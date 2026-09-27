@@ -52,5 +52,9 @@ jobs:
               printf 'SOURCE_OBJECTS_FOUND=%s\n' "$dir"
             fi
           done
+          if [[ -n "${DISPLAY:-}" ]]; then echo "DISPLAY_PRESENT=yes"; else echo "DISPLAY_PRESENT=no"; fi
+          if [[ -n "${WAYLAND_DISPLAY:-}" ]]; then echo "WAYLAND_DISPLAY_PRESENT=yes"; else echo "WAYLAND_DISPLAY_PRESENT=no"; fi
+          if [[ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ]]; then echo "DBUS_SESSION_BUS_PRESENT=yes"; else echo "DBUS_SESSION_BUS_PRESENT=no"; fi
+          if command -v xdg-open >/dev/null; then echo "XDG_OPEN_AVAILABLE=yes"; else echo "XDG_OPEN_AVAILABLE=no"; fi
           printf 'ROOT_DISK_AVAILABLE_BYTES=%s\n' "$(df -B1 "$HOME" | awk 'NR==2{print $4}')"
           echo 'READ_ONLY_PREFLIGHT_COMPLETE_NO_AUTHORIZATION_GRANTED'
