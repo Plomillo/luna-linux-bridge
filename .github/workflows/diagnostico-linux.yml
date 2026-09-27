@@ -1,0 +1,30 @@
+name: Diagnostico Linux - solo lectura
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'requests/diagnostico-*.txt'
+
+permissions:
+  contents: read
+
+jobs:
+  diagnostico:
+    if: github.repository == 'Plomillo/luna-linux-bridge'
+    runs-on: [self-hosted, Linux, luna-aux]
+    timeout-minutes: 3
+    steps:
+      - name: Identificacion basica del sistema
+        shell: bash
+        run: |
+          set -eu
+          echo '=== Sistema ==='
+          uname -srm
+          cat /etc/os-release
+          echo '=== Arquitectura ==='
+          uname -m
+          echo '=== Memoria ==='
+          if command -v free >/dev/null 2>&1; then free -h; fi
+          echo '=== Espacio de la particion principal ==='
+          df -h /
