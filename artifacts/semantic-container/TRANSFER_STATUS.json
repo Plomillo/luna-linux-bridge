@@ -4,7 +4,7 @@
   "source_drive_url": "https://drive.google.com/drive/folders/1xvUD6qtPSYgmSFaZMIMpuPnhrm5-Br6X",
   "source_manifest": "00_MANIFEST/MANIFEST.json",
   "source_cas_manifest": "18_HASH_INDEX/CAS_MANIFEST.json",
-  "status": "PARTIAL_CAS_TRANSFER_AWAITING_AUTHORIZED_SOURCE_AND_GIT_LFS",
+  "status": "CAS_4_OF_252_VERIFIED_TRANSFER_PENDING_GOOGLE_DRIVE_REMOTE_AUTH",
   "scope": "README only; does not supersede original manifests",
   "metadata_files_uploaded": 40,
   "cas_object_count_expected": 252,
@@ -44,5 +44,25 @@
     "workflow": ".github/workflows/importar-contenedor-semantico.yml",
     "requires_authorized_local_source_or_rclone": true,
     "requires_git_lfs": true
+  },
+  "tool_installation": {
+    "status": "PASS",
+    "run_id": 36356753488,
+    "execution_host": "LOUKSNA",
+    "installation_scope": "USER_LOCAL",
+    "installation_location": "~/.local/bin",
+    "package_source": "DEBIAN_SIGNED_APT",
+    "git_lfs_version": "3.6.1",
+    "rclone_version": "1.60.1-DEV",
+    "git_lfs_sha256": "95795bacd7040d12e1d510309ea8abfe8d3007ff60b7d996af0df19298096fb8",
+    "rclone_sha256": "20df3d5eac5d4e187ce638e4216354e7fa6778c3c51f0caf48c48acca9686354",
+    "evidence_artifact_id": 10943998436
+  },
+  "transfer_prerequisites": {
+    "tools_installed": true,
+    "drive_rclone_authorization": "NOT_CONFIGURED_OR_NOT_VERIFIED",
+    "cas_source_on_runner": "NOT_VERIFIED_AVAILABLE",
+    "pending_cas_objects": 248,
+    "automatic_import_trigger": "NOT_AUTHORIZED_OR_EXECUTED"
   }
 }
