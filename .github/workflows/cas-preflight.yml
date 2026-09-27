@@ -1,0 +1,36 @@
+name: "CAS: preflight local sin cambios"
+on:
+  push:
+    branches:
+      - staging/contenedor-semantico-e826-20260927
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  preflight:
+    runs-on: [self-hosted, linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Diagnosticar disponibilidad de fuente y herramientas sin leer credenciales
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          printf 'DEVICE=%s\n' "$(hostname)"
+          for name in python3 git git-lfs rclone; do
+            if command -v "$name" >/dev/null; then
+              printf 'TOOL_%s=AVAILABLE\n' "$name"
+            else
+              printf 'TOOL_%s=MISSING\n' "$name"
+            fi
+          done
+          if command -v rclone >/dev/null; then
+            count="$(rclone listremotes 2>/dev/null | wc -l)"
+            printf 'RCLONE_CONFIGURED_REMOTE_COUNT=%s\n' "$count"
+          fi
+          for dir in "$HOME/CONTENEDOR SEMANTICO" "$HOME/Google Drive/CONTENEDOR SEMANTICO" "$HOME/Drive/CONTENEDOR SEMANTICO" "$HOME/Downloads/CONTENEDOR SEMANTICO"; do
+            if [[ -d "$dir/18_HASH_INDEX/OBJECTS" ]]; then
+              printf 'SOURCE_OBJECTS_FOUND=%s\n' "$dir"
+            fi
+          done
+          printf 'ROOT_DISK_AVAILABLE_BYTES=%s\n' "$(df -B1 "$HOME" | awk 'NR==2{print $4}')"
+          echo 'READ_ONLY_PREFLIGHT_COMPLETE_NO_AUTHORIZATION_GRANTED'
