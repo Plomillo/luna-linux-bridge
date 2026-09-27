@@ -4,7 +4,7 @@
   "source_drive_url": "https://drive.google.com/drive/folders/1xvUD6qtPSYgmSFaZMIMpuPnhrm5-Br6X",
   "source_manifest": "00_MANIFEST/MANIFEST.json",
   "source_cas_manifest": "18_HASH_INDEX/CAS_MANIFEST.json",
-  "status": "PARTIAL_CAS_TRANSFER_UNCERTIFIED",
+  "status": "PARTIAL_CAS_TRANSFER_AWAITING_AUTHORIZED_SOURCE_AND_GIT_LFS",
   "scope": "README only; does not supersede original manifests",
   "metadata_files_uploaded": 40,
   "cas_object_count_expected": 252,
@@ -26,5 +26,23 @@
   "transfer_blockers": [
     "GitHub connector does not expose Git LFS upload; a 63,879,595-byte Drive file exceeds the 64-MiB inline base64 response limit; a 33,244,562-byte direct blob transfer failed at HTTP/2 transport.",
     "Require governed Git LFS import from authorized local/synced source for full 252-object payload."
-  ]
+  ],
+  "verified_staged_cas_objects": 4,
+  "git_sha256_runner_check": "PASS_RUN_36356042692",
+  "manifest_sha256_runner_check": "PASS_RUN_36356042692",
+  "runner_preflight": {
+    "run_id": 36355943485,
+    "status": "PASS_READ_ONLY",
+    "device": "LOUKSNA",
+    "git_lfs": "MISSING",
+    "rclone": "MISSING",
+    "source_objects_at_known_home_paths": "NOT_FOUND",
+    "root_disk_available_bytes": 21848518656
+  },
+  "import_automation_prepared": {
+    "script": "scripts/semantic_container/import_cas.py",
+    "workflow": ".github/workflows/importar-contenedor-semantico.yml",
+    "requires_authorized_local_source_or_rclone": true,
+    "requires_git_lfs": true
+  }
 }
