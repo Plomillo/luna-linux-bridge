@@ -4,7 +4,7 @@
   "source_drive_url": "https://drive.google.com/drive/folders/1xvUD6qtPSYgmSFaZMIMpuPnhrm5-Br6X",
   "source_manifest": "00_MANIFEST/MANIFEST.json",
   "source_cas_manifest": "18_HASH_INDEX/CAS_MANIFEST.json",
-  "status": "CAS_4_OF_252_VERIFIED_TRANSFER_PENDING_GOOGLE_DRIVE_REMOTE_AUTH",
+  "status": "AUTHORIZED_WAITING_GOOGLE_DRIVE_OAUTH_AND_GIT_LFS_IMPORT",
   "scope": "README only; does not supersede original manifests",
   "metadata_files_uploaded": 40,
   "cas_object_count_expected": 252,
@@ -14,7 +14,7 @@
   "g23": "NOT_EXECUTED",
   "g24": "NOT_EXECUTED",
   "certification": "NOT_CERTIFIED",
-  "operation_authorized": false,
+  "operation_authorized": true,
   "notes": "This branch contains all 40 directly inventoried non-CAS files and the supplied semantic binary IR; the 252 referenced content-addressed objects remain in the linked private Drive folder. Never claim this stage is the entire container, a certified release, or sufficient to reconstruct payload. Full restoration requires all 252 object bytes and SHA-256 checks.",
   "cas_object_bytes_uploaded": 74325,
   "cas_objects_pending": 248,
@@ -60,9 +60,14 @@
   },
   "transfer_prerequisites": {
     "tools_installed": true,
-    "drive_rclone_authorization": "NOT_CONFIGURED_OR_NOT_VERIFIED",
+    "drive_rclone_authorization": "BROWSER_APPROVAL_REQUEST_PREPARED",
     "cas_source_on_runner": "NOT_VERIFIED_AVAILABLE",
     "pending_cas_objects": 248,
-    "automatic_import_trigger": "NOT_AUTHORIZED_OR_EXECUTED"
-  }
+    "automatic_import_trigger": "USER_AUTHORIZED; OAuth_PENDING_BROWSER_APPROVAL"
+  },
+  "automatic_import_branch": "staging/contenedor-semantico-e826-20260927",
+  "oauth_mode": "LOCAL_BROWSER_READONLY_FOLDER_SCOPED",
+  "oauth_remote_name": "louksna_cas_drive",
+  "oauth_drive_scope": "drive.readonly",
+  "privacy_guard": "RCLONE_OAUTH_TOKEN_LOCAL_TO_LOUKSNA_NO_GITHUB_SECRETS"
 }
