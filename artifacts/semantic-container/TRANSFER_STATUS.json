@@ -4,16 +4,27 @@
   "source_drive_url": "https://drive.google.com/drive/folders/1xvUD6qtPSYgmSFaZMIMpuPnhrm5-Br6X",
   "source_manifest": "00_MANIFEST/MANIFEST.json",
   "source_cas_manifest": "18_HASH_INDEX/CAS_MANIFEST.json",
-  "status": "PARTIAL_METADATA_STAGED_BINARY_PAYLOAD_PENDING",
+  "status": "PARTIAL_CAS_TRANSFER_UNCERTIFIED",
   "scope": "README only; does not supersede original manifests",
   "metadata_files_uploaded": 40,
   "cas_object_count_expected": 252,
   "cas_object_bytes_expected": 327745213,
-  "cas_objects_uploaded": 0,
+  "cas_objects_uploaded": 4,
   "cas_payload_complete": false,
   "g23": "NOT_EXECUTED",
   "g24": "NOT_EXECUTED",
   "certification": "NOT_CERTIFIED",
   "operation_authorized": false,
-  "notes": "This branch contains all 40 directly inventoried non-CAS files and the supplied semantic binary IR; the 252 referenced content-addressed objects remain in the linked private Drive folder. Never claim this stage is the entire container, a certified release, or sufficient to reconstruct payload. Full restoration requires all 252 object bytes and SHA-256 checks."
+  "notes": "This branch contains all 40 directly inventoried non-CAS files and the supplied semantic binary IR; the 252 referenced content-addressed objects remain in the linked private Drive folder. Never claim this stage is the entire container, a certified release, or sufficient to reconstruct payload. Full restoration requires all 252 object bytes and SHA-256 checks.",
+  "cas_object_bytes_uploaded": 74325,
+  "cas_objects_pending": 248,
+  "cas_object_bytes_pending": 327670888,
+  "source_metadata_reconciled": true,
+  "source_metadata_reconciled_count": 252,
+  "source_metadata_reconciled_bytes": 327745213,
+  "source_content_hash_validation_pending": true,
+  "transfer_blockers": [
+    "GitHub connector does not expose Git LFS upload; a 63,879,595-byte Drive file exceeds the 64-MiB inline base64 response limit; a 33,244,562-byte direct blob transfer failed at HTTP/2 transport.",
+    "Require governed Git LFS import from authorized local/synced source for full 252-object payload."
+  ]
 }
