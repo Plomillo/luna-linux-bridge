@@ -37,6 +37,15 @@ jobs:
           persist-credentials: true
           lfs: false
 
+      - name: Habilitar binarios de usuario instalados
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/.local/bin:$PATH"
+          command -v git-lfs
+          command -v rclone
+
       - name: Prechecks y aislamiento de permisos
         shell: bash
         env:
@@ -68,8 +77,7 @@ jobs:
             python3 -B scripts/semantic_container/import_cas.py \
               --source-dir "$SOURCE_DIR" --mode verify
           else
-            python3 -B scripts/semantic_container/import_cas.py \
-              --rclone-source "$RCLONE_SOURCE" --allow-network --mode verify
+            echo "RCLONE_SINGLE_TRANSFER: verification will happen during import step."
           fi
 
       - name: Importacion local verificada a Git LFS
