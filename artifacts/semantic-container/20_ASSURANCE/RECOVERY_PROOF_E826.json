@@ -1,0 +1,9 @@
+{
+  "TRUSTED_RECOVERY_POINT": 1,
+  "checkpoint_manifest_sha256": "7e4be110431ef5585c5974d2f028526a631cba3808cc6161863cff9e8bdfa6eb",
+  "full_restore_verified": true,
+  "proof_digest": "90ffa7cc9ff902daf46b37571e11acfd95dcfa5a78f2a604f5bfafe9ff15f962",
+  "saved_entries": 257,
+  "saved_total_bytes": 328055108,
+  "schema": "metaos.s8.e826-recovery-proof/v1"
+}

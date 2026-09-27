@@ -1,0 +1,40 @@
+{
+  "entries": [
+    {
+      "original_path": "C:\\PROYECTOS\\1. PROYECTOS PRIORITARIOS\\5. CUSTOSZ\\0. CUSTOSZ  - OPERADOR\\MISSIONS\\METAOS_S08_FULL_MISSION_MIS-a8818ca7f6444b469d95\\METAOS_S08_E815_VALIDATION.json",
+      "relative_payload": "18_HASH_INDEX/OBJECTS/4a/4ae9a84c5bd93868bcf2f0cfbedefe7d37535296335cadfec02dd6dc3ac4526f",
+      "sha256": "4ae9a84c5bd93868bcf2f0cfbedefe7d37535296335cadfec02dd6dc3ac4526f",
+      "validation_state": "PASS"
+    },
+    {
+      "original_path": "C:\\PROYECTOS\\1. PROYECTOS PRIORITARIOS\\5. CUSTOSZ\\0. CUSTOSZ  - OPERADOR\\MISSIONS\\METAOS_S08_FULL_MISSION_MIS-a8818ca7f6444b469d95\\02_KNOWLEDGE\\E815_MICRO_METACOGNITION\\E815_NATIVE_MEMORY.jsonl",
+      "relative_payload": "18_HASH_INDEX/OBJECTS/4d/4d66c180979eadef134874f96eacc9ef9eee6cb61d59ad0014b7442cdfdbcab8",
+      "sha256": "4d66c180979eadef134874f96eacc9ef9eee6cb61d59ad0014b7442cdfdbcab8",
+      "validation_state": "PERSISTED_PRE_E822_SNAPSHOT"
+    },
+    {
+      "original_path": "C:\\PROYECTOS\\1. PROYECTOS PRIORITARIOS\\5. CUSTOSZ\\0. CUSTOSZ  - OPERADOR\\MISSIONS\\METAOS_S08_FULL_MISSION_MIS-a8818ca7f6444b469d95\\02_KNOWLEDGE\\METAOS_E815_MICRO_METACOGNITION_REGISTRY.json",
+      "relative_payload": "18_HASH_INDEX/OBJECTS/53/5376b6b18b91d29c71e18a276cc3a1c081088aaa21a8fbd6a80a02c02380f6d4",
+      "sha256": "5376b6b18b91d29c71e18a276cc3a1c081088aaa21a8fbd6a80a02c02380f6d4",
+      "validation_state": "PERSISTED_PRE_E822_SNAPSHOT"
+    },
+    {
+      "original_path": "C:\\PROYECTOS\\1. PROYECTOS PRIORITARIOS\\5. CUSTOSZ\\0. CUSTOSZ  - OPERADOR\\MISSIONS\\METAOS_S08_FULL_MISSION_MIS-a8818ca7f6444b469d95\\02_KNOWLEDGE\\E815_MICRO_METACOGNITION\\MICRO_METACOGNITION.jsonl.gz",
+      "relative_payload": "18_HASH_INDEX/OBJECTS/5d/5df8b0f13d33551fa144504c52818ea09f82a3b1481e54719e6ec7d6bc9563dd",
+      "sha256": "5df8b0f13d33551fa144504c52818ea09f82a3b1481e54719e6ec7d6bc9563dd",
+      "validation_state": "PERSISTED_PRE_E822_SNAPSHOT"
+    },
+    {
+      "original_path": "C:\\PROYECTOS\\1. PROYECTOS PRIORITARIOS\\5. CUSTOSZ\\0. CUSTOSZ  - OPERADOR\\MISSIONS\\METAOS_S08_FULL_MISSION_MIS-a8818ca7f6444b469d95\\02_KNOWLEDGE\\E815_MICRO_METACOGNITION\\MICRO_METACOGNITION_INDEX.json",
+      "relative_payload": "18_HASH_INDEX/OBJECTS/a3/a3f7cb81e38d49a12d8fc4e01a331813d92c503c1d55adf9742076e0f7a9958d",
+      "sha256": "a3f7cb81e38d49a12d8fc4e01a331813d92c503c1d55adf9742076e0f7a9958d",
+      "validation_state": "PERSISTED_PRE_E822_SNAPSHOT"
+    }
+  ],
+  "entry_count": 5,
+  "index_digest": "7be74d5a4566609ed8a41592971990d54222979c6a21c4c4db6ed8128a52875b",
+  "no_semantic_promotion": true,
+  "payload_store_relative": "../../18_HASH_INDEX/OBJECTS",
+  "schema": "metaos.semantic-container.domain-index/v1",
+  "section": "08_METACOGNITION/MICRO"
+}
