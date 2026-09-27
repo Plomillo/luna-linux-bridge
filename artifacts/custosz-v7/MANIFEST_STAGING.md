@@ -6,7 +6,7 @@ DESTINO=Plomillo/luna-linux-bridge (rama de preparación)
 AUTORIDAD=Louksna.md
 CERTIFICACION=NO_PROPAGADA
 EJECUCION_AUTOMATICA=DESHABILITADA
-VARIANTE_ROOT=NO_LOCALIZADA_EN_LA_CARPETA_ORIGEN
+RUNTIME=CUSTOSZ_RUNTIME_V1_SR_EXEC_BOUND_FME_01.b.pyz
 SHA256=VERIFICACION_PENDIENTE
 
 | Archivo | Bytes originales | SHA-1 de Git blob |
@@ -15,4 +15,4 @@ SHA256=VERIFICACION_PENDIENTE
 | CUSTOSZ_RUNTIME_V1_SR_EXEC_BOUND_FME_01.b.pyz | 10376 | 7268344859a3b2251fb42e71a6f8cab2f702f389 |
 | MetaOS.wasm | 2442 | 86124d95a38264019a3f5260cbe4cca3d9cd9e69 |
 
-Este inventario no afirma que el archivo de runtime sea la variante root. Ningún artefacto queda autorizado para ejecutarse por su simple presencia en el repositorio. Antes de integración: inventario de contenidos, escaneo de credenciales, SHA-256, validación de dependencias y comprobación de seguridad de la variante root.
+El runtime solicitado es CUSTOSZ_RUNTIME_V1_SR_EXEC_BOUND_FME_01.b.pyz. No se requiere un artefacto adicional con privilegios de administrador. Ningún artefacto queda autorizado para ejecutarse por su simple presencia en el repositorio. Antes de integración: inventario de contenidos, escaneo de credenciales, SHA-256, validación de dependencias y comprobaciones de seguridad.
