@@ -49,7 +49,10 @@
       "requires_prebound_executor": false,
       "execution_location": "SELF_HOSTED_LUNA_AUX",
       "scope": "FINAL_SERVER_READY_CLOSURE",
-      "status": "ACTIVE_PINNED"
+      "status": "ACTIVE_PINNED",
+      "materializer_path": "scripts/missions/final_server_ready_materialize.py",
+      "materializer_sha256": "6b193c6ab7ad6f94bdaf6b43e4ff0dbe529181a8a6ef36414b5bb0932af8407a",
+      "materializer_scope": "POINTS_1_3_PRODUCER_ONLY"
     }
   ]
 }
