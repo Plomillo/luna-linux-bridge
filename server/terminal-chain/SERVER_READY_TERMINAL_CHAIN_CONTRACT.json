@@ -1,5 +1,5 @@
 {
-  "schema": "SERVER_READY_TERMINAL_CHAIN_CONTRACT/1.0",
+  "schema": "SERVER_READY_TERMINAL_CHAIN_CONTRACT/1.1",
   "contract_id": "SR_TERMINAL_G08_G09_G23_G24_V1",
   "authority": "Louksna.md",
   "mission_source": "missions/inbox/server-ready-final-g23-g24-20260928/MISSION_ORIGINAL.md",
@@ -30,7 +30,9 @@
     "unknown_value": 0,
     "rule": "UNKNOWN_NEVER_PASS",
     "server_ready": "PRODUCT(GATE_01..GATE_15)",
-    "certification": "SERVER_TECHNICAL_READY * G23_PASS * G24_PASS"
+    "certification": "SERVER_TECHNICAL_READY * G23_PASS * G24_PASS",
+    "genuine_terminal_pass": "G08_PASS * G09_PASS * PRODUCT(GATE_01..GATE_15) * G23_PASS * G24_PASS",
+    "artificial_pass": "FORBIDDEN_IF_ANY_REQUIRED_EVIDENCE_IS_MISSING_UNKNOWN_UNEXECUTED_OR_CONTRADICTED"
   },
   "invariants": {
     "NO_SKIP": 1,
@@ -44,7 +46,12 @@
     "CERTIFICATION_PROPAGATION_FORBIDDEN": 1,
     "WORKFLOW_SUCCESS_NE_MISSION_SUCCESS": 1,
     "UNKNOWN_TO_PASS_FORBIDDEN": 1,
-    "PROTECTED_SCOPE_MUTATION_FORBIDDEN": 1
+    "PROTECTED_SCOPE_MUTATION_FORBIDDEN": 1,
+    "NO_EXIT_WITHOUT_GENUINE_PASS": 1,
+    "NO_ARTIFICIAL_PASS": 1,
+    "PASS_REQUIRES_MATERIAL_EVIDENCE": 1,
+    "HARD_CEILING_DOES_NOT_AUTHORIZE_TERMINAL_EXIT": 1,
+    "TIME_EXHAUSTION_REQUIRES_CHECKPOINT_NOT_COMPLETION": 1
   },
   "sequence": [
     {
@@ -89,16 +96,23 @@
     }
   ],
   "continuity": {
-    "state_model": "ACTIVE -> WAITING_RESUME | ADVANCING -> TERMINAL_PASS | TERMINAL_FAIL | EXPLICIT_ABORT",
+    "state_model": "ACTIVE -> WAITING_RESUME | ADVANCING -> TERMINAL_PASS",
     "subgate_hold_behavior": "persist checkpoint, exact blocker, remediation, verification test; mission remains ACTIVE",
     "global_terminal_conditions": [
-      "G24_PASS",
-      "UNRECOVERABLE_FAIL_WITH_ROLLBACK_RECORDED",
-      "EXPLICIT_OWNER_ABORT"
+      "G24_PASS_WITH_COMPLETE_EVIDENCE_CHAIN"
     ],
     "retry_policy": "RECHECK_FROM_LAST_VERIFIED_CHECKPOINT; DO_NOT_REPEAT_CLOSED_WORK",
     "heartbeat_rule": "HEARTBEAT != PROGRESS",
-    "progress_rule": "gate transition or new evidence hash required"
+    "progress_rule": "gate transition or new evidence hash required",
+    "non_terminal_attempt_end_conditions": [
+      "TIME_CEILING_REACHED",
+      "RECOVERABLE_BLOCKER",
+      "TOOL_GUARD",
+      "UNRESOLVED_EVIDENCE_GAP",
+      "TEMPORARY_EXECUTOR_UNAVAILABLE"
+    ],
+    "non_terminal_attempt_end_behavior": "PERSIST CHECKPOINT + EXACT BLOCKER + REMEDIATION + VERIFICATION_TEST + KEEP GLOBAL MISSION ACTIVE",
+    "exit_clause": "PROHIBITED_TO_DECLARE_MISSION_TERMINAL_WITHOUT_GENUINE_PASS; EQUALLY_PROHIBITED_TO_CREATE_INFER_ASSUME_OR_PROPAGATE_A_PASS_NOT_PROVEN_BY_MATERIAL_EVIDENCE"
   },
   "resource_policy": {
     "policy": "MINIMUM_SUFFICIENT_RESOURCES",
@@ -114,8 +128,12 @@
       "CHECKPOINT_RESUME",
       "HASHED_EVIDENCE",
       "G23_INDEPENDENCE",
-      "G24_DEPENDENCY_ON_G23"
+      "G24_DEPENDENCY_ON_G23",
+      "NO_EXIT_WITHOUT_GENUINE_PASS",
+      "NO_ARTIFICIAL_PASS",
+      "TIME_CEILING_CHECKPOINT_CONTINUITY"
     ],
-    "forbidden_guarantee": "PRECOMMITTED_G23_OR_G24_PASS"
+    "forbidden_guarantee": "PRECOMMITTED_G23_OR_G24_PASS",
+    "terminal_clause": "TERMINAL_PASS_ONLY_IF_G08=PASS AND G09=PASS AND ALL_15_GATES=PASS AND G23=PASS AND G24=PASS; OTHERWISE MISSION_REMAINS_ACTIVE_AT_A_CHECKPOINT"
   }
 }
