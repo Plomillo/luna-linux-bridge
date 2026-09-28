@@ -1,0 +1,3949 @@
+{
+  "schema": "LOUKSNA_METACOGNITIVE_ECOSYSTEM_GRAPH/1.0",
+  "graph_id": "META_ECOSYSTEM_GRAPH_V1",
+  "authority": "Louksna.md",
+  "canonical_status": "NON_CANONICAL_OPERATIONAL_CANDIDATE",
+  "doctrine": "EXTEND_DO_NOT_REPLACE",
+  "failure_posture": "FAIL_CLOSED",
+  "source_identity": {
+    "capabilities_blob_sha": "a482f464e3df969a07f7267f748ee751ce507625",
+    "dedup_blob_sha": "eacf5f437656a997524efad4d42ecfff83f3d741",
+    "census_blob_sha": "e069eba0fe314914056db54da4766dd076c3c3b3",
+    "custosz_pyz_sha256": "dacf1f8c13b2fcbfc617cf0d4d780b30502c13395224691e6b0f05f53d9816a2"
+  },
+  "invariants": {
+    "capability_count": 59,
+    "custosz_capability_count": 72,
+    "training_last": "MCAP-059",
+    "duplicate_implementation_policy": "BIND_OR_EXTEND_BEFORE_CREATE",
+    "heavy_compute": "GITHUB_HOSTED_OR_EXPLICIT_EXTERNAL_CLOUD",
+    "local_heavy_compute": "FORBIDDEN_BY_DEFAULT",
+    "g23_before_g24": true,
+    "certification_propagation": false
+  },
+  "nodes": [
+    {
+      "id": "SYS:LOUKSNA",
+      "type": "SYSTEM_COMPONENT",
+      "name": "Louksna.md",
+      "role": "CANONICAL_AUTHORITY"
+    },
+    {
+      "id": "SYS:METAOS",
+      "type": "SYSTEM_COMPONENT",
+      "name": "MetaOS",
+      "role": "GOVERNOR"
+    },
+    {
+      "id": "SYS:CUSTOSZ_V7",
+      "type": "SYSTEM_COMPONENT",
+      "name": "CUSTOSZ V7",
+      "role": "WORKER"
+    },
+    {
+      "id": "SYS:CUSTOSZ_RUNTIME_V1",
+      "type": "SYSTEM_COMPONENT",
+      "name": "CUSTOSZ_RUNTIME_V1",
+      "role": "RUNTIME"
+    },
+    {
+      "id": "SYS:PUAC2",
+      "type": "SYSTEM_COMPONENT",
+      "name": "PUAC2",
+      "role": "ASSURANCE_PROTOCOL"
+    },
+    {
+      "id": "SYS:GITHUB",
+      "type": "SYSTEM_COMPONENT",
+      "name": "GitHub",
+      "role": "CONTROL_COMPUTE_EVIDENCE_PLANE"
+    },
+    {
+      "id": "SYS:G23",
+      "type": "SYSTEM_COMPONENT",
+      "name": "G23",
+      "role": "INDEPENDENT_VALIDATION_GATE"
+    },
+    {
+      "id": "SYS:G24",
+      "type": "SYSTEM_COMPONENT",
+      "name": "G24",
+      "role": "CERTIFICATION_GATE"
+    },
+    {
+      "id": "SYS:CLOUD_DATA_PLANE",
+      "type": "SYSTEM_COMPONENT",
+      "name": "External Cloud Data Plane",
+      "role": "REMOTE_DATA_PLANE"
+    },
+    {
+      "id": "CUSTOSZ:cache.semantic",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "cache.semantic",
+      "family": "F01_IO_KNOWLEDGE",
+      "implementation": "SemanticCache"
+    },
+    {
+      "id": "CUSTOSZ:content.identity",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "content.identity",
+      "family": "F01_IO_KNOWLEDGE",
+      "implementation": "ContentIdentityEngine"
+    },
+    {
+      "id": "CUSTOSZ:handoff.remote_source",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "handoff.remote_source",
+      "family": "F01_IO_KNOWLEDGE",
+      "implementation": "RemoteSourceHandoff"
+    },
+    {
+      "id": "CUSTOSZ:ingestion.universal",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "ingestion.universal",
+      "family": "F01_IO_KNOWLEDGE",
+      "implementation": "UniversalIngestionEngine"
+    },
+    {
+      "id": "CUSTOSZ:io.query_plan",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "io.query_plan",
+      "family": "F01_IO_KNOWLEDGE",
+      "implementation": "IOQueryPlanner"
+    },
+    {
+      "id": "CUSTOSZ:io.resumable_reader",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "io.resumable_reader",
+      "family": "F01_IO_KNOWLEDGE",
+      "implementation": "ResumableReader"
+    },
+    {
+      "id": "CUSTOSZ:knowledge.high_throughput",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "knowledge.high_throughput",
+      "family": "F01_IO_KNOWLEDGE",
+      "implementation": "HighThroughputKnowledgeEngine"
+    },
+    {
+      "id": "CUSTOSZ:knowledge.remote",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "knowledge.remote",
+      "family": "F01_IO_KNOWLEDGE",
+      "implementation": "RemoteKnowledgeFabric"
+    },
+    {
+      "id": "CUSTOSZ:normalization.structured",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "normalization.structured",
+      "family": "F01_IO_KNOWLEDGE",
+      "implementation": "UniversalIngestionEngine"
+    },
+    {
+      "id": "CUSTOSZ:source.resolve",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "source.resolve",
+      "family": "F01_IO_KNOWLEDGE",
+      "implementation": "UniversalSourceResolver"
+    },
+    {
+      "id": "CUSTOSZ:streaming.range",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "streaming.range",
+      "family": "F01_IO_KNOWLEDGE",
+      "implementation": "HighThroughputKnowledgeEngine"
+    },
+    {
+      "id": "CUSTOSZ:volume.intelligence",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "volume.intelligence",
+      "family": "F01_IO_KNOWLEDGE",
+      "implementation": "VolumeIntelligenceEngine"
+    },
+    {
+      "id": "CUSTOSZ:backpressure.control",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "backpressure.control",
+      "family": "F02_EXECUTION_RESOURCES",
+      "implementation": "BackpressureController"
+    },
+    {
+      "id": "CUSTOSZ:desktop.internal",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "desktop.internal",
+      "family": "F02_EXECUTION_RESOURCES",
+      "implementation": "InternalDesktopCapability"
+    },
+    {
+      "id": "CUSTOSZ:execution.resumable",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "execution.resumable",
+      "family": "F02_EXECUTION_RESOURCES",
+      "implementation": "ResumableExecutionState"
+    },
+    {
+      "id": "CUSTOSZ:process.sessions",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "process.sessions",
+      "family": "F02_EXECUTION_RESOURCES",
+      "implementation": "ProcessSessionManager"
+    },
+    {
+      "id": "CUSTOSZ:resources.adaptive",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "resources.adaptive",
+      "family": "F02_EXECUTION_RESOURCES",
+      "implementation": "AdaptiveResourceGovernor"
+    },
+    {
+      "id": "CUSTOSZ:resources.budget_policy",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "resources.budget_policy",
+      "family": "F02_EXECUTION_RESOURCES",
+      "implementation": "ResourceBudgetPolicy"
+    },
+    {
+      "id": "CUSTOSZ:terminal.native",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "terminal.native",
+      "family": "F02_EXECUTION_RESOURCES",
+      "implementation": "NativeTerminalEngine"
+    },
+    {
+      "id": "CUSTOSZ:security.credentials",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "security.credentials",
+      "family": "F03_SECURITY_TRUST",
+      "implementation": "CredentialBroker"
+    },
+    {
+      "id": "CUSTOSZ:security.crypto",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "security.crypto",
+      "family": "F03_SECURITY_TRUST",
+      "implementation": "CryptoCore"
+    },
+    {
+      "id": "CUSTOSZ:security.fabric",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "security.fabric",
+      "family": "F03_SECURITY_TRUST",
+      "implementation": "NativeSecurityFabric"
+    },
+    {
+      "id": "CUSTOSZ:security.risk_classification",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "security.risk_classification",
+      "family": "F03_SECURITY_TRUST",
+      "implementation": "ContentRiskClassifier"
+    },
+    {
+      "id": "CUSTOSZ:security.sandbox_contract",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "security.sandbox_contract",
+      "family": "F03_SECURITY_TRUST",
+      "implementation": "SandboxContract"
+    },
+    {
+      "id": "CUSTOSZ:security.supply_chain",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "security.supply_chain",
+      "family": "F03_SECURITY_TRUST",
+      "implementation": "SupplyChainValidator"
+    },
+    {
+      "id": "CUSTOSZ:security.threat_currentness",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "security.threat_currentness",
+      "family": "F03_SECURITY_TRUST",
+      "implementation": "ThreatCurrentnessEngine"
+    },
+    {
+      "id": "CUSTOSZ:security.trust_policy",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "security.trust_policy",
+      "family": "F03_SECURITY_TRUST",
+      "implementation": "TrustPolicyEngine"
+    },
+    {
+      "id": "CUSTOSZ:languages.intelligence",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "languages.intelligence",
+      "family": "F04_INTELLIGENCE_SYNTHESIS",
+      "implementation": "ProgrammingLanguageIntelligenceEngine"
+    },
+    {
+      "id": "CUSTOSZ:optimization.intelligence",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "optimization.intelligence",
+      "family": "F04_INTELLIGENCE_SYNTHESIS",
+      "implementation": "OptimizationIntelligenceEngine"
+    },
+    {
+      "id": "CUSTOSZ:systems.intelligence",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "systems.intelligence",
+      "family": "F04_INTELLIGENCE_SYNTHESIS",
+      "implementation": "ComputingSystemsIntelligenceEngine"
+    },
+    {
+      "id": "CUSTOSZ:technology.synthesis",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "technology.synthesis",
+      "family": "F04_INTELLIGENCE_SYNTHESIS",
+      "implementation": "TechnologySynthesisEngine"
+    },
+    {
+      "id": "CUSTOSZ:assurance.fabric",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "assurance.fabric",
+      "family": "F05_ASSURANCE_EPISTEMIC",
+      "implementation": "AssuranceFabric"
+    },
+    {
+      "id": "CUSTOSZ:benchmark.contamination",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "benchmark.contamination",
+      "family": "F05_ASSURANCE_EPISTEMIC",
+      "implementation": "ContaminationControl"
+    },
+    {
+      "id": "CUSTOSZ:benchmark.ephemeral",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "benchmark.ephemeral",
+      "family": "F05_ASSURANCE_EPISTEMIC",
+      "implementation": "EphemeralBenchmarkEngine"
+    },
+    {
+      "id": "CUSTOSZ:benchmark.gap",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "benchmark.gap",
+      "family": "F05_ASSURANCE_EPISTEMIC",
+      "implementation": "BenchmarkGapEngine"
+    },
+    {
+      "id": "CUSTOSZ:epistemic.failure_detection",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "epistemic.failure_detection",
+      "family": "F05_ASSURANCE_EPISTEMIC",
+      "implementation": "EpistemicFailureDetectionEngine"
+    },
+    {
+      "id": "CUSTOSZ:evidence.completeness",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "evidence.completeness",
+      "family": "F05_ASSURANCE_EPISTEMIC",
+      "implementation": "EvidenceCompletenessEngine"
+    },
+    {
+      "id": "CUSTOSZ:evidence.graph",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "evidence.graph",
+      "family": "F05_ASSURANCE_EPISTEMIC",
+      "implementation": "EvidenceGraph"
+    },
+    {
+      "id": "CUSTOSZ:validation.adversarial",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "validation.adversarial",
+      "family": "F05_ASSURANCE_EPISTEMIC",
+      "implementation": "AdversarialValidationEngine"
+    },
+    {
+      "id": "CUSTOSZ:api.gateway",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "api.gateway",
+      "family": "F06_CONTINUITY_INTEROP",
+      "implementation": "APIGateway"
+    },
+    {
+      "id": "CUSTOSZ:continuity.fabric",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "continuity.fabric",
+      "family": "F06_CONTINUITY_INTEROP",
+      "implementation": "ContinuityFabric"
+    },
+    {
+      "id": "CUSTOSZ:continuity.heartbeat_watchdog",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "continuity.heartbeat_watchdog",
+      "family": "F06_CONTINUITY_INTEROP",
+      "implementation": "HeartbeatWatchdog"
+    },
+    {
+      "id": "CUSTOSZ:continuity.oob",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "continuity.oob",
+      "family": "F06_CONTINUITY_INTEROP",
+      "implementation": "OutOfBandAbstraction"
+    },
+    {
+      "id": "CUSTOSZ:continuity.preinstall_contract",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "continuity.preinstall_contract",
+      "family": "F06_CONTINUITY_INTEROP",
+      "implementation": "PreinstallAgentContract"
+    },
+    {
+      "id": "CUSTOSZ:continuity.reboot_state",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "continuity.reboot_state",
+      "family": "F06_CONTINUITY_INTEROP",
+      "implementation": "RebootResilientStateEngine"
+    },
+    {
+      "id": "CUSTOSZ:continuity.session_resume",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "continuity.session_resume",
+      "family": "F06_CONTINUITY_INTEROP",
+      "implementation": "SessionResume"
+    },
+    {
+      "id": "CUSTOSZ:handoff.transaction",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "handoff.transaction",
+      "family": "F06_CONTINUITY_INTEROP",
+      "implementation": "RemoteSourceHandoff"
+    },
+    {
+      "id": "CUSTOSZ:documentation.generated",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "documentation.generated",
+      "family": "F07_MEMORY_DOCUMENTATION",
+      "implementation": "DocumentationEngine"
+    },
+    {
+      "id": "CUSTOSZ:memory.capability",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "memory.capability",
+      "family": "F07_MEMORY_DOCUMENTATION",
+      "implementation": "MemoryView"
+    },
+    {
+      "id": "CUSTOSZ:memory.currentness",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "memory.currentness",
+      "family": "F07_MEMORY_DOCUMENTATION",
+      "implementation": "CurrentnessEngine"
+    },
+    {
+      "id": "CUSTOSZ:memory.decision",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "memory.decision",
+      "family": "F07_MEMORY_DOCUMENTATION",
+      "implementation": "MemoryView"
+    },
+    {
+      "id": "CUSTOSZ:memory.evidence",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "memory.evidence",
+      "family": "F07_MEMORY_DOCUMENTATION",
+      "implementation": "MemoryView"
+    },
+    {
+      "id": "CUSTOSZ:memory.failure",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "memory.failure",
+      "family": "F07_MEMORY_DOCUMENTATION",
+      "implementation": "MemoryView"
+    },
+    {
+      "id": "CUSTOSZ:memory.governed",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "memory.governed",
+      "family": "F07_MEMORY_DOCUMENTATION",
+      "implementation": "GovernedMemoryFabric"
+    },
+    {
+      "id": "CUSTOSZ:memory.invalidation",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "memory.invalidation",
+      "family": "F07_MEMORY_DOCUMENTATION",
+      "implementation": "InvalidationEngine"
+    },
+    {
+      "id": "CUSTOSZ:memory.state",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "memory.state",
+      "family": "F07_MEMORY_DOCUMENTATION",
+      "implementation": "MemoryView"
+    },
+    {
+      "id": "CUSTOSZ:memory.versioned",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "memory.versioned",
+      "family": "F07_MEMORY_DOCUMENTATION",
+      "implementation": "GovernedMemoryFabric"
+    },
+    {
+      "id": "CUSTOSZ:conformance.harness",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "conformance.harness",
+      "family": "F08_FORMAL_CORE",
+      "implementation": "SelfTestConformanceHarness"
+    },
+    {
+      "id": "CUSTOSZ:errors.taxonomy",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "errors.taxonomy",
+      "family": "F08_FORMAL_CORE",
+      "implementation": "UniversalErrorTaxonomy"
+    },
+    {
+      "id": "CUSTOSZ:interfaces.cross_family",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "interfaces.cross_family",
+      "family": "F08_FORMAL_CORE",
+      "implementation": "CrossFamilyInterfaceRegistry"
+    },
+    {
+      "id": "CUSTOSZ:invariants.engine",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "invariants.engine",
+      "family": "F08_FORMAL_CORE",
+      "implementation": "InvariantEngine"
+    },
+    {
+      "id": "CUSTOSZ:lifecycle.manager",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "lifecycle.manager",
+      "family": "F08_FORMAL_CORE",
+      "implementation": "CapabilityLifecycleManager"
+    },
+    {
+      "id": "CUSTOSZ:logic.arithmetic",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "logic.arithmetic",
+      "family": "F08_FORMAL_CORE",
+      "implementation": "FormalArithmeticEngine"
+    },
+    {
+      "id": "CUSTOSZ:logic.formal",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "logic.formal",
+      "family": "F08_FORMAL_CORE",
+      "implementation": "FormalLogicEngine"
+    },
+    {
+      "id": "CUSTOSZ:maintainability.engine",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "maintainability.engine",
+      "family": "F08_FORMAL_CORE",
+      "implementation": "MaintainabilityEngine"
+    },
+    {
+      "id": "CUSTOSZ:composition.engine",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "composition.engine",
+      "family": "F09_CAPABILITY_GAPS_EVOLUTION",
+      "implementation": "CompositionEngine"
+    },
+    {
+      "id": "CUSTOSZ:duplication.anti",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "duplication.anti",
+      "family": "F09_CAPABILITY_GAPS_EVOLUTION",
+      "implementation": "AntiDuplicationEngine"
+    },
+    {
+      "id": "CUSTOSZ:evolution.admission",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "evolution.admission",
+      "family": "F09_CAPABILITY_GAPS_EVOLUTION",
+      "implementation": "EvolutionAdmissionEngine"
+    },
+    {
+      "id": "CUSTOSZ:gap.evolution",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "gap.evolution",
+      "family": "F09_CAPABILITY_GAPS_EVOLUTION",
+      "implementation": "CapabilityGapEvolutionEngine"
+    },
+    {
+      "id": "CUSTOSZ:gap.proof",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "gap.proof",
+      "family": "F09_CAPABILITY_GAPS_EVOLUTION",
+      "implementation": "GapProofEngine"
+    },
+    {
+      "id": "CUSTOSZ:overlap.semantic",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "overlap.semantic",
+      "family": "F09_CAPABILITY_GAPS_EVOLUTION",
+      "implementation": "SemanticOverlapAnalyzer"
+    },
+    {
+      "id": "CUSTOSZ:placement.engine",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "placement.engine",
+      "family": "F09_CAPABILITY_GAPS_EVOLUTION",
+      "implementation": "PlacementEngine"
+    },
+    {
+      "id": "MCAP-001",
+      "type": "MCAP",
+      "ordinal": 1,
+      "name": "COGNITIVE_KERNEL",
+      "boundary": "Common cognitive state and bounded reasoning contracts.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "composable",
+      "f09_action": "COMPOSE_VIA_CONTRACT",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-002",
+      "type": "MCAP",
+      "ordinal": 2,
+      "name": "METACOGNITIVE_SUPERVISOR",
+      "boundary": "Second-order supervision of reasoning quality, contradictions, loops and false certainty.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "composable",
+      "f09_action": "COMPOSE_VIA_CONTRACT",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-003",
+      "type": "MCAP",
+      "ordinal": 3,
+      "name": "EPISTEMIC_ENGINE",
+      "boundary": "Typed epistemic states: fact, observation, inference, hypothesis, unknown, contradiction, validation.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "composable",
+      "f09_action": "COMPOSE_VIA_CONTRACT",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-004",
+      "type": "MCAP",
+      "ordinal": 4,
+      "name": "REASONING_ORCHESTRATOR",
+      "boundary": "Decompose missions and select the minimum sufficient capability set.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "composable",
+      "f09_action": "COMPOSE_VIA_CONTRACT",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-005",
+      "type": "MCAP",
+      "ordinal": 5,
+      "name": "SYSTEMS_ENGINEERING_ENGINE",
+      "boundary": "Systems engineering for Linux, Windows, Android, storage, networking and runtimes.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "partial",
+      "f09_action": "EXTEND_OWNER_FAMILY",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-006",
+      "type": "MCAP",
+      "ordinal": 6,
+      "name": "SOFTWARE_ENGINEERING_INTELLIGENCE",
+      "boundary": "Code, Git, CI/CD, build, test, dependency and architecture intelligence.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "partial",
+      "f09_action": "EXTEND_OWNER_FAMILY",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-007",
+      "type": "MCAP",
+      "ordinal": 7,
+      "name": "DIAGNOSTIC_AND_ROOT_CAUSE_ENGINE",
+      "boundary": "Reproduce failures, isolate causal mechanisms and verify remediation.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "composable",
+      "f09_action": "COMPOSE_VIA_CONTRACT",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-008",
+      "type": "MCAP",
+      "ordinal": 8,
+      "name": "COGNITIVE_MEMORY",
+      "boundary": "Versioned mission, architectural, procedural and episodic continuity.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "composable",
+      "f09_action": "COMPOSE_VIA_CONTRACT",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-009",
+      "type": "MCAP",
+      "ordinal": 9,
+      "name": "EXPERIENCE_DISTILLATION",
+      "boundary": "Convert validated executions into reusable patterns without training by default.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "partial",
+      "f09_action": "EXTEND_OWNER_FAMILY",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-010",
+      "type": "MCAP",
+      "ordinal": 10,
+      "name": "ADVERSARIAL_VALIDATION",
+      "boundary": "Negative, hostile and boundary tests without granting certification.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "full",
+      "f09_action": "REUSE",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-011",
+      "type": "MCAP",
+      "ordinal": 11,
+      "name": "RESOURCE_AND_EFFICIENCY_GOVERNOR",
+      "boundary": "Govern CPU, RAM, network, storage, time, concurrency and cost.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "composable",
+      "f09_action": "COMPOSE_VIA_CONTRACT",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-012",
+      "type": "MCAP",
+      "ordinal": 12,
+      "name": "CAPABILITY_GRAPH",
+      "boundary": "Non-duplicative graph of capabilities, dependencies, consumers and contracts.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "composable",
+      "f09_action": "COMPOSE_VIA_CONTRACT",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-013",
+      "type": "MCAP",
+      "ordinal": 13,
+      "name": "METACOGNITIVE_NODE_FAMILY",
+      "boundary": "Governed registry of model and agentic harness references versus real executors.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "novel",
+      "f09_action": "GAP_PROOF_THEN_CREATE",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-014",
+      "type": "MCAP",
+      "ordinal": 14,
+      "name": "MISSION_COMPILER",
+      "boundary": "Compile human intent into bounded governed missions with gates and rollback.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "partial",
+      "f09_action": "EXTEND_OWNER_FAMILY",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-015",
+      "type": "MCAP",
+      "ordinal": 15,
+      "name": "COGNITIVE_OBSERVABILITY",
+      "boundary": "Operational logs, metrics and traces for workers, tools and decisions.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "composable",
+      "f09_action": "COMPOSE_VIA_CONTRACT",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-016",
+      "type": "MCAP",
+      "ordinal": 16,
+      "name": "RCLONE_ADAPTIVE_MAX_THROUGHPUT_ENGINE",
+      "boundary": "Adaptive remote transfer concurrency with measured 8→16→32→48→64 escalation.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "partial",
+      "f09_action": "EXTEND_OWNER_FAMILY",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-017",
+      "type": "MCAP",
+      "ordinal": 17,
+      "name": "META_CAPABILITY_EVOLUTION_ENGINE",
+      "boundary": "NetKaizen discovery of capability gaps with mandatory duplicate checks.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "composable",
+      "f09_action": "COMPOSE_VIA_CONTRACT",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-018",
+      "type": "MCAP",
+      "ordinal": 18,
+      "name": "CROSS_PLATFORM_VIRTUAL_LAB",
+      "boundary": "Disposable Debian 13, Android API 36/37 and Windows build/test lanes.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "partial",
+      "f09_action": "EXTEND_OWNER_FAMILY",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-019",
+      "type": "MCAP",
+      "ordinal": 19,
+      "name": "REUSABLE_AUTOMATION_FABRIC",
+      "boundary": "Reusable workflows and composite actions with SHA-pinned dependencies.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "novel",
+      "f09_action": "GAP_PROOF_THEN_CREATE",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-020",
+      "type": "MCAP",
+      "ordinal": 20,
+      "name": "GITHUB_AGENTIC_WORKFLOW_FABRIC",
+      "boundary": "Governed invocation of authorized agentic CLIs from GitHub execution lanes.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "novel",
+      "f09_action": "GAP_PROOF_THEN_CREATE",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-021",
+      "type": "MCAP",
+      "ordinal": 21,
+      "name": "RUNNER_FLEET_AND_WORKER_SCHEDULER",
+      "boundary": "Schedule cloud workers, matrices, queues and ephemeral execution capacity.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "partial",
+      "f09_action": "EXTEND_OWNER_FAMILY",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-022",
+      "type": "MCAP",
+      "ordinal": 22,
+      "name": "ZERO_TRUST_IDENTITY_AND_AUTHORIZATION_PLANE",
+      "boundary": "Least privilege, ephemeral identity and explicit authorization boundaries.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "composable",
+      "f09_action": "COMPOSE_VIA_CONTRACT",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-023",
+      "type": "MCAP",
+      "ordinal": 23,
+      "name": "POLICY_AS_CODE_AND_CHANGE_CONTROL",
+      "boundary": "Machine-enforced change policy, pinning, allowed actions and admission rules.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "composable",
+      "f09_action": "COMPOSE_VIA_CONTRACT",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-024",
+      "type": "MCAP",
+      "ordinal": 24,
+      "name": "SUPPLY_CHAIN_PROVENANCE_AND_ATTESTATION",
+      "boundary": "Build lineage, hashes, SBOM references and attestable artifact identity.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "partial",
+      "f09_action": "EXTEND_OWNER_FAMILY",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-025",
+      "type": "MCAP",
+      "ordinal": 25,
+      "name": "DEPENDENCY_LICENSE_AND_CURRENTNESS_GOVERNOR",
+      "boundary": "Dependency identity, vulnerability, license and currentness control.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "partial",
+      "f09_action": "EXTEND_OWNER_FAMILY",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-026",
+      "type": "MCAP",
+      "ordinal": 26,
+      "name": "CODE_SECRET_AND_STATIC_SECURITY_GUARD",
+      "boundary": "Static security, secret leakage and source-code scanning controls.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "partial",
+      "f09_action": "EXTEND_OWNER_FAMILY",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-027",
+      "type": "MCAP",
+      "ordinal": 27,
+      "name": "FORENSIC_EVIDENCE_CHAIN_LEDGER",
+      "boundary": "Hash-linked evidence lineage with actor, run, commit, parent and result.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "composable",
+      "f09_action": "COMPOSE_VIA_CONTRACT",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-028",
+      "type": "MCAP",
+      "ordinal": 28,
+      "name": "ASSURANCE_CASE_COMPILER",
+      "boundary": "Compile claim→predicate→evidence→evaluation→limitation dossiers.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "composable",
+      "f09_action": "COMPOSE_VIA_CONTRACT",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-029",
+      "type": "MCAP",
+      "ordinal": 29,
+      "name": "G23_INDEPENDENT_VALIDATION_FABRIC",
+      "boundary": "Independent fresh-reader validation with no repair path.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "novel",
+      "f09_action": "GAP_PROOF_THEN_CREATE",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-030",
+      "type": "MCAP",
+      "ordinal": 30,
+      "name": "G24_CERTIFICATION_AND_PROMOTION_GATEWAY",
+      "boundary": "Certification/promotion boundary for one frozen digest after G23.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "novel",
+      "f09_action": "GAP_PROOF_THEN_CREATE",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-031",
+      "type": "MCAP",
+      "ordinal": 31,
+      "name": "ROLLBACK_AND_RECOVERY_PROOF_ENGINE",
+      "boundary": "Prove checkpoint→mutation/test→restore→state/hash verification.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "composable",
+      "f09_action": "COMPOSE_VIA_CONTRACT",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-032",
+      "type": "MCAP",
+      "ordinal": 32,
+      "name": "VALIDITY_NONREGRESSION_AND_RECERTIFICATION_ENGINE",
+      "boundary": "Track evidence validity, invalidation and recertification after change.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "partial",
+      "f09_action": "EXTEND_OWNER_FAMILY",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-033",
+      "type": "MCAP",
+      "ordinal": 33,
+      "name": "ECOSYSTEM_FEDERATION_AND_CONTRACT_MESH",
+      "boundary": "Versioned contracts among Louksna, MetaOS, CUSTOSZ, Runtime, PUAC2, GitHub and future canonical architectures.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "composable",
+      "f09_action": "COMPOSE_VIA_CONTRACT",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-034",
+      "type": "MCAP",
+      "ordinal": 34,
+      "name": "ARCHITECTURAL_MIRROR_AND_DRIFT_CONTROL",
+      "boundary": "Materialize INTENDED_MODEL↔OBSERVED_MODEL and detect architectural drift.",
+      "classification": "CANONICAL_MATERIALIZATION",
+      "admission_state": "DECLARED",
+      "f09_coverage": "partial",
+      "f09_action": "EXTEND_OWNER_FAMILY",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-035",
+      "type": "MCAP",
+      "ordinal": 35,
+      "name": "DIGITAL_ARCHITECTURAL_SHADOW_AND_PRECHANGE_SIMULATION",
+      "boundary": "Simulate candidate changes, blast radius and evidence invalidation before commitment.",
+      "classification": "CANONICAL_MATERIALIZATION",
+      "admission_state": "DECLARED",
+      "f09_coverage": "partial",
+      "f09_action": "EXTEND_OWNER_FAMILY",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-036",
+      "type": "MCAP",
+      "ordinal": 36,
+      "name": "FORMAL_INVARIANT_AND_MODEL_CHECKING",
+      "boundary": "Turn critical invariants and state transitions into executable formal checks.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "partial",
+      "f09_action": "EXTEND_OWNER_FAMILY",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-037",
+      "type": "MCAP",
+      "ordinal": 37,
+      "name": "LIFECYCLE_HYGIENE_AND_RESIDUE_GOVERNOR",
+      "boundary": "Detect superseded, orphaned, duplicate or temporary artifacts without silent deletion.",
+      "classification": "WATCH_MATERIALIZATION",
+      "admission_state": "DECLARED",
+      "f09_coverage": "composable",
+      "f09_action": "COMPOSE_VIA_CONTRACT",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-038",
+      "type": "MCAP",
+      "ordinal": 38,
+      "name": "HUMAN_APPROVAL_BLOCKER_AND_RESUME_CONTROLLER",
+      "boundary": "Represent approval blockers, HOLD checkpoints and exact resume conditions.",
+      "classification": "WATCH_MATERIALIZATION",
+      "admission_state": "DECLARED",
+      "f09_coverage": "partial",
+      "f09_action": "EXTEND_OWNER_FAMILY",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-039",
+      "type": "MCAP",
+      "ordinal": 39,
+      "name": "EXTERNAL_CAPABILITY_AND_PLUGIN_BROKER",
+      "boundary": "Discover external integrations only for evidenced gaps; never auto-install/connect.",
+      "classification": "WATCH_MATERIALIZATION",
+      "admission_state": "DECLARED",
+      "f09_coverage": "composable",
+      "f09_action": "COMPOSE_VIA_CONTRACT",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-040",
+      "type": "MCAP",
+      "ordinal": 40,
+      "name": "DATA_RIGHTS_PRIVACY_AND_USAGE_GOVERNOR",
+      "boundary": "Govern corpus rights, privacy, PII, licensing, retention and permitted transformations.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "partial",
+      "f09_action": "EXTEND_OWNER_FAMILY",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-041",
+      "type": "MCAP",
+      "ordinal": 41,
+      "name": "REMOTE_CORPUS_STREAMING_FABRIC",
+      "boundary": "Stream/query massive remote corpora without full local materialization.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "composable",
+      "f09_action": "COMPOSE_VIA_CONTRACT",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-042",
+      "type": "MCAP",
+      "ordinal": 42,
+      "name": "MASSIVE_DOCUMENT_MAP_AND_STRUCTURE_ENGINE",
+      "boundary": "Build hierarchical maps for huge PDF/EPUB/document corpora before deep reading.",
+      "classification": "CANONICAL_MATERIALIZATION",
+      "admission_state": "DECLARED",
+      "f09_coverage": "partial",
+      "f09_action": "EXTEND_OWNER_FAMILY",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-043",
+      "type": "MCAP",
+      "ordinal": 43,
+      "name": "DISTRIBUTED_SEMANTIC_INDEX_AND_QUERY_PLANE",
+      "boundary": "Distributed lexical/vector/graph retrieval over remote shards with provenance.",
+      "classification": "CANONICAL_MATERIALIZATION",
+      "admission_state": "DECLARED",
+      "f09_coverage": "partial",
+      "f09_action": "EXTEND_OWNER_FAMILY",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-044",
+      "type": "MCAP",
+      "ordinal": 44,
+      "name": "EXTREME_SCALE_TRANSLATION_ORCHESTRATOR",
+      "boundary": "Shard, translate, checkpoint and reassemble extremely large books deterministically.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "novel",
+      "f09_action": "GAP_PROOF_THEN_CREATE",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-045",
+      "type": "MCAP",
+      "ordinal": 45,
+      "name": "TRANSLATION_FIDELITY_VALIDATION_ENGINE",
+      "boundary": "Validate semantic, syntactic, terminological, entity, numeric and structural fidelity.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "novel",
+      "f09_action": "GAP_PROOF_THEN_CREATE",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-046",
+      "type": "MCAP",
+      "ordinal": 46,
+      "name": "TERMINOLOGY_TRANSLATION_MEMORY_AND_ONTOLOGY_PLANE",
+      "boundary": "Versioned terminology, translation memory and domain ontology with provenance.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "novel",
+      "f09_action": "GAP_PROOF_THEN_CREATE",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-047",
+      "type": "MCAP",
+      "ordinal": 47,
+      "name": "MULTISCALE_MULTI_INTER_TRANSDISCIPLINARY_SYNTHESIS",
+      "boundary": "Preserve methods and evidence while synthesizing micro/meso/macro and cross-disciplinary analysis.",
+      "classification": "WATCH_MATERIALIZATION",
+      "admission_state": "DECLARED",
+      "f09_coverage": "partial",
+      "f09_action": "EXTEND_OWNER_FAMILY",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-048",
+      "type": "MCAP",
+      "ordinal": 48,
+      "name": "CAUSAL_COUNTERFACTUAL_AND_SCENARIO_ENGINE",
+      "boundary": "Separate association, mechanism, causal claims, counterfactuals and scenario sensitivity.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "partial",
+      "f09_action": "EXTEND_OWNER_FAMILY",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-049",
+      "type": "MCAP",
+      "ordinal": 49,
+      "name": "REALTIME_EVENT_STREAM_AND_DATA_INGESTION",
+      "boundary": "Ingest governed webhooks/streams with sequence, latency, staleness and replay semantics.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "partial",
+      "f09_action": "EXTEND_OWNER_FAMILY",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-050",
+      "type": "MCAP",
+      "ordinal": 50,
+      "name": "DURABLE_LONG_RUNNING_WORKFLOW_ENGINE",
+      "boundary": "Durable state, retries, resumability and idempotency for hours/days workflows.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "composable",
+      "f09_action": "COMPOSE_VIA_CONTRACT",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-051",
+      "type": "MCAP",
+      "ordinal": 51,
+      "name": "CONTENT_ADDRESSED_OBJECT_AND_DATA_PLANE",
+      "boundary": "Keep large payloads outside Git while Git stores hashes, manifests and lineage.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "partial",
+      "f09_action": "EXTEND_OWNER_FAMILY",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-052",
+      "type": "MCAP",
+      "ordinal": 52,
+      "name": "HIGH_RESOLUTION_AI_METACOGNITIVE_TELEMETRY",
+      "boundary": "High-resolution traces for agents, models, tools, evidence, uncertainty and evaluation.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "composable",
+      "f09_action": "COMPOSE_VIA_CONTRACT",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-053",
+      "type": "MCAP",
+      "ordinal": 53,
+      "name": "AI_EVALUATION_CALIBRATION_AND_RELIABILITY_HARNESS",
+      "boundary": "Measure factuality, calibration, consistency, robustness, abstention and tool use.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "partial",
+      "f09_action": "EXTEND_OWNER_FAMILY",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-054",
+      "type": "MCAP",
+      "ordinal": 54,
+      "name": "ECONOMIC_AND_MARKET_DATA_FABRIC",
+      "boundary": "Normalize governed macro, FX, equity, rates, commodity and crypto market data.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "novel",
+      "f09_action": "GAP_PROOF_THEN_CREATE",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-055",
+      "type": "MCAP",
+      "ordinal": 55,
+      "name": "MONETARY_STABLECOIN_AND_LIQUIDITY_INTELLIGENCE",
+      "boundary": "Separate issuer, on-chain and market evidence for stablecoins, pegs, reserves and liquidity.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "novel",
+      "f09_action": "GAP_PROOF_THEN_CREATE",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-056",
+      "type": "MCAP",
+      "ordinal": 56,
+      "name": "LABOR_MARKET_AND_OPPORTUNITY_INTELLIGENCE",
+      "boundary": "Govern employment, vacancy, wage, skills and opportunity data with freshness/provenance.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "novel",
+      "f09_action": "GAP_PROOF_THEN_CREATE",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-057",
+      "type": "MCAP",
+      "ordinal": 57,
+      "name": "ECONOMIC_THEORY_MULTI_LENS_REASONING",
+      "boundary": "Apply Austrian, mainstream, institutional, historical and other lenses without epistemic collapse.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "novel",
+      "f09_action": "GAP_PROOF_THEN_CREATE",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-058",
+      "type": "MCAP",
+      "ordinal": 58,
+      "name": "METACOGNITIVE_OPERATIONAL_INTELLIGENCE_FABRIC",
+      "boundary": "Compose general and domain-specific metacognitive operational intelligence without claiming human-level AGI.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "admission_state": "DECLARED",
+      "f09_coverage": "composable",
+      "f09_action": "COMPOSE_VIA_CONTRACT",
+      "creates_authority": false,
+      "self_certifies": false
+    },
+    {
+      "id": "MCAP-059",
+      "type": "MCAP",
+      "ordinal": 59,
+      "name": "GOVERNED_TRAINING_AND_CONTINUOUS_LEARNING",
+      "boundary": "Last-stage governed learning from admitted evidence; every trained candidate re-enters full validation and certification.",
+      "classification": "TRAINING_LAST",
+      "admission_state": "DECLARED",
+      "f09_coverage": "novel",
+      "f09_action": "GAP_PROOF_THEN_CREATE",
+      "creates_authority": false,
+      "self_certifies": false
+    }
+  ],
+  "edges": [
+    {
+      "from": "SYS:LOUKSNA",
+      "to": "SYS:METAOS",
+      "relation": "GOVERNS_AUTHORITY_BOUNDARY"
+    },
+    {
+      "from": "SYS:LOUKSNA",
+      "to": "SYS:CUSTOSZ_V7",
+      "relation": "GOVERNS_AUTHORITY_BOUNDARY"
+    },
+    {
+      "from": "SYS:LOUKSNA",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "GOVERNS_AUTHORITY_BOUNDARY"
+    },
+    {
+      "from": "SYS:LOUKSNA",
+      "to": "SYS:PUAC2",
+      "relation": "GOVERNS_AUTHORITY_BOUNDARY"
+    },
+    {
+      "from": "SYS:LOUKSNA",
+      "to": "SYS:GITHUB",
+      "relation": "GOVERNS_AUTHORITY_BOUNDARY"
+    },
+    {
+      "from": "SYS:LOUKSNA",
+      "to": "SYS:G23",
+      "relation": "GOVERNS_AUTHORITY_BOUNDARY"
+    },
+    {
+      "from": "SYS:LOUKSNA",
+      "to": "SYS:G24",
+      "relation": "GOVERNS_AUTHORITY_BOUNDARY"
+    },
+    {
+      "from": "SYS:METAOS",
+      "to": "SYS:CUSTOSZ_V7",
+      "relation": "GOVERNS_EXECUTION"
+    },
+    {
+      "from": "SYS:CUSTOSZ_V7",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME"
+    },
+    {
+      "from": "SYS:PUAC2",
+      "to": "SYS:G23",
+      "relation": "PREPARES_INDEPENDENCE_AND_ASSURANCE"
+    },
+    {
+      "from": "SYS:G23",
+      "to": "SYS:G24",
+      "relation": "PRECEDES_ON_SAME_FROZEN_DIGEST"
+    },
+    {
+      "from": "SYS:GITHUB",
+      "to": "SYS:CLOUD_DATA_PLANE",
+      "relation": "ORCHESTRATES_EXPLICIT_ADAPTERS_ONLY"
+    },
+    {
+      "from": "MCAP-001",
+      "to": "CUSTOSZ:logic.formal",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-001",
+      "to": "CUSTOSZ:invariants.engine",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-001",
+      "to": "CUSTOSZ:composition.engine",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-001",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "CognitivePlane"
+    },
+    {
+      "from": "MCAP-001",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "GovernanceKernel"
+    },
+    {
+      "from": "MCAP-001",
+      "to": "SYS:LOUKSNA",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-001",
+      "to": "SYS:METAOS",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-001",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-002",
+      "to": "CUSTOSZ:epistemic.failure_detection",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-002",
+      "to": "CUSTOSZ:gap.evolution",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-002",
+      "to": "CUSTOSZ:validation.adversarial",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-002",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "MetacognitivePlane"
+    },
+    {
+      "from": "MCAP-002",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "ValidationPipeline"
+    },
+    {
+      "from": "MCAP-002",
+      "to": "SYS:LOUKSNA",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-002",
+      "to": "SYS:METAOS",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-002",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-003",
+      "to": "CUSTOSZ:assurance.fabric",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-003",
+      "to": "CUSTOSZ:epistemic.failure_detection",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-003",
+      "to": "CUSTOSZ:evidence.completeness",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-003",
+      "to": "CUSTOSZ:evidence.graph",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-003",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "ValidationPipeline"
+    },
+    {
+      "from": "MCAP-003",
+      "to": "SYS:LOUKSNA",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-003",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-003",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-004",
+      "to": "CUSTOSZ:composition.engine",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-004",
+      "to": "CUSTOSZ:placement.engine",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-004",
+      "to": "CUSTOSZ:io.query_plan",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-004",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "MissionController"
+    },
+    {
+      "from": "MCAP-004",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "CognitivePlane"
+    },
+    {
+      "from": "MCAP-004",
+      "to": "SYS:METAOS",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-004",
+      "to": "SYS:CUSTOSZ_V7",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-004",
+      "to": "SYS:LOUKSNA",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-005",
+      "to": "CUSTOSZ:systems.intelligence",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-005",
+      "to": "CUSTOSZ:technology.synthesis",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-005",
+      "to": "SYS:CUSTOSZ_V7",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-005",
+      "to": "SYS:METAOS",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-005",
+      "to": "CONSUMER:CROSS_PLATFORM_VIRTUAL_LAB",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-006",
+      "to": "CUSTOSZ:languages.intelligence",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-006",
+      "to": "CUSTOSZ:optimization.intelligence",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-006",
+      "to": "CUSTOSZ:technology.synthesis",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-006",
+      "to": "SYS:CUSTOSZ_V7",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-006",
+      "to": "SYS:GITHUB",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-006",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-007",
+      "to": "CUSTOSZ:errors.taxonomy",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-007",
+      "to": "CUSTOSZ:epistemic.failure_detection",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-007",
+      "to": "CUSTOSZ:benchmark.gap",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-007",
+      "to": "CUSTOSZ:memory.failure",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-007",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "FailureController"
+    },
+    {
+      "from": "MCAP-007",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "ValidationPipeline"
+    },
+    {
+      "from": "MCAP-007",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-007",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-007",
+      "to": "SYS:METAOS",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-008",
+      "to": "CUSTOSZ:memory.governed",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-008",
+      "to": "CUSTOSZ:memory.versioned",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-008",
+      "to": "CUSTOSZ:memory.currentness",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-008",
+      "to": "CUSTOSZ:memory.state",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-008",
+      "to": "CUSTOSZ:memory.decision",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-008",
+      "to": "CUSTOSZ:memory.evidence",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-008",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "CheckpointStore"
+    },
+    {
+      "from": "MCAP-008",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "EvidenceJournal"
+    },
+    {
+      "from": "MCAP-008",
+      "to": "SYS:LOUKSNA",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-008",
+      "to": "SYS:METAOS",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-008",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-009",
+      "to": "CUSTOSZ:documentation.generated",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-009",
+      "to": "CUSTOSZ:memory.evidence",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-009",
+      "to": "CUSTOSZ:memory.decision",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-009",
+      "to": "CUSTOSZ:memory.currentness",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-009",
+      "to": "SYS:LOUKSNA",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-009",
+      "to": "SYS:METAOS",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-009",
+      "to": "CONSUMER:GOVERNED_TRAINING_AND_CONTINUOUS_LEARNING",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-010",
+      "to": "CUSTOSZ:validation.adversarial",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "full"
+    },
+    {
+      "from": "MCAP-010",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "ValidationPipeline"
+    },
+    {
+      "from": "MCAP-010",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-010",
+      "to": "SYS:CUSTOSZ_V7",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-010",
+      "to": "CONSUMER:G23_INDEPENDENT_VALIDATION_FABRIC",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-011",
+      "to": "CUSTOSZ:resources.adaptive",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-011",
+      "to": "CUSTOSZ:resources.budget_policy",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-011",
+      "to": "CUSTOSZ:backpressure.control",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-011",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "TimeBudgetController"
+    },
+    {
+      "from": "MCAP-011",
+      "to": "SYS:METAOS",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-011",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-011",
+      "to": "CONSUMER:RUNNER_FLEET_AND_WORKER_SCHEDULER",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-012",
+      "to": "CUSTOSZ:interfaces.cross_family",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-012",
+      "to": "CUSTOSZ:overlap.semantic",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-012",
+      "to": "CUSTOSZ:duplication.anti",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-012",
+      "to": "CUSTOSZ:gap.proof",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-012",
+      "to": "CUSTOSZ:lifecycle.manager",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-012",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "ExecutorRegistry"
+    },
+    {
+      "from": "MCAP-012",
+      "to": "SYS:LOUKSNA",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-012",
+      "to": "SYS:METAOS",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-012",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-013",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "ExecutorRegistry"
+    },
+    {
+      "from": "MCAP-013",
+      "to": "SYS:METAOS",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-013",
+      "to": "SYS:CUSTOSZ_V7",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-013",
+      "to": "SYS:LOUKSNA",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-014",
+      "to": "CUSTOSZ:api.gateway",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-014",
+      "to": "CUSTOSZ:composition.engine",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-014",
+      "to": "CUSTOSZ:invariants.engine",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-014",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "MissionController"
+    },
+    {
+      "from": "MCAP-014",
+      "to": "SYS:METAOS",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-014",
+      "to": "SYS:CUSTOSZ_V7",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-014",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-015",
+      "to": "CUSTOSZ:continuity.heartbeat_watchdog",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-015",
+      "to": "CUSTOSZ:evidence.graph",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-015",
+      "to": "CUSTOSZ:memory.state",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-015",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "TelemetryFabric"
+    },
+    {
+      "from": "MCAP-015",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "EvidenceJournal"
+    },
+    {
+      "from": "MCAP-015",
+      "to": "SYS:METAOS",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-015",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-015",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-016",
+      "to": "CUSTOSZ:resources.adaptive",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-016",
+      "to": "CUSTOSZ:resources.budget_policy",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-016",
+      "to": "CUSTOSZ:backpressure.control",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-016",
+      "to": "CUSTOSZ:knowledge.high_throughput",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-016",
+      "to": "SYS:CUSTOSZ_V7",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-016",
+      "to": "CONSUMER:RESOURCE_AND_EFFICIENCY_GOVERNOR",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-016",
+      "to": "SYS:GITHUB",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-017",
+      "to": "CUSTOSZ:gap.evolution",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-017",
+      "to": "CUSTOSZ:gap.proof",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-017",
+      "to": "CUSTOSZ:evolution.admission",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-017",
+      "to": "CUSTOSZ:duplication.anti",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-017",
+      "to": "CUSTOSZ:overlap.semantic",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-017",
+      "to": "SYS:LOUKSNA",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-017",
+      "to": "SYS:METAOS",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-017",
+      "to": "CONSUMER:CAPABILITY_GRAPH",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-018",
+      "to": "CUSTOSZ:systems.intelligence",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-018",
+      "to": "CUSTOSZ:benchmark.ephemeral",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-018",
+      "to": "CUSTOSZ:conformance.harness",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-018",
+      "to": "SYS:CUSTOSZ_V7",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-018",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-018",
+      "to": "SYS:GITHUB",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-019",
+      "to": "SYS:GITHUB",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-019",
+      "to": "SYS:CUSTOSZ_V7",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-019",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-020",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "ExecutorRegistry"
+    },
+    {
+      "from": "MCAP-020",
+      "to": "SYS:CUSTOSZ_V7",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-020",
+      "to": "SYS:METAOS",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-020",
+      "to": "SYS:GITHUB",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-021",
+      "to": "CUSTOSZ:resources.adaptive",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-021",
+      "to": "CUSTOSZ:resources.budget_policy",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-021",
+      "to": "CUSTOSZ:backpressure.control",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-021",
+      "to": "CUSTOSZ:process.sessions",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-021",
+      "to": "CUSTOSZ:execution.resumable",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-021",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "ExecutorRegistry"
+    },
+    {
+      "from": "MCAP-021",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "ProcessSupervisor"
+    },
+    {
+      "from": "MCAP-021",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "TimeBudgetController"
+    },
+    {
+      "from": "MCAP-021",
+      "to": "SYS:METAOS",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-021",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-021",
+      "to": "CONSUMER:RESOURCE_AND_EFFICIENCY_GOVERNOR",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-022",
+      "to": "CUSTOSZ:security.credentials",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-022",
+      "to": "CUSTOSZ:security.crypto",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-022",
+      "to": "CUSTOSZ:security.sandbox_contract",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-022",
+      "to": "CUSTOSZ:security.trust_policy",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-022",
+      "to": "CUSTOSZ:security.fabric",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-022",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "GovernanceKernel"
+    },
+    {
+      "from": "MCAP-022",
+      "to": "SYS:METAOS",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-022",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-022",
+      "to": "SYS:GITHUB",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-023",
+      "to": "CUSTOSZ:security.trust_policy",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-023",
+      "to": "CUSTOSZ:invariants.engine",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-023",
+      "to": "CUSTOSZ:lifecycle.manager",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-023",
+      "to": "CUSTOSZ:conformance.harness",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-023",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "GovernanceKernel"
+    },
+    {
+      "from": "MCAP-023",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-023",
+      "to": "SYS:GITHUB",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-023",
+      "to": "SYS:METAOS",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-024",
+      "to": "CUSTOSZ:security.supply_chain",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-024",
+      "to": "CUSTOSZ:security.crypto",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-024",
+      "to": "CUSTOSZ:content.identity",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-024",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-024",
+      "to": "CONSUMER:G23_INDEPENDENT_VALIDATION_FABRIC",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-024",
+      "to": "SYS:GITHUB",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-025",
+      "to": "CUSTOSZ:security.supply_chain",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-025",
+      "to": "CUSTOSZ:security.threat_currentness",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-025",
+      "to": "CUSTOSZ:memory.currentness",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-025",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-025",
+      "to": "CONSUMER:SOFTWARE_ENGINEERING_INTELLIGENCE",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-025",
+      "to": "SYS:GITHUB",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-026",
+      "to": "CUSTOSZ:security.risk_classification",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-026",
+      "to": "CUSTOSZ:security.credentials",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-026",
+      "to": "CUSTOSZ:security.supply_chain",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-026",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-026",
+      "to": "CONSUMER:SOFTWARE_ENGINEERING_INTELLIGENCE",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-026",
+      "to": "SYS:GITHUB",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-027",
+      "to": "CUSTOSZ:evidence.graph",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-027",
+      "to": "CUSTOSZ:evidence.completeness",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-027",
+      "to": "CUSTOSZ:memory.evidence",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-027",
+      "to": "CUSTOSZ:content.identity",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-027",
+      "to": "CUSTOSZ:security.crypto",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-027",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "EvidenceJournal"
+    },
+    {
+      "from": "MCAP-027",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-027",
+      "to": "CONSUMER:G23_INDEPENDENT_VALIDATION_FABRIC",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-027",
+      "to": "CONSUMER:G24_CERTIFICATION_AND_PROMOTION_GATEWAY",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-028",
+      "to": "CUSTOSZ:assurance.fabric",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-028",
+      "to": "CUSTOSZ:evidence.graph",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-028",
+      "to": "CUSTOSZ:evidence.completeness",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-028",
+      "to": "CUSTOSZ:conformance.harness",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-028",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "ValidationPipeline"
+    },
+    {
+      "from": "MCAP-028",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-028",
+      "to": "CONSUMER:G23_INDEPENDENT_VALIDATION_FABRIC",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-028",
+      "to": "SYS:METAOS",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-029",
+      "to": "CUSTOSZ:assurance.fabric",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "novel"
+    },
+    {
+      "from": "MCAP-029",
+      "to": "CUSTOSZ:validation.adversarial",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "novel"
+    },
+    {
+      "from": "MCAP-029",
+      "to": "CUSTOSZ:conformance.harness",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "novel"
+    },
+    {
+      "from": "MCAP-029",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "ValidationPipeline"
+    },
+    {
+      "from": "MCAP-029",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-029",
+      "to": "SYS:LOUKSNA",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-029",
+      "to": "CONSUMER:G24_CERTIFICATION_AND_PROMOTION_GATEWAY",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-030",
+      "to": "CUSTOSZ:assurance.fabric",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "novel"
+    },
+    {
+      "from": "MCAP-030",
+      "to": "CUSTOSZ:lifecycle.manager",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "novel"
+    },
+    {
+      "from": "MCAP-030",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "GovernanceKernel"
+    },
+    {
+      "from": "MCAP-030",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-030",
+      "to": "SYS:LOUKSNA",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-030",
+      "to": "SYS:GITHUB",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-031",
+      "to": "CUSTOSZ:execution.resumable",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-031",
+      "to": "CUSTOSZ:continuity.session_resume",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-031",
+      "to": "CUSTOSZ:continuity.reboot_state",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-031",
+      "to": "CUSTOSZ:memory.state",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-031",
+      "to": "CUSTOSZ:memory.failure",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-031",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "CheckpointStore"
+    },
+    {
+      "from": "MCAP-031",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "ResumeManager"
+    },
+    {
+      "from": "MCAP-031",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "FailureController"
+    },
+    {
+      "from": "MCAP-031",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-031",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-031",
+      "to": "SYS:METAOS",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-032",
+      "to": "CUSTOSZ:memory.currentness",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-032",
+      "to": "CUSTOSZ:memory.invalidation",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-032",
+      "to": "CUSTOSZ:memory.versioned",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-032",
+      "to": "CUSTOSZ:conformance.harness",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-032",
+      "to": "CUSTOSZ:assurance.fabric",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-032",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "ValidationPipeline"
+    },
+    {
+      "from": "MCAP-032",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-032",
+      "to": "SYS:LOUKSNA",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-032",
+      "to": "SYS:METAOS",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-033",
+      "to": "CUSTOSZ:interfaces.cross_family",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-033",
+      "to": "CUSTOSZ:api.gateway",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-033",
+      "to": "CUSTOSZ:continuity.fabric",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-033",
+      "to": "CUSTOSZ:composition.engine",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-033",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "GovernanceKernel"
+    },
+    {
+      "from": "MCAP-033",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "MissionController"
+    },
+    {
+      "from": "MCAP-033",
+      "to": "SYS:LOUKSNA",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-033",
+      "to": "SYS:METAOS",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-033",
+      "to": "SYS:CUSTOSZ_V7",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-033",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-033",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-033",
+      "to": "SYS:GITHUB",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-034",
+      "to": "CUSTOSZ:memory.currentness",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-034",
+      "to": "CUSTOSZ:memory.invalidation",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-034",
+      "to": "CUSTOSZ:conformance.harness",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-034",
+      "to": "CUSTOSZ:content.identity",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-034",
+      "to": "SYS:LOUKSNA",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-034",
+      "to": "SYS:METAOS",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-034",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-035",
+      "to": "CUSTOSZ:benchmark.ephemeral",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-035",
+      "to": "CUSTOSZ:validation.adversarial",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-035",
+      "to": "CUSTOSZ:benchmark.gap",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-035",
+      "to": "CUSTOSZ:invariants.engine",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-035",
+      "to": "SYS:LOUKSNA",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-035",
+      "to": "SYS:METAOS",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-035",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-036",
+      "to": "CUSTOSZ:invariants.engine",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-036",
+      "to": "CUSTOSZ:logic.formal",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-036",
+      "to": "CUSTOSZ:logic.arithmetic",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-036",
+      "to": "CUSTOSZ:conformance.harness",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-036",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-036",
+      "to": "SYS:LOUKSNA",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-036",
+      "to": "CONSUMER:G23_INDEPENDENT_VALIDATION_FABRIC",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-037",
+      "to": "CUSTOSZ:lifecycle.manager",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-037",
+      "to": "CUSTOSZ:maintainability.engine",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-037",
+      "to": "CUSTOSZ:duplication.anti",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-037",
+      "to": "CUSTOSZ:memory.currentness",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-037",
+      "to": "CUSTOSZ:memory.invalidation",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-037",
+      "to": "SYS:METAOS",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-037",
+      "to": "SYS:CUSTOSZ_V7",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-037",
+      "to": "SYS:LOUKSNA",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-038",
+      "to": "CUSTOSZ:execution.resumable",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-038",
+      "to": "CUSTOSZ:continuity.session_resume",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-038",
+      "to": "CUSTOSZ:memory.state",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-038",
+      "to": "CUSTOSZ:continuity.fabric",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-038",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "MissionController"
+    },
+    {
+      "from": "MCAP-038",
+      "to": "SYS:METAOS",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-038",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-038",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-039",
+      "to": "CUSTOSZ:gap.proof",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-039",
+      "to": "CUSTOSZ:gap.evolution",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-039",
+      "to": "CUSTOSZ:placement.engine",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-039",
+      "to": "CUSTOSZ:continuity.preinstall_contract",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-039",
+      "to": "CUSTOSZ:api.gateway",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-039",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "ExecutorRegistry"
+    },
+    {
+      "from": "MCAP-039",
+      "to": "SYS:METAOS",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-039",
+      "to": "SYS:CUSTOSZ_V7",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-039",
+      "to": "CONSUMER:CAPABILITY_GRAPH",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-040",
+      "to": "CUSTOSZ:security.risk_classification",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-040",
+      "to": "CUSTOSZ:security.trust_policy",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-040",
+      "to": "CUSTOSZ:security.sandbox_contract",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-040",
+      "to": "CUSTOSZ:memory.currentness",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-040",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-040",
+      "to": "CONSUMER:REMOTE_CORPUS_STREAMING_FABRIC",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-040",
+      "to": "SYS:METAOS",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-041",
+      "to": "CUSTOSZ:knowledge.remote",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-041",
+      "to": "CUSTOSZ:knowledge.high_throughput",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-041",
+      "to": "CUSTOSZ:streaming.range",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-041",
+      "to": "CUSTOSZ:io.resumable_reader",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-041",
+      "to": "CUSTOSZ:source.resolve",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-041",
+      "to": "CUSTOSZ:ingestion.universal",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-041",
+      "to": "CUSTOSZ:volume.intelligence",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-041",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "SourceRegistry"
+    },
+    {
+      "from": "MCAP-041",
+      "to": "SYS:CUSTOSZ_V7",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-041",
+      "to": "SYS:METAOS",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-041",
+      "to": "CONSUMER:DISTRIBUTED_SEMANTIC_INDEX_AND_QUERY_PLANE",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-042",
+      "to": "CUSTOSZ:volume.intelligence",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-042",
+      "to": "CUSTOSZ:normalization.structured",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-042",
+      "to": "CUSTOSZ:content.identity",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-042",
+      "to": "CUSTOSZ:io.query_plan",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-042",
+      "to": "SYS:CUSTOSZ_V7",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-042",
+      "to": "SYS:LOUKSNA",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-042",
+      "to": "CONSUMER:EXTREME_SCALE_TRANSLATION_ORCHESTRATOR",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-043",
+      "to": "CUSTOSZ:cache.semantic",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-043",
+      "to": "CUSTOSZ:knowledge.remote",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-043",
+      "to": "CUSTOSZ:knowledge.high_throughput",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-043",
+      "to": "CUSTOSZ:io.query_plan",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-043",
+      "to": "CUSTOSZ:evidence.graph",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-043",
+      "to": "SYS:LOUKSNA",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-043",
+      "to": "SYS:CUSTOSZ_V7",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-043",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-044",
+      "to": "CUSTOSZ:execution.resumable",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "novel"
+    },
+    {
+      "from": "MCAP-044",
+      "to": "CUSTOSZ:resources.adaptive",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "novel"
+    },
+    {
+      "from": "MCAP-044",
+      "to": "CUSTOSZ:normalization.structured",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "novel"
+    },
+    {
+      "from": "MCAP-044",
+      "to": "SYS:CUSTOSZ_V7",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-044",
+      "to": "CONSUMER:Katya",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-044",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-045",
+      "to": "CUSTOSZ:validation.adversarial",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "novel"
+    },
+    {
+      "from": "MCAP-045",
+      "to": "CUSTOSZ:conformance.harness",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "novel"
+    },
+    {
+      "from": "MCAP-045",
+      "to": "CUSTOSZ:assurance.fabric",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "novel"
+    },
+    {
+      "from": "MCAP-045",
+      "to": "CONSUMER:Katya",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-045",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-045",
+      "to": "CONSUMER:G23_INDEPENDENT_VALIDATION_FABRIC",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-046",
+      "to": "CUSTOSZ:memory.governed",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "novel"
+    },
+    {
+      "from": "MCAP-046",
+      "to": "CUSTOSZ:cache.semantic",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "novel"
+    },
+    {
+      "from": "MCAP-046",
+      "to": "CUSTOSZ:memory.versioned",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "novel"
+    },
+    {
+      "from": "MCAP-046",
+      "to": "CONSUMER:Katya",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-046",
+      "to": "SYS:LOUKSNA",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-046",
+      "to": "CONSUMER:EXTREME_SCALE_TRANSLATION_ORCHESTRATOR",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-047",
+      "to": "CUSTOSZ:technology.synthesis",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-047",
+      "to": "CUSTOSZ:composition.engine",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-047",
+      "to": "CUSTOSZ:evidence.graph",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-047",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "CognitivePlane"
+    },
+    {
+      "from": "MCAP-047",
+      "to": "SYS:LOUKSNA",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-047",
+      "to": "SYS:METAOS",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-047",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-048",
+      "to": "CUSTOSZ:logic.formal",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-048",
+      "to": "CUSTOSZ:logic.arithmetic",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-048",
+      "to": "CUSTOSZ:assurance.fabric",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-048",
+      "to": "CUSTOSZ:evidence.graph",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-048",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "CognitivePlane"
+    },
+    {
+      "from": "MCAP-048",
+      "to": "SYS:LOUKSNA",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-048",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-048",
+      "to": "CONSUMER:ECONOMIC_THEORY_MULTI_LENS_REASONING",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-049",
+      "to": "CUSTOSZ:streaming.range",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-049",
+      "to": "CUSTOSZ:api.gateway",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-049",
+      "to": "CUSTOSZ:continuity.heartbeat_watchdog",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-049",
+      "to": "CUSTOSZ:backpressure.control",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-049",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "TelemetryFabric"
+    },
+    {
+      "from": "MCAP-049",
+      "to": "SYS:METAOS",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-049",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-049",
+      "to": "CONSUMER:ECONOMIC_AND_MARKET_DATA_FABRIC",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-050",
+      "to": "CUSTOSZ:execution.resumable",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-050",
+      "to": "CUSTOSZ:continuity.session_resume",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-050",
+      "to": "CUSTOSZ:continuity.heartbeat_watchdog",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-050",
+      "to": "CUSTOSZ:backpressure.control",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-050",
+      "to": "CUSTOSZ:memory.state",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-050",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "CheckpointStore"
+    },
+    {
+      "from": "MCAP-050",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "ResumeManager"
+    },
+    {
+      "from": "MCAP-050",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "ProcessSupervisor"
+    },
+    {
+      "from": "MCAP-050",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-050",
+      "to": "SYS:METAOS",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-050",
+      "to": "CONSUMER:EXTREME_SCALE_TRANSLATION_ORCHESTRATOR",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-051",
+      "to": "CUSTOSZ:content.identity",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-051",
+      "to": "CUSTOSZ:security.crypto",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-051",
+      "to": "CUSTOSZ:knowledge.remote",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-051",
+      "to": "CUSTOSZ:handoff.remote_source",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-051",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "SourceRegistry"
+    },
+    {
+      "from": "MCAP-051",
+      "to": "SYS:GITHUB",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-051",
+      "to": "SYS:CUSTOSZ_V7",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-051",
+      "to": "CONSUMER:FORENSIC_EVIDENCE_CHAIN_LEDGER",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-052",
+      "to": "CUSTOSZ:evidence.graph",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-052",
+      "to": "CUSTOSZ:memory.state",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-052",
+      "to": "CUSTOSZ:continuity.heartbeat_watchdog",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-052",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "TelemetryFabric"
+    },
+    {
+      "from": "MCAP-052",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "EvidenceJournal"
+    },
+    {
+      "from": "MCAP-052",
+      "to": "SYS:METAOS",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-052",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-052",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-053",
+      "to": "CUSTOSZ:benchmark.ephemeral",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-053",
+      "to": "CUSTOSZ:benchmark.gap",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-053",
+      "to": "CUSTOSZ:benchmark.contamination",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-053",
+      "to": "CUSTOSZ:validation.adversarial",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-053",
+      "to": "CUSTOSZ:conformance.harness",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-053",
+      "to": "CUSTOSZ:assurance.fabric",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "partial"
+    },
+    {
+      "from": "MCAP-053",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "ValidationPipeline"
+    },
+    {
+      "from": "MCAP-053",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-053",
+      "to": "CONSUMER:METACOGNITIVE_SUPERVISOR",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-053",
+      "to": "CONSUMER:G23_INDEPENDENT_VALIDATION_FABRIC",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-054",
+      "to": "CUSTOSZ:api.gateway",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "novel"
+    },
+    {
+      "from": "MCAP-054",
+      "to": "CUSTOSZ:streaming.range",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "novel"
+    },
+    {
+      "from": "MCAP-054",
+      "to": "CUSTOSZ:normalization.structured",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "novel"
+    },
+    {
+      "from": "MCAP-054",
+      "to": "CUSTOSZ:memory.currentness",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "novel"
+    },
+    {
+      "from": "MCAP-054",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "SourceRegistry"
+    },
+    {
+      "from": "MCAP-054",
+      "to": "SYS:METAOS",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-054",
+      "to": "SYS:LOUKSNA",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-054",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-055",
+      "to": "CUSTOSZ:api.gateway",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "novel"
+    },
+    {
+      "from": "MCAP-055",
+      "to": "CUSTOSZ:streaming.range",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "novel"
+    },
+    {
+      "from": "MCAP-055",
+      "to": "CUSTOSZ:content.identity",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "novel"
+    },
+    {
+      "from": "MCAP-055",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "SourceRegistry"
+    },
+    {
+      "from": "MCAP-055",
+      "to": "SYS:LOUKSNA",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-055",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-055",
+      "to": "CONSUMER:ECONOMIC_AND_MARKET_DATA_FABRIC",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-056",
+      "to": "CUSTOSZ:api.gateway",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "novel"
+    },
+    {
+      "from": "MCAP-056",
+      "to": "CUSTOSZ:normalization.structured",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "novel"
+    },
+    {
+      "from": "MCAP-056",
+      "to": "CUSTOSZ:memory.currentness",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "novel"
+    },
+    {
+      "from": "MCAP-056",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "SourceRegistry"
+    },
+    {
+      "from": "MCAP-056",
+      "to": "SYS:LOUKSNA",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-056",
+      "to": "SYS:METAOS",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-056",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-057",
+      "to": "CUSTOSZ:technology.synthesis",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "novel"
+    },
+    {
+      "from": "MCAP-057",
+      "to": "CUSTOSZ:composition.engine",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "novel"
+    },
+    {
+      "from": "MCAP-057",
+      "to": "CUSTOSZ:evidence.graph",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "novel"
+    },
+    {
+      "from": "MCAP-057",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "CognitivePlane"
+    },
+    {
+      "from": "MCAP-057",
+      "to": "SYS:LOUKSNA",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-057",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-057",
+      "to": "CONSUMER:MULTISCALE_MULTI_INTER_TRANSDISCIPLINARY_SYNTHESIS",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-058",
+      "to": "CUSTOSZ:composition.engine",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-058",
+      "to": "CUSTOSZ:gap.evolution",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-058",
+      "to": "CUSTOSZ:assurance.fabric",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-058",
+      "to": "CUSTOSZ:memory.governed",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-058",
+      "to": "CUSTOSZ:logic.formal",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "composable"
+    },
+    {
+      "from": "MCAP-058",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "CognitivePlane"
+    },
+    {
+      "from": "MCAP-058",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "MetacognitivePlane"
+    },
+    {
+      "from": "MCAP-058",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "MissionController"
+    },
+    {
+      "from": "MCAP-058",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "USES_RUNTIME_COMPONENT",
+      "component": "TelemetryFabric"
+    },
+    {
+      "from": "MCAP-058",
+      "to": "SYS:LOUKSNA",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-058",
+      "to": "SYS:METAOS",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-058",
+      "to": "SYS:CUSTOSZ_V7",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-058",
+      "to": "SYS:CUSTOSZ_RUNTIME_V1",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-058",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-059",
+      "to": "CUSTOSZ:benchmark.contamination",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "novel"
+    },
+    {
+      "from": "MCAP-059",
+      "to": "CUSTOSZ:assurance.fabric",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "novel"
+    },
+    {
+      "from": "MCAP-059",
+      "to": "CUSTOSZ:memory.evidence",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "novel"
+    },
+    {
+      "from": "MCAP-059",
+      "to": "CUSTOSZ:memory.currentness",
+      "relation": "BINDS_OR_EXTENDS_EXISTING",
+      "coverage": "novel"
+    },
+    {
+      "from": "MCAP-059",
+      "to": "SYS:LOUKSNA",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-059",
+      "to": "SYS:PUAC2",
+      "relation": "SERVES_CONSUMER"
+    },
+    {
+      "from": "MCAP-059",
+      "to": "SYS:METAOS",
+      "relation": "SERVES_CONSUMER"
+    }
+  ]
+}
