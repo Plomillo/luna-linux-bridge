@@ -44,6 +44,7 @@ jobs:
           set -Eeuo pipefail
           python3 -m py_compile scripts/mission_mailbox/*.py scripts/mission_mailbox/adapters/*.py scripts/metacognitive/*.py
           python3 -B -I scripts/mission_mailbox/test_router_policy.py
+          python3 -B -I scripts/metacognitive/test_meta_ecosystem_mailbox_binding.py
           python3 - <<'PY'
           import json
           for p in (
