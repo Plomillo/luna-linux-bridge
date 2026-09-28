@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "status": "ACTIVE_EMPTY_FAIL_CLOSED",
+  "status": "ACTIVE_PINNED_ADAPTERS_FAIL_CLOSED",
   "policy": {
     "unmatched_action": "HOLD",
     "require_sha256_pin": true,
@@ -8,5 +8,18 @@
     "require_executor_bound": true,
     "allowed_root": "scripts/mission_mailbox/adapters"
   },
-  "adapters": []
+  "adapters": [
+    {
+      "adapter_id": "SERVER_READY_CANDIDATE_V1",
+      "path": "scripts/mission_mailbox/adapters/server_ready_probe.py",
+      "sha256": "722f390655df0ecfa8d8d157549823db65b448992e22f1abf82fe7ed5a6fb59b",
+      "backend": "CUSTOSZ_RUNTIME",
+      "source_sha256": "8cc285625346e4675d8b6fba4b4545ee42b0255057d8109db3e48a1e061558b9",
+      "required_capabilities": [],
+      "provides_executor_binding": true,
+      "execution_location": "GITHUB_HOSTED_ONLY",
+      "scope": "SERVER_READY_TEST_ONLY",
+      "status": "STAGED_CANDIDATE"
+    }
+  ]
 }
