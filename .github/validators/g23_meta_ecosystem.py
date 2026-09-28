@@ -10,6 +10,7 @@ def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--bundle",required=True)
     ap.add_argument("--out",required=True)
+    ap.add_argument("--external-evaluator",default="")
     q=ap.parse_args()
     root=Path(q.bundle).resolve()
     manifest=json.loads((root/"CANDIDATE_MANIFEST.json").read_text(encoding="utf-8"))
@@ -56,11 +57,53 @@ def main():
     if "RISK-005" not in critical_open: findings.append("INDEPENDENCE_RISK_NOT_EXPLICIT")
     if validity.get("on_invalidation") is None or validity.get("monitoring_profile",{}).get("automatic_certification_propagation") is not False: findings.append("VALIDITY_POLICY_INVALID")
 
-    c27=indep.get("assessment",{}).get("puac_c27")
-    independence_ok=(c27=="PASS")
-    if not independence_ok: findings.append("PUAC_C27_NOT_PASS:"+str(c27))
+    c27_plan=indep.get("assessment",{}).get("puac_c27")
+    external=None
+    external_ok=False
+    external_findings=[]
+    if q.external_evaluator:
+        ep=Path(q.external_evaluator)
+        if not ep.is_file():
+            external_findings.append("EXTERNAL_EVALUATOR_RECORD_MISSING")
+        else:
+            try:
+                external=json.loads(ep.read_text(encoding="utf-8"))
+            except Exception:
+                external_findings.append("EXTERNAL_EVALUATOR_RECORD_UNPARSEABLE")
+            if external is not None:
+                if external.get("schema")!="EXTERNAL_EVALUATOR_RECORD/1.0": external_findings.append("EXTERNAL_EVALUATOR_SCHEMA_INVALID")
+                if external.get("artifact_id")!=manifest["artifact_id"]: external_findings.append("EXTERNAL_EVALUATOR_ARTIFACT_MISMATCH")
+                if external.get("candidate_digest")!=manifest["candidate_digest"]: external_findings.append("EXTERNAL_EVALUATOR_DIGEST_MISMATCH")
+                ev=external.get("evaluator",{})
+                ind=external.get("independence",{})
+                eva=external.get("evaluation",{})
+                prov=external.get("provenance",{})
+                prohibited={"ACTOR:PRODUCER:CUSTOSZ_V7","ACTOR:GOVERNOR:METAOS","ACTOR:GITHUB_PRODUCER_JOB","Plomillo","ChatGPT"}
+                if not ev.get("evaluator_id") or ev.get("evaluator_id") in prohibited: external_findings.append("EXTERNAL_EVALUATOR_IDENTITY_NOT_INDEPENDENT")
+                if ev.get("role")!="SECOND_INDEPENDENT_EVALUATOR": external_findings.append("EXTERNAL_EVALUATOR_ROLE_INVALID")
+                if not ev.get("provider"): external_findings.append("EXTERNAL_EVALUATOR_PROVIDER_MISSING")
+                if ind.get("not_candidate_builder") is not True: external_findings.append("EXTERNAL_EVALUATOR_IS_CANDIDATE_BUILDER")
+                if ind.get("not_material_worker") is not True: external_findings.append("EXTERNAL_EVALUATOR_IS_MATERIAL_WORKER")
+                if ind.get("read_only_candidate") is not True: external_findings.append("EXTERNAL_EVALUATOR_NOT_READ_ONLY")
+                if ind.get("repair_performed") is not False: external_findings.append("EXTERNAL_EVALUATOR_REPAIR_PERFORMED")
+                if ind.get("can_modify_candidate") is not False: external_findings.append("EXTERNAL_EVALUATOR_CAN_MODIFY_CANDIDATE")
+                if not ind.get("conflict_disclosure"): external_findings.append("EXTERNAL_EVALUATOR_CONFLICT_DISCLOSURE_MISSING")
+                if eva.get("result")!="PASS": external_findings.append("EXTERNAL_EVALUATOR_NOT_PASS")
+                if not eva.get("claims_reviewed"): external_findings.append("EXTERNAL_EVALUATOR_NO_CLAIMS_REVIEWED")
+                required_prov=("issued_at","source_system","source_record_id","source_record_uri","immutable_or_signed_proof")
+                if any(not prov.get(k) for k in required_prov): external_findings.append("EXTERNAL_EVALUATOR_PROVENANCE_INCOMPLETE")
+                external_ok=not external_findings
+    else:
+        external_findings.append("EXTERNAL_EVALUATOR_RECORD_NOT_SUPPLIED")
 
-    hard=[x for x in findings if not x.startswith("PUAC_C27_NOT_PASS:")]
+    # The candidate records the independence requirement. External evidence is deliberately
+    # out-of-candidate so PUAC.C27 can be satisfied without mutating the already frozen bytes.
+    independence_ok=external_ok
+    if not independence_ok:
+        findings.extend(external_findings)
+        findings.append("PUAC_C27_NOT_PASS:"+str(c27_plan))
+
+    hard=[x for x in findings if not x.startswith("PUAC_C27_NOT_PASS:") and x not in external_findings]
     status="PASS" if not hard and independence_ok else "HOLD"
     record={
       "schema":"G23_META_ECOSYSTEM_INDEPENDENT_VALIDATION/1.0",
@@ -70,12 +113,17 @@ def main():
       "evaluation_mode":"FRESH_READ_ONLY_INDEPENDENT_IMPLEMENTATION",
       "repair_performed":False,
       "candidate_hash_verification":"PASS" if not any("MISMATCH" in x or x.startswith("MISSING:") for x in findings) else "FAIL",
-      "puac_c27":c27,
+      "puac_c27_plan":c27_plan,
+      "puac_c27_effective":"PASS" if independence_ok else "HOLD",
+      "external_evaluator_record_supplied":bool(q.external_evaluator),
+      "external_evaluator_identity":(external or {}).get("evaluator",{}).get("evaluator_id") if external else None,
+      "external_evaluator_provider":(external or {}).get("evaluator",{}).get("provider") if external else None,
+      "external_evaluator_provenance":(external or {}).get("provenance") if external else None,
       "result":status,
       "findings":findings,
       "limitations":[
         "This validator does not infer operational status for external domain lanes excluded by the candidate scope.",
-        "G23 cannot PASS while structural independence PUAC.C27 is HOLD."
+        "G23 cannot PASS without a valid external evaluator record bound to the exact frozen candidate digest."
       ]
     }
     Path(q.out).write_text(json.dumps(record,indent=2,sort_keys=True)+"\n",encoding="utf-8")
