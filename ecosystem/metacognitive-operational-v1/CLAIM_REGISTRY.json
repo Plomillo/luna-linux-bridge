@@ -1,0 +1,135 @@
+{
+  "schema": "META_ECOSYSTEM_CLAIM_REGISTRY/1.0",
+  "artifact_id": "META_ECOSYSTEM_CONTROL_PLANE_V1",
+  "authority": "Louksna.md",
+  "assurance_profile": "PUAC2_CONTROL_PLANE_FIRST_PASS",
+  "intended_use": "Govern and route the metacognitive ecosystem control plane; bind/reuse CUSTOSZ capabilities; prepare cloud materialization; produce evidence for G23/G24.",
+  "exclusions": [
+    "Does not claim all 59 domain capabilities are fully operational against every external provider.",
+    "Does not claim human-level AGI.",
+    "Does not certify external market feeds, remote corpora, Android/Windows labs, or model training before their material lanes exist.",
+    "Does not alter Louksna canonical identity or automatically activate certification."
+  ],
+  "claims": [
+    {
+      "claim_id": "MECP-CLM-001",
+      "property": "AUTHORITY_PRESERVATION",
+      "acceptance_predicate": "authority == Louksna.md AND canonical_mutation == false AND authority_transfer == false",
+      "evidence": [
+        "CAPABILITIES.json",
+        "ECOSYSTEM_GRAPH.json",
+        "ECOSYSTEM_CONTRACT.md"
+      ]
+    },
+    {
+      "claim_id": "MECP-CLM-002",
+      "property": "CUSTOSZ72_EXACT_CENSUS",
+      "acceptance_predicate": "capability_count == 72 AND unique_capability_count == 72 AND custosz_pyz_sha256 matches pinned CUSTOSZ V7",
+      "evidence": [
+        "CUSTOSZ72_CENSUS.json",
+        "validate_custosz72_mcap59_dedup.py"
+      ]
+    },
+    {
+      "claim_id": "MECP-CLM-003",
+      "property": "MCAP59_STRUCTURAL_INTEGRITY",
+      "acceptance_predicate": "59 unique contiguous MCAPs AND MCAP-059 is training-last",
+      "evidence": [
+        "CAPABILITIES.json",
+        "validate.py"
+      ]
+    },
+    {
+      "claim_id": "MECP-CLM-004",
+      "property": "CAPABILITY_NON_DUPLICATION_PRECHECK",
+      "acceptance_predicate": "CUSTOSZ Family9 evaluates all 59 mappings with failure_count == 0",
+      "evidence": [
+        "CUSTOSZ72_DEDUP_EVIDENCE.json",
+        "validate_custosz72_mcap59_dedup.py"
+      ]
+    },
+    {
+      "claim_id": "MECP-CLM-005",
+      "property": "FEDERATED_GRAPH_INTEGRITY",
+      "acceptance_predicate": "all graph nodes unique, all edges resolved, no orphan MCAPs, G23 precedes G24",
+      "evidence": [
+        "ECOSYSTEM_GRAPH.json",
+        "validate_ecosystem_graph.py"
+      ]
+    },
+    {
+      "claim_id": "MECP-CLM-006",
+      "property": "IMMUTABLE_MISSION_ROUTING",
+      "acceptance_predicate": "original mission SHA remains exact AND class resolution is unique source-SHA binding AND exactly one SHA-pinned adapter matches",
+      "evidence": [
+        "MISSION_ORIGINAL.md",
+        "source-class-bindings/registry.json",
+        "runtime-adapters/registry.json",
+        "route_mission.py"
+      ]
+    },
+    {
+      "claim_id": "MECP-CLM-007",
+      "property": "HEAVY_COMPUTE_BOUNDARY",
+      "acceptance_predicate": "auxiliary runner performs ingress/routing/bounded admission only; heavy work is GitHub-hosted or explicit external cloud",
+      "evidence": [
+        "INFRASTRUCTURE.md",
+        "metacognitive_ecosystem_v1.py",
+        "runtime-adapters/registry.json"
+      ]
+    },
+    {
+      "claim_id": "MECP-CLM-008",
+      "property": "ROLLBACK_PROOF_CONTROL_PLANE",
+      "acceptance_predicate": "ephemeral checkpoint restore reproduces exact pre-mutation SHA set for candidate bundle",
+      "evidence": [
+        "control-plane assurance workflow rollback test"
+      ]
+    },
+    {
+      "claim_id": "MECP-CLM-009",
+      "property": "REPRODUCIBLE_FROZEN_CANDIDATE",
+      "acceptance_predicate": "sorted path/hash/size manifest deterministically yields one candidate digest and validators re-evaluate same bytes",
+      "evidence": [
+        "candidate manifest",
+        "control-plane assurance workflow"
+      ]
+    },
+    {
+      "claim_id": "MECP-CLM-010",
+      "property": "PROVENANCE_AND_AUDITABILITY",
+      "acceptance_predicate": "every candidate file has SHA-256 and source path; workflow/run/evaluator records are retained in evidence bundle",
+      "evidence": [
+        "candidate manifest",
+        "GitHub Actions evidence bundle"
+      ]
+    },
+    {
+      "claim_id": "MECP-CLM-011",
+      "property": "G23_STRUCTURAL_INDEPENDENCE",
+      "acceptance_predicate": "builder is not sole independent evaluator; evaluator identities, roles, permissions and separation evidence satisfy PUAC.C27",
+      "evidence": [
+        "INDEPENDENCE_PLAN.json",
+        "G23 record"
+      ]
+    },
+    {
+      "claim_id": "MECP-CLM-012",
+      "property": "G24_SAME_DIGEST_CERTIFICATION",
+      "acceptance_predicate": "G24 consumes only the exact frozen digest accepted by G23 and performs no repair",
+      "evidence": [
+        "G23 record",
+        "G24 decision"
+      ]
+    },
+    {
+      "claim_id": "MECP-CLM-013",
+      "property": "VALIDITY_AND_RECERTIFICATION",
+      "acceptance_predicate": "material change invalidates affected evidence and requests revalidation/recertification before active reuse",
+      "evidence": [
+        "ASSURANCE_G23_G24.md",
+        "validity policy"
+      ]
+    }
+  ]
+}
