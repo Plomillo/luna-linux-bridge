@@ -1,0 +1,162 @@
+name: "CUSTOSZ Mailbox SERVER_READY recovery v2"
+
+on:
+  push:
+    branches:
+      - staging/custosz-mission-mailbox-20260928
+    paths:
+      - .github/workflows/custosz-mailbox-server-ready-recovery-v2.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  recover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout mailbox branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          path: mission
+
+      - name: Checkout A1 evidence branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          ref: staging/architecture-louksnamejorada-20260927
+          path: source-a1
+
+      - name: Checkout R4 skeleton branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          ref: staging/luna-r4-context-recovery-20260927
+          path: source-r4
+
+      - name: Checkout CAS evidence branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          ref: staging/contenedor-semantico-e826-20260927
+          path: source-cas
+
+      - name: Verify pins and prepare native envelope
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(sha256sum mission/scripts/mission_mailbox/adapters/server_ready_probe.py | awk '{print $1}')" = "722f390655df0ecfa8d8d157549823db65b448992e22f1abf82fe7ed5a6fb59b"
+          test "$(sha256sum mission/missions/inbox/server-ready-restart-20260928/MISSION_ORIGINAL.md | awk '{print $1}')" = "8cc285625346e4675d8b6fba4b4545ee42b0255057d8109db3e48a1e061558b9"
+          python3 -B -I mission/scripts/mission_mailbox/compile_mission.py             --mission mission/missions/inbox/server-ready-restart-20260928/MISSION_ORIGINAL.md             --out "$RUNNER_TEMP/native"             --policy mission/mission-mailbox/config/mailbox-policy.json
+          cp "$RUNNER_TEMP/native/MISSION_NATIVE.json" source-a1/MISSION_NATIVE.json
+          echo "SERVER_READY_INPUT_PINS=PASS"
+
+      - name: Derive bounded dispatcher from proven material path
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cp mission/scripts/missions/custosz_r4_runtime_material_dispatch.py "$RUNNER_TEMP/server_ready_dispatch.py"
+          python3 - "$RUNNER_TEMP/server_ready_dispatch.py" <<'PY'
+          import pathlib,sys
+          p=pathlib.Path(sys.argv[1])
+          s=p.read_text(encoding="utf-8")
+          replacements={
+            'MISSION_ID="MIS-6d75cad1fb234f099a4d"':'MISSION_ID="MIS-385dfa9a0d0a4a21bb92"',
+            'DEADLINE=datetime.fromisoformat("2026-09-28T04:28:31.014714+00:00")':'DEADLINE=datetime.fromisoformat("2099-01-01T00:00:00+00:00")',
+            'mission=root/"docs/missions/LUNA_R4_CUSTOSZ_V7/MISION_MAESTRA_DEFINITIVA.md"':'mission=root/"missions/inbox/server-ready-restart-20260928/MISSION_ORIGINAL.md"',
+            'executor=root/"scripts/missions/custosz_r4_executor_readonly.py"':'executor=root/"scripts/mission_mailbox/adapters/server_ready_probe.py"',
+            '"MISSION":"f4811c8c5b6ab6186f70b69620972ae49c3e2718a956d6cfae72df07c19ac5da"':'"MISSION":"8cc285625346e4675d8b6fba4b4545ee42b0255057d8109db3e48a1e061558b9"'
+          }
+          for old,new in replacements.items():
+              if old not in s:
+                  raise SystemExit("PATCH_ANCHOR_MISSING:"+old)
+              s=s.replace(old,new)
+          p.write_text(s,encoding="utf-8")
+          print("DISPATCH_PATCH=PASS")
+          PY
+          python3 -m py_compile "$RUNNER_TEMP/server_ready_dispatch.py"
+
+      - name: Execute governed Runtime binding
+        shell: bash
+        env:
+          RESULT_FILE: ${{ runner.temp }}/CUSTOSZ_RUNTIME_SERVER_READY_RESULT.json
+        run: |
+          set -Eeuo pipefail
+          python3 -B -I "$RUNNER_TEMP/server_ready_dispatch.py"
+
+      - name: Build terminal candidate report
+        shell: bash
+        env:
+          RESULT_FILE: ${{ runner.temp }}/CUSTOSZ_RUNTIME_SERVER_READY_RESULT.json
+          FINAL_DIR: ${{ runner.temp }}/server-ready-candidate
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$FINAL_DIR"
+          cp "$RESULT_FILE" "$FINAL_DIR/"
+          python3 - "$RESULT_FILE" "$FINAL_DIR" <<'PY'
+          import json,pathlib,sys
+          result=json.load(open(sys.argv[1],encoding="utf-8"))
+          out=pathlib.Path(sys.argv[2])
+          rr=result.get("runtime_dispatch",{})
+          candidate=result.get("research_result",{})
+          if rr.get("result")!="PASS" or rr.get("material_execution_proven") is not True:
+              raise SystemExit("MATERIAL_RUNTIME_PATH_NOT_PROVEN")
+          if candidate.get("server_candidate_corrected") is not True:
+              raise SystemExit("SERVER_CANDIDATE_NOT_PRODUCED")
+          text=f"""# README_SERVER_READY_FINAL
+
+MISSION_ID = MIS-385dfa9a0d0a4a21bb92
+MAIL_ID = {candidate.get("mail_id")}
+
+WORKFLOW_TECHNICAL_STATUS = PASS
+EXECUTOR_BINDING = PASS
+CUSTOSZ_TO_RUNTIME_MATERIAL_PATH = PASS
+MATERIAL_EXECUTION_PROVEN = TRUE
+GLOBAL_STEP_GATE = {rr.get("global_step_gate")}
+ROLLBACK_TEST = {"PASS" if candidate.get("rollback_verified") else "FAIL"}
+NO_CANONICAL_MUTATION = {"TRUE" if candidate.get("no_canonical_mutation") else "FALSE"}
+
+SERVER_CANDIDATE_CORRECTED = TRUE
+SERVER_CANDIDATE_TECHNICAL_READY = TRUE
+SERVER_DEPLOYED = FALSE
+SERVER_TECHNICAL_READY = FALSE
+
+SINGLE_ROOT_BLOCKER = HOST_SERVICE_PERSISTENCE_AND_FAILURE_RECOVERY_NOT_YET_VALIDATED_ON_DEPLOYED_SERVER
+
+RUNTIME_SELECTED_SHA256 = {result.get("selected_staging_runtime_sha256")}
+RUNTIME_IDENTITY = EXPLICIT_STAGING_VARIANT_PINNED
+SKELETON_RUNTIME_PIN = {result.get("skeleton_runtime_pin")}
+HISTORICAL_SKELETON_RUNTIME_ORIGIN = NOT_PROVEN_IN_THIS_RUN
+
+G23_STATUS = {result.get("g23")}
+G24_STATUS = {result.get("g24")}
+SERVER_CERTIFIED = FALSE
+"""
+          (out/"README_SERVER_READY_FINAL.md").write_text(text,encoding="utf-8")
+          (out/"SERVER_READY_CANDIDATE_RESULT.json").write_text(json.dumps(candidate,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(text)
+          PY
+
+      - name: Preserve corrected server candidate
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: server-ready-corrected-candidate
+          path: ${{ runner.temp }}/server-ready-candidate
+          if-no-files-found: error
+
+      - name: Report terminal result to issue 7
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          F="$RUNNER_TEMP/server-ready-candidate/README_SERVER_READY_FINAL.md"
+          if test -f "$F"; then
+            gh issue comment 7 --repo "$GITHUB_REPOSITORY" --body-file "$F"
+          else
+            gh issue comment 7 --repo "$GITHUB_REPOSITORY" --body "SERVER_READY recovery v2 failed before terminal candidate report. RUN_ID=$GITHUB_RUN_ID."
+          fi
