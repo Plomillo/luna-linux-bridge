@@ -236,3 +236,19 @@ El proyecto está **READY_FOR_OWNER_DECISION** únicamente cuando se presenta un
 - GitHub Actions, condiciones de atestaciones nativas en repositorios privados: https://docs.github.com/en/actions/how-tos/secure-your-work/use-artifact-attestations/use-artifact-attestations
 - Debian, precauciones ante cambios de partición y respaldos: https://www.debian.org/releases/stable/amd64/ch03s05.en.html
 - systemd, cuotas de memoria y CPU para ejecutar de forma controlada: https://www.freedesktop.org/software/systemd/man/latest/systemd.resource-control.html
+
+---
+
+## ADITIVO F-2 — INVESTIGACIÓN EXTERNA Y CONTRATO DE ENSAYOS
+
+**Alcance:** endurecimiento trazable del plan precedente, sin sustituir F0–F5, F3-DISK ni F-1 y sin convertir fuentes externas en autoridad canónica. El dossier íntegro [ADITIVO_F2_EVIDENCIA_COMPARADA_Y_PRUEBAS.md](ADITIVO_F2_EVIDENCIA_COMPARADA_Y_PRUEBAS.md) y el candado declarativo [SYMPHYLAX_R1_NIGHT_MISSION_LOCK_CANDIDATE.json](SYMPHYLAX_R1_NIGHT_MISSION_LOCK_CANDIDATE.json) forman parte de este mismo expediente del PR #4.
+
+**Estudio profesional contrastado:** NIST SSDF v1.1 *final* y NIST 800-34, SLSA v1.2 *aprobado*, artículo arbitrado in-toto (USENIX Security 2019), Fedora/openQA sobre instalaciones completas y GUI, Ansible/Molecule para idempotencia, Google SRE para cambios progresivos y rollback, Debian/Microsoft/restic para recuperación y cifrado, Hugging Face para modelos fijados por revisión/model cards y GitHub para riesgos de runners autoalojados. Cada fuente se registra en el dossier con enlace primario, aplicación a R4 y una prohibición de inferir que el éxito externo certifica nuestro servidor.
+
+**Criterio antidecorativo:** por cada control externo debe existir una implementación verificable y un ensayo positivo, negativo o de recuperación ligado a evidencia original. El dossier define T01–T20 con identidad de fuente, manifiesto de misión y consentimiento, aislamiento, idempotencia, instalación simulada/real, UI visual, restauración, controles de recursos, prueba de precedencia G23/G24 y barrera F3-DISK. Los 20 ensayos están **especificados, NO ejecutados**; ningún PASS es transferible desde las herramientas citadas.
+
+**Plazo:** el objetivo de **20 minutos** aplica únicamente a investigación, contrastación de fuentes, redacción del aditivo y preparación documental. No convierte la revisión en certificación ni permite falsificar pruebas operacionales. El objetivo separado de completar la instalación **durante una noche** exige duraciones medidas, dependencias fijadas, competencia efectiva SYMPHYLAX/CUSTOSZ y reserva temporal para rollback y disponibilidad universitaria.
+
+**Puesta en espera segura:** el registro declarativo permanece `PREPARATION_INERT`, `user_authorized=false`, `automation_armed=false`, `server_operations_authorized=false`. No se ha habilitado workflow de instalación, cron ni servicio que responda a coincidencias del texto AUTORIZO. La futura autorización requiere una ficha de misión concreta, identidad verificada, commit/hash fijados, nonce, caducidad, revocación y validador de permisos efectivo. Un mensaje, PR o merge por sí solos no son suficiente autenticación. Si la cuenta GitHub privada no ofrece la política de entornos requerida, no se simula ese control.
+
+**Separación de resultados:** investigación terminada `RESEARCH_DOCUMENTED` ≠ paquete compilado `DESIGN_READY` ≠ pruebas de réplica `SANDBOX_VALIDATED` ≠ servidor/host `RUNTIME_VALIDATED` ≠ G23 independiente ≠ G24 competente ≠ permiso humano ≠ `ACTIVE`. El primer uso tras una autorización válida inicia solamente un preflight de lectura y ensayos reversibles expresamente consentidos; si G23/G24 de alcance real siguen pendientes, no instalar. La eliminación de Windows y todo cambio GPT/EFI permanecen bloqueados bajo esta autorización general y requieren F3-DISK con autorización H2/H4 distinta.
