@@ -1,4 +1,108 @@
 {
-  "run_id": "36376615311",
-  "status": "RUNTIME_DISPATCH_NO_RESULT"
+  "active_budget_seconds": 1192.802,
+  "custosz_v07-selftest": {
+    "exit_code": 0,
+    "stderr": "",
+    "stdout": "{\"status\": \"PASS\", \"checks\": {\"nine_families\": true, \"registry_nonempty\": true, \"unique_capabilities\": true, \"logic\": true, \"gap_reuse\": true, \"trust_exec_denied_without_three\": true}, \"certification\": \"NOT_CERTIFICATION\"}\n"
+  },
+  "custosz_v07-status": {
+    "exit_code": 0,
+    "stderr": "",
+    "stdout": "{\"name\": \"CUSTOSZ\", \"version\": \"7.0.0-candidate\", \"authority\": \"Louksna.md\", \"doctrine\": \"EXTEND_DO_NOT_REPLACE\", \"predecessor\": \"CUSTOSZ V06 CERTIFIED\", \"family_count\": 9, \"capability_count\": 72, \"families\": {\"F01_IO_KNOWLEDGE\": {\"capabilities\": 12, \"status\": \"DECLARED\"}, \"F02_EXECUTION_RESOURCES\": {\"capabilities\": 7, \"status\": \"DECLARED\"}, \"F03_SECURITY_TRUST\": {\"capabilities\": 8, \"status\": \"DECLARED\"}, \"F04_INTELLIGENCE_SYNTHESIS\": {\"capabilities\": 4, \"status\": \"DECLARED\"}, \"F05_ASSURANCE_EPISTEMIC\": {\"capabilities\": 8, \"status\": \"DECLARED\"}, \"F06_CONTINUITY_INTEROP\": {\"capabilities\": 8, \"status\": \"DECLARED\"}, \"F07_MEMORY_DOCUMENTATION\": {\"capabilities\": 10, \"status\": \"DECLARED\"}, \"F08_FORMAL_CORE\": {\"capabilities\": 8, \"status\": \"DECLARED\"}, \"F09_CAPABILITY_GAPS_EVOLUTION\": {\"capabilities\": 7, \"status\": \"DECLARED\"}}, \"certification\": \"EXTERNAL_G23_G24_REQUIRED\", \"self_certification\": false, \"active\": false}\n"
+  },
+  "deadline_utc": "2026-09-28T04:28:31.014714+00:00",
+  "ended_utc": "2026-09-28T04:13:48.202602+00:00",
+  "g23": "HOLD",
+  "g24": "HOLD",
+  "host_disk_mutation": false,
+  "host_installation": false,
+  "mission_id": "MIS-6d75cad1fb234f099a4d",
+  "research_result": {
+    "cas": {
+      "content_validation_pending": true,
+      "expected": 252,
+      "pending": 248,
+      "uploaded": 4
+    },
+    "conclusions": [
+      "A0, A1, PUAC2, Skeleton and mission identities were verified on GitHub-hosted compute.",
+      "The native CUSTOSZ continuation is registered on the real LUNA_PROJECT workspace; this material research is bound to the same mission_id without consuming user-host RAM.",
+      "The staging runtime is selected by its staging manifest but its SHA-256 differs from the generic Skeleton runtime pin; host activation remains blocked until provenance/variant reconciliation.",
+      "PUAC2 remains a 2.0.0 candidate with G23/G24 not granted; it may govern assurance requirements but cannot self-certify.",
+      "CAS transfer completion and semantic runtime validation remain separate; the GitHub branch still records pending CAS objects.",
+      "No installation, Windows/EFI/GPT/PROYECTOS mutation or reboot was performed."
+    ],
+    "mission_id": "MIS-6d75cad1fb234f099a4d",
+    "next_authorized_research": [
+      "Reconcile selected runtime variant against the Skeleton pin and original provenance.",
+      "Complete A0-A1 semantic/admission evidence without mutating canonical sources.",
+      "Complete CAS Git LFS transport from an isolated clean checkout and validate destination hashes.",
+      "Prepare the differential R4 component matrix and sandbox installation lots.",
+      "Independently test the consent/executor bridge before any host installation."
+    ],
+    "puac2": {
+      "candidate_2_0_present": true,
+      "d01_d10_markers": 10,
+      "g23_not_granted": true,
+      "g24_not_granted": true
+    },
+    "r4": {
+      "installation_performed_false": true,
+      "runtime_pin_declared": "4e9bf0e799487ea0fd6a6d32359176bdce996010e33ed151ce0f186155d11df0",
+      "target_os_debian13": true
+    },
+    "scope": "READONLY_RESEARCH",
+    "status": "MATERIAL_RESEARCH_COMPLETED",
+    "verified": {
+      "a0_sha256": "5270c3d643339c283edf13b414f335f23f921c4dac023b06d38de62927e29bf9",
+      "a1_sha256": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51",
+      "mission_sha256": "f4811c8c5b6ab6186f70b69620972ae49c3e2718a956d6cfae72df07c19ac5da",
+      "puac2_sha256": "c872ab8d31e0e301de93ab06047294424d309d947f225e62148cee8265b15869",
+      "skeleton_sha256": "fb9fad37994e684ad54b1ffc2762660eebcb8e41bd9c4ba685ffac55217d5b0f"
+    }
+  },
+  "runtime_dispatch": {
+    "evidence_chain_head": "7c478e39b3b047835f7298d476a8a1832512296b361935c394fe7e2e70c84ebb",
+    "global_step_gate": 1,
+    "material_execution_proven": true,
+    "result": "PASS"
+  },
+  "runtime_evidence_ledger": true,
+  "runtime_selftest": {
+    "anatomy": [
+      "GovernanceKernel",
+      "MissionController",
+      "CognitivePlane",
+      "MetacognitivePlane",
+      "ExecutorRegistry",
+      "ProcessSupervisor",
+      "TimeBudgetController",
+      "CheckpointStore",
+      "EvidenceJournal",
+      "TelemetryFabric",
+      "SourceRegistry",
+      "ResumeManager",
+      "FailureController",
+      "ValidationPipeline"
+    ],
+    "journal": true,
+    "runtime_id": "CUSTOSZ_RUNTIME_V1",
+    "status": "PASS"
+  },
+  "scope": "GITHUB_HOSTED_MATERIAL_RESEARCH_ONLY",
+  "selected_staging_runtime_sha256": "a79e13869601d68fe801b85ad421719b79d4afa5520ae34b91b419bd8834ae67",
+  "skeleton_runtime_pin": "4e9bf0e799487ea0fd6a6d32359176bdce996010e33ed151ce0f186155d11df0",
+  "source_hashes": {
+    "A0": "5270c3d643339c283edf13b414f335f23f921c4dac023b06d38de62927e29bf9",
+    "A1": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51",
+    "CUSTOSZ": "dacf1f8c13b2fcbfc617cf0d4d780b30502c13395224691e6b0f05f53d9816a2",
+    "METAOS": "5d8f1239e3a0b452be722078760b000afc22af0a64f93ffb0a1f74024f15aed0",
+    "MISSION": "f4811c8c5b6ab6186f70b69620972ae49c3e2718a956d6cfae72df07c19ac5da",
+    "PUAC2": "c872ab8d31e0e301de93ab06047294424d309d947f225e62148cee8265b15869",
+    "RUNTIME": "a79e13869601d68fe801b85ad421719b79d4afa5520ae34b91b419bd8834ae67",
+    "SKELETON": "fb9fad37994e684ad54b1ffc2762660eebcb8e41bd9c4ba685ffac55217d5b0f"
+  },
+  "started_utc": "2026-09-28T04:13:46.506128+00:00",
+  "status": "CUSTOSZ_AND_RUNTIME_MATERIAL_RESEARCH_PASS",
+  "user_host_ram_heavy_research": false
 }
