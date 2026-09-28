@@ -1,5 +1,5 @@
 {
-  "schema": "LOUKSNA_METACOGNITIVE_ECOSYSTEM_GRAPH/1.0",
+  "schema": "LOUKSNA_METACOGNITIVE_ECOSYSTEM_GRAPH/1.1",
   "graph_id": "META_ECOSYSTEM_GRAPH_V1",
   "authority": "Louksna.md",
   "canonical_status": "NON_CANONICAL_OPERATIONAL_CANDIDATE",
@@ -19,7 +19,8 @@
     "heavy_compute": "GITHUB_HOSTED_OR_EXPLICIT_EXTERNAL_CLOUD",
     "local_heavy_compute": "FORBIDDEN_BY_DEFAULT",
     "g23_before_g24": true,
-    "certification_propagation": false
+    "certification_propagation": false,
+    "dangling_edges_forbidden": true
   },
   "nodes": [
     {
@@ -75,6 +76,36 @@
       "type": "SYSTEM_COMPONENT",
       "name": "External Cloud Data Plane",
       "role": "REMOTE_DATA_PLANE"
+    },
+    {
+      "id": "SYS:FUTURE_CANONICAL_ARCHITECTURE",
+      "type": "SYSTEM_COMPONENT",
+      "name": "Future Canonical Architecture Adapter Boundary",
+      "role": "FUTURE_VERSIONED_ADAPTER_BOUNDARY"
+    },
+    {
+      "id": "AGENT:LUNA",
+      "type": "CANONICAL_AGENT",
+      "name": "Luna",
+      "role": "CANONICAL_AGENT"
+    },
+    {
+      "id": "AGENT:JOSEFINA",
+      "type": "CANONICAL_AGENT",
+      "name": "Josefina",
+      "role": "CANONICAL_AGENT"
+    },
+    {
+      "id": "AGENT:KATYA",
+      "type": "CANONICAL_AGENT",
+      "name": "Katya",
+      "role": "CANONICAL_AGENT"
+    },
+    {
+      "id": "AGENT:ANCAPI",
+      "type": "CANONICAL_AGENT",
+      "name": "Ancapi",
+      "role": "CANONICAL_AGENT"
     },
     {
       "id": "CUSTOSZ:cache.semantic",
@@ -1385,6 +1416,31 @@
       "relation": "GOVERNS_AUTHORITY_BOUNDARY"
     },
     {
+      "from": "SYS:LOUKSNA",
+      "to": "SYS:FUTURE_CANONICAL_ARCHITECTURE",
+      "relation": "GOVERNS_AUTHORITY_BOUNDARY"
+    },
+    {
+      "from": "SYS:LOUKSNA",
+      "to": "AGENT:LUNA",
+      "relation": "PRESERVES_AGENT_IDENTITY"
+    },
+    {
+      "from": "SYS:LOUKSNA",
+      "to": "AGENT:JOSEFINA",
+      "relation": "PRESERVES_AGENT_IDENTITY"
+    },
+    {
+      "from": "SYS:LOUKSNA",
+      "to": "AGENT:KATYA",
+      "relation": "PRESERVES_AGENT_IDENTITY"
+    },
+    {
+      "from": "SYS:LOUKSNA",
+      "to": "AGENT:ANCAPI",
+      "relation": "PRESERVES_AGENT_IDENTITY"
+    },
+    {
       "from": "SYS:METAOS",
       "to": "SYS:CUSTOSZ_V7",
       "relation": "GOVERNS_EXECUTION"
@@ -1408,6 +1464,11 @@
       "from": "SYS:GITHUB",
       "to": "SYS:CLOUD_DATA_PLANE",
       "relation": "ORCHESTRATES_EXPLICIT_ADAPTERS_ONLY"
+    },
+    {
+      "from": "SYS:FUTURE_CANONICAL_ARCHITECTURE",
+      "to": "SYS:LOUKSNA",
+      "relation": "MUST_REVALIDATE_AGAINST"
     },
     {
       "from": "MCAP-001",
@@ -1613,7 +1674,7 @@
     },
     {
       "from": "MCAP-005",
-      "to": "CONSUMER:CROSS_PLATFORM_VIRTUAL_LAB",
+      "to": "MCAP-018",
       "relation": "SERVES_CONSUMER"
     },
     {
@@ -1799,7 +1860,7 @@
     },
     {
       "from": "MCAP-009",
-      "to": "CONSUMER:GOVERNED_TRAINING_AND_CONTINUOUS_LEARNING",
+      "to": "MCAP-059",
       "relation": "SERVES_CONSUMER"
     },
     {
@@ -1826,7 +1887,7 @@
     },
     {
       "from": "MCAP-010",
-      "to": "CONSUMER:G23_INDEPENDENT_VALIDATION_FABRIC",
+      "to": "MCAP-029",
       "relation": "SERVES_CONSUMER"
     },
     {
@@ -1865,7 +1926,7 @@
     },
     {
       "from": "MCAP-011",
-      "to": "CONSUMER:RUNNER_FLEET_AND_WORKER_SCHEDULER",
+      "to": "MCAP-021",
       "relation": "SERVES_CONSUMER"
     },
     {
@@ -2055,7 +2116,7 @@
     },
     {
       "from": "MCAP-016",
-      "to": "CONSUMER:RESOURCE_AND_EFFICIENCY_GOVERNOR",
+      "to": "MCAP-011",
       "relation": "SERVES_CONSUMER"
     },
     {
@@ -2105,7 +2166,7 @@
     },
     {
       "from": "MCAP-017",
-      "to": "CONSUMER:CAPABILITY_GRAPH",
+      "to": "MCAP-012",
       "relation": "SERVES_CONSUMER"
     },
     {
@@ -2237,7 +2298,7 @@
     },
     {
       "from": "MCAP-021",
-      "to": "CONSUMER:RESOURCE_AND_EFFICIENCY_GOVERNOR",
+      "to": "MCAP-011",
       "relation": "SERVES_CONSUMER"
     },
     {
@@ -2361,7 +2422,7 @@
     },
     {
       "from": "MCAP-024",
-      "to": "CONSUMER:G23_INDEPENDENT_VALIDATION_FABRIC",
+      "to": "MCAP-029",
       "relation": "SERVES_CONSUMER"
     },
     {
@@ -2394,7 +2455,7 @@
     },
     {
       "from": "MCAP-025",
-      "to": "CONSUMER:SOFTWARE_ENGINEERING_INTELLIGENCE",
+      "to": "MCAP-006",
       "relation": "SERVES_CONSUMER"
     },
     {
@@ -2427,7 +2488,7 @@
     },
     {
       "from": "MCAP-026",
-      "to": "CONSUMER:SOFTWARE_ENGINEERING_INTELLIGENCE",
+      "to": "MCAP-006",
       "relation": "SERVES_CONSUMER"
     },
     {
@@ -2478,12 +2539,12 @@
     },
     {
       "from": "MCAP-027",
-      "to": "CONSUMER:G23_INDEPENDENT_VALIDATION_FABRIC",
+      "to": "MCAP-029",
       "relation": "SERVES_CONSUMER"
     },
     {
       "from": "MCAP-027",
-      "to": "CONSUMER:G24_CERTIFICATION_AND_PROMOTION_GATEWAY",
+      "to": "MCAP-030",
       "relation": "SERVES_CONSUMER"
     },
     {
@@ -2523,7 +2584,7 @@
     },
     {
       "from": "MCAP-028",
-      "to": "CONSUMER:G23_INDEPENDENT_VALIDATION_FABRIC",
+      "to": "MCAP-029",
       "relation": "SERVES_CONSUMER"
     },
     {
@@ -2567,7 +2628,7 @@
     },
     {
       "from": "MCAP-029",
-      "to": "CONSUMER:G24_CERTIFICATION_AND_PROMOTION_GATEWAY",
+      "to": "MCAP-030",
       "relation": "SERVES_CONSUMER"
     },
     {
@@ -2897,7 +2958,7 @@
     },
     {
       "from": "MCAP-036",
-      "to": "CONSUMER:G23_INDEPENDENT_VALIDATION_FABRIC",
+      "to": "MCAP-029",
       "relation": "SERVES_CONSUMER"
     },
     {
@@ -3038,7 +3099,7 @@
     },
     {
       "from": "MCAP-039",
-      "to": "CONSUMER:CAPABILITY_GRAPH",
+      "to": "MCAP-012",
       "relation": "SERVES_CONSUMER"
     },
     {
@@ -3072,7 +3133,7 @@
     },
     {
       "from": "MCAP-040",
-      "to": "CONSUMER:REMOTE_CORPUS_STREAMING_FABRIC",
+      "to": "MCAP-041",
       "relation": "SERVES_CONSUMER"
     },
     {
@@ -3140,7 +3201,7 @@
     },
     {
       "from": "MCAP-041",
-      "to": "CONSUMER:DISTRIBUTED_SEMANTIC_INDEX_AND_QUERY_PLANE",
+      "to": "MCAP-043",
       "relation": "SERVES_CONSUMER"
     },
     {
@@ -3179,7 +3240,7 @@
     },
     {
       "from": "MCAP-042",
-      "to": "CONSUMER:EXTREME_SCALE_TRANSLATION_ORCHESTRATOR",
+      "to": "MCAP-044",
       "relation": "SERVES_CONSUMER"
     },
     {
@@ -3252,7 +3313,7 @@
     },
     {
       "from": "MCAP-044",
-      "to": "CONSUMER:Katya",
+      "to": "AGENT:KATYA",
       "relation": "SERVES_CONSUMER"
     },
     {
@@ -3280,7 +3341,7 @@
     },
     {
       "from": "MCAP-045",
-      "to": "CONSUMER:Katya",
+      "to": "AGENT:KATYA",
       "relation": "SERVES_CONSUMER"
     },
     {
@@ -3290,7 +3351,7 @@
     },
     {
       "from": "MCAP-045",
-      "to": "CONSUMER:G23_INDEPENDENT_VALIDATION_FABRIC",
+      "to": "MCAP-029",
       "relation": "SERVES_CONSUMER"
     },
     {
@@ -3313,7 +3374,7 @@
     },
     {
       "from": "MCAP-046",
-      "to": "CONSUMER:Katya",
+      "to": "AGENT:KATYA",
       "relation": "SERVES_CONSUMER"
     },
     {
@@ -3323,7 +3384,7 @@
     },
     {
       "from": "MCAP-046",
-      "to": "CONSUMER:EXTREME_SCALE_TRANSLATION_ORCHESTRATOR",
+      "to": "MCAP-044",
       "relation": "SERVES_CONSUMER"
     },
     {
@@ -3407,7 +3468,7 @@
     },
     {
       "from": "MCAP-048",
-      "to": "CONSUMER:ECONOMIC_THEORY_MULTI_LENS_REASONING",
+      "to": "MCAP-057",
       "relation": "SERVES_CONSUMER"
     },
     {
@@ -3452,7 +3513,7 @@
     },
     {
       "from": "MCAP-049",
-      "to": "CONSUMER:ECONOMIC_AND_MARKET_DATA_FABRIC",
+      "to": "MCAP-054",
       "relation": "SERVES_CONSUMER"
     },
     {
@@ -3515,7 +3576,7 @@
     },
     {
       "from": "MCAP-050",
-      "to": "CONSUMER:EXTREME_SCALE_TRANSLATION_ORCHESTRATOR",
+      "to": "MCAP-044",
       "relation": "SERVES_CONSUMER"
     },
     {
@@ -3560,7 +3621,7 @@
     },
     {
       "from": "MCAP-051",
-      "to": "CONSUMER:FORENSIC_EVIDENCE_CHAIN_LEDGER",
+      "to": "MCAP-027",
       "relation": "SERVES_CONSUMER"
     },
     {
@@ -3657,12 +3718,12 @@
     },
     {
       "from": "MCAP-053",
-      "to": "CONSUMER:METACOGNITIVE_SUPERVISOR",
+      "to": "MCAP-002",
       "relation": "SERVES_CONSUMER"
     },
     {
       "from": "MCAP-053",
-      "to": "CONSUMER:G23_INDEPENDENT_VALIDATION_FABRIC",
+      "to": "MCAP-029",
       "relation": "SERVES_CONSUMER"
     },
     {
@@ -3746,7 +3807,7 @@
     },
     {
       "from": "MCAP-055",
-      "to": "CONSUMER:ECONOMIC_AND_MARKET_DATA_FABRIC",
+      "to": "MCAP-054",
       "relation": "SERVES_CONSUMER"
     },
     {
@@ -3824,7 +3885,7 @@
     },
     {
       "from": "MCAP-057",
-      "to": "CONSUMER:MULTISCALE_MULTI_INTER_TRANSDISCIPLINARY_SYNTHESIS",
+      "to": "MCAP-047",
       "relation": "SERVES_CONSUMER"
     },
     {
