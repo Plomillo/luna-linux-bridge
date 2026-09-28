@@ -1,0 +1,37 @@
+{
+  "schema": "META_ECOSYSTEM_VALIDITY_POLICY/1.0",
+  "artifact_id": "META_ECOSYSTEM_CONTROL_PLANE_V1",
+  "authority": "Louksna.md",
+  "monitored_properties": [
+    "candidate_digest",
+    "Louksna_sha256",
+    "CUSTOSZ_V7_sha256",
+    "Runtime_sha256",
+    "MetaOS_sha256",
+    "CAPABILITIES_manifest_sha256",
+    "CUSTOSZ72_census_sha256",
+    "dedup_evidence_sha256",
+    "runtime_adapter_sha256",
+    "source_class_binding",
+    "graph_integrity",
+    "workflow_validator_sha256"
+  ],
+  "invalidation_events": [
+    "any candidate file hash changes",
+    "Louksna authority hash changes",
+    "CUSTOSZ/Runtime/MetaOS identity changes",
+    "MCAP count/identity/boundary changes",
+    "CUSTOSZ census changes",
+    "dedup mapping or Family9 decision changes",
+    "adapter or routing policy changes",
+    "G23/G24 validator changes",
+    "critical security finding invalidates an accepted claim"
+  ],
+  "on_invalidation": "SUSPEND affected assurance status; recompute impact graph; rerun affected validation; invoke G23/G24 again when required.",
+  "monitoring_profile": {
+    "event_driven": true,
+    "periodic_watch": "Louksna Lab Watch",
+    "stale_state": "HOLD",
+    "automatic_certification_propagation": false
+  }
+}
