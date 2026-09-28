@@ -1,0 +1,52 @@
+name: "Metacognitive Assurance Trust Root — selftest"
+
+on:
+  push:
+    branches:
+      - staging/metacognitive-assurance-trust-root-20260928
+      - staging/custosz-mission-mailbox-20260928
+    paths:
+      - scripts/assurance/**
+      - .github/workflows/metacognitive-independent-assurance.yml
+      - .github/workflows/metacognitive-assurance-trust-root-selftest.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  selftest:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            scripts/assurance
+            .github/workflows/metacognitive-independent-assurance.yml
+          sparse-checkout-cone-mode: false
+      - name: Compile trust root and enforce security invariants
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -m py_compile scripts/assurance/metacognitive_trust_root.py
+          python3 - <<'PY'
+          from pathlib import Path
+          w=Path(".github/workflows/metacognitive-independent-assurance.yml").read_text()
+          required=[
+            "pull_request_target:",
+            "contents: read",
+            "actions: read",
+            "id-token: write",
+            "candidate_code_executed",
+            "repair_allowed",
+            "metacognitive-independent-g23",
+            "metacognitive-independent-g24",
+            "GITHUB_OIDC_JWT_SHA256"
+          ]
+          missing=[x for x in required if x not in w]
+          assert not missing,missing
+          assert "actions/checkout@" in w and "persist-credentials: false" in w
+          print("TRUST_ROOT_SELFTEST=PASS")
+          PY
