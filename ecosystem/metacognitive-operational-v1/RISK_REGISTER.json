@@ -1,0 +1,93 @@
+{
+  "schema": "META_ECOSYSTEM_RISK_REGISTER/1.0",
+  "artifact_id": "META_ECOSYSTEM_CONTROL_PLANE_V1",
+  "authority": "Louksna.md",
+  "risks": [
+    {
+      "id": "RISK-001",
+      "category": "AUTHORITY",
+      "risk": "Subordinate tooling silently mutates canonical identity.",
+      "severity": "CRITICAL",
+      "control": "canonical_mutation=false; authority_transfer=false; Louksna hash pinned; fail closed",
+      "residual": "LOW_IF_CONTROLS_HOLD"
+    },
+    {
+      "id": "RISK-002",
+      "category": "DUPLICATION",
+      "risk": "MCAP duplicates a CUSTOSZ/Runtime function.",
+      "severity": "HIGH",
+      "control": "exact CUSTOSZ72 census + Family9 mapping + bind/extend-before-create",
+      "residual": "LOW_FOR_DECLARED_59_MAPPING"
+    },
+    {
+      "id": "RISK-003",
+      "category": "COMPUTE",
+      "risk": "Massive corpus/model/translation workload overloads user host.",
+      "severity": "HIGH",
+      "control": "heavy_compute cloud-only; auxiliary runner bounded",
+      "residual": "LOW_FOR_CONTROL_PLANE"
+    },
+    {
+      "id": "RISK-004",
+      "category": "SUPPLY_CHAIN",
+      "risk": "Mutable workflow/action dependency changes validation behavior.",
+      "severity": "HIGH",
+      "control": "SHA-pin third-party actions and hash candidate inputs",
+      "residual": "MEDIUM_UNTIL_FULL_DEPENDENCY_AUDIT"
+    },
+    {
+      "id": "RISK-005",
+      "category": "INDEPENDENCE",
+      "risk": "Producer is effectively sole G23 evaluator.",
+      "severity": "CRITICAL",
+      "control": "fresh read-only G23 + separate G24 + external second evaluator required",
+      "residual": "OPEN_BLOCKER"
+    },
+    {
+      "id": "RISK-006",
+      "category": "SECRETS",
+      "risk": "Long-lived provider secrets leak through repo/artifacts/logs.",
+      "severity": "HIGH",
+      "control": "no secrets in candidate; least privilege; explicit provider adapters; OIDC when available",
+      "residual": "MEDIUM_UNTIL_PROVIDER_LANES"
+    },
+    {
+      "id": "RISK-007",
+      "category": "DATA_RIGHTS",
+      "risk": "Massive corpus is processed without permitted rights.",
+      "severity": "HIGH",
+      "control": "data-rights gate before remote corpus streaming",
+      "residual": "NOT_APPLICABLE_UNTIL_CORPUS_LANE"
+    },
+    {
+      "id": "RISK-008",
+      "category": "REALTIME_DATA",
+      "risk": "Stale market data is presented as live.",
+      "severity": "HIGH",
+      "control": "source identity + event time + observed time + freshness/staleness state",
+      "residual": "NOT_APPLICABLE_UNTIL_MARKET_LANE"
+    },
+    {
+      "id": "RISK-009",
+      "category": "TRANSLATION",
+      "risk": "Parallel translation silently loses/reorders semantic units.",
+      "severity": "HIGH",
+      "control": "stable segment identity, source hashes, XLIFF-compatible mapping, global QA",
+      "residual": "NOT_APPLICABLE_UNTIL_TRANSLATION_LANE"
+    },
+    {
+      "id": "RISK-010",
+      "category": "CERTIFICATION",
+      "risk": "Workflow green is misreported as G23/G24 certification.",
+      "severity": "CRITICAL",
+      "control": "distinct semantic records; explicit NOT_PERFORMED/HOLD; same-digest chain",
+      "residual": "LOW_IF_FAIL_CLOSED"
+    }
+  ],
+  "deny_if": [
+    "RISK-005 remains OPEN for a claimed G23 PASS",
+    "candidate digest changes after G23",
+    "critical unresolved risk is hidden",
+    "external lane is claimed operational without material evidence"
+  ]
+}
