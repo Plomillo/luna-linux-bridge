@@ -19,5 +19,15 @@
     "certifier_commit": "888a8274dcf09647dbf166742bb8f40a40fbdcf3",
     "artifact_id": 10987123425,
     "artifact_zip_sha256": "788a08dfe98b776a44f91bef457528b503b65d290112a1572bd04a1db8194638"
+  },
+  "base_trust_root": {
+    "staging_merge_commit": "310c3e169ce431dfa3af18eef4341bc71a8dbed7",
+    "resolver_mode_required": "CONTENT_ADDRESSED_RELEASE",
+    "resolver_path": "scripts/assurance/resolve_metacognitive_producer.py",
+    "validator_path": "scripts/assurance/metacognitive_trust_root.py",
+    "selftest_run_id": 36465187990,
+    "selftest_status": "PASS",
+    "candidate_mutation": false,
+    "certification_propagation": false
   }
 }
