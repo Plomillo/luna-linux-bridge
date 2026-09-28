@@ -3,10 +3,10 @@
 import argparse,hashlib,json
 from datetime import datetime,timezone
 from pathlib import Path
-MISSION_SHA256="aab2a74f026bab167a9f4b65b429f11cb85738bc67eee45b59b1a97a6cfc8d2f"
+MISSION_SHA256="db0b882d55ca6d4b62639cd451f0795c6f2e245732b631001816a8a937401983"
 MISSION_PATH="missions/inbox/server-ready-terminal-10m-20260928/MISSION_ORIGINAL.md"
 CONTRACT_PATH="server/terminal-chain/SERVER_READY_TERMINAL_10M_CONTRACT.json"
-CONTRACT_SHA256="2359657fef1441939d28f22728f27b1d91c22f37908b1ddf062e6d9dfb1d0a38"
+CONTRACT_SHA256="018f71a2de595076b02c290d563b4a27df8725b8dab35cbbf389762d9fde9904"
 EXPECTED={"authority":"5270c3d643339c283edf13b414f335f23f921c4dac023b06d38de62927e29bf9","custosz":"dacf1f8c13b2fcbfc617cf0d4d780b30502c13395224691e6b0f05f53d9816a2","runtime":"a79e13869601d68fe801b85ad421719b79d4afa5520ae34b91b419bd8834ae67","metaos":"5d8f1239e3a0b452be722078760b000afc22af0a64f93ffb0a1f74024f15aed0"}
 def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
 def utc():return datetime.now(timezone.utc).isoformat()

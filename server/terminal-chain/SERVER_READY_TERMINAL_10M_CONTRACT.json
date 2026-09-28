@@ -3,7 +3,7 @@
   "contract_id": "SR_TERMINAL_10M_G08_G09_G23_G24_V1",
   "authority": "Louksna.md",
   "mission_source": "missions/inbox/server-ready-terminal-10m-20260928/MISSION_ORIGINAL.md",
-  "mission_sha256": "aab2a74f026bab167a9f4b65b429f11cb85738bc67eee45b59b1a97a6cfc8d2f",
+  "mission_sha256": "db0b882d55ca6d4b62639cd451f0795c6f2e245732b631001816a8a937401983",
   "mail_id": "MAIL-8191840DEBD98F8775E5",
   "governor": "MetaOS",
   "worker": "CUSTOSZ_V7",

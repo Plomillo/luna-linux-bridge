@@ -57,9 +57,9 @@
     {
       "adapter_id": "SERVER_READY_TERMINAL_10M_V1",
       "path": "scripts/mission_mailbox/adapters/server_ready_terminal_10m.py",
-      "sha256": "c6eecdbf7c67e9943054361758a3fc22d14f70c69e17a8015112e96aa9776f30",
+      "sha256": "962853a045c447c1e369f1408c5bec0328f4c6b731d15a144ced153712629130",
       "backend": "CUSTOSZ_RUNTIME",
-      "source_sha256": "aab2a74f026bab167a9f4b65b429f11cb85738bc67eee45b59b1a97a6cfc8d2f",
+      "source_sha256": "db0b882d55ca6d4b62639cd451f0795c6f2e245732b631001816a8a937401983",
       "mission_classes": [
         "FINAL_SERVER_READY_CLOSURE_10M"
       ],
@@ -70,7 +70,7 @@
       "scope": "SERVER_READY_TERMINAL_10M_G08_G09_G23_G24",
       "status": "ACTIVE_PINNED",
       "terminal_contract_path": "server/terminal-chain/SERVER_READY_TERMINAL_10M_CONTRACT.json",
-      "terminal_contract_sha256": "2359657fef1441939d28f22728f27b1d91c22f37908b1ddf062e6d9dfb1d0a38",
+      "terminal_contract_sha256": "018f71a2de595076b02c290d563b4a27df8725b8dab35cbbf389762d9fde9904",
       "hard_ceiling_seconds": 600
     }
   ]
