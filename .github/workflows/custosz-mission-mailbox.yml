@@ -37,6 +37,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           python3 -m py_compile scripts/mission_mailbox/*.py scripts/mission_mailbox/adapters/*.py
+          python3 -B -I scripts/mission_mailbox/test_router_policy.py
           sha256sum scripts/mission_mailbox/adapters/*.py || true
           python3 - <<'PY'
           import json
@@ -105,6 +106,7 @@ jobs:
         env:
           COMPILED: ${{ runner.temp }}/mailbox-compiled
           RESULTS: ${{ runner.temp }}/mailbox-results
+          ROUTE_EXECUTION_LOCATION: SELF_HOSTED_LUNA_AUX
         run: |
           set -Eeuo pipefail
           mkdir -p "$RESULTS"

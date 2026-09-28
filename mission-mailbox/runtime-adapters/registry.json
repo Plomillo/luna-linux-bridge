@@ -6,7 +6,17 @@
     "require_sha256_pin": true,
     "require_runtime_selftest": true,
     "require_executor_bound": true,
-    "allowed_root": "scripts/mission_mailbox/adapters"
+    "allowed_root": "scripts/mission_mailbox/adapters",
+    "require_source_sha256": true,
+    "require_mission_class": true,
+    "allowed_statuses": [
+      "ACTIVE_PINNED",
+      "STAGED_CANDIDATE"
+    ],
+    "allowed_execution_locations": [
+      "GITHUB_HOSTED_ONLY",
+      "SELF_HOSTED_LUNA_AUX"
+    ]
   },
   "adapters": [
     {
@@ -19,7 +29,11 @@
       "provides_executor_binding": true,
       "execution_location": "GITHUB_HOSTED_ONLY",
       "scope": "SERVER_READY_TEST_ONLY",
-      "status": "STAGED_CANDIDATE"
+      "status": "STAGED_CANDIDATE",
+      "mission_classes": [
+        "FORENSIC_OPERATIONAL_SERVER_HARDENING"
+      ],
+      "requires_prebound_executor": false
     }
   ]
 }

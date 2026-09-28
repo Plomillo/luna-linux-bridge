@@ -83,33 +83,84 @@ def capability_inventory(status):
         "reason": None if found else "NO_CAPABILITY_LIST_IN_STATUS",
     }
 
-def adapter_match(registry, native, root):
+def mission_directive(native, key):
+    entries = native.get("mission_payload", {}).get("directives_observed", {}).get(key, [])
+    if not entries:
+        return None
+    value = entries[0].get("value")
+    return str(value).strip() if value is not None else None
+
+def adapter_match(registry, native, root, executor_bound, route_location):
     required = set(native["mission_payload"].get("required_capabilities_explicit", []))
     hints = set(native["mission_payload"].get("routing_hints", {}).get("values", []))
-    allowed_root = (root / registry["policy"]["allowed_root"]).resolve()
+    source_sha256 = native["source"]["sha256"]
+    mission_class = mission_directive(native, "MISSION_CLASS")
+    policy = registry.get("policy", {})
+    allowed_root = (root / policy["allowed_root"]).resolve()
+    allowed_statuses = set(policy.get("allowed_statuses", []))
+    allowed_locations = set(policy.get("allowed_execution_locations", []))
     matches = []
     rejected = []
+
     for adapter in registry.get("adapters", []):
         path = (root / adapter.get("path", "")).resolve()
         reasons = []
+
         if allowed_root not in path.parents:
             reasons.append("PATH_OUTSIDE_ALLOWED_ROOT")
         if not path.is_file():
             reasons.append("FILE_MISSING")
         elif sha(path) != adapter.get("sha256"):
             reasons.append("SHA256_MISMATCH")
+
+        if policy.get("require_source_sha256", False):
+            declared_source = adapter.get("source_sha256")
+            if not declared_source:
+                reasons.append("SOURCE_SHA256_MISSING")
+            elif declared_source != source_sha256:
+                reasons.append("SOURCE_SHA256_MISMATCH")
+
+        adapter_classes = set(adapter.get("mission_classes", []))
+        if policy.get("require_mission_class", False):
+            if not mission_class:
+                reasons.append("MISSION_CLASS_MISSING")
+            elif mission_class not in adapter_classes:
+                reasons.append("MISSION_CLASS_MISMATCH")
+        elif adapter_classes and mission_class not in adapter_classes:
+            reasons.append("MISSION_CLASS_MISMATCH")
+
+        status = adapter.get("status")
+        if allowed_statuses and status not in allowed_statuses:
+            reasons.append("STATUS_NOT_EXECUTABLE")
+
+        execution_location = adapter.get("execution_location")
+        if allowed_locations and execution_location not in allowed_locations:
+            reasons.append("EXECUTION_LOCATION_NOT_ALLOWED")
+        if execution_location and route_location and execution_location != route_location:
+            reasons.append("EXECUTION_LOCATION_MISMATCH")
+
+        if adapter.get("requires_prebound_executor", False) and not executor_bound:
+            reasons.append("PREBOUND_EXECUTOR_REQUIRED")
+        if not executor_bound and not adapter.get("provides_executor_binding", False):
+            reasons.append("EXECUTOR_UNBOUND_AND_ADAPTER_CANNOT_BIND")
+
         adapter_caps = set(adapter.get("required_capabilities", []))
         if not adapter_caps.issubset(required):
             reasons.append("CAPABILITY_MISMATCH")
+
         backend = adapter.get("backend")
         if backend and hints and backend not in hints:
             reasons.append("BACKEND_MISMATCH")
+
+        if not adapter.get("scope"):
+            reasons.append("SCOPE_MISSING")
+
         if reasons:
-            rejected.append({"adapter_id": adapter.get("adapter_id"), "reasons": reasons})
+            rejected.append({"adapter_id": adapter.get("adapter_id"), "reasons": sorted(set(reasons))})
         else:
             matches.append(adapter)
-    return matches, rejected
 
+    return matches, rejected
 def write_error(out, native, blocker, gate, observed, remediation, evidence):
     mission_id = native.get("declared_mission_id") or "UNDECLARED"
     mail_id = native["mail_id"]
@@ -270,24 +321,32 @@ def main():
             runtime_selftest = {"status": "FAIL", "exception": type(exc).__name__, "message": str(exc)[:2000]}
 
     runtime_ok = runtime_selftest.get("status") == "PASS"
-    matches, rejected = adapter_match(registry, native, root) if executor_bound and runtime_ok else ([], [])
+    route_location = os.environ.get("ROUTE_EXECUTION_LOCATION", "UNKNOWN")
+    matches, rejected = (
+        adapter_match(registry, native, root, executor_bound, route_location)
+        if runtime_ok else ([], [])
+    )
     adapter = matches[0] if len(matches) == 1 else None
+    adapter_provides_binding = bool(adapter and adapter.get("provides_executor_binding", False))
 
     if not runtime_ok:
         blocker = "CUSTOSZ_RUNTIME_SELFTEST_FAILED"
         gate = "RUNTIME_COMPATIBILITY"
         observed = "Runtime selftest != PASS"
         remediation = "Repair the staged Runtime through the governed provenance chain and rerun."
-    elif not executor_bound:
-        blocker = "CUSTOSZ_EXECUTOR_UNBOUND"
-        gate = "EXECUTOR_BINDING"
-        observed = "executor_reported=" + str(executor)
-        remediation = "Bind a governed executor in CUSTOSZ/Runtime for this mission class; do not substitute Desktop or an implicit shell."
     elif adapter is None:
         blocker = "NO_UNIQUE_PINNED_RUNTIME_ADAPTER"
         gate = "RUNTIME_ADAPTER"
-        observed = "matching_adapters=" + str(len(matches))
-        remediation = "Add one reviewed SHA-256-pinned adapter under scripts/mission_mailbox/adapters and register it without changing the source mission."
+        observed = (
+            "executor_bound=" + str(executor_bound) +
+            "; matching_adapters=" + str(len(matches)) +
+            "; rejected_adapters=" + str(len(rejected))
+        )
+        remediation = (
+            "Register exactly one reviewed SHA-256-pinned adapter for this source SHA-256, "
+            "mission class, scope and execution location. If the executor is initially unbound, "
+            "the adapter must explicitly declare provides_executor_binding=true."
+        )
     else:
         blocker = None
         gate = None
@@ -300,6 +359,8 @@ def main():
         "result": "PASS" if blocker is None else "HOLD",
         "runtime_selftest": runtime_selftest,
         "executor_bound": executor_bound,
+        "adapter_provides_binding": adapter_provides_binding,
+        "route_execution_location": route_location,
         "adapter_selected": adapter,
         "adapter_rejections": rejected,
         "root_blocker": blocker,
@@ -357,22 +418,34 @@ def main():
         write_error(out, native, blocker, gate, observed, remediation, "ROUTING_DECISION.json + RUNTIME_COMPATIBILITY.json")
         return 0
 
+    binding_mode = "PREBOUND" if executor_bound else "ADAPTER_PROVIDED_PENDING"
     plan = {
-        "schema": "CUSTOSZ_EXECUTION_PLAN/1.0",
+        "schema": "CUSTOSZ_EXECUTION_PLAN/1.1",
         "mail_id": native["mail_id"],
         "custosz_mission_id": mission["mission_id"],
         "adapter": adapter,
+        "binding_mode": binding_mode,
+        "observed_executor_bound": executor_bound,
         "status": "ROUTED_READY_NOT_YET_EXECUTED",
-        "rule": "Material execution must occur only through the pinned Runtime adapter and produce terminal evidence.",
+        "rule": (
+            "Material execution must occur only through the pinned Runtime adapter and produce terminal evidence. "
+            "Selecting a binding-providing adapter does not itself prove EXECUTOR_BINDING=PASS."
+        ),
     }
     atomic_json(out / "EXECUTION_PLAN.json", plan)
     history.append({"utc": utc(), "state": "RUNTIME_COMPATIBLE"})
-    history.append({"utc": utc(), "state": "EXECUTOR_BOUND"})
+    history.append({"utc": utc(), "state": "ADAPTER_SELECTED", "adapter_id": adapter.get("adapter_id")})
+    if executor_bound:
+        history.append({"utc": utc(), "state": "EXECUTOR_BOUND"})
+        current_state = "EXECUTOR_BOUND"
+    else:
+        history.append({"utc": utc(), "state": "BINDING_PROVIDER_SELECTED", "adapter_id": adapter.get("adapter_id")})
+        current_state = "BINDING_PROVIDER_SELECTED"
     final_state = {
         **prior_state,
         "workflow_technical_status": "PASS",
         "mission_terminal_status": None,
-        "current_state": "EXECUTOR_BOUND",
+        "current_state": current_state,
         "current_gate": "MATERIAL_EXECUTION",
         "root_blocker": None,
         "history": history,
