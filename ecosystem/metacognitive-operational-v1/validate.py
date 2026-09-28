@@ -40,16 +40,17 @@ def main() -> None:
     sha=hashlib.sha256(raw).hexdigest()
     result={
       "status":"PASS",
-      "scope":"STRUCTURAL_PRE_G23_VALIDATION_ONLY",
+      "scope":"STRUCTURAL_MANIFEST_VALIDATION_ONLY",
       "capability_count":len(caps),
       "manifest_sha256":sha,
       "canonical_mutation":False,
       "authority_transfer":False,
       "training_last":True,
-      "custosz72_exact_diff":"PENDING",
-      "g16_non_duplication":"HOLD",
-      "g23":"NOT_PERFORMED",
-      "g24":"NOT_PERFORMED"
+      "custosz72_exact_diff":"OUT_OF_SCOPE_FOR_THIS_VALIDATOR",
+      "g16_non_duplication":"OUT_OF_SCOPE_FOR_THIS_VALIDATOR",
+      "g23":"OUT_OF_SCOPE_FOR_THIS_VALIDATOR",
+      "g24":"OUT_OF_SCOPE_FOR_THIS_VALIDATOR",
+      "certification_state_source":"BASE_CONTROLLED_INDEPENDENT_ASSURANCE_WORKFLOW_AND_PERSISTED_CERTIFICATION_RECORD"
     }
     print(json.dumps(result, ensure_ascii=False, sort_keys=True))
     if args.out:
@@ -59,8 +60,10 @@ def main() -> None:
         (out/"README_VALIDATION.md").write_text(
             "# Metacognitive Ecosystem Validation\n\n"
             f"- Structural validation: **PASS**\n- Capability count: **{len(caps)}**\n"
-            f"- Manifest SHA-256: `{sha}`\n- CUSTOSZ 72 exact diff: **PENDING**\n"
-            "- G16 non-duplication: **HOLD**\n- G23: **NOT PERFORMED**\n- G24: **NOT PERFORMED**\n"
-            "\nThis PASS is not certification.\n", encoding="utf-8")
+            f"- Manifest SHA-256: `{sha}`\n"
+            "- CUSTOSZ72 / G16: **OUT OF SCOPE FOR THIS STRUCTURAL VALIDATOR**\n"
+            "- G23 / G24: **OUT OF SCOPE FOR THIS STRUCTURAL VALIDATOR**\n"
+            "- Certification state source: **base-controlled independent assurance workflow + persisted certification record**\n"
+            "\nThis structural PASS neither grants nor revokes certification.\n", encoding="utf-8")
 if __name__=="__main__":
     main()
