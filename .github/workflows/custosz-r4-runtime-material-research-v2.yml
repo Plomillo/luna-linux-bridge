@@ -5,6 +5,9 @@ on:
       - staging/custosz-v7-metaos-20260927
     paths:
       - .github/workflows/custosz-r4-runtime-material-research-v2.yml
+      - scripts/missions/custosz_r4_executor_readonly.py
+      - scripts/missions/custosz_r4_runtime_material_dispatch.py
+      - scripts/missions/publish_custosz_runtime_result.py
 
 permissions:
   contents: write
