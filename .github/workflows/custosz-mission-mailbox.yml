@@ -90,11 +90,10 @@ jobs:
           fetch-depth: 1
           sparse-checkout: |
             artifacts/custosz-v7
+            ecosystem/metacognitive-operational-v1/CUSTOSZ72_CENSUS.json
             Louksna.md
-            ecosystem/metacognitive-operational-v1
             mission-mailbox
             scripts/mission_mailbox
-            scripts/metacognitive
           sparse-checkout-cone-mode: false
 
       - name: Recover native envelopes
@@ -148,7 +147,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           shopt -s nullglob
-          for f in "$RESULTS"/*/README_ERROR.md "$RESULTS"/*/README_FINAL.md "$RESULTS"/*/CAPABILITY_SUGGESTIONS.md "$RESULTS"/*/MISSION_STATE.json "$RESULTS"/*/ROUTING_DECISION.json "$RESULTS"/*/RUNTIME_COMPATIBILITY.json; do
+          for f in "$RESULTS"/*/README_ERROR.md "$RESULTS"/*/README_FINAL.md "$RESULTS"/*/CAPABILITY_SUGGESTIONS.md "$RESULTS"/*/MISSION_STATE.json "$RESULTS"/*/ROUTING_DECISION.json "$RESULTS"/*/MISSION_CLASS_RESOLUTION.json "$RESULTS"/*/CUSTOSZ_CAPABILITY_INVENTORY.json "$RESULTS"/*/RUNTIME_COMPATIBILITY.json "$RESULTS"/*/EXECUTION_PLAN.json; do
             echo "===== $f ====="
             cat "$f"
             echo "" >> "$GITHUB_STEP_SUMMARY"
