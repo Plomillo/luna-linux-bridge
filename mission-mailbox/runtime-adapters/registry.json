@@ -108,6 +108,24 @@
       "status": "ACTIVE_PINNED",
       "hard_ceiling_seconds": 3600,
       "dedicated_workflow": ".github/workflows/symphylax-final-guaranteed-certification-60m.yml"
+    },
+    {
+      "adapter_id": "SYMPHYLAX_FINAL_REMEDIATION_6M_V1",
+      "path": "scripts/mission_mailbox/adapters/symphylax_final_remediation_6m.py",
+      "sha256": "1cfcb167c2627519173c361a97097a275d7f205fd3000f92a46959ff4122fe86",
+      "backend": "CUSTOSZ_RUNTIME",
+      "source_sha256": "e6e3a3bdbef7967d89cbc9e538469add01334e6e593ee2d1b93b72cbd32684dd",
+      "mission_classes": [
+        "SYMPHYLAX_FINAL_REMEDIATION_CERTIFICATION_6M"
+      ],
+      "required_capabilities": [],
+      "provides_executor_binding": true,
+      "requires_prebound_executor": false,
+      "execution_location": "SELF_HOSTED_LUNA_AUX",
+      "scope": "SYMPHYLAX_FINAL_REMEDIATION_G08_G09_PUAC2_G23_G24",
+      "status": "ACTIVE_PINNED",
+      "hard_ceiling_seconds": 360,
+      "dedicated_workflow": ".github/workflows/symphylax-final-remediation-certification-6m.yml"
     }
   ]
 }
