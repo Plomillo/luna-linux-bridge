@@ -1,0 +1,60 @@
+name: "Certified Metacognitive Release Integrity"
+
+on:
+  push:
+    branches:
+      - release/metacognitive-v1-b91d-certified-20260928
+      - staging/custosz-mission-mailbox-20260928
+    paths:
+      - ecosystem/metacognitive-operational-v1/CERTIFIED_RELEASE_RECORD.json
+      - ecosystem/metacognitive-operational-v1/CERTIFICATION_REFERENCES.json
+      - ecosystem/metacognitive-operational-v1/MONITORING_BINDING.json
+      - ecosystem/metacognitive-operational-v1/README_FINAL.md
+      - .github/workflows/metacognitive-certified-release-integrity.yml
+  pull_request:
+    paths:
+      - ecosystem/metacognitive-operational-v1/CERTIFIED_RELEASE_RECORD.json
+      - ecosystem/metacognitive-operational-v1/CERTIFICATION_REFERENCES.json
+      - ecosystem/metacognitive-operational-v1/MONITORING_BINDING.json
+      - ecosystem/metacognitive-operational-v1/README_FINAL.md
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            ecosystem/metacognitive-operational-v1/CERTIFIED_RELEASE_RECORD.json
+            ecosystem/metacognitive-operational-v1/CERTIFICATION_REFERENCES.json
+            ecosystem/metacognitive-operational-v1/MONITORING_BINDING.json
+          sparse-checkout-cone-mode: false
+      - name: Verify content-addressed release invariants
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import json
+          root="ecosystem/metacognitive-operational-v1"
+          r=json.load(open(f"{root}/CERTIFIED_RELEASE_RECORD.json",encoding="utf-8"))
+          e=json.load(open(f"{root}/CERTIFICATION_REFERENCES.json",encoding="utf-8"))
+          m=json.load(open(f"{root}/MONITORING_BINDING.json",encoding="utf-8"))
+          D="b91d04bf79cd98eda846a8d0435f20323013f7ef647d9b288ab4cf29dcc35240"
+          assert r["operational_status"]=="CERTIFIED_ACTIVE_IN_SCOPE",r
+          assert r["candidate_digest_sha256"]==D,r
+          assert r["puac2"]["status"]=="PASS",r
+          assert all(v=="PASS" for v in r["puac2"]["controls"].values()),r
+          assert r["g23"]["status"]=="PASS" and r["g24"]["status"]=="PASS",r
+          assert r["g24"]["authority_authenticated"] is True,r
+          assert r["invariants"]["canonical_mutation"] is False,r
+          assert r["invariants"]["certification_propagation"] is False,r
+          assert e["candidate"]["digest_sha256"]==D,e
+          assert m["candidate_digest_sha256"]==D,m
+          assert m["automatic_certification_propagation"] is False,m
+          print("CERTIFIED_RELEASE_INTEGRITY=PASS")
+          PY
