@@ -1,24 +1,11 @@
-name: "Metacognitive Ecosystem R4 — cloud materialization G23 G24"
+name: "SUPERSEDED — Metacognitive Ecosystem R4 legacy cloud G23 G24"
 
 on:
-  push:
-    branches:
-      - staging/metacognitive-ecosystem-v1-r4-cloud-cert-20260928
-      - staging/custosz-mission-mailbox-20260928
-    paths:
-      - ecosystem/metacognitive-operational-v1/**
-      - scripts/metacognitive/**
-      - scripts/mission_mailbox/**
-      - mission-mailbox/**
-      - .github/workflows/metacognitive-ecosystem-r4-cloud-cert.yml
-  pull_request:
-    paths:
-      - ecosystem/metacognitive-operational-v1/**
-      - scripts/metacognitive/**
-      - scripts/mission_mailbox/**
-      - mission-mailbox/**
-      - .github/workflows/metacognitive-ecosystem-r4-cloud-cert.yml
   workflow_dispatch:
+
+# SUPERSEDED_BY: .github/workflows/metacognitive-ecosystem-r4-cloud.yml
+# STATUS: AUDIT_HISTORY_ONLY
+# Automatic execution disabled to prevent duplicate R4 materialization/certification pipelines.
 
 permissions:
   contents: read
