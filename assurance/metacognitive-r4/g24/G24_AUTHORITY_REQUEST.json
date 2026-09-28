@@ -1,0 +1,32 @@
+{
+  "schema": "G24_AUTHORITY_REQUEST/1.0",
+  "mission_id": "MIS-META-ECO-20260928-V1",
+  "authority": "Louksna.md",
+  "candidate_digest_sha256": "3cf52cc4d6d114c2f201bf1f835217e605538987aa7b2f1d792b13d24a349bf4",
+  "prerequisite": {
+    "puac2_c25_c32": "PASS_REQUIRED",
+    "g23": "PASS_REQUIRED",
+    "same_digest": true,
+    "current_g23": "NOT_PERFORMED_C27_HOLD"
+  },
+  "required_authority_evidence": {
+    "schema": "G24_AUTHORITY_EVIDENCE/1.0",
+    "status": "PASS",
+    "authority_authenticated": true,
+    "authority_id": "REQUIRED",
+    "candidate_digest_sha256": "3cf52cc4d6d114c2f201bf1f835217e605538987aa7b2f1d792b13d24a349bf4",
+    "decision": "APPROVE_OR_DENY",
+    "signature_reference": "REQUIRED",
+    "decision_timestamp_utc": "REQUIRED",
+    "scope": "METACOGNITIVE_OPERATIONAL_ECOSYSTEM_V1_CONTROL_PLANE_AND_CLOUD_EXECUTION_FRAMEWORK"
+  },
+  "prohibitions": [
+    "Do not create G24 authority evidence before favorable G23 on the exact digest.",
+    "Do not accept unsigned or unauthenticated approval.",
+    "Do not change candidate bytes after G23.",
+    "Do not propagate certification to future candidate digests.",
+    "Do not treat GitHub workflow success as G24."
+  ],
+  "state": "DORMANT_UNTIL_G23_PASS",
+  "certification": false
+}
