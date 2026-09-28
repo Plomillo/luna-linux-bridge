@@ -72,7 +72,19 @@
       "classification": "EXISTING_PROFILE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "composable",
+      "family9_action": "COMPOSE_VIA_CONTRACT",
+      "existing_capabilities": [
+        "logic.formal",
+        "invariants.engine",
+        "composition.engine"
+      ],
+      "runtime_components": [
+        "CognitivePlane",
+        "GovernanceKernel"
+      ],
+      "dedup_rationale": "Cognitive kernel is a composition contract over existing cognitive/formal/governance primitives; no second kernel implementation."
     },
     {
       "id": "MCAP-002",
@@ -83,7 +95,19 @@
       "classification": "EXISTING_PROFILE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "composable",
+      "family9_action": "COMPOSE_VIA_CONTRACT",
+      "existing_capabilities": [
+        "epistemic.failure_detection",
+        "gap.evolution",
+        "validation.adversarial"
+      ],
+      "runtime_components": [
+        "MetacognitivePlane",
+        "ValidationPipeline"
+      ],
+      "dedup_rationale": "Second-order supervision composes existing metacognitive, epistemic-failure and validation primitives."
     },
     {
       "id": "MCAP-003",
@@ -94,7 +118,19 @@
       "classification": "EXISTING_PROFILE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "composable",
+      "family9_action": "COMPOSE_VIA_CONTRACT",
+      "existing_capabilities": [
+        "assurance.fabric",
+        "epistemic.failure_detection",
+        "evidence.completeness",
+        "evidence.graph"
+      ],
+      "runtime_components": [
+        "ValidationPipeline"
+      ],
+      "dedup_rationale": "Typed epistemic control is composed from the existing assurance/evidence family rather than duplicated."
     },
     {
       "id": "MCAP-004",
@@ -105,7 +141,19 @@
       "classification": "EXISTING_PROFILE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "composable",
+      "family9_action": "COMPOSE_VIA_CONTRACT",
+      "existing_capabilities": [
+        "composition.engine",
+        "placement.engine",
+        "io.query_plan"
+      ],
+      "runtime_components": [
+        "MissionController",
+        "CognitivePlane"
+      ],
+      "dedup_rationale": "Reasoning orchestration reuses mission control plus composition/placement/query planning."
     },
     {
       "id": "MCAP-005",
@@ -116,7 +164,15 @@
       "classification": "EXISTING_PROFILE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "partial",
+      "family9_action": "EXTEND_OWNER_FAMILY",
+      "existing_capabilities": [
+        "systems.intelligence",
+        "technology.synthesis"
+      ],
+      "runtime_components": [],
+      "dedup_rationale": "Systems intelligence exists; cross-platform operational execution lanes and concrete OS tooling extend its owner family."
     },
     {
       "id": "MCAP-006",
@@ -127,7 +183,16 @@
       "classification": "EXISTING_PROFILE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "partial",
+      "family9_action": "EXTEND_OWNER_FAMILY",
+      "existing_capabilities": [
+        "languages.intelligence",
+        "optimization.intelligence",
+        "technology.synthesis"
+      ],
+      "runtime_components": [],
+      "dedup_rationale": "Software intelligence primitives exist; Git/CI/CD-specific material adapters remain an extension."
     },
     {
       "id": "MCAP-007",
@@ -138,7 +203,20 @@
       "classification": "EXISTING_PROFILE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "composable",
+      "family9_action": "COMPOSE_VIA_CONTRACT",
+      "existing_capabilities": [
+        "errors.taxonomy",
+        "epistemic.failure_detection",
+        "benchmark.gap",
+        "memory.failure"
+      ],
+      "runtime_components": [
+        "FailureController",
+        "ValidationPipeline"
+      ],
+      "dedup_rationale": "Root-cause workflow composes failure taxonomy, failure memory and evidence-driven diagnosis."
     },
     {
       "id": "MCAP-008",
@@ -149,7 +227,22 @@
       "classification": "EXISTING_PROFILE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "composable",
+      "family9_action": "COMPOSE_VIA_CONTRACT",
+      "existing_capabilities": [
+        "memory.governed",
+        "memory.versioned",
+        "memory.currentness",
+        "memory.state",
+        "memory.decision",
+        "memory.evidence"
+      ],
+      "runtime_components": [
+        "CheckpointStore",
+        "EvidenceJournal"
+      ],
+      "dedup_rationale": "Cognitive memory is a governed view/composition of existing memory and checkpoint primitives."
     },
     {
       "id": "MCAP-009",
@@ -160,7 +253,17 @@
       "classification": "EXISTING_PROFILE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "partial",
+      "family9_action": "EXTEND_OWNER_FAMILY",
+      "existing_capabilities": [
+        "documentation.generated",
+        "memory.evidence",
+        "memory.decision",
+        "memory.currentness"
+      ],
+      "runtime_components": [],
+      "dedup_rationale": "Evidence/documentation primitives exist; validated experience distillation needs an explicit transformation contract."
     },
     {
       "id": "MCAP-010",
@@ -171,7 +274,16 @@
       "classification": "EXISTING_PROFILE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "full",
+      "family9_action": "REUSE",
+      "existing_capabilities": [
+        "validation.adversarial"
+      ],
+      "runtime_components": [
+        "ValidationPipeline"
+      ],
+      "dedup_rationale": "Direct existing CUSTOSZ adversarial validation capability."
     },
     {
       "id": "MCAP-011",
@@ -182,7 +294,18 @@
       "classification": "EXISTING_PROFILE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "composable",
+      "family9_action": "COMPOSE_VIA_CONTRACT",
+      "existing_capabilities": [
+        "resources.adaptive",
+        "resources.budget_policy",
+        "backpressure.control"
+      ],
+      "runtime_components": [
+        "TimeBudgetController"
+      ],
+      "dedup_rationale": "Resource governance is fully composable from existing adaptive budget/backpressure/time controls."
     },
     {
       "id": "MCAP-012",
@@ -193,7 +316,20 @@
       "classification": "EXISTING_PROFILE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "composable",
+      "family9_action": "COMPOSE_VIA_CONTRACT",
+      "existing_capabilities": [
+        "interfaces.cross_family",
+        "overlap.semantic",
+        "duplication.anti",
+        "gap.proof",
+        "lifecycle.manager"
+      ],
+      "runtime_components": [
+        "ExecutorRegistry"
+      ],
+      "dedup_rationale": "Capability graph is a view over existing registry/interface/lifecycle/dedup primitives, not a second registry."
     },
     {
       "id": "MCAP-013",
@@ -204,7 +340,14 @@
       "classification": "EXISTING_PROFILE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "novel",
+      "family9_action": "GAP_PROOF_THEN_CREATE",
+      "existing_capabilities": [],
+      "runtime_components": [
+        "ExecutorRegistry"
+      ],
+      "dedup_rationale": "A governed model/agent node family registry is not represented by a dedicated CUSTOSZ capability; ExecutorRegistry is support, not semantic coverage."
     },
     {
       "id": "MCAP-014",
@@ -215,7 +358,18 @@
       "classification": "EXISTING_PROFILE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "partial",
+      "family9_action": "EXTEND_OWNER_FAMILY",
+      "existing_capabilities": [
+        "api.gateway",
+        "composition.engine",
+        "invariants.engine"
+      ],
+      "runtime_components": [
+        "MissionController"
+      ],
+      "dedup_rationale": "Mission control exists; byte-exact mission compilation into a portable governed contract remains an extension."
     },
     {
       "id": "MCAP-015",
@@ -226,7 +380,19 @@
       "classification": "EXISTING_PROFILE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "composable",
+      "family9_action": "COMPOSE_VIA_CONTRACT",
+      "existing_capabilities": [
+        "continuity.heartbeat_watchdog",
+        "evidence.graph",
+        "memory.state"
+      ],
+      "runtime_components": [
+        "TelemetryFabric",
+        "EvidenceJournal"
+      ],
+      "dedup_rationale": "Observability is exposed as a composition/view over existing telemetry/evidence/heartbeat state."
     },
     {
       "id": "MCAP-016",
@@ -237,7 +403,17 @@
       "classification": "EXISTING_PROFILE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "partial",
+      "family9_action": "EXTEND_OWNER_FAMILY",
+      "existing_capabilities": [
+        "resources.adaptive",
+        "resources.budget_policy",
+        "backpressure.control",
+        "knowledge.high_throughput"
+      ],
+      "runtime_components": [],
+      "dedup_rationale": "Adaptive resource control exists; rclone-specific throughput profiling 8→64 is a domain extension."
     },
     {
       "id": "MCAP-017",
@@ -248,7 +424,18 @@
       "classification": "EXISTING_PROFILE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "composable",
+      "family9_action": "COMPOSE_VIA_CONTRACT",
+      "existing_capabilities": [
+        "gap.evolution",
+        "gap.proof",
+        "evolution.admission",
+        "duplication.anti",
+        "overlap.semantic"
+      ],
+      "runtime_components": [],
+      "dedup_rationale": "Direct composition of CUSTOSZ Family 9 evolution and anti-duplication machinery."
     },
     {
       "id": "MCAP-018",
@@ -259,7 +446,16 @@
       "classification": "EXISTING_PROFILE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "partial",
+      "family9_action": "EXTEND_OWNER_FAMILY",
+      "existing_capabilities": [
+        "systems.intelligence",
+        "benchmark.ephemeral",
+        "conformance.harness"
+      ],
+      "runtime_components": [],
+      "dedup_rationale": "System/benchmark primitives exist; disposable Debian/Android/Windows execution lanes require new adapters."
     },
     {
       "id": "MCAP-019",
@@ -270,7 +466,12 @@
       "classification": "EXISTING_PROFILE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "novel",
+      "family9_action": "GAP_PROOF_THEN_CREATE",
+      "existing_capabilities": [],
+      "runtime_components": [],
+      "dedup_rationale": "GitHub reusable-workflow/composite-action fabric is not represented in CUSTOSZ72."
     },
     {
       "id": "MCAP-020",
@@ -281,7 +482,14 @@
       "classification": "EXISTING_PROFILE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "novel",
+      "family9_action": "GAP_PROOF_THEN_CREATE",
+      "existing_capabilities": [],
+      "runtime_components": [
+        "ExecutorRegistry"
+      ],
+      "dedup_rationale": "GitHub-hosted agentic workflow execution is a new external execution adapter class."
     },
     {
       "id": "MCAP-021",
@@ -292,7 +500,22 @@
       "classification": "EXISTING_PROFILE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "partial",
+      "family9_action": "EXTEND_OWNER_FAMILY",
+      "existing_capabilities": [
+        "resources.adaptive",
+        "resources.budget_policy",
+        "backpressure.control",
+        "process.sessions",
+        "execution.resumable"
+      ],
+      "runtime_components": [
+        "ExecutorRegistry",
+        "ProcessSupervisor",
+        "TimeBudgetController"
+      ],
+      "dedup_rationale": "Scheduling/resource primitives exist; GitHub runner fleet scheduling is an external-platform extension."
     },
     {
       "id": "MCAP-022",
@@ -303,7 +526,20 @@
       "classification": "EXISTING_PROFILE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "composable",
+      "family9_action": "COMPOSE_VIA_CONTRACT",
+      "existing_capabilities": [
+        "security.credentials",
+        "security.crypto",
+        "security.sandbox_contract",
+        "security.trust_policy",
+        "security.fabric"
+      ],
+      "runtime_components": [
+        "GovernanceKernel"
+      ],
+      "dedup_rationale": "Zero-trust authorization composes existing security fabric, credentials, crypto and trust policy."
     },
     {
       "id": "MCAP-023",
@@ -314,7 +550,19 @@
       "classification": "EXISTING_PROFILE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "composable",
+      "family9_action": "COMPOSE_VIA_CONTRACT",
+      "existing_capabilities": [
+        "security.trust_policy",
+        "invariants.engine",
+        "lifecycle.manager",
+        "conformance.harness"
+      ],
+      "runtime_components": [
+        "GovernanceKernel"
+      ],
+      "dedup_rationale": "Policy-as-code is a composition of trust, invariants, lifecycle and conformance."
     },
     {
       "id": "MCAP-024",
@@ -325,7 +573,16 @@
       "classification": "EXISTING_PROFILE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "partial",
+      "family9_action": "EXTEND_OWNER_FAMILY",
+      "existing_capabilities": [
+        "security.supply_chain",
+        "security.crypto",
+        "content.identity"
+      ],
+      "runtime_components": [],
+      "dedup_rationale": "Supply-chain validation and identity exist; GitHub-native provenance/attestation formats remain an extension."
     },
     {
       "id": "MCAP-025",
@@ -336,7 +593,16 @@
       "classification": "EXISTING_PROFILE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "partial",
+      "family9_action": "EXTEND_OWNER_FAMILY",
+      "existing_capabilities": [
+        "security.supply_chain",
+        "security.threat_currentness",
+        "memory.currentness"
+      ],
+      "runtime_components": [],
+      "dedup_rationale": "Supply-chain/currentness exists; dependency-license and ecosystem-specific currentness adapters extend it."
     },
     {
       "id": "MCAP-026",
@@ -347,7 +613,16 @@
       "classification": "EXISTING_PROFILE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "partial",
+      "family9_action": "EXTEND_OWNER_FAMILY",
+      "existing_capabilities": [
+        "security.risk_classification",
+        "security.credentials",
+        "security.supply_chain"
+      ],
+      "runtime_components": [],
+      "dedup_rationale": "Security primitives exist; concrete static-code/secret scanning integrations remain adapters."
     },
     {
       "id": "MCAP-027",
@@ -358,7 +633,20 @@
       "classification": "EXISTING_PROFILE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "composable",
+      "family9_action": "COMPOSE_VIA_CONTRACT",
+      "existing_capabilities": [
+        "evidence.graph",
+        "evidence.completeness",
+        "memory.evidence",
+        "content.identity",
+        "security.crypto"
+      ],
+      "runtime_components": [
+        "EvidenceJournal"
+      ],
+      "dedup_rationale": "Forensic ledger is a hash-linked projection over the existing evidence graph/journal, not a parallel evidence authority."
     },
     {
       "id": "MCAP-028",
@@ -369,7 +657,19 @@
       "classification": "EXISTING_PROFILE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "composable",
+      "family9_action": "COMPOSE_VIA_CONTRACT",
+      "existing_capabilities": [
+        "assurance.fabric",
+        "evidence.graph",
+        "evidence.completeness",
+        "conformance.harness"
+      ],
+      "runtime_components": [
+        "ValidationPipeline"
+      ],
+      "dedup_rationale": "Assurance-case compilation composes existing assurance/evidence/conformance primitives into a dossier."
     },
     {
       "id": "MCAP-029",
@@ -380,7 +680,18 @@
       "classification": "EXISTING_PROFILE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "novel",
+      "family9_action": "GAP_PROOF_THEN_CREATE",
+      "existing_capabilities": [
+        "assurance.fabric",
+        "validation.adversarial",
+        "conformance.harness"
+      ],
+      "runtime_components": [
+        "ValidationPipeline"
+      ],
+      "dedup_rationale": "Validation primitives exist, but G23 requires an external independent trust boundary; support does not constitute independence."
     },
     {
       "id": "MCAP-030",
@@ -391,7 +702,17 @@
       "classification": "EXISTING_PROFILE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "novel",
+      "family9_action": "GAP_PROOF_THEN_CREATE",
+      "existing_capabilities": [
+        "assurance.fabric",
+        "lifecycle.manager"
+      ],
+      "runtime_components": [
+        "GovernanceKernel"
+      ],
+      "dedup_rationale": "Certification/promotion as G24 external authority boundary is intentionally absent from self-certifying CUSTOSZ."
     },
     {
       "id": "MCAP-031",
@@ -402,7 +723,22 @@
       "classification": "EXISTING_PROFILE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "composable",
+      "family9_action": "COMPOSE_VIA_CONTRACT",
+      "existing_capabilities": [
+        "execution.resumable",
+        "continuity.session_resume",
+        "continuity.reboot_state",
+        "memory.state",
+        "memory.failure"
+      ],
+      "runtime_components": [
+        "CheckpointStore",
+        "ResumeManager",
+        "FailureController"
+      ],
+      "dedup_rationale": "Rollback/recovery proof composes existing checkpoint/resume/failure/continuity primitives."
     },
     {
       "id": "MCAP-032",
@@ -413,7 +749,20 @@
       "classification": "EXISTING_PROFILE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "partial",
+      "family9_action": "EXTEND_OWNER_FAMILY",
+      "existing_capabilities": [
+        "memory.currentness",
+        "memory.invalidation",
+        "memory.versioned",
+        "conformance.harness",
+        "assurance.fabric"
+      ],
+      "runtime_components": [
+        "ValidationPipeline"
+      ],
+      "dedup_rationale": "Validity/currentness primitives exist; certification invalidation and recertification graph need an explicit extension contract."
     },
     {
       "id": "MCAP-033",
@@ -424,7 +773,20 @@
       "classification": "NEW_EXTENSION_CANDIDATE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "composable",
+      "family9_action": "COMPOSE_VIA_CONTRACT",
+      "existing_capabilities": [
+        "interfaces.cross_family",
+        "api.gateway",
+        "continuity.fabric",
+        "composition.engine"
+      ],
+      "runtime_components": [
+        "GovernanceKernel",
+        "MissionController"
+      ],
+      "dedup_rationale": "Ecosystem federation is a versioned composition contract over existing interfaces/API/continuity primitives."
     },
     {
       "id": "MCAP-034",
@@ -435,7 +797,17 @@
       "classification": "CANONICAL_MATERIALIZATION",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "partial",
+      "family9_action": "EXTEND_OWNER_FAMILY",
+      "existing_capabilities": [
+        "memory.currentness",
+        "memory.invalidation",
+        "conformance.harness",
+        "content.identity"
+      ],
+      "runtime_components": [],
+      "dedup_rationale": "Currentness/conformance primitives exist; intended↔observed architectural mirror requires a dedicated projection."
     },
     {
       "id": "MCAP-035",
@@ -446,7 +818,17 @@
       "classification": "CANONICAL_MATERIALIZATION",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "partial",
+      "family9_action": "EXTEND_OWNER_FAMILY",
+      "existing_capabilities": [
+        "benchmark.ephemeral",
+        "validation.adversarial",
+        "benchmark.gap",
+        "invariants.engine"
+      ],
+      "runtime_components": [],
+      "dedup_rationale": "Simulation primitives exist; architectural shadow/blast-radius simulation requires a dedicated model."
     },
     {
       "id": "MCAP-036",
@@ -457,7 +839,17 @@
       "classification": "NEW_EXTENSION_CANDIDATE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "partial",
+      "family9_action": "EXTEND_OWNER_FAMILY",
+      "existing_capabilities": [
+        "invariants.engine",
+        "logic.formal",
+        "logic.arithmetic",
+        "conformance.harness"
+      ],
+      "runtime_components": [],
+      "dedup_rationale": "Formal invariant checking exists; external SMT/model-checker integration is an extension rather than a duplicate engine."
     },
     {
       "id": "MCAP-037",
@@ -468,7 +860,18 @@
       "classification": "WATCH_MATERIALIZATION",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "composable",
+      "family9_action": "COMPOSE_VIA_CONTRACT",
+      "existing_capabilities": [
+        "lifecycle.manager",
+        "maintainability.engine",
+        "duplication.anti",
+        "memory.currentness",
+        "memory.invalidation"
+      ],
+      "runtime_components": [],
+      "dedup_rationale": "Lifecycle hygiene is a governed composition/view over lifecycle, maintainability, dedup and invalidation."
     },
     {
       "id": "MCAP-038",
@@ -479,7 +882,19 @@
       "classification": "WATCH_MATERIALIZATION",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "partial",
+      "family9_action": "EXTEND_OWNER_FAMILY",
+      "existing_capabilities": [
+        "execution.resumable",
+        "continuity.session_resume",
+        "memory.state",
+        "continuity.fabric"
+      ],
+      "runtime_components": [
+        "MissionController"
+      ],
+      "dedup_rationale": "Resume/HOLD state exists; explicit human approval boundary and approval evidence need an extension."
     },
     {
       "id": "MCAP-039",
@@ -490,7 +905,20 @@
       "classification": "WATCH_MATERIALIZATION",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "composable",
+      "family9_action": "COMPOSE_VIA_CONTRACT",
+      "existing_capabilities": [
+        "gap.proof",
+        "gap.evolution",
+        "placement.engine",
+        "continuity.preinstall_contract",
+        "api.gateway"
+      ],
+      "runtime_components": [
+        "ExecutorRegistry"
+      ],
+      "dedup_rationale": "External capability brokering composes gap proof, placement, preinstall contracts and API routing."
     },
     {
       "id": "MCAP-040",
@@ -501,7 +929,17 @@
       "classification": "NEW_EXTENSION_CANDIDATE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "partial",
+      "family9_action": "EXTEND_OWNER_FAMILY",
+      "existing_capabilities": [
+        "security.risk_classification",
+        "security.trust_policy",
+        "security.sandbox_contract",
+        "memory.currentness"
+      ],
+      "runtime_components": [],
+      "dedup_rationale": "Risk/trust policy exists; corpus rights, privacy, PII and transformation-use policy require domain rules."
     },
     {
       "id": "MCAP-041",
@@ -512,7 +950,22 @@
       "classification": "NEW_EXTENSION_CANDIDATE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "composable",
+      "family9_action": "COMPOSE_VIA_CONTRACT",
+      "existing_capabilities": [
+        "knowledge.remote",
+        "knowledge.high_throughput",
+        "streaming.range",
+        "io.resumable_reader",
+        "source.resolve",
+        "ingestion.universal",
+        "volume.intelligence"
+      ],
+      "runtime_components": [
+        "SourceRegistry"
+      ],
+      "dedup_rationale": "Massive remote corpus streaming is already materially expressible by existing remote/high-throughput/range/resumable source primitives."
     },
     {
       "id": "MCAP-042",
@@ -523,7 +976,17 @@
       "classification": "CANONICAL_MATERIALIZATION",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "partial",
+      "family9_action": "EXTEND_OWNER_FAMILY",
+      "existing_capabilities": [
+        "volume.intelligence",
+        "normalization.structured",
+        "content.identity",
+        "io.query_plan"
+      ],
+      "runtime_components": [],
+      "dedup_rationale": "Volume/structured ingestion exists; book/PDF hierarchical document-map semantics require an extension."
     },
     {
       "id": "MCAP-043",
@@ -534,7 +997,18 @@
       "classification": "CANONICAL_MATERIALIZATION",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "partial",
+      "family9_action": "EXTEND_OWNER_FAMILY",
+      "existing_capabilities": [
+        "cache.semantic",
+        "knowledge.remote",
+        "knowledge.high_throughput",
+        "io.query_plan",
+        "evidence.graph"
+      ],
+      "runtime_components": [],
+      "dedup_rationale": "Semantic/cache/query primitives exist; distributed vector/graph indexing requires dedicated adapters to Louksna retrieval engines."
     },
     {
       "id": "MCAP-044",
@@ -545,7 +1019,16 @@
       "classification": "NEW_EXTENSION_CANDIDATE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "novel",
+      "family9_action": "GAP_PROOF_THEN_CREATE",
+      "existing_capabilities": [
+        "execution.resumable",
+        "resources.adaptive",
+        "normalization.structured"
+      ],
+      "runtime_components": [],
+      "dedup_rationale": "Generic execution/normalization supports it, but extreme-scale translation orchestration is a distinct domain capability."
     },
     {
       "id": "MCAP-045",
@@ -556,7 +1039,16 @@
       "classification": "NEW_EXTENSION_CANDIDATE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "novel",
+      "family9_action": "GAP_PROOF_THEN_CREATE",
+      "existing_capabilities": [
+        "validation.adversarial",
+        "conformance.harness",
+        "assurance.fabric"
+      ],
+      "runtime_components": [],
+      "dedup_rationale": "Generic validation exists; translation-specific semantic/syntactic/terminology fidelity predicates are distinct."
     },
     {
       "id": "MCAP-046",
@@ -567,7 +1059,16 @@
       "classification": "NEW_EXTENSION_CANDIDATE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "novel",
+      "family9_action": "GAP_PROOF_THEN_CREATE",
+      "existing_capabilities": [
+        "memory.governed",
+        "cache.semantic",
+        "memory.versioned"
+      ],
+      "runtime_components": [],
+      "dedup_rationale": "Memory primitives support it, but translation memory + terminology ontology is a distinct domain plane."
     },
     {
       "id": "MCAP-047",
@@ -578,7 +1079,18 @@
       "classification": "WATCH_MATERIALIZATION",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "partial",
+      "family9_action": "EXTEND_OWNER_FAMILY",
+      "existing_capabilities": [
+        "technology.synthesis",
+        "composition.engine",
+        "evidence.graph"
+      ],
+      "runtime_components": [
+        "CognitivePlane"
+      ],
+      "dedup_rationale": "General synthesis exists; explicit multi/inter/transdisciplinary evidence-preserving synthesis requires an extension contract."
     },
     {
       "id": "MCAP-048",
@@ -589,7 +1101,19 @@
       "classification": "NEW_EXTENSION_CANDIDATE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "partial",
+      "family9_action": "EXTEND_OWNER_FAMILY",
+      "existing_capabilities": [
+        "logic.formal",
+        "logic.arithmetic",
+        "assurance.fabric",
+        "evidence.graph"
+      ],
+      "runtime_components": [
+        "CognitivePlane"
+      ],
+      "dedup_rationale": "Formal reasoning primitives exist; causal/counterfactual model semantics and scenario execution are an extension."
     },
     {
       "id": "MCAP-049",
@@ -600,7 +1124,19 @@
       "classification": "NEW_EXTENSION_CANDIDATE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "partial",
+      "family9_action": "EXTEND_OWNER_FAMILY",
+      "existing_capabilities": [
+        "streaming.range",
+        "api.gateway",
+        "continuity.heartbeat_watchdog",
+        "backpressure.control"
+      ],
+      "runtime_components": [
+        "TelemetryFabric"
+      ],
+      "dedup_rationale": "Streaming/API/backpressure primitives exist; durable event-bus sequencing/replay adapters are an extension."
     },
     {
       "id": "MCAP-050",
@@ -611,7 +1147,22 @@
       "classification": "NEW_EXTENSION_CANDIDATE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "composable",
+      "family9_action": "COMPOSE_VIA_CONTRACT",
+      "existing_capabilities": [
+        "execution.resumable",
+        "continuity.session_resume",
+        "continuity.heartbeat_watchdog",
+        "backpressure.control",
+        "memory.state"
+      ],
+      "runtime_components": [
+        "CheckpointStore",
+        "ResumeManager",
+        "ProcessSupervisor"
+      ],
+      "dedup_rationale": "Durable long-running workflow semantics are composable from existing resumability/checkpoint/watchdog controls."
     },
     {
       "id": "MCAP-051",
@@ -622,7 +1173,19 @@
       "classification": "NEW_EXTENSION_CANDIDATE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "partial",
+      "family9_action": "EXTEND_OWNER_FAMILY",
+      "existing_capabilities": [
+        "content.identity",
+        "security.crypto",
+        "knowledge.remote",
+        "handoff.remote_source"
+      ],
+      "runtime_components": [
+        "SourceRegistry"
+      ],
+      "dedup_rationale": "Content identity/remote transfer exist; durable content-addressed object storage is an external data-plane extension."
     },
     {
       "id": "MCAP-052",
@@ -633,7 +1196,19 @@
       "classification": "NEW_EXTENSION_CANDIDATE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "composable",
+      "family9_action": "COMPOSE_VIA_CONTRACT",
+      "existing_capabilities": [
+        "evidence.graph",
+        "memory.state",
+        "continuity.heartbeat_watchdog"
+      ],
+      "runtime_components": [
+        "TelemetryFabric",
+        "EvidenceJournal"
+      ],
+      "dedup_rationale": "High-resolution AI telemetry extends the schema but reuses the existing telemetry/evidence transport and journal."
     },
     {
       "id": "MCAP-053",
@@ -644,7 +1219,21 @@
       "classification": "NEW_EXTENSION_CANDIDATE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "partial",
+      "family9_action": "EXTEND_OWNER_FAMILY",
+      "existing_capabilities": [
+        "benchmark.ephemeral",
+        "benchmark.gap",
+        "benchmark.contamination",
+        "validation.adversarial",
+        "conformance.harness",
+        "assurance.fabric"
+      ],
+      "runtime_components": [
+        "ValidationPipeline"
+      ],
+      "dedup_rationale": "Evaluation harness primitives exist; AI-specific calibration/factuality/abstention metrics require extensions."
     },
     {
       "id": "MCAP-054",
@@ -655,7 +1244,19 @@
       "classification": "NEW_EXTENSION_CANDIDATE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "novel",
+      "family9_action": "GAP_PROOF_THEN_CREATE",
+      "existing_capabilities": [
+        "api.gateway",
+        "streaming.range",
+        "normalization.structured",
+        "memory.currentness"
+      ],
+      "runtime_components": [
+        "SourceRegistry"
+      ],
+      "dedup_rationale": "Generic data acquisition exists; governed economic/market source normalization is a domain data fabric."
     },
     {
       "id": "MCAP-055",
@@ -666,7 +1267,18 @@
       "classification": "NEW_EXTENSION_CANDIDATE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "novel",
+      "family9_action": "GAP_PROOF_THEN_CREATE",
+      "existing_capabilities": [
+        "api.gateway",
+        "streaming.range",
+        "content.identity"
+      ],
+      "runtime_components": [
+        "SourceRegistry"
+      ],
+      "dedup_rationale": "Stablecoin issuer/on-chain/market evidence fusion is a distinct domain capability."
     },
     {
       "id": "MCAP-056",
@@ -677,7 +1289,18 @@
       "classification": "NEW_EXTENSION_CANDIDATE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "novel",
+      "family9_action": "GAP_PROOF_THEN_CREATE",
+      "existing_capabilities": [
+        "api.gateway",
+        "normalization.structured",
+        "memory.currentness"
+      ],
+      "runtime_components": [
+        "SourceRegistry"
+      ],
+      "dedup_rationale": "Labor-market/opportunity ingestion and normalization is a distinct domain capability."
     },
     {
       "id": "MCAP-057",
@@ -688,7 +1311,18 @@
       "classification": "NEW_EXTENSION_CANDIDATE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "novel",
+      "family9_action": "GAP_PROOF_THEN_CREATE",
+      "existing_capabilities": [
+        "technology.synthesis",
+        "composition.engine",
+        "evidence.graph"
+      ],
+      "runtime_components": [
+        "CognitivePlane"
+      ],
+      "dedup_rationale": "Explicit economic-theory lens separation and comparison is not present as a dedicated capability."
     },
     {
       "id": "MCAP-058",
@@ -699,7 +1333,23 @@
       "classification": "NEW_EXTENSION_CANDIDATE",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "composable",
+      "family9_action": "COMPOSE_VIA_CONTRACT",
+      "existing_capabilities": [
+        "composition.engine",
+        "gap.evolution",
+        "assurance.fabric",
+        "memory.governed",
+        "logic.formal"
+      ],
+      "runtime_components": [
+        "CognitivePlane",
+        "MetacognitivePlane",
+        "MissionController",
+        "TelemetryFabric"
+      ],
+      "dedup_rationale": "General/specific metacognitive operational intelligence is an orchestration fabric over existing cognitive/metacognitive primitives, not a claim of human-level AGI."
     },
     {
       "id": "MCAP-059",
@@ -710,7 +1360,17 @@
       "classification": "TRAINING_LAST",
       "admission_state": "DECLARED",
       "self_certifies": false,
-      "creates_authority": false
+      "creates_authority": false,
+      "coverage": "novel",
+      "family9_action": "GAP_PROOF_THEN_CREATE",
+      "existing_capabilities": [
+        "benchmark.contamination",
+        "assurance.fabric",
+        "memory.evidence",
+        "memory.currentness"
+      ],
+      "runtime_components": [],
+      "dedup_rationale": "Governed training/continuous learning is deliberately absent from the current execution core and must remain last-stage with revalidation."
     },
     {
       "id": "CUSTOSZ:cache.semantic",
