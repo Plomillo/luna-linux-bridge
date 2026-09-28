@@ -1,0 +1,44 @@
+name: "Reusable metacognitive worker"
+
+on:
+  workflow_call:
+    inputs:
+      task:
+        required: true
+        type: string
+      runner:
+        required: false
+        type: string
+        default: ubuntu-24.04
+
+permissions:
+  contents: read
+
+jobs:
+  execute:
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Execute registered task only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          case "${{ inputs.task }}" in
+            extension-selftest)
+              python3 -B -I ecosystem/metacognitive-operational-v1/extensions/novel_v1.py
+              ;;
+            graph-validate)
+              python3 -B -I scripts/metacognitive/validate_ecosystem_graph.py \
+                --graph ecosystem/metacognitive-operational-v1/ECOSYSTEM_GRAPH.json
+              ;;
+            structural)
+              python3 -B -I ecosystem/metacognitive-operational-v1/validate.py
+              ;;
+            *)
+              echo "UNREGISTERED_REUSABLE_TASK" >&2
+              exit 64
+              ;;
+          esac
