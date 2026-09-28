@@ -5,6 +5,7 @@ on:
       - staging/custosz-v7-metaos-20260927
     paths:
       - .github/workflows/custosz-native-continuation.yml
+      - scripts/missions/custosz_native_continuation.py
 
 permissions:
   contents: write
