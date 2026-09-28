@@ -1,0 +1,161 @@
+name: "Metacognitive Ecosystem R2 — mailbox premerge assurance"
+
+on:
+  push:
+    branches:
+      - staging/metacognitive-ecosystem-v1-r2-20260928
+    paths:
+      - scripts/mission_mailbox/**
+      - mission-mailbox/**
+      - scripts/metacognitive/**
+      - ecosystem/metacognitive-operational-v1/**
+      - missions/inbox/metacognitive-ecosystem-v1-20260928/**
+      - .github/workflows/metacognitive-ecosystem-mailbox-premerge.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: meta-ecosystem-mailbox-premerge-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            Louksna.md
+            artifacts/custosz-v7
+            ecosystem/metacognitive-operational-v1
+            mission-mailbox
+            missions/inbox/metacognitive-ecosystem-v1-20260928
+            scripts/metacognitive
+            scripts/mission_mailbox
+          sparse-checkout-cone-mode: false
+
+      - name: Static mailbox and JSON validation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -m py_compile scripts/mission_mailbox/*.py scripts/mission_mailbox/adapters/*.py scripts/metacognitive/*.py
+          python3 -B -I scripts/mission_mailbox/test_router_policy.py
+          python3 - <<'PY'
+          import json
+          for p in (
+            "mission-mailbox/config/mailbox-policy.json",
+            "mission-mailbox/runtime-adapters/registry.json",
+            "mission-mailbox/source-class-bindings/registry.json",
+            "ecosystem/metacognitive-operational-v1/CUSTOSZ72_CENSUS.json",
+            "ecosystem/metacognitive-operational-v1/CUSTOSZ72_DEDUP_EVIDENCE.json",
+            "ecosystem/metacognitive-operational-v1/CAPABILITIES.json",
+          ):
+            json.load(open(p,encoding="utf-8"))
+          print("META_MAILBOX_JSON_VALIDATION=PASS")
+          PY
+
+      - name: Recompile immutable mission and verify source identity
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/meta-premerge"
+          mkdir -p "$OUT"
+          python3 -B -I scripts/mission_mailbox/compile_mission.py \
+            --mission missions/inbox/metacognitive-ecosystem-v1-20260928/MISSION_ORIGINAL.md \
+            --out "$OUT/compiled"
+          python3 - <<'PY'
+          import json, os
+          p=os.path.join(os.environ["RUNNER_TEMP"],"meta-premerge","compiled","MISSION_NATIVE.json")
+          d=json.load(open(p,encoding="utf-8"))
+          expected="1f8ba16e26789cc4ba3c9329357ac7c866af50177ccbf5915ca1dd5355c511d0"
+          assert d["source"]["sha256"]==expected,(d["source"]["sha256"],expected)
+          print("MISSION_SOURCE_IDENTITY=PASS")
+          PY
+
+      - name: Execute CUSTOSZ Family 9 72-to-59 gate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/meta-premerge"
+          python3 -B -I scripts/metacognitive/validate_custosz72_mcap59_dedup.py \
+            --manifest ecosystem/metacognitive-operational-v1/CAPABILITIES.json \
+            --evidence ecosystem/metacognitive-operational-v1/CUSTOSZ72_DEDUP_EVIDENCE.json \
+            --pyz artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz \
+            --extractor scripts/metacognitive/extract_custosz_v7_census.py \
+            --out "$OUT/MCAP59_CUSTOSZ72_DEDUP_VALIDATION.json"
+
+      - name: Execute source-bound admission adapter
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/meta-premerge"
+          python3 -B -I scripts/mission_mailbox/adapters/metacognitive_ecosystem_v1.py \
+            --repo-root . \
+            --out "$OUT/ADMISSION.json"
+
+      - name: Compile premerge evidence summary
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/meta-premerge"
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib
+          out=pathlib.Path(os.environ["RUNNER_TEMP"])/"meta-premerge"
+          dedup=json.load(open(out/"MCAP59_CUSTOSZ72_DEDUP_VALIDATION.json",encoding="utf-8"))
+          admission=json.load(open(out/"ADMISSION.json",encoding="utf-8"))
+          registry=json.load(open("mission-mailbox/runtime-adapters/registry.json",encoding="utf-8"))
+          bindings=json.load(open("mission-mailbox/source-class-bindings/registry.json",encoding="utf-8"))
+          adapters=[x for x in registry["adapters"] if x["adapter_id"]=="META_ECOSYSTEM_V1_ADMISSION"]
+          source=[x for x in bindings["bindings"] if x["source_sha256"]=="1f8ba16e26789cc4ba3c9329357ac7c866af50177ccbf5915ca1dd5355c511d0"]
+          assert len(adapters)==1
+          assert len(source)==1
+          assert dedup["status"]=="PASS"
+          assert dedup["mapped_count"]==59
+          assert admission["status"]=="PASS"
+          report={
+            "schema":"META_ECOSYSTEM_PREMERGE_ASSURANCE/1.0",
+            "status":"PASS",
+            "scope":"PREMERGE_CONTROL_PLANE_ONLY",
+            "source_sha256":"1f8ba16e26789cc4ba3c9329357ac7c866af50177ccbf5915ca1dd5355c511d0",
+            "custosz72":dedup["custosz_capability_count"],
+            "mcap59":dedup["mcap_count"],
+            "g16_precheck":dedup["g16_precheck"],
+            "family9_actions":dedup["family9_action_counts"],
+            "source_class_binding":"PASS_UNIQUE",
+            "runtime_adapter":"PASS_UNIQUE_SHA_PINNED",
+            "adapter_id":adapters[0]["adapter_id"],
+            "adapter_sha256":adapters[0]["sha256"],
+            "heavy_compute_on_auxiliary":False,
+            "canonical_mutation":False,
+            "g23":"NOT_PERFORMED",
+            "g24":"NOT_PERFORMED"
+          }
+          (out/"PREMERGE_ASSURANCE.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          (out/"README_PREMERGE.md").write_text(
+            "# Metacognitive Ecosystem R2 — Premerge Assurance\n\n"
+            "- Structural/mailbox policy: **PASS**\n"
+            "- Immutable mission source: **PASS**\n"
+            "- Exact CUSTOSZ census: **72/72**\n"
+            "- MCAP mapping: **59/59**\n"
+            "- CUSTOSZ Family 9 de-duplication precheck: **PASS**\n"
+            "- Source-class binding: **UNIQUE/PASS**\n"
+            "- SHA-pinned Runtime adapter: **UNIQUE/PASS**\n"
+            "- Heavy compute on auxiliary host: **FALSE**\n"
+            "- G23: **NOT PERFORMED**\n"
+            "- G24: **NOT PERFORMED**\n\n"
+            "This PASS authorizes only staging integration testing; it is not certification.\n",
+            encoding="utf-8")
+          print(json.dumps(report,sort_keys=True))
+          PY
+          cat "$OUT/README_PREMERGE.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: metacognitive-ecosystem-r2-premerge-assurance
+          path: ${{ runner.temp }}/meta-premerge
+          if-no-files-found: error
+          retention-days: 30
