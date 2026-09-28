@@ -3,7 +3,7 @@
 Runs only on GitHub-hosted compute. It reads repository sources and writes the
 runtime-owned target/ack/FME files. It performs no host installation or disk mutation.
 """
-import hashlib, json, re, sys
+import hashlib, json, os, re, sys, time
 from pathlib import Path
 
 def cjson(x):
@@ -25,6 +25,7 @@ def main(argv):
         "dispatch_id":d["dispatch_id"],
         "executor_id":d["executor_id"],
         "accepted":True,
+        "pid":os.getpid(),
         "process_or_execution_token":"github-hosted-custosz-v7-r4-readonly"
     }
     a["ack_digest"]=digest_obj(a)
@@ -95,6 +96,7 @@ def main(argv):
         "mission_id":d["mission_id"],
         "dispatch_id":d["dispatch_id"],
         "binding_id":d["binding_id"],
+        "pid":os.getpid(),
         "fme_id":"FME-GITHUB-R4-"+d["dispatch_id"],
         "target":str(target),
         "after_digest":sha(target),
@@ -106,6 +108,8 @@ def main(argv):
     }
     f["fme_digest"]=digest_obj(f)
     fme.write_text(json.dumps(f,sort_keys=True)+"\n",encoding="utf-8")
+    # Keep the process alive long enough for the runtime to prove PROCESS_RUNNING after ACK/FME.
+    time.sleep(1.0)
     return 0
 
 if __name__=="__main__":
