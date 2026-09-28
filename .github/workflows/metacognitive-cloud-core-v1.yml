@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - staging/metacognitive-cloud-core-v1-20260928
+      - staging/metacognitive-cloud-core-v1-r3-20260928
     paths:
       - ecosystem/metacognitive-operational-v1/**
       - scripts/metacognitive/**
