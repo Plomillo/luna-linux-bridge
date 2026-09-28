@@ -66,7 +66,6 @@ def run_research():
             check("METAOS",ROOT/"artifacts/custosz-v7/MetaOS.wasm"),
             check("MISSION",MISSION)])
     if not ok:return
-    import runtime_core
     import sys
     sys.path.insert(0,str(RUNTIME))
     from runtime_core import Runtime,TimeBudgetController
