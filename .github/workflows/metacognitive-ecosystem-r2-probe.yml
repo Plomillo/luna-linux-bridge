@@ -22,6 +22,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             scripts/mission_mailbox/adapters/metacognitive_ecosystem_v1.py
+            scripts/metacognitive/extract_custosz_v7_census.py
             artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz
           sparse-checkout-cone-mode: false
 
@@ -32,6 +33,10 @@ jobs:
           OUT="$RUNNER_TEMP/meta-r2-probe"
           mkdir -p "$OUT"
           sha256sum scripts/mission_mailbox/adapters/metacognitive_ecosystem_v1.py | tee "$OUT/ADAPTER_SHA256.txt"
+          python3 -B -I scripts/metacognitive/extract_custosz_v7_census.py \
+            --pyz artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz \
+            --out "$OUT/CUSTOSZ72_CENSUS.json" \
+            --expect 72
           python3 -B -I - <<'PY'
           import ast, hashlib, json, os, re, subprocess, sys, zipfile
           from pathlib import Path
