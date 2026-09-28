@@ -1,0 +1,131 @@
+name: "Metacognitive Ecosystem R2 — adapter and CUSTOSZ census probe"
+
+on:
+  push:
+    branches:
+      - staging/metacognitive-ecosystem-v1-r2-20260928
+    paths:
+      - scripts/mission_mailbox/adapters/metacognitive_ecosystem_v1.py
+      - .github/workflows/metacognitive-ecosystem-r2-probe.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            scripts/mission_mailbox/adapters/metacognitive_ecosystem_v1.py
+            artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz
+          sparse-checkout-cone-mode: false
+
+      - name: Hash adapter and inspect CUSTOSZ registry statically
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/meta-r2-probe"
+          mkdir -p "$OUT"
+          sha256sum scripts/mission_mailbox/adapters/metacognitive_ecosystem_v1.py | tee "$OUT/ADAPTER_SHA256.txt"
+          python3 -B -I - <<'PY'
+          import ast, hashlib, json, re, subprocess, sys, zipfile
+          from pathlib import Path
+
+          pyz=Path("artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz")
+          result={
+            "schema":"CUSTOSZ72_STATIC_PROBE/1.0",
+            "pyz_sha256":hashlib.sha256(pyz.read_bytes()).hexdigest(),
+            "zip_entries":[],
+            "status":None,
+            "literal_assignments":{},
+            "capability_like_strings":[],
+            "command_like_strings":[],
+            "capability_context_lines":[],
+          }
+          with zipfile.ZipFile(pyz) as z:
+            result["zip_entries"]=z.namelist()
+            cap_strings=set()
+            cmd_strings=set()
+            contexts=[]
+            for name in z.namelist():
+              if not name.endswith(".py"):
+                continue
+              raw=z.read(name)
+              try:
+                src=raw.decode("utf-8")
+              except UnicodeDecodeError:
+                continue
+              lines=src.splitlines()
+              for i,line in enumerate(lines):
+                if "capab" in line.lower() or "famil" in line.lower():
+                  contexts.append({"file":name,"line":i+1,"text":line[:500]})
+              try:
+                tree=ast.parse(src, filename=name)
+              except SyntaxError:
+                continue
+              for node in ast.walk(tree):
+                if isinstance(node, ast.Constant) and isinstance(node.value,str):
+                  s=node.value.strip()
+                  if re.fullmatch(r"[A-Z][A-Z0-9_\-]{2,100}",s) and (
+                      "CAP" in s or re.match(r"F\d\d_",s) or "_" in s):
+                    cap_strings.add(s)
+                  if re.fullmatch(r"v\d\d-[a-z0-9][a-z0-9-]{1,80}",s):
+                    cmd_strings.add(s)
+                if isinstance(node,(ast.Assign,ast.AnnAssign)):
+                  targets=[]
+                  value=node.value
+                  if isinstance(node,ast.Assign):
+                    targets=node.targets
+                  else:
+                    targets=[node.target]
+                  for target in targets:
+                    if isinstance(target,ast.Name) and any(k in target.id.upper() for k in ("CAPAB","FAMIL","REGISTR","CATALOG")):
+                      try:
+                        v=ast.literal_eval(value)
+                      except Exception:
+                        continue
+                      encoded=json.dumps(v,ensure_ascii=False)
+                      if len(encoded)<=50000:
+                        result["literal_assignments"][f"{name}:{target.id}"]=v
+            result["capability_like_strings"]=sorted(cap_strings)
+            result["command_like_strings"]=sorted(cmd_strings)
+            result["capability_context_lines"]=contexts[:300]
+
+          proc=subprocess.run([sys.executable,"-B","-I",str(pyz),"v07-status"],capture_output=True,text=True,timeout=30)
+          result["status"]={"exit_code":proc.returncode,"stdout":proc.stdout[-20000:],"stderr":proc.stderr[-3000:]}
+          Path("$RUNNER_TEMP/meta-r2-probe/CUSTOSZ72_PROBE.json").write_text(
+              json.dumps(result,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps({
+            "pyz_sha256":result["pyz_sha256"],
+            "literal_assignment_keys":sorted(result["literal_assignments"]),
+            "capability_like_count":len(result["capability_like_strings"]),
+            "command_like_strings":result["command_like_strings"],
+            "status_exit_code":proc.returncode
+          },ensure_ascii=False,sort_keys=True))
+          PY
+          echo "=== PROBE SUMMARY ==="
+          python3 - <<'PY'
+          import json,os
+          p=os.path.join(os.environ["RUNNER_TEMP"],"meta-r2-probe","CUSTOSZ72_PROBE.json")
+          d=json.load(open(p,encoding="utf-8"))
+          print("LITERAL_ASSIGNMENTS")
+          for k,v in d["literal_assignments"].items():
+              print(k, json.dumps(v,ensure_ascii=False)[:12000])
+          print("CAPABILITY_LIKE_STRINGS")
+          print(json.dumps(d["capability_like_strings"],ensure_ascii=False))
+          print("CONTEXT_LINES")
+          for x in d["capability_context_lines"][:120]:
+              print(f'{x["file"]}:{x["line"]}: {x["text"]}')
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: meta-ecosystem-r2-probe
+          path: ${{ runner.temp }}/meta-r2-probe
+          if-no-files-found: error
+          retention-days: 30
