@@ -26,7 +26,8 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             scripts/mission_mailbox/route_mission.py
-            scripts/mission_mailbox/adapters/metacognitive_ecosystem_v1.py
+            scripts/mission_mailbox/test_router_policy.py
+            scripts/mission_mailbox/adapters
             scripts/metacognitive
             mission-mailbox/config/mailbox-policy.json
             mission-mailbox/runtime-adapters/registry.json
@@ -76,6 +77,8 @@ jobs:
             "g24":d["g24"]
           },sort_keys=True))
           PY
+          python3 -m py_compile scripts/mission_mailbox/route_mission.py scripts/mission_mailbox/adapters/*.py scripts/metacognitive/*.py
+          python3 -B -I scripts/mission_mailbox/test_router_policy.py | tee "$OUT/MAILBOX_ROUTER_REGRESSION.txt"
           python3 -B -I scripts/metacognitive/test_meta_ecosystem_mailbox_binding.py | tee "$OUT/MAILBOX_BINDING_TEST.json"
           python3 -B -I scripts/mission_mailbox/adapters/metacognitive_ecosystem_v1.py \
             --repo-root . \
