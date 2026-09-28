@@ -60,12 +60,41 @@ def worker_cmd(custosz, command):
     )
     return {"exit_code": proc.returncode, "stdout": proc.stdout[-12000:], "stderr": proc.stderr[-3000:]}
 
-def capability_inventory(status):
+def capability_inventory(status, census_path=None, custosz_sha256=None):
+    if census_path:
+        census_path = Path(census_path)
+        if census_path.is_file():
+            try:
+                census = json.loads(census_path.read_text(encoding="utf-8"))
+                records = census.get("capabilities", [])
+                ids = sorted({x.get("capability_id") for x in records if isinstance(x, dict) and x.get("capability_id")})
+                if (
+                    census.get("capability_count") == 72
+                    and census.get("unique_capability_count") == 72
+                    and len(ids) == 72
+                    and (not custosz_sha256 or census.get("pyz_sha256") == custosz_sha256)
+                ):
+                    return {
+                        "dedup_evidence_available": True,
+                        "capabilities": ids,
+                        "reason": None,
+                        "source": "PINNED_CUSTOSZ72_CENSUS",
+                        "census_path": census_path.as_posix(),
+                        "custosz_sha256": custosz_sha256,
+                    }
+            except Exception as exc:
+                census_error = type(exc).__name__ + ":" + str(exc)[:300]
+            else:
+                census_error = "CENSUS_IDENTITY_OR_COUNT_MISMATCH"
+        else:
+            census_error = "CENSUS_FILE_MISSING"
+    else:
+        census_error = "CENSUS_PATH_UNCONFIGURED"
     text = status.get("stdout", "").strip()
     try:
         obj = json.loads(text.splitlines()[-1])
     except Exception:
-        return {"dedup_evidence_available": False, "capabilities": [], "reason": "V07_STATUS_NOT_MACHINE_PARSEABLE"}
+        return {"dedup_evidence_available": False, "capabilities": [], "reason": "V07_STATUS_NOT_MACHINE_PARSEABLE;" + census_error}
     found = set()
     def walk(value):
         if isinstance(value, dict):
@@ -80,7 +109,7 @@ def capability_inventory(status):
     return {
         "dedup_evidence_available": bool(found),
         "capabilities": sorted(found),
-        "reason": None if found else "NO_CAPABILITY_LIST_IN_STATUS",
+        "reason": None if found else "NO_CAPABILITY_LIST_IN_STATUS;" + census_error,
     }
 
 def mission_directive(native, key):
@@ -90,11 +119,52 @@ def mission_directive(native, key):
     value = entries[0].get("value")
     return str(value).strip() if value is not None else None
 
-def adapter_match(registry, native, root, executor_bound, route_location):
+def resolve_mission_class(binding_registry, native):
+    source_sha256 = native["source"]["sha256"]
+    direct = mission_directive(native, "MISSION_CLASS")
+    bindings = [
+        x for x in binding_registry.get("bindings", [])
+        if x.get("source_sha256") == source_sha256
+    ] if binding_registry else []
+    if len(bindings) > 1:
+        return {
+            "result": "HOLD",
+            "root_blocker": "AMBIGUOUS_SOURCE_CLASS_BINDING",
+            "source_sha256": source_sha256,
+            "direct_mission_class": direct,
+            "matches": bindings,
+            "mission_class": None,
+            "origin": None,
+        }
+    bound = bindings[0].get("mission_class") if bindings else None
+    if direct and bound and direct != bound:
+        return {
+            "result": "HOLD",
+            "root_blocker": "MISSION_CLASS_SOURCE_BINDING_COLLISION",
+            "source_sha256": source_sha256,
+            "direct_mission_class": direct,
+            "bound_mission_class": bound,
+            "matches": bindings,
+            "mission_class": None,
+            "origin": None,
+        }
+    effective = direct or bound
+    return {
+        "result": "PASS" if effective else "UNRESOLVED",
+        "root_blocker": None if effective else "MISSION_CLASS_UNRESOLVED",
+        "source_sha256": source_sha256,
+        "direct_mission_class": direct,
+        "bound_mission_class": bound,
+        "matches": bindings,
+        "mission_class": effective,
+        "origin": "MISSION_DIRECTIVE" if direct else ("SOURCE_BOUND_REGISTRY" if bound else None),
+    }
+
+def adapter_match(registry, native, root, executor_bound, route_location, mission_class_override=None):
     required = set(native["mission_payload"].get("required_capabilities_explicit", []))
     hints = set(native["mission_payload"].get("routing_hints", {}).get("values", []))
     source_sha256 = native["source"]["sha256"]
-    mission_class = mission_directive(native, "MISSION_CLASS")
+    mission_class = mission_class_override or mission_directive(native, "MISSION_CLASS")
     policy = registry.get("policy", {})
     allowed_root = (root / policy["allowed_root"]).resolve()
     allowed_statuses = set(policy.get("allowed_statuses", []))
@@ -221,6 +291,11 @@ def main():
 
     policy = json.loads((root / args.policy).read_text(encoding="utf-8"))
     registry = json.loads((root / policy["paths"]["adapter_registry"]).read_text(encoding="utf-8"))
+    binding_path = policy.get("paths", {}).get("source_class_bindings")
+    binding_registry = (
+        json.loads((root / binding_path).read_text(encoding="utf-8"))
+        if binding_path and (root / binding_path).is_file() else {"bindings": []}
+    )
     native = json.loads((compiled / "MISSION_NATIVE.json").read_text(encoding="utf-8"))
     prior_state = json.loads((compiled / "MISSION_STATE.json").read_text(encoding="utf-8"))
 
@@ -245,7 +320,11 @@ def main():
 
     status = worker_cmd(custosz, "v07-status")
     selftest = worker_cmd(custosz, "v07-selftest")
-    inventory = capability_inventory(status)
+    census_rel = policy.get("paths", {}).get("capability_census")
+    census_path = (root / census_rel) if census_rel else None
+    inventory = capability_inventory(status, census_path, identities["CUSTOSZ"])
+    class_resolution = resolve_mission_class(binding_registry, native)
+    atomic_json(out / "MISSION_CLASS_RESOLUTION.json", class_resolution)
     atomic_json(out / "CUSTOSZ_CAPABILITY_INVENTORY.json", inventory)
 
     if status["exit_code"] != 0 or selftest["exit_code"] != 0:
@@ -263,6 +342,23 @@ def main():
             "v07-status or v07-selftest returned nonzero",
             "Repair CUSTOSZ V7 status/selftest through its governed provenance chain, then rerun.",
             "RUNTIME_COMPATIBILITY.json",
+        )
+        return 0
+
+    if class_resolution["result"] == "HOLD":
+        compat = {
+            "schema": "CUSTOSZ_RUNTIME_COMPATIBILITY/1.0",
+            "result": "HOLD",
+            "root_blocker": class_resolution["root_blocker"],
+            "mission_class_resolution": class_resolution,
+            "identities": identities,
+        }
+        atomic_json(out / "RUNTIME_COMPATIBILITY.json", compat)
+        write_error(
+            out, native, class_resolution["root_blocker"], "MISSION_CLASS",
+            "source/directive classification collision or ambiguity",
+            "Correct only the explicit source-class binding registry; preserve original mission bytes and source SHA-256.",
+            "MISSION_CLASS_RESOLUTION.json",
         )
         return 0
 
@@ -308,6 +404,7 @@ def main():
         "worker_identity_sha256": identities["CUSTOSZ"],
         "required_capabilities_explicit": native["mission_payload"].get("required_capabilities_explicit", []),
         "routing_hints_non_authoritative": native["mission_payload"].get("routing_hints", {}),
+        "mission_class_resolution": class_resolution,
     }
     atomic_json(out / "ROUTING_DECISION.json", routing)
 
@@ -323,7 +420,10 @@ def main():
     runtime_ok = runtime_selftest.get("status") == "PASS"
     route_location = os.environ.get("ROUTE_EXECUTION_LOCATION", "UNKNOWN")
     matches, rejected = (
-        adapter_match(registry, native, root, executor_bound, route_location)
+        adapter_match(
+            registry, native, root, executor_bound, route_location,
+            mission_class_override=class_resolution.get("mission_class")
+        )
         if runtime_ok else ([], [])
     )
     adapter = matches[0] if len(matches) == 1 else None
@@ -363,6 +463,8 @@ def main():
         "route_execution_location": route_location,
         "adapter_selected": adapter,
         "adapter_rejections": rejected,
+        "mission_class_resolution": class_resolution,
+        "capability_inventory": inventory,
         "root_blocker": blocker,
         "identities": identities,
         "protected_scopes": policy["protected_scopes"],

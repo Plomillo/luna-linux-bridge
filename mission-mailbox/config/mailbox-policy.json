@@ -15,7 +15,9 @@
     "runtime": "artifacts/custosz-v7/CUSTOSZ_RUNTIME_V1_SR_EXEC_BOUND_FME_01.b.pyz",
     "metaos": "artifacts/custosz-v7/MetaOS.wasm",
     "authority": "Louksna.md",
-    "adapter_registry": "mission-mailbox/runtime-adapters/registry.json"
+    "adapter_registry": "mission-mailbox/runtime-adapters/registry.json",
+    "source_class_bindings": "mission-mailbox/source-class-bindings/registry.json",
+    "capability_census": "ecosystem/metacognitive-operational-v1/CUSTOSZ72_CENSUS.json"
   },
   "mission": {
     "max_input_bytes": 1048576,
