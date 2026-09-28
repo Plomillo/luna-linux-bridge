@@ -520,6 +520,59 @@ def main():
         write_error(out, native, blocker, gate, observed, remediation, "ROUTING_DECISION.json + RUNTIME_COMPATIBILITY.json")
         return 0
 
+    # Execute only explicitly auto-authorized lightweight route adapters.
+    # Heavy work remains outside the auxiliary runner and must continue in the declared cloud plane.
+    adapter_execution = None
+    if adapter.get("auto_execute_route_adapter", False):
+        adapter_out = out / "ADAPTER_EXECUTION.json"
+        adapter_cmd = [
+            sys.executable, "-B", "-I", str((root / adapter["path"]).resolve()),
+            "--repo-root", str(root),
+            "--out", str(adapter_out),
+        ]
+        proc = subprocess.run(adapter_cmd, text=True, capture_output=True, timeout=120)
+        if adapter_out.is_file():
+            try:
+                adapter_execution = json.loads(adapter_out.read_text(encoding="utf-8"))
+            except Exception:
+                adapter_execution = {
+                    "status": "HOLD",
+                    "root_blocker": "ADAPTER_OUTPUT_NOT_MACHINE_PARSEABLE",
+                }
+        else:
+            adapter_execution = {
+                "status": "HOLD",
+                "root_blocker": "ADAPTER_OUTPUT_MISSING",
+            }
+        adapter_execution["process_exit_code"] = proc.returncode
+        adapter_execution["stdout_tail"] = proc.stdout[-4000:]
+        adapter_execution["stderr_tail"] = proc.stderr[-2000:]
+        atomic_json(out / "ADAPTER_EXECUTION.json", adapter_execution)
+        if proc.returncode != 0 or adapter_execution.get("status") != "PASS":
+            blocker = adapter_execution.get("root_blocker") or "PINNED_ROUTE_ADAPTER_EXECUTION_FAILED"
+            history = list(prior_state.get("history", []))
+            history.append({"utc": utc(), "state": "ROUTED", "custosz_mission_id": mission["mission_id"]})
+            history.append({"utc": utc(), "state": "RUNTIME_COMPATIBLE"})
+            history.append({"utc": utc(), "state": "ADAPTER_SELECTED", "adapter_id": adapter.get("adapter_id")})
+            history.append({"utc": utc(), "state": "HOLD", "reason": blocker, "gate": "MATERIAL_EXECUTION"})
+            final_state = {
+                **prior_state,
+                "workflow_technical_status": "PASS",
+                "mission_terminal_status": "HOLD",
+                "current_state": "HOLD",
+                "current_gate": "MATERIAL_EXECUTION",
+                "root_blocker": blocker,
+                "history": history,
+            }
+            atomic_json(out / "MISSION_STATE.json", final_state)
+            write_error(
+                out, native, blocker, "MATERIAL_EXECUTION",
+                "Pinned route adapter did not produce PASS",
+                "Repair only the pinned adapter or its declared evidence dependencies, repin SHA-256, then rerun.",
+                "ADAPTER_EXECUTION.json",
+            )
+            return 0
+
     binding_mode = "PREBOUND" if executor_bound else "ADAPTER_PROVIDED_PENDING"
     plan = {
         "schema": "CUSTOSZ_EXECUTION_PLAN/1.1",
@@ -534,10 +587,25 @@ def main():
             "Selecting a binding-providing adapter does not itself prove EXECUTOR_BINDING=PASS."
         ),
     }
+    if adapter_execution:
+        plan["route_adapter_execution"] = {
+            "status": adapter_execution.get("status"),
+            "next_gate": adapter_execution.get("next_gate"),
+            "g16_precheck": adapter_execution.get("g16_precheck"),
+        }
+        plan["status"] = "ROUTE_ADAPTER_EXECUTED_READY_FOR_CLOUD"
     atomic_json(out / "EXECUTION_PLAN.json", plan)
     history.append({"utc": utc(), "state": "RUNTIME_COMPATIBLE"})
     history.append({"utc": utc(), "state": "ADAPTER_SELECTED", "adapter_id": adapter.get("adapter_id")})
-    if executor_bound:
+    if adapter_execution:
+        history.append({
+            "utc": utc(),
+            "state": "ROUTE_ADAPTER_EXECUTED",
+            "adapter_id": adapter.get("adapter_id"),
+            "next_gate": adapter_execution.get("next_gate"),
+        })
+        current_state = "ROUTE_ADAPTER_EXECUTED"
+    elif executor_bound:
         history.append({"utc": utc(), "state": "EXECUTOR_BOUND"})
         current_state = "EXECUTOR_BOUND"
     else:
@@ -548,7 +616,7 @@ def main():
         "workflow_technical_status": "PASS",
         "mission_terminal_status": None,
         "current_state": current_state,
-        "current_gate": "MATERIAL_EXECUTION",
+        "current_gate": ("CLOUD_CORE_MATERIALIZATION" if adapter_execution else "MATERIAL_EXECUTION"),
         "root_blocker": None,
         "history": history,
     }
