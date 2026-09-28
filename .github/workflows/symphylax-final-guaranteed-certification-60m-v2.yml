@@ -1,0 +1,125 @@
+name: "SYMPHYLAX R1 — final guaranteed certification 60m v2"
+
+on:
+  push:
+    branches:
+      - staging/custosz-mission-mailbox-20260928
+    paths:
+      - .github/workflows/symphylax-final-guaranteed-certification-60m-v2.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: symphylax-r1-final-guaranteed-60m-v2
+  cancel-in-progress: false
+
+jobs:
+  producer:
+    name: "Producer — audit, diagnose, remediate, G08, G09, freeze"
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            missions/inbox/symphylax-r1-final-guaranteed-certification-60m-20260928/MISSION_ORIGINAL.md
+            Louksna.md
+            artifacts/custosz-v7
+            server/symphylax-r1-candidate
+            scripts/missions/symphylax_final_guaranteed_60m.py
+          sparse-checkout-cone-mode: false
+      - name: Execute governed producer
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/symphylax-producer"
+          mkdir -p "$OUT"
+          python3 -B -I scripts/missions/symphylax_final_guaranteed_60m.py --repo-root . --mission missions/inbox/symphylax-r1-final-guaranteed-certification-60m-20260928/MISSION_ORIGINAL.md --out "$OUT"
+          cat "$OUT/README_PRODUCER.md"
+      - name: Preserve frozen producer evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: symphylax-r1-final-60m-producer
+          path: ${{ runner.temp }}/symphylax-producer
+          if-no-files-found: error
+          retention-days: 30
+
+  g23:
+    name: "G23 — independent hosted validation"
+    needs: producer
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            missions/inbox/symphylax-r1-final-guaranteed-certification-60m-20260928/MISSION_ORIGINAL.md
+            scripts/missions/symphylax_final_60m_g23.py
+          sparse-checkout-cone-mode: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: symphylax-r1-final-60m-producer
+          path: ${{ runner.temp }}/producer
+      - name: Validate frozen candidate without repair
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 -B -I scripts/missions/symphylax_final_60m_g23.py --producer "$RUNNER_TEMP/producer" --mission missions/inbox/symphylax-r1-final-guaranteed-certification-60m-20260928/MISSION_ORIGINAL.md --out "$RUNNER_TEMP/g23"
+          cat "$RUNNER_TEMP/g23/README_G23.md"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: symphylax-r1-final-60m-g23
+          path: ${{ runner.temp }}/g23
+          if-no-files-found: error
+          retention-days: 30
+
+  g24:
+    name: "G24 — final certification over exact G23 digest"
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: scripts/missions/symphylax_final_60m_g24.py
+          sparse-checkout-cone-mode: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: symphylax-r1-final-60m-g23
+          path: ${{ runner.temp }}/g23
+      - name: Certify exact accepted candidate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 -B -I scripts/missions/symphylax_final_60m_g24.py --g23 "$RUNNER_TEMP/g23" --out "$RUNNER_TEMP/g24"
+          cat "$RUNNER_TEMP/g24/README_SERVER_READY_FINAL.md"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: symphylax-r1-final-60m-g24
+          path: ${{ runner.temp }}/g24
+          if-no-files-found: error
+          retention-days: 30
+
+  postcert:
+    name: "Post-certification read-only assurance"
+    needs: g24
+    if: always()
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 2
+    steps:
+      - name: Read-only service health
+        shell: bash
+        run: |
+          set -u
+          echo "ACTIVE=$(systemctl --user is-active symphylax-r1.service 2>/dev/null || true)"
+          echo "ENABLED=$(systemctl --user is-enabled symphylax-r1.service 2>/dev/null || true)"
+          test -f "$HOME/.local/state/louksna/symphylax-r1/health.json" && cat "$HOME/.local/state/louksna/symphylax-r1/health.json" || true
