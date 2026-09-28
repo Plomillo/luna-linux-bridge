@@ -72,6 +72,24 @@
       "terminal_contract_path": "server/terminal-chain/SERVER_READY_TERMINAL_10M_CONTRACT.json",
       "terminal_contract_sha256": "018f71a2de595076b02c290d563b4a27df8725b8dab35cbbf389762d9fde9904",
       "hard_ceiling_seconds": 600
+    },
+    {
+      "adapter_id": "META_ECOSYSTEM_V1_ADMISSION",
+      "path": "scripts/mission_mailbox/adapters/metacognitive_ecosystem_v1.py",
+      "sha256": "872265252b9b7759ed6d2c5bfee200a5139da92f48dd819aa0c3924402872d0b",
+      "backend": "CUSTOSZ_RUNTIME",
+      "source_sha256": "1f8ba16e26789cc4ba3c9329357ac7c866af50177ccbf5915ca1dd5355c511d0",
+      "mission_classes": [
+        "METACOGNITIVE_ECOSYSTEM_V1"
+      ],
+      "required_capabilities": [],
+      "provides_executor_binding": true,
+      "requires_prebound_executor": false,
+      "execution_location": "SELF_HOSTED_LUNA_AUX",
+      "scope": "META_ECOSYSTEM_ADMISSION_AND_CLOUD_DISPATCH_BOUNDARY",
+      "heavy_compute": false,
+      "downstream_heavy_compute": "GITHUB_HOSTED_ONLY_OR_EXPLICIT_EXTERNAL_CLOUD",
+      "status": "STAGED_CANDIDATE"
     }
   ]
 }
