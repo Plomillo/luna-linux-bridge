@@ -1,0 +1,248 @@
+name: "Metacognitive Cloud Core V1 — material evidence"
+
+on:
+  push:
+    branches:
+      - staging/metacognitive-cloud-core-v1-20260928
+    paths:
+      - ecosystem/metacognitive-operational-v1/**
+      - scripts/metacognitive/**
+      - .github/workflows/metacognitive-cloud-core-v1.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: metacognitive-cloud-core-v1-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  graph:
+    name: "Federated graph"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            ecosystem/metacognitive-operational-v1/ECOSYSTEM_GRAPH.json
+            scripts/metacognitive/validate_ecosystem_graph.py
+          sparse-checkout-cone-mode: false
+      - shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/cloud-core-graph"
+          mkdir -p "$OUT"
+          python3 -B -I scripts/metacognitive/validate_ecosystem_graph.py             --graph ecosystem/metacognitive-operational-v1/ECOSYSTEM_GRAPH.json             --out "$OUT/GRAPH_VALIDATION.json"
+          cat "$OUT/GRAPH_VALIDATION.json" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: cloud-core-graph
+          path: ${{ runner.temp }}/cloud-core-graph
+          if-no-files-found: error
+          retention-days: 30
+
+  debian13:
+    name: "Debian 13 userspace lane"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/cloud-core-debian"
+          mkdir -p "$OUT"
+          docker pull debian:13
+          REF=$(docker image inspect debian:13 --format '{{index .RepoDigests 0}}')
+          docker run --rm debian:13 sh -lc 'cat /etc/os-release; command -v apt-get; uname -m' | tee "$OUT/os.txt"
+          REF="$REF" OUT="$OUT" python3 - <<'PY'
+          import json,os,re
+          text=open(os.path.join(os.environ["OUT"],"os.txt"),encoding="utf-8").read()
+          version=re.search(r'^VERSION_ID="?(.*?)"?$',text,re.M)
+          codename=re.search(r'^VERSION_CODENAME=(.*)$',text,re.M)
+          d={
+            "schema":"DEBIAN13_CLOUD_PROBE/1.0",
+            "status":"PASS" if version and version.group(1)=="13" else "FAIL",
+            "image_ref":os.environ["REF"],
+            "version_id":version.group(1) if version else None,
+            "codename":codename.group(1) if codename else None,
+            "host_kernel_is_debian":False,
+            "semantics":"DEBIAN_13_USERSPACE_ON_GITHUB_HOSTED_LINUX"
+          }
+          open(os.path.join(os.environ["OUT"],"DEBIAN13_PROBE.json"),"w",encoding="utf-8").write(json.dumps(d,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(d,sort_keys=True))
+          if d["status"]!="PASS": raise SystemExit(3)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: cloud-core-debian13
+          path: ${{ runner.temp }}/cloud-core-debian
+          if-no-files-found: error
+          retention-days: 30
+
+  android:
+    name: "Android API 36 + 37 lane"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/cloud-core-android"
+          mkdir -p "$OUT"
+          SDKMANAGER="$(command -v sdkmanager || true)"
+          if [ -z "$SDKMANAGER" ]; then
+            SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          fi
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" "platforms;android-36" "platforms;android-37"
+          test -f "$ANDROID_HOME/platforms/android-36/android.jar"
+          test -f "$ANDROID_HOME/platforms/android-37/android.jar"
+          SDKMANAGER="$SDKMANAGER" OUT="$OUT" python3 - <<'PY'
+          import json,os,pathlib,subprocess
+          home=pathlib.Path(os.environ["ANDROID_HOME"])
+          def props(api):
+              p=home/"platforms"/f"android-{api}"/"source.properties"
+              return p.read_text(encoding="utf-8",errors="replace") if p.is_file() else ""
+          d={
+            "schema":"ANDROID_API_CLOUD_PROBE/1.0",
+            "status":"PASS",
+            "apis":[36,37],
+            "api36_installed":(home/"platforms/android-36/android.jar").is_file(),
+            "api37_installed":(home/"platforms/android-37/android.jar").is_file(),
+            "api36_properties":props(36),
+            "api37_properties":props(37),
+            "sdkmanager":os.environ["SDKMANAGER"],
+            "execution_plane":"GITHUB_HOSTED_LINUX"
+          }
+          if not d["api36_installed"] or not d["api37_installed"]: d["status"]="FAIL"
+          out=pathlib.Path(os.environ["OUT"])/"ANDROID_API_PROBE.json"
+          out.write_text(json.dumps(d,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps({k:v for k,v in d.items() if not k.endswith("_properties")},sort_keys=True))
+          if d["status"]!="PASS": raise SystemExit(3)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: cloud-core-android
+          path: ${{ runner.temp }}/cloud-core-android
+          if-no-files-found: error
+          retention-days: 30
+
+  windows:
+    name: "Windows cloud lane"
+    runs-on: windows-2025
+    timeout-minutes: 5
+    steps:
+      - shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $out = Join-Path $env:RUNNER_TEMP "cloud-core-windows"
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          $os = Get-CimInstance Win32_OperatingSystem
+          $d = [ordered]@{
+            schema = "WINDOWS_CLOUD_PROBE/1.0"
+            status = "PASS"
+            caption = $os.Caption
+            version = $os.Version
+            build = $os.BuildNumber
+            architecture = $env:PROCESSOR_ARCHITECTURE
+            execution_plane = "GITHUB_HOSTED_WINDOWS"
+          }
+          $d | ConvertTo-Json | Set-Content -Encoding UTF8 (Join-Path $out "WINDOWS_PROBE.json")
+          $d | ConvertTo-Json -Compress
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: cloud-core-windows
+          path: ${{ runner.temp }}/cloud-core-windows
+          if-no-files-found: error
+          retention-days: 30
+
+  remote_corpus:
+    name: "Bounded remote corpus streaming"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: scripts/metacognitive/probe_remote_corpus.py
+          sparse-checkout-cone-mode: false
+      - shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/cloud-core-corpus"
+          mkdir -p "$OUT"
+          python3 -B -I scripts/metacognitive/probe_remote_corpus.py             --bytes 65536 --out "$OUT/REMOTE_CORPUS_PROBE.json"
+          cat "$OUT/REMOTE_CORPUS_PROBE.json" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: cloud-core-remote-corpus
+          path: ${{ runner.temp }}/cloud-core-corpus
+          if-no-files-found: error
+          retention-days: 30
+
+  rclone_governor:
+    name: "Rclone adaptive governor logic"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: scripts/metacognitive/select_rclone_profile.py
+          sparse-checkout-cone-mode: false
+      - shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/cloud-core-rclone"
+          mkdir -p "$OUT"
+          cat > "$OUT/profiles.json" <<'JSON'
+          [
+            {"workers":8,"bytes_per_second":100,"checksum_pass":true,"corruption":false,"retry_rate":0.0,"throttling":0.0,"ram_safe":true},
+            {"workers":16,"bytes_per_second":180,"checksum_pass":true,"corruption":false,"retry_rate":0.01,"throttling":0.0,"ram_safe":true},
+            {"workers":32,"bytes_per_second":260,"checksum_pass":true,"corruption":false,"retry_rate":0.01,"throttling":0.02,"ram_safe":true},
+            {"workers":48,"bytes_per_second":250,"checksum_pass":true,"corruption":false,"retry_rate":0.02,"throttling":0.04,"ram_safe":true},
+            {"workers":64,"bytes_per_second":300,"checksum_pass":true,"corruption":false,"retry_rate":0.09,"throttling":0.18,"ram_safe":true}
+          ]
+          JSON
+          python3 -B -I scripts/metacognitive/select_rclone_profile.py             --input "$OUT/profiles.json" --out "$OUT/RCLONE_GOVERNOR_PROBE.json"
+          grep -q '"selected_workers": 32' "$OUT/RCLONE_GOVERNOR_PROBE.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: cloud-core-rclone-governor
+          path: ${{ runner.temp }}/cloud-core-rclone
+          if-no-files-found: error
+          retention-days: 30
+
+  integrated:
+    name: "Integrated cloud core evidence"
+    needs: [graph, debian13, android, windows, remote_corpus, rclone_governor]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: scripts/metacognitive/validate_cloud_core_bundle.py
+          sparse-checkout-cone-mode: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: cloud-core-*
+          path: ${{ runner.temp }}/cloud-core-evidence
+          merge-multiple: true
+      - shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/cloud-core-final"
+          mkdir -p "$OUT"
+          python3 -B -I scripts/metacognitive/validate_cloud_core_bundle.py             --root "$RUNNER_TEMP/cloud-core-evidence"             --out "$OUT/CLOUD_CORE_RESULT.json"
+          cat "$OUT/CLOUD_CORE_RESULT.json" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: cloud-core-final
+          path: ${{ runner.temp }}/cloud-core-final
+          if-no-files-found: error
+          retention-days: 30
