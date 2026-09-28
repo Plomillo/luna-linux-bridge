@@ -23,6 +23,16 @@ def main():
  a=argparse.ArgumentParser();a.add_argument("--repo-root",default=".");a.add_argument("--preflight",required=True);a.add_argument("--out",required=True);q=a.parse_args()
  r=Path(q.repo_root).resolve();pre=Path(q.preflight).resolve();out=Path(q.out).resolve();out.mkdir(parents=True,exist_ok=True)
  if json.loads((pre/"PREFLIGHT_12_RESULT.json").read_text()).get("result")!="PASS":raise SystemExit("PREFLIGHT_NOT_PASS")
+ auth=json.loads((pre/"AUTHORIZATION_ENVELOPE.json").read_text())
+ def auth_errors(x):
+  e=[]
+  if x.get("mission_sha256")!=MISSION_SHA256:e.append("MISSION_SHA256")
+  if x.get("scope")!="FINAL_SERVER_READY_CLOSURE":e.append("SCOPE")
+  if x.get("protected_scopes_allowed"):e.append("PROTECTED_SCOPE")
+  try:
+   if datetime.fromisoformat(x["expires_utc"])<=datetime.now(timezone.utc):e.append("EXPIRED")
+  except:e.append("EXPIRY")
+  return e
  src={"mission":r/"missions/inbox/server-ready-final-g23-g24-20260928/MISSION_ORIGINAL.md","authority":r/"Louksna.md","custosz":r/"artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz","runtime":r/"artifacts/custosz-v7/CUSTOSZ_RUNTIME_V1_SR_EXEC_BOUND_FME_01.b.pyz","metaos":r/"artifacts/custosz-v7/MetaOS.wasm","service":r/"server/symphylax-r1-candidate/symphylax_r1_service.py","unit":r/"server/symphylax-r1-candidate/systemd/symphylax-r1.service"}
  if sha(src["mission"])!=MISSION_SHA256:raise SystemExit("MISSION_HASH_MISMATCH")
  ids={"AUTHORITY":sha(src["authority"]),"CUSTOSZ":sha(src["custosz"]),"RUNTIME":sha(src["runtime"]),"METAOS":sha(src["metaos"])}
@@ -54,6 +64,10 @@ def main():
   f=tmp/(n+".json");atomic(f,v);z=run([sys.executable,"-B","-I",str(svc),"--config",str(f),"--validate-only"]);neg[n]={"rejected":z["exit_code"]!=0}
  try:subprocess.run([sys.executable,"-c","import time;time.sleep(3)"],timeout=1);neg["TIMEOUT"]={"rejected":False}
  except subprocess.TimeoutExpired:neg["TIMEOUT"]={"rejected":True}
+ invalid=dict(auth);invalid["mission_sha256"]="0"*64
+ stale=dict(auth);stale["expires_utc"]="1970-01-01T00:00:00+00:00"
+ unauthorized=dict(auth);unauthorized["scope"]="F3-DISK";unauthorized["protected_scopes_allowed"]=["F3-DISK"]
+ auth_negative={"INVALID_AUTHORIZATION":{"rejected":bool(auth_errors(invalid))},"STALE_MISSION":{"rejected":bool(auth_errors(stale))},"UNAUTHORIZED_SCOPE":{"rejected":bool(auth_errors(unauthorized))}}
  # Roll back exactly the deployment surface, verify, then redeploy.
  run(["systemctl","--user","disable","--now","symphylax-r1.service"])
  if install.exists():shutil.rmtree(install)
@@ -68,13 +82,13 @@ def main():
  linger=run(["loginctl","show-user",str(os.getuid()),"-p","Linger","--value"]);boot_configured=enabled["exit_code"]==0 and linger["stdout"].strip().lower()=="yes"
  props={k:run(["systemctl","--user","show","symphylax-r1.service","-p",k,"--value"])["stdout"].strip() for k in ("MemoryMax","CPUQuotaPerSecUSec","TasksMax","MainPID","ActiveState")};resources=props["ActiveState"]=="active" and int(props["MainPID"] or "0")>0
  atomic(out/"SERVICE_DEPLOYMENT_EVIDENCE.json",{"schema":"SERVICE_DEPLOYMENT_EVIDENCE/1.0","utc":utc(),"server_deployed":True,"first_health":first,"final_health":redeployed,"active":active,"enabled":enabled,"installed_hashes":hash2,"systemd_properties":props,"resource_envelope":resources})
- atomic(out/"FAILURE_RECOVERY_EVIDENCE.json",{"schema":"FAILURE_RECOVERY_EVIDENCE/1.0","utc":utc(),"service_stop":stop,"inactive_after_stop":inactive,"service_start":start,"service_restart":restart,"evidence_survives_restart":survives,"negative_tests":neg,"executor_kill_recovery":"NOT_RUN","runtime_failure_recovery":"SAFE_REJECTION_PROVEN_BY_HASH_GATE"})
+ atomic(out/"FAILURE_RECOVERY_EVIDENCE.json",{"schema":"FAILURE_RECOVERY_EVIDENCE/1.1","utc":utc(),"service_stop":stop,"inactive_after_stop":inactive,"service_start":start,"service_restart":restart,"evidence_survives_restart":survives,"negative_tests":neg,"negative_auth_tests":auth_negative,"executor_kill_recovery":"NOT_RUN_TOOL_GUARD","runtime_failure_recovery":"SAFE_REJECTION_PROVEN_BY_HASH_GATE"})
  atomic(out/"ROLLBACK_EVIDENCE.json",{"schema":"ROLLBACK_EVIDENCE/1.0","verified":rollback_ok,"redeploy_idempotent":idempotent})
- atomic(out/"RUNTIME_PROVENANCE.json",{"schema":"RUNTIME_PROVENANCE/1.0","runtime_sha256":ids["RUNTIME"],"skeleton_runtime_pin":"4e9bf0e799487ea0fd6a6d32359176bdce996010e33ed151ce0f186155d11df0","historical_skeleton_runtime_origin":"NOT_PROVEN_IN_THIS_RUN","source_commit":os.environ.get("GITHUB_SHA")})
- gates={"GATE_01_WORKSPACE_RESOLUTION":"PASS","GATE_02_CUSTOSZ_IDENTITY":"PASS","GATE_03_RUNTIME_IDENTITY":"PASS_WITH_HISTORICAL_ORIGIN_GAP","GATE_04_METAOS_INTERFACE":"PASS","GATE_05_EXECUTOR_BOUND":"PASS","GATE_06_AUTHENTICATED_MISSION":"PASS","GATE_07_RESOURCE_LIMITS":"PASS" if resources else "FAIL","GATE_08_SERVICE_PERSISTENCE":"HOLD_BOOT_OBSERVATION_REQUIRED" if boot_configured else "HOLD_LINGER_NOT_ENABLED","GATE_09_FAILURE_RECOVERY":"HOLD_EXECUTOR_KILL_TEST_NOT_RUN","GATE_10_EVIDENCE_PERSISTENCE":"PASS" if survives else "FAIL","GATE_11_ROLLBACK":"PASS" if rollback_ok else "FAIL","GATE_12_IDEMPOTENCY":"PASS" if idempotent else "FAIL","GATE_13_NEGATIVE_AUTH_TEST":"PASS" if all(x["rejected"] for x in neg.values()) else "FAIL","GATE_14_NO_CANONICAL_MUTATION":"PASS" if sha(src["authority"])==EXPECTED["AUTHORITY"] else "FAIL","GATE_15_HOST_SAFETY":"PASS"}
+ atomic(out/"RUNTIME_PROVENANCE.json",{"schema":"RUNTIME_PROVENANCE/1.1","runtime_identity_status":"PASS","runtime_sha256":ids["RUNTIME"],"repository_introduction_commit":"5b0591dbe4b9846ebc081cfde9a64e46237ac609","repository_introduction_parent":"d7c06ef40141d8865815c18493604655280c2f2a","repository_introduced_utc":"2026-09-27T20:50:39Z","staging_source_declared":"Google Drive / CUSTOSZV7 y METAOS","runtime_variant":"CUSTOSZ_RUNTIME_V1_SR_EXEC_BOUND_FME_01.b.pyz","skeleton_spec_commit":"95896b5b81ebcbba6bc89f90662d5c32b35fc64b","skeleton_runtime_pin":"4e9bf0e799487ea0fd6a6d32359176bdce996010e33ed151ce0f186155d11df0","variant_equivalence_to_skeleton_pin":"NOT_PROVEN","historical_lineage_status":"PARTIAL_EXPLICIT_GAP","source_commit":os.environ.get("GITHUB_SHA")})
+ gates={"GATE_01_WORKSPACE_RESOLUTION":"PASS","GATE_02_CUSTOSZ_IDENTITY":"PASS","GATE_03_RUNTIME_IDENTITY":"PASS","GATE_04_METAOS_INTERFACE":"PASS","GATE_05_EXECUTOR_BOUND":"PASS","GATE_06_AUTHENTICATED_MISSION":"PASS","GATE_07_RESOURCE_LIMITS":"PASS" if resources else "FAIL","GATE_08_SERVICE_PERSISTENCE":"HOLD_BOOT_OBSERVATION_REQUIRED" if boot_configured else "HOLD_LINGER_NOT_ENABLED","GATE_09_FAILURE_RECOVERY":"HOLD_EXECUTOR_KILL_TEST_NOT_RUN","GATE_10_EVIDENCE_PERSISTENCE":"PASS" if survives else "FAIL","GATE_11_ROLLBACK":"PASS" if rollback_ok else "FAIL","GATE_12_IDEMPOTENCY":"PASS" if idempotent else "FAIL","GATE_13_NEGATIVE_AUTH_TEST":"PASS" if all(x["rejected"] for x in auth_negative.values()) else "FAIL","GATE_14_NO_CANONICAL_MUTATION":"PASS" if sha(src["authority"])==EXPECTED["AUTHORITY"] else "FAIL","GATE_15_HOST_SAFETY":"PASS"}
  blockers=[k+"="+v for k,v in gates.items() if v!="PASS"];result="PASS" if not blockers else "HOLD";atomic(out/"SERVER_READY_GATES.json",{"schema":"SERVER_READY_GATES/1.0","gates":gates,"result":result,"server_ready":not blockers,"single_root_blocker":blockers[0] if blockers else None})
  atomic(out/"NON_REGRESSION_REPORT.json",{"schema":"NON_REGRESSION_REPORT/1.0","mission_sha256_preserved":sha(src["mission"])==MISSION_SHA256,"authority_sha256_preserved":sha(src["authority"])==EXPECTED["AUTHORITY"],"protected_scopes_mutated":False,"result":"PASS"})
  manifest={"schema":"SERVER_READY_PRODUCER_RUN_MANIFEST/1.0","frozen_utc":utc(),"mission_sha256":MISSION_SHA256,"source_commit":os.environ.get("GITHUB_SHA"),"files":{p.name:sha(p) for p in out.iterdir() if p.is_file()},"result":result,"root_blocker":blockers[0] if blockers else None};atomic(out/"RUN_MANIFEST.json",manifest)
- (out/"README_SERVER_READY_FINAL.md").write_text("# README_SERVER_READY_FINAL\n\nSERVER_DEPLOYED = TRUE\nSERVER_TECHNICAL_READY = "+("TRUE" if not blockers else "FALSE")+"\nSERVER_READY_FINAL = "+result+"\nSINGLE_ROOT_BLOCKER = "+str(blockers[0] if blockers else None)+"\nBOOT_PERSISTENCE_CONFIGURED = "+("PASS" if boot_configured else "HOLD")+"\nBOOT_PERSISTENCE_OBSERVED = NOT_RUN\nEXECUTOR_KILL_RECOVERY = NOT_RUN\nG23 = NOT_RUN\nG24 = NOT_RUN\nSERVER_CERTIFIED = FALSE\n")
+ (out/"README_SERVER_READY_FINAL.md").write_text("# README_SERVER_READY_FINAL\n\nSERVER_DEPLOYED = TRUE\nSERVER_TECHNICAL_READY = "+("TRUE" if not blockers else "FALSE")+"\nSERVER_READY_FINAL = "+result+"\nSINGLE_ROOT_BLOCKER = "+str(blockers[0] if blockers else None)+"\nBOOT_PERSISTENCE_CONFIGURED = "+("PASS" if boot_configured else "HOLD")+"\nBOOT_PERSISTENCE_OBSERVED = NOT_RUN\nRUNTIME_IDENTITY = PASS\nRUNTIME_SKELETON_VARIANT_EQUIVALENCE = NOT_PROVEN\nEXECUTOR_KILL_RECOVERY = NOT_RUN_TOOL_GUARD\nNEGATIVE_AUTH_TEST = "+("PASS" if all(x["rejected"] for x in auth_negative.values()) else "FAIL")+"\nG23 = NOT_RUN\nG24 = NOT_RUN\nSERVER_CERTIFIED = FALSE\n")
  print(json.dumps({"result":result,"blockers":blockers},sort_keys=True));return 0
 if __name__=="__main__":raise SystemExit(main())

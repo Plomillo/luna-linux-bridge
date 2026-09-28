@@ -51,7 +51,7 @@
       "scope": "FINAL_SERVER_READY_CLOSURE",
       "status": "ACTIVE_PINNED",
       "materializer_path": "scripts/missions/final_server_ready_materialize.py",
-      "materializer_sha256": "6b193c6ab7ad6f94bdaf6b43e4ff0dbe529181a8a6ef36414b5bb0932af8407a",
+      "materializer_sha256": "640d513dfc8644679049947488c8bc8877c01900ab4990e74899871c6dd0ff23",
       "materializer_scope": "POINTS_1_3_PRODUCER_ONLY"
     }
   ]
