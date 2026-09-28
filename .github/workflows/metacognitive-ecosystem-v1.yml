@@ -1,0 +1,79 @@
+name: "Metacognitive Ecosystem V1 — structural assurance"
+
+on:
+  push:
+    branches:
+      - staging/metacognitive-ecosystem-v1-20260928
+    paths:
+      - ecosystem/metacognitive-operational-v1/**
+      - .github/workflows/metacognitive-ecosystem-v1.yml
+  pull_request:
+    paths:
+      - ecosystem/metacognitive-operational-v1/**
+      - .github/workflows/metacognitive-ecosystem-v1.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: metacognitive-ecosystem-v1-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  structural:
+    name: "Structural fail-closed validation"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            ecosystem/metacognitive-operational-v1
+          sparse-checkout-cone-mode: false
+      - name: Validate package
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/meta-ecosystem-validation"
+          python3 -B -I ecosystem/metacognitive-operational-v1/validate.py --out "$OUT"
+          sha256sum ecosystem/metacognitive-operational-v1/* > "$OUT/CONTROL_PLANE_SHA256.txt"
+          cat "$OUT/README_VALIDATION.md" >> "$GITHUB_STEP_SUMMARY"
+      - name: Preserve small evidence only
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: metacognitive-ecosystem-v1-structural-evidence
+          path: ${{ runner.temp }}/meta-ecosystem-validation
+          if-no-files-found: error
+          retention-days: 30
+
+  pre_g23_boundary:
+    name: "Pre-G23 independence boundary"
+    needs: structural
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Record boundary
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cat > "$RUNNER_TEMP/README_PRE_G23.md" <<'EOF'
+          # PRE-G23 BOUNDARY
+
+          STRUCTURAL_VALIDATION = PASS
+          G23 = NOT_PERFORMED
+          G24 = NOT_PERFORMED
+          CUSTOSZ72_EXACT_DIFF = PENDING
+          G16_NON_DUPLICATION = HOLD
+
+          This workflow intentionally does not award G23 or G24.
+          Independent validation must evaluate the frozen candidate through a trust boundary not writable by the producer.
+          EOF
+          cat "$RUNNER_TEMP/README_PRE_G23.md" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: metacognitive-ecosystem-v1-pre-g23
+          path: ${{ runner.temp }}/README_PRE_G23.md
+          if-no-files-found: error
+          retention-days: 30
