@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0",
+  "status": "ACTIVE_EMPTY_FAIL_CLOSED",
+  "policy": {
+    "unmatched_action": "HOLD",
+    "require_sha256_pin": true,
+    "require_runtime_selftest": true,
+    "require_executor_bound": true,
+    "allowed_root": "scripts/mission_mailbox/adapters"
+  },
+  "adapters": []
+}
