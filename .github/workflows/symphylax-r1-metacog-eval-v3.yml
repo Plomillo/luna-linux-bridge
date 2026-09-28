@@ -1,0 +1,114 @@
+name: "SYMPHYLAX R1 — one-minute governed evaluation v3"
+
+on:
+  push:
+    branches:
+      - evaluation/symphylax-r1-readonly-20260928
+    paths:
+      - .github/workflows/symphylax-r1-metacog-eval-v3.yml
+
+permissions:
+  contents: read
+
+jobs:
+  evaluate:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 1
+    steps:
+      - name: Checkout only evaluation surface
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          clean: false
+          sparse-checkout: |
+            artifacts/custosz-v7
+            ecosystem/metacognitive-operational-v1
+            scripts/metacognitive/operational_core.py
+            server/symphylax-r1-candidate
+            Louksna.md
+          sparse-checkout-cone-mode: false
+
+      - name: Read-only consultation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/symphylax-eval-v3"
+          mkdir -p "$OUT"
+          OUT="$OUT" python3 -B -I - <<'PY'
+          import importlib.util,json,os,pathlib,subprocess,sys
+          root=pathlib.Path('.').resolve()
+          out=pathlib.Path(os.environ['OUT'])
+          c=root/'artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz'
+          meta=root/'ecosystem/metacognitive-operational-v1'
+          intent=(
+            "READ_ONLY_DIAGNOSTIC_ONLY. SYMPHYLAX_R1 / SERVER_CANDIDATE_CORRECTED. "
+            "Do not execute, repair, mutate, install, reboot, certify or promote. "
+            "SERVER_READY currently: G08 HOLD; G09 HOLD; G23 HOLD; G24 HOLD; "
+            "SERVER_CERTIFIED FALSE; SERVER_READY_FINAL HOLD; "
+            "ROOT_BLOCKER POST_BOOT_PERSISTENCE_NOT_YET_OBSERVED. "
+            "Evaluate diagnosis, missing evidence, minimum safe route to closure, risks, forbidden shortcuts, exact next gate."
+          )
+          home=pathlib.Path.home()
+          candidates=[]
+          for parent in (home,home/'Proyectos',home/'PROYECTOS',pathlib.Path('/mnt'),pathlib.Path('/media')):
+              if not parent.is_dir(): continue
+              candidates.append(parent)
+              try: candidates.extend(list(parent.iterdir())[:100])
+              except OSError: pass
+          found=[]
+          for p in candidates:
+              try:
+                  p=p.resolve()
+                  if (p/'1. PROYECTOS PRIORITARIOS').is_dir() and ((p/'4. PENDIENTES').exists() or (p/'2. CORPUS').exists()) and p not in found:
+                      found.append(p)
+              except OSError: pass
+          if len(found)!=1:
+              raise SystemExit('REAL_WORKSPACE_NOT_UNIQUELY_RESOLVED:'+repr([str(x) for x in found]))
+          os.environ['CUSTOSZ_WORKSPACE']=str(found[0])
+          state=out/'custosz-state'; state.mkdir(parents=True,exist_ok=True)
+          os.environ['CUSTOSZ_STATE_DIR']=str(state)
+
+          z=subprocess.run([sys.executable,'-B','-I',str(c),'v07-status'],capture_output=True,text=True,timeout=12,check=True)
+          sys.path.insert(0,str(c))
+          import custosz_v05_legacy as worker
+          worker.PINS={k:(v[0].replace(chr(92),'/') if v[0] else None,v[1],v[2],v[3]) for k,v in worker.PINS.items()}
+          worker.PROFILES={k:([x.replace(chr(92),'/') for x in v[0]],[x.replace(chr(92),'/') for x in v[1]]) for k,v in worker.PROFILES.items()}
+          architect=worker.architect(intent,'LUNA_PROJECT')
+          reasoning=worker.reasoning_policy(intent,'LUNA_PROJECT')
+
+          spec=importlib.util.spec_from_file_location('meta_core',root/'scripts/metacognitive/operational_core.py')
+          mod=importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
+          caps=json.loads((meta/'CAPABILITIES.json').read_text(encoding='utf-8'))['capabilities']
+          ids=mod.MetacognitivePlanner(caps).plan(intent)
+          names={x['id']:x['name'] for x in caps}
+          mcap=[{'id':i,'name':names.get(i)} for i in ids]
+
+          response={
+            'mode':'READ_ONLY_DIAGNOSTIC_ONLY',
+            'material_execution_authorized':False,
+            'workspace':str(found[0]),
+            'custosz_status':json.loads(z.stdout),
+            'custosz_architect':architect,
+            'custosz_reasoning_policy':reasoning,
+            'metacognitive_capability_plan':mcap,
+            'current_state':{
+              'G08':'HOLD','G09':'HOLD','G23':'HOLD','G24':'HOLD',
+              'SERVER_CERTIFIED':False,'SERVER_READY_FINAL':'HOLD',
+              'ROOT_BLOCKER':'POST_BOOT_PERSISTENCE_NOT_YET_OBSERVED'
+            }
+          }
+          (out/'RESPONSE.json').write_text(json.dumps(response,ensure_ascii=False,indent=2,sort_keys=True)+'\n',encoding='utf-8')
+          print('CUSTOSZ_ARCHITECT='+json.dumps(architect,ensure_ascii=False,sort_keys=True))
+          print('CUSTOSZ_REASONING='+json.dumps(reasoning,ensure_ascii=False,sort_keys=True))
+          print('MCAP_PLAN='+json.dumps(mcap,ensure_ascii=False,sort_keys=True))
+          print('READ_ONLY_DIAGNOSTIC=PASS')
+          PY
+
+      - name: Preserve response
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: symphylax-r1-evaluation-v3
+          path: ${{ runner.temp }}/symphylax-eval-v3
+          if-no-files-found: error
+          retention-days: 7
