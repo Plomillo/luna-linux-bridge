@@ -7,6 +7,16 @@
 **Doctrina:** EXTEND_DO_NOT_REPLACE; APPEND_ONLY_WHERE_CANONICAL; FAIL_CLOSED; NO_SILENT_OPERATIONS.  
 **Propósito:** terminar de implementar las capacidades de R4 aún ausentes y producir pruebas separadas de implementación, no regresión, validación independiente y eventual certificación. Este plan no es certificación ni reemplaza decisiones humanas.
 
+## Enmienda de gobernanza — responsabilidad del servidor y frontera de disco
+
+**Decisión del propietario:** SYMPHYLAX R1 es el responsable operacional de la continuación de R4. No es un mero repositorio de evidencias ni debe delegar en el asistente o Remote Desktop Commander las misiones para las que fue concebido. Bajo la autoridad de Louksna y el gobierno de MetaOS, el servidor planifica, coordina, supervisa y verifica; CUSTOSZ V7 es el trabajador ejecutor autorizado, con CUSTOSZ_RUNTIME_V1 para límites temporales, checkpoints y recuperación. Las capacidades cognitivas y metacognitivas (arquitecturas A0/A1, Meta 2, contenedor semántico, PUAC2) son entradas gobernadas y versionadas; no prueban por sí mismas que SYMPHYLAX o CUSTOSZ puedan ejecutar una misión real.
+
+**Precondición fuerte:** antes de que el servidor instale aplicaciones por lotes debe completar una validación independiente G23 y una decisión G24 **limitadas al alcance de instalación no destructiva**, basadas en pruebas reales, negativas, recuperación y observabilidad. Antes de cualquier intervención sobre particiones o retirada de Windows debe superar además una evaluación separada **para el alcance destructivo concreto**. La acreditación de un alcance no se hereda por otros dominios. Ningún actor se autocertifica. El propietario conserva la autorización humana de operaciones irreversibles.
+
+**Activo prioritario:** `C:\PROYECTOS`; protección de datos comprobable, sin prometer riesgo físico cero. Si comparte partición NTFS con Windows, no se puede borrar esa partición para «quitar Windows» sin migrar primero los datos protegidos y demostrar recuperación desde copias independientes. La integridad del Debian operativo y las particiones EFI/arranque también es condición técnica de éxito. El plan debe exigir preservación explícita de `PROYECTOS`, sin conservar Windows como objetivo final.
+
+**Condición de uso cotidiano:** ventanas de ejecución controladas, presupuesto CPU/RAM/disco/red y prioridad para la estabilidad del escritorio y los estudios universitarios del propietario. El servidor no debe ocupar la máquina de modo que interrumpa el trabajo académico; tareas largas, si hay recursos, se realizan en el servidor y se sincronizan solo en checkpoints verificados.
+
 ## A. Fuentes congeladas y estado actualmente sustentado
 
 | Recurso | Identidad y evidencia verificadas | Estado admisible |
@@ -45,14 +55,16 @@ Los hashes declarados en Skeleton para CUSTOSZ V7, runtime, MetaOS y manifiesto 
 
 **Gate F0:** manifiestos firmados o hasheados, lista de ausencias y contradicciones, inventario host, checkpoint comprobable, fuente canónica preservada. Si falta alguno, bloquear cambios materiales.
 
-### F1 — Resolver ejecutabilidad de la orquestación sin ampliar autoridad
+### F1 — Certificar capacidad operacional del servidor ANTES de encargarle la instalación
 
-1. Confrontar hashes declarados en Skeleton de CUSTOSZ V7, CUSTOSZ_RUNTIME_V1, MetaOS y manifiesto semántico con los archivos realmente instalados.
-2. Demostrar con tareas inocuas y reversibles: registro de misión; selección de agente; decisión MetaOS; ejecución CUSTOSZ; acotación temporal del runtime; bitácora externa; postvalidación; restauración de un checkpoint de ensayo.
-3. Mantener Remote Desktop Commander **auxiliar de lectura/observación/transporte**, no trabajador de sustitución.
-4. El servidor solo ejecutará cambios aprobados dentro de permisos, dominios y dependencias declaradas. Estado `EXECUTOR=UNBOUND` o falta de evidencia => `HOLD`.
+1. Identificar el binario y configuración efectivos de SYMPHYLAX R1, CUSTOSZ V7, CUSTOSZ_RUNTIME_V1, MetaOS y, donde corresponda, Meta 2 y el contenedor semántico. Cotejar su versión, fuente, permisos, hash, plataforma, dependencias, recursos y límite de autoridad. Las referencias A0/A1 orientan la operación, no transfieren autoridad.
+2. Levantar una **matriz de competencias verificadas del servidor**: inventariar hardware/software; resolver dependencias; adquirir y verificar fuentes oficiales; simular instalación; instrumentar un checkout aislado; instalar/configurar paquetes en entorno de prueba; comprobar KDE/UI y aplicaciones; monitorizar CPU/RAM; checkpoint; rollback; recuperación de fallo; protección de PROYECTOS; gestión de ventanas temporales; generación y custodia de evidencia; diagnóstico autónomo sin destruir datos.
+3. Ejecutar una misión trazable de extremo a extremo, primero inocua, luego de instalación en sandbox: SYMPHYLAX recibe y planifica, MetaOS autoriza, CUSTOSZ ejecuta, runtime controla recursos y checkpoint, servidor evalúa resultados y redacta evidencia; inyectar fallos para exigir abortar, restaurar y comprobar restauración.
+4. Distinguir resultados: `AVAILABLE`, `TESTED`, `FUNCTIONALLY_VALIDATED`, `INDEPENDENTLY_VALIDATED`, `CERTIFIED_FOR_SCOPE`. No aceptar un inventario, un script, una salida autodeclarada o un hash como evidencia de competencia profesional integral.
+5. Exigir G23 **independiente del constructor y ejecutor** y dictamen G24 competente para un alcance delimitado de **instalación reversible no destructiva**. Si no hay validador independiente disponible, `HOLD`, sin certificación ni instalación autónoma. Registrar limitaciones explícitas.
+6. Remote Desktop Commander es AUXILIAR_ONLY para observación o transporte bajo permiso, no ejecutor sustituto. El servidor mantiene el presupuesto de recursos y no invade horarios de estudio ni interrumpe cargas académicas.
 
-**Gate F1:** traza completa `REQUEST→AUTHORIZATION→CHECKPOINT→EXECUTION→POSTVALIDATION→AUDIT`, y escenario de fallo `ABORT→ROLLBACK→VERIFY_RESTORATION` demostrados en alcance controlado.
+**Gate F1 PRE-INSTALL:** trazas, matriz de competencias, pruebas positivas/negativas/límites, recuperación ensayada, aislamiento entre dominios, G23 independiente y G24 aplicables al **alcance no destructivo**. Falta de evidencia, permisos insuficientes, inestabilidad del host o `EXECUTOR=UNBOUND` => `HOLD`.
 
 ### F2 — Contenedor semántico: conservar avance y completar transporte aparte
 
@@ -63,16 +75,34 @@ Los hashes declarados en Skeleton para CUSTOSZ V7, runtime, MetaOS y manifiesto 
 
 **Gate F2:** identidad exacta de los 252 objetos verificada desde GitHub **para el cierre del transporte**; contrato de consulta y recuperación validado por separado **para el cierre funcional**. F2 no impide empezar inventario e interfaz de F3 si la tarea es independiente.
 
-### F3 — Instalación diferencial R4 en lotes reversibles
+### F3 — Instalación diferencial R4 dirigida por SYMPHYLAX, ejecutada por CUSTOSZ
 
-1. No reinstalar Debian ni componentes ya válidos. Comparar paquetes y firmware efectivos con requisitos del Skeleton; resolver únicamente ausencias, dependencias conflictivas y versiones no fijadas.
-2. Priorizar: seguridad/firmware/almacenamiento → bases Node/Python/Git/7-Zip/OpenJDK/C++23/Mojo → navegador y compatibilidad universitaria → Projects Center/CUSTOSZ local → interfaz KDE y referencias visuales → Devocional y backend local → juegos/virtualización/higiene.
-3. Antes de cada lote: simulación de paquetes sin eliminación inesperada, procedencia oficial, licencia, hash cuando exista, prueba de cierre de dependencias, coste de recursos y checkpoint de archivos afectados.
-4. Después de cada lote: versionado, prueba funcional, monitor de RAM/CPU (Ryzen 5 3500U, ~5,92 GiB disponibles según Skeleton), inventario actualizado y ruta de rollback. No confundir instalación de un paquete con entrega de aplicación propia.
-5. La interfaz debe contrastarse visualmente contra el conjunto de referencias UI del Skeleton, además de medir accesibilidad, lanzadores, escritorio, fondo, navegación, estados de fallo y consistencia en KDE.
-6. No purgar Firefox, borrar Windows, modificar EFI/particiones ni reiniciar de forma automática. Esas operaciones son expedientes separados con autorización humana, seguridad de PROYECTOS y pruebas previas específicas.
+**Responsable de misión:** SYMPHYLAX R1, únicamente después de F1. **Trabajador de ejecución:** CUSTOSZ V7. **Gobernador:** MetaOS bajo Louksna. **Control de ejecución:** CUSTOSZ_RUNTIME_V1. **Asistente/Desktop:** auxiliares sin delegación del trabajo principal.
 
-**Gate F3:** evidencia individual `INSTALLED` y `FUNCTIONALLY_VALIDATED` por requisito; protección de datos y no regresión PASS del lote. Lo pendiente permanece explícitamente pendiente.
+1. El servidor compara requisitos completos del Skeleton con el sistema instalado. No reinstala Debian ni repite herramientas funcionales. Cada ausencia recibe ID, dependencias, riesgo, prueba, coste, responsable, ventana temporal, checkpoint y recuperación.
+2. El servidor genera y propone lotes ordenados: seguridad/firmware/almacenamiento → Node/Python/Git/7-Zip/OpenJDK/C++23/Mojo → navegador y compatibilidad universitaria → Projects Center/CUSTOSZ local → KDE/UI y referencias visuales → Devocional/backend local → juegos/virtualización/higiene.
+3. Antes de cada lote, SYMPHYLAX exige simulación de paquetes, fuente oficial y licencias, fijación de versión/hash disponible, conflicto de dependencias, prueba de protección de PROYECTOS, consumo de RAM/CPU y checkpoint. MetaOS autoriza el alcance; CUSTOSZ ejecuta **solo ese lote** y el runtime vigila límites y rollback.
+4. SYMPHYLAX conserva evidencia inmutable fuera del ámbito que pueda revertirse, ordena pruebas funcionales/repetición negativa y verifica no regresión. Fallo => abortar, restaurar checkpoint, comprobar restauración, informar con diagnóstico y detener avance de ese dominio.
+5. Las aplicaciones propias (Projects Center, Devocional, gestor de versiones, Hygiene, integración semántica) exigen pruebas funcionales reales; instalar dependencias no constituye entrega de una aplicación. Para KDE se contrasta el diseño, fondo, accesibilidad, navegación y referencias UI, no solo el inicio de sesión.
+6. Aplicar planificación respetuosa de la universidad: trabajo pesado preferentemente en servidor; límites configurables de recursos y tiempo en portátil; sin reinicios desatendidos, sin afectar documentos/clases ni quitar conectividad esencial.
+7. **Exclusión de este alcance:** borrar Windows, alterar GPT/EFI/particiones, formatear, mover PROYECTOS o purgar recursos de otro dominio. Su expediente separado es F3-DISK, no una subrutina de F3.
+
+**Gate F3:** cada lote muestra `INSTALLED`, `FUNCTIONALLY_VALIDATED`, evidencia de seguridad de datos y no regresión, bajo la competencia por alcance concedida en F1; sin atribución automática de G23/G24 al producto completo.
+
+### F3-DISK — Protección de PROYECTOS y eventual retirada de Windows 11 (fase separada)
+
+**Estado inicial obligatorio: `DENY_DESTRUCTIVE_ACTION`.** El objetivo futuro es retirar Windows 11 conservando los datos de PROYECTOS y el arranque funcional de Debian. No comenzar esta fase hasta la madurez y estabilización de SYMPHYLAX/CUSTOSZ y la autorización humana puntual. La regla H2 del Skeleton sigue vigente: particionado físico MANUAL por el usuario, asistido por un plan del servidor, salvo futura modificación expresa y formal de esa regla.
+
+1. **Geometría de solo lectura:** el servidor inventaría discos físicos, seriales/WWN si disponibles, GPT, UUID/PARTUUID, sistemas de archivos, volúmenes, uso real, montaje, EFI, GRUB/bootloader, Debian y ubicación física exacta de PROYECTOS. Confirmar si el antiguo `C:\PROYECTOS` se encuentra en la misma partición de Windows. No usar la letra C: como identificador Linux estable.
+2. **Cifrado y acceso:** detectar BitLocker u otro cifrado. Si existe, comprobar con el propietario que tiene una clave de recuperación accesible y comprobada **sin imprimirla ni subirla a GitHub**. Fallo de desbloqueo o duda de localización => abortar.
+3. **Congelación lógica:** interrumpir escrituras sobre la fuente protegida durante la captura consistente, inventariar cada ruta y metadatos, crear hashes y un manifiesto de exclusiones justificadas. No asumir que un atributo de solo lectura equivale a una instantánea consistente de NTFS; confirmar que el método empleado permite recuperación completa.
+4. **Redundancia real:** preparar al menos dos copias independientes cifradas de PROYECTOS en soportes físicos o ubicaciones de fallo independientes, ninguna almacenada exclusivamente en el mismo disco que será particionado. Conservar originales hasta verificar por lectura íntegra tamaños/hashes y realizar restauraciones de muestra **y un ensayo de restauración utilizable en destino aislado**. Disponer, cuando corresponda, de imagen de disco/volumen y un medio de rescate que realmente arranque. Una copia en GitHub o CAS no reemplaza por defecto el respaldo integral de PROYECTOS.
+5. **Análisis destructivo del servidor:** SYMPHYLAX debe generar un mapa exacto de segmentos a CONSERVAR/MIGRAR/ELIMINAR, comandos propuestos sin ejecutar, prueba en réplica o disco virtual de geometría equivalente, prueba de arranque y acceso a PROYECTOS desde Debian, prueba de restauración y plan de contingencia. Si PROYECTOS comparte partición con Windows, migrar primero a volumen de datos separado y conservar copias verificadas; NUNCA formatear esa partición suponiendo que la carpeta quedará a salvo.
+6. **Gate independiente para alcance destructivo:** G23 evalúa por separado la competencia efectiva de SYMPHYLAX/CUSTOSZ para ese dispositivo, esa tabla de particiones, ese mapa y ese método de restauración; G24 solo puede certificar/autorizar dentro de sus competencias y del alcance probado. Debe constar evidencia de arranque Debian/EFI preservado, copias probadas, riesgos residuales y ruta de recuperación.
+7. **Autorización humana H2/H4:** presentar al propietario el plano exacto del disco, tamaños/UUID de destinos, qué desaparece, qué se conserva, evidencias de restauración, margen de riesgo y momento de indisponibilidad; solicitar consentimiento explícito inmediatamente antes del evento. El usuario realiza el particionado físico manual conforme al Skeleton. El servidor puede inspeccionar y verificar antes y después, pero no adquirir permisos ilimitados para borrar discos automáticamente.
+8. **Postoperación:** verificar hashes del conjunto recuperado, disponibilidad de PROYECTOS, arranque limpio y estable de Debian/KDE, EFI funcional, acceso a universidad, recuperación de emergencia y no regresión de R4. Conservar evidencia fuera del disco intervenido. Eliminar imágenes y respaldos temporales solo mediante expediente de retención autorizado, nunca por limpieza automática.
+
+**Gate F3-DISK:** `SOURCE_FROZEN_AND_ACCESSIBLE` + `INDEPENDENT_BACKUPS_VERIFIED` + `RESTORE_PROVEN` + `DISK_MAP_REVIEWED` + `DEBIAN_BOOT_PROTECTED` + `SERVER_DESTRUCTIVE_SCOPE_INDEPENDENTLY_VALIDATED` + `G24_DECISION` + `HUMAN_H2_H4_APPROVAL`. Si cualquiera es desconocido, `HOLD` y mantener Windows temporalmente. No afirmar «riesgo cero» ni prometer rollback de particiones sin respaldo restaurable probado.
 
 ### F4 — Aseguramiento y validación independiente por objeto
 
@@ -100,4 +130,4 @@ Toda operación consecuencial debe emitir `operation_id, actor, authority, sourc
 
 ## E. Próximo hito autorizado
 
-**F0:** inventario diferencial del host respecto del Skeleton y verificación individual de CUSTOSZ V7, MetaOS, runtime y SYMPHYLAX. Solo después, y con checkpoints, continuar instalación de componentes faltantes por lotes. La transferencia restante del CAS puede reanudarse en paralelo cuando se decida, sin bloquear las comprobaciones no dependientes.
+**F0 → F1 PRE-INSTALL:** el servidor SYMPHYLAX ejecuta inventario diferencial del host respecto del Skeleton e identifica CUSTOSZ V7, MetaOS, runtime, arquitectura normal/mejorada, Meta 2 y contenedor semántico sin asumir que las declaraciones sean ejecutables. Su siguiente obligación es demostrar capacidad de instalación reversible en un entorno aislado con pruebas de error/rollback, seguida de G23 independiente y dictamen G24 **para ese alcance**. Solo entonces SYMPHYLAX coordina y CUSTOSZ ejecuta F3; no delegar la instalación al asistente ni a Desktop Commander. **F3-DISK se pospone** hasta completar protección comprobada y dos copias independientes restaurables de PROYECTOS, validar la capacidad destructiva por separado y obtener autorización humana H2/H4; Windows 11 no es un requisito que deba conservarse después de esa transición segura. Las cargas de trabajo preservan disponibilidad del portátil para estudios universitarios. La transferencia CAS pendiente puede completarse en paralelo, sin equiparar transporte con ejecución local.
