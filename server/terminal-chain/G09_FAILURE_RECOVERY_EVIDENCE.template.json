@@ -1,0 +1,21 @@
+{
+  "schema": "G09_FAILURE_RECOVERY_EVIDENCE/1.0",
+  "mission_sha256": "8191840debd98f8775e530a37d3d23770f148693af64689f8e0d187be037cb21",
+  "result": "HOLD",
+  "executor_kill_recovery": false,
+  "process_termination_recovery": false,
+  "runtime_failure_recovery": false,
+  "dependency_failure": "NOT_RUN",
+  "timeout": "NOT_RUN",
+  "no_orphan_process": false,
+  "state_recovery": false,
+  "evidence_survives_restart": false,
+  "before_process_id": null,
+  "after_process_id": null,
+  "test_start_utc": null,
+  "test_end_utc": null,
+  "source_executor": null,
+  "evidence_refs": [],
+  "root_blocker": "CONTROLLED_EXECUTOR_KILL_EVIDENCE_MISSING",
+  "resolved": false
+}
