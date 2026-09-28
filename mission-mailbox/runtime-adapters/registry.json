@@ -90,6 +90,24 @@
       "heavy_compute": false,
       "downstream_heavy_compute": "GITHUB_HOSTED_ONLY_OR_EXPLICIT_EXTERNAL_CLOUD",
       "status": "STAGED_CANDIDATE"
+    },
+    {
+      "adapter_id": "SYMPHYLAX_FINAL_GUARANTEED_60M_V1",
+      "path": "scripts/mission_mailbox/adapters/symphylax_final_guaranteed_60m.py",
+      "sha256": "138194ff7409cb3b9b48a32e98ec6362f0857fe87e667a5501fd4aa5bc939d85",
+      "backend": "CUSTOSZ_RUNTIME",
+      "source_sha256": "39ff460cab6e709f48775361ccb76996acc7a3cfc26e4c7399faf126c61ab0f6",
+      "mission_classes": [
+        "SYMPHYLAX_FINAL_GUARANTEED_CERTIFICATION_60M"
+      ],
+      "required_capabilities": [],
+      "provides_executor_binding": true,
+      "requires_prebound_executor": false,
+      "execution_location": "SELF_HOSTED_LUNA_AUX",
+      "scope": "SYMPHYLAX_FINAL_GUARANTEED_CERTIFICATION_G08_G09_PUAC2_G23_G24",
+      "status": "ACTIVE_PINNED",
+      "hard_ceiling_seconds": 3600,
+      "dedicated_workflow": ".github/workflows/symphylax-final-guaranteed-certification-60m.yml"
     }
   ]
 }
