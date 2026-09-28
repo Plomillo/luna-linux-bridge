@@ -270,3 +270,18 @@ El [expediente F-2.2](ADITIVO_F2_2_TRASPASO_AUDITORIA_PREAUTORIZO.md) continúa 
 **Observación actual de los gates:** investigación documentada; guardia inerte estática probada exclusivamente en CI GitHub-hosted; T01–T20 operacionales `NOT_EXECUTED`; puente de consentimiento `ABSENT_OR_UNVERIFIED`; G23/G24 de servidor/host `HOLD`; AUTORIZO `NOT_RECEIVED`; F3-DISK `DENIED`. **No atribuir `SERVER_READY` por el archivo JSON, un PASS de CI o un mensaje escrito.** El paquete no instala código ni modifica la máquina. La eventual eliminación de Windows exige expediente y autorización independientes después de copias externas y recuperación probada de PROYECTOS. 
 
 **Criterio de cierre del objetivo de 20 minutos:** publicación del estudio y del contrato de pruebas; no prueba de madurez del servidor. El objetivo de instalación nocturna se acepta únicamente con mediciones sobre réplica equivalente, margen de rollback, límites para disponibilidad académica y validaciones G23/G24 aplicables.
+
+
+## ADITIVO F-2.3 — CÁPSULA DE MISIÓN PRE-AUTORIZO
+
+El expediente [F-2.3](ADITIVO_F2_3_CAPSULA_MISION_PREAUTORIZO.md) materializa el siguiente entregable de F-2.2 sin modificar el host: `SYMPHYLAX_R1_NIGHT_MISSION_PACKAGE_CANDIDATE.json`, un paquete inerte con inputs fijados por commit/blob, 12 lotes L00–L11 en DAG, presupuesto provisional de recursos, contrato de evidencia, autorización de un solo uso y exclusión absoluta de F3-DISK del permiso general.
+
+La operación se formaliza como `DECLARED → PINNED → SIMULATED → SANDBOX_VALIDATED → AUTHORIZED → CHECKPOINTED → EXECUTED → FUNCTIONALLY_VALIDATED → INDEPENDENTLY_VALIDATED → CERTIFIED_FOR_SCOPE → ACTIVE`; ausencia de evidencia no permite saltos. El paquete mantiene `user_authorized=false`, `automation_armed=false`, `dispatch_enabled=false`, `live_server_ready=false` y `execution_permitted=false`.
+
+La workflow GitHub-hosted [36375968122](https://github.com/Plomillo/luna-linux-bridge/actions/runs/36375968122) ejecutó el verificador estático F-2.3: 12 pruebas negativas pasaron, 12 lotes declarados, 0 ejecutados, sin self-hosted runner ni acceso a SYMPHYLAX/LOUKSNA/PROYECTOS. Este PASS acredita coherencia estática y fail-closed local del paquete; no es G23, G24, sandbox funcional ni certificación del servidor.
+
+**Patrones endurecidos:** NIST SSDF (disciplina SDLC/evidencia), SLSA (procedencia sin reclamar nivel), in-toto (layout, actores, materiales/productos), TUF (resiliencia de updates), Sigstore (opción de firma/identidad a revisar), APT Secure (autenticación Debian), Ansible (idempotencia y check/diff con límites), GitHub Actions (self-hosted no asumido como sandbox) y Hugging Face (carga segura de modelos). Son referencias de diseño, no certificados transferibles.
+
+**Estado después de F-2.3:** `RESEARCH_COMPLETE=EVIDENCED`; `DESIGN_PACKAGE_MATERIALIZED=TRUE`; `STATIC_PACKAGE_NEGATIVE_TESTS=12_PASS`; `SANDBOX_VALIDATED=FALSE`; `AUTHENTICATED_CONSENT_ADAPTER=ABSENT_OR_UNVERIFIED`; `G23=HOLD`; `G24=HOLD`; `SERVER_READY_WAITING_FOR_AUTORIZO=FALSE`; `AUTORIZO=NOT_RECEIVED`; `F3_DISK=DENIED`.
+
+**Próximo hito F-2.4:** diseñar/revisar el adaptador de consentimiento autenticado y la réplica aislada, fijar las fuentes/versiones definitivas de los lotes y ejecutar T01–T20 + benchmarks de duración/recursos en sandbox autorizado. Solo evidencia real de esos ensayos y revisión independiente podrá convertir el paquete en candidato a `SERVER_READY_WAITING_FOR_AUTORIZO`.
