@@ -31,7 +31,18 @@ jobs:
             artifacts/custosz-v7
             server/symphylax-r1-candidate
             scripts/missions/symphylax_final_guaranteed_60m.py
+            scripts/missions/symphylax_final_60m_g23.py
+            scripts/missions/symphylax_final_60m_g24.py
           sparse-checkout-cone-mode: false
+      - name: Static syntax preflight — fail closed
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -m py_compile scripts/missions/symphylax_final_guaranteed_60m.py
+          python3 -m py_compile scripts/missions/symphylax_final_60m_g23.py
+          python3 -m py_compile scripts/missions/symphylax_final_60m_g24.py
+          python3 -m py_compile server/symphylax-r1-candidate/linux_remainder_fetch.py
+          echo "SYNTAX_PREFLIGHT=PASS"
       - name: Execute governed producer
         shell: bash
         run: |
