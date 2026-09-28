@@ -299,7 +299,7 @@ jobs:
           D="$(tr -d '\r\n' < "$C/CANDIDATE_DIGEST.txt")"
           echo "candidate_digest=$D" >> "$GITHUB_OUTPUT"
           echo "### Frozen candidate" >> "$GITHUB_STEP_SUMMARY"
-          echo "`$D`" >> "$GITHUB_STEP_SUMMARY"
+          printf '`%s`\n' "$D" >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: metacognitive-ecosystem-r4-frozen-candidate
