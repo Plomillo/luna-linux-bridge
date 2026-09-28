@@ -103,6 +103,10 @@ jobs:
           SDKMGR=$(command -v sdkmanager || find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -1)
           test -x "$SDKMGR"
           yes | "$SDKMGR" --licenses >/dev/null 2>&1 || true
+          "$SDKMGR" "cmdline-tools;latest"
+          SDKMGR="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          test -x "$SDKMGR"
+          "$SDKMGR" --version
           "$SDKMGR" --list --channel=3 > "$RUNNER_TEMP/sdk-list.txt"
           PKG37=$(awk -F'|' '
             /platforms;/ && (tolower($1) ~ /cinnamon/ || tolower($1) ~ /android-37/) {
