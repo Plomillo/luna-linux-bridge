@@ -82,3 +82,74 @@ El trabajo pesado de esta etapa se ejecutó en GitHub-hosted; no constituye acti
   "user_host_ram_heavy_research": null
 }
 ~~~
+
+
+## Despacho material CUSTOSZ + Runtime run 36376796627
+
+Evidencia de ejecución: https://github.com/Plomillo/luna-linux-bridge/actions/runs/36376796627
+
+El trabajo pesado de esta etapa se ejecutó en GitHub-hosted; no constituye activación de producción en LOUKSNA ni autorización F3-DISK.
+
+~~~json
+{
+  "ended_utc": "2026-09-28T04:13:48.202602+00:00",
+  "g23": "HOLD",
+  "g24": "HOLD",
+  "host_disk_mutation": false,
+  "host_installation": false,
+  "mission_id": "MIS-6d75cad1fb234f099a4d",
+  "research_result": {
+    "cas": {
+      "content_validation_pending": true,
+      "expected": 252,
+      "pending": 248,
+      "uploaded": 4
+    },
+    "conclusions": [
+      "A0, A1, PUAC2, Skeleton and mission identities were verified on GitHub-hosted compute.",
+      "The native CUSTOSZ continuation is registered on the real LUNA_PROJECT workspace; this material research is bound to the same mission_id without consuming user-host RAM.",
+      "The staging runtime is selected by its staging manifest but its SHA-256 differs from the generic Skeleton runtime pin; host activation remains blocked until provenance/variant reconciliation.",
+      "PUAC2 remains a 2.0.0 candidate with G23/G24 not granted; it may govern assurance requirements but cannot self-certify.",
+      "CAS transfer completion and semantic runtime validation remain separate; the GitHub branch still records pending CAS objects.",
+      "No installation, Windows/EFI/GPT/PROYECTOS mutation or reboot was performed."
+    ],
+    "mission_id": "MIS-6d75cad1fb234f099a4d",
+    "next_authorized_research": [
+      "Reconcile selected runtime variant against the Skeleton pin and original provenance.",
+      "Complete A0-A1 semantic/admission evidence without mutating canonical sources.",
+      "Complete CAS Git LFS transport from an isolated clean checkout and validate destination hashes.",
+      "Prepare the differential R4 component matrix and sandbox installation lots.",
+      "Independently test the consent/executor bridge before any host installation."
+    ],
+    "puac2": {
+      "candidate_2_0_present": true,
+      "d01_d10_markers": 10,
+      "g23_not_granted": true,
+      "g24_not_granted": true
+    },
+    "r4": {
+      "installation_performed_false": true,
+      "runtime_pin_declared": "4e9bf0e799487ea0fd6a6d32359176bdce996010e33ed151ce0f186155d11df0",
+      "target_os_debian13": true
+    },
+    "scope": "READONLY_RESEARCH",
+    "status": "MATERIAL_RESEARCH_COMPLETED",
+    "verified": {
+      "a0_sha256": "5270c3d643339c283edf13b414f335f23f921c4dac023b06d38de62927e29bf9",
+      "a1_sha256": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51",
+      "mission_sha256": "f4811c8c5b6ab6186f70b69620972ae49c3e2718a956d6cfae72df07c19ac5da",
+      "puac2_sha256": "c872ab8d31e0e301de93ab06047294424d309d947f225e62148cee8265b15869",
+      "skeleton_sha256": "fb9fad37994e684ad54b1ffc2762660eebcb8e41bd9c4ba685ffac55217d5b0f"
+    }
+  },
+  "runtime_dispatch": {
+    "evidence_chain_head": "7c478e39b3b047835f7298d476a8a1832512296b361935c394fe7e2e70c84ebb",
+    "global_step_gate": 1,
+    "material_execution_proven": true,
+    "result": "PASS"
+  },
+  "started_utc": "2026-09-28T04:13:46.506128+00:00",
+  "status": "CUSTOSZ_AND_RUNTIME_MATERIAL_RESEARCH_PASS",
+  "user_host_ram_heavy_research": false
+}
+~~~
