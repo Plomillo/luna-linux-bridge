@@ -4,6 +4,8 @@ import argparse, hashlib, json, pathlib
 from datetime import datetime, timezone
 
 ROOT_FILES=[
+ "Louksna.md",
+ "PUAC2.md",
  "ecosystem/metacognitive-operational-v1/CAPABILITIES.json",
  "ecosystem/metacognitive-operational-v1/CUSTOSZ72_CENSUS.json",
  "ecosystem/metacognitive-operational-v1/CUSTOSZ72_DEDUP_EVIDENCE.json",
@@ -64,9 +66,9 @@ class MetacognitivePlanner:
 
 def load(root):
  root=pathlib.Path(root)
- m=json.loads((root/ROOT_FILES[0]).read_text(encoding="utf-8"))
- c=json.loads((root/ROOT_FILES[1]).read_text(encoding="utf-8"))
- d=json.loads((root/ROOT_FILES[2]).read_text(encoding="utf-8"))
+ m=json.loads((root/"ecosystem/metacognitive-operational-v1/CAPABILITIES.json").read_text(encoding="utf-8"))
+ c=json.loads((root/"ecosystem/metacognitive-operational-v1/CUSTOSZ72_CENSUS.json").read_text(encoding="utf-8"))
+ d=json.loads((root/"ecosystem/metacognitive-operational-v1/CUSTOSZ72_DEDUP_EVIDENCE.json").read_text(encoding="utf-8"))
  return root,m,c,d
 
 def validate(root,m,c,d):
