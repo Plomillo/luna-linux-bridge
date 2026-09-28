@@ -89,7 +89,9 @@
       "scope": "META_ECOSYSTEM_ADMISSION_AND_CLOUD_DISPATCH_BOUNDARY",
       "heavy_compute": false,
       "downstream_heavy_compute": "GITHUB_HOSTED_ONLY_OR_EXPLICIT_EXTERNAL_CLOUD",
-      "status": "STAGED_CANDIDATE"
+      "status": "STAGED_CANDIDATE",
+      "auto_execute_route_adapter": true,
+      "route_adapter_effect": "ADMISSION_ONLY_THEN_CLOUD_CORE_MATERIALIZATION"
     }
   ]
 }
