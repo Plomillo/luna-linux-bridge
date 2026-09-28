@@ -1,5 +1,7 @@
 # README — Misión LUNA R4 para CUSTOSZ V7
 
+> **ESTADO ACTUAL VERIFICADO (28-09-2026 UTC):** CUSTOSZ V7 recibió y registró una misión supervisora de investigación en [run 36374826968](https://github.com/Plomillo/luna-linux-bridge/actions/runs/36374826968), identificador `MIS-31e208fc59964c059f03`; inicio `03:43:33Z`, vencimiento previsto `04:03:24Z`. Ejecutó planificación arquitectónica y política de razonamiento; el ejecutor quedó `UNBOUND_MEDIATED_OR_LOCAL`. El resultado se añadió al final de este archivo y **no acredita investigación autónoma completa**. El [run 36374864210](https://github.com/Plomillo/luna-linux-bridge/actions/runs/36374864210) ejecutó el artefacto CUSTOSZ y verificó la API real del runtime en un estado temporal aislado; publicó [README de conclusiones efectivas](README_CONCLUSIONES_CUSTOSZ_V7.md) y [evidencia JSON](RESEARCH_EVIDENCE.json) con 14 comprobaciones. Su propio `mission-start` falló por ausencia de un workspace explícito en ese checkout aislado; esto **no invalida el acuse del primer run**, que sí encontró el workspace original. El hash de runtime en staging difiere del declarado en el Skeleton y requiere reconciliación. El límite de investigación es 20 minutos desde recepción; NO se autorizó instalación, operación F3-DISK ni activación de runtime de producción.
+
 ## Orden íntegra y plazo
 
 [Misión íntegra publicada en GitHub, issue #5](https://github.com/Plomillo/luna-linux-bridge/issues/5).
