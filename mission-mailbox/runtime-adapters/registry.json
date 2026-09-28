@@ -53,6 +53,25 @@
       "materializer_path": "scripts/missions/final_server_ready_materialize.py",
       "materializer_sha256": "640d513dfc8644679049947488c8bc8877c01900ab4990e74899871c6dd0ff23",
       "materializer_scope": "POINTS_1_3_PRODUCER_ONLY"
+    },
+    {
+      "adapter_id": "SERVER_READY_TERMINAL_10M_V1",
+      "path": "scripts/mission_mailbox/adapters/server_ready_terminal_10m.py",
+      "sha256": "c6eecdbf7c67e9943054361758a3fc22d14f70c69e17a8015112e96aa9776f30",
+      "backend": "CUSTOSZ_RUNTIME",
+      "source_sha256": "aab2a74f026bab167a9f4b65b429f11cb85738bc67eee45b59b1a97a6cfc8d2f",
+      "mission_classes": [
+        "FINAL_SERVER_READY_CLOSURE_10M"
+      ],
+      "required_capabilities": [],
+      "provides_executor_binding": true,
+      "requires_prebound_executor": false,
+      "execution_location": "SELF_HOSTED_LUNA_AUX",
+      "scope": "SERVER_READY_TERMINAL_10M_G08_G09_G23_G24",
+      "status": "ACTIVE_PINNED",
+      "terminal_contract_path": "server/terminal-chain/SERVER_READY_TERMINAL_10M_CONTRACT.json",
+      "terminal_contract_sha256": "2359657fef1441939d28f22728f27b1d91c22f37908b1ddf062e6d9dfb1d0a38",
+      "hard_ceiling_seconds": 600
     }
   ]
 }
