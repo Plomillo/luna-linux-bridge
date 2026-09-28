@@ -5,7 +5,11 @@ on:
     branches:
       - staging/metacognitive-ecosystem-v1-r2-20260928
     paths:
-      - scripts/mission_mailbox/adapters/metacognitive_ecosystem_v1.py
+      - scripts/mission_mailbox/**
+      - scripts/metacognitive/**
+      - mission-mailbox/**
+      - ecosystem/metacognitive-operational-v1/**
+      - missions/inbox/metacognitive-ecosystem-v1-20260928/**
       - .github/workflows/metacognitive-ecosystem-r2-probe.yml
   workflow_dispatch:
 
@@ -21,13 +25,18 @@ jobs:
         with:
           persist-credentials: false
           sparse-checkout: |
+            scripts/mission_mailbox/route_mission.py
             scripts/mission_mailbox/adapters/metacognitive_ecosystem_v1.py
-            scripts/metacognitive/extract_custosz_v7_census.py
-            scripts/metacognitive/inspect_custosz_family9.py
-            scripts/metacognitive/validate_custosz72_mcap59_dedup.py
-            ecosystem/metacognitive-operational-v1/CAPABILITIES.json
-            ecosystem/metacognitive-operational-v1/CUSTOSZ72_DEDUP_EVIDENCE.json
+            scripts/metacognitive
+            mission-mailbox/config/mailbox-policy.json
+            mission-mailbox/runtime-adapters/registry.json
+            mission-mailbox/source-class-bindings/registry.json
+            ecosystem/metacognitive-operational-v1
+            missions/inbox/metacognitive-ecosystem-v1-20260928/MISSION_ORIGINAL.md
             artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz
+            artifacts/custosz-v7/CUSTOSZ_RUNTIME_V1_SR_EXEC_BOUND_FME_01.b.pyz
+            artifacts/custosz-v7/MetaOS.wasm
+            Louksna.md
           sparse-checkout-cone-mode: false
 
       - name: Hash adapter and inspect CUSTOSZ registry statically
@@ -67,6 +76,12 @@ jobs:
             "g24":d["g24"]
           },sort_keys=True))
           PY
+          python3 -B -I scripts/metacognitive/test_meta_ecosystem_mailbox_binding.py | tee "$OUT/MAILBOX_BINDING_TEST.json"
+          python3 -B -I scripts/mission_mailbox/adapters/metacognitive_ecosystem_v1.py \
+            --repo-root . \
+            --out "$OUT/META_ECOSYSTEM_ADMISSION.json"
+          echo "=== META ECOSYSTEM ADMISSION ==="
+          cat "$OUT/META_ECOSYSTEM_ADMISSION.json"
           python3 - <<'PY'
           import json, os
           p=os.path.join(os.environ["RUNNER_TEMP"],"meta-r2-probe","CUSTOSZ72_CENSUS.json")
