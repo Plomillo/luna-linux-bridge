@@ -1,0 +1,99 @@
+{
+  "schema": "G23_EXTERNAL_INDEPENDENCE_REQUEST/1.0",
+  "mission_id": "MIS-META-ECO-20260928-V1",
+  "authority": "Louksna.md",
+  "puac2": "2.0.0-CANDIDATE",
+  "candidate": {
+    "sha256": "3cf52cc4d6d114c2f201bf1f835217e605538987aa7b2f1d792b13d24a349bf4",
+    "workflow_run_id": 36458977765,
+    "artifact_id": 10986308528,
+    "artifact_name": "metacognitive-ecosystem-r4-frozen-candidate",
+    "artifact_zip_sha256": "1141ded7192fafbaafca86c403b83c9cdf792d11fa0b85bb9123ede7f17d8d03",
+    "frozen": true,
+    "mutable_by_evaluator": false
+  },
+  "puac2_pre_g23": {
+    "status": "HOLD",
+    "artifact_id": 10986368669,
+    "artifact_zip_sha256": "1848a3552df2c37cb0b0d73d004313b0be4cbd91d684e44aa5eb23e7d47517bc",
+    "pass": [
+      "PUAC.C25",
+      "PUAC.C26",
+      "PUAC.C28",
+      "PUAC.C29",
+      "PUAC.C30",
+      "PUAC.C31",
+      "PUAC.C32"
+    ],
+    "hold": [
+      "PUAC.C27"
+    ],
+    "root_blocker": "INDEPENDENT_EVALUATOR_EVIDENCE_MISSING_OR_INSUFFICIENT"
+  },
+  "evaluator_requirements": {
+    "distinct_evaluator_identity": true,
+    "producer_evaluator_role_separation": true,
+    "candidate_access": "READ_ONLY",
+    "write_access_to_candidate": false,
+    "repair_allowed": false,
+    "validator_mutation_allowed": false,
+    "candidate_digest_must_match": true,
+    "conflict_of_interest_record_required": true,
+    "fresh_runner_alone_is_not_sufficient": true
+  },
+  "mandatory_checks": [
+    "Recompute and match candidate SHA-256.",
+    "Read PUAC2 C25-C32 dossier without altering candidate.",
+    "Recompute claim/evidence linkage and limitations.",
+    "Verify CUSTOSZ72 and MCAP59 identity/count evidence.",
+    "Verify G16 Family-9 de-duplication evidence.",
+    "Verify required cloud lane evidence and bounded scopes.",
+    "Verify rollback/non-regression/security/provenance evidence.",
+    "Record every UNKNOWN/CONFLICT/HOLD; never coerce to PASS.",
+    "Do not repair or regenerate producer evidence."
+  ],
+  "required_output": {
+    "path_hint": "INDEPENDENCE_EVIDENCE.json",
+    "required_fields": [
+      "schema",
+      "status",
+      "evaluator_identity",
+      "evaluator_role",
+      "organization_or_system",
+      "evaluated_at_utc",
+      "candidate_digest_sha256",
+      "artifact_zip_sha256",
+      "distinct_evaluator_identity",
+      "write_access_to_candidate",
+      "repair_allowed",
+      "validator_mutation_allowed",
+      "conflict_of_interest",
+      "method",
+      "checks",
+      "findings",
+      "limitations",
+      "decision",
+      "signature_or_attestation_reference"
+    ],
+    "pass_predicates": {
+      "status": "PASS",
+      "candidate_digest_sha256": "3cf52cc4d6d114c2f201bf1f835217e605538987aa7b2f1d792b13d24a349bf4",
+      "distinct_evaluator_identity": true,
+      "write_access_to_candidate": false,
+      "repair_allowed": false,
+      "validator_mutation_allowed": false,
+      "conflict_of_interest": "NONE_OR_RESOLVED",
+      "decision": "INDEPENDENCE_ESTABLISHED_FOR_G23"
+    }
+  },
+  "prohibitions": [
+    "Producer-generated independence PASS is invalid.",
+    "A new GitHub-hosted runner alone does not satisfy C27.",
+    "Do not change candidate bytes after digest freeze.",
+    "Do not use a review comment alone as technical G23 evidence.",
+    "Do not grant G24 from C27 evidence; G23 must run next."
+  ],
+  "next_transition": "PUAC.C27 PASS -> execute G23 read-only on exact digest -> if G23 PASS, request authenticated G24 authority decision on same digest",
+  "current_state": "HOLD_C27",
+  "certification": false
+}
