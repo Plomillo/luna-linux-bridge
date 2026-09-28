@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - staging/metacognitive-ecosystem-v1-r2-20260928
+      - staging/metacognitive-cloud-core-v1-20260928
     paths:
       - scripts/mission_mailbox/**
       - mission-mailbox/**
@@ -11,6 +12,7 @@ on:
       - ecosystem/metacognitive-operational-v1/**
       - missions/inbox/metacognitive-ecosystem-v1-20260928/**
       - .github/workflows/metacognitive-ecosystem-mailbox-premerge.yml
+      - .github/workflows/custosz-mission-mailbox.yml
   workflow_dispatch:
 
 permissions:
