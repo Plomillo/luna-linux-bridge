@@ -1,0 +1,28 @@
+name: "CUSTOSZ Mailbox SERVER_READY recovery v3"
+
+on:
+  push:
+    branches:
+      - staging/custosz-mission-mailbox-20260928
+    paths:
+      - .github/workflows/custosz-mailbox-server-ready-recovery-v3.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  recover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout mailbox branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - name: Recovery bootstrap
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "RECOVERY_V3_BOOT=PASS"
