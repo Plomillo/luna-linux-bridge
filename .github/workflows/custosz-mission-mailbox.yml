@@ -86,6 +86,12 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 1
+          sparse-checkout: |
+            artifacts/custosz-v7
+            Louksna.md
+            mission-mailbox
+            scripts/mission_mailbox
+          sparse-checkout-cone-mode: false
 
       - name: Recover native envelopes
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
