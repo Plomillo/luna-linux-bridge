@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "G24 Authority Evidence",
+  "type": "object",
+  "required": [
+    "schema",
+    "status",
+    "authority_authenticated",
+    "authority_id",
+    "candidate_digest_sha256",
+    "decision",
+    "signature_reference",
+    "decision_timestamp_utc",
+    "scope"
+  ],
+  "properties": {
+    "schema": {
+      "const": "G24_AUTHORITY_EVIDENCE/1.0"
+    },
+    "status": {
+      "enum": [
+        "PASS",
+        "FAIL",
+        "HOLD"
+      ]
+    },
+    "authority_authenticated": {
+      "type": "boolean"
+    },
+    "authority_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "candidate_digest_sha256": {
+      "const": "3cf52cc4d6d114c2f201bf1f835217e605538987aa7b2f1d792b13d24a349bf4"
+    },
+    "decision": {
+      "enum": [
+        "APPROVE",
+        "DENY",
+        "HOLD"
+      ]
+    },
+    "signature_reference": {
+      "type": "string",
+      "minLength": 1
+    },
+    "decision_timestamp_utc": {
+      "type": "string",
+      "minLength": 1
+    },
+    "scope": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "additionalProperties": true
+}
