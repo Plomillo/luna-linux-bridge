@@ -33,7 +33,7 @@ jobs:
           mkdir -p "$OUT"
           sha256sum scripts/mission_mailbox/adapters/metacognitive_ecosystem_v1.py | tee "$OUT/ADAPTER_SHA256.txt"
           python3 -B -I - <<'PY'
-          import ast, hashlib, json, re, subprocess, sys, zipfile
+          import ast, hashlib, json, os, re, subprocess, sys, zipfile
           from pathlib import Path
 
           pyz=Path("artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz")
@@ -98,7 +98,7 @@ jobs:
 
           proc=subprocess.run([sys.executable,"-B","-I",str(pyz),"v07-status"],capture_output=True,text=True,timeout=30)
           result["status"]={"exit_code":proc.returncode,"stdout":proc.stdout[-20000:],"stderr":proc.stderr[-3000:]}
-          Path("$RUNNER_TEMP/meta-r2-probe/CUSTOSZ72_PROBE.json").write_text(
+          Path(os.environ["RUNNER_TEMP"],"meta-r2-probe","CUSTOSZ72_PROBE.json").write_text(
               json.dumps(result,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
           print(json.dumps({
             "pyz_sha256":result["pyz_sha256"],
