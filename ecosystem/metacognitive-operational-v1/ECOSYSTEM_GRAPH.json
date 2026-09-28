@@ -1,0 +1,3838 @@
+{
+  "schema": "LOUKSNA_METACOGNITIVE_ECOSYSTEM_GRAPH/1.0",
+  "authority": "Louksna.md",
+  "canonical_mutation": false,
+  "authority_transfer": false,
+  "doctrine": "EXTEND_DO_NOT_REPLACE",
+  "failure_posture": "FAIL_CLOSED",
+  "source_manifest": "ecosystem/metacognitive-operational-v1/CAPABILITIES.json",
+  "source_census": "ecosystem/metacognitive-operational-v1/CUSTOSZ72_CENSUS.json",
+  "source_dedup": "ecosystem/metacognitive-operational-v1/CUSTOSZ72_DEDUP_EVIDENCE.json",
+  "counts": {
+    "systems": 8,
+    "mcaps": 59,
+    "custosz_capabilities": 72,
+    "edges": 456
+  },
+  "nodes": [
+    {
+      "id": "SYS-LOUKSNA",
+      "type": "SYSTEM",
+      "name": "Louksna",
+      "role": "CANONICAL_AUTHORITY"
+    },
+    {
+      "id": "SYS-METAOS",
+      "type": "SYSTEM",
+      "name": "MetaOS",
+      "role": "GOVERNOR"
+    },
+    {
+      "id": "SYS-CUSTOSZ",
+      "type": "SYSTEM",
+      "name": "CUSTOSZ_V7",
+      "role": "WORKER"
+    },
+    {
+      "id": "SYS-RUNTIME",
+      "type": "SYSTEM",
+      "name": "CUSTOSZ_RUNTIME_V1",
+      "role": "RUNTIME"
+    },
+    {
+      "id": "SYS-PUAC2",
+      "type": "SYSTEM",
+      "name": "PUAC2",
+      "role": "ASSURANCE"
+    },
+    {
+      "id": "SYS-GITHUB",
+      "type": "SYSTEM",
+      "name": "GitHub",
+      "role": "CONTROL_COMPUTE_EVIDENCE_PLANE"
+    },
+    {
+      "id": "SYS-G23",
+      "type": "SYSTEM",
+      "name": "G23",
+      "role": "INDEPENDENT_VALIDATION"
+    },
+    {
+      "id": "SYS-G24",
+      "type": "SYSTEM",
+      "name": "G24",
+      "role": "CERTIFICATION"
+    },
+    {
+      "id": "MCAP-001",
+      "type": "MCAP",
+      "name": "COGNITIVE_KERNEL",
+      "ordinal": 1,
+      "boundary": "Common cognitive state and bounded reasoning contracts.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-002",
+      "type": "MCAP",
+      "name": "METACOGNITIVE_SUPERVISOR",
+      "ordinal": 2,
+      "boundary": "Second-order supervision of reasoning quality, contradictions, loops and false certainty.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-003",
+      "type": "MCAP",
+      "name": "EPISTEMIC_ENGINE",
+      "ordinal": 3,
+      "boundary": "Typed epistemic states: fact, observation, inference, hypothesis, unknown, contradiction, validation.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-004",
+      "type": "MCAP",
+      "name": "REASONING_ORCHESTRATOR",
+      "ordinal": 4,
+      "boundary": "Decompose missions and select the minimum sufficient capability set.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-005",
+      "type": "MCAP",
+      "name": "SYSTEMS_ENGINEERING_ENGINE",
+      "ordinal": 5,
+      "boundary": "Systems engineering for Linux, Windows, Android, storage, networking and runtimes.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-006",
+      "type": "MCAP",
+      "name": "SOFTWARE_ENGINEERING_INTELLIGENCE",
+      "ordinal": 6,
+      "boundary": "Code, Git, CI/CD, build, test, dependency and architecture intelligence.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-007",
+      "type": "MCAP",
+      "name": "DIAGNOSTIC_AND_ROOT_CAUSE_ENGINE",
+      "ordinal": 7,
+      "boundary": "Reproduce failures, isolate causal mechanisms and verify remediation.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-008",
+      "type": "MCAP",
+      "name": "COGNITIVE_MEMORY",
+      "ordinal": 8,
+      "boundary": "Versioned mission, architectural, procedural and episodic continuity.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-009",
+      "type": "MCAP",
+      "name": "EXPERIENCE_DISTILLATION",
+      "ordinal": 9,
+      "boundary": "Convert validated executions into reusable patterns without training by default.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-010",
+      "type": "MCAP",
+      "name": "ADVERSARIAL_VALIDATION",
+      "ordinal": 10,
+      "boundary": "Negative, hostile and boundary tests without granting certification.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-011",
+      "type": "MCAP",
+      "name": "RESOURCE_AND_EFFICIENCY_GOVERNOR",
+      "ordinal": 11,
+      "boundary": "Govern CPU, RAM, network, storage, time, concurrency and cost.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-012",
+      "type": "MCAP",
+      "name": "CAPABILITY_GRAPH",
+      "ordinal": 12,
+      "boundary": "Non-duplicative graph of capabilities, dependencies, consumers and contracts.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-013",
+      "type": "MCAP",
+      "name": "METACOGNITIVE_NODE_FAMILY",
+      "ordinal": 13,
+      "boundary": "Governed registry of model and agentic harness references versus real executors.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-014",
+      "type": "MCAP",
+      "name": "MISSION_COMPILER",
+      "ordinal": 14,
+      "boundary": "Compile human intent into bounded governed missions with gates and rollback.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-015",
+      "type": "MCAP",
+      "name": "COGNITIVE_OBSERVABILITY",
+      "ordinal": 15,
+      "boundary": "Operational logs, metrics and traces for workers, tools and decisions.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-016",
+      "type": "MCAP",
+      "name": "RCLONE_ADAPTIVE_MAX_THROUGHPUT_ENGINE",
+      "ordinal": 16,
+      "boundary": "Adaptive remote transfer concurrency with measured 8→16→32→48→64 escalation.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-017",
+      "type": "MCAP",
+      "name": "META_CAPABILITY_EVOLUTION_ENGINE",
+      "ordinal": 17,
+      "boundary": "NetKaizen discovery of capability gaps with mandatory duplicate checks.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-018",
+      "type": "MCAP",
+      "name": "CROSS_PLATFORM_VIRTUAL_LAB",
+      "ordinal": 18,
+      "boundary": "Disposable Debian 13, Android API 36/37 and Windows build/test lanes.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-019",
+      "type": "MCAP",
+      "name": "REUSABLE_AUTOMATION_FABRIC",
+      "ordinal": 19,
+      "boundary": "Reusable workflows and composite actions with SHA-pinned dependencies.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-020",
+      "type": "MCAP",
+      "name": "GITHUB_AGENTIC_WORKFLOW_FABRIC",
+      "ordinal": 20,
+      "boundary": "Governed invocation of authorized agentic CLIs from GitHub execution lanes.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-021",
+      "type": "MCAP",
+      "name": "RUNNER_FLEET_AND_WORKER_SCHEDULER",
+      "ordinal": 21,
+      "boundary": "Schedule cloud workers, matrices, queues and ephemeral execution capacity.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-022",
+      "type": "MCAP",
+      "name": "ZERO_TRUST_IDENTITY_AND_AUTHORIZATION_PLANE",
+      "ordinal": 22,
+      "boundary": "Least privilege, ephemeral identity and explicit authorization boundaries.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-023",
+      "type": "MCAP",
+      "name": "POLICY_AS_CODE_AND_CHANGE_CONTROL",
+      "ordinal": 23,
+      "boundary": "Machine-enforced change policy, pinning, allowed actions and admission rules.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-024",
+      "type": "MCAP",
+      "name": "SUPPLY_CHAIN_PROVENANCE_AND_ATTESTATION",
+      "ordinal": 24,
+      "boundary": "Build lineage, hashes, SBOM references and attestable artifact identity.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-025",
+      "type": "MCAP",
+      "name": "DEPENDENCY_LICENSE_AND_CURRENTNESS_GOVERNOR",
+      "ordinal": 25,
+      "boundary": "Dependency identity, vulnerability, license and currentness control.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-026",
+      "type": "MCAP",
+      "name": "CODE_SECRET_AND_STATIC_SECURITY_GUARD",
+      "ordinal": 26,
+      "boundary": "Static security, secret leakage and source-code scanning controls.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-027",
+      "type": "MCAP",
+      "name": "FORENSIC_EVIDENCE_CHAIN_LEDGER",
+      "ordinal": 27,
+      "boundary": "Hash-linked evidence lineage with actor, run, commit, parent and result.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-028",
+      "type": "MCAP",
+      "name": "ASSURANCE_CASE_COMPILER",
+      "ordinal": 28,
+      "boundary": "Compile claim→predicate→evidence→evaluation→limitation dossiers.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-029",
+      "type": "MCAP",
+      "name": "G23_INDEPENDENT_VALIDATION_FABRIC",
+      "ordinal": 29,
+      "boundary": "Independent fresh-reader validation with no repair path.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-030",
+      "type": "MCAP",
+      "name": "G24_CERTIFICATION_AND_PROMOTION_GATEWAY",
+      "ordinal": 30,
+      "boundary": "Certification/promotion boundary for one frozen digest after G23.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-031",
+      "type": "MCAP",
+      "name": "ROLLBACK_AND_RECOVERY_PROOF_ENGINE",
+      "ordinal": 31,
+      "boundary": "Prove checkpoint→mutation/test→restore→state/hash verification.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-032",
+      "type": "MCAP",
+      "name": "VALIDITY_NONREGRESSION_AND_RECERTIFICATION_ENGINE",
+      "ordinal": 32,
+      "boundary": "Track evidence validity, invalidation and recertification after change.",
+      "classification": "EXISTING_PROFILE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-033",
+      "type": "MCAP",
+      "name": "ECOSYSTEM_FEDERATION_AND_CONTRACT_MESH",
+      "ordinal": 33,
+      "boundary": "Versioned contracts among Louksna, MetaOS, CUSTOSZ, Runtime, PUAC2, GitHub and future canonical architectures.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-034",
+      "type": "MCAP",
+      "name": "ARCHITECTURAL_MIRROR_AND_DRIFT_CONTROL",
+      "ordinal": 34,
+      "boundary": "Materialize INTENDED_MODEL↔OBSERVED_MODEL and detect architectural drift.",
+      "classification": "CANONICAL_MATERIALIZATION",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-035",
+      "type": "MCAP",
+      "name": "DIGITAL_ARCHITECTURAL_SHADOW_AND_PRECHANGE_SIMULATION",
+      "ordinal": 35,
+      "boundary": "Simulate candidate changes, blast radius and evidence invalidation before commitment.",
+      "classification": "CANONICAL_MATERIALIZATION",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-036",
+      "type": "MCAP",
+      "name": "FORMAL_INVARIANT_AND_MODEL_CHECKING",
+      "ordinal": 36,
+      "boundary": "Turn critical invariants and state transitions into executable formal checks.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-037",
+      "type": "MCAP",
+      "name": "LIFECYCLE_HYGIENE_AND_RESIDUE_GOVERNOR",
+      "ordinal": 37,
+      "boundary": "Detect superseded, orphaned, duplicate or temporary artifacts without silent deletion.",
+      "classification": "WATCH_MATERIALIZATION",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-038",
+      "type": "MCAP",
+      "name": "HUMAN_APPROVAL_BLOCKER_AND_RESUME_CONTROLLER",
+      "ordinal": 38,
+      "boundary": "Represent approval blockers, HOLD checkpoints and exact resume conditions.",
+      "classification": "WATCH_MATERIALIZATION",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-039",
+      "type": "MCAP",
+      "name": "EXTERNAL_CAPABILITY_AND_PLUGIN_BROKER",
+      "ordinal": 39,
+      "boundary": "Discover external integrations only for evidenced gaps; never auto-install/connect.",
+      "classification": "WATCH_MATERIALIZATION",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-040",
+      "type": "MCAP",
+      "name": "DATA_RIGHTS_PRIVACY_AND_USAGE_GOVERNOR",
+      "ordinal": 40,
+      "boundary": "Govern corpus rights, privacy, PII, licensing, retention and permitted transformations.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-041",
+      "type": "MCAP",
+      "name": "REMOTE_CORPUS_STREAMING_FABRIC",
+      "ordinal": 41,
+      "boundary": "Stream/query massive remote corpora without full local materialization.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-042",
+      "type": "MCAP",
+      "name": "MASSIVE_DOCUMENT_MAP_AND_STRUCTURE_ENGINE",
+      "ordinal": 42,
+      "boundary": "Build hierarchical maps for huge PDF/EPUB/document corpora before deep reading.",
+      "classification": "CANONICAL_MATERIALIZATION",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-043",
+      "type": "MCAP",
+      "name": "DISTRIBUTED_SEMANTIC_INDEX_AND_QUERY_PLANE",
+      "ordinal": 43,
+      "boundary": "Distributed lexical/vector/graph retrieval over remote shards with provenance.",
+      "classification": "CANONICAL_MATERIALIZATION",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-044",
+      "type": "MCAP",
+      "name": "EXTREME_SCALE_TRANSLATION_ORCHESTRATOR",
+      "ordinal": 44,
+      "boundary": "Shard, translate, checkpoint and reassemble extremely large books deterministically.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-045",
+      "type": "MCAP",
+      "name": "TRANSLATION_FIDELITY_VALIDATION_ENGINE",
+      "ordinal": 45,
+      "boundary": "Validate semantic, syntactic, terminological, entity, numeric and structural fidelity.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-046",
+      "type": "MCAP",
+      "name": "TERMINOLOGY_TRANSLATION_MEMORY_AND_ONTOLOGY_PLANE",
+      "ordinal": 46,
+      "boundary": "Versioned terminology, translation memory and domain ontology with provenance.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-047",
+      "type": "MCAP",
+      "name": "MULTISCALE_MULTI_INTER_TRANSDISCIPLINARY_SYNTHESIS",
+      "ordinal": 47,
+      "boundary": "Preserve methods and evidence while synthesizing micro/meso/macro and cross-disciplinary analysis.",
+      "classification": "WATCH_MATERIALIZATION",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-048",
+      "type": "MCAP",
+      "name": "CAUSAL_COUNTERFACTUAL_AND_SCENARIO_ENGINE",
+      "ordinal": 48,
+      "boundary": "Separate association, mechanism, causal claims, counterfactuals and scenario sensitivity.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-049",
+      "type": "MCAP",
+      "name": "REALTIME_EVENT_STREAM_AND_DATA_INGESTION",
+      "ordinal": 49,
+      "boundary": "Ingest governed webhooks/streams with sequence, latency, staleness and replay semantics.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-050",
+      "type": "MCAP",
+      "name": "DURABLE_LONG_RUNNING_WORKFLOW_ENGINE",
+      "ordinal": 50,
+      "boundary": "Durable state, retries, resumability and idempotency for hours/days workflows.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-051",
+      "type": "MCAP",
+      "name": "CONTENT_ADDRESSED_OBJECT_AND_DATA_PLANE",
+      "ordinal": 51,
+      "boundary": "Keep large payloads outside Git while Git stores hashes, manifests and lineage.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-052",
+      "type": "MCAP",
+      "name": "HIGH_RESOLUTION_AI_METACOGNITIVE_TELEMETRY",
+      "ordinal": 52,
+      "boundary": "High-resolution traces for agents, models, tools, evidence, uncertainty and evaluation.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-053",
+      "type": "MCAP",
+      "name": "AI_EVALUATION_CALIBRATION_AND_RELIABILITY_HARNESS",
+      "ordinal": 53,
+      "boundary": "Measure factuality, calibration, consistency, robustness, abstention and tool use.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-054",
+      "type": "MCAP",
+      "name": "ECONOMIC_AND_MARKET_DATA_FABRIC",
+      "ordinal": 54,
+      "boundary": "Normalize governed macro, FX, equity, rates, commodity and crypto market data.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-055",
+      "type": "MCAP",
+      "name": "MONETARY_STABLECOIN_AND_LIQUIDITY_INTELLIGENCE",
+      "ordinal": 55,
+      "boundary": "Separate issuer, on-chain and market evidence for stablecoins, pegs, reserves and liquidity.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-056",
+      "type": "MCAP",
+      "name": "LABOR_MARKET_AND_OPPORTUNITY_INTELLIGENCE",
+      "ordinal": 56,
+      "boundary": "Govern employment, vacancy, wage, skills and opportunity data with freshness/provenance.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-057",
+      "type": "MCAP",
+      "name": "ECONOMIC_THEORY_MULTI_LENS_REASONING",
+      "ordinal": 57,
+      "boundary": "Apply Austrian, mainstream, institutional, historical and other lenses without epistemic collapse.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-058",
+      "type": "MCAP",
+      "name": "METACOGNITIVE_OPERATIONAL_INTELLIGENCE_FABRIC",
+      "ordinal": 58,
+      "boundary": "Compose general and domain-specific metacognitive operational intelligence without claiming human-level AGI.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "MCAP-059",
+      "type": "MCAP",
+      "name": "GOVERNED_TRAINING_AND_CONTINUOUS_LEARNING",
+      "ordinal": 59,
+      "boundary": "Last-stage governed learning from admitted evidence; every trained candidate re-enters full validation and certification.",
+      "classification": "TRAINING_LAST",
+      "admission_state": "DECLARED",
+      "self_certifies": false,
+      "creates_authority": false
+    },
+    {
+      "id": "CUSTOSZ:cache.semantic",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "cache.semantic",
+      "family": "F01_IO_KNOWLEDGE",
+      "implementation": "SemanticCache"
+    },
+    {
+      "id": "CUSTOSZ:content.identity",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "content.identity",
+      "family": "F01_IO_KNOWLEDGE",
+      "implementation": "ContentIdentityEngine"
+    },
+    {
+      "id": "CUSTOSZ:handoff.remote_source",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "handoff.remote_source",
+      "family": "F01_IO_KNOWLEDGE",
+      "implementation": "RemoteSourceHandoff"
+    },
+    {
+      "id": "CUSTOSZ:ingestion.universal",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "ingestion.universal",
+      "family": "F01_IO_KNOWLEDGE",
+      "implementation": "UniversalIngestionEngine"
+    },
+    {
+      "id": "CUSTOSZ:io.query_plan",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "io.query_plan",
+      "family": "F01_IO_KNOWLEDGE",
+      "implementation": "IOQueryPlanner"
+    },
+    {
+      "id": "CUSTOSZ:io.resumable_reader",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "io.resumable_reader",
+      "family": "F01_IO_KNOWLEDGE",
+      "implementation": "ResumableReader"
+    },
+    {
+      "id": "CUSTOSZ:knowledge.high_throughput",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "knowledge.high_throughput",
+      "family": "F01_IO_KNOWLEDGE",
+      "implementation": "HighThroughputKnowledgeEngine"
+    },
+    {
+      "id": "CUSTOSZ:knowledge.remote",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "knowledge.remote",
+      "family": "F01_IO_KNOWLEDGE",
+      "implementation": "RemoteKnowledgeFabric"
+    },
+    {
+      "id": "CUSTOSZ:normalization.structured",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "normalization.structured",
+      "family": "F01_IO_KNOWLEDGE",
+      "implementation": "UniversalIngestionEngine"
+    },
+    {
+      "id": "CUSTOSZ:source.resolve",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "source.resolve",
+      "family": "F01_IO_KNOWLEDGE",
+      "implementation": "UniversalSourceResolver"
+    },
+    {
+      "id": "CUSTOSZ:streaming.range",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "streaming.range",
+      "family": "F01_IO_KNOWLEDGE",
+      "implementation": "HighThroughputKnowledgeEngine"
+    },
+    {
+      "id": "CUSTOSZ:volume.intelligence",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "volume.intelligence",
+      "family": "F01_IO_KNOWLEDGE",
+      "implementation": "VolumeIntelligenceEngine"
+    },
+    {
+      "id": "CUSTOSZ:backpressure.control",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "backpressure.control",
+      "family": "F02_EXECUTION_RESOURCES",
+      "implementation": "BackpressureController"
+    },
+    {
+      "id": "CUSTOSZ:desktop.internal",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "desktop.internal",
+      "family": "F02_EXECUTION_RESOURCES",
+      "implementation": "InternalDesktopCapability"
+    },
+    {
+      "id": "CUSTOSZ:execution.resumable",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "execution.resumable",
+      "family": "F02_EXECUTION_RESOURCES",
+      "implementation": "ResumableExecutionState"
+    },
+    {
+      "id": "CUSTOSZ:process.sessions",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "process.sessions",
+      "family": "F02_EXECUTION_RESOURCES",
+      "implementation": "ProcessSessionManager"
+    },
+    {
+      "id": "CUSTOSZ:resources.adaptive",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "resources.adaptive",
+      "family": "F02_EXECUTION_RESOURCES",
+      "implementation": "AdaptiveResourceGovernor"
+    },
+    {
+      "id": "CUSTOSZ:resources.budget_policy",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "resources.budget_policy",
+      "family": "F02_EXECUTION_RESOURCES",
+      "implementation": "ResourceBudgetPolicy"
+    },
+    {
+      "id": "CUSTOSZ:terminal.native",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "terminal.native",
+      "family": "F02_EXECUTION_RESOURCES",
+      "implementation": "NativeTerminalEngine"
+    },
+    {
+      "id": "CUSTOSZ:security.credentials",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "security.credentials",
+      "family": "F03_SECURITY_TRUST",
+      "implementation": "CredentialBroker"
+    },
+    {
+      "id": "CUSTOSZ:security.crypto",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "security.crypto",
+      "family": "F03_SECURITY_TRUST",
+      "implementation": "CryptoCore"
+    },
+    {
+      "id": "CUSTOSZ:security.fabric",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "security.fabric",
+      "family": "F03_SECURITY_TRUST",
+      "implementation": "NativeSecurityFabric"
+    },
+    {
+      "id": "CUSTOSZ:security.risk_classification",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "security.risk_classification",
+      "family": "F03_SECURITY_TRUST",
+      "implementation": "ContentRiskClassifier"
+    },
+    {
+      "id": "CUSTOSZ:security.sandbox_contract",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "security.sandbox_contract",
+      "family": "F03_SECURITY_TRUST",
+      "implementation": "SandboxContract"
+    },
+    {
+      "id": "CUSTOSZ:security.supply_chain",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "security.supply_chain",
+      "family": "F03_SECURITY_TRUST",
+      "implementation": "SupplyChainValidator"
+    },
+    {
+      "id": "CUSTOSZ:security.threat_currentness",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "security.threat_currentness",
+      "family": "F03_SECURITY_TRUST",
+      "implementation": "ThreatCurrentnessEngine"
+    },
+    {
+      "id": "CUSTOSZ:security.trust_policy",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "security.trust_policy",
+      "family": "F03_SECURITY_TRUST",
+      "implementation": "TrustPolicyEngine"
+    },
+    {
+      "id": "CUSTOSZ:languages.intelligence",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "languages.intelligence",
+      "family": "F04_INTELLIGENCE_SYNTHESIS",
+      "implementation": "ProgrammingLanguageIntelligenceEngine"
+    },
+    {
+      "id": "CUSTOSZ:optimization.intelligence",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "optimization.intelligence",
+      "family": "F04_INTELLIGENCE_SYNTHESIS",
+      "implementation": "OptimizationIntelligenceEngine"
+    },
+    {
+      "id": "CUSTOSZ:systems.intelligence",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "systems.intelligence",
+      "family": "F04_INTELLIGENCE_SYNTHESIS",
+      "implementation": "ComputingSystemsIntelligenceEngine"
+    },
+    {
+      "id": "CUSTOSZ:technology.synthesis",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "technology.synthesis",
+      "family": "F04_INTELLIGENCE_SYNTHESIS",
+      "implementation": "TechnologySynthesisEngine"
+    },
+    {
+      "id": "CUSTOSZ:assurance.fabric",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "assurance.fabric",
+      "family": "F05_ASSURANCE_EPISTEMIC",
+      "implementation": "AssuranceFabric"
+    },
+    {
+      "id": "CUSTOSZ:benchmark.contamination",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "benchmark.contamination",
+      "family": "F05_ASSURANCE_EPISTEMIC",
+      "implementation": "ContaminationControl"
+    },
+    {
+      "id": "CUSTOSZ:benchmark.ephemeral",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "benchmark.ephemeral",
+      "family": "F05_ASSURANCE_EPISTEMIC",
+      "implementation": "EphemeralBenchmarkEngine"
+    },
+    {
+      "id": "CUSTOSZ:benchmark.gap",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "benchmark.gap",
+      "family": "F05_ASSURANCE_EPISTEMIC",
+      "implementation": "BenchmarkGapEngine"
+    },
+    {
+      "id": "CUSTOSZ:epistemic.failure_detection",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "epistemic.failure_detection",
+      "family": "F05_ASSURANCE_EPISTEMIC",
+      "implementation": "EpistemicFailureDetectionEngine"
+    },
+    {
+      "id": "CUSTOSZ:evidence.completeness",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "evidence.completeness",
+      "family": "F05_ASSURANCE_EPISTEMIC",
+      "implementation": "EvidenceCompletenessEngine"
+    },
+    {
+      "id": "CUSTOSZ:evidence.graph",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "evidence.graph",
+      "family": "F05_ASSURANCE_EPISTEMIC",
+      "implementation": "EvidenceGraph"
+    },
+    {
+      "id": "CUSTOSZ:validation.adversarial",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "validation.adversarial",
+      "family": "F05_ASSURANCE_EPISTEMIC",
+      "implementation": "AdversarialValidationEngine"
+    },
+    {
+      "id": "CUSTOSZ:api.gateway",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "api.gateway",
+      "family": "F06_CONTINUITY_INTEROP",
+      "implementation": "APIGateway"
+    },
+    {
+      "id": "CUSTOSZ:continuity.fabric",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "continuity.fabric",
+      "family": "F06_CONTINUITY_INTEROP",
+      "implementation": "ContinuityFabric"
+    },
+    {
+      "id": "CUSTOSZ:continuity.heartbeat_watchdog",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "continuity.heartbeat_watchdog",
+      "family": "F06_CONTINUITY_INTEROP",
+      "implementation": "HeartbeatWatchdog"
+    },
+    {
+      "id": "CUSTOSZ:continuity.oob",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "continuity.oob",
+      "family": "F06_CONTINUITY_INTEROP",
+      "implementation": "OutOfBandAbstraction"
+    },
+    {
+      "id": "CUSTOSZ:continuity.preinstall_contract",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "continuity.preinstall_contract",
+      "family": "F06_CONTINUITY_INTEROP",
+      "implementation": "PreinstallAgentContract"
+    },
+    {
+      "id": "CUSTOSZ:continuity.reboot_state",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "continuity.reboot_state",
+      "family": "F06_CONTINUITY_INTEROP",
+      "implementation": "RebootResilientStateEngine"
+    },
+    {
+      "id": "CUSTOSZ:continuity.session_resume",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "continuity.session_resume",
+      "family": "F06_CONTINUITY_INTEROP",
+      "implementation": "SessionResume"
+    },
+    {
+      "id": "CUSTOSZ:handoff.transaction",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "handoff.transaction",
+      "family": "F06_CONTINUITY_INTEROP",
+      "implementation": "RemoteSourceHandoff"
+    },
+    {
+      "id": "CUSTOSZ:documentation.generated",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "documentation.generated",
+      "family": "F07_MEMORY_DOCUMENTATION",
+      "implementation": "DocumentationEngine"
+    },
+    {
+      "id": "CUSTOSZ:memory.capability",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "memory.capability",
+      "family": "F07_MEMORY_DOCUMENTATION",
+      "implementation": "MemoryView"
+    },
+    {
+      "id": "CUSTOSZ:memory.currentness",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "memory.currentness",
+      "family": "F07_MEMORY_DOCUMENTATION",
+      "implementation": "CurrentnessEngine"
+    },
+    {
+      "id": "CUSTOSZ:memory.decision",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "memory.decision",
+      "family": "F07_MEMORY_DOCUMENTATION",
+      "implementation": "MemoryView"
+    },
+    {
+      "id": "CUSTOSZ:memory.evidence",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "memory.evidence",
+      "family": "F07_MEMORY_DOCUMENTATION",
+      "implementation": "MemoryView"
+    },
+    {
+      "id": "CUSTOSZ:memory.failure",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "memory.failure",
+      "family": "F07_MEMORY_DOCUMENTATION",
+      "implementation": "MemoryView"
+    },
+    {
+      "id": "CUSTOSZ:memory.governed",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "memory.governed",
+      "family": "F07_MEMORY_DOCUMENTATION",
+      "implementation": "GovernedMemoryFabric"
+    },
+    {
+      "id": "CUSTOSZ:memory.invalidation",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "memory.invalidation",
+      "family": "F07_MEMORY_DOCUMENTATION",
+      "implementation": "InvalidationEngine"
+    },
+    {
+      "id": "CUSTOSZ:memory.state",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "memory.state",
+      "family": "F07_MEMORY_DOCUMENTATION",
+      "implementation": "MemoryView"
+    },
+    {
+      "id": "CUSTOSZ:memory.versioned",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "memory.versioned",
+      "family": "F07_MEMORY_DOCUMENTATION",
+      "implementation": "GovernedMemoryFabric"
+    },
+    {
+      "id": "CUSTOSZ:conformance.harness",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "conformance.harness",
+      "family": "F08_FORMAL_CORE",
+      "implementation": "SelfTestConformanceHarness"
+    },
+    {
+      "id": "CUSTOSZ:errors.taxonomy",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "errors.taxonomy",
+      "family": "F08_FORMAL_CORE",
+      "implementation": "UniversalErrorTaxonomy"
+    },
+    {
+      "id": "CUSTOSZ:interfaces.cross_family",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "interfaces.cross_family",
+      "family": "F08_FORMAL_CORE",
+      "implementation": "CrossFamilyInterfaceRegistry"
+    },
+    {
+      "id": "CUSTOSZ:invariants.engine",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "invariants.engine",
+      "family": "F08_FORMAL_CORE",
+      "implementation": "InvariantEngine"
+    },
+    {
+      "id": "CUSTOSZ:lifecycle.manager",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "lifecycle.manager",
+      "family": "F08_FORMAL_CORE",
+      "implementation": "CapabilityLifecycleManager"
+    },
+    {
+      "id": "CUSTOSZ:logic.arithmetic",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "logic.arithmetic",
+      "family": "F08_FORMAL_CORE",
+      "implementation": "FormalArithmeticEngine"
+    },
+    {
+      "id": "CUSTOSZ:logic.formal",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "logic.formal",
+      "family": "F08_FORMAL_CORE",
+      "implementation": "FormalLogicEngine"
+    },
+    {
+      "id": "CUSTOSZ:maintainability.engine",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "maintainability.engine",
+      "family": "F08_FORMAL_CORE",
+      "implementation": "MaintainabilityEngine"
+    },
+    {
+      "id": "CUSTOSZ:composition.engine",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "composition.engine",
+      "family": "F09_CAPABILITY_GAPS_EVOLUTION",
+      "implementation": "CompositionEngine"
+    },
+    {
+      "id": "CUSTOSZ:duplication.anti",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "duplication.anti",
+      "family": "F09_CAPABILITY_GAPS_EVOLUTION",
+      "implementation": "AntiDuplicationEngine"
+    },
+    {
+      "id": "CUSTOSZ:evolution.admission",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "evolution.admission",
+      "family": "F09_CAPABILITY_GAPS_EVOLUTION",
+      "implementation": "EvolutionAdmissionEngine"
+    },
+    {
+      "id": "CUSTOSZ:gap.evolution",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "gap.evolution",
+      "family": "F09_CAPABILITY_GAPS_EVOLUTION",
+      "implementation": "CapabilityGapEvolutionEngine"
+    },
+    {
+      "id": "CUSTOSZ:gap.proof",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "gap.proof",
+      "family": "F09_CAPABILITY_GAPS_EVOLUTION",
+      "implementation": "GapProofEngine"
+    },
+    {
+      "id": "CUSTOSZ:overlap.semantic",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "overlap.semantic",
+      "family": "F09_CAPABILITY_GAPS_EVOLUTION",
+      "implementation": "SemanticOverlapAnalyzer"
+    },
+    {
+      "id": "CUSTOSZ:placement.engine",
+      "type": "CUSTOSZ_CAPABILITY",
+      "name": "placement.engine",
+      "family": "F09_CAPABILITY_GAPS_EVOLUTION",
+      "implementation": "PlacementEngine"
+    }
+  ],
+  "edges": [
+    {
+      "from": "MCAP-001",
+      "to": "SYS-LOUKSNA",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-001",
+      "to": "SYS-METAOS",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-001",
+      "to": "SYS-RUNTIME",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-002",
+      "to": "SYS-LOUKSNA",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-002",
+      "to": "SYS-METAOS",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-002",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-003",
+      "to": "SYS-LOUKSNA",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-003",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-003",
+      "to": "SYS-RUNTIME",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-004",
+      "to": "SYS-METAOS",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-004",
+      "to": "SYS-CUSTOSZ",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-004",
+      "to": "SYS-LOUKSNA",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-005",
+      "to": "SYS-CUSTOSZ",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-005",
+      "to": "SYS-METAOS",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-005",
+      "to": "MCAP-018",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-006",
+      "to": "SYS-CUSTOSZ",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-006",
+      "to": "SYS-GITHUB",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-006",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-007",
+      "to": "SYS-RUNTIME",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-007",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-007",
+      "to": "SYS-METAOS",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-008",
+      "to": "SYS-LOUKSNA",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-008",
+      "to": "SYS-METAOS",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-008",
+      "to": "SYS-RUNTIME",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-009",
+      "to": "SYS-LOUKSNA",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-009",
+      "to": "SYS-METAOS",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-009",
+      "to": "MCAP-059",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-010",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-010",
+      "to": "SYS-CUSTOSZ",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-010",
+      "to": "MCAP-029",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-011",
+      "to": "SYS-METAOS",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-011",
+      "to": "SYS-RUNTIME",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-011",
+      "to": "MCAP-021",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-012",
+      "to": "SYS-LOUKSNA",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-012",
+      "to": "SYS-METAOS",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-012",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-013",
+      "to": "SYS-METAOS",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-013",
+      "to": "SYS-CUSTOSZ",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-013",
+      "to": "SYS-LOUKSNA",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-014",
+      "to": "SYS-METAOS",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-014",
+      "to": "SYS-CUSTOSZ",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-014",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-015",
+      "to": "SYS-METAOS",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-015",
+      "to": "SYS-RUNTIME",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-015",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-016",
+      "to": "SYS-CUSTOSZ",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-016",
+      "to": "MCAP-011",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-016",
+      "to": "SYS-GITHUB",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-017",
+      "to": "SYS-LOUKSNA",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-017",
+      "to": "SYS-METAOS",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-017",
+      "to": "MCAP-012",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-018",
+      "to": "SYS-CUSTOSZ",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-018",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-018",
+      "to": "SYS-GITHUB",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-019",
+      "to": "SYS-GITHUB",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-019",
+      "to": "SYS-CUSTOSZ",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-019",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-020",
+      "to": "SYS-CUSTOSZ",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-020",
+      "to": "SYS-METAOS",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-020",
+      "to": "SYS-GITHUB",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-021",
+      "to": "SYS-METAOS",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-021",
+      "to": "SYS-RUNTIME",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-021",
+      "to": "MCAP-011",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-022",
+      "to": "SYS-METAOS",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-022",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-022",
+      "to": "SYS-GITHUB",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-023",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-023",
+      "to": "SYS-GITHUB",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-023",
+      "to": "SYS-METAOS",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-024",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-024",
+      "to": "MCAP-029",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-024",
+      "to": "SYS-GITHUB",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-025",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-025",
+      "to": "MCAP-006",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-025",
+      "to": "SYS-GITHUB",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-026",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-026",
+      "to": "MCAP-006",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-026",
+      "to": "SYS-GITHUB",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-027",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-027",
+      "to": "MCAP-029",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-027",
+      "to": "MCAP-030",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-028",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-028",
+      "to": "MCAP-029",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-028",
+      "to": "SYS-METAOS",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-029",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-029",
+      "to": "SYS-LOUKSNA",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-029",
+      "to": "MCAP-030",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-030",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-030",
+      "to": "SYS-LOUKSNA",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-030",
+      "to": "SYS-GITHUB",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-031",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-031",
+      "to": "SYS-RUNTIME",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-031",
+      "to": "SYS-METAOS",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-032",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-032",
+      "to": "SYS-LOUKSNA",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-032",
+      "to": "SYS-METAOS",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-033",
+      "to": "SYS-LOUKSNA",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-033",
+      "to": "SYS-METAOS",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-033",
+      "to": "SYS-CUSTOSZ",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-033",
+      "to": "SYS-RUNTIME",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-033",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-033",
+      "to": "SYS-GITHUB",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-034",
+      "to": "SYS-LOUKSNA",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-034",
+      "to": "SYS-METAOS",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-034",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-035",
+      "to": "SYS-LOUKSNA",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-035",
+      "to": "SYS-METAOS",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-035",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-036",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-036",
+      "to": "SYS-LOUKSNA",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-036",
+      "to": "MCAP-029",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-037",
+      "to": "SYS-METAOS",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-037",
+      "to": "SYS-CUSTOSZ",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-037",
+      "to": "SYS-LOUKSNA",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-038",
+      "to": "SYS-METAOS",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-038",
+      "to": "SYS-RUNTIME",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-038",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-039",
+      "to": "SYS-METAOS",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-039",
+      "to": "SYS-CUSTOSZ",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-039",
+      "to": "MCAP-012",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-040",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-040",
+      "to": "MCAP-041",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-040",
+      "to": "SYS-METAOS",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-041",
+      "to": "SYS-CUSTOSZ",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-041",
+      "to": "SYS-METAOS",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-041",
+      "to": "MCAP-043",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-042",
+      "to": "SYS-CUSTOSZ",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-042",
+      "to": "SYS-LOUKSNA",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-042",
+      "to": "MCAP-044",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-043",
+      "to": "SYS-LOUKSNA",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-043",
+      "to": "SYS-CUSTOSZ",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-043",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-044",
+      "to": "SYS-CUSTOSZ",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-044",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-045",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-045",
+      "to": "MCAP-029",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-046",
+      "to": "SYS-LOUKSNA",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-046",
+      "to": "MCAP-044",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-047",
+      "to": "SYS-LOUKSNA",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-047",
+      "to": "SYS-METAOS",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-047",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-048",
+      "to": "SYS-LOUKSNA",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-048",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-048",
+      "to": "MCAP-057",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-049",
+      "to": "SYS-METAOS",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-049",
+      "to": "SYS-RUNTIME",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-049",
+      "to": "MCAP-054",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-050",
+      "to": "SYS-RUNTIME",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-050",
+      "to": "SYS-METAOS",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-050",
+      "to": "MCAP-044",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-051",
+      "to": "SYS-GITHUB",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-051",
+      "to": "SYS-CUSTOSZ",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-051",
+      "to": "MCAP-027",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-052",
+      "to": "SYS-METAOS",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-052",
+      "to": "SYS-RUNTIME",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-052",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-053",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-053",
+      "to": "MCAP-002",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-053",
+      "to": "MCAP-029",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-054",
+      "to": "SYS-METAOS",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-054",
+      "to": "SYS-LOUKSNA",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-054",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-055",
+      "to": "SYS-LOUKSNA",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-055",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-055",
+      "to": "MCAP-054",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-056",
+      "to": "SYS-LOUKSNA",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-056",
+      "to": "SYS-METAOS",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-056",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-057",
+      "to": "SYS-LOUKSNA",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-057",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-057",
+      "to": "MCAP-047",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-058",
+      "to": "SYS-LOUKSNA",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-058",
+      "to": "SYS-METAOS",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-058",
+      "to": "SYS-CUSTOSZ",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-058",
+      "to": "SYS-RUNTIME",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-058",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-059",
+      "to": "SYS-LOUKSNA",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-059",
+      "to": "SYS-PUAC2",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-059",
+      "to": "SYS-METAOS",
+      "relation": "CONSUMED_BY"
+    },
+    {
+      "from": "MCAP-001",
+      "to": "CUSTOSZ:logic.formal",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-001",
+      "to": "CUSTOSZ:invariants.engine",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-001",
+      "to": "CUSTOSZ:composition.engine",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-001",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "CognitivePlane",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-001",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "GovernanceKernel",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-002",
+      "to": "CUSTOSZ:epistemic.failure_detection",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-002",
+      "to": "CUSTOSZ:gap.evolution",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-002",
+      "to": "CUSTOSZ:validation.adversarial",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-002",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "MetacognitivePlane",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-002",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "ValidationPipeline",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-003",
+      "to": "CUSTOSZ:assurance.fabric",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-003",
+      "to": "CUSTOSZ:epistemic.failure_detection",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-003",
+      "to": "CUSTOSZ:evidence.completeness",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-003",
+      "to": "CUSTOSZ:evidence.graph",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-003",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "ValidationPipeline",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-004",
+      "to": "CUSTOSZ:composition.engine",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-004",
+      "to": "CUSTOSZ:placement.engine",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-004",
+      "to": "CUSTOSZ:io.query_plan",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-004",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "MissionController",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-004",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "CognitivePlane",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-005",
+      "to": "CUSTOSZ:systems.intelligence",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-005",
+      "to": "CUSTOSZ:technology.synthesis",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-006",
+      "to": "CUSTOSZ:languages.intelligence",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-006",
+      "to": "CUSTOSZ:optimization.intelligence",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-006",
+      "to": "CUSTOSZ:technology.synthesis",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-007",
+      "to": "CUSTOSZ:errors.taxonomy",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-007",
+      "to": "CUSTOSZ:epistemic.failure_detection",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-007",
+      "to": "CUSTOSZ:benchmark.gap",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-007",
+      "to": "CUSTOSZ:memory.failure",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-007",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "FailureController",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-007",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "ValidationPipeline",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-008",
+      "to": "CUSTOSZ:memory.governed",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-008",
+      "to": "CUSTOSZ:memory.versioned",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-008",
+      "to": "CUSTOSZ:memory.currentness",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-008",
+      "to": "CUSTOSZ:memory.state",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-008",
+      "to": "CUSTOSZ:memory.decision",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-008",
+      "to": "CUSTOSZ:memory.evidence",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-008",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "CheckpointStore",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-008",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "EvidenceJournal",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-009",
+      "to": "CUSTOSZ:documentation.generated",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-009",
+      "to": "CUSTOSZ:memory.evidence",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-009",
+      "to": "CUSTOSZ:memory.decision",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-009",
+      "to": "CUSTOSZ:memory.currentness",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-010",
+      "to": "CUSTOSZ:validation.adversarial",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "REUSE"
+    },
+    {
+      "from": "MCAP-010",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "ValidationPipeline",
+      "family9_action": "REUSE"
+    },
+    {
+      "from": "MCAP-011",
+      "to": "CUSTOSZ:resources.adaptive",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-011",
+      "to": "CUSTOSZ:resources.budget_policy",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-011",
+      "to": "CUSTOSZ:backpressure.control",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-011",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "TimeBudgetController",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-012",
+      "to": "CUSTOSZ:interfaces.cross_family",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-012",
+      "to": "CUSTOSZ:overlap.semantic",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-012",
+      "to": "CUSTOSZ:duplication.anti",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-012",
+      "to": "CUSTOSZ:gap.proof",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-012",
+      "to": "CUSTOSZ:lifecycle.manager",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-012",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "ExecutorRegistry",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-013",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "ExecutorRegistry",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-014",
+      "to": "CUSTOSZ:api.gateway",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-014",
+      "to": "CUSTOSZ:composition.engine",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-014",
+      "to": "CUSTOSZ:invariants.engine",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-014",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "MissionController",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-015",
+      "to": "CUSTOSZ:continuity.heartbeat_watchdog",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-015",
+      "to": "CUSTOSZ:evidence.graph",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-015",
+      "to": "CUSTOSZ:memory.state",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-015",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "TelemetryFabric",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-015",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "EvidenceJournal",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-016",
+      "to": "CUSTOSZ:resources.adaptive",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-016",
+      "to": "CUSTOSZ:resources.budget_policy",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-016",
+      "to": "CUSTOSZ:backpressure.control",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-016",
+      "to": "CUSTOSZ:knowledge.high_throughput",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-017",
+      "to": "CUSTOSZ:gap.evolution",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-017",
+      "to": "CUSTOSZ:gap.proof",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-017",
+      "to": "CUSTOSZ:evolution.admission",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-017",
+      "to": "CUSTOSZ:duplication.anti",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-017",
+      "to": "CUSTOSZ:overlap.semantic",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-018",
+      "to": "CUSTOSZ:systems.intelligence",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-018",
+      "to": "CUSTOSZ:benchmark.ephemeral",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-018",
+      "to": "CUSTOSZ:conformance.harness",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-020",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "ExecutorRegistry",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-021",
+      "to": "CUSTOSZ:resources.adaptive",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-021",
+      "to": "CUSTOSZ:resources.budget_policy",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-021",
+      "to": "CUSTOSZ:backpressure.control",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-021",
+      "to": "CUSTOSZ:process.sessions",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-021",
+      "to": "CUSTOSZ:execution.resumable",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-021",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "ExecutorRegistry",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-021",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "ProcessSupervisor",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-021",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "TimeBudgetController",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-022",
+      "to": "CUSTOSZ:security.credentials",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-022",
+      "to": "CUSTOSZ:security.crypto",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-022",
+      "to": "CUSTOSZ:security.sandbox_contract",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-022",
+      "to": "CUSTOSZ:security.trust_policy",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-022",
+      "to": "CUSTOSZ:security.fabric",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-022",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "GovernanceKernel",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-023",
+      "to": "CUSTOSZ:security.trust_policy",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-023",
+      "to": "CUSTOSZ:invariants.engine",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-023",
+      "to": "CUSTOSZ:lifecycle.manager",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-023",
+      "to": "CUSTOSZ:conformance.harness",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-023",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "GovernanceKernel",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-024",
+      "to": "CUSTOSZ:security.supply_chain",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-024",
+      "to": "CUSTOSZ:security.crypto",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-024",
+      "to": "CUSTOSZ:content.identity",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-025",
+      "to": "CUSTOSZ:security.supply_chain",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-025",
+      "to": "CUSTOSZ:security.threat_currentness",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-025",
+      "to": "CUSTOSZ:memory.currentness",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-026",
+      "to": "CUSTOSZ:security.risk_classification",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-026",
+      "to": "CUSTOSZ:security.credentials",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-026",
+      "to": "CUSTOSZ:security.supply_chain",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-027",
+      "to": "CUSTOSZ:evidence.graph",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-027",
+      "to": "CUSTOSZ:evidence.completeness",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-027",
+      "to": "CUSTOSZ:memory.evidence",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-027",
+      "to": "CUSTOSZ:content.identity",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-027",
+      "to": "CUSTOSZ:security.crypto",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-027",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "EvidenceJournal",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-028",
+      "to": "CUSTOSZ:assurance.fabric",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-028",
+      "to": "CUSTOSZ:evidence.graph",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-028",
+      "to": "CUSTOSZ:evidence.completeness",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-028",
+      "to": "CUSTOSZ:conformance.harness",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-028",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "ValidationPipeline",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-029",
+      "to": "CUSTOSZ:assurance.fabric",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-029",
+      "to": "CUSTOSZ:validation.adversarial",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-029",
+      "to": "CUSTOSZ:conformance.harness",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-029",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "ValidationPipeline",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-030",
+      "to": "CUSTOSZ:assurance.fabric",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-030",
+      "to": "CUSTOSZ:lifecycle.manager",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-030",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "GovernanceKernel",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-031",
+      "to": "CUSTOSZ:execution.resumable",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-031",
+      "to": "CUSTOSZ:continuity.session_resume",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-031",
+      "to": "CUSTOSZ:continuity.reboot_state",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-031",
+      "to": "CUSTOSZ:memory.state",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-031",
+      "to": "CUSTOSZ:memory.failure",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-031",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "CheckpointStore",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-031",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "ResumeManager",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-031",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "FailureController",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-032",
+      "to": "CUSTOSZ:memory.currentness",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-032",
+      "to": "CUSTOSZ:memory.invalidation",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-032",
+      "to": "CUSTOSZ:memory.versioned",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-032",
+      "to": "CUSTOSZ:conformance.harness",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-032",
+      "to": "CUSTOSZ:assurance.fabric",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-032",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "ValidationPipeline",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-033",
+      "to": "CUSTOSZ:interfaces.cross_family",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-033",
+      "to": "CUSTOSZ:api.gateway",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-033",
+      "to": "CUSTOSZ:continuity.fabric",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-033",
+      "to": "CUSTOSZ:composition.engine",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-033",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "GovernanceKernel",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-033",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "MissionController",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-034",
+      "to": "CUSTOSZ:memory.currentness",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-034",
+      "to": "CUSTOSZ:memory.invalidation",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-034",
+      "to": "CUSTOSZ:conformance.harness",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-034",
+      "to": "CUSTOSZ:content.identity",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-035",
+      "to": "CUSTOSZ:benchmark.ephemeral",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-035",
+      "to": "CUSTOSZ:validation.adversarial",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-035",
+      "to": "CUSTOSZ:benchmark.gap",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-035",
+      "to": "CUSTOSZ:invariants.engine",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-036",
+      "to": "CUSTOSZ:invariants.engine",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-036",
+      "to": "CUSTOSZ:logic.formal",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-036",
+      "to": "CUSTOSZ:logic.arithmetic",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-036",
+      "to": "CUSTOSZ:conformance.harness",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-037",
+      "to": "CUSTOSZ:lifecycle.manager",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-037",
+      "to": "CUSTOSZ:maintainability.engine",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-037",
+      "to": "CUSTOSZ:duplication.anti",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-037",
+      "to": "CUSTOSZ:memory.currentness",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-037",
+      "to": "CUSTOSZ:memory.invalidation",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-038",
+      "to": "CUSTOSZ:execution.resumable",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-038",
+      "to": "CUSTOSZ:continuity.session_resume",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-038",
+      "to": "CUSTOSZ:memory.state",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-038",
+      "to": "CUSTOSZ:continuity.fabric",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-038",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "MissionController",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-039",
+      "to": "CUSTOSZ:gap.proof",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-039",
+      "to": "CUSTOSZ:gap.evolution",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-039",
+      "to": "CUSTOSZ:placement.engine",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-039",
+      "to": "CUSTOSZ:continuity.preinstall_contract",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-039",
+      "to": "CUSTOSZ:api.gateway",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-039",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "ExecutorRegistry",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-040",
+      "to": "CUSTOSZ:security.risk_classification",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-040",
+      "to": "CUSTOSZ:security.trust_policy",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-040",
+      "to": "CUSTOSZ:security.sandbox_contract",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-040",
+      "to": "CUSTOSZ:memory.currentness",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-041",
+      "to": "CUSTOSZ:knowledge.remote",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-041",
+      "to": "CUSTOSZ:knowledge.high_throughput",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-041",
+      "to": "CUSTOSZ:streaming.range",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-041",
+      "to": "CUSTOSZ:io.resumable_reader",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-041",
+      "to": "CUSTOSZ:source.resolve",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-041",
+      "to": "CUSTOSZ:ingestion.universal",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-041",
+      "to": "CUSTOSZ:volume.intelligence",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-041",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "SourceRegistry",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-042",
+      "to": "CUSTOSZ:volume.intelligence",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-042",
+      "to": "CUSTOSZ:normalization.structured",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-042",
+      "to": "CUSTOSZ:content.identity",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-042",
+      "to": "CUSTOSZ:io.query_plan",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-043",
+      "to": "CUSTOSZ:cache.semantic",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-043",
+      "to": "CUSTOSZ:knowledge.remote",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-043",
+      "to": "CUSTOSZ:knowledge.high_throughput",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-043",
+      "to": "CUSTOSZ:io.query_plan",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-043",
+      "to": "CUSTOSZ:evidence.graph",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-044",
+      "to": "CUSTOSZ:execution.resumable",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-044",
+      "to": "CUSTOSZ:resources.adaptive",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-044",
+      "to": "CUSTOSZ:normalization.structured",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-045",
+      "to": "CUSTOSZ:validation.adversarial",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-045",
+      "to": "CUSTOSZ:conformance.harness",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-045",
+      "to": "CUSTOSZ:assurance.fabric",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-046",
+      "to": "CUSTOSZ:memory.governed",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-046",
+      "to": "CUSTOSZ:cache.semantic",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-046",
+      "to": "CUSTOSZ:memory.versioned",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-047",
+      "to": "CUSTOSZ:technology.synthesis",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-047",
+      "to": "CUSTOSZ:composition.engine",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-047",
+      "to": "CUSTOSZ:evidence.graph",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-047",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "CognitivePlane",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-048",
+      "to": "CUSTOSZ:logic.formal",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-048",
+      "to": "CUSTOSZ:logic.arithmetic",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-048",
+      "to": "CUSTOSZ:assurance.fabric",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-048",
+      "to": "CUSTOSZ:evidence.graph",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-048",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "CognitivePlane",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-049",
+      "to": "CUSTOSZ:streaming.range",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-049",
+      "to": "CUSTOSZ:api.gateway",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-049",
+      "to": "CUSTOSZ:continuity.heartbeat_watchdog",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-049",
+      "to": "CUSTOSZ:backpressure.control",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-049",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "TelemetryFabric",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-050",
+      "to": "CUSTOSZ:execution.resumable",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-050",
+      "to": "CUSTOSZ:continuity.session_resume",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-050",
+      "to": "CUSTOSZ:continuity.heartbeat_watchdog",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-050",
+      "to": "CUSTOSZ:backpressure.control",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-050",
+      "to": "CUSTOSZ:memory.state",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-050",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "CheckpointStore",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-050",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "ResumeManager",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-050",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "ProcessSupervisor",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-051",
+      "to": "CUSTOSZ:content.identity",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-051",
+      "to": "CUSTOSZ:security.crypto",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-051",
+      "to": "CUSTOSZ:knowledge.remote",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-051",
+      "to": "CUSTOSZ:handoff.remote_source",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-051",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "SourceRegistry",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-052",
+      "to": "CUSTOSZ:evidence.graph",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-052",
+      "to": "CUSTOSZ:memory.state",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-052",
+      "to": "CUSTOSZ:continuity.heartbeat_watchdog",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-052",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "TelemetryFabric",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-052",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "EvidenceJournal",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-053",
+      "to": "CUSTOSZ:benchmark.ephemeral",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-053",
+      "to": "CUSTOSZ:benchmark.gap",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-053",
+      "to": "CUSTOSZ:benchmark.contamination",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-053",
+      "to": "CUSTOSZ:validation.adversarial",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-053",
+      "to": "CUSTOSZ:conformance.harness",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-053",
+      "to": "CUSTOSZ:assurance.fabric",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-053",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "ValidationPipeline",
+      "family9_action": "EXTEND_OWNER_FAMILY"
+    },
+    {
+      "from": "MCAP-054",
+      "to": "CUSTOSZ:api.gateway",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-054",
+      "to": "CUSTOSZ:streaming.range",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-054",
+      "to": "CUSTOSZ:normalization.structured",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-054",
+      "to": "CUSTOSZ:memory.currentness",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-054",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "SourceRegistry",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-055",
+      "to": "CUSTOSZ:api.gateway",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-055",
+      "to": "CUSTOSZ:streaming.range",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-055",
+      "to": "CUSTOSZ:content.identity",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-055",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "SourceRegistry",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-056",
+      "to": "CUSTOSZ:api.gateway",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-056",
+      "to": "CUSTOSZ:normalization.structured",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-056",
+      "to": "CUSTOSZ:memory.currentness",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-056",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "SourceRegistry",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-057",
+      "to": "CUSTOSZ:technology.synthesis",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-057",
+      "to": "CUSTOSZ:composition.engine",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-057",
+      "to": "CUSTOSZ:evidence.graph",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-057",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "CognitivePlane",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-058",
+      "to": "CUSTOSZ:composition.engine",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-058",
+      "to": "CUSTOSZ:gap.evolution",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-058",
+      "to": "CUSTOSZ:assurance.fabric",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-058",
+      "to": "CUSTOSZ:memory.governed",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-058",
+      "to": "CUSTOSZ:logic.formal",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-058",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "CognitivePlane",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-058",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "MetacognitivePlane",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-058",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "MissionController",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-058",
+      "to": "SYS-RUNTIME",
+      "relation": "RUNTIME_COMPONENT",
+      "component": "TelemetryFabric",
+      "family9_action": "COMPOSE_VIA_CONTRACT"
+    },
+    {
+      "from": "MCAP-059",
+      "to": "CUSTOSZ:benchmark.contamination",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-059",
+      "to": "CUSTOSZ:assurance.fabric",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-059",
+      "to": "CUSTOSZ:memory.evidence",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "MCAP-059",
+      "to": "CUSTOSZ:memory.currentness",
+      "relation": "CUSTOSZ_BINDING",
+      "family9_action": "GAP_PROOF_THEN_CREATE"
+    },
+    {
+      "from": "SYS-LOUKSNA",
+      "to": "SYS-METAOS",
+      "relation": "GOVERNS_CONTRACTS"
+    },
+    {
+      "from": "SYS-METAOS",
+      "to": "SYS-CUSTOSZ",
+      "relation": "GOVERNS_EXECUTION"
+    },
+    {
+      "from": "SYS-CUSTOSZ",
+      "to": "SYS-RUNTIME",
+      "relation": "USES_RUNTIME"
+    },
+    {
+      "from": "SYS-PUAC2",
+      "to": "SYS-G23",
+      "relation": "PREPARES_ASSURANCE_FOR"
+    },
+    {
+      "from": "SYS-G23",
+      "to": "SYS-G24",
+      "relation": "PRECEDES"
+    },
+    {
+      "from": "SYS-G24",
+      "to": "SYS-LOUKSNA",
+      "relation": "DOES_NOT_TRANSFER_AUTHORITY_TO",
+      "note": "Certification does not replace canonical authority."
+    }
+  ],
+  "invariants": {
+    "mcap_count": 59,
+    "custosz_capability_count": 72,
+    "training_last": "MCAP-059",
+    "no_self_certification": true,
+    "no_authority_transfer": true,
+    "heavy_compute_default": "GITHUB_HOSTED_OR_EXPLICIT_EXTERNAL_CLOUD",
+    "g23_before_g24": true
+  }
+}
