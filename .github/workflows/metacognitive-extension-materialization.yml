@@ -74,9 +74,11 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          command -v sdkmanager
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager "platforms;android-36" "platforms;android-37"
-          sdkmanager --list_installed | grep -E 'platforms;android-(36|37)'
+          SDKMANAGER="$(find "$ANDROID_HOME" -type f -name sdkmanager -print -quit)"
+          test -n "$SDKMANAGER"
+          echo "SDKMANAGER=$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "platforms;android-37"
+          "$SDKMANAGER" --list_installed | grep -E 'platforms;android-(36|37)'
           echo "ANDROID_16_API_36=PASS"
           echo "ANDROID_17_API_37=PASS"
