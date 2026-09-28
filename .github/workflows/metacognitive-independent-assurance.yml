@@ -9,6 +9,7 @@ on:
       - scripts/metacognitive/**
       - scripts/mission_mailbox/**
       - mission-mailbox/**
+      - .github/workflows/metacognitive-ecosystem-r4-cloud.yml
       - .github/workflows/metacognitive-ecosystem-r4-cloud-cert.yml
 
 permissions:
@@ -44,7 +45,7 @@ jobs:
           RUN_ID=$(RESP="$RESP" python3 - <<'PY'
           import json,os
           d=json.loads(os.environ["RESP"])
-          xs=[x for x in d.get("workflow_runs",[]) if x.get("name")=="Metacognitive Ecosystem R4 — cloud producer" and x.get("head_sha")==os.environ["HEAD_SHA"] and x.get("conclusion")=="success"]
+          xs=[x for x in d.get("workflow_runs",[]) if x.get("name")=="Metacognitive Ecosystem R4 — cloud materialization and PUAC2" and x.get("head_sha")==os.environ["HEAD_SHA"] and x.get("conclusion")=="success"]
           if not xs: raise SystemExit("NO_SUCCESSFUL_PRODUCER_RUN_FOR_EXACT_HEAD")
           xs.sort(key=lambda x:x.get("created_at",""),reverse=True)
           print(xs[0]["id"])
@@ -71,7 +72,7 @@ jobs:
       - name: Download producer frozen candidate as data only
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
-          name: metacognitive-r4-frozen-candidate
+          name: metacognitive-ecosystem-r4-frozen-candidate
           path: ${{ runner.temp }}/candidate
           github-token: ${{ github.token }}
           repository: ${{ github.repository }}
@@ -140,7 +141,7 @@ jobs:
 
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
-          name: metacognitive-r4-frozen-candidate
+          name: metacognitive-ecosystem-r4-frozen-candidate
           path: ${{ runner.temp }}/candidate
           github-token: ${{ github.token }}
           repository: ${{ github.repository }}

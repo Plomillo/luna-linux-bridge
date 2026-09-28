@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - staging/metacognitive-assurance-trust-root-20260928
+      - staging/metacognitive-assurance-trust-root-r2-20260928
       - staging/custosz-mission-mailbox-20260928
     paths:
       - scripts/assurance/**
