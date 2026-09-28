@@ -1,0 +1,140 @@
+{
+  "blockers": [
+    "Native CUSTOSZ requires a real resolved LUNA_PROJECT workspace; never manufacture one to fake receipt."
+  ],
+  "budget_seconds": 1200,
+  "checks": [
+    {
+      "bytes": 11536067,
+      "name": "A0",
+      "sha256": "5270c3d643339c283edf13b414f335f23f921c4dac023b06d38de62927e29bf9",
+      "status": "PASS"
+    },
+    {
+      "bytes": 62950,
+      "name": "PUAC2",
+      "sha256": "c872ab8d31e0e301de93ab06047294424d309d947f225e62148cee8265b15869",
+      "status": "PASS"
+    },
+    {
+      "bytes": 49379,
+      "name": "CUSTOSZ",
+      "sha256": "dacf1f8c13b2fcbfc617cf0d4d780b30502c13395224691e6b0f05f53d9816a2",
+      "status": "PASS"
+    },
+    {
+      "bytes": 10376,
+      "name": "RUNTIME",
+      "sha256": "a79e13869601d68fe801b85ad421719b79d4afa5520ae34b91b419bd8834ae67",
+      "status": "PASS"
+    },
+    {
+      "bytes": 2442,
+      "name": "METAOS",
+      "sha256": "5d8f1239e3a0b452be722078760b000afc22af0a64f93ffb0a1f74024f15aed0",
+      "status": "PASS"
+    },
+    {
+      "bytes": 17596,
+      "name": "MISSION",
+      "sha256": "f4811c8c5b6ab6186f70b69620972ae49c3e2718a956d6cfae72df07c19ac5da",
+      "status": "PASS"
+    },
+    {
+      "anatomy": [
+        "GovernanceKernel",
+        "MissionController",
+        "CognitivePlane",
+        "MetacognitivePlane",
+        "ExecutorRegistry",
+        "ProcessSupervisor",
+        "TimeBudgetController",
+        "CheckpointStore",
+        "EvidenceJournal",
+        "TelemetryFabric",
+        "SourceRegistry",
+        "ResumeManager",
+        "FailureController",
+        "ValidationPipeline"
+      ],
+      "name": "Runtime API selftest and mission journal",
+      "status": "SELFTEST_AND_READONLY_JOURNAL_PASS"
+    },
+    {
+      "exit_code": 0,
+      "name": "CUSTOSZ v07-status",
+      "reported_status": null,
+      "status": "PASS",
+      "version": "7.0.0-candidate"
+    },
+    {
+      "exit_code": 0,
+      "name": "CUSTOSZ v07-selftest",
+      "reported_status": "PASS",
+      "status": "PASS",
+      "version": null
+    },
+    {
+      "detail": "WORKSPACE_AMBIGUOUS_OR_MISSING:[]",
+      "exit_code": 2,
+      "name": "CUSTOSZ native mission-start",
+      "status": "FAIL_CLOSED"
+    },
+    {
+      "bytes": 11542631,
+      "name": "A1 original bytes",
+      "path": "LOUKSNAMEJORADA.md",
+      "ref": "origin/staging/architecture-louksnamejorada-20260927",
+      "sha256": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51",
+      "status": "PASS"
+    },
+    {
+      "bytes": 24964,
+      "name": "R4 Skeleton original bytes",
+      "path": "docs/luna-r4/source/SKELETON_CANONICO_REFERENCIA.txt",
+      "ref": "origin/staging/luna-r4-context-recovery-20260927",
+      "sha256": "fb9fad37994e684ad54b1ffc2762660eebcb8e41bd9c4ba685ffac55217d5b0f",
+      "status": "PASS"
+    },
+    {
+      "expected": 252,
+      "github_pending": 248,
+      "github_uploaded": 4,
+      "name": "CAS source manifest",
+      "status": "PASS"
+    },
+    {
+      "automation_armed": false,
+      "name": "Installation authorization contract",
+      "status": "PREPARATION_INERT",
+      "user_authorized": false
+    }
+  ],
+  "commit": "0550bd1e3fc77b09eaa8acb5d34e8e5e3b934b3c",
+  "contradictions": [
+    "Staged runtime hash a79e13869601d68fe801b85ad421719b79d4afa5520ae34b91b419bd8834ae67 differs from runtime hash 4e9bf0e799487ea0fd6a6d32359176bdce996010e33ed151ce0f186155d11df0 stated in the R4 Skeleton; variant and provenance require reconciliation."
+  ],
+  "deadline_status": "WITHIN_20_MINUTES",
+  "elapsed_seconds": 2.198,
+  "ended_utc": "2026-09-28T03:44:10.547403+00:00",
+  "findings": [
+    "The original CUSTOSZ executable was invoked. Its mission-start controls a supervisory clock; it is not an autonomous researcher without an authorized executor binding.",
+    "The original runtime API accepted a read-only GitHub research mission in an isolated runner temporary evidence journal.",
+    "Firefox is already uninstalled according to the owner; this research did not repeat removal."
+  ],
+  "g23": "HOLD",
+  "g24": "HOLD",
+  "governor": "MetaOS",
+  "installation_executed": false,
+  "mission_id": "SYMPHYLAX_R1_LUNA_R4_FINAL_COMPLETION_RESEARCH",
+  "native_receipt": "NOT_VERIFIED",
+  "projects_modified": false,
+  "run_id": "36374864210",
+  "runtime_receipt": "SELFTEST_AND_READONLY_JOURNAL_PASS",
+  "scope": "GITHUB_READONLY_RESEARCH_ONLY",
+  "started_utc": "2026-09-28T03:44:08.349144+00:00",
+  "status": "PARTIAL_OR_BLOCKED",
+  "supervisor": "SYMPHYLAX_R1",
+  "windows_modified": false,
+  "worker": "CUSTOSZ_V7"
+}
