@@ -36,7 +36,8 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          python3 -m py_compile scripts/mission_mailbox/*.py
+          python3 -m py_compile scripts/mission_mailbox/*.py scripts/mission_mailbox/adapters/*.py
+          sha256sum scripts/mission_mailbox/adapters/*.py || true
           python3 - <<'PY'
           import json
           for p in (
