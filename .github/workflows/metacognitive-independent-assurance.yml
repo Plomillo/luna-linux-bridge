@@ -1,0 +1,222 @@
+name: "Metacognitive Ecosystem — independent G23 G24 trust root"
+
+on:
+  pull_request_target:
+    branches:
+      - staging/custosz-mission-mailbox-20260928
+    paths:
+      - ecosystem/metacognitive-operational-v1/**
+      - scripts/metacognitive/**
+      - scripts/mission_mailbox/**
+      - mission-mailbox/**
+      - .github/workflows/metacognitive-ecosystem-r4-cloud.yml
+      - .github/workflows/metacognitive-ecosystem-r4-cloud-cert.yml
+
+permissions:
+  contents: read
+  actions: read
+  id-token: write
+
+concurrency:
+  group: meta-independent-assurance-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  discover:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      producer_run_id: ${{ steps.find.outputs.producer_run_id }}
+      candidate_head_sha: ${{ steps.find.outputs.candidate_head_sha }}
+    steps:
+      - name: Resolve successful producer run for exact PR head
+        id: find
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY' > "$RUNNER_TEMP/query.py"
+          PY
+          RESP=$(curl -fsSL             -H "Authorization: Bearer $GH_TOKEN"             -H "Accept: application/vnd.github+json"             "https://api.github.com/repos/$REPO/actions/runs?head_sha=$HEAD_SHA&status=success&per_page=100")
+          RUN_ID=$(RESP="$RESP" python3 - <<'PY'
+          import json,os
+          d=json.loads(os.environ["RESP"])
+          xs=[x for x in d.get("workflow_runs",[]) if x.get("name")=="Metacognitive Ecosystem R4 — cloud materialization and PUAC2" and x.get("head_sha")==os.environ["HEAD_SHA"] and x.get("conclusion")=="success"]
+          if not xs: raise SystemExit("NO_SUCCESSFUL_PRODUCER_RUN_FOR_EXACT_HEAD")
+          xs.sort(key=lambda x:x.get("created_at",""),reverse=True)
+          print(xs[0]["id"])
+          PY
+          )
+          echo "producer_run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "candidate_head_sha=$HEAD_SHA" >> "$GITHUB_OUTPUT"
+          echo "PRODUCER_RUN_ID=$RUN_ID" >> "$GITHUB_STEP_SUMMARY"
+          echo "CANDIDATE_HEAD_SHA=$HEAD_SHA" >> "$GITHUB_STEP_SUMMARY"
+
+  g23:
+    needs: discover
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - name: Checkout base-controlled trust root only
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+          sparse-checkout: scripts/assurance/metacognitive_trust_root.py
+          sparse-checkout-cone-mode: false
+
+      - name: Download producer frozen candidate as data only
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: metacognitive-ecosystem-r4-frozen-candidate
+          path: ${{ runner.temp }}/candidate
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ needs.discover.outputs.producer_run_id }}
+
+      - name: Build structural independence evidence
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BASE_REF: refs/heads/${{ github.event.pull_request.base.ref }}
+          HEAD_SHA: ${{ needs.discover.outputs.candidate_head_sha }}
+          TRUST_ROOT_SHA: ${{ github.workflow_sha }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          DIGEST=$(cat "$RUNNER_TEMP/candidate/CANDIDATE_DIGEST.txt")
+          TRUST_SHA=$(sha256sum scripts/assurance/metacognitive_trust_root.py | awk '{print $1}')
+          python3 - "$RUNNER_TEMP/g23/INDEPENDENCE.json" "$DIGEST" "$BASE_SHA" "$HEAD_SHA" "$TRUST_SHA" "$TRUST_ROOT_SHA" <<'PY'
+          import json,sys
+          out,digest,base,head,trust,trust_root=sys.argv[1:]
+          obj={
+            "schema":"PUAC2_C27_INDEPENDENCE_EVIDENCE/1.0",
+            "status":"PASS",
+            "distinct_evaluator_identity":"BASE_BRANCH_PULL_REQUEST_TARGET_G23",
+            "event":"pull_request_target",
+            "validator_trust_root_sha":trust_root,
+            "validator_script_sha256":trust,
+            "candidate_head_sha":head,
+            "candidate_digest_sha256":digest,
+            "write_access_to_candidate":False,
+            "repair_allowed":False,
+            "candidate_code_executed":False,
+            "candidate_artifact_consumed_as_data_only":True,
+            "producer_can_modify_running_validator":False,
+            "organizational_independence":"NOT_CLAIMED",
+            "structural_independence":"PASS"
+          }
+          json.dump(obj,open(out,"w"),indent=2,sort_keys=True)
+          PY
+
+      - name: G23 independent validation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          chmod -R a-w "$RUNNER_TEMP/candidate"
+          python3 -B -I scripts/assurance/metacognitive_trust_root.py g23             --candidate "$RUNNER_TEMP/candidate"             --independence "$RUNNER_TEMP/g23/INDEPENDENCE.json"             --out "$RUNNER_TEMP/g23/G23.json"
+          cat "$RUNNER_TEMP/g23/G23.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: metacognitive-independent-g23
+          path: ${{ runner.temp }}/g23
+          if-no-files-found: error
+          retention-days: 90
+
+  g24:
+    needs: [discover,g23]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - name: Checkout base-controlled trust root only
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+          sparse-checkout: scripts/assurance/metacognitive_trust_root.py
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: metacognitive-ecosystem-r4-frozen-candidate
+          path: ${{ runner.temp }}/candidate
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ needs.discover.outputs.producer_run_id }}
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: metacognitive-independent-g23
+          path: ${{ runner.temp }}/g23
+
+      - name: Obtain GitHub OIDC authority evidence bound to candidate digest
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BASE_REF: refs/heads/${{ github.event.pull_request.base.ref }}
+          HEAD_SHA: ${{ needs.discover.outputs.candidate_head_sha }}
+          TRUST_ROOT_SHA: ${{ github.workflow_sha }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g24"
+          DIGEST=$(cat "$RUNNER_TEMP/candidate/CANDIDATE_DIGEST.txt")
+          AUD="louksna-g24:$DIGEST"
+          RESP=$(curl -fsSL             -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN"             "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")
+          TOKEN=$(RESP="$RESP" python3 - <<'PY'
+          import json,os
+          print(json.loads(os.environ["RESP"])["value"])
+          PY
+          )
+          TOKEN="$TOKEN" DIGEST="$DIGEST" BASE_SHA="$BASE_SHA" BASE_REF="$BASE_REF" HEAD_SHA="$HEAD_SHA" TRUST_ROOT_SHA="$TRUST_ROOT_SHA" AUD="$AUD" python3 - <<'PY'
+          import base64,hashlib,json,os,pathlib
+          tok=os.environ["TOKEN"]
+          parts=tok.split(".")
+          if len(parts)!=3: raise SystemExit("OIDC_TOKEN_FORMAT_INVALID")
+          payload=parts[1] + "="*((4-len(parts[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload))
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY_MISMATCH")
+          aud=claims.get("aud")
+          if aud!=os.environ["AUD"] and not (isinstance(aud,list) and os.environ["AUD"] in aud): raise SystemExit("OIDC_AUDIENCE_MISMATCH")
+          obj={
+            "schema":"G24_AUTHORITY_EVIDENCE/1.0",
+            "status":"PASS",
+            "authority_authenticated":True,
+            "authority_id":"LOUKSNA_G24_BASE_WORKFLOW::"+claims.get("sub","UNKNOWN"),
+            "candidate_digest_sha256":os.environ["DIGEST"],
+            "signature_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(tok.encode()).hexdigest(),
+            "repository":claims.get("repository"),
+            "event":"pull_request_target",
+            "base_ref":os.environ["BASE_REF"],
+            "base_sha":os.environ["BASE_SHA"],
+            "trust_root_sha":os.environ["TRUST_ROOT_SHA"],
+            "oidc_ref":claims.get("ref",""),
+            "oidc_job_workflow_ref":claims.get("job_workflow_ref"),
+            "candidate_head_sha":os.environ["HEAD_SHA"],
+            "oidc_subject":claims.get("sub"),
+            "oidc_repository_id":claims.get("repository_id"),
+            "oidc_workflow":claims.get("workflow"),
+            "oidc_actor":claims.get("actor"),
+            "raw_token_persisted":False
+          }
+          pathlib.Path(os.environ["RUNNER_TEMP"],"g24","AUTHORITY_EVIDENCE.json").write_text(json.dumps(obj,indent=2,sort_keys=True)+"\n")
+          PY
+          unset TOKEN RESP
+
+      - name: G24 digest-bound certification
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B -I scripts/assurance/metacognitive_trust_root.py g24             --candidate "$RUNNER_TEMP/candidate"             --g23 "$RUNNER_TEMP/g23/G23.json"             --authority "$RUNNER_TEMP/g24/AUTHORITY_EVIDENCE.json"             --out "$RUNNER_TEMP/g24/G24_CERTIFICATE.json"
+          cat "$RUNNER_TEMP/g24/G24_CERTIFICATE.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: metacognitive-independent-g24
+          path: ${{ runner.temp }}/g24
+          if-no-files-found: error
+          retention-days: 90
