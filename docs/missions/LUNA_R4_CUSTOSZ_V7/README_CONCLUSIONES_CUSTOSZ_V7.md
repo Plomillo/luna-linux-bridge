@@ -59,3 +59,26 @@ El presente informe registra solamente comprobaciones realmente realizadas. No c
 Resolver los bloqueos documentados; evaluar adaptador de ejecución autenticado y pruebas independientes. F3-DISK exige autorización separada H2/H4.
 
 [Misión íntegra](MISION_MAESTRA_DEFINITIVA.md) · [Orden GitHub #5](https://github.com/Plomillo/luna-linux-bridge/issues/5) · [Evidencia](RESEARCH_EVIDENCE.json)
+
+
+## Despacho material CUSTOSZ + Runtime run 36376615311
+
+Evidencia de ejecución: https://github.com/Plomillo/luna-linux-bridge/actions/runs/36376615311
+
+El trabajo pesado de esta etapa se ejecutó en GitHub-hosted; no constituye activación de producción en LOUKSNA ni autorización F3-DISK.
+
+~~~json
+{
+  "ended_utc": null,
+  "g23": null,
+  "g24": null,
+  "host_disk_mutation": null,
+  "host_installation": null,
+  "mission_id": null,
+  "research_result": null,
+  "runtime_dispatch": null,
+  "started_utc": null,
+  "status": "RUNTIME_DISPATCH_NO_RESULT",
+  "user_host_ram_heavy_research": null
+}
+~~~
