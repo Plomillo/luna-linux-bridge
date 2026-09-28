@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Default-branch release-aware trust-root resolver; keep stdlib-only and fail-closed.
 from __future__ import annotations
 import argparse, base64, json, os, sys, urllib.error, urllib.parse, urllib.request
 
