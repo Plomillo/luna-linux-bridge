@@ -24,6 +24,9 @@ jobs:
             scripts/mission_mailbox/adapters/metacognitive_ecosystem_v1.py
             scripts/metacognitive/extract_custosz_v7_census.py
             scripts/metacognitive/inspect_custosz_family9.py
+            scripts/metacognitive/validate_custosz72_mcap59_dedup.py
+            ecosystem/metacognitive-operational-v1/CAPABILITIES.json
+            ecosystem/metacognitive-operational-v1/CUSTOSZ72_DEDUP_EVIDENCE.json
             artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz
           sparse-checkout-cone-mode: false
 
@@ -43,6 +46,27 @@ jobs:
             --out "$OUT/CUSTOSZ_F09_INTERFACE.json"
           echo "=== CUSTOSZ F09 INTERFACE ==="
           cat "$OUT/CUSTOSZ_F09_INTERFACE.json"
+          python3 -B -I scripts/metacognitive/validate_custosz72_mcap59_dedup.py \
+            --manifest ecosystem/metacognitive-operational-v1/CAPABILITIES.json \
+            --evidence ecosystem/metacognitive-operational-v1/CUSTOSZ72_DEDUP_EVIDENCE.json \
+            --pyz artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz \
+            --extractor scripts/metacognitive/extract_custosz_v7_census.py \
+            --out "$OUT/MCAP59_CUSTOSZ72_DEDUP_VALIDATION.json"
+          echo "=== MCAP59/CUSTOSZ72 DEDUP SUMMARY ==="
+          python3 - <<'PY'
+          import json,os
+          p=os.path.join(os.environ["RUNNER_TEMP"],"meta-r2-probe","MCAP59_CUSTOSZ72_DEDUP_VALIDATION.json")
+          d=json.load(open(p,encoding="utf-8"))
+          print(json.dumps({
+            "status":d["status"],
+            "mapped_count":d["mapped_count"],
+            "family9_action_counts":d["family9_action_counts"],
+            "g16_precheck":d["g16_precheck"],
+            "g16_canonical_gate":d["g16_canonical_gate"],
+            "g23":d["g23"],
+            "g24":d["g24"]
+          },sort_keys=True))
+          PY
           python3 - <<'PY'
           import json, os
           p=os.path.join(os.environ["RUNNER_TEMP"],"meta-r2-probe","CUSTOSZ72_CENSUS.json")
