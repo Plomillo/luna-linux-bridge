@@ -5,6 +5,7 @@ on:
     branches:
       - staging/metacognitive-assurance-trust-root-20260928
       - staging/metacognitive-assurance-trust-root-r2-20260928
+      - staging/metacognitive-trust-root-release-aware-20260928
       - staging/custosz-mission-mailbox-20260928
     paths:
       - scripts/assurance/**
@@ -31,7 +32,7 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          python3 -m py_compile scripts/assurance/metacognitive_trust_root.py
+          python3 -m py_compile scripts/assurance/metacognitive_trust_root.py scripts/assurance/resolve_metacognitive_producer.py
           python3 - <<'PY'
           from pathlib import Path
           w=Path(".github/workflows/metacognitive-independent-assurance.yml").read_text()
@@ -44,7 +45,10 @@ jobs:
             "repair_allowed",
             "metacognitive-independent-g23",
             "metacognitive-independent-g24",
-            "GITHUB_OIDC_JWT_SHA256"
+            "GITHUB_OIDC_JWT_SHA256",
+            "resolve_metacognitive_producer.py",
+            "CONTENT_ADDRESSED_RELEASE",
+            "expected_candidate_digest"
           ]
           missing=[x for x in required if x not in w]
           assert not missing,missing
