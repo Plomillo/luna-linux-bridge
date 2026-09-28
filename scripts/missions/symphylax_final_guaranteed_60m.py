@@ -83,7 +83,17 @@ def main():
   if p.is_symlink():critical.append("UNEXPECTED_SYMLINK:"+str(p))
  envshow=run(["systemctl","--user","show","symphylax-r1.service","-p","Environment","--value"])
  if any(x in envshow.get("stdout","") for x in ("ghp_","github_pat_","sk-","AKIA")):critical.append("SECRET_PREFIX_IN_SERVICE_ENV")
- sockets=run(["ss","-lntup"],15);pid=props.get("MainPID","0");listener_hit=bool(pid and pid!="0" and ("pid="+pid+"," in sockets.get("stdout","") or ("pid="+pid+")" in sockets.get("stdout","")))
+ sockets=run(["ss","-lntup"],15)
+ pid=props.get("MainPID","0")
+ socket_output=sockets.get("stdout","")
+ listener_hit=bool(
+  pid
+  and pid!="0"
+  and (
+   "pid="+pid+"," in socket_output
+   or "pid="+pid+")" in socket_output
+  )
+ )
  if listener_hit:critical.append("UNEXPECTED_NETWORK_LISTENER")
  unittext=unit.read_text(encoding="utf-8",errors="replace")
  for required in ("Restart=on-failure","NoNewPrivileges=yes","PrivateTmp=yes","MemoryMax=","CPUQuota=","TasksMax="):
