@@ -37,6 +37,15 @@ jobs:
             --pyz artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz \
             --out "$OUT/CUSTOSZ72_CENSUS.json" \
             --expect 72
+          python3 - <<'PY'
+          import json, os
+          p=os.path.join(os.environ["RUNNER_TEMP"],"meta-r2-probe","CUSTOSZ72_CENSUS.json")
+          d=json.load(open(p,encoding="utf-8"))
+          print("=== CUSTOSZ72 FINAL CENSUS ===")
+          print(json.dumps(d["capabilities"],ensure_ascii=False,sort_keys=True))
+          print("=== CUSTOSZ72 COUNTS ===")
+          print(json.dumps({"family_count":d["family_count"],"capability_count":d["capability_count"],"unique_capability_count":d["unique_capability_count"],"events":d["events"]},ensure_ascii=False,sort_keys=True))
+          PY
           python3 -B -I - <<'PY'
           import ast, hashlib, json, os, re, subprocess, sys, zipfile
           from pathlib import Path
