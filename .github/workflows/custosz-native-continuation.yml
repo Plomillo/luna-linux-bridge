@@ -1,0 +1,46 @@
+name: "CUSTOSZ V7: registrar continuación R4 sin carga pesada"
+on:
+  push:
+    branches:
+      - staging/custosz-v7-metaos-20260927
+    paths:
+      - .github/workflows/custosz-native-continuation.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: custosz-native-continuation
+  cancel-in-progress: false
+
+jobs:
+  register-continuation:
+    if: github.repository == 'Plomillo/luna-linux-bridge' && github.actor == 'Plomillo'
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 3
+    steps:
+      - name: Checkout mínimo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            artifacts/custosz-v7
+            scripts/missions/custosz_native_continuation.py
+          sparse-checkout-cone-mode: false
+      - name: Registrar continuación nativa con límite de RAM
+        shell: bash
+        env:
+          RESULT_FILE: ${{ runner.temp }}/CUSTOSZ_CONTINUATION.json
+        run: |
+          set -Eeuo pipefail
+          ulimit -v 262144 || true
+          nice -n 10 python3 -B -I scripts/missions/custosz_native_continuation.py
+      - name: Publicar acuse exacto en README
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESULT_FILE: ${{ runner.temp }}/CUSTOSZ_CONTINUATION.json
+        run: |
+          set -Eeuo pipefail
+          python3 -B -I -c 'import os,json,base64,urllib.request; from pathlib import Path; branch="staging/custosz-v7-metaos-20260927"; path="docs/missions/LUNA_R4_CUSTOSZ_V7/README.md"; f=Path(os.environ["RESULT_FILE"]); result=json.loads(f.read_text()) if f.is_file() else {"status":"CONTINUATION_NO_RESULT","run_id":os.environ["GITHUB_RUN_ID"]}; h={"Authorization":"Bearer "+os.environ["GH_TOKEN"],"Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","Content-Type":"application/json"}; u="https://api.github.com/repos/Plomillo/luna-linux-bridge/contents/"+path; old=json.load(urllib.request.urlopen(urllib.request.Request(u+"?ref="+branch,headers=h),timeout=20)); txt=base64.b64decode(old["content"]).decode(); title="## Continuación nativa CUSTOSZ run "+os.environ["GITHUB_RUN_ID"]; sec="\n\n"+title+"\n\n~~~json\n"+json.dumps(result,ensure_ascii=False,indent=2,sort_keys=True)+"\n~~~\n"; payload={"message":"docs(custosz): registrar continuación nativa R4","branch":branch,"sha":old["sha"],"content":base64.b64encode((txt+sec).encode()).decode()}; req=urllib.request.Request(u,data=json.dumps(payload).encode(),headers=h,method="PUT"); print(json.load(urllib.request.urlopen(req,timeout=30))["commit"]["sha"])'
