@@ -1,0 +1,23 @@
+{
+  "schema": "G23_ISOLATED_ROLE_POLICY/1.0",
+  "role_id": "GITHUB_ACTIONS_G23_ISOLATED_V1",
+  "producer_role": "GITHUB_ACTIONS_R4_PRODUCER",
+  "evaluator_role": "GITHUB_ACTIONS_G23_ISOLATED_V1",
+  "repository": "Plomillo/luna-linux-bridge",
+  "candidate_run_id": 36459022140,
+  "candidate_artifact_id": 10987077105,
+  "candidate_digest_sha256": "b91d04bf79cd98eda846a8d0435f20323013f7ef647d9b288ab4cf29dcc35240",
+  "producer_head_sha": "d930e9220ee5ab2013afca4da4ad4c876c20d4f2",
+  "permissions": {
+    "contents": "read",
+    "actions": "read"
+  },
+  "persist_credentials": false,
+  "candidate_write_access": false,
+  "repair_allowed": false,
+  "evaluator_environment": "credential-free subprocess under nobody",
+  "same_repository": true,
+  "common_repository_administrator_declared": true,
+  "assurance_profile": "INTERNAL_STRUCTURAL_INDEPENDENCE_SAME_REPOSITORY_V1",
+  "fail_closed": true
+}
