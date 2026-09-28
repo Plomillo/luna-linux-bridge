@@ -1,0 +1,85 @@
+{
+  "schema": "SYMPHYLAX_R1_STATE_MACHINE/1.0",
+  "initial": "ABSENT",
+  "states": [
+    "ABSENT",
+    "STAGED",
+    "INSTALLED",
+    "STARTED",
+    "HEALTHY",
+    "PERSISTENCE_VERIFIED",
+    "RECOVERY_VERIFIED",
+    "TECHNICALLY_READY",
+    "G23_VALIDATED",
+    "CERTIFIED",
+    "HOLD",
+    "FAILED"
+  ],
+  "terminal": [
+    "CERTIFIED",
+    "HOLD",
+    "FAILED"
+  ],
+  "transitions": {
+    "ABSENT": [
+      "STAGED",
+      "HOLD",
+      "FAILED"
+    ],
+    "STAGED": [
+      "INSTALLED",
+      "ABSENT",
+      "HOLD",
+      "FAILED"
+    ],
+    "INSTALLED": [
+      "STARTED",
+      "ABSENT",
+      "HOLD",
+      "FAILED"
+    ],
+    "STARTED": [
+      "HEALTHY",
+      "INSTALLED",
+      "HOLD",
+      "FAILED"
+    ],
+    "HEALTHY": [
+      "PERSISTENCE_VERIFIED",
+      "RECOVERY_VERIFIED",
+      "INSTALLED",
+      "HOLD",
+      "FAILED"
+    ],
+    "PERSISTENCE_VERIFIED": [
+      "RECOVERY_VERIFIED",
+      "HOLD",
+      "FAILED"
+    ],
+    "RECOVERY_VERIFIED": [
+      "TECHNICALLY_READY",
+      "HOLD",
+      "FAILED"
+    ],
+    "TECHNICALLY_READY": [
+      "G23_VALIDATED",
+      "HOLD",
+      "FAILED"
+    ],
+    "G23_VALIDATED": [
+      "CERTIFIED",
+      "HOLD",
+      "FAILED"
+    ],
+    "CERTIFIED": [],
+    "HOLD": [],
+    "FAILED": []
+  },
+  "forbidden_shortcuts": [
+    "ABSENT->TECHNICALLY_READY",
+    "STAGED->G23_VALIDATED",
+    "HEALTHY->CERTIFIED",
+    "TECHNICALLY_READY->CERTIFIED",
+    "ANY->CERTIFIED_WITHOUT_G23"
+  ]
+}

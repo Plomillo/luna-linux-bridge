@@ -1,0 +1,21 @@
+[Unit]
+Description=SYMPHYLAX R1 governed Louksna supervisor candidate
+After=default.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 %h/.local/lib/louksna/symphylax-r1/symphylax_r1_service.py --config %h/.config/louksna/symphylax-r1/config.json
+Restart=on-failure
+RestartSec=2
+TimeoutStopSec=15
+MemoryMax=268435456
+CPUQuota=50%
+TasksMax=64
+NoNewPrivileges=yes
+PrivateTmp=yes
+UMask=0077
+
+[Install]
+WantedBy=default.target
