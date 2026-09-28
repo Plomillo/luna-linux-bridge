@@ -1,0 +1,122 @@
+name: "G24 Certification — Metacognitive Ecosystem b91d"
+
+on:
+  push:
+    branches:
+      - certification/g24-metacognitive-v1-20260928
+    paths:
+      - g24/metacognitive-v1/**
+      - .github/workflows/g24-metacognitive-certification.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: g24-meta-b91d-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  g24:
+    name: "G24 isolated certification"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Checkout certifier only
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            g24/metacognitive-v1
+          sparse-checkout-cone-mode: false
+
+      - name: Checkout immutable Louksna authority snapshot
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: 46bbaaa97eba9f926124cdf7cb65eb161fedc868
+          path: authority-src
+          persist-credentials: false
+          sparse-checkout: |
+            Louksna.md
+          sparse-checkout-cone-mode: false
+
+      - name: Download exact frozen candidate
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: metacognitive-ecosystem-r4-frozen-candidate
+          path: ${{ runner.temp }}/candidate-src
+          github-token: ${{ github.token }}
+          repository: Plomillo/luna-linux-bridge
+          run-id: 36459022140
+
+      - name: Download exact G23 PASS record
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: g23-metacognitive-b91d-record
+          path: ${{ runner.temp }}/g23-src
+          github-token: ${{ github.token }}
+          repository: Plomillo/luna-linux-bridge
+          run-id: 36461879737
+
+      - name: Execute credential-free G24 certifier
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="/tmp/g24-eval"
+          C="$ROOT/candidate"
+          G="$ROOT/g23"
+          A="$ROOT/Louksna.md"
+          O="$ROOT/out"
+          V="$ROOT/certifier.py"
+          sudo rm -rf "$ROOT"
+          sudo install -d -m 0755 "$ROOT"
+          sudo cp -a "$RUNNER_TEMP/candidate-src" "$C"
+          sudo cp -a "$RUNNER_TEMP/g23-src" "$G"
+          sudo cp "$GITHUB_WORKSPACE/authority-src/Louksna.md" "$A"
+          sudo find "$C" -type d -exec chmod 0555 {} +
+          sudo find "$C" -type f -exec chmod 0444 {} +
+          sudo find "$G" -type d -exec chmod 0555 {} +
+          sudo find "$G" -type f -exec chmod 0444 {} +
+          sudo chmod 0444 "$A"
+          sudo install -m 0555 "$GITHUB_WORKSPACE/g24/metacognitive-v1/certifier.py" "$V"
+          sudo install -d -m 0755 -o nobody -g nogroup "$O"
+          sudo -u nobody env -i \
+            PATH=/usr/bin:/bin \
+            python3 -I -B "$V" \
+              --candidate "$C" \
+              --g23-dir "$G" \
+              --authority "$A" \
+              --out "$O" \
+              --certifier-commit "$GITHUB_SHA" \
+              --certifier-run-id "$GITHUB_RUN_ID" \
+              --authority-source-commit "46bbaaa97eba9f926124cdf7cb65eb161fedc868"
+          sudo chown -R "$USER":"$USER" "$O"
+          cp -a "$O" "$RUNNER_TEMP/g24-out"
+          cat "$RUNNER_TEMP/g24-out/G24_CERTIFICATION.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Verify G24 terminal PASS
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import json,os
+          root=os.path.join(os.environ["RUNNER_TEMP"],"g24-out")
+          g=json.load(open(os.path.join(root,"G24_CERTIFICATION.json"),encoding="utf-8"))
+          a=json.load(open(os.path.join(root,"AUTHORITY_EVIDENCE.json"),encoding="utf-8"))
+          assert g["status"]=="PASS",g
+          assert g["candidate_digest_sha256"]=="b91d04bf79cd98eda846a8d0435f20323013f7ef647d9b288ab4cf29dcc35240",g
+          assert g["g23_status"]=="PASS",g
+          assert g["puac2_status"]=="PASS",g
+          assert g["c27_status"]=="PASS",g
+          assert g["repair_allowed"] is False,g
+          assert a["status"]=="PASS" and a["authority_authenticated"] is True,a
+          print("G24_CERTIFICATION_TERMINAL=PASS")
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: g24-metacognitive-b91d-certification
+          path: ${{ runner.temp }}/g24-out
+          if-no-files-found: error
+          retention-days: 90
