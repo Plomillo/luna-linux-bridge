@@ -1,0 +1,79 @@
+{
+  "schema_id": "SYMPHYLAX_R1_NIGHT_MISSION_LOCK_CANDIDATE_V1",
+  "type": "DECLARATIVE_CONTRACT_ONLY_NOT_WIRED_TO_LIVE_SERVER",
+  "canonical_authority": "Louksna.md",
+  "derivative_reference": "LOUKSNAMEJORADA.md",
+  "master_plan": "docs/architecture/PLAN_INTEGRACION_CERTIFICACION_LUNA_R4_CANDIDATE.md",
+  "phase": "F_MINUS_1",
+  "state": "PREPARATION_INERT",
+  "user_authorized": false,
+  "automation_armed": false,
+  "server_operations_authorized": false,
+  "github_workflow_dispatch_enabled": false,
+  "live_server_capability_certified": false,
+  "scope": "R4_REVERSIBLE_NON_DESTRUCTIVE_INSTALLATION_ONLY",
+  "owner_intent_keyword": "AUTORIZO",
+  "authorization_binding": {
+    "mission_id": null,
+    "manifest_sha256": null,
+    "approved_git_commit": null,
+    "principal_identity_verified": false,
+    "one_time_nonce": null,
+    "expires_at_utc": null,
+    "authorization_record_verified": false,
+    "revoked": false
+  },
+  "gates": {
+    "source_provenance": "PENDING_COMPLETION",
+    "dependency_closure": "PENDING_COMPLETION",
+    "static_security_review": "PENDING",
+    "isolated_sandbox_tests": "NOT_EXECUTED",
+    "design_G23_independent_evaluation": "HOLD",
+    "design_G24_decision": "HOLD",
+    "host_preflight": "NOT_EXECUTED",
+    "live_server_operational_tests": "NOT_EXECUTED",
+    "host_scope_G23": "HOLD",
+    "host_scope_G24": "HOLD",
+    "owner_explicit_authorization": "NOT_RECEIVED",
+    "user_study_availability_budget": "NOT_VERIFIED",
+    "backup_and_restore_for_affected_non_destructive_lots": "NOT_VERIFIED"
+  },
+  "execution_policy": {
+    "no_automatic_triggers": true,
+    "no_local_runner_jobs_before_authorized_scope": true,
+    "no_install_without_live_g23_g24_when_mandatory": true,
+    "no_privilege_escalation_by_readme_or_issues": true,
+    "require_exact_commit_binding": true,
+    "require_preflight_and_verified_checkpoint": true,
+    "limit_to_one_host_mission": true,
+    "deadline_enforced": true,
+    "fail_closed_on_unknown": true,
+    "prohibit_operations": [
+      "DELETE_WINDOWS_11",
+      "FORMAT",
+      "REPARTITION",
+      "EFI_MUTATION",
+      "PROYECTOS_MIGRATION",
+      "MOUNT_UNTRUSTED_DEVICE_RW",
+      "DELETE_UNRELATED_USER_DATA",
+      "REBOOT_UNATTENDED"
+    ]
+  },
+  "destructive_scope": {
+    "state": "DENIED",
+    "requires_separate_mission": true,
+    "requires_new_explicit_human_approval": true,
+    "requires_manual_partitioning_per_skeleton_H2": true,
+    "requires_two_independent_verified_backups": true,
+    "requires_restoration_test": true,
+    "requires_separate_host_scope_G23_G24": true
+  },
+  "pre_authorize_allowed": [
+    "OFFLINE_PUBLIC_RESEARCH",
+    "GITHUB_DOCUMENTATION_STAGING",
+    "STATIC_REVIEW",
+    "ISOLATED_SANDBOX_ONLY_WITH_EXPLICIT_PERMISSION"
+  ],
+  "first_possible_transition": "AFTER_EXPLICIT_MISSION_BOUND_AUTORIZO_RUN_READONLY_LIVE_PREFLIGHT_THEN_HOLD_OR_PROCEED_BY_APPLICABLE_GATES",
+  "evidence_disclaimer": "This JSON is a candidate fail-closed contract for future implementation. Its presence does not itself block existing workflows, revoke existing host credentials, certify any component, arm or authorize SYMPHYLAX, or establish a live policy enforcement mechanism."
+}
