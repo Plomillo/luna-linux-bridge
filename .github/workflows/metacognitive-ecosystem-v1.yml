@@ -49,8 +49,8 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-  pre_g23_boundary:
-    name: "Pre-G23 independence boundary"
+  certification_scope_note:
+    name: "Structural / certification scope boundary"
     needs: structural
     runs-on: ubuntu-24.04
     timeout-minutes: 3
@@ -59,22 +59,23 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          cat > "$RUNNER_TEMP/README_PRE_G23.md" <<'EOF'
-          # PRE-G23 BOUNDARY
+          cat > "$RUNNER_TEMP/README_CERTIFICATION_SCOPE.md" <<'EOF'
+          # STRUCTURAL / CERTIFICATION SCOPE BOUNDARY
 
           STRUCTURAL_VALIDATION = PASS
-          G23 = NOT_PERFORMED
-          G24 = NOT_PERFORMED
-          CUSTOSZ72_EXACT_DIFF = PENDING
-          G16_NON_DUPLICATION = HOLD
+          CUSTOSZ72_EXACT_DIFF = OUT_OF_SCOPE_FOR_THIS_WORKFLOW
+          G16_NON_DUPLICATION = OUT_OF_SCOPE_FOR_THIS_WORKFLOW
+          G23 = OUT_OF_SCOPE_FOR_THIS_WORKFLOW
+          G24 = OUT_OF_SCOPE_FOR_THIS_WORKFLOW
 
-          This workflow intentionally does not award G23 or G24.
-          Independent validation must evaluate the frozen candidate through a trust boundary not writable by the producer.
+          This workflow performs structural validation only. It neither grants, revokes,
+          nor restates G23/G24. Current certification state must be read from the
+          base-controlled independent assurance workflow and the persisted certification record.
           EOF
-          cat "$RUNNER_TEMP/README_PRE_G23.md" >> "$GITHUB_STEP_SUMMARY"
+          cat "$RUNNER_TEMP/README_CERTIFICATION_SCOPE.md" >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: metacognitive-ecosystem-v1-pre-g23
-          path: ${{ runner.temp }}/README_PRE_G23.md
+          name: metacognitive-ecosystem-v1-structural-scope
+          path: ${{ runner.temp }}/README_CERTIFICATION_SCOPE.md
           if-no-files-found: error
           retention-days: 30
