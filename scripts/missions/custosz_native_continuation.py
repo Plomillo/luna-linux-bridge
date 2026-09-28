@@ -49,7 +49,7 @@ def main():
     sys.path.insert(0,str(CUSTOSZ))
     import custosz_v05_legacy as worker
     worker.PINS={k:(v[0].replace(chr(92),"/") if v[0] else None,v[1],v[2],v[3]) for k,v in worker.PINS.items()}
-    worker.PROFILES={k:([x.replace(chr(92),"/") for x in v[0]],[x.replace(chr(92),"/") for x in v[1]) for k,v in worker.PROFILES.items()}
+    worker.PROFILES={k:([x.replace(chr(92),"/") for x in v[0]],[x.replace(chr(92),"/") for x in v[1]]) for k,v in worker.PROFILES.items()}
     goal=(
       "CONTINUACION AUTORIZADA de "+PARENT+
       ": completar la investigacion maestra LUNA R4 enviada en GitHub issue #5. "
