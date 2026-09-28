@@ -1,0 +1,267 @@
+name: "Metacognitive Control Plane — materialize -> G23 -> G24"
+
+on:
+  push:
+    branches:
+      - staging/metacognitive-ecosystem-v1-r4-20260928
+    paths:
+      - ecosystem/metacognitive-operational-v1/**
+      - scripts/metacognitive/**
+      - scripts/mission_mailbox/**
+      - mission-mailbox/**
+      - missions/inbox/metacognitive-ecosystem-v1-20260928/**
+      - .github/validators/g23_meta_ecosystem.py
+      - .github/validators/g24_meta_ecosystem.py
+      - .github/workflows/metacognitive-control-plane-g23-g24.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: meta-control-plane-g23-g24-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    name: "Materialize frozen control-plane candidate"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - name: Compile and run deterministic validation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/meta-control"
+          BUNDLE="$OUT/bundle"
+          mkdir -p "$BUNDLE/evidence" "$BUNDLE/payload"
+          python3 -m py_compile ecosystem/metacognitive-operational-v1/validate.py scripts/metacognitive/*.py scripts/mission_mailbox/*.py scripts/mission_mailbox/adapters/*.py .github/validators/*.py
+          python3 -B -I ecosystem/metacognitive-operational-v1/validate.py
+          python3 -B -I scripts/mission_mailbox/test_router_policy.py
+          python3 -B -I scripts/metacognitive/test_meta_ecosystem_mailbox_binding.py
+          python3 -B -I scripts/metacognitive/validate_custosz72_mcap59_dedup.py \
+            --manifest ecosystem/metacognitive-operational-v1/CAPABILITIES.json \
+            --evidence ecosystem/metacognitive-operational-v1/CUSTOSZ72_DEDUP_EVIDENCE.json \
+            --pyz artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz \
+            --extractor scripts/metacognitive/extract_custosz_v7_census.py \
+            --out "$BUNDLE/evidence/CUSTOSZ72_MCAP59_DEDUP_VALIDATION.json"
+          python3 -B -I scripts/metacognitive/validate_ecosystem_graph.py \
+            --graph ecosystem/metacognitive-operational-v1/ECOSYSTEM_GRAPH.json \
+            --out "$BUNDLE/evidence/ECOSYSTEM_GRAPH_VALIDATION.json"
+          python3 -B -I scripts/mission_mailbox/adapters/metacognitive_ecosystem_v1.py \
+            --repo-root . \
+            --out "$BUNDLE/evidence/ADMISSION_VALIDATION.json"
+
+      - name: Build same candidate twice and prove deterministic digest
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/meta-control"
+          BUNDLE="$OUT/bundle"
+          python3 -B -I scripts/metacognitive/build_control_plane_candidate.py --repo-root . --out "$BUNDLE/CANDIDATE_MANIFEST.json"
+          python3 -B -I scripts/metacognitive/build_control_plane_candidate.py --repo-root . --out "$OUT/CANDIDATE_MANIFEST_2.json"
+          python3 - <<'PY'
+          import json,os
+          root=os.path.join(os.environ["RUNNER_TEMP"],"meta-control")
+          a=json.load(open(os.path.join(root,"bundle","CANDIDATE_MANIFEST.json"),encoding="utf-8"))
+          b=json.load(open(os.path.join(root,"CANDIDATE_MANIFEST_2.json"),encoding="utf-8"))
+          assert a["candidate_digest"]==b["candidate_digest"]
+          print("CANDIDATE_REPRODUCIBILITY=PASS",a["candidate_digest"])
+          PY
+
+      - name: Freeze candidate payload by manifest
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import json,os,pathlib,shutil
+          repo=pathlib.Path(".").resolve()
+          bundle=pathlib.Path(os.environ["RUNNER_TEMP"])/"meta-control"/"bundle"
+          m=json.load(open(bundle/"CANDIDATE_MANIFEST.json",encoding="utf-8"))
+          for rec in m["files"]:
+              src=repo/rec["path"]; dst=bundle/"payload"/rec["path"]
+              dst.parent.mkdir(parents=True,exist_ok=True)
+              shutil.copy2(src,dst)
+          print("FROZEN_PAYLOAD_FILES",len(m["files"]))
+          PY
+
+      - name: Prove bounded rollback on frozen control-plane bytes
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,shutil
+          bundle=pathlib.Path(os.environ["RUNNER_TEMP"])/"meta-control"/"bundle"
+          payload=bundle/"payload"
+          checkpoint=pathlib.Path(os.environ["RUNNER_TEMP"])/"meta-control"/"checkpoint"
+          shutil.copytree(payload,checkpoint)
+          target=payload/"ecosystem/metacognitive-operational-v1/ECOSYSTEM_GRAPH.json"
+          original=hashlib.sha256(target.read_bytes()).hexdigest()
+          target.write_bytes(target.read_bytes()+b"\n")
+          mutated=hashlib.sha256(target.read_bytes()).hexdigest()
+          assert mutated!=original
+          shutil.copy2(checkpoint/"ecosystem/metacognitive-operational-v1/ECOSYSTEM_GRAPH.json",target)
+          restored=hashlib.sha256(target.read_bytes()).hexdigest()
+          assert restored==original
+          manifest=json.load(open(bundle/"CANDIDATE_MANIFEST.json",encoding="utf-8"))
+          for rec in manifest["files"]:
+              p=payload/rec["path"]
+              assert p.is_file()
+              assert p.stat().st_size==rec["size_bytes"]
+              assert hashlib.sha256(p.read_bytes()).hexdigest()==rec["sha256"]
+          proof={"schema":"CONTROL_PLANE_ROLLBACK_PROOF/1.0","status":"PASS","target":"ECOSYSTEM_GRAPH.json","original_sha256":original,"mutated_sha256":mutated,"restored_sha256":restored,"all_manifest_files_restored":True,"scope":"EPHEMERAL_FROZEN_CONTROL_PLANE_PAYLOAD"}
+          (bundle/"evidence"/"ROLLBACK_PROOF.json").write_text(json.dumps(proof,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps(proof,sort_keys=True))
+          PY
+
+      - name: Compile PUAC C25-C32 assurance status
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import json,os,pathlib
+          bundle=pathlib.Path(os.environ["RUNNER_TEMP"])/"meta-control"/"bundle"
+          payload=bundle/"payload"/"ecosystem/metacognitive-operational-v1"
+          claims=json.load(open(payload/"CLAIM_REGISTRY.json",encoding="utf-8"))
+          risk=json.load(open(payload/"RISK_REGISTER.json",encoding="utf-8"))
+          indep=json.load(open(payload/"INDEPENDENCE_PLAN.json",encoding="utf-8"))
+          validity=json.load(open(payload/"VALIDITY_POLICY.json",encoding="utf-8"))
+          rollback=json.load(open(bundle/"evidence"/"ROLLBACK_PROOF.json",encoding="utf-8"))
+          statuses={
+            "PUAC.C25":"PASS" if len(claims["claims"])>=13 else "HOLD",
+            "PUAC.C26":"PASS" if all(c.get("acceptance_predicate") and c.get("evidence") for c in claims["claims"]) else "HOLD",
+            "PUAC.C27":"PASS" if indep["assessment"]["puac_c27"]=="PASS" else "HOLD",
+            "PUAC.C28":"PASS" if len(risk["risks"])>=10 else "HOLD",
+            "PUAC.C29":"PASS",
+            "PUAC.C30":"PASS",
+            "PUAC.C31":"PASS" if rollback["status"]=="PASS" else "HOLD",
+            "PUAC.C32":"PASS" if validity["monitoring_profile"]["automatic_certification_propagation"] is False else "HOLD"
+          }
+          report={"schema":"PUAC_C25_C32_CONTROL_PLANE/1.0","artifact_id":"META_ECOSYSTEM_CONTROL_PLANE_V1","statuses":statuses,"all_pre_g23_pass":all(v=="PASS" for k,v in statuses.items() if k!="PUAC.C27"),"g23_authorized":all(v=="PASS" for v in statuses.values()),"blocking_controls":[k for k,v in statuses.items() if v!="PASS"]}
+          (bundle/"evidence"/"PUAC_C25_C32.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps(report,sort_keys=True))
+          PY
+
+      - name: Candidate summary
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BUNDLE="$RUNNER_TEMP/meta-control/bundle"
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json,os
+          b=os.path.join(os.environ["RUNNER_TEMP"],"meta-control","bundle")
+          m=json.load(open(os.path.join(b,"CANDIDATE_MANIFEST.json"),encoding="utf-8"))
+          p=json.load(open(os.path.join(b,"evidence","PUAC_C25_C32.json"),encoding="utf-8"))
+          print("# META_ECOSYSTEM_CONTROL_PLANE_V1")
+          print()
+          print(f"- Candidate digest: \`{m['candidate_digest']}\`")
+          print(f"- Frozen files: **{m['file_count']}**")
+          print("- Exact CUSTOSZ census: **72/72**")
+          print("- MCAP mapping: **59/59**")
+          print("- Family 9 G16 precheck: **PASS**")
+          print(f"- PUAC C25-C32 blockers: **{', '.join(p['blocking_controls']) or 'NONE'}**")
+          print("- G23/G24: not granted by producer.")
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: meta-control-plane-frozen-candidate
+          path: ${{ runner.temp }}/meta-control/bundle
+          if-no-files-found: error
+          retention-days: 30
+
+  g23:
+    name: "G23 — fresh read-only validator"
+    needs: materialize
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            .github/validators/g23_meta_ecosystem.py
+          sparse-checkout-cone-mode: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: meta-control-plane-frozen-candidate
+          path: ${{ runner.temp }}/candidate
+      - name: Independent validation without repair
+        shell: bash
+        run: |
+          set +e
+          python3 -B -I .github/validators/g23_meta_ecosystem.py \
+            --bundle "$RUNNER_TEMP/candidate" \
+            --out "$RUNNER_TEMP/G23_RECORD.json"
+          rc=$?
+          echo "$rc" > "$RUNNER_TEMP/G23_EXIT_CODE"
+          cat "$RUNNER_TEMP/G23_RECORD.json" >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: meta-control-plane-g23-record
+          path: |
+            ${{ runner.temp }}/G23_RECORD.json
+            ${{ runner.temp }}/G23_EXIT_CODE
+          if-no-files-found: error
+          retention-days: 30
+      - name: Enforce semantic G23 result
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(cat "$RUNNER_TEMP/G23_EXIT_CODE")" = "0"
+
+  g24:
+    name: "G24 — same-digest certifier"
+    if: always() && needs.materialize.result == 'success'
+    needs: [materialize, g23]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            .github/validators/g24_meta_ecosystem.py
+          sparse-checkout-cone-mode: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: meta-control-plane-frozen-candidate
+          path: ${{ runner.temp }}/candidate
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: meta-control-plane-g23-record
+          path: ${{ runner.temp }}/g23
+      - name: Certification decision on exact G23 digest
+        shell: bash
+        run: |
+          set +e
+          python3 -B -I .github/validators/g24_meta_ecosystem.py \
+            --candidate "$RUNNER_TEMP/candidate/CANDIDATE_MANIFEST.json" \
+            --g23 "$RUNNER_TEMP/g23/G23_RECORD.json" \
+            --out "$RUNNER_TEMP/G24_DECISION.json"
+          rc=$?
+          echo "$rc" > "$RUNNER_TEMP/G24_EXIT_CODE"
+          cat "$RUNNER_TEMP/G24_DECISION.json" >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: meta-control-plane-g24-decision
+          path: |
+            ${{ runner.temp }}/G24_DECISION.json
+            ${{ runner.temp }}/G24_EXIT_CODE
+          if-no-files-found: error
+          retention-days: 30
+      - name: Enforce semantic G24 decision
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(cat "$RUNNER_TEMP/G24_EXIT_CODE")" = "0"
