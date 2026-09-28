@@ -65,3 +65,62 @@ No atribuir a CUSTOSZ las comprobaciones de la auditoría previa. Si el plazo se
 ## Frontera de autorización
 
 La presente orden solo transmite investigación y preparación por GitHub. **No** concede permisos para formatear, cambiar EFI/GPT, borrar Windows, desplazar PROYECTOS, instalar paquetes en el host o reiniciar autónomamente. Las operaciones sobre disco requieren expedientes G23/G24 y autorización H2/H4 específica, con copias independientes y restauración demostrada. El objetivo final sigue siendo LUNA R4 completa y Windows 11 ausente como sistema anfitrión.
+
+
+## Resultado ejecutado: GitHub Actions 36374826968
+
+Evidencia: https://github.com/Plomillo/luna-linux-bridge/actions/runs/36374826968
+
+El registro de una misión supervisora NO acredita un ejecutor material integrado, investigación externa exhaustiva ni certificación.
+
+~~~json
+{
+  "blockers": [
+    "RUNTIME_STAGING_SHA_DIFFERS_FROM_SKELETON; do not activate"
+  ],
+  "custosz_mission_deadline_utc": "2026-09-28T04:03:24.531623+00:00",
+  "custosz_mission_id": "MIS-31e208fc59964c059f03",
+  "custosz_receipt": "MISSION_REGISTERED",
+  "disk_authorized": false,
+  "elapsed_seconds": 1.148,
+  "executor_status": "UNBOUND_MEDIATED_OR_LOCAL",
+  "finished_at_utc": "2026-09-28T03:43:34.677867+00:00",
+  "install_authorized": false,
+  "max_research_seconds": 1200,
+  "observations": {
+    "CUSTOSZ": {
+      "bytes": 49379,
+      "sha256": "dacf1f8c13b2fcbfc617cf0d4d780b30502c13395224691e6b0f05f53d9816a2"
+    },
+    "METAOS": {
+      "bytes": 2442,
+      "sha256": "5d8f1239e3a0b452be722078760b000afc22af0a64f93ffb0a1f74024f15aed0"
+    },
+    "MISSION": {
+      "bytes": 17596,
+      "sha256": "f4811c8c5b6ab6186f70b69620972ae49c3e2718a956d6cfae72df07c19ac5da"
+    },
+    "RUNTIME": {
+      "bytes": 10376,
+      "sha256": "a79e13869601d68fe801b85ad421719b79d4afa5520ae34b91b419bd8834ae67"
+    },
+    "adapter": "LINUX_PATH_TRANSLATION_IN_MEMORY_ONLY",
+    "classes": [
+      "RESEARCH",
+      "CODE_REPOSITORY"
+    ],
+    "custosz_entrypoint": "EXECUTED",
+    "custosz_version": "7.0.0-candidate",
+    "decision_rule": "HARD_GATES > AUTHORITY_FIT > EVIDENCE > RESOURCE_SAFETY > ISOLATION > ROLLBACK > COST > PERFORMANCE",
+    "heartbeat": "SUPERVISORY_ACTIVE",
+    "reasoning_effort": "medium",
+    "workspace_candidate_count": 1
+  },
+  "received_at_utc": "2026-09-28T03:43:33.529471+00:00",
+  "run_id": "36374826968",
+  "runtime_execution": "NOT_AUTHORIZED_UNTIL_PIN_RECONCILED",
+  "scope": "DOCUMENTARY_RESEARCH_ONLY",
+  "status": "CUSTOSZ_REGISTERED_PLAN_RETURNED_EXECUTOR_NOT_AUTOMATICALLY_BOUND",
+  "worker_research": "ARCHITECTURAL_PLAN_AND_REASONING_POLICY_EXECUTED"
+}
+~~~
