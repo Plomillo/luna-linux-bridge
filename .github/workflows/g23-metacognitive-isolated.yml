@@ -44,14 +44,19 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          C="$RUNNER_TEMP/candidate"
-          O="$RUNNER_TEMP/g23-out"
-          test -f "$C/FROZEN_CANDIDATE.json"
-          chmod -R a+rX,a-w "$C"
-          V="$RUNNER_TEMP/g23-validator.py"
-          install -m 0555 "$GITHUB_WORKSPACE/g23/metacognitive-v1/validator.py" "$V"
-          sudo chown nobody:nogroup "$V"
-          sudo install -d -o nobody -g nogroup "$O"
+          SRC="$RUNNER_TEMP/candidate"
+          ROOT="/tmp/g23-eval"
+          C="$ROOT/candidate"
+          O="$ROOT/out"
+          V="$ROOT/validator.py"
+          test -f "$SRC/FROZEN_CANDIDATE.json"
+          sudo rm -rf "$ROOT"
+          sudo install -d -m 0755 "$ROOT"
+          sudo cp -a "$SRC" "$C"
+          sudo find "$C" -type d -exec chmod 0555 {} +
+          sudo find "$C" -type f -exec chmod 0444 {} +
+          sudo install -m 0555 "$GITHUB_WORKSPACE/g23/metacognitive-v1/validator.py" "$V"
+          sudo install -d -m 0755 -o nobody -g nogroup "$O"
           sudo -u nobody env -i \
             PATH=/usr/bin:/bin \
             python3 -I -B "$V" \
@@ -61,7 +66,8 @@ jobs:
               --evaluator-run-id "$GITHUB_RUN_ID" \
               --workflow-ref "$GITHUB_WORKFLOW_REF"
           sudo chown -R "$USER":"$USER" "$O"
-          cat "$O/G23_RECORD.json" >> "$GITHUB_STEP_SUMMARY"
+          cp -a "$O" "$RUNNER_TEMP/g23-out"
+          cat "$RUNNER_TEMP/g23-out/G23_RECORD.json" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Verify G23 terminal state
         shell: bash
