@@ -78,7 +78,7 @@ README_FINAL.md
 CANDIDATE_GAPS.json
 CAPABILITY_SUGGESTIONS.md
 
-Persistent outputs are published under missions/registry/<MAIL_ID>/.
+Automatic runs preserve compiled/routing evidence as immutable GitHub Actions artifacts. Promotion into missions/registry/<MAIL_ID>/ is a separate governed evidence step, intentionally decoupled from the low-privilege listener. The included publish_registry.py utility provides the promotion mechanism for a reviewed integration path.
 
 The registry is evidence, not canonical architecture.
 
