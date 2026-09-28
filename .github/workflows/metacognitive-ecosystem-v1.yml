@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - staging/metacognitive-ecosystem-v1-20260928
+      - staging/custosz-mission-mailbox-20260928
     paths:
       - ecosystem/metacognitive-operational-v1/**
       - .github/workflows/metacognitive-ecosystem-v1.yml
