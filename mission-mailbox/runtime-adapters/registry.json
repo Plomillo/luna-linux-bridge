@@ -76,7 +76,7 @@
     {
       "adapter_id": "META_ECOSYSTEM_V1_ADMISSION",
       "path": "scripts/mission_mailbox/adapters/metacognitive_ecosystem_v1.py",
-      "sha256": "872265252b9b7759ed6d2c5bfee200a5139da92f48dd819aa0c3924402872d0b",
+      "sha256": "966dea5d28e6aee598b537c0c66d4c62c3c2e0aaac0e21666f7b8545bfa01b59",
       "backend": "CUSTOSZ_RUNTIME",
       "source_sha256": "1f8ba16e26789cc4ba3c9329357ac7c866af50177ccbf5915ca1dd5355c511d0",
       "mission_classes": [
