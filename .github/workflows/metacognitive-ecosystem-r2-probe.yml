@@ -41,6 +41,8 @@ jobs:
           python3 -B -I scripts/metacognitive/inspect_custosz_family9.py \
             --pyz artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz \
             --out "$OUT/CUSTOSZ_F09_INTERFACE.json"
+          echo "=== CUSTOSZ F09 INTERFACE ==="
+          cat "$OUT/CUSTOSZ_F09_INTERFACE.json"
           python3 - <<'PY'
           import json, os
           p=os.path.join(os.environ["RUNNER_TEMP"],"meta-r2-probe","CUSTOSZ72_CENSUS.json")
