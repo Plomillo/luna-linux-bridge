@@ -3,6 +3,7 @@ name: "Metacognitive Assurance Trust Root — selftest"
 on:
   push:
     branches:
+      - main
       - staging/metacognitive-assurance-trust-root-20260928
       - staging/metacognitive-assurance-trust-root-r2-20260928
       - staging/metacognitive-default-trust-root-20260928
