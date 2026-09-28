@@ -1,0 +1,84 @@
+{
+  "schema": "PUAC_C27_INDEPENDENCE_PLAN/1.0",
+  "artifact_id": "META_ECOSYSTEM_CONTROL_PLANE_V1",
+  "authority": "Louksna.md",
+  "requirement": "Builder must not be the sole independent evaluator; identities, roles, permissions, conflicts and effective separation must be evidenced.",
+  "actors": [
+    {
+      "actor_id": "ACTOR:PRODUCER:CUSTOSZ_V7",
+      "role": "MATERIAL_WORKER",
+      "can_repair_candidate": true,
+      "can_grant_g23": false,
+      "can_grant_g24": false
+    },
+    {
+      "actor_id": "ACTOR:GOVERNOR:METAOS",
+      "role": "EXECUTION_GOVERNOR",
+      "can_repair_candidate": false,
+      "can_grant_g23": false,
+      "can_grant_g24": false
+    },
+    {
+      "actor_id": "ACTOR:GITHUB_PRODUCER_JOB",
+      "role": "CANDIDATE_BUILDER",
+      "permission_profile": "contents:read; artifact:write",
+      "can_repair_candidate": false,
+      "can_grant_g23": false,
+      "can_grant_g24": false
+    },
+    {
+      "actor_id": "ACTOR:G23_FRESH_READER",
+      "role": "INDEPENDENT_VALIDATION_EXECUTOR",
+      "permission_profile": "contents:read; no repair/write path",
+      "can_repair_candidate": false,
+      "can_grant_g23": true,
+      "can_grant_g24": false
+    },
+    {
+      "actor_id": "ACTOR:G24_FRESH_CERTIFIER",
+      "role": "CERTIFICATION_EXECUTOR",
+      "permission_profile": "contents:read; consumes frozen G23 record only",
+      "can_repair_candidate": false,
+      "can_grant_g23": false,
+      "can_grant_g24": true
+    },
+    {
+      "actor_id": "ACTOR:EXTERNAL_SECOND_EVALUATOR",
+      "role": "SECOND_INDEPENDENT_EVALUATOR",
+      "status": "UNBOUND",
+      "can_repair_candidate": false,
+      "can_grant_g23": false,
+      "can_grant_g24": false
+    }
+  ],
+  "separation_controls": [
+    "Producer, G23 and G24 execute as separate GitHub-hosted jobs with one-way artifact dependencies.",
+    "G23 and G24 use fresh runners and do not execute repair code.",
+    "G24 checks equality of candidate digest to G23 accepted digest.",
+    "Candidate is frozen before G23 and any change invalidates the G23 record.",
+    "Repository rulesets are not assumed because current private-repository API returned plan-related 403."
+  ],
+  "conflict_of_interest_records": [
+    {
+      "record_id": "COI-001",
+      "issue": "Validator code and candidate currently share repository administration domain.",
+      "impact": "Administrative independence is not yet proven by fresh-runner separation alone.",
+      "state": "OPEN"
+    },
+    {
+      "record_id": "COI-002",
+      "issue": "No registered remote Codex environment is currently available as a second evaluator.",
+      "impact": "External evaluator identity remains unbound.",
+      "state": "OPEN"
+    }
+  ],
+  "assessment": {
+    "process_separation": "DESIGNABLE_AND_TESTABLE",
+    "execution_environment_separation": "DESIGNABLE_AND_TESTABLE",
+    "repair_path_separation": "DESIGNABLE_AND_TESTABLE",
+    "administrative_separation": "HOLD",
+    "second_evaluator_identity": "HOLD",
+    "puac_c27": "HOLD_PENDING_EXTERNAL_SECOND_EVALUATOR_OR_EQUIVALENT_VERIFIED_SEPARATION"
+  },
+  "fail_closed_rule": "G23 MUST HOLD while PUAC.C27 assessment is HOLD."
+}
