@@ -25,9 +25,15 @@
     "resolver_mode_required": "CONTENT_ADDRESSED_RELEASE",
     "resolver_path": "scripts/assurance/resolve_metacognitive_producer.py",
     "validator_path": "scripts/assurance/metacognitive_trust_root.py",
-    "selftest_run_id": 36465187990,
+    "selftest_run_id": 36466123253,
     "selftest_status": "PASS",
     "candidate_mutation": false,
-    "certification_propagation": false
+    "certification_propagation": false,
+    "default_branch": "main",
+    "default_branch_commit": "467dfdc4db7f830ee7684ee22acf7de6582878cc",
+    "workflow_sha_required": true,
+    "oidc_required_for_g24": true,
+    "data_only_candidate_validation": true,
+    "hotfix_reason": "release-aware trust root preserved; missing os import repaired without weakening workflow_sha/OIDC/data-only boundary"
   }
 }
