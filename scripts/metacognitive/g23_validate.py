@@ -12,7 +12,7 @@ def digest_dir(root):
  return hashlib.sha256(json.dumps(rows,sort_keys=True,separators=(",",":")).encode()).hexdigest(),rows
 
 def main():
- ap=argparse.ArgumentParser(); ap.add_argument("--candidate",required=True); ap.add_argument("--out",required=True); q=ap.parse_args()
+ ap=argparse.ArgumentParser(); ap.add_argument("--candidate",required=True); ap.add_argument("--puac2",required=True); ap.add_argument("--out",required=True); q=ap.parse_args()
  root=pathlib.Path(q.candidate); frozen=json.loads((root/"FROZEN_CANDIDATE.json").read_text())
  actual,rows=digest_dir(root)
  readiness=json.loads((root/"READINESS.json").read_text())
@@ -20,6 +20,7 @@ def main():
  binds=json.loads((root/"CAPABILITY_BINDINGS.json").read_text())
  lane=json.loads((root/"LANE_EVIDENCE.json").read_text())["lanes"]
  core=json.loads((root/"CORE_SELFTEST.json").read_text())
+ puac=json.loads(pathlib.Path(q.puac2).read_text())
  present={k for k,v in lane.items() if isinstance(v,dict) and v.get("status")=="PASS"}
  failures=[]
  if actual!=frozen["candidate_digest_sha256"]: failures.append("CANDIDATE_DIGEST_MISMATCH")
@@ -27,10 +28,14 @@ def main():
  if graph.get("capability_count")!=59 or binds.get("count")!=59: failures.append("MCAP59_INCOMPLETE")
  if core.get("status")!="PASS": failures.append("CORE_SELFTEST_NOT_PASS")
  if not REQUIRED_LANES.issubset(present): failures.append("REQUIRED_LANES_MISSING:"+",".join(sorted(REQUIRED_LANES-present)))
+ if puac.get("status")!="PASS" or not puac.get("g23_allowed"): failures.append("PUAC2_C25_C32_NOT_PASS")
+ c27=puac.get("controls",{}).get("PUAC.C27",{})
+ if c27.get("status")!="PASS": failures.append("PUAC2_C27_INDEPENDENCE_NOT_PASS")
  status="PASS" if not failures else "FAIL"
  report={"schema":"G23_INDEPENDENT_VALIDATION/1.0","status":status,"candidate_digest_sha256":actual,
          "frozen_digest_sha256":frozen["candidate_digest_sha256"],"repair_allowed":False,
-         "validator_mode":"FRESH_READ_ONLY_RECOMPUTE","required_lanes":sorted(REQUIRED_LANES),
+         "validator_mode":"FRESH_READ_ONLY_RECOMPUTE_PLUS_PUAC2_C25_C32","required_lanes":sorted(REQUIRED_LANES),
+         "puac2_status":puac.get("status"),"puac2_c27":c27,
          "present_pass_lanes":sorted(present),"failures":failures,"g24_authorized":status=="PASS"}
  pathlib.Path(q.out).write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
  print(json.dumps(report,sort_keys=True))
