@@ -105,7 +105,8 @@ jobs:
           if [ ! -x "$SDKMANAGER" ]; then SDKMANAGER="$(command -v sdkmanager || true)"; fi
           test -n "$SDKMANAGER"
           yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
-          "$SDKMANAGER" "platforms;android-36" "platforms;android-37" >"$OUT/sdkmanager.log"
+          "$SDKMANAGER" "platforms;android-36" >"$OUT/sdkmanager-36.log"
+          "$SDKMANAGER" --channel=3 "platforms;android-37" >"$OUT/sdkmanager-37.log"
           test -f "${ANDROID_HOME}/platforms/android-36/android.jar"
           test -f "${ANDROID_HOME}/platforms/android-37/android.jar"
           EMU="$({ command -v emulator || true; })"
