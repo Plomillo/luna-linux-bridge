@@ -16,12 +16,12 @@ def cmd(c):
  except Exception as e:return {"exception":type(e).__name__,"message":str(e)}
 def main():
  a=argparse.ArgumentParser();a.add_argument("--repo-root",default=".");a.add_argument("--out",required=True);q=a.parse_args();r=Path(q.repo_root).resolve();o=Path(q.out).resolve();o.mkdir(parents=True,exist_ok=True)
- p={"mission":r/"missions/inbox/server-ready-final-g23-g24-20260928/MISSION_ORIGINAL.md","authority":r/"Louksna.md","custosz":r/"artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz","runtime":r/"artifacts/custosz-v7/CUSTOSZ_RUNTIME_V1_SR_EXEC_BOUND_FME_01.b.pyz","metaos":r/"artifacts/custosz-v7/MetaOS.wasm","deployment":r/"server/symphylax-r1-candidate/DEPLOYMENT_CONTRACT.json","state_machine":r/"server/symphylax-r1-candidate/STATE_MACHINE.json","cleanup":r/"server/symphylax-r1-candidate/CLEANUP_CONTRACT.json","service":r/"server/symphylax-r1-candidate/symphylax_r1_service.py","unit":r/"server/symphylax-r1-candidate/systemd/symphylax-r1.service","adapter":Path(__file__).resolve()}
+ p={"mission":r/"missions/inbox/server-ready-final-g23-g24-20260928/MISSION_ORIGINAL.md","authority":r/"Louksna.md","custosz":r/"artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz","runtime":r/"artifacts/custosz-v7/CUSTOSZ_RUNTIME_V1_SR_EXEC_BOUND_FME_01.b.pyz","metaos":r/"artifacts/custosz-v7/MetaOS.wasm","deployment":r/"server/symphylax-r1-candidate/DEPLOYMENT_CONTRACT.json","state_machine":r/"server/symphylax-r1-candidate/STATE_MACHINE.json","cleanup":r/"server/symphylax-r1-candidate/CLEANUP_CONTRACT.json","service":r/"server/symphylax-r1-candidate/symphylax_r1_service.py","unit":r/"server/symphylax-r1-candidate/systemd/symphylax-r1.service","registry":r/"mission-mailbox/runtime-adapters/registry.json","materializer":r/"scripts/missions/final_server_ready_materialize.py","adapter":Path(__file__).resolve()}
  missing=[str(x) for x in p.values() if not x.is_file()]
  if missing:raise SystemExit("MISSING:"+repr(missing))
  ids={"AUTHORITY":sha(p["authority"]),"CUSTOSZ":sha(p["custosz"]),"RUNTIME":sha(p["runtime"]),"METAOS":sha(p["metaos"])}
  if sha(p["mission"])!=MISSION_SHA256 or ids!=EXPECTED:raise SystemExit("IDENTITY_GATE_FAIL")
- ad=sha(p["adapter"]);dep=json.loads(p["deployment"].read_text());sm=json.loads(p["state_machine"].read_text());cl=json.loads(p["cleanup"].read_text())
+ ad=sha(p["adapter"]);dep=json.loads(p["deployment"].read_text());sm=json.loads(p["state_machine"].read_text());cl=json.loads(p["cleanup"].read_text());reg=json.loads(p["registry"].read_text());entry=next((x for x in reg.get("adapters",[]) if x.get("adapter_id")=="FINAL_SERVER_READY_CLOSURE_V1"),None);pin_ok=bool(entry and entry.get("sha256")==ad and entry.get("materializer_sha256")==sha(p["materializer"]) and entry.get("source_sha256")==MISSION_SHA256)
  systemd=cmd(["systemctl","--user","show-environment"]);host={"schema":"HOST_CAPABILITY_MANIFEST/1.0","utc":utc(),"platform":platform.platform(),"python":sys.version,"uid":os.getuid(),"user":os.environ.get("USER"),"home":str(Path.home()),"runner_name":os.environ.get("RUNNER_NAME"),"systemd_user":systemd,"systemd_user_available":systemd.get("exit_code")==0,"systemctl_version":cmd(["systemctl","--version"]),"loginctl_version":cmd(["loginctl","--version"])}
  atomic(o/"HOST_CAPABILITY_MANIFEST.json",host)
  auth={"schema":"SERVER_READY_AUTHORIZATION_ENVELOPE/1.0","issued_utc":utc(),"expires_utc":(datetime.now(timezone.utc)+timedelta(minutes=45)).isoformat(),"authorization_basis":"EXPLICIT_USER_AUTHORIZATION_RECORDED_BY_GOVERNED_COMMIT","mission_sha256":MISSION_SHA256,"mission_class":"FINAL_SERVER_READY_CLOSURE","adapter_sha256":ad,"scope":"FINAL_SERVER_READY_CLOSURE","protected_scopes_allowed":[],"checkpoint_required":True};auth["digest"]=shaobj(auth);atomic(o/"AUTHORIZATION_ENVELOPE.json",auth)
@@ -31,7 +31,7 @@ def main():
   except:lock_state="UNKNOWN"
  matrix=["WRONG_HASH","MISSING_ARTIFACT","STALE_AUTHORIZATION","UNAUTHORIZED_SCOPE","EXECUTOR_KILL","RUNTIME_VALIDATION_FAILURE","TIMEOUT","SERVICE_STOP_RESTART","EVIDENCE_SURVIVES_RESTART","NO_ORPHAN_PROCESS"]
  controls={
- "01_DEPLOYMENT_CONTRACT":"PASS" if dep.get("authority")=="Louksna.md" and dep.get("service_id")=="SYMPHYLAX_R1" else "FAIL",
+ "01_DEPLOYMENT_CONTRACT":"PASS" if dep.get("authority")=="Louksna.md" and dep.get("service_id")=="SYMPHYLAX_R1" and pin_ok else "FAIL",
  "02_HOST_CAPABILITY_MANIFEST":"PASS" if host["systemd_user_available"] else "HOLD",
  "03_AUTHORIZATION_ENVELOPE":"PASS",
  "04_STATE_MACHINE":"PASS" if sm.get("initial")=="ABSENT" and "CERTIFIED" in sm.get("states",[]) else "FAIL",
