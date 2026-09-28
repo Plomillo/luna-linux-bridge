@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import copy, hashlib, importlib.util, json, tempfile
+import copy, hashlib, importlib.util, json
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[2]
@@ -8,9 +8,13 @@ mod=importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
 
 registry=json.loads((ROOT/"mission-mailbox/runtime-adapters/registry.json").read_text(encoding="utf-8"))
-adapter=registry["adapters"][0]
-adapter_path=ROOT/adapter["path"]
-assert hashlib.sha256(adapter_path.read_bytes()).hexdigest()==adapter["sha256"]
+by_id={a["adapter_id"]:a for a in registry["adapters"]}
+old_adapter=by_id["SERVER_READY_CANDIDATE_V1"]
+final_adapter=by_id["FINAL_SERVER_READY_CLOSURE_V1"]
+
+for adapter in (old_adapter, final_adapter):
+    path=ROOT/adapter["path"]
+    assert hashlib.sha256(path.read_bytes()).hexdigest()==adapter["sha256"], adapter["adapter_id"]
 
 def native(source_sha, mission_class):
     return {
@@ -22,30 +26,35 @@ def native(source_sha, mission_class):
       }
     }
 
-# A binding-providing adapter may be selected without a prebound executor,
-# but only for its exact source, class and location.
-old=native(adapter["source_sha256"],"FORENSIC_OPERATIONAL_SERVER_HARDENING")
+def match_ids(matches):
+    return {x["adapter_id"] for x in matches}
+
+def rejected(rejections, adapter_id, reason):
+    return any(x["adapter_id"]==adapter_id and reason in x["reasons"] for x in rejections)
+
+old=native(old_adapter["source_sha256"],"FORENSIC_OPERATIONAL_SERVER_HARDENING")
 m,r=mod.adapter_match(registry,old,ROOT,False,"GITHUB_HOSTED_ONLY")
-assert len(m)==1 and not r, (m,r)
-assert m[0]["provides_executor_binding"] is True
+assert match_ids(m)=={"SERVER_READY_CANDIDATE_V1"}, (m,r)
+assert old_adapter["provides_executor_binding"] is True
+assert rejected(r,"FINAL_SERVER_READY_CLOSURE_V1","SOURCE_SHA256_MISMATCH")
 
-# Location mismatch must fail closed.
 m,r=mod.adapter_match(registry,old,ROOT,False,"SELF_HOSTED_LUNA_AUX")
-assert not m and any("EXECUTION_LOCATION_MISMATCH" in x["reasons"] for x in r), r
+assert "SERVER_READY_CANDIDATE_V1" not in match_ids(m)
+assert rejected(r,"SERVER_READY_CANDIDATE_V1","EXECUTION_LOCATION_MISMATCH")
 
-# New final mission must not inherit the old TEST_ONLY adapter.
-final=native("8191840debd98f8775e530a37d3d23770f148693af64689f8e0d187be037cb21","FINAL_SERVER_READY_CLOSURE")
+final=native(final_adapter["source_sha256"],"FINAL_SERVER_READY_CLOSURE")
 m,r=mod.adapter_match(registry,final,ROOT,False,"SELF_HOSTED_LUNA_AUX")
-assert not m, m
-flat={reason for item in r for reason in item["reasons"]}
-assert "SOURCE_SHA256_MISMATCH" in flat
-assert "MISSION_CLASS_MISMATCH" in flat
-assert "EXECUTION_LOCATION_MISMATCH" in flat
+assert match_ids(m)=={"FINAL_SERVER_READY_CLOSURE_V1"}, (m,r)
+assert rejected(r,"SERVER_READY_CANDIDATE_V1","SOURCE_SHA256_MISMATCH")
+assert rejected(r,"SERVER_READY_CANDIDATE_V1","MISSION_CLASS_MISMATCH")
+assert rejected(r,"SERVER_READY_CANDIDATE_V1","EXECUTION_LOCATION_MISMATCH")
 
-# An adapter that cannot provide binding cannot run from an unbound state.
 reg2=copy.deepcopy(registry)
-reg2["adapters"][0]["provides_executor_binding"]=False
-m,r=mod.adapter_match(reg2,old,ROOT,False,"GITHUB_HOSTED_ONLY")
-assert not m and any("EXECUTOR_UNBOUND_AND_ADAPTER_CANNOT_BIND" in x["reasons"] for x in r), r
+for a in reg2["adapters"]:
+    if a["adapter_id"]=="FINAL_SERVER_READY_CLOSURE_V1":
+        a["provides_executor_binding"]=False
+m,r=mod.adapter_match(reg2,final,ROOT,False,"SELF_HOSTED_LUNA_AUX")
+assert "FINAL_SERVER_READY_CLOSURE_V1" not in match_ids(m)
+assert rejected(r,"FINAL_SERVER_READY_CLOSURE_V1","EXECUTOR_UNBOUND_AND_ADAPTER_CANNOT_BIND")
 
 print("MAILBOX_ROUTER_POLICY_SELFTEST=PASS")
