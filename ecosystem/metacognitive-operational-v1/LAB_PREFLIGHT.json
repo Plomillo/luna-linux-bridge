@@ -1,0 +1,103 @@
+{
+  "mission_id": "MIS-META-ECO-20260928-V1",
+  "intent": "Materialize a governed, traceable, auditable, cloud-first metacognitive operational ecosystem control plane without canonical mutation.",
+  "authority": "Louksna.md",
+  "current_verified_state": [
+    "Louksna requires append-only/fail-closed/provenance/traceability/rollback/non-regression",
+    "CUSTOSZ V7 reports 9 families and 72 declared capabilities; exact binary capability-name census remains unavailable through UTF-8 GitHub connector",
+    "CUSTOSZ_RUNTIME_V1 exposes GovernanceKernel, MissionController, CognitivePlane, MetacognitivePlane, ExecutorRegistry, ProcessSupervisor, CheckpointStore, EvidenceJournal, TelemetryFabric, SourceRegistry, ResumeManager, FailureController and ValidationPipeline",
+    "PUAC2 G23/G24 are not auto-granted",
+    "GitHub branch protection/rulesets are not assumed available"
+  ],
+  "forensic_scope": [
+    "Louksna constraints",
+    "CUSTOSZ/Runtime overlap",
+    "GitHub execution surfaces",
+    "PUAC2 assurance boundary"
+  ],
+  "surgical_scope": [
+    "new control-plane package",
+    "59-capability manifest",
+    "validators",
+    "cloud-first policies",
+    "mission template"
+  ],
+  "exhaustive_scope": [
+    "duplicate rejection",
+    "authority boundaries",
+    "data/compute/control separation",
+    "G23/G24 independence",
+    "training-last"
+  ],
+  "auxiliary_scope": [
+    "Louksna Lab Watch layers used as preflight/governance model"
+  ],
+  "non_goals": [
+    "canonical admission",
+    "G23 PASS",
+    "G24 PASS",
+    "bulk corpus download",
+    "local heavy compute",
+    "automatic external account/plugin connection"
+  ],
+  "required_capabilities": [
+    "CAPABILITY_GRAPH",
+    "MISSION_COMPILER",
+    "FORENSIC_EVIDENCE_CHAIN_LEDGER",
+    "ASSURANCE_CASE_COMPILER",
+    "RESOURCE_AND_EFFICIENCY_GOVERNOR"
+  ],
+  "dependencies": [
+    "GitHub",
+    "Louksna.md",
+    "PUAC2.md",
+    "CUSTOSZ V7 registry evidence",
+    "CUSTOSZ_RUNTIME_V1"
+  ],
+  "resource_envelope": {
+    "repo_bytes": "CONTROL_PLANE_ONLY",
+    "heavy_compute": "GITHUB_HOSTED_OR_EXTERNAL_DATA_PLANE",
+    "user_host": "NO_HEAVY_COMPUTE"
+  },
+  "executor_runtime_binding": {
+    "governor": "MetaOS",
+    "worker_for_custosz_missions": "CUSTOSZ V7",
+    "runtime": "CUSTOSZ_RUNTIME_V1",
+    "github_role": "CLOUD_EXECUTION_AND_EVIDENCE"
+  },
+  "security_boundary": "No long-lived secrets in Git; least privilege; external data only through explicit adapters.",
+  "checkpoint": "FEATURE_BRANCH_BEFORE_CANONICAL_ADMISSION",
+  "evidence_plan": [
+    "workflow validation evidence",
+    "manifest SHA256",
+    "README validation summary",
+    "PR diff",
+    "CUSTOSZ mailbox evidence after governed merge/routing"
+  ],
+  "negative_tests": [
+    "duplicate names",
+    "non-contiguous ordinals",
+    "training not last",
+    "authority creation",
+    "missing consumers",
+    "forbidden local heavy-compute declaration",
+    "G24-before-G23 semantics"
+  ],
+  "rollback_plan": "Delete/revert feature-branch commits or close PR; no canonical file is mutated by this package.",
+  "terminal_criteria": [
+    "59 unique capabilities",
+    "validator PASS",
+    "no canonical mutation",
+    "CUSTOSZ exact-diff debt explicit",
+    "pre-G23 readiness only"
+  ],
+  "time_budget": "BOUNDED_BY_CURRENT_INTERACTIVE_EXECUTION; NO_ARTIFICIAL_WAIT",
+  "stop_rules": [
+    "stop on write permission failure",
+    "stop on canonical collision",
+    "stop on validator contradiction"
+  ],
+  "current_blockers": [
+    "CUSTOSZ72_EXACT_DIFF_PENDING"
+  ]
+}
