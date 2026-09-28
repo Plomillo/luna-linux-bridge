@@ -28,6 +28,14 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 1
+          sparse-checkout: |
+            artifacts/custosz-v7
+            Louksna.md
+            missions/inbox/server-ready-final-g23-g24-20260928/MISSION_ORIGINAL.md
+            server/symphylax-r1-candidate
+            scripts/mission_mailbox/adapters/final_server_ready_closure.py
+            mission-mailbox/runtime-adapters/registry.json
+          sparse-checkout-cone-mode: false
       - name: Static validation
         shell: bash
         run: |
