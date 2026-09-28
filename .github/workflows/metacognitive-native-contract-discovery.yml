@@ -1,0 +1,59 @@
+name: "Metacognitive Ecosystem R4 — native contract discovery"
+
+on:
+  push:
+    branches:
+      - staging/metacognitive-ecosystem-v1-r4-20260928
+    paths:
+      - .github/workflows/metacognitive-native-contract-discovery.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz
+          sparse-checkout-cone-mode: false
+      - name: Inspect only reusable native primitives
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B -I - <<'PY'
+          import inspect,json,sys
+          from pathlib import Path
+          pyz=Path("artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz").resolve()
+          sys.path.insert(0,str(pyz))
+          import custosz_v07_families as f
+          names=[
+            "RemoteKnowledgeFabric","HighThroughputKnowledgeEngine","ResumableReader",
+            "UniversalIngestionEngine","IOQueryPlanner","VolumeIntelligenceEngine",
+            "AdaptiveResourceGovernor","ResourceBudgetPolicy","BackpressureController","ResumableExecutionState",
+            "AssuranceFabric","AdversarialValidationEngine","EvidenceGraph","EvidenceCompletenessEngine",
+            "GovernedMemoryFabric","CurrentnessEngine","InvalidationEngine",
+            "CrossFamilyInterfaceRegistry","InvariantEngine"
+          ]
+          out={}
+          for name in names:
+              cls=getattr(f,name)
+              item={"constructor":str(inspect.signature(cls)),"methods":{}}
+              for m in dir(cls):
+                  if m.startswith("_"): continue
+                  obj=getattr(cls,m)
+                  if callable(obj):
+                      try:sig=str(inspect.signature(obj))
+                      except Exception:sig="UNKNOWN"
+                      try:src=inspect.getsource(obj)
+                      except Exception:src="SOURCE_UNAVAILABLE"
+                      item["methods"][m]={"signature":sig,"source":src[:8000]}
+              out[name]=item
+          print("=== NATIVE CONTRACT DISCOVERY ===")
+          print(json.dumps(out,ensure_ascii=False,sort_keys=True))
+          PY
