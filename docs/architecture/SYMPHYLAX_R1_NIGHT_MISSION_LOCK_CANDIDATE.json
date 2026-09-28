@@ -57,7 +57,10 @@
       "MOUNT_UNTRUSTED_DEVICE_RW",
       "DELETE_UNRELATED_USER_DATA",
       "REBOOT_UNATTENDED"
-    ]
+    ],
+    "no_install_on_plan_or_pr_merge": true,
+    "no_auto_activate_from_research_pass": true,
+    "no_claims_of_zero_data_loss_without_proven_recovery": true
   },
   "destructive_scope": {
     "state": "DENIED",
@@ -75,5 +78,174 @@
     "ISOLATED_SANDBOX_ONLY_WITH_EXPLICIT_PERMISSION"
   ],
   "first_possible_transition": "AFTER_EXPLICIT_MISSION_BOUND_AUTORIZO_RUN_READONLY_LIVE_PREFLIGHT_THEN_HOLD_OR_PROCEED_BY_APPLICABLE_GATES",
-  "evidence_disclaimer": "This JSON is a candidate fail-closed contract for future implementation. Its presence does not itself block existing workflows, revoke existing host credentials, certify any component, arm or authorize SYMPHYLAX, or establish a live policy enforcement mechanism."
+  "evidence_disclaimer": "This JSON is a candidate fail-closed contract for future implementation. Its presence does not itself block existing workflows, revoke existing host credentials, certify any component, arm or authorize SYMPHYLAX, or establish a live policy enforcement mechanism.",
+  "research_addendum": "docs/architecture/ADITIVO_F2_EVIDENCIA_COMPARADA_Y_PRUEBAS.md",
+  "research_stage": {
+    "research_protocol": "TIMEBOXED_20_MINUTE_SOURCE_COMPARISON_NOT_RUNTIME_CERTIFICATION",
+    "source_categories": [
+      "NIST_SSDF_FINAL_V1_1",
+      "SLSA_APPROVED_V1_2",
+      "IN_TOTO_USENIX_2019",
+      "OPENQA_FEDORA_DEPLOYMENT",
+      "ANSIBLE_CHECK_MOLECULE",
+      "GOOGLE_SRE",
+      "NIST_CONTINGENCY_DEBIAN_BITLOCKER_RESTIC",
+      "HUGGINGFACE_PINNED_REVISION",
+      "GITHUB_RUNNER_ISOLATION"
+    ],
+    "research_documented": true,
+    "source_conformity_independently_validated": false,
+    "runtime_use_proven": false
+  },
+  "test_families": [
+    {
+      "test_id": "T01",
+      "spec": "docs/architecture/ADITIVO_F2_EVIDENCIA_COMPARADA_Y_PRUEBAS.md",
+      "status": "NOT_EXECUTED",
+      "evidence_reference": null,
+      "independent_validation": "HOLD"
+    },
+    {
+      "test_id": "T02",
+      "spec": "docs/architecture/ADITIVO_F2_EVIDENCIA_COMPARADA_Y_PRUEBAS.md",
+      "status": "NOT_EXECUTED",
+      "evidence_reference": null,
+      "independent_validation": "HOLD"
+    },
+    {
+      "test_id": "T03",
+      "spec": "docs/architecture/ADITIVO_F2_EVIDENCIA_COMPARADA_Y_PRUEBAS.md",
+      "status": "NOT_EXECUTED",
+      "evidence_reference": null,
+      "independent_validation": "HOLD"
+    },
+    {
+      "test_id": "T04",
+      "spec": "docs/architecture/ADITIVO_F2_EVIDENCIA_COMPARADA_Y_PRUEBAS.md",
+      "status": "NOT_EXECUTED",
+      "evidence_reference": null,
+      "independent_validation": "HOLD"
+    },
+    {
+      "test_id": "T05",
+      "spec": "docs/architecture/ADITIVO_F2_EVIDENCIA_COMPARADA_Y_PRUEBAS.md",
+      "status": "NOT_EXECUTED",
+      "evidence_reference": null,
+      "independent_validation": "HOLD"
+    },
+    {
+      "test_id": "T06",
+      "spec": "docs/architecture/ADITIVO_F2_EVIDENCIA_COMPARADA_Y_PRUEBAS.md",
+      "status": "NOT_EXECUTED",
+      "evidence_reference": null,
+      "independent_validation": "HOLD"
+    },
+    {
+      "test_id": "T07",
+      "spec": "docs/architecture/ADITIVO_F2_EVIDENCIA_COMPARADA_Y_PRUEBAS.md",
+      "status": "NOT_EXECUTED",
+      "evidence_reference": null,
+      "independent_validation": "HOLD"
+    },
+    {
+      "test_id": "T08",
+      "spec": "docs/architecture/ADITIVO_F2_EVIDENCIA_COMPARADA_Y_PRUEBAS.md",
+      "status": "NOT_EXECUTED",
+      "evidence_reference": null,
+      "independent_validation": "HOLD"
+    },
+    {
+      "test_id": "T09",
+      "spec": "docs/architecture/ADITIVO_F2_EVIDENCIA_COMPARADA_Y_PRUEBAS.md",
+      "status": "NOT_EXECUTED",
+      "evidence_reference": null,
+      "independent_validation": "HOLD"
+    },
+    {
+      "test_id": "T10",
+      "spec": "docs/architecture/ADITIVO_F2_EVIDENCIA_COMPARADA_Y_PRUEBAS.md",
+      "status": "NOT_EXECUTED",
+      "evidence_reference": null,
+      "independent_validation": "HOLD"
+    },
+    {
+      "test_id": "T11",
+      "spec": "docs/architecture/ADITIVO_F2_EVIDENCIA_COMPARADA_Y_PRUEBAS.md",
+      "status": "NOT_EXECUTED",
+      "evidence_reference": null,
+      "independent_validation": "HOLD"
+    },
+    {
+      "test_id": "T12",
+      "spec": "docs/architecture/ADITIVO_F2_EVIDENCIA_COMPARADA_Y_PRUEBAS.md",
+      "status": "NOT_EXECUTED",
+      "evidence_reference": null,
+      "independent_validation": "HOLD"
+    },
+    {
+      "test_id": "T13",
+      "spec": "docs/architecture/ADITIVO_F2_EVIDENCIA_COMPARADA_Y_PRUEBAS.md",
+      "status": "NOT_EXECUTED",
+      "evidence_reference": null,
+      "independent_validation": "HOLD"
+    },
+    {
+      "test_id": "T14",
+      "spec": "docs/architecture/ADITIVO_F2_EVIDENCIA_COMPARADA_Y_PRUEBAS.md",
+      "status": "NOT_EXECUTED",
+      "evidence_reference": null,
+      "independent_validation": "HOLD"
+    },
+    {
+      "test_id": "T15",
+      "spec": "docs/architecture/ADITIVO_F2_EVIDENCIA_COMPARADA_Y_PRUEBAS.md",
+      "status": "NOT_EXECUTED",
+      "evidence_reference": null,
+      "independent_validation": "HOLD"
+    },
+    {
+      "test_id": "T16",
+      "spec": "docs/architecture/ADITIVO_F2_EVIDENCIA_COMPARADA_Y_PRUEBAS.md",
+      "status": "NOT_EXECUTED",
+      "evidence_reference": null,
+      "independent_validation": "HOLD"
+    },
+    {
+      "test_id": "T17",
+      "spec": "docs/architecture/ADITIVO_F2_EVIDENCIA_COMPARADA_Y_PRUEBAS.md",
+      "status": "NOT_EXECUTED",
+      "evidence_reference": null,
+      "independent_validation": "HOLD"
+    },
+    {
+      "test_id": "T18",
+      "spec": "docs/architecture/ADITIVO_F2_EVIDENCIA_COMPARADA_Y_PRUEBAS.md",
+      "status": "NOT_EXECUTED",
+      "evidence_reference": null,
+      "independent_validation": "HOLD"
+    },
+    {
+      "test_id": "T19",
+      "spec": "docs/architecture/ADITIVO_F2_EVIDENCIA_COMPARADA_Y_PRUEBAS.md",
+      "status": "NOT_EXECUTED",
+      "evidence_reference": null,
+      "independent_validation": "HOLD"
+    },
+    {
+      "test_id": "T20",
+      "spec": "docs/architecture/ADITIVO_F2_EVIDENCIA_COMPARADA_Y_PRUEBAS.md",
+      "status": "NOT_EXECUTED",
+      "evidence_reference": null,
+      "independent_validation": "HOLD"
+    }
+  ],
+  "runtime_phase_requirements": {
+    "before_AUTORIZO": "PREPARATION_ONLY_NO_LOCAL_SERVER_JOBS",
+    "after_valid_AUTORIZO": "READONLY_PREFLIGHT_THEN_LIMITED_REVERSIBLE_TESTS_HOLD_UNTIL_APPLICABLE_G23_G24",
+    "destructive_scope": "SECOND_SEPARATE_AUTHORIZATION_REQUIRED",
+    "deadline": "UNKNOWN_UNTIL_DURATION_BENCHMARKS",
+    "study_availability": "MANDATORY_CONSTRAINT",
+    "preparation_package_ready": false,
+    "trigger_implementation_validated": false
+  }
 }
