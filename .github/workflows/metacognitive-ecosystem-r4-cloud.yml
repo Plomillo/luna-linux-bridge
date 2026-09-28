@@ -1,0 +1,367 @@
+name: "Metacognitive Ecosystem R4 — cloud materialization and PUAC2"
+
+on:
+  push:
+    branches:
+      - staging/metacognitive-ecosystem-v1-r4-cloud-cert-20260928
+    paths:
+      - scripts/metacognitive/**
+      - ecosystem/metacognitive-operational-v1/**
+      - mission-mailbox/runtime-adapters/registry.json
+      - .github/workflows/metacognitive-ecosystem-r4-cloud.yml
+      - Louksna.md
+      - PUAC2.md
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: meta-ecosystem-r4-cloud-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  core:
+    name: "Admission + metacognitive core"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Execute pinned admission adapter
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/meta-core"
+          mkdir -p "$OUT"
+          python3 -B -I scripts/mission_mailbox/adapters/metacognitive_ecosystem_v1.py             --repo-root . --out "$OUT/ADMISSION.json"
+          python3 - <<'PY'
+          import json,os
+          p=os.path.join(os.environ["RUNNER_TEMP"],"meta-core","ADMISSION.json")
+          d=json.load(open(p,encoding="utf-8"))
+          assert d["status"]=="PASS",d
+          assert d["g16_precheck"]=="PASS",d
+          assert d["next_gate"]=="CLOUD_CORE_MATERIALIZATION",d
+          assert d["heavy_compute_on_auxiliary_runner"] is False,d
+          print("ADMISSION=PASS")
+          PY
+      - name: Execute operational core selftest
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/meta-core"
+          python3 -B -I scripts/metacognitive/operational_core.py selftest             --repo-root . --out "$OUT/CORE_SELFTEST.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: meta-lane-core
+          path: ${{ runner.temp }}/meta-core
+          if-no-files-found: error
+          retention-days: 30
+
+  debian13:
+    name: "Debian 13 userspace lane"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - name: Verify Debian 13 container lane
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/debian13"
+          mkdir -p "$OUT"
+          docker pull debian:13-slim
+          docker run --rm debian:13-slim sh -c 'cat /etc/os-release; echo ---; dpkg --print-architecture; echo ---; uname -r' | tee "$OUT/raw.txt"
+          grep -q 'VERSION_ID="13"' "$OUT/raw.txt"
+          python3 - <<'PY'
+          import json,os,platform,pathlib
+          out=pathlib.Path(os.environ["RUNNER_TEMP"])/"debian13"
+          raw=(out/"raw.txt").read_text()
+          d={"lane":"debian13","status":"PASS","scope":"DEBIAN_13_USERSPACE_CONTAINER",
+             "host_runner":"ubuntu-24.04","debian_version_id":"13","architecture":"amd64",
+             "kernel_semantics":"HOST_UBUNTU_NOT_DEBIAN_BOOT_KERNEL","raw_excerpt":raw[:4000],
+             "user_host_used":False}
+          (out/"debian13.json").write_text(json.dumps(d,indent=2,sort_keys=True)+"\n")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: meta-lane-debian13
+          path: ${{ runner.temp }}/debian13/debian13.json
+          if-no-files-found: error
+          retention-days: 30
+
+  android:
+    name: "Android 16/17 SDK lane"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Verify/install API 36 and 37 platforms
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/android"
+          mkdir -p "$OUT"
+          SDKMANAGER="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then SDKMANAGER="$(command -v sdkmanager || true)"; fi
+          test -n "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" "platforms;android-36" "platforms;android-37" >"$OUT/sdkmanager.log"
+          test -f "${ANDROID_HOME}/platforms/android-36/android.jar"
+          test -f "${ANDROID_HOME}/platforms/android-37/android.jar"
+          EMU="$({ command -v emulator || true; })"
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,subprocess
+          out=pathlib.Path(os.environ["RUNNER_TEMP"])/"android"
+          home=pathlib.Path(os.environ["ANDROID_HOME"])
+          p36=home/"platforms/android-36/android.jar"; p37=home/"platforms/android-37/android.jar"
+          def h(p):
+              x=hashlib.sha256()
+              with open(p,"rb") as f:
+                  for b in iter(lambda:f.read(1024*1024),b""): x.update(b)
+              return x.hexdigest()
+          d={"lane":"android36_37","status":"PASS","scope":"ANDROID_SDK_PLATFORM_BUILD_COMPATIBILITY",
+             "api36":{"android_jar_sha256":h(p36),"size":p36.stat().st_size},
+             "api37":{"android_jar_sha256":h(p37),"size":p37.stat().st_size},
+             "full_emulator_boot_certified":False,"hardware_acceleration_not_exercised":True,
+             "user_host_used":False}
+          (out/"android36_37.json").write_text(json.dumps(d,indent=2,sort_keys=True)+"\n")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: meta-lane-android
+          path: ${{ runner.temp }}/android/android36_37.json
+          if-no-files-found: error
+          retention-days: 30
+
+  windows:
+    name: "Windows cloud lane"
+    runs-on: windows-2025
+    timeout-minutes: 6
+    steps:
+      - name: Verify Windows build/test environment
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $out = Join-Path $env:RUNNER_TEMP "windows"
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          $os = Get-CimInstance Win32_OperatingSystem
+          $py = (& python --version 2>&1 | Out-String).Trim()
+          $git = (& git --version 2>&1 | Out-String).Trim()
+          $d = [ordered]@{
+            lane = "windows"
+            status = "PASS"
+            scope = "WINDOWS_2025_CLOUD_BUILD_TEST_ENVIRONMENT"
+            caption = $os.Caption
+            version = $os.Version
+            build_number = $os.BuildNumber
+            architecture = $env:PROCESSOR_ARCHITECTURE
+            python = $py
+            git = $git
+            user_host_used = $false
+          }
+          $d | ConvertTo-Json -Depth 5 | Set-Content -Encoding UTF8 (Join-Path $out "windows.json")
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: meta-lane-windows
+          path: ${{ runner.temp }}\windows\windows.json
+          if-no-files-found: error
+          retention-days: 30
+
+  rclone:
+    name: "rclone adaptive 8→64 lane"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            scripts/metacognitive/cloud_lane_probe.py
+          sparse-checkout-cone-mode: false
+      - name: Fetch pinned rclone and benchmark safe profiles
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/rclone"
+          mkdir -p "$OUT"
+          curl -fL --retry 3 -o "$OUT/rclone.zip"             https://github.com/rclone/rclone/releases/download/v1.75.1/rclone-v1.75.1-linux-amd64.zip
+          echo "982b5aa772841168f8e380f139e9e787b2a105403e32b94da8676a0e1c0a13ab  $OUT/rclone.zip" | sha256sum -c -
+          unzip -q "$OUT/rclone.zip" -d "$OUT"
+          BIN="$OUT/rclone-v1.75.1-linux-amd64/rclone"
+          chmod +x "$BIN"
+          python3 -B -I scripts/metacognitive/cloud_lane_probe.py rclone             --rclone "$BIN" --out "$OUT/rclone.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: meta-lane-rclone
+          path: ${{ runner.temp }}/rclone/rclone.json
+          if-no-files-found: error
+          retention-days: 30
+
+  range:
+    name: "Remote-range mechanism lane"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            scripts/metacognitive/cloud_lane_probe.py
+          sparse-checkout-cone-mode: false
+      - run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/range"
+          python3 -B -I scripts/metacognitive/cloud_lane_probe.py range             --out "$RUNNER_TEMP/range/remote_range.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: meta-lane-range
+          path: ${{ runner.temp }}/range/remote_range.json
+          if-no-files-found: error
+          retention-days: 30
+
+  translation:
+    name: "100k-segment translation orchestration lane"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            scripts/metacognitive
+          sparse-checkout-cone-mode: false
+      - run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/translation"
+          python3 -B -I scripts/metacognitive/cloud_lane_probe.py translation             --repo-root . --segments 100000             --out "$RUNNER_TEMP/translation/translation_scale.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: meta-lane-translation
+          path: ${{ runner.temp }}/translation/translation_scale.json
+          if-no-files-found: error
+          retention-days: 30
+
+  telemetry:
+    name: "Metacognitive telemetry lane"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            scripts/metacognitive/cloud_lane_probe.py
+          sparse-checkout-cone-mode: false
+      - run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/telemetry"
+          python3 -B -I scripts/metacognitive/cloud_lane_probe.py telemetry             --out "$RUNNER_TEMP/telemetry/telemetry.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: meta-lane-telemetry
+          path: ${{ runner.temp }}/telemetry/telemetry.json
+          if-no-files-found: error
+          retention-days: 30
+
+  materialize:
+    name: "Materialize and freeze candidate"
+    needs: [core,debian13,android,windows,rclone,range,translation,telemetry]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      candidate_digest: ${{ steps.freeze.outputs.candidate_digest }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: meta-lane-*
+          path: ${{ runner.temp }}/lanes
+          merge-multiple: true
+      - name: Build governed candidate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          C="$RUNNER_TEMP/candidate"
+          python3 -B -I scripts/metacognitive/operational_core.py materialize             --repo-root . --lane-dir "$RUNNER_TEMP/lanes" --out "$C"
+          cp "$RUNNER_TEMP/lanes/CORE_SELFTEST.json" "$C/CORE_SELFTEST.json"
+          cp "$RUNNER_TEMP/lanes/ADMISSION.json" "$C/ADMISSION.json"
+          python3 -B -I scripts/metacognitive/puac2_assure.py build --candidate "$C"
+      - name: Freeze exact candidate digest
+        id: freeze
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          C="$RUNNER_TEMP/candidate"
+          python3 -B -I scripts/metacognitive/operational_core.py freeze --input-dir "$C"
+          D="$(tr -d '\r\n' < "$C/CANDIDATE_DIGEST.txt")"
+          echo "candidate_digest=$D" >> "$GITHUB_OUTPUT"
+          echo "### Frozen candidate" >> "$GITHUB_STEP_SUMMARY"
+          echo "`$D`" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: metacognitive-ecosystem-r4-frozen-candidate
+          path: ${{ runner.temp }}/candidate
+          if-no-files-found: error
+          retention-days: 30
+
+  puac2:
+    name: "PUAC2 C25–C32 pre-G23 evaluation"
+    needs: materialize
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      g23_allowed: ${{ steps.eval.outputs.g23_allowed }}
+      puac_status: ${{ steps.eval.outputs.puac_status }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            scripts/metacognitive/puac2_assure.py
+          sparse-checkout-cone-mode: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: metacognitive-ecosystem-r4-frozen-candidate
+          path: ${{ runner.temp }}/candidate
+      - name: Evaluate C25-C32 fail-closed
+        id: eval
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          set +e
+          python3 -B -I scripts/metacognitive/puac2_assure.py evaluate             --candidate "$RUNNER_TEMP/candidate"             --out "$RUNNER_TEMP/PUAC2_EVALUATION.json"
+          RC=$?
+          set -e
+          python3 - <<'PY'
+          import json,os
+          p=os.path.join(os.environ["RUNNER_TEMP"],"PUAC2_EVALUATION.json")
+          d=json.load(open(p,encoding="utf-8"))
+          print(json.dumps(d,sort_keys=True))
+          with open(os.environ["GITHUB_OUTPUT"],"a",encoding="utf-8") as f:
+              f.write("g23_allowed="+("true" if d.get("g23_allowed") else "false")+"\n")
+              f.write("puac_status="+str(d.get("status"))+"\n")
+          if d.get("status") not in ("PASS","HOLD"):
+              raise SystemExit("PUAC2_TERMINAL_FAILURE")
+          PY
+          if [ "$RC" -ne 0 ] && [ "$RC" -ne 2 ]; then exit "$RC"; fi
+          cat "$RUNNER_TEMP/PUAC2_EVALUATION.json" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: metacognitive-ecosystem-r4-puac2
+          path: ${{ runner.temp }}/PUAC2_EVALUATION.json
+          if-no-files-found: error
+          retention-days: 30
+
+  g23_boundary:
+    name: "G23 boundary — only after C27 structural independence"
+    needs: [materialize,puac2]
+    if: ${{ needs.puac2.outputs.g23_allowed == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - run: |
+          echo "G23 is enabled only when a distinct read-only evaluator evidence package exists."
+          echo "This workflow intentionally supplies no producer-generated independence evidence."
+          exit 3
