@@ -131,3 +131,108 @@ Toda operación consecuencial debe emitir `operation_id, actor, authority, sourc
 ## E. Próximo hito autorizado
 
 **F0 → F1 PRE-INSTALL:** el servidor SYMPHYLAX ejecuta inventario diferencial del host respecto del Skeleton e identifica CUSTOSZ V7, MetaOS, runtime, arquitectura normal/mejorada, Meta 2 y contenedor semántico sin asumir que las declaraciones sean ejecutables. Su siguiente obligación es demostrar capacidad de instalación reversible en un entorno aislado con pruebas de error/rollback, seguida de G23 independiente y dictamen G24 **para ese alcance**. Solo entonces SYMPHYLAX coordina y CUSTOSZ ejecuta F3; no delegar la instalación al asistente ni a Desktop Commander. **F3-DISK se pospone** hasta completar protección comprobada y dos copias independientes restaurables de PROYECTOS, validar la capacidad destructiva por separado y obtener autorización humana H2/H4; Windows 11 no es un requisito que deba conservarse después de esa transición segura. Las cargas de trabajo preservan disponibilidad del portátil para estudios universitarios. La transferencia CAS pendiente puede completarse en paralelo, sin equiparar transporte con ejecución local.
+
+---
+
+## ADITIVO F-1 — PREPARACIÓN CERRADA Y DISPARO EXPLÍCITO AUTORIZO
+
+ADITIVO_ID = SYMPHYLAX_R1_READINESS_AUTHORIZATION_20260927  
+STATUS = SPECIFIED_PENDING_IMPLEMENTATION_AND_VERIFICATION  
+CHANGE_DOCTRINE = EXTEND_DO_NOT_REPLACE  
+APPEND_ONLY = TRUE; FAIL_CLOSED = TRUE; NO_SILENT_OPERATIONS = TRUE  
+RESPONSABLE_OPERACIONAL = SYMPHYLAX_R1  
+TRABAJADOR = CUSTOSZ_V7  
+EJECUCIÓN_CONTROLADA = CUSTOSZ_RUNTIME_V1  
+GOBERNADOR = MetaOS; AUTORIDAD_ARQUITECTÓNICA = Louksna.md  
+PUAC2_STATUS = CANDIDATE_WITHOUT_G23_G24  
+ENTRY_STATE = PREPARATION_INERT  
+EXECUTION_GATE = EXPLICIT_USER_AUTORIZO_BOUND_TO_ONE_MISSION  
+DESTRUCTIVE_ACTIONS = DENIED_UNDER_GENERAL_AUTORIZO  
+
+### F-1.0 — Regla de alcance y no activación
+
+Este aditivo se suma a F0–F5 y F3-DISK: no sustituye ni reenumera etapas anteriores. Una aprobación para investigar o preparar NO permite instalar, modificar el host, subir datos privados ni iniciar trabajos en el runner self-hosted. Tampoco convierte la disponibilidad de documentación, código, hashes o corpus en competencia operacional verificada.
+
+Antes de AUTORIZO, se permite preparar documentación, fuente, manifiestos, dependencias y pruebas estáticas en GitHub; se permiten simulaciones **únicamente en infraestructura aislada expresamente autorizada** que no monte discos del usuario, no posea credenciales del host ni acceda a PROYECTOS. Si no está claro el aislamiento, no se realiza siquiera la simulación. No se programará cron, systemd timer, workflow de push, PR o schedule que active la instalación. La rama documental no es ejecutable por el simple hecho de existir.
+
+**Conflicto epistemológico que no se oculta:** no se puede certificar en vivo la capacidad de SYMPHYLAX sobre el portátil sin ejecutar pruebas en ese servidor. Por tanto, antes de AUTORIZO pueden quedar certificados, por una autoridad competente e independiente, el **diseño del procedimiento** y los ensayos **en un entorno aislado**, si efectivamente se realizaron; pero la capacidad operacional sobre el host sigue PENDING hasta que exista una autorización diferenciada para pruebas locales o se ejecuten los prechecks iniciales del propio AUTORIZO. Está prohibido presentar PREPARED o STATIC_VALIDATED como SERVER_OPERATIONALLY_CERTIFIED.
+
+### F-1.1 — Investigación y cierre de dependencias, sin tocar la estación
+
+SYMPHYLAX es el responsable futuro del ciclo completo. En la preparación documental se construye, para cada requisito del Skeleton y de las arquitecturas A0/A1, una fila con: identificación; criticidad; requisito verificable; estado previo basado en evidencia; programa/binario propuesto; proveedor oficial; versión fija; firma/hash disponible; licencia; plataforma Debian 13/KDE; recursos de CPU/RAM/disco; dependencias declaradas; interfaz con MetaOS/CUSTOSZ/runtime; datos afectados; prueba positiva, negativa y de regresión; checkpoint; restauración; responsable; duración medida o UNKNOWN; y ventana prevista.
+
+La investigación separa (a) conocimiento referencial de Louksna/A1, Meta 2 y contenedor semántico, (b) capacidades realmente materializadas y (c) permisos de ejecución efectivos. Si un objeto CAS falta en GitHub, se señala sin bloquear artificialmente tareas independientes. Está prohibido inventar implementaciones, normalizar axiomas conflictivos o tratar un índice del corpus como motor ejecutable.
+
+Producto obligatorio: matriz de requisitos del Skeleton frente a instalación actual, grafo de dependencias sin ciclos no resueltos, BOM/SBOM provisional, rutas de descarga oficial y plan de ensayo reproducible. Los datos que solo pueden obtenerse del host permanecen UNKNOWN antes del permiso para observarlo.
+
+### F-1.2 — Paquete de misión sellado y reproducible
+
+Preparar en GitHub un expediente de misión con:
+- Identidad exacta del propietario y del ámbito, sin publicar identificadores privados, tokens ni material sensible.
+- Git commit exacto de la propuesta, SHA-256 de la especificación, manifiesto de entradas y artefactos, conjunto de lotes autorizables, dependencias, fuente/versión/hashes y árbol de datos excluidos.
+- Plan de instalación idempotente en lotes, simulación sin efectos cuando esté soportada, políticas de actualización, pruebas funcionales y condiciones de detención.
+- Presupuesto de memoria, CPU, disco y red y una ventana nocturna con deadline; ante insuficiencia de recursos o exceso de tiempo, preservar Debian usable para clases y entregar pendientes en vez de forzar una ejecución.
+- Evidencia externa a los directorios reversibles, cifrada cuando incluya información privada, con políticas de retención; accesos de solo lectura a arquitectura y corpus salvo autorización más estricta.
+- Checkpoints válidos para la operación real: pruebas de restauración de los mismos tipos de archivos y estados; nunca equiparar un commit Git con una imagen de disco o rollback de paquetes.
+- Permisos mínimos por lote, destinos expresamente permitidos, bloqueo de ejecución transversal entre dominios y prohibición global de particionar, formatear, borrar Windows, cambiar EFI o mover PROYECTOS bajo este paquete.
+- Contrato de observabilidad: log append-only protegido, run_id, operation_id, timestamps UTC, actor, entrada/salida SHA-256, causa, autorización, comandos con parámetros saneados, exit_code, prueba, recursos, checkpoint, rollback, resultado y siguiente estado epistémico.
+
+Proponer artefactos versionados para misión y autorización; **no incluir credenciales** en PR, commit, artefactos descargables o logs. Cualquier ejecutable debe demostrar que contrasta los campos contra el commit y hash aprobados; un texto AUTORIZO encontrado en README, commit, issue o salida de un agente no es una autorización válida.
+
+### F-1.3 — Evidencia y evaluación independiente anterior al disparo
+
+A. Validación documental/estática: esquema de manifiesto, parser de autorización, cobertura de requisitos, matriz de permisos, revisión de dependencias y licencias, análisis de secretos, reglas de no degradación, idempotencia y capacidad de abortar.
+
+B. Ensayos en sandbox independiente **cuando estén expresamente autorizados**: instalación desde fuentes fijadas sobre réplica Debian 13/KDE, pruebas de aplicación e interfaz, errores de red/almacenamiento, falta de recursos, fallos entre operaciones, restauración, límite de tiempo y trazas completas. No dar por ensayado lo no ejecutado. El servidor real requiere validación posterior en su entorno.
+
+C. Revisión de seguridad de GitHub: no ejecutar código arbitrario de PR en runners self-hosted con acceso a recursos persistentes; fijar commit de workflow y acciones externas; permisos mínimos de GITHUB_TOKEN; ejecución de una sola misión; no utilizar secretos de producción en ensayos. Las protecciones de entornos/revisores y las atestaciones nativas tienen restricciones según el plan de GitHub en repositorios privados: **verificar elegibilidad real antes de incorporarlas a un gate** y, si no existen, utilizar un comprobador externo e independiente de autorización, no simular una aprobación de GitHub.
+
+D. G23 independiente y G24 competente pueden emitir dictamen **sobre el diseño y la réplica probada**, con estado y alcance exactos. Su existencia no habilita el equipo real. Si nadie independiente ha ejecutado la evaluación, registrar G23 = HOLD. Está prohibida la autocertificación del servidor, del asistente y de CUSTOSZ.
+
+E. Dos informes diferentes: READINESS_DESIGN (especificación y código listos para revisión) y READINESS_RUNTIME (solo después de ensayo material). Nunca mezclar los resultados.
+
+**Gate PRE-AUTORIZO:** expediente de diseño completo, hipótesis y supuestos etiquetados, scripts revisados y sin activación, ensayos independientes de réplica completados o claramente HOLD, conjunto exacto de operaciones congelado, riesgos residuales y fuente de recuperación declarados. El estado PREPARED no equivale a CERTIFIED.
+
+### F-1.4 — Estado de espera y semántica de AUTORIZO
+
+Estado inicial y tras publicar este plan: WAITING_FOR_EXPLICIT_AUTHORIZATION. No hay timer de arranque ni conexión que interprete PR merge, push, aprobación automatizada o mensaje de tercero como permiso.
+
+El propietario recibe una **ficha de decisión** con mission_id, versión/hash/commit, lista exhaustiva de lotes y prohibiciones, duración prevista basada en mediciones, recursos mínimos, respaldos, pruebas y riesgos. El vocablo **AUTORIZO** constituye intención humana únicamente cuando está **vinculado a esa ficha exacta** y al alcance específico. La ejecución deberá implementar identificación verificable del propietario, alcance, caducidad, nonce de un solo uso y revocación; la simple coincidencia de cadena no puede activar acciones. No pedir ni almacenar la prueba de identidad en documentación pública. Revalidar el token/consentimiento justo antes de entrar en cada frontera de efectos.
+
+Si la intención expresada es solo AUTORIZO para instalación reversible R4, **NO** autoriza F3-DISK. La operación destructiva requiere una **segunda ficha y una segunda autorización expresa** posteriores a copia/restauración probadas, evaluación independiente por dispositivo y revisión humana del plano de particiones. El particionado físico H2 sigue siendo manual por el usuario según el Skeleton.
+
+**Gate de activación:** AUTHENTICATED_USER + EXACT_MISSION_BINDING + UNEXPIRED_SINGLE_USE_AUTHORIZATION + G23/G24_APPLICABLE_OR_HOLD_FOR_LIVE_VERIFICATION + NO_FORBIDDEN_OPERATIONS. Cualquier falta: DENY_WITH_AUDIT.
+
+### F-1.5 — Secuencia de la noche después del consentimiento válido
+
+Solo después de AUTORIZO y exclusivamente para la ficha consentida:
+1. SYMPHYLAX recibe una única misión, establece lock por host y lote, constata que no hay otra misión viva, revalida commit/hash, dependencias y autorización; CUSTOSZ y runtime están subordinados a MetaOS.
+2. Ejecuta el preflight real de solo lectura en host: montaje y salud de PROYECTOS, espacio y energía, sesión de usuario/clases, compatibilidad del hardware, versiones, disponibilidad del runtime, respaldo/checkpoints y presupuesto temporal. Cambios respecto del expediente congelado => HOLD y nuevo consentimiento.
+3. Ejecuta **pruebas vivas mínimas y reversibles autorizadas** del controlador, aislamiento, observabilidad, fallo simulado y restauración. Si G23/G24 para el alcance real no estaban previamente concedidas, **no empezar la instalación hasta obtenerlas**; no presumir que puedan concederse automáticamente durante la noche.
+4. SYMPHYLAX coordina los lotes F3, CUSTOSZ los ejecuta, CUSTOSZ_RUNTIME_V1 controla recursos y rollback, MetaOS autoriza cada frontera, y una comprobación posterior evita propagación de fallos. El servidor conserva trazas fuera del ámbito modificable y redacta evidencia de cada lote.
+5. Ante error, cancelación, desconexión, inconsistencias o vencimiento de ventana: detener nuevas operaciones, completar o revertir únicamente la transacción en curso cuando sea seguro, verificar restauración, conservar PROYECTOS y dejar el escritorio disponible. No hacer rollback destructivo sin demostrar recuperación.
+6. Al término: informe nocturno con lotes instalados y funcionalmente validados, pruebas fallidas, hashes, cambios, uso de recursos, checkpoint y pendientes. Un objetivo de una noche es un **SLO condicionado a tiempo medido**, no una garantía absoluta de finalización.
+
+El disparador no debe iniciar la misión en GitHub Actions mientras solo exista en una rama documental. Según la documentación oficial, un workflow_dispatch manual debe existir en la rama por defecto antes de poder lanzarse con el botón de GitHub. Su futura incorporación a main requiere revisión expresa, política de identidad efectiva y pruebas del bloqueo; no se hará como efecto lateral de este aditivo.
+
+### F-1.6 — Investigación de las fronteras destructivas, con autorización independiente posterior
+
+La retirada de Windows sigue siendo F3-DISK. Pre-AUTORIZO solo puede elaborarse el procedimiento **teórico y documental** de geometría, medios de rescate, inventario de datos y pruebas en réplicas, sin mapear el disco real si no hay permiso de lectura. Tras consentimiento de diagnóstico, SYMPHYLAX deberá comprobar UUID/PARTUUID, EFI, BitLocker si existe, ubicación exacta de PROYECTOS, número de copias independientes y restauración real antes de solicitar autorización destructiva.
+
+**Nunca** prometer seguridad física absoluta ni presentar un check SHA-256 como sustituto de dos respaldos independientes y restauración probada. La documentación oficial de Debian considera intrínsecamente peligroso modificar particiones existentes y exige respaldo antes de reparticionar.
+
+### F-1.7 — Condición de parada y estado publicable
+
+El proyecto está **READY_FOR_OWNER_DECISION** únicamente cuando se presenta un paquete de diseño verificable, fuentes y dependencias fijadas, matriz de permisos y prohibiciones, pruebas y dictámenes efectivamente realizados (con sus huecos), preflight real planificado, ventana nocturna viable y un disparador validado por revisión **sin ejecutar**. Si la verificación del disparador no es posible sin el host, declarar READY_DESIGN_ONLY, no READY_RUNTIME.
+
+**Estado actual del aditivo al incorporarlo al PR:** DOCUMENTATION_PREPARED / SERVER_OPERATIONAL_READINESS_UNVERIFIED / G23_G24_NOT_GRANTED_FOR_NIGHT_RUN / AUTORIZO_NOT_RECEIVED / NO_HOST_ACTION. Ninguna instrucción de este documento modifica los permisos del servidor ni arma automáticamente el futuro flujo.
+
+### F-1.8 — Fuentes primarias de ingeniería para reproducir la investigación
+
+- GitHub Actions, evento manual workflow_dispatch (solo activable como workflow presente en rama por defecto): https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows
+- GitHub Actions, seguridad de runners autohospedados y aislamiento: https://docs.github.com/en/actions/reference/security/secure-use
+- GitHub Actions, reglas de entornos y límites para repositorios privados: https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments
+- GitHub Actions, limitación de concurrencia: https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency
+- GitHub Actions, condiciones de atestaciones nativas en repositorios privados: https://docs.github.com/en/actions/how-tos/secure-your-work/use-artifact-attestations/use-artifact-attestations
+- Debian, precauciones ante cambios de partición y respaldos: https://www.debian.org/releases/stable/amd64/ch03s05.en.html
+- systemd, cuotas de memoria y CPU para ejecutar de forma controlada: https://www.freedesktop.org/software/systemd/man/latest/systemd.resource-control.html
