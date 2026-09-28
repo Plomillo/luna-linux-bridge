@@ -47,11 +47,14 @@ jobs:
           C="$RUNNER_TEMP/candidate"
           O="$RUNNER_TEMP/g23-out"
           test -f "$C/FROZEN_CANDIDATE.json"
-          chmod -R a-w "$C"
+          chmod -R a+rX,a-w "$C"
+          V="$RUNNER_TEMP/g23-validator.py"
+          install -m 0555 "$GITHUB_WORKSPACE/g23/metacognitive-v1/validator.py" "$V"
+          sudo chown nobody:nogroup "$V"
           sudo install -d -o nobody -g nogroup "$O"
           sudo -u nobody env -i \
             PATH=/usr/bin:/bin \
-            python3 -I -B "$GITHUB_WORKSPACE/g23/metacognitive-v1/validator.py" \
+            python3 -I -B "$V" \
               --candidate "$C" \
               --out "$O" \
               --evaluator-commit "$GITHUB_SHA" \
