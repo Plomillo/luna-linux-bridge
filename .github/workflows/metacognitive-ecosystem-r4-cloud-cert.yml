@@ -103,15 +103,24 @@ jobs:
           SDKMGR=$(command -v sdkmanager || find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -1)
           test -x "$SDKMGR"
           yes | "$SDKMGR" --licenses >/dev/null 2>&1 || true
-          "$SDKMGR" "platforms;android-36" "platforms;android-37"
+          LIST=$("$SDKMGR" --list --channel=3)
+          PKG37=$(printf '%s\n' "$LIST" | awk -F'|' '
+            /platforms;/ && (tolower($1) ~ /cinnamon/ || tolower($1) ~ /android-37/) {
+              gsub(/^[[:space:]]+|[[:space:]]+$/, "", $1); print $1; exit
+            }')
+          test -n "$PKG37"
+          "$SDKMGR" --channel=3 "platforms;android-36" "$PKG37"
           test -f "$ANDROID_HOME/platforms/android-36/android.jar"
-          test -f "$ANDROID_HOME/platforms/android-37/android.jar"
+          DIR37="$ANDROID_HOME/platforms/${PKG37#platforms;}"
+          test -f "$DIR37/android.jar"
           REV36=$(grep '^Pkg.Revision=' "$ANDROID_HOME/platforms/android-36/source.properties" | cut -d= -f2-)
-          REV37=$(grep '^Pkg.Revision=' "$ANDROID_HOME/platforms/android-37/source.properties" | cut -d= -f2-)
+          REV37=$(grep '^Pkg.Revision=' "$DIR37/source.properties" | cut -d= -f2-)
+          API37=$(grep '^AndroidVersion.ApiLevel=' "$DIR37/source.properties" | cut -d= -f2-)
+          test "$API37" = "37"
           mkdir -p "$RUNNER_TEMP/lane"
           python3 - <<PY
           import json,os
-          json.dump({"lane":"android36_37","status":"PASS","android_16_api":36,"android_17_api":37,"revision36":"""$REV36""","revision37":"""$REV37""","host":"ubuntu-24.04","emulator_boot_certified":False},open(os.path.join(os.environ["RUNNER_TEMP"],"lane","android36_37.json"),"w"),indent=2,sort_keys=True)
+          json.dump({"lane":"android36_37","status":"PASS","android_16_api":36,"android_17_api":37,"android17_package":"""$PKG37""","revision36":"""$REV36""","revision37":"""$REV37""","host":"ubuntu-24.04","preview_channel":3,"emulator_boot_certified":False},open(os.path.join(os.environ["RUNNER_TEMP"],"lane","android36_37.json"),"w"),indent=2,sort_keys=True)
           PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
