@@ -34,6 +34,22 @@
         "FORENSIC_OPERATIONAL_SERVER_HARDENING"
       ],
       "requires_prebound_executor": false
+    },
+    {
+      "adapter_id": "FINAL_SERVER_READY_CLOSURE_V1",
+      "path": "scripts/mission_mailbox/adapters/final_server_ready_closure.py",
+      "sha256": "7c17339b684da51f4dbe0794226baf8043856855aaba6173e59763235b5a6d64",
+      "backend": "CUSTOSZ_RUNTIME",
+      "source_sha256": "8191840debd98f8775e530a37d3d23770f148693af64689f8e0d187be037cb21",
+      "mission_classes": [
+        "FINAL_SERVER_READY_CLOSURE"
+      ],
+      "required_capabilities": [],
+      "provides_executor_binding": true,
+      "requires_prebound_executor": false,
+      "execution_location": "SELF_HOSTED_LUNA_AUX",
+      "scope": "FINAL_SERVER_READY_CLOSURE",
+      "status": "ACTIVE_PINNED"
     }
   ]
 }
