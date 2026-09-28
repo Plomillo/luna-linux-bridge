@@ -42,21 +42,32 @@ class NodeFamilyRegistry:
 class TranslationMemoryOntology:
     def __init__(self,path):
         self.path=Path(path); self.path.parent.mkdir(parents=True,exist_ok=True)
-        with sqlite3.connect(self.path) as db:
+        db=sqlite3.connect(self.path)
+        try:
             db.execute("""CREATE TABLE IF NOT EXISTS term(
               domain TEXT NOT NULL, source_lang TEXT NOT NULL, target_lang TEXT NOT NULL,
               source_term TEXT NOT NULL, target_term TEXT NOT NULL, version INTEGER NOT NULL,
               source_hash TEXT NOT NULL, status TEXT NOT NULL,
               PRIMARY KEY(domain,source_lang,target_lang,source_term,version))""")
+            db.commit()
+        finally:
+            db.close()
     def add(self,domain,source_lang,target_lang,source_term,target_term,version,source_hash,status="VALIDATED"):
         if status not in {"DECLARED","VALIDATED","CERTIFIED"}: raise ValueError("INVALID_TERM_STATE")
-        with sqlite3.connect(self.path) as db:
+        db=sqlite3.connect(self.path)
+        try:
             db.execute("INSERT INTO term VALUES(?,?,?,?,?,?,?,?)",(domain,source_lang,target_lang,source_term,target_term,int(version),source_hash,status))
+            db.commit()
+        finally:
+            db.close()
     def resolve(self,domain,source_lang,target_lang,source_term):
-        with sqlite3.connect(self.path) as db:
+        db=sqlite3.connect(self.path)
+        try:
             row=db.execute("""SELECT target_term,version,source_hash,status FROM term
               WHERE domain=? AND source_lang=? AND target_lang=? AND source_term=?
               ORDER BY version DESC LIMIT 1""",(domain,source_lang,target_lang,source_term)).fetchone()
+        finally:
+            db.close()
         return None if not row else {"target_term":row[0],"version":row[1],"source_hash":row[2],"status":row[3]}
 
 class ExtremeTranslationOrchestrator:
