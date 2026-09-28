@@ -1,0 +1,59 @@
+{
+  "schema": "LOUKSNA_BLOCKER_EVENT/1.0",
+  "blocker_id": "BLK-META-R4-C27-20260928",
+  "utc_timestamp": "2026-09-28T17:31:01Z",
+  "mission_id": "MIS-META-ECO-20260928-V1",
+  "authority": "Louksna.md",
+  "watch": "Louksna Lab Watch",
+  "tool_or_surface": "GitHub Actions + PUAC2",
+  "current_gate": "PUAC.C27_STRUCTURAL_INDEPENDENCE",
+  "exact_blocker": "INDEPENDENT_EVALUATOR_EVIDENCE_MISSING_OR_INSUFFICIENT",
+  "candidate_digest_sha256": "e53c26112337dc6ef4ca220a15a579d9e7a720d592e8cc62efbb45cf0561fcd6",
+  "source_run_id": 36458572307,
+  "frozen_candidate_artifact": {
+    "artifact_id": 10986971943,
+    "artifact_zip_sha256": "2f795b70a43fed203b878a3f02ad166eb4f9acdf31a03a08ce42f56749747241"
+  },
+  "puac2_artifact": {
+    "artifact_id": 10987031830,
+    "artifact_zip_sha256": "08639dfd98a9e3639ae0b9e53cf81bd31c5c7145529d2d1f1183e90b80d02fbc"
+  },
+  "last_verified_state": {
+    "PUAC.C25": "PASS",
+    "PUAC.C26": "PASS",
+    "PUAC.C27": "HOLD",
+    "PUAC.C28": "PASS",
+    "PUAC.C29": "PASS",
+    "PUAC.C30": "PASS",
+    "PUAC.C31": "PASS",
+    "PUAC.C32": "PASS",
+    "g23": "NOT_PERFORMED",
+    "g24": "NOT_PERFORMED"
+  },
+  "required_independence_evidence": [
+    "distinct evaluator identity",
+    "producer/evaluator role separation",
+    "read-only access to exact frozen candidate digest",
+    "repair_allowed=false",
+    "conflict-of-interest record",
+    "independent recomputation of candidate digest and applicable controls"
+  ],
+  "required_human_action": "Provide or connect one independent evaluator identity/surface that is not the producer and cannot repair the candidate. No other user action is required.",
+  "safe_side_work": [
+    "retain frozen candidate and artifacts",
+    "prepare draft PR/review surface",
+    "prepare G23/G24 intake contracts",
+    "preserve all cloud lane evidence"
+  ],
+  "unsafe_side_work": [
+    "self-approve C27",
+    "run producer-owned G23 and label it independent",
+    "issue G24 without G23 PASS",
+    "mutate frozen candidate while preserving the old certification claim"
+  ],
+  "resume_condition": "Independent evaluator evidence satisfies PUAC.C27 on candidate e53c26112337dc6ef4ca220a15a579d9e7a720d592e8cc62efbb45cf0561fcd6.",
+  "next_verification_test": "Run puac2_assure.py evaluate with independence evidence; require C25-C32 PASS, then execute g23_validate.py read-only on the same digest, then g24_certify.py on the same digest with authenticated authority evidence.",
+  "rollback_plan": "Close the R4 PR and retain staging mailbox baseline; no canonical mutation has occurred.",
+  "canonical_mutation": false,
+  "certification_propagation": false
+}
