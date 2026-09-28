@@ -6,6 +6,10 @@ on:
       - staging/custosz-mission-mailbox-20260928
     paths:
       - .github/workflows/server-ready-final-material.yml
+      - scripts/mission_mailbox/adapters/final_server_ready_closure.py
+      - scripts/missions/final_server_ready_materialize.py
+      - mission-mailbox/runtime-adapters/registry.json
+      - server/symphylax-r1-candidate/**
   workflow_dispatch:
 
 permissions:
