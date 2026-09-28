@@ -126,3 +126,13 @@ El registro de una misión supervisora NO acredita un ejecutor material integrad
   "worker_research": "ARCHITECTURAL_PLAN_AND_REASONING_POLICY_EXECUTED"
 }
 ~~~
+
+
+## Continuación nativa CUSTOSZ run 36376330016
+
+~~~json
+{
+  "run_id": "36376330016",
+  "status": "CONTINUATION_NO_RESULT"
+}
+~~~
