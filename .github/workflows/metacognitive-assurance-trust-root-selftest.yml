@@ -3,6 +3,7 @@ name: "Metacognitive Assurance Trust Root — selftest"
 on:
   push:
     branches:
+      - main
       - staging/metacognitive-assurance-trust-root-20260928
       - staging/metacognitive-assurance-trust-root-r2-20260928
       - staging/metacognitive-default-trust-root-20260928
@@ -51,7 +52,8 @@ jobs:
             "candidate_artifact_consumed_as_data_only",
             "resolve_metacognitive_producer.py",
             "CONTENT_ADDRESSED_RELEASE",
-            "expected_candidate_digest"
+            "expected_candidate_digest",
+            "import json,sys,os"
           ]
           missing=[x for x in required if x not in w]
           assert not missing,missing
