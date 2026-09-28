@@ -1,0 +1,156 @@
+name: "SYMPHYLAX R1 — metacognitive read-only evaluation v2"
+
+on:
+  push:
+    branches:
+      - evaluation/symphylax-r1-readonly-20260928
+    paths:
+      - .github/workflows/symphylax-r1-metacog-eval-v2.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    steps:
+      - name: Checkout governed evaluation surface
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            artifacts/custosz-v7
+            ecosystem/metacognitive-operational-v1
+            scripts/metacognitive/operational_core.py
+            server/symphylax-r1-candidate
+            server/terminal-chain
+            Louksna.md
+          sparse-checkout-cone-mode: false
+
+      - name: Ask CUSTOSZ + metacognitive planner
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/symphylax-eval"
+          mkdir -p "$OUT"
+          OUT="$OUT" python3 -B -I - <<'PY'
+          import hashlib, importlib.util, json, os, pathlib, subprocess, sys, tempfile
+          root=pathlib.Path('.')
+          out=pathlib.Path(os.environ['OUT'])
+          c=root/'artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz'
+          rt=root/'artifacts/custosz-v7/CUSTOSZ_RUNTIME_V1_SR_EXEC_BOUND_FME_01.b.pyz'
+          meta=root/'ecosystem/metacognitive-operational-v1'
+          candidate=root/'server/symphylax-r1-candidate'
+          intent=(
+            "READ_ONLY_EVALUATION_ONLY. Do not execute, repair, mutate, install, reboot, certify or promote. "
+            "Evaluate SYMPHYLAX_R1 / SERVER_CANDIDATE_CORRECTED. "
+            "Current SERVER_READY chain: G08=HOLD, G09=HOLD, G23=HOLD, G24=HOLD, "
+            "SERVER_CERTIFIED=FALSE, SERVER_READY_FINAL=HOLD. "
+            "Root blocker: POST_BOOT_PERSISTENCE_NOT_YET_OBSERVED. "
+            "Explain the diagnosis, missing evidence, minimum safe route to closure, risks, forbidden shortcuts, "
+            "and the exact next gate. Preserve Louksna authority and fail closed."
+          )
+          def sha(p): return hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
+          status=subprocess.run([sys.executable,'-B','-I',str(c),'v07-status'],
+                                capture_output=True,text=True,timeout=12)
+          if status.returncode:
+              raise SystemExit('CUSTOSZ_STATUS_FAILED:'+status.stderr[:500])
+          sys.path.insert(0,str(c))
+          import custosz_v05_legacy as worker
+          architect=worker.architect(intent,'LUNA_PROJECT')
+          reasoning=worker.reasoning_policy(intent,'LUNA_PROJECT')
+
+          spec=importlib.util.spec_from_file_location('meta_core',root/'scripts/metacognitive/operational_core.py')
+          mod=importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
+          caps=json.loads((meta/'CAPABILITIES.json').read_text(encoding='utf-8'))['capabilities']
+          ids=mod.MetacognitivePlanner(caps).plan(intent)
+          names={x['id']:x['name'] for x in caps}
+          mcap=[{'id':i,'name':names.get(i)} for i in ids]
+
+          runtime_selftest={}
+          try:
+              sys.path.insert(0,str(rt))
+              from runtime_core import Runtime
+              with tempfile.TemporaryDirectory(prefix='symphylax-eval-') as td:
+                  r=Runtime(pathlib.Path(td)/'runtime',root/'Louksna.md',sha(root/'Louksna.md'))
+                  runtime_selftest=r.selftest()
+          except Exception as exc:
+              runtime_selftest={'status':'FAIL','exception':type(exc).__name__,'message':str(exc)[:500]}
+
+          contracts={}
+          for name in ('STATE_MACHINE.json','DEPLOYMENT_CONTRACT.json','CLEANUP_CONTRACT.json','policy.json'):
+              p=candidate/name
+              contracts[name]=json.loads(p.read_text(encoding='utf-8'))
+          release=json.loads((meta/'CERTIFIED_RELEASE_RECORD.json').read_text(encoding='utf-8'))
+
+          report={
+            'schema':'SYMPHYLAX_R1_READONLY_METACOG_EVALUATION/1.0',
+            'mode':'READ_ONLY_EVALUATION_ONLY',
+            'material_execution_authorized':False,
+            'candidate':'SYMPHYLAX_R1 / SERVER_CANDIDATE_CORRECTED',
+            'current_server_state':{
+              'G08':'HOLD','G09':'HOLD','G23':'HOLD','G24':'HOLD',
+              'SERVER_CERTIFIED':False,'SERVER_READY_FINAL':'HOLD',
+              'ROOT_BLOCKER':'POST_BOOT_PERSISTENCE_NOT_YET_OBSERVED'
+            },
+            'custosz_status':json.loads(status.stdout),
+            'custosz_architect':architect,
+            'custosz_reasoning_policy':reasoning,
+            'metacognitive_capability_plan':mcap,
+            'runtime_selftest':runtime_selftest,
+            'metacognitive_release':{
+              'release_id':release.get('release_id'),
+              'operational_status':release.get('operational_status'),
+              'canonical_status':release.get('canonical_status'),
+              'candidate_digest_sha256':release.get('candidate_digest_sha256')
+            },
+            'candidate_contract_hashes':{name:sha(candidate/name) for name in contracts},
+            'candidate_contracts':contracts,
+            'answer_request':{
+              'diagnosis':True,'missing_evidence':True,'minimum_safe_route':True,
+              'risks':True,'forbidden_shortcuts':True,'exact_next_gate':True
+            }
+          }
+          (out/'EVALUATION.json').write_text(json.dumps(report,ensure_ascii=False,indent=2,sort_keys=True)+'\n',encoding='utf-8')
+          md=[
+            '# SYMPHYLAX R1 — respuesta de evaluación',
+            '',
+            'MODE = READ_ONLY_EVALUATION_ONLY',
+            'MATERIAL_EXECUTION_AUTHORIZED = FALSE',
+            'ROOT_BLOCKER = POST_BOOT_PERSISTENCE_NOT_YET_OBSERVED',
+            'EXACT_NEXT_GATE = G08',
+            '',
+            '## CUSTOSZ architect',
+            '~~~json',json.dumps(architect,ensure_ascii=False,indent=2,sort_keys=True),'~~~',
+            '',
+            '## CUSTOSZ reasoning policy',
+            '~~~json',json.dumps(reasoning,ensure_ascii=False,indent=2,sort_keys=True),'~~~',
+            '',
+            '## Metacognitive capability plan',
+            '~~~json',json.dumps(mcap,ensure_ascii=False,indent=2,sort_keys=True),'~~~',
+            '',
+            '## Runtime selftest',
+            '~~~json',json.dumps(runtime_selftest,ensure_ascii=False,indent=2,sort_keys=True),'~~~',
+            '',
+            'No repair, reboot, mutation, G23 or G24 was executed by this evaluation.'
+          ]
+          (out/'README_RESPONSE.md').write_text('\n'.join(md)+'\n',encoding='utf-8')
+          print('CUSTOSZ_ARCHITECT='+json.dumps(architect,ensure_ascii=False,sort_keys=True))
+          print('CUSTOSZ_REASONING='+json.dumps(reasoning,ensure_ascii=False,sort_keys=True))
+          print('MCAP_PLAN='+json.dumps(mcap,ensure_ascii=False,sort_keys=True))
+          print('RUNTIME_SELFTEST='+json.dumps(runtime_selftest,ensure_ascii=False,sort_keys=True))
+          print('ROOT_BLOCKER=POST_BOOT_PERSISTENCE_NOT_YET_OBSERVED')
+          print('EXACT_NEXT_GATE=G08')
+          print('READ_ONLY_EVALUATION=PASS')
+          PY
+
+      - name: Preserve response
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: symphylax-r1-readonly-evaluation
+          path: ${{ runner.temp }}/symphylax-eval
+          if-no-files-found: error
+          retention-days: 7
