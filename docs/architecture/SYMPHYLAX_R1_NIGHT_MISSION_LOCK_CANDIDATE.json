@@ -26,7 +26,7 @@
   "gates": {
     "source_provenance": "PENDING_COMPLETION",
     "dependency_closure": "PENDING_COMPLETION",
-    "static_security_review": "PENDING",
+    "static_security_review": "SELF_TEST_STATIC_PASS_NOT_INDEPENDENT_G23",
     "isolated_sandbox_tests": "NOT_EXECUTED",
     "design_G23_independent_evaluation": "HOLD",
     "design_G24_decision": "HOLD",
@@ -246,6 +246,21 @@
     "deadline": "UNKNOWN_UNTIL_DURATION_BENCHMARKS",
     "study_availability": "MANDATORY_CONSTRAINT",
     "preparation_package_ready": false,
-    "trigger_implementation_validated": false
+    "trigger_implementation_validated": false,
+    "design_capsule_materialized": true
+  },
+  "f2_3_package": {
+    "path": "docs/architecture/SYMPHYLAX_R1_NIGHT_MISSION_PACKAGE_CANDIDATE.json",
+    "addendum": "docs/architecture/ADITIVO_F2_3_CAPSULA_MISION_PREAUTORIZO.md",
+    "verifier": "scripts/governance/verify_night_mission_package_candidate.py",
+    "static_workflow": ".github/workflows/verify-night-mission-package-static.yml",
+    "static_run_id": 36375968122,
+    "static_run_result": "PASS_12_NEGATIVE_TESTS",
+    "declared_lots": 12,
+    "executed_lots": 0,
+    "host_executions": 0,
+    "execution_permitted": false,
+    "server_ready": false,
+    "design_capsule_materialized": true
   }
 }
