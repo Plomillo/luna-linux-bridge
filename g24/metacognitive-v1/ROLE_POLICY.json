@@ -1,0 +1,23 @@
+{
+  "schema": "G24_ISOLATED_ROLE_POLICY/1.0",
+  "role_id": "GITHUB_ACTIONS_G24_CERTIFIER_V1",
+  "producer_run_id": 36459022140,
+  "g23_run_id": 36461879737,
+  "g23_artifact_id": 10987242991,
+  "candidate_artifact_id": 10987077105,
+  "candidate_digest_sha256": "b91d04bf79cd98eda846a8d0435f20323013f7ef647d9b288ab4cf29dcc35240",
+  "g23_validator_commit": "a4e3ca776f151b1fc3d61ef1bc884447cfadb203",
+  "authority_source_commit": "46bbaaa97eba9f926124cdf7cb65eb161fedc868",
+  "authority_path": "Louksna.md",
+  "permissions": {
+    "contents": "read",
+    "actions": "read"
+  },
+  "persist_credentials": false,
+  "repair_allowed": false,
+  "candidate_write_access": false,
+  "g23_record_write_access": false,
+  "certification_propagation": false,
+  "canonical_mutation": false,
+  "fail_closed": true
+}
