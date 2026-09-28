@@ -136,3 +136,25 @@ El registro de una misión supervisora NO acredita un ejecutor material integrad
   "status": "CONTINUATION_NO_RESULT"
 }
 ~~~
+
+
+## Continuación nativa CUSTOSZ run 36376410026
+
+~~~json
+{
+  "active_budget_seconds_remaining": 1192.802,
+  "deadline_utc": "2026-09-28T04:28:03.479084+00:00",
+  "disk_mutation_authorized": false,
+  "elapsed_registration_seconds": 0.499,
+  "executor": "UNBOUND_MEDIATED_OR_LOCAL",
+  "heartbeat_state": "SUPERVISORY_ACTIVE",
+  "heavy_research_location": "GITHUB_HOSTED_ONLY",
+  "host_installation_authorized": false,
+  "mission_id": "MIS-ee38ae3fea574ac79d4d",
+  "parent_mission_id": "MIS-31e208fc59964c059f03",
+  "registered_utc": "2026-09-28T04:08:10.782031+00:00",
+  "state_dir": "/home/diegoignacionorambuenamiranda/.local/state/louksna/custosz-r4-cont-36376410026",
+  "status": "CONTINUATION_MISSION_REGISTERED",
+  "workspace_resolved": true
+}
+~~~
