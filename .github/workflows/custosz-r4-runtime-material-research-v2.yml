@@ -1,0 +1,80 @@
+name: "CUSTOSZ V7 + Runtime: investigación material R4 v2"
+on:
+  push:
+    branches:
+      - staging/custosz-v7-metaos-20260927
+    paths:
+      - .github/workflows/custosz-r4-runtime-material-research-v2.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: custosz-r4-runtime-material-research-v2
+  cancel-in-progress: false
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout misión y runtime
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          path: mission
+
+      - name: Checkout LOUKSNA mejorada
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          ref: staging/architecture-louksnamejorada-20260927
+          path: source-a1
+
+      - name: Checkout Skeleton R4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          ref: staging/luna-r4-context-recovery-20260927
+          path: source-r4
+
+      - name: Checkout estado CAS
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          ref: staging/contenedor-semantico-e826-20260927
+          path: source-cas
+
+      - name: Validar adaptadores
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -m py_compile mission/scripts/missions/custosz_r4_executor_readonly.py
+          python3 -m py_compile mission/scripts/missions/custosz_r4_runtime_material_dispatch.py
+          python3 -m py_compile mission/scripts/missions/publish_custosz_runtime_result.py
+
+      - name: Ejecutar CUSTOSZ y runtime material
+        shell: bash
+        env:
+          RESULT_FILE: ${{ runner.temp }}/CUSTOSZ_RUNTIME_R4_RESULT.json
+        run: |
+          set -Eeuo pipefail
+          python3 -B -I mission/scripts/missions/custosz_r4_runtime_material_dispatch.py
+
+      - name: Conservar evidencia del runtime
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: custosz-runtime-r4-material-result
+          path: ${{ runner.temp }}/CUSTOSZ_RUNTIME_R4_RESULT.json
+          if-no-files-found: warn
+
+      - name: Publicar conclusiones exactas en GitHub
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESULT_FILE: ${{ runner.temp }}/CUSTOSZ_RUNTIME_R4_RESULT.json
+        run: |
+          set -Eeuo pipefail
+          python3 -B -I mission/scripts/missions/publish_custosz_runtime_result.py
