@@ -1,0 +1,54 @@
+{
+  "authority": "Louksna.md",
+  "authority_transfer": false,
+  "blockers": [],
+  "canonical_mutation": false,
+  "checkpoint": "/home/diegoignacionorambuenamiranda/LOUKSNA_MAESTRO_20260925/MISSION3_OPERATIVE/R4_PART1_DESKTOP_V1/runs/20260926T034746Z-38579",
+  "checks": {
+    "CHECKPOINT.json": true,
+    "LAUNCHERS.json": true,
+    "PANEL_CREATED.json": true,
+    "PLASMA_CREATE_OUTPUT.txt": true,
+    "RUNTIME_VERIFY.json": true,
+    "bounded_runtime_pass": true,
+    "no_full_reinstall": true,
+    "ui_image": true,
+    "ui_kde": true
+  },
+  "details": {
+    "files": {
+      "CHECKPOINT.json": {
+        "bytes": 1808,
+        "sha256": "1235060c320b4af9810bab5913e929219053c1666c4f037e29a928c3d09c0538"
+      },
+      "LAUNCHERS.json": {
+        "bytes": 1992,
+        "sha256": "3ecf4f047c67e6d3121343b128e82de37ee5c721cbad4a50ec216c2b240b86a5"
+      },
+      "PANEL_CREATED.json": {
+        "bytes": 1220,
+        "sha256": "a4ff2cf431c467e1b74e8d9ef1a3c1866f5b094cdb4d3a08b2f19034a3ec2b78"
+      },
+      "PLASMA_CREATE_OUTPUT.txt": {
+        "bytes": 36,
+        "sha256": "13ca605d8dcd6bbe1762197ab5fe867ec95ada8dc32684fde4172e4b247bc4b6"
+      },
+      "RUNTIME_VERIFY.json": {
+        "bytes": 1268,
+        "sha256": "14047b4ff325c16c85594aefa577a277d9d859f8c3dbdbae269d03d5316f2806"
+      }
+    }
+  },
+  "mission_id": "MIS-dd341bc9c1524d7d9598",
+  "non_regression": "PASS",
+  "operation_id": "OP-b03d0eb3345743edae80d6b1348ca05c",
+  "part": "PART_1",
+  "part_name": "DESKTOP_KDE_CHECKPOINT_CLOSURE",
+  "previous_part_g24_sha256": null,
+  "rollback_pointer": "/home/diegoignacionorambuenamiranda/.local/state/louksna/r4-master-part1-part9/rollback/PART_1",
+  "schema": "LOUKSNA_R4_PART_MATERIAL_EVIDENCE/1.0",
+  "self_certified": false,
+  "status": "PASS",
+  "timestamp_utc": "2026-09-29T07:23:32.268973Z",
+  "validation": "PASS"
+}
