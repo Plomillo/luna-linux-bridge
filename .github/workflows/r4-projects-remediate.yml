@@ -1,0 +1,74 @@
+name: "R4 PART3 — restore PROYECTOS read-only binding"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-projects-remediate/**
+
+permissions:
+  contents: read
+
+jobs:
+  remediate:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 6
+    steps:
+      - name: Restore Windows mount read-only and verify PROYECTOS
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          DEV="/dev/nvme0n1p3"
+          EXPECT="/media/$USER/Windows"
+          PROJ="$EXPECT/PROYECTOS"
+          HOME_PROJ="$HOME/Proyectos"
+          HUB_PROJ="$HOME/Luna R4/Proyectos"
+
+          echo "=== BEFORE ==="
+          lsblk -o NAME,PATH,FSTYPE,LABEL,UUID,SIZE,MOUNTPOINTS "$DEV" || true
+          findmnt -T "$EXPECT" -o TARGET,SOURCE,FSTYPE,OPTIONS 2>/dev/null || true
+
+          mounted="$(findmnt -rn -S "$DEV" -o TARGET 2>/dev/null | head -n1 || true)"
+          if [ -z "$mounted" ]; then
+            echo "MOUNT_ACTION=UDISKS_READ_ONLY"
+            udisksctl mount -b "$DEV" -o ro
+          else
+            echo "ALREADY_MOUNTED=$mounted"
+          fi
+
+          echo "=== AFTER ==="
+          mountpoint="$(findmnt -rn -S "$DEV" -o TARGET | head -n1)"
+          options="$(findmnt -rn -S "$DEV" -o OPTIONS | head -n1)"
+          fstype="$(findmnt -rn -S "$DEV" -o FSTYPE | head -n1)"
+          printf 'MOUNTPOINT=%s\nFSTYPE=%s\nOPTIONS=%s\n' "$mountpoint" "$fstype" "$options"
+
+          case ",$options," in
+            *,ro,*) ;;
+            *) echo "FAIL_NOT_READ_ONLY"; exit 20 ;;
+          esac
+          [ "$fstype" = "ntfs3" ] || [ "$fstype" = "ntfs" ] || { echo "FAIL_UNEXPECTED_FSTYPE=$fstype"; exit 21; }
+
+          if [ "$mountpoint" != "$EXPECT" ]; then
+            echo "MOUNTPOINT_DIFFERS_FROM_EXPECTED=$mountpoint"
+            if [ -d "$mountpoint/PROYECTOS" ] && [ ! -e "$EXPECT" ]; then
+              echo "EXPECTED_BINDING_NOT_PRESENT"
+              exit 22
+            fi
+          fi
+
+          test -d "$PROJ"
+          test -L "$HOME_PROJ"
+          test -L "$HUB_PROJ"
+          resolved_home="$(readlink -f "$HOME_PROJ")"
+          resolved_hub="$(readlink -f "$HUB_PROJ")"
+          echo "HOME_PROYECTOS_RESOLVED=$resolved_home"
+          echo "HUB_PROYECTOS_RESOLVED=$resolved_hub"
+          test "$resolved_home" = "$PROJ"
+          test "$resolved_hub" = "$PROJ"
+
+          echo "=== PROYECTOS TOP LEVEL ==="
+          find "$PROJ" -maxdepth 1 -mindepth 1 -printf '%y\t%f\n' 2>/dev/null | head -n 120
+
+          echo "PROYECTOS_BINDING_RESTORED=PASS"
+          echo "ROLLBACK=udisksctl unmount -b $DEV"
