@@ -70,13 +70,14 @@
         "PURGE_SCOPE_G23_G24",
         "WINDOWS_PURGED",
         "POST_PURGE_INTEGRITY",
-        "NTFS_SHRUNK",
-        "EXT4_CREATED",
-        "PROYECTOS_MIGRATED_HASH_EQUIVALENT",
-        "NTFS_RETIRED",
-        "FINAL_LINUX_LAYOUT_PASS",
-        "PART4_G23",
-        "PART4_G24"
+        "NTFS_TO_EXT4_STORAGE_MIGRATION_G23_G24",
+        "FINAL_MERGE_PLAN_G23_G24",
+        "NEW_ROOT_PREBOOT_G23_G24",
+        "VERIFIED_BOOT_FROM_NEW_ROOT",
+        "OLD_ROOT_RETIREMENT_G23_G24",
+        "EFI_PLUS_ONE_MAIN_LINUX_ROOT_LAYOUT_PASS",
+        "PART4_FINAL_G23",
+        "PART4_FINAL_G24"
       ]
     },
     {
@@ -171,7 +172,27 @@
       "STEP_G23",
       "STEP_G24"
     ],
-    "migration_source_retirement_requires": "COMPLETE_TREE_HASH_EQUIVALENCE_PASS"
+    "migration_source_retirement_requires": "COMPLETE_TREE_HASH_EQUIVALENCE_PASS",
+    "final_merge": {
+      "target_disk": "/dev/nvme0n1",
+      "preserve": [
+        "EFI_SYSTEM_PARTITION_REQUIRED_FOR_DEBIAN_BOOT",
+        "PROYECTOS",
+        "VALID_DEBIAN_INSTALLATION"
+      ],
+      "retire_only_after_certified_transition": [
+        "OLD_DEBIAN_ROOT",
+        "WINDOWS_MSR",
+        "WINDOWS_RECOVERY",
+        "TEMPORARY_MIGRATION_PARTITIONS"
+      ],
+      "pre_irreversible_required": [
+        "FRESH_GEOMETRY_PREVALIDATION",
+        "STEP_G23",
+        "STEP_G24",
+        "CHECKPOINT_OR_ROLLBACK_WHERE_TECHNICALLY_APPLICABLE"
+      ]
+    }
   },
   "part4_r2": {
     "amendment_id": "PART4-R2-20260929",
@@ -183,6 +204,12 @@
     "autonomous_handoff_to_part5_after_part4_g24": true,
     "master_continues_existing_part5_to_part9_sequence": true,
     "assistant_polling_required": false,
-    "failure_behavior": "HOLD_FAIL_CLOSED_WITH_EVIDENCE_NO_SILENT_BYPASS"
+    "failure_behavior": "HOLD_FAIL_CLOSED_WITH_EVIDENCE_NO_SILENT_BYPASS",
+    "final_merge_addendum": "server/r4-master/PART4_R2_FINAL_MERGE_ADDENDUM.json",
+    "final_merge_authorization": "mission-control/r4-part4-r2-final-merge/AUTHORIZATION-20260929.json",
+    "final_layout_goal": "EFI_PLUS_ONE_MAIN_LINUX_ROOT_PARTITION_FOR_DEBIAN_AND_PROYECTOS",
+    "part4_close_requires_final_merge_g24": true,
+    "old_debian_root_retirement_requires": "VERIFIED_BOOT_FROM_NEW_ROOT_PLUS_G23_G24",
+    "efi_preserved": true
   }
 }
