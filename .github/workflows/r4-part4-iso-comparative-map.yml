@@ -1,0 +1,42 @@
+name: R4 PART4 — surgical ISO comparative map
+on:
+  push:
+    paths:
+      - 'mission-control/r4-part4-iso-map/**'
+permissions:
+  contents: read
+jobs:
+  map:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Read exact ISO map from existing hashed inventory
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          DB="$HOME/.local/state/louksna/r4-master-part1-part9/analysis/PART_4_PROYECTOS_DEDUP/proyectos.sqlite3"
+          test -f "$DB"
+          python3 - "$DB" <<'PY'
+          import sqlite3,sys,json,os
+          c=sqlite3.connect("file:"+sys.argv[1]+"?mode=ro",uri=True)
+          rows=c.execute("""SELECT path,size,sha256 FROM files
+                            WHERE sha256 IS NOT NULL AND lower(path) LIKE '%.iso'
+                            ORDER BY sha256,path""").fetchall()
+          groups={}
+          for p,s,h in rows:
+            groups.setdefault((h,s),[]).append(p)
+          unique=[]
+          for rank,((h,s),paths) in enumerate(sorted(groups.items(),key=lambda x:(-x[0][1],x[0][0])),1):
+            unique.append({"rank":rank,"sha256":h,"size_bytes":s,"size_GB_decimal":s/1e9,
+                           "copies":len(paths),"physical_bytes":s*len(paths),
+                           "redundant_bytes":s*(len(paths)-1),"paths":paths})
+          out={"schema":"LOUKSNA_R4_PART4_ISO_COMPARATIVE_MAP/1.0",
+               "mode":"READ_ONLY_EXISTING_HASHED_INVENTORY","mutation":False,"deletion":False,
+               "physical_iso_count":len(rows),"unique_iso_count":len(unique),
+               "physical_iso_bytes":sum(s for _,s,_ in rows),
+               "unique_iso_bytes":sum(x["size_bytes"] for x in unique),
+               "redundant_iso_bytes":sum(x["redundant_bytes"] for x in unique),
+               "deduplicated":unique,
+               "physical":[{"index":i,"path":p,"size_bytes":s,"sha256":h} for i,(p,s,h) in enumerate(rows,1)]}
+          print(json.dumps(out,indent=2,ensure_ascii=False))
+          PY
