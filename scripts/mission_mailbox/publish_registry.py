@@ -28,6 +28,20 @@ def main():
         else:
             continue
 
+        state_path = source / "MISSION_STATE.json"
+        if not state_path.is_file():
+            continue
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        if state.get("workflow_technical_status") != "PASS":
+            continue
+        if state.get("current_state") in {
+            "RECEIVED",
+            "VALIDATED",
+            "COMPILED",
+            "SEMANTICALLY_EQUIVALENT_BY_BYTE_PRESERVATION",
+        }:
+            continue
+
         target = registry / source.name
         if target.exists():
             shutil.rmtree(target)
