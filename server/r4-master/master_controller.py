@@ -151,9 +151,27 @@ def load_worker():
             "path":str(a),"exists":True,"observed_bytes":a.stat().st_size,
             "observed_sha256":digest,"sha256":digest,"integrity":"PASS","role":"CANONICAL_AUTHORITY"
         }}}
+    def resources_adapter():
+        mem_available_kib=0
+        try:
+            for line in pathlib.Path("/proc/meminfo").read_text().splitlines():
+                if line.startswith("MemAvailable:"):
+                    mem_available_kib=int(line.split()[1]); break
+        except Exception:
+            pass
+        disk=shutil.disk_usage(HOME)
+        zone="GREEN"
+        if mem_available_kib and mem_available_kib < 524288:
+            zone="RED"
+        elif mem_available_kib and mem_available_kib < 1048576:
+            zone="AMBER"
+        if disk.free < 2*1024*1024*1024:
+            zone="RED"
+        return {"resource_zone":zone,"mem_available_kib":mem_available_kib,"disk_free_bytes":disk.free,"source":"R4_MASTER_ADAPTER"}
     w.workspace=workspace_adapter
     w.discover=discover_adapter
     w.sources=sources_adapter
+    w.resources=resources_adapter
     return w,c,a
 
 def ensure_master_mission(worker,mission_text):
