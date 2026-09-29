@@ -1,0 +1,9 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_NTFS_DIAGNOSTIC_REQUEST/1.0",
+  "status": "REQUESTED",
+  "disk": "/dev/nvme0n1",
+  "partition": "/dev/nvme0n1p3",
+  "mountpoint": "/media/diegoignacionorambuenamiranda/Windows",
+  "destructive": false,
+  "purpose": "Capture exact ntfsresize --info failure after permanent sudo certification."
+}
