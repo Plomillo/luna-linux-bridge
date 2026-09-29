@@ -33,7 +33,7 @@ jobs:
           test "$(findmnt -T "$ROOT" -n -o SOURCE)" = "$EXPECTED_SOURCE"
           test "$(findmnt -T "$ROOT" -n -o FSTYPE)" = "ntfs3"
           findmnt -T "$ROOT" -n -o OPTIONS | tr ',' '\n' | grep -qx rw
-          test "$(blkid -s UUID -o value "$EXPECTED_SOURCE")" = "$EXPECTED_UUID"
+          test "$(/usr/sbin/blkid -s UUID -o value "$EXPECTED_SOURCE")" = "$EXPECTED_UUID"
 
           python3 - "$ROOT" "$KEEP" "$OUT" <<'PY'
           import json, os, pathlib, subprocess, sys, hashlib
