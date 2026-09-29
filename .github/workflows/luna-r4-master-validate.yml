@@ -44,7 +44,16 @@ jobs:
           assert contract["server_ready"]["repeat"] is False
           assert contract["certification"]["chain"]==["EVIDENCE","VALIDATION","G23","G24","ACTIVE_OR_NEXT_PART"]
           assert contract["destructive_scope"]["automatic_without_specific_gate"] is False
-          assert set(contract["destructive_scope"]["windows_efi_gpt_partitions_projects_require"]) == {"H2","H4","G23","G24","TWO_VERIFIED_BACKUPS","RESTORE_PROOF"}
+          assert contract["destructive_scope"]["operational_amendment"]=="PART4-R2-20260929"
+          assert set(contract["destructive_scope"]["pre_destruction_required"]) == {"H2","H4","CERTIFIED_PROYECTOS_FREEZE","EXACT_SCOPE_PREVALIDATION","STEP_G23","STEP_G24"}
+          assert set(contract["destructive_scope"]["superseded_preconditions"]) == {"TWO_VERIFIED_BACKUPS_BEFORE_WINDOWS_RETIREMENT","RESTORE_PROOF_BEFORE_WINDOWS_RETIREMENT"}
+          assert contract["part4_r2"]["part5_to_part9_unchanged"] is True
+          amendment=json.loads((root/"PART4_R2_AMENDMENT.json").read_text(encoding="utf-8"))
+          assert amendment["amendment_id"]=="PART4-R2-20260929"
+          assert amendment["authority"]=="Louksna.md"
+          assert amendment["canonical_mutation"] is False
+          assert amendment["authority_transfer"] is False
+          assert amendment["failure_posture"]=="FAIL_CLOSED"
           assert "PART_1 -> PART_2 -> PART_3 -> PART_4 -> PART_5 -> PART_6 -> PART_7 -> PART_8 -> PART_9" in mission
           assert "PART_1_FULL_REINSTALL" in mission
           assert "H2 and H4 remain human" in mission
@@ -68,7 +77,7 @@ jobs:
           python3 - <<'PY'
           import hashlib, json, pathlib, os
           root=pathlib.Path("server/r4-master")
-          names=["MASTER_RUN.sh","master_controller.py","MASTER_MISSION.md","R4_MASTER_CONTRACT.json","UPSTREAM_PINS.json"]
+          names=["MASTER_RUN.sh","master_controller.py","MASTER_MISSION.md","R4_MASTER_CONTRACT.json","UPSTREAM_PINS.json","PART4_R2_AMENDMENT.json"]
           rows=[]
           for name in sorted(names):
               data=(root/name).read_bytes()
