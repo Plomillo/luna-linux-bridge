@@ -1,0 +1,148 @@
+name: "R4 PART4 R2 — validate protected scope after partial purge"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-part4-r2-partial-purge-integrity.yml
+      - mission-control/r4-part4-r2-partial-purge-integrity/**
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  integrity:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 180
+    steps:
+      - name: Download certified freeze manifest
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/freeze"
+          gh run download 36619942178 --repo Plomillo/luna-linux-bridge -n R4-PART4-PROYECTOS-freeze-36619942178 -D "$RUNNER_TEMP/freeze"
+          test "$(sha256sum "$RUNNER_TEMP/freeze/PROYECTOS_MANIFEST.jsonl.gz" | awk '{print $1}')" = "99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e"
+
+      - name: Compare PROYECTOS and diagnose residual purge blockers
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="/media/diegoignacionorambuenamiranda/Windows"
+          KEEP="$ROOT/PROYECTOS"
+          MAN="$RUNNER_TEMP/freeze/PROYECTOS_MANIFEST.jsonl.gz"
+          OUT="$RUNNER_TEMP/r4-part4-r2-partial-integrity-$GITHUB_RUN_ID"
+          mkdir -p "$OUT"
+          test -d "$KEEP"
+          test ! -L "$KEEP"
+          test "$(findmnt -T "$ROOT" -n -o SOURCE)" = "/dev/nvme0n1p3"
+          test "$(/usr/sbin/blkid -s UUID -o value /dev/nvme0n1p3)" = "F2848A148489DC0B"
+
+          nice -n 10 python3 - "$ROOT" "$KEEP" "$MAN" "$OUT" <<'PY'
+          import gzip,hashlib,json,os,pathlib,stat,sys,time
+          root=pathlib.Path(sys.argv[1]); keep=pathlib.Path(sys.argv[2]); man=pathlib.Path(sys.argv[3]); out=pathlib.Path(sys.argv[4])
+
+          expected={}
+          with gzip.open(man,"rt",encoding="utf-8") as f:
+              for line in f:
+                  r=json.loads(line); expected[r["path"]]=r
+
+          mismatches=[]; seen=set(); counts={"file":0,"dir":0,"symlink":0,"other":0}; total=0
+          def hfile(p):
+              h=hashlib.sha256()
+              with open(p,"rb",buffering=0) as f:
+                  for b in iter(lambda:f.read(8*1024*1024),b""): h.update(b)
+              return h.hexdigest()
+
+          stack=[keep]
+          while stack:
+              d=stack.pop()
+              for e in os.scandir(d):
+                  p=pathlib.Path(e.path); rel=p.relative_to(keep).as_posix()
+                  seen.add(rel); exp=expected.get(rel)
+                  if exp is None:
+                      mismatches.append({"path":rel,"reason":"EXTRA"}); continue
+                  st=e.stat(follow_symlinks=False)
+                  typ="file" if stat.S_ISREG(st.st_mode) else "dir" if stat.S_ISDIR(st.st_mode) else "symlink" if stat.S_ISLNK(st.st_mode) else "other"
+                  counts[typ]+=1
+                  if typ!=exp.get("type"):
+                      mismatches.append({"path":rel,"reason":"TYPE","expected":exp.get("type"),"actual":typ}); continue
+                  if typ=="file":
+                      total+=st.st_size
+                      if st.st_size!=exp.get("size"):
+                          mismatches.append({"path":rel,"reason":"SIZE","expected":exp.get("size"),"actual":st.st_size}); continue
+                      h=hfile(p)
+                      if h!=exp.get("sha256"):
+                          mismatches.append({"path":rel,"reason":"SHA256","expected":exp.get("sha256"),"actual":h})
+                  elif typ=="dir":
+                      stack.append(p)
+                  elif typ=="symlink":
+                      try:t=os.readlink(p)
+                      except Exception as ex:
+                          mismatches.append({"path":rel,"reason":"READLINK","error":repr(ex)}); continue
+                      if t!=exp.get("target"):
+                          mismatches.append({"path":rel,"reason":"SYMLINK_TARGET","expected":exp.get("target"),"actual":t})
+
+          missing=sorted(set(expected)-seen)
+          if missing:
+              mismatches.extend({"path":p,"reason":"MISSING"} for p in missing[:1000])
+
+          survivors=[]
+          rootdev=os.lstat(root).st_dev
+          for e in sorted(os.scandir(root),key=lambda x:x.name.casefold()):
+              st=e.stat(follow_symlinks=False)
+              typ="dir" if stat.S_ISDIR(st.st_mode) else "file" if stat.S_ISREG(st.st_mode) else "symlink" if stat.S_ISLNK(st.st_mode) else "other"
+              survivors.append({"name":e.name,"path":e.path,"type":typ,"mode":oct(stat.S_IMODE(st.st_mode)),"uid":st.st_uid,"gid":st.st_gid,"size":st.st_size,"same_device":st.st_dev==rootdev})
+
+          blockers=[]
+          for s in survivors:
+              if s["name"]=="PROYECTOS": continue
+              p=pathlib.Path(s["path"])
+              if p.is_dir() and not p.is_symlink():
+                  for d,dirs,files in os.walk(p,topdown=True,followlinks=False):
+                      for n in files:
+                          fp=os.path.join(d,n)
+                          try:
+                              st=os.lstat(fp)
+                              parent=os.lstat(d)
+                              writable_parent=bool(stat.S_IMODE(parent.st_mode)&0o200)
+                              if not os.access(d,os.W_OK|os.X_OK):
+                                  blockers.append({"path":fp,"parent":d,"reason":"PARENT_NOT_WRITABLE_OR_SEARCHABLE","parent_mode":oct(stat.S_IMODE(parent.st_mode))})
+                                  if len(blockers)>=200: break
+                          except Exception as ex:
+                              blockers.append({"path":fp,"reason":"LSTAT_ERROR","error":repr(ex)})
+                              if len(blockers)>=200: break
+                      if len(blockers)>=200: break
+              if len(blockers)>=200: break
+
+          status="PASS" if (not mismatches and len(seen)==len(expected) and counts=={"file":436072,"dir":62016,"symlink":4,"other":0} and total==200490852057) else "HOLD"
+          result={
+            "schema":"LOUKSNA_R4_PART4_R2_PARTIAL_PURGE_INTEGRITY/1.0",
+            "status":status,
+            "manifest_sha256":"99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+            "seen_records":len(seen),"expected_records":len(expected),
+            "counts":counts,"regular_file_bytes":total,
+            "mismatch_count":len(mismatches),"mismatch_sample":mismatches[:100],
+            "survivors":survivors,
+            "permission_blocker_sample":blockers,
+            "permission_blocker_sample_count":len(blockers),
+            "validated_at_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
+          }
+          data=json.dumps(result,ensure_ascii=False,indent=2,sort_keys=True)+"\n"
+          (out/"PARTIAL_PURGE_INTEGRITY.json").write_text(data,encoding="utf-8")
+          (out/"PARTIAL_PURGE_INTEGRITY.sha256").write_text(hashlib.sha256(data.encode()).hexdigest()+"  PARTIAL_PURGE_INTEGRITY.json\n")
+          print(data)
+          if status!="PASS": raise SystemExit(3)
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: r4-part4-r2-partial-purge-integrity
+          path: ${{ runner.temp }}/r4-part4-r2-partial-integrity-${{ github.run_id }}/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
