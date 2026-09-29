@@ -17,7 +17,7 @@ hold(){ echo "HOLD:$*" >&2; exit 1; }
 command -v gh >/dev/null 2>&1 || hold "GH_MISSING"
 gh auth status >/dev/null 2>&1 || hold "GH_AUTH_REQUIRED"
 
-for f in master_controller.py MASTER_MISSION.md R4_MASTER_CONTRACT.json UPSTREAM_PINS.json; do
+for f in master_controller.py MASTER_MISSION.md R4_MASTER_CONTRACT.json UPSTREAM_PINS.json PART4_R2_AMENDMENT.json; do
   [ -f "$SRC/$f" ] || hold "BUNDLE_FILE_MISSING:$f"
   [ ! -L "$SRC/$f" ] || hold "BUNDLE_SYMLINK_REJECTED:$f"
 done
@@ -39,6 +39,7 @@ install -d -m 0755 "$UNIT_DIR"
 install -m 0700 "$SRC/master_controller.py" "$DST/master_controller.py"
 install -m 0600 "$SRC/MASTER_MISSION.md" "$DST/MASTER_MISSION.md"
 install -m 0600 "$SRC/R4_MASTER_CONTRACT.json" "$DST/R4_MASTER_CONTRACT.json"
+install -m 0600 "$SRC/PART4_R2_AMENDMENT.json" "$DST/PART4_R2_AMENDMENT.json"
 install -m 0600 "$SRC/UPSTREAM_PINS.json" "$DST/UPSTREAM_PINS.json"
 
 python3 -m py_compile "$DST/master_controller.py"
