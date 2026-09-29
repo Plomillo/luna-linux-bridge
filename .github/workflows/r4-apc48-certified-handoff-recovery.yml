@@ -1,0 +1,187 @@
+name: "R4 APC48 v2 — recover certified handoff to CUSTOSZ"
+
+on:
+  push:
+    branches:
+      - staging/custosz-mission-mailbox-20260928
+    paths:
+      - mission-control/r4-apc48-handoff-recovery/**
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: r4-apc48-v2-certified-handoff-recovery
+  cancel-in-progress: false
+
+env:
+  SOURCE_CERT_RUN: "36519487206"
+
+jobs:
+  handoff:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout mailbox branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: staging/custosz-mission-mailbox-20260928
+          fetch-depth: 1
+          persist-credentials: true
+
+      - name: Recover certified G24 artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-apc48-v2-postinstall-g24
+          path: ${{ runner.temp }}/g24
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 36519487206
+
+      - name: Materialize exact mission and pinned adapter
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          CERT="$RUNNER_TEMP/g24/G24_POSTINSTALL_CERTIFICATE.json"
+          test -f "$CERT"
+          export CERT
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib
+
+          cert_path=pathlib.Path(os.environ["CERT"])
+          cert=json.loads(cert_path.read_text(encoding="utf-8"))
+          required={
+              "status":"PASS",
+              "certificate_scope":"HOST_RUNTIME_ACTIVATION_APC48_V2",
+              "runtime_host_activation_certified":True,
+              "g23_status":"PASS",
+              "candidate_digest_sha256":"ed3c4267f94b3c53f1fec64b331f72dc657ebcc5e2c62a9314321c67c89684b7",
+              "part":"PART_1",
+              "mode":"DIFFERENTIAL",
+              "part2_gate":"PART1_POST_VALIDATION_PASS",
+              "canonical_mutation":False,
+              "authority_transfer":False,
+          }
+          for key,value in required.items():
+              if cert.get(key)!=value:
+                  raise SystemExit(f"G24_CERTIFICATE_CHECK_FAILED:{key}")
+
+          source_run=os.environ["SOURCE_CERT_RUN"]
+          cert_digest=hashlib.sha256(cert_path.read_bytes()).hexdigest()
+          mission_dir=pathlib.Path("missions/inbox")/f"luna-r4-part1-resume-apc48-v2-{source_run}"
+          if mission_dir.exists():
+              raise SystemExit("MISSION_ALREADY_EXISTS")
+          mission_dir.mkdir(parents=True)
+          mission=mission_dir/"MISSION_ORIGINAL.md"
+
+          lines=[
+              "# MISIÓN — REANUDAR LUNA R4 DESDE CHECKPOINT CERTIFICADO",
+              "",
+              f"MISSION_ID = MIS-LUNA-R4-PART1-RESUME-APC48-V2-{source_run}",
+              "MISSION_CLASS = LUNA_R4_PART1_DIFFERENTIAL_RESUME",
+              "AUTHORITY = Louksna.md",
+              "GOVERNOR = MetaOS",
+              "WORKER = CUSTOSZ V7",
+              "RUNTIME = CUSTOSZ_RUNTIME_V1",
+              "SUPERVISOR = SYMPHYLAX R1",
+              "INGRESS = CUSTOSZ MISSION MAILBOX",
+              "FAILURE_POSTURE = FAIL_CLOSED",
+              "TRACEABILITY = REQUIRED",
+              "AUDITABILITY = REQUIRED",
+              "PROVENANCE = REQUIRED",
+              "ROLLBACK = REQUIRED",
+              "NO_SILENT_OPERATIONS = ABSOLUTE",
+              "",
+              "HOST_ACTIVATION_CERTIFICATE = G24_POSTINSTALL",
+              f"HOST_ACTIVATION_CERTIFICATE_SHA256 = {cert_digest}",
+              f"HOST_ACTIVATION_CERTIFICATION_RUN = {source_run}",
+              "RUNTIME_HOST_ACTIVATION_CERTIFIED = TRUE",
+              f"APC48_V2_CANDIDATE_DIGEST = {cert['candidate_digest_sha256']}",
+              f"EVIDENCE_BUNDLE_DIGEST = {cert['evidence_bundle_digest_sha256']}",
+              "",
+              "CURRENT_PART = PART_1",
+              "RESUME_MODE = DIFFERENTIAL",
+              f"RESUME_CHECKPOINT = {cert['checkpoint']}",
+              "PART2_GATE = PART1_POST_VALIDATION_PASS",
+              "",
+              "DO_NOT_REPEAT = PART_0;PART_1_FULL_REINSTALL;SERVER_READY_G08_G09_G23_G24",
+              "FIRST_ACTION = VERIFY_CURRENT_PART1_AGAINST_CHECKPOINT_AND_APPROVED_UI_REFERENCE",
+              "SECOND_ACTION = APPLY_ONLY_MISSING_PART1_DELTA",
+              "PART2_ENTRY = ONLY_AFTER_PART1_POST_VALIDATION_PASS",
+              "PRIVILEGED_INTERFACE = sudo -n /usr/local/sbin/louksna-apc",
+              "",
+              "MANDATORY_PRECHECKS:",
+              "- verify APC48 status through sudo -n;",
+              "- verify checkpoint identity and evidence;",
+              "- verify approved UI/KDE reference hashes;",
+              "- verify runner and SYMPHYLAX remain active;",
+              "- refuse any password prompt;",
+              "- refuse silent overwrite or full PART 1 reinstall.",
+              "",
+              "EXECUTION:",
+              "Continue only the missing delta of PART 1. Preserve existing validated work.",
+              "Produce checkpointed evidence for each mutation and post-validation.",
+              "Do not enter PART 2 unless PART1_POST_VALIDATION_PASS is demonstrated.",
+              "",
+              "TERMINAL_RULE:",
+              "Any contradiction, missing identity, expired authorization, unexpected password request, hash mismatch, ambiguous state, or unauthorized scope => HOLD.",
+          ]
+          mission.write_text("\n".join(lines)+"\n",encoding="utf-8")
+          source_sha=hashlib.sha256(mission.read_bytes()).hexdigest()
+
+          adapter_path=pathlib.Path("scripts/mission_mailbox/adapters/luna_r4_part1_resume_apc48_v2.py")
+          adapter_lines=[
+              "#!/usr/bin/env python3",
+              '"""Pinned declarative adapter for exact LUNA R4 PART1 differential resume mission."""',
+              "import json",
+              f'SOURCE_SHA256 = "{source_sha}"',
+              'MISSION_CLASS = "LUNA_R4_PART1_DIFFERENTIAL_RESUME"',
+              'SCOPE = "LUNA_R4_PART1_DIFFERENTIAL_RESUME_HANDOFF"',
+              'print(json.dumps({"status":"READY","source_sha256":SOURCE_SHA256,"mission_class":MISSION_CLASS,"scope":SCOPE},sort_keys=True))',
+          ]
+          adapter_path.write_text("\n".join(adapter_lines)+"\n",encoding="utf-8")
+          adapter_sha=hashlib.sha256(adapter_path.read_bytes()).hexdigest()
+
+          registry_path=pathlib.Path("mission-mailbox/runtime-adapters/registry.json")
+          registry=json.loads(registry_path.read_text(encoding="utf-8"))
+          adapter_id=f"LUNA_R4_PART1_RESUME_APC48_V2_{source_run}"
+          if any(x.get("adapter_id")==adapter_id for x in registry.get("adapters",[])):
+              raise SystemExit("ADAPTER_ID_COLLISION")
+          registry["adapters"].append({
+              "adapter_id":adapter_id,
+              "path":adapter_path.as_posix(),
+              "sha256":adapter_sha,
+              "backend":"CUSTOSZ_RUNTIME",
+              "source_sha256":source_sha,
+              "mission_classes":["LUNA_R4_PART1_DIFFERENTIAL_RESUME"],
+              "required_capabilities":[],
+              "provides_executor_binding":True,
+              "requires_prebound_executor":False,
+              "execution_location":"SELF_HOSTED_LUNA_AUX",
+              "scope":"LUNA_R4_PART1_DIFFERENTIAL_RESUME_HANDOFF",
+              "status":"ACTIVE_PINNED",
+          })
+          registry_path.write_text(json.dumps(registry,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+
+          print("MISSION_PATH="+mission.as_posix())
+          print("MISSION_SOURCE_SHA256="+source_sha)
+          print("CERTIFICATE_SHA256="+cert_digest)
+          print("ADAPTER_SHA256="+adapter_sha)
+          PY
+
+          python3 -m py_compile scripts/mission_mailbox/adapters/luna_r4_part1_resume_apc48_v2.py
+          python3 -B -I scripts/mission_mailbox/compile_batch.py --out "$RUNNER_TEMP/precommit-compile"
+          cat "$RUNNER_TEMP/precommit-compile/INDEX.json"
+
+      - name: Commit certified handoff
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add missions/inbox/luna-r4-part1-resume-apc48-v2-36519487206                   scripts/mission_mailbox/adapters/luna_r4_part1_resume_apc48_v2.py                   mission-mailbox/runtime-adapters/registry.json
+          git diff --cached --check
+          git commit -m "mission(R4): certified PART1 resume handoff to CUSTOSZ"
+          git push origin HEAD:staging/custosz-mission-mailbox-20260928
+          echo "HANDOFF_COMMIT=$(git rev-parse HEAD)"
