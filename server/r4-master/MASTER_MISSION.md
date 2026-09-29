@@ -49,12 +49,32 @@ the semantic container, Projects Center, architecture/version management and
 the locally governed project workspace. Preserve Louksna authority and frozen
 identities.
 
-PART_4 — PROJECTS PROTECTION AND WINDOWS RETIREMENT:
-PROYECTOS must remain intact and restorable. Two independent verified backups,
-restore proof and exact disk/EFI map are mandatory. H2 and H4 remain human
-gates. Windows/EFI/GPT/partition operations are forbidden until the specific
-destructive-scope evidence, G23 and G24 all PASS. Generic master authorization
-does not silently satisfy H2/H4.
+PART_4 — PROJECTS PROTECTION AND WINDOWS RETIREMENT — R2:
+Operational amendment PART4-R2-20260929 is authoritative for PART_4 execution
+under Louksna.md without canonical mutation or authority transfer. The certified
+PROYECTOS cryptographic freeze (manifest SHA-256
+99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e) replaces
+the former requirement for two complete pre-destruction backups and pre-delete
+restore proof. H2 and H4 remain human gates. Every destructive transition still
+requires exact-scope evidence, step-specific independent G23 and G24, rollback
+or HOLD semantics, traceability, provenance, auditability and non-regression.
+
+PART_4 R2 ORDER:
+1. Preserve the G23/G24-certified freeze of exact PROYECTOS.
+2. Prevalidate and independently certify the exact purge scope.
+3. Delete every direct child of /dev/nvme0n1p3's Windows mount except exact
+   PROYECTOS; do not touch p1/p2/p4/p5 in this purge.
+4. Post-validate PROYECTOS integrity against the certified manifest.
+5. Unmount and shrink NTFS only after geometry/filesystem prevalidation.
+6. Shrink the p3 boundary, create new Linux ext4 space, and validate it.
+7. Migrate PROYECTOS transactionally NTFS -> ext4; no source object may be
+   retired until its destination object validates.
+8. Require complete source/destination tree/hash equivalence.
+9. Retire remaining NTFS and Windows recovery/residual storage only after the
+   migration equivalence gate passes.
+10. Reassign reclaimed capacity to a validated Linux-only storage layout.
+11. Close PART_4 only after final non-regression, G23 and G24.
+PART_5 through PART_9 are unchanged by this amendment.
 
 PART_5 — LABORATORY:
 Close QEMU/KVM/libvirt/virt-manager and the authorized lab images and
