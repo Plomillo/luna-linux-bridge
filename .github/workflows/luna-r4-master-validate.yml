@@ -63,6 +63,10 @@ jobs:
           assert "PART4_H2_H4.json" in controller
           assert "PART_4_R2/STATE.json" in controller
           assert "PART4_R2_AMENDMENT.json" in runner
+          assert "PART4_R2_AUTOPILOT_ADDENDUM.json" in runner
+          assert "part4_r2_verify_tree.py" in runner
+          assert "part4_r2_storage_migrate.sh" in runner
+          assert "part4_r2_final_g24" in controller
           assert "NoNewPrivileges=yes" not in runner
           assert "ProtectSystem=full" not in runner
           assert "systemctl --user enable --now luna-r4-master-part1-part9.service" in runner
@@ -78,7 +82,7 @@ jobs:
           python3 - <<'PY'
           import hashlib, json, pathlib, os
           root=pathlib.Path("server/r4-master")
-          names=["MASTER_RUN.sh","master_controller.py","MASTER_MISSION.md","R4_MASTER_CONTRACT.json","UPSTREAM_PINS.json","PART4_R2_AMENDMENT.json"]
+          names=["MASTER_RUN.sh","master_controller.py","MASTER_MISSION.md","R4_MASTER_CONTRACT.json","UPSTREAM_PINS.json","PART4_R2_AMENDMENT.json","PART4_R2_AUTOPILOT_ADDENDUM.json","part4_r2_verify_tree.py","part4_r2_storage_migrate.sh"]
           rows=[]
           for name in sorted(names):
               data=(root/name).read_bytes()
