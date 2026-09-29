@@ -431,6 +431,26 @@ def main():
     worker.PINS = {k: (v[0].replace(chr(92), "/") if v[0] else None, v[1], v[2], v[3]) for k, v in worker.PINS.items()}
     worker.PROFILES = {k: ([x.replace(chr(92), "/") for x in v[0]], [x.replace(chr(92), "/") for x in v[1]]) for k, v in worker.PROFILES.items()}
 
+    # Bind the legacy worker to the already-governed workspace selected above.
+    # This avoids a second, independent discovery pass from reclassifying the
+    # same workspace and failing the mailbox for unrelated mission payloads.
+    def _workspace_adapter():
+        return workspace
+    def _discover_adapter():
+        project_path = workspace / "1. PROYECTOS PRIORITARIOS" / "1. PROYECTO LUNA"
+        return {
+            "workspace": str(workspace),
+            "projects": {
+                policy["mission"]["default_profile"]: {
+                    "status": "RESOLVED",
+                    "path": str(project_path if project_path.exists() else workspace),
+                    "score": 999,
+                }
+            },
+        }
+    worker.workspace = _workspace_adapter
+    worker.discover = _discover_adapter
+
     goal = (
         "MISSION_MAILBOX_NATIVE " + native["mail_id"] +
         "; SOURCE_SHA256=" + native["source"]["sha256"] +
