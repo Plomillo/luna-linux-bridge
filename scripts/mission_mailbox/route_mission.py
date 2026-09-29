@@ -455,16 +455,29 @@ def main():
     # against the policy authority path. Bind the legacy worker's source probe
     # to that verified authority instead of asking it to rediscover authority
     # through the project workspace projection.
-    if hasattr(worker, "source"):
-        def _source_adapter(*args, **kwargs):
-            return {
-                "path": str(authority),
-                "sha256": identities["AUTHORITY"],
-                "integrity": "PASS",
-                "authority": policy["authority"],
-                "binding": "MAILBOX_VERIFIED_REPOSITORY_AUTHORITY",
-            }
-        worker.source = _source_adapter
+    def _sources_adapter(large=False):
+        observed = sha(authority)
+        st = authority.stat()
+        expected_rel, expected_bytes, expected_sha, expected_role = worker.PINS["LOUKSNA"]
+        integrity = "PASS" if observed == expected_sha and st.st_size == expected_bytes else "DRIFT"
+        return {
+            "observed_at": utc(),
+            "sources": {
+                "LOUKSNA": {
+                    "relative": expected_rel,
+                    "bytes": expected_bytes,
+                    "sha256": expected_sha,
+                    "role": expected_role,
+                    "path": str(authority),
+                    "exists": True,
+                    "observed_bytes": st.st_size,
+                    "observed_sha256": observed,
+                    "integrity": integrity,
+                    "binding": "MAILBOX_VERIFIED_REPOSITORY_AUTHORITY",
+                }
+            },
+        }
+    worker.sources = _sources_adapter
 
     goal = (
         "MISSION_MAILBOX_NATIVE " + native["mail_id"] +
