@@ -210,6 +210,6 @@ jobs:
           systemctl --user restart luna-r4-master-part1-part9.service
           test "$(systemctl --user is-active luna-r4-master-part1-part9.service)" = active
 
-          gh workflow run r4-part4-r2-purge-windows.yml --repo Plomillo/luna-linux-bridge --ref staging/luna-r4-master-part1-part9-20260929
           echo "AUTOPILOT=ACTIVE"
-          echo "CHAIN=PART4_R2->MASTER_PART4_G23_G24->PART5->PART6->PART7->PART8->PART9"
+          echo "ROUTING=DEDICATED_STAGE_PUSH_HANDOFFS"
+          echo "CHAIN=PART4_R2->FINAL_MERGE->MASTER_PART4_G23_G24->PART5->PART6->PART7->PART8->PART9"
