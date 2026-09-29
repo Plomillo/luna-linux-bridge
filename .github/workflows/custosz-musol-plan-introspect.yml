@@ -1,0 +1,42 @@
+name: "CUSTOSZ MUSOL — planner interface introspection"
+on:
+  push:
+    branches: [staging/custosz-mission-mailbox-20260928]
+    paths:
+      - mission-control/custosz-musol-plan/**
+      - .github/workflows/custosz-musol-plan-introspect.yml
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            artifacts/custosz-v7
+          sparse-checkout-cone-mode: false
+      - name: Inspect CUSTOSZ planning interfaces only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import zipfile,re,pathlib
+          p=pathlib.Path("artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz")
+          pat=re.compile(r"def (mission_[A-Za-z0-9_]+|plan[A-Za-z0-9_]*|.*proposal.*|.*recommend.*)|class .*Mission|argparse|add_argument",re.I)
+          with zipfile.ZipFile(p) as z:
+              for n in z.namelist():
+                  if not n.endswith(".py"): continue
+                  s=z.read(n).decode("utf-8","replace").splitlines()
+                  hits=[i for i,l in enumerate(s) if pat.search(l)]
+                  if not hits: continue
+                  print("FILE",n)
+                  shown=set()
+                  for i in hits:
+                      for j in range(max(0,i-4),min(len(s),i+18)):
+                          if j not in shown:
+                              print(f"{j+1:04d}: {s[j]}")
+                              shown.add(j)
+          PY
