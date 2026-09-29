@@ -172,7 +172,7 @@ def part1(mid):
     return evidence_base("PART_1",mid,checks,"PASS" if not blockers else "HOLD",blockers,details)
 
 def pkg_installed(pkg):
-    p=run(["dpkg-query","-W","-f=\${Status}",pkg],timeout=15)
+    p=run(["dpkg-query","-W","-f=${Status}",pkg],timeout=15)
     return p["returncode"]==0 and "install ok installed" in p["stdout"]
 
 def part2(mid):
