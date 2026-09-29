@@ -146,8 +146,18 @@ def main() -> int:
     b.add_argument("--g23", required=True)
     b.add_argument("--authority", required=True)
     b.add_argument("--out", required=True)
+    c = sub.add_parser("authority")
+    c.add_argument("--digest", required=True)
+    c.add_argument("--audience", required=True)
+    c.add_argument("--candidate-head-sha", required=True)
+    c.add_argument("--trust-root-sha", required=True)
+    c.add_argument("--out", required=True)
     args = p.parse_args()
-    return g23(args) if args.cmd == "g23" else g24(args)
+    if args.cmd == "g23":
+        return g23(args)
+    if args.cmd == "authority":
+        return authority(args)
+    return g24(args)
 
 if __name__ == "__main__":
     raise SystemExit(main())
