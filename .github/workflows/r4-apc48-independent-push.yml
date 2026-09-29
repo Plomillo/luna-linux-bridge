@@ -24,7 +24,7 @@ jobs:
           ref: ${{ github.sha }}
           persist-credentials: false
           path: trust
-          sparse-checkout: scripts/assurance/apc48_trust_root.py
+          sparse-checkout: |\n            scripts/assurance/apc48_trust_root.py\n            scripts/assurance/apc48_g23_v2.py
           sparse-checkout-cone-mode: false
 
       - name: Checkout fixed candidate as data only
@@ -48,7 +48,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           mkdir -p "$RUNNER_TEMP/g23"
-          python3 -B -I "$GITHUB_WORKSPACE/trust/scripts/assurance/apc48_trust_root.py" g23 \
+          python3 -B -I "$GITHUB_WORKSPACE/trust/scripts/assurance/apc48_g23_v2.py" \
             --candidate "$GITHUB_WORKSPACE/candidate" \
             --out "$RUNNER_TEMP/g23/G23.json"
           cat "$RUNNER_TEMP/g23/G23.json" >> "$GITHUB_STEP_SUMMARY"
@@ -72,7 +72,7 @@ jobs:
           ref: ${{ github.sha }}
           persist-credentials: false
           path: trust
-          sparse-checkout: scripts/assurance/apc48_trust_root.py
+          sparse-checkout: |\n            scripts/assurance/apc48_trust_root.py\n            scripts/assurance/apc48_g23_v2.py
           sparse-checkout-cone-mode: false
 
       - name: Download G23
