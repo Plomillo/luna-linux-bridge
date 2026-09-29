@@ -1,0 +1,91 @@
+name: "R4 APC48 v2 — candidate validation"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-apc48-v2-20260929
+    paths:
+      - server/apc48/**
+      - .github/workflows/r4-apc48-v2-validation.yml
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Syntax and static tests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          bash -n server/apc48/activate-48h.sh
+          bash -n server/apc48/louksna_apc_revoke.sh
+          python3 -m py_compile server/apc48/louksna_apc.py server/apc48/test_apc.py
+          python3 server/apc48/test_apc.py
+
+      - name: Validate sudoers grammar
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          T="$RUNNER_TEMP/apc48-v2.sudoers"
+          printf '%s\n' 'diegoignacionorambuenamiranda ALL=(root) NOTAFTER=20991231235959Z NOPASSWD: /usr/local/sbin/louksna-apc' > "$T"
+          chmod 0440 "$T"
+          sudo visudo -cf "$T"
+
+      - name: Freeze v2 candidate digest
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/apc48-v2"
+          mkdir -p "$OUT"
+          python3 - <<'PY'
+import hashlib,json,pathlib,os,datetime
+files=sorted([
+ "server/apc48/activate-48h.sh",
+ "server/apc48/louksna_apc.py",
+ "server/apc48/louksna_apc_revoke.sh",
+ "server/apc48/test_apc.py",
+])
+rows=[]
+for rel in files:
+    data=pathlib.Path(rel).read_bytes()
+    rows.append({"path":rel,"bytes":len(data),"sha256":hashlib.sha256(data).hexdigest()})
+material="".join(f"{r['path']}\0{r['sha256']}\0{r['bytes']}\n" for r in rows).encode()
+digest=hashlib.sha256(material).hexdigest()
+out=pathlib.Path(os.environ["RUNNER_TEMP"])/"apc48-v2"
+(out/"CANDIDATE_DIGEST.txt").write_text(digest+"\n")
+(out/"VALIDATION.json").write_text(json.dumps({
+ "schema":"LOUKSNA_R4_APC48_V2_CANDIDATE_VALIDATION/1.0",
+ "status":"PASS",
+ "candidate_digest_sha256":digest,
+ "candidate_head_sha":os.environ["GITHUB_SHA"],
+ "files":rows,
+ "regressions_closed":[
+   "AWAKE_GUARD_WHY_ARGUMENT_SPLIT",
+   "FAIL_EXIT_BYPASSED_ERR_TRAP",
+   "RESIDUAL_REVOKE_TIMER",
+   "INCOMPLETE_BOOTSTRAP_RECOVERY"
+ ],
+ "runtime_host_activation_certified":False,
+ "post_installation_certification_required":True,
+ "validated_at_utc":datetime.datetime.now(datetime.timezone.utc).isoformat()
+},indent=2,sort_keys=True)+"\n")
+print("CANDIDATE_DIGEST_SHA256="+digest)
+PY
+          cat "$OUT/VALIDATION.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Preserve validation evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-apc48-v2-validation
+          path: ${{ runner.temp }}/apc48-v2
+          if-no-files-found: error
+          retention-days: 90
