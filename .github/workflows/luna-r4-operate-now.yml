@@ -108,13 +108,10 @@ jobs:
 
           test "$(systemctl --user is-active luna-r4-master-part1-part9.service)" = "active"
 
-      - name: Record dispatch to workers
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Record dispatch locally
         shell: bash
         run: |
           set -Eeuo pipefail
-          STATE="$HOME/.local/state/louksna/r4-master-part1-part9/MASTER_STATUS.json"
-          BODY="LUNA_R4_WORKERS_DISPATCHED%0A%0Acheckpoint=20260926T034746Z-38579%0Amode=DIFFERENTIAL%0Asequence=PART_1->PART_2->PART_3->PART_4->PART_5->PART_6->PART_7->PART_8->PART_9%0Aserver_service=luna-r4-master-part1-part9.service%0Apolicy=WORK_UNTIL_PERMISSION_GATE%0Anotify_user_only=NEEDS_PRIVILEGE_OR_NEEDS_HUMAN_AUTHORIZATION"
-          gh api --method POST repos/Plomillo/luna-linux-bridge/issues/29/comments -f body="$BODY" >/dev/null
           echo "WORKERS_DISPATCHED=PASS"
+          echo "POLICY=WORK_UNTIL_PERMISSION_GATE"
+          echo "NOTIFY_USER_ONLY=NEEDS_PRIVILEGE_OR_NEEDS_HUMAN_AUTHORIZATION"
