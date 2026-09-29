@@ -278,16 +278,97 @@ def find_any(patterns):
 
 def part3(mid):
     checks={}
-    details={}
+    details={"priority_order":["PROYECTOS","SEMANTIC_CONTAINER"],"projects_center_alias":"PROYECTOS"}
     checks["runner"]=run(["systemctl","is-active","actions.runner.Plomillo-luna-linux-bridge.luna-linux.service"])["stdout"].strip()=="active"
     checks["symphylax"]=run(["systemctl","--user","is-active","symphylax-r1.service"])["stdout"].strip()=="active"
     c=locate_custosz(); a=locate_authority()
     checks.update({"custosz":c.is_file(),"runtime":RUNTIME_PATH.is_file(),"metaos":METAOS_PATH.is_file(),"authority":a.is_file(),"project_workspace":PROJECT_ROOT.is_dir()})
     details["identities"]={k:sha(v) for k,v in {"custosz":c,"runtime":RUNTIME_PATH,"metaos":METAOS_PATH,"authority":a}.items() if v.is_file()}
-    projects=find_any(["*Projects*Center*","*projects*center*","*PROYECTOS*CENTER*"])
-    semantic=find_any(["*SEMANTIC*CONTAINER*","*semantic*container*","SOURCE_REGISTRY.json"])
-    details["projects_center_candidate"]=projects; details["semantic_container_candidate"]=semantic
-    checks["projects_center"]=bool(projects); checks["semantic_container"]=bool(semantic)
+
+    # P1: projects_center is a logical gate identifier. The real architectural
+    # entity is PROYECTOS / Proyectos. Prefer a live operational binding and
+    # keep historical/projection candidates as evidence only.
+    live_project_paths=[
+        HOME/"Proyectos",
+        HOME/"Luna R4"/"Proyectos",
+        pathlib.Path("/media")/HOME.name/"Windows"/"PROYECTOS",
+    ]
+    project_candidates=[]
+    project_operational=None
+    for p in live_project_paths:
+        try:
+            exists=p.exists()
+            islink=p.is_symlink()
+            rec={"path":str(p),"exists":exists,"is_symlink":islink}
+            if islink:
+                try:
+                    resolved=p.resolve(strict=True)
+                    rec["resolved"]=str(resolved)
+                    rec["resolved_is_dir"]=resolved.is_dir()
+                    if resolved.is_dir() and resolved.name.casefold()=="proyectos":
+                        project_operational=str(p)
+                except Exception as e:
+                    rec["resolve_error"]=type(e).__name__+":"+str(e)
+            elif p.is_dir() and p.name.casefold()=="proyectos":
+                rec["resolved"]=str(p.resolve())
+                rec["resolved_is_dir"]=True
+                project_operational=project_operational or str(p)
+            if exists or islink:
+                project_candidates.append(rec)
+        except OSError as e:
+            project_candidates.append({"path":str(p),"error":type(e).__name__+":"+str(e)})
+
+    project_search_bases=[
+        PROJECT_ROOT,
+        HOME/".local/share",
+        HOME/".local/lib/louksna",
+        HOME/"SYMPHYLAX_LAB",
+        HOME/"MISION_PUAC_20260926",
+    ]
+    project_patterns=["PROYECTOS","Proyectos","1. PROYECTOS PRIORITARIOS","*PROYECTOS PRIORITARIOS*"]
+    historical_project=None
+    for base in project_search_bases:
+        if historical_project or not base.exists(): continue
+        for pat in project_patterns:
+            try:
+                historical_project=str(next(base.rglob(pat))); break
+            except (StopIteration,OSError):
+                pass
+
+    details["projects_center_live_candidates"]=project_candidates
+    details["projects_center_candidate"]=project_operational or historical_project
+    details["projects_center_historical_candidate"]=historical_project
+    details["projects_center_resolution"]="ALIAS_PROJECTS_CENTER_TO_PROYECTOS"
+    checks["projects_center"]=bool(project_operational)
+
+    # P2: widen semantic discovery across governed historical/remediation
+    # surfaces and Spanish/English derivations. Existence is only discovery;
+    # PART_3 still preserves fail-closed certification downstream.
+    semantic_bases=[
+        PROJECT_ROOT,
+        HOME/".local/share",
+        HOME/".local/lib/louksna",
+        HOME/"SYMPHYLAX_LAB",
+        HOME/"MISION_PUAC_20260926",
+    ]
+    semantic_patterns=[
+        "*SEMANTIC*CONTAINER*","*semantic*container*",
+        "*CONTENEDOR*SEMANTIC*","*contenedor*semantic*",
+        "*CONTENIDO*SEMANTIC*","*contenido*semantic*",
+        "*SEMANTIC*CONTENT*","*semantic*content*",
+        "SOURCE_REGISTRY.json","semantic_container.json","semantic_continuity.py",
+    ]
+    semantic=None
+    for base in semantic_bases:
+        if semantic or not base.exists(): continue
+        for pat in semantic_patterns:
+            try:
+                semantic=str(next(base.rglob(pat))); break
+            except (StopIteration,OSError):
+                pass
+    details["semantic_container_candidate"]=semantic
+    checks["semantic_container"]=bool(semantic)
+
     blockers=[k for k,v in checks.items() if not v]
     return evidence_base("PART_3",mid,checks,"PASS" if not blockers else "HOLD",blockers,details)
 
