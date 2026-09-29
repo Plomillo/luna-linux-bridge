@@ -392,6 +392,8 @@ def part4(mid):
         "ntfs_retired": r2.get("ntfs_retired") is True,
         "final_linux_layout": r2.get("final_linux_layout") is True,
         "part4_r2_final_g24": r2.get("part4_r2_final_g24") is True,
+        "final_merge_g24": r2.get("final_merge_g24") is True,
+        "verified_root_on_consolidated_linux": r2.get("verified_root_on_consolidated_linux") is True,
     }
     blockers=[k for k,v in checks.items() if not v]
     details={
@@ -406,6 +408,8 @@ def part4(mid):
         "part5_to_part9_unchanged":True,
         "autopilot_addendum_reference":"server/r4-master/PART4_R2_AUTOPILOT_ADDENDUM.json",
         "autopilot_requires_final_g24":True,
+        "final_merge_addendum_reference":"server/r4-master/PART4_R2_FINAL_MERGE_ADDENDUM.json",
+        "part4_close_requires_final_merge_g24":True,
     }
     ev=evidence_base("PART_4",mid,checks,"PASS" if not blockers else "HOLD",blockers,details)
     ev["human_gates"]={"H2":checks["H2"],"H4":checks["H4"]}
