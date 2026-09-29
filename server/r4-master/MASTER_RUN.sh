@@ -54,16 +54,13 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=$OWNER
 WorkingDirectory=$DST
 Environment=HOME=$HOME
 Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$HOME/.local/bin
 ExecStart=/usr/bin/python3 -B -I $DST/master_controller.py --loop --sleep 300
 Restart=on-failure
 RestartSec=15
-NoNewPrivileges=yes
 PrivateTmp=yes
-ProtectSystem=full
 ProtectHome=false
 LockPersonality=yes
 
