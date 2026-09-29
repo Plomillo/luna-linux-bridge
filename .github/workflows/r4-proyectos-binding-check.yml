@@ -1,0 +1,36 @@
+name: "R4 PART3 — exact Proyectos binding check"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-proyectos-binding/**
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 3
+    steps:
+      - name: Inspect exact Proyectos bindings read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          for p in "$HOME/Proyectos" "$HOME/PROYECTOS"; do
+            echo "=== $p ==="
+            if test -e "$p"; then
+              stat -c 'EXISTS type=%F bytes=%s mode=%a path=%n' "$p"
+              find "$p" -maxdepth 2 -mindepth 1 -printf '%y\t%p\t%s\n' 2>/dev/null | head -n 150
+            else
+              echo MISSING
+            fi
+          done
+
+          echo "=== PART1 DISPATCHER proyectos ==="
+          grep -n -i -C 5 'proyectos' "$HOME/.local/share/louksna-r4/part1/dispatcher.py" || true
+
+          echo "=== R4_AREAS_V7 proyectos ==="
+          grep -n -i -C 8 'proyectos' "$HOME/LOUKSNA_MAESTRO_20260925/MISSION3_OPERATIVE/R4_UI_DOLPHIN_V7/R4_AREAS_V7.py" || true
