@@ -1,0 +1,5 @@
+{
+  "scope": "READ_ONLY",
+  "purpose": "Post-sleep journal/status probe",
+  "requested_at_local": "2026-09-29T09:52:00-03:00"
+}
