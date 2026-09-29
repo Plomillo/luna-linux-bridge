@@ -39,6 +39,10 @@ def find_workspace():
         q = Path(override).expanduser().resolve()
         if not q.is_dir():
             raise RuntimeError("WORKSPACE_OVERRIDE_NOT_DIRECTORY:" + str(q))
+        marker = (q / "1. PROYECTOS PRIORITARIOS").is_dir()
+        secondary = (q / "4. PENDIENTES").exists() or (q / "2. CORPUS").exists()
+        if not (marker and secondary):
+            raise RuntimeError("WORKSPACE_OVERRIDE_INVALID_SHAPE:" + str(q))
         return q
 
     candidates = []
