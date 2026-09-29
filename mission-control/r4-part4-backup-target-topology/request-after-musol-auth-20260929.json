@@ -1,0 +1,5 @@
+{
+  "schema": "LOUKSNA_R4_BACKUP_TARGET_TOPOLOGY_REQUEST/1.0",
+  "purpose": "Re-scan storage targets immediately after explicit MUSOL authorization",
+  "mode": "READ_ONLY"
+}
