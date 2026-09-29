@@ -1,0 +1,81 @@
+{
+  "authority_context": {
+    "authority": "Louksna.md",
+    "authority_transfer": false,
+    "canonical_mutation_authorized": false
+  },
+  "declared_mission_id": null,
+  "execution_contract": {
+    "default_profile": "LUNA_PROJECT",
+    "fail_closed": true,
+    "governor": "MetaOS",
+    "no_silent_executor_substitution": true,
+    "protected_scopes": [
+      "WINDOWS",
+      "EFI",
+      "GPT",
+      "PARTITIONS",
+      "PROYECTOS",
+      "F3-DISK",
+      "CANONICAL_ARCHITECTURE",
+      "FROZEN_ARTIFACTS"
+    ],
+    "runtime": "CUSTOSZ_RUNTIME_V1",
+    "supervisor": "SYMPHYLAX_R1",
+    "validation_reserve_seconds": 240,
+    "wallclock_seconds": 1200,
+    "worker": "CUSTOSZ_V7",
+    "workflow_success_is_not_mission_success": true
+  },
+  "mail_id": "MAIL-67B9B37F617918BDDAD9",
+  "mailbox_version": "0.1.0",
+  "mission_payload": {
+    "byte_exact_preservation": true,
+    "directives_observed": {
+      "AUTHORITY": [
+        {
+          "line": 4,
+          "value": "Louksna.md"
+        }
+      ],
+      "GOAL": [
+        {
+          "line": 3,
+          "value": "Verify that the mailbox registry deduplicates already-processed missions and routes one fresh synthetic mission without touching protected scopes."
+        }
+      ],
+      "MISSION_CLASS": [
+        {
+          "line": 1,
+          "value": "MAILBOX_SELFTEST"
+        }
+      ],
+      "MODE": [
+        {
+          "line": 2,
+          "value": "READ_ONLY"
+        }
+      ],
+      "NO_PROTECTED_SCOPE_MUTATION": [
+        {
+          "line": 5,
+          "value": "TRUE"
+        }
+      ]
+    },
+    "required_capabilities_explicit": [],
+    "routing_hints": {
+      "authoritative": false,
+      "values": []
+    },
+    "source_utf8_b64": "TUlTU0lPTl9DTEFTUyA9IE1BSUxCT1hfU0VMRlRFU1QKTU9ERSA9IFJFQURfT05MWQpHT0FMID0gVmVyaWZ5IHRoYXQgdGhlIG1haWxib3ggcmVnaXN0cnkgZGVkdXBsaWNhdGVzIGFscmVhZHktcHJvY2Vzc2VkIG1pc3Npb25zIGFuZCByb3V0ZXMgb25lIGZyZXNoIHN5bnRoZXRpYyBtaXNzaW9uIHdpdGhvdXQgdG91Y2hpbmcgcHJvdGVjdGVkIHNjb3Blcy4KQVVUSE9SSVRZID0gTG91a3NuYS5tZApOT19QUk9URUNURURfU0NPUEVfTVVUQVRJT04gPSBUUlVFCg=="
+  },
+  "schema_version": "1.0",
+  "source": {
+    "bytes": 262,
+    "encoding": "utf-8",
+    "path": "missions/inbox/MAILBOX_SELFTEST_20260929/MISSION_ORIGINAL.md",
+    "sha256": "67b9b37f617918bddad9bb6d8d0258542bc25f71ed8786bcee7d043b4d0a169a",
+    "source_commit": "139e4ea83c3d914054e948e4666349b53162799f"
+  }
+}
