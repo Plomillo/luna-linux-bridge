@@ -1,0 +1,68 @@
+name: "R4 PART1 — current material state audit"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-ui-reference-20260929
+    paths:
+      - .github/workflows/r4-part1-current-state-audit.yml
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 3
+    steps:
+      - name: Verify current PART1 material state read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/r4-part1-current-state"
+          mkdir -p "$OUT"
+          HOME_REAL="/home/diegoignacionorambuenamiranda"
+          CFG="$HOME_REAL/.config/plasma-org.kde.plasma.desktop-appletsrc"
+          APPS="$HOME_REAL/.local/share/applications"
+          test -f "$CFG"
+
+          export OUT HOME_REAL CFG APPS
+          python3 - <<'PY'
+          import os, pathlib, json, hashlib, datetime
+          cfg=pathlib.Path(os.environ["CFG"])
+          apps=pathlib.Path(os.environ["APPS"])
+          text=cfg.read_text(encoding="utf-8",errors="replace")
+          names=["inicio","estudio","devocional","juegos","ingenieria","laboratorio","proyectos","sistema"]
+          rec={}
+          for n in names:
+              p=apps/f"luna-r4-part1-{n}.desktop"
+              data=p.read_bytes() if p.is_file() else None
+              rec[n]={
+                  "path":str(p),
+                  "exists":p.is_file(),
+                  "bytes":len(data) if data is not None else None,
+                  "sha256":hashlib.sha256(data).hexdigest() if data is not None else None,
+                  "url_present_in_plasma_config":f"luna-r4-part1-{n}.desktop" in text,
+              }
+          result={
+              "schema":"LUNA_R4_PART1_CURRENT_MATERIAL_AUDIT/1.0",
+              "audited_at_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),
+              "status":"PASS" if all(x["exists"] for x in rec.values()) else "HOLD",
+              "plasma_config_sha256":hashlib.sha256(cfg.read_bytes()).hexdigest(),
+              "launchers":rec,
+              "launcher_exists_count":sum(x["exists"] for x in rec.values()),
+              "launcher_url_in_plasma_config_count":sum(x["url_present_in_plasma_config"] for x in rec.values()),
+          }
+          out=pathlib.Path(os.environ["OUT"])
+          (out/"PART1_CURRENT_MATERIAL_AUDIT.json").write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+          print(json.dumps(result,ensure_ascii=False,indent=2))
+          if result["status"]!="PASS":
+              raise SystemExit(42)
+          PY
+      - name: Preserve evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part1-current-material-audit
+          path: ${{ runner.temp }}/r4-part1-current-state
+          if-no-files-found: error
