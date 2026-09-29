@@ -9,7 +9,7 @@ on:
       - mission-control/r4-part4-r2-purge/**
 
 permissions:
-  contents: read
+  contents: write
   actions: write
   id-token: write
 
@@ -644,5 +644,10 @@ jobs:
           s["updated_at_utc"]=time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
           t=sp+".tmp"; json.dump(s,open(t,"w"),indent=2,sort_keys=True); os.replace(t,sp)
           PY
-          gh workflow run r4-part4-r2-storage-migration.yml --repo Plomillo/luna-linux-bridge --ref staging/luna-r4-master-part1-part9-20260929
-          echo "HANDOFF=STORAGE_MIGRATION_DISPATCHED"
+          TRIGGER="mission-control/r4-part4-r2-storage-migration/HANDOFF-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.json"
+          BODY="$(printf '{"schema":"LOUKSNA_R4_PART4_R2_STAGE_HANDOFF/1.0","from":"POST_PURGE_G24","to":"STORAGE_MIGRATION","source_run":%s}' "$GITHUB_RUN_ID" | base64 -w0)"
+          gh api --method PUT "repos/Plomillo/luna-linux-bridge/contents/$TRIGGER" \
+            -f message="handoff(PART4-R2): post-purge G24 to storage migration" \
+            -f content="$BODY" \
+            -f branch="staging/luna-r4-master-part1-part9-20260929"
+          echo "HANDOFF=STORAGE_MIGRATION_PUSH_TRIGGERED"
