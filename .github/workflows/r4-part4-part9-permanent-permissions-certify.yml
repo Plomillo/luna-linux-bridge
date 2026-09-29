@@ -1,0 +1,222 @@
+name: "R4 PART4-PART9 permanent permissions — preinstall certify"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-part4-part9-permanent-permissions-20260929
+    paths:
+      - server/r4-part4-part9-permanent-permissions/**
+      - .github/workflows/r4-part4-part9-permanent-permissions-certify.yml
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Static syntax and bounded-policy validation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          SCRIPT="server/r4-part4-part9-permanent-permissions/ACTIVATE_PERMANENT_PERMISSIONS.sh"
+          TEST="server/r4-part4-part9-permanent-permissions/test_candidate.py"
+          bash -n "$SCRIPT"
+          python3 -m py_compile "$TEST"
+          python3 "$TEST"
+
+          T1="$RUNNER_TEMP/apc-permanent.sudoers"
+          printf '%s\n' 'diegoignacionorambuenamiranda ALL=(root) NOTAFTER=20991231235959Z NOPASSWD: /usr/local/sbin/louksna-apc' > "$T1"
+          chmod 0440 "$T1"
+          sudo visudo -cf "$T1"
+
+          T2="$RUNNER_TEMP/virt-services.sudoers"
+          cat > "$T2" <<'EOF'
+          Cmnd_Alias LOUKSNA_R4_VIRT_SERVICES = /usr/bin/systemctl start libvirtd.service, /usr/bin/systemctl stop libvirtd.service, /usr/bin/systemctl restart libvirtd.service, /usr/bin/systemctl enable libvirtd.service, /usr/bin/systemctl disable libvirtd.service, /usr/bin/systemctl start libvirtd.socket, /usr/bin/systemctl stop libvirtd.socket, /usr/bin/systemctl restart libvirtd.socket, /usr/bin/systemctl enable libvirtd.socket, /usr/bin/systemctl disable libvirtd.socket, /usr/bin/systemctl start virtlogd.service, /usr/bin/systemctl stop virtlogd.service, /usr/bin/systemctl restart virtlogd.service, /usr/bin/systemctl start virtlockd.service, /usr/bin/systemctl stop virtlockd.service, /usr/bin/systemctl restart virtlockd.service, /usr/bin/systemctl start waydroid-container.service, /usr/bin/systemctl stop waydroid-container.service, /usr/bin/systemctl restart waydroid-container.service, /usr/bin/systemctl daemon-reload
+          Cmnd_Alias LOUKSNA_R4_KERNEL_MODULES = /usr/sbin/modprobe kvm, /usr/sbin/modprobe kvm_amd, /usr/sbin/modprobe binder_linux
+          diegoignacionorambuenamiranda ALL=(root) NOPASSWD: LOUKSNA_R4_VIRT_SERVICES, LOUKSNA_R4_KERNEL_MODULES
+          EOF
+          sed -i 's/^          //' "$T2"
+          chmod 0440 "$T2"
+          sudo visudo -cf "$T2"
+
+      - name: Freeze candidate digest
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/perm-candidate"
+          mkdir -p "$OUT/source"
+          cp server/r4-part4-part9-permanent-permissions/ACTIVATE_PERMANENT_PERMISSIONS.sh "$OUT/source/"
+          cp server/r4-part4-part9-permanent-permissions/test_candidate.py "$OUT/source/"
+          export OUT
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,datetime as dt
+          out=pathlib.Path(os.environ["OUT"])
+          files=[]
+          for p in sorted((out/"source").iterdir()):
+              b=p.read_bytes()
+              files.append({"path":p.name,"bytes":len(b),"sha256":hashlib.sha256(b).hexdigest()})
+          material="".join(f"{x['path']}\0{x['sha256']}\0{x['bytes']}\n" for x in files).encode()
+          digest=hashlib.sha256(material).hexdigest()
+          obj={
+            "schema":"LOUKSNA_R4_PART4_PART9_PERMISSIONS_CANDIDATE_VALIDATION/1.0",
+            "status":"PASS",
+            "scope":"PREINSTALL_STATIC_CANDIDATE",
+            "source_commit":os.environ["GITHUB_SHA"],
+            "candidate_digest_sha256":digest,
+            "files":files,
+            "security":{
+              "sudo_all":False,
+              "arbitrary_root_shell":False,
+              "apc_helper_mutation":False,
+              "automatic_apc_expiry_removed":True,
+              "manual_apc_revoke_preserved":True,
+              "privilege_scope":"BOUND_TO_APC_PLUS_EXACT_SERVICE_MODULE_ALLOWLIST"
+            },
+            "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          (out/"VALIDATION.json").write_text(json.dumps(obj,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(obj,indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-part9-permissions-candidate
+          path: ${{ runner.temp }}/perm-candidate
+          if-no-files-found: error
+          retention-days: 90
+
+  g23:
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-part9-permissions-candidate
+          path: ${{ runner.temp }}/candidate
+
+      - name: Independent fresh-reader validation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export CAND="$RUNNER_TEMP/candidate"
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib
+          root=pathlib.Path(os.environ["CAND"])
+          v=json.loads((root/"VALIDATION.json").read_text())
+          script=(root/"source/ACTIVATE_PERMANENT_PERMISSIONS.sh").read_text()
+          files=[]
+          for p in sorted((root/"source").iterdir()):
+              b=p.read_bytes()
+              files.append({"path":p.name,"bytes":len(b),"sha256":hashlib.sha256(b).hexdigest()})
+          material="".join(f"{x['path']}\0{x['sha256']}\0{x['bytes']}\n" for x in files).encode()
+          digest=hashlib.sha256(material).hexdigest()
+          checks={
+            "producer_pass":v.get("status")=="PASS",
+            "digest_match":digest==v.get("candidate_digest_sha256"),
+            "no_sudo_all":"NOPASSWD: ALL" not in script,
+            "no_arbitrary_shell":"curl | sh" not in script and "wget | sh" not in script,
+            "helper_hash_bound":'e686c6e89026ec872cdccbc664601d31159aebabf07c203a4432ed77ad137ce6' in script,
+            "helper_not_replaced":'install -o root -g root -m 0755 "$APC"' not in script,
+            "manual_revoke_preserved":"/usr/local/sbin/louksna-apc" in script and "louksna-r4-apc-revoke.service" not in script,
+            "permanent_expiry_explicit":"2099-12-31T23:59:59Z" in script,
+            "kvm_libvirt":"kvm,libvirt" in script,
+            "waydroid_allowlisted":"waydroid-container.service" in script,
+            "proyectos_rw_revalidated":"PROYECTOS_NOT_RW" in script,
+          }
+          passed=all(checks.values())
+          obj={
+            "schema":"LOUKSNA_R4_PART4_PART9_PERMISSIONS_G23/1.0",
+            "status":"PASS" if passed else "HOLD",
+            "candidate_digest_sha256":digest,
+            "checks":checks,
+            "independence":{
+              "reader":"GITHUB_HOSTED_UBUNTU_24_04",
+              "candidate_execution":False,
+              "repair_permitted":False,
+              "candidate_mutation_permitted":False
+            },
+            "g24_allowed":passed
+          }
+          out=pathlib.Path(os.environ["RUNNER_TEMP"])/"g23/G23.json"
+          out.write_text(json.dumps(obj,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(obj,indent=2,sort_keys=True))
+          if not passed: raise SystemExit(2)
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-part9-permissions-g23
+          path: ${{ runner.temp }}/g23
+          if-no-files-found: error
+          retention-days: 90
+
+  g24:
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-part9-permissions-g23
+          path: ${{ runner.temp }}/g23
+
+      - name: Digest-bound G24 preinstall certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          DIGEST="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["candidate_digest_sha256"])' "$RUNNER_TEMP/g23/G23.json")"
+          AUD="louksna-r4-part4-part9-permissions-g24:$DIGEST"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export DIGEST AUD TOKEN
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib
+          g23=json.loads((pathlib.Path(os.environ["RUNNER_TEMP"])/"g23/G23.json").read_text())
+          if g23.get("status")!="PASS" or not g23.get("g24_allowed"):
+              raise SystemExit("G23_NOT_PASS")
+          tok=os.environ["TOKEN"]
+          parts=tok.split(".")
+          if len(parts)!=3: raise SystemExit("OIDC_FORMAT_INVALID")
+          payload=parts[1]+"="*((4-len(parts[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload))
+          aud=claims.get("aud")
+          expected=os.environ["AUD"]
+          if aud!=expected and not (isinstance(aud,list) and expected in aud):
+              raise SystemExit("OIDC_AUDIENCE_MISMATCH")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge":
+              raise SystemExit("OIDC_REPOSITORY_MISMATCH")
+          cert={
+            "schema":"LOUKSNA_R4_PART4_PART9_PERMISSIONS_G24/1.0",
+            "status":"PASS",
+            "certificate_scope":"PREINSTALL_CANDIDATE_ONLY",
+            "candidate_digest_sha256":os.environ["DIGEST"],
+            "g23_status":"PASS",
+            "authority_authenticated":True,
+            "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(tok.encode()).hexdigest(),
+            "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+            "host_materialization_certified":False,
+            "postinstall_validation_required":True
+          }
+          out=pathlib.Path(os.environ["RUNNER_TEMP"])/"g24/G24.json"
+          out.write_text(json.dumps(cert,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(cert,indent=2,sort_keys=True))
+          PY
+          unset TOKEN RESP
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-part9-permissions-g24
+          path: ${{ runner.temp }}/g24
+          if-no-files-found: error
+          retention-days: 90
