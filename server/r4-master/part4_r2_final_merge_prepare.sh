@@ -162,7 +162,7 @@ elif len(dest_present)!=len(tops):
     raise SystemExit("HOLD:RELOCATED_TOPLEVEL_INCOMPLETE")
 PY
 
-sudo -n chown -R "$OWNER:$OWNER" "$NEWROOT_MNT/home/$OWNER/PROYECTOS"
+sudo -n chown "$OWNER:$OWNER" "$NEWROOT_MNT/home/$OWNER/PROYECTOS"
 python3 "$VERIFY" --root "$NEWROOT_MNT/home/$OWNER/PROYECTOS" --manifest "$MANIFEST" --out "$OUT/VERIFY_PROJECTS_AFTER_RELOCATION.json"
 
 # Two-pass live root copy. -x preserves filesystem boundary and therefore never
@@ -210,7 +210,9 @@ sudo -n mkdir -p "$NEWROOT_MNT/boot/efi"
 sudo -n mount "$EFI" "$NEWROOT_MNT/boot/efi"
 
 sudo -n chroot "$NEWROOT_MNT" /usr/sbin/update-initramfs -u -k all
-sudo -n chroot "$NEWROOT_MNT" /usr/sbin/grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=debian --recheck
+# Install the candidate bootloader under a distinct EFI/NVRAM identity.
+# The existing Debian EFI entry is intentionally left untouched as rollback.
+sudo -n chroot "$NEWROOT_MNT" /usr/sbin/grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=LOUKSNA-P3 --recheck
 sudo -n chroot "$NEWROOT_MNT" /usr/sbin/update-grub
 
 grep -F "$P3_UUID" "$NEWROOT_MNT/etc/fstab" >/dev/null || hold "NEW_FSTAB_MISSING_P3_UUID"
@@ -267,13 +269,23 @@ sudo -n chroot "$NEWROOT_MNT" /usr/bin/systemctl enable louksna-part4-r2-postboo
 cp "$NEWROOT_MNT/etc/fstab" "$OUT/fstab.newroot"
 cp "$NEWROOT_MNT/boot/grub/grub.cfg" "$OUT/grub.cfg.newroot"
 (efibootmgr -v || true) > "$OUT/efibootmgr.after-grub-install.txt"
-sha256sum "$OUT/fstab.newroot" "$OUT/grub.cfg.newroot" "$OUT/VERIFY_PROJECTS_AFTER_ROOT_COPY.json" > "$OUT/PREBOOT_EVIDENCE.sha256"
+python3 - "$OUT/efibootmgr.after-grub-install.txt" "$OUT/CANDIDATE_BOOT_ENTRY.json" <<'PY'
+import json,re,sys
+txt=open(sys.argv[1],encoding="utf-8",errors="replace").read()
+hits=[]
+for line in txt.splitlines():
+    m=re.match(r"Boot([0-9A-Fa-f]{4})\*?\s+LOUKSNA-P3\b",line)
+    if m: hits.append(m.group(1).upper())
+if len(hits)!=1: raise SystemExit("HOLD:CANDIDATE_BOOT_ENTRY_NOT_UNIQUE:"+repr(hits))
+json.dump({"schema":"LOUKSNA_R4_PART4_R2_CANDIDATE_BOOT_ENTRY/1.0","label":"LOUKSNA-P3","bootnum":hits[0]},open(sys.argv[2],"w"),indent=2,sort_keys=True)
+PY
+sha256sum "$OUT/fstab.newroot" "$OUT/grub.cfg.newroot" "$OUT/VERIFY_PROJECTS_AFTER_ROOT_COPY.json" "$OUT/CANDIDATE_BOOT_ENTRY.json" > "$OUT/PREBOOT_EVIDENCE.sha256"
 
 export P3_UUID P5_UUID EFI_UUID
 python3 - "$OUT/PREBOOT_STATE.json" <<'PY'
 import hashlib,json,os,pathlib,sys,time
 out=pathlib.Path(sys.argv[1])
-files=["VERIFY_PROJECTS_BEFORE_RELOCATION.json","VERIFY_PROJECTS_AFTER_RELOCATION.json","VERIFY_PROJECTS_AFTER_ROOT_COPY.json","fstab.newroot","grub.cfg.newroot","PARTITION_TABLE_PREBOOT.sfdisk"]
+files=["VERIFY_PROJECTS_BEFORE_RELOCATION.json","VERIFY_PROJECTS_AFTER_RELOCATION.json","VERIFY_PROJECTS_AFTER_ROOT_COPY.json","fstab.newroot","grub.cfg.newroot","PARTITION_TABLE_PREBOOT.sfdisk","CANDIDATE_BOOT_ENTRY.json"]
 base=out.parent
 r={
  "schema":"LOUKSNA_R4_PART4_R2_FINAL_MERGE_PREBOOT/1.0","status":"PASS",
@@ -281,7 +293,7 @@ r={
  "candidate_root_uuid":os.environ["P3_UUID"],"old_root_uuid":os.environ["P5_UUID"],"efi_uuid":os.environ["EFI_UUID"],
  "projects_final_path":"/home/diegoignacionorambuenamiranda/PROYECTOS",
  "projects_manifest_sha256":"99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
- "old_root_preserved":True,"postboot_dispatch_installed":True,
+ "old_root_preserved":True,"existing_efi_entry_preserved":True,"candidate_boot_entry_label":"LOUKSNA-P3","postboot_dispatch_installed":True,
  "evidence_sha256":{n:hashlib.sha256((base/n).read_bytes()).hexdigest() for n in files},
  "prepared_at_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
 }
