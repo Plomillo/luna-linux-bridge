@@ -1,0 +1,125 @@
+name: "R4 APC48 v2 — independent G23 G24 trust root"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-apc48-v2-trustroot-20260929
+    paths:
+      - .github/workflows/r4-apc48-v2-independent.yml
+      - scripts/assurance/apc48_v2_g23.py
+      - scripts/assurance/apc48_v2_g24.py
+
+permissions:
+  contents: read
+  id-token: write
+  actions: read
+
+jobs:
+  g23:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout immutable v2 trust root
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          path: trust
+          sparse-checkout: |
+            scripts/assurance/apc48_v2_g23.py
+            scripts/assurance/apc48_v2_g24.py
+          sparse-checkout-cone-mode: false
+
+      - name: Checkout frozen v2 candidate as data only
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: 2393388d84401144c64a0d9a68767a53cc64baea
+          persist-credentials: false
+          path: candidate
+          sparse-checkout: server/apc48
+          sparse-checkout-cone-mode: true
+
+      - name: Freeze candidate read-only
+        shell: bash
+        run: chmod -R a-w "$GITHUB_WORKSPACE/candidate"
+
+      - name: Independent G23 v2
+        shell: bash
+        env:
+          GITHUB_WORKFLOW_SHA: ${{ github.sha }}
+          CANDIDATE_HEAD_SHA: 2393388d84401144c64a0d9a68767a53cc64baea
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 -B -I "$GITHUB_WORKSPACE/trust/scripts/assurance/apc48_v2_g23.py" \
+            --candidate "$GITHUB_WORKSPACE/candidate" \
+            --out "$RUNNER_TEMP/g23/G23.json"
+          cat "$RUNNER_TEMP/g23/G23.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Preserve G23 v2
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-apc48-v2-independent-g23
+          path: ${{ runner.temp }}/g23
+          if-no-files-found: error
+          retention-days: 90
+
+  g24:
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout immutable v2 trust root
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          path: trust
+          sparse-checkout: scripts/assurance/apc48_v2_g24.py
+          sparse-checkout-cone-mode: false
+
+      - name: Download G23 v2
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-apc48-v2-independent-g23
+          path: ${{ runner.temp }}/g23
+
+      - name: Request digest-bound OIDC token
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g24"
+          DIGEST="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["candidate_digest_sha256"])' "$RUNNER_TEMP/g23/G23.json")"
+          AUD="louksna-r4-apc48-v2-g24:$DIGEST"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          printf '%s' "$TOKEN" > "$RUNNER_TEMP/g24/OIDC_TOKEN.tmp"
+          printf '%s\n' "$AUD" > "$RUNNER_TEMP/g24/OIDC_AUDIENCE.txt"
+
+      - name: Independent digest-bound G24 v2
+        shell: bash
+        env:
+          CANDIDATE_HEAD_SHA: 2393388d84401144c64a0d9a68767a53cc64baea
+          TRUST_ROOT_SHA: ${{ github.sha }}
+        run: |
+          set -Eeuo pipefail
+          AUD="$(cat "$RUNNER_TEMP/g24/OIDC_AUDIENCE.txt")"
+          export OIDC_TOKEN="$(cat "$RUNNER_TEMP/g24/OIDC_TOKEN.tmp")"
+          rm -f "$RUNNER_TEMP/g24/OIDC_TOKEN.tmp"
+          python3 -B -I "$GITHUB_WORKSPACE/trust/scripts/assurance/apc48_v2_g24.py" \
+            --g23 "$RUNNER_TEMP/g23/G23.json" \
+            --audience "$AUD" \
+            --candidate-head-sha "$CANDIDATE_HEAD_SHA" \
+            --trust-root-sha "$TRUST_ROOT_SHA" \
+            --authority-out "$RUNNER_TEMP/g24/AUTHORITY_EVIDENCE.json" \
+            --certificate-out "$RUNNER_TEMP/g24/G24_CERTIFICATE.json"
+          unset OIDC_TOKEN
+          cat "$RUNNER_TEMP/g24/G24_CERTIFICATE.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Preserve G24 v2
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-apc48-v2-independent-g24
+          path: ${{ runner.temp }}/g24
+          if-no-files-found: error
+          retention-days: 90
