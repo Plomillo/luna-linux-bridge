@@ -1,0 +1,49 @@
+name: "CUSTOSZ MUSOL — governed proposal"
+on:
+  push:
+    branches: [staging/custosz-mission-mailbox-20260928]
+    paths:
+      - .github/workflows/custosz-musol-proposal.yml
+      - mission-control/custosz-musol-proposal/**
+permissions:
+  contents: read
+jobs:
+  propose:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            artifacts/custosz-v7
+          sparse-checkout-cone-mode: false
+      - name: Ask CUSTOSZ architect and reasoning policy
+        shell: bash
+        env:
+          CUSTOSZ_WORKSPACE: /media/diegoignacionorambuenamiranda/Windows/PROYECTOS
+        run: |
+          set -Eeuo pipefail
+          PYZ="artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz"
+          OUT="$RUNNER_TEMP/custosz-musol-proposal-$GITHUB_RUN_ID"
+          mkdir -p "$OUT"
+          PROBLEM='PART4 MUSOL: preserve and freeze exactly /media/diegoignacionorambuenamiranda/Windows/PROYECTOS as the only protected scope on the Windows NTFS partition; inventory and hash-verify it; satisfy two_verified_backups, restore_proof and destructive_scope_prevalidated without fake PASS; then, only after evidence, remove Windows 11 and every direct child outside PROYECTOS on /dev/nvme0n1p3; never touch EFI, GPT, Debian/Linux, other partitions, or anything inside PROYECTOS; retain historical no-touch protections inside PROYECTOS including 8. Vida personal y Ocio; require checkpoint, fail-closed prevalidation, symlink/reparse-point and nested-mount defenses, postvalidation, rollback/recovery where technically applicable, G23 independent validation and G24 certification; return proposal only, no deletion.'
+          python3 -B -I "$PYZ" status > "$OUT/STATUS.json"
+          python3 -B -I "$PYZ" architect "$PROBLEM" --project LUNA_PROJECT > "$OUT/ARCHITECT.json"
+          python3 -B -I "$PYZ" reasoning-policy "$PROBLEM" --project LUNA_PROJECT > "$OUT/REASONING_POLICY.json"
+          python3 -B -I "$PYZ" resources > "$OUT/RESOURCES.json"
+          sha256sum "$OUT"/*.json > "$OUT/SHA256SUMS.txt"
+          echo '=== CUSTOSZ ARCHITECT ==='
+          cat "$OUT/ARCHITECT.json"
+          echo '=== CUSTOSZ REASONING POLICY ==='
+          cat "$OUT/REASONING_POLICY.json"
+          echo '=== CUSTOSZ RESOURCES ==='
+          cat "$OUT/RESOURCES.json"
+      - name: Preserve proposal evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: CUSTOSZ-MUSOL-proposal-${{ github.run_id }}
+          path: ${{ runner.temp }}/custosz-musol-proposal-${{ github.run_id }}/
+          if-no-files-found: error
+          retention-days: 30
