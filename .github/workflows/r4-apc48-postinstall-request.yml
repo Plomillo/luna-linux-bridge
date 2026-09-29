@@ -71,7 +71,7 @@ jobs:
           for name in files:
               data=(phys/name).read_bytes()
               rows.append((f"server/apc48/{name}",hashlib.sha256(data).hexdigest(),len(data)))
-          material="".join(f"{p}\0{h}\0{n}\n" for p,h,n in rows).encode()
+          material="".join(f"{p}\\0{h}\\0{n}\\n" for p,h,n in rows).encode()
           candidate_digest=hashlib.sha256(material).hexdigest()
 
           def sh(*cmd):
@@ -192,7 +192,7 @@ jobs:
           for name in sorted(files):
               data=(evdir/name).read_bytes()
               rows.append({"path":name,"bytes":len(data),"sha256":hashlib.sha256(data).hexdigest()})
-          material="".join(f"{r['path']}\0{r['sha256']}\0{r['bytes']}\n" for r in rows).encode()
+          material="".join(f"{r['path']}\\0{r['sha256']}\\0{r['bytes']}\\n" for r in rows).encode()
           digest=hashlib.sha256(material).hexdigest()
 
           exp=dt.datetime.fromisoformat(str(activation["expires_at_utc"]).replace("Z","+00:00")).astimezone(dt.timezone.utc)
