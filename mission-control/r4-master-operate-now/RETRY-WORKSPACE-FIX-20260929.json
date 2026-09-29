@@ -1,0 +1,19 @@
+{
+  "schema": "LOUKSNA_R4_OPERATE_NOW_RETRY/1.0",
+  "reason": "CUSTOSZ_WORKSPACE_ADAPTER_FIXED",
+  "checkpoint": "20260926T034746Z-38579",
+  "mode": "DIFFERENTIAL",
+  "preserve": [
+    "PART_0_NO_REPEAT",
+    "PART_1_NO_FULL_REINSTALL",
+    "SERVER_READY_NO_REPEAT",
+    "APC48_NO_REPEAT",
+    "G23_G24_NO_REPEAT"
+  ],
+  "action": "RESUME_WORKERS_AND_SERVER",
+  "notify_user_only_on": [
+    "NEEDS_PRIVILEGE",
+    "NEEDS_HUMAN_AUTHORIZATION"
+  ],
+  "fail_closed": true
+}
