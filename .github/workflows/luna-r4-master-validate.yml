@@ -67,6 +67,7 @@ jobs:
           assert "PART4_R2_FINAL_MERGE_ADDENDUM.json" in runner
           assert "part4_r2_verify_tree.py" in runner
           assert "part4_r2_storage_migrate.sh" in runner
+          assert "part4_r2_final_merge_prepare.sh" in runner
           assert "part4_r2_final_g24" in controller
           assert "final_merge_g24" in controller
           assert "verified_root_on_consolidated_linux" in controller
@@ -85,7 +86,7 @@ jobs:
           python3 - <<'PY'
           import hashlib, json, pathlib, os
           root=pathlib.Path("server/r4-master")
-          names=["MASTER_RUN.sh","master_controller.py","MASTER_MISSION.md","R4_MASTER_CONTRACT.json","UPSTREAM_PINS.json","PART4_R2_AMENDMENT.json","PART4_R2_AUTOPILOT_ADDENDUM.json","PART4_R2_FINAL_MERGE_ADDENDUM.json","part4_r2_verify_tree.py","part4_r2_storage_migrate.sh"]
+          names=["MASTER_RUN.sh","master_controller.py","MASTER_MISSION.md","R4_MASTER_CONTRACT.json","UPSTREAM_PINS.json","PART4_R2_AMENDMENT.json","PART4_R2_AUTOPILOT_ADDENDUM.json","PART4_R2_FINAL_MERGE_ADDENDUM.json","part4_r2_verify_tree.py","part4_r2_storage_migrate.sh","part4_r2_final_merge_prepare.sh"]
           rows=[]
           for name in sorted(names):
               data=(root/name).read_bytes()
