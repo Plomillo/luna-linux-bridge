@@ -1,0 +1,212 @@
+name: "R4 PART4 R2 — certify final merge authorization"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-part4-r2-final-merge-authority-g23-g24.yml
+      - server/r4-master/PART4_R2_FINAL_MERGE_ADDENDUM.json
+      - mission-control/r4-part4-r2-final-merge/AUTHORIZATION-20260929.json
+      - server/r4-master/R4_MASTER_CONTRACT.json
+      - server/r4-master/MASTER_MISSION.md
+      - server/r4-master/master_controller.py
+      - server/r4-master/MASTER_RUN.sh
+
+permissions:
+  contents: read
+  actions: read
+  id-token: write
+
+concurrency:
+  group: r4-part4-r2-final-merge-authority
+  cancel-in-progress: false
+
+jobs:
+  g23:
+    name: G23 validate final merge authorization
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Retrieve certified prior gates
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/prior"
+          gh run download 36621093750 --repo Plomillo/luna-linux-bridge -n r4-part4-freeze-g24 -D "$RUNNER_TEMP/prior/freeze"
+          gh run download 36621903764 --repo Plomillo/luna-linux-bridge -n r4-part4-r2-g24 -D "$RUNNER_TEMP/prior/r2"
+          gh run download 36625874952 --repo Plomillo/luna-linux-bridge -n r4-part4-r2-autopilot-g24 -D "$RUNNER_TEMP/prior/autopilot"
+          gh run download 36623383678 --repo Plomillo/luna-linux-bridge -n r4-part4-r2-partial-purge-integrity -D "$RUNNER_TEMP/prior/checkpoint"
+
+      - name: Independently validate authorization, scope and non-regression
+        shell: bash
+        env:
+          BASELINE_SHA: "7a3684ce77c49d8a70f8de5c6081101e7e11c726"
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/g23/G23_FINAL_MERGE_AUTH.json" <<'PY'
+          import hashlib,json,os,pathlib,subprocess,sys,datetime as dt
+          authp=pathlib.Path("mission-control/r4-part4-r2-final-merge/AUTHORIZATION-20260929.json")
+          addp=pathlib.Path("server/r4-master/PART4_R2_FINAL_MERGE_ADDENDUM.json")
+          contractp=pathlib.Path("server/r4-master/R4_MASTER_CONTRACT.json")
+          ctlp=pathlib.Path("server/r4-master/master_controller.py")
+          auth=json.loads(authp.read_text()); add=json.loads(addp.read_text()); contract=json.loads(contractp.read_text()); ctl=ctlp.read_text()
+          freeze=json.load(open(os.path.join(os.environ["RUNNER_TEMP"],"prior/freeze/G24_FREEZE.json")))
+          r2=json.load(open(os.path.join(os.environ["RUNNER_TEMP"],"prior/r2/G24_PART4_R2.json")))
+          autop=json.load(open(os.path.join(os.environ["RUNNER_TEMP"],"prior/autopilot/G24_AUTOPILOT.json")))
+          chk=json.load(open(os.path.join(os.environ["RUNNER_TEMP"],"prior/checkpoint/PARTIAL_PURGE_INTEGRITY.json")))
+          baseline=os.environ["BASELINE_SHA"]
+          oldctl=subprocess.run(["git","show",f"{baseline}:server/r4-master/master_controller.py"],text=True,capture_output=True,check=True).stdout
+          oldc=json.loads(subprocess.run(["git","show",f"{baseline}:server/r4-master/R4_MASTER_CONTRACT.json"],text=True,capture_output=True,check=True).stdout)
+          def tail(s):
+              return s[s.index("\ndef part5(mid):"):]
+          oldtail=json.dumps([x for x in oldc["sequence"] if x["part"] in {"PART_5","PART_6","PART_7","PART_8","PART_9"}],sort_keys=True)
+          newtail=json.dumps([x for x in contract["sequence"] if x["part"] in {"PART_5","PART_6","PART_7","PART_8","PART_9"}],sort_keys=True)
+          checks={
+            "auth_status":auth.get("status")=="AUTHORIZED",
+            "disk_exact":auth.get("authorized_target_disk")=="/dev/nvme0n1",
+            "final_goal":auth.get("final_layout_goal")=="EFI_PLUS_ONE_MAIN_LINUX_PARTITION_FOR_DEBIAN_AND_PROYECTOS",
+            "preserve_efi":"EFI_REQUIRED_FOR_DEBIAN_BOOT" in auth.get("preserve",[]),
+            "preserve_projects":"PROYECTOS_BIT_INTEGRITY" in auth.get("preserve",[]),
+            "preserve_debian":"VALID_DEBIAN_INSTALLATION" in auth.get("preserve",[]),
+            "fail_closed":auth.get("failure_posture")=="FAIL_CLOSED" and add.get("failure_posture")=="FAIL_CLOSED",
+            "addendum_id":add.get("addendum_id")=="PART4-R2-FINAL-MERGE-20260929",
+            "authority":add.get("authority")=="Louksna.md",
+            "no_authority_transfer":add.get("authority_transfer") is False,
+            "no_canonical_mutation":add.get("canonical_mutation") is False,
+            "old_root_retirement_guard":"NO_DELETE_OLD_ROOT_BEFORE_VERIFIED_BOOT_FROM_NEW_ROOT" in add.get("invariants",[]),
+            "projects_guard":"NO_DELETE_VERIFIED_PROYECTOS_COPY_BEFORE_SECOND_VERIFIED_COPY_OR_FINAL_ROOT_IS_CONFIRMED" in add.get("invariants",[]),
+            "contract_final_gate":contract.get("part4_r2",{}).get("part4_close_requires_final_merge_g24") is True,
+            "contract_efi":contract.get("part4_r2",{}).get("efi_preserved") is True,
+            "controller_final_gate":"final_merge_g24" in ctl and "verified_root_on_consolidated_linux" in ctl,
+            "part5_9_controller_unchanged":tail(oldctl)==tail(ctl),
+            "part5_9_contract_unchanged":oldtail==newtail,
+            "freeze_g24":freeze.get("status")=="PASS" and freeze.get("manifest_sha256")=="99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+            "r2_g24":r2.get("status")=="PASS",
+            "autopilot_g24":autop.get("status")=="PASS",
+            "checkpoint_integrity":chk.get("status")=="PASS" and chk.get("mismatch_count")==0 and chk.get("seen_records")==498092,
+          }
+          passed=all(checks.values())
+          r={"schema":"LOUKSNA_R4_PART4_R2_FINAL_MERGE_AUTH_G23/1.0","status":"PASS" if passed else "HOLD",
+             "scope":"FINAL_MERGE_AUTHORIZATION_AND_CONTROL_ONLY","checks":checks,
+             "authorization_sha256":hashlib.sha256(authp.read_bytes()).hexdigest(),
+             "addendum_sha256":hashlib.sha256(addp.read_bytes()).hexdigest(),
+             "contract_sha256":hashlib.sha256(contractp.read_bytes()).hexdigest(),
+             "repair_allowed":False,"g24_allowed":passed,
+             "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,indent=2,sort_keys=True))
+          if not passed: raise SystemExit(3)
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-final-merge-auth-g23
+          path: ${{ runner.temp }}/g23/G23_FINAL_MERGE_AUTH.json
+          retention-days: 90
+          compression-level: 0
+
+  g24:
+    name: G24 certify final merge authorization
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-final-merge-auth-g23
+          path: ${{ runner.temp }}/g23
+      - name: Issue digest-bound certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G23="$RUNNER_TEMP/g23/G23_FINAL_MERGE_AUTH.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$G23")" = PASS
+          H="$(sha256sum "$G23"|awk '{print $1}')"
+          A="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["authorization_sha256"])' "$G23")"
+          D="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["addendum_sha256"])' "$G23")"
+          AUD="louksna-r4-part4-r2-final-merge-auth:$A:$D:$H"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export TOKEN H A D AUD
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$RUNNER_TEMP/g24/G24_FINAL_MERGE_AUTH.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          token=os.environ["TOKEN"]; parts=token.split(".")
+          if len(parts)!=3: raise SystemExit("OIDC_FORMAT")
+          payload=parts[1]+"="*((4-len(parts[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload)); aud=claims.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          r={"schema":"LOUKSNA_R4_PART4_R2_FINAL_MERGE_AUTH_G24/1.0","status":"PASS",
+             "scope":"FINAL_MERGE_AUTHORIZATION_AND_CONTROL_ONLY","addendum_id":"PART4-R2-FINAL-MERGE-20260929",
+             "authorization_sha256":os.environ["A"],"addendum_sha256":os.environ["D"],"g23_sha256":os.environ["H"],
+             "authority_authenticated":True,
+             "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(token.encode()).hexdigest(),
+             "canonical_mutation":False,"authority_transfer":False,"part5_to_part9_unchanged":True,
+             "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-final-merge-auth-g24
+          path: ${{ runner.temp }}/g24/G24_FINAL_MERGE_AUTH.json
+          retention-days: 90
+          compression-level: 0
+
+  activate:
+    name: Activate final merge authorization on LOUKSNA server
+    needs: g24
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: server/r4-master
+          sparse-checkout-cone-mode: true
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-final-merge-auth-g24
+          path: ${{ runner.temp }}/g24
+      - name: Persist certified authorization and deploy current Master
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          CERT="$RUNNER_TEMP/g24/G24_FINAL_MERGE_AUTH.json"
+          STATE_DIR="$HOME/.local/state/louksna/r4-master-part1-part9/PART_4_R2"
+          STATE="$STATE_DIR/STATE.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$CERT")" = PASS
+          mkdir -p "$STATE_DIR"; chmod 700 "$STATE_DIR"
+          python3 - "$STATE" "$CERT" <<'PY'
+          import hashlib,json,os,sys,time
+          sp,cp=sys.argv[1:]; s=json.load(open(sp)) if os.path.exists(sp) else {"schema":"LOUKSNA_R4_PART4_R2_STATE/1.0"}
+          s.update({
+            "final_merge_owner_authorized":True,
+            "final_merge_authorization_g24":True,
+            "final_merge_authorization_g24_sha256":hashlib.sha256(open(cp,"rb").read()).hexdigest(),
+            "final_merge_g24":False,
+            "verified_root_on_consolidated_linux":False,
+            "part4_r2_final_g24":False,
+            "updated_at_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
+          })
+          t=sp+".tmp"; json.dump(s,open(t,"w"),indent=2,sort_keys=True); os.replace(t,sp)
+          PY
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+          test -S "$XDG_RUNTIME_DIR/bus"
+          bash server/r4-master/MASTER_RUN.sh
+          systemctl --user restart luna-r4-master-part1-part9.service
+          test "$(systemctl --user is-active luna-r4-master-part1-part9.service)" = active
+          echo "FINAL_MERGE_AUTHORIZATION_G24=ACTIVE"
