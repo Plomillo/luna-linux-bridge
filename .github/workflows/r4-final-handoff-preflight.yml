@@ -1,0 +1,43 @@
+name: "R4 final handoff — local GitHub capability preflight"
+
+on:
+  push:
+    branches:
+      - staging/custosz-mission-mailbox-20260928
+    paths:
+      - .github/workflows/r4-final-handoff-preflight.yml
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 3
+    steps:
+      - name: Inspect local handoff capabilities
+        shell: bash
+        run: |
+          set -u
+          echo "HOST=$(hostname)"
+          echo "USER=$(id -un)"
+          echo "GH_BIN=$(command -v gh || true)"
+          echo "GIT_BIN=$(command -v git || true)"
+          if command -v gh >/dev/null 2>&1; then
+            if gh auth status >/dev/null 2>&1; then
+              echo "GH_AUTH=PASS"
+            else
+              echo "GH_AUTH=FAIL"
+            fi
+          else
+            echo "GH_AUTH=UNAVAILABLE"
+          fi
+          if git config --global --get user.name >/dev/null 2>&1; then
+            echo "GIT_IDENTITY=CONFIGURED"
+          else
+            echo "GIT_IDENTITY=UNCONFIGURED"
+          fi
+          echo "APC_STATUS=$(sudo -n /usr/local/sbin/louksna-apc status >/dev/null 2>&1 && echo PASS || echo FAIL)"
+          echo "RUNNER=$(systemctl is-active actions.runner.Plomillo-luna-linux-bridge.luna-linux.service 2>/dev/null || true)"
+          UIDN="$(id -u)"
+          echo "SYMPHYLAX=$(XDG_RUNTIME_DIR=/run/user/$UIDN DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$UIDN/bus systemctl --user is-active symphylax-r1.service 2>/dev/null || true)"
