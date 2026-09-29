@@ -1,0 +1,139 @@
+name: "R4 APC48 — sync validated candidate to LOUKSNA"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-apc-48h-candidate-20260929
+    paths:
+      - .github/workflows/r4-apc48-host-sync.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r4-apc48-host-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact candidate in isolated path
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          clean: true
+          path: apc48-sync
+          sparse-checkout: server/apc48
+          sparse-checkout-cone-mode: true
+
+      - name: Verify frozen candidate digest
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          SOURCE="$GITHUB_WORKSPACE/apc48-sync"
+          EXPECTED="3f107506fee63c4abded37fa9e716cc7279f7530218d786cc3c0bddef8d9d122"
+          export SOURCE EXPECTED
+          python3 - <<'PY'
+          import hashlib,os,pathlib
+          root=pathlib.Path(os.environ["SOURCE"])
+          files=sorted([
+            "server/apc48/activate-48h.sh",
+            "server/apc48/louksna_apc.py",
+            "server/apc48/louksna_apc_revoke.sh",
+            "server/apc48/test_apc.py",
+          ])
+          rows=[]
+          for rel in files:
+              data=(root/rel).read_bytes()
+              rows.append((rel,hashlib.sha256(data).hexdigest(),len(data)))
+          material="".join(f"{p}\0{h}\0{n}\n" for p,h,n in rows).encode()
+          actual=hashlib.sha256(material).hexdigest()
+          print("CANDIDATE_DIGEST_SHA256="+actual)
+          if actual != os.environ["EXPECTED"]:
+              raise SystemExit("CANDIDATE_DIGEST_MISMATCH")
+          PY
+
+      - name: Materialize candidate without silent overwrite
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          SOURCE="$GITHUB_WORKSPACE/apc48-sync/server/apc48"
+          TARGET="/home/diegoignacionorambuenamiranda/Descargas/LUNA_R4_SERVER_ACTIVATION"
+          test -d "/home/diegoignacionorambuenamiranda/Descargas"
+          mkdir -p "$TARGET"
+          test ! -L "$TARGET"
+
+          copy_checked() {
+            src="$1"
+            dst="$2"
+            mode="$3"
+            if [ -L "$dst" ]; then
+              echo "HOLD:TARGET_SYMLINK:$dst" >&2
+              exit 41
+            fi
+            if [ -e "$dst" ]; then
+              a="$(sha256sum "$src" | awk '{print $1}')"
+              b="$(sha256sum "$dst" | awk '{print $1}')"
+              if [ "$a" != "$b" ]; then
+                echo "HOLD:TARGET_DIVERGENCE:$dst source=$a target=$b" >&2
+                exit 42
+              fi
+              chmod "$mode" "$dst"
+              echo "UNCHANGED_MATCH=$dst"
+            else
+              install -m "$mode" -- "$src" "$dst"
+              echo "MATERIALIZED=$dst"
+            fi
+          }
+
+          copy_checked "$SOURCE/activate-48h.sh" "$TARGET/activate-48h.sh" 0700
+          copy_checked "$SOURCE/louksna_apc.py" "$TARGET/louksna_apc.py" 0600
+          copy_checked "$SOURCE/louksna_apc_revoke.sh" "$TARGET/louksna_apc_revoke.sh" 0600
+          copy_checked "$SOURCE/test_apc.py" "$TARGET/test_apc.py" 0600
+
+          export TARGET
+          python3 - <<'PY'
+          import datetime,hashlib,json,os,pathlib
+          t=pathlib.Path(os.environ["TARGET"])
+          files=["activate-48h.sh","louksna_apc.py","louksna_apc_revoke.sh","test_apc.py"]
+          rows={}
+          for name in files:
+              data=(t/name).read_bytes()
+              rows[name]={"bytes":len(data),"sha256":hashlib.sha256(data).hexdigest()}
+          obj={
+            "schema":"LOUKSNA_R4_APC48_PREINSTALL_MANIFEST/1.0",
+            "status":"VALIDATED_CANDIDATE_MATERIALIZED",
+            "runtime_host_activation_certified":False,
+            "post_installation_certification_required":True,
+            "candidate_digest_sha256":"3f107506fee63c4abded37fa9e716cc7279f7530218d786cc3c0bddef8d9d122",
+            "source_commit":os.environ["GITHUB_SHA"],
+            "validation_run":36515809826,
+            "physical_root":str(t),
+            "files":rows,
+            "resume":{
+              "part":"PART_1",
+              "mode":"DIFFERENTIAL",
+              "checkpoint":"/home/diegoignacionorambuenamiranda/LOUKSNA_MAESTRO_20260925/MISSION3_OPERATIVE/R4_PART1_DESKTOP_V1/runs/20260926T034746Z-38579",
+              "part2_gate":"PART1_POST_VALIDATION_PASS"
+            },
+            "materialized_at_utc":datetime.datetime.now(datetime.timezone.utc).isoformat()
+          }
+          p=t/"PREINSTALL_MANIFEST.json"
+          p.write_text(json.dumps(obj,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+          p.chmod(0o600)
+          out=pathlib.Path(os.environ["RUNNER_TEMP"])/"apc48-host-sync"
+          out.mkdir(parents=True,exist_ok=True)
+          (out/"PREINSTALL_MANIFEST.json").write_bytes(p.read_bytes())
+          PY
+          echo "APC48_HOST_SYNC=PASS"
+          echo "TARGET=$TARGET"
+
+      - name: Preserve sync evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-apc48-host-sync
+          path: ${{ runner.temp }}/apc48-host-sync
+          if-no-files-found: error
