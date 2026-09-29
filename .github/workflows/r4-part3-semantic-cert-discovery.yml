@@ -1,0 +1,56 @@
+name: "R4 PART3 — certified semantic container discovery"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part3-semantic-cert/**
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 4
+    steps:
+      - name: Inspect candidate certification evidence read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BASE="$HOME/SYMPHYLAX_LAB"
+          echo "=== CERTIFICATE-LIKE FILES AROUND FINAL/R1 G23 G24 ==="
+          find "$BASE" -xdev -maxdepth 6 -type f \
+            \( -iname '*G24*.json' -o -iname '*CERT*.json' -o -iname '*RESULT*.json' -o -iname '*FINAL*.json' \) \
+            -print 2>/dev/null | grep -E 'R1_FINAL|CUSTOSZ_V7_R1_G23_G24|MISION_R1_CIERRE' | sort | head -n 300
+
+          echo "=== SEMANTIC CONTAINER CANDIDATES WITH MANIFEST HASH ==="
+          for d in \
+            "$BASE/R1_FINAL_CLOSURE_6X60_20260926T225628Z/R1_FINAL_CANDIDATE" \
+            "$BASE/CUSTOSZ_V7_R1_G23_G24_20260927T021532Z/R1_G23_ENGINEERED_F01_F06_CANDIDATE" \
+            "$BASE/MISION_R1_CIERRE_20260927T014526Z/R1_CANDIDATE_REMEDIATE"
+          do
+            test -d "$d" || continue
+            echo "--- CANDIDATE=$d"
+            test -f "$d/SEMANTIC_CONTAINER/SOURCE_REGISTRY.json" && sha256sum "$d/SEMANTIC_CONTAINER/SOURCE_REGISTRY.json"
+            test -f "$d/contracts/semantic_container.json" && sha256sum "$d/contracts/semantic_container.json"
+            find "$(dirname "$d")" -maxdepth 3 -type f \( -iname '*G24*.json' -o -iname '*CERT*.json' -o -iname '*RESULT*.json' \) -print 2>/dev/null | sort | while read -r f; do
+              echo "### $f"
+              python3 - "$f" <<'PY'
+          import json,sys
+          p=sys.argv[1]
+          try:
+              d=json.load(open(p,encoding="utf-8"))
+          except Exception:
+              raise SystemExit
+          wanted={}
+          for k,v in d.items():
+              lk=k.lower()
+              if any(x in lk for x in ("status","g23","g24","cert","candidate","semantic","sha256","scope","active")):
+                  if isinstance(v,(str,int,float,bool)) or v is None:
+                      wanted[k]=v
+          print(json.dumps(wanted,ensure_ascii=False,sort_keys=True))
+          PY
+            done
+          done
