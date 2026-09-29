@@ -23,7 +23,7 @@ jobs:
       - name: Ask deployed CUSTOSZ architecture read-only
         shell: bash
         env:
-          CONSULT_SOURCE: missions/inbox/luna-r4-part3-contingency-consult-20260929/MISSION_ORIGINAL.md
+          CONSULT_SOURCE: mission-control/custosz-part3-advisory/CONSULT.md
         run: |
           set -Eeuo pipefail
           OUT="$RUNNER_TEMP/custosz-part3-advisory"
