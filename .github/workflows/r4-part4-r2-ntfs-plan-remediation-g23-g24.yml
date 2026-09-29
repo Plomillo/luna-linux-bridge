@@ -1,0 +1,172 @@
+name: "R4 PART4 R2 — NTFS info remediation G23 G24"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-r2-ntfs-plan-remediation/REMEDIATION-*.json
+
+permissions:
+  contents: read
+  actions: read
+  id-token: write
+
+concurrency:
+  group: r4-part4-r2-ntfs-plan-remediation
+  cancel-in-progress: false
+
+jobs:
+  g23:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Syntax validation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          bash -n server/r4-master/part4_r2_storage_migrate.sh
+
+      - name: Verify incident evidence
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          gh run view 36647289871 --repo Plomillo/luna-linux-bridge --log | grep -F 'HOLD:NTFS_INFO_FAILED'
+          gh run view 36647429039 --repo Plomillo/luna-linux-bridge --log | grep -F "ERROR: Device '/dev/nvme0n1p3' is mounted read-write. You must 'umount' it first."
+
+      - name: Independent remediation validation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mapfile -t files < <(git diff-tree --no-commit-id --name-only -r "$GITHUB_SHA" | grep '^mission-control/r4-part4-r2-ntfs-plan-remediation/REMEDIATION-.*\.json$' || true)
+          test "${#files[@]}" -eq 1
+          E="${files[0]}"
+          OUT="$RUNNER_TEMP/g23"
+          mkdir -p "$OUT"
+
+          python3 - "$E" server/r4-master/part4_r2_storage_migrate.sh "$OUT/G23_NTFS_PLAN_REMEDIATION.json" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,subprocess,sys
+          ep=pathlib.Path(sys.argv[1]); sp=pathlib.Path(sys.argv[2]); out=pathlib.Path(sys.argv[3])
+          e=json.loads(ep.read_text())
+          text=sp.read_text()
+          git_blob=subprocess.check_output(["git","hash-object",str(sp)],text=True).strip()
+
+          plan=text.split('if [ "$MODE" = "plan" ]; then',1)[1].split('[ "$MODE" = "execute" ] || hold "UNKNOWN_MODE:$MODE"',1)[0]
+          execute=text.split('[ "$MODE" = "execute" ] || hold "UNKNOWN_MODE:$MODE"',1)[1]
+
+          checks={
+            "schema":e.get("schema")=="LOUKSNA_R4_PART4_R2_NTFS_PLAN_REMEDIATION/1.0",
+            "status":e.get("status")=="CANDIDATE",
+            "authority":e.get("authority")=="Louksna.md",
+            "fail_closed":e.get("failure_posture")=="FAIL_CLOSED",
+            "incident_run":e.get("incident",{}).get("storage_run_id")==36647289871,
+            "diagnostic_run":e.get("incident",{}).get("diagnostic_run_id")==36647429039,
+            "diagnostic_exact":e.get("incident",{}).get("diagnostic_error")=="ERROR: Device '/dev/nvme0n1p3' is mounted read-write. You must 'umount' it first.",
+            "old_blob":e.get("binding",{}).get("previous_storage_blob")=="d571000fc26539bc7bce4b5b08415e54bf1715c4",
+            "new_blob":e.get("binding",{}).get("candidate_storage_blob")==git_blob=="ff5a035fa12fdb78149679069898e62598bf2307",
+            "sudo_gate_preserved":'sudo -n true >/dev/null 2>&1 || hold "NONINTERACTIVE_SUDO_REQUIRED"' in text,
+            "blkid_hardening_preserved":'BLKID="/usr/sbin/blkid"' in text and 'need_exec "$BLKID"' in text,
+            "bounded_unmount":'sudo -n umount "$WINROOT" || hold "P3_UNMOUNT_FOR_NTFS_INFO_FAILED"' in plan,
+            "restore_trap":'trap plan_restore_mount EXIT' in plan and 'PLAN_REMOUNT_REQUIRED=1' in plan,
+            "info_probe":'NTFS_INFO="$(LC_ALL=C sudo -n ntfsresize --info --force "$P3" 2>&1)"' in plan,
+            "probe_rc_bound":'NTFS_INFO_RC=$?' in plan and 'NTFS_INFO_FAILED_RC_$NTFS_INFO_RC' in plan,
+            "remount":'sudo -n mount "$WINROOT" || hold "P3_REMOUNT_AFTER_NTFS_INFO_FAILED"' in plan,
+            "revalidate_source":'P3_SOURCE_AFTER_NTFS_INFO' in plan,
+            "revalidate_fstype":'P3_FSTYPE_AFTER_NTFS_INFO' in plan,
+            "revalidate_uuid":'P3_UUID_AFTER_NTFS_INFO' in plan,
+            "revalidate_projects":'PROYECTOS_AFTER_NTFS_INFO_MISSING' in plan,
+            "no_partition_mutation_in_plan":all(x not in plan for x in ['resizepart 3','mkpart LOUKSNA_TMP','mkfs.ext4 -F','sfdisk --delete','sfdisk --dump']),
+            "execute_sequence_preserved":'sudo -n ntfsresize --force --no-progress-bar --size "$FS_TARGET" "$P3"' in execute and 'sudo -n parted -s "$DISK" unit s resizepart 3' in execute,
+            "no_authority_transfer":e.get("authority_transfer") is False,
+            "no_canonical_mutation":e.get("canonical_mutation") is False,
+          }
+          passed=all(checks.values())
+          result={
+            "schema":"LOUKSNA_R4_PART4_R2_NTFS_PLAN_G23/1.0",
+            "status":"PASS" if passed else "HOLD",
+            "scope":"NTFS_INFO_MOUNT_WINDOW_REMEDIATION_ONLY",
+            "evidence_sha256":hashlib.sha256(ep.read_bytes()).hexdigest(),
+            "storage_blob":git_blob,
+            "storage_sha256":hashlib.sha256(sp.read_bytes()).hexdigest(),
+            "checks":checks,
+            "repair_allowed":False,
+            "g24_allowed":passed,
+            "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          out.write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(result,indent=2,sort_keys=True))
+          if not passed: raise SystemExit(3)
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-ntfs-plan-g23
+          path: ${{ runner.temp }}/g23/G23_NTFS_PLAN_REMEDIATION.json
+          retention-days: 90
+          compression-level: 0
+
+  g24:
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-ntfs-plan-g23
+          path: ${{ runner.temp }}/g23
+
+      - name: Digest-bound certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/G23_NTFS_PLAN_REMEDIATION.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$G")" = PASS
+          H="$(sha256sum "$G" | awk '{print $1}')"
+          AUD="louksna-r4-part4-r2-ntfs-plan:$H"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export H AUD TOKEN
+          mkdir -p "$RUNNER_TEMP/g24"
+
+          python3 - "$G" "$RUNNER_TEMP/g24/G24_NTFS_PLAN_REMEDIATION.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          g=json.loads(pathlib.Path(sys.argv[1]).read_text())
+          t=os.environ["TOKEN"]; parts=t.split(".")
+          if len(parts)!=3: raise SystemExit("OIDC_FORMAT")
+          payload=parts[1]+"="*((4-len(parts[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload))
+          aud=claims.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          cert={
+            "schema":"LOUKSNA_R4_PART4_R2_NTFS_PLAN_G24/1.0",
+            "status":"PASS",
+            "scope":"NTFS_INFO_MOUNT_WINDOW_REMEDIATION_ONLY",
+            "storage_blob":g["storage_blob"],
+            "storage_sha256":g["storage_sha256"],
+            "g23_sha256":os.environ["H"],
+            "authority_authenticated":True,
+            "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
+            "does_not_certify_disk_geometry":True,
+            "does_not_authorize_partition_mutation":True,
+            "canonical_mutation":False,
+            "authority_transfer":False,
+            "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          pathlib.Path(sys.argv[2]).write_text(json.dumps(cert,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(cert,indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-ntfs-plan-g24
+          path: ${{ runner.temp }}/g24/G24_NTFS_PLAN_REMEDIATION.json
+          retention-days: 90
+          compression-level: 0
