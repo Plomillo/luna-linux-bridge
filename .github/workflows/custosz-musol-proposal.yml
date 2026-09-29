@@ -28,17 +28,20 @@ jobs:
           OUT="$RUNNER_TEMP/custosz-musol-proposal-$GITHUB_RUN_ID"
           mkdir -p "$OUT"
           PROBLEM='PART4 MUSOL: preserve and freeze exactly /media/diegoignacionorambuenamiranda/Windows/PROYECTOS as the only protected scope on the Windows NTFS partition; inventory and hash-verify it; satisfy two_verified_backups, restore_proof and destructive_scope_prevalidated without fake PASS; then, only after evidence, remove Windows 11 and every direct child outside PROYECTOS on /dev/nvme0n1p3; never touch EFI, GPT, Debian/Linux, other partitions, or anything inside PROYECTOS; retain historical no-touch protections inside PROYECTOS including 8. Vida personal y Ocio; require checkpoint, fail-closed prevalidation, symlink/reparse-point and nested-mount defenses, postvalidation, rollback/recovery where technically applicable, G23 independent validation and G24 certification; return proposal only, no deletion.'
-          python3 -B -I "$PYZ" status > "$OUT/STATUS.json"
-          python3 -B -I "$PYZ" architect "$PROBLEM" --project LUNA_PROJECT > "$OUT/ARCHITECT.json"
-          python3 -B -I "$PYZ" reasoning-policy "$PROBLEM" --project LUNA_PROJECT > "$OUT/REASONING_POLICY.json"
-          python3 -B -I "$PYZ" resources > "$OUT/RESOURCES.json"
-          sha256sum "$OUT"/*.json > "$OUT/SHA256SUMS.txt"
-          echo '=== CUSTOSZ ARCHITECT ==='
-          cat "$OUT/ARCHITECT.json"
-          echo '=== CUSTOSZ REASONING POLICY ==='
-          cat "$OUT/REASONING_POLICY.json"
-          echo '=== CUSTOSZ RESOURCES ==='
-          cat "$OUT/RESOURCES.json"
+          set +e
+          python3 -B -I "$PYZ" status > "$OUT/STATUS.json" 2> "$OUT/STATUS.err"; RC_STATUS=$?
+          python3 -B -I "$PYZ" architect "$PROBLEM" --project LUNA_PROJECT > "$OUT/ARCHITECT.json" 2> "$OUT/ARCHITECT.err"; RC_ARCH=$?
+          python3 -B -I "$PYZ" reasoning-policy "$PROBLEM" --project LUNA_PROJECT > "$OUT/REASONING_POLICY.json" 2> "$OUT/REASONING_POLICY.err"; RC_REASON=$?
+          python3 -B -I "$PYZ" resources > "$OUT/RESOURCES.json" 2> "$OUT/RESOURCES.err"; RC_RES=$?
+          set -e
+          sha256sum "$OUT"/* > "$OUT/SHA256SUMS.txt"
+          echo "RC_STATUS=$RC_STATUS RC_ARCH=$RC_ARCH RC_REASON=$RC_REASON RC_RES=$RC_RES"
+          echo '=== STATUS ==='; cat "$OUT/STATUS.json"; cat "$OUT/STATUS.err"
+          echo '=== CUSTOSZ ARCHITECT ==='; cat "$OUT/ARCHITECT.json"; cat "$OUT/ARCHITECT.err"
+          echo '=== CUSTOSZ REASONING POLICY ==='; cat "$OUT/REASONING_POLICY.json"; cat "$OUT/REASONING_POLICY.err"
+          echo '=== CUSTOSZ RESOURCES ==='; cat "$OUT/RESOURCES.json"; cat "$OUT/RESOURCES.err"
+          test "$RC_ARCH" -eq 0
+          test "$RC_REASON" -eq 0
       - name: Preserve proposal evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
