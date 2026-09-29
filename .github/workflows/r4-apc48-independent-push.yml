@@ -7,6 +7,7 @@ on:
     paths:
       - .github/workflows/r4-apc48-independent-push.yml
       - scripts/assurance/apc48_trust_root.py
+      - scripts/assurance/apc48_g23_v2.py
 
 permissions:
   contents: read
@@ -24,7 +25,9 @@ jobs:
           ref: ${{ github.sha }}
           persist-credentials: false
           path: trust
-          sparse-checkout: |\n            scripts/assurance/apc48_trust_root.py\n            scripts/assurance/apc48_g23_v2.py
+          sparse-checkout: |
+            scripts/assurance/apc48_trust_root.py
+            scripts/assurance/apc48_g23_v2.py
           sparse-checkout-cone-mode: false
 
       - name: Checkout fixed candidate as data only
@@ -72,7 +75,9 @@ jobs:
           ref: ${{ github.sha }}
           persist-credentials: false
           path: trust
-          sparse-checkout: |\n            scripts/assurance/apc48_trust_root.py\n            scripts/assurance/apc48_g23_v2.py
+          sparse-checkout: |
+            scripts/assurance/apc48_trust_root.py
+            scripts/assurance/apc48_g23_v2.py
           sparse-checkout-cone-mode: false
 
       - name: Download G23
