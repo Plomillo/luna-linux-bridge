@@ -1,0 +1,36 @@
+name: "R4 master — APC sandbox isolation test"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-master-apc-sandbox-test.yml
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 3
+    steps:
+      - name: Compare user-systemd sandbox flags
+        shell: bash
+        run: |
+          set +e
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+
+          echo "=== NO SANDBOX ==="
+          systemd-run --user --wait --pipe --collect /usr/bin/sudo -n /usr/local/sbin/louksna-apc status >/dev/null
+          echo "NO_SANDBOX_RC=$?"
+
+          echo "=== LOCKPERSONALITY ONLY ==="
+          systemd-run --user --wait --pipe --collect -p LockPersonality=yes /usr/bin/sudo -n /usr/local/sbin/louksna-apc status >/dev/null
+          echo "LOCKPERSONALITY_RC=$?"
+
+          echo "=== PRIVATETMP ONLY ==="
+          systemd-run --user --wait --pipe --collect -p PrivateTmp=yes /usr/bin/sudo -n /usr/local/sbin/louksna-apc status >/dev/null
+          echo "PRIVATETMP_RC=$?"
