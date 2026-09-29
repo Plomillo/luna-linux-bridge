@@ -57,7 +57,42 @@ if [ "$MODE" = "plan" ]; then
   SS="$(sudo -n blockdev --getss "$DISK")"
   [ "$SS" -gt 0 ] || hold "BAD_SECTOR_SIZE"
   PARTED_RAW="$(sudo -n parted -m "$DISK" unit s print)"
-  NTFS_INFO="$(sudo -n ntfsresize --info --force "$P3" 2>&1)" || hold "NTFS_INFO_FAILED"
+
+  # ntfsresize refuses --info on a read-write mounted NTFS volume.
+  # Open a bounded read-only planning window: unmount only for the probe,
+  # remount immediately from the already-governed fstab, then revalidate.
+  PLAN_REMOUNT_REQUIRED=0
+  plan_restore_mount(){
+    rc=$?
+    if [ "${PLAN_REMOUNT_REQUIRED:-0}" -eq 1 ]; then
+      sudo -n mount "$WINROOT" >/dev/null 2>&1 || true
+    fi
+    return "$rc"
+  }
+  trap plan_restore_mount EXIT
+
+  sudo -n umount "$WINROOT" || hold "P3_UNMOUNT_FOR_NTFS_INFO_FAILED"
+  PLAN_REMOUNT_REQUIRED=1
+
+  set +e
+  NTFS_INFO="$(LC_ALL=C sudo -n ntfsresize --info --force "$P3" 2>&1)"
+  NTFS_INFO_RC=$?
+  set -e
+
+  sudo -n mount "$WINROOT" || hold "P3_REMOUNT_AFTER_NTFS_INFO_FAILED"
+  PLAN_REMOUNT_REQUIRED=0
+  trap - EXIT
+
+  [ "$NTFS_INFO_RC" -eq 0 ] || {
+    printf '%s\n' "$NTFS_INFO" > "$OUT/NTFS_INFO_ERROR.txt"
+    hold "NTFS_INFO_FAILED_RC_$NTFS_INFO_RC"
+  }
+
+  [ "$(findmnt -T "$WINROOT" -n -o SOURCE)" = "$P3" ] || hold "P3_SOURCE_AFTER_NTFS_INFO"
+  [ "$(findmnt -T "$WINROOT" -n -o FSTYPE)" = "ntfs3" ] || hold "P3_FSTYPE_AFTER_NTFS_INFO"
+  [ "$(blkid_uuid "$P3")" = "$OLD_UUID" ] || hold "P3_UUID_AFTER_NTFS_INFO"
+  [ -d "$KEEP" ] || hold "PROYECTOS_AFTER_NTFS_INFO_MISSING"
+  [ ! -L "$KEEP" ] || hold "PROYECTOS_AFTER_NTFS_INFO_SYMLINK"
 
   export PARTED_RAW NTFS_INFO SS
   python3 - "$OUT/STORAGE_PLAN.json" <<'PY'
