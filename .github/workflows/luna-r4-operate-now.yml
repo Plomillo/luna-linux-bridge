@@ -52,6 +52,15 @@ jobs:
           mkdir -p "$REC" "$DST" "$STATE" "$UNIT_DIR"
           systemctl --user stop luna-r4-master-part1-part9.service 2>/dev/null || true
 
+          if test -f "$STATE/MASTER_STATUS.json"; then
+            cp -a "$STATE/MASTER_STATUS.json" "$REC/MASTER_STATUS.before.json"
+            rm -f "$STATE/MASTER_STATUS.json"
+          fi
+          if test -f "$STATE/PERMISSION_REQUEST.json"; then
+            cp -a "$STATE/PERMISSION_REQUEST.json" "$REC/PERMISSION_REQUEST.before.json"
+            rm -f "$STATE/PERMISSION_REQUEST.json"
+          fi
+
           for f in master_controller.py MASTER_MISSION.md R4_MASTER_CONTRACT.json UPSTREAM_PINS.json; do
             if test -f "$DST/$f"; then cp -a "$DST/$f" "$REC/$f.before"; fi
             install -m 0600 "$SRC/$f" "$DST/$f"
