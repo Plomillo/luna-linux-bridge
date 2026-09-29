@@ -1,0 +1,91 @@
+name: "CUSTOSZ — PART3 advisory architecture consultation"
+
+on:
+  push:
+    branches:
+      - staging/custosz-mission-mailbox-20260928
+    paths:
+      - mission-control/custosz-part3-advisory/**
+
+permissions:
+  contents: read
+
+jobs:
+  consult:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Ask deployed CUSTOSZ architecture read-only
+        shell: bash
+        env:
+          CONSULT_SOURCE: missions/inbox/luna-r4-part3-contingency-consult-20260929/MISSION_ORIGINAL.md
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/custosz-part3-advisory"
+          mkdir -p "$OUT"
+          python3 - "$CONSULT_SOURCE" "$OUT" <<'PY'
+          import json, os, pathlib, sys, traceback
+          source=pathlib.Path(sys.argv[1])
+          out=pathlib.Path(sys.argv[2])
+          prompt=source.read_text(encoding="utf-8")
+          HOME=pathlib.Path("/home/diegoignacionorambuenamiranda")
+          PROJECT_ROOT=HOME/"LOUKSNA_MAESTRO_20260925"
+          CUSTOSZ=HOME/".local/lib/louksna/symphylax-r1/CUSTOSZ.v07.f04_b.pyz"
+          os.environ["CUSTOSZ_STATE_DIR"]=str(out/"ephemeral-custosz-state")
+          sys.path.insert(0,str(CUSTOSZ))
+          import custosz_v05_legacy as w
+
+          def workspace_adapter():
+              return PROJECT_ROOT
+          def discover_adapter():
+              return {
+                  "workspace":str(PROJECT_ROOT),
+                  "projects":{
+                      "LUNA_PROJECT":{
+                          "status":"RESOLVED",
+                          "path":str(PROJECT_ROOT),
+                          "score":999
+                      }
+                  }
+              }
+          w.workspace=workspace_adapter
+          w.discover=discover_adapter
+
+          result={
+              "schema":"LOUKSNA_PART3_ADVISORY_RESPONSE/1.0",
+              "mode":"READ_ONLY_ADVISORY",
+              "execution_authorized":False,
+              "mutation_authorized":False,
+              "authority":"Louksna.md",
+              "workspace":str(PROJECT_ROOT),
+              "source":str(source),
+          }
+          try:
+              result["architecture"]=w.architect(prompt,"LUNA_PROJECT")
+          except Exception as e:
+              result["architecture_error"]=type(e).__name__+":"+str(e)
+              result["architecture_traceback"]=traceback.format_exc()
+          try:
+              result["reasoning_policy"]=w.reasoning_policy(prompt,"LUNA_PROJECT")
+          except Exception as e:
+              result["reasoning_policy_error"]=type(e).__name__+":"+str(e)
+              result["reasoning_policy_traceback"]=traceback.format_exc()
+          (out/"CUSTOSZ_PART3_ADVISORY.json").write_text(
+              json.dumps(result,ensure_ascii=False,indent=2,sort_keys=True)+"\n",
+              encoding="utf-8"
+          )
+          print(json.dumps(result,ensure_ascii=False,indent=2,sort_keys=True))
+          PY
+
+      - name: Preserve advisory response
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: custosz-part3-advisory-response
+          path: ${{ runner.temp }}/custosz-part3-advisory/CUSTOSZ_PART3_ADVISORY.json
+          if-no-files-found: error
+          retention-days: 30
