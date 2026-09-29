@@ -1,0 +1,27 @@
+name: "R4 PART3 — inspect APC48 mount capability"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-apc-mount-capability/**
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 3
+    steps:
+      - name: Inspect APC48 capability read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "=== APC STATUS ==="
+          sudo -n /usr/local/sbin/louksna-apc status || true
+          echo "=== APC HELP ==="
+          /usr/local/sbin/louksna-apc --help 2>&1 || true
+          echo "=== APC SOURCE TOKENS ==="
+          grep -nEi 'mount|udisks|ntfs|case|apt-|reboot|service|status' /usr/local/sbin/louksna-apc 2>/dev/null | head -n 240 || true
