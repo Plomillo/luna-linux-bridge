@@ -113,7 +113,9 @@ jobs:
           set -Eeuo pipefail
           mkdir -p "$RESULTS"
           ulimit -v 262144 || true
-          export CUSTOSZ_WORKSPACE_OVERRIDE="$HOME/LOUKSNA_MAESTRO_20260925"
+          export CUSTOSZ_WORKSPACE_OVERRIDE="$HOME/SYMPHYLAX_LAB/CUSTOSZ_V7_R1_G23_G24_20260927T021532Z/POSIX_COMPATIBILITY_VIEW"
+          test -d "$CUSTOSZ_WORKSPACE_OVERRIDE/1. PROYECTOS PRIORITARIOS"
+          test -e "$CUSTOSZ_WORKSPACE_OVERRIDE/4. PENDIENTES" -o -e "$CUSTOSZ_WORKSPACE_OVERRIDE/2. CORPUS"
           python3 - <<'PY'
           import json, os, subprocess, sys
           from pathlib import Path
@@ -174,7 +176,7 @@ jobs:
 
   publish-registry:
     needs: [compile, route]
-    if: always() && needs.route.result != 'cancelled'
+    if: always() && (needs.route.result == 'success' || needs.route.result == 'failure')
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
