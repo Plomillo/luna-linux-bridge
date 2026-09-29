@@ -1,0 +1,120 @@
+name: "LUNA R4 — operate now from PART1 checkpoint"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-master-operate-now/**
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: luna-r4-operate-now
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: staging/luna-r4-master-part1-part9-20260929
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            server/r4-master
+          sparse-checkout-cone-mode: true
+
+      - name: Resume workers and master service from certified checkpoint
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+
+          SRC="$GITHUB_WORKSPACE/server/r4-master"
+          DST="$HOME/.local/lib/louksna/r4-master-part1-part9"
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9"
+          UNIT_DIR="$HOME/.config/systemd/user"
+          UNIT="$UNIT_DIR/luna-r4-master-part1-part9.service"
+          TS="$(date -u +%Y%m%dT%H%M%SZ)"
+          REC="$STATE/recovery/$TS"
+
+          test "$(hostname)" = "LOUKSNA"
+          test "$(id -un)" = "diegoignacionorambuenamiranda"
+          test -d "/home/diegoignacionorambuenamiranda/LOUKSNA_MAESTRO_20260925/MISSION3_OPERATIVE/R4_PART1_DESKTOP_V1/runs/20260926T034746Z-38579"
+
+          mkdir -p "$REC" "$DST" "$STATE" "$UNIT_DIR"
+          systemctl --user stop luna-r4-master-part1-part9.service 2>/dev/null || true
+
+          for f in master_controller.py MASTER_MISSION.md R4_MASTER_CONTRACT.json UPSTREAM_PINS.json; do
+            if test -f "$DST/$f"; then cp -a "$DST/$f" "$REC/$f.before"; fi
+            install -m 0600 "$SRC/$f" "$DST/$f"
+          done
+          chmod 0700 "$DST/master_controller.py"
+          python3 -m py_compile "$DST/master_controller.py"
+
+          if test -f "$UNIT"; then cp -a "$UNIT" "$REC/luna-r4-master-part1-part9.service.before"; fi
+          cat > "$UNIT.tmp" <<EOF
+          [Unit]
+          Description=LOUKSNA R4 master PART1-PART9
+          After=network-online.target
+          Wants=network-online.target
+
+          [Service]
+          Type=simple
+          WorkingDirectory=$DST
+          Environment=HOME=$HOME
+          Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$HOME/.local/bin
+          ExecStart=/usr/bin/python3 -B -I $DST/master_controller.py --loop --sleep 300
+          Restart=on-failure
+          RestartSec=15
+          ProtectHome=false
+
+          [Install]
+          WantedBy=default.target
+          EOF
+          sed -i 's/^          //' "$UNIT.tmp"
+          mv "$UNIT.tmp" "$UNIT"
+          chmod 0600 "$UNIT"
+
+          systemctl --user daemon-reload
+          systemctl --user enable luna-r4-master-part1-part9.service >/dev/null
+          systemctl --user reset-failed luna-r4-master-part1-part9.service || true
+          systemctl --user start luna-r4-master-part1-part9.service
+
+          for _ in $(seq 1 45); do
+            active="$(systemctl --user is-active luna-r4-master-part1-part9.service 2>/dev/null || true)"
+            if test "$active" = "active" && test -f "$STATE/MASTER_STATUS.json"; then
+              break
+            fi
+            sleep 2
+          done
+
+          echo "SERVICE_ACTIVE=$(systemctl --user is-active luna-r4-master-part1-part9.service 2>/dev/null || true)"
+          echo "SERVICE_ENABLED=$(systemctl --user is-enabled luna-r4-master-part1-part9.service 2>/dev/null || true)"
+          echo "RECOVERY_POINTER=$REC"
+          if test -f "$STATE/MASTER_STATUS.json"; then
+            echo "=== MASTER_STATUS ==="
+            cat "$STATE/MASTER_STATUS.json"
+          else
+            echo "MASTER_STATUS=STARTING"
+          fi
+
+          test "$(systemctl --user is-active luna-r4-master-part1-part9.service)" = "active"
+
+      - name: Record dispatch to workers
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9/MASTER_STATUS.json"
+          BODY="LUNA_R4_WORKERS_DISPATCHED%0A%0Acheckpoint=20260926T034746Z-38579%0Amode=DIFFERENTIAL%0Asequence=PART_1->PART_2->PART_3->PART_4->PART_5->PART_6->PART_7->PART_8->PART_9%0Aserver_service=luna-r4-master-part1-part9.service%0Apolicy=WORK_UNTIL_PERMISSION_GATE%0Anotify_user_only=NEEDS_PRIVILEGE_OR_NEEDS_HUMAN_AUTHORIZATION"
+          gh api --method POST repos/Plomillo/luna-linux-bridge/issues/29/comments -f body="$BODY" >/dev/null
+          echo "WORKERS_DISPATCHED=PASS"
