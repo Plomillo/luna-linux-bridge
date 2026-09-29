@@ -1,0 +1,10 @@
+{
+  "scope": "BOUNDED_NON_DESTRUCTIVE",
+  "priority": "P1_PROYECTOS",
+  "action": "RESTORE_WINDOWS_NTFS_READ_ONLY_BINDING",
+  "device": "/dev/nvme0n1p3",
+  "expected_mount": "/media/diegoignacionorambuenamiranda/Windows",
+  "expected_projects": "/media/diegoignacionorambuenamiranda/Windows/PROYECTOS",
+  "rollback": "udisksctl unmount -b /dev/nvme0n1p3",
+  "authorized_by_user": true
+}
