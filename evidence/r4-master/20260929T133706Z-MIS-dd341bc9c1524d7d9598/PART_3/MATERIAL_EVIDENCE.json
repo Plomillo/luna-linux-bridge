@@ -1,0 +1,70 @@
+{
+  "authority": "Louksna.md",
+  "authority_transfer": false,
+  "blockers": [],
+  "canonical_mutation": false,
+  "checkpoint": "/home/diegoignacionorambuenamiranda/LOUKSNA_MAESTRO_20260925/MISSION3_OPERATIVE/R4_PART1_DESKTOP_V1/runs/20260926T034746Z-38579",
+  "checks": {
+    "authority": true,
+    "custosz": true,
+    "metaos": true,
+    "project_workspace": true,
+    "projects_center": true,
+    "runner": true,
+    "runtime": true,
+    "semantic_container": true,
+    "symphylax": true
+  },
+  "details": {
+    "identities": {
+      "authority": "5270c3d643339c283edf13b414f335f23f921c4dac023b06d38de62927e29bf9",
+      "custosz": "dacf1f8c13b2fcbfc617cf0d4d780b30502c13395224691e6b0f05f53d9816a2",
+      "metaos": "5d8f1239e3a0b452be722078760b000afc22af0a64f93ffb0a1f74024f15aed0",
+      "runtime": "a79e13869601d68fe801b85ad421719b79d4afa5520ae34b91b419bd8834ae67"
+    },
+    "priority_order": [
+      "PROYECTOS",
+      "SEMANTIC_CONTAINER"
+    ],
+    "projects_center_alias": "PROYECTOS",
+    "projects_center_candidate": "/home/diegoignacionorambuenamiranda/Luna R4/Proyectos",
+    "projects_center_historical_candidate": "/home/diegoignacionorambuenamiranda/SYMPHYLAX_LAB/CUSTOSZ_V7_R1_G23_G24_20260927T021532Z/POSIX_COMPATIBILITY_VIEW/1. PROYECTOS PRIORITARIOS",
+    "projects_center_live_candidates": [
+      {
+        "exists": true,
+        "is_symlink": true,
+        "path": "/home/diegoignacionorambuenamiranda/Proyectos",
+        "resolved": "/media/diegoignacionorambuenamiranda/Windows/PROYECTOS",
+        "resolved_is_dir": true
+      },
+      {
+        "exists": true,
+        "is_symlink": true,
+        "path": "/home/diegoignacionorambuenamiranda/Luna R4/Proyectos",
+        "resolved": "/media/diegoignacionorambuenamiranda/Windows/PROYECTOS",
+        "resolved_is_dir": true
+      },
+      {
+        "exists": true,
+        "is_symlink": false,
+        "path": "/media/diegoignacionorambuenamiranda/Windows/PROYECTOS",
+        "resolved": "/media/diegoignacionorambuenamiranda/Windows/PROYECTOS",
+        "resolved_is_dir": true
+      }
+    ],
+    "projects_center_resolution": "ALIAS_PROJECTS_CENTER_TO_PROYECTOS",
+    "semantic_container_candidate": "/home/diegoignacionorambuenamiranda/SYMPHYLAX_LAB/R1_CANDIDATE/SEMANTIC_CONTAINER"
+  },
+  "mission_id": "MIS-dd341bc9c1524d7d9598",
+  "non_regression": "PASS",
+  "operation_id": "OP-30cc5a5c15a54cac9a7ef054dfce46c9",
+  "part": "PART_3",
+  "part_name": "CORE_ORCHESTRATION_AND_PROJECTS",
+  "previous_part_g24_sha256": "a5e6ae2b4679cc8145e65879bf35ba7288715daef9fea2a73f9ba66eeaf38468",
+  "rollback_pointer": "/home/diegoignacionorambuenamiranda/.local/state/louksna/r4-master-part1-part9/rollback/PART_3",
+  "schema": "LOUKSNA_R4_PART_MATERIAL_EVIDENCE/1.0",
+  "self_certified": false,
+  "status": "PASS",
+  "timestamp_utc": "2026-09-29T13:37:06.935080Z",
+  "validation": "PASS"
+}
