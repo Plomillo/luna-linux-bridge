@@ -1,0 +1,7 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_GEOMETRY_ONLY_REQUEST/1.0",
+  "status": "REQUESTED",
+  "disk": "/dev/nvme0n1",
+  "purpose": "Find a migration route that does not require resizing inconsistent NTFS p3.",
+  "destructive": false
+}
