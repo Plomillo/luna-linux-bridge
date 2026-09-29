@@ -1,0 +1,156 @@
+name: "R4 PART1 — forensic checkpoint audit"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-ui-reference-20260929
+    paths:
+      - .github/workflows/r4-part1-checkpoint-audit.yml
+
+permissions:
+  contents: read
+
+jobs:
+  audit-part1-checkpoint:
+    name: "Read-only PART1 resume audit on LOUKSNA"
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout audit definition in isolated path
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          clean: true
+          path: r4-part1-checkpoint-audit
+          sparse-checkout: |
+            docs/luna-r4/ui-reference
+          sparse-checkout-cone-mode: true
+
+      - name: Audit latest known PART1 checkpoint without mutation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export AUDIT_OUT="$RUNNER_TEMP/r4-part1-checkpoint-audit"
+          mkdir -p "$AUDIT_OUT"
+          HOME_REAL="/home/diegoignacionorambuenamiranda"
+          HIST_RUN="20260926T034746Z-38579"
+          HIST_DIR_NAME="R4_PART1_DESKTOP_V1"
+
+          # Targeted lookup only; prune caches/runner work to avoid unnecessary traversal.
+          mapfile -t MATCHES < <(
+            find "$HOME_REAL" -xdev -maxdepth 10               \( -path "$HOME_REAL/.cache" -o -path "$HOME_REAL/actions-runner/_work" \) -prune -o               -type d -path "*/$HIST_DIR_NAME/runs/$HIST_RUN" -print 2>/dev/null | sort -u
+          )
+
+          CHECKPOINT_MATCH_COUNT="${#MATCHES[@]}"
+          CHECKPOINT_PATH=""
+          if [ "$CHECKPOINT_MATCH_COUNT" -eq 1 ]; then
+            CHECKPOINT_PATH="${MATCHES[0]}"
+          fi
+
+          PLASMA_CFG="$HOME_REAL/.config/plasma-org.kde.plasma.desktop-appletsrc"
+          KDEGLOBALS="$HOME_REAL/.config/kdeglobals"
+          KWINRC="$HOME_REAL/.config/kwinrc"
+          UI_REF="$HOME_REAL/Descargas/LUNA_R4_UI_REFERENCE"
+
+          SYMPHYLAX_STATE="$(XDG_RUNTIME_DIR=/run/user/$(id -u) DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus systemctl --user is-active symphylax-r1.service 2>/dev/null || true)"
+          LINGER="$(loginctl show-user "$(id -un)" -p Linger --value 2>/dev/null || true)"
+          RUNNER_STATE="$(systemctl is-active actions.runner.Plomillo-luna-linux-bridge.luna-linux.service 2>/dev/null || true)"
+          BOOT_ID="$(cat /proc/sys/kernel/random/boot_id)"
+
+          IMAGE_SHA=""
+          KDE_REF_SHA=""
+          if [ -f "$UI_REF/LUNA_R4_UI_REFERENCE_PARTS_1_9.jpg" ]; then
+            IMAGE_SHA="$(sha256sum "$UI_REF/LUNA_R4_UI_REFERENCE_PARTS_1_9.jpg" | awk '{print $1}')"
+          fi
+          if [ -f "$UI_REF/KDE_UI_REFERENCE_20260929T020349Z.7z" ]; then
+            KDE_REF_SHA="$(sha256sum "$UI_REF/KDE_UI_REFERENCE_20260929T020349Z.7z" | awk '{print $1}')"
+          fi
+
+          export CHECKPOINT_MATCH_COUNT CHECKPOINT_PATH PLASMA_CFG KDEGLOBALS KWINRC UI_REF
+          export SYMPHYLAX_STATE LINGER RUNNER_STATE BOOT_ID IMAGE_SHA KDE_REF_SHA HIST_RUN HIST_DIR_NAME
+
+          python3 - <<'PY'
+          import os, json, pathlib, hashlib, datetime, re
+
+          def sha(path):
+              p=pathlib.Path(path)
+              if not p.is_file():
+                  return None
+              h=hashlib.sha256()
+              with p.open("rb") as f:
+                  for chunk in iter(lambda:f.read(1024*1024),b""):
+                      h.update(chunk)
+              return h.hexdigest()
+
+          plasma=pathlib.Path(os.environ["PLASMA_CFG"])
+          text=plasma.read_text(encoding="utf-8",errors="replace") if plasma.is_file() else ""
+          expected_labels=["Inicio","Estudio","Devocional","Juegos","Ingeniería","Laboratorio","Proyectos","Sistema"]
+          label_presence={x:(x in text) for x in expected_labels}
+
+          count=int(os.environ["CHECKPOINT_MATCH_COUNT"])
+          path=os.environ["CHECKPOINT_PATH"] or None
+
+          result={
+              "schema":"LUNA_R4_PART1_RESUME_AUDIT/1.0",
+              "status":"PASS" if count==1 else "HOLD",
+              "audit_mode":"READ_ONLY",
+              "audited_at_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),
+              "host":{
+                  "machine":os.uname().nodename,
+                  "user":os.environ.get("USER",""),
+                  "boot_id":os.environ["BOOT_ID"],
+                  "runner_state":os.environ["RUNNER_STATE"],
+                  "symphylax_state":os.environ["SYMPHYLAX_STATE"],
+                  "linger":os.environ["LINGER"],
+              },
+              "historical_checkpoint":{
+                  "expected_family":os.environ["HIST_DIR_NAME"],
+                  "expected_run":os.environ["HIST_RUN"],
+                  "match_count":count,
+                  "resolved_path":path,
+              },
+              "current_kde":{
+                  "plasma_config":str(plasma),
+                  "plasma_config_sha256":sha(plasma),
+                  "kdeglobals_sha256":sha(os.environ["KDEGLOBALS"]),
+                  "kwinrc_sha256":sha(os.environ["KWINRC"]),
+                  "expected_section_labels_present":label_presence,
+                  "expected_section_labels_count":sum(label_presence.values()),
+              },
+              "ui_reference":{
+                  "root":os.environ["UI_REF"],
+                  "image_sha256":os.environ["IMAGE_SHA"] or None,
+                  "kde_snapshot_sha256":os.environ["KDE_REF_SHA"] or None,
+                  "image_expected":"8a9852c4155d64fd74059c7239e67c82e16e5acd556627d70575db85078d4ed4",
+                  "kde_snapshot_expected":"c21e04d5447e123b59fc9b94d2e9684bc03ea164999ef6f60210e257557a16dc",
+              },
+              "resume_contract":{
+                  "current_part":"PART_1",
+                  "do_not_repeat":[
+                      "PART_0 inventory/diagnostic/preparation already accepted as advanced baseline",
+                      "PART_1 full reinstall",
+                      "SERVER_READY G08/G09/G23/G24 chain"
+                  ],
+                  "first_action":"DIFFERENTIAL_VERIFY_PART1_AGAINST_APPROVED_UI_REFERENCE",
+                  "then":"APPLY_ONLY_MISSING_PART1_DELTA",
+                  "part2_gate":"ENTER_PART_2_ONLY_AFTER_PART1_POST_VALIDATION_PASS",
+                  "failure_posture":"FAIL_CLOSED"
+              }
+          }
+          out=pathlib.Path(os.environ["AUDIT_OUT"])
+          (out/"PART1_RESUME_AUDIT.json").write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+          (out/"CHECKPOINT_PATH.txt").write_text((path or "UNRESOLVED")+"\n",encoding="utf-8")
+          print(json.dumps(result,ensure_ascii=False,indent=2))
+          if result["status"] != "PASS":
+              raise SystemExit(42)
+          PY
+
+      - name: Preserve checkpoint audit evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part1-resume-audit
+          path: ${{ runner.temp }}/r4-part1-checkpoint-audit
+          if-no-files-found: error
