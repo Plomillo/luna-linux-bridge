@@ -122,6 +122,9 @@ jobs:
           test "$(sha256sum "$UI/KDE_UI_REFERENCE_20260929T020349Z.7z" | awk '{print $1}')" = "c21e04d5447e123b59fc9b94d2e9684bc03ea164999ef6f60210e257557a16dc"
 
           test "$(systemctl is-active actions.runner.Plomillo-luna-linux-bridge.luna-linux.service)" = "active"
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
           test "$(systemctl --user is-active symphylax-r1.service)" = "active"
           sudo -n /usr/local/sbin/louksna-apc status > "$RUNNER_TEMP/APC_STATUS.json"
           python3 - "$RUNNER_TEMP/APC_STATUS.json" <<'PY'
