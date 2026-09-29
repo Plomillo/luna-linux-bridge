@@ -28,5 +28,14 @@
     "FAIL_CLOSED",
     "NO_SILENT_OPERATIONS",
     "EXTEND_DO_NOT_REPLACE"
-  ]
+  ],
+  "host_physical_reference": {
+    "root": "/home/diegoignacionorambuenamiranda/Descargas/LUNA_R4_UI_REFERENCE",
+    "requested_parent": "/home/diegoignacionorambuenamiranda/Descargas",
+    "role": "LOCAL_OPERATIONAL_REFERENCE",
+    "authority": false,
+    "must_match_repository_sha256": true,
+    "silent_overwrite": false,
+    "divergence_action": "HOLD"
+  }
 }
