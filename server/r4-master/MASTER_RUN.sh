@@ -54,7 +54,7 @@ Type=simple
 WorkingDirectory=$DST
 Environment=HOME=$HOME
 Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$HOME/.local/bin
-ExecStart=/usr/bin/python3 -B -I $DST/master_controller.py --loop --sleep 300
+ExecStart=/usr/bin/python3 -B -I $DST/master_controller.py --loop --sleep 60
 Restart=on-failure
 RestartSec=15
 ProtectHome=false
