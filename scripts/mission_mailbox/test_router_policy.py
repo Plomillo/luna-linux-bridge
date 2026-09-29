@@ -101,8 +101,11 @@ assert census["pyz_sha256"]=="dacf1f8c13b2fcbfc617cf0d4d780b30502c13395224691e6b
 old_override=os.environ.get("CUSTOSZ_WORKSPACE_OVERRIDE")
 try:
     with tempfile.TemporaryDirectory(prefix="mailbox-workspace-selftest-") as td:
+        root=Path(td)
+        (root/"1. PROYECTOS PRIORITARIOS").mkdir()
+        (root/"4. PENDIENTES").mkdir()
         os.environ["CUSTOSZ_WORKSPACE_OVERRIDE"]=td
-        assert mod.find_workspace()==Path(td).resolve()
+        assert mod.find_workspace()==root.resolve()
     os.environ["CUSTOSZ_WORKSPACE_OVERRIDE"]="/definitely/not/a/real/mailbox/workspace"
     try:
         mod.find_workspace()
