@@ -69,9 +69,7 @@ jobs:
           "technically applicable, G23 independent validation and G24 certification; proposal only, no deletion.")
           architect=worker.architect(problem,"LUNA_PROJECT")
           policy=worker.reasoning_policy(problem,"LUNA_PROJECT")
-          status=worker.stat()
-          resources=worker.resources()
-          for name,obj in [("ARCHITECT.json",architect),("REASONING_POLICY.json",policy),("STATUS.json",status),("RESOURCES.json",resources)]:
+          for name,obj in [("ARCHITECT.json",architect),("REASONING_POLICY.json",policy)]:
               (out/name).write_text(json.dumps(obj,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
           print("=== CUSTOSZ ARCHITECT ===")
           print(json.dumps(architect,ensure_ascii=False,indent=2,sort_keys=True))
