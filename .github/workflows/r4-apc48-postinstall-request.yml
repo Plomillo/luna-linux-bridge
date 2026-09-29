@@ -71,7 +71,7 @@ jobs:
           for name in files:
               data=(phys/name).read_bytes()
               rows.append((f"server/apc48/{name}",hashlib.sha256(data).hexdigest(),len(data)))
-          material="".join(f"{p}\\0{h}\\0{n}\\n" for p,h,n in rows).encode()
+          material="".join(f"{p}\0{h}\0{n}\n" for p,h,n in rows).encode()
           candidate_digest=hashlib.sha256(material).hexdigest()
 
           def sh(*cmd):
@@ -192,7 +192,7 @@ jobs:
           for name in sorted(files):
               data=(evdir/name).read_bytes()
               rows.append({"path":name,"bytes":len(data),"sha256":hashlib.sha256(data).hexdigest()})
-          material="".join(f"{r['path']}\\0{r['sha256']}\\0{r['bytes']}\\n" for r in rows).encode()
+          material="".join(f"{r['path']}\0{r['sha256']}\0{r['bytes']}\n" for r in rows).encode()
           digest=hashlib.sha256(material).hexdigest()
 
           exp=dt.datetime.fromisoformat(str(activation["expires_at_utc"]).replace("Z","+00:00")).astimezone(dt.timezone.utc)
@@ -359,70 +359,70 @@ jobs:
           mission=mission_dir/"MISSION_ORIGINAL.md"
 
           body=f"""# MISIÓN — REANUDAR LUNA R4 DESDE CHECKPOINT CERTIFICADO
-
-MISSION_ID = MIS-LUNA-R4-PART1-RESUME-APC48-V2-{run_id}
-MISSION_CLASS = LUNA_R4_PART1_DIFFERENTIAL_RESUME
-AUTHORITY = Louksna.md
-GOVERNOR = MetaOS
-WORKER = CUSTOSZ V7
-RUNTIME = CUSTOSZ_RUNTIME_V1
-SUPERVISOR = SYMPHYLAX R1
-INGRESS = CUSTOSZ MISSION MAILBOX
-FAILURE_POSTURE = FAIL_CLOSED
-TRACEABILITY = REQUIRED
-AUDITABILITY = REQUIRED
-PROVENANCE = REQUIRED
-ROLLBACK = REQUIRED
-NO_SILENT_OPERATIONS = ABSOLUTE
-
-HOST_ACTIVATION_CERTIFICATE = G24_POSTINSTALL
-HOST_ACTIVATION_CERTIFICATE_SHA256 = {cert_digest}
-HOST_ACTIVATION_CERTIFICATION_RUN = {run_id}
-RUNTIME_HOST_ACTIVATION_CERTIFIED = TRUE
-APC48_V2_CANDIDATE_DIGEST = {cert["candidate_digest_sha256"]}
-
-CURRENT_PART = PART_1
-RESUME_MODE = DIFFERENTIAL
-RESUME_CHECKPOINT = {cert["checkpoint"]}
-PART2_GATE = PART1_POST_VALIDATION_PASS
-
-DO_NOT_REPEAT = PART_0;PART_1_FULL_REINSTALL;SERVER_READY_G08_G09_G23_G24
-FIRST_ACTION = VERIFY_CURRENT_PART1_AGAINST_CHECKPOINT_AND_APPROVED_UI_REFERENCE
-SECOND_ACTION = APPLY_ONLY_MISSING_PART1_DELTA
-PART2_ENTRY = ONLY_AFTER_PART1_POST_VALIDATION_PASS
-PRIVILEGED_INTERFACE = sudo -n /usr/local/sbin/louksna-apc
-
-MANDATORY_PRECHECKS:
-- verify APC48 status through sudo -n;
-- verify checkpoint identity and evidence;
-- verify approved UI/KDE reference hashes;
-- verify runner and SYMPHYLAX remain active;
-- refuse any password prompt;
-- refuse silent overwrite or full PART 1 reinstall.
-
-EXECUTION:
-Continue only the missing delta of PART 1. Preserve existing validated work. Produce checkpointed evidence for each mutation and post-validation. Do not enter PART 2 unless PART1_POST_VALIDATION_PASS is demonstrated.
-
-TERMINAL_RULE:
-Any contradiction, missing identity, expired authorization, unexpected password request, hash mismatch, ambiguous state, or unauthorized scope => HOLD.
-"""
+          
+          MISSION_ID = MIS-LUNA-R4-PART1-RESUME-APC48-V2-{run_id}
+          MISSION_CLASS = LUNA_R4_PART1_DIFFERENTIAL_RESUME
+          AUTHORITY = Louksna.md
+          GOVERNOR = MetaOS
+          WORKER = CUSTOSZ V7
+          RUNTIME = CUSTOSZ_RUNTIME_V1
+          SUPERVISOR = SYMPHYLAX R1
+          INGRESS = CUSTOSZ MISSION MAILBOX
+          FAILURE_POSTURE = FAIL_CLOSED
+          TRACEABILITY = REQUIRED
+          AUDITABILITY = REQUIRED
+          PROVENANCE = REQUIRED
+          ROLLBACK = REQUIRED
+          NO_SILENT_OPERATIONS = ABSOLUTE
+          
+          HOST_ACTIVATION_CERTIFICATE = G24_POSTINSTALL
+          HOST_ACTIVATION_CERTIFICATE_SHA256 = {cert_digest}
+          HOST_ACTIVATION_CERTIFICATION_RUN = {run_id}
+          RUNTIME_HOST_ACTIVATION_CERTIFIED = TRUE
+          APC48_V2_CANDIDATE_DIGEST = {cert["candidate_digest_sha256"]}
+          
+          CURRENT_PART = PART_1
+          RESUME_MODE = DIFFERENTIAL
+          RESUME_CHECKPOINT = {cert["checkpoint"]}
+          PART2_GATE = PART1_POST_VALIDATION_PASS
+          
+          DO_NOT_REPEAT = PART_0;PART_1_FULL_REINSTALL;SERVER_READY_G08_G09_G23_G24
+          FIRST_ACTION = VERIFY_CURRENT_PART1_AGAINST_CHECKPOINT_AND_APPROVED_UI_REFERENCE
+          SECOND_ACTION = APPLY_ONLY_MISSING_PART1_DELTA
+          PART2_ENTRY = ONLY_AFTER_PART1_POST_VALIDATION_PASS
+          PRIVILEGED_INTERFACE = sudo -n /usr/local/sbin/louksna-apc
+          
+          MANDATORY_PRECHECKS:
+          - verify APC48 status through sudo -n;
+          - verify checkpoint identity and evidence;
+          - verify approved UI/KDE reference hashes;
+          - verify runner and SYMPHYLAX remain active;
+          - refuse any password prompt;
+          - refuse silent overwrite or full PART 1 reinstall.
+          
+          EXECUTION:
+          Continue only the missing delta of PART 1. Preserve existing validated work. Produce checkpointed evidence for each mutation and post-validation. Do not enter PART 2 unless PART1_POST_VALIDATION_PASS is demonstrated.
+          
+          TERMINAL_RULE:
+          Any contradiction, missing identity, expired authorization, unexpected password request, hash mismatch, ambiguous state, or unauthorized scope => HOLD.
+          """
           mission.write_text(body,encoding="utf-8")
           source_sha=hashlib.sha256(mission.read_bytes()).hexdigest()
 
           adapter_path=pathlib.Path("scripts/mission_mailbox/adapters/luna_r4_part1_resume_apc48_v2.py")
           adapter_text=f'''#!/usr/bin/env python3
-"""Pinned mailbox adapter for the exact LUNA R4 PART1 differential resume mission.
-This adapter is declarative: material execution remains governed by the execution plan.
-"""
-import json
-SOURCE_SHA256 = "{source_sha}"
-MISSION_CLASS = "LUNA_R4_PART1_DIFFERENTIAL_RESUME"
-SCOPE = "LUNA_R4_PART1_DIFFERENTIAL_RESUME_HANDOFF"
-def main():
-    print(json.dumps({{"status":"READY","source_sha256":SOURCE_SHA256,"mission_class":MISSION_CLASS,"scope":SCOPE}},sort_keys=True))
-if __name__ == "__main__":
-    main()
-'''
+          """Pinned mailbox adapter for the exact LUNA R4 PART1 differential resume mission.
+          This adapter is declarative: material execution remains governed by the execution plan.
+          """
+          import json
+          SOURCE_SHA256 = "{source_sha}"
+          MISSION_CLASS = "LUNA_R4_PART1_DIFFERENTIAL_RESUME"
+          SCOPE = "LUNA_R4_PART1_DIFFERENTIAL_RESUME_HANDOFF"
+          def main():
+          print(json.dumps({{"status":"READY","source_sha256":SOURCE_SHA256,"mission_class":MISSION_CLASS,"scope":SCOPE}},sort_keys=True))
+          if __name__ == "__main__":
+          main()
+          '''
           adapter_path.write_text(adapter_text,encoding="utf-8")
           adapter_sha=hashlib.sha256(adapter_path.read_bytes()).hexdigest()
 
