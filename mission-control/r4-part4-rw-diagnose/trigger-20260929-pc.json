@@ -1,0 +1,9 @@
+{
+  "mission": "PART4_RW_ACCESS_DIAGNOSIS",
+  "mode": "READ_ONLY",
+  "objective": "Identify exact cause and available governed path to write-enable Windows/PROYECTOS for previously authorized deduplication",
+  "prior_failed_run": 36592939878,
+  "prior_job": 109490429580,
+  "expected_current_mount": "read-only",
+  "no_mutation": true
+}
