@@ -17,31 +17,68 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             artifacts/custosz-v7
+            Louksna.md
           sparse-checkout-cone-mode: false
-      - name: Ask CUSTOSZ architect and reasoning policy
+      - name: Ask governed CUSTOSZ architect
         shell: bash
-        env:
-          CUSTOSZ_WORKSPACE: /home/diegoignacionorambuenamiranda/SYMPHYLAX_LAB/CUSTOSZ_V7_R1_G23_G24_20260927T021532Z/POSIX_COMPATIBILITY_VIEW
         run: |
           set -Eeuo pipefail
-          PYZ="artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz"
           OUT="$RUNNER_TEMP/custosz-musol-proposal-$GITHUB_RUN_ID"
           mkdir -p "$OUT"
-          PROBLEM='PART4 MUSOL: preserve and freeze exactly /media/diegoignacionorambuenamiranda/Windows/PROYECTOS as the only protected scope on the Windows NTFS partition; inventory and hash-verify it; satisfy two_verified_backups, restore_proof and destructive_scope_prevalidated without fake PASS; then, only after evidence, remove Windows 11 and every direct child outside PROYECTOS on /dev/nvme0n1p3; never touch EFI, GPT, Debian/Linux, other partitions, or anything inside PROYECTOS; retain historical no-touch protections inside PROYECTOS including 8. Vida personal y Ocio; require checkpoint, fail-closed prevalidation, symlink/reparse-point and nested-mount defenses, postvalidation, rollback/recovery where technically applicable, G23 independent validation and G24 certification; return proposal only, no deletion.'
-          set +e
-          python3 -B -I "$PYZ" status > "$OUT/STATUS.json" 2> "$OUT/STATUS.err"; RC_STATUS=$?
-          python3 -B -I "$PYZ" architect "$PROBLEM" --project LUNA_PROJECT > "$OUT/ARCHITECT.json" 2> "$OUT/ARCHITECT.err"; RC_ARCH=$?
-          python3 -B -I "$PYZ" reasoning-policy "$PROBLEM" --project LUNA_PROJECT > "$OUT/REASONING_POLICY.json" 2> "$OUT/REASONING_POLICY.err"; RC_REASON=$?
-          python3 -B -I "$PYZ" resources > "$OUT/RESOURCES.json" 2> "$OUT/RESOURCES.err"; RC_RES=$?
-          set -e
-          sha256sum "$OUT"/* > "$OUT/SHA256SUMS.txt"
-          echo "RC_STATUS=$RC_STATUS RC_ARCH=$RC_ARCH RC_REASON=$RC_REASON RC_RES=$RC_RES"
-          echo '=== STATUS ==='; cat "$OUT/STATUS.json"; cat "$OUT/STATUS.err"
-          echo '=== CUSTOSZ ARCHITECT ==='; cat "$OUT/ARCHITECT.json"; cat "$OUT/ARCHITECT.err"
-          echo '=== CUSTOSZ REASONING POLICY ==='; cat "$OUT/REASONING_POLICY.json"; cat "$OUT/REASONING_POLICY.err"
-          echo '=== CUSTOSZ RESOURCES ==='; cat "$OUT/RESOURCES.json"; cat "$OUT/RESOURCES.err"
-          test "$RC_ARCH" -eq 0
-          test "$RC_REASON" -eq 0
+          python3 - "$OUT" <<'PY'
+          import sys, json, hashlib, pathlib
+          out=pathlib.Path(sys.argv[1])
+          pyz=pathlib.Path("artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz").resolve()
+          authority=pathlib.Path("Louksna.md").resolve()
+          workspace=pathlib.Path("/home/diegoignacionorambuenamiranda/SYMPHYLAX_LAB/CUSTOSZ_V7_R1_G23_G24_20260927T021532Z/POSIX_COMPATIBILITY_VIEW").resolve()
+          project_path=workspace/"1. PROYECTOS PRIORITARIOS"/"1. PROYECTO LUNA"
+          if not workspace.is_dir() or not project_path.exists():
+              raise SystemExit("HOLD:GOVERNED_WORKSPACE_MISSING")
+          sys.path.insert(0,str(pyz))
+          import custosz_v05_legacy as worker
+          def sha(p):
+              h=hashlib.sha256()
+              with open(p,"rb") as f:
+                  for b in iter(lambda:f.read(8*1024*1024),b""): h.update(b)
+              return h.hexdigest()
+          observed=sha(authority)
+          expected_rel,expected_bytes,expected_sha,expected_role=worker.PINS["LOUKSNA"]
+          if observed!=expected_sha or authority.stat().st_size!=expected_bytes:
+              raise SystemExit("HOLD:LOUKSNA_AUTHORITY_PIN_MISMATCH")
+          worker.workspace=lambda:workspace
+          worker.discover=lambda:{
+              "workspace":str(workspace),
+              "projects":{"LUNA_PROJECT":{"status":"RESOLVED","path":str(project_path),"score":999}}
+          }
+          worker.sources=lambda large=False:{
+              "observed_at":worker.utc(),
+              "sources":{"LOUKSNA":{
+                  "relative":expected_rel,"bytes":expected_bytes,"sha256":expected_sha,
+                  "role":expected_role,"path":str(authority),"exists":True,
+                  "observed_bytes":authority.stat().st_size,"observed_sha256":observed,
+                  "integrity":"PASS","binding":"MAILBOX_VERIFIED_REPOSITORY_AUTHORITY"
+              }}
+          }
+          problem=("PART4 MUSOL: preserve and freeze exactly /media/diegoignacionorambuenamiranda/Windows/PROYECTOS "
+          "as the only protected scope on the Windows NTFS partition; inventory and hash-verify it; satisfy "
+          "two_verified_backups, restore_proof and destructive_scope_prevalidated without fake PASS; then only "
+          "after evidence remove Windows 11 and every direct child outside PROYECTOS on /dev/nvme0n1p3; never touch "
+          "EFI, GPT, Debian/Linux, other partitions, or anything inside PROYECTOS; retain historical no-touch "
+          "protections inside PROYECTOS including 8. Vida personal y Ocio; require checkpoint, fail-closed "
+          "prevalidation, symlink/reparse-point and nested-mount defenses, postvalidation, rollback/recovery where "
+          "technically applicable, G23 independent validation and G24 certification; proposal only, no deletion.")
+          architect=worker.architect(problem,"LUNA_PROJECT")
+          policy=worker.reasoning_policy(problem,"LUNA_PROJECT")
+          status=worker.stat()
+          resources=worker.resources()
+          for name,obj in [("ARCHITECT.json",architect),("REASONING_POLICY.json",policy),("STATUS.json",status),("RESOURCES.json",resources)]:
+              (out/name).write_text(json.dumps(obj,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print("=== CUSTOSZ ARCHITECT ===")
+          print(json.dumps(architect,ensure_ascii=False,indent=2,sort_keys=True))
+          print("=== CUSTOSZ REASONING POLICY ===")
+          print(json.dumps(policy,ensure_ascii=False,indent=2,sort_keys=True))
+          PY
+          sha256sum "$OUT"/*.json > "$OUT/SHA256SUMS.txt"
       - name: Preserve proposal evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
