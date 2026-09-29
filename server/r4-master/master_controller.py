@@ -36,6 +36,19 @@ CUSTOSZ_CANDIDATES=[
 AUTHORITY_CANDIDATES=[HOME/".local/lib/louksna/symphylax-r1/Louksna.md"]
 RUNTIME_PATH=HOME/".local/lib/louksna/symphylax-r1/CUSTOSZ_RUNTIME_V1_SR_EXEC_BOUND_FME_01.b.pyz"
 METAOS_PATH=HOME/".local/lib/louksna/symphylax-r1/MetaOS.wasm"
+NOTICE_STATE=STATE/"LAST_GATE_NOTICE.json"
+PERMISSION_REQUEST=STATE/"PERMISSION_REQUEST.json"
+PR_NUMBER=29
+
+class PrivilegeRequired(RuntimeError):
+    def __init__(self, part, actions, reason):
+        super().__init__(reason)
+        self.part=part; self.actions=list(actions); self.reason=reason
+
+class HumanAuthorizationRequired(RuntimeError):
+    def __init__(self, part, gates, reason):
+        super().__init__(reason)
+        self.part=part; self.gates=list(gates); self.reason=reason
 
 def utc():
     return dt.datetime.now(dt.timezone.utc).isoformat().replace("+00:00","Z")
@@ -66,13 +79,37 @@ def read_json(p,default=None):
 def command_exists(name):
     return shutil.which(name) is not None
 
-def require_apc():
+def apc_status():
     r=run(APC+["status"],timeout=20)
-    if r["returncode"]!=0: raise RuntimeError("APC48_NOT_AVAILABLE")
-    d=json.loads(r["stdout"])
-    if d.get("status")!="ACTIVE" or not d.get("authorization_valid"):
-        raise RuntimeError("APC48_NOT_ACTIVE")
+    if r["returncode"]!=0:
+        return None
+    try:
+        return json.loads(r["stdout"])
+    except Exception:
+        return None
+
+def require_apc(part, actions):
+    d=apc_status()
+    if not d or d.get("status")!="ACTIVE" or not d.get("authorization_valid"):
+        raise PrivilegeRequired(part,actions,"APC48_REQUIRED_OR_EXPIRED")
     return d
+
+def publish_gate_notice(obj):
+    key=hashlib.sha256(json.dumps(obj,sort_keys=True,ensure_ascii=False).encode()).hexdigest()
+    prior=read_json(NOTICE_STATE,{}) or {}
+    if prior.get("key")==key:
+        return
+    body=(
+        "LUNA_R4_GATE_NOTICE\\n\\n"
+        f"status={obj.get('status')}\\n"
+        f"part={obj.get('part')}\\n"
+        f"reason={obj.get('reason')}\\n"
+        f"required={json.dumps(obj.get('required',[]),ensure_ascii=False)}\\n"
+        f"checkpoint={CHECKPOINT}\\n"
+        "action=USER_AUTHORIZATION_REQUIRED"
+    )
+    r=run(["gh","api","--method","POST",f"repos/{REPO}/issues/{PR_NUMBER}/comments","-f",f"body={body}"],timeout=60)
+    atomic_json(NOTICE_STATE,{"key":key,"published":r["returncode"]==0,"published_at_utc":utc(),"status":obj.get("status"),"part":obj.get("part")})
 
 def host_preflight():
     if os.uname().nodename!="LOUKSNA": raise RuntimeError("HOST_MISMATCH")
@@ -87,7 +124,7 @@ def host_preflight():
     if run(["systemctl","--user","is-active","symphylax-r1.service"])["stdout"].strip()!="active":
         raise RuntimeError("SYMPHYLAX_NOT_ACTIVE")
     if run(["gh","auth","status"],timeout=20)["returncode"]!=0: raise RuntimeError("GH_AUTH_REQUIRED")
-    return require_apc()
+    return {"apc":apc_status()}
 
 def locate_custosz():
     for p in CUSTOSZ_CANDIDATES:
@@ -176,10 +213,10 @@ def pkg_installed(pkg):
     return p["returncode"]==0 and "install ok installed" in p["stdout"]
 
 def part2(mid):
-    require_apc()
     packages=["nodejs","npm","python3","python3-venv","python3-pip","pipx","git","7zip","default-jdk","g++","cmake","ninja-build","gdb","pkg-config"]
     missing=[p for p in packages if not pkg_installed(p)]; actions=[]
     if missing:
+        require_apc("PART_2",["apt-update","apt-install"])
         actions.append(run(APC+["apt-update"],timeout=600))
         actions.append(run(APC+["apt-install",*missing],timeout=1800))
     checks={p:pkg_installed(p) for p in packages}
@@ -237,15 +274,17 @@ def part4(mid):
     auth=STATE/"authorizations/PART4_H2_H4.json"; d=read_json(auth,{}) or {}
     checks={"H2":d.get("H2") is True,"H4":d.get("H4") is True,"two_verified_backups":d.get("two_verified_backups") is True,"restore_proof":d.get("restore_proof") is True,"destructive_scope_prevalidated":d.get("destructive_scope_prevalidated") is True}
     blockers=[k for k,v in checks.items() if not v]
-    ev=evidence_base("PART_4",mid,checks,"PASS" if not blockers else "HOLD",blockers,{"authorization_file":str(auth)})
+    if blockers:
+        raise HumanAuthorizationRequired("PART_4",blockers,"PART4_H2_H4_OR_PROTECTION_PROOF_REQUIRED")
+    ev=evidence_base("PART_4",mid,checks,"PASS",[],{"authorization_file":str(auth)})
     ev["human_gates"]={"H2":checks["H2"],"H4":checks["H4"]}; ev["two_verified_backups"]=checks["two_verified_backups"]; ev["restore_proof"]=checks["restore_proof"]; ev["destructive_scope_prevalidated"]=checks["destructive_scope_prevalidated"]
     return ev
 
 def part5(mid):
-    require_apc()
     packages=["qemu-system-x86","qemu-utils","libvirt-daemon-system","libvirt-clients","virt-manager"]
     missing=[p for p in packages if not pkg_installed(p)]; actions=[]
     if missing:
+        require_apc("PART_5",["apt-update","apt-install"])
         actions.append(run(APC+["apt-update"],timeout=600)); actions.append(run(APC+["apt-install",*missing],timeout=1800))
     checks={p:pkg_installed(p) for p in packages}; checks["kvm_device"]=pathlib.Path("/dev/kvm").exists()
     checks["virt_host_validate"]=run(["virsh","version"],timeout=30)["returncode"]==0 if command_exists("virsh") else False
@@ -344,6 +383,18 @@ def main():
     atomic_json(STATE/"IDENTITY.json",{"mission_id":mid,"custosz_path":str(custosz),"custosz_sha256":sha(custosz),"authority_path":str(authority),"authority_sha256":sha(authority),"checkpoint":str(CHECKPOINT),"started_or_resumed_utc":utc()})
     while True:
         try: result=supervise_once(worker,mid)
+        except PrivilegeRequired as e:
+            req={"schema":"LOUKSNA_R4_PERMISSION_REQUEST/1.0","status":"NEEDS_PRIVILEGE","part":e.part,"reason":e.reason,"required":e.actions,"mission_id":mid,"checkpoint":str(CHECKPOINT),"created_at_utc":utc()}
+            atomic_json(PERMISSION_REQUEST,req); publish_gate_notice(req)
+            atomic_json(STATE/"MASTER_STATUS.json",req)
+            if a.once: return 4
+            time.sleep(max(60,a.sleep)); continue
+        except HumanAuthorizationRequired as e:
+            req={"schema":"LOUKSNA_R4_PERMISSION_REQUEST/1.0","status":"NEEDS_HUMAN_AUTHORIZATION","part":e.part,"reason":e.reason,"required":e.gates,"mission_id":mid,"checkpoint":str(CHECKPOINT),"created_at_utc":utc()}
+            atomic_json(PERMISSION_REQUEST,req); publish_gate_notice(req)
+            atomic_json(STATE/"MASTER_STATUS.json",req)
+            if a.once: return 5
+            time.sleep(max(60,a.sleep)); continue
         except Exception as e:
             atomic_json(STATE/"MASTER_STATUS.json",{"status":"HOLD","error":type(e).__name__+":"+str(e),"mission_id":mid,"updated_at_utc":utc()})
             if a.once: raise
