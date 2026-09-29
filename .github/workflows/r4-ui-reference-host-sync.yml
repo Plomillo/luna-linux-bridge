@@ -22,11 +22,16 @@ jobs:
     timeout-minutes: 5
 
     steps:
-      - name: Checkout exact reference branch
+      - name: Checkout exact reference branch in isolated path
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           persist-credentials: false
           fetch-depth: 1
+          clean: true
+          path: r4-ui-reference-sync
+          sparse-checkout: |
+            docs/luna-r4/ui-reference
+          sparse-checkout-cone-mode: true
 
       - name: Verify source and target boundary
         shell: bash
@@ -34,17 +39,22 @@ jobs:
           set -Eeuo pipefail
           PARENT="/home/diegoignacionorambuenamiranda/Descargas"
           TARGET="$PARENT/LUNA_R4_UI_REFERENCE"
-          SOURCE="docs/luna-r4/ui-reference"
+          SOURCE="$GITHUB_WORKSPACE/r4-ui-reference-sync/docs/luna-r4/ui-reference"
 
-          test -d "$PARENT"
-          test ! -L "$PARENT"
-          test -w "$PARENT"
-          test "$(stat -c %u "$PARENT")" = "$(id -u)"
+          echo "RUNNER_USER=$(id -un)"
+          echo "RUNNER_UID=$(id -u)"
+          echo "PARENT=$PARENT"
+          echo "SOURCE=$SOURCE"
+          test -d "$PARENT" || { echo "HOLD:PARENT_NOT_FOUND"; exit 31; }
+          test ! -L "$PARENT" || { echo "HOLD:PARENT_IS_SYMLINK"; exit 32; }
+          test -w "$PARENT" || { echo "HOLD:PARENT_NOT_WRITABLE"; exit 33; }
+          echo "PARENT_UID=$(stat -c %u "$PARENT")"
+          test "$(stat -c %u "$PARENT")" = "$(id -u)" || { echo "HOLD:PARENT_OWNER_MISMATCH"; exit 34; }
 
-          test -f "$SOURCE/LUNA_R4_UI_REFERENCE_PARTS_1_9.jpg"
-          test -f "$SOURCE/KDE_UI_REFERENCE_20260929T020349Z.7z"
-          test -f "$SOURCE/REFERENCE_MANIFEST.json"
-          test -f "$SOURCE/README.md"
+          test -f "$SOURCE/LUNA_R4_UI_REFERENCE_PARTS_1_9.jpg" || { echo "HOLD:IMAGE_SOURCE_MISSING"; exit 35; }
+          test -f "$SOURCE/KDE_UI_REFERENCE_20260929T020349Z.7z" || { echo "HOLD:KDE_SOURCE_MISSING"; exit 36; }
+          test -f "$SOURCE/REFERENCE_MANIFEST.json" || { echo "HOLD:MANIFEST_SOURCE_MISSING"; exit 37; }
+          test -f "$SOURCE/README.md" || { echo "HOLD:README_SOURCE_MISSING"; exit 38; }
 
           IMAGE_SHA="$(sha256sum "$SOURCE/LUNA_R4_UI_REFERENCE_PARTS_1_9.jpg" | awk '{print $1}')"
           KDE_SHA="$(sha256sum "$SOURCE/KDE_UI_REFERENCE_20260929T020349Z.7z" | awk '{print $1}')"
@@ -64,7 +74,7 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          SOURCE="docs/luna-r4/ui-reference"
+          SOURCE="$GITHUB_WORKSPACE/r4-ui-reference-sync/docs/luna-r4/ui-reference"
           TARGET="$(cat "$RUNNER_TEMP/r4-ui-reference-target.txt")"
 
           copy_fail_closed() {
