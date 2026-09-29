@@ -1,0 +1,41 @@
+{
+  "schema": "LOUKSNA_R4_MASTER_RESUME_REQUEST/1.0",
+  "status": "AUTHORIZED_TO_RESUME_NONDESTRUCTIVE_WORK",
+  "authority": "Louksna.md",
+  "worker": "CUSTOSZ_V7",
+  "governor": "MetaOS",
+  "runtime": "CUSTOSZ_RUNTIME_V1",
+  "supervisor": "SYMPHYLAX_R1",
+  "start_from": {
+    "part": "PART_1",
+    "checkpoint": "/home/diegoignacionorambuenamiranda/LOUKSNA_MAESTRO_20260925/MISSION3_OPERATIVE/R4_PART1_DESKTOP_V1/runs/20260926T034746Z-38579",
+    "mode": "DIFFERENTIAL"
+  },
+  "sequence": [
+    "PART_1",
+    "PART_2",
+    "PART_3",
+    "PART_4",
+    "PART_5",
+    "PART_6",
+    "PART_7",
+    "PART_8",
+    "PART_9"
+  ],
+  "do_not_repeat": [
+    "PART_0",
+    "PART_1_FULL_REINSTALL",
+    "SERVER_READY_G08_G09_G23_G24"
+  ],
+  "instruction": "Begin operating immediately from the last valid PART_1 checkpoint. Continue chronologically through subsequent parts. Perform all non-destructive and already-authorized work without user interaction. When a privileged or human gate is actually required, stop that transition, preserve evidence, publish NEEDS_PRIVILEGE or NEEDS_HUMAN_AUTHORIZATION, and request the user only then.",
+  "permission_policy": {
+    "ask_user_now": false,
+    "operate_until_gate": true,
+    "notify_only_when_required": true,
+    "unexpected_password_prompt": "HOLD"
+  },
+  "fail_closed": true,
+  "traceability_required": true,
+  "auditability_required": true,
+  "rollback_required": true
+}
