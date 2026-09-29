@@ -1,0 +1,156 @@
+name: "R4 PART4 — PROYECTOS storage analysis"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-analysis/**
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 180
+    steps:
+      - name: Read-only low-memory storage analysis
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          PROJ="$HOME/Proyectos"
+          REAL="$(readlink -f "$PROJ")"
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9/analysis/PART_4_PROYECTOS_DEDUP"
+          DB="$STATE/proyectos.sqlite3"
+          mkdir -p "$STATE"
+
+          test -d "$REAL"
+          OPTS="$(findmnt -rn -T "$REAL" -o OPTIONS)"
+          case ",$OPTS," in
+            *,ro,*) ;;
+            *) echo "FAIL_CLOSED: source not read-only"; exit 20 ;;
+          esac
+
+          nice -n 10 ionice -c2 -n7 python3 - "$REAL" "$DB" "$STATE" <<'PY'
+          import os, sys, sqlite3, hashlib, json, csv
+          root, db_path, out = sys.argv[1:4]
+
+          con=sqlite3.connect(db_path)
+          con.execute("DROP TABLE IF EXISTS files")
+          con.execute("CREATE TABLE files(path TEXT PRIMARY KEY,size INTEGER NOT NULL,sha256 TEXT)")
+          con.execute("CREATE INDEX idx_size ON files(size)")
+          con.execute("CREATE INDEX idx_sha ON files(sha256)")
+
+          total_files=0
+          total_bytes=0
+          read_errors=0
+          batch=[]
+          stack=[root]
+
+          while stack:
+              d=stack.pop()
+              try:
+                  with os.scandir(d) as it:
+                      for e in it:
+                          try:
+                              if e.is_symlink():
+                                  continue
+                              if e.is_dir(follow_symlinks=False):
+                                  stack.append(e.path)
+                              elif e.is_file(follow_symlinks=False):
+                                  st=e.stat(follow_symlinks=False)
+                                  total_files+=1
+                                  total_bytes+=st.st_size
+                                  batch.append((e.path,st.st_size,None))
+                                  if len(batch)>=5000:
+                                      con.executemany("INSERT INTO files VALUES(?,?,?)",batch)
+                                      con.commit(); batch.clear()
+                          except Exception:
+                              read_errors+=1
+              except Exception:
+                  read_errors+=1
+
+          if batch:
+              con.executemany("INSERT INTO files VALUES(?,?,?)",batch)
+              con.commit()
+
+          def sha(path):
+              h=hashlib.sha256()
+              with open(path,"rb",buffering=0) as f:
+                  while True:
+                      b=f.read(8*1024*1024)
+                      if not b: break
+                      h.update(b)
+              return h.hexdigest()
+
+          candidates=con.execute("""
+            SELECT size FROM files
+            WHERE size>0
+            GROUP BY size HAVING COUNT(*)>1
+          """).fetchall()
+
+          hashed=0
+          hash_errors=0
+          for (size,) in candidates:
+              for (p,) in con.execute("SELECT path FROM files WHERE size=?",(size,)).fetchall():
+                  try:
+                      digest=sha(p)
+                      con.execute("UPDATE files SET sha256=? WHERE path=?",(digest,p))
+                      hashed+=1
+                  except Exception:
+                      hash_errors+=1
+              con.commit()
+
+          groups=con.execute("""
+            SELECT sha256,size,COUNT(*) n
+            FROM files
+            WHERE sha256 IS NOT NULL
+            GROUP BY sha256,size
+            HAVING COUNT(*)>1
+            ORDER BY ((COUNT(*)-1)*size) DESC
+          """).fetchall()
+
+          savings=sum((n-1)*size for digest,size,n in groups)
+          duplicate_files=sum(n for digest,size,n in groups)
+          redundant=sum(n-1 for digest,size,n in groups)
+
+          with open(os.path.join(out,"DUPLICATE_GROUPS_LOCAL.csv"),"w",newline="",encoding="utf-8") as f:
+              w=csv.writer(f)
+              w.writerow(["sha256","size_bytes","copies","potential_savings_bytes","paths"])
+              for digest,size,n in groups:
+                  paths=[r[0] for r in con.execute("SELECT path FROM files WHERE sha256=? AND size=? ORDER BY path",(digest,size))]
+                  w.writerow([digest,size,n,(n-1)*size," | ".join(paths)])
+
+          summary={
+            "schema":"LOUKSNA_R4_PROYECTOS_DEDUP_SUMMARY/1.0",
+            "status":"PASS" if read_errors==0 and hash_errors==0 else "PASS_WITH_READ_ERRORS",
+            "read_only":True,
+            "mutation_performed":False,
+            "deletion_performed":False,
+            "total_files":total_files,
+            "total_bytes":total_bytes,
+            "hashed_candidate_files":hashed,
+            "exact_duplicate_groups":len(groups),
+            "exact_duplicate_files":duplicate_files,
+            "redundant_extra_copies":redundant,
+            "theoretical_reclaimable_bytes":savings,
+            "theoretical_reclaimable_percent":round((savings/total_bytes*100),4) if total_bytes else 0,
+            "read_errors":read_errors,
+            "hash_errors":hash_errors,
+            "detailed_report_location":os.path.join(out,"DUPLICATE_GROUPS_LOCAL.csv"),
+            "note":"REPORT_ONLY. Detailed paths remain local on LOUKSNA."
+          }
+          with open(os.path.join(out,"SUMMARY.json"),"w",encoding="utf-8") as f:
+              json.dump(summary,f,indent=2)
+              f.write("\n")
+
+          print(json.dumps({
+            k:v for k,v in summary.items()
+            if k not in ("detailed_report_location",)
+          },indent=2))
+          PY
+
+          echo "Detailed evidence retained locally under:"
+          echo "$STATE"
