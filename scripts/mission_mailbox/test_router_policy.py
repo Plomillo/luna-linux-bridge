@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import copy, hashlib, importlib.util, json
+import copy, hashlib, importlib.util, json, os, tempfile
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[2]
@@ -95,5 +95,25 @@ census=json.loads((ROOT/"ecosystem/metacognitive-operational-v1/CUSTOSZ72_CENSUS
 assert census["capability_count"]==72
 assert census["unique_capability_count"]==72
 assert census["pyz_sha256"]=="dacf1f8c13b2fcbfc617cf0d4d780b30502c13395224691e6b0f05f53d9816a2"
+
+# Workspace regression: a trusted workflow binding must not depend on a
+# mounted Windows/PROYECTOS volume, and an invalid binding must fail closed.
+old_override=os.environ.get("CUSTOSZ_WORKSPACE_OVERRIDE")
+try:
+    with tempfile.TemporaryDirectory(prefix="mailbox-workspace-selftest-") as td:
+        os.environ["CUSTOSZ_WORKSPACE_OVERRIDE"]=td
+        assert mod.find_workspace()==Path(td).resolve()
+    os.environ["CUSTOSZ_WORKSPACE_OVERRIDE"]="/definitely/not/a/real/mailbox/workspace"
+    try:
+        mod.find_workspace()
+    except RuntimeError as exc:
+        assert str(exc).startswith("WORKSPACE_OVERRIDE_NOT_DIRECTORY:"), exc
+    else:
+        raise AssertionError("invalid workspace override did not fail closed")
+finally:
+    if old_override is None:
+        os.environ.pop("CUSTOSZ_WORKSPACE_OVERRIDE",None)
+    else:
+        os.environ["CUSTOSZ_WORKSPACE_OVERRIDE"]=old_override
 
 print("MAILBOX_ROUTER_POLICY_SELFTEST=PASS")
