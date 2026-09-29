@@ -57,12 +57,26 @@
     {
       "part": "PART_4",
       "name": "PROJECTS_PROTECTION_AND_WINDOWS_RETIREMENT",
-      "mode": "HUMAN_GATED_DESTRUCTIVE",
+      "mode": "HUMAN_GATED_DESTRUCTIVE_R2",
       "entry": "PART3_CERTIFIED",
-      "exit": "PART4_CERTIFIED",
+      "exit": "PART4_R2_CERTIFIED",
       "human_gates": [
         "H2",
         "H4"
+      ],
+      "operational_amendment": "server/r4-master/PART4_R2_AMENDMENT.json",
+      "required_chain": [
+        "FREEZE_G24",
+        "PURGE_SCOPE_G23_G24",
+        "WINDOWS_PURGED",
+        "POST_PURGE_INTEGRITY",
+        "NTFS_SHRUNK",
+        "EXT4_CREATED",
+        "PROYECTOS_MIGRATED_HASH_EQUIVALENT",
+        "NTFS_RETIRED",
+        "FINAL_LINUX_LAYOUT_PASS",
+        "PART4_G23",
+        "PART4_G24"
       ]
     },
     {
@@ -130,13 +144,39 @@
   },
   "destructive_scope": {
     "automatic_without_specific_gate": false,
-    "windows_efi_gpt_partitions_projects_require": [
+    "operational_amendment": "PART4-R2-20260929",
+    "pre_destruction_required": [
       "H2",
       "H4",
-      "G23",
-      "G24",
-      "TWO_VERIFIED_BACKUPS",
-      "RESTORE_PROOF"
-    ]
+      "CERTIFIED_PROYECTOS_FREEZE",
+      "EXACT_SCOPE_PREVALIDATION",
+      "STEP_G23",
+      "STEP_G24"
+    ],
+    "superseded_preconditions": [
+      "TWO_VERIFIED_BACKUPS_BEFORE_WINDOWS_RETIREMENT",
+      "RESTORE_PROOF_BEFORE_WINDOWS_RETIREMENT"
+    ],
+    "purge_partition": "/dev/nvme0n1p3",
+    "exact_preserve": "/media/diegoignacionorambuenamiranda/Windows/PROYECTOS",
+    "purge_partitions_out_of_scope": [
+      "/dev/nvme0n1p1",
+      "/dev/nvme0n1p2",
+      "/dev/nvme0n1p4",
+      "/dev/nvme0n1p5"
+    ],
+    "partition_mutation_after_purge_requires": [
+      "POST_PURGE_INTEGRITY_PASS",
+      "GEOMETRY_PREVALIDATION",
+      "STEP_G23",
+      "STEP_G24"
+    ],
+    "migration_source_retirement_requires": "COMPLETE_TREE_HASH_EQUIVALENCE_PASS"
+  },
+  "part4_r2": {
+    "amendment_id": "PART4-R2-20260929",
+    "certified_freeze_manifest_sha256": "99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+    "freeze_certification_run_id": 36621093750,
+    "part5_to_part9_unchanged": true
   }
 }
