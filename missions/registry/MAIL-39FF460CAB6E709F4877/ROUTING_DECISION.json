@@ -1,0 +1,38 @@
+{
+  "custosz_mission_id": "MIS-193a1390080b447eb70b",
+  "deadline_utc": "2026-09-29T15:02:44.595863+00:00",
+  "executor_bound": false,
+  "executor_reported": "UNBOUND_MEDIATED_OR_LOCAL",
+  "heartbeat_state": "SUPERVISORY_ACTIVE",
+  "mail_id": "MAIL-39FF460CAB6E709F4877",
+  "mission_class_resolution": {
+    "bound_mission_class": null,
+    "direct_mission_class": "SYMPHYLAX_FINAL_GUARANTEED_CERTIFICATION_60M",
+    "matches": [],
+    "mission_class": "SYMPHYLAX_FINAL_GUARANTEED_CERTIFICATION_60M",
+    "origin": "MISSION_DIRECTIVE",
+    "result": "PASS",
+    "root_blocker": null,
+    "source_sha256": "39ff460cab6e709f48775361ccb76996acc7a3cfc26e4c7399faf126c61ab0f6"
+  },
+  "registered_utc": "2026-09-29T14:42:44.628849+00:00",
+  "required_capabilities_explicit": [],
+  "routing_hints_non_authoritative": {
+    "authoritative": false,
+    "values": [
+      "CUSTOSZ_RUNTIME",
+      "GITHUB",
+      "LOCAL_HOST",
+      "PROTECTED_F3_DISK_SCOPE",
+      "PROTECTED_WINDOWS_SCOPE",
+      "RESEARCH",
+      "ROLLBACK",
+      "TERMINAL_REPORT"
+    ]
+  },
+  "schema": "CUSTOSZ_ROUTING_DECISION/1.0",
+  "worker_identity_sha256": "dacf1f8c13b2fcbfc617cf0d4d780b30502c13395224691e6b0f05f53d9816a2",
+  "workspace": "/home/diegoignacionorambuenamiranda/SYMPHYLAX_LAB/CUSTOSZ_V7_R1_G23_G24_20260927T021532Z/POSIX_COMPATIBILITY_VIEW",
+  "workspace_binding": "TRUSTED_WORKFLOW_OVERRIDE",
+  "workspace_resolved": true
+}

@@ -1,0 +1,11 @@
+{
+  "authoritative_inference_performed": false,
+  "mail_id": "MAIL-DB0B882D55CA6D4B6263",
+  "mechanism": "ORIGINAL_UTF8_BYTES_EMBEDDED_BASE64_IN_MISSION_NATIVE",
+  "reconstruction_test_sha256": "db0b882d55ca6d4b62639cd451f0795c6f2e245732b631001816a8a937401983",
+  "result": "PASS_SOURCE_BYTE_EXACT",
+  "routing_hints_authoritative": false,
+  "schema": "CUSTOSZ_SEMANTIC_MAPPING/1.0",
+  "semantic_reduction_performed": false,
+  "source_sha256": "db0b882d55ca6d4b62639cd451f0795c6f2e245732b631001816a8a937401983"
+}

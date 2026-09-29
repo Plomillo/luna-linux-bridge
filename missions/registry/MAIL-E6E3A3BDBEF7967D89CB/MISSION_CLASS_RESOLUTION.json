@@ -1,0 +1,10 @@
+{
+  "bound_mission_class": null,
+  "direct_mission_class": "SYMPHYLAX_FINAL_REMEDIATION_CERTIFICATION_6M",
+  "matches": [],
+  "mission_class": "SYMPHYLAX_FINAL_REMEDIATION_CERTIFICATION_6M",
+  "origin": "MISSION_DIRECTIVE",
+  "result": "PASS",
+  "root_blocker": null,
+  "source_sha256": "e6e3a3bdbef7967d89cbc9e538469add01334e6e593ee2d1b93b72cbd32684dd"
+}

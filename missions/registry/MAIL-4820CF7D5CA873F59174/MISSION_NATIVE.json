@@ -1,0 +1,247 @@
+{
+  "authority_context": {
+    "authority": "Louksna.md",
+    "authority_transfer": false,
+    "canonical_mutation_authorized": false
+  },
+  "declared_mission_id": "MIS-LUNA-R4-PART1-RESUME-APC48-V2-36519487206",
+  "execution_contract": {
+    "default_profile": "LUNA_PROJECT",
+    "fail_closed": true,
+    "governor": "MetaOS",
+    "no_silent_executor_substitution": true,
+    "protected_scopes": [
+      "WINDOWS",
+      "EFI",
+      "GPT",
+      "PARTITIONS",
+      "PROYECTOS",
+      "F3-DISK",
+      "CANONICAL_ARCHITECTURE",
+      "FROZEN_ARTIFACTS"
+    ],
+    "runtime": "CUSTOSZ_RUNTIME_V1",
+    "supervisor": "SYMPHYLAX_R1",
+    "validation_reserve_seconds": 240,
+    "wallclock_seconds": 1200,
+    "worker": "CUSTOSZ_V7",
+    "workflow_success_is_not_mission_success": true
+  },
+  "mail_id": "MAIL-4820CF7D5CA873F59174",
+  "mailbox_version": "0.1.0",
+  "mission_payload": {
+    "byte_exact_preservation": true,
+    "directives_observed": {
+      "APC48_V2_CANDIDATE_DIGEST": [
+        {
+          "line": 22,
+          "value": "ed3c4267f94b3c53f1fec64b331f72dc657ebcc5e2c62a9314321c67c89684b7"
+        }
+      ],
+      "AUDITABILITY": [
+        {
+          "line": 13,
+          "value": "REQUIRED"
+        }
+      ],
+      "AUTHORITY": [
+        {
+          "line": 5,
+          "value": "Louksna.md"
+        }
+      ],
+      "CURRENT_PART": [
+        {
+          "line": 25,
+          "value": "PART_1"
+        }
+      ],
+      "DO_NOT_REPEAT": [
+        {
+          "line": 30,
+          "value": "PART_0;PART_1_FULL_REINSTALL;SERVER_READY_G08_G09_G23_G24"
+        }
+      ],
+      "EVIDENCE_BUNDLE_DIGEST": [
+        {
+          "line": 23,
+          "value": "a3c3663f35549668a4af608a079f9c061889cfca26ebb1efaeea22cd28424535"
+        }
+      ],
+      "EXECUTION": [
+        {
+          "line": 44,
+          "value": ""
+        }
+      ],
+      "FAILURE_POSTURE": [
+        {
+          "line": 11,
+          "value": "FAIL_CLOSED"
+        }
+      ],
+      "FIRST_ACTION": [
+        {
+          "line": 31,
+          "value": "VERIFY_CURRENT_PART1_AGAINST_CHECKPOINT_AND_APPROVED_UI_REFERENCE"
+        }
+      ],
+      "GOVERNOR": [
+        {
+          "line": 6,
+          "value": "MetaOS"
+        }
+      ],
+      "HOST_ACTIVATION_CERTIFICATE": [
+        {
+          "line": 18,
+          "value": "G24_POSTINSTALL"
+        }
+      ],
+      "HOST_ACTIVATION_CERTIFICATE_SHA256": [
+        {
+          "line": 19,
+          "value": "0e5addd6b0a2d2d6cd5300768f6ed71925dc589c9806ef318abb347a31d24f71"
+        }
+      ],
+      "HOST_ACTIVATION_CERTIFICATION_RUN": [
+        {
+          "line": 20,
+          "value": "36519487206"
+        }
+      ],
+      "INGRESS": [
+        {
+          "line": 10,
+          "value": "CUSTOSZ MISSION MAILBOX"
+        }
+      ],
+      "MANDATORY_PRECHECKS": [
+        {
+          "line": 36,
+          "value": ""
+        }
+      ],
+      "MISSION_CLASS": [
+        {
+          "line": 4,
+          "value": "LUNA_R4_PART1_DIFFERENTIAL_RESUME"
+        }
+      ],
+      "MISSION_ID": [
+        {
+          "line": 3,
+          "value": "MIS-LUNA-R4-PART1-RESUME-APC48-V2-36519487206"
+        }
+      ],
+      "NO_SILENT_OPERATIONS": [
+        {
+          "line": 16,
+          "value": "ABSOLUTE"
+        }
+      ],
+      "PART2_ENTRY": [
+        {
+          "line": 33,
+          "value": "ONLY_AFTER_PART1_POST_VALIDATION_PASS"
+        }
+      ],
+      "PART2_GATE": [
+        {
+          "line": 28,
+          "value": "PART1_POST_VALIDATION_PASS"
+        }
+      ],
+      "PRIVILEGED_INTERFACE": [
+        {
+          "line": 34,
+          "value": "sudo -n /usr/local/sbin/louksna-apc"
+        }
+      ],
+      "PROVENANCE": [
+        {
+          "line": 14,
+          "value": "REQUIRED"
+        }
+      ],
+      "RESUME_CHECKPOINT": [
+        {
+          "line": 27,
+          "value": "/home/diegoignacionorambuenamiranda/LOUKSNA_MAESTRO_20260925/MISSION3_OPERATIVE/R4_PART1_DESKTOP_V1/runs/20260926T034746Z-38579"
+        }
+      ],
+      "RESUME_MODE": [
+        {
+          "line": 26,
+          "value": "DIFFERENTIAL"
+        }
+      ],
+      "ROLLBACK": [
+        {
+          "line": 15,
+          "value": "REQUIRED"
+        }
+      ],
+      "RUNTIME": [
+        {
+          "line": 8,
+          "value": "CUSTOSZ_RUNTIME_V1"
+        }
+      ],
+      "RUNTIME_HOST_ACTIVATION_CERTIFIED": [
+        {
+          "line": 21,
+          "value": "TRUE"
+        }
+      ],
+      "SECOND_ACTION": [
+        {
+          "line": 32,
+          "value": "APPLY_ONLY_MISSING_PART1_DELTA"
+        }
+      ],
+      "SUPERVISOR": [
+        {
+          "line": 9,
+          "value": "SYMPHYLAX R1"
+        }
+      ],
+      "TERMINAL_RULE": [
+        {
+          "line": 49,
+          "value": ""
+        }
+      ],
+      "TRACEABILITY": [
+        {
+          "line": 12,
+          "value": "REQUIRED"
+        }
+      ],
+      "WORKER": [
+        {
+          "line": 7,
+          "value": "CUSTOSZ V7"
+        }
+      ]
+    },
+    "required_capabilities_explicit": [],
+    "routing_hints": {
+      "authoritative": false,
+      "values": [
+        "CUSTOSZ_RUNTIME",
+        "LOCAL_HOST",
+        "ROLLBACK"
+      ]
+    },
+    "source_utf8_b64": "IyBNSVNJw5NOIOKAlCBSRUFOVURBUiBMVU5BIFI0IERFU0RFIENIRUNLUE9JTlQgQ0VSVElGSUNBRE8KCk1JU1NJT05fSUQgPSBNSVMtTFVOQS1SNC1QQVJUMS1SRVNVTUUtQVBDNDgtVjItMzY1MTk0ODcyMDYKTUlTU0lPTl9DTEFTUyA9IExVTkFfUjRfUEFSVDFfRElGRkVSRU5USUFMX1JFU1VNRQpBVVRIT1JJVFkgPSBMb3Vrc25hLm1kCkdPVkVSTk9SID0gTWV0YU9TCldPUktFUiA9IENVU1RPU1ogVjcKUlVOVElNRSA9IENVU1RPU1pfUlVOVElNRV9WMQpTVVBFUlZJU09SID0gU1lNUEhZTEFYIFIxCklOR1JFU1MgPSBDVVNUT1NaIE1JU1NJT04gTUFJTEJPWApGQUlMVVJFX1BPU1RVUkUgPSBGQUlMX0NMT1NFRApUUkFDRUFCSUxJVFkgPSBSRVFVSVJFRApBVURJVEFCSUxJVFkgPSBSRVFVSVJFRApQUk9WRU5BTkNFID0gUkVRVUlSRUQKUk9MTEJBQ0sgPSBSRVFVSVJFRApOT19TSUxFTlRfT1BFUkFUSU9OUyA9IEFCU09MVVRFCgpIT1NUX0FDVElWQVRJT05fQ0VSVElGSUNBVEUgPSBHMjRfUE9TVElOU1RBTEwKSE9TVF9BQ1RJVkFUSU9OX0NFUlRJRklDQVRFX1NIQTI1NiA9IDBlNWFkZGQ2YjBhMmQyZDZjZDUzMDA3NjhmNmVkNzE5MjVkYzU4OWM5ODA2ZWYzMThhYmIzNDdhMzFkMjRmNzEKSE9TVF9BQ1RJVkFUSU9OX0NFUlRJRklDQVRJT05fUlVOID0gMzY1MTk0ODcyMDYKUlVOVElNRV9IT1NUX0FDVElWQVRJT05fQ0VSVElGSUVEID0gVFJVRQpBUEM0OF9WMl9DQU5ESURBVEVfRElHRVNUID0gZWQzYzQyNjdmOTRiM2M1M2YxZmVjNjRiMzMxZjcyZGM2NTdlYmNjNWUyYzYyYTkzMTQzMjFjNjdjODk2ODRiNwpFVklERU5DRV9CVU5ETEVfRElHRVNUID0gYTNjMzY2M2YzNTU0OTY2OGE0YWY2MDhhMDc5ZjljMDYxODg5Y2ZjYTI2ZWJiMWVmYWVlYTIyY2QyODQyNDUzNQoKQ1VSUkVOVF9QQVJUID0gUEFSVF8xClJFU1VNRV9NT0RFID0gRElGRkVSRU5USUFMClJFU1VNRV9DSEVDS1BPSU5UID0gL2hvbWUvZGllZ29pZ25hY2lvbm9yYW1idWVuYW1pcmFuZGEvTE9VS1NOQV9NQUVTVFJPXzIwMjYwOTI1L01JU1NJT04zX09QRVJBVElWRS9SNF9QQVJUMV9ERVNLVE9QX1YxL3J1bnMvMjAyNjA5MjZUMDM0NzQ2Wi0zODU3OQpQQVJUMl9HQVRFID0gUEFSVDFfUE9TVF9WQUxJREFUSU9OX1BBU1MKCkRPX05PVF9SRVBFQVQgPSBQQVJUXzA7UEFSVF8xX0ZVTExfUkVJTlNUQUxMO1NFUlZFUl9SRUFEWV9HMDhfRzA5X0cyM19HMjQKRklSU1RfQUNUSU9OID0gVkVSSUZZX0NVUlJFTlRfUEFSVDFfQUdBSU5TVF9DSEVDS1BPSU5UX0FORF9BUFBST1ZFRF9VSV9SRUZFUkVOQ0UKU0VDT05EX0FDVElPTiA9IEFQUExZX09OTFlfTUlTU0lOR19QQVJUMV9ERUxUQQpQQVJUMl9FTlRSWSA9IE9OTFlfQUZURVJfUEFSVDFfUE9TVF9WQUxJREFUSU9OX1BBU1MKUFJJVklMRUdFRF9JTlRFUkZBQ0UgPSBzdWRvIC1uIC91c3IvbG9jYWwvc2Jpbi9sb3Vrc25hLWFwYwoKTUFOREFUT1JZX1BSRUNIRUNLUzoKLSB2ZXJpZnkgQVBDNDggc3RhdHVzIHRocm91Z2ggc3VkbyAtbjsKLSB2ZXJpZnkgY2hlY2twb2ludCBpZGVudGl0eSBhbmQgZXZpZGVuY2U7Ci0gdmVyaWZ5IGFwcHJvdmVkIFVJL0tERSByZWZlcmVuY2UgaGFzaGVzOwotIHZlcmlmeSBydW5uZXIgYW5kIFNZTVBIWUxBWCByZW1haW4gYWN0aXZlOwotIHJlZnVzZSBhbnkgcGFzc3dvcmQgcHJvbXB0OwotIHJlZnVzZSBzaWxlbnQgb3ZlcndyaXRlIG9yIGZ1bGwgUEFSVCAxIHJlaW5zdGFsbC4KCkVYRUNVVElPTjoKQ29udGludWUgb25seSB0aGUgbWlzc2luZyBkZWx0YSBvZiBQQVJUIDEuIFByZXNlcnZlIGV4aXN0aW5nIHZhbGlkYXRlZCB3b3JrLgpQcm9kdWNlIGNoZWNrcG9pbnRlZCBldmlkZW5jZSBmb3IgZWFjaCBtdXRhdGlvbiBhbmQgcG9zdC12YWxpZGF0aW9uLgpEbyBub3QgZW50ZXIgUEFSVCAyIHVubGVzcyBQQVJUMV9QT1NUX1ZBTElEQVRJT05fUEFTUyBpcyBkZW1vbnN0cmF0ZWQuCgpURVJNSU5BTF9SVUxFOgpBbnkgY29udHJhZGljdGlvbiwgbWlzc2luZyBpZGVudGl0eSwgZXhwaXJlZCBhdXRob3JpemF0aW9uLCB1bmV4cGVjdGVkIHBhc3N3b3JkIHJlcXVlc3QsIGhhc2ggbWlzbWF0Y2gsIGFtYmlndW91cyBzdGF0ZSwgb3IgdW5hdXRob3JpemVkIHNjb3BlID0+IEhPTEQuCg=="
+  },
+  "schema_version": "1.0",
+  "source": {
+    "bytes": 2116,
+    "encoding": "utf-8",
+    "path": "missions/inbox/luna-r4-part1-resume-apc48-v2-36519487206/MISSION_ORIGINAL.md",
+    "sha256": "4820cf7d5ca873f5917466a76e9b57fd46f84344a4a9f1fa3e47d144e9a01456",
+    "source_commit": "af38a955885516b9938de29dc2e22308209491db"
+  }
+}

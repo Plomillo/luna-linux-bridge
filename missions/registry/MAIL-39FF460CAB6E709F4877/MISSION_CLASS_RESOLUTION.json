@@ -1,0 +1,10 @@
+{
+  "bound_mission_class": null,
+  "direct_mission_class": "SYMPHYLAX_FINAL_GUARANTEED_CERTIFICATION_60M",
+  "matches": [],
+  "mission_class": "SYMPHYLAX_FINAL_GUARANTEED_CERTIFICATION_60M",
+  "origin": "MISSION_DIRECTIVE",
+  "result": "PASS",
+  "root_blocker": null,
+  "source_sha256": "39ff460cab6e709f48775361ccb76996acc7a3cfc26e4c7399faf126c61ab0f6"
+}
