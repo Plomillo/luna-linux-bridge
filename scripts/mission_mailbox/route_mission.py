@@ -30,6 +30,17 @@ def atomic_json(path, obj):
 
 def find_workspace():
     home = Path.home()
+
+    # Trusted workflow-level binding. Mission payloads cannot set this value.
+    # This decouples mailbox routing from whether the Windows/PROYECTOS volume
+    # happens to be mounted at routing time.
+    override = os.environ.get("CUSTOSZ_WORKSPACE_OVERRIDE")
+    if override:
+        q = Path(override).expanduser().resolve()
+        if not q.is_dir():
+            raise RuntimeError("WORKSPACE_OVERRIDE_NOT_DIRECTORY:" + str(q))
+        return q
+
     candidates = []
     for parent in (home, home / "Proyectos", home / "PROYECTOS", Path("/mnt"), Path("/media")):
         if not parent.is_dir():
@@ -362,7 +373,48 @@ def main():
         )
         return 0
 
-    workspace = find_workspace()
+    try:
+        workspace = find_workspace()
+    except RuntimeError as exc:
+        blocker = "WORKSPACE_UNRESOLVED"
+        gate = "WORKSPACE_RESOLUTION"
+        workspace_evidence = {
+            "schema": "CUSTOSZ_WORKSPACE_RESOLUTION/1.0",
+            "result": "HOLD",
+            "root_blocker": blocker,
+            "detail": str(exc),
+            "trusted_override": os.environ.get("CUSTOSZ_WORKSPACE_OVERRIDE"),
+            "mail_id": native["mail_id"],
+            "mission_class_resolution": class_resolution,
+            "identity_hashes": identities,
+        }
+        atomic_json(out / "WORKSPACE_RESOLUTION.json", workspace_evidence)
+        atomic_json(out / "RUNTIME_COMPATIBILITY.json", {
+            "schema": "CUSTOSZ_RUNTIME_COMPATIBILITY/1.0",
+            "result": "HOLD",
+            "root_blocker": blocker,
+            "mission_class_resolution": class_resolution,
+            "capability_inventory": inventory,
+            "identities": identities,
+        })
+        history = list(prior_state.get("history", []))
+        history.append({"utc": utc(), "state": "HOLD", "reason": blocker, "gate": gate})
+        atomic_json(out / "MISSION_STATE.json", {
+            **prior_state,
+            "workflow_technical_status": "PASS",
+            "mission_terminal_status": "HOLD",
+            "current_state": "HOLD",
+            "current_gate": gate,
+            "root_blocker": blocker,
+            "history": history,
+        })
+        write_error(
+            out, native, blocker, gate, str(exc),
+            "Restore the trusted governed workspace binding or correct only the mailbox workflow binding; do not infer a workspace from mission text.",
+            "WORKSPACE_RESOLUTION.json + RUNTIME_COMPATIBILITY.json",
+        )
+        return 0
+
     state_dir = Path.home() / ".local/state/louksna/mission-mailbox" / (
         native["mail_id"] + "-" + os.environ.get("GITHUB_RUN_ID", "manual") + "-" + os.environ.get("GITHUB_RUN_ATTEMPT", "1")
     )
@@ -401,6 +453,8 @@ def main():
         "executor_reported": executor,
         "executor_bound": executor_bound,
         "workspace_resolved": True,
+        "workspace": str(workspace),
+        "workspace_binding": "TRUSTED_WORKFLOW_OVERRIDE" if os.environ.get("CUSTOSZ_WORKSPACE_OVERRIDE") else "LEGACY_DISCOVERY",
         "worker_identity_sha256": identities["CUSTOSZ"],
         "required_capabilities_explicit": native["mission_payload"].get("required_capabilities_explicit", []),
         "routing_hints_non_authoritative": native["mission_payload"].get("routing_hints", {}),
