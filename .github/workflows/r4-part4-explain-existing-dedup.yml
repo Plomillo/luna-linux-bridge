@@ -1,0 +1,59 @@
+name: "R4 PART4 — explain existing 179.9GB exact duplicates"
+on:
+  push:
+    branches: [staging/luna-r4-master-part1-part9-20260929]
+    paths: ["mission-control/r4-part4-explain-dedup/**"]
+permissions:
+  contents: read
+jobs:
+  explain:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Explain existing dedup evidence without rehashing or mutation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9/analysis/PART_4_PROYECTOS_DEDUP"
+          DB="$STATE/proyectos.sqlite3"
+          test -f "$DB"
+          OUT="$RUNNER_TEMP/r4-part4-explain-dedup-$GITHUB_RUN_ID"; mkdir -p "$OUT"
+          python3 - "$DB" "$OUT" <<'PY'
+          import sqlite3,sys,json,csv,os
+          db,out=sys.argv[1:3]; c=sqlite3.connect("file:"+db+"?mode=ro",uri=True)
+          groups=c.execute("""SELECT sha256,size,COUNT(*) n FROM files WHERE sha256 IS NOT NULL
+            GROUP BY sha256,size HAVING COUNT(*)>1 ORDER BY ((COUNT(*)-1)*size) DESC""").fetchall()
+          total=sum((n-1)*s for h,s,n in groups)
+          rows=[]; bytop={}
+          for i,(h,s,n) in enumerate(groups,1):
+            paths=[x[0] for x in c.execute("SELECT path FROM files WHERE sha256=? AND size=? ORDER BY path",(h,s))]
+            save=(n-1)*s
+            rows.append((i,h,s,n,save," | ".join(paths)))
+            for p in paths[1:]:
+              rel=p.split("/PROYECTOS/",1)[-1]; top=rel.split("/",1)[0]
+              bytop[top]=bytop.get(top,0)+s
+          with open(out+"/DUPLICATE_GROUPS_EXPLAINED.csv","w",newline="",encoding="utf-8") as f:
+            w=csv.writer(f); w.writerow(["rank","sha256","size_bytes","copies","redundant_bytes","all_paths"]); w.writerows(rows)
+          topgroups=[{"rank":i,"sha256":h,"size_bytes":s,"copies":n,"redundant_bytes":(n-1)*s,
+                      "paths":[x[0] for x in c.execute("SELECT path FROM files WHERE sha256=? AND size=? ORDER BY path",(h,s))]}
+                     for i,(h,s,n) in enumerate(groups[:50],1)]
+          report={"schema":"LOUKSNA_R4_PART4_EXISTING_DEDUP_EXPLANATION/1.0","mode":"READ_ONLY_EXISTING_DB",
+            "rehash_performed":False,"mutation_performed":False,"deletion_performed":False,
+            "exact_duplicate_groups":len(groups),"theoretical_redundant_bytes":total,
+            "interpretation":"For each SHA-256-identical group, one logical content instance is sufficient for deduplicated storage only if every original path is preserved in the reconstruction manifest. No source deletion is authorized.",
+            "top50_groups":topgroups,
+            "redundant_bytes_attributed_by_top_level_from_redundant_paths":sorted(
+              ({"top_level":k,"redundant_bytes":v} for k,v in bytop.items()),key=lambda x:x["redundant_bytes"],reverse=True)}
+          json.dump(report,open(out+"/REPORT.json","w"),indent=2,ensure_ascii=False)
+          print(json.dumps({k:v for k,v in report.items() if k!="top50_groups"},indent=2,ensure_ascii=False))
+          print("=== TOP 20 EXACT DUPLICATE GROUPS ===")
+          for g in topgroups[:20]:
+            print(json.dumps(g,ensure_ascii=False))
+          PY
+          sha256sum "$OUT"/* > "$OUT/SHA256SUMS.txt"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: R4-PART4-existing-dedup-explanation-${{ github.run_id }}
+          path: ${{ runner.temp }}/r4-part4-explain-dedup-${{ github.run_id }}
+          if-no-files-found: error
+          retention-days: 30
