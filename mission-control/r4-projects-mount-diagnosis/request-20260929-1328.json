@@ -1,0 +1,5 @@
+{
+  "scope": "READ_ONLY",
+  "priority": "P1_PROYECTOS",
+  "purpose": "Resolve broken Proyectos -> Windows/PROYECTOS binding"
+}
