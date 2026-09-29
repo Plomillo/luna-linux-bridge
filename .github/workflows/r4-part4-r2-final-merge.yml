@@ -2,6 +2,11 @@ name: "R4 PART4 R2 — final merge preboot"
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-r2-final-merge/**
 
 permissions:
   contents: read
