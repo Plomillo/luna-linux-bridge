@@ -73,7 +73,15 @@ PART_4 R2 ORDER:
 9. Retire remaining NTFS and Windows recovery/residual storage only after the
    migration equivalence gate passes.
 10. Reassign reclaimed capacity to a validated Linux-only storage layout.
-11. Close PART_4 only after final non-regression, G23 and G24.
+11. After the NTFS->ext4 project migration is independently certified, apply
+    PART4-R2-FINAL-MERGE-20260929: migrate the valid Debian root into the
+    verified ext4 Linux partition, preserve EFI, prove the new root boot,
+    retire the old Debian root only after post-boot G23/G24, and expand the
+    new root to the final usable boundary.
+12. Final target layout: required EFI + one main Linux ext4 root containing
+    Debian and PROYECTOS; normal alignment gaps are permitted.
+13. Close PART_4 only after the final merged layout, PROYECTOS integrity,
+    boot-chain non-regression, G23 and G24 all PASS.
 PART_5 through PART_9 are unchanged by this amendment.
 
 PART_5 — LABORATORY:
