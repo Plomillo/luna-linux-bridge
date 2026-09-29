@@ -1,0 +1,41 @@
+{
+  "status": "REFERENCE_MATERIALIZED_HASH_VERIFIED",
+  "scope": "LUNA_R4_UI_REFERENCE_ONLY",
+  "canonical_mutation": false,
+  "authority_transfer": false,
+  "g23_granted": false,
+  "g24_granted": false,
+  "source_authorization": "Explicit owner authorization in ChatGPT conversation, 2026-09-28 local time",
+  "visual_reference": {
+    "path": "docs/luna-r4/ui-reference/LUNA_R4_UI_REFERENCE_PARTS_1_9.jpg",
+    "bytes": 374879,
+    "sha256": "8a9852c4155d64fd74059c7239e67c82e16e5acd556627d70575db85078d4ed4"
+  },
+  "kde_baseline": {
+    "path": "docs/luna-r4/ui-reference/KDE_UI_REFERENCE_20260929T020349Z.7z",
+    "bytes": 281114,
+    "sha256": "c21e04d5447e123b59fc9b94d2e9684bc03ea164999ef6f60210e257557a16dc"
+  },
+  "visual_policy": {
+    "preserve_existing_wallpaper": true,
+    "remove_excess_floral_decorations_from_ui_mockup": true,
+    "preserve_dark_blue_purple_kde_tonality": true,
+    "parts": "1-9"
+  },
+  "generated_at_utc": "2026-09-29T02:38:29.413375+00:00",
+  "doctrine": [
+    "EVIDENCE_FIRST",
+    "FAIL_CLOSED",
+    "NO_SILENT_OPERATIONS",
+    "EXTEND_DO_NOT_REPLACE"
+  ],
+  "host_physical_reference": {
+    "root": "/home/diegoignacionorambuenamiranda/Descargas/LUNA_R4_UI_REFERENCE",
+    "requested_parent": "/home/diegoignacionorambuenamiranda/Descargas",
+    "role": "LOCAL_OPERATIONAL_REFERENCE",
+    "authority": false,
+    "must_match_repository_sha256": true,
+    "silent_overwrite": false,
+    "divergence_action": "HOLD"
+  }
+}

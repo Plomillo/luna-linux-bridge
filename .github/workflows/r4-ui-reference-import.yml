@@ -1,0 +1,116 @@
+name: "R4 UI reference — materialize authorized binary artifacts"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-ui-reference-20260929
+    paths:
+      - .github/workflows/r4-ui-reference-import.yml
+
+permissions:
+  contents: write
+
+jobs:
+  materialize-reference:
+    if: >-
+      github.repository == 'Plomillo/luna-linux-bridge' &&
+      github.event.head_commit.message == 'ci(R4): materializar referencias UI autorizadas'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout exact staging branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 1
+          persist-credentials: true
+
+      - name: Decode, verify and freeze authorized references
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="docs/luna-r4/ui-reference"
+          TRANSPORT="$ROOT/_transport"
+          IMAGE_OUT="$ROOT/LUNA_R4_UI_REFERENCE_PARTS_1_9.jpg"
+          KDE_OUT="$ROOT/KDE_UI_REFERENCE_20260929T020349Z.7z"
+
+          test -f "$TRANSPORT/LUNA_R4_UI_REFERENCE_PARTS_1_9.jpg.b64"
+          test -f "$TRANSPORT/KDE_UI_REFERENCE_20260929T020349Z.7z.b64"
+
+          tr -d '\r\n\t ' < "$TRANSPORT/LUNA_R4_UI_REFERENCE_PARTS_1_9.jpg.b64" | base64 --decode > "$IMAGE_OUT"
+          tr -d '\r\n\t ' < "$TRANSPORT/KDE_UI_REFERENCE_20260929T020349Z.7z.b64" | base64 --decode > "$KDE_OUT"
+
+          IMAGE_SHA="$(sha256sum "$IMAGE_OUT" | awk '{print $1}')"
+          KDE_SHA="$(sha256sum "$KDE_OUT" | awk '{print $1}')"
+          IMAGE_BYTES="$(stat -c %s "$IMAGE_OUT")"
+          KDE_BYTES="$(stat -c %s "$KDE_OUT")"
+
+          test "$IMAGE_SHA" = "8a9852c4155d64fd74059c7239e67c82e16e5acd556627d70575db85078d4ed4"
+          test "$KDE_SHA" = "c21e04d5447e123b59fc9b94d2e9684bc03ea164999ef6f60210e257557a16dc"
+          test "$IMAGE_BYTES" = "374879"
+          test "$KDE_BYTES" = "281114"
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import json, hashlib, datetime
+
+          root=Path("docs/luna-r4/ui-reference")
+          image=root/"LUNA_R4_UI_REFERENCE_PARTS_1_9.jpg"
+          kde=root/"KDE_UI_REFERENCE_20260929T020349Z.7z"
+
+          def rec(path):
+              data=path.read_bytes()
+              return {
+                  "path": str(path),
+                  "bytes": len(data),
+                  "sha256": hashlib.sha256(data).hexdigest()
+              }
+
+          manifest={
+              "status":"REFERENCE_MATERIALIZED_HASH_VERIFIED",
+              "scope":"LUNA_R4_UI_REFERENCE_ONLY",
+              "canonical_mutation":False,
+              "authority_transfer":False,
+              "g23_granted":False,
+              "g24_granted":False,
+              "source_authorization":"Explicit owner authorization in ChatGPT conversation, 2026-09-28 local time",
+              "visual_reference":rec(image),
+              "kde_baseline":rec(kde),
+              "visual_policy":{
+                  "preserve_existing_wallpaper":True,
+                  "remove_excess_floral_decorations_from_ui_mockup":True,
+                  "preserve_dark_blue_purple_kde_tonality":True,
+                  "parts":"1-9"
+              },
+              "generated_at_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),
+              "doctrine":[
+                  "EVIDENCE_FIRST",
+                  "FAIL_CLOSED",
+                  "NO_SILENT_OPERATIONS",
+                  "EXTEND_DO_NOT_REPLACE"
+              ]
+          }
+          (root/"REFERENCE_MANIFEST.json").write_text(
+              json.dumps(manifest,ensure_ascii=False,indent=2)+"\n",
+              encoding="utf-8"
+          )
+          PY
+
+          rm -rf "$TRANSPORT"
+
+          echo "IMAGE_SHA256=$IMAGE_SHA"
+          echo "KDE_SHA256=$KDE_SHA"
+          echo "IMAGE_BYTES=$IMAGE_BYTES"
+          echo "KDE_BYTES=$KDE_BYTES"
+          echo "REFERENCE_MATERIALIZATION=PASS"
+
+      - name: Commit verified binaries and evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name "louksna-r4-ui-reference[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add --             docs/luna-r4/ui-reference/LUNA_R4_UI_REFERENCE_PARTS_1_9.jpg             docs/luna-r4/ui-reference/KDE_UI_REFERENCE_20260929T020349Z.7z             docs/luna-r4/ui-reference/REFERENCE_MANIFEST.json             docs/luna-r4/ui-reference/_transport
+          git diff --cached --check
+          git -c commit.gpgsign=false commit -m "docs(R4): materializar referencia visual y baseline KDE verificados"
+          git push origin HEAD:refs/heads/staging/luna-r4-ui-reference-20260929

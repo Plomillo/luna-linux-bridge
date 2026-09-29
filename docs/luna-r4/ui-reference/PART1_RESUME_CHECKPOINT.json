@@ -1,0 +1,68 @@
+{
+  "schema": "LUNA_R4_PART1_RESUME_CHECKPOINT/1.0",
+  "status": "AUDITED_RESUME_POINT",
+  "current_part": "PART_1",
+  "historical_checkpoint": {
+    "family": "R4_PART1_DESKTOP_V1",
+    "run": "20260926T034746Z-38579",
+    "path": "/home/diegoignacionorambuenamiranda/LOUKSNA_MAESTRO_20260925/MISSION3_OPERATIVE/R4_PART1_DESKTOP_V1/runs/20260926T034746Z-38579",
+    "checkpoint_scope": "PART1 additive top panel, preserving original bottom panel",
+    "panel_id": 27,
+    "quicklaunch_id": 29,
+    "launchers_expected": 8,
+    "runtime_status": "PASS_BOUNDED_RUNTIME",
+    "human_visual_review_at_historical_run": "PENDING",
+    "g23_part1_at_historical_run": "PENDING",
+    "g24_part1_at_historical_run": "PENDING"
+  },
+  "historical_source_hashes": {
+    "dispatcher.py": "6b551c8a819baa10f82b5e616bbf2a1315c3d55164915830646887e0b019d2a2",
+    "panel.template.js": "40cd06efd8f42ac2a9cdad4e9a30086d97d07a00e6d8c193ec37add8f16664b5",
+    "r4_part1.py": "197c116d9f7c2060b9628f3b5f7395fdccd4e1ec69e91346da3edaa16c6ed7d6",
+    "rollback.template.js": "e6322cfd819807a534b3a113a97020d9c230a3cc978d9189f6376c31154056dd",
+    "verify.template.js": "a8bc7326fb35e816ceb11d9d2c446986b45ef6b497fe422b75d686c7c2ceedfd"
+  },
+  "current_host_audit": {
+    "audit_run": 36514736716,
+    "detail_run": 36514800184,
+    "material_run": 36514894200,
+    "machine": "LOUKSNA",
+    "runner_state": "active",
+    "symphylax_state": "active",
+    "linger": "yes",
+    "boot_id": "044d6d5a-8ef3-4a38-a48c-9e4a3952dd10",
+    "current_plasma_config_sha256": "bbf4b40c6978bcb00c66130da7dc00df7766a4fb46c87e2a5e97d8b80c8ba0ea",
+    "current_kdeglobals_sha256": "f154c020ae9cdd220a9bdaf1953cafaf124b7c5b38e450751b9ab0601be16060",
+    "current_kwinrc_sha256": "e96da564d4674bb63c8ba5ac7d37b276afe887cb23ba5e803eeaa1888e0273af",
+    "current_launchers_exist": 8,
+    "note": "Launcher .desktop files are present; their literal URLs are not currently serialized in plasma-org.kde.plasma.desktop-appletsrc, so resume must verify actual Plasma layout differentially instead of assuming absence."
+  },
+  "approved_ui_reference": {
+    "root": "/home/diegoignacionorambuenamiranda/Descargas/LUNA_R4_UI_REFERENCE",
+    "image_sha256": "8a9852c4155d64fd74059c7239e67c82e16e5acd556627d70575db85078d4ed4",
+    "kde_snapshot_sha256": "c21e04d5447e123b59fc9b94d2e9684bc03ea164999ef6f60210e257557a16dc"
+  },
+  "server_ready": {
+    "run": 36503769931,
+    "g08": "PASS",
+    "g09": "PASS",
+    "g23": "PASS",
+    "g24": "PASS",
+    "server_certified": true,
+    "repeat_required": false
+  },
+  "resume_contract": {
+    "mode": "DIFFERENTIAL_RESUME",
+    "start_from_exact_checkpoint": true,
+    "do_not_repeat": [
+      "PART_0 baseline work",
+      "PART_1 full reinstall",
+      "SERVER_READY G08/G09/G23/G24"
+    ],
+    "first_action": "VERIFY_CURRENT_PART1_AGAINST_CHECKPOINT_AND_APPROVED_UI_REFERENCE",
+    "second_action": "APPLY_ONLY_MISSING_PART1_DELTA",
+    "part2_entry_gate": "PART1_POST_VALIDATION_PASS",
+    "failure_posture": "FAIL_CLOSED",
+    "silent_overwrite": false
+  }
+}

@@ -1,0 +1,68 @@
+name: "R4 PART1 — checkpoint detail audit"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-ui-reference-20260929
+    paths:
+      - .github/workflows/r4-part1-checkpoint-detail-audit.yml
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 3
+    steps:
+      - name: Inspect exact PART1 checkpoint read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="/home/diegoignacionorambuenamiranda/LOUKSNA_MAESTRO_20260925/MISSION3_OPERATIVE/R4_PART1_DESKTOP_V1/runs/20260926T034746Z-38579"
+          OUT="$RUNNER_TEMP/r4-part1-checkpoint-detail"
+          mkdir -p "$OUT"
+          test -d "$ROOT"
+
+          {
+            echo "ROOT=$ROOT"
+            echo "=== TREE ==="
+            find "$ROOT" -maxdepth 3 -type f -printf '%s\t%p\n' | sort
+            echo "=== SHA256 ==="
+            find "$ROOT" -maxdepth 3 -type f -print0 | sort -z | xargs -0 sha256sum
+          } > "$OUT/INVENTORY.txt"
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import os, json
+          root=Path("/home/diegoignacionorambuenamiranda/LOUKSNA_MAESTRO_20260925/MISSION3_OPERATIVE/R4_PART1_DESKTOP_V1/runs/20260926T034746Z-38579")
+          out=Path(os.environ["RUNNER_TEMP"])/"r4-part1-checkpoint-detail"
+          allow_ext={".json",".txt",".md",".log",".conf",".ini",".yaml",".yml"}
+          records=[]
+          for p in sorted(root.rglob("*")):
+              if not p.is_file() or p.suffix.lower() not in allow_ext:
+                  continue
+              try:
+                  size=p.stat().st_size
+              except OSError:
+                  continue
+              if size>150_000:
+                  records.append({"path":str(p),"size":size,"content":"<SKIPPED_TOO_LARGE>"})
+                  continue
+              try:
+                  content=p.read_text(encoding="utf-8",errors="replace")
+              except Exception as e:
+                  content=f"<READ_ERROR:{e}>"
+              records.append({"path":str(p),"size":size,"content":content})
+          (out/"TEXT_RECORDS.json").write_text(json.dumps(records,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+          for r in records:
+              print("\n===== "+r["path"]+" =====")
+              print(r["content"][:12000])
+          PY
+      - name: Preserve evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part1-checkpoint-detail
+          path: ${{ runner.temp }}/r4-part1-checkpoint-detail
+          if-no-files-found: error
