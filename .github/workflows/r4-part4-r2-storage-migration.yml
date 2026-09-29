@@ -243,8 +243,8 @@ jobs:
             "old_ntfs_uuid_gone":p3.get("uuid")!="F2848A148489DC0B",
             "p2_absent":"/dev/nvme0n1p2" not in bypath,
             "p4_absent":"/dev/nvme0n1p4" not in bypath,
-            "final_mount":any(m==str(pathlib.Path.home()/"PROYECTOS") for m in (p3.get("mountpoints") or []) if m),
-            "checkpoint_present":pathlib.Path("$RUNNER_TEMP/result/PARTITION_TABLE_BEFORE.sfdisk").exists(),
+            "final_mount":any(m=="/home/diegoignacionorambuenamiranda/PROYECTOS" for m in (p3.get("mountpoints") or []) if m),
+            "checkpoint_present":(rp.parent/"PARTITION_TABLE_BEFORE.sfdisk").exists(),
           }
           passed=all(checks.values())
           q={"schema":"LOUKSNA_R4_PART4_R2_STORAGE_FINAL_G23/1.0","status":"PASS" if passed else "HOLD","checks":checks,
