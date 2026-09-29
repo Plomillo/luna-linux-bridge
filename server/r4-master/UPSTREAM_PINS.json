@@ -1,0 +1,19 @@
+{
+  "schema": "LOUKSNA_R4_MASTER_UPSTREAM_PINS/1.0",
+  "captured_utc": "2026-09-29T00:00:00Z",
+  "mojo": {
+    "version": "1.1.0",
+    "install_reference": "https://mojolang.static.modular.com/install/",
+    "supported_installers": [
+      "uv",
+      "pixi"
+    ],
+    "selected_method": "isolated_python_venv_pip_compatible",
+    "selected_package": "mojo==1.1.0",
+    "note": "Selected from current official Mojo install documentation; material installation must record resolved package hashes."
+  },
+  "debian": {
+    "target": "Debian GNU/Linux 13 Trixie",
+    "package_source_policy": "OFFICIAL_CONFIGURED_APT_SOURCES_ONLY"
+  }
+}
