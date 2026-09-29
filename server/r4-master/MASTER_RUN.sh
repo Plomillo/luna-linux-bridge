@@ -31,11 +31,8 @@ echo "Modo: DIFFERENTIAL"
 echo "Servidor: SERVER_READY ya certificado"
 echo "Secuencia: PART_1 -> PART_2 -> ... -> PART_9"
 echo
-echo "Se validará sudo una sola vez para arrancar el ciclo gobernado."
+echo "El ciclo arranca sin privilegios. Sólo se pedirá autorización si una PART la necesita."
 echo
-
-sudo -v
-sudo -n /usr/local/sbin/louksna-apc status >/dev/null || hold "APC48_NOT_ACTIVE"
 
 install -d -m 0700 "$DST" "$STATE"
 install -d -m 0755 "$UNIT_DIR"
