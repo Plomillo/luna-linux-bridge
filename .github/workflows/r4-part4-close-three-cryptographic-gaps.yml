@@ -1,0 +1,117 @@
+name: "R4 PART4 — close three cryptographic gaps"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-part4-close-three-cryptographic-gaps.yml
+      - mission-control/r4-part4-close-three-cryptographic-gaps/**
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 20
+    steps:
+      - name: Diagnose exact three objects read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="/media/diegoignacionorambuenamiranda/Windows/PROYECTOS"
+          EXPECTED_SOURCE="/dev/nvme0n1p3"
+          EXPECTED_UUID="F2848A148489DC0B"
+          OUT="$RUNNER_TEMP/r4-part4-close-three-$GITHUB_RUN_ID"
+          mkdir -p "$OUT"
+          test -d "$ROOT"
+          test "$(findmnt -T "$ROOT" -n -o SOURCE)" = "$EXPECTED_SOURCE"
+          test "$(/usr/sbin/blkid -s UUID -o value "$EXPECTED_SOURCE")" = "$EXPECTED_UUID"
+
+          python3 - "$ROOT" "$OUT" <<'PY'
+          import os,sys,json,stat,hashlib,subprocess,base64,errno
+          from pathlib import Path
+          root=Path(sys.argv[1])
+          out=Path(sys.argv[2])
+          rels=[
+            "1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/0. JSON/FORENSIC_V1_20260909/a080_runtime_closure_v1/libopengl_staging/extracted/usr/share/doc/libopengl0/changelog.Debian.gz",
+            "1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/0. JSON/FORENSIC_V1_20260909/a080_runtime_closure_v1/libopengl_staging/extracted/usr/lib/x86_64-linux-gnu/libGLdispatch.so.0",
+            "1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/0. JSON/FORENSIC_V1_20260909/a080_runtime_closure_v1/libopengl_staging/extracted/usr/lib/x86_64-linux-gnu/libOpenGL.so.0"
+          ]
+          def sha_file(p):
+              h=hashlib.sha256()
+              with open(p,'rb',buffering=0) as f:
+                  for b in iter(lambda:f.read(1024*1024),b''): h.update(b)
+              return h.hexdigest()
+          def cmd(args):
+              q=subprocess.run(args,text=True,capture_output=True)
+              return {"argv":args,"rc":q.returncode,"stdout":q.stdout[-8000:],"stderr":q.stderr[-8000:]}
+          report={"schema":"LOUKSNA_R4_PART4_CRYPTO_GAP_DIAGNOSIS/1.0","mode":"READ_ONLY","source_mutated":False,"targets":[]}
+          for rel in rels:
+              p=root/rel
+              rec={"rel":rel,"path":str(p),"exists_lexical":os.path.lexists(p)}
+              try:
+                  st=os.lstat(p)
+                  rec.update({
+                    "lstat_mode":oct(stat.S_IMODE(st.st_mode)),
+                    "st_mode":st.st_mode,"st_size":st.st_size,"st_ino":st.st_ino,"st_dev":st.st_dev,
+                    "is_reg":stat.S_ISREG(st.st_mode),"is_dir":stat.S_ISDIR(st.st_mode),
+                    "is_symlink":stat.S_ISLNK(st.st_mode),"is_other":not(stat.S_ISREG(st.st_mode) or stat.S_ISDIR(st.st_mode) or stat.S_ISLNK(st.st_mode))
+                  })
+              except Exception as e:
+                  rec["lstat_error"]=repr(e)
+              try:
+                  rec["readlink"]=os.readlink(p)
+              except Exception as e:
+                  rec["readlink_error"]=repr(e)
+              try:
+                  rec["sha256_normal_open"]=sha_file(p)
+              except Exception as e:
+                  rec["sha256_normal_open_error"]=repr(e)
+              try:
+                  fd=os.open(p,os.O_RDONLY|getattr(os,"O_NOFOLLOW",0))
+                  try:
+                      h=hashlib.sha256()
+                      while True:
+                          b=os.read(fd,1024*1024)
+                          if not b: break
+                          h.update(b)
+                      rec["sha256_nofollow"]=h.hexdigest()
+                  finally:
+                      os.close(fd)
+              except Exception as e:
+                  rec["sha256_nofollow_error"]=repr(e)
+              xattrs={}
+              try:
+                  for n in os.listxattr(p,follow_symlinks=False):
+                      try:
+                          v=os.getxattr(p,n,follow_symlinks=False)
+                          xattrs[n]={"len":len(v),"sha256":hashlib.sha256(v).hexdigest(),"base64_prefix":base64.b64encode(v[:256]).decode()}
+                      except Exception as e:
+                          xattrs[n]={"error":repr(e)}
+              except Exception as e:
+                  rec["listxattr_error"]=repr(e)
+              rec["xattrs"]=xattrs
+              rec["commands"]=[
+                 cmd(["/usr/bin/stat","--printf=%F|%a|%s|%i|%d|%N\n",str(p)]),
+                 cmd(["/usr/bin/readlink","--",str(p)]),
+                 cmd(["/usr/bin/file","-b","--",str(p)]),
+                 cmd(["/usr/bin/find",str(p.parent),"-maxdepth","1","-samefile",str(p),"-printf","%y|%s|%i|%p|%l\n"])
+              ]
+              report["targets"].append(rec)
+          data=json.dumps(report,ensure_ascii=False,indent=2,sort_keys=True)+"\n"
+          (out/"DIAGNOSIS.json").write_text(data,encoding="utf-8")
+          (out/"DIAGNOSIS.sha256").write_text(hashlib.sha256(data.encode()).hexdigest()+"  DIAGNOSIS.json\n",encoding="utf-8")
+          print(data)
+          PY
+
+      - name: Preserve diagnosis evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: R4-PART4-close-three-diagnosis-${{ github.run_id }}
+          path: ${{ runner.temp }}/r4-part4-close-three-${{ github.run_id }}/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
