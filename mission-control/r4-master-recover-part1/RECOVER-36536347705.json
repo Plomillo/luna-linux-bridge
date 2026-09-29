@@ -1,0 +1,9 @@
+{
+  "schema": "LOUKSNA_R4_PART1_CERT_RECOVERY/1.0",
+  "source_g24_run": 36536347705,
+  "part": "PART_1",
+  "checkpoint": "20260926T034746Z-38579",
+  "action": "BIND_EXISTING_G24_AND_CONTINUE",
+  "repeat_certification": false,
+  "fail_closed": true
+}
