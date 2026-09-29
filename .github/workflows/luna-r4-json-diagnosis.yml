@@ -1,0 +1,53 @@
+name: "LUNA R4 — diagnose JSON hold"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-master-json-diagnosis/**
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 3
+    steps:
+      - name: Inspect JSON state and current controller
+        shell: bash
+        run: |
+          set +e
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9"
+          echo "=== SERVICE ==="
+          systemctl --user show luna-r4-master-part1-part9.service -p ActiveState -p SubState -p Result -p ExecMainStatus -p MainPID -p NRestarts
+          echo "=== MASTER STATUS ==="
+          test -f "$STATE/MASTER_STATUS.json" && cat "$STATE/MASTER_STATUS.json" || true
+          echo "=== JSON FILE AUDIT ==="
+          python3 - "$STATE" <<'PY'
+          import json, pathlib, sys
+          root=pathlib.Path(sys.argv[1])
+          for p in sorted(root.rglob("*.json")):
+              try:
+                  size=p.stat().st_size
+              except OSError:
+                  continue
+              rel=p.relative_to(root)
+              if size > 1024*1024:
+                  print(f"SKIP_LARGE\t{size}\t{rel}")
+                  continue
+              try:
+                  txt=p.read_text(encoding="utf-8")
+                  json.loads(txt)
+                  print(f"PASS\t{size}\t{rel}")
+              except Exception as e:
+                  print(f"FAIL\t{size}\t{rel}\t{type(e).__name__}:{e}")
+          PY
+          echo "=== CUSTOSZ STATE TREE ==="
+          find "$STATE/custosz" -maxdepth 4 -type f -printf '%s\t%p\n' 2>/dev/null | sort -n | head -n 300
+          echo "=== CURRENT JOURNAL ==="
+          journalctl --user -u luna-r4-master-part1-part9.service -n 160 --no-pager
