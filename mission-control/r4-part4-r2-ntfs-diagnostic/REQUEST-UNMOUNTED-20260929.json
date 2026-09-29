@@ -1,0 +1,9 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_NTFS_UNMOUNTED_DIAGNOSTIC_REQUEST/1.0",
+  "status": "REQUESTED",
+  "target": "/dev/nvme0n1p3",
+  "mountpoint": "/media/diegoignacionorambuenamiranda/Windows",
+  "mode": "UNMOUNT_PROBE_REMOUNT",
+  "destructive": false,
+  "purpose": "Capture exact ntfsresize --info failure while p3 is unmounted, then restore governed mount."
+}
