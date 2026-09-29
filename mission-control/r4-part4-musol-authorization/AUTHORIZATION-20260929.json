@@ -1,0 +1,29 @@
+{
+  "schema": "LOUKSNA_R4_PART4_MUSOL_HUMAN_AUTHORIZATION/1.0",
+  "authority": "HUMAN_EXPLICIT_AUTHORIZATION",
+  "plan": "MUSOL_PART4",
+  "authorized": true,
+  "authorized_scope": {
+    "preserve_exact": "/media/diegoignacionorambuenamiranda/Windows/PROYECTOS",
+    "destructive_partition": "/dev/nvme0n1p3",
+    "delete_rule": "DELETE_EVERY_DIRECT_CHILD_OF_WINDOWS_EXCEPT_EXACT_PROYECTOS",
+    "excluded": [
+      "EFI",
+      "GPT",
+      "Debian/Linux",
+      "all other partitions"
+    ]
+  },
+  "required_preconditions": [
+    "freeze_and_protect_PROYECTOS",
+    "complete_sha256_manifest",
+    "two_verified_independent_backups",
+    "real_restore_proof",
+    "destructive_scope_prevalidated",
+    "G23_PASS",
+    "G24_PASS"
+  ],
+  "failure_posture": "FAIL_CLOSED_ABORT_ON_ANY_DISCREPANCY",
+  "destructive_execution_authorized_conditionally": true,
+  "unconditional_delete_authorized": false
+}
