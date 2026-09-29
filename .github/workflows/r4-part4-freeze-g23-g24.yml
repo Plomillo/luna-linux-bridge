@@ -1,0 +1,221 @@
+name: "R4 PART4 — G23 G24 certify PROYECTOS cryptographic freeze"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-part4-freeze-g23-g24.yml
+      - mission-control/r4-part4-freeze-certification/**
+
+permissions:
+  contents: read
+  actions: read
+  id-token: write
+
+concurrency:
+  group: r4-part4-freeze-cert-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  g23:
+    name: G23 independent validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Download exact freeze evidence artifact
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/freeze-evidence"
+          gh run download 36619942178 \
+            --repo Plomillo/luna-linux-bridge \
+            -n R4-PART4-PROYECTOS-freeze-36619942178 \
+            -D "$RUNNER_TEMP/freeze-evidence"
+          find "$RUNNER_TEMP/freeze-evidence" -maxdepth 1 -type f -printf '%f\n' | sort
+
+      - name: Independently validate complete freeze evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/freeze-evidence" "$RUNNER_TEMP/g23/G23_FREEZE.json" <<'PY'
+          import gzip, hashlib, json, pathlib, re, sys, datetime as dt
+          d=pathlib.Path(sys.argv[1]); out=pathlib.Path(sys.argv[2])
+          summary=d/"FREEZE_SUMMARY.json"
+          manifest=d/"PROYECTOS_MANIFEST.jsonl.gz"
+          sums=d/"SHA256SUMS.txt"
+          required=[summary,manifest,sums]
+          checks={"required_files":all(p.is_file() for p in required)}
+          if not checks["required_files"]:
+              result={"schema":"LOUKSNA_R4_PART4_FREEZE_G23/1.0","status":"HOLD","checks":checks}
+              out.write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
+              raise SystemExit(3)
+
+          s=json.loads(summary.read_text(encoding="utf-8"))
+          def sha(p):
+              h=hashlib.sha256()
+              with p.open("rb") as f:
+                  for b in iter(lambda:f.read(8*1024*1024),b""): h.update(b)
+              return h.hexdigest()
+          manifest_sha=sha(manifest)
+          summary_sha=sha(summary)
+          checks.update({
+            "schema":s.get("schema")=="LOUKSNA_R4_PART4_PROYECTOS_FREEZE/1.0",
+            "status_pass":s.get("status")=="PASS",
+            "source_mutated_false":s.get("source_mutated") is False,
+            "error_count_zero":s.get("error_count")==0 and s.get("errors")==[],
+            "changed_count_zero":s.get("changed_count")==0 and s.get("changed_during_capture")==[],
+            "root_exact":s.get("root")=="/media/diegoignacionorambuenamiranda/Windows/PROYECTOS",
+            "manifest_digest_matches_summary":manifest_sha==s.get("manifest_sha256"),
+            "manifest_digest_pinned":manifest_sha=="99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+            "regular_file_bytes":s.get("regular_file_bytes")==200490852057,
+            "counts_expected":s.get("counts")=={"dir":62016,"file":436072,"other":0,"symlink":4},
+          })
+
+          seen=set(); counts={"dir":0,"file":0,"other":0,"symlink":0}; bytes_total=0
+          malformed=[]; duplicates=[]
+          with gzip.open(manifest,"rt",encoding="utf-8") as f:
+              for i,line in enumerate(f,1):
+                  try:r=json.loads(line)
+                  except Exception as e:
+                      malformed.append({"line":i,"error":type(e).__name__}); continue
+                  p=r.get("path"); typ=r.get("type")
+                  if not isinstance(p,str) or not p or p.startswith("/") or ".." in pathlib.PurePosixPath(p).parts:
+                      malformed.append({"line":i,"reason":"BAD_PATH"}); continue
+                  if p in seen: duplicates.append(p)
+                  seen.add(p)
+                  if typ not in counts:
+                      malformed.append({"line":i,"reason":"BAD_TYPE"}); continue
+                  counts[typ]+=1
+                  if typ=="file":
+                      h=r.get("sha256")
+                      if not isinstance(h,str) or not re.fullmatch(r"[0-9a-f]{64}",h):
+                          malformed.append({"line":i,"reason":"BAD_SHA256","path":p})
+                      if not isinstance(r.get("size"),int) or r["size"]<0:
+                          malformed.append({"line":i,"reason":"BAD_SIZE","path":p})
+                      else: bytes_total+=r["size"]
+                  elif typ=="symlink":
+                      if not isinstance(r.get("target"),str):
+                          malformed.append({"line":i,"reason":"BAD_SYMLINK_TARGET","path":p})
+
+          checks.update({
+            "manifest_no_malformed_records":not malformed,
+            "manifest_no_duplicate_paths":not duplicates,
+            "manifest_counts_match_summary":counts==s.get("counts"),
+            "manifest_bytes_match_summary":bytes_total==s.get("regular_file_bytes"),
+            "manifest_record_count":len(seen)==498092,
+          })
+          passed=all(checks.values())
+          result={
+            "schema":"LOUKSNA_R4_PART4_FREEZE_G23/1.0",
+            "status":"PASS" if passed else "HOLD",
+            "scope":"PROYECTOS_CRYPTOGRAPHIC_FREEZE_ONLY",
+            "does_not_certify_global_part4":True,
+            "source_run_id":36619942178,
+            "source_artifact":"R4-PART4-PROYECTOS-freeze-36619942178",
+            "manifest_sha256":manifest_sha,
+            "summary_sha256":summary_sha,
+            "checks":checks,
+            "observed_counts":counts,
+            "observed_regular_file_bytes":bytes_total,
+            "malformed_sample":malformed[:20],
+            "duplicate_sample":duplicates[:20],
+            "independent_reader":"GITHUB_HOSTED_UBUNTU_24_04",
+            "repair_allowed":False,
+            "g24_allowed":passed,
+            "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          raw=json.dumps(result,indent=2,sort_keys=True)+"\n"
+          out.write_text(raw,encoding="utf-8")
+          print(raw)
+          if not passed: raise SystemExit(3)
+          PY
+
+      - name: Preserve G23
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-freeze-g23
+          path: ${{ runner.temp }}/g23/G23_FREEZE.json
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  g24:
+    name: G24 digest-bound certification
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Download G23
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-freeze-g23
+          path: ${{ runner.temp }}/g23
+
+      - name: Issue scope-bounded G24 certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$RUNNER_TEMP/g23/G23_FREEZE.json" "$RUNNER_TEMP/g24/PREP.json" <<'PY'
+          import hashlib,json,pathlib,sys
+          p=pathlib.Path(sys.argv[1]); g=json.loads(p.read_text())
+          if g.get("status")!="PASS" or not g.get("g24_allowed"):
+              raise SystemExit("G23_NOT_PASS")
+          pathlib.Path(sys.argv[2]).write_text(json.dumps({
+            "g23_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),
+            "manifest_sha256":g["manifest_sha256"]
+          })+"\n")
+          PY
+          G23_SHA="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["g23_sha256"])' "$RUNNER_TEMP/g24/PREP.json")"
+          MANIFEST_SHA="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["manifest_sha256"])' "$RUNNER_TEMP/g24/PREP.json")"
+          AUD="louksna-r4-part4-freeze-g24:$MANIFEST_SHA:$G23_SHA"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export TOKEN G23_SHA MANIFEST_SHA AUD
+          python3 - "$RUNNER_TEMP/g23/G23_FREEZE.json" "$RUNNER_TEMP/g24/G24_FREEZE.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          g=json.load(open(sys.argv[1],encoding="utf-8"))
+          token=os.environ["TOKEN"]; parts=token.split(".")
+          if len(parts)!=3: raise SystemExit("OIDC_FORMAT")
+          payload=parts[1]+"="*((4-len(parts[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload))
+          expected=os.environ["AUD"]; aud=claims.get("aud")
+          if aud!=expected and not (isinstance(aud,list) and expected in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          if g.get("status")!="PASS" or g.get("scope")!="PROYECTOS_CRYPTOGRAPHIC_FREEZE_ONLY":
+              raise SystemExit("G23_SCOPE_OR_STATUS")
+          cert={
+            "schema":"LOUKSNA_R4_PART4_FREEZE_G24/1.0",
+            "status":"PASS",
+            "scope":"PROYECTOS_CRYPTOGRAPHIC_FREEZE_ONLY",
+            "does_not_certify_global_part4":True,
+            "source_run_id":36619942178,
+            "manifest_sha256":os.environ["MANIFEST_SHA"],
+            "g23_sha256":os.environ["G23_SHA"],
+            "g23_status":"PASS",
+            "authority_authenticated":True,
+            "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(token.encode()).hexdigest(),
+            "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+            "canonical_mutation":False,
+            "authority_transfer":False,
+            "self_certified":False,
+            "certificate_scope":"R4_PART4_PROYECTOS_CRYPTOGRAPHIC_FREEZE"
+          }
+          pathlib.Path(sys.argv[2]).write_text(json.dumps(cert,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps(cert,indent=2,sort_keys=True))
+          PY
+          rm -f "$RUNNER_TEMP/g24/PREP.json"
+          unset TOKEN RESP
+
+      - name: Preserve G24
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-freeze-g24
+          path: ${{ runner.temp }}/g24/G24_FREEZE.json
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
