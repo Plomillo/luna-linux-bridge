@@ -1,0 +1,84 @@
+name: "R4 master — recover user service sandbox"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-master-service-recovery/**
+
+permissions:
+  contents: read
+
+jobs:
+  recover:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Recover master service in place
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+
+          UNIT="$HOME/.config/systemd/user/luna-r4-master-part1-part9.service"
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9"
+          REC="$STATE/recovery/$(date -u +%Y%m%dT%H%M%SZ)-sandbox-fix"
+          mkdir -p "$REC"
+          cp "$UNIT" "$REC/luna-r4-master-part1-part9.service.before"
+
+          systemctl --user stop luna-r4-master-part1-part9.service || true
+
+          python3 - "$UNIT" <<'PY'
+          import pathlib,sys
+          p=pathlib.Path(sys.argv[1])
+          s=p.read_text(encoding="utf-8")
+          s=s.replace("PrivateTmp=yes\n","")
+          s=s.replace("LockPersonality=yes\n","")
+          p.write_text(s,encoding="utf-8")
+          PY
+
+          cp "$UNIT" "$REC/luna-r4-master-part1-part9.service.after"
+          systemctl --user daemon-reload
+          systemctl --user reset-failed luna-r4-master-part1-part9.service || true
+
+          echo "=== APC IN USER SYSTEMD WITHOUT SANDBOX ==="
+          systemd-run --user --wait --pipe --collect             /usr/bin/sudo -n /usr/local/sbin/louksna-apc status >/dev/null
+
+          systemctl --user start luna-r4-master-part1-part9.service
+
+          sleep 3
+          first_pid="$(systemctl --user show luna-r4-master-part1-part9.service -p MainPID --value)"
+          first_restart="$(systemctl --user show luna-r4-master-part1-part9.service -p NRestarts --value)"
+          first_state="$(systemctl --user is-active luna-r4-master-part1-part9.service || true)"
+
+          sleep 20
+          second_pid="$(systemctl --user show luna-r4-master-part1-part9.service -p MainPID --value)"
+          second_restart="$(systemctl --user show luna-r4-master-part1-part9.service -p NRestarts --value)"
+          second_state="$(systemctl --user is-active luna-r4-master-part1-part9.service || true)"
+
+          echo "FIRST_STATE=$first_state"
+          echo "SECOND_STATE=$second_state"
+          echo "FIRST_PID=$first_pid"
+          echo "SECOND_PID=$second_pid"
+          echo "FIRST_NRESTARTS=$first_restart"
+          echo "SECOND_NRESTARTS=$second_restart"
+
+          test "$first_state" = "active"
+          test "$second_state" = "active"
+          test "$first_pid" != "0"
+          test "$second_pid" = "$first_pid"
+          test "$second_restart" = "$first_restart"
+
+          if test -f "$STATE/MASTER_STATUS.json"; then
+            echo "=== MASTER_STATUS ==="
+            cat "$STATE/MASTER_STATUS.json"
+          else
+            echo "MASTER_STATUS_MISSING"
+            journalctl --user -u luna-r4-master-part1-part9.service -n 120 --no-pager
+            exit 1
+          fi
+
+          echo "SERVICE_SANDBOX_RECOVERY=PASS"
