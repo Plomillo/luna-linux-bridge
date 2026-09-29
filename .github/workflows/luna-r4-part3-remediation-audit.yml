@@ -1,0 +1,62 @@
+name: "LUNA R4 — PART3 exact remediation audit"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part3-remediation-audit/**
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Audit semantic candidate and Projects Center sources
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          FINAL="$HOME/SYMPHYLAX_LAB/R1_FINAL_CLOSURE_6X60_20260926T225628Z"
+          echo "=== FINAL SEMANTIC CANDIDATE TREE ==="
+          if test -d "$FINAL"; then
+            find "$FINAL" -maxdepth 3 -type f -printf '%p\t%s\n' | sort | head -n 500
+          else
+            echo "FINAL_CANDIDATE_ROOT_MISSING"
+          fi
+
+          echo "=== FINAL STATUS/G23/G24 TEXT ==="
+          if test -d "$FINAL"; then
+            while IFS= read -r f; do
+              size="$(stat -c %s "$f" 2>/dev/null || echo 9999999)"
+              [ "$size" -le 262144 ] || continue
+              case "$f" in
+                *.json|*.md|*.txt|*.log)
+                  if grep -Eiq 'G23|G24|PASS|CERT|SEMANTIC|FINAL|status|252|SOURCE_REGISTRY' "$f" 2>/dev/null; then
+                    echo "### $f"
+                    sed -n '1,260p' "$f" || true
+                  fi
+                  ;;
+              esac
+            done < <(find "$FINAL" -maxdepth 3 -type f | sort)
+          fi
+
+          echo "=== PROJECTS CENTER SEARCH ==="
+          ROOTS=(
+            "$HOME/LOUKSNA_MAESTRO_20260925"
+            "$HOME/.local"
+            "$HOME/SYMPHYLAX_LAB"
+            "$HOME/MISION_PUAC_20260926"
+            "$HOME/Descargas"
+            "/media/$USER/Windows/PROYECTOS"
+          )
+          for r in "${ROOTS[@]}"; do
+            test -d "$r" || continue
+            echo "-- ROOT=$r"
+            find "$r" -xdev -maxdepth 10 \
+              \( -type f -o -type d \) \
+              \( -iname '*projects*center*' -o -iname '*project*center*' -o -iname '*centro*proyecto*' -o -iname '*centro*proyectos*' -o -iname 'project.manifest.json' -o -iname 'semantic.binding.json' \) \
+              -printf '%y\t%p\n' 2>/dev/null | head -n 500
+          done
