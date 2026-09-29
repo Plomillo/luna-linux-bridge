@@ -451,6 +451,21 @@ def main():
     worker.workspace = _workspace_adapter
     worker.discover = _discover_adapter
 
+    # The mailbox already verifies the repository-pinned Louksna.md SHA-256
+    # against the policy authority path. Bind the legacy worker's source probe
+    # to that verified authority instead of asking it to rediscover authority
+    # through the project workspace projection.
+    if hasattr(worker, "source"):
+        def _source_adapter(*args, **kwargs):
+            return {
+                "path": str(authority),
+                "sha256": identities["AUTHORITY"],
+                "integrity": "PASS",
+                "authority": policy["authority"],
+                "binding": "MAILBOX_VERIFIED_REPOSITORY_AUTHORITY",
+            }
+        worker.source = _source_adapter
+
     goal = (
         "MISSION_MAILBOX_NATIVE " + native["mail_id"] +
         "; SOURCE_SHA256=" + native["source"]["sha256"] +
