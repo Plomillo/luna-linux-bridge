@@ -60,9 +60,7 @@ Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$H
 ExecStart=/usr/bin/python3 -B -I $DST/master_controller.py --loop --sleep 300
 Restart=on-failure
 RestartSec=15
-PrivateTmp=yes
 ProtectHome=false
-LockPersonality=yes
 
 [Install]
 WantedBy=default.target
