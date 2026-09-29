@@ -1,0 +1,466 @@
+name: "R4 APC48 v2 — post-install certification and CUSTOSZ handoff"
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+  id-token: write
+
+concurrency:
+  group: r4-apc48-v2-postinstall-close-handoff
+  cancel-in-progress: false
+
+env:
+  APC_CANDIDATE_DIGEST: "ed3c4267f94b3c53f1fec64b331f72dc657ebcc5e2c62a9314321c67c89684b7"
+  CHECKPOINT: "/home/diegoignacionorambuenamiranda/LOUKSNA_MAESTRO_20260925/MISSION3_OPERATIVE/R4_PART1_DESKTOP_V1/runs/20260926T034746Z-38579"
+  UI_IMAGE_SHA: "8a9852c4155d64fd74059c7239e67c82e16e5acd556627d70575db85078d4ed4"
+  UI_KDE_SHA: "c21e04d5447e123b59fc9b94d2e9684bc03ea164999ef6f60210e257557a16dc"
+  SERVER_READY_RUN: "36503769931"
+
+jobs:
+  capture:
+    name: "Post-install evidence capture on LOUKSNA"
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Capture and validate current host state
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/r4-apc48-postinstall"
+          mkdir -p "$OUT"
+          export OUT
+
+          test "$(hostname)" = "LOUKSNA"
+          test -d "$CHECKPOINT"
+          for f in CHECKPOINT.json LAUNCHERS.json PANEL_CREATED.json RUNTIME_VERIFY.json; do
+            test -f "$CHECKPOINT/$f"
+          done
+
+          sudo -n /usr/local/sbin/louksna-apc status > "$OUT/APC_STATUS.json"
+          sudo -n /usr/local/sbin/louksna-apc audit-tail 200 > "$OUT/APC_AUDIT_TAIL.jsonl"
+
+          test -f /var/lib/louksna-r4-apc/ACTIVATION_EVIDENCE.json
+          cp /var/lib/louksna-r4-apc/ACTIVATION_EVIDENCE.json "$OUT/ACTIVATION_EVIDENCE.json"
+
+          PHYS="/home/diegoignacionorambuenamiranda/Descargas/LUNA_R4_SERVER_ACTIVATION"
+          test -f "$PHYS/PREINSTALL_MANIFEST.json"
+          cp "$PHYS/PREINSTALL_MANIFEST.json" "$OUT/PREINSTALL_MANIFEST.json"
+
+          export PHYS
+          python3 - <<'PY'
+          import datetime as dt, hashlib, json, os, pathlib, subprocess
+
+          out=pathlib.Path(os.environ["OUT"])
+          phys=pathlib.Path(os.environ["PHYS"])
+          expected_digest=os.environ["APC_CANDIDATE_DIGEST"]
+          checkpoint=os.environ["CHECKPOINT"]
+
+          status=json.loads((out/"APC_STATUS.json").read_text(encoding="utf-8"))
+          evidence=json.loads((out/"ACTIVATION_EVIDENCE.json").read_text(encoding="utf-8"))
+          pre=json.loads((out/"PREINSTALL_MANIFEST.json").read_text(encoding="utf-8"))
+
+          files=sorted(["activate-48h.sh","louksna_apc.py","louksna_apc_revoke.sh","test_apc.py"])
+          rows=[]
+          for name in files:
+              data=(phys/name).read_bytes()
+              rows.append((f"server/apc48/{name}",hashlib.sha256(data).hexdigest(),len(data)))
+          material="".join(f"{p}\0{h}\0{n}\n" for p,h,n in rows).encode()
+          candidate_digest=hashlib.sha256(material).hexdigest()
+
+          def sh(*cmd):
+              return subprocess.run(cmd,text=True,capture_output=True,check=False).stdout.strip()
+
+          runner=sh("systemctl","is-active","actions.runner.Plomillo-luna-linux-bridge.luna-linux.service")
+          awake=sh("systemctl","is-active","louksna-r4-awake.service")
+          awake_pid=sh("systemctl","show","louksna-r4-awake.service","-p","MainPID","--value")
+          awake_result=sh("systemctl","show","louksna-r4-awake.service","-p","Result","--value")
+          timer=sh("systemctl","is-active","louksna-r4-apc-revoke.timer")
+
+          uid=os.getuid()
+          env=dict(os.environ)
+          env["XDG_RUNTIME_DIR"]=f"/run/user/{uid}"
+          env["DBUS_SESSION_BUS_ADDRESS"]=f"unix:path=/run/user/{uid}/bus"
+          sym=subprocess.run(["systemctl","--user","is-active","symphylax-r1.service"],text=True,capture_output=True,env=env).stdout.strip()
+
+          now=dt.datetime.now(dt.timezone.utc)
+          exp=dt.datetime.fromisoformat(str(status["expires_at_utc"]).replace("Z","+00:00")).astimezone(dt.timezone.utc)
+
+          checks={
+              "candidate_digest": candidate_digest==expected_digest,
+              "preinstall_manifest_status": pre.get("status")=="G24_CERTIFIED_CANDIDATE_MATERIALIZED",
+              "preinstall_g23": pre.get("g23")=="PASS",
+              "preinstall_g24": pre.get("g24")=="PASS",
+              "preinstall_digest": pre.get("candidate_digest_sha256")==expected_digest,
+              "apc_status_active": status.get("status")=="ACTIVE",
+              "apc_authorization_valid": status.get("authorization_valid") is True,
+              "apc_not_expired": now < exp,
+              "activation_schema": evidence.get("schema")=="LOUKSNA_R4_APC_ACTIVATION_EVIDENCE/2.0",
+              "activation_status": evidence.get("status")=="PASS",
+              "activation_checkpoint": evidence.get("resume",{}).get("checkpoint")==checkpoint,
+              "activation_part": evidence.get("resume",{}).get("part")=="PART_1",
+              "activation_mode": evidence.get("resume",{}).get("mode")=="DIFFERENTIAL",
+              "activation_part2_gate": evidence.get("resume",{}).get("part2_gate")=="PART1_POST_VALIDATION_PASS",
+              "activation_nopasswd": evidence.get("nopasswd_proof")=="PASS",
+              "activation_awake": evidence.get("awake_guard")=="ACTIVE_STABLE",
+              "activation_timer": evidence.get("automatic_revoke_timer")=="ACTIVE",
+              "ui_image_hash": evidence.get("hashes",{}).get("ui_image")==os.environ["UI_IMAGE_SHA"],
+              "ui_kde_hash": evidence.get("hashes",{}).get("ui_kde_snapshot")==os.environ["UI_KDE_SHA"],
+              "runner_live": runner=="active",
+              "symphylax_live": sym=="active",
+              "awake_live": awake=="active",
+              "awake_pid_nonzero": awake_pid not in ("","0"),
+              "awake_result_success": awake_result=="success",
+              "timer_live": timer=="active",
+          }
+          passed=all(checks.values())
+          bundle={
+              "schema":"LOUKSNA_R4_APC48_V2_POSTINSTALL_EVIDENCE/1.0",
+              "status":"PASS" if passed else "HOLD",
+              "captured_at_utc":now.isoformat(),
+              "candidate_digest_sha256":candidate_digest,
+              "checkpoint":checkpoint,
+              "part":"PART_1",
+              "mode":"DIFFERENTIAL",
+              "part2_gate":"PART1_POST_VALIDATION_PASS",
+              "server_ready_run":int(os.environ["SERVER_READY_RUN"]),
+              "runtime_state":{
+                  "runner":runner,
+                  "symphylax":sym,
+                  "awake":awake,
+                  "awake_pid":awake_pid,
+                  "awake_result":awake_result,
+                  "timer":timer,
+                  "authorization_expires_at_utc":status["expires_at_utc"],
+              },
+              "checks":checks,
+              "activation_evidence_sha256":hashlib.sha256((out/"ACTIVATION_EVIDENCE.json").read_bytes()).hexdigest(),
+              "preinstall_manifest_sha256":hashlib.sha256((out/"PREINSTALL_MANIFEST.json").read_bytes()).hexdigest(),
+              "audit_tail_sha256":hashlib.sha256((out/"APC_AUDIT_TAIL.jsonl").read_bytes()).hexdigest(),
+              "canonical_mutation":False,
+              "authority_transfer":False,
+              "postinstall_validation":"PASS" if passed else "HOLD",
+          }
+          (out/"POSTINSTALL_EVIDENCE.json").write_text(json.dumps(bundle,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps(bundle,ensure_ascii=False,indent=2))
+          if not passed:
+              raise SystemExit("POSTINSTALL_EVIDENCE_HOLD")
+          PY
+
+      - name: Preserve post-install evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-apc48-v2-postinstall-evidence
+          path: ${{ runner.temp }}/r4-apc48-postinstall
+          if-no-files-found: error
+          retention-days: 90
+
+  g23:
+    name: "G23 — independent fresh reader"
+    needs: capture
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Download frozen post-install evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-apc48-v2-postinstall-evidence
+          path: ${{ runner.temp }}/evidence
+
+      - name: Validate independently without repair
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/g23"
+          mkdir -p "$OUT"
+          export OUT
+          python3 - <<'PY'
+          import datetime as dt, hashlib, json, os, pathlib
+          evdir=pathlib.Path(os.environ["RUNNER_TEMP"])/"evidence"
+          ev=json.loads((evdir/"POSTINSTALL_EVIDENCE.json").read_text(encoding="utf-8"))
+          activation=json.loads((evdir/"ACTIVATION_EVIDENCE.json").read_text(encoding="utf-8"))
+          pre=json.loads((evdir/"PREINSTALL_MANIFEST.json").read_text(encoding="utf-8"))
+
+          files=["ACTIVATION_EVIDENCE.json","APC_STATUS.json","APC_AUDIT_TAIL.jsonl","PREINSTALL_MANIFEST.json","POSTINSTALL_EVIDENCE.json"]
+          rows=[]
+          for name in sorted(files):
+              data=(evdir/name).read_bytes()
+              rows.append({"path":name,"bytes":len(data),"sha256":hashlib.sha256(data).hexdigest()})
+          material="".join(f"{r['path']}\0{r['sha256']}\0{r['bytes']}\n" for r in rows).encode()
+          digest=hashlib.sha256(material).hexdigest()
+
+          exp=dt.datetime.fromisoformat(str(activation["expires_at_utc"]).replace("Z","+00:00")).astimezone(dt.timezone.utc)
+          now=dt.datetime.now(dt.timezone.utc)
+          checks={
+              "producer_validation_pass": ev.get("status")=="PASS" and ev.get("postinstall_validation")=="PASS",
+              "all_producer_checks_pass": all(ev.get("checks",{}).values()),
+              "candidate_digest": ev.get("candidate_digest_sha256")==os.environ["APC_CANDIDATE_DIGEST"],
+              "activation_pass": activation.get("status")=="PASS",
+              "activation_not_expired": now < exp,
+              "preinstall_g23_g24": pre.get("g23")=="PASS" and pre.get("g24")=="PASS",
+              "checkpoint": ev.get("checkpoint")==os.environ["CHECKPOINT"],
+              "part": ev.get("part")=="PART_1",
+              "mode": ev.get("mode")=="DIFFERENTIAL",
+              "part2_gate": ev.get("part2_gate")=="PART1_POST_VALIDATION_PASS",
+              "canonical_mutation_false": ev.get("canonical_mutation") is False,
+              "authority_transfer_false": ev.get("authority_transfer") is False,
+          }
+          passed=all(checks.values())
+          obj={
+              "schema":"LOUKSNA_R4_APC48_V2_POSTINSTALL_G23/1.0",
+              "status":"PASS" if passed else "HOLD",
+              "evidence_bundle_digest_sha256":digest,
+              "candidate_digest_sha256":ev["candidate_digest_sha256"],
+              "checks":checks,
+              "files":rows,
+              "independence":{
+                  "reader":"GITHUB_HOSTED_UBUNTU_24_04",
+                  "host_under_test":"LOUKSNA_SELF_HOSTED",
+                  "repair_permitted":False,
+                  "candidate_mutation_permitted":False,
+              },
+              "runtime_host_activation_certified":False,
+              "g24_allowed":passed,
+          }
+          out=pathlib.Path(os.environ["OUT"])
+          (out/"G23_POSTINSTALL.json").write_text(json.dumps(obj,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps(obj,ensure_ascii=False,indent=2))
+          if not passed:
+              raise SystemExit("G23_HOLD")
+          PY
+
+      - name: Preserve G23
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-apc48-v2-postinstall-g23
+          path: ${{ runner.temp }}/g23
+          if-no-files-found: error
+          retention-days: 90
+
+  g24:
+    name: "G24 — digest-bound final certifier"
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Download G23
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-apc48-v2-postinstall-g23
+          path: ${{ runner.temp }}/g23
+
+      - name: Issue OIDC-bound host activation certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/g24"
+          mkdir -p "$OUT"
+
+          DIGEST="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["evidence_bundle_digest_sha256"])' "$RUNNER_TEMP/g23/G23_POSTINSTALL.json")"
+          AUD="louksna-r4-apc48-v2-postinstall-g24:$DIGEST"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export TOKEN DIGEST AUD OUT
+
+          python3 - <<'PY'
+          import base64, datetime as dt, hashlib, json, os, pathlib
+          g23=json.loads((pathlib.Path(os.environ["RUNNER_TEMP"])/"g23/G23_POSTINSTALL.json").read_text(encoding="utf-8"))
+          if g23.get("status")!="PASS" or not g23.get("g24_allowed"):
+              raise SystemExit("G23_NOT_PASS")
+
+          tok=os.environ["TOKEN"]
+          parts=tok.split(".")
+          if len(parts)!=3:
+              raise SystemExit("OIDC_TOKEN_FORMAT_INVALID")
+          payload=parts[1]+"="*((4-len(parts[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload))
+          aud=claims.get("aud")
+          expected=os.environ["AUD"]
+          if aud!=expected and not (isinstance(aud,list) and expected in aud):
+              raise SystemExit("OIDC_AUDIENCE_MISMATCH")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge":
+              raise SystemExit("OIDC_REPOSITORY_MISMATCH")
+
+          cert={
+              "schema":"LOUKSNA_R4_APC48_V2_POSTINSTALL_G24/1.0",
+              "status":"PASS",
+              "certificate_scope":"HOST_RUNTIME_ACTIVATION_APC48_V2",
+              "evidence_bundle_digest_sha256":os.environ["DIGEST"],
+              "candidate_digest_sha256":g23["candidate_digest_sha256"],
+              "g23_status":"PASS",
+              "authority_authenticated":True,
+              "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(tok.encode()).hexdigest(),
+              "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+              "runtime_host_activation_certified":True,
+              "checkpoint":os.environ["CHECKPOINT"],
+              "part":"PART_1",
+              "mode":"DIFFERENTIAL",
+              "part2_gate":"PART1_POST_VALIDATION_PASS",
+              "canonical_mutation":False,
+              "authority_transfer":False,
+          }
+          out=pathlib.Path(os.environ["OUT"])
+          (out/"G24_POSTINSTALL_CERTIFICATE.json").write_text(json.dumps(cert,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps(cert,ensure_ascii=False,indent=2))
+          PY
+          unset TOKEN RESP
+
+      - name: Preserve G24
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-apc48-v2-postinstall-g24
+          path: ${{ runner.temp }}/g24
+          if-no-files-found: error
+          retention-days: 90
+
+  handoff:
+    name: "Create governed CUSTOSZ mailbox handoff"
+    needs: g24
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout mailbox branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: staging/custosz-mission-mailbox-20260928
+          fetch-depth: 1
+          persist-credentials: true
+
+      - name: Download G24 certificate
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-apc48-v2-postinstall-g24
+          path: ${{ runner.temp }}/g24
+
+      - name: Materialize mission and exact source-pinned adapter
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          CERT="$RUNNER_TEMP/g24/G24_POSTINSTALL_CERTIFICATE.json"
+          test -f "$CERT"
+          export CERT
+
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib
+          cert=json.loads(pathlib.Path(os.environ["CERT"]).read_text(encoding="utf-8"))
+          if cert.get("status")!="PASS" or cert.get("runtime_host_activation_certified") is not True:
+              raise SystemExit("G24_CERTIFICATE_INVALID")
+
+          cert_digest=hashlib.sha256(pathlib.Path(os.environ["CERT"]).read_bytes()).hexdigest()
+          run_id=os.environ["GITHUB_RUN_ID"]
+          mission_dir=pathlib.Path("missions/inbox")/f"luna-r4-part1-resume-apc48-v2-{run_id}"
+          mission_dir.mkdir(parents=True,exist_ok=False)
+          mission=mission_dir/"MISSION_ORIGINAL.md"
+
+          body=f"""# MISIÓN — REANUDAR LUNA R4 DESDE CHECKPOINT CERTIFICADO
+
+MISSION_ID = MIS-LUNA-R4-PART1-RESUME-APC48-V2-{run_id}
+MISSION_CLASS = LUNA_R4_PART1_DIFFERENTIAL_RESUME
+AUTHORITY = Louksna.md
+GOVERNOR = MetaOS
+WORKER = CUSTOSZ V7
+RUNTIME = CUSTOSZ_RUNTIME_V1
+SUPERVISOR = SYMPHYLAX R1
+INGRESS = CUSTOSZ MISSION MAILBOX
+FAILURE_POSTURE = FAIL_CLOSED
+TRACEABILITY = REQUIRED
+AUDITABILITY = REQUIRED
+PROVENANCE = REQUIRED
+ROLLBACK = REQUIRED
+NO_SILENT_OPERATIONS = ABSOLUTE
+
+HOST_ACTIVATION_CERTIFICATE = G24_POSTINSTALL
+HOST_ACTIVATION_CERTIFICATE_SHA256 = {cert_digest}
+HOST_ACTIVATION_CERTIFICATION_RUN = {run_id}
+RUNTIME_HOST_ACTIVATION_CERTIFIED = TRUE
+APC48_V2_CANDIDATE_DIGEST = {cert["candidate_digest_sha256"]}
+
+CURRENT_PART = PART_1
+RESUME_MODE = DIFFERENTIAL
+RESUME_CHECKPOINT = {cert["checkpoint"]}
+PART2_GATE = PART1_POST_VALIDATION_PASS
+
+DO_NOT_REPEAT = PART_0;PART_1_FULL_REINSTALL;SERVER_READY_G08_G09_G23_G24
+FIRST_ACTION = VERIFY_CURRENT_PART1_AGAINST_CHECKPOINT_AND_APPROVED_UI_REFERENCE
+SECOND_ACTION = APPLY_ONLY_MISSING_PART1_DELTA
+PART2_ENTRY = ONLY_AFTER_PART1_POST_VALIDATION_PASS
+PRIVILEGED_INTERFACE = sudo -n /usr/local/sbin/louksna-apc
+
+MANDATORY_PRECHECKS:
+- verify APC48 status through sudo -n;
+- verify checkpoint identity and evidence;
+- verify approved UI/KDE reference hashes;
+- verify runner and SYMPHYLAX remain active;
+- refuse any password prompt;
+- refuse silent overwrite or full PART 1 reinstall.
+
+EXECUTION:
+Continue only the missing delta of PART 1. Preserve existing validated work. Produce checkpointed evidence for each mutation and post-validation. Do not enter PART 2 unless PART1_POST_VALIDATION_PASS is demonstrated.
+
+TERMINAL_RULE:
+Any contradiction, missing identity, expired authorization, unexpected password request, hash mismatch, ambiguous state, or unauthorized scope => HOLD.
+"""
+          mission.write_text(body,encoding="utf-8")
+          source_sha=hashlib.sha256(mission.read_bytes()).hexdigest()
+
+          adapter_path=pathlib.Path("scripts/mission_mailbox/adapters/luna_r4_part1_resume_apc48_v2.py")
+          adapter_text=f'''#!/usr/bin/env python3
+"""Pinned mailbox adapter for the exact LUNA R4 PART1 differential resume mission.
+This adapter is declarative: material execution remains governed by the execution plan.
+"""
+import json
+SOURCE_SHA256 = "{source_sha}"
+MISSION_CLASS = "LUNA_R4_PART1_DIFFERENTIAL_RESUME"
+SCOPE = "LUNA_R4_PART1_DIFFERENTIAL_RESUME_HANDOFF"
+def main():
+    print(json.dumps({{"status":"READY","source_sha256":SOURCE_SHA256,"mission_class":MISSION_CLASS,"scope":SCOPE}},sort_keys=True))
+if __name__ == "__main__":
+    main()
+'''
+          adapter_path.write_text(adapter_text,encoding="utf-8")
+          adapter_sha=hashlib.sha256(adapter_path.read_bytes()).hexdigest()
+
+          registry_path=pathlib.Path("mission-mailbox/runtime-adapters/registry.json")
+          registry=json.loads(registry_path.read_text(encoding="utf-8"))
+          adapter_id=f"LUNA_R4_PART1_RESUME_APC48_V2_{run_id}"
+          if any(x.get("adapter_id")==adapter_id for x in registry.get("adapters",[])):
+              raise SystemExit("ADAPTER_ID_COLLISION")
+          registry["adapters"].append({
+              "adapter_id":adapter_id,
+              "path":adapter_path.as_posix(),
+              "sha256":adapter_sha,
+              "backend":"CUSTOSZ_RUNTIME",
+              "source_sha256":source_sha,
+              "mission_classes":["LUNA_R4_PART1_DIFFERENTIAL_RESUME"],
+              "required_capabilities":[],
+              "provides_executor_binding":True,
+              "requires_prebound_executor":False,
+              "execution_location":"SELF_HOSTED_LUNA_AUX",
+              "scope":"LUNA_R4_PART1_DIFFERENTIAL_RESUME_HANDOFF",
+              "status":"ACTIVE_PINNED",
+          })
+          registry_path.write_text(json.dumps(registry,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+
+          print("MISSION_PATH="+mission.as_posix())
+          print("MISSION_SOURCE_SHA256="+source_sha)
+          print("ADAPTER_PATH="+adapter_path.as_posix())
+          print("ADAPTER_SHA256="+adapter_sha)
+          PY
+
+          python3 -m py_compile scripts/mission_mailbox/adapters/luna_r4_part1_resume_apc48_v2.py
+          python3 -B -I scripts/mission_mailbox/compile_batch.py --out "$RUNNER_TEMP/precommit-compile"
+          cat "$RUNNER_TEMP/precommit-compile/INDEX.json"
+
+      - name: Commit governed handoff
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add missions/inbox scripts/mission_mailbox/adapters/luna_r4_part1_resume_apc48_v2.py mission-mailbox/runtime-adapters/registry.json
+          git diff --cached --check
+          git commit -m "mission(R4): handoff PART1 differential resume to CUSTOSZ"
+          git push origin HEAD:staging/custosz-mission-mailbox-20260928
+          echo "HANDOFF_COMMIT=$(git rev-parse HEAD)"
