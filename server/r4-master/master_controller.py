@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import argparse, base64, datetime as dt, fcntl, hashlib, json, os, pathlib, shutil, subprocess, sys, tempfile, time, uuid
+import argparse, base64, datetime as dt, fcntl, hashlib, json, os, pathlib, shutil, subprocess, sys, tempfile, time, uuid, traceback
 
 HOME=pathlib.Path("/home/diegoignacionorambuenamiranda")
 PROJECT_ROOT=HOME/"LOUKSNA_MAESTRO_20260925"
@@ -421,7 +421,7 @@ def main():
             if a.once: return 5
             time.sleep(max(60,a.sleep)); continue
         except Exception as e:
-            atomic_json(STATE/"MASTER_STATUS.json",{"status":"HOLD","error":type(e).__name__+":"+str(e),"mission_id":mid,"updated_at_utc":utc()})
+            atomic_json(STATE/"MASTER_STATUS.json",{"status":"HOLD","error":type(e).__name__+":"+str(e),"traceback":traceback.format_exc(),"mission_id":mid,"updated_at_utc":utc()})
             if a.once: raise
             time.sleep(max(60,a.sleep)); continue
         if result=="COMPLETE": return 0
