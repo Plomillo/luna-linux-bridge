@@ -141,6 +141,8 @@ def load_worker():
     os.environ["CUSTOSZ_STATE_DIR"]=str(STATE/"custosz")
     sys.path.insert(0,str(c))
     import custosz_v05_legacy as w
+    def workspace_adapter():
+        return PROJECT_ROOT
     def discover_adapter():
         return {"workspace":str(PROJECT_ROOT),"projects":{"LUNA_PROJECT":{"status":"RESOLVED","path":str(PROJECT_ROOT),"score":999}}}
     def sources_adapter(large=False):
@@ -149,6 +151,7 @@ def load_worker():
             "path":str(a),"exists":True,"observed_bytes":a.stat().st_size,
             "observed_sha256":digest,"sha256":digest,"integrity":"PASS","role":"CANONICAL_AUTHORITY"
         }}}
+    w.workspace=workspace_adapter
     w.discover=discover_adapter
     w.sources=sources_adapter
     return w,c,a
