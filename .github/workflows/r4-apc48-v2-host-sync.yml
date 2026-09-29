@@ -1,0 +1,189 @@
+name: "R4 APC48 v2 — materialize certified candidate on LOUKSNA"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-apc48-v2-20260929
+    paths:
+      - .github/workflows/r4-apc48-v2-host-sync.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r4-apc48-v2-host-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Checkout frozen v2 candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: 2393388d84401144c64a0d9a68767a53cc64baea
+          persist-credentials: false
+          fetch-depth: 1
+          clean: true
+          path: apc48-v2-sync
+          sparse-checkout: server/apc48
+          sparse-checkout-cone-mode: true
+
+      - name: Verify certified v2 digest
+        shell: bash
+        env:
+          EXPECTED: ed3c4267f94b3c53f1fec64b331f72dc657ebcc5e2c62a9314321c67c89684b7
+        run: |
+          set -Eeuo pipefail
+          SOURCE="$GITHUB_WORKSPACE/apc48-v2-sync"
+          export SOURCE
+          python3 - <<'PY'
+          import hashlib, os, pathlib
+          root=pathlib.Path(os.environ["SOURCE"])
+          files=sorted([
+              "server/apc48/activate-48h.sh",
+              "server/apc48/louksna_apc.py",
+              "server/apc48/louksna_apc_revoke.sh",
+              "server/apc48/test_apc.py",
+          ])
+          rows=[]
+          for rel in files:
+              data=(root/rel).read_bytes()
+              rows.append((rel,hashlib.sha256(data).hexdigest(),len(data)))
+          material="".join(f"{p}\0{h}\0{n}\n" for p,h,n in rows).encode()
+          actual=hashlib.sha256(material).hexdigest()
+          print("V2_CANDIDATE_DIGEST="+actual)
+          if actual != os.environ["EXPECTED"]:
+              raise SystemExit("HOLD:V2_CANDIDATE_DIGEST_MISMATCH")
+          PY
+
+      - name: Preserve v1 physical reference and atomically materialize v2
+        shell: bash
+        env:
+          OLD_DIGEST: 3f107506fee63c4abded37fa9e716cc7279f7530218d786cc3c0bddef8d9d122
+          NEW_DIGEST: ed3c4267f94b3c53f1fec64b331f72dc657ebcc5e2c62a9314321c67c89684b7
+          CANDIDATE_SHA: 2393388d84401144c64a0d9a68767a53cc64baea
+        run: |
+          set -Eeuo pipefail
+          SOURCE="$GITHUB_WORKSPACE/apc48-v2-sync/server/apc48"
+          TARGET="/home/diegoignacionorambuenamiranda/Descargas/LUNA_R4_SERVER_ACTIVATION"
+          test -d "$TARGET"
+          test ! -L "$TARGET"
+          export TARGET SOURCE
+
+          CURRENT="$(python3 - <<'PY'
+          import hashlib, pathlib, os
+          root=pathlib.Path(os.environ["TARGET"])
+          files=sorted(["activate-48h.sh","louksna_apc.py","louksna_apc_revoke.sh","test_apc.py"])
+          rows=[]
+          for name in files:
+              p=root/name
+              if not p.is_file():
+                  print("MISSING")
+                  raise SystemExit(0)
+              data=p.read_bytes()
+              rows.append((f"server/apc48/{name}",hashlib.sha256(data).hexdigest(),len(data)))
+          material="".join(f"{p}\0{h}\0{n}\n" for p,h,n in rows).encode()
+          print(hashlib.sha256(material).hexdigest())
+          PY
+          )"
+
+          if [ "$CURRENT" = "$NEW_DIGEST" ]; then
+            echo "V2_ALREADY_MATERIALIZED=TRUE"
+          elif [ "$CURRENT" = "$OLD_DIGEST" ]; then
+            STAMP="$(date -u '+%Y%m%dT%H%M%SZ')"
+            PREFIX="$(printf '%s' "$OLD_DIGEST" | cut -c1-12)"
+            HIST="$TARGET/history/APC48_V1_${STAMP}_${PREFIX}"
+            mkdir -p "$HIST"
+            for f in activate-48h.sh louksna_apc.py louksna_apc_revoke.sh test_apc.py PREINSTALL_MANIFEST.json ACTIVATION_EVIDENCE.json; do
+              [ -e "$TARGET/$f" ] && cp -a "$TARGET/$f" "$HIST/$f"
+            done
+            printf '%s\n' "$OLD_DIGEST" > "$HIST/CANDIDATE_DIGEST.txt"
+            echo "V1_PRESERVED=$HIST"
+
+            TMP="$TARGET/.v2-materialize.$$"
+            mkdir -p "$TMP"
+            install -m 0700 "$SOURCE/activate-48h.sh" "$TMP/activate-48h.sh"
+            install -m 0600 "$SOURCE/louksna_apc.py" "$TMP/louksna_apc.py"
+            install -m 0600 "$SOURCE/louksna_apc_revoke.sh" "$TMP/louksna_apc_revoke.sh"
+            install -m 0600 "$SOURCE/test_apc.py" "$TMP/test_apc.py"
+            for f in activate-48h.sh louksna_apc.py louksna_apc_revoke.sh test_apc.py; do
+              mv -f "$TMP/$f" "$TARGET/$f"
+            done
+            rmdir "$TMP"
+          else
+            echo "HOLD:PHYSICAL_CANDIDATE_UNEXPECTED:$CURRENT" >&2
+            exit 42
+          fi
+
+          FINAL="$(python3 - <<'PY'
+          import hashlib, pathlib, os
+          root=pathlib.Path(os.environ["TARGET"])
+          files=sorted(["activate-48h.sh","louksna_apc.py","louksna_apc_revoke.sh","test_apc.py"])
+          rows=[]
+          for name in files:
+              data=(root/name).read_bytes()
+              rows.append((f"server/apc48/{name}",hashlib.sha256(data).hexdigest(),len(data)))
+          material="".join(f"{p}\0{h}\0{n}\n" for p,h,n in rows).encode()
+          print(hashlib.sha256(material).hexdigest())
+          PY
+          )"
+          test "$FINAL" = "$NEW_DIGEST"
+
+          export FINAL
+          python3 - <<'PY'
+          import datetime, json, os, pathlib, hashlib
+          t=pathlib.Path(os.environ["TARGET"])
+          rows={}
+          for name in ["activate-48h.sh","louksna_apc.py","louksna_apc_revoke.sh","test_apc.py"]:
+              data=(t/name).read_bytes()
+              rows[name]={"bytes":len(data),"sha256":hashlib.sha256(data).hexdigest()}
+          obj={
+              "schema":"LOUKSNA_R4_APC48_V2_PREINSTALL_MANIFEST/1.0",
+              "status":"G24_CERTIFIED_CANDIDATE_MATERIALIZED",
+              "candidate_digest_sha256":os.environ["FINAL"],
+              "candidate_head_sha":os.environ["CANDIDATE_SHA"],
+              "validation_run":36517715796,
+              "independent_assurance_run":36517859830,
+              "g23":"PASS",
+              "g24":"PASS",
+              "certificate_scope":"PRE_INSTALLATION_CANDIDATE_V2_ONLY",
+              "runtime_host_activation_certified":False,
+              "post_installation_certificate_required":True,
+              "physical_root":str(t),
+              "files":rows,
+              "incident_regressions_closed":[
+                  "AWAKE_GUARD_WHY_ARGUMENT_SPLIT",
+                  "FAIL_EXIT_BYPASSED_ERR_TRAP",
+                  "RESIDUAL_REVOKE_TIMER",
+                  "INCOMPLETE_BOOTSTRAP_RECOVERY"
+              ],
+              "resume":{
+                  "part":"PART_1",
+                  "mode":"DIFFERENTIAL",
+                  "checkpoint":"/home/diegoignacionorambuenamiranda/LOUKSNA_MAESTRO_20260925/MISSION3_OPERATIVE/R4_PART1_DESKTOP_V1/runs/20260926T034746Z-38579",
+                  "part2_gate":"PART1_POST_VALIDATION_PASS",
+                  "do_not_repeat":["PART_0","PART_1_FULL_REINSTALL","SERVER_READY_G08_G09_G23_G24"]
+              },
+              "materialized_at_utc":datetime.datetime.now(datetime.timezone.utc).isoformat()
+          }
+          p=t/"PREINSTALL_MANIFEST.json"
+          tmp=t/".PREINSTALL_MANIFEST.json.tmp"
+          tmp.write_text(json.dumps(obj,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+          tmp.chmod(0o600)
+          tmp.replace(p)
+          out=pathlib.Path(os.environ["RUNNER_TEMP"])/"apc48-v2-host-sync"
+          out.mkdir(parents=True,exist_ok=True)
+          (out/"PREINSTALL_MANIFEST.json").write_bytes(p.read_bytes())
+          PY
+          echo "APC48_V2_HOST_SYNC=PASS"
+          echo "TARGET=$TARGET"
+
+      - name: Preserve host-sync evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-apc48-v2-host-sync
+          path: ${{ runner.temp }}/apc48-v2-host-sync
+          if-no-files-found: error
+          retention-days: 90

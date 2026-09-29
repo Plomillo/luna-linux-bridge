@@ -1,0 +1,47 @@
+name: "R4 APC48 candidate checks"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-apc-48h-candidate-20260929
+    paths:
+      - server/apc48/**
+      - .github/workflows/r4-apc48-candidate-checks.yml
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Syntax checks
+        run: |
+          set -Eeuo pipefail
+          bash -n server/apc48/activate-48h.sh
+          bash -n server/apc48/louksna_apc_revoke.sh
+          python3 -m py_compile server/apc48/louksna_apc.py server/apc48/test_apc.py
+      - name: Static tests
+        run: python3 server/apc48/test_apc.py
+      - name: Candidate digest
+        run: |
+          python3 - <<'PY'
+          import hashlib,pathlib
+          files=sorted([
+            "server/apc48/activate-48h.sh",
+            "server/apc48/louksna_apc.py",
+            "server/apc48/louksna_apc_revoke.sh",
+            "server/apc48/test_apc.py",
+          ])
+          rows=[]
+          for rel in files:
+              data=pathlib.Path(rel).read_bytes()
+              rows.append((rel,hashlib.sha256(data).hexdigest(),len(data)))
+          material="".join(f"{p}\0{h}\0{n}\n" for p,h,n in rows).encode()
+          print("CANDIDATE_DIGEST_SHA256="+hashlib.sha256(material).hexdigest())
+          PY
