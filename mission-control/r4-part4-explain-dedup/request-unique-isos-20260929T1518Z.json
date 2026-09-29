@@ -1,0 +1,22 @@
+{
+  "mission": "CALCULATE_UNIQUE_ISO_FOOTPRINT",
+  "part": "PART_4",
+  "mode": "READ_ONLY",
+  "source": "existing PART_4_PROYECTOS_DEDUP sqlite inventory",
+  "constraints": {
+    "rehash": false,
+    "mutation": false,
+    "deletion": false
+  },
+  "definition": "Files whose path/name ends in .iso (case-insensitive), deduplicated by SHA-256; count and sum exactly one instance per distinct SHA-256.",
+  "outputs": [
+    "unique_iso_sha256_count",
+    "unique_iso_bytes",
+    "unique_iso_GB_decimal",
+    "unique_iso_GiB_binary",
+    "total_iso_instances",
+    "duplicate_iso_instances",
+    "duplicate_iso_redundant_bytes",
+    "per_unique_iso name,size,sha256,copies"
+  ]
+}
