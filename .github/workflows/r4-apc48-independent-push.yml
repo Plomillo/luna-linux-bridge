@@ -6,8 +6,8 @@ on:
       - staging/luna-r4-apc48-trustroot-20260929
     paths:
       - .github/workflows/r4-apc48-independent-push.yml
-      - scripts/assurance/apc48_trust_root.py
       - scripts/assurance/apc48_g23_v2.py
+      - scripts/assurance/apc48_g24_v2.py
 
 permissions:
   contents: read
@@ -26,8 +26,8 @@ jobs:
           persist-credentials: false
           path: trust
           sparse-checkout: |
-            scripts/assurance/apc48_trust_root.py
             scripts/assurance/apc48_g23_v2.py
+            scripts/assurance/apc48_g24_v2.py
           sparse-checkout-cone-mode: false
 
       - name: Checkout fixed candidate as data only
@@ -76,8 +76,7 @@ jobs:
           persist-credentials: false
           path: trust
           sparse-checkout: |
-            scripts/assurance/apc48_trust_root.py
-            scripts/assurance/apc48_g23_v2.py
+            scripts/assurance/apc48_g24_v2.py
           sparse-checkout-cone-mode: false
 
       - name: Download G23
@@ -96,36 +95,26 @@ jobs:
           RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
           TOKEN="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["value"])' "$RESP")"
           printf '%s' "$TOKEN" > "$RUNNER_TEMP/g24/OIDC_TOKEN.tmp"
-          printf '%s\n' "$DIGEST" > "$RUNNER_TEMP/g24/CANDIDATE_DIGEST.txt"
           printf '%s\n' "$AUD" > "$RUNNER_TEMP/g24/OIDC_AUDIENCE.txt"
 
-      - name: Build authority evidence in trust-root code
+      - name: Independent digest-bound G24
         shell: bash
         env:
           CANDIDATE_HEAD_SHA: 478886c5207892c25d37a41849c5ede37ffa7274
           TRUST_ROOT_SHA: ${{ github.sha }}
         run: |
           set -Eeuo pipefail
-          DIGEST="$(cat "$RUNNER_TEMP/g24/CANDIDATE_DIGEST.txt")"
           AUD="$(cat "$RUNNER_TEMP/g24/OIDC_AUDIENCE.txt")"
           export OIDC_TOKEN="$(cat "$RUNNER_TEMP/g24/OIDC_TOKEN.tmp")"
           rm -f "$RUNNER_TEMP/g24/OIDC_TOKEN.tmp"
-          python3 -B -I "$GITHUB_WORKSPACE/trust/scripts/assurance/apc48_trust_root.py" authority \
-            --digest "$DIGEST" \
+          python3 -B -I "$GITHUB_WORKSPACE/trust/scripts/assurance/apc48_g24_v2.py" \
+            --g23 "$RUNNER_TEMP/g23/G23.json" \
             --audience "$AUD" \
             --candidate-head-sha "$CANDIDATE_HEAD_SHA" \
             --trust-root-sha "$TRUST_ROOT_SHA" \
-            --out "$RUNNER_TEMP/g24/AUTHORITY_EVIDENCE.json"
+            --authority-out "$RUNNER_TEMP/g24/AUTHORITY_EVIDENCE.json" \
+            --certificate-out "$RUNNER_TEMP/g24/G24_CERTIFICATE.json"
           unset OIDC_TOKEN
-
-      - name: Digest-bound G24
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          python3 -B -I "$GITHUB_WORKSPACE/trust/scripts/assurance/apc48_trust_root.py" g24 \
-            --g23 "$RUNNER_TEMP/g23/G23.json" \
-            --authority "$RUNNER_TEMP/g24/AUTHORITY_EVIDENCE.json" \
-            --out "$RUNNER_TEMP/g24/G24_CERTIFICATE.json"
           cat "$RUNNER_TEMP/g24/G24_CERTIFICATE.json" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Preserve G24
