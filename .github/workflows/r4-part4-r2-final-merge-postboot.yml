@@ -1,0 +1,449 @@
+name: "R4 PART4 R2 — final merge postboot"
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  id-token: write
+
+concurrency:
+  group: r4-part4-r2-final-merge-postboot
+  cancel-in-progress: false
+
+jobs:
+  verify_boot:
+    name: Verify booted P3 root while P5 rollback remains
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: server/r4-master
+          sparse-checkout-cone-mode: true
+      - name: Download certified PROYECTOS manifest
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/freeze"
+          gh run download 36619942178 --repo Plomillo/luna-linux-bridge -n R4-PART4-PROYECTOS-freeze-36619942178 -D "$RUNNER_TEMP/freeze"
+          test "$(sha256sum "$RUNNER_TEMP/freeze/PROYECTOS_MANIFEST.jsonl.gz"|awk '{print $1}')" = "99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e"
+
+      - name: Validate candidate root boot and protected data
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/r4-part4-r2-postboot-$GITHUB_RUN_ID"
+          mkdir -p "$OUT"
+          ROOTSRC="$(readlink -f "$(findmnt -n -o SOURCE /)")"
+          test "$ROOTSRC" = "/dev/nvme0n1p3"
+          test "$(findmnt -n -o FSTYPE /)" = ext4
+          test -b /dev/nvme0n1p5
+          test -z "$(findmnt -n -S /dev/nvme0n1p5 || true)"
+          test "$(readlink -f "$(findmnt -T /boot/efi -n -o SOURCE)")" = "/dev/nvme0n1p1"
+          test "$(findmnt -T /boot/efi -n -o FSTYPE)" = vfat
+          test "$(systemctl is-active actions.runner.Plomillo-luna-linux-bridge.luna-linux.service)" = active
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+          test "$(systemctl --user is-active symphylax-r1.service)" = active
+          test "$(systemctl --user is-active luna-r4-master-part1-part9.service)" = active
+
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9/PART_4_R2/STATE.json"
+          python3 - "$STATE" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1]))
+          assert d.get("final_merge_preboot_g24") is True
+          assert d.get("boot_switch_pending") is True
+          assert d.get("final_merge_authorization_g24") is True
+          PY
+
+          python3 server/r4-master/part4_r2_verify_tree.py             --root "$HOME/PROYECTOS"             --manifest "$RUNNER_TEMP/freeze/PROYECTOS_MANIFEST.jsonl.gz"             --out "$OUT/VERIFY_PROJECTS_POSTBOOT.json"
+
+          lsblk -b -J -o NAME,PATH,TYPE,SIZE,FSTYPE,FSAVAIL,FSUSE%,MOUNTPOINTS,UUID,PARTUUID,START > "$OUT/LSBLK_POSTBOOT.json"
+          df -B1 / "$HOME/PROYECTOS" /boot/efi > "$OUT/DF_POSTBOOT.txt"
+          efibootmgr -v > "$OUT/EFIBOOTMGR_POSTBOOT.txt" || true
+          sfdisk --dump /dev/nvme0n1 > "$OUT/PARTITION_TABLE_POSTBOOT.sfdisk"
+
+          export OUT
+          python3 - "$OUT/POSTBOOT_STATE.json" <<'PY'
+          import hashlib,json,os,pathlib,subprocess,sys,time
+          out=pathlib.Path(os.environ["OUT"])
+          v=json.loads((out/"VERIFY_PROJECTS_POSTBOOT.json").read_text())
+          root=subprocess.check_output(["findmnt","-n","-o","SOURCE","/"],text=True).strip()
+          r={
+            "schema":"LOUKSNA_R4_PART4_R2_POSTBOOT_STATE/1.0",
+            "status":"PASS" if v.get("status")=="PASS" else "HOLD",
+            "root_source":os.path.realpath(root),"root_fstype":subprocess.check_output(["findmnt","-n","-o","FSTYPE","/"],text=True).strip(),
+            "old_root_present":pathlib.Path("/dev/nvme0n1p5").exists(),
+            "old_root_mounted":bool(subprocess.run(["findmnt","-n","-S","/dev/nvme0n1p5"],text=True,capture_output=True).stdout.strip()),
+            "efi_source":os.path.realpath(subprocess.check_output(["findmnt","-T","/boot/efi","-n","-o","SOURCE"],text=True).strip()),
+            "projects_manifest_sha256":v.get("manifest_sha256"),"projects_mismatch_count":v.get("mismatch_count"),
+            "projects_records":v.get("seen_records"),"projects_regular_file_bytes":v.get("regular_file_bytes"),
+            "runner_active":subprocess.run(["systemctl","is-active","actions.runner.Plomillo-luna-linux-bridge.luna-linux.service"],text=True,capture_output=True).stdout.strip()=="active",
+            "verified_at_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
+          }
+          data=json.dumps(r,indent=2,sort_keys=True)+"\n"; pathlib.Path(sys.argv[1]).write_text(data); print(data)
+          if r["status"]!="PASS": raise SystemExit(3)
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-postboot-state
+          path: ${{ runner.temp }}/r4-part4-r2-postboot-${{ github.run_id }}/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  g23_postboot:
+    name: G23 certify boot before old-root retirement
+    needs: verify_boot
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-postboot-state
+          path: ${{ runner.temp }}/post
+      - name: Independently validate boot evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/post/POSTBOOT_STATE.json" "$RUNNER_TEMP/post/VERIFY_PROJECTS_POSTBOOT.json" "$RUNNER_TEMP/g23/G23_POSTBOOT.json" <<'PY'
+          import hashlib,json,pathlib,sys,datetime as dt
+          sp=pathlib.Path(sys.argv[1]); vp=pathlib.Path(sys.argv[2]); out=pathlib.Path(sys.argv[3])
+          s=json.loads(sp.read_text()); v=json.loads(vp.read_text())
+          checks={
+            "state_pass":s.get("status")=="PASS",
+            "root_p3":s.get("root_source")=="/dev/nvme0n1p3",
+            "root_ext4":s.get("root_fstype")=="ext4",
+            "oldroot_present":s.get("old_root_present") is True,
+            "oldroot_unmounted":s.get("old_root_mounted") is False,
+            "efi_p1":s.get("efi_source")=="/dev/nvme0n1p1",
+            "projects_pass":v.get("status")=="PASS" and v.get("mismatch_count")==0,
+            "projects_manifest":v.get("manifest_sha256")=="99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+            "projects_records":v.get("seen_records")==498092,
+            "projects_bytes":v.get("regular_file_bytes")==200490852057,
+            "runner":s.get("runner_active") is True,
+          }
+          passed=all(checks.values())
+          r={"schema":"LOUKSNA_R4_PART4_R2_POSTBOOT_G23/1.0","status":"PASS" if passed else "HOLD",
+             "checks":checks,"postboot_sha256":hashlib.sha256(sp.read_bytes()).hexdigest(),
+             "projects_verify_sha256":hashlib.sha256(vp.read_bytes()).hexdigest(),
+             "oldroot_retirement_allowed":passed,"g24_allowed":passed,
+             "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          out.write_text(json.dumps(r,indent=2,sort_keys=True)+"\n"); print(json.dumps(r,indent=2,sort_keys=True))
+          if not passed: raise SystemExit(3)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-postboot-g23
+          path: ${{ runner.temp }}/g23/G23_POSTBOOT.json
+          retention-days: 90
+          compression-level: 0
+
+  g24_postboot:
+    name: G24 authorize retirement of old root
+    needs: g23_postboot
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-postboot-g23
+          path: ${{ runner.temp }}/g23
+      - name: Issue postboot certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G23="$RUNNER_TEMP/g23/G23_POSTBOOT.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$G23")" = PASS
+          H="$(sha256sum "$G23"|awk '{print $1}')"
+          AUD="louksna-r4-part4-r2-postboot-oldroot-retire:$H"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export TOKEN H AUD
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$RUNNER_TEMP/g24/G24_POSTBOOT.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          token=os.environ["TOKEN"]; parts=token.split("."); payload=parts[1]+"="*((4-len(parts[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload)); aud=claims.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          r={"schema":"LOUKSNA_R4_PART4_R2_POSTBOOT_G24/1.0","status":"PASS",
+             "scope":"P3_BOOT_VERIFIED_P5_RETIREMENT_AUTHORIZED","g23_sha256":os.environ["H"],
+             "authority_authenticated":True,"authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(token.encode()).hexdigest(),
+             "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-postboot-g24
+          path: ${{ runner.temp }}/g24/G24_POSTBOOT.json
+          retention-days: 90
+          compression-level: 0
+
+  retire_expand:
+    name: Retire P5 and expand P3 root
+    needs: g24_postboot
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: server/r4-master
+          sparse-checkout-cone-mode: true
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-postboot-g24
+          path: ${{ runner.temp }}/g24
+      - name: Execute certified old-root retirement and online root growth
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          CERT="$RUNNER_TEMP/g24/G24_POSTBOOT.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$CERT")" = PASS
+          test "$(readlink -f "$(findmnt -n -o SOURCE /)")" = "/dev/nvme0n1p3"
+          test "$(findmnt -n -o FSTYPE /)" = ext4
+          test -b /dev/nvme0n1p5
+          test -z "$(findmnt -n -S /dev/nvme0n1p5 || true)"
+          OUT="$RUNNER_TEMP/r4-part4-r2-final-layout-$GITHUB_RUN_ID"
+          mkdir -p "$OUT"
+          sudo -n sfdisk --dump /dev/nvme0n1 > "$OUT/PARTITION_TABLE_BEFORE_P5_RETIRE.sfdisk"
+          efibootmgr -v > "$OUT/EFIBOOTMGR_BEFORE_FINAL.txt" || true
+
+          sudo -n parted -s /dev/nvme0n1 rm 5
+          sudo -n partprobe /dev/nvme0n1 || true
+          sudo -n partx -u /dev/nvme0n1 || true
+          udevadm settle
+
+          test ! -b /dev/nvme0n1p5 || {
+            sleep 2
+            sudo -n partx -d --nr 5 /dev/nvme0n1 || true
+          }
+          test ! -b /dev/nvme0n1p5
+
+          sudo -n parted -s /dev/nvme0n1 unit s resizepart 3 100%
+          sudo -n partprobe /dev/nvme0n1 || true
+          sudo -n partx -u --nr 3 /dev/nvme0n1 || true
+          udevadm settle
+          sleep 2
+
+          DISK_BYTES="$(sudo -n blockdev --getsize64 /dev/nvme0n1)"
+          P3_BYTES="$(sudo -n blockdev --getsize64 /dev/nvme0n1p3)"
+          START_BYTES="$(( $(cat /sys/class/block/nvme0n1p3/start) * $(sudo -n blockdev --getss /dev/nvme0n1) ))"
+          GAP="$((DISK_BYTES - START_BYTES - P3_BYTES))"
+          test "$GAP" -lt 16777216 || {
+            echo "HOLD:P3_KERNEL_SIZE_NOT_UPDATED:gap=$GAP" >&2
+            exit 20
+          }
+
+          sudo -n resize2fs /dev/nvme0n1p3
+          sync
+
+          # Candidate EFI entry becomes first in BootOrder only after verified boot and G24.
+          BOOTNUM="$(efibootmgr -v | sed -n 's/^Boot\([0-9A-Fa-f]\{4\}\)\*\{0,1\}[[:space:]]\+LOUKSNA-P3.*/\1/p' | head -1)"
+          test -n "$BOOTNUM"
+          ORDER="$(efibootmgr | sed -n 's/^BootOrder: //p')"
+          NEW_ORDER="$(python3 - "$BOOTNUM" "$ORDER" <<'PY'
+          import sys
+          b=sys.argv[1].upper(); old=[x.upper() for x in sys.argv[2].split(",") if x]
+          print(",".join([b]+[x for x in old if x!=b]))
+          PY
+          )"
+          sudo -n efibootmgr -o "$NEW_ORDER"
+
+          systemctl disable louksna-part4-r2-postboot-dispatch.service >/dev/null 2>&1 || true
+
+          lsblk -b -J -o NAME,PATH,TYPE,SIZE,FSTYPE,FSAVAIL,FSUSE%,MOUNTPOINTS,UUID,PARTUUID,START > "$OUT/LSBLK_FINAL_MERGE.json"
+          sudo -n sfdisk --dump /dev/nvme0n1 > "$OUT/PARTITION_TABLE_FINAL.sfdisk"
+          df -B1 / /boot/efi "$HOME/PROYECTOS" > "$OUT/DF_FINAL_MERGE.txt"
+          efibootmgr -v > "$OUT/EFIBOOTMGR_FINAL.txt" || true
+
+          mkdir -p "$RUNNER_TEMP/freeze"
+          GH_TOKEN="${{ github.token }}" gh run download 36619942178 --repo Plomillo/luna-linux-bridge -n R4-PART4-PROYECTOS-freeze-36619942178 -D "$RUNNER_TEMP/freeze"
+          python3 server/r4-master/part4_r2_verify_tree.py             --root "$HOME/PROYECTOS"             --manifest "$RUNNER_TEMP/freeze/PROYECTOS_MANIFEST.jsonl.gz"             --out "$OUT/VERIFY_PROJECTS_FINAL_MERGE.json"
+
+          export OUT
+          python3 - "$OUT/FINAL_MERGE_STATE.json" <<'PY'
+          import json,os,pathlib,subprocess,sys,time
+          out=pathlib.Path(os.environ["OUT"])
+          l=json.loads((out/"LSBLK_FINAL_MERGE.json").read_text())
+          flat=[]
+          def walk(xs):
+              for x in xs:
+                  flat.append(x); walk(x.get("children",[]))
+          walk(l.get("blockdevices",[]))
+          paths={x.get("path"):x for x in flat if x.get("path")}
+          v=json.loads((out/"VERIFY_PROJECTS_FINAL_MERGE.json").read_text())
+          r={
+            "schema":"LOUKSNA_R4_PART4_R2_FINAL_MERGE_STATE/1.0",
+            "status":"PASS",
+            "root_source":os.path.realpath(subprocess.check_output(["findmnt","-n","-o","SOURCE","/"],text=True).strip()),
+            "efi_source":os.path.realpath(subprocess.check_output(["findmnt","-T","/boot/efi","-n","-o","SOURCE"],text=True).strip()),
+            "partitions_present":sorted(p for p in paths if p.startswith("/dev/nvme0n1p")),
+            "p3_fstype":paths.get("/dev/nvme0n1p3",{}).get("fstype"),
+            "p3_mountpoints":paths.get("/dev/nvme0n1p3",{}).get("mountpoints"),
+            "projects_status":v.get("status"),"projects_mismatch_count":v.get("mismatch_count"),
+            "projects_manifest_sha256":v.get("manifest_sha256"),"projects_records":v.get("seen_records"),
+            "projects_regular_file_bytes":v.get("regular_file_bytes"),
+            "verified_at_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
+          }
+          if r["root_source"]!="/dev/nvme0n1p3" or r["efi_source"]!="/dev/nvme0n1p1": r["status"]="HOLD"
+          if r["partitions_present"]!=["/dev/nvme0n1p1","/dev/nvme0n1p3"]: r["status"]="HOLD"
+          if r["p3_fstype"]!="ext4" or v.get("status")!="PASS" or v.get("mismatch_count")!=0: r["status"]="HOLD"
+          data=json.dumps(r,indent=2,sort_keys=True)+"\n"; pathlib.Path(sys.argv[1]).write_text(data); print(data)
+          if r["status"]!="PASS": raise SystemExit(3)
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-final-merge-state
+          path: ${{ runner.temp }}/r4-part4-r2-final-layout-${{ github.run_id }}/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  g23_final:
+    name: G23 independently validate consolidated Debian layout
+    needs: retire_expand
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-final-merge-state
+          path: ${{ runner.temp }}/final
+      - name: Validate final layout and PROYECTOS non-regression
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/final/FINAL_MERGE_STATE.json" "$RUNNER_TEMP/final/VERIFY_PROJECTS_FINAL_MERGE.json" "$RUNNER_TEMP/g23/G23_FINAL_MERGE.json" <<'PY'
+          import hashlib,json,pathlib,sys,datetime as dt
+          sp=pathlib.Path(sys.argv[1]); vp=pathlib.Path(sys.argv[2]); out=pathlib.Path(sys.argv[3])
+          s=json.loads(sp.read_text()); v=json.loads(vp.read_text())
+          checks={
+            "state_pass":s.get("status")=="PASS",
+            "root_p3":s.get("root_source")=="/dev/nvme0n1p3",
+            "efi_p1":s.get("efi_source")=="/dev/nvme0n1p1",
+            "only_efi_and_main_partition":s.get("partitions_present")==["/dev/nvme0n1p1","/dev/nvme0n1p3"],
+            "p3_ext4":s.get("p3_fstype")=="ext4",
+            "projects_pass":v.get("status")=="PASS" and v.get("mismatch_count")==0,
+            "projects_manifest":v.get("manifest_sha256")=="99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+            "projects_records":v.get("seen_records")==498092,
+            "projects_bytes":v.get("regular_file_bytes")==200490852057,
+            "partition_checkpoint":(sp.parent/"PARTITION_TABLE_BEFORE_P5_RETIRE.sfdisk").is_file(),
+            "final_partition_table":(sp.parent/"PARTITION_TABLE_FINAL.sfdisk").is_file(),
+          }
+          passed=all(checks.values())
+          r={"schema":"LOUKSNA_R4_PART4_R2_FINAL_MERGE_G23/1.0","status":"PASS" if passed else "HOLD",
+             "checks":checks,"final_state_sha256":hashlib.sha256(sp.read_bytes()).hexdigest(),
+             "projects_verify_sha256":hashlib.sha256(vp.read_bytes()).hexdigest(),
+             "g24_allowed":passed,"validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          out.write_text(json.dumps(r,indent=2,sort_keys=True)+"\n"); print(json.dumps(r,indent=2,sort_keys=True))
+          if not passed: raise SystemExit(3)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-final-merge-g23
+          path: ${{ runner.temp }}/g23/G23_FINAL_MERGE.json
+          retention-days: 90
+          compression-level: 0
+
+  g24_final:
+    name: G24 certify final consolidated Linux disk
+    needs: g23_final
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-final-merge-g23
+          path: ${{ runner.temp }}/g23
+      - name: Issue final merge certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G23="$RUNNER_TEMP/g23/G23_FINAL_MERGE.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$G23")" = PASS
+          H="$(sha256sum "$G23"|awk '{print $1}')"
+          AUD="louksna-r4-part4-r2-final-merge:$H"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export TOKEN H AUD
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$RUNNER_TEMP/g24/G24_FINAL_MERGE.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          token=os.environ["TOKEN"]; parts=token.split("."); payload=parts[1]+"="*((4-len(parts[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload)); aud=claims.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          r={"schema":"LOUKSNA_R4_PART4_R2_FINAL_MERGE_G24/1.0","status":"PASS",
+             "scope":"EFI_P1_PLUS_SINGLE_MAIN_EXT4_DEBIAN_ROOT_P3_WITH_PROYECTOS",
+             "g23_sha256":os.environ["H"],"authority_authenticated":True,
+             "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(token.encode()).hexdigest(),
+             "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-final-merge-g24
+          path: ${{ runner.temp }}/g24/G24_FINAL_MERGE.json
+          retention-days: 90
+          compression-level: 0
+
+  activate_master:
+    name: Activate final PART4 state and release Master to PART5
+    needs: g24_final
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: server/r4-master
+          sparse-checkout-cone-mode: true
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-final-merge-g24
+          path: ${{ runner.temp }}/g24
+      - name: Commit certified merged state and resume chronological Master
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          CERT="$RUNNER_TEMP/g24/G24_FINAL_MERGE.json"
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9/PART_4_R2/STATE.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$CERT")" = PASS
+          python3 - "$STATE" "$CERT" <<'PY'
+          import hashlib,json,os,sys,time
+          sp,cp=sys.argv[1:]; s=json.load(open(sp))
+          s.update({
+            "final_merge_g24":True,
+            "final_merge_g24_sha256":hashlib.sha256(open(cp,"rb").read()).hexdigest(),
+            "verified_root_on_consolidated_linux":True,
+            "part4_r2_final_g24":True,
+            "final_linux_layout":True,
+            "boot_switch_pending":False,
+            "final_layout":"EFI_P1_PLUS_SINGLE_MAIN_EXT4_DEBIAN_ROOT_P3",
+            "updated_at_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
+          })
+          t=sp+".tmp"; json.dump(s,open(t,"w"),indent=2,sort_keys=True); os.replace(t,sp)
+          PY
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+          bash server/r4-master/MASTER_RUN.sh
+          systemctl --user restart luna-r4-master-part1-part9.service
+          test "$(systemctl --user is-active luna-r4-master-part1-part9.service)" = active
+          echo "PART4_FINAL_MERGE_G24=PASS"
+          echo "MASTER_RELEASED=PART4_TO_PART5_TO_PART9"
