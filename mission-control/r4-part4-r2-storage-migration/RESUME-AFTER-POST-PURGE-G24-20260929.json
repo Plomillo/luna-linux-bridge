@@ -1,0 +1,11 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_STAGE_HANDOFF/1.0",
+  "status": "AUTHORIZED_TRIGGER",
+  "from": "POST_PURGE_G24",
+  "to": "STORAGE_MIGRATION",
+  "source_run_id": 36626054013,
+  "protected_manifest_sha256": "99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+  "final_merge_authorization": "PART4-R2-FINAL-MERGE-20260929",
+  "failure_posture": "FAIL_CLOSED",
+  "assistant_polling_required": false
+}
