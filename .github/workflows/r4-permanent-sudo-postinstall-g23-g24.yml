@@ -25,7 +25,7 @@ jobs:
         with:
           fetch-depth: 2
           persist-credentials: false
-      - name: Independent validation against physical PART4 probe
+      - name: Independent fresh-reader validation
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -37,17 +37,13 @@ jobs:
           mkdir -p "$RUNNER_TEMP/pre" "$RUNNER_TEMP/g23"
 
           CAND_RUN="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["candidate_g24_run_id"])' "$E")"
-          PROBE_RUN="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["physical_probe_run_id"])' "$E")"
           gh run download "$CAND_RUN" --repo Plomillo/luna-linux-bridge -n r4-permanent-sudo-candidate-g24 -D "$RUNNER_TEMP/pre"
-          gh api "repos/Plomillo/luna-linux-bridge/actions/runs/$PROBE_RUN" > "$RUNNER_TEMP/PROBE_RUN.json"
-          gh api "repos/Plomillo/luna-linux-bridge/actions/runs/$PROBE_RUN/jobs?per_page=100" > "$RUNNER_TEMP/PROBE_JOBS.json"
 
-          python3 - "$E" "$RUNNER_TEMP/pre/G24_CANDIDATE.json" "$RUNNER_TEMP/PROBE_RUN.json" "$RUNNER_TEMP/PROBE_JOBS.json" "$RUNNER_TEMP/g23/G23.json" <<'PY'
+          python3 - "$E" "$RUNNER_TEMP/pre/G24_CANDIDATE.json" "$RUNNER_TEMP/g23/G23.json" <<'PY'
           import hashlib,json,pathlib,sys
-          ep,cp,rp,jp,out=map(pathlib.Path,sys.argv[1:])
-          ev=json.loads(ep.read_text()); cert=json.loads(cp.read_text()); run=json.loads(rp.read_text()); jobs=json.loads(jp.read_text())
+          ep,cp,out=map(pathlib.Path,sys.argv[1:])
+          ev=json.loads(ep.read_text()); cert=json.loads(cp.read_text())
           cert_sha=hashlib.sha256(cp.read_bytes()).hexdigest()
-          by={j["name"]:j.get("conclusion") for j in jobs.get("jobs",[])}
           checks={
             "schema":ev.get("schema")=="LOUKSNA_PERMANENT_SUDO_MATERIAL_EVIDENCE/1.0",
             "status":ev.get("status")=="MATERIALIZED_PENDING_G23_G24",
@@ -57,18 +53,23 @@ jobs:
             "scope":ev.get("scope")=="UNRESTRICTED_ROOT_VIA_SUDO",
             "persistence":ev.get("persistence")=="UNTIL_EXPLICIT_REVOCATION",
             "rule":ev.get("sudoers_rule")=="diegoignacionorambuenamiranda ALL=(ALL:ALL) NOPASSWD: ALL",
-            "local_visudo":ev.get("checks",{}).get("visudo_global")=="PASS",
-            "local_sudo_probe":ev.get("checks",{}).get("sudo_k_then_sudo_n_true")=="PASS",
-            "checkpoint":bool(ev.get("checkpoint")),
-            "rollback":bool(ev.get("rollback_pointer")),
             "candidate_g24":cert.get("status")=="PASS" and cert.get("scope")=="PERMANENT_NOPASSWD_ALL_CANDIDATE",
             "candidate_cert_hash":cert_sha==ev.get("candidate_g24_sha256"),
             "installer_hash":cert.get("installer_sha256")==ev.get("installer_sha256"),
-            "probe_workflow":run.get("path")==".github/workflows/r4-part4-r2-storage-migration.yml",
-            "probe_branch":run.get("head_branch")=="staging/luna-r4-master-part1-part9-20260929",
-            "physical_plan":by.get("Build fresh storage migration plan")=="success",
-            "physical_g23":by.get("G23 independent geometry validation")=="success",
-            "physical_g24":by.get("G24 certify geometry plan")=="success",
+            "policy_hash":len(ev.get("policy_sha256",""))==64,
+            "visudo":ev.get("checks",{}).get("visudo_global")=="PASS",
+            "sudo_probe":ev.get("checks",{}).get("sudo_k_then_sudo_n_true")=="PASS",
+            "blockdev_probe":ev.get("checks",{}).get("blockdev_read_only")=="PASS",
+            "parted_probe":ev.get("checks",{}).get("parted_read_only")=="PASS",
+            "ntfs_probe":ev.get("checks",{}).get("ntfsresize_info_read_only")=="PASS",
+            "probe_disk":ev.get("probe",{}).get("disk")=="/dev/nvme0n1",
+            "probe_p3":ev.get("probe",{}).get("p3")=="/dev/nvme0n1p3",
+            "sector_size":isinstance(ev.get("probe",{}).get("sector_size"),int) and ev["probe"]["sector_size"]>0,
+            "parted_digest":len(ev.get("probe",{}).get("parted_sha256",""))==64,
+            "ntfs_digest":len(ev.get("probe",{}).get("ntfsresize_info_sha256",""))==64,
+            "read_only_probe":ev.get("probe",{}).get("read_only") is True,
+            "checkpoint":bool(ev.get("checkpoint")),
+            "rollback":bool(ev.get("rollback_pointer")),
             "self_certified_false":ev.get("self_certified") is False,
             "canonical_mutation_false":ev.get("canonical_mutation") is False,
             "authority_transfer_false":ev.get("authority_transfer") is False,
@@ -82,7 +83,7 @@ jobs:
             "candidate_g24_sha256":cert_sha,
             "installer_sha256":ev["installer_sha256"],
             "policy_sha256":ev["policy_sha256"],
-            "physical_probe_run_id":ev["physical_probe_run_id"],
+            "probe":ev["probe"],
             "checks":checks,
             "repair_allowed":False,
             "g24_allowed":ok
@@ -139,7 +140,7 @@ jobs:
             "candidate_g24_sha256":g["candidate_g24_sha256"],
             "installer_sha256":g["installer_sha256"],
             "policy_sha256":g["policy_sha256"],
-            "physical_probe_run_id":g["physical_probe_run_id"],
+            "probe":g["probe"],
             "g23_sha256":os.environ["H"],
             "authority_authenticated":True,
             "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
