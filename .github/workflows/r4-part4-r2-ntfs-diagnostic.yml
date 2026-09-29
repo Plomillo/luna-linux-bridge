@@ -15,20 +15,49 @@ jobs:
     runs-on: [self-hosted, Linux, x64, luna-aux]
     timeout-minutes: 5
     steps:
-      - name: Capture mount and ntfsresize diagnostics
+      - name: Capture unmounted ntfsresize diagnostic and restore mount
         shell: bash
         run: |
           set -Eeuo pipefail
+          WINROOT=/media/diegoignacionorambuenamiranda/Windows
+          P3=/dev/nvme0n1p3
           echo "HOST=$(hostname)"
           echo "USER=$(id -un)"
-          echo "--- FINDMNT ---"
-          findmnt -T /media/diegoignacionorambuenamiranda/Windows -o SOURCE,FSTYPE,OPTIONS,TARGET
-          echo "--- BLKID ---"
-          sudo -n /usr/sbin/blkid -p /dev/nvme0n1p3
-          echo "--- NTFSRESIZE INFO ---"
+          echo "--- BEFORE ---"
+          findmnt -T "$WINROOT" -o SOURCE,FSTYPE,OPTIONS,TARGET
+          sudo -n /usr/sbin/blkid -p "$P3"
+
+          NEED_REMOUNT=0
+          restore(){
+            rc=$?
+            if [ "$NEED_REMOUNT" -eq 1 ]; then
+              sudo -n mount "$WINROOT" || true
+            fi
+            exit "$rc"
+          }
+          trap restore EXIT
+
+          sudo -n umount "$WINROOT"
+          NEED_REMOUNT=1
+          echo "--- UNMOUNTED ---"
+          if findmnt -S "$P3"; then
+            echo "ERROR:P3_STILL_MOUNTED"
+            exit 31
+          fi
+
+          echo "--- NTFSRESIZE INFO WHILE UNMOUNTED ---"
           set +e
-          sudo -n ntfsresize --info --force /dev/nvme0n1p3 2>&1
+          LC_ALL=C sudo -n ntfsresize --info --force "$P3" 2>&1
           rc=$?
           set -e
           echo "NTFSRESIZE_RC=$rc"
-          test "$rc" -eq 0
+
+          sudo -n mount "$WINROOT"
+          NEED_REMOUNT=0
+          trap - EXIT
+
+          echo "--- AFTER REMOUNT ---"
+          findmnt -T "$WINROOT" -o SOURCE,FSTYPE,OPTIONS,TARGET
+          sudo -n /usr/sbin/blkid -p "$P3"
+          test -d "$WINROOT/PROYECTOS"
+          exit "$rc"
