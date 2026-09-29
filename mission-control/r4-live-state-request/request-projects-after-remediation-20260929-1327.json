@@ -1,0 +1,11 @@
+{
+  "schema": "LOUKSNA_R4_LIVE_STATE_SNAPSHOT_REQUEST/1.0",
+  "scope": "READ_ONLY",
+  "requested_files": [
+    "MASTER_STATUS.json",
+    "evidence/PART_3.json",
+    "PERMISSION_REQUEST.json"
+  ],
+  "include_service_status": true,
+  "purpose": "Inspect exact PROYECTOS candidates after PART3 alias remediation."
+}
