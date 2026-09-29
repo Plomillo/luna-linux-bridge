@@ -1,0 +1,65 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_AUTOPILOT_ADDENDUM/1.0",
+  "addendum_id": "PART4-R2-AUTOPILOT-20260929",
+  "authority": "Louksna.md",
+  "parent_amendment": "PART4-R2-20260929",
+  "parent_amendment_certification_run": 36621903764,
+  "owner_authorized": true,
+  "authorization_scope": "AUTONOMOUS_EXECUTION_OF_ALREADY_AUTHORIZED_PART4_R2_AND_EXISTING_PART5_PART9_SEQUENCE",
+  "doctrine": "EXTEND_DO_NOT_REPLACE",
+  "failure_posture": "FAIL_CLOSED",
+  "canonical_mutation": false,
+  "authority_transfer": false,
+  "semantic_change_to_parts_5_9": false,
+  "execution_model": {
+    "primary_worker": "CUSTOSZ_V7_AND_LUNA_R4_MASTER_ON_SELF_HOSTED_SERVER",
+    "control_plane": "GITHUB_ACTIONS",
+    "supervisor": "SYMPHYLAX_R1",
+    "assistant_role": "NO_CONTINUOUS_POLLING_REQUIRED",
+    "loop": "STATE -> NEXT_AUTHORIZED_STEP -> EVIDENCE -> VALIDATION -> G23 -> G24 -> STATE_UPDATE -> NEXT_STEP",
+    "retry_policy": {
+      "automatic": true,
+      "retry_only_if_scope_unchanged": true,
+      "strategy_mutation_before_repeat": true,
+      "max_identical_failures": 3,
+      "terminal_on_unknown_or_scope_drift": "HOLD"
+    }
+  },
+  "current_checkpoint": {
+    "protected_integrity_run": 36623383678,
+    "protected_integrity": "PASS",
+    "certified_manifest_sha256": "99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+    "purge_scope_certified_run": 36622966081,
+    "purge_attempt_status": "PARTIAL_HOLD_PERMISSION_DENIED",
+    "protected_scope_mutated": false
+  },
+  "part4_autonomous_sequence": [
+    "REMEDIATE_ONLY_RESIDUAL_WINDOWS_PERMISSION_BLOCKERS_OUTSIDE_PROYECTOS",
+    "COMPLETE_WINDOWS_PURGE",
+    "FULL_POST_PURGE_HASH_VALIDATION",
+    "POST_PURGE_G23_G24",
+    "GEOMETRY_AND_PRIVILEGE_PREVALIDATION",
+    "GEOMETRY_G23_G24",
+    "SHRINK_NTFS",
+    "CREATE_TEMP_EXT4",
+    "MIGRATE_PROYECTOS_TO_TEMP_EXT4_AND_VERIFY",
+    "REFORMAT_ORIGINAL_P3_AS_EXT4",
+    "MIGRATE_PROYECTOS_BACK_TO_P3_EXT4_AND_VERIFY",
+    "RETIRE_TEMP_AND_WINDOWS_RECOVERY_PARTITIONS",
+    "EXPAND_P3_LINUX_DATA_TO_AVAILABLE_BOUNDARY",
+    "PERSIST_DEBIAN_MOUNT",
+    "FINAL_FULL_HASH_VALIDATION",
+    "PART4_FINAL_G23_G24",
+    "MASTER_CONTINUES_PART5_PART6_PART7_PART8_PART9_WITH_EXISTING_CONTRACT"
+  ],
+  "invariants": [
+    "EXACT_PROYECTOS_NEVER_DELETED",
+    "NO_FOLLOW_SYMLINKS_FOR_DESTRUCTIVE_TRAVERSAL",
+    "NO_DEVICE_BOUNDARY_CROSSING",
+    "NO_PARTITION_MUTATION_WITHOUT_FRESH_GEOMETRY_AND_G23_G24",
+    "NO_NTFS_RETIREMENT_UNTIL_VERIFIED_EXT4_COPY_EXISTS",
+    "NO_TEMP_EXT4_RETIREMENT_UNTIL_VERIFIED_FINAL_EXT4_COPY_EXISTS",
+    "PART5_PART9_SEMANTICS_UNCHANGED",
+    "UNKNOWN_OR_MISMATCH_EQUALS_HOLD"
+  ]
+}
