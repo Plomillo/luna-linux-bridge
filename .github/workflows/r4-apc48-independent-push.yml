@@ -37,9 +37,11 @@ jobs:
           sparse-checkout-cone-mode: true
 
       - name: Freeze candidate read-only
+        shell: bash
         run: chmod -R a-w "$GITHUB_WORKSPACE/candidate"
 
       - name: Independent G23
+        shell: bash
         env:
           GITHUB_WORKFLOW_SHA: ${{ github.sha }}
           CANDIDATE_HEAD_SHA: 478886c5207892c25d37a41849c5ede37ffa7274
@@ -51,7 +53,8 @@ jobs:
             --out "$RUNNER_TEMP/g23/G23.json"
           cat "$RUNNER_TEMP/g23/G23.json" >> "$GITHUB_STEP_SUMMARY"
 
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - name: Preserve G23
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: r4-apc48-independent-g23-push
           path: ${{ runner.temp }}/g23
@@ -72,55 +75,46 @@ jobs:
           sparse-checkout: scripts/assurance/apc48_trust_root.py
           sparse-checkout-cone-mode: false
 
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+      - name: Download G23
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: r4-apc48-independent-g23-push
           path: ${{ runner.temp }}/g23
 
-      - name: OIDC authority bound to candidate digest
-        env:
-          CANDIDATE_HEAD_SHA: 478886c5207892c25d37a41849c5ede37ffa7274
-          TRUST_ROOT_SHA: ${{ github.sha }}
+      - name: Request OIDC token
+        shell: bash
         run: |
           set -Eeuo pipefail
           mkdir -p "$RUNNER_TEMP/g24"
           DIGEST="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["candidate_digest_sha256"])' "$RUNNER_TEMP/g23/G23.json")"
           AUD="louksna-r4-apc48-g24:$DIGEST"
           RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
-          TOKEN="$(RESP="$RESP" python3 - <<'PY'
-import json,os
-print(json.loads(os.environ["RESP"])["value"])
-PY
-)"
-          TOKEN="$TOKEN" DIGEST="$DIGEST" AUD="$AUD" python3 - <<'PY'
-import base64,hashlib,json,os,pathlib
-tok=os.environ["TOKEN"]
-parts=tok.split(".")
-if len(parts)!=3: raise SystemExit("OIDC_TOKEN_FORMAT_INVALID")
-payload=parts[1] + "="*((4-len(parts[1])%4)%4)
-claims=json.loads(base64.urlsafe_b64decode(payload))
-aud=claims.get("aud"); expected=os.environ["AUD"]
-if aud!=expected and not (isinstance(aud,list) and expected in aud):
-    raise SystemExit("OIDC_AUDIENCE_MISMATCH")
-if claims.get("repository")!="Plomillo/luna-linux-bridge":
-    raise SystemExit("OIDC_REPOSITORY_MISMATCH")
-obj={
- "schema":"LOUKSNA_R4_APC48_AUTHORITY/1.0",
- "authority_authenticated":True,
- "candidate_digest_sha256":os.environ["DIGEST"],
- "candidate_head_sha":os.environ["CANDIDATE_HEAD_SHA"],
- "trust_root_sha":os.environ["TRUST_ROOT_SHA"],
- "signature_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(tok.encode()).hexdigest(),
- "repository":claims.get("repository"),
- "subject":claims.get("sub"),
- "workflow":claims.get("workflow"),
- "raw_token_persisted":False
-}
-pathlib.Path(os.environ["RUNNER_TEMP"],"g24","AUTHORITY_EVIDENCE.json").write_text(json.dumps(obj,indent=2,sort_keys=True)+"\n")
-PY
-          unset TOKEN RESP
+          TOKEN="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          printf '%s' "$TOKEN" > "$RUNNER_TEMP/g24/OIDC_TOKEN.tmp"
+          printf '%s\n' "$DIGEST" > "$RUNNER_TEMP/g24/CANDIDATE_DIGEST.txt"
+          printf '%s\n' "$AUD" > "$RUNNER_TEMP/g24/OIDC_AUDIENCE.txt"
+
+      - name: Build authority evidence in trust-root code
+        shell: bash
+        env:
+          CANDIDATE_HEAD_SHA: 478886c5207892c25d37a41849c5ede37ffa7274
+          TRUST_ROOT_SHA: ${{ github.sha }}
+        run: |
+          set -Eeuo pipefail
+          DIGEST="$(cat "$RUNNER_TEMP/g24/CANDIDATE_DIGEST.txt")"
+          AUD="$(cat "$RUNNER_TEMP/g24/OIDC_AUDIENCE.txt")"
+          export OIDC_TOKEN="$(cat "$RUNNER_TEMP/g24/OIDC_TOKEN.tmp")"
+          rm -f "$RUNNER_TEMP/g24/OIDC_TOKEN.tmp"
+          python3 -B -I "$GITHUB_WORKSPACE/trust/scripts/assurance/apc48_trust_root.py" authority \
+            --digest "$DIGEST" \
+            --audience "$AUD" \
+            --candidate-head-sha "$CANDIDATE_HEAD_SHA" \
+            --trust-root-sha "$TRUST_ROOT_SHA" \
+            --out "$RUNNER_TEMP/g24/AUTHORITY_EVIDENCE.json"
+          unset OIDC_TOKEN
 
       - name: Digest-bound G24
+        shell: bash
         run: |
           set -Eeuo pipefail
           python3 -B -I "$GITHUB_WORKSPACE/trust/scripts/assurance/apc48_trust_root.py" g24 \
@@ -129,7 +123,8 @@ PY
             --out "$RUNNER_TEMP/g24/G24_CERTIFICATE.json"
           cat "$RUNNER_TEMP/g24/G24_CERTIFICATE.json" >> "$GITHUB_STEP_SUMMARY"
 
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - name: Preserve G24
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: r4-apc48-independent-g24-push
           path: ${{ runner.temp }}/g24
