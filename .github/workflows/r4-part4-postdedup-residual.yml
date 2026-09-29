@@ -1,0 +1,90 @@
+name: "R4 PART4 — post-dedup residual diagnosis"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-postdedup-residual/**
+      - .github/workflows/r4-part4-postdedup-residual.yml
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Diagnose residual PART4 blockers read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="/media/diegoignacionorambuenamiranda/Windows/PROYECTOS"
+          OUT="$RUNNER_TEMP/r4-part4-postdedup-residual-$GITHUB_RUN_ID"
+          mkdir -p "$OUT"
+
+          {
+            echo "captured_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "host=$(hostname)"
+            echo "user=$(id -un)"
+            echo "uid=$(id -u)"
+            echo "gid=$(id -g)"
+            echo "groups=$(id -nG)"
+            echo "=== MOUNT ==="
+            findmnt -T "$ROOT" -o SOURCE,FSTYPE,OPTIONS,TARGET
+            echo "=== SPACE ==="
+            df -B1 -T "$ROOT" "$HOME"
+            echo "=== CURRENT TREE SIZE ==="
+            du -sx --block-size=1 "$ROOT" 2>/dev/null || true
+          } | tee "$OUT/HOST.txt"
+
+          python3 - "$ROOT" "$OUT" <<'PY'
+          import json, os, pathlib, subprocess, sys
+          root=pathlib.Path(sys.argv[1]); out=pathlib.Path(sys.argv[2])
+          rels=[
+            "6. UNIVERSIDAD UNIACC/Trabajos Universitarios/Primer Año/desktop.ini",
+            "6. UNIVERSIDAD UNIACC/Trabajos Universitarios/Primer Año/Portada Uniacc/UNIACCPORTADA.png",
+            "6. UNIVERSIDAD UNIACC/Trabajos Universitarios/Primer Año/Portada Uniacc/TrabajonU2 DiegoNorambuena_WilliamNavarrete.jpg.jpeg",
+            "6. UNIVERSIDAD UNIACC/Trabajos Universitarios/Primer Año/Portada Uniacc/desktop.ini",
+          ]
+          rows=[]
+          for rel in rels:
+              p=root/rel
+              rec={"path":str(p),"exists":p.exists(),"parent_exists":p.parent.exists(),
+                   "parent_writable_os_access":os.access(p.parent,os.W_OK)}
+              try:
+                  st=p.stat()
+                  rec.update({"mode":oct(st.st_mode & 0o7777),"uid":st.st_uid,"gid":st.st_gid,"size":st.st_size})
+              except Exception as e:
+                  rec["stat_error"]=repr(e)
+              for key,cmd in {
+                  "namei":["namei","-l",str(p)],
+                  "lsattr":["lsattr","-d",str(p)],
+                  "getfacl":["getfacl","-p",str(p)],
+                  "getfattr":["getfattr","-d","-m","-",str(p)],
+              }.items():
+                  try:
+                      q=subprocess.run(cmd,text=True,capture_output=True,timeout=10)
+                      rec[key]={"rc":q.returncode,"stdout":q.stdout[-12000:],"stderr":q.stderr[-4000:]}
+                  except FileNotFoundError:
+                      rec[key]={"missing_tool":True}
+                  except Exception as e:
+                      rec[key]={"error":repr(e)}
+              rows.append(rec)
+          obj={"schema":"LOUKSNA_R4_PART4_POSTDEDUP_RESIDUAL_DIAG/1.0",
+               "mode":"READ_ONLY","source_mutated":False,"files":rows}
+          (out/"RESIDUAL.json").write_text(json.dumps(obj,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+          print(json.dumps(obj,ensure_ascii=False,indent=2))
+          PY
+
+          sha256sum "$OUT"/* > "$OUT/SHA256SUMS.txt"
+
+      - name: Preserve diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: R4-PART4-postdedup-residual-${{ github.run_id }}
+          path: ${{ runner.temp }}/r4-part4-postdedup-residual-${{ github.run_id }}/
+          if-no-files-found: error
+          retention-days: 14
