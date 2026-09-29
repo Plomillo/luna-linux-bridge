@@ -1,0 +1,11 @@
+{
+  "scope": "READ_ONLY",
+  "part": "PART_4",
+  "purpose": "Measure PROYECTOS and discover independent backup destinations before protection proof generation",
+  "constraints": [
+    "PROYECTOS_READ_ONLY",
+    "NO_DELETION",
+    "NO_MUTATION",
+    "FAIL_CLOSED"
+  ]
+}
