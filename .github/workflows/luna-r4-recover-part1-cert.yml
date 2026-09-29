@@ -35,6 +35,8 @@ jobs:
           run-id: 36536347705
 
       - name: Bind certificate locally and resume
+        env:
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -45,18 +47,22 @@ jobs:
           STATE="$HOME/.local/state/louksna/r4-master-part1-part9"
           CERTS="$STATE/certificates"
           EVID="$STATE/evidence/PART_1.json"
+          PUBLISHED_EVID="$RUNNER_TEMP/PART_1_PUBLISHED.json"
+          PUBLISHED_PATH="evidence/r4-master/20260929T072332Z-MIS-dd341bc9c1524d7d9598/PART_1/MATERIAL_EVIDENCE.json"
           DST="$HOME/.local/lib/louksna/r4-master-part1-part9"
           SRC="$GITHUB_WORKSPACE/server/r4-master"
           UNIT="luna-r4-master-part1-part9.service"
           G24="$RUNNER_TEMP/part1-g24/G24.json"
 
           test -f "$G24"
-          test -f "$EVID"
-          mkdir -p "$CERTS"
+          mkdir -p "$CERTS" "$STATE/evidence"
 
-          python3 - "$G24" "$EVID" "$CERTS/PART_1.json" <<'PY'
+          gh api "repos/Plomillo/luna-linux-bridge/contents/$PUBLISHED_PATH?ref=1e3d6154a52added449a37c24885bad5acf0cddc" --jq '.content' | tr -d '\n' | base64 -d > "$PUBLISHED_EVID"
+          test -s "$PUBLISHED_EVID"
+
+          python3 - "$G24" "$PUBLISHED_EVID" "$CERTS/PART_1.json" "$EVID" <<'PY'
           import hashlib,json,pathlib,sys
-          g24p=pathlib.Path(sys.argv[1]); evidp=pathlib.Path(sys.argv[2]); out=pathlib.Path(sys.argv[3])
+          g24p=pathlib.Path(sys.argv[1]); evidp=pathlib.Path(sys.argv[2]); out=pathlib.Path(sys.argv[3]); local_evid=pathlib.Path(sys.argv[4])
           g=json.loads(g24p.read_text(encoding="utf-8"))
           if g.get("status")!="PASS" or g.get("part")!="PART_1" or g.get("g23_status")!="PASS":
               raise SystemExit("PART1_G24_INVALID")
@@ -65,6 +71,9 @@ jobs:
               raise SystemExit("PART1_G24_EVIDENCE_MISMATCH")
           g["workflow_run_id"]=36536347705
           g["evidence_commit_sha"]="1e3d6154a52added449a37c24885bad5acf0cddc"
+          etmp=local_evid.with_suffix(".json.tmp")
+          etmp.write_bytes(evidp.read_bytes())
+          etmp.replace(local_evid)
           tmp=out.with_suffix(".json.tmp")
           tmp.write_text(json.dumps(g,indent=2,sort_keys=True)+"\n",encoding="utf-8")
           tmp.replace(out)
