@@ -1,6 +1,8 @@
 #!/bin/bash
 set -Eeuo pipefail
 umask 077
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}"
+BLKID="/usr/sbin/blkid"
 
 MODE="${1:-}"
 PLAN="${2:-}"
@@ -23,8 +25,12 @@ PROJECT_BYTES=200490852057
 
 hold(){ echo "HOLD:$*" >&2; exit 20; }
 need(){ command -v "$1" >/dev/null 2>&1 || hold "MISSING_COMMAND:$1"; }
+need_exec(){ [ -x "$1" ] || hold "MISSING_COMMAND:$1"; }
+blkid_uuid(){ sudo -n "$BLKID" -p -s UUID -o value "$1"; }
 
-for c in python3 lsblk findmnt blkid blockdev df du rsync mount umount sfdisk sha256sum chroot grub-install update-grub update-initramfs; do need "$c"; done
+for c in python3 lsblk findmnt blockdev df du rsync mount umount sfdisk sha256sum chroot grub-install update-grub update-initramfs; do need "$c"; done
+need_exec "$BLKID"
+sudo -n true >/dev/null 2>&1 || hold "NONINTERACTIVE_SUDO_REQUIRED"
 [ -n "$MODE" ] || hold "MODE_REQUIRED"
 [ -n "$OUT" ] || hold "OUT_REQUIRED"
 mkdir -p "$OUT"
@@ -47,9 +53,9 @@ done
 [ -b "$OLDROOT_DEV" ] || hold "OLDROOT_MISSING"
 [ -b "$NEWROOT_DEV" ] || hold "NEWROOT_DEVICE_MISSING"
 
-P3_UUID="$(/usr/sbin/blkid -s UUID -o value "$NEWROOT_DEV")"
-P5_UUID="$(/usr/sbin/blkid -s UUID -o value "$OLDROOT_DEV")"
-EFI_UUID="$(/usr/sbin/blkid -s UUID -o value "$EFI")"
+P3_UUID="$(blkid_uuid "$NEWROOT_DEV")"
+P5_UUID="$(blkid_uuid "$OLDROOT_DEV")"
+EFI_UUID="$(blkid_uuid "$EFI")"
 [ -n "$P3_UUID" ] && [ -n "$P5_UUID" ] && [ -n "$EFI_UUID" ] || hold "UUID_MISSING"
 
 P3_FREE="$(df -B1 --output=avail "$PROJECTS_MOUNT" | tail -1 | tr -d ' ')"

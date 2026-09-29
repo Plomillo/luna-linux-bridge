@@ -1,6 +1,8 @@
 #!/bin/bash
 set -Eeuo pipefail
 umask 077
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}"
+BLKID="/usr/sbin/blkid"
 
 MODE="${1:-}"
 PLAN="${2:-}"
@@ -21,6 +23,8 @@ MANIFEST_SHA="99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e"
 
 hold(){ echo "HOLD:$*" >&2; exit 20; }
 need(){ command -v "$1" >/dev/null 2>&1 || hold "MISSING_COMMAND:$1"; }
+need_exec(){ [ -x "$1" ] || hold "MISSING_COMMAND:$1"; }
+blkid_uuid(){ sudo -n "$BLKID" -p -s UUID -o value "$1"; }
 json_get(){ python3 - "$PLAN" "$1" <<'PY'
 import json,sys
 d=json.load(open(sys.argv[1],encoding="utf-8"))
@@ -34,7 +38,8 @@ PY
 [ -n "$OUT" ] || hold "OUT_REQUIRED"
 mkdir -p "$OUT"
 
-for c in python3 lsblk findmnt blkid blockdev ntfsresize parted partprobe udevadm mkfs.ext4 resize2fs e2fsck rsync mount umount sfdisk sha256sum; do need "$c"; done
+for c in python3 lsblk findmnt blockdev ntfsresize parted partprobe udevadm mkfs.ext4 resize2fs e2fsck rsync mount umount sfdisk sha256sum; do need "$c"; done
+need_exec "$BLKID"
 sudo -n true >/dev/null 2>&1 || hold "NONINTERACTIVE_SUDO_REQUIRED"
 
 if [ "$MODE" = "plan" ]; then
@@ -42,7 +47,7 @@ if [ "$MODE" = "plan" ]; then
   [ ! -L "$KEEP" ] || hold "PROYECTOS_SYMLINK_REJECTED"
   [ "$(findmnt -T "$WINROOT" -n -o SOURCE)" = "$P3" ] || hold "P3_SOURCE_MISMATCH"
   [ "$(findmnt -T "$WINROOT" -n -o FSTYPE)" = "ntfs3" ] || hold "P3_FSTYPE_MISMATCH"
-  [ "$(/usr/sbin/blkid -s UUID -o value "$P3")" = "$OLD_UUID" ] || hold "P3_UUID_MISMATCH"
+  [ "$(blkid_uuid "$P3")" = "$OLD_UUID" ] || hold "P3_UUID_MISMATCH"
   mapfile -t top < <(find "$WINROOT" -mindepth 1 -maxdepth 1 -printf '%f\n' | sort)
   [ "${#top[@]}" -eq 1 ] || hold "WINDOWS_PURGE_INCOMPLETE:${top[*]}"
   [ "${top[0]}" = "PROYECTOS" ] || hold "UNEXPECTED_SURVIVOR:${top[0]}"
@@ -175,7 +180,7 @@ exit $rc' ERR
 # Fresh identity checks immediately before first storage mutation.
 [ -d "$KEEP" ] || hold "KEEP_MISSING_PREEXEC"
 [ "$(findmnt -T "$WINROOT" -n -o SOURCE)" = "$P3" ] || hold "P3_SOURCE_PREEXEC"
-[ "$(/usr/sbin/blkid -s UUID -o value "$P3")" = "$OLD_UUID" ] || hold "P3_UUID_PREEXEC"
+[ "$(blkid_uuid "$P3")" = "$OLD_UUID" ] || hold "P3_UUID_PREEXEC"
 mapfile -t top < <(find "$WINROOT" -mindepth 1 -maxdepth 1 -printf '%f\n' | sort)
 [ "${#top[@]}" -eq 1 ] && [ "${top[0]}" = "PROYECTOS" ] || hold "PURGE_NOT_COMPLETE_PREEXEC"
 
@@ -261,7 +266,7 @@ event P3_EXT4_EXPANDED
 
 mkdir -p "$FINAL_MOUNT"
 sudo -n mount -t ext4 "$P3" "$FINAL_MOUNT"
-NEW_UUID="$(/usr/sbin/blkid -s UUID -o value "$P3")"
+NEW_UUID="$(blkid_uuid "$P3")"
 [ -n "$NEW_UUID" ] || hold "NEW_UUID_MISSING"
 python3 "$VERIFY" --root "$FINAL_MOUNT" --manifest "$MANIFEST" --out "$OUT/VERIFY_FINAL.json"
 event FINAL_TREE_VERIFIED
