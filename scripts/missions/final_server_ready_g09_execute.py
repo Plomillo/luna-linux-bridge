@@ -97,12 +97,39 @@ def main():
   check_deadline(q.deadline_epoch)
 
   marker=durable/"G09_EVIDENCE_SURVIVAL.marker";marker.write_text("schema=G09_EVIDENCE_SURVIVAL/1.0\nmission_sha256="+MISSION_SHA+"\ncreated_utc="+utc()+"\n",encoding="utf-8");mh=sha(marker)
-  restart=run(["systemctl","--user","restart",SERVICE],user=True);fh=wait_health(health,15);finalpid,fshow=main_pid()
-  details["tests"]["governed_restart"]=restart;details["tests"]["final_health"]=fh;details["tests"]["final_pid_show"]=fshow
+  pre_restart_health=wait_health(health,5);pre_restart_pid,pre_restart_show=main_pid()
+  restart_started_utc=utc();restart_started_dt=datetime.fromisoformat(restart_started_utc)
+  restart=run(["systemctl","--user","restart",SERVICE],user=True)
+  fh={};finalpid=0;fshow={};active={};fresh={}
+  end=min(time.time()+25,q.deadline_epoch or time.time()+25)
+  while time.time()<end:
+   finalpid,fshow=main_pid();active=run(["systemctl","--user","is-active",SERVICE],user=True)
+   try: fh=json.loads(health.read_text(encoding="utf-8"))
+   except Exception: fh={}
+   hb=fh.get("heartbeat_utc");started=fh.get("started_utc");seq=fh.get("heartbeat_seq")
+   try: hb_dt=datetime.fromisoformat(hb) if isinstance(hb,str) else None
+   except Exception: hb_dt=None
+   try: started_dt=datetime.fromisoformat(started) if isinstance(started,str) else None
+   except Exception: started_dt=None
+   fresh={
+    "heartbeat_after_restart":bool(hb_dt and hb_dt>restart_started_dt),
+    "service_started_after_restart":bool(started_dt and started_dt>restart_started_dt),
+    "heartbeat_seq_present":isinstance(seq,int) and seq>=0,
+    "health_pid_matches_mainpid":finalpid>0 and fh.get("pid")==finalpid,
+    "new_mainpid_after_restart":finalpid>0 and finalpid!=pre_restart_pid,
+    "service_active":active.get("exit_code")==0 and active.get("stdout","").strip()=="active",
+    "health_status_healthy":fh.get("status")=="HEALTHY"
+   }
+   if restart.get("exit_code")==0 and all(fresh.values()): break
+   time.sleep(.5)
+  details["tests"]["pre_restart_health"]=pre_restart_health;details["tests"]["pre_restart_pid_show"]=pre_restart_show
+  details["tests"]["restart_started_utc"]=restart_started_utc;details["tests"]["governed_restart"]=restart
+  details["tests"]["final_health"]=fh;details["tests"]["final_pid_show"]=fshow;details["tests"]["final_service_active"]=active
+  details["tests"]["state_recovery_freshness"]=fresh
   pgrep=run(["pgrep","-f","[s]ymphylax_r1_service.py"]);pids=[int(x) for x in pgrep.get("stdout","").split() if x.isdigit()]
   no_orphan=finalpid>0 and len(set(pids))==1 and finalpid in set(pids)
   details["tests"]["process_inventory"]={"pgrep":pgrep,"service_main_pid":finalpid,"matched_pids":pids}
-  marker_ok=marker.is_file() and sha(marker)==mh;state_ok=restart["exit_code"]==0 and fh.get("status")=="HEALTHY" and fh.get("pid") in (None,finalpid)
+  marker_ok=marker.is_file() and sha(marker)==mh;state_ok=restart.get("exit_code")==0 and all(fresh.values())
   ev["no_orphan_process"]=no_orphan;ev["state_recovery"]=state_ok;ev["evidence_survives_restart"]=marker_ok
   ok=all((recovered,runtime_ok,missing_ok,timeout_ok,no_orphan,state_ok,marker_ok));ev["result"]="PASS" if ok else "HOLD";ev["resolved"]=ok
   if ok: ev["root_blocker"]=None
