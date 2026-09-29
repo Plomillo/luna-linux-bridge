@@ -32,6 +32,9 @@ fail() {
   exit 1
 }
 
+if [ "$#" -ne 0 ]; then
+  fail "NO_ARGUMENTS_ALLOWED"
+fi
 if [ "${EUID}" -ne 0 ]; then
   fail "RUN_WITH_SUDO"
 fi
@@ -42,7 +45,7 @@ if [ "$(hostname)" != "$HOST_EXPECTED" ]; then
   fail "HOST_MISMATCH expected=$HOST_EXPECTED actual=$(hostname)"
 fi
 
-for cmd in /usr/sbin/visudo /usr/bin/python3 /usr/bin/systemctl /usr/bin/systemd-inhibit /usr/bin/sha256sum /usr/bin/date /usr/bin/install /usr/sbin/runuser; do
+for cmd in /usr/sbin/visudo /usr/bin/python3 /usr/bin/systemctl /usr/bin/systemd-inhibit /usr/bin/sha256sum /usr/bin/date /usr/bin/install /usr/sbin/runuser /usr/bin/journalctl; do
   [ -x "$cmd" ] || fail "MISSING_COMMAND:$cmd"
 done
 [ -f "$HELPER_SRC" ] || fail "HELPER_SOURCE_MISSING"
@@ -68,30 +71,53 @@ SYMPHYLAX_STATE="$(runuser -u "$OWNER" -- env XDG_RUNTIME_DIR="/run/user/$OWNER_
 LINGER="$(loginctl show-user "$OWNER" -p Linger --value 2>/dev/null || true)"
 [ "$LINGER" = "yes" ] || fail "LINGER_NOT_ENABLED"
 
-# Never silently extend an existing active APC.
-if [ -f "$CFG" ]; then
-  EXISTING_STATUS="$(python3 - "$CFG" <<'PY'
-import json,sys,datetime as dt
-p=sys.argv[1]
+install -d -m 0755 "$STATE_DIR"
+install -d -m 0700 "$LOG_DIR"
+RECOVERY_DIR="$STATE_DIR/recovery/$(date -u '+%Y%m%dT%H%M%SZ')"
+RECOVERY_PERFORMED=0
+
+# Recover only a previously revoked/incomplete APC. Never overwrite an active one.
+if [ -f "$CFG" ] || [ -e "$HELPER_DST" ] || [ -e "$SUDOERS" ] || [ -e "$AWAKE_UNIT" ] || [ -e "$REVOKE_TIMER" ]; then
+  EXISTING_STATUS="UNKNOWN"
+  if [ -f "$CFG" ]; then
+    EXISTING_STATUS="$(python3 - "$CFG" <<'PY'
+import json,sys
 try:
-    d=json.load(open(p,encoding="utf-8"))
-    exp=dt.datetime.fromisoformat(str(d.get("expires_at_utc","")).replace("Z","+00:00"))
-    active=d.get("status")=="ACTIVE" and dt.datetime.now(dt.timezone.utc)<exp.astimezone(dt.timezone.utc)
-    print("ACTIVE" if active else d.get("status","UNKNOWN"))
+    print(json.load(open(sys.argv[1],encoding="utf-8")).get("status","UNKNOWN"))
 except Exception:
     print("INVALID")
 PY
 )"
-  if [ "$EXISTING_STATUS" = "ACTIVE" ]; then
-    echo "APC_ALREADY_ACTIVE_NO_EXTENSION"
-    "$HELPER_DST" status
-    exit 0
   fi
-  fail "PREVIOUS_APC_STATE_PRESENT:$EXISTING_STATUS (revoke/cleanup explicitly before reinstall)"
+
+  if [ "$EXISTING_STATUS" = "ACTIVE" ]; then
+    fail "ACTIVE_APC_ALREADY_PRESENT_NO_EXTENSION"
+  fi
+  if [ "$EXISTING_STATUS" != "REVOKED" ] && [ "$EXISTING_STATUS" != "UNKNOWN" ]; then
+    fail "UNSAFE_PREVIOUS_APC_STATE:$EXISTING_STATUS"
+  fi
+
+  install -d -m 0700 "$RECOVERY_DIR"
+  if [ -f "$CFG" ]; then
+    cp -a "$CFG" "$RECOVERY_DIR/authorization.before.json"
+  fi
+  systemctl show louksna-r4-awake.service -p LoadState -p ActiveState -p SubState -p Result -p ExecMainStatus -p UnitFileState > "$RECOVERY_DIR/awake.before.txt" 2>&1 || true
+  systemctl show louksna-r4-apc-revoke.timer -p LoadState -p ActiveState -p SubState -p Result -p UnitFileState -p NextElapseUSecRealtime > "$RECOVERY_DIR/timer.before.txt" 2>&1 || true
+  journalctl -u louksna-r4-awake.service -b --no-pager -n 120 > "$RECOVERY_DIR/awake.journal.txt" 2>&1 || true
+
+  systemctl disable --now louksna-r4-awake.service >/dev/null 2>&1 || true
+  systemctl disable --now louksna-r4-apc-revoke.timer >/dev/null 2>&1 || true
+  rm -f -- "$SUDOERS" "$HELPER_DST" "$REVOKE_DST" "$AWAKE_UNIT" "$REVOKE_SERVICE" "$REVOKE_TIMER"
+  rm -rf -- "$CFG_DIR"
+  rm -f -- "$STATE_DIR/NOPASSWD_PROOF.json" "$STATE_DIR/ACTIVATION_EVIDENCE.json"
+  systemctl daemon-reload
+  RECOVERY_PERFORMED=1
+  echo "PREVIOUS_REVOKED_APC_RECOVERY=PASS"
+  echo "RECOVERY_EVIDENCE=$RECOVERY_DIR"
 fi
 
 for p in "$HELPER_DST" "$REVOKE_DST" "$SUDOERS" "$AWAKE_UNIT" "$REVOKE_SERVICE" "$REVOKE_TIMER"; do
-  [ ! -e "$p" ] || fail "TARGET_ALREADY_EXISTS:$p"
+  [ ! -e "$p" ] || fail "TARGET_ALREADY_EXISTS_AFTER_RECOVERY:$p"
 done
 
 CREATED_AT="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
@@ -103,30 +129,31 @@ HELPER_SHA="$(sha256sum "$HELPER_SRC" | awk '{print $1}')"
 REVOKE_SHA="$(sha256sum "$REVOKE_SRC" | awk '{print $1}')"
 
 CLEANUP_NEEDED=1
-rollback_on_error() {
+cleanup_on_exit() {
   rc=$?
-  if [ "$CLEANUP_NEEDED" -eq 1 ]; then
+  if [ "$rc" -ne 0 ] && [ "$CLEANUP_NEEDED" -eq 1 ]; then
     echo "ROLLBACK:activation failed rc=$rc" >&2
     systemctl disable --now louksna-r4-awake.service >/dev/null 2>&1 || true
     systemctl disable --now louksna-r4-apc-revoke.timer >/dev/null 2>&1 || true
     rm -f -- "$SUDOERS" "$HELPER_DST" "$REVOKE_DST" "$AWAKE_UNIT" "$REVOKE_SERVICE" "$REVOKE_TIMER"
-    systemctl daemon-reload >/dev/null 2>&1 || true
     rm -rf -- "$CFG_DIR"
+    rm -f -- "$STATE_DIR/NOPASSWD_PROOF.json" "$STATE_DIR/ACTIVATION_EVIDENCE.json"
+    systemctl daemon-reload >/dev/null 2>&1 || true
   fi
-  exit "$rc"
 }
-trap rollback_on_error ERR INT TERM
+trap cleanup_on_exit EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
-install -d -m 0755 /usr/local/libexec "$CFG_DIR" "$STATE_DIR"
-install -d -m 0700 "$LOG_DIR"
+install -d -m 0755 /usr/local/libexec "$CFG_DIR"
 install -o root -g root -m 0755 "$HELPER_SRC" "$HELPER_DST"
 install -o root -g root -m 0755 "$REVOKE_SRC" "$REVOKE_DST"
 
-python3 - "$CFG" "$CREATED_AT" "$EXPIRES_AT" "$CHECKPOINT" "$UI_REF" "$IMAGE_SHA" "$KDE_SHA" "$SERVER_READY_RUN" "$HELPER_SHA" "$REVOKE_SHA" "$BOOT_ID" <<'PY'
+python3 - "$CFG" "$CREATED_AT" "$EXPIRES_AT" "$CHECKPOINT" "$UI_REF" "$IMAGE_SHA" "$KDE_SHA" "$SERVER_READY_RUN" "$HELPER_SHA" "$REVOKE_SHA" "$BOOT_ID" "$RECOVERY_PERFORMED" "$RECOVERY_DIR" <<'PY'
 import json,sys,os,pathlib
-(cfg,created,expires,checkpoint,ui,image_sha,kde_sha,server_run,helper_sha,revoke_sha,boot_id)=sys.argv[1:]
+(cfg,created,expires,checkpoint,ui,image_sha,kde_sha,server_run,helper_sha,revoke_sha,boot_id,recovery_performed,recovery_dir)=sys.argv[1:]
 obj={
-  "schema":"LOUKSNA_R4_APC_AUTHORIZATION/1.0",
+  "schema":"LOUKSNA_R4_APC_AUTHORIZATION/2.0",
   "status":"ACTIVE",
   "owner":"diegoignacionorambuenamiranda",
   "created_at_utc":created,
@@ -145,6 +172,7 @@ obj={
   "repeat_server_ready":False,
   "helper_sha256":helper_sha,
   "revoke_sha256":revoke_sha,
+  "recovery":{"performed":recovery_performed=="1","evidence_dir":recovery_dir if recovery_performed=="1" else None},
   "authority_scope":{
     "arbitrary_root_shell":False,
     "sudo_all":False,
@@ -175,7 +203,7 @@ ConditionPathExists=/etc/louksna-r4-apc/authorization.json
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/systemd-inhibit --what=sleep:idle:handle-lid-switch --who=LOUKSNA-R4-APC --why=Governed R4 installation window --mode=block /usr/bin/sleep infinity
+ExecStart=/usr/bin/systemd-inhibit --what=sleep:idle:handle-lid-switch --who=LOUKSNA-R4-APC --why=LOUKSNA-R4-governed-installation-window --mode=block /usr/bin/sleep infinity
 Restart=on-failure
 RestartSec=3
 NoNewPrivileges=yes
@@ -227,10 +255,21 @@ systemctl daemon-reload
 systemctl enable --now louksna-r4-awake.service
 systemctl enable --now louksna-r4-apc-revoke.timer
 
-[ "$(systemctl is-active louksna-r4-awake.service)" = "active" ] || fail "AWAKE_GUARD_NOT_ACTIVE"
-[ "$(systemctl is-active louksna-r4-apc-revoke.timer)" = "active" ] || fail "REVOCATION_TIMER_NOT_ACTIVE"
+for _ in 1 2 3 4 5; do
+  [ "$(systemctl is-active louksna-r4-awake.service 2>/dev/null || true)" = "active" ] && break
+  sleep 1
+done
+[ "$(systemctl is-active louksna-r4-awake.service 2>/dev/null || true)" = "active" ] || fail "AWAKE_GUARD_NOT_ACTIVE"
 
-# Prove the user can invoke only the governed helper without another password.
+AWAKE_PID_1="$(systemctl show louksna-r4-awake.service -p MainPID --value)"
+[ "$AWAKE_PID_1" != "0" ] || fail "AWAKE_GUARD_PID_ZERO"
+sleep 2
+[ "$(systemctl is-active louksna-r4-awake.service 2>/dev/null || true)" = "active" ] || fail "AWAKE_GUARD_NOT_STABLE"
+AWAKE_PID_2="$(systemctl show louksna-r4-awake.service -p MainPID --value)"
+[ "$AWAKE_PID_2" = "$AWAKE_PID_1" ] || fail "AWAKE_GUARD_PID_CHANGED_DURING_STABILITY_WINDOW"
+
+[ "$(systemctl is-active louksna-r4-apc-revoke.timer 2>/dev/null || true)" = "active" ] || fail "REVOCATION_TIMER_NOT_ACTIVE"
+
 runuser -u "$OWNER" -- sudo -n /usr/local/sbin/louksna-apc status > "$STATE_DIR/NOPASSWD_PROOF.json"
 chmod 0644 "$STATE_DIR/NOPASSWD_PROOF.json"
 
@@ -243,11 +282,11 @@ TIMER_SHA="$(sha256sum "$REVOKE_TIMER" | awk '{print $1}')"
 [ "$HELPER_DST_SHA" = "$HELPER_SHA" ] || fail "HELPER_INSTALL_HASH_MISMATCH"
 [ "$REVOKE_DST_SHA" = "$REVOKE_SHA" ] || fail "REVOKE_INSTALL_HASH_MISMATCH"
 
-python3 - "$STATE_DIR/ACTIVATION_EVIDENCE.json" "$CREATED_AT" "$EXPIRES_AT" "$BOOT_ID" "$HELPER_DST_SHA" "$REVOKE_DST_SHA" "$SUDOERS_SHA" "$AWAKE_SHA" "$TIMER_SHA" "$IMAGE_SHA" "$KDE_SHA" <<'PY'
+python3 - "$STATE_DIR/ACTIVATION_EVIDENCE.json" "$CREATED_AT" "$EXPIRES_AT" "$BOOT_ID" "$HELPER_DST_SHA" "$REVOKE_DST_SHA" "$SUDOERS_SHA" "$AWAKE_SHA" "$TIMER_SHA" "$IMAGE_SHA" "$KDE_SHA" "$AWAKE_PID_2" "$RECOVERY_PERFORMED" "$RECOVERY_DIR" <<'PY'
 import json,sys,os,pathlib
-(out,created,expires,boot,helper,revoke,sudoers,awake,timer,image,kde)=sys.argv[1:]
+(out,created,expires,boot,helper,revoke,sudoers,awake,timer,image,kde,awake_pid,recovery_performed,recovery_dir)=sys.argv[1:]
 obj={
- "schema":"LOUKSNA_R4_APC_ACTIVATION_EVIDENCE/1.0",
+ "schema":"LOUKSNA_R4_APC_ACTIVATION_EVIDENCE/2.0",
  "status":"PASS",
  "created_at_utc":created,
  "expires_at_utc":expires,
@@ -257,8 +296,10 @@ obj={
  "symphylax_active":True,
  "linger":True,
  "nopasswd_proof":"PASS",
- "awake_guard":"ACTIVE",
+ "awake_guard":"ACTIVE_STABLE",
+ "awake_main_pid":int(awake_pid),
  "automatic_revoke_timer":"ACTIVE",
+ "recovery":{"performed":recovery_performed=="1","evidence_dir":recovery_dir if recovery_performed=="1" else None},
  "hashes":{
    "helper":helper,"revoke":revoke,"sudoers":sudoers,
    "awake_unit":awake,"revoke_timer":timer,
@@ -275,7 +316,8 @@ obj={
    "nopasswd_all":False,
    "arbitrary_root_shell":False,
    "canonical_mutation":False,
-   "automatic_expiry_hard_bound":"sudoers NOTAFTER + systemd timer"
+   "automatic_expiry_hard_bound":"sudoers NOTAFTER + systemd timer",
+   "transactional_rollback":"EXIT_TRAP"
  }
 }
 p=pathlib.Path(out)
@@ -288,11 +330,11 @@ chown "$OWNER:$OWNER" "$SELF_DIR/ACTIVATION_EVIDENCE.json"
 chmod 0644 "$SELF_DIR/ACTIVATION_EVIDENCE.json"
 
 CLEANUP_NEEDED=0
-trap - ERR INT TERM
+trap - EXIT INT TERM
 
 echo
 echo "============================================================"
-echo "LOUKSNA R4 APC 48H = ACTIVADO"
+echo "LOUKSNA R4 APC 48H V2 = ACTIVADO"
 echo "============================================================"
 echo "CREATED_AT_UTC=$CREATED_AT"
 echo "EXPIRES_AT_UTC=$EXPIRES_AT"
@@ -303,14 +345,13 @@ echo "PART2_GATE=PART1_POST_VALIDATION_PASS"
 echo "RUNNER=active"
 echo "SYMPHYLAX=active"
 echo "LINGER=yes"
-echo "AWAKE_GUARD=active"
+echo "AWAKE_GUARD=active_stable"
+echo "AWAKE_MAIN_PID=$AWAKE_PID_2"
 echo "NOPASSWD_PROOF=PASS"
+echo "RECOVERY_PERFORMED=$RECOVERY_PERFORMED"
 echo
 echo "Estado:"
 runuser -u "$OWNER" -- sudo -n /usr/local/sbin/louksna-apc status
-echo
-echo "Siguiente interfaz privilegiada gobernada:"
-echo "  sudo -n /usr/local/sbin/louksna-apc <accion>"
 echo
 echo "Revocacion manual:"
 echo "  sudo -n /usr/local/sbin/louksna-apc revoke"
