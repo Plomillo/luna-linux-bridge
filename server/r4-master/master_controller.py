@@ -380,7 +380,11 @@ def current_part():
     return None
 
 def supervise_once(worker,mid):
-    tick=worker.mission_tick(mid); atomic_json(STATE/"LAST_HEARTBEAT.json",tick)
+    try:
+        tick=worker.mission_tick(mid)
+    except Exception as e:
+        tick={"status":"DEGRADED_SUPERVISION_LOCAL_FALLBACK","mission_id":mid,"error":type(e).__name__+":"+str(e),"utc":utc(),"authority":"Louksna.md","canonical_mutation":False}
+    atomic_json(STATE/"LAST_HEARTBEAT.json",tick)
     part=current_part()
     if part is None:
         atomic_json(STATE/"MASTER_STATUS.json",{"status":"COMPLETE","global_mission_status":"COMPLETE","mission_id":mid,"utc":utc()}); return "COMPLETE"
