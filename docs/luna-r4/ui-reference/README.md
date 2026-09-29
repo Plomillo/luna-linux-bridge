@@ -30,3 +30,21 @@ Este directorio preserva dos artefactos autorizados por el propietario como refe
 El workflow `.github/workflows/r4-ui-reference-import.yml` reconstruye la imagen desde transporte base64, toma el snapshot KDE de solo lectura desde el escritorio del runner LOUKSNA, verifica ambos SHA-256 y únicamente entonces los incorpora a esta rama junto con evidencia.
 
 Doctrina: `EVIDENCE_FIRST / FAIL_CLOSED / NO_SILENT_OPERATIONS / EXTEND_DO_NOT_REPLACE`.
+
+## Referencia física en el servidor
+
+Además de la copia versionada en GitHub, la referencia debe estar materializada en el host LOUKSNA bajo:
+
+```text
+/home/diegoignacionorambuenamiranda/Descargas/LUNA_R4_UI_REFERENCE/
+```
+
+Contenido esperado:
+
+- `LUNA_R4_UI_REFERENCE_PARTS_1_9.jpg`
+- `KDE_UI_REFERENCE_20260929T020349Z.7z`
+- `REFERENCE_MANIFEST.json`
+- `README.md`
+- `LOCAL_REFERENCE_MANIFEST.json`
+
+La copia física es una referencia operativa local, no una nueva autoridad. Debe coincidir por SHA-256 con los artefactos versionados en esta rama. Cualquier divergencia produce `HOLD` y no debe sobreescribirse silenciosamente.
