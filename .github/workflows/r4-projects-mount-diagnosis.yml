@@ -1,0 +1,39 @@
+name: "R4 PART3 — diagnose PROYECTOS mount"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-projects-mount-diagnosis/**
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 4
+    steps:
+      - name: Diagnose PROYECTOS binding and Windows mount read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "=== SYMLINKS ==="
+          for p in "$HOME/Proyectos" "$HOME/Luna R4/Proyectos"; do
+            printf '%s -> ' "$p"
+            readlink "$p" || true
+            stat -c 'type=%F mode=%a inode=%i' "$p" 2>/dev/null || true
+          done
+          echo "=== LSBLK ==="
+          lsblk -o NAME,PATH,TYPE,FSTYPE,LABEL,UUID,SIZE,MOUNTPOINTS
+          echo "=== FINDMNT ==="
+          findmnt -rn -o TARGET,SOURCE,FSTYPE,OPTIONS || true
+          echo "=== TARGET DEVICE ==="
+          ls -l /dev/nvme0n1p3 2>/dev/null || true
+          udevadm info --query=property --name=/dev/nvme0n1p3 2>/dev/null | grep -E '^(ID_FS_|ID_PART_|DEVNAME=)' || true
+          echo "=== FSTAB ==="
+          grep -nE 'nvme0n1p3|Windows|PROYECTOS|ntfs' /etc/fstab 2>/dev/null || true
+          echo "=== UDISKS ==="
+          command -v udisksctl || true
+          udisksctl info -b /dev/nvme0n1p3 2>/dev/null | sed -n '1,180p' || true
