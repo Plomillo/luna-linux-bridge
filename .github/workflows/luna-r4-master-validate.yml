@@ -61,10 +61,11 @@ jobs:
           assert "publish_and_certify" in controller
           assert "luna-r4-master-part-certify.yml" in controller
           assert "PART4_H2_H4.json" in controller
+          assert "PART_4_R2/STATE.json" in controller
+          assert "PART4_R2_AMENDMENT.json" in runner
           assert "NoNewPrivileges=yes" not in runner
           assert "ProtectSystem=full" not in runner
-          assert "sudo -v" in runner
-          assert "sudo -n /usr/local/sbin/louksna-apc status" in runner
+          assert "systemctl --user enable --now luna-r4-master-part1-part9.service" in runner
           assert pins["mojo"]["version"]=="1.1.0"
           print("R4_MASTER_STATIC_VALIDATION=PASS")
           PY
