@@ -1,0 +1,38 @@
+name: "R4 PART3 — inspect CUSTOS local API"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part3-custos-api/**
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 3
+    steps:
+      - name: Read callable signatures
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          PYZ="$HOME/.local/lib/louksna/symphylax-r1/CUSTOSZ.v07.f04_b.pyz"
+          test -f "$PYZ"
+          python3 -B -I - "$PYZ" <<'PY'
+          import inspect, json, sys
+          sys.path.insert(0,sys.argv[1])
+          import custosz_v05_legacy as w
+          for name in ("run","broker","mission_start","mission_tick","mission_supervise","load_mission"):
+              obj=getattr(w,name,None)
+              if obj is None:
+                  continue
+              print("===",name,inspect.signature(obj))
+              try:
+                  src=inspect.getsource(obj)
+                  print(src[:8000])
+              except Exception as e:
+                  print(type(e).__name__,e)
+          PY
