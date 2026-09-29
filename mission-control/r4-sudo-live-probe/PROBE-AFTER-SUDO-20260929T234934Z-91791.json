@@ -1,0 +1,10 @@
+{
+  "destructive": false,
+  "host": "LOUKSNA",
+  "install_id": "20260929T234934Z-91791",
+  "purpose": "Verify permanent sudo from Maestro self-hosted runner",
+  "requested_at_utc": "2026-09-29T23:49:35.487124+00:00",
+  "schema": "LOUKSNA_R4_SUDO_LIVE_PROBE_REQUEST/1.0",
+  "status": "REQUESTED",
+  "user": "diegoignacionorambuenamiranda"
+}
