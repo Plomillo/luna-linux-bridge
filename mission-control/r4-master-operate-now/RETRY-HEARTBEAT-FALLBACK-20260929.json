@@ -1,0 +1,11 @@
+{
+  "schema": "LOUKSNA_R4_OPERATE_NOW_RETRY/1.0",
+  "reason": "CUSTOSZ_HEARTBEAT_FALLBACK_ENABLED",
+  "checkpoint": "20260926T034746Z-38579",
+  "action": "RESUME_NOW",
+  "notify_user_only_on": [
+    "NEEDS_PRIVILEGE",
+    "NEEDS_HUMAN_AUTHORIZATION"
+  ],
+  "fail_closed": true
+}
