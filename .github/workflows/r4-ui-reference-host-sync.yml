@@ -1,0 +1,172 @@
+name: "R4 UI reference — sync verified copy to physical host"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-ui-reference-20260929
+    paths:
+      - .github/workflows/r4-ui-reference-host-sync.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r4-ui-reference-host-sync
+  cancel-in-progress: false
+
+jobs:
+  sync-host-reference:
+    name: "Materialize local UI reference on LOUKSNA host"
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout exact reference branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Verify source and target boundary
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          PARENT="/home/diegoignacionorambuenamiranda/Descargas"
+          TARGET="$PARENT/LUNA_R4_UI_REFERENCE"
+          SOURCE="docs/luna-r4/ui-reference"
+
+          test -d "$PARENT"
+          test ! -L "$PARENT"
+          test -w "$PARENT"
+          test "$(stat -c %u "$PARENT")" = "$(id -u)"
+
+          test -f "$SOURCE/LUNA_R4_UI_REFERENCE_PARTS_1_9.jpg"
+          test -f "$SOURCE/KDE_UI_REFERENCE_20260929T020349Z.7z"
+          test -f "$SOURCE/REFERENCE_MANIFEST.json"
+          test -f "$SOURCE/README.md"
+
+          IMAGE_SHA="$(sha256sum "$SOURCE/LUNA_R4_UI_REFERENCE_PARTS_1_9.jpg" | awk '{print $1}')"
+          KDE_SHA="$(sha256sum "$SOURCE/KDE_UI_REFERENCE_20260929T020349Z.7z" | awk '{print $1}')"
+
+          test "$IMAGE_SHA" = "8a9852c4155d64fd74059c7239e67c82e16e5acd556627d70575db85078d4ed4"
+          test "$KDE_SHA" = "c21e04d5447e123b59fc9b94d2e9684bc03ea164999ef6f60210e257557a16dc"
+
+          umask 077
+          mkdir -p "$TARGET"
+          test ! -L "$TARGET"
+
+          printf '%s\n' "$TARGET" > "$RUNNER_TEMP/r4-ui-reference-target.txt"
+          printf '%s\n' "$IMAGE_SHA" > "$RUNNER_TEMP/r4-ui-reference-image.sha256"
+          printf '%s\n' "$KDE_SHA" > "$RUNNER_TEMP/r4-ui-reference-kde.sha256"
+
+      - name: Materialize without silent overwrite
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          SOURCE="docs/luna-r4/ui-reference"
+          TARGET="$(cat "$RUNNER_TEMP/r4-ui-reference-target.txt")"
+
+          copy_fail_closed() {
+            src="$1"
+            dst="$2"
+
+            if test -L "$dst"; then
+              echo "HOLD: target is symlink: $dst" >&2
+              exit 41
+            fi
+
+            if test -e "$dst"; then
+              SRC_SHA="$(sha256sum "$src" | awk '{print $1}')"
+              DST_SHA="$(sha256sum "$dst" | awk '{print $1}')"
+              if test "$SRC_SHA" != "$DST_SHA"; then
+                echo "HOLD: physical reference diverges: $dst" >&2
+                echo "SOURCE_SHA256=$SRC_SHA" >&2
+                echo "TARGET_SHA256=$DST_SHA" >&2
+                exit 42
+              fi
+              echo "UNCHANGED_MATCH=$dst"
+            else
+              install -m 0600 -- "$src" "$dst"
+              echo "MATERIALIZED=$dst"
+            fi
+          }
+
+          copy_fail_closed             "$SOURCE/LUNA_R4_UI_REFERENCE_PARTS_1_9.jpg"             "$TARGET/LUNA_R4_UI_REFERENCE_PARTS_1_9.jpg"
+
+          copy_fail_closed             "$SOURCE/KDE_UI_REFERENCE_20260929T020349Z.7z"             "$TARGET/KDE_UI_REFERENCE_20260929T020349Z.7z"
+
+          copy_fail_closed             "$SOURCE/REFERENCE_MANIFEST.json"             "$TARGET/REFERENCE_MANIFEST.json"
+
+          copy_fail_closed             "$SOURCE/README.md"             "$TARGET/README.md"
+
+      - name: Write local evidence and verify final hashes
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          TARGET="$(cat "$RUNNER_TEMP/r4-ui-reference-target.txt")"
+          IMAGE_EXPECTED="$(cat "$RUNNER_TEMP/r4-ui-reference-image.sha256")"
+          KDE_EXPECTED="$(cat "$RUNNER_TEMP/r4-ui-reference-kde.sha256")"
+
+          IMAGE_ACTUAL="$(sha256sum "$TARGET/LUNA_R4_UI_REFERENCE_PARTS_1_9.jpg" | awk '{print $1}')"
+          KDE_ACTUAL="$(sha256sum "$TARGET/KDE_UI_REFERENCE_20260929T020349Z.7z" | awk '{print $1}')"
+
+          test "$IMAGE_ACTUAL" = "$IMAGE_EXPECTED"
+          test "$KDE_ACTUAL" = "$KDE_EXPECTED"
+
+          export TARGET IMAGE_ACTUAL KDE_ACTUAL
+          python3 - <<'PY'
+          import json, os, pathlib, datetime
+
+          target = pathlib.Path(os.environ["TARGET"])
+          evidence = {
+              "status": "PASS",
+              "role": "LOCAL_OPERATIONAL_REFERENCE",
+              "authority": False,
+              "canonical_mutation": False,
+              "repository": os.environ["GITHUB_REPOSITORY"],
+              "branch": os.environ["GITHUB_REF_NAME"],
+              "source_commit": os.environ["GITHUB_SHA"],
+              "runner_user": os.environ.get("USER", ""),
+              "physical_root": str(target),
+              "materialized_at_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+              "artifacts": {
+                  "LUNA_R4_UI_REFERENCE_PARTS_1_9.jpg": {
+                      "sha256": os.environ["IMAGE_ACTUAL"],
+                      "bytes": (target / "LUNA_R4_UI_REFERENCE_PARTS_1_9.jpg").stat().st_size,
+                  },
+                  "KDE_UI_REFERENCE_20260929T020349Z.7z": {
+                      "sha256": os.environ["KDE_ACTUAL"],
+                      "bytes": (target / "KDE_UI_REFERENCE_20260929T020349Z.7z").stat().st_size,
+                  },
+              },
+              "policy": {
+                  "silent_overwrite": False,
+                  "divergence_action": "HOLD",
+                  "must_match_repository_sha256": True,
+              },
+          }
+          p = target / "LOCAL_REFERENCE_MANIFEST.json"
+          tmp = target / ".LOCAL_REFERENCE_MANIFEST.json.tmp"
+          tmp.write_text(json.dumps(evidence, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+          tmp.chmod(0o600)
+          tmp.replace(p)
+
+          out = pathlib.Path(os.environ["RUNNER_TEMP"]) / "r4-ui-host-sync-evidence"
+          out.mkdir(parents=True, exist_ok=True)
+          (out / "LOCAL_REFERENCE_MANIFEST.json").write_bytes(p.read_bytes())
+          (out / "TARGET_PATH.txt").write_text(str(target) + "\n", encoding="utf-8")
+          PY
+
+          echo "PHYSICAL_REFERENCE_ROOT=$TARGET"
+          echo "IMAGE_SHA256=$IMAGE_ACTUAL"
+          echo "KDE_SHA256=$KDE_ACTUAL"
+          echo "HOST_SYNC=PASS"
+
+      - name: Preserve host-sync evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-ui-reference-host-sync-evidence
+          path: ${{ runner.temp }}/r4-ui-host-sync-evidence
+          if-no-files-found: warn
