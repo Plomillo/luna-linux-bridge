@@ -1,0 +1,46 @@
+name: "R4 PART3 — discover existing Projects Center and Semantic Container"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part3-discovery/**
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 4
+    steps:
+      - name: Bounded read-only discovery
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="/home/diegoignacionorambuenamiranda/LOUKSNA_MAESTRO_20260925"
+          HOME_REAL="/home/diegoignacionorambuenamiranda"
+          echo "=== PROJECT_ROOT ==="
+          test -d "$ROOT"
+          printf 'ROOT=%s\n' "$ROOT"
+
+          echo "=== PROJECTS CENTER CANDIDATES ==="
+          find "$ROOT" -xdev -maxdepth 8 \( -type f -o -type d \) \
+            \( -iname '*project*center*' -o -iname '*projects*center*' -o -iname '*centro*proyecto*' -o -iname '*proyectos*center*' \) \
+            -printf '%y\t%p\n' 2>/dev/null | sort | head -n 250
+
+          echo "=== SEMANTIC CONTAINER CANDIDATES ==="
+          find "$ROOT" -xdev -maxdepth 9 \( -type f -o -type d \) \
+            \( -iname '*semantic*container*' -o -iname '*contenedor*semantic*' -o -iname 'SOURCE_REGISTRY.json' -o -iname '*semantic*registry*' \) \
+            -printf '%y\t%p\n' 2>/dev/null | sort | head -n 250
+
+          echo "=== BROADER PROJECT/SEMANTIC SIGNALS ==="
+          find "$ROOT" -xdev -maxdepth 6 \( -type f -o -type d \) \
+            \( -iname '*project*' -o -iname '*proyecto*' -o -iname '*semantic*' -o -iname '*semant*' \) \
+            -printf '%y\t%p\n' 2>/dev/null | sort | head -n 500
+
+          echo "=== LOCAL LOUKSNA COMPONENTS ==="
+          find "$HOME_REAL/.local/lib/louksna" -maxdepth 5 \( -type f -o -type d \) \
+            \( -iname '*project*' -o -iname '*semantic*' -o -iname '*container*' -o -iname '*registry*' \) \
+            -printf '%y\t%p\n' 2>/dev/null | sort | head -n 300
