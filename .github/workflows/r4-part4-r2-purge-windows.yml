@@ -57,6 +57,11 @@ jobs:
           assert r["part5_to_part9_unchanged"] is True
           PY
 
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+          test -S "$XDG_RUNTIME_DIR/bus"
+
           bash server/r4-master/MASTER_RUN.sh
           systemctl --user restart luna-r4-master-part1-part9.service
           sleep 2
