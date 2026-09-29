@@ -1,0 +1,162 @@
+name: "LUNA R4 master — per-part G23 G24 certification"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - evidence/r4-master/**/MATERIAL_EVIDENCE.json
+
+permissions:
+  contents: read
+  id-token: write
+  actions: read
+
+concurrency:
+  group: r4-master-cert-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  g23:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Resolve exact evidence file
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mapfile -t files < <(git diff-tree --no-commit-id --name-only -r "$GITHUB_SHA" | grep '^evidence/r4-master/.*/MATERIAL_EVIDENCE.json$' || true)
+          test "${#files[@]}" -eq 1
+          printf '%s\n' "${files[0]}" > "$RUNNER_TEMP/EVIDENCE_PATH"
+          echo "EVIDENCE_PATH=${files[0]}"
+
+      - name: Independent G23 validation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/EVIDENCE_PATH" "$RUNNER_TEMP/g23/G23.json" <<'PY'
+          import datetime as dt, hashlib, json, pathlib, re, sys
+          path=pathlib.Path(pathlib.Path(sys.argv[1]).read_text().strip())
+          out=pathlib.Path(sys.argv[2])
+          data=json.loads(path.read_text(encoding="utf-8"))
+          part=str(data.get("part",""))
+          checks={
+              "schema": data.get("schema")=="LOUKSNA_R4_PART_MATERIAL_EVIDENCE/1.0",
+              "part": bool(re.fullmatch(r"PART_[1-9]",part)),
+              "status": data.get("status")=="PASS",
+              "authority": data.get("authority")=="Louksna.md",
+              "canonical_mutation_false": data.get("canonical_mutation") is False,
+              "authority_transfer_false": data.get("authority_transfer") is False,
+              "traceability": bool(data.get("operation_id")) and bool(data.get("checkpoint")) and bool(data.get("rollback_pointer")),
+              "validation_pass": data.get("validation")=="PASS",
+              "non_regression_pass": data.get("non_regression")=="PASS",
+              "previous_gate": part=="PART_1" or bool(data.get("previous_part_g24_sha256")),
+              "no_fake_pass": data.get("self_certified") is False,
+          }
+          if part=="PART_4":
+              hg=data.get("human_gates",{})
+              checks.update({
+                  "h2": hg.get("H2") is True,
+                  "h4": hg.get("H4") is True,
+                  "two_backups": data.get("two_verified_backups") is True,
+                  "restore_proof": data.get("restore_proof") is True,
+                  "disk_scope_g23_precondition": data.get("destructive_scope_prevalidated") is True,
+              })
+          if part=="PART_9":
+              checks["all_prior_parts_bound"]=len(data.get("prior_part_certificates",[]))==8
+              checks["final_postinstall_matrix"]=data.get("postinstall_matrix")=="PASS"
+              checks["rollback_survives"]=data.get("rollback_survives") is True
+          passed=all(checks.values())
+          raw=path.read_bytes()
+          result={
+              "schema":"LOUKSNA_R4_PART_G23/1.0",
+              "status":"PASS" if passed else "HOLD",
+              "part":part,
+              "evidence_path":path.as_posix(),
+              "evidence_sha256":hashlib.sha256(raw).hexdigest(),
+              "checks":checks,
+              "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+              "independent_reader":"GITHUB_HOSTED_UBUNTU_24_04",
+              "repair_allowed":False,
+              "g24_allowed":passed,
+          }
+          out.write_text(json.dumps(result,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps(result,indent=2,sort_keys=True))
+          if not passed:
+              raise SystemExit(3)
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-master-g23
+          path: ${{ runner.temp }}/g23
+          if-no-files-found: error
+          retention-days: 90
+
+  g24:
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-master-g23
+          path: ${{ runner.temp }}/g23
+
+      - name: Issue digest-bound G24 certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g24"
+          DIGEST="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["evidence_sha256"])' "$RUNNER_TEMP/g23/G23.json")"
+          PART="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["part"])' "$RUNNER_TEMP/g23/G23.json")"
+          AUD="louksna-r4-master-g24:$PART:$DIGEST"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export TOKEN DIGEST PART AUD
+          python3 - "$RUNNER_TEMP/g23/G23.json" "$RUNNER_TEMP/g24/G24.json" <<'PY'
+          import base64, datetime as dt, hashlib, json, os, pathlib, sys
+          g23=json.load(open(sys.argv[1],encoding="utf-8"))
+          if g23.get("status")!="PASS" or not g23.get("g24_allowed"):
+              raise SystemExit("G23_NOT_PASS")
+          token=os.environ["TOKEN"]
+          parts=token.split(".")
+          if len(parts)!=3: raise SystemExit("OIDC_FORMAT")
+          payload=parts[1]+"="*((4-len(parts[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload))
+          aud=claims.get("aud")
+          expected=os.environ["AUD"]
+          if aud!=expected and not (isinstance(aud,list) and expected in aud):
+              raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge":
+              raise SystemExit("OIDC_REPOSITORY")
+          cert={
+              "schema":"LOUKSNA_R4_PART_G24/1.0",
+              "status":"PASS",
+              "part":os.environ["PART"],
+              "evidence_sha256":os.environ["DIGEST"],
+              "g23_status":"PASS",
+              "authority_authenticated":True,
+              "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(token.encode()).hexdigest(),
+              "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+              "canonical_mutation":False,
+              "authority_transfer":False,
+              "certificate_scope":"LUNA_R4_"+os.environ["PART"]+"_ACTUAL_EVIDENCE",
+          }
+          pathlib.Path(sys.argv[2]).write_text(json.dumps(cert,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps(cert,indent=2,sort_keys=True))
+          PY
+          unset TOKEN RESP
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-master-g24
+          path: ${{ runner.temp }}/g24
+          if-no-files-found: error
+          retention-days: 90
