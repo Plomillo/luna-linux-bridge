@@ -1,0 +1,7 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_NTFSFIX_NOACTION_REQUEST/1.0",
+  "status": "REQUESTED",
+  "target": "/dev/nvme0n1p3",
+  "destructive": false,
+  "purpose": "Determine whether ntfsfix reports a repairable NTFS inconsistency without modifying the filesystem."
+}
