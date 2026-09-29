@@ -10,7 +10,7 @@ on:
 
 permissions:
   contents: read
-  actions: read
+  actions: write
   id-token: write
 
 concurrency:
@@ -55,6 +55,15 @@ jobs:
           assert r["status"]=="PASS"
           assert r["amendment_id"]=="PART4-R2-20260929"
           assert r["part5_to_part9_unchanged"] is True
+          PY
+
+          R2STATE="$HOME/.local/state/louksna/r4-master-part1-part9/PART_4_R2/STATE.json"
+          test -f "$R2STATE"
+          python3 - "$R2STATE" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1]))
+          assert d.get("autopilot_g24") is True
+          assert d.get("r2_owner_authorized") is True
           PY
 
           UIDN="$(id -u)"
@@ -148,8 +157,8 @@ jobs:
           (out/"PURGE_SCOPE.json").write_text(data,encoding="utf-8")
           (out/"PURGE_SCOPE.sha256").write_text(hashlib.sha256(data.encode()).hexdigest()+"  PURGE_SCOPE.json\n")
 
-          s={
-            "schema":"LOUKSNA_R4_PART4_R2_STATE/1.0",
+          s=json.loads(state.read_text()) if state.is_file() else {"schema":"LOUKSNA_R4_PART4_R2_STATE/1.0"}
+          s.update({
             "r2_owner_authorized":True,
             "freeze_g24":True,
             "amendment_g24":True,
@@ -162,9 +171,10 @@ jobs:
             "projects_migrated_hash_equivalent":False,
             "ntfs_retired":False,
             "final_linux_layout":False,
+            "part4_r2_final_g24":False,
             "certified_freeze_manifest_sha256":"99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
             "updated_at_utc":report["timestamp_utc"]
-          }
+          })
           tmp=state.with_suffix(".tmp"); tmp.write_text(json.dumps(s,indent=2,sort_keys=True)+"\n"); os.replace(tmp,state)
           print(data)
           PY
@@ -350,8 +360,28 @@ jobs:
                   prescan["objects"]+=1
                   if stat.S_ISREG(mode): prescan["bytes_regular"]+=os.lstat(tp).st_size
 
+          # Deterministic permission remediation limited to deletion targets only.
+          # Never traverses or mutates PROYECTOS. Directories owned by the runner
+          # may be made owner-writable/searchable solely to permit their removal.
+          uid=os.getuid(); permission_remediation=[]
+          for tp,mode in targets:
+              if not stat.S_ISDIR(mode): continue
+              for d,dirs,files in os.walk(tp,topdown=True,followlinks=False):
+                  st=os.lstat(d)
+                  if st.st_dev!=root_st.st_dev: raise SystemExit("REMEDIATION_DEVICE_BOUNDARY:"+d)
+                  if st.st_uid==uid:
+                      old=stat.S_IMODE(st.st_mode); new=old|0o300
+                      if new!=old:
+                          os.chmod(d,new,follow_symlinks=False)
+                          permission_remediation.append({"path":d,"old_mode":oct(old),"new_mode":oct(new)})
+                  elif not os.access(d,os.W_OK|os.X_OK):
+                      raise SystemExit("REMEDIATION_OWNER_MISMATCH:"+d+":uid="+str(st.st_uid))
+                  for n in list(dirs):
+                      p=os.path.join(d,n); stc=os.lstat(p)
+                      if stat.S_ISLNK(stc.st_mode): dirs.remove(n)
+
           report={"schema":"LOUKSNA_R4_PART4_R2_WINDOWS_PURGE/1.0","status":"RUNNING","root":str(root),"keep_exact":str(keep),
-                  "targets":[x[0] for x in targets],"prescan":prescan,"deleted_top_level":[],"errors":[],
+                  "targets":[x[0] for x in targets],"prescan":prescan,"permission_remediation":permission_remediation,"deleted_top_level":[],"errors":[],
                   "rollback_scope":"PROTECTED_PROYECTOS_AND_GOVERNED_STATE_ONLY",
                   "discarded_windows_scope_recovery":"INTENTIONALLY_NOT_PRESERVED_BY_OWNER_AUTHORIZATION",
                   "started_at_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())}
@@ -586,3 +616,33 @@ jobs:
           path: ${{ runner.temp }}/g24/G24_POST_PURGE.json
           retention-days: 90
           compression-level: 0
+
+  handoff_storage:
+    name: Mark post-purge G24 and hand off to autonomous storage migration
+    needs: post_g24
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-post-purge-g24
+          path: ${{ runner.temp }}/g24
+      - name: Commit local certified state and dispatch next workflow
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          CERT="$RUNNER_TEMP/g24/G24_POST_PURGE.json"
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9/PART_4_R2/STATE.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$CERT")" = PASS
+          python3 - "$STATE" "$CERT" <<'PY'
+          import hashlib,json,os,sys,time
+          sp,cp=sys.argv[1:]; s=json.load(open(sp))
+          s["post_purge_g24"]=True
+          s["post_purge_g24_sha256"]=hashlib.sha256(open(cp,"rb").read()).hexdigest()
+          s["updated_at_utc"]=time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
+          t=sp+".tmp"; json.dump(s,open(t,"w"),indent=2,sort_keys=True); os.replace(t,sp)
+          PY
+          gh workflow run r4-part4-r2-storage-migration.yml --repo Plomillo/luna-linux-bridge --ref staging/luna-r4-master-part1-part9-20260929
+          echo "HANDOFF=STORAGE_MIGRATION_DISPATCHED"
