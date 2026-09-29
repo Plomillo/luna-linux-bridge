@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 import importlib.util
 import pathlib
-import sys
 
 ROOT=pathlib.Path(__file__).resolve().parent
 spec=importlib.util.spec_from_file_location("apc", ROOT/"louksna_apc.py")
@@ -41,16 +40,32 @@ assert apc.ALLOWED_UNITS == {
 assert "daemon-reload" not in apc.ALLOWED_SERVICE_ACTIONS
 assert "cat" not in apc.ALLOWED_SERVICE_ACTIONS
 
-text=(ROOT/"activate-48h.sh").read_text(encoding="utf-8")
-assert "NOPASSWD: ALL" not in text
-assert "NOTAFTER=" in text
-assert "PART1_POST_VALIDATION_PASS" in text
-assert "20260926T034746Z-38579" in text
-assert "SERVER_READY_RUN=\"36503769931\"" in text
-assert "PART_1_FULL_REINSTALL" in text
-assert "systemd-inhibit" in text
-
+activate=(ROOT/"activate-48h.sh").read_text(encoding="utf-8")
+revoke=(ROOT/"louksna_apc_revoke.sh").read_text(encoding="utf-8")
 helper=(ROOT/"louksna_apc.py").read_text(encoding="utf-8")
+
+assert "NOPASSWD: ALL" not in activate
+assert "NOTAFTER=" in activate
+assert "PART1_POST_VALIDATION_PASS" in activate
+assert "20260926T034746Z-38579" in activate
+assert 'SERVER_READY_RUN="36503769931"' in activate
+assert "PART_1_FULL_REINSTALL" in activate
+assert "systemd-inhibit" in activate
+assert "--why=LOUKSNA-R4-governed-installation-window" in activate
+assert "--why=Governed R4 installation window" not in activate
+assert "trap cleanup_on_exit EXIT" in activate
+assert "RECOVERY_EVIDENCE=" in activate
+assert "PREVIOUS_REVOKED_APC_RECOVERY=PASS" in activate
+assert "ACTIVE_APC_ALREADY_PRESENT_NO_EXTENSION" in activate
+assert "AWAKE_GUARD_NOT_STABLE" in activate
+assert "AWAKE_GUARD_PID_CHANGED_DURING_STABILITY_WINDOW" in activate
+assert '"schema":"LOUKSNA_R4_APC_AUTHORIZATION/2.0"' in activate
+assert '"schema":"LOUKSNA_R4_APC_ACTIVATION_EVIDENCE/2.0"' in activate
+
+assert "disable --now louksna-r4-apc-revoke.timer" in revoke
+assert 'rm -f -- "$SUDOERS" "$HELPER" "$AWAKE_UNIT" "$REVOKE_SERVICE" "$REVOKE_TIMER"' in revoke
+assert '"timer_disabled":True' in revoke
+
 for forbidden in [
     "shell=True",
     "os.system(",
@@ -62,4 +77,4 @@ for forbidden in [
 ]:
     assert forbidden not in helper, forbidden
 
-print("APC48_STATIC_TESTS=PASS")
+print("APC48_V2_STATIC_TESTS=PASS")
