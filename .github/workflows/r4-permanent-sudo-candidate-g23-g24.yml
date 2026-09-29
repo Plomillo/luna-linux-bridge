@@ -1,0 +1,181 @@
+name: "R4 permanent sudo — candidate G23 G24"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-permanent-sudo-candidate/CANDIDATE-*.json
+
+permissions:
+  contents: read
+  actions: read
+  id-token: write
+
+concurrency:
+  group: r4-permanent-sudo-candidate
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Validate exact candidate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mapfile -t files < <(git diff-tree --no-commit-id --name-only -r "$GITHUB_SHA" | grep '^mission-control/r4-permanent-sudo-candidate/CANDIDATE-.*\.json$' || true)
+          test "${#files[@]}" -eq 1
+          C="${files[0]}"
+          mkdir -p "$RUNNER_TEMP/candidate"
+          python3 - "$C" "$RUNNER_TEMP/candidate/INSTALLER.sh" "$RUNNER_TEMP/candidate/VALIDATION.json" <<'PY'
+          import base64,hashlib,json,pathlib,sys
+          src=pathlib.Path(sys.argv[1]); ins=pathlib.Path(sys.argv[2]); out=pathlib.Path(sys.argv[3])
+          d=json.loads(src.read_text(encoding="utf-8"))
+          raw=base64.b64decode(d["installer_base64"],validate=True)
+          ins.write_bytes(raw); ins.chmod(0o700)
+          checks={
+            "schema":d.get("schema")=="LOUKSNA_PERMANENT_SUDO_CANDIDATE/1.0",
+            "status":d.get("status")=="CANDIDATE",
+            "authority":d.get("authority")=="Louksna.md",
+            "target_user":d.get("target_user")=="diegoignacionorambuenamiranda",
+            "target_host":d.get("target_host")=="LOUKSNA",
+            "scope":d.get("scope")=="UNRESTRICTED_ROOT_VIA_SUDO",
+            "persistence":d.get("persistence")=="UNTIL_EXPLICIT_REVOCATION",
+            "rule":d.get("sudoers_rule")=="diegoignacionorambuenamiranda ALL=(ALL:ALL) NOPASSWD: ALL",
+            "installer_hash":hashlib.sha256(raw).hexdigest()==d.get("installer_sha256"),
+            "explicit_authorization":d.get("explicit_human_authorization") is True,
+            "fail_closed":d.get("fail_closed") is True,
+            "g23_required":d.get("g23_required") is True,
+            "g24_required":d.get("g24_required") is True,
+            "canonical_mutation_false":d.get("canonical_mutation") is False,
+            "authority_transfer_false":d.get("authority_transfer") is False,
+          }
+          text=raw.decode("utf-8")
+          checks["installer_exact_rule"]=d["sudoers_rule"] in text
+          checks["installer_visudo"]= "/usr/sbin/visudo" in text
+          checks["installer_post_test"]="sudo -n true" in text
+          ok=all(checks.values())
+          r={
+            "schema":"LOUKSNA_PERMANENT_SUDO_CANDIDATE_VALIDATION/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "candidate_path":src.as_posix(),
+            "candidate_sha256":hashlib.sha256(src.read_bytes()).hexdigest(),
+            "installer_sha256":hashlib.sha256(raw).hexdigest(),
+            "checks":checks
+          }
+          out.write_text(json.dumps(r,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps(r,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(3)
+          PY
+          bash -n "$RUNNER_TEMP/candidate/INSTALLER.sh"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-permanent-sudo-candidate-validation
+          path: ${{ runner.temp }}/candidate/VALIDATION.json
+          retention-days: 90
+          compression-level: 0
+
+  g23:
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-permanent-sudo-candidate-validation
+          path: ${{ runner.temp }}/candidate
+      - name: Independent validation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/candidate/VALIDATION.json" "$RUNNER_TEMP/g23/G23.json" <<'PY'
+          import hashlib,json,pathlib,sys
+          p=pathlib.Path(sys.argv[1]); d=json.loads(p.read_text())
+          checks={
+            "producer_pass":d.get("status")=="PASS",
+            "all_checks":all(d.get("checks",{}).values()),
+            "candidate_digest":len(d.get("candidate_sha256",""))==64,
+            "installer_digest":len(d.get("installer_sha256",""))==64,
+          }
+          ok=all(checks.values())
+          r={
+            "schema":"LOUKSNA_PERMANENT_SUDO_CANDIDATE_G23/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "candidate_sha256":d["candidate_sha256"],
+            "installer_sha256":d["installer_sha256"],
+            "validation_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),
+            "checks":checks,
+            "repair_allowed":False,
+            "g24_allowed":ok
+          }
+          pathlib.Path(sys.argv[2]).write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(4)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-permanent-sudo-candidate-g23
+          path: ${{ runner.temp }}/g23/G23.json
+          retention-days: 90
+          compression-level: 0
+
+  g24:
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-permanent-sudo-candidate-g23
+          path: ${{ runner.temp }}/g23
+      - name: Issue digest-bound certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/G23.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$G")" = PASS
+          H="$(sha256sum "$G" | awk '{print $1}')"
+          AUD="louksna-r4-permanent-sudo-candidate:$H"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export H AUD TOKEN
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$G" "$RUNNER_TEMP/g24/G24_CANDIDATE.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          g=json.loads(pathlib.Path(sys.argv[1]).read_text())
+          t=os.environ["TOKEN"]; parts=t.split(".")
+          if len(parts)!=3: raise SystemExit("OIDC_FORMAT")
+          payload=parts[1]+"="*((4-len(parts[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload))
+          aud=claims.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          r={
+            "schema":"LOUKSNA_PERMANENT_SUDO_CANDIDATE_G24/1.0",
+            "status":"PASS",
+            "scope":"PERMANENT_NOPASSWD_ALL_CANDIDATE",
+            "candidate_sha256":g["candidate_sha256"],
+            "installer_sha256":g["installer_sha256"],
+            "g23_sha256":os.environ["H"],
+            "authority_authenticated":True,
+            "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
+            "does_not_certify_materialization":True,
+            "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          pathlib.Path(sys.argv[2]).write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,indent=2,sort_keys=True))
+          PY
+          unset TOKEN RESP
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-permanent-sudo-candidate-g24
+          path: ${{ runner.temp }}/g24/G24_CANDIDATE.json
+          retention-days: 90
+          compression-level: 0
