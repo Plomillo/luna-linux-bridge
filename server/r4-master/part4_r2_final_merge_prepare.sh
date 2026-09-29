@@ -235,7 +235,10 @@ export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$HOME_
 [ ! -e "$MARK" ] || exit 0
 for i in $(seq 1 90); do
   if /usr/bin/gh auth status >/dev/null 2>&1; then
-    if /usr/bin/gh workflow run r4-part4-r2-final-merge-postboot.yml --repo Plomillo/luna-linux-bridge --ref staging/luna-r4-master-part1-part9-20260929; then
+    TS="$(date -u +%Y%m%dT%H%M%SZ)"
+    TRIGGER="mission-control/r4-part4-r2-final-merge-postboot/BOOT-$TS.json"
+    BODY="$(printf '{"schema":"LOUKSNA_R4_PART4_R2_POSTBOOT_TRIGGER/1.0","host":"LOUKSNA","root":"/dev/nvme0n1p3","utc":"%s"}' "$TS" | base64 -w0)"
+    if /usr/bin/gh api --method PUT "repos/Plomillo/luna-linux-bridge/contents/$TRIGGER"       -f message="handoff(PART4-R2): resume final merge after P3 boot"       -f content="$BODY"       -f branch="staging/luna-r4-master-part1-part9-20260929"; then
       mkdir -p "$(dirname "$MARK")"
       date -u +%FT%TZ > "$MARK"
       exit 0
