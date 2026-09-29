@@ -1,0 +1,6 @@
+{
+  "execute": true,
+  "authority": "explicit user authorization",
+  "rule": "SHA256 identical => retain one, delete N-1; Debian13/KDE downloaded ISO media authorized for removal; hash mismatch => HOLD; Vida personal y Ocio excluded",
+  "post_validation": true
+}
