@@ -1,0 +1,33 @@
+{
+  "custosz_mission_id": "MIS-ba048df2f0c54ebf934e",
+  "deadline_utc": "2026-09-29T18:24:06.149674+00:00",
+  "executor_bound": false,
+  "executor_reported": "UNBOUND_MEDIATED_OR_LOCAL",
+  "heartbeat_state": "SUPERVISORY_ACTIVE",
+  "mail_id": "MAIL-F5AF1B54E5551E65DB02",
+  "mission_class_resolution": {
+    "bound_mission_class": null,
+    "direct_mission_class": null,
+    "matches": [],
+    "mission_class": null,
+    "origin": null,
+    "result": "UNRESOLVED",
+    "root_blocker": "MISSION_CLASS_UNRESOLVED",
+    "source_sha256": "f5af1b54e5551e65db02d008d6065a3ff39f573b997a9870dce877bb1015e071"
+  },
+  "registered_utc": "2026-09-29T18:04:06.183214+00:00",
+  "required_capabilities_explicit": [],
+  "routing_hints_non_authoritative": {
+    "authoritative": false,
+    "values": [
+      "GITHUB",
+      "PROTECTED_WINDOWS_SCOPE",
+      "ROLLBACK"
+    ]
+  },
+  "schema": "CUSTOSZ_ROUTING_DECISION/1.0",
+  "worker_identity_sha256": "dacf1f8c13b2fcbfc617cf0d4d780b30502c13395224691e6b0f05f53d9816a2",
+  "workspace": "/home/diegoignacionorambuenamiranda/SYMPHYLAX_LAB/CUSTOSZ_V7_R1_G23_G24_20260927T021532Z/POSIX_COMPATIBILITY_VIEW",
+  "workspace_binding": "TRUSTED_WORKFLOW_OVERRIDE",
+  "workspace_resolved": true
+}
