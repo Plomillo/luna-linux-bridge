@@ -373,13 +373,43 @@ def part3(mid):
     return evidence_base("PART_3",mid,checks,"PASS" if not blockers else "HOLD",blockers,details)
 
 def part4(mid):
-    auth=STATE/"authorizations/PART4_H2_H4.json"; d=read_json(auth,{}) or {}
-    checks={"H2":d.get("H2") is True,"H4":d.get("H4") is True,"two_verified_backups":d.get("two_verified_backups") is True,"restore_proof":d.get("restore_proof") is True,"destructive_scope_prevalidated":d.get("destructive_scope_prevalidated") is True}
+    # PART4-R2-20260929: user-authorized operational amendment.
+    # Louksna.md remains canonical authority; PART_5..PART_9 are unchanged.
+    legacy_auth=read_json(STATE/"authorizations/PART4_H2_H4.json",{}) or {}
+    r2=read_json(STATE/"PART_4_R2/STATE.json",{}) or {}
+    checks={
+        "H2": legacy_auth.get("H2") is True,
+        "H4": legacy_auth.get("H4") is True,
+        "r2_owner_authorized": r2.get("r2_owner_authorized") is True,
+        "freeze_g24": r2.get("freeze_g24") is True,
+        "purge_scope_prevalidated": r2.get("purge_scope_prevalidated") is True,
+        "purge_scope_g23_g24": r2.get("purge_scope_g23_g24") is True,
+        "windows_purged_preserving_projects": r2.get("windows_purged_preserving_projects") is True,
+        "post_purge_integrity": r2.get("post_purge_integrity") is True,
+        "ntfs_shrunk": r2.get("ntfs_shrunk") is True,
+        "ext4_created": r2.get("ext4_created") is True,
+        "projects_migrated_hash_equivalent": r2.get("projects_migrated_hash_equivalent") is True,
+        "ntfs_retired": r2.get("ntfs_retired") is True,
+        "final_linux_layout": r2.get("final_linux_layout") is True,
+    }
     blockers=[k for k,v in checks.items() if not v]
-    if blockers:
-        raise HumanAuthorizationRequired("PART_4",blockers,"PART4_H2_H4_OR_PROTECTION_PROOF_REQUIRED")
-    ev=evidence_base("PART_4",mid,checks,"PASS",[],{"authorization_file":str(auth)})
-    ev["human_gates"]={"H2":checks["H2"],"H4":checks["H4"]}; ev["two_verified_backups"]=checks["two_verified_backups"]; ev["restore_proof"]=checks["restore_proof"]; ev["destructive_scope_prevalidated"]=checks["destructive_scope_prevalidated"]
+    details={
+        "operational_amendment":"PART4-R2-20260929",
+        "amendment_reference":"server/r4-master/PART4_R2_AMENDMENT.json",
+        "certified_freeze_manifest_sha256":"99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+        "freeze_certification_run_id":36621093750,
+        "r2_state_file":str(STATE/"PART_4_R2/STATE.json"),
+        "legacy_human_gate_file":str(STATE/"authorizations/PART4_H2_H4.json"),
+        "predelete_full_backup_requirement_superseded":True,
+        "restore_proof_predelete_requirement_superseded":True,
+        "part5_to_part9_unchanged":True,
+    }
+    ev=evidence_base("PART_4",mid,checks,"PASS" if not blockers else "HOLD",blockers,details)
+    ev["human_gates"]={"H2":checks["H2"],"H4":checks["H4"]}
+    ev["operational_amendment"]="PART4-R2-20260929"
+    ev["two_verified_backups"]="SUPERSEDED_BY_PART4_R2"
+    ev["restore_proof"]="SUPERSEDED_BY_PART4_R2"
+    ev["destructive_scope_prevalidated"]=checks["purge_scope_prevalidated"]
     return ev
 
 def part5(mid):
