@@ -1,0 +1,9 @@
+{
+  "scope": "READ_ONLY",
+  "purpose": "Confirm whether SYMPHYLAX has begun PART4 protection/backups for PROYECTOS",
+  "requested_files": [
+    "MASTER_STATUS.json",
+    "PERMISSION_REQUEST.json",
+    "authorizations/PART4_H2_H4.json"
+  ]
+}
