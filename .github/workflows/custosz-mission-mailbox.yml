@@ -93,6 +93,7 @@ jobs:
             ecosystem/metacognitive-operational-v1/CUSTOSZ72_CENSUS.json
             Louksna.md
             mission-mailbox
+            missions/registry
             scripts/mission_mailbox
           sparse-checkout-cone-mode: false
 
@@ -112,12 +113,14 @@ jobs:
           set -Eeuo pipefail
           mkdir -p "$RESULTS"
           ulimit -v 262144 || true
+          export CUSTOSZ_WORKSPACE_OVERRIDE="$HOME/LOUKSNA_MAESTRO_20260925"
           python3 - <<'PY'
           import json, os, subprocess, sys
           from pathlib import Path
           compiled = Path(os.environ["COMPILED"])
           results = Path(os.environ["RESULTS"])
           index = json.load(open(compiled / "INDEX.json", encoding="utf-8"))
+          system_failures = []
           for item in index["items"]:
               mail_id = item["mail_id"]
               src = compiled / mail_id
@@ -136,7 +139,13 @@ jobs:
               ]
               proc = subprocess.run(cmd, text=True)
               if proc.returncode:
-                  raise SystemExit("MAILBOX_ROUTE_SYSTEM_FAILURE:" + mail_id)
+                  system_failures.append({"mail_id": mail_id, "exit_code": proc.returncode})
+          if system_failures:
+              (results / "SYSTEM_FAILURES.json").write_text(
+                  json.dumps({"schema":"CUSTOSZ_MAILBOX_SYSTEM_FAILURES/1.0","items":system_failures},indent=2,sort_keys=True)+"\n",
+                  encoding="utf-8",
+              )
+              raise SystemExit("MAILBOX_ROUTE_SYSTEM_FAILURES:" + ",".join(x["mail_id"] for x in system_failures))
           PY
 
       - name: Show precise terminal reports
@@ -161,3 +170,45 @@ jobs:
           name: custosz-mailbox-results
           path: ${{ runner.temp }}/mailbox-results
           if-no-files-found: error
+
+
+  publish-registry:
+    needs: [compile, route]
+    if: always() && needs.route.result != 'cancelled'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout registry surface
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: true
+          fetch-depth: 1
+          sparse-checkout: |
+            missions/registry
+            scripts/mission_mailbox/publish_registry.py
+          sparse-checkout-cone-mode: false
+
+      - name: Recover routing evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: custosz-mailbox-results
+          path: ${{ runner.temp }}/mailbox-results
+
+      - name: Persist routed mission registry
+        shell: bash
+        env:
+          RESULTS: ${{ runner.temp }}/mailbox-results
+        run: |
+          set -Eeuo pipefail
+          python3 -B -I scripts/mission_mailbox/publish_registry.py --results "$RESULTS" --registry missions/registry
+          git add missions/registry
+          if git diff --cached --quiet; then
+            echo "MAILBOX_REGISTRY_CHANGES=0"
+            exit 0
+          fi
+          git config user.name "louksna-mailbox-bot"
+          git config user.email "louksna-mailbox-bot@users.noreply.github.com"
+          git commit -m "evidence(mailbox): persist routed mission registry"
+          git push origin "HEAD:$GITHUB_REF_NAME"
