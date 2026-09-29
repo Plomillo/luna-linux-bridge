@@ -1,0 +1,583 @@
+name: "R4 PART4 R2 — purge Windows preserving PROYECTOS"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-part4-r2-purge-windows.yml
+      - mission-control/r4-part4-r2-purge/**
+
+permissions:
+  contents: read
+  actions: read
+  id-token: write
+
+concurrency:
+  group: r4-part4-r2-destructive
+  cancel-in-progress: false
+
+jobs:
+  activate_prevalidate:
+    name: Activate R2 and prevalidate purge scope
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            server/r4-master
+            mission-control/r4-part4-r2-authorization
+          sparse-checkout-cone-mode: true
+
+      - name: Verify certified prerequisites and activate revised master bundle
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          test "$(gh api repos/Plomillo/luna-linux-bridge/actions/runs/36622181875 --jq .conclusion)" = success
+          test "$(gh api repos/Plomillo/luna-linux-bridge/actions/runs/36621903764 --jq .conclusion)" = success
+          test "$(gh api repos/Plomillo/luna-linux-bridge/actions/runs/36621093750 --jq .conclusion)" = success
+
+          mkdir -p "$RUNNER_TEMP/freeze-g24" "$RUNNER_TEMP/r2-g24"
+          gh run download 36621093750 --repo Plomillo/luna-linux-bridge -n r4-part4-freeze-g24 -D "$RUNNER_TEMP/freeze-g24"
+          gh run download 36621903764 --repo Plomillo/luna-linux-bridge -n r4-part4-r2-g24 -D "$RUNNER_TEMP/r2-g24"
+
+          python3 - "$RUNNER_TEMP/freeze-g24/G24_FREEZE.json" "$RUNNER_TEMP/r2-g24/G24_PART4_R2.json" <<'PY'
+          import json,sys
+          f=json.load(open(sys.argv[1])); r=json.load(open(sys.argv[2]))
+          assert f["status"]=="PASS"
+          assert f["manifest_sha256"]=="99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e"
+          assert f["scope"]=="PROYECTOS_CRYPTOGRAPHIC_FREEZE_ONLY"
+          assert r["status"]=="PASS"
+          assert r["amendment_id"]=="PART4-R2-20260929"
+          assert r["part5_to_part9_unchanged"] is True
+          PY
+
+          bash server/r4-master/MASTER_RUN.sh
+          systemctl --user restart luna-r4-master-part1-part9.service
+          sleep 2
+          test "$(systemctl --user is-active luna-r4-master-part1-part9.service)" = active
+
+      - name: Build fresh exact purge scope and initialize R2 state
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="/media/diegoignacionorambuenamiranda/Windows"
+          KEEP="$ROOT/PROYECTOS"
+          DEV="/dev/nvme0n1p3"
+          UUID="F2848A148489DC0B"
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9"
+          R2STATE="$STATE/PART_4_R2"
+          OUT="$RUNNER_TEMP/r4-part4-r2-prevalidate-$GITHUB_RUN_ID"
+          mkdir -p "$OUT" "$R2STATE"
+          chmod 700 "$R2STATE"
+
+          test -d "$ROOT"
+          test -d "$KEEP"
+          test ! -L "$KEEP"
+          test "$(findmnt -T "$ROOT" -n -o SOURCE)" = "$DEV"
+          test "$(findmnt -T "$ROOT" -n -o FSTYPE)" = ntfs3
+          findmnt -T "$ROOT" -n -o OPTIONS | tr ',' '\n' | grep -qx rw
+          test "$(/usr/sbin/blkid -s UUID -o value "$DEV")" = "$UUID"
+
+          AUTH="$STATE/authorizations/PART4_H2_H4.json"
+          test -f "$AUTH"
+          python3 - "$AUTH" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1]))
+          assert d.get("H2") is True
+          assert d.get("H4") is True
+          PY
+
+          cp "$RUNNER_TEMP/freeze-g24/G24_FREEZE.json" "$OUT/FREEZE_G24.json"
+          cp "$RUNNER_TEMP/r2-g24/G24_PART4_R2.json" "$OUT/AMENDMENT_G24.json"
+
+          python3 - "$ROOT" "$KEEP" "$DEV" "$UUID" "$OUT" "$R2STATE/STATE.json" <<'PY'
+          import hashlib,json,os,pathlib,stat,subprocess,sys,time
+          root=pathlib.Path(sys.argv[1]); keep=pathlib.Path(sys.argv[2])
+          dev=sys.argv[3]; uuid=sys.argv[4]; out=pathlib.Path(sys.argv[5]); state=pathlib.Path(sys.argv[6])
+          rst=os.lstat(root); kst=os.lstat(keep)
+          if not stat.S_ISDIR(kst.st_mode) or stat.S_ISLNK(kst.st_mode): raise SystemExit("KEEP_NOT_REAL_DIRECTORY")
+          if keep.parent != root or keep.name!="PROYECTOS": raise SystemExit("KEEP_SCOPE_NOT_EXACT")
+          if kst.st_dev!=rst.st_dev: raise SystemExit("KEEP_DEVICE_DRIFT")
+
+          nested=[]
+          q=subprocess.run(["findmnt","-R","-n","-o","TARGET",str(root)],text=True,capture_output=True)
+          for line in q.stdout.splitlines():
+              t=line.strip()
+              if t and pathlib.Path(t)!=root: nested.append(t)
+          if nested: raise SystemExit("NESTED_MOUNTS:"+json.dumps(nested))
+
+          entries=[]
+          for e in sorted(os.scandir(root),key=lambda x:x.name.casefold()):
+              p=pathlib.Path(e.path); st=e.stat(follow_symlinks=False)
+              if st.st_dev!=rst.st_dev: raise SystemExit("DEVICE_BOUNDARY:"+str(p))
+              typ="dir" if stat.S_ISDIR(st.st_mode) else "file" if stat.S_ISREG(st.st_mode) else "symlink" if stat.S_ISLNK(st.st_mode) else "other"
+              if typ=="other": raise SystemExit("UNSUPPORTED_TOP_LEVEL_TYPE:"+str(p))
+              action="KEEP_FROZEN_SCOPE" if e.name=="PROYECTOS" else "DELETE_EXACT_DIRECT_CHILD"
+              entries.append({"name":e.name,"path":str(p),"type":typ,"inode":st.st_ino,"size":st.st_size,"action":action})
+          if sum(1 for x in entries if x["action"]=="KEEP_FROZEN_SCOPE")!=1: raise SystemExit("KEEP_CARDINALITY")
+
+          topology=subprocess.run(["lsblk","-b","-J","-o","NAME,KNAME,PATH,TYPE,SIZE,FSTYPE,MOUNTPOINTS,UUID,PARTUUID,START"],text=True,capture_output=True,check=True).stdout
+          report={
+            "schema":"LOUKSNA_R4_PART4_R2_PURGE_PREVALIDATION/1.0",
+            "status":"PASS","mode":"READ_ONLY","source_mutated":False,
+            "root":str(root),"keep_exact":str(keep),"device":dev,"uuid":uuid,
+            "delete_rule":"DELETE_EVERY_DIRECT_CHILD_EXCEPT_EXACT_PROYECTOS",
+            "partitions_in_scope":["/dev/nvme0n1p3"],
+            "partitions_out_of_scope":["/dev/nvme0n1p1","/dev/nvme0n1p2","/dev/nvme0n1p4","/dev/nvme0n1p5"],
+            "nested_mounts":nested,"entries":entries,
+            "certified_freeze_manifest_sha256":"99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+            "r2_amendment":"PART4-R2-20260929",
+            "master_validation_run":36622181875,
+            "amendment_certification_run":36621903764,
+            "freeze_certification_run":36621093750,
+            "timestamp_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),
+            "lsblk":json.loads(topology)
+          }
+          data=json.dumps(report,ensure_ascii=False,indent=2,sort_keys=True)+"\n"
+          (out/"PURGE_SCOPE.json").write_text(data,encoding="utf-8")
+          (out/"PURGE_SCOPE.sha256").write_text(hashlib.sha256(data.encode()).hexdigest()+"  PURGE_SCOPE.json\n")
+
+          s={
+            "schema":"LOUKSNA_R4_PART4_R2_STATE/1.0",
+            "r2_owner_authorized":True,
+            "freeze_g24":True,
+            "amendment_g24":True,
+            "purge_scope_prevalidated":True,
+            "purge_scope_g23_g24":False,
+            "windows_purged_preserving_projects":False,
+            "post_purge_integrity":False,
+            "ntfs_shrunk":False,
+            "ext4_created":False,
+            "projects_migrated_hash_equivalent":False,
+            "ntfs_retired":False,
+            "final_linux_layout":False,
+            "certified_freeze_manifest_sha256":"99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+            "updated_at_utc":report["timestamp_utc"]
+          }
+          tmp=state.with_suffix(".tmp"); tmp.write_text(json.dumps(s,indent=2,sort_keys=True)+"\n"); os.replace(tmp,state)
+          print(data)
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-purge-prevalidation
+          path: ${{ runner.temp }}/r4-part4-r2-prevalidate-${{ github.run_id }}/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  g23_scope:
+    name: G23 independent purge-scope validation
+    needs: activate_prevalidate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-purge-prevalidation
+          path: ${{ runner.temp }}/pre
+      - name: Validate exact destructive scope
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/pre/PURGE_SCOPE.json" "$RUNNER_TEMP/pre/FREEZE_G24.json" "$RUNNER_TEMP/pre/AMENDMENT_G24.json" "$RUNNER_TEMP/g23/G23_PURGE_SCOPE.json" <<'PY'
+          import hashlib,json,pathlib,sys,datetime as dt
+          p=pathlib.Path(sys.argv[1]); scope=json.loads(p.read_text())
+          freeze=json.load(open(sys.argv[2])); amend=json.load(open(sys.argv[3])); out=pathlib.Path(sys.argv[4])
+          entries=scope.get("entries",[])
+          checks={
+            "scope_pass":scope.get("status")=="PASS",
+            "read_only_prevalidation":scope.get("source_mutated") is False,
+            "root_exact":scope.get("root")=="/media/diegoignacionorambuenamiranda/Windows",
+            "keep_exact":scope.get("keep_exact")=="/media/diegoignacionorambuenamiranda/Windows/PROYECTOS",
+            "device_exact":scope.get("device")=="/dev/nvme0n1p3",
+            "uuid_exact":scope.get("uuid")=="F2848A148489DC0B",
+            "no_nested_mounts":scope.get("nested_mounts")==[],
+            "one_keep":sum(1 for x in entries if x.get("action")=="KEEP_FROZEN_SCOPE" and x.get("name")=="PROYECTOS")==1,
+            "all_others_delete":all(x.get("action")=="KEEP_FROZEN_SCOPE" if x.get("name")=="PROYECTOS" else x.get("action")=="DELETE_EXACT_DIRECT_CHILD" for x in entries),
+            "p5_out_of_scope":"/dev/nvme0n1p5" in scope.get("partitions_out_of_scope",[]),
+            "freeze_g24":freeze.get("status")=="PASS" and freeze.get("manifest_sha256")=="99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+            "amendment_g24":amend.get("status")=="PASS" and amend.get("amendment_id")=="PART4-R2-20260929",
+          }
+          passed=all(checks.values())
+          result={"schema":"LOUKSNA_R4_PART4_R2_PURGE_SCOPE_G23/1.0","status":"PASS" if passed else "HOLD",
+                  "scope_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),"checks":checks,
+                  "protected_scope":scope.get("keep_exact"),"destructive_scope":"/dev/nvme0n1p3:ALL_DIRECT_CHILDREN_EXCEPT_PROYECTOS",
+                  "repair_allowed":False,"g24_allowed":passed,
+                  "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          out.write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(result,indent=2,sort_keys=True))
+          if not passed: raise SystemExit(3)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-purge-g23
+          path: ${{ runner.temp }}/g23/G23_PURGE_SCOPE.json
+          retention-days: 90
+          compression-level: 0
+
+  g24_scope:
+    name: G24 certify purge scope
+    needs: g23_scope
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-purge-g23
+          path: ${{ runner.temp }}/g23
+      - name: Issue scope-bound G24
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g24"
+          G23="$RUNNER_TEMP/g23/G23_PURGE_SCOPE.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$G23")" = PASS
+          G23_SHA="$(sha256sum "$G23"|awk '{print $1}')"
+          SCOPE_SHA="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["scope_sha256"])' "$G23")"
+          AUD="louksna-r4-part4-r2-purge:$SCOPE_SHA:$G23_SHA"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export TOKEN G23_SHA SCOPE_SHA AUD
+          python3 - "$RUNNER_TEMP/g24/G24_PURGE_SCOPE.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          token=os.environ["TOKEN"]; parts=token.split(".")
+          if len(parts)!=3: raise SystemExit("OIDC_FORMAT")
+          payload=parts[1]+"="*((4-len(parts[1])%4)%4); claims=json.loads(base64.urlsafe_b64decode(payload))
+          aud=claims.get("aud"); expected=os.environ["AUD"]
+          if aud!=expected and not (isinstance(aud,list) and expected in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          cert={"schema":"LOUKSNA_R4_PART4_R2_PURGE_SCOPE_G24/1.0","status":"PASS",
+                "scope":"P3_WINDOWS_CONTENT_PURGE_EXCEPT_EXACT_PROYECTOS",
+                "scope_sha256":os.environ["SCOPE_SHA"],"g23_sha256":os.environ["G23_SHA"],"g23_status":"PASS",
+                "authority_authenticated":True,
+                "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(token.encode()).hexdigest(),
+                "canonical_mutation":False,"authority_transfer":False,
+                "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(cert,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(cert,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-purge-g24
+          path: ${{ runner.temp }}/g24/G24_PURGE_SCOPE.json
+          retention-days: 90
+          compression-level: 0
+
+  purge:
+    name: Purge Windows content outside exact PROYECTOS
+    needs: g24_scope
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 120
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-purge-g24
+          path: ${{ runner.temp }}/g24
+      - name: Execute exact direct-child purge fail-closed
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="/media/diegoignacionorambuenamiranda/Windows"
+          KEEP="$ROOT/PROYECTOS"
+          DEV="/dev/nvme0n1p3"
+          UUID="F2848A148489DC0B"
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9/PART_4_R2/STATE.json"
+          OUT="$RUNNER_TEMP/r4-part4-r2-purge-$GITHUB_RUN_ID"
+          mkdir -p "$OUT"
+
+          python3 - "$RUNNER_TEMP/g24/G24_PURGE_SCOPE.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1])); assert d["status"]=="PASS"; assert d["scope"]=="P3_WINDOWS_CONTENT_PURGE_EXCEPT_EXACT_PROYECTOS"
+          PY
+          test -d "$KEEP"; test ! -L "$KEEP"
+          test "$(findmnt -T "$ROOT" -n -o SOURCE)" = "$DEV"
+          test "$(findmnt -T "$ROOT" -n -o FSTYPE)" = ntfs3
+          test "$(/usr/sbin/blkid -s UUID -o value "$DEV")" = "$UUID"
+          test -z "$(findmnt -R -n -o TARGET "$ROOT" | tail -n +2)"
+
+          python3 - "$ROOT" "$KEEP" "$STATE" "$OUT" <<'PY'
+          import errno,hashlib,json,os,pathlib,stat,sys,time,traceback
+          root=pathlib.Path(sys.argv[1]); keep=pathlib.Path(sys.argv[2]); state=pathlib.Path(sys.argv[3]); out=pathlib.Path(sys.argv[4])
+          root_st=os.lstat(root); keep_st=os.lstat(keep)
+          if keep.parent!=root or keep.name!="PROYECTOS" or stat.S_ISLNK(keep_st.st_mode) or not stat.S_ISDIR(keep_st.st_mode):
+              raise SystemExit("KEEP_IDENTITY_FAIL")
+          if keep_st.st_dev!=root_st.st_dev: raise SystemExit("KEEP_DEVICE_FAIL")
+
+          targets=[]
+          for e in sorted(os.scandir(root),key=lambda x:x.name.casefold()):
+              st=e.stat(follow_symlinks=False)
+              if st.st_dev!=root_st.st_dev: raise SystemExit("TOP_DEVICE_BOUNDARY:"+e.path)
+              if e.name=="PROYECTOS": continue
+              if not (stat.S_ISREG(st.st_mode) or stat.S_ISDIR(st.st_mode) or stat.S_ISLNK(st.st_mode)):
+                  raise SystemExit("UNSUPPORTED_TOP_TYPE:"+e.path)
+              targets.append((e.path,st.st_mode))
+
+          # Pre-scan every directory without following symlinks; abort before first deletion on device boundary/unsupported type.
+          prescan={"objects":0,"bytes_regular":0}
+          for tp,mode in targets:
+              if stat.S_ISDIR(mode):
+                  for d,dirs,files in os.walk(tp,topdown=True,followlinks=False):
+                      dst=os.lstat(d)
+                      if dst.st_dev!=root_st.st_dev: raise SystemExit("DIR_DEVICE_BOUNDARY:"+d)
+                      prescan["objects"]+=1
+                      for n in list(dirs):
+                          p=os.path.join(d,n); st=os.lstat(p)
+                          if st.st_dev!=root_st.st_dev: raise SystemExit("CHILD_DEVICE_BOUNDARY:"+p)
+                          if stat.S_ISLNK(st.st_mode):
+                              dirs.remove(n)
+                          elif not stat.S_ISDIR(st.st_mode): raise SystemExit("DIR_ENTRY_TYPE_DRIFT:"+p)
+                      for n in files:
+                          p=os.path.join(d,n); st=os.lstat(p)
+                          if st.st_dev!=root_st.st_dev: raise SystemExit("FILE_DEVICE_BOUNDARY:"+p)
+                          if not (stat.S_ISREG(st.st_mode) or stat.S_ISLNK(st.st_mode)):
+                              raise SystemExit("UNSUPPORTED_CHILD_TYPE:"+p)
+                          prescan["objects"]+=1
+                          if stat.S_ISREG(st.st_mode): prescan["bytes_regular"]+=st.st_size
+              else:
+                  prescan["objects"]+=1
+                  if stat.S_ISREG(mode): prescan["bytes_regular"]+=os.lstat(tp).st_size
+
+          report={"schema":"LOUKSNA_R4_PART4_R2_WINDOWS_PURGE/1.0","status":"RUNNING","root":str(root),"keep_exact":str(keep),
+                  "targets":[x[0] for x in targets],"prescan":prescan,"deleted_top_level":[],"errors":[],
+                  "rollback_scope":"PROTECTED_PROYECTOS_AND_GOVERNED_STATE_ONLY",
+                  "discarded_windows_scope_recovery":"INTENTIONALLY_NOT_PRESERVED_BY_OWNER_AUTHORIZATION",
+                  "started_at_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())}
+
+          def unlink_leaf(p):
+              os.unlink(p)
+
+          def delete_dir_tree(top):
+              for d,dirs,files in os.walk(top,topdown=False,followlinks=False):
+                  for n in files:
+                      p=os.path.join(d,n)
+                      try: os.unlink(p)
+                      except Exception as e: raise RuntimeError("UNLINK_FAIL:"+p+":"+repr(e))
+                  for n in dirs:
+                      p=os.path.join(d,n)
+                      try:
+                          st=os.lstat(p)
+                          if stat.S_ISLNK(st.st_mode): os.unlink(p)
+                          else: os.rmdir(p)
+                      except Exception as e: raise RuntimeError("RMDIR_CHILD_FAIL:"+p+":"+repr(e))
+              os.rmdir(top)
+
+          try:
+              for tp,mode in targets:
+                  if stat.S_ISDIR(mode): delete_dir_tree(tp)
+                  else: unlink_leaf(tp)
+                  if os.path.lexists(tp): raise RuntimeError("TOP_DELETE_POSTCONDITION:"+tp)
+                  report["deleted_top_level"].append(tp)
+              survivors=[e.name for e in os.scandir(root)]
+              if survivors!=["PROYECTOS"]:
+                  if sorted(survivors)!=["PROYECTOS"]: raise RuntimeError("UNEXPECTED_SURVIVORS:"+repr(survivors))
+              k2=os.lstat(keep)
+              if not stat.S_ISDIR(k2.st_mode) or stat.S_ISLNK(k2.st_mode) or k2.st_dev!=root_st.st_dev:
+                  raise RuntimeError("KEEP_POSTCONDITION_FAIL")
+              report["status"]="PASS"
+          except Exception as e:
+              report["status"]="HOLD"
+              report["errors"].append({"error":repr(e),"traceback":traceback.format_exc()[-12000:]})
+          report["finished_at_utc"]=time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
+          data=json.dumps(report,ensure_ascii=False,indent=2,sort_keys=True)+"\n"
+          (out/"PURGE_RESULT.json").write_text(data,encoding="utf-8")
+          (out/"PURGE_RESULT.sha256").write_text(hashlib.sha256(data.encode()).hexdigest()+"  PURGE_RESULT.json\n")
+          print(data)
+
+          if report["status"]=="PASS":
+              s=json.loads(state.read_text())
+              s["purge_scope_g23_g24"]=True
+              s["windows_purged_preserving_projects"]=True
+              s["updated_at_utc"]=report["finished_at_utc"]
+              t=state.with_suffix(".tmp"); t.write_text(json.dumps(s,indent=2,sort_keys=True)+"\n"); os.replace(t,state)
+          else:
+              raise SystemExit(4)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: r4-part4-r2-purge-result
+          path: ${{ runner.temp }}/r4-part4-r2-purge-${{ github.run_id }}/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  postvalidate:
+    name: Rehash PROYECTOS against certified manifest
+    needs: purge
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 180
+    steps:
+      - name: Download certified freeze manifest
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/freeze"
+          gh run download 36619942178 --repo Plomillo/luna-linux-bridge -n R4-PART4-PROYECTOS-freeze-36619942178 -D "$RUNNER_TEMP/freeze"
+          test "$(sha256sum "$RUNNER_TEMP/freeze/PROYECTOS_MANIFEST.jsonl.gz"|awk '{print $1}')" = "99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e"
+      - name: Full post-purge integrity validation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="/media/diegoignacionorambuenamiranda/Windows/PROYECTOS"
+          MAN="$RUNNER_TEMP/freeze/PROYECTOS_MANIFEST.jsonl.gz"
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9/PART_4_R2/STATE.json"
+          OUT="$RUNNER_TEMP/r4-part4-r2-postvalidate-$GITHUB_RUN_ID"
+          mkdir -p "$OUT"
+          nice -n 10 python3 - "$ROOT" "$MAN" "$STATE" "$OUT" <<'PY'
+          import gzip,hashlib,json,os,pathlib,stat,sys,time
+          root=pathlib.Path(sys.argv[1]); man=pathlib.Path(sys.argv[2]); state=pathlib.Path(sys.argv[3]); out=pathlib.Path(sys.argv[4])
+          expected={}
+          with gzip.open(man,"rt",encoding="utf-8") as f:
+              for line in f:
+                  r=json.loads(line); expected[r["path"]]=r
+          mismatches=[]; seen=set(); counts={"file":0,"dir":0,"symlink":0,"other":0}; total=0
+          def hfile(p):
+              h=hashlib.sha256()
+              with open(p,"rb",buffering=0) as f:
+                  for b in iter(lambda:f.read(8*1024*1024),b""): h.update(b)
+              return h.hexdigest()
+          stack=[root]
+          while stack:
+              d=stack.pop()
+              for e in os.scandir(d):
+                  p=pathlib.Path(e.path); rel=p.relative_to(root).as_posix()
+                  seen.add(rel); exp=expected.get(rel)
+                  if exp is None:
+                      mismatches.append({"path":rel,"reason":"EXTRA"}); continue
+                  st=e.stat(follow_symlinks=False)
+                  typ="file" if stat.S_ISREG(st.st_mode) else "dir" if stat.S_ISDIR(st.st_mode) else "symlink" if stat.S_ISLNK(st.st_mode) else "other"
+                  counts[typ]+=1
+                  if typ!=exp.get("type"): mismatches.append({"path":rel,"reason":"TYPE","expected":exp.get("type"),"actual":typ}); continue
+                  if typ=="file":
+                      total+=st.st_size
+                      if st.st_size!=exp.get("size"): mismatches.append({"path":rel,"reason":"SIZE"}); continue
+                      h=hfile(p)
+                      if h!=exp.get("sha256"): mismatches.append({"path":rel,"reason":"SHA256","expected":exp.get("sha256"),"actual":h})
+                  elif typ=="dir": stack.append(p)
+                  elif typ=="symlink":
+                      try:t=os.readlink(p)
+                      except Exception as ex: mismatches.append({"path":rel,"reason":"READLINK","error":repr(ex)}); continue
+                      if t!=exp.get("target"): mismatches.append({"path":rel,"reason":"SYMLINK_TARGET","expected":exp.get("target"),"actual":t})
+          missing=sorted(set(expected)-seen)
+          if missing: mismatches.extend({"path":p,"reason":"MISSING"} for p in missing[:1000])
+          status="PASS" if not mismatches and len(seen)==len(expected) and counts=={"file":436072,"dir":62016,"symlink":4,"other":0} and total==200490852057 else "HOLD"
+          result={"schema":"LOUKSNA_R4_PART4_R2_POST_PURGE_INTEGRITY/1.0","status":status,
+                  "manifest_sha256":"99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+                  "seen_records":len(seen),"expected_records":len(expected),"counts":counts,"regular_file_bytes":total,
+                  "mismatch_count":len(mismatches),"mismatch_sample":mismatches[:100],
+                  "validated_at_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())}
+          data=json.dumps(result,ensure_ascii=False,indent=2,sort_keys=True)+"\n"
+          (out/"POST_PURGE_INTEGRITY.json").write_text(data,encoding="utf-8")
+          (out/"POST_PURGE_INTEGRITY.sha256").write_text(hashlib.sha256(data.encode()).hexdigest()+"  POST_PURGE_INTEGRITY.json\n")
+          print(data)
+          if status=="PASS":
+              s=json.loads(state.read_text()); s["post_purge_integrity"]=True; s["updated_at_utc"]=result["validated_at_utc"]
+              t=state.with_suffix(".tmp"); t.write_text(json.dumps(s,indent=2,sort_keys=True)+"\n"); os.replace(t,state)
+          else: raise SystemExit(5)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: r4-part4-r2-post-purge-integrity
+          path: ${{ runner.temp }}/r4-part4-r2-postvalidate-${{ github.run_id }}/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  post_g23:
+    name: G23 validate purge result and protected integrity
+    needs: postvalidate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-purge-result
+          path: ${{ runner.temp }}/purge
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-post-purge-integrity
+          path: ${{ runner.temp }}/integrity
+      - name: Independent post-purge validation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23post"
+          python3 - "$RUNNER_TEMP/purge/PURGE_RESULT.json" "$RUNNER_TEMP/integrity/POST_PURGE_INTEGRITY.json" "$RUNNER_TEMP/g23post/G23_POST_PURGE.json" <<'PY'
+          import hashlib,json,pathlib,sys,datetime as dt
+          p=pathlib.Path(sys.argv[1]); i=pathlib.Path(sys.argv[2]); out=pathlib.Path(sys.argv[3])
+          purge=json.loads(p.read_text()); integ=json.loads(i.read_text())
+          checks={
+            "purge_pass":purge.get("status")=="PASS",
+            "keep_exact":purge.get("keep_exact")=="/media/diegoignacionorambuenamiranda/Windows/PROYECTOS",
+            "no_purge_errors":purge.get("errors")==[],
+            "integrity_pass":integ.get("status")=="PASS",
+            "zero_mismatches":integ.get("mismatch_count")==0,
+            "manifest_bound":integ.get("manifest_sha256")=="99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+            "counts":integ.get("counts")=={"file":436072,"dir":62016,"symlink":4,"other":0},
+            "bytes":integ.get("regular_file_bytes")==200490852057,
+          }
+          passed=all(checks.values())
+          r={"schema":"LOUKSNA_R4_PART4_R2_POST_PURGE_G23/1.0","status":"PASS" if passed else "HOLD","checks":checks,
+             "purge_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),"integrity_sha256":hashlib.sha256(i.read_bytes()).hexdigest(),
+             "g24_allowed":passed,"validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          out.write_text(json.dumps(r,indent=2,sort_keys=True)+"\n"); print(json.dumps(r,indent=2,sort_keys=True))
+          if not passed: raise SystemExit(3)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-post-purge-g23
+          path: ${{ runner.temp }}/g23post/G23_POST_PURGE.json
+          retention-days: 90
+          compression-level: 0
+
+  post_g24:
+    name: G24 certify post-purge state
+    needs: post_g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-post-purge-g23
+          path: ${{ runner.temp }}/g23
+      - name: Issue post-purge certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g24"
+          G23="$RUNNER_TEMP/g23/G23_POST_PURGE.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$G23")" = PASS
+          H="$(sha256sum "$G23"|awk '{print $1}')"
+          AUD="louksna-r4-part4-r2-postpurge:$H"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export TOKEN H AUD
+          python3 - "$RUNNER_TEMP/g24/G24_POST_PURGE.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          token=os.environ["TOKEN"]; parts=token.split("."); payload=parts[1]+"="*((4-len(parts[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload)); aud=claims.get("aud"); expected=os.environ["AUD"]
+          if aud!=expected and not (isinstance(aud,list) and expected in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          cert={"schema":"LOUKSNA_R4_PART4_R2_POST_PURGE_G24/1.0","status":"PASS",
+                "scope":"WINDOWS_CONTENT_PURGED_PROYECTOS_HASH_INTACT","g23_sha256":os.environ["H"],
+                "authority_authenticated":True,"authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(token.encode()).hexdigest(),
+                "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(cert,indent=2,sort_keys=True)+"\n"); print(json.dumps(cert,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-post-purge-g24
+          path: ${{ runner.temp }}/g24/G24_POST_PURGE.json
+          retention-days: 90
+          compression-level: 0
