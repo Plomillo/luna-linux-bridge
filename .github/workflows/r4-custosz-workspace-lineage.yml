@@ -1,0 +1,41 @@
+name: "R4 CUSTOSZ — resolve workspace lineage"
+
+on:
+  push:
+    branches:
+      - staging/custosz-mission-mailbox-20260928
+    paths:
+      - .github/workflows/r4-custosz-workspace-lineage.yml
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 3
+    steps:
+      - name: Read lineage evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOTS=(
+            "/home/diegoignacionorambuenamiranda/SYMPHYLAX_LAB/CUSTOSZ_V7_R1_G23_G24_20260927T021509Z"
+            "/home/diegoignacionorambuenamiranda/SYMPHYLAX_LAB/CUSTOSZ_V7_R1_G23_G24_20260927T021532Z"
+          )
+          for root in "${ROOTS[@]}"; do
+            echo "===== $root ====="
+            find "$root" -maxdepth 2 -type f -printf '%p\t%s\n' | sort | head -n 200
+            echo "-- SHA256 SMALL --"
+            while IFS= read -r f; do
+              size="$(stat -c %s "$f" 2>/dev/null || echo 999999)"
+              [ "$size" -le 131072 ] || continue
+              sha256sum "$f" || true
+              case "$f" in
+                *.json|*.md|*.txt|*.log)
+                  echo "### $f"
+                  sed -n '1,220p' "$f" || true
+                  ;;
+              esac
+            done < <(find "$root" -maxdepth 2 -type f | sort)
+          done
