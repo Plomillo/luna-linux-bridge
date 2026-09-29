@@ -346,9 +346,15 @@ def part9(mid):
 HANDLERS={"PART_1":part1,"PART_2":part2,"PART_3":part3,"PART_4":part4,"PART_5":part5,"PART_6":part6,"PART_7":part7,"PART_8":part8,"PART_9":part9}
 
 def gh_json(args,timeout=120):
-    r=run(["gh",*args],timeout=timeout)
+    env=dict(os.environ); env["GH_PAGER"]="cat"; env["NO_COLOR"]="1"
+    r=run(["gh",*args],timeout=timeout,env=env)
     if r["returncode"]!=0: raise RuntimeError("GH_FAILED:"+r["stderr"])
-    return json.loads(r["stdout"]) if r["stdout"].strip() else {}
+    raw=r["stdout"].strip()
+    if not raw: return {}
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError as e:
+        raise RuntimeError("GH_JSON_INVALID:"+repr(raw[:500])) from e
 
 def publish_and_certify(ev):
     part=ev["part"]; stamp=dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
@@ -357,7 +363,7 @@ def publish_and_certify(ev):
     resp=gh_json(["api","--method","PUT",f"repos/{REPO}/contents/{rel}","-f",f"message=evidence(R4): {part} material evidence","-f",f"content={payload}","-f",f"branch={BRANCH}"],timeout=60)
     commit=resp["commit"]["sha"]; run_id=None
     for _ in range(120):
-        q=gh_json(["api",f"repos/{REPO}/actions/runs?branch={BRANCH}&event=push&per_page=100"],timeout=30)
+        q=gh_json(["api",f"repos/{REPO}/actions/runs?branch={BRANCH}&event=push&per_page=100","--jq",'{"workflow_runs":[.workflow_runs[]|{id,head_sha,path,status,conclusion}]}'],timeout=30)
         for rr in q.get("workflow_runs",[]):
             if rr.get("head_sha")==commit and rr.get("path")==CERT_WORKFLOW: run_id=rr["id"]; break
         if run_id: break
