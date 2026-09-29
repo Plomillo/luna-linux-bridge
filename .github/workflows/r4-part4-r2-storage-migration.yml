@@ -10,7 +10,7 @@ on:
 
 permissions:
   contents: read
-  actions: read
+  actions: write
   id-token: write
 
 concurrency:
@@ -302,8 +302,8 @@ jobs:
           retention-days: 90
           compression-level: 0
 
-  activate_final:
-    name: Activate PART4 final state for Master
+  handoff_final_merge:
+    name: Record storage-migration G24 and hand off to final Debian merge
     needs: g24_final
     runs-on: [self-hosted, Linux, x64, luna-aux]
     timeout-minutes: 5
@@ -312,8 +312,10 @@ jobs:
         with:
           name: r4-part4-r2-storage-final-g24
           path: ${{ runner.temp }}/g24
-      - name: Commit certified local state and wake Master
+      - name: Persist certified storage stage and dispatch final merge
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -Eeuo pipefail
           CERT="$RUNNER_TEMP/g24/G24_STORAGE_FINAL.json"
@@ -321,15 +323,15 @@ jobs:
           test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$CERT")" = PASS
           python3 - "$STATE" "$CERT" <<'PY'
           import json,sys,os,time,hashlib
-          sp,cp=sys.argv[1:]; s=json.load(open(sp)); c=json.load(open(cp))
-          s["part4_r2_final_g24"]=True
-          s["part4_r2_final_g24_sha256"]=hashlib.sha256(open(cp,"rb").read()).hexdigest()
+          sp,cp=sys.argv[1:]; s=json.load(open(sp))
+          s["storage_migration_g24"]=True
+          s["storage_migration_g24_sha256"]=hashlib.sha256(open(cp,"rb").read()).hexdigest()
+          s["part4_r2_final_g24"]=False
+          s["final_merge_g24"]=False
+          s["verified_root_on_consolidated_linux"]=False
           s["updated_at_utc"]=time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
           t=sp+".tmp"; json.dump(s,open(t,"w"),indent=2,sort_keys=True); os.replace(t,sp)
           PY
-          UIDN="$(id -u)"
-          export XDG_RUNTIME_DIR="/run/user/$UIDN"
-          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
-          systemctl --user restart luna-r4-master-part1-part9.service
-          echo "PART4_R2_FINAL_G24=ACTIVE"
-          echo "MASTER_CONTINUES_PART5_TO_PART9=AUTOMATIC"
+          gh workflow run r4-part4-r2-final-merge.yml --repo Plomillo/luna-linux-bridge --ref staging/luna-r4-master-part1-part9-20260929
+          echo "STORAGE_MIGRATION_G24=PASS"
+          echo "HANDOFF=PART4_R2_FINAL_MERGE"
