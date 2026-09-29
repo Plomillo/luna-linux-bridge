@@ -1,0 +1,16 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_RESUME_AFTER_NTFS_PLAN_G24/1.0",
+  "status": "AUTHORIZED_RESUME",
+  "sudo_postinstall_g24_run_id": 36647246047,
+  "sudo_live_probe_run_id": 36647224141,
+  "ntfs_plan_remediation_g24_run_id": 36647664866,
+  "ntfs_diagnostic_run_id": 36647429039,
+  "target_disk": "/dev/nvme0n1",
+  "preserve": [
+    "PROYECTOS",
+    "EFI_REQUIRED_FOR_DEBIAN_BOOT",
+    "VALID_DEBIAN_INSTALLATION"
+  ],
+  "failure_posture": "FAIL_CLOSED",
+  "note": "Resume storage planning only after certified bounded unmount/remount remediation for ntfsresize --info."
+}
