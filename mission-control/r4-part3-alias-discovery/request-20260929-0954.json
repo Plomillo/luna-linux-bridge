@@ -1,0 +1,18 @@
+{
+  "scope": "READ_ONLY",
+  "purpose": "Verify whether PART3 blockers are naming/alias mismatches",
+  "aliases": {
+    "projects": [
+      "PROYECTOS",
+      "Projects",
+      "Project Center",
+      "Projects Center"
+    ],
+    "semantic": [
+      "Contenedor semántico",
+      "Contenedor semantico",
+      "Semantic Container",
+      "semantic_container"
+    ]
+  }
+}
