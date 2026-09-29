@@ -1,0 +1,74 @@
+name: "LUNA R4 — live state snapshot artifact"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-live-state-request/**
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 3
+    steps:
+      - name: Capture governed live state read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9"
+          OUT="$RUNNER_TEMP/luna-r4-live-state-$GITHUB_RUN_ID"
+          mkdir -p "$OUT"
+
+          printf 'captured_at_utc=%s\nhost=%s\nrun_id=%s\n' \
+            "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$(hostname)" "$GITHUB_RUN_ID" \
+            > "$OUT/CAPTURE_METADATA.txt"
+
+          copy_if_present() {
+            src="$1"
+            dst="$2"
+            if [ -f "$src" ]; then
+              cp -- "$src" "$OUT/$dst"
+            else
+              printf '{"status":"MISSING","source":"%s"}\n' "$src" > "$OUT/$dst.MISSING.json"
+            fi
+          }
+
+          copy_if_present "$STATE/MASTER_STATUS.json" "MASTER_STATUS.json"
+          copy_if_present "$STATE/LAST_HEARTBEAT.json" "LAST_HEARTBEAT.json"
+          copy_if_present "$STATE/evidence/PART_3.json" "PART_3.json"
+          copy_if_present "$STATE/PERMISSION_REQUEST.json" "PERMISSION_REQUEST.json"
+
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+          systemctl --user show luna-r4-master-part1-part9.service \
+            -p ActiveState -p SubState -p Result -p ExecMainStatus -p MainPID -p NRestarts \
+            > "$OUT/SERVICE_STATUS.txt" || true
+
+          (
+            cd "$OUT"
+            sha256sum ./* > SHA256SUMS.txt
+          )
+
+          echo "=== CAPTURE ==="
+          cat "$OUT/CAPTURE_METADATA.txt"
+          echo "=== SERVICE ==="
+          cat "$OUT/SERVICE_STATUS.txt"
+          echo "=== MASTER STATUS ==="
+          cat "$OUT/MASTER_STATUS.json" 2>/dev/null || true
+          echo "=== PART 3 ==="
+          cat "$OUT/PART_3.json" 2>/dev/null || true
+          echo "=== PERMISSION ==="
+          cat "$OUT/PERMISSION_REQUEST.json" 2>/dev/null || echo NONE
+
+      - name: Upload exact state snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: LUNA-R4-live-state-${{ github.run_id }}
+          path: ${{ runner.temp }}/luna-r4-live-state-${{ github.run_id }}/
+          if-no-files-found: error
+          retention-days: 7
