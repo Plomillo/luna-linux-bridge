@@ -1,0 +1,12 @@
+{
+  "schema": "LOUKSNA_R4_OPERATE_NOW/1.0",
+  "checkpoint": "20260926T034746Z-38579",
+  "current_certified_through": "PART_2",
+  "action": "RESUME_IMMEDIATELY_AT_PART_3",
+  "loop_interval_seconds": 60,
+  "notify_user_only_on": [
+    "NEEDS_PRIVILEGE",
+    "NEEDS_HUMAN_AUTHORIZATION"
+  ],
+  "fail_closed": true
+}
