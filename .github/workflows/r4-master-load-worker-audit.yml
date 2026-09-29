@@ -1,0 +1,64 @@
+name: "R4 — deployed master load_worker audit"
+
+on:
+  push:
+    branches:
+      - staging/custosz-mission-mailbox-20260928
+    paths:
+      - .github/workflows/r4-master-load-worker-audit.yml
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 3
+    steps:
+      - name: Inspect deployed load_worker and service state read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          MASTER="$HOME/.local/lib/louksna/r4-master-part1-part9/master_controller.py"
+          echo "MASTER_PATH=$MASTER"
+          if [ ! -f "$MASTER" ]; then
+            echo "MASTER_PRESENT=FALSE"
+            exit 0
+          fi
+          echo "MASTER_PRESENT=TRUE"
+          echo "MASTER_SHA256=$(sha256sum "$MASTER" | awk '{print $1}')"
+          echo "MASTER_BYTES=$(stat -c %s "$MASTER")"
+          echo "=== LOAD_WORKER_EXACT ==="
+          nl -ba "$MASTER" | sed -n '132,205p'
+          echo "=== SUPERVISOR_EXACT ==="
+          nl -ba "$MASTER" | sed -n '400,455p'
+          echo "=== PROCESS ==="
+          PID="$(pgrep -f "$MASTER --loop" | head -n 1 || true)"
+          echo "MASTER_PID=${PID:-NONE}"
+          if [ -n "$PID" ]; then
+            ps -p "$PID" -o pid,ppid,user,etimes,lstart,cmd
+            echo "CGROUP:"
+            cat "/proc/$PID/cgroup" 2>/dev/null || true
+            echo "CWD=$(readlink -f "/proc/$PID/cwd" 2>/dev/null || true)"
+          fi
+          echo "=== STATE TREE ==="
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9"
+          echo "STATE_PATH=$STATE"
+          if [ -d "$STATE" ]; then
+            find "$STATE" -maxdepth 2 -type f -printf '%P\t%s\t%TY-%Tm-%TdT%TH:%TM:%TS%Tz\n' | sort | tail -n 160
+          else
+            echo "STATE_PRESENT=FALSE"
+          fi
+          echo "=== RECENT STATE CONTENT ==="
+          for f in IDENTITY.json CURRENT_STATE.json MASTER_STATE.json LAST_RESULT.json LAST_ERROR.json STATUS.json; do
+            p="$STATE/$f"
+            if [ -f "$p" ] && [ "$(stat -c %s "$p")" -le 131072 ]; then
+              echo "### $p"
+              sed -n '1,260p' "$p"
+            fi
+          done
+          echo "=== RECENT USER JOURNAL ==="
+          journalctl --user --since '-30 min' --no-pager 2>/dev/null |
+            grep -Ei 'r4-master|master_controller|custosz|resource|adapter|workspace|traceback|exception|error|hold' |
+            tail -n 260 || true
+          echo "LOAD_WORKER_AUDIT_COMPLETE=TRUE"
