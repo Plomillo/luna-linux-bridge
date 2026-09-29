@@ -1,0 +1,37 @@
+name: "R4 Maestro — live sudo capability probe"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-sudo-live-probe/**
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 3
+    steps:
+      - name: Probe exact Maestro sudo capability
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "HOST=$(hostname)"
+          echo "USER=$(id -un)"
+          echo "UID=$(id -u)"
+          echo "GID=$(id -g)"
+          if sudo -n true; then
+            echo "SUDO_NONINTERACTIVE=PASS"
+            sudo -n /usr/sbin/visudo -c
+            echo "VISUDO=PASS"
+            sudo -n /usr/sbin/blockdev --getss /dev/nvme0n1
+            echo "BLOCKDEV_READ=PASS"
+            sudo -n /usr/sbin/blkid -p -s UUID -o value /dev/nvme0n1p3
+            echo "BLKID_READ=PASS"
+          else
+            echo "SUDO_NONINTERACTIVE=FAIL"
+            exit 20
+          fi
