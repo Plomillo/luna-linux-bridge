@@ -1,0 +1,4 @@
+{
+  "scope": "READ_ONLY",
+  "purpose": "Resolve exact Proyectos path and dispatcher bindings"
+}
