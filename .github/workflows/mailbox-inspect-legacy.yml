@@ -1,0 +1,35 @@
+name: "Mailbox inspect legacy CUSTOSZ"
+on:
+  push:
+    branches: [staging/custosz-mission-mailbox-20260928]
+    paths: [".github/workflows/mailbox-inspect-legacy.yml",".mailbox-inspect/**"]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import sys, inspect, pathlib
+          p=pathlib.Path("artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz").resolve()
+          sys.path.insert(0,str(p))
+          import custosz_v05_legacy as w
+          for name in ["mission_start","sources","source","verify","integrity","workspace","discover"]:
+              obj=getattr(w,name,None)
+              print("===== SYMBOL",name,repr(obj),"=====")
+              if callable(obj):
+                  try: print(inspect.getsource(obj))
+                  except Exception as e: print("SOURCE_ERR",type(e).__name__,e)
+          print("===== GLOBALS USED BY mission_start =====")
+          fn=w.mission_start
+          for k in sorted(fn.__globals__):
+              if k.lower().startswith(("source","integr","verify","louk","pin","discover","workspace")):
+                  print(k,repr(fn.__globals__[k]))
+          PY
