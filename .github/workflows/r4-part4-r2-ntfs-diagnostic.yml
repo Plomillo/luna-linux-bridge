@@ -1,0 +1,34 @@
+name: "R4 PART4 R2 — ntfsresize diagnostic"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-r2-ntfs-diagnostic/**
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Capture mount and ntfsresize diagnostics
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "HOST=$(hostname)"
+          echo "USER=$(id -un)"
+          echo "--- FINDMNT ---"
+          findmnt -T /media/diegoignacionorambuenamiranda/Windows -o SOURCE,FSTYPE,OPTIONS,TARGET
+          echo "--- BLKID ---"
+          sudo -n /usr/sbin/blkid -p /dev/nvme0n1p3
+          echo "--- NTFSRESIZE INFO ---"
+          set +e
+          sudo -n ntfsresize --info --force /dev/nvme0n1p3 2>&1
+          rc=$?
+          set -e
+          echo "NTFSRESIZE_RC=$rc"
+          test "$rc" -eq 0
