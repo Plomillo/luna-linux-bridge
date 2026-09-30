@@ -1,4 +1,4 @@
-# F2 local-delta rerun 2: provider mock now returns completed process
+# F2 local-delta rerun 3: constrain final JSON with zero explicit-thought budget
 name: "LOUKSNA Qwen F2 — integrate REASONING_INTERFACE with inline G23 G24"
 
 on:

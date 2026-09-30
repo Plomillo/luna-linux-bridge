@@ -95,7 +95,7 @@ def _extract_json(text):
     raise ProviderHold("MODEL_OUTPUT_NOT_JSON")
 
 
-def invoke(request, timeout_sec=180, threads=2, ctx_size=3072, reasoning_budget=256):
+def invoke(request, timeout_sec=180, threads=2, ctx_size=3072, reasoning_budget=0):
     request = validate_request(request)
     _manifest, binding, model, runtime = verify_material()
     schema = json.dumps(model_output_schema(), separators=(",", ":"))
@@ -112,7 +112,6 @@ def invoke(request, timeout_sec=180, threads=2, ctx_size=3072, reasoning_budget=
         "--simple-io",
         "--single-turn",
         "--reasoning-budget", str(reasoning_budget),
-        "--reasoning-format", "deepseek",
         "--json-schema", schema,
     ]
     try:
@@ -148,7 +147,7 @@ def main(argv=None):
     parser.add_argument("--timeout-sec", type=int, default=180)
     parser.add_argument("--threads", type=int, default=2)
     parser.add_argument("--ctx-size", type=int, default=3072)
-    parser.add_argument("--reasoning-budget", type=int, default=256)
+    parser.add_argument("--reasoning-budget", type=int, default=0)
     args = parser.parse_args(argv)
     request = json.loads(Path(args.request).read_text(encoding="utf-8"))
     result = invoke(
