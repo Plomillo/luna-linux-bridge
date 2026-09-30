@@ -45,15 +45,15 @@ jobs:
           fi
           test "$(sha256sum "$STAGE/bridge/live_link.py"|awk '{print $1}')" = "$(sha256sum bridge/live_link.py|awk '{print $1}')"
           sed -e "s|@REVIEWED_PROJECT_ROOT@|$STAGE|g"               -e "s|@OWNER_PRIVATE_STATE@|$STATE|g"               bridge/deploy/louksna-live-socket.service.in >"$OUT/louksna-live-socket.service"
-          /usr/bin/systemd-analyze verify --user "$OUT/louksna-live-socket.service" >"$OUT/systemd_verify.txt" 2>&1 || {
-            cat "$OUT/systemd_verify.txt"; exit 3;
-          }
-          install -m 0600 "$OUT/louksna-live-socket.service" "$UNITDIR/louksna-live-socket.service"
           sudo -n /usr/bin/loginctl enable-linger "$U"
           sudo -n /usr/bin/systemctl start "user@$UIDN.service"
           export XDG_RUNTIME_DIR="/run/user/$UIDN"
           export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
           test -S "$XDG_RUNTIME_DIR/bus"
+          /usr/bin/systemd-analyze --user verify "$OUT/louksna-live-socket.service" >"$OUT/systemd_verify.txt" 2>&1 || {
+            cat "$OUT/systemd_verify.txt"; exit 3;
+          }
+          install -m 0600 "$OUT/louksna-live-socket.service" "$UNITDIR/louksna-live-socket.service"
           systemctl --user daemon-reload
           systemctl --user enable --now louksna-live-socket.service
           systemctl --user is-enabled louksna-live-socket.service | tee "$OUT/ENABLED.txt"
