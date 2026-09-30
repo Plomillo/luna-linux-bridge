@@ -1,0 +1,119 @@
+name: "LOUKSNA Bridge 0.3 — bounded live-local host proof"
+on:
+  push:
+    branches:
+      - candidate/lrb-elastic-metacognition-v1
+    paths:
+      - ".github/workflows/louksna-lrb-v03-live-host-proof.yml"
+permissions:
+  contents: read
+concurrency:
+  group: lrb-v03-live-host-readonly-proof
+  cancel-in-progress: false
+jobs:
+  verify-live-local:
+    if: github.repository == 'Plomillo/luna-linux-bridge'
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 4
+    steps:
+      - name: Checkout candidate safely
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            bridge
+          sparse-checkout-cone-mode: true
+      - name: Strict live-local socket integration and host attestations
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(hostname)" = LOUKSNA
+          test "$(id -u)" -ne 0
+          umask 077
+          S="$RUNNER_TEMP/lrb-v03-live-$GITHUB_RUN_ID"
+          mkdir -p "$S"
+          state="$S/private-state"
+          mkdir -m 700 "$state"
+          sockdir="$RUNNER_TEMP/s$GITHUB_RUN_ID"
+          mkdir -m 700 "$sockdir"
+          ledger="$S/RECEIPT.txt"
+          printf 'run=%s\nsource_commit=%s\nhost=%s\nmutations=false\nroot_shell=false\ng23=NOT_EXECUTED\ng24=NOT_EXECUTED\n' \
+            "$GITHUB_RUN_ID" "$GITHUB_SHA" "$(hostname)" > "$ledger"
+          nice -n 12 timeout 75s python3 -B -m unittest discover -s bridge/tests -p 'test_*.py' -v > "$S/UNITTEST.log" 2>&1
+          grep -E '^Ran [0-9]+ tests' "$S/UNITTEST.log" >> "$ledger"
+          nice -n 12 timeout 70s python3 -B bridge/live_link.py --state-dir "$state" --socket-dir "$sockdir" serve > "$S/DAEMON.stdout" 2> "$S/DAEMON.stderr" &
+          pid=$!
+          trap 'rc=$?; if [ "$rc" -ne 0 ]; then echo "LRB_HOST_DIAGNOSTIC_EXIT=$rc"; test ! -f "$S/DAEMON.stderr" || tail -40 "$S/DAEMON.stderr"; test ! -f "$S/UNITTEST.log" || tail -8 "$S/UNITTEST.log"; fi; kill "$pid" >/dev/null 2>&1 || :; wait "$pid" >/dev/null 2>&1 || :' EXIT
+          for n in $(seq 1 50); do
+            test -S "$sockdir/BRIDGE.sock" && break
+            kill -0 "$pid"
+            sleep 0.1
+          done
+          test -S "$sockdir/BRIDGE.sock"
+          timeout 8s python3 -B bridge/live_link.py --state-dir "$state" --socket-dir "$sockdir" request --op status > "$S/STATUS.jsonl"
+          timeout 12s python3 -B bridge/live_link.py --state-dir "$state" --socket-dir "$sockdir" request --op watch --frames 3 --interval-sec 1 > "$S/LIVE.jsonl"
+          timeout 8s python3 -B bridge/live_link.py --state-dir "$state" --socket-dir "$sockdir" request --op tick_readonly > "$S/ELASTIC_IDLE.jsonl"
+          # Exercise the *current* metacognitive and gate-stop code over the
+          # live host socket. This request is a proposal only, not sudo authority.
+          python3 - "$S" <<'PY'
+          from datetime import datetime,timedelta,timezone
+          import json,os,pathlib,sys
+          p=pathlib.Path(sys.argv[1])
+          mission={
+            "mission_id":"HOST-GATED-"+os.environ["GITHUB_RUN_ID"],
+            "user_objective":"Confirm that the live Bridge blocks an unissued root session",
+            "model_proposal":"Test a signed-gate requirement without executing sudo bash",
+            "model":{"declared_name":"HOST_TEST_ONLY_NOT_LLM","declared_version":"UNVERIFIED"},
+            "deadline_utc":(datetime.now(timezone.utc)+timedelta(minutes=2)).isoformat(),
+            "max_auto_steps":1,
+            "steps":[{"kind":"GATED_OPERATION","requested_capability":"CAP_SUDO_BASH"}]
+          }
+          (p/"GATED_MISSION.json").write_text(json.dumps(mission,sort_keys=True))
+          PY
+          timeout 8s python3 -B bridge/elastic_automation.py --state-dir "$state" admit --mission-file "$S/GATED_MISSION.json" > "$S/GATED_ADMIT.json"
+          timeout 8s python3 -B bridge/live_link.py --state-dir "$state" --socket-dir "$sockdir" request --op diagnose --mission-id "HOST-GATED-$GITHUB_RUN_ID" > "$S/GATED_DIAGNOSIS.jsonl"
+          timeout 8s python3 -B bridge/live_link.py --state-dir "$state" --socket-dir "$sockdir" request --op tick_readonly > "$S/GATED_STOP.jsonl"
+          python3 - "$S" <<'PY'
+          import json, pathlib, sys
+          p=pathlib.Path(sys.argv[1])
+          status=json.loads((p/"STATUS.jsonl").read_text().strip())
+          frames=[json.loads(x) for x in (p/"LIVE.jsonl").read_text().splitlines()]
+          idle=json.loads((p/"ELASTIC_IDLE.jsonl").read_text().strip())
+          assert status["local_transport"]=="CONNECTED_SAME_UID"
+          assert status["sudo_root_shell"]=="NOT_EXPOSED"
+          assert status["g23"]=="NOT_EXECUTED" and status["g24"]=="NOT_EXECUTED"
+          assert len(frames)==3 and [f["frame"] for f in frames]==[1,2,3]
+          assert all(f["observation"]["host"]=="LOUKSNA" for f in frames)
+          assert frames[-1]["evidence_hash"]!=frames[0]["evidence_hash"]
+          assert idle["result"]["status"]=="IDLE_NO_ELIGIBLE_TASK"
+          assert idle["result"]["executed_steps"]==0 and not idle["certified"]
+          diag=json.loads((p/"GATED_DIAGNOSIS.jsonl").read_text().strip())
+          stop=json.loads((p/"GATED_STOP.jsonl").read_text().strip())
+          assert diag["status"]=="HOLD_INDEPENDENT_GATES_REQUIRED"
+          assert diag["privileged_execution_allowed"] is False
+          assert diag["next_action_executed"] is False
+          assert diag["owner_goal_exact"].startswith("Confirm that the live Bridge")
+          assert stop["result"]["status"]=="WAITING_FRESH_G23_G24"
+          assert stop["result"]["executed_steps"]==0 and not stop["certified"]
+          assert (p/"private-state/EVENTS.jsonl").is_file()
+          print("LRB_V03_HOST_GATED_DIAGNOSIS=PASS; ROOT_SESSION=NEVER_STARTED")
+          print("LRB_V03_HOST_UNIX_SOCKET_3_FRAMES=PASS; G23_G24=NOT_EXECUTED; ROOT_MUTATION=FALSE")
+          PY
+          printf 'live_socket=PASS\nframe_count=3\nelastic_idle=PASS\n' >> "$ledger"
+          if timeout 3s sudo -n true </dev/null >/dev/null 2>&1; then
+            printf 'sudo_noninteractive=AVAILABLE_CHECK_ONLY\n' >> "$ledger"
+          else
+            printf 'sudo_noninteractive=UNAVAILABLE_OR_TIMEOUT\n' >> "$ledger"
+          fi
+          sha256sum "$S/STATUS.jsonl" "$S/LIVE.jsonl" "$S/ELASTIC_IDLE.jsonl" "$S/GATED_ADMIT.json" "$S/GATED_DIAGNOSIS.jsonl" "$S/GATED_STOP.jsonl" "$S/GATED_MISSION.json" "$state/EVENTS.jsonl" > "$S/SHA256SUMS.txt"
+          echo "ARTIFACT_DIR=$S" >> "$GITHUB_ENV"
+          echo "HOST_LIVE_SOCKET_SCOPE=READONLY" >> "$GITHUB_STEP_SUMMARY"
+      - name: Preserve bounded read-only host observations
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-v03-live-host-readonly
+          path: ${{ runner.temp }}/lrb-v03-live-${{ github.run_id }}/
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 0
