@@ -78,6 +78,15 @@ jobs:
           BOOTORDER="$(sudo -n efibootmgr | awk -F': ' '/^BootOrder:/{print $2}')"
           test -n "$BOOTORDER"
           test "${BOOTORDER%%,*}" = 0000
+
+          # Static hardening: root-owned STATE must never be written by an unprivileged shell redirection.
+          SELF="$GITHUB_WORKSPACE/.github/workflows/r4-part4-r2-winre-activate.yml"
+          if [ -f "$SELF" ]; then
+            if grep -nE '>+[[:space:]]*"\\$STATE/' "$SELF" | grep -v 'sudo -n tee'; then
+              echo "HOLD:UNPRIVILEGED_STATE_REDIRECTION"
+              exit 41
+            fi
+          fi
           BOOT_BCD_SHA="$(sha256sum /boot/efi/EFI/Microsoft/Boot/BCD|awk '{print $1}')"
           REC_BCD_SHA="$(sha256sum /boot/efi/EFI/Microsoft/Recovery/BCD|awk '{print $1}')"
           BOOTMGFW_SHA="$(sha256sum /boot/efi/EFI/Microsoft/Boot/bootmgfw.efi|awk '{print $1}')"
@@ -492,7 +501,7 @@ jobs:
           sync
           test "$(sha256sum "$EFI/EFI/Microsoft/Boot/BCD"|awk '{print $1}')" = "$REC_BCD_SHA"
 
-          sudo -n efibootmgr -c -d /dev/nvme0n1 -p 1 -L "LOUKSNA WinRE OneShot" -l '\EFI\Microsoft\Boot\bootmgfw.efi' > "$STATE/EFIBOOTMGR.create.txt"
+          sudo -n efibootmgr -c -d /dev/nvme0n1 -p 1 -L "LOUKSNA WinRE OneShot" -l '\EFI\Microsoft\Boot\bootmgfw.efi' | sudo -n tee "$STATE/EFIBOOTMGR.create.txt" >/dev/null
           mapfile -t boots < <(sudo -n efibootmgr | sed -n 's/^Boot\([0-9A-Fa-f]\{4\}\)\* LOUKSNA WinRE OneShot.*/\1/p')
           test "${#boots[@]}" -eq 1
           BOOTNUM="${boots[0]}"
@@ -501,7 +510,7 @@ jobs:
           AFTER="$(sudo -n efibootmgr)"
           test "$(printf '%s\n' "$AFTER"|awk -F': ' '/^BootOrder:/{print $2}')" = "$ORIG_ORDER"
           test "$(printf '%s\n' "$AFTER"|awk -F': ' '/^BootNext:/{print $2}')" = "$BOOTNUM"
-          printf '%s\n' "$AFTER" > "$STATE/EFIBOOTMGR.armed.txt"
+          printf '%s\n' "$AFTER" | sudo -n tee "$STATE/EFIBOOTMGR.armed.txt" >/dev/null
 
           export INSTALL_ID BOOTNUM ORIG_ORDER SRC_SHA CAND_SHA BOOT_BCD_SHA REC_BCD_SHA
           sudo -n -E python3 - "$ROOT/ACTIVE.json" <<'PY'
