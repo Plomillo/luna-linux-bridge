@@ -1,0 +1,63 @@
+name: "LRB W6 — persistent service failure diagnosis"
+on:
+  push:
+    branches:
+      - candidate/lrb-terminal-sevenfold-20260930
+    paths:
+      - ".github/workflows/lrb-w6-service-diagnosis.yml"
+permissions:
+  contents: read
+env:
+  CORE_SHA: c961a198f524a128dba6374290e2abe73dfaece6
+jobs:
+  diagnose:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: c961a198f524a128dba6374290e2abe73dfaece6
+          persist-credentials: false
+          sparse-checkout: bridge
+      - name: Diagnose exact service failure without persistence
+        shell: bash
+        run: |
+          set +e
+          umask 077
+          UIDN="$(id -u)"; U="$(id -un)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+          sudo -n /usr/bin/loginctl enable-linger "$U"
+          sudo -n /usr/bin/systemctl start "user@$UIDN.service"
+          O="$RUNNER_TEMP/w6diag"; mkdir -m 700 "$O"
+          STAGE="$HOME/.local/lib/louksna-remote-bridge/$CORE_SHA"
+          STATE="$HOME/.local/state/louksna/remote-bridge/service"
+          mkdir -p "$STAGE" "$STATE"
+          test -d "$STAGE/bridge" || cp -a bridge "$STAGE/bridge"
+          sed -e "s|@REVIEWED_PROJECT_ROOT@|$STAGE|g" -e "s|@OWNER_PRIVATE_STATE@|$STATE|g"             bridge/deploy/louksna-live-socket.service.in >"$O/unit.service"
+          install -m 0600 "$O/unit.service" "$HOME/.config/systemd/user/louksna-live-socket.service"
+          systemctl --user daemon-reload
+          systemctl --user start louksna-live-socket.service
+          sleep 1
+          systemctl --user status louksna-live-socket.service --no-pager -l >"$O/status.txt" 2>&1
+          systemctl --user show louksna-live-socket.service -p ActiveState -p SubState -p Result -p ExecMainStatus -p NRestarts -p MainPID -p ExecStart >"$O/show.txt" 2>&1
+          journalctl --user -u louksna-live-socket.service --no-pager -n 120 >"$O/journal.txt" 2>&1
+          find "/run/user/$UIDN" -maxdepth 3 \( -type s -o -type d \) -printf '%y %m %u %g %p\n' >"$O/runtime-tree.txt" 2>&1
+          # Manual exact command under bounded timeout to capture stderr.
+          mkdir -p "$RUNNER_TEMP/manual-sock" "$RUNNER_TEMP/manual-state"
+          timeout 3s /usr/bin/python3 -B "$STAGE/bridge/live_link.py"             --state-dir "$RUNNER_TEMP/manual-state" --socket-dir "$RUNNER_TEMP/manual-sock" serve             >"$O/manual.stdout" 2>"$O/manual.stderr"
+          echo "MANUAL_RC=$?" >"$O/manual.rc"
+          find "$RUNNER_TEMP/manual-sock" -maxdepth 1 -printf '%y %m %p\n' >>"$O/manual.rc"
+          cat "$O/show.txt"
+          cat "$O/journal.txt"
+          cat "$O/manual.stderr"
+          systemctl --user disable --now louksna-live-socket.service >/dev/null 2>&1
+          rm -f "$HOME/.config/systemd/user/louksna-live-socket.service"
+          systemctl --user daemon-reload
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-w6-service-diagnosis
+          path: ${{ runner.temp }}/w6diag/
+          if-no-files-found: warn
+          compression-level: 0
