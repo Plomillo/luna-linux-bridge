@@ -1,7 +1,7 @@
 name: "LOUKSNA Remote Bridge — terminal certification 60s"
 
 on:
-  pull_request_target:
+  pull_request:
     branches:
       - trust-root/lrb-terminal-cert-20260930
   workflow_dispatch:
@@ -22,7 +22,7 @@ env:
 
 jobs:
   g23_prepare:
-    if: github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.sha == 'c961a198f524a128dba6374290e2abe73dfaece6'
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.sha == 'c961a198f524a128dba6374290e2abe73dfaece6'
     runs-on: ubuntu-24.04
     timeout-minutes: 1
     outputs:
@@ -47,7 +47,7 @@ jobs:
           done
           mkdir -p "$RUNNER_TEMP/g23p"
           sha256sum candidate/bridge/*.py candidate/bridge/*.json > "$RUNNER_TEMP/g23p/CANDIDATE_SHA256.txt"
-          printf '{"schema":"LRB_G23_PREP/1.0","status":"PASS","candidate_sha":"%s","candidate_code_executed":false,"validator_surface":"BASE_CONTROLLED_PULL_REQUEST_TARGET"}\n' "$TARGET_SHA" > "$RUNNER_TEMP/g23p/G23_PREP.json"
+          printf '{"schema":"LRB_G23_PREP/1.0","status":"PASS","candidate_sha":"%s","candidate_code_executed":false,"validator_surface":"BASE_CONTROLLED_PULL_REQUEST"}\n' "$TARGET_SHA" > "$RUNNER_TEMP/g23p/G23_PREP.json"
           echo "status=PASS" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
@@ -57,7 +57,7 @@ jobs:
           retention-days: 90
 
   g24_prepare:
-    if: github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.sha == 'c961a198f524a128dba6374290e2abe73dfaece6'
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.sha == 'c961a198f524a128dba6374290e2abe73dfaece6'
     runs-on: ubuntu-24.04
     timeout-minutes: 1
     outputs:
@@ -102,7 +102,7 @@ jobs:
           retention-days: 90
 
   maestro_prepare:
-    if: github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.sha == 'c961a198f524a128dba6374290e2abe73dfaece6'
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.sha == 'c961a198f524a128dba6374290e2abe73dfaece6'
     runs-on: ubuntu-24.04
     timeout-minutes: 1
     outputs:
@@ -126,7 +126,7 @@ jobs:
           echo "status=PASS" >> "$GITHUB_OUTPUT"
 
   material_parallel:
-    if: github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.sha == 'c961a198f524a128dba6374290e2abe73dfaece6'
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.sha == 'c961a198f524a128dba6374290e2abe73dfaece6'
     runs-on: [self-hosted, Linux, x64, luna-aux]
     timeout-minutes: 2
     outputs:
