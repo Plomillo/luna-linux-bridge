@@ -49,6 +49,28 @@ jobs:
         run: |
           set -Eeuo pipefail
           timeout 90s python3 -B -m unittest discover -s bridge/tests -p "test_*.py" -v
+      - name: Functional observer and revisioned-time smoke (no root, no host)
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          S="$RUNNER_TEMP/lrb-smoke-state"
+          python3 -B bridge/lrb_core.py --state-dir "$S" status > "$RUNNER_TEMP/STATUS_BEFORE.json"
+          python3 -B bridge/lrb_core.py --state-dir "$S" observe > "$RUNNER_TEMP/OBSERVE.json"
+          python3 -B bridge/lrb_core.py --state-dir "$S" time-update --revision 0 --heartbeat-sec 10 --work-seconds 20 > "$RUNNER_TEMP/TIME_UPDATE.json"
+          python3 -B bridge/lrb_core.py --state-dir "$S" monitor --cycles 2 > "$RUNNER_TEMP/MONITOR.json"
+          python3 -B bridge/lrb_core.py --state-dir "$S" plan --objective 'Observe without mutating' --model-expectation 'Expect PASS if evidence exists' --model-name 'DECLARED_TEST_MODEL' --model-version 'UNVERIFIED' > "$RUNNER_TEMP/PLAN.json"
+          python3 -B bridge/lrb_core.py --state-dir "$S" status > "$RUNNER_TEMP/STATUS_AFTER.json"
+          python3 - "$RUNNER_TEMP/STATUS_AFTER.json" "$RUNNER_TEMP/PLAN.json" <<'PY'
+          import json,sys
+          state=json.load(open(sys.argv[1]))
+          plan=json.load(open(sys.argv[2]))
+          assert state["time_policy"]["revision"]==1
+          assert state["g23"]=="NOT_EXECUTED"
+          assert plan["execution_allowed"] is False
+          print("LRB_GITHUB_HOSTED_SMOKE=PASS; HOST_CERTIFICATION=FALSE")
+          PY
+          mkdir -p "$RUNNER_TEMP/lrb-test-evidence"
+          cp "$RUNNER_TEMP"/{STATUS_BEFORE,STATUS_AFTER,OBSERVE,TIME_UPDATE,MONITOR,PLAN}.json "$RUNNER_TEMP/lrb-test-evidence/"
       - name: Record immutable candidate test evidence
         if: always()
         shell: bash
