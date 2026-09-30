@@ -72,6 +72,25 @@ jobs:
             ("C_NO_SCHEMA",["--reasoning-budget","0","--reasoning-format","deepseek"]),
             ("D_PLAIN",["--reasoning-budget","0"])
           ]
+          # Exact provider-contract probes: same complex schema, without publishing model text.
+          import sys
+          sys.path.insert(0, str(pathlib.Path("bridge/reasoning").resolve()))
+          from interface import model_output_schema, build_prompt
+          req={
+            "schema":"LOUKSNA_REASONING_REQUEST/1.0",
+            "request_id":"F2-DIAG-PROVIDER",
+            "objective":"Using only supplied evidence, identify the safe state. No execution is authorized.",
+            "evidence_refs":["F1:36790409680"],
+            "context":{"host":"LOUKSNA","f1":"PASS"},
+            "constraints":{"fail_closed":True,"execution_authority":False}
+          }
+          provider_schema=json.dumps(model_output_schema(),separators=(",",":"))
+          provider_prompt=build_prompt(req)
+          provider_variants=[
+            ("E_PROVIDER_512",512),
+            ("F_PROVIDER_1024",1024),
+            ("G_PROVIDER_1536",1536)
+          ]
           rows=[]
           for name,extra in variants:
               cmd=[runtime,"-m",model,"-p",prompt,"-n","160","--temp","0","--ctx-size","1024","--threads","2","--no-display-prompt","--simple-io","--single-turn",*extra]
@@ -98,7 +117,33 @@ jobs:
                   })
               except subprocess.TimeoutExpired:
                   rows.append({"variant":name,"timeout":True,"stdout_json":False,"stderr_json":False})
-          result={"schema":"LOUKSNA_QWEN_F2_OUTPUT_DIAG/1.0","status":"PASS","published_model_text":False,"variants":rows}
+          for name,max_tokens in provider_variants:
+              cmd=[runtime,"-m",model,"-p",provider_prompt,"-n",str(max_tokens),"--temp","0","--ctx-size","3072","--threads","2","--no-display-prompt","--simple-io","--single-turn","--reasoning-budget","0","--reasoning-format","deepseek","--json-schema",provider_schema]
+              try:
+                  p=subprocess.run(cmd,stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=120,check=False,shell=False)
+                  stdout=p.stdout or ""; stderr=p.stderr or ""
+                  def first_json(s):
+                      dec=json.JSONDecoder()
+                      for i,ch in enumerate(s):
+                          if ch!="{": continue
+                          try:
+                              obj,end=dec.raw_decode(s[i:])
+                              return isinstance(obj,dict),i,end
+                          except Exception:
+                              pass
+                      return False,None,None
+                  parsed,start,end=first_json(stdout)
+                  rows.append({
+                    "variant":name,"rc":p.returncode,"max_tokens":max_tokens,
+                    "stdout_bytes":len(stdout.encode()),"stderr_bytes":len(stderr.encode()),
+                    "stdout_first_object_json":parsed,
+                    "stdout_has_open":"{" in stdout,"stdout_has_close":"}" in stdout,
+                    "stdout_sha256":hashlib.sha256(stdout.encode()).hexdigest(),
+                    "stderr_sha256":hashlib.sha256(stderr.encode()).hexdigest()
+                  })
+              except subprocess.TimeoutExpired:
+                  rows.append({"variant":name,"timeout":True,"stdout_first_object_json":False})
+          result={"schema":"LOUKSNA_QWEN_F2_OUTPUT_DIAG/1.1","status":"PASS","published_model_text":False,"variants":rows}
           (out/"DIAG.json").write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
           print(json.dumps(result,sort_keys=True))
           PY
