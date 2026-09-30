@@ -1,0 +1,44 @@
+name: "R4 final chain static diagnosis"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-final-chain-static-diagnose.yml
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Validate final merge workflow chain
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          GOBIN="$RUNNER_TEMP/bin" go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
+          for f in             .github/workflows/r4-part4-r2-final-merge.yml             .github/workflows/r4-part4-r2-final-merge-postboot.yml             .github/workflows/r4-part4-r2-final-merge-authority-g23-g24.yml; do
+            ruby -e 'require "yaml"; x=YAML.load_file(ARGV[0]); raise "jobs missing" unless x.is_a?(Hash) && x["jobs"].is_a?(Hash); puts "YAML_PASS=#{ARGV[0]} jobs=#{x["jobs"].keys.join(",")}"' "$f"
+            "$RUNNER_TEMP/bin/actionlint" -ignore 'label "luna-aux" is unknown' -ignore 'shellcheck reported issue' "$f"
+          done
+          bash -n server/r4-master/part4_r2_final_merge_prepare.sh
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("server/r4-master/part4_r2_final_merge_prepare.sh").read_text()
+          pre=Path(".github/workflows/r4-part4-r2-final-merge.yml").read_text()
+          post=Path(".github/workflows/r4-part4-r2-final-merge-postboot.yml").read_text()
+          assert 'P5_REMAINS_UNMODIFIED_BOOTABLE_ROOT' in pre
+          assert 'ONE_SHOT_BOOT_TO_P3_WITH_P5_ROLLBACK_PRESERVED' in pre
+          assert 'P3_BOOT_VERIFIED_P5_RETIREMENT_AUTHORIZED' in post
+          assert 'G24 certify final consolidated Linux disk' in post
+          assert 'MASTER_RELEASED=PART4_TO_PART5_TO_PART9' in post
+          assert '99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e' in p
+          print("FINAL_CHAIN_INVARIANTS=PASS")
+          PY
