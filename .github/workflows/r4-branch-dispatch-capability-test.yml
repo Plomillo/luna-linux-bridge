@@ -1,0 +1,26 @@
+name: "R4 branch workflow-dispatch capability test"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-branch-dispatch-capability-test.yml
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Dispatch branch-only diagnostic workflow
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          gh api --method POST repos/Plomillo/luna-linux-bridge/actions/workflows/r4-v5-syntax-diagnose.yml/dispatches             -f ref=staging/luna-r4-master-part1-part9-20260929
+          echo "BRANCH_WORKFLOW_DISPATCH=PASS"
