@@ -36,3 +36,15 @@ All verbs are local, unprivileged and operate on an explicitly supplied private 
 Final certification needs working host transport, actual independent evidence, G23/G24 and second-order signers, CUSTOSZ review and owner acceptance. GitHub CI success alone does not certify or deploy the Bridge.
 
 This extension leaves Louksna.md, staging R4, P3, P2/P4, fstab, bootloader, privilege policy and already approved workflows untouched.
+
+
+## Verified staged scheduler and live-host demonstration
+An additive user-level timer design now exists in deploy/louksna-elastic-readonly.service.in and .timer.in. They are **templates only**, not installed. elastic_tick.py chooses the earliest eligible deadline, runs at most one registered read-only step per tick, enforces a separate nonblocking scheduler lock, and returns IDLE after completion. The systemd template specifies CPUQuota=10%, MemoryMax=128M and low I/O priority, but these limits have not yet been benchmarked or activated on LOUKSNA.
+
+- Source CI: run 36731280774, commit 3556c3a2c8df764f088446915699ebf025e0d50b, 35 tests PASS.
+- Real LOUKSNA self-hosted GitHub runner: run 36731593246, commit f6b9c7532d6720ca0a38dbb83af2008eee68910c, 35 tests PASS; two autonomous read-only steps PASS; third attempt IDLE; no privilege-changing action.
+- Live sudo-n true check in that bounded run: AVAILABLE_FOR_CHECK_ONLY. This is not a persistent root lease, nor does it independently re-certify the installed privilege bridge.
+- Host evidence artifact ID 11105137526, ZIP digest SHA-256 093d9aed7d226ff8095074f7242073340e9c7d2fb26afb87adbad745c44aa5c4.
+- Formal independent review handoff: GitHub issue #32 for CUSTOSZ V7/Meastro; opening the issue does not instantiate CUSTOSZ or issue G23/G24.
+
+This is a reproducible **read-only host smoke**, not certified deployment, browser/screen streaming, root capability, or permission to progress R4 PART4/5-9. The owner retains the objective; model recommendations remain explicitly separate.
