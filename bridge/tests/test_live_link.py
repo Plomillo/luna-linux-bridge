@@ -128,6 +128,51 @@ class LiveTransportTests(unittest.TestCase):
             server.server_close()
             path.unlink()
 
+    def test_diagnosis_binds_real_local_authenticated_channel(self):
+        from datetime import datetime,timedelta,timezone
+        request={"mission_id":"diagnose","user_objective":"Observe exact host only",
+                 "model_proposal":"Observe host without root",
+                 "model":{"declared_name":"TEST","declared_version":"1"},
+                 "deadline_utc":(datetime.now(timezone.utc)+timedelta(minutes=2)).isoformat(),
+                 "max_auto_steps":1,"steps":[{"kind":"OBSERVE_LOCAL"}]}
+        self.transport.automation.admit(request)
+        result=self.transport.dispatch({"op":"diagnose","mission_id":"diagnose"})
+        self.assertEqual(result["status"],"READY_REGISTERED_READONLY_STEP")
+        self.assertEqual(result["owner_goal_exact"],"Observe exact host only")
+        self.assertFalse(result["privileged_execution_allowed"])
+        self.assertEqual(len(result["review_passes"]),3)
+
+    def test_model_drift_is_rejected_before_structural_review(self):
+        from datetime import datetime,timedelta,timezone
+        request={"mission_id":"model-001","user_objective":"Preserve owner exact wording",
+                 "model_proposal":"Observe only",
+                 "model":{"declared_name":"TEST","declared_version":"1"},
+                 "deadline_utc":(datetime.now(timezone.utc)+timedelta(minutes=2)).isoformat(),
+                 "max_auto_steps":1,"steps":[{"kind":"OBSERVE_LOCAL"}]}
+        self.transport.automation.admit(request)
+        with self.assertRaisesRegex(RuntimeError,"MODEL_OWNER_SCOPE_DRIFT"):
+            self.transport.dispatch({"op":"review_model","mission_id":"model-001",
+                  "envelope":{"user_objective":"LLM invented a different objective"},
+                  "evidence_index":{"observations":{}}})
+
+    def test_gate_preflight_does_not_grant_on_missing_checkpoint(self):
+        from datetime import datetime,timedelta,timezone
+        req={"mission_id":"safe-first","user_objective":"Only observation now",
+             "model_proposal":"No privilege",
+             "model":{"declared_name":"TEST","declared_version":"1"},
+             "deadline_utc":(datetime.now(timezone.utc)+timedelta(minutes=2)).isoformat(),
+             "max_auto_steps":1,"steps":[{"kind":"OBSERVE_LOCAL"}]}
+        self.transport.automation.admit(req)
+        with self.assertRaisesRegex(RuntimeError,"GATED_MISSION_CHECKPOINT_REQUIRED"):
+            self.transport.dispatch({"op":"gate_preflight","mission_id":"safe-first",
+                 "request_path":"/nonexistent","owner_signature":"/nonexistent",
+                 "receipts":{},"strong":True})
+
+    def test_weakened_external_gate_is_rejected(self):
+        with self.assertRaisesRegex(RuntimeError,"STRONG_EXTERNAL_GATES_REQUIRED"):
+            self.transport.dispatch({"op":"gate_preflight","mission_id":"no-mission",
+                 "request_path":"x","owner_signature":"x","receipts":{},"strong":False})
+
     def test_failed_gate_cannot_run_via_socket(self):
         from datetime import datetime, timedelta, timezone
         mission={"mission_id":"host-report","user_objective":"Only an approval-gated task",
