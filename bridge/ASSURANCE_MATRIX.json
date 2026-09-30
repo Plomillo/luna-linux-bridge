@@ -1,0 +1,658 @@
+{
+  "schema": "LRB_CONTINUOUS_ASSURANCE/0.1",
+  "authority": "Louksna.md",
+  "supporting_protocol": "PUAC2.md",
+  "status": "DESIGN_ONLY_UNCERTIFIED",
+  "doctrine": "EXTEND_DO_NOT_REPLACE",
+  "workstreams": [
+    {
+      "id": "TRUST_AND_CERTIFICATION",
+      "owner_requirement": "Five independently controlled cryptographic authorities: OWNER, G23, G24, G23_2 and G24_2; fresh non-replayable scope-bound decisions.",
+      "claim": "Cryptographic identity, provenance, decision chronology, issuer custody and revocation are independently assessed.",
+      "acceptance": "Exactly five unique public trust identities are root-protected and their separate operators are externally attested; a current strongly signed request is approved in order without replay.",
+      "verification": "Compare exact source and live-host hashes, validate external_gates signatures and expiration, test cross-state and global replay.",
+      "validation": "Independent G23 checks each phase; G24 reviews G23 evidence and signs an exact current object only with sufficient evidence.",
+      "risks": [
+        "Unattested signer custody",
+        "Stale APC certification propagation",
+        "Cross-directory scope replay",
+        "Revocation after signing"
+      ],
+      "dependencies": [
+        "Owner-controlled public trust anchors outside repository",
+        "Independent issuer decisions",
+        "Exact source/host/boot/operation bound receipt"
+      ],
+      "execution_responsible": "CUSTOSZ_V7_UNDER_MAESTRO_WITH_SEPARATE_OWNER_APPROVAL",
+      "phases": {
+        "INTAKE": {
+          "object_and_version": "TRUST_AND_CERTIFICATION: exact owner requirements + source pin",
+          "expected_evidence": [
+            "TRUST_AND_CERTIFICATION: Owner objective and immutable source identity",
+            "TRUST_AND_CERTIFICATION: Risk/dependency inventory and defined acceptance"
+          ],
+          "impact_review": "TRUST_AND_CERTIFICATION: Determine current authorized scope and identify historic vs current evidence; block inferred approvals",
+          "rollback_condition": "TRUST_AND_CERTIFICATION: Abort intake and preserve original source if scope/identity changes",
+          "G23": {
+            "role": "G23",
+            "expected_evidence": [
+              "TRUST_AND_CERTIFICATION: G23 scope and independence assignment",
+              "TRUST_AND_CERTIFICATION: Verification criteria specified before implementation"
+            ],
+            "decision_authority": "INDEPENDENT_VALIDATOR",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          },
+          "G24": {
+            "role": "G24",
+            "expected_evidence": [
+              "TRUST_AND_CERTIFICATION: G24 decision scope and authority assignment",
+              "TRUST_AND_CERTIFICATION: Predeclared certificate acceptance/denial conditions"
+            ],
+            "decision_authority": "SEPARATE_CERTIFICATION_AUTHORITY",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          }
+        },
+        "DEVELOPMENT": {
+          "object_and_version": "TRUST_AND_CERTIFICATION: source candidate and all affected dependencies",
+          "expected_evidence": [
+            "TRUST_AND_CERTIFICATION: Current source revision and provenance ledger",
+            "TRUST_AND_CERTIFICATION: Reproducible negative and positive test records"
+          ],
+          "impact_review": "TRUST_AND_CERTIFICATION: Assess code/regression risk, invalidation of prior source evidence and required fresh reviews",
+          "rollback_condition": "TRUST_AND_CERTIFICATION: Restore last verified source without reassigning canonical identity",
+          "G23": {
+            "role": "G23",
+            "expected_evidence": [
+              "TRUST_AND_CERTIFICATION: Independent review of tested source and risk coverage",
+              "TRUST_AND_CERTIFICATION: G23 deficiencies and conflict findings"
+            ],
+            "decision_authority": "INDEPENDENT_VALIDATOR",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          },
+          "G24": {
+            "role": "G24",
+            "expected_evidence": [
+              "TRUST_AND_CERTIFICATION: G24 evidence-completeness precheck distinct from G23",
+              "TRUST_AND_CERTIFICATION: G24 outstanding decision dependencies"
+            ],
+            "decision_authority": "SEPARATE_CERTIFICATION_AUTHORITY",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          }
+        },
+        "INTEGRATION": {
+          "object_and_version": "TRUST_AND_CERTIFICATION: candidate plus live host transport, APC and CUSTOSZ interfaces",
+          "expected_evidence": [
+            "TRUST_AND_CERTIFICATION: Real-host authenticated read-only receipts",
+            "TRUST_AND_CERTIFICATION: Cross-component source and dependency compatibility evidence"
+          ],
+          "impact_review": "TRUST_AND_CERTIFICATION: Reassess trust boundaries, signer custody and global one-use register before any protected integration",
+          "rollback_condition": "TRUST_AND_CERTIFICATION: Revert unapproved integration only; preserve already certified historical components",
+          "G23": {
+            "role": "G23",
+            "expected_evidence": [
+              "TRUST_AND_CERTIFICATION: Independent integration review with real-host negative tests",
+              "TRUST_AND_CERTIFICATION: G23 provenance and separation-of-duties assessment"
+            ],
+            "decision_authority": "INDEPENDENT_VALIDATOR",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          },
+          "G24": {
+            "role": "G24",
+            "expected_evidence": [
+              "TRUST_AND_CERTIFICATION: G24 exact integration object review readiness",
+              "TRUST_AND_CERTIFICATION: No inherited component certificates without fresh integration approval"
+            ],
+            "decision_authority": "SEPARATE_CERTIFICATION_AUTHORITY",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          }
+        },
+        "PRE_RELEASE": {
+          "object_and_version": "TRUST_AND_CERTIFICATION: exact deployable source, host/boot identity and owner-approved operation scope",
+          "expected_evidence": [
+            "TRUST_AND_CERTIFICATION: Signed current owner request and full production gate chain",
+            "TRUST_AND_CERTIFICATION: Current exact hashes, residual risks and scoped rollback plan"
+          ],
+          "impact_review": "TRUST_AND_CERTIFICATION: Identify all unresolved critical findings; distinguish CI success from independent certification and authorization",
+          "rollback_condition": "TRUST_AND_CERTIFICATION: Deny release and preserve previous functioning version if any required gate fails",
+          "G23": {
+            "role": "G23",
+            "expected_evidence": [
+              "TRUST_AND_CERTIFICATION: Actual favorable independent signed G23 decision",
+              "TRUST_AND_CERTIFICATION: G23_2 independent second-order decision and custody proof"
+            ],
+            "decision_authority": "INDEPENDENT_VALIDATOR",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          },
+          "G24": {
+            "role": "G24",
+            "expected_evidence": [
+              "TRUST_AND_CERTIFICATION: Actual separate signed G24 decision depending on G23",
+              "TRUST_AND_CERTIFICATION: G24_2 independent second-order decision and custody proof"
+            ],
+            "decision_authority": "SEPARATE_CERTIFICATION_AUTHORITY",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          }
+        },
+        "POSTBOOT": {
+          "object_and_version": "TRUST_AND_CERTIFICATION: deployed build and machine state after the real restart",
+          "expected_evidence": [
+            "TRUST_AND_CERTIFICATION: New live boot identifier, service health and bounded resource evidence",
+            "TRUST_AND_CERTIFICATION: Postboot source identity, evidence-chain continuity and regression proof"
+          ],
+          "impact_review": "TRUST_AND_CERTIFICATION: Invalidate boot-scoped signatures if boot changes; identify changed artifact/host dependencies",
+          "rollback_condition": "TRUST_AND_CERTIFICATION: Execute only separately authorized rollback and independently verify restoration",
+          "G23": {
+            "role": "G23",
+            "expected_evidence": [
+              "TRUST_AND_CERTIFICATION: Independent postboot host and resource validation on current boot",
+              "TRUST_AND_CERTIFICATION: G23 confirmation of new or retained approval scope"
+            ],
+            "decision_authority": "INDEPENDENT_VALIDATOR",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          },
+          "G24": {
+            "role": "G24",
+            "expected_evidence": [
+              "TRUST_AND_CERTIFICATION: G24 decision on current postboot evidence",
+              "TRUST_AND_CERTIFICATION: Final Maestro release acceptance only after independent gates"
+            ],
+            "decision_authority": "SEPARATE_CERTIFICATION_AUTHORITY",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          }
+        }
+      }
+    },
+    {
+      "id": "GOVERNANCE",
+      "owner_requirement": "CUSTOSZ V7 is the actual senior worker; Maestro governs the phase chain and the user's objective outranks optional LLM proposals.",
+      "claim": "CUSTOSZ source review, independent validation and Maestro handoff are evidenced on exactly the candidate source SHA.",
+      "acceptance": "CUSTOSZ reviews this exact build using a registered pinned adapter and publishes reproducible findings; independent G23/G24 and Maestro produce authentic decisions.",
+      "verification": "Audit mission adapter hash, CUSTOSZ and runtime receipts, source SHA, exact user/model split and machine-readable provenance.",
+      "validation": "Separate independent technical review of worker evidence and certifier role/authority before accepting Maestro handoff.",
+      "risks": [
+        "Supervisory selftest misreported as material review",
+        "LLM recommendation superseding owner objective",
+        "Executor substitution",
+        "Certification by assistant self-assertion"
+      ],
+      "dependencies": [
+        "Registered SHA256-pinned LRB CUSTOSZ review adapter",
+        "Independent reviewer with traceable identity",
+        "Maestro acceptance record"
+      ],
+      "execution_responsible": "CUSTOSZ_V7_UNDER_MAESTRO_WITH_SEPARATE_OWNER_APPROVAL",
+      "phases": {
+        "INTAKE": {
+          "object_and_version": "GOVERNANCE: exact owner requirements + source pin",
+          "expected_evidence": [
+            "GOVERNANCE: Owner objective and immutable source identity",
+            "GOVERNANCE: Risk/dependency inventory and defined acceptance"
+          ],
+          "impact_review": "GOVERNANCE: Determine current authorized scope and identify historic vs current evidence; block inferred approvals",
+          "rollback_condition": "GOVERNANCE: Abort intake and preserve original source if scope/identity changes",
+          "G23": {
+            "role": "G23",
+            "expected_evidence": [
+              "GOVERNANCE: G23 scope and independence assignment",
+              "GOVERNANCE: Verification criteria specified before implementation"
+            ],
+            "decision_authority": "INDEPENDENT_VALIDATOR",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          },
+          "G24": {
+            "role": "G24",
+            "expected_evidence": [
+              "GOVERNANCE: G24 decision scope and authority assignment",
+              "GOVERNANCE: Predeclared certificate acceptance/denial conditions"
+            ],
+            "decision_authority": "SEPARATE_CERTIFICATION_AUTHORITY",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          }
+        },
+        "DEVELOPMENT": {
+          "object_and_version": "GOVERNANCE: source candidate and all affected dependencies",
+          "expected_evidence": [
+            "GOVERNANCE: Current source revision and provenance ledger",
+            "GOVERNANCE: Reproducible negative and positive test records"
+          ],
+          "impact_review": "GOVERNANCE: Assess code/regression risk, invalidation of prior source evidence and required fresh reviews",
+          "rollback_condition": "GOVERNANCE: Restore last verified source without reassigning canonical identity",
+          "G23": {
+            "role": "G23",
+            "expected_evidence": [
+              "GOVERNANCE: Independent review of tested source and risk coverage",
+              "GOVERNANCE: G23 deficiencies and conflict findings"
+            ],
+            "decision_authority": "INDEPENDENT_VALIDATOR",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          },
+          "G24": {
+            "role": "G24",
+            "expected_evidence": [
+              "GOVERNANCE: G24 evidence-completeness precheck distinct from G23",
+              "GOVERNANCE: G24 outstanding decision dependencies"
+            ],
+            "decision_authority": "SEPARATE_CERTIFICATION_AUTHORITY",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          }
+        },
+        "INTEGRATION": {
+          "object_and_version": "GOVERNANCE: candidate plus live host transport, APC and CUSTOSZ interfaces",
+          "expected_evidence": [
+            "GOVERNANCE: Real-host authenticated read-only receipts",
+            "GOVERNANCE: Cross-component source and dependency compatibility evidence"
+          ],
+          "impact_review": "GOVERNANCE: Reassess trust boundaries, signer custody and global one-use register before any protected integration",
+          "rollback_condition": "GOVERNANCE: Revert unapproved integration only; preserve already certified historical components",
+          "G23": {
+            "role": "G23",
+            "expected_evidence": [
+              "GOVERNANCE: Independent integration review with real-host negative tests",
+              "GOVERNANCE: G23 provenance and separation-of-duties assessment"
+            ],
+            "decision_authority": "INDEPENDENT_VALIDATOR",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          },
+          "G24": {
+            "role": "G24",
+            "expected_evidence": [
+              "GOVERNANCE: G24 exact integration object review readiness",
+              "GOVERNANCE: No inherited component certificates without fresh integration approval"
+            ],
+            "decision_authority": "SEPARATE_CERTIFICATION_AUTHORITY",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          }
+        },
+        "PRE_RELEASE": {
+          "object_and_version": "GOVERNANCE: exact deployable source, host/boot identity and owner-approved operation scope",
+          "expected_evidence": [
+            "GOVERNANCE: Signed current owner request and full production gate chain",
+            "GOVERNANCE: Current exact hashes, residual risks and scoped rollback plan"
+          ],
+          "impact_review": "GOVERNANCE: Identify all unresolved critical findings; distinguish CI success from independent certification and authorization",
+          "rollback_condition": "GOVERNANCE: Deny release and preserve previous functioning version if any required gate fails",
+          "G23": {
+            "role": "G23",
+            "expected_evidence": [
+              "GOVERNANCE: Actual favorable independent signed G23 decision",
+              "GOVERNANCE: G23_2 independent second-order decision and custody proof"
+            ],
+            "decision_authority": "INDEPENDENT_VALIDATOR",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          },
+          "G24": {
+            "role": "G24",
+            "expected_evidence": [
+              "GOVERNANCE: Actual separate signed G24 decision depending on G23",
+              "GOVERNANCE: G24_2 independent second-order decision and custody proof"
+            ],
+            "decision_authority": "SEPARATE_CERTIFICATION_AUTHORITY",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          }
+        },
+        "POSTBOOT": {
+          "object_and_version": "GOVERNANCE: deployed build and machine state after the real restart",
+          "expected_evidence": [
+            "GOVERNANCE: New live boot identifier, service health and bounded resource evidence",
+            "GOVERNANCE: Postboot source identity, evidence-chain continuity and regression proof"
+          ],
+          "impact_review": "GOVERNANCE: Invalidate boot-scoped signatures if boot changes; identify changed artifact/host dependencies",
+          "rollback_condition": "GOVERNANCE: Execute only separately authorized rollback and independently verify restoration",
+          "G23": {
+            "role": "G23",
+            "expected_evidence": [
+              "GOVERNANCE: Independent postboot host and resource validation on current boot",
+              "GOVERNANCE: G23 confirmation of new or retained approval scope"
+            ],
+            "decision_authority": "INDEPENDENT_VALIDATOR",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          },
+          "G24": {
+            "role": "G24",
+            "expected_evidence": [
+              "GOVERNANCE: G24 decision on current postboot evidence",
+              "GOVERNANCE: Final Maestro release acceptance only after independent gates"
+            ],
+            "decision_authority": "SEPARATE_CERTIFICATION_AUTHORITY",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          }
+        }
+      }
+    },
+    {
+      "id": "EXECUTION_AND_OBSERVABILITY",
+      "owner_requirement": "Governed scoped sudo bash, authenticated bidirectional off-host transport, opt-in real-time visual observation and authorized elastic mission execution.",
+      "claim": "Existing local socket and synthetic mTLS evidence remain distinct from actual off-host deployment and material root execution.",
+      "acceptance": "Approved capability executes only on exact signed scope through verified APC broker and durable one-use register; consented remote stream passes authenticated end-to-end tests.",
+      "verification": "Replay, command injection, host source drift, stale signatures, opt-in consent, pressure and bounded transport negative tests.",
+      "validation": "G23 independently validates exact live integration and failure cases; G24 grants limited operational scope only after G23.",
+      "risks": [
+        "Arbitrary remote root ingress",
+        "Unconsented screen capture",
+        "Misleading loopback test as off-host service",
+        "Unbounded workload on owner device"
+      ],
+      "dependencies": [
+        "Production identity and independent current G23/G24 issuance",
+        "Reviewed APC material executor",
+        "Owner-approved off-host transport/visual session"
+      ],
+      "execution_responsible": "CUSTOSZ_V7_UNDER_MAESTRO_WITH_SEPARATE_OWNER_APPROVAL",
+      "phases": {
+        "INTAKE": {
+          "object_and_version": "EXECUTION_AND_OBSERVABILITY: exact owner requirements + source pin",
+          "expected_evidence": [
+            "EXECUTION_AND_OBSERVABILITY: Owner objective and immutable source identity",
+            "EXECUTION_AND_OBSERVABILITY: Risk/dependency inventory and defined acceptance"
+          ],
+          "impact_review": "EXECUTION_AND_OBSERVABILITY: Determine current authorized scope and identify historic vs current evidence; block inferred approvals",
+          "rollback_condition": "EXECUTION_AND_OBSERVABILITY: Abort intake and preserve original source if scope/identity changes",
+          "G23": {
+            "role": "G23",
+            "expected_evidence": [
+              "EXECUTION_AND_OBSERVABILITY: G23 scope and independence assignment",
+              "EXECUTION_AND_OBSERVABILITY: Verification criteria specified before implementation"
+            ],
+            "decision_authority": "INDEPENDENT_VALIDATOR",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          },
+          "G24": {
+            "role": "G24",
+            "expected_evidence": [
+              "EXECUTION_AND_OBSERVABILITY: G24 decision scope and authority assignment",
+              "EXECUTION_AND_OBSERVABILITY: Predeclared certificate acceptance/denial conditions"
+            ],
+            "decision_authority": "SEPARATE_CERTIFICATION_AUTHORITY",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          }
+        },
+        "DEVELOPMENT": {
+          "object_and_version": "EXECUTION_AND_OBSERVABILITY: source candidate and all affected dependencies",
+          "expected_evidence": [
+            "EXECUTION_AND_OBSERVABILITY: Current source revision and provenance ledger",
+            "EXECUTION_AND_OBSERVABILITY: Reproducible negative and positive test records"
+          ],
+          "impact_review": "EXECUTION_AND_OBSERVABILITY: Assess code/regression risk, invalidation of prior source evidence and required fresh reviews",
+          "rollback_condition": "EXECUTION_AND_OBSERVABILITY: Restore last verified source without reassigning canonical identity",
+          "G23": {
+            "role": "G23",
+            "expected_evidence": [
+              "EXECUTION_AND_OBSERVABILITY: Independent review of tested source and risk coverage",
+              "EXECUTION_AND_OBSERVABILITY: G23 deficiencies and conflict findings"
+            ],
+            "decision_authority": "INDEPENDENT_VALIDATOR",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          },
+          "G24": {
+            "role": "G24",
+            "expected_evidence": [
+              "EXECUTION_AND_OBSERVABILITY: G24 evidence-completeness precheck distinct from G23",
+              "EXECUTION_AND_OBSERVABILITY: G24 outstanding decision dependencies"
+            ],
+            "decision_authority": "SEPARATE_CERTIFICATION_AUTHORITY",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          }
+        },
+        "INTEGRATION": {
+          "object_and_version": "EXECUTION_AND_OBSERVABILITY: candidate plus live host transport, APC and CUSTOSZ interfaces",
+          "expected_evidence": [
+            "EXECUTION_AND_OBSERVABILITY: Real-host authenticated read-only receipts",
+            "EXECUTION_AND_OBSERVABILITY: Cross-component source and dependency compatibility evidence"
+          ],
+          "impact_review": "EXECUTION_AND_OBSERVABILITY: Reassess trust boundaries, signer custody and global one-use register before any protected integration",
+          "rollback_condition": "EXECUTION_AND_OBSERVABILITY: Revert unapproved integration only; preserve already certified historical components",
+          "G23": {
+            "role": "G23",
+            "expected_evidence": [
+              "EXECUTION_AND_OBSERVABILITY: Independent integration review with real-host negative tests",
+              "EXECUTION_AND_OBSERVABILITY: G23 provenance and separation-of-duties assessment"
+            ],
+            "decision_authority": "INDEPENDENT_VALIDATOR",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          },
+          "G24": {
+            "role": "G24",
+            "expected_evidence": [
+              "EXECUTION_AND_OBSERVABILITY: G24 exact integration object review readiness",
+              "EXECUTION_AND_OBSERVABILITY: No inherited component certificates without fresh integration approval"
+            ],
+            "decision_authority": "SEPARATE_CERTIFICATION_AUTHORITY",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          }
+        },
+        "PRE_RELEASE": {
+          "object_and_version": "EXECUTION_AND_OBSERVABILITY: exact deployable source, host/boot identity and owner-approved operation scope",
+          "expected_evidence": [
+            "EXECUTION_AND_OBSERVABILITY: Signed current owner request and full production gate chain",
+            "EXECUTION_AND_OBSERVABILITY: Current exact hashes, residual risks and scoped rollback plan"
+          ],
+          "impact_review": "EXECUTION_AND_OBSERVABILITY: Identify all unresolved critical findings; distinguish CI success from independent certification and authorization",
+          "rollback_condition": "EXECUTION_AND_OBSERVABILITY: Deny release and preserve previous functioning version if any required gate fails",
+          "G23": {
+            "role": "G23",
+            "expected_evidence": [
+              "EXECUTION_AND_OBSERVABILITY: Actual favorable independent signed G23 decision",
+              "EXECUTION_AND_OBSERVABILITY: G23_2 independent second-order decision and custody proof"
+            ],
+            "decision_authority": "INDEPENDENT_VALIDATOR",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          },
+          "G24": {
+            "role": "G24",
+            "expected_evidence": [
+              "EXECUTION_AND_OBSERVABILITY: Actual separate signed G24 decision depending on G23",
+              "EXECUTION_AND_OBSERVABILITY: G24_2 independent second-order decision and custody proof"
+            ],
+            "decision_authority": "SEPARATE_CERTIFICATION_AUTHORITY",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          }
+        },
+        "POSTBOOT": {
+          "object_and_version": "EXECUTION_AND_OBSERVABILITY: deployed build and machine state after the real restart",
+          "expected_evidence": [
+            "EXECUTION_AND_OBSERVABILITY: New live boot identifier, service health and bounded resource evidence",
+            "EXECUTION_AND_OBSERVABILITY: Postboot source identity, evidence-chain continuity and regression proof"
+          ],
+          "impact_review": "EXECUTION_AND_OBSERVABILITY: Invalidate boot-scoped signatures if boot changes; identify changed artifact/host dependencies",
+          "rollback_condition": "EXECUTION_AND_OBSERVABILITY: Execute only separately authorized rollback and independently verify restoration",
+          "G23": {
+            "role": "G23",
+            "expected_evidence": [
+              "EXECUTION_AND_OBSERVABILITY: Independent postboot host and resource validation on current boot",
+              "EXECUTION_AND_OBSERVABILITY: G23 confirmation of new or retained approval scope"
+            ],
+            "decision_authority": "INDEPENDENT_VALIDATOR",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          },
+          "G24": {
+            "role": "G24",
+            "expected_evidence": [
+              "EXECUTION_AND_OBSERVABILITY: G24 decision on current postboot evidence",
+              "EXECUTION_AND_OBSERVABILITY: Final Maestro release acceptance only after independent gates"
+            ],
+            "decision_authority": "SEPARATE_CERTIFICATION_AUTHORITY",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          }
+        }
+      }
+    },
+    {
+      "id": "CONTINUITY_AND_GUARANTEES",
+      "owner_requirement": "Persistent governed services with measured RAM/CPU/I/O limits, audit trail, rollback, nonregression and successful post-reboot continuity.",
+      "claim": "System survives bounded restarts and failures without duplicated operations or loss of evidence, and reports all unresolved states.",
+      "acceptance": "Benchmarked resource-capped user/root separation, single-use recovery tests, durable audit and postboot Maestro receipt on same approved build.",
+      "verification": "Measure memory CPU I/O on real host; inject interruptions; compare pre/postboot source and evidence digests; exercise rollback.",
+      "validation": "Independent G23 validates recovery and regression; G24 independently certifies final integrated object after fresh postboot evidence.",
+      "risks": [
+        "Postboot certificate scope drift",
+        "Resource saturation",
+        "Unreconciled incomplete transaction",
+        "Root broker replay after restart"
+      ],
+      "dependencies": [
+        "Measured real-host resource limits",
+        "Recovery/rollback checkpoint",
+        "Current-boot signatures and independent acceptance"
+      ],
+      "execution_responsible": "CUSTOSZ_V7_UNDER_MAESTRO_WITH_SEPARATE_OWNER_APPROVAL",
+      "phases": {
+        "INTAKE": {
+          "object_and_version": "CONTINUITY_AND_GUARANTEES: exact owner requirements + source pin",
+          "expected_evidence": [
+            "CONTINUITY_AND_GUARANTEES: Owner objective and immutable source identity",
+            "CONTINUITY_AND_GUARANTEES: Risk/dependency inventory and defined acceptance"
+          ],
+          "impact_review": "CONTINUITY_AND_GUARANTEES: Determine current authorized scope and identify historic vs current evidence; block inferred approvals",
+          "rollback_condition": "CONTINUITY_AND_GUARANTEES: Abort intake and preserve original source if scope/identity changes",
+          "G23": {
+            "role": "G23",
+            "expected_evidence": [
+              "CONTINUITY_AND_GUARANTEES: G23 scope and independence assignment",
+              "CONTINUITY_AND_GUARANTEES: Verification criteria specified before implementation"
+            ],
+            "decision_authority": "INDEPENDENT_VALIDATOR",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          },
+          "G24": {
+            "role": "G24",
+            "expected_evidence": [
+              "CONTINUITY_AND_GUARANTEES: G24 decision scope and authority assignment",
+              "CONTINUITY_AND_GUARANTEES: Predeclared certificate acceptance/denial conditions"
+            ],
+            "decision_authority": "SEPARATE_CERTIFICATION_AUTHORITY",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          }
+        },
+        "DEVELOPMENT": {
+          "object_and_version": "CONTINUITY_AND_GUARANTEES: source candidate and all affected dependencies",
+          "expected_evidence": [
+            "CONTINUITY_AND_GUARANTEES: Current source revision and provenance ledger",
+            "CONTINUITY_AND_GUARANTEES: Reproducible negative and positive test records"
+          ],
+          "impact_review": "CONTINUITY_AND_GUARANTEES: Assess code/regression risk, invalidation of prior source evidence and required fresh reviews",
+          "rollback_condition": "CONTINUITY_AND_GUARANTEES: Restore last verified source without reassigning canonical identity",
+          "G23": {
+            "role": "G23",
+            "expected_evidence": [
+              "CONTINUITY_AND_GUARANTEES: Independent review of tested source and risk coverage",
+              "CONTINUITY_AND_GUARANTEES: G23 deficiencies and conflict findings"
+            ],
+            "decision_authority": "INDEPENDENT_VALIDATOR",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          },
+          "G24": {
+            "role": "G24",
+            "expected_evidence": [
+              "CONTINUITY_AND_GUARANTEES: G24 evidence-completeness precheck distinct from G23",
+              "CONTINUITY_AND_GUARANTEES: G24 outstanding decision dependencies"
+            ],
+            "decision_authority": "SEPARATE_CERTIFICATION_AUTHORITY",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          }
+        },
+        "INTEGRATION": {
+          "object_and_version": "CONTINUITY_AND_GUARANTEES: candidate plus live host transport, APC and CUSTOSZ interfaces",
+          "expected_evidence": [
+            "CONTINUITY_AND_GUARANTEES: Real-host authenticated read-only receipts",
+            "CONTINUITY_AND_GUARANTEES: Cross-component source and dependency compatibility evidence"
+          ],
+          "impact_review": "CONTINUITY_AND_GUARANTEES: Reassess trust boundaries, signer custody and global one-use register before any protected integration",
+          "rollback_condition": "CONTINUITY_AND_GUARANTEES: Revert unapproved integration only; preserve already certified historical components",
+          "G23": {
+            "role": "G23",
+            "expected_evidence": [
+              "CONTINUITY_AND_GUARANTEES: Independent integration review with real-host negative tests",
+              "CONTINUITY_AND_GUARANTEES: G23 provenance and separation-of-duties assessment"
+            ],
+            "decision_authority": "INDEPENDENT_VALIDATOR",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          },
+          "G24": {
+            "role": "G24",
+            "expected_evidence": [
+              "CONTINUITY_AND_GUARANTEES: G24 exact integration object review readiness",
+              "CONTINUITY_AND_GUARANTEES: No inherited component certificates without fresh integration approval"
+            ],
+            "decision_authority": "SEPARATE_CERTIFICATION_AUTHORITY",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          }
+        },
+        "PRE_RELEASE": {
+          "object_and_version": "CONTINUITY_AND_GUARANTEES: exact deployable source, host/boot identity and owner-approved operation scope",
+          "expected_evidence": [
+            "CONTINUITY_AND_GUARANTEES: Signed current owner request and full production gate chain",
+            "CONTINUITY_AND_GUARANTEES: Current exact hashes, residual risks and scoped rollback plan"
+          ],
+          "impact_review": "CONTINUITY_AND_GUARANTEES: Identify all unresolved critical findings; distinguish CI success from independent certification and authorization",
+          "rollback_condition": "CONTINUITY_AND_GUARANTEES: Deny release and preserve previous functioning version if any required gate fails",
+          "G23": {
+            "role": "G23",
+            "expected_evidence": [
+              "CONTINUITY_AND_GUARANTEES: Actual favorable independent signed G23 decision",
+              "CONTINUITY_AND_GUARANTEES: G23_2 independent second-order decision and custody proof"
+            ],
+            "decision_authority": "INDEPENDENT_VALIDATOR",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          },
+          "G24": {
+            "role": "G24",
+            "expected_evidence": [
+              "CONTINUITY_AND_GUARANTEES: Actual separate signed G24 decision depending on G23",
+              "CONTINUITY_AND_GUARANTEES: G24_2 independent second-order decision and custody proof"
+            ],
+            "decision_authority": "SEPARATE_CERTIFICATION_AUTHORITY",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          }
+        },
+        "POSTBOOT": {
+          "object_and_version": "CONTINUITY_AND_GUARANTEES: deployed build and machine state after the real restart",
+          "expected_evidence": [
+            "CONTINUITY_AND_GUARANTEES: New live boot identifier, service health and bounded resource evidence",
+            "CONTINUITY_AND_GUARANTEES: Postboot source identity, evidence-chain continuity and regression proof"
+          ],
+          "impact_review": "CONTINUITY_AND_GUARANTEES: Invalidate boot-scoped signatures if boot changes; identify changed artifact/host dependencies",
+          "rollback_condition": "CONTINUITY_AND_GUARANTEES: Execute only separately authorized rollback and independently verify restoration",
+          "G23": {
+            "role": "G23",
+            "expected_evidence": [
+              "CONTINUITY_AND_GUARANTEES: Independent postboot host and resource validation on current boot",
+              "CONTINUITY_AND_GUARANTEES: G23 confirmation of new or retained approval scope"
+            ],
+            "decision_authority": "INDEPENDENT_VALIDATOR",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          },
+          "G24": {
+            "role": "G24",
+            "expected_evidence": [
+              "CONTINUITY_AND_GUARANTEES: G24 decision on current postboot evidence",
+              "CONTINUITY_AND_GUARANTEES: Final Maestro release acceptance only after independent gates"
+            ],
+            "decision_authority": "SEPARATE_CERTIFICATION_AUTHORITY",
+            "status": "PENDING_INDEPENDENT_DECISION"
+          }
+        }
+      }
+    }
+  ],
+  "lifecycle": [
+    "INTAKE",
+    "DEVELOPMENT",
+    "INTEGRATION",
+    "PRE_RELEASE",
+    "POSTBOOT"
+  ],
+  "activation_contract": {
+    "g23": "INDEPENDENT_VALIDATION",
+    "g24": "CERTIFICATION_AFTER_FAVORABLE_G23",
+    "second_order": [
+      "G23_2",
+      "G24_2"
+    ],
+    "all_phases_have_g23_g24_prechecks": true,
+    "new_scope_requires_fresh_decisions": true,
+    "historic_certification_is_not_current_authorization": true,
+    "independent_signer_custody_must_be_externally_attested": true,
+    "release_requires_verified_production_signatures": true,
+    "postboot_requires_new_boot_scoped_review_if_changed": true
+  }
+}

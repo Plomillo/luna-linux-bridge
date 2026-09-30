@@ -74,9 +74,27 @@ def atomic_json(path, obj):
 
 
 def load_time_policy(state, contract):
+    # A partially written signed owner lease halts all policy consumers.
+    # It must NEVER be treated as an implicit budget increase or auto-retried.
+    ledger = EvidenceLedger(state)
+    ledger.verify()
+    pending = set()
+    committed = []
+    for event in ledger._records():
+        if event["kind"] == "OWNER_LEASE_INTENT":
+            pending.add(event["payload"]["lease_id"])
+        elif event["kind"] == "OWNER_LEASE_COMMIT":
+            pending.discard(event["payload"]["lease_id"])
+            committed.append(event["payload"]["new_revision"])
+    if pending:
+        raise RuntimeError("INCOMPLETE_SIGNED_TIME_LEASE_HOLD")
     path = state / "TIME_POLICY.json"
+    if path.is_symlink():
+        raise RuntimeError("TIME_POLICY_SYMLINK_DENIED")
     defaults = contract["resource_defaults"]
     if not path.exists():
+        if committed:
+            raise RuntimeError("SIGNED_TIME_LEASE_STATE_MISSING")
         return {"revision": 0, "heartbeat_sec": defaults["heartbeat_sec"],
                 "max_work_seconds": defaults["max_work_seconds"],
                 "hard_deadline_sec": defaults["hard_deadline_sec"]}
@@ -87,6 +105,8 @@ def load_time_policy(state, contract):
         or policy["max_work_seconds"] > policy.get("hard_deadline_sec", 0)
         or policy.get("hard_deadline_sec") != defaults["hard_deadline_sec"]):
         raise RuntimeError("TIME_POLICY_INVALID")
+    if committed and policy["revision"] < max(committed):
+        raise RuntimeError("SIGNED_TIME_POLICY_ROLLBACK_DENIED")
     return policy
 
 

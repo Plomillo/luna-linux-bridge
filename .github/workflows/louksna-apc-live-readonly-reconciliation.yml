@@ -1,0 +1,53 @@
+name: "LOUKSNA Bridge — existing APC v1.2.1 live read-only identity"
+on:
+  push:
+    branches:
+      - candidate/lrb-elastic-metacognition-v1
+    paths:
+      - ".github/workflows/louksna-apc-live-readonly-reconciliation.yml"
+permissions:
+  contents: read
+concurrency:
+  group: lrb-apc-historical-identity-readonly
+  cancel-in-progress: false
+jobs:
+  reconcile-historical-identities:
+    if: github.repository == 'Plomillo/luna-linux-bridge'
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 3
+    steps:
+      - name: Checkout fixed candidate code without credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            bridge
+            mission-control/privilege-bridge
+          sparse-checkout-cone-mode: false
+      - name: Re-prove legacy APC file identities using fixed read-only paths only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(hostname)" = LOUKSNA
+          test "$(id -u)" -ne 0
+          umask 077
+          S="$RUNNER_TEMP/lrb-apc-identity-$GITHUB_RUN_ID"
+          mkdir -m 700 "$S"
+          printf 'run=%s\ncommit=%s\nmutation=false\nno_authority_transfer=true\n' \
+            "$GITHUB_RUN_ID" "$GITHUB_SHA" > "$S/RECEIPT.txt"
+          sha256sum bridge/apc_inventory.py \
+            mission-control/privilege-bridge/V121-CERTIFIED-20260930T033205Z.json > "$S/SOURCE_HASHES.txt"
+          nice -n 12 timeout 30s python3 -B bridge/apc_inventory.py \
+            --manifest mission-control/privilege-bridge/V121-CERTIFIED-20260930T033205Z.json \
+            --out "$S/RESULT.json"
+          echo 'CURRENT_APC_LEGACY_IDENTITY_PROBE=PASS; LRB_G23_G24=NOT_ISSUED' >> "$GITHUB_STEP_SUMMARY"
+          echo "ARTIFACT_READY=$S" >> "$GITHUB_ENV"
+      - name: Upload pass or hold without concealing error
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-apc-v121-historical-identity-readonly
+          path: ${{ runner.temp }}/lrb-apc-identity-${{ github.run_id }}/
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 0
