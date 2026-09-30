@@ -1,0 +1,363 @@
+name: "LOUKSNA Remote Bridge — seven-point terminal certification closure"
+
+on:
+  push:
+    branches:
+      - candidate/lrb-terminal-sevenfold-20260930
+    paths:
+      - ".github/workflows/lrb-terminal-sevenfold-certification.yml"
+
+permissions:
+  contents: read
+
+env:
+  LRB_TARGET_SHA: c961a198f524a128dba6374290e2abe73dfaece6
+
+concurrency:
+  group: lrb-terminal-sevenfold-certification
+  cancel-in-progress: false
+
+jobs:
+  w1_custosz_review:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 1
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: c961a198f524a128dba6374290e2abe73dfaece6
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            artifacts/custosz-v7
+            bridge
+            Louksna.md
+      - name: Execute CUSTOSZ V7 material review attempt
+        shell: bash
+        run: |
+          set +e
+          OUT="$RUNNER_TEMP/lrb-w1"; mkdir -m 700 "$OUT"
+          PYZ="artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz"
+          python3 -B -I "$PYZ" v07-status >"$OUT/status.txt" 2>"$OUT/status.err"; RS=$?
+          python3 -B -I "$PYZ" v07-selftest >"$OUT/selftest.txt" 2>"$OUT/selftest.err"; RT=$?
+          python3 -B -I "$PYZ" --help >"$OUT/help.txt" 2>"$OUT/help.err"; RH=$?
+          nice -n 12 timeout 30s python3 -B -m unittest discover -s bridge/tests -p 'test_*.py'             >"$OUT/tests.txt" 2>&1; RU=$?
+          EXPLICIT=1
+          if grep -Eiq 'review|audit|security' "$OUT/help.txt"; then EXPLICIT=0; fi
+          export OUT RS RT RH RU EXPLICIT
+          python3 - <<'PY'
+          import json,os,pathlib,hashlib
+          out=pathlib.Path(os.environ["OUT"])
+          pyz=pathlib.Path("artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz")
+          status="PASS" if all(int(os.environ[x])==0 for x in ("RS","RT","RU")) and int(os.environ["EXPLICIT"])==0 else "HOLD"
+          reason=None if status=="PASS" else ("CUSTOSZ_EXPLICIT_REVIEW_SURFACE_NOT_PROVEN" if int(os.environ["EXPLICIT"]) else "CUSTOSZ_STATUS_SELFTEST_OR_SUITE_FAILED")
+          data={"workstream":"W1_CUSTOSZ_REVIEW","status":status,"reason":reason,
+                "target_sha":os.environ["LRB_TARGET_SHA"],
+                "custosz_sha256":hashlib.sha256(pyz.read_bytes()).hexdigest(),
+                "v07_status_rc":int(os.environ["RS"]),"v07_selftest_rc":int(os.environ["RT"]),
+                "candidate_suite_rc":int(os.environ["RU"]),
+                "explicit_review_token_in_help":int(os.environ["EXPLICIT"])==0,
+                "certification_propagated":False}
+          (out/"W1.json").write_text(json.dumps(data,indent=2,sort_keys=True)+"\n")
+          PY
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-w1-custosz
+          path: ${{ runner.temp }}/lrb-w1/
+          if-no-files-found: error
+          compression-level: 0
+
+  w2_trust_roots:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 1
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: c961a198f524a128dba6374290e2abe73dfaece6
+          persist-credentials: false
+          sparse-checkout: bridge
+      - name: Verify material five-role trust root
+        shell: bash
+        run: |
+          set +e
+          OUT="$RUNNER_TEMP/lrb-w2"; mkdir -m 700 "$OUT"; export OUT
+          PYTHONPATH=bridge python3 - <<'PY'
+          import json,os,pathlib,sys
+          from external_gates import ExternalGateVerifier
+          out=pathlib.Path(os.environ["OUT"])
+          try:
+              v=ExternalGateVerifier("/etc/louksna/remote-bridge",enforce_root_owned=True)
+              signers=v.trust["signers"]
+              status="PASS"; reason=None
+              result={"issuer_ids":{k:v["issuer_id"] for k,v in signers.items()},
+                      "public_key_hashes":{k:v["sha256"] for k,v in signers.items()}}
+          except Exception as e:
+              status="HOLD"; reason=str(e)[:160]; result={}
+          (out/"W2.json").write_text(json.dumps({"workstream":"W2_TRUST_ROOTS","status":status,
+            "reason":reason,"target_sha":os.environ["LRB_TARGET_SHA"],"five_roles_required":True,
+            "root_owned_required":True,"details":result},indent=2,sort_keys=True)+"\n")
+          PY
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-w2-trust
+          path: ${{ runner.temp }}/lrb-w2/
+          if-no-files-found: error
+          compression-level: 0
+
+  w3_fresh_gates:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 1
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: c961a198f524a128dba6374290e2abe73dfaece6
+          persist-credentials: false
+          sparse-checkout: bridge
+      - name: Verify fresh G23/G24/G23_2/G24_2 on exact candidate
+        shell: bash
+        run: |
+          set +e
+          OUT="$RUNNER_TEMP/lrb-w3"; mkdir -m 700 "$OUT"; export OUT
+          PYTHONPATH=bridge python3 - <<'PY'
+          import json,os,pathlib,subprocess
+          out=pathlib.Path(os.environ["OUT"])
+          base=pathlib.Path("/var/lib/louksna/remote-bridge/current")
+          names=["REQUEST.json","OWNER.sig","G23.json","G23.sig","G24.json","G24.sig","G23_2.json","G23_2.sig","G24_2.json","G24_2.sig"]
+          present={n:(base/n).is_file() for n in names}
+          status="HOLD"; reason="FRESH_STRONG_GATE_BUNDLE_NOT_PRESENT"
+          verifier=None
+          if all(present.values()):
+              cmd=["python3","-B","bridge/external_gates.py","--trust-dir","/etc/louksna/remote-bridge",
+                   "--request",str(base/"REQUEST.json"),"--owner-signature",str(base/"OWNER.sig"),
+                   "--g23",str(base/"G23.json"),"--g23-signature",str(base/"G23.sig"),
+                   "--g24",str(base/"G24.json"),"--g24-signature",str(base/"G24.sig"),
+                   "--g23-2",str(base/"G23_2.json"),"--g23-2-signature",str(base/"G23_2.sig"),
+                   "--g24-2",str(base/"G24_2.json"),"--g24-2-signature",str(base/"G24_2.sig"),
+                   "--strong","--state-dir",str(out/"state")]
+              p=subprocess.run(cmd,text=True,capture_output=True,timeout=20)
+              (out/"verifier.stdout").write_text(p.stdout)
+              (out/"verifier.stderr").write_text(p.stderr)
+              if p.returncode==0:
+                  try:
+                      verifier=json.loads(p.stdout)
+                      if verifier.get("strong_second_order_receipts_verified") is True:
+                          status="PASS"; reason=None
+                  except Exception:
+                      reason="VERIFIER_OUTPUT_NOT_JSON"
+              else:
+                  reason="FRESH_STRONG_GATE_VERIFICATION_FAILED"
+          (out/"W3.json").write_text(json.dumps({"workstream":"W3_FRESH_G23_G24_SECOND_ORDER",
+            "status":status,"reason":reason,"target_sha":os.environ["LRB_TARGET_SHA"],
+            "bundle_root":str(base),"present":present,"verifier":verifier,
+            "certification_propagated":False},indent=2,sort_keys=True)+"\n")
+          PY
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-w3-gates
+          path: ${{ runner.temp }}/lrb-w3/
+          if-no-files-found: error
+          compression-level: 0
+
+  w4_apc_root_broker:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 1
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: c961a198f524a128dba6374290e2abe73dfaece6
+          persist-credentials: false
+          sparse-checkout: |
+            bridge
+            mission-control/privilege-bridge
+      - name: Re-prove APC 1.2.1 and anti-replay broker controls
+        shell: bash
+        run: |
+          set +e
+          OUT="$RUNNER_TEMP/lrb-w4"; mkdir -m 700 "$OUT"
+          python3 -B bridge/apc_inventory.py --manifest mission-control/privilege-bridge/V121-CERTIFIED-20260930T033205Z.json --out "$OUT/APC.json" >"$OUT/apc.stdout" 2>"$OUT/apc.stderr"; RA=$?
+          python3 -B -m unittest bridge.tests.test_external_gates bridge.tests.test_one_time_scope bridge.tests.test_global_scope_register >"$OUT/tests.txt" 2>&1; RT=$?
+          sudo -n /usr/bin/test -x /usr/local/sbin/louksna-apc; RX=$?
+          export OUT RA RT RX
+          python3 - <<'PY'
+          import json,os,pathlib
+          out=pathlib.Path(os.environ["OUT"])
+          status="PASS" if all(int(os.environ[x])==0 for x in ("RA","RT","RX")) else "HOLD"
+          reason=None if status=="PASS" else "APC_OR_BROKER_CONTROL_REPROOF_FAILED"
+          (out/"W4.json").write_text(json.dumps({"workstream":"W4_APC_ROOT_BROKER",
+            "status":status,"reason":reason,"target_sha":os.environ["LRB_TARGET_SHA"],
+            "apc_inventory_rc":int(os.environ["RA"]),"broker_tests_rc":int(os.environ["RT"]),
+            "apc_executable_rc":int(os.environ["RX"]),"authority_transfer":False},indent=2,sort_keys=True)+"\n")
+          PY
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-w4-apc
+          path: ${{ runner.temp }}/lrb-w4/
+          if-no-files-found: error
+          compression-level: 0
+
+  w5_offhost_relay_visual:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 1
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: c961a198f524a128dba6374290e2abe73dfaece6
+          persist-credentials: false
+          sparse-checkout: bridge
+      - name: Prove or reject real off-host relay and visual channel
+        shell: bash
+        run: |
+          set +e
+          OUT="$RUNNER_TEMP/lrb-w5"; mkdir -m 700 "$OUT"
+          python3 -B -m unittest bridge.tests.test_mtls_gateway bridge.tests.test_live_link >"$OUT/local_transport_tests.txt" 2>&1; RT=$?
+          RELAY=1; VISUAL=1
+          test -f bridge/remote_relay.py && RELAY=0
+          test -f bridge/visual_capture.py && VISUAL=0
+          export OUT RT RELAY VISUAL
+          python3 - <<'PY'
+          import json,os,pathlib
+          out=pathlib.Path(os.environ["OUT"])
+          rt,relay,visual=[int(os.environ[x]) for x in ("RT","RELAY","VISUAL")]
+          status="PASS" if rt==0 and relay==0 and visual==0 else "HOLD"
+          reason=None if status=="PASS" else "OFF_HOST_REALTIME_AND_OR_VISUAL_IMPLEMENTATION_NOT_MATERIAL"
+          (out/"W5.json").write_text(json.dumps({"workstream":"W5_OFFHOST_RELAY_VISUAL",
+            "status":status,"reason":reason,"target_sha":os.environ["LRB_TARGET_SHA"],
+            "local_transport_tests_rc":rt,"remote_relay_source_present":relay==0,
+            "visual_capture_source_present":visual==0},indent=2,sort_keys=True)+"\n")
+          PY
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-w5-relay
+          path: ${{ runner.temp }}/lrb-w5/
+          if-no-files-found: error
+          compression-level: 0
+
+  w6_persistent_service_postboot:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 1
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: c961a198f524a128dba6374290e2abe73dfaece6
+          persist-credentials: false
+          sparse-checkout: bridge/deploy
+      - name: Inspect governed persistent service and postboot proof
+        shell: bash
+        run: |
+          set +e
+          OUT="$RUNNER_TEMP/lrb-w6"; mkdir -m 700 "$OUT"
+          systemctl --user is-enabled louksna-live-socket.service >"$OUT/enabled.txt" 2>&1; RE=$?
+          systemctl --user is-active louksna-live-socket.service >"$OUT/active.txt" 2>&1; RA=$?
+          systemctl --user show louksna-live-socket.service -p ExecStart -p MemoryMax -p CPUQuotaPerSecUSec -p NoNewPrivileges >"$OUT/show.txt" 2>&1; RS=$?
+          POSTBOOT="$HOME/.local/state/louksna/remote-bridge/POSTBOOT_PROOF.json"
+          test -f "$POSTBOOT"; RP=$?
+          export OUT RE RA RS RP POSTBOOT
+          python3 - <<'PY'
+          import json,os,pathlib
+          out=pathlib.Path(os.environ["OUT"])
+          vals={x:int(os.environ[x]) for x in ("RE","RA","RS","RP")}
+          status="PASS" if all(v==0 for v in vals.values()) else "HOLD"
+          reason=None if status=="PASS" else "PERSISTENT_SERVICE_AND_POSTBOOT_NOT_BOTH_PROVEN"
+          (out/"W6.json").write_text(json.dumps({"workstream":"W6_PERSISTENT_SERVICE_POSTBOOT",
+            "status":status,"reason":reason,"target_sha":os.environ["LRB_TARGET_SHA"],
+            "systemd_enabled_rc":vals["RE"],"systemd_active_rc":vals["RA"],
+            "systemd_show_rc":vals["RS"],"postboot_proof_rc":vals["RP"],
+            "postboot_path":os.environ["POSTBOOT"]},indent=2,sort_keys=True)+"\n")
+          PY
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-w6-service
+          path: ${{ runner.temp }}/lrb-w6/
+          if-no-files-found: error
+          compression-level: 0
+
+  w7_maestro_preacceptance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: c961a198f524a128dba6374290e2abe73dfaece6
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: bridge
+      - name: Independent Maestro preacceptance over exact candidate
+        shell: bash
+        run: |
+          set +e
+          OUT="$RUNNER_TEMP/lrb-w7"; mkdir -m 700 "$OUT"
+          python3 -B bridge/continuous_assurance.py --plan bridge/ASSURANCE_MATRIX.json --commit "$LRB_TARGET_SHA" --out "$OUT/lifecycle.json" >"$OUT/lifecycle.stdout" 2>"$OUT/lifecycle.stderr"; RA=$?
+          python3 -B -m unittest bridge.tests.test_continuous_assurance bridge.tests.test_metacog_diagnosis bridge.tests.test_model_handrail >"$OUT/tests.txt" 2>&1; RT=$?
+          export OUT RA RT
+          python3 - <<'PY'
+          import json,os,pathlib
+          out=pathlib.Path(os.environ["OUT"])
+          status="PASS" if int(os.environ["RA"])==0 and int(os.environ["RT"])==0 else "HOLD"
+          (out/"W7.json").write_text(json.dumps({"workstream":"W7_MAESTRO_PREACCEPTANCE",
+            "status":status,"reason":None if status=="PASS" else "MAESTRO_PREACCEPTANCE_FAILED",
+            "target_sha":os.environ["LRB_TARGET_SHA"],"final_acceptance":False,
+            "requires_all_other_workstreams":True},indent=2,sort_keys=True)+"\n")
+          PY
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-w7-maestro
+          path: ${{ runner.temp }}/lrb-w7/
+          if-no-files-found: error
+          compression-level: 0
+
+  terminal_certification:
+    needs: [w1_custosz_review, w2_trust_roots, w3_fresh_gates, w4_apc_root_broker, w5_offhost_relay_visual, w6_persistent_service_postboot, w7_maestro_preacceptance]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: lrb-w*
+          path: ${{ runner.temp }}/lrb-terminal
+          merge-multiple: true
+      - name: Seal terminal certification or exact HOLD
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export ROOT="$RUNNER_TEMP/lrb-terminal"
+          python3 - <<'PY'
+          import json,os,pathlib,hashlib,datetime
+          root=pathlib.Path(os.environ["ROOT"])
+          rows=[]
+          for i in range(1,8):
+              p=root/f"W{i}.json"
+              if not p.is_file():
+                  rows.append({"workstream":f"W{i}","status":"HOLD","reason":"EVIDENCE_MISSING"})
+              else:
+                  rows.append(json.loads(p.read_text()))
+          allpass=all(r.get("status")=="PASS" for r in rows)
+          state="CERTIFIED_ACTIVE" if allpass else "HOLD"
+          report={"schema":"LOUKSNA_REMOTE_BRIDGE_TERMINAL_CERTIFICATION/1.0",
+                  "target_sha":os.environ["LRB_TARGET_SHA"],
+                  "workstreams":rows,
+                  "g23_required":True,"g24_required":True,
+                  "g23_2_required":True,"g24_2_required":True,
+                  "certification_propagated":False,
+                  "canonical_mutation":False,"authority_transfer":False,
+                  "final_state":state,
+                  "certified":allpass,"active":allpass,
+                  "sealed_utc":datetime.datetime.now(datetime.timezone.utc).isoformat()}
+          raw=(json.dumps(report,indent=2,sort_keys=True)+"\n").encode()
+          (root/"LRB_FINAL_CERTIFICATION.json").write_bytes(raw)
+          (root/"LRB_FINAL_CERTIFICATION.sha256").write_text(hashlib.sha256(raw).hexdigest()+"  LRB_FINAL_CERTIFICATION.json\n")
+          print(json.dumps({"final_state":state,"statuses":{r["workstream"]:r["status"] for r in rows}},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-terminal-certification
+          path: ${{ runner.temp }}/lrb-terminal/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 90
