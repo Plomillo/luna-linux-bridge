@@ -30,6 +30,7 @@ jobs:
           test "$(hostname)" = LOUKSNA
           test "$(id -u)" -ne 0
           command -v openssl
+          openssl version -a | head -n 2
           umask 077
           OUT="$RUNNER_TEMP/lrb-mtls-$GITHUB_RUN_ID"
           mkdir -m 700 "$OUT"
