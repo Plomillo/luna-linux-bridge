@@ -1,0 +1,9 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_V6_TRIGGER/1.0",
+  "status": "AUTHORIZED_TO_PROBE",
+  "source_failure_run": 36676372720,
+  "validated_definition_run": 36677565918,
+  "recovery_mode": "LIVE_MOUNT_BOUND_FAIL_CLOSED",
+  "certification_propagation": false,
+  "authority_transfer": false
+}
