@@ -1,0 +1,13 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_POSTBOUNDARY_V9_CANDIDATE/1.0",
+  "status": "DECLARED_UNCERTIFIED",
+  "source_run": 36687767779,
+  "scope": "READONLY_POSTBOUNDARY_P3_EXT4_VALIDATION",
+  "evidence": "V8 output 498092 manifest records plus root-only lost+found",
+  "v9_g23": "NOT_EXECUTED",
+  "v9_g24": "NOT_ISSUED",
+  "physical_state": "NOT_REPROBED_BY_V9",
+  "staging_branch_unchanged": true,
+  "material_execution_authorized": false,
+  "canonical_authority": "Louksna.md"
+}
