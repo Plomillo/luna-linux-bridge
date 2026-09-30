@@ -1,0 +1,49 @@
+name: "LRB W6 — socket namespace diagnosis"
+on:
+  push:
+    branches:
+      - candidate/lrb-terminal-sevenfold-20260930
+    paths:
+      - ".github/workflows/lrb-w6-namespace-diagnosis.yml"
+permissions:
+  contents: read
+env:
+  CORE_SHA: c961a198f524a128dba6374290e2abe73dfaece6
+jobs:
+  diagnose:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 1
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: c961a198f524a128dba6374290e2abe73dfaece6
+          persist-credentials: false
+          sparse-checkout: bridge
+      - name: Inspect live process namespace and bound descriptors
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          UIDN="$(id -u)"; U="$(id -un)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+          sudo -n /usr/bin/loginctl enable-linger "$U"
+          sudo -n /usr/bin/systemctl start "user@$UIDN.service"
+          STAGE="$HOME/.local/lib/louksna-remote-bridge/$CORE_SHA"
+          STATE="$HOME/.local/state/louksna/remote-bridge/service"
+          mkdir -p "$STAGE" "$STATE" "$HOME/.config/systemd/user"
+          test -d "$STAGE/bridge" || cp -a bridge "$STAGE/bridge"
+          sed -e "s|@REVIEWED_PROJECT_ROOT@|$STAGE|g" -e "s|@OWNER_PRIVATE_STATE@|$STATE|g" bridge/deploy/louksna-live-socket.service.in >"$HOME/.config/systemd/user/louksna-live-socket.service"
+          systemctl --user daemon-reload
+          systemctl --user restart louksna-live-socket.service
+          sleep 1
+          PID="$(systemctl --user show louksna-live-socket.service -p MainPID --value)"
+          test "$PID" -gt 1
+          echo "PID=$PID"
+          echo "===CMDLINE==="; tr '\0' ' ' <"/proc/$PID/cmdline"; echo
+          echo "===WCHAN==="; cat "/proc/$PID/wchan" || true
+          echo "===FD==="; ls -l "/proc/$PID/fd" || true
+          echo "===PROC ROOT SOCKET DIR==="; ls -la "/proc/$PID/root/run/user/$UIDN/lrb-sock" || true
+          echo "===HOST SOCKET DIR==="; ls -la "$XDG_RUNTIME_DIR/lrb-sock" || true
+          echo "===UNIX SOCKET TABLE==="; grep -E 'BRIDGE|lrb-sock' /proc/net/unix || true
+          echo "===MOUNT DIFF==="; grep -E '/run/user|/tmp' "/proc/$PID/mountinfo" | tail -30 || true
+          systemctl --user stop louksna-live-socket.service
