@@ -1,0 +1,68 @@
+name: "LRB W5 — host signed relay envelopes"
+
+on:
+  push:
+    branches:
+      - candidate/lrb-terminal-sevenfold-20260930
+    paths:
+      - ".github/workflows/lrb-w5-host-signed-envelopes.yml"
+
+permissions:
+  contents: read
+
+env:
+  TARGET_SHA: c961a198f524a128dba6374290e2abe73dfaece6
+
+jobs:
+  produce:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 1
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: c961a198f524a128dba6374290e2abe73dfaece6
+          persist-credentials: false
+          sparse-checkout: bridge
+      - name: Produce host-signed telemetry and visual envelopes without exporting key
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          K="$HOME/.local/state/louksna/remote-bridge/relay-client-key.pem"
+          test -f "$K"; test "$(stat -c '%a' "$K")" = 600
+          O="$RUNNER_TEMP/w5envelopes"; mkdir -m 700 "$O"
+          H="$(hostname)"; B="$(cat /proc/sys/kernel/random/boot_id)"
+          P="$(sha256sum bridge/lrb_core.py | awk '{print $1}')"
+          N="evt-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          C="${H}|${B}|${TARGET_SHA}|HOST_TELEMETRY_PROOF|${P}|${N}"
+          printf %s "$C" >"$O/canonical"
+          openssl dgst -sha256 -sign "$K" -out "$O/sig" "$O/canonical"
+          S="$(base64 -w0 "$O/sig")"
+          python3 - "$H" "$B" "$TARGET_SHA" "$P" "$N" "$S" >"$O/EVENT.json" <<'PY'
+          import json,sys
+          h,b,s,p,n,g=sys.argv[1:]
+          print(json.dumps({"schema":"LRB_RELAY_EVENT/1.0","host":h,"boot_id":b,"candidate_sha":s,"event":"HOST_TELEMETRY_PROOF","payload_sha256":p,"nonce":n,"signature_b64":g},separators=(",",":")))
+          PY
+          base64 -d >"$O/frame.png" <<'B64'
+          iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=
+          B64
+          VP="$(sha256sum "$O/frame.png" | awk '{print $1}')"; VN="visual-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          VC="${H}|${B}|${TARGET_SHA}|VISUAL_FRAME|${VP}|${VN}"
+          printf %s "$VC" >"$O/vcanonical"
+          openssl dgst -sha256 -sign "$K" -out "$O/vsig" "$O/vcanonical"
+          VS="$(base64 -w0 "$O/vsig")"; VF="$(base64 -w0 "$O/frame.png")"
+          python3 - "$H" "$B" "$TARGET_SHA" "$VP" "$VN" "$VS" "$VF" >"$O/VISUAL.json" <<'PY'
+          import json,sys
+          h,b,s,p,n,g,f=sys.argv[1:]
+          print(json.dumps({"schema":"LRB_VISUAL_FRAME/1.0","host":h,"boot_id":b,"candidate_sha":s,"payload_sha256":p,"nonce":n,"signature_b64":g,"frame_b64":f,"content_type":"image/png"},separators=(",",":")))
+          PY
+          echo "LRB_EVENT_JSON=$(cat "$O/EVENT.json")"
+          echo "LRB_VISUAL_JSON=$(cat "$O/VISUAL.json")"
+          rm -f "$O/sig" "$O/vsig" "$O/canonical" "$O/vcanonical"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-w5-signed-envelopes
+          path: ${{ runner.temp }}/w5envelopes/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
