@@ -1,0 +1,251 @@
+name: "R4 PART4 R2 — recover and certify WinRE postboot result"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-part4-r2-postboot-recover-certify.yml
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: r4-part4-r2-postboot-recover-certify
+  cancel-in-progress: false
+
+env:
+  INSTALL_ID: "20260930T013042Z-36655383695"
+  EXPECTED_MANIFEST_SHA256: "99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e"
+  EXPECTED_BOOT_BCD_SHA256: "a38af18916ff236aee97aa214bfc7201894f9e3943a3b5ebecbc2edbc0f3466a"
+  EXPECTED_RECOVERY_BCD_SHA256: "9b43ec614cb43e1553537c46ba45041281fb41ffd37bef2c67f182adaf82b1ef"
+  EXPECTED_WINRE_WIM_SHA256: "9b60f5b05ea573f1458424501fcdbc2a138e20f3b843d69c602f0210fe0cf454"
+
+jobs:
+  collect:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 15
+    steps:
+      - name: Recover completed postboot evidence read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+          ROOT="/var/lib/louksna-governance/winre-repair/postboot/$INSTALL_ID"
+          STATE="/var/lib/louksna-governance/winre-repair/$INSTALL_ID"
+          OUT="$RUNNER_TEMP/postboot-certification"
+          P4M="$RUNNER_TEMP/winre-p4"
+          EFI=/boot/efi
+          mkdir -p "$OUT" "$P4M"
+
+          test -d "$ROOT"
+          for f in POSTBOOT_EVIDENCE.json VERIFY_PROYECTOS.json NTFS_INFO.txt CHKDSK_P3.txt CHKDSK_P3.rc; do
+            test -f "$ROOT/$f"
+          done
+
+          cp "$ROOT/POSTBOOT_EVIDENCE.json" "$OUT/"
+          cp "$ROOT/VERIFY_PROYECTOS.json" "$OUT/"
+          cp "$ROOT/NTFS_INFO.txt" "$OUT/"
+          cp "$ROOT/CHKDSK_P3.txt" "$OUT/"
+          cp "$ROOT/CHKDSK_P3.rc" "$OUT/"
+
+          test "$(sudo -n /usr/sbin/blkid -p -s UUID -o value /dev/nvme0n1p3)" = F2848A148489DC0B
+          test "$(sudo -n /usr/sbin/blkid -p -s UUID -o value /dev/nvme0n1p4)" = CADE667DDE666225
+          test -d /media/diegoignacionorambuenamiranda/Windows/PROYECTOS
+          ! sudo -n efibootmgr | grep -F "LOUKSNA WinRE OneShot"
+          ! sudo -n efibootmgr | grep -q '^BootNext:'
+          sudo -n efibootmgr -v > "$OUT/EFIBOOTMGR_LIVE.txt"
+
+          BOOT_BCD_SHA="$(sha256sum "$EFI/EFI/Microsoft/Boot/BCD"|awk '{print $1}')"
+          REC_BCD_SHA="$(sha256sum "$EFI/EFI/Microsoft/Recovery/BCD"|awk '{print $1}')"
+          test "$BOOT_BCD_SHA" = "$EXPECTED_BOOT_BCD_SHA256"
+          test "$REC_BCD_SHA" = "$EXPECTED_RECOVERY_BCD_SHA256"
+
+          sudo -n mount -t ntfs3 -o ro /dev/nvme0n1p4 "$P4M"
+          trap 'sudo -n umount "$P4M" >/dev/null 2>&1 || true' EXIT
+          WIM_SHA="$(sha256sum "$P4M/Recovery/WindowsRE/winre.wim"|awk '{print $1}')"
+          test "$WIM_SHA" = "$EXPECTED_WINRE_WIM_SHA256"
+          sudo -n umount "$P4M"
+          trap - EXIT
+
+          export BOOT_BCD_SHA REC_BCD_SHA WIM_SHA
+          python3 - "$OUT/POSTBOOT_EVIDENCE.json" "$OUT/VERIFY_PROYECTOS.json" "$OUT/NTFS_INFO.txt" "$OUT/CHKDSK_P3.txt" "$OUT/CHKDSK_P3.rc" "$OUT/MATERIAL.json" <<'PY'
+          import datetime as dt,hashlib,json,os,pathlib,re,sys
+          ep,vp,np,cp,rp,out=map(pathlib.Path,sys.argv[1:7])
+          e=json.loads(ep.read_text()); v=json.loads(vp.read_text())
+          ntfs=np.read_text(encoding="utf-8",errors="replace")
+          chkdsk=cp.read_text(encoding="utf-8",errors="replace")
+          rc=rp.read_text(encoding="utf-8",errors="replace").strip()
+          checks={
+            "postboot_status":e.get("status")=="PASS",
+            "repair_scope":e.get("repair_scope")=="NTFS_METADATA_P3_ONLY",
+            "chkdsk_finished":e.get("chkdsk_finished") is True,
+            "ntfs_info_pass":e.get("ntfs_info_pass") is True,
+            "bitmap_zero":e.get("bitmap_mismatches")==0,
+            "projects_pass":e.get("projects_manifest_status")=="PASS",
+            "projects_rc_zero":e.get("projects_verify_rc")==0,
+            "boot_bcd_restored":e.get("boot_bcd_restored") is True,
+            "winre_restored":e.get("winre_wim_restored") is True,
+            "bootorder_restored":e.get("bootorder_restored") is True,
+            "temp_boot_removed":e.get("temporary_boot_removed") is True,
+            "debian_present":e.get("debian_boot_present") is True,
+            "p3_uuid":e.get("p3_uuid")=="F2848A148489DC0B",
+            "p4_uuid":e.get("p4_uuid")=="CADE667DDE666225",
+            "no_resize":e.get("partition_resize_performed") is False,
+            "no_format":e.get("format_performed") is False,
+            "manifest_status":v.get("status")=="PASS",
+            "manifest_digest":v.get("manifest_sha256")==os.environ["EXPECTED_MANIFEST_SHA256"],
+            "manifest_mismatch_zero":v.get("mismatch_count")==0,
+            "manifest_files":v.get("counts",{}).get("file")==436072,
+            "manifest_dirs":v.get("counts",{}).get("dir")==62016,
+            "manifest_symlinks":v.get("counts",{}).get("symlink")==4,
+            "manifest_other":v.get("counts",{}).get("other")==0,
+            "manifest_bytes":v.get("regular_file_bytes")==200490852057,
+            "manifest_records":v.get("seen_records")==498092,
+            "ntfs_no_accounting_error":not re.search(r"cluster accounting mismatches|Cluster accounting failed|ERROR:",ntfs,re.I),
+            "chkdsk_log_hash":hashlib.sha256(cp.read_bytes()).hexdigest()==e.get("chkdsk_log_sha256"),
+            "projects_verify_hash":hashlib.sha256(vp.read_bytes()).hexdigest()==e.get("projects_verify_sha256"),
+            "boot_bcd_live":os.environ["BOOT_BCD_SHA"]==os.environ["EXPECTED_BOOT_BCD_SHA256"],
+            "recovery_bcd_live":os.environ["REC_BCD_SHA"]==os.environ["EXPECTED_RECOVERY_BCD_SHA256"],
+            "winre_wim_live":os.environ["WIM_SHA"]==os.environ["EXPECTED_WINRE_WIM_SHA256"],
+          }
+          ok=all(checks.values())
+          m={
+            "schema":"LOUKSNA_R4_PART4_R2_POSTBOOT_RECOVERED_MATERIAL/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "install_id":e.get("install_id"),
+            "checks":checks,
+            "chkdsk_rc_raw":rc,
+            "postboot_sha256":hashlib.sha256(ep.read_bytes()).hexdigest(),
+            "verify_projects_sha256":hashlib.sha256(vp.read_bytes()).hexdigest(),
+            "ntfs_info_sha256":hashlib.sha256(np.read_bytes()).hexdigest(),
+            "chkdsk_sha256":hashlib.sha256(cp.read_bytes()).hexdigest(),
+            "boot_bcd_sha256":os.environ["BOOT_BCD_SHA"],
+            "recovery_bcd_sha256":os.environ["REC_BCD_SHA"],
+            "winre_wim_sha256":os.environ["WIM_SHA"],
+            "recovered_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          out.write_text(json.dumps(m,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(m,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(20)
+          PY
+          sha256sum "$OUT"/* > "$OUT/EVIDENCE.sha256"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-postboot-recovered-material
+          path: ${{ runner.temp }}/postboot-certification/
+          retention-days: 90
+          compression-level: 0
+
+  g23:
+    needs: collect
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-postboot-recovered-material
+          path: ${{ runner.temp }}/material
+      - name: Independent postboot validation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/material/MATERIAL.json" "$RUNNER_TEMP/material/POSTBOOT_EVIDENCE.json" "$RUNNER_TEMP/material/VERIFY_PROYECTOS.json" "$RUNNER_TEMP/g23/G23_POSTBOOT.json" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,sys
+          mp,ep,vp,out=map(pathlib.Path,sys.argv[1:5])
+          m=json.loads(mp.read_text()); e=json.loads(ep.read_text()); v=json.loads(vp.read_text())
+          checks={
+            "material_pass":m.get("status")=="PASS",
+            "all_material_checks":all(m.get("checks",{}).values()),
+            "postboot_pass":e.get("status")=="PASS",
+            "bitmap_zero":e.get("bitmap_mismatches")==0,
+            "projects_pass":e.get("projects_manifest_status")=="PASS",
+            "verify_pass":v.get("status")=="PASS",
+            "verify_mismatch_zero":v.get("mismatch_count")==0,
+            "no_resize":e.get("partition_resize_performed") is False,
+            "no_format":e.get("format_performed") is False,
+            "boot_restored":e.get("boot_bcd_restored") is True and e.get("bootorder_restored") is True,
+            "winre_restored":e.get("winre_wim_restored") is True,
+            "temporary_removed":e.get("temporary_boot_removed") is True,
+          }
+          ok=all(checks.values())
+          r={
+            "schema":"LOUKSNA_R4_PART4_R2_POSTBOOT_G23/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "scope":"P3_NTFS_BITMAP_REPAIR_AND_PROYECTOS_NONREGRESSION",
+            "material_sha256":hashlib.sha256(mp.read_bytes()).hexdigest(),
+            "postboot_sha256":hashlib.sha256(ep.read_bytes()).hexdigest(),
+            "projects_sha256":hashlib.sha256(vp.read_bytes()).hexdigest(),
+            "checks":checks,
+            "g24_allowed":ok,
+            "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          out.write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(3)
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-postboot-g23-recovered
+          path: ${{ runner.temp }}/g23/G23_POSTBOOT.json
+          retention-days: 90
+          compression-level: 0
+
+  g24:
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-postboot-g23-recovered
+          path: ${{ runner.temp }}/g23
+      - name: Digest-bound postboot certification
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/G23_POSTBOOT.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$G")" = PASS
+          H="$(sha256sum "$G"|awk '{print $1}')"
+          AUD="louksna-r4-part4-r2-postboot-recovered:$H"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export H AUD TOKEN
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$G" "$RUNNER_TEMP/g24/G24_POSTBOOT.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          g=json.loads(pathlib.Path(sys.argv[1]).read_text())
+          t=os.environ["TOKEN"]; p=t.split(".")
+          payload=p[1]+"="*((4-len(p[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload))
+          aud=claims.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          r={
+            "schema":"LOUKSNA_R4_PART4_R2_POSTBOOT_G24/1.0",
+            "status":"PASS",
+            "scope":"P3_NTFS_BITMAP_REPAIR_AND_PROYECTOS_NONREGRESSION",
+            "g23_sha256":os.environ["H"],
+            "authority_authenticated":True,
+            "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
+            "bitmap_repair_certified":True,
+            "projects_non_regression_certified":True,
+            "boot_restoration_certified":True,
+            "partition_resize_authorized":False,
+            "format_authorized":False,
+            "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          pathlib.Path(sys.argv[2]).write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-postboot-g24-recovered
+          path: ${{ runner.temp }}/g24/G24_POSTBOOT.json
+          retention-days: 90
+          compression-level: 0
