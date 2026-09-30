@@ -42,7 +42,7 @@ def sha256(path):
 def run_model(cli, model, label, outdir, timeout_per_case):
     rows=[]; total=0
     for case in CASES:
-        cmd=[cli,"-m",model,"-p",case["prompt"],"-n","180","--temp","0","--ctx-size","3072","--threads","4","--no-display-prompt","--simple-io"]
+        cmd=[cli,"-m",model,"-p",case["prompt"],"-n","180","--temp","0","--ctx-size","3072","--threads","4","--no-display-prompt","--simple-io","--single-turn"]
         start=time.monotonic()
         try:
             p=subprocess.run(cmd,capture_output=True,text=True,timeout=timeout_per_case)
