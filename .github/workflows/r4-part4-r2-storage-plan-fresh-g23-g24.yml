@@ -75,9 +75,27 @@ jobs:
           gate P3_FSTYPE test "$(findmnt -T "$WINROOT" -n -o FSTYPE)" = ntfs3
           gate PROJECTS_DIR test -d "$WINROOT/PROYECTOS"
           mapfile -t top < <(find "$WINROOT" -mindepth 1 -maxdepth 1 -printf '%f\n' | sort)
-          [ "${#top[@]}" -eq 1 ] || { echo "HOLD:TOP_LEVEL_COUNT:${#top[@]}" >&2; exit 20; }
-          [ "${top[0]}" = PROYECTOS ] || { echo "HOLD:TOP_LEVEL_SURVIVOR:${top[*]}" >&2; exit 20; }
-          echo "GATE:PROYECTOS_ONLY=PASS"
+          [ "${#top[@]}" -ge 1 ] && [ "${#top[@]}" -le 2 ] || { echo "HOLD:TOP_LEVEL_COUNT:${#top[@]}:${top[*]}" >&2; exit 20; }
+          for x in "${top[@]}"; do
+            case "$x" in
+              PROYECTOS|"System Volume Information") ;;
+              *) echo "HOLD:TOP_LEVEL_SURVIVOR:$x" >&2; exit 20 ;;
+            esac
+          done
+          if [ -e "$WINROOT/System Volume Information" ]; then
+            SVI="$WINROOT/System Volume Information"
+            [ -d "$SVI" ] && [ ! -L "$SVI" ] || { echo "HOLD:SVI_TYPE" >&2; exit 20; }
+            while IFS= read -r rel; do
+              case "$rel" in
+                "."|"./Chkdsk"|"./MountPointManagerRemoteDatabase"|./Chkdsk/Chkdsk*.log) ;;
+                *) echo "HOLD:SVI_UNEXPECTED_ENTRY:$rel" >&2; exit 20 ;;
+              esac
+            done < <(cd "$SVI" && find . -mindepth 0 -maxdepth 3 -printf '%p\n' | sort)
+            SVI_BYTES="$(du -sb --apparent-size "$SVI" | awk '{print $1}')"
+            [ "$SVI_BYTES" -le 67108864 ] || { echo "HOLD:SVI_TOO_LARGE:$SVI_BYTES" >&2; exit 20; }
+            echo "GATE:CHKDSK_SVI_BOUNDED=PASS:$SVI_BYTES"
+          fi
+          echo "GATE:PROTECTED_TOP_LEVEL_POLICY=PASS"
 
       - name: Generate fresh exact plan read-only
         shell: bash
