@@ -62,8 +62,10 @@ cmp -s "$OUT/PARTITION_TABLE_BEFORE.sfdisk" "$OUT/PARTITION_TABLE_AFTER.sfdisk" 
 test "$(sudo -n blkid -p -s UUID -o value "$P3")" = e084ec2a-af39-48b5-bb89-db2dc6a98332 || hold P3_CHANGED_DURING_PROBE
 test "$(digest /etc/fstab)" = "$(digest "$OUT/fstab.before")" || hold FSTAB_CHANGED_DURING_PROBE
 test "$(readlink -f "$(findmnt -M "$ROOT" -n -o SOURCE)")" = "$P3" || hold MOUNT_CHANGED_DURING_PROBE
+PROBE_SCRIPT_SHA="$(sha256sum "$SELF/part4_r2_postboundary_probe_v9.sh" | awk '{print $1}')"
+export PROBE_SCRIPT_SHA
 python3 - "$OUT" "$MANIFEST" "$VERIFY" "$POSIX" "$V8" <<'PY'
-import datetime as dt,hashlib,json,pathlib,sys
+import datetime as dt,hashlib,json,os,pathlib,sys
 out,man,ver,pos,v8=map(pathlib.Path,sys.argv[1:6])
 d=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
 t=json.loads((out/"TREE_V9.json").read_text())
@@ -88,6 +90,7 @@ r={"schema":"LOUKSNA_R4_PART4_R2_POSTBOUNDARY_V9_PROBE/1.0",
    "partition_sha256":d(out/"PARTITION_TABLE_BEFORE.sfdisk"),
    "fstab_before_sha256":d(out/"fstab.before"),
    "verifier_sha256":d(ver),"posix_verifier_sha256":d(pos),
+   "probe_script_sha256":os.environ["PROBE_SCRIPT_SHA"],
    "irreversible_mutation_authorized":False,"p2_p4_retirement_authorized":False,
    "checked_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
 (out/"PROBE_V9.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")

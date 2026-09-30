@@ -9,8 +9,8 @@ EXP={1:(2048,532480),2:(534528,32768),3:(567296,853842233),
 def sha(p):return hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
 def main():
     a=argparse.ArgumentParser()
-    a.add_argument("--probe",required=True);a.add_argument("--out",required=True)
-    x=a.parse_args();root=pathlib.Path(x.probe);out=pathlib.Path(x.out);out.parent.mkdir(parents=True,exist_ok=True)
+    a.add_argument("--probe",required=True);a.add_argument("--v8",required=True);a.add_argument("--out",required=True)
+    x=a.parse_args();root=pathlib.Path(x.probe);v8=pathlib.Path(x.v8);out=pathlib.Path(x.out);out.parent.mkdir(parents=True,exist_ok=True)
     p=json.loads((root/"PROBE_V9.json").read_text())
     v=json.loads((root/"TREE_V9.json").read_text())
     m=json.loads((root/"POSIX_V9.json").read_text())
@@ -23,6 +23,9 @@ def main():
     lf=v.get("root_technical_exclusion") or {}
     lm=m.get("root_technical_exclusion") or {}
     base=pathlib.Path(__file__).resolve().parent
+    vb=json.loads((v8/"VERIFY_P3_PREEXPAND.json").read_text())
+    vp=json.loads((v8/"POSIX_P3_PREEXPAND.json").read_text())
+    vs=json.loads((v8/"POSIX_SOURCE.json").read_text())
     checks={
         "probe":p.get("status")=="PASS" and p.get("source_run")==36687767779,
         "phase":p.get("boundary")=="P3_ALREADY_EXT4_EXPANDED",
@@ -41,6 +44,13 @@ def main():
                 and p.get("posix_sha256")==sha(root/"POSIX_V9.json"),
         "v9_code":p.get("verifier_sha256")==sha(base/"part4_r2_verify_tree_ext4_v9.py")
                    and p.get("posix_verifier_sha256")==sha(base/"part4_r2_posix_fingerprint_v9.py"),
+        "probe_script_bound":p.get("probe_script_sha256")==sha(base/"part4_r2_postboundary_probe_v9.sh"),
+        "v8_checkpoint":vb.get("status")=="PASS" and vb.get("mismatch_count")==0
+                         and vb.get("seen_records")==498092 and vb.get("regular_file_bytes")==200490852057
+                         and vp.get("status")=="PASS" and vp.get("matches_expected") is True
+                         and vp.get("fingerprint_sha256")==vs.get("fingerprint_sha256")==FP
+                         and p.get("v8_source_posix_sha256")==sha(v8/"POSIX_SOURCE.json")
+                         and p.get("v8_p3_preexpand_sha256")==sha(v8/"VERIFY_P3_PREEXPAND.json"),
         "fstab":p.get("fstab_before_sha256")==sha(root/"fstab.before"),
         "no_mutation":p.get("irreversible_mutation_authorized") is False
                       and p.get("p2_p4_retirement_authorized") is False
@@ -50,6 +60,8 @@ def main():
       "status":"PASS" if valid else "HOLD","scope":"READONLY_POSTBOUNDARY_P3_VALIDATION_ONLY",
       "checks":checks,"probe_sha256":sha(root/"PROBE_V9.json"),
       "tree_sha256":sha(root/"TREE_V9.json"),"posix_sha256":sha(root/"POSIX_V9.json"),
+      "probe_script_sha256":sha(base/"part4_r2_postboundary_probe_v9.sh"),
+      "v8_checkpoint_sha256":sha(v8/"VERIFY_P3_PREEXPAND.json"),
       "g24_allowed":valid,"fstab_mutation_authorized":False,"retirement_authorized":False,
       "verified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
     out.write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
