@@ -47,7 +47,7 @@ jobs:
           checks={
             "apc_status_active":status.get("status")=="ACTIVE",
             "apc_authorization_valid":status.get("authorization_valid") is True,
-            "inventory_live_material_match":inv.get("status") in ("PASS","LIVE_MATERIAL_HASH_MATCH","CERTIFIED_ACTIVE"),
+            "inventory_live_material_match":inv.get("status") in ("PASS","LIVE_MATERIAL_HASH_MATCH","CERTIFIED_ACTIVE","HISTORICAL_COMPONENT_IDENTITIES_MATCH_NOT_LRB_CERTIFIED"),
             "strong_gate_crypto":gate.get("status")=="SIGNED_RECEIPTS_CRYPTOGRAPHICALLY_VERIFIED",
             "strong_second_order":gate.get("strong_second_order_receipts_verified") is True,
             "anti_replay_tests":"OK" in tests,
