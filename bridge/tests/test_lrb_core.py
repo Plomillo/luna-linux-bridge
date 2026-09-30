@@ -109,6 +109,33 @@ class BridgeContractTests(unittest.TestCase):
         self.assertEqual(observed["bridge_root_shell"], "NOT_DEPLOYED")
         self.assertEqual(observed["sudo_noninteractive"], "NOT_PROBED")
 
+    def test_real_priority_folder_discovery_bounded(self):
+        from unittest import mock
+        home = self.state / "home"
+        home.mkdir()
+        workspace = home / "workspace"
+        workspace.mkdir()
+        priority = workspace / "1. PROYECTOS PRIORITARIOS"
+        priority.mkdir()
+        (workspace / "4. PENDIENTES").mkdir()
+        with mock.patch.object(core.Path, "home", return_value=home):
+            discovered = core.discover_priority_root()
+        self.assertEqual(discovered, str(priority.resolve()))
+
+    def test_priority_folder_ambiguity_holds(self):
+        from unittest import mock
+        home = self.state / "home"
+        home.mkdir()
+        for label in ("a", "b"):
+            workspace = home / label
+            workspace.mkdir()
+            (workspace / "1. PROYECTOS PRIORITARIOS").mkdir()
+            (workspace / "4. PENDIENTES").mkdir()
+        with mock.patch.object(core.Path, "home", return_value=home):
+            with self.assertRaisesRegex(RuntimeError, "PRIORITY_ROOT_NOT_UNIQUELY_VERIFIED"):
+                core.discover_priority_root()
+
+
 
 if __name__ == "__main__":
     unittest.main()

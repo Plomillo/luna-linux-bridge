@@ -106,7 +106,10 @@ def update_time_policy(state, contract, revision, heartbeat, work):
             raise RuntimeError("EXTENDED_BUDGET_REQUIRES_NEW_AUTHORITY")
         change = {**current, "revision": revision + 1,
                   "heartbeat_sec": heartbeat, "max_work_seconds": work}
+        evidence = EvidenceLedger(state)
+        evidence.append("TIME_POLICY_CHANGE_INTENT", {"previous": current, "next": change})
         atomic_json(state / "TIME_POLICY.json", change)
+        evidence.append("TIME_POLICY_CHANGE_COMMIT", {"new_revision": change["revision"]})
     return change
 
 
@@ -246,6 +249,37 @@ def validate_url(url, host):
     return url
 
 
+def discover_priority_root():
+    """Bounded discovery of the real priority folder; zero recursive walks."""
+    home = Path.home()
+    parents = (home, home / "Proyectos", home / "PROYECTOS", Path("/mnt"), Path("/media"))
+    found = set()
+    for parent in parents:
+        if parent.is_symlink() or not parent.is_dir():
+            continue
+        candidates = [parent]
+        try:
+            with os.scandir(parent) as entries:
+                for idx, entry in enumerate(entries):
+                    if idx >= 120:
+                        break
+                    if entry.is_dir(follow_symlinks=False):
+                        candidates.append(Path(entry.path))
+        except OSError:
+            continue
+        for path in candidates:
+            try:
+                if ((path / "1. PROYECTOS PRIORITARIOS").is_dir()
+                    and ((path / "4. PENDIENTES").exists()
+                         or (path / "2. CORPUS").exists())):
+                    found.add(str((path / "1. PROYECTOS PRIORITARIOS").resolve()))
+            except OSError:
+                pass
+    if len(found) != 1:
+        raise RuntimeError("PRIORITY_ROOT_NOT_UNIQUELY_VERIFIED")
+    return next(iter(found))
+
+
 def priority_index(root, limit=40):
     root = Path(root).expanduser()
     if root.is_symlink() or not root.is_dir():
@@ -288,7 +322,8 @@ def main(argv=None):
     p.add_argument("--url", required=True)
     p.add_argument("--authorized-host", required=True)
     p = commands.add_parser("projects")
-    p.add_argument("--root", required=True)
+    p.add_argument("--root")
+    p.add_argument("--discover", action="store_true")
     p.add_argument("--limit", type=int, default=40)
     args = parser.parse_args(argv)
     contract = json.loads(Path(args.contract).read_text(encoding="utf-8"))
@@ -336,7 +371,7 @@ def main(argv=None):
         result["completed_cycles"] = index
     elif args.command == "time-update":
         result = update_time_policy(state, contract, args.revision, args.heartbeat_sec, args.work_seconds)
-        ledger.append("TIME_POLICY_REDUCED_OR_RETIMED", result)
+        # update_time_policy emitted intent and commit under its lock.
     elif args.command == "plan":
         result = validate_claims(args.objective, args.model_expectation,
                                  args.model_name, args.model_version)
@@ -352,7 +387,9 @@ def main(argv=None):
                   "page_content_verified": False}
         ledger.append("BROWSER_LAUNCH", result)
     elif args.command == "projects":
-        result = priority_index(args.root, args.limit)
+        if bool(args.root) == bool(args.discover):
+            raise RuntimeError("GIVE_EXACT_ROOT_OR_DISCOVER_NOT_BOTH")
+        result = priority_index(discover_priority_root() if args.discover else args.root, args.limit)
         ledger.append("PROJECT_INDEX_READONLY", {"root": result["root"],
                       "entries": len(result["items"]), "recursive_scan": False})
     else:
