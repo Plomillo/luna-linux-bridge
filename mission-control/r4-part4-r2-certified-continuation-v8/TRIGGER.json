@@ -1,0 +1,20 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_CONTINUATION_TRIGGER/1.0",
+  "continuation": "V8",
+  "source_failure_run": 36682665542,
+  "requested": "FAIL_CLOSED_GO_VERIFIED",
+  "execution_gate": "FRESH_PROBE_G23_CLEANUP_G24_CLEANUP_G23_POSTCLEAN_G24_MIGRATE",
+  "initial_authorization": "TEMP_ONLY_CLEANUP_AFTER_INDEPENDENT_VALIDATION",
+  "p3_reformat": "CONDITIONAL_ON_NEW_G24_AND_FULL_TEMP_SHA_POSIX_VERIFICATION",
+  "preserve": [
+    "P3_NTFS_UNTIL_VERIFIED_TEMP",
+    "P1",
+    "P2",
+    "P4",
+    "P5",
+    "G23_G24_SEPARATION",
+    "FAIL_CLOSED",
+    "ROLLBACK"
+  ],
+  "generated_by": "ChatGPT via authorized GitHub connector"
+}
