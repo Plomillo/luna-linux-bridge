@@ -49,7 +49,38 @@ jobs:
             tail -38 "$S/TESTS.log"
             exit "$rc"
           }
-          grep -E '^Ran [0-9]+ tests|^OK$' "$S/TESTS.log" >> "$S/RECEIPT.txt"
+          grep -E '^Ran [0-9]+ tests|^OK          echo "HOST_SIGNATURE_VERIFIER_TESTS=PASS; REAL_G23_G24=NOT_EXECUTED" >> "$GITHUB_STEP_SUMMARY"
+          sha256sum "$S/RECEIPT.txt" "$S/TESTS.log" "$S/ONE_TIME_TESTS.log" "$S/CODE_HASHES.txt" > "$S/EVIDENCE_HASHES_SHA256.txt"
+      - name: Preserve evidence only, never ephemeral private keys
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-host-signature-verifier-only
+          path: ${{ runner.temp }}/lrb-signature-${{ github.run_id }}/
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 0
+ "$S/TESTS.log" >> "$S/RECEIPT.txt"
+          # Reuse this exact host proof rather than creating another workflow.
+          sha256sum bridge/one_time_scope.py bridge/tests/test_one_time_scope.py >> "$S/CODE_HASHES.txt"
+          nice -n 12 timeout 45s python3 -B -m unittest discover -s bridge/tests -p 'test_one_time_scope.py' -v > "$S/ONE_TIME_TESTS.log" 2>&1 || {
+            rc=$?
+            tail -38 "$S/ONE_TIME_TESTS.log"
+            exit "$rc"
+          }
+          grep -E '^Ran [0-9]+ tests|^OK          echo "HOST_SIGNATURE_VERIFIER_TESTS=PASS; REAL_G23_G24=NOT_EXECUTED" >> "$GITHUB_STEP_SUMMARY"
+          sha256sum "$S/RECEIPT.txt" "$S/TESTS.log" > "$S/EVIDENCE_HASHES_SHA256.txt"
+      - name: Preserve evidence only, never ephemeral private keys
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-host-signature-verifier-only
+          path: ${{ runner.temp }}/lrb-signature-${{ github.run_id }}/
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 0
+ "$S/ONE_TIME_TESTS.log" >> "$S/RECEIPT.txt"
+          printf 'one_time_scope=UNIT_TESTED_LOCAL_LEDGER_ONLY\\nroot_executor=NOT_DEPLOYED\\nglobal_replay_register=NOT_DEPLOYED\\n' >> "$S/RECEIPT.txt"
           echo "HOST_SIGNATURE_VERIFIER_TESTS=PASS; REAL_G23_G24=NOT_EXECUTED" >> "$GITHUB_STEP_SUMMARY"
           sha256sum "$S/RECEIPT.txt" "$S/TESTS.log" > "$S/EVIDENCE_HASHES_SHA256.txt"
       - name: Preserve evidence only, never ephemeral private keys
