@@ -1,0 +1,35 @@
+name: "R4 V5 workflow syntax diagnosis"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-v5-syntax-diagnose.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Parse YAML and inspect workflow structure
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          F=.github/workflows/r4-part4-r2-certified-continuation-v5.yml
+          ruby -e 'require "yaml"; x=YAML.load_file(ARGV[0]); raise "jobs missing" unless x.is_a?(Hash) && x["jobs"].is_a?(Hash); puts "YAML_PARSE=PASS"; puts "JOBS="+x["jobs"].keys.join(",")' "$F"
+          python3 - "$F" <<'PY'
+          import pathlib,sys
+          s=pathlib.Path(sys.argv[1]).read_text()
+          assert s.count("${{")==s.count("}}"), (s.count("${{"),s.count("}}"))
+          assert "jobs:" in s
+          print("EXPRESSION_DELIMITER_CHECK=PASS")
+          PY
