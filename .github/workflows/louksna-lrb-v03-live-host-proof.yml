@@ -53,6 +53,26 @@ jobs:
           timeout 8s python3 -B bridge/live_link.py --state-dir "$state" --socket-dir "$sockdir" request --op status > "$S/STATUS.jsonl"
           timeout 12s python3 -B bridge/live_link.py --state-dir "$state" --socket-dir "$sockdir" request --op watch --frames 3 --interval-sec 1 > "$S/LIVE.jsonl"
           timeout 8s python3 -B bridge/live_link.py --state-dir "$state" --socket-dir "$sockdir" request --op tick_readonly > "$S/ELASTIC_IDLE.jsonl"
+          # Exercise the *current* metacognitive and gate-stop code over the
+          # live host socket. This request is a proposal only, not sudo authority.
+          python3 - "$S" <<'PY'
+          from datetime import datetime,timedelta,timezone
+          import json,os,pathlib,sys
+          p=pathlib.Path(sys.argv[1])
+          mission={
+            "mission_id":"HOST-GATED-"+os.environ["GITHUB_RUN_ID"],
+            "user_objective":"Confirm that the live Bridge blocks an unissued root session",
+            "model_proposal":"Test a signed-gate requirement without executing sudo bash",
+            "model":{"declared_name":"HOST_TEST_ONLY_NOT_LLM","declared_version":"UNVERIFIED"},
+            "deadline_utc":(datetime.now(timezone.utc)+timedelta(minutes=2)).isoformat(),
+            "max_auto_steps":1,
+            "steps":[{"kind":"GATED_OPERATION","requested_capability":"CAP_SUDO_BASH"}]
+          }
+          (p/"GATED_MISSION.json").write_text(json.dumps(mission,sort_keys=True))
+          PY
+          timeout 8s python3 -B bridge/elastic_automation.py --state-dir "$state" admit --mission-file "$S/GATED_MISSION.json" > "$S/GATED_ADMIT.json"
+          timeout 8s python3 -B bridge/live_link.py --state-dir "$state" --socket-dir "$sockdir" request --op diagnose --mission-id "HOST-GATED-$GITHUB_RUN_ID" > "$S/GATED_DIAGNOSIS.jsonl"
+          timeout 8s python3 -B bridge/live_link.py --state-dir "$state" --socket-dir "$sockdir" request --op tick_readonly > "$S/GATED_STOP.jsonl"
           python3 - "$S" <<'PY'
           import json, pathlib, sys
           p=pathlib.Path(sys.argv[1])
@@ -67,7 +87,16 @@ jobs:
           assert frames[-1]["evidence_hash"]!=frames[0]["evidence_hash"]
           assert idle["result"]["status"]=="IDLE_NO_ELIGIBLE_TASK"
           assert idle["result"]["executed_steps"]==0 and not idle["certified"]
+          diag=json.loads((p/"GATED_DIAGNOSIS.jsonl").read_text().strip())
+          stop=json.loads((p/"GATED_STOP.jsonl").read_text().strip())
+          assert diag["status"]=="HOLD_INDEPENDENT_GATES_REQUIRED"
+          assert diag["privileged_execution_allowed"] is False
+          assert diag["next_action_executed"] is False
+          assert diag["user_goal_exact"].startswith("Confirm that the live Bridge")
+          assert stop["result"]["status"]=="WAITING_FRESH_G23_G24"
+          assert stop["result"]["executed_steps"]==0 and not stop["certified"]
           assert (p/"private-state/EVENTS.jsonl").is_file()
+          print("LRB_V03_HOST_GATED_DIAGNOSIS=PASS; ROOT_SESSION=NEVER_STARTED")
           print("LRB_V03_HOST_UNIX_SOCKET_3_FRAMES=PASS; G23_G24=NOT_EXECUTED; ROOT_MUTATION=FALSE")
           PY
           printf 'live_socket=PASS\nframe_count=3\nelastic_idle=PASS\n' >> "$ledger"
@@ -76,7 +105,7 @@ jobs:
           else
             printf 'sudo_noninteractive=UNAVAILABLE_OR_TIMEOUT\n' >> "$ledger"
           fi
-          sha256sum "$S/STATUS.jsonl" "$S/LIVE.jsonl" "$S/ELASTIC_IDLE.jsonl" "$state/EVENTS.jsonl" > "$S/SHA256SUMS.txt"
+          sha256sum "$S/STATUS.jsonl" "$S/LIVE.jsonl" "$S/ELASTIC_IDLE.jsonl" "$S/GATED_ADMIT.json" "$S/GATED_DIAGNOSIS.jsonl" "$S/GATED_STOP.jsonl" "$S/GATED_MISSION.json" "$state/EVENTS.jsonl" > "$S/SHA256SUMS.txt"
           echo "ARTIFACT_DIR=$S" >> "$GITHUB_ENV"
           echo "HOST_LIVE_SOCKET_SCOPE=READONLY" >> "$GITHUB_STEP_SUMMARY"
       - name: Preserve bounded read-only host observations
