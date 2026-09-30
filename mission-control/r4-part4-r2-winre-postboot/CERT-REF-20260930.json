@@ -1,0 +1,15 @@
+{
+  "schema":"LOUKSNA_R4_PART4_R2_CERT_REF/1.0",
+  "status":"CERTIFIED",
+  "scope":"P3_NTFS_BITMAP_REPAIR_AND_PROYECTOS_NONREGRESSION",
+  "activation_run":36655383695,
+  "forensic_run":36656737513,
+  "certification_run":36656963520,
+  "g23":"PASS",
+  "g24":"PASS",
+  "bitmap_mismatches":0,
+  "projects_non_regression":"PASS",
+  "boot_restoration":"PASS",
+  "partition_resize_authorized":false,
+  "format_authorized":false
+}
