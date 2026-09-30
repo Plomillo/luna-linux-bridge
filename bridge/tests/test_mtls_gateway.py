@@ -35,13 +35,18 @@ class MTLSGatewayTests(unittest.TestCase):
         cls.ca_key=p/"ca.key"
         cls.ca=p/"ca.pem"
         openssl("req","-x509","-newkey","rsa:2048","-nodes","-keyout",cls.ca_key,
-                "-out",cls.ca,"-days","1","-subj","/CN=LRB-Test-Only-CA")
+                "-out",cls.ca,"-days","1","-subj","/CN=LRB-Test-Only-CA",
+                "-addext","basicConstraints=critical,CA:TRUE",
+                "-addext","keyUsage=critical,keyCertSign,cRLSign",
+                "-addext","subjectKeyIdentifier=hash")
         def identity(name,ekus):
             key=p/(name+".key")
             req=p/(name+".csr")
             cert=p/(name+".pem")
             ext=p/(name+".ext")
-            ext.write_text("subjectAltName=DNS:localhost,IP:127.0.0.1\n"
+            ext.write_text("basicConstraints=critical,CA:FALSE\n"
+                           +"keyUsage=critical,digitalSignature,keyEncipherment\n"
+                           +"subjectAltName=DNS:localhost,IP:127.0.0.1\n"
                            +"extendedKeyUsage="+ekus+"\n")
             openssl("req","-new","-newkey","rsa:2048","-nodes",
                     "-keyout",key,"-out",req,"-subj","/CN="+name)
