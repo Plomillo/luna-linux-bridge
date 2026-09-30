@@ -1,0 +1,63 @@
+name: "LOUKSNA Bridge — real-host ephemeral mTLS loopback proof"
+on:
+  push:
+    branches:
+      - candidate/lrb-elastic-metacognition-v1
+    paths:
+      - ".github/workflows/louksna-lrb-mtls-host-loopback-proof.yml"
+permissions:
+  contents: read
+concurrency:
+  group: lrb-mtls-loopback-ephemeral
+  cancel-in-progress: false
+jobs:
+  host-mtls-loopback:
+    if: github.repository == 'Plomillo/luna-linux-bridge'
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 3
+    steps:
+      - name: Checkout reviewed candidate with no retained credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            bridge
+          sparse-checkout-cone-mode: true
+      - name: Real-host bounded ephemeral mTLS proof
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(hostname)" = LOUKSNA
+          test "$(id -u)" -ne 0
+          command -v openssl
+          umask 077
+          OUT="$RUNNER_TEMP/lrb-mtls-$GITHUB_RUN_ID"
+          mkdir -m 700 "$OUT"
+          printf 'run=%s\nsource_sha=%s\nhost=LOUKSNA\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" > "$OUT/HOST_RECEIPT.txt"
+          printf 'scope=EPHEMERAL_127.0.0.1_MTLS_TEST\n' >> "$OUT/HOST_RECEIPT.txt"
+          printf 'root_shell=false\nsudo_commands=false\nno_permanent_tls_certificates=true\n' >> "$OUT/HOST_RECEIPT.txt"
+          printf 'remote_public_binding=false\nnew_g23=NOT_EXECUTED\nnew_g24=NOT_EXECUTED\n' >> "$OUT/HOST_RECEIPT.txt"
+          sha256sum bridge/mtls_gateway.py bridge/live_link.py bridge/CONTRACT.v0.json \
+            > "$OUT/SOURCE_HASHES_SHA256.txt"
+          ulimit -v 262144 || true
+          nice -n 12 timeout 70s python3 -B -m unittest discover -s bridge/tests -p 'test_mtls_gateway.py' -v \
+            > "$OUT/TEST.log" 2>&1 || {
+              rc=$?
+              tail -35 "$OUT/TEST.log"
+              echo "FAILURE_EXIT=$rc" >> "$OUT/HOST_RECEIPT.txt"
+              exit "$rc"
+            }
+          tail -14 "$OUT/TEST.log"
+          grep -E '^Ran [0-9]+ tests' "$OUT/TEST.log" >> "$OUT/HOST_RECEIPT.txt"
+          printf 'loopback_mtls=PASS\nclient_certificate_pin=TESTED\npublic_listener=false\ncertified=false\n' >> "$OUT/HOST_RECEIPT.txt"
+          sha256sum "$OUT/HOST_RECEIPT.txt" "$OUT/TEST.log" > "$OUT/EVIDENCE_HASHES_SHA256.txt"
+          echo "HOST_MTLS_LOOPBACK_TESTED=PASS; PRODUCTION_TRUST_UNPROVISIONED" >> "$GITHUB_STEP_SUMMARY"
+      - name: Retain bounded proof (NO private keys)
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-mtls-ephemeral-host-proof
+          path: ${{ runner.temp }}/lrb-mtls-${{ github.run_id }}/
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 0
