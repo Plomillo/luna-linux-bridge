@@ -93,7 +93,10 @@ jobs:
           cp "$WORK/winre.candidate.wim" "$WORK/winre.before-update.wim"
           BEFORE_SHA="$(sha256sum "$WORK/winre.before-update.wim" | awk '{print $1}')"
 
-          wimlib-imagex update "$WORK/winre.candidate.wim" 1             --command="add $WORK/louksna-repair.cmd /Windows/System32/louksna-repair.cmd"             --command="add $WORK/winpeshl.ini /Windows/System32/winpeshl.ini"
+          {
+            printf 'add "%s" /Windows/System32/louksna-repair.cmd\n' "$WORK/louksna-repair.cmd"
+            printf 'add "%s" /Windows/System32/winpeshl.ini\n' "$WORK/winpeshl.ini"
+          } | wimlib-imagex update "$WORK/winre.candidate.wim" 1
 
           CAND_SHA="$(sha256sum "$WORK/winre.candidate.wim" | awk '{print $1}')"
           CAND_SIZE="$(stat -c %s "$WORK/winre.candidate.wim")"
