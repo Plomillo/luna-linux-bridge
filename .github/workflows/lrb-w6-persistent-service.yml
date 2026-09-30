@@ -1,0 +1,103 @@
+name: "LRB W6 — persistent user service materialization"
+
+on:
+  push:
+    branches:
+      - candidate/lrb-terminal-sevenfold-20260930
+    paths:
+      - ".github/workflows/lrb-w6-persistent-service.yml"
+
+permissions:
+  contents: read
+
+env:
+  CORE_SHA: c961a198f524a128dba6374290e2abe73dfaece6
+
+jobs:
+  install-and-prove:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: c961a198f524a128dba6374290e2abe73dfaece6
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: bridge
+      - name: Checkpoint, stage immutable core, install user service, prove active+enabled
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          U="$(id -un)"; UIDN="$(id -u)"
+          STAGE="$HOME/.local/lib/louksna-remote-bridge/$CORE_SHA"
+          STATE="$HOME/.local/state/louksna/remote-bridge/service"
+          UNITDIR="$HOME/.config/systemd/user"
+          OUT="$RUNNER_TEMP/lrb-w6"; mkdir -m 700 "$OUT"
+          mkdir -p "$STAGE" "$STATE" "$UNITDIR"
+          if [ -e "$UNITDIR/louksna-live-socket.service" ]; then
+            cp "$UNITDIR/louksna-live-socket.service" "$OUT/PRE_UNIT.service"
+          else
+            echo ABSENT >"$OUT/PRE_UNIT.service"
+          fi
+          if [ ! -d "$STAGE/bridge" ]; then
+            cp -a bridge "$STAGE/bridge"
+          fi
+          test "$(sha256sum "$STAGE/bridge/live_link.py"|awk '{print $1}')" = "$(sha256sum bridge/live_link.py|awk '{print $1}')"
+          sed -e "s|@REVIEWED_PROJECT_ROOT@|$STAGE|g"               -e "s|@OWNER_PRIVATE_STATE@|$STATE|g"               bridge/deploy/louksna-live-socket.service.in >"$OUT/louksna-live-socket.service"
+          /usr/bin/systemd-analyze verify --user "$OUT/louksna-live-socket.service" >"$OUT/systemd_verify.txt" 2>&1 || {
+            cat "$OUT/systemd_verify.txt"; exit 3;
+          }
+          install -m 0600 "$OUT/louksna-live-socket.service" "$UNITDIR/louksna-live-socket.service"
+          sudo -n /usr/bin/loginctl enable-linger "$U"
+          sudo -n /usr/bin/systemctl start "user@$UIDN.service"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+          test -S "$XDG_RUNTIME_DIR/bus"
+          systemctl --user daemon-reload
+          systemctl --user enable --now louksna-live-socket.service
+          systemctl --user is-enabled louksna-live-socket.service | tee "$OUT/ENABLED.txt"
+          systemctl --user is-active louksna-live-socket.service | tee "$OUT/ACTIVE.txt"
+          systemctl --user show louksna-live-socket.service             -p MainPID -p ActiveState -p SubState -p FragmentPath -p MemoryMax -p CPUQuotaPerSecUSec             -p TasksMax -p NoNewPrivileges -p Restart -p ExecStart >"$OUT/SERVICE_SHOW.txt"
+          test -S "$XDG_RUNTIME_DIR/lrb-sock/lrb.sock"
+          stat -c '%U:%G:%a:%F:%n' "$XDG_RUNTIME_DIR/lrb-sock/lrb.sock" >"$OUT/SOCKET_METADATA.txt"
+          BOOT="$(cat /proc/sys/kernel/random/boot_id)"
+          export OUT BOOT STAGE STATE UNITDIR U UIDN
+          python3 - <<'PY'
+          import json,os,pathlib,hashlib,datetime
+          out=pathlib.Path(os.environ["OUT"])
+          proof={"schema":"LRB_PERSISTENT_SERVICE_PROOF/1.0","status":"PASS",
+            "core_sha":os.environ["CORE_SHA"],"host":"LOUKSNA","boot_id":os.environ["BOOT"],
+            "stage":os.environ["STAGE"],"state":os.environ["STATE"],
+            "user":os.environ["U"],"uid":int(os.environ["UIDN"]),
+            "enabled":(out/"ENABLED.txt").read_text().strip()=="enabled",
+            "active":(out/"ACTIVE.txt").read_text().strip()=="active",
+            "socket_metadata":(out/"SOCKET_METADATA.txt").read_text().strip(),
+            "resource_controls":(out/"SERVICE_SHOW.txt").read_text(),
+            "postboot_actual_reboot_proven":False,
+            "canonical_mutation":False,"authority_transfer":False}
+          assert proof["enabled"] and proof["active"]
+          raw=json.dumps(proof,indent=2,sort_keys=True)+"\n"
+          (out/"W6_PREBOOT_RESULT.json").write_text(raw)
+          (out/"W6_PREBOOT_RESULT.sha256").write_text(hashlib.sha256(raw.encode()).hexdigest()+"  W6_PREBOOT_RESULT.json\n")
+          PY
+      - if: failure()
+        name: Roll back service unit
+        shell: bash
+        run: |
+          UIDN="$(id -u)"; export XDG_RUNTIME_DIR="/run/user/$UIDN"; export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+          systemctl --user disable --now louksna-live-socket.service 2>/dev/null || true
+          if grep -qx ABSENT "$RUNNER_TEMP/lrb-w6/PRE_UNIT.service" 2>/dev/null; then
+            rm -f "$HOME/.config/systemd/user/louksna-live-socket.service"
+          else
+            cp "$RUNNER_TEMP/lrb-w6/PRE_UNIT.service" "$HOME/.config/systemd/user/louksna-live-socket.service"
+          fi
+          systemctl --user daemon-reload 2>/dev/null || true
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-w6-persistent-service
+          path: ${{ runner.temp }}/lrb-w6/
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 0
