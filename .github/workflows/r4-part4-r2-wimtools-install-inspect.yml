@@ -40,9 +40,11 @@ jobs:
           sha256sum "$WIM" | tee "$OUT/WINRE_WIM.sha256"
 
           wimlib-imagex info "$WIM" | tee "$OUT/WIM_INFO.txt"
+          echo "--- WIM SYSTEM32 RELEVANT PATHS ---" | tee "$OUT/WIM_RELEVANT_PATHS.txt"
+          wimlib-imagex dir "$WIM" 1 /Windows/System32 | grep -Ei 'startnet|winpeshl|wpeinit|chkdsk|recenv|wpeutil|diskpart' | tee -a "$OUT/WIM_RELEVANT_PATHS.txt" || true
           mkdir -p "$OUT/extract"
           set +e
-          wimlib-imagex extract "$WIM" 1 --dest-dir="$OUT/extract"             /Windows/System32/startnet.cmd             /Windows/System32/winpeshl.ini             /Windows/System32/wpeinit.exe             /Windows/System32/recenv.exe             /Windows/System32/chkdsk.exe
+          wimlib-imagex extract "$WIM" 1 --nullglob --dest-dir="$OUT/extract"             /Windows/System32/startnet.cmd             /Windows/System32/winpeshl.ini             /Windows/System32/wpeinit.exe             /Windows/System32/chkdsk.exe             /Windows/System32/wpeutil.exe             /Windows/System32/diskpart.exe
           rc=$?
           set -e
           echo "EXTRACT_RC=$rc" | tee "$OUT/EXTRACT_STATUS.txt"
