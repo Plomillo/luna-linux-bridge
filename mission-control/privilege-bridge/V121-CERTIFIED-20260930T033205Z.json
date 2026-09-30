@@ -1,0 +1,43 @@
+{
+  "schema": "LOUKSNA_PRIVILEGE_BRIDGE_SYNC/1.0",
+  "status": "PASS_STRICT",
+  "source": "LOUKSNA_LOCAL_TERMINAL_CERTIFICATION",
+  "host": "LOUKSNA",
+  "target_user": "diegoignacionorambuenamiranda",
+  "certified_at_utc": "2026-09-30T03:32:05Z",
+  "runuser": {
+    "required": true,
+    "fallback_allowed": false,
+    "path": "/usr/sbin/runuser",
+    "sha256": "ea71a94cb0097f3e1d5ce2fa8fb775bf1bd1ddd74960fad3ee22d7d8d1ef4488",
+    "package": "util-linux",
+    "package_version": "2.41.5-0+deb13u1",
+    "state": "CERTIFIED_ACTIVE"
+  },
+  "bridge": {
+    "version": "1.2.1",
+    "prior_v12": "SUPERSEDED",
+    "state": "CERTIFIED_ACTIVE",
+    "complete_sudo_policy_sha256": "a570fbb5b0dcafaa1c1633015c75970acd6c9ea342a2f4130c6b254cb0fbbade",
+    "complete_component_manifest_sha256": "d81cd60be8a9c1b589fc180b95b4410aeb262bfef342c7a73f95f24dae1bcbe9",
+    "g23_sha256": "641955e0a149f99cb4905bb44fbcae29a422b18a6e4cd3b9d210010c9aaa0029",
+    "g24_sha256": "53b882221d31ac3fe4ba14565a9681f47f574c8fffcd9f5da02ddeade6d2c139",
+    "g23_path": "/var/lib/louksna/privilege-bridge/g23/G23_V121_20260930T033205Z.json",
+    "g24_path": "/var/lib/louksna/privilege-bridge/g24/G24_V121_20260930T033205Z.json",
+    "supersession_path": "/var/lib/louksna/privilege-bridge/SUPERSESSION_V12_TO_V121_20260930T033205Z.json"
+  },
+  "checks": {
+    "cache_free_runuser_user_sudo_root": "PASS",
+    "sudoers_syntax": "PASS",
+    "runner_state": "PASS",
+    "guardian_state": "PASS",
+    "telemetry_hash_chain": "PASS",
+    "g23": "PASS",
+    "g24_host_local_operational": "PASS"
+  },
+  "failure_posture": "FAIL_CLOSED",
+  "silent_sudoers_repair": false,
+  "canonical_mutation": false,
+  "authority_transfer": false,
+  "sync_note": "Repository synchronization record. A self-hosted live verifier must re-prove these digests before using this bridge as an execution prerequisite."
+}
