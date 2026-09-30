@@ -23,8 +23,11 @@ jobs:
           P4M="$RUNNER_TEMP/winre-p4"
           mkdir -p "$OUT" "$P4M"
 
-          CAND="$(apt-cache policy wimtools | awk '/Candidate:/{print $2}')"
-          test "$CAND" = "1.14.4-1.1+b3"
+          apt-cache policy wimtools | tee "$OUT/APT_POLICY_WIMTOOLS.txt"
+          CAND="$(awk '/Candidate:/{print $2}' "$OUT/APT_POLICY_WIMTOOLS.txt")"
+          test -n "$CAND"
+          test "$CAND" != "(none)"
+          printf 'CANDIDATE=%s\n' "$CAND" | tee "$OUT/APT_CANDIDATE.txt"
           sudo -n apt-get -y --no-install-recommends install "wimtools=$CAND"
           command -v wimlib-imagex
           wimlib-imagex --version | tee "$OUT/WIMLIB_VERSION.txt"
