@@ -1,0 +1,304 @@
+name: "LOUKSNA Qwen F2 — integrate REASONING_INTERFACE with inline G23 G24"
+
+on:
+  push:
+    branches:
+      - candidate/qwen35-4b-s-integral-20260930
+    paths:
+      - ".github/workflows/qwen-f2-integrate-inline-gates.yml"
+      - "bridge/reasoning/**"
+      - "bridge/tests/test_reasoning_integration.py"
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: louksna-qwen35-f2
+  cancel-in-progress: false
+
+env:
+  BASE_SHA: c961a198f524a128dba6374290e2abe73dfaece6
+  F1_RUN: "36790409680"
+  MODEL_SHA256: 9f020bfc77a9503a641e3e0511de04b4bfba16b9facfa62c3772b4f8e318ba55
+  RUNTIME_SHA256: afeac87f989294d544aa0248407604f18fbab5d18767be48f85795aca987379b
+
+jobs:
+  f2_g23_intake:
+    name: "F2 inline G23 intake"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: qwen-f1-g23
+          path: ${{ runner.temp }}/f1-g23
+          run-id: ${{ env.F1_RUN }}
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: qwen-f1-g24
+          path: ${{ runner.temp }}/f1-g24
+          run-id: ${{ env.F1_RUN }}
+          github-token: ${{ github.token }}
+      - name: Verify F1 closure and additive-only integration delta
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import json,os
+          g23=json.load(open(os.environ["RUNNER_TEMP"]+"/f1-g23/F1_G23.json"))
+          g24=json.load(open(os.environ["RUNNER_TEMP"]+"/f1-g24/F1_G24.json"))
+          b=json.load(open("bridge/reasoning/F1_BINDING.json"))
+          assert g23["status"]=="PASS" and g24["status"]=="PASS"
+          assert g24["terminal_certification_issued"] is False
+          assert b["f1_run_id"]==int(os.environ["F1_RUN"])
+          assert b["model"]["sha256"]==os.environ["MODEL_SHA256"]
+          assert b["runtime"]["binary_sha256"]==os.environ["RUNTIME_SHA256"]
+          print("F2_G23_INTAKE=PASS")
+          PY
+          git diff --quiet "$BASE_SHA"...HEAD -- Louksna.md PUAC2.md
+          test ! -e bridge/VIRTUAL_BRAIN.json
+          test ! -e bridge/virtual_brain.py
+
+  f2_g24_intake:
+    name: "F2 inline G24 certifiability intake"
+    needs: f2_g23_intake
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Reject authority drift or non-additive candidate changes
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          CHANGED="$(git diff --name-only "$BASE_SHA"...HEAD)"
+          printf '%s\n' "$CHANGED"
+          python3 - <<'PY'
+          import pathlib,re
+          text=pathlib.Path("bridge/reasoning/interface.py").read_text()
+          assert '"execution": False' in text
+          assert '"root": False' in text
+          assert '"gate": False' in text
+          assert '"certification": False' in text
+          q=pathlib.Path("bridge/reasoning/qwen_provider.py").read_text()
+          assert "shell=False" in q
+          assert "MODEL_SHA256_MISMATCH" in q
+          assert "RUNTIME_SHA256_MISMATCH" in q
+          a=pathlib.Path("bridge/reasoning/bridge_adapter.py").read_text()
+          assert "BRIDGE_EXECUTION_AUTHORITY_DRIFT" in a
+          print("F2_G24_INTAKE=PASS; CERTIFICATION_ISSUED=FALSE")
+          PY
+
+  f2_static:
+    name: "F2 static and regression integration"
+    needs: f2_g24_intake
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Compile and run full bridge regression suite
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -m py_compile bridge/reasoning/*.py
+          python3 -B -m unittest discover -s bridge/tests -p 'test_*.py' -v |& tee "$RUNNER_TEMP/F2_TESTS.log"
+          grep -Eq '^OK$|^OK ' "$RUNNER_TEMP/F2_TESTS.log"
+      - name: Seal static evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/f2-static"; mkdir -m 700 "$OUT"
+          cp "$RUNNER_TEMP/F2_TESTS.log" "$OUT/"
+          sha256sum bridge/reasoning/*.py bridge/reasoning/*.json bridge/tests/test_reasoning_integration.py > "$OUT/SOURCE_SHA256.txt"
+          python3 - <<'PY'
+          import json,os,pathlib,re
+          log=pathlib.Path(os.environ["RUNNER_TEMP"]+"/F2_TESTS.log").read_text(errors="replace")
+          m=re.search(r"Ran\s+(\d+)\s+tests",log)
+          assert m and "FAILED" not in log and "ERROR" not in log
+          out=pathlib.Path(os.environ["RUNNER_TEMP"]+"/f2-static")
+          out.joinpath("F2_STATIC.json").write_text(json.dumps({
+            "schema":"LOUKSNA_QWEN_F2_STATIC/1.0","status":"PASS",
+            "tests":int(m.group(1)),"canonical_mutation":False,
+            "authority_transfer":False,"certification_propagated":False
+          },indent=2,sort_keys=True)+"\n")
+          print("F2_STATIC=PASS tests="+m.group(1))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: qwen-f2-static
+          path: ${{ runner.temp }}/f2-static/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  f2_material:
+    name: "F2 material Qwen integration smoke on LOUKSNA"
+    needs: f2_static
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            bridge
+          sparse-checkout-cone-mode: true
+      - name: Verify F1 material and run one bounded advisory reasoning turn
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(hostname)" = "LOUKSNA"
+          OUT="$RUNNER_TEMP/f2-material"; mkdir -m 700 "$OUT"
+          cat > "$OUT/REQUEST.json" <<'JSON'
+          {
+            "schema":"LOUKSNA_REASONING_REQUEST/1.0",
+            "request_id":"F2-MATERIAL-SMOKE",
+            "objective":"Using only supplied evidence, identify the safe state. No execution is authorized.",
+            "evidence_refs":["F1:36790409680","LRB:c961a198f524a128dba6374290e2abe73dfaece6"],
+            "context":{"host":"LOUKSNA","f1":"PASS","terminal_certification_for_integrated_object":false},
+            "constraints":{"fail_closed":true,"no_silent_operations":true,"execution_authority":false}
+          }
+          JSON
+          nice -n 10 timeout 240s python3 -B bridge/reasoning/qwen_provider.py             --request "$OUT/REQUEST.json" --out "$OUT/REASONING_RESULT.json"             --timeout-sec 210 --threads 2 --ctx-size 3072 --reasoning-budget 192             | tee "$OUT/PROVIDER_RECEIPT.txt"
+          PYTHONPATH=bridge:bridge/reasoning python3 - "$OUT" <<'PY'
+          import json,pathlib,sys
+          from bridge_adapter import bind_to_bridge
+          out=pathlib.Path(sys.argv[1])
+          req=json.load(open(out/"REQUEST.json"))
+          res=json.load(open(out/"REASONING_RESULT.json"))
+          plan=bind_to_bridge(req,res)
+          assert res["execution_allowed"] is False
+          assert all(v is False for v in res["authority"].values())
+          assert plan["execution_allowed"] is False
+          assert plan["status"]=="PROPOSED_UNCERTIFIED"
+          assert plan["g23"]=="NOT_EXECUTED" and plan["g24"]=="NOT_EXECUTED"
+          (out/"BRIDGE_PLAN.json").write_text(json.dumps(plan,indent=2,sort_keys=True)+"\n")
+          (out/"F2_RESULT.json").write_text(json.dumps({
+            "schema":"LOUKSNA_QWEN_F2_RESULT/1.0","status":"PASS",
+            "source_sha":"${{ github.sha }}","host":"LOUKSNA",
+            "reasoning_interface":"REASONING_INTERFACE/1.0",
+            "provider_id":res["provider_id"],
+            "model_sha256":res["material_binding"]["model_sha256"],
+            "runtime_sha256":res["material_binding"]["runtime_sha256"],
+            "model_replaceable":True,
+            "model_authority":False,
+            "direct_execution":False,
+            "direct_apc":False,
+            "bridge_execution_allowed":False,
+            "integrated_object_certified":False,
+            "canonical_mutation":False,
+            "authority_transfer":False
+          },indent=2,sort_keys=True)+"\n")
+          print("F2_MATERIAL=PASS")
+          PY
+          sha256sum "$OUT"/*.json > "$OUT/EVIDENCE_SHA256.txt"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: qwen-f2-material
+          path: ${{ runner.temp }}/f2-material/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  f2_g23_post:
+    name: "F2 inline G23 post-validation"
+    needs: f2_material
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: qwen-f2-material
+          path: ${{ runner.temp }}/f2
+      - name: Independently validate F2 material result
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/f2-g23"; mkdir -m 700 "$OUT"
+          export OUT
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib
+          p=pathlib.Path(os.environ["RUNNER_TEMP"]+"/f2/F2_RESULT.json")
+          d=json.loads(p.read_text())
+          ok=(d.get("status")=="PASS"
+              and d.get("reasoning_interface")=="REASONING_INTERFACE/1.0"
+              and d.get("model_sha256")==os.environ["MODEL_SHA256"]
+              and d.get("runtime_sha256")==os.environ["RUNTIME_SHA256"]
+              and d.get("model_replaceable") is True
+              and d.get("model_authority") is False
+              and d.get("direct_execution") is False
+              and d.get("direct_apc") is False
+              and d.get("bridge_execution_allowed") is False
+              and d.get("integrated_object_certified") is False
+              and d.get("canonical_mutation") is False
+              and d.get("authority_transfer") is False)
+          r={"schema":"LOUKSNA_QWEN_F2_G23/1.0","status":"PASS" if ok else "HOLD",
+             "f2_result_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),
+             "repair_permitted":False,"certification_permitted":False}
+          pathlib.Path(os.environ["OUT"]).joinpath("F2_G23.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          if not ok: raise SystemExit("F2_G23_HOLD")
+          print("F2_G23_POST=PASS")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: qwen-f2-g23
+          path: ${{ runner.temp }}/f2-g23/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  f2_g24_post:
+    name: "F2 inline G24 post-validation"
+    needs: f2_g23_post
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: qwen-f2-g23
+          path: ${{ runner.temp }}/g23
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: qwen-f2-material
+          path: ${{ runner.temp }}/f2
+      - name: Close F2 certifiability without terminal certification
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/f2-g24"; mkdir -m 700 "$OUT"
+          export OUT
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib
+          f=pathlib.Path(os.environ["RUNNER_TEMP"]+"/f2/F2_RESULT.json")
+          g=pathlib.Path(os.environ["RUNNER_TEMP"]+"/g23/F2_G23.json")
+          fd=json.loads(f.read_text()); gd=json.loads(g.read_text())
+          ok=(fd.get("status")=="PASS" and gd.get("status")=="PASS"
+              and fd.get("integrated_object_certified") is False)
+          r={"schema":"LOUKSNA_QWEN_F2_G24/1.0","status":"PASS" if ok else "HOLD",
+             "certifiability":"PASS" if ok else "HOLD",
+             "terminal_certification_issued":False,
+             "f2_result_sha256":hashlib.sha256(f.read_bytes()).hexdigest(),
+             "g23_sha256":hashlib.sha256(g.read_bytes()).hexdigest()}
+          pathlib.Path(os.environ["OUT"]).joinpath("F2_G24.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          if not ok: raise SystemExit("F2_G24_HOLD")
+          print("F2_PASS=TRUE; NEXT_ALLOWED_FAMILY=F3")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: qwen-f2-g24
+          path: ${{ runner.temp }}/f2-g24/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0

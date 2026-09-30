@@ -1,0 +1,33 @@
+{
+  "schema": "LOUKSNA_QWEN_F1_BINDING/1.0",
+  "status": "PASS",
+  "f1_run_id": 36790409680,
+  "f1_source_sha": "b8889e8fbc2ef50ed4948b9f980fc5fc88c79dd3",
+  "base_sha": "c961a198f524a128dba6374290e2abe73dfaece6",
+  "model": {
+    "sha256": "9f020bfc77a9503a641e3e0511de04b4bfba16b9facfa62c3772b4f8e318ba55",
+    "bytes": 1904339232,
+    "path": "~/.local/share/louksna/reasoning/models/qwen35-4b-s/Qwen3.5-4B-S-TS-Q4_K_S.gguf"
+  },
+  "runtime": {
+    "source_revision": "bec4772f6a2527d371557b5d2032641e5ff7619c",
+    "binary_sha256": "afeac87f989294d544aa0248407604f18fbab5d18767be48f85795aca987379b",
+    "path": "~/.local/share/louksna/reasoning/runtime/bec4772f6a2527d371557b5d2032641e5ff7619c/bin/llama-cli"
+  },
+  "legacy": {
+    "gpt_oss_120b_cache_entries_retired": 0,
+    "gpt_oss_120b_active_provider": false,
+    "gpt_oss_120b_fallback": false
+  },
+  "inline_gates": {
+    "G23": "PASS",
+    "G24": "PASS"
+  },
+  "artifacts": {
+    "qwen_f1_material_zip_sha256": "058adb97d3624e5637ec930bbf649950d4aa88893d7f16c68962f4dbfd55e1f3",
+    "qwen_f1_g23_zip_sha256": "5b1e6198c5d1159b12703b127a3332c22af2670419d10438866d0b463fb45bed",
+    "qwen_f1_g24_zip_sha256": "0be0a8520c1f516ec1abf12f9b0fe26eeb60919c12b52e645a81b3127c7859f1"
+  },
+  "certification_propagated": false,
+  "terminal_certification_issued": false
+}
