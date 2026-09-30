@@ -1,0 +1,221 @@
+name: "R4 PART4 R2 — fresh storage plan G23 G24"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-part4-r2-storage-plan-fresh-g23-g24.yml
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: r4-part4-r2-storage-plan-fresh
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: server/r4-master
+          sparse-checkout-cone-mode: true
+
+      - name: Preflight repaired NTFS and resilient Maestro
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+          UNIT="actions.runner.Plomillo-luna-linux-bridge.luna-linux.service"
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9/PART_4_R2/STATE.json"
+          WINROOT="/media/diegoignacionorambuenamiranda/Windows"
+
+          test "$(hostname)" = LOUKSNA
+          test "$(id -un)" = diegoignacionorambuenamiranda
+          sudo -k
+          sudo -n true
+          sudo -n visudo -c
+
+          test "$(systemctl is-active "$UNIT")" = active
+          test "$(systemctl is-enabled "$UNIT")" = enabled
+          test "$(systemctl show "$UNIT" -p Restart --value)" = always
+          test "$(systemctl show "$UNIT" -p RestartUSec --value)" = 5s
+          test "$(systemctl is-active louksna-maestro-guardian.timer)" = active
+          test "$(systemctl is-enabled louksna-maestro-guardian.timer)" = enabled
+          pgrep -u diegoignacionorambuenamiranda -f '/home/diegoignacionorambuenamiranda/actions-runner/bin/Runner.Listener run --startuptype service' >/dev/null
+
+          test -f "$STATE"
+          python3 - "$STATE" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1]))
+          assert d.get("r2_owner_authorized") is True
+          assert d.get("freeze_g24") is True
+          assert d.get("autopilot_g24") is True
+          assert d.get("windows_purged_preserving_projects") is True
+          assert d.get("post_purge_integrity") is True
+          assert d.get("ntfs_shrunk") is not True
+          PY
+
+          test "$(sudo -n blkid -p -s UUID -o value /dev/nvme0n1p3)" = F2848A148489DC0B
+          test "$(sudo -n blkid -p -s UUID -o value /dev/nvme0n1p4)" = CADE667DDE666225
+          test "$(findmnt -T "$WINROOT" -n -o SOURCE)" = /dev/nvme0n1p3
+          test "$(findmnt -T "$WINROOT" -n -o FSTYPE)" = ntfs3
+          test -d "$WINROOT/PROYECTOS"
+          mapfile -t top < <(find "$WINROOT" -mindepth 1 -maxdepth 1 -printf '%f\n' | sort)
+          test "${#top[@]}" -eq 1
+          test "${top[0]}" = PROYECTOS
+
+      - name: Generate fresh exact plan read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/storage-plan"
+          mkdir -p "$OUT"
+          bash server/r4-master/part4_r2_storage_migrate.sh plan /dev/null "$OUT" /dev/null
+          test -f "$OUT/STORAGE_PLAN.json"
+          test -f "$OUT/STORAGE_PLAN.json.sha256"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-fresh-storage-plan
+          path: ${{ runner.temp }}/storage-plan/
+          retention-days: 90
+          compression-level: 0
+
+  g23:
+    needs: plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-fresh-storage-plan
+          path: ${{ runner.temp }}/plan
+
+      - name: Independent geometry and migration feasibility validation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/plan/STORAGE_PLAN.json" "$RUNNER_TEMP/g23/G23_STORAGE_PLAN.json" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,re,sys
+          p=pathlib.Path(sys.argv[1]); d=json.loads(p.read_text()); out=pathlib.Path(sys.argv[2])
+          p3=d["p3_original"]; p5=d["p5"]; p4=d["p4_original"]
+          raw=d.get("ntfs_info_raw","")
+          steps=d.get("steps",[])
+          checks={
+            "plan_pass":d.get("status")=="PASS",
+            "disk_exact":d.get("disk")=="/dev/nvme0n1",
+            "sector_512":d.get("sector_size")==512,
+            "p3_exact":d.get("source_partition")=="/dev/nvme0n1p3",
+            "uuid_exact":d.get("source_uuid")=="F2848A148489DC0B",
+            "manifest_bound":d.get("certified_manifest_sha256")=="99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+            "source_bytes_exact":d.get("source_regular_file_bytes")==200490852057,
+            "physical_p3_p5_contiguous":p3["end_sector"]+1==p5["start_sector"],
+            "physical_p5_before_p4":p5["end_sector"]<p4["start_sector"],
+            "ntfs_min_positive":d.get("ntfs_minimum_bytes",0)>0,
+            "ntfs_headroom":d["ntfs_fs_target_bytes"]>=d["ntfs_minimum_bytes"]+268435456,
+            "partition_larger_than_fs":d["p3_partition_target_bytes"]>d["ntfs_fs_target_bytes"],
+            "temp_capacity":d["temp_bytes"]>=d["source_regular_file_bytes"]+6_000_000_000,
+            "temp_before_p5":d["temp_end_sector"]<p5["start_sector"],
+            "final_before_p5":d["final_p3_end_sector"]<p5["start_sector"],
+            "ordered":p3["start_sector"]<d["p3_new_end_sector"]<d["temp_start_sector"]<=d["temp_end_sector"]<p5["start_sector"]<=p5["end_sector"]<p4["start_sector"],
+            "no_ntfs_error":not re.search(r'ERROR:|cluster accounting mismatches|Cluster accounting failed',raw,re.I),
+            "rollback_table":d["rollback_contract"].get("partition_table_dump_before_mutation") is True,
+            "rollback_original_source":d["rollback_contract"].get("before_p3_reformat")=="ORIGINAL_NTFS_P3_REMAINS_SOURCE_OF_TRUTH",
+            "rollback_temp_copy":d["rollback_contract"].get("after_p3_reformat_until_final_verify")=="VERIFIED_TEMP_EXT4_REMAINS_RECOVERY_COPY",
+            "delete_temp_only":"DELETE_TEMP_ONLY" in steps,
+            "no_p2_retire":not any("P2" in x and ("DELETE" in x or "RETIRE" in x) for x in steps),
+            "no_p4_retire":not any("P4" in x and ("DELETE" in x or "RETIRE" in x) for x in steps),
+          }
+          passed=all(checks.values())
+          q={
+            "schema":"LOUKSNA_R4_PART4_R2_STORAGE_PLAN_G23/2.0",
+            "status":"PASS" if passed else "HOLD",
+            "scope":"P3_NTFS_TO_EXT4_MIGRATION_PLAN_PRESERVING_P5_P4_P2",
+            "plan_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),
+            "checks":checks,
+            "geometry":{
+              "p3":p3,"p5":p5,"p4":p4,
+              "p3_new_end_sector":d["p3_new_end_sector"],
+              "temp_start_sector":d["temp_start_sector"],
+              "temp_end_sector":d["temp_end_sector"],
+              "final_p3_end_sector":d["final_p3_end_sector"],
+              "ntfs_minimum_bytes":d["ntfs_minimum_bytes"],
+              "ntfs_fs_target_bytes":d["ntfs_fs_target_bytes"],
+              "temp_bytes":d["temp_bytes"]
+            },
+            "g24_allowed":passed,
+            "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          out.write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if not passed: raise SystemExit(3)
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-fresh-storage-plan-g23
+          path: ${{ runner.temp }}/g23/G23_STORAGE_PLAN.json
+          retention-days: 90
+          compression-level: 0
+
+  g24:
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-fresh-storage-plan-g23
+          path: ${{ runner.temp }}/g23
+      - name: Digest-bound plan certification
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/G23_STORAGE_PLAN.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$G")" = PASS
+          H="$(sha256sum "$G"|awk '{print $1}')"
+          PLAN_SHA="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["plan_sha256"])' "$G")"
+          AUD="louksna-r4-part4-r2-storage-plan-v2:$PLAN_SHA:$H"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export H PLAN_SHA AUD TOKEN
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$G" "$RUNNER_TEMP/g24/G24_STORAGE_PLAN.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          g=json.loads(pathlib.Path(sys.argv[1]).read_text())
+          t=os.environ["TOKEN"]; parts=t.split(".")
+          payload=parts[1]+"="*((4-len(parts[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload))
+          aud=claims.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          r={
+            "schema":"LOUKSNA_R4_PART4_R2_STORAGE_PLAN_G24/2.0",
+            "status":"PASS",
+            "scope":"P3_NTFS_TO_EXT4_MIGRATION_PLAN_PRESERVING_P5_P4_P2",
+            "plan_sha256":os.environ["PLAN_SHA"],
+            "g23_sha256":os.environ["H"],
+            "authority_authenticated":True,
+            "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
+            "migration_execution_authorized":False,
+            "partition_mutation_authorized":False,
+            "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          pathlib.Path(sys.argv[2]).write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-fresh-storage-plan-g24
+          path: ${{ runner.temp }}/g24/G24_STORAGE_PLAN.json
+          retention-days: 90
+          compression-level: 0
