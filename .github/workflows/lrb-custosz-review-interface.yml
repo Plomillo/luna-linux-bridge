@@ -1,0 +1,31 @@
+name: "LRB CUSTOSZ V7 review interface probe"
+
+on:
+  push:
+    branches:
+      - candidate/lrb-terminal-sevenfold-20260930
+    paths:
+      - ".github/workflows/lrb-custosz-review-interface.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 1
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: c961a198f524a128dba6374290e2abe73dfaece6
+          persist-credentials: false
+          sparse-checkout: artifacts/custosz-v7
+      - name: Show bounded CUSTOSZ review-capable command surfaces
+        shell: bash
+        run: |
+          set +e
+          P=artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz
+          for C in doctor architect mission-start mission-status mission-tick mission-supervise progress-check broker-request reasoning-policy; do
+            echo "===== $C ====="
+            python3 -B -I "$P" "$C" --help 2>&1 | head -120
+          done
