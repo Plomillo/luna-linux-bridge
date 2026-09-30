@@ -36,40 +36,48 @@ jobs:
           STATE="$HOME/.local/state/louksna/r4-master-part1-part9/PART_4_R2/STATE.json"
           WINROOT="/media/diegoignacionorambuenamiranda/Windows"
 
-          test "$(hostname)" = LOUKSNA
-          test "$(id -un)" = diegoignacionorambuenamiranda
+          gate(){ name="$1"; shift; if "$@"; then echo "GATE:$name=PASS"; else echo "HOLD:$name" >&2; exit 20; fi; }
+
+          gate HOST test "$(hostname)" = LOUKSNA
+          gate USER test "$(id -un)" = diegoignacionorambuenamiranda
           sudo -k
-          sudo -n true
-          sudo -n visudo -c
+          gate SUDO sudo -n true
+          gate VISUDO sudo -n visudo -c
 
-          test "$(systemctl is-active "$UNIT")" = active
-          test "$(systemctl is-enabled "$UNIT")" = enabled
-          test "$(systemctl show "$UNIT" -p Restart --value)" = always
-          test "$(systemctl show "$UNIT" -p RestartUSec --value)" = 5s
-          test "$(systemctl is-active louksna-maestro-guardian.timer)" = active
-          test "$(systemctl is-enabled louksna-maestro-guardian.timer)" = enabled
-          pgrep -u diegoignacionorambuenamiranda -f '/home/diegoignacionorambuenamiranda/actions-runner/bin/Runner.Listener run --startuptype service' >/dev/null
+          gate RUNNER_ACTIVE test "$(systemctl is-active "$UNIT")" = active
+          gate RUNNER_ENABLED test "$(systemctl is-enabled "$UNIT")" = enabled
+          gate RUNNER_RESTART test "$(systemctl show "$UNIT" -p Restart --value)" = always
+          gate RUNNER_RESTART_SEC test "$(systemctl show "$UNIT" -p RestartUSec --value)" = 5s
+          gate GUARDIAN_ACTIVE test "$(systemctl is-active louksna-maestro-guardian.timer)" = active
+          gate GUARDIAN_ENABLED test "$(systemctl is-enabled louksna-maestro-guardian.timer)" = enabled
+          gate RUNNER_LISTENER pgrep -u diegoignacionorambuenamiranda -f '/home/diegoignacionorambuenamiranda/actions-runner/bin/Runner.Listener run --startuptype service'
 
-          test -f "$STATE"
+          gate STATE_EXISTS test -f "$STATE"
           python3 - "$STATE" <<'PY'
           import json,sys
           d=json.load(open(sys.argv[1]))
-          assert d.get("r2_owner_authorized") is True
-          assert d.get("freeze_g24") is True
-          assert d.get("autopilot_g24") is True
-          assert d.get("windows_purged_preserving_projects") is True
-          assert d.get("post_purge_integrity") is True
-          assert d.get("ntfs_shrunk") is not True
+          req={
+            "r2_owner_authorized":True,
+            "freeze_g24":True,
+            "autopilot_g24":True,
+            "windows_purged_preserving_projects":True,
+            "post_purge_integrity":True
+          }
+          bad={k:(d.get(k),v) for k,v in req.items() if d.get(k) is not v}
+          if bad: raise SystemExit("HOLD:STATE_REQUIRED_FLAGS:"+repr(bad))
+          if d.get("ntfs_shrunk") is True: raise SystemExit("HOLD:STATE_NTFS_ALREADY_SHRUNK")
+          print("GATE:STATE_R2=PASS")
           PY
 
-          test "$(sudo -n blkid -p -s UUID -o value /dev/nvme0n1p3)" = F2848A148489DC0B
-          test "$(sudo -n blkid -p -s UUID -o value /dev/nvme0n1p4)" = CADE667DDE666225
-          test "$(findmnt -T "$WINROOT" -n -o SOURCE)" = /dev/nvme0n1p3
-          test "$(findmnt -T "$WINROOT" -n -o FSTYPE)" = ntfs3
-          test -d "$WINROOT/PROYECTOS"
+          gate P3_UUID test "$(sudo -n blkid -p -s UUID -o value /dev/nvme0n1p3)" = F2848A148489DC0B
+          gate P4_UUID test "$(sudo -n blkid -p -s UUID -o value /dev/nvme0n1p4)" = CADE667DDE666225
+          gate P3_SOURCE test "$(findmnt -T "$WINROOT" -n -o SOURCE)" = /dev/nvme0n1p3
+          gate P3_FSTYPE test "$(findmnt -T "$WINROOT" -n -o FSTYPE)" = ntfs3
+          gate PROJECTS_DIR test -d "$WINROOT/PROYECTOS"
           mapfile -t top < <(find "$WINROOT" -mindepth 1 -maxdepth 1 -printf '%f\n' | sort)
-          test "${#top[@]}" -eq 1
-          test "${top[0]}" = PROYECTOS
+          [ "${#top[@]}" -eq 1 ] || { echo "HOLD:TOP_LEVEL_COUNT:${#top[@]}" >&2; exit 20; }
+          [ "${top[0]}" = PROYECTOS ] || { echo "HOLD:TOP_LEVEL_SURVIVOR:${top[*]}" >&2; exit 20; }
+          echo "GATE:PROYECTOS_ONLY=PASS"
 
       - name: Generate fresh exact plan read-only
         shell: bash
