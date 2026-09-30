@@ -1,0 +1,27 @@
+name: "LRB W6 — APC reboot interface read-only probe"
+on:
+  push:
+    branches:
+      - candidate/lrb-terminal-sevenfold-20260930
+    paths:
+      - ".github/workflows/lrb-w6-apc-reboot-probe.yml"
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 1
+    steps:
+      - name: Inspect reboot parser surface without invoking reboot
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo -n /usr/bin/python3 - <<'PY'
+          from pathlib import Path
+          p=Path("/usr/local/sbin/louksna-apc")
+          t=p.read_text(errors="replace").splitlines()
+          for i,line in enumerate(t):
+              if "reboot" in line.lower() or "argparse" in line.lower() or "sys.argv" in line.lower() or "allowed_actions" in line.lower():
+                  lo=max(0,i-3); hi=min(len(t),i+6)
+                  print("\n".join(f"{j+1}:{t[j]}" for j in range(lo,hi)))
+          PY
