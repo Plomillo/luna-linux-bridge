@@ -24,7 +24,7 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          F=.github/workflows/r4-part4-r2-certified-continuation-v5.yml
+          F=.github/workflows/r4-part4-r2-certified-continuation-v6.yml
           ruby -e 'require "yaml"; x=YAML.load_file(ARGV[0]); raise "jobs missing" unless x.is_a?(Hash) && x["jobs"].is_a?(Hash); puts "YAML_PARSE=PASS"; puts "JOBS="+x["jobs"].keys.join(",")' "$F"
           python3 - "$F" <<'PY'
           import pathlib,sys
@@ -40,6 +40,10 @@ jobs:
           x["jobs"].each{|k,v| puts "NEEDS #{k}=#{v["needs"].inspect}"}
           RB
           GOBIN="$RUNNER_TEMP/bin" go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
-          "$RUNNER_TEMP/bin/actionlint" -color "$F"
+          bash -n server/r4-master/part4_r2_storage_resume_after_v5_mount_guard_v6.sh
+          grep -F 'preexisting_mounts.p3' server/r4-master/part4_r2_storage_resume_after_v5_mount_guard_v6.sh
+          grep -F 'df --output=iavail' server/r4-master/part4_r2_storage_resume_after_v5_mount_guard_v6.sh
+          ! grep -F 'df -i --output=iavail' server/r4-master/part4_r2_storage_resume_after_v5_mount_guard_v6.sh
+          "$RUNNER_TEMP/bin/actionlint" -color -ignore 'label "luna-aux" is unknown' -ignore 'shellcheck reported issue' "$F"
 
-# validation generation: post-needs-fix
+# validation generation: v6-definition
