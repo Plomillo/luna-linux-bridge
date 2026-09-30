@@ -102,7 +102,7 @@ jobs:
           PLAN_SHA="$(sha256sum "$OUT/STORAGE_PLAN.json"|awk '{print $1}')"
           export SCRIPT_SHA PLAN_SHA
           python3 - "$OUT/REMEDIATION_BINDING.json" <<'PY'
-          import json,os,pathlib,time
+          import json,os,pathlib,time,sys
           r={
             "schema":"LOUKSNA_R4_PART4_R2_REMEDIATION_BINDING/1.0",
             "status":"PASS",
