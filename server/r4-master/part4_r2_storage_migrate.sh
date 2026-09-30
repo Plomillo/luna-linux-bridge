@@ -103,8 +103,9 @@ if [ "$MODE" = "plan" ]; then
   sudo -n umount "$WINROOT" || hold "P3_UNMOUNT_FOR_NTFS_INFO_FAILED"
   PLAN_REMOUNT_REQUIRED=1
 
+  NTFS_INFO_FILE="$OUT/NTFS_INFO.txt"
   set +e
-  NTFS_INFO="$(LC_ALL=C sudo -n ntfsresize --info --force "$P3" 2>&1)"
+  LC_ALL=C sudo -n ntfsresize --info --force "$P3" > "$NTFS_INFO_FILE" 2>&1
   NTFS_INFO_RC=$?
   set -e
 
@@ -113,7 +114,7 @@ if [ "$MODE" = "plan" ]; then
   trap - EXIT
 
   [ "$NTFS_INFO_RC" -eq 0 ] || {
-    printf '%s\n' "$NTFS_INFO" > "$OUT/NTFS_INFO_ERROR.txt"
+    cp "$NTFS_INFO_FILE" "$OUT/NTFS_INFO_ERROR.txt"
     hold "NTFS_INFO_FAILED_RC_$NTFS_INFO_RC"
   }
 
@@ -122,10 +123,14 @@ if [ "$MODE" = "plan" ]; then
   [ "$(blkid_uuid "$P3")" = "$OLD_UUID" ] || hold "P3_UUID_AFTER_NTFS_INFO"
   validate_top_level "$WINROOT"
 
-  export PARTED_RAW NTFS_INFO SS
-  python3 - "$OUT/STORAGE_PLAN.json" <<'PY'
-import json,os,re,sys,time,hashlib
-raw=os.environ["PARTED_RAW"]; info=os.environ["NTFS_INFO"]; ss=int(os.environ["SS"])
+  PARTED_FILE="$OUT/PARTED_BEFORE.txt"
+  printf '%s\n' "$PARTED_RAW" > "$PARTED_FILE"
+  export SS
+  python3 - "$OUT/STORAGE_PLAN.json" "$PARTED_FILE" "$NTFS_INFO_FILE" <<'PY'
+import json,os,re,sys,time,hashlib,pathlib
+raw=pathlib.Path(sys.argv[2]).read_text(encoding="utf-8",errors="replace")
+info=pathlib.Path(sys.argv[3]).read_text(encoding="utf-8",errors="replace")
+ss=int(os.environ["SS"])
 parts={}
 for line in raw.splitlines():
     if not re.match(r"^\d+:",line): continue
