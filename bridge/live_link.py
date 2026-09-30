@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 from datetime import datetime, timezone
 import json
+import hashlib
 import os
 from pathlib import Path
 import signal
@@ -22,6 +23,9 @@ import time
 import lrb_core as base
 import elastic_automation as elastic
 import elastic_tick
+import metacog_diagnosis as metacog
+import model_handrail
+import external_gates
 
 SCHEMA = "LRB_LOCAL_TRANSPORT/0.3"
 MAX_REQUEST_BYTES = 8192
@@ -50,7 +54,11 @@ class Transport:
         if not isinstance(request, dict) or type(request.get("op")) is not str:
             raise RuntimeError("INVALID_TYPED_REQUEST")
         allowed = {"status": {"op"}, "observe": {"op"},
-                   "tick_readonly": {"op"}, "report": {"op", "mission_id"}}
+                   "tick_readonly": {"op"}, "report": {"op", "mission_id"},
+                   "diagnose": {"op", "mission_id"},
+                   "review_model": {"op", "mission_id", "envelope", "evidence_index"},
+                   "gate_preflight": {"op", "mission_id", "request_path",
+                                      "owner_signature", "receipts", "strong"}}
         op = request["op"]
         if op not in allowed or set(request) != allowed[op]:
             raise RuntimeError("UNREGISTERED_OPERATION_DENIED")
@@ -75,6 +83,56 @@ class Transport:
                     "certified": False}
         if not isinstance(request["mission_id"], str) or not elastic.MID.fullmatch(request["mission_id"]):
             raise RuntimeError("MISSION_ID_INVALID")
+        if op == "diagnose":
+            return metacog.diagnose(self.automation, request["mission_id"],
+                                    observation=self.observe(),
+                                    same_uid_socket_verified=True)
+        if op == "review_model":
+            with self.automation.exclusive() as commits:
+                document = self.automation.read(commits)
+                row = document["missions"].get(request["mission_id"])
+                if row is None:
+                    raise RuntimeError("MISSION_UNKNOWN")
+                owner_goal = row["request"]["user_objective"]
+            if (not isinstance(request["envelope"], dict)
+                    or request["envelope"].get("user_objective") != owner_goal):
+                raise RuntimeError("MODEL_OWNER_SCOPE_DRIFT")
+            report = model_handrail.review(request["envelope"], request["evidence_index"])
+            self.ledger.append("MODEL_STRUCTURAL_REVIEW", {
+                "mission_id": request["mission_id"], "mission_sha256": row["mission_sha256"],
+                "review_sha256": base.digest(report), "correction_count": len(report["corrections"]),
+                "certified": False})
+            return report
+        if op == "gate_preflight":
+            if request["strong"] is not True or not isinstance(request["receipts"], dict):
+                raise RuntimeError("STRONG_EXTERNAL_GATES_REQUIRED")
+            with self.automation.exclusive() as commits:
+                document = self.automation.read(commits)
+                row = document["missions"].get(request["mission_id"])
+                if row is None or row["status"] != "WAITING_FRESH_G23_G24":
+                    raise RuntimeError("GATED_MISSION_CHECKPOINT_REQUIRED")
+                next_step = row["request"]["steps"][row["next_step"]]
+                if next_step["kind"] != "GATED_OPERATION":
+                    raise RuntimeError("GATED_STEP_NOT_CURRENT")
+            raw = external_gates.read_regular(request["request_path"])
+            signed_request = json.loads(raw)
+            if (signed_request.get("mission_id") != request["mission_id"]
+                    or signed_request.get("mission_sha256") != row["mission_sha256"]
+                    or signed_request.get("owner_objective_sha256") != base.digest(
+                        row["request"]["user_objective"])
+                    or signed_request.get("capability") != next_step["requested_capability"]
+                    or signed_request.get("source_sha256") != hashlib.sha256(
+                        Path(__file__).read_bytes()).hexdigest()):
+                raise RuntimeError("SIGNED_SCOPE_MISSION_OR_LIVE_CODE_MISMATCH")
+            verifier = external_gates.ExternalGateVerifier("/etc/louksna/remote-bridge",
+                                                          enforce_root_owned=True)
+            result = verifier.preflight(request["request_path"],
+                         request["owner_signature"], request["receipts"], strong=True)
+            self.ledger.append("STRONG_EXTERNAL_GATE_PREFLIGHT", {
+                "mission_id":request["mission_id"], "receipt_hashes": result["hashes"],
+                "privileged_execution":False, "certified":False})
+            return {**result, "material_dispatch_registered": False,
+                    "execution_authorized_by_this_transport":False}
         return {"schema": SCHEMA, "mission": self.automation.report(request["mission_id"]),
                 "privileged": False, "certified": False}
 
@@ -126,6 +184,12 @@ class Handler(socketserver.StreamRequestHandler):
         except (BrokenPipeError, ConnectionResetError, TimeoutError):
             return
         except Exception as exc:
+            try:
+                self.server.bridge.ledger.append("TRANSPORT_OPERATION_HOLD", {
+                    "error_class": type(exc).__name__, "reason_code": str(exc)[:120],
+                    "no_material_execution": True})
+            except Exception:
+                pass
             self._write({"schema": SCHEMA, "status": "HOLD", "code": str(exc)[:120],
                          "certified": False})
 
@@ -216,7 +280,7 @@ def main(argv=None):
     sp = p.add_subparsers(dest="verb", required=True)
     sp.add_parser("serve")
     ask = sp.add_parser("request")
-    ask.add_argument("--op", choices=("status", "observe", "tick_readonly", "report", "watch"), required=True)
+    ask.add_argument("--op", choices=("status", "observe", "tick_readonly", "report", "watch", "diagnose"), required=True)
     ask.add_argument("--mission-id")
     ask.add_argument("--frames", type=int, default=2)
     ask.add_argument("--interval-sec", type=int, default=1)
@@ -225,7 +289,7 @@ def main(argv=None):
         socket_dir = a.socket_dir or a.state_dir
         path = Path(socket_dir).expanduser() / "BRIDGE.sock"
         if a.verb == "request":
-            if a.op == "report":
+            if a.op in ("report", "diagnose"):
                 req = {"op": a.op, "mission_id": a.mission_id}
             elif a.op == "watch":
                 req = {"op": "watch", "frames": a.frames, "interval_sec": a.interval_sec}
