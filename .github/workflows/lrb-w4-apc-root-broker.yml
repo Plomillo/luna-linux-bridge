@@ -68,6 +68,7 @@ jobs:
           raw=json.dumps(report,indent=2,sort_keys=True)+"\n"
           (out/"W4_RESULT.json").write_text(raw)
           (out/"W4_RESULT.sha256").write_text(hashlib.sha256(raw.encode()).hexdigest()+"  W4_RESULT.json\n")
+          print(json.dumps({"W4":report["status"],"checks":checks,"apc_status":status,"inventory_status":inv.get("status"),"gate_status":gate.get("status")},sort_keys=True))
           if not ok: raise SystemExit("W4_HOLD")
           PY
           sha256sum "$OUT"/APC_STATUS.json "$OUT"/APC_INVENTORY.json "$OUT"/STRONG_GATE_VERIFY.json "$OUT"/W4_RESULT.json >"$OUT/EVIDENCE_SHA256.txt"
