@@ -93,7 +93,8 @@ class ReasoningInterfaceTests(unittest.TestCase):
             "model": {"sha256": "m", "bytes": 1},
             "runtime": {"source_revision": "r", "binary_sha256": "b"},
         }
-        fake = mock.Mock(returncode=0, stdout=json.dumps(model_payload()), stderr="")
+        completed = mock.Mock(returncode=0, stdout=json.dumps(model_payload()), stderr="")
+        fake = mock.Mock(return_value=completed)
         with mock.patch.object(qwen_provider, "verify_material", return_value=(manifest, binding, pathlib.Path("/m"), pathlib.Path("/r"))),              mock.patch.object(qwen_provider.subprocess, "run", fake):
             out = qwen_provider.invoke(request(), timeout_sec=1)
         self.assertFalse(out["execution_allowed"])
