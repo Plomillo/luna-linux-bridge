@@ -1,0 +1,273 @@
+name: "R4 PART4 R2 — build and certify automated WinRE repair candidate"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-part4-r2-winre-candidate-g23-g24.yml
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: r4-part4-r2-winre-repair-candidate
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 45
+    steps:
+      - name: Build modified WinRE candidate on ext4 only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+          P4=/dev/nvme0n1p4
+          P4M="$RUNNER_TEMP/winre-p4"
+          OUT="$RUNNER_TEMP/winre-candidate-evidence"
+          WORK="$HOME/.local/state/louksna/r4-master-part1-part9/PART_4_R2/winre-repair"
+          mkdir -p "$P4M" "$OUT" "$WORK"
+          chmod 700 "$WORK"
+
+          command -v wimlib-imagex
+          test "$(wimlib-imagex --version | head -1)" = "wimlib-imagex 1.14.4-1.1+b3 (using wimlib 1.14.4-1.1+b3)"
+          test "$(sudo -n /usr/sbin/blkid -p -s UUID -o value "$P4")" = CADE667DDE666225
+          test "$(sudo -n /usr/sbin/blkid -p -s UUID -o value /dev/nvme0n1p3)" = F2848A148489DC0B
+          test -d /media/diegoignacionorambuenamiranda/Windows/PROYECTOS
+
+          sudo -n mount -t ntfs3 -o ro "$P4" "$P4M"
+          trap 'sudo -n umount "$P4M" >/dev/null 2>&1 || true' EXIT
+          SRC="$P4M/Recovery/WindowsRE/winre.wim"
+          test -f "$SRC"
+          SRC_SHA="$(sha256sum "$SRC" | awk '{print $1}')"
+          SRC_SIZE="$(stat -c %s "$SRC")"
+          test "$SRC_SIZE" -eq 624309008
+          cp --reflink=auto --sparse=always "$SRC" "$WORK/winre.candidate.wim"
+          test "$(sha256sum "$WORK/winre.candidate.wim" | awk '{print $1}')" = "$SRC_SHA"
+          sudo -n umount "$P4M"
+          trap - EXIT
+
+          cat > "$WORK/louksna-repair.cmd" <<'CMD'
+          @echo off
+          setlocal EnableExtensions
+          wpeinit
+          set LOGDIR=S:\EFI\LOUKSNA
+          >X:\louksna-diskpart.txt echo select disk 0
+          >>X:\louksna-diskpart.txt echo select partition 1
+          >>X:\louksna-diskpart.txt echo assign letter=S noerr
+          >>X:\louksna-diskpart.txt echo select partition 3
+          >>X:\louksna-diskpart.txt echo assign letter=P noerr
+          >>X:\louksna-diskpart.txt echo exit
+          diskpart /s X:\louksna-diskpart.txt > X:\louksna-diskpart.log 2>&1
+          set DPRC=%ERRORLEVEL%
+          if not "%DPRC%"=="0" goto fail_nolog
+          if not exist S:\EFI\Microsoft\Boot\bootmgfw.efi goto fail
+          if not exist P:\PROYECTOS\ goto fail
+          if exist P:\Windows\System32\config\SYSTEM goto fail
+          if not exist "%LOGDIR%" mkdir "%LOGDIR%"
+          copy /y X:\louksna-diskpart.log "%LOGDIR%\DISKPART.log" >nul
+          >"%LOGDIR%\WINRE_REPAIR_STARTED.txt" echo LOUKSNA_WINRE_REPAIR_STARTED
+          chkdsk P: /f /x > "%LOGDIR%\CHKDSK_P3.txt" 2>&1
+          set CHKRC=%ERRORLEVEL%
+          >"%LOGDIR%\CHKDSK_P3.rc" echo %CHKRC%
+          >"%LOGDIR%\WINRE_REPAIR_FINISHED.txt" echo LOUKSNA_WINRE_REPAIR_FINISHED
+          wpeutil reboot
+          goto :eof
+          :fail
+          if not exist "%LOGDIR%" mkdir "%LOGDIR%"
+          >"%LOGDIR%\WINRE_REPAIR_HOLD.txt" echo HOLD:TARGET_VALIDATION_FAILED
+          wpeutil reboot
+          goto :eof
+          :fail_nolog
+          wpeutil reboot
+          CMD
+
+          cat > "$WORK/winpeshl.ini" <<'INI'
+          [LaunchApps]
+          %SYSTEMROOT%\System32\cmd.exe, /d /c %SYSTEMROOT%\System32\louksna-repair.cmd
+          INI
+
+          cp "$WORK/winre.candidate.wim" "$WORK/winre.before-update.wim"
+          BEFORE_SHA="$(sha256sum "$WORK/winre.before-update.wim" | awk '{print $1}')"
+
+          wimlib-imagex update "$WORK/winre.candidate.wim" 1             --command="add $WORK/louksna-repair.cmd /Windows/System32/louksna-repair.cmd"             --command="add $WORK/winpeshl.ini /Windows/System32/winpeshl.ini"
+
+          CAND_SHA="$(sha256sum "$WORK/winre.candidate.wim" | awk '{print $1}')"
+          CAND_SIZE="$(stat -c %s "$WORK/winre.candidate.wim")"
+          test "$CAND_SHA" != "$BEFORE_SHA"
+          test "$CAND_SIZE" -gt 0
+
+          rm -rf "$WORK/verify"
+          mkdir -p "$WORK/verify"
+          wimlib-imagex extract "$WORK/winre.candidate.wim" 1 --dest-dir="$WORK/verify"             /Windows/System32/louksna-repair.cmd             /Windows/System32/winpeshl.ini             /Windows/System32/chkdsk.exe             /Windows/System32/diskpart.exe             /Windows/System32/wpeutil.exe
+          cmp -s "$WORK/louksna-repair.cmd" "$WORK/verify/louksna-repair.cmd"
+          cmp -s "$WORK/winpeshl.ini" "$WORK/verify/winpeshl.ini"
+          test -s "$WORK/verify/chkdsk.exe"
+          test -s "$WORK/verify/diskpart.exe"
+          test -s "$WORK/verify/wpeutil.exe"
+
+          cp "$WORK/louksna-repair.cmd" "$OUT/"
+          cp "$WORK/winpeshl.ini" "$OUT/"
+          sha256sum "$WORK/louksna-repair.cmd" "$WORK/winpeshl.ini" > "$OUT/PAYLOAD.sha256"
+          export SRC_SHA SRC_SIZE CAND_SHA CAND_SIZE BEFORE_SHA
+          python3 - "$OUT/CANDIDATE.json" <<'PY'
+          import datetime as dt,json,os,pathlib,sys
+          obj={
+            "schema":"LOUKSNA_R4_PART4_R2_WINRE_REPAIR_CANDIDATE/1.0",
+            "status":"PASS",
+            "source_wim_sha256":os.environ["SRC_SHA"],
+            "source_wim_size":int(os.environ["SRC_SIZE"]),
+            "candidate_wim_sha256":os.environ["CAND_SHA"],
+            "candidate_wim_size":int(os.environ["CAND_SIZE"]),
+            "before_update_sha256":os.environ["BEFORE_SHA"],
+            "candidate_local_path":"~/.local/state/louksna/r4-master-part1-part9/PART_4_R2/winre-repair/winre.candidate.wim",
+            "target_disk":"/dev/nvme0n1",
+            "target_partition":"/dev/nvme0n1p3",
+            "target_uuid":"F2848A148489DC0B",
+            "recovery_partition":"/dev/nvme0n1p4",
+            "recovery_uuid":"CADE667DDE666225",
+            "repair_command":"chkdsk P: /f /x",
+            "write_scope":"NTFS_METADATA_REPAIR_ON_P3_ONLY",
+            "partition_mutation":False,
+            "format_operation":False,
+            "windows_reinstall":False,
+            "payload_verified_after_update":True,
+            "built_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(obj,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(obj,indent=2,sort_keys=True))
+          PY
+          sha256sum "$OUT"/* > "$OUT/EVIDENCE.sha256"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-winre-repair-candidate
+          path: ${{ runner.temp }}/winre-candidate-evidence/
+          retention-days: 90
+          compression-level: 0
+
+  g23:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-winre-repair-candidate
+          path: ${{ runner.temp }}/candidate
+      - name: Independent candidate validation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/candidate/CANDIDATE.json" "$RUNNER_TEMP/candidate/louksna-repair.cmd" "$RUNNER_TEMP/candidate/winpeshl.ini" "$RUNNER_TEMP/g23/G23_WINRE_REPAIR.json" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,sys
+          cp,sp,ip,out=map(pathlib.Path,sys.argv[1:5])
+          c=json.loads(cp.read_text()); s=sp.read_text(); i=ip.read_text()
+          checks={
+            "candidate_pass":c.get("status")=="PASS",
+            "target_disk":c.get("target_disk")=="/dev/nvme0n1",
+            "target_partition":c.get("target_partition")=="/dev/nvme0n1p3",
+            "target_uuid":c.get("target_uuid")=="F2848A148489DC0B",
+            "recovery_partition":c.get("recovery_partition")=="/dev/nvme0n1p4",
+            "recovery_uuid":c.get("recovery_uuid")=="CADE667DDE666225",
+            "repair_exact":c.get("repair_command")=="chkdsk P: /f /x",
+            "no_partition_mutation":c.get("partition_mutation") is False,
+            "no_format":c.get("format_operation") is False,
+            "no_windows_reinstall":c.get("windows_reinstall") is False,
+            "payload_verified":c.get("payload_verified_after_update") is True,
+            "script_select_disk0":"select disk 0" in s,
+            "script_select_p3":"select partition 3" in s,
+            "script_select_efi":"select partition 1" in s,
+            "script_projects_guard":r"P:\PROYECTOS\" in s,
+            "script_windows_guard":r"P:\Windows\System32\config\SYSTEM" in s,
+            "script_chkdsk":"chkdsk P: /f /x" in s,
+            "script_result_to_efi":r"S:\EFI\LOUKSNA" in s,
+            "script_reboot":"wpeutil reboot" in s,
+            "winpeshl_cmd":"cmd.exe, /d /c %SYSTEMROOT%\\System32\\louksna-repair.cmd" in i,
+          }
+          ok=all(checks.values())
+          r={
+            "schema":"LOUKSNA_R4_PART4_R2_WINRE_REPAIR_G23/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "scope":"AUTOMATED_CHKDSK_P3_WINRE_CANDIDATE",
+            "candidate_sha256":hashlib.sha256(cp.read_bytes()).hexdigest(),
+            "script_sha256":hashlib.sha256(sp.read_bytes()).hexdigest(),
+            "winpeshl_sha256":hashlib.sha256(ip.read_bytes()).hexdigest(),
+            "candidate_wim_sha256":c.get("candidate_wim_sha256"),
+            "checks":checks,
+            "g24_allowed":ok,
+            "activation_allowed":False,
+            "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          out.write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(3)
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-winre-repair-g23
+          path: ${{ runner.temp }}/g23/G23_WINRE_REPAIR.json
+          retention-days: 90
+          compression-level: 0
+
+  g24:
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-winre-repair-g23
+          path: ${{ runner.temp }}/g23
+      - name: Digest-bound candidate certification
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/G23_WINRE_REPAIR.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$G")" = PASS
+          H="$(sha256sum "$G" | awk '{print $1}')"
+          AUD="louksna-r4-part4-r2-winre-repair:$H"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export H AUD TOKEN
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$G" "$RUNNER_TEMP/g24/G24_WINRE_REPAIR.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          g=json.loads(pathlib.Path(sys.argv[1]).read_text())
+          t=os.environ["TOKEN"]; p=t.split(".")
+          payload=p[1]+"="*((4-len(p[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload))
+          aud=claims.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          cert={
+            "schema":"LOUKSNA_R4_PART4_R2_WINRE_REPAIR_G24/1.0",
+            "status":"PASS",
+            "scope":"AUTOMATED_CHKDSK_P3_WINRE_CANDIDATE",
+            "g23_sha256":os.environ["H"],
+            "candidate_wim_sha256":g["candidate_wim_sha256"],
+            "script_sha256":g["script_sha256"],
+            "winpeshl_sha256":g["winpeshl_sha256"],
+            "authority_authenticated":True,
+            "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
+            "does_not_certify_repair_result":True,
+            "does_not_authorize_partition_resize":True,
+            "does_not_authorize_format":True,
+            "activation_requires_checkpoint_and_one_shot_boot":True,
+            "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          pathlib.Path(sys.argv[2]).write_text(json.dumps(cert,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(cert,indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-winre-repair-g24
+          path: ${{ runner.temp }}/g24/G24_WINRE_REPAIR.json
+          retention-days: 90
+          compression-level: 0
