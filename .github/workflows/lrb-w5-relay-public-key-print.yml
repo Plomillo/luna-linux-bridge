@@ -1,0 +1,22 @@
+name: "LRB W5 — relay public key exposure"
+on:
+  push:
+    branches:
+      - candidate/lrb-terminal-sevenfold-20260930
+    paths:
+      - ".github/workflows/lrb-w5-relay-public-key-print.yml"
+permissions:
+  contents: read
+jobs:
+  print:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 1
+    steps:
+      - name: Print public key and fingerprint only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          K="$HOME/.local/state/louksna/remote-bridge/relay-client-key.pem"
+          test -f "$K"
+          openssl pkey -in "$K" -pubout
+          openssl pkey -in "$K" -pubout | sha256sum
