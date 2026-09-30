@@ -1,0 +1,111 @@
+name: "LOUKSNA Qwen F2 — bounded output diagnostic with inline G23 G24"
+
+on:
+  push:
+    branches:
+      - candidate/qwen35-4b-s-integral-20260930
+    paths:
+      - ".github/workflows/qwen-f2-output-diagnostic.yml"
+
+permissions:
+  contents: read
+
+env:
+  PRE_DIAG_SHA: e418dbe925593082397ad88954126f4da1fb2892
+  MODEL_PATH: /home/diegoignacionorambuenamiranda/.local/share/louksna/reasoning/models/qwen35-4b-s/Qwen3.5-4B-S-TS-Q4_K_S.gguf
+  RUNTIME_PATH: /home/diegoignacionorambuenamiranda/.local/share/louksna/reasoning/runtime/bec4772f6a2527d371557b5d2032641e5ff7619c/bin/llama-cli
+
+jobs:
+  diag_g23:
+    name: "F2 diagnostic inline G23"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Prove diagnostic-only delta
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          CHANGED="$(git diff --name-only "$PRE_DIAG_SHA"...HEAD)"
+          test "$CHANGED" = ".github/workflows/qwen-f2-output-diagnostic.yml"
+          echo "F2_DIAG_G23=PASS"
+
+  diag_g24:
+    name: "F2 diagnostic inline G24"
+    needs: diag_g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Certifiability posture remains unchanged
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "F2_DIAG_G24=PASS; CERTIFICATION_ISSUED=FALSE; MUTATION_SCOPE=DIAGNOSTIC_ONLY"
+
+  material_diag:
+    name: "F2 material output-channel diagnostic"
+    needs: diag_g24
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 8
+    steps:
+      - name: Diagnose response channel without publishing model text
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(hostname)" = "LOUKSNA"
+          test -x "$RUNTIME_PATH"
+          test -f "$MODEL_PATH"
+          OUT="$RUNNER_TEMP/qwen-f2-diag"; mkdir -m 700 "$OUT"
+          export OUT
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,subprocess
+          out=pathlib.Path(os.environ["OUT"])
+          runtime=os.environ["RUNTIME_PATH"]; model=os.environ["MODEL_PATH"]
+          prompt='Return exactly one JSON object: {"decision":"HOLD","reason":"no execution authorization"}'
+          schema='{"type":"object","additionalProperties":false,"required":["decision","reason"],"properties":{"decision":{"type":"string"},"reason":{"type":"string"}}}'
+          variants=[
+            ("A_CURRENT",["--reasoning-budget","0","--reasoning-format","deepseek","--json-schema",schema]),
+            ("B_NO_REASONING_FORMAT",["--reasoning-budget","0","--json-schema",schema]),
+            ("C_NO_SCHEMA",["--reasoning-budget","0","--reasoning-format","deepseek"]),
+            ("D_PLAIN",["--reasoning-budget","0"])
+          ]
+          rows=[]
+          for name,extra in variants:
+              cmd=[runtime,"-m",model,"-p",prompt,"-n","160","--temp","0","--ctx-size","1024","--threads","2","--no-display-prompt","--simple-io","--single-turn",*extra]
+              try:
+                  p=subprocess.run(cmd,stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=80,check=False,shell=False)
+                  stdout=p.stdout or ""; stderr=p.stderr or ""
+                  def parse_json(s):
+                      s=s.strip()
+                      try: json.loads(s); return True
+                      except Exception: pass
+                      a=s.find("{"); b=s.rfind("}")
+                      if a>=0 and b>a:
+                          try: json.loads(s[a:b+1]); return True
+                          except Exception: pass
+                      return False
+                  rows.append({
+                    "variant":name,"rc":p.returncode,
+                    "stdout_bytes":len(stdout.encode()),"stderr_bytes":len(stderr.encode()),
+                    "stdout_json":parse_json(stdout),"stderr_json":parse_json(stderr),
+                    "stdout_sha256":hashlib.sha256(stdout.encode()).hexdigest(),
+                    "stderr_sha256":hashlib.sha256(stderr.encode()).hexdigest(),
+                    "stdout_has_object_delimiters":"{" in stdout and "}" in stdout,
+                    "stderr_has_object_delimiters":"{" in stderr and "}" in stderr
+                  })
+              except subprocess.TimeoutExpired:
+                  rows.append({"variant":name,"timeout":True,"stdout_json":False,"stderr_json":False})
+          result={"schema":"LOUKSNA_QWEN_F2_OUTPUT_DIAG/1.0","status":"PASS","published_model_text":False,"variants":rows}
+          (out/"DIAG.json").write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(result,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: qwen-f2-output-diagnostic
+          path: ${{ runner.temp }}/qwen-f2-diag/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
