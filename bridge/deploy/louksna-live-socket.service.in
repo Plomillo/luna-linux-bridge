@@ -1,0 +1,23 @@
+# DESIGN TEMPLATE: DO NOT INSTALL WITHOUT LIVE-HOST REVIEW + SCOPED G23/G24.
+# User instance ONLY, no root daemon. Fill values after verifying checkout digest.
+[Unit]
+Description=LOUKSNA Remote Bridge 0.3 local bounded telemetry socket
+After=default.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 -B @REVIEWED_PROJECT_ROOT@/bridge/live_link.py --state-dir @OWNER_PRIVATE_STATE@ serve
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+MemoryMax=128M
+CPUQuota=10%
+TasksMax=8
+Nice=12
+IOSchedulingClass=idle
+RestrictAddressFamilies=AF_UNIX
+PrivateTmp=true
+UMask=0077
+
+[Install]
+WantedBy=default.target
