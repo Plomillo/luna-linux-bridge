@@ -325,7 +325,7 @@ jobs:
 
   g23_migration:
     name: G23 validate recovered P3 ext4 intermediate state
-    needs: execute
+    needs: migrate
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
