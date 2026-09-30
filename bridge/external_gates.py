@@ -164,7 +164,9 @@ class ExternalGateVerifier:
                                                 "CAP_BOOT_RECOVERY", "CAP_FSTAB_FIX")
                 or req.get("risk") not in ("ROOT_READONLY", "ROOT_MUTATION", "BOOT")
                 or not isinstance(req.get("owner_objective_sha256"), str)
-                or not RE_HEX.fullmatch(req["owner_objective_sha256"])):
+                or not RE_HEX.fullmatch(req["owner_objective_sha256"])
+                or not isinstance(req.get("mission_sha256"), str)
+                or not RE_HEX.fullmatch(req["mission_sha256"])):
             raise RuntimeError("OWNER_REQUEST_SCOPE_INVALID")
         declared_risks = {"CAP_STORAGE_INSPECT": "ROOT_READONLY", "CAP_SUDO_BASH": "ROOT_MUTATION",
                           "CAP_BOOT_RECOVERY": "BOOT", "CAP_FSTAB_FIX": "ROOT_MUTATION"}
