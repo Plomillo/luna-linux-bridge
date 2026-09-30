@@ -1,0 +1,35 @@
+name: "R4 PART4 R2 — inspect post-chkdsk NTFS top level"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-part4-r2-postchkdsk-top-level.yml
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 10
+    steps:
+      - name: Inspect p3 top level read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT=/media/diegoignacionorambuenamiranda/Windows
+          echo "--- TOP LEVEL ---"
+          find "$ROOT" -mindepth 1 -maxdepth 1 -printf '%y\t%f\t%s\t%TY-%Tm-%TdT%TH:%TM:%TS\n' | sort
+          echo "--- DISK USAGE ---"
+          for p in "$ROOT"/* "$ROOT"/.[!.]* "$ROOT"/..?*; do
+            [ -e "$p" ] || continue
+            printf '%s\t' "$(basename "$p")"
+            du -sb --apparent-size "$p" 2>/dev/null || true
+          done
+          echo "--- DETAILS NON-PROYECTOS ---"
+          find "$ROOT" -mindepth 1 -maxdepth 1 ! -name PROYECTOS -print0 | while IFS= read -r -d '' p; do
+            stat --printf='PATH=%n\nTYPE=%F\nMODE=%a\nUID=%u\nGID=%g\nSIZE=%s\nMTIME=%y\nCTIME=%z\n' "$p"
+            find "$p" -maxdepth 3 -printf '%y\t%p\t%s\n' 2>/dev/null | head -200 || true
+          done
