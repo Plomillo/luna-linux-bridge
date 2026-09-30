@@ -246,7 +246,7 @@ jobs:
              "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
              "canonical_mutation":False,"authority_transfer":False,
              "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
-          pathlib.Path("$RUNNER_TEMP/g24/G24_PLAN_V3.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          pathlib.Path(os.environ["RUNNER_TEMP"]+"/g24/G24_PLAN_V3.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
           PY
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -413,7 +413,7 @@ jobs:
              "authority_authenticated":True,"authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
              "canonical_mutation":False,"authority_transfer":False,
              "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
-          pathlib.Path("$RUNNER_TEMP/g24/G24_MIGRATION_V3.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          pathlib.Path(os.environ["RUNNER_TEMP"]+"/g24/G24_MIGRATION_V3.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
           PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
@@ -529,7 +529,7 @@ jobs:
              "plan_sha256":os.environ["P"],"g23_sha256":os.environ["H"],"authority_authenticated":True,
              "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),"canonical_mutation":False,"authority_transfer":False,
              "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
-          pathlib.Path("$RUNNER_TEMP/g24/G24_RETIRE_PLAN_V3.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          pathlib.Path(os.environ["RUNNER_TEMP"]+"/g24/G24_RETIRE_PLAN_V3.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
           PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
@@ -680,7 +680,7 @@ jobs:
              "g23_sha256":os.environ["H"],"authority_authenticated":True,"authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
              "canonical_mutation":False,"authority_transfer":False,"final_merge_ready":True,
              "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
-          pathlib.Path("$RUNNER_TEMP/g24/G24_RETIRED_V3.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          pathlib.Path(os.environ["RUNNER_TEMP"]+"/g24/G24_RETIRED_V3.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
           PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
