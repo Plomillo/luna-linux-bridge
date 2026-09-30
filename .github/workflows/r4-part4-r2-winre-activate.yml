@@ -297,8 +297,8 @@ jobs:
           sudo -n cp "$EFI/EFI/Microsoft/Boot/BCD" "$STATE/BCD_BOOT.original"
           sudo -n cp "$EFI/EFI/Microsoft/Recovery/BCD" "$STATE/BCD_RECOVERY.certified"
           sudo -n cp server/r4-master/part4_r2_verify_tree.py "$STATE/part4_r2_verify_tree.py"
-          sudo -n sfdisk --dump /dev/nvme0n1 > "$STATE/PARTITION_TABLE.before"
-          sudo -n efibootmgr -v > "$STATE/EFIBOOTMGR.before"
+          sudo -n sfdisk --dump /dev/nvme0n1 | sudo -n tee "$STATE/PARTITION_TABLE.before" >/dev/null
+          sudo -n efibootmgr -v | sudo -n tee "$STATE/EFIBOOTMGR.before" >/dev/null
 
           gh run download "$FREEZE_RUN" --repo Plomillo/luna-linux-bridge -n "R4-PART4-PROYECTOS-freeze-$FREEZE_RUN" -D "$RUNNER_TEMP/freeze"
           test "$(sha256sum "$RUNNER_TEMP/freeze/PROYECTOS_MANIFEST.jsonl.gz"|awk '{print $1}')" = "$FREEZE_MANIFEST_SHA256"
