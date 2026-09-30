@@ -153,8 +153,8 @@ if m is None: raise SystemExit("HOLD:NTFS_MINIMUM_UNPARSEABLE")
 source=200490852057
 align=max(1,1048576//ss)
 def up(v,a): return ((v+a-1)//a)*a
-# Reserve enough for one complete verified temporary ext4 copy plus 6 GB decimal.
-temp_required=source+6_000_000_000
+# Reserve enough for one complete verified temporary ext4 copy plus 8 GB decimal.
+temp_required=source+8_000_000_000
 total_bytes=(p5["start_sector"]-p3["start_sector"])*ss
 part_target_max=total_bytes-temp_required-2*1048576
 part_target=(part_target_max//(align*ss))*(align*ss)
@@ -255,8 +255,15 @@ sha256sum "$OUT/PARTITION_TABLE_BEFORE.sfdisk" > "$OUT/PARTITION_TABLE_BEFORE.sh
 event PARTITION_TABLE_CHECKPOINT
 
 sudo -n umount "$WINROOT"
-! findmnt -T "$P3" >/dev/null 2>&1 || true
+if findmnt -S "$P3" >/dev/null 2>&1; then hold "P3_STILL_MOUNTED_AFTER_UNMOUNT"; fi
 event P3_UNMOUNTED
+
+# Last full cryptographic non-regression gate before the first irreversible mutation.
+sudo -n mount -t ntfs3 -o ro "$P3" "$SRCM"
+python3 "$VERIFY" --root "$SRCM/PROYECTOS" --manifest "$MANIFEST" --out "$OUT/VERIFY_SOURCE_PREMUTATION.json"
+sudo -n umount "$SRCM"
+if findmnt -S "$P3" >/dev/null 2>&1; then hold "P3_STILL_MOUNTED_AFTER_PREVERIFY"; fi
+event SOURCE_PREMUTATION_VERIFIED
 
 sudo -n ntfsresize --force --no-progress-bar --size "$FS_TARGET" "$P3"
 event NTFS_FILESYSTEM_SHRUNK
@@ -283,30 +290,34 @@ PY
 )"
 [ -b "$TMPDEV" ] || hold "TEMP_DEVICE_NOT_BLOCK:$TMPDEV"
 TMPNUM="${TMPDEV##*p}"
-sudo -n mkfs.ext4 -F -L LOUKSNA_TMP "$TMPDEV"
+sudo -n mkfs.ext4 -F -m 0 -N 1000000 -L LOUKSNA_TMP "$TMPDEV"
 event TEMP_EXT4_CREATED
 
 sudo -n mount -t ntfs3 -o ro "$P3" "$SRCM"
 sudo -n mount -t ext4 "$TMPDEV" "$TMPM"
 sudo -n chown "$(id -u):$(id -g)" "$TMPM"
+TEMP_AVAIL="$(df -B1 --output=avail "$TMPM" | tail -1 | tr -d ' ')"
+TEMP_IFREE="$(df -i --output=iavail "$TMPM" | tail -1 | tr -d ' ')"
+[ "$TEMP_AVAIL" -ge $((SOURCE_BYTES + 1000000000)) ] || hold "TEMP_EXT4_AVAILABLE_BYTES_TOO_SMALL:$TEMP_AVAIL"
+[ "$TEMP_IFREE" -ge 600000 ] || hold "TEMP_EXT4_INODES_TOO_SMALL:$TEMP_IFREE"
 event SOURCE_AND_TEMP_MOUNTED
 
 python3 "$VERIFY" --root "$SRCM/PROYECTOS" --manifest "$MANIFEST" --out "$OUT/VERIFY_SOURCE.json"
 event SOURCE_REVERIFIED
 
 mkdir -p "$TMPM/PROYECTOS"
-rsync -aH --delete --numeric-ids "$SRCM/PROYECTOS/" "$TMPM/PROYECTOS/"
+rsync -aHAX --delete --numeric-ids "$SRCM/PROYECTOS/" "$TMPM/PROYECTOS/"
 sync
 python3 "$VERIFY" --root "$TMPM/PROYECTOS" --manifest "$MANIFEST" --out "$OUT/VERIFY_TEMP.json"
 event TEMP_COPY_VERIFIED
 
 sudo -n umount "$SRCM"
-sudo -n mkfs.ext4 -F -L LOUKSNA_PROJECTS "$P3"
+sudo -n mkfs.ext4 -F -m 0 -N 1000000 -L LOUKSNA_PROJECTS "$P3"
 sudo -n mount -t ext4 "$P3" "$FINALM"
 sudo -n chown "$(id -u):$(id -g)" "$FINALM"
 event P3_REFORMATTED_EXT4
 
-rsync -aH --delete --numeric-ids "$TMPM/PROYECTOS/" "$FINALM/"
+rsync -aHAX --delete --numeric-ids "$TMPM/PROYECTOS/" "$FINALM/"
 sync
 python3 "$VERIFY" --root "$FINALM" --manifest "$MANIFEST" --out "$OUT/VERIFY_P3_PREEXPAND.json"
 event P3_COPY_VERIFIED
