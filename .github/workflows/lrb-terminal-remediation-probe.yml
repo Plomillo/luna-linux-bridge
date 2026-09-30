@@ -1,0 +1,57 @@
+name: "LRB terminal remediation probe — interfaces and exact blockers"
+
+on:
+  push:
+    branches:
+      - candidate/lrb-terminal-sevenfold-20260930
+    paths:
+      - ".github/workflows/lrb-terminal-remediation-probe.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: c961a198f524a128dba6374290e2abe73dfaece6
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            artifacts/custosz-v7
+            bridge
+            mission-control/privilege-bridge
+      - name: Probe exact remediation surfaces read-only
+        shell: bash
+        run: |
+          set +e
+          echo "=== HOST ==="
+          hostname
+          cat /proc/sys/kernel/random/boot_id
+          echo "=== CUSTOSZ HELP ==="
+          python3 -B -I artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz --help 2>&1 | head -160
+          echo "=== CUSTOSZ STATUS ==="
+          python3 -B -I artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz v07-status 2>&1 | tail -80
+          echo "=== CUSTOSZ SELFTEST ==="
+          python3 -B -I artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz v07-selftest 2>&1 | tail -80
+          echo "=== APC HELP ==="
+          sudo -n /usr/local/sbin/louksna-apc --help 2>&1 | head -200
+          echo "APC_HELP_RC=$?"
+          echo "=== APC VERSION ==="
+          sudo -n /usr/local/sbin/louksna-apc --version 2>&1 | head -80
+          echo "APC_VERSION_RC=$?"
+          echo "=== TRUST METADATA ==="
+          sudo -n /usr/bin/stat -c '%n|%u:%g:%a|%F' /etc/louksna /etc/louksna/remote-bridge /etc/louksna/remote-bridge/trust.json 2>&1
+          echo "TRUST_STAT_RC=$?"
+          echo "=== GATE BUNDLE METADATA ==="
+          sudo -n /usr/bin/stat -c '%n|%u:%g:%a|%F' /var/lib/louksna/remote-bridge /var/lib/louksna/remote-bridge/current 2>&1
+          echo "GATE_STAT_RC=$?"
+          echo "=== USER SERVICE ==="
+          systemctl --user is-enabled louksna-live-socket.service 2>&1; echo "ENABLED_RC=$?"
+          systemctl --user is-active louksna-live-socket.service 2>&1; echo "ACTIVE_RC=$?"
+          systemctl --user status louksna-live-socket.service --no-pager -n 30 2>&1 | tail -60
+          echo "=== SUDO LIST BOUNDED ==="
+          sudo -n -l 2>&1 | head -160
