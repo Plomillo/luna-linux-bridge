@@ -133,7 +133,11 @@ sudo -n umount "$SRCM"
 event SOURCE_REVERIFIED_AFTER_NTFS_SHRINK
 
 resize_partition_sfdisk(){
-  local num="$1" new_size="$2" before="$OUT/sfdisk-before-p${num}-$(date +%s%N).txt" spec="$OUT/sfdisk-spec-p${num}-$(date +%s%N).txt"
+  local num new_size before spec
+  num="$1"
+  new_size="$2"
+  before="$OUT/sfdisk-before-p${num}-$(date +%s%N).txt"
+  spec="$OUT/sfdisk-spec-p${num}-$(date +%s%N).txt"
   sudo -n sfdisk --dump "$DISK" > "$before"
   python3 - "$before" "$num" "$new_size" "$spec" <<'PY'
 import re,sys,pathlib
