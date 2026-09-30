@@ -1,0 +1,102 @@
+name: "R4 PART4 R2 — NTFS shrink no-action feasibility"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-r2-ntfs-shrink-noaction/**
+
+permissions:
+  contents: read
+
+jobs:
+  dryrun:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 15
+    steps:
+      - name: Compute real-geometry target and run ntfsresize no-action
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          DISK=/dev/nvme0n1
+          P3=/dev/nvme0n1p3
+          WINROOT=/media/diegoignacionorambuenamiranda/Windows
+          SOURCE_BYTES=200490852057
+          SS="$(sudo -n blockdev --getss "$DISK")"
+          RAW="$(sudo -n parted -m "$DISK" unit s print)"
+          export RAW SS SOURCE_BYTES
+
+          eval "$(python3 - <<'PY'
+import os,re
+raw=os.environ["RAW"]; ss=int(os.environ["SS"]); source=int(os.environ["SOURCE_BYTES"])
+parts={}
+for line in raw.splitlines():
+    if not re.match(r"^\d+:",line): continue
+    f=line.rstrip(";").split(":")
+    n=int(f[0]); parts[n]={"start":int(f[1][:-1]),"end":int(f[2][:-1]),"size":int(f[3][:-1])}
+for n in (3,5):
+    if n not in parts: raise SystemExit(f"MISSING_PARTITION_{n}")
+p3,p5=parts[3],parts[5]
+if p3["end"]+1 != p5["start"]:
+    raise SystemExit(f"P3_P5_NOT_CONTIGUOUS:{p3}:{p5}")
+align=max(1,1048576//ss)
+temp_required=source+6_000_000_000
+total=(p5["start"]-p3["start"])*ss
+part_target_max=total-temp_required-2*1048576
+part_target=(part_target_max//(align*ss))*(align*ss)
+fs_target=part_target-536870912
+new_end=p3["start"]+part_target//ss-1
+temp_start=((new_end+1+align+align-1)//align)*align
+temp_end=p5["start"]-align
+temp_bytes=(temp_end-temp_start+1)*ss
+if fs_target <= 0 or temp_bytes < temp_required:
+    raise SystemExit(f"TARGET_INVALID:fs={fs_target}:temp={temp_bytes}:required={temp_required}")
+print(f"FS_TARGET={fs_target}")
+print(f"PART_TARGET={part_target}")
+print(f"NEW_END={new_end}")
+print(f"TEMP_START={temp_start}")
+print(f"TEMP_END={temp_end}")
+print(f"TEMP_BYTES={temp_bytes}")
+print(f"P5_START={p5['start']}")
+PY
+)"
+
+          echo "SS=$SS"
+          echo "FS_TARGET=$FS_TARGET"
+          echo "PART_TARGET=$PART_TARGET"
+          echo "NEW_END=$NEW_END"
+          echo "TEMP_START=$TEMP_START"
+          echo "TEMP_END=$TEMP_END"
+          echo "TEMP_BYTES=$TEMP_BYTES"
+          echo "P5_START=$P5_START"
+
+          NEED_REMOUNT=0
+          restore(){
+            rc=$?
+            if [ "$NEED_REMOUNT" -eq 1 ]; then
+              sudo -n mount "$WINROOT" || true
+            fi
+            exit "$rc"
+          }
+          trap restore EXIT
+
+          sudo -n umount "$WINROOT"
+          NEED_REMOUNT=1
+          ! findmnt -S "$P3" >/dev/null 2>&1
+
+          echo "--- NTFSRESIZE NO-ACTION DOUBLE-FORCE ---"
+          set +e
+          LC_ALL=C sudo -n ntfsresize --no-action --force --force --no-progress-bar --size "$FS_TARGET" "$P3" 2>&1
+          rc=$?
+          set -e
+          echo "NTFSRESIZE_NOACTION_RC=$rc"
+
+          sudo -n mount "$WINROOT"
+          NEED_REMOUNT=0
+          trap - EXIT
+
+          echo "--- RESTORED ---"
+          findmnt -T "$WINROOT" -o SOURCE,FSTYPE,OPTIONS,TARGET
+          test -d "$WINROOT/PROYECTOS"
+          exit "$rc"
