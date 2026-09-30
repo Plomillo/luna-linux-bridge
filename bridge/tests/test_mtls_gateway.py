@@ -150,7 +150,7 @@ class MTLSGatewayTests(unittest.TestCase):
         self.assertIn(b"400",reply.split(b"\r\n",1)[0])
 
     def test_trust_file_not_root_owned_for_real_deployment(self):
-        with self.assertRaisesRegex(RuntimeError,"MTLS_CONFIG_"):
+        with self.assertRaisesRegex(RuntimeError,"MTLS_KEY_OR_POLICY_OWNERSHIP_INVALID|MTLS_CONFIG_PARENT_TRUST_FAILURE"):
             gate.read_config(self.configpath,enforce_root=True)
 
     def test_ca_pin_mismatch_fails(self):
