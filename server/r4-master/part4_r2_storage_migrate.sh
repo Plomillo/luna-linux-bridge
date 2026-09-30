@@ -107,7 +107,7 @@ for line in raw.splitlines():
 for n in (1,2,3,4,5):
     if n not in parts: raise SystemExit(f"HOLD:MISSING_PARTITION_{n}")
 p3,p4,p5=parts[3],parts[4],parts[5]
-if not (p3["end_sector"] < p4["start_sector"] <= p4["end_sector"] < p5["start_sector"]):
+if not (p3["end_sector"] + 1 == p5["start_sector"] and p5["end_sector"] < p4["start_sector"] <= p4["end_sector"]):
     raise SystemExit("HOLD:PARTITION_ORDER_UNEXPECTED")
 m=None
 for line in info.splitlines():
@@ -122,7 +122,7 @@ align=max(1,1048576//ss)
 def up(v,a): return ((v+a-1)//a)*a
 # Reserve enough for one complete verified temporary ext4 copy plus 6 GB decimal.
 temp_required=source+6_000_000_000
-total_bytes=(p4["start_sector"]-p3["start_sector"])*ss
+total_bytes=(p5["start_sector"]-p3["start_sector"])*ss
 part_target_max=total_bytes-temp_required-2*1048576
 part_target=(part_target_max//(align*ss))*(align*ss)
 fs_target=part_target-536870912
@@ -131,7 +131,7 @@ if fs_target < m+268435456:
 part_sectors=part_target//ss
 new_end=p3["start_sector"]+part_sectors-1
 temp_start=up(new_end+1+align,align)
-temp_end=(p4["start_sector"]-align)
+temp_end=(p5["start_sector"]-align)
 temp_bytes=(temp_end-temp_start+1)*ss
 if temp_bytes < temp_required:
     raise SystemExit(f"HOLD:TEMP_AREA_TOO_SMALL:{temp_bytes}:{temp_required}")
@@ -152,7 +152,7 @@ plan={
  "steps":[
    "UNMOUNT_P3","SHRINK_NTFS_FILESYSTEM","SHRINK_P3_BOUNDARY","CREATE_TEMP_EXT4",
    "VERIFY_SOURCE","COPY_TO_TEMP","VERIFY_TEMP","REFORMAT_P3_EXT4",
-   "COPY_TEMP_TO_P3","VERIFY_P3","DELETE_TEMP_P4_P2","EXPAND_P3","RESIZE_EXT4",
+   "COPY_TEMP_TO_P3","VERIFY_P3","DELETE_TEMP_ONLY","EXPAND_P3","RESIZE_EXT4",
    "PERSIST_FINAL_MOUNT","VERIFY_FINAL"
  ],
  "rollback_contract":{
@@ -283,13 +283,12 @@ event P3_COPY_VERIFIED
 sudo -n umount "$FINALM"
 sudo -n umount "$TMPM"
 
-# Retire temporary and Windows-only partition entries only after final-p3 copy has verified.
+# Retire only the temporary migration partition here.
+# p2/p4 remain untouched until the separately certified final-merge phase.
 if [ -e "/sys/class/block/nvme0n1p$TMPNUM" ]; then sudo -n parted -s "$DISK" rm "$TMPNUM"; fi
-if [ -e /sys/class/block/nvme0n1p4 ]; then sudo -n parted -s "$DISK" rm 4; fi
-if [ -e /sys/class/block/nvme0n1p2 ]; then sudo -n parted -s "$DISK" rm 2; fi
 sudo -n partprobe "$DISK" || true
 sudo -n udevadm settle
-event WINDOWS_AND_TEMP_PARTITIONS_RETIRED
+event TEMP_PARTITION_RETIRED
 
 sudo -n parted -s "$DISK" unit s resizepart 3 "${FINAL_END}s"
 sudo -n partprobe "$DISK" || true
