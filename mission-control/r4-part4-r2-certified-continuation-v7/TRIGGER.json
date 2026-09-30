@@ -1,0 +1,9 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_CONTINUATION_TRIGGER/1.0",
+  "continuation": "V7",
+  "source_failure_run": 36677628359,
+  "source_failure_job": 109767961823,
+  "reason": "Fresh live-state probe plus semantic xattr classification, deterministic POSIX metadata fingerprint, G23 and G24.",
+  "failure_posture": "FAIL_CLOSED",
+  "created_by": "ChatGPT/GitHub governed continuation"
+}

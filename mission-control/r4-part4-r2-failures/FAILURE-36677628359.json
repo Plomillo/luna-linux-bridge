@@ -1,0 +1,37 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_FAILURE_EVIDENCE/1.0",
+  "status": "FAIL_CLOSED_HOLD",
+  "source_run": 36677628359,
+  "source_job": 109767961823,
+  "source_commit": "604ba359f094c08f4b4041e57bce86f30e703dd3",
+  "failed_step": "Bind V6 certificate and resume from exact checkpoint",
+  "bug_class": "NTFS3_RESERVED_WSL_XATTR_TRANSPORT_INCOMPATIBILITY",
+  "rsync_exit_code": 23,
+  "observed_errors": [
+    "$LXUID Operation not supported (95)",
+    "$LXGID Operation not supported (95)",
+    "$LXMOD Operation not supported (95)"
+  ],
+  "root_cause": "V6 used rsync -aHAX from ntfs3 to ext4. ntfs3 exposes reserved WSL permission EAs as raw xattrs while also materializing their semantics into inode uid/gid/mode; ext4 rejects those raw empty-prefix xattr names.",
+  "source_integrity": {
+    "status": "PASS",
+    "manifest_sha256": "99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+    "records": 498092,
+    "regular_file_bytes": 200490852057,
+    "mismatch_count": 0
+  },
+  "projects_copy_started": true,
+  "temporary_ext4_partial_copy": true,
+  "p3_reformatted_ext4": false,
+  "p2_p4_retired": false,
+  "final_merge_dispatched": false,
+  "rollback_source_of_truth": "P3_SHRUNK_NTFS",
+  "required_fix": "Fresh live probe; classify all source xattrs; fail on unknown xattrs; preserve effective POSIX uid/gid/mode and ACLs; disable raw xattr transport; verify full POSIX fingerprint before P3 reformat; issue new digest-bound G23/G24.",
+  "certification_propagation": false,
+  "authority_transfer": false,
+  "evidence_artifact": {
+    "id": 11082130863,
+    "name": "r4-part4-r2-v6-migration-material",
+    "sha256": "fec0eb1047976facdd31af9257b9c81eb76725d5408c88a33ae4e2981d202c6d"
+  }
+}
