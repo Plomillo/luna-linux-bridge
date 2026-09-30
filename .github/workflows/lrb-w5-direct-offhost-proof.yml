@@ -1,0 +1,103 @@
+name: "LRB W5 — direct host to off-host relay proof"
+
+on:
+  push:
+    branches:
+      - candidate/lrb-terminal-sevenfold-20260930
+    paths:
+      - ".github/workflows/lrb-w5-direct-offhost-proof.yml"
+
+permissions:
+  contents: read
+
+env:
+  TARGET_SHA: c961a198f524a128dba6374290e2abe73dfaece6
+  RELAY_BASE: https://louksna-remote.hatchable.site
+  PREVIEW_TOKEN: eyJzbHVnIjoibG91a3NuYS1yZW1vdGUiLCJleHAiOjE3OTA4MDM1OTQsInJvbGUiOiJwdWJsaWMifQ.4dd7284c0d76a7ac47dce9a089a1da6bdec3a952b510c2e505b2ec4b68821c88
+
+jobs:
+  prove:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: c961a198f524a128dba6374290e2abe73dfaece6
+          persist-credentials: false
+          sparse-checkout: bridge
+      - name: Direct signed telemetry + visual transport from host to independent relay
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          OUT="$RUNNER_TEMP/lrb-w5-direct"; mkdir -m 700 "$OUT"; export OUT
+          KEY="$HOME/.local/state/louksna/remote-bridge/relay-client-key.pem"
+          test -f "$KEY"; test "$(stat -c '%a' "$KEY")" = 600
+          HOST="$(hostname)"; BOOT="$(cat /proc/sys/kernel/random/boot_id)"
+          PAYLOAD="$(sha256sum bridge/lrb_core.py | awk '{print $1}')"
+          NONCE="direct-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          CANON="${HOST}|${BOOT}|${TARGET_SHA}|HOST_TELEMETRY_PROOF|${PAYLOAD}|${NONCE}"
+          printf %s "$CANON" >"$OUT/event.canonical"
+          openssl dgst -sha256 -sign "$KEY" -out "$OUT/event.sig" "$OUT/event.canonical"
+          SIG="$(base64 -w0 "$OUT/event.sig")"
+          python3 - "$HOST" "$BOOT" "$TARGET_SHA" "$PAYLOAD" "$NONCE" "$SIG" >"$OUT/event.json" <<'PY'
+          import json,sys
+          h,b,s,p,n,g=sys.argv[1:]
+          print(json.dumps({"schema":"LRB_RELAY_EVENT/1.0","host":h,"boot_id":b,"candidate_sha":s,"event":"HOST_TELEMETRY_PROOF","payload_sha256":p,"nonce":n,"signature_b64":g},separators=(",",":")))
+          PY
+          URL="${RELAY_BASE}/api/ingest?_preview=${PREVIEW_TOKEN}"
+          C1=$(curl --silent --show-error --max-time 15 -o "$OUT/event.response.json" -w '%{http_code}' -H 'content-type: application/json' --data-binary @"$OUT/event.json" "$URL")
+          test "$C1" = 200
+          python3 - "$OUT/event.response.json" <<'PY'
+          import json,sys
+          x=json.load(open(sys.argv[1])); assert x["status"]=="ACCEPTED_AUTHENTICATED_READONLY",x
+          PY
+          C2=$(curl --silent --show-error --max-time 15 -o "$OUT/replay.response.json" -w '%{http_code}' -H 'content-type: application/json' --data-binary @"$OUT/event.json" "$URL")
+          test "$C2" = 409
+
+          base64 -d >"$OUT/frame.png" <<'B64'
+          iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=
+          B64
+          VPAY="$(sha256sum "$OUT/frame.png" | awk '{print $1}')"
+          VNONCE="direct-visual-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          VCANON="${HOST}|${BOOT}|${TARGET_SHA}|VISUAL_FRAME|${VPAY}|${VNONCE}"
+          printf %s "$VCANON" >"$OUT/visual.canonical"
+          openssl dgst -sha256 -sign "$KEY" -out "$OUT/visual.sig" "$OUT/visual.canonical"
+          VSIG="$(base64 -w0 "$OUT/visual.sig")"; VF="$(base64 -w0 "$OUT/frame.png")"
+          python3 - "$HOST" "$BOOT" "$TARGET_SHA" "$VPAY" "$VNONCE" "$VSIG" "$VF" >"$OUT/visual.json" <<'PY'
+          import json,sys
+          h,b,s,p,n,g,f=sys.argv[1:]
+          print(json.dumps({"schema":"LRB_VISUAL_FRAME/1.0","host":h,"boot_id":b,"candidate_sha":s,"payload_sha256":p,"nonce":n,"signature_b64":g,"frame_b64":f,"content_type":"image/png"},separators=(",",":")))
+          PY
+          VURL="${RELAY_BASE}/api/visual?_preview=${PREVIEW_TOKEN}"
+          VCODE=$(curl --silent --show-error --max-time 15 -o "$OUT/visual.response.json" -w '%{http_code}' -H 'content-type: application/json' --data-binary @"$OUT/visual.json" "$VURL")
+          test "$VCODE" = 200
+          python3 - "$OUT/visual.response.json" <<'PY'
+          import json,sys
+          x=json.load(open(sys.argv[1])); assert x["status"]=="ACCEPTED_AUTHENTICATED_VISUAL",x
+          PY
+          export HOST BOOT PAYLOAD NONCE VPAY VNONCE
+          python3 - <<'PY'
+          import json,os,pathlib,hashlib
+          o=pathlib.Path(os.environ["OUT"])
+          report={"schema":"LRB_W5_DIRECT_OFFHOST_PROOF/1.0","status":"PASS",
+            "host":os.environ["HOST"],"boot_id":os.environ["BOOT"],"target_sha":os.environ["TARGET_SHA"],
+            "relay":"HATCHABLE_OFFHOST","transport":"HTTPS_DIRECT_FROM_LOUKSNA",
+            "telemetry_receipt":json.loads((o/"event.response.json").read_text()),
+            "replay_http_status":409,
+            "visual_receipt":json.loads((o/"visual.response.json").read_text()),
+            "visual_payload_class":"SYNTHETIC_PROTOCOL_FRAME",
+            "host_private_key_exported":False,"remote_command_execution":False}
+          raw=json.dumps(report,indent=2,sort_keys=True)+"\n"
+          (o/"W5_RESULT.json").write_text(raw)
+          (o/"W5_RESULT.sha256").write_text(hashlib.sha256(raw.encode()).hexdigest()+"  W5_RESULT.json\n")
+          PY
+          rm -f "$OUT/event.sig" "$OUT/visual.sig" "$OUT/event.json" "$OUT/visual.json"
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-w5-direct-offhost-proof
+          path: ${{ runner.temp }}/lrb-w5-direct/
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 0
