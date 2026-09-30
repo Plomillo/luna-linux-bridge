@@ -1,0 +1,166 @@
+name: "LRB W5 — authenticated off-host telemetry + visual relay"
+
+on:
+  push:
+    branches:
+      - candidate/lrb-terminal-sevenfold-20260930
+    paths:
+      - ".github/workflows/lrb-w5-authenticated-offhost-relay.yml"
+
+permissions:
+  contents: read
+
+env:
+  TARGET_SHA: c961a198f524a128dba6374290e2abe73dfaece6
+
+jobs:
+  host_sender:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: c961a198f524a128dba6374290e2abe73dfaece6
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: bridge
+      - name: Produce host-authenticated telemetry and visual evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          O="$RUNNER_TEMP/w5-send"; mkdir -m 700 "$O"
+          K="$HOME/.local/state/louksna/remote-bridge/relay-client-key.pem"
+          test -f "$K"
+          test "$(stat -c '%a' "$K")" = 600
+          test "$(hostname)" = "LOUKSNA"
+          H="$(hostname)"
+          B="$(cat /proc/sys/kernel/random/boot_id)"
+          P="$(sha256sum bridge/lrb_core.py | awk '{print $1}')"
+          N="telemetry-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          C="${H}|${B}|${TARGET_SHA}|HOST_TELEMETRY_PROOF|${P}|${N}"
+          printf %s "$C" > "$O/telemetry.canonical"
+          openssl dgst -sha256 -sign "$K" -out "$O/telemetry.sig" "$O/telemetry.canonical"
+          base64 -w0 "$O/telemetry.sig" > "$O/telemetry.sig.b64"
+          python3 - "$H" "$B" "$TARGET_SHA" "$P" "$N" "$(cat "$O/telemetry.sig.b64")" >"$O/TELEMETRY.json" <<'PY'
+          import json,sys
+          h,b,s,p,n,g=sys.argv[1:]
+          print(json.dumps({"schema":"LRB_RELAY_EVENT/1.0","host":h,"boot_id":b,
+            "candidate_sha":s,"event":"HOST_TELEMETRY_PROOF","payload_sha256":p,
+            "nonce":n,"signature_b64":g},sort_keys=True))
+          PY
+
+          # Deterministic visual test frame proves the visual transport path
+          # without silently capturing the user's desktop.
+          base64 -d >"$O/frame.png" <<'B64'
+          iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=
+          B64
+          VP="$(sha256sum "$O/frame.png" | awk '{print $1}')"
+          VN="visual-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          VC="${H}|${B}|${TARGET_SHA}|VISUAL_FRAME|${VP}|${VN}"
+          printf %s "$VC" > "$O/visual.canonical"
+          openssl dgst -sha256 -sign "$K" -out "$O/visual.sig" "$O/visual.canonical"
+          base64 -w0 "$O/visual.sig" > "$O/visual.sig.b64"
+          python3 - "$H" "$B" "$TARGET_SHA" "$VP" "$VN" "$(cat "$O/visual.sig.b64")" >"$O/VISUAL.json" <<'PY'
+          import json,sys
+          h,b,s,p,n,g=sys.argv[1:]
+          print(json.dumps({"schema":"LRB_VISUAL_FRAME/1.0","host":h,"boot_id":b,
+            "candidate_sha":s,"payload_sha256":p,"nonce":n,
+            "signature_b64":g,"content_type":"image/png","frame_file":"frame.png"},sort_keys=True))
+          PY
+          sha256sum "$O/TELEMETRY.json" "$O/VISUAL.json" "$O/frame.png" > "$O/SENDER_SHA256.txt"
+          rm -f "$O/"*.sig "$O/"*.sig.b64 "$O/"*.canonical
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-w5-host-envelope
+          path: ${{ runner.temp }}/w5-send/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  offhost_receiver:
+    needs: host_sender
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: lrb-w5-host-envelope
+          path: ${{ runner.temp }}/recv
+      - name: Independently verify exact host signatures, scope, hashes and visual payload
+        shell: bash
+        env:
+          LRB_PUBLIC_KEY: |
+            -----BEGIN PUBLIC KEY-----
+            MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAsLRHWue6qjC2AQze/90g
+            BhPu5rKnzzvWHWTc9mksbm2pHMUt13QbIv/LwRt63+A7F2YMeiu2ymhQdzR4M9aw
+            5gBAWDQBydq0PmpVxmw+k8VGRIO2b0Tuox7vfbDfJiqFkdRy+FbovTRrrLRx62l5
+            1ag1WqAYxaH/2sTUhlM4zLkb60oBJLP0Qz/zpFdY+qh4R1gqgq7DyKzkK6cHq+Ju
+            //F90oQX6N7U0GJGS5+PMISUaBoJX0+l+TxAuSoWWxSJm8k+VjUr5BhEF4zcJqyF
+            Mx9aGhT/Q9SnL0xCgjSNiPjyRyXdS47X0vlSdx2qZXWzkGwru7CXLo9DdqFSWa5j
+            1jAh5Ai97BwObHRKWvGWcUUS60kKXHc49lXkSQHOZsMGX/NBpz6bcmSbs9il+Hcz
+            EziP4TbQ3U22BO9Wln87ArscevSqkU6e/FEwtAo5Kwdv5yTyD7lAkAa65FLMXJ+v
+            XB0YFm2iu8btZ1DPBPVIn1O6aItEyT/2PcMDrrDlahNtAgMBAAE=
+            -----END PUBLIC KEY-----
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          R="$RUNNER_TEMP/recv"; O="$RUNNER_TEMP/w5-receiver"; mkdir -m 700 "$O"
+          printf '%s
+' "$LRB_PUBLIC_KEY" > "$O/relay-public.pem"
+          test "$(sha256sum "$O/relay-public.pem" | awk '{print $1}')" = "118b454c875b539d7f29268eefe315d7355077cff3d41b9aeb9218191fa06278"
+          export R O TARGET_SHA
+          python3 - <<'PY'
+          import base64,hashlib,json,os,pathlib,subprocess,tempfile
+          r=pathlib.Path(os.environ["R"]); o=pathlib.Path(os.environ["O"])
+          key=o/"relay-public.pem"
+          telemetry=json.loads((r/"TELEMETRY.json").read_text())
+          visual=json.loads((r/"VISUAL.json").read_text())
+          frame=(r/"frame.png").read_bytes()
+          assert telemetry["schema"]=="LRB_RELAY_EVENT/1.0"
+          assert visual["schema"]=="LRB_VISUAL_FRAME/1.0"
+          assert telemetry["host"]==visual["host"]=="LOUKSNA"
+          assert telemetry["candidate_sha"]==visual["candidate_sha"]==os.environ["TARGET_SHA"]
+          assert hashlib.sha256(frame).hexdigest()==visual["payload_sha256"]
+          assert telemetry["nonce"]!=visual["nonce"]
+          def verify(doc,kind,payload_hash,nonce,event):
+              canonical="|".join([doc["host"],doc["boot_id"],doc["candidate_sha"],event,payload_hash,nonce]).encode()
+              sig=base64.b64decode(doc["signature_b64"],validate=True)
+              cp=o/(kind+".canonical"); sp=o/(kind+".sig")
+              cp.write_bytes(canonical); sp.write_bytes(sig)
+              p=subprocess.run(["openssl","dgst","-sha256","-verify",str(key),"-signature",str(sp),str(cp)],
+                               text=True,capture_output=True,check=False)
+              assert p.returncode==0 and "Verified OK" in p.stdout, (p.stdout,p.stderr)
+              return hashlib.sha256(canonical).hexdigest()
+          th=verify(telemetry,"telemetry",telemetry["payload_sha256"],telemetry["nonce"],"HOST_TELEMETRY_PROOF")
+          vh=verify(visual,"visual",visual["payload_sha256"],visual["nonce"],"VISUAL_FRAME")
+          report={
+            "schema":"LRB_W5_OFFHOST_RELAY_VISUAL/1.0",
+            "status":"PASS",
+            "target_sha":os.environ["TARGET_SHA"],
+            "sender_host":"LOUKSNA",
+            "receiver":"GITHUB_HOSTED_UBUNTU_24_04",
+            "offhost_transfer":"GITHUB_ACTIONS_ARTIFACT",
+            "telemetry_signature_verified":True,
+            "visual_signature_verified":True,
+            "visual_payload_sha256_verified":True,
+            "visual_channel_class":"DETERMINISTIC_TEST_FRAME_NO_DESKTOP_CAPTURE",
+            "telemetry_canonical_sha256":th,
+            "visual_canonical_sha256":vh,
+            "remote_command_execution":False,
+            "host_private_key_exported":False,
+            "candidate_mutation":False,
+            "certification_propagated":False
+          }
+          (o/"W5.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(report,sort_keys=True))
+          PY
+          rm -f "$O/"*.sig "$O/"*.canonical
+          sha256sum "$O/W5.json" "$O/relay-public.pem" >"$O/EVIDENCE_SHA256.txt"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-w5-offhost-receiver
+          path: ${{ runner.temp }}/w5-receiver/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
