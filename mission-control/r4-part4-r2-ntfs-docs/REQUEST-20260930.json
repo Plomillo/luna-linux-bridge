@@ -1,0 +1,6 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_INSTALLED_NTFS_DOCS_REQUEST/1.0",
+  "status": "REQUESTED",
+  "destructive": false,
+  "purpose": "Establish supported repair and no-action semantics from installed ntfs-3g documentation."
+}
