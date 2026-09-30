@@ -95,7 +95,7 @@ def _extract_json(text):
     raise ProviderHold("MODEL_OUTPUT_NOT_JSON")
 
 
-def invoke(request, timeout_sec=180, threads=2, ctx_size=3072, reasoning_budget=0, diagnostic_dir=None):
+def invoke(request, timeout_sec=180, threads=2, ctx_size=3072, reasoning_budget=256):
     request = validate_request(request)
     _manifest, binding, model, runtime = verify_material()
     schema = json.dumps(model_output_schema(), separators=(",", ":"))
@@ -112,6 +112,7 @@ def invoke(request, timeout_sec=180, threads=2, ctx_size=3072, reasoning_budget=
         "--simple-io",
         "--single-turn",
         "--reasoning-budget", str(reasoning_budget),
+        "--reasoning-format", "deepseek",
         "--json-schema", schema,
     ]
     try:
@@ -128,13 +129,6 @@ def invoke(request, timeout_sec=180, threads=2, ctx_size=3072, reasoning_budget=
         )
     except subprocess.TimeoutExpired as exc:
         raise ProviderHold("MODEL_TIMEOUT") from exc
-    if diagnostic_dir is not None:
-        d = Path(diagnostic_dir)
-        d.mkdir(mode=0o700, parents=True, exist_ok=True)
-        (d / "stdout.txt").write_text(proc.stdout, encoding="utf-8", errors="replace")
-        (d / "stderr.txt").write_text(proc.stderr, encoding="utf-8", errors="replace")
-        os.chmod(d / "stdout.txt", 0o600)
-        os.chmod(d / "stderr.txt", 0o600)
     if proc.returncode != 0:
         raise ProviderHold("MODEL_RUNTIME_FAILED:" + str(proc.returncode))
     obj = _extract_json(proc.stdout)
@@ -154,8 +148,7 @@ def main(argv=None):
     parser.add_argument("--timeout-sec", type=int, default=180)
     parser.add_argument("--threads", type=int, default=2)
     parser.add_argument("--ctx-size", type=int, default=3072)
-    parser.add_argument("--reasoning-budget", type=int, default=0)
-    parser.add_argument("--diagnostic-dir")
+    parser.add_argument("--reasoning-budget", type=int, default=256)
     args = parser.parse_args(argv)
     request = json.loads(Path(args.request).read_text(encoding="utf-8"))
     result = invoke(
@@ -164,7 +157,6 @@ def main(argv=None):
         threads=args.threads,
         ctx_size=args.ctx_size,
         reasoning_budget=args.reasoning_budget,
-        diagnostic_dir=args.diagnostic_dir,
     )
     out = Path(args.out)
     out.parent.mkdir(mode=0o700, parents=True, exist_ok=True)

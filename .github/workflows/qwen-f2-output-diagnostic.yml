@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 env:
-  PRE_DIAG_SHA: e418dbe925593082397ad88954126f4da1fb2892
+  PRE_DIAG_SHA: fd21fdaf4c6a04379c1cc34f51352ea066546450
   MODEL_PATH: /home/diegoignacionorambuenamiranda/.local/share/louksna/reasoning/models/qwen35-4b-s/Qwen3.5-4B-S-TS-Q4_K_S.gguf
   RUNTIME_PATH: /home/diegoignacionorambuenamiranda/.local/share/louksna/reasoning/runtime/bec4772f6a2527d371557b5d2032641e5ff7619c/bin/llama-cli
 
@@ -29,9 +29,14 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          CHANGED="$(git diff --name-only "$PRE_DIAG_SHA"...HEAD)"
-          test "$CHANGED" = ".github/workflows/qwen-f2-output-diagnostic.yml"
-          echo "F2_DIAG_G23=PASS"
+          mapfile -t CHANGED < <(git diff --name-only "$PRE_DIAG_SHA"...HEAD | sort)
+          EXPECTED=(".github/workflows/qwen-f2-integrate-inline-gates.yml" ".github/workflows/qwen-f2-output-diagnostic.yml" "bridge/reasoning/qwen_provider.py")
+          test "${#CHANGED[@]}" -eq 3
+          for i in 0 1 2; do test "${CHANGED[$i]}" = "${EXPECTED[$i]}"; done
+          grep -Fq 'reasoning_budget=256' bridge/reasoning/qwen_provider.py
+          grep -Fq '"--reasoning-format", "deepseek"' bridge/reasoning/qwen_provider.py
+          ! grep -Fq 'diagnostic_dir' bridge/reasoning/qwen_provider.py
+          echo "F2_DIAG_G23=PASS; PROVIDER_REASONING_SEMANTICS_RESTORED=TRUE"
 
   diag_g24:
     name: "F2 diagnostic inline G24"
