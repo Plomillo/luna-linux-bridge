@@ -1,0 +1,45 @@
+name: "LRB W6 — live socket exact probe"
+on:
+  push:
+    branches:
+      - candidate/lrb-terminal-sevenfold-20260930
+    paths:
+      - ".github/workflows/lrb-w6-socket-probe.yml"
+permissions:
+  contents: read
+env:
+  CORE_SHA: c961a198f524a128dba6374290e2abe73dfaece6
+jobs:
+  probe:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 1
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: c961a198f524a128dba6374290e2abe73dfaece6
+          persist-credentials: false
+          sparse-checkout: bridge
+      - name: Start exact service and probe actual socket + client
+        shell: bash
+        run: |
+          set +e
+          UIDN="$(id -u)"; U="$(id -un)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+          sudo -n /usr/bin/loginctl enable-linger "$U"
+          sudo -n /usr/bin/systemctl start "user@$UIDN.service"
+          STAGE="$HOME/.local/lib/louksna-remote-bridge/$CORE_SHA"
+          STATE="$HOME/.local/state/louksna/remote-bridge/service"
+          mkdir -p "$STAGE" "$STATE" "$HOME/.config/systemd/user"
+          test -d "$STAGE/bridge" || cp -a bridge "$STAGE/bridge"
+          sed -e "s|@REVIEWED_PROJECT_ROOT@|$STAGE|g" -e "s|@OWNER_PRIVATE_STATE@|$STATE|g" bridge/deploy/louksna-live-socket.service.in >"$HOME/.config/systemd/user/louksna-live-socket.service"
+          systemctl --user daemon-reload
+          systemctl --user start louksna-live-socket.service
+          sleep 1
+          echo "===UNIT==="; systemctl --user show louksna-live-socket.service -p ActiveState -p SubState -p MainPID -p ExecMainStatus -p NRestarts -p Result
+          echo "===RUNTIME DIR==="; ls -la "$XDG_RUNTIME_DIR/lrb-sock" 2>&1
+          echo "===FIND SOCKETS==="; find "$XDG_RUNTIME_DIR" -maxdepth 4 -type s -printf '%m %u:%g %p\n' 2>&1
+          echo "===CLIENT==="; /usr/bin/python3 -B "$STAGE/bridge/live_link.py" --state-dir "$STATE" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op status 2>&1
+          echo "CLIENT_RC=$?"
+          echo "===JOURNAL==="; journalctl --user -u louksna-live-socket.service --no-pager -n 30
+          systemctl --user stop louksna-live-socket.service
