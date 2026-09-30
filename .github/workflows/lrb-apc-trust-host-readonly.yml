@@ -42,9 +42,10 @@ jobs:
               try:
                   x=subprocess.run(argv,stdin=subprocess.DEVNULL,capture_output=True,
                                    timeout=limit,check=False)
-                  return {"rc":x.returncode,"stdout":x.stdout.decode(errors="replace").strip()}
+                  return {"rc":x.returncode,"stdout":x.stdout.decode(errors="replace").strip(),
+                          "stderr":x.stderr.decode(errors="replace")[:300]}
               except (OSError,subprocess.TimeoutExpired):
-                  return {"rc":None,"stdout":""}
+                  return {"rc":None,"stdout":"","stderr":"TIMEOUT_OR_EXEC_ERROR"}
 
           recordpath=pathlib.Path("mission-control/privilege-bridge/V121-CERTIFIED-20260930T033205Z.json")
           cert=json.loads(recordpath.read_text())
@@ -64,7 +65,17 @@ jobs:
               sudo_hash(cert["bridge"]["g24_path"],cert["bridge"]["g24_sha256"])
           ]
           apc=run_bounded(["sudo","-n","/usr/bin/test","-x","/usr/local/sbin/louksna-apc"])
-          roots=run_bounded(["sudo","-n","/usr/bin/test","-d","/etc/louksna/remote-bridge"])
+          truststat=run_bounded(["sudo","-n","/usr/bin/stat","-c","%u:%g:%a:%F",
+                                   "/etc/louksna/remote-bridge"])
+          if truststat["rc"]==0:
+              truststatus="PRESENT_METADATA_OBSERVED"
+          elif "No such file" in truststat["stderr"]:
+              truststatus="ABSENT_REQUIRES_AUTHORIZED_BOOTSTRAP"
+          elif "not allowed" in truststat["stderr"].lower() or "password" in truststat["stderr"].lower():
+              truststatus="SUDO_STAT_NOT_ALLOWED"
+          else:
+              truststatus="UNDETERMINED"
+
           report={
               "schema":"LRB_APC_READONLY_PREFLIGHT/0.1",
               "run_id":os.environ["GITHUB_RUN_ID"],
@@ -78,7 +89,7 @@ jobs:
               "sudo_n_true":"AVAILABLE_FOR_CHECK_ONLY" if root["rc"]==0 else "UNAVAILABLE_OR_DENIED",
               "live_file_digests":target,
               "apc_executable_readonly_check":"PRESENT_AND_EXECUTABLE" if apc["rc"]==0 else "UNAVAILABLE_OR_DENIED",
-              "lrbgate_trust_dir_readonly_check":"PRESENT" if roots["rc"]==0 else "NOT_PROVEN_PRESENT",
+              "lrbgate_trust_dir_readonly_check":truststatus,
               "sudo_policy_hash":"NOT_CHECKED_UNKNOWN_ABSOLUTE_PATH",
               "signature_authorities_independently_audited":False,
               "fresh_g23":"NOT_EXECUTED",
