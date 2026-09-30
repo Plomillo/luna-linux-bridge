@@ -1,0 +1,44 @@
+name: "R4 PART4 R2 — internal WinRE inventory"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-r2-winre-inventory/**
+
+permissions:
+  contents: read
+
+jobs:
+  inventory:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Inspect recovery partition and EFI read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          P4=/dev/nvme0n1p4
+          EFI=/boot/efi
+          TMP="$RUNNER_TEMP/winre-p4"
+          mkdir -p "$TMP"
+          echo "--- P4 BLKID ---"
+          sudo -n /usr/sbin/blkid -p "$P4" || true
+          echo "--- P4 READ-ONLY MOUNT ---"
+          sudo -n mount -t ntfs3 -o ro "$P4" "$TMP"
+          trap 'sudo -n umount "$TMP" >/dev/null 2>&1 || true' EXIT
+          echo "--- P4 TOP ---"
+          find "$TMP" -maxdepth 4 -printf '%y %p\n' | head -300
+          echo "--- WINRE CANDIDATES ---"
+          find "$TMP" -type f \( -iname 'winre.wim' -o -iname 'boot.sdi' -o -iname 'reagent.xml' -o -iname 'BCD' \) -printf '%s %p\n' | sort -n
+          echo "--- EFI MICROSOFT ---"
+          if [ -d "$EFI/EFI/Microsoft" ]; then
+            find "$EFI/EFI/Microsoft" -maxdepth 4 -printf '%y %s %p\n' | head -300
+          else
+            echo "EFI_MICROSOFT_MISSING"
+          fi
+          echo "--- EFI BOOT ENTRIES ---"
+          sudo -n efibootmgr -v || true
+          sudo -n umount "$TMP"
+          trap - EXIT
