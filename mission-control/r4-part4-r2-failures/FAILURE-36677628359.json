@@ -33,5 +33,9 @@
     "id": 11082130863,
     "name": "r4-part4-r2-v6-migration-material",
     "sha256": "fec0eb1047976facdd31af9257b9c81eb76725d5408c88a33ae4e2981d202c6d"
-  }
+  },
+  "p3_ntfs_preserved": true,
+  "p3_old_uuid": "F2848A148489DC0B",
+  "p3_partition_shrunk": true,
+  "temporary_ext4_created": true
 }
