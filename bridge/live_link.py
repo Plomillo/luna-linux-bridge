@@ -184,6 +184,8 @@ def guarded_socket_path(state):
                 raise RuntimeError("SOCKET_STATE_UNVERIFIED") from exc
             else:
                 raise RuntimeError("LIVE_SERVER_ALREADY_BOUND")
+    if len(os.fsencode(str(target))) >= 108:
+        raise RuntimeError("AF_UNIX_SOCKET_PATH_EXCEEDS_KERNEL_LIMIT")
     return target
 
 
@@ -209,6 +211,7 @@ def client(path, command, stream=False):
 def main(argv=None):
     p = argparse.ArgumentParser()
     p.add_argument("--state-dir", required=True)
+    p.add_argument("--socket-dir", help="Separate short, private 0700 socket directory")
     p.add_argument("--contract", default=str(Path(__file__).with_name("CONTRACT.v0.json")))
     sp = p.add_subparsers(dest="verb", required=True)
     sp.add_parser("serve")
@@ -219,7 +222,8 @@ def main(argv=None):
     ask.add_argument("--interval-sec", type=int, default=1)
     a = p.parse_args(argv)
     try:
-        path = Path(a.state_dir).expanduser() / "BRIDGE.sock"
+        socket_dir = a.socket_dir or a.state_dir
+        path = Path(socket_dir).expanduser() / "BRIDGE.sock"
         if a.verb == "request":
             if a.op == "report":
                 req = {"op": a.op, "mission_id": a.mission_id}
@@ -231,7 +235,7 @@ def main(argv=None):
             return 0
         config = json.loads(Path(a.contract).read_text(encoding="utf-8"))
         bridge = Transport(a.state_dir, config)
-        target = guarded_socket_path(bridge.state)
+        target = guarded_socket_path(socket_dir)
         server = Server(target, bridge)
         try:
             server.serve_forever(poll_interval=0.5)
