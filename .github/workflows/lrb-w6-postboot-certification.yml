@@ -1,0 +1,119 @@
+name: "LRB W6 — governed reboot and postboot certification"
+
+on:
+  push:
+    branches:
+      - candidate/lrb-terminal-sevenfold-20260930
+    paths:
+      - ".github/workflows/lrb-w6-postboot-certification.yml"
+
+permissions:
+  contents: read
+
+env:
+  CORE_SHA: c961a198f524a128dba6374290e2abe73dfaece6
+
+jobs:
+  pre_reboot:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 2
+    steps:
+      - name: Seal pre-reboot checkpoint and invoke governed APC reboot
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          UIDN="$(id -u)"; U="$(id -un)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+          D="$HOME/.local/state/louksna/remote-bridge"
+          mkdir -p "$D"
+          systemctl --user is-enabled louksna-live-socket.service
+          systemctl --user is-active louksna-live-socket.service
+          BOOT="$(cat /proc/sys/kernel/random/boot_id)"
+          cat >"$D/REBOOT_CHECKPOINT.json" <<JSON
+          {"schema":"LRB_REBOOT_CHECKPOINT/1.0","core_sha":"$CORE_SHA","host":"$(hostname)","boot_id_before":"$BOOT","service":"louksna-live-socket.service","service_enabled":true,"service_active_pre_reboot":true,"reboot_authority":"LOUKSNA_APC_1.2.1","rollback_if_postboot_fails":"DISABLE_AND_REMOVE_LRB_USER_SERVICE"}
+          JSON
+          chmod 0600 "$D/REBOOT_CHECKPOINT.json"
+          sha256sum "$D/REBOOT_CHECKPOINT.json" >"$D/REBOOT_CHECKPOINT.sha256"
+          sync
+          sudo -n /usr/local/sbin/louksna-apc reboot
+
+  postboot:
+    needs: pre_reboot
+    if: always()
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: c961a198f524a128dba6374290e2abe73dfaece6
+          persist-credentials: false
+          sparse-checkout: bridge
+      - name: Prove new boot, persistent service, socket roundtrip, APC audit
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          UIDN="$(id -u)"; U="$(id -un)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+          D="$HOME/.local/state/louksna/remote-bridge"
+          O="$RUNNER_TEMP/lrb-postboot"; mkdir -m 700 "$O"; export O D
+          test -f "$D/REBOOT_CHECKPOINT.json"
+          sha256sum -c "$D/REBOOT_CHECKPOINT.sha256"
+          BEFORE="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["boot_id_before"])' "$D/REBOOT_CHECKPOINT.json")"
+          AFTER="$(cat /proc/sys/kernel/random/boot_id)"
+          test "$BEFORE" != "$AFTER"
+          systemctl --user is-enabled louksna-live-socket.service | tee "$O/ENABLED.txt"
+          for i in $(seq 1 100); do
+            systemctl --user is-active --quiet louksna-live-socket.service && test -S "$XDG_RUNTIME_DIR/lrb-sock/BRIDGE.sock" && break
+            sleep 0.2
+          done
+          systemctl --user is-active louksna-live-socket.service | tee "$O/ACTIVE.txt"
+          test -S "$XDG_RUNTIME_DIR/lrb-sock/BRIDGE.sock"
+          STAGE="$HOME/.local/lib/louksna-remote-bridge/$CORE_SHA"
+          STATE="$HOME/.local/state/louksna/remote-bridge/service"
+          /usr/bin/python3 -B "$STAGE/bridge/live_link.py" --state-dir "$STATE" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op status >"$O/LIVE_ROUNDTRIP.json"
+          sudo -n /usr/local/sbin/louksna-apc audit-tail 100 >"$O/APC_AUDIT.jsonl"
+          export BEFORE AFTER CORE_SHA
+          python3 - <<'PY'
+          import json,os,pathlib,hashlib,datetime
+          o=pathlib.Path(os.environ["O"]); d=pathlib.Path(os.environ["D"])
+          live=json.loads((o/"LIVE_ROUNDTRIP.json").read_text())
+          assert live["local_transport"]=="CONNECTED_SAME_UID"
+          assert live["sudo_root_shell"]=="NOT_EXPOSED"
+          audit=(o/"APC_AUDIT.jsonl").read_text(errors="replace")
+          assert "reboot" in audit.lower()
+          proof={
+            "schema":"LRB_POSTBOOT_PROOF/1.0","status":"PASS",
+            "core_sha":os.environ["CORE_SHA"],"host":"LOUKSNA",
+            "boot_id_before":os.environ["BEFORE"],"boot_id_after":os.environ["AFTER"],
+            "boot_changed":True,"runner_returned":True,
+            "service_enabled":(o/"ENABLED.txt").read_text().strip()=="enabled",
+            "service_active":(o/"ACTIVE.txt").read_text().strip()=="active",
+            "live_roundtrip":live,"apc_reboot_audit_present":True,
+            "rollback_available":"DISABLE_AND_REMOVE_LRB_USER_SERVICE",
+            "canonical_mutation":False,"authority_transfer":False
+          }
+          assert proof["service_enabled"] and proof["service_active"]
+          raw=json.dumps(proof,indent=2,sort_keys=True)+"\n"
+          (o/"W6_POSTBOOT_RESULT.json").write_text(raw)
+          (o/"W6_POSTBOOT_RESULT.sha256").write_text(hashlib.sha256(raw.encode()).hexdigest()+"  W6_POSTBOOT_RESULT.json\n")
+          (d/"POSTBOOT_PROOF.json").write_text(raw)
+          (d/"POSTBOOT_PROOF.sha256").write_text(hashlib.sha256(raw.encode()).hexdigest()+"  POSTBOOT_PROOF.json\n")
+          PY
+      - if: failure()
+        name: Fail-closed service rollback
+        shell: bash
+        run: |
+          UIDN="$(id -u)"; export XDG_RUNTIME_DIR="/run/user/$UIDN"; export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+          systemctl --user disable --now louksna-live-socket.service 2>/dev/null || true
+          rm -f "$HOME/.config/systemd/user/louksna-live-socket.service"
+          systemctl --user daemon-reload 2>/dev/null || true
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-w6-postboot-proof
+          path: ${{ runner.temp }}/lrb-postboot/
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 0
