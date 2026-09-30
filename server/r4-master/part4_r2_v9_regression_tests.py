@@ -63,6 +63,13 @@ with tempfile.TemporaryDirectory(prefix="v9_lost_found_test_") as d:
     assert a!=0 and any(x["reason"]=="SHA256" for x in t["mismatches"])
     note.write_bytes(b"VERIFIED")
     lf.rmdir()
+    external=base/"external_directory";external.mkdir()
+    lf.symlink_to(external,target_is_directory=True)
+    a,t=tree(True,"tree_symlink_lf.json")
+    assert a!=0 and any(x["reason"]=="UNSAFE_ROOT_LOST_FOUND_TYPE_OR_MOUNT" for x in t["mismatches"])
+    code,_=posix(True,"posix_symlink_lf.json")
+    assert code!=0
+    lf.unlink()
     a,t=tree(True,"tree_missing_lf.json")
     assert a!=0 and t["checks"]["technical_exclusion_strict"] is False
-print("V9_REGRESSION_TESTS=PASS strict-only-root-empty-lostfound,default-HOLD,POSIX-exclusion,nonempty-HOLD,unexpected-HOLD,hash-HOLD,missing-HOLD")
+print("V9_REGRESSION_TESTS=PASS strict-only-root-empty-lostfound,default-HOLD,POSIX-exclusion,nonempty-HOLD,unexpected-HOLD,hash-HOLD,symlink-HOLD,missing-HOLD")

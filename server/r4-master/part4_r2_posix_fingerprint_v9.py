@@ -27,6 +27,8 @@ def main():
             p=pathlib.Path(e.path); rel=p.relative_to(root).as_posix()
             if rel=="lost+found" and d==root and a.allow_root_empty_ext4_lostfound:
                 st=e.stat(follow_symlinks=False)
+                if not stat.S_ISDIR(st.st_mode) or stat.S_ISLNK(st.st_mode) or os.path.ismount(pathlib.Path(e.path)):
+                    raise SystemExit("HOLD:UNSAFE_ROOT_LOSTFOUND_TYPE_OR_MOUNT")
                 try: children=list(os.scandir(pathlib.Path(e.path)))
                 except OSError as ex: raise SystemExit("HOLD:LOSTFOUND_SCAN:"+repr(ex))
                 ok=(stat.S_ISDIR(st.st_mode) and not stat.S_ISLNK(st.st_mode)

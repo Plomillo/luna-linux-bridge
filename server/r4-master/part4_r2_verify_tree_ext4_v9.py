@@ -49,6 +49,9 @@ def main():
             p=pathlib.Path(e.path); rel=p.relative_to(root).as_posix()
             if rel=="lost+found" and d==root and a.allow_root_empty_ext4_lostfound:
                 st_lf=e.stat(follow_symlinks=False)
+                if not stat.S_ISDIR(st_lf.st_mode) or stat.S_ISLNK(st_lf.st_mode) or os.path.ismount(p):
+                    result["mismatches"].append({"path":rel,"reason":"UNSAFE_ROOT_LOST_FOUND_TYPE_OR_MOUNT"})
+                    continue
                 try:
                     children=sorted(x.name for x in os.scandir(p))
                 except OSError as ex:
