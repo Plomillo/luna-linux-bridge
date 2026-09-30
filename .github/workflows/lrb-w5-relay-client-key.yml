@@ -1,0 +1,48 @@
+name: "LRB W5 — relay client signing key bootstrap"
+
+on:
+  push:
+    branches:
+      - candidate/lrb-terminal-sevenfold-20260930
+    paths:
+      - ".github/workflows/lrb-w5-relay-client-key.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  keygen:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 1
+    steps:
+      - name: Create or reuse host-local relay signing key; export public only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          D="$HOME/.local/state/louksna/remote-bridge"
+          mkdir -p "$D"
+          K="$D/relay-client-key.pem"
+          P="$RUNNER_TEMP/lrb-relay-pub"
+          mkdir -m 700 "$P"
+          if [ ! -f "$K" ]; then
+            openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:3072 -out "$K" >/dev/null 2>&1
+            chmod 0600 "$K"
+          fi
+          test "$(stat -c '%a' "$K")" = 600
+          openssl pkey -in "$K" -pubout -out "$P/relay-client-public.pem" >/dev/null 2>&1
+          sha256sum "$P/relay-client-public.pem" > "$P/relay-client-public.sha256"
+          {
+            echo "host=$(hostname)"
+            echo "boot_id=$(cat /proc/sys/kernel/random/boot_id)"
+            echo "private_key_path=$K"
+            echo "private_key_exported=false"
+            echo "public_key_sha256=$(cut -d' ' -f1 "$P/relay-client-public.sha256")"
+          } > "$P/KEY_RECEIPT.txt"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-w5-relay-public-key
+          path: ${{ runner.temp }}/lrb-relay-pub/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
