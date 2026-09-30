@@ -1,0 +1,7 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_NTFS_SHRINK_NOACTION_REQUEST/1.0",
+  "status": "REQUESTED",
+  "target": "/dev/nvme0n1p3",
+  "destructive": false,
+  "purpose": "Dry-run real-geometry NTFS shrink with --no-action --force --force before any resize."
+}
