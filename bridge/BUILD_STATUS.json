@@ -1,0 +1,32 @@
+{
+  "schema": "LOUKSNA_REMOTE_BRIDGE_BUILD_STATUS/0.1",
+  "branch": "candidate/louksna-remote-bridge-v0-unreleased",
+  "base_commit": "52d83b97b59fcef4b6e35251d7cc9676d77014ed",
+  "state": "SOURCE_PREPARED_UNCERTIFIED",
+  "tests_declared": 16,
+  "tests_executed": 0,
+  "host_deployed": false,
+  "host_probe_after_commit": false,
+  "root_shell_deployed": false,
+  "github_api_readonly_adapter": "PREPARED_UNTESTED",
+  "github_control_plane_dispatch": "DESIGNED_NOT_IMPLEMENTED",
+  "github_workflow": "NOT_PUBLISHED",
+  "g23": "NOT_EXECUTED",
+  "g24": "NOT_EXECUTED",
+  "g23_2": "NOT_EXECUTED",
+  "g24_2": "NOT_EXECUTED",
+  "part4": "UNCHANGED_FROM_SOURCE_CHECKPOINT",
+  "parts_5_to_9": "INTERFACE_ONLY_NOT_EXECUTED",
+  "blocked": [
+    "Python/container runner for independent syntax and unit test",
+    "GitHub workflow publication previously blocked; no security-control bypass",
+    "Independent validator and certifier not yet integrated",
+    "Host probe, resource benchmark and secure transport not performed"
+  ],
+  "next": [
+    "Review candidate written specification",
+    "Execute sixteen unit tests in isolated CI or verified environment",
+    "Independent threat model and security audit",
+    "Implement authenticated transport, independent G23/G24, then host integration under explicit approval and scoped policy"
+  ]
+}
