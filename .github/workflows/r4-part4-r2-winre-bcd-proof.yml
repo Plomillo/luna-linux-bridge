@@ -1,0 +1,72 @@
+name: "R4 PART4 R2 — WinRE BCD proof"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-part4-r2-winre-bcd-proof.yml
+
+permissions:
+  contents: read
+
+jobs:
+  proof:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 10
+    steps:
+      - name: Prove recovery metadata read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          P4=/dev/nvme0n1p4
+          EFI=/boot/efi
+          TMP="$RUNNER_TEMP/winre-p4"
+          mkdir -p "$TMP"
+
+          echo "HOST=$(hostname)"
+          echo "USER=$(id -un)"
+          echo "--- TOOLING ---"
+          for c in chntpw hivexregedit hivexsh wimlib-imagex strings efibootmgr; do
+            printf '%s=' "$c"
+            command -v "$c" || true
+          done
+
+          test "$(sudo -n /usr/sbin/blkid -p -s UUID -o value "$P4")" = CADE667DDE666225
+          sudo -n mount -t ntfs3 -o ro "$P4" "$TMP"
+          trap 'sudo -n umount "$TMP" >/dev/null 2>&1 || true' EXIT
+
+          REAG="$TMP/Recovery/WindowsRE/ReAgent.xml"
+          BCDR="$EFI/EFI/Microsoft/Recovery/BCD"
+          BCDB="$EFI/EFI/Microsoft/Boot/BCD"
+
+          test -f "$REAG"
+          test -f "$BCDR"
+          test -f "$BCDB"
+
+          echo "--- REAGENT XML ---"
+          cat "$REAG"
+
+          echo "--- RECOVERY BCD UTF16 STRINGS ---"
+          strings -el "$BCDR" | head -500
+
+          echo "--- BOOT BCD UTF16 STRINGS ---"
+          strings -el "$BCDB" | head -500
+
+          echo "--- OPTIONAL CHNTPW RECOVERY BCD ---"
+          if command -v chntpw >/dev/null 2>&1; then
+            chntpw -l "$BCDR" || true
+          fi
+
+          echo "--- OPTIONAL HIVEX EXPORT RECOVERY BCD ---"
+          if command -v hivexregedit >/dev/null 2>&1; then
+            hivexregedit --export "$BCDR" '\\Objects' 2>/dev/null | head -1000 || true
+          fi
+
+          echo "--- OPTIONAL WIM INFO ---"
+          if command -v wimlib-imagex >/dev/null 2>&1; then
+            wimlib-imagex info "$TMP/Recovery/WindowsRE/winre.wim" | head -250
+          fi
+
+          sudo -n umount "$TMP"
+          trap - EXIT
