@@ -170,6 +170,8 @@ jobs:
           import datetime as dt,hashlib,json,pathlib,sys
           cp,sp,ip,out=map(pathlib.Path,sys.argv[1:5])
           c=json.loads(cp.read_text()); s=sp.read_text(); i=ip.read_text()
+          sn=s.replace("\\","/")
+          inn=i.replace("\\","/")
           checks={
             "candidate_pass":c.get("status")=="PASS",
             "target_disk":c.get("target_disk")=="/dev/nvme0n1",
@@ -182,15 +184,15 @@ jobs:
             "no_format":c.get("format_operation") is False,
             "no_windows_reinstall":c.get("windows_reinstall") is False,
             "payload_verified":c.get("payload_verified_after_update") is True,
-            "script_select_disk0":"select disk 0" in s,
-            "script_select_p3":"select partition 3" in s,
-            "script_select_efi":"select partition 1" in s,
-            "script_projects_guard":r"P:\PROYECTOS\" in s,
-            "script_windows_guard":r"P:\Windows\System32\config\SYSTEM" in s,
-            "script_chkdsk":"chkdsk P: /f /x" in s,
-            "script_result_to_efi":r"S:\EFI\LOUKSNA" in s,
-            "script_reboot":"wpeutil reboot" in s,
-            "winpeshl_cmd":"cmd.exe, /d /c %SYSTEMROOT%\\System32\\louksna-repair.cmd" in i,
+            "script_select_disk0":"select disk 0" in sn,
+            "script_select_p3":"select partition 3" in sn,
+            "script_select_efi":"select partition 1" in sn,
+            "script_projects_guard":"P:/PROYECTOS/" in sn,
+            "script_windows_guard":"P:/Windows/System32/config/SYSTEM" in sn,
+            "script_chkdsk":"chkdsk P: /f /x" in sn,
+            "script_result_to_efi":"S:/EFI/LOUKSNA" in sn,
+            "script_reboot":"wpeutil reboot" in sn,
+            "winpeshl_cmd":"cmd.exe, /d /c %SYSTEMROOT%/System32/louksna-repair.cmd" in inn,
           }
           ok=all(checks.values())
           r={
