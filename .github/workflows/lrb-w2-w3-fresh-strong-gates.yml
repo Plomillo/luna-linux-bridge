@@ -376,9 +376,13 @@ jobs:
           set -Eeuo pipefail
           umask 077
           ROOT="$RUNNER_TEMP/all"; OUT="$RUNNER_TEMP/material"; mkdir -m 700 "$OUT"
-          test ! -e /etc/louksna/remote-bridge
-          test ! -e /var/lib/louksna/remote-bridge
           stat -c '%a' /etc/louksna >"$OUT/ETC_LOUKSNA_MODE_BEFORE.txt"
+          if sudo -n /usr/bin/test -d /etc/louksna/remote-bridge; then
+            sudo -n /usr/bin/tar -C /etc/louksna -cf "$OUT/TRUST_PREVIOUS.tar" remote-bridge
+          fi
+          if sudo -n /usr/bin/test -d /var/lib/louksna/remote-bridge; then
+            sudo -n /usr/bin/tar -C /var/lib/louksna -cf "$OUT/STATE_PREVIOUS.tar" remote-bridge
+          fi
           find "$ROOT" -name '*.key' -o -name '*private*' >"$OUT/PRIVATE_KEY_SCAN.txt"
           test ! -s "$OUT/PRIVATE_KEY_SCAN.txt"
           mkdir -p "$OUT/trust"
@@ -438,6 +442,12 @@ jobs:
         shell: bash
         run: |
           sudo -n /usr/bin/rm -rf /etc/louksna/remote-bridge /var/lib/louksna/remote-bridge || true
+          if test -f "$RUNNER_TEMP/material/TRUST_PREVIOUS.tar"; then
+            sudo -n /usr/bin/tar -C /etc/louksna -xf "$RUNNER_TEMP/material/TRUST_PREVIOUS.tar" || true
+          fi
+          if test -f "$RUNNER_TEMP/material/STATE_PREVIOUS.tar"; then
+            sudo -n /usr/bin/tar -C /var/lib/louksna -xf "$RUNNER_TEMP/material/STATE_PREVIOUS.tar" || true
+          fi
           if test -f "$RUNNER_TEMP/material/ETC_LOUKSNA_MODE_BEFORE.txt"; then
             M=$(cat "$RUNNER_TEMP/material/ETC_LOUKSNA_MODE_BEFORE.txt")
             sudo -n /usr/bin/chmod "$M" /etc/louksna || true
