@@ -92,18 +92,33 @@ jobs:
             > "$S/LIFECYCLE_COMMAND.json"
           # Check ONLY fixed root trust path metadata using noninteractive allowlisted
           # sudo stat. Denial and absence are intentionally indistinguishable.
-          if timeout 4s sudo -n /usr/bin/stat -c '%u:%a' /etc/louksna/remote-bridge > "$S/TRUST_DIR_METADATA.txt" 2>/dev/null; then
+          if timeout 4s sudo -n /usr/bin/stat -c '%u:%a' /etc/louksna/remote-bridge > "$S/TRUST_DIR_METADATA.txt" 2>"$S/STAT_DIR_ERROR.txt"; then
             echo 'live_trust_directory=METADATA_READ_ONLY_PRESENT_NOT_CERTIFIED' >> "$S/RECEIPT.txt"
+          elif grep -Fq 'No such file or directory' "$S/STAT_DIR_ERROR.txt"; then
+            echo 'ABSENT_BY_EXECUTED_STAT' > "$S/TRUST_DIR_METADATA.txt"
+            echo 'live_trust_directory=ABSENT_BY_EXECUTED_SUDO_STAT' >> "$S/RECEIPT.txt"
+          elif grep -Eiq '(not allowed|password is required|a terminal is required)' "$S/STAT_DIR_ERROR.txt"; then
+            echo 'SUDO_COMMAND_DENIED' > "$S/TRUST_DIR_METADATA.txt"
+            echo 'live_trust_directory=UNDETERMINED_SUDO_COMMAND_DENIED' >> "$S/RECEIPT.txt"
           else
             echo 'NOT_PROVEN_PRESENT' > "$S/TRUST_DIR_METADATA.txt"
-            echo 'live_trust_directory=UNDETERMINED_DENIED_OR_MISSING' >> "$S/RECEIPT.txt"
+            echo 'live_trust_directory=UNDETERMINED_OTHER' >> "$S/RECEIPT.txt"
           fi
-          if timeout 4s sudo -n /usr/bin/stat -c '%u:%a' /etc/louksna/remote-bridge/trust.json > "$S/TRUST_FILE_METADATA.txt" 2>/dev/null; then
+          if timeout 4s sudo -n /usr/bin/stat -c '%u:%a' /etc/louksna/remote-bridge/trust.json > "$S/TRUST_FILE_METADATA.txt" 2>"$S/STAT_FILE_ERROR.txt"; then
             echo 'public_trust_manifest=METADATA_READ_ONLY_PRESENT_NOT_AUTHENTICATED' >> "$S/RECEIPT.txt"
+          elif grep -Fq 'No such file or directory' "$S/STAT_FILE_ERROR.txt"; then
+            echo 'ABSENT_BY_EXECUTED_STAT' > "$S/TRUST_FILE_METADATA.txt"
+            echo 'public_trust_manifest=ABSENT_BY_EXECUTED_SUDO_STAT' >> "$S/RECEIPT.txt"
+          elif grep -Eiq '(not allowed|password is required|a terminal is required)' "$S/STAT_FILE_ERROR.txt"; then
+            echo 'SUDO_COMMAND_DENIED' > "$S/TRUST_FILE_METADATA.txt"
+            echo 'public_trust_manifest=UNDETERMINED_SUDO_COMMAND_DENIED' >> "$S/RECEIPT.txt"
           else
             echo 'NOT_PROVEN_PRESENT' > "$S/TRUST_FILE_METADATA.txt"
-            echo 'public_trust_manifest=UNDETERMINED_DENIED_OR_MISSING' >> "$S/RECEIPT.txt"
+            echo 'public_trust_manifest=UNDETERMINED_OTHER' >> "$S/RECEIPT.txt"
           fi
+          # Keep potential sudo error details out of published evidence; only
+          # the deterministic, non-sensitive classification leaves the host.
+          rm -f -- "$S/STAT_DIR_ERROR.txt" "$S/STAT_FILE_ERROR.txt"
           echo 'continuous_g23_g24_design_precheck=40_ROLE_PHASE_SLOTS_UNCERTIFIED' >> "$S/RECEIPT.txt"
           grep -E '^(live_trust_directory|public_trust_manifest|continuous_g23_g24_design_precheck|historical_authority_source_hashes)=' "$S/RECEIPT.txt"
           echo 'root_executor=NOT_DEPLOYED' >> "$S/RECEIPT.txt"
