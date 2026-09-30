@@ -34,3 +34,10 @@ jobs:
           assert "jobs:" in s
           print("EXPRESSION_DELIMITER_CHECK=PASS")
           PY
+          ruby - "$F" <<'RB'
+          require "yaml"
+          x=YAML.load_file(ARGV[0])
+          x["jobs"].each{|k,v| puts "NEEDS #{k}=#{v["needs"].inspect}"}
+          RB
+          GOBIN="$RUNNER_TEMP/bin" go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
+          "$RUNNER_TEMP/bin/actionlint" -color "$F"
