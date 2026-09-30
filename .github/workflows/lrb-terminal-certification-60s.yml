@@ -140,6 +140,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ github.event.pull_request.base.sha }}
+          path: trustroot
           persist-credentials: false
       - name: Checkout frozen non-model Bridge candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -163,12 +164,12 @@ jobs:
 
           custosz_review() {
             set +e
-            sha256sum missions/inbox/lrb-terminal-cert-60s-20260930/MISSION_ORIGINAL.md | tee "$E/MISSION_SHA256.txt"
-            sha256sum scripts/mission_mailbox/adapters/lrb_source_security_review_v1.py | tee "$E/ADAPTER_SHA256.txt"
+            sha256sum trustroot/missions/inbox/lrb-terminal-cert-60s-20260930/MISSION_ORIGINAL.md | tee "$E/MISSION_SHA256.txt"
+            sha256sum trustroot/scripts/mission_mailbox/adapters/lrb_source_security_review_v1.py | tee "$E/ADAPTER_SHA256.txt"
             M="$(awk '{print $1}' "$E/MISSION_SHA256.txt")"
             A="$(awk '{print $1}' "$E/ADAPTER_SHA256.txt")"
             if [ "$M" != "$MISSION_SHA256" ] || [ "$A" != "$ADAPTER_SHA256" ]; then echo HOLD > "$E/CUSTOSZ.status"; return; fi
-            python3 -B scripts/mission_mailbox/adapters/lrb_source_security_review_v1.py --candidate-root candidate --out "$E/CUSTOSZ_REVIEW.json" > "$E/CUSTOSZ.stdout" 2> "$E/CUSTOSZ.stderr"
+            python3 -B trustroot/scripts/mission_mailbox/adapters/lrb_source_security_review_v1.py --candidate-root candidate --out "$E/CUSTOSZ_REVIEW.json" > "$E/CUSTOSZ.stdout" 2> "$E/CUSTOSZ.stderr"
             rc=$?
             if [ "$rc" -eq 0 ] && grep -Fq '"status": "PASS"' "$E/CUSTOSZ_REVIEW.json"; then echo PASS > "$E/CUSTOSZ.status"; else echo HOLD > "$E/CUSTOSZ.status"; fi
           }
