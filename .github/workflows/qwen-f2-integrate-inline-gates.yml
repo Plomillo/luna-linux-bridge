@@ -1,4 +1,4 @@
-# F2 local-delta rerun 3: constrain final JSON with zero explicit-thought budget
+# F2 local-delta diagnostic: preserve synthetic smoke stdout/stderr for local repair only
 name: "LOUKSNA Qwen F2 — integrate REASONING_INTERFACE with inline G23 G24"
 
 on:
@@ -172,7 +172,7 @@ jobs:
             "constraints":{"fail_closed":true,"no_silent_operations":true,"execution_authority":false}
           }
           JSON
-          nice -n 10 timeout 240s python3 -B bridge/reasoning/qwen_provider.py             --request "$OUT/REQUEST.json" --out "$OUT/REASONING_RESULT.json"             --timeout-sec 210 --threads 2 --ctx-size 3072 --reasoning-budget 0             | tee "$OUT/PROVIDER_RECEIPT.txt"
+          nice -n 10 timeout 240s python3 -B bridge/reasoning/qwen_provider.py             --request "$OUT/REQUEST.json" --out "$OUT/REASONING_RESULT.json"             --timeout-sec 210 --threads 2 --ctx-size 3072 --reasoning-budget 0 --diagnostic-dir "$OUT/diag"             | tee "$OUT/PROVIDER_RECEIPT.txt"
           PYTHONPATH=bridge:bridge/reasoning python3 - "$OUT" <<'PY'
           import json,pathlib,sys
           from bridge_adapter import bind_to_bridge
@@ -205,7 +205,8 @@ jobs:
           print("F2_MATERIAL=PASS")
           PY
           sha256sum "$OUT"/*.json > "$OUT/EVIDENCE_SHA256.txt"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: qwen-f2-material
           path: ${{ runner.temp }}/f2-material/
