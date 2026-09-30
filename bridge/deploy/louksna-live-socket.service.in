@@ -3,10 +3,14 @@
 [Unit]
 Description=LOUKSNA Remote Bridge 0.3 local bounded telemetry socket
 After=default.target
+StartLimitIntervalSec=60
+StartLimitBurst=3
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/python3 -B @REVIEWED_PROJECT_ROOT@/bridge/live_link.py --state-dir @OWNER_PRIVATE_STATE@ serve
+RuntimeDirectory=lrb-sock
+RuntimeDirectoryMode=0700
+ExecStart=/usr/bin/python3 -B @REVIEWED_PROJECT_ROOT@/bridge/live_link.py --state-dir @OWNER_PRIVATE_STATE@ --socket-dir %t/lrb-sock serve
 Restart=on-failure
 RestartSec=5
 NoNewPrivileges=yes
