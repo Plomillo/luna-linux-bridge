@@ -29,7 +29,8 @@ jobs:
           python3 - "$F" <<'PY'
           import pathlib,sys
           s=pathlib.Path(sys.argv[1]).read_text()
-          assert s.count("${{")==s.count("}}"), (s.count("${{"),s.count("}}"))
+          needle=chr(36)+"{{"
+          assert s.count(needle)==s.count("}}"), (s.count(needle),s.count("}}"))
           assert "jobs:" in s
           print("EXPRESSION_DELIMITER_CHECK=PASS")
           PY
