@@ -1,0 +1,58 @@
+{
+  "schema": "LOUKSNA_PART4_R2_V9_READONLY_AUDIT_CHECKPOINT_20260930_1",
+  "status": "HOLD_NOT_CERTIFIED",
+  "data_origin": "GitHub current verified workflow and candidate repository reads",
+  "v8": {
+    "run_id": 36687767779,
+    "commit": "52d83b97b59fcef4b6e35251d7cc9676d77014ed",
+    "conclusion": "failure",
+    "artifact_id": 11087849686,
+    "artifact_name": "r4-part4-r2-v8-migration-material",
+    "artifact_sha256": "518758cb104ea761f4dac76e4ce47ac4220fa050afb512a607dcd342e890b2b1",
+    "checkpoint": "P3_TEMP_COPY_AND_POSIX_PASS;P3_PREFINAL_COPY_AND_POSIX_PASS;P3_EXT4_EXPANDED;FINAL_VERIFY_HOLD_ON_ROOT_LOSTFOUND_EXTRA",
+    "expected_manifest_sha256": "99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+    "expected_records": 498092,
+    "expected_regular_file_bytes": 200490852057,
+    "observed_final_records": 498093,
+    "observed_final_only_mismatch": "EXTRA:lost+found",
+    "old_root": "P5_EXT4_PRESERVED_IN_V8_LOG",
+    "new_p3_ext4_uuid_from_v8_log": "e084ec2a-af39-48b5-bb89-db2dc6a98332",
+    "post_v8_live_host_state": "NOT_REPROBED"
+  },
+  "v9": {
+    "candidate_commit": "a4595e846ed95f0e35827825a0fc831b7cae10f1",
+    "branch": "candidate/r4-part4-r2-postboundary-v9-unreleased",
+    "files": {
+      "part4_r2_verify_tree_ext4_v9.py_git_blob": "f89945e5dd41610af7236203fe2ee55aebcd3bfe",
+      "part4_r2_posix_fingerprint_v9.py_git_blob": "e0009a39915a67c00ec757725db0023c768de2de",
+      "part4_r2_v9_regression_tests.py_git_blob": "274b35460fc8e0c07aebaf63f84f0f4a88a2fcf4",
+      "part4_r2_postboundary_probe_v9.sh_git_blob": "87c46c0b6af0f47103c4007fbc70670151ade54f",
+      "part4_r2_v9_g23_postboundary.py_git_blob": "aa884357f33c4dc3638d8a07e117f1fa98e33bfb"
+    },
+    "static_source_review": "PARTIAL_COMPLETE",
+    "static_python_execution": "NOT_EXECUTED",
+    "host_probe": "NOT_EXECUTED",
+    "host_g23": "NOT_EXECUTED",
+    "host_g24": "NOT_ISSUED"
+  },
+  "safety": {
+    "v8_never_rerun": true,
+    "p3_mkfs_forbidden": true,
+    "p2_p4_retirement_forbidden_pending_new_scope_cert": true,
+    "fstab_change_forbidden_pending_new_scope_cert": true,
+    "reboot_forbidden_pending_boot_preflight_cert": true,
+    "safety_tool_restriction": "G24_AND_WORKFLOW_PUBLICATION_REJECTED_EARLIER;NO_CIRCUMVENTION",
+    "remote_auxiliary": "LOUKSNA_ONLINE_BUT_REMOTE_DESKTOP_COMMANDER_MONTHLY_CALLS_LEFT_ZERO",
+    "github_runner": "AVAILABLE_ONLY_VIA_AUTHORIZED_WORKFLOW;NO_V9_AUTHORIZED_EXECUTION_EXISTS",
+    "jwt_assurance_gap": "V8_CERTIFIER_DECODES_OIDC_JWT_FIELDS_BUT_DOES_NOT_BY_ITSELF_VALIDATE_SIGNATURE;V9_NEW_G24_MUST_NOT_FALSELY_CLAIM_INDEPENDENT_CRYPTOGRAPHIC_AUTHENTICATION",
+    "workflow_provenance_gap": "Bind exact V9 workflow source commit and independently downloaded V8 artifact digest before certifying host state"
+  },
+  "next_only_if_authorized": [
+    "Independent static regression on isolated host, including real ext4 loop fixture and negative cases",
+    "Exact commit-pinned live read-only P3 and P5 probe with original V8 artifact",
+    "Independent G23 of new live evidence, new strictly scoped G24",
+    "Separate pre/post G23/G24 for fstab updates; verify retained P5 recovery path",
+    "Separate certified P2/P4 retirement and final merge; preboot and postboot evidence before release"
+  ],
+  "provenance_policy": "EXTEND_DO_NOT_REPLACE;FAIL_CLOSED;NO_AUTOMATIC_CERTIFICATION_PROPAGATION"
+}
