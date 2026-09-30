@@ -1,0 +1,121 @@
+name: "LRB APC 1.2.1 and external G23/G24 roots — host readonly inventory"
+on:
+  push:
+    branches:
+      - candidate/lrb-apc-trust-readonly-preflight-20260930
+    paths:
+      - ".github/workflows/lrb-apc-trust-host-readonly.yml"
+permissions:
+  contents: read
+concurrency:
+  group: lrb-apc-trust-readonly
+  cancel-in-progress: false
+jobs:
+  host-readonly-trust-inventory:
+    if: github.repository == 'Plomillo/luna-linux-bridge'
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 3
+    steps:
+      - name: Checkout certificate record without retained credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            mission-control/privilege-bridge/V121-CERTIFIED-20260930T033205Z.json
+          sparse-checkout-cone-mode: false
+      - name: Bounded real-host read-only APC, root trust and sudo inventory
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(hostname)" = LOUKSNA
+          test "$(id -u)" -ne 0
+          umask 077
+          OUT="$GITHUB_WORKSPACE/lrb-apc-report"
+          test ! -e "$OUT"
+          mkdir -m 700 "$OUT"
+          export OUT
+          nice -n 12 timeout 65s python3 - <<'PY'
+          import hashlib, json, os, pathlib, socket, subprocess
+          from datetime import datetime,timezone
+
+          def run_bounded(argv, limit=4):
+              try:
+                  x=subprocess.run(argv,stdin=subprocess.DEVNULL,capture_output=True,
+                                   timeout=limit,check=False)
+                  return {"rc":x.returncode,"stdout":x.stdout.decode(errors="replace").strip(),
+                          "stderr":x.stderr.decode(errors="replace")[:300]}
+              except (OSError,subprocess.TimeoutExpired):
+                  return {"rc":None,"stdout":"","stderr":"TIMEOUT_OR_EXEC_ERROR"}
+
+          recordpath=pathlib.Path("mission-control/privilege-bridge/V121-CERTIFIED-20260930T033205Z.json")
+          cert=json.loads(recordpath.read_text())
+          assert cert["host"]=="LOUKSNA" and cert["status"]=="PASS_STRICT"
+          assert cert["bridge"]["version"]=="1.2.1"
+          def sudo_hash(path,expected):
+              result=run_bounded(["sudo","-n","/usr/bin/sha256sum",str(path)])
+              val=result["stdout"].split()[0] if result["rc"]==0 and result["stdout"] else None
+              return {"path":str(path),"expected_sha256":expected,"observed_sha256":val,
+                      "state":"MATCH" if val==expected else
+                       ("UNAVAILABLE_OR_DENIED" if val is None else "MISMATCH")}
+
+          root=run_bounded(["sudo","-n","/usr/bin/true"])
+          target=[
+              sudo_hash(cert["runuser"]["path"],cert["runuser"]["sha256"]),
+              sudo_hash(cert["bridge"]["g23_path"],cert["bridge"]["g23_sha256"]),
+              sudo_hash(cert["bridge"]["g24_path"],cert["bridge"]["g24_sha256"])
+          ]
+          apc=run_bounded(["sudo","-n","/usr/bin/test","-x","/usr/local/sbin/louksna-apc"])
+          truststat=run_bounded(["sudo","-n","/usr/bin/stat","-c","%u:%g:%a:%F",
+                                   "/etc/louksna/remote-bridge"])
+          if truststat["rc"]==0:
+              truststatus="PRESENT_METADATA_OBSERVED"
+          elif "No such file" in truststat["stderr"]:
+              truststatus="ABSENT_REQUIRES_AUTHORIZED_BOOTSTRAP"
+          elif "not allowed" in truststat["stderr"].lower() or "password" in truststat["stderr"].lower():
+              truststatus="SUDO_STAT_NOT_ALLOWED"
+          else:
+              truststatus="UNDETERMINED"
+
+          report={
+              "schema":"LRB_APC_READONLY_PREFLIGHT/0.1",
+              "run_id":os.environ["GITHUB_RUN_ID"],
+              "candidate_sha":os.environ["GITHUB_SHA"],
+              "observed_at_utc":datetime.now(timezone.utc).isoformat(),
+              "host":socket.gethostname(),
+              "boot_id":pathlib.Path("/proc/sys/kernel/random/boot_id").read_text().strip(),
+              "caller_uid":os.getuid(),
+              "historical_record_sha256":hashlib.sha256(recordpath.read_bytes()).hexdigest(),
+              "historical_record_status":"UNVERIFIED_UNTIL_LIVE_MATCH",
+              "sudo_n_true":"AVAILABLE_FOR_CHECK_ONLY" if root["rc"]==0 else "UNAVAILABLE_OR_DENIED",
+              "live_file_digests":target,
+              "apc_executable_readonly_check":"PRESENT_AND_EXECUTABLE" if apc["rc"]==0 else "UNAVAILABLE_OR_DENIED",
+              "lrbgate_trust_dir_readonly_check":truststatus,
+              "sudo_policy_hash":"NOT_CHECKED_UNKNOWN_ABSOLUTE_PATH",
+              "signature_authorities_independently_audited":False,
+              "fresh_g23":"NOT_EXECUTED",
+              "fresh_g24":"NOT_EXECUTED",
+              "fresh_g23_2":"NOT_EXECUTED",
+              "fresh_g24_2":"NOT_EXECUTED",
+              "root_shell_started":False,
+              "disks_modified":False,
+              "certified":False
+          }
+          report["historical_record_status"]="LIVE_MATERIAL_HASH_MATCH" if all(
+              x["state"]=="MATCH" for x in target) else "HOLD_LIVE_HASH_NOT_FULLY_PROVEN"
+          p=pathlib.Path(os.environ["OUT"])
+          (p/"APC_LIVE_READONLY.json").write_text(json.dumps(report,sort_keys=True,indent=2)+"\n")
+          print("LRB_APC_READONLY_PREFLIGHT=" + report["historical_record_status"])
+          print("SUDO_N_TRUE=" + report["sudo_n_true"])
+          print("LRB_ROOT_TRUST_DIRECTORY=" + report["lrbgate_trust_dir_readonly_check"])
+          print("FRESH_G23_G24=NOT_EXECUTED")
+          PY
+          sha256sum "$OUT/APC_LIVE_READONLY.json" > "$OUT/HASHES_SHA256.txt"
+      - name: Preserve exact host read-only inventory and digest
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-apc121-trust-readonly
+          path: lrb-apc-report/
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 0
