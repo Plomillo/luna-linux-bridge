@@ -437,6 +437,10 @@ jobs:
           (out/"W2_W3_RESULT.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
           PY
           sha256sum "$OUT"/*.json "$OUT"/trust/* >"$OUT/EVIDENCE_SHA256.txt"
+          # Rollback snapshots are evidence inputs only after successful commit; make them readable
+          # by the artifact uploader without changing the root-owned live trust/state.
+          sudo -n /usr/bin/chown "$(id -u):$(id -g)" "$OUT"/TRUST_PREVIOUS.tar "$OUT"/STATE_PREVIOUS.tar 2>/dev/null || true
+          chmod 0600 "$OUT"/TRUST_PREVIOUS.tar "$OUT"/STATE_PREVIOUS.tar 2>/dev/null || true
       - if: failure()
         name: Roll back partial trust bootstrap
         shell: bash
