@@ -34,6 +34,39 @@ print(cur)
 PY
 }
 
+validate_top_level(){
+  local root="$1"
+  [ -d "$root/PROYECTOS" ] || hold "PROYECTOS_MISSING"
+  [ ! -L "$root/PROYECTOS" ] || hold "PROYECTOS_SYMLINK_REJECTED"
+  mapfile -t top < <(find "$root" -mindepth 1 -maxdepth 1 -printf '%f\n' | sort)
+  [ "${#top[@]}" -ge 1 ] || hold "EMPTY_SOURCE_ROOT"
+  [ "${#top[@]}" -le 2 ] || hold "UNEXPECTED_TOP_LEVEL_COUNT:${#top[@]}:${top[*]}"
+  local x
+  for x in "${top[@]}"; do
+    case "$x" in
+      PROYECTOS) ;;
+      "System Volume Information") ;;
+      *) hold "UNEXPECTED_SURVIVOR:$x" ;;
+    esac
+  done
+  if [ -e "$root/System Volume Information" ]; then
+    local svi="$root/System Volume Information"
+    [ -d "$svi" ] || hold "SVI_NOT_DIRECTORY"
+    [ ! -L "$svi" ] || hold "SVI_SYMLINK_REJECTED"
+    local rel
+    while IFS= read -r rel; do
+      case "$rel" in
+        "."|"./Chkdsk"|"./MountPointManagerRemoteDatabase") ;;
+        ./Chkdsk/Chkdsk*.log) ;;
+        *) hold "SVI_UNEXPECTED_ENTRY:$rel" ;;
+      esac
+    done < <(cd "$svi" && find . -mindepth 0 -maxdepth 3 -printf '%p\n' | sort)
+    local svi_bytes
+    svi_bytes="$(du -sb --apparent-size "$svi" | awk '{print $1}')"
+    [ "$svi_bytes" -le 67108864 ] || hold "SVI_TOO_LARGE:$svi_bytes"
+  fi
+}
+
 [ -n "$MODE" ] || hold "MODE_REQUIRED"
 [ -n "$OUT" ] || hold "OUT_REQUIRED"
 mkdir -p "$OUT"
@@ -43,14 +76,10 @@ need_exec "$BLKID"
 sudo -n true >/dev/null 2>&1 || hold "NONINTERACTIVE_SUDO_REQUIRED"
 
 if [ "$MODE" = "plan" ]; then
-  [ -d "$KEEP" ] || hold "PROYECTOS_MISSING"
-  [ ! -L "$KEEP" ] || hold "PROYECTOS_SYMLINK_REJECTED"
+  validate_top_level "$WINROOT"
   [ "$(findmnt -T "$WINROOT" -n -o SOURCE)" = "$P3" ] || hold "P3_SOURCE_MISMATCH"
   [ "$(findmnt -T "$WINROOT" -n -o FSTYPE)" = "ntfs3" ] || hold "P3_FSTYPE_MISMATCH"
   [ "$(blkid_uuid "$P3")" = "$OLD_UUID" ] || hold "P3_UUID_MISMATCH"
-  mapfile -t top < <(find "$WINROOT" -mindepth 1 -maxdepth 1 -printf '%f\n' | sort)
-  [ "${#top[@]}" -eq 1 ] || hold "WINDOWS_PURGE_INCOMPLETE:${top[*]}"
-  [ "${top[0]}" = "PROYECTOS" ] || hold "UNEXPECTED_SURVIVOR:${top[0]}"
   nested="$(findmnt -R -n -o TARGET "$WINROOT" | tail -n +2 || true)"
   [ -z "$nested" ] || hold "NESTED_MOUNT:$nested"
 
@@ -91,8 +120,7 @@ if [ "$MODE" = "plan" ]; then
   [ "$(findmnt -T "$WINROOT" -n -o SOURCE)" = "$P3" ] || hold "P3_SOURCE_AFTER_NTFS_INFO"
   [ "$(findmnt -T "$WINROOT" -n -o FSTYPE)" = "ntfs3" ] || hold "P3_FSTYPE_AFTER_NTFS_INFO"
   [ "$(blkid_uuid "$P3")" = "$OLD_UUID" ] || hold "P3_UUID_AFTER_NTFS_INFO"
-  [ -d "$KEEP" ] || hold "PROYECTOS_AFTER_NTFS_INFO_MISSING"
-  [ ! -L "$KEEP" ] || hold "PROYECTOS_AFTER_NTFS_INFO_SYMLINK"
+  validate_top_level "$WINROOT"
 
   export PARTED_RAW NTFS_INFO SS
   python3 - "$OUT/STORAGE_PLAN.json" <<'PY'
@@ -213,11 +241,9 @@ PY
 exit $rc' ERR
 
 # Fresh identity checks immediately before first storage mutation.
-[ -d "$KEEP" ] || hold "KEEP_MISSING_PREEXEC"
+validate_top_level "$WINROOT"
 [ "$(findmnt -T "$WINROOT" -n -o SOURCE)" = "$P3" ] || hold "P3_SOURCE_PREEXEC"
 [ "$(blkid_uuid "$P3")" = "$OLD_UUID" ] || hold "P3_UUID_PREEXEC"
-mapfile -t top < <(find "$WINROOT" -mindepth 1 -maxdepth 1 -printf '%f\n' | sort)
-[ "${#top[@]}" -eq 1 ] && [ "${top[0]}" = "PROYECTOS" ] || hold "PURGE_NOT_COMPLETE_PREEXEC"
 
 sudo -n sfdisk --dump "$DISK" > "$OUT/PARTITION_TABLE_BEFORE.sfdisk"
 sha256sum "$OUT/PARTITION_TABLE_BEFORE.sfdisk" > "$OUT/PARTITION_TABLE_BEFORE.sha256"
