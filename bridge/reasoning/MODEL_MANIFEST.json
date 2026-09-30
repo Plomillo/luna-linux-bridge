@@ -1,0 +1,52 @@
+{
+  "schema": "LOUKSNA_REASONING_MODEL_MANIFEST/1.0",
+  "status": "F1_AUDIT_CANDIDATE",
+  "authority": "Louksna.md",
+  "certified_bridge_base_sha": "c961a198f524a128dba6374290e2abe73dfaece6",
+  "role": "TRANSVERSAL_REASONING_INTELLIGENCE",
+  "interface": "REASONING_INTERFACE/1.0",
+  "replaceable": true,
+  "canonical_authority": false,
+  "execution_authority": false,
+  "gate_authority": false,
+  "root_authority": false,
+  "self_certification": false,
+  "model": {
+    "provider_id": "QWEN35_4B_S",
+    "repo_id": "TheStageAI/Qwen3.5-4B-GGUF",
+    "repo_revision": "9e325bb0db1f4eb8a51450142227bb6a7e4d37f1",
+    "filename": "Qwen3.5-4B-S-TS-Q4_K_S.gguf",
+    "expected_sha256": "9f020bfc77a9503a641e3e0511de04b4bfba16b9facfa62c3772b4f8e318ba55",
+    "expected_file_bytes": 1904339232,
+    "license": "apache-2.0",
+    "base_model": "Qwen/Qwen3.5-4B",
+    "base_model_revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+    "gguf_file_type": "MOSTLY_Q2_K",
+    "hub_quant_label": "Q4_K_S",
+    "reasoning_support": "supported",
+    "upstream_evaluation_id": "2a822bbb0cecfc257f43d7230b9f6cbb2dbd4ba346eb330b3fb93b5e436953b9"
+  },
+  "runtime": {
+    "repo": "ggml-org/llama.cpp",
+    "revision": "bec4772f6a2527d371557b5d2032641e5ff7619c",
+    "build_target": "llama-cli",
+    "network_inference_default": false
+  },
+  "legacy": {
+    "gpt_oss_120b_active_role": false,
+    "gpt_oss_120b_active_provider": false,
+    "gpt_oss_120b_fallback": false,
+    "history_preserved": true,
+    "provenance_preserved": true
+  },
+  "governance": {
+    "g23_present_from_start": true,
+    "g24_present_from_start": true,
+    "fail_closed": true,
+    "no_silent_operations": true,
+    "no_certification_propagation": true,
+    "rollback_required": true,
+    "non_regression_required": true,
+    "certification_type": "INTEGRAL_TERMINAL"
+  }
+}
