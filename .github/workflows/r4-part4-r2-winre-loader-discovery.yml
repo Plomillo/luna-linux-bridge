@@ -1,0 +1,34 @@
+name: "R4 PART4 R2 — WinRE loader discovery"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-part4-r2-winre-loader-discovery.yml
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 8
+    steps:
+      - name: Discover local WinPE/WinRE boot loaders read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "--- EFI SEARCH ---"
+          find /boot/efi -xdev -type f \( -iname 'wimboot*' -o -iname 'bootmgr*' -o -iname '*ipxe*' -o -iname '*wim*.efi' \) -printf '%s %p\n' | sort -n
+          echo "--- SYSTEM SEARCH ---"
+          for d in /boot /usr/lib /usr/share /opt "$HOME"; do
+            [ -e "$d" ] || continue
+            find "$d" -xdev -type f \( -iname 'wimboot*' -o -iname '*ipxe*.efi' -o -iname '*wim*.efi' \) -printf '%s %p\n' 2>/dev/null | sort -n | head -500
+          done
+          echo "--- GRUB2WIN EFI TREE ---"
+          if [ -d /boot/efi/efi/grub2win ]; then
+            find /boot/efi/efi/grub2win -maxdepth 6 -type f -printf '%s %p\n' | head -1000
+          fi
+          echo "--- PACKAGES ---"
+          dpkg-query -W -f='${Package}\t${Version}\n' 2>/dev/null | grep -Ei 'wim|ipxe|grub2win|qemu|ovmf' || true
