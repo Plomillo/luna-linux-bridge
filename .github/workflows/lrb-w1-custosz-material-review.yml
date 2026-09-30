@@ -1,0 +1,92 @@
+name: "LRB W1 — CUSTOSZ V7 material source-security review"
+
+on:
+  push:
+    branches:
+      - candidate/lrb-terminal-sevenfold-20260930
+    paths:
+      - ".github/workflows/lrb-w1-custosz-material-review.yml"
+
+permissions:
+  contents: read
+
+env:
+  TARGET_SHA: c961a198f524a128dba6374290e2abe73dfaece6
+
+jobs:
+  custosz-review:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: c961a198f524a128dba6374290e2abe73dfaece6
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            artifacts/custosz-v7
+            bridge
+            Louksna.md
+          sparse-checkout-cone-mode: false
+
+      - name: CUSTOSZ V7 review exact LRB source and evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          OUT="$RUNNER_TEMP/lrb-custosz-material-review"; mkdir -m 700 "$OUT"
+          P=artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz
+          sha256sum bridge/*.py bridge/CONTRACT.v0.json bridge/ASSURANCE_MATRIX.json > "$OUT/LRB_SOURCE_HASHES.txt"
+          python3 -B -I "$P" doctor >"$OUT/CUSTOSZ_DOCTOR.json" 2>"$OUT/CUSTOSZ_DOCTOR.err" || true
+          PROBLEM="LOUKSNA Remote Bridge exact candidate ${TARGET_SHA}. Perform a fail-closed source/security architecture review only. Review bridge/*.py, CONTRACT.v0.json, ASSURANCE_MATRIX.json and negative-test evidence for privilege escalation, arbitrary shell, replay, scope drift, trust-root misuse, self-certification, authority transfer, silent mutation, rollback/non-regression gaps, and remote transport boundaries. Return evidence-backed findings; do not mutate source; do not inherit certification."
+          python3 -B -I "$P" architect --project LUNA_PROJECT "$PROBLEM" >"$OUT/CUSTOSZ_ARCHITECT_REVIEW.json" 2>"$OUT/CUSTOSZ_ARCHITECT_REVIEW.err" || true
+          python3 -B -I "$P" reasoning-policy --project LUNA_PROJECT "$PROBLEM" >"$OUT/CUSTOSZ_REASONING_POLICY.json" 2>"$OUT/CUSTOSZ_REASONING_POLICY.err" || true
+          python3 -B -m unittest discover -s bridge/tests -p 'test_*.py' -v >"$OUT/LRB_TESTS.log" 2>&1
+          GOAL="Review exact LOUKSNA Remote Bridge candidate ${TARGET_SHA} source/security fail-closed; no mutation; produce PASS/HOLD evidence only."
+          python3 -B -I "$P" mission-start 0.0167 "$GOAL" --project LUNA_PROJECT --report-minutes 1 >"$OUT/MISSION_START.json" 2>"$OUT/MISSION_START.err" || true
+          export OUT TARGET_SHA
+          python3 - <<'PY'
+          import json,os,pathlib,re
+          out=pathlib.Path(os.environ["OUT"])
+          def load(name):
+              p=out/name
+              if not p.is_file(): return None
+              t=p.read_text(errors="replace").strip()
+              try: return json.loads(t.splitlines()[-1])
+              except Exception: return {"raw":t[-8000:]}
+          doctor=load("CUSTOSZ_DOCTOR.json")
+          arch=load("CUSTOSZ_ARCHITECT_REVIEW.json")
+          policy=load("CUSTOSZ_REASONING_POLICY.json")
+          mission=load("MISSION_START.json")
+          tests=(out/"LRB_TESTS.log").read_text(errors="replace")
+          tests_ok=("OK" in tests and re.search(r"Ran\s+151\s+tests",tests) is not None)
+          evidence_nonempty=bool(arch) and bool(policy)
+          status="PASS" if tests_ok and evidence_nonempty else "HOLD"
+          report={
+            "schema":"LRB_CUSTOSZ_V7_SOURCE_SECURITY_REVIEW/1.0",
+            "workstream":"W1_CUSTOSZ_REVIEW",
+            "target_sha":os.environ["TARGET_SHA"],
+            "status":status,
+            "tests_151_ok":bool(tests_ok),
+            "doctor":doctor,
+            "architect_review":arch,
+            "reasoning_policy":policy,
+            "mission_start":mission,
+            "review_actor":"CUSTOSZ_V7",
+            "source_mutation":False,
+            "certification_propagated":False,
+            "self_certification":False,
+            "next_gate":"G23" if status=="PASS" else "REVIEW_REMEDIATION"
+          }
+          (out/"W1_CUSTOSZ_REVIEW.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+          print(json.dumps({"W1":status,"tests_151_ok":tests_ok,"architect_review":bool(arch),"reasoning_policy":bool(policy)}))
+          PY
+
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-w1-custosz-material-review
+          path: ${{ runner.temp }}/lrb-custosz-material-review/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
