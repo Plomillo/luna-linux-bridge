@@ -1,0 +1,142 @@
+name: "R4 PART4 R2 — post-reboot forensic probe"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-part4-r2-postreboot-forensic-probe.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r4-part4-r2-postreboot-forensic-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 15
+    steps:
+      - name: Read-only forensic state after WinRE reboot
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+          OUT="$RUNNER_TEMP/postreboot-forensic"
+          P4M="$RUNNER_TEMP/winre-p4"
+          ROOT=/var/lib/louksna-governance/winre-repair
+          EFI=/boot/efi
+          WINROOT=/media/diegoignacionorambuenamiranda/Windows
+          mkdir -p "$OUT" "$P4M"
+
+          echo "HOST=$(hostname)" | tee "$OUT/HOST.txt"
+          echo "USER=$(id -un)" | tee -a "$OUT/HOST.txt"
+          echo "BOOT_ID=$(cat /proc/sys/kernel/random/boot_id)" | tee -a "$OUT/HOST.txt"
+          uptime -s | tee "$OUT/UPTIME_SINCE.txt"
+          uname -a | tee "$OUT/UNAME.txt"
+
+          sudo -k
+          sudo -n true
+          sudo -n /usr/sbin/visudo -c | tee "$OUT/VISUDO.txt"
+
+          echo "--- EFI ---" | tee "$OUT/EFI_STATE.txt"
+          sudo -n efibootmgr -v | tee -a "$OUT/EFI_STATE.txt"
+          echo "--- ACTIVE ---" | tee "$OUT/ACTIVE_STATE.txt"
+          if [ -f "$ROOT/ACTIVE.json" ]; then
+            echo "ACTIVE_JSON_PRESENT=YES" | tee -a "$OUT/ACTIVE_STATE.txt"
+            sudo -n cat "$ROOT/ACTIVE.json" | tee -a "$OUT/ACTIVE_STATE.txt"
+          else
+            echo "ACTIVE_JSON_PRESENT=NO" | tee -a "$OUT/ACTIVE_STATE.txt"
+          fi
+          echo "--- ROOT TREE ---" | tee "$OUT/ROOT_TREE.txt"
+          sudo -n find "$ROOT" -maxdepth 3 -type f -printf '%TY-%Tm-%TdT%TH:%TM:%TSZ %s %p\n' 2>/dev/null | sort | tee -a "$OUT/ROOT_TREE.txt" || true
+
+          echo "--- SERVICE ---" | tee "$OUT/SERVICE.txt"
+          systemctl is-enabled louksna-winre-postboot.service 2>&1 | tee -a "$OUT/SERVICE.txt" || true
+          systemctl is-active louksna-winre-postboot.service 2>&1 | tee -a "$OUT/SERVICE.txt" || true
+          sudo -n systemctl status louksna-winre-postboot.service --no-pager -l 2>&1 | tee -a "$OUT/SERVICE.txt" || true
+          echo "--- JOURNAL CURRENT BOOT ---" | tee "$OUT/JOURNAL.txt"
+          sudo -n journalctl -b -u louksna-winre-postboot.service --no-pager -o short-iso 2>&1 | tee -a "$OUT/JOURNAL.txt" || true
+
+          echo "--- WINRE MARKERS ---" | tee "$OUT/WINRE_MARKERS.txt"
+          if [ -d "$EFI/EFI/LOUKSNA" ]; then
+            find "$EFI/EFI/LOUKSNA" -maxdepth 1 -type f -printf '%s %p\n' | sort | tee -a "$OUT/WINRE_MARKERS.txt"
+            for f in "$EFI/EFI/LOUKSNA/"*; do
+              [ -f "$f" ] || continue
+              echo "### $f" | tee -a "$OUT/WINRE_MARKERS.txt"
+              case "$f" in
+                *.txt|*.log|*.rc) sed -n '1,400p' "$f" | tee -a "$OUT/WINRE_MARKERS.txt" ;;
+              esac
+            done
+          else
+            echo "EFI_LOUKSNA_DIR_MISSING" | tee -a "$OUT/WINRE_MARKERS.txt"
+          fi
+
+          echo "--- UUID/MOUNTS ---" | tee "$OUT/STORAGE.txt"
+          sudo -n blkid -p /dev/nvme0n1p3 | tee -a "$OUT/STORAGE.txt"
+          sudo -n blkid -p /dev/nvme0n1p4 | tee -a "$OUT/STORAGE.txt"
+          findmnt -T "$WINROOT" -o SOURCE,FSTYPE,OPTIONS -n | tee -a "$OUT/STORAGE.txt" || true
+          if [ -d "$WINROOT/PROYECTOS" ]; then echo "PROJECTS_PRESENT=YES" | tee -a "$OUT/STORAGE.txt"; else echo "PROJECTS_PRESENT=NO" | tee -a "$OUT/STORAGE.txt"; fi
+
+          echo "--- BCD HASHES ---" | tee "$OUT/HASHES.txt"
+          sha256sum "$EFI/EFI/Microsoft/Boot/BCD" "$EFI/EFI/Microsoft/Recovery/BCD" "$EFI/EFI/Microsoft/Boot/bootmgfw.efi" | tee -a "$OUT/HASHES.txt"
+
+          sudo -n mount -t ntfs3 -o ro /dev/nvme0n1p4 "$P4M"
+          trap 'sudo -n umount "$P4M" >/dev/null 2>&1 || true' EXIT
+          sha256sum "$P4M/Recovery/WindowsRE/winre.wim" | tee -a "$OUT/HASHES.txt"
+          sudo -n umount "$P4M"
+          trap - EXIT
+
+          python3 - "$OUT" <<'PY'
+          import datetime as dt,json,pathlib,re,subprocess,sys
+          out=pathlib.Path(sys.argv[1])
+          efi=(out/"EFI_STATE.txt").read_text(errors="replace")
+          active=(out/"ACTIVE_STATE.txt").read_text(errors="replace")
+          service=(out/"SERVICE.txt").read_text(errors="replace")
+          journal=(out/"JOURNAL.txt").read_text(errors="replace")
+          markers=(out/"WINRE_MARKERS.txt").read_text(errors="replace")
+          storage=(out/"STORAGE.txt").read_text(errors="replace")
+          hashes=(out/"HASHES.txt").read_text(errors="replace")
+          def grab(pat,s):
+              m=re.search(pat,s,re.M)
+              return m.group(1) if m else None
+          obj={
+            "schema":"LOUKSNA_R4_PART4_R2_POSTREBOOT_FORENSIC/1.0",
+            "status":"OBSERVED",
+            "host":"LOUKSNA",
+            "boot_current":grab(r"^BootCurrent:\s*([0-9A-Fa-f]{4})",efi),
+            "boot_next":grab(r"^BootNext:\s*([0-9A-Fa-f]{4})",efi),
+            "boot_order":grab(r"^BootOrder:\s*(.+)$",efi),
+            "temporary_entry_present":"LOUKSNA WinRE OneShot" in efi,
+            "active_json_present":"ACTIVE_JSON_PRESENT=YES" in active,
+            "service_enabled":"enabled" in service.splitlines()[:3],
+            "service_active":"\nactive\n" in "\n"+service+"\n",
+            "service_failed":"failed" in service.lower(),
+            "winre_started":"LOUKSNA_WINRE_REPAIR_STARTED" in markers,
+            "winre_finished":"LOUKSNA_WINRE_REPAIR_FINISHED" in markers,
+            "winre_hold":"WINRE_REPAIR_HOLD" in markers or "HOLD:" in markers,
+            "chkdsk_log_present":"CHKDSK_P3.txt" in markers,
+            "chkdsk_rc":grab(r"CHKDSK_P3\.rc.*?\n(?:###.*?\n)?\s*(\d+)",markers),
+            "projects_present":"PROJECTS_PRESENT=YES" in storage,
+            "p3_uuid_ok":"F2848A148489DC0B" in storage,
+            "p4_uuid_ok":"CADE667DDE666225" in storage,
+            "boot_bcd_original":"a38af18916ff236aee97aa214bfc7201894f9e3943a3b5ebecbc2edbc0f3466a" in hashes,
+            "recovery_bcd_original":"9b43ec614cb43e1553537c46ba45041281fb41ffd37bef2c67f182adaf82b1ef" in hashes,
+            "winre_wim_original":"9b60f5b05ea573f1458424501fcdbc2a138e20f3b843d69c602f0210fe0cf454" in hashes,
+            "journal_tail":journal[-12000:],
+            "observed_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          (out/"FORENSIC.json").write_text(json.dumps(obj,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(obj,indent=2,sort_keys=True))
+          PY
+
+          sha256sum "$OUT"/* > "$OUT/EVIDENCE.sha256"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-postreboot-forensic
+          path: ${{ runner.temp }}/postreboot-forensic/
+          retention-days: 90
+          compression-level: 0
