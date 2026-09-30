@@ -23,7 +23,7 @@ jobs:
           P4M="$RUNNER_TEMP/winre-p4"
           mkdir -p "$OUT" "$P4M"
 
-          apt-cache policy wimtools | tee "$OUT/APT_POLICY_WIMTOOLS.txt"
+          LC_ALL=C apt-cache policy wimtools | tee "$OUT/APT_POLICY_WIMTOOLS.txt"
           CAND="$(awk '/Candidate:/{print $2}' "$OUT/APT_POLICY_WIMTOOLS.txt")"
           test -n "$CAND"
           test "$CAND" != "(none)"
