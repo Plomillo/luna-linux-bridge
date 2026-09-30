@@ -131,7 +131,13 @@ def invoke(request, timeout_sec=180, threads=2, ctx_size=3072, reasoning_budget=
         raise ProviderHold("MODEL_TIMEOUT") from exc
     if proc.returncode != 0:
         raise ProviderHold("MODEL_RUNTIME_FAILED:" + str(proc.returncode))
-    obj = _extract_json(proc.stdout)
+    try:
+        obj = _extract_json(proc.stdout)
+    except ProviderHold:
+        if diagnostic_dir is not None:
+            print("LOUKSNA_REASONING_DIAG_STDOUT=" + repr(proc.stdout[:4000]), file=sys.stderr)
+            print("LOUKSNA_REASONING_DIAG_STDERR_TAIL=" + repr(proc.stderr[-4000:]), file=sys.stderr)
+        raise
     result = validate_result(obj, request["request_id"], PROVIDER_ID)
     result["material_binding"] = {
         "model_sha256": binding["model"]["sha256"],
