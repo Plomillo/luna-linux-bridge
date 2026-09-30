@@ -19,6 +19,23 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            bridge
+          sparse-checkout-cone-mode: true
+      - name: Read-only checkout integrity diagnosis
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          printf 'WORKSPACE=%s\\n' "$GITHUB_WORKSPACE"
+          git rev-parse HEAD
+          git ls-tree -r HEAD --name-only bridge | head -30
+          git ls-files bridge/lrb_core.py
+          test -f "$GITHUB_WORKSPACE/bridge/lrb_core.py" || {
+            echo "HOLD_CHECKOUT_WORKTREE_MISSING_FILE"
+            git status --short
+            exit 22
+          }
       - name: Read-only identity, resource and sudo availability probe
         shell: bash
         run: |
