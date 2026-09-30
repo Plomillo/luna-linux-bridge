@@ -44,6 +44,17 @@ jobs:
           } > "$S/RECEIPT.txt"
           sha256sum bridge/external_gates.py bridge/tests/test_external_gates.py > "$S/CODE_HASHES.txt"
           openssl version >> "$S/RECEIPT.txt"
+          # Source identity: compare current checkout against the pinned
+          # historical CUSTOSZ records; this is NOT inherited certification.
+          git show "$GITHUB_SHA:Louksna.md" | sha256sum | awk '{print $1"  Louksna.md"}' > "$S/ARCH_SOURCE_HASHES.txt"
+          git show "$GITHUB_SHA:PUAC2.md" | sha256sum | awk '{print $1"  PUAC2.md"}' >> "$S/ARCH_SOURCE_HASHES.txt"
+          if grep -Fxq '5270c3d643339c283edf13b414f335f23f921c4dac023b06d38de62927e29bf9  Louksna.md' "$S/ARCH_SOURCE_HASHES.txt" &&
+             grep -Fxq 'c872ab8d31e0e301de93ab06047294424d309d947f225e62148cee8265b15869  PUAC2.md' "$S/ARCH_SOURCE_HASHES.txt"; then
+            echo 'historical_authority_source_hashes=UNCHANGED_NOT_FRESH_CERTIFICATION' >> "$S/RECEIPT.txt"
+          else
+            echo 'historical_authority_source_hashes=HOLD_IDENTITY_DRIFT' >> "$S/RECEIPT.txt"
+            exit 3
+          fi
           nice -n 12 timeout 90s python3 -B -m unittest discover -s bridge/tests -p 'test_external_gates.py' -v > "$S/TESTS.log" 2>&1 || {
             rc=$?
             tail -38 "$S/TESTS.log"
@@ -94,10 +105,11 @@ jobs:
             echo 'public_trust_manifest=UNDETERMINED_DENIED_OR_MISSING' >> "$S/RECEIPT.txt"
           fi
           echo 'continuous_g23_g24_design_precheck=40_ROLE_PHASE_SLOTS_UNCERTIFIED' >> "$S/RECEIPT.txt"
+          grep -E '^(live_trust_directory|public_trust_manifest|continuous_g23_g24_design_precheck|historical_authority_source_hashes)=' "$S/RECEIPT.txt"
           echo 'root_executor=NOT_DEPLOYED' >> "$S/RECEIPT.txt"
           echo 'global_replay_register=NOT_DEPLOYED' >> "$S/RECEIPT.txt"
           echo "HOST_SIGNATURE_VERIFIER_TESTS=PASS; REAL_G23_G24=NOT_EXECUTED" >> "$GITHUB_STEP_SUMMARY"
-          sha256sum "$S/RECEIPT.txt" "$S/TESTS.log" "$S/ONE_TIME_TESTS.log" "$S/GLOBAL_SCOPE_TESTS.log" "$S/LIFECYCLE_TESTS.log" "$S/LIFECYCLE_REPORT.json" "$S/LIFECYCLE_COMMAND.json" "$S/TRUST_DIR_METADATA.txt" "$S/TRUST_FILE_METADATA.txt" "$S/CODE_HASHES.txt" > "$S/EVIDENCE_HASHES_SHA256.txt"
+          sha256sum "$S/RECEIPT.txt" "$S/TESTS.log" "$S/ONE_TIME_TESTS.log" "$S/GLOBAL_SCOPE_TESTS.log" "$S/LIFECYCLE_TESTS.log" "$S/LIFECYCLE_REPORT.json" "$S/LIFECYCLE_COMMAND.json" "$S/TRUST_DIR_METADATA.txt" "$S/TRUST_FILE_METADATA.txt" "$S/ARCH_SOURCE_HASHES.txt" "$S/CODE_HASHES.txt" > "$S/EVIDENCE_HASHES_SHA256.txt"
       - name: Preserve evidence only, never ephemeral private keys
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
