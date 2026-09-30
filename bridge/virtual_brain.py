@@ -11,6 +11,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import ssl
 import sys
@@ -22,6 +23,7 @@ MAX_PROMPT_BYTES = 16_384
 MAX_REPLY_BYTES = 524_288
 MAX_OUTPUT_TOKENS = 1024
 DEFAULT_CONFIG = Path(__file__).with_name("VIRTUAL_BRAIN.json")
+MODEL_IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_./-]{0,127}$")
 ENDPOINTS = {
     "groq": ("https://api.groq.com/openai/v1/chat/completions", "GROQ_API_KEY"),
     "huggingface": ("https://router.huggingface.co/v1/chat/completions", "HF_TOKEN"),
@@ -51,7 +53,8 @@ def validate_config(config):
         if (not isinstance(row, dict) or set(row) != {
             "endpoint", "credential_env", "model", "cost_gate"
         } or row["endpoint"] != endpoint or row["credential_env"] != variable
-            or row["model"] != "openai/gpt-oss-120b"
+            or not isinstance(row["model"], str)
+            or not MODEL_IDENTIFIER.fullmatch(row["model"])
             or row["cost_gate"] not in ("FREE_PLAN_RATE_LIMITED",
                                       "OWNER_ACKNOWLEDGES_USAGE_BILLING")):
             raise ValueError("UNAPPROVED_PROVIDER_CONFIGURATION")

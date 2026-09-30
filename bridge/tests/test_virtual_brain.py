@@ -94,7 +94,13 @@ class VirtualBrainTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"UNAPPROVED"):
             brain.VirtualBrain(alter)
         alter=json.loads(json.dumps(CONFIG))
-        alter["providers"]["groq"]["model"]="other-model"
+        alter["providers"]["groq"]["model"]="openai/gpt-oss-20b"
+        reviewed=brain.VirtualBrain(alter,transport=self.mock,
+                                     environ={"GROQ_API_KEY":"fixture-g"})
+        reviewed.infer(provider="groq",prompt="prueba",
+                       owner_consents_to_egress=True)
+        self.assertEqual(self.captured[-1]["payload"]["model"],"openai/gpt-oss-20b")
+        alter["providers"]["groq"]["model"]="../../localhost/secret?x=y"
         with self.assertRaisesRegex(ValueError,"UNAPPROVED"):
             brain.VirtualBrain(alter)
 

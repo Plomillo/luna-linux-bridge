@@ -7,7 +7,7 @@ La inferencia puede ejecutarse en un proveedor externo, mientras LOUKSNA conserv
 
 ## Adaptador
 - `bridge/virtual_brain.py`: interfaz Python `VirtualBrain.infer`, estado y CLI; `bridge/VIRTUAL_BRAIN.json`: modelos, proveedores y controles de egress/coste explícitos. El estado solo describe credenciales presentes, nunca revela su contenido.
-- Modelo compartido lógico: `openai/gpt-oss-120b`; proveedores permitidos `groq` o `huggingface`. Sin failover silencioso, ejecución root, ingesta de documentos o acceso al escritorio.
+- Modelo compartido lógico inicial: `openai/gpt-oss-120b`. El ID de modelo puede cambiarse explícitamente en el manifiesto versionado y revisado, sin reescribir el adaptador; proveedores permitidos `groq` o `huggingface`. Sin failover silencioso, ejecución root, ingesta de documentos o acceso al escritorio.
 - Precondiciones para un prompt real: consentimiento explícito de transferencia externa, clave de proveedor exclusivamente como variable de entorno `GROQ_API_KEY` o `HF_TOKEN`. Hugging Face requiere aceptación adicional de posibles cargos. El plan gratuito de Groq tiene límites variables: puede devolver 429.
 - Límites iniciales: prompt hasta 16 KiB, salida hasta 1024 tokens, timeout de 20 segundos y respuesta hasta 512 KiB. Respuesta no validada como verdad ni certificación.
 - Sin servidores de inferencia ni pesos en GitHub. No se asigna al núcleo portátil de 479.000.000 bytes. No hay coste generado durante pruebas simuladas.
