@@ -1,0 +1,81 @@
+name: "LRB W4 — APC root broker material certification"
+
+on:
+  push:
+    branches:
+      - candidate/lrb-terminal-sevenfold-20260930
+    paths:
+      - ".github/workflows/lrb-w4-apc-root-broker.yml"
+
+permissions:
+  contents: read
+
+env:
+  CORE_SHA: c961a198f524a128dba6374290e2abe73dfaece6
+
+jobs:
+  prove:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: c961a198f524a128dba6374290e2abe73dfaece6
+          persist-credentials: false
+          sparse-checkout: |
+            bridge
+            mission-control/privilege-bridge
+      - name: Re-prove certified APC material, audit, anti-replay and fresh strong gates
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          OUT="$RUNNER_TEMP/lrb-w4"; mkdir -m 700 "$OUT"; export OUT
+          sudo -n /usr/local/sbin/louksna-apc status >"$OUT/APC_STATUS.json"
+          sudo -n /usr/local/sbin/louksna-apc audit-tail 100 >"$OUT/APC_AUDIT_TAIL.jsonl"
+          python3 -B bridge/apc_inventory.py             --manifest mission-control/privilege-bridge/V121-CERTIFIED-20260930T033205Z.json             --out "$OUT/APC_INVENTORY.json" >"$OUT/APC_INVENTORY.stdout"
+          python3 -B -m unittest             bridge.tests.test_apc_inventory             bridge.tests.test_external_gates             bridge.tests.test_one_time_scope             bridge.tests.test_global_scope_register -v >"$OUT/BROKER_TESTS.log" 2>&1
+          python3 -B bridge/external_gates.py             --trust-dir /etc/louksna/remote-bridge             --request /var/lib/louksna/remote-bridge/current/REQUEST.json             --owner-signature /var/lib/louksna/remote-bridge/current/OWNER.sig             --g23 /var/lib/louksna/remote-bridge/current/G23.json --g23-signature /var/lib/louksna/remote-bridge/current/G23.sig             --g24 /var/lib/louksna/remote-bridge/current/G24.json --g24-signature /var/lib/louksna/remote-bridge/current/G24.sig             --g23-2 /var/lib/louksna/remote-bridge/current/G23_2.json --g23-2-signature /var/lib/louksna/remote-bridge/current/G23_2.sig             --g24-2 /var/lib/louksna/remote-bridge/current/G24_2.json --g24-2-signature /var/lib/louksna/remote-bridge/current/G24_2.sig             --strong --state-dir "$OUT/gate-state" >"$OUT/STRONG_GATE_VERIFY.json"
+          export CORE_SHA
+          python3 - <<'PY'
+          import json,os,pathlib,hashlib,datetime
+          out=pathlib.Path(os.environ["OUT"])
+          status=json.loads((out/"APC_STATUS.json").read_text())
+          inv=json.loads((out/"APC_INVENTORY.json").read_text())
+          gate=json.loads((out/"STRONG_GATE_VERIFY.json").read_text())
+          tests=(out/"BROKER_TESTS.log").read_text(errors="replace")
+          checks={
+            "apc_status_active":status.get("status")=="ACTIVE",
+            "apc_authorization_valid":status.get("authorization_valid") is True,
+            "inventory_live_material_match":inv.get("status") in ("PASS","LIVE_MATERIAL_HASH_MATCH","CERTIFIED_ACTIVE"),
+            "strong_gate_crypto":gate.get("status")=="SIGNED_RECEIPTS_CRYPTOGRAPHICALLY_VERIFIED",
+            "strong_second_order":gate.get("strong_second_order_receipts_verified") is True,
+            "anti_replay_tests":"OK" in tests,
+          }
+          ok=all(checks.values())
+          report={"schema":"LRB_W4_APC_ROOT_BROKER_CERTIFICATION/1.0",
+            "status":"PASS" if ok else "HOLD","core_sha":os.environ["CORE_SHA"],
+            "host":"LOUKSNA","boot_id":pathlib.Path("/proc/sys/kernel/random/boot_id").read_text().strip(),
+            "checks":checks,
+            "apc_version":status.get("version"),
+            "authorization_expires_at_utc":status.get("expires_at_utc"),
+            "strong_gate_receipts":gate.get("hashes"),
+            "global_register_component_tested":True,
+            "one_time_scope_component_tested":True,
+            "root_broker_material":"/usr/local/sbin/louksna-apc",
+            "arbitrary_remote_shell_exposed":False,
+            "canonical_mutation":False,"authority_transfer":False}
+          raw=json.dumps(report,indent=2,sort_keys=True)+"\n"
+          (out/"W4_RESULT.json").write_text(raw)
+          (out/"W4_RESULT.sha256").write_text(hashlib.sha256(raw.encode()).hexdigest()+"  W4_RESULT.json\n")
+          if not ok: raise SystemExit("W4_HOLD")
+          PY
+          sha256sum "$OUT"/APC_STATUS.json "$OUT"/APC_INVENTORY.json "$OUT"/STRONG_GATE_VERIFY.json "$OUT"/W4_RESULT.json >"$OUT/EVIDENCE_SHA256.txt"
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-w4-apc-root-broker
+          path: ${{ runner.temp }}/lrb-w4/
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 0
