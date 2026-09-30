@@ -1,0 +1,27 @@
+name: "R4 PART4 R2 — all block devices diagnostic"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-r2-all-devices/**
+
+permissions:
+  contents: read
+
+jobs:
+  devices:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Inventory all physical block devices read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "--- LSBLK ALL ---"
+          lsblk -b -e7 -o NAME,PATH,SIZE,TYPE,TRAN,MODEL,FSTYPE,FSAVAIL,FSUSE%,MOUNTPOINTS,UUID
+          echo "--- FINDMNT ---"
+          findmnt -rn -o SOURCE,TARGET,FSTYPE,OPTIONS
+          echo "--- DF ---"
+          df -B1 -T
