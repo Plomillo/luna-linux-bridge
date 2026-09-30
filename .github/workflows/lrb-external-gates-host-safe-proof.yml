@@ -68,10 +68,36 @@ jobs:
           grep -E '^Ran [0-9]+ tests|^OK$' "$S/GLOBAL_SCOPE_TESTS.log" >> "$S/RECEIPT.txt"
           echo 'global_replay_registry=TESTED_UNPRIVILEGED_FIXTURE_NOT_DEPLOYED' >> "$S/RECEIPT.txt"
           echo 'one_time_scope=UNIT_TESTED_LOCAL_LEDGER_ONLY' >> "$S/RECEIPT.txt"
+          # Simultaneous life-cycle DESIGN review queues, not actual independent approvals.
+          sha256sum bridge/continuous_assurance.py bridge/ASSURANCE_MATRIX.json bridge/tests/test_continuous_assurance.py >> "$S/CODE_HASHES.txt"
+          nice -n 12 timeout 40s python3 -B -m unittest discover -s bridge/tests -p 'test_continuous_assurance.py' -v > "$S/LIFECYCLE_TESTS.log" 2>&1 || {
+            rc=$?
+            tail -38 "$S/LIFECYCLE_TESTS.log"
+            exit "$rc"
+          }
+          grep -E '^Ran [0-9]+ tests|^OK$' "$S/LIFECYCLE_TESTS.log" >> "$S/RECEIPT.txt"
+          nice -n 12 timeout 10s python3 -B bridge/continuous_assurance.py \
+            --plan bridge/ASSURANCE_MATRIX.json --commit "$GITHUB_SHA" --out "$S/LIFECYCLE_REPORT.json" \
+            > "$S/LIFECYCLE_COMMAND.json"
+          # Check ONLY fixed root trust path metadata using noninteractive allowlisted
+          # sudo stat. Denial and absence are intentionally indistinguishable.
+          if timeout 4s sudo -n /usr/bin/stat -c '%u:%a' /etc/louksna/remote-bridge > "$S/TRUST_DIR_METADATA.txt" 2>/dev/null; then
+            echo 'live_trust_directory=METADATA_READ_ONLY_PRESENT_NOT_CERTIFIED' >> "$S/RECEIPT.txt"
+          else
+            echo 'NOT_PROVEN_PRESENT' > "$S/TRUST_DIR_METADATA.txt"
+            echo 'live_trust_directory=UNDETERMINED_DENIED_OR_MISSING' >> "$S/RECEIPT.txt"
+          fi
+          if timeout 4s sudo -n /usr/bin/stat -c '%u:%a' /etc/louksna/remote-bridge/trust.json > "$S/TRUST_FILE_METADATA.txt" 2>/dev/null; then
+            echo 'public_trust_manifest=METADATA_READ_ONLY_PRESENT_NOT_AUTHENTICATED' >> "$S/RECEIPT.txt"
+          else
+            echo 'NOT_PROVEN_PRESENT' > "$S/TRUST_FILE_METADATA.txt"
+            echo 'public_trust_manifest=UNDETERMINED_DENIED_OR_MISSING' >> "$S/RECEIPT.txt"
+          fi
+          echo 'continuous_g23_g24_design_precheck=40_ROLE_PHASE_SLOTS_UNCERTIFIED' >> "$S/RECEIPT.txt"
           echo 'root_executor=NOT_DEPLOYED' >> "$S/RECEIPT.txt"
           echo 'global_replay_register=NOT_DEPLOYED' >> "$S/RECEIPT.txt"
           echo "HOST_SIGNATURE_VERIFIER_TESTS=PASS; REAL_G23_G24=NOT_EXECUTED" >> "$GITHUB_STEP_SUMMARY"
-          sha256sum "$S/RECEIPT.txt" "$S/TESTS.log" "$S/ONE_TIME_TESTS.log" "$S/GLOBAL_SCOPE_TESTS.log" "$S/CODE_HASHES.txt" > "$S/EVIDENCE_HASHES_SHA256.txt"
+          sha256sum "$S/RECEIPT.txt" "$S/TESTS.log" "$S/ONE_TIME_TESTS.log" "$S/GLOBAL_SCOPE_TESTS.log" "$S/LIFECYCLE_TESTS.log" "$S/LIFECYCLE_REPORT.json" "$S/LIFECYCLE_COMMAND.json" "$S/TRUST_DIR_METADATA.txt" "$S/TRUST_FILE_METADATA.txt" "$S/CODE_HASHES.txt" > "$S/EVIDENCE_HASHES_SHA256.txt"
       - name: Preserve evidence only, never ephemeral private keys
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
