@@ -1,0 +1,397 @@
+name: "LOUKSNA Remote Bridge — terminal certification 60s"
+
+on:
+  pull_request_target:
+    branches:
+      - trust-root/lrb-terminal-cert-20260930
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  id-token: write
+
+concurrency:
+  group: lrb-terminal-cert-60s-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: false
+
+env:
+  TARGET_SHA: c961a198f524a128dba6374290e2abe73dfaece6
+  MISSION_SHA256: 87aa8c404835a8023e9e41c74380554546ac74b6ded4c54f2dea9b7a22afe0b1
+  ADAPTER_SHA256: 2b24a5aea0968d73d0dc7c3e402e7d5747093b63c099bac0cd674162e3a77751
+
+jobs:
+  g23_prepare:
+    if: github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.sha == 'c961a198f524a128dba6374290e2abe73dfaece6'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    outputs:
+      status: ${{ steps.g23p.outputs.status }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: candidate
+          persist-credentials: false
+      - id: g23p
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git -C candidate rev-parse HEAD)" = "$TARGET_SHA"
+          for p in bridge/virtual_brain.py bridge/VIRTUAL_BRAIN.json bridge/VIRTUAL_BRAIN.md bridge/benchmarks/qwen_puac2_benchmark.py .github/workflows/lrb-qwen-puac2-benchmark.yml; do
+            test ! -e "candidate/$p"
+          done
+          mkdir -p "$RUNNER_TEMP/g23p"
+          sha256sum candidate/bridge/*.py candidate/bridge/*.json > "$RUNNER_TEMP/g23p/CANDIDATE_SHA256.txt"
+          printf '{"schema":"LRB_G23_PREP/1.0","status":"PASS","candidate_sha":"%s","candidate_code_executed":false,"validator_surface":"BASE_CONTROLLED_PULL_REQUEST_TARGET"}\n' "$TARGET_SHA" > "$RUNNER_TEMP/g23p/G23_PREP.json"
+          echo "status=PASS" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-g23-prep
+          path: ${{ runner.temp }}/g23p
+          if-no-files-found: error
+          retention-days: 90
+
+  g24_prepare:
+    if: github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.sha == 'c961a198f524a128dba6374290e2abe73dfaece6'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    outputs:
+      status: ${{ steps.g24p.outputs.status }}
+    steps:
+      - id: g24p
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g24p"
+          AUD="louksna-lrb-g24:$TARGET_SHA"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(RESP="$RESP" python3 - <<'PY'
+          import json,os
+          print(json.loads(os.environ["RESP"])["value"])
+          PY
+          )"
+          TOKEN="$TOKEN" AUD="$AUD" TARGET_SHA="$TARGET_SHA" python3 - <<'PY'
+          import base64,hashlib,json,os,pathlib
+          t=os.environ["TOKEN"]; p=t.split(".")
+          if len(p)!=3: raise SystemExit("OIDC_FORMAT_INVALID")
+          q=p[1]+"="*((4-len(p[1])%4)%4)
+          c=json.loads(base64.urlsafe_b64decode(q))
+          aud=c.get("aud")
+          if aud!=os.environ["AUD"] and not (isinstance(aud,list) and os.environ["AUD"] in aud):
+              raise SystemExit("OIDC_AUD_MISMATCH")
+          if c.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPO_MISMATCH")
+          out={"schema":"LRB_G24_PREP/1.0","status":"PASS","candidate_sha":os.environ["TARGET_SHA"],
+               "authority_authenticated":True,"oidc_subject":c.get("sub"),
+               "job_workflow_ref":c.get("job_workflow_ref"),
+               "token_sha256":hashlib.sha256(t.encode()).hexdigest(),"raw_token_persisted":False,
+               "certification_issued":False}
+          pathlib.Path(os.environ["RUNNER_TEMP"],"g24p","G24_PREP.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          PY
+          unset TOKEN RESP
+          echo "status=PASS" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-g24-prep
+          path: ${{ runner.temp }}/g24p
+          if-no-files-found: error
+          retention-days: 90
+
+  maestro_prepare:
+    if: github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.sha == 'c961a198f524a128dba6374290e2abe73dfaece6'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    outputs:
+      status: ${{ steps.mp.outputs.status }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          sparse-checkout: |
+            bridge
+      - id: mp
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -f bridge/README.md
+          grep -Fq 'CUSTOSZ V7' bridge/README.md
+          grep -Fq 'G23' bridge/README.md
+          grep -Fq 'G24' bridge/README.md
+          grep -Fq 'rollback' bridge/README.md
+          echo "status=PASS" >> "$GITHUB_OUTPUT"
+
+  material_parallel:
+    if: github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.sha == 'c961a198f524a128dba6374290e2abe73dfaece6'
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 2
+    outputs:
+      custosz: ${{ steps.summary.outputs.custosz }}
+      trust: ${{ steps.summary.outputs.trust }}
+      rootbroker: ${{ steps.summary.outputs.rootbroker }}
+      relay: ${{ steps.summary.outputs.relay }}
+      service: ${{ steps.summary.outputs.service }}
+    steps:
+      - name: Checkout immutable certification trust root
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+      - name: Checkout frozen non-model Bridge candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: candidate
+          persist-credentials: false
+      - name: Seven-front material evidence attack
+        id: material
+        shell: bash
+        env:
+          CUSTOSZ_WORKSPACE_OVERRIDE: ${{ runner.temp }}/lrb-custosz-workspace
+        run: |
+          set -u
+          export LC_ALL=C LANG=C
+          test "$(hostname)" = LOUKSNA || exit 50
+          test "$(git -C candidate rev-parse HEAD)" = "$TARGET_SHA" || exit 51
+          E="$RUNNER_TEMP/lrb-terminal-evidence"
+          mkdir -p "$E"
+          printf '%s\n' "$TARGET_SHA" > "$E/TARGET_SHA.txt"
+
+          custosz_review() {
+            set +e
+            sha256sum missions/inbox/lrb-terminal-cert-60s-20260930/MISSION_ORIGINAL.md | tee "$E/MISSION_SHA256.txt"
+            sha256sum scripts/mission_mailbox/adapters/lrb_source_security_review_v1.py | tee "$E/ADAPTER_SHA256.txt"
+            M="$(awk '{print $1}' "$E/MISSION_SHA256.txt")"
+            A="$(awk '{print $1}' "$E/ADAPTER_SHA256.txt")"
+            if [ "$M" != "$MISSION_SHA256" ] || [ "$A" != "$ADAPTER_SHA256" ]; then echo HOLD > "$E/CUSTOSZ.status"; return; fi
+            python3 -B scripts/mission_mailbox/adapters/lrb_source_security_review_v1.py --candidate-root candidate --out "$E/CUSTOSZ_REVIEW.json" > "$E/CUSTOSZ.stdout" 2> "$E/CUSTOSZ.stderr"
+            rc=$?
+            if [ "$rc" -eq 0 ] && grep -Fq '"status": "PASS"' "$E/CUSTOSZ_REVIEW.json"; then echo PASS > "$E/CUSTOSZ.status"; else echo HOLD > "$E/CUSTOSZ.status"; fi
+          }
+
+          trust_roots() {
+            set +e
+            : > "$E/TRUST_CHECK.txt"
+            sudo -n /usr/bin/stat -c 'dir=%u:%g:%a' /etc/louksna/remote-bridge >> "$E/TRUST_CHECK.txt" 2> "$E/TRUST_DIR.err"
+            d=$?
+            sudo -n /usr/bin/stat -c 'file=%u:%g:%a' /etc/louksna/remote-bridge/trust.json >> "$E/TRUST_CHECK.txt" 2> "$E/TRUST_FILE.err"
+            f=$?
+            if [ "$d" -ne 0 ] || [ "$f" -ne 0 ]; then
+              if grep -Fq 'No such file or directory' "$E/TRUST_DIR.err" "$E/TRUST_FILE.err"; then echo ABSENT >> "$E/TRUST_CHECK.txt"; else echo UNAVAILABLE_OR_DENIED >> "$E/TRUST_CHECK.txt"; fi
+              rm -f "$E/TRUST_DIR.err" "$E/TRUST_FILE.err"
+              echo HOLD > "$E/TRUST.status"; return
+            fi
+            rm -f "$E/TRUST_DIR.err" "$E/TRUST_FILE.err"
+            PYTHONPATH="$PWD/candidate/bridge" python3 -B - <<'PY' > "$E/TRUST_VALIDATION.json" 2> "$E/TRUST_VALIDATION.err"
+          import json
+          from external_gates import ExternalGateVerifier
+          v=ExternalGateVerifier("/etc/louksna/remote-bridge",enforce_root_owned=True)
+          print(json.dumps({"schema":"LRB_TRUST_ROOT_VALIDATION/1.0","status":"PASS",
+            "roles":sorted(v.trust["signers"]),"issuer_ids":sorted(x["issuer_id"] for x in v.trust["signers"].values()),
+            "private_keys_read":False},sort_keys=True))
+          PY
+            if [ "$?" -eq 0 ]; then echo PASS > "$E/TRUST.status"; else rm -f "$E/TRUST_VALIDATION.err"; echo HOLD > "$E/TRUST.status"; fi
+          }
+
+          root_broker() {
+            set +e
+            timeout 50s python3 -B -m unittest discover -s candidate/bridge/tests -p 'test_one_time_scope.py' -v > "$E/ROOT_ONETIME.log" 2>&1
+            a=$?
+            timeout 50s python3 -B -m unittest discover -s candidate/bridge/tests -p 'test_global_scope_register.py' -v > "$E/ROOT_GLOBAL.log" 2>&1
+            b=$?
+            systemctl list-unit-files --no-legend 2>/dev/null | grep -Ei 'louksna.*(root|broker)' > "$E/ROOT_BROKER_UNITS.txt"
+            c=$?
+            if [ "$a" -eq 0 ] && [ "$b" -eq 0 ] && [ "$c" -eq 0 ] && [ -s "$E/ROOT_BROKER_UNITS.txt" ]; then echo PASS > "$E/ROOTBROKER.status"; else echo HOLD > "$E/ROOTBROKER.status"; fi
+          }
+
+          remote_relay() {
+            set +e
+            timeout 50s python3 -B -m unittest discover -s candidate/bridge/tests -p 'test_mtls_gateway.py' -v > "$E/RELAY_MTLS.log" 2>&1
+            a=$?
+            systemctl --user list-unit-files --no-legend 2>/dev/null | grep -Ei 'louksna.*(relay|remote)' > "$E/RELAY_UNITS.txt"
+            b=$?
+            if [ "$a" -eq 0 ] && [ "$b" -eq 0 ] && [ -s "$E/RELAY_UNITS.txt" ]; then echo PASS > "$E/RELAY.status"; else echo HOLD > "$E/RELAY.status"; fi
+          }
+
+          persistent_service() {
+            set +e
+            : > "$E/SERVICE.txt"
+            ok=0
+            for u in louksna-live-socket.service louksna-mtls-readonly.service; do
+              systemctl --user is-enabled "$u" >> "$E/SERVICE.txt" 2>&1 || ok=1
+              systemctl --user is-active "$u" >> "$E/SERVICE.txt" 2>&1 || ok=1
+              systemctl --user show "$u" -p ActiveState -p UnitFileState -p MemoryMax -p CPUQuotaPerSecUSec >> "$E/SERVICE.txt" 2>&1 || ok=1
+            done
+            if [ "$ok" -eq 0 ]; then echo PASS > "$E/SERVICE.status"; else echo HOLD > "$E/SERVICE.status"; fi
+          }
+
+          custosz_review & p1=$!
+          trust_roots & p2=$!
+          root_broker & p3=$!
+          remote_relay & p4=$!
+          persistent_service & p5=$!
+          wait "$p1" "$p2" "$p3" "$p4" "$p5" || true
+
+          for s in CUSTOSZ TRUST ROOTBROKER RELAY SERVICE; do
+            test -f "$E/$s.status" || echo HOLD > "$E/$s.status"
+          done
+          sha256sum "$E"/* > "$E/EVIDENCE_SHA256.txt" 2>/dev/null || true
+
+      - id: summary
+        if: always()
+        shell: bash
+        run: |
+          E="$RUNNER_TEMP/lrb-terminal-evidence"
+          for x in CUSTOSZ TRUST ROOTBROKER RELAY SERVICE; do test -f "$E/$x.status" || echo HOLD > "$E/$x.status"; done
+          echo "custosz=$(cat "$E/CUSTOSZ.status")" >> "$GITHUB_OUTPUT"
+          echo "trust=$(cat "$E/TRUST.status")" >> "$GITHUB_OUTPUT"
+          echo "rootbroker=$(cat "$E/ROOTBROKER.status")" >> "$GITHUB_OUTPUT"
+          echo "relay=$(cat "$E/RELAY.status")" >> "$GITHUB_OUTPUT"
+          echo "service=$(cat "$E/SERVICE.status")" >> "$GITHUB_OUTPUT"
+          printf 'CUSTOSZ=%s\nTRUST=%s\nROOTBROKER=%s\nRELAY=%s\nSERVICE=%s\n'             "$(cat "$E/CUSTOSZ.status")" "$(cat "$E/TRUST.status")" "$(cat "$E/ROOTBROKER.status")" "$(cat "$E/RELAY.status")" "$(cat "$E/SERVICE.status")"             | tee "$E/MATERIAL_SUMMARY.txt"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: lrb-terminal-material-evidence
+          path: ${{ runner.temp }}/lrb-terminal-evidence
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  g23_final:
+    needs: [g23_prepare, material_parallel, maestro_prepare]
+    if: always() && needs.g23_prepare.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    outputs:
+      status: ${{ steps.g23.outputs.status }}
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: lrb-terminal-material-evidence
+          path: ${{ runner.temp }}/material
+      - id: g23
+        env:
+          CUSTOSZ: ${{ needs.material_parallel.outputs.custosz }}
+          TRUST: ${{ needs.material_parallel.outputs.trust }}
+          ROOTBROKER: ${{ needs.material_parallel.outputs.rootbroker }}
+          RELAY: ${{ needs.material_parallel.outputs.relay }}
+          SERVICE: ${{ needs.material_parallel.outputs.service }}
+          MAESTRO_PREP: ${{ needs.maestro_prepare.outputs.status }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          STATUS=PASS
+          for v in "$CUSTOSZ" "$TRUST" "$ROOTBROKER" "$RELAY" "$SERVICE" "$MAESTRO_PREP"; do [ "$v" = PASS ] || STATUS=HOLD; done
+          MATERIAL_SHA="$(sha256sum "$RUNNER_TEMP/material/MATERIAL_SUMMARY.txt" | awk '{print $1}')"
+          STATUS="$STATUS" MATERIAL_SHA="$MATERIAL_SHA" TARGET_SHA="$TARGET_SHA" python3 - <<'PY'
+          import json,os,pathlib
+          o={"schema":"LRB_G23_INDEPENDENT_VERDICT/1.0","status":os.environ["STATUS"],
+             "candidate_sha":os.environ["TARGET_SHA"],"material_summary_sha256":os.environ["MATERIAL_SHA"],
+             "validator":"GITHUB_HOSTED_BASE_CONTROLLED","candidate_write_access":False,
+             "certification_issued":False}
+          pathlib.Path(os.environ["RUNNER_TEMP"],"g23","G23_VERDICT.json").write_text(json.dumps(o,indent=2,sort_keys=True)+"\n")
+          PY
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-independent-g23
+          path: ${{ runner.temp }}/g23
+          if-no-files-found: error
+          retention-days: 90
+
+  g24_final:
+    needs: [g24_prepare, g23_final]
+    if: always() && needs.g24_prepare.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    outputs:
+      status: ${{ steps.g24.outputs.status }}
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: lrb-independent-g23
+          path: ${{ runner.temp }}/g23
+      - id: g24
+        env:
+          G23: ${{ needs.g23_final.outputs.status }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g24"
+          STATUS=HOLD
+          [ "$G23" = PASS ] && STATUS=PASS
+          G23_SHA="$(sha256sum "$RUNNER_TEMP/g23/G23_VERDICT.json" | awk '{print $1}')"
+          STATUS="$STATUS" G23_SHA="$G23_SHA" TARGET_SHA="$TARGET_SHA" python3 - <<'PY'
+          import json,os,pathlib
+          o={"schema":"LRB_G24_CERTIFICATE/1.0","status":os.environ["STATUS"],
+             "candidate_sha":os.environ["TARGET_SHA"],"depends_on_g23_sha256":os.environ["G23_SHA"],
+             "certifier":"GITHUB_HOSTED_BASE_CONTROLLED",
+             "certified":os.environ["STATUS"]=="PASS","active":False}
+          pathlib.Path(os.environ["RUNNER_TEMP"],"g24","G24_CERTIFICATE.json").write_text(json.dumps(o,indent=2,sort_keys=True)+"\n")
+          PY
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-independent-g24
+          path: ${{ runner.temp }}/g24
+          if-no-files-found: error
+          retention-days: 90
+
+  maestro_final:
+    needs: [material_parallel, g23_final, g24_final, maestro_prepare]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        if: needs.g24_final.result == 'success'
+        with:
+          name: lrb-independent-g24
+          path: ${{ runner.temp }}/g24
+      - shell: bash
+        env:
+          CUSTOSZ: ${{ needs.material_parallel.outputs.custosz }}
+          TRUST: ${{ needs.material_parallel.outputs.trust }}
+          ROOTBROKER: ${{ needs.material_parallel.outputs.rootbroker }}
+          RELAY: ${{ needs.material_parallel.outputs.relay }}
+          SERVICE: ${{ needs.material_parallel.outputs.service }}
+          G23: ${{ needs.g23_final.outputs.status }}
+          G24: ${{ needs.g24_final.outputs.status }}
+          MAESTRO_PREP: ${{ needs.maestro_prepare.outputs.status }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/final"
+          FINAL=CERTIFIED_ACTIVE
+          for v in "$CUSTOSZ" "$TRUST" "$ROOTBROKER" "$RELAY" "$SERVICE" "$G23" "$G24" "$MAESTRO_PREP"; do [ "$v" = PASS ] || FINAL=HOLD; done
+          FINAL="$FINAL" TARGET_SHA="$TARGET_SHA" CUSTOSZ="$CUSTOSZ" TRUST="$TRUST" ROOTBROKER="$ROOTBROKER" RELAY="$RELAY" SERVICE="$SERVICE" G23="$G23" G24="$G24" python3 - <<'PY'
+          import json,os,pathlib
+          o={"schema":"LOUKSNA_REMOTE_BRIDGE_TERMINAL_STATE/1.0",
+             "candidate_sha":os.environ["TARGET_SHA"],
+             "custosz":os.environ["CUSTOSZ"],"trust":os.environ["TRUST"],
+             "root_broker":os.environ["ROOTBROKER"],"remote_relay":os.environ["RELAY"],
+             "persistent_service_postboot":os.environ["SERVICE"],
+             "g23":os.environ["G23"],"g24":os.environ["G24"],
+             "maestro":"PASS" if os.environ["FINAL"]=="CERTIFIED_ACTIVE" else "HOLD",
+             "certified":os.environ["FINAL"]=="CERTIFIED_ACTIVE",
+             "active":os.environ["FINAL"]=="CERTIFIED_ACTIVE",
+             "final_state":os.environ["FINAL"],
+             "canonical_mutation":False,"authority_transfer":False,
+             "failure_posture":"FAIL_CLOSED"}
+          p=pathlib.Path(os.environ["RUNNER_TEMP"],"final","FINAL_STATE.json")
+          p.write_text(json.dumps(o,indent=2,sort_keys=True)+"\n")
+          PY
+          sha256sum "$RUNNER_TEMP/final/FINAL_STATE.json" > "$RUNNER_TEMP/final/FINAL_STATE.sha256"
+          cat "$RUNNER_TEMP/final/FINAL_STATE.json" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-terminal-final-state
+          path: ${{ runner.temp }}/final
+          if-no-files-found: error
+          retention-days: 180
+          compression-level: 0
