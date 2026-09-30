@@ -1,0 +1,186 @@
+name: "R4 PART4 R2 — certify WinRE repair result"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-r2-winre-postboot/**
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: r4-part4-r2-winre-postboot-certification
+  cancel-in-progress: false
+
+jobs:
+  material:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Validate local postboot evidence and current host state
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          TRIGGER="$(find mission-control/r4-part4-r2-winre-postboot -maxdepth 1 -type f -name 'RESULT-*.json' -printf '%T@ %p\n' | sort -n | tail -1 | cut -d' ' -f2-)"
+          test -n "$TRIGGER"
+          INSTALL_ID="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["install_id"])' "$TRIGGER")"
+          ROOT="/var/lib/louksna-governance/winre-repair/postboot/$INSTALL_ID"
+          test -f "$ROOT/POSTBOOT_EVIDENCE.json"
+          OUT="$RUNNER_TEMP/winre-postboot-material"
+          mkdir -p "$OUT"
+          cp -a "$ROOT/." "$OUT/"
+
+          test "$(hostname)" = LOUKSNA
+          test "$(id -un)" = diegoignacionorambuenamiranda
+          test "$(sudo -n /usr/sbin/blkid -p -s UUID -o value /dev/nvme0n1p3)" = F2848A148489DC0B
+          test "$(sudo -n /usr/sbin/blkid -p -s UUID -o value /dev/nvme0n1p4)" = CADE667DDE666225
+          test -d /media/diegoignacionorambuenamiranda/Windows/PROYECTOS
+          sudo -n efibootmgr -v > "$OUT/EFIBOOTMGR_LIVE.txt"
+
+          python3 - "$TRIGGER" "$OUT/POSTBOOT_EVIDENCE.json" "$OUT/MATERIAL_VALIDATION.json" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,sys
+          tp,ep,out=map(pathlib.Path,sys.argv[1:4])
+          t=json.loads(tp.read_text()); e=json.loads(ep.read_text())
+          checks={
+            "trigger_schema":t.get("schema")=="LOUKSNA_R4_PART4_R2_WINRE_POSTBOOT_TRIGGER/1.0",
+            "evidence_schema":e.get("schema")=="LOUKSNA_R4_PART4_R2_WINRE_POSTBOOT/1.0",
+            "same_install":t.get("install_id")==e.get("install_id"),
+            "postboot_pass":e.get("status")=="PASS",
+            "chkdsk_finished":e.get("chkdsk_finished") is True,
+            "ntfs_info_pass":e.get("ntfs_info_pass") is True,
+            "bitmap_mismatches_zero":e.get("bitmap_mismatches")==0,
+            "projects_manifest_pass":e.get("projects_manifest_status")=="PASS",
+            "boot_bcd_restored":e.get("boot_bcd_restored") is True,
+            "winre_wim_restored":e.get("winre_wim_restored") is True,
+            "bootorder_restored":e.get("bootorder_restored") is True,
+            "temporary_boot_removed":e.get("temporary_boot_removed") is True,
+            "debian_boot_present":e.get("debian_boot_present") is True,
+            "p3_uuid":e.get("p3_uuid")=="F2848A148489DC0B",
+            "p4_uuid":e.get("p4_uuid")=="CADE667DDE666225",
+          }
+          ok=all(checks.values())
+          r={
+            "schema":"LOUKSNA_R4_PART4_R2_WINRE_POSTBOOT_MATERIAL/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "install_id":e.get("install_id"),
+            "postboot_evidence_sha256":hashlib.sha256(ep.read_bytes()).hexdigest(),
+            "checks":checks,
+            "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          out.write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(20)
+          PY
+          sha256sum "$OUT"/* > "$OUT/ARTIFACT.sha256"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-winre-postboot-material
+          path: ${{ runner.temp }}/winre-postboot-material/
+          retention-days: 90
+          compression-level: 0
+
+  g23:
+    needs: material
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-winre-postboot-material
+          path: ${{ runner.temp }}/material
+      - name: Independent result validation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/material/MATERIAL_VALIDATION.json" "$RUNNER_TEMP/material/POSTBOOT_EVIDENCE.json" "$RUNNER_TEMP/g23/G23_WINRE_POSTBOOT.json" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,sys
+          mp,ep,out=map(pathlib.Path,sys.argv[1:4]); m=json.loads(mp.read_text()); e=json.loads(ep.read_text())
+          checks={
+            "material_pass":m.get("status")=="PASS",
+            "all_material_checks":all(m.get("checks",{}).values()),
+            "repair_scope":e.get("repair_scope")=="NTFS_METADATA_P3_ONLY",
+            "no_partition_resize":e.get("partition_resize_performed") is False,
+            "no_format":e.get("format_performed") is False,
+            "projects_hash_equivalent":e.get("projects_manifest_status")=="PASS",
+            "ntfs_consistent":e.get("ntfs_info_pass") is True and e.get("bitmap_mismatches")==0,
+            "rollback_assets_restored":e.get("boot_bcd_restored") is True and e.get("winre_wim_restored") is True,
+          }
+          ok=all(checks.values())
+          r={
+            "schema":"LOUKSNA_R4_PART4_R2_WINRE_POSTBOOT_G23/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "scope":"P3_NTFS_METADATA_REPAIR_RESULT",
+            "material_sha256":hashlib.sha256(mp.read_bytes()).hexdigest(),
+            "postboot_sha256":hashlib.sha256(ep.read_bytes()).hexdigest(),
+            "checks":checks,
+            "g24_allowed":ok,
+            "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          out.write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(3)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-winre-postboot-g23
+          path: ${{ runner.temp }}/g23/G23_WINRE_POSTBOOT.json
+          retention-days: 90
+          compression-level: 0
+
+  g24:
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-winre-postboot-g23
+          path: ${{ runner.temp }}/g23
+      - name: Certify repair result
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/G23_WINRE_POSTBOOT.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$G")" = PASS
+          H="$(sha256sum "$G" | awk '{print $1}')"
+          AUD="louksna-r4-part4-r2-winre-postboot:$H"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export H AUD TOKEN
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$G" "$RUNNER_TEMP/g24/G24_WINRE_POSTBOOT.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          g=json.loads(pathlib.Path(sys.argv[1]).read_text())
+          t=os.environ["TOKEN"]; p=t.split("."); payload=p[1]+"="*((4-len(p[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload)); aud=claims.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          cert={
+            "schema":"LOUKSNA_R4_PART4_R2_WINRE_POSTBOOT_G24/1.0",
+            "status":"PASS",
+            "scope":"P3_NTFS_METADATA_REPAIR_RESULT",
+            "g23_sha256":os.environ["H"],
+            "authority_authenticated":True,
+            "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
+            "does_not_authorize_partition_resize":True,
+            "does_not_authorize_format":True,
+            "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(cert,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(cert,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-winre-postboot-g24
+          path: ${{ runner.temp }}/g24/G24_WINRE_POSTBOOT.json
+          retention-days: 90
+          compression-level: 0
