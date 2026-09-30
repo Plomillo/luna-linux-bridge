@@ -1,4 +1,4 @@
-# F2 local-delta rerun: subprocess mock corrected; no F1 replay
+# F2 local-delta rerun 2: provider mock now returns completed process
 name: "LOUKSNA Qwen F2 — integrate REASONING_INTERFACE with inline G23 G24"
 
 on:
