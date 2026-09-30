@@ -55,7 +55,7 @@ class SignatureVerifierTests(unittest.TestCase):
         req={"schema":"LRB_SCOPED_REQUEST/0.3",
              "mission_id":"TEST-ONLY","scope_id":"STORAGE_READONLY",
              "host":"TEST_HOST","boot_id":"TEST_BOOT",
-             "source_sha256":self.subject,"capability":"CAP_STORAGE_INSPECT",
+             "source_sha256":self.subject,"mission_sha256":"d"*64,"capability":"CAP_STORAGE_INSPECT",
              "risk":"ROOT_READONLY","owner_objective_sha256":"b"*64,
              "deadline_utc":(self.now+timedelta(minutes=5)).isoformat()}
         self.request=self.path/"request.json"
