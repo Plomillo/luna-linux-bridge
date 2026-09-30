@@ -39,16 +39,15 @@ jobs:
           EFI=/boot/efi
           mkdir -p "$OUT" "$P4M"
 
-          test -d "$ROOT"
+          sudo -n test -d "$ROOT"
           for f in POSTBOOT_EVIDENCE.json VERIFY_PROYECTOS.json NTFS_INFO.txt CHKDSK_P3.txt CHKDSK_P3.rc; do
-            test -f "$ROOT/$f"
+            sudo -n test -f "$ROOT/$f"
           done
 
-          cp "$ROOT/POSTBOOT_EVIDENCE.json" "$OUT/"
-          cp "$ROOT/VERIFY_PROYECTOS.json" "$OUT/"
-          cp "$ROOT/NTFS_INFO.txt" "$OUT/"
-          cp "$ROOT/CHKDSK_P3.txt" "$OUT/"
-          cp "$ROOT/CHKDSK_P3.rc" "$OUT/"
+          for f in POSTBOOT_EVIDENCE.json VERIFY_PROYECTOS.json NTFS_INFO.txt CHKDSK_P3.txt CHKDSK_P3.rc; do
+            sudo -n cp "$ROOT/$f" "$OUT/$f"
+          done
+          sudo -n chown -R "$(id -u):$(id -g)" "$OUT"
 
           test "$(sudo -n /usr/sbin/blkid -p -s UUID -o value /dev/nvme0n1p3)" = F2848A148489DC0B
           test "$(sudo -n /usr/sbin/blkid -p -s UUID -o value /dev/nvme0n1p4)" = CADE667DDE666225
