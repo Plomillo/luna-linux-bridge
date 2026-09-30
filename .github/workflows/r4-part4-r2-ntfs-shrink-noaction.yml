@@ -28,39 +28,42 @@ jobs:
           export RAW SS SOURCE_BYTES
 
           eval "$(python3 - <<'PY'
-import os,re
-raw=os.environ["RAW"]; ss=int(os.environ["SS"]); source=int(os.environ["SOURCE_BYTES"])
-parts={}
-for line in raw.splitlines():
-    if not re.match(r"^\d+:",line): continue
-    f=line.rstrip(";").split(":")
-    n=int(f[0]); parts[n]={"start":int(f[1][:-1]),"end":int(f[2][:-1]),"size":int(f[3][:-1])}
-for n in (3,5):
-    if n not in parts: raise SystemExit(f"MISSING_PARTITION_{n}")
-p3,p5=parts[3],parts[5]
-if p3["end"]+1 != p5["start"]:
-    raise SystemExit(f"P3_P5_NOT_CONTIGUOUS:{p3}:{p5}")
-align=max(1,1048576//ss)
-temp_required=source+6_000_000_000
-total=(p5["start"]-p3["start"])*ss
-part_target_max=total-temp_required-2*1048576
-part_target=(part_target_max//(align*ss))*(align*ss)
-fs_target=part_target-536870912
-new_end=p3["start"]+part_target//ss-1
-temp_start=((new_end+1+align+align-1)//align)*align
-temp_end=p5["start"]-align
-temp_bytes=(temp_end-temp_start+1)*ss
-if fs_target <= 0 or temp_bytes < temp_required:
-    raise SystemExit(f"TARGET_INVALID:fs={fs_target}:temp={temp_bytes}:required={temp_required}")
-print(f"FS_TARGET={fs_target}")
-print(f"PART_TARGET={part_target}")
-print(f"NEW_END={new_end}")
-print(f"TEMP_START={temp_start}")
-print(f"TEMP_END={temp_end}")
-print(f"TEMP_BYTES={temp_bytes}")
-print(f"P5_START={p5['start']}")
-PY
-)"
+          import os,re
+          raw=os.environ["RAW"]; ss=int(os.environ["SS"]); source=int(os.environ["SOURCE_BYTES"])
+          parts={}
+          for line in raw.splitlines():
+              if not re.match(r"^\d+:",line):
+                  continue
+              f=line.rstrip(";").split(":")
+              n=int(f[0])
+              parts[n]={"start":int(f[1][:-1]),"end":int(f[2][:-1]),"size":int(f[3][:-1])}
+          for n in (3,5):
+              if n not in parts:
+                  raise SystemExit(f"MISSING_PARTITION_{n}")
+          p3,p5=parts[3],parts[5]
+          if p3["end"]+1 != p5["start"]:
+              raise SystemExit(f"P3_P5_NOT_CONTIGUOUS:{p3}:{p5}")
+          align=max(1,1048576//ss)
+          temp_required=source+6_000_000_000
+          total=(p5["start"]-p3["start"])*ss
+          part_target_max=total-temp_required-2*1048576
+          part_target=(part_target_max//(align*ss))*(align*ss)
+          fs_target=part_target-536870912
+          new_end=p3["start"]+part_target//ss-1
+          temp_start=((new_end+1+align+align-1)//align)*align
+          temp_end=p5["start"]-align
+          temp_bytes=(temp_end-temp_start+1)*ss
+          if fs_target <= 0 or temp_bytes < temp_required:
+              raise SystemExit(f"TARGET_INVALID:fs={fs_target}:temp={temp_bytes}:required={temp_required}")
+          print(f"FS_TARGET={fs_target}")
+          print(f"PART_TARGET={part_target}")
+          print(f"NEW_END={new_end}")
+          print(f"TEMP_START={temp_start}")
+          print(f"TEMP_END={temp_end}")
+          print(f"TEMP_BYTES={temp_bytes}")
+          print("P5_START="+str(p5["start"]))
+          PY
+          )"
 
           echo "SS=$SS"
           echo "FS_TARGET=$FS_TARGET"
