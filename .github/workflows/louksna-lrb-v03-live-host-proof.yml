@@ -92,7 +92,7 @@ jobs:
           assert diag["status"]=="HOLD_INDEPENDENT_GATES_REQUIRED"
           assert diag["privileged_execution_allowed"] is False
           assert diag["next_action_executed"] is False
-          assert diag["user_goal_exact"].startswith("Confirm that the live Bridge")
+          assert diag["owner_goal_exact"].startswith("Confirm that the live Bridge")
           assert stop["result"]["status"]=="WAITING_FRESH_G23_G24"
           assert stop["result"]["executed_steps"]==0 and not stop["certified"]
           assert (p/"private-state/EVENTS.jsonl").is_file()
