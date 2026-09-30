@@ -1,0 +1,399 @@
+name: "LOUKSNA Qwen F1 — audit freeze download sanitize with inline G23 G24"
+
+on:
+  push:
+    branches:
+      - candidate/qwen35-4b-s-integral-20260930
+    paths:
+      - ".github/workflows/qwen-f1-audit-freeze-download-sanitize.yml"
+      - "bridge/reasoning/MODEL_MANIFEST.json"
+      - "bridge/reasoning/FOUR_FAMILY_PLAN.json"
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: louksna-qwen35-f1
+  cancel-in-progress: false
+
+env:
+  BASE_SHA: c961a198f524a128dba6374290e2abe73dfaece6
+  HF_REPO: TheStageAI/Qwen3.5-4B-GGUF
+  HF_REV: 9e325bb0db1f4eb8a51450142227bb6a7e4d37f1
+  MODEL_FILE: Qwen3.5-4B-S-TS-Q4_K_S.gguf
+  MODEL_SHA256: 9f020bfc77a9503a641e3e0511de04b4bfba16b9facfa62c3772b4f8e318ba55
+  MODEL_BYTES: "1904339232"
+  LLAMA_CPP_REV: bec4772f6a2527d371557b5d2032641e5ff7619c
+
+jobs:
+  f1_g23_intake:
+    name: "F1 inline G23 intake"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Independently verify frozen input identity and upstream manifest
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git merge-base --is-ancestor "$BASE_SHA" "$GITHUB_SHA"
+          test ! -e bridge/VIRTUAL_BRAIN.json
+          test ! -e bridge/virtual_brain.py
+          python3 - <<'PY'
+          import json, pathlib, urllib.request, os
+          m=json.loads(pathlib.Path("bridge/reasoning/MODEL_MANIFEST.json").read_text())
+          p=json.loads(pathlib.Path("bridge/reasoning/FOUR_FAMILY_PLAN.json").read_text())
+          assert m["certified_bridge_base_sha"]==os.environ["BASE_SHA"]
+          assert m["model"]["repo_revision"]==os.environ["HF_REV"]
+          assert m["model"]["expected_sha256"]==os.environ["MODEL_SHA256"]
+          assert m["model"]["expected_file_bytes"]==int(os.environ["MODEL_BYTES"])
+          assert m["model"]["license"]=="apache-2.0"
+          assert m["runtime"]["revision"]==os.environ["LLAMA_CPP_REV"]
+          assert m["legacy"]["gpt_oss_120b_active_role"] is False
+          assert m["legacy"]["gpt_oss_120b_active_provider"] is False
+          assert m["legacy"]["gpt_oss_120b_fallback"] is False
+          assert m["governance"]["g23_present_from_start"] is True
+          assert m["governance"]["g24_present_from_start"] is True
+          assert m["governance"]["certification_type"]=="INTEGRAL_TERMINAL"
+          assert p["continuous_gates"]["G23"]=="PRESENT_INLINE_FROM_F1_THROUGH_F4"
+          assert p["continuous_gates"]["G24"]=="PRESENT_INLINE_FROM_F1_THROUGH_F4"
+          url=f"https://huggingface.co/{os.environ['HF_REPO']}/resolve/{os.environ['HF_REV']}/release-manifest.json"
+          with urllib.request.urlopen(url, timeout=30) as r:
+              upstream=json.load(r)
+          assert upstream["license"]=="apache-2.0"
+          assert upstream["base_model_revision"]==m["model"]["base_model_revision"]
+          assert upstream["tested_llama_cpp_revision"]==os.environ["LLAMA_CPP_REV"]
+          rows=[x for x in upstream["variants"] if x["filename"]==os.environ["MODEL_FILE"]]
+          assert len(rows)==1
+          row=rows[0]
+          assert row["sha256"]==os.environ["MODEL_SHA256"]
+          assert row["file_bytes"]==int(os.environ["MODEL_BYTES"])
+          assert row["reasoning_support"]=="supported"
+          print("F1_G23_INTAKE=PASS")
+          PY
+
+  f1_g24_intake:
+    name: "F1 inline G24 certifiability intake"
+    needs: f1_g23_intake
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Verify certification path is integral and fail-closed before host mutation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import json
+          m=json.load(open("bridge/reasoning/MODEL_MANIFEST.json"))
+          p=json.load(open("bridge/reasoning/FOUR_FAMILY_PLAN.json"))
+          g=m["governance"]
+          assert g["fail_closed"] is True
+          assert g["no_silent_operations"] is True
+          assert g["no_certification_propagation"] is True
+          assert g["rollback_required"] is True
+          assert g["non_regression_required"] is True
+          assert g["certification_type"]=="INTEGRAL_TERMINAL"
+          assert p["family_order"]==["F1","F2","F3","F4"]
+          assert "G23_FINAL_PASS" in p["families"]["F4"]["required"]
+          assert "G24_FINAL_PASS" in p["families"]["F4"]["required"]
+          assert "G23_2_PASS" in p["families"]["F4"]["required"]
+          assert "G24_2_PASS" in p["families"]["F4"]["required"]
+          print("F1_G24_INTAKE=PASS; CERTIFICATION_ISSUED=FALSE")
+          PY
+
+  f1_material:
+    name: "F1 material host audit download runtime sanitize"
+    needs: f1_g24_intake
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            bridge/reasoning
+          sparse-checkout-cone-mode: false
+      - name: Host identity and bounded resource precheck
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(hostname)" = "LOUKSNA"
+          test "$(id -u)" -ne 0
+          for x in python3 curl git cmake sha256sum stat; do command -v "$x" >/dev/null; done
+          FREE="$(df -PB1 "$HOME" | awk 'NR==2{print $4}')"
+          MEM="$(awk '/MemAvailable:/{print $2*1024}' /proc/meminfo)"
+          test "$FREE" -ge 6000000000
+          test "$MEM" -ge 900000000
+          echo "F1_RESOURCE_PRECHECK=PASS free_bytes=$FREE mem_available_bytes=$MEM"
+      - name: Audit and retire only provenance-resolvable local gpt-oss-120b cache
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          E="$RUNNER_TEMP/qwen-f1-${{ github.run_id }}"
+          mkdir -m 700 -p "$E"
+          export E
+          python3 - <<'PY'
+          import json,os,pathlib,shutil
+          home=pathlib.Path.home()
+          targets=[
+            home/".cache/huggingface/hub/models--openai--gpt-oss-120b",
+            home/".cache/huggingface/hub/.locks/models--openai--gpt-oss-120b",
+          ]
+          rows=[]
+          for p in targets:
+              if not p.exists() and not p.is_symlink():
+                  continue
+              rp=p.absolute()
+              allowed=(home/".cache/huggingface/hub").absolute()
+              if allowed not in rp.parents:
+                  raise SystemExit("GPT_OSS_PATH_OUTSIDE_ALLOWED_CACHE")
+              rev=None
+              ref=p/"refs/main"
+              if ref.is_file():
+                  v=ref.read_text(errors="replace").strip()
+                  if len(v)==40 and all(c in "0123456789abcdef" for c in v.lower()):
+                      rev=v
+              size=0
+              if p.is_file() or p.is_symlink():
+                  try:size=p.lstat().st_size
+                  except OSError:size=0
+              else:
+                  for root,dirs,files in os.walk(p,followlinks=False):
+                      for n in files:
+                          q=pathlib.Path(root)/n
+                          try:size+=q.lstat().st_size
+                          except OSError:pass
+              if p.name=="models--openai--gpt-oss-120b" and rev is None:
+                  raise SystemExit("GPT_OSS_CACHE_PRESENT_BUT_REVISION_UNPROVEN")
+              rows.append({"path":str(p),"bytes":size,"repo":"openai/gpt-oss-120b","revision":rev,
+                           "rollback":"redownload exact recorded revision after fresh authorization"})
+          out=pathlib.Path(os.environ["E"])/"GPT_OSS_RETIREMENT.json"
+          out.write_text(json.dumps({"schema":"GPT_OSS_120B_RETIREMENT/1.0","found":len(rows),
+                                     "entries":rows,"history_preserved":True,"active_provider":False},indent=2,sort_keys=True)+"\n")
+          for row in rows:
+              p=pathlib.Path(row["path"])
+              if p.is_symlink() or p.is_file(): p.unlink()
+              elif p.is_dir(): shutil.rmtree(p)
+          print(f"GPT_OSS_120B_RETIRED_ENTRIES={len(rows)}")
+          PY
+      - name: Download exact Qwen model to governed persistent path and verify byte identity
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          E="$RUNNER_TEMP/qwen-f1-${{ github.run_id }}"
+          MODEL_DIR="$HOME/.local/share/louksna/reasoning/models/qwen35-4b-s"
+          MODEL_PATH="$MODEL_DIR/$MODEL_FILE"
+          mkdir -m 700 -p "$MODEL_DIR"
+          TMP="$MODEL_PATH.part.$GITHUB_RUN_ID"
+          trap 'rm -f -- "$TMP"' EXIT
+          URL="https://huggingface.co/$HF_REPO/resolve/$HF_REV/$MODEL_FILE?download=true"
+          nice -n 10 curl -fL --retry 3 --retry-delay 3 --connect-timeout 20 "$URL" -o "$TMP"
+          GOT_SHA="$(sha256sum "$TMP" | awk '{print $1}')"
+          GOT_BYTES="$(stat -c '%s' "$TMP")"
+          test "$GOT_SHA" = "$MODEL_SHA256"
+          test "$GOT_BYTES" = "$MODEL_BYTES"
+          python3 - "$TMP" <<'PY'
+          import pathlib,struct,sys,json
+          p=pathlib.Path(sys.argv[1])
+          with p.open("rb") as f:
+              magic=f.read(4)
+              version=struct.unpack("<I",f.read(4))[0]
+              tensors=struct.unpack("<Q",f.read(8))[0]
+              metadata=struct.unpack("<Q",f.read(8))[0]
+          assert magic==b"GGUF"
+          assert version in (2,3)
+          assert tensors>0 and metadata>0
+          print(json.dumps({"magic":"GGUF","version":version,"tensor_count":tensors,"metadata_count":metadata}))
+          PY
+          chmod 600 "$TMP"
+          mv -f -- "$TMP" "$MODEL_PATH"
+          printf '%s  %s\n' "$MODEL_SHA256" "$MODEL_PATH" > "$E/MODEL_SHA256.txt"
+          printf '%s\n' "$MODEL_PATH" > "$E/MODEL_PATH.txt"
+          echo "QWEN_MODEL_DOWNLOAD=PASS"
+      - name: Build pinned llama.cpp runtime candidate without activation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          E="$RUNNER_TEMP/qwen-f1-${{ github.run_id }}"
+          SRC="$RUNNER_TEMP/llama-src-$GITHUB_RUN_ID"
+          BUILD="$RUNNER_TEMP/llama-build-$GITHUB_RUN_ID"
+          DEST="$HOME/.local/share/louksna/reasoning/runtime/$LLAMA_CPP_REV"
+          rm -rf -- "$SRC" "$BUILD"
+          git init -q "$SRC"
+          git -C "$SRC" remote add origin https://github.com/ggml-org/llama.cpp.git
+          nice -n 10 git -C "$SRC" fetch -q --depth 1 origin "$LLAMA_CPP_REV"
+          git -C "$SRC" checkout -q --detach FETCH_HEAD
+          test "$(git -C "$SRC" rev-parse HEAD)" = "$LLAMA_CPP_REV"
+          nice -n 10 cmake -S "$SRC" -B "$BUILD" -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=ON -DLLAMA_CURL=OFF -DBUILD_SHARED_LIBS=OFF >/dev/null
+          nice -n 10 cmake --build "$BUILD" --target llama-cli -j1 >/dev/null
+          test -x "$BUILD/bin/llama-cli"
+          mkdir -m 700 -p "$DEST/bin"
+          install -m 700 "$BUILD/bin/llama-cli" "$DEST/bin/llama-cli"
+          "$DEST/bin/llama-cli" --version > "$E/LLAMA_VERSION.txt"
+          sha256sum "$DEST/bin/llama-cli" > "$E/LLAMA_SHA256.txt"
+          printf '%s\n' "$DEST/bin/llama-cli" > "$E/LLAMA_PATH.txt"
+          echo "LLAMA_RUNTIME_BUILD=PASS"
+      - name: Seal F1 material result
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          E="$RUNNER_TEMP/qwen-f1-${{ github.run_id }}"
+          export E
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,socket,datetime
+          e=pathlib.Path(os.environ["E"])
+          model_path=pathlib.Path((e/"MODEL_PATH.txt").read_text().strip())
+          runtime_path=pathlib.Path((e/"LLAMA_PATH.txt").read_text().strip())
+          retired=json.loads((e/"GPT_OSS_RETIREMENT.json").read_text())
+          def sha(p):
+              h=hashlib.sha256()
+              with p.open("rb") as f:
+                  for b in iter(lambda:f.read(1024*1024),b""):h.update(b)
+              return h.hexdigest()
+          obj={
+            "schema":"LOUKSNA_QWEN_F1_RESULT/1.0",
+            "status":"PASS",
+            "family":"F1_AUDIT_FREEZE_DOWNLOAD_SANITIZE",
+            "source_sha":os.environ["GITHUB_SHA"],
+            "base_sha":os.environ["BASE_SHA"],
+            "host":socket.gethostname(),
+            "model":{
+              "path":str(model_path),
+              "sha256":sha(model_path),
+              "bytes":model_path.stat().st_size,
+              "expected_sha256":os.environ["MODEL_SHA256"],
+              "expected_bytes":int(os.environ["MODEL_BYTES"]),
+              "source_repo":os.environ["HF_REPO"],
+              "source_revision":os.environ["HF_REV"]
+            },
+            "runtime":{
+              "path":str(runtime_path),
+              "sha256":sha(runtime_path),
+              "source_revision":os.environ["LLAMA_CPP_REV"]
+            },
+            "gpt_oss_120b":retired,
+            "model_active":False,
+            "integration_started":False,
+            "g23_inline_present":True,
+            "g24_inline_present":True,
+            "canonical_mutation":False,
+            "authority_transfer":False,
+            "sealed_at_utc":datetime.datetime.now(datetime.timezone.utc).isoformat()
+          }
+          assert obj["model"]["sha256"]==obj["model"]["expected_sha256"]
+          assert obj["model"]["bytes"]==obj["model"]["expected_bytes"]
+          (e/"F1_RESULT.json").write_text(json.dumps(obj,indent=2,sort_keys=True)+"\n")
+          (e/"EVIDENCE_SHA256.txt").write_text(hashlib.sha256((e/"F1_RESULT.json").read_bytes()).hexdigest()+"  F1_RESULT.json\n")
+          print(json.dumps({"F1_MATERIAL":"PASS","model_sha256":obj["model"]["sha256"],"runtime_sha256":obj["runtime"]["sha256"]},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: qwen-f1-material
+          path: ${{ runner.temp }}/qwen-f1-${{ github.run_id }}/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  f1_g23_post:
+    name: "F1 inline G23 post-validation"
+    needs: f1_material
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: qwen-f1-material
+          path: ${{ runner.temp }}/f1
+      - name: Independent F1 evidence validation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export IN="$RUNNER_TEMP/f1/F1_RESULT.json" OUT="$RUNNER_TEMP/f1-g23"
+          mkdir -m 700 "$OUT"
+          python3 - <<'PY'
+          import json,os,pathlib,hashlib
+          r=json.load(open(os.environ["IN"]))
+          m=json.load(open("bridge/reasoning/MODEL_MANIFEST.json"))
+          ok=(r.get("status")=="PASS"
+              and r.get("base_sha")==m["certified_bridge_base_sha"]
+              and r["model"]["sha256"]==m["model"]["expected_sha256"]
+              and r["model"]["bytes"]==m["model"]["expected_file_bytes"]
+              and r["model"]["source_revision"]==m["model"]["repo_revision"]
+              and r["runtime"]["source_revision"]==m["runtime"]["revision"]
+              and r.get("model_active") is False
+              and r.get("integration_started") is False
+              and r.get("canonical_mutation") is False
+              and r.get("authority_transfer") is False
+              and r.get("g23_inline_present") is True
+              and r.get("g24_inline_present") is True)
+          report={"schema":"LOUKSNA_QWEN_F1_G23/1.0","status":"PASS" if ok else "HOLD",
+                  "family":"F1","source_sha":r.get("source_sha"),
+                  "f1_result_sha256":hashlib.sha256(pathlib.Path(os.environ["IN"]).read_bytes()).hexdigest(),
+                  "repair_permitted":False,"certification_permitted":False}
+          pathlib.Path(os.environ["OUT"]).joinpath("F1_G23.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+          if not ok: raise SystemExit("F1_G23_HOLD")
+          print("F1_G23_POST=PASS")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: qwen-f1-g23
+          path: ${{ runner.temp }}/f1-g23/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  f1_g24_post:
+    name: "F1 inline G24 post-validation"
+    needs: f1_g23_post
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: qwen-f1-material
+          path: ${{ runner.temp }}/f1
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: qwen-f1-g23
+          path: ${{ runner.temp }}/g23
+      - name: Certifiability closure for F1 without terminal certification
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export F1="$RUNNER_TEMP/f1/F1_RESULT.json" G23="$RUNNER_TEMP/g23/F1_G23.json" OUT="$RUNNER_TEMP/f1-g24"
+          mkdir -m 700 "$OUT"
+          python3 - <<'PY'
+          import json,os,pathlib,hashlib
+          f1=json.load(open(os.environ["F1"])); g23=json.load(open(os.environ["G23"]))
+          ok=(f1.get("status")=="PASS" and g23.get("status")=="PASS"
+              and f1.get("model_active") is False and f1.get("integration_started") is False
+              and f1.get("canonical_mutation") is False and f1.get("authority_transfer") is False)
+          report={"schema":"LOUKSNA_QWEN_F1_G24/1.0","status":"PASS" if ok else "HOLD",
+                  "family":"F1","certifiability":"PASS" if ok else "HOLD",
+                  "terminal_certification_issued":False,
+                  "f1_result_sha256":hashlib.sha256(pathlib.Path(os.environ["F1"]).read_bytes()).hexdigest(),
+                  "g23_sha256":hashlib.sha256(pathlib.Path(os.environ["G23"]).read_bytes()).hexdigest()}
+          pathlib.Path(os.environ["OUT"]).joinpath("F1_G24.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+          if not ok: raise SystemExit("F1_G24_HOLD")
+          print("F1_PASS=TRUE; NEXT_ALLOWED_FAMILY=F2")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: qwen-f1-g24
+          path: ${{ runner.temp }}/f1-g24/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
