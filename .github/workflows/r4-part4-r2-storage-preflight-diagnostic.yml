@@ -1,0 +1,55 @@
+name: "R4 PART4 R2 — storage preflight diagnostic"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-part4-r2-storage-preflight-diagnostic.yml
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 10
+    steps:
+      - name: Report every preflight gate read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          UNIT="actions.runner.Plomillo-luna-linux-bridge.luna-linux.service"
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9/PART_4_R2/STATE.json"
+          WINROOT="/media/diegoignacionorambuenamiranda/Windows"
+
+          echo "HOST=$(hostname)"
+          echo "USER=$(id -un)"
+          echo "SUDO=$(sudo -n true >/dev/null 2>&1 && echo PASS || echo FAIL)"
+          echo "RUNNER_ACTIVE=$(systemctl is-active "$UNIT" 2>&1 || true)"
+          echo "RUNNER_ENABLED=$(systemctl is-enabled "$UNIT" 2>&1 || true)"
+          echo "RUNNER_RESTART=$(systemctl show "$UNIT" -p Restart --value 2>&1 || true)"
+          echo "RUNNER_RESTART_USEC=$(systemctl show "$UNIT" -p RestartUSec --value 2>&1 || true)"
+          echo "GUARDIAN_ACTIVE=$(systemctl is-active louksna-maestro-guardian.timer 2>&1 || true)"
+          echo "GUARDIAN_ENABLED=$(systemctl is-enabled louksna-maestro-guardian.timer 2>&1 || true)"
+          if pgrep -u diegoignacionorambuenamiranda -f '/home/diegoignacionorambuenamiranda/actions-runner/bin/Runner.Listener run --startuptype service' >/dev/null; then echo LISTENER=PASS; else echo LISTENER=FAIL; fi
+
+          echo "STATE_EXISTS=$([ -f "$STATE" ] && echo YES || echo NO)"
+          if [ -f "$STATE" ]; then
+            python3 - "$STATE" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1]))
+          for k in ["r2_owner_authorized","freeze_g24","autopilot_g24","windows_purged_preserving_projects","post_purge_integrity","ntfs_shrunk","storage_migration_g24","final_merge_g24"]:
+              print(f"STATE_{k}={d.get(k)!r}")
+          PY
+          fi
+
+          echo "P3_UUID=$(sudo -n blkid -p -s UUID -o value /dev/nvme0n1p3 2>/dev/null || true)"
+          echo "P4_UUID=$(sudo -n blkid -p -s UUID -o value /dev/nvme0n1p4 2>/dev/null || true)"
+          echo "WINROOT_SOURCE=$(findmnt -T "$WINROOT" -n -o SOURCE 2>/dev/null || true)"
+          echo "WINROOT_FSTYPE=$(findmnt -T "$WINROOT" -n -o FSTYPE 2>/dev/null || true)"
+          echo "PROJECTS_DIR=$([ -d "$WINROOT/PROYECTOS" ] && echo YES || echo NO)"
+          echo "--- TOP ---"
+          find "$WINROOT" -mindepth 1 -maxdepth 1 -printf '%f\n' 2>/dev/null | sort || true
+          echo "--- LSBLK ---"
+          lsblk -b -o NAME,PATH,TYPE,SIZE,FSTYPE,MOUNTPOINTS,UUID,START /dev/nvme0n1
