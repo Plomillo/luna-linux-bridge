@@ -1,0 +1,104 @@
+name: "LOUKSNA elastic candidate — bounded real-host readonly smoke"
+on:
+  push:
+    branches:
+      - candidate/lrb-elastic-metacognition-v1
+    paths:
+      - ".github/workflows/louksna-elastic-host-readonly-smoke.yml"
+permissions:
+  contents: read
+concurrency:
+  group: lrb-elastic-host-readonly-candidate
+  cancel-in-progress: false
+jobs:
+  host-readonly:
+    if: github.repository == 'Plomillo/luna-linux-bridge'
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 4
+    steps:
+      - name: Checkout candidate without retained credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            bridge
+          sparse-checkout-cone-mode: true
+      - name: Test exact host and bounded source syntax without root
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(hostname)" = LOUKSNA
+          test "$(id -u)" -ne 0
+          test -f bridge/elastic_automation.py
+          test -f bridge/elastic_tick.py
+          python3 -m py_compile bridge/lrb_core.py bridge/elastic_automation.py bridge/elastic_tick.py
+          nice -n 12 timeout 60s python3 -B -m unittest discover -s bridge/tests -p 'test_*.py' -v
+      - name: Run two bounded autonomous readonly ticks on LOUKSNA
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          S="$GITHUB_WORKSPACE/host-evidence"
+          mkdir -p "$S"
+          export S
+          python3 -B - <<'PY'
+          import datetime as dt,json,os,pathlib
+          p=pathlib.Path(os.environ["S"])
+          future=(dt.datetime.now(dt.timezone.utc)+dt.timedelta(minutes=3)).isoformat().replace("+00:00","Z")
+          mission={
+            "mission_id":"HOST-ELASTIC-"+os.environ["GITHUB_RUN_ID"],
+            "user_objective":"Prove two local read-only elastic observations only",
+            "model_proposal":"Test only, no live AI and no privileged operation",
+            "model":{"declared_name":"TEST_HARNESS_NOT_LLM","declared_version":"UNVERIFIED"},
+            "deadline_utc":future,"max_auto_steps":2,
+            "steps":[{"kind":"OBSERVE_LOCAL"},{"kind":"OBSERVE_LOCAL"}]
+          }
+          (p/"MISSION.json").write_text(json.dumps(mission,indent=2))
+          PY
+          M="HOST-ELASTIC-$GITHUB_RUN_ID"
+          nice -n 12 timeout 30s python3 -B bridge/elastic_automation.py \
+            --state-dir "$S/state" admit --mission-file "$S/MISSION.json" > "$S/ADMIT.json"
+          nice -n 12 timeout 30s python3 -B bridge/elastic_tick.py \
+            --state-dir "$S/state" > "$S/TICK1.json"
+          nice -n 12 timeout 30s python3 -B bridge/elastic_tick.py \
+            --state-dir "$S/state" > "$S/TICK2.json"
+          nice -n 12 timeout 30s python3 -B bridge/elastic_tick.py \
+            --state-dir "$S/state" > "$S/TICK3_IDLE.json"
+          nice -n 12 timeout 30s python3 -B bridge/elastic_automation.py \
+            --state-dir "$S/state" report --mission-id "$M" > "$S/REPORT.json"
+          python3 - "$S" <<'PY'
+          import json,pathlib,sys
+          p=pathlib.Path(sys.argv[1])
+          tick1=json.loads((p/"TICK1.json").read_text())
+          tick2=json.loads((p/"TICK2.json").read_text())
+          tick3=json.loads((p/"TICK3_IDLE.json").read_text())
+          final=json.loads((p/"REPORT.json").read_text())
+          assert tick1["executed_steps"]==1 and tick2["executed_steps"]==1
+          assert tick3["executed_steps"]==0 and tick3["status"]=="IDLE_NO_ELIGIBLE_TASK"
+          assert final["status"]=="COMPLETE_READONLY_UNCERTIFIED"
+          assert final["next_step"]==2 and len(final["evidence"])==2
+          assert final["certified"] is False and final["g24"]=="NOT_EXECUTED"
+          print("HOST_BOUNDED_ELASTIC_READONLY=PASS; CERTIFIED=FALSE")
+          PY
+          if timeout 3s sudo -n true </dev/null >/dev/null 2>&1; then
+            echo "HOST_SUDO_NONINTERACTIVE=AVAILABLE_FOR_CHECK_ONLY" > "$S/SUDO_CAPABILITY.txt"
+          else
+            echo "HOST_SUDO_NONINTERACTIVE=UNAVAILABLE_OR_TIMED_OUT" > "$S/SUDO_CAPABILITY.txt"
+          fi
+          {
+            printf 'run=%s\ncommit=%s\nhost=LOUKSNA\nscope=READONLY_SMOKE_ONLY\n' "$GITHUB_RUN_ID" "$GITHUB_SHA"
+            printf 'disk_mutation=false\nroot_shell=false\nno_certification_inherited=true\n'
+          } > "$S/RECEIPT.txt"
+          sha256sum "$S/ADMIT.json" "$S/TICK1.json" "$S/TICK2.json" \
+            "$S/TICK3_IDLE.json" "$S/REPORT.json" > "$S/HASHES_SHA256.txt"
+          cat "$S/SUDO_CAPABILITY.txt"
+      - name: Upload host-only bounded evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-elastic-live-host-readonly
+          path: host-evidence/
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 0
