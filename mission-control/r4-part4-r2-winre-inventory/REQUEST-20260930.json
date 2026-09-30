@@ -1,6 +1,1 @@
-{
-  "schema": "LOUKSNA_R4_PART4_R2_WINRE_INVENTORY_REQUEST/1.0",
-  "status": "REQUESTED",
-  "destructive": false,
-  "purpose": "Determine whether internal WinRE and Microsoft EFI survived, so NTFS $Bitmap can be repaired without USB."
-}
+{"schema":"LOUKSNA_R4_PART4_R2_WINRE_INVENTORY_REQUEST/1.0","status":"REQUESTED_CERTIFIED_AUDIT","destructive":false,"purpose":"Certify internal WinRE assets before NTFS repair.","request_revision":3}
