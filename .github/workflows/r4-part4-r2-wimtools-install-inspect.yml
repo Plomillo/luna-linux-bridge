@@ -49,7 +49,7 @@ jobs:
           set -e
           echo "EXTRACT_RC=$rc" | tee "$OUT/EXTRACT_STATUS.txt"
           find "$OUT/extract" -type f -printf '%s %p\n' | sort | tee "$OUT/EXTRACTED_FILES.txt"
-          for f in "$OUT/extract/Windows/System32/startnet.cmd" "$OUT/extract/Windows/System32/winpeshl.ini"; do
+          for f in "$OUT/extract/startnet.cmd" "$OUT/extract/winpeshl.ini"; do
             if [ -f "$f" ]; then
               echo "--- $f ---"
               sed -n '1,200p' "$f"
