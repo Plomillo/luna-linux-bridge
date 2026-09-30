@@ -6,6 +6,7 @@ on:
       - staging/luna-r4-master-part1-part9-20260929
     paths:
       - mission-control/r4-part4-r2-certified-continuation-v4/**
+      - .github/workflows/r4-part4-r2-certified-continuation-v4.yml
   workflow_dispatch:
 
 permissions:
