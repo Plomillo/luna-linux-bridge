@@ -1,0 +1,14 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_CERTIFIED_CONTINUATION_V3_TRIGGER/1.0",
+  "status": "AUTHORIZED_EXECUTION",
+  "retry_of": 36661683524,
+  "reason": "CORRECTED_BINDING_IMPORT_ONLY",
+  "storage_mutation_before_retry": false,
+  "requested_action": "RESTORE_RECERTIFY_EXECUTE_AND_HANDOFF",
+  "governance": {
+    "authority": "Louksna.md",
+    "failure_posture": "FAIL_CLOSED",
+    "canonical_mutation": false,
+    "authority_transfer": false
+  }
+}
