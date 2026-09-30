@@ -1,0 +1,19 @@
+{
+  "schema": "LOUKSNA_ELASTIC_AUTOMATION_STATUS/0.2",
+  "state": "SOURCE_PREPARED_UNCERTIFIED",
+  "parent_bridge_commit": "22c5f4e4ae11ff59c262849a04ecba2a7650c23e",
+  "base_bridge_ci_run": 36728942754,
+  "base_bridge_host_readonly_run": 36728936994,
+  "extra_regression_tests": 13,
+  "extra_tests_execution": "PENDING_GITHUB_CI",
+  "host_deployed": false,
+  "root_shell_deployed": false,
+  "visual_transport_deployed": false,
+  "autonomous_mutations_enabled": false,
+  "g23": "NOT_EXECUTED",
+  "g24": "NOT_EXECUTED",
+  "g23_2": "NOT_EXECUTED",
+  "g24_2": "NOT_EXECUTED",
+  "part4_material_changes": 0,
+  "parts5_9_execution": "NOT_AUTHORIZED_BY_THIS_EXTENSION"
+}
