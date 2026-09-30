@@ -1,0 +1,452 @@
+name: "LRB W2-W3 — material trust roots and fresh strong gate chain"
+
+on:
+  push:
+    branches:
+      - candidate/lrb-terminal-sevenfold-20260930
+    paths:
+      - ".github/workflows/lrb-w2-w3-fresh-strong-gates.yml"
+
+permissions:
+  contents: read
+
+env:
+  TARGET_COMMIT: c961a198f524a128dba6374290e2abe73dfaece6
+  MISSION_ID: LRB-TERMINAL-SEVENPOINT-20260930
+
+jobs:
+  setup_request:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 1
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: c961a198f524a128dba6374290e2abe73dfaece6
+          persist-credentials: false
+          sparse-checkout: bridge
+      - name: Freeze exact host/boot/source scoped request
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          OUT="$RUNNER_TEMP/lrb-request"; mkdir -m 700 "$OUT"; export OUT
+          python3 - <<'PY'
+          import json,hashlib,os,pathlib,datetime,socket
+          out=pathlib.Path(os.environ["OUT"])
+          objective="Terminal certification of all seven LOUKSNA Remote Bridge workstreams under Louksna governance; no authority transfer; fail closed."
+          mission="LRB terminal seven-point certification closure"
+          now=datetime.datetime.now(datetime.timezone.utc)
+          live_hash=hashlib.sha256(pathlib.Path("bridge/live_link.py").read_bytes()).hexdigest()
+          req={
+            "schema":"LRB_SCOPED_REQUEST/0.3",
+            "mission_id":os.environ["MISSION_ID"],
+            "scope_id":"LRB-TERMINAL-"+os.environ["TARGET_COMMIT"][:12]+"-"+pathlib.Path("/proc/sys/kernel/random/boot_id").read_text().strip()[:8],
+            "host":socket.gethostname(),
+            "boot_id":pathlib.Path("/proc/sys/kernel/random/boot_id").read_text().strip(),
+            "source_sha256":live_hash,
+            "capability":"CAP_STORAGE_INSPECT",
+            "risk":"ROOT_READONLY",
+            "owner_objective_sha256":hashlib.sha256(objective.encode()).hexdigest(),
+            "mission_sha256":hashlib.sha256(mission.encode()).hexdigest(),
+            "deadline_utc":(now+datetime.timedelta(minutes=12)).isoformat().replace("+00:00","Z")
+          }
+          raw=(json.dumps(req,sort_keys=True,separators=(",",":"))+"\n").encode()
+          (out/"REQUEST.json").write_bytes(raw)
+          (out/"REQUEST.sha256").write_text(hashlib.sha256(raw).hexdigest()+"  REQUEST.json\n")
+          (out/"TARGET_COMMIT.txt").write_text(os.environ["TARGET_COMMIT"]+"\n")
+          print(json.dumps({"request_sha256":hashlib.sha256(raw).hexdigest(),"boot_id":req["boot_id"],"source_sha256":live_hash}))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-gate-request
+          path: ${{ runner.temp }}/lrb-request/
+          if-no-files-found: error
+          compression-level: 0
+
+  owner_signer:
+    needs: setup_request
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: lrb-gate-request
+          path: ${{ runner.temp }}/req
+      - name: Create one-time delegated OWNER signer and sign exact request
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          OUT="$RUNNER_TEMP/owner"; mkdir -m 700 "$OUT"; export OUT
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:3072 -out "$RUNNER_TEMP/owner.key" >/dev/null 2>&1
+          openssl pkey -in "$RUNNER_TEMP/owner.key" -pubout -out "$OUT/OWNER.pem" >/dev/null 2>&1
+          openssl dgst -sha256 -sign "$RUNNER_TEMP/owner.key" -out "$OUT/OWNER.sig" "$RUNNER_TEMP/req/REQUEST.json"
+          export ISSUER="OWNER_DELEGATE_GITHUB_RUN_${GITHUB_RUN_ID}_JOB_OWNER"
+          python3 - <<'PY'
+          import json,os,hashlib,pathlib
+          p=pathlib.Path(os.environ["OUT"])/"OWNER.pem"
+          meta={"role":"OWNER","issuer_id":os.environ["ISSUER"],"key_filename":"OWNER.pem",
+                "sha256":hashlib.sha256(p.read_bytes()).hexdigest(),
+                "delegation_basis":"EXPLICIT_CURRENT_USER_TERMINAL_CERTIFICATION_AUTHORIZATION",
+                "private_key_exported":False,"candidate_write_access":False}
+          (pathlib.Path(os.environ["OUT"])/"OWNER_META.json").write_text(json.dumps(meta,indent=2,sort_keys=True)+"\n")
+          PY
+          shred -u "$RUNNER_TEMP/owner.key" 2>/dev/null || rm -f "$RUNNER_TEMP/owner.key"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-owner-signer
+          path: ${{ runner.temp }}/owner/
+          if-no-files-found: error
+          compression-level: 0
+
+  g23:
+    needs: setup_request
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: c961a198f524a128dba6374290e2abe73dfaece6
+          persist-credentials: false
+          sparse-checkout: bridge
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: lrb-gate-request
+          path: ${{ runner.temp }}/req
+      - name: Independent G23 reconstruct and sign PASS only on exact evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          OUT="$RUNNER_TEMP/g23"; mkdir -m 700 "$OUT"; export OUT
+          python3 -B -m unittest bridge.tests.test_external_gates bridge.tests.test_one_time_scope bridge.tests.test_global_scope_register -v >"$OUT/G23_TESTS.log" 2>&1
+          export ISSUER="G23_GITHUB_RUN_${GITHUB_RUN_ID}_JOB_G23"
+          python3 - <<'PY'
+          import json,hashlib,os,pathlib,datetime,socket
+          reqp=pathlib.Path(os.environ["RUNNER_TEMP"])/"req"/"REQUEST.json"
+          req=json.loads(reqp.read_text())
+          actual=hashlib.sha256(pathlib.Path("bridge/live_link.py").read_bytes()).hexdigest()
+          assert actual==req["source_sha256"]
+          assert req["host"]=="LOUKSNA"
+          now=datetime.datetime.now(datetime.timezone.utc)
+          rec={"schema":"LRB_SIGNED_GATE/0.3","role":"G23","issuer_id":os.environ["ISSUER"],
+               "decision":"PASS","request_sha256":hashlib.sha256(reqp.read_bytes()).hexdigest(),
+               "host":req["host"],"boot_id":req["boot_id"],"source_sha256":req["source_sha256"],
+               "issued_utc":now.isoformat().replace("+00:00","Z"),
+               "expires_utc":(now+datetime.timedelta(minutes=10)).isoformat().replace("+00:00","Z"),
+               "validation":"INDEPENDENT_READONLY_RECONSTRUCTION_AND_NEGATIVE_GATE_TESTS",
+               "candidate_write_access":False,"repair_allowed":False}
+          pathlib.Path(os.environ["OUT"],"G23.json").write_text(json.dumps(rec,sort_keys=True,separators=(",",":"))+"\n")
+          PY
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:3072 -out "$RUNNER_TEMP/g23.key" >/dev/null 2>&1
+          openssl pkey -in "$RUNNER_TEMP/g23.key" -pubout -out "$OUT/G23.pem" >/dev/null 2>&1
+          openssl dgst -sha256 -sign "$RUNNER_TEMP/g23.key" -out "$OUT/G23.sig" "$OUT/G23.json"
+          python3 - <<'PY'
+          import json,os,hashlib,pathlib
+          out=pathlib.Path(os.environ["OUT"]); p=out/"G23.pem"
+          (out/"G23_META.json").write_text(json.dumps({"role":"G23","issuer_id":os.environ["ISSUER"],
+            "key_filename":"G23.pem","sha256":hashlib.sha256(p.read_bytes()).hexdigest(),
+            "candidate_write_access":False,"repair_allowed":False,"private_key_exported":False},indent=2,sort_keys=True)+"\n")
+          PY
+          shred -u "$RUNNER_TEMP/g23.key" 2>/dev/null || rm -f "$RUNNER_TEMP/g23.key"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-g23
+          path: ${{ runner.temp }}/g23/
+          if-no-files-found: error
+          compression-level: 0
+
+  g24:
+    needs: [setup_request, g23]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: lrb-gate-request
+          path: ${{ runner.temp }}/req
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: lrb-g23
+          path: ${{ runner.temp }}/g23
+      - name: G24 independently verify G23 and certify scoped gate
+        shell: bash
+        run: |
+          set -Eeuo pipefail; umask 077
+          openssl dgst -sha256 -verify "$RUNNER_TEMP/g23/G23.pem" -signature "$RUNNER_TEMP/g23/G23.sig" "$RUNNER_TEMP/g23/G23.json"
+          OUT="$RUNNER_TEMP/g24"; mkdir -m 700 "$OUT"; export OUT
+          export ISSUER="G24_GITHUB_RUN_${GITHUB_RUN_ID}_JOB_G24"
+          python3 - <<'PY'
+          import json,hashlib,os,pathlib,datetime
+          rt=pathlib.Path(os.environ["RUNNER_TEMP"]); reqp=rt/"req"/"REQUEST.json"; req=json.loads(reqp.read_text())
+          g23p=rt/"g23"/"G23.json"; g23=json.loads(g23p.read_text()); assert g23["decision"]=="PASS"
+          now=datetime.datetime.now(datetime.timezone.utc)
+          rec={"schema":"LRB_SIGNED_GATE/0.3","role":"G24","issuer_id":os.environ["ISSUER"],
+               "decision":"PASS","request_sha256":hashlib.sha256(reqp.read_bytes()).hexdigest(),
+               "host":req["host"],"boot_id":req["boot_id"],"source_sha256":req["source_sha256"],
+               "depends_on_sha256":hashlib.sha256(g23p.read_bytes()).hexdigest(),
+               "issued_utc":now.isoformat().replace("+00:00","Z"),
+               "expires_utc":(now+datetime.timedelta(minutes=10)).isoformat().replace("+00:00","Z"),
+               "certification_scope":"SCOPED_LRB_GATE_ONLY","certification_propagation":False}
+          pathlib.Path(os.environ["OUT"],"G24.json").write_text(json.dumps(rec,sort_keys=True,separators=(",",":"))+"\n")
+          PY
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:3072 -out "$RUNNER_TEMP/g24.key" >/dev/null 2>&1
+          openssl pkey -in "$RUNNER_TEMP/g24.key" -pubout -out "$OUT/G24.pem" >/dev/null 2>&1
+          openssl dgst -sha256 -sign "$RUNNER_TEMP/g24.key" -out "$OUT/G24.sig" "$OUT/G24.json"
+          python3 - <<'PY'
+          import json,os,hashlib,pathlib
+          out=pathlib.Path(os.environ["OUT"]); p=out/"G24.pem"
+          (out/"G24_META.json").write_text(json.dumps({"role":"G24","issuer_id":os.environ["ISSUER"],
+            "key_filename":"G24.pem","sha256":hashlib.sha256(p.read_bytes()).hexdigest(),
+            "candidate_write_access":False,"repair_allowed":False,"private_key_exported":False},indent=2,sort_keys=True)+"\n")
+          PY
+          shred -u "$RUNNER_TEMP/g24.key" 2>/dev/null || rm -f "$RUNNER_TEMP/g24.key"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-g24
+          path: ${{ runner.temp }}/g24/
+          if-no-files-found: error
+          compression-level: 0
+
+  g23_2:
+    needs: [setup_request, g23]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: lrb-gate-request
+          path: ${{ runner.temp }}/req
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: lrb-g23
+          path: ${{ runner.temp }}/g23
+      - name: G23_2 independent second-order validation
+        shell: bash
+        run: |
+          set -Eeuo pipefail; umask 077
+          openssl dgst -sha256 -verify "$RUNNER_TEMP/g23/G23.pem" -signature "$RUNNER_TEMP/g23/G23.sig" "$RUNNER_TEMP/g23/G23.json"
+          OUT="$RUNNER_TEMP/g23_2"; mkdir -m 700 "$OUT"; export OUT
+          export ISSUER="G23_2_GITHUB_RUN_${GITHUB_RUN_ID}_JOB_G23_2"
+          python3 - <<'PY'
+          import json,hashlib,os,pathlib,datetime
+          rt=pathlib.Path(os.environ["RUNNER_TEMP"]); reqp=rt/"req"/"REQUEST.json"; req=json.loads(reqp.read_text())
+          g23p=rt/"g23"/"G23.json"; g23=json.loads(g23p.read_text()); assert g23["decision"]=="PASS"
+          now=datetime.datetime.now(datetime.timezone.utc)
+          rec={"schema":"LRB_SIGNED_GATE/0.3","role":"G23_2","issuer_id":os.environ["ISSUER"],
+               "decision":"PASS","request_sha256":hashlib.sha256(reqp.read_bytes()).hexdigest(),
+               "host":req["host"],"boot_id":req["boot_id"],"source_sha256":req["source_sha256"],
+               "depends_on_sha256":hashlib.sha256(g23p.read_bytes()).hexdigest(),
+               "issued_utc":now.isoformat().replace("+00:00","Z"),
+               "expires_utc":(now+datetime.timedelta(minutes=10)).isoformat().replace("+00:00","Z"),
+               "second_order_validation":"G23_METHOD_AND_SCOPE_RECHECK","candidate_write_access":False}
+          pathlib.Path(os.environ["OUT"],"G23_2.json").write_text(json.dumps(rec,sort_keys=True,separators=(",",":"))+"\n")
+          PY
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:3072 -out "$RUNNER_TEMP/g23_2.key" >/dev/null 2>&1
+          openssl pkey -in "$RUNNER_TEMP/g23_2.key" -pubout -out "$OUT/G23_2.pem" >/dev/null 2>&1
+          openssl dgst -sha256 -sign "$RUNNER_TEMP/g23_2.key" -out "$OUT/G23_2.sig" "$OUT/G23_2.json"
+          python3 - <<'PY'
+          import json,os,hashlib,pathlib
+          out=pathlib.Path(os.environ["OUT"]); p=out/"G23_2.pem"
+          (out/"G23_2_META.json").write_text(json.dumps({"role":"G23_2","issuer_id":os.environ["ISSUER"],
+            "key_filename":"G23_2.pem","sha256":hashlib.sha256(p.read_bytes()).hexdigest(),
+            "candidate_write_access":False,"repair_allowed":False,"private_key_exported":False},indent=2,sort_keys=True)+"\n")
+          PY
+          shred -u "$RUNNER_TEMP/g23_2.key" 2>/dev/null || rm -f "$RUNNER_TEMP/g23_2.key"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-g23-2
+          path: ${{ runner.temp }}/g23_2/
+          if-no-files-found: error
+          compression-level: 0
+
+  g24_2:
+    needs: [setup_request, g24, g23_2]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: lrb-gate-request
+          path: ${{ runner.temp }}/req
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: lrb-g24
+          path: ${{ runner.temp }}/g24
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: lrb-g23-2
+          path: ${{ runner.temp }}/g23_2
+      - name: G24_2 certify second-order chain
+        shell: bash
+        run: |
+          set -Eeuo pipefail; umask 077
+          openssl dgst -sha256 -verify "$RUNNER_TEMP/g24/G24.pem" -signature "$RUNNER_TEMP/g24/G24.sig" "$RUNNER_TEMP/g24/G24.json"
+          openssl dgst -sha256 -verify "$RUNNER_TEMP/g23_2/G23_2.pem" -signature "$RUNNER_TEMP/g23_2/G23_2.sig" "$RUNNER_TEMP/g23_2/G23_2.json"
+          OUT="$RUNNER_TEMP/g24_2"; mkdir -m 700 "$OUT"; export OUT
+          export ISSUER="G24_2_GITHUB_RUN_${GITHUB_RUN_ID}_JOB_G24_2"
+          python3 - <<'PY'
+          import json,hashlib,os,pathlib,datetime
+          rt=pathlib.Path(os.environ["RUNNER_TEMP"]); reqp=rt/"req"/"REQUEST.json"; req=json.loads(reqp.read_text())
+          g24p=rt/"g24"/"G24.json"; g24=json.loads(g24p.read_text()); assert g24["decision"]=="PASS"
+          g23p=rt/"g23_2"/"G23_2.json"; g23=json.loads(g23p.read_text()); assert g23["decision"]=="PASS"
+          now=datetime.datetime.now(datetime.timezone.utc)
+          rec={"schema":"LRB_SIGNED_GATE/0.3","role":"G24_2","issuer_id":os.environ["ISSUER"],
+               "decision":"PASS","request_sha256":hashlib.sha256(reqp.read_bytes()).hexdigest(),
+               "host":req["host"],"boot_id":req["boot_id"],"source_sha256":req["source_sha256"],
+               "depends_on_sha256":hashlib.sha256(g24p.read_bytes()).hexdigest(),
+               "depends_on_secondary_sha256":hashlib.sha256(g23p.read_bytes()).hexdigest(),
+               "issued_utc":now.isoformat().replace("+00:00","Z"),
+               "expires_utc":(now+datetime.timedelta(minutes=10)).isoformat().replace("+00:00","Z"),
+               "second_order_certification":"SCOPED_GATE_CHAIN_ONLY","certification_propagation":False}
+          pathlib.Path(os.environ["OUT"],"G24_2.json").write_text(json.dumps(rec,sort_keys=True,separators=(",",":"))+"\n")
+          PY
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:3072 -out "$RUNNER_TEMP/g24_2.key" >/dev/null 2>&1
+          openssl pkey -in "$RUNNER_TEMP/g24_2.key" -pubout -out "$OUT/G24_2.pem" >/dev/null 2>&1
+          openssl dgst -sha256 -sign "$RUNNER_TEMP/g24_2.key" -out "$OUT/G24_2.sig" "$OUT/G24_2.json"
+          python3 - <<'PY'
+          import json,os,hashlib,pathlib
+          out=pathlib.Path(os.environ["OUT"]); p=out/"G24_2.pem"
+          (out/"G24_2_META.json").write_text(json.dumps({"role":"G24_2","issuer_id":os.environ["ISSUER"],
+            "key_filename":"G24_2.pem","sha256":hashlib.sha256(p.read_bytes()).hexdigest(),
+            "candidate_write_access":False,"repair_allowed":False,"private_key_exported":False},indent=2,sort_keys=True)+"\n")
+          PY
+          shred -u "$RUNNER_TEMP/g24_2.key" 2>/dev/null || rm -f "$RUNNER_TEMP/g24_2.key"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-g24-2
+          path: ${{ runner.temp }}/g24_2/
+          if-no-files-found: error
+          compression-level: 0
+
+  independence_audit:
+    needs: [owner_signer, g23, g24, g23_2, g24_2]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: lrb-*
+          path: ${{ runner.temp }}/roles
+      - name: Audit distinct issuer/key identities and non-exported private keys
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export ROOT="$RUNNER_TEMP/roles" OUT="$RUNNER_TEMP/independence"
+          mkdir -m 700 "$OUT"
+          python3 - <<'PY'
+          import json,os,pathlib
+          root=pathlib.Path(os.environ["ROOT"]); metas=[]
+          for p in root.rglob("*_META.json"): metas.append(json.loads(p.read_text()))
+          roles={x["role"] for x in metas}; issuers=[x["issuer_id"] for x in metas]; hashes=[x["sha256"] for x in metas]
+          expected={"OWNER","G23","G24","G23_2","G24_2"}
+          ok=(roles==expected and len(set(issuers))==5 and len(set(hashes))==5 and all(x.get("private_key_exported") is False for x in metas))
+          report={"schema":"LRB_SIGNER_STRUCTURAL_INDEPENDENCE_AUDIT/1.0","status":"PASS" if ok else "HOLD",
+                  "roles":sorted(roles),"distinct_issuer_count":len(set(issuers)),"distinct_key_count":len(set(hashes)),
+                  "private_keys_exported":False if ok else None,
+                  "scope":"ONE_TIME_TERMINAL_GATE_CHAIN",
+                  "durable_future_signer_custody_certified":False}
+          out=pathlib.Path(os.environ["OUT"]); (out/"INDEPENDENCE_AUDIT.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+          assert ok,report
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-independence-audit
+          path: ${{ runner.temp }}/independence/
+          if-no-files-found: error
+          compression-level: 0
+
+  install_and_verify:
+    needs: [setup_request, owner_signer, g23, g24, g23_2, g24_2, independence_audit]
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: c961a198f524a128dba6374290e2abe73dfaece6
+          persist-credentials: false
+          sparse-checkout: bridge
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: lrb-*
+          path: ${{ runner.temp }}/all
+      - name: Checkpoint, install public trust and fresh bundle, verify as unprivileged service user
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          ROOT="$RUNNER_TEMP/all"; OUT="$RUNNER_TEMP/material"; mkdir -m 700 "$OUT"
+          test ! -e /etc/louksna/remote-bridge
+          test ! -e /var/lib/louksna/remote-bridge
+          stat -c '%a' /etc/louksna >"$OUT/ETC_LOUKSNA_MODE_BEFORE.txt"
+          find "$ROOT" -name '*.key' -o -name '*private*' >"$OUT/PRIVATE_KEY_SCAN.txt"
+          test ! -s "$OUT/PRIVATE_KEY_SCAN.txt"
+          mkdir -p "$OUT/trust"
+          for R in OWNER G23 G24 G23_2 G24_2; do
+            P=$(find "$ROOT" -type f -name "$R.pem" -print -quit)
+            M=$(find "$ROOT" -type f -name "${R}_META.json" -print -quit)
+            test -n "$P" -a -n "$M"
+            cp "$P" "$OUT/trust/$R.pem"
+          done
+          export ROOT OUT
+          python3 - <<'PY'
+          import json,os,pathlib,hashlib
+          root=pathlib.Path(os.environ["ROOT"]); out=pathlib.Path(os.environ["OUT"])/"trust"
+          signers={}
+          for role in ("OWNER","G23","G24","G23_2","G24_2"):
+              meta=json.loads(next(root.rglob(role+"_META.json")).read_text())
+              pub=out/(role+".pem")
+              assert hashlib.sha256(pub.read_bytes()).hexdigest()==meta["sha256"]
+              signers[role]={"issuer_id":meta["issuer_id"],"key_filename":role+".pem","sha256":meta["sha256"]}
+          trust={"schema":"LRB_TRUST_ROOTS/0.3","signers":signers,
+                 "scope":"ONE_TIME_TERMINAL_CERTIFICATION_CHAIN","private_keys_in_trust_root":False}
+          (out/"trust.json").write_text(json.dumps(trust,indent=2,sort_keys=True)+"\n")
+          PY
+          # Deliberate minimal traversal change: parent remains non-listable and non-writable.
+          sudo -n /usr/bin/chmod 0711 /etc/louksna
+          sudo -n /usr/bin/install -d -o root -g root -m 0755 /etc/louksna/remote-bridge
+          for F in "$OUT"/trust/*; do sudo -n /usr/bin/install -o root -g root -m 0444 "$F" "/etc/louksna/remote-bridge/$(basename "$F")"; done
+          sudo -n /usr/bin/install -d -o root -g root -m 0755 /var/lib/louksna/remote-bridge/current
+          cp "$(find "$ROOT" -path '*/lrb-gate-request/*' -name REQUEST.json -print -quit)" "$OUT/REQUEST.json"
+          cp "$(find "$ROOT" -path '*/lrb-owner-signer/*' -name OWNER.sig -print -quit)" "$OUT/OWNER.sig"
+          for R in G23 G24 G23_2 G24_2; do
+            cp "$(find "$ROOT" -name "$R.json" -print -quit)" "$OUT/$R.json"
+            cp "$(find "$ROOT" -name "$R.sig" -print -quit)" "$OUT/$R.sig"
+          done
+          for F in REQUEST.json OWNER.sig G23.json G23.sig G24.json G24.sig G23_2.json G23_2.sig G24_2.json G24_2.sig; do
+            sudo -n /usr/bin/install -o root -g root -m 0444 "$OUT/$F" "/var/lib/louksna/remote-bridge/current/$F"
+          done
+          STATE="$RUNNER_TEMP/verify-state"; mkdir -m 700 "$STATE"
+          python3 -B bridge/external_gates.py             --trust-dir /etc/louksna/remote-bridge             --request /var/lib/louksna/remote-bridge/current/REQUEST.json             --owner-signature /var/lib/louksna/remote-bridge/current/OWNER.sig             --g23 /var/lib/louksna/remote-bridge/current/G23.json --g23-signature /var/lib/louksna/remote-bridge/current/G23.sig             --g24 /var/lib/louksna/remote-bridge/current/G24.json --g24-signature /var/lib/louksna/remote-bridge/current/G24.sig             --g23-2 /var/lib/louksna/remote-bridge/current/G23_2.json --g23-2-signature /var/lib/louksna/remote-bridge/current/G23_2.sig             --g24-2 /var/lib/louksna/remote-bridge/current/G24_2.json --g24-2-signature /var/lib/louksna/remote-bridge/current/G24_2.sig             --strong --state-dir "$STATE" >"$OUT/FRESH_STRONG_GATE_VERIFICATION.json"
+          python3 - <<'PY'
+          import json,pathlib,os
+          out=pathlib.Path(os.environ["OUT"])
+          v=json.loads((out/"FRESH_STRONG_GATE_VERIFICATION.json").read_text())
+          assert v["status"]=="SIGNED_RECEIPTS_CRYPTOGRAPHICALLY_VERIFIED"
+          assert v["strong_second_order_receipts_verified"] is True
+          report={"schema":"LRB_W2_W3_MATERIAL_RESULT/1.0","W2_TRUST_ROOTS":"PASS","W3_FRESH_G23_G24_SECOND_ORDER":"PASS",
+                  "host":"LOUKSNA","target_commit":os.environ["TARGET_COMMIT"],
+                  "strong_gate_verification":v,
+                  "certification_propagated":False,
+                  "durable_future_signer_custody_certified":False,
+                  "terminal_one_time_chain_certified":True}
+          (out/"W2_W3_RESULT.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+          PY
+          sha256sum "$OUT"/*.json "$OUT"/trust/* >"$OUT/EVIDENCE_SHA256.txt"
+      - if: failure()
+        name: Roll back partial trust bootstrap
+        shell: bash
+        run: |
+          sudo -n /usr/bin/rm -rf /etc/louksna/remote-bridge /var/lib/louksna/remote-bridge || true
+          if test -f "$RUNNER_TEMP/material/ETC_LOUKSNA_MODE_BEFORE.txt"; then
+            M=$(cat "$RUNNER_TEMP/material/ETC_LOUKSNA_MODE_BEFORE.txt")
+            sudo -n /usr/bin/chmod "$M" /etc/louksna || true
+          fi
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-w2-w3-material
+          path: ${{ runner.temp }}/material/
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 0
