@@ -59,6 +59,10 @@ jobs:
           systemctl --user is-enabled louksna-live-socket.service | tee "$OUT/ENABLED.txt"
           systemctl --user is-active louksna-live-socket.service | tee "$OUT/ACTIVE.txt"
           systemctl --user show louksna-live-socket.service             -p MainPID -p ActiveState -p SubState -p FragmentPath -p MemoryMax -p CPUQuotaPerSecUSec             -p TasksMax -p NoNewPrivileges -p Restart -p ExecStart >"$OUT/SERVICE_SHOW.txt"
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            test -S "$XDG_RUNTIME_DIR/lrb-sock/lrb.sock" && break
+            sleep 0.2
+          done
           test -S "$XDG_RUNTIME_DIR/lrb-sock/lrb.sock"
           stat -c '%U:%G:%a:%F:%n' "$XDG_RUNTIME_DIR/lrb-sock/lrb.sock" >"$OUT/SOCKET_METADATA.txt"
           BOOT="$(cat /proc/sys/kernel/random/boot_id)"
