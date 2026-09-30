@@ -1,0 +1,62 @@
+name: "R4 PART4 R2 — install wimtools and inspect WinRE startup"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-part4-r2-wimtools-install-inspect.yml
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 20
+    steps:
+      - name: Install pinned wimtools and inspect WinRE startup files
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/wimtools-inspect"
+          P4M="$RUNNER_TEMP/winre-p4"
+          mkdir -p "$OUT" "$P4M"
+
+          CAND="$(apt-cache policy wimtools | awk '/Candidate:/{print $2}')"
+          test "$CAND" = "1.14.4-1.1+b3"
+          sudo -n apt-get -y --no-install-recommends install "wimtools=$CAND"
+          command -v wimlib-imagex
+          wimlib-imagex --version | tee "$OUT/WIMLIB_VERSION.txt"
+          dpkg-query -W -f='${Package}\t${Version}\n' wimtools libwim15t64 | tee "$OUT/DPKG_WIMTOOLS.txt"
+
+          sudo -n mount -t ntfs3 -o ro /dev/nvme0n1p4 "$P4M"
+          trap 'sudo -n umount "$P4M" >/dev/null 2>&1 || true' EXIT
+          WIM="$P4M/Recovery/WindowsRE/winre.wim"
+          test -f "$WIM"
+          sha256sum "$WIM" | tee "$OUT/WINRE_WIM.sha256"
+
+          wimlib-imagex info "$WIM" | tee "$OUT/WIM_INFO.txt"
+          mkdir -p "$OUT/extract"
+          set +e
+          wimlib-imagex extract "$WIM" 1 --dest-dir="$OUT/extract"             /Windows/System32/startnet.cmd             /Windows/System32/winpeshl.ini             /Windows/System32/wpeinit.exe             /Windows/System32/recenv.exe             /Windows/System32/chkdsk.exe
+          rc=$?
+          set -e
+          echo "EXTRACT_RC=$rc" | tee "$OUT/EXTRACT_STATUS.txt"
+          find "$OUT/extract" -type f -printf '%s %p\n' | sort | tee "$OUT/EXTRACTED_FILES.txt"
+          for f in "$OUT/extract/Windows/System32/startnet.cmd" "$OUT/extract/Windows/System32/winpeshl.ini"; do
+            if [ -f "$f" ]; then
+              echo "--- $f ---"
+              sed -n '1,200p' "$f"
+            fi
+          done
+
+          sudo -n umount "$P4M"
+          trap - EXIT
+          sha256sum "$OUT"/*.txt > "$OUT/EVIDENCE.sha256"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-wimtools-inspect
+          path: ${{ runner.temp }}/wimtools-inspect/
+          retention-days: 90
+          compression-level: 0
