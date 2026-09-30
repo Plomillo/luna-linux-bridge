@@ -1,0 +1,13 @@
+# Read-only loopback mTLS gateway — staged design 0.3
+
+**Scope:** code candidate, not installed/certified and not currently available to off-host ChatGPT. GitHub runner remains the currently verified off-host asynchronous control/evidence channel.
+
+bridge/mtls_gateway.py implements a TLS 1.3 only HTTP telemetry gateway, fixed to 127.0.0.1. It requires a client TLS certificate signed by an explicit external CA AND pinned leaf certificate SHA-256 fingerprint. The TLS policy file must be separately provisioned under a root-controlled nonwritable directory; its server key is private to the user service. There is no fallback anonymous HTTP. The reviewed implementation never supports external bind, direct cloud ingress, shell, sudo, screenshots, files, mutating HTTP methods or auto-issued certificates.
+
+Routes: GET /v1/status; GET /v1/observe; GET /v1/watch?frames=1..5&interval_sec=1..5. All outputs declare uncertified status. Each observation is chained to the local evidence ledger. Concurrency is capped at three active requests. Host service templates impose 10% CPUQuota, 128 MiB MemoryMax, eight tasks, limited restart bursts and low I/O priority, subject to real-host resource and lifecycle tests before any install. A claimed user-facing real-time link requires a separately approved authenticated relay or owner tunnel; do not treat GitHub Actions artifacts as continuous low-latency bidirectional transport.
+
+Required out-of-repository config JSON keys, not secrets stored in GitHub: schema=LRB_MTLS_READONLY_GATEWAY/0.3; server_cert (absolute root-owned cert file); server_key (absolute user-owned private mode-0600 file); client_ca (absolute root-owned CA); client_cert_sha256 (pinned leaf DER SHA-256); server_cert_sha256 and client_ca_sha256 (file SHA-256). A production config file and its parents must be root-owned, and no trust path may be group/world writable or symlinked.
+
+No certificate authority, private key, owner trust root, user identity, server tunnel or permanent systemd service is created by this commit. Tests use short-lived synthetic RSA certificates created in a temporary isolated working directory. Passing a synthetic test is never issuance of real G23/G24. Source review and actual CUSTOSZ/independent decisions remain required.
+
+Integration with LOUKSNA: the gateway reuses the live_link.Transport read-only observer and evidence chain; it does not change Maesto R4 PART4–PART9, reformat any volume, modify sudoers or confer new execution authority. For root operations, external_gates.py remains a *preflight proof verifier only*, with distinct independently provisioned owner/G23/G24/G23_2/G24_2 signers; a separate reviewed execution broker is still required.

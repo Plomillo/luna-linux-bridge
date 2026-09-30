@@ -1,0 +1,25 @@
+# REVIEW TEMPLATE ONLY. Root-managed certificate policy and owner approval required.
+# HTTPS/mTLS binds 127.0.0.1 ONLY. No public firewall or tunnel changes.
+[Unit]
+Description=LOUKSNA bounded localhost mTLS read-only telemetry candidate
+After=network.target
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 -B @REVIEWED_PROJECT_ROOT@/bridge/mtls_gateway.py --config @ROOT_PROVISIONED_MTLS_CONFIG@ --state-dir @OWNER_PRIVATE_STATE@ --port @OWNER_CHOSEN_PORT@
+Restart=on-failure
+RestartSec=10
+NoNewPrivileges=yes
+MemoryMax=128M
+CPUQuota=10%
+TasksMax=8
+Nice=12
+IOSchedulingClass=idle
+RestrictAddressFamilies=AF_UNIX AF_INET
+PrivateTmp=true
+UMask=0077
+
+[Install]
+WantedBy=default.target
