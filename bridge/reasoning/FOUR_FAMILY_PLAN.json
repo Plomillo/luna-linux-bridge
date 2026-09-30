@@ -1,0 +1,83 @@
+{
+  "schema": "LOUKSNA_QWEN_FOUR_FAMILY_PLAN/1.0",
+  "status": "AUTHORIZED_FOR_EXECUTION",
+  "base_sha": "c961a198f524a128dba6374290e2abe73dfaece6",
+  "family_order": ["F1", "F2", "F3", "F4"],
+  "continuous_gates": {
+    "G23": "PRESENT_INLINE_FROM_F1_THROUGH_F4",
+    "G24": "PRESENT_INLINE_FROM_F1_THROUGH_F4",
+    "G24_terminal_dependency": "G23_TERMINAL_PASS_REQUIRED"
+  },
+  "families": {
+    "F1": {
+      "name": "AUDIT_FREEZE_DOWNLOAD_SANITIZE",
+      "required": [
+        "BRIDGE_BASE_SHA_VERIFIED",
+        "MODEL_PROVENANCE_VERIFIED",
+        "MODEL_LICENSE_VERIFIED",
+        "MODEL_SOURCE_REVISION_PINNED",
+        "MODEL_DOWNLOAD_EXECUTED",
+        "MODEL_HASH_MATCH",
+        "MODEL_FILE_BYTES_MATCH",
+        "GGUF_CONTAINER_VERIFIED",
+        "RUNTIME_REVISION_PINNED",
+        "RUNTIME_BUILD_VERIFIED",
+        "GPT_OSS_120B_ACTIVE_FALSE",
+        "F1_G23_PASS",
+        "F1_G24_PASS"
+      ]
+    },
+    "F2": {
+      "name": "INTEGRATE",
+      "required": [
+        "REASONING_INTERFACE_MATERIALIZED",
+        "QWEN_PROVIDER_MATERIALIZED",
+        "MODEL_REPLACEABLE_TRUE",
+        "MODEL_AUTHORITY_FALSE",
+        "DIRECT_EXECUTION_FALSE",
+        "DIRECT_APC_FALSE",
+        "F2_G23_PASS",
+        "F2_G24_PASS"
+      ]
+    },
+    "F3": {
+      "name": "VALIDATE_INTEGRALLY",
+      "required": [
+        "MODEL_REASONING_PASS",
+        "STRUCTURED_OUTPUT_PASS",
+        "PUAC2_ADVERSARIAL_PASS",
+        "ARCHITECTURE_COMPATIBILITY_PASS",
+        "ELASTICITY_PASS",
+        "REMOTE_BRIDGE_LOOP_PASS",
+        "D4_REPLAY_PASS",
+        "ROLLBACK_PASS",
+        "GLOBAL_NON_REGRESSION_PASS",
+        "FORBIDDEN_ACTION_HITS_ZERO",
+        "F3_G23_PASS",
+        "F3_G24_PASS"
+      ]
+    },
+    "F4": {
+      "name": "CERTIFY_INTEGRAL_TERMINAL",
+      "object": "LOUKSNA+QWEN+REASONING_INTERFACE+AGENTS+ENGINES+CFE+REMOTE_BRIDGE+APC+HOST_INTEGRATION+PUAC2_CONTROLS",
+      "required": [
+        "F1_PASS",
+        "F2_PASS",
+        "F3_PASS",
+        "CUSTOSZ_PASS",
+        "G23_FINAL_PASS",
+        "G24_FINAL_PASS",
+        "G23_2_PASS",
+        "G24_2_PASS",
+        "MAESTRO_PASS",
+        "ROLLBACK_PASS",
+        "NON_REGRESSION_PASS",
+        "CANONICAL_MUTATION_FALSE",
+        "AUTHORITY_TRANSFER_FALSE",
+        "SILENT_OPERATION_FALSE"
+      ]
+    }
+  },
+  "correction_rule": "DETECT_EARLY->CORRECT_MINIMUM_LOCAL_DELTA->REVALIDATE_LOCAL->CONTINUE",
+  "terminal_rule": "ANY_REQUIRED_FAIL=>CERTIFIED_FALSE;ACTIVE_FALSE;STATE_HOLD"
+}
