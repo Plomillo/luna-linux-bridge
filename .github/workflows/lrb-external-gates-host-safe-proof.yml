@@ -1,0 +1,63 @@
+name: "LOUKSNA Bridge — host external signature verifier safety proof"
+on:
+  push:
+    branches:
+      - candidate/lrb-elastic-metacognition-v1
+    paths:
+      - ".github/workflows/lrb-external-gates-host-safe-proof.yml"
+permissions:
+  contents: read
+concurrency:
+  group: lrb-signature-verifier-host-proof
+  cancel-in-progress: false
+jobs:
+  ephemeral-signature-verifier:
+    if: github.repository == 'Plomillo/luna-linux-bridge'
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 3
+    steps:
+      - name: Checkout candidate source only
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            bridge
+          sparse-checkout-cone-mode: true
+      - name: Run synthetic independent-role negative verifier suite without sudo
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(hostname)" = LOUKSNA
+          test "$(id -u)" -ne 0
+          umask 077
+          S="$RUNNER_TEMP/lrb-signature-$GITHUB_RUN_ID"
+          mkdir -m 700 "$S"
+          {
+            echo "source_sha=$GITHUB_SHA"
+            echo "run_id=$GITHUB_RUN_ID"
+            echo "host=LOUKSNA"
+            echo "root_mutation=false"
+            echo "signature_keys=EPHEMERAL_SYNTHETIC_TEST_ONLY"
+            echo "production_g23=NOT_EXECUTED"
+            echo "production_g24=NOT_EXECUTED"
+            echo "production_second_order=NOT_EXECUTED"
+          } > "$S/RECEIPT.txt"
+          sha256sum bridge/external_gates.py bridge/tests/test_external_gates.py > "$S/CODE_HASHES.txt"
+          openssl version >> "$S/RECEIPT.txt"
+          nice -n 12 timeout 90s python3 -B -m unittest discover -s bridge/tests -p 'test_external_gates.py' -v > "$S/TESTS.log" 2>&1 || {
+            rc=$?
+            tail -38 "$S/TESTS.log"
+            exit "$rc"
+          }
+          grep -E '^Ran [0-9]+ tests|^OK$' "$S/TESTS.log" >> "$S/RECEIPT.txt"
+          echo "HOST_SIGNATURE_VERIFIER_TESTS=PASS; REAL_G23_G24=NOT_EXECUTED" >> "$GITHUB_STEP_SUMMARY"
+          sha256sum "$S/RECEIPT.txt" "$S/TESTS.log" > "$S/EVIDENCE_HASHES_SHA256.txt"
+      - name: Preserve evidence only, never ephemeral private keys
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-host-signature-verifier-only
+          path: ${{ runner.temp }}/lrb-signature-${{ github.run_id }}/
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 0
