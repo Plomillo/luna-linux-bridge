@@ -57,7 +57,45 @@ jobs:
             tail -38 "$S/ONE_TIME_TESTS.log"
             exit "$rc"
           }
-          grep -E '^Ran [0-9]+ tests|^OK$' "$S/ONE_TIME_TESTS.log" >> "$S/RECEIPT.txt"
+          grep -E '^Ran [0-9]+ tests|^OK >> "$S/RECEIPT.txt"
+          echo 'root_executor=NOT_DEPLOYED' >> "$S/RECEIPT.txt"
+          echo 'global_replay_register=NOT_DEPLOYED' >> "$S/RECEIPT.txt"
+          echo "HOST_SIGNATURE_VERIFIER_TESTS=PASS; REAL_G23_G24=NOT_EXECUTED" >> "$GITHUB_STEP_SUMMARY"
+          sha256sum "$S/RECEIPT.txt" "$S/TESTS.log" "$S/ONE_TIME_TESTS.log" "$S/GLOBAL_SCOPE_TESTS.log" "$S/CODE_HASHES.txt" > "$S/EVIDENCE_HASHES_SHA256.txt"
+      - name: Preserve evidence only, never ephemeral private keys
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-host-signature-verifier-only
+          path: ${{ runner.temp }}/lrb-signature-${{ github.run_id }}/
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 0
+ "$S/ONE_TIME_TESTS.log" >> "$S/RECEIPT.txt"
+          # Keep the same trusted host runner; test GLOBAL replay in an unprivileged
+          # temporary fixture, never create or install a production root registry.
+          sha256sum bridge/global_scope_register.py bridge/tests/test_global_scope_register.py >> "$S/CODE_HASHES.txt"
+          nice -n 12 timeout 30s python3 -B -m unittest discover -s bridge/tests -p 'test_global_scope_register.py' -v > "$S/GLOBAL_SCOPE_TESTS.log" 2>&1 || {
+            rc=$?
+            tail -38 "$S/GLOBAL_SCOPE_TESTS.log"
+            exit "$rc"
+          }
+          grep -E '^Ran [0-9]+ tests|^OK >> "$S/RECEIPT.txt"
+          echo 'root_executor=NOT_DEPLOYED' >> "$S/RECEIPT.txt"
+          echo 'global_replay_register=NOT_DEPLOYED' >> "$S/RECEIPT.txt"
+          echo "HOST_SIGNATURE_VERIFIER_TESTS=PASS; REAL_G23_G24=NOT_EXECUTED" >> "$GITHUB_STEP_SUMMARY"
+          sha256sum "$S/RECEIPT.txt" "$S/TESTS.log" "$S/ONE_TIME_TESTS.log" "$S/CODE_HASHES.txt" > "$S/EVIDENCE_HASHES_SHA256.txt"
+      - name: Preserve evidence only, never ephemeral private keys
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-host-signature-verifier-only
+          path: ${{ runner.temp }}/lrb-signature-${{ github.run_id }}/
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 0
+ "$S/GLOBAL_SCOPE_TESTS.log" >> "$S/RECEIPT.txt"
+          echo 'global_replay_registry=TESTED_UNPRIVILEGED_FIXTURE_NOT_DEPLOYED' >> "$S/RECEIPT.txt"
           echo 'one_time_scope=UNIT_TESTED_LOCAL_LEDGER_ONLY' >> "$S/RECEIPT.txt"
           echo 'root_executor=NOT_DEPLOYED' >> "$S/RECEIPT.txt"
           echo 'global_replay_register=NOT_DEPLOYED' >> "$S/RECEIPT.txt"
