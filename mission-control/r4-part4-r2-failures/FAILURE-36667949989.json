@@ -1,0 +1,28 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_FAILURE_EVIDENCE/1.0",
+  "status": "FAIL_CLOSED_HOLD",
+  "source_run": 36667949989,
+  "source_job": 109738548072,
+  "branch": "staging/luna-r4-master-part1-part9-20260929",
+  "head_sha": "faf9aa9c74d5fe81bd98d1b5e726c0b243ad24e1",
+  "stage": "V4_EXECUTION_BEFORE_P3_BOUNDARY_SHRINK",
+  "root_cause": "BASH_UNBOUND_LOCAL_VARIABLE_NUM",
+  "failing_location": "server/r4-master/part4_r2_storage_resume_after_ntfs_shrink_v4.sh:136",
+  "failure_message": "num: variable sin asignar",
+  "source_tree_reverified": {
+    "status": "PASS",
+    "manifest_sha256": "99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+    "records": 498092,
+    "regular_file_bytes": 200490852057,
+    "mismatch_count": 0
+  },
+  "recovery_plan_g23": "PASS",
+  "recovery_plan_g24": "PASS",
+  "new_irreversible_mutation_reached": false,
+  "p3_boundary_shrink_reached": false,
+  "required_remediation": "Split local declaration/assignment so num/new_size are assigned before num is expanded in before/spec path expressions; rerun full v4 probe and issue fresh G23/G24 bound to the corrected script.",
+  "blind_rerun_forbidden": true,
+  "failure_posture": "FAIL_CLOSED",
+  "supersedes_nothing": true,
+  "observed_at_utc": "2026-09-30T04:31:33Z"
+}
