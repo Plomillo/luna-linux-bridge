@@ -1,0 +1,13 @@
+# UNINSTALLED DESIGN TEMPLATE: requires owner review and scoped G23/G24.
+[Unit]
+Description=Periodic bounded LOUKSNA elastic readonly tick
+
+[Timer]
+OnBootSec=120s
+OnUnitInactiveSec=120s
+AccuracySec=15s
+Persistent=false
+Unit=louksna-elastic-readonly.service
+
+[Install]
+WantedBy=timers.target

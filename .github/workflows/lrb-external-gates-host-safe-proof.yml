@@ -1,0 +1,136 @@
+name: "LOUKSNA Bridge — host external signature verifier safety proof"
+on:
+  push:
+    branches:
+      - candidate/lrb-elastic-metacognition-v1
+    paths:
+      - ".github/workflows/lrb-external-gates-host-safe-proof.yml"
+permissions:
+  contents: read
+concurrency:
+  group: lrb-signature-verifier-host-proof
+  cancel-in-progress: false
+jobs:
+  ephemeral-signature-verifier:
+    if: github.repository == 'Plomillo/luna-linux-bridge'
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 3
+    steps:
+      - name: Checkout candidate source only
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            bridge
+          sparse-checkout-cone-mode: true
+      - name: Run synthetic independent-role negative verifier suite without sudo
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(hostname)" = LOUKSNA
+          test "$(id -u)" -ne 0
+          umask 077
+          S="$RUNNER_TEMP/lrb-signature-$GITHUB_RUN_ID"
+          mkdir -m 700 "$S"
+          {
+            echo "source_sha=$GITHUB_SHA"
+            echo "run_id=$GITHUB_RUN_ID"
+            echo "host=LOUKSNA"
+            echo "root_mutation=false"
+            echo "signature_keys=EPHEMERAL_SYNTHETIC_TEST_ONLY"
+            echo "production_g23=NOT_EXECUTED"
+            echo "production_g24=NOT_EXECUTED"
+            echo "production_second_order=NOT_EXECUTED"
+          } > "$S/RECEIPT.txt"
+          sha256sum bridge/external_gates.py bridge/tests/test_external_gates.py > "$S/CODE_HASHES.txt"
+          openssl version >> "$S/RECEIPT.txt"
+          # Source identity: compare current checkout against the pinned
+          # historical CUSTOSZ records; this is NOT inherited certification.
+          git show "$GITHUB_SHA:Louksna.md" | sha256sum | awk '{print $1"  Louksna.md"}' > "$S/ARCH_SOURCE_HASHES.txt"
+          git show "$GITHUB_SHA:PUAC2.md" | sha256sum | awk '{print $1"  PUAC2.md"}' >> "$S/ARCH_SOURCE_HASHES.txt"
+          if grep -Fxq '5270c3d643339c283edf13b414f335f23f921c4dac023b06d38de62927e29bf9  Louksna.md' "$S/ARCH_SOURCE_HASHES.txt" &&
+             grep -Fxq 'c872ab8d31e0e301de93ab06047294424d309d947f225e62148cee8265b15869  PUAC2.md' "$S/ARCH_SOURCE_HASHES.txt"; then
+            echo 'historical_authority_source_hashes=UNCHANGED_NOT_FRESH_CERTIFICATION' >> "$S/RECEIPT.txt"
+          else
+            echo 'historical_authority_source_hashes=HOLD_IDENTITY_DRIFT' >> "$S/RECEIPT.txt"
+            exit 3
+          fi
+          nice -n 12 timeout 90s python3 -B -m unittest discover -s bridge/tests -p 'test_external_gates.py' -v > "$S/TESTS.log" 2>&1 || {
+            rc=$?
+            tail -38 "$S/TESTS.log"
+            exit "$rc"
+          }
+          grep -E '^Ran [0-9]+ tests|^OK$' "$S/TESTS.log" >> "$S/RECEIPT.txt"
+          # Reuse this host proof, no additional runner or duplicated workflow.
+          sha256sum bridge/one_time_scope.py bridge/tests/test_one_time_scope.py >> "$S/CODE_HASHES.txt"
+          nice -n 12 timeout 45s python3 -B -m unittest discover -s bridge/tests -p 'test_one_time_scope.py' -v > "$S/ONE_TIME_TESTS.log" 2>&1 || {
+            rc=$?
+            tail -38 "$S/ONE_TIME_TESTS.log"
+            exit "$rc"
+          }
+          grep -E '^Ran [0-9]+ tests|^OK$' "$S/ONE_TIME_TESTS.log" >> "$S/RECEIPT.txt"
+          # Exercise global replay register with unprivileged fixtures; no root deployment.
+          sha256sum bridge/global_scope_register.py bridge/tests/test_global_scope_register.py >> "$S/CODE_HASHES.txt"
+          nice -n 12 timeout 30s python3 -B -m unittest discover -s bridge/tests -p 'test_global_scope_register.py' -v > "$S/GLOBAL_SCOPE_TESTS.log" 2>&1 || {
+            rc=$?
+            tail -38 "$S/GLOBAL_SCOPE_TESTS.log"
+            exit "$rc"
+          }
+          grep -E '^Ran [0-9]+ tests|^OK$' "$S/GLOBAL_SCOPE_TESTS.log" >> "$S/RECEIPT.txt"
+          echo 'global_replay_registry=TESTED_UNPRIVILEGED_FIXTURE_NOT_DEPLOYED' >> "$S/RECEIPT.txt"
+          echo 'one_time_scope=UNIT_TESTED_LOCAL_LEDGER_ONLY' >> "$S/RECEIPT.txt"
+          # Simultaneous life-cycle DESIGN review queues, not actual independent approvals.
+          sha256sum bridge/continuous_assurance.py bridge/ASSURANCE_MATRIX.json bridge/tests/test_continuous_assurance.py >> "$S/CODE_HASHES.txt"
+          nice -n 12 timeout 40s python3 -B -m unittest discover -s bridge/tests -p 'test_continuous_assurance.py' -v > "$S/LIFECYCLE_TESTS.log" 2>&1 || {
+            rc=$?
+            tail -38 "$S/LIFECYCLE_TESTS.log"
+            exit "$rc"
+          }
+          grep -E '^Ran [0-9]+ tests|^OK$' "$S/LIFECYCLE_TESTS.log" >> "$S/RECEIPT.txt"
+          nice -n 12 timeout 10s python3 -B bridge/continuous_assurance.py \
+            --plan bridge/ASSURANCE_MATRIX.json --commit "$GITHUB_SHA" --out "$S/LIFECYCLE_REPORT.json" \
+            > "$S/LIFECYCLE_COMMAND.json"
+          # Check ONLY fixed root trust path metadata using noninteractive allowlisted
+          # sudo stat. Denial and absence are intentionally indistinguishable.
+          if timeout 4s sudo -n /usr/bin/stat -c '%u:%a' /etc/louksna/remote-bridge > "$S/TRUST_DIR_METADATA.txt" 2>"$S/STAT_DIR_ERROR.txt"; then
+            echo 'live_trust_directory=METADATA_READ_ONLY_PRESENT_NOT_CERTIFIED' >> "$S/RECEIPT.txt"
+          elif grep -Fq 'No such file or directory' "$S/STAT_DIR_ERROR.txt"; then
+            echo 'ABSENT_BY_EXECUTED_STAT' > "$S/TRUST_DIR_METADATA.txt"
+            echo 'live_trust_directory=ABSENT_BY_EXECUTED_SUDO_STAT' >> "$S/RECEIPT.txt"
+          elif grep -Eiq '(not allowed|password is required|a terminal is required)' "$S/STAT_DIR_ERROR.txt"; then
+            echo 'SUDO_COMMAND_DENIED' > "$S/TRUST_DIR_METADATA.txt"
+            echo 'live_trust_directory=UNDETERMINED_SUDO_COMMAND_DENIED' >> "$S/RECEIPT.txt"
+          else
+            echo 'NOT_PROVEN_PRESENT' > "$S/TRUST_DIR_METADATA.txt"
+            echo 'live_trust_directory=UNDETERMINED_OTHER' >> "$S/RECEIPT.txt"
+          fi
+          if timeout 4s sudo -n /usr/bin/stat -c '%u:%a' /etc/louksna/remote-bridge/trust.json > "$S/TRUST_FILE_METADATA.txt" 2>"$S/STAT_FILE_ERROR.txt"; then
+            echo 'public_trust_manifest=METADATA_READ_ONLY_PRESENT_NOT_AUTHENTICATED' >> "$S/RECEIPT.txt"
+          elif grep -Fq 'No such file or directory' "$S/STAT_FILE_ERROR.txt"; then
+            echo 'ABSENT_BY_EXECUTED_STAT' > "$S/TRUST_FILE_METADATA.txt"
+            echo 'public_trust_manifest=ABSENT_BY_EXECUTED_SUDO_STAT' >> "$S/RECEIPT.txt"
+          elif grep -Eiq '(not allowed|password is required|a terminal is required)' "$S/STAT_FILE_ERROR.txt"; then
+            echo 'SUDO_COMMAND_DENIED' > "$S/TRUST_FILE_METADATA.txt"
+            echo 'public_trust_manifest=UNDETERMINED_SUDO_COMMAND_DENIED' >> "$S/RECEIPT.txt"
+          else
+            echo 'NOT_PROVEN_PRESENT' > "$S/TRUST_FILE_METADATA.txt"
+            echo 'public_trust_manifest=UNDETERMINED_OTHER' >> "$S/RECEIPT.txt"
+          fi
+          # Keep potential sudo error details out of published evidence; only
+          # the deterministic, non-sensitive classification leaves the host.
+          rm -f -- "$S/STAT_DIR_ERROR.txt" "$S/STAT_FILE_ERROR.txt"
+          echo 'continuous_g23_g24_design_precheck=40_ROLE_PHASE_SLOTS_UNCERTIFIED' >> "$S/RECEIPT.txt"
+          grep -E '^(live_trust_directory|public_trust_manifest|continuous_g23_g24_design_precheck|historical_authority_source_hashes)=' "$S/RECEIPT.txt"
+          echo 'root_executor=NOT_DEPLOYED' >> "$S/RECEIPT.txt"
+          echo 'global_replay_register=NOT_DEPLOYED' >> "$S/RECEIPT.txt"
+          echo "HOST_SIGNATURE_VERIFIER_TESTS=PASS; REAL_G23_G24=NOT_EXECUTED" >> "$GITHUB_STEP_SUMMARY"
+          sha256sum "$S/RECEIPT.txt" "$S/TESTS.log" "$S/ONE_TIME_TESTS.log" "$S/GLOBAL_SCOPE_TESTS.log" "$S/LIFECYCLE_TESTS.log" "$S/LIFECYCLE_REPORT.json" "$S/LIFECYCLE_COMMAND.json" "$S/TRUST_DIR_METADATA.txt" "$S/TRUST_FILE_METADATA.txt" "$S/ARCH_SOURCE_HASHES.txt" "$S/CODE_HASHES.txt" > "$S/EVIDENCE_HASHES_SHA256.txt"
+      - name: Preserve evidence only, never ephemeral private keys
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-host-signature-verifier-only
+          path: ${{ runner.temp }}/lrb-signature-${{ github.run_id }}/
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 0

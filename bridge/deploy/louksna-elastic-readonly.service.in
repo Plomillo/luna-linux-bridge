@@ -1,0 +1,18 @@
+# UNINSTALLED DESIGN TEMPLATE: independently review and obtain scoped G23/G24.
+# Replace @REVIEWED_PROJECT_ROOT@ and @PRIVATE_STATE@ from independently verified paths.
+# Use a user-level systemd service; NEVER install as a root or GitHub action service.
+[Unit]
+Description=LOUKSNA Elastic Automation — bounded readonly one-shot candidate
+After=default.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 -B @REVIEWED_PROJECT_ROOT@/bridge/elastic_tick.py --state-dir @PRIVATE_STATE@
+NoNewPrivileges=yes
+MemoryMax=128M
+CPUQuota=10%
+TasksMax=8
+Nice=12
+IOSchedulingClass=idle
+RestrictAddressFamilies=AF_UNIX
+PrivateTmp=true
