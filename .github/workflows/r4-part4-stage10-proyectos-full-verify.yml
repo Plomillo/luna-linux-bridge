@@ -1,0 +1,158 @@
+name: "R4 PART4 — Stage10 PROYECTOS full non-regression"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-stage10-full-verify/**
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: r4-part4-stage10-proyectos-full-verify
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 180
+    steps:
+      - name: Checkout exact verifier
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: staging/luna-r4-master-part1-part9-20260929
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            server/r4-master
+          sparse-checkout-cone-mode: true
+
+      - name: Download certified freeze manifest
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          BASE="$RUNNER_TEMP/stage10-baseline-$GITHUB_RUN_ID"
+          mkdir -p "$BASE"
+          gh run download 36619942178 \
+            --repo Plomillo/luna-linux-bridge \
+            -n R4-PART4-PROYECTOS-freeze-36619942178 \
+            -D "$BASE"
+          test -f "$BASE/PROYECTOS_MANIFEST.jsonl.gz"
+          printf '%s  %s\n' \
+            "99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e" \
+            "$BASE/PROYECTOS_MANIFEST.jsonl.gz" | sha256sum -c -
+
+      - name: Full forensic non-regression verify
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="$HOME/PROYECTOS"
+          BASE="$RUNNER_TEMP/stage10-baseline-$GITHUB_RUN_ID"
+          OUT="$RUNNER_TEMP/stage10-verify-$GITHUB_RUN_ID"
+          EXEC="$HOME/.local/state/louksna/r4-master-part1-part9/PART_4_P3_HARDENED"
+          mkdir -p "$OUT" "$EXEC"
+
+          test -d "$ROOT"
+          test ! -L "$ROOT"
+          test "$(findmnt -T "$ROOT" -n -o SOURCE)" = "/dev/nvme0n1p3"
+          test "$(findmnt -T "$ROOT" -n -o FSTYPE)" = "ext4"
+
+          python3 server/r4-master/part4_r2_verify_tree_v2.py --selftest
+
+          VERIFY=(python3 server/r4-master/part4_r2_verify_tree_v2.py
+            --root "$ROOT"
+            --manifest "$BASE/PROYECTOS_MANIFEST.jsonl.gz"
+            --out "$OUT/VERIFY.json"
+            --allow-ext4-root-lost-found)
+
+          if command -v ionice >/dev/null 2>&1; then
+            nice -n 10 ionice -c2 -n7 ${VERIFY[@]}
+          else
+            nice -n 10 ${VERIFY[@]}
+          fi
+
+          OUT="$OUT" EXEC="$EXEC" python3 - <<'PY'
+          import datetime as dt
+          import hashlib
+          import json
+          import os
+          import pathlib
+
+          out=pathlib.Path(os.environ["OUT"])
+          execdir=pathlib.Path(os.environ["EXEC"])
+          v=json.loads((out/"VERIFY.json").read_text(encoding="utf-8"))
+
+          def sha256(p):
+              h=hashlib.sha256()
+              with pathlib.Path(p).open("rb") as f:
+                  for b in iter(lambda:f.read(8*1024*1024),b""):
+                      h.update(b)
+              return h.hexdigest()
+
+          reasons={"MISSING":0,"EXTRA":0,"SHA256":0,"TYPE":0,"SIZE":0}
+          for m in v.get("mismatches",[]):
+              r=m.get("reason")
+              if r in reasons:
+                  reasons[r]+=1
+
+          strict_pass=(
+              v.get("status")=="PASS"
+              and v.get("manifest_sha256")=="99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e"
+              and v.get("seen_records")==498092
+              and v.get("counts")=={"file":436072,"dir":62016,"symlink":4,"other":0}
+              and v.get("regular_file_bytes")==200490852057
+              and v.get("mismatch_count")==0
+          )
+          c=v.get("counts",{})
+          rec={
+              "schema":"LOUKSNA_R4_PART4_STAGE10_PROYECTOS_NON_REGRESSION/1.0",
+              "status":"PASS" if strict_pass else "HOLD",
+              "scope":"PROYECTOS_FORENSIC_NON_REGRESSION_BARRIER",
+              "root":v.get("root"),
+              "root_fstype":v.get("root_fstype"),
+              "manifest_sha256":v.get("manifest_sha256"),
+              "records":v.get("seen_records"),
+              "dirs":c.get("dir"),
+              "files":c.get("file"),
+              "symlinks":c.get("symlink"),
+              "other":c.get("other"),
+              "regular_file_bytes":v.get("regular_file_bytes"),
+              "missing":0 if strict_pass else reasons["MISSING"],
+              "unexpected":0 if strict_pass else reasons["EXTRA"],
+              "hash_mismatch":0 if strict_pass else reasons["SHA256"],
+              "type_mismatch":0 if strict_pass else reasons["TYPE"],
+              "size_mismatch":0 if strict_pass else reasons["SIZE"],
+              "strict_verifier_status":v.get("status"),
+              "strict_verifier_sha256":sha256(pathlib.Path("server/r4-master/part4_r2_verify_tree_v2.py")),
+              "verify_result_sha256":sha256(out/"VERIFY.json"),
+              "ignored_filesystem_admin_entries":v.get("ignored_filesystem_admin_entries",[]),
+              "disk_mutation_performed":False,
+              "filesystem_mutation_performed":False,
+              "resize2fs_performed":False,
+              "resize2fs_authorization_eligible":bool(strict_pass),
+              "recorded_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          raw=json.dumps(rec,indent=2,sort_keys=True)+"\n"
+          (out/"STAGE10_PROYECTOS_NON_REGRESSION.json").write_text(raw,encoding="utf-8")
+          (execdir/"STAGE10_PROYECTOS_NON_REGRESSION.json").write_text(raw,encoding="utf-8")
+          print(raw)
+          if not strict_pass:
+              raise SystemExit(23)
+          PY
+
+          sha256sum "$OUT"/* | sort > "$OUT/SHA256SUMS.txt"
+
+      - name: Upload Stage10 evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-stage10-proyectos-non-regression
+          path: ${{ runner.temp }}/stage10-verify-${{ github.run_id }}
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 0
