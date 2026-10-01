@@ -1,0 +1,71 @@
+{
+  "schema": "LOUKSNA_R4_PROYECTOS_UI_REPAIR_PLAN/1.0",
+  "status": "PREPARED_NOT_AUTHORIZED_WHILE_PART6_OPEN",
+  "authority": "Louksna.md",
+  "prerequisites": {
+    "part4_certified": true,
+    "part5_certified": true,
+    "part6_certificate_required": true,
+    "lrb_live_observation_required": true,
+    "canonical_projects_root": "/home/diegoignacionorambuenamiranda/PROYECTOS",
+    "canonical_projects_uri": "file:///home/diegoignacionorambuenamiranda/PROYECTOS"
+  },
+  "observed_defects": {
+    "home_Proyectos": {
+      "type": "BROKEN_SYMLINK",
+      "current_target": "/media/diegoignacionorambuenamiranda/Windows/PROYECTOS",
+      "desired_target": "/home/diegoignacionorambuenamiranda/PROYECTOS"
+    },
+    "luna_r4_Proyectos": {
+      "type": "BROKEN_SYMLINK",
+      "current_target": "/media/diegoignacionorambuenamiranda/Windows/PROYECTOS",
+      "desired_target": "/home/diegoignacionorambuenamiranda/PROYECTOS"
+    },
+    "dolphin_place": {
+      "title": "Proyectos",
+      "current_href": "file:///home/diegoignacionorambuenamiranda/Proyectos",
+      "desired_href": "file:///home/diegoignacionorambuenamiranda/PROYECTOS"
+    }
+  },
+  "launchers_to_validate": [
+    "/home/diegoignacionorambuenamiranda/.local/share/applications/luna-r4-part1-proyectos.desktop",
+    "/home/diegoignacionorambuenamiranda/.local/share/applications/luna-r4-v7-proyectos.desktop"
+  ],
+  "mutation_order": [
+    "LRB_PRE_OBSERVATION",
+    "VERIFY_PART6_CERTIFICATE",
+    "VERIFY_CANONICAL_PROJECTS_ROOT",
+    "HASH_AND_COPY_KDE_AND_LAUNCHER_CHECKPOINT",
+    "READ_AND_VALIDATE_LAUNCHER_DISPATCHERS",
+    "REPLACE_ONLY_BROKEN_PROYECTOS_SYMLINKS_ATOMICALLY",
+    "UPDATE_ONLY_PROYECTOS_BOOKMARK_TO_CANONICAL_URI",
+    "RELOAD_MINIMUM_USER_UI_STATE_IF_REQUIRED",
+    "FUNCTIONALLY_OPEN_PROYECTOS_AND_VERIFY_TARGET",
+    "LRB_POST_OBSERVATION",
+    "NON_REGRESSION",
+    "WRITE_ROLLBACK_AND_EVIDENCE"
+  ],
+  "prohibitions": [
+    "PART_4_MUTATION",
+    "DEBIAN_DOWNLOAD",
+    "KDE_DOWNLOAD_OR_REINSTALL",
+    "WALLPAPER_REPLACEMENT",
+    "WHOLESALE_KDE_SNAPSHOT_RESTORE",
+    "DELETE_PROJECTS_DATA",
+    "WINDOWS_MEDIA_PATH_REINTRODUCTION",
+    "LAUNCHER_REWRITE_BEFORE_DISPATCHER_AUDIT"
+  ],
+  "rollback": {
+    "restore_exact_checkpoint_files": true,
+    "restore_prior_symlink_text": true,
+    "preserve_projects_data": true
+  },
+  "source_evidence": {
+    "live_audit_run_id": 36940079353,
+    "live_audit_artifact_id": 11200026876,
+    "lrb_evidence_seq": 55,
+    "lrb_evidence_sha256": "f95bb27b0049eb9194728be18bccd492fada278ec953e1a1972f9a283b007763",
+    "ui_delta_spec": "docs/luna-r4/PART5_PART9_UI_DELTA_SPEC.json"
+  },
+  "prepared_at_utc": "2026-10-01T23:29:00Z"
+}
