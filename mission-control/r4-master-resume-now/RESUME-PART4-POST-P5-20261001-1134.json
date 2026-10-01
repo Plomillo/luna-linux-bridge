@@ -1,0 +1,9 @@
+{
+  "schema": "LOUKSNA_R4_MASTER_RESUME_TRIGGER/1.0",
+  "authority": "Louksna.md",
+  "target": "PART_4",
+  "mode": "RESUME_FROM_LAST_VALID_CHECKPOINT",
+  "replay_completed_work": false,
+  "desktop_commander": false,
+  "requested_at_local": "2026-10-01T11:34:00-03:00"
+}
