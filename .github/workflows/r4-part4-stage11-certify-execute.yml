@@ -1,0 +1,417 @@
+name: "R4 PART4 — Stage11 G23 G24 ext4 grow and verify"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-stage11-certify-execute/**
+
+permissions:
+  contents: read
+  actions: read
+  id-token: write
+
+concurrency:
+  group: r4-part4-stage11-ext4-transaction
+  cancel-in-progress: false
+
+env:
+  CANDIDATE_RUN_ID: "36925432293"
+  BASELINE_RUN_ID: "36619942178"
+  BASELINE_MANIFEST_SHA256: "99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e"
+
+jobs:
+  g23:
+    name: G23 independent filesystem validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Download fresh Stage11 candidate
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/candidate" "$RUNNER_TEMP/g23"
+          gh run download "$CANDIDATE_RUN_ID" \
+            --repo Plomillo/luna-linux-bridge \
+            -n r4-part4-stage11-candidate \
+            -D "$RUNNER_TEMP/candidate"
+          test -f "$RUNNER_TEMP/candidate/STAGE11_CANDIDATE.json"
+
+      - name: G23 validate exact filesystem transaction
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - "$RUNNER_TEMP/candidate/STAGE11_CANDIDATE.json" "$RUNNER_TEMP/g23/G23.json" <<'PY'
+          import datetime as dt, hashlib, json, pathlib, sys
+          p,o=map(pathlib.Path,sys.argv[1:])
+          c=json.loads(p.read_text())
+          expected_cmd=["sudo","-n","/usr/sbin/resize2fs","/dev/nvme0n1p3"]
+          checks={
+              "candidate_ready":c.get("status")=="CANDIDATE_READY",
+              "all_candidate_checks":all(c.get("checks",{}).values()),
+              "scope":c.get("scope")=="ONE_ONLINE_EXT4_GROW_ONLY",
+              "device":c.get("device")=="/dev/nvme0n1p3",
+              "filesystem":c.get("filesystem")=="ext4",
+              "online_root":c.get("online_root") is True,
+              "command_exact":c.get("command")==expected_cmd,
+              "binary_path":c.get("resize2fs_path")=="/usr/sbin/resize2fs",
+              "binary_sha":isinstance(c.get("resize2fs_binary_sha256"),str) and len(c["resize2fs_binary_sha256"])==64,
+              "version_bound":str(c.get("resize2fs_version","")).lower().startswith("resize2fs "),
+              "device_grew":int(c.get("block_device_bytes",0))>int(c.get("filesystem_bytes_before",0)),
+              "growth_positive":int(c.get("growth_bytes_available",0))>0,
+              "p3_start_immutable":int(c.get("p3_start_sector",-1))==567296,
+              "p3_size_target":int(c.get("p3_size_sectors",-1))==999647887,
+              "uuid":c.get("uuid")=="e084ec2a-af39-48b5-bb89-db2dc6a98332",
+              "partuuid":c.get("partuuid")=="8e0b4274-21ff-4b16-8180-495381efb1d9",
+              "one_attempt":int(c.get("resize2fs_attempts_authorized",0))==1,
+              "no_format":c.get("format_allowed") is False,
+              "no_shrink":c.get("shrink_allowed") is False,
+              "no_start_move":c.get("move_start_allowed") is False,
+              "no_partition_mutation":c.get("partition_table_mutation_allowed") is False,
+              "no_reboot":c.get("reboot_allowed") is False,
+              "no_prior_fs_mutation":c.get("filesystem_mutation_performed") is False,
+              "post_verify_required":c.get("postcondition_requires_full_proyectos_reverify") is True,
+          }
+          ok=all(checks.values())
+          q={
+              "schema":"LOUKSNA_R4_PART4_STAGE11_EXT4_G23/1.0",
+              "status":"PASS" if ok else "HOLD",
+              "scope":"ONE_ONLINE_EXT4_GROW_ONLY",
+              "candidate_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),
+              "checks":checks,
+              "g24_allowed":ok,
+              "filesystem_mutation_eligible":ok,
+              "disk_geometry_mutation_allowed":False,
+              "partition_table_mutation_allowed":False,
+              "format_allowed":False,
+              "shrink_allowed":False,
+              "resize2fs_attempts_allowed":1 if ok else 0,
+              "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          o.write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(23)
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-stage11-g23
+          path: ${{ runner.temp }}/g23/G23.json
+          retention-days: 90
+          compression-level: 0
+
+  g24:
+    name: G24 certify filesystem-only mutation
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-stage11-g23
+          path: ${{ runner.temp }}/g23
+
+      - name: Issue OIDC digest-bound filesystem-only certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/G23.json"
+          test "$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d["status"] if d.get("g24_allowed") else "HOLD")' "$G")" = PASS
+          GHASH="$(sha256sum "$G" | awk '{print $1}')"
+          CHASH="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["candidate_sha256"])' "$G")"
+          AUD="louksna-r4-part4-stage11-ext4:$GHASH:$CHASH"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export GHASH CHASH AUD TOKEN
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$RUNNER_TEMP/g24/G24.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          t=os.environ["TOKEN"]; parts=t.split(".")
+          payload=parts[1]+"="*((4-len(parts[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload))
+          aud=claims.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          q={
+              "schema":"LOUKSNA_R4_PART4_STAGE11_EXT4_G24/1.0",
+              "status":"PASS",
+              "scope":"ONE_ONLINE_EXT4_GROW_ONLY",
+              "candidate_sha256":os.environ["CHASH"],
+              "g23_sha256":os.environ["GHASH"],
+              "authority_authenticated":True,
+              "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
+              "authorized_command":["sudo","-n","/usr/sbin/resize2fs","/dev/nvme0n1p3"],
+              "filesystem_mutation_authorized":True,
+              "resize2fs_attempts_authorized":1,
+              "disk_geometry_mutation_authorized":False,
+              "partition_table_mutation_authorized":False,
+              "format_authorized":False,
+              "shrink_authorized":False,
+              "reboot_authorized":False,
+              "certification_propagated":False,
+              "canonical_mutation":False,
+              "authority_transfer":False,
+              "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-stage11-g24
+          path: ${{ runner.temp }}/g24/G24.json
+          retention-days: 90
+          compression-level: 0
+
+  execute_and_verify:
+    name: One resize2fs then full PROYECTOS reverify
+    needs: [g23, g24]
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: staging/luna-r4-master-part1-part9-20260929
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            server/r4-master
+          sparse-checkout-cone-mode: true
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-stage11-g23
+          path: ${{ runner.temp }}/g23
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-stage11-g24
+          path: ${{ runner.temp }}/g24
+
+      - name: Download source candidate and frozen PROYECTOS manifest
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/candidate" "$RUNNER_TEMP/baseline"
+          gh run download "$CANDIDATE_RUN_ID" \
+            --repo Plomillo/luna-linux-bridge \
+            -n r4-part4-stage11-candidate \
+            -D "$RUNNER_TEMP/candidate"
+          gh run download "$BASELINE_RUN_ID" \
+            --repo Plomillo/luna-linux-bridge \
+            -n R4-PART4-PROYECTOS-freeze-36619942178 \
+            -D "$RUNNER_TEMP/baseline"
+          printf '%s  %s\n' "$BASELINE_MANIFEST_SHA256" "$RUNNER_TEMP/baseline/PROYECTOS_MANIFEST.jsonl.gz" | sha256sum -c -
+
+      - name: Revalidate certificates and execute exactly once
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/stage11-execution-$GITHUB_RUN_ID"
+          EXEC_DIR="$HOME/.local/state/louksna/r4-master-part1-part9/PART_4_P3_HARDENED"
+          C="$RUNNER_TEMP/candidate/STAGE11_CANDIDATE.json"
+          G23="$RUNNER_TEMP/g23/G23.json"
+          G24="$RUNNER_TEMP/g24/G24.json"
+          mkdir -p "$OUT" "$EXEC_DIR"
+
+          C="$C" G23="$G23" G24="$G24" EXEC_DIR="$EXEC_DIR" python3 - <<'PY'
+          import datetime as dt,hashlib,json,os,pathlib,subprocess
+          C=pathlib.Path(os.environ["C"]); G23=pathlib.Path(os.environ["G23"]); G24=pathlib.Path(os.environ["G24"])
+          d=pathlib.Path(os.environ["EXEC_DIR"])
+          c=json.loads(C.read_text()); g=json.loads(G23.read_text()); q=json.loads(G24.read_text())
+          h=lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+          live=json.loads((d/"EXECUTION.json").read_text())
+          s10=json.loads((d/"STAGE10_PROYECTOS_NON_REGRESSION.json").read_text())
+          current_binary=hashlib.sha256(pathlib.Path("/usr/sbin/resize2fs").read_bytes()).hexdigest()
+          current_uuid=subprocess.check_output(["lsblk","-n","-o","UUID","/dev/nvme0n1p3"],text=True).strip()
+          current_partuuid=subprocess.check_output(["lsblk","-n","-o","PARTUUID","/dev/nvme0n1p3"],text=True).strip()
+          root=subprocess.check_output(["findmnt","-n","-o","SOURCE,FSTYPE","/"],text=True).split()
+          checks={
+              "stage_boundary":int(live.get("last_completed_stage",0))==10 and int(live.get("current_stage",0))==11,
+              "candidate":c.get("status")=="CANDIDATE_READY" and all(c.get("checks",{}).values()),
+              "candidate_g23_bound":g.get("candidate_sha256")==h(C),
+              "g23_pass":g.get("status")=="PASS" and g.get("g24_allowed") is True,
+              "g23_g24_bound":q.get("g23_sha256")==h(G23),
+              "candidate_g24_bound":q.get("candidate_sha256")==h(C),
+              "g24_pass":q.get("status")=="PASS",
+              "scope":q.get("scope")=="ONE_ONLINE_EXT4_GROW_ONLY",
+              "command":q.get("authorized_command")==["sudo","-n","/usr/sbin/resize2fs","/dev/nvme0n1p3"],
+              "one_attempt":int(q.get("resize2fs_attempts_authorized",0))==1,
+              "fs_auth":q.get("filesystem_mutation_authorized") is True,
+              "no_geometry":q.get("disk_geometry_mutation_authorized") is False and q.get("partition_table_mutation_authorized") is False,
+              "no_format_shrink":q.get("format_authorized") is False and q.get("shrink_authorized") is False,
+              "binary_unchanged":current_binary==c.get("resize2fs_binary_sha256"),
+              "stage10_unchanged":h(d/"STAGE10_PROYECTOS_NON_REGRESSION.json")==c.get("stage10_sha256"),
+              "stage10_pass":s10.get("status")=="PASS",
+              "root":len(root)>=2 and root[0]=="/dev/nvme0n1p3" and root[1]=="ext4",
+              "uuid":current_uuid==c.get("uuid"),
+              "partuuid":current_partuuid==c.get("partuuid"),
+          }
+          record={
+              "schema":"LOUKSNA_R4_PART4_STAGE11_PRECOMMIT/1.0",
+              "status":"PASS" if all(checks.values()) else "HOLD",
+              "candidate_sha256":h(C),"g23_sha256":h(G23),"g24_sha256":h(G24),
+              "checks":checks,"filesystem_mutation_performed":False,
+              "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          pathlib.Path(os.environ["EXEC_DIR"],"STAGE11_PRECOMMIT.json").write_text(json.dumps(record,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(record,indent=2,sort_keys=True))
+          if record["status"]!="PASS": raise SystemExit(23)
+          PY
+
+          sudo -n /usr/sbin/tune2fs -l /dev/nvme0n1p3 > "$OUT/TUNE2FS_BEFORE.txt"
+          sudo -n /usr/sbin/blockdev --getsize64 /dev/nvme0n1p3 > "$OUT/BLOCKDEV_BYTES.txt"
+          cp "$C" "$OUT/STAGE11_CANDIDATE.json"
+          cp "$G23" "$OUT/STAGE11_G23.json"
+          cp "$G24" "$OUT/STAGE11_G24.json"
+          cp "$EXEC_DIR/STAGE11_PRECOMMIT.json" "$OUT/STAGE11_PRECOMMIT.json"
+
+          set +e
+          sudo -n /usr/sbin/resize2fs /dev/nvme0n1p3 > "$OUT/RESIZE2FS.stdout" 2> "$OUT/RESIZE2FS.stderr"
+          RESIZE_RC=$?
+          set -e
+          echo "$RESIZE_RC" > "$OUT/RESIZE2FS_RC.txt"
+
+          sudo -n /usr/sbin/tune2fs -l /dev/nvme0n1p3 > "$OUT/TUNE2FS_AFTER.txt"
+          lsblk -J -b -o NAME,PATH,TYPE,SIZE,START,FSTYPE,FSAVAIL,FSUSE%,MOUNTPOINTS,UUID,PARTUUID /dev/nvme0n1 > "$OUT/LSBLK_AFTER.json"
+          findmnt -n -o SOURCE,FSTYPE,OPTIONS / > "$OUT/FINDMNT_ROOT_AFTER.txt"
+          if test -r /sys/fs/ext4/nvme0n1p3/errors_count; then cat /sys/fs/ext4/nvme0n1p3/errors_count > "$OUT/EXT4_ERRORS_COUNT_AFTER.txt"; else echo UNAVAILABLE > "$OUT/EXT4_ERRORS_COUNT_AFTER.txt"; fi
+          sudo -n dmesg --level=err,warn 2>/dev/null | grep -Ei 'EXT4-fs|nvme0n1p3' | tail -n 200 > "$OUT/EXT4_DMESG_WARN_ERR_AFTER.txt" || true
+
+          RESIZE_RC="$RESIZE_RC" OUT="$OUT" python3 - <<'PY'
+          import json,os,pathlib,re,subprocess
+          out=pathlib.Path(os.environ["OUT"])
+          c=json.loads((out/"STAGE11_CANDIDATE.json").read_text())
+          def fields(p):
+              t=pathlib.Path(p).read_text(errors="replace")
+              def f(name):
+                  m=re.search(r"^"+re.escape(name)+r":\s*(.+)$",t,re.M)
+                  return m.group(1).strip() if m else None
+              return f
+          before=fields(out/"TUNE2FS_BEFORE.txt"); after=fields(out/"TUNE2FS_AFTER.txt")
+          bcount=int(before("Block count")); acount=int(after("Block count")); bsize=int(after("Block size"))
+          dev=int((out/"BLOCKDEV_BYTES.txt").read_text().strip())
+          fs_after=acount*bsize
+          uuid=subprocess.check_output(["lsblk","-n","-o","UUID","/dev/nvme0n1p3"],text=True).strip()
+          puid=subprocess.check_output(["lsblk","-n","-o","PARTUUID","/dev/nvme0n1p3"],text=True).strip()
+          root=(out/"FINDMNT_ROOT_AFTER.txt").read_text().split()
+          er=(out/"EXT4_ERRORS_COUNT_AFTER.txt").read_text().strip()
+          ec=None if er=="UNAVAILABLE" else int(er)
+          dmesg=(out/"EXT4_DMESG_WARN_ERR_AFTER.txt").read_text(errors="replace").lower()
+          fatal=any(x in dmesg for x in ["ext4-fs error","remounting filesystem read-only","aborting journal","i/o error"])
+          checks={
+              "resize_rc_zero":int(os.environ["RESIZE_RC"])==0,
+              "block_count_increased":acount>bcount,
+              "uses_full_device_blocks":0 <= dev-fs_after < bsize,
+              "uuid_preserved":uuid==c.get("uuid"),
+              "partuuid_preserved":puid==c.get("partuuid"),
+              "root_preserved":len(root)>=2 and root[0]=="/dev/nvme0n1p3" and root[1]=="ext4",
+              "filesystem_state_clean":after("Filesystem state")=="clean",
+              "errors_count_zero_or_unavailable":ec in (None,0),
+              "no_fatal_ext4_marker":not fatal,
+          }
+          q={"status":"PASS" if all(checks.values()) else "HOLD","checks":checks,
+             "block_count_before":bcount,"block_count_after":acount,"block_size":bsize,
+             "filesystem_bytes_after":fs_after,"block_device_bytes":dev}
+          (out/"RESIZE_POSTCHECK.json").write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if q["status"]!="PASS": raise SystemExit(31)
+          PY
+
+      - name: Full post-resize PROYECTOS non-regression verification
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/stage11-execution-$GITHUB_RUN_ID"
+          VERIFY_OUT="$OUT/PROYECTOS_POST_VERIFY.json"
+          VERIFY=(python3 server/r4-master/part4_r2_verify_tree_v2.py
+            --root "$HOME/PROYECTOS"
+            --manifest "$RUNNER_TEMP/baseline/PROYECTOS_MANIFEST.jsonl.gz"
+            --out "$VERIFY_OUT"
+            --allow-ext4-root-lost-found)
+          set +e
+          if command -v ionice >/dev/null 2>&1; then
+            nice -n 10 ionice -c2 -n7 ${VERIFY[@]}
+          else
+            nice -n 10 ${VERIFY[@]}
+          fi
+          VERIFY_RC=$?
+          set -e
+          echo "$VERIFY_RC" > "$OUT/PROYECTOS_POST_VERIFY_RC.txt"
+
+          VERIFY_RC="$VERIFY_RC" OUT="$OUT" EXEC_DIR="$HOME/.local/state/louksna/r4-master-part1-part9/PART_4_P3_HARDENED" python3 - <<'PY'
+          import datetime as dt,hashlib,json,os,pathlib
+          out=pathlib.Path(os.environ["OUT"]); d=pathlib.Path(os.environ["EXEC_DIR"])
+          c=json.loads((out/"STAGE11_CANDIDATE.json").read_text())
+          g23=json.loads((out/"STAGE11_G23.json").read_text())
+          g24=json.loads((out/"STAGE11_G24.json").read_text())
+          post=json.loads((out/"RESIZE_POSTCHECK.json").read_text())
+          v=json.loads((out/"PROYECTOS_POST_VERIFY.json").read_text())
+          h=lambda p: hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
+          strict=(
+              int(os.environ["VERIFY_RC"])==0
+              and v.get("status")=="PASS"
+              and v.get("manifest_sha256")=="99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e"
+              and v.get("seen_records")==498092
+              and v.get("counts")=={"file":436072,"dir":62016,"symlink":4,"other":0}
+              and v.get("regular_file_bytes")==200490852057
+              and v.get("mismatch_count")==0
+          )
+          checks={
+              "resize_postcheck":post.get("status")=="PASS" and all(post.get("checks",{}).values()),
+              "proyectos_post_verify":strict,
+              "g23_pass":g23.get("status")=="PASS",
+              "g24_pass":g24.get("status")=="PASS",
+              "candidate_bound":g23.get("candidate_sha256")==h(out/"STAGE11_CANDIDATE.json")==g24.get("candidate_sha256"),
+              "g23_g24_bound":g24.get("g23_sha256")==h(out/"STAGE11_G23.json"),
+          }
+          q={
+              "schema":"LOUKSNA_R4_PART4_STAGE11_EXT4_RESULT/1.0",
+              "status":"PASS" if all(checks.values()) else "HOLD",
+              "scope":"ONE_ONLINE_EXT4_GROW_ONLY",
+              "checks":checks,
+              "candidate_sha256":h(out/"STAGE11_CANDIDATE.json"),
+              "g23_sha256":h(out/"STAGE11_G23.json"),
+              "g24_sha256":h(out/"STAGE11_G24.json"),
+              "resize_postcheck_sha256":h(out/"RESIZE_POSTCHECK.json"),
+              "proyectos_post_verify_sha256":h(out/"PROYECTOS_POST_VERIFY.json"),
+              "filesystem_bytes_before":c.get("filesystem_bytes_before"),
+              "filesystem_bytes_after":post.get("filesystem_bytes_after"),
+              "block_device_bytes":post.get("block_device_bytes"),
+              "resize2fs_attempts_performed":1,
+              "filesystem_mutation_performed":True,
+              "disk_geometry_mutation_performed":False,
+              "partition_table_mutation_performed":False,
+              "format_performed":False,
+              "shrink_performed":False,
+              "reboot_performed":False,
+              "post_proyectos_records":v.get("seen_records"),
+              "post_proyectos_mismatch_count":v.get("mismatch_count"),
+              "recorded_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          raw=json.dumps(q,indent=2,sort_keys=True)+"\n"
+          (out/"STAGE11_RESULT.json").write_text(raw)
+          (d/"STAGE11_RESULT.json").write_text(raw)
+          (d/"STAGE11_G23.json").write_bytes((out/"STAGE11_G23.json").read_bytes())
+          (d/"STAGE11_G24.json").write_bytes((out/"STAGE11_G24.json").read_bytes())
+          print(raw)
+          if q["status"]!="PASS": raise SystemExit(41)
+          PY
+
+          sha256sum "$OUT"/* | sort > "$OUT/SHA256SUMS.txt"
+
+      - name: Upload complete Stage11 evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-stage11-ext4-result
+          path: ${{ runner.temp }}/stage11-execution-${{ github.run_id }}
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 0
