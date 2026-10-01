@@ -1,0 +1,14 @@
+{
+  "schema": "LOUKSNA_R4_PART4_STAGE9_REQUEST/1.0",
+  "requested_stage": 9,
+  "operation": "EVALUATE_STAGE9_REBOOT_REQUIREMENT",
+  "source_stage8_run_id": 36922669386,
+  "source_stage8_status": "PASS",
+  "expected_kernel_current": true,
+  "expected_reboot_required": false,
+  "allow_reboot": false,
+  "allow_disk_mutation": false,
+  "allow_filesystem_mutation": false,
+  "fail_closed": true,
+  "requested_at_utc": "2026-10-01T20:38:00Z"
+}
