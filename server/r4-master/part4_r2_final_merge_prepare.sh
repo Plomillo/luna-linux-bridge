@@ -243,12 +243,12 @@ sudo -n chroot "$NEWROOT_MNT" /usr/sbin/update-initramfs -u -k all
 sudo -n chroot "$NEWROOT_MNT" /usr/sbin/grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=LOUKSNA-P3 --recheck
 sudo -n chroot "$NEWROOT_MNT" /usr/sbin/update-grub
 
-grep -F "$P3_UUID" "$NEWROOT_MNT/etc/fstab" >/dev/null || hold "NEW_FSTAB_MISSING_P3_UUID"
+sudo -n grep -F "$P3_UUID" "$NEWROOT_MNT/etc/fstab" >/dev/null || hold "NEW_FSTAB_MISSING_P3_UUID"
 sudo -n grep -F "$P3_UUID" "$NEWROOT_MNT/boot/grub/grub.cfg" >/dev/null || hold "NEW_GRUB_MISSING_P3_UUID"
-test -x "$NEWROOT_MNT/usr/bin/python3" || hold "NEWROOT_PYTHON_MISSING"
-test -e "$NEWROOT_MNT/etc/os-release" || hold "NEWROOT_OS_RELEASE_MISSING"
-test -d "$NEWROOT_MNT/home/$OWNER/actions-runner" || hold "NEWROOT_RUNNER_MISSING"
-test -f "$NEWROOT_MNT/home/$OWNER/.local/state/louksna/r4-master-part1-part9/PART_4_R2/STATE.json" || hold "NEWROOT_STATE_MISSING"
+sudo -n test -x "$NEWROOT_MNT/usr/bin/python3" || hold "NEWROOT_PYTHON_MISSING"
+sudo -n test -e "$NEWROOT_MNT/etc/os-release" || hold "NEWROOT_OS_RELEASE_MISSING"
+sudo -n test -d "$NEWROOT_MNT/home/$OWNER/actions-runner" || hold "NEWROOT_RUNNER_MISSING"
+sudo -n test -f "$NEWROOT_MNT/home/$OWNER/.local/state/louksna/r4-master-part1-part9/PART_4_R2/STATE.json" || hold "NEWROOT_STATE_MISSING"
 
 # Install one-shot postboot dispatcher into the future root.
 sudo -n mkdir -p "$NEWROOT_MNT/usr/local/lib/louksna"
@@ -297,7 +297,7 @@ WantedBy=multi-user.target
 EOF
 sudo -n chroot "$NEWROOT_MNT" /usr/bin/systemctl enable louksna-part4-r2-postboot-dispatch.service
 
-cp "$NEWROOT_MNT/etc/fstab" "$OUT/fstab.newroot"
+sudo -n cat "$NEWROOT_MNT/etc/fstab" > "$OUT/fstab.newroot"
 sudo -n cat "$NEWROOT_MNT/boot/grub/grub.cfg" > "$OUT/grub.cfg.newroot"
 (sudo -n efibootmgr -v || true) > "$OUT/efibootmgr.after-grub-install.txt"
 python3 - "$OUT/efibootmgr.after-grub-install.txt" "$OUT/CANDIDATE_BOOT_ENTRY.json" <<'PY'
