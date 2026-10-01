@@ -80,6 +80,14 @@ jobs:
             parted --version 2>&1 || true
             lsblk --version 2>&1 || true
           } > "$OUT/TOOL_VERSIONS.txt"
+          {
+            echo "=== APT POLICY cloud-guest-utils ==="
+            apt-cache policy cloud-guest-utils 2>&1 || true
+            echo "=== INSTALLED STATUS ==="
+            dpkg-query -W -f='status=${Status}\nversion=${Version}\n' cloud-guest-utils 2>&1 || true
+            echo "=== SIMULATED INSTALL ==="
+            sudo -n apt-get -s install cloud-guest-utils 2>&1 || true
+          } > "$OUT/GROWPART_PACKAGE_SIMULATION.txt"
 
           if command -v growpart >/dev/null 2>&1; then
             if grep -Eq -- 'dry-run|--dry-run|-N' "$OUT/GROWPART_HELP.txt"; then
@@ -94,6 +102,8 @@ jobs:
           cat "$OUT/GROWPART_HELP.txt"
           echo "=== GROWPART DRY RUN ==="
           cat "$OUT/GROWPART_DRYRUN.txt"
+          echo "=== GROWPART PACKAGE SIMULATION ==="
+          cat "$OUT/GROWPART_PACKAGE_SIMULATION.txt"
           echo "=== RESIZE2FS DIAGNOSTIC ==="
           cat "$OUT/RESIZE2FS_DIAGNOSTIC.txt"
           echo "=== RESIZE2FS MINIMUM READ-ONLY ESTIMATE ==="
