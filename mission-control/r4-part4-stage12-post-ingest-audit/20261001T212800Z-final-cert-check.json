@@ -1,0 +1,8 @@
+{
+  "schema": "LOUKSNA_R4_PART4_FINAL_CERT_CHECK_REQUEST/1.0",
+  "reason": "CONFIRM_LOCAL_PART4_CERTIFICATE_AND_PART5_HANDOFF_AFTER_GH_JSON_FIX",
+  "expected_part4_certificate": true,
+  "expected_current_part": "PART_5",
+  "read_only": true,
+  "requested_at_utc": "2026-10-01T21:28:00Z"
+}
