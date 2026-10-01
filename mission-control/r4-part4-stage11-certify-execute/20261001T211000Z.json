@@ -1,0 +1,22 @@
+{
+  "schema": "LOUKSNA_R4_PART4_STAGE11_EXECUTION_REQUEST/1.0",
+  "requested_stage": 11,
+  "operation": "NEW_G23_NEW_G24_FS_ONLY_SINGLE_RESIZE2FS_POST_FULL_VERIFY",
+  "candidate_run_id": 36925432293,
+  "candidate_artifact": "r4-part4-stage11-candidate",
+  "expected_device": "/dev/nvme0n1p3",
+  "expected_command": [
+    "sudo",
+    "-n",
+    "/usr/sbin/resize2fs",
+    "/dev/nvme0n1p3"
+  ],
+  "max_resize2fs_attempts": 1,
+  "prohibit_partition_mutation": true,
+  "prohibit_format": true,
+  "prohibit_shrink": true,
+  "prohibit_reboot": true,
+  "require_post_full_proyectos_verify": true,
+  "fail_closed": true,
+  "requested_at_utc": "2026-10-01T21:10:00Z"
+}
