@@ -1,0 +1,20 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_FINAL_MERGE_CONTINUATION/1.0",
+  "status": "AUTHORIZED_CONTINUATION",
+  "reason": "Resume from current valid post-retire/P3 state after banal privilege-propagation remediation.",
+  "source_failed_run": 36835500954,
+  "source_failed_job": 110282014308,
+  "bug_record": "mission-control/r4-plan-definitivo/bug-ledger/BUG-PART4-R2-PRIVILEGE-PROPAGATION-20261001.json",
+  "script_fix_commits": [
+    "5d445454d45b1eab42a9d02a41123ae1db82b569",
+    "a5fc1855986793d885e4b3caf0571f5b8295edd3"
+  ],
+  "sudo_policy_commit": "1ec7ccd27196987a779452a969f419a811a722d3",
+  "repeat_projects_migration": false,
+  "repeat_partition_migration": false,
+  "repeat_certified_work": false,
+  "resume": "FINAL_MERGE_PREBOOT_FROM_CURRENT_VALID_STATE",
+  "authority": "Louksna.md",
+  "assurance": "PUAC2.md",
+  "fail_closed": true
+}
