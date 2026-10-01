@@ -13,7 +13,7 @@ EVIDENCE=STATE/"evidence"
 LOCK=STATE/"master.lock"
 REPO="Plomillo/luna-linux-bridge"
 BRANCH="staging/luna-r4-master-part1-part9-20260929"
-CERT_WORKFLOW=".github/workflows/luna-r4-master-part-certify.yml"
+CERT_WORKFLOW=".github/workflows/luna-r4-master-part-certify.yml"\nCERT_WORKFLOW_PART4=".github/workflows/luna-r4-master-part4-r2-certify.yml"
 APC=["sudo","-n","/usr/local/sbin/louksna-apc"]
 EXPECTED_UI_IMAGE="8a9852c4155d64fd74059c7239e67c82e16e5acd556627d70575db85078d4ed4"
 EXPECTED_UI_KDE="c21e04d5447e123b59fc9b94d2e9684bc03ea164999ef6f60210e257557a16dc"
@@ -410,6 +410,11 @@ def part4(mid):
         "autopilot_requires_final_g24":True,
         "final_merge_addendum_reference":"server/r4-master/PART4_R2_FINAL_MERGE_ADDENDUM.json",
         "part4_close_requires_final_merge_g24":True,
+        "final_merge_g24_sha256":r2.get("final_merge_g24_sha256"),
+        "storage_migration_g24_sha256":r2.get("storage_migration_g24_sha256"),
+        "p2_p4_retirement_g24_sha256":r2.get("p2_p4_retirement_g24_sha256"),
+        "lost_found_exception_certified":r2.get("lost_found_exception_certified") is True,
+        "migration_replayed":r2.get("migration_replayed"),
     }
     ev=evidence_base("PART_4",mid,checks,"PASS" if not blockers else "HOLD",blockers,details)
     ev["human_gates"]={"H2":checks["H2"],"H4":checks["H4"]}
@@ -483,7 +488,7 @@ def publish_and_certify(ev):
     for _ in range(120):
         q=gh_json(["api",f"repos/{REPO}/actions/runs?branch={BRANCH}&event=push&per_page=100","--jq",'{"workflow_runs":[.workflow_runs[]|{id,head_sha,path,status,conclusion}]}'],timeout=30)
         for rr in q.get("workflow_runs",[]):
-            if rr.get("head_sha")==commit and rr.get("path")==CERT_WORKFLOW: run_id=rr["id"]; break
+            expected_workflow=CERT_WORKFLOW_PART4 if part=="PART_4" else CERT_WORKFLOW\n            if rr.get("head_sha")==commit and rr.get("path")==expected_workflow: run_id=rr["id"]; break
         if run_id: break
         time.sleep(2)
     if not run_id: raise RuntimeError("CERT_WORKFLOW_NOT_FOUND")
