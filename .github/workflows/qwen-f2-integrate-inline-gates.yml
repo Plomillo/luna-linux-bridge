@@ -177,7 +177,7 @@ jobs:
             "constraints":{"fail_closed":true,"no_silent_operations":true,"execution_authority":false}
           }
           JSON
-          nice -n 10 timeout 240s python3 -B bridge/reasoning/qwen_provider.py             --request "$OUT/REQUEST.json" --out "$OUT/REASONING_RESULT.json"             --timeout-sec 210 --threads 2 --ctx-size 3072 --reasoning-budget 0             | tee "$OUT/PROVIDER_RECEIPT.txt"
+          nice -n 10 timeout 240s python3 -B bridge/reasoning/qwen_provider.py             --request "$OUT/REQUEST.json" --out "$OUT/REASONING_RESULT.json"             --timeout-sec 210 --threads 2 --ctx-size 3072 --reasoning-budget 256             | tee "$OUT/PROVIDER_RECEIPT.txt"
           PYTHONPATH=bridge:bridge/reasoning python3 - "$OUT" <<'PY'
           import json,pathlib,sys
           from bridge_adapter import bind_to_bridge
