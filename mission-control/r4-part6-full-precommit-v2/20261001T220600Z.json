@@ -1,0 +1,12 @@
+{
+  "schema": "LOUKSNA_R4_PART6_FULL_PRECOMMIT_V2_REQUEST/1.0",
+  "candidate_run_id": 36932586115,
+  "candidate_artifact_id": 11196981642,
+  "operation": "INDEPENDENT_FULL_G23_THEN_EXACT_OIDC_G24",
+  "require_proton_app_info_identity": true,
+  "authorize_host_mutation": false,
+  "require_explicit_steam_repo_side_effects": true,
+  "require_waydroid_script_effect_inspection": true,
+  "fail_closed": true,
+  "requested_at_utc": "2026-10-01T22:06:00Z"
+}
