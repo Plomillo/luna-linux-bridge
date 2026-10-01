@@ -1060,8 +1060,183 @@ def part4_hardened_progress(mid):
             "mutation_performed":q.get("filesystem_mutation_performed",False),
         },11,"DIAGNOSE_STAGE11_CERTIFIED_RESULT")
 
-    # Stage 12 remains exact-scope gated until fresh terminal G23/G24 and
-    # monotonic handoff evidence are materialized.
+    # Stage 12: consume fresh terminal evidence with separate G24 scopes.
+    # Only after both certificates and the live effective state agree may the
+    # controller close the four terminal PART_4_R2 state flags. No disk or
+    # filesystem mutation is authorized here.
+    if stage==12:
+        candidate=PART4_P3_EXEC_DIR/"STAGE12_CANDIDATE.json"
+        g23p=PART4_P3_EXEC_DIR/"STAGE12_G23.json"
+        mergeg24p=PART4_P3_EXEC_DIR/"STAGE12_FINAL_MERGE_G24.json"
+        part4g24p=PART4_P3_EXEC_DIR/"STAGE12_PART4_G24.json"
+        result=PART4_P3_EXEC_DIR/"STAGE12_RESULT.json"
+        required=[candidate,g23p,mergeg24p,part4g24p,result]
+        if not all(p.is_file() for p in required):
+            return record(12,"AWAITING_TERMINAL_CERTIFICATION",{
+                "candidate_present":candidate.is_file(),
+                "g23_present":g23p.is_file(),
+                "final_merge_g24_present":mergeg24p.is_file(),
+                "part4_final_g24_present":part4g24p.is_file(),
+                "result_present":result.is_file(),
+                "mutation_performed":False,
+            },12,"COMPLETE_STAGE12_TERMINAL_G23_G24")
+
+        c=read_json(candidate,{}) or {}
+        g23=read_json(g23p,{}) or {}
+        mg24=read_json(mergeg24p,{}) or {}
+        pg24=read_json(part4g24p,{}) or {}
+        q=read_json(result,{}) or {}
+        stage11=PART4_P3_EXEC_DIR/"STAGE11_RESULT.json"
+        expected_blockers={
+            "final_linux_layout",
+            "part4_r2_final_g24",
+            "final_merge_g24",
+            "verified_root_on_consolidated_linux",
+        }
+        try:
+            root_source=os.path.realpath(run(["findmnt","-n","-o","SOURCE","/"],check=True)["stdout"].strip())
+            root_fstype=run(["findmnt","-n","-o","FSTYPE","/"],check=True)["stdout"].strip()
+            efi_source=os.path.realpath(run(["findmnt","-n","-o","SOURCE","/boot/efi"],check=True)["stdout"].strip())
+            efi_fstype=run(["findmnt","-n","-o","FSTYPE","/boot/efi"],check=True)["stdout"].strip()
+            p3_start=int(pathlib.Path("/sys/class/block/nvme0n1p3/start").read_text().strip())
+            p3_size=int(pathlib.Path("/sys/class/block/nvme0n1p3/size").read_text().strip())
+            uuid_now=run(["lsblk","-n","-o","UUID","/dev/nvme0n1p3"],check=True)["stdout"].strip()
+            partuuid_now=run(["lsblk","-n","-o","PARTUUID","/dev/nvme0n1p3"],check=True)["stdout"].strip()
+            parts=run(["lsblk","-ln","-o","PATH,TYPE","/dev/nvme0n1"],check=True)["stdout"].splitlines()
+            partitions=sorted(line.split()[0] for line in parts if len(line.split())>=2 and line.split()[1]=="part")
+            live_ok=True
+        except Exception:
+            root_source=root_fstype=efi_source=efi_fstype=uuid_now=partuuid_now=None
+            p3_start=p3_size=None
+            partitions=[]
+            live_ok=False
+
+        checks={
+            "result_status":q.get("status")=="PASS",
+            "result_scope":q.get("scope")=="PART4_TERMINAL_CERTIFICATION_AND_MONOTONIC_HANDOFF",
+            "result_checks":all(q.get("checks",{}).values()),
+            "close_eligible":q.get("four_final_blockers_close_eligible") is True,
+            "result_no_disk_mutation":q.get("disk_mutation_performed") is False,
+            "result_no_fs_mutation":q.get("filesystem_mutation_performed") is False,
+            "result_no_state_mutation":q.get("state_flags_mutated") is False,
+            "candidate_ready":c.get("status")=="CANDIDATE_READY" and all(c.get("checks",{}).values()),
+            "candidate_scope":c.get("scope")=="PART4_TERMINAL_EFFECTIVE_STATE_CERTIFICATION_ONLY",
+            "candidate_blockers":set(c.get("four_final_blockers_before",[]))==expected_blockers,
+            "candidate_hash_bound":q.get("candidate_sha256")==sha(candidate)==g23.get("candidate_sha256")==mg24.get("candidate_sha256")==pg24.get("candidate_sha256"),
+            "g23_pass":g23.get("status")=="PASS" and g23.get("scope")=="PART4_TERMINAL_EFFECTIVE_STATE_INDEPENDENT_VALIDATION",
+            "g23_hash_bound":q.get("g23_sha256")==sha(g23p)==mg24.get("g23_sha256")==pg24.get("g23_sha256"),
+            "merge_g24_pass":mg24.get("status")=="PASS" and mg24.get("scope")=="PART4_R2_FINAL_MERGE_EFFECTIVE_STATE_ONLY",
+            "merge_g24_hash_bound":q.get("final_merge_g24_sha256")==sha(mergeg24p)==pg24.get("final_merge_g24_sha256"),
+            "merge_flags_exact":set(mg24.get("certified_state_flags",[]))=={
+                "final_linux_layout","final_merge_g24","verified_root_on_consolidated_linux"
+            },
+            "part4_g24_pass":pg24.get("status")=="PASS" and pg24.get("scope")=="PART4_TERMINAL_CERTIFICATION_ONLY",
+            "part4_g24_hash_bound":q.get("part4_final_g24_sha256")==sha(part4g24p),
+            "part4_flag_exact":pg24.get("certified_state_flags")==["part4_r2_final_g24"],
+            "no_certification_propagation":mg24.get("certification_propagated") is False and pg24.get("certification_propagated") is False,
+            "certs_no_disk_auth":mg24.get("disk_mutation_authorized") is False and pg24.get("disk_mutation_authorized") is False,
+            "certs_no_fs_auth":mg24.get("filesystem_mutation_authorized") is False and pg24.get("filesystem_mutation_authorized") is False,
+            "stage11_bound":stage11.is_file() and q.get("stage11_result_sha256")==sha(stage11)==c.get("stage11_result_sha256"),
+            "live_read_ok":live_ok,
+            "live_root":root_source=="/dev/nvme0n1p3" and root_fstype=="ext4",
+            "live_efi":efi_source=="/dev/nvme0n1p1" and efi_fstype=="vfat",
+            "live_partitions":partitions==["/dev/nvme0n1p1","/dev/nvme0n1p3"],
+            "live_p5_absent":not pathlib.Path("/dev/nvme0n1p5").exists(),
+            "live_p3_start":p3_start==567296,
+            "live_p3_size":p3_size==999647887,
+            "live_uuid":uuid_now=="e084ec2a-af39-48b5-bb89-db2dc6a98332",
+            "live_partuuid":partuuid_now=="8e0b4274-21ff-4b16-8180-495381efb1d9",
+        }
+        if not all(checks.values()):
+            return record(12,"HOLD",{
+                "reason":"STAGE12_TERMINAL_CHAIN_OR_LIVE_STATE_NOT_PROVEN",
+                "checks":checks,
+                "mutation_performed":False,
+            },12,"DIAGNOSE_STAGE12_TERMINAL_EVIDENCE")
+
+        r2path=STATE/"PART_4_R2/STATE.json"
+        if not r2path.is_file():
+            return record(12,"HOLD",{
+                "reason":"PART4_R2_STATE_MISSING",
+                "checks":checks,
+                "mutation_performed":False,
+            },12,"RESTORE_PART4_R2_STATE_CHECKPOINT")
+        try:
+            r2_before=read_json(r2path,{}) or {}
+            before_sha=sha(r2path)
+            checkpoint=PART4_P3_EXEC_DIR/"STAGE12_R2_STATE_BEFORE.json"
+            if not checkpoint.is_file():
+                shutil.copy2(r2path,checkpoint)
+            r2_after=dict(r2_before)
+            r2_after.update({
+                "final_linux_layout":True,
+                "verified_root_on_consolidated_linux":True,
+                "final_merge_g24":True,
+                "final_merge_g24_sha256":sha(mergeg24p),
+                "part4_r2_final_g24":True,
+                "part4_r2_final_g24_sha256":sha(part4g24p),
+                "stage12_terminal_candidate_sha256":sha(candidate),
+                "stage12_terminal_g23_sha256":sha(g23p),
+                "stage12_terminal_result_sha256":sha(result),
+                "stage12_terminal_state_update_scope":"FOUR_FINAL_BLOCKERS_ONLY",
+                "stage12_terminal_state_updated_at_utc":utc(),
+            })
+            atomic_json(r2path,r2_after)
+            verified=read_json(r2path,{}) or {}
+            state_checks={
+                "final_linux_layout":verified.get("final_linux_layout") is True,
+                "verified_root":verified.get("verified_root_on_consolidated_linux") is True,
+                "final_merge_g24":verified.get("final_merge_g24") is True,
+                "final_merge_hash":verified.get("final_merge_g24_sha256")==sha(mergeg24p),
+                "part4_final_g24":verified.get("part4_r2_final_g24") is True,
+                "part4_final_hash":verified.get("part4_r2_final_g24_sha256")==sha(part4g24p),
+                "candidate_hash":verified.get("stage12_terminal_candidate_sha256")==sha(candidate),
+                "g23_hash":verified.get("stage12_terminal_g23_sha256")==sha(g23p),
+                "result_hash":verified.get("stage12_terminal_result_sha256")==sha(result),
+            }
+            state_update={
+                "schema":"LOUKSNA_R4_PART4_STAGE12_STATE_UPDATE/1.0",
+                "status":"PASS" if all(state_checks.values()) else "HOLD",
+                "scope":"FOUR_FINAL_BLOCKERS_ONLY",
+                "before_sha256":before_sha,
+                "checkpoint_sha256":sha(checkpoint),
+                "after_sha256":sha(r2path),
+                "final_merge_g24_sha256":sha(mergeg24p),
+                "part4_final_g24_sha256":sha(part4g24p),
+                "checks":state_checks,
+                "disk_mutation_performed":False,
+                "filesystem_mutation_performed":False,
+                "updated_at_utc":utc(),
+            }
+            atomic_json(PART4_P3_EXEC_DIR/"STAGE12_STATE_UPDATE.json",state_update)
+        except Exception as exc:
+            return record(12,"HOLD",{
+                "reason":"STAGE12_STATE_UPDATE_FAILED",
+                "error":type(exc).__name__+":"+str(exc)[:1000],
+                "checks":checks,
+                "mutation_performed":False,
+            },12,"RESTORE_STAGE12_R2_STATE_CHECKPOINT")
+
+        if not all(state_checks.values()):
+            return record(12,"HOLD",{
+                "reason":"STAGE12_STATE_UPDATE_VERIFY_FAILED",
+                "checks":checks,
+                "state_checks":state_checks,
+                "mutation_performed":False,
+            },12,"VERIFY_STAGE12_R2_STATE")
+
+        return record(12,"PASS",{
+            "stage12_result_sha256":sha(result),
+            "stage12_g23_sha256":sha(g23p),
+            "stage12_final_merge_g24_sha256":sha(mergeg24p),
+            "stage12_part4_final_g24_sha256":sha(part4g24p),
+            "stage12_state_update_sha256":sha(PART4_P3_EXEC_DIR/"STAGE12_STATE_UPDATE.json"),
+            "four_final_blockers_closed":True,
+            "checks":checks,
+            "state_checks":state_checks,
+            "mutation_performed":False,
+        },None,"HANDOFF_PART4_TO_PART5")
+
     stage_id=stages[stage-1]["id"]
     return record(stage,"AWAITING_STAGE_HANDLER",{
         "stage_id":stage_id,
