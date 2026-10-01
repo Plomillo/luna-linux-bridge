@@ -1,0 +1,10 @@
+{
+  "schema": "LOUKSNA_AUX_CHROMIUM_MEMORY_RELIEF_REQUEST/1.0",
+  "operation": "CLOSE_CHROMIUM_GRACEFULLY_AND_MEASURE_RAM",
+  "worker_scope": "AUXILIARY_HOUSEKEEPING_ONLY",
+  "preserve_maestro_part6": true,
+  "observer": "LOUKSNA_REMOTE_BRIDGE",
+  "prohibit_debian_download": true,
+  "prohibit_kde_download": true,
+  "requested_at_utc": "2026-10-01T23:03:00Z"
+}
