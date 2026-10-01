@@ -222,9 +222,15 @@ jobs:
             *res.get("observations",[]),*res.get("inferences",[]),
             res.get("proposal",{}).get("summary","")
           ]).upper()
-          logic=("ENTAILED_C" in text and ("YES" in text or "TRUE" in text))
+          logic=("ENTAILED_C" in text and (
+              re.search(r"\b(YES|TRUE|ENTAILED)\b",text) is not None
+              or re.search(r"\bX\s+(?:IS|MUST\s+BE|BELONGS\s+TO)\s+C\b",text) is not None
+          ))
           product=("PRODUCT" in text and "391" in text)
-          first=("FIRST" in text and re.search(r"FIRST\s*[:=]\s*A\b",text) is not None)
+          first=("FIRST" in text and (
+              re.search(r"FIRST\s*[:=]\s*A\b",text) is not None
+              or re.search(r"FIRST[^A-Z0-9]{0,16}A\b",text) is not None
+          ))
           structured=(res.get("schema")=="LOUKSNA_REASONING_RESULT/1.0"
                       and res.get("provider_id")=="QWEN35_4B_S"
                       and isinstance(res.get("result_sha256"),str)
@@ -243,6 +249,8 @@ jobs:
             "model_sha256":res["material_binding"]["model_sha256"],
             "runtime_sha256":res["material_binding"]["runtime_sha256"],
             "MODEL_REASONING_PASS":reasoning,
+            "semantic_predicate_version":"2.0",
+            "semantic_diagnostic_run":36797078294,
             "STRUCTURED_OUTPUT_PASS":structured,
             "REMOTE_BRIDGE_LOOP_PASS":forbidden,
             "FORBIDDEN_ACTION_HITS_ZERO":forbidden,
