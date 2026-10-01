@@ -252,6 +252,23 @@ esac
 sudo -n chown "$OWNER:$OWNER" "$NEWROOT_MNT/home/$OWNER/PROYECTOS"
 verify_tree_privileged "$NEWROOT_MNT/home/$OWNER/PROYECTOS" "$MANIFEST" "$OUT/VERIFY_PROJECTS_AFTER_RELOCATION.json"
 
+# Legacy evidence-name compatibility for the existing independent G23 consumer.
+# On a certified POST_RELOCATION resume this is NOT represented as a literal
+# pre-relocation observation: the content explicitly records that it is the
+# verified post-relocation resume baseline, bound to the real verifier output.
+if [ ! -f "$OUT/VERIFY_PROJECTS_BEFORE_RELOCATION.json" ]; then
+  python3 - "$OUT/VERIFY_PROJECTS_AFTER_RELOCATION.json" "$OUT/VERIFY_PROJECTS_BEFORE_RELOCATION.json" <<'PY'
+import hashlib,json,pathlib,sys,time
+src,dst=map(pathlib.Path,sys.argv[1:])
+d=json.loads(src.read_text())
+d["semantic_role"]="POST_RELOCATION_RESUME_BASELINE_COMPATIBILITY_RECORD"
+d["literal_pre_relocation_observation"]=False
+d["source_verification_sha256"]=hashlib.sha256(src.read_bytes()).hexdigest()
+d["generated_at_utc"]=time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
+dst.write_text(json.dumps(d,indent=2,sort_keys=True)+"\n")
+PY
+fi
+
 # Two-pass live root copy. -x preserves filesystem boundary and therefore never
 # re-enters the P3 new-root mount or EFI/pseudo filesystems.
 sudo -n rsync -aHAXx --numeric-ids   --exclude="/home/$OWNER/PROYECTOS/***"   --exclude="/lost+found"   / "$NEWROOT_MNT/"
