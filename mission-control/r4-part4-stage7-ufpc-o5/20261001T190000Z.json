@@ -1,0 +1,15 @@
+{
+  "mission_id": "MIS-e5963403a3b44ee8be96",
+  "directive_id": "PART4-STAGE7-UFPC-O5-20261001",
+  "authority": "Louksna.md",
+  "action": "EXECUTE_UNIVERSAL_FRESH_PRECOMMIT_O5_WITH_MAESTRO_AND_LRB",
+  "worker": "CUSTOSZ_V7_MAESTRO",
+  "observer": "LOUKSNA_REMOTE_BRIDGE",
+  "maximum_work_seconds": 90,
+  "expected_current_stage": 7,
+  "expected_last_completed_stage": 6,
+  "partition_geometry_mutation_authorized": false,
+  "filesystem_resize_authorized": false,
+  "stage7_commit_authorized": false,
+  "start_immediately": true
+}
