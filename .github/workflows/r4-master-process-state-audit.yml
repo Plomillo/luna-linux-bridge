@@ -1,0 +1,62 @@
+name: "R4 master — process state audit"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-master-process-state-audit.yml
+      - mission-control/r4-master-process-state-audit/**
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Inspect Maestro process tree read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+
+          PID="$(systemctl --user show luna-r4-master-part1-part9.service -p MainPID --value)"
+          echo "MAINPID=$PID"
+          test "$PID" -gt 0
+          echo "=== SERVICE ==="
+          systemctl --user show luna-r4-master-part1-part9.service -p ActiveState -p SubState -p Result -p MainPID -p NRestarts
+
+          echo "=== MAIN CMDLINE ==="
+          tr '\0' ' ' < "/proc/$PID/cmdline"; echo
+          echo "=== MAIN STATUS ==="
+          grep -E '^(Name|State|Pid|PPid|Threads|VmRSS):' "/proc/$PID/status" || true
+          echo "=== MAIN WCHAN ==="
+          cat "/proc/$PID/wchan" || true
+          echo
+
+          echo "=== CHILDREN ==="
+          CHILDREN="$(cat "/proc/$PID/task/$PID/children" 2>/dev/null || true)"
+          echo "$CHILDREN"
+          for C in $CHILDREN; do
+            echo "--- CHILD $C ---"
+            tr '\0' ' ' < "/proc/$C/cmdline" 2>/dev/null || true; echo
+            grep -E '^(Name|State|Pid|PPid|Threads|VmRSS):' "/proc/$C/status" 2>/dev/null || true
+            cat "/proc/$C/wchan" 2>/dev/null || true; echo
+            GC="$(cat "/proc/$C/task/$C/children" 2>/dev/null || true)"
+            echo "GRANDCHILDREN=$GC"
+            for G in $GC; do
+              echo "----- GRANDCHILD $G -----"
+              tr '\0' ' ' < "/proc/$G/cmdline" 2>/dev/null || true; echo
+              grep -E '^(Name|State|Pid|PPid|Threads|VmRSS):' "/proc/$G/status" 2>/dev/null || true
+              cat "/proc/$G/wchan" 2>/dev/null || true; echo
+            done
+          done
+
+          echo "=== MASTER STATUS ==="
+          cat "$HOME/.local/state/louksna/r4-master-part1-part9/MASTER_STATUS.json"
+          echo "=== RECENT JOURNAL ==="
+          journalctl --user -u luna-r4-master-part1-part9.service -n 80 --no-pager -o short-iso || true
