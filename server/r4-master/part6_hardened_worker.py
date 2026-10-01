@@ -12,7 +12,9 @@ REPO="Plomillo/luna-linux-bridge"
 BRANCH="staging/luna-r4-master-part1-part9-20260929"
 
 STEAM_URL="https://repo.steampowered.com/steam/archive/stable/steam_latest.deb"
+STEAM_DEB_SHA256="765aba9a0ed339a50226ceb614fcc9879a991ba184098bc8de920efb12c714a4"
 STEAMCMD_URL="https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz"
+STEAMCMD_SHA256="cebf0046bfd08cf45da6bc094ae47aa39ebf4155e5ede41373b579b8f1071e7c"
 PROTON_RELEASE="proton-11.0-2"
 PROTON_APP_ID=4628710
 LUTRIS_URL="https://github.com/lutris/lutris/releases/download/v0.5.22/lutris_0.5.22_all.deb"
@@ -20,6 +22,7 @@ LUTRIS_SHA256="88a350357e0438b423cdf93108f27942de094dc19f973df73839f3b0b0bafaa0"
 PRISM_URL="https://github.com/PrismLauncher/PrismLauncher/releases/download/11.1.1/PrismLauncher-Linux-x86_64.AppImage"
 PRISM_SHA256="bb81038c56a09e944659e4b808dbfbc52d52d5e3a3ffe32216689a3ca1508d3d"
 WAYDROID_REPO_URL="https://repo.waydro.id"
+WAYDROID_SCRIPT_SHA256="2cf79f3cc82adb8c235faca0240c1312867afab0221e9aaf7a539a8614a503fd"
 FLATHUB_REPO="https://dl.flathub.org/repo/flathub.flatpakrepo"
 BOTTLES_APP="com.usebottles.bottles"
 
@@ -225,7 +228,7 @@ def main():
         return 0
 
     last_fail=read_json(D/"LAST_FAILURE.json",{}) or {}
-    if last_fail.get("worker_version")=="2.0" and last_fail.get("recorded_epoch"):
+    if last_fail.get("worker_version")=="2.1" and last_fail.get("recorded_epoch"):
         if time.time()-float(last_fail["recorded_epoch"]) < 600:
             print("PART6_BACKOFF_ACTIVE")
             return 23
@@ -250,8 +253,10 @@ def main():
         actions.append(apt_install(base_pkgs,timeout=2400))
 
         steam_deb=SOURCES/"steam_latest.deb"
-        if not steam_deb.is_file():
+        if not steam_deb.is_file() or sha(steam_deb)!=STEAM_DEB_SHA256:
             download(STEAM_URL,steam_deb)
+        if sha(steam_deb)!=STEAM_DEB_SHA256:
+            raise RuntimeError("STEAM_DEB_SHA256_MISMATCH")
         steam_meta=run(["dpkg-deb","-f",str(steam_deb),"Package","Version"],timeout=30,check=True)
         if not pkg_version("steam-launcher"):
             actions.append(apt_install([steam_deb],timeout=2400))
@@ -279,11 +284,13 @@ def main():
             link.symlink_to(prism)
 
         way_script=SOURCES/"waydroid-repo-bootstrap.sh"
-        if not way_script.is_file():
+        if not way_script.is_file() or sha(way_script)!=WAYDROID_SCRIPT_SHA256:
             download(WAYDROID_REPO_URL,way_script,timeout=180)
+        if sha(way_script)!=WAYDROID_SCRIPT_SHA256:
+            raise RuntimeError("WAYDROID_BOOTSTRAP_SHA256_MISMATCH")
         way_script.chmod(0o700)
         if not pkg_version("waydroid"):
-            actions.append(run(["sudo","-n","bash",str(way_script),"-s","trixie"],timeout=300,check=True))
+            actions.append(run(["sudo","-n","bash",str(way_script),"trixie"],timeout=300,check=True))
             actions.append(run(["sudo","-n","/usr/bin/apt-get","update"],timeout=900,check=True,env=env))
             policy=run(["apt-cache","policy","waydroid"],timeout=60,check=True)
             if not any(x in policy["stdout"] for x in ("Candidate:","Candidato:")):
@@ -297,8 +304,10 @@ def main():
         actions.append(run(["sudo","-n","/usr/bin/systemctl","enable","--now","waydroid-container.service"],timeout=180,check=False))
 
         steamcmd_tar=SOURCES/"steamcmd_linux.tar.gz"
-        if not steamcmd_tar.is_file():
+        if not steamcmd_tar.is_file() or sha(steamcmd_tar)!=STEAMCMD_SHA256:
             download(STEAMCMD_URL,steamcmd_tar,timeout=900)
+        if sha(steamcmd_tar)!=STEAMCMD_SHA256:
+            raise RuntimeError("STEAMCMD_SHA256_MISMATCH")
         steamcmd_dir=COMPONENTS/"steamcmd"
         steamcmd_dir.mkdir(parents=True,exist_ok=True)
         steamcmd=steamcmd_dir/"steamcmd.sh"
@@ -430,12 +439,12 @@ def main():
             "filesystem_format_or_resize_performed":False,
             "unrelated_user_data_deleted":False,
             "certification_propagated":False,
-            "worker_version":"2.0",
+            "worker_version":"2.1",
             "recorded_at_utc":utc(),
         }
         atomic_json(candidate,candidate_obj)
         if status!="PASS":
-            atomic_json(D/"LAST_FAILURE.json",{"schema":"LOUKSNA_R4_PART6_WORKER_FAILURE/1.0","worker_version":"2.0",
+            atomic_json(D/"LAST_FAILURE.json",{"schema":"LOUKSNA_R4_PART6_WORKER_FAILURE/1.0","worker_version":"2.1",
                 "recorded_epoch":time.time(),"recorded_at_utc":utc(),"reason":"FUNCTIONAL_OR_INVARIANT_GATE_FAILED",
                 "candidate_sha256":sha(candidate),"checks":checks,"functional":functional})
             print(json.dumps(candidate_obj,indent=2,sort_keys=True))
@@ -447,7 +456,7 @@ def main():
         return 0
 
     except Exception as e:
-        rec={"schema":"LOUKSNA_R4_PART6_WORKER_FAILURE/1.0","worker_version":"2.0","recorded_epoch":time.time(),
+        rec={"schema":"LOUKSNA_R4_PART6_WORKER_FAILURE/1.0","worker_version":"2.1","recorded_epoch":time.time(),
              "recorded_at_utc":utc(),"error":type(e).__name__+":"+str(e),"actions_tail":actions[-5:],
              "rollback_checkpoint_path":str(D/"ROLLBACK_CHECKPOINT.json"),"rollback_script_path":str(rollback)}
         atomic_json(D/"LAST_FAILURE.json",rec)
