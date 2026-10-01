@@ -1,0 +1,78 @@
+name: "R4 — LOUKSNA Remote Bridge forensic snapshot"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-remote-bridge-forensic/**
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Capture Remote Bridge status + observe read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/lrb-forensic-$GITHUB_RUN_ID"
+          mkdir -p "$OUT"
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+          mapfile -t LINKS < <(find "$HOME/.local/lib/louksna-remote-bridge" -type f -path '*/bridge/live_link.py' -print 2>/dev/null | sort)
+          test "${#LINKS[@]}" -ge 1
+          LINK="${LINKS[-1]}"
+          STATE_DIR="$HOME/.local/state/louksna/remote-bridge/service"
+          SOCKET_DIR="$XDG_RUNTIME_DIR/lrb-sock"
+          python3 -B "$LINK" --state-dir "$STATE_DIR" --socket-dir "$SOCKET_DIR" request --op status > "$OUT/LRB_STATUS.json"
+          python3 -B "$LINK" --state-dir "$STATE_DIR" --socket-dir "$SOCKET_DIR" request --op observe > "$OUT/LRB_OBSERVE.json"
+          python3 - "$OUT/LRB_STATUS.json" "$OUT/LRB_OBSERVE.json" "$OUT/LRB_FORENSIC_SUMMARY.json" <<'PY'
+          import json,pathlib,sys,time,hashlib,os
+          sp,op,out=map(pathlib.Path,sys.argv[1:])
+          s=json.loads(sp.read_text()); o=json.loads(op.read_text())
+          obs=o.get("observation",{})
+          summary={
+            "schema":"LOUKSNA_REMOTE_BRIDGE_FORENSIC_SNAPSHOT/1.0",
+            "status":"PASS",
+            "host":s.get("host"),
+            "boot_id":s.get("boot_id"),
+            "transport":s.get("local_transport"),
+            "bridge_status":s.get("status"),
+            "observe_status":o.get("status"),
+            "evidence_seq":o.get("evidence_seq"),
+            "evidence_sha256":o.get("evidence_sha256"),
+            "load":obs.get("load"),
+            "memory_bytes":obs.get("memory_bytes"),
+            "root_fs_bytes":obs.get("root_fs_bytes"),
+            "bridge_root_shell":obs.get("bridge_root_shell"),
+            "github_transport":obs.get("github_transport"),
+            "project_partition":obs.get("project_partition"),
+            "sudo_noninteractive":obs.get("sudo_noninteractive"),
+            "screen":obs.get("screen"),
+            "captured_at_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
+          }
+          out.write_text(json.dumps(summary,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(summary,indent=2,sort_keys=True))
+          PY
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9"
+          for f in MASTER_STATUS.json PART_4_R2/STATE.json; do
+            if [ -f "$STATE/$f" ]; then
+              cp "$STATE/$f" "$OUT/$(basename "$f")"
+            fi
+          done
+          (
+            cd "$OUT"
+            sha256sum ./* > SHA256SUMS.txt
+          )
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-louksna-remote-bridge-forensic-${{ github.run_id }}
+          path: ${{ runner.temp }}/lrb-forensic-${{ github.run_id }}/
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
