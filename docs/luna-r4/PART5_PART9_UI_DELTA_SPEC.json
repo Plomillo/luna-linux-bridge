@@ -1,0 +1,84 @@
+{
+  "schema": "LOUKSNA_R4_PART5_PART9_UI_DELTA_SPEC/1.0",
+  "status": "SPECIFIED_NOT_APPLIED",
+  "authority": "Louksna.md",
+  "plan_reference": {
+    "path": "docs/luna-r4/PLAN DEFINITIVO",
+    "blob_sha": "247dbaab0bed3ff8aa9a141e9951ff9cb14a9898"
+  },
+  "skeleton_reference": {
+    "path": "docs/luna-r4/source/SKELETON_CANONICO_REFERENCIA.txt",
+    "blob_sha": "f8da6af8bffd325122ea83a20e686fbb95f7f578",
+    "sha256": "fb9fad37994e684ad54b1ffc2762660eebcb8e41bd9c4ba685ffac55217d5b0f"
+  },
+  "visual_reference": {
+    "path": "docs/luna-r4/ui-reference/LUNA_R4_UI_REFERENCE_PARTS_1_9.jpg",
+    "blob_sha": "5245ad5aaab51e91c82c86c12f3ef1a9b889b8e1",
+    "sha256": "8a9852c4155d64fd74059c7239e67c82e16e5acd556627d70575db85078d4ed4",
+    "role": "REFERENCE_ONLY_NOT_PIXEL_PERFECT"
+  },
+  "scope": {
+    "reference_panels": {
+      "PART_5": "JUEGOS",
+      "PART_6": "INGENIERIA",
+      "PART_7": "LABORATORIO",
+      "PART_8": "PROYECTOS",
+      "PART_9": "SISTEMA"
+    },
+    "part4_mutation": false,
+    "certified_part5_material_mutation": false,
+    "user_kde_ui_only": true,
+    "projects_navigation_fix": true
+  },
+  "aesthetics": {
+    "palette": "DARK_BLUE_PURPLE_SOBER",
+    "qualities": [
+      "dark",
+      "sober",
+      "minimal",
+      "mature",
+      "refined",
+      "stable",
+      "warm",
+      "technical_without_hostility"
+    ],
+    "sidebar": "FIXED_DOMAIN_NAVIGATION",
+    "cards": "DOMAIN_CARDS_WITH_PROGRESSIVE_DISCLOSURE",
+    "search": "BOTTOM_FAMILIAR_SEARCH",
+    "preserve_existing_wallpaper": true,
+    "literal_windows_clone": false
+  },
+  "projects_contract": {
+    "label": "PROYECTOS",
+    "semantic_target": "LIVE_VERIFIED_CANONICAL_PROJECTS_ROOT",
+    "preferred_candidate": "$HOME/PROYECTOS",
+    "hardcode_before_live_audit": false,
+    "action": "OPEN_PROJECTS_IN_DOLPHIN_OR_LUNA_PROJECTS_CENTER_IF_CERTIFIED_PRESENT",
+    "dead_symlink_allowed": false,
+    "fabricated_windows_drive_semantics": false,
+    "dolphin_place_required": true,
+    "launcher_required_if_luna_shell_surface_exists": true
+  },
+  "activation_gates": [
+    "PART_4_CERTIFIED_PRESERVED",
+    "PART_5_CERTIFIED_PRESERVED",
+    "PART_6_CERTIFIED_OR_EXPLICIT_SAFE_UI_GATE",
+    "LOUKSNA_REMOTE_BRIDGE_LIVE_OBSERVATION",
+    "CANONICAL_PROJECTS_ROOT_LIVE_VERIFIED",
+    "KDE_CONFIG_CHECKPOINT_CREATED",
+    "NO_DEBIAN_DOWNLOAD",
+    "NO_KDE_DOWNLOAD_OR_REINSTALL",
+    "NO_WALLPAPER_REPLACEMENT",
+    "NO_CROSS_DOMAIN_SILENT_MUTATION",
+    "ROLLBACK_READY"
+  ],
+  "prohibited": [
+    "download Debian ISO",
+    "install or reinstall KDE Plasma",
+    "restore historical KDE snapshot wholesale",
+    "mutate PART_4",
+    "overwrite divergent live KDE configuration silently",
+    "create PROYECTOS launcher to an unverified path"
+  ],
+  "generated_at_utc": "2026-10-01T23:16:00Z"
+}
