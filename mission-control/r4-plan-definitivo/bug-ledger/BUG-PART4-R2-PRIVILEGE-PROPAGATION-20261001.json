@@ -1,0 +1,38 @@
+{
+  "schema": "LOUKSNA_R4_BANAL_BUG_RECORD/1.0",
+  "bug_id": "BUG-PART4-R2-PRIVILEGE-PROPAGATION-20261001",
+  "status": "REMEDIATED_PENDING_RERUN_VALIDATION",
+  "source_run": 36835500954,
+  "source_job": 110282014308,
+  "classification": "PRIVILEGE_PROPAGATION_MISMATCH",
+  "exact_error": "PermissionError: [Errno 13] Permission denied: '/home/diegoignacionorambuenamiranda/.local/state/louksna/r4-master-part1-part9/PART_4_R2/final-merge/newroot/home/diegoignacionorambuenamiranda/PROYECTOS'",
+  "root_cause": "P3 candidate-root and PROYECTOS relocation were created/manipulated through sudo -n, but subsequent tree verification traversed the root-owned candidate path as the unprivileged runner user.",
+  "evidence_before_failure": {
+    "projects_mismatch_count": 0,
+    "final_merge_plan_g23": "PASS",
+    "final_merge_plan_g24": "PASS"
+  },
+  "correction": {
+    "helper": "verify_tree_privileged",
+    "verifier_execution": "sudo -n python3",
+    "evidence_reownership": "chown runner owner after privileged verifier output",
+    "candidate_root_reads": "sudo -n for protected verification/read paths",
+    "commits": [
+      "5d445454d45b1eab42a9d02a41123ae1db82b569",
+      "a5fc1855986793d885e4b3caf0571f5b8295edd3"
+    ],
+    "policy_commit": "1ec7ccd27196987a779452a969f419a811a722d3"
+  },
+  "replay": {
+    "projects_migration": false,
+    "partition_migration": false,
+    "certified_work": false
+  },
+  "scope_expansion": false,
+  "privilege_expansion": false,
+  "existing_sudo_capability_used": true,
+  "authority": "Louksna.md",
+  "assurance": "PUAC2.md",
+  "plan": "PLAN DEFINITIVO",
+  "failure_posture": "FAIL_CLOSED"
+}
