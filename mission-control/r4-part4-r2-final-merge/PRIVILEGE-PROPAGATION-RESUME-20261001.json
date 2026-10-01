@@ -1,0 +1,14 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_FINAL_MERGE_CONTINUATION/1.0",
+  "status": "AUTHORIZED_CONTINUATION",
+  "source_failed_run": 36835500954,
+  "bug_record": "mission-control/r4-plan-definitivo/bug-ledger/BUG-36835500954-PRIVILEGE-PROPAGATION.json",
+  "corrective_commit": "5d445454d45b1eab42a9d02a41123ae1db82b569",
+  "sudo_policy_commit": "330cd5820db7a4418d18f4c1790ac774ecc3e08f",
+  "repeat_projects_migration": false,
+  "repeat_partition_work": false,
+  "resume": "FINAL_MERGE_PREBOOT_FROM_CURRENT_VALID_STATE",
+  "authority": "Louksna.md",
+  "assurance": "PUAC2.md",
+  "fail_closed": true
+}
