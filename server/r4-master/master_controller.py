@@ -1281,11 +1281,30 @@ def part6(mid):
     resultp=d/"RESULT.json"
     component_names=("wine","steam","proton","bottles","lutris","prism","waydroid")
 
+    worker_path=pathlib.Path(__file__).with_name("part6_hardened_worker.py")
+    worker_dispatch=None
+    if not resultp.is_file() and worker_path.is_file():
+        try:
+            worker_dispatch=run(
+                [sys.executable,"-B",str(worker_path),"--mission-id",mid],
+                timeout=7200,
+            )
+        except Exception as exc:
+            worker_dispatch={
+                "argv":[sys.executable,"-B",str(worker_path),"--mission-id",mid],
+                "returncode":999,
+                "stdout":"",
+                "stderr":type(exc).__name__+":"+str(exc),
+            }
+
     if not resultp.is_file():
         checks={k:False for k in component_names}
         details={
             "hardened_result_present":False,
             "hardened_result_path":str(resultp),
+            "worker_path":str(worker_path),
+            "worker_present":worker_path.is_file(),
+            "worker_dispatch":worker_dispatch,
             "presence_support_only":presence_details,
             "certification_basis":"HARDENED_RESULT_REQUIRED; PRESENCE_ONLY_FORBIDDEN",
         }
