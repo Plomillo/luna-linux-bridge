@@ -128,7 +128,10 @@ jobs:
 
           crit=iv(metrics["critical_warning"]); media=iv(metrics["media_errors"])
           spare=iv(metrics["available_spare_pct"]); thresh=iv(metrics["available_spare_threshold_pct"])
-          used=iv(metrics["percentage_used"]); temp=iv(metrics["temperature_c"])
+          used=iv(metrics["percentage_used"]); temp_raw=iv(metrics["temperature_c"])
+          temp_c=(temp_raw-273.15) if temp_raw is not None and temp_raw>=200 else temp_raw
+          metrics["temperature_raw"]=temp_raw
+          metrics["temperature_c_normalized"]=round(temp_c,2) if temp_c is not None else None
 
           patterns={
             "nvme_reset_or_timeout":r"nvme.*(reset|timeout|abort|I/O|failed|error)",
@@ -159,7 +162,8 @@ jobs:
             "media_errors_zero":media==0,
             "spare_above_threshold":spare is not None and thresh is not None and spare>=thresh,
             "wear_below_100":used is not None and used<100,
-            "temperature_noncritical":temp is not None and temp<80,
+            "temperature_noncritical":temp_c is not None and temp_c<80,
+            "smartctl_health_passed":metrics.get("smartctl_passed") is True,
             "kernel_no_nvme_reset_timeout":kh["nvme_reset_or_timeout"]==0,
             "kernel_no_block_io_error":kh["block_io_error"]==0,
             "kernel_no_ext4_error":kh["ext4_error"]==0,
@@ -175,6 +179,7 @@ jobs:
             "metrics":metrics,
             "command_return_codes":rcs,
             "meaningful_error_entries":meaningful,
+            "error_log_classification":"NO_CURRENT_MATERIAL_ERROR_ENTRY" if len(meaningful)==0 else "MATERIAL_ERROR_ENTRY_PRESENT",
             "kernel_hits_7d":kh,
             "ext4_filesystem_state":fs_state,
             "checks":checks,
