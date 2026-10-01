@@ -1,0 +1,9 @@
+{
+  "mission_id": "MIS-e5963403a3b44ee8be96",
+  "action": "POST_OPERATOR_STAGE7_PHYSICAL_READBACK_ONLY",
+  "authority": "Louksna.md",
+  "expected_old_start": 567296,
+  "expected_old_end": 854409528,
+  "expected_target_end": 1000215182,
+  "note": "Operator reports Stage7 physical action completed; perform read-only physical truth check. Do not repeat mutation."
+}
