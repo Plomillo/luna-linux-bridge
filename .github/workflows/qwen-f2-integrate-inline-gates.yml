@@ -23,6 +23,7 @@ env:
   F1_RUN: "36790409680"
   MODEL_SHA256: 9f020bfc77a9503a641e3e0511de04b4bfba16b9facfa62c3772b4f8e318ba55
   RUNTIME_SHA256: afeac87f989294d544aa0248407604f18fbab5d18767be48f85795aca987379b
+  F2_PURE_DIAG_RUN: "36795497638"
 
 jobs:
   f2_g23_intake:
@@ -97,6 +98,11 @@ jobs:
           assert "RUNTIME_SHA256_MISMATCH" in q
           assert "reasoning_budget=256" in q
           assert '"--reasoning-format", "deepseek"' in q
+          assert '"--skip-chat-parsing"' in q
+          assert '"--log-disable"' in q
+          assert '"--reasoning", "on"' in q
+          assert '"-n", "1024"' in q
+          assert "MODEL_WIRE_JSON_NOT_FOUND" in q
           assert "diagnostic_dir" not in q
           a=pathlib.Path("bridge/reasoning/bridge_adapter.py").read_text()
           assert "BRIDGE_EXECUTION_AUTHORITY_DRIFT" in a
@@ -198,6 +204,7 @@ jobs:
             "provider_id":res["provider_id"],
             "model_sha256":res["material_binding"]["model_sha256"],
             "runtime_sha256":res["material_binding"]["runtime_sha256"],
+            "parser_diagnostic_run":"${{ env.F2_PURE_DIAG_RUN }}",
             "model_replaceable":True,
             "model_authority":False,
             "direct_execution":False,
@@ -242,6 +249,7 @@ jobs:
               and d.get("reasoning_interface")=="REASONING_INTERFACE/1.0"
               and d.get("model_sha256")==os.environ["MODEL_SHA256"]
               and d.get("runtime_sha256")==os.environ["RUNTIME_SHA256"]
+              and d.get("parser_diagnostic_run")==os.environ["F2_PURE_DIAG_RUN"]
               and d.get("model_replaceable") is True
               and d.get("model_authority") is False
               and d.get("direct_execution") is False

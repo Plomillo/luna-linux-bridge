@@ -90,6 +90,10 @@ class ReasoningInterfaceTests(unittest.TestCase):
         self.assertEqual(canonical["alternatives"][0]["id"], "A1")
         self.assertEqual(canonical["confidence"], 0.85)
 
+    def test_wire_extractor_ignores_foreign_json_prefix(self):
+        mixed = json.dumps(request()) + "\n" + json.dumps(wire_payload())
+        self.assertEqual(qwen_provider._extract_wire_json(mixed), wire_payload())
+
     def test_bridge_adapter_remains_proposed_uncertified(self):
         result = interface.validate_result(model_payload(), "test-001", "QWEN35_4B_S")
         result["material_binding"] = {"model_sha256": "a" * 64}
@@ -125,6 +129,11 @@ class ReasoningInterfaceTests(unittest.TestCase):
         self.assertIs(kwargs["shell"], False)
         cmd = fake.call_args.args[0]
         self.assertEqual(cmd[0], "/r")
+        self.assertIn("--skip-chat-parsing", cmd)
+        self.assertIn("--log-disable", cmd)
+        self.assertIn("--reasoning", cmd)
+        self.assertEqual(cmd[cmd.index("--reasoning") + 1], "on")
+        self.assertEqual(cmd[cmd.index("-n") + 1], "1024")
         self.assertNotIn("bash", cmd)
         self.assertNotIn("sh", cmd)
 
