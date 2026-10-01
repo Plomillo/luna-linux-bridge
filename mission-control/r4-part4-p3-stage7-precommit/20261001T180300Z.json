@@ -1,0 +1,10 @@
+{
+  "directive_id": "PART4-P3-TEN-POINT-HARDENED-CONTINUATION-20261001",
+  "mission_id": "MIS-e5963403a3b44ee8be96",
+  "action": "CAPTURE_STAGE7_READ_ONLY_PRECOMMIT_BOUNDARY",
+  "expected_current_stage": 7,
+  "expected_last_completed_stage": 6,
+  "authority": "Louksna.md",
+  "disk_mutation_authorized": false,
+  "filesystem_mutation_authorized": false
+}
