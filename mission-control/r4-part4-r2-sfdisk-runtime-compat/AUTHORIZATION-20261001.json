@@ -1,0 +1,28 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_SFDISK_RUNTIME_COMPAT_AUTH/1.0",
+  "status": "OWNER_AUTHORIZED",
+  "authority": "Louksna.md",
+  "doctrine": "EXTEND_DO_NOT_REPLACE",
+  "failure_posture": "FAIL_CLOSED",
+  "preserve_sudo": true,
+  "source": "server/r4-master/compat/sfdisk",
+  "destination": "/usr/local/bin/sfdisk",
+  "purpose": "Provide a reversible compatibility shim so legacy workflow calls resolve to sudo -n /usr/sbin/sfdisk without changing partition semantics.",
+  "incident": {
+    "workflow_run": 36863003361,
+    "attempt": 2,
+    "observed_error": "sfdisk: orden no encontrada",
+    "projects_status": "PASS",
+    "projects_manifest_sha256": "99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e"
+  },
+  "invariants": [
+    "NO_PARTITION_MUTATION_BY_REMEDIATION",
+    "NO_PROYECTOS_MUTATION",
+    "NO_SUDO_REMOVAL",
+    "G23_REQUIRED",
+    "G24_REQUIRED",
+    "ROLLBACK_DEMONSTRATION_REQUIRED",
+    "NO_CERTIFICATION_PROPAGATION"
+  ],
+  "continuation": "RERUN_EXISTING_FAILED_POSTBOOT_CHAIN_AFTER_DEPLOYMENT_PASS"
+}
