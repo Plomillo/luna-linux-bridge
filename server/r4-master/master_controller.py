@@ -15,7 +15,7 @@ REPO="Plomillo/luna-linux-bridge"
 BRANCH="staging/luna-r4-master-part1-part9-20260929"
 CERT_WORKFLOW=".github/workflows/luna-r4-master-part-certify.yml"
 CERT_WORKFLOW_PART4=".github/workflows/luna-r4-master-part4-r2-certify.yml"
-APC=["sudo","-n","/usr/local/sbin/louksna-apc"]
+PRIVILEGE_GOV=["sudo","-n","/usr/local/sbin/louksna-sudo-governance"]
 EXPECTED_UI_IMAGE="8a9852c4155d64fd74059c7239e67c82e16e5acd556627d70575db85078d4ed4"
 EXPECTED_UI_KDE="c21e04d5447e123b59fc9b94d2e9684bc03ea164999ef6f60210e257557a16dc"
 PARTS=[f"PART_{i}" for i in range(1,10)]
@@ -80,19 +80,30 @@ def read_json(p,default=None):
 def command_exists(name):
     return shutil.which(name) is not None
 
-def apc_status():
-    r=run(APC+["status"],timeout=20)
+def privilege_status():
+    r=run(PRIVILEGE_GOV+["status"],timeout=20)
     if r["returncode"]!=0:
         return None
     try:
-        return json.loads(r["stdout"])
+        d=json.loads(r["stdout"])
     except Exception:
         return None
+    root=run(["sudo","-n","id","-u"],timeout=10)
+    d["sudo_root_probe"]=(root["returncode"]==0 and root["stdout"].strip()=="0")
+    return d
 
-def require_apc(part, actions):
-    d=apc_status()
-    if not d or d.get("status")!="ACTIVE" or not d.get("authorization_valid"):
-        raise PrivilegeRequired(part,actions,"APC48_REQUIRED_OR_EXPIRED")
+def require_privilege(part, actions):
+    d=privilege_status()
+    valid=(
+        d
+        and d.get("status")=="ACTIVE"
+        and d.get("policy_exact") is True
+        and d.get("g24_certificate_local") is True
+        and d.get("scope")=="UNRESTRICTED_ROOT_VIA_SUDO"
+        and d.get("sudo_root_probe") is True
+    )
+    if not valid:
+        raise PrivilegeRequired(part,actions,"CERTIFIED_PRIVILEGE_BRIDGE_V121_REQUIRED")
     return d
 
 def publish_gate_notice(obj):
@@ -125,7 +136,7 @@ def host_preflight():
     if run(["systemctl","--user","is-active","symphylax-r1.service"])["stdout"].strip()!="active":
         raise RuntimeError("SYMPHYLAX_NOT_ACTIVE")
     if run(["gh","auth","status"],timeout=20)["returncode"]!=0: raise RuntimeError("GH_AUTH_REQUIRED")
-    return {"apc":apc_status()}
+    return {"privilege_bridge":privilege_status()}
 
 def locate_custosz():
     for p in CUSTOSZ_CANDIDATES:
@@ -238,9 +249,9 @@ def part2(mid):
     packages=["nodejs","npm","python3","python3-venv","python3-pip","pipx","git","7zip","default-jdk","g++","cmake","ninja-build","gdb","pkg-config"]
     missing=[p for p in packages if not pkg_installed(p)]; actions=[]
     if missing:
-        require_apc("PART_2",["apt-update","apt-install"])
-        actions.append(run(APC+["apt-update"],timeout=600))
-        actions.append(run(APC+["apt-install",*missing],timeout=1800))
+        require_privilege("PART_2",["apt-update","apt-install"])
+        actions.append(run(["sudo","-n","/usr/bin/apt-get","update"],timeout=600))
+        actions.append(run(["sudo","-n","/usr/bin/apt-get","install","-y","--no-install-recommends",*missing],timeout=1800))
     checks={p:pkg_installed(p) for p in packages}
     tests={}
     tests["node"]=run(["node","-e","console.log('LUNA_R4_NODE_PASS')"],timeout=30) if command_exists("node") else {"returncode":127}
@@ -429,8 +440,8 @@ def part5(mid):
     packages=["qemu-system-x86","qemu-utils","libvirt-daemon-system","libvirt-clients","virt-manager"]
     missing=[p for p in packages if not pkg_installed(p)]; actions=[]
     if missing:
-        require_apc("PART_5",["apt-update","apt-install"])
-        actions.append(run(APC+["apt-update"],timeout=600)); actions.append(run(APC+["apt-install",*missing],timeout=1800))
+        require_privilege("PART_5",["apt-update","apt-install"])
+        actions.append(run(["sudo","-n","/usr/bin/apt-get","update"],timeout=600)); actions.append(run(["sudo","-n","/usr/bin/apt-get","install","-y","--no-install-recommends",*missing],timeout=1800))
     checks={p:pkg_installed(p) for p in packages}; checks["kvm_device"]=pathlib.Path("/dev/kvm").exists()
     checks["virt_host_validate"]=run(["virsh","version"],timeout=30)["returncode"]==0 if command_exists("virsh") else False
     blockers=[k for k,v in checks.items() if not v]
