@@ -1,0 +1,19 @@
+{
+  "schema": "LOUKSNA_R4_BANAL_BUG_RECORD/1.0",
+  "status": "REMEDIATED_PENDING_RERUN_VALIDATION",
+  "source_run": 36835402262,
+  "source_job": 110281490576,
+  "classification": "SPARSE_CHECKOUT_DEPENDENCY_OMISSION",
+  "exact_error": "FileNotFoundError: mission-control/r4-plan-definitivo/BUG_AUTONOMY_POLICY.json",
+  "root_cause": "The plan job sparse checkout included server/r4-master but omitted the governed policy path consumed by IMPLEMENTATION_BINDING.",
+  "minimum_corrective_delta": "Include mission-control/r4-plan-definitivo in the plan job sparse checkout.",
+  "material_replay_required": false,
+  "certified_work_replay_required": false,
+  "scope_expansion": false,
+  "authority_change": false,
+  "privilege_expansion": false,
+  "corrective_commit": "18bbd0db83ef0aff3d75b83a9cecdf8cbb05efd5",
+  "authority": "Louksna.md",
+  "assurance": "PUAC2.md",
+  "fail_closed": true
+}
