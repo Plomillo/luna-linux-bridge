@@ -17,7 +17,7 @@ hold(){ echo "HOLD:$*" >&2; exit 1; }
 command -v gh >/dev/null 2>&1 || hold "GH_MISSING"
 gh auth status >/dev/null 2>&1 || hold "GH_AUTH_REQUIRED"
 
-for f in master_controller.py MASTER_MISSION.md R4_MASTER_CONTRACT.json UPSTREAM_PINS.json PART4_R2_AMENDMENT.json PART4_R2_AUTOPILOT_ADDENDUM.json PART4_R2_FINAL_MERGE_ADDENDUM.json part4_r2_verify_tree.py part4_r2_storage_migrate.sh part4_r2_final_merge_prepare.sh; do
+for f in master_controller.py MASTER_MISSION.md R4_MASTER_CONTRACT.json UPSTREAM_PINS.json PART4_R2_AMENDMENT.json PART4_R2_AUTOPILOT_ADDENDUM.json PART4_R2_FINAL_MERGE_ADDENDUM.json PART4_P3_GROWTH_HARDENED_ANTI_PARALYSIS.json PART4_P3_TEN_POINT_HARDENED_CONTINUATION.json part4_r2_verify_tree.py part4_r2_storage_migrate.sh part4_r2_final_merge_prepare.sh; do
   [ -f "$SRC/$f" ] || hold "BUNDLE_FILE_MISSING:$f"
   [ ! -L "$SRC/$f" ] || hold "BUNDLE_SYMLINK_REJECTED:$f"
 done
@@ -42,6 +42,8 @@ install -m 0600 "$SRC/R4_MASTER_CONTRACT.json" "$DST/R4_MASTER_CONTRACT.json"
 install -m 0600 "$SRC/PART4_R2_AMENDMENT.json" "$DST/PART4_R2_AMENDMENT.json"
 install -m 0600 "$SRC/PART4_R2_AUTOPILOT_ADDENDUM.json" "$DST/PART4_R2_AUTOPILOT_ADDENDUM.json"
 install -m 0600 "$SRC/PART4_R2_FINAL_MERGE_ADDENDUM.json" "$DST/PART4_R2_FINAL_MERGE_ADDENDUM.json"
+install -m 0600 "$SRC/PART4_P3_GROWTH_HARDENED_ANTI_PARALYSIS.json" "$DST/PART4_P3_GROWTH_HARDENED_ANTI_PARALYSIS.json"
+install -m 0600 "$SRC/PART4_P3_TEN_POINT_HARDENED_CONTINUATION.json" "$DST/PART4_P3_TEN_POINT_HARDENED_CONTINUATION.json"
 install -m 0700 "$SRC/part4_r2_verify_tree.py" "$DST/part4_r2_verify_tree.py"
 install -m 0700 "$SRC/part4_r2_storage_migrate.sh" "$DST/part4_r2_storage_migrate.sh"
 install -m 0700 "$SRC/part4_r2_final_merge_prepare.sh" "$DST/part4_r2_final_merge_prepare.sh"
