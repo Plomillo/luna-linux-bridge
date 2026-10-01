@@ -15,83 +15,114 @@ jobs:
     runs-on: [self-hosted, Linux, x64, luna-aux]
     timeout-minutes: 5
     steps:
-      - name: Reconcile logical state from already-completed physical truth
+      - name: Reconcile logical state from verified physical truth
         shell: bash
         run: |
           set -Eeuo pipefail
-          STATE="$HOME/.local/state/louksna/r4-master-part1-part9"
-          DIR="$STATE/PART_4_P3_HARDENED"
-          EXEC="$DIR/EXECUTION.json"
-          G24="$DIR/STAGE6_G24.json"
-          test -f "$EXEC" -a -f "$G24"
+          python3 - <<'PY'
+          import datetime as dt
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import re
+          import subprocess
+          import time
 
-          START="$(cat /sys/class/block/nvme0n1p3/start)"
-          SIZE="$(cat /sys/class/block/nvme0n1p3/size)"
-          END="$((START+SIZE-1))"
-          UUID="$(lsblk -n -o UUID /dev/nvme0n1p3)"
-          PARTUUID="$(lsblk -n -o PARTUUID /dev/nvme0n1p3)"
-          G24SHA="$(sha256sum "$G24" | awk '{print $1}')"
-          SUDOLOG="$(sudo -n journalctl _COMM=sudo --since "2026-10-01 20:08:30 UTC" --no-pager -o cat || true)"
-          ACTUAL_ATTEMPTS="$(printf '%s
-' "$SUDOLOG" | grep -F 'COMMAND=/usr/bin/growpart /dev/nvme0n1 3' | grep -v -- ' -N ' | wc -l)"
-          FS_RESIZES="$(printf '%s
-' "$SUDOLOG" | grep -F 'resize2fs' | wc -l)"
+          home=pathlib.Path.home()
+          state=home/".local/state/louksna/r4-master-part1-part9"
+          d=state/"PART_4_P3_HARDENED"
+          execution=d/"EXECUTION.json"
+          stage6=d/"STAGE6_G24.json"
+          assert execution.is_file() and stage6.is_file()
 
-          test "$START" = "567296"
-          test "$END" = "1000215182"
-          test "$SIZE" = "999647887"
-          test "$UUID" = "e084ec2a-af39-48b5-bb89-db2dc6a98332"
-          test "$PARTUUID" = "8e0b4274-21ff-4b16-8180-495381efb1d9"
-          test "$G24SHA" = "352763cc4e88b5575e7aee8aa9dcb5fa5dfc6fe54b34a072e4261f205f282bcd"
-          test "$ACTUAL_ATTEMPTS" = "1"
-          test "$FS_RESIZES" = "0"
-          test ! -e /dev/nvme0n1p5
+          e=json.loads(execution.read_text())
+          assert int(e.get("current_stage",0))==7
+          assert int(e.get("last_completed_stage",0))>=6
 
-          python3 - "$DIR/STAGE7_RESULT.json" "$G24SHA" <<'PY'
-          import json,pathlib,sys,datetime as dt
-          out=pathlib.Path(sys.argv[1])
-          q={
-            "status":"PASS",
-            "scope":"P3_TRAILING_END_EXTENSION_ONLY",
-            "attempt_count":1,
-            "post_start_sector":567296,
-            "post_end_sector":1000215182,
-            "authorized_new_end_sector":1000215182,
-            "p1_unchanged":True,
-            "p5_absent":True,
-            "uuid_preserved":True,
-            "partuuid_preserved":True,
-            "blind_retry_performed":False,
-            "stage6_g24_sha256":sys.argv[2],
-            "physical_change_observed":True,
-            "filesystem_resize_performed":False,
-            "reconciled_from_live_physical_truth":True,
-            "recorded_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          p3_start=int(pathlib.Path("/sys/class/block/nvme0n1p3/start").read_text())
+          p3_size=int(pathlib.Path("/sys/class/block/nvme0n1p3/size").read_text())
+          p3_end=p3_start+p3_size-1
+          p1_start=int(pathlib.Path("/sys/class/block/nvme0n1p1/start").read_text())
+          p1_size=int(pathlib.Path("/sys/class/block/nvme0n1p1/size").read_text())
+          p1_end=p1_start+p1_size-1
+
+          def out(cmd):
+              return subprocess.run(cmd,text=True,capture_output=True,check=True).stdout.strip()
+
+          uuid=out(["lsblk","-n","-o","UUID","/dev/nvme0n1p3"])
+          partuuid=out(["lsblk","-n","-o","PARTUUID","/dev/nvme0n1p3"])
+          stage6_sha=hashlib.sha256(stage6.read_bytes()).hexdigest()
+
+          sudo_log=subprocess.run(
+              ["sudo","-n","journalctl","_COMM=sudo","--since","2026-10-01 20:08:30 UTC","--no-pager","-o","cat"],
+              text=True,capture_output=True,check=False
+          ).stdout
+          actual=[
+              x for x in sudo_log.splitlines()
+              if "COMMAND=/usr/bin/growpart /dev/nvme0n1 3" in x and " -N " not in x
+          ]
+          fs_resize=[x for x in sudo_log.splitlines() if "COMMAND=" in x and "resize2fs" in x]
+
+          checks={
+              "stage7_boundary":int(e.get("current_stage",0))==7 and int(e.get("last_completed_stage",0))>=6,
+              "p3_start":p3_start==567296,
+              "p3_end":p3_end==1000215182,
+              "p3_size":p3_size==999647887,
+              "p1_unchanged":(p1_start,p1_end,p1_size)==(2048,534527,532480),
+              "p5_absent":not pathlib.Path("/dev/nvme0n1p5").exists(),
+              "uuid_preserved":uuid=="e084ec2a-af39-48b5-bb89-db2dc6a98332",
+              "partuuid_preserved":partuuid=="8e0b4274-21ff-4b16-8180-495381efb1d9",
+              "stage6_bound":stage6_sha=="352763cc4e88b5575e7aee8aa9dcb5fa5dfc6fe54b34a072e4261f205f282bcd",
+              "single_actual_attempt":len(actual)==1,
+              "no_filesystem_resize":len(fs_resize)==0,
           }
-          out.write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
-          print(json.dumps(q,indent=2,sort_keys=True))
-          PY
+          if not all(checks.values()):
+              print(json.dumps({"status":"HOLD","checks":checks},indent=2))
+              raise SystemExit(23)
 
-          UIDN="$(id -u)"
-          export XDG_RUNTIME_DIR="/run/user/$UIDN"
-          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
-          systemctl --user restart luna-r4-master-part1-part9.service
+          result={
+              "status":"PASS",
+              "scope":"P3_TRAILING_END_EXTENSION_ONLY",
+              "attempt_count":1,
+              "post_start_sector":p3_start,
+              "post_end_sector":p3_end,
+              "authorized_new_end_sector":1000215182,
+              "p1_unchanged":True,
+              "p5_absent":True,
+              "uuid_preserved":True,
+              "partuuid_preserved":True,
+              "blind_retry_performed":False,
+              "stage6_g24_sha256":stage6_sha,
+              "physical_change_observed":True,
+              "filesystem_resize_performed":False,
+              "reconciled_from_live_physical_truth":True,
+              "checks":checks,
+              "recorded_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          (d/"STAGE7_RESULT.json").write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(result,indent=2,sort_keys=True))
 
-          for i in $(seq 1 30); do
-            LAST="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1])).get("last_completed_stage",0))' "$EXEC" 2>/dev/null || echo 0)"
-            [ "$LAST" -ge 7 ] && break
-            sleep 1
-          done
-          python3 - "$EXEC" <<'PY'
-          import json,sys
-          e=json.load(open(sys.argv[1]))
+          uid=os.getuid()
+          env=os.environ.copy()
+          env["XDG_RUNTIME_DIR"]=f"/run/user/{uid}"
+          env["DBUS_SESSION_BUS_ADDRESS"]=f"unix:path=/run/user/{uid}/bus"
+          subprocess.run(["systemctl","--user","restart","luna-r4-master-part1-part9.service"],env=env,check=True)
+
+          final=None
+          for _ in range(30):
+              final=json.loads(execution.read_text())
+              if int(final.get("last_completed_stage",0))>=7:
+                  break
+              time.sleep(1)
           print(json.dumps({
-            "status":e.get("status"),
-            "current_stage":e.get("current_stage"),
-            "last_completed_stage":e.get("last_completed_stage"),
-            "next_authorized_action":e.get("next_authorized_action"),
-            "disk_mutation_performed":e.get("disk_mutation_performed"),
-            "filesystem_mutation_performed":e.get("filesystem_mutation_performed")
+              "status":final.get("status"),
+              "current_stage":final.get("current_stage"),
+              "last_completed_stage":final.get("last_completed_stage"),
+              "next_authorized_action":final.get("next_authorized_action"),
+              "disk_mutation_performed":final.get("disk_mutation_performed"),
+              "filesystem_mutation_performed":final.get("filesystem_mutation_performed"),
           },indent=2))
-          if int(e.get("last_completed_stage",0))<7: raise SystemExit(31)
+          if int(final.get("last_completed_stage",0))<7:
+              raise SystemExit(31)
           PY
