@@ -1,0 +1,21 @@
+{
+  "schema": "LOUKSNA_R4_BANAL_BUG_RECORD/1.0",
+  "status": "REMEDIATED_PENDING_RERUN_VALIDATION",
+  "source_run": 36835500954,
+  "source_job": 110282014308,
+  "classification": "PRIVILEGE_PROPAGATION_MISMATCH",
+  "exact_error": "PermissionError: [Errno 13] Permission denied while verifying the relocated P3 candidate PROYECTOS tree",
+  "root_cause": "The candidate tree was manipulated under sudo -n, but the subsequent verifier was invoked unprivileged.",
+  "corrective_action": "Route candidate-tree verifier calls through the existing permanent non-interactive sudo capability, then return evidence ownership to the runner user.",
+  "corrective_commit": "5d445454d45b1eab42a9d02a41123ae1db82b569",
+  "sudo_policy_commit": "330cd5820db7a4418d18f4c1790ac774ecc3e08f",
+  "material_replay_required": false,
+  "projects_migration_replay_required": false,
+  "partition_replay_required": false,
+  "scope_expansion": false,
+  "privilege_expansion": false,
+  "sudoers_mutation": false,
+  "authority": "Louksna.md",
+  "assurance": "PUAC2.md",
+  "fail_closed": true
+}
