@@ -1264,8 +1264,94 @@ def bounded_presence_part(part,requirements):
     return checks,blockers,details
 
 def part6(mid):
-    req={"wine":["wine-stable-amd64.deb","wine"],"steam":["steam_latest.deb","steam"],"proton":["proton-11.0-2.tar.gz","*Proton*"],"bottles":["bottles.flatpakref","*Bottles*"],"lutris":["lutris-v0.5.22.tar.gz","*lutris*"],"prism":["PrismLauncher.AppImage","*PrismLauncher*"],"waydroid":["waydroid_1.6.2_all.deb","*waydroid*"]}
-    checks,blockers,details=bounded_presence_part("PART_6",req)
+    # PART_6 is certification-gated by hardened functional evidence. Legacy
+    # filename discovery remains supporting evidence only and can never cause
+    # PASS by itself.
+    req={
+        "wine":["wine-stable-amd64.deb","wine"],
+        "steam":["steam_latest.deb","steam"],
+        "proton":["proton-11.0-2.tar.gz","*Proton*"],
+        "bottles":["bottles.flatpakref","*Bottles*"],
+        "lutris":["lutris-v0.5.22.tar.gz","*lutris*"],
+        "prism":["PrismLauncher.AppImage","*PrismLauncher*"],
+        "waydroid":["waydroid_1.6.2_all.deb","*waydroid*"],
+    }
+    _,_,presence_details=bounded_presence_part("PART_6",req)
+    d=STATE/"PART_6_HARDENED"
+    resultp=d/"RESULT.json"
+    component_names=("wine","steam","proton","bottles","lutris","prism","waydroid")
+
+    if not resultp.is_file():
+        checks={k:False for k in component_names}
+        details={
+            "hardened_result_present":False,
+            "hardened_result_path":str(resultp),
+            "presence_support_only":presence_details,
+            "certification_basis":"HARDENED_RESULT_REQUIRED; PRESENCE_ONLY_FORBIDDEN",
+        }
+        return evidence_base("PART_6",mid,checks,"HOLD",list(component_names),details)
+
+    q=read_json(resultp,{}) or {}
+    candidate=d/"FULL_CANDIDATE_V2.json"
+    g23p=d/"FULL_G23_V2.json"
+    g24p=d/"FULL_G24_V2.json"
+    precommit=d/"FULL_PRECOMMIT_V2.json"
+    chain_files=(candidate,g23p,g24p,precommit)
+    components=q.get("components",{}) if isinstance(q.get("components"),dict) else {}
+
+    component_checks={}
+    for name in component_names:
+        item=components.get(name,{}) if isinstance(components.get(name),dict) else {}
+        component_checks[name]=(
+            item.get("status")=="PASS"
+            and item.get("functional_test_pass") is True
+            and bool(item.get("provenance"))
+        )
+
+    checkpoint_path=q.get("rollback_checkpoint_path")
+    checkpoint_ok=False
+    if isinstance(checkpoint_path,str) and checkpoint_path:
+        try:
+            cp=pathlib.Path(checkpoint_path)
+            checkpoint_ok=(
+                cp.is_file()
+                and str(cp.resolve()).startswith(str(d.resolve())+os.sep)
+                and q.get("rollback_checkpoint_sha256")==sha(cp)
+            )
+        except Exception:
+            checkpoint_ok=False
+
+    chain_present=all(p.is_file() for p in chain_files)
+    chain_checks={
+        "schema":q.get("schema")=="LOUKSNA_R4_PART6_HARDENED_RESULT/1.0",
+        "result_status":q.get("status")=="PASS",
+        "mission_id":q.get("mission_id")==mid,
+        "chain_present":chain_present,
+        "candidate_bound":chain_present and q.get("candidate_sha256")==sha(candidate),
+        "g23_bound":chain_present and q.get("g23_sha256")==sha(g23p),
+        "g24_bound":chain_present and q.get("g24_sha256")==sha(g24p),
+        "precommit_pass":chain_present and (read_json(precommit,{}) or {}).get("status")=="PASS",
+        "g23_pass":chain_present and (read_json(g23p,{}) or {}).get("status")=="PASS",
+        "g24_pass":chain_present and (read_json(g24p,{}) or {}).get("status")=="PASS",
+        "result_checks":isinstance(q.get("checks"),dict) and bool(q.get("checks")) and all(q.get("checks",{}).values()),
+        "rollback_checkpoint":checkpoint_ok,
+        "no_partition_mutation":q.get("disk_partition_mutation_performed") is False,
+        "no_fs_format_resize":q.get("filesystem_format_or_resize_performed") is False,
+        "no_unrelated_delete":q.get("unrelated_user_data_deleted") is False,
+        "no_certification_propagation":q.get("certification_propagated") is False,
+        "component_set_exact":set(components)==set(component_names),
+    }
+    checks={**component_checks,**{"hardened_"+k:v for k,v in chain_checks.items()}}
+    blockers=[k for k,v in component_checks.items() if not v]
+    blockers += ["hardened_"+k for k,v in chain_checks.items() if not v]
+    details={
+        "hardened_result_path":str(resultp),
+        "hardened_result_sha256":sha(resultp),
+        "component_evidence":components,
+        "chain_checks":chain_checks,
+        "presence_support_only":presence_details,
+        "certification_basis":"FUNCTIONAL_EVIDENCE_PLUS_G23_G24_CHAIN",
+    }
     return evidence_base("PART_6",mid,checks,"PASS" if not blockers else "HOLD",blockers,details)
 
 def part7(mid):
