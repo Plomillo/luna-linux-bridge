@@ -57,7 +57,7 @@ jobs:
           execution=d/"EXECUTION.json"
           stage7=d/"STAGE7_RESULT.json"
 
-          def sha(p):
+          def sha256(p):
               h=hashlib.sha256()
               with pathlib.Path(p).open("rb") as f:
                   for chunk in iter(lambda:f.read(1024*1024),b""):
@@ -74,9 +74,10 @@ jobs:
           s7=json.loads(stage7.read_text())
 
           sfd=(outdir/"SFDISK.txt").read_text()
-          m3=re.search(r"/dev/nvme0n1p3\\s*:\\s*start=\\s*(\\d+),\\s*size=\\s*(\\d+)",sfd)
-          m1=re.search(r"/dev/nvme0n1p1\\s*:\\s*start=\\s*(\\d+),\\s*size=\\s*(\\d+)",sfd)
+          m3=re.search(r"/dev/nvme0n1p3\s*:\s*start=\s*(\d+),\s*size=\s*(\d+)",sfd)
+          m1=re.search(r"/dev/nvme0n1p1\s*:\s*start=\s*(\d+),\s*size=\s*(\d+)",sfd)
           if not m3 or not m1:
+              print(sfd)
               raise SystemExit("STAGE8_SFDISK_PARSE_FAILED")
 
           gpt_start,gpt_size=map(int,m3.groups())
@@ -149,13 +150,13 @@ jobs:
               "filesystem_mutation_performed":False,
               "kernel_reread_command_performed":False,
               "blind_retry_performed":False,
-              "stage7_result_sha256":sha(stage7),
+              "stage7_result_sha256":sha256(stage7),
               "checks":checks,
-              "raw_sha256":{name:sha(outdir/name) for name in raw_files},
+              "raw_sha256":{name:sha256(outdir/name) for name in raw_files},
               "recorded_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
           }
-          (outdir/"STAGE8_RECONCILIATION.json").write_text(json.dumps(rec,indent=2,sort_keys=True)+"\\n")
-          (d/"STAGE8_RECONCILIATION.json").write_text(json.dumps(rec,indent=2,sort_keys=True)+"\\n")
+          (outdir/"STAGE8_RECONCILIATION.json").write_text(json.dumps(rec,indent=2,sort_keys=True)+"\n")
+          (d/"STAGE8_RECONCILIATION.json").write_text(json.dumps(rec,indent=2,sort_keys=True)+"\n")
           print(json.dumps(rec,indent=2,sort_keys=True))
 
           if status!="PASS":
@@ -182,7 +183,7 @@ jobs:
               "disk_mutation_performed":final.get("disk_mutation_performed"),
               "filesystem_mutation_performed":final.get("filesystem_mutation_performed"),
           }
-          (outdir/"MAESTRO_AFTER_STAGE8.json").write_text(json.dumps(summary,indent=2,sort_keys=True)+"\\n")
+          (outdir/"MAESTRO_AFTER_STAGE8.json").write_text(json.dumps(summary,indent=2,sort_keys=True)+"\n")
           print(json.dumps(summary,indent=2,sort_keys=True))
           if int(final.get("last_completed_stage",0))<8:
               raise SystemExit(31)
@@ -193,6 +194,6 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: r4-part4-stage8-gpt-kernel-reconciliation
-          path: \${{ runner.temp }}/stage8-\${{ github.run_id }}
+          path: ${{ runner.temp }}/stage8-${{ github.run_id }}
           if-no-files-found: warn
           retention-days: 90
