@@ -1,0 +1,216 @@
+name: "R4 PART4 — LRB NVMe health pre-Stage7 audit"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-lrb-health-audit/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r4-part4-lrb-health-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 10
+    steps:
+      - name: LRB + passive NVMe health audit
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/lrb-health-$GITHUB_RUN_ID"
+          mkdir -p "$OUT"
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+
+          mapfile -t LINKS < <(find "$HOME/.local/lib/louksna-remote-bridge" -type f -path '*/bridge/live_link.py' -print 2>/dev/null | sort)
+          test "${#LINKS[@]}" -ge 1
+          LINK="${LINKS[-1]}"
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op status > "$OUT/LRB_STATUS.json"
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op observe > "$OUT/LRB_OBSERVE.json"
+
+          {
+            echo "smartctl=$(command -v smartctl || true)"
+            echo "nvme=$(command -v nvme || true)"
+            echo "tune2fs=$(command -v tune2fs || true)"
+            echo "sgdisk=$(command -v sgdisk || true)"
+          } > "$OUT/TOOLS.txt"
+
+          if command -v smartctl >/dev/null 2>&1; then
+            sudo -n smartctl -x -j /dev/nvme0n1 > "$OUT/SMARTCTL.json" 2> "$OUT/SMARTCTL.stderr" || true
+          else
+            printf '{"available":false}\n' > "$OUT/SMARTCTL.json"
+          fi
+
+          if command -v nvme >/dev/null 2>&1; then
+            sudo -n nvme smart-log -o json /dev/nvme0n1 > "$OUT/NVME_SMART.json" 2> "$OUT/NVME_SMART.stderr" || true
+            sudo -n nvme error-log -e 64 -o json /dev/nvme0n1 > "$OUT/NVME_ERROR_LOG.json" 2> "$OUT/NVME_ERROR_LOG.stderr" || true
+            sudo -n nvme id-ctrl -o json /dev/nvme0n1 > "$OUT/NVME_ID_CTRL.json" 2> "$OUT/NVME_ID_CTRL.stderr" || true
+            sudo -n nvme id-ns -n 1 -o json /dev/nvme0n1 > "$OUT/NVME_ID_NS.json" 2> "$OUT/NVME_ID_NS.stderr" || true
+          else
+            printf '{"available":false}\n' > "$OUT/NVME_SMART.json"
+            printf '{"available":false}\n' > "$OUT/NVME_ERROR_LOG.json"
+          fi
+
+          sudo -n /usr/sbin/sgdisk -v /dev/nvme0n1 > "$OUT/SGDISK_VERIFY.txt" 2>&1 || true
+          sudo -n /usr/sbin/sfdisk --dump /dev/nvme0n1 > "$OUT/SFDISK.txt"
+          sudo -n /usr/sbin/parted -sm /dev/nvme0n1 unit s print free > "$OUT/PARTED.txt"
+          lsblk -J -b -o NAME,PATH,TYPE,SIZE,START,FSTYPE,FSAVAIL,FSUSE%,MOUNTPOINTS,UUID,PARTUUID,ROTA,RO,DISC-GRAN,DISC-MAX /dev/nvme0n1 > "$OUT/LSBLK.json"
+          findmnt -J / > "$OUT/FINDMNT_ROOT.json"
+          findmnt -n -o SOURCE,FSTYPE,OPTIONS / > "$OUT/ROOT_MOUNT.txt"
+
+          if command -v tune2fs >/dev/null 2>&1; then
+            sudo -n tune2fs -l /dev/nvme0n1p3 > "$OUT/TUNE2FS.txt" 2> "$OUT/TUNE2FS.stderr" || true
+          fi
+
+          sudo -n journalctl -k -b --no-pager -o short-iso > "$OUT/KERNEL_CURRENT_BOOT.txt" || true
+          sudo -n journalctl -k --since "7 days ago" --no-pager -o short-iso > "$OUT/KERNEL_7D.txt" || true
+
+          cat /sys/block/nvme0n1/stat > "$OUT/SYS_BLOCK_STAT.txt"
+          {
+            for f in logical_block_size physical_block_size minimum_io_size optimal_io_size alignment_offset rotational write_cache discard_granularity discard_max_bytes; do
+              p="/sys/block/nvme0n1/queue/$f"
+              if [ -r "$p" ]; then printf "%s=" "$f"; cat "$p"; fi
+            done
+          } > "$OUT/QUEUE.txt"
+
+          python3 - "$OUT" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,re,subprocess,sys
+          root=pathlib.Path(sys.argv[1])
+          h=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+          l=json.loads((root/"LRB_STATUS.json").read_text())
+          o=json.loads((root/"LRB_OBSERVE.json").read_text())
+
+          def loadj(name):
+              p=root/name
+              if not p.exists() or p.stat().st_size==0: return {}
+              try: return json.loads(p.read_text(errors="replace"))
+              except: return {}
+
+          smartctl=loadj("SMARTCTL.json")
+          nvme=loadj("NVME_SMART.json")
+          nerr=loadj("NVME_ERROR_LOG.json")
+          kern=(root/"KERNEL_7D.txt").read_text(errors="replace")
+          tune=(root/"TUNE2FS.txt").read_text(errors="replace") if (root/"TUNE2FS.txt").exists() else ""
+          sg=(root/"SGDISK_VERIFY.txt").read_text(errors="replace")
+
+          # Prefer nvme-cli JSON; fall back to smartctl JSON when fields are absent.
+          def pick(*vals):
+              for v in vals:
+                  if v is not None: return v
+              return None
+          sn=smartctl.get("nvme_smart_health_information_log",{}) if isinstance(smartctl,dict) else {}
+          sc=smartctl.get("smart_status",{}) if isinstance(smartctl,dict) else {}
+
+          metrics={
+            "critical_warning":pick(nvme.get("critical_warning"),sn.get("critical_warning")),
+            "temperature_c":pick(nvme.get("temperature"),sn.get("temperature")),
+            "available_spare_pct":pick(nvme.get("avail_spare"),nvme.get("available_spare"),sn.get("available_spare")),
+            "available_spare_threshold_pct":pick(nvme.get("spare_thresh"),nvme.get("available_spare_threshold"),sn.get("available_spare_threshold")),
+            "percentage_used":pick(nvme.get("percent_used"),nvme.get("percentage_used"),sn.get("percentage_used")),
+            "media_errors":pick(nvme.get("media_errors"),sn.get("media_errors")),
+            "num_err_log_entries":pick(nvme.get("num_err_log_entries"),sn.get("num_err_log_entries")),
+            "unsafe_shutdowns":pick(nvme.get("unsafe_shutdowns"),sn.get("unsafe_shutdowns")),
+            "power_on_hours":pick(nvme.get("power_on_hours"),sn.get("power_on_hours")),
+            "power_cycles":pick(nvme.get("power_cycles"),sn.get("power_cycles")),
+            "warning_temp_time":pick(nvme.get("warning_temp_time"),sn.get("warning_temp_time")),
+            "critical_comp_time":pick(nvme.get("critical_comp_time"),sn.get("critical_comp_time")),
+            "smartctl_passed":sc.get("passed")
+          }
+
+          def intish(v):
+              if v is None: return None
+              if isinstance(v,bool): return int(v)
+              if isinstance(v,(int,float)): return int(v)
+              s=str(v).strip().replace(",","")
+              m=re.search(r"-?\d+",s)
+              return int(m.group()) if m else None
+
+          crit=intish(metrics["critical_warning"])
+          media=intish(metrics["media_errors"])
+          spare=intish(metrics["available_spare_pct"])
+          thresh=intish(metrics["available_spare_threshold_pct"])
+          used=intish(metrics["percentage_used"])
+          temp=intish(metrics["temperature_c"])
+
+          patterns={
+            "nvme_reset_or_timeout":r"nvme.*(reset|timeout|abort|I/O|failed|error)",
+            "block_io_error":r"(blk_update_request|I/O error|Buffer I/O error|end_request: I/O error)",
+            "ext4_error":r"EXT4-fs (error|warning)|EXT4-fs.*(corrupt|aborted)",
+            "pcie_aer_error":r"(AER:.*error|PCIe Bus Error|pcieport.*error)",
+            "read_only_remount":r"Remounting filesystem read-only|re-mounted.*read-only"
+          }
+          kernel_hits={k:len(re.findall(p,kern,re.I)) for k,p in patterns.items()}
+
+          fs_state=None
+          m=re.search(r"^Filesystem state:\s*(.+)$",tune,re.M)
+          if m: fs_state=m.group(1).strip()
+          fs_errors=None
+          m=re.search(r"^Errors behavior:\s*(.+)$",tune,re.M)
+          if m: fs_errors=m.group(1).strip()
+
+          gpt_ok=("No problems found" in sg) or ("No problems found." in sg)
+          smart_available=bool(smartctl) and smartctl.get("available") is not False
+          nvme_available=bool(nvme) and nvme.get("available") is not False
+
+          checks={
+            "lrb_host":l.get("host")=="LOUKSNA",
+            "lrb_evidence":bool(o.get("evidence_sha256")),
+            "gpt_verify_clean":gpt_ok,
+            "critical_warning_zero":crit in (0,None),
+            "media_errors_zero":media in (0,None),
+            "spare_above_threshold":(spare is None or thresh is None or spare>=thresh),
+            "wear_below_100pct":used is None or used<100,
+            "temperature_not_critical":temp is None or temp<80,
+            "kernel_no_nvme_reset_timeout":kernel_hits["nvme_reset_or_timeout"]==0,
+            "kernel_no_block_io_error":kernel_hits["block_io_error"]==0,
+            "kernel_no_ext4_error":kernel_hits["ext4_error"]==0,
+            "kernel_no_pcie_aer_error":kernel_hits["pcie_aer_error"]==0,
+            "kernel_no_ro_remount":kernel_hits["read_only_remount"]==0,
+            "root_mounted":"/dev/nvme0n1p3" in (root/"ROOT_MOUNT.txt").read_text(errors="replace"),
+          }
+
+          hard_fail=any(not checks[k] for k in [
+            "lrb_host","lrb_evidence","gpt_verify_clean","critical_warning_zero","media_errors_zero",
+            "spare_above_threshold","wear_below_100pct","temperature_not_critical",
+            "kernel_no_nvme_reset_timeout","kernel_no_block_io_error","kernel_no_ext4_error",
+            "kernel_no_pcie_aer_error","kernel_no_ro_remount","root_mounted"
+          ])
+
+          # Passive audit only: mounted root is never fsck'ed here.
+          q={
+            "schema":"LOUKSNA_R4_PART4_NVME_HEALTH_PRE_STAGE7/1.0",
+            "status":"HOLD" if hard_fail else "PASS",
+            "scope":"PASSIVE_READ_ONLY_PRE_STAGE7_HEALTH",
+            "host":l.get("host"),
+            "lrb_evidence_seq":o.get("evidence_seq"),
+            "lrb_evidence_sha256":o.get("evidence_sha256"),
+            "smartctl_available":smart_available,
+            "nvme_cli_available":nvme_available,
+            "metrics":metrics,
+            "kernel_hits_7d":kernel_hits,
+            "ext4_metadata":{"filesystem_state":fs_state,"errors_behavior":fs_errors,"fsck_skipped_reason":"ROOT_IS_MOUNTED; NO_OFFLINE_FSCK_IN_PASSIVE_AUDIT"},
+            "checks":checks,
+            "disk_mutation_performed":False,
+            "device_self_test_started":False,
+            "package_installation_performed":False,
+            "audited_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+            "raw_sha256":{p.name:h(p) for p in root.iterdir() if p.is_file()}
+          }
+          (root/"HEALTH_AUDIT.json").write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if hard_fail: raise SystemExit(23)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: r4-part4-lrb-nvme-health-pre-stage7
+          path: ${{ runner.temp }}/lrb-health-${{ github.run_id }}/
+          retention-days: 30
+          compression-level: 0
