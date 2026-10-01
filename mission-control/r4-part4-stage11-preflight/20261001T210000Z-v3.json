@@ -1,0 +1,14 @@
+{
+  "schema": "LOUKSNA_R4_PART4_STAGE11_PREFLIGHT_REQUEST/1.0",
+  "requested_stage": 11,
+  "operation": "BUILD_FRESH_EXT4_GROW_CANDIDATE",
+  "hardening": "BIND_RESIZE2FS_PATH_VERSION_SHA256",
+  "workflow_commit": "3ed4c807cfc22914093fd4a181af9adc80b1c596",
+  "prerequisite_stage10_run_id": 36923579885,
+  "require_current_stage": 11,
+  "require_last_completed_stage": 10,
+  "authorize_resize2fs": false,
+  "read_only": true,
+  "fail_closed": true,
+  "requested_at_utc": "2026-10-01T21:00:00Z"
+}
