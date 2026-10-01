@@ -83,6 +83,7 @@ jobs:
               "downloaded_g24_evidence_sha256":remote.get("evidence_sha256") if remote else None,
               "downloaded_g24_matches_local_evidence":remote is not None and remote.get("evidence_sha256")==ev_sha,
               "downloaded_g24_sha256":sha(candidates[0]) if len(candidates)==1 else None,
+              "process_relevant":(out/"PROCESS_RELEVANT.txt").read_text(errors="replace")[-8000:],
               "observed_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
           }
           (out/"DIAG.json").write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
