@@ -1,0 +1,83 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_SFDISK_REMEDIATION_DIRECTIVE/1.0",
+  "status": "AUTHORIZED_CANDIDATE",
+  "authority": "Louksna.md",
+  "authority_transfer": false,
+  "canonical_mutation": false,
+  "doctrine": "EXTEND_DO_NOT_REPLACE",
+  "failure_posture": "FAIL_CLOSED",
+  "no_silent_operations": true,
+  "incident": {
+    "workflow_run": 36863003361,
+    "job_id": 110371561124,
+    "failed_stage": "Validate candidate root boot and protected data",
+    "observed_error": "sfdisk: orden no encontrada",
+    "error_class": "MISSING_OPERATIONAL_DEPENDENCY_OR_PATH",
+    "projects_verification": {
+      "status": "PASS",
+      "manifest_sha256": "99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+      "seen_records": 498092,
+      "regular_file_bytes": 200490852057,
+      "mismatch_count": 0
+    }
+  },
+  "directive": [
+    {
+      "step": 1,
+      "name": "FREEZE_AND_EVIDENCE_CURRENT_CHECKPOINT",
+      "requirement": "Capture hashes and current PART4-R2/Maestro state, P3/P5/root context, the failed run, and exact SFDISK blocker before any mutation."
+    },
+    {
+      "step": 2,
+      "name": "AUTHORIZED_MINIMAL_SFDISK_REMEDIATION",
+      "requirement": "Resolve sfdisk by the least-impact valid change. Prefer an existing canonical absolute path if present; otherwise install the official Debian fdisk package at the repository candidate version under governed noninteractive sudo. Record source/version/dependencies and make no cross-domain or canonical mutation."
+    },
+    {
+      "step": 3,
+      "name": "VALIDATE_REMEDIATION",
+      "requirement": "Verify command path, version, functional read-only sfdisk test, provenance, reproducibility evidence, and fresh PROYECTOS manifest equivalence."
+    },
+    {
+      "step": 4,
+      "name": "NON_REGRESSION_AND_REVERSIBILITY",
+      "requirement": "Preserve the pre-change checkpoint, prove applicable rollback/reversibility, verify no PART4-R2 protected state or PROYECTOS regression, and resume idempotently without replaying migration or already certified operations."
+    },
+    {
+      "step": 5,
+      "name": "REENTER_CERTIFICATION_AND_RESUME",
+      "requirement": "Evaluate applicable PUAC.C25-C32 controls, obtain independent G23 and digest-bound G24 for the remediation, then dispatch the existing PART4-R2 final-merge postboot continuation. Do not retire P5 or expand P3 before the existing postboot G23/G24 gates pass."
+    }
+  ],
+  "puac2_controls": {
+    "PUAC.C25": "SCOPE_AND_CLAIMS",
+    "PUAC.C26": "EVIDENCE_AND_ARGUMENTATION",
+    "PUAC.C27": "STRUCTURAL_INDEPENDENCE",
+    "PUAC.C28": "SECURITY_AND_RISK",
+    "PUAC.C29": "INTEGRITY_AND_REPRODUCIBILITY",
+    "PUAC.C30": "INTEGRATION_AND_NON_REGRESSION",
+    "PUAC.C31": "DEMONSTRATED_REVERSIBILITY",
+    "PUAC.C32": "VALIDITY_AND_REEVALUATION"
+  },
+  "required_chain": [
+    "SPECIFICATION",
+    "EVIDENCE",
+    "VALIDATION",
+    "G23_INDEPENDENT_VALIDATION",
+    "G24_CERTIFICATION",
+    "SEPARATE_OPERATIONAL_CONTINUATION"
+  ],
+  "invariants": [
+    "NO_MIGRATION_REPLAY",
+    "NO_P5_RETIREMENT_BEFORE_EXISTING_POSTBOOT_G24",
+    "NO_P3_EXPANSION_BEFORE_EXISTING_POSTBOOT_G24",
+    "NO_CANONICAL_AUTHORITY_CHANGE",
+    "NO_CERTIFICATION_PROPAGATION",
+    "NO_SILENT_MUTATION",
+    "PRESERVE_PROYECTOS_EXACT_MANIFEST",
+    "ROLLBACK_REQUIRED_WHERE_MUTATION_OCCURS"
+  ],
+  "dispatch_target": "MAESTRO_PART4_R2_FINAL_MERGE_POSTBOOT",
+  "remote_bridge_role": "OBSERVATION_DIAGNOSIS_EVIDENCE_ONLY",
+  "github_role": "GOVERNED_TRANSPORT_AND_EVIDENCE",
+  "requested_action": "ACT_NOW_UNDER_EXISTING_AUTHORIZATION"
+}
