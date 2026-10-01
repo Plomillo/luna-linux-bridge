@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+REAL="/usr/sbin/sfdisk"
+SUDO="/usr/bin/sudo"
+[ -x "$REAL" ] || exit 127
+if [ "$(id -u)" -eq 0 ]; then
+  exec "$REAL" "$@"
+fi
+exec "$SUDO" -n "$REAL" "$@"
