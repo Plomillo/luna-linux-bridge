@@ -1,0 +1,39 @@
+name: "R4 PART4 R2 — live layout observation"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-r2-live-layout-observe/**
+
+permissions:
+  contents: read
+
+jobs:
+  observe:
+    name: Read-only live disk layout
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Capture live layout without mutation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "HOST=$(hostname)"
+          echo "ROOT_SOURCE=$(readlink -f "$(findmnt -n -o SOURCE /)")"
+          echo "ROOT_FSTYPE=$(findmnt -n -o FSTYPE /)"
+          echo "EFI_SOURCE=$(readlink -f "$(findmnt -T /boot/efi -n -o SOURCE)")"
+          echo "EFI_FSTYPE=$(findmnt -T /boot/efi -n -o FSTYPE)"
+          echo "P5_BLOCK=$([ -b /dev/nvme0n1p5 ] && echo PRESENT || echo ABSENT)"
+          echo "P5_MOUNT=$(findmnt -n -S /dev/nvme0n1p5 || true)"
+          echo "DISK_BYTES=$(blockdev --getsize64 /dev/nvme0n1)"
+          echo "P3_BYTES=$(blockdev --getsize64 /dev/nvme0n1p3)"
+          echo "P3_START_SECTORS=$(cat /sys/class/block/nvme0n1p3/start)"
+          echo "SECTOR_BYTES=$(blockdev --getss /dev/nvme0n1)"
+          echo "=== LSBLK ==="
+          lsblk -b -J -o NAME,PATH,TYPE,SIZE,FSTYPE,FSAVAIL,FSUSE%,MOUNTPOINTS,UUID,PARTUUID,START
+          echo "=== DF ==="
+          df -B1 / /boot/efi "$HOME/PROYECTOS"
+          echo "=== DEVICES ==="
+          ls -l /dev/nvme0n1p* 2>/dev/null || true
