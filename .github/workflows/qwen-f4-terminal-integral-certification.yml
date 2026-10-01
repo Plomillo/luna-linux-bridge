@@ -1,0 +1,692 @@
+name: "LOUKSNA Qwen F4 — integral terminal certification with inline G23 G24"
+
+on:
+  push:
+    branches:
+      - candidate/qwen35-4b-s-integral-20260930
+    paths:
+      - ".github/workflows/qwen-f4-terminal-integral-certification.yml"
+
+permissions:
+  contents: read
+  actions: read
+  id-token: write
+
+concurrency:
+  group: louksna-qwen35-f4-terminal
+  cancel-in-progress: false
+
+env:
+  BASE_SHA: c961a198f524a128dba6374290e2abe73dfaece6
+  PRODUCT_SHA: a760fc10068a834c8f8051cd58721494f5577f11
+  F1_RUN: "36790409680"
+  F2_RUN: "36796161236"
+  F3_RUN: "36798176058"
+  LRB_TERMINAL_RUN: "36779009218"
+  MODEL_SHA256: 9f020bfc77a9503a641e3e0511de04b4bfba16b9facfa62c3772b4f8e318ba55
+  RUNTIME_SHA256: afeac87f989294d544aa0248407604f18fbab5d18767be48f85795aca987379b
+
+jobs:
+  f4_g23_intake:
+    name: "F4 inline G23 intake"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: qwen-f1-g24
+          path: ${{ runner.temp }}/f1-g24
+          run-id: ${{ env.F1_RUN }}
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: qwen-f2-material
+          path: ${{ runner.temp }}/f2-material
+          run-id: ${{ env.F2_RUN }}
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: qwen-f2-g24
+          path: ${{ runner.temp }}/f2-g24
+          run-id: ${{ env.F2_RUN }}
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: qwen-f3-material
+          path: ${{ runner.temp }}/f3-material
+          run-id: ${{ env.F3_RUN }}
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: qwen-f3-g23
+          path: ${{ runner.temp }}/f3-g23
+          run-id: ${{ env.F3_RUN }}
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: qwen-f3-g24
+          path: ${{ runner.temp }}/f3-g24
+          run-id: ${{ env.F3_RUN }}
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: lrb-terminal-certificate
+          path: ${{ runner.temp }}/lrb-terminal
+          run-id: ${{ env.LRB_TERMINAL_RUN }}
+          github-token: ${{ github.token }}
+      - name: Verify F1 F2 F3 closure, certified LRB component, and immutable product scope
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git merge-base --is-ancestor "$BASE_SHA" "$PRODUCT_SHA"
+          git merge-base --is-ancestor "$PRODUCT_SHA" HEAD
+          git diff --quiet "$PRODUCT_SHA"...HEAD -- bridge/reasoning
+          git diff --quiet "$BASE_SHA"..."$PRODUCT_SHA" -- Louksna.md PUAC2.md
+          OUT="$RUNNER_TEMP/f4-intake"; mkdir -m 700 "$OUT"; export OUT
+          export F1="$RUNNER_TEMP/f1-g24/F1_G24.json"
+          export F2M="$RUNNER_TEMP/f2-material/F2_RESULT.json"
+          export F2G="$RUNNER_TEMP/f2-g24/F2_G24.json"
+          export F3M="$RUNNER_TEMP/f3-material/F3_MATERIAL.json"
+          export F3G23="$RUNNER_TEMP/f3-g23/F3_G23.json"
+          export F3G24="$RUNNER_TEMP/f3-g24/F3_G24.json"
+          export LRB="$RUNNER_TEMP/lrb-terminal/LRB_TERMINAL_CERTIFICATE.json"
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib
+          f1=json.load(open(os.environ["F1"]))
+          f2m=json.load(open(os.environ["F2M"])); f2g=json.load(open(os.environ["F2G"]))
+          f3m=json.load(open(os.environ["F3M"])); f3g23=json.load(open(os.environ["F3G23"])); f3g24=json.load(open(os.environ["F3G24"]))
+          lrb=json.load(open(os.environ["LRB"]))
+          binding=json.load(open("bridge/reasoning/F1_BINDING.json"))
+          checks={
+            "F1_PASS":f1.get("status")=="PASS" and binding.get("status")=="PASS"
+                and binding.get("inline_gates",{}).get("G23")=="PASS" and binding.get("inline_gates",{}).get("G24")=="PASS",
+            "F2_PASS":f2m.get("status")=="PASS" and f2g.get("status")=="PASS"
+                and f2m.get("source_sha")==os.environ["PRODUCT_SHA"],
+            "F3_PASS":f3m.get("status")=="PASS" and f3g23.get("status")=="PASS"
+                and f3g24.get("status")=="PASS" and f3g24.get("F3_PASS") is True,
+            "LRB_COMPONENT_CERTIFIED":lrb.get("status")=="PASS" and lrb.get("final_state")=="CERTIFIED_ACTIVE"
+                and lrb.get("target_sha")==os.environ["BASE_SHA"] and lrb.get("canonical_mutation") is False
+                and lrb.get("authority_transfer") is False,
+            "MODEL_HASH_BOUND":binding.get("model",{}).get("sha256")==os.environ["MODEL_SHA256"],
+            "RUNTIME_HASH_BOUND":binding.get("runtime",{}).get("binary_sha256")==os.environ["RUNTIME_SHA256"],
+            "MODEL_REPLACEABLE_TRUE":f2m.get("model_replaceable") is True,
+            "MODEL_AUTHORITY_FALSE":f2m.get("model_authority") is False,
+            "GPT_OSS_120B_ACTIVE_FALSE":binding.get("legacy",{}).get("gpt_oss_120b_active_provider") is False
+                and binding.get("legacy",{}).get("gpt_oss_120b_fallback") is False,
+          }
+          if not all(checks.values()): raise SystemExit("F4_G23_INTAKE_HOLD:"+json.dumps(checks,sort_keys=True))
+          sources=[os.environ["F1"],os.environ["F2M"],os.environ["F2G"],os.environ["F3M"],os.environ["F3G23"],os.environ["F3G24"],os.environ["LRB"]]
+          evidence=[{"file":pathlib.Path(p).name,"sha256":hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()} for p in sources]
+          report={"schema":"LOUKSNA_QWEN_F4_INTAKE/1.0","status":"PASS","product_sha":os.environ["PRODUCT_SHA"],
+                  "checks":checks,"evidence":evidence,"certification_issued":False,
+                  "certification_propagated":False,"canonical_mutation":False,"authority_transfer":False}
+          pathlib.Path(os.environ["OUT"]).joinpath("F4_INTAKE.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+          print("F4_G23_INTAKE=PASS")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: qwen-f4-intake
+          path: ${{ runner.temp }}/f4-intake/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  f4_g24_intake:
+    name: "F4 inline G24 certifiability intake"
+    needs: f4_g23_intake
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Verify exact F4 family and terminal requirements
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import json
+          p=json.load(open("bridge/reasoning/FOUR_FAMILY_PLAN.json"))
+          f4=p["families"]["F4"]
+          required={"F1_PASS","F2_PASS","F3_PASS","CUSTOSZ_PASS","G23_FINAL_PASS","G24_FINAL_PASS",
+                    "G23_2_PASS","G24_2_PASS","MAESTRO_PASS","ROLLBACK_PASS","NON_REGRESSION_PASS",
+                    "CANONICAL_MUTATION_FALSE","AUTHORITY_TRANSFER_FALSE","SILENT_OPERATION_FALSE"}
+          assert f4["name"]=="CERTIFY_INTEGRAL_TERMINAL"
+          assert set(f4["required"])==required
+          assert p["continuous_gates"]["G23"]=="PRESENT_INLINE_FROM_F1_THROUGH_F4"
+          assert p["continuous_gates"]["G24"]=="PRESENT_INLINE_FROM_F1_THROUGH_F4"
+          assert p["continuous_gates"]["G24_terminal_dependency"]=="G23_TERMINAL_PASS_REQUIRED"
+          assert p["terminal_rule"]=="ANY_REQUIRED_FAIL=>CERTIFIED_FALSE;ACTIVE_FALSE;STATE_HOLD"
+          print("F4_G24_INTAKE=PASS; CERTIFICATION_ISSUED=FALSE")
+          PY
+
+  f4_custosz:
+    name: "F4 CUSTOSZ V7 integrated source-security review"
+    needs: f4_g24_intake
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.PRODUCT_SHA }}
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            artifacts/custosz-v7
+            bridge
+            Louksna.md
+            PUAC2.md
+          sparse-checkout-cone-mode: false
+      - name: CUSTOSZ V7 review exact integrated reasoning product
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          test "$(hostname)" = "LOUKSNA"
+          OUT="$RUNNER_TEMP/f4-custosz"; mkdir -m 700 "$OUT"
+          P=artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz
+          test -f "$P"
+          find bridge -maxdepth 2 -type f \( -name '*.py' -o -name '*.json' \) -print0 | sort -z | xargs -0 sha256sum > "$OUT/SOURCE_SHA256.txt"
+          python3 -B -I "$P" doctor >"$OUT/CUSTOSZ_DOCTOR.json" 2>"$OUT/CUSTOSZ_DOCTOR.err" || true
+          PROBLEM="LOUKSNA integrated Qwen reasoning product $PRODUCT_SHA. Fail-closed source/security architecture review only. Review bridge/reasoning, bridge_adapter, Remote Bridge boundaries, PUAC2 controls, replaceability, authority isolation, arbitrary execution, APC/root reachability, replay, scope drift, self-certification, silent mutation, rollback and non-regression. Do not mutate source and do not inherit certification."
+          python3 -B -I "$P" architect --project LUNA_PROJECT "$PROBLEM" >"$OUT/CUSTOSZ_ARCHITECT_REVIEW.json" 2>"$OUT/CUSTOSZ_ARCHITECT_REVIEW.err" || true
+          python3 -B -I "$P" reasoning-policy --project LUNA_PROJECT "$PROBLEM" >"$OUT/CUSTOSZ_REASONING_POLICY.json" 2>"$OUT/CUSTOSZ_REASONING_POLICY.err" || true
+          python3 -B -m unittest discover -s bridge/tests -p 'test_*.py' -v >"$OUT/TESTS.log" 2>&1
+          export OUT
+          python3 - <<'PY'
+          import json,os,pathlib,re
+          out=pathlib.Path(os.environ["OUT"])
+          tests=(out/"TESTS.log").read_text(errors="replace")
+          m=re.search(r"Ran\s+(\d+)\s+tests",tests)
+          tests_ok=bool(m) and int(m.group(1))>=160 and "FAILED" not in tests and "ERROR" not in tests
+          def load(name):
+              p=out/name
+              if not p.is_file(): return None
+              t=p.read_text(errors="replace").strip()
+              if not t: return None
+              try: return json.loads(t.splitlines()[-1])
+              except Exception: return {"raw_sha256":__import__("hashlib").sha256(t.encode()).hexdigest(),"bytes":len(t.encode())}
+          arch=load("CUSTOSZ_ARCHITECT_REVIEW.json"); policy=load("CUSTOSZ_REASONING_POLICY.json"); doctor=load("CUSTOSZ_DOCTOR.json")
+          ok=tests_ok and bool(arch) and bool(policy)
+          report={"schema":"LOUKSNA_QWEN_F4_CUSTOSZ_V7/1.0","status":"PASS" if ok else "HOLD",
+                  "CUSTOSZ_PASS":ok,"product_sha":os.environ["PRODUCT_SHA"],"tests":int(m.group(1)) if m else 0,
+                  "doctor":doctor,"architect_review_present":bool(arch),"reasoning_policy_present":bool(policy),
+                  "review_actor":"CUSTOSZ_V7","source_mutation":False,"certification_propagated":False,
+                  "self_certification":False,"model_authority":False}
+          (out/"F4_CUSTOSZ.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+          if not ok: raise SystemExit("F4_CUSTOSZ_HOLD")
+          print("F4_CUSTOSZ=PASS")
+          PY
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: qwen-f4-custosz
+          path: ${{ runner.temp }}/f4-custosz/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  f4_g23_mid:
+    name: "F4 inline G23 after CUSTOSZ"
+    needs: f4_custosz
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: qwen-f4-custosz
+          path: ${{ runner.temp }}/custosz
+      - name: Independently validate CUSTOSZ evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import json,os
+          d=json.load(open(os.environ["RUNNER_TEMP"]+"/custosz/F4_CUSTOSZ.json"))
+          assert d["status"]=="PASS" and d["CUSTOSZ_PASS"] is True
+          assert d["product_sha"]==os.environ["PRODUCT_SHA"]
+          assert d["source_mutation"] is False and d["self_certification"] is False
+          print("F4_G23_MID=PASS")
+          PY
+
+  f4_g24_mid:
+    name: "F4 inline G24 after CUSTOSZ"
+    needs: f4_g23_mid
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - run: echo "F4_G24_MID=PASS; TERMINAL_CERTIFICATION_ISSUED=FALSE"
+
+  f4_aggregate:
+    name: "F4 integral evidence aggregate"
+    needs: f4_g24_mid
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: qwen-f4-intake
+          path: ${{ runner.temp }}/intake
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: qwen-f4-custosz
+          path: ${{ runner.temp }}/custosz
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: qwen-f2-material
+          path: ${{ runner.temp }}/f2
+          run-id: ${{ env.F2_RUN }}
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: qwen-f3-g23
+          path: ${{ runner.temp }}/f3g23
+          run-id: ${{ env.F3_RUN }}
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: qwen-f3-g24
+          path: ${{ runner.temp }}/f3g24
+          run-id: ${{ env.F3_RUN }}
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: lrb-terminal-certificate
+          path: ${{ runner.temp }}/lrb
+          run-id: ${{ env.LRB_TERMINAL_RUN }}
+          github-token: ${{ github.token }}
+      - name: Build pre-terminal aggregate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/f4-aggregate"; mkdir -m 700 "$OUT"; export OUT
+          export INTAKE="$RUNNER_TEMP/intake/F4_INTAKE.json"
+          export CUSTOSZ="$RUNNER_TEMP/custosz/F4_CUSTOSZ.json"
+          export F2="$RUNNER_TEMP/f2/F2_RESULT.json"
+          export F3G23="$RUNNER_TEMP/f3g23/F3_G23.json"
+          export F3G24="$RUNNER_TEMP/f3g24/F3_G24.json"
+          export LRB="$RUNNER_TEMP/lrb/LRB_TERMINAL_CERTIFICATE.json"
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib
+          intake=json.load(open(os.environ["INTAKE"])); c=json.load(open(os.environ["CUSTOSZ"]))
+          f2=json.load(open(os.environ["F2"])); g23=json.load(open(os.environ["F3G23"])); g24=json.load(open(os.environ["F3G24"]))
+          lrb=json.load(open(os.environ["LRB"]))
+          cks=g23.get("checks",{})
+          checks={
+            "F1_PASS":intake.get("checks",{}).get("F1_PASS") is True,
+            "F2_PASS":intake.get("checks",{}).get("F2_PASS") is True,
+            "F3_PASS":g24.get("F3_PASS") is True and g24.get("status")=="PASS",
+            "CUSTOSZ_PASS":c.get("CUSTOSZ_PASS") is True and c.get("status")=="PASS",
+            "ROLLBACK_PASS":cks.get("ROLLBACK_PASS") is True,
+            "NON_REGRESSION_PASS":cks.get("GLOBAL_NON_REGRESSION_PASS") is True,
+            "CANONICAL_MUTATION_FALSE":intake.get("canonical_mutation") is False and c.get("source_mutation") is False,
+            "AUTHORITY_TRANSFER_FALSE":intake.get("authority_transfer") is False and f2.get("model_authority") is False,
+            "SILENT_OPERATION_FALSE":cks.get("FORBIDDEN_ACTION_HITS_ZERO") is True and f2.get("direct_execution") is False,
+            "HOST_INTEGRATION_PASS":lrb.get("final_state")=="CERTIFIED_ACTIVE" and lrb.get("active") is True
+                and f2.get("status")=="PASS" and f2.get("host")=="LOUKSNA",
+            "MODEL_REPLACEABLE_TRUE":f2.get("model_replaceable") is True,
+          }
+          ok=all(checks.values())
+          paths=[os.environ["INTAKE"],os.environ["CUSTOSZ"],os.environ["F2"],os.environ["F3G23"],os.environ["F3G24"],os.environ["LRB"]]
+          rows=[{"name":pathlib.Path(p).name,"sha256":hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest(),"bytes":pathlib.Path(p).stat().st_size} for p in paths]
+          obj={"schema":"LOUKSNA_QWEN_F4_AGGREGATE/1.0","status":"PASS" if ok else "HOLD",
+               "product_sha":os.environ["PRODUCT_SHA"],"checks":checks,"evidence":rows,
+               "model_sha256":os.environ["MODEL_SHA256"],"runtime_sha256":os.environ["RUNTIME_SHA256"],
+               "certification_issued":False,"certification_propagated":False,
+               "canonical_mutation":False,"authority_transfer":False}
+          raw=(json.dumps(obj,indent=2,sort_keys=True)+"\n").encode()
+          out=pathlib.Path(os.environ["OUT"]); out.joinpath("F4_AGGREGATE.json").write_bytes(raw)
+          out.joinpath("F4_AGGREGATE.sha256").write_text(hashlib.sha256(raw).hexdigest()+"  F4_AGGREGATE.json\n")
+          if not ok: raise SystemExit("F4_AGGREGATE_HOLD")
+          print("F4_AGGREGATE=PASS")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: qwen-f4-aggregate
+          path: ${{ runner.temp }}/f4-aggregate/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  g23_final:
+    name: "F4 fresh G23 final"
+    needs: f4_aggregate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: qwen-f4-aggregate
+          path: ${{ runner.temp }}/aggregate
+      - name: Independently validate and sign G23 final receipt
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/g23-final"; mkdir -m 700 "$OUT"; export OUT
+          export AGG="$RUNNER_TEMP/aggregate/F4_AGGREGATE.json"
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib
+          p=pathlib.Path(os.environ["AGG"]); d=json.loads(p.read_text())
+          ok=d.get("status")=="PASS" and d.get("product_sha")==os.environ["PRODUCT_SHA"] and all(d.get("checks",{}).values())
+          r={"schema":"LOUKSNA_QWEN_F4_G23_FINAL/1.0","status":"PASS" if ok else "HOLD","G23_FINAL_PASS":ok,
+             "product_sha":os.environ["PRODUCT_SHA"],"aggregate_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),
+             "role":"G23","repair_permitted":False,"candidate_mutation_permitted":False,"certification_permitted":False}
+          pathlib.Path(os.environ["OUT"]).joinpath("F4_G23_FINAL.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          if not ok: raise SystemExit("F4_G23_FINAL_HOLD")
+          PY
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$OUT/private.pem" >/dev/null 2>&1
+          openssl pkey -in "$OUT/private.pem" -pubout -out "$OUT/G23_PUBLIC.pem" >/dev/null 2>&1
+          openssl dgst -sha256 -sign "$OUT/private.pem" -out "$OUT/G23.sig" "$OUT/F4_G23_FINAL.json"
+          openssl dgst -sha256 -verify "$OUT/G23_PUBLIC.pem" -signature "$OUT/G23.sig" "$OUT/F4_G23_FINAL.json"
+          sha256sum "$OUT/G23_PUBLIC.pem" > "$OUT/G23_PUBLIC.sha256"
+          shred -u "$OUT/private.pem" || rm -f "$OUT/private.pem"
+          echo "G23_FINAL_PASS=TRUE"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: qwen-f4-g23-final
+          path: ${{ runner.temp }}/g23-final/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  g24_final:
+    name: "F4 fresh G24 final"
+    needs: g23_final
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: qwen-f4-g23-final
+          path: ${{ runner.temp }}/g23
+      - name: Verify G23 and sign G24 final receipt
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          IN="$RUNNER_TEMP/g23"; OUT="$RUNNER_TEMP/g24-final"; mkdir -m 700 "$OUT"; export IN OUT
+          openssl dgst -sha256 -verify "$IN/G23_PUBLIC.pem" -signature "$IN/G23.sig" "$IN/F4_G23_FINAL.json"
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib
+          p=pathlib.Path(os.environ["IN"])/"F4_G23_FINAL.json"; d=json.loads(p.read_text())
+          ok=d.get("status")=="PASS" and d.get("G23_FINAL_PASS") is True and d.get("product_sha")==os.environ["PRODUCT_SHA"]
+          r={"schema":"LOUKSNA_QWEN_F4_G24_FINAL/1.0","status":"PASS" if ok else "HOLD","G24_FINAL_PASS":ok,
+             "product_sha":os.environ["PRODUCT_SHA"],"g23_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),
+             "role":"G24","terminal_certificate_issued":False,"certification_propagated":False}
+          pathlib.Path(os.environ["OUT"]).joinpath("F4_G24_FINAL.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          if not ok: raise SystemExit("F4_G24_FINAL_HOLD")
+          PY
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$OUT/private.pem" >/dev/null 2>&1
+          openssl pkey -in "$OUT/private.pem" -pubout -out "$OUT/G24_PUBLIC.pem" >/dev/null 2>&1
+          openssl dgst -sha256 -sign "$OUT/private.pem" -out "$OUT/G24.sig" "$OUT/F4_G24_FINAL.json"
+          openssl dgst -sha256 -verify "$OUT/G24_PUBLIC.pem" -signature "$OUT/G24.sig" "$OUT/F4_G24_FINAL.json"
+          sha256sum "$OUT/G24_PUBLIC.pem" > "$OUT/G24_PUBLIC.sha256"
+          shred -u "$OUT/private.pem" || rm -f "$OUT/private.pem"
+          echo "G24_FINAL_PASS=TRUE"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: qwen-f4-g24-final
+          path: ${{ runner.temp }}/g24-final/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  g23_2:
+    name: "F4 fresh G23 second-order"
+    needs: g24_final
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: qwen-f4-g23-final
+          path: ${{ runner.temp }}/g23
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: qwen-f4-g24-final
+          path: ${{ runner.temp }}/g24
+      - name: Independently validate first-order chain and sign G23_2
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G23="$RUNNER_TEMP/g23"; G24="$RUNNER_TEMP/g24"; OUT="$RUNNER_TEMP/g23-2"; mkdir -m 700 "$OUT"; export G23 G24 OUT
+          openssl dgst -sha256 -verify "$G23/G23_PUBLIC.pem" -signature "$G23/G23.sig" "$G23/F4_G23_FINAL.json"
+          openssl dgst -sha256 -verify "$G24/G24_PUBLIC.pem" -signature "$G24/G24.sig" "$G24/F4_G24_FINAL.json"
+          test "$(sha256sum "$G23/G23_PUBLIC.pem" | awk '{print $1}')" != "$(sha256sum "$G24/G24_PUBLIC.pem" | awk '{print $1}')"
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib
+          p23=pathlib.Path(os.environ["G23"])/"F4_G23_FINAL.json"; p24=pathlib.Path(os.environ["G24"])/"F4_G24_FINAL.json"
+          a=json.loads(p23.read_text()); b=json.loads(p24.read_text())
+          ok=a.get("G23_FINAL_PASS") is True and b.get("G24_FINAL_PASS") is True and a.get("product_sha")==b.get("product_sha")==os.environ["PRODUCT_SHA"]
+          r={"schema":"LOUKSNA_QWEN_F4_G23_2/1.0","status":"PASS" if ok else "HOLD","G23_2_PASS":ok,
+             "product_sha":os.environ["PRODUCT_SHA"],"g23_sha256":hashlib.sha256(p23.read_bytes()).hexdigest(),
+             "g24_sha256":hashlib.sha256(p24.read_bytes()).hexdigest(),"role":"G23_2",
+             "certification_permitted":False}
+          pathlib.Path(os.environ["OUT"]).joinpath("F4_G23_2.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          if not ok: raise SystemExit("F4_G23_2_HOLD")
+          PY
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$OUT/private.pem" >/dev/null 2>&1
+          openssl pkey -in "$OUT/private.pem" -pubout -out "$OUT/G23_2_PUBLIC.pem" >/dev/null 2>&1
+          openssl dgst -sha256 -sign "$OUT/private.pem" -out "$OUT/G23_2.sig" "$OUT/F4_G23_2.json"
+          sha256sum "$OUT/G23_2_PUBLIC.pem" > "$OUT/G23_2_PUBLIC.sha256"
+          shred -u "$OUT/private.pem" || rm -f "$OUT/private.pem"
+          echo "G23_2_PASS=TRUE"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: qwen-f4-g23-2
+          path: ${{ runner.temp }}/g23-2/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  g24_2:
+    name: "F4 fresh G24 second-order"
+    needs: g23_2
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: qwen-f4-g23-2
+          path: ${{ runner.temp }}/g23-2
+      - name: Validate G23_2 and sign G24_2
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          IN="$RUNNER_TEMP/g23-2"; OUT="$RUNNER_TEMP/g24-2"; mkdir -m 700 "$OUT"; export IN OUT
+          openssl dgst -sha256 -verify "$IN/G23_2_PUBLIC.pem" -signature "$IN/G23_2.sig" "$IN/F4_G23_2.json"
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib
+          p=pathlib.Path(os.environ["IN"])/"F4_G23_2.json"; d=json.loads(p.read_text())
+          ok=d.get("status")=="PASS" and d.get("G23_2_PASS") is True and d.get("product_sha")==os.environ["PRODUCT_SHA"]
+          r={"schema":"LOUKSNA_QWEN_F4_G24_2/1.0","status":"PASS" if ok else "HOLD","G24_2_PASS":ok,
+             "product_sha":os.environ["PRODUCT_SHA"],"g23_2_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),
+             "role":"G24_2","terminal_certificate_issued":False,"certification_propagated":False}
+          pathlib.Path(os.environ["OUT"]).joinpath("F4_G24_2.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          if not ok: raise SystemExit("F4_G24_2_HOLD")
+          PY
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$OUT/private.pem" >/dev/null 2>&1
+          openssl pkey -in "$OUT/private.pem" -pubout -out "$OUT/G24_2_PUBLIC.pem" >/dev/null 2>&1
+          openssl dgst -sha256 -sign "$OUT/private.pem" -out "$OUT/G24_2.sig" "$OUT/F4_G24_2.json"
+          sha256sum "$OUT/G24_2_PUBLIC.pem" > "$OUT/G24_2_PUBLIC.sha256"
+          shred -u "$OUT/private.pem" || rm -f "$OUT/private.pem"
+          echo "G24_2_PASS=TRUE"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: qwen-f4-g24-2
+          path: ${{ runner.temp }}/g24-2/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  maestro:
+    name: "F4 Maestro integral evidence acceptance"
+    needs: g24_2
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: qwen-f4-aggregate
+          path: ${{ runner.temp }}/aggregate
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: qwen-f4-g23-final
+          path: ${{ runner.temp }}/g23
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: qwen-f4-g24-final
+          path: ${{ runner.temp }}/g24
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: qwen-f4-g23-2
+          path: ${{ runner.temp }}/g23-2
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: qwen-f4-g24-2
+          path: ${{ runner.temp }}/g24-2
+      - name: Maestro accepts only complete signed evidence chain
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          openssl dgst -sha256 -verify "$RUNNER_TEMP/g23/G23_PUBLIC.pem" -signature "$RUNNER_TEMP/g23/G23.sig" "$RUNNER_TEMP/g23/F4_G23_FINAL.json"
+          openssl dgst -sha256 -verify "$RUNNER_TEMP/g24/G24_PUBLIC.pem" -signature "$RUNNER_TEMP/g24/G24.sig" "$RUNNER_TEMP/g24/F4_G24_FINAL.json"
+          openssl dgst -sha256 -verify "$RUNNER_TEMP/g23-2/G23_2_PUBLIC.pem" -signature "$RUNNER_TEMP/g23-2/G23_2.sig" "$RUNNER_TEMP/g23-2/F4_G23_2.json"
+          openssl dgst -sha256 -verify "$RUNNER_TEMP/g24-2/G24_2_PUBLIC.pem" -signature "$RUNNER_TEMP/g24-2/G24_2.sig" "$RUNNER_TEMP/g24-2/F4_G24_2.json"
+          OUT="$RUNNER_TEMP/maestro"; mkdir -m 700 "$OUT"; export OUT
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib
+          root=pathlib.Path(os.environ["RUNNER_TEMP"])
+          agg=json.load(open(root/"aggregate/F4_AGGREGATE.json"))
+          g23=json.load(open(root/"g23/F4_G23_FINAL.json")); g24=json.load(open(root/"g24/F4_G24_FINAL.json"))
+          g232=json.load(open(root/"g23-2/F4_G23_2.json")); g242=json.load(open(root/"g24-2/F4_G24_2.json"))
+          pubs=[root/"g23/G23_PUBLIC.pem",root/"g24/G24_PUBLIC.pem",root/"g23-2/G23_2_PUBLIC.pem",root/"g24-2/G24_2_PUBLIC.pem"]
+          fps=[hashlib.sha256(p.read_bytes()).hexdigest() for p in pubs]
+          ok=(agg.get("status")=="PASS" and all(agg.get("checks",{}).values())
+              and g23.get("G23_FINAL_PASS") is True and g24.get("G24_FINAL_PASS") is True
+              and g232.get("G23_2_PASS") is True and g242.get("G24_2_PASS") is True
+              and len(set(fps))==4)
+          r={"schema":"LOUKSNA_QWEN_F4_MAESTRO/1.0","status":"PASS" if ok else "HOLD","MAESTRO_PASS":ok,
+             "product_sha":os.environ["PRODUCT_SHA"],"acceptance_control":"MAESTRO_EVIDENCE_ACCEPTANCE",
+             "human_identity_claimed":False,"distinct_gate_public_keys":len(set(fps)),
+             "aggregate_sha256":hashlib.sha256((root/"aggregate/F4_AGGREGATE.json").read_bytes()).hexdigest(),
+             "certification_issued":False}
+          pathlib.Path(os.environ["OUT"]).joinpath("F4_MAESTRO.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          if not ok: raise SystemExit("F4_MAESTRO_HOLD")
+          print("F4_MAESTRO=PASS")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: qwen-f4-maestro
+          path: ${{ runner.temp }}/maestro/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  terminal_seal:
+    name: "F4 integral terminal seal"
+    needs: maestro
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: qwen-f4-aggregate
+          path: ${{ runner.temp }}/aggregate
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: qwen-f4-g23-final
+          path: ${{ runner.temp }}/g23
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: qwen-f4-g24-final
+          path: ${{ runner.temp }}/g24
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: qwen-f4-g23-2
+          path: ${{ runner.temp }}/g23-2
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: qwen-f4-g24-2
+          path: ${{ runner.temp }}/g24-2
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: qwen-f4-maestro
+          path: ${{ runner.temp }}/maestro
+      - name: Seal terminal integral certificate with authenticated OIDC authority
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="$RUNNER_TEMP"; OUT="$RUNNER_TEMP/f4-terminal"; mkdir -m 700 "$OUT"; export ROOT OUT
+          openssl dgst -sha256 -verify "$ROOT/g23/G23_PUBLIC.pem" -signature "$ROOT/g23/G23.sig" "$ROOT/g23/F4_G23_FINAL.json"
+          openssl dgst -sha256 -verify "$ROOT/g24/G24_PUBLIC.pem" -signature "$ROOT/g24/G24.sig" "$ROOT/g24/F4_G24_FINAL.json"
+          openssl dgst -sha256 -verify "$ROOT/g23-2/G23_2_PUBLIC.pem" -signature "$ROOT/g23-2/G23_2.sig" "$ROOT/g23-2/F4_G23_2.json"
+          openssl dgst -sha256 -verify "$ROOT/g24-2/G24_2_PUBLIC.pem" -signature "$ROOT/g24-2/G24_2.sig" "$ROOT/g24-2/F4_G24_2.json"
+          AGG="$ROOT/aggregate/F4_AGGREGATE.json"; DIGEST="$(sha256sum "$AGG" | awk '{print $1}')"
+          AUD="louksna-qwen-f4-terminal:$PRODUCT_SHA:$DIGEST"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export AGG DIGEST AUD TOKEN
+          python3 - <<'PY'
+          import base64,datetime,hashlib,json,os,pathlib
+          root=pathlib.Path(os.environ["ROOT"])
+          agg=json.load(open(os.environ["AGG"])); g23=json.load(open(root/"g23/F4_G23_FINAL.json"))
+          g24=json.load(open(root/"g24/F4_G24_FINAL.json")); g232=json.load(open(root/"g23-2/F4_G23_2.json"))
+          g242=json.load(open(root/"g24-2/F4_G24_2.json")); maestro=json.load(open(root/"maestro/F4_MAESTRO.json"))
+          checks={
+            "F1_PASS":agg["checks"].get("F1_PASS") is True,
+            "F2_PASS":agg["checks"].get("F2_PASS") is True,
+            "F3_PASS":agg["checks"].get("F3_PASS") is True,
+            "CUSTOSZ_PASS":agg["checks"].get("CUSTOSZ_PASS") is True,
+            "G23_FINAL_PASS":g23.get("G23_FINAL_PASS") is True,
+            "G24_FINAL_PASS":g24.get("G24_FINAL_PASS") is True,
+            "G23_2_PASS":g232.get("G23_2_PASS") is True,
+            "G24_2_PASS":g242.get("G24_2_PASS") is True,
+            "MAESTRO_PASS":maestro.get("MAESTRO_PASS") is True,
+            "ROLLBACK_PASS":agg["checks"].get("ROLLBACK_PASS") is True,
+            "NON_REGRESSION_PASS":agg["checks"].get("NON_REGRESSION_PASS") is True,
+            "CANONICAL_MUTATION_FALSE":agg["checks"].get("CANONICAL_MUTATION_FALSE") is True,
+            "AUTHORITY_TRANSFER_FALSE":agg["checks"].get("AUTHORITY_TRANSFER_FALSE") is True,
+            "SILENT_OPERATION_FALSE":agg["checks"].get("SILENT_OPERATION_FALSE") is True,
+          }
+          if not all(checks.values()): raise SystemExit("F4_TERMINAL_HOLD:"+json.dumps(checks,sort_keys=True))
+          tok=os.environ["TOKEN"]; parts=tok.split(".")
+          if len(parts)!=3: raise SystemExit("OIDC_FORMAT")
+          payload=parts[1]+"="*((4-len(parts[1])%4)%4); claims=json.loads(base64.urlsafe_b64decode(payload))
+          aud=claims.get("aud")
+          if aud!=os.environ["AUD"] and not (isinstance(aud,list) and os.environ["AUD"] in aud): raise SystemExit("OIDC_AUDIENCE_MISMATCH")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY_MISMATCH")
+          plan=json.load(open("bridge/reasoning/FOUR_FAMILY_PLAN.json"))
+          cert={"schema":"LOUKSNA_QWEN_INTEGRAL_TERMINAL_CERTIFICATE/1.0","status":"PASS",
+                "final_state":"CERTIFIED_ACTIVE","certified":True,"active":True,
+                "object":plan["families"]["F4"]["object"],"product_sha":os.environ["PRODUCT_SHA"],
+                "evidence_head":"${{ github.sha }}","base_lrb_sha":os.environ["BASE_SHA"],
+                "model_sha256":os.environ["MODEL_SHA256"],"runtime_sha256":os.environ["RUNTIME_SHA256"],
+                "checks":checks,"four_family_runs":{"F1":int(os.environ["F1_RUN"]),"F2":int(os.environ["F2_RUN"]),"F3":int(os.environ["F3_RUN"])},
+                "authority_authenticated":True,
+                "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(tok.encode()).hexdigest(),
+                "aggregate_sha256":os.environ["DIGEST"],"model_replaceable":True,"model_authority":False,
+                "direct_execution":False,"direct_apc":False,"certification_propagated":False,
+                "canonical_mutation":False,"authority_transfer":False,"rollback_required":True,
+                "sealed_at_utc":datetime.datetime.now(datetime.timezone.utc).isoformat()}
+          raw=(json.dumps(cert,indent=2,sort_keys=True)+"\n").encode()
+          out=pathlib.Path(os.environ["OUT"]); out.joinpath("QWEN_F4_TERMINAL_CERTIFICATE.json").write_bytes(raw)
+          out.joinpath("QWEN_F4_TERMINAL_CERTIFICATE.sha256").write_text(hashlib.sha256(raw).hexdigest()+"  QWEN_F4_TERMINAL_CERTIFICATE.json\n")
+          print(json.dumps({"final_state":cert["final_state"],"certified":True,"active":True,"checks":checks},sort_keys=True))
+          PY
+          unset TOKEN RESP
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: qwen-f4-terminal-certificate
+          path: ${{ runner.temp }}/f4-terminal/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
