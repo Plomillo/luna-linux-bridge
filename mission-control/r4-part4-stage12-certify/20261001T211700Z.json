@@ -1,0 +1,13 @@
+{
+  "schema": "LOUKSNA_R4_PART4_STAGE12_CERTIFY_REQUEST/1.0",
+  "requested_stage": 12,
+  "operation": "G23_TERMINAL_THEN_SEPARATE_FINAL_MERGE_G24_AND_PART4_G24",
+  "candidate_run_id": 36927333844,
+  "candidate_artifact_id": 11194009042,
+  "require_no_certification_propagation": true,
+  "authorize_disk_mutation": false,
+  "authorize_filesystem_mutation": false,
+  "authorize_state_flag_mutation": false,
+  "fail_closed": true,
+  "requested_at_utc": "2026-10-01T21:17:00Z"
+}
