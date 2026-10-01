@@ -113,7 +113,7 @@ jobs:
               "filesystem_state_clean": fs_state=="clean",
               "errors_count_zero_or_unavailable": errors_count in (None,0),
               "no_fatal_ext4_kernel_marker": not dmesg_fatal,
-              "resize2fs_version_present": "resize2fs" in resize_version.lower() and "version" in resize_version.lower(),
+              "resize2fs_version_present": bool(re.search(r"resize2fs\\s+\\d+\\.\\d+", resize_version, re.I)),
               "resize2fs_binary_sha256_present": len(resize_sha)==64,
           }
 
