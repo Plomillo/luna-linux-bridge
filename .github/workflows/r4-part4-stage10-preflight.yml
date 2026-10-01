@@ -1,0 +1,86 @@
+name: "R4 PART4 — Stage10 PROYECTOS preflight"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-stage10-preflight/**
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  preflight:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Inspect Stage10 binding read-only
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/stage10-preflight-$GITHUB_RUN_ID"
+          mkdir -p "$OUT"
+          systemctl --user show luna-r4-master-part1-part9.service -p FragmentPath -p ExecStart -p ActiveState -p SubState > "$OUT/SERVICE.txt"
+          gh api repos/Plomillo/luna-linux-bridge/actions/runs/36619942178/artifacts > "$OUT/BASELINE_ARTIFACTS.json"
+          OUT="$OUT" python3 - <<'PY'
+          import json, os, pathlib, subprocess, datetime as dt
+          out=pathlib.Path(os.environ["OUT"])
+          home=pathlib.Path.home()
+          candidates=[
+            home/"Proyectos",
+            home/"Luna R4"/"Proyectos",
+            pathlib.Path("/media")/home.name/"Windows"/"PROYECTOS",
+          ]
+          rows=[]
+          selected=None
+          for p in candidates:
+              rec={"path":str(p),"exists":p.exists(),"is_symlink":p.is_symlink()}
+              try:
+                  if p.exists() or p.is_symlink():
+                      rec["resolved"]=str(p.resolve(strict=True))
+                      rec["is_dir"]=p.resolve(strict=True).is_dir()
+                      if rec["is_dir"] and selected is None:
+                          selected=p
+              except Exception as e:
+                  rec["resolve_error"]=type(e).__name__+":"+str(e)
+              if p.exists():
+                  for key,cmd in {
+                    "findmnt_source":["findmnt","-T",str(p),"-n","-o","SOURCE"],
+                    "findmnt_fstype":["findmnt","-T",str(p),"-n","-o","FSTYPE"],
+                    "findmnt_target":["findmnt","-T",str(p),"-n","-o","TARGET"],
+                  }.items():
+                      q=subprocess.run(cmd,text=True,capture_output=True)
+                      rec[key]=q.stdout.strip() if q.returncode==0 else None
+              rows.append(rec)
+          arts=json.loads((out/"BASELINE_ARTIFACTS.json").read_text())
+          matches=[a for a in arts.get("artifacts",[]) if a.get("name")=="R4-PART4-PROYECTOS-freeze-36619942178"]
+          result={
+            "schema":"LOUKSNA_R4_PART4_STAGE10_PREFLIGHT/1.0",
+            "status":"PASS" if selected is not None and len(matches)==1 else "HOLD",
+            "candidates":rows,
+            "selected_root":str(selected) if selected else None,
+            "selected_resolved":str(selected.resolve(strict=True)) if selected else None,
+            "baseline_artifact_match_count":len(matches),
+            "baseline_artifact":matches[0] if len(matches)==1 else None,
+            "baseline_manifest_sha256":"99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+            "source_run_id":36619942178,
+            "disk_mutation_performed":False,
+            "filesystem_mutation_performed":False,
+            "recorded_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          (out/"STAGE10_PREFLIGHT.json").write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(result,indent=2,sort_keys=True))
+          if result["status"]!="PASS": raise SystemExit(23)
+          PY
+      - name: Upload preflight
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-stage10-preflight
+          path: ${{ runner.temp }}/stage10-preflight-${{ github.run_id }}
+          if-no-files-found: warn
+          retention-days: 30
