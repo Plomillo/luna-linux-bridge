@@ -34,6 +34,33 @@ verify_tree_privileged(){
   sudo -n chown "$OWNER:$OWNER" "$out"
   chmod 600 "$out"
 }
+classify_relocation_state(){
+  local root="$1" manifest="$2"
+  sudo -n python3 - "$root" "$manifest" "$OWNER" <<'PY'
+import gzip,json,os,pathlib,sys
+root=pathlib.Path(sys.argv[1]); man=pathlib.Path(sys.argv[2]); owner=sys.argv[3]
+tops=set()
+with gzip.open(man,"rt",encoding="utf-8") as f:
+    for line in f:
+        parts=pathlib.PurePosixPath(json.loads(line)["path"]).parts
+        if parts: tops.add(parts[0])
+dest=root/"home"/owner/"PROYECTOS"
+rp={n for n in tops if os.path.lexists(root/n)}
+dp={n for n in tops if os.path.lexists(dest/n)}
+both=rp & dp
+neither=tops-rp-dp
+if len(rp)==len(tops) and not dp:
+    print("PRE_RELOCATION")
+elif len(dp)==len(tops) and not rp:
+    print("POST_RELOCATION")
+elif both:
+    print("DUPLICATED_MIXED_STATE")
+elif neither:
+    print("INCOMPLETE_OR_UNKNOWN")
+else:
+    print("SPLIT_RELOCATION")
+PY
+}
 
 for c in python3 lsblk findmnt blockdev df du rsync mount umount sfdisk sha256sum chroot grub-install update-grub update-initramfs efibootmgr; do need "$c"; done
 need_exec "$BLKID"
@@ -156,7 +183,30 @@ sudo -n cat /boot/grub/grub.cfg > "$OUT/grub.cfg.oldroot.before"
 (sudo -n efibootmgr -v || true) > "$OUT/efibootmgr.before.txt"
 sha256sum "$OUT/PARTITION_TABLE_PREBOOT.sfdisk" "$OUT/fstab.oldroot.before" "$OUT/grub.cfg.oldroot.before" > "$OUT/CHECKPOINTS.sha256"
 
-python3 "$VERIFY" --root "$PROJECTS_MOUNT" --manifest "$MANIFEST" --out "$OUT/VERIFY_PROJECTS_BEFORE_RELOCATION.json" --allow-ext4-root-lost-found
+RELOCATION_ENTRY_STATE="$(classify_relocation_state "$P3_MOUNT_TARGET" "$MANIFEST")"
+export RELOCATION_ENTRY_STATE P3_MOUNT_CONTEXT P3_MOUNT_TARGET
+python3 - "$OUT/RELOCATION_RECONCILIATION.json" <<'PY'
+import json,os,pathlib,sys,time
+state=os.environ["RELOCATION_ENTRY_STATE"]
+ok=state in {"PRE_RELOCATION","POST_RELOCATION"}
+r={
+  "schema":"LOUKSNA_R4_PART4_R2_RELOCATION_RECONCILIATION/1.0",
+  "status":"PASS" if ok else "HOLD",
+  "entry_state":state,
+  "p3_mount_context":os.environ["P3_MOUNT_CONTEXT"],
+  "p3_mount_target":os.environ["P3_MOUNT_TARGET"],
+  "policy":"REUSE_EXISTING_POST_RELOCATION_STATE_AND_NEVER_MOVE_CERTIFIED_PROJECTS_TWICE",
+  "repeat_projects_migration":False,
+  "repeat_partition_migration":False,
+  "generated_at_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
+}
+pathlib.Path(sys.argv[1]).write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+if not ok: raise SystemExit("HOLD:RELOCATION_STATE:"+state)
+PY
+
+if [ "$RELOCATION_ENTRY_STATE" = "PRE_RELOCATION" ]; then
+  verify_tree_privileged "$P3_MOUNT_TARGET" "$MANIFEST" "$OUT/VERIFY_PROJECTS_BEFORE_RELOCATION.json" --allow-ext4-root-lost-found
+fi
 
 if [ "$P3_MOUNT_CONTEXT" = "PROJECTS_MOUNT" ]; then
   sudo -n umount "$PROJECTS_MOUNT"
@@ -167,29 +217,38 @@ else
   hold "UNKNOWN_P3_MOUNT_CONTEXT:$P3_MOUNT_CONTEXT"
 fi
 
-# Relocate only manifest-owned top-level project entries into the future Debian home path.
-sudo -n python3 - "$NEWROOT_MNT" "$MANIFEST" "$OWNER" <<'PY'
+RELOCATION_STATE_AT_NEWROOT="$(classify_relocation_state "$NEWROOT_MNT" "$MANIFEST")"
+case "$RELOCATION_STATE_AT_NEWROOT" in
+  PRE_RELOCATION)
+    sudo -n python3 - "$NEWROOT_MNT" "$MANIFEST" "$OWNER" <<'PY'
 import gzip,json,os,pathlib,sys
 root=pathlib.Path(sys.argv[1]); man=pathlib.Path(sys.argv[2]); owner=sys.argv[3]
 tops=set()
 with gzip.open(man,"rt",encoding="utf-8") as f:
     for line in f:
-        p=json.loads(line)["path"]
-        tops.add(pathlib.PurePosixPath(p).parts[0])
+        parts=pathlib.PurePosixPath(json.loads(line)["path"]).parts
+        if parts: tops.add(parts[0])
 dest=root/"home"/owner/"PROYECTOS"
 dest.mkdir(parents=True,exist_ok=True)
 source_present=[n for n in sorted(tops) if os.path.lexists(root/n)]
 dest_present=[n for n in sorted(tops) if os.path.lexists(dest/n)]
-if source_present and dest_present:
-    raise SystemExit("HOLD:MIXED_RELOCATION_STATE")
-if source_present:
-    if len(source_present)!=len(tops): raise SystemExit("HOLD:SOURCE_TOPLEVEL_INCOMPLETE")
-    for n in sorted(tops):
-        os.rename(root/n,dest/n)
-elif len(dest_present)!=len(tops):
-    raise SystemExit("HOLD:RELOCATED_TOPLEVEL_INCOMPLETE")
+if dest_present:
+    raise SystemExit("HOLD:DEST_NOT_EMPTY_DURING_PRE_RELOCATION")
+if len(source_present)!=len(tops):
+    raise SystemExit("HOLD:SOURCE_TOPLEVEL_INCOMPLETE")
+for n in sorted(tops):
+    os.rename(root/n,dest/n)
 PY
+    ;;
+  POST_RELOCATION)
+    echo "RELOCATION_REUSE=POST_RELOCATION_ALREADY_MATERIALIZED"
+    ;;
+  *)
+    hold "RELOCATION_STATE_AT_NEWROOT_UNSAFE:$RELOCATION_STATE_AT_NEWROOT"
+    ;;
+esac
 
+[ "$(classify_relocation_state "$NEWROOT_MNT" "$MANIFEST")" = "POST_RELOCATION" ] || hold "RELOCATION_POSTCONDITION_FAILED"
 sudo -n chown "$OWNER:$OWNER" "$NEWROOT_MNT/home/$OWNER/PROYECTOS"
 verify_tree_privileged "$NEWROOT_MNT/home/$OWNER/PROYECTOS" "$MANIFEST" "$OUT/VERIFY_PROJECTS_AFTER_RELOCATION.json"
 
@@ -316,14 +375,21 @@ export P3_UUID P5_UUID EFI_UUID
 python3 - "$OUT/PREBOOT_STATE.json" <<'PY'
 import hashlib,json,os,pathlib,sys,time
 out=pathlib.Path(sys.argv[1])
-files=["VERIFY_PROJECTS_BEFORE_RELOCATION.json","VERIFY_PROJECTS_AFTER_RELOCATION.json","VERIFY_PROJECTS_AFTER_ROOT_COPY.json","fstab.newroot","grub.cfg.newroot","PARTITION_TABLE_PREBOOT.sfdisk","CANDIDATE_BOOT_ENTRY.json"]
 base=out.parent
+recon=json.loads((base/"RELOCATION_RECONCILIATION.json").read_text())
+project_validation_files=["VERIFY_PROJECTS_AFTER_RELOCATION.json","VERIFY_PROJECTS_AFTER_ROOT_COPY.json"]
+if (base/"VERIFY_PROJECTS_BEFORE_RELOCATION.json").is_file():
+    project_validation_files.insert(0,"VERIFY_PROJECTS_BEFORE_RELOCATION.json")
+files=[*project_validation_files,"RELOCATION_RECONCILIATION.json","fstab.newroot","grub.cfg.newroot","PARTITION_TABLE_PREBOOT.sfdisk","CANDIDATE_BOOT_ENTRY.json"]
 r={
  "schema":"LOUKSNA_R4_PART4_R2_FINAL_MERGE_PREBOOT/1.0","status":"PASS",
  "current_root":"/dev/nvme0n1p5","candidate_root":"/dev/nvme0n1p3","efi":"/dev/nvme0n1p1",
  "candidate_root_uuid":os.environ["P3_UUID"],"old_root_uuid":os.environ["P5_UUID"],"efi_uuid":os.environ["EFI_UUID"],
  "projects_final_path":"/home/diegoignacionorambuenamiranda/PROYECTOS",
  "projects_manifest_sha256":"99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+ "relocation_entry_state":recon["entry_state"],
+ "relocation_reconciliation_status":recon["status"],
+ "project_validation_files":project_validation_files,
  "old_root_preserved":True,"existing_efi_entry_preserved":True,"candidate_boot_entry_label":"LOUKSNA-P3","postboot_dispatch_installed":True,
  "evidence_sha256":{n:hashlib.sha256((base/n).read_bytes()).hexdigest() for n in files},
  "prepared_at_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
