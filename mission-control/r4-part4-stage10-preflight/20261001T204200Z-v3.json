@@ -1,0 +1,12 @@
+{
+  "schema": "LOUKSNA_R4_PART4_STAGE10_PREFLIGHT_REQUEST/1.0",
+  "requested_stage": 10,
+  "operation": "LOCATE_PROYECTOS_AND_BASELINE_BINDING",
+  "retry_reason": "ADD_CANONICAL_UPPERCASE_HOME_PROYECTOS_CANDIDATE",
+  "workflow_fix_commit": "8b74211743d3965aebbdb05affdbc3ab9afac788",
+  "require_read_only": true,
+  "expected_manifest_sha256": "99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+  "expected_records": 498092,
+  "fail_closed": true,
+  "requested_at_utc": "2026-10-01T20:42:00Z"
+}
