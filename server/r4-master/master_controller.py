@@ -1290,10 +1290,15 @@ def part9(mid):
 HANDLERS={"PART_1":part1,"PART_2":part2,"PART_3":part3,"PART_4":part4,"PART_5":part5,"PART_6":part6,"PART_7":part7,"PART_8":part8,"PART_9":part9}
 
 def gh_json(args,timeout=120):
+    # GitHub JSON must never pass through run(), whose bounded stdout is
+    # intentionally truncated for ordinary command evidence. Truncating a
+    # large Actions response destroys the leading JSON and causes false
+    # GH_JSON_INVALID failures during certificate discovery.
     env=dict(os.environ); env["GH_PAGER"]="cat"; env["NO_COLOR"]="1"
-    r=run(["gh",*args],timeout=timeout,env=env)
-    if r["returncode"]!=0: raise RuntimeError("GH_FAILED:"+r["stderr"])
-    raw=r["stdout"].strip()
+    p=subprocess.run(["gh",*args],text=True,capture_output=True,timeout=timeout,env=env)
+    if p.returncode!=0:
+        raise RuntimeError("GH_FAILED:"+p.stderr[-6000:])
+    raw=p.stdout.strip()
     if not raw: return {}
     try:
         return json.loads(raw)
