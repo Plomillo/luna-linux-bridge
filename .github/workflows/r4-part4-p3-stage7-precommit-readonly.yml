@@ -1,0 +1,84 @@
+name: "R4 PART4 — Stage7 read-only precommit proof"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-p3-stage7-precommit/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r4-part4-p3-stage7-precommit
+  cancel-in-progress: false
+
+jobs:
+  live:
+    name: Capture exact live Stage7 boundary
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Deploy Stage7-9 state handlers and capture read-only geometry
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          DST="$HOME/.local/lib/louksna/r4-master-part1-part9"
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9"
+          DIR="$STATE/PART_4_P3_HARDENED"
+          install -m 0700 server/r4-master/master_controller.py "$DST/master_controller.py"
+          python3 -m py_compile "$DST/master_controller.py"
+          OUT="$RUNNER_TEMP/live"; mkdir -p "$OUT"
+          cp "$DIR/EXECUTION.json" "$OUT/EXECUTION.json"
+          cp "$DIR/STAGE5_CANDIDATE.json" "$OUT/STAGE5_CANDIDATE.json"
+          cp "$DIR/STAGE6_G24.json" "$OUT/STAGE6_G24.json"
+          sudo -n /usr/sbin/sfdisk --dump /dev/nvme0n1 > "$OUT/SFDISK.txt"
+          sudo -n /usr/sbin/sgdisk -p /dev/nvme0n1 > "$OUT/SGDISK.txt"
+          sudo -n /usr/sbin/parted -sm /dev/nvme0n1 unit s print free > "$OUT/PARTED.txt"
+          lsblk -J -b -o NAME,PATH,TYPE,SIZE,START,FSTYPE,UUID,PARTUUID,MOUNTPOINTS /dev/nvme0n1 > "$OUT/LSBLK.json"
+          python3 - "$OUT" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,subprocess,sys
+          root=pathlib.Path(sys.argv[1]); h=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+          e=json.loads((root/"EXECUTION.json").read_text())
+          c=json.loads((root/"STAGE5_CANDIDATE.json").read_text())
+          g=json.loads((root/"STAGE6_G24.json").read_text())
+          start=int(pathlib.Path("/sys/class/block/nvme0n1p3/start").read_text().strip())
+          size=int(pathlib.Path("/sys/class/block/nvme0n1p3/size").read_text().strip()); end=start+size-1
+          uuid=subprocess.run(["lsblk","-n","-o","UUID","/dev/nvme0n1p3"],text=True,capture_output=True,check=True).stdout.strip()
+          puid=subprocess.run(["lsblk","-n","-o","PARTUUID","/dev/nvme0n1p3"],text=True,capture_output=True,check=True).stdout.strip()
+          checks={
+            "stage7_boundary":int(e.get("current_stage",0))==7 and int(e.get("last_completed_stage",0))>=6,
+            "start_exact":start==567296,
+            "old_end_exact":end==854409528,
+            "candidate_bound":g.get("candidate_sha256")==h(root/"STAGE5_CANDIDATE.json"),
+            "target_exact":int(g.get("authorized_new_end_sector",-1))==1000215182,
+            "scope_exact":g.get("scope")=="P3_TRAILING_END_EXTENSION_ONLY",
+            "no_fs_authority":g.get("filesystem_resize_authorized") is False,
+            "no_format":g.get("format_authorized") is False,
+            "no_shrink":g.get("shrink_authorized") is False,
+            "uuid_expected":uuid=="e084ec2a-af39-48b5-bb89-db2dc6a98332",
+            "p5_absent":not pathlib.Path("/dev/nvme0n1p5").exists(),
+          }
+          q={"schema":"LOUKSNA_R4_PART4_STAGE7_READ_ONLY_PRECOMMIT/1.0",
+             "status":"PASS" if all(checks.values()) else "HOLD",
+             "current_stage":e.get("current_stage"),"last_completed_stage":e.get("last_completed_stage"),
+             "start_sector":start,"end_sector":end,"authorized_new_end_sector":g.get("authorized_new_end_sector"),
+             "uuid":uuid,"partuuid":puid,"candidate_sha256":h(root/"STAGE5_CANDIDATE.json"),
+             "stage6_g24_sha256":h(root/"STAGE6_G24.json"),"checks":checks,
+             "disk_mutation_performed":False,"filesystem_mutation_performed":False,
+             "observed_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          (root/"PRECOMMIT.json").write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if q["status"]!="PASS": raise SystemExit(23)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-stage7-read-only-precommit
+          path: ${{ runner.temp }}/live/
+          retention-days: 90
+          compression-level: 0
