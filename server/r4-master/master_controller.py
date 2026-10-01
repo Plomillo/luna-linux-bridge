@@ -389,6 +389,47 @@ def part4(mid):
     # Louksna.md remains canonical authority; PART_5..PART_9 are unchanged.
     legacy_auth=read_json(STATE/"authorizations/PART4_H2_H4.json",{}) or {}
     r2=read_json(STATE/"PART_4_R2/STATE.json",{}) or {}
+    # POST-P5 reconciliation is evidence-derived and additive: historical flags
+    # remain untouched, while stronger live end-state evidence may satisfy obsolete
+    # intermediate predicates. Any observation failure stays fail-closed.
+    live_post_p5={"status":"HOLD","root_source":None,"root_fstype":None,"partitions_present":[],"p5_absent":False}
+    try:
+        root_source=os.path.realpath(subprocess.check_output(["findmnt","-n","-o","SOURCE","/"],text=True).strip())
+        root_fstype=subprocess.check_output(["findmnt","-n","-o","FSTYPE","/"],text=True).strip()
+        q=subprocess.run(["lsblk","-nrpo","PATH,TYPE","/dev/nvme0n1"],text=True,capture_output=True,check=True)
+        partitions_present=sorted(
+            line.split()[0] for line in q.stdout.splitlines()
+            if len(line.split())>=2 and line.split()[1]=="part"
+        )
+        p5_absent=not pathlib.Path("/dev/nvme0n1p5").exists()
+        live_post_p5.update({
+            "root_source":root_source,
+            "root_fstype":root_fstype,
+            "partitions_present":partitions_present,
+            "p5_absent":p5_absent,
+        })
+        if (
+            root_source=="/dev/nvme0n1p3"
+            and root_fstype=="ext4"
+            and partitions_present==["/dev/nvme0n1p1","/dev/nvme0n1p3"]
+            and p5_absent
+        ):
+            live_post_p5["status"]="PASS"
+    except Exception as exc:
+        live_post_p5["error"]=type(exc).__name__+":"+str(exc)[:300]
+
+    post_p5_effective=live_post_p5["status"]=="PASS"
+    ntfs_transition_satisfied=(
+        r2.get("ntfs_shrunk") is True
+        or (r2.get("ntfs_retired") is True and post_p5_effective)
+    )
+    ext4_root_effective=(
+        r2.get("ext4_created") is True
+        or (
+            live_post_p5.get("root_source")=="/dev/nvme0n1p3"
+            and live_post_p5.get("root_fstype")=="ext4"
+        )
+    )
     checks={
         "H2": legacy_auth.get("H2") is True,
         "H4": legacy_auth.get("H4") is True,
@@ -398,10 +439,11 @@ def part4(mid):
         "purge_scope_g23_g24": r2.get("purge_scope_g23_g24") is True,
         "windows_purged_preserving_projects": r2.get("windows_purged_preserving_projects") is True,
         "post_purge_integrity": r2.get("post_purge_integrity") is True,
-        "ntfs_shrunk": r2.get("ntfs_shrunk") is True,
-        "ext4_created": r2.get("ext4_created") is True,
+        "ntfs_transition_satisfied": ntfs_transition_satisfied,
+        "ext4_root_effective": ext4_root_effective,
         "projects_migrated_hash_equivalent": r2.get("projects_migrated_hash_equivalent") is True,
         "ntfs_retired": r2.get("ntfs_retired") is True,
+        "post_p5_live_reconciled": post_p5_effective,
         "final_linux_layout": r2.get("final_linux_layout") is True,
         "part4_r2_final_g24": r2.get("part4_r2_final_g24") is True,
         "final_merge_g24": r2.get("final_merge_g24") is True,
@@ -427,6 +469,11 @@ def part4(mid):
         "p2_p4_retirement_g24_sha256":r2.get("p2_p4_retirement_g24_sha256"),
         "lost_found_exception_certified":r2.get("lost_found_exception_certified") is True,
         "migration_replayed":r2.get("migration_replayed"),
+        "historical_ntfs_shrunk_flag":r2.get("ntfs_shrunk"),
+        "historical_ext4_created_flag":r2.get("ext4_created"),
+        "post_p5_live_evidence":live_post_p5,
+        "ntfs_transition_satisfaction_basis":"HISTORICAL_FLAG" if r2.get("ntfs_shrunk") is True else ("POST_P5_EFFECTIVE_STATE" if ntfs_transition_satisfied else None),
+        "ext4_satisfaction_basis":"HISTORICAL_FLAG" if r2.get("ext4_created") is True else ("LIVE_P3_EXT4_ROOT" if ext4_root_effective else None),
     }
     ev=evidence_base("PART_4",mid,checks,"PASS" if not blockers else "HOLD",blockers,details)
     ev["human_gates"]={"H2":checks["H2"],"H4":checks["H4"]}
