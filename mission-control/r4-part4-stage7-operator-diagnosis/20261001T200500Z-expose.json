@@ -1,0 +1,7 @@
+{
+  "mission_id": "MIS-e5963403a3b44ee8be96",
+  "action": "EXPOSE_STAGE7_OPERATOR_DIAGNOSTIC_EVIDENCE",
+  "authority": "Louksna.md",
+  "read_only": true,
+  "no_retry": true
+}
