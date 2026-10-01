@@ -1,0 +1,13 @@
+{
+  "schema": "LOUKSNA_R4_MASTER_RESUME_REQUEST/1.0",
+  "reason": "INGEST_STAGE12_TERMINAL_CHAIN_AND_CLOSE_FOUR_FINAL_BLOCKERS",
+  "source_stage12_run_id": 36927567987,
+  "source_stage12_artifact_id": 11194820504,
+  "expected_stage_before": 12,
+  "expected_stage_after": 12,
+  "expected_last_completed_stage_after": 12,
+  "expected_next_action": "HANDOFF_PART4_TO_PART5",
+  "require_no_disk_mutation": true,
+  "require_no_filesystem_mutation": true,
+  "requested_at_utc": "2026-10-01T21:20:00Z"
+}
