@@ -1,0 +1,9 @@
+{
+  "mission_id": "MIS-e5963403a3b44ee8be96",
+  "action": "POST_STAGE7_READ_ONLY_GEOMETRY_AUDIT",
+  "authority": "Louksna.md",
+  "read_only": true,
+  "no_disk_mutation": true,
+  "no_filesystem_mutation": true,
+  "no_retry": true
+}
