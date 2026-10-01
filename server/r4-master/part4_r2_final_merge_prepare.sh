@@ -19,7 +19,7 @@ PROJECTS_MOUNT="$HOME_DIR/PROYECTOS"
 STATE_ROOT="$HOME_DIR/.local/state/louksna/r4-master-part1-part9"
 WORK="$STATE_ROOT/PART_4_R2/final-merge"
 NEWROOT_MNT="$WORK/newroot"
-VERIFY="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/part4_r2_verify_tree.py"
+VERIFY="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/part4_r2_verify_tree_v2.py"
 MANIFEST_SHA="99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e"
 PROJECT_BYTES=200490852057
 
@@ -140,7 +140,7 @@ cp -a /boot/grub/grub.cfg "$OUT/grub.cfg.oldroot.before"
 (efibootmgr -v || true) > "$OUT/efibootmgr.before.txt"
 sha256sum "$OUT/PARTITION_TABLE_PREBOOT.sfdisk" "$OUT/fstab.oldroot.before" "$OUT/grub.cfg.oldroot.before" > "$OUT/CHECKPOINTS.sha256"
 
-python3 "$VERIFY" --root "$PROJECTS_MOUNT" --manifest "$MANIFEST" --out "$OUT/VERIFY_PROJECTS_BEFORE_RELOCATION.json"
+python3 "$VERIFY" --root "$PROJECTS_MOUNT" --manifest "$MANIFEST" --out "$OUT/VERIFY_PROJECTS_BEFORE_RELOCATION.json" --allow-ext4-root-lost-found
 
 sudo -n umount "$PROJECTS_MOUNT"
 sudo -n mount -t ext4 "$NEWROOT_DEV" "$NEWROOT_MNT"
