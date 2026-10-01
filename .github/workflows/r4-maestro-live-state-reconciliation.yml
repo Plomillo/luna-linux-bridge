@@ -1,0 +1,81 @@
+name: "R4 Maestro — live state reconciliation"
+
+on:
+  push:
+    branches:
+      - audit/r4-part4-part9-second-order-20261001
+    paths:
+      - ".github/workflows/r4-maestro-live-state-reconciliation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  reconcile:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Reconcile Maestro state, user services and PART4 state read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9"
+          OUT="$RUNNER_TEMP/reconcile"
+          mkdir -p "$OUT"
+          {
+            echo "=== OBSERVATION ==="
+            date -u --iso-8601=seconds
+            echo "boot_id=$(cat /proc/sys/kernel/random/boot_id)"
+            echo "=== USER_SERVICES ==="
+            for u in symphylax-r1.service luna-r4-master-part1-part9.service louksna-remote-bridge-observer.service louksna-live-socket.service louksna-mtls-readonly.service louksna-elastic-readonly.service louksna-elastic-readonly.timer; do
+              echo "-- $u"
+              systemctl --user show "$u" -p LoadState -p ActiveState -p SubState -p UnitFileState -p FragmentPath -p MemoryCurrent -p CPUUsageNSec --no-pager 2>&1 || true
+            done
+            echo "=== SYSTEM_GUARDIANS ==="
+            for u in louksna-maestro-guardian.timer louksna-maestro-guardian.service louksna-privilege-guardian.timer louksna-privilege-guardian.service; do
+              echo "-- $u"
+              systemctl show "$u" -p LoadState -p ActiveState -p SubState -p UnitFileState -p FragmentPath --no-pager 2>&1 || true
+            done
+            echo "=== STATE_FILES ==="
+            if [ -d "$STATE" ]; then
+              find "$STATE" -maxdepth 3 -type f -printf '%P|%s|%TY-%Tm-%TdT%TH:%TM:%TS\n' 2>/dev/null | sort | head -n 500
+              for f in MASTER_STATUS.json IDENTITY.json PERMISSION_REQUEST.json LAST_HEARTBEAT.json authorizations/PART4_H2_H4.json PART_4_R2/STATE.json; do
+                echo "--- $f"
+                if [ -f "$STATE/$f" ]; then
+                  sha256sum "$STATE/$f"
+                  cat "$STATE/$f"
+                else
+                  echo "ABSENT"
+                fi
+              done
+              echo "=== CERTIFICATES ==="
+              if [ -d "$STATE/certificates" ]; then
+                for f in "$STATE"/certificates/*.json; do
+                  [ -f "$f" ] || continue
+                  sha256sum "$f"
+                  cat "$f"
+                done
+              fi
+            else
+              echo "STATE_DIR_ABSENT"
+            fi
+            echo "=== LIVE_STORAGE_BINDING ==="
+            findmnt -T / -o TARGET,SOURCE,FSTYPE,FSROOT,OPTIONS
+            findmnt -T "$HOME/PROYECTOS" -o TARGET,SOURCE,FSTYPE,FSROOT,OPTIONS 2>/dev/null || true
+            lsblk -b -o PATH,START,SIZE,FSTYPE,LABEL,UUID,PARTUUID,MOUNTPOINTS /dev/nvme0n1
+            echo "=== END ==="
+          } | tee "$OUT/RECONCILIATION.txt"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-maestro-live-state-reconciliation
+          path: ${{ runner.temp }}/reconcile/
+          retention-days: 30
+          if-no-files-found: error
