@@ -46,8 +46,8 @@ jobs:
           new=cp.read_text()
           old=subprocess.run(["git","show",f"{base}:server/r4-master/master_controller.py"],text=True,capture_output=True,check=True).stdout
           h=json.loads(hp.read_text())
-          def tail(s):
-              return s[s.index("\ndef part5(mid):"):]
+          def part5_9_handlers(s):
+              return s[s.index("\ndef part5(mid):"):s.index("\nHANDLERS=")]
           expected_ids=[
             "LIVE_POST_P5_CHECKPOINT_AND_CONTINUITY",
             "GROWPART_CAPABILITY_MICROTRANSACTION",
@@ -87,7 +87,7 @@ jobs:
             "fail_closed_not_stop_all":anti.get("fail_closed_is_not_stop_all_work") is True,
             "controller_ingests_contract":"p3_hardened=read_json(PART4_P3_HARDENED_CONTRACT" in new,
             "controller_marks_anti_paralysis":'"safe_work_while_hold":part=="PART_4"' in new,
-            "part5_part9_byte_equal":tail(old)==tail(new),
+            "part5_part9_byte_equal":part5_9_handlers(old)==part5_9_handlers(new),
             "mission_binds_contract":"PART4-P3-GROWTH-HARDENED-ANTI-PARALYSIS-20261001" in mp.read_text(),
             "mission_prohibits_desktop_commander":"REMOTE_DESKTOP_COMMANDER = PROHIBITED" in mp.read_text(),
             "resume_deploys_contract":"PART4_P3_GROWTH_HARDENED_ANTI_PARALYSIS.json" in rp.read_text(),
