@@ -133,3 +133,24 @@ SUCCESS:
 PART 1 through PART 9 each have material evidence, independent validation and
 certification for their actual scope; final post-reboot tests pass; protected
 data are intact; rollback/evidence survive; GLOBAL_MISSION_STATUS=COMPLETE.
+
+PART_4 — POST-P5 HARDENED P3 GROWTH CONTINUATION:
+MANDATORY_ADDENDUM = PART4_P3_GROWTH_HARDENED_ANTI_PARALYSIS.json
+CONTRACT_ID = PART4-P3-GROWTH-HARDENED-ANTI-PARALYSIS-20261001
+RESUME_FROM = LAST_VALID_POST_P5_CHECKPOINT
+REMOTE_DESKTOP_COMMANDER = PROHIBITED
+DESKTOP_COMMANDER = PROHIBITED
+LIVE_OBSERVATION = LOUKSNA_REMOTE_BRIDGE
+ANTI_PARALYSIS = MANDATORY
+HOLD_SEMANTICS = BLOCK_ONLY_UNSAFE_DEPENDENT_TRANSITION
+NO_INDEFINITE_HOLD = TRUE
+NO_BLIND_DESTRUCTIVE_RETRY = TRUE
+NO_FULL_PIPELINE_REPLAY_WHEN_DIFFERENTIAL_RECOVERY_EXISTS = TRUE
+SAFE_OBSERVATION_DIAGNOSIS_AND_MINIMAL_REMEDIATION_WHILE_HOLD = REQUIRED
+AUTO_ADVANCE_AFTER_EXACT_GATES_PASS = REQUIRED
+
+The twelve hardened stages in the mandatory addendum govern the remaining
+POST-P5 PART_4 work. No partition or filesystem mutation is authorized merely
+by this mission text or by the addendum. Every destructive commit requires its
+own fresh exact-scope evidence, G23 independent validation and digest-bound G24.
+
