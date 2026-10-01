@@ -481,7 +481,8 @@ def gh_json(args,timeout=120):
 
 def publish_and_certify(ev):
     part=ev["part"]; stamp=dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    rel=f"evidence/r4-master/{stamp}-{ev['mission_id']}/{part}/MATERIAL_EVIDENCE.json"
+    evidence_root="evidence/r4-master-part4-r2" if part=="PART_4" else "evidence/r4-master"
+    rel=f"{evidence_root}/{stamp}-{ev['mission_id']}/{part}/MATERIAL_EVIDENCE.json"
     raw=(json.dumps(ev,ensure_ascii=False,indent=2,sort_keys=True)+"\n").encode(); payload=base64.b64encode(raw).decode()
     resp=gh_json(["api","--method","PUT",f"repos/{REPO}/contents/{rel}","-f",f"message=evidence(R4): {part} material evidence","-f",f"content={payload}","-f",f"branch={BRANCH}"],timeout=60)
     commit=resp["commit"]["sha"]; run_id=None
