@@ -1,0 +1,293 @@
+name: "R4 PART4-PART9 — live read-only second-order audit"
+
+on:
+  push:
+    branches:
+      - audit/r4-part4-part9-second-order-20261001
+    paths:
+      - ".github/workflows/r4-part4-part9-live-second-order-audit.yml"
+      - "audit-control/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: r4-part4-part9-live-audit
+  cancel-in-progress: false
+
+jobs:
+  host_snapshot:
+    name: "Fresh read-only LOUKSNA host snapshot"
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            server/r4-master
+            bridge
+          sparse-checkout-cone-mode: true
+
+      - name: Collect PART4-PART9 live state without mutation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/r4-live-audit"
+          mkdir -p "$OUT"
+          export OUT
+          python3 - <<'PY'
+          import datetime as dt, json, os, pathlib, shutil, socket, subprocess
+
+          OUT=pathlib.Path(os.environ["OUT"])
+          HOME=pathlib.Path.home()
+          PROJECTS=HOME/"PROYECTOS"
+
+          def run(argv, timeout=45):
+              try:
+                  p=subprocess.run(argv, text=True, capture_output=True, timeout=timeout, check=False)
+                  return {"argv":argv,"rc":p.returncode,"stdout":p.stdout[-40000:],"stderr":p.stderr[-12000:]}
+              except Exception as e:
+                  return {"argv":argv,"rc":999,"error":type(e).__name__+":"+str(e)}
+
+          def cmd(name):
+              return shutil.which(name)
+
+          def pkg(name):
+              r=run(["dpkg-query","-W",name],15)
+              ok=r["rc"]==0
+              return {"installed":ok,"raw":r.get("stdout","").strip() if ok else ""}
+
+          def service(name,user=False):
+              a=["systemctl"]+(["--user"] if user else [])+["is-active",name]
+              r=run(a,15)
+              return {"active":r["rc"]==0 and r.get("stdout","").strip()=="active","raw":r.get("stdout","").strip()}
+
+          def bounded_find(roots, needles, max_depth=3, cap=300):
+              out=[]
+              for root in roots:
+                  root=pathlib.Path(root)
+                  if not root.exists(): continue
+                  base_depth=len(root.parts)
+                  try:
+                      for cur,dirs,files in os.walk(root):
+                          p=pathlib.Path(cur)
+                          if len(p.parts)-base_depth >= max_depth:
+                              dirs[:] = []
+                          for n in list(dirs)+list(files):
+                              low=n.casefold()
+                              if any(x in low for x in needles):
+                                  out.append(str(p/n))
+                                  if len(out)>=cap: return out
+                  except Exception:
+                      pass
+              return out
+
+          boot_id=""
+          try: boot_id=pathlib.Path("/proc/sys/kernel/random/boot_id").read_text().strip()
+          except Exception: pass
+
+          qwen_model=HOME/".local/share/louksna/reasoning/models/qwen35-4b-s/Qwen3.5-4B-S-TS-Q4_K_S.gguf"
+          qwen_runtime=HOME/".local/share/louksna/reasoning/runtime/bec4772f6a2527d371557b5d2032641e5ff7619c/bin/llama-cli"
+
+          top=[]
+          lost={}
+          if PROJECTS.is_dir():
+              try:
+                  names=sorted(x.name for x in PROJECTS.iterdir())
+                  top=names[:300]
+                  lf=PROJECTS/"lost+found"
+                  lost={
+                    "exists":lf.exists(),
+                    "is_dir":lf.is_dir(),
+                    "is_symlink":lf.is_symlink(),
+                    "same_device_as_root": (lf.stat().st_dev==PROJECTS.stat().st_dev) if lf.exists() else None,
+                  }
+              except Exception as e:
+                  lost={"error":type(e).__name__+":"+str(e)}
+
+          part5_pkgs=["qemu-system-x86","qemu-utils","libvirt-daemon-system","libvirt-clients","virt-manager"]
+          part6_pkgs=["wine","wine64","steam-installer","lutris","waydroid","flatpak"]
+          common_roots=[HOME/"Proyectos",HOME/"Luna R4"/"Proyectos",HOME/"LOUKSNA_MAESTRO_20260925",HOME/".local/share",HOME/".local/lib/louksna"]
+
+          data={
+            "schema":"LOUKSNA_R4_LIVE_READONLY_AUDIT/1.0",
+            "status":"OBSERVED_NOT_CERTIFIED",
+            "observed_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+            "host":{"hostname":socket.gethostname(),"uid":os.getuid(),"user":os.environ.get("USER"),"boot_id":boot_id,
+                    "kernel":run(["uname","-a"],10),"uptime":run(["uptime","-p"],10),
+                    "memory":run(["free","-b"],10),"load":run(["cat","/proc/loadavg"],10)},
+            "storage":{
+              "lsblk":run(["lsblk","-J","-b","-o","NAME,PATH,SIZE,TYPE,FSTYPE,FSVER,LABEL,UUID,PARTUUID,MOUNTPOINTS"],20),
+              "findmnt":run(["findmnt","-J","-o","TARGET,SOURCE,FSTYPE,OPTIONS"],20),
+              "df":run(["df","-B1","-P"],20),
+            },
+            "part4":{
+              "projects_path":str(PROJECTS),
+              "projects_exists":PROJECTS.is_dir(),
+              "projects_is_mountpoint":os.path.ismount(PROJECTS) if PROJECTS.exists() else False,
+              "projects_findmnt":run(["findmnt","-J","-T",str(PROJECTS),"-o","TARGET,SOURCE,FSTYPE,OPTIONS"],20) if PROJECTS.exists() else {},
+              "projects_stat":run(["stat","-c","%d|%i|%s|%U|%G|%a|%n",str(PROJECTS)],10) if PROJECTS.exists() else {},
+              "top_level_sample":top,
+              "lost_found":lost,
+              "p3_probe":run(["lsblk","-b","-o","PATH,SIZE,FSTYPE,LABEL,UUID,PARTUUID,MOUNTPOINTS","/dev/nvme0n1p3"],15),
+              "partition_table":run(["lsblk","-b","-o","PATH,START,SIZE,TYPE,FSTYPE,LABEL,UUID,PARTUUID,MOUNTPOINTS","/dev/nvme0n1"],15),
+            },
+            "part5":{
+              "packages":{x:pkg(x) for x in part5_pkgs},
+              "kvm_device":pathlib.Path("/dev/kvm").exists(),
+              "virsh":run(["virsh","version"],20) if cmd("virsh") else {"rc":127},
+              "virt_host_validate":run(["virt-host-validate","qemu"],45) if cmd("virt-host-validate") else {"rc":127},
+              "libvirtd":service("libvirtd.service"),
+              "virtqemud":service("virtqemud.service"),
+            },
+            "part6":{
+              "packages":{x:pkg(x) for x in part6_pkgs},
+              "commands":{x:cmd(x) for x in ["wine","steam","lutris","waydroid","flatpak"]},
+              "flatpak_apps":run(["flatpak","list","--app","--columns=application,version,origin"],30) if cmd("flatpak") else {"rc":127},
+              "proton_paths":bounded_find([HOME/".steam",HOME/".local/share/Steam"],["proton"],3,100),
+              "prism_paths":bounded_find(common_roots,["prismlauncher","prism launcher"],3,100),
+            },
+            "part7":{
+              "study_devotional_hermeneutic_paths":bounded_find(common_roots,["estudio","study","devoc","hermeneut"],3,300),
+            },
+            "part8":{
+              "backup_tools":{x:cmd(x) for x in ["rsync","borg","restic","timeshift","tar","7z","7zz"]},
+              "backup_recovery_paths":bounded_find(common_roots,["backup","respaldo","recovery","rollback","hygiene","higiene"],3,300),
+              "failed_system_units":run(["systemctl","--failed","--no-pager","--plain"],30),
+              "failed_user_units":run(["systemctl","--user","--failed","--no-pager","--plain"],30),
+              "timers":run(["systemctl","list-timers","--all","--no-pager","--plain"],30),
+            },
+            "part9":{
+              "runner":service("actions.runner.Plomillo-luna-linux-bridge.luna-linux.service"),
+              "symphylax":service("symphylax-r1.service",True),
+              "master":service("luna-r4-master-part1-part9.service",True),
+            },
+            "remote_bridge":{
+              "observer":service("louksna-remote-bridge-observer.service",True),
+              "live_socket":service("louksna-live-socket.service",True),
+              "mtls_readonly":service("louksna-mtls-readonly.service",True),
+              "elastic_readonly":service("louksna-elastic-readonly.service",True),
+              "elastic_timer":service("louksna-elastic-readonly.timer",True),
+            },
+            "qwen_local":{
+              "processes":run(["pgrep","-a","-f","llama-cli|Qwen3.5|qwen_provider"],15),
+              "model":{"path":str(qwen_model),"exists":qwen_model.is_file(),"bytes":qwen_model.stat().st_size if qwen_model.is_file() else 0},
+              "runtime":{"path":str(qwen_runtime),"exists":qwen_runtime.is_file(),"bytes":qwen_runtime.stat().st_size if qwen_runtime.is_file() else 0},
+              "future_execution_plane_requirement":"GITHUB_HOSTED_ONLY",
+            },
+            "apc_status":run(["sudo","-n","/usr/local/sbin/louksna-apc","status"],20) if pathlib.Path("/usr/local/sbin/louksna-apc").exists() else {"rc":127},
+          }
+          p=OUT/"LIVE_AUDIT.json"
+          p.write_text(json.dumps(data,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
+
+          compact={
+            "schema":data["schema"],"status":data["status"],"observed_at_utc":data["observed_at_utc"],
+            "hostname":data["host"]["hostname"],
+            "part4":{"projects_exists":data["part4"]["projects_exists"],"mountpoint":data["part4"]["projects_is_mountpoint"],
+                     "lost_found":data["part4"]["lost_found"],"p3":data["part4"]["p3_probe"].get("stdout","")},
+            "part5":{"kvm":data["part5"]["kvm_device"],"packages":{k:v["installed"] for k,v in data["part5"]["packages"].items()}},
+            "part6":{"packages":{k:v["installed"] for k,v in data["part6"]["packages"].items()},"commands":data["part6"]["commands"],
+                     "proton_count":len(data["part6"]["proton_paths"]),"prism_count":len(data["part6"]["prism_paths"])},
+            "part7":{"discovered_paths":len(data["part7"]["study_devotional_hermeneutic_paths"])},
+            "part8":{"backup_tools":data["part8"]["backup_tools"]},
+            "part9":data["part9"],
+            "remote_bridge":data["remote_bridge"],
+            "qwen_local":{"process_rc":data["qwen_local"]["processes"]["rc"],"processes":data["qwen_local"]["processes"].get("stdout",""),
+                          "model_exists":data["qwen_local"]["model"]["exists"],"model_bytes":data["qwen_local"]["model"]["bytes"]},
+          }
+          print("LIVE_AUDIT_COMPACT="+json.dumps(compact,sort_keys=True,ensure_ascii=False))
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-part9-live-audit
+          path: ${{ runner.temp }}/r4-live-audit/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 6
+
+  hosted_classifier:
+    name: "PUAC2 non-certifying second-order classifier"
+    needs: host_snapshot
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-part9-live-audit
+          path: ${{ runner.temp }}/audit
+
+      - name: Separate observation from inference and emit readiness map
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/classifier"
+          mkdir -p "$OUT"
+          export OUT
+          python3 - "$RUNNER_TEMP/audit/LIVE_AUDIT.json" <<'PY'
+          import json, os, pathlib, sys
+          d=json.load(open(sys.argv[1],encoding="utf-8"))
+          def installed(part,pkg): return bool(d[part]["packages"].get(pkg,{}).get("installed"))
+          p4=d["part4"]; p5=d["part5"]; p6=d["part6"]; p7=d["part7"]; p8=d["part8"]; p9=d["part9"]
+          rb=d["remote_bridge"]; q=d["qwen_local"]
+          p3txt=p4.get("p3_probe",{}).get("stdout","")
+          qproc=q.get("processes",{}).get("stdout","").strip()
+
+          result={
+            "schema":"LOUKSNA_R4_PUAC2_READINESS_MAP/1.0",
+            "status":"ADVISORY_NOT_G23_NOT_G24",
+            "observed_at_utc":d.get("observed_at_utc"),
+            "facts":{
+              "PART4_P3_EXT4_OBSERVED":"ext4" in p3txt,
+              "PART4_PROJECTS_VISIBLE":p4.get("projects_exists") is True,
+              "PART4_LOST_FOUND_ADMIN_DIR_OBSERVED":p4.get("lost_found",{}).get("exists") is True and p4.get("lost_found",{}).get("is_dir") is True,
+              "PART5_KVM_PRESENT":p5.get("kvm_device") is True,
+              "PART5_QEMU_LIBVIRT_PACKAGES":all(installed("part5",x) for x in ["qemu-system-x86","qemu-utils","libvirt-daemon-system","libvirt-clients","virt-manager"]),
+              "PART6_WINE_PRESENT":installed("part6","wine") or installed("part6","wine64"),
+              "PART6_LUTRIS_PRESENT":installed("part6","lutris"),
+              "PART6_WAYDROID_PRESENT":installed("part6","waydroid"),
+              "PART7_DISCOVERY_NONEMPTY":len(p7.get("study_devotional_hermeneutic_paths",[]))>0,
+              "PART8_FAILED_UNIT_PROBE_EXECUTED":p8.get("failed_system_units",{}).get("rc") in [0,1],
+              "PART9_RUNNER_ACTIVE":p9.get("runner",{}).get("active") is True,
+              "PART9_SYMPHYLAX_ACTIVE":p9.get("symphylax",{}).get("active") is True,
+              "QWEN_LOCAL_PROCESS_ABSENT":qproc=="",
+              "QWEN_LOCAL_MODEL_MAY_EXIST_BUT_MUST_NOT_EXECUTE":q.get("model",{}).get("exists") is True,
+              "REMOTE_BRIDGE_ANY_USER_SERVICE_ACTIVE":any(v.get("active") is True for v in rb.values()),
+            },
+            "inferences":{
+              "PART4":"RECONCILE_V8_POSTFAILURE_THEN_CLOSE_FINAL_MERGE",
+              "PART5":"AUDIT_AND_MATERIALIZE_ONLY_AFTER_PART4_G24",
+              "PART6":"AUDIT_AND_MATERIALIZE_ONLY_AFTER_PART5_G24",
+              "PART7":"AUDIT_AND_MATERIALIZE_ONLY_AFTER_PART6_G24",
+              "PART8":"AUDIT_AND_MATERIALIZE_ONLY_AFTER_PART7_G24",
+              "PART9":"GLOBAL_MATRIX_ONLY_AFTER_PART8_G24",
+              "QWEN_EXECUTION_PLANE":"GITHUB_HOSTED_REQUIRED_ZERO_LOCAL_INFERENCE",
+              "REMOTE_BRIDGE_ROLE":"LIVE_TELEMETRY_AND_STATE_RECONCILIATION_NOT_CERTIFICATION",
+            },
+            "puac2_second_order":{
+              "MC07":"REQUIRED_PER_TRANSITION",
+              "MC08":"REQUIRED_PER_TRANSITION",
+              "T13_SECOND_ORDER_REGRESSION":"MUST_PASS",
+              "T21_CROSS_DOMAIN_ISOLATION":"MUST_PASS",
+              "T25_FALSE_POSITIVE":"MUST_PASS",
+              "T26_FALSE_NEGATIVE":"MUST_PASS",
+              "G23":"SEPARATE_REQUIRED",
+              "G24":"SEPARATE_REQUIRED",
+            },
+            "certification_issued":False,
+            "activation_authorized":False,
+          }
+          out=pathlib.Path(os.environ["OUT"])/"READINESS_MAP.json"
+          out.write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
+          print("READINESS_MAP="+json.dumps(result,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-part9-readiness-map
+          path: ${{ runner.temp }}/classifier/
+          if-no-files-found: error
+          retention-days: 30
