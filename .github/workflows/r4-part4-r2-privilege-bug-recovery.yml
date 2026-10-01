@@ -1,0 +1,242 @@
+name: "R4 PART4 R2 — certify banal privilege-boundary fix and resume"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - server/r4-master/part4_r2_final_merge_prepare.sh
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+  id-token: write
+
+concurrency:
+  group: r4-part4-r2-banal-privilege-fix
+  cancel-in-progress: false
+
+env:
+  SOURCE_RUN: "36834032810"
+  SOURCE_JOB: "110277217174"
+  SOURCE_HEAD: "416cf11d28eba7bbdc80a249b32dddcf6a1bb961"
+  POLICY_PATH: "mission-control/r4-plan-definitivo/BUG_AUTONOMY_POLICY.json"
+  SCRIPT_PATH: "server/r4-master/part4_r2_final_merge_prepare.sh"
+
+jobs:
+  audit_fix:
+    name: "Audit privilege-boundary bug and minimum corrective family"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Bind source failure, policy and exact patch
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/audit"; mkdir -p "$OUT"
+          gh run view "$SOURCE_RUN" --repo Plomillo/luna-linux-bridge --job "$SOURCE_JOB" --log > "$OUT/SOURCE_JOB.log"
+          grep -F "cp: no se puede abrir '/boot/grub/grub.cfg' para lectura: Permiso denegado" "$OUT/SOURCE_JOB.log" >/dev/null
+          test -f "$POLICY_PATH"
+          python3 - "$POLICY_PATH" <<'PY'
+          import json,sys
+          p=json.load(open(sys.argv[1]))
+          assert p["status"]=="AUTHORIZED_OPERATIONAL_POLICY"
+          assert p["authority"]=="Louksna.md"
+          assert p["assurance"]=="PUAC2.md"
+          assert p["hard_rules"]["repeat_certified_work"] is False
+          assert p["hard_rules"]["repeat_hash_verified_bulk_copy"] is False
+          assert p["hard_rules"]["repeat_partition_migration"] is False
+          assert p["hard_rules"]["bypass_g23"] is False
+          assert p["hard_rules"]["bypass_g24"] is False
+          PY
+          git diff "$SOURCE_HEAD"..HEAD -- "$SCRIPT_PATH" > "$OUT/PATCH.diff"
+          test -s "$OUT/PATCH.diff"
+          grep -F 'sudo -n cat /boot/grub/grub.cfg > "$OUT/grub.cfg.oldroot.before"' "$SCRIPT_PATH" >/dev/null
+          grep -F 'sudo -n cat "$NEWROOT_MNT/boot/grub/grub.cfg" > "$OUT/grub.cfg.newroot"' "$SCRIPT_PATH" >/dev/null
+          grep -F 'sudo -n grep -F "$P3_UUID" "$NEWROOT_MNT/boot/grub/grub.cfg"' "$SCRIPT_PATH" >/dev/null
+          test "$(grep -Fc 'sudo -n efibootmgr -v' "$SCRIPT_PATH")" -eq 2
+          ! grep -F 'cp -a /boot/grub/grub.cfg "$OUT/grub.cfg.oldroot.before"' "$SCRIPT_PATH"
+          ! grep -F 'cp "$NEWROOT_MNT/boot/grub/grub.cfg" "$OUT/grub.cfg.newroot"' "$SCRIPT_PATH"
+          bash -n "$SCRIPT_PATH"
+          python3 - "$OUT/SOURCE_JOB.log" "$OUT/PATCH.diff" "$POLICY_PATH" "$SCRIPT_PATH" "$OUT/BUG_FIX_AUDIT.json" <<'PY'
+          import hashlib,json,pathlib,sys,datetime as dt
+          log,diff,policy,script,out=map(pathlib.Path,sys.argv[1:])
+          src=log.read_text(errors="replace")
+          patch=diff.read_text(errors="replace")
+          s=script.read_text()
+          checks={
+            "source_failure_exact":"cp: no se puede abrir '/boot/grub/grub.cfg' para lectura: Permiso denegado" in src,
+            "policy_present":json.loads(policy.read_text()).get("status")=="AUTHORIZED_OPERATIONAL_POLICY",
+            "oldroot_privileged_read":'sudo -n cat /boot/grub/grub.cfg > "$OUT/grub.cfg.oldroot.before"' in s,
+            "newroot_privileged_read":'sudo -n cat "$NEWROOT_MNT/boot/grub/grub.cfg" > "$OUT/grub.cfg.newroot"' in s,
+            "newroot_privileged_validation":'sudo -n grep -F "$P3_UUID" "$NEWROOT_MNT/boot/grub/grub.cfg"' in s,
+            "efibootmgr_privileged":s.count("sudo -n efibootmgr -v")==2,
+            "patch_nonempty":bool(patch.strip())
+          }
+          ok=all(checks.values())
+          q={
+            "schema":"LOUKSNA_R4_PART4_R2_PRIVILEGE_BOUNDARY_BUG_AUDIT/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "classification":"READ_ONLY_PRIVILEGE_BOUNDARY_MISMATCH",
+            "source_run":36834032810,
+            "source_job":110277217174,
+            "source_head":"416cf11d28eba7bbdc80a249b32dddcf6a1bb961",
+            "exact_error":"cp: no se puede abrir '/boot/grub/grub.cfg' para lectura: Permiso denegado",
+            "root_cause":"root-readable boot metadata was consumed through an unprivileged read path",
+            "minimum_corrective_family":"use sudo -n only for protected reads/validation while keeping evidence outputs user-owned",
+            "material_replay_required":False,
+            "partition_replay_required":False,
+            "projects_migration_replay_required":False,
+            "checks":checks,
+            "patch_sha256":hashlib.sha256(diff.read_bytes()).hexdigest(),
+            "script_sha256":hashlib.sha256(script.read_bytes()).hexdigest(),
+            "policy_sha256":hashlib.sha256(policy.read_bytes()).hexdigest(),
+            "audited_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          out.write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          if not ok: raise SystemExit(41)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-privilege-bug-audit
+          path: ${{ runner.temp }}/audit/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  g23_fix:
+    name: "G23 independently validate banal bug classification and patch"
+    needs: audit_fix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-privilege-bug-audit
+          path: ${{ runner.temp }}/audit
+      - name: G23 exact-scope validation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/audit/BUG_FIX_AUDIT.json" "$RUNNER_TEMP/g23/G23_PRIVILEGE_FIX.json" <<'PY'
+          import hashlib,json,pathlib,sys,datetime as dt
+          inp,out=map(pathlib.Path,sys.argv[1:])
+          d=json.loads(inp.read_text())
+          checks={
+            "audit_pass":d.get("status")=="PASS",
+            "class_exact":d.get("classification")=="READ_ONLY_PRIVILEGE_BOUNDARY_MISMATCH",
+            "no_material_replay":d.get("material_replay_required") is False,
+            "no_partition_replay":d.get("partition_replay_required") is False,
+            "no_projects_replay":d.get("projects_migration_replay_required") is False,
+            "minimum_family_exact":d.get("minimum_corrective_family")=="use sudo -n only for protected reads/validation while keeping evidence outputs user-owned"
+          }
+          ok=all(checks.values())
+          q={"schema":"LOUKSNA_R4_PART4_R2_PRIVILEGE_BOUNDARY_FIX_G23/1.0",
+             "status":"PASS" if ok else "HOLD","checks":checks,
+             "audit_sha256":hashlib.sha256(inp.read_bytes()).hexdigest(),
+             "g24_allowed":ok,"validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          out.write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          if not ok: raise SystemExit(23)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-privilege-bug-g23
+          path: ${{ runner.temp }}/g23/G23_PRIVILEGE_FIX.json
+          retention-days: 90
+          compression-level: 0
+
+  g24_fix:
+    name: "G24 certify banal bug remediation scope"
+    needs: g23_fix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-privilege-bug-g23
+          path: ${{ runner.temp }}/g23
+      - name: G24 exact fix certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/G23_PRIVILEGE_FIX.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$G")" = PASS
+          H="$(sha256sum "$G"|awk '{print $1}')"
+          AUD="louksna-r4-part4-r2-privilege-bug-fix:$H"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export H AUD TOKEN
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$RUNNER_TEMP/g24/G24_PRIVILEGE_FIX.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          t=os.environ["TOKEN"]; p=t.split(".")[1]; p += "="*((4-len(p)%4)%4); c=json.loads(base64.urlsafe_b64decode(p))
+          aud=c.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if c.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          q={"schema":"LOUKSNA_R4_PART4_R2_PRIVILEGE_BOUNDARY_FIX_G24/1.0","status":"PASS",
+             "certified_scope":"READ_ONLY_PRIVILEGE_BOUNDARY_FIX_FAMILY_ONLY",
+             "g23_sha256":os.environ["H"],
+             "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
+             "repeat_certified_work":False,
+             "repeat_projects_migration":False,
+             "scope_expansion":False,
+             "privilege_expansion":False,
+             "downstream_resume_allowed":True,
+             "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-privilege-bug-g24
+          path: ${{ runner.temp }}/g24/G24_PRIVILEGE_FIX.json
+          retention-days: 90
+          compression-level: 0
+
+  handoff:
+    name: "Resume final merge only after G24"
+    needs: g24_fix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-privilege-bug-g24
+          path: ${{ runner.temp }}/g24
+      - name: Create governed continuation trigger
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          CERT="$RUNNER_TEMP/g24/G24_PRIVILEGE_FIX.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$CERT")" = PASS
+          CERT_SHA="$(sha256sum "$CERT"|awk '{print $1}')"
+          TS="$(date -u +%Y%m%dT%H%M%SZ)"
+          PATH_OUT="mission-control/r4-part4-r2-final-merge/BUGFIX-$TS.json"
+          BODY="$(python3 - "$CERT_SHA" <<'PY' | base64 -w0
+          import json,sys
+          print(json.dumps({
+            "schema":"LOUKSNA_R4_PART4_R2_FINAL_MERGE_BUGFIX_TRIGGER/1.0",
+            "status":"AUTHORIZED_CONTINUATION",
+            "source_failed_run":36834032810,
+            "source_failed_job":110277217174,
+            "bug_class":"READ_ONLY_PRIVILEGE_BOUNDARY_MISMATCH",
+            "bug_fix_g24_sha256":sys.argv[1],
+            "repeat_certified_work":False,
+            "repeat_projects_migration":False,
+            "resume":"FINAL_MERGE_PREBOOT_FROM_CURRENT_VALID_STATE",
+            "authority":"Louksna.md",
+            "assurance":"PUAC2.md",
+            "fail_closed":True
+          },sort_keys=True))
+          PY
+          )"
+          gh api --method PUT "repos/Plomillo/luna-linux-bridge/contents/$PATH_OUT"             -f message="continue(PART4-R2): resume final merge after certified banal privilege fix"             -f content="$BODY"             -f branch="staging/luna-r4-master-part1-part9-20260929"
