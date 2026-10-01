@@ -1,0 +1,34 @@
+name: "R4 — LOUKSNA Remote Bridge capability probe"
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-louksna-remote-bridge-capability-probe.yml
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 3
+    steps:
+      - name: Inspect installed Remote Bridge command surface read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mapfile -t LINKS < <(find "$HOME/.local/lib/louksna-remote-bridge" -type f -path '*/bridge/live_link.py' -print 2>/dev/null | sort)
+          test "${#LINKS[@]}" -ge 1
+          LINK="${LINKS[-1]}"
+          echo "LINK=$LINK"
+          python3 -B "$LINK" --help || true
+          echo "=== REQUEST HELP ==="
+          python3 -B "$LINK" request --help || true
+          echo "=== OP TOKENS IN SOURCE ==="
+          python3 - "$LINK" <<'PY'
+          import pathlib,re,sys
+          p=pathlib.Path(sys.argv[1])
+          s=p.read_text(encoding="utf-8",errors="replace")
+          for i,line in enumerate(s.splitlines(),1):
+              if re.search(r'(status|observe|request|operation|op|execute|mission|dispatch|command|write|apply|submit)',line,re.I):
+                  print(f"{i}: {line[:500]}")
+          PY
