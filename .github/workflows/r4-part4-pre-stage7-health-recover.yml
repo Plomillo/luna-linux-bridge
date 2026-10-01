@@ -31,11 +31,11 @@ jobs:
           OUT="$RUNNER_TEMP/recover"; mkdir -p "$OUT"
 
           dpkg-query -W -f='${Package}	${Version}	${Architecture}	${Status}\n' nvme-cli smartmontools > "$OUT/PACKAGES.txt" 2> "$OUT/PACKAGES.stderr" || true
-          NVME_BIN="$(command -v nvme || true)"
-          SMART_BIN="$(command -v smartctl || true)"
+          NVME_BIN="/usr/sbin/nvme"
+          SMART_BIN="/usr/sbin/smartctl"
           printf 'nvme=%s\nsmartctl=%s\n' "$NVME_BIN" "$SMART_BIN" > "$OUT/BINARIES.txt"
-          test -n "$NVME_BIN" -a -x "$NVME_BIN"
-          test -n "$SMART_BIN" -a -x "$SMART_BIN"
+          test -x "$NVME_BIN"
+          test -x "$SMART_BIN"
           sha256sum "$NVME_BIN" "$SMART_BIN" > "$OUT/BINARY_SHA256.txt"
 
           UIDN="$(id -u)"
@@ -196,5 +196,114 @@ jobs:
         with:
           name: r4-part4-pre-stage7-health-recovery
           path: ${{ runner.temp }}/recover/
+          retention-days: 90
+          compression-level: 0
+
+  g23:
+    name: G23 independent recovered health validation
+    needs: observe
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-pre-stage7-health-recovery
+          path: ${{ runner.temp }}/recover
+      - name: Validate recovered health evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/recover/RECOVERY_HEALTH.json" "$RUNNER_TEMP/g23/G23.json" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,sys
+          p=pathlib.Path(sys.argv[1]); out=pathlib.Path(sys.argv[2])
+          q=json.loads(p.read_text())
+          h=hashlib.sha256(p.read_bytes()).hexdigest()
+          checks={
+            "health_pass":q.get("status")=="PASS",
+            "all_checks":all(q.get("checks",{}).values()),
+            "no_meaningful_errors":len(q.get("meaningful_error_entries",[]))==0,
+            "no_reinstall":q.get("package_installation_repeated") is False,
+            "no_geometry_mutation":q.get("partition_geometry_mutation_performed") is False,
+            "no_fs_resize":q.get("filesystem_resize_performed") is False,
+            "no_active_device_test":q.get("active_device_test_performed") is False,
+            "lrb_evidence":bool(q.get("lrb_evidence_sha256"))
+          }
+          ok=all(checks.values())
+          r={
+            "schema":"LOUKSNA_R4_PART4_PRE_STAGE7_HEALTH_RECOVERY_G23/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "scope":"PRE_STAGE7_NVME_HEALTH_GATE_ONLY",
+            "health_sha256":h,
+            "checks":checks,
+            "g24_allowed":ok,
+            "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          out.write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(23)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-pre-stage7-health-recovery-g23
+          path: ${{ runner.temp }}/g23/G23.json
+          retention-days: 90
+          compression-level: 0
+
+  g24:
+    name: G24 certify recovered health gate
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-pre-stage7-health-recovery-g23
+          path: ${{ runner.temp }}/g23
+      - name: Issue non-propagating recovered health certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/G23.json"
+          test "$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(d["status"] if d.get("g24_allowed") else "HOLD")' "$G")" = PASS
+          H="$(sha256sum "$G"|awk '{print $1}')"
+          O="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["health_sha256"])' "$G")"
+          AUD="louksna-r4-pre-stage7-health-recovery:$H:$O"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export H O AUD TOKEN
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$RUNNER_TEMP/g24/G24.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          t=os.environ["TOKEN"]; p=t.split("."); payload=p[1]+"="*((4-len(p[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload))
+          aud=claims.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          q={
+            "schema":"LOUKSNA_R4_PART4_PRE_STAGE7_HEALTH_RECOVERY_G24/1.0",
+            "status":"PASS",
+            "scope":"PRE_STAGE7_NVME_HEALTH_GATE_ONLY",
+            "g23_sha256":os.environ["H"],
+            "health_sha256":os.environ["O"],
+            "next_authorized_action":"STAGE7_FRESH_PRECOMMIT_READ_ONLY",
+            "stage7_commit_authorized":False,
+            "partition_geometry_mutation_authorized":False,
+            "filesystem_resize_authorized":False,
+            "certification_propagated":False,
+            "authority_authenticated":True,
+            "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
+            "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-pre-stage7-health-recovery-g24
+          path: ${{ runner.temp }}/g24/G24.json
           retention-days: 90
           compression-level: 0
