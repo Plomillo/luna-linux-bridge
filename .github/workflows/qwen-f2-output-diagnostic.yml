@@ -1,4 +1,4 @@
-name: "LOUKSNA Qwen F2 — clean-output diagnostic with inline G23 G24"
+name: "LOUKSNA Qwen F2 — pure-content reasoning diagnostic with inline G23 G24"
 
 on:
   push:
@@ -11,84 +11,120 @@ permissions:
   contents: read
 
 env:
-  PRE_DIAG_SHA: 9a491add6fd2ccc900cc848d08df77496c86c0d5
+  PRE_DIAG_SHA: 509d8ea44352409ac98d2db9db1a5ec05eb661e0
   MODEL_PATH: /home/diegoignacionorambuenamiranda/.local/share/louksna/reasoning/models/qwen35-4b-s/Qwen3.5-4B-S-TS-Q4_K_S.gguf
   RUNTIME_PATH: /home/diegoignacionorambuenamiranda/.local/share/louksna/reasoning/runtime/bec4772f6a2527d371557b5d2032641e5ff7619c/bin/llama-cli
 
 jobs:
   diag_g23:
+    name: "F2 pure-content diagnostic inline G23"
     runs-on: ubuntu-24.04
     timeout-minutes: 3
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with: {persist-credentials: false, fetch-depth: 0}
-      - shell: bash
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Verify diagnostic-only delta
+        shell: bash
         run: |
           set -Eeuo pipefail
           mapfile -t CHANGED < <(git diff --name-only "$PRE_DIAG_SHA"...HEAD)
           test "${#CHANGED[@]}" -eq 1
           test "${CHANGED[0]}" = ".github/workflows/qwen-f2-output-diagnostic.yml"
-          echo "F2_CLEAN_OUTPUT_DIAG_G23=PASS"
+          echo "F2_PURE_CONTENT_DIAG_G23=PASS"
 
   diag_g24:
+    name: "F2 pure-content diagnostic inline G24"
     needs: diag_g23
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
-      - run: echo "F2_CLEAN_OUTPUT_DIAG_G24=PASS; CERTIFICATION_ISSUED=FALSE"
+      - run: echo "F2_PURE_CONTENT_DIAG_G24=PASS; CERTIFICATION_ISSUED=FALSE"
 
   material_diag:
+    name: "F2 pure-content reasoning material diagnostic"
     needs: diag_g24
     runs-on: [self-hosted, Linux, x64, luna-aux]
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
-      - name: Isolate CLI display/logging effects without publishing model text
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            bridge/reasoning
+          sparse-checkout-cone-mode: false
+      - name: Test exact governed wire under pure-content parser without publishing model text
         shell: bash
         run: |
           set -Eeuo pipefail
-          OUT="$RUNNER_TEMP/qwen-f2-clean"; mkdir -m 700 "$OUT"; export OUT
+          test "$(hostname)" = "LOUKSNA"
+          OUT="$RUNNER_TEMP/qwen-f2-pure-content"; mkdir -m 700 "$OUT"; export OUT
           python3 - <<'PY'
-          import hashlib,json,os,pathlib,subprocess
+          import hashlib,json,os,pathlib,subprocess,sys
+          sys.path.insert(0,str(pathlib.Path("bridge/reasoning").resolve()))
+          from interface import build_prompt, model_wire_schema, MODEL_WIRE_FIELDS
           runtime=os.environ["RUNTIME_PATH"]; model=os.environ["MODEL_PATH"]; out=pathlib.Path(os.environ["OUT"])
-          prompt="Classify conservatively. Execution is not authorized."
-          schema={"type":"object","additionalProperties":False,"required":["decision","reason"],
-                  "properties":{"decision":{"type":"string"},"reason":{"type":"string"}}}
-          def first_obj(s):
+          req={
+            "schema":"LOUKSNA_REASONING_REQUEST/1.0",
+            "request_id":"F2-PURE-CONTENT",
+            "objective":"Using only supplied evidence, identify the safe state. No execution is authorized.",
+            "evidence_refs":["F1:36790409680"],
+            "context":{"host":"LOUKSNA","f1":"PASS","terminal_certification_for_integrated_object":False},
+            "constraints":{"fail_closed":True,"execution_authority":False}
+          }
+          prompt=build_prompt(req)
+          schema=json.dumps(model_wire_schema(),separators=(",",":"))
+          expected=set(MODEL_WIRE_FIELDS)
+          def matching_object(text):
               dec=json.JSONDecoder()
-              for idx,ch in enumerate(s):
+              found=[]
+              for i,ch in enumerate(text):
                   if ch!="{": continue
                   try:
-                      obj,end=dec.raw_decode(s[idx:])
-                      if isinstance(obj,dict): return True,sorted(obj),end
-                  except Exception: pass
-              return False,[],None
-          common=[runtime,"-m",model,"-p",prompt,"-n","160","--temp","0","--ctx-size","1024","--threads","2",
-                  "--no-display-prompt","--single-turn","--reasoning","off","--json-schema",json.dumps(schema,separators=(",",":"))]
+                      obj,end=dec.raw_decode(text[i:])
+                  except Exception:
+                      continue
+                  if isinstance(obj,dict):
+                      keys=set(obj)
+                      found.append(sorted(keys))
+                      if keys==expected:
+                          return True,sorted(keys),len(found)
+              return False,[],len(found)
           cases=[
-            ("BASE",["--simple-io"]),
-            ("LOG_DISABLED",["--simple-io","--log-disable"]),
-            ("CLEAN_ALL",["--simple-io","--log-disable","--no-show-timings","--color","off"]),
-            ("SKIP_CHAT_PARSE",["--simple-io","--log-disable","--no-show-timings","--color","off","--skip-chat-parsing"]),
+            ("CONTROL_REASONING_OFF",["--reasoning","off"],512),
+            ("PURE_REASONING_64",["--reasoning","on","--reasoning-budget","64","--reasoning-format","deepseek"],768),
+            ("PURE_REASONING_256",["--reasoning","on","--reasoning-budget","256","--reasoning-format","deepseek"],1024),
           ]
           rows=[]
-          for name,extra in cases:
-              p=subprocess.run([*common,*extra],stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,
-                               timeout=90,check=False,shell=False)
-              ok,keys,end=first_obj(p.stdout or "")
-              rows.append({"case":name,"rc":p.returncode,"json_object":ok,"keys":keys,
-                           "stdout_bytes":len((p.stdout or "").encode()),"stderr_bytes":len((p.stderr or "").encode()),
-                           "stdout_sha256":hashlib.sha256((p.stdout or "").encode()).hexdigest(),
-                           "stderr_sha256":hashlib.sha256((p.stderr or "").encode()).hexdigest(),
-                           "stdout_prompt_marker":prompt in (p.stdout or ""),"stderr_prompt_marker":prompt in (p.stderr or ""),
-                           "stdout_decision_key":'"decision"' in (p.stdout or ""),"stderr_decision_key":'"decision"' in (p.stderr or "")})
-          result={"schema":"LOUKSNA_QWEN_F2_CLEAN_OUTPUT_DIAG/1.0","status":"PASS","published_model_text":False,"cases":rows}
+          for name,extra,max_tokens in cases:
+              cmd=[runtime,"-m",model,"-p",prompt,"-n",str(max_tokens),"--temp","0","--ctx-size","3072","--threads","2",
+                   "--no-display-prompt","--simple-io","--single-turn","--skip-chat-parsing",
+                   "--log-disable","--no-show-timings","--color","off","--json-schema",schema,*extra]
+              try:
+                  p=subprocess.run(cmd,stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,
+                                   timeout=150,check=False,shell=False)
+                  ok,keys,obj_count=matching_object(p.stdout or "")
+                  rows.append({
+                    "case":name,"rc":p.returncode,"max_tokens":max_tokens,
+                    "wire_object":ok,"wire_keys":keys,"json_objects_seen":obj_count,
+                    "stdout_bytes":len((p.stdout or "").encode()),"stderr_bytes":len((p.stderr or "").encode()),
+                    "stdout_sha256":hashlib.sha256((p.stdout or "").encode()).hexdigest(),
+                    "stderr_sha256":hashlib.sha256((p.stderr or "").encode()).hexdigest(),
+                    "has_think_open":"<think>" in (p.stdout or ""),"has_think_close":"</think>" in (p.stdout or "")
+                  })
+              except subprocess.TimeoutExpired:
+                  rows.append({"case":name,"timeout":True,"wire_object":False})
+          result={"schema":"LOUKSNA_QWEN_F2_PURE_CONTENT_DIAG/1.0","status":"PASS",
+                  "published_model_text":False,"cases":rows}
           (out/"DIAG.json").write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
           print(json.dumps(result,sort_keys=True))
           PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: qwen-f2-clean-output-diagnostic
-          path: ${{ runner.temp }}/qwen-f2-clean/
+          name: qwen-f2-pure-content-diagnostic
+          path: ${{ runner.temp }}/qwen-f2-pure-content/
           if-no-files-found: error
           retention-days: 30
           compression-level: 0
