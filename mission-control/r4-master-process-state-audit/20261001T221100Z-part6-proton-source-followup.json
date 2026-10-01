@@ -1,0 +1,9 @@
+{
+  "schema": "LOUKSNA_R4_MASTER_PROCESS_AUDIT_REQUEST/1.0",
+  "reason": "FOLLOW_UP_OFFICIAL_PROTON_SOURCE_BUILD",
+  "expected_current_part": "PART_6",
+  "worker": "MAESTRO",
+  "observer": "LOUKSNA_REMOTE_BRIDGE",
+  "read_only": true,
+  "requested_at_utc": "2026-10-01T22:11:00Z"
+}
