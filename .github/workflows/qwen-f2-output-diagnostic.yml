@@ -1,4 +1,4 @@
-name: "LOUKSNA Qwen F2 — prompt-schema isolation diagnostic with inline G23 G24"
+name: "LOUKSNA Qwen F2 — conversation-mode diagnostic with inline G23 G24"
 
 on:
   push:
@@ -11,13 +11,13 @@ permissions:
   contents: read
 
 env:
-  PRE_DIAG_SHA: d61a0f515e86dd6f0fc8d5b8603a723aebec310f
+  PRE_DIAG_SHA: 40afdf831be202fd60945ed0bea6159b141c0009
   MODEL_PATH: /home/diegoignacionorambuenamiranda/.local/share/louksna/reasoning/models/qwen35-4b-s/Qwen3.5-4B-S-TS-Q4_K_S.gguf
   RUNTIME_PATH: /home/diegoignacionorambuenamiranda/.local/share/louksna/reasoning/runtime/bec4772f6a2527d371557b5d2032641e5ff7619c/bin/llama-cli
 
 jobs:
   diag_g23:
-    name: "F2 isolation diagnostic inline G23"
+    name: "F2 conversation diagnostic inline G23"
     runs-on: ubuntu-24.04
     timeout-minutes: 3
     steps:
@@ -25,62 +25,40 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
-      - name: Verify diagnostic-only local delta
+      - name: Verify diagnostic-only delta
         shell: bash
         run: |
           set -Eeuo pipefail
           mapfile -t CHANGED < <(git diff --name-only "$PRE_DIAG_SHA"...HEAD)
           test "${#CHANGED[@]}" -eq 1
           test "${CHANGED[0]}" = ".github/workflows/qwen-f2-output-diagnostic.yml"
-          grep -Fq 'reasoning_budget=256' bridge/reasoning/qwen_provider.py
-          grep -Fq '"--reasoning-format", "deepseek"' bridge/reasoning/qwen_provider.py
-          echo "F2_ISOLATION_DIAG_G23=PASS"
+          echo "F2_CONVERSATION_DIAG_G23=PASS"
 
   diag_g24:
-    name: "F2 isolation diagnostic inline G24"
+    name: "F2 conversation diagnostic inline G24"
     needs: diag_g23
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
-      - run: echo "F2_ISOLATION_DIAG_G24=PASS; CERTIFICATION_ISSUED=FALSE; SCOPE=DIAGNOSTIC_ONLY"
+      - run: echo "F2_CONVERSATION_DIAG_G24=PASS; CERTIFICATION_ISSUED=FALSE"
 
   material_diag:
-    name: "F2 isolate prompt versus schema"
+    name: "F2 conversation mode material diagnostic"
     needs: diag_g24
     runs-on: [self-hosted, Linux, x64, luna-aux]
     timeout-minutes: 8
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          persist-credentials: false
-          fetch-depth: 1
-          sparse-checkout: |
-            bridge/reasoning
-          sparse-checkout-cone-mode: false
-      - name: Four-factor bounded diagnostic without publishing model text
+      - name: Isolate llama.cpp conversation mode without publishing model text
         shell: bash
         run: |
           set -Eeuo pipefail
-          test "$(hostname)" = "LOUKSNA"
-          OUT="$RUNNER_TEMP/qwen-f2-isolation"; mkdir -m 700 "$OUT"; export OUT
+          OUT="$RUNNER_TEMP/qwen-f2-conv-diag"; mkdir -m 700 "$OUT"; export OUT
           python3 - <<'PY'
-          import hashlib,json,os,pathlib,subprocess,sys
-          sys.path.insert(0,str(pathlib.Path("bridge/reasoning").resolve()))
-          from interface import build_prompt
+          import hashlib,json,os,pathlib,subprocess
           runtime=os.environ["RUNTIME_PATH"]; model=os.environ["MODEL_PATH"]; out=pathlib.Path(os.environ["OUT"])
-          req={"schema":"LOUKSNA_REASONING_REQUEST/1.0","request_id":"F2-ISO",
-               "objective":"Identify the safe state. No execution is authorized.",
-               "evidence_refs":["F1:36790409680"],"context":{"f1":"PASS"},
-               "constraints":{"fail_closed":True,"execution_authority":False}}
-          simple_prompt='Return exactly one JSON object. No execution is authorized.'
-          governed_prompt=build_prompt(req)
-          simple_schema={"type":"object","additionalProperties":False,
-                         "required":["decision","reason"],
-                         "properties":{"decision":{"type":"string"},"reason":{"type":"string"}}}
-          compact3={"type":"object","additionalProperties":False,
-                    "required":["analysis","proposal","confidence"],
-                    "properties":{"analysis":{"type":"string"},"proposal":{"type":"string"},
-                                  "confidence":{"type":"string","enum":["LOW","MEDIUM","HIGH"]}}}
+          prompt="Classify the state conservatively. Execution is not authorized."
+          schema={"type":"object","additionalProperties":False,"required":["decision","reason"],
+                  "properties":{"decision":{"type":"string"},"reason":{"type":"string"}}}
           def first_obj(s):
               dec=json.JSONDecoder()
               for idx,ch in enumerate(s):
@@ -90,33 +68,35 @@ jobs:
                       if isinstance(obj,dict): return True,sorted(obj),end
                   except Exception: pass
               return False,[],None
-          rows=[]
           cases=[
-            ("SIMPLE_PROMPT_SIMPLE_SCHEMA",simple_prompt,simple_schema),
-            ("GOVERNED_PROMPT_SIMPLE_SCHEMA",governed_prompt,simple_schema),
-            ("SIMPLE_PROMPT_COMPACT3",simple_prompt,compact3),
-            ("GOVERNED_PROMPT_COMPACT3",governed_prompt,compact3),
+            ("AUTO_CONVERSATION",[]),
+            ("NO_CONVERSATION",["--no-conversation"]),
+            ("NO_CONVERSATION_NO_SIMPLE_IO",["--no-conversation","--no-simple-io"]),
+            ("AUTO_NO_SIMPLE_IO",["--no-simple-io"]),
           ]
-          for name,prompt,schema in cases:
-              cmd=[runtime,"-m",model,"-p",prompt,"-n","512","--temp","0","--ctx-size","3072","--threads","2",
-                   "--no-display-prompt","--simple-io","--single-turn","--reasoning-budget","0",
-                   "--reasoning-format","deepseek","--json-schema",json.dumps(schema,separators=(",",":"))]
-              p=subprocess.run(cmd,stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,
-                               timeout=90,check=False,shell=False)
+          rows=[]
+          for name,extra in cases:
+              cmd=[runtime,"-m",model,"-p",prompt,"-n","160","--temp","0","--ctx-size","1024","--threads","2",
+                   "--no-display-prompt","--single-turn","--reasoning-budget","0","--reasoning-format","deepseek",
+                   "--json-schema",json.dumps(schema,separators=(",",":"))]
+              if "NO_SIMPLE_IO" not in name: cmd.append("--simple-io")
+              cmd.extend(extra)
+              p=subprocess.run(cmd,stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=90,check=False,shell=False)
               ok,keys,end=first_obj(p.stdout or "")
               rows.append({"case":name,"rc":p.returncode,"json_object":ok,"keys":keys,
                            "stdout_bytes":len((p.stdout or "").encode()),"stderr_bytes":len((p.stderr or "").encode()),
                            "stdout_sha256":hashlib.sha256((p.stdout or "").encode()).hexdigest(),
-                           "stderr_sha256":hashlib.sha256((p.stderr or "").encode()).hexdigest()})
-          result={"schema":"LOUKSNA_QWEN_F2_PROMPT_SCHEMA_ISOLATION/1.0","status":"PASS",
-                  "published_model_text":False,"cases":rows}
+                           "stderr_sha256":hashlib.sha256((p.stderr or "").encode()).hexdigest(),
+                           "stdout_contains_prompt_marker":"Classify the state conservatively" in (p.stdout or ""),
+                           "stderr_contains_prompt_marker":"Classify the state conservatively" in (p.stderr or "")})
+          result={"schema":"LOUKSNA_QWEN_F2_CONVERSATION_DIAG/1.0","status":"PASS","published_model_text":False,"cases":rows}
           (out/"DIAG.json").write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
           print(json.dumps(result,sort_keys=True))
           PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: qwen-f2-prompt-schema-isolation
-          path: ${{ runner.temp }}/qwen-f2-isolation/
+          name: qwen-f2-conversation-diagnostic
+          path: ${{ runner.temp }}/qwen-f2-conv-diag/
           if-no-files-found: error
           retention-days: 30
           compression-level: 0
