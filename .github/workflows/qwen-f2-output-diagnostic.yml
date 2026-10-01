@@ -1,4 +1,4 @@
-name: "LOUKSNA Qwen F2 — bounded output diagnostic with inline G23 G24"
+name: "LOUKSNA Qwen F2 — compact wire diagnostic with inline G23 G24"
 
 on:
   push:
@@ -11,13 +11,13 @@ permissions:
   contents: read
 
 env:
-  PRE_DIAG_SHA: fd21fdaf4c6a04379c1cc34f51352ea066546450
+  PRE_DIAG_SHA: 1aeb313a9ba1702823a564809b12bab5076bddf4
   MODEL_PATH: /home/diegoignacionorambuenamiranda/.local/share/louksna/reasoning/models/qwen35-4b-s/Qwen3.5-4B-S-TS-Q4_K_S.gguf
   RUNTIME_PATH: /home/diegoignacionorambuenamiranda/.local/share/louksna/reasoning/runtime/bec4772f6a2527d371557b5d2032641e5ff7619c/bin/llama-cli
 
 jobs:
   diag_g23:
-    name: "F2 diagnostic inline G23"
+    name: "F2 compact diagnostic inline G23"
     runs-on: ubuntu-24.04
     timeout-minutes: 3
     steps:
@@ -25,137 +25,125 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
-      - name: Prove diagnostic-only delta
+      - name: Verify diagnostic-only delta and preserved provider semantics
         shell: bash
         run: |
           set -Eeuo pipefail
-          mapfile -t CHANGED < <(git diff --name-only "$PRE_DIAG_SHA"...HEAD | sort)
-          EXPECTED=(".github/workflows/qwen-f2-integrate-inline-gates.yml" ".github/workflows/qwen-f2-output-diagnostic.yml" "bridge/reasoning/qwen_provider.py")
-          test "${#CHANGED[@]}" -eq 3
-          for i in 0 1 2; do test "${CHANGED[$i]}" = "${EXPECTED[$i]}"; done
+          mapfile -t CHANGED < <(git diff --name-only "$PRE_DIAG_SHA"...HEAD)
+          test "${#CHANGED[@]}" -eq 1
+          test "${CHANGED[0]}" = ".github/workflows/qwen-f2-output-diagnostic.yml"
           grep -Fq 'reasoning_budget=256' bridge/reasoning/qwen_provider.py
           grep -Fq '"--reasoning-format", "deepseek"' bridge/reasoning/qwen_provider.py
-          ! grep -Fq 'diagnostic_dir' bridge/reasoning/qwen_provider.py
-          echo "F2_DIAG_G23=PASS; PROVIDER_REASONING_SEMANTICS_RESTORED=TRUE"
+          grep -Fq 'execution_allowed": False' bridge/reasoning/interface.py
+          echo "F2_COMPACT_DIAG_G23=PASS"
 
   diag_g24:
-    name: "F2 diagnostic inline G24"
+    name: "F2 compact diagnostic inline G24"
     needs: diag_g23
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
-      - name: Certifiability posture remains unchanged
+      - name: Keep terminal certification explicitly false
         shell: bash
         run: |
           set -Eeuo pipefail
-          echo "F2_DIAG_G24=PASS; CERTIFICATION_ISSUED=FALSE; MUTATION_SCOPE=DIAGNOSTIC_ONLY"
+          echo "F2_COMPACT_DIAG_G24=PASS; CERTIFICATION_ISSUED=FALSE; REPAIR_SCOPE=F2_LOCAL_ONLY"
 
   material_diag:
-    name: "F2 material output-channel diagnostic"
+    name: "F2 compact wire material diagnostic"
     needs: diag_g24
     runs-on: [self-hosted, Linux, x64, luna-aux]
     timeout-minutes: 8
     steps:
-      - name: Diagnose response channel without publishing model text
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            bridge/reasoning
+          sparse-checkout-cone-mode: false
+      - name: Find minimum deterministic JSON wire without publishing model text
         shell: bash
         run: |
           set -Eeuo pipefail
           test "$(hostname)" = "LOUKSNA"
           test -x "$RUNTIME_PATH"
           test -f "$MODEL_PATH"
-          OUT="$RUNNER_TEMP/qwen-f2-diag"; mkdir -m 700 "$OUT"
-          export OUT
+          OUT="$RUNNER_TEMP/qwen-f2-compact-diag"; mkdir -m 700 "$OUT"; export OUT
           python3 - <<'PY'
-          import hashlib,json,os,pathlib,subprocess
+          import hashlib,json,os,pathlib,subprocess,sys
+          sys.path.insert(0,str(pathlib.Path("bridge/reasoning").resolve()))
+          from interface import build_prompt, model_wire_schema
           out=pathlib.Path(os.environ["OUT"])
           runtime=os.environ["RUNTIME_PATH"]; model=os.environ["MODEL_PATH"]
-          prompt='Return exactly one JSON object: {"decision":"HOLD","reason":"no execution authorization"}'
-          schema='{"type":"object","additionalProperties":false,"required":["decision","reason"],"properties":{"decision":{"type":"string"},"reason":{"type":"string"}}}'
-          variants=[
-            ("A_CURRENT",["--reasoning-budget","0","--reasoning-format","deepseek","--json-schema",schema]),
-            ("B_NO_REASONING_FORMAT",["--reasoning-budget","0","--json-schema",schema]),
-            ("C_NO_SCHEMA",["--reasoning-budget","0","--reasoning-format","deepseek"]),
-            ("D_PLAIN",["--reasoning-budget","0"])
-          ]
-          # Exact provider-contract probes: same complex schema, without publishing model text.
-          import sys
-          sys.path.insert(0, str(pathlib.Path("bridge/reasoning").resolve()))
-          from interface import model_output_schema, build_prompt
           req={
             "schema":"LOUKSNA_REASONING_REQUEST/1.0",
-            "request_id":"F2-DIAG-PROVIDER",
+            "request_id":"F2-COMPACT-DIAG",
             "objective":"Using only supplied evidence, identify the safe state. No execution is authorized.",
             "evidence_refs":["F1:36790409680"],
             "context":{"host":"LOUKSNA","f1":"PASS"},
             "constraints":{"fail_closed":True,"execution_authority":False}
           }
-          provider_schema=json.dumps(model_output_schema(),separators=(",",":"))
-          provider_prompt=build_prompt(req)
-          provider_variants=[
-            ("E_PROVIDER_512",512),
-            ("F_PROVIDER_1024",1024),
-            ("G_PROVIDER_1536",1536)
-          ]
+          prompt=build_prompt(req)
+          full=model_wire_schema()
+          six={
+            "type":"object","additionalProperties":False,
+            "required":["observations","inferences","proposal","risks","recovery","confidence"],
+            "properties":{
+              "observations":{"type":"string"},"inferences":{"type":"string"},
+              "proposal":{"type":"string"},"risks":{"type":"string"},
+              "recovery":{"type":"string"},"confidence":{"type":"string","enum":["LOW","MEDIUM","HIGH"]}
+            }
+          }
+          four={
+            "type":"object","additionalProperties":False,
+            "required":["analysis","proposal","risk","confidence"],
+            "properties":{
+              "analysis":{"type":"string"},"proposal":{"type":"string"},
+              "risk":{"type":"string"},"confidence":{"type":"string","enum":["LOW","MEDIUM","HIGH"]}
+            }
+          }
+          three={
+            "type":"object","additionalProperties":False,
+            "required":["analysis","proposal","confidence"],
+            "properties":{
+              "analysis":{"type":"string"},"proposal":{"type":"string"},
+              "confidence":{"type":"string","enum":["LOW","MEDIUM","HIGH"]}
+            }
+          }
+          def first_object(text):
+              dec=json.JSONDecoder()
+              for idx,ch in enumerate(text):
+                  if ch!="{": continue
+                  try:
+                      obj,end=dec.raw_decode(text[idx:])
+                      return isinstance(obj,dict), sorted(obj) if isinstance(obj,dict) else [], end
+                  except Exception:
+                      pass
+              return False,[],None
           rows=[]
-          for name,extra in variants:
-              cmd=[runtime,"-m",model,"-p",prompt,"-n","160","--temp","0","--ctx-size","1024","--threads","2","--no-display-prompt","--simple-io","--single-turn",*extra]
-              try:
-                  p=subprocess.run(cmd,stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=80,check=False,shell=False)
-                  stdout=p.stdout or ""; stderr=p.stderr or ""
-                  def parse_json(s):
-                      s=s.strip()
-                      try: json.loads(s); return True
-                      except Exception: pass
-                      a=s.find("{"); b=s.rfind("}")
-                      if a>=0 and b>a:
-                          try: json.loads(s[a:b+1]); return True
-                          except Exception: pass
-                      return False
-                  rows.append({
-                    "variant":name,"rc":p.returncode,
-                    "stdout_bytes":len(stdout.encode()),"stderr_bytes":len(stderr.encode()),
-                    "stdout_json":parse_json(stdout),"stderr_json":parse_json(stderr),
-                    "stdout_sha256":hashlib.sha256(stdout.encode()).hexdigest(),
-                    "stderr_sha256":hashlib.sha256(stderr.encode()).hexdigest(),
-                    "stdout_has_object_delimiters":"{" in stdout and "}" in stdout,
-                    "stderr_has_object_delimiters":"{" in stderr and "}" in stderr
-                  })
-              except subprocess.TimeoutExpired:
-                  rows.append({"variant":name,"timeout":True,"stdout_json":False,"stderr_json":False})
-          for name,max_tokens in provider_variants:
-              cmd=[runtime,"-m",model,"-p",provider_prompt,"-n",str(max_tokens),"--temp","0","--ctx-size","3072","--threads","2","--no-display-prompt","--simple-io","--single-turn","--reasoning-budget","0","--reasoning-format","deepseek","--json-schema",provider_schema]
-              try:
-                  p=subprocess.run(cmd,stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=120,check=False,shell=False)
-                  stdout=p.stdout or ""; stderr=p.stderr or ""
-                  def first_json(s):
-                      dec=json.JSONDecoder()
-                      for i,ch in enumerate(s):
-                          if ch!="{": continue
-                          try:
-                              obj,end=dec.raw_decode(s[i:])
-                              return isinstance(obj,dict),i,end
-                          except Exception:
-                              pass
-                      return False,None,None
-                  parsed,start,end=first_json(stdout)
-                  rows.append({
-                    "variant":name,"rc":p.returncode,"max_tokens":max_tokens,
-                    "stdout_bytes":len(stdout.encode()),"stderr_bytes":len(stderr.encode()),
-                    "stdout_first_object_json":parsed,
-                    "stdout_has_open":"{" in stdout,"stdout_has_close":"}" in stdout,
-                    "stdout_sha256":hashlib.sha256(stdout.encode()).hexdigest(),
-                    "stderr_sha256":hashlib.sha256(stderr.encode()).hexdigest()
-                  })
-              except subprocess.TimeoutExpired:
-                  rows.append({"variant":name,"timeout":True,"stdout_first_object_json":False})
-          result={"schema":"LOUKSNA_QWEN_F2_OUTPUT_DIAG/1.1","status":"PASS","published_model_text":False,"variants":rows}
+          for name,schema in [("FULL12",full),("COMPACT6",six),("COMPACT4",four),("COMPACT3",three)]:
+              cmd=[runtime,"-m",model,"-p",prompt,"-n","512","--temp","0","--ctx-size","3072","--threads","2",
+                   "--no-display-prompt","--simple-io","--single-turn","--reasoning-budget","0",
+                   "--reasoning-format","deepseek","--json-schema",json.dumps(schema,separators=(",",":"))]
+              p=subprocess.run(cmd,stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=90,check=False,shell=False)
+              ok,keys,end=first_object(p.stdout or "")
+              rows.append({
+                "variant":name,"rc":p.returncode,"json_object":ok,"keys":keys,
+                "stdout_bytes":len((p.stdout or "").encode()),"stderr_bytes":len((p.stderr or "").encode()),
+                "stdout_sha256":hashlib.sha256((p.stdout or "").encode()).hexdigest(),
+                "stderr_sha256":hashlib.sha256((p.stderr or "").encode()).hexdigest(),
+                "has_open":"{" in (p.stdout or ""),"has_close":"}" in (p.stdout or "")
+              })
+          result={"schema":"LOUKSNA_QWEN_F2_COMPACT_WIRE_DIAG/1.0","status":"PASS",
+                  "published_model_text":False,"variants":rows}
           (out/"DIAG.json").write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
           print(json.dumps(result,sort_keys=True))
           PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: qwen-f2-output-diagnostic
-          path: ${{ runner.temp }}/qwen-f2-diag/
+          name: qwen-f2-compact-wire-diagnostic
+          path: ${{ runner.temp }}/qwen-f2-compact-diag/
           if-no-files-found: error
           retention-days: 30
           compression-level: 0
