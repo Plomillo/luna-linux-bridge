@@ -1,0 +1,51 @@
+name: "R4 PART4 — Stage7 operator action diagnosis"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-stage7-operator-diagnosis/**
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Diagnose recent Stage7 operator action read-only
+        shell: bash
+        run: |
+          set -u
+          OUT="$RUNNER_TEMP/stage7-diagnosis"; mkdir -p "$OUT"
+          {
+            echo "=== TOOL PATHS ==="
+            command -v growpart || true
+            command -v parted || true
+            command -v sfdisk || true
+            command -v sgdisk || true
+            echo "=== TOOL VERSIONS ==="
+            growpart --help 2>&1 | head -n 3 || true
+            parted --version 2>&1 || true
+            sfdisk --version 2>&1 || true
+            sgdisk --version 2>&1 || true
+          } > "$OUT/TOOLS.txt" 2>&1
+
+          sudo -n journalctl --since "2026-10-01 19:50:00 UTC" --no-pager -o short-iso             | grep -Ei 'growpart|parted|sfdisk|sgdisk|nvme0n1|partition|BLKRRPART|re-read|reread|sudo'             > "$OUT/RECENT_RELEVANT_JOURNAL.txt" 2>&1 || true
+
+          sudo -n journalctl _COMM=sudo --since "2026-10-01 19:50:00 UTC" --no-pager -o short-iso             > "$OUT/SUDO_JOURNAL.txt" 2>&1 || true
+
+          sudo -n dmesg --ctime             | grep -Ei 'nvme0n1|partition|GPT|blk|I/O|error|fail|busy'             | tail -n 200 > "$OUT/DMESG_STORAGE_TAIL.txt" 2>&1 || true
+
+          sudo -n /usr/sbin/sfdisk --dump /dev/nvme0n1 > "$OUT/SFDISK_NOW.txt" 2>&1 || true
+          sudo -n /usr/sbin/parted -sm /dev/nvme0n1 unit s print free > "$OUT/PARTED_NOW.txt" 2>&1 || true
+
+          sha256sum "$OUT"/* > "$OUT/SHA256SUMS.txt"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-stage7-operator-diagnosis
+          path: ${{ runner.temp }}/stage7-diagnosis/
+          retention-days: 30
+          compression-level: 0
