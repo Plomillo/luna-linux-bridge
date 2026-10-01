@@ -1,0 +1,8 @@
+{
+  "schema": "LOUKSNA_R4_PART4_CERT_INGEST_DIAG_REQUEST/1.0",
+  "reason": "CAPTURE_POST_GH_JSON_FIX_CERT_INGEST_STATE",
+  "target_certification_run_id": 36928649731,
+  "expected_evidence_sha256": "6f10dbd8bc10cad0d4c17b3a6b93d39221a6355d82b460941e4881735300dad3",
+  "read_only": true,
+  "requested_at_utc": "2026-10-01T21:30:00Z"
+}
