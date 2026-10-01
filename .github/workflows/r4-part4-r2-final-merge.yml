@@ -27,7 +27,9 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 1
-          sparse-checkout: server/r4-master
+          sparse-checkout: |
+            server/r4-master
+            mission-control/r4-plan-definitivo
           sparse-checkout-cone-mode: true
 
       - name: Require certified storage migration and final-merge authorization
