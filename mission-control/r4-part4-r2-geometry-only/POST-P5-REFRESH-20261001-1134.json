@@ -1,0 +1,8 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_GEOMETRY_REFRESH/1.0",
+  "authority": "Louksna.md",
+  "mode": "READ_ONLY",
+  "target": "POST_P5_CURRENT_GEOMETRY",
+  "mutation": false,
+  "requested_at_local": "2026-10-01T11:34:00-03:00"
+}
