@@ -1,0 +1,371 @@
+name: "R4 PART6 — hardened gaming G23 G24"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - evidence/r4-master-part6/**
+
+permissions:
+  contents: read
+  actions: read
+  id-token: write
+
+concurrency:
+  group: r4-part6-hardened-g23-g24
+  cancel-in-progress: false
+
+jobs:
+  g23:
+    name: G23 independent PART6 validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout candidate evidence
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: staging/luna-r4-master-part1-part9-20260929
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            evidence/r4-master-part6
+          sparse-checkout-cone-mode: false
+
+      - name: Resolve exact candidate from push
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - "$GITHUB_EVENT_PATH" "$GITHUB_ENV" <<'PY'
+          import json, pathlib, sys
+          ev=json.load(open(sys.argv[1],encoding="utf-8"))
+          paths=[]
+          for c in ev.get("commits",[]):
+              paths += c.get("added",[]) + c.get("modified",[])
+          paths=[p for p in paths if p.startswith("evidence/r4-master-part6/") and p.endswith("/FULL_CANDIDATE_V2.json")]
+          paths=sorted(set(paths))
+          if len(paths)!=1:
+              raise SystemExit("CANDIDATE_PATH_CARDINALITY:"+repr(paths))
+          p=pathlib.Path(paths[0])
+          if not p.is_file():
+              raise SystemExit("CANDIDATE_NOT_CHECKED_OUT:"+str(p))
+          with open(sys.argv[2],"a",encoding="utf-8") as f:
+              f.write("CANDIDATE_PATH="+str(p)+"\n")
+          print("CANDIDATE_PATH="+str(p))
+          PY
+
+      - name: Independently validate actual PART6 candidate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$CANDIDATE_PATH" "$RUNNER_TEMP/g23/FULL_G23_V2.json" <<'PY'
+          import datetime as dt, hashlib, json, pathlib, sys
+          p,o=map(pathlib.Path,sys.argv[1:])
+          c=json.loads(p.read_text(encoding="utf-8"))
+          names={"wine","steam","proton","bottles","lutris","prism","waydroid"}
+          comps=c.get("components",{}) if isinstance(c.get("components"),dict) else {}
+          def prov(name):
+              x=comps.get(name,{})
+              return x.get("provenance",{}) if isinstance(x,dict) and isinstance(x.get("provenance"),dict) else {}
+          checks={
+              "schema":c.get("schema")=="LOUKSNA_R4_PART6_FULL_CANDIDATE_V2/1.0",
+              "status":c.get("status")=="PASS",
+              "host":c.get("host")=="LOUKSNA",
+              "component_set_exact":set(comps)==names,
+              "components_pass":all(
+                  isinstance(comps.get(n),dict)
+                  and comps[n].get("status")=="PASS"
+                  and comps[n].get("functional_test_pass") is True
+                  and bool(comps[n].get("version"))
+                  and bool(comps[n].get("provenance"))
+                  for n in names
+              ),
+              "wine_source":prov("wine").get("source")=="DEBIAN_TRIXIE_OFFICIAL_APT",
+              "steam_source":str(prov("steam").get("url","")).startswith("https://repo.steampowered.com/steam/"),
+              "proton_release":prov("proton").get("release_tag")=="proton-11.0-2" and int(prov("proton").get("steam_app_id",0))==4628710,
+              "bottles_source":prov("bottles").get("app_id")=="com.usebottles.bottles" and prov("bottles").get("remote")=="flathub",
+              "lutris_release":prov("lutris").get("release_tag")=="v0.5.22" and prov("lutris").get("artifact_sha256")=="88a350357e0438b423cdf93108f27942de094dc19f973df73839f3b0b0bafaa0",
+              "prism_release":prov("prism").get("release_tag")=="11.1.1" and prov("prism").get("artifact_sha256")=="bb81038c56a09e944659e4b808dbfbc52d52d5e3a3ffe32216689a3ca1508d3d",
+              "waydroid_source":str(prov("waydroid").get("url","")).startswith("https://repo.waydro.id"),
+              "rollback_checkpoint_sha":isinstance(c.get("rollback_checkpoint_sha256"),str) and len(c["rollback_checkpoint_sha256"])==64,
+              "rollback_script_sha":isinstance(c.get("rollback_script_sha256"),str) and len(c["rollback_script_sha256"])==64,
+              "rollback_declared":c.get("rollback_ready") is True,
+              "no_partition_mutation":c.get("disk_partition_mutation_performed") is False,
+              "no_fs_format_resize":c.get("filesystem_format_or_resize_performed") is False,
+              "no_unrelated_delete":c.get("unrelated_user_data_deleted") is False,
+              "no_certification_propagation":c.get("certification_propagated") is False,
+              "root_identity":c.get("root_source")=="/dev/nvme0n1p3" and c.get("root_fstype")=="ext4",
+              "layout_preserved":c.get("p3_start_sector")==567296 and c.get("p3_size_sectors")==999647887,
+          }
+          ok=all(checks.values())
+          h=hashlib.sha256(p.read_bytes()).hexdigest()
+          q={
+              "schema":"LOUKSNA_R4_PART6_FULL_G23_V2/1.0",
+              "status":"PASS" if ok else "HOLD",
+              "scope":"PART6_GAMING_ACTUAL_STATE_INDEPENDENT_VALIDATION",
+              "candidate_sha256":h,
+              "mission_id":c.get("mission_id"),
+              "checks":checks,
+              "g24_allowed":ok,
+              "disk_partition_mutation_allowed":False,
+              "filesystem_format_or_resize_allowed":False,
+              "certification_propagated":False,
+              "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          o.write_text(json.dumps(q,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if not ok:
+              raise SystemExit(23)
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part6-full-g23-v2
+          path: ${{ runner.temp }}/g23/FULL_G23_V2.json
+          retention-days: 90
+          compression-level: 0
+
+  g24:
+    name: G24 certify PART6 actual state
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part6-full-g23-v2
+          path: ${{ runner.temp }}/g23
+
+      - name: Issue digest-bound OIDC G24
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/FULL_G23_V2.json"
+          test "$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(d["status"] if d.get("g24_allowed") else "HOLD")' "$G")" = PASS
+          GHASH="$(sha256sum "$G" | awk '{print $1}')"
+          CHASH="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["candidate_sha256"])' "$G")"
+          AUD="louksna-r4-part6-hardened:$GHASH:$CHASH"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export GHASH CHASH AUD TOKEN
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$G" "$RUNNER_TEMP/g24/FULL_G24_V2.json" <<'PY'
+          import base64, datetime as dt, hashlib, json, os, pathlib, sys
+          g=json.loads(pathlib.Path(sys.argv[1]).read_text())
+          t=os.environ["TOKEN"]; parts=t.split(".")
+          payload=parts[1]+"="*((4-len(parts[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload))
+          aud=claims.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud):
+              raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge":
+              raise SystemExit("OIDC_REPOSITORY")
+          q={
+              "schema":"LOUKSNA_R4_PART6_FULL_G24_V2/1.0",
+              "status":"PASS",
+              "scope":"PART6_GAMING_ACTUAL_STATE_CERTIFICATION_ONLY",
+              "mission_id":g.get("mission_id"),
+              "candidate_sha256":os.environ["CHASH"],
+              "g23_sha256":os.environ["GHASH"],
+              "authority_authenticated":True,
+              "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
+              "disk_partition_mutation_authorized":False,
+              "filesystem_format_or_resize_authorized":False,
+              "unrelated_delete_authorized":False,
+              "certification_propagated":False,
+              "canonical_mutation":False,
+              "authority_transfer":False,
+              "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          pathlib.Path(sys.argv[2]).write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part6-full-g24-v2
+          path: ${{ runner.temp }}/g24/FULL_G24_V2.json
+          retention-days: 90
+          compression-level: 0
+
+  materialize:
+    name: Precommit and materialize PART6 result
+    needs: [g23, g24]
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 15
+    steps:
+      - name: Checkout candidate evidence
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: staging/luna-r4-master-part1-part9-20260929
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            evidence/r4-master-part6
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part6-full-g23-v2
+          path: ${{ runner.temp }}/g23
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part6-full-g24-v2
+          path: ${{ runner.temp }}/g24
+
+      - name: Resolve exact candidate from push
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - "$GITHUB_EVENT_PATH" "$GITHUB_ENV" <<'PY'
+          import json, pathlib, sys
+          ev=json.load(open(sys.argv[1],encoding="utf-8"))
+          paths=[]
+          for c in ev.get("commits",[]):
+              paths += c.get("added",[]) + c.get("modified",[])
+          paths=sorted(set(p for p in paths if p.startswith("evidence/r4-master-part6/") and p.endswith("/FULL_CANDIDATE_V2.json")))
+          if len(paths)!=1:
+              raise SystemExit("CANDIDATE_PATH_CARDINALITY:"+repr(paths))
+          with open(sys.argv[2],"a",encoding="utf-8") as f:
+              f.write("CANDIDATE_PATH="+paths[0]+"\n")
+          PY
+
+      - name: Revalidate live LOUKSNA and write precommit/result
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          D="$HOME/.local/state/louksna/r4-master-part1-part9/PART_6_HARDENED"
+          LOCAL="$D/FULL_CANDIDATE_V2.json"
+          REPO_C="$CANDIDATE_PATH"
+          G23="$RUNNER_TEMP/g23/FULL_G23_V2.json"
+          G24="$RUNNER_TEMP/g24/FULL_G24_V2.json"
+          mkdir -p "$D"
+
+          test -f "$LOCAL"
+          test -f "$REPO_C"
+          test "$(sha256sum "$LOCAL" | awk '{print $1}')" = "$(sha256sum "$REPO_C" | awk '{print $1}')"
+
+          ROOT_SOURCE="$(findmnt -n -o SOURCE /)"
+          ROOT_FSTYPE="$(findmnt -n -o FSTYPE /)"
+          P3_START="$(cat /sys/class/block/nvme0n1p3/start)"
+          P3_SIZE="$(cat /sys/class/block/nvme0n1p3/size)"
+          MASTER="$HOME/.local/state/louksna/r4-master-part1-part9/MASTER_STATUS.json"
+
+          LOCAL="$LOCAL" G23="$G23" G24="$G24" D="$D" MASTER="$MASTER" ROOT_SOURCE="$ROOT_SOURCE" ROOT_FSTYPE="$ROOT_FSTYPE" P3_START="$P3_START" P3_SIZE="$P3_SIZE" python3 - <<'PY'
+          import datetime as dt, hashlib, json, os, pathlib, subprocess
+          local=pathlib.Path(os.environ["LOCAL"])
+          g23p=pathlib.Path(os.environ["G23"])
+          g24p=pathlib.Path(os.environ["G24"])
+          d=pathlib.Path(os.environ["D"])
+          c=json.loads(local.read_text())
+          g=json.loads(g23p.read_text())
+          q=json.loads(g24p.read_text())
+          ms=json.loads(pathlib.Path(os.environ["MASTER"]).read_text())
+          def h(p): return hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
+          def run(argv,env=None,timeout=120):
+              try:
+                  p=subprocess.run(argv,text=True,capture_output=True,timeout=timeout,env=env)
+                  return {"rc":p.returncode,"out":p.stdout[-4000:],"err":p.stderr[-4000:]}
+              except Exception as e:
+                  return {"rc":999,"err":type(e).__name__+":"+str(e)}
+          comps=c["components"]
+          live={}
+          live["wine"]=run(["wine","--version"])
+          steam_cmd=comps["steam"].get("executable")
+          live["steam"]={"rc":0 if steam_cmd and pathlib.Path(steam_cmd).exists() else 127,"path":steam_cmd}
+          proton_wine=comps["proton"].get("runtime_wine")
+          live["proton"]=run([proton_wine,"--version"]) if proton_wine and pathlib.Path(proton_wine).exists() else {"rc":127}
+          live["bottles"]=run(["flatpak","run","--command=bottles-cli","com.usebottles.bottles","--version"],timeout=120)
+          live["lutris"]=run(["lutris","--version"],timeout=60)
+          prism=comps["prism"].get("artifact_path")
+          env=dict(os.environ); env["APPIMAGE_EXTRACT_AND_RUN"]="1"; env["QT_QPA_PLATFORM"]="offscreen"
+          live["prism"]=run([prism,"--version"],env=env,timeout=120) if prism and pathlib.Path(prism).is_file() else {"rc":127}
+          live["waydroid"]=run(["waydroid","--version"],timeout=60)
+          component_live={k:v.get("rc")==0 for k,v in live.items()}
+          checks={
+              "master_part6":ms.get("current_part")=="PART_6",
+              "candidate_pass":c.get("status")=="PASS",
+              "g23_pass":g.get("status")=="PASS",
+              "g24_pass":q.get("status")=="PASS",
+              "g23_candidate_bound":g.get("candidate_sha256")==h(local),
+              "g24_candidate_bound":q.get("candidate_sha256")==h(local),
+              "g24_g23_bound":q.get("g23_sha256")==h(g23p),
+              "component_live_tests":all(component_live.values()),
+              "root_identity":os.environ["ROOT_SOURCE"]=="/dev/nvme0n1p3" and os.environ["ROOT_FSTYPE"]=="ext4",
+              "layout_identity":int(os.environ["P3_START"])==567296 and int(os.environ["P3_SIZE"])==999647887,
+              "rollback_checkpoint":pathlib.Path(c.get("rollback_checkpoint_path","")).is_file(),
+              "rollback_script":pathlib.Path(c.get("rollback_script_path","")).is_file(),
+              "no_partition_mutation":c.get("disk_partition_mutation_performed") is False,
+              "no_fs_format_resize":c.get("filesystem_format_or_resize_performed") is False,
+              "no_unrelated_delete":c.get("unrelated_user_data_deleted") is False,
+              "no_certification_propagation":q.get("certification_propagated") is False,
+          }
+          pre={
+              "schema":"LOUKSNA_R4_PART6_FULL_PRECOMMIT_V2/1.0",
+              "status":"PASS" if all(checks.values()) else "HOLD",
+              "mission_id":c.get("mission_id"),
+              "candidate_sha256":h(local),
+              "g23_sha256":h(g23p),
+              "g24_sha256":h(g24p),
+              "checks":checks,
+              "live_tests":live,
+              "component_live":component_live,
+              "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          prep=d/"FULL_PRECOMMIT_V2.json"
+          prep.write_text(json.dumps(pre,indent=2,sort_keys=True)+"\n")
+          if pre["status"]!="PASS":
+              print(json.dumps(pre,indent=2,sort_keys=True))
+              raise SystemExit(31)
+
+          (d/"FULL_G23_V2.json").write_bytes(g23p.read_bytes())
+          (d/"FULL_G24_V2.json").write_bytes(g24p.read_bytes())
+          result_checks={
+              "candidate_pass":True,
+              "g23_pass":True,
+              "g24_pass":True,
+              "precommit_pass":True,
+              "component_live_tests":True,
+              "rollback_checkpoint":True,
+              "rollback_script":True,
+              "root_identity":True,
+              "layout_identity":True,
+              "no_partition_mutation":True,
+              "no_fs_format_resize":True,
+              "no_unrelated_delete":True,
+              "no_certification_propagation":True,
+          }
+          result={
+              "schema":"LOUKSNA_R4_PART6_HARDENED_RESULT/1.0",
+              "status":"PASS",
+              "mission_id":c.get("mission_id"),
+              "components":c.get("components"),
+              "candidate_sha256":h(local),
+              "g23_sha256":h(g23p),
+              "g24_sha256":h(g24p),
+              "precommit_sha256":h(prep),
+              "rollback_checkpoint_path":c.get("rollback_checkpoint_path"),
+              "rollback_checkpoint_sha256":c.get("rollback_checkpoint_sha256"),
+              "rollback_script_path":c.get("rollback_script_path"),
+              "rollback_script_sha256":c.get("rollback_script_sha256"),
+              "checks":result_checks,
+              "disk_partition_mutation_performed":False,
+              "filesystem_format_or_resize_performed":False,
+              "unrelated_user_data_deleted":False,
+              "certification_propagated":False,
+              "recorded_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          (d/"RESULT.json").write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(result,indent=2,sort_keys=True))
+          PY
+
+      - name: Upload complete PART6 hardened evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part6-hardened-result
+          path: /home/diegoignacionorambuenamiranda/.local/state/louksna/r4-master-part1-part9/PART_6_HARDENED
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 0
