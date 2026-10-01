@@ -253,6 +253,10 @@ jobs:
           }
           (out/"BRIDGE_PLAN.json").write_text(json.dumps(plan,indent=2,sort_keys=True)+"\n")
           (out/"F3_MATERIAL.json").write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
+          print("F3_MATERIAL_CHECKS="+json.dumps({
+            "logic":logic,"product":product,"first":first,
+            "structured":structured,"forbidden":forbidden
+          },sort_keys=True))
           if result["status"]!="PASS": raise SystemExit("F3_MATERIAL_HOLD")
           print("F3_MATERIAL=PASS")
           PY
