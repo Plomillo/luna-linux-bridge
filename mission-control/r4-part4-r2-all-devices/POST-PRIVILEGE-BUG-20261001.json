@@ -1,0 +1,4 @@
+{
+  "mode":"READ_ONLY",
+  "reason":"verify current P3/P5 mount state after failed final-merge attempt"
+}
