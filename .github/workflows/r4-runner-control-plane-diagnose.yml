@@ -21,7 +21,7 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          TARGET_JOB_ID: "110619317467"
+          TARGET_JOB_ID: "110626437175"
         run: |
           set -Eeuo pipefail
           echo "=== TARGET JOB ==="
