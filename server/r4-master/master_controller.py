@@ -952,8 +952,52 @@ def part4_hardened_progress(mid):
             return record(9,"AWAITING_CONTROLLED_REBOOT",{"resume_token_sha256":sha(token),"mutation_performed":False},9,"CONTROLLED_REBOOT_AND_RESUME")
         return record(9,"HOLD",{"reason":"STAGE9_RESUME_TOKEN_REQUIRED","mutation_performed":False},9,"CREATE_STAGE9_RESUME_TOKEN")
 
-    # Stages 10-12 remain exact-scope gated until their handlers and fresh
-    # filesystem/final certification gates are materialized.
+    # Stage 10: consume a fresh full read-only PROYECTOS non-regression
+    # verification bound to the certified freeze manifest. No filesystem or
+    # geometry mutation is authorized by this handler.
+    if stage==10:
+        rec=PART4_P3_EXEC_DIR/"STAGE10_PROYECTOS_NON_REGRESSION.json"
+        if not rec.is_file():
+            return record(10,"AWAITING_FULL_VERIFY",{
+                "manifest_sha256":"99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+                "expected_records":498092,
+                "mutation_performed":False,
+            },10,"RUN_STAGE10_PROYECTOS_FULL_NON_REGRESSION")
+        q=read_json(rec,{}) or {}
+        checks={
+            "status":q.get("status")=="PASS",
+            "scope":q.get("scope")=="PROYECTOS_FORENSIC_NON_REGRESSION_BARRIER",
+            "manifest":q.get("manifest_sha256")=="99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+            "records":int(q.get("records",-1))==498092,
+            "dirs":int(q.get("dirs",-1))==62016,
+            "files":int(q.get("files",-1))==436072,
+            "symlinks":int(q.get("symlinks",-1))==4,
+            "other":int(q.get("other",-1))==0,
+            "bytes":int(q.get("regular_file_bytes",-1))==200490852057,
+            "missing_zero":int(q.get("missing", -1))==0,
+            "unexpected_zero":int(q.get("unexpected", -1))==0,
+            "hash_mismatch_zero":int(q.get("hash_mismatch", -1))==0,
+            "type_mismatch_zero":int(q.get("type_mismatch", -1))==0,
+            "size_mismatch_zero":int(q.get("size_mismatch", -1))==0,
+            "disk_false":q.get("disk_mutation_performed") is False,
+            "fs_false":q.get("filesystem_mutation_performed") is False,
+        }
+        if all(checks.values()):
+            return record(10,"PASS",{
+                "stage10_sha256":sha(rec),
+                "checks":checks,
+                "resize2fs_authorization_eligible":True,
+                "mutation_performed":False,
+            },11,"PREPARE_STAGE11_EXT4_G23_G24")
+        return record(10,"HOLD",{
+            "reason":"PROYECTOS_NON_REGRESSION_NOT_PROVEN",
+            "stage10_sha256":sha(rec),
+            "checks":checks,
+            "mutation_performed":False,
+        },10,"DIAGNOSE_STAGE10_PROYECTOS")
+
+    # Stages 11-12 remain exact-scope gated until fresh filesystem and final
+    # certification handlers are materialized.
     stage_id=stages[stage-1]["id"]
     return record(stage,"AWAITING_STAGE_HANDLER",{
         "stage_id":stage_id,
