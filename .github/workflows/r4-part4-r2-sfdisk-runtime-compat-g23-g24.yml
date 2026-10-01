@@ -1,0 +1,165 @@
+name: "R4 PART4 R2 — certify and deploy sudo-preserving sfdisk compat"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-r2-sfdisk-runtime-compat/**
+
+permissions:
+  contents: read
+  actions: read
+  id-token: write
+
+concurrency:
+  group: r4-part4-r2-sfdisk-runtime-compat
+  cancel-in-progress: false
+
+env:
+  SHIM: server/r4-master/compat/sfdisk
+  AUTH: mission-control/r4-part4-r2-sfdisk-runtime-compat/AUTHORIZATION-20261001.json
+
+jobs:
+  g23:
+    name: G23 independently validate runtime compatibility shim
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            server/r4-master/compat
+            mission-control/r4-part4-r2-sfdisk-runtime-compat
+          sparse-checkout-cone-mode: true
+      - name: Validate exact sudo-preserving shim
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$AUTH" "$SHIM" "$RUNNER_TEMP/g23/G23_SFDISK_RUNTIME_COMPAT.json" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,sys
+          ap,sp,out=map(pathlib.Path,sys.argv[1:4])
+          a=json.loads(ap.read_text())
+          s=sp.read_text()
+          checks={
+            "authorization":a.get("status")=="OWNER_AUTHORIZED",
+            "authority":a.get("authority")=="Louksna.md",
+            "fail_closed":a.get("failure_posture")=="FAIL_CLOSED",
+            "preserve_sudo":a.get("preserve_sudo") is True,
+            "real_absolute":'REAL="/usr/sbin/sfdisk"' in s,
+            "sudo_absolute":'SUDO="/usr/bin/sudo"' in s,
+            "noninteractive_sudo":'exec "$SUDO" -n "$REAL" "$@"' in s,
+            "root_no_double_sudo":'if [ "$(id -u)" -eq 0 ]' in s and 'exec "$REAL" "$@"' in s,
+            "no_disk_mutators":all(x not in s for x in ["parted","resize2fs","mkfs","wipefs","dd if=","sfdisk --delete"]),
+          }
+          ok=all(checks.values())
+          r={"schema":"LOUKSNA_R4_PART4_R2_SFDISK_RUNTIME_COMPAT_G23/1.0",
+             "status":"PASS" if ok else "HOLD","scope":"SFDISK_RUNTIME_RESOLUTION_ONLY",
+             "checks":checks,"shim_sha256":hashlib.sha256(sp.read_bytes()).hexdigest(),
+             "authorization_sha256":hashlib.sha256(ap.read_bytes()).hexdigest(),
+             "g24_allowed":ok,"repair_allowed":False,
+             "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          out.write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(3)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-sfdisk-runtime-compat-g23
+          path: ${{ runner.temp }}/g23/G23_SFDISK_RUNTIME_COMPAT.json
+          retention-days: 90
+          compression-level: 0
+
+  g24:
+    name: G24 certify runtime compatibility shim
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-sfdisk-runtime-compat-g23
+          path: ${{ runner.temp }}/g23
+      - name: Issue digest-bound certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/G23_SFDISK_RUNTIME_COMPAT.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$G")" = PASS
+          H="$(sha256sum "$G"|awk '{print $1}')"
+          AUD="louksna-r4-part4-r2-sfdisk-runtime-compat:$H"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export H AUD TOKEN
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$RUNNER_TEMP/g24/G24_SFDISK_RUNTIME_COMPAT.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          t=os.environ["TOKEN"]; parts=t.split("."); payload=parts[1]+"="*((4-len(parts[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload)); aud=claims.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          r={"schema":"LOUKSNA_R4_PART4_R2_SFDISK_RUNTIME_COMPAT_G24/1.0","status":"PASS",
+             "scope":"SFDISK_RUNTIME_RESOLUTION_ONLY","g23_sha256":os.environ["H"],
+             "authority_authenticated":True,
+             "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
+             "disk_mutation_certified":False,"sudo_preserved":True,
+             "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-sfdisk-runtime-compat-g24
+          path: ${{ runner.temp }}/g24/G24_SFDISK_RUNTIME_COMPAT.json
+          retention-days: 90
+          compression-level: 0
+
+  deploy:
+    name: Deploy, prove rollback, and restore certified shim on LOUKSNA
+    needs: g24
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: server/r4-master/compat
+          sparse-checkout-cone-mode: true
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-sfdisk-runtime-compat-g24
+          path: ${{ runner.temp }}/g24
+      - name: Deploy certified compatibility shim with demonstrated rollback
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          CERT="$RUNNER_TEMP/g24/G24_SFDISK_RUNTIME_COMPAT.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$CERT")" = PASS
+          test "$(hostname)" = LOUKSNA
+          sudo -n true
+          test -x /usr/sbin/sfdisk
+          SRC="$SHIM"
+          DST=/usr/local/bin/sfdisk
+          EXPECT="$(sha256sum "$SRC"|awk '{print $1}')"
+          if [ -e "$DST" ]; then
+            test "$(sha256sum "$DST"|awk '{print $1}')" = "$EXPECT" || { echo "HOLD:EXISTING_SFDISK_SHIM_COLLISION" >&2; exit 20; }
+          else
+            sudo -n install -o root -g root -m 0755 "$SRC" "$DST"
+          fi
+          test "$(sha256sum "$DST"|awk '{print $1}')" = "$EXPECT"
+          PATH="/usr/local/bin:/usr/bin:/bin" sfdisk --version
+          PATH="/usr/local/bin:/usr/bin:/bin" sfdisk --dump /dev/nvme0n1 > "$RUNNER_TEMP/SFDISK_COMPAT_DUMP_BEFORE_ROLLBACK.txt"
+          test -s "$RUNNER_TEMP/SFDISK_COMPAT_DUMP_BEFORE_ROLLBACK.txt"
+
+          sudo -n rm -f "$DST"
+          test ! -e "$DST"
+          sudo -n install -o root -g root -m 0755 "$SRC" "$DST"
+          test "$(sha256sum "$DST"|awk '{print $1}')" = "$EXPECT"
+          PATH="/usr/local/bin:/usr/bin:/bin" sfdisk --version
+          PATH="/usr/local/bin:/usr/bin:/bin" sfdisk --dump /dev/nvme0n1 > "$RUNNER_TEMP/SFDISK_COMPAT_DUMP_FINAL.txt"
+          test -s "$RUNNER_TEMP/SFDISK_COMPAT_DUMP_FINAL.txt"
+          stat -c '%U:%G %a %n' "$DST"
+          echo "ROLLBACK_PROOF=PASS"
+          echo "SFDISK_RUNTIME_COMPAT=ACTIVE"
