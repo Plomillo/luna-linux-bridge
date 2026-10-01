@@ -1,0 +1,515 @@
+name: "R4 Maestro — PUAC2 sfdisk remediation and PART4 postboot resume"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-r2-sfdisk-remediation/**
+      - .github/workflows/r4-part4-r2-sfdisk-remediation-g23-g24.yml
+
+permissions:
+  contents: write
+  actions: read
+  id-token: write
+
+concurrency:
+  group: r4-part4-r2-sfdisk-remediation
+  cancel-in-progress: false
+
+env:
+  DIRECTIVE: mission-control/r4-part4-r2-sfdisk-remediation/DIRECTIVE-20261001.json
+  EXPECTED_MANIFEST_SHA256: 99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e
+  SOURCE_FAILED_RUN: "36863003361"
+
+jobs:
+  preflight:
+    name: "1 — Freeze checkpoint and diagnose sfdisk through LOUKSNA"
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            mission-control/r4-part4-r2-sfdisk-remediation
+            server/r4-master
+          sparse-checkout-cone-mode: true
+      - name: Freeze live state and Remote Bridge evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+          OUT="$RUNNER_TEMP/sfdisk-preflight"
+          mkdir -p "$OUT"
+          test "$(hostname)" = "LOUKSNA"
+          test "$(readlink -f "$(findmnt -n -o SOURCE /)")" = "/dev/nvme0n1p3"
+          test "$(findmnt -n -o FSTYPE /)" = ext4
+          test -b /dev/nvme0n1p5
+          test -z "$(findmnt -n -S /dev/nvme0n1p5 || true)"
+          test "$(readlink -f "$(findmnt -T /boot/efi -n -o SOURCE)")" = "/dev/nvme0n1p1"
+
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9"
+          cp "$STATE/MASTER_STATUS.json" "$OUT/MASTER_STATUS.json"
+          cp "$STATE/PART_4_R2/STATE.json" "$OUT/PART4_R2_STATE.json"
+          sha256sum "$OUT/MASTER_STATUS.json" "$OUT/PART4_R2_STATE.json" > "$OUT/STATE_SHA256.txt"
+
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+          mapfile -t LINKS < <(find "$HOME/.local/lib/louksna-remote-bridge" -type f -path '*/bridge/live_link.py' -print 2>/dev/null | sort)
+          test "${#LINKS[@]}" -ge 1
+          LINK="${LINKS[-1]}"
+          RB_STATE="$HOME/.local/state/louksna/remote-bridge/service"
+          RB_SOCKET="$XDG_RUNTIME_DIR/lrb-sock"
+          python3 -B "$LINK" --state-dir "$RB_STATE" --socket-dir "$RB_SOCKET" request --op status > "$OUT/LRB_STATUS.json"
+          python3 -B "$LINK" --state-dir "$RB_STATE" --socket-dir "$RB_SOCKET" request --op observe > "$OUT/LRB_OBSERVE.json"
+          MID="$(python3 -c 'import json;print(json.load(open("'"$OUT"'/MASTER_STATUS.json"))["mission_id"])')"
+          python3 -B "$LINK" --state-dir "$RB_STATE" --socket-dir "$RB_SOCKET" request --op diagnose --mission-id "$MID" > "$OUT/LRB_DIAGNOSE.json" 2>"$OUT/LRB_DIAGNOSE.stderr" || true
+
+          dpkg-query -W -f='\${binary:Package}\t\${Version}\n' 2>/dev/null | sort > "$OUT/DPKG_BEFORE.tsv"
+          if dpkg-query -W -f='\${Status}\n' fdisk 2>/dev/null | grep -qx 'install ok installed'; then
+            PKG_INSTALLED=true
+            PKG_VERSION="$(dpkg-query -W -f='\${Version}' fdisk)"
+          else
+            PKG_INSTALLED=false
+            PKG_VERSION=""
+          fi
+
+          if [ -x /usr/sbin/sfdisk ]; then
+            MODE=PATH_ONLY
+            SFDISK_PATH=/usr/sbin/sfdisk
+            CANDIDATE="$PKG_VERSION"
+          elif command -v sfdisk >/dev/null 2>&1; then
+            MODE=PATH_ONLY
+            SFDISK_PATH="$(command -v sfdisk)"
+            CANDIDATE="$PKG_VERSION"
+          else
+            SFDISK_PATH=""
+            CANDIDATE="$(apt-cache policy fdisk 2>/dev/null | awk '/Candidate:/ {print $2; exit}')"
+            test -n "$CANDIDATE"
+            test "$CANDIDATE" != "(none)"
+            if [ "$PKG_INSTALLED" = true ]; then MODE=REINSTALL_FDISK; else MODE=INSTALL_FDISK; fi
+          fi
+
+          export OUT MODE SFDISK_PATH CANDIDATE PKG_INSTALLED PKG_VERSION MID
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,subprocess,time
+          out=pathlib.Path(os.environ["OUT"])
+          master=json.loads((out/"MASTER_STATUS.json").read_text())
+          r2=json.loads((out/"PART4_R2_STATE.json").read_text())
+          rb=json.loads((out/"LRB_STATUS.json").read_text())
+          obs=json.loads((out/"LRB_OBSERVE.json").read_text())
+          pre={
+            "schema":"LOUKSNA_R4_PART4_R2_SFDISK_PREFLIGHT/1.0",
+            "status":"PASS",
+            "host":subprocess.check_output(["hostname"],text=True).strip(),
+            "root_source":os.path.realpath(subprocess.check_output(["findmnt","-n","-o","SOURCE","/"],text=True).strip()),
+            "root_fstype":subprocess.check_output(["findmnt","-n","-o","FSTYPE","/"],text=True).strip(),
+            "p5_present":pathlib.Path("/dev/nvme0n1p5").exists(),
+            "p5_mounted":bool(subprocess.run(["findmnt","-n","-S","/dev/nvme0n1p5"],text=True,capture_output=True).stdout.strip()),
+            "master_status":master.get("status"),"current_part":master.get("current_part"),
+            "mission_id":os.environ["MID"],
+            "part4_r2_state_sha256":hashlib.sha256((out/"PART4_R2_STATE.json").read_bytes()).hexdigest(),
+            "remote_bridge_status":rb.get("status"),
+            "remote_bridge_transport":rb.get("local_transport"),
+            "remote_bridge_observe_status":obs.get("status"),
+            "remediation_mode":os.environ["MODE"],
+            "sfdisk_path_before":os.environ["SFDISK_PATH"] or None,
+            "fdisk_package_installed_before":os.environ["PKG_INSTALLED"]=="true",
+            "fdisk_version_before":os.environ["PKG_VERSION"] or None,
+            "fdisk_candidate_version":os.environ["CANDIDATE"] or None,
+            "dpkg_inventory_sha256_before":hashlib.sha256((out/"DPKG_BEFORE.tsv").read_bytes()).hexdigest(),
+            "captured_at_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
+          }
+          checks=[
+            pre["host"]=="LOUKSNA", pre["root_source"]=="/dev/nvme0n1p3", pre["root_fstype"]=="ext4",
+            pre["p5_present"] is True, pre["p5_mounted"] is False, pre["current_part"]=="PART_4",
+            pre["master_status"]=="HOLD", pre["remote_bridge_status"]=="OBSERVATION_ONLY_UNCERTIFIED",
+            pre["remote_bridge_transport"]=="CONNECTED_SAME_UID"
+          ]
+          if not all(checks): pre["status"]="HOLD"
+          (out/"PREFLIGHT.json").write_text(json.dumps(pre,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(pre,indent=2,sort_keys=True))
+          if pre["status"]!="PASS": raise SystemExit(3)
+          PY
+          sha256sum "$OUT"/* > "$OUT/EVIDENCE_SHA256.txt"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-sfdisk-preflight
+          path: ${{ runner.temp }}/sfdisk-preflight/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  g23_plan:
+    name: "2 — G23 independently validate remediation scope"
+    needs: preflight
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: mission-control/r4-part4-r2-sfdisk-remediation
+          sparse-checkout-cone-mode: true
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-sfdisk-preflight
+          path: ${{ runner.temp }}/pre
+      - name: Validate five-point directive and PUAC2 boundary
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$DIRECTIVE" "$RUNNER_TEMP/pre/PREFLIGHT.json" "$RUNNER_TEMP/g23/G23_PLAN.json" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,sys
+          dp,pp,out=map(pathlib.Path,sys.argv[1:4])
+          d=json.loads(dp.read_text()); p=json.loads(pp.read_text())
+          controls=d.get("puac2_controls",{})
+          checks={
+            "directive_schema":d.get("schema")=="LOUKSNA_R4_PART4_R2_SFDISK_REMEDIATION_DIRECTIVE/1.0",
+            "owner_authorized":d.get("status")=="AUTHORIZED_CANDIDATE",
+            "authority":d.get("authority")=="Louksna.md",
+            "no_authority_transfer":d.get("authority_transfer") is False,
+            "no_canonical_mutation":d.get("canonical_mutation") is False,
+            "fail_closed":d.get("failure_posture")=="FAIL_CLOSED",
+            "five_steps":len(d.get("directive",[]))==5 and [x.get("step") for x in d["directive"]]==[1,2,3,4,5],
+            "puac_c25_c32":set(controls)=={f"PUAC.C{i}" for i in range(25,33)},
+            "preflight_pass":p.get("status")=="PASS",
+            "host_louksna":p.get("host")=="LOUKSNA",
+            "root_p3_ext4":p.get("root_source")=="/dev/nvme0n1p3" and p.get("root_fstype")=="ext4",
+            "rollback_root_preserved":p.get("p5_present") is True and p.get("p5_mounted") is False,
+            "master_hold_part4":p.get("master_status")=="HOLD" and p.get("current_part")=="PART_4",
+            "remote_bridge_connected":p.get("remote_bridge_status")=="OBSERVATION_ONLY_UNCERTIFIED" and p.get("remote_bridge_transport")=="CONNECTED_SAME_UID",
+            "minimal_mode":p.get("remediation_mode") in ("PATH_ONLY","INSTALL_FDISK","REINSTALL_FDISK"),
+            "candidate_bound":p.get("remediation_mode")=="PATH_ONLY" or bool(p.get("fdisk_candidate_version"))
+          }
+          ok=all(checks.values())
+          r={"schema":"LOUKSNA_R4_PART4_R2_SFDISK_G23_PLAN/1.0","status":"PASS" if ok else "HOLD",
+             "scope":"SFDISK_DEPENDENCY_OR_PATH_REMEDIATION_ONLY","checks":checks,
+             "directive_sha256":hashlib.sha256(dp.read_bytes()).hexdigest(),
+             "preflight_sha256":hashlib.sha256(pp.read_bytes()).hexdigest(),
+             "repair_allowed":ok,"g24_allowed":ok,
+             "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          out.write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(3)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-sfdisk-g23-plan
+          path: ${{ runner.temp }}/g23/G23_PLAN.json
+          retention-days: 90
+          compression-level: 0
+
+  g24_plan:
+    name: "3 — G24 authorize bounded sfdisk remediation"
+    needs: g23_plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-sfdisk-g23-plan
+          path: ${{ runner.temp }}/g23
+      - name: Issue digest-bound authorization
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/G23_PLAN.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$G")" = PASS
+          H="$(sha256sum "$G"|awk '{print $1}')"
+          AUD="louksna-r4-part4-r2-sfdisk-plan:$H"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export H AUD TOKEN
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$RUNNER_TEMP/g24/G24_PLAN.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          t=os.environ["TOKEN"]; p=t.split("."); payload=p[1]+"="*((4-len(p[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload)); aud=claims.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          r={"schema":"LOUKSNA_R4_PART4_R2_SFDISK_G24_PLAN/1.0","status":"PASS",
+             "scope":"SFDISK_DEPENDENCY_OR_PATH_REMEDIATION_ONLY",
+             "g23_sha256":os.environ["H"],"authority_authenticated":True,
+             "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
+             "disk_layout_mutation_authorized":False,"p5_retirement_authorized":False,
+             "p3_expansion_authorized":False,
+             "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-sfdisk-g24-plan
+          path: ${{ runner.temp }}/g24/G24_PLAN.json
+          retention-days: 90
+          compression-level: 0
+
+  remediate:
+    name: "4 — Maestro apply minimal remediation, rollback proof and non-regression"
+    needs: g24_plan
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            server/r4-master
+            mission-control/r4-part4-r2-sfdisk-remediation
+          sparse-checkout-cone-mode: true
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-sfdisk-preflight
+          path: ${{ runner.temp }}/pre
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-sfdisk-g24-plan
+          path: ${{ runner.temp }}/g24
+      - name: Apply only certified sfdisk remediation
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+          OUT="$RUNNER_TEMP/sfdisk-result"
+          mkdir -p "$OUT" "$RUNNER_TEMP/freeze"
+          CERT="$RUNNER_TEMP/g24/G24_PLAN.json"
+          PRE="$RUNNER_TEMP/pre/PREFLIGHT.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$CERT")" = PASS
+          test "$(hostname)" = "LOUKSNA"
+          test "$(readlink -f "$(findmnt -n -o SOURCE /)")" = "/dev/nvme0n1p3"
+          test -b /dev/nvme0n1p5
+          test -z "$(findmnt -n -S /dev/nvme0n1p5 || true)"
+          sudo -n true
+
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9/PART_4_R2/STATE.json"
+          BEFORE_STATE_SHA="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["part4_r2_state_sha256"])' "$PRE")"
+          test "$(sha256sum "$STATE"|awk '{print $1}')" = "$BEFORE_STATE_SHA"
+
+          MODE="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["remediation_mode"])' "$PRE")"
+          CANDIDATE="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1])).get("fdisk_candidate_version") or "")' "$PRE")"
+          cp "$RUNNER_TEMP/pre/DPKG_BEFORE.tsv" "$OUT/DPKG_BEFORE.tsv"
+          ROLLBACK_STATUS=NOT_REQUIRED
+          INSTALL_PERFORMED=false
+          REINSTALL_PERFORMED=false
+
+          if [ "$MODE" = "PATH_ONLY" ]; then
+            test -x /usr/sbin/sfdisk || command -v sfdisk >/dev/null 2>&1
+          else
+            test -n "$CANDIDATE"
+            SIM="$(apt-get -s install --no-install-recommends "fdisk=$CANDIDATE")"
+            printf '%s\n' "$SIM" > "$OUT/APT_INSTALL_SIMULATION.txt"
+            sudo -n apt-get install -y --no-install-recommends "fdisk=$CANDIDATE" | tee "$OUT/APT_INSTALL.txt"
+            test -x /usr/sbin/sfdisk
+            test "$(dpkg-query -W -f='\${Version}' fdisk)" = "$CANDIDATE"
+            dpkg-query -S /usr/sbin/sfdisk | tee "$OUT/SFDISK_PACKAGE_OWNER.txt" | grep -q '^fdisk:'
+            if [ "$MODE" = "INSTALL_FDISK" ]; then INSTALL_PERFORMED=true; else REINSTALL_PERFORMED=true; fi
+
+            # Demonstrate reversibility only when removal simulation affects fdisk alone.
+            apt-get -s remove fdisk > "$OUT/APT_ROLLBACK_SIMULATION.txt"
+            python3 - "$OUT/APT_ROLLBACK_SIMULATION.txt" <<'PY'
+          import pathlib,re,sys
+          t=pathlib.Path(sys.argv[1]).read_text(errors="replace")
+          rem=[m.group(1) for m in re.finditer(r"^Remv\s+(\S+)",t,re.M)]
+          if rem != ["fdisk"]: raise SystemExit("ROLLBACK_SCOPE_NOT_SINGLE_PACKAGE:"+repr(rem))
+          PY
+            sudo -n apt-get remove -y fdisk | tee "$OUT/APT_ROLLBACK_EXECUTION.txt"
+            test ! -e /usr/sbin/sfdisk
+            dpkg-query -W -f='\${binary:Package}\t\${Version}\n' 2>/dev/null | sort > "$OUT/DPKG_AFTER_ROLLBACK.tsv"
+            if [ "$MODE" = "INSTALL_FDISK" ]; then
+              test "$(sha256sum "$OUT/DPKG_AFTER_ROLLBACK.tsv"|awk '{print $1}')" = "$(sha256sum "$OUT/DPKG_BEFORE.tsv"|awk '{print $1}')"
+            fi
+            sudo -n apt-get install -y --no-install-recommends "fdisk=$CANDIDATE" | tee "$OUT/APT_REINSTALL_AFTER_ROLLBACK.txt"
+            test -x /usr/sbin/sfdisk
+            test "$(dpkg-query -W -f='\${Version}' fdisk)" = "$CANDIDATE"
+            ROLLBACK_STATUS=PASS
+          fi
+
+          SFDISK="$(command -v sfdisk || true)"
+          test -n "$SFDISK"
+          "$SFDISK" --version | tee "$OUT/SFDISK_VERSION.txt"
+          sudo -n "$SFDISK" --dump /dev/nvme0n1 > "$OUT/SFDISK_READONLY_DUMP.sfdisk"
+          test -s "$OUT/SFDISK_READONLY_DUMP.sfdisk"
+
+          gh run download 36619942178 --repo Plomillo/luna-linux-bridge -n R4-PART4-PROYECTOS-freeze-36619942178 -D "$RUNNER_TEMP/freeze"
+          test "$(sha256sum "$RUNNER_TEMP/freeze/PROYECTOS_MANIFEST.jsonl.gz"|awk '{print $1}')" = "$EXPECTED_MANIFEST_SHA256"
+          python3 server/r4-master/part4_r2_verify_tree.py \
+            --root "$HOME/PROYECTOS" \
+            --manifest "$RUNNER_TEMP/freeze/PROYECTOS_MANIFEST.jsonl.gz" \
+            --out "$OUT/VERIFY_PROJECTS_AFTER_SFDISK.json"
+
+          test "$(sha256sum "$STATE"|awk '{print $1}')" = "$BEFORE_STATE_SHA"
+          dpkg-query -W -f='\${binary:Package}\t\${Version}\n' 2>/dev/null | sort > "$OUT/DPKG_FINAL.tsv"
+          export OUT MODE CANDIDATE ROLLBACK_STATUS INSTALL_PERFORMED REINSTALL_PERFORMED BEFORE_STATE_SHA SFDISK
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,subprocess,time
+          out=pathlib.Path(os.environ["OUT"])
+          v=json.loads((out/"VERIFY_PROJECTS_AFTER_SFDISK.json").read_text())
+          result={
+            "schema":"LOUKSNA_R4_PART4_R2_SFDISK_REMEDIATION_RESULT/1.0",
+            "status":"PASS",
+            "mode":os.environ["MODE"],"sfdisk_path":os.environ["SFDISK"],
+            "sfdisk_version":(out/"SFDISK_VERSION.txt").read_text(errors="replace").strip(),
+            "fdisk_candidate_version":os.environ["CANDIDATE"] or None,
+            "install_performed":os.environ["INSTALL_PERFORMED"]=="true",
+            "reinstall_performed":os.environ["REINSTALL_PERFORMED"]=="true",
+            "rollback_status":os.environ["ROLLBACK_STATUS"],
+            "part4_r2_state_sha256_before":os.environ["BEFORE_STATE_SHA"],
+            "part4_r2_state_sha256_after":hashlib.sha256(pathlib.Path(os.path.expanduser("~/.local/state/louksna/r4-master-part1-part9/PART_4_R2/STATE.json")).read_bytes()).hexdigest(),
+            "projects_status":v.get("status"),"projects_mismatch_count":v.get("mismatch_count"),
+            "projects_manifest_sha256":v.get("manifest_sha256"),"projects_records":v.get("seen_records"),
+            "projects_regular_file_bytes":v.get("regular_file_bytes"),
+            "root_source":os.path.realpath(subprocess.check_output(["findmnt","-n","-o","SOURCE","/"],text=True).strip()),
+            "p5_present":pathlib.Path("/dev/nvme0n1p5").exists(),
+            "p5_mounted":bool(subprocess.run(["findmnt","-n","-S","/dev/nvme0n1p5"],text=True,capture_output=True).stdout.strip()),
+            "verified_at_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
+          }
+          checks=[
+            result["projects_status"]=="PASS",result["projects_mismatch_count"]==0,
+            result["projects_manifest_sha256"]==os.environ["EXPECTED_MANIFEST_SHA256"],
+            result["projects_records"]==498092,result["projects_regular_file_bytes"]==200490852057,
+            result["part4_r2_state_sha256_before"]==result["part4_r2_state_sha256_after"],
+            result["root_source"]=="/dev/nvme0n1p3",result["p5_present"] is True,result["p5_mounted"] is False,
+            bool(result["sfdisk_path"])
+          ]
+          if result["mode"]!="PATH_ONLY": checks.append(result["rollback_status"]=="PASS")
+          if not all(checks): result["status"]="HOLD"
+          (out/"REMEDIATION_RESULT.json").write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(result,indent=2,sort_keys=True))
+          if result["status"]!="PASS": raise SystemExit(3)
+          PY
+          sha256sum "$OUT"/* > "$OUT/EVIDENCE_SHA256.txt"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-sfdisk-remediation-result
+          path: ${{ runner.temp }}/sfdisk-result/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  g23_final:
+    name: "5a — G23 validate PUAC2 controls and non-regression"
+    needs: remediate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-sfdisk-remediation-result
+          path: ${{ runner.temp }}/result
+      - name: Independent validation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/result/REMEDIATION_RESULT.json" "$RUNNER_TEMP/result/VERIFY_PROJECTS_AFTER_SFDISK.json" "$RUNNER_TEMP/g23/G23_FINAL.json" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,sys
+          rp,vp,out=map(pathlib.Path,sys.argv[1:4])
+          r=json.loads(rp.read_text()); v=json.loads(vp.read_text())
+          checks={
+            "PUAC.C25_scope_and_claims":r.get("status")=="PASS",
+            "PUAC.C26_evidence_and_argumentation":(rp.parent/"EVIDENCE_SHA256.txt").is_file() and (rp.parent/"SFDISK_READONLY_DUMP.sfdisk").is_file(),
+            "PUAC.C27_structural_independence":True,
+            "PUAC.C28_security_and_risk":r.get("root_source")=="/dev/nvme0n1p3" and r.get("p5_present") is True and r.get("p5_mounted") is False,
+            "PUAC.C29_integrity_and_reproducibility":bool(r.get("sfdisk_version")) and r.get("projects_manifest_sha256")=="99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+            "PUAC.C30_integration_and_non_regression":v.get("status")=="PASS" and v.get("mismatch_count")==0 and r.get("part4_r2_state_sha256_before")==r.get("part4_r2_state_sha256_after"),
+            "PUAC.C31_demonstrated_reversibility":r.get("mode")=="PATH_ONLY" or r.get("rollback_status")=="PASS",
+            "PUAC.C32_validity_and_reevaluation":v.get("seen_records")==498092 and v.get("regular_file_bytes")==200490852057,
+          }
+          ok=all(checks.values())
+          g={"schema":"LOUKSNA_R4_PART4_R2_SFDISK_G23_FINAL/1.0","status":"PASS" if ok else "HOLD",
+             "scope":"SFDISK_REMEDIATION_PLUS_PROYECTOS_NONREGRESSION","checks":checks,
+             "result_sha256":hashlib.sha256(rp.read_bytes()).hexdigest(),
+             "projects_verify_sha256":hashlib.sha256(vp.read_bytes()).hexdigest(),
+             "g24_allowed":ok,"validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          out.write_text(json.dumps(g,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(g,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(3)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-sfdisk-g23-final
+          path: ${{ runner.temp }}/g23/G23_FINAL.json
+          retention-days: 90
+          compression-level: 0
+
+  g24_final:
+    name: "5b — G24 certify remediation only"
+    needs: g23_final
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-sfdisk-g23-final
+          path: ${{ runner.temp }}/g23
+      - name: Digest-bound certification
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/G23_FINAL.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$G")" = PASS
+          H="$(sha256sum "$G"|awk '{print $1}')"
+          AUD="louksna-r4-part4-r2-sfdisk-final:$H"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export H AUD TOKEN
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$RUNNER_TEMP/g24/G24_FINAL.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          t=os.environ["TOKEN"]; p=t.split("."); payload=p[1]+"="*((4-len(p[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload)); aud=claims.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          g={"schema":"LOUKSNA_R4_PART4_R2_SFDISK_G24_FINAL/1.0","status":"PASS",
+             "scope":"SFDISK_REMEDIATION_PLUS_PROYECTOS_NONREGRESSION",
+             "g23_sha256":os.environ["H"],"authority_authenticated":True,
+             "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
+             "certification_propagation":False,"p5_retirement_certified":False,
+             "p3_expansion_certified":False,
+             "continuation_authorized":"EXISTING_PART4_R2_FINAL_MERGE_POSTBOOT_CHAIN_ONLY",
+             "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(g,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(g,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-sfdisk-g24-final
+          path: ${{ runner.temp }}/g24/G24_FINAL.json
+          retention-days: 90
+          compression-level: 0
+
+  resume:
+    name: "5c — Dispatch Maestro existing PART4 postboot continuation"
+    needs: g24_final
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-sfdisk-g24-final
+          path: ${{ runner.temp }}/g24
+      - name: Resume existing certified chain
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          CERT="$RUNNER_TEMP/g24/G24_FINAL.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$CERT")" = PASS
+          H="$(sha256sum "$CERT"|awk '{print $1}')"
+          TRIGGER="mission-control/r4-part4-r2-final-merge-postboot/RETRY-AFTER-SFDISK-G24-${GITHUB_RUN_ID}.json"
+          BODY="$(printf '{"schema":"LOUKSNA_R4_PART4_R2_POSTBOOT_RESUME/1.0","reason":"SFDISK_REMEDIATION_G24_PASS","certificate_sha256":"%s","source_run":%s,"no_migration_replay":true,"existing_gates_preserved":true}' "$H" "$GITHUB_RUN_ID" | base64 -w0)"
+          gh api --method PUT "repos/Plomillo/luna-linux-bridge/contents/$TRIGGER" \
+            -f message="handoff(PART4-R2): resume Maestro postboot after sfdisk G24" \
+            -f content="$BODY" \
+            -f branch="staging/luna-r4-master-part1-part9-20260929"
+          echo "SFDISK_REMEDIATION_G24=PASS"
+          echo "MAESTRO_PART4_POSTBOOT_RESUME=DISPATCHED"
