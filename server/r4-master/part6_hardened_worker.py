@@ -247,19 +247,36 @@ def build_proton_from_official_source(actions):
             PROTON_REPO_URL,str(src)
         ],timeout=3600,check=True))
     else:
-        actions.append(run(["git","-C",str(src),"fetch","--depth","1","origin","tag",PROTON_RELEASE],timeout=1800,check=False))
+        current=run(["git","-C",str(src),"rev-parse","HEAD"],timeout=30)
+        current_head=current["stdout"].strip() if current["returncode"]==0 else ""
+        local_commit=run(["git","-C",str(src),"cat-file","-e",PROTON_COMMIT+"^{commit}"],timeout=30)
+        if current_head==PROTON_COMMIT:
+            actions.append({"operation":"REUSE_PROTON_SOURCE_COMMIT","path":str(src),"commit":PROTON_COMMIT,"network":False})
+        elif local_commit["returncode"]==0:
+            actions.append(run(["git","-C",str(src),"checkout","--detach",PROTON_COMMIT],timeout=180,check=True))
+        else:
+            actions.append(run(["git","-C",str(src),"fetch","--depth","1","origin","tag",PROTON_RELEASE],timeout=1800,check=True))
+            actions.append(run(["git","-C",str(src),"checkout","--detach",PROTON_COMMIT],timeout=180,check=True))
 
-    actions.append(run(["git","-C",str(src),"checkout","--detach",PROTON_COMMIT],timeout=180,check=True))
     head=run(["git","-C",str(src),"rev-parse","HEAD"],timeout=30,check=True)["stdout"].strip()
     if head!=PROTON_COMMIT:
         raise RuntimeError("PROTON_SOURCE_COMMIT_MISMATCH:"+head)
 
-    sub=run(["git","-C",str(src),"submodule","update","--init","--recursive","--depth","1"],timeout=7200)
-    actions.append(sub)
-    if sub["returncode"]!=0:
-        actions.append(run(["git","-C",str(src),"submodule","update","--init","--recursive"],timeout=7200,check=True))
-
-    substatus=run(["git","-C",str(src),"submodule","status","--recursive"],timeout=300,check=True)
+    substatus_pre=run(["git","-C",str(src),"submodule","status","--recursive"],timeout=300)
+    submodules_ready=(
+        substatus_pre["returncode"]==0
+        and bool(substatus_pre["stdout"].strip())
+        and all(line[:1]==" " for line in substatus_pre["stdout"].splitlines() if line.strip())
+    )
+    if submodules_ready:
+        actions.append({"operation":"REUSE_PROTON_SUBMODULES","path":str(src),"network":False})
+        substatus=substatus_pre
+    else:
+        sub=run(["git","-C",str(src),"submodule","update","--init","--recursive","--depth","1"],timeout=7200)
+        actions.append(sub)
+        if sub["returncode"]!=0:
+            actions.append(run(["git","-C",str(src),"submodule","update","--init","--recursive"],timeout=7200,check=True))
+        substatus=run(["git","-C",str(src),"submodule","status","--recursive"],timeout=300,check=True)
     substatus_path=D/"PROTON_SUBMODULE_STATUS.txt"
     substatus_path.write_text(substatus["stdout"],encoding="utf-8")
 
@@ -319,7 +336,7 @@ def main():
         return 0
 
     last_fail=read_json(D/"LAST_FAILURE.json",{}) or {}
-    if last_fail.get("worker_version")=="2.2" and last_fail.get("recorded_epoch"):
+    if last_fail.get("worker_version")=="2.3" and last_fail.get("recorded_epoch"):
         if time.time()-float(last_fail["recorded_epoch"]) < 600:
             print("PART6_BACKOFF_ACTIVE")
             return 23
@@ -339,9 +356,13 @@ def main():
         if "i386" not in archs:
             actions.append(run(["sudo","-n","/usr/bin/dpkg","--add-architecture","i386"],timeout=60,check=True))
         env=dict(os.environ); env["DEBIAN_FRONTEND"]="noninteractive"
-        actions.append(run(["sudo","-n","/usr/bin/apt-get","update"],timeout=900,check=True,env=env))
         base_pkgs=["wine","wine64","wine32:i386","flatpak","curl","ca-certificates","libc6:i386","libstdc++6:i386","libgcc-s1:i386","libgl1-mesa-dri:i386"]
-        actions.append(apt_install(base_pkgs,timeout=2400))
+        missing_base=[p for p in base_pkgs if not pkg_version(p)]
+        if missing_base:
+            actions.append(run(["sudo","-n","/usr/bin/apt-get","update"],timeout=900,check=True,env=env))
+            actions.append(apt_install(missing_base,timeout=2400))
+        else:
+            actions.append({"operation":"REUSE_BASE_PACKAGES","packages":base_pkgs,"network":False,"reinstall":False})
 
         steam_deb=SOURCES/"steam_latest.deb"
         if not steam_deb.is_file() or sha(steam_deb)!=STEAM_DEB_SHA256:
@@ -548,7 +569,7 @@ def main():
             "filesystem_format_or_resize_performed":False,
             "unrelated_user_data_deleted":False,
             "certification_propagated":False,
-            "worker_version":"2.2",
+            "worker_version":"2.3",
             "recorded_at_utc":utc(),
         }
         atomic_json(candidate,candidate_obj)
