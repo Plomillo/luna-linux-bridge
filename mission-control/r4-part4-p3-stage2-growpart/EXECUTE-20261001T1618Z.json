@@ -1,0 +1,7 @@
+{
+  "schema": "R4_STAGE2_GROWPART_DISPATCH/1.0",
+  "scope": "INSTALL_GROWPART_CAPABILITY_ONLY",
+  "contract": "PART4-P3-GROWTH-HARDENED-ANTI-PARALYSIS-20261001",
+  "disk_geometry_mutation": false,
+  "filesystem_mutation": false
+}
