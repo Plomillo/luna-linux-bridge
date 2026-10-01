@@ -26,20 +26,24 @@ jobs:
 
           PID="$(systemctl --user show luna-r4-master-part1-part9.service -p MainPID --value)"
           echo "MAINPID=$PID"
-          test "$PID" -gt 0
           echo "=== SERVICE ==="
-          systemctl --user show luna-r4-master-part1-part9.service -p ActiveState -p SubState -p Result -p MainPID -p NRestarts
+          systemctl --user show luna-r4-master-part1-part9.service -p ActiveState -p SubState -p Result -p ExecMainStatus -p MainPID -p NRestarts
 
-          echo "=== MAIN CMDLINE ==="
-          tr '\0' ' ' < "/proc/$PID/cmdline"; echo
-          echo "=== MAIN STATUS ==="
-          grep -E '^(Name|State|Pid|PPid|Threads|VmRSS):' "/proc/$PID/status" || true
-          echo "=== MAIN WCHAN ==="
-          cat "/proc/$PID/wchan" || true
-          echo
+          if [ "$PID" -gt 0 ] && [ -r "/proc/$PID/status" ]; then
+            echo "=== MAIN CMDLINE ==="
+            tr '\0' ' ' < "/proc/$PID/cmdline"; echo
+            echo "=== MAIN STATUS ==="
+            grep -E '^(Name|State|Pid|PPid|Threads|VmRSS):' "/proc/$PID/status" || true
+            echo "=== MAIN WCHAN ==="
+            cat "/proc/$PID/wchan" || true
+            echo
+            CHILDREN="$(cat "/proc/$PID/task/$PID/children" 2>/dev/null || true)"
+          else
+            echo "=== MAIN PROCESS ABSENT ==="
+            CHILDREN=""
+          fi
 
           echo "=== CHILDREN ==="
-          CHILDREN="$(cat "/proc/$PID/task/$PID/children" 2>/dev/null || true)"
           echo "$CHILDREN"
           for C in $CHILDREN; do
             echo "--- CHILD $C ---"
