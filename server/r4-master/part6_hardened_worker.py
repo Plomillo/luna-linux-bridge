@@ -17,6 +17,9 @@ STEAMCMD_URL="https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.ta
 STEAMCMD_SHA256="cebf0046bfd08cf45da6bc094ae47aa39ebf4155e5ede41373b579b8f1071e7c"
 PROTON_RELEASE="proton-11.0-2"
 PROTON_APP_ID=4628710
+PROTON_REPO_URL="https://github.com/ValveSoftware/Proton.git"
+PROTON_COMMIT="db9e6ffbf24a95b104fb699dd62532c70a2f9a51"
+PROTON_BUILD_NAME="louksna-proton-11.0-2"
 LUTRIS_URL="https://github.com/lutris/lutris/releases/download/v0.5.22/lutris_0.5.22_all.deb"
 LUTRIS_SHA256="88a350357e0438b423cdf93108f27942de094dc19f973df73839f3b0b0bafaa0"
 PRISM_URL="https://github.com/PrismLauncher/PrismLauncher/releases/download/11.1.1/PrismLauncher-Linux-x86_64.AppImage"
@@ -116,7 +119,7 @@ def checkpoint():
         return read_json(p,{}) or {}
     archs=run(["dpkg","--print-foreign-architectures"],timeout=30)["stdout"].split()
     packages=["wine","wine64","wine32:i386","flatpak","steam-launcher","lutris","waydroid","curl","ca-certificates",
-              "libc6:i386","libstdc++6:i386","libgcc-s1:i386","libgl1-mesa-dri:i386"]
+              "libc6:i386","libstdc++6:i386","libgcc-s1:i386","libgl1-mesa-dri:i386","podman"]
     cp={
         "schema":"LOUKSNA_R4_PART6_ROLLBACK_CHECKPOINT/1.0",
         "created_at_utc":utc(),
@@ -139,8 +142,6 @@ def checkpoint():
 
 def write_rollback(cp):
     p=D/"ROLLBACK.sh"
-    if p.is_file():
-        return p
     lines=[
         "#!/usr/bin/env bash",
         "set -Eeuo pipefail",
@@ -150,13 +151,16 @@ def write_rollback(cp):
     preapps=set(cp.get("flatpak_apps",[]))
     if BOTTLES_APP not in preapps:
         lines.append("flatpak --user uninstall -y com.usebottles.bottles || true")
-    for pkg in ["waydroid","lutris","steam-launcher","wine32:i386","wine64","wine","flatpak"]:
+    for pkg in ["podman","waydroid","lutris","steam-launcher","wine32:i386","wine64","wine","flatpak"]:
         if not cp.get("packages",{}).get(pkg):
             lines.append("sudo -n /usr/bin/apt-get remove -y "+pkg+" || true")
     if "i386" not in cp.get("foreign_architectures",[]):
         lines.append("sudo -n /usr/bin/dpkg --remove-architecture i386 || true")
     if not cp.get("paths",{}).get("prism_link"):
         lines.append("rm -f "+str(BIN/"prismlauncher"))
+    # These exact governed Proton paths were absent in the certified PART6 discovery.
+    lines.append("rm -rf "+str(COMPONENTS/"Proton-11.0"))
+    lines.append("rm -rf "+str(COMPONENTS/"Proton-source-11.0-2"))
     if not cp.get("paths",{}).get("components"):
         lines.append("rm -rf "+str(COMPONENTS))
     if not cp.get("paths",{}).get("waydroid_source_list"):
@@ -202,6 +206,93 @@ def safe_test(argv,timeout=120,env=None):
     except Exception as e:
         return {"argv":[str(x) for x in argv],"returncode":999,"stdout":"","stderr":type(e).__name__+":"+str(e)}
 
+def run_logged(argv,log_path,timeout,cwd=None,env=None):
+    log_path=pathlib.Path(log_path); log_path.parent.mkdir(parents=True,exist_ok=True)
+    started=utc()
+    with log_path.open("w",encoding="utf-8",errors="replace") as f:
+        p=subprocess.run(argv,text=True,stdout=f,stderr=subprocess.STDOUT,timeout=timeout,cwd=cwd,env=env)
+    raw=log_path.read_bytes()
+    tail=raw[-12000:].decode("utf-8","replace")
+    rec={
+        "argv":[str(x) for x in argv],
+        "returncode":p.returncode,
+        "stdout_tail":tail,
+        "stderr":"",
+        "log_path":str(log_path),
+        "log_sha256":sha(log_path),
+        "log_bytes":log_path.stat().st_size,
+        "started_at_utc":started,
+        "ended_at_utc":utc(),
+    }
+    if p.returncode:
+        raise RuntimeError("COMMAND_FAILED_LOGGED:"+json.dumps(rec,ensure_ascii=False))
+    return rec
+
+def build_proton_from_official_source(actions):
+    if not command("podman"):
+        actions.append(apt_install(["podman"],timeout=2400))
+    pinfo=run(["podman","info","--format","json"],timeout=180)
+    if pinfo["returncode"]!=0:
+        raise RuntimeError("PODMAN_ROOTLESS_UNAVAILABLE:"+pinfo.get("stderr","")[-4000:])
+
+    src=COMPONENTS/"Proton-source-11.0-2"
+    if src.exists() and not (src/".git").is_dir():
+        quarantine=src.with_name(src.name+".incomplete-"+dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ"))
+        src.rename(quarantine)
+        actions.append({"operation":"QUARANTINE_INCOMPLETE_PROTON_SOURCE","from":str(src),"to":str(quarantine)})
+
+    if not (src/".git").is_dir():
+        actions.append(run([
+            "git","clone","--branch",PROTON_RELEASE,"--depth","1",
+            PROTON_REPO_URL,str(src)
+        ],timeout=3600,check=True))
+    else:
+        actions.append(run(["git","-C",str(src),"fetch","--depth","1","origin","tag",PROTON_RELEASE],timeout=1800,check=False))
+
+    actions.append(run(["git","-C",str(src),"checkout","--detach",PROTON_COMMIT],timeout=180,check=True))
+    head=run(["git","-C",str(src),"rev-parse","HEAD"],timeout=30,check=True)["stdout"].strip()
+    if head!=PROTON_COMMIT:
+        raise RuntimeError("PROTON_SOURCE_COMMIT_MISMATCH:"+head)
+
+    sub=run(["git","-C",str(src),"submodule","update","--init","--recursive","--depth","1"],timeout=7200)
+    actions.append(sub)
+    if sub["returncode"]!=0:
+        actions.append(run(["git","-C",str(src),"submodule","update","--init","--recursive"],timeout=7200,check=True))
+
+    substatus=run(["git","-C",str(src),"submodule","status","--recursive"],timeout=300,check=True)
+    substatus_path=D/"PROTON_SUBMODULE_STATUS.txt"
+    substatus_path.write_text(substatus["stdout"],encoding="utf-8")
+
+    redist=src/"build"/PROTON_BUILD_NAME
+    runtime_wine=redist/"files/bin/wine64"
+    launcher=redist/"proton"
+    if not launcher.is_file() or not runtime_wine.is_file():
+        env=dict(os.environ)
+        env["MAKEFLAGS"]="-j2"
+        build_log=D/"PROTON_BUILD.log"
+        actions.append(run_logged(
+            ["make",f"build_name={PROTON_BUILD_NAME}","enable_ccache=0","redist"],
+            build_log,timeout=14400,cwd=str(src),env=env
+        ))
+    if not launcher.is_file():
+        raise RuntimeError("PROTON_SOURCE_BUILD_LAUNCHER_MISSING:"+str(launcher))
+    if not runtime_wine.is_file() and not (redist/"files/bin/wine").is_file():
+        raise RuntimeError("PROTON_SOURCE_BUILD_WINE_MISSING:"+str(redist))
+
+    meta={
+        "source":"VALVE_OFFICIAL_SOURCE_BUILD",
+        "release_tag":PROTON_RELEASE,
+        "source_commit":head,
+        "source_repository":PROTON_REPO_URL,
+        "submodule_status_sha256":sha(substatus_path),
+        "build_name":PROTON_BUILD_NAME,
+        "build_engine":"podman-rootless",
+        "build_jobs":2,
+        "steam_app_id":PROTON_APP_ID,
+        "steamcmd_no_subscription_fallback":True,
+    }
+    return redist,meta
+
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--mission-id",required=True)
@@ -228,7 +319,7 @@ def main():
         return 0
 
     last_fail=read_json(D/"LAST_FAILURE.json",{}) or {}
-    if last_fail.get("worker_version")=="2.1" and last_fail.get("recorded_epoch"):
+    if last_fail.get("worker_version")=="2.2" and last_fail.get("recorded_epoch"):
         if time.time()-float(last_fail["recorded_epoch"]) < 600:
             print("PART6_BACKOFF_ACTIVE")
             return 23
@@ -318,13 +409,33 @@ def main():
         proton_dir.mkdir(parents=True,exist_ok=True)
         proton_launcher=proton_dir/"proton"
         proton_wine=proton_dir/"files/bin/wine64"
+        proton_provenance={
+            "source":"VALVE_STEAM_DEPOT",
+            "steam_app_id":PROTON_APP_ID,
+            "release_tag":PROTON_RELEASE,
+            "release_reference":"https://github.com/ValveSoftware/Proton/releases/tag/"+PROTON_RELEASE,
+            "steamcmd_url":STEAMCMD_URL,
+            "steamcmd_archive_sha256":sha(steamcmd_tar),
+        }
         if not proton_launcher.is_file() or not proton_wine.is_file():
-            actions.append(run([str(steamcmd),
-                "+@sSteamCmdForcePlatformType","linux",
-                "+force_install_dir",str(proton_dir),
-                "+login","anonymous",
-                "+app_update",str(PROTON_APP_ID),"validate",
-                "+quit"],timeout=3600,check=True))
+            known_no_subscription="No subscription" in json.dumps(last_fail,ensure_ascii=False)
+            steam_attempt=None
+            if not known_no_subscription:
+                steam_attempt=run([str(steamcmd),
+                    "+@sSteamCmdForcePlatformType","linux",
+                    "+force_install_dir",str(proton_dir),
+                    "+login","anonymous",
+                    "+app_update",str(PROTON_APP_ID),"validate",
+                    "+quit"],timeout=3600)
+                actions.append(steam_attempt)
+            if known_no_subscription or (steam_attempt and steam_attempt["returncode"]!=0):
+                combined="" if steam_attempt is None else steam_attempt.get("stdout","")+"\n"+steam_attempt.get("stderr","")
+                if known_no_subscription or "No subscription" in combined:
+                    proton_dir,proton_provenance=build_proton_from_official_source(actions)
+                    proton_launcher=proton_dir/"proton"
+                    proton_wine=proton_dir/"files/bin/wine64"
+                else:
+                    raise RuntimeError("PROTON_STEAMCMD_FAILED:"+json.dumps(steam_attempt,ensure_ascii=False))
 
         tests={}
         tests["wine"]=safe_test(["wine","--version"],timeout=60)
@@ -378,9 +489,7 @@ def main():
             "proton":{
                 "status":"PASS" if functional["proton"] else "HOLD","functional_test_pass":functional["proton"],"version":proton_version,
                 "runtime_path":str(proton_dir),"runtime_wine":str(proton_wine),"test":tests["proton"],
-                "provenance":{"source":"VALVE_STEAM_DEPOT","steam_app_id":PROTON_APP_ID,"release_tag":PROTON_RELEASE,
-                "release_reference":"https://github.com/ValveSoftware/Proton/releases/tag/"+PROTON_RELEASE,
-                "steamcmd_url":STEAMCMD_URL,"steamcmd_archive_sha256":sha(steamcmd_tar)}},
+                "provenance":proton_provenance},
             "bottles":{
                 "status":"PASS" if functional["bottles"] else "HOLD","functional_test_pass":functional["bottles"],
                 "version":tests["bottles"].get("stdout","").strip() or bottles_commit,"flatpak_commit":bottles_commit,"test":tests["bottles"],
@@ -439,12 +548,12 @@ def main():
             "filesystem_format_or_resize_performed":False,
             "unrelated_user_data_deleted":False,
             "certification_propagated":False,
-            "worker_version":"2.1",
+            "worker_version":"2.2",
             "recorded_at_utc":utc(),
         }
         atomic_json(candidate,candidate_obj)
         if status!="PASS":
-            atomic_json(D/"LAST_FAILURE.json",{"schema":"LOUKSNA_R4_PART6_WORKER_FAILURE/1.0","worker_version":"2.1",
+            atomic_json(D/"LAST_FAILURE.json",{"schema":"LOUKSNA_R4_PART6_WORKER_FAILURE/1.0","worker_version":"2.2",
                 "recorded_epoch":time.time(),"recorded_at_utc":utc(),"reason":"FUNCTIONAL_OR_INVARIANT_GATE_FAILED",
                 "candidate_sha256":sha(candidate),"checks":checks,"functional":functional})
             print(json.dumps(candidate_obj,indent=2,sort_keys=True))
@@ -456,7 +565,7 @@ def main():
         return 0
 
     except Exception as e:
-        rec={"schema":"LOUKSNA_R4_PART6_WORKER_FAILURE/1.0","worker_version":"2.1","recorded_epoch":time.time(),
+        rec={"schema":"LOUKSNA_R4_PART6_WORKER_FAILURE/1.0","worker_version":"2.2","recorded_epoch":time.time(),
              "recorded_at_utc":utc(),"error":type(e).__name__+":"+str(e),"actions_tail":actions[-5:],
              "rollback_checkpoint_path":str(D/"ROLLBACK_CHECKPOINT.json"),"rollback_script_path":str(rollback)}
         atomic_json(D/"LAST_FAILURE.json",rec)
