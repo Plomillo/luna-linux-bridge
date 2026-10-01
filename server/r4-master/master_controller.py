@@ -996,8 +996,72 @@ def part4_hardened_progress(mid):
             "mutation_performed":False,
         },10,"DIAGNOSE_STAGE10_PROYECTOS")
 
-    # Stages 11-12 remain exact-scope gated until fresh filesystem and final
-    # certification handlers are materialized.
+    # Stage 11: consume the independently certified, filesystem-only ext4
+    # transaction result. This handler never executes resize2fs itself and
+    # therefore cannot replay the consequential mutation.
+    if stage==11:
+        result=PART4_P3_EXEC_DIR/"STAGE11_RESULT.json"
+        g23p=PART4_P3_EXEC_DIR/"STAGE11_G23.json"
+        g24p=PART4_P3_EXEC_DIR/"STAGE11_G24.json"
+        if not result.is_file() or not g23p.is_file() or not g24p.is_file():
+            return record(11,"AWAITING_EXT4_RESULT",{
+                "stage11_result_present":result.is_file(),
+                "stage11_g23_present":g23p.is_file(),
+                "stage11_g24_present":g24p.is_file(),
+                "mutation_performed":False,
+            },11,"COMPLETE_STAGE11_CERTIFIED_EXT4_TRANSACTION")
+        q=read_json(result,{}) or {}
+        g23=read_json(g23p,{}) or {}
+        g24=read_json(g24p,{}) or {}
+        checks={
+            "status":q.get("status")=="PASS",
+            "scope":q.get("scope")=="ONE_ONLINE_EXT4_GROW_ONLY",
+            "result_checks":all(q.get("checks",{}).values()),
+            "one_resize":int(q.get("resize2fs_attempts_performed",0))==1,
+            "filesystem_mutated":q.get("filesystem_mutation_performed") is True,
+            "no_geometry_mutation":q.get("disk_geometry_mutation_performed") is False,
+            "no_partition_mutation":q.get("partition_table_mutation_performed") is False,
+            "no_format":q.get("format_performed") is False,
+            "no_shrink":q.get("shrink_performed") is False,
+            "no_reboot":q.get("reboot_performed") is False,
+            "filesystem_grew":int(q.get("filesystem_bytes_after",0))>int(q.get("filesystem_bytes_before",0)),
+            "device_bound":0 <= int(q.get("block_device_bytes",0))-int(q.get("filesystem_bytes_after",0)) < 4096,
+            "proyectos_records":int(q.get("post_proyectos_records",-1))==498092,
+            "proyectos_mismatch_zero":int(q.get("post_proyectos_mismatch_count",-1))==0,
+            "g23_hash_bound":q.get("g23_sha256")==sha(g23p),
+            "g24_hash_bound":q.get("g24_sha256")==sha(g24p),
+            "g23_pass":g23.get("status")=="PASS" and g23.get("scope")=="ONE_ONLINE_EXT4_GROW_ONLY",
+            "g24_pass":g24.get("status")=="PASS" and g24.get("scope")=="ONE_ONLINE_EXT4_GROW_ONLY",
+            "g23_g24_bound":g24.get("g23_sha256")==sha(g23p),
+            "candidate_chain":q.get("candidate_sha256")==g23.get("candidate_sha256")==g24.get("candidate_sha256"),
+            "g24_fs_only":g24.get("filesystem_mutation_authorized") is True
+                and g24.get("disk_geometry_mutation_authorized") is False
+                and g24.get("partition_table_mutation_authorized") is False
+                and g24.get("format_authorized") is False
+                and g24.get("shrink_authorized") is False
+                and int(g24.get("resize2fs_attempts_authorized",0))==1,
+        }
+        if all(checks.values()):
+            st["filesystem_mutation_performed"]=True
+            return record(11,"PASS",{
+                "stage11_result_sha256":sha(result),
+                "stage11_g23_sha256":sha(g23p),
+                "stage11_g24_sha256":sha(g24p),
+                "filesystem_bytes_before":q.get("filesystem_bytes_before"),
+                "filesystem_bytes_after":q.get("filesystem_bytes_after"),
+                "block_device_bytes":q.get("block_device_bytes"),
+                "checks":checks,
+                "mutation_performed":True,
+            },12,"PREPARE_STAGE12_TERMINAL_G23_G24")
+        return record(11,"HOLD",{
+            "reason":"STAGE11_CERTIFIED_RESULT_NOT_PROVEN",
+            "stage11_result_sha256":sha(result),
+            "checks":checks,
+            "mutation_performed":q.get("filesystem_mutation_performed",False),
+        },11,"DIAGNOSE_STAGE11_CERTIFIED_RESULT")
+
+    # Stage 12 remains exact-scope gated until fresh terminal G23/G24 and
+    # monotonic handoff evidence are materialized.
     stage_id=stages[stage-1]["id"]
     return record(stage,"AWAITING_STAGE_HANDLER",{
         "stage_id":stage_id,
