@@ -1,0 +1,108 @@
+name: "R4 PART4 — LRB Maestro 12-stage progress audit"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-part4-lrb-maestro-12-stage-progress.yml
+      - mission-control/r4-part4-lrb-maestro-12-stage-progress/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r4-part4-lrb-maestro-12-stage-progress
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 10
+    steps:
+      - name: Remote Bridge + read-only Maestro stage audit
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/maestro-stage-audit-$GITHUB_RUN_ID"
+          mkdir -p "$OUT"
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+
+          mapfile -t LINKS < <(find "$HOME/.local/lib/louksna-remote-bridge" -type f -path '*/bridge/live_link.py' -print 2>/dev/null | sort)
+          test "${#LINKS[@]}" -ge 1
+          LINK="${LINKS[-1]}"
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op status > "$OUT/LRB_STATUS.json"
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op observe > "$OUT/LRB_OBSERVE.json"
+
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9"
+          DST="$HOME/.local/lib/louksna/r4-master-part1-part9"
+          cp "$STATE/MASTER_STATUS.json" "$OUT/MASTER_STATUS.json"
+          cp "$STATE/LAST_HEARTBEAT.json" "$OUT/LAST_HEARTBEAT.json" 2>/dev/null || true
+          cp "$STATE/PART_4_R2/STATE.json" "$OUT/PART4_STATE.json" 2>/dev/null || true
+          cp "$DST/PART4_P3_GROWTH_HARDENED_ANTI_PARALYSIS.json" "$OUT/CONTRACT.json"
+
+          systemctl --user show luna-r4-master-part1-part9.service -p ActiveState -p SubState -p Result -p MainPID -p NRestarts > "$OUT/SERVICE.txt"
+          journalctl --user -u luna-r4-master-part1-part9.service --since "2026-10-01 15:51:00 UTC" --no-pager -o short-iso > "$OUT/JOURNAL.txt" || true
+
+          {
+            command -v growpart || true
+            dpkg-query -W -f='cloud-guest-utils=${Status} ${Version}\n' cloud-guest-utils 2>/dev/null || true
+            dpkg-query -W -f='gdisk=${Status} ${Version}\n' gdisk 2>/dev/null || true
+          } > "$OUT/STAGE2_TOOL_STATE.txt"
+
+          find "$STATE" -maxdepth 4 -type f -newermt "2026-10-01 15:51:08 UTC" -printf '%TY-%Tm-%TdT%TH:%TM:%TSZ %p\n' | sort > "$OUT/STATE_FILES_AFTER_INGEST.txt"
+
+          python3 - "$OUT" <<'PY'
+          import json,pathlib,sys,re,datetime as dt
+          root=pathlib.Path(sys.argv[1])
+          s=json.loads((root/"MASTER_STATUS.json").read_text())
+          hb=json.loads((root/"LAST_HEARTBEAT.json").read_text()) if (root/"LAST_HEARTBEAT.json").exists() else {}
+          c=json.loads((root/"CONTRACT.json").read_text())
+          l=json.loads((root/"LRB_STATUS.json").read_text())
+          o=json.loads((root/"LRB_OBSERVE.json").read_text())
+          tools=(root/"STAGE2_TOOL_STATE.txt").read_text(errors="replace")
+          files=(root/"STATE_FILES_AFTER_INGEST.txt").read_text(errors="replace").splitlines()
+          journal=(root/"JOURNAL.txt").read_text(errors="replace")
+          growpart_installed=bool(re.search(r'(^|\n)/\S*growpart\s*($|\n)',tools))
+          pkg_installed="install ok installed" in tools
+          stage_markers=[x for x in files if re.search(r'P3|GROW|CAPSULE|RESIZE|STAGE|HARDENED',x,re.I)]
+          q={
+            "schema":"LOUKSNA_R4_PART4_MAESTRO_12_STAGE_PROGRESS_AUDIT/1.0",
+            "status":"PASS",
+            "host":l.get("host"),
+            "bridge_evidence_seq":o.get("evidence_seq"),
+            "bridge_evidence_sha256":o.get("evidence_sha256"),
+            "contract_id":c.get("contract_id"),
+            "master_status":s.get("status"),
+            "master_next":s.get("next"),
+            "master_updated_at_utc":s.get("updated_at_utc"),
+            "mission_id":s.get("mission_id"),
+            "heartbeat_status":hb.get("status"),
+            "heartbeat_utc":hb.get("utc") or hb.get("updated_at_utc") or hb.get("observed_at"),
+            "growpart_installed":growpart_installed,
+            "growth_packages_installed":pkg_installed,
+            "post_ingest_state_file_count":len(files),
+            "stage_specific_state_markers":stage_markers,
+            "journal_mentions_stage_or_growth":bool(re.search(r'growpart|capsule|resize2fs|P3_GROWTH|HARDENED_CONTINUE|stage',journal,re.I)),
+            "disk_mutation_observed":False
+          }
+          # "started" requires material evidence of an actual numbered stage beyond merely loading/evaluating the contract.
+          q["operating_contract"]=(
+            s.get("anti_paralysis_contract")==c.get("contract_id")
+            and s.get("safe_work_while_hold") is True
+            and s.get("next")=="PART4_P3_HARDENED_CONTINUE_SAFE_REMEDIATION"
+          )
+          q["numbered_stage_execution_started"]=bool(growpart_installed or stage_markers or q["journal_mentions_stage_or_growth"])
+          q["classification"]="ACTIVE_SUPERVISION_NO_NUMBERED_STAGE_EXECUTION" if q["operating_contract"] and not q["numbered_stage_execution_started"] else ("NUMBERED_STAGE_EXECUTION_OBSERVED" if q["numbered_stage_execution_started"] else "STOPPED_OR_UNBOUND")
+          (root/"AUDIT.json").write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-lrb-maestro-12-stage-progress
+          path: ${{ runner.temp }}/maestro-stage-audit-${{ github.run_id }}/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
