@@ -40,6 +40,7 @@ METAOS_PATH=HOME/".local/lib/louksna/symphylax-r1/MetaOS.wasm"
 NOTICE_STATE=STATE/"LAST_GATE_NOTICE.json"
 PERMISSION_REQUEST=STATE/"PERMISSION_REQUEST.json"
 PR_NUMBER=29
+PART4_P3_HARDENED_CONTRACT=pathlib.Path(__file__).with_name("PART4_P3_GROWTH_HARDENED_ANTI_PARALYSIS.json")
 
 class PrivilegeRequired(RuntimeError):
     def __init__(self, part, actions, reason):
@@ -389,6 +390,18 @@ def part4(mid):
     # Louksna.md remains canonical authority; PART_5..PART_9 are unchanged.
     legacy_auth=read_json(STATE/"authorizations/PART4_H2_H4.json",{}) or {}
     r2=read_json(STATE/"PART_4_R2/STATE.json",{}) or {}
+    p3_hardened=read_json(PART4_P3_HARDENED_CONTRACT,{}) or {}
+    p3_hardened_valid=(
+        p3_hardened.get("contract_id")=="PART4-P3-GROWTH-HARDENED-ANTI-PARALYSIS-20261001"
+        and p3_hardened.get("authority")=="Louksna.md"
+        and p3_hardened.get("desktop_commander")=="PROHIBITED"
+        and p3_hardened.get("remote_desktop_commander")=="PROHIBITED"
+        and p3_hardened.get("observation_authority")=="LOUKSNA_REMOTE_BRIDGE"
+        and p3_hardened.get("anti_paralysis",{}).get("hold_is_not_deadlock") is True
+        and p3_hardened.get("anti_paralysis",{}).get("fail_closed_is_not_stop_all_work") is True
+        and len(p3_hardened.get("stages",[]))==12
+        and p3_hardened.get("disk_mutation_authorized_by_this_contract") is False
+    )
     # POST-P5 reconciliation is evidence-derived and additive: historical flags
     # remain untouched, while stronger live end-state evidence may satisfy obsolete
     # intermediate predicates. Any observation failure stays fail-closed.
@@ -444,6 +457,7 @@ def part4(mid):
         "projects_migrated_hash_equivalent": r2.get("projects_migrated_hash_equivalent") is True,
         "ntfs_retired": r2.get("ntfs_retired") is True,
         "post_p5_live_reconciled": post_p5_effective,
+        "p3_growth_hardened_contract": p3_hardened_valid,
         "final_linux_layout": r2.get("final_linux_layout") is True,
         "part4_r2_final_g24": r2.get("part4_r2_final_g24") is True,
         "final_merge_g24": r2.get("final_merge_g24") is True,
@@ -452,6 +466,13 @@ def part4(mid):
     blockers=[k for k,v in checks.items() if not v]
     details={
         "operational_amendment":"PART4-R2-20260929",
+        "p3_growth_hardened_contract":str(PART4_P3_HARDENED_CONTRACT),
+        "p3_growth_hardened_contract_sha256":sha(PART4_P3_HARDENED_CONTRACT) if PART4_P3_HARDENED_CONTRACT.is_file() else None,
+        "p3_growth_hardened_contract_id":p3_hardened.get("contract_id"),
+        "anti_paralysis_active":p3_hardened_valid,
+        "desktop_commander":"PROHIBITED",
+        "remote_desktop_commander":"PROHIBITED",
+        "live_observation_authority":"LOUKSNA_REMOTE_BRIDGE",
         "amendment_reference":"server/r4-master/PART4_R2_AMENDMENT.json",
         "certified_freeze_manifest_sha256":"99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
         "freeze_certification_run_id":36621093750,
@@ -579,7 +600,18 @@ def supervise_once(worker,mid):
     if part is None:
         atomic_json(STATE/"MASTER_STATUS.json",{"status":"COMPLETE","global_mission_status":"COMPLETE","mission_id":mid,"utc":utc()}); return "COMPLETE"
     ev=HANDLERS[part](mid); atomic_json(EVIDENCE/f"{part}.json",ev)
-    atomic_json(STATE/"MASTER_STATUS.json",{"status":ev["status"],"current_part":part,"blockers":ev.get("blockers",[]),"mission_id":mid,"updated_at_utc":utc(),"next":"CERTIFY" if ev["status"]=="PASS" else "RETRY_AFTER_REMEDIATION"})
+    next_action="CERTIFY" if ev["status"]=="PASS" else ("PART4_P3_HARDENED_CONTINUE_SAFE_REMEDIATION" if part=="PART_4" else "RETRY_AFTER_REMEDIATION")
+    atomic_json(STATE/"MASTER_STATUS.json",{
+        "status":ev["status"],
+        "current_part":part,
+        "blockers":ev.get("blockers",[]),
+        "mission_id":mid,
+        "updated_at_utc":utc(),
+        "next":next_action,
+        "hold_semantics":"BLOCK_ONLY_UNSAFE_DEPENDENT_TRANSITION" if ev["status"]!="PASS" else None,
+        "safe_work_while_hold":part=="PART_4" and ev["status"]!="PASS",
+        "anti_paralysis_contract":ev.get("details",{}).get("p3_growth_hardened_contract_id") if part=="PART_4" else None,
+    })
     if ev["status"]!="PASS": return "HOLD"
     cert=publish_and_certify(ev)
     nxt=PARTS[PARTS.index(part)+1] if part!="PART_9" else "COMPLETE"
