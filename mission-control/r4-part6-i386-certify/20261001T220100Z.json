@@ -1,0 +1,11 @@
+{
+  "schema": "LOUKSNA_R4_PART6_I386_CERTIFY_REQUEST/1.0",
+  "candidate_run_id": 36932087800,
+  "candidate_artifact_id": 11195804437,
+  "operation": "G23_G24_THEN_BOUNDED_I386_ENABLE_AND_APT_REFRESH",
+  "package_install_authorized": false,
+  "apt_source_file_mutation_authorized": false,
+  "rollback_required": true,
+  "fail_closed": true,
+  "requested_at_utc": "2026-10-01T22:01:00Z"
+}
