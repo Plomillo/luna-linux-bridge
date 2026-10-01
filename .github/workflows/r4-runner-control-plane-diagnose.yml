@@ -1,0 +1,76 @@
+name: "R4 — runner control-plane diagnosis"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-runner-control-plane-diagnose.yml
+      - mission-control/r4-runner-control-plane-diagnose/**
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Inspect self-hosted runner allocation from GitHub control plane
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_JOB_ID: "110619317467"
+        run: |
+          set -Eeuo pipefail
+          echo "=== TARGET JOB ==="
+          set +e
+          gh api "repos/Plomillo/luna-linux-bridge/actions/jobs/$TARGET_JOB_ID" > job.json 2>job.err
+          JRC=$?
+          set -e
+          echo "job_api_rc=$JRC"
+          cat job.err || true
+          if test -s job.json; then
+            python3 - <<'PY'
+import json
+d=json.load(open("job.json"))
+print(json.dumps({
+  "id":d.get("id"),
+  "status":d.get("status"),
+  "conclusion":d.get("conclusion"),
+  "runner_id":d.get("runner_id"),
+  "runner_name":d.get("runner_name"),
+  "runner_group_id":d.get("runner_group_id"),
+  "runner_group_name":d.get("runner_group_name"),
+  "labels":d.get("labels"),
+  "started_at":d.get("started_at"),
+  "completed_at":d.get("completed_at"),
+},indent=2,sort_keys=True))
+PY
+          fi
+
+          echo "=== REPOSITORY RUNNERS ==="
+          set +e
+          gh api "repos/Plomillo/luna-linux-bridge/actions/runners?per_page=100" > runners.json 2>runners.err
+          RRC=$?
+          set -e
+          echo "runners_api_rc=$RRC"
+          cat runners.err || true
+          if test -s runners.json; then
+            python3 - <<'PY'
+import json
+d=json.load(open("runners.json"))
+print(json.dumps({
+ "total_count":d.get("total_count"),
+ "runners":[{
+   "id":x.get("id"),
+   "name":x.get("name"),
+   "os":x.get("os"),
+   "status":x.get("status"),
+   "busy":x.get("busy"),
+   "labels":[y.get("name") for y in x.get("labels",[])]
+ } for x in d.get("runners",[])]
+},indent=2,sort_keys=True))
+PY
+          fi
