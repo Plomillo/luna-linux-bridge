@@ -1,0 +1,332 @@
+{
+  "schema": "LOUKSNA_R4_PART4_PART9_SECOND_ORDER_PLAN/1.0",
+  "status": "AUDITED_PLAN_READY_NOT_EXECUTED",
+  "created_from": {
+    "maestro_branch": "staging/luna-r4-master-part1-part9-20260929",
+    "maestro_checkpoint": "52d83b97b59fcef4b6e35251d7cc9676d77014ed",
+    "audit_branch": "audit/r4-part4-part9-second-order-20261001",
+    "live_audit_run": 36809129816,
+    "detail_audit_run": 36809772606,
+    "reconciliation_run": 36809862439,
+    "observed_boot_id": "5e533a20-6c1b-4a44-bd4f-fdab76da990a"
+  },
+  "authority": {
+    "canonical": "Louksna.md",
+    "assurance": "PUAC2.md",
+    "doctrine": "EXTEND_DO_NOT_REPLACE",
+    "failure_posture": "FAIL_CLOSED",
+    "no_silent_operations": true,
+    "certification_propagation": false
+  },
+  "roles": {
+    "maestro": "mission_order_state_and_gate_orchestration",
+    "qwen": "github_hosted_second_order_advisory_reasoning_only",
+    "remote_bridge": "live_telemetry_observation_and_state_reconciliation",
+    "custosz_v7": "authorized_material_worker",
+    "apc": "scoped_privileged_interface",
+    "g23": "independent_validation",
+    "g24": "certification"
+  },
+  "execution_planes": {
+    "qwen": {
+      "required_plane": "GITHUB_HOSTED",
+      "local_inference_forbidden": true,
+      "local_model_storage_may_exist": true,
+      "local_qwen_process_required_absent": true,
+      "canonical_authority": false,
+      "execution_authority": false,
+      "certification_authority": false,
+      "admission_gate": "HOSTED_INFERENCE_BENCHMARK_PLUS_PINNED_MODEL_AND_RUNTIME_ATTESTATION"
+    },
+    "telemetry": {
+      "preferred": "LOUKSNA_REMOTE_BRIDGE_LIVE_READONLY",
+      "current_proven_path": "LOUKSNA_LIVE_SOCKET_PLUS_SELF_HOSTED_GITHUB_READONLY_OBSERVATION",
+      "durable_evidence": "GITHUB_ARTIFACTS_AT_GATES_INCIDENTS_AND_CHECKPOINTS",
+      "local_observation_files": "MINIMIZE_EPHEMERAL_ONLY"
+    }
+  },
+  "current_facts": {
+    "certified_parts": [
+      "PART_1",
+      "PART_2",
+      "PART_3"
+    ],
+    "current_part": "PART_4",
+    "master_service": "ACTIVE",
+    "symphylax_service": "ACTIVE",
+    "live_socket_service": "ACTIVE",
+    "runner_service": "ACTIVE",
+    "p1": {
+      "role": "EFI",
+      "mounted": "/boot/efi",
+      "fstype": "vfat",
+      "size_bytes": 272629760
+    },
+    "p2": {
+      "role": "WINDOWS_MSR_RESIDUAL",
+      "size_bytes": 16777216
+    },
+    "p3": {
+      "role": "LOUKSNA_PROJECTS_TARGET",
+      "fstype": "ext4",
+      "label": "LOUKSNA_PROJECTS",
+      "uuid": "e084ec2a-af39-48b5-bb89-db2dc6a98332",
+      "size_bytes": 437167223296,
+      "mounted": false
+    },
+    "p4": {
+      "role": "WINDOWS_RECOVERY_RESIDUAL",
+      "fstype": "ntfs",
+      "uuid": "CADE667DDE666225",
+      "size_bytes": 700448768
+    },
+    "p5": {
+      "role": "CURRENT_DEBIAN_ROOT",
+      "fstype": "ext4",
+      "uuid": "be769419-4a44-489e-8e5a-98b30999d859",
+      "size_bytes": 73943322624,
+      "mounted": "/"
+    },
+    "home_projects": {
+      "path": "~/PROYECTOS",
+      "physical_source": "P5_CURRENT_ROOT",
+      "mountpoint": false
+    },
+    "qwen_local": {
+      "model_bytes": 1904339232,
+      "model_present": true,
+      "inference_process_present": false
+    },
+    "part5": {
+      "kvm_device": true,
+      "qemu_libvirt_packages_present": false
+    },
+    "part6": {
+      "wine": false,
+      "steam": false,
+      "proton": false,
+      "bottles": false,
+      "lutris": false,
+      "prism": false,
+      "waydroid": false
+    },
+    "part7": {
+      "discovery": "LAUNCHERS_AND_ICONS_ONLY_OBSERVED_SO_FAR"
+    },
+    "part8": {
+      "available_tools": [
+        "rsync",
+        "tar",
+        "7z"
+      ],
+      "system_failed_units": 0
+    },
+    "state_divergence": {
+      "declared_part4_state_updated_at": "2026-09-30T02:16:18Z",
+      "declared_ext4_created": false,
+      "physical_p3_ext4": true,
+      "declared_ntfs_shrunk": false,
+      "physical_p3_repartitioned_and_ext4": true,
+      "declared_projects_equivalent": false,
+      "v8_prior_evidence_full_content_and_posix_equivalence_before_final_postcheck": true,
+      "stale_permission_request_requires_superseded_backups": true
+    }
+  },
+  "puac2": {
+    "controls": [
+      "PUAC.C25",
+      "PUAC.C26",
+      "PUAC.C27",
+      "PUAC.C28",
+      "PUAC.C29",
+      "PUAC.C30",
+      "PUAC.C31",
+      "PUAC.C32"
+    ],
+    "metacognitive": [
+      "PUAC.MC.07",
+      "PUAC.MC.08"
+    ],
+    "mandatory_tests": [
+      "T13_SECOND_ORDER_REGRESSION",
+      "T21_CROSS_DOMAIN_ISOLATION",
+      "T22_CERTIFICATION_SCOPE_MISMATCH",
+      "T23_INVALID_CERTIFICATE_REUSE",
+      "T24_INDEPENDENT_VALIDATOR_CONFLICT",
+      "T25_METACOGNITIVE_FALSE_POSITIVE",
+      "T26_METACOGNITIVE_FALSE_NEGATIVE",
+      "T27_ADVERSARIAL_INPUT",
+      "T28_HISTORICAL_RECORD_PRESERVATION"
+    ]
+  },
+  "second_order_transition": [
+    "OBSERVE_LIVE",
+    "RECONCILE_DECLARED_PHYSICAL_EVIDENCE_AUTHORIZATION_STATE",
+    "QWEN_HOSTED_ANALYSIS",
+    "MC07_CAUSAL_IMPACT_ALTERNATIVES",
+    "MC08_SELF_AUDIT_UNCERTAINTY_ESCALATIONS",
+    "DETERMINISTIC_PRECHECKS",
+    "PROPOSAL",
+    "PRE_COMMIT_CHECKPOINT",
+    "PRE_IRREVERSIBLE_G23_G24_IF_REQUIRED",
+    "CUSTOSZ_APC_EXECUTE_EXACT_SCOPE",
+    "REMOTE_OBSERVE_RESULT",
+    "POST_VALIDATION",
+    "NON_REGRESSION",
+    "G23",
+    "G24",
+    "STATE_UPDATE_WITH_EVIDENCE_DIGESTS",
+    "NEXT_PART"
+  ],
+  "failure_transition": [
+    "FAIL_OR_UNKNOWN_OR_CONFLICT",
+    "HOLD",
+    "PRESERVE_EVIDENCE",
+    "CLASSIFY_ROOT_CAUSE",
+    "QWEN_HOSTED_ALTERNATIVES",
+    "MC07_SECOND_ORDER_IMPACT",
+    "MC08_SELF_AUDIT",
+    "SELECT_MINIMUM_LOCAL_DELTA",
+    "ROLLBACK_OR_PRESERVE_SAFE_CHECKPOINT",
+    "REVALIDATE_CHANGED_STRATEGY",
+    "NO_IDENTICAL_IRREVERSIBLE_RETRY"
+  ],
+  "phases": {
+    "S0_RECONCILE": {
+      "objective": "Replace stale logical PART4 state with a digest-bound reconciliation record without erasing history.",
+      "gates": [
+        "fresh_live_topology",
+        "read_only_mount_or_equivalent_inspection_of_p3",
+        "prove_p3_PROYECTOS_against_certified_manifest",
+        "prove_p5_current_root_and_home_projects_role",
+        "classify_stale_permission_request_as_superseded_not_delete",
+        "bind_V8_artifact_to_current_physical_state",
+        "repair_generic_PART4_certifier_to_understand_PART4_R2_supersession",
+        "G23_reconciliation",
+        "G24_reconciliation"
+      ],
+      "mutation": "NO_NVME_MUTATION"
+    },
+    "PART_4": {
+      "objective": "Finish Windows retirement and final Linux consolidation from the physical state actually observed.",
+      "sequence": [
+        "P4_01_certify_current_p3_ext4_PROYECTOS",
+        "P4_02_certify_exact_p2_p4_retirement_plan",
+        "P4_03_retire_p2_and_p4_only_after_g23_g24",
+        "P4_04_revalidate_efi_p3_p5_and_projects",
+        "P4_05_capacity_and_geometry_preflight_for_final_merge",
+        "P4_06_move_projects_into_final_p3_root_namespace_with_reverify",
+        "P4_07_copy_p5_debian_root_to_p3_preserving_acl_xattr_hardlinks",
+        "P4_08_configure_fstab_initramfs_grub_efi",
+        "P4_09_preboot_g23_g24",
+        "P4_10_reboot_to_p3_preserving_p5",
+        "P4_11_postboot_verify_root_projects_services_boot_chain",
+        "P4_12_postboot_g23_g24",
+        "P4_13_retire_p5_only_after_verified_p3_boot",
+        "P4_14_expand_p3_to_final_boundary",
+        "P4_15_e2fsck_resize2fs_projects_reverify_nonregression",
+        "P4_16_final_g23_g24"
+      ],
+      "exit": "PART4_R2_CERTIFIED"
+    },
+    "PART_5": {
+      "objective": "Operational laboratory, not package presence.",
+      "requirements": [
+        "pinned_official_sources_and_versions",
+        "qemu_kvm_libvirt_virt_manager_install_or_reuse",
+        "hardware_acceleration_validation",
+        "libvirt_service_and_permissions",
+        "authorized_image_hash_registry_and_quarantine",
+        "disposable_vm_create_boot_test_shutdown_destroy",
+        "rollback_and_nonregression",
+        "G23_G24"
+      ],
+      "exit": "PART5_CERTIFIED"
+    },
+    "PART_6": {
+      "objective": "Operational gaming stack, each capability independently evidenced.",
+      "requirements": [
+        "Wine",
+        "Steam",
+        "Proton",
+        "Bottles",
+        "Lutris",
+        "Prism",
+        "Waydroid",
+        "official_or_approved_source_provenance",
+        "pinned_versions_where_required",
+        "functional_launch_tests",
+        "graphics_wayland_x11_dependencies",
+        "isolation_and_rollback",
+        "cross_component_nonregression",
+        "G23_G24"
+      ],
+      "exit": "PART6_CERTIFIED"
+    },
+    "PART_7": {
+      "objective": "Material study and devotional surface, not launcher/icon discovery.",
+      "requirements": [
+        "classify_real_source_corpus",
+        "source_immutability_and_hashes",
+        "provenance_registry",
+        "document_classification_UNKNOWN_FAIL_CLOSED",
+        "index_build_and_reproducibility",
+        "retrieval_tests",
+        "Louksna_hermeneutic_controls",
+        "negative_and_adversarial_tests",
+        "G23_G24"
+      ],
+      "exit": "PART7_CERTIFIED"
+    },
+    "PART_8": {
+      "objective": "System management, backup/recovery, hygiene and resource governance.",
+      "requirements": [
+        "system_resource_and_update_status",
+        "backup_policy_on_final_storage_layout",
+        "verified_backup_artifacts",
+        "restore_proof",
+        "recovery_drill",
+        "hygiene_dry_run_first",
+        "protected_sets_projects_checkpoints_evidence_authority_rollback",
+        "architecture_version_management",
+        "resource_limits_and_monitoring",
+        "G23_G24"
+      ],
+      "exit": "PART8_CERTIFIED"
+    },
+    "PART_9": {
+      "objective": "Global terminal integration and post-reboot certification.",
+      "requirements": [
+        "PART1_PART8_digest_bound_certificates",
+        "full_postinstall_matrix",
+        "cross_domain_isolation",
+        "global_nonregression",
+        "recovery_proof",
+        "Qwen_GitHub_hosted_reasoning_path",
+        "Remote_Bridge_live_telemetry_path",
+        "CUSTOSZ_APC_governed_execution_path",
+        "runner_symphylax_maestro_health",
+        "boot_and_storage_integrity",
+        "final_G23",
+        "final_G24",
+        "authorized_final_reboot",
+        "postreboot_repeat_of_critical_matrix"
+      ],
+      "exit": "GLOBAL_MISSION_STATUS_COMPLETE"
+    }
+  },
+  "automation": {
+    "chronological_gate_enforcement": true,
+    "autonomous_handoff_after_each_part_g24": true,
+    "human_reprompt_for_already_authorized_PART4_scope": false,
+    "unknown_conflict_or_scope_drift": "HOLD",
+    "identical_failure_limit": 1,
+    "strategy_mutation_required_before_retry": true,
+    "local_ram_policy": {
+      "qwen_inference": "ZERO_LOCAL",
+      "telemetry": "BOUNDED",
+      "local_evidence": "MINIMAL"
+    }
+  },
+  "immediate_next_gate": "S0_RECONCILE_P3_CONTENT_AND_STATE_WITHOUT_NVME_MUTATION"
+}
