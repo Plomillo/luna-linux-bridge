@@ -1,0 +1,12 @@
+{
+  "github_run_attempt": "1",
+  "github_run_id": "36828627436",
+  "mail_id": "MAIL-A4CDC89F3CCBA6754919",
+  "received_utc": "2026-10-01T07:08:40.551030+00:00",
+  "schema": "CUSTOSZ_MAILBOX_RECEIPT/1.0",
+  "source_bytes": 7656,
+  "source_commit": "cca847f8ea80bcd81665ebd7dbc03920e1302755",
+  "source_path": "missions/inbox/luna-r4-part4-part9-plan-definitivo-24h-20261001/MISSION_ORIGINAL.md",
+  "source_sha256": "a4cdc89f3ccba6754919ae55b4e4f8bc16ae584587a595f5403ac180d74a3b50",
+  "status": "RECEIVED"
+}
