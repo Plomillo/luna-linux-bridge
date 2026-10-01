@@ -56,6 +56,44 @@ jobs:
           OUT="$RUNNER_TEMP/r4-part4-r2-final-merge-plan-$GITHUB_RUN_ID"
           mkdir -p "$OUT"
           bash server/r4-master/part4_r2_final_merge_prepare.sh plan /dev/null "$OUT" /dev/null
+          python3 - server/r4-master/part4_r2_final_merge_prepare.sh mission-control/r4-plan-definitivo/BUG_AUTONOMY_POLICY.json "$OUT/IMPLEMENTATION_BINDING.json" <<'PY'
+          import hashlib,json,pathlib,subprocess,sys,time
+          script,policy,out=map(pathlib.Path,sys.argv[1:])
+          s=script.read_text(encoding="utf-8")
+          p=json.loads(policy.read_text(encoding="utf-8"))
+          checks={
+            "script_syntax":subprocess.run(["bash","-n",str(script)]).returncode==0,
+            "oldroot_grub_privileged_read":'sudo -n cat /boot/grub/grub.cfg > "$OUT/grub.cfg.oldroot.before"' in s,
+            "newroot_grub_privileged_read":'sudo -n cat "$NEWROOT_MNT/boot/grub/grub.cfg" > "$OUT/grub.cfg.newroot"' in s,
+            "newroot_grub_privileged_validation":'sudo -n grep -F "$P3_UUID" "$NEWROOT_MNT/boot/grub/grub.cfg"' in s,
+            "efibootmgr_privileged":s.count("sudo -n efibootmgr -v")==2,
+            "old_unprivileged_read_removed":'cp -a /boot/grub/grub.cfg "$OUT/grub.cfg.oldroot.before"' not in s,
+            "new_unprivileged_read_removed":'cp "$NEWROOT_MNT/boot/grub/grub.cfg" "$OUT/grub.cfg.newroot"' not in s,
+            "policy_authorized":p.get("status")=="AUTHORIZED_OPERATIONAL_POLICY",
+            "policy_authority":p.get("authority")=="Louksna.md",
+            "policy_assurance":p.get("assurance")=="PUAC2.md",
+            "policy_no_repeat_certified":p.get("hard_rules",{}).get("repeat_certified_work") is False,
+            "policy_no_repeat_migration":p.get("hard_rules",{}).get("repeat_partition_migration") is False,
+            "policy_keeps_g23":p.get("hard_rules",{}).get("bypass_g23") is False,
+            "policy_keeps_g24":p.get("hard_rules",{}).get("bypass_g24") is False
+          }
+          ok=all(checks.values())
+          q={
+            "schema":"LOUKSNA_R4_PART4_R2_IMPLEMENTATION_BINDING/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "source_failed_run":36834032810,
+            "source_failed_job":110277217174,
+            "bug_class":"READ_ONLY_PRIVILEGE_BOUNDARY_MISMATCH",
+            "script_sha256":hashlib.sha256(script.read_bytes()).hexdigest(),
+            "policy_sha256":hashlib.sha256(policy.read_bytes()).hexdigest(),
+            "checks":checks,
+            "repeat_projects_migration":False,
+            "scope_expansion":False,
+            "generated_at_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
+          }
+          out.write_text(json.dumps(q,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          if not ok: raise SystemExit(42)
+          PY
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
@@ -80,9 +118,10 @@ jobs:
         run: |
           set -Eeuo pipefail
           mkdir -p "$RUNNER_TEMP/g23"
-          python3 - "$RUNNER_TEMP/plan/FINAL_MERGE_PLAN.json" "$RUNNER_TEMP/g23/G23_FINAL_MERGE_PLAN.json" <<'PY'
+          python3 - "$RUNNER_TEMP/plan/FINAL_MERGE_PLAN.json" "$RUNNER_TEMP/plan/IMPLEMENTATION_BINDING.json" "$RUNNER_TEMP/g23/G23_FINAL_MERGE_PLAN.json" <<'PY'
           import hashlib,json,pathlib,sys,datetime as dt
-          p=pathlib.Path(sys.argv[1]); d=json.loads(p.read_text()); out=pathlib.Path(sys.argv[2])
+          p=pathlib.Path(sys.argv[1]); b=pathlib.Path(sys.argv[2]); out=pathlib.Path(sys.argv[3])
+          d=json.loads(p.read_text()); ib=json.loads(b.read_text())
           parts={int(k):v for k,v in d.get("partitions",{}).items()}
           checks={
             "plan_pass":d.get("status")=="PASS",
@@ -98,10 +137,20 @@ jobs:
             "old_root_guard":d.get("old_root_retirement_condition")=="VERIFIED_BOOT_FROM_P3_PLUS_POSTBOOT_G23_G24",
             "rollback_before_reboot":d.get("rollback_contract",{}).get("before_reboot")=="P5_REMAINS_UNMODIFIED_BOOTABLE_ROOT",
             "rollback_after_reboot":d.get("rollback_contract",{}).get("after_reboot_before_p5_delete")=="P5_REMAINS_RECOVERY_ROOT",
+            "implementation_binding_pass":ib.get("status")=="PASS",
+            "privilege_bug_class":ib.get("bug_class")=="READ_ONLY_PRIVILEGE_BOUNDARY_MISMATCH",
+            "privilege_bug_source_run":ib.get("source_failed_run")==36834032810,
+            "privilege_bug_source_job":ib.get("source_failed_job")==110277217174,
+            "no_projects_migration_replay":ib.get("repeat_projects_migration") is False,
+            "no_scope_expansion":ib.get("scope_expansion") is False,
           }
           passed=all(checks.values())
           r={"schema":"LOUKSNA_R4_PART4_R2_FINAL_MERGE_PLAN_G23/1.0","status":"PASS" if passed else "HOLD",
-             "plan_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),"checks":checks,
+             "plan_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),
+             "implementation_binding_sha256":hashlib.sha256(b.read_bytes()).hexdigest(),
+             "implementation_script_sha256":ib.get("script_sha256"),
+             "bug_autonomy_policy_sha256":ib.get("policy_sha256"),
+             "checks":checks,
              "repair_allowed":False,"g24_allowed":passed,
              "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
           out.write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
@@ -133,10 +182,11 @@ jobs:
           test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$G23")" = PASS
           H="$(sha256sum "$G23"|awk '{print $1}')"
           P="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["plan_sha256"])' "$G23")"
-          AUD="louksna-r4-part4-r2-final-merge-plan:$P:$H"
+          I="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["implementation_binding_sha256"])' "$G23")"
+          AUD="louksna-r4-part4-r2-final-merge-plan:$P:$I:$H"
           RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
           TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
-          export TOKEN H P AUD
+          export TOKEN H P I AUD
           mkdir -p "$RUNNER_TEMP/g24"
           python3 - "$RUNNER_TEMP/g24/G24_FINAL_MERGE_PLAN.json" <<'PY'
           import base64,datetime as dt,hashlib,json,os,pathlib,sys
@@ -146,7 +196,9 @@ jobs:
           if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
           if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
           r={"schema":"LOUKSNA_R4_PART4_R2_FINAL_MERGE_PLAN_G24/1.0","status":"PASS",
-             "scope":"P3_NEW_ROOT_P5_OLD_ROOT_P1_EFI_EXACT_PLAN","plan_sha256":os.environ["P"],"g23_sha256":os.environ["H"],
+             "scope":"P3_NEW_ROOT_P5_OLD_ROOT_P1_EFI_EXACT_PLAN","plan_sha256":os.environ["P"],
+             "implementation_binding_sha256":os.environ["I"],"g23_sha256":os.environ["H"],
+             "privilege_boundary_bug_fix_certified":True,"banal_bug_autonomy_policy_bound":True,
              "authority_authenticated":True,"authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(token.encode()).hexdigest(),
              "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
           pathlib.Path(sys.argv[1]).write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
