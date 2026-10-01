@@ -25,6 +25,8 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
+          export LC_ALL=C
+          export LANG=C
           OUT="$RUNNER_TEMP/r4-part6-preflight-$GITHUB_RUN_ID"
           STATE="$HOME/.local/state/louksna/r4-master-part1-part9"
           mkdir -p "$OUT"
