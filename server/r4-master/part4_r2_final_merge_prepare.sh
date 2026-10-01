@@ -27,6 +27,13 @@ hold(){ echo "HOLD:$*" >&2; exit 20; }
 need(){ command -v "$1" >/dev/null 2>&1 || hold "MISSING_COMMAND:$1"; }
 need_exec(){ [ -x "$1" ] || hold "MISSING_COMMAND:$1"; }
 blkid_uuid(){ sudo -n "$BLKID" -p -s UUID -o value "$1"; }
+verify_tree_privileged(){
+  local root="$1" manifest="$2" out="$3"
+  shift 3
+  sudo -n python3 "$VERIFY" --root "$root" --manifest "$manifest" --out "$out" "$@"
+  sudo -n chown "$OWNER:$OWNER" "$out"
+  chmod 600 "$out"
+}
 
 for c in python3 lsblk findmnt blockdev df du rsync mount umount sfdisk sha256sum chroot grub-install update-grub update-initramfs efibootmgr; do need "$c"; done
 need_exec "$BLKID"
@@ -169,7 +176,7 @@ elif len(dest_present)!=len(tops):
 PY
 
 sudo -n chown "$OWNER:$OWNER" "$NEWROOT_MNT/home/$OWNER/PROYECTOS"
-python3 "$VERIFY" --root "$NEWROOT_MNT/home/$OWNER/PROYECTOS" --manifest "$MANIFEST" --out "$OUT/VERIFY_PROJECTS_AFTER_RELOCATION.json"
+verify_tree_privileged "$NEWROOT_MNT/home/$OWNER/PROYECTOS" "$MANIFEST" "$OUT/VERIFY_PROJECTS_AFTER_RELOCATION.json"
 
 # Two-pass live root copy. -x preserves filesystem boundary and therefore never
 # re-enters the P3 new-root mount or EFI/pseudo filesystems.
@@ -180,7 +187,7 @@ sudo -n rsync -aHAXx --numeric-ids   --exclude="/home/$OWNER/PROYECTOS/***"   --
 sync
 
 # Ensure the certified project tree survived root materialization.
-python3 "$VERIFY" --root "$NEWROOT_MNT/home/$OWNER/PROYECTOS" --manifest "$MANIFEST" --out "$OUT/VERIFY_PROJECTS_AFTER_ROOT_COPY.json"
+verify_tree_privileged "$NEWROOT_MNT/home/$OWNER/PROYECTOS" "$MANIFEST" "$OUT/VERIFY_PROJECTS_AFTER_ROOT_COPY.json"
 
 # Build the new root's fstab deterministically.
 sudo -n env P3_UUID="$P3_UUID" EFI_UUID="$EFI_UUID" OWNER="$OWNER" python3 - "$NEWROOT_MNT/etc/fstab" <<'PY'
