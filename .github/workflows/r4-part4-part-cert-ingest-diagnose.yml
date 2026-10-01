@@ -34,6 +34,8 @@ jobs:
           if test -f "$STATE/certificates/PART_4.json"; then cp "$STATE/certificates/PART_4.json" "$OUT/PART4_CERTIFICATE.json"; fi
           systemctl --user show luna-r4-master-part1-part9.service -p ActiveState -p SubState -p MainPID -p Result -p NRestarts > "$OUT/SERVICE.txt"
           journalctl --user -u luna-r4-master-part1-part9.service --since "2026-10-01 21:19:00 UTC" --no-pager -o short-iso > "$OUT/JOURNAL.txt" || true
+          ps -eo pid,ppid,stat,etime,args --forest > "$OUT/PROCESS_TREE.txt"
+          grep -E 'master_controller|gh run watch|gh run download|luna-r4-master' "$OUT/PROCESS_TREE.txt" > "$OUT/PROCESS_RELEVANT.txt" || true
           gh --version > "$OUT/GH_VERSION.txt" 2>&1 || true
 
           set +e
