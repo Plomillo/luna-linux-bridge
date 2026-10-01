@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import argparse, base64, datetime as dt, fcntl, hashlib, json, os, pathlib, shutil, subprocess, sys, tempfile, time, uuid, traceback
+import argparse, base64, datetime as dt, fcntl, hashlib, json, os, pathlib, re, shutil, subprocess, sys, tempfile, time, uuid, traceback
 
 HOME=pathlib.Path("/home/diegoignacionorambuenamiranda")
 PROJECT_ROOT=HOME/"LOUKSNA_MAESTRO_20260925"
@@ -41,6 +41,7 @@ NOTICE_STATE=STATE/"LAST_GATE_NOTICE.json"
 PERMISSION_REQUEST=STATE/"PERMISSION_REQUEST.json"
 PR_NUMBER=29
 PART4_P3_HARDENED_CONTRACT=pathlib.Path(__file__).with_name("PART4_P3_GROWTH_HARDENED_ANTI_PARALYSIS.json")
+PART4_P3_TEN_POINT_DIRECTIVE=pathlib.Path(__file__).with_name("PART4_P3_TEN_POINT_HARDENED_CONTINUATION.json")
 PART4_P3_EXEC_DIR=STATE/"PART_4_P3_HARDENED"
 PART4_P3_EXEC_STATE=PART4_P3_EXEC_DIR/"EXECUTION.json"
 
@@ -630,10 +631,276 @@ def part4_hardened_progress(mid):
             return record(3,"PASS",{"dryrun_sha256":sha(PART4_P3_EXEC_DIR/"STAGE3_DRYRUN.json"),"deterministic":True,"mutation_performed":False},4,"CREATE_STAGE4_RECOVERY_CAPSULE")
         return record(3,"HOLD",{"dryrun_sha256":sha(PART4_P3_EXEC_DIR/"STAGE3_DRYRUN.json"),"deterministic":eq,"rc":r1["returncode"],"mutation_performed":False},3,"DIAGNOSE_STAGE3_DRYRUN")
 
-    # Stages 4-12 are active in the state machine but remain exact-scope gated.
-    # The controller never skips them or self-authorizes their consequential commits.
+    directive=read_json(PART4_P3_TEN_POINT_DIRECTIVE,{}) or {}
+    directive_ok=(
+        directive.get("directive_id")=="PART4-P3-TEN-POINT-HARDENED-CONTINUATION-20261001"
+        and directive.get("authority")=="Louksna.md"
+        and directive.get("mission_id")==mid
+        and directive.get("subordinate_to_contract",{}).get("contract_id")==contract.get("contract_id")
+        and directive.get("disk_mutation_authorized_by_this_directive") is False
+        and directive.get("filesystem_mutation_authorized_by_this_directive") is False
+    )
+    if stage>=4 and not directive_ok:
+        return record(stage,"HOLD",{"reason":"TEN_POINT_DIRECTIVE_INVALID_OR_UNBOUND","mutation_performed":False},stage,"RECONCILE_TEN_POINT_DIRECTIVE")
+
+    # Stage 4: build one local forensic recovery capsule, then wait for
+    # independent off-host verification/certification. The disk is read only.
+    if stage==4:
+        capsule=PART4_P3_EXEC_DIR/"STAGE4_CAPSULE"
+        manifest=capsule/"CAPSULE_MANIFEST.json"
+        cert=PART4_P3_EXEC_DIR/"STAGE4_G24.json"
+        if cert.is_file() and manifest.is_file():
+            g24=read_json(cert,{}) or {}
+            manifest_sha=sha(manifest)
+            ok=(
+                g24.get("status")=="PASS"
+                and g24.get("scope")=="RECOVERY_CAPSULE_VALID_FOR_PRE_GROWTH_STATE"
+                and g24.get("capsule_manifest_sha256")==manifest_sha
+                and g24.get("disk_geometry_mutation_authorized") is False
+                and g24.get("filesystem_mutation_authorized") is False
+                and g24.get("certification_propagated") is False
+            )
+            if ok:
+                return record(4,"PASS",{
+                    "directive_id":directive["directive_id"],
+                    "capsule_manifest_sha256":manifest_sha,
+                    "stage4_g24_sha256":sha(cert),
+                    "off_host_verified":True,
+                    "mutation_performed":False,
+                },5,"BUILD_STAGE5_EXACT_P3_GROWTH_CANDIDATE")
+            return record(4,"HOLD",{"reason":"STAGE4_G24_MISMATCH","mutation_performed":False},4,"REVALIDATE_STAGE4_G24")
+
+        if manifest.is_file():
+            return record(4,"AWAITING_G23_G24",{
+                "directive_id":directive["directive_id"],
+                "capsule_manifest_sha256":sha(manifest),
+                "local_capsule_ready":True,
+                "off_host_verification_required":True,
+                "mutation_performed":False,
+            },4,"CERTIFY_STAGE4_CAPSULE_OFF_HOST")
+
+        try:
+            require_privilege("PART_4",["READ_ONLY_PARTITION_TABLE_RECOVERY_CAPSULE"])
+            capsule.mkdir(parents=True,exist_ok=True)
+            disk="/dev/nvme0n1"
+            sfdisk=shutil.which("sfdisk") or "/usr/sbin/sfdisk"
+            sgdisk=shutil.which("sgdisk") or "/usr/sbin/sgdisk"
+            parted=shutil.which("parted") or "/usr/sbin/parted"
+            blkid=shutil.which("blkid") or "/usr/sbin/blkid"
+            commands={
+                "SFDISK_DUMP.txt":["sudo","-n",sfdisk,"--dump",disk],
+                "LSBLK.json":["lsblk","-J","-b","-o","NAME,PATH,TYPE,SIZE,START,FSTYPE,UUID,PARTUUID,MOUNTPOINTS",disk],
+                "PARTED_PRINT_FREE.txt":["sudo","-n",parted,"-sm",disk,"unit","s","print","free"],
+                "BLKID.txt":["sudo","-n",blkid,disk,"/dev/nvme0n1p1","/dev/nvme0n1p3"],
+                "SGDISK_PRINT.txt":["sudo","-n",sgdisk,"-p",disk],
+            }
+            command_results={}
+            for name,argv in commands.items():
+                rr=run(argv,timeout=120)
+                command_results[name]={"returncode":rr["returncode"],"argv":argv}
+                if rr["returncode"]!=0:
+                    raise RuntimeError("CAPSULE_COMMAND_FAILED:"+name+":"+rr["stderr"][:500])
+                (capsule/name).write_text(rr["stdout"],encoding="utf-8")
+            gpt=capsule/"GPT_BACKUP.bin"
+            rr=run(["sudo","-n",sgdisk,f"--backup={gpt}",disk],timeout=120)
+            if rr["returncode"]!=0:
+                raise RuntimeError("SGDISK_BACKUP_FAILED:"+rr["stderr"][:500])
+            run(["sudo","-n","chown",f"{os.getuid()}:{os.getgid()}",str(gpt)],timeout=30,check=True)
+            p3_start=int(pathlib.Path("/sys/class/block/nvme0n1p3/start").read_text().strip())
+            p3_size=int(pathlib.Path("/sys/class/block/nvme0n1p3/size").read_text().strip())
+            boot_id=pathlib.Path("/proc/sys/kernel/random/boot_id").read_text().strip()
+            root_source=os.path.realpath(run(["findmnt","-n","-o","SOURCE","/"],check=True)["stdout"].strip())
+            root_fstype=run(["findmnt","-n","-o","FSTYPE","/"],check=True)["stdout"].strip()
+            uuid_out=run(["lsblk","-n","-o","UUID","/dev/nvme0n1p3"],check=True)["stdout"].strip()
+            partuuid_out=run(["lsblk","-n","-o","PARTUUID","/dev/nvme0n1p3"],check=True)["stdout"].strip()
+            tool_versions={}
+            for name,argv in {
+                "sfdisk":[sfdisk,"--version"],"sgdisk":[sgdisk,"--version"],
+                "parted":[parted,"--version"],"lsblk":["lsblk","--version"]
+            }.items():
+                vr=run(argv,timeout=30)
+                tool_versions[name]=(vr["stdout"]+"\n"+vr["stderr"]).strip()[:1000]
+            files={}
+            for p in sorted(capsule.iterdir()):
+                if p.is_file() and p.name!="CAPSULE_MANIFEST.json":
+                    files[p.name]={"sha256":sha(p),"bytes":p.stat().st_size}
+            checks={
+                "p3_start_immutable":p3_start==567296,
+                "root_p3":root_source=="/dev/nvme0n1p3",
+                "root_ext4":root_fstype=="ext4",
+                "p5_absent":not pathlib.Path("/dev/nvme0n1p5").exists(),
+                "p3_uuid":uuid_out=="e084ec2a-af39-48b5-bb89-db2dc6a98332",
+                "gpt_backup_nonempty":gpt.stat().st_size>0,
+                "required_files":all(x in files for x in ["SFDISK_DUMP.txt","LSBLK.json","PARTED_PRINT_FREE.txt","BLKID.txt","SGDISK_PRINT.txt","GPT_BACKUP.bin"]),
+            }
+            q={
+                "schema":"LOUKSNA_R4_PART4_STAGE4_RECOVERY_CAPSULE/1.0",
+                "status":"LOCAL_READY" if all(checks.values()) else "HOLD",
+                "scope":"RECOVERY_CAPSULE_PRE_GROWTH_READ_ONLY",
+                "mission_id":mid,
+                "directive_id":directive["directive_id"],
+                "contract_id":contract["contract_id"],
+                "contract_sha256":sha(PART4_P3_HARDENED_CONTRACT),
+                "directive_sha256":sha(PART4_P3_TEN_POINT_DIRECTIVE),
+                "disk":disk,
+                "p3_start_sector":p3_start,
+                "p3_size_sectors":p3_size,
+                "p3_uuid":uuid_out,
+                "p3_partuuid":partuuid_out,
+                "root_source":root_source,
+                "root_fstype":root_fstype,
+                "boot_id":boot_id,
+                "checks":checks,
+                "tool_versions":tool_versions,
+                "command_results":command_results,
+                "files":files,
+                "disk_mutation_performed":False,
+                "filesystem_mutation_performed":False,
+                "off_host_verified":False,
+                "created_at_utc":utc(),
+            }
+            atomic_json(manifest,q)
+            if not all(checks.values()):
+                return record(4,"HOLD",{"reason":"STAGE4_LOCAL_CAPSULE_CHECK_FAILED","checks":checks,"mutation_performed":False},4,"REMEDIATE_STAGE4_CAPSULE")
+            return record(4,"AWAITING_G23_G24",{
+                "directive_id":directive["directive_id"],
+                "capsule_manifest_sha256":sha(manifest),
+                "local_capsule_ready":True,
+                "off_host_verification_required":True,
+                "mutation_performed":False,
+            },4,"CERTIFY_STAGE4_CAPSULE_OFF_HOST")
+        except Exception as exc:
+            return record(4,"HOLD",{
+                "reason":"STAGE4_CAPSULE_EXCEPTION",
+                "error":type(exc).__name__+":"+str(exc)[:1000],
+                "mutation_performed":False,
+            },4,"DIAGNOSE_STAGE4_CAPSULE")
+
+    # Stage 5: derive the exact growth candidate from the deterministic Stage 3
+    # evidence and current live geometry. No partition mutation is performed.
+    if stage==5:
+        candidate=PART4_P3_EXEC_DIR/"STAGE5_CANDIDATE.json"
+        g23p=PART4_P3_EXEC_DIR/"STAGE5_G23.json"
+        if g23p.is_file() and candidate.is_file():
+            g23=read_json(g23p,{}) or {}
+            ok=(
+                g23.get("status")=="PASS"
+                and g23.get("scope")=="P3_TRAILING_END_EXTENSION_CANDIDATE_ONLY"
+                and g23.get("candidate_sha256")==sha(candidate)
+                and g23.get("g24_allowed") is True
+            )
+            if ok:
+                return record(5,"PASS",{
+                    "candidate_sha256":sha(candidate),
+                    "stage5_g23_sha256":sha(g23p),
+                    "mutation_performed":False,
+                },6,"CERTIFY_STAGE6_EXACT_P3_TRAILING_END_EXTENSION")
+            return record(5,"HOLD",{"reason":"STAGE5_G23_MISMATCH","mutation_performed":False},5,"REVALIDATE_STAGE5_G23")
+        if candidate.is_file():
+            return record(5,"AWAITING_G23",{"candidate_sha256":sha(candidate),"mutation_performed":False},5,"G23_VALIDATE_STAGE5_CANDIDATE")
+        dry=PART4_P3_EXEC_DIR/"STAGE3_DRYRUN.json"
+        cap=PART4_P3_EXEC_DIR/"STAGE4_CAPSULE"/"CAPSULE_MANIFEST.json"
+        if not dry.is_file() or not cap.is_file():
+            return record(5,"HOLD",{"reason":"STAGE5_PREREQUISITE_MISSING","mutation_performed":False},4,"RETURN_STAGE4")
+        d=read_json(dry,{}) or {}
+        text=(d.get("run1",{}).get("stdout","")+"\n"+d.get("run1",{}).get("stderr",""))
+        m=re.search(r"start=(\d+).*?old:\s*size=(\d+)\s*end=(\d+).*?new:\s*size=(\d+)\s*end=(\d+)",text,re.S)
+        if not m:
+            return record(5,"HOLD",{"reason":"STAGE3_DRYRUN_PARSE_FAILED","dryrun_sha256":sha(dry),"mutation_performed":False},5,"DIAGNOSE_STAGE3_DRYRUN_FORMAT")
+        start,old_size,old_end,new_size,new_end=map(int,m.groups())
+        live_start=int(pathlib.Path("/sys/class/block/nvme0n1p3/start").read_text().strip())
+        live_size=int(pathlib.Path("/sys/class/block/nvme0n1p3/size").read_text().strip())
+        sgdisk=shutil.which("sgdisk") or "/usr/sbin/sgdisk"
+        gp=run(["sudo","-n",sgdisk,"-p","/dev/nvme0n1"],timeout=60)
+        lm=re.search(r"last usable sector is\s+(\d+)",gp["stdout"]+"\n"+gp["stderr"],re.I)
+        last_usable=int(lm.group(1)) if lm else None
+        checks={
+            "stage3_deterministic":d.get("deterministic") is True,
+            "start_exact":start==live_start==567296,
+            "old_size_exact":old_size==live_size,
+            "old_end_exact":old_end==live_start+live_size-1,
+            "growth_positive":new_size>old_size and new_end>old_end,
+            "new_geometry_consistent":new_end==start+new_size-1,
+            "last_usable_known":last_usable is not None,
+            "target_within_last_usable":last_usable is not None and new_end<=last_usable,
+            "p5_absent":not pathlib.Path("/dev/nvme0n1p5").exists(),
+        }
+        q={
+            "schema":"LOUKSNA_R4_PART4_STAGE5_P3_GROWTH_CANDIDATE/1.0",
+            "status":"CANDIDATE_READY" if all(checks.values()) else "HOLD",
+            "scope":"P3_TRAILING_END_EXTENSION_CANDIDATE_ONLY",
+            "mission_id":mid,
+            "directive_id":directive["directive_id"],
+            "disk":"/dev/nvme0n1",
+            "partition":3,
+            "old_start_sector":start,
+            "old_end_sector":old_end,
+            "old_size_sectors":old_size,
+            "target_start_sector":start,
+            "target_end_sector":new_end,
+            "target_size_sectors":new_size,
+            "delta_sectors":new_size-old_size,
+            "delta_bytes":(new_size-old_size)*512,
+            "gpt_last_usable_sector":last_usable,
+            "stage3_dryrun_sha256":sha(dry),
+            "stage4_capsule_manifest_sha256":sha(cap),
+            "checks":checks,
+            "disk_mutation_performed":False,
+            "filesystem_mutation_performed":False,
+            "prepared_at_utc":utc(),
+        }
+        atomic_json(candidate,q)
+        if not all(checks.values()):
+            return record(5,"HOLD",{"reason":"STAGE5_CANDIDATE_CHECK_FAILED","checks":checks,"mutation_performed":False},5,"DIAGNOSE_STAGE5_CANDIDATE")
+        return record(5,"AWAITING_G23",{"candidate_sha256":sha(candidate),"mutation_performed":False},5,"G23_VALIDATE_STAGE5_CANDIDATE")
+
+    # Stage 6: consume only a fresh exact-scope G24 certificate bound to the
+    # Stage 5 candidate. This stage itself never mutates disk or filesystem.
+    if stage==6:
+        candidate=PART4_P3_EXEC_DIR/"STAGE5_CANDIDATE.json"
+        cert=PART4_P3_EXEC_DIR/"STAGE6_G24.json"
+        if not candidate.is_file():
+            return record(6,"HOLD",{"reason":"STAGE5_CANDIDATE_MISSING","mutation_performed":False},5,"RETURN_STAGE5")
+        if not cert.is_file():
+            return record(6,"AWAITING_G24",{"candidate_sha256":sha(candidate),"mutation_performed":False},6,"G24_CERTIFY_EXACT_P3_TRAILING_END_EXTENSION")
+        cand=read_json(candidate,{}) or {}
+        g24=read_json(cert,{}) or {}
+        checks={
+            "status":g24.get("status")=="PASS",
+            "scope":g24.get("scope")=="P3_TRAILING_END_EXTENSION_ONLY",
+            "candidate_bound":g24.get("candidate_sha256")==sha(candidate),
+            "device":g24.get("authorized_device")=="/dev/nvme0n1",
+            "partition":int(g24.get("authorized_partition",0))==3,
+            "start":int(g24.get("authorized_start_sector",-1))==567296==int(cand.get("target_start_sector",-2)),
+            "old_end":int(g24.get("authorized_old_end_sector",-1))==int(cand.get("old_end_sector",-2)),
+            "new_end":int(g24.get("authorized_new_end_sector",-1))==int(cand.get("target_end_sector",-2)),
+            "format_false":g24.get("format_authorized") is False,
+            "shrink_false":g24.get("shrink_authorized") is False,
+            "move_false":g24.get("move_start_authorized") is False,
+            "fs_false":g24.get("filesystem_resize_authorized") is False,
+            "p5_false":g24.get("p5_recreation_authorized") is False,
+            "migration_false":g24.get("migration_replay_authorized") is False,
+            "no_propagation":g24.get("certification_propagated") is False,
+        }
+        if all(checks.values()):
+            return record(6,"PASS",{
+                "candidate_sha256":sha(candidate),
+                "stage6_g24_sha256":sha(cert),
+                "checks":checks,
+                "mutation_performed":False,
+            },7,"EXECUTE_STAGE7_SINGLE_P3_GEOMETRY_COMMIT")
+        return record(6,"HOLD",{"reason":"STAGE6_G24_SCOPE_MISMATCH","checks":checks,"mutation_performed":False},6,"REVALIDATE_STAGE6_G24")
+
+    # Stages 7-12 are bound by the ten-point directive and remain exact-scope
+    # gated until their handlers/certificates are materialized. They may not be
+    # skipped or self-authorized.
     stage_id=stages[stage-1]["id"]
-    return record(stage,"AWAITING_STAGE_HANDLER",{"stage_id":stage_id,"mutation_performed":False},stage,"DISPATCH_"+stage_id)
+    return record(stage,"AWAITING_STAGE_HANDLER",{
+        "stage_id":stage_id,
+        "directive_id":directive["directive_id"],
+        "directive_sha256":sha(PART4_P3_TEN_POINT_DIRECTIVE),
+        "mutation_performed":False,
+    },stage,"DISPATCH_"+stage_id)
 
 def part5(mid):
     packages=["qemu-system-x86","qemu-utils","libvirt-daemon-system","libvirt-clients","virt-manager"]
