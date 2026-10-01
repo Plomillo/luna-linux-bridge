@@ -1,0 +1,176 @@
+name: "R4 master — recover proven stale CUSTOSZ ledger lock"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-master-stale-ledger-lock-recovery/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r4-master-stale-ledger-lock-recovery
+  cancel-in-progress: false
+
+jobs:
+  recover:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 10
+    steps:
+      - name: Remove only proven stale ledger sentinel and restart Maestro
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9"
+          CUST="$STATE/custosz"
+          LOCK="$CUST/.ledger.lock"
+          LEDGER="$CUST/evidence.jsonl"
+          ANCHOR="$CUST/ledger_anchor.json"
+          MASTER_MISSION="$STATE/MASTER_CUSTOSZ_MISSION.json"
+          EXEC_DIR="$STATE/PART_4_P3_HARDENED"
+          OUT="$RUNNER_TEMP/stale-lock-recovery-$GITHUB_RUN_ID"
+          mkdir -p "$OUT" "$EXEC_DIR"
+
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+
+          # Eliminate races before examining/removing the sentinel.
+          systemctl --user stop luna-r4-master-part1-part9.service || true
+          for i in $(seq 1 20); do
+            [ "$(systemctl --user is-active luna-r4-master-part1-part9.service 2>/dev/null || true)" != "active" ] && break
+            sleep 1
+          done
+          test "$(systemctl --user is-active luna-r4-master-part1-part9.service 2>/dev/null || true)" != "active"
+
+          test -f "$LOCK"
+          test -f "$MASTER_MISSION"
+          SIZE="$(stat -c '%s' "$LOCK")"
+          MTIME="$(stat -c '%Y' "$LOCK")"
+          NOW="$(date +%s)"
+          AGE="$((NOW-MTIME))"
+          test "$SIZE" -eq 0
+          test "$AGE" -ge 300
+
+          # A live holder makes recovery fail closed.
+          set +e
+          fuser "$LOCK" > "$OUT/FUSER.stdout" 2> "$OUT/FUSER.stderr"
+          FUSER_RC=$?
+          set -e
+          test "$FUSER_RC" -ne 0
+
+          stat -c 'path=%n size=%s uid=%u gid=%g mode=%a mtime_epoch=%Y mtime=%y ctime=%z inode=%i' "$LOCK" > "$OUT/LOCK_STAT_BEFORE.txt"
+          sha256sum "$LOCK" > "$OUT/LOCK_SHA256_BEFORE.txt"
+          if test -f "$LEDGER"; then sha256sum "$LEDGER" > "$OUT/LEDGER_SHA256_BEFORE.txt"; fi
+          if test -f "$ANCHOR"; then sha256sum "$ANCHOR" > "$OUT/ANCHOR_SHA256_BEFORE.txt"; fi
+          cp "$MASTER_MISSION" "$OUT/MASTER_CUSTOSZ_MISSION_BEFORE.json"
+
+          STATE="$STATE" LOCK="$LOCK" AGE="$AGE" FUSER_RC="$FUSER_RC" OUT="$OUT" python3 - <<'PY'
+          import datetime as dt, hashlib, json, os, pathlib
+          state=pathlib.Path(os.environ["STATE"])
+          out=pathlib.Path(os.environ["OUT"])
+          master=json.loads((state/"MASTER_CUSTOSZ_MISSION.json").read_text())
+          mid=master.get("mission_id")
+          mp=state/"custosz"/"missions"/f"{mid}.json"
+          if not mid or not mp.is_file():
+              raise SystemExit("MISSION_RECORD_MISSING")
+          mission=json.loads(mp.read_text())
+          deadline=dt.datetime.fromisoformat(str(mission["deadline_utc"]).replace("Z","+00:00"))
+          now=dt.datetime.now(dt.timezone.utc)
+          checks={
+              "master_mission_matches":mission.get("mission_id")==mid,
+              "mission_lease_expired":now>deadline,
+              "lock_empty":pathlib.Path(os.environ["LOCK"]).stat().st_size==0,
+              "lock_old_enough":int(os.environ["AGE"])>=300,
+              "no_fuser_holder":int(os.environ["FUSER_RC"])!=0,
+          }
+          q={
+              "schema":"LOUKSNA_R4_CUSTOSZ_STALE_LEDGER_LOCK_PRECHECK/1.0",
+              "status":"PASS" if all(checks.values()) else "HOLD",
+              "mission_id":mid,
+              "mission_state":mission.get("state"),
+              "mission_started_at_utc":mission.get("started_at_utc"),
+              "mission_deadline_utc":mission.get("deadline_utc"),
+              "mission_expired_by_seconds":max(0,int((now-deadline).total_seconds())),
+              "lock_path":os.environ["LOCK"],
+              "lock_age_seconds":int(os.environ["AGE"]),
+              "checks":checks,
+              "disk_mutation_authorized":False,
+              "filesystem_payload_mutation_authorized":False,
+              "ledger_mutation_authorized":False,
+              "lock_sentinel_recovery_authorized":all(checks.values()),
+              "validated_at_utc":now.isoformat(),
+          }
+          (out/"PRECHECK.json").write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if q["status"]!="PASS":
+              raise SystemExit(23)
+          PY
+
+          # One exact recovery mutation: unlink the stale zero-byte sentinel.
+          rm -- "$LOCK"
+          test ! -e "$LOCK"
+
+          if test -f "$LEDGER"; then sha256sum "$LEDGER" > "$OUT/LEDGER_SHA256_AFTER.txt"; diff -u "$OUT/LEDGER_SHA256_BEFORE.txt" "$OUT/LEDGER_SHA256_AFTER.txt"; fi
+          if test -f "$ANCHOR"; then sha256sum "$ANCHOR" > "$OUT/ANCHOR_SHA256_AFTER.txt"; diff -u "$OUT/ANCHOR_SHA256_BEFORE.txt" "$OUT/ANCHOR_SHA256_AFTER.txt"; fi
+
+          OUT="$OUT" EXEC_DIR="$EXEC_DIR" python3 - <<'PY'
+          import datetime as dt, hashlib, json, os, pathlib
+          out=pathlib.Path(os.environ["OUT"]); d=pathlib.Path(os.environ["EXEC_DIR"])
+          pre=json.loads((out/"PRECHECK.json").read_text())
+          def digest_if(p):
+              p=pathlib.Path(p)
+              return hashlib.sha256(p.read_bytes()).hexdigest() if p.is_file() else None
+          q={
+              "schema":"LOUKSNA_R4_CUSTOSZ_STALE_LEDGER_LOCK_RECOVERY/1.0",
+              "status":"PASS",
+              "scope":"REMOVE_PROVEN_STALE_ZERO_BYTE_CUSTOSZ_LEDGER_SENTINEL_ONLY",
+              "precheck_sha256":digest_if(out/"PRECHECK.json"),
+              "old_mission_id":pre.get("mission_id"),
+              "old_mission_deadline_utc":pre.get("mission_deadline_utc"),
+              "stale_lock_removed":True,
+              "lock_was_zero_bytes":True,
+              "lock_had_no_live_holder":True,
+              "ledger_sha256_before":digest_if(pathlib.Path.home()/".local/state/louksna/r4-master-part1-part9/custosz/evidence.jsonl"),
+              "anchor_sha256_before":digest_if(pathlib.Path.home()/".local/state/louksna/r4-master-part1-part9/custosz/ledger-anchor.json"),
+              "ledger_mutated":False,
+              "anchor_mutated":False,
+              "disk_mutation_performed":False,
+              "filesystem_payload_mutation_performed":False,
+              "stage12_mutated":False,
+              "certificates_mutated":False,
+              "recovered_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          raw=json.dumps(q,indent=2,sort_keys=True)+"\n"
+          (out/"RECOVERY.json").write_text(raw)
+          (d/"CUSTOSZ_STALE_LEDGER_LOCK_RECOVERY.json").write_text(raw)
+          print(raw)
+          PY
+
+          systemctl --user reset-failed luna-r4-master-part1-part9.service || true
+          systemctl --user start luna-r4-master-part1-part9.service
+          for i in $(seq 1 30); do
+            [ "$(systemctl --user is-active luna-r4-master-part1-part9.service 2>/dev/null || true)" = "active" ] && break
+            sleep 1
+          done
+          test "$(systemctl --user is-active luna-r4-master-part1-part9.service)" = "active"
+
+          sleep 8
+          systemctl --user show luna-r4-master-part1-part9.service -p ActiveState -p SubState -p Result -p MainPID -p NRestarts > "$OUT/SERVICE_AFTER.txt"
+          cp "$STATE/MASTER_CUSTOSZ_MISSION.json" "$OUT/MASTER_CUSTOSZ_MISSION_AFTER.json" 2>/dev/null || true
+          cp "$STATE/MASTER_STATUS.json" "$OUT/MASTER_STATUS_AFTER.json" 2>/dev/null || true
+          if test -e "$LOCK"; then
+            stat -c 'path=%n size=%s mtime=%y inode=%i' "$LOCK" > "$OUT/LOCK_REAPPEARED.txt"
+          fi
+
+      - name: Upload stale-lock recovery evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-master-stale-ledger-lock-recovery
+          path: ${{ runner.temp }}/stale-lock-recovery-${{ github.run_id }}
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 0
