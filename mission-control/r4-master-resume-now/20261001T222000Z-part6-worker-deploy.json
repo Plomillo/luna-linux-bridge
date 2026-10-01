@@ -1,0 +1,15 @@
+{
+  "schema": "LOUKSNA_R4_MASTER_RESUME_REQUEST/1.0",
+  "reason": "DEPLOY_PART6_HARDENED_WORKER_UNDER_MAESTRO",
+  "controller_commit": "68d4769683566a9851784a195deae0ceebd2d7a1",
+  "worker_commit": "949a05b2f478b9a24fd1ec34e27930e3620e0185",
+  "deploy_workflow_commit": "63d1413df5dfd543e984991ee309f0278a0e1319",
+  "expected_current_part": "PART_6",
+  "worker": "MAESTRO",
+  "observation": "LOUKSNA_REMOTE_BRIDGE",
+  "require_hardened_result_before_pass": true,
+  "require_g23_g24": true,
+  "prohibit_disk_partition_mutation": true,
+  "prohibit_filesystem_format_resize": true,
+  "requested_at_utc": "2026-10-01T22:20:00Z"
+}
