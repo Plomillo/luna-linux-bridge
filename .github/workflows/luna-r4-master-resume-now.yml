@@ -57,11 +57,12 @@ jobs:
           install -d -m 0700 "$DST" "$STATE"
           install -d -m 0755 "$UNIT_DIR"
           install -m 0700 server/r4-master/master_controller.py "$DST/master_controller.py"
+          install -m 0700 server/r4-master/part6_hardened_worker.py "$DST/part6_hardened_worker.py"
           install -m 0600 server/r4-master/MASTER_MISSION.md "$DST/MASTER_MISSION.md"
           install -m 0600 server/r4-master/PART4_P3_GROWTH_HARDENED_ANTI_PARALYSIS.json "$DST/PART4_P3_GROWTH_HARDENED_ANTI_PARALYSIS.json"
           install -m 0600 server/r4-master/R4_MASTER_CONTRACT.json "$DST/R4_MASTER_CONTRACT.json"
           install -m 0600 server/r4-master/UPSTREAM_PINS.json "$DST/UPSTREAM_PINS.json"
-          python3 -m py_compile "$DST/master_controller.py"
+          python3 -m py_compile "$DST/master_controller.py" "$DST/part6_hardened_worker.py"
 
           cat > "$UNIT.tmp" <<UNIT
           [Unit]
