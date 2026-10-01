@@ -1,0 +1,106 @@
+name: "R4 PART4-PART9 — forensic live detail audit"
+
+on:
+  push:
+    branches:
+      - audit/r4-part4-part9-second-order-20261001
+    paths:
+      - ".github/workflows/r4-part4-part9-live-detail-audit.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: r4-part4-part9-live-detail-audit
+  cancel-in-progress: false
+
+jobs:
+  live_detail:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - name: Read-only forensic detail
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          O="$RUNNER_TEMP/detail"
+          mkdir -p "$O"
+          {
+            echo "=== IDENTITY ==="
+            date -u --iso-8601=seconds
+            hostname
+            id
+            cat /proc/sys/kernel/random/boot_id
+            echo "=== ROOT_HOME_PROJECTS ==="
+            findmnt -T / -o TARGET,SOURCE,FSTYPE,FSROOT,OPTIONS
+            findmnt -T "$HOME" -o TARGET,SOURCE,FSTYPE,FSROOT,OPTIONS
+            if [ -e "$HOME/PROYECTOS" ]; then
+              stat -c 'projects_stat dev=%d inode=%i mode=%a owner=%U:%G size=%s path=%n' "$HOME/PROYECTOS"
+              findmnt -T "$HOME/PROYECTOS" -o TARGET,SOURCE,FSTYPE,FSROOT,OPTIONS
+              readlink -f "$HOME/PROYECTOS"
+              find "$HOME/PROYECTOS" -mindepth 1 -maxdepth 1 -printf '%y|%f\n' 2>/dev/null | sort | head -n 120
+            fi
+            echo "=== NVME ==="
+            lsblk -b -o NAME,PATH,START,SIZE,TYPE,FSTYPE,FSVER,LABEL,UUID,PARTUUID,MOUNTPOINTS /dev/nvme0n1
+            echo "=== P3 ==="
+            lsblk -b -o PATH,START,SIZE,FSTYPE,FSVER,LABEL,UUID,PARTUUID,MOUNTPOINTS /dev/nvme0n1p3
+            sudo -n /usr/bin/blkid /dev/nvme0n1p3 || true
+            echo "=== FILESYSTEMS ==="
+            df -B1 -P
+            echo "=== QWEN_LOCAL ==="
+            pgrep -a -f 'llama-cli|Qwen3.5|qwen_provider' || true
+            ls -l "$HOME/.local/share/louksna/reasoning/models/qwen35-4b-s/Qwen3.5-4B-S-TS-Q4_K_S.gguf" 2>/dev/null || true
+            echo "=== SERVICES ==="
+            for u in actions.runner.Plomillo-luna-linux-bridge.luna-linux.service; do
+              systemctl is-active "$u" || true
+              systemctl show "$u" -p ActiveState -p SubState -p MemoryCurrent -p CPUUsageNSec --no-pager || true
+            done
+            for u in symphylax-r1.service luna-r4-master-part1-part9.service louksna-remote-bridge-observer.service louksna-live-socket.service louksna-mtls-readonly.service louksna-elastic-readonly.service louksna-elastic-readonly.timer; do
+              echo "-- $u"
+              systemctl --user is-active "$u" || true
+              systemctl --user show "$u" -p LoadState -p ActiveState -p SubState -p UnitFileState -p MemoryCurrent -p CPUUsageNSec --no-pager 2>/dev/null || true
+            done
+            echo "=== APC ==="
+            sudo -n /usr/local/sbin/louksna-apc status || true
+            echo "=== PART5 ==="
+            for p in qemu-system-x86 qemu-utils libvirt-daemon-system libvirt-clients virt-manager; do
+              dpkg-query -W "$p" 2>/dev/null || echo "ABSENT|$p"
+            done
+            test -e /dev/kvm && ls -l /dev/kvm || true
+            command -v virsh || true
+            command -v virt-host-validate || true
+            echo "=== PART6 ==="
+            for p in wine wine64 steam-installer lutris waydroid flatpak; do
+              dpkg-query -W "$p" 2>/dev/null || echo "ABSENT|$p"
+            done
+            for c in wine steam lutris waydroid flatpak; do
+              command -v "$c" || true
+            done
+            echo "=== PART7_DISCOVERY ==="
+            for base in "$HOME/Proyectos" "$HOME/Luna R4/Proyectos" "$HOME/LOUKSNA_MAESTRO_20260925" "$HOME/.local/share" "$HOME/.local/lib/louksna"; do
+              [ -d "$base" ] || continue
+              find "$base" -maxdepth 4 \( -iname '*estudio*' -o -iname '*study*' -o -iname '*devoc*' -o -iname '*hermeneut*' \) -print 2>/dev/null | head -n 100
+            done
+            echo "=== PART8 ==="
+            for c in rsync borg restic timeshift tar 7z 7zz; do printf '%s|' "$c"; command -v "$c" || true; done
+            echo "-- failed system units"
+            systemctl --failed --no-pager --plain || true
+            echo "-- failed user units"
+            systemctl --user --failed --no-pager --plain || true
+            echo "-- timers"
+            systemctl list-timers --all --no-pager --plain | head -n 80 || true
+            echo "=== END ==="
+          } | tee "$O/DETAIL.txt"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-part9-live-detail
+          path: ${{ runner.temp }}/detail/
+          retention-days: 30
+          if-no-files-found: error
