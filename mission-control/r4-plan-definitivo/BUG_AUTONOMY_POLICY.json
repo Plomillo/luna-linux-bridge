@@ -1,0 +1,98 @@
+{
+  "schema": "LOUKSNA_PUAC2_BANAL_BUG_AUTONOMY_POLICY/1.0",
+  "status": "AUTHORIZED_OPERATIONAL_POLICY",
+  "authority": "Louksna.md",
+  "assurance": "PUAC2.md",
+  "plan": "PLAN DEFINITIVO",
+  "scope": "CURRENT_AUTHORIZED_MISSION_ONLY",
+  "doctrine": "EXTEND_DO_NOT_REPLACE",
+  "failure_posture": "FAIL_CLOSED",
+  "purpose": "Allow autonomous correction of trivial deterministic implementation defects without redoing already-certified material work or requesting repeated human approval.",
+  "banal_bug_definition": {
+    "required_all": [
+      "exact_failure_evidence_exists",
+      "root_cause_is_deterministic_and_localized",
+      "no_data_integrity_failure",
+      "no_hash_mismatch_of_protected_payload",
+      "no_scope_expansion",
+      "no_authority_change",
+      "no_privilege_expansion",
+      "no_new_destructive_operation",
+      "no_legal_or_license_gate",
+      "minimum_corrective_delta_is_testable"
+    ],
+    "examples": [
+      "filename_or_path_mismatch",
+      "read_only_privilege_boundary_mismatch",
+      "quoting_or_shell_redirection_bug",
+      "environment_variable_or_runtime_path_bug",
+      "deterministic_parser_or_validator_false_negative",
+      "workflow_wiring_or_artifact_name_mismatch"
+    ]
+  },
+  "autonomous_remediation_pipeline": [
+    "CAPTURE_FAILURE",
+    "CLASSIFY",
+    "PROVE_BANAL_SCOPE",
+    "CHECKPOINT_CURRENT_VALID_STATE",
+    "PATCH_MINIMUM_DELTA",
+    "STATIC_TEST",
+    "NEGATIVE_TESTS_WHERE_APPLICABLE",
+    "AUDIT",
+    "TRACE",
+    "G23",
+    "G24",
+    "RERUN_ONLY_FAILED_OR_DOWNSTREAM_STEP",
+    "NON_REGRESSION",
+    "CONTINUE"
+  ],
+  "hard_rules": {
+    "repeat_certified_work": false,
+    "repeat_hash_verified_bulk_copy": false,
+    "repeat_partition_migration": false,
+    "debian_redownload": false,
+    "debian_reinstall": false,
+    "kde_redownload": false,
+    "kde_reinstall": false,
+    "bypass_g23": false,
+    "bypass_g24": false,
+    "certification_propagation": false,
+    "silent_scope_expansion": false,
+    "silent_privilege_expansion": false,
+    "blind_retry": false,
+    "identical_irreversible_retry": false
+  },
+  "mandatory_hold_classes": [
+    "DATA_CORRUPTION",
+    "PROTECTED_HASH_MISMATCH",
+    "UNEXPECTED_PARTITION_GEOMETRY",
+    "UNRESOLVED_BOOT_SAFETY",
+    "SCOPE_DRIFT",
+    "AUTHORITY_CHANGE",
+    "PRIVILEGE_EXPANSION",
+    "NEW_DESTRUCTIVE_SCOPE",
+    "LEGAL_OR_LICENSE_GATE",
+    "SECRET_OR_CREDENTIAL_EXPOSURE",
+    "UNKNOWN"
+  ],
+  "human_reprompt_only_if": [
+    "SCOPE_EXPANSION",
+    "NEW_IRREVERSIBLE_SCOPE",
+    "LEGAL_LICENSE_GATE",
+    "AUTHORITY_CHANGE",
+    "UNRESOLVED_SAFETY_BOUNDARY"
+  ],
+  "evidence_requirements": [
+    "source_run_id",
+    "source_job_id",
+    "source_commit",
+    "exact_error",
+    "root_cause",
+    "patch_diff_or_patch_hash",
+    "static_validation",
+    "g23_reference",
+    "g24_reference",
+    "rerun_reference",
+    "non_regression_result"
+  ]
+}
