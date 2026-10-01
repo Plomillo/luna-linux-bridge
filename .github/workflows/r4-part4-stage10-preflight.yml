@@ -24,6 +24,9 @@ jobs:
           set -Eeuo pipefail
           OUT="$RUNNER_TEMP/stage10-preflight-$GITHUB_RUN_ID"
           mkdir -p "$OUT"
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
           systemctl --user show luna-r4-master-part1-part9.service -p FragmentPath -p ExecStart -p ActiveState -p SubState > "$OUT/SERVICE.txt"
           gh api repos/Plomillo/luna-linux-bridge/actions/runs/36619942178/artifacts > "$OUT/BASELINE_ARTIFACTS.json"
           OUT="$OUT" python3 - <<'PY'
