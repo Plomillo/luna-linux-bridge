@@ -27,7 +27,9 @@
       "quoting_or_shell_redirection_bug",
       "environment_variable_or_runtime_path_bug",
       "deterministic_parser_or_validator_false_negative",
-      "workflow_wiring_or_artifact_name_mismatch"
+      "workflow_wiring_or_artifact_name_mismatch",
+      "privilege_propagation_mismatch",
+      "root_owned_tree_verifier_permission_mismatch"
     ]
   },
   "autonomous_remediation_pipeline": [
@@ -60,7 +62,10 @@
     "silent_scope_expansion": false,
     "silent_privilege_expansion": false,
     "blind_retry": false,
-    "identical_irreversible_retry": false
+    "identical_irreversible_retry": false,
+    "sudoers_mutation": false,
+    "interactive_sudo": false,
+    "unscoped_root_shell": false
   },
   "mandatory_hold_classes": [
     "DATA_CORRUPTION",
@@ -94,5 +99,21 @@
     "g24_reference",
     "rerun_reference",
     "non_regression_result"
-  ]
+  ],
+  "sudo_policy": {
+    "capability": "PERMANENT_NONINTERACTIVE_WITHIN_ALREADY_AUTHORIZED_SCOPE",
+    "command_prefix": "sudo -n",
+    "interactive_password_prompts": "FORBIDDEN",
+    "sudoers_mutation": "FORBIDDEN",
+    "privilege_scope_expansion": "FORBIDDEN",
+    "automatic_use_required_for": [
+      "root_owned_candidate_tree_reads",
+      "root_owned_candidate_tree_verification",
+      "protected_boot_metadata_reads",
+      "block_device_reads_and_already_authorized_mutations",
+      "mount_umount_chroot_bootloader_operations_within_existing_part4_scope"
+    ],
+    "automatic_banal_bug_remediation": true,
+    "rule": "If a deterministic permission-boundary bug occurs inside already-authorized scope and no new destructive or privilege scope is introduced, correct the exact call to use sudo -n, audit it, validate G23, certify G24, and resume only the failed/downstream step."
+  }
 }
