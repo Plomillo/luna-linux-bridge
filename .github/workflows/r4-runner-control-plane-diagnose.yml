@@ -32,22 +32,7 @@ jobs:
           echo "job_api_rc=$JRC"
           cat job.err || true
           if test -s job.json; then
-            python3 - <<'PY'
-import json
-d=json.load(open("job.json"))
-print(json.dumps({
-  "id":d.get("id"),
-  "status":d.get("status"),
-  "conclusion":d.get("conclusion"),
-  "runner_id":d.get("runner_id"),
-  "runner_name":d.get("runner_name"),
-  "runner_group_id":d.get("runner_group_id"),
-  "runner_group_name":d.get("runner_group_name"),
-  "labels":d.get("labels"),
-  "started_at":d.get("started_at"),
-  "completed_at":d.get("completed_at"),
-},indent=2,sort_keys=True))
-PY
+            python3 -c 'import json; d=json.load(open("job.json")); print(json.dumps({"id":d.get("id"),"status":d.get("status"),"conclusion":d.get("conclusion"),"runner_id":d.get("runner_id"),"runner_name":d.get("runner_name"),"runner_group_id":d.get("runner_group_id"),"runner_group_name":d.get("runner_group_name"),"labels":d.get("labels"),"started_at":d.get("started_at"),"completed_at":d.get("completed_at")},indent=2,sort_keys=True))'
           fi
 
           echo "=== REPOSITORY RUNNERS ==="
@@ -58,19 +43,5 @@ PY
           echo "runners_api_rc=$RRC"
           cat runners.err || true
           if test -s runners.json; then
-            python3 - <<'PY'
-import json
-d=json.load(open("runners.json"))
-print(json.dumps({
- "total_count":d.get("total_count"),
- "runners":[{
-   "id":x.get("id"),
-   "name":x.get("name"),
-   "os":x.get("os"),
-   "status":x.get("status"),
-   "busy":x.get("busy"),
-   "labels":[y.get("name") for y in x.get("labels",[])]
- } for x in d.get("runners",[])]
-},indent=2,sort_keys=True))
-PY
+            python3 -c 'import json; d=json.load(open("runners.json")); print(json.dumps({"total_count":d.get("total_count"),"runners":[{"id":x.get("id"),"name":x.get("name"),"os":x.get("os"),"status":x.get("status"),"busy":x.get("busy"),"labels":[y.get("name") for y in x.get("labels",[])]} for x in d.get("runners",[])]},indent=2,sort_keys=True))'
           fi
