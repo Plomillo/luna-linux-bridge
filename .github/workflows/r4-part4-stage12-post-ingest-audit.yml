@@ -1,0 +1,178 @@
+name: "R4 PART4 — Stage12 post-ingest closure audit"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-part4-stage12-post-ingest-audit.yml
+      - mission-control/r4-part4-stage12-post-ingest-audit/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r4-part4-stage12-post-ingest-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 10
+    steps:
+      - name: Audit Stage12 closure and PART4 handoff read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/stage12-post-ingest-$GITHUB_RUN_ID"
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9"
+          EXEC_DIR="$STATE/PART_4_P3_HARDENED"
+          CERTS="$STATE/certificates"
+          EVIDENCE="$STATE/evidence"
+          mkdir -p "$OUT"
+
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+
+          cp "$EXEC_DIR/EXECUTION.json" "$OUT/EXECUTION.json"
+          cp "$STATE/PART_4_R2/STATE.json" "$OUT/PART4_R2_STATE.json"
+          cp "$STATE/MASTER_STATUS.json" "$OUT/MASTER_STATUS.json"
+          cp "$EXEC_DIR/STAGE12_RESULT.json" "$OUT/STAGE12_RESULT.json"
+          cp "$EXEC_DIR/STAGE12_G23.json" "$OUT/STAGE12_G23.json"
+          cp "$EXEC_DIR/STAGE12_FINAL_MERGE_G24.json" "$OUT/STAGE12_FINAL_MERGE_G24.json"
+          cp "$EXEC_DIR/STAGE12_PART4_G24.json" "$OUT/STAGE12_PART4_G24.json"
+          if test -f "$EXEC_DIR/STAGE12_STATE_UPDATE.json"; then cp "$EXEC_DIR/STAGE12_STATE_UPDATE.json" "$OUT/STAGE12_STATE_UPDATE.json"; fi
+          if test -f "$CERTS/PART_4.json"; then cp "$CERTS/PART_4.json" "$OUT/PART4_CERTIFICATE.json"; fi
+          if test -f "$EVIDENCE/PART_4.json"; then cp "$EVIDENCE/PART_4.json" "$OUT/PART4_EVIDENCE.json"; fi
+
+          findmnt -n -o SOURCE,FSTYPE / > "$OUT/FINDMNT_ROOT.txt"
+          findmnt -n -o SOURCE,FSTYPE /boot/efi > "$OUT/FINDMNT_EFI.txt"
+          lsblk -J -b -o NAME,PATH,TYPE,SIZE,START,FSTYPE,MOUNTPOINTS,UUID,PARTUUID /dev/nvme0n1 > "$OUT/LSBLK.json"
+          systemctl --user show luna-r4-master-part1-part9.service -p ActiveState -p SubState -p Result -p MainPID -p NRestarts > "$OUT/MASTER_SERVICE.txt"
+
+          mapfile -t LINKS < <(find "$HOME/.local/lib/louksna-remote-bridge" -type f -path '*/bridge/live_link.py' -print 2>/dev/null | sort)
+          test "${#LINKS[@]}" -ge 1
+          LINK="${LINKS[-1]}"
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op status > "$OUT/LRB_STATUS.json"
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op observe > "$OUT/LRB_OBSERVE.json"
+
+          OUT="$OUT" python3 - <<'PY'
+          import hashlib,json,os,pathlib,subprocess,datetime as dt
+          out=pathlib.Path(os.environ["OUT"])
+          ex=json.loads((out/"EXECUTION.json").read_text())
+          r2=json.loads((out/"PART4_R2_STATE.json").read_text())
+          ms=json.loads((out/"MASTER_STATUS.json").read_text())
+          s12=json.loads((out/"STAGE12_RESULT.json").read_text())
+          g23=json.loads((out/"STAGE12_G23.json").read_text())
+          mg24=json.loads((out/"STAGE12_FINAL_MERGE_G24.json").read_text())
+          pg24=json.loads((out/"STAGE12_PART4_G24.json").read_text())
+          su=json.loads((out/"STAGE12_STATE_UPDATE.json").read_text()) if (out/"STAGE12_STATE_UPDATE.json").is_file() else None
+          cert=json.loads((out/"PART4_CERTIFICATE.json").read_text()) if (out/"PART4_CERTIFICATE.json").is_file() else None
+          ev=json.loads((out/"PART4_EVIDENCE.json").read_text()) if (out/"PART4_EVIDENCE.json").is_file() else None
+          lrb=json.loads((out/"LRB_STATUS.json").read_text())
+          obs=json.loads((out/"LRB_OBSERVE.json").read_text())
+
+          def sha(p):
+              h=hashlib.sha256()
+              with pathlib.Path(p).open("rb") as f:
+                  for b in iter(lambda:f.read(1024*1024),b""):
+                      h.update(b)
+              return h.hexdigest()
+
+          root=(out/"FINDMNT_ROOT.txt").read_text().split()
+          efi=(out/"FINDMNT_EFI.txt").read_text().split()
+          parts=subprocess.check_output(["lsblk","-ln","-o","PATH,TYPE","/dev/nvme0n1"],text=True).splitlines()
+          partitions=sorted(x.split()[0] for x in parts if len(x.split())>=2 and x.split()[1]=="part")
+
+          stage12_checks={
+              "execution_last_completed_12":int(ex.get("last_completed_stage",0))==12,
+              "execution_current_12":int(ex.get("current_stage",0))==12,
+              "execution_status_pass":ex.get("status")=="PASS",
+              "execution_handoff":ex.get("next_authorized_action")=="HANDOFF_PART4_TO_PART5",
+              "stage12_result_pass":s12.get("status")=="PASS",
+              "stage12_result_checks":all(s12.get("checks",{}).values()),
+              "state_update_present":su is not None,
+              "state_update_pass":su is not None and su.get("status")=="PASS",
+              "state_update_checks":su is not None and all(su.get("checks",{}).values()),
+              "final_linux_layout":r2.get("final_linux_layout") is True,
+              "verified_root":r2.get("verified_root_on_consolidated_linux") is True,
+              "final_merge_g24":r2.get("final_merge_g24") is True,
+              "part4_r2_final_g24":r2.get("part4_r2_final_g24") is True,
+              "final_merge_hash":r2.get("final_merge_g24_sha256")==sha(out/"STAGE12_FINAL_MERGE_G24.json"),
+              "part4_final_hash":r2.get("part4_r2_final_g24_sha256")==sha(out/"STAGE12_PART4_G24.json"),
+              "g23_chain":s12.get("g23_sha256")==sha(out/"STAGE12_G23.json"),
+              "merge_chain":s12.get("final_merge_g24_sha256")==sha(out/"STAGE12_FINAL_MERGE_G24.json"),
+              "part4_chain":s12.get("part4_final_g24_sha256")==sha(out/"STAGE12_PART4_G24.json"),
+              "no_cert_propagation":mg24.get("certification_propagated") is False and pg24.get("certification_propagated") is False,
+              "root_live":len(root)>=2 and root[0]=="/dev/nvme0n1p3" and root[1]=="ext4",
+              "efi_live":len(efi)>=2 and efi[0]=="/dev/nvme0n1p1" and efi[1]=="vfat",
+              "partitions_live":partitions==["/dev/nvme0n1p1","/dev/nvme0n1p3"],
+              "lrb_live":lrb.get("host")=="LOUKSNA" and bool(obs.get("evidence_sha256")),
+          }
+          stage12_closed=all(stage12_checks.values())
+
+          cert_checks={
+              "certificate_present":cert is not None,
+              "certificate_pass":cert is not None and cert.get("status")=="PASS",
+              "certificate_part4":cert is not None and cert.get("part")=="PART_4",
+              "part4_evidence_present":ev is not None,
+              "part4_evidence_pass":ev is not None and ev.get("status")=="PASS",
+              "master_advanced_to_part5":ms.get("current_part")=="PART_5",
+              "master_not_part4_hold":not (ms.get("current_part")=="PART_4" and ms.get("status")=="HOLD"),
+          }
+          part4_closed=all(cert_checks.values())
+
+          classification=(
+              "PART4_CLOSED_HANDOFF_PART5"
+              if stage12_closed and part4_closed else
+              "STAGE12_CLOSED_PART4_CERTIFICATION_PENDING"
+              if stage12_closed else
+              "STAGE12_NOT_CLOSED"
+          )
+          q={
+              "schema":"LOUKSNA_R4_PART4_STAGE12_POST_INGEST_AUDIT/1.0",
+              "status":"PASS" if stage12_closed else "HOLD",
+              "classification":classification,
+              "stage12_closed":stage12_closed,
+              "part4_closed":part4_closed,
+              "stage12_checks":stage12_checks,
+              "part4_certificate_checks":cert_checks,
+              "execution":{
+                  "current_stage":ex.get("current_stage"),
+                  "last_completed_stage":ex.get("last_completed_stage"),
+                  "status":ex.get("status"),
+                  "next_authorized_action":ex.get("next_authorized_action"),
+                  "updated_at_utc":ex.get("updated_at_utc"),
+              },
+              "master":{
+                  "status":ms.get("status"),
+                  "current_part":ms.get("current_part"),
+                  "blockers":ms.get("blockers"),
+                  "next":ms.get("next"),
+                  "updated_at_utc":ms.get("updated_at_utc"),
+              },
+              "part4_certificate_sha256":sha(out/"PART4_CERTIFICATE.json") if cert is not None else None,
+              "part4_evidence_sha256":sha(out/"PART4_EVIDENCE.json") if ev is not None else None,
+              "stage12_state_update_sha256":sha(out/"STAGE12_STATE_UPDATE.json") if su is not None else None,
+              "lrb_evidence_seq":obs.get("evidence_seq"),
+              "lrb_evidence_sha256":obs.get("evidence_sha256"),
+              "disk_mutation_performed":False,
+              "filesystem_mutation_performed":False,
+              "observed_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          (out/"AUDIT.json").write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if not stage12_closed:
+              raise SystemExit(23)
+          PY
+
+      - name: Upload closure audit
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-stage12-post-ingest-audit
+          path: ${{ runner.temp }}/stage12-post-ingest-${{ github.run_id }}
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 0
