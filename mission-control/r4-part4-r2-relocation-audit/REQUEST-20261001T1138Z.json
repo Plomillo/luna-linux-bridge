@@ -1,0 +1,10 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_RELOCATION_AUDIT_REQUEST/1.0",
+  "mode": "READ_ONLY_FORENSIC",
+  "purpose": "Verify current P3 PRE_RELOCATION vs POST_RELOCATION state and certify resume-idempotency diagnosis before correction.",
+  "prohibit_desktop_commander": true,
+  "repeat_projects_migration": false,
+  "repeat_partition_migration": false,
+  "authority": "Louksna.md",
+  "assurance": "PUAC2.md"
+}
