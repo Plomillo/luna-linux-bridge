@@ -1,0 +1,11 @@
+{
+  "schema": "LOUKSNA_R4_MASTER_RESUME_REQUEST/1.0",
+  "reason": "INGEST_STAGE11_CERTIFIED_EXT4_RESULT",
+  "source_stage11_run_id": 36925651622,
+  "source_stage11_artifact_id": 11194371467,
+  "expected_stage_before": 11,
+  "expected_stage_after": 12,
+  "require_no_additional_resize2fs": true,
+  "require_no_disk_geometry_mutation": true,
+  "requested_at_utc": "2026-10-01T21:12:00Z"
+}
