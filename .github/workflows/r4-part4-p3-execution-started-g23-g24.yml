@@ -1,0 +1,198 @@
+name: "R4 PART4 — certify Maestro 12-stage execution started"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-part4-p3-execution-started-g23-g24.yml
+      - mission-control/r4-part4-p3-execution-started/**
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: r4-part4-p3-execution-started
+  cancel-in-progress: false
+
+jobs:
+  live:
+    name: Live Remote Bridge execution-start proof
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 8
+    steps:
+      - name: Observe live Maestro stage state
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/live"
+          mkdir -p "$OUT"
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9"
+          EXEC="$STATE/PART_4_P3_HARDENED/EXECUTION.json"
+          CONTRACT="$HOME/.local/lib/louksna/r4-master-part1-part9/PART4_P3_GROWTH_HARDENED_ANTI_PARALYSIS.json"
+          test -f "$EXEC" -a -f "$CONTRACT"
+
+          mapfile -t LINKS < <(find "$HOME/.local/lib/louksna-remote-bridge" -type f -path '*/bridge/live_link.py' -print 2>/dev/null | sort)
+          test "${#LINKS[@]}" -ge 1
+          LINK="${LINKS[-1]}"
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op status > "$OUT/LRB_STATUS.json"
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op observe > "$OUT/LRB_OBSERVE.json"
+          cp "$EXEC" "$OUT/EXECUTION.json"
+          cp "$CONTRACT" "$OUT/CONTRACT.json"
+          cp "$STATE/MASTER_STATUS.json" "$OUT/MASTER_STATUS.json"
+
+          python3 - "$OUT" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,sys
+          root=pathlib.Path(sys.argv[1])
+          e=json.loads((root/"EXECUTION.json").read_text())
+          c=json.loads((root/"CONTRACT.json").read_text())
+          s=json.loads((root/"MASTER_STATUS.json").read_text())
+          l=json.loads((root/"LRB_STATUS.json").read_text())
+          o=json.loads((root/"LRB_OBSERVE.json").read_text())
+          checks={
+            "host_live":l.get("host")=="LOUKSNA",
+            "contract_exact":c.get("contract_id")=="PART4-P3-GROWTH-HARDENED-ANTI-PARALYSIS-20261001",
+            "twelve_stages":len(c.get("stages",[]))==12,
+            "mission_continuity":e.get("mission_id")==s.get("mission_id")=="MIS-e5963403a3b44ee8be96",
+            "stage1_completed":int(e.get("last_completed_stage",0))>=1,
+            "advanced_beyond_stage1":int(e.get("current_stage",0))>=2,
+            "history_has_stage1_pass":any(x.get("stage")==1 and x.get("status")=="PASS" for x in e.get("history",[])),
+            "master_exports_execution":int(s.get("stage_last_completed",0))>=1 and int(s.get("stage_current",0))>=2,
+            "remote_bridge_evidence":bool(o.get("evidence_sha256")),
+            "no_disk_mutation":e.get("disk_mutation_performed") is False,
+            "no_fs_mutation":e.get("filesystem_mutation_performed") is False,
+          }
+          ok=all(checks.values())
+          q={
+            "schema":"LOUKSNA_R4_PART4_P3_EXECUTION_STARTED_LIVE/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "classification":"MAESTRO_12_STAGE_EXECUTION_STARTED" if ok else "NOT_PROVEN",
+            "contract_id":c.get("contract_id"),
+            "mission_id":e.get("mission_id"),
+            "current_stage":e.get("current_stage"),
+            "last_completed_stage":e.get("last_completed_stage"),
+            "next_authorized_action":e.get("next_authorized_action"),
+            "execution_sha256":hashlib.sha256((root/"EXECUTION.json").read_bytes()).hexdigest(),
+            "contract_sha256":hashlib.sha256((root/"CONTRACT.json").read_bytes()).hexdigest(),
+            "remote_bridge_evidence_seq":o.get("evidence_seq"),
+            "remote_bridge_evidence_sha256":o.get("evidence_sha256"),
+            "checks":checks,
+            "disk_mutation_performed":False,
+            "observed_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          (root/"LIVE.json").write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(23)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-p3-execution-started-live
+          path: ${{ runner.temp }}/live/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  g23:
+    name: G23 independently validate execution started
+    needs: live
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-p3-execution-started-live
+          path: ${{ runner.temp }}/live
+      - name: Independent start gate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/live/LIVE.json" "$RUNNER_TEMP/g23/G23.json" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,sys
+          lp,out=map(pathlib.Path,sys.argv[1:])
+          l=json.loads(lp.read_text())
+          checks={
+            "live_pass":l.get("status")=="PASS",
+            "classification":l.get("classification")=="MAESTRO_12_STAGE_EXECUTION_STARTED",
+            "all_live_checks":all(l.get("checks",{}).values()),
+            "stage1_done":int(l.get("last_completed_stage",0))>=1,
+            "stage2_or_later":int(l.get("current_stage",0))>=2,
+            "no_disk_mutation":l.get("disk_mutation_performed") is False,
+          }
+          ok=all(checks.values())
+          q={
+            "schema":"LOUKSNA_R4_PART4_P3_EXECUTION_STARTED_G23/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "scope":"MAESTRO_12_STAGE_EXECUTION_STARTED_ONLY",
+            "live_sha256":hashlib.sha256(lp.read_bytes()).hexdigest(),
+            "checks":checks,
+            "g24_allowed":ok,
+            "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          out.write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(23)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-p3-execution-started-g23
+          path: ${{ runner.temp }}/g23/G23.json
+          retention-days: 90
+          compression-level: 0
+
+  g24:
+    name: G24 certify Maestro 12-stage execution started
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-p3-execution-started-g23
+          path: ${{ runner.temp }}/g23
+      - name: Issue start certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/G23.json"
+          test "$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(d["status"] if d.get("g24_allowed") else "HOLD")' "$G")" = PASS
+          H="$(sha256sum "$G"|awk '{print $1}')"
+          AUD="louksna-r4-part4-p3-execution-started:$H"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export H AUD TOKEN
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$RUNNER_TEMP/g24/G24.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          t=os.environ["TOKEN"]; p=t.split(".")
+          payload=p[1]+"="*((4-len(p[1])%4)%4); claims=json.loads(base64.urlsafe_b64decode(payload))
+          aud=claims.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          q={
+            "schema":"LOUKSNA_R4_PART4_P3_EXECUTION_STARTED_G24/1.0",
+            "status":"PASS",
+            "scope":"MAESTRO_12_STAGE_EXECUTION_STARTED_ONLY",
+            "classification":"CERTIFIED_STARTED",
+            "g23_sha256":os.environ["H"],
+            "authority_authenticated":True,
+            "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
+            "disk_mutation_authorized":False,
+            "filesystem_mutation_authorized":False,
+            "package_install_authorized":False,
+            "certification_propagated":False,
+            "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-p3-execution-started-g24
+          path: ${{ runner.temp }}/g24/G24.json
+          retention-days: 90
+          compression-level: 0
