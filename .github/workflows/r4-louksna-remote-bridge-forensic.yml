@@ -65,6 +65,10 @@ jobs:
               cp "$STATE/$f" "$OUT/$(basename "$f")"
             fi
           done
+          echo "=== MASTER_STATUS ==="
+          cat "$OUT/MASTER_STATUS.json" 2>/dev/null || true
+          echo "=== PART4_R2_STATE ==="
+          cat "$OUT/STATE.json" 2>/dev/null || true
           (
             cd "$OUT"
             sha256sum ./* > SHA256SUMS.txt
