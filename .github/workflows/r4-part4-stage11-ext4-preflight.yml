@@ -1,0 +1,162 @@
+name: "R4 PART4 — Stage11 ext4 transaction preflight"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-stage11-preflight/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r4-part4-stage11-ext4-preflight
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 10
+    steps:
+      - name: Build fresh read-only Stage11 candidate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/stage11-preflight-$GITHUB_RUN_ID"
+          EXEC_DIR="$HOME/.local/state/louksna/r4-master-part1-part9/PART_4_P3_HARDENED"
+          mkdir -p "$OUT"
+
+          test -f "$EXEC_DIR/EXECUTION.json"
+          test -f "$EXEC_DIR/STAGE10_PROYECTOS_NON_REGRESSION.json"
+
+          sudo -n /usr/sbin/tune2fs -l /dev/nvme0n1p3 > "$OUT/TUNE2FS.txt"
+          sudo -n /usr/sbin/dumpe2fs -h /dev/nvme0n1p3 > "$OUT/DUMPE2FS.txt" 2> "$OUT/DUMPE2FS.stderr"
+          sudo -n /usr/bin/blockdev --getsize64 /dev/nvme0n1p3 > "$OUT/BLOCKDEV_BYTES.txt"
+          lsblk -J -b -o NAME,PATH,TYPE,SIZE,START,FSTYPE,FSAVAIL,FSUSE%,MOUNTPOINTS,UUID,PARTUUID /dev/nvme0n1 > "$OUT/LSBLK.json"
+          findmnt -n -o SOURCE,FSTYPE,OPTIONS / > "$OUT/FINDMNT_ROOT.txt"
+          cat /sys/class/block/nvme0n1p3/start > "$OUT/P3_START.txt"
+          cat /sys/class/block/nvme0n1p3/size > "$OUT/P3_SECTORS.txt"
+          if test -r /sys/fs/ext4/nvme0n1p3/errors_count; then
+            cat /sys/fs/ext4/nvme0n1p3/errors_count > "$OUT/EXT4_ERRORS_COUNT.txt"
+          else
+            echo "UNAVAILABLE" > "$OUT/EXT4_ERRORS_COUNT.txt"
+          fi
+          sudo -n dmesg --level=err,warn 2>/dev/null | grep -Ei 'EXT4-fs|nvme0n1p3' | tail -n 200 > "$OUT/EXT4_DMESG_WARN_ERR.txt" || true
+
+          OUT="$OUT" EXEC_DIR="$EXEC_DIR" python3 - <<'PY'
+          import datetime as dt
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import re
+          import subprocess
+
+          out=pathlib.Path(os.environ["OUT"])
+          d=pathlib.Path(os.environ["EXEC_DIR"])
+          execution=json.loads((d/"EXECUTION.json").read_text())
+          s10=json.loads((d/"STAGE10_PROYECTOS_NON_REGRESSION.json").read_text())
+
+          def sha256(p):
+              h=hashlib.sha256()
+              with pathlib.Path(p).open("rb") as f:
+                  for b in iter(lambda:f.read(1024*1024),b""):
+                      h.update(b)
+              return h.hexdigest()
+
+          tune=(out/"TUNE2FS.txt").read_text(errors="replace")
+          def field(name):
+              m=re.search(r"^"+re.escape(name)+r":\s*(.+)$",tune,re.M)
+              return m.group(1).strip() if m else None
+
+          block_count=int(field("Block count"))
+          block_size=int(field("Block size"))
+          fs_bytes=block_count*block_size
+          dev_bytes=int((out/"BLOCKDEV_BYTES.txt").read_text().strip())
+          p3_start=int((out/"P3_START.txt").read_text().strip())
+          p3_sectors=int((out/"P3_SECTORS.txt").read_text().strip())
+          root=(out/"FINDMNT_ROOT.txt").read_text().strip().split()
+          uuid=subprocess.check_output(["lsblk","-n","-o","UUID","/dev/nvme0n1p3"],text=True).strip()
+          partuuid=subprocess.check_output(["lsblk","-n","-o","PARTUUID","/dev/nvme0n1p3"],text=True).strip()
+          errors_raw=(out/"EXT4_ERRORS_COUNT.txt").read_text().strip()
+          errors_count=None if errors_raw=="UNAVAILABLE" else int(errors_raw)
+          fs_state=field("Filesystem state")
+          fs_errors_behavior=field("Errors behavior")
+          dmesg=(out/"EXT4_DMESG_WARN_ERR.txt").read_text(errors="replace")
+          fatal_markers=["EXT4-fs error","Remounting filesystem read-only","Aborting journal","I/O error"]
+          dmesg_fatal=any(x.lower() in dmesg.lower() for x in fatal_markers)
+
+          checks={
+              "execution_boundary": int(execution.get("last_completed_stage",0))==10 and int(execution.get("current_stage",0))==11,
+              "stage10_pass": s10.get("status")=="PASS",
+              "stage10_scope": s10.get("scope")=="PROYECTOS_FORENSIC_NON_REGRESSION_BARRIER",
+              "stage10_manifest": s10.get("manifest_sha256")=="99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+              "stage10_mismatch_zero": all(int(s10.get(k,-1))==0 for k in ["missing","unexpected","hash_mismatch","type_mismatch","size_mismatch"]),
+              "root_source": len(root)>=2 and root[0]=="/dev/nvme0n1p3",
+              "root_fstype": len(root)>=2 and root[1]=="ext4",
+              "p3_start": p3_start==567296,
+              "p3_target_sectors": p3_sectors==999647887,
+              "uuid_preserved": uuid=="e084ec2a-af39-48b5-bb89-db2dc6a98332",
+              "partuuid_preserved": partuuid=="8e0b4274-21ff-4b16-8180-495381efb1d9",
+              "filesystem_smaller_than_device": fs_bytes < dev_bytes,
+              "filesystem_state_clean": fs_state=="clean",
+              "errors_count_zero_or_unavailable": errors_count in (None,0),
+              "no_fatal_ext4_kernel_marker": not dmesg_fatal,
+          }
+
+          candidate={
+              "schema":"LOUKSNA_R4_PART4_STAGE11_EXT4_CANDIDATE/1.0",
+              "status":"CANDIDATE_READY" if all(checks.values()) else "HOLD",
+              "scope":"ONE_ONLINE_EXT4_GROW_ONLY",
+              "device":"/dev/nvme0n1p3",
+              "command":["sudo","-n","/usr/sbin/resize2fs","/dev/nvme0n1p3"],
+              "filesystem":"ext4",
+              "online_root":True,
+              "filesystem_block_count_before":block_count,
+              "filesystem_block_size":block_size,
+              "filesystem_bytes_before":fs_bytes,
+              "block_device_bytes":dev_bytes,
+              "growth_bytes_available":dev_bytes-fs_bytes,
+              "p3_start_sector":p3_start,
+              "p3_size_sectors":p3_sectors,
+              "uuid":uuid,
+              "partuuid":partuuid,
+              "filesystem_state":fs_state,
+              "errors_behavior":fs_errors_behavior,
+              "errors_count":errors_count,
+              "dmesg_fatal_ext4_marker":dmesg_fatal,
+              "stage10_sha256":sha256(d/"STAGE10_PROYECTOS_NON_REGRESSION.json"),
+              "execution_sha256":sha256(d/"EXECUTION.json"),
+              "checks":checks,
+              "format_allowed":False,
+              "shrink_allowed":False,
+              "move_start_allowed":False,
+              "partition_table_mutation_allowed":False,
+              "reboot_allowed":False,
+              "resize2fs_attempts_authorized":1,
+              "rollback_is_shrink":False,
+              "rollback_strategy":"NO_SHRINK_ROLLBACK; FAIL_CLOSED; PRESERVE_ROOT_AND_EVIDENCE",
+              "postcondition_requires_full_proyectos_reverify":True,
+              "disk_mutation_performed":False,
+              "filesystem_mutation_performed":False,
+              "recorded_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          raw=json.dumps(candidate,indent=2,sort_keys=True)+"\n"
+          (out/"STAGE11_CANDIDATE.json").write_text(raw)
+          print(raw)
+          if candidate["status"]!="CANDIDATE_READY":
+              raise SystemExit(23)
+          PY
+
+          sha256sum "$OUT"/* | sort > "$OUT/SHA256SUMS.txt"
+
+      - name: Upload Stage11 candidate
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-stage11-candidate
+          path: ${{ runner.temp }}/stage11-preflight-${{ github.run_id }}
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 0
