@@ -1,0 +1,144 @@
+name: "R4 PART6 — execution readiness"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part6-execution-readiness/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r4-part6-execution-readiness
+  cancel-in-progress: false
+
+jobs:
+  readiness:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 15
+    steps:
+      - name: Simulate exact dependency plan without mutation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+          export LANG=C
+          OUT="$RUNNER_TEMP/r4-part6-readiness-$GITHUB_RUN_ID"
+          D="$HOME/.local/state/louksna/r4-master-part1-part9/PART_6_HARDENED"
+          mkdir -p "$OUT/src" "$OUT/steamcmd"
+
+          cp "$D/CANDIDATE.json" "$OUT/CANDIDATE.json"
+          cp "$D/G23.json" "$OUT/G23.json"
+          cp "$D/G24.json" "$OUT/G24.json"
+          cp "$D/PRECOMMIT.json" "$OUT/PRECOMMIT.json"
+
+          curl -fsSL --retry 3 "https://repo.steampowered.com/steam/archive/stable/steam_latest.deb" -o "$OUT/src/steam_latest.deb"
+          curl -fsSL --retry 3 "https://github.com/ValveSoftware/Proton/archive/refs/tags/proton-11.0-2.tar.gz" -o "$OUT/src/proton-11.0-2.tar.gz"
+          curl -fsSL --retry 3 "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz" -o "$OUT/src/steamcmd_linux.tar.gz"
+          curl -fsSL --retry 3 "https://dl.flathub.org/repo/flathub.flatpakrepo" -o "$OUT/src/flathub.flatpakrepo"
+          curl -fsSL --retry 3 "https://repo.waydro.id" -o "$OUT/src/waydroid-repo-script.sh"
+
+          sha256sum "$OUT/src"/* | sort > "$OUT/SOURCE_HASHES.txt"
+          dpkg --print-foreign-architectures > "$OUT/FOREIGN_ARCHES.txt"
+          dpkg-deb -f "$OUT/src/steam_latest.deb" Package Version Architecture Depends Recommends > "$OUT/STEAM_CONTROL.txt"
+
+          set +e
+          apt-get -s --no-install-recommends install wine flatpak > "$OUT/APT_BASE_SIM.stdout" 2> "$OUT/APT_BASE_SIM.stderr"
+          echo $? > "$OUT/APT_BASE_SIM.rc"
+          apt-get -s --no-install-recommends install "$OUT/src/steam_latest.deb" > "$OUT/APT_STEAM_SIM.stdout" 2> "$OUT/APT_STEAM_SIM.stderr"
+          echo $? > "$OUT/APT_STEAM_SIM.rc"
+          set -e
+
+          tar -xzf "$OUT/src/steamcmd_linux.tar.gz" -C "$OUT/steamcmd"
+          set +e
+          timeout 300 "$OUT/steamcmd/steamcmd.sh" +login anonymous +app_info_print 4628710 +quit > "$OUT/PROTON_APPINFO.stdout" 2> "$OUT/PROTON_APPINFO.stderr"
+          echo $? > "$OUT/PROTON_APPINFO.rc"
+          set -e
+
+          OUT="$OUT" python3 - <<'PY'
+          import datetime as dt,hashlib,json,os,pathlib,re
+          out=pathlib.Path(os.environ["OUT"])
+          c=json.loads((out/"CANDIDATE.json").read_text())
+          g=json.loads((out/"G23.json").read_text())
+          a=json.loads((out/"G24.json").read_text())
+          p=json.loads((out/"PRECOMMIT.json").read_text())
+
+          def sha(x):
+              h=hashlib.sha256()
+              with pathlib.Path(x).open("rb") as f:
+                  for b in iter(lambda:f.read(1024*1024),b""):
+                      h.update(b)
+              return h.hexdigest()
+
+          pins=g["source_pins"]
+          hashes={
+              "steam_latest_deb_sha256":sha(out/"src/steam_latest.deb"),
+              "proton_source_tar_sha256":sha(out/"src/proton-11.0-2.tar.gz"),
+              "steamcmd_tar_sha256":sha(out/"src/steamcmd_linux.tar.gz"),
+              "flathub_flatpakrepo_sha256":sha(out/"src/flathub.flatpakrepo"),
+              "waydroid_repo_script_sha256":sha(out/"src/waydroid-repo-script.sh"),
+          }
+          base_rc=int((out/"APT_BASE_SIM.rc").read_text().strip())
+          steam_rc=int((out/"APT_STEAM_SIM.rc").read_text().strip())
+          app_rc=int((out/"PROTON_APPINFO.rc").read_text().strip())
+          steam_out=(out/"APT_STEAM_SIM.stdout").read_text(errors="replace")
+          steam_err=(out/"APT_STEAM_SIM.stderr").read_text(errors="replace")
+          app=(out/"PROTON_APPINFO.stdout").read_text(errors="replace")+"\n"+(out/"PROTON_APPINFO.stderr").read_text(errors="replace")
+          foreign=[x.strip() for x in (out/"FOREIGN_ARCHES.txt").read_text().splitlines() if x.strip()]
+          multiarch_needed=("i386" in (steam_out+steam_err).lower()) and "i386" not in foreign
+          proton_identity=("4628710" in app) and ("proton 11" in app.lower() or '"name"' in app.lower())
+
+          checks={
+              "precommit_pass":p.get("status")=="PASS",
+              "candidate_bound":p.get("candidate_sha256")==sha(out/"CANDIDATE.json")==g.get("candidate_sha256")==a.get("candidate_sha256"),
+              "g23_bound":p.get("g23_sha256")==sha(out/"G23.json")==a.get("g23_sha256"),
+              "g24_bound":p.get("g24_sha256")==sha(out/"G24.json"),
+              "source_hashes_match":all(hashes[k]==pins.get(k) for k in hashes),
+              "base_apt_simulation":base_rc==0,
+              "steam_apt_simulation":steam_rc==0,
+              "no_unapproved_i386_requirement":not multiarch_needed,
+              "proton_appinfo":app_rc==0 and proton_identity,
+          }
+          if all(checks.values()):
+              classification="READY_TO_EXECUTE_CERTIFIED_SCOPE"
+          elif multiarch_needed:
+              classification="HOLD_NEEDS_EXPLICIT_I386_SCOPE_EXTENSION"
+          elif not checks["proton_appinfo"]:
+              classification="HOLD_PROTON_OFFICIAL_DELIVERY_NOT_PROVEN"
+          else:
+              classification="HOLD_DEPENDENCY_SIMULATION_FAILED"
+
+          q={
+              "schema":"LOUKSNA_R4_PART6_EXECUTION_READINESS/1.0",
+              "status":"PASS" if all(checks.values()) else "HOLD",
+              "classification":classification,
+              "checks":checks,
+              "source_hashes":hashes,
+              "foreign_architectures":foreign,
+              "multiarch_i386_extension_needed":multiarch_needed,
+              "apt_base_simulation_rc":base_rc,
+              "apt_steam_simulation_rc":steam_rc,
+              "proton_appinfo_rc":app_rc,
+              "steam_control":(out/"STEAM_CONTROL.txt").read_text(errors="replace"),
+              "apt_steam_tail":(steam_out+"\n"+steam_err)[-8000:],
+              "proton_appinfo_tail":app[-8000:],
+              "mutation_performed":False,
+              "observed_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          (out/"READINESS.json").write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if q["status"]!="PASS":
+              raise SystemExit(23)
+          PY
+
+      - name: Upload readiness evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part6-execution-readiness
+          path: ${{ runner.temp }}/r4-part6-readiness-${{ github.run_id }}
+          if-no-files-found: warn
+          retention-days: 60
+          compression-level: 0
