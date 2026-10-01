@@ -32,7 +32,7 @@ jobs:
 
           sudo -n /usr/sbin/tune2fs -l /dev/nvme0n1p3 > "$OUT/TUNE2FS.txt"
           sudo -n /usr/sbin/dumpe2fs -h /dev/nvme0n1p3 > "$OUT/DUMPE2FS.txt" 2> "$OUT/DUMPE2FS.stderr"
-          sudo -n /usr/bin/blockdev --getsize64 /dev/nvme0n1p3 > "$OUT/BLOCKDEV_BYTES.txt"
+          sudo -n /usr/sbin/blockdev --getsize64 /dev/nvme0n1p3 > "$OUT/BLOCKDEV_BYTES.txt"
           lsblk -J -b -o NAME,PATH,TYPE,SIZE,START,FSTYPE,FSAVAIL,FSUSE%,MOUNTPOINTS,UUID,PARTUUID /dev/nvme0n1 > "$OUT/LSBLK.json"
           findmnt -n -o SOURCE,FSTYPE,OPTIONS / > "$OUT/FINDMNT_ROOT.txt"
           cat /sys/class/block/nvme0n1p3/start > "$OUT/P3_START.txt"
