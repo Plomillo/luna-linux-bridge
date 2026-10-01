@@ -13,7 +13,8 @@ EVIDENCE=STATE/"evidence"
 LOCK=STATE/"master.lock"
 REPO="Plomillo/luna-linux-bridge"
 BRANCH="staging/luna-r4-master-part1-part9-20260929"
-CERT_WORKFLOW=".github/workflows/luna-r4-master-part-certify.yml"\nCERT_WORKFLOW_PART4=".github/workflows/luna-r4-master-part4-r2-certify.yml"
+CERT_WORKFLOW=".github/workflows/luna-r4-master-part-certify.yml"
+CERT_WORKFLOW_PART4=".github/workflows/luna-r4-master-part4-r2-certify.yml"
 APC=["sudo","-n","/usr/local/sbin/louksna-apc"]
 EXPECTED_UI_IMAGE="8a9852c4155d64fd74059c7239e67c82e16e5acd556627d70575db85078d4ed4"
 EXPECTED_UI_KDE="c21e04d5447e123b59fc9b94d2e9684bc03ea164999ef6f60210e257557a16dc"
@@ -489,7 +490,8 @@ def publish_and_certify(ev):
     for _ in range(120):
         q=gh_json(["api",f"repos/{REPO}/actions/runs?branch={BRANCH}&event=push&per_page=100","--jq",'{"workflow_runs":[.workflow_runs[]|{id,head_sha,path,status,conclusion}]}'],timeout=30)
         for rr in q.get("workflow_runs",[]):
-            expected_workflow=CERT_WORKFLOW_PART4 if part=="PART_4" else CERT_WORKFLOW\n            if rr.get("head_sha")==commit and rr.get("path")==expected_workflow: run_id=rr["id"]; break
+            expected_workflow=CERT_WORKFLOW_PART4 if part=="PART_4" else CERT_WORKFLOW
+            if rr.get("head_sha")==commit and rr.get("path")==expected_workflow: run_id=rr["id"]; break
         if run_id: break
         time.sleep(2)
     if not run_id: raise RuntimeError("CERT_WORKFLOW_NOT_FOUND")
