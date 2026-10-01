@@ -438,6 +438,10 @@ jobs:
             "verified_root_on_consolidated_linux":True,
             "part4_r2_final_g24":True,
             "final_linux_layout":True,
+            "ntfs_shrunk":True,
+            "ext4_created":True,
+            "projects_migrated_hash_equivalent":True,
+            "ntfs_retired":True,
             "boot_switch_pending":False,
             "final_layout":"EFI_P1_PLUS_SINGLE_MAIN_EXT4_DEBIAN_ROOT_P3",
             "updated_at_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
