@@ -1287,7 +1287,7 @@ def part6(mid):
         try:
             worker_dispatch=run(
                 [sys.executable,"-B",str(worker_path),"--mission-id",mid],
-                timeout=7200,
+                timeout=21600,
             )
         except Exception as exc:
             worker_dispatch={
