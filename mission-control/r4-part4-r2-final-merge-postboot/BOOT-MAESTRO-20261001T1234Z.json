@@ -1,0 +1,12 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_POSTBOOT_CONTINUATION_REQUEST/1.0",
+  "mission": "MAESTRO",
+  "phase": "PART_4_R2_FINAL_MERGE_POSTBOOT",
+  "authorization": "OWNER_EXPLICIT",
+  "requested_action": "EXECUTE_CANONICAL_POSTBOOT_CHAIN",
+  "boot_id_observed": "715c284b-5161-4bd1-86a7-c97d6f72032a",
+  "preboot_run_id": 36858432458,
+  "required_gates": ["VERIFY_P3_BOOT_AND_PROYECTOS", "G23", "G24", "RETIRE_P5", "EXPAND_P3", "FINAL_G23", "FINAL_G24", "ACTIVATE_MASTER"],
+  "failure_posture": "FAIL_CLOSED",
+  "no_bypass": true
+}
