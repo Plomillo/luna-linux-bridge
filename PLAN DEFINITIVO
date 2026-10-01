@@ -1,0 +1,1275 @@
+===============================================================================
+LUNA R4 / METAOS / MAESTRO
+PLAN DEFINITIVO
+CONTRATO OPERACIONAL PART4 -> PART9
+GOBERNADO + DIFERENCIAL + AUDITABLE + TRAZABLE + SEGUNDO ORDEN + PUAC2
+===============================================================================
+
+CONTRACT_ID=LUNA_R4_MASTER_PART4_PART9_FINAL_GOVERNED_CONTRACT_V2
+
+AUTHORITY=Louksna.md
+ASSURANCE_STANDARD=PUAC2.md
+REFERENCE_SKELETON=SKELETON_CANONICO_REFERENCIA.txt
+PROTECTED_BASELINE=LUNACORE_final_formalized_v25.md
+
+SOURCE_MASTER_CHECKPOINT=
+52d83b97b59fcef4b6e35251d7cc9676d77014ed
+
+CHANGE_DOCTRINE=EXTEND_DO_NOT_REPLACE
+CONSTRUCTION_POLICY=ADDITIVE_WHERE_CANONICAL
+FAILURE_POSTURE=FAIL_CLOSED
+RESUME_MODE=DIFFERENTIAL
+NO_RESEARCH_LOOP=TRUE
+NO_SILENT_REOPEN=TRUE
+
+TRACEABILITY_REQUIRED=TRUE
+AUDITABILITY_REQUIRED=TRUE
+PROVENANCE_REQUIRED=TRUE
+GOVERNANCE_REQUIRED=TRUE
+ROLLBACK_REQUIRED=TRUE
+NON_REGRESSION_REQUIRED=TRUE
+DETERMINISM_REQUIRED_WHERE_TECHNICALLY_POSSIBLE=TRUE
+
+INDEPENDENT_VALIDATION=G23
+CERTIFICATION=G24
+
+AUTO_CERTIFICATION=FORBIDDEN
+CERTIFICATION_PROPAGATION=FORBIDDEN
+AUTHORITY_TRANSFER=FORBIDDEN
+
+NO_SILENT_OPERATION=ABSOLUTE
+NO_SILENT_REDOWNLOAD=TRUE
+NO_SILENT_REINSTALL=TRUE
+NO_SILENT_REPLACEMENT=TRUE
+NO_SILENT_RECLASSIFICATION=TRUE
+NO_SILENT_REASSIGNMENT=TRUE
+NO_SILENT_DOWNGRADE=TRUE
+
+ORDER_IMMUTABLE:
+PART_4
+-> PART_5
+-> PART_6
+-> PART_7
+-> PART_8
+-> PART_9
+-> TERMINAL_FREEZE
+-> FINAL_G23
+-> FINAL_G24
+-> ACTIVE
+
+PART_10=NONEXISTENT
+
+===============================================================================
+01. PRINCIPIO DE AUTORIDAD
+===============================================================================
+
+LOUKSNA:
+ROLE=CANONICAL_AUTHORITY
+
+LOUKSNA SHALL:
+- gobernar identidad;
+- gobernar alcance;
+- gobernar relaciones;
+- gobernar invariantes;
+- gobernar transiciones;
+- impedir operaciones fuera de contrato;
+- conservar trazabilidad;
+- conservar procedencia;
+- preservar no-regresión.
+
+NO subordinate component SHALL redefine Louksna.
+
+METAOS:
+ROLE=GOVERNOR
+
+CUSTOSZ_V7:
+ROLE=MATERIAL_WORKER
+
+CUSTOSZ_RUNTIME_V1:
+ROLE=EXECUTION_CONTINUITY_AND_CHECKPOINT_RUNTIME
+
+SYMPHYLAX:
+ROLE=SUPERVISOR
+
+APC:
+ROLE=SCOPED_PRIVILEGED_EXECUTION_INTERFACE
+
+G23:
+ROLE=INDEPENDENT_VALIDATOR
+
+G24:
+ROLE=CERTIFIER
+
+===============================================================================
+02. QWEN + REMOTE BRIDGE
+===============================================================================
+
+QWEN_MAESTRO_REASONER:
+ROLE=SECOND_ORDER_REASONING
+
+EXECUTION_PLANE=GITHUB_HOSTED
+LOCAL_QWEN_INFERENCE=FORBIDDEN
+LOCAL_RAM_FOR_QWEN_INFERENCE=0_TARGET
+
+QWEN MAY:
+- analizar evidencia;
+- comparar estado esperado/observado;
+- construir causalidad;
+- detectar contradicciones;
+- proponer delta mínimo;
+- evaluar efectos de segundo orden;
+- generar alternativas;
+- efectuar self-audit metacognitivo.
+
+QWEN SHALL NOT:
+- adquirir autoridad canónica;
+- ejecutar mutaciones directamente;
+- emitir G23;
+- emitir G24;
+- convertir inferencia en evidencia material;
+- convertir una probabilidad en PASS.
+
+LOUKSNA_REMOTE_BRIDGE:
+ROLE=LIVE_OPERATIONAL_OBSERVABILITY
+
+REMOTE_BRIDGE SHALL:
+- observar estado vivo;
+- proporcionar telemetría;
+- exponer estado de servicios;
+- exponer filesystem/storage;
+- informar resultado material;
+- soportar continuidad operacional;
+- minimizar generación local innecesaria de archivos.
+
+REMOTE_BRIDGE SHALL NOT:
+- certificar;
+- redefinir autoridad;
+- autoclasificar resultado como PASS sin validación.
+
+===============================================================================
+03. GOBERNANZA TRANSVERSAL OBLIGATORIA
+===============================================================================
+
+GOVERNANCE_IS_NOT_FINAL_ONLY=TRUE
+
+EVERY CONSEQUENTIAL OPERATION SHALL be governed.
+
+MANDATORY_OPERATION_PIPELINE:
+
+REQUEST
+-> INTENT
+-> SCOPE_RESOLUTION
+-> AUTHORITY_CHECK
+-> CURRENT_STATE_OBSERVATION
+-> DUPLICATION_CHECK
+-> PROVENANCE_CHECK
+-> RISK_CLASSIFICATION
+-> QWEN_SECOND_ORDER_ANALYSIS
+-> DETERMINISTIC_VALIDATION
+-> PROPOSAL
+-> PRE_COMMIT
+-> CHECKPOINT
+-> EXECUTION_AUTHORIZATION
+-> COMMIT
+-> LIVE_RESULT_OBSERVATION
+-> POST_VALIDATION
+-> NON_REGRESSION
+-> EVIDENCE_COMMIT
+-> G23
+-> G24
+-> STATE_UPDATE
+-> NEXT
+
+NO CONSEQUENTIAL MUTATION MAY BYPASS THIS PIPELINE.
+
+===============================================================================
+04. TRAZABILIDAD
+===============================================================================
+
+TRACEABILITY SHALL be bidirectional.
+
+FOR EVERY TRANSITION Ti:
+
+SOURCE_STATE(Ti)
+MUST map to:
+  OPERATION_ID
+  REQUIREMENT_ID
+  PART_ID
+  ACTOR
+  GOVERNOR
+  AUTHORITY_REFERENCE
+  INPUT_OBJECTS
+  INPUT_HASHES
+  INPUT_STATE
+  EXECUTION_PARAMETERS
+  OUTPUT_OBJECTS
+  OUTPUT_HASHES
+  OBSERVED_RESULT
+  VALIDATION_RESULT
+  NON_REGRESSION_RESULT
+  G23_REFERENCE
+  G24_REFERENCE
+  CHECKPOINT_REFERENCE
+  ROLLBACK_REFERENCE
+  NEXT_STATE
+
+FORWARD_TRACE:
+requirement -> operation -> evidence -> result -> certification
+
+BACKWARD_TRACE:
+certification -> result -> operation -> input -> requirement -> authority
+
+TRACE_GAP_ON_CONSEQUENTIAL_OPERATION=HOLD
+
+===============================================================================
+05. AUDITABILIDAD
+===============================================================================
+
+AUDITABILITY_REQUIRED=TRUE
+
+AUDIT RECORD SHALL answer:
+
+WHAT happened?
+WHY was it necessary?
+WHO/WHAT executed it?
+WHO governed it?
+WHEN did it happen?
+WHAT exact scope was authorized?
+WHAT existed before?
+WHAT changed?
+WHAT hashes identify inputs?
+WHAT hashes identify outputs?
+WHAT tests were run?
+WHAT failed?
+WHAT passed?
+WHAT uncertainty remains?
+WHERE is rollback?
+WHAT did G23 validate?
+WHAT did G24 certify?
+
+AUDIT_RECORD_IMMUTABILITY=REQUIRED
+
+AUDIT HISTORY SHALL NOT be rewritten to make a failure disappear.
+
+FAILED_ATTEMPT:
+MUST remain historical evidence.
+
+SUPERSEDED_STATE:
+MUST remain traceable.
+
+STALE_STATE:
+MAY be superseded,
+MUST NOT be silently deleted.
+
+===============================================================================
+06. EVIDENCE CONTRACT
+===============================================================================
+
+EVERY CONSEQUENTIAL OPERATION SHALL RECORD:
+
+operation_id
+mission_id
+part_id
+requirement_id
+actor
+governor
+validator
+certifier
+authority_reference
+timestamp_start
+timestamp_end
+observed_at
+source
+version
+provenance
+input_path
+input_hash
+input_size
+output_path
+output_hash
+output_size
+parameters
+reason
+expected_result
+actual_result
+validation
+regression_test
+checkpoint
+rollback_pointer
+incident_reference
+g23_reference
+g24_reference
+status
+
+EVIDENCE_CHAIN:
+
+DECLARED
+-> EVIDENCED
+-> VALIDATED
+-> INDEPENDENTLY_VALIDATED
+-> CERTIFIED
+-> ACTIVE
+
+FORBIDDEN:
+
+DECLARED -> CERTIFIED
+EVIDENCED -> CERTIFIED
+VALIDATED -> CERTIFIED_WITHOUT_G23
+ANY_STATE -> ACTIVE_WITHOUT_G24
+
+===============================================================================
+07. G23 / G24 AS PART OF NORMAL EXECUTION
+===============================================================================
+
+G23_AND_G24_ARE_NOT_DECORATIVE=TRUE
+
+G23 SHALL:
+- be structurally separate from material execution;
+- validate actual evidence;
+- validate scope;
+- validate provenance;
+- validate non-regression;
+- validate rollback;
+- validate trace completeness;
+- reject stale or mismatched evidence;
+- reject certification-scope mismatch;
+- reject reused invalid certificates.
+
+G24 SHALL:
+- consume a valid G23;
+- certify an exact identified state;
+- bind certification to hashes;
+- bind certification to scope;
+- bind certification to version;
+- refuse ambiguous state.
+
+SELF_DECLARED_PASS!=G23
+WORKFLOW_GREEN!=G23
+QWEN_APPROVAL!=G23
+
+G23_PASS!=G24
+
+G24 may occur only after G23 PASS.
+
+===============================================================================
+08. ANTI-DUPLICACIÓN GLOBAL
+===============================================================================
+
+BEFORE_ANY_DOWNLOAD:
+
+CHECK_INSTALLED
+-> CHECK_MATERIALIZED
+-> CHECK_ACQUIRED
+-> CHECK_LOCAL_CACHE
+-> CHECK_CANONICAL_PAYLOAD
+-> CHECK_PROJECT_ARTIFACT
+-> CHECK_GITHUB_ARTIFACT
+-> HASH_COMPARE
+-> VERSION_COMPARE
+-> PROVENANCE_COMPARE
+-> ARCHITECTURE_COMPARE
+
+IF_INSTALLED_AND_CORRECT:
+  DOWNLOAD=DENIED
+  REINSTALL=DENIED
+  ACTION=REUSE
+
+IF_MATERIALIZED_AND_HASH_VERIFIED:
+  DOWNLOAD=DENIED
+  ACTION=INSTALL_EXISTING
+
+IF_ACQUIRED_AND_HASH_VERIFIED:
+  REDOWNLOAD=DENIED
+  ACTION=MATERIALIZE_EXISTING
+
+IF_BYTES_PRESENT_UNADOPTED:
+  REDOWNLOAD=DENIED
+  ACTION=RESOLVE_ADOPTION_GATE
+
+IF_PARTIAL_AND_RESUMABLE:
+  FULL_REDOWNLOAD=DENIED
+  ACTION=RESUME
+
+IF_QUARANTINED:
+  PROMOTION=DENIED
+
+IF_ABSENT_AND_REQUIRED:
+  ACQUISITION MAY PROCEED ONLY AFTER:
+    SOURCE_RESOLVED
+    VERSION_PINNED
+    PROVENANCE_RESOLVED
+    COMPATIBILITY_PASS
+    LICENSE_PASS_WHERE_APPLICABLE
+    DUPLICATION_SCAN_PASS
+
+SAME_SHA256=IDENTICAL_CONTENT
+
+UNJUSTIFIED_DUPLICATE_BYTES=DENIED
+
+===============================================================================
+09. DEBIAN + KDE ABSOLUTE PRESERVATION
+===============================================================================
+
+DEBIAN_STATE=INSTALLED
+KDE_PLASMA_STATE=INSTALLED
+
+FOR PART5 THROUGH PART9:
+
+DOWNLOAD_DEBIAN_ISO=FORBIDDEN
+DOWNLOAD_DEBIAN_INSTALLER=FORBIDDEN
+REINSTALL_DEBIAN=FORBIDDEN
+REPLACE_DEBIAN_BASE=FORBIDDEN
+
+DOWNLOAD_KDE_FULL_PAYLOAD=FORBIDDEN
+REINSTALL_KDE_PLASMA=FORBIDDEN
+REPLACE_KDE_BASE=FORBIDDEN
+
+CURRENT_DEBIAN_KDE SHALL be reused.
+
+PART8 MAY perform governed differential package maintenance.
+
+PART8 SHALL NOT reinterpret differential update
+as authorization for base reinstall.
+
+===============================================================================
+10. COMPONENT STATE MODEL
+===============================================================================
+
+DECLARED
+-> SELECTED
+-> SOURCE_RESOLVED
+-> ACQUIRED
+-> HASH_VERIFIED
+-> MATERIALIZED
+-> INSTALLABLE
+-> INSTALLED
+-> CONFIGURED
+-> FUNCTIONALLY_VALIDATED
+-> INDEPENDENTLY_VALIDATED
+-> CERTIFIED
+-> ACTIVE
+
+EXCEPTIONAL:
+
+PARTIAL
+QUARANTINED
+LICENSE_BLOCKED
+BYTES_PRESENT_UNADOPTED
+RESEARCH_REQUIRED
+FAILED
+DEGRADED
+HISTORICAL
+ROLLBACK_READY
+
+INVARIANTS:
+
+ACQUIRED!=MATERIALIZED
+MATERIALIZED!=INSTALLED
+INSTALLED!=VALIDATED
+VALIDATED!=CERTIFIED
+CERTIFIED!=ACTIVE
+
+ABSENT_FROM_PACKAGE_MANAGER
+!=
+ABSENT_FROM_PROJECT
+
+NO_RESEARCH_LOOP=TRUE
+
+===============================================================================
+11. SECOND-ORDER METACOGNITIVE LOOP
+===============================================================================
+
+BEFORE EACH CONSEQUENTIAL COMMIT:
+
+PUAC.MC.07 SHALL ASK:
+
+- what causes this transition?
+- what assumptions support it?
+- what depends on it?
+- what second-order effects may follow?
+- what alternative produces less blast radius?
+- what happens if our diagnosis is false?
+
+PUAC.MC.08 SHALL ASK:
+
+- what evidence may be stale?
+- what is observation?
+- what is inference?
+- what remains unknown?
+- could this be a false positive?
+- could this be a false negative?
+- is the validator using the correct scope?
+- are we repeating a failed strategy?
+
+MANDATORY TESTS INCLUDE:
+
+T13 SECOND_ORDER_REGRESSION
+T21 CROSS_DOMAIN_ISOLATION
+T22 CERTIFICATION_SCOPE_MISMATCH
+T23 INVALID_CERTIFICATE_REUSE
+T24 INDEPENDENT_VALIDATOR_CONFLICT
+T25 METACOGNITIVE_FALSE_POSITIVE
+T26 METACOGNITIVE_FALSE_NEGATIVE
+T27 ADVERSARIAL_INPUT
+T28 HISTORICAL_RECORD_PRESERVATION
+
+===============================================================================
+12. FAILURE PIPELINE
+===============================================================================
+
+FAIL
+-> ABORT_OR_HOLD
+-> PRESERVE_CHECKPOINT
+-> PRESERVE_EVIDENCE
+-> OBSERVE_LIVE_STATE
+-> CLASSIFY_ROOT_CAUSE
+-> RECORD_FAILURE
+-> QWEN_ALTERNATIVE_ANALYSIS
+-> MC07_SECOND_ORDER_REVIEW
+-> MC08_SELF_AUDIT
+-> SELECT_MINIMUM_DELTA
+-> VERIFY_ROLLBACK_OR_SAFE_STATE
+-> INDEPENDENT_REVALIDATION
+-> RETRY_CHANGED_STRATEGY
+
+IDENTICAL_IRREVERSIBLE_RETRY=FORBIDDEN
+
+NO_BLIND_RETRY=TRUE
+
+===============================================================================
+13. PART4 — RECONCILIATION + FINAL STORAGE CONSOLIDATION
+===============================================================================
+
+ENTRY_STATE=PART4_HOLD
+
+KNOWN:
+
+P1=EFI
+P3=EXT4_LOUKSNA_PROJECTS
+P5=CURRENT_DEBIAN_ROOT
+P2=WINDOWS_MSR_RESIDUAL
+P4=WINDOWS_RECOVERY_RESIDUAL
+
+STATE_DECLARED!=STATE_PHYSICAL
+
+S0_RECONCILIATION SHALL:
+
+- inspect p3 read-only;
+- inspect current p5 root;
+- identify exact PROYECTOS copies;
+- bind V8 evidence;
+- revalidate manifest;
+- revalidate POSIX metadata;
+- distinguish ext4 lost+found from dataset content;
+- preserve historical STATE.json;
+- append reconciled state;
+- preserve stale permission record as historical;
+- mark superseded requirements explicitly;
+- repair PART4-R2 certification semantics;
+- produce audit record;
+- produce full trace record;
+- G23;
+- G24.
+
+NO_NVME_MUTATION_BEFORE_S0_G24=TRUE
+
+AFTER S0:
+
+P4.01 certify p3 contents.
+P4.02 certify PROYECTOS equivalence.
+P4.03 prevalidate retirement of p2/p4.
+P4.04 G23.
+P4.05 G24.
+P4.06 retire exact authorized p2/p4 scope.
+P4.07 postvalidate p1/p3/p5.
+P4.08 capacity proof.
+P4.09 checkpoint.
+P4.10 migrate Debian p5 -> p3.
+P4.11 preserve ownership/modes/ACL/xattrs/hardlinks.
+P4.12 update fstab/initramfs/GRUB/EFI.
+P4.13 G23 preboot.
+P4.14 G24 preboot.
+P4.15 reboot to p3 while preserving p5.
+P4.16 Remote Bridge live postboot observation.
+P4.17 verify / source=p3.
+P4.18 verify PROYECTOS.
+P4.19 verify EFI.
+P4.20 verify Maestro/MetaOS/CUSTOSZ/Runtime/Symphylax/Bridge.
+P4.21 G23 postboot.
+P4.22 G24 postboot.
+P4.23 retire p5.
+P4.24 expand p3.
+P4.25 e2fsck/resize2fs.
+P4.26 verify PROYECTOS again.
+P4.27 global PART4 non-regression.
+P4.28 audit closure.
+P4.29 trace closure.
+P4.30 G23.
+P4.31 G24.
+
+EXIT=PART4_R2_CERTIFIED
+
+===============================================================================
+14. PART5 — LABORATORY
+===============================================================================
+
+ENTRY=PART4_R2_CERTIFIED
+
+FIRST_ACTION=INVENTORY_EXISTING
+
+KNOWN EXISTING MATERIAL SHALL be reused.
+
+ubuntu-24.04-minimal-cloudimg-amd64.img
+= MATERIALIZED
+
+archlinux-x86_64.iso
+= MATERIALIZED
+
+nix-install.sh
+= MATERIALIZED
+
+Windows correct target
+= SELECTED
+
+Windows mismatched complete ISO
+= QUARANTINED
+
+Windows reacquisition
+= PARTIAL
+
+Android16
+= BYTES_PRESENT_UNADOPTED
+
+Android17
+= BYTES_PRESENT_UNADOPTED
+
+NO_CORRECT_ARTIFACT_REDOWNLOAD=TRUE
+
+MATERIALIZE ONLY MISSING:
+QEMU
+KVM support
+libvirt
+virt-manager
+missing exact dependencies
+
+THEN:
+
+install
+-> configure
+-> /dev/kvm validation
+-> AMD-V validation
+-> VM image hash validation
+-> disposable VM creation
+-> boot
+-> functional test
+-> shutdown
+-> rollback
+-> non-regression
+-> evidence
+-> audit
+-> trace
+-> G23
+-> G24
+
+EXIT=PART5_CERTIFIED
+
+===============================================================================
+15. PART6 — GAMING
+===============================================================================
+
+ENTRY=PART5_CERTIFIED
+
+REUSE MATERIALIZED PAYLOADS:
+
+Wine
+Steam
+Proton
+Bottles
+Lutris
+Prism
+Waydroid
+
+BEFORE USE:
+SHA256 SHALL be checked against canonical Skeleton record.
+
+HASH_MATCH:
+REDOWNLOAD=DENIED
+
+INSTALLATION PIPELINE:
+
+EXISTENCE_CHECK
+-> HASH
+-> PROVENANCE
+-> DEPENDENCIES
+-> INSTALL
+-> CONFIGURE
+-> FUNCTIONAL_TEST
+-> GRAPHICS_TEST
+-> ISOLATION
+-> ROLLBACK
+-> CROSS_COMPONENT_NON_REGRESSION
+-> EVIDENCE
+-> AUDIT
+-> TRACE
+-> G23
+-> G24
+
+EXIT=PART6_CERTIFIED
+
+===============================================================================
+16. PART7 — STUDY + DEVOTIONAL
+===============================================================================
+
+ENTRY=PART6_CERTIFIED
+
+NO_DUPLICATE_DOCUMENT_INGESTION=TRUE
+SOURCE_IDENTITY=SHA256
+
+EXISTING_CORPUS SHALL be discovered before acquisition.
+
+ORIGINAL_SOURCE=IMMUTABLE_BY_DEFAULT
+
+GENERATED_ANALYSIS
+SHALL be separated from source.
+
+DOCUMENT CLASSIFICATION:
+
+BIBLE_TEXT
+STUDY_BIBLE
+COMMENTARY
+LEXICON
+BIBLICAL_DICTIONARY
+CONFESSION
+CATECHISM
+THEOLOGICAL_TREATISE
+CHURCH_HISTORY
+CHURCH_FATHER
+ACADEMIC_ARTICLE
+MAP_ATLAS
+PERSONAL_NOTE
+UNKNOWN
+
+UNKNOWN=HOLD
+
+HERMENEUTIC PIPELINE:
+
+TEXT
+-> OBSERVATION
+-> LINGUISTIC_ANALYSIS
+-> CONTEXT
+-> HISTORICAL_CULTURAL_ANALYSIS
+-> INFERENCE
+-> INTERPRETATION
+-> DOCTRINAL_SYNTHESIS
+-> VALIDATION
+
+CONTROLS:
+
+EISEGESIS
+PROOF_TEXTING
+ANACHRONISM
+LEXICAL_FALLACY
+SEMANTIC_OVERLOADING
+CONTEXTUAL_DISPLACEMENT
+
+MUST PASS:
+
+source hash
+provenance
+classification
+index reproducibility
+retrieval
+source/output trace
+hermeneutic controls
+unknown negative tests
+adversarial tests
+non-regression
+audit
+trace
+G23
+G24
+
+P25_LOCAL_COGNITIVE_BACKEND
+SHALL remain a separate Skeleton requirement unless explicitly amended.
+
+QWEN_MAESTRO_REASONER
+SHALL NOT silently satisfy P25.
+
+EXIT=PART7_CERTIFIED
+
+===============================================================================
+17. PART8 — SYSTEM
+===============================================================================
+
+ENTRY=PART7_CERTIFIED
+
+SCOPE:
+
+Status
+Resources
+Updates
+Backup
+Recovery
+Storage
+Hygiene
+Architecture management
+CUSTOS version management
+Runtime
+MetaOS
+Evidence
+Advanced settings
+
+BACKUP:
+SHALL target final PART4 topology.
+
+BACKUP PASS REQUIRES:
+backup artifact
+hash
+manifest
+restore test
+recovery proof
+
+HYGIENE:
+DRY_RUN_FIRST=TRUE
+UNKNOWN=PRESERVE
+
+NEVER_AUTO_DELETE:
+
+PROYECTOS
+authority
+project sources
+checkpoints
+evidence
+G23/G24 certificates
+rollback
+backup manifests
+VM disks
+active gaming data
+semantic container
+Devotional originals
+roadmaps
+goals
+
+RESOURCE_GOVERNOR SHALL:
+- prioritize desktop responsiveness;
+- serialize heavy workloads;
+- control RAM/CPU/disk pressure;
+- NOT silently reduce required quality.
+
+PART8 SHALL produce:
+evidence
+audit ledger
+trace graph
+rollback proof
+non-regression
+G23
+G24
+
+EXIT=PART8_CERTIFIED
+
+===============================================================================
+18. PART9 — TERMINAL INTEGRATION
+===============================================================================
+
+ENTRY=PART8_CERTIFIED
+
+PART1..PART8 CERTIFICATES
+SHALL be digest-bound.
+
+FINAL MATRIX SHALL cover:
+
+BASE
+ENGINEERING
+LABORATORY
+GAMING
+PROJECTS
+STUDY
+DEVOTIONAL
+SYSTEM
+BACKUP
+RESTORE
+RECOVERY
+HYGIENE
+RESOURCE GOVERNOR
+METAOS
+CUSTOSZ
+RUNTIME
+SYMPHYLAX
+APC
+MAESTRO
+GITHUB RUNNER
+QWEN HOSTED REASONING
+REMOTE BRIDGE LIVE TELEMETRY
+
+PART9 SHALL verify:
+
+cross-domain isolation
+certification scope
+certificate reuse safety
+validator independence
+metacognitive false positive
+metacognitive false negative
+adversarial handling
+historical preservation
+global non-regression
+rollback continuity
+trace completeness
+audit completeness
+provenance completeness
+
+PART9_G23=REQUIRED
+PART9_G24=REQUIRED
+
+PART9 EXIT:
+PART9_CERTIFIED_CANDIDATE
+
+===============================================================================
+19. TERMINAL FREEZE
+===============================================================================
+
+ENTRY=PART9_CERTIFIED_CANDIDATE
+
+FREEZE SHALL occur before terminal release certification.
+
+FREEZE_SCOPE:
+
+- final architecture bindings;
+- PART1-PART9 state;
+- exact component versions;
+- exact configuration;
+- manifests;
+- certificates;
+- evidence indexes;
+- audit ledger;
+- trace graph;
+- rollback map;
+- active service definitions;
+- package state;
+- storage topology;
+- boot topology;
+- Qwen hosted binding;
+- Remote Bridge binding;
+- CUSTOSZ binding;
+- MetaOS binding;
+- Runtime binding;
+- Symphylax binding.
+
+TERMINAL_FREEZE SHALL generate:
+
+FINAL_FREEZE_MANIFEST.json
+FINAL_SHA256SUMS.txt
+FINAL_COMPONENT_MATRIX.json
+FINAL_CERTIFICATE_INDEX.json
+FINAL_EVIDENCE_INDEX.json
+FINAL_TRACE_GRAPH.json
+FINAL_AUDIT_LEDGER_ANCHOR.json
+FINAL_ROLLBACK_INDEX.json
+FINAL_STATE.json
+
+FREEZE_STATE=IMMUTABLE_CANDIDATE
+
+AFTER_FREEZE:
+
+NO MUTATION
+NO PACKAGE CHANGE
+NO CONFIG CHANGE
+NO FILE REPLACEMENT
+NO VERSION CHANGE
+NO SERVICE CHANGE
+NO STATE REWRITE
+
+WITHOUT:
+FREEZE_INVALIDATION
++
+NEW_VERSION
++
+NEW_CHECKPOINT
++
+NEW_G23
++
+NEW_G24
+
+===============================================================================
+20. FINAL INDEPENDENT VALIDATION — G23
+===============================================================================
+
+FINAL_G23 SHALL validate THE FROZEN STATE.
+
+NOT:
+an earlier mutable candidate.
+
+G23 SHALL verify:
+
+FREEZE_HASHES
+CERTIFICATE_CHAIN
+PART1-PART9
+PROVENANCE
+TRACEABILITY
+AUDITABILITY
+ROLLBACK
+NON_REGRESSION
+GOVERNANCE
+NO_SILENT_OPERATIONS
+NO_UNAUTHORIZED_DUPLICATION
+DEBIAN_KDE_PRESERVATION
+QWEN_OFFHOST_EXECUTION
+REMOTE_BRIDGE_OPERATIONALITY
+POSTBOOT_STATE
+HISTORICAL_EVIDENCE_PRESERVATION
+
+FINAL_G23_FAIL:
+FREEZE remains evidence,
+RELEASE=DENIED,
+ACTIVE=DENIED.
+
+Remediation requires:
+NEW_CANDIDATE
+-> NEW_FREEZE
+-> NEW_HASHES
+-> NEW_G23
+
+===============================================================================
+21. FINAL CERTIFICATION — G24
+===============================================================================
+
+ENTRY=FINAL_G23_PASS
+
+G24 SHALL certify:
+
+EXACT_FREEZE_ID
+EXACT_FREEZE_HASH
+EXACT_VERSION
+EXACT_ARCHITECTURAL_STATE
+EXACT_PART1_PART9_CERTIFICATE_SET
+
+G24 SHALL NOT certify:
+an abstract description,
+a moving target,
+an unfrozen directory,
+or a state modified after G23.
+
+FINAL_G24_CERTIFICATE SHALL contain:
+
+CERTIFICATION_ID
+FREEZE_ID
+FREEZE_SHA256
+G23_REFERENCE
+AUTHORITY_REFERENCE
+VERSION
+TIMESTAMP
+CERTIFIED_SCOPE
+NON_REGRESSION_REFERENCE
+ROLLBACK_REFERENCE
+TRACE_ROOT
+AUDIT_ROOT
+PROVENANCE_ROOT
+
+FINAL_G24_PASS
+-> CERTIFIED
+
+===============================================================================
+22. ACTIVATION
+===============================================================================
+
+CERTIFIED!=ACTIVE
+
+ACTIVATION SHALL occur only after:
+
+FINAL_FREEZE=PASS
+FINAL_G23=PASS
+FINAL_G24=PASS
+POST_CERT_HASH_RECHECK=PASS
+
+ACTIVATION ACTION:
+
+atomic active pointer update
+
+NO COPY-OVER ACTIVATION
+NO SILENT REPLACEMENT
+
+ACTIVE POINTER SHALL identify
+the exact certified freeze.
+
+THEN:
+
+GLOBAL_MISSION_STATUS=COMPLETE
+SYSTEM_STATE=ACTIVE
+RELEASE_STATE=CERTIFIED_FROZEN_ACTIVE
+
+===============================================================================
+23. POST-CERTIFICATION IMMUTABILITY
+===============================================================================
+
+CERTIFIED_FREEZE=IMMUTABLE
+
+Any later change SHALL be:
+
+NEW_CANDIDATE
+
+and SHALL follow:
+
+SPECIFICATION
+-> EVIDENCE
+-> VALIDATION
+-> G23
+-> FREEZE
+-> FINAL_G23
+-> G24
+-> ACTIVATION
+
+NO CERTIFICATION INHERITANCE BY MODIFICATION.
+
+NO:
+"small change, certificate still counts"
+
+NO:
+"same version with changed bytes"
+
+NO:
+"certificate copied to successor"
+
+===============================================================================
+24. GOVERNED AUTONOMY
+===============================================================================
+
+AUTOMATIC_CONTINUATION=TRUE
+
+IF PART_N_G24=PASS:
+  checkpoint;
+  bind certificate digest;
+  update trace;
+  update audit;
+  update evidence index;
+  advance PART_N+1.
+
+HUMAN RE-PROMPT SHALL NOT occur for already-authorized identical scope.
+
+HUMAN GATE REQUIRED WHEN:
+
+- destructive scope expands;
+- legal/license acceptance is required;
+- protected asset scope changes;
+- authority relationship changes;
+- irreversible action lacks existing authorization;
+- uncertainty cannot be resolved automatically.
+
+AUTONOMY!=UNGOVERNED_EXECUTION
+
+===============================================================================
+25. FINAL SUCCESS DEFINITION
+===============================================================================
+
+SUCCESS!=DOWNLOAD_COMPLETE
+SUCCESS!=FILES_EXIST
+SUCCESS!=PACKAGE_INSTALLED
+SUCCESS!=WORKFLOW_GREEN
+SUCCESS!=QWEN_APPROVES
+
+SUCCESS REQUIRES:
+
+PART4 CERTIFIED
+PART5 CERTIFIED
+PART6 CERTIFIED
+PART7 CERTIFIED
+PART8 CERTIFIED
+PART9 CERTIFIED
+
+AND:
+
+TRACEABILITY=PASS
+AUDITABILITY=PASS
+PROVENANCE=PASS
+GOVERNANCE=PASS
+ROLLBACK=PASS
+NON_REGRESSION=PASS
+PUAC2=PASS
+SECOND_ORDER_CONTROLS=PASS
+CROSS_DOMAIN_ISOLATION=PASS
+
+AND:
+
+NO_UNNECESSARY_REDOWNLOAD=PASS
+NO_DUPLICATION=PASS
+DEBIAN_REDOWNLOAD=ZERO
+DEBIAN_REINSTALL=ZERO
+KDE_REDOWNLOAD=ZERO
+KDE_REINSTALL=ZERO
+
+AND:
+
+TERMINAL_FREEZE=PASS
+FINAL_G23=PASS
+FINAL_G24=PASS
+POST_CERT_HASH_RECHECK=PASS
+
+THEN:
+
+GLOBAL_MISSION_STATUS=COMPLETE
+CANONICAL_OPERATIONAL_STATE=FROZEN
+CERTIFICATION_STATE=CERTIFIED
+ACTIVATION_STATE=ACTIVE
+
+===============================================================================
+26. TERMINAL PRINCIPLE
+===============================================================================
+
+RESOLVED
+=> PRESERVE
+
+CORRECT
+=> REUSE
+
+MATERIALIZED
+=> REHASH + USE
+
+INSTALLED
+=> VALIDATE, DO NOT REINSTALL
+
+PARTIAL
+=> RESUME
+
+QUARANTINED
+=> NEVER PROMOTE
+
+UNKNOWN
+=> HOLD
+
+FAILED
+=> DIAGNOSE
+
+CONSEQUENTIAL_CHANGE
+=> GOVERN
+
+EVERY_CHANGE
+=> TRACE
+
+EVERY_RESULT
+=> AUDIT
+
+EVERY_TRANSITION
+=> EVIDENCE
+
+EVERY_CERTIFICATION
+=> G23 BEFORE G24
+
+FINAL_SYSTEM
+=> FREEZE
+
+FROZEN_SYSTEM
+=> HASH
+
+HASHED_FROZEN_SYSTEM
+=> FINAL G23
+
+FINAL_G23_PASS
+=> FINAL G24
+
+FINAL_G24_PASS
+=> ATOMIC ACTIVATION
+
+CERTIFIED_BYTES
+=> NEVER SILENTLY MUTATE
+
+===============================================================================
+END OF PLAN DEFINITIVO
+===============================================================================
