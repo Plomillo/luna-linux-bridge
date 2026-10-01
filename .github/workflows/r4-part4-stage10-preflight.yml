@@ -34,6 +34,7 @@ jobs:
           out=pathlib.Path(os.environ["OUT"])
           home=pathlib.Path.home()
           candidates=[
+            home/"PROYECTOS",
             home/"Proyectos",
             home/"Luna R4"/"Proyectos",
             pathlib.Path("/media")/home.name/"Windows"/"PROYECTOS",
