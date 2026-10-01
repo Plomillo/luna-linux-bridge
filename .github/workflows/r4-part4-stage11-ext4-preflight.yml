@@ -31,7 +31,11 @@ jobs:
           test -f "$EXEC_DIR/STAGE10_PROYECTOS_NON_REGRESSION.json"
 
           test -x /usr/sbin/resize2fs
+          set +e
           /usr/sbin/resize2fs -V > "$OUT/RESIZE2FS_VERSION.txt" 2>&1
+          RESIZE2FS_VERSION_RC=$?
+          set -e
+          echo "$RESIZE2FS_VERSION_RC" > "$OUT/RESIZE2FS_VERSION_RC.txt"
           sha256sum /usr/sbin/resize2fs > "$OUT/RESIZE2FS_SHA256.txt"
           sudo -n /usr/sbin/tune2fs -l /dev/nvme0n1p3 > "$OUT/TUNE2FS.txt"
           sudo -n /usr/sbin/dumpe2fs -h /dev/nvme0n1p3 > "$OUT/DUMPE2FS.txt" 2> "$OUT/DUMPE2FS.stderr"
@@ -89,6 +93,7 @@ jobs:
           dmesg=(out/"EXT4_DMESG_WARN_ERR.txt").read_text(errors="replace")
           resize_version=(out/"RESIZE2FS_VERSION.txt").read_text(errors="replace").strip()
           resize_sha=(out/"RESIZE2FS_SHA256.txt").read_text().split()[0]
+          resize_version_rc=int((out/"RESIZE2FS_VERSION_RC.txt").read_text().strip())
           fatal_markers=["EXT4-fs error","Remounting filesystem read-only","Aborting journal","I/O error"]
           dmesg_fatal=any(x.lower() in dmesg.lower() for x in fatal_markers)
 
@@ -108,7 +113,7 @@ jobs:
               "filesystem_state_clean": fs_state=="clean",
               "errors_count_zero_or_unavailable": errors_count in (None,0),
               "no_fatal_ext4_kernel_marker": not dmesg_fatal,
-              "resize2fs_version_present": bool(resize_version),
+              "resize2fs_version_present": "resize2fs" in resize_version.lower() and "version" in resize_version.lower(),
               "resize2fs_binary_sha256_present": len(resize_sha)==64,
           }
 
@@ -120,6 +125,7 @@ jobs:
               "command":["sudo","-n","/usr/sbin/resize2fs","/dev/nvme0n1p3"],
               "resize2fs_path":"/usr/sbin/resize2fs",
               "resize2fs_version":resize_version,
+              "resize2fs_version_probe_rc":resize_version_rc,
               "resize2fs_binary_sha256":resize_sha,
               "filesystem":"ext4",
               "online_root":True,
