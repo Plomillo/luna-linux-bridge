@@ -1,0 +1,510 @@
+name: "R4 PART4 — Stage7 universal fresh precommit O5"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-stage7-ufpc-o5/**
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: r4-part4-stage7-ufpc-o5
+  cancel-in-progress: false
+
+env:
+  MISSION_ID: "MIS-e5963403a3b44ee8be96"
+  DIRECTIVE_ID: "PART4-STAGE7-UFPC-O5-20261001"
+
+jobs:
+  start_evidence:
+    name: Maestro + LRB start evidence
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Prove worker and observer started
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/start"; mkdir -p "$OUT"
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9"
+          DIR="$STATE/PART_4_P3_HARDENED"
+          cp server/r4-master/PART4_STAGE7_UNIVERSAL_FRESH_PRECOMMIT_O5.json "$OUT/DIRECTIVE.json"
+          cp "$DIR/EXECUTION.json" "$OUT/EXECUTION.json"
+
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+          mapfile -t LINKS < <(find "$HOME/.local/lib/louksna-remote-bridge" -type f -path '*/bridge/live_link.py' -print 2>/dev/null | sort)
+          test "${#LINKS[@]}" -ge 1
+          LINK="${LINKS[-1]}"
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op status > "$OUT/LRB_STATUS.json"
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op observe > "$OUT/LRB_OBSERVE.json"
+          cat /proc/sys/kernel/random/boot_id > "$OUT/BOOT_ID.txt"
+
+          python3 - "$OUT" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,sys
+          root=pathlib.Path(sys.argv[1]); h=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+          d=json.loads((root/"DIRECTIVE.json").read_text())
+          e=json.loads((root/"EXECUTION.json").read_text())
+          l=json.loads((root/"LRB_STATUS.json").read_text())
+          o=json.loads((root/"LRB_OBSERVE.json").read_text())
+          checks={
+            "directive":d.get("directive_id")=="PART4-STAGE7-UFPC-O5-20261001",
+            "authority":d.get("authority")=="Louksna.md",
+            "worker_role":d.get("worker",{}).get("role")=="WORKER",
+            "observer_role":d.get("observer",{}).get("role")=="EYES_AND_LIGHT_READ_ONLY",
+            "mission":e.get("mission_id")=="MIS-e5963403a3b44ee8be96",
+            "stage7_boundary":int(e.get("current_stage",0))==7 and int(e.get("last_completed_stage",0))>=6,
+            "lrb_host":l.get("host")=="LOUKSNA",
+            "lrb_observation":bool(o.get("evidence_sha256")),
+            "read_only_scope":d.get("boundaries",{}).get("partition_geometry_mutation_authorized") is False and d.get("boundaries",{}).get("filesystem_resize_authorized") is False,
+            "seconds_ceiling":int(d.get("maximum_work_seconds",0))==90,
+          }
+          q={
+            "schema":"LOUKSNA_R4_PART4_STAGE7_UFPC_O5_START/1.0",
+            "status":"STARTED" if all(checks.values()) else "HOLD",
+            "worker":"CUSTOSZ_V7_MAESTRO",
+            "observer":"LOUKSNA_REMOTE_BRIDGE",
+            "lrb_evidence_seq":o.get("evidence_seq"),
+            "lrb_evidence_sha256":o.get("evidence_sha256"),
+            "boot_id":(root/"BOOT_ID.txt").read_text().strip(),
+            "directive_sha256":h(root/"DIRECTIVE.json"),
+            "execution_sha256":h(root/"EXECUTION.json"),
+            "checks":checks,
+            "started_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          (root/"START.json").write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if q["status"]!="STARTED": raise SystemExit(23)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-stage7-ufpc-o5-start
+          path: ${{ runner.temp }}/start/
+          retention-days: 90
+          compression-level: 0
+
+  g23_start:
+    name: G23 verify actual start
+    needs: start_evidence
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-stage7-ufpc-o5-start
+          path: ${{ runner.temp }}/start
+      - name: Independently validate start evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/start" "$RUNNER_TEMP/g23/G23_START.json" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,sys
+          root=pathlib.Path(sys.argv[1]); out=pathlib.Path(sys.argv[2])
+          s=json.loads((root/"START.json").read_text())
+          h=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+          checks={
+            "started":s.get("status")=="STARTED",
+            "all_start_checks":all(s.get("checks",{}).values()),
+            "worker_exact":s.get("worker")=="CUSTOSZ_V7_MAESTRO",
+            "observer_exact":s.get("observer")=="LOUKSNA_REMOTE_BRIDGE",
+            "lrb_evidence":bool(s.get("lrb_evidence_sha256")),
+            "directive_bound":s.get("directive_sha256")==h(root/"DIRECTIVE.json"),
+            "execution_bound":s.get("execution_sha256")==h(root/"EXECUTION.json"),
+          }
+          ok=all(checks.values())
+          q={
+            "schema":"LOUKSNA_R4_PART4_STAGE7_UFPC_O5_START_G23/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "scope":"CERTIFY_UFPC_O5_WORK_ACTUALLY_STARTED_ONLY",
+            "start_sha256":h(root/"START.json"),
+            "checks":checks,
+            "g24_allowed":ok,
+            "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          out.write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(23)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-stage7-ufpc-o5-start-g23
+          path: ${{ runner.temp }}/g23/G23_START.json
+          retention-days: 90
+          compression-level: 0
+
+  g24_start:
+    name: G24 certify work started
+    needs: g23_start
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-stage7-ufpc-o5-start-g23
+          path: ${{ runner.temp }}/g23
+      - name: Issue start-only certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/G23_START.json"
+          test "$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(d["status"] if d.get("g24_allowed") else "HOLD")' "$G")" = PASS
+          H="$(sha256sum "$G"|awk '{print $1}')"
+          AUD="louksna-r4-stage7-ufpc-o5-start:$H"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export H AUD TOKEN
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$RUNNER_TEMP/g24/G24_START.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          t=os.environ["TOKEN"]; p=t.split("."); payload=p[1]+"="*((4-len(p[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload))
+          aud=claims.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          q={
+            "schema":"LOUKSNA_R4_PART4_STAGE7_UFPC_O5_START_G24/1.0",
+            "status":"PASS",
+            "scope":"CERTIFY_UFPC_O5_WORK_ACTUALLY_STARTED_ONLY",
+            "g23_sha256":os.environ["H"],
+            "worker_started":True,
+            "observer_started":True,
+            "maximum_work_seconds":90,
+            "allow_unattended_read_only_completion":True,
+            "partition_geometry_mutation_authorized":False,
+            "filesystem_resize_authorized":False,
+            "stage7_commit_authorized":False,
+            "certification_propagated":False,
+            "authority_authenticated":True,
+            "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
+            "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-stage7-ufpc-o5-start-g24
+          path: ${{ runner.temp }}/g24/G24_START.json
+          retention-days: 90
+          compression-level: 0
+
+  universal_snapshot:
+    name: Maestro + LRB universal fresh snapshot O5
+    needs: g24_start
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 2
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-stage7-ufpc-o5-start-g24
+          path: ${{ runner.temp }}/start-g24
+      - name: Capture universal fresh precommit within 90 seconds
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          CERT="$RUNNER_TEMP/start-g24/G24_START.json"
+          test "$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(d["status"])' "$CERT")" = PASS
+          test "$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(d["stage7_commit_authorized"])' "$CERT")" = False
+
+          timeout --signal=TERM --kill-after=5s 90s bash -Eeuo pipefail <<'SNAP'
+          OUT="$RUNNER_TEMP/ufpc"; mkdir -p "$OUT"
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9"
+          DIR="$STATE/PART_4_P3_HARDENED"
+          cp "$DIR/EXECUTION.json" "$OUT/EXECUTION.json"
+          cp "$DIR/STAGE5_CANDIDATE.json" "$OUT/STAGE5_CANDIDATE.json"
+          cp "$DIR/STAGE6_G24.json" "$OUT/STAGE6_G24.json"
+          cp "$DIR/STAGE4_CAPSULE/CAPSULE_MANIFEST.json" "$OUT/STAGE4_CAPSULE_MANIFEST.json"
+          cp "$DIR/STAGE4_CAPSULE/GPT_BACKUP.bin" "$OUT/GPT_BACKUP.bin"
+
+          cat /proc/sys/kernel/random/boot_id > "$OUT/BOOT_ID_START.txt"
+          date -u +%Y-%m-%dT%H:%M:%S.%NZ > "$OUT/EPOCH_START.txt"
+
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+          mapfile -t LINKS < <(find "$HOME/.local/lib/louksna-remote-bridge" -type f -path '*/bridge/live_link.py' -print 2>/dev/null | sort)
+          test "${#LINKS[@]}" -ge 1
+          LINK="${LINKS[-1]}"
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op status > "$OUT/LRB_STATUS_START.json"
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op observe > "$OUT/LRB_OBSERVE_START.json"
+
+          sudo -n /usr/sbin/sfdisk --dump /dev/nvme0n1 > "$OUT/SFDISK.txt"
+          sudo -n /usr/sbin/sgdisk -p /dev/nvme0n1 > "$OUT/SGDISK_PRINT.txt"
+          sudo -n /usr/sbin/sgdisk -v /dev/nvme0n1 > "$OUT/SGDISK_VERIFY.txt" 2>&1
+          sudo -n /usr/sbin/parted -sm /dev/nvme0n1 unit s print free > "$OUT/PARTED.txt"
+          lsblk -J -b -o NAME,PATH,TYPE,SIZE,START,FSTYPE,FSAVAIL,FSUSE%,MOUNTPOINTS,UUID,PARTUUID /dev/nvme0n1 > "$OUT/LSBLK.json"
+          findmnt -n -o SOURCE,FSTYPE,OPTIONS / > "$OUT/ROOT_MOUNT.txt"
+          sudo -n tune2fs -l /dev/nvme0n1p3 > "$OUT/TUNE2FS.txt"
+          sudo -n journalctl -k --since "7 days ago" --no-pager -o short-iso > "$OUT/KERNEL_7D.txt" || true
+
+          sudo -n /usr/sbin/nvme smart-log -o json /dev/nvme0n1 > "$OUT/NVME_SMART.json"
+          sudo -n /usr/sbin/nvme error-log -e 64 -o json /dev/nvme0n1 > "$OUT/NVME_ERROR_LOG.json"
+          sudo -n /usr/sbin/nvme id-ctrl -o json /dev/nvme0n1 > "$OUT/NVME_ID_CTRL.json"
+          sudo -n /usr/sbin/nvme id-ns -n 1 -o json /dev/nvme0n1 > "$OUT/NVME_ID_NS.json"
+          sudo -n /usr/sbin/smartctl -x -j /dev/nvme0n1 > "$OUT/SMARTCTL.json"
+
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op observe > "$OUT/LRB_OBSERVE_END.json"
+          cat /proc/sys/kernel/random/boot_id > "$OUT/BOOT_ID_END.txt"
+          date -u +%Y-%m-%dT%H:%M:%S.%NZ > "$OUT/EPOCH_END.txt"
+
+          python3 - "$OUT" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,re,subprocess,sys
+          root=pathlib.Path(sys.argv[1]); h=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+          e=json.loads((root/"EXECUTION.json").read_text())
+          c=json.loads((root/"STAGE5_CANDIDATE.json").read_text())
+          g=json.loads((root/"STAGE6_G24.json").read_text())
+          cap=json.loads((root/"STAGE4_CAPSULE_MANIFEST.json").read_text())
+          l=json.loads((root/"LRB_STATUS_START.json").read_text())
+          os_=json.loads((root/"LRB_OBSERVE_START.json").read_text())
+          oe=json.loads((root/"LRB_OBSERVE_END.json").read_text())
+          nv=json.loads((root/"NVME_SMART.json").read_text())
+          er=json.loads((root/"NVME_ERROR_LOG.json").read_text())
+          sc=json.loads((root/"SMARTCTL.json").read_text())
+          sfd=(root/"SFDISK.txt").read_text()
+          parted=(root/"PARTED.txt").read_text()
+          sg=(root/"SGDISK_VERIFY.txt").read_text()
+          tune=(root/"TUNE2FS.txt").read_text()
+          kern=(root/"KERNEL_7D.txt").read_text(errors="replace")
+          start=int(pathlib.Path("/sys/class/block/nvme0n1p3/start").read_text().strip())
+          size=int(pathlib.Path("/sys/class/block/nvme0n1p3/size").read_text().strip()); end=start+size-1
+          p1s=int(pathlib.Path("/sys/class/block/nvme0n1p1/start").read_text().strip())
+          p1z=int(pathlib.Path("/sys/class/block/nvme0n1p1/size").read_text().strip()); p1e=p1s+p1z-1
+          uuid=subprocess.run(["lsblk","-n","-o","UUID","/dev/nvme0n1p3"],text=True,capture_output=True,check=True).stdout.strip()
+          puid=subprocess.run(["lsblk","-n","-o","PARTUUID","/dev/nvme0n1p3"],text=True,capture_output=True,check=True).stdout.strip()
+          m=re.search(r"/dev/nvme0n1p3\s*:\s*start=\s*(\d+),\s*size=\s*(\d+)",sfd); assert m
+          sfd_start,sfd_size=map(int,m.groups()); sfd_end=sfd_start+sfd_size-1
+          free_start=free_end=None
+          for line in parted.splitlines():
+              f=line.rstrip(";").split(":")
+              if len(f)>=5 and f[4]=="free" and f[1].endswith("s") and f[2].endswith("s"):
+                  a,b=int(f[1][:-1]),int(f[2][:-1])
+                  if a>end: free_start,free_end=a,b
+
+          def iv(v):
+              if v is None:return None
+              if isinstance(v,bool):return int(v)
+              if isinstance(v,(int,float)):return int(v)
+              mm=re.search(r"-?\d+",str(v).replace(",","")); return int(mm.group()) if mm else None
+          def pick(d,*ks):
+              for k in ks:
+                  if isinstance(d,dict) and k in d:return d[k]
+              return None
+          slog=sc.get("nvme_smart_health_information_log",{}) if isinstance(sc,dict) else {}
+          crit=iv(pick(nv,"critical_warning")); media=iv(pick(nv,"media_errors"))
+          spare=iv(pick(nv,"avail_spare","available_spare")); thresh=iv(pick(nv,"spare_thresh","available_spare_threshold"))
+          used=iv(pick(nv,"percent_used","percentage_used")); tr=iv(pick(nv,"temperature")); tc=(tr-273.15) if tr is not None and tr>=200 else tr
+          smart_pass=sc.get("smart_status",{}).get("passed") if isinstance(sc,dict) else None
+          entries=er if isinstance(er,list) else er.get("errors",[]) if isinstance(er,dict) else []
+          meaningful=[]
+          for x in entries:
+              if isinstance(x,dict):
+                  ec=iv(x.get("error_count")); sf=iv(x.get("status_field"))
+                  if (ec or 0)>0 or (sf or 0)!=0: meaningful.append(x)
+          patterns={
+            "nvme":r"nvme.*(reset|timeout|abort|I/O|failed|error)",
+            "block":r"(blk_update_request|I/O error|Buffer I/O error|end_request: I/O error)",
+            "ext4":r"EXT4-fs (error|warning)|EXT4-fs.*(corrupt|aborted)",
+            "pcie":r"(AER:.*error|PCIe Bus Error|pcieport.*error)",
+            "ro":r"Remounting filesystem read-only|re-mounted.*read-only"
+          }
+          kh={k:len(re.findall(p,kern,re.I)) for k,p in patterns.items()}
+          fm=re.search(r"^Filesystem state:\s*(.+)$",tune,re.M); fs_state=fm.group(1).strip() if fm else None
+          root_mount=(root/"ROOT_MOUNT.txt").read_text()
+          boot_start=(root/"BOOT_ID_START.txt").read_text().strip(); boot_end=(root/"BOOT_ID_END.txt").read_text().strip()
+
+          checks={
+            "same_boot_epoch":boot_start==boot_end,
+            "lrb_host":l.get("host")=="LOUKSNA",
+            "lrb_start_evidence":bool(os_.get("evidence_sha256")),
+            "lrb_end_evidence":bool(oe.get("evidence_sha256")),
+            "stage7_boundary":int(e.get("current_stage",0))==7 and int(e.get("last_completed_stage",0))>=6,
+            "no_prior_stage7_result":not pathlib.Path.home().joinpath(".local/state/louksna/r4-master-part1-part9/PART_4_P3_HARDENED/STAGE7_RESULT.json").exists(),
+            "p3_sysfs_start":start==567296,
+            "p3_sysfs_end":end==854409528,
+            "p3_sfdisk_matches":sfd_start==start and sfd_end==end,
+            "p1_exact":p1s==2048 and p1e==534527,
+            "p5_absent":not pathlib.Path("/dev/nvme0n1p5").exists(),
+            "free_tail_exact":free_start==854409529 and free_end==1000215182,
+            "contiguous_tail":end+1==free_start,
+            "candidate_start":int(c.get("target_start_sector",-1))==567296,
+            "candidate_old_end":int(c.get("old_end_sector",-1))==854409528,
+            "candidate_target":int(c.get("target_end_sector",-1))==1000215182,
+            "g24_scope":g.get("scope")=="P3_TRAILING_END_EXTENSION_ONLY",
+            "g24_candidate_bound":g.get("candidate_sha256")==h(root/"STAGE5_CANDIDATE.json"),
+            "g24_start":int(g.get("authorized_start_sector",-1))==567296,
+            "g24_old_end":int(g.get("authorized_old_end_sector",-1))==854409528,
+            "g24_new_end":int(g.get("authorized_new_end_sector",-1))==1000215182,
+            "root_device":"/dev/nvme0n1p3" in root_mount,
+            "root_ext4":"ext4" in root_mount,
+            "uuid":uuid=="e084ec2a-af39-48b5-bb89-db2dc6a98332",
+            "partuuid":puid=="8e0b4274-21ff-4b16-8180-495381efb1d9",
+            "ext4_clean":fs_state=="clean",
+            "gpt_clean":"No problems found" in sg,
+            "critical_warning_zero":crit==0,
+            "media_errors_zero":media==0,
+            "spare_above_threshold":spare is not None and thresh is not None and spare>=thresh,
+            "wear_below_100":used is not None and used<100,
+            "temperature_noncritical":tc is not None and tc<80,
+            "smartctl_passed":smart_pass is True,
+            "no_material_error_entry":len(meaningful)==0,
+            "kernel_nvme_clean":kh["nvme"]==0,
+            "kernel_block_clean":kh["block"]==0,
+            "kernel_ext4_clean":kh["ext4"]==0,
+            "kernel_pcie_clean":kh["pcie"]==0,
+            "kernel_no_ro_remount":kh["ro"]==0,
+            "recovery_manifest_ready":cap.get("status")=="LOCAL_READY",
+            "gpt_backup_present":(root/"GPT_BACKUP.bin").stat().st_size>0,
+            "no_geometry_mutation":e.get("disk_mutation_performed") is False,
+            "no_fs_mutation":e.get("filesystem_mutation_performed") is False,
+          }
+          contradictions=[k for k,v in checks.items() if not v]
+          q={
+            "schema":"LOUKSNA_R4_PART4_STAGE7_UNIVERSAL_FRESH_PRECOMMIT_O5/1.0",
+            "status":"PASS" if not contradictions else "HOLD",
+            "transaction_epoch":{"boot_id":boot_start,"lrb_seq_start":os_.get("evidence_seq"),"lrb_seq_end":oe.get("evidence_seq")},
+            "geometry":{"p3_start":start,"p3_end":end,"free_start":free_start,"free_end":free_end,"target_end":1000215182},
+            "identity":{"uuid":uuid,"partuuid":puid,"root":root_mount.strip()},
+            "health":{"critical_warning":crit,"media_errors":media,"available_spare":spare,"spare_threshold":thresh,"percentage_used":used,"temperature_raw":tr,"temperature_c_normalized":round(tc,2) if tc is not None else None,"smartctl_passed":smart_pass,"material_error_entries":len(meaningful)},
+            "kernel_hits_7d":kh,
+            "expected_delta":{"field":"P3_END","from":854409528,"to":1000215182,"delta_sectors":145805654},
+            "contradictions":contradictions,
+            "unknowns":[],
+            "checks":checks,
+            "candidate_sha256":h(root/"STAGE5_CANDIDATE.json"),
+            "stage6_g24_sha256":h(root/"STAGE6_G24.json"),
+            "recovery_manifest_sha256":h(root/"STAGE4_CAPSULE_MANIFEST.json"),
+            "gpt_backup_sha256":h(root/"GPT_BACKUP.bin"),
+            "lrb_start_sha256":os_.get("evidence_sha256"),
+            "lrb_end_sha256":oe.get("evidence_sha256"),
+            "partition_geometry_mutation_performed":False,
+            "filesystem_resize_performed":False,
+            "stage7_commit_performed":False,
+            "completed_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          (root/"UFPC_O5.json").write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if q["status"]!="PASS": raise SystemExit(23)
+          PY
+          SNAP
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: r4-part4-stage7-ufpc-o5
+          path: ${{ runner.temp }}/ufpc/
+          retention-days: 90
+          compression-level: 0
+
+  g23_final:
+    name: G23 independent universal precommit validation
+    needs: universal_snapshot
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-stage7-ufpc-o5
+          path: ${{ runner.temp }}/ufpc
+      - name: Validate universal snapshot
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/ufpc/UFPC_O5.json" "$RUNNER_TEMP/g23/G23.json" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,sys
+          p=pathlib.Path(sys.argv[1]); out=pathlib.Path(sys.argv[2]); q=json.loads(p.read_text())
+          checks={
+            "snapshot_pass":q.get("status")=="PASS",
+            "all_checks":all(q.get("checks",{}).values()),
+            "zero_contradictions":len(q.get("contradictions",[]))==0,
+            "zero_unknowns":len(q.get("unknowns",[]))==0,
+            "no_geometry_mutation":q.get("partition_geometry_mutation_performed") is False,
+            "no_fs_resize":q.get("filesystem_resize_performed") is False,
+            "no_stage7_commit":q.get("stage7_commit_performed") is False,
+            "delta_exact":q.get("expected_delta",{}).get("delta_sectors")==145805654,
+          }
+          ok=all(checks.values())
+          r={
+            "schema":"LOUKSNA_R4_PART4_STAGE7_UFPC_O5_G23/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "scope":"UNIVERSAL_FRESH_PRECOMMIT_READ_ONLY_ONLY",
+            "ufpc_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),
+            "checks":checks,
+            "g24_allowed":ok,
+            "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          out.write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(23)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-stage7-ufpc-o5-g23
+          path: ${{ runner.temp }}/g23/G23.json
+          retention-days: 90
+          compression-level: 0
+
+  g24_final:
+    name: G24 certify universal fresh precommit only
+    needs: g23_final
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-stage7-ufpc-o5-g23
+          path: ${{ runner.temp }}/g23
+      - name: Issue non-propagating precommit certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/G23.json"
+          test "$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(d["status"] if d.get("g24_allowed") else "HOLD")' "$G")" = PASS
+          H="$(sha256sum "$G"|awk '{print $1}')"
+          U="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["ufpc_sha256"])' "$G")"
+          AUD="louksna-r4-stage7-ufpc-o5-final:$H:$U"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export H U AUD TOKEN
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$RUNNER_TEMP/g24/G24.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          t=os.environ["TOKEN"]; p=t.split("."); payload=p[1]+"="*((4-len(p[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload))
+          aud=claims.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          q={
+            "schema":"LOUKSNA_R4_PART4_STAGE7_UFPC_O5_G24/1.0",
+            "status":"PASS",
+            "scope":"UNIVERSAL_FRESH_PRECOMMIT_READ_ONLY_ONLY",
+            "g23_sha256":os.environ["H"],
+            "ufpc_sha256":os.environ["U"],
+            "result":"PRECOMMIT_STATE_CERTIFIED_FRESH",
+            "next_state":"AWAIT_EXPLICIT_STAGE7_COMMIT_AUTHORIZATION",
+            "stage7_commit_authorized":False,
+            "partition_geometry_mutation_authorized":False,
+            "filesystem_resize_authorized":False,
+            "certification_propagated":False,
+            "authority_authenticated":True,
+            "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
+            "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-stage7-ufpc-o5-g24
+          path: ${{ runner.temp }}/g24/G24.json
+          retention-days: 90
+          compression-level: 0
