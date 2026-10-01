@@ -1,0 +1,131 @@
+{
+  "schema": "LOUKSNA_R4_PART4_PRE_STAGE7_NVME_HEALTH_GATE_HARDENED/1.0",
+  "directive_id": "PRE-STAGE7-NVME-HEALTH-GATE-HARDENED-20261001",
+  "authority": "Louksna.md",
+  "mission_id": "MIS-e5963403a3b44ee8be96",
+  "worker": "CUSTOSZ_V7_MAESTRO",
+  "observer": "LOUKSNA_REMOTE_BRIDGE",
+  "expected_state": {
+    "part": "PART_4",
+    "current_stage": 7,
+    "last_completed_stage": 6
+  },
+  "parent_stage7_contract": "PART4-P3-TEN-POINT-HARDENED-CONTINUATION-20261001",
+  "doctrine": {
+    "extend_do_not_replace": true,
+    "append_only": true,
+    "fail_closed_with_antiparalysis": true,
+    "no_silent_operations": true,
+    "no_automatic_certification_propagation": true,
+    "physical_truth_over_stale_state": true,
+    "g23_required": true,
+    "g24_required": true,
+    "minimal_delta_recovery": true
+  },
+  "puac2_operational_mapping": {
+    "C25": "SCOPE_AND_CLAIM_BOUNDARY",
+    "C26": "PRIMARY_EVIDENCE_AND_PROVENANCE",
+    "C27": "INDEPENDENT_VALIDATION",
+    "C28": "RISK_AND_FAILURE_EXPOSURE",
+    "C29": "INTEGRITY_DETERMINISM_REPRODUCIBILITY",
+    "C30": "INTEGRATION_AND_NON_REGRESSION",
+    "C31": "REVERSIBILITY_RECOVERY_ROLLBACK",
+    "C32": "VALIDITY_REEVALUATION_AND_CONTINUITY"
+  },
+  "authorized_scope": {
+    "packages": [
+      "nvme-cli",
+      "smartmontools"
+    ],
+    "package_source": "CURRENT_CONFIGURED_DEBIAN_REPOSITORIES_ONLY",
+    "apt_simulation_required": true,
+    "package_delta_must_be_explicit": true,
+    "package_removals_allowed": false,
+    "package_installation_allowed_after_g23_g24": true,
+    "passive_nvme_health_reads": true,
+    "passive_smart_reads": true,
+    "lrb_status_and_observe": true,
+    "gpt_read_only_verification": true,
+    "kernel_log_read_only_analysis": true,
+    "ext4_read_only_metadata_inspection": true
+  },
+  "points": [
+    {
+      "n": 1,
+      "id": "MICROSCOPIC_REPRODUCIBLE_INSTALLATION",
+      "requires": [
+        "PREINSTALL_STATE",
+        "APT_SIMULATION",
+        "DEPENDENCY_DELTA",
+        "G23",
+        "G24",
+        "EXACT_PACKAGE_INSTALL"
+      ]
+    },
+    {
+      "n": 2,
+      "id": "PROVENANCE_CHAIN_OF_CUSTODY",
+      "requires": [
+        "VERSIONS",
+        "APT_LOG",
+        "BINARY_PATHS",
+        "BINARY_SHA256",
+        "TRANSACTION_ID",
+        "CHECKPOINT_ID",
+        "OFF_HOST_ARTIFACT"
+      ]
+    },
+    {
+      "n": 3,
+      "id": "MULTILEVEL_NVME_HEALTH",
+      "requires": [
+        "NVME_HEALTH",
+        "NVME_ERROR_LOG",
+        "DEVICE_IDENTITY",
+        "SMART_HEALTH",
+        "GPT_VERIFY",
+        "KERNEL_STORAGE_ERRORS",
+        "EXT4_PASSIVE_METADATA",
+        "LRB_EVIDENCE"
+      ],
+      "rules": [
+        "NULL_NOT_ZERO",
+        "UNKNOWN_NOT_PASS",
+        "ERROR_LOG_CLASSIFY_BEFORE_DECISION"
+      ]
+    },
+    {
+      "n": 4,
+      "id": "STRICT_PRE_STAGE7_BOUNDARY",
+      "requires": [
+        "NO_PARTITION_GEOMETRY_CHANGE",
+        "NO_FILESYSTEM_RESIZE",
+        "NO_REBOOT",
+        "NO_ACTIVE_DEVICE_TEST",
+        "NO_FIRMWARE_CHANGE"
+      ]
+    }
+  ],
+  "terminal_gate": {
+    "pass_requires": [
+      "PACKAGE_TRANSACTION_PASS",
+      "PROVENANCE_PASS",
+      "TOOL_INTEGRITY_PASS",
+      "NVME_HEALTH_PASS",
+      "KERNEL_STORAGE_HEALTH_PASS",
+      "GPT_HEALTH_PASS",
+      "ROOT_IDENTITY_PASS",
+      "G23_FINAL_PASS",
+      "G24_FINAL_PASS"
+    ],
+    "next_authorized_action": "STAGE7_FRESH_PRECOMMIT_READ_ONLY",
+    "stage7_commit_authorized_by_this_directive": false
+  },
+  "on_failure": [
+    "PRESERVE_EVIDENCE",
+    "CLASSIFY_FAILURE",
+    "MINIMAL_REMEDIATION",
+    "REVALIDATE_AFFECTED_SCOPE",
+    "RESUME_SAME_HEALTH_GATE"
+  ]
+}
