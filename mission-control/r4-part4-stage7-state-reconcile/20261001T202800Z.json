@@ -1,0 +1,9 @@
+{
+  "mission_id": "MIS-e5963403a3b44ee8be96",
+  "action": "RECONCILE_COMPLETED_STAGE7_PHYSICAL_TRUTH",
+  "authority": "Louksna.md",
+  "state_only": true,
+  "no_disk_mutation": true,
+  "no_filesystem_mutation": true,
+  "no_retry": true
+}
