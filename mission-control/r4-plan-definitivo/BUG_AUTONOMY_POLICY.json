@@ -131,5 +131,88 @@
       "legal_or_license_gate",
       "unknown_root_cause"
     ]
+  },
+  "bug_governance_v2": {
+    "status": "AUTHORIZED_WITHIN_CURRENT_MISSION_SCOPE",
+    "authority": "Louksna.md",
+    "assurance": "PUAC2.md",
+    "principle": "BUG_COMPLEXITY_ALONE_DOES_NOT_REQUIRE_HUMAN_REPROMPT; SCOPE, AUTHORITY, IRREVERSIBILITY, SAFETY, LEGALITY AND EVIDENCE DETERMINE THE GATE.",
+    "tiers": {
+      "T1_BANAL_DETERMINISTIC": {
+        "autonomous": true,
+        "pipeline": [
+          "CAPTURE_FAILURE",
+          "CLASSIFY",
+          "ROOT_CAUSE",
+          "MINIMUM_DELTA",
+          "STATIC_OR_TARGETED_TEST",
+          "AUDIT",
+          "TRACE",
+          "G23",
+          "G24",
+          "RERUN_FAILED_OR_DOWNSTREAM_ONLY",
+          "NON_REGRESSION",
+          "CONTINUE"
+        ]
+      },
+      "T2_COMPLEX_BOUNDED": {
+        "autonomous": true,
+        "preconditions": [
+          "CURRENT_MISSION_SCOPE_UNCHANGED",
+          "AUTHORITY_UNCHANGED",
+          "PRIVILEGE_ENVELOPE_UNCHANGED",
+          "NO_NEW_IRREVERSIBLE_SCOPE",
+          "NO_LEGAL_OR_LICENSE_GATE",
+          "VERIFIED_CHECKPOINT_OR_PROVEN_SAFE_STATE",
+          "EVIDENCE_PRESERVED"
+        ],
+        "pipeline": [
+          "CAPTURE_FAILURE",
+          "BUILD_INCIDENT_RECORD",
+          "FORM_COMPETING_HYPOTHESES",
+          "MC07_SECOND_ORDER_IMPACT",
+          "MC08_SELF_AUDIT",
+          "IDENTIFY_LAST_VERIFIED_CHECKPOINT",
+          "DESIGN_MINIMUM_BOUNDED_REMEDIATION",
+          "G23_REVIEW_OF_CONSEQUENTIAL_REMEDIATION_PLAN",
+          "CHECKPOINT",
+          "EXECUTE_BOUNDED_DELTA",
+          "POST_VALIDATE",
+          "TEST_NON_REGRESSION",
+          "AUDIT",
+          "TRACE",
+          "G23_STATE_VALIDATION",
+          "G24_EXACT_SCOPE_CERTIFICATION",
+          "CONTINUE"
+        ],
+        "blind_retry": false,
+        "certification_inheritance": false
+      },
+      "T3_HUMAN_GATE": {
+        "autonomous": false,
+        "triggers": [
+          "SCOPE_EXPANSION",
+          "NEW_IRREVERSIBLE_SCOPE",
+          "AUTHORITY_CHANGE",
+          "PRIVILEGE_EXPANSION",
+          "LEGAL_LICENSE_GATE",
+          "UNRESOLVED_SAFETY_BOUNDARY",
+          "PROTECTED_HASH_MISMATCH_WITHOUT_PROVEN_CAUSE",
+          "DATA_CORRUPTION_WITHOUT_PROVEN_SAFE_RECOVERY",
+          "UNKNOWN_AFTER_BOUNDED_DIAGNOSIS"
+        ]
+      }
+    },
+    "global_invariants": [
+      "DO_NOT_REPEAT_CERTIFIED_WORK",
+      "DO_NOT_REPEAT_HASH_VERIFIED_BULK_COPY",
+      "DO_NOT_REPEAT_PARTITION_MIGRATION",
+      "USE_EXISTING_SUDO_N_WHEN_REQUIRED_BY_ALREADY_AUTHORIZED_SCOPE",
+      "G23_AND_G24_REMAIN_DISTINCT",
+      "G23_PRECEDES_G24",
+      "NO_SILENT_CERTIFICATION_PROPAGATION",
+      "APPEND_ONLY_INCIDENT_HISTORY",
+      "FAIL_CLOSED_ON_UNKNOWN_OR_CONFLICT"
+    ]
   }
 }
