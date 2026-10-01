@@ -1,0 +1,22 @@
+{
+  "schema": "LOUKSNA_R4_CUSTOSZ_STALE_LEDGER_LOCK_RECOVERY_REQUEST/1.0",
+  "operation": "REMOVE_PROVEN_STALE_ZERO_BYTE_CUSTOSZ_LEDGER_SENTINEL_ONLY",
+  "target": "~/.local/state/louksna/r4-master-part1-part9/custosz/.ledger.lock",
+  "evidence": {
+    "observed_size_bytes": 0,
+    "observed_mtime_local": "2026-10-01T13:12:08.420905081-03:00",
+    "fuser_holder": false,
+    "old_mission_id": "MIS-e5963403a3b44ee8be96",
+    "old_mission_created_at_utc": "2026-09-30T21:19:44.802212Z",
+    "lease_hours": 24
+  },
+  "require_service_stopped_before_unlink": true,
+  "require_recheck_no_holder": true,
+  "require_lock_age_seconds_min": 300,
+  "prohibit_ledger_mutation": true,
+  "prohibit_anchor_mutation": true,
+  "prohibit_stage12_mutation": true,
+  "prohibit_certificate_mutation": true,
+  "fail_closed": true,
+  "requested_at_utc": "2026-10-01T21:37:00Z"
+}
