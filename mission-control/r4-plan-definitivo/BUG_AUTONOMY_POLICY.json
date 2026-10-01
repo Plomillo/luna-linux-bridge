@@ -101,19 +101,35 @@
     "non_regression_result"
   ],
   "sudo_policy": {
-    "capability": "PERMANENT_NONINTERACTIVE_WITHIN_ALREADY_AUTHORIZED_SCOPE",
-    "command_prefix": "sudo -n",
-    "interactive_password_prompts": "FORBIDDEN",
-    "sudoers_mutation": "FORBIDDEN",
-    "privilege_scope_expansion": "FORBIDDEN",
-    "automatic_use_required_for": [
-      "root_owned_candidate_tree_reads",
-      "root_owned_candidate_tree_verification",
-      "protected_boot_metadata_reads",
-      "block_device_reads_and_already_authorized_mutations",
-      "mount_umount_chroot_bootloader_operations_within_existing_part4_scope"
+    "capability": "PERMANENT_NONINTERACTIVE_SUDO_ALREADY_AUTHORIZED",
+    "invocation": "sudo -n",
+    "rule": "USE_WHEN_A_CURRENTLY_AUTHORIZED_OPERATION_CROSSES_AN_EXISTING_ROOT_OWNED_OR_PRIVILEGED_FILESYSTEM_BOUNDARY",
+    "privilege_expansion": false,
+    "password_prompt_forbidden": true,
+    "sudoers_mutation_forbidden_without_new_scope": true,
+    "apc_scope_preserved": true,
+    "evidence_outputs_should_return_to_runner_owner_when_required": true
+  },
+  "similar_bug_authorization": {
+    "status": "AUTHORIZED",
+    "scope": "ANY_DETERMINISTIC_BUG_OF_THE_SAME_NON_EXPANDING_IMPLEMENTATION_NATURE_DURING_CURRENT_MISSION",
+    "examples": [
+      "missing sudo -n on an already-authorized privileged read/verification",
+      "root-owned candidate tree consumed by an unprivileged verifier",
+      "artifact/path/name mismatch",
+      "sparse-checkout dependency omission",
+      "quoting/environment/wiring defect"
     ],
-    "automatic_banal_bug_remediation": true,
-    "rule": "If a deterministic permission-boundary bug occurs inside already-authorized scope and no new destructive or privilege scope is introduced, correct the exact call to use sudo -n, audit it, validate G23, certify G24, and resume only the failed/downstream step."
+    "must_hold_if": [
+      "scope_expands",
+      "privileges_expand",
+      "new_destructive_action_is_needed",
+      "protected_hash_mismatch",
+      "data_corruption",
+      "boot_safety_unresolved",
+      "authority_changes",
+      "legal_or_license_gate",
+      "unknown_root_cause"
+    ]
   }
 }
