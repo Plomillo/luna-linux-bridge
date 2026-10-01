@@ -1,0 +1,8 @@
+{
+  "schema": "LOUKSNA_R4_PART6_FULL_PREFLIGHT_REQUEST/2.0",
+  "reason": "REBUILD_FULL_PART6_CANDIDATE_AFTER_CERTIFIED_I386_PREREQUISITE",
+  "i386_result_run_id": 36932248915,
+  "authorize_mutation": false,
+  "fail_closed": true,
+  "requested_at_utc": "2026-10-01T22:03:00Z"
+}
