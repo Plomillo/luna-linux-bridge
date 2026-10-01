@@ -1,0 +1,146 @@
+name: "R4 PART4 — LRB geometry forensic audit"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-lrb-geometry-audit/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r4-part4-lrb-geometry-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 8
+    steps:
+      - name: LRB + raw disk geometry read-only audit
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/lrb-geometry-$GITHUB_RUN_ID"
+          mkdir -p "$OUT"
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+
+          mapfile -t LINKS < <(find "$HOME/.local/lib/louksna-remote-bridge" -type f -path '*/bridge/live_link.py' -print 2>/dev/null | sort)
+          test "${#LINKS[@]}" -ge 1
+          LINK="${LINKS[-1]}"
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op status > "$OUT/LRB_STATUS.json"
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op observe > "$OUT/LRB_OBSERVE.json"
+
+          sudo -n /usr/sbin/sfdisk --dump /dev/nvme0n1 > "$OUT/SFDISK.txt"
+          sudo -n /usr/sbin/sgdisk -p /dev/nvme0n1 > "$OUT/SGDISK.txt"
+          sudo -n /usr/sbin/parted -sm /dev/nvme0n1 unit s print free > "$OUT/PARTED.txt"
+          lsblk -J -b -o NAME,PATH,TYPE,SIZE,START,FSTYPE,FSAVAIL,FSUSE%,MOUNTPOINTS,UUID,PARTUUID /dev/nvme0n1 > "$OUT/LSBLK.json"
+          findmnt -J / > "$OUT/FINDMNT_ROOT.json"
+          findmnt -J /boot/efi > "$OUT/FINDMNT_EFI.json"
+
+          python3 - "$OUT" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,re,subprocess,sys
+          root=pathlib.Path(sys.argv[1])
+          h=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+          l=json.loads((root/"LRB_STATUS.json").read_text())
+          o=json.loads((root/"LRB_OBSERVE.json").read_text())
+          sfd=(root/"SFDISK.txt").read_text()
+          parted=(root/"PARTED.txt").read_text()
+          ls=json.loads((root/"LSBLK.json").read_text())
+
+          def sh(cmd):
+              return subprocess.run(cmd,text=True,capture_output=True,check=True).stdout.strip()
+
+          p3_start=int(pathlib.Path("/sys/class/block/nvme0n1p3/start").read_text().strip())
+          p3_size=int(pathlib.Path("/sys/class/block/nvme0n1p3/size").read_text().strip())
+          p3_end=p3_start+p3_size-1
+          p1_start=int(pathlib.Path("/sys/class/block/nvme0n1p1/start").read_text().strip())
+          p1_size=int(pathlib.Path("/sys/class/block/nvme0n1p1/size").read_text().strip())
+          p1_end=p1_start+p1_size-1
+          disk_sectors=int(pathlib.Path("/sys/class/block/nvme0n1/size").read_text().strip())
+          sector_size=int(pathlib.Path("/sys/class/block/nvme0n1/queue/logical_block_size").read_text().strip())
+
+          m=re.search(r"/dev/nvme0n1p3\s*:\s*start=\s*(\d+),\s*size=\s*(\d+)",sfd)
+          if not m: raise SystemExit("SFDISK_P3_PARSE_FAILED")
+          gpt_start,gpt_size=map(int,m.groups())
+          gpt_end=gpt_start+gpt_size-1
+
+          p1m=re.search(r"/dev/nvme0n1p1\s*:\s*start=\s*(\d+),\s*size=\s*(\d+)",sfd)
+          if not p1m: raise SystemExit("SFDISK_P1_PARSE_FAILED")
+          gpt_p1_start,gpt_p1_size=map(int,p1m.groups())
+          gpt_p1_end=gpt_p1_start+gpt_p1_size-1
+
+          uuid=sh(["lsblk","-n","-o","UUID","/dev/nvme0n1p3"])
+          partuuid=sh(["lsblk","-n","-o","PARTUUID","/dev/nvme0n1p3"])
+          root_source=sh(["findmnt","-n","-o","SOURCE","/"])
+          root_fstype=sh(["findmnt","-n","-o","FSTYPE","/"])
+          efi_source=sh(["findmnt","-n","-o","SOURCE","/boot/efi"])
+          efi_fstype=sh(["findmnt","-n","-o","FSTYPE","/boot/efi"])
+
+          free_tail_start=None; free_tail_end=None
+          for line in parted.splitlines():
+              f=line.rstrip(";").split(":")
+              if len(f)>=5 and f[4]=="free" and f[1].endswith("s") and f[2].endswith("s"):
+                  a,b=int(f[1][:-1]),int(f[2][:-1])
+                  if a>p3_end:
+                      free_tail_start,free_tail_end=a,b
+
+          p5_exists=pathlib.Path("/dev/nvme0n1p5").exists()
+          checks={
+            "lrb_host":l.get("host")=="LOUKSNA",
+            "lrb_evidence_present":bool(o.get("evidence_sha256")),
+            "gpt_kernel_start_match":gpt_start==p3_start,
+            "gpt_kernel_end_match":gpt_end==p3_end,
+            "p3_start_invariant":p3_start==567296,
+            "p3_old_end_still_present":p3_end==854409528,
+            "p1_start_expected":p1_start==2048,
+            "p1_end_expected":p1_end==534527,
+            "p1_gpt_kernel_match":gpt_p1_start==p1_start and gpt_p1_end==p1_end,
+            "p5_absent":not p5_exists,
+            "root_on_p3":root_source=="/dev/nvme0n1p3",
+            "root_ext4":root_fstype=="ext4",
+            "efi_on_p1":efi_source=="/dev/nvme0n1p1",
+            "efi_vfat":efi_fstype=="vfat",
+            "uuid_preserved":uuid=="e084ec2a-af39-48b5-bb89-db2dc6a98332",
+            "partuuid_preserved":partuuid=="8e0b4274-21ff-4b16-8180-495381efb1d9",
+          }
+          q={
+            "schema":"LOUKSNA_R4_PART4_LRB_GEOMETRY_AUDIT/1.0",
+            "status":"PASS" if all(checks.values()) else "HOLD",
+            "host":l.get("host"),
+            "lrb_evidence_seq":o.get("evidence_seq"),
+            "lrb_evidence_sha256":o.get("evidence_sha256"),
+            "disk":"/dev/nvme0n1",
+            "disk_size_sectors":disk_sectors,
+            "logical_sector_size_bytes":sector_size,
+            "disk_size_bytes":disk_sectors*sector_size,
+            "p1":{"start":p1_start,"end":p1_end,"size_sectors":p1_size},
+            "p3":{"start":p3_start,"end":p3_end,"size_sectors":p3_size,"uuid":uuid,"partuuid":partuuid},
+            "gpt_p3":{"start":gpt_start,"end":gpt_end,"size_sectors":gpt_size},
+            "free_tail":{"start":free_tail_start,"end":free_tail_end,"size_sectors":(free_tail_end-free_tail_start+1) if free_tail_start is not None else None},
+            "root":{"source":root_source,"fstype":root_fstype},
+            "efi":{"source":efi_source,"fstype":efi_fstype},
+            "p5_exists":p5_exists,
+            "checks":checks,
+            "disk_mutation_performed":False,
+            "audited_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+            "raw_sha256":{
+              "sfdisk":h(root/"SFDISK.txt"),"sgdisk":h(root/"SGDISK.txt"),
+              "parted":h(root/"PARTED.txt"),"lsblk":h(root/"LSBLK.json"),
+              "lrb_observe":h(root/"LRB_OBSERVE.json")
+            }
+          }
+          (root/"GEOMETRY_AUDIT.json").write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if q["status"]!="PASS": raise SystemExit(23)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-lrb-geometry-audit
+          path: ${{ runner.temp }}/lrb-geometry-${{ github.run_id }}/
+          retention-days: 30
+          compression-level: 0
