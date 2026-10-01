@@ -1,0 +1,6 @@
+{
+  "schema": "R4_EXECUTION_STARTED_CERT/1.0",
+  "contract": "PART4-P3-GROWTH-HARDENED-ANTI-PARALYSIS-20261001",
+  "scope": "MAESTRO_12_STAGE_EXECUTION_STARTED_ONLY",
+  "mutation": false
+}
