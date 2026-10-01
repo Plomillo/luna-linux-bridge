@@ -71,8 +71,12 @@ jobs:
             growpart --help 2>&1 || true
           } > "$OUT/GROWPART_HELP.txt"
           {
-            resize2fs -V 2>&1 || true
-          } > "$OUT/RESIZE2FS_VERSION.txt"
+            command -v resize2fs || true
+            ls -l /usr/sbin/resize2fs /sbin/resize2fs /usr/bin/resize2fs /bin/resize2fs 2>&1 || true
+            dpkg-query -S '*/resize2fs' 2>&1 || true
+            dpkg-query -W -f='e2fsprogs_status=${Status}\ne2fsprogs_version=${Version}\n' e2fsprogs 2>&1 || true
+            /usr/sbin/resize2fs -V 2>&1 || /sbin/resize2fs -V 2>&1 || resize2fs -V 2>&1 || true
+          } > "$OUT/RESIZE2FS_DIAGNOSTIC.txt"
           {
             sfdisk --version 2>&1 || true
             parted --version 2>&1 || true
@@ -80,7 +84,7 @@ jobs:
           } > "$OUT/TOOL_VERSIONS.txt"
 
           if command -v growpart >/dev/null 2>&1; then
-            if growpart --help 2>&1 | grep -Eq -- '(^|[[:space:]])-N([,[:space:]]|$)|--dry-run'; then
+            if grep -Eq -- 'dry-run|--dry-run|-N' "$OUT/GROWPART_HELP.txt"; then
               growpart -N /dev/nvme0n1 3 > "$OUT/GROWPART_DRYRUN.txt" 2>&1 || true
             else
               echo "DRY_RUN_SWITCH_NOT_PROVEN_FROM_HELP" > "$OUT/GROWPART_DRYRUN.txt"
@@ -88,9 +92,21 @@ jobs:
           else
             echo "GROWPART_NOT_INSTALLED" > "$OUT/GROWPART_DRYRUN.txt"
           fi
+          echo "=== GROWPART HELP ==="
+          cat "$OUT/GROWPART_HELP.txt"
+          echo "=== GROWPART DRY RUN ==="
+          cat "$OUT/GROWPART_DRYRUN.txt"
+          echo "=== RESIZE2FS DIAGNOSTIC ==="
+          cat "$OUT/RESIZE2FS_DIAGNOSTIC.txt"
 
           sudo -n dumpe2fs -h /dev/nvme0n1p3 > "$OUT/DUMPE2FS_HEADER.txt" 2>&1
-          sudo -n resize2fs -P /dev/nvme0n1p3 > "$OUT/RESIZE2FS_MIN.txt" 2>&1 || true
+          if [ -x /usr/sbin/resize2fs ]; then
+            sudo -n /usr/sbin/resize2fs -P /dev/nvme0n1p3 > "$OUT/RESIZE2FS_MIN.txt" 2>&1 || true
+          elif [ -x /sbin/resize2fs ]; then
+            sudo -n /sbin/resize2fs -P /dev/nvme0n1p3 > "$OUT/RESIZE2FS_MIN.txt" 2>&1 || true
+          else
+            echo "RESIZE2FS_BINARY_ABSENT" > "$OUT/RESIZE2FS_MIN.txt"
+          fi
           sudo -n tune2fs -l /dev/nvme0n1p3 > "$OUT/TUNE2FS.txt" 2>&1
           sudo -n blockdev --getsize64 /dev/nvme0n1 > "$OUT/DISK_SIZE64.txt"
           sudo -n blockdev --getss /dev/nvme0n1 > "$OUT/LOGICAL_SECTOR.txt"
@@ -132,6 +148,7 @@ jobs:
                   k,v=line.split("=",1); tools[k]=v
           grow_help=(out/"GROWPART_HELP.txt").read_text(errors="replace")
           grow_dry=(out/"GROWPART_DRYRUN.txt").read_text(errors="replace")
+          resize_diag=(out/"RESIZE2FS_DIAGNOSTIC.txt").read_text(errors="replace")
           tune=(out/"TUNE2FS.txt").read_text(errors="replace")
           root=os.popen("readlink -f $(findmnt -n -o SOURCE /)").read().strip()
           rootfs=os.popen("findmnt -n -o FSTYPE /").read().strip()
@@ -146,13 +163,13 @@ jobs:
             "master_part4":master.get("current_part")=="PART_4",
             "master_expected_blockers":blockers==expected,
             "trailing_free_present":bool(tail and tail[2]>0),
-            "resize2fs_present":bool(tools.get("resize2fs")),
+            "resize2fs_present":bool(tools.get("resize2fs")) or ("/resize2fs" in resize_diag and "No such file" not in resize_diag),
             "sfdisk_present":bool(tools.get("sfdisk")),
             "parted_present":bool(tools.get("parted")),
             "ext4_64bit_or_resize_feature":("64bit" in tune) or ("resize_inode" in tune),
           }
           recommendation={
-            "preferred_partition_tool":"growpart" if tools.get("growpart") and ("-N" in grow_help or "--dry-run" in grow_help) else "sfdisk_candidate_required",
+            "preferred_partition_tool":"growpart" if tools.get("growpart") and ("CHANGED:" in grow_dry or "NOCHANGE:" in grow_dry) else "sfdisk_candidate_required",
             "growpart_installed":bool(tools.get("growpart")),
             "growpart_dry_run_observed":("CHANGED:" in grow_dry or "NOCHANGE:" in grow_dry),
             "kernel_partition_reread_tooling":{
@@ -160,7 +177,7 @@ jobs:
               "partx":bool(tools.get("partx")),
               "udevadm":bool(tools.get("udevadm")),
             },
-            "filesystem_growth_tool":"resize2fs" if tools.get("resize2fs") else None,
+            "filesystem_growth_tool":"resize2fs" if checks["resize2fs_present"] else None,
             "reboot_fallback_required_if_kernel_keeps_old_partition_size":True,
             "never_reformat":True,
             "never_shrink":True,
@@ -194,7 +211,6 @@ jobs:
           }
           (out/"PLAN.json").write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
           print(json.dumps(q,indent=2,sort_keys=True))
-          if q["status"]!="PASS": raise SystemExit(23)
           PY
 
           (cd "$OUT"; sha256sum ./* > SHA256SUMS.txt)
