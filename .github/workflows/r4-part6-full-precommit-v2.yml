@@ -1,0 +1,409 @@
+name: "R4 PART6 — full post-i386 G23 G24 v2"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part6-full-precommit-v2/**
+
+permissions:
+  contents: read
+  actions: read
+  id-token: write
+
+concurrency:
+  group: r4-part6-full-precommit-v2
+  cancel-in-progress: false
+
+env:
+  CANDIDATE_RUN_ID: "36932586115"
+  CANDIDATE_ARTIFACT_ID: "11196981642"
+
+jobs:
+  g23:
+    name: G23 independently validate complete PART6 plan v2
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Download full candidate
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/candidate" "$RUNNER_TEMP/g23/sources" "$RUNNER_TEMP/g23/steam-control" "$RUNNER_TEMP/g23/steamcmd"
+          gh run download "$CANDIDATE_RUN_ID" \
+            --repo Plomillo/luna-linux-bridge \
+            -n r4-part6-full-candidate \
+            -D "$RUNNER_TEMP/candidate"
+          test -f "$RUNNER_TEMP/candidate/CANDIDATE.json"
+
+      - name: Re-fetch and independently verify official sources
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+          export LANG=C
+          S="$RUNNER_TEMP/g23/sources"
+
+          curl -fsSL --retry 3 "https://repo.steampowered.com/steam/archive/stable/steam_latest.deb" -o "$S/steam_latest.deb"
+          curl -fsSL --retry 3 "https://github.com/ValveSoftware/Proton/archive/refs/tags/proton-11.0-2.tar.gz" -o "$S/proton-11.0-2.tar.gz"
+          curl -fsSL --retry 3 "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz" -o "$S/steamcmd_linux.tar.gz"
+          curl -fsSL --retry 3 "https://dl.flathub.org/repo/flathub.flatpakrepo" -o "$S/flathub.flatpakrepo"
+          curl -fsSL --retry 3 "https://repo.waydro.id" -o "$S/waydroid-repo-script.sh"
+
+          curl -fsSL --retry 3 "https://api.github.com/repos/ValveSoftware/Proton/releases/tags/proton-11.0-2" -o "$S/proton-release.json"
+          curl -fsSL --retry 3 "https://api.github.com/repos/lutris/lutris/releases/tags/v0.5.22" -o "$S/lutris-release.json"
+          curl -fsSL --retry 3 "https://api.github.com/repos/PrismLauncher/PrismLauncher/releases/tags/11.1.1" -o "$S/prism-release.json"
+          curl -fsSL --retry 3 "https://api.github.com/repos/waydroid/waydroid/releases/tags/1.6.3" -o "$S/waydroid-release.json"
+
+          dpkg-deb -e "$S/steam_latest.deb" "$RUNNER_TEMP/g23/steam-control"
+          dpkg-deb -c "$S/steam_latest.deb" > "$RUNNER_TEMP/g23/STEAM_CONTENTS.txt"
+          grep -RnsE 'sources\.list|keyring|steam-libs|apt-get|dpkg --add-architecture|i386' \
+            "$RUNNER_TEMP/g23/steam-control" "$RUNNER_TEMP/g23/STEAM_CONTENTS.txt" \
+            > "$RUNNER_TEMP/g23/STEAM_EFFECTS.txt" || true
+
+          chmod 0755 "$S/waydroid-repo-script.sh"
+          grep -nE 'sources\.list|keyring|signed-by|waydroid|apt|gpg|distro|codename|suite|usage|getopts' \
+            "$S/waydroid-repo-script.sh" > "$RUNNER_TEMP/g23/WAYDROID_SCRIPT_EFFECTS.txt" || true
+
+      - name: Prove official Proton Steam app identity on disposable runner
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export DEBIAN_FRONTEND=noninteractive
+          sudo dpkg --add-architecture i386
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libc6:i386 libstdc++6:i386 libgcc-s1:i386 ca-certificates
+          tar -xzf "$RUNNER_TEMP/g23/sources/steamcmd_linux.tar.gz" -C "$RUNNER_TEMP/g23/steamcmd"
+
+          file "$RUNNER_TEMP/g23/steamcmd/linux32/steamcmd" > "$RUNNER_TEMP/g23/STEAMCMD_FILE.txt"
+          ldd "$RUNNER_TEMP/g23/steamcmd/linux32/steamcmd" > "$RUNNER_TEMP/g23/STEAMCMD_LDD.txt" 2>&1 || true
+
+          set +e
+          timeout 420 "$RUNNER_TEMP/g23/steamcmd/steamcmd.sh" \
+            +login anonymous \
+            +app_info_update 1 \
+            +app_info_print 4628710 \
+            +quit \
+            > "$RUNNER_TEMP/g23/PROTON_APPINFO.stdout" \
+            2> "$RUNNER_TEMP/g23/PROTON_APPINFO.stderr"
+          echo $? > "$RUNNER_TEMP/g23/PROTON_APPINFO.rc"
+          set -e
+
+      - name: Build independent G23 result
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          C="$RUNNER_TEMP/candidate/CANDIDATE.json" GDIR="$RUNNER_TEMP/g23" python3 - <<'PY'
+          import datetime as dt, hashlib, json, os, pathlib, re, subprocess
+
+          cpath=pathlib.Path(os.environ["C"])
+          gdir=pathlib.Path(os.environ["GDIR"])
+          s=gdir/"sources"
+          c=json.loads(cpath.read_text())
+
+          def sha(p):
+              h=hashlib.sha256()
+              with pathlib.Path(p).open("rb") as f:
+                  for b in iter(lambda:f.read(1024*1024),b""):
+                      h.update(b)
+              return h.hexdigest()
+
+          proton=json.loads((s/"proton-release.json").read_text())
+          lutris=json.loads((s/"lutris-release.json").read_text())
+          prism=json.loads((s/"prism-release.json").read_text())
+          waydroid=json.loads((s/"waydroid-release.json").read_text())
+
+          def asset_digest(release,name):
+              for a in release.get("assets",[]):
+                  if a.get("name")==name:
+                      return a.get("digest")
+              return None
+
+          source_hashes={
+              "steam_latest_deb_sha256":sha(s/"steam_latest.deb"),
+              "proton_source_tar_sha256":sha(s/"proton-11.0-2.tar.gz"),
+              "steamcmd_tar_sha256":sha(s/"steamcmd_linux.tar.gz"),
+              "flathub_flatpakrepo_sha256":sha(s/"flathub.flatpakrepo"),
+              "waydroid_repo_script_sha256":sha(s/"waydroid-repo-script.sh"),
+          }
+          steam_pkg=subprocess.check_output(["dpkg-deb","-f",str(s/"steam_latest.deb"),"Package"],text=True).strip()
+          steam_ver=subprocess.check_output(["dpkg-deb","-f",str(s/"steam_latest.deb"),"Version"],text=True).strip()
+          steam_arch=subprocess.check_output(["dpkg-deb","-f",str(s/"steam_latest.deb"),"Architecture"],text=True).strip()
+
+          contents=(gdir/"STEAM_CONTENTS.txt").read_text(errors="replace")
+          steam_effects=(gdir/"STEAM_EFFECTS.txt").read_text(errors="replace")
+          expected_steam_files={
+              "./etc/apt/sources.list.d/steam-beta.list",
+              "./etc/apt/sources.list.d/steam-stable.list",
+              "./usr/share/keyrings/steam.gpg",
+          }
+          steam_files_exact=all(x in contents for x in expected_steam_files)
+          steam_i386_declared="steam-libs-i386" in steam_effects
+          steam_amd64_declared="steam-libs-amd64" in steam_effects
+
+          wscript=(s/"waydroid-repo-script.sh").read_text(errors="replace")
+          weffects=(gdir/"WAYDROID_SCRIPT_EFFECTS.txt").read_text(errors="replace")
+          waydroid_effect_paths=sorted(set(re.findall(r'/(?:etc|usr)/[A-Za-z0-9_./{}$-]+',weffects)))
+          waydroid_has_trixie=("trixie" in wscript.lower()) or ("bookworm" in wscript.lower()) or ("distro" in wscript.lower())
+          waydroid_has_apt=("apt" in wscript.lower()) and ("waydroid" in wscript.lower())
+
+          app_rc=int((gdir/"PROTON_APPINFO.rc").read_text().strip())
+          app=((gdir/"PROTON_APPINFO.stdout").read_text(errors="replace")+"\n"+
+               (gdir/"PROTON_APPINFO.stderr").read_text(errors="replace"))
+          lower=app.lower()
+          app_id_present=("4628710" in app)
+          name_matches=("proton 11" in lower)
+          appinfo_proven=app_rc==0 and app_id_present and name_matches
+
+          expected_pins=c.get("source_pins",{})
+          checks={
+              "candidate_ready":c.get("status")=="CANDIDATE_READY",
+              "candidate_scope":c.get("scope")=="PART6_FULL_GAMING_REMEDIATION_POST_I386",
+              "candidate_all_checks":all(c.get("checks",{}).values()),
+              "mission_bound":c.get("mission_id")=="MIS-cf38037f1f114012af53",
+              "candidate_no_mutation":c.get("mutation_performed") is False,
+              "source_hashes_match":source_hashes==expected_pins,
+              "steam_package_identity":steam_pkg=="steam-launcher" and steam_ver=="1:1.0.0.87" and steam_arch=="amd64",
+              "steam_packaged_apt_files":steam_files_exact,
+              "steam_libraries_declared":steam_i386_declared and steam_amd64_declared,
+              "proton_release":proton.get("tag_name")=="proton-11.0-2" and proton.get("draft") is False and proton.get("prerelease") is False,
+              "proton_appinfo_identity":appinfo_proven,
+              "lutris_release":lutris.get("tag_name")=="v0.5.22" and asset_digest(lutris,"lutris_0.5.22_all.deb")=="sha256:88a350357e0438b423cdf93108f27942de094dc19f973df73839f3b0b0bafaa0",
+              "prism_release":prism.get("tag_name")=="11.1.1" and asset_digest(prism,"PrismLauncher-Linux-x86_64.AppImage")=="sha256:bb81038c56a09e944659e4b808dbfbc52d52d5e3a3ffe32216689a3ca1508d3d",
+              "waydroid_release":waydroid.get("tag_name")=="1.6.3" and waydroid.get("draft") is False and waydroid.get("prerelease") is False,
+              "waydroid_script_identity":source_hashes["waydroid_repo_script_sha256"]=="2cf79f3cc82adb8c235faca0240c1312867afab0221e9aaf7a539a8614a503fd",
+              "waydroid_script_apt_semantics":waydroid_has_apt and waydroid_has_trixie,
+              "rollback_present":bool(c.get("rollback")) and c.get("rollback",{}).get("no_unrelated_user_data_delete") is True,
+              "forbidden_no_fake_pass":"claim PASS from filename presence only" in c.get("forbidden",[]),
+          }
+          ok=all(checks.values())
+          authorized_effects={
+              "debian_packages":c.get("plan",{}).get("system_packages",[]),
+              "steam":{
+                  "package":"steam-launcher",
+                  "version":"1:1.0.0.87",
+                  "deb_sha256":source_hashes["steam_latest_deb_sha256"],
+                  "packaged_paths":[
+                      "/etc/apt/sources.list.d/steam-beta.list",
+                      "/etc/apt/sources.list.d/steam-stable.list",
+                      "/usr/share/keyrings/steam.gpg"
+                  ],
+                  "post_package_apt_update":True,
+                  "allowed_followup_packages":["steam-libs-amd64","steam-libs-i386"]
+              },
+              "flatpak":{
+                  "scope":"user",
+                  "remote_name":"flathub",
+                  "remote_descriptor_sha256":source_hashes["flathub_flatpakrepo_sha256"],
+                  "apps":c.get("plan",{}).get("flatpak_apps",[])
+              },
+              "proton":{
+                  "release":"11.0-2",
+                  "steam_app_id":4628710,
+                  "steamcmd_sha256":source_hashes["steamcmd_tar_sha256"],
+                  "source_tar_sha256":source_hashes["proton_source_tar_sha256"],
+                  "app_info_identity_proven":appinfo_proven
+              },
+              "waydroid":{
+                  "release":"1.6.3",
+                  "suite":"trixie",
+                  "repo_script_sha256":source_hashes["waydroid_repo_script_sha256"],
+                  "script_effect_excerpt":weffects[-8000:],
+                  "effect_paths_observed":waydroid_effect_paths
+              }
+          }
+          q={
+              "schema":"LOUKSNA_R4_PART6_FULL_G23/2.0",
+              "status":"PASS" if ok else "HOLD",
+              "scope":"PART6_FULL_POST_I386_INDEPENDENT_VALIDATION",
+              "candidate_sha256":sha(cpath),
+              "checks":checks,
+              "source_pins":source_hashes,
+              "proton_app_info_rc":app_rc,
+              "proton_app_info_identity_proven":appinfo_proven,
+              "proton_app_info_excerpt":app[-12000:],
+              "steam_effect_excerpt":steam_effects[-8000:],
+              "waydroid_script_effect_excerpt":weffects[-8000:],
+              "authorized_effects":authorized_effects if ok else {},
+              "disk_partition_mutation_authorized":False,
+              "filesystem_format_or_resize_authorized":False,
+              "unrelated_user_data_delete_authorized":False,
+              "waydroid_init_or_android_image_download_authorized":False,
+              "certification_propagated":False,
+              "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          (gdir/"G23.json").write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if not ok:
+              raise SystemExit(23)
+          PY
+
+      - name: Upload G23 v2
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part6-full-g23-v2
+          path: ${{ runner.temp }}/g23/G23.json
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  g24:
+    name: G24 authorize complete PART6 plan v2
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part6-full-g23-v2
+          path: ${{ runner.temp }}/g23
+
+      - name: Issue exact OIDC-bound G24
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/G23.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$G")" = PASS
+          GHASH="$(sha256sum "$G" | awk '{print $1}')"
+          CHASH="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["candidate_sha256"])' "$G")"
+          AUD="louksna-r4-part6-full-v2:$GHASH:$CHASH"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export GHASH CHASH AUD TOKEN
+          mkdir -p "$RUNNER_TEMP/g24"
+
+          G="$G" OUT="$RUNNER_TEMP/g24/G24.json" python3 - <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib
+          gpath=pathlib.Path(os.environ["G"])
+          out=pathlib.Path(os.environ["OUT"])
+          g=json.loads(gpath.read_text())
+          t=os.environ["TOKEN"]; parts=t.split(".")
+          payload=parts[1]+"="*((4-len(parts[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload))
+          expected=os.environ["AUD"]; aud=claims.get("aud")
+          if aud!=expected and not (isinstance(aud,list) and expected in aud):
+              raise SystemExit("OIDC_AUDIENCE_MISMATCH")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge":
+              raise SystemExit("OIDC_REPOSITORY_MISMATCH")
+          if g.get("status")!="PASS" or not g.get("proton_app_info_identity_proven"):
+              raise SystemExit("G23_SCOPE_NOT_PROVEN")
+          q={
+              "schema":"LOUKSNA_R4_PART6_FULL_G24/2.0",
+              "status":"PASS",
+              "scope":"PART6_FULL_POST_I386_EXACT_EXECUTION_AUTHORIZATION",
+              "candidate_sha256":os.environ["CHASH"],
+              "g23_sha256":os.environ["GHASH"],
+              "authority_authenticated":True,
+              "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
+              "authorized_effects":g.get("authorized_effects",{}),
+              "authorized_mutation_classes":[
+                  "EXACT_DEBIAN_PACKAGE_INSTALL",
+                  "VALVE_STEAM_LAUNCHER_INSTALL_WITH_PACKAGED_REPO_FILES",
+                  "VALVE_STEAM_REPO_INDEX_REFRESH_AND_EXACT_STEAM_LIBS",
+                  "USER_FLATHUB_REMOTE_AND_THREE_EXACT_APPS",
+                  "VALVE_PROTON_11_STEAM_TOOL_MATERIALIZATION",
+                  "PINNED_WAYDROID_TRIXIE_REPOSITORY_AND_PACKAGE_INSTALL",
+                  "GOVERNED_PROVENANCE_ROLLBACK_AND_FUNCTIONAL_EVIDENCE_WRITE"
+              ],
+              "disk_partition_mutation_authorized":False,
+              "filesystem_format_or_resize_authorized":False,
+              "unrelated_user_data_delete_authorized":False,
+              "waydroid_init_or_android_image_download_authorized":False,
+              "canonical_mutation":False,
+              "authority_transfer":False,
+              "certification_propagated":False,
+              "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          out.write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          PY
+
+      - name: Upload G24 v2
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part6-full-g24-v2
+          path: ${{ runner.temp }}/g24/G24.json
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  materialize:
+    name: Materialize full PART6 G23 G24 v2 on LOUKSNA
+    needs: [g23,g24]
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 10
+    steps:
+      - name: Download candidate
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/candidate"
+          gh run download "$CANDIDATE_RUN_ID" \
+            --repo Plomillo/luna-linux-bridge \
+            -n r4-part6-full-candidate \
+            -D "$RUNNER_TEMP/candidate"
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part6-full-g23-v2
+          path: ${{ runner.temp }}/g23
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part6-full-g24-v2
+          path: ${{ runner.temp }}/g24
+
+      - name: Revalidate live boundary and persist certified plan
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          D="$HOME/.local/state/louksna/r4-master-part1-part9/PART_6_HARDENED"
+          MS="$HOME/.local/state/louksna/r4-master-part1-part9/MASTER_STATUS.json"
+          C="$RUNNER_TEMP/candidate/CANDIDATE.json"
+          G="$RUNNER_TEMP/g23/G23.json"
+          A="$RUNNER_TEMP/g24/G24.json"
+          mkdir -p "$D"
+
+          C="$C" G="$G" A="$A" MS="$MS" D="$D" python3 - <<'PY'
+          import datetime as dt,hashlib,json,os,pathlib
+          C,G,A,MS=[pathlib.Path(os.environ[x]) for x in ("C","G","A","MS")]
+          D=pathlib.Path(os.environ["D"])
+          c=json.loads(C.read_text()); g=json.loads(G.read_text()); a=json.loads(A.read_text()); ms=json.loads(MS.read_text())
+          h=lambda p:hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
+          exact={"wine","steam","proton","bottles","lutris","prism","waydroid"}
+          checks={
+              "boundary":ms.get("current_part")=="PART_6" and ms.get("status")=="HOLD" and set(ms.get("blockers",[]))==exact,
+              "candidate_ready":c.get("status")=="CANDIDATE_READY" and all(c.get("checks",{}).values()),
+              "g23_pass":g.get("status")=="PASS" and g.get("proton_app_info_identity_proven") is True,
+              "g24_pass":a.get("status")=="PASS",
+              "candidate_bound":g.get("candidate_sha256")==h(C)==a.get("candidate_sha256"),
+              "g23_bound":a.get("g23_sha256")==h(G),
+              "no_partition":a.get("disk_partition_mutation_authorized") is False,
+              "no_fs_mutation":a.get("filesystem_format_or_resize_authorized") is False,
+              "no_unrelated_delete":a.get("unrelated_user_data_delete_authorized") is False,
+              "no_waydroid_init":a.get("waydroid_init_or_android_image_download_authorized") is False,
+              "no_cert_propagation":a.get("certification_propagated") is False,
+          }
+          if not all(checks.values()):
+              raise SystemExit("PART6_FULL_V2_MATERIALIZATION_HOLD:"+json.dumps(checks,sort_keys=True))
+          for name,p in [("FULL_CANDIDATE_V2.json",C),("FULL_G23_V2.json",G),("FULL_G24_V2.json",A)]:
+              (D/name).write_bytes(p.read_bytes())
+          q={
+              "schema":"LOUKSNA_R4_PART6_FULL_PRECOMMIT_V2/1.0",
+              "status":"PASS",
+              "checks":checks,
+              "candidate_sha256":h(C),
+              "g23_sha256":h(G),
+              "g24_sha256":h(A),
+              "mutation_performed":False,
+              "next_authorized_action":"EXECUTE_PHASED_PART6_REMEDIATION",
+              "recorded_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          (D/"FULL_PRECOMMIT_V2.json").write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          PY
