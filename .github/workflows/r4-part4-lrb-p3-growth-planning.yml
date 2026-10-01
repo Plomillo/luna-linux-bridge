@@ -61,10 +61,8 @@ jobs:
           sudo -n parted -m /dev/nvme0n1 unit B print free > "$OUT/PARTED_FREE_BYTES.txt"
 
           for c in growpart resize2fs dumpe2fs tune2fs partprobe partx udevadm sfdisk parted blockdev findmnt lsblk; do
-            {
-              printf '%s=' "$c"
-              command -v "$c" || true
-            } >> "$OUT/TOOLS.txt"
+            p="$(command -v "$c" 2>/dev/null || true)"
+            printf '%s=%s\n' "$c" "$p" >> "$OUT/TOOLS.txt"
           done
 
           {
@@ -98,6 +96,10 @@ jobs:
           cat "$OUT/GROWPART_DRYRUN.txt"
           echo "=== RESIZE2FS DIAGNOSTIC ==="
           cat "$OUT/RESIZE2FS_DIAGNOSTIC.txt"
+          echo "=== RESIZE2FS MINIMUM READ-ONLY ESTIMATE ==="
+          cat "$OUT/RESIZE2FS_MIN.txt" 2>/dev/null || true
+          echo "=== EXT4 FEATURES ==="
+          grep -E '^(Filesystem features|Block count|Block size|Reserved block count):' "$OUT/TUNE2FS.txt" 2>/dev/null || true
 
           sudo -n dumpe2fs -h /dev/nvme0n1p3 > "$OUT/DUMPE2FS_HEADER.txt" 2>&1
           if [ -x /usr/sbin/resize2fs ]; then
