@@ -41,6 +41,8 @@ NOTICE_STATE=STATE/"LAST_GATE_NOTICE.json"
 PERMISSION_REQUEST=STATE/"PERMISSION_REQUEST.json"
 PR_NUMBER=29
 PART4_P3_HARDENED_CONTRACT=pathlib.Path(__file__).with_name("PART4_P3_GROWTH_HARDENED_ANTI_PARALYSIS.json")
+PART4_P3_EXEC_DIR=STATE/"PART_4_P3_HARDENED"
+PART4_P3_EXEC_STATE=PART4_P3_EXEC_DIR/"EXECUTION.json"
 
 class PrivilegeRequired(RuntimeError):
     def __init__(self, part, actions, reason):
@@ -504,6 +506,135 @@ def part4(mid):
     ev["destructive_scope_prevalidated"]=checks["purge_scope_prevalidated"]
     return ev
 
+def part4_hardened_progress(mid):
+    """Advance the hardened PART_4 state machine without bypassing mutation gates."""
+    contract=read_json(PART4_P3_HARDENED_CONTRACT,{}) or {}
+    stages=contract.get("stages",[])
+    if len(stages)!=12 or contract.get("contract_id")!="PART4-P3-GROWTH-HARDENED-ANTI-PARALYSIS-20261001":
+        return {"status":"HOLD","reason":"HARDENED_CONTRACT_INVALID","current_stage":None}
+
+    PART4_P3_EXEC_DIR.mkdir(parents=True,exist_ok=True)
+    st=read_json(PART4_P3_EXEC_STATE,{}) or {}
+    if not st:
+        st={
+          "schema":"LOUKSNA_R4_PART4_P3_HARDENED_EXECUTION/1.0",
+          "status":"ACTIVE",
+          "mission_id":mid,
+          "contract_id":contract["contract_id"],
+          "contract_sha256":sha(PART4_P3_HARDENED_CONTRACT),
+          "current_stage":1,
+          "last_completed_stage":0,
+          "history":[],
+          "disk_mutation_performed":False,
+          "filesystem_mutation_performed":False,
+          "started_at_utc":utc(),
+        }
+
+    def record(stage,status,details,next_stage=None,next_action=None):
+        rec={
+          "stage":stage,
+          "stage_id":stages[stage-1]["id"],
+          "status":status,
+          "details":details,
+          "timestamp_utc":utc(),
+        }
+        hist=st.setdefault("history",[])
+        if not hist or hist[-1].get("stage")!=stage or hist[-1].get("status")!=status or hist[-1].get("details")!=details:
+            hist.append(rec)
+            st["history"]=hist[-100:]
+        st["current_stage"]=next_stage if next_stage is not None else stage
+        if status=="PASS":
+            st["last_completed_stage"]=max(int(st.get("last_completed_stage",0)),stage)
+        st["status"]="ACTIVE" if next_stage and next_stage<=12 else status
+        st["next_authorized_action"]=next_action
+        st["updated_at_utc"]=utc()
+        atomic_json(PART4_P3_EXEC_STATE,st)
+        return st
+
+    stage=int(st.get("current_stage") or 1)
+
+    # Stage 1: fresh live checkpoint and continuity. Read-only.
+    if stage==1:
+        try:
+            root_source=os.path.realpath(run(["findmnt","-n","-o","SOURCE","/"],check=True)["stdout"].strip())
+            root_fstype=run(["findmnt","-n","-o","FSTYPE","/"],check=True)["stdout"].strip()
+            p3_start=int(pathlib.Path("/sys/class/block/nvme0n1p3/start").read_text().strip())
+            p5_absent=not pathlib.Path("/dev/nvme0n1p5").exists()
+            uuid_out=run(["lsblk","-n","-o","UUID","/dev/nvme0n1p3"],check=True)["stdout"].strip()
+            parts=run(["lsblk","-ln","-o","PATH,TYPE","/dev/nvme0n1"],check=True)["stdout"].splitlines()
+            partitions=sorted(line.split()[0] for line in parts if len(line.split())>=2 and line.split()[1]=="part")
+            details={
+              "root_source":root_source,"root_fstype":root_fstype,"p3_start_sector":p3_start,
+              "p3_uuid":uuid_out,"p5_absent":p5_absent,"partitions_present":partitions,
+              "disk_mutation_performed":False,
+            }
+            ok=(
+              root_source=="/dev/nvme0n1p3"
+              and root_fstype=="ext4"
+              and p3_start==567296
+              and uuid_out=="e084ec2a-af39-48b5-bb89-db2dc6a98332"
+              and p5_absent
+              and partitions==["/dev/nvme0n1p1","/dev/nvme0n1p3"]
+            )
+        except Exception as exc:
+            details={"error":type(exc).__name__+":"+str(exc)[:500],"disk_mutation_performed":False}
+            ok=False
+        if ok:
+            return record(1,"PASS",details,2,"PREPARE_STAGE2_GROWPART_CAPABILITY_CANDIDATE")
+        return record(1,"HOLD",details,1,"RECONCILE_STAGE1_LIVE_CHECKPOINT")
+
+    # Stage 2: candidate preparation only. Package installation is a distinct
+    # consequential microtransaction and must have exact-scope G23/G24.
+    if stage==2:
+        growpart=shutil.which("growpart")
+        pkg_cloud=pkg_installed("cloud-guest-utils")
+        pkg_gdisk=pkg_installed("gdisk")
+        if growpart and pkg_cloud and pkg_gdisk:
+            details={"growpart":growpart,"cloud_guest_utils":True,"gdisk":True,"mutation_performed":False}
+            return record(2,"PASS",details,3,"RUN_STAGE3_GROWPART_DRY_RUN")
+        sim=run(["apt-get","-s","install","cloud-guest-utils","gdisk"],timeout=120)
+        policy=run(["apt-cache","policy","cloud-guest-utils","gdisk"],timeout=60)
+        evidence={
+          "schema":"LOUKSNA_R4_PART4_STAGE2_GROWPART_CANDIDATE/1.0",
+          "status":"CANDIDATE_READY" if sim["returncode"]==0 else "HOLD",
+          "mission_id":mid,
+          "stage":2,
+          "packages":["cloud-guest-utils","gdisk"],
+          "simulation":sim,
+          "policy":policy,
+          "growpart_present":bool(growpart),
+          "disk_mutation_authorized":False,
+          "disk_mutation_performed":False,
+          "prepared_at_utc":utc(),
+        }
+        atomic_json(PART4_P3_EXEC_DIR/"STAGE2_CANDIDATE.json",evidence)
+        return record(
+          2,
+          "AWAITING_G23_G24" if sim["returncode"]==0 else "HOLD",
+          {"candidate_sha256":sha(PART4_P3_EXEC_DIR/"STAGE2_CANDIDATE.json"),"simulation_rc":sim["returncode"],"mutation_performed":False},
+          2,
+          "CERTIFY_STAGE2_GROWPART_CAPABILITY_MICROTRANSACTION" if sim["returncode"]==0 else "REMEDIATE_STAGE2_PACKAGE_CANDIDATE"
+        )
+
+    # Stage 3: deterministic growpart dry-run only.
+    if stage==3:
+        growpart=shutil.which("growpart")
+        if not growpart:
+            return record(3,"HOLD",{"reason":"GROWPART_NOT_INSTALLED","mutation_performed":False},2,"RETURN_STAGE2")
+        r1=run([growpart,"-N","/dev/nvme0n1","3"],timeout=120)
+        r2=run([growpart,"-N","/dev/nvme0n1","3"],timeout=120)
+        eq=(r1["returncode"]==r2["returncode"] and r1["stdout"]==r2["stdout"] and r1["stderr"]==r2["stderr"])
+        ev={"schema":"LOUKSNA_R4_PART4_STAGE3_DRYRUN/1.0","run1":r1,"run2":r2,"deterministic":eq,"mutation_performed":False,"observed_at_utc":utc()}
+        atomic_json(PART4_P3_EXEC_DIR/"STAGE3_DRYRUN.json",ev)
+        if eq and r1["returncode"]==0:
+            return record(3,"PASS",{"dryrun_sha256":sha(PART4_P3_EXEC_DIR/"STAGE3_DRYRUN.json"),"deterministic":True,"mutation_performed":False},4,"CREATE_STAGE4_RECOVERY_CAPSULE")
+        return record(3,"HOLD",{"dryrun_sha256":sha(PART4_P3_EXEC_DIR/"STAGE3_DRYRUN.json"),"deterministic":eq,"rc":r1["returncode"],"mutation_performed":False},3,"DIAGNOSE_STAGE3_DRYRUN")
+
+    # Stages 4-12 are active in the state machine but remain exact-scope gated.
+    # The controller never skips them or self-authorizes their consequential commits.
+    stage_id=stages[stage-1]["id"]
+    return record(stage,"AWAITING_STAGE_HANDLER",{"stage_id":stage_id,"mutation_performed":False},stage,"DISPATCH_"+stage_id)
+
 def part5(mid):
     packages=["qemu-system-x86","qemu-utils","libvirt-daemon-system","libvirt-clients","virt-manager"]
     missing=[p for p in packages if not pkg_installed(p)]; actions=[]
@@ -612,7 +743,18 @@ def supervise_once(worker,mid):
         "safe_work_while_hold":part=="PART_4" and ev["status"]!="PASS",
         "anti_paralysis_contract":ev.get("details",{}).get("p3_growth_hardened_contract_id") if part=="PART_4" else None,
     })
-    if ev["status"]!="PASS": return "HOLD"
+    if ev["status"]!="PASS":
+        if part=="PART_4":
+            part4_progress=part4_hardened_progress(mid)
+            ms=read_json(STATE/"MASTER_STATUS.json",{}) or {}
+            ms["part4_hardened_execution"]=part4_progress
+            ms["stage_current"]=part4_progress.get("current_stage")
+            ms["stage_last_completed"]=part4_progress.get("last_completed_stage")
+            ms["stage_next"]=part4_progress.get("next_authorized_action")
+            ms["stage_status"]=part4_progress.get("status")
+            ms["updated_at_utc"]=utc()
+            atomic_json(STATE/"MASTER_STATUS.json",ms)
+        return "HOLD"
     cert=publish_and_certify(ev)
     nxt=PARTS[PARTS.index(part)+1] if part!="PART_9" else "COMPLETE"
     atomic_json(STATE/"MASTER_STATUS.json",{"status":"PART_CERTIFIED","current_part":part,"g24":cert,"mission_id":mid,"updated_at_utc":utc(),"next":nxt})
