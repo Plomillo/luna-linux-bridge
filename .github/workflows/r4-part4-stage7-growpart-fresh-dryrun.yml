@@ -1,0 +1,25 @@
+name: "R4 PART4 — Stage7 growpart fresh dry-run"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-stage7-growpart-dryrun/**
+
+permissions:
+  contents: read
+
+jobs:
+  dryrun:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 3
+    steps:
+      - name: Fresh non-mutating growpart dry-run
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "=== CURRENT GEOMETRY ==="
+          sudo -n /usr/sbin/sfdisk --dump /dev/nvme0n1
+          echo "=== GROWPART DRY RUN ==="
+          sudo -n /usr/bin/growpart -N /dev/nvme0n1 3
