@@ -43,6 +43,18 @@ jobs:
           sudo -n /usr/sbin/parted -sm /dev/nvme0n1 unit s print free > "$OUT/PARTED_NOW.txt" 2>&1 || true
 
           sha256sum "$OUT"/* > "$OUT/SHA256SUMS.txt"
+          echo "=== TOOLS ==="
+          cat "$OUT/TOOLS.txt"
+          echo "=== RECENT RELEVANT JOURNAL ==="
+          cat "$OUT/RECENT_RELEVANT_JOURNAL.txt"
+          echo "=== SUDO JOURNAL ==="
+          cat "$OUT/SUDO_JOURNAL.txt"
+          echo "=== DMESG STORAGE TAIL ==="
+          cat "$OUT/DMESG_STORAGE_TAIL.txt"
+          echo "=== SFDISK NOW ==="
+          cat "$OUT/SFDISK_NOW.txt"
+          echo "=== PARTED NOW ==="
+          cat "$OUT/PARTED_NOW.txt"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: r4-part4-stage7-operator-diagnosis
