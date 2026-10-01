@@ -1320,8 +1320,19 @@ def publish_and_certify(ev):
         if run_id: break
         time.sleep(2)
     if not run_id: raise RuntimeError("CERT_WORKFLOW_NOT_FOUND")
-    w=run(["gh","run","watch",str(run_id),"--repo",REPO,"--exit-status"],timeout=900)
-    if w["returncode"]!=0: raise RuntimeError("CERT_WORKFLOW_FAILED:"+str(run_id))
+    completed=False
+    for _ in range(450):
+        wr=gh_json(["api",f"repos/{REPO}/actions/runs/{run_id}"],timeout=30)
+        status=wr.get("status")
+        if status=="completed":
+            conclusion=wr.get("conclusion")
+            if conclusion!="success":
+                raise RuntimeError("CERT_WORKFLOW_FAILED:"+str(run_id)+":"+str(conclusion))
+            completed=True
+            break
+        time.sleep(2)
+    if not completed:
+        raise RuntimeError("CERT_WORKFLOW_TIMEOUT:"+str(run_id))
     with tempfile.TemporaryDirectory(prefix="r4-g24-") as td:
         d=pathlib.Path(td)
         z=run(["gh","run","download",str(run_id),"--repo",REPO,"-n","r4-master-g24","-D",str(d)],timeout=120)
