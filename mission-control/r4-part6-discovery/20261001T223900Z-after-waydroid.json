@@ -1,0 +1,8 @@
+{
+  "schema": "LOUKSNA_R4_PART6_OBSERVATION_REQUEST/1.0",
+  "reason": "READ_POST_WAYDROID_WORKER_FAILURE",
+  "worker": "MAESTRO",
+  "observer": "LOUKSNA_REMOTE_BRIDGE",
+  "read_only": true,
+  "requested_at_utc": "2026-10-01T22:39:00Z"
+}
