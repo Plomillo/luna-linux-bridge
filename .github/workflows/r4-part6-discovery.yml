@@ -140,6 +140,30 @@ jobs:
           print(json.dumps(q,indent=2,sort_keys=True))
           PY
 
+      - name: Surface exact candidates and observe through LOUKSNA Remote Bridge
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/r4-part6-discovery-$GITHUB_RUN_ID"
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+
+          echo "=== APT POLICY ==="
+          cat "$OUT/APT_POLICY.txt"
+          echo "=== APT SOURCES ==="
+          cat "$OUT/APT_SOURCES.txt"
+          echo "=== FLATPAK ==="
+          cat "$OUT/FLATPAK.txt"
+          echo "=== COMMANDS ==="
+          cat "$OUT/COMMANDS.txt"
+
+          mapfile -t LINKS < <(find "$HOME/.local/lib/louksna-remote-bridge" -type f -path '*/bridge/live_link.py' -print 2>/dev/null | sort)
+          test "${#LINKS[@]}" -ge 1
+          LINK="${LINKS[-1]}"
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op status | tee "$OUT/LRB_STATUS.json"
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op observe | tee "$OUT/LRB_OBSERVE.json"
+
       - name: Upload PART6 discovery
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
