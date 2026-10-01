@@ -1,0 +1,11 @@
+{
+  "directive_id": "PART4-P3-TEN-POINT-HARDENED-CONTINUATION-20261001",
+  "mission_id": "MIS-e5963403a3b44ee8be96",
+  "requested_at_utc": "2026-10-01T17:43:00Z",
+  "action": "DEPLOY_CERTIFY_AND_ADVANCE_STAGE4_TO_STAGE6_FROM_CURRENT_CHECKPOINT",
+  "current_expected_stage": 4,
+  "last_completed_stage": 3,
+  "authority": "Louksna.md",
+  "desktop_commander": "PROHIBITED",
+  "mutation_authorized_by_trigger": false
+}
