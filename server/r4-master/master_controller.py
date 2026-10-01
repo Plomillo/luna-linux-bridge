@@ -891,9 +891,69 @@ def part4_hardened_progress(mid):
             },7,"EXECUTE_STAGE7_SINGLE_P3_GEOMETRY_COMMIT")
         return record(6,"HOLD",{"reason":"STAGE6_G24_SCOPE_MISMATCH","checks":checks,"mutation_performed":False},6,"REVALIDATE_STAGE6_G24")
 
-    # Stages 7-12 are bound by the ten-point directive and remain exact-scope
-    # gated until their handlers/certificates are materialized. They may not be
-    # skipped or self-authorized.
+    # Stage 7: consume externally executed single-commit evidence. The
+    # controller itself never retries or replays the geometry mutation.
+    if stage==7:
+        result=PART4_P3_EXEC_DIR/"STAGE7_RESULT.json"
+        if not result.is_file():
+            return record(7,"AWAITING_EXACT_COMMIT",{
+                "directive_id":directive["directive_id"],
+                "stage6_g24_sha256":sha(PART4_P3_EXEC_DIR/"STAGE6_G24.json") if (PART4_P3_EXEC_DIR/"STAGE6_G24.json").is_file() else None,
+                "mutation_performed":False,
+            },7,"EXECUTE_STAGE7_SINGLE_P3_GEOMETRY_COMMIT")
+        q=read_json(result,{}) or {}
+        checks={
+            "status":q.get("status")=="PASS",
+            "scope":q.get("scope")=="P3_TRAILING_END_EXTENSION_ONLY",
+            "attempt_count":int(q.get("attempt_count",0))==1,
+            "start_preserved":int(q.get("post_start_sector",-1))==567296,
+            "target_end":int(q.get("post_end_sector",-1))==int(q.get("authorized_new_end_sector",-2)),
+            "p1_unchanged":q.get("p1_unchanged") is True,
+            "p5_absent":q.get("p5_absent") is True,
+            "uuid_preserved":q.get("uuid_preserved") is True,
+            "partuuid_preserved":q.get("partuuid_preserved") is True,
+            "blind_retry":q.get("blind_retry_performed") is False,
+            "stage6_bound":q.get("stage6_g24_sha256")==sha(PART4_P3_EXEC_DIR/"STAGE6_G24.json"),
+        }
+        if all(checks.values()):
+            st["disk_mutation_performed"]=True
+            return record(7,"PASS",{
+                "stage7_result_sha256":sha(result),
+                "checks":checks,
+                "mutation_performed":True,
+            },8,"RECONCILE_STAGE8_GPT_AND_KERNEL")
+        return record(7,"HOLD",{"reason":"STAGE7_RESULT_NOT_PROVEN","checks":checks,"mutation_performed":q.get("physical_change_observed",False)},7,"OBSERVE_STAGE7_PHYSICAL_REALITY")
+
+    # Stage 8: reconcile on-disk GPT and kernel-visible partition geometry.
+    if stage==8:
+        rec=PART4_P3_EXEC_DIR/"STAGE8_RECONCILIATION.json"
+        if not rec.is_file():
+            return record(8,"AWAITING_RECONCILIATION",{"mutation_performed":False},8,"RUN_STAGE8_GPT_KERNEL_RECONCILIATION")
+        q=read_json(rec,{}) or {}
+        if q.get("status")=="PASS" and q.get("gpt_target") is True and q.get("kernel_target") is True and q.get("p3_start_sector")==567296:
+            return record(8,"PASS",{"stage8_sha256":sha(rec),"kernel_current":True,"mutation_performed":False},9,"EVALUATE_STAGE9_REBOOT_REQUIREMENT")
+        if q.get("gpt_target") is True and q.get("kernel_target") is False:
+            return record(8,"HOLD",{"reason":"GPT_CORRECT_KERNEL_STALE","stage8_sha256":sha(rec),"mutation_performed":False},8,"SAFE_KERNEL_VISIBILITY_REMEDIATION")
+        return record(8,"HOLD",{"reason":"GEOMETRY_RECONCILIATION_FAILED","stage8_sha256":sha(rec),"mutation_performed":False},8,"DIAGNOSE_STAGE8_PHYSICAL_REALITY")
+
+    # Stage 9: skip reboot when kernel already exposes the certified geometry.
+    if stage==9:
+        rec=PART4_P3_EXEC_DIR/"STAGE8_RECONCILIATION.json"
+        q=read_json(rec,{}) or {}
+        if q.get("status")=="PASS" and q.get("kernel_target") is True:
+            return record(9,"PASS",{
+                "reboot_required":False,
+                "reason":"KERNEL_ALREADY_CURRENT",
+                "stage8_sha256":sha(rec),
+                "mutation_performed":False,
+            },10,"RUN_STAGE10_PROYECTOS_FULL_NON_REGRESSION")
+        token=PART4_P3_EXEC_DIR/"STAGE9_RESUME_TOKEN.json"
+        if token.is_file():
+            return record(9,"AWAITING_CONTROLLED_REBOOT",{"resume_token_sha256":sha(token),"mutation_performed":False},9,"CONTROLLED_REBOOT_AND_RESUME")
+        return record(9,"HOLD",{"reason":"STAGE9_RESUME_TOKEN_REQUIRED","mutation_performed":False},9,"CREATE_STAGE9_RESUME_TOKEN")
+
+    # Stages 10-12 remain exact-scope gated until their handlers and fresh
+    # filesystem/final certification gates are materialized.
     stage_id=stages[stage-1]["id"]
     return record(stage,"AWAITING_STAGE_HANDLER",{
         "stage_id":stage_id,
