@@ -193,7 +193,7 @@ jobs:
               "waydroid":"stop container/session; remove introduced package/repo; restore apt-source checkpoint; do not delete unrelated user data",
               "steam":"remove only Valve launcher package and PART6-created compatibility/runtime paths",
               "proton":"remove only app 4628710 content materialized by PART6",
-              "no_blind_recursive_delete":true
+              "no_blind_recursive_delete":True
           }
           candidate={
               "schema":"LOUKSNA_R4_PART6_REMEDIATION_CANDIDATE/1.0",
