@@ -157,6 +157,14 @@ jobs:
           cat "$OUT/FLATPAK.txt"
           echo "=== COMMANDS ==="
           cat "$OUT/COMMANDS.txt"
+          echo "=== PART6 WORKER STATE ==="
+          P6="$HOME/.local/state/louksna/r4-master-part1-part9/PART_6_HARDENED"
+          for f in ROLLBACK_CHECKPOINT.json LAST_FAILURE.json FULL_CANDIDATE_V2.json CANDIDATE_PUBLISHED.json RESULT.json; do
+            if test -f "$P6/$f"; then
+              echo "--- $f ---"
+              cat "$P6/$f"
+            fi
+          done
 
           mapfile -t LINKS < <(find "$HOME/.local/lib/louksna-remote-bridge" -type f -path '*/bridge/live_link.py' -print 2>/dev/null | sort)
           test "${#LINKS[@]}" -ge 1
