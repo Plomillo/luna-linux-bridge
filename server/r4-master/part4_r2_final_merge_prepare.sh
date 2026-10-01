@@ -28,7 +28,7 @@ need(){ command -v "$1" >/dev/null 2>&1 || hold "MISSING_COMMAND:$1"; }
 need_exec(){ [ -x "$1" ] || hold "MISSING_COMMAND:$1"; }
 blkid_uuid(){ sudo -n "$BLKID" -p -s UUID -o value "$1"; }
 
-for c in python3 lsblk findmnt blockdev df du rsync mount umount sfdisk sha256sum chroot grub-install update-grub update-initramfs; do need "$c"; done
+for c in python3 lsblk findmnt blockdev df du rsync mount umount sfdisk sha256sum chroot grub-install update-grub update-initramfs efibootmgr; do need "$c"; done
 need_exec "$BLKID"
 sudo -n true >/dev/null 2>&1 || hold "NONINTERACTIVE_SUDO_REQUIRED"
 [ -n "$MODE" ] || hold "MODE_REQUIRED"
@@ -136,8 +136,8 @@ mkdir -p "$WORK" "$NEWROOT_MNT"
 chmod 700 "$WORK"
 sudo -n sfdisk --dump "$DISK" > "$OUT/PARTITION_TABLE_PREBOOT.sfdisk"
 cp -a /etc/fstab "$OUT/fstab.oldroot.before"
-cp -a /boot/grub/grub.cfg "$OUT/grub.cfg.oldroot.before"
-(efibootmgr -v || true) > "$OUT/efibootmgr.before.txt"
+sudo -n cat /boot/grub/grub.cfg > "$OUT/grub.cfg.oldroot.before"
+(sudo -n efibootmgr -v || true) > "$OUT/efibootmgr.before.txt"
 sha256sum "$OUT/PARTITION_TABLE_PREBOOT.sfdisk" "$OUT/fstab.oldroot.before" "$OUT/grub.cfg.oldroot.before" > "$OUT/CHECKPOINTS.sha256"
 
 python3 "$VERIFY" --root "$PROJECTS_MOUNT" --manifest "$MANIFEST" --out "$OUT/VERIFY_PROJECTS_BEFORE_RELOCATION.json" --allow-ext4-root-lost-found
@@ -222,7 +222,7 @@ sudo -n chroot "$NEWROOT_MNT" /usr/sbin/grub-install --target=x86_64-efi --efi-d
 sudo -n chroot "$NEWROOT_MNT" /usr/sbin/update-grub
 
 grep -F "$P3_UUID" "$NEWROOT_MNT/etc/fstab" >/dev/null || hold "NEW_FSTAB_MISSING_P3_UUID"
-grep -F "$P3_UUID" "$NEWROOT_MNT/boot/grub/grub.cfg" >/dev/null || hold "NEW_GRUB_MISSING_P3_UUID"
+sudo -n grep -F "$P3_UUID" "$NEWROOT_MNT/boot/grub/grub.cfg" >/dev/null || hold "NEW_GRUB_MISSING_P3_UUID"
 test -x "$NEWROOT_MNT/usr/bin/python3" || hold "NEWROOT_PYTHON_MISSING"
 test -e "$NEWROOT_MNT/etc/os-release" || hold "NEWROOT_OS_RELEASE_MISSING"
 test -d "$NEWROOT_MNT/home/$OWNER/actions-runner" || hold "NEWROOT_RUNNER_MISSING"
@@ -276,8 +276,8 @@ EOF
 sudo -n chroot "$NEWROOT_MNT" /usr/bin/systemctl enable louksna-part4-r2-postboot-dispatch.service
 
 cp "$NEWROOT_MNT/etc/fstab" "$OUT/fstab.newroot"
-cp "$NEWROOT_MNT/boot/grub/grub.cfg" "$OUT/grub.cfg.newroot"
-(efibootmgr -v || true) > "$OUT/efibootmgr.after-grub-install.txt"
+sudo -n cat "$NEWROOT_MNT/boot/grub/grub.cfg" > "$OUT/grub.cfg.newroot"
+(sudo -n efibootmgr -v || true) > "$OUT/efibootmgr.after-grub-install.txt"
 python3 - "$OUT/efibootmgr.after-grub-install.txt" "$OUT/CANDIDATE_BOOT_ENTRY.json" <<'PY'
 import json,re,sys
 txt=open(sys.argv[1],encoding="utf-8",errors="replace").read()
