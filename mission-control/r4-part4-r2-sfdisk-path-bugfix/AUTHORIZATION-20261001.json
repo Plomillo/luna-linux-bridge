@@ -1,0 +1,45 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_SFDISK_PATH_BUGFIX_AUTH/1.0",
+  "status": "OWNER_AUTHORIZED",
+  "authority": "Louksna.md",
+  "doctrine": "EXTEND_DO_NOT_REPLACE",
+  "failure_posture": "FAIL_CLOSED",
+  "no_silent_operations": true,
+  "preserve_sudo": true,
+  "target": ".github/workflows/r4-part4-r2-final-merge-postboot.yml",
+  "incident": {
+    "workflow_run": 36863003361,
+    "attempt": 2,
+    "failed_job_id": 110389336120,
+    "observed_error": "sfdisk: orden no encontrada",
+    "projects_status": "PASS",
+    "projects_manifest_sha256": "99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+    "projects_mismatch_count": 0
+  },
+  "authorized_patch": {
+    "purpose": "Replace all ambiguous or unprivileged sfdisk dump invocations in the PART4-R2 postboot workflow with sudo -n /usr/sbin/sfdisk and add an early noninteractive sudo + executable + version precheck.",
+    "allowed_changes": [
+      "ADD_PRECHECK_SUDO_N_TRUE",
+      "ADD_PRECHECK_TEST_X_USR_SBIN_SFDISK",
+      "ADD_PRECHECK_SUDO_N_USR_SBIN_SFDISK_VERSION",
+      "REPLACE_LEGACY_POSTBOOT_SFDISK_DUMP_WITH_SUDO_N_ABSOLUTE_PATH",
+      "REPLACE_LEGACY_PRIVILEGED_SFDISK_DUMPS_WITH_SUDO_N_ABSOLUTE_PATH"
+    ],
+    "forbidden_changes": [
+      "NO_PARTITION_GEOMETRY_CHANGE_BY_BUGFIX",
+      "NO_NEW_DISK_MUTATION",
+      "NO_PROYECTOS_MUTATION",
+      "NO_AUTHORITY_CHANGE",
+      "NO_G23_G24_BYPASS",
+      "NO_SUDO_REMOVAL",
+      "NO_CERTIFICATION_PROPAGATION"
+    ]
+  },
+  "required_chain": [
+    "PATCH",
+    "G23_INDEPENDENT_VALIDATION",
+    "G24_DIGEST_BOUND_CERTIFICATION",
+    "SEPARATE_POSTBOOT_DISPATCH"
+  ],
+  "continuation": "EXISTING_PART4_R2_POSTBOOT_CHAIN_ONLY"
+}
