@@ -1,0 +1,198 @@
+name: "R4 PART6 — full post-i386 preflight"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part6-full-preflight/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r4-part6-full-post-i386-preflight
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 15
+    steps:
+      - name: Build full post-i386 PART6 candidate read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+          export LANG=C
+          OUT="$RUNNER_TEMP/r4-part6-full-preflight-$GITHUB_RUN_ID"
+          D="$HOME/.local/state/louksna/r4-master-part1-part9/PART_6_HARDENED"
+          MS="$HOME/.local/state/louksna/r4-master-part1-part9/MASTER_STATUS.json"
+          mkdir -p "$OUT/src" "$OUT/steam-control"
+
+          cp "$D/PRECOMMIT.json" "$OUT/ORIGINAL_PRECOMMIT.json"
+          cp "$D/G23.json" "$OUT/ORIGINAL_G23.json"
+          cp "$D/G24.json" "$OUT/ORIGINAL_G24.json"
+          cp "$D/I386_RESULT.json" "$OUT/I386_RESULT.json"
+          cp "$MS" "$OUT/MASTER_STATUS.json"
+
+          dpkg --print-foreign-architectures > "$OUT/FOREIGN_ARCHES.txt"
+
+          curl -fsSL --retry 3 "https://repo.steampowered.com/steam/archive/stable/steam_latest.deb" -o "$OUT/src/steam_latest.deb"
+          curl -fsSL --retry 3 "https://github.com/ValveSoftware/Proton/archive/refs/tags/proton-11.0-2.tar.gz" -o "$OUT/src/proton-11.0-2.tar.gz"
+          curl -fsSL --retry 3 "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz" -o "$OUT/src/steamcmd_linux.tar.gz"
+          curl -fsSL --retry 3 "https://dl.flathub.org/repo/flathub.flatpakrepo" -o "$OUT/src/flathub.flatpakrepo"
+          curl -fsSL --retry 3 "https://repo.waydro.id" -o "$OUT/src/waydroid-repo-script.sh"
+
+          dpkg-deb -c "$OUT/src/steam_latest.deb" > "$OUT/STEAM_CONTENTS.txt"
+          dpkg-deb -e "$OUT/src/steam_latest.deb" "$OUT/steam-control"
+          grep -RnsE 'repo\.steampowered|sources\.list|keyring|apt-get|dpkg --add-architecture|i386' "$OUT/steam-control" "$OUT/STEAM_CONTENTS.txt" > "$OUT/STEAM_SIDE_EFFECTS.txt" || true
+
+          {
+            for p in wine wine64 wine32:i386 flatpak libc6:i386 libstdc++6:i386 libgcc-s1:i386; do
+              echo "### $p"
+              apt-cache policy "$p" 2>&1 || true
+            done
+          } > "$OUT/APT_POLICY.txt"
+
+          set +e
+          apt-get -s --no-install-recommends install \
+            wine wine32:i386 flatpak libc6:i386 libstdc++6:i386 libgcc-s1:i386 \
+            > "$OUT/APT_BASE_SIM.stdout" 2> "$OUT/APT_BASE_SIM.stderr"
+          echo $? > "$OUT/APT_BASE_SIM.rc"
+
+          apt-get -s --no-install-recommends install "$OUT/src/steam_latest.deb" \
+            > "$OUT/APT_STEAM_SIM.stdout" 2> "$OUT/APT_STEAM_SIM.stderr"
+          echo $? > "$OUT/APT_STEAM_SIM.rc"
+          set -e
+
+          OUT="$OUT" python3 - <<'PY'
+          import datetime as dt,hashlib,json,os,pathlib,re
+          out=pathlib.Path(os.environ["OUT"])
+          pre=json.loads((out/"ORIGINAL_PRECOMMIT.json").read_text())
+          g=json.loads((out/"ORIGINAL_G23.json").read_text())
+          a=json.loads((out/"ORIGINAL_G24.json").read_text())
+          i386=json.loads((out/"I386_RESULT.json").read_text())
+          ms=json.loads((out/"MASTER_STATUS.json").read_text())
+
+          def sha(x):
+              h=hashlib.sha256()
+              with pathlib.Path(x).open("rb") as f:
+                  for b in iter(lambda:f.read(1024*1024),b""): h.update(b)
+              return h.hexdigest()
+
+          policy=(out/"APT_POLICY.txt").read_text(errors="replace")
+          def cand(pkg):
+              m=re.search(r"^### "+re.escape(pkg)+r"\n.*?^\s*Candidate:\s*(\S+)",policy,re.M|re.S)
+              return m.group(1) if m else None
+          candidates={p:cand(p) for p in [
+              "wine","wine64","wine32:i386","flatpak",
+              "libc6:i386","libstdc++6:i386","libgcc-s1:i386"
+          ]}
+          pins=g["source_pins"]
+          hashes={
+              "steam_latest_deb_sha256":sha(out/"src/steam_latest.deb"),
+              "proton_source_tar_sha256":sha(out/"src/proton-11.0-2.tar.gz"),
+              "steamcmd_tar_sha256":sha(out/"src/steamcmd_linux.tar.gz"),
+              "flathub_flatpakrepo_sha256":sha(out/"src/flathub.flatpakrepo"),
+              "waydroid_repo_script_sha256":sha(out/"src/waydroid-repo-script.sh"),
+          }
+          foreign=[x.strip() for x in (out/"FOREIGN_ARCHES.txt").read_text().splitlines() if x.strip()]
+          side=(out/"STEAM_SIDE_EFFECTS.txt").read_text(errors="replace")
+          contents=(out/"STEAM_CONTENTS.txt").read_text(errors="replace")
+          steam_apt_files=any(x in contents for x in ["/etc/apt/","sources.list.d","keyring"])
+          exact={"wine","steam","proton","bottles","lutris","prism","waydroid"}
+          checks={
+              "part6_boundary":ms.get("current_part")=="PART_6" and ms.get("status")=="HOLD" and set(ms.get("blockers",[]))==exact,
+              "original_precommit":pre.get("status")=="PASS",
+              "original_g24":a.get("status")=="PASS",
+              "i386_result":i386.get("status")=="PASS" and i386.get("i386_architecture_enabled") is True,
+              "i386_enabled":"i386" in foreign,
+              "source_hashes_match":all(hashes[k]==pins.get(k) for k in hashes),
+              "wine_candidate":candidates["wine"]=="10.0~repack-6",
+              "wine64_candidate":candidates["wine64"]=="10.0~repack-6",
+              "wine32_candidate":candidates["wine32:i386"]=="10.0~repack-6",
+              "flatpak_candidate":candidates["flatpak"]=="1.16.6-1~deb13u3",
+              "libc6_i386_candidate":candidates["libc6:i386"]=="2.41-12+deb13u4",
+              "libstdcpp_i386_candidate":candidates["libstdc++6:i386"]=="14.2.0-19",
+              "libgcc_i386_candidate":candidates["libgcc-s1:i386"]=="14.2.0-19",
+              "base_install_simulation":int((out/"APT_BASE_SIM.rc").read_text().strip())==0,
+              "steam_install_simulation":int((out/"APT_STEAM_SIM.rc").read_text().strip())==0,
+          }
+          plan={
+              "system_packages":[
+                  "libc6:i386","libstdc++6:i386","libgcc-s1:i386",
+                  "wine=10.0~repack-6","wine32:i386=10.0~repack-6",
+                  "flatpak=1.16.6-1~deb13u3"
+              ],
+              "steam":{
+                  "package":"steam-launcher",
+                  "version":"1:1.0.0.87",
+                  "deb_sha256":hashes["steam_latest_deb_sha256"],
+                  "package_contains_apt_material":steam_apt_files,
+                  "side_effect_excerpt":side[-8000:],
+                  "post_install_action":"apt-get update; install steam-libs-amd64 and steam-libs-i386 only if official Valve package exposes candidates"
+              },
+              "flatpak_apps":[
+                  "com.usebottles.bottles",
+                  "net.lutris.Lutris",
+                  "org.prismlauncher.PrismLauncher"
+              ],
+              "proton":{
+                  "release":"11.0-2",
+                  "steam_app_id":4628710,
+                  "steamcmd_sha256":hashes["steamcmd_tar_sha256"],
+                  "source_tar_sha256":hashes["proton_source_tar_sha256"],
+                  "require_official_app_info_identity_before_runtime_download":True
+              },
+              "waydroid":{
+                  "release":"1.6.3",
+                  "suite":"trixie",
+                  "repo_script_sha256":hashes["waydroid_repo_script_sha256"],
+                  "require_script_hash_before_execution":True
+              }
+          }
+          rollback={
+              "checkpoint":"dpkg selections, foreign architectures, apt source/key files, flatpak refs/remotes, governed PART6 directory",
+              "package_delta":"remove only packages newly installed by this transaction when rollback is technically safe",
+              "steam":"remove introduced launcher/libs and restore apt source/key checkpoint",
+              "flatpak":"uninstall only introduced app refs and restore prior remote set",
+              "proton":"delete only governed Proton runtime/source directories created by transaction",
+              "waydroid":"stop introduced service/container; remove introduced package/repo; restore apt source/key checkpoint",
+              "preserve_i386_prerequisite":True,
+              "no_unrelated_user_data_delete":True
+          }
+          q={
+              "schema":"LOUKSNA_R4_PART6_FULL_CANDIDATE/2.0",
+              "status":"CANDIDATE_READY" if all(checks.values()) else "HOLD",
+              "scope":"PART6_FULL_GAMING_REMEDIATION_POST_I386",
+              "mission_id":ms.get("mission_id"),
+              "checks":checks,
+              "apt_candidates":candidates,
+              "source_pins":hashes,
+              "plan":plan,
+              "rollback":rollback,
+              "forbidden":[
+                  "claim PASS from filename presence only",
+                  "delete unrelated user data",
+                  "modify disk partition geometry",
+                  "format or resize filesystems",
+                  "propagate certification"
+              ],
+              "mutation_performed":False,
+              "recorded_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          (out/"CANDIDATE.json").write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if q["status"]!="CANDIDATE_READY": raise SystemExit(23)
+          PY
+
+      - name: Upload full candidate
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part6-full-candidate
+          path: ${{ runner.temp }}/r4-part6-full-preflight-${{ github.run_id }}
+          if-no-files-found: warn
+          retention-days: 60
+          compression-level: 0
