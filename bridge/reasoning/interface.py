@@ -41,6 +41,22 @@ MODEL_FIELDS = (
 )
 
 
+MODEL_WIRE_FIELDS = (
+    "observations",
+    "assumptions",
+    "inferences",
+    "alternatives",
+    "proposal_summary",
+    "proposal_operation_class",
+    "risks",
+    "expected_result",
+    "failure_conditions",
+    "recovery_proposal",
+    "limitations",
+    "confidence",
+)
+
+
 class ReasoningContractError(RuntimeError):
     pass
 
@@ -83,58 +99,83 @@ def validate_request(obj):
     }
 
 
-def model_output_schema():
-    string_array = {"type": "array", "items": {"type": "string"}, "maxItems": 24}
+def model_wire_schema():
+    # Deliberately flat wire format: llama.cpp JSON grammar remained deterministic
+    # for flat scalar objects while the earlier nested schema terminated incomplete.
+    scalar = {"type": "string"}
     return {
         "type": "object",
         "additionalProperties": False,
-        "required": list(MODEL_FIELDS),
+        "required": list(MODEL_WIRE_FIELDS),
         "properties": {
-            "observations": string_array,
-            "assumptions": string_array,
-            "inferences": string_array,
-            "alternatives": {
-                "type": "array",
-                "maxItems": 12,
-                "items": {
-                    "type": "object",
-                    "additionalProperties": False,
-                    "required": ["id", "summary", "requires_authorization"],
-                    "properties": {
-                        "id": {"type": "string"},
-                        "summary": {"type": "string"},
-                        "requires_authorization": {"type": "boolean"},
-                    },
-                },
+            "observations": scalar,
+            "assumptions": scalar,
+            "inferences": scalar,
+            "alternatives": scalar,
+            "proposal_summary": scalar,
+            "proposal_operation_class": {
+                "type": "string",
+                "enum": ["NONE", "READ_ONLY", "MUTABLE", "PRIVILEGED"],
             },
-            "proposal": {
-                "type": "object",
-                "additionalProperties": False,
-                "required": ["summary", "operation_class"],
-                "properties": {
-                    "summary": {"type": "string"},
-                    "operation_class": {
-                        "type": "string",
-                        "enum": ["NONE", "READ_ONLY", "MUTABLE", "PRIVILEGED"],
-                    },
-                },
+            "risks": scalar,
+            "expected_result": scalar,
+            "failure_conditions": scalar,
+            "recovery_proposal": scalar,
+            "limitations": scalar,
+            "confidence": {
+                "type": "string",
+                "enum": ["LOW", "MEDIUM", "HIGH"],
             },
-            "risks": string_array,
-            "expected_result": {"type": "string"},
-            "failure_conditions": string_array,
-            "recovery_proposal": {"type": "string"},
-            "limitations": string_array,
-            "confidence": {"type": "number", "minimum": 0.0, "maximum": 1.0},
         },
     }
 
+
+def _split_wire(value):
+    if not isinstance(value, str):
+        raise ReasoningContractError("WIRE_STRING_REQUIRED")
+    return [part.strip() for part in value.split(";") if part.strip()][:24]
+
+
+def normalize_model_wire(obj):
+    if not isinstance(obj, dict) or set(obj) != set(MODEL_WIRE_FIELDS):
+        raise ReasoningContractError("MODEL_WIRE_FIELDS_INVALID")
+    op = obj["proposal_operation_class"]
+    if op not in {"NONE", "READ_ONLY", "MUTABLE", "PRIVILEGED"}:
+        raise ReasoningContractError("WIRE_OPERATION_CLASS_INVALID")
+    conf = obj["confidence"]
+    confidence_map = {"LOW": 0.25, "MEDIUM": 0.60, "HIGH": 0.85}
+    if conf not in confidence_map:
+        raise ReasoningContractError("WIRE_CONFIDENCE_INVALID")
+    alt_texts = _split_wire(obj["alternatives"])
+    canonical = {
+        "observations": _split_wire(obj["observations"]),
+        "assumptions": _split_wire(obj["assumptions"]),
+        "inferences": _split_wire(obj["inferences"]),
+        "alternatives": [
+            {"id": f"A{idx+1}", "summary": summary, "requires_authorization": op != "NONE"}
+            for idx, summary in enumerate(alt_texts[:12])
+        ],
+        "proposal": {"summary": obj["proposal_summary"].strip(), "operation_class": op},
+        "risks": _split_wire(obj["risks"]),
+        "expected_result": obj["expected_result"].strip(),
+        "failure_conditions": _split_wire(obj["failure_conditions"]),
+        "recovery_proposal": obj["recovery_proposal"].strip(),
+        "limitations": _split_wire(obj["limitations"]),
+        "confidence": confidence_map[conf],
+    }
+    return canonical
+
+
+# Backward-compatible alias for code that only needs the model-facing schema.
+def model_output_schema():
+    return model_wire_schema()
 
 def build_prompt(request):
     req = validate_request(request)
     compact = json.dumps(req, ensure_ascii=False, sort_keys=True)
     return (
         "You are the advisory reasoning provider inside LOUKSNA. "
-        "Return only the JSON object required by the supplied JSON schema. "
+        "Return only the flat JSON object required by the supplied JSON schema. Keep every field concise; use semicolons inside scalar fields when listing multiple items. "
         "Do not claim execution, root, canonical, gate, or certification authority. "
         "Do not expose hidden chain-of-thought; provide concise auditable observations, "
         "assumptions, inferences, alternatives, risks, and recovery conditions. "

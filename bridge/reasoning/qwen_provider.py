@@ -19,7 +19,7 @@ HERE = Path(__file__).resolve().parent
 if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
-from interface import build_prompt, model_output_schema, validate_request, validate_result
+from interface import build_prompt, model_wire_schema, normalize_model_wire, validate_request, validate_result
 
 PROVIDER_ID = "QWEN35_4B_S"
 MANIFEST_PATH = HERE / "MODEL_MANIFEST.json"
@@ -98,7 +98,7 @@ def _extract_json(text):
 def invoke(request, timeout_sec=180, threads=2, ctx_size=3072, reasoning_budget=256):
     request = validate_request(request)
     _manifest, binding, model, runtime = verify_material()
-    schema = json.dumps(model_output_schema(), separators=(",", ":"))
+    schema = json.dumps(model_wire_schema(), separators=(",", ":"))
     prompt = build_prompt(request)
     cmd = [
         str(runtime),
@@ -131,13 +131,8 @@ def invoke(request, timeout_sec=180, threads=2, ctx_size=3072, reasoning_budget=
         raise ProviderHold("MODEL_TIMEOUT") from exc
     if proc.returncode != 0:
         raise ProviderHold("MODEL_RUNTIME_FAILED:" + str(proc.returncode))
-    try:
-        obj = _extract_json(proc.stdout)
-    except ProviderHold:
-        if diagnostic_dir is not None:
-            print("LOUKSNA_REASONING_DIAG_STDOUT=" + repr(proc.stdout[:4000]), file=sys.stderr)
-            print("LOUKSNA_REASONING_DIAG_STDERR_TAIL=" + repr(proc.stderr[-4000:]), file=sys.stderr)
-        raise
+    wire = _extract_json(proc.stdout)
+    obj = normalize_model_wire(wire)
     result = validate_result(obj, request["request_id"], PROVIDER_ID)
     result["material_binding"] = {
         "model_sha256": binding["model"]["sha256"],

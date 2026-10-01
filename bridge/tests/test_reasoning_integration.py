@@ -26,6 +26,23 @@ def request():
     }
 
 
+def wire_payload():
+    return {
+        "observations": "Observed bounded evidence only.",
+        "assumptions": "",
+        "inferences": "No execution authorization is present.",
+        "alternatives": "Remain HOLD.",
+        "proposal_summary": "Remain advisory.",
+        "proposal_operation_class": "NONE",
+        "risks": "Unverified state must not be promoted.",
+        "expected_result": "No host mutation.",
+        "failure_conditions": "Evidence drift.",
+        "recovery_proposal": "Remain HOLD.",
+        "limitations": "No independent terminal certification in this unit test.",
+        "confidence": "HIGH",
+    }
+
+
 def model_payload():
     return {
         "observations": ["Observed bounded evidence only."],
@@ -62,10 +79,16 @@ class ReasoningInterfaceTests(unittest.TestCase):
             interface.validate_result(bad, "test-001", "QWEN35_4B_S")
 
     def test_schema_forbids_extra_model_properties(self):
-        schema = interface.model_output_schema()
+        schema = interface.model_wire_schema()
         self.assertIs(schema["additionalProperties"], False)
         self.assertNotIn("authority", schema["properties"])
         self.assertNotIn("command", schema["properties"])
+
+    def test_wire_normalizes_to_canonical_contract(self):
+        canonical = interface.normalize_model_wire(wire_payload())
+        self.assertEqual(canonical["proposal"]["operation_class"], "NONE")
+        self.assertEqual(canonical["alternatives"][0]["id"], "A1")
+        self.assertEqual(canonical["confidence"], 0.85)
 
     def test_bridge_adapter_remains_proposed_uncertified(self):
         result = interface.validate_result(model_payload(), "test-001", "QWEN35_4B_S")
@@ -93,7 +116,7 @@ class ReasoningInterfaceTests(unittest.TestCase):
             "model": {"sha256": "m", "bytes": 1},
             "runtime": {"source_revision": "r", "binary_sha256": "b"},
         }
-        completed = mock.Mock(returncode=0, stdout=json.dumps(model_payload()), stderr="")
+        completed = mock.Mock(returncode=0, stdout=json.dumps(wire_payload()), stderr="")
         fake = mock.Mock(return_value=completed)
         with mock.patch.object(qwen_provider, "verify_material", return_value=(manifest, binding, pathlib.Path("/m"), pathlib.Path("/r"))),              mock.patch.object(qwen_provider.subprocess, "run", fake):
             out = qwen_provider.invoke(request(), timeout_sec=1)
@@ -116,7 +139,8 @@ class ReasoningInterfaceTests(unittest.TestCase):
             "model": {"sha256": "m", "bytes": 1},
             "runtime": {"source_revision": "r", "binary_sha256": "b"},
         }
-        fake = mock.Mock(returncode=0, stdout="not-json", stderr="")
+        completed = mock.Mock(returncode=0, stdout="not-json", stderr="")
+        fake = mock.Mock(return_value=completed)
         with mock.patch.object(qwen_provider, "verify_material", return_value=(manifest, binding, pathlib.Path("/m"), pathlib.Path("/r"))),              mock.patch.object(qwen_provider.subprocess, "run", fake):
             with self.assertRaises(qwen_provider.ProviderHold):
                 qwen_provider.invoke(request(), timeout_sec=1)
