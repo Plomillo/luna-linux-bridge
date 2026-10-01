@@ -1,0 +1,14 @@
+{
+  "schema": "LOUKSNA_R4_UI_LIVE_AUDIT_REQUEST/1.0",
+  "scope": "PART5_PART9",
+  "operation": "AUDIT_KDE_LUNA_UI_AND_PROYECTOS_BINDING",
+  "worker": "MAESTRO_FOR_R4_ONLY",
+  "observer": "LOUKSNA_REMOTE_BRIDGE",
+  "part4_closed": true,
+  "prohibit_part4_mutation": true,
+  "prohibit_debian_download": true,
+  "prohibit_kde_download_or_reinstall": true,
+  "preserve_wallpaper": true,
+  "apply_mutation": false,
+  "requested_at_utc": "2026-10-01T23:19:00Z"
+}
