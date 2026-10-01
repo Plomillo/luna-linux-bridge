@@ -1,0 +1,314 @@
+name: "R4 PART6 — certify and execute i386 prerequisite"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part6-i386-certify/**
+
+permissions:
+  contents: read
+  actions: read
+  id-token: write
+
+concurrency:
+  group: r4-part6-i386-certify-execute
+  cancel-in-progress: false
+
+env:
+  CANDIDATE_RUN_ID: "36932087800"
+
+jobs:
+  g23:
+    name: G23 validate i386 prerequisite transaction
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Download candidate
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/candidate" "$RUNNER_TEMP/g23"
+          gh run download "$CANDIDATE_RUN_ID" \
+            --repo Plomillo/luna-linux-bridge \
+            -n r4-part6-i386-candidate \
+            -D "$RUNNER_TEMP/candidate"
+          test -f "$RUNNER_TEMP/candidate/CANDIDATE.json"
+
+      - name: Independently validate exact transaction
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - "$RUNNER_TEMP/candidate/CANDIDATE.json" "$RUNNER_TEMP/g23/G23.json" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,sys
+          p,o=map(pathlib.Path,sys.argv[1:])
+          c=json.loads(p.read_text())
+          h=lambda x:hashlib.sha256(pathlib.Path(x).read_bytes()).hexdigest()
+          checks={
+              "ready":c.get("status")=="CANDIDATE_READY",
+              "scope":c.get("scope")=="ADD_I386_FOREIGN_ARCHITECTURE_AND_REFRESH_APT_INDEX_ONLY",
+              "all_checks":all(c.get("checks",{}).values()),
+              "mission":c.get("mission_id")=="MIS-cf38037f1f114012af53",
+              "prestate_no_i386":"i386" not in c.get("foreign_architectures_before",[]),
+              "steam_pin":c.get("source_pins",{}).get("steam_latest_deb_sha256")=="765aba9a0ed339a50226ceb614fcc9879a991ba184098bc8de920efb12c714a4",
+              "steamcmd_pin":c.get("source_pins",{}).get("steamcmd_tar_sha256")=="cebf0046bfd08cf45da6bc094ae47aa39ebf4155e5ede41373b579b8f1071e7c",
+              "package_install_forbidden":c.get("package_install_authorized") is False,
+              "source_mutation_forbidden":c.get("apt_source_mutation_authorized") is False,
+              "no_partition":c.get("disk_partition_mutation_authorized") is False,
+              "no_fs_mutation":c.get("filesystem_format_or_resize_authorized") is False,
+              "rollback_exact":c.get("rollback",{}).get("on_postcondition_failure")=="dpkg --remove-architecture i386 then apt-get update",
+          }
+          ok=all(checks.values())
+          q={
+              "schema":"LOUKSNA_R4_PART6_I386_G23/1.0",
+              "status":"PASS" if ok else "HOLD",
+              "scope":"ADD_I386_FOREIGN_ARCHITECTURE_AND_REFRESH_APT_INDEX_ONLY_INDEPENDENT_VALIDATION",
+              "candidate_sha256":h(p),
+              "checks":checks,
+              "mutation_authorized":ok,
+              "authorized_commands":[
+                  "dpkg --add-architecture i386",
+                  "apt-get update"
+              ] if ok else [],
+              "package_install_authorized":False,
+              "apt_source_file_mutation_authorized":False,
+              "rollback_authorized":ok,
+              "certification_propagated":False,
+              "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          o.write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(23)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part6-i386-g23
+          path: ${{ runner.temp }}/g23/G23.json
+          retention-days: 90
+          compression-level: 0
+
+  g24:
+    name: G24 authorize exact i386 prerequisite transaction
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part6-i386-g23
+          path: ${{ runner.temp }}/g23
+      - name: Issue OIDC-bound G24
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/G23.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$G")" = PASS
+          GHASH="$(sha256sum "$G" | awk '{print $1}')"
+          CHASH="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["candidate_sha256"])' "$G")"
+          AUD="louksna-r4-part6-i386:$GHASH:$CHASH"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export GHASH CHASH AUD TOKEN
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$RUNNER_TEMP/g24/G24.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          t=os.environ["TOKEN"]; parts=t.split(".")
+          payload=parts[1]+"="*((4-len(parts[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload))
+          expected=os.environ["AUD"]; aud=claims.get("aud")
+          if aud!=expected and not (isinstance(aud,list) and expected in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          q={
+              "schema":"LOUKSNA_R4_PART6_I386_G24/1.0",
+              "status":"PASS",
+              "scope":"ADD_I386_FOREIGN_ARCHITECTURE_AND_REFRESH_APT_INDEX_ONLY_EXECUTION_AUTHORIZATION",
+              "candidate_sha256":os.environ["CHASH"],
+              "g23_sha256":os.environ["GHASH"],
+              "authority_authenticated":True,
+              "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
+              "authorized_commands":["dpkg --add-architecture i386","apt-get update"],
+              "package_install_authorized":False,
+              "apt_source_file_mutation_authorized":False,
+              "rollback_authorized":True,
+              "canonical_mutation":False,
+              "authority_transfer":False,
+              "certification_propagated":False,
+              "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part6-i386-g24
+          path: ${{ runner.temp }}/g24/G24.json
+          retention-days: 90
+          compression-level: 0
+
+  execute:
+    name: Execute certified i386 prerequisite on LOUKSNA
+    needs: [g23,g24]
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 20
+    steps:
+      - name: Download certified evidence
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/candidate"
+          gh run download "$CANDIDATE_RUN_ID" \
+            --repo Plomillo/luna-linux-bridge \
+            -n r4-part6-i386-candidate \
+            -D "$RUNNER_TEMP/candidate"
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part6-i386-g23
+          path: ${{ runner.temp }}/g23
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part6-i386-g24
+          path: ${{ runner.temp }}/g24
+
+      - name: Checkpoint, execute, verify, rollback on failure
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+          export LANG=C
+          OUT="$RUNNER_TEMP/r4-part6-i386-result-$GITHUB_RUN_ID"
+          D="$HOME/.local/state/louksna/r4-master-part1-part9/PART_6_HARDENED"
+          MS="$HOME/.local/state/louksna/r4-master-part1-part9/MASTER_STATUS.json"
+          C="$RUNNER_TEMP/candidate/CANDIDATE.json"
+          G="$RUNNER_TEMP/g23/G23.json"
+          A="$RUNNER_TEMP/g24/G24.json"
+          mkdir -p "$OUT" "$D"
+
+          cp "$C" "$OUT/CANDIDATE.json"
+          cp "$G" "$OUT/G23.json"
+          cp "$A" "$OUT/G24.json"
+          cp "$MS" "$OUT/MASTER_STATUS_BEFORE.json"
+          dpkg --print-foreign-architectures > "$OUT/FOREIGN_ARCHES_BEFORE.txt"
+          find /etc/apt -maxdepth 2 -type f \( -name '*.list' -o -name '*.sources' -o -name '*.gpg' -o -name '*.asc' \) -print0 2>/dev/null | sort -z | xargs -0r sha256sum > "$OUT/APT_SOURCE_HASHES_BEFORE.txt"
+
+          C="$C" G="$G" A="$A" MS="$MS" python3 - <<'PY'
+          import hashlib,json,os,pathlib
+          C,G,A,MS=[pathlib.Path(os.environ[x]) for x in ("C","G","A","MS")]
+          c=json.loads(C.read_text()); g=json.loads(G.read_text()); a=json.loads(A.read_text()); ms=json.loads(MS.read_text())
+          h=lambda p:hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
+          exact={"wine","steam","proton","bottles","lutris","prism","waydroid"}
+          checks={
+              "boundary":ms.get("current_part")=="PART_6" and ms.get("status")=="HOLD" and set(ms.get("blockers",[]))==exact,
+              "candidate_ready":c.get("status")=="CANDIDATE_READY" and all(c.get("checks",{}).values()),
+              "g23_pass":g.get("status")=="PASS",
+              "g24_pass":a.get("status")=="PASS",
+              "candidate_bound":g.get("candidate_sha256")==h(C)==a.get("candidate_sha256"),
+              "g23_bound":a.get("g23_sha256")==h(G),
+              "scope":a.get("scope")=="ADD_I386_FOREIGN_ARCHITECTURE_AND_REFRESH_APT_INDEX_ONLY_EXECUTION_AUTHORIZATION",
+              "no_package_install":a.get("package_install_authorized") is False,
+              "no_source_mutation":a.get("apt_source_file_mutation_authorized") is False,
+          }
+          if not all(checks.values()):
+              raise SystemExit("PRECOMMIT_REVALIDATION_FAILED:"+json.dumps(checks,sort_keys=True))
+          PY
+
+          rollback_needed=0
+          set +e
+          sudo -n dpkg --add-architecture i386 > "$OUT/ADD_ARCH.stdout" 2> "$OUT/ADD_ARCH.stderr"
+          RC_ADD=$?
+          if [ "$RC_ADD" -eq 0 ]; then
+            rollback_needed=1
+            sudo -n apt-get update > "$OUT/APT_UPDATE.stdout" 2> "$OUT/APT_UPDATE.stderr"
+            RC_UPDATE=$?
+          else
+            RC_UPDATE=99
+          fi
+          set -e
+
+          dpkg --print-foreign-architectures > "$OUT/FOREIGN_ARCHES_AFTER.txt"
+          {
+            for p in libc6:i386 libstdc++6:i386 libgcc-s1:i386 wine32:i386; do
+              echo "### $p"
+              apt-cache policy "$p" 2>&1 || true
+            done
+          } > "$OUT/I386_POLICY.txt"
+          find /etc/apt -maxdepth 2 -type f \( -name '*.list' -o -name '*.sources' -o -name '*.gpg' -o -name '*.asc' \) -print0 2>/dev/null | sort -z | xargs -0r sha256sum > "$OUT/APT_SOURCE_HASHES_AFTER.txt"
+
+          OUT="$OUT" RC_ADD="$RC_ADD" RC_UPDATE="$RC_UPDATE" python3 - <<'PY' > "$OUT/VERIFY.json"
+          import json,os,pathlib,re
+          out=pathlib.Path(os.environ["OUT"])
+          foreign=[x.strip() for x in (out/"FOREIGN_ARCHES_AFTER.txt").read_text().splitlines() if x.strip()]
+          policy=(out/"I386_POLICY.txt").read_text(errors="replace")
+          def cand(pkg):
+              m=re.search(r"^### "+re.escape(pkg)+r"\n.*?^\s*Candidate:\s*(\S+)",policy,re.M|re.S)
+              return m.group(1) if m else None
+          candidates={p:cand(p) for p in ["libc6:i386","libstdc++6:i386","libgcc-s1:i386","wine32:i386"]}
+          q={
+              "add_arch_rc":int(os.environ["RC_ADD"]),
+              "apt_update_rc":int(os.environ["RC_UPDATE"]),
+              "i386_enabled":"i386" in foreign,
+              "candidates":candidates,
+              "all_candidates":all(v not in (None,"(none)") for v in candidates.values()),
+              "apt_sources_unchanged":(out/"APT_SOURCE_HASHES_BEFORE.txt").read_text()==(out/"APT_SOURCE_HASHES_AFTER.txt").read_text(),
+          }
+          q["pass"]=q["add_arch_rc"]==0 and q["apt_update_rc"]==0 and q["i386_enabled"] and q["all_candidates"] and q["apt_sources_unchanged"]
+          print(json.dumps(q,indent=2,sort_keys=True))
+          PY
+
+          PASS="$(python3 -c 'import json,sys;print("yes" if json.load(open(sys.argv[1]))["pass"] else "no")' "$OUT/VERIFY.json")"
+          if [ "$PASS" != yes ]; then
+            if [ "$rollback_needed" -eq 1 ]; then
+              sudo -n dpkg --remove-architecture i386 > "$OUT/ROLLBACK_REMOVE.stdout" 2> "$OUT/ROLLBACK_REMOVE.stderr" || true
+              sudo -n apt-get update > "$OUT/ROLLBACK_APT.stdout" 2> "$OUT/ROLLBACK_APT.stderr" || true
+            fi
+            dpkg --print-foreign-architectures > "$OUT/FOREIGN_ARCHES_ROLLBACK.txt"
+            OUT="$OUT" python3 - <<'PY'
+          import datetime as dt,json,os,pathlib
+          out=pathlib.Path(os.environ["OUT"])
+          q={"schema":"LOUKSNA_R4_PART6_I386_RESULT/1.0","status":"HOLD","verify":json.loads((out/"VERIFY.json").read_text()),"rollback_attempted":True,"mutation_retained":False,"recorded_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          (out/"RESULT.json").write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          PY
+            cp "$OUT/RESULT.json" "$D/I386_RESULT.json"
+            exit 23
+          fi
+
+          OUT="$OUT" D="$D" python3 - <<'PY'
+          import datetime as dt,hashlib,json,os,pathlib
+          out=pathlib.Path(os.environ["OUT"]); d=pathlib.Path(os.environ["D"])
+          h=lambda p:hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
+          q={
+              "schema":"LOUKSNA_R4_PART6_I386_RESULT/1.0",
+              "status":"PASS",
+              "scope":"ADD_I386_FOREIGN_ARCHITECTURE_AND_REFRESH_APT_INDEX_ONLY",
+              "verify":json.loads((out/"VERIFY.json").read_text()),
+              "candidate_sha256":h(out/"CANDIDATE.json"),
+              "g23_sha256":h(out/"G23.json"),
+              "g24_sha256":h(out/"G24.json"),
+              "package_install_performed":False,
+              "apt_source_file_mutation_performed":False,
+              "i386_architecture_enabled":True,
+              "rollback_attempted":False,
+              "mutation_retained":True,
+              "next_authorized_action":"REBUILD_FULL_PART6_CANDIDATE_WITH_I386_REALITY",
+              "recorded_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          raw=json.dumps(q,indent=2,sort_keys=True)+"\n"
+          (out/"RESULT.json").write_text(raw)
+          (d/"I386_RESULT.json").write_text(raw)
+          print(raw)
+          PY
+
+      - name: Upload i386 transaction evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part6-i386-result
+          path: ${{ runner.temp }}/r4-part6-i386-result-${{ github.run_id }}
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 0
