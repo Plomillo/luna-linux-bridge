@@ -1,0 +1,8 @@
+{
+  "mission_id": "MIS-e5963403a3b44ee8be96",
+  "action": "READ_CURRENT_STAGE_AFTER_PHYSICAL_STAGE7_COMMIT",
+  "authority": "Louksna.md",
+  "read_only": true,
+  "no_disk_mutation": true,
+  "no_filesystem_mutation": true
+}
