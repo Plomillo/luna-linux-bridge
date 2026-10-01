@@ -14,7 +14,7 @@ permissions:
 
 concurrency:
   group: louksna-qwen35-f4-terminal
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 env:
   BASE_SHA: c961a198f524a128dba6374290e2abe73dfaece6
