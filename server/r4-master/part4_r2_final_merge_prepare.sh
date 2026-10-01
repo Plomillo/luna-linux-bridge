@@ -46,9 +46,15 @@ root_source="$(readlink -f "$(findmnt -n -o SOURCE /)")"
 [ "$root_source" = "$OLDROOT_DEV" ] || hold "CURRENT_ROOT_NOT_OLDROOT:$root_source"
 [ "$(findmnt -n -o FSTYPE /)" = "ext4" ] || hold "CURRENT_ROOT_NOT_EXT4"
 
-proj_source="$(readlink -f "$(findmnt -T "$PROJECTS_MOUNT" -n -o SOURCE)")"
-[ "$proj_source" = "$NEWROOT_DEV" ] || hold "PROJECTS_NOT_ON_P3:$proj_source"
-[ "$(findmnt -T "$PROJECTS_MOUNT" -n -o FSTYPE)" = "ext4" ] || hold "P3_NOT_EXT4"
+P3_MOUNT_TARGET="$(findmnt -rn -S "$NEWROOT_DEV" -o TARGET | head -1 || true)"
+if [ "$P3_MOUNT_TARGET" = "$PROJECTS_MOUNT" ]; then
+  P3_MOUNT_CONTEXT="PROJECTS_MOUNT"
+elif [ "$P3_MOUNT_TARGET" = "$NEWROOT_MNT" ]; then
+  P3_MOUNT_CONTEXT="FINAL_MERGE_STAGED_NEWROOT"
+else
+  hold "P3_MOUNT_CONTEXT_UNEXPECTED:${P3_MOUNT_TARGET:-UNMOUNTED}"
+fi
+[ "$(findmnt -T "$P3_MOUNT_TARGET" -n -o FSTYPE)" = "ext4" ] || hold "P3_NOT_EXT4"
 
 efi_source="$(readlink -f "$(findmnt -T /boot/efi -n -o SOURCE)")"
 [ "$efi_source" = "$EFI" ] || hold "EFI_SOURCE_MISMATCH:$efi_source"
@@ -65,7 +71,7 @@ P5_UUID="$(blkid_uuid "$OLDROOT_DEV")"
 EFI_UUID="$(blkid_uuid "$EFI")"
 [ -n "$P3_UUID" ] && [ -n "$P5_UUID" ] && [ -n "$EFI_UUID" ] || hold "UUID_MISSING"
 
-P3_FREE="$(df -B1 --output=avail "$PROJECTS_MOUNT" | tail -1 | tr -d ' ')"
+P3_FREE="$(df -B1 --output=avail "$P3_MOUNT_TARGET" | tail -1 | tr -d ' ')"
 ROOT_USED="$(df -B1 --output=used / | tail -1 | tr -d ' ')"
 MARGIN=10000000000
 [ "$P3_FREE" -gt $((ROOT_USED+MARGIN)) ] || hold "INSUFFICIENT_P3_FREE_FOR_ROOT_COPY:$P3_FREE:$ROOT_USED"
@@ -74,7 +80,7 @@ PARTED_RAW="$(sudo -n parted -m "$DISK" unit s print)" || hold "PARTED_READ_FAIL
 LSBLK_RAW="$(lsblk -b -J -o NAME,PATH,TYPE,SIZE,FSTYPE,FSAVAIL,FSUSE%,MOUNTPOINTS,UUID,PARTUUID,START)"
 
 if [ "$MODE" = "plan" ]; then
-  export PARTED_RAW LSBLK_RAW P3_UUID P5_UUID EFI_UUID P3_FREE ROOT_USED
+  export PARTED_RAW LSBLK_RAW P3_UUID P5_UUID EFI_UUID P3_FREE ROOT_USED P3_MOUNT_CONTEXT P3_MOUNT_TARGET
   python3 - "$OUT/FINAL_MERGE_PLAN.json" <<'PY'
 import hashlib,json,os,re,sys,time
 raw=os.environ["PARTED_RAW"]
@@ -101,6 +107,9 @@ plan={
  "final_layout":"EFI_P1_PLUS_SINGLE_MAIN_EXT4_ROOT_P3",
  "old_root_retirement_condition":"VERIFIED_BOOT_FROM_P3_PLUS_POSTBOOT_G23_G24",
  "projects_final_path":"/home/diegoignacionorambuenamiranda/PROYECTOS",
+ "p3_mount_context":os.environ["P3_MOUNT_CONTEXT"],
+ "p3_mount_target":os.environ["P3_MOUNT_TARGET"],
+ "resume_from_staged_newroot_allowed":True,
  "normal_alignment_gap_allowed":True,
  "rollback_contract":{
    "before_reboot":"P5_REMAINS_UNMODIFIED_BOOTABLE_ROOT",
@@ -149,8 +158,14 @@ sha256sum "$OUT/PARTITION_TABLE_PREBOOT.sfdisk" "$OUT/fstab.oldroot.before" "$OU
 
 python3 "$VERIFY" --root "$PROJECTS_MOUNT" --manifest "$MANIFEST" --out "$OUT/VERIFY_PROJECTS_BEFORE_RELOCATION.json" --allow-ext4-root-lost-found
 
-sudo -n umount "$PROJECTS_MOUNT"
-sudo -n mount -t ext4 "$NEWROOT_DEV" "$NEWROOT_MNT"
+if [ "$P3_MOUNT_CONTEXT" = "PROJECTS_MOUNT" ]; then
+  sudo -n umount "$PROJECTS_MOUNT"
+  sudo -n mount -t ext4 "$NEWROOT_DEV" "$NEWROOT_MNT"
+elif [ "$P3_MOUNT_CONTEXT" = "FINAL_MERGE_STAGED_NEWROOT" ]; then
+  [ "$(readlink -f "$(findmnt -n -o SOURCE "$NEWROOT_MNT")")" = "$NEWROOT_DEV" ] || hold "STAGED_NEWROOT_SOURCE_MISMATCH"
+else
+  hold "UNKNOWN_P3_MOUNT_CONTEXT:$P3_MOUNT_CONTEXT"
+fi
 
 # Relocate only manifest-owned top-level project entries into the future Debian home path.
 sudo -n python3 - "$NEWROOT_MNT" "$MANIFEST" "$OWNER" <<'PY'
