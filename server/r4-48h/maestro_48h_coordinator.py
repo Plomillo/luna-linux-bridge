@@ -288,19 +288,34 @@ def safe_handoff(reason):
     ledger("MASTER_SAFE_HANDOFF",reason=reason,checkpoint=str(checkpoint))
 
 def ensure_master_hardened():
-    staged=STAGED/"master_controller.py"
-    live=LIVE/"master_controller.py"
-    if not staged.is_file():
-        return False
-    staged_hash=sha(staged)
-    live_hash=sha(live) if live.is_file() else None
+    names=["master_controller.py","part6_hardened_worker.py","R4_48H_CONTRACT.json"]
+    staged_hashes={}
+    live_hashes={}
+    for name in names:
+        sp=STAGED/name
+        lp=LIVE/name
+        if not sp.is_file():
+            return False
+        staged_hashes[name]=sha(sp)
+        live_hashes[name]=sha(lp) if lp.is_file() else None
+
     st=service_state(True,MASTER_SERVICE)
     unhealthy=st.get("ActiveState")!="active" or st.get("MainPID") in (None,"","0")
-    if live_hash!=staged_hash or unhealthy:
+    drift={name:{"live":live_hashes[name],"staged":staged_hashes[name]}
+           for name in names if live_hashes[name]!=staged_hashes[name]}
+
+    if drift or unhealthy:
         if part6_child_active():
-            ledger("HANDOFF_DEFERRED_ACTIVE_PART6",live_sha256=live_hash,staged_sha256=staged_hash,service=st)
+            ledger("HANDOFF_DEFERRED_ACTIVE_PART6",drift=drift,service=st)
             return False
-        safe_handoff("V2_15_POINT_COORDINATION_RECONCILIATION")
+        safe_handoff("V2_15_POINT_ATOMIC_BUNDLE_RECONCILIATION")
+
+    # Postcondition: all three live surfaces must equal the staged certified
+    # bundle. A master-only equality is insufficient.
+    for name in names:
+        lp=LIVE/name
+        if not lp.is_file() or sha(lp)!=staged_hashes[name]:
+            return False
     return master_active()
 
 def projects_binding_state():
