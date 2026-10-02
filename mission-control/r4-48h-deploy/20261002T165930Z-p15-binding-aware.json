@@ -1,0 +1,27 @@
+{
+  "schema": "LOUKSNA_R4_48H_DEPLOY_REQUEST/1.0",
+  "purpose": "DEPLOY_P15_BINDING_AWARE_ANTI_PARALYSIS_ONLY",
+  "source_commit": "4875711700fabd716f04088b0e8d778545283b6d",
+  "preserve_certified_points": [
+    "P01",
+    "P02",
+    "P03",
+    "P04",
+    "P05",
+    "P06",
+    "P07",
+    "P08",
+    "P09",
+    "P10",
+    "P11",
+    "P12",
+    "P13",
+    "P14"
+  ],
+  "repeat_certified_work": false,
+  "protected_reference_binding_required": true,
+  "desktop_commander_used": false,
+  "partitioning_authorized": false,
+  "part4_reopen_authorized": false,
+  "created_at_utc": "2026-10-02T16:59:30Z"
+}
