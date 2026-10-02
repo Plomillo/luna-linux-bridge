@@ -1,0 +1,70 @@
+{
+  "authority": "Louksna.md",
+  "authority_transfer": false,
+  "blockers": [],
+  "canonical_mutation": false,
+  "checkpoint": "/home/diegoignacionorambuenamiranda/LOUKSNA_MAESTRO_20260925/MISSION3_OPERATIVE/R4_PART1_DESKTOP_V1/runs/20260926T034746Z-38579",
+  "checks": {
+    "aux_pass": true,
+    "aux_present": true,
+    "backup_artifact": true,
+    "backup_hash": true,
+    "backup_manifest": true,
+    "evidence_audit_trace": true,
+    "heavy_work_serialization_policy": true,
+    "hygiene_dry_run_first": true,
+    "metaos": true,
+    "no_cleanup_performed": true,
+    "non_regression": true,
+    "protected_paths_denied": true,
+    "quality_floor_not_reduced": true,
+    "recovery_proof": true,
+    "resource_governor_observed": true,
+    "restore_test": true,
+    "rollback_proof": true,
+    "runtime": true,
+    "unknown_preserve": true
+  },
+  "details": {
+    "aux": {
+      "path": "/home/diegoignacionorambuenamiranda/.local/state/louksna/r4-48h/evidence/PART8_AUX_EVIDENCE.json",
+      "present": true,
+      "schema": "LOUKSNA_R4_PART8_AUX_EVIDENCE/1.0",
+      "sha256": "2e7c91eb95b8adf076aefcc41854d5ea3e1b717fe9f4d71ebf6f31b9340aac11",
+      "status": "PASS"
+    },
+    "aux_blockers": [],
+    "material_dispatch": {
+      "attempt_receipt": "/home/diegoignacionorambuenamiranda/.local/state/louksna/r4-48h/material-attempts/PART_8.json",
+      "material_replayed": false,
+      "result": {
+        "argv": [
+          "/usr/bin/python3",
+          "-B",
+          "/home/diegoignacionorambuenamiranda/.local/lib/louksna/r4-master-part1-part9/part789_hardened_worker.py",
+          "--part",
+          "PART_8",
+          "--mission-id",
+          "MIS-cf38037f1f114012af53"
+        ],
+        "returncode": 0,
+        "stderr": "/home/diegoignacionorambuenamiranda/.local/lib/louksna/r4-master-part1-part9/part789_hardened_worker.py:603: DeprecationWarning: Python 3.14 will, by default, filter extracted tar archives and reject files or modify their metadata. Use the filter argument to control this behavior.\n  members=list(safe_tar_members(tf)); tf.extractall(td,members=members)\n",
+        "stdout": "{\"backup\": {\"artifact\": \"/home/diegoignacionorambuenamiranda/.local/state/louksna/r4-48h/part8/backups/R4_STATE_BACKUP_20261002T123445Z.tar.gz\", \"created_at_utc\": \"2026-10-02T12:34:45.888263Z\", \"files\": [{\"arcname\": \"snapshot/00-MASTER_STATUS.json\", \"bytes\": 840, \"path\": \"/home/diegoignacionorambuenamiranda/.local/state/louksna/r4-master-part1-part9/MASTER_STATUS.json\", \"sha256\": \"806931cdea64ff1fedfeb38f2904fc8d5c483462806c88b0a8aa3e3ea1a3f24a\"}, {\"arcname\": \"snapshot/01-PART7_AUX_EVIDENCE.json\", \"bytes\": 14346, \"path\": \"/home/diegoignacionorambuenamiranda/.local/state/louksna/r4-48h/evidence/PART7_AUX_EVIDENCE.json\", \"sha256\": \"2574404a2291896a5708eeb583206e6105e27fa2ffddfce98ef58306e8b6bda2\"}, {\"arcname\": \"snapshot/02-user-places.xbel\", \"bytes\": 8192, \"path\": \"/home/diegoignacionorambuenamiranda/.local/share/user-places.xbel\", \"sha256\": \"32fe9837e748417512b844399f01bc5e0abaf3236c9145dd88622446965cf1b5\"}, {\"arcname\": \"snapshot/03-luna-r4-part1-proyectos.desktop\", \"bytes\": 340, \"path\": \"/home/diegoignacionorambuenamiranda/.local/share/applications/luna-r4-part1-proyectos.desktop\", \"sha256\": \"4e86b2705b0f285cb24c2225c4564447df4b85248a3f00196e917f9e7d45ccab\"}, {\"arcname\": \"snapshot/04-luna-r4-v7-proyectos.desktop\", \"bytes\": 470, \"path\": \"/home/diegoignacionorambuenamiranda/.local/share/applications/luna-r4-v7-proyectos.desktop\", \"sha256\": \"32791fdf75ec55f4fc9add11c22eb25b10a9e532bbe3d76b005d314ed587d7ad\"}], \"mission_id\": \"MIS-cf38037f1f114012af53\", \"recovery_proof\": \"HASH_IDENTICAL_TEMP_RESTORE\", \"restore_test_pass\": true, \"schema\": \"LOUKSNA_R4_PART8_BACKUP_MANIFEST/1.0\", \"sha256\": \"9c989ba790b540fb9b8dd6a55a91b4bf90fb570eac0513b9424c18b4ef6587a7\"}, \"blockers\": [], \"checks\": {\"backup_artifact\": true, \"backup_hash\": true, \"backup_manifest\": true, \"evidence_audit_trace\": true, \"heavy_work_serialization_policy\": true, \"hygiene_dry_run_first\": true, \"metaos\": true, \"no_cleanup_performed\": true, \"non_regression\": true, \"part7_g24\": true, \"protected_paths_denied\": true, \"quality_floor_not_reduced\": true, \"recovery_proof\": true, \"resource_governor_observed\": true, \"restore_test\": true, \"rollback_proof\": true, \"runtime\": true, \"unknown_preserve\": true}, \"cleanup_performed\": false, \"completed_at_utc\": \"2026-10-02T12:34:47.717255Z\", \"executor\": \"MAESTRO\", \"hygiene\": {\"candidates\": [{\"bytes\": 4747095283, \"path\": \"/home/diegoignacionorambuenamiranda/.cache\"}, {\"bytes\": 0, \"path\": \"/home/diegoignacionorambuenamiranda/.local/share/Trash/files\"}], \"deleted\": [], \"mode\": \"DRY_RUN\", \"protected\": [\"/home/diegoignacionorambuenamiranda/PROYECTOS\", \"/home/diegoignacionorambuenamiranda/.local/lib/louksna/symphylax-r1/Louksna.md\", \"/home/diegoignacionorambuenamiranda/.local/state/louksna/r4-master-part1-part9\", \"/home/diegoignacionorambuenamiranda/.local/state/louksna/r4-48h\"]}, \"lrb_post\": \"dce57ceb4d86677a9814fe1f0427d2376331210c8d21a8cafab33c77e6b54081\", \"lrb_pre\": \"b39dc8923b280c701334dde418978f5f0638d7208775324a404c6df5cb5d36b3\", \"mission_id\": \"MIS-cf38037f1f114012af53\", \"network_download_performed\": false, \"observer\": \"LOUKSNA_REMOTE_BRIDGE\", \"part7_certificate\": {\"path\": \"/home/diegoignacionorambuenamiranda/.local/state/louksna/r4-master-part1-part9/certificates/PART_7.json\", \"sha256\": \"1ecafa9d2c7894b12a48fcc57dbed0d9b2af8de55b59e3f868ca70fa15256b00\", \"status\": \"PASS\"}, \"partitioning_performed\": false, \"producer_revision\": \"2026-10-02.PART789.8-P25-GITHUB-REASONING-ONLY\", \"producer_sha256\": \"9bc235fa8533f7b353cf0b93701ce8d99bf3dbe1b1ee0950368a049f4740ffeb\", \"resources\": {\"load\": [0.796875, 0.345703125, 1.189453125], \"memory_bytes\": {\"MemAvailable\": 1572532224, \"MemTotal\": 6125785088}}, \"schema\": \"LOUKSNA_R4_PART8_AUX_EVIDENCE/1.0\", \"status\": \"PASS\", \"supersedes\": null}\n"
+      },
+      "status": "PASS",
+      "worker": "/home/diegoignacionorambuenamiranda/.local/lib/louksna/r4-master-part1-part9/part789_hardened_worker.py"
+    }
+  },
+  "mission_id": "MIS-cf38037f1f114012af53",
+  "non_regression": "PASS",
+  "operation_id": "OP-e97dd4f4d965481ab16fb2ed17579218",
+  "part": "PART_8",
+  "part_name": "SYSTEM_HYGIENE_RECOVERY",
+  "previous_part_g24_sha256": "1ecafa9d2c7894b12a48fcc57dbed0d9b2af8de55b59e3f868ca70fa15256b00",
+  "rollback_pointer": "/home/diegoignacionorambuenamiranda/.local/state/louksna/r4-master-part1-part9/rollback/PART_8",
+  "schema": "LOUKSNA_R4_PART_MATERIAL_EVIDENCE/1.0",
+  "self_certified": false,
+  "status": "PASS",
+  "timestamp_utc": "2026-10-02T12:34:47.738659Z",
+  "validation": "PASS"
+}
