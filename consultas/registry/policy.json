@@ -1,0 +1,30 @@
+{
+  "schema": "LOUKSNA_CONSULTAS_POLICY/1.0",
+  "authority": "Louksna.md",
+  "kind": "CONSULTA",
+  "execution_authorized": false,
+  "mutation_authorized": false,
+  "allowed_terminal_states": [
+    "ANSWERED",
+    "HOLD",
+    "REJECTED"
+  ],
+  "forbidden": [
+    "SILENT_PROMOTION_TO_MISSION",
+    "MATERIAL_EXECUTION",
+    "CANONICAL_MUTATION",
+    "CERTIFICATION_PROPAGATION",
+    "SELF_CERTIFICATION"
+  ],
+  "anti_loop": {
+    "repeat_limit": 3,
+    "no_progress_limit": 5,
+    "strategy_mutation_before_retry": true
+  },
+  "provider": {
+    "id": "CUSTOSZ_V7_READ_ONLY",
+    "mode": "READ_ONLY_ADVISORY",
+    "expected_sha256": "dacf1f8c13b2fcbfc617cf0d4d780b30502c13395224691e6b0f05f53d9816a2"
+  },
+  "promotion_rule": "NEW_AUTHORIZATION_PLUS_NEW_TRACEABLE_MISSION_OBJECT"
+}
