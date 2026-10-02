@@ -557,8 +557,19 @@
     "protected_reference_binding": {
       "name": "LOUKSNAMEJORADA.md",
       "mode": "EXTERNAL_PROTECTED_REFERENCE",
+      "source_surface": "CHATGPT_PROJECT_FILE",
+      "source_file_id": "file_000000001c48820eb53e4091e5b9dc62",
+      "source_size_bytes": 11542631,
       "content_copy_required": false,
+      "cryptographic_host_binding_required_before_final_g24": true,
       "provenance_required": true
+    },
+    "canonical_source_binding": {
+      "name": "Louksna.md",
+      "source_surface": "CHATGPT_PROJECT_FILE",
+      "source_file_id": "file_000000006ca0820ebb296160fb48f4d0",
+      "operational_host_copy_required": true,
+      "operational_host_hash_recorded_each_evidence": true
     }
   },
   "created_from_user_authorization_utc": "2026-10-02T09:49:00Z"
