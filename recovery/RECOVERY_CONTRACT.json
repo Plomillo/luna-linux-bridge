@@ -1,0 +1,12 @@
+{
+  "schema":"LOUKSNA_RECOVERY_CONTRACT/1.0",
+  "authority":"Louksna.md",
+  "roles":["TRUST_ROOT","RECOVERY_ROOT","CONTINUITY_ROOT"],
+  "direct_main_mutation":false,
+  "checkpoint_required":true,
+  "rollback_required":true,
+  "live_verify_required":true,
+  "certification_inheritance":false,
+  "no_blind_retry":true,
+  "no_indefinite_hold":true
+}

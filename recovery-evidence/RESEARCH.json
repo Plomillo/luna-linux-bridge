@@ -1,0 +1,23 @@
+{
+  "authority": "Louksna.md",
+  "checks": {
+    "authority_present": true,
+    "current_project_identity": true,
+    "current_resource_leases": true,
+    "fresh_physical_state": true,
+    "provider_readiness": true,
+    "puac2_present": true
+  },
+  "evidence_gaps": [],
+  "main_sha": "48b42b6bc985450c380c601d07ac1285e1e755f5",
+  "next": "IMPLEMENT_RECOVERY_ROOT_CANDIDATE",
+  "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+  "result": "PASS",
+  "schema": "LOUKSNA_MAIN_RECOVERY_RESEARCH/1.0",
+  "tools": {
+    "gh": "/usr/bin/gh",
+    "git": "/usr/bin/git",
+    "python3": "/usr/bin/python3",
+    "sha256sum": "/usr/bin/sha256sum"
+  }
+}

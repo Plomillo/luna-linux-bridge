@@ -1,0 +1,7 @@
+{
+  "schema":"LOUKSNA_RECOVERY_MANIFEST/1.0",
+  "authority":"Louksna.md",
+  "minimal_root":true,
+  "heavy_runtime_embedded":false,
+  "components":["RECOVERY_CONTRACT.json","STATE_MACHINE.json","PROVIDERS.json","recovery.py","selftest.py"]
+}
