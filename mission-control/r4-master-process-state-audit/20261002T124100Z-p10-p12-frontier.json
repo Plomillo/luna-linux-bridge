@@ -1,0 +1,10 @@
+{
+  "schema": "LOUKSNA_R4_LIVE_STATE_REQUEST/1.0",
+  "mode": "READ_ONLY",
+  "purpose": "VERIFY_P10_P12_FRONTIER_AFTER_P09_P11_G24",
+  "desktop_commander_used": false,
+  "repeat_certified_work": false,
+  "partitioning_authorized": false,
+  "part4_reopen_authorized": false,
+  "created_at_utc": "2026-10-02T12:41:00Z"
+}
