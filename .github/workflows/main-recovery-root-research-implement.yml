@@ -33,6 +33,14 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
+      - name: Checkout governed CUSTOSZ control plane
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: staging/mailbox-dispatch-bridge-repair-20261002
+          path: .control
+          fetch-depth: 1
+          persist-credentials: false
+
       - name: Research required evidence
         id: research
         shell: bash
@@ -45,7 +53,7 @@ jobs:
           import hashlib,json,os,pathlib,platform,shutil,subprocess
           root=pathlib.Path.cwd()
           def sha(p): return hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
-          custosz=root/"artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz"
+          custosz=root/".control/artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz"
           expected="dacf1f8c13b2fcbfc617cf0d4d780b30502c13395224691e6b0f05f53d9816a2"
           tools={x:shutil.which(x) for x in ("git","python3","gh","sha256sum")}
           checks={
@@ -78,7 +86,7 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          C="artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz"
+          C=".control/artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz"
           python3 -B -I "$C" v07-selftest
           python3 -B -I "$C" v07-status
 
