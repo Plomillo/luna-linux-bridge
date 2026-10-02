@@ -705,6 +705,29 @@ def maestro_p11_materialize(mid,request):
     atomic_json(R48_STATE/"P11_MATERIAL_RESULT.json",result)
     return result
 
+def maestro_ui_point(mid,request):
+    worker=pathlib.Path(__file__).with_name("ui_p10_p12_hardened_worker.py")
+    point=request.get("point_id")
+    outname={"P10":"UI_PANEL_4_9_RESULT.json","P12":"PROJECTS_CENTER_RESULT.json"}.get(point)
+    if not worker.is_file() or not outname:
+        return {
+          "schema":"LOUKSNA_R4_MAESTRO_POINT_RESULT/1.0","request_id":request.get("request_id"),
+          "point_id":point,"status":"HOLD","mission_id":mid,"executor":"MAESTRO",
+          "blockers":["UI_P10_P12_WORKER_MISSING_OR_POINT_INVALID"],"completed_at_utc":utc()
+        }
+    rr=run([sys.executable,"-B",str(worker),"--point",point,"--mission-id",mid],timeout=1800)
+    material=read_json(R48_STATE/outname,{}) or {}
+    return {
+      "schema":"LOUKSNA_R4_MAESTRO_POINT_RESULT/1.0","request_id":request.get("request_id"),
+      "point_id":point,"status":material.get("status","HOLD"),"mission_id":mid,"executor":"MAESTRO",
+      "worker":str(worker),"worker_sha256":sha(worker),"material_result_path":str(R48_STATE/outname),
+      "material_result_sha256":sha(R48_STATE/outname) if (R48_STATE/outname).is_file() else None,
+      "checks":material.get("checks",{}),"blockers":[k for k,v in material.get("checks",{}).items() if not bool(v)],
+      "worker_returncode":rr.get("returncode"),"partitioning_performed":False,
+      "debian_redownload_performed":False,"kde_redownload_performed":False,
+      "completed_at_utc":utc()
+    }
+
 def handle_r48_point_request(mid):
     req=read_json(R48_POINT_REQUEST,{}) or {}
     if not req or req.get("status")!="AUTHORIZED":
@@ -718,6 +741,8 @@ def handle_r48_point_request(mid):
         result=maestro_projects_repair(mid,req)
     elif point=="P11":
         result=maestro_p11_materialize(mid,req)
+    elif point in {"P10","P12"}:
+        result=maestro_ui_point(mid,req)
     else:
         result={
             "schema":"LOUKSNA_R4_MAESTRO_POINT_RESULT/1.0",
