@@ -1,0 +1,112 @@
+name: "CUSTOSZ Mailbox — promotion channel guard"
+
+on:
+  push:
+    branches:
+      - staging/mailbox-dispatch-bridge-repair-20261002
+    paths:
+      - mission-control/mailbox-promotion-channel-guard/**
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: mailbox-promotion-channel-guard
+  cancel-in-progress: false
+
+jobs:
+  g23_guard:
+    name: "G23 — verify authorized promotion channel"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    outputs:
+      guard_sha256: ${{ steps.guard.outputs.guard_sha256 }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: staging/mailbox-dispatch-bridge-repair-20261002
+          persist-credentials: false
+          fetch-depth: 1
+
+      - id: guard
+        name: Verify no workflow mutation via Actions token
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          WF=".github/workflows/mailbox-dispatch-bridge-repair-6m.yml"
+          TERM="evidence/mailbox-dispatch-bridge-terminal/08cb7d9d9913cc474e3356db71893b03bd4a1fcf03fffb491dc9f5aaf6b75cd5/TERMINAL_CERTIFICATION.json"
+          PKG="evidence/mailbox-dispatch-bridge-certified/08cb7d9d9913cc474e3356db71893b03bd4a1fcf03fffb491dc9f5aaf6b75cd5/PROMOTION_PACKAGE.json"
+
+          grep -q 'required_promotion_channel":"GITHUB_CONNECTED_WRITER"' "$WF"
+          grep -q 'forbidden_promotion_channel":"GITHUB_ACTIONS_TOKEN_FOR_WORKFLOW_MUTATION"' "$WF"
+          grep -q 'READY_FOR_AUTHORIZED_EXTERNAL_PROMOTION' "$WF"
+          ! grep -q 'Promote exact G24-certified candidate' "$WF"
+          ! grep -q 'git push origin "HEAD:$REPAIR_BRANCH"' "$WF"
+          ! grep -q 'contents: write' "$WF"
+
+          test -f "$TERM"
+          test -f "$PKG"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$TERM")" = PASS
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["operational_status"])' "$TERM")" = CERTIFIED_ACTIVE_IN_SCOPE
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$PKG")" = G24_CERTIFIED_READY_FOR_PROMOTION
+
+          mkdir -p "$RUNNER_TEMP/guard"
+          python3 - "$WF" "$TERM" "$PKG" > "$RUNNER_TEMP/guard/G23_PROMOTION_CHANNEL.json" <<'PY'
+          import hashlib,json,pathlib,sys,datetime as dt
+          wf,term,pkg=map(pathlib.Path,sys.argv[1:4])
+          report={
+            "schema":"LOUKSNA_MAILBOX_PROMOTION_CHANNEL_G23/1.0",
+            "status":"PASS",
+            "scope":"MAILBOX_CERTIFIED_PROMOTION_CHANNEL",
+            "required_channel":"GITHUB_CONNECTED_WRITER",
+            "forbidden_channel":"GITHUB_ACTIONS_TOKEN_FOR_WORKFLOW_MUTATION",
+            "repair_workflow_sha256":hashlib.sha256(wf.read_bytes()).hexdigest(),
+            "terminal_certification_sha256":hashlib.sha256(term.read_bytes()).hexdigest(),
+            "promotion_package_sha256":hashlib.sha256(pkg.read_bytes()).hexdigest(),
+            "actions_workflow_mutation_disabled":True,
+            "live_terminal_certification_verified":True,
+            "repair_allowed":False,
+            "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          print(json.dumps(report,indent=2,sort_keys=True))
+          PY
+          H="$(sha256sum "$RUNNER_TEMP/guard/G23_PROMOTION_CHANNEL.json" | awk '{print $1}')"
+          echo "guard_sha256=$H" >> "$GITHUB_OUTPUT"
+          cat "$RUNNER_TEMP/guard/G23_PROMOTION_CHANNEL.json"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: mailbox-promotion-channel-g23
+          path: ${{ runner.temp }}/guard/G23_PROMOTION_CHANNEL.json
+          if-no-files-found: error
+          retention-days: 90
+
+  g24_guard:
+    name: "G24 — certify promotion-channel guard"
+    needs: g23_guard
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: mailbox-promotion-channel-g23
+          path: ${{ runner.temp }}/guard
+
+      - name: Bind guard to GitHub OIDC
+        shell: bash
+        env:
+          EXPECTED_G23_SHA: ${{ needs.g23_guard.outputs.guard_sha256 }}
+        run: |
+          set -Eeuo pipefail
+          G23="$RUNNER_TEMP/guard/G23_PROMOTION_CHANNEL.json"
+          test "$(sha256sum "$G23" | awk '{print $1}')" = "$EXPECTED_G23_SHA"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$G23")" = PASS
+          AUD="louksna-mailbox-promotion-channel:$EXPECTED_G23_SHA"
+          TOKEN_JSON="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.load(sys.stdin)["value"])' <<<"$TOKEN_JSON")"
+          test -n "$TOKEN"
+          echo "PROMOTION_CHANNEL_G24_STARTED=PASS"
