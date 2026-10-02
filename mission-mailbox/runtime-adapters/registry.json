@@ -138,6 +138,25 @@
       "dispatch_ref": "staging/luna-r4-master-part1-part9-20260929",
       "dispatch_trigger_path_prefix": "mission-control/r4-master-resume-now/",
       "dedicated_workflow_sha256": "23952a10bfad15b7103de15495fb494709dfc23941326be7e0a571a6dcb88d7c"
+    },
+    {
+      "adapter_id": "MAIN_RECOVERY_ROOT_GOVERNED_V1",
+      "backend": "CUSTOSZ_RUNTIME",
+      "execution_location": "SELF_HOSTED_LUNA_AUX",
+      "mission_classes": [
+        "MAIN_RECOVERY_ROOT_GOVERNED_IMPLEMENTATION"
+      ],
+      "path": "scripts/mission_mailbox/adapters/main_recovery_root_governed_v1.py",
+      "provides_executor_binding": true,
+      "required_capabilities": [],
+      "requires_prebound_executor": false,
+      "scope": "MAIN_RECOVERY_ROOT_RESEARCH_IMPLEMENT_G23_G24",
+      "sha256": "41bc9f70a24928e438c8a33f9b8a8600efa3279082167d60fa01641ed8531a88",
+      "source_sha256": "b6fe480557d9e207aee3f5a60ae76420b467f0627efcd86ab6cdb165253bee33",
+      "status": "ACTIVE_PINNED",
+      "dispatch_mode": "WORKFLOW_DISPATCH",
+      "dedicated_workflow": ".github/workflows/main-recovery-root-research-implement.yml",
+      "dedicated_workflow_sha256": "e61dae2d849a47db11991269f66fa35ad67a8ac0ed35a15711be09393a55b51f"
     }
   ],
   "policy": {
