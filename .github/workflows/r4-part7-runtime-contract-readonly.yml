@@ -1,0 +1,105 @@
+name: "R4 PART7 — local runtime contract read-only"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part7-runtime-contract/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r4-part7-runtime-contract
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 12
+    steps:
+      - name: Verify local P25 and inspect local P26 wheel
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          H="/home/diegoignacionorambuenamiranda"
+          LLAMA="$H/.local/share/louksna/reasoning/runtime/bec4772f6a2527d371557b5d2032641e5ff7619c/bin/llama-cli"
+          MODEL="$H/.local/share/louksna/reasoning/models/qwen35-4b-s/Qwen3.5-4B-S-TS-Q4_K_S.gguf"
+          WHEEL="$H/PROYECTOS/1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/2. Cajita de Luna/5. Inteligencia documental/Docling/docling_slim-2.124.0-py3-none-any.whl"
+          CORPUS="$H/PROYECTOS/2. CORPUS/CORPUS TEÓLOGICO"
+          OUT="$RUNNER_TEMP/r4-part7-runtime-$GITHUB_RUN_ID"
+          mkdir -p "$OUT"
+
+          test -x "$LLAMA"
+          test -f "$MODEL"
+          test -f "$WHEEL"
+          test -d "$CORPUS"
+
+          "$LLAMA" --version > "$OUT/LLAMA_VERSION.txt" 2>&1
+          "$LLAMA" --help > "$OUT/LLAMA_HELP.txt" 2>&1 || true
+
+          # Tiny deterministic local inference probe. No network and no writes
+          # outside RUNNER_TEMP.
+          set +e
+          timeout 180 "$LLAMA" -m "$MODEL" -p "Return exactly: LOUKSNA_P25_OK" -n 16             --temp 0 --no-display-prompt > "$OUT/P25_OUTPUT.txt" 2> "$OUT/P25_ERR.txt"
+          RC=$?
+          set -e
+          echo "$RC" > "$OUT/P25_RC.txt"
+
+          python3 - "$WHEEL" "$OUT" <<'PY'
+          import json,sys,zipfile,pathlib,re,hashlib
+          wheel=pathlib.Path(sys.argv[1]); out=pathlib.Path(sys.argv[2])
+          with zipfile.ZipFile(wheel) as z:
+              names=z.namelist()
+              metadata=[n for n in names if n.endswith(".dist-info/METADATA")]
+              if len(metadata)!=1: raise SystemExit("METADATA_CARDINALITY")
+              text=z.read(metadata[0]).decode("utf-8","replace")
+          req=[x.split(":",1)[1].strip() for x in text.splitlines() if x.startswith("Requires-Dist:")]
+          obj={
+            "wheel":str(wheel),"sha256":hashlib.sha256(wheel.read_bytes()).hexdigest(),
+            "metadata_path":metadata[0],
+            "name":next((x.split(":",1)[1].strip() for x in text.splitlines() if x.startswith("Name:")),None),
+            "version":next((x.split(":",1)[1].strip() for x in text.splitlines() if x.startswith("Version:")),None),
+            "requires_dist":req,
+            "entry_points":[n for n in names if n.endswith(".dist-info/entry_points.txt")],
+            "file_count":len(names)
+          }
+          (out/"P26_WHEEL.json").write_text(json.dumps(obj,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(obj,indent=2,sort_keys=True))
+          PY
+
+          python3 - "$OUT" "$CORPUS" <<'PY'
+          import json,pathlib,sys,hashlib
+          out=pathlib.Path(sys.argv[1]); corpus=pathlib.Path(sys.argv[2])
+          version=(out/"LLAMA_VERSION.txt").read_text(errors="replace")
+          pout=(out/"P25_OUTPUT.txt").read_text(errors="replace")
+          perr=(out/"P25_ERR.txt").read_text(errors="replace")
+          rc=int((out/"P25_RC.txt").read_text().strip())
+          docs=[]
+          for p in sorted(corpus.rglob("*")):
+              if p.is_file() and p.suffix.casefold() in {".pdf",".epub",".md",".txt",".docx",".odt",".html",".htm",".rtf"}:
+                  docs.append({"path":str(p),"bytes":p.stat().st_size})
+                  if len(docs)>=500: break
+          q={
+            "schema":"LOUKSNA_R4_PART7_LOCAL_RUNTIME_DIAGNOSTIC/1.0",
+            "p25":{"returncode":rc,"version":version[-3000:],"output":pout[-4000:],"stderr":perr[-4000:],
+                   "operational":rc==0 and bool(pout.strip())},
+            "p26":json.loads((out/"P26_WHEEL.json").read_text()),
+            "corpus":{"root":str(corpus),"document_count_sample":len(docs),"sample":docs[:100]},
+            "downloads_performed":False,"installs_performed":False,
+            "corpus_mutation_performed":False,"partitioning_performed":False
+          }
+          (out/"DIAGNOSTIC.json").write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if not q["p25"]["operational"]: raise SystemExit(25)
+          if q["p26"]["name"]!="docling-slim" or q["p26"]["version"]!="2.124.0": raise SystemExit(26)
+          if q["corpus"]["document_count_sample"]<1: raise SystemExit(27)
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part7-runtime-contract
+          path: ${{ runner.temp }}/r4-part7-runtime-${{ github.run_id }}
+          retention-days: 90
+          compression-level: 0
