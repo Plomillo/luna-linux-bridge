@@ -34,10 +34,17 @@ jobs:
 
           STATUS="$(python3 -B "$LINK"             --state-dir "$HOME_REAL/.local/state/louksna/remote-bridge/service"             --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op status)"
           OBSERVE="$(python3 -B "$LINK"             --state-dir "$HOME_REAL/.local/state/louksna/remote-bridge/service"             --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op observe)"
+          MISSION_ID="MIS-cf38037f1f114012af53"
+          REPORT="$(python3 -B "$LINK"             --state-dir "$HOME_REAL/.local/state/louksna/remote-bridge/service"             --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op report --mission-id "$MISSION_ID" 2>&1 || true)"
+          DIAGNOSE="$(python3 -B "$LINK"             --state-dir "$HOME_REAL/.local/state/louksna/remote-bridge/service"             --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op diagnose --mission-id "$MISSION_ID" 2>&1 || true)"
 
-          python3 - "$STATUS" "$OBSERVE" <<'PY'
+          python3 - "$STATUS" "$OBSERVE" "$REPORT" "$DIAGNOSE" "$MISSION_ID" <<'PY'
           import hashlib,json,sys
           status=json.loads(sys.argv[1]); observe=json.loads(sys.argv[2])
+          raw_report,raw_diagnose,mission_id=sys.argv[3],sys.argv[4],sys.argv[5]
+          def maybe_json(raw):
+              try:return {"available":True,"payload":json.loads(raw)}
+              except Exception:return {"available":False,"raw":raw[-4000:]}
           if status.get("host")!="LOUKSNA":
               raise SystemExit("LRB_HOST_MISMATCH")
           if not observe.get("evidence_sha256"):
@@ -50,6 +57,9 @@ jobs:
             "material_execution":False,
             "lrb_status":status,
             "lrb_observe":observe,
+            "mission_id":mission_id,
+            "lrb_report":maybe_json(raw_report),
+            "lrb_diagnose":maybe_json(raw_diagnose),
             "observation_binding_sha256":hashlib.sha256(
               (json.dumps(status,sort_keys=True,separators=(",",":"))+
                json.dumps(observe,sort_keys=True,separators=(",",":"))).encode()
