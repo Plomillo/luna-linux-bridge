@@ -156,7 +156,7 @@
       "status": "ACTIVE_PINNED",
       "dispatch_mode": "WORKFLOW_DISPATCH",
       "dedicated_workflow": ".github/workflows/main-recovery-root-research-implement.yml",
-      "dedicated_workflow_sha256": "e61dae2d849a47db11991269f66fa35ad67a8ac0ed35a15711be09393a55b51f"
+      "dedicated_workflow_sha256": "c80c8847b578b850243b5d945bb4596aff4f31954b35b5f00acc8ff6a28c8563"
     }
   ],
   "policy": {
