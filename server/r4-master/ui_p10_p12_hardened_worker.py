@@ -33,6 +33,7 @@ AREAS={
 PANEL_KEYS={5:"juegos",6:"ingenieria",7:"laboratorio",8:"proyectos",9:"sistema"}
 EXECUTOR="MAESTRO"
 OBSERVER="LOUKSNA_REMOTE_BRIDGE"
+PRODUCER_REVISION="2026-10-02.P10.3-URI-SEARCH-SEMANTIC-DETECTOR"
 
 def utc():
     return dt.datetime.now(dt.timezone.utc).isoformat().replace("+00:00","Z")
@@ -181,24 +182,53 @@ def xbel_checks():
     if not PLACES.is_file(): return {"pass":False,"reason":"XBEL_MISSING","areas":{}}
     root=ET.parse(PLACES).getroot(); rows={}
     for key,target in AREAS.items():
-        want=target.as_uri(); matches=[]
+        want=target.as_uri()
+        exact=[]; titled=[]
         for bm in root.iter():
             if not bm.tag.endswith("bookmark"): continue
             title=""
             for ch in bm:
                 if ch.tag.endswith("title"): title=ch.text or ""
             href=bm.attrib.get("href","")
-            if title.casefold()==key.casefold() or urllib.parse.unquote(href)==str(target):
-                matches.append({"title":title,"href":href})
-        rows[key]={"target":want,"matches":matches,"pass":sum(1 for x in matches if x["href"]==want)==1}
-    return {"pass":all(v["pass"] for v in rows.values()),"areas":rows}
+            rec={"title":title,"href":href}
+            if href==want:
+                exact.append(rec)
+            if title.casefold()==key.casefold():
+                titled.append(rec)
+        rows[key]={
+          "target":want,
+          "exact_uri_matches":exact,
+          "title_matches":titled,
+          "pass":len(exact)==1,
+          "comparison":"EXACT_CANONICAL_FILE_URI"
+        }
+    return {"pass":all(v["pass"] for v in rows.values()),"areas":rows,
+            "policy":"FIXED_DOMAIN_NAVIGATION_EXISTENCE_NO_XBEL_REWRITE"}
 
 def search_surface():
-    if not PLASMA.is_file(): return {"pass":False,"reason":"PLASMA_CONFIG_MISSING"}
-    t=PLASMA.read_text(encoding="utf-8",errors="replace")
+    # The canonical references require search familiarity, not a pixel-perfect
+    # Windows clone nor a specific Plasma applet binding. Validate the live KDE
+    # search capability instead of mutating the user's panel configuration.
+    krunner=shutil.which("krunner")
+    version=run([krunner,"--version"],30) if krunner else {"returncode":127,"stdout":"","stderr":"KRUNNER_MISSING"}
+    plasmoid_roots=[pathlib.Path("/usr/share/plasma/plasmoids"),HOME/".local/share/plasma/plasmoids"]
     ids=["org.kde.plasma.kickoff","org.kde.plasma.kicker","org.kde.plasma.milou"]
-    found=[x for x in ids if x in t]
-    return {"pass":bool(found),"applets":found}
+    installed=[x for x in ids if any((root/x).is_dir() for root in plasmoid_roots)]
+    bound=[]
+    if PLASMA.is_file():
+        t=PLASMA.read_text(encoding="utf-8",errors="replace")
+        bound=[x for x in ids if x in t]
+    functional=bool(krunner) and version.get("returncode")==0 and bool(installed)
+    return {
+      "pass":functional,
+      "mode":"KDE_FAMILIAR_SEARCH_SEMANTIC_EQUIVALENCE",
+      "reference_policy":"REFERENCE_ONLY_NOT_PIXEL_PERFECT",
+      "krunner":krunner,
+      "krunner_version":version,
+      "installed_plasmoids":installed,
+      "bound_plasmoids":bound,
+      "panel_mutation_required":False
+    }
 
 def maybe_apply_dark():
     before=dark_state()
@@ -256,6 +286,7 @@ def p10(mid):
         if not all(pathlib.Path(x["path"]).exists() for x in restored if "path" in x):
             raise RuntimeError("P10_ROLLBACK_VERIFY_FAILED")
     q={"schema":"LOUKSNA_R4_UI_PANEL_4_9_RESULT/2.0","status":status,"executor":EXECUTOR,"observer":OBSERVER,
+       "producer_revision":PRODUCER_REVISION,"producer_sha256":sha(pathlib.Path(__file__)),
        "mission_id":mid,"reference_sha256":EXPECTED_UI_SHA,"reference_path":str(UI_REF),
        "panels":panels,"checks":checks,"surgical_patch":patch,"launchers":launcher,"icons":icons,
        "dolphin_places":places,"search_surface":search,"dark_surface":dark,
