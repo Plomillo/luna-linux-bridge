@@ -38,10 +38,11 @@ jobs:
           REPORT="$(python3 -B "$LINK"             --state-dir "$HOME_REAL/.local/state/louksna/remote-bridge/service"             --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op report --mission-id "$MISSION_ID" 2>&1 || true)"
           DIAGNOSE="$(python3 -B "$LINK"             --state-dir "$HOME_REAL/.local/state/louksna/remote-bridge/service"             --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op diagnose --mission-id "$MISSION_ID" 2>&1 || true)"
 
-          python3 - "$STATUS" "$OBSERVE" "$REPORT" "$DIAGNOSE" "$MISSION_ID" <<'PY'
-          import hashlib,json,sys
+          OUT="$RUNNER_TEMP/LRB_OBSERVATION.json"
+          python3 - "$STATUS" "$OBSERVE" "$REPORT" "$DIAGNOSE" "$MISSION_ID" "$OUT" <<'PY'
+          import hashlib,json,pathlib,sys
           status=json.loads(sys.argv[1]); observe=json.loads(sys.argv[2])
-          raw_report,raw_diagnose,mission_id=sys.argv[3],sys.argv[4],sys.argv[5]
+          raw_report,raw_diagnose,mission_id,out_path=sys.argv[3],sys.argv[4],sys.argv[5],sys.argv[6]
           def maybe_json(raw):
               try:return {"available":True,"payload":json.loads(raw)}
               except Exception:return {"available":False,"raw":raw[-4000:]}
@@ -65,5 +66,15 @@ jobs:
                json.dumps(observe,sort_keys=True,separators=(",",":"))).encode()
             ).hexdigest()
           }
-          print(json.dumps(out,indent=2,sort_keys=True))
+          raw=json.dumps(out,indent=2,sort_keys=True)+"\n"
+          pathlib.Path(out_path).write_text(raw,encoding="utf-8")
+          print(raw,end="")
           PY
+
+      - name: Persist exact LRB observation for GitHub-hosted reasoners
+        uses: actions/upload-artifact@v4
+        with:
+          name: r4-lrb-observation
+          path: ${{ runner.temp }}/LRB_OBSERVATION.json
+          if-no-files-found: error
+          retention-days: 7
