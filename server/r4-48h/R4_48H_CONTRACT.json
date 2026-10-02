@@ -406,7 +406,8 @@
         "P01",
         "P02",
         "P03",
-        "P04"
+        "P04",
+        "P08"
       ],
       "puac2": [
         "C25",
@@ -572,5 +573,14 @@
       "operational_host_hash_recorded_each_evidence": true
     }
   },
-  "created_from_user_authorization_utc": "2026-10-02T09:49:00Z"
+  "created_from_user_authorization_utc": "2026-10-02T09:49:00Z",
+  "serialization": {
+    "P11": {
+      "after_point": "P08",
+      "after_part": "PART_7",
+      "rationale": "Prevent P11 ISO/Mojo material work from racing local cognition/document ingestion and PART_7 certification.",
+      "resumable_partial_bytes_preserved": true,
+      "repeat_download_forbidden": true
+    }
+  }
 }
