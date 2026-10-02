@@ -258,6 +258,11 @@ jobs:
           test "$(id -un)" = diegoignacionorambuenamiranda
           mkdir -p "$ROOT" "$STAGED" "$STATE" "$UNIT_DIR"
 
+          COORD_CHANGED=1
+          if [ -f "$ROOT/maestro_48h_coordinator.py" ] && cmp -s server/r4-48h/maestro_48h_coordinator.py "$ROOT/maestro_48h_coordinator.py"; then
+            COORD_CHANGED=0
+          fi
+
           install -m 0700 server/r4-48h/maestro_48h_coordinator.py "$ROOT/maestro_48h_coordinator.py"
           install -m 0600 server/r4-48h/R4_48H_CONTRACT.json "$ROOT/R4_48H_CONTRACT.json"
           install -m 0700 server/r4-master/master_controller.py "$STAGED/master_controller.py"
@@ -313,10 +318,22 @@ jobs:
 
           systemctl --user daemon-reload
           systemctl --user enable luna-r4-48h-coordinator.service
-          # Repeated certified deployments may legitimately hit systemd's start-rate
-          # limiter. Clear only the failed/rate-limit state before the governed restart.
-          systemctl --user reset-failed luna-r4-48h-coordinator.service || true
-          systemctl --user restart luna-r4-48h-coordinator.service
+
+          CURRENT_STATE="$(systemctl --user is-active luna-r4-48h-coordinator.service 2>/dev/null || true)"
+          if [ "$CURRENT_STATE" = active ] && [ "$COORD_CHANGED" = 0 ]; then
+            echo "COORDINATOR_ACTIVATION=NOOP_ALREADY_ACTIVE_IDENTICAL"
+          else
+            # Clear only systemd failure/rate-limit state, then perform exactly one
+            # governed activation for a changed or inactive certified coordinator.
+            systemctl --user reset-failed luna-r4-48h-coordinator.service || true
+            if [ "$CURRENT_STATE" = active ]; then
+              systemctl --user restart luna-r4-48h-coordinator.service
+              echo "COORDINATOR_ACTIVATION=RESTART_CHANGED"
+            else
+              systemctl --user start luna-r4-48h-coordinator.service
+              echo "COORDINATOR_ACTIVATION=START_INACTIVE"
+            fi
+          fi
 
           sleep 5
           test "$(systemctl --user is-active luna-r4-48h-coordinator.service)" = active
