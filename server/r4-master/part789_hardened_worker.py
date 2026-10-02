@@ -112,7 +112,7 @@ def classify(path:pathlib.Path):
       ("MAP_ATLAS",("atlas","mapa","map")),
       ("ACADEMIC_ARTICLE",("articulo","artículo","article","paper","journal")),
       ("PERSONAL_NOTE",("nota","notes","apunte")),
-      ("THEOLOGICAL_TREATISE",("teologia","teología","theology","tratado","treatise","dogmat")),
+      ("THEOLOGICAL_TREATISE",("teologia","teología","theology","tratado","treatise","dogmat","exegético","exegetico","exegesis","hermenéutico","hermeneutico","hermeneutic")),
     ]
     for cls,words in rules:
         if any(w in s or w in n for w in words): return cls
