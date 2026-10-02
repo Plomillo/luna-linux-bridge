@@ -1,4 +1,4 @@
-name: "R4 — Qwen reasoning provider operational probe"
+name: "R4 — Qwen shared reasoner operational proof"
 
 on:
   push:
@@ -9,85 +9,144 @@ on:
       - mission-control/r4-qwen-provider-probe/**
 
 permissions:
-  contents: read
-  models: read
+  actions: read
+  contents: write
 
 jobs:
-  probe:
+  reason:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 20
     env:
-      GITHUB_TOKEN: ${{ github.token }}
+      GH_TOKEN: ${{ github.token }}
+      BRANCH: staging/luna-r4-master-part1-part9-20260929
+      QWEN_MODEL_ID: Qwen/Qwen2.5-0.5B-Instruct
+      QWEN_MODEL_REVISION: 2b01de6d1108f9b2b5e46a726aa678a359b6c03b
     steps:
-      - name: Invoke a Qwen model through GitHub Models using LRB-only evidence
+      - name: Resolve latest successful LRB observation artifact
         shell: bash
         run: |
           set -Eeuo pipefail
-          catalog="$(mktemp)"
-          response="$(mktemp)"
-          payload="$(mktemp)"
-          trap 'rm -f "$catalog" "$response" "$payload"' EXIT
+          RUN_ID="$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/r4-lrb-live-observe.yml/runs?branch=$BRANCH&status=success&per_page=20"             --jq '.workflow_runs[0].id')"
+          test -n "$RUN_ID"
+          mkdir -p "$RUNNER_TEMP/lrb"
+          gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" -n r4-lrb-observation -D "$RUNNER_TEMP/lrb"
+          test -f "$RUNNER_TEMP/lrb/LRB_OBSERVATION.json"
+          echo "LRB_RUN_ID=$RUN_ID" >> "$GITHUB_ENV"
+          echo "LRB_FILE=$RUNNER_TEMP/lrb/LRB_OBSERVATION.json" >> "$GITHUB_ENV"
+          sha256sum "$RUNNER_TEMP/lrb/LRB_OBSERVATION.json"
 
-          cat_code="$(curl --location --silent --show-error             --output "$catalog" --write-out '%{http_code}'             -H "Accept: application/vnd.github+json"             -H "Authorization: Bearer $GITHUB_TOKEN"             -H "X-GitHub-Api-Version: 2026-03-10"             https://models.github.ai/catalog/models)"
+      - name: Validate LRB-only input contract
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - "$LRB_FILE" <<'PY'
+          import json,pathlib,sys
+          p=pathlib.Path(sys.argv[1]); d=json.loads(p.read_text())
+          assert d.get("schema")=="LOUKSNA_R4_LRB_LIVE_OBSERVATION/1.0"
+          assert d.get("status")=="PASS"
+          assert d.get("transport")=="LOUKSNA_REMOTE_BRIDGE"
+          assert d.get("desktop_commander_used") is False
+          assert d.get("material_execution") is False
+          assert d.get("lrb_observe",{}).get("evidence_sha256")
+          print("LRB_INPUT_CONTRACT=PASS")
+          PY
 
-          echo "SCHEMA=LOUKSNA_R4_QWEN_PROVIDER_OPERATIONAL/2.0"
-          echo "CATALOG_HTTP=$cat_code"
-          [ "$cat_code" = "200" ] || { echo "GITHUB_MODELS_QWEN=HOLD"; exit 1; }
+      - name: Install hosted Qwen runtime
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -m pip install --disable-pip-version-check --no-input --quiet             --index-url https://download.pytorch.org/whl/cpu torch
+          python3 -m pip install --disable-pip-version-check --no-input --quiet             "transformers>=4.48,<5" "safetensors>=0.4" "huggingface_hub>=0.28"
 
-          mapfile -t qwen_models < <(
-            jq -r 'if type=="array" then . else (.models // .data // []) end
-                   | .[] | (.id // .name // empty)' "$catalog"             | grep -i 'qwen' || true
+      - name: Execute Qwen reasoning-only decision on LRB evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/QWEN_REASONING_EVIDENCE.json"
+          python3 - "$LRB_FILE" "$OUT" "$LRB_RUN_ID" "$QWEN_MODEL_ID" "$QWEN_MODEL_REVISION" <<'PY'
+          import hashlib,json,pathlib,sys,time
+          import torch
+          from transformers import AutoTokenizer,AutoModelForCausalLM
+
+          inp,out_path,lrb_run,model_id,revision=sys.argv[1:6]
+          raw=pathlib.Path(inp).read_bytes()
+          lrb=json.loads(raw)
+          compact={
+            "schema":lrb["schema"],
+            "status":lrb["status"],
+            "transport":lrb["transport"],
+            "material_execution":lrb["material_execution"],
+            "desktop_commander_used":lrb["desktop_commander_used"],
+            "lrb_status":lrb.get("lrb_status",{}),
+            "lrb_observe":lrb.get("lrb_observe",{}),
+            "mission_id":lrb.get("mission_id"),
+            "observation_binding_sha256":lrb.get("observation_binding_sha256"),
+          }
+          system=(
+            "You are Qwen, the swappable shared reasoning brain for LOUKSNA. "
+            "You receive only LOUKSNA Remote Bridge evidence through GitHub. "
+            "You have no host observation channel, no tools, no material execution authority, "
+            "no partition authority, and no permission to request host actions. "
+            "Return exactly PASS if the evidence is internally valid: status PASS, transport "
+            "LOUKSNA_REMOTE_BRIDGE, material_execution false, desktop_commander_used false, "
+            "and lrb_observe contains evidence_sha256. Otherwise return exactly HOLD."
           )
-          [ "${#qwen_models[@]}" -gt 0 ] || {
-            echo "QWEN_MODELS_FOUND=0"
-            echo "GITHUB_MODELS_QWEN=HOLD"
-            exit 1
+          user="LRB_EVIDENCE="+json.dumps(compact,sort_keys=True,separators=(",",":"))
+          tok=AutoTokenizer.from_pretrained(model_id,revision=revision,trust_remote_code=False)
+          model=AutoModelForCausalLM.from_pretrained(
+              model_id,revision=revision,trust_remote_code=False,torch_dtype=torch.float32
+          )
+          rendered=tok.apply_chat_template(
+              [{"role":"system","content":system},{"role":"user","content":user}],
+              tokenize=False,add_generation_prompt=True
+          )
+          inputs=tok([rendered],return_tensors="pt")
+          t0=time.time()
+          with torch.no_grad():
+              generated=model.generate(**inputs,max_new_tokens=8,do_sample=False)
+          answer=tok.batch_decode(generated[:,inputs.input_ids.shape[1]:],skip_special_tokens=True)[0].strip()
+          normalized=answer.upper()
+          decision="PASS" if normalized.startswith("PASS") else "HOLD"
+          evidence={
+            "schema":"LOUKSNA_R4_QWEN_SHARED_REASONER_EVIDENCE/1.0",
+            "status":"PASS" if decision=="PASS" else "HOLD",
+            "decision":decision,
+            "provider_class":"SWAPPABLE_SHARED_REASONER",
+            "provider_current":"QWEN",
+            "execution_plane":"GITHUB_HOSTED_RUNNER",
+            "operator_plane":"GITHUB",
+            "role":"REASONING_ONLY",
+            "input_source":"LOUKSNA_REMOTE_BRIDGE_EVIDENCE_ONLY",
+            "lrb_workflow_run_id":int(lrb_run),
+            "lrb_input_sha256":hashlib.sha256(raw).hexdigest(),
+            "lrb_evidence_sha256":compact.get("lrb_observe",{}).get("evidence_sha256"),
+            "model_id":model_id,
+            "model_revision":revision,
+            "model_download_target":"GITHUB_HOSTED_RUNNER_ONLY",
+            "model_download_to_user_pc":False,
+            "host_material_access":False,
+            "host_observation_authority":False,
+            "material_execution_authorized":False,
+            "partitioning_authorized":False,
+            "desktop_commander_used":False,
+            "tools_enabled":False,
+            "provider_replacement_preserves_interface":True,
+            "raw_answer_sha256":hashlib.sha256(answer.encode()).hexdigest(),
+            "elapsed_seconds":round(time.time()-t0,3),
           }
+          pathlib.Path(out_path).write_text(json.dumps(evidence,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(evidence,indent=2,sort_keys=True))
+          if decision!="PASS":
+              raise SystemExit("QWEN_REASONING_DECISION_HOLD")
+          PY
+          echo "QWEN_REASONING_EVIDENCE=$OUT" >> "$GITHUB_ENV"
 
-          selected="$(printf '%s\n' "${qwen_models[@]}" | grep -Ei 'thinking|reason' | head -n 1 || true)"
-          [ -n "$selected" ] || selected="${qwen_models[0]}"
-          echo "QWEN_MODELS_FOUND=${#qwen_models[@]}"
-          echo "SELECTED_MODEL=$selected"
-
-          jq -n --arg model "$selected" '{
-            model:$model,
-            messages:[
-              {
-                role:"system",
-                content:"You are the swappable reasoning-only brain for LOUKSNA. You receive only LOUKSNA Remote Bridge evidence through GitHub. You have no host or material execution authority. Return a compact JSON decision envelope only."
-              },
-              {
-                role:"user",
-                content:"LRB_EVIDENCE={\"schema\":\"LOUKSNA_REMOTE_BRIDGE_EVIDENCE/1.0\",\"host_material_access\":false,\"partitioning\":false,\"observation\":\"services nominal\"}. Decide whether this evidence authorizes a reasoning-only PASS. Do not request or perform host actions."
-              }
-            ],
-            temperature:0,
-            max_tokens:96
-          }' > "$payload"
-
-          infer_code="$(curl --location --silent --show-error             --output "$response" --write-out '%{http_code}'             -H "Content-Type: application/json"             -H "Accept: application/json"             -H "Authorization: Bearer $GITHUB_TOKEN"             https://models.github.ai/inference/chat/completions             --data-binary @"$payload")"
-
-          echo "INFERENCE_HTTP=$infer_code"
-          [ "$infer_code" = "200" ] || {
-            echo "GITHUB_MODELS_QWEN=HOLD"
-            jq -c '{error:(.error.message // .error // "unknown")}' "$response" 2>/dev/null || true
-            exit 1
-          }
-
-          answer="$(jq -r '.choices[0].message.content // empty' "$response")"
-          [ -n "$answer" ] || { echo "GITHUB_MODELS_QWEN=HOLD"; exit 1; }
-          answer_sha="$(printf '%s' "$answer" | sha256sum | awk '{print $1}')"
-
-          echo "RESPONSE_SHA256=$answer_sha"
-          echo "REASONING_RESPONSE_NONEMPTY=TRUE"
-          echo "INPUT_SOURCE=LOUKSNA_REMOTE_BRIDGE_EVIDENCE_ONLY"
-          echo "OPERATOR_PLANE=GITHUB"
-          echo "ROLE=REASONING_ONLY"
-          echo "PROVIDER_SWAPPABLE=TRUE"
-          echo "HOST_MATERIAL_ACCESS=FALSE"
-          echo "HOST_OBSERVATION_AUTHORITY=FALSE"
-          echo "DIRECT_HOST_TOOLING=FALSE"
-          echo "DESKTOP_COMMANDER_USED=FALSE"
-          echo "PARTITIONING_PERFORMED=FALSE"
-          echo "SECRETS_VALUES_EXPOSED=FALSE"
-          echo "GITHUB_MODELS_QWEN=PASS"
+      - name: Publish immutable Qwen reasoning evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          REL="evidence/r4-qwen-reasoner/${GITHUB_RUN_ID}/QWEN_REASONING_EVIDENCE.json"
+          B64="$(base64 -w0 "$QWEN_REASONING_EVIDENCE")"
+          gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$REL"             -f "message=evidence(R4): Qwen reasoning-only LRB-bound proof"             -f "content=$B64"             -f "branch=$BRANCH" >/tmp/qwen-publish.json
+          echo "QWEN_EVIDENCE_PATH=$REL"
+          echo "QWEN_SHARED_REASONER=PASS"
