@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import argparse, datetime as dt, hashlib, json, os, pathlib, shlex, shutil, subprocess, tarfile, tempfile, time
+import argparse, datetime as dt, hashlib, json, os, pathlib, shlex, shutil, subprocess, tarfile, tempfile, time, signal
 
 HOME=pathlib.Path("/home/diegoignacionorambuenamiranda")
 R4=HOME/".local/state/louksna/r4-master-part1-part9"
