@@ -18,25 +18,49 @@ DISPATCHER = Path("scripts/mission_mailbox/dispatch_execution.py")
 TESTER = Path("scripts/mission_mailbox/test_dispatch_execution.py")
 MARKER = "MAILBOX_TERMINAL_DISPATCH_BRIDGE_V1"
 
-WORKFLOW_BINDINGS = {
-    "FINAL_SERVER_READY_CLOSURE_V1": ".github/workflows/server-ready-final-material.yml",
-    "SERVER_READY_TERMINAL_10M_V1": ".github/workflows/server-ready-terminal-chain.yml",
-    "LUNA_R4_PART1_RESUME_APC48_V2_36519487206": ".github/workflows/luna-r4-master-resume-now.yml",
+DISPATCH_BINDINGS = {
+    "FINAL_SERVER_READY_CLOSURE_V1": {
+        "dispatch_mode": "WORKFLOW_DISPATCH",
+        "dedicated_workflow": ".github/workflows/server-ready-final-material.yml",
+    },
+    "SERVER_READY_TERMINAL_10M_V1": {
+        "dispatch_mode": "WORKFLOW_DISPATCH",
+        "dedicated_workflow": ".github/workflows/server-ready-terminal-chain.yml",
+    },
+    "SYMPHYLAX_FINAL_GUARANTEED_60M_V1": {
+        "dispatch_mode": "WORKFLOW_DISPATCH",
+        "dedicated_workflow": ".github/workflows/symphylax-final-guaranteed-certification-60m.yml",
+    },
+    "SYMPHYLAX_FINAL_REMEDIATION_6M_V1": {
+        "dispatch_mode": "WORKFLOW_DISPATCH",
+        "dedicated_workflow": ".github/workflows/symphylax-final-remediation-certification-6m.yml",
+    },
+    "LUNA_R4_PART1_RESUME_APC48_V2_36519487206": {
+        "dispatch_mode": "PUSH_TRIGGER_FILE",
+        "dedicated_workflow": ".github/workflows/luna-r4-master-resume-now.yml",
+        "dispatch_ref": "staging/luna-r4-master-part1-part9-20260929",
+        "dispatch_trigger_path_prefix": "mission-control/r4-master-resume-now/",
+    },
 }
 
 DISPATCHER_SOURCE = r'''#!/usr/bin/env python3
-"""Dispatch one already-routed mailbox mission through its pinned GitHub workflow.
+"""Dispatch one already-routed mailbox mission through an explicit GitHub contract.
 
-The router remains a classifier/binder. This bridge consumes EXECUTION_PLAN.json,
-verifies the exact workflow binding and SHA-256 pin, and performs workflow_dispatch.
-It never invents an executor and never treats dispatch as terminal success.
+Supported contracts:
+- WORKFLOW_DISPATCH: GitHub Actions workflow_dispatch on a SHA-pinned workflow.
+- PUSH_TRIGGER_FILE: create one immutable mission-control trigger in the pinned
+  target branch for an existing push/path-triggered workflow.
+
+The bridge never invents an executor and never treats dispatch as terminal success.
 """
 from __future__ import annotations
 
 import argparse
+import base64
 import hashlib
 import json
 import os
+import re
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
@@ -74,6 +98,10 @@ def fail(out, mail_id, blocker, checks, plan=None):
     return 23
 
 
+def gh(cmd):
+    return subprocess.run(["gh", "api", *cmd], text=True, capture_output=True, timeout=45)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--results", required=True)
@@ -97,17 +125,30 @@ def main():
     plan = json.loads(plan_path.read_text(encoding="utf-8"))
     mail_id = str(plan.get("mail_id") or "UNKNOWN")
     adapter = plan.get("adapter") or {}
+    mode = adapter.get("dispatch_mode")
     workflow = adapter.get("dedicated_workflow")
     expected_sha = adapter.get("dedicated_workflow_sha256")
+    target_ref = adapter.get("dispatch_ref") or q.ref
+    trigger_prefix = adapter.get("dispatch_trigger_path_prefix")
 
     checks = {
         "plan_status": plan.get("status") == "ROUTED_READY_NOT_YET_EXECUTED",
         "adapter_present": bool(adapter),
         "provider_binding_explicit": adapter.get("provides_executor_binding") is True,
+        "dispatch_mode_known": mode in {"WORKFLOW_DISPATCH", "PUSH_TRIGGER_FILE"},
         "workflow_declared": isinstance(workflow, str) and bool(workflow),
         "workflow_sha_declared": isinstance(expected_sha, str) and len(expected_sha) == 64,
         "workflow_path_bounded": isinstance(workflow, str) and workflow.startswith(".github/workflows/") and ".." not in workflow,
+        "target_ref_declared": isinstance(target_ref, str) and bool(target_ref),
     }
+    if mode == "PUSH_TRIGGER_FILE":
+        checks["trigger_prefix_declared"] = (
+            isinstance(trigger_prefix, str)
+            and trigger_prefix.startswith("mission-control/")
+            and trigger_prefix.endswith("/")
+            and ".." not in trigger_prefix
+        )
+
     if not all(checks.values()):
         return fail(out, mail_id, "MATERIAL_DISPATCH_CONTRACT_INCOMPLETE", checks, plan)
 
@@ -115,21 +156,29 @@ def main():
     workflows_root = (root / ".github/workflows").resolve()
     checks["workflow_within_root"] = workflows_root in wf.parents
     checks["workflow_exists"] = wf.is_file()
-    if wf.is_file():
-        checks["workflow_sha256_match"] = sha(wf) == expected_sha
-        text = wf.read_text(encoding="utf-8", errors="strict")
-        checks["workflow_dispatch_supported"] = "workflow_dispatch:" in text
+    text = wf.read_text(encoding="utf-8", errors="strict") if wf.is_file() else ""
+    checks["workflow_sha256_match"] = wf.is_file() and sha(wf) == expected_sha
+
+    if mode == "WORKFLOW_DISPATCH":
+        checks["dispatch_surface_matches_mode"] = "workflow_dispatch:" in text
     else:
-        checks["workflow_sha256_match"] = False
-        checks["workflow_dispatch_supported"] = False
+        checks["dispatch_surface_matches_mode"] = (
+            trigger_prefix in text and target_ref in text
+        )
 
     if not all(checks.values()):
-        blocker = "WORKFLOW_SHA256_MISMATCH" if checks.get("workflow_exists") and not checks.get("workflow_sha256_match") else "PINNED_WORKFLOW_NOT_DISPATCHABLE"
+        blocker = (
+            "WORKFLOW_SHA256_MISMATCH"
+            if checks.get("workflow_exists") and not checks.get("workflow_sha256_match")
+            else "PINNED_WORKFLOW_NOT_DISPATCHABLE"
+        )
         return fail(out, mail_id, blocker, checks, plan)
 
     action = {
         "repo": q.repo,
-        "ref": q.ref,
+        "source_ref": q.ref,
+        "target_ref": target_ref,
+        "dispatch_mode": mode,
         "workflow_path": workflow,
         "workflow_file": Path(workflow).name,
         "workflow_sha256": expected_sha,
@@ -138,18 +187,48 @@ def main():
     if not q.dry_run:
         if not os.environ.get("GH_TOKEN"):
             return fail(out, mail_id, "GH_TOKEN_MISSING", checks, plan)
-        cmd = [
-            "gh", "api", "--method", "POST",
-            f"repos/{q.repo}/actions/workflows/{Path(workflow).name}/dispatches",
-            "-f", f"ref={q.ref}",
-        ]
-        proc = subprocess.run(cmd, text=True, capture_output=True, timeout=45)
+
+        if mode == "WORKFLOW_DISPATCH":
+            proc = gh([
+                "--method", "POST",
+                f"repos/{q.repo}/actions/workflows/{Path(workflow).name}/dispatches",
+                "-f", f"ref={target_ref}",
+            ])
+            action["api_operation"] = "ACTIONS_WORKFLOW_DISPATCH"
+        else:
+            safe_mail = re.sub(r"[^A-Za-z0-9_.-]+", "-", mail_id).strip("-") or "MAIL"
+            run_id = os.environ.get("GITHUB_RUN_ID", "manual")
+            trigger_path = f"{trigger_prefix}{safe_mail}-{run_id}.json"
+            payload = {
+                "schema": "CUSTOSZ_MAILBOX_PUSH_TRIGGER/1.0",
+                "mail_id": mail_id,
+                "adapter_id": adapter.get("adapter_id"),
+                "source_sha256": adapter.get("source_sha256"),
+                "source_ref": q.ref,
+                "target_ref": target_ref,
+                "workflow_sha256": expected_sha,
+                "created_utc": utc(),
+                "terminal_success_claimed": False,
+            }
+            encoded = base64.b64encode(
+                (json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode()
+            ).decode()
+            proc = gh([
+                "--method", "PUT",
+                f"repos/{q.repo}/contents/{trigger_path}",
+                "-f", f"message=mission(mailbox): dispatch {mail_id}",
+                "-f", f"branch={target_ref}",
+                "-f", f"content={encoded}",
+            ])
+            action["api_operation"] = "CONTENTS_PUSH_TRIGGER"
+            action["trigger_path"] = trigger_path
+
         action["exit_code"] = proc.returncode
         action["stdout"] = proc.stdout[-2000:]
         action["stderr"] = proc.stderr[-2000:]
         if proc.returncode != 0:
-            return fail(out, mail_id, "WORKFLOW_DISPATCH_FAILED", {**checks, "gh_dispatch_exit_zero": False}, plan)
-        checks["gh_dispatch_exit_zero"] = True
+            return fail(out, mail_id, "WORKFLOW_DISPATCH_FAILED", {**checks, "github_dispatch_exit_zero": False}, plan)
+        checks["github_dispatch_exit_zero"] = True
 
     report = {
         "schema": "CUSTOSZ_MAILBOX_MATERIAL_DISPATCH/1.0",
@@ -174,6 +253,8 @@ def main():
             "state": "DISPATCH_READY" if q.dry_run else "DISPATCHED",
             "adapter_id": adapter.get("adapter_id"),
             "workflow": workflow,
+            "dispatch_mode": mode,
+            "target_ref": target_ref,
         })
         state.update({
             "workflow_technical_status": "PASS",
@@ -194,10 +275,9 @@ if __name__ == "__main__":
 '''
 
 TEST_SOURCE = r'''#!/usr/bin/env python3
-"""Deterministic negative/positive tests for the mailbox dispatch bridge."""
+"""Deterministic positive/negative tests for both mailbox dispatch modes."""
 import hashlib
 import json
-import os
 import pathlib
 import subprocess
 import sys
@@ -210,21 +290,34 @@ def sha(p):
     return hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
 
 
-def run_case(mutator=None):
+def execute(mode="WORKFLOW_DISPATCH", mutator=None):
     with tempfile.TemporaryDirectory(prefix="mailbox-dispatch-test-") as td:
         root = pathlib.Path(td)
         wf = root / ".github/workflows/test-target.yml"
         wf.parent.mkdir(parents=True)
-        wf.write_text("name: test\non:\n  workflow_dispatch:\njobs:\n  x:\n    runs-on: ubuntu-24.04\n    steps:\n      - run: true\n", encoding="utf-8")
+        if mode == "WORKFLOW_DISPATCH":
+            wf.write_text(
+                "name: test\non:\n  workflow_dispatch:\njobs:\n  x:\n    runs-on: ubuntu-24.04\n    steps:\n      - run: true\n",
+                encoding="utf-8",
+            )
+        else:
+            wf.write_text(
+                "name: test\non:\n  push:\n    branches:\n      - target-branch\n    paths:\n      - mission-control/test/**\n",
+                encoding="utf-8",
+            )
         results = root / "results"
         out = root / "out"
         results.mkdir()
         adapter = {
             "adapter_id": "TEST",
             "provides_executor_binding": True,
+            "dispatch_mode": mode,
             "dedicated_workflow": ".github/workflows/test-target.yml",
             "dedicated_workflow_sha256": sha(wf),
         }
+        if mode == "PUSH_TRIGGER_FILE":
+            adapter["dispatch_ref"] = "target-branch"
+            adapter["dispatch_trigger_path_prefix"] = "mission-control/test/"
         plan = {
             "schema": "CUSTOSZ_EXECUTION_PLAN/1.1",
             "mail_id": "MAIL-TEST",
@@ -240,26 +333,27 @@ def run_case(mutator=None):
         p = subprocess.run([
             sys.executable, "-B", "-I", str(SCRIPT),
             "--results", str(results), "--repo-root", str(root),
-            "--repo", "owner/repo", "--ref", "branch",
+            "--repo", "owner/repo", "--ref", "source-branch",
             "--out", str(out), "--dry-run",
         ], text=True, capture_output=True)
         report = json.loads((out / "MATERIAL_DISPATCH.json").read_text())
         return p.returncode, report
 
 
-rc, rep = run_case()
-assert rc == 0 and rep["status"] == "PASS" and rep["dispatch_performed"] is False
+for mode in ("WORKFLOW_DISPATCH", "PUSH_TRIGGER_FILE"):
+    rc, rep = execute(mode)
+    assert rc == 0 and rep["status"] == "PASS" and rep["dispatch_performed"] is False, (mode, rc, rep)
 
 def corrupt(root, plan):
     (root / ".github/workflows/test-target.yml").write_text("name: changed\non:\n  workflow_dispatch:\n", encoding="utf-8")
 
-rc, rep = run_case(corrupt)
+rc, rep = execute("WORKFLOW_DISPATCH", corrupt)
 assert rc == 23 and rep["root_blocker"] == "WORKFLOW_SHA256_MISMATCH"
 
 def remove_binding(root, plan):
     plan["adapter"].pop("dedicated_workflow")
 
-rc, rep = run_case(remove_binding)
+rc, rep = execute("WORKFLOW_DISPATCH", remove_binding)
 assert rc == 23 and rep["root_blocker"] == "MATERIAL_DISPATCH_CONTRACT_INCOMPLETE"
 
 print("MAILBOX_DISPATCH_BRIDGE_SELFTEST=PASS")
@@ -273,7 +367,7 @@ DISPATCH_JOB = r'''
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
-      contents: read
+      contents: write
       actions: write
     steps:
       - name: Checkout exact dispatch surface
@@ -352,18 +446,32 @@ def main():
     registry = json.loads(reg_path.read_text(encoding="utf-8"))
     for entry in registry.get("adapters", []):
         aid = entry.get("adapter_id")
-        if aid in WORKFLOW_BINDINGS:
-            entry["dedicated_workflow"] = WORKFLOW_BINDINGS[aid]
+        if aid in DISPATCH_BINDINGS:
+            entry.update(DISPATCH_BINDINGS[aid])
+
+        if entry.get("status") != "ACTIVE_PINNED":
+            continue
+
+        mode = entry.get("dispatch_mode")
         workflow = entry.get("dedicated_workflow")
-        if entry.get("status") == "ACTIVE_PINNED":
-            if not workflow:
-                raise SystemExit("ACTIVE_PINNED_ADAPTER_WITHOUT_WORKFLOW:" + str(aid))
-            wp = root / workflow
-            if not wp.is_file():
-                raise SystemExit("DEDICATED_WORKFLOW_MISSING:" + str(workflow))
-            if "workflow_dispatch:" not in wp.read_text(encoding="utf-8"):
-                raise SystemExit("DEDICATED_WORKFLOW_NOT_DISPATCHABLE:" + str(workflow))
-            entry["dedicated_workflow_sha256"] = sha(wp)
+        if mode not in {"WORKFLOW_DISPATCH", "PUSH_TRIGGER_FILE"} or not workflow:
+            raise SystemExit("ACTIVE_PINNED_ADAPTER_WITHOUT_DISPATCH_CONTRACT:" + str(aid))
+
+        wp = root / workflow
+        if not wp.is_file():
+            raise SystemExit("DEDICATED_WORKFLOW_MISSING:" + str(workflow))
+        wtext = wp.read_text(encoding="utf-8")
+
+        if mode == "WORKFLOW_DISPATCH":
+            if "workflow_dispatch:" not in wtext:
+                raise SystemExit("DEDICATED_WORKFLOW_NOT_WORKFLOW_DISPATCH:" + str(workflow))
+        else:
+            ref = entry.get("dispatch_ref")
+            prefix = entry.get("dispatch_trigger_path_prefix")
+            if not ref or not prefix or ref not in wtext or prefix not in wtext:
+                raise SystemExit("PUSH_TRIGGER_CONTRACT_MISMATCH:" + str(workflow))
+
+        entry["dedicated_workflow_sha256"] = sha(wp)
 
     reg_path.write_text(json.dumps(registry, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     (root / DISPATCHER).write_text(DISPATCHER_SOURCE, encoding="utf-8")
@@ -377,7 +485,8 @@ def main():
         "authority": "Louksna.md",
         "branch": BRANCH,
         "defect": "ROUTER_STOPS_AT_ROUTED_READY_NOT_YET_EXECUTED_WITHOUT_GENERAL_MATERIAL_DISPATCH",
-        "repair": "HOSTED_POST_ROUTE_WORKFLOW_DISPATCH_BOUND_TO_PINNED_ADAPTER_WORKFLOW",
+        "repair": "HOSTED_POST_ROUTE_DISPATCH_WITH_SHA_PINNED_WORKFLOW_OR_PUSH_TRIGGER_CONTRACT",
+        "supported_dispatch_modes": ["WORKFLOW_DISPATCH", "PUSH_TRIGGER_FILE"],
         "changed_files": [
             {"path": str(p), "sha256": sha(root / p), "bytes": (root / p).stat().st_size}
             for p in changed
@@ -390,6 +499,7 @@ def main():
             "workflow_sha256_pin_required": True,
             "dispatch_runs_on_github_hosted": True,
             "self_certification": False,
+            "push_trigger_requires_explicit_target_branch": True,
         },
     }
     raw = json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
