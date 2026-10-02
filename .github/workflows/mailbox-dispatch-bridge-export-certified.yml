@@ -1,0 +1,121 @@
+name: "CUSTOSZ Mailbox — export G24-certified promotion package"
+
+on:
+  push:
+    branches:
+      - staging/mailbox-dispatch-bridge-repair-20261002
+    paths:
+      - mission-control/mailbox-dispatch-bridge-export/**
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: mailbox-dispatch-bridge-export-certified
+  cancel-in-progress: false
+
+env:
+  SOURCE_RUN_ID: "37058020563"
+  SOURCE_CANDIDATE_DIGEST: "08cb7d9d9913cc474e3356db71893b03bd4a1fcf03fffb491dc9f5aaf6b75cd5"
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: staging/mailbox-dispatch-bridge-repair-20261002
+          persist-credentials: true
+          fetch-depth: 2
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: mailbox-dispatch-bridge-candidate
+          path: ${{ runner.temp }}/candidate
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ env.SOURCE_RUN_ID }}
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: mailbox-dispatch-bridge-g23
+          path: ${{ runner.temp }}/g23
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ env.SOURCE_RUN_ID }}
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: mailbox-dispatch-bridge-g24
+          path: ${{ runner.temp }}/g24
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ env.SOURCE_RUN_ID }}
+
+      - name: Verify certified source chain
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(python3 -c 'import json; print(json.load(open("'"$RUNNER_TEMP"'/g23/G23.json"))["status"])')" = PASS
+          test "$(python3 -c 'import json; print(json.load(open("'"$RUNNER_TEMP"'/g24/G24.json"))["status"])')" = PASS
+          test "$(python3 -c 'import json; print(json.load(open("'"$RUNNER_TEMP"'/g24/G24.json"))["promotion_authorized"])')" = True
+          test "$(cat "$RUNNER_TEMP/candidate/CANDIDATE_DIGEST.txt")" = "$SOURCE_CANDIDATE_DIGEST"
+          test "$(python3 -c 'import json; print(json.load(open("'"$RUNNER_TEMP"'/g23/G23.json"))["candidate_digest_sha256"])')" = "$SOURCE_CANDIDATE_DIGEST"
+          test "$(python3 -c 'import json; print(json.load(open("'"$RUNNER_TEMP"'/g24/G24.json"))["candidate_digest_sha256"])')" = "$SOURCE_CANDIDATE_DIGEST"
+          echo "CERTIFIED_SOURCE_CHAIN=PASS"
+
+      - name: Materialize exact promotion payload under evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          DEST="evidence/mailbox-dispatch-bridge-certified/$SOURCE_CANDIDATE_DIGEST"
+          rm -rf "$DEST"
+          mkdir -p "$DEST/payload/.github/workflows" "$DEST/payload/mission-mailbox/runtime-adapters" "$DEST/payload/scripts/mission_mailbox"
+          cp "$RUNNER_TEMP/candidate/candidate/.github/workflows/custosz-mission-mailbox.yml" "$DEST/payload/.github/workflows/"
+          cp "$RUNNER_TEMP/candidate/candidate/mission-mailbox/runtime-adapters/registry.json" "$DEST/payload/mission-mailbox/runtime-adapters/"
+          cp "$RUNNER_TEMP/candidate/candidate/scripts/mission_mailbox/dispatch_execution.py" "$DEST/payload/scripts/mission_mailbox/"
+          cp "$RUNNER_TEMP/candidate/candidate/scripts/mission_mailbox/test_dispatch_execution.py" "$DEST/payload/scripts/mission_mailbox/"
+          cp "$RUNNER_TEMP/candidate/REPAIR_MANIFEST.json" "$DEST/"
+          cp "$RUNNER_TEMP/g23/G23.json" "$DEST/"
+          cp "$RUNNER_TEMP/g24/G24.json" "$DEST/"
+
+          python3 - "$DEST" "$SOURCE_RUN_ID" "$SOURCE_CANDIDATE_DIGEST" <<'PY'
+          import hashlib,json,pathlib,sys,datetime as dt
+          dest=pathlib.Path(sys.argv[1]); run_id=sys.argv[2]; digest=sys.argv[3]
+          manifest=json.load(open(dest/"REPAIR_MANIFEST.json",encoding="utf-8"))
+          expected={x["path"]:(x["sha256"],x["bytes"]) for x in manifest["changed_files"]}
+          rows=[]
+          for rel,(eh,eb) in sorted(expected.items()):
+              p=dest/"payload"/rel
+              b=p.read_bytes(); h=hashlib.sha256(b).hexdigest()
+              if h!=eh or len(b)!=eb:
+                  raise SystemExit("PROMOTION_PAYLOAD_MISMATCH:"+rel)
+              rows.append({"path":rel,"sha256":h,"bytes":len(b)})
+          package={
+              "schema":"LOUKSNA_MAILBOX_DISPATCH_BRIDGE_PROMOTION_PACKAGE/1.0",
+              "status":"G24_CERTIFIED_READY_FOR_PROMOTION",
+              "source_run_id":run_id,
+              "candidate_digest_sha256":digest,
+              "authority":"Louksna.md",
+              "files":rows,
+              "canonical_mutation":False,
+              "certification_propagated":False,
+              "generated_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          (dest/"PROMOTION_PACKAGE.json").write_text(json.dumps(package,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          PY
+
+      - name: Commit certified package only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          DEST="evidence/mailbox-dispatch-bridge-certified/$SOURCE_CANDIDATE_DIGEST"
+          git config user.name "louksna-github-evidence"
+          git config user.email "actions@users.noreply.github.com"
+          git add "$DEST"
+          git diff --cached --quiet && { echo "CERTIFIED_PACKAGE_ALREADY_PRESENT"; exit 0; }
+          git commit -m "evidence(mailbox): materialize G24-certified promotion package"
+          git push origin HEAD:staging/mailbox-dispatch-bridge-repair-20261002
+          echo "CERTIFIED_PACKAGE_COMMIT=$(git rev-parse HEAD)"
