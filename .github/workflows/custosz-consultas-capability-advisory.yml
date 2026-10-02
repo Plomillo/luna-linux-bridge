@@ -1,0 +1,120 @@
+name: "CUSTOSZ — consultas capability advisory"
+
+on:
+  push:
+    branches:
+      - staging/custosz-consultas-capability-advisory-20261002
+    paths:
+      - .github/workflows/custosz-consultas-capability-advisory.yml
+
+permissions:
+  contents: read
+
+jobs:
+  consult:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Ask deployed CUSTOSZ read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$GITHUB_WORKSPACE/consultas-capability-output"
+          mkdir -p "$OUT"
+          python3 - "$OUT" <<'PY'
+          import json, os, pathlib, sys, traceback
+          out=pathlib.Path(sys.argv[1])
+          prompt=r"""
+          CONSULTA ARQUITECTÓNICA READ_ONLY — CAPACIDAD PARA ATENDER CONSULTAS.
+
+          Pregunta del usuario:
+          ¿Puede CUSTOSZ encargarse de investigar y responder la futura categoría
+          `consultas/` del buzón, incluyendo buscar evidencia, revisar repositorio,
+          estudiar causas, comparar alternativas y devolver una respuesta trazable,
+          sin convertir una consulta en misión material ni modificar el sistema?
+
+          Debes responder de forma operativa y gobernada:
+          1. CAN_HANDLE_CONSULTATION_RESEARCH = YES | CONDITIONAL | NO.
+          2. Qué tipos de investigación puedes realizar directamente.
+          3. Qué fuentes/proveedores puedes consultar de forma real en el entorno actual
+             y cuáles requieren un proveedor externo o binding adicional.
+          4. Qué NO puedes hacer en modo consulta.
+          5. Cómo preservar SOURCE_SHA256, provenance, traceability, auditability y evidence.
+          6. Cómo distinguir ANSWERED, HOLD y REJECTED.
+          7. Qué criterio usar para detener la investigación y responder, evitando bucles.
+          8. Qué hacer cuando falte evidencia o acceso a una fuente.
+          9. Si puedes producir una respuesta en castellano para el usuario y un artefacto
+             estructurado para GitHub.
+          10. Qué arquitectura mínima recomiendas para integrarte detrás de
+              `consultas/` sin tocar `missions/`.
+          11. Qué pasos exactos se necesitan para pasar de esta capacidad advisory
+              ya existente a un canal general de consultas.
+
+          Restricciones:
+          - READ_ONLY_ADVISORY.
+          - execution_authorized=false.
+          - mutation_authorized=false.
+          - NO modificar main, Louksna.md, missions/, controlador ni arquitectura canónica.
+          - NO autocertificar.
+          - NO fabricar PASS ni afirmar acceso a fuentes no disponibles.
+          - NO promover CONSULTA -> MISIÓN implícitamente.
+          - Louksna.md conserva autoridad.
+          - EXTEND_DO_NOT_REPLACE, FAIL_CLOSED, NO_SILENT_OPERATIONS.
+          - Preservar evidencia y declarar gaps explícitamente.
+          - Si una investigación requiere red, proveedor, token o herramienta no disponible,
+            declararlo y devolver HOLD con NEXT exacto.
+
+          Concluir con:
+          CAN_HANDLE_CONSULTATION_RESEARCH
+          RECOMMENDED_ROLE
+          SUPPORTED_RESEARCH
+          CURRENT_PROVIDER_ACCESS
+          REQUIRED_ADDITIONAL_BINDINGS
+          FORBIDDEN_ACTIONS
+          EVIDENCE_MODEL
+          STOP_RULE
+          HOLD_RULE
+          MINIMAL_INTEGRATION
+          EXACT_NEXT_ACTION
+          """
+          HOME=pathlib.Path("/home/diegoignacionorambuenamiranda")
+          PROJECT_ROOT=HOME/"LOUKSNA_MAESTRO_20260925"
+          CUSTOSZ=HOME/".local/lib/louksna/symphylax-r1/CUSTOSZ.v07.f04_b.pyz"
+          os.environ["CUSTOSZ_STATE_DIR"]=str(out/"ephemeral-custosz-state")
+          sys.path.insert(0,str(CUSTOSZ))
+          import custosz_v05_legacy as w
+          def workspace_adapter(): return PROJECT_ROOT
+          def discover_adapter():
+              return {"workspace":str(PROJECT_ROOT),"projects":{"LUNA_PROJECT":{"status":"RESOLVED","path":str(PROJECT_ROOT),"score":999}}}
+          w.workspace=workspace_adapter
+          w.discover=discover_adapter
+          result={
+            "schema":"LOUKSNA_CONSULTAS_CAPABILITY_ADVISORY/1.0",
+            "mode":"READ_ONLY_ADVISORY",
+            "execution_authorized":False,
+            "mutation_authorized":False,
+            "authority":"Louksna.md",
+            "workspace":str(PROJECT_ROOT)
+          }
+          try:
+              result["architecture"]=w.architect(prompt,"LUNA_PROJECT")
+          except Exception as e:
+              result["architecture_error"]=type(e).__name__+":"+str(e)
+              result["architecture_traceback"]=traceback.format_exc()
+          try:
+              result["reasoning_policy"]=w.reasoning_policy(prompt,"LUNA_PROJECT")
+          except Exception as e:
+              result["reasoning_policy_error"]=type(e).__name__+":"+str(e)
+              result["reasoning_policy_traceback"]=traceback.format_exc()
+          p=out/"CUSTOSZ_CONSULTAS_CAPABILITY_ADVISORY.json"
+          p.write_text(json.dumps(result,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps(result,ensure_ascii=False,indent=2,sort_keys=True))
+          PY
+
+      - name: Preserve advisory response
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: custosz-consultas-capability-advisory
+          path: consultas-capability-output/CUSTOSZ_CONSULTAS_CAPABILITY_ADVISORY.json
+          if-no-files-found: error
+          retention-days: 30
