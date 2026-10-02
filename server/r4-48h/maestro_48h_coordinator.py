@@ -506,9 +506,24 @@ def evidence_for(point):
         details["part6_certificate"]=cert
     elif point=="P08":
         cert=part_cert("PART_7")
-        checks={**common,"dependencies":deps_pass(point),"part7_g24":cert is not None,
-                "local_backend_not_hosted_substitution":True,"source_immutability_required":True}
+        p7=load(STATE/"evidence/PART7_AUX_EVIDENCE.json",{}) or {}
+        p25=p7.get("p25_local_cognitive_backend",{}) if isinstance(p7.get("p25_local_cognitive_backend"),dict) else {}
+        p26=p7.get("p26_document_ingestion_stack",{}) if isinstance(p7.get("p26_document_ingestion_stack"),dict) else {}
+        checks={**common,"dependencies":deps_pass(point),
+                "part7_g24":cert is not None,
+                "part7_evidence_pass":p7.get("status")=="PASS",
+                "p25_local_backend_operational":p25.get("status")=="PASS" and p25.get("operational") is True,
+                "p25_not_hosted_substitution":p25.get("hosted_backend_used") is False and p25.get("qwen_substitution") is False,
+                "p25_no_model_download":p25.get("downloads_performed") is False,
+                "p26_document_ingestion_operational":p26.get("status")=="PASS" and p26.get("operational") is True,
+                "p26_source_immutable":p26.get("source_immutable") is True,
+                "p26_no_docling_asset_download":p26.get("docling_assets_downloaded") is False,
+                "source_immutability_required":p7.get("checks",{}).get("originals_immutable_by_operation") is True}
         details["part7_certificate"]=cert
+        details["part7_evidence"]={"path":str(STATE/"evidence/PART7_AUX_EVIDENCE.json"),
+                                   "sha256":sha(STATE/"evidence/PART7_AUX_EVIDENCE.json") if (STATE/"evidence/PART7_AUX_EVIDENCE.json").is_file() else None}
+        details["p25"]=p25
+        details["p26"]=p26
     elif point=="P09":
         cert=part_cert("PART_8")
         checks={**common,"dependencies":deps_pass(point),"part8_g24":cert is not None,
