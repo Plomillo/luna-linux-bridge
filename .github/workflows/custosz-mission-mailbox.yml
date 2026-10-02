@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - staging/custosz-mission-mailbox-20260928
+      - staging/mailbox-dispatch-bridge-repair-20261002
     paths:
       - missions/inbox/**
       - mission-mailbox/**
