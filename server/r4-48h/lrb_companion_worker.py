@@ -197,7 +197,7 @@ def repair_projects_ui():
             for ch in bm:
                 if ch.tag.endswith("title"): title=(ch.text or "")
             href=bm.attrib.get("href","")
-            if title.casefold()=="proyectos" or "proyectos" in urllib.parse.unquote(href).casefold():
+            if (title or "").casefold()=="proyectos" or "proyectos" in urllib.parse.unquote(href).casefold():
                 if href!=target_uri:
                     bm.set("href",target_uri); changed+=1
         if changed:
