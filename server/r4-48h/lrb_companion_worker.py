@@ -217,10 +217,22 @@ def repair_projects_ui():
     # Do not rewrite launchers: repaired aliases are sufficient unless independent audit proves otherwise.
 
     post=observe_pair("PROJECTS_UI_POST")
+    bookmark_ok=False
+    if xbel.is_file():
+        verify=ET.parse(xbel).getroot()
+        target_uri="file://"+urllib.parse.quote(str(PROYECTOS))
+        for bm in verify.iter():
+            if not bm.tag.endswith("bookmark"): continue
+            title=""
+            for ch in bm:
+                if ch.tag.endswith("title"): title=ch.text or ""
+            if title.casefold()=="proyectos" and bm.attrib.get("href")==target_uri:
+                bookmark_ok=True; break
     checks={
       "canonical_root":PROYECTOS.is_dir(),
       "aliases":all(a.is_symlink() and a.resolve(strict=True)==PROYECTOS.resolve() for a in aliases),
-      "xbel_parse":(not xbel.exists()) or (ET.parse(xbel) is not None),
+      "xbel_parse":xbel.is_file() and (ET.parse(xbel) is not None),
+      "projects_bookmark_canonical":bookmark_ok,
       "launchers_no_direct_old_media":all(not x["old_media_projects_reference"] for x in launcher_audit),
     }
     q={"schema":"LOUKSNA_R4_PROJECTS_UI_REPAIR/1.0","status":"PASS" if all(checks.values()) else "HOLD",
