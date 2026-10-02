@@ -18,7 +18,7 @@ PROTECTED=[
 PART7_SCHEMA="LOUKSNA_R4_PART7_AUX_EVIDENCE/1.0"
 PART8_SCHEMA="LOUKSNA_R4_PART8_AUX_EVIDENCE/1.0"
 PART9_SCHEMA="LOUKSNA_R4_PART9_TERMINAL_MATRIX/1.0"
-PRODUCER_REVISION="2026-10-02.PART789.5-P25-ISOLATED-FILEBACKED"
+PRODUCER_REVISION="2026-10-02.PART789.6-P25-SINGLE-TOKEN-HARD-BOUND"
 
 def utc():
     return dt.datetime.now(dt.timezone.utc).isoformat().replace("+00:00","Z")
@@ -206,8 +206,8 @@ def chromium_memory_relief_if_needed(required_bytes):
 
 def bounded_inference_same_qwen(runtime,model,memory_max_bytes):
     args=[
-        str(runtime),"-m",str(model),"-c","256","-n","8","-t","1","-ngl","0",
-        "--temp","0","--no-display-prompt","-p","Return exactly: LOUKSNA_P25_OK"
+        str(runtime),"-m",str(model),"-c","64","-n","1","-t","1","-ngl","0",
+        "--temp","0","--no-display-prompt","-p","Reply with the single digit 7."
     ]
     systemd=shutil.which("systemd-run")
     env=dict(os.environ)
@@ -218,12 +218,18 @@ def bounded_inference_same_qwen(runtime,model,memory_max_bytes):
     if systemd:
         max_mib=max(3072,int(memory_max_bytes//(1024*1024)))
         high_mib=max(2816,max_mib-256)
+        timeout_bin=shutil.which("timeout")
+        if not timeout_bin:
+            return {
+              "argv":args,"returncode":125,"stdout":"","stderr":"GNU_TIMEOUT_UNAVAILABLE_FAIL_CLOSED",
+              "elapsed_seconds":0.0,"isolation":"SYSTEMD_USER_SCOPE_TIMEOUT_UNAVAILABLE"
+            }
         wrapped=[
           systemd,"--user","--scope","--quiet","--collect",
           "-p",f"MemoryHigh={high_mib}M","-p",f"MemoryMax={max_mib}M",
-          "--"
+          "--",timeout_bin,"--signal=TERM","--kill-after=10s","150s"
         ]+args
-        r=bounded_run_filebacked(wrapped,timeout=300,env=env)
+        r=bounded_run_filebacked(wrapped,timeout=180,env=env)
         r["isolation"]="SYSTEMD_USER_SCOPE"
         r["memory_high_mib"]=high_mib
         r["memory_max_mib"]=max_mib
@@ -276,8 +282,9 @@ def p25_local_backend():
     probe=bounded_inference_same_qwen(runtime,model,memory_max)
     result.update({"version_test":version,"inference_test":probe,
                    "mem_available_after":mem_available_bytes()})
-    result["operational"]=(version["returncode"]==0 and probe["returncode"]==0 and
-                           "LOUKSNA_P25_OK" in (probe.get("stdout","")+probe.get("stderr","")))
+    generated=probe.get("stdout","").strip()
+    result["generated_probe_tail"]=generated[-512:]
+    result["operational"]=(version["returncode"]==0 and probe["returncode"]==0 and "7" in generated)
     result["state"]="PASS" if result["operational"] else "HOLD"
     if not result["operational"]:
         result["reason"]="LOCAL_INFERENCE_PROBE_FAILED_OR_RESOURCE_ISOLATION"
