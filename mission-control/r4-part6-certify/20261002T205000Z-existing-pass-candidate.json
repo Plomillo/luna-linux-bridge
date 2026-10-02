@@ -1,0 +1,20 @@
+{
+  "schema": "LOUKSNA_R4_PART6_CERTIFICATION_REQUEST/1.0",
+  "status": "AUTHORIZED",
+  "candidate_path": "evidence/r4-master-part6/20261002T104214Z-MIS-cf38037f1f114012af53/FULL_CANDIDATE_V2.json",
+  "mission_id": "MIS-cf38037f1f114012af53",
+  "material_reexecution_authorized": false,
+  "redownload_authorized": false,
+  "reinstall_authorized": false,
+  "preserve_existing_point_certificates": [
+    "P01",
+    "P02",
+    "P03",
+    "P04",
+    "P05",
+    "P06"
+  ],
+  "part4_reopen_authorized": false,
+  "partitioning_authorized": false,
+  "created_at_utc": "2026-10-02T20:50:00Z"
+}
