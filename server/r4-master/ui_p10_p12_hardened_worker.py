@@ -52,7 +52,7 @@ def atomic_json(p,obj):
 def run(argv,timeout=120,env=None):
     p=subprocess.run([str(x) for x in argv],text=True,capture_output=True,timeout=timeout,env=env)
     return {"argv":[str(x) for x in argv],"returncode":p.returncode,
-            "stdout":p.stdout[-12000:],"stderr":p.stderr[-12000:]}
+            "stdout":p.stdout[-16000:],"stderr":p.stderr[-12000:]}
 
 def lrb_link():
     roots=sorted((HOME/".local/lib/louksna-remote-bridge").glob("**/bridge/live_link.py"))
@@ -94,74 +94,84 @@ def checkpoint(paths,tag):
     atomic_json(root/"MANIFEST.json",{"schema":"LOUKSNA_R4_UI_CHECKPOINT/1.0","tag":tag,"rows":rows,"utc":utc()})
     return root
 
-DISPATCHER='''#!/usr/bin/env python3
-import argparse,json,pathlib,shutil,subprocess
-H=pathlib.Path.home()
-AREAS={
- "inicio":H/"Luna R4",
- "estudio":H/"Luna R4"/"Estudio",
- "juegos":H/"Luna R4"/"Juegos",
- "laboratorio":H/"Luna R4"/"Laboratorio",
- "ingenieria":H/"Luna R4"/"Ingeniería",
- "sistema":H/"Luna R4"/"Sistema",
- "devocional":H/"Luna R4"/"Devocional",
- "proyectos":H/"PROYECTOS",
-}
-def check(key):
-    p=AREAS[key]
-    ok=p.is_dir() and (key!="proyectos" or (not p.is_symlink()))
-    return {"status":"PASS" if ok else "HOLD","key":key,"target":str(p.resolve()) if p.exists() else str(p),"is_dir":p.is_dir(),"canonical_projects":key!="proyectos" or (p.is_dir() and not p.is_symlink())}
-def main():
-    ap=argparse.ArgumentParser(); ap.add_argument("--check",choices=sorted(AREAS)); ap.add_argument("--open",choices=sorted(AREAS))
-    a=ap.parse_args(); key=a.check or a.open
-    if not key: raise SystemExit(2)
-    q=check(key)
-    if q["status"]!="PASS":
-        print(json.dumps(q,ensure_ascii=False,sort_keys=True)); return 20
-    if a.open:
-        dolphin=shutil.which("dolphin")
-        if not dolphin:
-            q["status"]="HOLD"; q["error"]="DOLPHIN_MISSING"
-            print(json.dumps(q,ensure_ascii=False,sort_keys=True)); return 21
-        subprocess.Popen([dolphin,str(AREAS[key])],stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,start_new_session=True)
-        q["opened"]=True
-    print(json.dumps(q,ensure_ascii=False,sort_keys=True)); return 0
-if __name__=="__main__": raise SystemExit(main())
-'''
+def restore_checkpoint(root):
+    m=json.loads((pathlib.Path(root)/"MANIFEST.json").read_text(encoding="utf-8"))
+    restored=[]
+    for row in m["rows"]:
+        p=pathlib.Path(row["path"])
+        if row.get("backup"):
+            src=pathlib.Path(row["backup"]); p.parent.mkdir(parents=True,exist_ok=True)
+            tmp=p.with_name(p.name+".louksna-restore-tmp"); shutil.copy2(src,tmp); os.replace(tmp,p)
+            restored.append({"path":str(p),"sha256":sha(p)})
+        elif row.get("is_symlink"):
+            try:p.unlink()
+            except FileNotFoundError:pass
+            os.symlink(row["symlink_target"],p); restored.append({"path":str(p),"symlink":row["symlink_target"]})
+        elif not row.get("exists") and (p.exists() or p.is_symlink()):
+            if p.is_file() or p.is_symlink(): p.unlink()
+    return restored
 
 def dark_state():
     if not KDEGLOBALS.is_file(): return {"dark":False,"reason":"KDEGLOBALS_MISSING"}
     text=KDEGLOBALS.read_text(encoding="utf-8",errors="replace")
     m=re.search(r"(?mi)^ColorScheme\s*=\s*(.+)$",text)
     scheme=m.group(1).strip() if m else ""
-    dark="dark" in scheme.casefold()
-    bg=None
     m2=re.search(r"(?mi)^BackgroundNormal\s*=\s*(\d+),\s*(\d+),\s*(\d+)",text)
-    if m2:
-        bg=tuple(map(int,m2.groups()))
-        dark=dark or sum(bg)/3<128
-    return {"dark":dark,"scheme":scheme,"background":bg}
+    bg=tuple(map(int,m2.groups())) if m2 else None
+    return {"dark":("dark" in scheme.casefold()) or (bg is not None and sum(bg)/3<128),
+            "scheme":scheme,"background":bg}
 
-def ensure_dark():
-    before=dark_state()
-    if before["dark"]: return {"changed":False,"before":before,"after":before}
-    exe=shutil.which("plasma-apply-colorscheme")
-    if not exe: return {"changed":False,"before":before,"after":before,"error":"DARK_SCHEME_APPLIER_MISSING"}
-    listing=run([exe,"--list-schemes"],30)
-    candidate=None
-    for name in ("BreezeDark","Breeze Dark"):
-        if name.casefold() in (listing["stdout"]+listing["stderr"]).casefold():
-            candidate=name; break
-    if not candidate: return {"changed":False,"before":before,"after":before,"error":"INSTALLED_DARK_SCHEME_MISSING"}
-    applied=run([exe,candidate],60)
-    after=dark_state()
-    return {"changed":applied["returncode"]==0 and after["dark"],"before":before,"after":after,"apply":applied}
-
-def expected_launcher(key):
-    return APPS/f"luna-r4-v7-{key}.desktop"
+def patch_live_v7():
+    if not LIVE_UI.is_file(): return {"status":"HOLD","blocker":"LIVE_V7_SOURCE_MISSING"}
+    raw=LIVE_UI.read_text(encoding="utf-8")
+    before_sha=sha(LIVE_UI)
+    text=raw
+    replacements=[
+      ('ORIGINAL=H/"Proyectos"','ORIGINAL=H/"PROYECTOS"'),
+      (' assert ORIGINAL.is_symlink() and ORIGINAL.resolve(strict=True)==pathlib.Path("/media")/H.name/"Windows/PROYECTOS","ORIGINAL_PROJECTS_DRIFT"',
+       ' assert ORIGINAL.is_dir() and not ORIGINAL.is_symlink() and ORIGINAL.resolve(strict=True)==(H/"PROYECTOS").resolve(strict=True),"CANONICAL_PROJECTS_ROOT_DRIFT"'),
+      (' m=json.loads(subprocess.check_output(["findmnt","-J","-T",str(ORIGINAL),"-o","SOURCE,FSTYPE,OPTIONS"],text=True))["filesystems"]\n assert len(m)==1 and m[0]["source"]=="/dev/nvme0n1p3" and m[0]["fstype"]=="ntfs3","NTFS_MOUNT_DRIFT"\n assert "ro" in m[0]["options"].split(","),"NTFS_NOT_READ_ONLY"',
+       ' m=[]'),
+      (' return {"proyectos":str(ORIGINAL.resolve()),"mount":m[0],"original_places_sha256":sha(PLACES)}',
+       ' return {"proyectos":str(ORIGINAL.resolve()),"mount":None,"original_places_sha256":sha(PLACES)}'),
+      (' meta=pathlib.Path("/media")/H.name/"Windows/PROYECTOS/1. PROYECTOS PRIORITARIOS/8. META OS/COMPONENTS/MATERIALIZED_15MIN_20260923"',
+       ' meta=ORIGINAL/"1. PROYECTOS PRIORITARIOS/8. META OS/COMPONENTS/MATERIALIZED_15MIN_20260923"'),
+      (' out.append("PROYECTOS conserva su ubicación original y la partición NTFS de solo lectura.")',
+       ' out.append("PROYECTOS usa el root canónico local gobernado; este informe no muta particiones.")'),
+      ('  assert target.is_symlink() and target.resolve(strict=True)==pathlib.Path("/media")/H.name/"Windows/PROYECTOS"',
+       '  assert target.is_dir() and not target.is_symlink() and target.resolve(strict=True)==(H/"PROYECTOS").resolve(strict=True)'),
+    ]
+    applied=[]
+    for old,new in replacements:
+        if old in text:
+            text=text.replace(old,new,1); applied.append(hashlib.sha256(old.encode()).hexdigest()[:12])
+    required=[
+      'ORIGINAL=H/"PROYECTOS"',
+      '"CANONICAL_PROJECTS_ROOT_DRIFT"',
+      'meta=ORIGINAL/"1. PROYECTOS PRIORITARIOS/8. META OS/COMPONENTS/MATERIALIZED_15MIN_20260923"',
+      'target.is_dir() and not target.is_symlink()',
+    ]
+    missing=[x for x in required if x not in text]
+    forbidden=[
+      'ORIGINAL=H/"Proyectos"',
+      'pathlib.Path("/media")/H.name/"Windows/PROYECTOS"',
+      '"NTFS_MOUNT_DRIFT"',
+      '"NTFS_NOT_READ_ONLY"',
+    ]
+    residual=[x for x in forbidden if x in text]
+    if missing or residual:
+        return {"status":"HOLD","before_sha256":before_sha,"missing_postconditions":missing,"residual_obsolete_bindings":residual}
+    if text!=raw:
+        tmp=LIVE_UI.with_suffix(".py.louksna-p10-tmp")
+        tmp.write_text(text,encoding="utf-8"); os.chmod(tmp,0o700); os.replace(tmp,LIVE_UI)
+    compile_test=run(["python3","-m","py_compile",LIVE_UI],60)
+    verify=run(["python3","-B",LIVE_UI,"--verify"],180)
+    status="PASS" if compile_test["returncode"]==0 and verify["returncode"]==0 else "HOLD"
+    return {"status":status,"before_sha256":before_sha,"after_sha256":sha(LIVE_UI),
+            "changed":text!=raw,"applied_replacement_ids":applied,"compile":compile_test,"verify":verify}
 
 def launcher_check(key):
-    p=expected_launcher(key)
+    p=APPS/f"luna-r4-v7-{key}.desktop"
     if not p.is_file(): return {"pass":False,"path":str(p),"reason":"MISSING"}
     text=p.read_text(encoding="utf-8",errors="replace")
     return {"pass":("R4_AREAS_V7.py" in text and f"--open {key}" in text and "Terminal=false" in text),
@@ -171,16 +181,16 @@ def xbel_checks():
     if not PLACES.is_file(): return {"pass":False,"reason":"XBEL_MISSING","areas":{}}
     root=ET.parse(PLACES).getroot(); rows={}
     for key,target in AREAS.items():
-        want=target.as_uri(); found=[]
+        want=target.as_uri(); matches=[]
         for bm in root.iter():
             if not bm.tag.endswith("bookmark"): continue
             title=""
             for ch in bm:
-                if ch.tag.endswith("title"): title=(ch.text or "")
+                if ch.tag.endswith("title"): title=ch.text or ""
             href=bm.attrib.get("href","")
             if title.casefold()==key.casefold() or urllib.parse.unquote(href)==str(target):
-                found.append({"title":title,"href":href})
-        rows[key]={"target":want,"matches":found,"pass":any(x["href"]==want for x in found)}
+                matches.append({"title":title,"href":href})
+        rows[key]={"target":want,"matches":matches,"pass":sum(1 for x in matches if x["href"]==want)==1}
     return {"pass":all(v["pass"] for v in rows.values()),"areas":rows}
 
 def search_surface():
@@ -190,76 +200,70 @@ def search_surface():
     found=[x for x in ids if x in t]
     return {"pass":bool(found),"applets":found}
 
-def install_dispatcher():
-    if not PROYECTOS.is_dir() or PROYECTOS.is_symlink(): raise RuntimeError("CANONICAL_PROJECTS_ROOT_INVALID")
-    for key,p in AREAS.items():
-        if key!="proyectos": p.mkdir(parents=True,exist_ok=True)
-    LIVE_UI.parent.mkdir(parents=True,exist_ok=True)
-    changed=not LIVE_UI.is_file() or LIVE_UI.read_text(encoding="utf-8",errors="replace")!=DISPATCHER
-    if changed:
-        tmp=LIVE_UI.with_suffix(".py.louksna-ui-tmp")
-        tmp.write_text(DISPATCHER,encoding="utf-8"); os.chmod(tmp,0o700); os.replace(tmp,LIVE_UI)
-    else:
-        os.chmod(LIVE_UI,0o700)
-    return changed
-
-def dispatcher_checks():
-    out={}
-    for key in AREAS:
-        r=run(["python3","-B",LIVE_UI,"--check",key],30)
-        data={}
-        try:data=json.loads(r["stdout"])
-        except Exception: pass
-        out[key]={"pass":r["returncode"]==0 and data.get("status")=="PASS","result":data,"returncode":r["returncode"]}
-    return out
+def maybe_apply_dark():
+    before=dark_state()
+    if before["dark"]: return {"changed":False,"before":before,"after":before,"status":"PASS"}
+    exe=shutil.which("plasma-apply-colorscheme")
+    scheme=pathlib.Path("/usr/share/color-schemes/BreezeDark.colors")
+    if not exe or not scheme.is_file():
+        return {"changed":False,"before":before,"after":before,"status":"HOLD","blocker":"INSTALLED_DARK_SCHEME_UNAVAILABLE"}
+    r=run([exe,"BreezeDark"],60)
+    after=dark_state()
+    return {"changed":r["returncode"]==0 and after["dark"],"before":before,"after":after,
+            "status":"PASS" if r["returncode"]==0 and after["dark"] else "HOLD","apply":r}
 
 def p10(mid):
     pre=observe("P10_UI_PRE")
     if not UI_REF.is_file() or sha(UI_REF)!=EXPECTED_UI_SHA: raise RuntimeError("UI_REFERENCE_HASH_MISMATCH")
-    paths=[LIVE_UI,KDEGLOBALS,PLASMA,PLACES]+[expected_launcher(k) for k in PANEL_KEYS.values()]
+    if not PROYECTOS.is_dir() or PROYECTOS.is_symlink(): raise RuntimeError("CANONICAL_PROJECTS_ROOT_INVALID")
+    paths=[LIVE_UI,KDEGLOBALS,PLASMA,PLACES]+[APPS/f"luna-r4-v7-{k}.desktop" for k in PANEL_KEYS.values()]
     cp=checkpoint(paths,"P10_UI")
     wallpaper_before=sha(PLASMA) if PLASMA.is_file() else None
-    source_changed=install_dispatcher()
-    dark=ensure_dark()
-    dispatch=dispatcher_checks()
-    places=xbel_checks()
-    search=search_surface()
+    patch=patch_live_v7()
+    dark=maybe_apply_dark()
+    places=xbel_checks(); search=search_surface()
     launcher={k:launcher_check(k) for k in PANEL_KEYS.values()}
-    wallpaper_after=sha(PLASMA) if PLASMA.is_file() else None
     icons={k:{"path":str(ICONS/f"{k}.svg"),"pass":(ICONS/f"{k}.svg").is_file()} for k in PANEL_KEYS.values()}
-    panels={"UI_PANEL_4":"PASS" if dark["after"]["dark"] and search["pass"] and wallpaper_before==wallpaper_after else "HOLD"}
+    wallpaper_after=sha(PLASMA) if PLASMA.is_file() else None
+    panels={"UI_PANEL_4":"PASS" if dark["status"]=="PASS" and search["pass"] and wallpaper_before==wallpaper_after else "HOLD"}
     for n,key in PANEL_KEYS.items():
-        ok=dispatch[key]["pass"] and launcher[key]["pass"] and icons[key]["pass"]
-        if key=="proyectos":
-            try: ok=ok and pathlib.Path(dispatch[key]["result"].get("target","")).resolve()==PROYECTOS.resolve()
-            except Exception: ok=False
+        target=AREAS[key]
+        ok=target.is_dir() and (key!="proyectos" or not target.is_symlink()) and launcher[key]["pass"] and icons[key]["pass"]
         panels[f"UI_PANEL_{n}"]="PASS" if ok else "HOLD"
     post=observe("P10_UI_POST")
     checks={
       "reference_hash":sha(UI_REF)==EXPECTED_UI_SHA,
+      "surgical_extend_not_replace":patch.get("status")=="PASS",
       "semantic_visual_equivalence":all(v=="PASS" for v in panels.values()),
-      "dark_sober_surface":dark["after"]["dark"],
+      "dark_sober_surface":dark["status"]=="PASS",
       "fixed_domain_navigation":places["pass"],
       "familiar_search_surface":search["pass"],
       "wallpaper_preserved":wallpaper_before==wallpaper_after,
-      "all_dispatchers_operational":all(v["pass"] for v in dispatch.values()),
+      "v7_verify_pass":patch.get("verify",{}).get("returncode")==0,
       "panel_launchers_existing":all(v["pass"] for v in launcher.values()),
       "panel_icons_existing":all(v["pass"] for v in icons.values()),
-      "projects_canonical":dispatch["proyectos"]["pass"],
+      "projects_canonical":PROYECTOS.is_dir() and not PROYECTOS.is_symlink(),
       "lrb_pre_post":bool(pre["observe"].get("evidence_sha256")) and bool(post["observe"].get("evidence_sha256")),
       "no_duplicate_launcher_creation":True,
       "no_debian_kde_reinstall":True,
       "part4_untouched":True
     }
     status="PASS" if all(checks.values()) else "HOLD"
-    q={"schema":"LOUKSNA_R4_UI_PANEL_4_9_RESULT/1.0","status":status,"executor":EXECUTOR,"observer":OBSERVER,
+    rollback_performed=False; restored=[]
+    if status!="PASS" and (patch.get("changed") or dark.get("changed")):
+        restored=restore_checkpoint(cp); rollback_performed=True
+        # Rollback itself must be verified.
+        if not all(pathlib.Path(x["path"]).exists() for x in restored if "path" in x):
+            raise RuntimeError("P10_ROLLBACK_VERIFY_FAILED")
+    q={"schema":"LOUKSNA_R4_UI_PANEL_4_9_RESULT/2.0","status":status,"executor":EXECUTOR,"observer":OBSERVER,
        "mission_id":mid,"reference_sha256":EXPECTED_UI_SHA,"reference_path":str(UI_REF),
-       "panels":panels,"checks":checks,"dispatcher":{"path":str(LIVE_UI),"sha256":sha(LIVE_UI),"changed":source_changed,"checks":dispatch},
-       "launchers":launcher,"icons":icons,"dolphin_places":places,"search_surface":search,"dark_surface":dark,
+       "panels":panels,"checks":checks,"surgical_patch":patch,"launchers":launcher,"icons":icons,
+       "dolphin_places":places,"search_surface":search,"dark_surface":dark,
        "wallpaper_config_sha256_before":wallpaper_before,"wallpaper_config_sha256_after":wallpaper_after,
        "lrb_visual_evidence":post["observe"].get("evidence_sha256"),
        "lrb_visual_evidence_mode":"READ_ONLY_LRB_STATE_PLUS_KDE_STRUCTURAL_SEMANTIC_EQUIVALENCE",
-       "checkpoint":str(cp),"partitioning_performed":False,"downloads_performed":False,
+       "checkpoint":str(cp),"rollback_performed":rollback_performed,"rollback_restored":restored,
+       "partitioning_performed":False,"downloads_performed":False,
        "debian_reinstall_performed":False,"kde_reinstall_performed":False,"completed_at_utc":utc()}
     atomic_json(STATE/"UI_PANEL_4_9_RESULT.json",q)
     return q
@@ -282,9 +286,11 @@ def find_named(tokens,limit=100):
 def p12(mid):
     pre=observe("P12_PROJECTS_CENTER_PRE")
     ui=json.loads((STATE/"UI_PANEL_4_9_RESULT.json").read_text(encoding="utf-8")) if (STATE/"UI_PANEL_4_9_RESULT.json").is_file() else {}
-    dispatch=run(["python3","-B",LIVE_UI,"--check","proyectos"],30) if LIVE_UI.is_file() else {"returncode":127,"stdout":"","stderr":"UI_MISSING"}
-    try: route=json.loads(dispatch["stdout"])
-    except Exception: route={}
+    verify=run(["python3","-B",LIVE_UI,"--verify"],180) if LIVE_UI.is_file() else {"returncode":127,"stdout":"","stderr":"UI_MISSING"}
+    launcher=launcher_check("proyectos")
+    source=LIVE_UI.read_text(encoding="utf-8",errors="replace") if LIVE_UI.is_file() else ""
+    route_ok=(verify["returncode"]==0 and launcher["pass"] and 'ORIGINAL=H/"PROYECTOS"' in source
+              and 'CANONICAL_PROJECTS_ROOT_DRIFT' in source and 'pathlib.Path("/media")/H.name/"Windows/PROYECTOS"' not in source)
     custos=next((p for p in CUSTOSZ if p.is_file()),None)
     roadmaps=find_named(("roadmap","hoja de ruta","road map"))
     goals=find_named(("metas","meta","goals","goal","objetivos","objetivo"))
@@ -294,9 +300,6 @@ def p12(mid):
     evidence+=find_named(("evidence","evidencia"),40)
     semantic=[str(p) for p in [AUTHORITY,HOME/".local/lib/louksna/symphylax-r1/LOUKSNAMEJORADA.md"] if p.is_file()]
     semantic+=find_named(("semantic","semantica","semántica","identity","manifest"),40)
-    route_ok=False
-    try: route_ok=dispatch["returncode"]==0 and route.get("status")=="PASS" and pathlib.Path(route.get("target","")).resolve()==PROYECTOS.resolve()
-    except Exception: route_ok=False
     checks={
       "p10_material_pass":ui.get("status")=="PASS",
       "canonical_root":PROYECTOS.is_dir() and not PROYECTOS.is_symlink(),
@@ -312,9 +315,10 @@ def p12(mid):
     post=observe("P12_PROJECTS_CENTER_POST")
     checks["lrb_pre_post"]=bool(pre["observe"].get("evidence_sha256")) and bool(post["observe"].get("evidence_sha256"))
     status="PASS" if all(checks.values()) else "HOLD"
-    q={"schema":"LOUKSNA_R4_PROJECTS_CENTER_RESULT/1.0","status":status,"executor":EXECUTOR,"observer":OBSERVER,
+    q={"schema":"LOUKSNA_R4_PROJECTS_CENTER_RESULT/2.0","status":status,"executor":EXECUTOR,"observer":OBSERVER,
        "mission_id":mid,"canonical_root":str(PROYECTOS.resolve()) if PROYECTOS.exists() else str(PROYECTOS),
-       "route":route,"custos_local":{"path":str(custos),"sha256":sha(custos)} if custos else None,
+       "route":{"verify":verify,"launcher":launcher,"canonical_source_binding":route_ok},
+       "custos_local":{"path":str(custos),"sha256":sha(custos)} if custos else None,
        "roadmaps":roadmaps,"goals":goals,"checkpoints":checkpoints,"evidence":evidence,"semantic_context":semantic,
        "checks":checks,"lrb_evidence_sha256":post["observe"].get("evidence_sha256"),
        "partitioning_performed":False,"downloads_performed":False,"data_copy_performed":False,"completed_at_utc":utc()}
