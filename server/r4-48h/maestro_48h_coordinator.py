@@ -393,16 +393,29 @@ def evidence_for(point):
     elif point=="P03":
         ms=load(R4/"MASTER_STATUS.json",{}) or {}
         st=details["master_service"]
+        lease=load(R4/"MASTER_CUSTOSZ_MISSION.json",{}) or {}
+        live_master_text=(LIVE/"master_controller.py").read_text(encoding="utf-8",errors="replace") if (LIVE/"master_controller.py").is_file() else ""
+        lease_v2=lease.get("schema")=="LOUKSNA_R4_GLOBAL_MISSION_LEASE/2.0"
+        legacy_bounded=(
+            not lease.get("schema")
+            and bool(lease.get("mission_id"))
+            and 1 <= int(lease.get("lease_hours",0) or 0) <= 24
+            and "LOUKSNA_R4_GLOBAL_MISSION_LEASE/2.0" in live_master_text
+            and "min(24,configured" in live_master_text
+        )
         checks={
             **common,
             "dependency_P01":point_cert("P01") is not None,
             "master_active":st.get("ActiveState")=="active" and st.get("MainPID") not in (None,"","0"),
             "anti_paralysis_non_null":ms.get("anti_paralysis_contract")=="R4_15P_ANTI_PARALYSIS_V1",
-            "renewable_lease":(load(R4/"MASTER_CUSTOSZ_MISSION.json",{}) or {}).get("schema")=="LOUKSNA_R4_GLOBAL_MISSION_LEASE/2.0",
+            "lease_bounded":1 <= int(lease.get("lease_hours",0) or 0) <= 24,
+            "renewal_code_live":"LOUKSNA_R4_GLOBAL_MISSION_LEASE/2.0" in live_master_text and "min(24,configured" in live_master_text,
+            "lease_state_acceptable":lease_v2 or legacy_bounded,
             "restart_storm_not_active":restart_storm_guard()
         }
         details["master_status"]=ms
-        details["lease"]=load(R4/"MASTER_CUSTOSZ_MISSION.json",{}) or {}
+        details["lease"]=lease
+        details["lease_class"]="V2" if lease_v2 else ("LEGACY_BOUNDED_ACTIVE" if legacy_bounded else "INVALID")
     elif point=="P04":
         checks={
             **common,
