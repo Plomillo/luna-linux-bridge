@@ -535,7 +535,7 @@ def part8(mid):
       "recovery_proof":backup.get("recovery_proof")=="HASH_IDENTICAL_TEMP_RESTORE",
       "hygiene_dry_run_first":True,"unknown_preserve":True,
       "protected_paths_denied":all(pathlib.Path(x).is_absolute() for x in map(str,PROTECTED)),
-      "no_cleanup_performed":True,"resource_governor_observed":mem.get("MemTotal:",0)>0 and len(load)==3,
+      "no_cleanup_performed":True,"resource_governor_observed":mem.get("MemTotal",0)>0 and mem.get("MemAvailable",0)>=0 and len(load)==3,
       "heavy_work_serialization_policy":True,"quality_floor_not_reduced":True,
       "metaos":(HOME/".local/lib/louksna/symphylax-r1/MetaOS.wasm").is_file(),
       "runtime":(HOME/".local/lib/louksna/symphylax-r1/CUSTOSZ_RUNTIME_V1_SR_EXEC_BOUND_FME_01.b.pyz").is_file(),
