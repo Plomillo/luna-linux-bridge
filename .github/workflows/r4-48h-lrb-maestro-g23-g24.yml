@@ -313,6 +313,9 @@ jobs:
 
           systemctl --user daemon-reload
           systemctl --user enable luna-r4-48h-coordinator.service
+          # Repeated certified deployments may legitimately hit systemd's start-rate
+          # limiter. Clear only the failed/rate-limit state before the governed restart.
+          systemctl --user reset-failed luna-r4-48h-coordinator.service || true
           systemctl --user restart luna-r4-48h-coordinator.service
 
           sleep 5
