@@ -1,0 +1,442 @@
+name: "CUSTOSZ Mailbox — terminal dispatch bridge repair 6m"
+
+on:
+  push:
+    branches:
+      - staging/mailbox-dispatch-bridge-repair-20261002
+    paths:
+      - mission-control/mailbox-dispatch-bridge-repair/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mailbox-dispatch-bridge-repair-6m
+  cancel-in-progress: false
+
+env:
+  GROSS_CEILING_SECONDS: "360"
+  REPAIR_BRANCH: "staging/mailbox-dispatch-bridge-repair-20261002"
+
+jobs:
+  candidate:
+    name: "Candidate — deterministic repair and selftests"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    outputs:
+      candidate_digest: ${{ steps.digest.outputs.candidate_digest }}
+    steps:
+      - name: Open gross six-minute budget
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          START="$(date +%s)"
+          DEADLINE="$((START + GROSS_CEILING_SECONDS))"
+          mkdir -p "$RUNNER_TEMP/mailbox-repair"
+          python3 - "$START" "$DEADLINE" > "$RUNNER_TEMP/mailbox-repair/BUDGET.json" <<'PY'
+          import json,sys,datetime as dt
+          start=int(sys.argv[1]); deadline=int(sys.argv[2])
+          print(json.dumps({
+            "schema":"LOUKSNA_MAILBOX_REPAIR_GROSS_BUDGET/1.0",
+            "gross_ceiling_seconds":360,
+            "started_epoch":start,
+            "deadline_epoch":deadline,
+            "started_utc":dt.datetime.fromtimestamp(start,dt.timezone.utc).isoformat(),
+            "deadline_utc":dt.datetime.fromtimestamp(deadline,dt.timezone.utc).isoformat()
+          },indent=2,sort_keys=True))
+          PY
+          cat "$RUNNER_TEMP/mailbox-repair/BUDGET.json"
+
+      - name: Checkout exact repair branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.REPAIR_BRANCH }}
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Prove exact defect before repair
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          grep -q 'ROUTED_READY_NOT_YET_EXECUTED' scripts/mission_mailbox/route_mission.py
+          ! test -f scripts/mission_mailbox/dispatch_execution.py
+          ! grep -q 'MAILBOX_TERMINAL_DISPATCH_BRIDGE_V1' .github/workflows/custosz-mission-mailbox.yml
+          grep -q 'actions: write' .github/workflows/r4-branch-dispatch-capability-test.yml
+          grep -q 'workflow_dispatch:' .github/workflows/r4-branch-dispatch-capability-test.yml
+          echo "EXACT_DEFECT_AND_DISPATCH_CAPABILITY=PASS"
+
+      - name: Build candidate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B -I scripts/mission_mailbox/repair_dispatch_bridge_candidate.py             --repo-root .             --out "$RUNNER_TEMP/mailbox-repair"
+
+      - name: Candidate tests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -m py_compile             scripts/mission_mailbox/dispatch_execution.py             scripts/mission_mailbox/test_dispatch_execution.py             scripts/mission_mailbox/route_mission.py
+          python3 -B -I scripts/mission_mailbox/test_router_policy.py
+          python3 -B -I scripts/mission_mailbox/test_dispatch_execution.py
+          python3 - <<'PY'
+          import hashlib,json,pathlib
+          root=pathlib.Path(".")
+          reg=json.load(open("mission-mailbox/runtime-adapters/registry.json",encoding="utf-8"))
+          active=[x for x in reg["adapters"] if x.get("status")=="ACTIVE_PINNED"]
+          assert active
+          for a in active:
+              wf=a.get("dedicated_workflow")
+              pin=a.get("dedicated_workflow_sha256")
+              assert wf and pin and len(pin)==64,a
+              p=root/wf
+              assert p.is_file(),a
+              assert hashlib.sha256(p.read_bytes()).hexdigest()==pin,a
+              assert "workflow_dispatch:" in p.read_text(encoding="utf-8"),a
+          text=pathlib.Path(".github/workflows/custosz-mission-mailbox.yml").read_text()
+          assert "MAILBOX_TERMINAL_DISPATCH_BRIDGE_V1" in text
+          assert "actions: write" in text
+          assert "dispatch_execution.py" in text
+          print("ACTIVE_PINNED_DISPATCH_CONTRACTS=PASS")
+          PY
+
+      - id: digest
+        name: Freeze candidate digest
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/mailbox-repair"
+          mkdir -p "$OUT/candidate"
+          for p in             mission-mailbox/runtime-adapters/registry.json             .github/workflows/custosz-mission-mailbox.yml             scripts/mission_mailbox/dispatch_execution.py             scripts/mission_mailbox/test_dispatch_execution.py; do
+            mkdir -p "$OUT/candidate/$(dirname "$p")"
+            cp "$p" "$OUT/candidate/$p"
+          done
+          DIGEST="$(python3 - "$OUT" <<'PY'
+          import hashlib,json,pathlib,sys
+          out=pathlib.Path(sys.argv[1])
+          m=json.load(open(out/"REPAIR_MANIFEST.json",encoding="utf-8"))
+          rows=[]
+          for x in sorted(m["changed_files"],key=lambda z:z["path"]):
+              p=out/"candidate"/x["path"]
+              b=p.read_bytes()
+              h=hashlib.sha256(b).hexdigest()
+              assert h==x["sha256"]
+              assert len(b)==x["bytes"]
+              rows.append({"path":x["path"],"sha256":h,"bytes":len(b)})
+          raw=json.dumps(rows,sort_keys=True,separators=(",",":")).encode()
+          print(hashlib.sha256(raw).hexdigest())
+          PY
+          )"
+          echo "candidate_digest=$DIGEST" >> "$GITHUB_OUTPUT"
+          echo "$DIGEST" > "$OUT/CANDIDATE_DIGEST.txt"
+          echo "CANDIDATE_DIGEST=$DIGEST"
+
+      - name: Preserve frozen candidate
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: mailbox-dispatch-bridge-candidate
+          path: ${{ runner.temp }}/mailbox-repair
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  g23:
+    name: "G23 — independent hosted validation"
+    needs: candidate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    outputs:
+      g23_sha256: ${{ steps.g23.outputs.g23_sha256 }}
+    steps:
+      - name: Checkout producer-independent baseline
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 1
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: mailbox-dispatch-bridge-candidate
+          path: ${{ runner.temp }}/candidate
+
+      - name: Enforce gross deadline
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          DEADLINE="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["deadline_epoch"])' "$RUNNER_TEMP/candidate/BUDGET.json")"
+          NOW="$(date +%s)"
+          test "$NOW" -lt "$DEADLINE"
+          echo "G23_BUDGET_REMAINING=$((DEADLINE-NOW))"
+
+      - id: g23
+        name: Validate exact candidate without repair permission
+        shell: bash
+        env:
+          EXPECTED_DIGEST: ${{ needs.candidate.outputs.candidate_digest }}
+        run: |
+          set -Eeuo pipefail
+          cp -a "$RUNNER_TEMP/candidate/candidate/." .
+          python3 -m py_compile scripts/mission_mailbox/dispatch_execution.py scripts/mission_mailbox/test_dispatch_execution.py
+          python3 -B -I scripts/mission_mailbox/test_router_policy.py
+          python3 -B -I scripts/mission_mailbox/test_dispatch_execution.py
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/candidate" "$EXPECTED_DIGEST" "$RUNNER_TEMP/g23/G23.json" <<'PY'
+          import hashlib,json,pathlib,sys
+          src=pathlib.Path(sys.argv[1]); expected=sys.argv[2]; out=pathlib.Path(sys.argv[3])
+          manifest=json.load(open(src/"REPAIR_MANIFEST.json",encoding="utf-8"))
+          rows=[]
+          checks={
+            "authority_preserved":manifest.get("authority")=="Louksna.md",
+            "louksna_mutated":manifest.get("invariants",{}).get("louksna_mutated") is False,
+            "router_semantics_preserved":manifest.get("invariants",{}).get("router_classification_semantics_mutated") is False,
+            "dispatch_not_terminal_success":manifest.get("invariants",{}).get("material_dispatch_is_terminal_success") is False,
+            "active_pinned_contract_required":manifest.get("invariants",{}).get("active_pinned_requires_dispatch_contract") is True,
+            "workflow_pin_required":manifest.get("invariants",{}).get("workflow_sha256_pin_required") is True,
+            "github_hosted_dispatch":manifest.get("invariants",{}).get("dispatch_runs_on_github_hosted") is True,
+            "self_certification_denied":manifest.get("invariants",{}).get("self_certification") is False,
+          }
+          allowed={
+            "mission-mailbox/runtime-adapters/registry.json",
+            ".github/workflows/custosz-mission-mailbox.yml",
+            "scripts/mission_mailbox/dispatch_execution.py",
+            "scripts/mission_mailbox/test_dispatch_execution.py",
+          }
+          actual={x["path"] for x in manifest["changed_files"]}
+          checks["change_scope_exact"]=actual==allowed
+          for x in sorted(manifest["changed_files"],key=lambda z:z["path"]):
+              p=src/"candidate"/x["path"]; b=p.read_bytes(); h=hashlib.sha256(b).hexdigest()
+              checks["hash_"+x["path"]]=(h==x["sha256"] and len(b)==x["bytes"])
+              rows.append({"path":x["path"],"sha256":h,"bytes":len(b)})
+          digest=hashlib.sha256(json.dumps(rows,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          checks["candidate_digest_bound"]=digest==expected
+          ok=all(checks.values())
+          report={
+            "schema":"LOUKSNA_MAILBOX_DISPATCH_BRIDGE_G23/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "scope":"MAILBOX_ROUTER_TO_MATERIAL_DISPATCH_BRIDGE",
+            "candidate_digest_sha256":digest,
+            "independent_validator":"GITHUB_HOSTED_UBUNTU_G23",
+            "repair_allowed":False,
+            "checks":checks,
+          }
+          out.write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+          if not ok: raise SystemExit(23)
+          PY
+          H="$(sha256sum "$RUNNER_TEMP/g23/G23.json" | awk '{print $1}')"
+          echo "g23_sha256=$H" >> "$GITHUB_OUTPUT"
+          cat "$RUNNER_TEMP/g23/G23.json"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: mailbox-dispatch-bridge-g23
+          path: ${{ runner.temp }}/g23/G23.json
+          if-no-files-found: error
+          retention-days: 90
+
+  g24:
+    name: "G24 — digest-bound terminal repair certification"
+    needs: [candidate, g23]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      g24_sha256: ${{ steps.cert.outputs.g24_sha256 }}
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: mailbox-dispatch-bridge-candidate
+          path: ${{ runner.temp }}/candidate
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: mailbox-dispatch-bridge-g23
+          path: ${{ runner.temp }}/g23
+
+      - name: Enforce gross deadline
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          DEADLINE="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["deadline_epoch"])' "$RUNNER_TEMP/candidate/BUDGET.json")"
+          NOW="$(date +%s)"
+          test "$NOW" -lt "$DEADLINE"
+          echo "G24_BUDGET_REMAINING=$((DEADLINE-NOW))"
+
+      - id: cert
+        name: Bind G24 to exact G23 and GitHub OIDC identity
+        shell: bash
+        env:
+          EXPECTED_DIGEST: ${{ needs.candidate.outputs.candidate_digest }}
+          EXPECTED_G23_SHA: ${{ needs.g23.outputs.g23_sha256 }}
+        run: |
+          set -Eeuo pipefail
+          G23="$RUNNER_TEMP/g23/G23.json"
+          test "$(sha256sum "$G23" | awk '{print $1}')" = "$EXPECTED_G23_SHA"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$G23")" = "PASS"
+          AUD="louksna-mailbox-dispatch-bridge:$EXPECTED_DIGEST"
+          TOKEN_JSON="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.load(sys.stdin)["value"])' <<<"$TOKEN_JSON")"
+          test -n "$TOKEN"
+          mkdir -p "$RUNNER_TEMP/g24"
+          TOKEN="$TOKEN" python3 - "$G23" "$EXPECTED_DIGEST" "$EXPECTED_G23_SHA" "$RUNNER_TEMP/g24/G24.json" <<'PY'
+          import hashlib,json,os,pathlib,sys,datetime as dt
+          g23p=pathlib.Path(sys.argv[1]); digest=sys.argv[2]; g23sha=sys.argv[3]; out=pathlib.Path(sys.argv[4])
+          g=json.load(open(g23p,encoding="utf-8")); tok=os.environ["TOKEN"]
+          checks={
+            "g23_pass":g.get("status")=="PASS",
+            "g23_candidate_bound":g.get("candidate_digest_sha256")==digest,
+            "g23_hash_bound":hashlib.sha256(g23p.read_bytes()).hexdigest()==g23sha,
+            "oidc_present":bool(tok),
+          }
+          ok=all(checks.values())
+          cert={
+            "schema":"LOUKSNA_MAILBOX_DISPATCH_BRIDGE_G24/1.0",
+            "status":"PASS" if ok else "BLOCKED",
+            "scope":"MAILBOX_ROUTER_TO_MATERIAL_DISPATCH_BRIDGE",
+            "authority":"Louksna.md",
+            "candidate_digest_sha256":digest,
+            "g23_sha256":g23sha,
+            "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(tok.encode()).hexdigest(),
+            "certification_propagated":False,
+            "canonical_mutation":False,
+            "promotion_authorized":ok,
+            "checks":checks,
+            "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          out.write_text(json.dumps(cert,indent=2,sort_keys=True)+"\n")
+          if not ok: raise SystemExit(24)
+          PY
+          H="$(sha256sum "$RUNNER_TEMP/g24/G24.json" | awk '{print $1}')"
+          echo "g24_sha256=$H" >> "$GITHUB_OUTPUT"
+          cat "$RUNNER_TEMP/g24/G24.json"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: mailbox-dispatch-bridge-g24
+          path: ${{ runner.temp }}/g24/G24.json
+          if-no-files-found: error
+          retention-days: 90
+
+  promote:
+    name: "Promote exact G24-certified candidate"
+    needs: [candidate, g23, g24]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout live repair branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.REPAIR_BRANCH }}
+          persist-credentials: true
+          fetch-depth: 2
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: mailbox-dispatch-bridge-candidate
+          path: ${{ runner.temp }}/candidate
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: mailbox-dispatch-bridge-g24
+          path: ${{ runner.temp }}/g24
+
+      - name: Enforce gross deadline and promote
+        shell: bash
+        env:
+          EXPECTED_DIGEST: ${{ needs.candidate.outputs.candidate_digest }}
+          EXPECTED_G24_SHA: ${{ needs.g24.outputs.g24_sha256 }}
+        run: |
+          set -Eeuo pipefail
+          DEADLINE="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["deadline_epoch"])' "$RUNNER_TEMP/candidate/BUDGET.json")"
+          NOW="$(date +%s)"
+          test "$NOW" -lt "$DEADLINE"
+          CERT="$RUNNER_TEMP/g24/G24.json"
+          test "$(sha256sum "$CERT" | awk '{print $1}')" = "$EXPECTED_G24_SHA"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$CERT")" = "PASS"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["candidate_digest_sha256"])' "$CERT")" = "$EXPECTED_DIGEST"
+          cp -a "$RUNNER_TEMP/candidate/candidate/." .
+          python3 -B -I scripts/mission_mailbox/test_dispatch_execution.py
+          python3 -B -I scripts/mission_mailbox/test_router_policy.py
+          git config user.name "louksna-github-certifier"
+          git config user.email "actions@users.noreply.github.com"
+          git add             mission-mailbox/runtime-adapters/registry.json             .github/workflows/custosz-mission-mailbox.yml             scripts/mission_mailbox/dispatch_execution.py             scripts/mission_mailbox/test_dispatch_execution.py
+          git diff --cached --quiet && { echo "NO_CANDIDATE_DIFF"; exit 31; }
+          git commit -m "repair(mailbox): close certified router-to-execution dispatch bridge"
+          git push origin "HEAD:$REPAIR_BRANCH"
+          echo "PROMOTION_COMMIT=$(git rev-parse HEAD)"
+
+  terminal:
+    name: "Terminal — verify promoted repair"
+    needs: [candidate, g23, g24, promote]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    steps:
+      - name: Checkout promoted branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.REPAIR_BRANCH }}
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: mailbox-dispatch-bridge-candidate
+          path: ${{ runner.temp }}/candidate
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: mailbox-dispatch-bridge-g24
+          path: ${{ runner.temp }}/g24
+
+      - name: Terminal integrity and non-regression
+        shell: bash
+        env:
+          EXPECTED_DIGEST: ${{ needs.candidate.outputs.candidate_digest }}
+          EXPECTED_G23_SHA: ${{ needs.g23.outputs.g23_sha256 }}
+          EXPECTED_G24_SHA: ${{ needs.g24.outputs.g24_sha256 }}
+        run: |
+          set -Eeuo pipefail
+          DEADLINE="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["deadline_epoch"])' "$RUNNER_TEMP/candidate/BUDGET.json")"
+          NOW="$(date +%s)"
+          test "$NOW" -le "$DEADLINE"
+          python3 -m py_compile scripts/mission_mailbox/dispatch_execution.py scripts/mission_mailbox/test_dispatch_execution.py scripts/mission_mailbox/route_mission.py
+          python3 -B -I scripts/mission_mailbox/test_router_policy.py
+          python3 -B -I scripts/mission_mailbox/test_dispatch_execution.py
+          python3 - "$RUNNER_TEMP/candidate" "$EXPECTED_DIGEST" "$EXPECTED_G23_SHA" "$EXPECTED_G24_SHA" > "$RUNNER_TEMP/TERMINAL_CERTIFICATION.json" <<'PY'
+          import hashlib,json,pathlib,sys,datetime as dt
+          src=pathlib.Path(sys.argv[1]); digest=sys.argv[2]; g23=sys.argv[3]; g24=sys.argv[4]
+          m=json.load(open(src/"REPAIR_MANIFEST.json",encoding="utf-8"))
+          checks={}
+          rows=[]
+          for x in sorted(m["changed_files"],key=lambda z:z["path"]):
+              p=pathlib.Path(x["path"]); b=p.read_bytes(); h=hashlib.sha256(b).hexdigest()
+              checks["live_"+x["path"]]=(h==x["sha256"] and len(b)==x["bytes"])
+              rows.append({"path":x["path"],"sha256":h,"bytes":len(b)})
+          actual=hashlib.sha256(json.dumps(rows,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          checks["candidate_digest_live"]=actual==digest
+          checks["bridge_marker"]="MAILBOX_TERMINAL_DISPATCH_BRIDGE_V1" in pathlib.Path(".github/workflows/custosz-mission-mailbox.yml").read_text()
+          checks["dispatcher_materialized"]=pathlib.Path("scripts/mission_mailbox/dispatch_execution.py").is_file()
+          ok=all(checks.values())
+          q={
+            "schema":"LOUKSNA_MAILBOX_DISPATCH_BRIDGE_TERMINAL/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "operational_status":"CERTIFIED_ACTIVE_IN_SCOPE" if ok else "HOLD",
+            "scope":"MAILBOX_ROUTER_TO_MATERIAL_DISPATCH_BRIDGE",
+            "candidate_digest_sha256":digest,
+            "g23_sha256":g23,
+            "g24_sha256":g24,
+            "certification_propagated":False,
+            "canonical_mutation":False,
+            "checks":checks,
+            "verified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(25)
+          PY
+          cat "$RUNNER_TEMP/TERMINAL_CERTIFICATION.json"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: mailbox-dispatch-bridge-terminal
+          path: ${{ runner.temp }}/TERMINAL_CERTIFICATION.json
+          if-no-files-found: error
+          retention-days: 90
