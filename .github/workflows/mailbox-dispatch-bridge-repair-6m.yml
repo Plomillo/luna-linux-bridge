@@ -145,6 +145,7 @@ jobs:
           if-no-files-found: error
           retention-days: 90
           compression-level: 0
+          include-hidden-files: true
 
   g23:
     name: "G23 — independent hosted validation"
