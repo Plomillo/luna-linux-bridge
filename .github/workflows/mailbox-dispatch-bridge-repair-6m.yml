@@ -325,126 +325,62 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
-  promote:
-    name: "Promote exact G24-certified candidate"
+  handoff:
+    name: "Certified handoff — external authorized GitHub promotion"
     needs: [candidate, g23, g24]
     runs-on: ubuntu-24.04
     timeout-minutes: 1
     permissions:
-      contents: write
+      contents: read
     steps:
-      - name: Checkout live repair branch
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          ref: ${{ env.REPAIR_BRANCH }}
-          persist-credentials: true
-          fetch-depth: 2
-
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: mailbox-dispatch-bridge-candidate
           path: ${{ runner.temp }}/candidate
+
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: mailbox-dispatch-bridge-g24
           path: ${{ runner.temp }}/g24
 
-      - name: Enforce gross deadline and promote
+      - name: Verify G24 and emit promotion handoff only
         shell: bash
         env:
           EXPECTED_DIGEST: ${{ needs.candidate.outputs.candidate_digest }}
           EXPECTED_G24_SHA: ${{ needs.g24.outputs.g24_sha256 }}
         run: |
           set -Eeuo pipefail
-          DEADLINE="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["deadline_epoch"])' "$RUNNER_TEMP/candidate/BUDGET.json")"
-          NOW="$(date +%s)"
-          test "$NOW" -lt "$DEADLINE"
           CERT="$RUNNER_TEMP/g24/G24.json"
           test "$(sha256sum "$CERT" | awk '{print $1}')" = "$EXPECTED_G24_SHA"
           test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$CERT")" = "PASS"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["promotion_authorized"])' "$CERT")" = "True"
           test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["candidate_digest_sha256"])' "$CERT")" = "$EXPECTED_DIGEST"
-          cp -a "$RUNNER_TEMP/candidate/candidate/." .
-          python3 -B -I scripts/mission_mailbox/test_dispatch_execution.py
-          python3 -B -I scripts/mission_mailbox/test_router_policy.py
-          git config user.name "louksna-github-certifier"
-          git config user.email "actions@users.noreply.github.com"
-          git add             mission-mailbox/runtime-adapters/registry.json             .github/workflows/custosz-mission-mailbox.yml             scripts/mission_mailbox/dispatch_execution.py             scripts/mission_mailbox/test_dispatch_execution.py
-          git diff --cached --quiet && { echo "NO_CANDIDATE_DIFF"; exit 31; }
-          git commit -m "repair(mailbox): close certified router-to-execution dispatch bridge"
-          git push origin "HEAD:$REPAIR_BRANCH"
-          echo "PROMOTION_COMMIT=$(git rev-parse HEAD)"
 
-  terminal:
-    name: "Terminal — verify promoted repair"
-    needs: [candidate, g23, g24, promote]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 1
-    steps:
-      - name: Checkout promoted branch
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          ref: ${{ env.REPAIR_BRANCH }}
-          persist-credentials: false
-          fetch-depth: 1
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        with:
-          name: mailbox-dispatch-bridge-candidate
-          path: ${{ runner.temp }}/candidate
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        with:
-          name: mailbox-dispatch-bridge-g24
-          path: ${{ runner.temp }}/g24
-
-      - name: Terminal integrity and non-regression
-        shell: bash
-        env:
-          EXPECTED_DIGEST: ${{ needs.candidate.outputs.candidate_digest }}
-          EXPECTED_G23_SHA: ${{ needs.g23.outputs.g23_sha256 }}
-          EXPECTED_G24_SHA: ${{ needs.g24.outputs.g24_sha256 }}
-        run: |
-          set -Eeuo pipefail
-          DEADLINE="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["deadline_epoch"])' "$RUNNER_TEMP/candidate/BUDGET.json")"
-          NOW="$(date +%s)"
-          test "$NOW" -le "$DEADLINE"
-          python3 -m py_compile scripts/mission_mailbox/dispatch_execution.py scripts/mission_mailbox/test_dispatch_execution.py scripts/mission_mailbox/route_mission.py
-          python3 -B -I scripts/mission_mailbox/test_router_policy.py
-          python3 -B -I scripts/mission_mailbox/test_dispatch_execution.py
-          python3 - "$RUNNER_TEMP/candidate" "$EXPECTED_DIGEST" "$EXPECTED_G23_SHA" "$EXPECTED_G24_SHA" > "$RUNNER_TEMP/TERMINAL_CERTIFICATION.json" <<'PY'
-          import hashlib,json,pathlib,sys,datetime as dt
-          src=pathlib.Path(sys.argv[1]); digest=sys.argv[2]; g23=sys.argv[3]; g24=sys.argv[4]
-          m=json.load(open(src/"REPAIR_MANIFEST.json",encoding="utf-8"))
-          checks={}
-          rows=[]
-          for x in sorted(m["changed_files"],key=lambda z:z["path"]):
-              p=pathlib.Path(x["path"]); b=p.read_bytes(); h=hashlib.sha256(b).hexdigest()
-              checks["live_"+x["path"]]=(h==x["sha256"] and len(b)==x["bytes"])
-              rows.append({"path":x["path"],"sha256":h,"bytes":len(b)})
-          actual=hashlib.sha256(json.dumps(rows,sort_keys=True,separators=(",",":")).encode()).hexdigest()
-          checks["candidate_digest_live"]=actual==digest
-          checks["bridge_marker"]="MAILBOX_TERMINAL_DISPATCH_BRIDGE_V1" in pathlib.Path(".github/workflows/custosz-mission-mailbox.yml").read_text()
-          checks["dispatcher_materialized"]=pathlib.Path("scripts/mission_mailbox/dispatch_execution.py").is_file()
-          ok=all(checks.values())
-          q={
-            "schema":"LOUKSNA_MAILBOX_DISPATCH_BRIDGE_TERMINAL/1.0",
-            "status":"PASS" if ok else "HOLD",
-            "operational_status":"CERTIFIED_ACTIVE_IN_SCOPE" if ok else "HOLD",
-            "scope":"MAILBOX_ROUTER_TO_MATERIAL_DISPATCH_BRIDGE",
-            "candidate_digest_sha256":digest,
-            "g23_sha256":g23,
-            "g24_sha256":g24,
-            "certification_propagated":False,
-            "canonical_mutation":False,
-            "checks":checks,
-            "verified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
-          }
-          print(json.dumps(q,indent=2,sort_keys=True))
-          if not ok: raise SystemExit(25)
+          OUT="$RUNNER_TEMP/promotion-handoff"
+          mkdir -p "$OUT"
+          python3 - "$CERT" "$EXPECTED_G24_SHA" "$EXPECTED_DIGEST" > "$OUT/AUTHORIZED_PROMOTION_HANDOFF.json" <<'PY'
+          import json,sys,datetime as dt
+          cert=json.load(open(sys.argv[1],encoding="utf-8"))
+          print(json.dumps({
+            "schema":"LOUKSNA_MAILBOX_PROMOTION_HANDOFF/1.0",
+            "status":"READY_FOR_AUTHORIZED_EXTERNAL_PROMOTION",
+            "authority":"Louksna.md",
+            "candidate_digest_sha256":sys.argv[3],
+            "g24_sha256":sys.argv[2],
+            "required_promotion_channel":"GITHUB_CONNECTED_WRITER",
+            "forbidden_promotion_channel":"GITHUB_ACTIONS_TOKEN_FOR_WORKFLOW_MUTATION",
+            "actions_may_promote_workflow_files":False,
+            "terminal_success_claimed":False,
+            "next_gate":"AUTHORIZED_GITHUB_PROMOTION_THEN_TERMINAL_G23_G24",
+            "created_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          },indent=2,sort_keys=True))
           PY
-          cat "$RUNNER_TEMP/TERMINAL_CERTIFICATION.json"
+          cat "$OUT/AUTHORIZED_PROMOTION_HANDOFF.json"
 
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - name: Preserve certified promotion handoff
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: mailbox-dispatch-bridge-terminal
-          path: ${{ runner.temp }}/TERMINAL_CERTIFICATION.json
+          name: mailbox-dispatch-bridge-promotion-handoff
+          path: ${{ runner.temp }}/promotion-handoff/AUTHORIZED_PROMOTION_HANDOFF.json
           if-no-files-found: error
           retention-days: 90
