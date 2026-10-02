@@ -85,13 +85,20 @@ jobs:
           active=[x for x in reg["adapters"] if x.get("status")=="ACTIVE_PINNED"]
           assert active
           for a in active:
+              mode=a.get("dispatch_mode")
               wf=a.get("dedicated_workflow")
               pin=a.get("dedicated_workflow_sha256")
+              assert mode in {"WORKFLOW_DISPATCH","PUSH_TRIGGER_FILE"},a
               assert wf and pin and len(pin)==64,a
               p=root/wf
               assert p.is_file(),a
               assert hashlib.sha256(p.read_bytes()).hexdigest()==pin,a
-              assert "workflow_dispatch:" in p.read_text(encoding="utf-8"),a
+              wtext=p.read_text(encoding="utf-8")
+              if mode=="WORKFLOW_DISPATCH":
+                  assert "workflow_dispatch:" in wtext,a
+              else:
+                  assert a.get("dispatch_ref") in wtext,a
+                  assert a.get("dispatch_trigger_path_prefix") in wtext,a
           text=pathlib.Path(".github/workflows/custosz-mission-mailbox.yml").read_text()
           assert "MAILBOX_TERMINAL_DISPATCH_BRIDGE_V1" in text
           assert "actions: write" in text
