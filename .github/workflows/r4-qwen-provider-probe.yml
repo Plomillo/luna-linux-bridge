@@ -1,0 +1,41 @@
+name: "R4 — Qwen reasoning provider capability probe"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-qwen-provider-probe.yml
+      - mission-control/r4-qwen-provider-probe/**
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+      QWEN_API_KEY: ${{ secrets.QWEN_API_KEY }}
+    steps:
+      - name: Report capability without exposing credentials
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          has_dashscope=false
+          has_qwen=false
+          [ -n "${DASHSCOPE_API_KEY:-}" ] && has_dashscope=true
+          [ -n "${QWEN_API_KEY:-}" ] && has_qwen=true
+          echo "SCHEMA=LOUKSNA_R4_QWEN_PROVIDER_CAPABILITY/1.0"
+          echo "DASHSCOPE_API_KEY_PRESENT=$has_dashscope"
+          echo "QWEN_API_KEY_PRESENT=$has_qwen"
+          echo "SECRETS_VALUES_EXPOSED=FALSE"
+          echo "HOST_MATERIAL_ACCESS=FALSE"
+          echo "DESKTOP_COMMANDER_USED=FALSE"
+          echo "PARTITIONING_PERFORMED=FALSE"
+          if [ "$has_dashscope" = true ] || [ "$has_qwen" = true ]; then
+            echo "QWEN_EXTERNAL_PROVIDER_CREDENTIAL=AVAILABLE"
+          else
+            echo "QWEN_EXTERNAL_PROVIDER_CREDENTIAL=ABSENT"
+          fi
