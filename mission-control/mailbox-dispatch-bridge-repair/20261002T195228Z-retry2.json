@@ -1,0 +1,8 @@
+{
+  "schema": "LOUKSNA_MAILBOX_DISPATCH_BRIDGE_REPAIR_TRIGGER/1.0",
+  "status": "AUTHORIZED_TO_START",
+  "gross_ceiling_seconds": 360,
+  "g23_required": true,
+  "g24_required": true,
+  "fail_closed": true
+}
