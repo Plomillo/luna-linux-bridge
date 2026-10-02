@@ -105,14 +105,51 @@ jobs:
             "part789_attempt_receipt_bound":'LOUKSNA_R4_PART789_ATTEMPT/1.0' in master and 'attempt_dir=R48_STATE/"material-attempts"' in master,
             "part789_identical_retry_denied":'REUSE_HOLD_NO_REPLAY' in master and 'requires_new_causal_worker_sha' in master and 'attempt.get("status") in {"RUNNING","PASS","HOLD","ERROR"}' in master,
             "part789_material_replay_false":'"material_replayed":False' in master,
-            "p25_single_token_real_inference":'"-c","64","-n","1","-t","1"' in worker789 and '"Reply with the single digit 7."' in worker789 and '"7" in generated' in worker789,
-            "p25_hard_timeout_bound":'"150s"' in worker789 and 'timeout=180' in worker789 and 'GNU_TIMEOUT_UNAVAILABLE_FAIL_CLOSED' in worker789,
-            "p25_same_local_qwen_no_substitution":'Qwen3.5-4B-S-TS-Q4_K_S.gguf' in worker789 and '"qwen_substitution":False' in worker789 and '"hosted_substitution":False' in worker789,
-            "p25_desktop_commander_denied":'"desktop_commander_used":False' in worker789,
-            "p25_stale_cleanup_exact_profiles":'MAESTRO_EXACT_OBSOLETE_P25_SIGNATURE_SIGTERM_ONLY' in worker789 and '"c":"256","n":"8","t":"1"' in worker789 and '"c":"512","n":"16","t":"2"' in worker789,
-            "p25_stale_cleanup_sigterm_only":'os.kill(x["pid"],signal.SIGTERM)' in worker789 and '"sigkill_used":False' in worker789 and '"sudo_used":False' in worker789,
-            "p25_stale_cleanup_fail_closed":'HOLD_OBSOLETE_P25_DID_NOT_EXIT_GRACEFULLY' in worker789 and 'OBSOLETE_P25_RETIRE_FAILED_FAIL_CLOSED' in worker789,
-            "p25_stale_cleanup_no_desktop_partition":'"desktop_commander_used":False' in worker789 and '"partitioning_performed":False' in worker789,
+            "p25_reasoning_contract_present":(
+                c.get("reasoning_operator",{}).get("schema")=="LOUKSNA_SHARED_REASONER_OPERATOR/1.0"
+                and c.get("control_fabric",{}).get("qwen_reasoner")=="GITHUB_REASONING_ONLY_SWAPPABLE_PROVIDER"
+            ),
+            "p25_qwen_reasoning_only":(
+                '"provider_current":"QWEN"' in worker789
+                and '"role":"REASONING_ONLY"' in worker789
+                and '"operator_plane":"GITHUB"' in worker789
+                and '"input_source":"LOUKSNA_REMOTE_BRIDGE_EVIDENCE_ONLY"' in worker789
+            ),
+            "p25_lrb_evidence_only":(
+                c.get("reasoning_operator",{}).get("input_source")=="LOUKSNA_REMOTE_BRIDGE_EVIDENCE_ONLY"
+                and 'lrb_evidence_sha256' in worker789
+            ),
+            "p25_no_material_or_host_authority":(
+                '"material_execution_authorized":False' in worker789
+                and '"host_observation_authorized":False' in worker789
+                and '"direct_host_tooling_authorized":False' in worker789
+                and '"inference_executed_on_host":False' in worker789
+                and c.get("reasoning_operator",{}).get("material_execution_authority") is False
+                and c.get("reasoning_operator",{}).get("host_observation_authority") is False
+            ),
+            "p25_maestro_material_executor":(
+                '"maestro_material_executor":True' in worker789
+                and c.get("reasoning_operator",{}).get("maestro_is_material_executor") is True
+            ),
+            "p25_provider_swappable":(
+                '"provider_swappable":True' in worker789
+                and c.get("reasoning_operator",{}).get("provider_swappable") is True
+                and c.get("reasoning_operator",{}).get("replacement_preserves_interface") is True
+            ),
+            "p25_no_local_backend_gate":(
+                'def p25_local_backend()' not in worker789
+                and 'def p25_reasoning_operator()' in worker789
+                and 'p25=p25_reasoning_operator()' in worker789
+            ),
+            "p25_no_model_runtime_download":(
+                '"model_download_performed":False' in worker789
+                and '"runtime_download_performed":False' in worker789
+                and c.get("anti_duplication",{}).get("p25_reasoner_download_forbidden_without_separate_authorization") is True
+            ),
+            "p25_desktop_commander_denied":(
+                '"desktop_commander_used":False' in worker789
+                and c.get("reasoning_operator",{}).get("desktop_commander_forbidden") is True
+            ),
           }
 
           # Static AST safety for coordinator: it may coordinate services and GitHub,
