@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import argparse, base64, datetime as dt, fcntl, hashlib, json, os, pathlib, re, shutil, subprocess, sys, tempfile, time, uuid, traceback
+import argparse, base64, datetime as dt, fcntl, hashlib, json, os, pathlib, re, shutil, subprocess, sys, tempfile, time, uuid, traceback, urllib.parse, xml.etree.ElementTree as ET
 
 HOME=pathlib.Path("/home/diegoignacionorambuenamiranda")
 PROJECT_ROOT=HOME/"LOUKSNA_MAESTRO_20260925"
@@ -47,6 +47,9 @@ PART4_P3_EXEC_STATE=PART4_P3_EXEC_DIR/"EXECUTION.json"
 R48_CONTRACT=pathlib.Path(__file__).with_name("R4_48H_CONTRACT.json")
 R48_STATE=HOME/".local/state/louksna/r4-48h"
 R48_EVID=R48_STATE/"evidence"
+R48_POINT_REQUEST=R48_STATE/"MAESTRO_POINT_REQUEST.json"
+R48_POINT_RESULT=R48_STATE/"MAESTRO_POINT_RESULT.json"
+PROYECTOS=HOME/"PROYECTOS"
 
 class PrivilegeRequired(RuntimeError):
     def __init__(self, part, actions, reason):
@@ -86,7 +89,7 @@ def read_json(p,default=None):
 
 def r48_contract():
     d=read_json(R48_CONTRACT,{}) or {}
-    if d.get("schema")!="LOUKSNA_R4_REMAINDER_48H_CONTRACT/1.0":
+    if d.get("schema")!="LOUKSNA_R4_REMAINDER_48H_CONTRACT/2.0":
         raise RuntimeError("R4_48H_CONTRACT_INVALID")
     return d
 
@@ -214,23 +217,219 @@ def load_worker():
     w.resources=resources_adapter
     return w,c,a
 
+def remaining_global_hours():
+    remaining=(r48_deadline()-dt.datetime.now(dt.timezone.utc)).total_seconds()/3600.0
+    return max(0.0,remaining)
+
 def ensure_master_mission(worker,mission_text):
+    """
+    Preserve one global user mission window while binding CUSTOSZ to bounded,
+    renewable runtime leases. Lease renewal never resets checkpoint, evidence,
+    provenance, or global mission identity.
+    """
     f=STATE/"MASTER_CUSTOSZ_MISSION.json"
-    prior=read_json(f)
-    if prior and prior.get("mission_id") and int(prior.get("lease_hours",0) or 0)>=48:
+    prior=read_json(f,{}) or {}
+    if prior.get("mission_id"):
         try:
             m=worker.load_mission(prior["mission_id"])
-            if m.get("state")=="SUPERVISORY_ACTIVE": return prior["mission_id"],m
-        except Exception: pass
+            if m.get("state")=="SUPERVISORY_ACTIVE":
+                return prior["mission_id"],m
+        except Exception:
+            pass
+
+    remaining=remaining_global_hours()
+    if remaining<=0:
+        raise RuntimeError("R4_GLOBAL_WINDOW_EXPIRED")
+
+    c=r48_contract()
+    configured=int(c.get("window",{}).get("default_max_internal_lease_hours",24) or 24)
+    lease=max(1,min(24,configured,int(remaining+0.999999)))
     goal=mission_text[:30000]
-    m=worker.mission_start(48,"LUNA_PROJECT",goal,report_minutes=5)
+    m=worker.mission_start(lease,"LUNA_PROJECT",goal,report_minutes=5)
+
+    lineage=list(prior.get("lease_lineage",[])) if isinstance(prior,dict) else []
+    if prior.get("mission_id"):
+        lineage.append({
+            "mission_id":prior.get("mission_id"),
+            "lease_hours":prior.get("lease_hours"),
+            "closed_or_replaced_at_utc":utc()
+        })
+
     atomic_json(f,{
-        "mission_id":m["mission_id"],"created_at_utc":utc(),"lease_hours":48,
-        "deadline_utc":r48_contract()["window"]["deadline_utc"],
-        "parent_mission_id":prior.get("mission_id") if isinstance(prior,dict) else None,
-        "goal_sha256":hashlib.sha256(goal.encode()).hexdigest()
+        "schema":"LOUKSNA_R4_GLOBAL_MISSION_LEASE/2.0",
+        "global_window_hours":48,
+        "mission_id":m["mission_id"],
+        "created_or_renewed_at_utc":utc(),
+        "lease_hours":lease,
+        "deadline_utc":c["window"]["deadline_utc"],
+        "parent_mission_id":prior.get("mission_id"),
+        "lease_lineage":lineage[-20:],
+        "goal_sha256":hashlib.sha256(goal.encode()).hexdigest(),
+        "checkpoint_preserved":True,
+        "evidence_chain_preserved":True
     })
     return m["mission_id"],m
+
+def _r48_checkpoint_user_paths(paths,tag):
+    root=R48_STATE/"rollback"/(dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")+"-"+tag)
+    root.mkdir(parents=True,exist_ok=False)
+    rows=[]
+    for p in map(pathlib.Path,paths):
+        row={"path":str(p),"exists":p.exists() or p.is_symlink(),"is_symlink":p.is_symlink()}
+        if p.is_symlink():
+            row["symlink_target"]=os.readlink(p)
+        elif p.is_file():
+            dst=root/(hashlib.sha256(str(p).encode()).hexdigest()[:16]+"-"+p.name)
+            shutil.copy2(p,dst)
+            row.update({"backup":str(dst),"sha256":sha(p),"backup_sha256":sha(dst)})
+        rows.append(row)
+    atomic_json(root/"MANIFEST.json",{
+        "schema":"LOUKSNA_R4_MAESTRO_CHECKPOINT/1.0",
+        "tag":tag,"files":rows,"created_at_utc":utc()
+    })
+    return root,rows
+
+def maestro_projects_repair(mid,request):
+    if not PROYECTOS.is_dir() or PROYECTOS.is_symlink():
+        raise RuntimeError("CANONICAL_PROJECTS_ROOT_INVALID")
+
+    aliases=[HOME/"Proyectos",HOME/"Luna R4"/"Proyectos"]
+    xbel=HOME/".local/share/user-places.xbel"
+    launchers=[
+        HOME/".local/share/applications/luna-r4-part1-proyectos.desktop",
+        HOME/".local/share/applications/luna-r4-v7-proyectos.desktop",
+    ]
+    checkpoint,manifest=_r48_checkpoint_user_paths([*aliases,xbel,*launchers],"P06_PROJECTS")
+    actions=[]
+
+    for a in aliases:
+        if a.exists() and not a.is_symlink():
+            raise RuntimeError("PROJECTS_ALIAS_COLLISION_NON_SYMLINK:"+str(a))
+        if a.is_symlink():
+            try:
+                if a.resolve(strict=True)==PROYECTOS.resolve():
+                    actions.append({"path":str(a),"action":"REUSE_CORRECT"})
+                    continue
+            except Exception:
+                pass
+        a.parent.mkdir(parents=True,exist_ok=True)
+        tmp=a.with_name(a.name+".louksna-maestro-tmp")
+        try:
+            tmp.unlink()
+        except FileNotFoundError:
+            pass
+        os.symlink(str(PROYECTOS),tmp)
+        os.replace(tmp,a)
+        actions.append({"path":str(a),"action":"REPOINT","target":str(PROYECTOS)})
+
+    xbel_action="ABSENT"
+    if xbel.is_file():
+        tree=ET.parse(xbel)
+        root=tree.getroot()
+        target_uri="file://"+urllib.parse.quote(str(PROYECTOS))
+        changed=0
+        for bm in root.iter():
+            if not bm.tag.endswith("bookmark"):
+                continue
+            title=""
+            for ch in bm:
+                if ch.tag.endswith("title"):
+                    title=ch.text or ""
+            href=bm.attrib.get("href","")
+            if title.casefold()=="proyectos" or "proyectos" in urllib.parse.unquote(href).casefold():
+                if href!=target_uri:
+                    bm.set("href",target_uri)
+                    changed+=1
+        if changed:
+            tmp=xbel.with_suffix(".xbel.louksna-maestro-tmp")
+            tree.write(tmp,encoding="utf-8",xml_declaration=True)
+            ET.parse(tmp)
+            os.replace(tmp,xbel)
+            xbel_action=f"UPDATED_{changed}"
+        else:
+            xbel_action="REUSE"
+
+    launcher_audit=[]
+    for p in launchers:
+        if not p.is_file():
+            continue
+        text=p.read_text(encoding="utf-8",errors="replace")
+        execs=[line for line in text.splitlines() if line.startswith("Exec=")]
+        launcher_audit.append({
+            "path":str(p),
+            "sha256":sha(p),
+            "exec":execs,
+            "old_media_projects_reference":any("/media/" in x and "PROYECTOS" in x for x in execs)
+        })
+
+    bookmark_ok=False
+    if xbel.is_file():
+        verify=ET.parse(xbel).getroot()
+        target_uri="file://"+urllib.parse.quote(str(PROYECTOS))
+        for bm in verify.iter():
+            if not bm.tag.endswith("bookmark"):
+                continue
+            title=""
+            for ch in bm:
+                if ch.tag.endswith("title"):
+                    title=ch.text or ""
+            if title.casefold()=="proyectos" and bm.attrib.get("href")==target_uri:
+                bookmark_ok=True
+                break
+
+    checks={
+        "canonical_root":PROYECTOS.is_dir() and not PROYECTOS.is_symlink(),
+        "aliases":all(a.is_symlink() and a.resolve(strict=True)==PROYECTOS.resolve() for a in aliases),
+        "xbel_parse":xbel.is_file() and ET.parse(xbel) is not None,
+        "projects_bookmark_canonical":bookmark_ok,
+        "launchers_no_direct_old_media":all(not x["old_media_projects_reference"] for x in launcher_audit),
+        "partitioning_performed":False,
+        "data_copy_performed":False,
+        "network_download_performed":False
+    }
+
+    return {
+        "schema":"LOUKSNA_R4_MAESTRO_POINT_RESULT/1.0",
+        "request_id":request["request_id"],
+        "point_id":"P06",
+        "status":"PASS" if all(checks.values()) else "HOLD",
+        "mission_id":mid,
+        "executor":"MAESTRO",
+        "custosz_bound":True,
+        "checkpoint":str(checkpoint),
+        "checkpoint_manifest":manifest,
+        "actions":actions,
+        "xbel_action":xbel_action,
+        "launcher_audit":launcher_audit,
+        "checks":checks,
+        "blockers":[k for k,v in checks.items() if not v],
+        "completed_at_utc":utc()
+    }
+
+def handle_r48_point_request(mid):
+    req=read_json(R48_POINT_REQUEST,{}) or {}
+    if not req or req.get("status")!="AUTHORIZED":
+        return None
+    prior=read_json(R48_POINT_RESULT,{}) or {}
+    if prior.get("request_id")==req.get("request_id"):
+        return prior
+
+    point=req.get("point_id")
+    if point=="P06":
+        result=maestro_projects_repair(mid,req)
+    else:
+        result={
+            "schema":"LOUKSNA_R4_MAESTRO_POINT_RESULT/1.0",
+            "request_id":req.get("request_id"),
+            "point_id":point,
+            "status":"HOLD",
+            "mission_id":mid,
+            "executor":"MAESTRO",
+            "blockers":["NO_MATERIAL_HANDLER_REQUIRED_OR_IMPLEMENTED_FOR_THIS_POINT"],
+            "completed_at_utc":utc()
+        }
+    atomic_json(R48_POINT_RESULT,result)
+    return result
 
 def prepare_all(worker):
     for part in PARTS:
@@ -1555,7 +1754,7 @@ def supervise_once(worker,mid):
         "next":next_action,
         "hold_semantics":"BLOCK_ONLY_UNSAFE_DEPENDENT_TRANSITION" if ev["status"]!="PASS" else None,
         "safe_work_while_hold":part=="PART_4" and ev["status"]!="PASS",
-        "anti_paralysis_contract":ev.get("details",{}).get("p3_growth_hardened_contract_id") if part=="PART_4" else None,
+        "anti_paralysis_contract":"R4_15P_ANTI_PARALYSIS_V1",
     })
     if ev["status"]!="PASS":
         if part=="PART_4":
@@ -1591,7 +1790,12 @@ def main():
               "current_part":current_part(),"updated_at_utc":utc(),"new_material_work":False
             })
             return 0
-        try: result=supervise_once(worker,mid)
+        try:
+            mid,_=ensure_master_mission(worker,mission_text)
+            point_result=handle_r48_point_request(mid)
+            if point_result is not None:
+                atomic_json(R48_STATE/"LAST_MAESTRO_POINT_RESULT.json",point_result)
+            result=supervise_once(worker,mid)
         except PrivilegeRequired as e:
             req={"schema":"LOUKSNA_R4_PERMISSION_REQUEST/1.0","status":"NEEDS_PRIVILEGE","part":e.part,"reason":e.reason,"required":e.actions,"mission_id":mid,"checkpoint":str(CHECKPOINT),"created_at_utc":utc()}
             atomic_json(PERMISSION_REQUEST,req); publish_gate_notice(req)
