@@ -1,0 +1,84 @@
+name: "R4 control-plane — hosted static + runner health"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-hosted-static/**
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  static:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Compile exact current R4 control bundle
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -m py_compile \
+            server/r4-master/master_controller.py \
+            server/r4-master/part6_hardened_worker.py \
+            server/r4-master/part789_hardened_worker.py \
+            server/r4-master/ui_p10_p12_hardened_worker.py \
+            server/r4-48h/maestro_48h_coordinator.py
+          python3 - <<'PY'
+          import json,pathlib
+          root=pathlib.Path(".")
+          c=json.loads((root/"server/r4-48h/R4_48H_CONTRACT.json").read_text())
+          master=(root/"server/r4-master/master_controller.py").read_text()
+          ui=(root/"server/r4-master/ui_p10_p12_hardened_worker.py").read_text()
+          coord=(root/"server/r4-48h/maestro_48h_coordinator.py").read_text()
+          assert c["immutable_boundaries"]["part4_closed"] is True
+          assert c["immutable_boundaries"]["partitioning_operations_forbidden"] is True
+          assert c["immutable_boundaries"]["debian_download_forbidden"] is True
+          assert c["immutable_boundaries"]["kde_download_forbidden"] is True
+          assert 'EXECUTOR="MAESTRO"' in ui
+          assert 'OBSERVER="LOUKSNA_REMOTE_BRIDGE"' in ui
+          assert 'EXPECTED_UI_SHA="8a9852c4155d64fd74059c7239e67c82e16e5acd556627d70575db85078d4ed4"' in ui
+          assert '"no_duplicate_launcher_creation":True' in ui
+          assert 'restore_checkpoint' in ui
+          assert 'ORIGINAL=H/"PROYECTOS"' in ui
+          assert 'elif point in {"P10","P12"}:' in master
+          assert "ui_p10_p12_hardened_worker.py" in coord
+          forbidden=("sfdisk","fdisk","parted","growpart","resize2fs","ntfsresize","mkfs","wipefs","blkdiscard")
+          assert all(x not in ui for x in forbidden)
+          print("R4_HOSTED_STATIC=PASS")
+          PY
+
+  runner_health:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Query repository runner state through GitHub control plane
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          API: ${{ github.api_url }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "$API/repos/$REPO/actions/runners?per_page=100" > /tmp/runners.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open("/tmp/runners.json"))
+          rows=[{"id":x.get("id"),"name":x.get("name"),"os":x.get("os"),"status":x.get("status"),"busy":x.get("busy"),
+                 "labels":[y.get("name") for y in x.get("labels",[])]} for x in d.get("runners",[])]
+          print(json.dumps({"schema":"LOUKSNA_R4_GITHUB_RUNNER_HEALTH/1.0","runners":rows},indent=2,sort_keys=True))
+          target=[x for x in rows if x["name"]=="luna-linux"]
+          if not target: raise SystemExit("RUNNER_LUNA_LINUX_NOT_REGISTERED")
+          PY
