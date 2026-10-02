@@ -1,0 +1,10 @@
+{
+  "schema": "LOUKSNA_R4_MEMORY_CENSUS_REQUEST/1.0",
+  "mode": "READ_ONLY",
+  "purpose": "IDENTIFY_MEMORY_PRESSURE_BEFORE_P25_WITHOUT_KILLING_OR_MUTATING",
+  "desktop_commander_used": false,
+  "sudo_used": false,
+  "signals_authorized": false,
+  "partitioning_authorized": false,
+  "created_at_utc": "2026-10-02T12:17:00Z"
+}
