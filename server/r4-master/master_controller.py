@@ -1899,7 +1899,7 @@ def run_part789_material(part,mid):
     name,schema=names[part]
     p=R48_EVID/name
     prior=read_json(p,{}) or {}
-    expected_revision="2026-10-02.PART789.2-CANONICAL-CORPUS"
+    expected_revision="2026-10-02.PART789.3-P25-P26-OPERATIONAL"
     # Idempotence is revision-bound: reuse the exact producer revision, but
     # allow one changed-strategy retry after new causal evidence/code.
     if (prior.get("schema")==schema and prior.get("executor")=="MAESTRO"
@@ -1931,7 +1931,19 @@ def part7(mid):
       "adversarial_unknown_holds":bool(d and d.get("checks",{}).get("adversarial_unknown_holds") is True),
       "source_output_separation":bool(d and d.get("checks",{}).get("generated_analysis_separate") is True),
       "originals_immutable":bool(d and d.get("checks",{}).get("originals_immutable_by_operation") is True),
-      "qwen_not_p25":bool(d and d.get("p25_local_cognitive_backend",{}).get("qwen_substitution") is False),
+      "p25_local_backend":bool(
+          d and d.get("p25_local_cognitive_backend",{}).get("status")=="PASS"
+          and d.get("p25_local_cognitive_backend",{}).get("operational") is True
+          and d.get("p25_local_cognitive_backend",{}).get("hosted_backend_used") is False
+      ),
+      "p25_not_hosted_substitution":bool(d and d.get("p25_local_cognitive_backend",{}).get("qwen_substitution") is False),
+      "p26_document_ingestion":bool(
+          d and d.get("p26_document_ingestion_stack",{}).get("status")=="PASS"
+          and d.get("p26_document_ingestion_stack",{}).get("operational") is True
+          and d.get("p26_document_ingestion_stack",{}).get("source_immutable") is True
+      ),
+      "no_p25_model_download":bool(d and d.get("p25_local_cognitive_backend",{}).get("downloads_performed") is False),
+      "no_p26_docling_download":bool(d and d.get("p26_document_ingestion_stack",{}).get("docling_assets_downloaded") is False),
       "audit_trace":bool(d and d.get("checks",{}).get("audit_trace") is True),
       "non_regression":bool(d and d.get("checks",{}).get("non_regression") is True),
     }
