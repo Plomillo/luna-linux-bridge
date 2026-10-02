@@ -1,0 +1,165 @@
+name: "CUSTOSZ consulta receipt — G23/G24"
+
+on:
+  push:
+    branches:
+      - staging/consultas-receipt-cert-20261002
+    paths:
+      - .github/workflows/custosz-consulta-receipt-certification.yml
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  g23-receipt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    outputs:
+      result: ${{ steps.g23.outputs.result }}
+    steps:
+      - name: Download exact consulta result artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: consultas-readonly-results
+          path: producer
+          github-token: ${{ github.token }}
+          repository: Plomillo/luna-linux-bridge
+          run-id: 37075176968
+
+      - name: G23 independently verify receipt and response
+        id: g23
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p g23
+          python3 - <<'PY'
+          import hashlib, json, pathlib
+
+          expected_source_sha="293b2030898dfa7d046e153f7ddf002297c22b04fce5ba1a98ee8f9f3fe7f87a"
+          expected_consulta_id="CONSULTA-293B2030898DFA7D046E"
+          expected_run_id=37075176968
+          expected_artifact_id=11256620354
+          expected_artifact_digest="sha256:8ff13865210bec8acdf40e2add1fd2e2008394e1f9b773d78d73e3de9716b2d5"
+
+          env=json.load(open("producer/main-recovery-skeleton-consulta-20261002.envelope.json",encoding="utf-8"))
+          res=json.load(open("producer/main-recovery-skeleton-consulta-20261002.result.json",encoding="utf-8"))
+          checks={
+            "envelope_schema":env.get("schema")=="LOUKSNA_CONSULTA_ENVELOPE/1.0",
+            "result_schema":res.get("schema")=="LOUKSNA_CONSULTA_RESULT/1.0",
+            "consulta_id_bound":env.get("consulta_id")==expected_consulta_id and res.get("consulta_id")==expected_consulta_id,
+            "source_sha_bound":env.get("source_sha256")==expected_source_sha and res.get("source_sha256")==expected_source_sha,
+            "received_state_recorded":env.get("state")=="RECEIVED",
+            "response_present":res.get("state") in ["ANSWERED","HOLD","REJECTED"],
+            "response_is_answered":res.get("state")=="ANSWERED",
+            "provider_bound":res.get("provider")=="CUSTOSZ_V7_READ_ONLY",
+            "execution_denied":env.get("execution_authorized") is False and res.get("execution_authorized") is False,
+            "mutation_denied":env.get("mutation_authorized") is False and res.get("mutation_authorized") is False,
+            "authority_preserved":env.get("authority")=="Louksna.md" and res.get("authority")=="Louksna.md",
+            "certification_not_propagated":res.get("certification_propagated") is False,
+          }
+          result="PASS" if all(checks.values()) else "FAIL"
+          out={
+            "schema":"LOUKSNA_CONSULTA_RECEIPT_G23/1.0",
+            "gate":"G23_INDEPENDENT_VALIDATION",
+            "scope":"CONSULTA_RECEIPT_AND_RESPONSE_PRESENCE_ONLY",
+            "source_run_id":expected_run_id,
+            "source_artifact_id":expected_artifact_id,
+            "source_artifact_digest":expected_artifact_digest,
+            "consulta_id":expected_consulta_id,
+            "source_sha256":expected_source_sha,
+            "response_state":res.get("state"),
+            "checks":checks,
+            "result":result,
+            "semantic_sufficiency_certified":False,
+            "implementation_authorized":False,
+            "certification_propagation":False,
+          }
+          pathlib.Path("g23/G23_RECEIPT.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps(out,indent=2,sort_keys=True))
+          if result!="PASS":
+              raise SystemExit("G23_RECEIPT_FAIL")
+          PY
+          echo "result=PASS" >> "$GITHUB_OUTPUT"
+
+      - name: Preserve G23 receipt evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: consulta-receipt-g23
+          path: g23/G23_RECEIPT.json
+          if-no-files-found: error
+          retention-days: 30
+
+  g24-receipt:
+    needs: g23-receipt
+    if: needs.g23-receipt.outputs.result == 'PASS'
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Download G23 receipt evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: consulta-receipt-g23
+          path: g23
+
+      - name: Download producer artifact again
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: consultas-readonly-results
+          path: producer
+          github-token: ${{ github.token }}
+          repository: Plomillo/luna-linux-bridge
+          run-id: 37075176968
+
+      - name: G24 certify exact receipt scope
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p g24
+          python3 - <<'PY'
+          import json, pathlib
+          g23=json.load(open("g23/G23_RECEIPT.json",encoding="utf-8"))
+          env=json.load(open("producer/main-recovery-skeleton-consulta-20261002.envelope.json",encoding="utf-8"))
+          res=json.load(open("producer/main-recovery-skeleton-consulta-20261002.result.json",encoding="utf-8"))
+          checks={
+            "g23_pass":g23.get("result")=="PASS",
+            "g23_scope_exact":g23.get("scope")=="CONSULTA_RECEIPT_AND_RESPONSE_PRESENCE_ONLY",
+            "source_sha_reconfirmed":env.get("source_sha256")==g23.get("source_sha256") and res.get("source_sha256")==g23.get("source_sha256"),
+            "answered_reconfirmed":res.get("state")=="ANSWERED" and g23.get("response_state")=="ANSWERED",
+            "no_execution":res.get("execution_authorized") is False,
+            "no_mutation":res.get("mutation_authorized") is False,
+            "no_certification_propagation":res.get("certification_propagated") is False and g23.get("certification_propagation") is False,
+            "semantic_sufficiency_not_in_scope":g23.get("semantic_sufficiency_certified") is False,
+          }
+          status="PASS" if all(checks.values()) else "FAIL"
+          cert={
+            "schema":"LOUKSNA_CONSULTA_RECEIPT_G24/1.0",
+            "gate":"G24_CERTIFICATION",
+            "scope":"CONSULTA_RECEIPT_AND_RESPONSE_PRESENCE_ONLY",
+            "status":status,
+            "operational_status":"CERTIFIED_RECEIVED_AND_ANSWERED" if status=="PASS" else "HOLD",
+            "authority":"Louksna.md",
+            "source_run_id":37075176968,
+            "source_artifact_id":11256620354,
+            "source_artifact_digest":"sha256:8ff13865210bec8acdf40e2add1fd2e2008394e1f9b773d78d73e3de9716b2d5",
+            "consulta_id":"CONSULTA-293B2030898DFA7D046E",
+            "source_sha256":"293b2030898dfa7d046e153f7ddf002297c22b04fce5ba1a98ee8f9f3fe7f87a",
+            "response_state":res.get("state"),
+            "checks":checks,
+            "semantic_sufficiency_certified":False,
+            "implementation_authorized":False,
+            "certification_propagation":False,
+          }
+          pathlib.Path("g24/G24_RECEIPT_CERTIFICATION.json").write_text(json.dumps(cert,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps(cert,indent=2,sort_keys=True))
+          if status!="PASS":
+              raise SystemExit("G24_RECEIPT_FAIL")
+          PY
+
+      - name: Preserve G24 receipt certification
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: consulta-receipt-g24
+          path: g24/G24_RECEIPT_CERTIFICATION.json
+          if-no-files-found: error
+          retention-days: 30
