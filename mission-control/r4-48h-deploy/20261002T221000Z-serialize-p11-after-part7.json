@@ -1,0 +1,30 @@
+{
+  "schema": "LOUKSNA_R4_15P_EXACT_SHA_DEPLOY/1.0",
+  "status": "AUTHORIZED",
+  "scope": "SERIALIZE_P11_AFTER_P08_PART7_AND_RELEASE_PART7_WORKER",
+  "preserve_existing_point_certificates": [
+    "P01",
+    "P02",
+    "P03",
+    "P04",
+    "P05",
+    "P06",
+    "P07"
+  ],
+  "preserve_part_certificates": [
+    "PART_1",
+    "PART_2",
+    "PART_3",
+    "PART_4",
+    "PART_5",
+    "PART_6"
+  ],
+  "p11_partial_bytes_preserved": true,
+  "p11_resume_later": true,
+  "repeat_part6_material": false,
+  "repeat_certified_points": false,
+  "part4_reopen_authorized": false,
+  "partitioning_authorized": false,
+  "desktop_plugin_used": false,
+  "created_at_utc": "2026-10-02T22:10:00Z"
+}
