@@ -1,0 +1,21 @@
+{
+  "schema": "LOUKSNA_MAILBOX_DISPATCH_BRIDGE_REPAIR_TRIGGER/1.0",
+  "status": "AUTHORIZED_TO_START",
+  "authority": "Louksna.md",
+  "branch": "staging/mailbox-dispatch-bridge-repair-20261002",
+  "defect": "ROUTER_STOPS_AT_ROUTED_READY_NOT_YET_EXECUTED_WITHOUT_GENERAL_MATERIAL_DISPATCH",
+  "repair_scope": "MAILBOX_ROUTER_TO_MATERIAL_DISPATCH_BRIDGE_ONLY",
+  "gross_ceiling_seconds": 360,
+  "started_intent_local": "2026-10-02T16:49:03-03:00",
+  "certification_from_start": true,
+  "g23_required": true,
+  "g24_required": true,
+  "puac2_required": true,
+  "canonical_mutation": false,
+  "louksna_mutation": false,
+  "fail_closed": true,
+  "rollback_required": true,
+  "no_silent_operations": true,
+  "execution_plane": "GITHUB_ACTIONS",
+  "local_pc_work_required": false
+}
