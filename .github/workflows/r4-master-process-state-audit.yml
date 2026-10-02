@@ -98,5 +98,19 @@ jobs:
             [ -f "$F" ] && cat "$F" || echo MISSING
           done
 
+          echo "=== P11 DOWNLOAD PROGRESS ==="
+          P11DIR="$HOME/PROYECTOS/1. PROYECTOS PRIORITARIOS/8. META OS/COMPONENTS"
+          P11PART="$P11DIR/26100.1.240331-1435.ge_release_CLIENT_IOT_LTSC_EVAL_x64FRE_en-us.iso.louksna.part"
+          P11FINAL="$P11DIR/26100.1.240331-1435.ge_release_CLIENT_IOT_LTSC_EVAL_x64FRE_en-us.iso"
+          EXPECTED=4428627968
+          for P in "$P11PART" "$P11FINAL"; do
+            if [ -f "$P" ]; then
+              SZ="$(stat -c %s "$P")"
+              echo "path=$P bytes=$SZ expected=$EXPECTED"
+            else
+              echo "path=$P MISSING"
+            fi
+          done
+
           echo "=== RECENT JOURNAL ==="
           journalctl --user -u luna-r4-master-part1-part9.service -n 120 --no-pager -o short-iso || true
