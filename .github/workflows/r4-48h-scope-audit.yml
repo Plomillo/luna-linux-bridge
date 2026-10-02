@@ -78,6 +78,15 @@ jobs:
 
           ps -eo pid,ppid,etimes,comm,rss,args --sort=ppid | grep -E 'master_controller|part6_hardened_worker|make build_name=louksna-proton' | grep -v grep > "$OUT/MAESTRO_PROCESS.txt" || true
 
+          echo "=== LRB_REQUEST_HELP ==="
+          cat "$OUT/LRB_REQUEST_HELP.txt"
+          echo "=== LRB_SOURCE_CAPABILITIES ==="
+          cat "$OUT/LRB_SOURCE_CAPABILITIES.txt"
+          echo "=== LOCAL_REFERENCE_FILES ==="
+          find "$HOME_REAL/Descargas/LUNA_R4_UI_REFERENCE" -maxdepth 4 -type f -printf '%s|%p\n' 2>/dev/null | sort | head -n 300
+          echo "=== RELEVANT_PATHS ==="
+          sed -n '1,1200p' "$OUT/RELEVANT_PATHS.txt"
+
           python3 - "$OUT" <<'PY'
           import json,pathlib,sys,datetime as dt
           out=pathlib.Path(sys.argv[1])
