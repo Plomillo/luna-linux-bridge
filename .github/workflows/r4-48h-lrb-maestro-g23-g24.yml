@@ -97,6 +97,11 @@ jobs:
             "ui_worker_projects_canonical":'"proyectos":PROYECTOS' in uiworker,
             "deploy_stale_head_guard":"STALE_TRIGGER_HEAD_DEPLOY_DENIED" in deployw.read_text() and "CURRENT_BRANCH_HEAD" in deployw.read_text(),
             "per_sha_concurrency":"group: r4-48h-lrb-maestro-deploy-" in deployw.read_text() and "github.sha" in deployw.read_text(),
+            "obsolete_part7_guard_present":'def obsolete_part7_only_active(drift):' in coord and 'def retire_obsolete_part7_for_handoff(drift):' in coord,
+            "obsolete_part7_uncertified_only":'part_cert("PART_7") is not None' in coord and '"--part PART_7"' in coord,
+            "obsolete_part7_hash_drift_required":'"part789_hardened_worker.py" not in drift' in coord and 'if live_sha==staged_sha' in coord,
+            "obsolete_part7_other_material_denied":'"part6_hardened_worker.py","ui_p10_p12_hardened_worker.py"' in coord and '"software-static.download.prss.microsoft.com"' in coord,
+            "obsolete_part7_master_cgroup_only":'OBSOLETE_PART7_RETIRE_BEGIN' in coord and 'systemctl_user("stop",MASTER_SERVICE)' in coord and 'desktop_commander_used":False' in coord,
           }
 
           # Static AST safety for coordinator: it may coordinate services and GitHub,
