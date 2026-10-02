@@ -96,7 +96,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           SHORT="$(git rev-parse --short=12 HEAD)"
-          BRANCH="staging/main-recovery-root-${SHORT}-20261002"
+          BRANCH="staging/main-recovery-root-${SHORT}-${GITHUB_RUN_ID}"
           git checkout -b "$BRANCH"
           mkdir -p recovery
           cat > recovery/RECOVERY_CONTRACT.json <<'JSON'
@@ -234,7 +234,7 @@ jobs:
             "scope_only":all(p.startswith("recovery/") or p=="recovery-evidence/RESEARCH.json" for p in changed),
             "louksna_unchanged":sh("git","rev-parse",base+":Louksna.md")==sh("git","rev-parse",cand+":Louksna.md"),
             "puac2_unchanged":sh("git","rev-parse",base+":PUAC2.md")==sh("git","rev-parse",cand+":PUAC2.md"),
-            "missions_unchanged":sh("git","rev-parse",base+":missions")==sh("git","rev-parse",cand+":missions"),
+            "missions_unchanged":subprocess.run(["git","diff","--quiet",base,cand,"--","missions"]).returncode==0,
             "contract_no_direct_main":json.load(open("recovery/RECOVERY_CONTRACT.json"))["direct_main_mutation"] is False,
           }
           result="PASS" if all(checks.values()) else "FAIL"
