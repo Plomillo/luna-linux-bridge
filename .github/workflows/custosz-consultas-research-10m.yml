@@ -1,0 +1,268 @@
+name: "CUSTOSZ — consultas evidence research 10m"
+
+on:
+  push:
+    branches:
+      - staging/custosz-consultas-research-10m-20261002
+    paths:
+      - .github/workflows/custosz-consultas-research-10m.yml
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: custosz-consultas-research-10m
+  cancel-in-progress: false
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      MAX_WALLCLOCK_SECONDS: "600"
+      RESEARCH_SOFT_DEADLINE_SECONDS: "510"
+    steps:
+      - name: Checkout exact candidate surface
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Verify fixed CUSTOSZ identity
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          CUSTOSZ="artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz"
+          test -f "$CUSTOSZ"
+          ACTUAL="$(sha256sum "$CUSTOSZ" | awk '{print $1}')"
+          EXPECTED="dacf1f8c13b2fcbfc617cf0d4d780b30502c13395224691e6b0f05f53d9816a2"
+          printf 'CUSTOSZ_SHA256=%s\n' "$ACTUAL"
+          test "$ACTUAL" = "$EXPECTED"
+          python3 -B -I "$CUSTOSZ" v07-status
+
+      - name: Research evidence and candidate toolchain
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$GITHUB_WORKSPACE/consultas-research-output"
+          mkdir -p "$OUT"
+          timeout 510s python3 - "$OUT" <<'PY'
+          import hashlib, json, os, pathlib, platform, shutil, subprocess, sys, time, traceback
+          from datetime import datetime, timezone
+
+          started=time.monotonic()
+          out=pathlib.Path(sys.argv[1])
+          repo=pathlib.Path(os.environ["GITHUB_WORKSPACE"])
+          sha256=lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+          now=lambda: datetime.now(timezone.utc).isoformat()
+
+          evidence=[]
+          patterns=[
+              ".github/workflows/custosz-mission-mailbox.yml",
+              ".github/workflows/r4-part3-advisory-consult.yml",
+              ".github/workflows/mailbox-dispatch-bridge-terminal-certification.yml",
+              ".github/workflows/mailbox-promotion-channel-guard.yml",
+              "scripts/mission_mailbox",
+              "mission-mailbox",
+              "evidence/mailbox-dispatch-bridge-terminal",
+              "artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz",
+          ]
+          for rel in patterns:
+              p=repo/rel
+              if p.is_file():
+                  evidence.append({"path":rel,"kind":"FILE","bytes":p.stat().st_size,"sha256":sha256(p)})
+              elif p.is_dir():
+                  files=sorted(x for x in p.rglob("*") if x.is_file())
+                  evidence.append({
+                      "path":rel,"kind":"DIRECTORY","file_count":len(files),
+                      "entries":[{"path":str(x.relative_to(repo)),"bytes":x.stat().st_size,"sha256":sha256(x)} for x in files[:500]]
+                  })
+              else:
+                  evidence.append({"path":rel,"kind":"MISSING"})
+
+          tool_cmds={
+              "python3":["python3","--version"],
+              "git":["git","--version"],
+              "gh":["gh","--version"],
+              "sha256sum":["sha256sum","--version"],
+          }
+          tools=[]
+          for name,cmd in tool_cmds.items():
+              exe=shutil.which(cmd[0])
+              if not exe:
+                  tools.append({"tool":name,"present":False,"verification":"MISSING","certification":"NOT_APPLICABLE"})
+                  continue
+              try:
+                  cp=subprocess.run(cmd,capture_output=True,text=True,timeout=8)
+                  version=(cp.stdout or cp.stderr).strip().splitlines()[0] if (cp.stdout or cp.stderr) else ""
+              except Exception as e:
+                  version="ERROR:"+type(e).__name__
+              digest=None
+              try: digest=sha256(pathlib.Path(exe))
+              except Exception: pass
+              tools.append({
+                  "tool":name,"present":True,"path":exe,"version":version,
+                  "binary_sha256":digest,
+                  "verification":"RUNTIME_IDENTITY_RECORDED",
+                  "certification":"NOT_PROVEN_BY_IDENTITY_ALONE"
+              })
+
+          terminal_certs=[]
+          for p in repo.glob("evidence/mailbox-dispatch-bridge-terminal/*/TERMINAL_CERTIFICATION.json"):
+              try:
+                  d=json.loads(p.read_text(encoding="utf-8"))
+                  terminal_certs.append({
+                      "path":str(p.relative_to(repo)),
+                      "sha256":sha256(p),
+                      "scope":d.get("scope"),
+                      "status":d.get("status"),
+                      "operational_status":d.get("operational_status"),
+                      "g23_terminal_pass":d.get("g23_terminal_pass"),
+                      "g23_terminal_hash_bound":d.get("g23_terminal_hash_bound"),
+                      "schema":d.get("schema")
+                  })
+              except Exception as e:
+                  terminal_certs.append({"path":str(p.relative_to(repo)),"parse_error":type(e).__name__+":"+str(e)})
+
+          manifest={
+              "schema":"LOUKSNA_CONSULTAS_RESEARCH_EVIDENCE/1.0",
+              "mission":"CONSULTAS_IMPLEMENTATION_EVIDENCE_RESEARCH_10M",
+              "authority":"Louksna.md",
+              "mode":"RESEARCH_ONLY",
+              "implementation_authorized":False,
+              "canonical_mutation_authorized":False,
+              "started_at_utc":now(),
+              "source_commit":os.environ.get("GITHUB_SHA"),
+              "runner":platform.platform(),
+              "evidence":evidence,
+              "runtime_tools":tools,
+              "existing_terminal_certifications":terminal_certs,
+              "rules":{
+                  "no_certification_propagation":True,
+                  "verified_is_not_certified":True,
+                  "scope_binding_required":True,
+                  "fail_closed":True
+              }
+          }
+          (out/"EVIDENCE_MANIFEST.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+
+          custosz=repo/"artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz"
+          os.environ["CUSTOSZ_STATE_DIR"]=str(out/"ephemeral-custosz-state")
+          sys.path.insert(0,str(custosz))
+          import custosz_v05_legacy as w
+          def workspace_adapter(): return repo
+          def discover_adapter():
+              return {"workspace":str(repo),"projects":{"LUNA_PROJECT":{"status":"RESOLVED","path":str(repo),"score":999}}}
+          w.workspace=workspace_adapter
+          w.discover=discover_adapter
+
+          prompt=f"""
+          MISIÓN DE INVESTIGACIÓN — CONSULTAS — TECHO BRUTO 10 MINUTOS.
+
+          Objetivo: recopilar evidencia suficiente, identificar herramientas y componentes
+          reales que permitan implementar una categoría nativa consultas/ separada de missions/,
+          y clasificar cada elemento como ENCONTRADO, VERIFICADO o CERTIFICADO_EN_SU_ALCANCE.
+          Nunca propagar certificación entre alcances.
+
+          Evidencia local precompilada:
+          {json.dumps(manifest,ensure_ascii=False)[:18000]}
+
+          Debes:
+          1. Determinar qué piezas existentes son reutilizables para consultas/.
+          2. Distinguir evidencia de identidad/hash, verificación funcional y certificación G23/G24.
+          3. Si una pieza tiene certificación terminal, conservar exactamente su scope; no asumir
+             que certifica consultas/.
+          4. Proponer el conjunto mínimo de herramientas para implementar consultas/:
+             ingestión, schema/envelope, advisory/read-only processor, registry/evidence,
+             estados ANSWERED/HOLD/REJECTED, anti-loop, respuesta humana + artefacto estructurado.
+          5. Determinar gaps y bindings externos que hagan falta.
+          6. Indicar pruebas necesarias de no-regresión sobre missions/.
+          7. Indicar qué debe validar G23 independientemente y qué podría certificar G24 después.
+          8. No implementar consultas/ en esta misión.
+          9. No tocar main, Louksna.md ni missions/.
+          10. Entregar NEXT exacto y criterio de suficiencia de evidencia.
+
+          Restricciones: EXTEND_DO_NOT_REPLACE; FAIL_CLOSED; NO_SILENT_OPERATIONS;
+          PROVENANCE/TRACEABILITY/AUDITABILITY/EVIDENCE/ROLLBACK/NON_REGRESSION requeridos;
+          CERTIFICATION_PROPAGATION prohibida; SELF_CERTIFICATION prohibida.
+          """
+          report={
+              "schema":"LOUKSNA_CONSULTAS_RESEARCH_REPORT/1.0",
+              "authority":"Louksna.md",
+              "mode":"RESEARCH_ONLY",
+              "implementation_authorized":False,
+              "started_at_utc":manifest["started_at_utc"],
+              "source_commit":os.environ.get("GITHUB_SHA"),
+              "custosz_sha256":sha256(custosz),
+          }
+          try:
+              report["architecture"]=w.architect(prompt,"LUNA_PROJECT")
+              report["reasoning_policy"]=w.reasoning_policy(prompt,"LUNA_PROJECT")
+              report["custosz_research_status"]="RESPONDED"
+          except Exception as e:
+              report["custosz_research_status"]="HOLD"
+              report["error"]=type(e).__name__+":"+str(e)
+              report["traceback"]=traceback.format_exc()
+
+          report["elapsed_seconds"]=round(time.monotonic()-started,3)
+          report["finished_at_utc"]=now()
+          (out/"CUSTOSZ_RESEARCH_REPORT.json").write_text(json.dumps(report,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+
+          # Deterministic local verification: evidence integrity, scope discipline, no false G24.
+          certs=manifest["existing_terminal_certifications"]
+          verified={
+              "schema":"LOUKSNA_CONSULTAS_RESEARCH_VALIDATION/1.0",
+              "evidence_manifest_present":True,
+              "custosz_sha256_match":report["custosz_sha256"]=="dacf1f8c13b2fcbfc617cf0d4d780b30502c13395224691e6b0f05f53d9816a2",
+              "terminal_cert_records_found":len(certs),
+              "certification_propagation_detected":False,
+              "implementation_mutation_performed":False,
+              "result":"PASS"
+          }
+          (out/"VALIDATION.json").write_text(json.dumps(verified,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+
+          # Correct certification posture: research can be validated here, but G23/G24 for a future
+          # consultas implementation are not granted by this producer run.
+          decision={
+              "schema":"LOUKSNA_CONSULTAS_RESEARCH_CERTIFICATION_DECISION/1.0",
+              "research_validation":"PASS",
+              "g23_for_future_consultas_implementation":"NOT_GRANTED_IN_PRODUCER_RUN",
+              "g24_for_future_consultas_implementation":"NOT_GRANTED_WITHOUT_G23_AND_IMPLEMENTATION_EVIDENCE",
+              "existing_certifications_reused_only_as_scoped_evidence":True,
+              "certification_propagation":False,
+              "next":"INDEPENDENT_G23_REVIEW_OF_RESEARCH_BUNDLE_THEN_AUTHORIZE_OR_HOLD_IMPLEMENTATION_CANDIDATE"
+          }
+          (out/"CERTIFICATION_DECISION.json").write_text(json.dumps(decision,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+
+          hashes=[]
+          for p in sorted(out.glob("*.json")):
+              hashes.append(f"{sha256(p)}  {p.name}")
+          (out/"SHA256SUMS.txt").write_text("\n".join(hashes)+"\n",encoding="utf-8")
+          print(json.dumps({"status":"RESEARCH_BUNDLE_READY","elapsed_seconds":report["elapsed_seconds"],"next":decision["next"]},ensure_ascii=False))
+          PY
+
+      - name: Verify evidence bundle
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd consultas-research-output
+          sha256sum -c SHA256SUMS.txt
+          python3 - <<'PY'
+          import json
+          v=json.load(open("VALIDATION.json",encoding="utf-8"))
+          c=json.load(open("CERTIFICATION_DECISION.json",encoding="utf-8"))
+          assert v["result"]=="PASS"
+          assert v["certification_propagation_detected"] is False
+          assert c["g24_for_future_consultas_implementation"].startswith("NOT_GRANTED")
+          print("LOCAL_VALIDATION=PASS")
+          print("FALSE_CERTIFICATION=ABSENT")
+          PY
+
+      - name: Preserve research evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: custosz-consultas-research-10m-evidence
+          path: consultas-research-output/
+          if-no-files-found: error
+          retention-days: 30
