@@ -1,0 +1,135 @@
+name: "MAIN Recovery Mission — dispatch package G23/G24"
+
+on:
+  push:
+    branches:
+      - staging/main-recovery-mission-receipt-cert-20261002
+    paths:
+      - .github/workflows/main-recovery-mission-receipt-cert.yml
+
+permissions:
+  contents: read
+
+jobs:
+  g23:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    outputs:
+      result: ${{ steps.review.outputs.result }}
+    steps:
+      - name: Checkout exact dispatched control plane
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: c858539edc28518c5e0f3e3d70bc416f96d70694
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: G23 independently verify dispatch package
+        id: review
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p assurance
+          python3 - <<'PY'
+          import hashlib,json,pathlib
+          root=pathlib.Path.cwd()
+          def sha(p): return hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
+          mission=root/"missions/inbox/main-recovery-root-research-and-implement-20261002/MISSION_ORIGINAL.md"
+          trigger=root/"mission-control/main-recovery-root/MAIN_RECOVERY_ROOT_RESEARCH_AND_IMPLEMENT_20261002.retry1.json"
+          workflow=root/".github/workflows/main-recovery-root-research-implement.yml"
+          registry=json.load(open(root/"mission-mailbox/runtime-adapters/registry.json",encoding="utf-8"))
+          tr=json.load(open(trigger,encoding="utf-8"))
+          adapter=next((x for x in registry["adapters"] if x.get("adapter_id")=="MAIN_RECOVERY_ROOT_GOVERNED_V1"),None)
+          checks={
+            "mission_sha256_exact":sha(mission)=="b6fe480557d9e207aee3f5a60ae76420b467f0627efcd86ab6cdb165253bee33",
+            "trigger_bound_to_mission":tr.get("mission_source_sha256")=="b6fe480557d9e207aee3f5a60ae76420b467f0627efcd86ab6cdb165253bee33",
+            "trigger_material_authorized":tr.get("material_implementation_authorized") is True,
+            "trigger_main_mutation_denied":tr.get("direct_main_mutation_authorized") is False,
+            "adapter_present":adapter is not None,
+            "adapter_source_bound":adapter and adapter.get("source_sha256")=="b6fe480557d9e207aee3f5a60ae76420b467f0627efcd86ab6cdb165253bee33",
+            "adapter_class_bound":adapter and adapter.get("mission_classes")==["MAIN_RECOVERY_ROOT_GOVERNED_IMPLEMENTATION"],
+            "adapter_workflow_bound":adapter and adapter.get("dedicated_workflow")==".github/workflows/main-recovery-root-research-implement.yml",
+            "workflow_sha_bound":adapter and adapter.get("dedicated_workflow_sha256")==sha(workflow),
+            "authority_preserved":tr.get("authority")=="Louksna.md",
+            "no_certification_propagation":tr.get("certification_propagation") is False
+          }
+          result="PASS" if all(checks.values()) else "FAIL"
+          out={
+            "schema":"LOUKSNA_MAIN_RECOVERY_DISPATCH_G23/1.0",
+            "gate":"G23_INDEPENDENT_VALIDATION",
+            "scope":"MISSION_DISPATCH_PACKAGE_ONLY",
+            "mission_id":"MAIN_RECOVERY_ROOT_RESEARCH_AND_IMPLEMENT_20261002",
+            "mission_source_sha256":"b6fe480557d9e207aee3f5a60ae76420b467f0627efcd86ab6cdb165253bee33",
+            "observed_material_run_id":37076548839,
+            "checks":checks,
+            "result":result,
+            "implementation_success_certified":False,
+            "main_incorporation_certified":False,
+            "certification_propagation":False
+          }
+          pathlib.Path("assurance/G23_DISPATCH.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,indent=2,sort_keys=True))
+          if result!="PASS": raise SystemExit("G23_DISPATCH_FAIL")
+          PY
+          echo "result=PASS" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: main-recovery-dispatch-g23
+          path: assurance/G23_DISPATCH.json
+          if-no-files-found: error
+          retention-days: 30
+
+  g24:
+    needs: g23
+    if: needs.g23.outputs.result == 'PASS'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: main-recovery-dispatch-g23
+          path: assurance
+
+      - name: G24 certify exact dispatch scope
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p certification
+          python3 - <<'PY'
+          import json,pathlib
+          g23=json.load(open("assurance/G23_DISPATCH.json",encoding="utf-8"))
+          checks={
+            "g23_pass":g23.get("result")=="PASS",
+            "g23_scope_exact":g23.get("scope")=="MISSION_DISPATCH_PACKAGE_ONLY",
+            "mission_bound":g23.get("mission_source_sha256")=="b6fe480557d9e207aee3f5a60ae76420b467f0627efcd86ab6cdb165253bee33",
+            "no_false_terminal_claim":g23.get("implementation_success_certified") is False,
+            "main_not_certified":g23.get("main_incorporation_certified") is False,
+            "no_certification_propagation":g23.get("certification_propagation") is False
+          }
+          status="PASS" if all(checks.values()) else "FAIL"
+          out={
+            "schema":"LOUKSNA_MAIN_RECOVERY_DISPATCH_G24/1.0",
+            "gate":"G24_CERTIFICATION",
+            "scope":"MISSION_DISPATCH_PACKAGE_ONLY",
+            "status":status,
+            "operational_status":"CERTIFIED_DISPATCH_PACKAGE" if status=="PASS" else "HOLD",
+            "mission_id":"MAIN_RECOVERY_ROOT_RESEARCH_AND_IMPLEMENT_20261002",
+            "mission_source_sha256":"b6fe480557d9e207aee3f5a60ae76420b467f0627efcd86ab6cdb165253bee33",
+            "observed_material_run_id":37076548839,
+            "checks":checks,
+            "implementation_success_certified":False,
+            "main_incorporation_certified":False,
+            "certification_propagation":False
+          }
+          pathlib.Path("certification/G24_DISPATCH.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,indent=2,sort_keys=True))
+          if status!="PASS": raise SystemExit("G24_DISPATCH_FAIL")
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: main-recovery-dispatch-g24
+          path: certification/G24_DISPATCH.json
+          if-no-files-found: error
+          retention-days: 30
