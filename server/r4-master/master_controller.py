@@ -44,6 +44,9 @@ PART4_P3_HARDENED_CONTRACT=pathlib.Path(__file__).with_name("PART4_P3_GROWTH_HAR
 PART4_P3_TEN_POINT_DIRECTIVE=pathlib.Path(__file__).with_name("PART4_P3_TEN_POINT_HARDENED_CONTINUATION.json")
 PART4_P3_EXEC_DIR=STATE/"PART_4_P3_HARDENED"
 PART4_P3_EXEC_STATE=PART4_P3_EXEC_DIR/"EXECUTION.json"
+R48_CONTRACT=pathlib.Path(__file__).with_name("R4_48H_CONTRACT.json")
+R48_STATE=HOME/".local/state/louksna/r4-48h"
+R48_EVID=R48_STATE/"evidence"
 
 class PrivilegeRequired(RuntimeError):
     def __init__(self, part, actions, reason):
@@ -80,6 +83,27 @@ def atomic_json(p,obj):
 def read_json(p,default=None):
     try:return json.loads(pathlib.Path(p).read_text(encoding="utf-8"))
     except Exception:return default
+
+def r48_contract():
+    d=read_json(R48_CONTRACT,{}) or {}
+    if d.get("schema")!="LOUKSNA_R4_REMAINDER_48H_CONTRACT/1.0":
+        raise RuntimeError("R4_48H_CONTRACT_INVALID")
+    return d
+
+def r48_deadline():
+    c=r48_contract()
+    return dt.datetime.fromisoformat(c["window"]["deadline_utc"].replace("Z","+00:00"))
+
+def r48_expired():
+    return dt.datetime.now(dt.timezone.utc) >= r48_deadline()
+
+def r48_aux(name,schema):
+    p=R48_EVID/name
+    if not p.is_file(): return None,{"present":False,"path":str(p)}
+    d=read_json(p,{}) or {}
+    meta={"present":True,"path":str(p),"sha256":sha(p),"schema":d.get("schema"),"status":d.get("status")}
+    if d.get("schema")!=schema: return None,{**meta,"error":"SCHEMA_MISMATCH"}
+    return d,meta
 
 def command_exists(name):
     return shutil.which(name) is not None
@@ -193,14 +217,19 @@ def load_worker():
 def ensure_master_mission(worker,mission_text):
     f=STATE/"MASTER_CUSTOSZ_MISSION.json"
     prior=read_json(f)
-    if prior and prior.get("mission_id"):
+    if prior and prior.get("mission_id") and int(prior.get("lease_hours",0) or 0)>=48:
         try:
             m=worker.load_mission(prior["mission_id"])
             if m.get("state")=="SUPERVISORY_ACTIVE": return prior["mission_id"],m
         except Exception: pass
     goal=mission_text[:30000]
-    m=worker.mission_start(24,"LUNA_PROJECT",goal,report_minutes=5)
-    atomic_json(f,{"mission_id":m["mission_id"],"created_at_utc":utc(),"lease_hours":24,"goal_sha256":hashlib.sha256(goal.encode()).hexdigest()})
+    m=worker.mission_start(48,"LUNA_PROJECT",goal,report_minutes=5)
+    atomic_json(f,{
+        "mission_id":m["mission_id"],"created_at_utc":utc(),"lease_hours":48,
+        "deadline_utc":r48_contract()["window"]["deadline_utc"],
+        "parent_mission_id":prior.get("mission_id") if isinstance(prior,dict) else None,
+        "goal_sha256":hashlib.sha256(goal.encode()).hexdigest()
+    })
     return m["mission_id"],m
 
 def prepare_all(worker):
@@ -1374,11 +1403,38 @@ def part6(mid):
     return evidence_base("PART_6",mid,checks,"PASS" if not blockers else "HOLD",blockers,details)
 
 def part7(mid):
-    checks,blockers,details=bounded_presence_part("PART_7",{"study_surface":["*ESTUDIO*","*Study*"],"devotional":["*DEVOCIONAL*","*devotional*"],"hermeneutic":["*Hermeneut*","*hermeneut*"]})
+    d,meta=r48_aux("PART7_AUX_EVIDENCE.json","LOUKSNA_R4_PART7_AUX_EVIDENCE/1.0")
+    checks={
+      "aux_present":d is not None,
+      "aux_pass":bool(d and d.get("status")=="PASS"),
+      "source_count":bool(d and int(d.get("source_count",0))>0),
+      "unknown_zero":bool(d and int(d.get("unknown_count",-1))==0),
+      "classification":bool(d and d.get("checks",{}).get("classification") is True),
+      "index_reproducible":bool(d and d.get("checks",{}).get("index_reproducible") is True),
+      "retrieval":bool(d and d.get("checks",{}).get("retrieval") is True),
+      "hermeneutic_controls":bool(d and d.get("checks",{}).get("hermeneutic_controls") is True),
+      "unknown_negative_test":bool(d and d.get("checks",{}).get("unknown_negative_test") is True),
+      "adversarial_unknown_holds":bool(d and d.get("checks",{}).get("adversarial_unknown_holds") is True),
+      "source_output_separation":bool(d and d.get("checks",{}).get("generated_analysis_separate") is True),
+      "originals_immutable":bool(d and d.get("checks",{}).get("originals_immutable_by_operation") is True),
+      "qwen_not_p25":bool(d and d.get("p25_local_cognitive_backend",{}).get("qwen_substitution") is False),
+      "audit_trace":bool(d and d.get("checks",{}).get("audit_trace") is True),
+      "non_regression":bool(d and d.get("checks",{}).get("non_regression") is True),
+    }
+    blockers=[k for k,v in checks.items() if not v]
+    details={"aux":meta,"aux_blockers":d.get("blockers",[]) if d else ["AUX_EVIDENCE_MISSING"]}
     return evidence_base("PART_7",mid,checks,"PASS" if not blockers else "HOLD",blockers,details)
 
 def part8(mid):
-    checks,blockers,details=bounded_presence_part("PART_8",{"backup":["*backup*","*respaldo*"],"recovery":["*recovery*","*rollback*"],"hygiene":["*hygiene*","*HIGIENE*"],"architecture_manager":["*architecture*manager*","*arquitectura*version*"]})
+    d,meta=r48_aux("PART8_AUX_EVIDENCE.json","LOUKSNA_R4_PART8_AUX_EVIDENCE/1.0")
+    required=("backup_artifact","backup_hash","backup_manifest","restore_test","recovery_proof",
+              "hygiene_dry_run_first","unknown_preserve","protected_paths_denied","no_cleanup_performed",
+              "resource_governor_observed","heavy_work_serialization_policy","quality_floor_not_reduced",
+              "metaos","runtime","evidence_audit_trace","rollback_proof","non_regression")
+    checks={"aux_present":d is not None,"aux_pass":bool(d and d.get("status")=="PASS")}
+    for k in required: checks[k]=bool(d and d.get("checks",{}).get(k) is True)
+    blockers=[k for k,v in checks.items() if not v]
+    details={"aux":meta,"aux_blockers":d.get("blockers",[]) if d else ["AUX_EVIDENCE_MISSING"]}
     return evidence_base("PART_8",mid,checks,"PASS" if not blockers else "HOLD",blockers,details)
 
 def part9(mid):
@@ -1386,10 +1442,33 @@ def part9(mid):
     for p in PARTS[:-1]:
         cp=CERTS/f"{p}.json"
         if cp.is_file(): prior.append({"part":p,"sha256":sha(cp)})
-    checks={"prior_certificates":len(prior)==8,"runner":run(["systemctl","is-active","actions.runner.Plomillo-luna-linux-bridge.luna-linux.service"])["stdout"].strip()=="active","symphylax":run(["systemctl","--user","is-active","symphylax-r1.service"])["stdout"].strip()=="active"}
+    d,meta=r48_aux("PART9_MATRIX.json","LOUKSNA_R4_PART9_TERMINAL_MATRIX/1.0")
+    matrix_checks=d.get("checks",{}) if d else {}
+    cert_bind_ok=bool(d and len(prior)==8 and all(
+        d.get("certificates",{}).get(row["part"],{}).get("sha256")==row["sha256"] for row in prior
+    ))
+    checks={
+      "prior_certificates":len(prior)==8,
+      "matrix_present":d is not None,
+      "matrix_pass":bool(d and d.get("status")=="PASS"),
+      "certificate_digest_binding":cert_bind_ok,
+      "runner":run(["systemctl","is-active","actions.runner.Plomillo-luna-linux-bridge.luna-linux.service"])["stdout"].strip()=="active",
+      "symphylax":run(["systemctl","--user","is-active","symphylax-r1.service"])["stdout"].strip()=="active",
+      "remote_bridge_live_telemetry":bool(matrix_checks.get("REMOTE_BRIDGE_LIVE_TELEMETRY")),
+      "cross_domain_isolation":bool(matrix_checks.get("cross_domain_isolation")),
+      "validator_independence":bool(matrix_checks.get("validator_independence_required")),
+      "global_non_regression":bool(matrix_checks.get("global_non_regression")),
+      "rollback_continuity":bool(matrix_checks.get("rollback_continuity")),
+      "trace_complete":bool(matrix_checks.get("trace_completeness")),
+      "audit_complete":bool(matrix_checks.get("audit_completeness")),
+      "provenance_complete":bool(matrix_checks.get("provenance_completeness")),
+    }
     blockers=[k for k,v in checks.items() if not v]
-    ev=evidence_base("PART_9",mid,checks,"PASS" if not blockers else "HOLD",blockers,{"prior":prior})
-    ev["prior_part_certificates"]=prior; ev["postinstall_matrix"]="PASS" if not blockers else "HOLD"; ev["rollback_survives"]=not blockers
+    ev=evidence_base("PART_9",mid,checks,"PASS" if not blockers else "HOLD",blockers,{"prior":prior,"matrix":meta,"matrix_blockers":d.get("blockers",[]) if d else ["MATRIX_MISSING"]})
+    ev["prior_part_certificates"]=prior
+    ev["postinstall_matrix"]="PASS" if not blockers else "HOLD"
+    ev["rollback_survives"]=checks["rollback_continuity"]
+    ev["part9_exit"]="PART9_CERTIFIED_CANDIDATE" if not blockers else "HOLD"
     return ev
 
 HANDLERS={"PART_1":part1,"PART_2":part2,"PART_3":part3,"PART_4":part4,"PART_5":part5,"PART_6":part6,"PART_7":part7,"PART_8":part8,"PART_9":part9}
@@ -1448,8 +1527,12 @@ def publish_and_certify(ev):
         atomic_json(CERTS/f"{part}.json",cert); return cert
 
 def current_part():
+    contract=r48_contract()
     for p in PARTS:
-        if not (CERTS/f"{p}.json").is_file(): return p
+        if not (CERTS/f"{p}.json").is_file():
+            if p=="PART_4" and contract.get("immutable_boundaries",{}).get("part4_closed") is True:
+                raise RuntimeError("PART4_CERT_MISSING_REOPEN_DENIED")
+            return p
     return None
 
 def supervise_once(worker,mid):
@@ -1502,6 +1585,12 @@ def main():
     mid,_=ensure_master_mission(worker,mission_text); prepare_all(worker)
     atomic_json(STATE/"IDENTITY.json",{"mission_id":mid,"custosz_path":str(custosz),"custosz_sha256":sha(custosz),"authority_path":str(authority),"authority_sha256":sha(authority),"checkpoint":str(CHECKPOINT),"started_or_resumed_utc":utc()})
     while True:
+        if r48_expired():
+            atomic_json(STATE/"MASTER_STATUS.json",{
+              "status":"EXPIRED_48H","mission_id":mid,"deadline_utc":r48_contract()["window"]["deadline_utc"],
+              "current_part":current_part(),"updated_at_utc":utc(),"new_material_work":False
+            })
+            return 0
         try: result=supervise_once(worker,mid)
         except PrivilegeRequired as e:
             req={"schema":"LOUKSNA_R4_PERMISSION_REQUEST/1.0","status":"NEEDS_PRIVILEGE","part":e.part,"reason":e.reason,"required":e.actions,"mission_id":mid,"checkpoint":str(CHECKPOINT),"created_at_utc":utc()}
