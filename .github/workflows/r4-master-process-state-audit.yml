@@ -118,5 +118,14 @@ jobs:
             fi
           done
 
+          echo "=== P12 ROADMAP CANDIDATES ==="
+          ROOT="$HOME/PROYECTOS"
+          if [ -d "$ROOT" ]; then
+            find "$ROOT" -maxdepth 8 \( -type f -o -type d \) -printf '%p\n' 2>/dev/null \
+              | grep -Eai '/([^/]*(roadmap|road map|hoja[ _-]*de[ _-]*ruta|plan|programa[ _-]*maestro|fases?|milestones?|hitos?)[^/]*)          journalctl --user -u luna-r4-master-part1-part9.service -n 120 --no-pager -o short-iso || true
+ \
+              | head -n 200 || true
+          fi
+
           echo "=== RECENT JOURNAL ==="
           journalctl --user -u luna-r4-master-part1-part9.service -n 120 --no-pager -o short-iso || true
