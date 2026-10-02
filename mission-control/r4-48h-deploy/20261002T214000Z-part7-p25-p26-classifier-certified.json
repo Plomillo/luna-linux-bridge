@@ -1,0 +1,33 @@
+{
+  "schema": "LOUKSNA_R4_15P_DEPLOY_AMENDMENT/1.0",
+  "status": "AUTHORIZED",
+  "scope": "PART7_P25_P26_OPERATIONAL_AND_EVIDENCED_CLASSIFICATION",
+  "preserve_existing_point_certificates": [
+    "P01",
+    "P02",
+    "P03",
+    "P04",
+    "P05",
+    "P06",
+    "P07"
+  ],
+  "preserve_part_certificates": [
+    "PART_1",
+    "PART_2",
+    "PART_3",
+    "PART_4",
+    "PART_5",
+    "PART_6"
+  ],
+  "repeat_certified_points": false,
+  "repeat_part6_material": false,
+  "source_unknown_resolution": "EXEGETICAL_HERMENEUTICAL_CONTENT_EVIDENCE",
+  "p25_assets_reuse_only": true,
+  "p26_assets_reuse_only": true,
+  "downloads_authorized": false,
+  "reinstalls_authorized": false,
+  "lrb_role": "READ_ONLY_EYES_TELEMETRY_DIAGNOSIS",
+  "part4_reopen_authorized": false,
+  "partitioning_authorized": false,
+  "created_at_utc": "2026-10-02T21:40:00Z"
+}
