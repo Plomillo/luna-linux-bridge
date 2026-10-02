@@ -1,0 +1,161 @@
+{
+  "schema": "LOUKSNA_R4_REMAINDER_48H_CONTRACT/1.0",
+  "status": "SPECIFIED_PENDING_G23_G24",
+  "authority": "Louksna.md",
+  "doctrine": "EXTEND_DO_NOT_REPLACE",
+  "fail_closed": true,
+  "window": {
+    "start_utc": "2026-10-02T03:28:00Z",
+    "deadline_utc": "2026-10-04T03:28:00Z",
+    "ceiling_seconds": 172800,
+    "hard_ceiling": true,
+    "completion_before_deadline_allowed": true
+  },
+  "checkpoint": {
+    "mode": "RESUME_EXISTING_LIVE_STATE",
+    "master_checkpoint": "/home/diegoignacionorambuenamiranda/LOUKSNA_MAESTRO_20260925/MISSION3_OPERATIVE/R4_PART1_DESKTOP_V1/runs/20260926T034746Z-38579",
+    "current_expected_part": "PART_6",
+    "certificates_required_present": [
+      "PART_1",
+      "PART_2",
+      "PART_3",
+      "PART_4",
+      "PART_5"
+    ],
+    "active_part6_process_must_not_be_interrupted": true
+  },
+  "roles": {
+    "MAESTRO": {
+      "role": "PRIMARY_WORKER",
+      "material_execution": true,
+      "certification_self_grant": false,
+      "expected_scope": [
+        "PART_6",
+        "PART_7",
+        "PART_8",
+        "PART_9",
+        "UI_REMAINDER"
+      ],
+      "supervision_interval_seconds": 60
+    },
+    "LOUKSNA_REMOTE_BRIDGE": {
+      "role": [
+        "COMPANION",
+        "TELEMETRY",
+        "OBSERVATION"
+      ],
+      "base_bridge_material_execution": false,
+      "base_bridge_mutation": false,
+      "current_certification_state": "OBSERVATION_ONLY_UNCERTIFIED",
+      "extension_model": "SEPARATE_GOVERNED_COMPANION_ADAPTER"
+    },
+    "LRB_COMPANION_WORKER": {
+      "role": "AUXILIARY_WORKER",
+      "user_scope_only": true,
+      "requires_lrb_pre_post_observation": true,
+      "allowed": [
+        "READ_ONLY_DISCOVERY",
+        "HASH_VERIFICATION",
+        "PROVENANCE_CAPTURE",
+        "CHECKPOINT_USER_CONFIG",
+        "ROLLBACK_USER_CONFIG",
+        "UI_PROYECTOS_REPAIR_AFTER_PART6_CERT",
+        "PART7_EVIDENCE_SUPPORT",
+        "PART8_EVIDENCE_SUPPORT",
+        "PART9_MATRIX_SUPPORT",
+        "TELEMETRY_JOURNAL"
+      ],
+      "denied": [
+        "ROOT_SHELL",
+        "SUDO",
+        "APT",
+        "DPKG_INSTALL",
+        "FLATPAK_INSTALL",
+        "NETWORK_DOWNLOAD",
+        "CURL",
+        "WGET",
+        "GIT_FETCH",
+        "DELETE_PROTECTED_DATA",
+        "FORMAT",
+        "PARTITION",
+        "SFDISK",
+        "FDISK",
+        "PARTED",
+        "GROWPART",
+        "RESIZE2FS",
+        "NTFSRESIZE",
+        "MKFS",
+        "WIPEFS",
+        "BLKDISCARD",
+        "DEVICE_WRITE"
+      ]
+    },
+    "G23": {
+      "role": "INDEPENDENT_VALIDATOR"
+    },
+    "G24": {
+      "role": "CERTIFIER"
+    }
+  },
+  "immutable_boundaries": {
+    "part4_closed": true,
+    "part4_stages_closed": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ],
+    "partitioning_reopen": false,
+    "partitioning_operations_forbidden": true,
+    "debian_download_forbidden": true,
+    "debian_reinstall_forbidden": true,
+    "kde_download_forbidden": true,
+    "kde_reinstall_forbidden": true,
+    "preserve_existing_wallpaper": true,
+    "preserve_projects_data": true
+  },
+  "differential_policy": {
+    "existing_and_correct": "REUSE",
+    "hash_match": "NO_REDOWNLOAD",
+    "missing_only": "ACQUIRE_IF_AUTHORIZED_AND_REQUIRED",
+    "unknown": "HOLD",
+    "no_silent_research_reopen": true
+  },
+  "transition_policy": {
+    "part6_to_part7": {
+      "require_part6_g24": true,
+      "require_no_active_part6_child": true,
+      "require_hardened_remaining_handlers_g23_g24": true,
+      "perform_projects_ui_repair_before_part7": true
+    },
+    "each_part": [
+      "EVIDENCE",
+      "VALIDATION",
+      "G23",
+      "G24",
+      "NEXT_PART"
+    ],
+    "part9_exit": "PART9_CERTIFIED_CANDIDATE"
+  },
+  "deadline_policy": {
+    "after_deadline_new_material_work": false,
+    "if_incomplete": "WRITE_EXPIRED_CHECKPOINT_AND_STOP_COORDINATOR_AND_MAESTRO_GRACEFULLY",
+    "never_interrupt_irreversible_operation": true,
+    "preserve_rollback": true
+  },
+  "references": {
+    "plan": "docs/luna-r4/PLAN DEFINITIVO",
+    "skeleton": "docs/luna-r4/source/SKELETON_CANONICO_REFERENCIA.txt",
+    "ui": "docs/luna-r4/ui-reference/LUNA_R4_UI_REFERENCE_PARTS_1_9.jpg",
+    "ui_sha256": "8a9852c4155d64fd74059c7239e67c82e16e5acd556627d70575db85078d4ed4"
+  },
+  "created_at_utc": "2026-10-02T03:38:00Z"
+}
