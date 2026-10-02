@@ -762,6 +762,16 @@ def evidence_for(point):
             )
     elif point=="P12":
         pc=load(STATE/"PROJECTS_CENTER_RESULT.json",{}) or {}
+        ui_worker=LIVE/"ui_p10_p12_hardened_worker.py"
+        prior_result=load(STATE/"MAESTRO_POINT_RESULT.json",{}) or {}
+        current_worker_sha=sha(ui_worker) if ui_worker.is_file() else None
+        prior_worker_sha=prior_result.get("worker_sha256") if prior_result.get("point_id")=="P12" else None
+        changed_strategy=bool(
+            pc and pc.get("status")!="PASS"
+            and prior_result.get("point_id")=="P12"
+            and current_worker_sha and prior_worker_sha
+            and current_worker_sha!=prior_worker_sha
+        )
         checks={**common,"dependencies":deps_pass(point),
                 "projects_center_result":pc.get("status")=="PASS",
                 "canonical_root":PROYECTOS.is_dir(),
@@ -772,10 +782,16 @@ def evidence_for(point):
                 "evidence":bool(pc.get("evidence")),
                 "semantic_context":bool(pc.get("semantic_context"))}
         details["projects_center"]=pc
-        if deps_pass(point) and not pc:
+        details["retry_control"]={
+            "policy":"RETRY_ONLY_IF_WORKER_SHA_CHANGED_AFTER_HOLD",
+            "current_worker_sha256":current_worker_sha,
+            "prior_worker_sha256":prior_worker_sha,
+            "changed_strategy":changed_strategy
+        }
+        if deps_pass(point) and (not pc or changed_strategy):
             details["request"]=request_maestro(
                 "P12",
-                "Materialize and verify the canonical local Projects Center route using existing PROYECTOS, CUSTOSZ, roadmaps, goals, checkpoints, evidence, and semantic context; no data copy and no partitions"
+                "Materialize and verify the canonical local Projects Center route using existing PROYECTOS, CUSTOSZ, real planning/roadmap artifacts, goals, checkpoints, evidence, and semantic context; no data copy and no partitions"
             )
     elif point=="P13":
         cert=part_cert("PART_9")

@@ -314,6 +314,44 @@ def find_named(tokens,limit=100):
                 if len(out)>=limit:return out
     return out
 
+def find_roadmaps(limit=100):
+    """Discover real planning/roadmap artifacts without substring false positives."""
+    out=[]
+    if not PROYECTOS.is_dir(): return out
+    priority=PROYECTOS/"1. PROYECTOS PRIORITARIOS"
+    roots=[priority] if priority.is_dir() else [PROYECTOS]
+    allowed={".json",".md",".txt",".yaml",".yml",".cmd",".toml"}
+    def name_tokens(name):
+        tokens=[]; cur=[]
+        for ch in name.casefold():
+            if ch.isalnum():
+                cur.append(ch)
+            elif cur:
+                tokens.append("".join(cur)); cur=[]
+        if cur: tokens.append("".join(cur))
+        return tokens
+    for root in roots:
+        for base,dirs,files in os.walk(root):
+            p=pathlib.Path(base)
+            try: rel=p.relative_to(root)
+            except Exception: continue
+            if len(rel.parts)>=9: dirs[:]=[]
+            for name in sorted(files):
+                q=p/name
+                if q.suffix.casefold() not in allowed: continue
+                t=name_tokens(q.stem)
+                roadmap=(
+                    "roadmap" in t or "plan" in t or
+                    "milestone" in t or "milestones" in t or
+                    "hito" in t or "hitos" in t or
+                    ("hoja" in t and "ruta" in t) or
+                    ("programa" in t and "maestro" in t)
+                )
+                if not roadmap: continue
+                out.append(str(q))
+                if len(out)>=limit: return out
+    return out
+
 def p12(mid):
     pre=observe("P12_PROJECTS_CENTER_PRE")
     ui=json.loads((STATE/"UI_PANEL_4_9_RESULT.json").read_text(encoding="utf-8")) if (STATE/"UI_PANEL_4_9_RESULT.json").is_file() else {}
@@ -323,7 +361,7 @@ def p12(mid):
     route_ok=(verify["returncode"]==0 and launcher["pass"] and 'ORIGINAL=H/"PROYECTOS"' in source
               and 'CANONICAL_PROJECTS_ROOT_DRIFT' in source and 'pathlib.Path("/media")/H.name/"Windows/PROYECTOS"' not in source)
     custos=next((p for p in CUSTOSZ if p.is_file()),None)
-    roadmaps=find_named(("roadmap","hoja de ruta","road map"))
+    roadmaps=find_roadmaps()
     goals=find_named(("metas","meta","goals","goal","objetivos","objetivo"))
     checkpoints=[str(p) for p in [STATE/"rollback",HOME/".local/state/louksna/r4-master-part1-part9"] if p.is_dir()]
     checkpoints+=find_named(("checkpoint","checkpoints"),40)
