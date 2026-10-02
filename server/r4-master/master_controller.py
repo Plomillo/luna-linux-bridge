@@ -409,7 +409,7 @@ def maestro_projects_repair(mid,request):
 def _p11_heavy_part6_active():
     p=run(["ps","-eo","args"],timeout=20)
     text=p.get("stdout","")
-    return ("part6_hardened_worker.py" in text or "make build_name=louksna-proton" in text)
+    return ("part6_hardened_worker.py" in text or "part789_hardened_worker.py" in text or "llama-cli" in text or "make build_name=louksna-proton" in text)
 
 def _p11_cpu_flags():
     flags=set()
