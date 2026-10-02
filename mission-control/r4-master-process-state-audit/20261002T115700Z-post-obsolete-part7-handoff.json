@@ -1,0 +1,29 @@
+{
+  "schema": "LOUKSNA_R4_LIVE_STATE_REQUEST/1.0",
+  "mode": "READ_ONLY",
+  "purpose": "VERIFY_OBSOLETE_PART7_RETIRE_HANDOFF_AND_CURRENT_FRONTIER",
+  "source_head": "f1c77668b1513a15316df7891a1a971c684f778f",
+  "desktop_commander_used": false,
+  "observation_transport": "GITHUB_RUNNER_PLUS_LOUKSNA_REMOTE_BRIDGE_EVIDENCE",
+  "repeat_certified_work": false,
+  "preserve_certified_points": [
+    "P01",
+    "P02",
+    "P03",
+    "P04",
+    "P05",
+    "P06",
+    "P07"
+  ],
+  "preserve_certified_parts": [
+    "PART_1",
+    "PART_2",
+    "PART_3",
+    "PART_4",
+    "PART_5",
+    "PART_6"
+  ],
+  "partitioning_authorized": false,
+  "part4_reopen_authorized": false,
+  "created_at_utc": "2026-10-02T11:57:00Z"
+}
