@@ -30,13 +30,14 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          python3 -m py_compile             server/r4-master/master_controller.py             server/r4-master/part6_hardened_worker.py             server/r4-master/part789_hardened_worker.py             server/r4-48h/maestro_48h_coordinator.py
+          python3 -m py_compile             server/r4-master/master_controller.py             server/r4-master/part6_hardened_worker.py             server/r4-master/part789_hardened_worker.py             server/r4-master/ui_p10_p12_hardened_worker.py             server/r4-48h/maestro_48h_coordinator.py
           python3 - <<'PY'
           import json,pathlib
           root=pathlib.Path(".")
           master=(root/"server/r4-master/master_controller.py").read_text()
           worker=(root/"server/r4-master/part6_hardened_worker.py").read_text()
           worker789=(root/"server/r4-master/part789_hardened_worker.py").read_text()
+          uiworker=(root/"server/r4-master/ui_p10_p12_hardened_worker.py").read_text()
           coord=(root/"server/r4-48h/maestro_48h_coordinator.py").read_text()
           c=json.loads((root/"server/r4-48h/R4_48H_CONTRACT.json").read_text())
           assert c["schema"]=="LOUKSNA_R4_REMAINDER_48H_CONTRACT/2.0"
@@ -62,6 +63,12 @@ jobs:
           assert '"part7_g24":part7_cert is not None' in coord
           assert 'part7_cert is not None and deps_pass(point)' in coord
           assert "producer_sha256" in worker789
+          assert 'EXECUTOR="MAESTRO"' in uiworker
+          assert 'OBSERVER="LOUKSNA_REMOTE_BRIDGE"' in uiworker
+          assert 'EXPECTED_UI_SHA="8a9852c4155d64fd74059c7239e67c82e16e5acd556627d70575db85078d4ed4"' in uiworker
+          assert '"no_duplicate_launcher_creation":True' in uiworker
+          assert 'point in {"P10","P12"}' in master
+          assert "ui_p10_p12_hardened_worker.py" in coord
           assert "V2_15_POINT_ATOMIC_BUNDLE_RECONCILIATION" in coord
           assert "lrb_companion_worker.py" not in coord
           print("R4_MASTER_CURRENT_STATIC=PASS")
