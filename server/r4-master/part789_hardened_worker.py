@@ -18,7 +18,7 @@ PROTECTED=[
 PART7_SCHEMA="LOUKSNA_R4_PART7_AUX_EVIDENCE/1.0"
 PART8_SCHEMA="LOUKSNA_R4_PART8_AUX_EVIDENCE/1.0"
 PART9_SCHEMA="LOUKSNA_R4_PART9_TERMINAL_MATRIX/1.0"
-PRODUCER_REVISION="2026-10-02.PART789.7-P25-ISOLATED-LAUNCH-MARGIN"
+PRODUCER_REVISION="2026-10-02.PART789.8-P25-STALE-RETIRE-SINGLE-TOKEN"
 
 def utc():
     return dt.datetime.now(dt.timezone.utc).isoformat().replace("+00:00","Z")
@@ -204,6 +204,76 @@ def chromium_memory_relief_if_needed(required_bytes):
     result["status"]="PASS" if not remaining else "HOLD_CHROMIUM_DID_NOT_EXIT_GRACEFULLY"
     return result
 
+def retire_obsolete_p25_profiles(runtime,model):
+    before=mem_available_bytes()
+    obsolete=[
+      {"c":"256","n":"8","t":"1","prompt":"Return exactly: LOUKSNA_P25_OK"},
+      {"c":"512","n":"16","t":"2","prompt":"Return exactly: LOUKSNA_P25_OK"},
+    ]
+    found=[]
+    for proc in pathlib.Path("/proc").iterdir():
+        if not proc.name.isdigit(): continue
+        pid=int(proc.name)
+        if pid==os.getpid(): continue
+        try:
+            raw=(proc/"cmdline").read_bytes()
+            argv=[x.decode("utf-8","replace") for x in raw.split(b"\0") if x]
+        except (OSError,PermissionError):
+            continue
+        if not argv or argv[0]!=str(runtime): continue
+        try:
+            mi=argv.index("-m")
+            if mi+1>=len(argv) or argv[mi+1]!=str(model): continue
+        except ValueError:
+            continue
+        for sig in obsolete:
+            def pair(flag,val):
+                try:
+                    i=argv.index(flag)
+                    return i+1<len(argv) and argv[i+1]==val
+                except ValueError:
+                    return False
+            prompt_ok=False
+            try:
+                pi=argv.index("-p")
+                prompt_ok=pi+1<len(argv) and argv[pi+1]==sig["prompt"]
+            except ValueError:
+                pass
+            if pair("-c",sig["c"]) and pair("-n",sig["n"]) and pair("-t",sig["t"]) and prompt_ok:
+                found.append({"pid":pid,"signature":sig,"argv":argv})
+                break
+    result={
+      "policy":"MAESTRO_EXACT_OBSOLETE_P25_SIGNATURE_SIGTERM_ONLY",
+      "status":"NOT_NEEDED" if not found else "AUTHORIZED",
+      "matched":found,
+      "target_pids":[x["pid"] for x in found],
+      "sigterm_only":True,"sigkill_used":False,"sudo_used":False,
+      "desktop_commander_used":False,"partitioning_performed":False,
+      "mem_available_before":before,
+    }
+    if not found:
+        result["mem_available_after"]=before
+        return result
+    for x in found:
+        try: os.kill(x["pid"],signal.SIGTERM)
+        except ProcessLookupError: pass
+    deadline=time.monotonic()+15
+    remaining=[x["pid"] for x in found]
+    while remaining and time.monotonic()<deadline:
+        time.sleep(0.5)
+        alive=[]
+        for pid in remaining:
+            try: os.kill(pid,0); alive.append(pid)
+            except ProcessLookupError: pass
+        remaining=alive
+    time.sleep(1)
+    after=mem_available_bytes()
+    result["remaining_pids"]=remaining
+    result["mem_available_after"]=after
+    result["mem_available_delta"]=after-before
+    result["status"]="PASS" if not remaining else "HOLD_OBSOLETE_P25_DID_NOT_EXIT_GRACEFULLY"
+    return result
+
 def bounded_inference_same_qwen(runtime,model,memory_max_bytes):
     args=[
         str(runtime),"-m",str(model),"-c","64","-n","1","-t","1","-ngl","0",
@@ -268,10 +338,17 @@ def p25_local_backend():
                    "required_mem_available":required,
                    "memory_max_bytes":memory_max})
     lrb_before=observe_pair("P25_MEMORY_PRE")
+    stale=retire_obsolete_p25_profiles(runtime,model)
+    lrb_after_stale=observe_pair("P25_MEMORY_POST_STALE_RETIRE")
+    result["obsolete_p25_cleanup"]=stale
+    result["lrb_pre_sha256"]=lrb_before["observe"].get("evidence_sha256")
+    result["lrb_post_stale_sha256"]=lrb_after_stale["observe"].get("evidence_sha256")
+    if stale.get("status")=="HOLD_OBSOLETE_P25_DID_NOT_EXIT_GRACEFULLY":
+        result["reason"]="OBSOLETE_P25_RETIRE_FAILED_FAIL_CLOSED"
+        return result
     relief=chromium_memory_relief_if_needed(required)
     lrb_after_relief=observe_pair("P25_MEMORY_POST_RELIEF")
     result["memory_relief"]=relief
-    result["lrb_pre_sha256"]=lrb_before["observe"].get("evidence_sha256")
     result["lrb_post_relief_sha256"]=lrb_after_relief["observe"].get("evidence_sha256")
     available=mem_available_bytes()
     result["mem_available_after_relief"]=available
