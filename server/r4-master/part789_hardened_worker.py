@@ -18,7 +18,7 @@ PROTECTED=[
 PART7_SCHEMA="LOUKSNA_R4_PART7_AUX_EVIDENCE/1.0"
 PART8_SCHEMA="LOUKSNA_R4_PART8_AUX_EVIDENCE/1.0"
 PART9_SCHEMA="LOUKSNA_R4_PART9_TERMINAL_MATRIX/1.0"
-PRODUCER_REVISION="2026-10-02.PART789.6-P25-SINGLE-TOKEN-HARD-BOUND"
+PRODUCER_REVISION="2026-10-02.PART789.7-P25-ISOLATED-LAUNCH-MARGIN"
 
 def utc():
     return dt.datetime.now(dt.timezone.utc).isoformat().replace("+00:00","Z")
@@ -258,9 +258,9 @@ def p25_local_backend():
         return result
     runtime=runtimes[0]
     model_bytes=model.stat().st_size
-    # Model bytes + 768 MiB host safety margin. Chromium may be closed gracefully
-    # by Maestro if and only if memory is below this threshold.
-    required=model_bytes+768*1024*1024
+    # Model bytes + 640 MiB pre-launch margin. The inference remains isolated
+    # by the independent 3 GiB systemd scope; scope failure cannot take Maestro down.
+    required=model_bytes+640*1024*1024
     memory_max=max(model_bytes+640*1024*1024,3072*1024*1024)
     result.update({"runtime":str(runtime),"runtime_sha256":sha(runtime),
                    "model":str(model),"model_sha256":external_sha256(model),"model_bytes":model_bytes,
