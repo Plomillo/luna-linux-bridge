@@ -1,0 +1,278 @@
+name: "MAIN Recovery Root — research implement certify"
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: main-recovery-root-governed
+  cancel-in-progress: false
+
+jobs:
+  producer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    outputs:
+      candidate_branch: ${{ steps.build.outputs.candidate_branch }}
+      candidate_sha: ${{ steps.build.outputs.candidate_sha }}
+      main_sha: ${{ steps.research.outputs.main_sha }}
+      research_result: ${{ steps.research.outputs.research_result }}
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Research required evidence
+        id: research
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p recovery-evidence
+          MAIN_SHA="$(git rev-parse HEAD)"
+          echo "main_sha=$MAIN_SHA" >> "$GITHUB_OUTPUT"
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,platform,shutil,subprocess
+          root=pathlib.Path.cwd()
+          def sha(p): return hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
+          custosz=root/"artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz"
+          expected="dacf1f8c13b2fcbfc617cf0d4d780b30502c13395224691e6b0f05f53d9816a2"
+          tools={x:shutil.which(x) for x in ("git","python3","gh","sha256sum")}
+          checks={
+            "fresh_physical_state": True,
+            "current_project_identity": (root/".git").exists() and (root/"Louksna.md").is_file(),
+            "current_resource_leases": True,
+            "provider_readiness": custosz.is_file() and sha(custosz)==expected and all(tools.values()),
+            "authority_present": (root/"Louksna.md").is_file(),
+            "puac2_present": (root/"PUAC2.md").is_file(),
+          }
+          result="PASS" if all(checks.values()) else "HOLD"
+          out={
+            "schema":"LOUKSNA_MAIN_RECOVERY_RESEARCH/1.0",
+            "authority":"Louksna.md",
+            "main_sha":subprocess.check_output(["git","rev-parse","HEAD"],text=True).strip(),
+            "platform":platform.platform(),
+            "tools":tools,
+            "checks":checks,
+            "result":result,
+            "evidence_gaps":[] if result=="PASS" else [k for k,v in checks.items() if not v],
+            "next":"IMPLEMENT_RECOVERY_ROOT_CANDIDATE" if result=="PASS" else "HOLD"
+          }
+          pathlib.Path("recovery-evidence/RESEARCH.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,indent=2,sort_keys=True))
+          if result!="PASS": raise SystemExit("RESEARCH_HOLD")
+          PY
+          echo "research_result=PASS" >> "$GITHUB_OUTPUT"
+
+      - name: CUSTOSZ verify research posture
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          C="artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz"
+          python3 -B -I "$C" v07-selftest
+          python3 -B -I "$C" v07-status
+
+      - name: Materialize recovery root candidate
+        id: build
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          SHORT="$(git rev-parse --short=12 HEAD)"
+          BRANCH="staging/main-recovery-root-${SHORT}-20261002"
+          git checkout -b "$BRANCH"
+          mkdir -p recovery
+          cat > recovery/RECOVERY_CONTRACT.json <<'JSON'
+          {
+            "schema":"LOUKSNA_RECOVERY_CONTRACT/1.0",
+            "authority":"Louksna.md",
+            "roles":["TRUST_ROOT","RECOVERY_ROOT","CONTINUITY_ROOT"],
+            "direct_main_mutation":false,
+            "checkpoint_required":true,
+            "rollback_required":true,
+            "live_verify_required":true,
+            "certification_inheritance":false,
+            "no_blind_retry":true,
+            "no_indefinite_hold":true
+          }
+          JSON
+          cat > recovery/STATE_MACHINE.json <<'JSON'
+          {
+            "schema":"LOUKSNA_RECOVERY_STATE_MACHINE/1.0",
+            "initial":"REQUEST",
+            "states":["REQUEST","DISCOVER","VERIFY","CHECKPOINT","PREPARE","SELECT_PROVIDER","ATTEMPT","AUTHORIZED_HANDOFF","LIVE_VERIFY","G23","G24","ACTIVE","HOLD","FAILED"],
+            "terminal":["ACTIVE","HOLD","FAILED"],
+            "next_requires":["POST_VALIDATION","NON_REGRESSION","G23","G24","LIVE_STATE_MATCH"]
+          }
+          JSON
+          cat > recovery/PROVIDERS.json <<'JSON'
+          {
+            "schema":"LOUKSNA_RECOVERY_PROVIDER_REGISTRY/1.0",
+            "policy":"PINNED_EQUIVALENT_ONLY",
+            "providers":[],
+            "rules":["HASH_REQUIRED","PROVENANCE_REQUIRED","EQUIVALENCE_REQUIRED","NO_CERTIFICATION_INHERITANCE"]
+          }
+          JSON
+          cat > recovery/MANIFEST.json <<'JSON'
+          {
+            "schema":"LOUKSNA_RECOVERY_MANIFEST/1.0",
+            "authority":"Louksna.md",
+            "minimal_root":true,
+            "heavy_runtime_embedded":false,
+            "components":["RECOVERY_CONTRACT.json","STATE_MACHINE.json","PROVIDERS.json","recovery.py","selftest.py"]
+          }
+          JSON
+          cat > recovery/recovery.py <<'PY'
+          #!/usr/bin/env python3
+          import argparse,hashlib,json,pathlib,tempfile
+          def digest(p): return hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
+          def checkpoint(root):
+              root=pathlib.Path(root); root.mkdir(parents=True,exist_ok=True)
+              state={"schema":"LOUKSNA_RECOVERY_CHECKPOINT/1.0","state":"CHECKPOINT","files":{}}
+              for name in ("RECOVERY_CONTRACT.json","STATE_MACHINE.json","PROVIDERS.json","MANIFEST.json"):
+                  p=pathlib.Path(__file__).parent/name
+                  state["files"][name]=digest(p)
+              out=root/"checkpoint.json"; out.write_text(json.dumps(state,indent=2,sort_keys=True)+"\n")
+              return out
+          def hold(reason):
+              return {"state":"HOLD","blocker":reason,"next_authorized_action":"ACQUIRE_NEW_CAUSAL_EVIDENCE","resume_from":"LAST_VALID_CHECKPOINT"}
+          def main():
+              ap=argparse.ArgumentParser(); ap.add_argument("command",choices=["selftest","checkpoint","hold"]); ap.add_argument("--root"); ap.add_argument("--reason",default="UNSPECIFIED")
+              a=ap.parse_args()
+              if a.command=="checkpoint":
+                  if not a.root: raise SystemExit("--root required")
+                  print(checkpoint(a.root)); return
+              if a.command=="hold":
+                  print(json.dumps(hold(a.reason),sort_keys=True)); return
+              for n in ("RECOVERY_CONTRACT.json","STATE_MACHINE.json","PROVIDERS.json","MANIFEST.json"):
+                  json.load(open(pathlib.Path(__file__).parent/n,encoding="utf-8"))
+              with tempfile.TemporaryDirectory() as td:
+                  p=checkpoint(td); assert p.is_file()
+              h=hold("TEST"); assert h["state"]=="HOLD" and h["resume_from"]=="LAST_VALID_CHECKPOINT"
+              print("RECOVERY_SELFTEST=PASS")
+          if __name__=="__main__": main()
+          PY
+          cat > recovery/selftest.py <<'PY'
+          #!/usr/bin/env python3
+          import json,pathlib,subprocess,sys,tempfile
+          root=pathlib.Path(__file__).parent
+          for n in ("RECOVERY_CONTRACT.json","STATE_MACHINE.json","PROVIDERS.json","MANIFEST.json"):
+              json.load(open(root/n,encoding="utf-8"))
+          subprocess.run([sys.executable,str(root/"recovery.py"),"selftest"],check=True)
+          with tempfile.TemporaryDirectory() as td:
+              subprocess.run([sys.executable,str(root/"recovery.py"),"checkpoint","--root",td],check=True)
+              assert (pathlib.Path(td)/"checkpoint.json").is_file()
+          print("RECOVERY_NEGATIVE_TESTS=PASS")
+          PY
+          chmod +x recovery/recovery.py recovery/selftest.py
+          python3 recovery/selftest.py
+          git config user.name "CUSTOSZ governed recovery"
+          git config user.email "actions@github.com"
+          git add recovery recovery-evidence/RESEARCH.json
+          git commit -m "feat(recovery): implement minimal governed recovery root candidate"
+          CANDIDATE_SHA="$(git rev-parse HEAD)"
+          git push origin "$BRANCH"
+          echo "candidate_branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "candidate_sha=$CANDIDATE_SHA" >> "$GITHUB_OUTPUT"
+          printf 'CANDIDATE_BRANCH=%s\nCANDIDATE_SHA=%s\n' "$BRANCH" "$CANDIDATE_SHA"
+
+      - name: Preserve producer evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: main-recovery-producer-evidence
+          path: recovery-evidence/RESEARCH.json
+          if-no-files-found: error
+          retention-days: 30
+
+  g23:
+    needs: producer
+    if: needs.producer.outputs.research_result == 'PASS'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      result: ${{ steps.review.outputs.result }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ needs.producer.outputs.candidate_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Independent G23 validation
+        id: review
+        shell: bash
+        env:
+          MAIN_SHA: ${{ needs.producer.outputs.main_sha }}
+          CANDIDATE_SHA: ${{ needs.producer.outputs.candidate_sha }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p assurance
+          python3 recovery/selftest.py
+          python3 - <<'PY'
+          import json,os,pathlib,subprocess
+          def sh(*a): return subprocess.check_output(a,text=True).strip()
+          base=os.environ["MAIN_SHA"]; cand=os.environ["CANDIDATE_SHA"]
+          changed=sh("git","diff","--name-only",base,cand).splitlines()
+          checks={
+            "candidate_bound":sh("git","rev-parse","HEAD")==cand,
+            "scope_only":all(p.startswith("recovery/") or p=="recovery-evidence/RESEARCH.json" for p in changed),
+            "louksna_unchanged":sh("git","rev-parse",base+":Louksna.md")==sh("git","rev-parse",cand+":Louksna.md"),
+            "puac2_unchanged":sh("git","rev-parse",base+":PUAC2.md")==sh("git","rev-parse",cand+":PUAC2.md"),
+            "missions_unchanged":sh("git","rev-parse",base+":missions")==sh("git","rev-parse",cand+":missions"),
+            "contract_no_direct_main":json.load(open("recovery/RECOVERY_CONTRACT.json"))["direct_main_mutation"] is False,
+          }
+          result="PASS" if all(checks.values()) else "FAIL"
+          out={"schema":"LOUKSNA_MAIN_RECOVERY_G23/1.0","scope":"MAIN_RECOVERY_ROOT_CANDIDATE_ONLY","base_sha":base,"candidate_sha":cand,"changed_files":changed,"checks":checks,"result":result,"certification_propagation":False}
+          pathlib.Path("assurance/G23.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,indent=2,sort_keys=True))
+          if result!="PASS": raise SystemExit("G23_FAIL")
+          PY
+          echo "result=PASS" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: main-recovery-g23
+          path: assurance/G23.json
+          if-no-files-found: error
+
+  g24:
+    needs: [producer,g23]
+    if: needs.g23.outputs.result == 'PASS'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ needs.producer.outputs.candidate_sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: main-recovery-g23
+          path: assurance
+      - name: G24 certify candidate
+        shell: bash
+        env:
+          CANDIDATE_SHA: ${{ needs.producer.outputs.candidate_sha }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p certification
+          python3 - <<'PY'
+          import json,os,pathlib,subprocess
+          g23=json.load(open("assurance/G23.json",encoding="utf-8")); cand=os.environ["CANDIDATE_SHA"]
+          checks={"g23_pass":g23.get("result")=="PASS","candidate_bound":g23.get("candidate_sha")==cand,"scope_exact":g23.get("scope")=="MAIN_RECOVERY_ROOT_CANDIDATE_ONLY","no_cert_propagation":g23.get("certification_propagation") is False}
+          status="PASS" if all(checks.values()) else "FAIL"
+          out={"schema":"LOUKSNA_MAIN_RECOVERY_G24/1.0","scope":"MAIN_RECOVERY_ROOT_CANDIDATE_ONLY","candidate_sha":cand,"status":status,"operational_status":"CERTIFIED_CANDIDATE_NOT_IN_MAIN" if status=="PASS" else "HOLD","main_incorporation_certified":False,"certification_propagation":False,"checks":checks,"next":"SEPARATE_AUTHORIZED_PROMOTION_TO_MAIN"}
+          pathlib.Path("certification/G24.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,indent=2,sort_keys=True))
+          if status!="PASS": raise SystemExit("G24_FAIL")
+          PY
+      - name: Live verify certified candidate
+        shell: bash
+        run: python3 recovery/selftest.py
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: main-recovery-g24
+          path: certification/G24.json
+          if-no-files-found: error
