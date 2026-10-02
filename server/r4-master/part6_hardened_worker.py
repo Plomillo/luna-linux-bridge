@@ -60,7 +60,18 @@ def run(argv,timeout=120,check=False,env=None,cwd=None):
     return r
 
 def command(name):
-    return shutil.which(name)
+    p=shutil.which(name)
+    if p:
+        return p
+    # systemd user services may intentionally have a minimal PATH. Debian
+    # game launchers are canonically allowed in /usr/games and
+    # /usr/local/games; resolve them explicitly rather than treating an
+    # installed package as absent.
+    for root in ("/usr/local/games","/usr/games"):
+        candidate=pathlib.Path(root)/name
+        if candidate.is_file() and os.access(candidate,os.X_OK):
+            return str(candidate)
+    return None
 
 def pkg_version(name):
     r=run(["dpkg-query","-W","-f=${Status}|${Version}",name],timeout=30)
@@ -472,7 +483,11 @@ def main():
         else:
             tests["proton"]={"returncode":127,"stdout":"","stderr":"PROTON_WINE_MISSING"}
         tests["bottles"]=safe_test(["flatpak","run","--command=bottles-cli",BOTTLES_APP,"--version"],timeout=180)
-        tests["lutris"]=safe_test(["lutris","--version"],timeout=90)
+        lutris_exec=command("lutris")
+        tests["lutris"]=safe_test([lutris_exec,"--version"],timeout=90) if lutris_exec else {
+            "argv":["lutris","--version"],"returncode":127,"stdout":"","stderr":"LUTRIS_EXECUTABLE_NOT_RESOLVED"
+        }
+        tests["lutris"]["resolved_path"]=lutris_exec
         penv=dict(os.environ); penv["APPIMAGE_EXTRACT_AND_RUN"]="1"; penv["QT_QPA_PLATFORM"]="offscreen"
         tests["prism"]=safe_test([str(prism),"--version"],timeout=180,env=penv)
         tests["waydroid"]=safe_test(["waydroid","--version"],timeout=90)
