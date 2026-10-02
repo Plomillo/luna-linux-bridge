@@ -5,11 +5,9 @@ on:
     branches:
       - staging/luna-r4-master-part1-part9-20260929
     paths:
-      - .github/workflows/r4-part4-r2-amendment-g23-g24.yml
       - server/r4-master/PART4_R2_AMENDMENT.json
       - server/r4-master/MASTER_MISSION.md
       - server/r4-master/R4_MASTER_CONTRACT.json
-      - server/r4-master/master_controller.py
       - mission-control/r4-part4-r2-authorization/**
 
 permissions:
