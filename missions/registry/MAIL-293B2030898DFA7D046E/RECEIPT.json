@@ -1,0 +1,12 @@
+{
+  "github_run_attempt": "1",
+  "github_run_id": "37070241770",
+  "mail_id": "MAIL-293B2030898DFA7D046E",
+  "received_utc": "2026-10-02T22:02:00.228003+00:00",
+  "schema": "CUSTOSZ_MAILBOX_RECEIPT/1.0",
+  "source_bytes": 6078,
+  "source_commit": "af7d55bba95e4b6dfeb1a816249badf902e2c676",
+  "source_path": "missions/inbox/main-recovery-skeleton-consulta-20261002/MISSION_ORIGINAL.md",
+  "source_sha256": "293b2030898dfa7d046e153f7ddf002297c22b04fce5ba1a98ee8f9f3fe7f87a",
+  "status": "RECEIVED"
+}
