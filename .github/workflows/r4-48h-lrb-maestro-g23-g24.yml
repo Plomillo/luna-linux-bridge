@@ -102,6 +102,13 @@ jobs:
             "obsolete_part7_hash_drift_required":'"part789_hardened_worker.py" not in drift' in coord and 'if live_sha==staged_sha' in coord,
             "obsolete_part7_other_material_denied":'"part6_hardened_worker.py","ui_p10_p12_hardened_worker.py"' in coord and '"software-static.download.prss.microsoft.com"' in coord,
             "obsolete_part7_master_cgroup_only":'OBSOLETE_PART7_RETIRE_BEGIN' in coord and 'systemctl_user("stop",MASTER_SERVICE)' in coord and 'desktop_commander_used":False' in coord,
+            "part789_attempt_receipt_bound":'LOUKSNA_R4_PART789_ATTEMPT/1.0' in master and 'attempt_dir=R48_STATE/"material-attempts"' in master,
+            "part789_identical_retry_denied":'REUSE_HOLD_NO_REPLAY' in master and 'requires_new_causal_worker_sha' in master and 'attempt.get("status") in {"RUNNING","PASS","HOLD","ERROR"}' in master,
+            "part789_material_replay_false":'"material_replayed":False' in master,
+            "p25_single_token_real_inference":'"-c","64","-n","1","-t","1"' in worker789 and '"Reply with the single digit 7."' in worker789 and '"7" in generated' in worker789,
+            "p25_hard_timeout_bound":'"150s"' in worker789 and 'timeout=180' in worker789 and 'GNU_TIMEOUT_UNAVAILABLE_FAIL_CLOSED' in worker789,
+            "p25_same_local_qwen_no_substitution":'Qwen3.5-4B-S-TS-Q4_K_S.gguf' in worker789 and '"qwen_substitution":False' in worker789 and '"hosted_substitution":False' in worker789,
+            "p25_desktop_commander_denied":'"desktop_commander_used":False' in worker789,
           }
 
           # Static AST safety for coordinator: it may coordinate services and GitHub,
