@@ -18,6 +18,7 @@ PROTECTED=[
 PART7_SCHEMA="LOUKSNA_R4_PART7_AUX_EVIDENCE/1.0"
 PART8_SCHEMA="LOUKSNA_R4_PART8_AUX_EVIDENCE/1.0"
 PART9_SCHEMA="LOUKSNA_R4_PART9_TERMINAL_MATRIX/1.0"
+PRODUCER_REVISION="2026-10-02.PART789.2-CANONICAL-CORPUS"
 
 def utc():
     return dt.datetime.now(dt.timezone.utc).isoformat().replace("+00:00","Z")
@@ -73,6 +74,8 @@ def observe_pair(tag):
 
 def candidate_domain_roots():
     exact=[
+      PROYECTOS/"2. CORPUS/CORPUS TEÓLOGICO",
+      PROYECTOS/"2. CORPUS/CORPUS TEOLOGICO",
       PROYECTOS/"ESTUDIO",PROYECTOS/"Estudio",PROYECTOS/"DEVOCIONAL",PROYECTOS/"Devocional",
       HOME/"Estudio",HOME/"ESTUDIO",HOME/"Devocional",HOME/"DEVOCIONAL"
     ]
@@ -114,6 +117,16 @@ def classify(path:pathlib.Path):
     for cls,words in rules:
         if any(w in s or w in n for w in words): return cls
     return "UNKNOWN"
+
+def preserve_previous(p):
+    p=pathlib.Path(p)
+    if not p.is_file(): return None
+    digest=sha(p)
+    hist=STATE/"history"/f"{p.stem}-{digest[:16]}.json"
+    if not hist.is_file():
+        hist.parent.mkdir(parents=True,exist_ok=True)
+        shutil.copy2(p,hist)
+    return {"path":str(hist),"sha256":digest}
 
 def part7(mid):
     c6=require_cert("PART_6"); pre=observe_pair("PART7_PRE")
@@ -172,7 +185,8 @@ def part7(mid):
     blockers=[k for k,v in checks.items() if not v]
     if not roots: blockers.append("study_devotional_roots_missing")
     if not sources: blockers.append("study_devotional_sources_missing")
-    q={"schema":PART7_SCHEMA,"status":status,"executor":"MAESTRO","observer":"LOUKSNA_REMOTE_BRIDGE",
+    previous=preserve_previous(EVID/"PART7_AUX_EVIDENCE.json")
+    q={"schema":PART7_SCHEMA,"producer_revision":PRODUCER_REVISION,"status":status,"executor":"MAESTRO","observer":"LOUKSNA_REMOTE_BRIDGE",
        "checks":checks,"blockers":sorted(set(blockers)),"part6_certificate":c6,
        "roots":[str(x) for x in roots],"source_count":len(sources),"unknown_count":len(unknown),
        "unknown_sample":unknown[:100],"classes":sorted({x["class"] for x in sources}),
@@ -180,7 +194,7 @@ def part7(mid):
        "p25_local_cognitive_backend":{"state":"SEPARATE_SKELETON_REQUIREMENT","qwen_substitution":False},
        "lrb_pre":pre["observe"].get("evidence_sha256"),"lrb_post":post["observe"].get("evidence_sha256"),
        "partitioning_performed":False,"network_download_performed":False,"original_source_mutation_performed":False,
-       "mission_id":mid,"completed_at_utc":utc()}
+       "supersedes":previous,"mission_id":mid,"completed_at_utc":utc()}
     atomic_json(EVID/"PART7_AUX_EVIDENCE.json",q)
     return q
 
@@ -251,13 +265,14 @@ def part8(mid):
     }
     post=observe_pair("PART8_POST")
     status="PASS" if all(checks.values()) else "HOLD"
-    q={"schema":PART8_SCHEMA,"status":status,"executor":"MAESTRO","observer":"LOUKSNA_REMOTE_BRIDGE",
+    previous=preserve_previous(EVID/"PART8_AUX_EVIDENCE.json")
+    q={"schema":PART8_SCHEMA,"producer_revision":PRODUCER_REVISION,"status":status,"executor":"MAESTRO","observer":"LOUKSNA_REMOTE_BRIDGE",
        "checks":checks,"blockers":[k for k,v in checks.items() if not v],"part7_certificate":c7,
        "backup":backup,"hygiene":{"mode":"DRY_RUN","candidates":candidates,
        "protected":[str(x) for x in PROTECTED],"deleted":[]},"resources":{"memory_bytes":mem,"load":load},
        "lrb_pre":pre["observe"].get("evidence_sha256"),"lrb_post":post["observe"].get("evidence_sha256"),
        "partitioning_performed":False,"cleanup_performed":False,"network_download_performed":False,
-       "mission_id":mid,"completed_at_utc":utc()}
+       "supersedes":previous,"mission_id":mid,"completed_at_utc":utc()}
     atomic_json(EVID/"PART8_AUX_EVIDENCE.json",q)
     return q
 
@@ -304,13 +319,14 @@ def part9(mid):
       "lrb_post_observation":bool(post["observe"].get("evidence_sha256"))
     }
     checks={**matrix,**meta}; status="PASS" if all(bool(v) for v in checks.values()) else "HOLD"
-    q={"schema":PART9_SCHEMA,"status":status,"executor":"MAESTRO","observer":"LOUKSNA_REMOTE_BRIDGE",
+    previous=preserve_previous(EVID/"PART9_MATRIX.json")
+    q={"schema":PART9_SCHEMA,"producer_revision":PRODUCER_REVISION,"status":status,"executor":"MAESTRO","observer":"LOUKSNA_REMOTE_BRIDGE",
        "checks":checks,"blockers":[k for k,v in checks.items() if not v],"part8_certificate":c8,
        "certificates":certs,"lrb_evidence_sha256":pre["observe"].get("evidence_sha256"),
        "lrb_post_sha256":post["observe"].get("evidence_sha256"),
        "part9_exit":"PART9_CERTIFIED_CANDIDATE" if status=="PASS" else "HOLD",
        "partitioning_performed":False,"network_download_performed":False,
-       "mission_id":mid,"completed_at_utc":utc()}
+       "supersedes":previous,"mission_id":mid,"completed_at_utc":utc()}
     atomic_json(EVID/"PART9_MATRIX.json",q)
     return q
 
