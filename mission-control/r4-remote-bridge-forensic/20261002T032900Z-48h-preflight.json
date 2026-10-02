@@ -1,0 +1,30 @@
+{
+  "schema": "LOUKSNA_R4_48H_PREFLIGHT/1.0",
+  "purpose": "VERIFY_LRB_AND_MAESTRO_FROM_LAST_CHECKPOINT_BEFORE_48H_CONTINUATION",
+  "maestro_role": "PRIMARY_WORKER",
+  "lrb_role_requested": [
+    "COMPANION",
+    "TELEMETRY",
+    "AUXILIARY_WORKER_IF_CAPABILITY_PROVEN"
+  ],
+  "resume_from_last_checkpoint": true,
+  "part4_partitioning_closed": true,
+  "part4_stages_completed": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
+  ],
+  "prohibit_partitioning": true,
+  "prohibit_debian_download": true,
+  "prohibit_kde_download": true,
+  "requested_at_utc": "2026-10-02T03:29:00Z"
+}
