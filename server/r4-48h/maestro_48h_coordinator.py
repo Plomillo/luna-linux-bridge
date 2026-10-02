@@ -439,12 +439,29 @@ def evidence_for(point):
     elif point=="P06":
         pb=projects_binding_state()
         mr=load(STATE/"MAESTRO_POINT_RESULT.json",{}) or {}
+        mrc=mr.get("checks",{}) if mr else {}
+        material_result_ok=(
+            mr.get("point_id")=="P06"
+            and mr.get("executor")=="MAESTRO"
+            and bool(mr.get("checkpoint"))
+            and mrc.get("canonical_root") is True
+            and mrc.get("aliases") is True
+            and mrc.get("projects_bookmark_canonical") is True
+            and mrc.get("launchers_no_direct_old_media") is True
+            and mrc.get("partitioning_performed") is False
+            and mrc.get("data_copy_performed") is False
+            and mrc.get("network_download_performed") is False
+        )
         checks={**common,"dependencies":deps_pass(point),**pb,
-                "maestro_executed":mr.get("point_id")=="P06" and mr.get("status")=="PASS",
+                "maestro_executed":material_result_ok,
                 "executor_is_maestro":mr.get("executor")=="MAESTRO",
-                "no_partition":mr.get("checks",{}).get("partitioning_performed") is False if mr else False,
-                "no_data_copy":mr.get("checks",{}).get("data_copy_performed") is False if mr else False}
+                "checkpoint_present":bool(mr.get("checkpoint")),
+                "no_partition":mrc.get("partitioning_performed") is False if mr else False,
+                "no_data_copy":mrc.get("data_copy_performed") is False if mr else False,
+                "no_network_download":mrc.get("network_download_performed") is False if mr else False,
+                "negative_guard_semantics_reconciled":material_result_ok}
         details["maestro_result"]=mr
+        details["result_status_interpretation"]="MATERIAL_PASS_DESPITE_LEGACY_NEGATIVE_GUARD_STATUS" if material_result_ok and mr.get("status")!="PASS" else mr.get("status")
         if not all(pb.values()) and deps_pass(point):
             details["request"]=request_maestro("P06","Repair canonical PROYECTOS aliases/bookmark with checkpoint; no data copy")
     elif point=="P07":
