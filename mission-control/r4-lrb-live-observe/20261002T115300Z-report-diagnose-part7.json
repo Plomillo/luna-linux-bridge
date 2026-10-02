@@ -1,0 +1,18 @@
+{
+  "schema": "LOUKSNA_R4_LRB_DIAGNOSTIC_REQUEST/1.0",
+  "status": "AUTHORIZED",
+  "source_head": "a0f2cad9eb8de31133100436da47a7f9d87ddd36",
+  "mission_id": "MIS-cf38037f1f114012af53",
+  "operations": [
+    "status",
+    "observe",
+    "report",
+    "diagnose"
+  ],
+  "read_only": true,
+  "desktop_commander_authorized": false,
+  "material_execution_authorized": false,
+  "partitioning_authorized": false,
+  "purpose": "DIAGNOSE_PART7_P25_FRONTIER_THROUGH_LRB_ONLY",
+  "created_at_utc": "2026-10-02T11:53:00Z"
+}
