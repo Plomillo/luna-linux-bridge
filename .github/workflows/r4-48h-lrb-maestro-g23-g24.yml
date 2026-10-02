@@ -281,7 +281,7 @@ jobs:
           [Unit]
           Description=LOUKSNA R4 48h Maestro + LRB companion coordinator
           After=default.target
-          Requires=luna-r4-master-part1-part9.service
+          Wants=luna-r4-master-part1-part9.service
 
           [Service]
           Type=simple
@@ -302,7 +302,8 @@ jobs:
           export XDG_RUNTIME_DIR="/run/user/$UIDN"
           export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
           systemctl --user daemon-reload
-          systemctl --user enable --now luna-r4-48h-coordinator.service
+          systemctl --user enable luna-r4-48h-coordinator.service
+          systemctl --user restart luna-r4-48h-coordinator.service
 
           echo "=== ACTIVE MAESTRO WORK — MUST REMAIN UNINTERRUPTED ==="
           ps -eo pid,ppid,etimes,args | grep -E 'master_controller|part6_hardened_worker|make build_name=louksna-proton' | grep -v grep || true
