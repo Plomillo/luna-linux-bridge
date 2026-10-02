@@ -406,6 +406,293 @@ def maestro_projects_repair(mid,request):
         "completed_at_utc":utc()
     }
 
+def _p11_heavy_part6_active():
+    p=run(["ps","-eo","args"],timeout=20)
+    text=p.get("stdout","")
+    return ("part6_hardened_worker.py" in text or "make build_name=louksna-proton" in text)
+
+def _p11_cpu_flags():
+    flags=set()
+    try:
+        for line in pathlib.Path("/proc/cpuinfo").read_text(encoding="utf-8",errors="replace").splitlines():
+            if line.startswith("flags"):
+                flags.update(line.split(":",1)[1].strip().split())
+                break
+    except Exception:
+        pass
+    required={"avx","avx2","bmi1","bmi2","f16c","fma","movbe","xsave"}
+    # Linux normally exposes LZCNT as abm.
+    lzcnt=("abm" in flags or "lzcnt" in flags)
+    return {"required":sorted(required|{"lzcnt"}),"present":sorted(flags),
+            "x86_64_v3":required.issubset(flags) and lzcnt,
+            "missing":sorted(required-flags)+([] if lzcnt else ["lzcnt/abm"])}
+
+def _p11_mem_total_bytes():
+    try:
+        for line in pathlib.Path("/proc/meminfo").read_text().splitlines():
+            if line.startswith("MemTotal:"):
+                return int(line.split()[1])*1024
+    except Exception:
+        pass
+    return 0
+
+def _p11_find_correct_windows(expected_sha):
+    roots=[
+        PROYECTOS/"1. PROYECTOS PRIORITARIOS/8. META OS/COMPONENTS",
+        HOME/"Descargas",
+        HOME/"Downloads",
+        HOME/".local/share/louksna/r4-p11",
+    ]
+    names=[
+        "26100.1.240331-1435.ge_release_CLIENT_IOT_LTSC_EVAL_x64FRE_en-us.iso",
+        "Windows11_IoT_Enterprise_LTSC_2024_Eval_x64.iso",
+    ]
+    rows=[]
+    for root in roots:
+        if not root.exists():
+            continue
+        for name in names:
+            p=root/name
+            if not p.is_file():
+                continue
+            h=sha(p)
+            rows.append({"path":str(p),"bytes":p.stat().st_size,"sha256":h})
+            if h==expected_sha:
+                return p,rows
+    return None,rows
+
+def _p11_windows(mid):
+    expected_sha="8abf91c9cd408368dc73aab3425d5e3c02dae74900742072eb5c750fc637c195"
+    expected_size=4428627968
+    source_url=("https://software-static.download.prss.microsoft.com/dbazure/"
+                "888969d5-f34g-4e03-ac9d-1f9786c66749/"
+                "26100.1.240331-1435.ge_release_CLIENT_IOT_LTSC_EVAL_x64FRE_en-us.iso")
+    bad_path=PROYECTOS/"1. PROYECTOS PRIORITARIOS/8. META OS/COMPONENTS/Windows11_IoT_Enterprise_LTSC_2024_Eval_x64.iso.reacquire.part"
+    bad_expected="2cee70bd183df42b92a2e0da08cc2bb7a2a9ce3a3841955a012c0f77aeb3cb29"
+    target_dir=PROYECTOS/"1. PROYECTOS PRIORITARIOS/8. META OS/COMPONENTS"
+    target=target_dir/"26100.1.240331-1435.ge_release_CLIENT_IOT_LTSC_EVAL_x64FRE_en-us.iso"
+    part=target.with_suffix(target.suffix+".louksna.part")
+    receipt=part.with_suffix(part.suffix+".source.json")
+
+    existing,scan=_p11_find_correct_windows(expected_sha)
+    bad=None
+    if bad_path.is_file():
+        bad={"path":str(bad_path),"bytes":bad_path.stat().st_size,"sha256":sha(bad_path)}
+        bad["known_refresh_hash"]=bad["sha256"]==bad_expected
+        bad["matches_required_hash"]=bad["sha256"]==expected_sha
+
+    actions=[]
+    if existing is None:
+        target_dir.mkdir(parents=True,exist_ok=True)
+        if part.exists():
+            src=read_json(receipt,{}) or {}
+            if src.get("url")!=source_url or src.get("expected_sha256")!=expected_sha:
+                raise RuntimeError("P11_WINDOWS_PARTIAL_PROVENANCE_MISMATCH")
+        else:
+            atomic_json(receipt,{
+                "schema":"LOUKSNA_R4_P11_WINDOWS_SOURCE/1.0",
+                "url":source_url,
+                "source_owner":"MICROSOFT",
+                "source_domain":"software-static.download.prss.microsoft.com",
+                "target_build":"26100.1",
+                "expected_bytes":expected_size,
+                "expected_sha256":expected_sha,
+                "official_hash_document":"Windows11IoTEnterpriseLTSC2024EvalHashValues.pdf",
+                "created_at_utc":utc()
+            })
+
+        free=shutil.disk_usage(target_dir).free
+        if free < expected_size + 2*1024*1024*1024:
+            raise RuntimeError("P11_WINDOWS_INSUFFICIENT_FREE_SPACE:"+str(free))
+
+        curl=shutil.which("curl")
+        if not curl:
+            raise RuntimeError("P11_WINDOWS_CURL_MISSING")
+        dl=run([
+            curl,"--location","--fail","--show-error","--silent",
+            "--retry","5","--retry-delay","5","--retry-all-errors",
+            "--connect-timeout","30","--continue-at","-",
+            "--output",str(part),source_url
+        ],timeout=21600)
+        actions.append({"operation":"MICROSOFT_OFFICIAL_CDN_DOWNLOAD","result":dl,"resumable":True})
+        if dl["returncode"]!=0:
+            return {"status":"HOLD","reason":"WINDOWS_DOWNLOAD_INCOMPLETE","source_url":source_url,
+                    "partial_path":str(part),"partial_bytes":part.stat().st_size if part.exists() else 0,
+                    "existing_scan":scan,"known_bad_refresh":bad,"actions":actions}
+        actual_size=part.stat().st_size
+        actual_sha=sha(part)
+        if actual_size!=expected_size or actual_sha!=expected_sha:
+            quarantine=part.with_name(part.name+".quarantine-"+actual_sha[:16])
+            os.replace(part,quarantine)
+            return {"status":"HOLD","reason":"WINDOWS_IDENTITY_MISMATCH","source_url":source_url,
+                    "expected_bytes":expected_size,"actual_bytes":actual_size,
+                    "expected_sha256":expected_sha,"actual_sha256":actual_sha,
+                    "quarantine":str(quarantine),"known_bad_refresh":bad,"actions":actions}
+        os.replace(part,target)
+        existing=target
+
+    iso_test={"returncode":127,"stdout":"","stderr":"7z missing"}
+    seven=shutil.which("7z") or shutil.which("7zz")
+    if seven:
+        iso_test=run([seven,"t","-bd",str(existing)],timeout=1800)
+    return {
+        "status":"PASS" if existing.is_file() and sha(existing)==expected_sha and existing.stat().st_size==expected_size and iso_test["returncode"]==0 else "HOLD",
+        "path":str(existing),"bytes":existing.stat().st_size if existing.is_file() else None,
+        "sha256":sha(existing) if existing.is_file() else None,
+        "expected_sha256":expected_sha,"expected_bytes":expected_size,
+        "source_url":source_url,"source_owner":"MICROSOFT",
+        "official_hash_document_sha256_value":expected_sha,
+        "media_test":iso_test,"known_bad_refresh":bad,"existing_scan":scan,"actions":actions
+    }
+
+def _p11_mojo(mid):
+    version="1.1.0"
+    root=HOME/".local/share/louksna/mojo-1.1.0-p11"
+    wheelhouse=HOME/".local/share/louksna/r4-p11/mojo-wheelhouse-1.1.0"
+    bindir=HOME/".local/bin"
+    link=bindir/"mojo"
+    cpu=_p11_cpu_flags()
+    mem=_p11_mem_total_bytes()
+    vendor_ram_min=8*1024**3
+    glibc=run(["getconf","GNU_LIBC_VERSION"],timeout=20)
+    gcc=shutil.which("gcc") or shutil.which("cc") or shutil.which("clang")
+
+    existing=shutil.which("mojo")
+    actions=[]
+    selected=pathlib.Path(existing) if existing else root/"bin/mojo"
+    if selected.is_file():
+        vt=run([str(selected),"--version"],timeout=60)
+        if vt["returncode"]!=0 or "1.1.0" not in (vt["stdout"]+vt["stderr"]):
+            if existing:
+                raise RuntimeError("P11_MOJO_EXISTING_COMMAND_VERSION_CONFLICT:"+str(existing))
+    else:
+        if not cpu["x86_64_v3"]:
+            return {"status":"HOLD","reason":"MOJO_CPU_X86_64_V3_NOT_MET","cpu":cpu}
+        if not gcc:
+            return {"status":"HOLD","reason":"MOJO_C_LINKER_MISSING","cpu":cpu}
+        if not root.exists():
+            rr=run(["python3","-m","venv",str(root)],timeout=300)
+            actions.append({"operation":"CREATE_MOJO_VENV","result":rr})
+            if rr["returncode"]!=0:
+                return {"status":"HOLD","reason":"MOJO_VENV_CREATE_FAILED","actions":actions}
+        pip=root/"bin/pip"
+        if not pip.is_file():
+            return {"status":"HOLD","reason":"MOJO_VENV_PIP_MISSING","actions":actions}
+        wheelhouse.mkdir(parents=True,exist_ok=True)
+        # Download once into a version-pinned local wheelhouse, then install only
+        # from those local artifacts. Official Mojo docs publish the Python package.
+        dr=run([str(pip),"download","--disable-pip-version-check",
+                "--dest",str(wheelhouse),f"mojo=={version}"],timeout=3600)
+        actions.append({"operation":"MODULAR_MOJO_1_1_0_WHEELHOUSE_ACQUIRE","result":dr})
+        if dr["returncode"]!=0:
+            return {"status":"HOLD","reason":"MOJO_WHEELHOUSE_ACQUIRE_FAILED","actions":actions}
+        wheels=[]
+        for p in sorted(wheelhouse.iterdir()):
+            if p.is_file():
+                wheels.append({"path":str(p),"bytes":p.stat().st_size,"sha256":sha(p)})
+        ir=run([str(pip),"install","--disable-pip-version-check","--no-index",
+                "--find-links",str(wheelhouse),f"mojo=={version}"],timeout=3600)
+        actions.append({"operation":"MOJO_INSTALL_FROM_LOCAL_WHEELHOUSE","result":ir,"wheelhouse":wheels})
+        if ir["returncode"]!=0:
+            return {"status":"HOLD","reason":"MOJO_LOCAL_INSTALL_FAILED","actions":actions,"wheelhouse":wheels}
+        selected=root/"bin/mojo"
+        if not selected.is_file():
+            return {"status":"HOLD","reason":"MOJO_EXECUTABLE_MISSING_AFTER_INSTALL","actions":actions}
+        bindir.mkdir(parents=True,exist_ok=True)
+        if link.exists() or link.is_symlink():
+            try:
+                if link.resolve(strict=True)!=selected.resolve(strict=True):
+                    return {"status":"HOLD","reason":"MOJO_BIN_LINK_CONFLICT","existing":str(link.resolve(strict=False)),
+                            "selected":str(selected),"actions":actions}
+            except Exception:
+                return {"status":"HOLD","reason":"MOJO_BIN_LINK_BROKEN_CONFLICT","selected":str(selected),"actions":actions}
+        else:
+            tmp=bindir/(".mojo-louksna-"+uuid.uuid4().hex)
+            os.symlink(str(selected),tmp)
+            os.replace(tmp,link)
+            actions.append({"operation":"ACTIVATE_MOJO_USER_BIN","path":str(link),"target":str(selected)})
+
+    testdir=R48_STATE/"p11/mojo-functional"
+    testdir.mkdir(parents=True,exist_ok=True)
+    src=testdir/"hello.mojo"
+    src.write_text('def main():\n    print("LOUKSNA_MOJO_1_1_0_PASS")\n',encoding="utf-8")
+    run_test=run([str(selected),str(src)],timeout=300)
+    out=testdir/"hello"
+    build_test=run([str(selected),"build",str(src),"-o",str(out)],timeout=600)
+    exec_test=run([str(out)],timeout=60) if out.is_file() else {"returncode":127,"stdout":"","stderr":"build output missing"}
+    ver_test=run([str(selected),"--version"],timeout=60)
+    functional=(ver_test["returncode"]==0 and "1.1.0" in (ver_test["stdout"]+ver_test["stderr"]) and
+                run_test["returncode"]==0 and "LOUKSNA_MOJO_1_1_0_PASS" in run_test["stdout"] and
+                build_test["returncode"]==0 and exec_test["returncode"]==0 and
+                "LOUKSNA_MOJO_1_1_0_PASS" in exec_test["stdout"])
+    return {
+        "status":"PASS" if functional else "HOLD",
+        "version_required":version,"selected":str(selected),
+        "version_test":ver_test,"run_test":run_test,"build_test":build_test,"executable_test":exec_test,
+        "cpu":cpu,"glibc":glibc,"c_linker":gcc,
+        "mem_total_bytes":mem,"vendor_minimum_ram_bytes":vendor_ram_min,
+        "vendor_ram_minimum_met":mem>=vendor_ram_min,
+        "compatibility_state":("OFFICIAL_RAM_MINIMUM_MET_AND_FUNCTIONAL" if mem>=vendor_ram_min and functional
+                               else "FUNCTIONAL_ON_ACTUAL_HOST_WITH_VENDOR_RAM_MINIMUM_DEVIATION" if functional
+                               else "HOLD"),
+        "official_release":"MOJO_1_1_0_STABLE_2026_09_17",
+        "actions":actions
+    }
+
+def maestro_p11_materialize(mid,request):
+    if _p11_heavy_part6_active():
+        return {
+            "schema":"LOUKSNA_R4_MAESTRO_POINT_RESULT/1.0",
+            "request_id":request["request_id"],"point_id":"P11","status":"HOLD",
+            "mission_id":mid,"executor":"MAESTRO",
+            "blockers":["RESOURCE_GOVERNOR_SERIALIZES_P11_WHILE_PART6_HEAVY_ACTIVE"],
+            "partitioning_performed":False,"completed_at_utc":utc()
+        }
+    checkpoint=R48_STATE/"rollback"/(dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")+"-P11")
+    checkpoint.mkdir(parents=True,exist_ok=False)
+    baseline={
+        "schema":"LOUKSNA_R4_P11_CHECKPOINT/1.0",
+        "bad_windows_path":str(PROYECTOS/"1. PROYECTOS PRIORITARIOS/8. META OS/COMPONENTS/Windows11_IoT_Enterprise_LTSC_2024_Eval_x64.iso.reacquire.part"),
+        "mojo_before":shutil.which("mojo"),
+        "sudo_valid":privilege_status() is not None,
+        "partitioning_authorized":False,
+        "created_at_utc":utc()
+    }
+    atomic_json(checkpoint/"CHECKPOINT.json",baseline)
+
+    windows=_p11_windows(mid)
+    mojo=_p11_mojo(mid)
+    checks={
+        "windows_exact":windows.get("status")=="PASS",
+        "mojo_functional":mojo.get("status")=="PASS",
+        "mojo_exact_version":mojo.get("version_required")=="1.1.0",
+        "mojo_actual_host_test":mojo.get("compatibility_state") in {
+            "OFFICIAL_RAM_MINIMUM_MET_AND_FUNCTIONAL",
+            "FUNCTIONAL_ON_ACTUAL_HOST_WITH_VENDOR_RAM_MINIMUM_DEVIATION"
+        },
+        "checkpoint":(checkpoint/"CHECKPOINT.json").is_file(),
+        "partitioning_performed":False,
+        "debian_redownload_performed":False,
+        "kde_redownload_performed":False
+    }
+    success=(checks["windows_exact"] and checks["mojo_functional"] and checks["mojo_exact_version"] and
+             checks["mojo_actual_host_test"] and checks["checkpoint"])
+    result={
+        "schema":"LOUKSNA_R4_MAESTRO_POINT_RESULT/1.0",
+        "request_id":request["request_id"],"point_id":"P11",
+        "status":"PASS" if success else "HOLD",
+        "mission_id":mid,"executor":"MAESTRO","custosz_bound":True,
+        "checkpoint":str(checkpoint),"windows":windows,"mojo":mojo,
+        "checks":checks,
+        "blockers":[k for k,v in checks.items() if k not in {"partitioning_performed","debian_redownload_performed","kde_redownload_performed"} and not v],
+        "partitioning_performed":False,
+        "debian_redownload_performed":False,
+        "kde_redownload_performed":False,
+        "completed_at_utc":utc()
+    }
+    atomic_json(R48_STATE/"P11_MATERIAL_RESULT.json",result)
+    return result
+
 def handle_r48_point_request(mid):
     req=read_json(R48_POINT_REQUEST,{}) or {}
     if not req or req.get("status")!="AUTHORIZED":
@@ -417,6 +704,8 @@ def handle_r48_point_request(mid):
     point=req.get("point_id")
     if point=="P06":
         result=maestro_projects_repair(mid,req)
+    elif point=="P11":
+        result=maestro_p11_materialize(mid,req)
     else:
         result={
             "schema":"LOUKSNA_R4_MAESTRO_POINT_RESULT/1.0",
