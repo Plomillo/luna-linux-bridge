@@ -1,0 +1,19 @@
+{
+  "schema": "LOUKSNA_R4_48H_DEPLOY_REQUEST/1.0",
+  "requested_action": "G23_G24_THEN_STAGE_COORDINATOR",
+  "preserve_live_part6_build": true,
+  "do_not_restart_maestro_while_part6_child_active": true,
+  "maestro_role": "PRIMARY_WORKER",
+  "lrb_base_role": [
+    "COMPANION",
+    "TELEMETRY",
+    "OBSERVATION"
+  ],
+  "lrb_extension_role": "AUXILIARY_WORKER_AFTER_G24",
+  "deadline_utc": "2026-10-04T03:28:00Z",
+  "part4_closed": true,
+  "stages_1_12_closed": true,
+  "partitioning_forbidden": true,
+  "debian_kde_download_forbidden": true,
+  "requested_at_utc": "2026-10-02T03:43:00Z"
+}
