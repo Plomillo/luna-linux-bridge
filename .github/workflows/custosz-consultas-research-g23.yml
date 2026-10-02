@@ -1,0 +1,95 @@
+name: "CUSTOSZ consultas research — G23 independent review"
+
+on:
+  push:
+    branches:
+      - staging/custosz-consultas-research-cert-20261002
+    paths:
+      - .github/workflows/custosz-consultas-research-g23.yml
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  g23:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Download producer research bundle
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: custosz-consultas-research-10m-evidence
+          path: research
+          github-token: ${{ github.token }}
+          repository: Plomillo/luna-linux-bridge
+          run-id: 37072997444
+
+      - name: Independently validate evidence chain
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd research
+          sha256sum -c SHA256SUMS.txt
+          python3 - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+
+          expected_source_commit="9e2af7dca56543be6c246a60ed506b2c90bfcb08"
+          expected_custosz="dacf1f8c13b2fcbfc617cf0d4d780b30502c13395224691e6b0f05f53d9816a2"
+          expected_artifact_digest="sha256:3e541fe20901dbb68fc466edf2673ca91f10b7dee3124c784a02fafa6118571d"
+
+          manifest=json.load(open("EVIDENCE_MANIFEST.json",encoding="utf-8"))
+          report=json.load(open("CUSTOSZ_RESEARCH_REPORT.json",encoding="utf-8"))
+          validation=json.load(open("VALIDATION.json",encoding="utf-8"))
+          decision=json.load(open("CERTIFICATION_DECISION.json",encoding="utf-8"))
+
+          checks={
+            "source_commit_bound": manifest.get("source_commit")==expected_source_commit,
+            "authority_louksna": manifest.get("authority")=="Louksna.md" and report.get("authority")=="Louksna.md",
+            "research_only": manifest.get("mode")=="RESEARCH_ONLY" and report.get("mode")=="RESEARCH_ONLY",
+            "implementation_not_authorized": manifest.get("implementation_authorized") is False and report.get("implementation_authorized") is False,
+            "canonical_mutation_not_authorized": manifest.get("canonical_mutation_authorized") is False,
+            "custosz_hash_bound": report.get("custosz_sha256")==expected_custosz,
+            "local_validation_pass": validation.get("result")=="PASS",
+            "no_certification_propagation": validation.get("certification_propagation_detected") is False and decision.get("certification_propagation") is False,
+            "producer_did_not_grant_g23": decision.get("g23_for_future_consultas_implementation")=="NOT_GRANTED_IN_PRODUCER_RUN",
+            "producer_did_not_grant_g24": str(decision.get("g24_for_future_consultas_implementation","")).startswith("NOT_GRANTED"),
+            "scoped_existing_cert_only": decision.get("existing_certifications_reused_only_as_scoped_evidence") is True,
+            "evidence_present": bool(manifest.get("evidence")),
+            "runtime_tools_present": len(manifest.get("runtime_tools",[])) >= 4,
+            "terminal_cert_scope_not_reclassified": all(
+                x.get("scope")=="LIVE_MAILBOX_ROUTER_TO_MATERIAL_DISPATCH_BRIDGE"
+                for x in manifest.get("existing_terminal_certifications",[])
+            ),
+          }
+          result="PASS" if all(checks.values()) else "FAIL"
+          out={
+            "schema":"LOUKSNA_CONSULTAS_RESEARCH_G23/1.0",
+            "gate":"G23_INDEPENDENT_VALIDATION",
+            "scope":"CONSULTAS_RESEARCH_BUNDLE_ONLY",
+            "research_run_id":37072997444,
+            "research_artifact_id":11255936253,
+            "research_artifact_digest":expected_artifact_digest,
+            "source_commit":expected_source_commit,
+            "checks":checks,
+            "result":result,
+            "certification_propagation":False,
+            "future_consultas_implementation_certified":False,
+            "next":"G24_CERTIFY_RESEARCH_BUNDLE_ONLY" if result=="PASS" else "HOLD"
+          }
+          Path("../g23").mkdir(exist_ok=True)
+          p=Path("../g23/G23_REVIEW.json")
+          p.write_text(json.dumps(out,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps(out,indent=2,sort_keys=True))
+          if result!="PASS":
+              raise SystemExit("G23_FAIL")
+          PY
+
+      - name: Preserve G23 evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: custosz-consultas-research-g23
+          path: g23/G23_REVIEW.json
+          if-no-files-found: error
+          retention-days: 30
