@@ -96,7 +96,7 @@ jobs:
             "ui_worker_no_duplicate_launchers":'"no_duplicate_launcher_creation":True' in uiworker,
             "ui_worker_projects_canonical":'"proyectos":PROYECTOS' in uiworker,
             "deploy_stale_head_guard":"STALE_TRIGGER_HEAD_DEPLOY_DENIED" in deployw.read_text() and "CURRENT_BRANCH_HEAD" in deployw.read_text(),
-            "per_sha_concurrency":"r4-48h-lrb-maestro-deploy-${{ github.sha }}" in deployw.read_text(),
+            "per_sha_concurrency":"group: r4-48h-lrb-maestro-deploy-" in deployw.read_text() and "github.sha" in deployw.read_text(),
           }
 
           # Static AST safety for coordinator: it may coordinate services and GitHub,
