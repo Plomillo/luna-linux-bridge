@@ -516,18 +516,49 @@ def evidence_for(point):
                 "panels_4_9":all(ui.get("panels",{}).get(f"UI_PANEL_{i}")=="PASS" for i in range(4,10))}
         details["ui_result"]=ui
     elif point=="P11":
-        windows_match=False; windows_observed=None
-        if WINDOWS_BAD.is_file():
-            # This hash is intentionally computed only at the acquisition gate.
-            windows_observed=sha(WINDOWS_BAD)
-            windows_match=windows_observed==WINDOWS_EXPECTED_SHA
-        mojo=shutil.which("mojo")
+        mr=load(STATE/"P11_MATERIAL_RESULT.json",{}) or {}
+        windows=mr.get("windows",{}) if isinstance(mr.get("windows"),dict) else {}
+        mojo=mr.get("mojo",{}) if isinstance(mr.get("mojo"),dict) else {}
+        target=PROYECTOS/"1. PROYECTOS PRIORITARIOS/8. META OS/COMPONENTS/26100.1.240331-1435.ge_release_CLIENT_IOT_LTSC_EVAL_x64FRE_en-us.iso"
+        target_sha=sha(target) if target.is_file() and mr.get("status")=="PASS" else None
+        mojo_path=shutil.which("mojo")
+        mojo_version=run([mojo_path,"--version"],timeout=60) if mojo_path else {"returncode":127,"stdout":"","stderr":"mojo missing"}
+        windows_exact=(
+            target.is_file()
+            and target.stat().st_size==4428627968
+            and target_sha==WINDOWS_EXPECTED_SHA
+            and windows.get("status")=="PASS"
+        )
+        mojo_functional=(
+            mojo.get("status")=="PASS"
+            and mojo.get("version_required")=="1.1.0"
+            and mojo_version.get("returncode")==0
+            and "1.1.0" in (mojo_version.get("stdout","")+mojo_version.get("stderr",""))
+            and mojo.get("compatibility_state") in {
+                "OFFICIAL_RAM_MINIMUM_MET_AND_FUNCTIONAL",
+                "FUNCTIONAL_ON_ACTUAL_HOST_WITH_VENDOR_RAM_MINIMUM_DEVIATION"
+            }
+        )
         checks={**common,"dependencies":deps_pass(point),
-                "windows_correct_iso":windows_match,
-                "bad_windows_never_promoted":not windows_match,
-                "mojo_present":bool(mojo)}
-        details["windows"]={"path":str(WINDOWS_BAD),"sha256":windows_observed,"expected":WINDOWS_EXPECTED_SHA}
-        details["mojo_path"]=mojo
+                "maestro_material_result":mr.get("status")=="PASS",
+                "windows_correct_iso":windows_exact,
+                "windows_exact_size":bool(target.is_file() and target.stat().st_size==4428627968),
+                "bad_refresh_not_promoted":str(target)!=str(WINDOWS_BAD),
+                "mojo_1_1_0_functional":mojo_functional,
+                "mojo_command_live":mojo_version.get("returncode")==0,
+                "vendor_ram_deviation_explicit":("vendor_ram_minimum_met" in mojo),
+                "checkpoint_present":bool(mr.get("checkpoint")),
+                "no_partition":mr.get("partitioning_performed") is False if mr else False,
+                "no_debian_redownload":mr.get("debian_redownload_performed") is False if mr else False,
+                "no_kde_redownload":mr.get("kde_redownload_performed") is False if mr else False}
+        details["material_result"]=mr
+        details["windows_live"]={"path":str(target),"sha256":target_sha,"expected":WINDOWS_EXPECTED_SHA}
+        details["mojo_live"]={"path":mojo_path,"version_test":mojo_version}
+        if deps_pass(point) and not (windows_exact and mojo_functional and mr.get("status")=="PASS"):
+            details["request"]=request_maestro(
+                "P11",
+                "Materialize exact Microsoft Windows 11 IoT Enterprise LTSC 2024 Eval 26100.1 x64 and Mojo 1.1.0; reuse local bytes; official provenance; no partitions"
+            )
     elif point=="P12":
         pc=load(STATE/"PROJECTS_CENTER_RESULT.json",{}) or {}
         checks={**common,"dependencies":deps_pass(point),
