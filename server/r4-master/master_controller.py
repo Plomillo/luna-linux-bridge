@@ -1937,24 +1937,73 @@ def run_part789_material(part,mid):
     p=R48_EVID/name
     prior=read_json(p,{}) or {}
     worker=pathlib.Path(__file__).with_name("part789_hardened_worker.py")
-    expected_revision="2026-10-02.PART789.3-P25-P26-OPERATIONAL"
     expected_worker_sha=sha(worker) if worker.is_file() else None
-    # Idempotence is byte-bound. Reuse evidence only when the exact material
-    # producer bytes that generated it are still the current certified worker.
-    # Any real worker delta is new causal evidence and permits one revalidation.
+    attempt_dir=R48_STATE/"material-attempts"
+    attempt_file=attempt_dir/f"{part}.json"
+    attempt=read_json(attempt_file,{}) or {}
+
+    # Evidence is reusable only when the exact producer bytes still match.
     if (prior.get("schema")==schema and prior.get("executor")=="MAESTRO"
         and expected_worker_sha
         and prior.get("producer_sha256")==expected_worker_sha):
         return {"status":"REUSE_EXISTING","evidence_path":str(p),"evidence_sha256":sha(p),
-                "producer_revision":expected_revision,"producer_sha256":expected_worker_sha}
+                "producer_revision":prior.get("producer_revision"),
+                "producer_sha256":expected_worker_sha,"material_replayed":False}
+
     if not worker.is_file():
-        return {"status":"HOLD","error":"PART789_WORKER_MISSING","worker":str(worker)}
+        return {"status":"HOLD","error":"PART789_WORKER_MISSING","worker":str(worker),"material_replayed":False}
+
+    # Anti-replay invariant: the same material producer SHA receives at most one
+    # attempt unless new causal code is certified. RUNNING also blocks replay,
+    # covering interrupted/OOM/restart cases where no final evidence was written.
+    if (attempt.get("schema")=="LOUKSNA_R4_PART789_ATTEMPT/1.0"
+        and attempt.get("part")==part
+        and attempt.get("worker_sha256")==expected_worker_sha
+        and attempt.get("status") in {"RUNNING","PASS","HOLD","ERROR"}):
+        return {
+          "status":"REUSE_HOLD_NO_REPLAY",
+          "worker":str(worker),
+          "producer_sha256":expected_worker_sha,
+          "attempt_receipt":str(attempt_file),
+          "attempt_status":attempt.get("status"),
+          "attempt_result":attempt.get("result"),
+          "material_replayed":False,
+          "requires_new_causal_worker_sha":True,
+        }
+
+    attempt_dir.mkdir(parents=True,exist_ok=True)
+    atomic_json(attempt_file,{
+      "schema":"LOUKSNA_R4_PART789_ATTEMPT/1.0",
+      "part":part,"status":"RUNNING","worker":str(worker),
+      "worker_sha256":expected_worker_sha,"mission_id":mid,
+      "material_replayed":False,"started_at_utc":utc()
+    })
     timeout={"PART_7":7200,"PART_8":1800,"PART_9":600}[part]
     try:
         r=run([sys.executable,"-B",str(worker),"--part",part,"--mission-id",mid],timeout=timeout)
+        status="PASS" if r["returncode"]==0 else "HOLD"
+        receipt={
+          "schema":"LOUKSNA_R4_PART789_ATTEMPT/1.0",
+          "part":part,"status":status,"worker":str(worker),
+          "worker_sha256":expected_worker_sha,"mission_id":mid,
+          "result":{"returncode":r.get("returncode"),"elapsed_seconds":r.get("elapsed_seconds"),
+                    "stdout_tail":r.get("stdout","")[-4000:],"stderr_tail":r.get("stderr","")[-4000:]},
+          "material_replayed":False,"completed_at_utc":utc()
+        }
+        atomic_json(attempt_file,receipt)
+        return {"status":status,"worker":str(worker),"result":r,
+                "attempt_receipt":str(attempt_file),"material_replayed":False}
     except Exception as e:
-        return {"status":"HOLD","error":type(e).__name__+":"+str(e),"worker":str(worker)}
-    return {"status":"PASS" if r["returncode"]==0 else "HOLD","worker":str(worker),"result":r}
+        receipt={
+          "schema":"LOUKSNA_R4_PART789_ATTEMPT/1.0",
+          "part":part,"status":"ERROR","worker":str(worker),
+          "worker_sha256":expected_worker_sha,"mission_id":mid,
+          "result":{"error":type(e).__name__+":"+str(e)},
+          "material_replayed":False,"completed_at_utc":utc()
+        }
+        atomic_json(attempt_file,receipt)
+        return {"status":"HOLD","error":type(e).__name__+":"+str(e),"worker":str(worker),
+                "attempt_receipt":str(attempt_file),"material_replayed":False}
 
 def part7(mid):
     dispatch=run_part789_material("PART_7",mid)
