@@ -1,0 +1,83 @@
+name: "R4 PART6 — Lutris differential read-only diagnostic"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part6-lutris-diagnostic/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r4-part6-lutris-diagnostic
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 8
+    steps:
+      - name: Inspect only existing Lutris differential
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          HOME_REAL="/home/diegoignacionorambuenamiranda"
+          DEB="$HOME_REAL/.local/share/louksna/r4-part6/sources/lutris_0.5.22_all.deb"
+          EXPECTED="88a350357e0438b423cdf93108f27942de094dc19f973df73839f3b0b0bafaa0"
+
+          echo "=== HOST ==="
+          hostname
+          id
+          echo "=== ARTIFACT ==="
+          test -f "$DEB"
+          stat -c 'path=%n bytes=%s mode=%a uid=%u gid=%g' "$DEB"
+          H="$(sha256sum "$DEB" | awk '{print $1}')"
+          echo "sha256=$H"
+          echo "expected=$EXPECTED"
+          test "$H" = "$EXPECTED"
+
+          echo "=== DEB METADATA ==="
+          dpkg-deb -f "$DEB" Package Version Architecture Depends Recommends Suggests
+          echo "=== DEB BIN PATHS ==="
+          dpkg-deb -c "$DEB" | grep -E '/(bin|games)/|\.desktop$' | head -n 200 || true
+
+          echo "=== INSTALLED PACKAGE ==="
+          dpkg-query -W -f='status=${Status}\nversion=${Version}\narchitecture=${Architecture}\n' lutris 2>&1 || true
+          echo "=== DPKG LIST ==="
+          dpkg -L lutris 2>&1 | head -n 400 || true
+
+          echo "=== COMMAND RESOLUTION ==="
+          command -v lutris || true
+          type -a lutris || true
+          for p in /usr/bin/lutris /usr/games/lutris /usr/local/bin/lutris "$HOME_REAL/.local/bin/lutris"; do
+            if [ -e "$p" ] || [ -L "$p" ]; then
+              ls -l "$p"
+              file "$p" || true
+              head -n 2 "$p" 2>/dev/null || true
+            fi
+          done
+
+          echo "=== PACKAGE CONSISTENCY ==="
+          dpkg --audit || true
+          dpkg -C || true
+          echo "=== APT POLICY ==="
+          apt-cache policy lutris || true
+          echo "=== SIMULATED EXISTING DEB INSTALL ==="
+          apt-get -s -o Debug::NoLocking=true install "$DEB" 2>&1 | tail -n 240 || true
+
+          echo "=== PYTHON RUNTIME ==="
+          python3 --version
+          python3 - <<'PY'
+          import importlib.util,os,shutil,sys
+          print("PATH="+os.environ.get("PATH",""))
+          print("which_lutris="+str(shutil.which("lutris")))
+          print("lutris_module="+str(importlib.util.find_spec("lutris")))
+          print("python="+sys.executable)
+          PY
+
+          echo "=== SAFETY ==="
+          echo "DOWNLOADS_PERFORMED=FALSE"
+          echo "INSTALLS_PERFORMED=FALSE"
+          echo "PARTITIONING_PERFORMED=FALSE"
