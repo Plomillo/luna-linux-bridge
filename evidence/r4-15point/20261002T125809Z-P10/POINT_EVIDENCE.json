@@ -1,0 +1,425 @@
+{
+  "authority": "Louksna.md",
+  "blockers": [],
+  "checks": {
+    "authority": true,
+    "contract_v2": true,
+    "debian_redownload_denied": true,
+    "dependencies": true,
+    "desktop_plugin_denied": true,
+    "g23_required": true,
+    "g24_required": true,
+    "kde_redownload_denied": true,
+    "lrb_visual_evidence": true,
+    "panels_4_9": true,
+    "part4_closed": true,
+    "part4_stages_1_12": true,
+    "partitioning_denied": true,
+    "protected_reference": true,
+    "reference_hash": true,
+    "third_order": true,
+    "ui_result_present": true,
+    "ui_status_pass": true
+  },
+  "control_plane": "GITHUB",
+  "created_at_utc": "2026-10-02T12:58:09.434083Z",
+  "debian_redownload_performed": false,
+  "details": {
+    "lrb": {
+      "certified": false,
+      "evidence_seq": 406,
+      "evidence_sha256": "2ea5cfac1218a136ffc6405c582eeca8559d4eb8cca4808c6495e430cfaf3556",
+      "observation": {
+        "boot_id": "340911cd-6eae-41b0-bcf1-ea6d2eb6e493",
+        "bridge_root_shell": "NOT_DEPLOYED",
+        "gid": 1001,
+        "github_transport": "NOT_DEPLOYED",
+        "host": "LOUKSNA",
+        "load": [
+          0.29736328125,
+          0.2138671875,
+          0.40869140625
+        ],
+        "memory_bytes": {
+          "MemAvailable": 1635491840,
+          "MemTotal": 6125785088,
+          "SwapFree": 0,
+          "SwapTotal": 0
+        },
+        "observed_utc": "2026-10-02T12:58:09.256056Z",
+        "pid": 1232,
+        "project_partition": "NOT_LIVE_VERIFIED",
+        "root_fs_bytes": {
+          "available": 196912001024,
+          "total": 510059147264
+        },
+        "screen": "NOT_ENABLED",
+        "sudo_noninteractive": "NOT_PROBED",
+        "uid": 1000
+      },
+      "schema": "LRB_LOCAL_TRANSPORT/0.3",
+      "status": "OBSERVED_NOT_CERTIFIED"
+    },
+    "master_service": {
+      "ActiveState": "inactive",
+      "MainPID": "0",
+      "NRestarts": "0",
+      "SubState": "dead",
+      "returncode": 0
+    },
+    "retry_control": {
+      "changed_strategy": false,
+      "current_worker_sha256": "40496081600b8ab95ecb8ad80fd72703fd7c5b3b41493147aef40c07f82bbcfa",
+      "policy": "RETRY_ONLY_IF_WORKER_SHA_CHANGED_AFTER_HOLD",
+      "prior_worker_sha256": "40496081600b8ab95ecb8ad80fd72703fd7c5b3b41493147aef40c07f82bbcfa"
+    },
+    "runner_service": {
+      "ActiveState": "active",
+      "MainPID": "303661",
+      "NRestarts": "1",
+      "SubState": "running",
+      "returncode": 0
+    },
+    "ui_result": {
+      "checkpoint": "/home/diegoignacionorambuenamiranda/.local/state/louksna/r4-48h/rollback/20261002T125627Z-P10_UI",
+      "checks": {
+        "dark_sober_surface": true,
+        "familiar_search_surface": true,
+        "fixed_domain_navigation": true,
+        "lrb_pre_post": true,
+        "no_debian_kde_reinstall": true,
+        "no_duplicate_launcher_creation": true,
+        "panel_icons_existing": true,
+        "panel_launchers_existing": true,
+        "part4_untouched": true,
+        "projects_canonical": true,
+        "reference_hash": true,
+        "semantic_visual_equivalence": true,
+        "surgical_extend_not_replace": true,
+        "v7_verify_pass": true,
+        "wallpaper_preserved": true
+      },
+      "completed_at_utc": "2026-10-02T12:56:28.881817Z",
+      "dark_surface": {
+        "after": {
+          "background": [
+            35,
+            38,
+            58
+          ],
+          "dark": true,
+          "scheme": ""
+        },
+        "before": {
+          "background": [
+            35,
+            38,
+            58
+          ],
+          "dark": true,
+          "scheme": ""
+        },
+        "changed": false,
+        "status": "PASS"
+      },
+      "debian_reinstall_performed": false,
+      "dolphin_places": {
+        "areas": {
+          "devocional": {
+            "comparison": "EXACT_CANONICAL_FILE_URI",
+            "exact_uri_matches": [
+              {
+                "href": "file:///home/diegoignacionorambuenamiranda/Luna%20R4/Devocional",
+                "title": "Devocional"
+              }
+            ],
+            "pass": true,
+            "target": "file:///home/diegoignacionorambuenamiranda/Luna%20R4/Devocional",
+            "title_matches": [
+              {
+                "href": "file:///home/diegoignacionorambuenamiranda/Luna%20R4/Devocional",
+                "title": "Devocional"
+              }
+            ]
+          },
+          "estudio": {
+            "comparison": "EXACT_CANONICAL_FILE_URI",
+            "exact_uri_matches": [
+              {
+                "href": "file:///home/diegoignacionorambuenamiranda/Luna%20R4/Estudio",
+                "title": "Estudio"
+              }
+            ],
+            "pass": true,
+            "target": "file:///home/diegoignacionorambuenamiranda/Luna%20R4/Estudio",
+            "title_matches": [
+              {
+                "href": "file:///home/diegoignacionorambuenamiranda/Luna%20R4/Estudio",
+                "title": "Estudio"
+              }
+            ]
+          },
+          "ingenieria": {
+            "comparison": "EXACT_CANONICAL_FILE_URI",
+            "exact_uri_matches": [
+              {
+                "href": "file:///home/diegoignacionorambuenamiranda/Luna%20R4/Ingenier%C3%ADa",
+                "title": "Ingeniería"
+              }
+            ],
+            "pass": true,
+            "target": "file:///home/diegoignacionorambuenamiranda/Luna%20R4/Ingenier%C3%ADa",
+            "title_matches": []
+          },
+          "inicio": {
+            "comparison": "EXACT_CANONICAL_FILE_URI",
+            "exact_uri_matches": [
+              {
+                "href": "file:///home/diegoignacionorambuenamiranda/Luna%20R4",
+                "title": "Inicio"
+              }
+            ],
+            "pass": true,
+            "target": "file:///home/diegoignacionorambuenamiranda/Luna%20R4",
+            "title_matches": [
+              {
+                "href": "file:///home/diegoignacionorambuenamiranda/Luna%20R4",
+                "title": "Inicio"
+              }
+            ]
+          },
+          "juegos": {
+            "comparison": "EXACT_CANONICAL_FILE_URI",
+            "exact_uri_matches": [
+              {
+                "href": "file:///home/diegoignacionorambuenamiranda/Luna%20R4/Juegos",
+                "title": "Juegos"
+              }
+            ],
+            "pass": true,
+            "target": "file:///home/diegoignacionorambuenamiranda/Luna%20R4/Juegos",
+            "title_matches": [
+              {
+                "href": "file:///home/diegoignacionorambuenamiranda/Luna%20R4/Juegos",
+                "title": "Juegos"
+              }
+            ]
+          },
+          "laboratorio": {
+            "comparison": "EXACT_CANONICAL_FILE_URI",
+            "exact_uri_matches": [
+              {
+                "href": "file:///home/diegoignacionorambuenamiranda/Luna%20R4/Laboratorio",
+                "title": "Laboratorio"
+              }
+            ],
+            "pass": true,
+            "target": "file:///home/diegoignacionorambuenamiranda/Luna%20R4/Laboratorio",
+            "title_matches": [
+              {
+                "href": "file:///home/diegoignacionorambuenamiranda/Luna%20R4/Laboratorio",
+                "title": "Laboratorio"
+              }
+            ]
+          },
+          "proyectos": {
+            "comparison": "EXACT_CANONICAL_FILE_URI",
+            "exact_uri_matches": [
+              {
+                "href": "file:///home/diegoignacionorambuenamiranda/PROYECTOS",
+                "title": "Proyectos"
+              }
+            ],
+            "pass": true,
+            "target": "file:///home/diegoignacionorambuenamiranda/PROYECTOS",
+            "title_matches": [
+              {
+                "href": "file:///home/diegoignacionorambuenamiranda/PROYECTOS",
+                "title": "Proyectos"
+              }
+            ]
+          },
+          "sistema": {
+            "comparison": "EXACT_CANONICAL_FILE_URI",
+            "exact_uri_matches": [
+              {
+                "href": "file:///home/diegoignacionorambuenamiranda/Luna%20R4/Sistema",
+                "title": "Sistema"
+              }
+            ],
+            "pass": true,
+            "target": "file:///home/diegoignacionorambuenamiranda/Luna%20R4/Sistema",
+            "title_matches": [
+              {
+                "href": "file:///home/diegoignacionorambuenamiranda/Luna%20R4/Sistema",
+                "title": "Sistema"
+              }
+            ]
+          }
+        },
+        "pass": true,
+        "policy": "FIXED_DOMAIN_NAVIGATION_EXISTENCE_NO_XBEL_REWRITE"
+      },
+      "downloads_performed": false,
+      "executor": "MAESTRO",
+      "icons": {
+        "ingenieria": {
+          "pass": true,
+          "path": "/home/diegoignacionorambuenamiranda/.local/share/louksna-r4/R4_V7/icons/ingenieria.svg"
+        },
+        "juegos": {
+          "pass": true,
+          "path": "/home/diegoignacionorambuenamiranda/.local/share/louksna-r4/R4_V7/icons/juegos.svg"
+        },
+        "laboratorio": {
+          "pass": true,
+          "path": "/home/diegoignacionorambuenamiranda/.local/share/louksna-r4/R4_V7/icons/laboratorio.svg"
+        },
+        "proyectos": {
+          "pass": true,
+          "path": "/home/diegoignacionorambuenamiranda/.local/share/louksna-r4/R4_V7/icons/proyectos.svg"
+        },
+        "sistema": {
+          "pass": true,
+          "path": "/home/diegoignacionorambuenamiranda/.local/share/louksna-r4/R4_V7/icons/sistema.svg"
+        }
+      },
+      "kde_reinstall_performed": false,
+      "launchers": {
+        "ingenieria": {
+          "pass": true,
+          "path": "/home/diegoignacionorambuenamiranda/.local/share/applications/luna-r4-v7-ingenieria.desktop",
+          "sha256": "a5d294e1cf40117233f29822c042fdcddbcd9000bd931ec646885709cf4ee277"
+        },
+        "juegos": {
+          "pass": true,
+          "path": "/home/diegoignacionorambuenamiranda/.local/share/applications/luna-r4-v7-juegos.desktop",
+          "sha256": "ddf46de5eebd9f8a8fc5468509e23604d3a27833fd9ce2cc466d6a7940e8be8d"
+        },
+        "laboratorio": {
+          "pass": true,
+          "path": "/home/diegoignacionorambuenamiranda/.local/share/applications/luna-r4-v7-laboratorio.desktop",
+          "sha256": "1d591054b8750eb9c6893af92bb1b2f50c759faad3e787f3591f8ff6463af314"
+        },
+        "proyectos": {
+          "pass": true,
+          "path": "/home/diegoignacionorambuenamiranda/.local/share/applications/luna-r4-v7-proyectos.desktop",
+          "sha256": "32791fdf75ec55f4fc9add11c22eb25b10a9e532bbe3d76b005d314ed587d7ad"
+        },
+        "sistema": {
+          "pass": true,
+          "path": "/home/diegoignacionorambuenamiranda/.local/share/applications/luna-r4-v7-sistema.desktop",
+          "sha256": "94c0fcca41f2a30edf5cb5e7b43aa8c5fe8f346f42c4abfbd241f8662721a323"
+        }
+      },
+      "lrb_visual_evidence": "15a576aadbfb14e1fb7f1a03c9896bfedb0a58abb577650d43e3500ede9e43da",
+      "lrb_visual_evidence_mode": "READ_ONLY_LRB_STATE_PLUS_KDE_STRUCTURAL_SEMANTIC_EQUIVALENCE",
+      "mission_id": "MIS-cf38037f1f114012af53",
+      "observer": "LOUKSNA_REMOTE_BRIDGE",
+      "panels": {
+        "UI_PANEL_4": "PASS",
+        "UI_PANEL_5": "PASS",
+        "UI_PANEL_6": "PASS",
+        "UI_PANEL_7": "PASS",
+        "UI_PANEL_8": "PASS",
+        "UI_PANEL_9": "PASS"
+      },
+      "partitioning_performed": false,
+      "producer_revision": "2026-10-02.P10.3-URI-SEARCH-SEMANTIC-DETECTOR",
+      "producer_sha256": "40496081600b8ab95ecb8ad80fd72703fd7c5b3b41493147aef40c07f82bbcfa",
+      "reference_path": "/home/diegoignacionorambuenamiranda/Descargas/LUNA_R4_UI_REFERENCE/LUNA_R4_UI_REFERENCE_PARTS_1_9.jpg",
+      "reference_sha256": "8a9852c4155d64fd74059c7239e67c82e16e5acd556627d70575db85078d4ed4",
+      "rollback_performed": false,
+      "rollback_restored": [],
+      "schema": "LOUKSNA_R4_UI_PANEL_4_9_RESULT/2.0",
+      "search_surface": {
+        "bound_plasmoids": [],
+        "installed_plasmoids": [
+          "org.kde.plasma.kickoff",
+          "org.kde.plasma.kicker"
+        ],
+        "krunner": "/usr/bin/krunner",
+        "krunner_version": {
+          "argv": [
+            "/usr/bin/krunner",
+            "--version"
+          ],
+          "returncode": 0,
+          "stderr": "QThreadStorage: Thread 0x55673aa1c2b0 exited after QThreadStorage 8 destroyed\nQThreadStorage: Thread 0x55673aa1c2b0 exited after QThreadStorage 4 destroyed\nQThreadStorage: Thread 0x55673aa1c2b0 exited after QThreadStorage 3 destroyed\n",
+          "stdout": "krunner 6.3.6\n"
+        },
+        "mode": "KDE_FAMILIAR_SEARCH_SEMANTIC_EQUIVALENCE",
+        "panel_mutation_required": false,
+        "pass": true,
+        "reference_policy": "REFERENCE_ONLY_NOT_PIXEL_PERFECT"
+      },
+      "status": "PASS",
+      "surgical_patch": {
+        "after_sha256": "deba1dcb62042b632cd93f648be69474f73cf5b0bd5e07e1b1d511c88a6b7a49",
+        "applied_replacement_ids": [
+          "bd8864391c74",
+          "e8229394b096",
+          "5dec8c1e45dc",
+          "2c8936af79b7",
+          "14520d1d4882",
+          "53167fce7fdd",
+          "f1fa087866d0"
+        ],
+        "before_sha256": "97dfb5f62db553668b5ba512cfbe8204cfbfc6d0649d208ebec441ccc27e9fda",
+        "changed": true,
+        "compile": {
+          "argv": [
+            "python3",
+            "-m",
+            "py_compile",
+            "/home/diegoignacionorambuenamiranda/LOUKSNA_MAESTRO_20260925/MISSION3_OPERATIVE/R4_UI_DOLPHIN_V7/R4_AREAS_V7.py"
+          ],
+          "returncode": 0,
+          "stderr": "",
+          "stdout": ""
+        },
+        "status": "PASS",
+        "verify": {
+          "argv": [
+            "python3",
+            "-B",
+            "/home/diegoignacionorambuenamiranda/LOUKSNA_MAESTRO_20260925/MISSION3_OPERATIVE/R4_UI_DOLPHIN_V7/R4_AREAS_V7.py",
+            "--verify"
+          ],
+          "returncode": 0,
+          "stderr": "",
+          "stdout": "{\"status\": \"PASS_BOUNDED_DOLPHIN_AREAS\", \"spaces\": 8, \"project_target\": \"/home/diegoignacionorambuenamiranda/PROYECTOS\", \"original_project_bytes_written\": 0, \"Dolphin_Places\": 8, \"system_disk_info\": \"available and refresh-on-click\"}\n"
+        }
+      },
+      "wallpaper_config_sha256_after": "6eb96b551c5af5e733ae2b5461048167dcc993c3a305f9695c8b5fe8c5f581f7",
+      "wallpaper_config_sha256_before": "6eb96b551c5af5e733ae2b5461048167dcc993c3a305f9695c8b5fe8c5f581f7"
+    }
+  },
+  "executor": "MAESTRO",
+  "kde_redownload_performed": false,
+  "observer": "LOUKSNA_REMOTE_BRIDGE",
+  "partitioning_performed": false,
+  "point_id": "P10",
+  "point_name": "UI_PANEL_4_9_MOCKUP_ACCEPTANCE",
+  "protected_reference": "LOUKSNAMEJORADA.md",
+  "provenance": {
+    "authority_sha256": "5270c3d643339c283edf13b414f335f23f921c4dac023b06d38de62927e29bf9",
+    "contract_sha256": "9ebd7faf9bfe6dd8d01c11eb38d332bda4e3fd82f01508453b3e4bac178ee1cc",
+    "ledger_head_sha256": "7136c0dffef546451bf90c0512902d35f79e5d7ec5b3957bfe24adfe987a07b5",
+    "lrb_evidence_sha256": "2ea5cfac1218a136ffc6405c582eeca8559d4eb8cca4808c6495e430cfaf3556",
+    "master_controller_sha256": "9b67595a70df187375f64d85776d5780a97d28d8254140bab057c6342914a862"
+  },
+  "puac2": {
+    "C25": true,
+    "C26": true,
+    "C27": true,
+    "C28": true,
+    "C29": true,
+    "C30": true,
+    "C31": true,
+    "C32": true
+  },
+  "schema": "LOUKSNA_R4_15_POINT_EVIDENCE/1.0",
+  "self_certified": false,
+  "status": "PASS"
+}
