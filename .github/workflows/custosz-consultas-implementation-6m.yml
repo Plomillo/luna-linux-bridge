@@ -1,4 +1,4 @@
-name: "CUSTOSZ — consultas implementation candidate 6m"
+name: "CUSTOSZ — consultas implementation verify certify 6m"
 
 on:
   push:
@@ -8,479 +8,176 @@ on:
       - .github/workflows/custosz-consultas-implementation-6m.yml
 
 permissions:
-  contents: write
-  actions: read
-
-concurrency:
-  group: custosz-consultas-implementation-6m
-  cancel-in-progress: false
+  contents: read
 
 jobs:
-  implement:
+  verify-certify:
     runs-on: ubuntu-latest
     timeout-minutes: 6
-    outputs:
-      base_sha: ${{ steps.meta.outputs.base_sha }}
-      candidate_sha: ${{ steps.commit.outputs.candidate_sha }}
     steps:
-      - name: Checkout exact implementation base
+      - name: Checkout exact consultas candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          fetch-depth: 2
-          persist-credentials: true
+          fetch-depth: 0
+          persist-credentials: false
 
-      - name: Bind implementation base
-        id: meta
+      - name: CUSTOSZ assess live candidate
         shell: bash
         run: |
           set -Eeuo pipefail
-          echo "base_sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
-          printf 'IMPLEMENTATION_BASE_SHA=%s\n' "$GITHUB_SHA"
-          printf 'BRANCH=%s\n' "$GITHUB_REF_NAME"
-
-      - name: Verify fixed CUSTOSZ before materialization
-        shell: bash
-        run: |
-          set -Eeuo pipefail
+          mkdir -p consultas-assurance
           CUSTOSZ="artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz"
           EXPECTED="dacf1f8c13b2fcbfc617cf0d4d780b30502c13395224691e6b0f05f53d9816a2"
           test -f "$CUSTOSZ"
-          ACTUAL="$(sha256sum "$CUSTOSZ" | awk '{print $1}')"
-          test "$ACTUAL" = "$EXPECTED"
-          python3 -B -I "$CUSTOSZ" v07-status
-
-      - name: CUSTOSZ implementation contract precheck
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          mkdir -p implementation-evidence
+          test "$(sha256sum "$CUSTOSZ" | awk '{print $1}')" = "$EXPECTED"
           python3 - <<'PY'
           import hashlib,json,os,pathlib,sys
-          root=pathlib.Path(os.environ["GITHUB_WORKSPACE"])
+          root=pathlib.Path.cwd()
           c=root/"artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz"
-          os.environ["CUSTOSZ_STATE_DIR"]=str(root/"implementation-evidence/ephemeral-custosz-state")
+          os.environ["CUSTOSZ_STATE_DIR"]=str(root/"consultas-assurance/ephemeral-custosz-state")
           sys.path.insert(0,str(c))
           import custosz_v05_legacy as w
-          def workspace_adapter(): return root
-          def discover_adapter():
-              return {"workspace":str(root),"projects":{"LUNA_PROJECT":{"status":"RESOLVED","path":str(root),"score":999}}}
-          w.workspace=workspace_adapter
-          w.discover=discover_adapter
-          prompt=r"""
-          IMPLEMENTATION PRECHECK — CONSULTAS CHANNEL.
-          Authorized scope: create a new consultas/ channel and its own scripts/workflow on this
-          staging branch only. Do not modify missions/, Louksna.md, main, canonical IDs, or frozen
-          artifacts. CONSULTA is read-only advisory: execution_authorized=false and
-          mutation_authorized=false. Required: immutable SOURCE_SHA256, ANSWERED/HOLD/REJECTED,
-          anti-loop, explicit CONSULTA->MISSION prohibition, evidence/provenance/traceability,
-          rollback by branch/revert, non-regression of missions/. EXTEND_DO_NOT_REPLACE.
-          Return architecture/reasoning constraints. This precheck does not self-certify.
-          """
-          result={
-              "schema":"LOUKSNA_CONSULTAS_IMPLEMENTATION_PRECHECK/1.0",
-              "authority":"Louksna.md",
-              "scope":"CONSULTAS_CHANNEL_CANDIDATE_ONLY",
-              "execution_authorized_for_consulta":False,
-              "mutation_authorized_for_consulta":False,
-              "canonical_mutation_authorized":False,
-              "custosz_sha256":hashlib.sha256(c.read_bytes()).hexdigest(),
-              "architecture":w.architect(prompt,"LUNA_PROJECT"),
-              "reasoning_policy":w.reasoning_policy(prompt,"LUNA_PROJECT")
-          }
-          (root/"implementation-evidence/CUSTOSZ_PRECHECK.json").write_text(
-              json.dumps(result,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
-          print("CUSTOSZ_PRECHECK=PASS")
-          PY
-
-      - name: Materialize consultas implementation candidate
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-          import json
-          root=Path(".")
-          files={}
-
-          files["consultas/README.md"] = """# Consultas mailbox
-
-Canal separado de `missions/` para preguntas, investigación, diagnóstico y análisis de factibilidad.
-
-Invariantes:
-- CONSULTA != MISIÓN.
-- CONSULTA != AUTORIZACIÓN DE EJECUCIÓN MATERIAL.
-- `execution_authorized=false` y `mutation_authorized=false` son obligatorios.
-- El texto fuente se conserva por SHA-256; el envelope no sustituye ni muta el original.
-- Estados terminales: `ANSWERED`, `HOLD`, `REJECTED`.
-- Una promoción CONSULTA -> MISIÓN requiere un nuevo acto autorizativo y un nuevo objeto trazable.
-- Louksna.md conserva la autoridad.
-- EXTEND_DO_NOT_REPLACE, FAIL_CLOSED, NO_SILENT_OPERATIONS.
-"""
-
-          files["consultas/schema/consulta-envelope.schema.json"] = json.dumps({
-            "$schema":"https://json-schema.org/draft/2020-12/schema",
-            "$id":"LOUKSNA_CONSULTA_ENVELOPE/1.0",
-            "type":"object",
-            "required":["schema","consulta_id","kind","source_path","source_sha256","source_bytes",
-                        "execution_authorized","mutation_authorized","state","authority","created_at_utc"],
-            "properties":{
-              "schema":{"const":"LOUKSNA_CONSULTA_ENVELOPE/1.0"},
-              "consulta_id":{"type":"string","minLength":1},
-              "kind":{"const":"CONSULTA"},
-              "source_path":{"type":"string","minLength":1},
-              "source_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},
-              "source_bytes":{"type":"integer","minimum":1},
-              "execution_authorized":{"const":False},
-              "mutation_authorized":{"const":False},
-              "state":{"enum":["RECEIVED","ROUTED","ANSWERED","HOLD","REJECTED"]},
-              "authority":{"const":"Louksna.md"},
-              "created_at_utc":{"type":"string","minLength":1},
-              "provenance":{"type":"object"}
-            },
-            "additionalProperties":True
-          },ensure_ascii=False,indent=2,sort_keys=True)+"\n"
-
-          files["consultas/registry/policy.json"] = json.dumps({
-            "schema":"LOUKSNA_CONSULTAS_POLICY/1.0",
+          w.workspace=lambda: root
+          w.discover=lambda: {"workspace":str(root),"projects":{"LUNA_PROJECT":{"status":"RESOLVED","path":str(root),"score":999}}}
+          prompt=(
+            "Evalúa este candidato de implementación consultas/ en modo READ_ONLY_ASSURANCE. "
+            "Debe permanecer separado de missions/, preservar Louksna.md, impedir ejecución material "
+            "desde consultas, exigir SOURCE_SHA256, estados ANSWERED/HOLD/REJECTED, promoción explícita "
+            "CONSULTA->MISIÓN y no propagar certificación. No modificar nada ni autocertificar."
+          )
+          out={
+            "schema":"LOUKSNA_CONSULTAS_CANDIDATE_CUSTOSZ_ASSESSMENT/1.0",
+            "candidate_sha":os.environ["GITHUB_SHA"],
             "authority":"Louksna.md",
-            "kind":"CONSULTA",
-            "execution_authorized":False,
-            "mutation_authorized":False,
-            "allowed_terminal_states":["ANSWERED","HOLD","REJECTED"],
-            "forbidden":["SILENT_PROMOTION_TO_MISSION","MATERIAL_EXECUTION","CANONICAL_MUTATION",
-                         "CERTIFICATION_PROPAGATION","SELF_CERTIFICATION"],
-            "anti_loop":{"repeat_limit":3,"no_progress_limit":5,"strategy_mutation_before_retry":True},
-            "provider":{"id":"CUSTOSZ_V7_READ_ONLY","mode":"READ_ONLY_ADVISORY",
-                        "expected_sha256":"dacf1f8c13b2fcbfc617cf0d4d780b30502c13395224691e6b0f05f53d9816a2"},
-            "promotion_rule":"NEW_AUTHORIZATION_PLUS_NEW_TRACEABLE_MISSION_OBJECT"
-          },ensure_ascii=False,indent=2,sort_keys=True)+"\n"
-
-          files["scripts/consultas/compile_consulta.py"] = r'''#!/usr/bin/env python3
-import argparse, hashlib, json, pathlib
-from datetime import datetime, timezone
-
-def main():
-    ap=argparse.ArgumentParser()
-    ap.add_argument("source")
-    ap.add_argument("--out",required=True)
-    ns=ap.parse_args()
-    src=pathlib.Path(ns.source)
-    raw=src.read_bytes()
-    if not raw:
-        raise SystemExit("EMPTY_CONSULTA")
-    digest=hashlib.sha256(raw).hexdigest()
-    env={
-      "schema":"LOUKSNA_CONSULTA_ENVELOPE/1.0",
-      "consulta_id":"CONSULTA-"+digest[:20].upper(),
-      "kind":"CONSULTA",
-      "source_path":str(src),
-      "source_sha256":digest,
-      "source_bytes":len(raw),
-      "execution_authorized":False,
-      "mutation_authorized":False,
-      "state":"RECEIVED",
-      "authority":"Louksna.md",
-      "created_at_utc":datetime.now(timezone.utc).isoformat(),
-      "provenance":{"compiler":"scripts/consultas/compile_consulta.py"}
-    }
-    out=pathlib.Path(ns.out)
-    out.parent.mkdir(parents=True,exist_ok=True)
-    out.write_text(json.dumps(env,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
-    print(json.dumps(env,ensure_ascii=False,sort_keys=True))
-if __name__=="__main__":
-    main()
-'''
-
-          files["scripts/consultas/process_consulta.py"] = r'''#!/usr/bin/env python3
-import argparse, hashlib, json, os, pathlib, sys, tempfile
-
-PIN="dacf1f8c13b2fcbfc617cf0d4d780b30502c13395224691e6b0f05f53d9816a2"
-
-def emit(out,data):
-    p=pathlib.Path(out); p.parent.mkdir(parents=True,exist_ok=True)
-    p.write_text(json.dumps(data,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
-
-def main():
-    ap=argparse.ArgumentParser()
-    ap.add_argument("envelope")
-    ap.add_argument("source")
-    ap.add_argument("--custosz")
-    ap.add_argument("--out",required=True)
-    ns=ap.parse_args()
-    env=json.loads(pathlib.Path(ns.envelope).read_text(encoding="utf-8"))
-    raw=pathlib.Path(ns.source).read_bytes()
-    actual=hashlib.sha256(raw).hexdigest()
-    base={
-      "schema":"LOUKSNA_CONSULTA_RESULT/1.0",
-      "consulta_id":env.get("consulta_id"),
-      "source_sha256":env.get("source_sha256"),
-      "authority":"Louksna.md",
-      "execution_authorized":False,
-      "mutation_authorized":False,
-      "provider":"CUSTOSZ_V7_READ_ONLY"
-    }
-    if env.get("kind")!="CONSULTA" or env.get("execution_authorized") is not False or env.get("mutation_authorized") is not False:
-        emit(ns.out,{**base,"state":"REJECTED","blocker":"INVALID_CONSULTA_ENVELOPE"}); return
-    if actual!=env.get("source_sha256"):
-        emit(ns.out,{**base,"state":"REJECTED","blocker":"SOURCE_SHA256_MISMATCH"}); return
-    if not ns.custosz:
-        emit(ns.out,{**base,"state":"HOLD","blocker":"CUSTOSZ_PROVIDER_NOT_BOUND",
-                     "next":"BIND_PINNED_CUSTOSZ_READ_ONLY_PROVIDER"}); return
-    cp=pathlib.Path(ns.custosz)
-    if not cp.is_file() or hashlib.sha256(cp.read_bytes()).hexdigest()!=PIN:
-        emit(ns.out,{**base,"state":"HOLD","blocker":"CUSTOSZ_PIN_MISMATCH",
-                     "next":"BIND_EXACT_PINNED_CUSTOSZ_PROVIDER"}); return
-    state_dir=tempfile.mkdtemp(prefix="louksna-consulta-")
-    os.environ["CUSTOSZ_STATE_DIR"]=state_dir
-    sys.path.insert(0,str(cp))
-    import custosz_v05_legacy as w
-    root=pathlib.Path.cwd()
-    w.workspace=lambda: root
-    w.discover=lambda: {"workspace":str(root),"projects":{"LUNA_PROJECT":{"status":"RESOLVED","path":str(root),"score":999}}}
-    prompt=raw.decode("utf-8","replace")
-    try:
-        architecture=w.architect(prompt,"LUNA_PROJECT")
-        policy=w.reasoning_policy(prompt,"LUNA_PROJECT")
-        emit(ns.out,{**base,"state":"ANSWERED","architecture":architecture,"reasoning_policy":policy,
-                     "certification_propagated":False})
-    except Exception as e:
-        emit(ns.out,{**base,"state":"HOLD","blocker":type(e).__name__+":"+str(e),
-                     "next":"ACQUIRE_MISSING_PROVIDER_OR_EVIDENCE_AND_RETRY_WITH_NEW_CAUSAL_EVIDENCE"})
-if __name__=="__main__":
-    main()
-'''
-
-          files["scripts/consultas/selftest.py"] = r'''#!/usr/bin/env python3
-import hashlib,json,pathlib,subprocess,tempfile,sys
-root=pathlib.Path.cwd()
-with tempfile.TemporaryDirectory() as td:
-    td=pathlib.Path(td)
-    src=td/"CONSULTA_ORIGINAL.md"; src.write_text("¿Puede responder esta consulta?\n",encoding="utf-8")
-    env=td/"envelope.json"; res=td/"result.json"
-    subprocess.run([sys.executable,str(root/"scripts/consultas/compile_consulta.py"),str(src),"--out",str(env)],check=True)
-    e=json.loads(env.read_text())
-    assert e["kind"]=="CONSULTA"
-    assert e["execution_authorized"] is False and e["mutation_authorized"] is False
-    assert e["source_sha256"]==hashlib.sha256(src.read_bytes()).hexdigest()
-    subprocess.run([sys.executable,str(root/"scripts/consultas/process_consulta.py"),str(env),str(src),"--out",str(res)],check=True)
-    r=json.loads(res.read_text())
-    assert r["state"]=="HOLD"
-    assert r["blocker"]=="CUSTOSZ_PROVIDER_NOT_BOUND"
-    assert r["execution_authorized"] is False and r["mutation_authorized"] is False
-print("CONSULTAS_SELFTEST=PASS")
-'''
-
-          files[".github/workflows/custosz-consultas-mailbox.yml"] = '''name: "CUSTOSZ Consultas Mailbox — read-only advisory"
-on:
-  push:
-    branches:
-      - main
-      - staging/consultas-implementation-6m-20261002
-    paths:
-      - consultas/inbox/**
-      - consultas/schema/**
-      - consultas/registry/**
-      - scripts/consultas/**
-      - .github/workflows/custosz-consultas-mailbox.yml
-permissions:
-  contents: read
-jobs:
-  consultas:
-    runs-on: ubuntu-latest
-    timeout-minutes: 6
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          persist-credentials: false
-      - name: Verify consultas channel
-        shell: bash
-        run: python3 scripts/consultas/selftest.py
-      - name: Process consultas in inbox read-only
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          mkdir -p consultas-output
-          found=0
-          while IFS= read -r -d '' src; do
-            found=1
-            base="$(dirname "$src")"
-            id="$(basename "$base")"
-            python3 scripts/consultas/compile_consulta.py "$src" --out "consultas-output/$id.envelope.json"
-            python3 scripts/consultas/process_consulta.py "consultas-output/$id.envelope.json" "$src" \
-              --custosz artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz \
-              --out "consultas-output/$id.result.json"
-          done < <(find consultas/inbox -type f -name CONSULTA_ORIGINAL.md -print0 2>/dev/null || true)
-          if [ "$found" = 0 ]; then echo "NO_CONSULTAS_TO_PROCESS"; fi
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        if: always()
-        with:
-          name: consultas-readonly-results
-          path: consultas-output/
-          if-no-files-found: ignore
-          retention-days: 30
-'''
-
-          for rel,data in files.items():
-              p=root/rel
-              p.parent.mkdir(parents=True,exist_ok=True)
-              p.write_text(data,encoding="utf-8")
-
-          (root/"consultas/inbox/.gitkeep").parent.mkdir(parents=True,exist_ok=True)
-          (root/"consultas/inbox/.gitkeep").write_text("",encoding="utf-8")
-          print("CONSULTAS_IMPLEMENTATION_MATERIALIZED=TRUE")
+            "custosz_sha256":hashlib.sha256(c.read_bytes()).hexdigest(),
+            "mode":"READ_ONLY_ASSURANCE",
+            "architecture":w.architect(prompt,"LUNA_PROJECT"),
+            "reasoning_policy":w.reasoning_policy(prompt,"LUNA_PROJECT")
+          }
+          pathlib.Path("consultas-assurance/CUSTOSZ_ASSESSMENT.json").write_text(
+            json.dumps(out,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print("CUSTOSZ_CANDIDATE_ASSESSMENT=PASS")
           PY
 
-      - name: Validate implementation before commit
+      - name: Functional verification
         shell: bash
         run: |
           set -Eeuo pipefail
           python3 -m json.tool consultas/schema/consulta-envelope.schema.json >/dev/null
           python3 -m json.tool consultas/registry/policy.json >/dev/null
           python3 scripts/consultas/selftest.py
-          test ! -n "$(git status --porcelain -- missions Louksna.md)"
-          echo "PRECOMMIT_VALIDATION=PASS"
+          td="$(mktemp -d)"
+          printf '¿Puede responder esta consulta de prueba?\n' > "$td/CONSULTA_ORIGINAL.md"
+          python3 scripts/consultas/compile_consulta.py "$td/CONSULTA_ORIGINAL.md" --out "$td/envelope.json"
+          python3 scripts/consultas/process_consulta.py "$td/envelope.json" "$td/CONSULTA_ORIGINAL.md"             --custosz artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz --out "$td/result.json"
+          python3 - "$td/result.json" <<'PY'
+          import json,sys
+          r=json.load(open(sys.argv[1],encoding="utf-8"))
+          assert r["state"]=="ANSWERED", r
+          assert r["execution_authorized"] is False
+          assert r["mutation_authorized"] is False
+          assert r.get("certification_propagated") is False
+          print("LIVE_CONSULTA_PROCESSING=PASS")
+          PY
 
-      - name: Commit implementation candidate
-        id: commit
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          git config user.name "CUSTOSZ governed implementation"
-          git config user.email "actions@github.com"
-          git add consultas scripts/consultas .github/workflows/custosz-consultas-mailbox.yml implementation-evidence/CUSTOSZ_PRECHECK.json
-          git commit -m "feat(consultas): implement governed read-only consultas channel"
-          CANDIDATE="$(git rev-parse HEAD)"
-          git push origin "HEAD:$GITHUB_REF_NAME"
-          echo "candidate_sha=$CANDIDATE" >> "$GITHUB_OUTPUT"
-          echo "IMPLEMENTATION_CANDIDATE_SHA=$CANDIDATE"
-
-      - name: Preserve producer evidence
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: consultas-implementation-producer-evidence
-          path: implementation-evidence/CUSTOSZ_PRECHECK.json
-          if-no-files-found: error
-          retention-days: 30
-
-  g23:
-    needs: implement
-    runs-on: ubuntu-latest
-    timeout-minutes: 4
-    outputs:
-      result: ${{ steps.review.outputs.result }}
-    steps:
-      - name: Checkout exact candidate SHA
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          ref: ${{ needs.implement.outputs.candidate_sha }}
-          fetch-depth: 2
-          persist-credentials: false
-
-      - name: G23 independent validation
-        id: review
+      - name: G23 independent validation in clean worktree
         shell: bash
         env:
-          BASE_SHA: ${{ needs.implement.outputs.base_sha }}
-          CANDIDATE_SHA: ${{ needs.implement.outputs.candidate_sha }}
+          BASE_SHA: "597853f8b45dceeac5d7ee38a4283f9c98d098a1"
         run: |
           set -Eeuo pipefail
-          mkdir -p assurance-g23
+          WT="$RUNNER_TEMP/consultas-g23"
+          git worktree add --detach "$WT" "$GITHUB_SHA"
+          cd "$WT"
           python3 scripts/consultas/selftest.py
           python3 - <<'PY'
-          import hashlib,json,os,pathlib,subprocess
-          base=os.environ["BASE_SHA"]; cand=os.environ["CANDIDATE_SHA"]
-          def sh(*args): return subprocess.check_output(args,text=True).strip()
+          import json,os,pathlib,subprocess
+          base=os.environ["BASE_SHA"]
+          cand=os.environ["GITHUB_SHA"]
+          def sh(*a):
+              return subprocess.check_output(a,text=True).strip()
           changed=sh("git","diff","--name-only",base,cand).splitlines()
-          allowed=lambda p: p.startswith("consultas/") or p.startswith("scripts/consultas/") or p==".github/workflows/custosz-consultas-mailbox.yml" or p=="implementation-evidence/CUSTOSZ_PRECHECK.json"
-          checks={
-            "candidate_sha_bound": sh("git","rev-parse","HEAD")==cand,
-            "scope_only": all(allowed(p) for p in changed),
-            "missions_tree_unchanged": sh("git","rev-parse",base+":missions")==sh("git","rev-parse",cand+":missions"),
-            "louksna_unchanged": sh("git","rev-parse",base+":Louksna.md")==sh("git","rev-parse",cand+":Louksna.md"),
-            "mission_mailbox_unchanged": sh("git","rev-parse",base+":mission-mailbox")==sh("git","rev-parse",cand+":mission-mailbox"),
-            "mission_scripts_unchanged": sh("git","rev-parse",base+":scripts/mission_mailbox")==sh("git","rev-parse",cand+":scripts/mission_mailbox"),
-          }
+          def allowed(p):
+              return (
+                  p.startswith("consultas/") or
+                  p.startswith("scripts/consultas/") or
+                  p==".github/workflows/custosz-consultas-mailbox.yml" or
+                  p==".github/workflows/custosz-consultas-implementation-6m.yml"
+              )
           policy=json.load(open("consultas/registry/policy.json",encoding="utf-8"))
-          checks.update({
-            "consulta_execution_false": policy["execution_authorized"] is False,
-            "consulta_mutation_false": policy["mutation_authorized"] is False,
-            "promotion_explicit": policy["promotion_rule"]=="NEW_AUTHORIZATION_PLUS_NEW_TRACEABLE_MISSION_OBJECT",
-            "no_cert_propagation": "CERTIFICATION_PROPAGATION" in policy["forbidden"],
-            "terminal_states_exact": policy["allowed_terminal_states"]==["ANSWERED","HOLD","REJECTED"],
-          })
+          checks={
+            "candidate_sha_bound":sh("git","rev-parse","HEAD")==cand,
+            "scope_only":all(allowed(p) for p in changed),
+            "missions_tree_unchanged":sh("git","rev-parse",base+":missions")==sh("git","rev-parse",cand+":missions"),
+            "louksna_unchanged":sh("git","rev-parse",base+":Louksna.md")==sh("git","rev-parse",cand+":Louksna.md"),
+            "mission_mailbox_unchanged":sh("git","rev-parse",base+":mission-mailbox")==sh("git","rev-parse",cand+":mission-mailbox"),
+            "mission_scripts_unchanged":sh("git","rev-parse",base+":scripts/mission_mailbox")==sh("git","rev-parse",cand+":scripts/mission_mailbox"),
+            "execution_false":policy["execution_authorized"] is False,
+            "mutation_false":policy["mutation_authorized"] is False,
+            "promotion_explicit":policy["promotion_rule"]=="NEW_AUTHORIZATION_PLUS_NEW_TRACEABLE_MISSION_OBJECT",
+            "terminal_states_exact":policy["allowed_terminal_states"]==["ANSWERED","HOLD","REJECTED"],
+            "no_cert_propagation":"CERTIFICATION_PROPAGATION" in policy["forbidden"]
+          }
           result="PASS" if all(checks.values()) else "FAIL"
-          out={"schema":"LOUKSNA_CONSULTAS_IMPLEMENTATION_G23/1.0","gate":"G23_INDEPENDENT_VALIDATION",
-               "scope":"CONSULTAS_CHANNEL_CANDIDATE_ONLY","base_sha":base,"candidate_sha":cand,
-               "changed_files":changed,"checks":checks,"result":result,
-               "certification_propagation":False,"main_modified":False}
-          pathlib.Path("assurance-g23/G23.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          out={
+            "schema":"LOUKSNA_CONSULTAS_IMPLEMENTATION_G23/1.0",
+            "gate":"G23_INDEPENDENT_VALIDATION",
+            "scope":"CONSULTAS_CHANNEL_CANDIDATE_ONLY",
+            "base_sha":base,
+            "candidate_sha":cand,
+            "changed_files":changed,
+            "checks":checks,
+            "result":result,
+            "certification_propagation":False,
+            "main_modified":False
+          }
+          target=pathlib.Path(os.environ["GITHUB_WORKSPACE"])/"consultas-assurance/G23.json"
+          target.write_text(json.dumps(out,indent=2,sort_keys=True)+"\n",encoding="utf-8")
           print(json.dumps(out,indent=2,sort_keys=True))
-          if result!="PASS": raise SystemExit("G23_FAIL")
+          if result!="PASS":
+              raise SystemExit("G23_FAIL")
           PY
-          echo "result=PASS" >> "$GITHUB_OUTPUT"
-
-      - name: Preserve G23
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: consultas-implementation-g23
-          path: assurance-g23/G23.json
-          if-no-files-found: error
-          retention-days: 30
-
-  g24:
-    needs: [implement,g23]
-    if: needs.g23.outputs.result == 'PASS'
-    runs-on: ubuntu-latest
-    timeout-minutes: 4
-    steps:
-      - name: Checkout certified candidate
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          ref: ${{ needs.implement.outputs.candidate_sha }}
-          persist-credentials: false
-
-      - name: Download G23 evidence
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        with:
-          name: consultas-implementation-g23
-          path: assurance-g23
 
       - name: G24 certify exact candidate scope
         shell: bash
-        env:
-          CANDIDATE_SHA: ${{ needs.implement.outputs.candidate_sha }}
         run: |
           set -Eeuo pipefail
-          mkdir -p assurance-g24
           python3 - <<'PY'
-          import hashlib,json,os,pathlib,subprocess
-          cand=os.environ["CANDIDATE_SHA"]
-          g23=json.load(open("assurance-g23/G23.json",encoding="utf-8"))
-          head=subprocess.check_output(["git","rev-parse","HEAD"],text=True).strip()
+          import json,os,pathlib,subprocess
+          g23=json.load(open("consultas-assurance/G23.json",encoding="utf-8"))
+          cand=os.environ["GITHUB_SHA"]
           checks={
-            "candidate_sha_exact":head==cand,
             "g23_pass":g23.get("result")=="PASS",
             "g23_scope_exact":g23.get("scope")=="CONSULTAS_CHANNEL_CANDIDATE_ONLY",
             "g23_candidate_bound":g23.get("candidate_sha")==cand,
             "no_certification_propagation":g23.get("certification_propagation") is False,
-            "main_not_modified":g23.get("main_modified") is False,
+            "main_not_modified":g23.get("main_modified") is False
           }
-          result="PASS" if all(checks.values()) else "FAIL"
-          cert={"schema":"LOUKSNA_CONSULTAS_IMPLEMENTATION_G24/1.0","gate":"G24_CERTIFICATION",
-                "scope":"CONSULTAS_CHANNEL_CANDIDATE_ONLY","candidate_sha":cand,
-                "status":result,"operational_status":"CERTIFIED_CANDIDATE_NOT_IN_MAIN" if result=="PASS" else "HOLD",
-                "authority":"Louksna.md","checks":checks,"certification_propagation":False,
-                "main_incorporation_certified":False,
-                "next":"SEPARATE_AUTHORIZED_PROMOTION_OR_MIGRATION_STEP" if result=="PASS" else "HOLD"}
-          pathlib.Path("assurance-g24/G24.json").write_text(json.dumps(cert,indent=2,sort_keys=True)+"\n")
+          status="PASS" if all(checks.values()) else "FAIL"
+          cert={
+            "schema":"LOUKSNA_CONSULTAS_IMPLEMENTATION_G24/1.0",
+            "gate":"G24_CERTIFICATION",
+            "scope":"CONSULTAS_CHANNEL_CANDIDATE_ONLY",
+            "candidate_sha":cand,
+            "status":status,
+            "operational_status":"CERTIFIED_CANDIDATE_NOT_IN_MAIN" if status=="PASS" else "HOLD",
+            "authority":"Louksna.md",
+            "checks":checks,
+            "certification_propagation":False,
+            "main_incorporation_certified":False,
+            "next":"SEPARATE_AUTHORIZED_PROMOTION_OR_MIGRATION_STEP" if status=="PASS" else "HOLD"
+          }
+          pathlib.Path("consultas-assurance/G24.json").write_text(
+            json.dumps(cert,indent=2,sort_keys=True)+"\n",encoding="utf-8")
           print(json.dumps(cert,indent=2,sort_keys=True))
-          if result!="PASS": raise SystemExit("G24_FAIL")
+          if status!="PASS":
+              raise SystemExit("G24_FAIL")
           PY
 
-      - name: Preserve G24
+      - name: Preserve assurance bundle
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: consultas-implementation-g24
-          path: assurance-g24/G24.json
+          name: consultas-implementation-assurance
+          path: consultas-assurance/
           if-no-files-found: error
           retention-days: 30
