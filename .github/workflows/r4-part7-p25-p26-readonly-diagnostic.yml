@@ -58,6 +58,23 @@ jobs:
           done
           sort -u "$OUT/MODELS.tsv" -o "$OUT/MODELS.tsv"
 
+          {
+            echo "=== REASONING TREE ==="
+            find "$HOME_REAL/.local/share/louksna/reasoning" -maxdepth 5 -type f -printf '%m\t%s\t%p\n' 2>/dev/null | head -n 3000 || true
+            echo "=== REASONING EXECUTABLES ==="
+            find "$HOME_REAL/.local/share/louksna/reasoning" -maxdepth 6 -type f -perm /111 -printf '%m\t%s\t%p\n' 2>/dev/null | head -n 1000 || true
+            echo "=== DOCLING TREE ==="
+            find "$HOME_REAL/PROYECTOS/1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/2. Cajita de Luna/5. Inteligencia documental/Docling" -maxdepth 5 -type f -printf '%m\t%s\t%p\n' 2>/dev/null | head -n 3000 || true
+          } > "$OUT/LOCAL_STACKS.txt"
+
+          {
+            find "$HOME_REAL/PROYECTOS" -maxdepth 9 -type f \
+              \( -iname '*biblia*' -o -iname '*bible*' -o -iname '*teolog*' -o -iname '*theolog*' \
+                 -o -iname '*devoc*' -o -iname '*catec*' -o -iname '*confes*' -o -iname '*commentar*' \
+                 -o -iname '*comentario*' -o -iname '*lexic*' -o -iname '*hebre*' -o -iname '*grieg*' \) \
+              -printf '%s\t%p\n' 2>/dev/null | head -n 5000 || true
+          } > "$OUT/CORPUS_CANDIDATES.tsv"
+
           : > "$OUT/CORPUS_ROOTS.tsv"
           for root in "$HOME_REAL/PROYECTOS" "$HOME_REAL/Estudio" "$HOME_REAL/ESTUDIO" "$HOME_REAL/Devocional" "$HOME_REAL/DEVOCIONAL"; do
             [ -d "$root" ] || continue
@@ -78,6 +95,12 @@ jobs:
               except Exception: pass
           roots=[x for x in (out/"CORPUS_ROOTS.tsv").read_text(errors="replace").splitlines() if x]
           runtime=(out/"RUNTIMES.txt").read_text(errors="replace")
+          local_stacks=(out/"LOCAL_STACKS.txt").read_text(errors="replace")
+          corpus_candidates=[]
+          for line in (out/"CORPUS_CANDIDATES.tsv").read_text(errors="replace").splitlines():
+              try:
+                  size,path=line.split("\t",1); corpus_candidates.append({"bytes":int(size),"path":path})
+              except Exception: pass
           qwen=[x for x in models if "qwen" in x["path"].casefold()]
           docling=[x for x in models if "docling" in x["path"].casefold()]
           obj={
@@ -88,6 +111,9 @@ jobs:
             "docling_model_candidates":docling[:100],
             "corpus_roots":roots,
             "runtime_text":runtime,
+            "local_stacks_text":local_stacks,
+            "corpus_candidate_count":len(corpus_candidates),
+            "corpus_candidates":corpus_candidates[:500],
             "hosted_qwen_substitution_allowed":False,
             "downloads_performed":False,
             "installs_performed":False,
