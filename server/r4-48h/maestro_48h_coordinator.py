@@ -102,7 +102,13 @@ def master_active():
 
 def proc_lines():
     r=run(["ps","-eo","pid,ppid,etimes,args"],timeout=20)
-    keys=("master_controller.py","part6_hardened_worker.py","part789_hardened_worker.py","make build_name=louksna-proton")
+    keys=(
+        "master_controller.py","part6_hardened_worker.py","part789_hardened_worker.py",
+        "make build_name=louksna-proton",
+        "software-static.download.prss.microsoft.com",
+        "26100.1.240331-1435.ge_release_CLIENT_IOT_LTSC_EVAL_x64FRE_en-us.iso.louksna.part",
+        "mojo-1.1.0-p11","r4-p11/mojo-wheelhouse-1.1.0"
+    )
     return [x for x in r["stdout"].splitlines() if any(k in x for k in keys) and "maestro_48h_coordinator.py" not in x]
 
 def part6_child_active():
@@ -113,6 +119,9 @@ def material_child_active():
         "part6_hardened_worker.py" in x
         or "part789_hardened_worker.py" in x
         or "make build_name=louksna-proton" in x
+        or ("software-static.download.prss.microsoft.com" in x and ".iso.louksna.part" in x)
+        or "mojo-1.1.0-p11" in x
+        or "r4-p11/mojo-wheelhouse-1.1.0" in x
         for x in proc_lines()
     )
 
@@ -325,8 +334,8 @@ def ensure_master_hardened():
            for name in names if live_hashes[name]!=staged_hashes[name]}
 
     if drift or unhealthy:
-        if part6_child_active():
-            ledger("HANDOFF_DEFERRED_ACTIVE_PART6",drift=drift,service=st)
+        if material_child_active():
+            ledger("HANDOFF_DEFERRED_ACTIVE_MATERIAL",drift=drift,service=st,processes=proc_lines())
             return False
         safe_handoff("V2_15_POINT_ATOMIC_BUNDLE_RECONCILIATION")
 
@@ -539,6 +548,7 @@ def evidence_for(point):
                 "panels_4_9":all(ui.get("panels",{}).get(f"UI_PANEL_{i}")=="PASS" for i in range(4,10))}
         details["ui_result"]=ui
     elif point=="P11":
+        part7_cert=part_cert("PART_7")
         mr=load(STATE/"P11_MATERIAL_RESULT.json",{}) or {}
         windows=mr.get("windows",{}) if isinstance(mr.get("windows"),dict) else {}
         mojo=mr.get("mojo",{}) if isinstance(mr.get("mojo"),dict) else {}
@@ -563,6 +573,7 @@ def evidence_for(point):
             }
         )
         checks={**common,"dependencies":deps_pass(point),
+                "part7_g24":part7_cert is not None,
                 "maestro_material_result":mr.get("status")=="PASS",
                 "windows_correct_iso":windows_exact,
                 "windows_exact_size":bool(target.is_file() and target.stat().st_size==4428627968),
@@ -577,7 +588,8 @@ def evidence_for(point):
         details["material_result"]=mr
         details["windows_live"]={"path":str(target),"sha256":target_sha,"expected":WINDOWS_EXPECTED_SHA}
         details["mojo_live"]={"path":mojo_path,"version_test":mojo_version}
-        if deps_pass(point) and not (windows_exact and mojo_functional and mr.get("status")=="PASS"):
+        details["part7_certificate"]=part7_cert
+        if part7_cert is not None and deps_pass(point) and not (windows_exact and mojo_functional and mr.get("status")=="PASS"):
             details["request"]=request_maestro(
                 "P11",
                 "Materialize exact Microsoft Windows 11 IoT Enterprise LTSC 2024 Eval 26100.1 x64 and Mojo 1.1.0; reuse local bytes; official provenance; no partitions"
