@@ -33,7 +33,10 @@
       "scope": "FINAL_SERVER_READY_CLOSURE",
       "sha256": "b6d58a8299ee5530e668666753d2637b4d426b366d0e6022895502df6e2d3898",
       "source_sha256": "8191840debd98f8775e530a37d3d23770f148693af64689f8e0d187be037cb21",
-      "status": "ACTIVE_PINNED"
+      "status": "ACTIVE_PINNED",
+      "dispatch_mode": "WORKFLOW_DISPATCH",
+      "dedicated_workflow": ".github/workflows/server-ready-final-material.yml",
+      "dedicated_workflow_sha256": "3e5c2a3088c8032f34d53cef8e38e562e9de6deb7ab60c8e4ee4787585dca446"
     },
     {
       "adapter_id": "SERVER_READY_TERMINAL_10M_V1",
@@ -52,7 +55,10 @@
       "source_sha256": "db0b882d55ca6d4b62639cd451f0795c6f2e245732b631001816a8a937401983",
       "status": "ACTIVE_PINNED",
       "terminal_contract_path": "server/terminal-chain/SERVER_READY_TERMINAL_10M_CONTRACT.json",
-      "terminal_contract_sha256": "018f71a2de595076b02c290d563b4a27df8725b8dab35cbbf389762d9fde9904"
+      "terminal_contract_sha256": "018f71a2de595076b02c290d563b4a27df8725b8dab35cbbf389762d9fde9904",
+      "dispatch_mode": "WORKFLOW_DISPATCH",
+      "dedicated_workflow": ".github/workflows/server-ready-terminal-chain.yml",
+      "dedicated_workflow_sha256": "72624dcd487c2da6bf8cb6292360545a04f9044cd80e419cfe7f7e5b5264dc04"
     },
     {
       "adapter_id": "META_ECOSYSTEM_V1_ADMISSION",
@@ -88,7 +94,9 @@
       "scope": "SYMPHYLAX_FINAL_GUARANTEED_CERTIFICATION_G08_G09_PUAC2_G23_G24",
       "sha256": "138194ff7409cb3b9b48a32e98ec6362f0857fe87e667a5501fd4aa5bc939d85",
       "source_sha256": "39ff460cab6e709f48775361ccb76996acc7a3cfc26e4c7399faf126c61ab0f6",
-      "status": "ACTIVE_PINNED"
+      "status": "ACTIVE_PINNED",
+      "dispatch_mode": "WORKFLOW_DISPATCH",
+      "dedicated_workflow_sha256": "9f324d28edf87f1e9f7233817c1cd6b390d5b576713c6664cdfdfe90d7bfa45b"
     },
     {
       "adapter_id": "SYMPHYLAX_FINAL_REMEDIATION_6M_V1",
@@ -106,7 +114,9 @@
       "scope": "SYMPHYLAX_FINAL_REMEDIATION_G08_G09_PUAC2_G23_G24",
       "sha256": "1cfcb167c2627519173c361a97097a275d7f205fd3000f92a46959ff4122fe86",
       "source_sha256": "e6e3a3bdbef7967d89cbc9e538469add01334e6e593ee2d1b93b72cbd32684dd",
-      "status": "ACTIVE_PINNED"
+      "status": "ACTIVE_PINNED",
+      "dispatch_mode": "WORKFLOW_DISPATCH",
+      "dedicated_workflow_sha256": "55fb6e1d28fa252b7e0c939bcc8d251a9d2c76f2540fdd5fcd17e29ec391161c"
     },
     {
       "adapter_id": "LUNA_R4_PART1_RESUME_APC48_V2_36519487206",
@@ -122,7 +132,12 @@
       "scope": "LUNA_R4_PART1_DIFFERENTIAL_RESUME_HANDOFF",
       "sha256": "eea4a1e392ac69b80c18f56402dffc74d815b4cc5b319ff6cac0f1ad52db2526",
       "source_sha256": "4820cf7d5ca873f5917466a76e9b57fd46f84344a4a9f1fa3e47d144e9a01456",
-      "status": "ACTIVE_PINNED"
+      "status": "ACTIVE_PINNED",
+      "dispatch_mode": "PUSH_TRIGGER_FILE",
+      "dedicated_workflow": ".github/workflows/luna-r4-master-resume-now.yml",
+      "dispatch_ref": "staging/luna-r4-master-part1-part9-20260929",
+      "dispatch_trigger_path_prefix": "mission-control/r4-master-resume-now/",
+      "dedicated_workflow_sha256": "23952a10bfad15b7103de15495fb494709dfc23941326be7e0a571a6dcb88d7c"
     }
   ],
   "policy": {
