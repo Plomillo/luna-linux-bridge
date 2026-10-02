@@ -139,7 +139,7 @@ def main():
     c=contract()
     ledger("COORDINATOR_START",deadline_utc=c["window"]["deadline_utc"],roles=c["roles"],part4_closed=True)
     part6_idle_since=None
-    hardened=False
+    hardened=(STATE/"HANDOFF_COMPLETE.json").is_file()
     last_telemetry=0.0
     last_part6_preserve_log=0.0
     while True:
@@ -184,11 +184,6 @@ def main():
                 part6_idle_since=None
             time.sleep(POLL)
             continue
-
-        # If this coordinator was restarted after the handoff, infer hardened state
-        # from the durable marker rather than restarting Maestro again.
-        if not hardened and (STATE/"HANDOFF_COMPLETE.json").is_file():
-            hardened=True
 
         if c6 and not cert("PART_7"):
             action_once("projects_ui","repair_projects_ui",lambda:cert("PART_6"))
