@@ -1,0 +1,26 @@
+{
+  "schema": "LOUKSNA_R4_15P_DEPLOY_AMENDMENT/1.0",
+  "status": "AUTHORIZED",
+  "scope": "P08_PART7_P25_P26_OPERATIONAL_LOCAL_ASSET_REUSE",
+  "preserve_existing_point_certificates": [
+    "P01",
+    "P02",
+    "P03",
+    "P04",
+    "P05",
+    "P06",
+    "P07"
+  ],
+  "repeat_certified_points": false,
+  "p25_model_redownload_authorized": false,
+  "p25_runtime_redownload_authorized": false,
+  "p26_docling_wheel_redownload_authorized": false,
+  "p26_model_redownload_authorized": false,
+  "p26_dependency_acquisition": "ONLY_MISSING_DEPENDENCIES_FROM_PYPI_WITH_HASH_RECEIPT_THEN_OFFLINE_INSTALL",
+  "corpus_source_mutation_authorized": false,
+  "p11_serialized_against_part7": true,
+  "part4_reopen_authorized": false,
+  "partitioning_authorized": false,
+  "desktop_plugin_used": false,
+  "created_at_utc": "2026-10-02T21:15:00Z"
+}
