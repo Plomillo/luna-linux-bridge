@@ -261,11 +261,11 @@ jobs:
           install -m 0700 server/r4-48h/maestro_48h_coordinator.py "$ROOT/maestro_48h_coordinator.py"
           install -m 0600 server/r4-48h/R4_48H_CONTRACT.json "$ROOT/R4_48H_CONTRACT.json"
           install -m 0700 server/r4-master/master_controller.py "$STAGED/master_controller.py"
-          install -m 0700 server/r4-master/part6_hardened_worker.py "$STAGED/part6_hardened_worker.py"             "$STAGED/part789_hardened_worker.py"
+          install -m 0700 server/r4-master/part6_hardened_worker.py "$STAGED/part6_hardened_worker.py"
           install -m 0700 server/r4-master/part789_hardened_worker.py "$STAGED/part789_hardened_worker.py"
           install -m 0600 server/r4-48h/R4_48H_CONTRACT.json "$STAGED/R4_48H_CONTRACT.json"
 
-          python3 -m py_compile             "$ROOT/maestro_48h_coordinator.py"             "$STAGED/master_controller.py"             "$STAGED/part6_hardened_worker.py"
+          python3 -m py_compile             "$ROOT/maestro_48h_coordinator.py"             "$STAGED/master_controller.py"             "$STAGED/part6_hardened_worker.py"             "$STAGED/part789_hardened_worker.py"
 
           python3 - "$STATE/G24_DEPLOY_BINDING.json" <<'PY'
           import datetime as dt,json,os,pathlib,sys
