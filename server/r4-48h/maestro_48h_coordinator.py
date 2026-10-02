@@ -162,6 +162,52 @@ def part_cert(part):
     d=load(p,{}) or {}
     return d if d.get("status")=="PASS" else None
 
+def restart_storm_guard():
+    st=service_state(True,MASTER_SERVICE)
+    now=time.time()
+    counter=int(st.get("NRestarts") or 0)
+    p=STATE/"anti-paralysis/MASTER_RESTART_SAMPLE.json"
+    prior=load(p,{}) or {}
+    delta=max(0,counter-int(prior.get("counter",counter) or counter))
+    elapsed=max(0.0,now-float(prior.get("epoch",now) or now))
+    storm=bool(prior) and elapsed<=240 and delta>=3
+    atomic(p,{"counter":counter,"epoch":now,"delta":delta,"elapsed_seconds":elapsed,"storm":storm,"service":st,"utc":utc()})
+    if storm:
+        ledger("CIRCUIT_BREAKER_MASTER_RESTART_STORM",restart_delta=delta,elapsed_seconds=elapsed,counter=counter)
+    return not storm
+
+def evaluation_allowed(point):
+    p=STATE/"anti-paralysis"/f"{point}.json"
+    d=load(p,{}) or {}
+    return time.time()>=float(d.get("next_retry_epoch",0) or 0)
+
+def record_evaluation(ev):
+    point=ev["point_id"]
+    p=STATE/"anti-paralysis"/f"{point}.json"
+    prior=load(p,{}) or {}
+    signature=hashlib.sha256(json.dumps({
+        "status":ev.get("status"),
+        "blockers":ev.get("blockers",[]),
+        "checks":ev.get("checks",{})
+    },sort_keys=True,separators=(",",":")).encode()).hexdigest()
+    same=prior.get("signature")==signature
+    count=(int(prior.get("identical_count",0))+1) if same else 1
+    backoff=0
+    circuit=False
+    if ev.get("status")!="PASS" and count>=3:
+        circuit=True
+        backoff=min(900,60*(2**min(4,count-3)))
+    rec={
+        "point_id":point,"signature":signature,"identical_count":count,
+        "circuit_breaker":circuit,"backoff_seconds":backoff,
+        "next_retry_epoch":time.time()+backoff,
+        "last_status":ev.get("status"),"last_blockers":ev.get("blockers",[]),"utc":utc()
+    }
+    atomic(p,rec)
+    if circuit:
+        ledger("POINT_CIRCUIT_BREAKER",point_id=point,identical_count=count,backoff_seconds=backoff,signature=signature)
+    return rec
+
 def point_cert(point):
     p=POINT_CERTS/f"{point}.json"
     if not p.is_file():
@@ -353,7 +399,7 @@ def evidence_for(point):
             "master_active":st.get("ActiveState")=="active" and st.get("MainPID") not in (None,"","0"),
             "anti_paralysis_non_null":ms.get("anti_paralysis_contract")=="R4_15P_ANTI_PARALYSIS_V1",
             "renewable_lease":(load(R4/"MASTER_CUSTOSZ_MISSION.json",{}) or {}).get("schema")=="LOUKSNA_R4_GLOBAL_MISSION_LEASE/2.0",
-            "restart_storm_not_active":int(st.get("NRestarts") or 0)<25
+            "restart_storm_not_active":restart_storm_guard()
         }
         details["master_status"]=ms
         details["lease"]=load(R4/"MASTER_CUSTOSZ_MISSION.json",{}) or {}
@@ -455,7 +501,9 @@ def evidence_for(point):
                 "third_order_assurance":c["formal_assurance"]["third_order_automation"] is True,
                 "audit_of_audit":c["formal_assurance"]["audit_of_audit"] is True,
                 "sudo_valid":sudo_ok(),
-                "lrb_terminal_observation":bool(obs["observe"].get("evidence_sha256"))}
+                "lrb_terminal_observation":bool(obs["observe"].get("evidence_sha256")),
+                "protected_reference_source_bound":bool(c.get("references",{}).get("protected_reference_binding",{}).get("source_file_id")),
+                "protected_reference_host_crypto_binding":bool((load(STATE/"PROTECTED_REFERENCE_HOST_BINDING.json",{}) or {}).get("status")=="PASS")}
     else:
         raise RuntimeError("UNKNOWN_POINT:"+point)
 
@@ -610,8 +658,11 @@ def main():
 
         progressed=False
         for point in next_ready_points():
+            if not evaluation_allowed(point):
+                continue
             ev=evidence_for(point)
-            ledger("POINT_EVALUATED",point_id=point,status=ev["status"],blockers=ev["blockers"])
+            ap=record_evaluation(ev)
+            ledger("POINT_EVALUATED",point_id=point,status=ev["status"],blockers=ev["blockers"],anti_paralysis=ap)
             if ev["status"]=="PASS":
                 publish_and_wait_certificate(ev)
                 progressed=True
