@@ -1,0 +1,29 @@
+{
+  "candidate_digest_sha256": "08cb7d9d9913cc474e3356db71893b03bd4a1fcf03fffb491dc9f5aaf6b75cd5",
+  "checks": {
+    "dispatch_bridge_marker": true,
+    "dispatcher_present": true,
+    "live_bytes:.github/workflows/custosz-mission-mailbox.yml": true,
+    "live_bytes:mission-mailbox/runtime-adapters/registry.json": true,
+    "live_bytes:scripts/mission_mailbox/dispatch_execution.py": true,
+    "live_bytes:scripts/mission_mailbox/test_dispatch_execution.py": true,
+    "live_hash:.github/workflows/custosz-mission-mailbox.yml": true,
+    "live_hash:mission-mailbox/runtime-adapters/registry.json": true,
+    "live_hash:scripts/mission_mailbox/dispatch_execution.py": true,
+    "live_hash:scripts/mission_mailbox/test_dispatch_execution.py": true,
+    "package_digest": true,
+    "package_status": true,
+    "prior_g23_digest": true,
+    "prior_g23_pass": true,
+    "prior_g24_digest": true,
+    "prior_g24_pass": true,
+    "prior_g24_promotion_authorized": true,
+    "router_still_preserves_preexecution_state": true
+  },
+  "independent_validator": "GITHUB_HOSTED_UBUNTU_G23_TERMINAL",
+  "repair_allowed": false,
+  "schema": "LOUKSNA_MAILBOX_DISPATCH_BRIDGE_TERMINAL_G23/1.0",
+  "scope": "LIVE_MAILBOX_ROUTER_TO_MATERIAL_DISPATCH_BRIDGE",
+  "status": "PASS",
+  "validated_at_utc": "2026-10-02T21:04:08.599018+00:00"
+}
