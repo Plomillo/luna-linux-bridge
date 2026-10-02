@@ -1899,13 +1899,17 @@ def run_part789_material(part,mid):
     name,schema=names[part]
     p=R48_EVID/name
     prior=read_json(p,{}) or {}
-    expected_revision="2026-10-02.PART789.3-P25-P26-OPERATIONAL"
-    # Idempotence is revision-bound: reuse the exact producer revision, but
-    # allow one changed-strategy retry after new causal evidence/code.
-    if (prior.get("schema")==schema and prior.get("executor")=="MAESTRO"
-        and prior.get("producer_revision")==expected_revision):
-        return {"status":"REUSE_EXISTING","evidence_path":str(p),"evidence_sha256":sha(p),"producer_revision":expected_revision}
     worker=pathlib.Path(__file__).with_name("part789_hardened_worker.py")
+    expected_revision="2026-10-02.PART789.3-P25-P26-OPERATIONAL"
+    expected_worker_sha=sha(worker) if worker.is_file() else None
+    # Idempotence is byte-bound. Reuse evidence only when the exact material
+    # producer bytes that generated it are still the current certified worker.
+    # Any real worker delta is new causal evidence and permits one revalidation.
+    if (prior.get("schema")==schema and prior.get("executor")=="MAESTRO"
+        and expected_worker_sha
+        and prior.get("producer_sha256")==expected_worker_sha):
+        return {"status":"REUSE_EXISTING","evidence_path":str(p),"evidence_sha256":sha(p),
+                "producer_revision":expected_revision,"producer_sha256":expected_worker_sha}
     if not worker.is_file():
         return {"status":"HOLD","error":"PART789_WORKER_MISSING","worker":str(worker)}
     timeout={"PART_7":7200,"PART_8":1800,"PART_9":600}[part]

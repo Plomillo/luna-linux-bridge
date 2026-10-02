@@ -347,7 +347,7 @@ def part7(mid):
     if not roots: blockers.append("study_devotional_roots_missing")
     if not sources: blockers.append("study_devotional_sources_missing")
     previous=preserve_previous(EVID/"PART7_AUX_EVIDENCE.json")
-    q={"schema":PART7_SCHEMA,"producer_revision":PRODUCER_REVISION,"status":status,
+    q={"schema":PART7_SCHEMA,"producer_revision":PRODUCER_REVISION,"producer_sha256":sha(pathlib.Path(__file__).resolve()),"status":status,
        "executor":"MAESTRO","observer":"LOUKSNA_REMOTE_BRIDGE",
        "checks":checks,"blockers":sorted(set(blockers)),"part6_certificate":c6,
        "roots":[str(x) for x in roots],"source_count":len(sources),"unknown_count":len(unknown),
@@ -431,7 +431,7 @@ def part8(mid):
     post=observe_pair("PART8_POST")
     status="PASS" if all(checks.values()) else "HOLD"
     previous=preserve_previous(EVID/"PART8_AUX_EVIDENCE.json")
-    q={"schema":PART8_SCHEMA,"producer_revision":PRODUCER_REVISION,"status":status,"executor":"MAESTRO","observer":"LOUKSNA_REMOTE_BRIDGE",
+    q={"schema":PART8_SCHEMA,"producer_revision":PRODUCER_REVISION,"producer_sha256":sha(pathlib.Path(__file__).resolve()),"status":status,"executor":"MAESTRO","observer":"LOUKSNA_REMOTE_BRIDGE",
        "checks":checks,"blockers":[k for k,v in checks.items() if not v],"part7_certificate":c7,
        "backup":backup,"hygiene":{"mode":"DRY_RUN","candidates":candidates,
        "protected":[str(x) for x in PROTECTED],"deleted":[]},"resources":{"memory_bytes":mem,"load":load},
@@ -485,7 +485,7 @@ def part9(mid):
     }
     checks={**matrix,**meta}; status="PASS" if all(bool(v) for v in checks.values()) else "HOLD"
     previous=preserve_previous(EVID/"PART9_MATRIX.json")
-    q={"schema":PART9_SCHEMA,"producer_revision":PRODUCER_REVISION,"status":status,"executor":"MAESTRO","observer":"LOUKSNA_REMOTE_BRIDGE",
+    q={"schema":PART9_SCHEMA,"producer_revision":PRODUCER_REVISION,"producer_sha256":sha(pathlib.Path(__file__).resolve()),"status":status,"executor":"MAESTRO","observer":"LOUKSNA_REMOTE_BRIDGE",
        "checks":checks,"blockers":[k for k,v in checks.items() if not v],"part8_certificate":c8,
        "certificates":certs,"lrb_evidence_sha256":pre["observe"].get("evidence_sha256"),
        "lrb_post_sha256":post["observe"].get("evidence_sha256"),
