@@ -6,6 +6,7 @@ on:
       - staging/luna-r4-master-part1-part9-20260929
     paths:
       - evidence/r4-master-part6/**
+      - mission-control/r4-part6-certify/**
 
 permissions:
   contents: read
@@ -27,28 +28,52 @@ jobs:
         with:
           ref: staging/luna-r4-master-part1-part9-20260929
           persist-credentials: false
-          fetch-depth: 1
+          fetch-depth: 2
           sparse-checkout: |
             evidence/r4-master-part6
+            mission-control/r4-part6-certify
           sparse-checkout-cone-mode: false
 
-      - name: Resolve exact candidate from push
+      - name: Resolve exact candidate from push or governed certification request
         shell: bash
         run: |
           set -Eeuo pipefail
           python3 - "$GITHUB_EVENT_PATH" "$GITHUB_ENV" <<'PY'
-          import json, pathlib, sys
+          import json, pathlib, subprocess, sys
           ev=json.load(open(sys.argv[1],encoding="utf-8"))
-          paths=[]
+          changed=[]
           for c in ev.get("commits",[]):
-              paths += c.get("added",[]) + c.get("modified",[])
-          paths=[p for p in paths if p.startswith("evidence/r4-master-part6/") and p.endswith("/FULL_CANDIDATE_V2.json")]
-          paths=sorted(set(paths))
-          if len(paths)!=1:
-              raise SystemExit("CANDIDATE_PATH_CARDINALITY:"+repr(paths))
-          p=pathlib.Path(paths[0])
+              changed += c.get("added",[]) + c.get("modified",[])
+          if not changed:
+              p=subprocess.run(["git","show","--pretty=","--name-only",ev.get("after","HEAD")],
+                               text=True,capture_output=True,check=False)
+              if p.returncode==0:
+                  changed += [x.strip() for x in p.stdout.splitlines() if x.strip()]
+          candidates=sorted(set(
+              p for p in changed
+              if p.startswith("evidence/r4-master-part6/") and p.endswith("/FULL_CANDIDATE_V2.json")
+          ))
+          requests=sorted(set(
+              p for p in changed
+              if p.startswith("mission-control/r4-part6-certify/") and p.endswith(".json")
+          ))
+          if len(candidates)==1:
+              selected=candidates[0]
+          elif len(candidates)==0 and len(requests)==1:
+              req=json.loads(pathlib.Path(requests[0]).read_text(encoding="utf-8"))
+              if req.get("schema")!="LOUKSNA_R4_PART6_CERTIFICATION_REQUEST/1.0" or req.get("status")!="AUTHORIZED":
+                  raise SystemExit("INVALID_CERTIFICATION_REQUEST")
+              selected=req.get("candidate_path")
+              if not isinstance(selected,str):
+                  raise SystemExit("CERTIFICATION_REQUEST_CANDIDATE_PATH_MISSING")
+          else:
+              raise SystemExit("CANDIDATE_OR_REQUEST_CARDINALITY:"+repr({"candidates":candidates,"requests":requests}))
+          p=pathlib.Path(selected)
           if not p.is_file():
               raise SystemExit("CANDIDATE_NOT_CHECKED_OUT:"+str(p))
+          c=json.loads(p.read_text(encoding="utf-8"))
+          if c.get("schema")!="LOUKSNA_R4_PART6_FULL_CANDIDATE_V2/1.0" or c.get("status")!="PASS":
+              raise SystemExit("CANDIDATE_NOT_PASS")
           with open(sys.argv[2],"a",encoding="utf-8") as f:
               f.write("CANDIDATE_PATH="+str(p)+"\n")
           print("CANDIDATE_PATH="+str(p))
@@ -200,9 +225,10 @@ jobs:
         with:
           ref: staging/luna-r4-master-part1-part9-20260929
           persist-credentials: false
-          fetch-depth: 1
+          fetch-depth: 2
           sparse-checkout: |
             evidence/r4-master-part6
+            mission-control/r4-part6-certify
           sparse-checkout-cone-mode: false
 
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -214,21 +240,44 @@ jobs:
           name: r4-part6-full-g24-v2
           path: ${{ runner.temp }}/g24
 
-      - name: Resolve exact candidate from push
+      - name: Resolve same exact candidate from push or governed certification request
         shell: bash
         run: |
           set -Eeuo pipefail
           python3 - "$GITHUB_EVENT_PATH" "$GITHUB_ENV" <<'PY'
-          import json, pathlib, sys
+          import json, pathlib, subprocess, sys
           ev=json.load(open(sys.argv[1],encoding="utf-8"))
-          paths=[]
+          changed=[]
           for c in ev.get("commits",[]):
-              paths += c.get("added",[]) + c.get("modified",[])
-          paths=sorted(set(p for p in paths if p.startswith("evidence/r4-master-part6/") and p.endswith("/FULL_CANDIDATE_V2.json")))
-          if len(paths)!=1:
-              raise SystemExit("CANDIDATE_PATH_CARDINALITY:"+repr(paths))
+              changed += c.get("added",[]) + c.get("modified",[])
+          if not changed:
+              p=subprocess.run(["git","show","--pretty=","--name-only",ev.get("after","HEAD")],
+                               text=True,capture_output=True,check=False)
+              if p.returncode==0:
+                  changed += [x.strip() for x in p.stdout.splitlines() if x.strip()]
+          candidates=sorted(set(
+              p for p in changed
+              if p.startswith("evidence/r4-master-part6/") and p.endswith("/FULL_CANDIDATE_V2.json")
+          ))
+          requests=sorted(set(
+              p for p in changed
+              if p.startswith("mission-control/r4-part6-certify/") and p.endswith(".json")
+          ))
+          if len(candidates)==1:
+              selected=candidates[0]
+          elif len(candidates)==0 and len(requests)==1:
+              req=json.loads(pathlib.Path(requests[0]).read_text(encoding="utf-8"))
+              if req.get("schema")!="LOUKSNA_R4_PART6_CERTIFICATION_REQUEST/1.0" or req.get("status")!="AUTHORIZED":
+                  raise SystemExit("INVALID_CERTIFICATION_REQUEST")
+              selected=req.get("candidate_path")
+          else:
+              raise SystemExit("CANDIDATE_OR_REQUEST_CARDINALITY")
+          p=pathlib.Path(selected)
+          if not p.is_file():
+              raise SystemExit("CANDIDATE_NOT_CHECKED_OUT:"+str(p))
           with open(sys.argv[2],"a",encoding="utf-8") as f:
-              f.write("CANDIDATE_PATH="+paths[0]+"\n")
+              f.write("CANDIDATE_PATH="+str(p)+"\n")
+          print("CANDIDATE_PATH="+str(p))
           PY
 
       - name: Revalidate live LOUKSNA and write precommit/result
@@ -277,7 +326,10 @@ jobs:
           proton_wine=comps["proton"].get("runtime_wine")
           live["proton"]=run([proton_wine,"--version"]) if proton_wine and pathlib.Path(proton_wine).exists() else {"rc":127}
           live["bottles"]=run(["flatpak","run","--command=bottles-cli","com.usebottles.bottles","--version"],timeout=120)
-          live["lutris"]=run(["lutris","--version"],timeout=60)
+          lutris_path=pathlib.Path("/usr/games/lutris")
+          if not lutris_path.is_file():
+              lutris_path=pathlib.Path("/usr/local/games/lutris")
+          live["lutris"]=run([str(lutris_path),"--version"],timeout=60) if lutris_path.is_file() else {"rc":127,"err":"LUTRIS_EXECUTABLE_NOT_FOUND"}
           prism=comps["prism"].get("artifact_path")
           env=dict(os.environ); env["APPIMAGE_EXTRACT_AND_RUN"]="1"; env["QT_QPA_PLATFORM"]="offscreen"
           live["prism"]=run([prism,"--version"],env=env,timeout=120) if prism and pathlib.Path(prism).is_file() else {"rc":127}
