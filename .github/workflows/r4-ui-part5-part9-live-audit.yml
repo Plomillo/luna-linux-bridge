@@ -79,6 +79,34 @@ jobs:
 
           systemctl --user show plasma-plasmashell.service -p ActiveState -p SubState -p MainPID > "$OUT/PLASMASHELL_SERVICE.txt" 2>/dev/null || true
 
+          echo "=== P10 NAVIGATION AND SEARCH DIAGNOSTIC ==="
+          python3 - "$HOME/.local/share/user-places.xbel" <<'PY'
+          import pathlib,sys,urllib.parse,xml.etree.ElementTree as ET
+          p=pathlib.Path(sys.argv[1])
+          print("XBEL_PATH="+str(p))
+          if p.is_file():
+              root=ET.parse(p).getroot()
+              for bm in root.iter():
+                  if not bm.tag.endswith("bookmark"): continue
+                  title=""
+                  for ch in bm:
+                      if ch.tag.endswith("title"): title=ch.text or ""
+                  href=bm.attrib.get("href","")
+                  print("PLACE title="+repr(title)+" href="+repr(href)+" decoded="+repr(urllib.parse.unquote(href)))
+          else:
+              print("XBEL_MISSING")
+          PY
+          for cmd in krunner plasmawindowed plasmashell kstart6 kstart dolphin; do
+            printf 'COMMAND %s=' "$cmd"
+            command -v "$cmd" || true
+          done
+          for pkg in org.kde.plasma.kickoff org.kde.plasma.kicker org.kde.plasma.milou; do
+            printf 'PLASMOID %s=' "$pkg"
+            find /usr/share/plasma/plasmoids "$HOME/.local/share/plasma/plasmoids" -maxdepth 1 -type d -name "$pkg" -print 2>/dev/null | head -n 1 || true
+          done
+          echo "PLASMA_APPLET_BINDINGS"
+          grep -nE 'org\.kde\.plasma\.(kickoff|kicker|milou)' "$HOME/.config/plasma-org.kde.plasma.desktop-appletsrc" 2>/dev/null || true
+
           echo "=== LIVE UI SOURCES ==="
           SOURCES=(
             "$HOME/LOUKSNA_MAESTRO_20260925/MISSION3_OPERATIVE/R4_UI_DOLPHIN_V7/R4_AREAS_V7.py"
