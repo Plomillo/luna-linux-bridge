@@ -1,0 +1,256 @@
+{
+  "authority": "Louksna.md",
+  "authority_transfer": false,
+  "blockers": [],
+  "canonical_mutation": false,
+  "checkpoint": "/home/diegoignacionorambuenamiranda/LOUKSNA_MAESTRO_20260925/MISSION3_OPERATIVE/R4_PART1_DESKTOP_V1/runs/20260926T034746Z-38579",
+  "checks": {
+    "bottles": true,
+    "hardened_candidate_bound": true,
+    "hardened_chain_present": true,
+    "hardened_component_set_exact": true,
+    "hardened_g23_bound": true,
+    "hardened_g23_pass": true,
+    "hardened_g24_bound": true,
+    "hardened_g24_pass": true,
+    "hardened_mission_id": true,
+    "hardened_no_certification_propagation": true,
+    "hardened_no_fs_format_resize": true,
+    "hardened_no_partition_mutation": true,
+    "hardened_no_unrelated_delete": true,
+    "hardened_precommit_pass": true,
+    "hardened_result_checks": true,
+    "hardened_result_status": true,
+    "hardened_rollback_checkpoint": true,
+    "hardened_schema": true,
+    "lutris": true,
+    "prism": true,
+    "proton": true,
+    "steam": true,
+    "waydroid": true,
+    "wine": true
+  },
+  "details": {
+    "certification_basis": "FUNCTIONAL_EVIDENCE_PLUS_G23_G24_CHAIN",
+    "chain_checks": {
+      "candidate_bound": true,
+      "chain_present": true,
+      "component_set_exact": true,
+      "g23_bound": true,
+      "g23_pass": true,
+      "g24_bound": true,
+      "g24_pass": true,
+      "mission_id": true,
+      "no_certification_propagation": true,
+      "no_fs_format_resize": true,
+      "no_partition_mutation": true,
+      "no_unrelated_delete": true,
+      "precommit_pass": true,
+      "result_checks": true,
+      "result_status": true,
+      "rollback_checkpoint": true,
+      "schema": true
+    },
+    "component_evidence": {
+      "bottles": {
+        "flatpak_commit": "b63354d6e95377f11796244da517df58866c708aeab2b13cf81082ba5a14c1dd",
+        "functional_test_pass": true,
+        "provenance": {
+          "app_id": "com.usebottles.bottles",
+          "flatpak_commit": "b63354d6e95377f11796244da517df58866c708aeab2b13cf81082ba5a14c1dd",
+          "remote": "flathub",
+          "repo": "https://dl.flathub.org/repo/flathub.flatpakrepo",
+          "source": "BOTTLES_SUPPORTED_FLATPAK"
+        },
+        "status": "PASS",
+        "test": {
+          "argv": [
+            "flatpak",
+            "run",
+            "--command=bottles-cli",
+            "com.usebottles.bottles",
+            "--version"
+          ],
+          "returncode": 0,
+          "stderr": "",
+          "stdout": "Bottles 67.3\n"
+        },
+        "version": "Bottles 67.3"
+      },
+      "lutris": {
+        "artifact_path": "/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/sources/lutris_0.5.22_all.deb",
+        "artifact_sha256": "88a350357e0438b423cdf93108f27942de094dc19f973df73839f3b0b0bafaa0",
+        "functional_test_pass": true,
+        "provenance": {
+          "artifact_sha256": "88a350357e0438b423cdf93108f27942de094dc19f973df73839f3b0b0bafaa0",
+          "release_tag": "v0.5.22",
+          "source": "LUTRIS_OFFICIAL_GITHUB_RELEASE",
+          "url": "https://github.com/lutris/lutris/releases/download/v0.5.22/lutris_0.5.22_all.deb"
+        },
+        "status": "PASS",
+        "test": {
+          "argv": [
+            "/usr/games/lutris",
+            "--version"
+          ],
+          "resolved_path": "/usr/games/lutris",
+          "returncode": 0,
+          "stderr": "",
+          "stdout": "lutris-0.5.22\n"
+        },
+        "version": "0.5.22"
+      },
+      "prism": {
+        "artifact_path": "/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/PrismLauncher.AppImage",
+        "artifact_sha256": "bb81038c56a09e944659e4b808dbfbc52d52d5e3a3ffe32216689a3ca1508d3d",
+        "functional_test_pass": true,
+        "provenance": {
+          "artifact_sha256": "bb81038c56a09e944659e4b808dbfbc52d52d5e3a3ffe32216689a3ca1508d3d",
+          "release_tag": "11.1.1",
+          "source": "PRISMLAUNCHER_OFFICIAL_GITHUB_RELEASE",
+          "url": "https://github.com/PrismLauncher/PrismLauncher/releases/download/11.1.1/PrismLauncher-Linux-x86_64.AppImage"
+        },
+        "status": "PASS",
+        "test": {
+          "argv": [
+            "/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/PrismLauncher.AppImage",
+            "--version"
+          ],
+          "returncode": 0,
+          "stderr": "",
+          "stdout": "PrismLauncher 11.1.1\n\n"
+        },
+        "version": "11.1.1"
+      },
+      "proton": {
+        "functional_test_pass": true,
+        "provenance": {
+          "build_engine": "podman-rootless",
+          "build_jobs": 2,
+          "build_name": "louksna-proton-11.0-2",
+          "release_tag": "proton-11.0-2",
+          "source": "VALVE_OFFICIAL_SOURCE_BUILD",
+          "source_commit": "db9e6ffbf24a95b104fb699dd62532c70a2f9a51",
+          "source_repository": "https://github.com/ValveSoftware/Proton.git",
+          "steam_app_id": 4628710,
+          "steamcmd_no_subscription_fallback": true,
+          "submodule_status_sha256": "c08b530d0119fce30ec8b66eba49ab28d187faa0253231c4acf1c447a5909031"
+        },
+        "runtime_path": "/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/louksna-proton-11.0-2",
+        "runtime_wine": "/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/louksna-proton-11.0-2/files/bin/wine",
+        "status": "PASS",
+        "test": {
+          "argv": [
+            "/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/louksna-proton-11.0-2/files/bin/wine",
+            "--version"
+          ],
+          "returncode": 0,
+          "stderr": "",
+          "stdout": "wine-11.0\n"
+        },
+        "version": "wine-11.0"
+      },
+      "steam": {
+        "artifact_path": "/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/sources/steam_latest.deb",
+        "artifact_sha256": "765aba9a0ed339a50226ceb614fcc9879a991ba184098bc8de920efb12c714a4",
+        "executable": "/usr/bin/steam",
+        "functional_test_pass": true,
+        "provenance": {
+          "artifact_sha256": "765aba9a0ed339a50226ceb614fcc9879a991ba184098bc8de920efb12c714a4",
+          "dpkg_metadata": "Package: steam-launcher\nVersion: 1:1.0.0.87",
+          "package": "steam-launcher",
+          "source": "VALVE_OFFICIAL_STEAM_REPOSITORY",
+          "url": "https://repo.steampowered.com/steam/archive/stable/steam_latest.deb",
+          "version": "1:1.0.0.87"
+        },
+        "status": "PASS",
+        "test": {
+          "argv": [
+            "dpkg",
+            "-V",
+            "steam-launcher"
+          ],
+          "executable": "/usr/bin/steam",
+          "returncode": 0,
+          "stderr": "",
+          "stdout": ""
+        },
+        "version": "1:1.0.0.87"
+      },
+      "waydroid": {
+        "functional_test_pass": true,
+        "provenance": {
+          "package": "waydroid",
+          "repo_bootstrap_sha256": "2cf79f3cc82adb8c235faca0240c1312867afab0221e9aaf7a539a8614a503fd",
+          "source": "WAYDROID_OFFICIAL_APT_REPOSITORY",
+          "url": "https://repo.waydro.id",
+          "version": "1.6.2"
+        },
+        "status": "PASS",
+        "test": {
+          "argv": [
+            "waydroid",
+            "--version"
+          ],
+          "container_service": {
+            "argv": [
+              "systemctl",
+              "is-active",
+              "waydroid-container.service"
+            ],
+            "returncode": 0,
+            "stderr": "",
+            "stdout": "active\n"
+          },
+          "returncode": 0,
+          "stderr": "",
+          "stdout": "1.6.2\n"
+        },
+        "version": "1.6.2"
+      },
+      "wine": {
+        "functional_test_pass": true,
+        "provenance": {
+          "package": "wine",
+          "repository": "http://deb.debian.org/debian trixie main",
+          "source": "DEBIAN_TRIXIE_OFFICIAL_APT",
+          "version": "10.0~repack-6"
+        },
+        "status": "PASS",
+        "test": {
+          "argv": [
+            "wine",
+            "--version"
+          ],
+          "returncode": 0,
+          "stderr": "",
+          "stdout": "wine-10.0 (Debian 10.0~repack-6)\n"
+        },
+        "version": "10.0~repack-6"
+      }
+    },
+    "hardened_result_path": "/home/diegoignacionorambuenamiranda/.local/state/louksna/r4-master-part1-part9/PART_6_HARDENED/RESULT.json",
+    "hardened_result_sha256": "444704ebc493d29771dc9921bb79122bd7d8f8fdf139a5cc70980b50a83d8468",
+    "presence_support_only": {
+      "bottles": null,
+      "lutris": "/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/sources/lutris_0.5.22_all.deb",
+      "prism": "/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/PrismLauncher.AppImage",
+      "proton": "/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-11.0",
+      "steam": "/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/sources/steam_latest.deb",
+      "waydroid": "/home/diegoignacionorambuenamiranda/.local/share/waydroid",
+      "wine": "/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/wine"
+    }
+  },
+  "mission_id": "MIS-cf38037f1f114012af53",
+  "non_regression": "PASS",
+  "operation_id": "OP-c213e579650044c9b1bc899f4c9592f0",
+  "part": "PART_6",
+  "part_name": "GAMING",
+  "previous_part_g24_sha256": "8e612fd480b97a0e061656781226c354140bfb2c1dfa6a1789ef6b4d046faa0e",
+  "rollback_pointer": "/home/diegoignacionorambuenamiranda/.local/state/louksna/r4-master-part1-part9/rollback/PART_6",
+  "schema": "LOUKSNA_R4_PART_MATERIAL_EVIDENCE/1.0",
+  "self_certified": false,
+  "status": "PASS",
+  "timestamp_utc": "2026-10-02T10:45:43.224059Z",
+  "validation": "PASS"
+}
