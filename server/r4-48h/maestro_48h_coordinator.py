@@ -618,6 +618,17 @@ def evidence_for(point):
         details["part8_certificate"]=cert
     elif point=="P10":
         ui=load(STATE/"UI_PANEL_4_9_RESULT.json",{}) or {}
+        ui_worker=LIVE/"ui_p10_p12_hardened_worker.py"
+        prior_result=load(STATE/"MAESTRO_POINT_RESULT.json",{}) or {}
+        current_worker_sha=sha(ui_worker) if ui_worker.is_file() else None
+        prior_worker_sha=prior_result.get("worker_sha256") if prior_result.get("point_id")=="P10" else None
+        changed_strategy=(
+            bool(ui)
+            and ui.get("status")!="PASS"
+            and bool(current_worker_sha)
+            and bool(prior_worker_sha)
+            and current_worker_sha!=prior_worker_sha
+        )
         checks={**common,"dependencies":deps_pass(point),
                 "ui_result_present":bool(ui),
                 "ui_status_pass":ui.get("status")=="PASS",
@@ -625,7 +636,13 @@ def evidence_for(point):
                 "lrb_visual_evidence":bool(ui.get("lrb_visual_evidence")),
                 "panels_4_9":all(ui.get("panels",{}).get(f"UI_PANEL_{i}")=="PASS" for i in range(4,10))}
         details["ui_result"]=ui
-        if deps_pass(point) and not ui:
+        details["retry_control"]={
+            "policy":"RETRY_ONLY_IF_WORKER_SHA_CHANGED_AFTER_HOLD",
+            "current_worker_sha256":current_worker_sha,
+            "prior_worker_sha256":prior_worker_sha,
+            "changed_strategy":changed_strategy
+        }
+        if deps_pass(point) and (not ui or changed_strategy):
             details["request"]=request_maestro(
                 "P10",
                 "Apply the certified PART5-PART9 semantic visual delta against the bound mockup; preserve wallpaper; repair existing V7 dispatcher only; no duplicate launchers; no Debian/KDE reinstall"
