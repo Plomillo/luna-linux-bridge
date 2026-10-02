@@ -18,7 +18,7 @@ PROTECTED=[
 PART7_SCHEMA="LOUKSNA_R4_PART7_AUX_EVIDENCE/1.0"
 PART8_SCHEMA="LOUKSNA_R4_PART8_AUX_EVIDENCE/1.0"
 PART9_SCHEMA="LOUKSNA_R4_PART9_TERMINAL_MATRIX/1.0"
-PRODUCER_REVISION="2026-10-02.PART789.3-P25-P26-OPERATIONAL"
+PRODUCER_REVISION="2026-10-02.PART789.4-P25-BOUNDED-IO-MEMORY"
 
 def utc():
     return dt.datetime.now(dt.timezone.utc).isoformat().replace("+00:00","Z")
@@ -127,6 +127,26 @@ def bounded_run(argv,timeout=300,env=None):
             "stdout":p.stdout[-12000:],"stderr":p.stderr[-12000:],
             "elapsed_seconds":round(time.monotonic()-started,3)}
 
+def bounded_run_filebacked(argv,timeout=300,env=None):
+    started=time.monotonic()
+    with tempfile.NamedTemporaryFile(prefix="louksna-p25-out-",mode="w+b") as out, \
+         tempfile.NamedTemporaryFile(prefix="louksna-p25-err-",mode="w+b") as err:
+        p=subprocess.run(argv,stdout=out,stderr=err,timeout=timeout,env=env)
+        def tail(f,limit=12000):
+            f.flush(); size=f.tell(); f.seek(max(0,size-limit))
+            return f.read().decode("utf-8","replace")
+        return {"argv":[str(x) for x in argv],"returncode":p.returncode,
+                "stdout":tail(out),"stderr":tail(err),
+                "stdout_bytes":out.tell(),"stderr_bytes":err.tell(),
+                "capture_mode":"FILE_BACKED_TAIL_ONLY",
+                "elapsed_seconds":round(time.monotonic()-started,3)}
+
+def external_sha256(p):
+    r=bounded_run(["sha256sum","--",str(p)],timeout=300)
+    if r["returncode"]!=0 or not r["stdout"].strip():
+        raise RuntimeError("EXTERNAL_SHA256_FAILED:"+str(p))
+    return r["stdout"].split()[0]
+
 def mem_available_bytes():
     try:
         for line in pathlib.Path("/proc/meminfo").read_text().splitlines():
@@ -152,16 +172,21 @@ def p25_local_backend():
         return result
     runtime=runtimes[0]
     result.update({"runtime":str(runtime),"runtime_sha256":sha(runtime),
-                   "model":str(model),"model_sha256":sha(model),"model_bytes":model.stat().st_size,
-                   "mem_available_before":mem_available_bytes()})
-    if result["mem_available_before"] and result["mem_available_before"] < 2600*1024*1024:
+                   "model":str(model),"model_sha256":external_sha256(model),"model_bytes":model.stat().st_size,
+                   "mem_available_before":mem_available_bytes(),
+                   "resource_profile":"P25_QWEN_LOCAL_FILEBACKED_V1"})
+    # Fail closed before launching a known multi-GiB local model under pressure.
+    if result["mem_available_before"] and result["mem_available_before"] < 3200*1024*1024:
         result["reason"]="RESOURCE_GOVERNOR_LOW_MEMORY"
+        result["required_mem_available_bytes"]=3200*1024*1024
         return result
     version=bounded_run([str(runtime),"--version"],timeout=30)
-    probe=bounded_run([
-        str(runtime),"-m",str(model),"-c","512","-n","16","-t","2","-ngl","0",
+    probe_env=dict(os.environ)
+    probe_env.update({"OMP_NUM_THREADS":"1","MALLOC_ARENA_MAX":"2"})
+    probe=bounded_run_filebacked([
+        str(runtime),"-m",str(model),"-c","128","-n","16","-t","1","-ngl","0",
         "--temp","0","--no-display-prompt","-p","Return exactly: LOUKSNA_P25_OK"
-    ],timeout=300)
+    ],timeout=300,env=probe_env)
     result.update({"version_test":version,"inference_test":probe,
                    "mem_available_after":mem_available_bytes()})
     result["operational"]=(version["returncode"]==0 and probe["returncode"]==0 and
