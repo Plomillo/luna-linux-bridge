@@ -73,14 +73,20 @@ jobs:
           cat "$HOME/.local/state/louksna/r4-master-part1-part9/part6/RESULT.json" 2>/dev/null || true
           find "$HOME/.local/state/louksna/r4-master-part1-part9" -maxdepth 4 -type f \( -name 'RESULT.json' -o -name 'LAST_FAILURE.json' \) -path '*PART_6*' -print -exec tail -n 80 {} \; 2>/dev/null || true
           echo "=== LIVE/STAGED BUNDLE HASHES ==="
-          for N in master_controller.py part6_hardened_worker.py part789_hardened_worker.py R4_48H_CONTRACT.json; do
+          for N in master_controller.py part6_hardened_worker.py part789_hardened_worker.py ui_p10_p12_hardened_worker.py R4_48H_CONTRACT.json; do
             L="$HOME/.local/lib/louksna/r4-master-part1-part9/$N"
             S="$HOME/.local/lib/louksna/r4-48h/staged/$N"
             printf '%s live=' "$N"; [ -f "$L" ] && sha256sum "$L" | awk '{print $1}' || echo MISSING
             printf '%s staged=' "$N"; [ -f "$S" ] && sha256sum "$S" | awk '{print $1}' || echo MISSING
           done
 
-          echo "=== PART7/8/9 MATERIAL EVIDENCE ==="
+          echo "=== P10 HANDOFF/ANTI-PARALYSIS ==="
+cat "$HOME/.local/state/louksna/r4-48h/HANDOFF_COMPLETE.json" 2>/dev/null || echo HANDOFF_COMPLETE_MISSING
+cat "$HOME/.local/state/louksna/r4-48h/anti-paralysis/P10.json" 2>/dev/null || echo P10_ANTI_PARALYSIS_MISSING
+echo "--- LEDGER TAIL ---"
+tail -n 80 "$HOME/.local/state/louksna/r4-48h/LEDGER.jsonl" 2>/dev/null || true
+
+echo "=== PART7/8/9 MATERIAL EVIDENCE ==="
           for F in PART7_AUX_EVIDENCE.json PART8_AUX_EVIDENCE.json PART9_MATRIX.json; do
             P="$HOME/.local/state/louksna/r4-48h/evidence/$F"
             echo "--- $F ---"
