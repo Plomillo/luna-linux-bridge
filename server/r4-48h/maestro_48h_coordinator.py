@@ -211,6 +211,10 @@ def strategy_fingerprint(point):
         paths.append(LIVE/"part789_hardened_worker.py")
     if point in {"P10","P12"}:
         paths.append(LIVE/"ui_p10_p12_hardened_worker.py")
+    if point=="P15":
+        # The protected-reference host binding is causal evidence for P15.
+        # Its appearance/change must invalidate a HOLD backoff immediately.
+        paths.append(STATE/"PROTECTED_REFERENCE_HOST_BINDING.json")
     rows=[{"path":str(p),"sha256":sha(p) if p.is_file() else None} for p in paths]
     return hashlib.sha256(json.dumps(rows,sort_keys=True,separators=(",",":")).encode()).hexdigest()
 
