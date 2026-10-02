@@ -62,5 +62,15 @@ jobs:
 
           echo "=== MASTER STATUS ==="
           cat "$HOME/.local/state/louksna/r4-master-part1-part9/MASTER_STATUS.json"
+          echo "=== 15P COORDINATOR ==="
+          systemctl --user show luna-r4-48h-coordinator.service -p ActiveState -p SubState -p MainPID -p NRestarts || true
+          cat "$HOME/.local/state/louksna/r4-48h/STATUS.json" 2>/dev/null || echo STATUS_MISSING
+          echo "=== MAESTRO POINT REQUEST/RESULT ==="
+          cat "$HOME/.local/state/louksna/r4-48h/MAESTRO_POINT_REQUEST.json" 2>/dev/null || echo REQUEST_MISSING
+          cat "$HOME/.local/state/louksna/r4-48h/MAESTRO_POINT_RESULT.json" 2>/dev/null || echo RESULT_MISSING
+          echo "=== PART6 RESULT/CERTIFICATE ==="
+          cat "$HOME/.local/state/louksna/r4-master-part1-part9/certificates/PART_6.json" 2>/dev/null || echo PART6_CERT_MISSING
+          cat "$HOME/.local/state/louksna/r4-master-part1-part9/part6/RESULT.json" 2>/dev/null || true
+          find "$HOME/.local/state/louksna/r4-master-part1-part9" -maxdepth 4 -type f \( -name 'RESULT.json' -o -name 'LAST_FAILURE.json' \) -path '*PART_6*' -print -exec tail -n 80 {} \; 2>/dev/null || true
           echo "=== RECENT JOURNAL ==="
           journalctl --user -u luna-r4-master-part1-part9.service -n 80 --no-pager -o short-iso || true
