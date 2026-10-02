@@ -118,6 +118,7 @@ def material_child_active():
     return any(
         "part6_hardened_worker.py" in x
         or "part789_hardened_worker.py" in x
+        or "ui_p10_p12_hardened_worker.py" in x
         or "make build_name=louksna-proton" in x
         or ("software-static.download.prss.microsoft.com" in x and ".iso.louksna.part" in x)
         or "mojo-1.1.0-p11" in x
@@ -276,7 +277,7 @@ def static_invariants():
 def safe_handoff(reason):
     if material_child_active():
         raise RuntimeError("HANDOFF_DENIED_MATERIAL_CHILD_ACTIVE")
-    required=["master_controller.py","part6_hardened_worker.py","part789_hardened_worker.py","R4_48H_CONTRACT.json"]
+    required=["master_controller.py","part6_hardened_worker.py","part789_hardened_worker.py","ui_p10_p12_hardened_worker.py","R4_48H_CONTRACT.json"]
     for name in required:
         if not (STAGED/name).is_file():
             raise RuntimeError("STAGED_FILE_MISSING:"+name)
@@ -298,7 +299,7 @@ def safe_handoff(reason):
         shutil.copy2(src,tmp)
         os.chmod(tmp,0o700 if name.endswith(".py") else 0o600)
         os.replace(tmp,dst)
-    run(["python3","-m","py_compile",str(LIVE/"master_controller.py"),str(LIVE/"part6_hardened_worker.py"),str(LIVE/"part789_hardened_worker.py")],timeout=60,check=True)
+    run(["python3","-m","py_compile",str(LIVE/"master_controller.py"),str(LIVE/"part6_hardened_worker.py"),str(LIVE/"part789_hardened_worker.py"),str(LIVE/"ui_p10_p12_hardened_worker.py")],timeout=60,check=True)
     systemctl_user("daemon-reload")
     systemctl_user("reset-failed",MASTER_SERVICE)
     systemctl_user("start",MASTER_SERVICE)
@@ -317,7 +318,7 @@ def safe_handoff(reason):
     ledger("MASTER_SAFE_HANDOFF",reason=reason,checkpoint=str(checkpoint))
 
 def ensure_master_hardened():
-    names=["master_controller.py","part6_hardened_worker.py","part789_hardened_worker.py","R4_48H_CONTRACT.json"]
+    names=["master_controller.py","part6_hardened_worker.py","part789_hardened_worker.py","ui_p10_p12_hardened_worker.py","R4_48H_CONTRACT.json"]
     staged_hashes={}
     live_hashes={}
     for name in names:
@@ -547,6 +548,11 @@ def evidence_for(point):
                 "lrb_visual_evidence":bool(ui.get("lrb_visual_evidence")),
                 "panels_4_9":all(ui.get("panels",{}).get(f"UI_PANEL_{i}")=="PASS" for i in range(4,10))}
         details["ui_result"]=ui
+        if deps_pass(point) and not ui:
+            details["request"]=request_maestro(
+                "P10",
+                "Apply the certified PART5-PART9 semantic visual delta against the bound mockup; preserve wallpaper; repair existing V7 dispatcher only; no duplicate launchers; no Debian/KDE reinstall"
+            )
     elif point=="P11":
         part7_cert=part_cert("PART_7")
         mr=load(STATE/"P11_MATERIAL_RESULT.json",{}) or {}
@@ -606,6 +612,11 @@ def evidence_for(point):
                 "evidence":bool(pc.get("evidence")),
                 "semantic_context":bool(pc.get("semantic_context"))}
         details["projects_center"]=pc
+        if deps_pass(point) and not pc:
+            details["request"]=request_maestro(
+                "P12",
+                "Materialize and verify the canonical local Projects Center route using existing PROYECTOS, CUSTOSZ, roadmaps, goals, checkpoints, evidence, and semantic context; no data copy and no partitions"
+            )
     elif point=="P13":
         cert=part_cert("PART_9")
         checks={**common,"dependencies":deps_pass(point),"part9_g24":cert is not None,
