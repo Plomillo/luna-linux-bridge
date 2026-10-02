@@ -1,0 +1,18 @@
+{
+  "schema": "LOUKSNA_MAIN_RECOVERY_MATERIAL_TRIGGER/1.0",
+  "retry": 2,
+  "retry_reason": "G23_ABSENT_MISSIONS_PATH_CHECK_FIXED_AND_UNIQUE_BRANCH_ENABLED",
+  "mission_id": "MAIN_RECOVERY_ROOT_RESEARCH_AND_IMPLEMENT_20261002",
+  "mission_class": "MAIN_RECOVERY_ROOT_GOVERNED_IMPLEMENTATION",
+  "mission_source_sha256": "b6fe480557d9e207aee3f5a60ae76420b467f0627efcd86ab6cdb165253bee33",
+  "source_consulta_id": "CONSULTA-293B2030898DFA7D046E",
+  "source_consulta_sha256": "293b2030898dfa7d046e153f7ddf002297c22b04fce5ba1a98ee8f9f3fe7f87a",
+  "adapter_id": "MAIN_RECOVERY_ROOT_GOVERNED_V1",
+  "adapter_sha256": "41bc9f70a24928e438c8a33f9b8a8600efa3279082167d60fa01641ed8531a88",
+  "dedicated_workflow_sha256": "4d7e21a39b9a7144dc0dca457432f9f9c2d8900e21890e3b9d8938ee70923827",
+  "material_implementation_authorized": true,
+  "direct_main_mutation_authorized": false,
+  "merge_to_main_authorized": false,
+  "authority": "Louksna.md",
+  "certification_propagation": false
+}
