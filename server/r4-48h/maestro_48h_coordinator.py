@@ -201,12 +201,27 @@ def dependency_fingerprint(point):
         rows.append({"point":dep,"sha256":sha(p) if p.is_file() else None})
     return hashlib.sha256(json.dumps(rows,sort_keys=True,separators=(",",":")).encode()).hexdigest()
 
+def strategy_fingerprint(point):
+    # A changed certified implementation is new causal evidence.  It must
+    # invalidate a HOLD/backoff without erasing history or replaying a PASS.
+    paths=[pathlib.Path(__file__),CONTRACT]
+    if point in {"P06","P11"}:
+        paths.append(LIVE/"master_controller.py")
+    if point in {"P07","P08","P09"}:
+        paths.append(LIVE/"part789_hardened_worker.py")
+    if point in {"P10","P12"}:
+        paths.append(LIVE/"ui_p10_p12_hardened_worker.py")
+    rows=[{"path":str(p),"sha256":sha(p) if p.is_file() else None} for p in paths]
+    return hashlib.sha256(json.dumps(rows,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+
 def evaluation_allowed(point):
     p=STATE/"anti-paralysis"/f"{point}.json"
     d=load(p,{}) or {}
-    # A newly certified dependency is new causal evidence and must bypass
-    # any HOLD/backoff that was calculated before that certificate existed.
+    # New dependency evidence OR a changed certified strategy bypasses a
+    # backoff computed for the previous causal state.
     if d.get("dependency_fingerprint")!=dependency_fingerprint(point):
+        return True
+    if d.get("strategy_fingerprint")!=strategy_fingerprint(point):
         return True
     return time.time()>=float(d.get("next_retry_epoch",0) or 0)
 
@@ -219,7 +234,8 @@ def record_evaluation(ev):
         "blockers":ev.get("blockers",[]),
         "checks":ev.get("checks",{})
     },sort_keys=True,separators=(",",":")).encode()).hexdigest()
-    same=prior.get("signature")==signature
+    current_strategy=strategy_fingerprint(point)
+    same=(prior.get("signature")==signature and prior.get("strategy_fingerprint")==current_strategy)
     count=(int(prior.get("identical_count",0))+1) if same else 1
     backoff=0
     circuit=False
@@ -229,6 +245,7 @@ def record_evaluation(ev):
     rec={
         "point_id":point,"signature":signature,"identical_count":count,
         "dependency_fingerprint":dependency_fingerprint(point),
+        "strategy_fingerprint":current_strategy,
         "circuit_breaker":circuit,"backoff_seconds":backoff,
         "next_retry_epoch":time.time()+backoff,
         "last_status":ev.get("status"),"last_blockers":ev.get("blockers",[]),"utc":utc()
@@ -383,6 +400,36 @@ def safe_handoff(reason):
     })
     ledger("MASTER_SAFE_HANDOFF",reason=reason,checkpoint=str(checkpoint))
 
+def pending_maestro_request():
+    req=load(STATE/"MAESTRO_POINT_REQUEST.json",{}) or {}
+    result=load(STATE/"MAESTRO_POINT_RESULT.json",{}) or {}
+    return (
+        req.get("status")=="AUTHORIZED"
+        and bool(req.get("request_id"))
+        and result.get("request_id")!=req.get("request_id")
+    )
+
+def master_terminal_complete():
+    ms=load(R4/"MASTER_STATUS.json",{}) or {}
+    return (
+        ms.get("status")=="COMPLETE"
+        and ms.get("global_mission_status")=="COMPLETE"
+        and not material_child_active()
+    )
+
+def start_master_for_pending_request():
+    if not pending_maestro_request():
+        return False
+    systemctl_user("reset-failed",MASTER_SERVICE)
+    systemctl_user("start",MASTER_SERVICE)
+    for _ in range(45):
+        if master_active():
+            ledger("MASTER_STARTED_FOR_PENDING_REQUEST")
+            return True
+        time.sleep(1)
+    ledger("MASTER_PENDING_REQUEST_START_FAILED",request=load(STATE/"MAESTRO_POINT_REQUEST.json",{}) or {})
+    return False
+
 def ensure_master_hardened():
     names=["master_controller.py","part6_hardened_worker.py","part789_hardened_worker.py","ui_p10_p12_hardened_worker.py","R4_48H_CONTRACT.json"]
     staged_hashes={}
@@ -396,24 +443,43 @@ def ensure_master_hardened():
         live_hashes[name]=sha(lp) if lp.is_file() else None
 
     st=service_state(True,MASTER_SERVICE)
-    unhealthy=st.get("ActiveState")!="active" or st.get("MainPID") in (None,"","0")
     drift={name:{"live":live_hashes[name],"staged":staged_hashes[name]}
            for name in names if live_hashes[name]!=staged_hashes[name]}
 
-    if drift or unhealthy:
+    # Handoff is for byte drift only. A completed one-shot Maestro being
+    # inactive is a valid terminal state and must never cause checkpoint churn.
+    if drift:
         if material_child_active():
             if not retire_obsolete_part7_for_handoff(drift):
                 ledger("HANDOFF_DEFERRED_ACTIVE_MATERIAL",drift=drift,service=st,processes=proc_lines())
                 return False
         safe_handoff("V2_15_POINT_ATOMIC_BUNDLE_RECONCILIATION")
 
-    # Postcondition: all three live surfaces must equal the staged certified
-    # bundle. A master-only equality is insufficient.
+    # Byte-integrity postcondition first.
     for name in names:
         lp=LIVE/name
         if not lp.is_file() or sha(lp)!=staged_hashes[name]:
             return False
-    return master_active()
+
+    st=service_state(True,MASTER_SERVICE)
+    if st.get("ActiveState")=="active" and st.get("MainPID") not in (None,"","0"):
+        return True
+    if pending_maestro_request():
+        return start_master_for_pending_request()
+    if master_terminal_complete():
+        ledger("MASTER_TERMINAL_COMPLETE_HEALTHY_NO_RESTART")
+        return True
+
+    # Non-terminal inactivity is abnormal; start the already-certified live
+    # bundle without recopying it or creating a redundant handoff checkpoint.
+    systemctl_user("reset-failed",MASTER_SERVICE)
+    systemctl_user("start",MASTER_SERVICE)
+    for _ in range(45):
+        if master_active():
+            ledger("MASTER_RECOVERED_IN_PLACE_NO_HANDOFF")
+            return True
+        time.sleep(1)
+    return False
 
 def projects_binding_state():
     aliases=[HOME/"Proyectos",HOME/"Luna R4"/"Proyectos"]
