@@ -1,0 +1,24 @@
+{
+  "candidate_digest_sha256": "08cb7d9d9913cc474e3356db71893b03bd4a1fcf03fffb491dc9f5aaf6b75cd5",
+  "checks": {
+    "active_pinned_contract_required": true,
+    "authority_preserved": true,
+    "candidate_digest_bound": true,
+    "change_scope_exact": true,
+    "dispatch_not_terminal_success": true,
+    "github_hosted_dispatch": true,
+    "hash_.github/workflows/custosz-mission-mailbox.yml": true,
+    "hash_mission-mailbox/runtime-adapters/registry.json": true,
+    "hash_scripts/mission_mailbox/dispatch_execution.py": true,
+    "hash_scripts/mission_mailbox/test_dispatch_execution.py": true,
+    "louksna_mutated": true,
+    "router_semantics_preserved": true,
+    "self_certification_denied": true,
+    "workflow_pin_required": true
+  },
+  "independent_validator": "GITHUB_HOSTED_UBUNTU_G23",
+  "repair_allowed": false,
+  "schema": "LOUKSNA_MAILBOX_DISPATCH_BRIDGE_G23/1.0",
+  "scope": "MAILBOX_ROUTER_TO_MATERIAL_DISPATCH_BRIDGE",
+  "status": "PASS"
+}

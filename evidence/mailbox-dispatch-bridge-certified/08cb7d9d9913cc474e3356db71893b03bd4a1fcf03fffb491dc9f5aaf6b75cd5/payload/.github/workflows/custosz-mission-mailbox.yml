@@ -1,0 +1,220 @@
+name: "CUSTOSZ Mission Mailbox — governed ingress and routing"
+
+on:
+  push:
+    branches:
+      - main
+      - staging/custosz-mission-mailbox-20260928
+    paths:
+      - missions/inbox/**
+      - mission-mailbox/**
+      - scripts/mission_mailbox/**
+      - .github/workflows/custosz-mission-mailbox.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: custosz-mission-mailbox-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  compile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      pending_count: ${{ steps.count.outputs.pending_count }}
+    steps:
+      - name: Checkout mailbox
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Static validation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -m py_compile scripts/mission_mailbox/*.py scripts/mission_mailbox/adapters/*.py
+          python3 -B -I scripts/mission_mailbox/test_router_policy.py
+          sha256sum scripts/mission_mailbox/adapters/*.py || true
+          python3 - <<'PY'
+          import json
+          for p in (
+              "mission-mailbox/config/mailbox-policy.json",
+              "mission-mailbox/runtime-adapters/registry.json",
+              "mission-mailbox/schemas/MISSION_NATIVE.schema.json",
+              "mission-mailbox/schemas/MISSION_STATE.schema.json",
+          ):
+              json.load(open(p, encoding="utf-8"))
+          print("MAILBOX_STATIC_VALIDATION=PASS")
+          PY
+
+      - name: Compile unregistered missions
+        shell: bash
+        env:
+          OUT_DIR: ${{ runner.temp }}/mailbox-compiled
+        run: |
+          set -Eeuo pipefail
+          python3 -B -I scripts/mission_mailbox/compile_batch.py --out "$OUT_DIR"
+
+      - name: Count pending
+        id: count
+        shell: bash
+        env:
+          OUT_DIR: ${{ runner.temp }}/mailbox-compiled
+        run: |
+          set -Eeuo pipefail
+          COUNT=$(python3 -c 'import json,os; print(json.load(open(os.path.join(os.environ["OUT_DIR"],"INDEX.json")))["count"])')
+          echo "pending_count=$COUNT" >> "$GITHUB_OUTPUT"
+          echo "PENDING_MISSIONS=$COUNT" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Preserve native envelopes
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: custosz-mailbox-compiled
+          path: ${{ runner.temp }}/mailbox-compiled
+          if-no-files-found: error
+
+  route:
+    needs: compile
+    if: needs.compile.outputs.pending_count != '0'
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 20
+    steps:
+      - name: Checkout governed worker surface
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            artifacts/custosz-v7
+            ecosystem/metacognitive-operational-v1/CUSTOSZ72_CENSUS.json
+            Louksna.md
+            mission-mailbox
+            scripts/mission_mailbox
+          sparse-checkout-cone-mode: false
+
+      - name: Recover native envelopes
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: custosz-mailbox-compiled
+          path: ${{ runner.temp }}/mailbox-compiled
+
+      - name: Register in CUSTOSZ and evaluate Runtime compatibility
+        shell: bash
+        env:
+          COMPILED: ${{ runner.temp }}/mailbox-compiled
+          RESULTS: ${{ runner.temp }}/mailbox-results
+          ROUTE_EXECUTION_LOCATION: SELF_HOSTED_LUNA_AUX
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RESULTS"
+          ulimit -v 262144 || true
+          python3 - <<'PY'
+          import json, os, subprocess, sys
+          from pathlib import Path
+          compiled = Path(os.environ["COMPILED"])
+          results = Path(os.environ["RESULTS"])
+          index = json.load(open(compiled / "INDEX.json", encoding="utf-8"))
+          for item in index["items"]:
+              mail_id = item["mail_id"]
+              src = compiled / mail_id
+              dst = results / mail_id
+              dst.mkdir(parents=True, exist_ok=True)
+              for name in ("RECEIPT.json","INGRESS_VALIDATION.json","MISSION_NATIVE.json","SEMANTIC_MAPPING.json","MISSION_STATE.json","README_ERROR.md"):
+                  p = src / name
+                  if p.is_file():
+                      (dst / name).write_bytes(p.read_bytes())
+              if item["compile_exit_code"] != 0:
+                  continue
+              cmd = [
+                  "nice","-n","10",sys.executable,"-B","-I",
+                  "scripts/mission_mailbox/route_mission.py",
+                  "--compiled",str(src),"--out",str(dst),"--repo-root","."
+              ]
+              proc = subprocess.run(cmd, text=True)
+              if proc.returncode:
+                  raise SystemExit("MAILBOX_ROUTE_SYSTEM_FAILURE:" + mail_id)
+          PY
+
+      - name: Show precise terminal reports
+        if: always()
+        shell: bash
+        env:
+          RESULTS: ${{ runner.temp }}/mailbox-results
+        run: |
+          set -Eeuo pipefail
+          shopt -s nullglob
+          for f in "$RESULTS"/*/README_ERROR.md "$RESULTS"/*/README_FINAL.md "$RESULTS"/*/CAPABILITY_SUGGESTIONS.md "$RESULTS"/*/MISSION_STATE.json "$RESULTS"/*/ROUTING_DECISION.json "$RESULTS"/*/MISSION_CLASS_RESOLUTION.json "$RESULTS"/*/CUSTOSZ_CAPABILITY_INVENTORY.json "$RESULTS"/*/RUNTIME_COMPATIBILITY.json "$RESULTS"/*/EXECUTION_PLAN.json; do
+            echo "===== $f ====="
+            cat "$f"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            cat "$f" >> "$GITHUB_STEP_SUMMARY"
+          done
+
+      - name: Preserve routing evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: custosz-mailbox-results
+          path: ${{ runner.temp }}/mailbox-results
+          if-no-files-found: error
+  dispatch:
+    name: "Dispatch pinned material workflow"
+    needs: [compile, route]
+    if: needs.compile.outputs.pending_count != '0' && needs.route.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - name: Checkout exact dispatch surface
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            .github/workflows
+            scripts/mission_mailbox/dispatch_execution.py
+          sparse-checkout-cone-mode: false
+
+      - name: Recover routed execution plans
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: custosz-mailbox-results
+          path: ${{ runner.temp }}/mailbox-results
+
+      - name: MAILBOX_TERMINAL_DISPATCH_BRIDGE_V1
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESULTS: ${{ runner.temp }}/mailbox-results
+          OUT: ${{ runner.temp }}/mailbox-dispatch
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$OUT"
+          failures=0
+          count=0
+          while IFS= read -r plan; do
+            count=$((count+1))
+            src="$(dirname "$plan")"
+            mail_id="$(basename "$src")"
+            mkdir -p "$OUT/$mail_id"
+            rc=0
+            python3 -B -I scripts/mission_mailbox/dispatch_execution.py               --results "$src"               --repo-root .               --repo "$GITHUB_REPOSITORY"               --ref "$GITHUB_REF_NAME"               --out "$OUT/$mail_id" || rc=$?
+            if [ "$rc" -ne 0 ]; then failures=$((failures+1)); fi
+          done < <(find "$RESULTS" -mindepth 2 -maxdepth 2 -name EXECUTION_PLAN.json -print | sort)
+          echo "EXECUTION_PLANS=$count"
+          echo "DISPATCH_FAILURES=$failures"
+          test "$failures" -eq 0
+
+      - name: Preserve material dispatch evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: custosz-mailbox-dispatch
+          path: ${{ runner.temp }}/mailbox-dispatch
+          if-no-files-found: warn

@@ -1,0 +1,44 @@
+{
+  "authority": "Louksna.md",
+  "branch": "staging/mailbox-dispatch-bridge-repair-20261002",
+  "changed_files": [
+    {
+      "bytes": 7470,
+      "path": "mission-mailbox/runtime-adapters/registry.json",
+      "sha256": "3d29f5c3a621fc335ff6264f40eaeb6cf3e3dd0829738ab431b88ab89263349f"
+    },
+    {
+      "bytes": 8289,
+      "path": ".github/workflows/custosz-mission-mailbox.yml",
+      "sha256": "b951f13312e04208afc57e2faa32f74e7fa56de5466a8a0bb61d6248ce477968"
+    },
+    {
+      "bytes": 8587,
+      "path": "scripts/mission_mailbox/dispatch_execution.py",
+      "sha256": "56738803b3027320d1ea7aa07f23f0ae7b80a9bc1234ebe520e57ec697b07283"
+    },
+    {
+      "bytes": 3304,
+      "path": "scripts/mission_mailbox/test_dispatch_execution.py",
+      "sha256": "8e6a06b8c5c08e43967636f9360190c10257f179976784da1be98621e37ddaa3"
+    }
+  ],
+  "defect": "ROUTER_STOPS_AT_ROUTED_READY_NOT_YET_EXECUTED_WITHOUT_GENERAL_MATERIAL_DISPATCH",
+  "invariants": {
+    "active_pinned_requires_dispatch_contract": true,
+    "dispatch_runs_on_github_hosted": true,
+    "louksna_mutated": false,
+    "material_dispatch_is_terminal_success": false,
+    "push_trigger_requires_explicit_target_branch": true,
+    "router_classification_semantics_mutated": false,
+    "self_certification": false,
+    "workflow_sha256_pin_required": true
+  },
+  "repair": "HOSTED_POST_ROUTE_DISPATCH_WITH_SHA_PINNED_WORKFLOW_OR_PUSH_TRIGGER_CONTRACT",
+  "schema": "LOUKSNA_MAILBOX_DISPATCH_BRIDGE_REPAIR_CANDIDATE/1.0",
+  "status": "CANDIDATE",
+  "supported_dispatch_modes": [
+    "WORKFLOW_DISPATCH",
+    "PUSH_TRIGGER_FILE"
+  ]
+}

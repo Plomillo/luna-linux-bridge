@@ -1,0 +1,32 @@
+{
+  "authority": "Louksna.md",
+  "candidate_digest_sha256": "08cb7d9d9913cc474e3356db71893b03bd4a1fcf03fffb491dc9f5aaf6b75cd5",
+  "canonical_mutation": false,
+  "certification_propagated": false,
+  "files": [
+    {
+      "bytes": 8289,
+      "path": ".github/workflows/custosz-mission-mailbox.yml",
+      "sha256": "b951f13312e04208afc57e2faa32f74e7fa56de5466a8a0bb61d6248ce477968"
+    },
+    {
+      "bytes": 7470,
+      "path": "mission-mailbox/runtime-adapters/registry.json",
+      "sha256": "3d29f5c3a621fc335ff6264f40eaeb6cf3e3dd0829738ab431b88ab89263349f"
+    },
+    {
+      "bytes": 8587,
+      "path": "scripts/mission_mailbox/dispatch_execution.py",
+      "sha256": "56738803b3027320d1ea7aa07f23f0ae7b80a9bc1234ebe520e57ec697b07283"
+    },
+    {
+      "bytes": 3304,
+      "path": "scripts/mission_mailbox/test_dispatch_execution.py",
+      "sha256": "8e6a06b8c5c08e43967636f9360190c10257f179976784da1be98621e37ddaa3"
+    }
+  ],
+  "generated_utc": "2026-10-02T21:02:25.465242+00:00",
+  "schema": "LOUKSNA_MAILBOX_DISPATCH_BRIDGE_PROMOTION_PACKAGE/1.0",
+  "source_run_id": "37058020563",
+  "status": "G24_CERTIFIED_READY_FOR_PROMOTION"
+}

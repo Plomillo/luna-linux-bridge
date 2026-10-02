@@ -1,0 +1,19 @@
+{
+  "authority": "Louksna.md",
+  "authority_reference": "GITHUB_OIDC_JWT_SHA256:aacedae195d444b965c6c613d4e9f71ba21234a029262b220a23d48402818d29",
+  "candidate_digest_sha256": "08cb7d9d9913cc474e3356db71893b03bd4a1fcf03fffb491dc9f5aaf6b75cd5",
+  "canonical_mutation": false,
+  "certification_propagated": false,
+  "certified_at_utc": "2026-10-02T20:03:11.486124+00:00",
+  "checks": {
+    "g23_candidate_bound": true,
+    "g23_hash_bound": true,
+    "g23_pass": true,
+    "oidc_present": true
+  },
+  "g23_sha256": "dd50130ebc19d539573a0e00051308805ef6c280da5d3be5a146eff3ba4c402a",
+  "promotion_authorized": true,
+  "schema": "LOUKSNA_MAILBOX_DISPATCH_BRIDGE_G24/1.0",
+  "scope": "MAILBOX_ROUTER_TO_MATERIAL_DISPATCH_BRIDGE",
+  "status": "PASS"
+}
