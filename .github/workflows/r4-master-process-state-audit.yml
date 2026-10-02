@@ -81,12 +81,12 @@ jobs:
           done
 
           echo "=== P10 HANDOFF/ANTI-PARALYSIS ==="
-cat "$HOME/.local/state/louksna/r4-48h/HANDOFF_COMPLETE.json" 2>/dev/null || echo HANDOFF_COMPLETE_MISSING
-cat "$HOME/.local/state/louksna/r4-48h/anti-paralysis/P10.json" 2>/dev/null || echo P10_ANTI_PARALYSIS_MISSING
-echo "--- LEDGER TAIL ---"
-tail -n 80 "$HOME/.local/state/louksna/r4-48h/LEDGER.jsonl" 2>/dev/null || true
+          cat "$HOME/.local/state/louksna/r4-48h/HANDOFF_COMPLETE.json" 2>/dev/null || echo HANDOFF_COMPLETE_MISSING
+          cat "$HOME/.local/state/louksna/r4-48h/anti-paralysis/P10.json" 2>/dev/null || echo P10_ANTI_PARALYSIS_MISSING
+          echo "--- LEDGER TAIL ---"
+          tail -n 80 "$HOME/.local/state/louksna/r4-48h/LEDGER.jsonl" 2>/dev/null || true
 
-echo "=== PART7/8/9 MATERIAL EVIDENCE ==="
+          echo "=== PART7/8/9 MATERIAL EVIDENCE ==="
           for F in PART7_AUX_EVIDENCE.json PART8_AUX_EVIDENCE.json PART9_MATRIX.json; do
             P="$HOME/.local/state/louksna/r4-48h/evidence/$F"
             echo "--- $F ---"
