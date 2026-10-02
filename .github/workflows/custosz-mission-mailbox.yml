@@ -161,3 +161,60 @@ jobs:
           name: custosz-mailbox-results
           path: ${{ runner.temp }}/mailbox-results
           if-no-files-found: error
+  dispatch:
+    name: "Dispatch pinned material workflow"
+    needs: [compile, route]
+    if: needs.compile.outputs.pending_count != '0' && needs.route.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - name: Checkout exact dispatch surface
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            .github/workflows
+            scripts/mission_mailbox/dispatch_execution.py
+          sparse-checkout-cone-mode: false
+
+      - name: Recover routed execution plans
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: custosz-mailbox-results
+          path: ${{ runner.temp }}/mailbox-results
+
+      - name: MAILBOX_TERMINAL_DISPATCH_BRIDGE_V1
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESULTS: ${{ runner.temp }}/mailbox-results
+          OUT: ${{ runner.temp }}/mailbox-dispatch
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$OUT"
+          failures=0
+          count=0
+          while IFS= read -r plan; do
+            count=$((count+1))
+            src="$(dirname "$plan")"
+            mail_id="$(basename "$src")"
+            mkdir -p "$OUT/$mail_id"
+            rc=0
+            python3 -B -I scripts/mission_mailbox/dispatch_execution.py               --results "$src"               --repo-root .               --repo "$GITHUB_REPOSITORY"               --ref "$GITHUB_REF_NAME"               --out "$OUT/$mail_id" || rc=$?
+            if [ "$rc" -ne 0 ]; then failures=$((failures+1)); fi
+          done < <(find "$RESULTS" -mindepth 2 -maxdepth 2 -name EXECUTION_PLAN.json -print | sort)
+          echo "EXECUTION_PLANS=$count"
+          echo "DISPATCH_FAILURES=$failures"
+          test "$failures" -eq 0
+
+      - name: Preserve material dispatch evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: custosz-mailbox-dispatch
+          path: ${{ runner.temp }}/mailbox-dispatch
+          if-no-files-found: warn
