@@ -1,0 +1,32 @@
+{
+  "schema": "LOUKSNA_R4_15P_DEPLOY_AMENDMENT/1.0",
+  "status": "AUTHORIZED",
+  "scope": "COORDINATION_ONLY_P11_AFTER_PART7_G24_AND_ACTIVE_MATERIAL_PROTECTION",
+  "required_commit_ancestor": "28b7ff800d6644eda44c0e55c22a0f0d1f689d26",
+  "observed_head_sha": "77c1661aca616bab491cd3efbdf9e8bb810e2a92",
+  "preserve_existing_point_certificates": [
+    "P01",
+    "P02",
+    "P03",
+    "P04",
+    "P05",
+    "P06",
+    "P07"
+  ],
+  "preserve_part_certificates": [
+    "PART_1",
+    "PART_2",
+    "PART_3",
+    "PART_4",
+    "PART_5",
+    "PART_6"
+  ],
+  "preserve_active_resumable_p11_partial": true,
+  "stop_maestro_authorized": false,
+  "repeat_certified_material": false,
+  "desktop_plugin_used": false,
+  "lrb_material_execution_authorized": false,
+  "part4_reopen_authorized": false,
+  "partitioning_authorized": false,
+  "created_at_utc": "2026-10-02T11:13:00Z"
+}
