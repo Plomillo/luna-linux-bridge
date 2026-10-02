@@ -72,5 +72,31 @@ jobs:
           cat "$HOME/.local/state/louksna/r4-master-part1-part9/certificates/PART_6.json" 2>/dev/null || echo PART6_CERT_MISSING
           cat "$HOME/.local/state/louksna/r4-master-part1-part9/part6/RESULT.json" 2>/dev/null || true
           find "$HOME/.local/state/louksna/r4-master-part1-part9" -maxdepth 4 -type f \( -name 'RESULT.json' -o -name 'LAST_FAILURE.json' \) -path '*PART_6*' -print -exec tail -n 80 {} \; 2>/dev/null || true
+          echo "=== LIVE/STAGED BUNDLE HASHES ==="
+          for N in master_controller.py part6_hardened_worker.py part789_hardened_worker.py R4_48H_CONTRACT.json; do
+            L="$HOME/.local/lib/louksna/r4-master-part1-part9/$N"
+            S="$HOME/.local/lib/louksna/r4-48h/staged/$N"
+            printf '%s live=' "$N"; [ -f "$L" ] && sha256sum "$L" | awk '{print $1}' || echo MISSING
+            printf '%s staged=' "$N"; [ -f "$S" ] && sha256sum "$S" | awk '{print $1}' || echo MISSING
+          done
+
+          echo "=== PART7/8/9 MATERIAL EVIDENCE ==="
+          for F in PART7_AUX_EVIDENCE.json PART8_AUX_EVIDENCE.json PART9_MATRIX.json; do
+            P="$HOME/.local/state/louksna/r4-48h/evidence/$F"
+            echo "--- $F ---"
+            if [ -f "$P" ]; then
+              sha256sum "$P"
+              cat "$P"
+            else
+              echo MISSING
+            fi
+          done
+          echo "=== PART7/8/9 CERTIFICATES ==="
+          for P in 7 8 9; do
+            F="$HOME/.local/state/louksna/r4-master-part1-part9/certificates/PART_$P.json"
+            echo "--- PART_$P ---"
+            [ -f "$F" ] && cat "$F" || echo MISSING
+          done
+
           echo "=== RECENT JOURNAL ==="
-          journalctl --user -u luna-r4-master-part1-part9.service -n 80 --no-pager -o short-iso || true
+          journalctl --user -u luna-r4-master-part1-part9.service -n 120 --no-pager -o short-iso || true
