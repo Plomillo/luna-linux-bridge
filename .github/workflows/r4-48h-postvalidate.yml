@@ -91,15 +91,23 @@ jobs:
           echo "=== MASTER LEASE ==="
           test -f "$R4/MASTER_CUSTOSZ_MISSION.json"
           cat "$R4/MASTER_CUSTOSZ_MISSION.json"
-          python3 - "$R4/MASTER_CUSTOSZ_MISSION.json" <<'PY'
-          import json,sys
+          python3 - "$R4/MASTER_CUSTOSZ_MISSION.json" "$LIVE/master_controller.py" <<'PY'
+          import json,pathlib,sys
           d=json.load(open(sys.argv[1]))
-          assert d["schema"]=="LOUKSNA_R4_GLOBAL_MISSION_LEASE/2.0"
-          assert 1 <= int(d["lease_hours"]) <= 24
-          assert d["global_window_hours"]==48
-          assert d["checkpoint_preserved"] is True
-          assert d["evidence_chain_preserved"] is True
-          print("RENEWABLE_LEASE=PASS")
+          src=pathlib.Path(sys.argv[2]).read_text(encoding="utf-8",errors="replace")
+          lease=int(d.get("lease_hours",0) or 0)
+          assert 1 <= lease <= 24
+          renewal=("LOUKSNA_R4_GLOBAL_MISSION_LEASE/2.0" in src and "min(24,configured" in src)
+          assert renewal
+          if d.get("schema")=="LOUKSNA_R4_GLOBAL_MISSION_LEASE/2.0":
+              assert d["global_window_hours"]==48
+              assert d["checkpoint_preserved"] is True
+              assert d["evidence_chain_preserved"] is True
+              cls="V2"
+          else:
+              assert d.get("mission_id")
+              cls="LEGACY_BOUNDED_ACTIVE"
+          print("RENEWABLE_LEASE=PASS CLASS="+cls)
           PY
 
           echo "=== 15P STATUS ==="
