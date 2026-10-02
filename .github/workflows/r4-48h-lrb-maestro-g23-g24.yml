@@ -33,6 +33,7 @@ jobs:
             server/r4-48h
             server/r4-master
             .github/workflows/r4-15point-certify.yml
+            .github/workflows/r4-48h-lrb-maestro-g23-g24.yml
           sparse-checkout-cone-mode: false
 
       - id: validate
@@ -50,6 +51,7 @@ jobs:
           masterp=root/"server/r4-master/master_controller.py"
           workerp=root/"server/r4-master/part6_hardened_worker.py"
           pointw=root/".github/workflows/r4-15point-certify.yml"
+          deployw=root/".github/workflows/r4-48h-lrb-maestro-g23-g24.yml"
           c=json.loads(cp.read_text())
           coord=coordp.read_text()
           master=masterp.read_text()
@@ -95,7 +97,7 @@ jobs:
           checks["global_48h_preserved"]=(deadline-start).total_seconds()==172800 and c["window"]["global_window_preserved"] is True
 
           ok=all(checks.values())
-          files=[cp,coordp,masterp,workerp,pointw]
+          files=[cp,coordp,masterp,workerp,pointw,deployw]
           rows=[]
           for p in files:
               b=p.read_bytes()
@@ -145,6 +147,7 @@ jobs:
             server/r4-48h
             server/r4-master
             .github/workflows/r4-15point-certify.yml
+            .github/workflows/r4-48h-lrb-maestro-g23-g24.yml
           sparse-checkout-cone-mode: false
 
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -167,6 +170,7 @@ jobs:
             pathlib.Path("server/r4-master/master_controller.py"),
             pathlib.Path("server/r4-master/part6_hardened_worker.py"),
             pathlib.Path(".github/workflows/r4-15point-certify.yml"),
+            pathlib.Path(".github/workflows/r4-48h-lrb-maestro-g23-g24.yml"),
           ]
           rows=[]
           for p in paths:
