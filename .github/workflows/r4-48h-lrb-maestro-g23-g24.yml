@@ -26,7 +26,7 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: staging/luna-r4-master-part1-part9-20260929
+          ref: ${{ github.sha }}
           persist-credentials: false
           fetch-depth: 1
           sparse-checkout: |
@@ -146,7 +146,7 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: staging/luna-r4-master-part1-part9-20260929
+          ref: ${{ github.sha }}
           persist-credentials: false
           fetch-depth: 1
           sparse-checkout: |
@@ -235,7 +235,7 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: staging/luna-r4-master-part1-part9-20260929
+          ref: ${{ github.sha }}
           persist-credentials: false
           fetch-depth: 1
           sparse-checkout: |
