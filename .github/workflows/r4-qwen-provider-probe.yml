@@ -1,4 +1,4 @@
-name: "R4 — Qwen reasoning provider capability probe"
+name: "R4 — Qwen reasoning provider operational probe"
 
 on:
   push:
@@ -10,32 +10,84 @@ on:
 
 permissions:
   contents: read
+  models: read
 
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 5
     env:
-      DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
-      QWEN_API_KEY: ${{ secrets.QWEN_API_KEY }}
+      GITHUB_TOKEN: ${{ github.token }}
     steps:
-      - name: Report capability without exposing credentials
+      - name: Invoke a Qwen model through GitHub Models using LRB-only evidence
         shell: bash
         run: |
           set -Eeuo pipefail
-          has_dashscope=false
-          has_qwen=false
-          [ -n "${DASHSCOPE_API_KEY:-}" ] && has_dashscope=true
-          [ -n "${QWEN_API_KEY:-}" ] && has_qwen=true
-          echo "SCHEMA=LOUKSNA_R4_QWEN_PROVIDER_CAPABILITY/1.0"
-          echo "DASHSCOPE_API_KEY_PRESENT=$has_dashscope"
-          echo "QWEN_API_KEY_PRESENT=$has_qwen"
-          echo "SECRETS_VALUES_EXPOSED=FALSE"
+          catalog="$(mktemp)"
+          response="$(mktemp)"
+          payload="$(mktemp)"
+          trap 'rm -f "$catalog" "$response" "$payload"' EXIT
+
+          cat_code="$(curl --location --silent --show-error             --output "$catalog" --write-out '%{http_code}'             -H "Accept: application/vnd.github+json"             -H "Authorization: Bearer $GITHUB_TOKEN"             -H "X-GitHub-Api-Version: 2026-03-10"             https://models.github.ai/catalog/models)"
+
+          echo "SCHEMA=LOUKSNA_R4_QWEN_PROVIDER_OPERATIONAL/2.0"
+          echo "CATALOG_HTTP=$cat_code"
+          [ "$cat_code" = "200" ] || { echo "GITHUB_MODELS_QWEN=HOLD"; exit 1; }
+
+          mapfile -t qwen_models < <(
+            jq -r 'if type=="array" then . else (.models // .data // []) end
+                   | .[] | (.id // .name // empty)' "$catalog"             | grep -i 'qwen' || true
+          )
+          [ "${#qwen_models[@]}" -gt 0 ] || {
+            echo "QWEN_MODELS_FOUND=0"
+            echo "GITHUB_MODELS_QWEN=HOLD"
+            exit 1
+          }
+
+          selected="$(printf '%s\n' "${qwen_models[@]}" | grep -Ei 'thinking|reason' | head -n 1 || true)"
+          [ -n "$selected" ] || selected="${qwen_models[0]}"
+          echo "QWEN_MODELS_FOUND=${#qwen_models[@]}"
+          echo "SELECTED_MODEL=$selected"
+
+          jq -n --arg model "$selected" '{
+            model:$model,
+            messages:[
+              {
+                role:"system",
+                content:"You are the swappable reasoning-only brain for LOUKSNA. You receive only LOUKSNA Remote Bridge evidence through GitHub. You have no host or material execution authority. Return a compact JSON decision envelope only."
+              },
+              {
+                role:"user",
+                content:"LRB_EVIDENCE={\"schema\":\"LOUKSNA_REMOTE_BRIDGE_EVIDENCE/1.0\",\"host_material_access\":false,\"partitioning\":false,\"observation\":\"services nominal\"}. Decide whether this evidence authorizes a reasoning-only PASS. Do not request or perform host actions."
+              }
+            ],
+            temperature:0,
+            max_tokens:96
+          }' > "$payload"
+
+          infer_code="$(curl --location --silent --show-error             --output "$response" --write-out '%{http_code}'             -H "Content-Type: application/json"             -H "Accept: application/json"             -H "Authorization: Bearer $GITHUB_TOKEN"             https://models.github.ai/inference/chat/completions             --data-binary @"$payload")"
+
+          echo "INFERENCE_HTTP=$infer_code"
+          [ "$infer_code" = "200" ] || {
+            echo "GITHUB_MODELS_QWEN=HOLD"
+            jq -c '{error:(.error.message // .error // "unknown")}' "$response" 2>/dev/null || true
+            exit 1
+          }
+
+          answer="$(jq -r '.choices[0].message.content // empty' "$response")"
+          [ -n "$answer" ] || { echo "GITHUB_MODELS_QWEN=HOLD"; exit 1; }
+          answer_sha="$(printf '%s' "$answer" | sha256sum | awk '{print $1}')"
+
+          echo "RESPONSE_SHA256=$answer_sha"
+          echo "REASONING_RESPONSE_NONEMPTY=TRUE"
+          echo "INPUT_SOURCE=LOUKSNA_REMOTE_BRIDGE_EVIDENCE_ONLY"
+          echo "OPERATOR_PLANE=GITHUB"
+          echo "ROLE=REASONING_ONLY"
+          echo "PROVIDER_SWAPPABLE=TRUE"
           echo "HOST_MATERIAL_ACCESS=FALSE"
+          echo "HOST_OBSERVATION_AUTHORITY=FALSE"
+          echo "DIRECT_HOST_TOOLING=FALSE"
           echo "DESKTOP_COMMANDER_USED=FALSE"
           echo "PARTITIONING_PERFORMED=FALSE"
-          if [ "$has_dashscope" = true ] || [ "$has_qwen" = true ]; then
-            echo "QWEN_EXTERNAL_PROVIDER_CREDENTIAL=AVAILABLE"
-          else
-            echo "QWEN_EXTERNAL_PROVIDER_CREDENTIAL=ABSENT"
-          fi
+          echo "SECRETS_VALUES_EXPOSED=FALSE"
+          echo "GITHUB_MODELS_QWEN=PASS"
