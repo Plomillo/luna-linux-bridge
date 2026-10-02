@@ -176,9 +176,20 @@ def restart_storm_guard():
         ledger("CIRCUIT_BREAKER_MASTER_RESTART_STORM",restart_delta=delta,elapsed_seconds=elapsed,counter=counter)
     return not storm
 
+def dependency_fingerprint(point):
+    rows=[]
+    for dep in point_def(point).get("depends_on",[]):
+        p=POINT_CERTS/f"{dep}.json"
+        rows.append({"point":dep,"sha256":sha(p) if p.is_file() else None})
+    return hashlib.sha256(json.dumps(rows,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+
 def evaluation_allowed(point):
     p=STATE/"anti-paralysis"/f"{point}.json"
     d=load(p,{}) or {}
+    # A newly certified dependency is new causal evidence and must bypass
+    # any HOLD/backoff that was calculated before that certificate existed.
+    if d.get("dependency_fingerprint")!=dependency_fingerprint(point):
+        return True
     return time.time()>=float(d.get("next_retry_epoch",0) or 0)
 
 def record_evaluation(ev):
@@ -199,6 +210,7 @@ def record_evaluation(ev):
         backoff=min(900,60*(2**min(4,count-3)))
     rec={
         "point_id":point,"signature":signature,"identical_count":count,
+        "dependency_fingerprint":dependency_fingerprint(point),
         "circuit_breaker":circuit,"backoff_seconds":backoff,
         "next_retry_epoch":time.time()+backoff,
         "last_status":ev.get("status"),"last_blockers":ev.get("blockers",[]),"utc":utc()
