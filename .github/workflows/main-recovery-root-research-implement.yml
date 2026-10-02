@@ -2,6 +2,11 @@ name: "MAIN Recovery Root — research implement certify"
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - staging/mailbox-dispatch-bridge-repair-20261002
+    paths:
+      - mission-control/main-recovery-root/**
 
 permissions:
   contents: write
