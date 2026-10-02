@@ -1,0 +1,32 @@
+{
+  "schema": "LOUKSNA_R4_15P_DEPLOY_AMENDMENT/1.0",
+  "status": "AUTHORIZED",
+  "scope": "P12_REAL_ROADMAP_DISCOVERY_AND_CHANGED_STRATEGY_RETRY_ONLY",
+  "source_head": "5c9d8d08e151f9b59bb999b48267e2f1477c8a9e",
+  "preserve_existing_certificates": true,
+  "repeat_certified_work": false,
+  "certified_points_preserved": [
+    "P01",
+    "P02",
+    "P03",
+    "P04",
+    "P05",
+    "P06",
+    "P07",
+    "P08",
+    "P09",
+    "P10",
+    "P11"
+  ],
+  "p12_only_material_retry": true,
+  "qwen_role": "GITHUB_HOSTED_REASONING_ONLY_LRB_INPUT_ONLY",
+  "qwen_host_material_execution": false,
+  "lrb_role": "READ_ONLY_EYES_TELEMETRY_DIAGNOSIS",
+  "maestro_role": "PRIMARY_MATERIAL_WORKER",
+  "desktop_commander_used": false,
+  "part4_reopen_authorized": false,
+  "partitioning_authorized": false,
+  "debian_redownload_authorized": false,
+  "kde_redownload_authorized": false,
+  "created_at_utc": "2026-10-02T16:01:00Z"
+}
