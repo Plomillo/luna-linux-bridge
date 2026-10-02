@@ -1,0 +1,12 @@
+{
+  "schema": "LOUKSNA_R4_MEMORY_CENSUS_REQUEST/1.0",
+  "mode": "READ_ONLY",
+  "purpose": "POST_STALE_P25_MEMORY_CENSUS_BEFORE_OPERATIONAL_QWEN_PROOF",
+  "source_head": "301b9b3c66fdce79c0db1101de15ff1ace9952b3",
+  "desktop_commander_used": false,
+  "signals_authorized": false,
+  "sudo_mutation_authorized": false,
+  "partitioning_authorized": false,
+  "repeat_certified_work": false,
+  "created_at_utc": "2026-10-02T12:24:00Z"
+}
