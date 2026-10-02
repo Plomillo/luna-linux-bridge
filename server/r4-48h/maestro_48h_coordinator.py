@@ -274,6 +274,72 @@ def static_invariants():
         "third_order":c["formal_assurance"]["third_order_automation"] is True,
     }
 
+def obsolete_part7_only_active(drift):
+    if "part789_hardened_worker.py" not in drift:
+        return False
+    if part_cert("PART_7") is not None:
+        return False
+    lines=proc_lines()
+    forbidden=(
+        "part6_hardened_worker.py","ui_p10_p12_hardened_worker.py",
+        "make build_name=louksna-proton","software-static.download.prss.microsoft.com",
+        "mojo-1.1.0-p11","r4-p11/mojo-wheelhouse-1.1.0"
+    )
+    if any(any(k in x for k in forbidden) for x in lines):
+        return False
+    p7=[x for x in lines if "part789_hardened_worker.py" in x]
+    return bool(p7) and all("--part PART_7" in x for x in p7)
+
+def retire_obsolete_part7_for_handoff(drift):
+    if not obsolete_part7_only_active(drift):
+        return False
+    live=LIVE/"part789_hardened_worker.py"
+    staged=STAGED/"part789_hardened_worker.py"
+    if not (live.is_file() and staged.is_file()):
+        return False
+    live_sha=sha(live); staged_sha=sha(staged)
+    if live_sha==staged_sha:
+        return False
+    pre=observe("OBSOLETE_PART7_RETIRE_PRE")
+    rec={
+      "schema":"LOUKSNA_R4_OBSOLETE_PART7_RETIRE/1.0",
+      "status":"AUTHORIZED",
+      "reason":"LIVE_PART7_WORKER_DIFFERS_FROM_G24_STAGED_AND_PART7_UNCERTIFIED",
+      "live_worker_sha256":live_sha,
+      "staged_worker_sha256":staged_sha,
+      "part7_certificate_present":False,
+      "processes_before":proc_lines(),
+      "lrb_pre_sha256":pre["observe"].get("evidence_sha256"),
+      "partitioning_performed":False,
+      "desktop_commander_used":False,
+      "utc":utc()
+    }
+    out=STATE/"anti-paralysis"/"OBSOLETE_PART7_RETIRE.json"
+    atomic(out,rec)
+    ledger("OBSOLETE_PART7_RETIRE_BEGIN",live_sha256=live_sha,staged_sha256=staged_sha)
+    systemctl_user("stop",MASTER_SERVICE)
+    for _ in range(30):
+        if not material_child_active():
+            break
+        time.sleep(1)
+    if material_child_active():
+        rec["status"]="HOLD"
+        rec["reason"]="MATERIAL_CHILD_SURVIVED_MASTER_CGROUP_STOP"
+        rec["processes_after"]=proc_lines()
+        atomic(out,rec)
+        ledger("OBSOLETE_PART7_RETIRE_HOLD",processes=rec["processes_after"])
+        return False
+    post=observe("OBSOLETE_PART7_RETIRE_POST")
+    rec.update({
+      "status":"PASS",
+      "processes_after":proc_lines(),
+      "lrb_post_sha256":post["observe"].get("evidence_sha256"),
+      "completed_at_utc":utc()
+    })
+    atomic(out,rec)
+    ledger("OBSOLETE_PART7_RETIRE_PASS",live_sha256=live_sha,staged_sha256=staged_sha)
+    return True
+
 def safe_handoff(reason):
     if material_child_active():
         raise RuntimeError("HANDOFF_DENIED_MATERIAL_CHILD_ACTIVE")
@@ -336,8 +402,9 @@ def ensure_master_hardened():
 
     if drift or unhealthy:
         if material_child_active():
-            ledger("HANDOFF_DEFERRED_ACTIVE_MATERIAL",drift=drift,service=st,processes=proc_lines())
-            return False
+            if not retire_obsolete_part7_for_handoff(drift):
+                ledger("HANDOFF_DEFERRED_ACTIVE_MATERIAL",drift=drift,service=st,processes=proc_lines())
+                return False
         safe_handoff("V2_15_POINT_ATOMIC_BUNDLE_RECONCILIATION")
 
     # Postcondition: all three live surfaces must equal the staged certified
