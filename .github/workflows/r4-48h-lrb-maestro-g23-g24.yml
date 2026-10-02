@@ -1,0 +1,313 @@
+name: "R4 48H — LRB companion + Maestro G23 G24 deploy"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-48h-deploy/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r4-48h-lrb-maestro-deploy
+  cancel-in-progress: false
+
+jobs:
+  g23:
+    name: G23 independent validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      bundle_sha256: ${{ steps.validate.outputs.bundle_sha256 }}
+      g23_sha256: ${{ steps.validate.outputs.g23_sha256 }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: staging/luna-r4-master-part1-part9-20260929
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            server/r4-48h
+            server/r4-master
+          sparse-checkout-cone-mode: true
+
+      - id: validate
+        name: Validate contract, code boundaries and transition gates
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -m py_compile \
+            server/r4-48h/lrb_companion_worker.py \
+            server/r4-48h/maestro_48h_coordinator.py \
+            server/r4-master/master_controller.py \
+            server/r4-master/part6_hardened_worker.py
+
+          python3 - <<'PY'
+          import ast,hashlib,json,pathlib,datetime as dt,os
+          root=pathlib.Path(".")
+          contract=json.loads((root/"server/r4-48h/R4_48H_CONTRACT.json").read_text())
+          assert contract["schema"]=="LOUKSNA_R4_REMAINDER_48H_CONTRACT/1.0"
+          start=dt.datetime.fromisoformat(contract["window"]["start_utc"].replace("Z","+00:00"))
+          deadline=dt.datetime.fromisoformat(contract["window"]["deadline_utc"].replace("Z","+00:00"))
+          assert (deadline-start).total_seconds()==172800
+          assert contract["window"]["hard_ceiling"] is True
+          ib=contract["immutable_boundaries"]
+          assert ib["part4_closed"] is True
+          assert ib["part4_stages_closed"]==list(range(1,13))
+          assert ib["partitioning_reopen"] is False
+          assert ib["partitioning_operations_forbidden"] is True
+          assert ib["debian_download_forbidden"] and ib["debian_reinstall_forbidden"]
+          assert ib["kde_download_forbidden"] and ib["kde_reinstall_forbidden"]
+
+          companion=(root/"server/r4-48h/lrb_companion_worker.py").read_text()
+          coord=(root/"server/r4-48h/maestro_48h_coordinator.py").read_text()
+          master=(root/"server/r4-master/master_controller.py").read_text()
+          worker=(root/"server/r4-master/part6_hardened_worker.py").read_text()
+
+          for name,src in [("companion",companion),("coordinator",coord)]:
+              tree=ast.parse(src)
+              for node in ast.walk(tree):
+                  if isinstance(node,(ast.Import,ast.ImportFrom)):
+                      mods=[x.name for x in node.names] if isinstance(node,ast.Import) else [node.module or ""]
+                      assert not any(m.split(".")[0] in {"requests","httpx","socket","paramiko","ftplib"} for m in mods), (name,mods)
+                  if isinstance(node,ast.Call):
+                      if isinstance(node.func,ast.Attribute) and isinstance(node.func.value,ast.Name):
+                          assert not (node.func.value.id=="os" and node.func.attr in {"system","popen"}), (name,node.lineno)
+                      for kw in node.keywords:
+                          if kw.arg=="shell" and isinstance(kw.value,ast.Constant):
+                              assert kw.value.value is not True, (name,node.lineno)
+              assert "/dev/" not in src
+              assert "subprocess.Popen" not in src
+
+          assert 'require_cert("PART_6")' in companion
+          assert "backup_paths" in companion and "PROJECTS_UI_REPAIR" in companion
+          assert "network_performed" in companion and "partitioning_performed" in companion
+          assert "observe_pair" in companion
+
+          assert "if part6_active(): raise RuntimeError(\"HANDOFF_DENIED_PART6_CHILD_ACTIVE\")" in coord
+          assert "PART6_BUILD_PRESERVED" in coord
+          assert "time.monotonic()-part6_idle_since>=180" in coord
+          assert "deadline_stop" in coord
+
+          assert 'mission_start(48,"LUNA_PROJECT"' in master
+          assert "R4_48H_CONTRACT_INVALID" in master
+          assert "PART4_CERT_MISSING_REOPEN_DENIED" in master
+          assert "EXPIRED_48H" in master
+
+          def fn_source(src,name):
+              tree=ast.parse(src); lines=src.splitlines()
+              for n in tree.body:
+                  if isinstance(n,ast.FunctionDef) and n.name==name:
+                      return "\n".join(lines[n.lineno-1:n.end_lineno])
+              raise AssertionError(name)
+          p7=fn_source(master,"part7"); p8=fn_source(master,"part8"); p9=fn_source(master,"part9")
+          assert "bounded_presence_part" not in p7
+          assert "bounded_presence_part" not in p8
+          assert "PART7_AUX_EVIDENCE" in p7
+          assert "PART8_AUX_EVIDENCE" in p8
+          assert "PART9_MATRIX" in p9 and "certificate_digest_binding" in p9
+
+          assert "REUSE_BASE_PACKAGES" in worker
+          assert "REUSE_PROTON_SOURCE_COMMIT" in worker
+          assert "REUSE_PROTON_SUBMODULES" in worker
+
+          files=[
+            root/"server/r4-48h/R4_48H_CONTRACT.json",
+            root/"server/r4-48h/lrb_companion_worker.py",
+            root/"server/r4-48h/maestro_48h_coordinator.py",
+            root/"server/r4-master/master_controller.py",
+            root/"server/r4-master/part6_hardened_worker.py",
+          ]
+          rows=[]
+          for p in files:
+              b=p.read_bytes(); rows.append({"path":str(p),"sha256":hashlib.sha256(b).hexdigest(),"bytes":len(b)})
+          canon=json.dumps(rows,sort_keys=True,separators=(",",":")).encode()
+          bundle=hashlib.sha256(canon).hexdigest()
+          result={
+            "schema":"LOUKSNA_R4_48H_G23/1.0","status":"PASS",
+            "bundle_sha256":bundle,"files":rows,
+            "checks":{
+              "syntax":True,"48h_exact":True,"part4_closed_1_12":True,
+              "partitioning_denied":True,"debian_kde_redownload_denied":True,
+              "lrb_additive_auxiliary_boundary":True,"part6_live_preservation":True,
+              "part7_8_9_hardened":True,"part6_differential_reuse":True
+            }
+          }
+          raw=(json.dumps(result,sort_keys=True,separators=(",",":"))+"\n").encode()
+          g23=hashlib.sha256(raw).hexdigest()
+          pathlib.Path("/tmp/G23.json").write_bytes(raw)
+          with open(os.environ["GITHUB_OUTPUT"],"a") as f:
+              f.write("bundle_sha256="+bundle+"\n")
+              f.write("g23_sha256="+g23+"\n")
+          print(json.dumps(result,indent=2))
+          print("G23_SHA256="+g23)
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-48h-g23
+          path: /tmp/G23.json
+          retention-days: 90
+          compression-level: 0
+
+  g24:
+    name: G24 certification
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      certificate_sha256: ${{ steps.certify.outputs.certificate_sha256 }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: staging/luna-r4-master-part1-part9-20260929
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            server/r4-48h
+            server/r4-master
+          sparse-checkout-cone-mode: true
+
+      - id: certify
+        name: Independently rebind exact candidate and certify
+        env:
+          EXPECTED_BUNDLE: ${{ needs.g23.outputs.bundle_sha256 }}
+          G23_SHA256: ${{ needs.g23.outputs.g23_sha256 }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,ast,datetime as dt
+          root=pathlib.Path(".")
+          paths=[
+            "server/r4-48h/R4_48H_CONTRACT.json",
+            "server/r4-48h/lrb_companion_worker.py",
+            "server/r4-48h/maestro_48h_coordinator.py",
+            "server/r4-master/master_controller.py",
+            "server/r4-master/part6_hardened_worker.py",
+          ]
+          rows=[]
+          for s in paths:
+              p=root/s;b=p.read_bytes()
+              rows.append({"path":s,"sha256":hashlib.sha256(b).hexdigest(),"bytes":len(b)})
+              if s.endswith(".py"): ast.parse(b.decode())
+          bundle=hashlib.sha256(json.dumps(rows,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          assert bundle==os.environ["EXPECTED_BUNDLE"]
+          c=json.loads((root/"server/r4-48h/R4_48H_CONTRACT.json").read_text())
+          denied=set(c["roles"]["LRB_COMPANION_WORKER"]["denied"])
+          for required in {"ROOT_SHELL","SUDO","NETWORK_DOWNLOAD","FORMAT","PARTITION","SFDISK","FDISK","PARTED","GROWPART","RESIZE2FS","NTFSRESIZE","MKFS","WIPEFS","BLKDISCARD","DEVICE_WRITE"}:
+              assert required in denied
+          assert c["transition_policy"]["part6_to_part7"]["require_part6_g24"] is True
+          assert c["transition_policy"]["part6_to_part7"]["require_no_active_part6_child"] is True
+          assert c["transition_policy"]["part6_to_part7"]["require_hardened_remaining_handlers_g23_g24"] is True
+          cert={
+            "schema":"LOUKSNA_R4_48H_G24/1.0","status":"PASS",
+            "authority":"Louksna.md","bundle_sha256":bundle,
+            "g23_sha256":os.environ["G23_SHA256"],
+            "scope":"R4_REMAINDER_48H_MAESTRO_PRIMARY_LRB_COMPANION",
+            "part4_reopen_authorized":False,"partitioning_authorized":False,
+            "debian_kde_download_authorized":False,
+            "activation":"AUTHORIZED_FOR_STAGED_COORDINATOR_DEPLOY",
+            "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          raw=(json.dumps(cert,sort_keys=True,separators=(",",":"))+"\n").encode()
+          digest=hashlib.sha256(raw).hexdigest()
+          pathlib.Path("/tmp/G24.json").write_bytes(raw)
+          with open(os.environ["GITHUB_OUTPUT"],"a") as f:f.write("certificate_sha256="+digest+"\n")
+          print(json.dumps(cert,indent=2)); print("G24_SHA256="+digest)
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-48h-g24
+          path: /tmp/G24.json
+          retention-days: 90
+          compression-level: 0
+
+  deploy:
+    name: Staged deploy without interrupting PART6
+    needs: [g23,g24]
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 10
+    env:
+      BUNDLE_SHA256: ${{ needs.g23.outputs.bundle_sha256 }}
+      G23_SHA256: ${{ needs.g23.outputs.g23_sha256 }}
+      G24_SHA256: ${{ needs.g24.outputs.certificate_sha256 }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: staging/luna-r4-master-part1-part9-20260929
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            server/r4-48h
+            server/r4-master
+          sparse-checkout-cone-mode: true
+
+      - name: Install certified 48h coordinator and staged future Maestro
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          HOME_REAL="/home/diegoignacionorambuenamiranda"
+          ROOT="$HOME_REAL/.local/lib/louksna/r4-48h"
+          STAGED="$ROOT/staged"
+          STATE="$HOME_REAL/.local/state/louksna/r4-48h"
+          UNIT_DIR="$HOME_REAL/.config/systemd/user"
+          UNIT="$UNIT_DIR/luna-r4-48h-coordinator.service"
+          mkdir -p "$ROOT" "$STAGED" "$STATE" "$UNIT_DIR"
+
+          install -m 0700 server/r4-48h/lrb_companion_worker.py "$ROOT/lrb_companion_worker.py"
+          install -m 0700 server/r4-48h/maestro_48h_coordinator.py "$ROOT/maestro_48h_coordinator.py"
+          install -m 0600 server/r4-48h/R4_48H_CONTRACT.json "$ROOT/R4_48H_CONTRACT.json"
+          install -m 0700 server/r4-master/master_controller.py "$STAGED/master_controller.py"
+          install -m 0700 server/r4-master/part6_hardened_worker.py "$STAGED/part6_hardened_worker.py"
+          install -m 0600 server/r4-48h/R4_48H_CONTRACT.json "$STAGED/R4_48H_CONTRACT.json"
+
+          python3 -m py_compile "$ROOT/lrb_companion_worker.py" "$ROOT/maestro_48h_coordinator.py" "$STAGED/master_controller.py" "$STAGED/part6_hardened_worker.py"
+
+          python3 - "$STATE/G24_DEPLOY_BINDING.json" <<'PY'
+          import json,os,pathlib,datetime as dt,sys
+          pathlib.Path(sys.argv[1]).write_text(json.dumps({
+            "schema":"LOUKSNA_R4_48H_G24_DEPLOY_BINDING/1.0","status":"PASS",
+            "bundle_sha256":os.environ["BUNDLE_SHA256"],"g23_sha256":os.environ["G23_SHA256"],"g24_sha256":os.environ["G24_SHA256"],
+            "part4_reopen_authorized":False,"partitioning_authorized":False,
+            "deployed_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          },indent=2,sort_keys=True)+"\n")
+          PY
+
+          cat > "$UNIT" <<UNIT
+          [Unit]
+          Description=LOUKSNA R4 48h Maestro + LRB companion coordinator
+          After=default.target
+          Requires=luna-r4-master-part1-part9.service
+
+          [Service]
+          Type=simple
+          WorkingDirectory=$ROOT
+          Environment=HOME=$HOME_REAL
+          Environment=PATH=/usr/local/bin:/usr/bin:/bin:$HOME_REAL/.local/bin
+          ExecStart=/usr/bin/python3 -B $ROOT/maestro_48h_coordinator.py
+          Restart=on-failure
+          RestartSec=20
+
+          [Install]
+          WantedBy=default.target
+          UNIT
+          sed -i 's/^          //' "$UNIT"
+          chmod 0600 "$UNIT"
+
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+          systemctl --user daemon-reload
+          systemctl --user enable --now luna-r4-48h-coordinator.service
+
+          echo "=== ACTIVE MAESTRO WORK — MUST REMAIN UNINTERRUPTED ==="
+          ps -eo pid,ppid,etimes,args | grep -E 'master_controller|part6_hardened_worker|make build_name=louksna-proton' | grep -v grep || true
+          echo "=== COORDINATOR ==="
+          systemctl --user show luna-r4-48h-coordinator.service -p ActiveState -p SubState -p MainPID -p NRestarts
+          sleep 5
+          cat "$STATE/G24_DEPLOY_BINDING.json"
+          test "$(systemctl --user is-active luna-r4-48h-coordinator.service)" = "active"
