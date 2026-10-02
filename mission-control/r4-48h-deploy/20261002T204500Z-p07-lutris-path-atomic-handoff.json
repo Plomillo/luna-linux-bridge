@@ -1,0 +1,21 @@
+{
+  "schema": "LOUKSNA_R4_15P_DEPLOY_AMENDMENT/1.0",
+  "status": "AUTHORIZED",
+  "scope": "P07_LUTRIS_PATH_RESOLUTION_AND_ATOMIC_BUNDLE_HANDOFF",
+  "preserve_existing_point_certificates": [
+    "P01",
+    "P02",
+    "P03",
+    "P04",
+    "P05",
+    "P06"
+  ],
+  "target_component": "lutris",
+  "existing_artifact_reuse_required": true,
+  "redownload_authorized": false,
+  "reinstall_unrelated_components": false,
+  "handoff_policy": "DEFER_WHILE_PART6_CHILD_ACTIVE",
+  "part4_reopen_authorized": false,
+  "partitioning_authorized": false,
+  "created_at_utc": "2026-10-02T20:45:00Z"
+}
