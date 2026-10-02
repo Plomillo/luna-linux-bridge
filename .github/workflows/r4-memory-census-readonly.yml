@@ -1,0 +1,40 @@
+name: "R4 — host memory census read-only"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-memory-census/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r4-memory-census-readonly
+  cancel-in-progress: false
+
+jobs:
+  census:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Read host memory and top RSS only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "=== HOST ==="
+          hostname
+          id
+          echo "=== MEMINFO ==="
+          grep -E '^(MemTotal|MemFree|MemAvailable|Buffers|Cached|SReclaimable|Shmem|SwapTotal|SwapFree):' /proc/meminfo
+          echo "=== TOP RSS ==="
+          ps -eo user=,pid=,ppid=,comm=,rss=,etimes=,args= --sort=-rss | head -n 60
+          echo "=== USER SESSIONS ==="
+          loginctl list-sessions --no-legend || true
+          echo "=== SAFETY ==="
+          echo "MODE=READ_ONLY"
+          echo "DESKTOP_COMMANDER_USED=FALSE"
+          echo "SIGNALS_SENT=FALSE"
+          echo "SUDO_USED=FALSE"
+          echo "PARTITIONING_PERFORMED=FALSE"
