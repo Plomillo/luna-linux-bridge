@@ -1,0 +1,9 @@
+{
+  "schema": "LOUKSNA_MAILBOX_PROMOTION_CHANNEL_GUARD_TRIGGER/1.0",
+  "status": "AUTHORIZED_TO_START",
+  "required_channel": "GITHUB_CONNECTED_WRITER",
+  "forbidden_channel": "GITHUB_ACTIONS_TOKEN_FOR_WORKFLOW_MUTATION",
+  "g23_required": true,
+  "g24_required": true,
+  "fail_closed": true
+}
