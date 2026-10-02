@@ -156,13 +156,92 @@ def mem_available_bytes():
         pass
     return 0
 
+def chromium_memory_relief_if_needed(required_bytes):
+    before=mem_available_bytes()
+    result={
+      "policy":"MAESTRO_GRACEFUL_CHROMIUM_ONLY",
+      "required_bytes":required_bytes,
+      "mem_available_before":before,
+      "attempted":False,
+      "targeted_process_names":["chromium","chromium-browser"],
+      "target_pids":[],
+      "sigterm_only":True,
+      "sigkill_used":False,
+      "desktop_commander_used":False,
+      "partitioning_performed":False,
+    }
+    if before>=required_bytes:
+        result["status"]="NOT_NEEDED"; result["mem_available_after"]=before
+        return result
+    pids=[]
+    for name in ("chromium","chromium-browser"):
+        q=subprocess.run(["pgrep","-x",name],text=True,capture_output=True,timeout=10)
+        if q.returncode in (0,1):
+            for x in q.stdout.split():
+                if x.isdigit(): pids.append(int(x))
+    pids=sorted(set(pids))
+    result["target_pids"]=pids
+    if not pids:
+        result["status"]="NO_CHROMIUM_FOUND"; result["mem_available_after"]=before
+        return result
+    result["attempted"]=True
+    for pid in pids:
+        try: os.kill(pid,signal.SIGTERM)
+        except ProcessLookupError: pass
+    deadline=time.monotonic()+12
+    remaining=list(pids)
+    while remaining and time.monotonic()<deadline:
+        time.sleep(0.4)
+        alive=[]
+        for pid in remaining:
+            try: os.kill(pid,0); alive.append(pid)
+            except ProcessLookupError: pass
+        remaining=alive
+    after=mem_available_bytes()
+    result["remaining_pids"]=remaining
+    result["mem_available_after"]=after
+    result["mem_available_delta"]=after-before
+    result["status"]="PASS" if not remaining else "HOLD_CHROMIUM_DID_NOT_EXIT_GRACEFULLY"
+    return result
+
+def bounded_inference_same_qwen(runtime,model,memory_max_bytes):
+    args=[
+        str(runtime),"-m",str(model),"-c","256","-n","8","-t","1","-ngl","0",
+        "--temp","0","--no-display-prompt","-p","Return exactly: LOUKSNA_P25_OK"
+    ]
+    systemd=shutil.which("systemd-run")
+    env=dict(os.environ)
+    uid=os.getuid()
+    env.setdefault("XDG_RUNTIME_DIR",f"/run/user/{uid}")
+    env.setdefault("DBUS_SESSION_BUS_ADDRESS",f"unix:path=/run/user/{uid}/bus")
+    if systemd:
+        max_mib=max(3072,int(memory_max_bytes//(1024*1024)))
+        high_mib=max(2816,max_mib-256)
+        wrapped=[
+          systemd,"--user","--scope","--quiet","--collect",
+          "-p",f"MemoryHigh={high_mib}M","-p",f"MemoryMax={max_mib}M",
+          "--"
+        ]+args
+        r=bounded_run(wrapped,timeout=300,env=env)
+        r["isolation"]="SYSTEMD_USER_SCOPE"
+        r["memory_high_mib"]=high_mib
+        r["memory_max_mib"]=max_mib
+        r["inner_argv"]=args
+        return r
+    # Fail closed rather than run the 4B model unbounded on a 6 GiB host.
+    return {
+      "argv":args,"returncode":125,"stdout":"","stderr":"SYSTEMD_RUN_UNAVAILABLE_FAIL_CLOSED",
+      "elapsed_seconds":0.0,"isolation":"UNAVAILABLE"
+    }
+
 def p25_local_backend():
     runtime_root=HOME/".local/share/louksna/reasoning/runtime"
     runtimes=sorted(runtime_root.glob("*/bin/llama-cli")) if runtime_root.is_dir() else []
     runtimes=[p for p in runtimes if p.is_file() and os.access(p,os.X_OK)]
     model=HOME/".local/share/louksna/reasoning/models/qwen35-4b-s/Qwen3.5-4B-S-TS-Q4_K_S.gguf"
     result={"state":"HOLD","qwen_substitution":False,"hosted_substitution":False,
-            "model_download_performed":False,"runtime_download_performed":False}
+            "model_download_performed":False,"runtime_download_performed":False,
+            "desktop_commander_used":False,"partitioning_performed":False}
     if len(runtimes)!=1:
         result["reason"]="LLAMA_RUNTIME_CARDINALITY"
         result["runtime_candidates"]=[str(x) for x in runtimes]
@@ -171,28 +250,36 @@ def p25_local_backend():
         result["reason"]="LOCAL_QWEN_MODEL_MISSING"
         return result
     runtime=runtimes[0]
+    model_bytes=model.stat().st_size
+    # Model bytes + 768 MiB host safety margin. Chromium may be closed gracefully
+    # by Maestro if and only if memory is below this threshold.
+    required=model_bytes+768*1024*1024
+    memory_max=max(model_bytes+640*1024*1024,3072*1024*1024)
     result.update({"runtime":str(runtime),"runtime_sha256":sha(runtime),
-                   "model":str(model),"model_sha256":external_sha256(model),"model_bytes":model.stat().st_size,
+                   "model":str(model),"model_sha256":sha(model),"model_bytes":model_bytes,
                    "mem_available_before":mem_available_bytes(),
-                   "resource_profile":"P25_QWEN_LOCAL_FILEBACKED_V1"})
-    # Fail closed before launching a known multi-GiB local model under pressure.
-    if result["mem_available_before"] and result["mem_available_before"] < 3200*1024*1024:
-        result["reason"]="RESOURCE_GOVERNOR_LOW_MEMORY"
-        result["required_mem_available_bytes"]=3200*1024*1024
+                   "required_mem_available":required,
+                   "memory_max_bytes":memory_max})
+    lrb_before=observe_pair("P25_MEMORY_PRE")
+    relief=chromium_memory_relief_if_needed(required)
+    lrb_after_relief=observe_pair("P25_MEMORY_POST_RELIEF")
+    result["memory_relief"]=relief
+    result["lrb_pre_sha256"]=lrb_before["observe"].get("evidence_sha256")
+    result["lrb_post_relief_sha256"]=lrb_after_relief["observe"].get("evidence_sha256")
+    available=mem_available_bytes()
+    result["mem_available_after_relief"]=available
+    if available<required:
+        result["reason"]="RESOURCE_GOVERNOR_LOW_MEMORY_AFTER_GRACEFUL_RELIEF"
         return result
     version=bounded_run([str(runtime),"--version"],timeout=30)
-    probe_env=dict(os.environ)
-    probe_env.update({"OMP_NUM_THREADS":"1","MALLOC_ARENA_MAX":"2"})
-    probe=bounded_run_filebacked([
-        str(runtime),"-m",str(model),"-c","128","-n","16","-t","1","-ngl","0",
-        "--temp","0","--no-display-prompt","-p","Return exactly: LOUKSNA_P25_OK"
-    ],timeout=300,env=probe_env)
+    probe=bounded_inference_same_qwen(runtime,model,memory_max)
     result.update({"version_test":version,"inference_test":probe,
                    "mem_available_after":mem_available_bytes()})
     result["operational"]=(version["returncode"]==0 and probe["returncode"]==0 and
-                           "LOUKSNA_P25_OK" in (probe["stdout"]+probe["stderr"]))
+                           "LOUKSNA_P25_OK" in (probe.get("stdout","")+probe.get("stderr","")))
     result["state"]="PASS" if result["operational"] else "HOLD"
-    if not result["operational"]: result["reason"]="LOCAL_INFERENCE_PROBE_FAILED"
+    if not result["operational"]:
+        result["reason"]="LOCAL_INFERENCE_PROBE_FAILED_OR_RESOURCE_ISOLATION"
     return result
 
 def p26_document_ingestion():
