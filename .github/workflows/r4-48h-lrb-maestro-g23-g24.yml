@@ -41,7 +41,7 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          python3 -m py_compile             server/r4-48h/maestro_48h_coordinator.py             server/r4-master/master_controller.py             server/r4-master/part6_hardened_worker.py             server/r4-master/part789_hardened_worker.py
+          python3 -m py_compile             server/r4-48h/maestro_48h_coordinator.py             server/r4-master/master_controller.py             server/r4-master/part6_hardened_worker.py             server/r4-master/part789_hardened_worker.py             server/r4-master/ui_p10_p12_hardened_worker.py
 
           python3 - <<'PY'
           import ast,datetime as dt,hashlib,json,os,pathlib,re
@@ -51,6 +51,7 @@ jobs:
           masterp=root/"server/r4-master/master_controller.py"
           workerp=root/"server/r4-master/part6_hardened_worker.py"
           worker789p=root/"server/r4-master/part789_hardened_worker.py"
+          uiworkerp=root/"server/r4-master/ui_p10_p12_hardened_worker.py"
           pointw=root/".github/workflows/r4-15point-certify.yml"
           deployw=root/".github/workflows/r4-48h-lrb-maestro-g23-g24.yml"
           c=json.loads(cp.read_text())
@@ -58,6 +59,7 @@ jobs:
           master=masterp.read_text()
           pointwf=pointw.read_text()
           worker789=worker789p.read_text()
+          uiworker=uiworkerp.read_text()
 
           checks={
             "schema_v2":c.get("schema")=="LOUKSNA_R4_REMAINDER_48H_CONTRACT/2.0",
@@ -88,6 +90,11 @@ jobs:
             "part789_lrb_read_only":'op not in {"status","observe"}' in worker789 and "LRB_MUTATING_OP_DENIED" in worker789,
             "part789_no_download_client":all(x not in worker789 for x in ('["curl"', '["wget"')),
             "part789_no_partition_mutator":all(x not in worker789 for x in ("sfdisk","fdisk","parted","growpart","resize2fs","ntfsresize","mkfs","wipefs","blkdiscard")),
+            "ui_worker_maestro_owned":'EXECUTOR="MAESTRO"' in uiworker and 'OBSERVER="LOUKSNA_REMOTE_BRIDGE"' in uiworker,
+            "ui_worker_lrb_read_only":'op not in {"status","observe"}' in uiworker and "LRB_MUTATING_OP_DENIED" in uiworker,
+            "ui_worker_no_download_client":all(x not in uiworker for x in ('["curl"', '["wget"')),
+            "ui_worker_no_duplicate_launchers":'"no_duplicate_launcher_creation":True' in uiworker,
+            "ui_worker_projects_canonical":'"proyectos":PROYECTOS' in uiworker,
           }
 
           # Static AST safety for coordinator: it may coordinate services and GitHub,
@@ -103,7 +110,7 @@ jobs:
           checks["global_48h_preserved"]=(deadline-start).total_seconds()==172800 and c["window"]["global_window_preserved"] is True
 
           ok=all(checks.values())
-          files=[cp,coordp,masterp,workerp,worker789p,pointw,deployw]
+          files=[cp,coordp,masterp,workerp,worker789p,uiworkerp,pointw,deployw]
           rows=[]
           for p in files:
               b=p.read_bytes()
@@ -176,6 +183,7 @@ jobs:
             pathlib.Path("server/r4-master/master_controller.py"),
             pathlib.Path("server/r4-master/part6_hardened_worker.py"),
             pathlib.Path("server/r4-master/part789_hardened_worker.py"),
+            pathlib.Path("server/r4-master/ui_p10_p12_hardened_worker.py"),
             pathlib.Path(".github/workflows/r4-15point-certify.yml"),
             pathlib.Path(".github/workflows/r4-48h-lrb-maestro-g23-g24.yml"),
           ]
@@ -268,9 +276,10 @@ jobs:
           install -m 0700 server/r4-master/master_controller.py "$STAGED/master_controller.py"
           install -m 0700 server/r4-master/part6_hardened_worker.py "$STAGED/part6_hardened_worker.py"
           install -m 0700 server/r4-master/part789_hardened_worker.py "$STAGED/part789_hardened_worker.py"
+          install -m 0700 server/r4-master/ui_p10_p12_hardened_worker.py "$STAGED/ui_p10_p12_hardened_worker.py"
           install -m 0600 server/r4-48h/R4_48H_CONTRACT.json "$STAGED/R4_48H_CONTRACT.json"
 
-          python3 -m py_compile             "$ROOT/maestro_48h_coordinator.py"             "$STAGED/master_controller.py"             "$STAGED/part6_hardened_worker.py"             "$STAGED/part789_hardened_worker.py"
+          python3 -m py_compile             "$ROOT/maestro_48h_coordinator.py"             "$STAGED/master_controller.py"             "$STAGED/part6_hardened_worker.py"             "$STAGED/part789_hardened_worker.py"             "$STAGED/ui_p10_p12_hardened_worker.py"
 
           python3 - "$STATE/G24_DEPLOY_BINDING.json" <<'PY'
           import datetime as dt,json,os,pathlib,sys
