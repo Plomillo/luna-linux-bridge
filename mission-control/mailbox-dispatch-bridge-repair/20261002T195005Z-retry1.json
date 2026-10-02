@@ -1,0 +1,17 @@
+{
+  "schema": "LOUKSNA_MAILBOX_DISPATCH_BRIDGE_REPAIR_RETRY_TRIGGER/1.0",
+  "status": "AUTHORIZED_TO_START",
+  "authority": "Louksna.md",
+  "branch": "staging/mailbox-dispatch-bridge-repair-20261002",
+  "predecessor_run_id": 37056586750,
+  "predecessor_failure": "PRECONDITION_PROBE_EXPECTED_WORKFLOW_DISPATCH_KEY_IN_CAPABILITY_TEST_INSTEAD_OF_PROVEN_GH_API_DISPATCH_CALL",
+  "retry_reason": "REPAIR_ORCHESTRATOR_PRECONDITION_CORRECTED_ONLY; MAILBOX_NOT_MUTATED",
+  "defect": "ROUTER_STOPS_AT_ROUTED_READY_NOT_YET_EXECUTED_WITHOUT_GENERAL_MATERIAL_DISPATCH",
+  "gross_ceiling_seconds": 360,
+  "started_intent_local": "2026-10-02T16:50:05-03:00",
+  "g23_required": true,
+  "g24_required": true,
+  "fail_closed": true,
+  "no_silent_operations": true,
+  "canonical_mutation": false
+}
