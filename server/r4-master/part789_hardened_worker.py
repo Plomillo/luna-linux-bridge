@@ -18,7 +18,7 @@ PROTECTED=[
 PART7_SCHEMA="LOUKSNA_R4_PART7_AUX_EVIDENCE/1.0"
 PART8_SCHEMA="LOUKSNA_R4_PART8_AUX_EVIDENCE/1.0"
 PART9_SCHEMA="LOUKSNA_R4_PART9_TERMINAL_MATRIX/1.0"
-PRODUCER_REVISION="2026-10-02.PART789.4-P25-BOUNDED-IO-MEMORY"
+PRODUCER_REVISION="2026-10-02.PART789.5-P25-ISOLATED-FILEBACKED"
 
 def utc():
     return dt.datetime.now(dt.timezone.utc).isoformat().replace("+00:00","Z")
@@ -211,6 +211,7 @@ def bounded_inference_same_qwen(runtime,model,memory_max_bytes):
     ]
     systemd=shutil.which("systemd-run")
     env=dict(os.environ)
+    env.update({"OMP_NUM_THREADS":"1","MALLOC_ARENA_MAX":"2"})
     uid=os.getuid()
     env.setdefault("XDG_RUNTIME_DIR",f"/run/user/{uid}")
     env.setdefault("DBUS_SESSION_BUS_ADDRESS",f"unix:path=/run/user/{uid}/bus")
@@ -222,7 +223,7 @@ def bounded_inference_same_qwen(runtime,model,memory_max_bytes):
           "-p",f"MemoryHigh={high_mib}M","-p",f"MemoryMax={max_mib}M",
           "--"
         ]+args
-        r=bounded_run(wrapped,timeout=300,env=env)
+        r=bounded_run_filebacked(wrapped,timeout=300,env=env)
         r["isolation"]="SYSTEMD_USER_SCOPE"
         r["memory_high_mib"]=high_mib
         r["memory_max_mib"]=max_mib
@@ -256,7 +257,7 @@ def p25_local_backend():
     required=model_bytes+768*1024*1024
     memory_max=max(model_bytes+640*1024*1024,3072*1024*1024)
     result.update({"runtime":str(runtime),"runtime_sha256":sha(runtime),
-                   "model":str(model),"model_sha256":sha(model),"model_bytes":model_bytes,
+                   "model":str(model),"model_sha256":external_sha256(model),"model_bytes":model_bytes,
                    "mem_available_before":mem_available_bytes(),
                    "required_mem_available":required,
                    "memory_max_bytes":memory_max})
