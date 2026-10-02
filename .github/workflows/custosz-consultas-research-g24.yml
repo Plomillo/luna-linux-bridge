@@ -1,0 +1,105 @@
+name: "CUSTOSZ consultas research — G24 certification"
+
+on:
+  push:
+    branches:
+      - staging/custosz-consultas-research-cert-20261002
+    paths:
+      - .github/workflows/custosz-consultas-research-g24.yml
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  g24:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Download producer research bundle
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: custosz-consultas-research-10m-evidence
+          path: research
+          github-token: ${{ github.token }}
+          repository: Plomillo/luna-linux-bridge
+          run-id: 37072997444
+
+      - name: Download independent G23 result
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: custosz-consultas-research-g23
+          path: g23
+          github-token: ${{ github.token }}
+          repository: Plomillo/luna-linux-bridge
+          run-id: 37074040032
+
+      - name: Certify exact research bundle scope
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd research
+          sha256sum -c SHA256SUMS.txt
+          cd ..
+          python3 - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+
+          expected_source_commit="9e2af7dca56543be6c246a60ed506b2c90bfcb08"
+          expected_research_artifact_id=11255936253
+          expected_research_artifact_digest="sha256:3e541fe20901dbb68fc466edf2673ca91f10b7dee3124c784a02fafa6118571d"
+          expected_g23_artifact_id=11255448844
+          expected_g23_artifact_digest="sha256:24cc8d5f43c72c8e8042b33cedb2f08e388a0dae8e297a07ec07f79715610a56"
+
+          manifest=json.load(open("research/EVIDENCE_MANIFEST.json",encoding="utf-8"))
+          validation=json.load(open("research/VALIDATION.json",encoding="utf-8"))
+          decision=json.load(open("research/CERTIFICATION_DECISION.json",encoding="utf-8"))
+          g23=json.load(open("g23/G23_REVIEW.json",encoding="utf-8"))
+
+          checks={
+            "g23_pass": g23.get("result")=="PASS",
+            "g23_scope_exact": g23.get("scope")=="CONSULTAS_RESEARCH_BUNDLE_ONLY",
+            "g23_bound_to_research_artifact": g23.get("research_artifact_id")==expected_research_artifact_id and g23.get("research_artifact_digest")==expected_research_artifact_digest,
+            "g23_bound_to_source_commit": g23.get("source_commit")==expected_source_commit,
+            "producer_source_commit_match": manifest.get("source_commit")==expected_source_commit,
+            "producer_validation_pass": validation.get("result")=="PASS",
+            "producer_no_cert_propagation": validation.get("certification_propagation_detected") is False and decision.get("certification_propagation") is False,
+            "producer_did_not_self_certify_future_implementation": str(decision.get("g24_for_future_consultas_implementation","")).startswith("NOT_GRANTED"),
+            "research_only_scope": manifest.get("mode")=="RESEARCH_ONLY" and manifest.get("implementation_authorized") is False,
+          }
+          result="PASS" if all(checks.values()) else "FAIL"
+
+          cert={
+            "schema":"LOUKSNA_CONSULTAS_RESEARCH_G24/1.0",
+            "gate":"G24_CERTIFICATION",
+            "scope":"CONSULTAS_RESEARCH_BUNDLE_ONLY",
+            "status":result,
+            "operational_status":"CERTIFIED_RESEARCH_EVIDENCE_ONLY" if result=="PASS" else "HOLD",
+            "authority":"Louksna.md",
+            "research_run_id":37072997444,
+            "research_artifact_id":expected_research_artifact_id,
+            "research_artifact_digest":expected_research_artifact_digest,
+            "g23_run_id":37074040032,
+            "g23_artifact_id":expected_g23_artifact_id,
+            "g23_artifact_digest":expected_g23_artifact_digest,
+            "source_commit":expected_source_commit,
+            "checks":checks,
+            "certification_propagation":False,
+            "future_consultas_implementation_certified":False,
+            "missions_semantics_certified_unchanged":False,
+            "next":"IMPLEMENTATION_CANDIDATE_MAY_BE_AUTHORIZED_SEPARATELY_WITH_NEW_EVIDENCE_CHAIN" if result=="PASS" else "HOLD"
+          }
+          Path("g24").mkdir(exist_ok=True)
+          Path("g24/G24_CERTIFICATION.json").write_text(json.dumps(cert,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps(cert,indent=2,sort_keys=True))
+          if result!="PASS":
+              raise SystemExit("G24_FAIL")
+          PY
+
+      - name: Preserve G24 certification
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: custosz-consultas-research-g24
+          path: g24/G24_CERTIFICATION.json
+          if-no-files-found: error
+          retention-days: 30
