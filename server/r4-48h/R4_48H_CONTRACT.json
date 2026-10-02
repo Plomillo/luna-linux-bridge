@@ -27,7 +27,8 @@
     "meta_os": "OPERATIONAL_STATE_ENVIRONMENT",
     "louksna_remote_bridge": "READ_ONLY_EYES_TELEMETRY_DIAGNOSIS",
     "g23": "INDEPENDENT_VALIDATOR",
-    "g24": "CERTIFIER"
+    "g24": "CERTIFIER",
+    "qwen_reasoner": "GITHUB_REASONING_ONLY_SWAPPABLE_PROVIDER"
   },
   "epistemic": {
     "declaration_ne_evidence": true,
@@ -110,7 +111,8 @@
       "PUAC2_PASS"
     ],
     "lutris_existing_artifact_reuse_required": true,
-    "p25_local_candidates_before_download": true
+    "p25_local_candidates_before_download": true,
+    "p25_reasoner_download_forbidden_without_separate_authorization": true
   },
   "anti_paralysis": {
     "contract_id": "R4_15P_ANTI_PARALYSIS_V1",
@@ -550,7 +552,7 @@
     "mode": "RESUME_EXISTING_LIVE_STATE",
     "master_checkpoint": "/home/diegoignacionorambuenamiranda/LOUKSNA_MAESTRO_20260925/MISSION3_OPERATIVE/R4_PART1_DESKTOP_V1/runs/20260926T034746Z-38579",
     "part4_is_input_only": true,
-    "current_material_frontier": "PART_6_PLUS_15_POINT_GOVERNANCE"
+    "current_material_frontier": "PART_7_REASONING_ROLE_CORRECTION_THEN_PART_8_PART_9"
   },
   "references": {
     "plan": "docs/luna-r4/PLAN DEFINITIVO",
@@ -582,5 +584,21 @@
       "resumable_partial_bytes_preserved": true,
       "repeat_download_forbidden": true
     }
+  },
+  "reasoning_operator": {
+    "schema": "LOUKSNA_SHARED_REASONER_OPERATOR/1.0",
+    "provider_current": "QWEN",
+    "provider_class": "SWAPPABLE_SHARED_REASONER",
+    "role": "REASONING_ONLY",
+    "operator_plane": "GITHUB",
+    "input_source": "LOUKSNA_REMOTE_BRIDGE_EVIDENCE_ONLY",
+    "output_contract": "REASONING_DECISION_ENVELOPE_ONLY",
+    "material_execution_authority": false,
+    "host_observation_authority": false,
+    "direct_host_tooling_authority": false,
+    "maestro_is_material_executor": true,
+    "provider_swappable": true,
+    "replacement_preserves_interface": true,
+    "desktop_commander_forbidden": true
   }
 }

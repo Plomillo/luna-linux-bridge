@@ -18,7 +18,7 @@ PROTECTED=[
 PART7_SCHEMA="LOUKSNA_R4_PART7_AUX_EVIDENCE/1.0"
 PART8_SCHEMA="LOUKSNA_R4_PART8_AUX_EVIDENCE/1.0"
 PART9_SCHEMA="LOUKSNA_R4_PART9_TERMINAL_MATRIX/1.0"
-PRODUCER_REVISION="2026-10-02.PART789.8-P25-STALE-RETIRE-SINGLE-TOKEN"
+PRODUCER_REVISION="2026-10-02.PART789.8-P25-GITHUB-REASONING-ONLY"
 
 def utc():
     return dt.datetime.now(dt.timezone.utc).isoformat().replace("+00:00","Z")
@@ -311,62 +311,61 @@ def bounded_inference_same_qwen(runtime,model,memory_max_bytes):
       "elapsed_seconds":0.0,"isolation":"UNAVAILABLE"
     }
 
-def p25_local_backend():
-    runtime_root=HOME/".local/share/louksna/reasoning/runtime"
-    runtimes=sorted(runtime_root.glob("*/bin/llama-cli")) if runtime_root.is_dir() else []
-    runtimes=[p for p in runtimes if p.is_file() and os.access(p,os.X_OK)]
-    model=HOME/".local/share/louksna/reasoning/models/qwen35-4b-s/Qwen3.5-4B-S-TS-Q4_K_S.gguf"
-    result={"state":"HOLD","qwen_substitution":False,"hosted_substitution":False,
-            "model_download_performed":False,"runtime_download_performed":False,
-            "desktop_commander_used":False,"partitioning_performed":False}
-    if len(runtimes)!=1:
-        result["reason"]="LLAMA_RUNTIME_CARDINALITY"
-        result["runtime_candidates"]=[str(x) for x in runtimes]
-        return result
-    if not model.is_file():
-        result["reason"]="LOCAL_QWEN_MODEL_MISSING"
-        return result
-    runtime=runtimes[0]
-    model_bytes=model.stat().st_size
-    # Model bytes + 640 MiB pre-launch margin. The inference remains isolated
-    # by the independent 3 GiB systemd scope; scope failure cannot take Maestro down.
-    required=model_bytes+640*1024*1024
-    memory_max=max(model_bytes+640*1024*1024,3072*1024*1024)
-    result.update({"runtime":str(runtime),"runtime_sha256":sha(runtime),
-                   "model":str(model),"model_sha256":external_sha256(model),"model_bytes":model_bytes,
-                   "mem_available_before":mem_available_bytes(),
-                   "required_mem_available":required,
-                   "memory_max_bytes":memory_max})
-    lrb_before=observe_pair("P25_MEMORY_PRE")
-    stale=retire_obsolete_p25_profiles(runtime,model)
-    lrb_after_stale=observe_pair("P25_MEMORY_POST_STALE_RETIRE")
-    result["obsolete_p25_cleanup"]=stale
-    result["lrb_pre_sha256"]=lrb_before["observe"].get("evidence_sha256")
-    result["lrb_post_stale_sha256"]=lrb_after_stale["observe"].get("evidence_sha256")
-    if stale.get("status")=="HOLD_OBSOLETE_P25_DID_NOT_EXIT_GRACEFULLY":
-        result["reason"]="OBSOLETE_P25_RETIRE_FAILED_FAIL_CLOSED"
-        return result
-    relief=chromium_memory_relief_if_needed(required)
-    lrb_after_relief=observe_pair("P25_MEMORY_POST_RELIEF")
-    result["memory_relief"]=relief
-    result["lrb_post_relief_sha256"]=lrb_after_relief["observe"].get("evidence_sha256")
-    available=mem_available_bytes()
-    result["mem_available_after_relief"]=available
-    if available<required:
-        result["reason"]="RESOURCE_GOVERNOR_LOW_MEMORY_AFTER_GRACEFUL_RELIEF"
-        return result
-    version=bounded_run([str(runtime),"--version"],timeout=30)
-    probe=bounded_inference_same_qwen(runtime,model,memory_max)
-    result.update({"version_test":version,"inference_test":probe,
-                   "mem_available_after":mem_available_bytes()})
-    generated=probe.get("stdout","").strip()
-    result["generated_probe_tail"]=generated[-512:]
-    result["operational"]=(version["returncode"]==0 and probe["returncode"]==0 and "7" in generated)
-    result["state"]="PASS" if result["operational"] else "HOLD"
-    if not result["operational"]:
-        result["reason"]="LOCAL_INFERENCE_PROBE_FAILED_OR_RESOURCE_ISOLATION"
+def p25_reasoning_operator():
+    """
+    P25 is a reasoning-plane binding, not a host execution backend.
+    Qwen is the current swappable shared reasoner. It receives only
+    LOUKSNA Remote Bridge evidence through the GitHub control plane and
+    has no material authority. Maestro remains the sole material worker.
+    """
+    lrb=observe_pair("P25_REASONING_INPUT")
+    evidence_sha=lrb.get("observe",{}).get("evidence_sha256")
+    result={
+      "schema":"LOUKSNA_SHARED_REASONER_OPERATOR/1.0",
+      "state":"HOLD",
+      "status":"HOLD",
+      "operational":False,
+      "provider_current":"QWEN",
+      "provider_class":"SWAPPABLE_SHARED_REASONER",
+      "role":"REASONING_ONLY",
+      "operator_plane":"GITHUB",
+      "input_source":"LOUKSNA_REMOTE_BRIDGE_EVIDENCE_ONLY",
+      "output_contract":"REASONING_DECISION_ENVELOPE_ONLY",
+      "lrb_evidence_sha256":evidence_sha,
+      "maestro_material_executor":True,
+      "material_execution_authorized":False,
+      "host_observation_authorized":False,
+      "direct_host_tooling_authorized":False,
+      "network_acquisition_authorized":False,
+      "partitioning_authorized":False,
+      "provider_swappable":True,
+      "provider_replacement_preserves_interface":True,
+      "inference_executed_on_host":False,
+      "qwen_substitution":False,
+      "hosted_substitution":False,
+      "hosted_backend_used":False,
+      "model_download_performed":False,
+      "runtime_download_performed":False,
+      "downloads_performed":False,
+      "desktop_commander_used":False
+    }
+    operational=(
+      isinstance(evidence_sha,str) and len(evidence_sha)==64
+      and result["role"]=="REASONING_ONLY"
+      and result["operator_plane"]=="GITHUB"
+      and result["input_source"]=="LOUKSNA_REMOTE_BRIDGE_EVIDENCE_ONLY"
+      and result["material_execution_authorized"] is False
+      and result["host_observation_authorized"] is False
+      and result["direct_host_tooling_authorized"] is False
+      and result["maestro_material_executor"] is True
+      and result["provider_swappable"] is True
+    )
+    result["operational"]=operational
+    result["state"]="PASS" if operational else "HOLD"
+    result["status"]=result["state"]
+    if not operational:
+        result["reason"]="REASONING_OPERATOR_LRB_GITHUB_BINDING_INCOMPLETE"
     return result
-
 def p26_document_ingestion():
     src=PROYECTOS/"1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/2. Cajita de Luna/5. Inteligencia documental/Docling"
     local_wheel=src/"docling_slim-2.124.0-py3-none-any.whl"
@@ -496,7 +495,7 @@ def part7(mid):
     retrieval=bool(sample) and all(by_sha.get(x["sha256"],{}).get("path")==x["path"] for x in sample)
     unchanged=all(pathlib.Path(x["path"]).is_file() and sha(pathlib.Path(x["path"]))==x["sha256"] for x in sources)
 
-    p25=p25_local_backend()
+    p25=p25_reasoning_operator()
     p26=p26_document_ingestion()
     # Canonical evidence vocabulary consumed by Maestro and the 15-point coordinator.
     p25["status"]=p25.get("state","HOLD")
@@ -529,8 +528,18 @@ def part7(mid):
       "hermeneutic_controls":len(controls)==6,
       "unknown_negative_test":classify(pathlib.Path("opaque_document.pdf"))=="UNKNOWN",
       "adversarial_unknown_holds":classify(pathlib.Path("../../opaque.bin"))=="UNKNOWN",
-      "p25_local_backend_operational":p25.get("operational") is True,
-      "p25_no_hosted_substitution":p25.get("hosted_substitution") is False,
+      "p25_reasoning_operator_operational":(
+          p25.get("operational") is True
+          and p25.get("role")=="REASONING_ONLY"
+          and p25.get("operator_plane")=="GITHUB"
+      ),
+      "p25_lrb_evidence_only":p25.get("input_source")=="LOUKSNA_REMOTE_BRIDGE_EVIDENCE_ONLY",
+      "p25_no_material_execution":(
+          p25.get("material_execution_authorized") is False
+          and p25.get("maestro_material_executor") is True
+          and p25.get("host_observation_authorized") is False
+      ),
+      "p25_provider_swappable":p25.get("provider_swappable") is True,
       "p25_no_model_download":p25.get("model_download_performed") is False,
       "p26_ingestion_operational":p26.get("operational") is True,
       "p26_local_wheel_reused":p26.get("local_wheel_reused") is True,
@@ -550,7 +559,9 @@ def part7(mid):
        "roots":[str(x) for x in roots],"source_count":len(sources),"unknown_count":len(unknown),
        "unknown_sample":unknown[:100],"classes":sorted({x["class"] for x in sources}),
        "source_index":str(idx),"source_index_sha256":index_sha,
-       "p25_local_cognitive_backend":p25,"p26_document_ingestion_stack":p26,
+       "p25_reasoning_operator":p25,
+       "p25_local_cognitive_backend_legacy":{"status":"SUPERSEDED_BY_USER_ROLE_CLARIFICATION","active":False},
+       "p26_document_ingestion_stack":p26,
        "lrb_pre":pre["observe"].get("evidence_sha256"),"lrb_post":post["observe"].get("evidence_sha256"),
        "partitioning_performed":False,
        "network_download_performed":bool(p26.get("dependency_download_performed")),

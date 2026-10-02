@@ -584,13 +584,23 @@ def evidence_for(point):
     elif point=="P08":
         cert=part_cert("PART_7")
         p7=load(STATE/"evidence/PART7_AUX_EVIDENCE.json",{}) or {}
-        p25=p7.get("p25_local_cognitive_backend",{}) if isinstance(p7.get("p25_local_cognitive_backend"),dict) else {}
+        p25=p7.get("p25_reasoning_operator",{}) if isinstance(p7.get("p25_reasoning_operator"),dict) else {}
         p26=p7.get("p26_document_ingestion_stack",{}) if isinstance(p7.get("p26_document_ingestion_stack"),dict) else {}
         checks={**common,"dependencies":deps_pass(point),
                 "part7_g24":cert is not None,
                 "part7_evidence_pass":p7.get("status")=="PASS",
-                "p25_local_backend_operational":p25.get("status")=="PASS" and p25.get("operational") is True,
-                "p25_not_hosted_substitution":p25.get("hosted_backend_used") is False and p25.get("qwen_substitution") is False,
+                "p25_reasoning_operator_operational":(
+                    p25.get("status")=="PASS" and p25.get("operational") is True
+                    and p25.get("role")=="REASONING_ONLY"
+                    and p25.get("operator_plane")=="GITHUB"
+                    and p25.get("input_source")=="LOUKSNA_REMOTE_BRIDGE_EVIDENCE_ONLY"
+                ),
+                "p25_no_material_execution":(
+                    p25.get("material_execution_authorized") is False
+                    and p25.get("maestro_material_executor") is True
+                    and p25.get("host_observation_authorized") is False
+                ),
+                "p25_provider_swappable":p25.get("provider_swappable") is True,
                 "p25_no_model_download":p25.get("downloads_performed") is False,
                 "p26_document_ingestion_operational":p26.get("status")=="PASS" and p26.get("operational") is True,
                 "p26_source_immutable":p26.get("source_immutable") is True,
