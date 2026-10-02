@@ -102,11 +102,19 @@ def master_active():
 
 def proc_lines():
     r=run(["ps","-eo","pid,ppid,etimes,args"],timeout=20)
-    keys=("master_controller.py","part6_hardened_worker.py","make build_name=louksna-proton")
+    keys=("master_controller.py","part6_hardened_worker.py","part789_hardened_worker.py","make build_name=louksna-proton")
     return [x for x in r["stdout"].splitlines() if any(k in x for k in keys) and "maestro_48h_coordinator.py" not in x]
 
 def part6_child_active():
     return any("part6_hardened_worker.py" in x or "make build_name=louksna-proton" in x for x in proc_lines())
+
+def material_child_active():
+    return any(
+        "part6_hardened_worker.py" in x
+        or "part789_hardened_worker.py" in x
+        or "make build_name=louksna-proton" in x
+        for x in proc_lines()
+    )
 
 def lrb_link():
     roots=sorted((HOME/".local/lib/louksna-remote-bridge").glob("**/bridge/live_link.py"))
@@ -257,9 +265,9 @@ def static_invariants():
     }
 
 def safe_handoff(reason):
-    if part6_child_active():
-        raise RuntimeError("HANDOFF_DENIED_PART6_CHILD_ACTIVE")
-    required=["master_controller.py","part6_hardened_worker.py","R4_48H_CONTRACT.json"]
+    if material_child_active():
+        raise RuntimeError("HANDOFF_DENIED_MATERIAL_CHILD_ACTIVE")
+    required=["master_controller.py","part6_hardened_worker.py","part789_hardened_worker.py","R4_48H_CONTRACT.json"]
     for name in required:
         if not (STAGED/name).is_file():
             raise RuntimeError("STAGED_FILE_MISSING:"+name)
@@ -281,7 +289,7 @@ def safe_handoff(reason):
         shutil.copy2(src,tmp)
         os.chmod(tmp,0o700 if name.endswith(".py") else 0o600)
         os.replace(tmp,dst)
-    run(["python3","-m","py_compile",str(LIVE/"master_controller.py"),str(LIVE/"part6_hardened_worker.py")],timeout=60,check=True)
+    run(["python3","-m","py_compile",str(LIVE/"master_controller.py"),str(LIVE/"part6_hardened_worker.py"),str(LIVE/"part789_hardened_worker.py")],timeout=60,check=True)
     systemctl_user("daemon-reload")
     systemctl_user("reset-failed",MASTER_SERVICE)
     systemctl_user("start",MASTER_SERVICE)
@@ -300,7 +308,7 @@ def safe_handoff(reason):
     ledger("MASTER_SAFE_HANDOFF",reason=reason,checkpoint=str(checkpoint))
 
 def ensure_master_hardened():
-    names=["master_controller.py","part6_hardened_worker.py","R4_48H_CONTRACT.json"]
+    names=["master_controller.py","part6_hardened_worker.py","part789_hardened_worker.py","R4_48H_CONTRACT.json"]
     staged_hashes={}
     live_hashes={}
     for name in names:
