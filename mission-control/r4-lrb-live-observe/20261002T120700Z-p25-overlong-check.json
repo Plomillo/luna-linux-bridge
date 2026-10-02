@@ -1,0 +1,10 @@
+{
+  "schema": "LOUKSNA_R4_LRB_LIVE_OBSERVATION_REQUEST/1.0",
+  "status": "AUTHORIZED",
+  "purpose": "OBSERVE_P25_OVERLONG_MEMORY_STATE_ONLY",
+  "transport": "LOUKSNA_REMOTE_BRIDGE",
+  "desktop_commander_used": false,
+  "material_execution": false,
+  "partitioning_authorized": false,
+  "created_at_utc": "2026-10-02T12:07:00Z"
+}
