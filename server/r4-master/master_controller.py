@@ -640,6 +640,18 @@ def _p11_mojo(mid):
     }
 
 def maestro_p11_materialize(mid,request):
+    part7_cert=CERTS/"PART_7.json"
+    part7=read_json(part7_cert,{}) or {}
+    if not part7_cert.is_file() or part7.get("status")!="PASS":
+        return {
+            "schema":"LOUKSNA_R4_MAESTRO_POINT_RESULT/1.0",
+            "request_id":request["request_id"],"point_id":"P11","status":"HOLD",
+            "mission_id":mid,"executor":"MAESTRO",
+            "blockers":["PART7_G24_REQUIRED_BEFORE_P11"],
+            "partial_bytes_preserved":True,
+            "redownload_from_zero_performed":False,
+            "partitioning_performed":False,"completed_at_utc":utc()
+        }
     if _p11_heavy_part6_active():
         return {
             "schema":"LOUKSNA_R4_MAESTRO_POINT_RESULT/1.0",
