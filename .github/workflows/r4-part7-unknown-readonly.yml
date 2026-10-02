@@ -51,3 +51,21 @@ jobs:
           }
           print(json.dumps(out,ensure_ascii=False,indent=2,sort_keys=True))
           PY
+
+          python3 - "$I" <<'PY'
+          import json,pathlib,sys,zipfile,xml.etree.ElementTree as ET
+          idx=json.loads(pathlib.Path(sys.argv[1]).read_text())
+          unknown=[pathlib.Path(x["path"]) for x in idx if x.get("class")=="UNKNOWN"]
+          for p in unknown[:20]:
+              print("=== UNKNOWN_DOCUMENT ===")
+              print("PATH="+str(p))
+              if p.suffix.casefold()==".docx":
+                  with zipfile.ZipFile(p) as z:
+                      raw=z.read("word/document.xml")
+                  root=ET.fromstring(raw)
+                  texts=[(e.text or "") for e in root.iter() if e.tag.endswith("}t")]
+                  body=" ".join(x.strip() for x in texts if x.strip())
+                  print("TEXT_SAMPLE="+body[:6000])
+              else:
+                  print("TEXT_SAMPLE=UNSUPPORTED_READONLY_FORMAT")
+          PY
