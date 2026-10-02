@@ -1890,7 +1890,30 @@ def part6(mid):
     }
     return evidence_base("PART_6",mid,checks,"PASS" if not blockers else "HOLD",blockers,details)
 
+def run_part789_material(part,mid):
+    names={
+      "PART_7":("PART7_AUX_EVIDENCE.json","LOUKSNA_R4_PART7_AUX_EVIDENCE/1.0"),
+      "PART_8":("PART8_AUX_EVIDENCE.json","LOUKSNA_R4_PART8_AUX_EVIDENCE/1.0"),
+      "PART_9":("PART9_MATRIX.json","LOUKSNA_R4_PART9_TERMINAL_MATRIX/1.0"),
+    }
+    name,schema=names[part]
+    p=R48_EVID/name
+    prior=read_json(p,{}) or {}
+    # Idempotence: never repeat a Maestro-produced state merely because it is HOLD.
+    if prior.get("schema")==schema and prior.get("executor")=="MAESTRO":
+        return {"status":"REUSE_EXISTING","evidence_path":str(p),"evidence_sha256":sha(p)}
+    worker=pathlib.Path(__file__).with_name("part789_hardened_worker.py")
+    if not worker.is_file():
+        return {"status":"HOLD","error":"PART789_WORKER_MISSING","worker":str(worker)}
+    timeout={"PART_7":7200,"PART_8":1800,"PART_9":600}[part]
+    try:
+        r=run([sys.executable,"-B",str(worker),"--part",part,"--mission-id",mid],timeout=timeout)
+    except Exception as e:
+        return {"status":"HOLD","error":type(e).__name__+":"+str(e),"worker":str(worker)}
+    return {"status":"PASS" if r["returncode"]==0 else "HOLD","worker":str(worker),"result":r}
+
 def part7(mid):
+    dispatch=run_part789_material("PART_7",mid)
     d,meta=r48_aux("PART7_AUX_EVIDENCE.json","LOUKSNA_R4_PART7_AUX_EVIDENCE/1.0")
     checks={
       "aux_present":d is not None,
@@ -1910,10 +1933,11 @@ def part7(mid):
       "non_regression":bool(d and d.get("checks",{}).get("non_regression") is True),
     }
     blockers=[k for k,v in checks.items() if not v]
-    details={"aux":meta,"aux_blockers":d.get("blockers",[]) if d else ["AUX_EVIDENCE_MISSING"]}
+    details={"aux":meta,"aux_blockers":d.get("blockers",[]) if d else ["AUX_EVIDENCE_MISSING"],"material_dispatch":dispatch}
     return evidence_base("PART_7",mid,checks,"PASS" if not blockers else "HOLD",blockers,details)
 
 def part8(mid):
+    dispatch=run_part789_material("PART_8",mid)
     d,meta=r48_aux("PART8_AUX_EVIDENCE.json","LOUKSNA_R4_PART8_AUX_EVIDENCE/1.0")
     required=("backup_artifact","backup_hash","backup_manifest","restore_test","recovery_proof",
               "hygiene_dry_run_first","unknown_preserve","protected_paths_denied","no_cleanup_performed",
@@ -1922,10 +1946,11 @@ def part8(mid):
     checks={"aux_present":d is not None,"aux_pass":bool(d and d.get("status")=="PASS")}
     for k in required: checks[k]=bool(d and d.get("checks",{}).get(k) is True)
     blockers=[k for k,v in checks.items() if not v]
-    details={"aux":meta,"aux_blockers":d.get("blockers",[]) if d else ["AUX_EVIDENCE_MISSING"]}
+    details={"aux":meta,"aux_blockers":d.get("blockers",[]) if d else ["AUX_EVIDENCE_MISSING"],"material_dispatch":dispatch}
     return evidence_base("PART_8",mid,checks,"PASS" if not blockers else "HOLD",blockers,details)
 
 def part9(mid):
+    dispatch=run_part789_material("PART_9",mid)
     prior=[]
     for p in PARTS[:-1]:
         cp=CERTS/f"{p}.json"
@@ -1952,7 +1977,7 @@ def part9(mid):
       "provenance_complete":bool(matrix_checks.get("provenance_completeness")),
     }
     blockers=[k for k,v in checks.items() if not v]
-    ev=evidence_base("PART_9",mid,checks,"PASS" if not blockers else "HOLD",blockers,{"prior":prior,"matrix":meta,"matrix_blockers":d.get("blockers",[]) if d else ["MATRIX_MISSING"]})
+    ev=evidence_base("PART_9",mid,checks,"PASS" if not blockers else "HOLD",blockers,{"prior":prior,"matrix":meta,"matrix_blockers":d.get("blockers",[]) if d else ["MATRIX_MISSING"],"material_dispatch":dispatch})
     ev["prior_part_certificates"]=prior
     ev["postinstall_matrix"]="PASS" if not blockers else "HOLD"
     ev["rollback_survives"]=checks["rollback_continuity"]
