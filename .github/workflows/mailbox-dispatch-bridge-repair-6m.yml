@@ -62,7 +62,7 @@ jobs:
           ! test -f scripts/mission_mailbox/dispatch_execution.py
           ! grep -q 'MAILBOX_TERMINAL_DISPATCH_BRIDGE_V1' .github/workflows/custosz-mission-mailbox.yml
           grep -q 'actions: write' .github/workflows/r4-branch-dispatch-capability-test.yml
-          grep -q 'workflow_dispatch:' .github/workflows/r4-branch-dispatch-capability-test.yml
+          grep -q 'gh api --method POST' .github/workflows/r4-branch-dispatch-capability-test.yml
           echo "EXACT_DEFECT_AND_DISPATCH_CAPABILITY=PASS"
 
       - name: Build candidate
