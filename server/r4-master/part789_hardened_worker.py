@@ -18,7 +18,7 @@ PROTECTED=[
 PART7_SCHEMA="LOUKSNA_R4_PART7_AUX_EVIDENCE/1.0"
 PART8_SCHEMA="LOUKSNA_R4_PART8_AUX_EVIDENCE/1.0"
 PART9_SCHEMA="LOUKSNA_R4_PART9_TERMINAL_MATRIX/1.0"
-PRODUCER_REVISION="2026-10-02.PART789.2-CANONICAL-CORPUS"
+PRODUCER_REVISION="2026-10-02.PART789.3-P25-P26-OPERATIONAL"
 
 def utc():
     return dt.datetime.now(dt.timezone.utc).isoformat().replace("+00:00","Z")
@@ -128,6 +128,230 @@ def preserve_previous(p):
         shutil.copy2(p,hist)
     return {"path":str(hist),"sha256":digest}
 
+
+def mem_available_bytes():
+    try:
+        for line in pathlib.Path("/proc/meminfo").read_text().splitlines():
+            if line.startswith("MemAvailable:"):
+                return int(line.split()[1])*1024
+    except Exception:
+        pass
+    return 0
+
+def find_llama_cli():
+    direct=shutil.which("llama-cli")
+    candidates=[]
+    if direct: candidates.append(pathlib.Path(direct))
+    root=HOME/".local/share/louksna/reasoning/runtime"
+    if root.is_dir():
+        candidates += sorted(root.glob("*/bin/llama-cli"))
+    for p in candidates:
+        if p.is_file() and os.access(p,os.X_OK):
+            commit=p.parents[1].name if len(p.parents)>1 else None
+            return p,commit
+    return None,None
+
+def local_p25_models():
+    explicit=[
+      PROYECTOS/"1. PROYECTOS PRIORITARIOS/2. LUNITA_MATERIALIZATION/01_INPUTS/Qwen_Qwen3-0.6B-IQ3_XS.gguf",
+      HOME/".local/share/louksna/reasoning/models/qwen35-4b-s/Qwen3.5-4B-S-TS-Q4_K_S.gguf",
+    ]
+    rows=[]
+    for p in explicit:
+        if p.is_file():
+            rows.append({"path":str(p),"bytes":p.stat().st_size,"sha256":sha(p)})
+    return rows
+
+def p25_operational():
+    cli,commit=find_llama_cli()
+    models=local_p25_models()
+    if cli is None or not models:
+        return {
+          "status":"HOLD","operational":False,"qwen_substitution":False,
+          "blockers":[x for x,v in (("llama_cli_missing",cli),("local_model_missing",models)) if not v],
+          "downloads_performed":False
+        }
+    # Low-RAM candidate first. Larger Qwen remains evidence-backed fallback/quality candidate.
+    models=sorted(models,key=lambda x:(x["bytes"],x["path"]))
+    runtime_version=subprocess.run([str(cli),"--version"],text=True,capture_output=True,timeout=60)
+    probes=[]
+    selected=None
+    for model in models:
+        if model["bytes"]>3_000_000_000 and mem_available_bytes()<4_500_000_000:
+            probes.append({"model":model,"status":"SKIPPED_RESOURCE_GOVERNOR","mem_available_bytes":mem_available_bytes()})
+            continue
+        prompt='Respond with exactly this token and nothing else: LOUKSNA_P25_OK'
+        argv=[str(cli),"-m",model["path"],"-p",prompt,"-n","24","--temp","0","--no-display-prompt"]
+        try:
+            p=subprocess.run(argv,text=True,capture_output=True,timeout=240)
+            rec={"model":model,"argv":argv,"returncode":p.returncode,
+                 "stdout":p.stdout[-5000:],"stderr":p.stderr[-5000:],
+                 "marker_present":"LOUKSNA_P25_OK" in p.stdout}
+        except subprocess.TimeoutExpired as e:
+            rec={"model":model,"argv":argv,"returncode":124,"stdout":(e.stdout or "")[-5000:] if isinstance(e.stdout,str) else "",
+                 "stderr":"TIMEOUT","marker_present":False}
+        probes.append(rec)
+        if rec["returncode"]==0 and rec["marker_present"]:
+            selected=model; break
+    if selected is None:
+        return {
+          "status":"HOLD","operational":False,"qwen_substitution":False,
+          "runtime":{"path":str(cli),"sha256":sha(cli),"version":(runtime_version.stdout+runtime_version.stderr)[-3000:],
+                     "source_commit":commit},
+          "models":models,"probes":probes,"downloads_performed":False,
+          "blockers":["local_inference_probe_failed"]
+        }
+    bdir=HOME/".local/share/louksna/r4-part7/bin"; bdir.mkdir(parents=True,exist_ok=True)
+    wrapper=bdir/"louksna-local-cognitive"
+    body=("#!/bin/sh\\nexec "+json.dumps(str(cli))+" -m "+json.dumps(selected["path"])+" \\"$@\\"\\n")
+    if wrapper.is_file():
+        if wrapper.read_text(encoding="utf-8")!=body:
+            wrapper.write_text(body,encoding="utf-8")
+    else:
+        wrapper.write_text(body,encoding="utf-8")
+    wrapper.chmod(0o700)
+    return {
+      "status":"PASS","operational":True,"qwen_substitution":False,
+      "backend":"LOCAL_LLAMA_CPP_GGUF","wrapper":str(wrapper),"wrapper_sha256":sha(wrapper),
+      "runtime":{"path":str(cli),"sha256":sha(cli),"version":(runtime_version.stdout+runtime_version.stderr)[-3000:],
+                 "source_commit":commit},
+      "selected_model":selected,"candidate_models":models,"probes":probes,
+      "hosted_backend_used":False,"downloads_performed":False
+    }
+
+INGESTOR_SOURCE=r'''#!/usr/bin/env python3
+import hashlib,json,pathlib,re,subprocess,sys,zipfile
+from html.parser import HTMLParser
+
+class T(HTMLParser):
+    def __init__(self): super().__init__(); self.parts=[]
+    def handle_data(self,d):
+        if d and d.strip(): self.parts.append(d.strip())
+
+def digest(p):
+    h=hashlib.sha256()
+    with p.open("rb") as f:
+        for b in iter(lambda:f.read(1024*1024),b""): h.update(b)
+    return h.hexdigest()
+
+def strip_markup(raw):
+    x=re.sub(r"<[^>]+>"," ",raw)
+    return re.sub(r"\\s+"," ",x).strip()
+
+def extract(src):
+    ext=src.suffix.casefold()
+    if ext==".pdf":
+        p=subprocess.run(["pdftotext",str(src),"-"],text=True,capture_output=True,timeout=300)
+        if p.returncode: raise RuntimeError("PDFTOTEXT:"+p.stderr[-1000:])
+        return p.stdout,"PDF_POPPLER"
+    if ext in {".txt",".md",".rtf"}:
+        return src.read_text(encoding="utf-8",errors="replace"),"TEXT_DIRECT"
+    if ext in {".html",".htm"}:
+        parser=T(); parser.feed(src.read_text(encoding="utf-8",errors="replace"))
+        return "\\n".join(parser.parts),"HTML_STDLIB"
+    if ext in {".docx",".odt",".epub"}:
+        chunks=[]
+        with zipfile.ZipFile(src) as z:
+            for name in sorted(z.namelist()):
+                low=name.casefold()
+                if not low.endswith((".xml",".xhtml",".html",".htm")): continue
+                try: raw=z.read(name).decode("utf-8","replace")
+                except Exception: continue
+                text=strip_markup(raw)
+                if text: chunks.append(text)
+        return "\\n".join(chunks),"ZIP_XML_STDLIB"
+    raise RuntimeError("UNSUPPORTED_FORMAT:"+ext)
+
+def main():
+    if len(sys.argv)!=3: return 2
+    src=pathlib.Path(sys.argv[1]).resolve(strict=True)
+    out=pathlib.Path(sys.argv[2])
+    before=digest(src)
+    text,engine=extract(src)
+    after=digest(src)
+    if before!=after: raise RuntimeError("SOURCE_MUTATED")
+    if not text.strip(): raise RuntimeError("EMPTY_EXTRACTION")
+    out.parent.mkdir(parents=True,exist_ok=True)
+    obj={"schema":"LOUKSNA_R4_DOCUMENT_INGEST/1.0","source":str(src),
+         "source_sha256":before,"source_bytes":src.stat().st_size,
+         "engine":engine,"chars":len(text),"text":text}
+    tmp=out.with_suffix(out.suffix+".tmp")
+    tmp.write_text(json.dumps(obj,ensure_ascii=False,sort_keys=True)+"\\n",encoding="utf-8")
+    tmp.replace(out)
+    print(json.dumps({"status":"PASS","source_sha256":before,"engine":engine,
+                      "chars":len(text),"output":str(out)},sort_keys=True))
+    return 0
+if __name__=="__main__": raise SystemExit(main())
+'''
+
+def p26_operational(sources):
+    pdftotext=shutil.which("pdftotext")
+    bdir=HOME/".local/share/louksna/r4-part7/bin"; bdir.mkdir(parents=True,exist_ok=True)
+    ing=bdir/"louksna-document-ingest"
+    if ing.is_file():
+        if ing.read_text(encoding="utf-8")!=INGESTOR_SOURCE:
+            ing.write_text(INGESTOR_SOURCE,encoding="utf-8")
+    else:
+        ing.write_text(INGESTOR_SOURCE,encoding="utf-8")
+    ing.chmod(0o700)
+
+    docling_root=PROYECTOS/"1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/2. Cajita de Luna/5. Inteligencia documental/Docling"
+    assets=[]
+    if docling_root.is_dir():
+        for name in ("docling_slim-2.124.0-py3-none-any.whl",
+                     "granite-docling-258M-Q4_K_M.gguf",
+                     "mmproj-granite-docling-258M-f16.gguf"):
+            p=docling_root/name
+            if p.is_file():
+                assets.append({"path":str(p),"bytes":p.stat().st_size,"sha256":sha(p)})
+
+    candidates=sorted(
+        [x for x in sources if pathlib.Path(x["path"]).suffix.casefold() in DOC_EXT and int(x.get("bytes",0) or 0)<=25_000_000],
+        key=lambda x:(int(x.get("bytes",0) or 0),x["path"])
+    )[:24]
+    tests=[]
+    selected=None
+    outdir=STATE/"part7/ingestion-tests"; outdir.mkdir(parents=True,exist_ok=True)
+    for i,row in enumerate(candidates):
+        src=pathlib.Path(row["path"])
+        if src.suffix.casefold()==".pdf" and not pdftotext:
+            continue
+        before=sha(src)
+        out=outdir/f"sample-{i:02d}.json"
+        try:
+            p=subprocess.run([str(ing),str(src),str(out)],text=True,capture_output=True,timeout=360)
+            rec={"source":str(src),"source_sha256_before":before,"returncode":p.returncode,
+                 "stdout":p.stdout[-3000:],"stderr":p.stderr[-3000:],
+                 "source_sha256_after":sha(src),
+                 "output":str(out),"output_sha256":sha(out) if out.is_file() else None}
+            if out.is_file():
+                try:
+                    obj=read_json(out,{}) or {}; rec["chars"]=obj.get("chars"); rec["engine"]=obj.get("engine")
+                except Exception: pass
+        except subprocess.TimeoutExpired:
+            rec={"source":str(src),"source_sha256_before":before,"returncode":124,"stderr":"TIMEOUT",
+                 "source_sha256_after":sha(src)}
+        tests.append(rec)
+        if rec["returncode"]==0 and rec.get("source_sha256_after")==before and int(rec.get("chars",0) or 0)>0:
+            selected=rec; break
+
+    status="PASS" if selected is not None else "HOLD"
+    return {
+      "status":status,"operational":status=="PASS",
+      "stack":"LOUKSNA_DOCUMENT_INGEST_STDLIB_POPPLER",
+      "executable":str(ing),"executable_sha256":sha(ing),
+      "supported_extensions":sorted(DOC_EXT),
+      "pdftotext":pdftotext,
+      "local_docling_assets":assets,
+      "docling_assets_downloaded":False,
+      "selected_functional_test":selected,
+      "tests":tests,
+      "source_output_separation":True,
+      "source_immutable":bool(selected and selected["source_sha256_before"]==selected["source_sha256_after"]),
+      "downloads_performed":False,
+      "blockers":[] if status=="PASS" else ["no_supported_source_extracted_successfully"]
+    }
+
 def part7(mid):
     c6=require_cert("PART_6"); pre=observe_pair("PART7_PRE")
     roots=candidate_domain_roots(); sources=[]
@@ -159,6 +383,8 @@ def part7(mid):
     retrieval=bool(sample) and all(by_sha.get(x["sha256"],{}).get("path")==x["path"] for x in sample)
     # Re-hash after writing only state-side outputs; source bytes must be unchanged.
     unchanged=all(pathlib.Path(x["path"]).is_file() and sha(pathlib.Path(x["path"]))==x["sha256"] for x in sources)
+    p25=p25_operational()
+    p26=p26_operational(sources)
     controls=["EISEGESIS","PROOF_TEXTING","ANACHRONISM","LEXICAL_FALLACY","SEMANTIC_OVERLOADING","CONTEXTUAL_DISPLACEMENT"]
     control={
       "schema":"LOUKSNA_R4_HERMENEUTIC_CONTROL/1.0",
@@ -179,6 +405,10 @@ def part7(mid):
       "hermeneutic_controls":len(controls)==6,
       "unknown_negative_test":classify(pathlib.Path("opaque_document.pdf"))=="UNKNOWN",
       "adversarial_unknown_holds":classify(pathlib.Path("../../opaque.bin"))=="UNKNOWN",
+      "p25_local_backend":p25.get("status")=="PASS" and p25.get("operational") is True and p25.get("hosted_backend_used") is False,
+      "p26_document_ingestion":p26.get("status")=="PASS" and p26.get("operational") is True and p26.get("source_immutable") is True,
+      "no_model_download":p25.get("downloads_performed") is False,
+      "no_docling_asset_download":p26.get("docling_assets_downloaded") is False,
       "non_regression":unchanged,"audit_trace":bool(pre["observe"].get("evidence_sha256")) and bool(post["observe"].get("evidence_sha256"))
     }
     status="PASS" if roots and sources and all(checks.values()) else "HOLD"
@@ -191,7 +421,8 @@ def part7(mid):
        "roots":[str(x) for x in roots],"source_count":len(sources),"unknown_count":len(unknown),
        "unknown_sample":unknown[:100],"classes":sorted({x["class"] for x in sources}),
        "source_index":str(idx),"source_index_sha256":index_sha,
-       "p25_local_cognitive_backend":{"state":"SEPARATE_SKELETON_REQUIREMENT","qwen_substitution":False},
+       "p25_local_cognitive_backend":p25,
+       "p26_document_ingestion_stack":p26,
        "lrb_pre":pre["observe"].get("evidence_sha256"),"lrb_post":post["observe"].get("evidence_sha256"),
        "partitioning_performed":False,"network_download_performed":False,"original_source_mutation_performed":False,
        "supersedes":previous,"mission_id":mid,"completed_at_utc":utc()}
