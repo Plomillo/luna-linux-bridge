@@ -1,0 +1,53 @@
+name: "R4 PART7 — UNKNOWN classification read-only"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part7-unknown-diagnostic/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r4-part7-unknown-readonly
+  cancel-in-progress: false
+
+jobs:
+  inspect:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 8
+    steps:
+      - name: Inspect existing PART7 UNKNOWN evidence without mutation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          HOME_REAL="/home/diegoignacionorambuenamiranda"
+          E="$HOME_REAL/.local/state/louksna/r4-48h/evidence/PART7_AUX_EVIDENCE.json"
+          I="$HOME_REAL/.local/state/louksna/r4-48h/part7/SOURCE_INDEX.json"
+          test -f "$E"
+          test -f "$I"
+          python3 - "$E" "$I" <<'PY'
+          import json,pathlib,sys,collections
+          e=json.loads(pathlib.Path(sys.argv[1]).read_text())
+          idx=json.loads(pathlib.Path(sys.argv[2]).read_text())
+          unknown=[x for x in idx if x.get("class")=="UNKNOWN"]
+          ext=collections.Counter(pathlib.Path(x["path"]).suffix.casefold() for x in unknown)
+          parents=collections.Counter(pathlib.Path(x["path"]).parent.name for x in unknown)
+          out={
+            "schema":"LOUKSNA_R4_PART7_UNKNOWN_READONLY/1.0",
+            "producer_revision":e.get("producer_revision"),
+            "status":e.get("status"),
+            "source_count":e.get("source_count"),
+            "unknown_count":len(unknown),
+            "unknown_paths":[x.get("path") for x in unknown[:300]],
+            "unknown_extensions":dict(ext),
+            "unknown_parent_names":dict(parents.most_common(100)),
+            "downloads_performed":False,
+            "installs_performed":False,
+            "corpus_mutation_performed":False,
+            "partitioning_performed":False
+          }
+          print(json.dumps(out,ensure_ascii=False,indent=2,sort_keys=True))
+          PY
