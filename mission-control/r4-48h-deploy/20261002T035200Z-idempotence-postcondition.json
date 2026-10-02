@@ -1,0 +1,10 @@
+{
+  "schema": "LOUKSNA_R4_48H_DEPLOY_REQUEST/1.0",
+  "reason": "RECERTIFY_HANDOFF_IDEMPOTENCE_AND_PROJECTS_UI_POSTCONDITION",
+  "preserve_live_part6_build": true,
+  "coordinator_only_restart_allowed": true,
+  "deadline_utc": "2026-10-04T03:28:00Z",
+  "part4_closed": true,
+  "partitioning_forbidden": true,
+  "requested_at_utc": "2026-10-02T03:52:00Z"
+}
