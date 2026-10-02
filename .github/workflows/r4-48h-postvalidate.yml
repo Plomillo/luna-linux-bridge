@@ -1,4 +1,4 @@
-name: "R4 48H — live post-validation"
+name: "R4 48H — 15P live post-validation"
 
 on:
   push:
@@ -10,80 +10,122 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: r4-15p-postvalidate
+  cancel-in-progress: false
+
 jobs:
   verify:
     runs-on: [self-hosted, Linux, x64, luna-aux]
-    timeout-minutes: 8
+    timeout-minutes: 12
     steps:
-      - name: Verify deployed certified state read-only
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: staging/luna-r4-master-part1-part9-20260929
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            server/r4-48h
+            server/r4-master
+          sparse-checkout-cone-mode: true
+
+      - name: Verify certified live 15-point control fabric
         shell: bash
         run: |
           set -Eeuo pipefail
           HOME_REAL="/home/diegoignacionorambuenamiranda"
           ROOT="$HOME_REAL/.local/lib/louksna/r4-48h"
+          STAGED="$ROOT/staged"
           STATE="$HOME_REAL/.local/state/louksna/r4-48h"
           R4="$HOME_REAL/.local/state/louksna/r4-master-part1-part9"
+          LIVE="$HOME_REAL/.local/lib/louksna/r4-master-part1-part9"
           UIDN="$(id -u)"
           export XDG_RUNTIME_DIR="/run/user/$UIDN"
           export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
 
+          test "$(hostname)" = LOUKSNA
+          test "$(id -un)" = diegoignacionorambuenamiranda
+          test -f "$STATE/G24_DEPLOY_BINDING.json"
+          test -f "$ROOT/R4_48H_CONTRACT.json"
+
+          python3 - "$ROOT/R4_48H_CONTRACT.json" "$STATE/G24_DEPLOY_BINDING.json" <<'PY'
+          import json,pathlib,sys,datetime as dt
+          c=json.loads(pathlib.Path(sys.argv[1]).read_text())
+          b=json.loads(pathlib.Path(sys.argv[2]).read_text())
+          assert c["schema"]=="LOUKSNA_R4_REMAINDER_48H_CONTRACT/2.0"
+          assert len(c["points"])==15
+          assert b["schema"]=="LOUKSNA_R4_15P_PROGRAM_DEPLOY_BINDING/1.0"
+          assert b["status"]=="PASS"
+          assert b["maestro_primary_worker"] is True
+          assert b["lrb_observation_only"] is True
+          assert b["desktop_plugin_used"] is False
+          assert b["part4_reopen_authorized"] is False
+          assert b["partitioning_authorized"] is False
+          deadline=dt.datetime.fromisoformat(c["window"]["deadline_utc"].replace("Z","+00:00"))
+          assert dt.datetime.now(dt.timezone.utc)<deadline
+          print("CONTRACT_AND_BINDING=PASS")
+          PY
+
+          echo "=== WAIT FOR COORDINATOR/HANDOFF ==="
+          for i in $(seq 1 90); do
+            C="$(systemctl --user is-active luna-r4-48h-coordinator.service 2>/dev/null || true)"
+            M="$(systemctl --user is-active luna-r4-master-part1-part9.service 2>/dev/null || true)"
+            if [ "$C" = active ] && [ "$M" = active ] && [ -f "$LIVE/master_controller.py" ]; then
+              RH="$(sha256sum server/r4-master/master_controller.py | awk '{print $1}')"
+              LH="$(sha256sum "$LIVE/master_controller.py" | awk '{print $1}')"
+              if [ "$RH" = "$LH" ]; then break; fi
+            fi
+            sleep 2
+          done
+
+          test "$(systemctl --user is-active luna-r4-48h-coordinator.service)" = active
+          test "$(systemctl --user is-active luna-r4-master-part1-part9.service)" = active
+          test "$(sha256sum server/r4-48h/maestro_48h_coordinator.py | awk '{print $1}')" = "$(sha256sum "$ROOT/maestro_48h_coordinator.py" | awk '{print $1}')"
+          test "$(sha256sum server/r4-master/master_controller.py | awk '{print $1}')" = "$(sha256sum "$LIVE/master_controller.py" | awk '{print $1}')"
+          test "$(sha256sum server/r4-48h/R4_48H_CONTRACT.json | awk '{print $1}')" = "$(sha256sum "$LIVE/R4_48H_CONTRACT.json" | awk '{print $1}')"
+
           echo "=== SERVICES ==="
-          systemctl --user show luna-r4-48h-coordinator.service -p ActiveState -p SubState -p MainPID -p NRestarts -p Wants -p Requires
+          systemctl --user show luna-r4-48h-coordinator.service -p ActiveState -p SubState -p MainPID -p NRestarts -p StartLimitBurst
           systemctl --user show luna-r4-master-part1-part9.service -p ActiveState -p SubState -p MainPID -p NRestarts
-          echo "=== UNIT ==="
-          systemctl --user cat luna-r4-48h-coordinator.service
 
-          echo "=== CERTIFIED BINDING ==="
-          cat "$STATE/G24_DEPLOY_BINDING.json"
-          echo "=== CONTRACT ==="
-          cat "$ROOT/R4_48H_CONTRACT.json"
-          echo "=== COORDINATOR LEDGER TAIL ==="
-          tail -n 40 "$STATE/COORDINATOR.jsonl" || true
-          echo "=== FAILURES ==="
-          cat "$STATE/COORDINATOR_FAILURE.json" 2>/dev/null || echo NONE
+          echo "=== MASTER LEASE ==="
+          test -f "$R4/MASTER_CUSTOSZ_MISSION.json"
+          cat "$R4/MASTER_CUSTOSZ_MISSION.json"
+          python3 - "$R4/MASTER_CUSTOSZ_MISSION.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1]))
+          assert d["schema"]=="LOUKSNA_R4_GLOBAL_MISSION_LEASE/2.0"
+          assert 1 <= int(d["lease_hours"]) <= 24
+          assert d["global_window_hours"]==48
+          assert d["checkpoint_preserved"] is True
+          assert d["evidence_chain_preserved"] is True
+          print("RENEWABLE_LEASE=PASS")
+          PY
 
-          echo "=== CERTIFICATES ==="
-          find "$R4/certificates" -maxdepth 1 -type f -printf '%f\n' | sort
+          echo "=== 15P STATUS ==="
+          test -f "$STATE/STATUS.json"
+          cat "$STATE/STATUS.json"
+          test -f "$STATE/LEDGER.jsonl"
+          test -f "$STATE/LEDGER_HEAD.json"
+          tail -n 40 "$STATE/LEDGER.jsonl"
 
-          echo "=== PROCESSES ==="
-          ps -eo pid,ppid,etimes,comm,rss,args | grep -E 'master_controller|part6_hardened_worker|make build_name=louksna-proton|maestro_48h_coordinator' | grep -v grep || true
-
-          echo "=== PARTITION PROCESS DENIAL ==="
-          if pgrep -af '(^|/)(sfdisk|fdisk|parted|growpart|resize2fs|ntfsresize|mkfs[^ ]*|wipefs|blkdiscard)( |$)' > /tmp/r4-partition-procs.txt; then
-            cat /tmp/r4-partition-procs.txt
-            exit 91
-          else
-            echo NONE
-          fi
-
+          echo "=== LRB READ-ONLY OBSERVATION ==="
           mapfile -t LINKS < <(find "$HOME_REAL/.local/lib/louksna-remote-bridge" -type f -path '*/bridge/live_link.py' -print 2>/dev/null | sort)
           test "${#LINKS[@]}" -ge 1
           LINK="${LINKS[-1]}"
-          echo "=== LRB STATUS ==="
           python3 -B "$LINK" --state-dir "$HOME_REAL/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op status
-          echo "=== LRB OBSERVE ==="
           python3 -B "$LINK" --state-dir "$HOME_REAL/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op observe
 
-          python3 - "$ROOT/R4_48H_CONTRACT.json" "$STATE/G24_DEPLOY_BINDING.json" <<'PY'
-          import datetime as dt,json,pathlib,sys
-          c=json.loads(pathlib.Path(sys.argv[1]).read_text())
-          b=json.loads(pathlib.Path(sys.argv[2]).read_text())
-          now=dt.datetime.now(dt.timezone.utc)
-          deadline=dt.datetime.fromisoformat(c["window"]["deadline_utc"].replace("Z","+00:00"))
-          q={
-            "schema":"LOUKSNA_R4_48H_POSTVALIDATION/1.0",
-            "status":"PASS",
-            "now_utc":now.isoformat(),
-            "deadline_utc":deadline.isoformat(),
-            "remaining_seconds":max(0,int((deadline-now).total_seconds())),
-            "g24_binding_status":b.get("status"),
-            "part4_reopen_authorized":b.get("part4_reopen_authorized"),
-            "partitioning_authorized":b.get("partitioning_authorized"),
-            "hard_ceiling":c["window"]["hard_ceiling"],
-          }
-          assert q["remaining_seconds"]>0
-          assert q["g24_binding_status"]=="PASS"
-          assert q["part4_reopen_authorized"] is False
-          assert q["partitioning_authorized"] is False
-          print(json.dumps(q,indent=2,sort_keys=True))
-          PY
+          if pgrep -af 'lrb_companion_worker.py' > /tmp/r4-lrb-companion.txt; then
+            cat /tmp/r4-lrb-companion.txt
+            exit 88
+          fi
+
+          echo "=== PARTITION MUTATOR DENIAL ==="
+          if pgrep -af '(^|/)(sfdisk|fdisk|parted|growpart|resize2fs|ntfsresize|mkfs[^ ]*|wipefs|blkdiscard)( |$)' >/tmp/r4-partition-procs.txt; then
+            cat /tmp/r4-partition-procs.txt
+            exit 91
+          fi
+          echo NONE
+
+          echo "R4_15P_LIVE_POSTVALIDATION=PASS"
