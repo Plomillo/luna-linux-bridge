@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import argparse, datetime as dt, hashlib, json, os, pathlib, shutil, subprocess, tarfile, tempfile, time
+import argparse, datetime as dt, hashlib, json, os, pathlib, shlex, shutil, subprocess, tarfile, tempfile, time
 
 HOME=pathlib.Path("/home/diegoignacionorambuenamiranda")
 R4=HOME/".local/state/louksna/r4-master-part1-part9"
@@ -343,7 +343,7 @@ def p25_operational():
         }
     bdir=HOME/".local/share/louksna/r4-part7/bin"; bdir.mkdir(parents=True,exist_ok=True)
     wrapper=bdir/"louksna-local-cognitive"
-    body=("#!/bin/sh\\nexec "+json.dumps(str(cli))+" -m "+json.dumps(selected["path"])+" \\"$@\\"\\n")
+    body="#!/bin/sh\\nexec "+shlex.quote(str(cli))+" -m "+shlex.quote(selected["path"])+" \"$@\"\\n"
     if wrapper.is_file():
         if wrapper.read_text(encoding="utf-8")!=body:
             wrapper.write_text(body,encoding="utf-8")
