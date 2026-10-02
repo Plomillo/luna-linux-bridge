@@ -79,6 +79,26 @@ jobs:
 
           systemctl --user show plasma-plasmashell.service -p ActiveState -p SubState -p MainPID > "$OUT/PLASMASHELL_SERVICE.txt" 2>/dev/null || true
 
+          echo "=== LIVE UI SOURCES ==="
+          SOURCES=(
+            "$HOME/LOUKSNA_MAESTRO_20260925/MISSION3_OPERATIVE/R4_UI_DOLPHIN_V7/R4_AREAS_V7.py"
+            "$HOME/.local/share/louksna-r4/part1/dispatcher.py"
+          )
+          for src in "${SOURCES[@]}"; do
+            if test -f "$src"; then
+              echo "--- SOURCE $src ---"
+              sha256sum "$src"
+              sed -n '1,260p' "$src"
+            else
+              echo "MISSING_SOURCE=$src"
+            fi
+          done
+          echo "=== UI DELTA SPECS ==="
+          find "$HOME/LOUKSNA_MAESTRO_20260925" "$HOME/.local/state/louksna" "$HOME/.local/share/louksna-r4" \
+            -maxdepth 8 -type f -name 'PART5_PART9_UI_DELTA_SPEC.json' -print 2>/dev/null | while read -r spec; do
+              echo "--- SPEC $spec ---"; sha256sum "$spec"; cat "$spec"
+            done
+
           mapfile -t LINKS < <(find "$HOME/.local/lib/louksna-remote-bridge" -type f -path '*/bridge/live_link.py' -print 2>/dev/null | sort)
           test "${#LINKS[@]}" -ge 1
           LINK="${LINKS[-1]}"
