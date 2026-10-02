@@ -1,0 +1,108 @@
+name: "R4 PART7 — P25 P26 corpus read-only diagnostic"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part7-diagnostic/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r4-part7-p25-p26-diagnostic
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 12
+    steps:
+      - name: Observe existing PART7 capabilities without mutation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          HOME_REAL="/home/diegoignacionorambuenamiranda"
+          OUT="$RUNNER_TEMP/r4-part7-diag-$GITHUB_RUN_ID"
+          mkdir -p "$OUT"
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+
+          mapfile -t LINKS < <(find "$HOME_REAL/.local/lib/louksna-remote-bridge" -type f -path '*/bridge/live_link.py' -print 2>/dev/null | sort)
+          test "${#LINKS[@]}" -ge 1
+          LINK="${LINKS[-1]}"
+          python3 -B "$LINK" --state-dir "$HOME_REAL/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op observe > "$OUT/LRB_PRE.json"
+
+          {
+            echo "=== RUNTIMES ==="
+            for c in llama-cli llama-server llamafile ollama python3 uv pipx docling docling-serve pdftotext tesseract; do
+              printf '%s=' "$c"; command -v "$c" 2>/dev/null || true
+            done
+            echo "=== PYTHON IMPORTS ==="
+            python3 - <<'PY'
+          import importlib.util,json
+          names=["docling","docling_core","llama_cpp","transformers","torch","sentence_transformers","pypdf","fitz"]
+          print(json.dumps({n:bool(importlib.util.find_spec(n)) for n in names},sort_keys=True))
+          PY
+            echo "=== PACKAGES ==="
+            dpkg-query -W -f='${Package}\t${Status}\t${Version}\n' 2>/dev/null | grep -Ei 'llama|docling|poppler|tesseract|python3-(torch|transformers|pypdf)' || true
+            python3 -m pip list --format=freeze 2>/dev/null | grep -Ei 'docling|llama|transformers|torch|sentence|pypdf|pymupdf' || true
+          } > "$OUT/RUNTIMES.txt"
+
+          : > "$OUT/MODELS.tsv"
+          for root in             "$HOME_REAL/Descargas"             "$HOME_REAL/Downloads"             "$HOME_REAL/PROYECTOS"             "$HOME_REAL/.local/share/louksna"             "$HOME_REAL/.cache/huggingface"             "$HOME_REAL/LOUKSNA_MAESTRO_20260925"; do
+            [ -d "$root" ] || continue
+            nice -n 19 ionice -c3 find "$root" -maxdepth 10 -type f               \( -iname '*.gguf' -o -iname '*.safetensors' \)               -printf '%s\t%p\n' 2>/dev/null | head -n 4000 >> "$OUT/MODELS.tsv" || true
+          done
+          sort -u "$OUT/MODELS.tsv" -o "$OUT/MODELS.tsv"
+
+          : > "$OUT/CORPUS_ROOTS.tsv"
+          for root in "$HOME_REAL/PROYECTOS" "$HOME_REAL/Estudio" "$HOME_REAL/ESTUDIO" "$HOME_REAL/Devocional" "$HOME_REAL/DEVOCIONAL"; do
+            [ -d "$root" ] || continue
+            if [ "$root" = "$HOME_REAL/PROYECTOS" ]; then
+              find "$root" -maxdepth 5 -type d \( -iname '*estudio*' -o -iname '*study*' -o -iname '*devocional*' -o -iname '*devotional*' \) -print 2>/dev/null | head -n 2000
+            else
+              printf '%s\n' "$root"
+            fi
+          done | sort -u > "$OUT/CORPUS_ROOTS.tsv"
+
+          python3 - "$OUT" <<'PY'
+          import json,pathlib,sys
+          out=pathlib.Path(sys.argv[1])
+          models=[]
+          for line in (out/"MODELS.tsv").read_text(errors="replace").splitlines():
+              try:
+                  size,path=line.split("\t",1); models.append({"bytes":int(size),"path":path})
+              except Exception: pass
+          roots=[x for x in (out/"CORPUS_ROOTS.tsv").read_text(errors="replace").splitlines() if x]
+          runtime=(out/"RUNTIMES.txt").read_text(errors="replace")
+          qwen=[x for x in models if "qwen" in x["path"].casefold()]
+          docling=[x for x in models if "docling" in x["path"].casefold()]
+          obj={
+            "schema":"LOUKSNA_R4_PART7_DIAGNOSTIC/1.0",
+            "status":"OBSERVED",
+            "model_count":len(models),
+            "qwen_candidates":qwen[:100],
+            "docling_model_candidates":docling[:100],
+            "corpus_roots":roots,
+            "runtime_text":runtime,
+            "hosted_qwen_substitution_allowed":False,
+            "downloads_performed":False,
+            "installs_performed":False,
+            "corpus_mutation_performed":False,
+            "partitioning_performed":False
+          }
+          (out/"DIAGNOSTIC.json").write_text(json.dumps(obj,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(obj,indent=2,sort_keys=True))
+          PY
+
+          python3 -B "$LINK" --state-dir "$HOME_REAL/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op observe > "$OUT/LRB_POST.json"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part7-p25-p26-diagnostic
+          path: ${{ runner.temp }}/r4-part7-diag-${{ github.run_id }}
+          retention-days: 90
+          compression-level: 0
