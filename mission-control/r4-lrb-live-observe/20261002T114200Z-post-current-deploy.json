@@ -1,0 +1,11 @@
+{
+  "schema": "LOUKSNA_R4_LRB_LIVE_OBSERVATION_REQUEST/1.0",
+  "status": "AUTHORIZED",
+  "source_head": "33e09c5b46a56980c0214167f1b09b729cf84737",
+  "mode": "READ_ONLY",
+  "desktop_commander_authorized": false,
+  "material_execution_authorized": false,
+  "partitioning_authorized": false,
+  "purpose": "POST_CURRENT_G23_G24_DEPLOY_OPERATIONAL_OBSERVATION",
+  "created_at_utc": "2026-10-02T11:42:00Z"
+}
