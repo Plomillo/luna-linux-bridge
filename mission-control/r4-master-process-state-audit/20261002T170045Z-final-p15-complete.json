@@ -1,0 +1,13 @@
+{
+  "schema": "LOUKSNA_R4_LIVE_STATE_REQUEST/1.0",
+  "mode": "READ_ONLY",
+  "purpose": "FINAL_VERIFY_P15_LOCAL_BOUND_AND_GLOBAL_COMPLETE",
+  "p15_workflow_run_id": 37037751908,
+  "p15_evidence_commit": "54107a710daa585df89dfbff5f644d9649f75596",
+  "repeat_certified_work": false,
+  "desktop_commander_used": false,
+  "lrb_observation_only": true,
+  "partitioning_authorized": false,
+  "part4_reopen_authorized": false,
+  "created_at_utc": "2026-10-02T17:00:45Z"
+}
