@@ -109,23 +109,29 @@ def safe_handoff(reason):
 def deadline_stop():
     ms=load(R4/"MASTER_STATUS.json",{}) or {}
     rows=proc_lines()
+    was_active=master_active()
     atomic(STATE/"DEADLINE_CHECKPOINT.json",{
       "schema":"LOUKSNA_R4_48H_DEADLINE_CHECKPOINT/1.0","status":"EXPIRED",
       "deadline_utc":contract()["window"]["deadline_utc"],"master_status":ms,
       "processes":rows,"certificates":sorted(p.name for p in CERTS.glob("PART_*.json")),
       "new_material_work":False,"partitioning_performed":False,"utc":utc()
     })
-    if master_active():
+    if was_active:
         systemctl_user("stop",MASTER_SERVICE)
-    ledger("DEADLINE_STOP",master_was_active=master_active(),processes=rows)
+    ledger("DEADLINE_STOP",master_was_active=was_active,processes=rows)
 
-def action_once(name,op,prereq=None):
+def action_once(name,op,prereq=None,retry_seconds=900):
     stamp=STATE/"actions"/(name+".json")
-    if stamp.is_file() and (load(stamp,{}) or {}).get("status")=="PASS": return True
+    prior=load(stamp,{}) or {}
+    if prior.get("status")=="PASS": return True
+    if prior.get("status")=="HOLD" and prior.get("attempt_epoch"):
+        if time.time()-float(prior["attempt_epoch"]) < retry_seconds:
+            return False
     if prereq and not prereq(): return False
     rec=run_companion(op)
     status="PASS" if rec["returncode"]==0 else "HOLD"
-    atomic(stamp,{"status":status,"operation":op,"returncode":rec["returncode"],"utc":utc()})
+    atomic(stamp,{"status":status,"operation":op,"returncode":rec["returncode"],
+                  "attempt_epoch":time.time(),"retry_seconds":retry_seconds,"utc":utc()})
     return status=="PASS"
 
 def main():
@@ -135,6 +141,7 @@ def main():
     part6_idle_since=None
     hardened=False
     last_telemetry=0.0
+    last_part6_preserve_log=0.0
     while True:
         now=dt.datetime.now(dt.timezone.utc)
         if now>=deadline():
@@ -150,7 +157,9 @@ def main():
         c6=cert("PART_6")
         if p6child:
             part6_idle_since=None
-            ledger("PART6_BUILD_PRESERVED",processes=proc_lines())
+            if time.monotonic()-last_part6_preserve_log>=300:
+                ledger("PART6_BUILD_PRESERVED",processes=proc_lines())
+                last_part6_preserve_log=time.monotonic()
             time.sleep(POLL)
             continue
 
