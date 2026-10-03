@@ -1,0 +1,17 @@
+{
+  "assurance": "PUAC2.md",
+  "authority": "Louksna.md",
+  "duplicate_engine_identity": false,
+  "existing_reasoning_mutation": false,
+  "existing_shared_reasoner_reused": true,
+  "files": {
+    "bridge/cooperation/contract.py": "91728ae453f49754ddfd393fe46a8f64ac52bccd1339f78460ca96a1a9c45912",
+    "bridge/cooperation/coordinator.py": "f251d4a1cad11d2a669df02f00ac6c48d599a12c6b2266f811d2de6fdb977920",
+    "bridge/knowledge/KNOWLEDGE_MANIFEST.json": "200696aea4443064790ec9772e5eddc4b9f312a764a28f91967174a5492e43ff",
+    "bridge/knowledge/interface.py": "2e0876d7d389ab84ed00aa0d63281584470e3e248e9635951141f5d5421b648a",
+    "bridge/knowledge/marklogic_provider.py": "aa57cff8fdefd7057eec84c1a86a46d0c12e17098f9fe4c1f746ed5530539a62"
+  },
+  "qwen_redownload": false,
+  "schema": "LOUKSNA_KNOWLEDGE_OPERATOR_PHASE1/1.0",
+  "status": "PASS"
+}

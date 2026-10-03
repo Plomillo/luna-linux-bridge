@@ -1,0 +1,27 @@
+{
+  "schema": "LOUKSNA_KNOWLEDGE_PROVIDER_MANIFEST/1.0",
+  "status": "SKELETON_MATERIALIZED_PROVIDER_PENDING",
+  "authority": "Louksna.md",
+  "role": "KNOWLEDGE_OPERATOR",
+  "interface": "KNOWLEDGE_INTERFACE/1.0",
+  "compatible_consumer_interface": "REASONING_INTERFACE/1.0",
+  "provider": {
+    "provider_id": "MARKLOGIC_12",
+    "provider_class": "SWAPPABLE_KNOWLEDGE_PROVIDER",
+    "replaceable": true,
+    "material_binding": null
+  },
+  "canonical_authority": false,
+  "execution_authority": false,
+  "gate_authority": false,
+  "root_authority": false,
+  "self_certification": false,
+  "new_engine_identity_created": false,
+  "existing_capability_bindings": {
+    "E05": "PROVIDES_BACKEND_FOR_VECTOR_SEARCH",
+    "E06": "PROVIDES_BACKEND_FOR_KNOWLEDGE_GRAPH",
+    "E07": "PROVIDES_BACKEND_FOR_RDF",
+    "E14": "INTEGRATES_WITH_PROVENANCE"
+  },
+  "activation": false
+}
