@@ -1,0 +1,68 @@
+name: "Dropbox PROYECTOS PRIORITARIOS — governed download + CUSTOSZ audit"
+
+on:
+  push:
+    branches:
+      - staging/dropbox-proyectos-prioritarios-custosz-20261003
+    paths:
+      - mission-control/dropbox-proyectos-prioritarios/REQUEST.json
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dropbox-proyectos-prioritarios-custosz-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  download-certify-audit:
+    name: "Download complete folder, certify, then CUSTOSZ audit"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Checkout governed branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - name: Execute governed Dropbox acquisition and CUSTOSZ audit
+        shell: bash
+        run: bash mission-control/dropbox-proyectos-prioritarios/run.sh
+
+      - name: Publish small immutable evidence to mission branch
+        if: success()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add evidence/dropbox-proyectos-prioritarios
+          if ! git diff --cached --quiet; then
+            git commit -m "evidence(dropbox): certify download and CUSTOSZ project audit"
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
+
+      - name: Preserve exact downloaded archive and evidence in GitHub Actions
+        if: success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dropbox-proyectos-prioritarios-certified-${{ github.run_id }}
+          path: |
+            ${{ env.DROPBOX_ARCHIVE }}
+            evidence/dropbox-proyectos-prioritarios/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Preserve failure evidence
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dropbox-proyectos-prioritarios-failure-${{ github.run_id }}
+          path: |
+            evidence/dropbox-proyectos-prioritarios/
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 0
