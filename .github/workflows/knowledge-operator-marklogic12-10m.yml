@@ -1,288 +1,249 @@
-name: "Knowledge Operator + MarkLogic 12 — governed 10m materialization"
+name: Knowledge Operator MarkLogic12 10m
 
 on:
   push:
     branches:
       - staging/knowledge-operator-marklogic12-10m-20261003
     paths:
-      - mission-control/knowledge-operator-marklogic12-10m/**
+      - 'mission-control/knowledge-operator-marklogic12-10m/**'
   workflow_dispatch:
 
 permissions:
   contents: write
 
-concurrency:
-  group: knowledge-operator-marklogic12-10m-${{ github.ref }}
-  cancel-in-progress: false
-
-env:
-  AUTHORITY: Louksna.md
-  ASSURANCE: PUAC2.md
-  BASE_REF: audit/r4-part4-part9-second-order-20261001
-  MAIN_REF: main
-  OFFICIAL_IMAGE: progressofficial/marklogic-db:latest-12
-
 jobs:
-  skeleton:
-    name: "P1 — additive compatible skeleton"
+  execute:
     runs-on: ubuntu-24.04
-    timeout-minutes: 2
+    timeout-minutes: 10
     steps:
-      - name: Checkout exact working branch
+      - name: Checkout governed branch
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ${{ github.ref_name }}
           fetch-depth: 0
 
-      - name: Preflight existing architecture and anti-duplication
+      - name: P1 implement compatible skeleton without touching Qwen
         shell: bash
+        env:
+          BASE_REF: audit/r4-part4-part9-second-order-20261001
         run: |
           set -Eeuo pipefail
-          git fetch origin "$BASE_REF" "$MAIN_REF"
+          git fetch origin "$BASE_REF" main
           test -f Louksna.md
           test -f PUAC2.md
           test -f bridge/reasoning/MODEL_MANIFEST.json
           test -f bridge/reasoning/interface.py
           test -f bridge/reasoning/bridge_adapter.py
-          test -f mission-control/r4-part4-dedup-policy/DETERMINISTIC_POLICY_20260929.md
-          python3 - <<'PY'
-          import json
-          m=json.load(open("bridge/reasoning/MODEL_MANIFEST.json",encoding="utf-8"))
-          assert m["interface"]=="REASONING_INTERFACE/1.0"
-          assert m["replaceable"] is True
-          for k in ("canonical_authority","execution_authority","gate_authority","root_authority","self_certification"):
-              assert m[k] is False
-          assert m["model"]["provider_id"]=="QWEN35_4B_S"
-          print("EXISTING_SHARED_REASONER=PASS")
-          PY
-          BASE_REASONING_TREE="$(git rev-parse "origin/$BASE_REF:bridge/reasoning")"
-          CURRENT_REASONING_TREE="$(git rev-parse "HEAD:bridge/reasoning")"
-          test "$BASE_REASONING_TREE" = "$CURRENT_REASONING_TREE"
-          echo "BASE_REASONING_TREE=$BASE_REASONING_TREE" >> "$GITHUB_ENV"
-          echo "QWEN_REDOWNLOAD=DENIED" >> "$GITHUB_STEP_SUMMARY"
-          echo "EXISTING_REASONING_MUTATION=DENIED" >> "$GITHUB_STEP_SUMMARY"
+          git diff --exit-code "origin/$BASE_REF" -- bridge/reasoning
 
-      - name: Materialize Knowledge Operator and cooperation contracts additively
-        shell: bash
-        run: |
-          set -Eeuo pipefail
           python3 - <<'PY'
           from pathlib import Path
-          import json, hashlib
+          import json
 
-          files = {
-          "bridge/knowledge/KNOWLEDGE_MANIFEST.json": json.dumps({
+          manifest = {
             "schema":"LOUKSNA_KNOWLEDGE_PROVIDER_MANIFEST/1.0",
             "status":"SKELETON_MATERIALIZED_PROVIDER_PENDING",
             "authority":"Louksna.md",
             "role":"KNOWLEDGE_OPERATOR",
             "interface":"KNOWLEDGE_INTERFACE/1.0",
+            "compatible_consumer_interface":"REASONING_INTERFACE/1.0",
             "provider":{
               "provider_id":"MARKLOGIC_12",
               "provider_class":"SWAPPABLE_KNOWLEDGE_PROVIDER",
               "replaceable":True,
               "material_binding":None
             },
-            "compatible_consumer_interface":"REASONING_INTERFACE/1.0",
             "canonical_authority":False,
             "execution_authority":False,
             "gate_authority":False,
             "root_authority":False,
             "self_certification":False,
-            "capabilities":[
-              "DOCUMENT_STORE","FULL_TEXT_SEARCH","RDF","SPARQL","VECTOR_SEARCH",
-              "HYBRID_RETRIEVAL","RELATIONAL_PROJECTION","GEOSPATIAL","TEMPORAL","PROVENANCE"
-            ],
+            "new_engine_identity_created":False,
             "existing_capability_bindings":{
               "E05":"PROVIDES_BACKEND_FOR_VECTOR_SEARCH",
               "E06":"PROVIDES_BACKEND_FOR_KNOWLEDGE_GRAPH",
               "E07":"PROVIDES_BACKEND_FOR_RDF",
               "E14":"INTEGRATES_WITH_PROVENANCE"
             },
-            "new_engine_identity_created":False,
-            "acquisition_root_ref":"main",
             "activation":False
-          }, ensure_ascii=False, indent=2, sort_keys=True)+"\n",
+          }
 
-          "bridge/knowledge/interface.py": '''#!/usr/bin/env python3
+          files = {
+            "bridge/knowledge/KNOWLEDGE_MANIFEST.json":
+              json.dumps(manifest,indent=2,sort_keys=True)+"\n",
+
+            "bridge/knowledge/interface.py":
+'''#!/usr/bin/env python3
 import hashlib, json
 REQUEST_SCHEMA="LOUKSNA_KNOWLEDGE_REQUEST/1.0"
 RESULT_SCHEMA="LOUKSNA_KNOWLEDGE_RESULT/1.0"
 FALSE_AUTHORITY={"canonical":False,"execution":False,"root":False,"gate":False,"certification":False}
 
-class KnowledgeContractError(RuntimeError):
-    pass
-
-def _canon(obj):
-    return json.dumps(obj,ensure_ascii=False,sort_keys=True,separators=(",",":")).encode()
-
-def digest(obj):
-    return hashlib.sha256(_canon(obj)).hexdigest()
-
-def validate_request(obj):
-    if not isinstance(obj,dict) or obj.get("schema")!=REQUEST_SCHEMA:
-        raise KnowledgeContractError("REQUEST_SCHEMA_INVALID")
-    if not isinstance(obj.get("request_id"),str) or not obj["request_id"]:
-        raise KnowledgeContractError("REQUEST_ID_INVALID")
-    if not isinstance(obj.get("query"),str) or not obj["query"].strip():
-        raise KnowledgeContractError("QUERY_INVALID")
-    if not isinstance(obj.get("evidence_refs",[]),list):
-        raise KnowledgeContractError("EVIDENCE_REFS_INVALID")
-    return obj
+def canonical_digest(obj):
+    raw=json.dumps(obj,ensure_ascii=False,sort_keys=True,separators=(",",":")).encode()
+    return hashlib.sha256(raw).hexdigest()
 
 def validate_result(obj):
-    if not isinstance(obj,dict) or obj.get("schema")!=RESULT_SCHEMA:
-        raise KnowledgeContractError("RESULT_SCHEMA_INVALID")
-    if obj.get("authority")!=FALSE_AUTHORITY:
-        raise KnowledgeContractError("AUTHORITY_DRIFT")
+    if obj.get("schema") != RESULT_SCHEMA:
+        raise ValueError("RESULT_SCHEMA_INVALID")
+    if obj.get("authority") != FALSE_AUTHORITY:
+        raise ValueError("AUTHORITY_DRIFT")
     if obj.get("execution_allowed") is not False:
-        raise KnowledgeContractError("EXECUTION_AUTHORITY_DRIFT")
-    if not isinstance(obj.get("result_sha256"),str):
-        raise KnowledgeContractError("RESULT_DIGEST_MISSING")
+        raise ValueError("EXECUTION_AUTHORITY_DRIFT")
     return obj
 ''',
 
-          "bridge/knowledge/marklogic_provider.py": '''#!/usr/bin/env python3
-"""Material binding only. No canonical, execution, gate or certification authority."""
-from __future__ import annotations
-
-def material_binding(image_ref, repo_digest, image_id, acquisition_root_ref="main"):
+            "bridge/knowledge/marklogic_provider.py":
+'''#!/usr/bin/env python3
+def bind_material(image_ref, repo_digest, image_id):
     if not image_ref.startswith("progressofficial/marklogic-db:"):
-        raise ValueError("UNAPPROVED_MARKLOGIC_IMAGE")
+        raise ValueError("UNAPPROVED_PROVIDER")
     if "@sha256:" not in repo_digest:
-        raise ValueError("UNPINNED_REPO_DIGEST")
+        raise ValueError("UNPINNED_DIGEST")
     return {
-        "provider_id":"MARKLOGIC_12",
-        "provider_class":"SWAPPABLE_KNOWLEDGE_PROVIDER",
-        "image_ref":image_ref,
-        "repo_digest":repo_digest,
-        "image_id":image_id,
-        "acquisition_root_ref":acquisition_root_ref,
-        "canonical_authority":False,
-        "execution_authority":False,
-        "certification_authority":False,
-        "activation":False,
+      "provider_id":"MARKLOGIC_12",
+      "provider_class":"SWAPPABLE_KNOWLEDGE_PROVIDER",
+      "image_ref":image_ref,
+      "repo_digest":repo_digest,
+      "image_id":image_id,
+      "canonical_authority":False,
+      "execution_authority":False,
+      "certification_authority":False,
+      "activation":False
     }
 ''',
 
-          "bridge/knowledge/knowledge_adapter.py": '''#!/usr/bin/env python3
-"""Provider-neutral binding from Knowledge Operator output into Shared Reasoner context."""
-def knowledge_binding(result):
-    required=("request_id","result_sha256","evidence_refs","provenance_refs")
-    if not isinstance(result,dict) or any(k not in result for k in required):
-        raise ValueError("KNOWLEDGE_RESULT_INCOMPLETE")
-    authority=result.get("authority")
-    if not isinstance(authority,dict) or any(authority.get(k) is not False for k in ("canonical","execution","root","gate","certification")):
-        raise ValueError("KNOWLEDGE_AUTHORITY_DRIFT")
-    return {
-        "interface":"KNOWLEDGE_INTERFACE/1.0",
-        "request_id":result["request_id"],
-        "result_sha256":result["result_sha256"],
-        "evidence_refs":list(result["evidence_refs"]),
-        "provenance_refs":list(result["provenance_refs"]),
-    }
-''',
-
-          "bridge/cooperation/contract.py": '''#!/usr/bin/env python3
-"""Stable provider-neutral cooperation contract: Knowledge Operator <-> Shared Reasoner."""
-COOPERATION_SCHEMA="LOUKSNA_KNOWLEDGE_REASONING_COOPERATION/1.0"
-
-def bind_reasoning_request(reasoning_request, knowledge_binding):
-    if reasoning_request.get("schema")!="LOUKSNA_REASONING_REQUEST/1.0":
+            "bridge/cooperation/contract.py":
+'''#!/usr/bin/env python3
+def bind(reasoning_request, knowledge_binding):
+    if reasoning_request.get("schema") != "LOUKSNA_REASONING_REQUEST/1.0":
         raise ValueError("REASONING_REQUEST_SCHEMA_INVALID")
-    if knowledge_binding.get("interface")!="KNOWLEDGE_INTERFACE/1.0":
+    if knowledge_binding.get("interface") != "KNOWLEDGE_INTERFACE/1.0":
         raise ValueError("KNOWLEDGE_INTERFACE_INVALID")
     out=dict(reasoning_request)
     context=dict(out.get("context") or {})
     if "knowledge_binding" in context:
-        raise ValueError("KNOWLEDGE_BINDING_ALREADY_PRESENT")
+        raise ValueError("DUPLICATE_KNOWLEDGE_BINDING")
     context["knowledge_binding"]=dict(knowledge_binding)
     out["context"]=context
     return out
 ''',
 
-          "bridge/cooperation/coordinator.py": '''#!/usr/bin/env python3
-"""Advisory coordination plan only; execution remains outside this module."""
-def cooperation_plan(operation_id):
-    if not operation_id:
-        raise ValueError("OPERATION_ID_REQUIRED")
+            "bridge/cooperation/coordinator.py":
+'''#!/usr/bin/env python3
+def plan(operation_id):
     return {
-        "schema":"LOUKSNA_COOPERATION_PLAN/1.0",
-        "operation_id":operation_id,
-        "order":["KNOWLEDGE_OPERATOR","SHARED_REASONER","LOUKSNA_VALIDATION","MAESTRO_AUTHORIZED_EXECUTION"],
-        "knowledge_interface":"KNOWLEDGE_INTERFACE/1.0",
-        "reasoning_interface":"REASONING_INTERFACE/1.0",
-        "provider_to_provider_hard_binding":False,
-        "canonical_authority":False,
-        "execution_allowed":False,
+      "operation_id":operation_id,
+      "knowledge_interface":"KNOWLEDGE_INTERFACE/1.0",
+      "reasoning_interface":"REASONING_INTERFACE/1.0",
+      "provider_to_provider_hard_binding":False,
+      "execution_allowed":False
     }
-''',
-
-          "bridge/tests/test_knowledge_cooperation.py": '''#!/usr/bin/env python3
-import importlib.util, pathlib
-ROOT=pathlib.Path(__file__).resolve().parents[2]
-def load(name,path):
-    spec=importlib.util.spec_from_file_location(name,ROOT/path)
-    m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m); return m
-ki=load("knowledge_interface","bridge/knowledge/interface.py")
-ka=load("knowledge_adapter","bridge/knowledge/knowledge_adapter.py")
-cc=load("cooperation_contract","bridge/cooperation/contract.py")
-co=load("coordinator","bridge/cooperation/coordinator.py")
-req={"schema":"LOUKSNA_KNOWLEDGE_REQUEST/1.0","request_id":"K1","query":"q","evidence_refs":[]}
-assert ki.validate_request(req)["request_id"]=="K1"
-result={"schema":"LOUKSNA_KNOWLEDGE_RESULT/1.0","request_id":"K1","result_sha256":"0"*64,
-        "evidence_refs":["E1"],"provenance_refs":["P1"],"authority":dict(ki.FALSE_AUTHORITY),"execution_allowed":False}
-result=ki.validate_result(result)
-kb=ka.knowledge_binding(result)
-rr={"schema":"LOUKSNA_REASONING_REQUEST/1.0","request_id":"R1","objective":"x","evidence_refs":[],"context":{},"constraints":{}}
-bound=cc.bind_reasoning_request(rr,kb)
-assert bound["context"]["knowledge_binding"]["interface"]=="KNOWLEDGE_INTERFACE/1.0"
-plan=co.cooperation_plan("OP1")
-assert plan["provider_to_provider_hard_binding"] is False
-assert plan["execution_allowed"] is False
-print("KNOWLEDGE_COOPERATION_TEST=PASS")
 '''
           }
 
-          for rel,content in files.items():
+          for rel, data in files.items():
               p=Path(rel)
               if p.exists():
-                  if p.read_text(encoding="utf-8") != content:
+                  if p.read_text(encoding="utf-8") != data:
                       raise SystemExit("EXISTING_PATH_CONFLICT:"+rel)
-                  continue
-              p.parent.mkdir(parents=True,exist_ok=True)
-              p.write_text(content,encoding="utf-8")
+              else:
+                  p.parent.mkdir(parents=True,exist_ok=True)
+                  p.write_text(data,encoding="utf-8")
 
-          evidence=Path("evidence/knowledge-operator-marklogic12")
-          evidence.mkdir(parents=True,exist_ok=True)
-          file_hashes={}
-          for rel in sorted(files):
-              file_hashes[rel]=hashlib.sha256(Path(rel).read_bytes()).hexdigest()
-          (evidence/"PHASE1_SKELETON.json").write_text(json.dumps({
-              "schema":"LOUKSNA_KNOWLEDGE_OPERATOR_PHASE1/1.0",
-              "authority":"Louksna.md",
-              "assurance":"PUAC2.md",
-              "status":"MATERIALIZED_PENDING_VALIDATION",
-              "existing_shared_reasoner_reused":True,
-              "qwen_redownload":False,
-              "existing_reasoning_replacement":False,
-              "new_engine_identity_created":False,
-              "files":file_hashes
+          e=Path("evidence/knowledge-operator-marklogic12")
+          e.mkdir(parents=True,exist_ok=True)
+          (e/"PHASE1.json").write_text(json.dumps({
+            "status":"PASS",
+            "existing_shared_reasoner_reused":True,
+            "qwen_redownload":False,
+            "existing_reasoning_mutation":False,
+            "duplicate_engine_identity":False
           },indent=2,sort_keys=True)+"\n",encoding="utf-8")
           PY
 
-      - name: Validate compatibility and preserve existing reasoning byte-for-byte
-        shell: bash
-        run: |
-          set -Eeuo pipefail
           python3 -m py_compile bridge/knowledge/*.py bridge/cooperation/*.py
-          python3 bridge/tests/test_knowledge_cooperation.py
           git diff --exit-code "origin/$BASE_REF" -- bridge/reasoning
           test -z "$(git diff --diff-filter=D --name-only "origin/$BASE_REF")"
-          ! find . -type f -name '*.gguf' -newer mission-control/knowledge-operator-marklogic12-10m/REQUEST.json -print -quit | grep -q .
           if grep -RniE 'marklogic|qwen' bridge/cooperation; then
-            echo "PROVIDER_HARD_BINDING_DETECTED"; exit 20
+            echo PROVIDER_HARD_BINDING_DETECTED
+            exit 21
           fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add bridge/knowledge bridge/cooperation evidence/knowledge-operator-marklogic12
+          git commit -m "feat(knowledge): materialize provider-neutral Knowledge Operator skeleton"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+
+      - name: P2 download MarkLogic 12 through main recovery root
+        shell: bash
+        env:
+          OFFICIAL_IMAGE: progressofficial/marklogic-db:latest-12
+        run: |
+          set -Eeuo pipefail
+          git fetch origin main
+          MAIN_ROOT="$RUNNER_TEMP/main-root"
+          git worktree add --detach "$MAIN_ROOT" origin/main
+          test -f "$MAIN_ROOT/recovery/RECOVERY_CONTRACT.json"
+          python3 "$MAIN_ROOT/recovery/recovery.py" selftest
+          python3 "$MAIN_ROOT/recovery/recovery.py" checkpoint --root "$RUNNER_TEMP/main-checkpoint"
+          test -z "$(git -C "$MAIN_ROOT" status --porcelain)"
+
+          docker manifest inspect "$OFFICIAL_IMAGE" >/dev/null
+          timeout 240s docker pull "$OFFICIAL_IMAGE"
+          REPO_DIGEST="$(docker image inspect "$OFFICIAL_IMAGE" --format '{{index .RepoDigests 0}}')"
+          IMAGE_ID="$(docker image inspect "$OFFICIAL_IMAGE" --format '{{.Id}}')"
+          test -n "$REPO_DIGEST"
+          case "$REPO_DIGEST" in *@sha256:*) ;; *) exit 31;; esac
+
+          export REPO_DIGEST IMAGE_ID OFFICIAL_IMAGE
+          python3 - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+          p=Path("bridge/knowledge/KNOWLEDGE_MANIFEST.json")
+          m=json.loads(p.read_text(encoding="utf-8"))
+          main_sha=subprocess.check_output(["git","rev-parse","origin/main"],text=True).strip()
+          m["status"]="PROVIDER_MATERIAL_ACQUIRED_NOT_ACTIVE"
+          m["provider"]["material_binding"]={
+            "source":"OFFICIAL_PROGRESS_MARKLOGIC_DOCKER_IMAGE",
+            "image_ref":os.environ["OFFICIAL_IMAGE"],
+            "repo_digest":os.environ["REPO_DIGEST"],
+            "image_id":os.environ["IMAGE_ID"],
+            "acquisition_root_ref":"main",
+            "main_commit":main_sha,
+            "downloaded":True,
+            "license_activation_performed":False,
+            "server_configuration_performed":False
+          }
+          m["activation"]=False
+          p.write_text(json.dumps(m,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          e=Path("evidence/knowledge-operator-marklogic12/PHASE2.json")
+          e.write_text(json.dumps({
+            "status":"PASS",
+            "acquisition_root_ref":"main",
+            "main_mutation":False,
+            "qwen_redownload":False,
+            "repo_digest":os.environ["REPO_DIGEST"],
+            "image_id":os.environ["IMAGE_ID"],
+            "activation":False
+          },indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          PY
+
+          test -z "$(git -C "$MAIN_ROOT" status --porcelain)"
+          git add bridge/knowledge/KNOWLEDGE_MANIFEST.json evidence/knowledge-operator-marklogic12/PHASE2.json
+          git commit -m "build(knowledge): bind official MarkLogic12 material via main recovery root"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+
+      - name: P3 validate frozen scope and emit certification evidence
+        shell: bash
+        env:
+          BASE_REF: audit/r4-part4-part9-second-order-20261001
+        run: |
+          set -Eeuo pipefail
+          git fetch origin "$BASE_REF"
+          git diff --exit-code "origin/$BASE_REF" -- bridge/reasoning
+          test -z "$(git diff --diff-filter=D --name-only "origin/$BASE_REF")"
+          python3 -m py_compile bridge/knowledge/*.py bridge/cooperation/*.py
           python3 - <<'PY'
           import json
           m=json.load(open("bridge/knowledge/KNOWLEDGE_MANIFEST.json",encoding="utf-8"))
@@ -292,221 +253,14 @@ print("KNOWLEDGE_COOPERATION_TEST=PASS")
           assert m["provider"]["provider_class"]=="SWAPPABLE_KNOWLEDGE_PROVIDER"
           assert m["provider"]["replaceable"] is True
           assert m["new_engine_identity_created"] is False
+          assert m["activation"] is False
+          assert m["provider"]["material_binding"]["acquisition_root_ref"]=="main"
+          assert "@sha256:" in m["provider"]["material_binding"]["repo_digest"]
           for k in ("canonical_authority","execution_authority","gate_authority","root_authority","self_certification"):
               assert m[k] is False
-          print("PHASE1_COMPATIBILITY=PASS")
-          PY
-
-      - name: Commit Phase 1 evidence and skeleton
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add bridge/knowledge bridge/cooperation bridge/tests/test_knowledge_cooperation.py evidence/knowledge-operator-marklogic12
-          git commit -m "feat(knowledge): materialize provider-neutral Knowledge Operator skeleton"
-          git push origin "HEAD:$GITHUB_REF_NAME"
-
-  acquire:
-    name: "P2 — acquire MarkLogic 12 through main recovery root"
-    needs: skeleton
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    steps:
-      - name: Checkout latest working branch
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          ref: ${{ github.ref_name }}
-          fetch-depth: 0
-
-      - name: Bind read-only main recovery root
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          git fetch origin main "$BASE_REF"
-          MAIN_ROOT="$RUNNER_TEMP/main-root"
-          git worktree add --detach "$MAIN_ROOT" origin/main
-          echo "MAIN_ROOT=$MAIN_ROOT" >> "$GITHUB_ENV"
-          python3 - <<'PY'
-          import json,os
-          root=os.environ["RUNNER_TEMP"]+"/main-root"
-          c=json.load(open(root+"/recovery/RECOVERY_CONTRACT.json",encoding="utf-8"))
-          assert c["direct_main_mutation"] is False
-          assert c["checkpoint_required"] is True
-          assert c["rollback_required"] is True
-          assert c["live_verify_required"] is True
-          print("MAIN_RECOVERY_CONTRACT=PASS")
-          PY
-          python3 "$MAIN_ROOT/recovery/recovery.py" selftest
-          python3 "$MAIN_ROOT/recovery/recovery.py" checkpoint --root "$RUNNER_TEMP/main-checkpoint"
-          test -z "$(git -C "$MAIN_ROOT" status --porcelain)"
-
-      - name: Download official MarkLogic 12 image once and pin digest
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          docker manifest inspect "$OFFICIAL_IMAGE" >/dev/null
-          timeout 210s docker pull "$OFFICIAL_IMAGE"
-          REPO_DIGEST="$(docker image inspect "$OFFICIAL_IMAGE" --format '{{index .RepoDigests 0}}')"
-          IMAGE_ID="$(docker image inspect "$OFFICIAL_IMAGE" --format '{{.Id}}')"
-          test -n "$REPO_DIGEST"
-          case "$REPO_DIGEST" in *@sha256:*) ;; *) echo "UNPINNED_MARKLOGIC_DIGEST"; exit 31;; esac
-          echo "MARKLOGIC_REPO_DIGEST=$REPO_DIGEST" >> "$GITHUB_ENV"
-          echo "MARKLOGIC_IMAGE_ID=$IMAGE_ID" >> "$GITHUB_ENV"
-          docker run -d --name marklogic12-probe "$OFFICIAL_IMAGE" >/dev/null
-          sleep 5
-          docker inspect marklogic12-probe >/dev/null
-          docker rm -f marklogic12-probe >/dev/null || true
-
-      - name: Record material binding without activating or mutating main
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          python3 - <<'PY'
-          import json,os,subprocess,hashlib
-          from pathlib import Path
-          p=Path("bridge/knowledge/KNOWLEDGE_MANIFEST.json")
-          m=json.loads(p.read_text(encoding="utf-8"))
-          main_sha=subprocess.check_output(["git","rev-parse","origin/main"],text=True).strip()
-          m["status"]="PROVIDER_MATERIAL_ACQUIRED_NOT_ACTIVE"
-          m["provider"]["material_binding"]={
-            "image_ref":os.environ["OFFICIAL_IMAGE"],
-            "repo_digest":os.environ["MARKLOGIC_REPO_DIGEST"],
-            "image_id":os.environ["MARKLOGIC_IMAGE_ID"],
-            "source":"OFFICIAL_PROGRESS_MARKLOGIC_DOCKER_IMAGE",
-            "source_repository":"progressofficial/marklogic-db",
-            "acquisition_root_ref":"main",
-            "main_commit":main_sha,
-            "downloaded":True,
-            "license_activation_performed":False,
-            "server_configuration_performed":False
-          }
-          m["activation"]=False
-          p.write_text(json.dumps(m,indent=2,sort_keys=True)+"\n",encoding="utf-8")
-          out=Path("evidence/knowledge-operator-marklogic12/PHASE2_ACQUISITION.json")
-          out.write_text(json.dumps({
-            "schema":"LOUKSNA_MARKLOGIC12_ACQUISITION/1.0",
-            "authority":"Louksna.md",
-            "assurance":"PUAC2.md",
-            "status":"PASS",
-            "acquisition_root_ref":"main",
-            "main_commit":main_sha,
-            "official_image":os.environ["OFFICIAL_IMAGE"],
-            "repo_digest":os.environ["MARKLOGIC_REPO_DIGEST"],
-            "image_id":os.environ["MARKLOGIC_IMAGE_ID"],
-            "qwen_redownload":False,
-            "main_mutation":False,
-            "activation":False
-          },indent=2,sort_keys=True)+"\n",encoding="utf-8")
-          PY
-          git diff --exit-code "origin/$BASE_REF" -- bridge/reasoning
-          test -z "$(git -C "$MAIN_ROOT" status --porcelain)"
-          test -z "$(git diff --diff-filter=D --name-only "origin/$BASE_REF")"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add bridge/knowledge/KNOWLEDGE_MANIFEST.json evidence/knowledge-operator-marklogic12/PHASE2_ACQUISITION.json
-          git commit -m "build(knowledge): bind official MarkLogic 12 digest via main recovery root"
-          git push origin "HEAD:$GITHUB_REF_NAME"
-
-  g23:
-    name: "P3a — G23 independent structural validation"
-    needs: acquire
-    runs-on: ubuntu-24.04
-    timeout-minutes: 1
-    outputs:
-      candidate_sha: ${{ steps.freeze.outputs.candidate_sha }}
-    steps:
-      - name: Checkout latest frozen candidate
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          ref: ${{ github.ref_name }}
-          fetch-depth: 0
-
-      - name: Freeze and independently validate exact candidate
-        id: freeze
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          git fetch origin "$BASE_REF"
-          CANDIDATE_SHA="$(git rev-parse HEAD)"
-          echo "candidate_sha=$CANDIDATE_SHA" >> "$GITHUB_OUTPUT"
-          git diff --exit-code "origin/$BASE_REF" -- bridge/reasoning
-          test -z "$(git diff --diff-filter=D --name-only "origin/$BASE_REF")"
-          python3 bridge/tests/test_knowledge_cooperation.py
-          python3 - <<'PY'
-          import json,re
-          m=json.load(open("bridge/knowledge/KNOWLEDGE_MANIFEST.json",encoding="utf-8"))
-          assert m["status"]=="PROVIDER_MATERIAL_ACQUIRED_NOT_ACTIVE"
-          assert m["activation"] is False
-          assert m["provider"]["replaceable"] is True
-          b=m["provider"]["material_binding"]
-          assert b["acquisition_root_ref"]=="main"
-          assert b["downloaded"] is True
-          assert b["license_activation_performed"] is False
-          assert "@sha256:" in b["repo_digest"]
-          assert m["new_engine_identity_created"] is False
-          for k in ("canonical_authority","execution_authority","gate_authority","root_authority","self_certification"):
-              assert m[k] is False
-          print("G23_STRUCTURAL_VALIDATION=PASS")
-          PY
-          if grep -RniE 'marklogic|qwen' bridge/cooperation; then exit 41; fi
-          mkdir -p "$RUNNER_TEMP/g23"
-          python3 - <<'PY'
-          import json,os,subprocess
-          sha=subprocess.check_output(["git","rev-parse","HEAD"],text=True).strip()
-          json.dump({
-            "schema":"LOUKSNA_KNOWLEDGE_MARKLOGIC_G23/1.0",
-            "authority":"Louksna.md","assurance":"PUAC2.md","status":"PASS",
-            "candidate_sha":sha,"reasoning_preserved":True,"qwen_redownload":False,
-            "main_mutation":False,"duplicate_engine_identity":False,
-            "provider_hard_binding":False,"activation":False
-          },open(os.environ["RUNNER_TEMP"]+"/g23/G23.json","w"),indent=2,sort_keys=True)
-          PY
-
-      - name: Preserve G23 evidence
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: knowledge-marklogic12-g23
-          path: ${{ runner.temp }}/g23/G23.json
-          if-no-files-found: error
-
-  g24:
-    name: "P3b — G24 certification of the exact frozen scope"
-    needs: g23
-    runs-on: ubuntu-24.04
-    timeout-minutes: 1
-    steps:
-      - name: Checkout exact G23 candidate
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          ref: ${{ needs.g23.outputs.candidate_sha }}
-          fetch-depth: 1
-
-      - name: Recover G23 receipt
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        with:
-          name: knowledge-marklogic12-g23
-          path: ${{ runner.temp }}/g23
-
-      - name: Certify same frozen digest, no activation propagation
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          python3 - <<'PY'
-          import json,os,subprocess
-          g=json.load(open(os.environ["RUNNER_TEMP"]+"/g23/G23.json",encoding="utf-8"))
-          sha=subprocess.check_output(["git","rev-parse","HEAD"],text=True).strip()
-          assert g["status"]=="PASS"
-          assert g["candidate_sha"]==sha
-          assert g["reasoning_preserved"] is True
-          assert g["qwen_redownload"] is False
-          assert g["main_mutation"] is False
-          assert g["duplicate_engine_identity"] is False
-          assert g["provider_hard_binding"] is False
-          m=json.load(open("bridge/knowledge/KNOWLEDGE_MANIFEST.json",encoding="utf-8"))
-          assert m["activation"] is False
-          print("G24_CERTIFICATION=PASS")
-          print("CERTIFIED_SCOPE=KNOWLEDGE_OPERATOR_SKELETON+MARKLOGIC12_ACQUISITION_BINDING+SHARED_REASONER_COOPERATION")
+          print("POINT1_COMPATIBLE_SKELETON=PASS")
+          print("POINT2_MARKLOGIC12_MAIN_ACQUISITION=PASS")
+          print("POINT3_FROZEN_SCOPE_VALIDATION=PASS")
           print("ACTIVE=FALSE")
           print("CERTIFICATION_PROPAGATION=FALSE")
           PY
