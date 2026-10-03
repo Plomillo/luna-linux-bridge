@@ -1,0 +1,228 @@
+name: "CUSTOSZ — priority folder absorption consultation 60s"
+
+on:
+  push:
+    branches:
+      - staging/mailbox-dispatch-bridge-repair-20261002
+    paths:
+      - "missions/inbox/priority-projects-folder-absorption-consult-20261003/MISSION_ORIGINAL.md"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: custosz-priority-folder-absorption-consult-60s
+  cancel-in-progress: false
+
+env:
+  MISSION_PATH: "missions/inbox/priority-projects-folder-absorption-consult-20261003/MISSION_ORIGINAL.md"
+
+jobs:
+  receipt:
+    name: "Receipt evidence"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Checkout exact consultation
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            missions/inbox/priority-projects-folder-absorption-consult-20261003/MISSION_ORIGINAL.md
+          sparse-checkout-cone-mode: false
+
+      - name: Produce receipt
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/receipt"
+          test -s "$MISSION_PATH"
+          SHA="$(sha256sum "$MISSION_PATH" | awk '{print $1}')"
+          BYTES="$(stat -c '%s' "$MISSION_PATH")"
+          python3 - "$RUNNER_TEMP/receipt/RECEIPT.json" "$MISSION_PATH" "$SHA" "$BYTES" "$GITHUB_SHA" "$GITHUB_RUN_ID" <<'PY'
+          import json,sys
+          out,path,sha,size,commit,run_id=sys.argv[1:]
+          obj={
+            "schema":"LOUKSNA_MISSION_CONSULT_RECEIPT/1.0",
+            "status":"RECEIVED",
+            "source_path":path,
+            "source_sha256":sha,
+            "source_bytes":int(size),
+            "source_commit":commit,
+            "run_id":run_id,
+            "consultation_only":True,
+            "material_execution_authorized":False,
+            "mutation_authorized":False,
+          }
+          open(out,"w",encoding="utf-8").write(json.dumps(obj,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(obj,sort_keys=True))
+          PY
+      - name: Preserve receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: priority-folder-consult-receipt
+          path: ${{ runner.temp }}/receipt/RECEIPT.json
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+  g23_receipt:
+    name: "G23 independent receipt validation"
+    needs: receipt
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Checkout source independently
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            missions/inbox/priority-projects-folder-absorption-consult-20261003/MISSION_ORIGINAL.md
+          sparse-checkout-cone-mode: false
+      - name: Recover receipt
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: priority-folder-consult-receipt
+          path: ${{ runner.temp }}/receipt
+      - name: Independently verify receipt binding
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$MISSION_PATH" "$RUNNER_TEMP/receipt/RECEIPT.json" "$RUNNER_TEMP/g23/G23.json" <<'PY'
+          import hashlib,json,sys
+          mission,receipt_path,out=sys.argv[1:]
+          raw=open(mission,"rb").read()
+          receipt=json.load(open(receipt_path,encoding="utf-8"))
+          sha=hashlib.sha256(raw).hexdigest()
+          checks={
+            "source_sha_match": receipt["source_sha256"]==sha,
+            "source_bytes_match": receipt["source_bytes"]==len(raw),
+            "receipt_status_received": receipt["status"]=="RECEIVED",
+            "consultation_only": receipt["consultation_only"] is True,
+            "material_execution_forbidden": receipt["material_execution_authorized"] is False,
+            "mutation_forbidden": receipt["mutation_authorized"] is False,
+          }
+          status="PASS" if all(checks.values()) else "FAIL"
+          obj={"schema":"LOUKSNA_G23_RECEIPT_ONLY/1.0","scope":"CONSULT_RECEIPT_AND_SOURCE_BINDING_ONLY","status":status,"checks":checks,"source_sha256":sha}
+          open(out,"w",encoding="utf-8").write(json.dumps(obj,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(obj,sort_keys=True))
+          raise SystemExit(0 if status=="PASS" else 2)
+          PY
+      - name: Preserve G23
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: priority-folder-consult-g23-receipt
+          path: ${{ runner.temp }}/g23/G23.json
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+  g24_receipt:
+    name: "G24 receipt certification"
+    needs: [receipt, g23_receipt]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Recover G23
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: priority-folder-consult-g23-receipt
+          path: ${{ runner.temp }}/g23
+      - name: Certify receipt scope only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$RUNNER_TEMP/g23/G23.json" "$RUNNER_TEMP/g24/G24.json" <<'PY'
+          import json,sys
+          g23=json.load(open(sys.argv[1],encoding="utf-8"))
+          ok=g23.get("status")=="PASS" and g23.get("scope")=="CONSULT_RECEIPT_AND_SOURCE_BINDING_ONLY"
+          obj={
+            "schema":"LOUKSNA_G24_RECEIPT_ONLY/1.0",
+            "scope":"CONSULT_RECEIPT_AND_FLOW_START_ONLY",
+            "status":"PASS" if ok else "FAIL",
+            "semantic_answer_certified":False,
+            "material_execution_authorized":False,
+            "mutation_authorized":False,
+            "certification_propagation":False,
+          }
+          open(sys.argv[2],"w",encoding="utf-8").write(json.dumps(obj,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(obj,sort_keys=True))
+          raise SystemExit(0 if ok else 2)
+          PY
+      - name: Preserve G24
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: priority-folder-consult-g24-receipt
+          path: ${{ runner.temp }}/g24/G24.json
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+  consult:
+    name: "CUSTOSZ read-only consultation"
+    needs: g24_receipt
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 2
+    steps:
+      - name: Checkout consultation only
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            missions/inbox/priority-projects-folder-absorption-consult-20261003/MISSION_ORIGINAL.md
+          sparse-checkout-cone-mode: false
+
+      - name: Ask deployed CUSTOSZ read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/priority-folder-consult"
+          mkdir -p "$OUT"
+          timeout --signal=TERM --kill-after=5s 60s python3 - "$MISSION_PATH" "$OUT/CUSTOSZ_RESPONSE.json" <<'PY'
+          import json,os,pathlib,sys,traceback
+          mission_path=pathlib.Path(sys.argv[1])
+          out=pathlib.Path(sys.argv[2])
+          mission=mission_path.read_text(encoding="utf-8")
+          home=pathlib.Path("/home/diegoignacionorambuenamiranda")
+          custosz=home/".local/lib/louksna/symphylax-r1/CUSTOSZ.v07.f04_b.pyz"
+          os.environ["CUSTOSZ_STATE_DIR"]=str(out.parent/"ephemeral-custosz-state")
+          sys.path.insert(0,str(custosz))
+          import custosz_v05_legacy as w
+          prompt = """CONSULTA READ_ONLY. No ejecutar, descargar, instalar, copiar, mover, borrar, indexar ni absorber nada. No mutar main, Louksna.md ni el buzón. Responder únicamente desde la arquitectura/capacidades conocidas y el estado accesible. Techo bruto: 60 segundos.\n\n""" + mission
+          result={
+            "schema":"LOUKSNA_PRIORITY_FOLDER_ABSORPTION_CONSULT/1.0",
+            "mode":"READ_ONLY_ADVISORY",
+            "authority":"Louksna.md",
+            "consultation_only":True,
+            "execution_authorized":False,
+            "mutation_authorized":False,
+            "download_authorized":False,
+          }
+          try:
+            result["architecture"]=w.architect(prompt,"LUNA_PROJECT")
+          except Exception as e:
+            result["architecture_error"]=type(e).__name__+":"+str(e)
+            result["architecture_traceback"]=traceback.format_exc()
+          try:
+            result["reasoning_policy"]=w.reasoning_policy(prompt,"LUNA_PROJECT")
+          except Exception as e:
+            result["reasoning_policy_error"]=type(e).__name__+":"+str(e)
+            result["reasoning_policy_traceback"]=traceback.format_exc()
+          out.write_text(json.dumps(result,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps(result,ensure_ascii=False,indent=2,sort_keys=True))
+          PY
+
+      - name: Preserve advisory response
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: priority-folder-custosz-response
+          path: ${{ runner.temp }}/priority-folder-consult/CUSTOSZ_RESPONSE.json
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 0
