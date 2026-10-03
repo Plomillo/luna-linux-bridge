@@ -1,0 +1,239 @@
+name: "CUSTOSZ Consultas — rclone host-to-GitHub 2m"
+
+on:
+  push:
+    branches:
+      - staging/consultas-implementation-6m-20261002
+    paths:
+      - "consultas/inbox/rclone-host-folder-to-github-20261003/CONSULTA_ORIGINAL.md"
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: custosz-consultas-rclone-host-to-github-2m
+  cancel-in-progress: false
+
+jobs:
+  consult:
+    name: "CUSTOSZ rclone repository review"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Checkout full repository history surface
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Certify consultation receipt and flow start
+        id: receipt
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          SRC="consultas/inbox/rclone-host-folder-to-github-20261003/CONSULTA_ORIGINAL.md"
+          test -s "$SRC"
+          mkdir -p "$RUNNER_TEMP/rclone-consulta"
+          SHA="$(sha256sum "$SRC" | awk '{print $1}')"
+          BYTES="$(stat -c '%s' "$SRC")"
+          python3 - "$RUNNER_TEMP/rclone-consulta/FLOW_RECEIPT.json" "$SRC" "$SHA" "$BYTES" "$GITHUB_SHA" "$GITHUB_RUN_ID" <<'PY'
+          import json,sys
+          out,path,sha,size,commit,run_id=sys.argv[1:]
+          obj={
+            "schema":"LOUKSNA_CONSULTA_FLOW_RECEIPT/1.0",
+            "channel":"consultas",
+            "status":"RECEIVED_AND_FLOW_STARTED",
+            "source_path":path,
+            "source_sha256":sha,
+            "source_bytes":int(size),
+            "source_commit":commit,
+            "run_id":run_id,
+            "execution_authorized":False,
+            "mutation_authorized":False,
+            "upload_authorized":False,
+            "install_authorized":False,
+            "authority":"Louksna.md"
+          }
+          open(out,"w",encoding="utf-8").write(json.dumps(obj,indent=2,sort_keys=True)+"\n")
+          print("FLOW_RECEIPT_CERT=PASS")
+          print("CONSULTA_SHA256="+sha)
+          print("FLOW_STATE=LIVE")
+          PY
+
+      - name: Review entire tracked repository and ask CUSTOSZ
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/rclone-consulta"
+          mkdir -p "$OUT"
+          timeout --signal=TERM --kill-after=5s 105s python3 - "$OUT" "consultas/inbox/rclone-host-folder-to-github-20261003/CONSULTA_ORIGINAL.md" <<'PY'
+          import hashlib,json,os,pathlib,subprocess,sys,time,traceback
+          from datetime import datetime,timezone
+
+          out=pathlib.Path(sys.argv[1])
+          consulta=pathlib.Path(sys.argv[2]).read_text(encoding="utf-8")
+          repo=pathlib.Path(os.environ["GITHUB_WORKSPACE"])
+          started=time.monotonic()
+
+          def run(cmd,timeout=20):
+              cp=subprocess.run(cmd,cwd=repo,text=True,capture_output=True,timeout=timeout)
+              return {"cmd":cmd,"rc":cp.returncode,"stdout":cp.stdout[-60000:],"stderr":cp.stderr[-12000:]}
+
+          def sha(p):
+              return hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
+
+          # Full tracked-file inventory of consultation branch.
+          head_files=subprocess.check_output(["git","ls-files"],cwd=repo,text=True).splitlines()
+
+          # Read-only main ref inspection. Fetch only if absent locally.
+          subprocess.run(["git","fetch","--no-tags","origin","main:refs/remotes/origin/main"],cwd=repo,text=True,capture_output=True,timeout=20)
+          main_ls=run(["git","ls-tree","-r","--name-only","origin/main"],15)
+          main_files=main_ls["stdout"].splitlines() if main_ls["rc"]==0 else []
+
+          tokens=[
+            "rclone","git lfs","git-lfs","lfs","large file","upload","ingest",
+            "import","github api","gh api","contents api","release","artifact",
+            "recovery root","download","push","git add","git commit","git push"
+          ]
+
+          searches=[]
+          for ref,label in [("HEAD","consultas_branch"),("origin/main","main")]:
+              for token in tokens:
+                  cp=subprocess.run(
+                    ["git","grep","-n","-I","-i","-e",token,ref,"--"],
+                    cwd=repo,text=True,capture_output=True,timeout=8
+                  )
+                  lines=cp.stdout.splitlines()
+                  if lines:
+                      searches.append({"ref":label,"token":token,"match_count":len(lines),"matches":lines[:120]})
+
+          # File-name level search across every tracked path.
+          name_hits=[]
+          for label,files in [("consultas_branch",head_files),("main",main_files)]:
+              for p in files:
+                  low=p.lower()
+                  if any(k in low for k in ("rclone","upload","ingest","import","lfs","recovery","github","artifact")):
+                      name_hits.append({"ref":label,"path":p})
+
+          evidence={
+            "schema":"LOUKSNA_RCLONE_HOST_TO_GITHUB_REPO_REVIEW/1.0",
+            "authority":"Louksna.md",
+            "mode":"READ_ONLY_RESEARCH",
+            "source_commit":os.environ.get("GITHUB_SHA"),
+            "consultas_branch_tracked_file_count":len(head_files),
+            "main_tracked_file_count":len(main_files),
+            "consultas_branch_inventory_sha256":hashlib.sha256(("\n".join(head_files)+"\n").encode()).hexdigest(),
+            "main_inventory_sha256":hashlib.sha256(("\n".join(main_files)+"\n").encode()).hexdigest() if main_files else None,
+            "relevant_content_searches":searches,
+            "relevant_filename_hits":name_hits[:1000],
+            "inspection_scope":"ALL_TRACKED_PATHS_PLUS_RELEVANT_CONTENT_SEARCH_ON_HEAD_AND_ORIGIN_MAIN",
+            "execution_authorized":False,
+            "mutation_authorized":False,
+            "upload_authorized":False,
+            "install_authorized":False
+          }
+          (out/"REPOSITORY_EVIDENCE.json").write_text(json.dumps(evidence,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+
+          custosz=repo/"artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz"
+          expected="dacf1f8c13b2fcbfc617cf0d4d780b30502c13395224691e6b0f05f53d9816a2"
+          provider_ok=custosz.is_file() and sha(custosz)==expected
+
+          result={
+            "schema":"LOUKSNA_RCLONE_HOST_TO_GITHUB_CONSULTA_RESULT/1.0",
+            "provider_sha256":sha(custosz) if custosz.is_file() else None,
+            "provider_pin_match":provider_ok,
+            "execution_authorized":False,
+            "mutation_authorized":False,
+            "upload_authorized":False,
+            "install_authorized":False,
+            "authority":"Louksna.md"
+          }
+
+          if not provider_ok:
+              result["state"]="HOLD"
+              result["blocker"]="CUSTOSZ_PROVIDER_PIN_MISMATCH_OR_MISSING"
+          else:
+              os.environ["CUSTOSZ_STATE_DIR"]=str(out/"ephemeral-custosz-state")
+              sys.path.insert(0,str(custosz))
+              import custosz_v05_legacy as w
+              w.workspace=lambda: repo
+              w.discover=lambda: {"workspace":str(repo),"projects":{"LUNA_PROJECT":{"status":"RESOLVED","path":str(repo),"score":999}}}
+
+              prompt=f"""
+              CONSULTA READ_ONLY — RCLONE DESDE HOST/ESCRITORIO HACIA GITHUB.
+              TECHO BRUTO DEL FLUJO: 120 SEGUNDOS.
+
+              La carpeta objetivo está FUERA de GitHub, en el host del usuario, por ejemplo:
+              $HOME/PROYECTOS/1. PROYECTOS PRIORITARIOS
+
+              El usuario pregunta específicamente:
+              1. ¿Puede rclone, con una configuración exacta, subir/ingerir esa carpeta
+                 hacia un repositorio GitHub de forma real y gobernada?
+              2. Si rclone NO puede escribir directamente a un repositorio GitHub,
+                 decirlo sin ambigüedad y explicar por qué.
+              3. Determinar si existe en ESTE repositorio algún mecanismo ya implementado
+                 que permita host -> repository: Git, Git LFS, GitHub API, gh, Releases,
+                 artifacts, recovery root de main, adaptadores de ingestión, staging u otro.
+              4. Distinguir cargar bytes a GitHub de versionarlos dentro del Git repository.
+              5. Considerar tamaño, límites por archivo, historial Git, LFS, atomicidad,
+                 reanudación, hashes, provenance, rollback y no-regresión.
+              6. Si existe una arquitectura viable con rclone como parte auxiliar,
+                 dar la CONFIGURACIÓN/TOPOLOGÍA EXACTA: qué remote sería, contra qué backend,
+                 dónde termina rclone y dónde comienza Git/GitHub; no inventar un remote GitHub
+                 si rclone no lo ofrece.
+              7. Si faltan dependencias o componentes, enumerarlos exactamente y determinar
+                 si la capacidad gobernada de descarga/recuperación de main podría obtenerlos
+                 en una MISIÓN futura separada.
+              8. Revisar la evidencia del repositorio completo suministrada abajo y basar la
+                 conclusión en mecanismos realmente observados. No ejecutar subida, no instalar
+                 y no mutar archivos.
+              9. Si la evidencia local no basta para una afirmación sobre rclone/GitHub,
+                 marcar qué punto requiere documentación oficial externa; no fabricar certeza.
+              10. Responder de forma operativa y clara, deteniéndote cuando la conclusión
+                  esté suficientemente respaldada.
+
+              EVIDENCIA DE REPOSITORIO (HEAD + origin/main):
+              {json.dumps(evidence,ensure_ascii=False)[:42000]}
+
+              CONSULTA ORIGINAL:
+              {consulta}
+
+              SALIDA OBLIGATORIA:
+              CAN_RCLONE_UPLOAD_DIRECTLY_TO_GITHUB_REPOSITORY = TRUE | FALSE | HOLD
+              CAN_RCLONE_BE_USED_AS_AUXILIARY = TRUE | FALSE | HOLD
+              EXACT_RCLONE_TOPOLOGY_OR_CONFIG
+              EXISTING_REPOSITORY_MECHANISMS
+              MAIN_RECOVERY_DOWNLOAD_RELEVANCE
+              REQUIRED_DEPENDENCIES
+              FILE_SIZE_AND_REPOSITORY_LIMITS
+              PROVENANCE_AND_ROLLBACK_MODEL
+              RISKS
+              RECOMMENDED_PATH
+              EVIDENCE_BASIS
+              EXACT_NEXT_ACTION
+              """
+              try:
+                  result["architecture"]=w.architect(prompt,"LUNA_PROJECT")
+                  result["reasoning_policy"]=w.reasoning_policy(prompt,"LUNA_PROJECT")
+                  result["state"]="ANSWERED"
+              except Exception as e:
+                  result["state"]="HOLD"
+                  result["blocker"]=type(e).__name__+":"+str(e)
+                  result["traceback"]=traceback.format_exc()
+
+          result["elapsed_seconds"]=round(time.monotonic()-started,3)
+          (out/"CUSTOSZ_RCLONE_RESPONSE.json").write_text(json.dumps(result,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print("CUSTOSZ_CONSULTA_STATE="+result.get("state","UNKNOWN"))
+          print("ELAPSED_SECONDS="+str(result["elapsed_seconds"]))
+          PY
+
+      - name: Preserve consultation evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: custosz-rclone-host-to-github-consulta
+          path: ${{ runner.temp }}/rclone-consulta/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
