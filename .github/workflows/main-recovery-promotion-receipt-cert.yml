@@ -1,0 +1,98 @@
+name: "MAIN Recovery Promotion — receipt G23/G24"
+
+on:
+  push:
+    branches:
+      - staging/mailbox-dispatch-bridge-repair-20261002
+    paths:
+      - evidence/main-recovery-promotion-receipt/**
+
+permissions:
+  contents: read
+
+jobs:
+  g23:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    outputs:
+      result: ${{ steps.review.outputs.result }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: G23 independently validate receipt package
+        id: review
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p receipt-assurance
+          python3 - <<'PY'
+          import hashlib,json,pathlib
+          root=pathlib.Path.cwd()
+          def sha(p): return hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
+          evidence=json.load(open("evidence/main-recovery-promotion-receipt/RECEIPT.json",encoding="utf-8"))
+          mission=root/"missions/inbox/main-recovery-root-promote-hardened-20261002/MISSION_ORIGINAL.md"
+          trigger=json.load(open(root/"mission-control/main-recovery-promotion/MAIN_RECOVERY_ROOT_PROMOTE_HARDENED_20261002.json",encoding="utf-8"))
+          registry=json.load(open(root/"mission-mailbox/runtime-adapters/registry.json",encoding="utf-8"))
+          adapter=next((x for x in registry["adapters"] if x.get("adapter_id")=="MAIN_RECOVERY_ROOT_HARDENED_PROMOTION_V1"),None)
+          checks={
+            "mission_hash_exact":sha(mission)==evidence["mission_source_sha256"],
+            "trigger_bound":trigger.get("mission_source_sha256")==evidence["mission_source_sha256"],
+            "adapter_present":adapter is not None,
+            "adapter_bound":adapter and adapter.get("source_sha256")==evidence["mission_source_sha256"],
+            "workflow_bound":adapter and adapter.get("dedicated_workflow")==".github/workflows/main-recovery-root-hardened-promotion.yml",
+            "material_start_recorded":evidence.get("material_run_id")==37082619910 and evidence.get("observed_status")=="in_progress",
+            "terminal_success_not_claimed":evidence.get("terminal_success_claimed") is False,
+            "scope_exact":evidence.get("certification_scope")=="MISSION_RECEIPT_AND_MATERIAL_START_ONLY",
+            "authority_preserved":evidence.get("authority")=="Louksna.md",
+            "no_certification_propagation":evidence.get("certification_propagation") is False
+          }
+          result="PASS" if all(checks.values()) else "FAIL"
+          out={"schema":"LOUKSNA_MAIN_RECOVERY_PROMOTION_RECEIPT_G23/1.0","gate":"G23_INDEPENDENT_VALIDATION","scope":"MISSION_RECEIPT_AND_MATERIAL_START_ONLY","mission_id":evidence["mission_id"],"material_run_id":evidence["material_run_id"],"checks":checks,"result":result,"terminal_success_certified":False,"certification_propagation":False}
+          pathlib.Path("receipt-assurance/G23.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,indent=2,sort_keys=True))
+          if result!="PASS": raise SystemExit("G23_RECEIPT_FAIL")
+          PY
+          echo "result=PASS" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: main-recovery-promotion-receipt-g23
+          path: receipt-assurance/G23.json
+          if-no-files-found: error
+
+  g24:
+    needs: g23
+    if: needs.g23.outputs.result == 'PASS'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: main-recovery-promotion-receipt-g23
+          path: receipt-assurance
+      - name: G24 certify receipt scope only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p receipt-certification
+          python3 - <<'PY'
+          import json,pathlib
+          g23=json.load(open("receipt-assurance/G23.json",encoding="utf-8"))
+          checks={
+            "g23_pass":g23.get("result")=="PASS",
+            "scope_exact":g23.get("scope")=="MISSION_RECEIPT_AND_MATERIAL_START_ONLY",
+            "terminal_success_not_certified":g23.get("terminal_success_certified") is False,
+            "no_certification_propagation":g23.get("certification_propagation") is False
+          }
+          status="PASS" if all(checks.values()) else "FAIL"
+          out={"schema":"LOUKSNA_MAIN_RECOVERY_PROMOTION_RECEIPT_G24/1.0","gate":"G24_CERTIFICATION","scope":"MISSION_RECEIPT_AND_MATERIAL_START_ONLY","status":status,"operational_status":"CERTIFIED_RECEIVED_AND_STARTED" if status=="PASS" else "HOLD","material_run_id":37082619910,"terminal_success_certified":False,"certification_propagation":False}
+          pathlib.Path("receipt-certification/G24.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,indent=2,sort_keys=True))
+          if status!="PASS": raise SystemExit("G24_RECEIPT_FAIL")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: main-recovery-promotion-receipt-g24
+          path: receipt-certification/G24.json
+          if-no-files-found: error

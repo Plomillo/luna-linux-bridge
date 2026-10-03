@@ -1,0 +1,16 @@
+{
+  "schema": "LOUKSNA_MAIN_RECOVERY_PROMOTION_RECEIPT_EVIDENCE/1.0",
+  "mission_id": "MAIN_RECOVERY_ROOT_PROMOTE_HARDENED_20261002",
+  "mission_source_sha256": "03c0c6013d1d0aedbde6203aa804b65a08c79aefbc019624577ca732a60ffc17",
+  "dispatch_commit": "ea37c12b092b1d88988912e1e32478d6afc9e063",
+  "material_run_id": 37082619910,
+  "material_workflow": "MAIN Recovery Root — hardened promotion",
+  "observed_status": "in_progress",
+  "observed_head_sha": "ea37c12b092b1d88988912e1e32478d6afc9e063",
+  "observed_at_utc": "2026-10-03T00:34:17Z",
+  "terminal_success_claimed": false,
+  "certification_scope": "MISSION_RECEIPT_AND_MATERIAL_START_ONLY",
+  "authority": "Louksna.md",
+  "assurance_reference": "PUAC2.md",
+  "certification_propagation": false
+}
