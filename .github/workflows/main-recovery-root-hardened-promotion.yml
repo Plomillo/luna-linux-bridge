@@ -2,6 +2,11 @@ name: "MAIN Recovery Root — hardened promotion"
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - staging/mailbox-dispatch-bridge-repair-20261002
+    paths:
+      - mission-control/main-recovery-promotion/**
 
 permissions:
   contents: write

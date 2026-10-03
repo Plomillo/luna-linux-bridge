@@ -175,7 +175,7 @@
       "status": "ACTIVE_PINNED",
       "dispatch_mode": "WORKFLOW_DISPATCH",
       "dedicated_workflow": ".github/workflows/main-recovery-root-hardened-promotion.yml",
-      "dedicated_workflow_sha256": "5ff515f88567f38b583fc575122e05960aa1e6cf7fc9c0d229e3ddf1ea38a2ef"
+      "dedicated_workflow_sha256": "01ca519d5e77fb92e89efcbbe63f6e9fa63af1bdccf4d138d48311e9098e0f6f"
     }
   ],
   "policy": {

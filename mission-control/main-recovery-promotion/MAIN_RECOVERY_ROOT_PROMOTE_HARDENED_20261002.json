@@ -1,0 +1,16 @@
+{
+  "schema": "LOUKSNA_MAIN_RECOVERY_PROMOTION_TRIGGER/1.0",
+  "mission_id": "MAIN_RECOVERY_ROOT_PROMOTE_HARDENED_20261002",
+  "mission_source_sha256": "03c0c6013d1d0aedbde6203aa804b65a08c79aefbc019624577ca732a60ffc17",
+  "adapter_id": "MAIN_RECOVERY_ROOT_HARDENED_PROMOTION_V1",
+  "adapter_sha256": "92685098af2c967b6eed8ddc37c3bd5934165b91fa5e756b06cfaee4c8c7654e",
+  "workflow_sha256": "01ca519d5e77fb92e89efcbbe63f6e9fa63af1bdccf4d138d48311e9098e0f6f",
+  "source_candidate_sha": "2a5057a2b47c122476a8fc90b756fdf8d942ebc5",
+  "expected_main_sha": "48b42b6bc985450c380c601d07ac1285e1e755f5",
+  "user_authorization": "EXPLICIT",
+  "promotion_to_main_authorized": true,
+  "direct_main_update_authorized": "ONLY_AFTER_PRE_G23_G24_PASS",
+  "authority": "Louksna.md",
+  "assurance_reference": "PUAC2.md",
+  "certification_propagation": false
+}
