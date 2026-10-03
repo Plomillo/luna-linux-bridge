@@ -1,49 +1,53 @@
 {
-  "schema": "LOUKSNA_DROPBOX_PROJECTS_MISSION/1.0",
-  "mission_id": "DROPBOX-PROYECTOS-PRIORITARIOS-CUSTOSZ-20261003",
+  "schema": "LOUKSNA_DROPBOX_PROJECTS_MISSION/2.0",
+  "mission_id": "DROPBOX-PROYECTOS-PRIORITARIOS-WGET-FIX-20261003",
   "authority": "Louksna.md",
   "worker": "CUSTOSZ_V7",
   "execution_surface": "GITHUB_ACTIONS",
-  "branch": "staging/dropbox-proyectos-prioritarios-custosz-20261003",
+  "branch": "staging/dropbox-proyectos-prioritarios-wget-fix-20261003",
   "dropbox_url": "https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/AIIzeblluaJfhuXh9EnP-10?rlkey=p712fwlkbwn9g0dtybu2sf159&st=3igdng0g&dl=0",
   "expected_dropbox_folder": "1. PROYECTOS PRIORITARIOS",
-  "dropbox_metadata": {
-    "link_type": "folder",
-    "access_level": "edit",
-    "audience": "public",
-    "allow_download": true,
-    "dropbox_id": "id:3C2Vtkj41nkAAAAAAAAAKQ"
+  "bug_fix_scope": "PREVIOUS_CURL_RESPONSE_WAS_HTML_NOT_ZIP",
+  "download_policy": {
+    "source_of_truth": "dropbox_url",
+    "transport": "wget",
+    "follow_redirects": true,
+    "preserve_original_query_parameters": true,
+    "force_dl_parameter": "1",
+    "require_zip_signature_before_extraction": true,
+    "require_zip_crc": true,
+    "require_sha256": true,
+    "require_per_file_manifest": true,
+    "execute_downloaded_content": false
   },
-  "phase_1": {
-    "action": "DOWNLOAD_AND_CERTIFY",
-    "requirements": [
-      "Use a new isolated GitHub Actions workspace keyed by run_id.",
-      "Do not reuse, overwrite, rename, delete, or merge the prior main artifact 1. PROYECTOS PRIORITARIOS.7z.001.",
-      "Download the exact Dropbox folder through its authorized shared link.",
-      "Require complete HTTP transfer, non-empty archive, ZIP CRC pass, path-safety pass, SHA-256 archive identity, and per-file manifest.",
-      "Do not execute downloaded content."
-    ]
+  "prior_7z_policy": {
+    "pattern": "1. PROYECTOS PRIORITARIOS.7z*",
+    "status": "IGNORED_NOT_INPUT",
+    "read": false,
+    "reuse": false,
+    "compare": false,
+    "mutate": false
   },
-  "phase_2": {
-    "precondition": "PHASE_1_STATUS_PASS",
-    "action": "CUSTOSZ_READ_ONLY_FORENSIC_PROJECT_AUDIT",
-    "requirements": [
-      "Run the pinned CUSTOSZ V7 identity after download certification.",
-      "Audit projects from each project's latest explicit checkpoint/state/status/evidence marker.",
-      "Report exact duplicate payload groups by SHA-256 without deleting anything.",
-      "Do not execute or mutate downloaded projects.",
-      "Preserve audit evidence and CUSTOSZ mission identity."
-    ]
+  "non_interference": {
+    "unique_branch": true,
+    "unique_concurrency_group": true,
+    "cancel_in_progress": false,
+    "cancel_other_runs": false,
+    "mutate_prior_workflows": false
   },
   "invariants": {
     "traceability": true,
     "auditability": true,
     "provenance": true,
+    "governance": true,
     "fail_closed": true,
     "no_silent_operations": true,
-    "no_collision_with_previous_download": true,
     "certification_propagation": false,
     "desktop_commander_used": false
+  },
+  "phase_2": {
+    "precondition": "DOWNLOAD_CERTIFICATION_PASS",
+    "action": "CUSTOSZ_READ_ONLY_FORENSIC_PROJECT_AUDIT"
   },
   "stop_condition_for_assistant": "STOP_INTERVENING_ONCE_REAL_GITHUB_JOB_IS_QUEUED_OR_IN_PROGRESS"
 }
