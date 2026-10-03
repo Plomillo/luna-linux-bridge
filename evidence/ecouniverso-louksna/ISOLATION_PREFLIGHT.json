@@ -1,0 +1,10 @@
+{
+  "concurrency_cancel_in_progress": false,
+  "current_branch": "staging/ecouniverso-louksna-hardened-skeleton-16m-20261003",
+  "current_run_id": 37154390319,
+  "other_live_runs_observed": [],
+  "other_workflow_files_modified": [],
+  "previous_process_cancellation_requested": false,
+  "schema": "LOUKSNA_ECOUNIVERSO_RUN_ISOLATION/1.0",
+  "status": "PASS"
+}

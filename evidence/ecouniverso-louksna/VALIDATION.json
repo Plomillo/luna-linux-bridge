@@ -1,0 +1,117 @@
+{
+  "assurance_standard": "PUAC2.md",
+  "authority": "Louksna.md",
+  "base_ref": "staging/luna-r4-master-part1-part9-20260929",
+  "certification_claimed": false,
+  "checks": [
+    {
+      "family": "AUDITABILITY",
+      "status": "PASS",
+      "tokens": [
+        "AUDITABILITY_REQUIRED = TRUE",
+        "MISSING_AUDIT_RECORD = FAIL_CLOSED",
+        "CERTIFICATION_WITHOUT_AUDIT_EVIDENCE = FORBIDDEN"
+      ]
+    },
+    {
+      "family": "TRACEABILITY",
+      "status": "PASS",
+      "tokens": [
+        "TRACEABILITY_REQUIRED = TRUE",
+        "TRACE_ID_REQUIRED = TRUE",
+        "MISSING_TRACE = FAIL_CLOSED",
+        "TRACEABILITY_LOSS = REJECT"
+      ]
+    },
+    {
+      "family": "GOVERNANCE",
+      "status": "PASS",
+      "tokens": [
+        "GOVERNANCE_ROOT = Louksna.md",
+        "EXTEND_DO_NOT_REPLACE = TRUE",
+        "APPEND_ONLY = TRUE",
+        "FAIL_CLOSED = TRUE",
+        "NO_SILENT_AUTHORITY_TRANSFER = TRUE",
+        "AUTO_CERTIFICATION = FORBIDDEN",
+        "CERTIFICATION_PROPAGATION = FORBIDDEN"
+      ]
+    },
+    {
+      "family": "PROVENANCE",
+      "status": "PASS",
+      "tokens": [
+        "PROVENANCE_REQUIRED = TRUE",
+        "NEW_MATERIAL_PROVENANCE = MANDATORY",
+        "UNRESOLVED_PROVENANCE = FAIL_CLOSED",
+        "PROVENANCE_DELETION = FORBIDDEN",
+        "PROVENANCE_FABRICATION = FORBIDDEN"
+      ]
+    },
+    {
+      "family": "AUTHORITY_AND_ORDER",
+      "status": "PASS",
+      "tokens": [
+        "CANONICAL_AUTHORITY = Louksna.md",
+        "ASSURANCE_STANDARD = PUAC2.md",
+        "CURRENT_ORDER_MODE = QUINTO_ORDEN_MODE",
+        "ORDER_CHANGE != IDENTITY_CHANGE",
+        "ORDER_CHANGE != FAMILY_REPLACEMENT",
+        "ORDER_CHANGE != AUTHORITY_TRANSFER",
+        "VALIDATOR = G23",
+        "CERTIFIER = G24",
+        "STATUS_FINAL_DE_ESTA_ESPECIFICACION = CANDIDATE_NOT_CERTIFIED"
+      ]
+    },
+    {
+      "family": "FAMILY_PRESENCE",
+      "status": "PASS",
+      "tokens": [
+        "TEORIA_DE_TIPOS_DEPENDIENTES_DE_ORDEN_SUPERIOR",
+        "HOTT_UNIVALENCIA",
+        "ANTIPARALISIS",
+        "ORDEN",
+        "GOBERNANZA",
+        "GENERAL",
+        "PARTICULAR",
+        "MULTIDISCIPLINARIEDAD",
+        "INTERDISCIPLINARIEDAD",
+        "TRANSDISCIPLINARIEDAD",
+        "ELASTICIDAD",
+        "PODA",
+        "CUANTIZACION",
+        "ENDURECIMIENTO",
+        "CATOLICIDAD_REFORMADA_SISTEMATICA",
+        "NETKAIZEN",
+        "AUDITABILIDAD",
+        "TRAZABILIDAD",
+        "INSTITUCION",
+        "CONSTITUCION",
+        "DIRECTRICES",
+        "MATRIX",
+        "DIRECTIVA",
+        "HERMENEUTICA",
+        "EXEGESIS",
+        "TRADUCTOR",
+        "CHECKPOINT",
+        "TRANSPARENCIA",
+        "ANTI_DUPLICACION",
+        "TAXONOMIA",
+        "SEMANTICA",
+        "OPTIMIZACION",
+        "METAFISICA",
+        "INGENIERIA_Y_SOFTWARE",
+        "LOGICA_FORMAL",
+        "INTEGRIDAD"
+      ]
+    }
+  ],
+  "deletions": [],
+  "g23_status": "NOT_CLAIMED",
+  "g24_status": "NOT_CLAIMED",
+  "non_regression_scope": "STRUCTURAL_ADDITIVE_PREFLIGHT",
+  "protected_existing_scope_mutation": [],
+  "schema": "LOUKSNA_ECOUNIVERSO_SKELETON_VALIDATION/1.0",
+  "spec_path": "architecture/ecouniverso-louksna/ECOUNIVERSO_LOUKSNA_HARDENED_SKELETON.md",
+  "spec_sha256": "4a279e1bde3d6604f2ddc98dd3afc1769094a8292fb8cddbe2308ac706bae1a0",
+  "status": "PASS"
+}
