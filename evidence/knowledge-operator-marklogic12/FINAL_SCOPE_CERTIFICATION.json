@@ -1,0 +1,20 @@
+{
+  "active": false,
+  "assurance": "PUAC2.md",
+  "authority": "Louksna.md",
+  "candidate_sha": "fe72951e821308603b875b984d76292ce05f59e4",
+  "g23": {
+    "candidate_mutation": false,
+    "external_actor_independence": false,
+    "method": "DETACHED_WORKTREE_READ_ONLY_VALIDATION_PROCESS",
+    "status": "PASS"
+  },
+  "g24": {
+    "certification_propagation": false,
+    "certified_scope": "KNOWLEDGE_OPERATOR_SKELETON+MARKLOGIC12_ACQUISITION_BINDING+SHARED_REASONER_COOPERATION",
+    "same_frozen_candidate_sha": true,
+    "status": "PASS"
+  },
+  "runtime_marklogic_query_certified": false,
+  "schema": "LOUKSNA_KNOWLEDGE_MARKLOGIC12_G23_G24/1.0"
+}
