@@ -1,0 +1,67 @@
+name: "CUSTOSZ — expose rclone response as TXT"
+
+on:
+  push:
+    branches:
+      - staging/consultas-implementation-6m-20261002
+    paths:
+      - ".github/workflows/custosz-rclone-response-json-to-txt.yml"
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  expose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Checkout consultation branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: true
+          fetch-depth: 1
+
+      - name: Extract exact CUSTOSZ JSON and publish as TXT
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_ID: "11281086582"
+          OUT_PATH: "consultas/outbox/rclone-host-folder-to-github-20261003/CUSTOSZ_RCLONE_RESPONSE.txt"
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
+
+          gh api \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}/zip" \
+            > "$tmp/custosz.zip"
+
+          unzip -p "$tmp/custosz.zip" CUSTOSZ_RCLONE_RESPONSE.json > "$tmp/CUSTOSZ_RCLONE_RESPONSE.json"
+          test -s "$tmp/CUSTOSZ_RCLONE_RESPONSE.json"
+
+          mkdir -p "$(dirname "$OUT_PATH")"
+          cp -- "$tmp/CUSTOSZ_RCLONE_RESPONSE.json" "$OUT_PATH"
+
+          json_sha="$(sha256sum "$tmp/CUSTOSZ_RCLONE_RESPONSE.json" | awk '{print $1}')"
+          txt_sha="$(sha256sum "$OUT_PATH" | awk '{print $1}')"
+          test "$json_sha" = "$txt_sha"
+
+          git config user.name "CUSTOSZ transport"
+          git config user.email "actions@users.noreply.github.com"
+          git add -- "$OUT_PATH"
+
+          if git diff --cached --quiet; then
+            echo "TXT_ALREADY_CURRENT=true"
+            exit 0
+          fi
+
+          git commit -m "custosz: expose rclone response as txt"
+          git push origin HEAD:staging/consultas-implementation-6m-20261002
+
+          echo "CUSTOSZ_JSON_TO_TXT=PASS"
+          echo "SOURCE_ARTIFACT_ID=$ARTIFACT_ID"
+          echo "TXT_PATH=$OUT_PATH"
+          echo "CONTENT_SHA256=$txt_sha"
