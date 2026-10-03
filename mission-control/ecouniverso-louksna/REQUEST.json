@@ -1,0 +1,31 @@
+{
+  "schema": "LOUKSNA_ECOUNIVERSO_SKELETON_MISSION/1.0",
+  "mission_id": "ECOUNIVERSO-LOUKSNA-HARDENED-SKELETON-16M-20261003",
+  "authority": "Louksna.md",
+  "assurance_standard": "PUAC2.md",
+  "branch": "staging/ecouniverso-louksna-hardened-skeleton-16m-20261003",
+  "hard_ceiling_seconds": 960,
+  "doctrine": "EXTEND_DO_NOT_REPLACE",
+  "construction_mode": "APPEND_ONLY",
+  "failure_posture": "FAIL_CLOSED",
+  "priorities": [
+    "AUDITABILITY",
+    "TRACEABILITY",
+    "GOVERNANCE",
+    "PROVENANCE"
+  ],
+  "requirements": [
+    "Materialize the hardened ECOUNIVERSO LOUKSNA skeleton additively.",
+    "Preserve Louksna.md and PUAC2.md unchanged.",
+    "Do not mutate bridge/reasoning, server/r4-master, server/r4-48h, or prior workflow files.",
+    "Do not delete or overwrite existing repository content.",
+    "Use a unique branch and unique concurrency group.",
+    "Set cancel-in-progress=false.",
+    "Do not request cancellation of any prior run.",
+    "Validate auditability, traceability, governance and provenance before the remaining skeleton.",
+    "Do not claim G23 or G24 certification in this materialization run.",
+    "Persist only bounded validation evidence on this isolated branch."
+  ],
+  "assistant_stop_condition": "STOP_ON_REAL_GITHUB_JOB_QUEUED_OR_IN_PROGRESS",
+  "certification_scope_requested": "START_AND_ISOLATION_ONLY"
+}
