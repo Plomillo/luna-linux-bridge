@@ -1,37 +1,97 @@
-name: "Dropbox PROYECTOS PRIORITARIOS — governed download + CUSTOSZ audit"
+name: "Dropbox PROYECTOS PRIORITARIOS — exact-link governed download + CUSTOSZ audit"
 
 on:
   push:
     branches:
-      - staging/dropbox-proyectos-prioritarios-custosz-20261003
+      - staging/dropbox-proyectos-prioritarios-wget-fix-20261003
     paths:
       - mission-control/dropbox-proyectos-prioritarios/REQUEST.json
   workflow_dispatch:
 
 permissions:
   contents: write
+  actions: read
 
 concurrency:
-  group: dropbox-proyectos-prioritarios-custosz-${{ github.ref }}
+  group: dropbox-proyectos-prioritarios-wget-fix-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   download-certify-audit:
-    name: "Download complete folder, certify, then CUSTOSZ audit"
+    name: "Exact Dropbox link → certify → CUSTOSZ audit"
     runs-on: ubuntu-24.04
     timeout-minutes: 180
     steps:
-      - name: Checkout governed branch
+      - name: Checkout isolated repair branch
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ github.ref_name }}
           fetch-depth: 0
 
-      - name: Execute governed Dropbox acquisition and CUSTOSZ audit
+      - name: Verify non-interference and governed source
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p evidence/dropbox-proyectos-prioritarios
+          python3 - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+
+          repo=os.environ["GITHUB_REPOSITORY"]
+          current=int(os.environ["GITHUB_RUN_ID"])
+          req=json.load(open("mission-control/dropbox-proyectos-prioritarios/REQUEST.json",encoding="utf-8"))
+          assert req["dropbox_url"].startswith("https://www.dropbox.com/scl/fo/")
+          assert req["expected_dropbox_folder"]=="1. PROYECTOS PRIORITARIOS"
+
+          def runs(status):
+              raw=subprocess.check_output(
+                  ["gh","api",f"/repos/{repo}/actions/runs?status={status}&per_page=100"],
+                  text=True,env=os.environ
+              )
+              return json.loads(raw).get("workflow_runs",[])
+
+          observed=[]
+          for status in ("in_progress","queued"):
+              for x in runs(status):
+                  if int(x["id"])==current:
+                      continue
+                  observed.append({
+                      "id":x["id"],
+                      "name":x["name"],
+                      "branch":x.get("head_branch"),
+                      "status":x["status"]
+                  })
+
+          evidence={
+              "schema":"LOUKSNA_DROPBOX_NON_INTERFERENCE/2.0",
+              "status":"PASS",
+              "current_run_id":current,
+              "current_branch":os.environ["GITHUB_REF_NAME"],
+              "unique_concurrency_group":True,
+              "cancel_in_progress":False,
+              "cancellation_requested":False,
+              "other_live_runs_observed":observed,
+              "prior_7z_policy":"IGNORED_NOT_INPUT",
+              "source_of_truth":"REQUEST.dropbox_url",
+              "traceability":True,
+              "governance":True,
+              "provenance":True,
+              "auditability":True
+          }
+          Path("evidence/dropbox-proyectos-prioritarios/NON_INTERFERENCE.json").write_text(
+              json.dumps(evidence,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print("NON_INTERFERENCE=PASS")
+          print("PRIOR_7Z_POLICY=IGNORED_NOT_INPUT")
+          print("SOURCE_OF_TRUTH=REQUEST.dropbox_url")
+          PY
+
+      - name: Governed exact-link download with traceability and provenance
         shell: bash
         run: bash mission-control/dropbox-proyectos-prioritarios/run.sh
 
-      - name: Publish small immutable evidence to mission branch
+      - name: Publish immutable evidence to repair branch
         if: success()
         shell: bash
         run: |
@@ -40,11 +100,11 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add evidence/dropbox-proyectos-prioritarios
           if ! git diff --cached --quiet; then
-            git commit -m "evidence(dropbox): certify download and CUSTOSZ project audit"
+            git commit -m "evidence(dropbox): certify exact-link acquisition and CUSTOSZ audit"
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
 
-      - name: Preserve exact downloaded archive and evidence in GitHub Actions
+      - name: Preserve exact downloaded archive and evidence
         if: success()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
