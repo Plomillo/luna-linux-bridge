@@ -1,0 +1,56 @@
+{
+  "schema": "LOUKSNA_KNOWLEDGE_OPERATOR_MARKLOGIC12_MISSION/1.0",
+  "mission_id": "MIS-KNOWLEDGE-OPERATOR-MARKLOGIC12-10M-20261003",
+  "authority": "Louksna.md",
+  "assurance": "PUAC2.md",
+  "worker_surface": "GITHUB_ACTIONS",
+  "hard_ceiling_seconds": 600,
+  "failure_posture": "FAIL_CLOSED",
+  "doctrine": "EXTEND_DO_NOT_REPLACE",
+  "no_silent_operations": true,
+  "traceability": "REQUIRED",
+  "auditability": "REQUIRED",
+  "provenance": "REQUIRED",
+  "rollback": "REQUIRED",
+  "non_regression": "REQUIRED",
+  "three_points_only": [
+    {
+      "point": 1,
+      "name": "IMPLEMENT_COMPATIBLE_SKELETON",
+      "requirements": [
+        "Preserve existing bridge/reasoning and Qwen materialization byte-for-byte.",
+        "Do not redownload Qwen.",
+        "Do not delete, replace, rename or silently mutate existing infrastructure.",
+        "Add Knowledge Operator, KNOWLEDGE_INTERFACE/1.0 and provider-neutral cooperation contract with REASONING_INTERFACE/1.0.",
+        "Do not create duplicate engine identities for E05/E06/E07/E14; bind as backend/support relationships only.",
+        "Knowledge Operator and Shared Reasoner know each other's stable interfaces; MarkLogic and Qwen do not hard-code each other."
+      ]
+    },
+    {
+      "point": 2,
+      "name": "DOWNLOAD_MARKLOGIC12_THROUGH_MAIN",
+      "precondition": "POINT_1_PASS",
+      "requirements": [
+        "Use main as the read-only recovery/acquisition root.",
+        "Do not mutate main.",
+        "Download the official Progress MarkLogic 12 Docker image exactly once when absent.",
+        "Pin the resulting repository digest and image identity as provenance evidence.",
+        "Do not activate, license-configure or promote MarkLogic during acquisition.",
+        "Do not redownload Qwen."
+      ]
+    },
+    {
+      "point": 3,
+      "name": "VALIDATE_AND_CERTIFY_EXACT_FROZEN_SCOPE",
+      "precondition": "POINT_2_PASS",
+      "requirements": [
+        "Freeze the exact candidate commit.",
+        "G23 independently verifies compatibility, no deletion, no Qwen mutation/redownload, no duplicate engine identity, no provider hard-binding, provenance and fail-closed boundaries.",
+        "G24 certifies only the same frozen digest after G23 PASS.",
+        "Certification propagation is forbidden and ACTIVE remains false unless separately authorized."
+      ]
+    }
+  ],
+  "stop_condition_for_assistant": "ONCE_GITHUB_RUN_IS_QUEUED_OR_IN_PROGRESS_THE_ASSISTANT_STOPS_INTERVENING",
+  "success_condition_for_assistant": "REAL_GITHUB_ACTIONS_RUN_OBSERVED_FOR_THIS_WORKFLOW"
+}
