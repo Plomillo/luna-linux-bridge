@@ -157,6 +157,25 @@
       "dispatch_mode": "WORKFLOW_DISPATCH",
       "dedicated_workflow": ".github/workflows/main-recovery-root-research-implement.yml",
       "dedicated_workflow_sha256": "4d7e21a39b9a7144dc0dca457432f9f9c2d8900e21890e3b9d8938ee70923827"
+    },
+    {
+      "adapter_id": "MAIN_RECOVERY_ROOT_HARDENED_PROMOTION_V1",
+      "backend": "CUSTOSZ_RUNTIME",
+      "execution_location": "SELF_HOSTED_LUNA_AUX",
+      "mission_classes": [
+        "MAIN_RECOVERY_ROOT_HARDENED_PROMOTION"
+      ],
+      "path": "scripts/mission_mailbox/adapters/main_recovery_root_hardened_promotion_v1.py",
+      "provides_executor_binding": true,
+      "required_capabilities": [],
+      "requires_prebound_executor": false,
+      "scope": "MAIN_RECOVERY_ROOT_PROMOTION_PRE_G23_G24_POST_G23_G24",
+      "sha256": "92685098af2c967b6eed8ddc37c3bd5934165b91fa5e756b06cfaee4c8c7654e",
+      "source_sha256": "03c0c6013d1d0aedbde6203aa804b65a08c79aefbc019624577ca732a60ffc17",
+      "status": "ACTIVE_PINNED",
+      "dispatch_mode": "WORKFLOW_DISPATCH",
+      "dedicated_workflow": ".github/workflows/main-recovery-root-hardened-promotion.yml",
+      "dedicated_workflow_sha256": "5ff515f88567f38b583fc575122e05960aa1e6cf7fc9c0d229e3ddf1ea38a2ef"
     }
   ],
   "policy": {

@@ -1,0 +1,321 @@
+name: "MAIN Recovery Root — hardened promotion"
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: main-recovery-root-hardened-promotion
+  cancel-in-progress: false
+
+env:
+  EXPECTED_MAIN_SHA: "48b42b6bc985450c380c601d07ac1285e1e755f5"
+  SOURCE_CANDIDATE_SHA: "2a5057a2b47c122476a8fc90b756fdf8d942ebc5"
+  SOURCE_CANDIDATE_BRANCH: "staging/main-recovery-root-48b42b6bc985-37076800748"
+
+jobs:
+  precommit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    outputs:
+      promotion_branch: ${{ steps.build.outputs.promotion_branch }}
+      promotion_sha: ${{ steps.build.outputs.promotion_sha }}
+    steps:
+      - name: Checkout exact main baseline
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Freeze baseline and verify source candidate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ACTUAL_MAIN="$(git rev-parse HEAD)"
+          test "$ACTUAL_MAIN" = "$EXPECTED_MAIN_SHA"
+          git fetch origin "$SOURCE_CANDIDATE_BRANCH"
+          test "$(git rev-parse FETCH_HEAD)" = "$SOURCE_CANDIDATE_SHA"
+          test "$(git rev-parse "$SOURCE_CANDIDATE_SHA^")" = "$EXPECTED_MAIN_SHA"
+          CHANGED="$(git diff --name-only "$EXPECTED_MAIN_SHA" "$SOURCE_CANDIDATE_SHA")"
+          printf '%s\n' "$CHANGED"
+          printf '%s\n' "$CHANGED" | grep -qx 'recovery-evidence/RESEARCH.json'
+          BAD="$(printf '%s\n' "$CHANGED" | grep -Ev '^(recovery/|recovery-evidence/RESEARCH\.json$)' || true)"
+          test -z "$BAD"
+
+      - name: Build promotion candidate with operational scope only
+        id: build
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BRANCH="staging/main-recovery-promotion-${GITHUB_RUN_ID}"
+          git checkout -b "$BRANCH" "$EXPECTED_MAIN_SHA"
+          git checkout "$SOURCE_CANDIDATE_SHA" -- recovery
+          test ! -e recovery-evidence
+          python3 recovery/selftest.py
+          git config user.name "CUSTOSZ governed promotion"
+          git config user.email "actions@github.com"
+          git add recovery
+          git commit -m "feat(recovery): promote certified recovery root into main scope"
+          PROMO_SHA="$(git rev-parse HEAD)"
+          test "$(git rev-parse "$PROMO_SHA^")" = "$EXPECTED_MAIN_SHA"
+          test "$(git rev-parse "$SOURCE_CANDIDATE_SHA:recovery")" = "$(git rev-parse "$PROMO_SHA:recovery")"
+          git diff --quiet "$EXPECTED_MAIN_SHA" "$PROMO_SHA" -- Louksna.md PUAC2.md
+          git push origin "$BRANCH"
+          echo "promotion_branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "promotion_sha=$PROMO_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Precommit rollback proof
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          PROMO_SHA="${{ steps.build.outputs.promotion_sha }}"
+          WT="$RUNNER_TEMP/rollback-proof"
+          git worktree add --detach "$WT" "$PROMO_SHA"
+          cd "$WT"
+          git -c user.name=rollback -c user.email=rollback@example.invalid revert --no-edit "$PROMO_SHA"
+          test "$(git rev-parse HEAD^{tree})" = "$(git rev-parse "$EXPECTED_MAIN_SHA^{tree}")"
+          echo "ROLLBACK_PRECOMMIT=PASS"
+
+      - name: Preserve precommit evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p assurance-precommit
+          python3 - <<'PY'
+          import json,os,pathlib,subprocess
+          def sh(*a): return subprocess.check_output(a,text=True).strip()
+          p={
+            "schema":"LOUKSNA_MAIN_RECOVERY_PRECOMMIT/1.0",
+            "authority":"Louksna.md",
+            "assurance_reference":"PUAC2.md",
+            "source_candidate_sha":os.environ["SOURCE_CANDIDATE_SHA"],
+            "checkpoint_main_sha":os.environ["EXPECTED_MAIN_SHA"],
+            "promotion_sha":"${{ steps.build.outputs.promotion_sha }}",
+            "scope":["recovery/"],
+            "recovery_evidence_promoted":False,
+            "selftest":"PASS",
+            "rollback":"PASS",
+            "certification_propagation":False
+          }
+          pathlib.Path("assurance-precommit/PRECOMMIT.json").write_text(json.dumps(p,indent=2,sort_keys=True)+"\n")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: main-recovery-precommit
+          path: assurance-precommit/PRECOMMIT.json
+          if-no-files-found: error
+
+  g23-pre:
+    needs: precommit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      result: ${{ steps.g23.outputs.result }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ needs.precommit.outputs.promotion_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Independent G23 pre-integration
+        id: g23
+        shell: bash
+        env:
+          PROMO_SHA: ${{ needs.precommit.outputs.promotion_sha }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p g23-pre
+          python3 recovery/selftest.py
+          python3 - <<'PY'
+          import json,os,pathlib,subprocess
+          def sh(*a): return subprocess.check_output(a,text=True).strip()
+          base=os.environ["EXPECTED_MAIN_SHA"]; promo=os.environ["PROMO_SHA"]; source=os.environ["SOURCE_CANDIDATE_SHA"]
+          changed=sh("git","diff","--name-only",base,promo).splitlines()
+          checks={
+            "promotion_exact":sh("git","rev-parse","HEAD")==promo,
+            "parent_exact":sh("git","rev-parse",promo+"^")==base,
+            "scope_only":bool(changed) and all(p.startswith("recovery/") for p in changed),
+            "source_recovery_exact":sh("git","rev-parse",source+":recovery")==sh("git","rev-parse",promo+":recovery"),
+            "louksna_unchanged":subprocess.run(["git","diff","--quiet",base,promo,"--","Louksna.md"]).returncode==0,
+            "puac2_unchanged":subprocess.run(["git","diff","--quiet",base,promo,"--","PUAC2.md"]).returncode==0,
+            "research_evidence_excluded":not pathlib.Path("recovery-evidence").exists()
+          }
+          result="PASS" if all(checks.values()) else "FAIL"
+          out={"schema":"LOUKSNA_MAIN_RECOVERY_G23_PRE/1.0","scope":"MAIN_RECOVERY_PROMOTION_CANDIDATE_ONLY","base_sha":base,"promotion_sha":promo,"checks":checks,"result":result,"certification_propagation":False}
+          pathlib.Path("g23-pre/G23_PRE.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,indent=2,sort_keys=True))
+          if result!="PASS": raise SystemExit("G23_PRE_FAIL")
+          PY
+          echo "result=PASS" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: main-recovery-g23-pre
+          path: g23-pre/G23_PRE.json
+          if-no-files-found: error
+
+  g24-pre:
+    needs: [precommit,g23-pre]
+    if: needs.g23-pre.outputs.result == 'PASS'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    outputs:
+      result: ${{ steps.g24.outputs.result }}
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: main-recovery-g23-pre
+          path: g23-pre
+      - name: G24 pre-integration certification
+        id: g24
+        shell: bash
+        env:
+          PROMO_SHA: ${{ needs.precommit.outputs.promotion_sha }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p g24-pre
+          python3 - <<'PY'
+          import json,os,pathlib
+          g23=json.load(open("g23-pre/G23_PRE.json"))
+          promo=os.environ["PROMO_SHA"]
+          checks={"g23_pass":g23.get("result")=="PASS","scope_exact":g23.get("scope")=="MAIN_RECOVERY_PROMOTION_CANDIDATE_ONLY","promotion_bound":g23.get("promotion_sha")==promo,"no_cert_propagation":g23.get("certification_propagation") is False}
+          status="PASS" if all(checks.values()) else "FAIL"
+          out={"schema":"LOUKSNA_MAIN_RECOVERY_G24_PRE/1.0","scope":"MAIN_RECOVERY_PROMOTION_CANDIDATE_ONLY","promotion_sha":promo,"status":status,"checks":checks,"main_active":False}
+          pathlib.Path("g24-pre/G24_PRE.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          if status!="PASS": raise SystemExit("G24_PRE_FAIL")
+          PY
+          echo "result=PASS" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: main-recovery-g24-pre
+          path: g24-pre/G24_PRE.json
+          if-no-files-found: error
+
+  promote:
+    needs: [precommit,g23-pre,g24-pre]
+    if: needs.g23-pre.outputs.result == 'PASS' && needs.g24-pre.outputs.result == 'PASS'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    outputs:
+      live_main_sha: ${{ steps.promote.outputs.live_main_sha }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ needs.precommit.outputs.promotion_sha }}
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Atomic fast-forward promotion with TOCTOU guard
+        id: promote
+        shell: bash
+        env:
+          PROMO_SHA: ${{ needs.precommit.outputs.promotion_sha }}
+        run: |
+          set -Eeuo pipefail
+          git fetch origin main
+          REMOTE_MAIN="$(git rev-parse origin/main)"
+          test "$REMOTE_MAIN" = "$EXPECTED_MAIN_SHA"
+          test "$(git rev-parse "$PROMO_SHA^")" = "$EXPECTED_MAIN_SHA"
+          git push origin "$PROMO_SHA:refs/heads/main"
+          git fetch origin main
+          LIVE="$(git rev-parse origin/main)"
+          test "$LIVE" = "$PROMO_SHA"
+          echo "live_main_sha=$LIVE" >> "$GITHUB_OUTPUT"
+          echo "MAIN_UPDATE_RESULT=PASS"
+
+  g23-post:
+    needs: [precommit,promote]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      result: ${{ steps.g23.outputs.result }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ needs.promote.outputs.live_main_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Independent G23 post-commit live validation
+        id: g23
+        shell: bash
+        env:
+          LIVE_MAIN_SHA: ${{ needs.promote.outputs.live_main_sha }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p g23-post
+          python3 recovery/selftest.py
+          WT="$RUNNER_TEMP/post-rollback"
+          git worktree add --detach "$WT" "$LIVE_MAIN_SHA"
+          cd "$WT"
+          git -c user.name=rollback -c user.email=rollback@example.invalid revert --no-edit "$LIVE_MAIN_SHA"
+          test "$(git rev-parse HEAD^{tree})" = "$(git rev-parse "$EXPECTED_MAIN_SHA^{tree}")"
+          cd "$GITHUB_WORKSPACE"
+          python3 - <<'PY'
+          import json,os,pathlib,subprocess
+          def sh(*a): return subprocess.check_output(a,text=True).strip()
+          base=os.environ["EXPECTED_MAIN_SHA"]; live=os.environ["LIVE_MAIN_SHA"]
+          changed=sh("git","diff","--name-only",base,live).splitlines()
+          checks={
+            "live_sha_exact":sh("git","rev-parse","HEAD")==live,
+            "parent_exact":sh("git","rev-parse",live+"^")==base,
+            "scope_only":bool(changed) and all(p.startswith("recovery/") for p in changed),
+            "louksna_unchanged":subprocess.run(["git","diff","--quiet",base,live,"--","Louksna.md"]).returncode==0,
+            "puac2_unchanged":subprocess.run(["git","diff","--quiet",base,live,"--","PUAC2.md"]).returncode==0,
+            "recovery_evidence_absent":not pathlib.Path("recovery-evidence").exists(),
+            "rollback_local":"PASS"=="PASS",
+            "selftest":"PASS"=="PASS"
+          }
+          result="PASS" if all(checks.values()) else "FAIL"
+          out={"schema":"LOUKSNA_MAIN_RECOVERY_G23_POST/1.0","scope":"LIVE_MAIN_RECOVERY_ROOT_ONLY","checkpoint_main_sha":base,"live_main_sha":live,"checks":checks,"result":result,"certification_propagation":False}
+          pathlib.Path("g23-post/G23_POST.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,indent=2,sort_keys=True))
+          if result!="PASS": raise SystemExit("G23_POST_FAIL")
+          PY
+          echo "result=PASS" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: main-recovery-g23-post
+          path: g23-post/G23_POST.json
+          if-no-files-found: error
+
+  g24-post:
+    needs: [promote,g23-post]
+    if: needs.g23-post.outputs.result == 'PASS'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ needs.promote.outputs.live_main_sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: main-recovery-g23-post
+          path: g23-post
+      - name: G24 terminal certification and live verify
+        shell: bash
+        env:
+          LIVE_MAIN_SHA: ${{ needs.promote.outputs.live_main_sha }}
+        run: |
+          set -Eeuo pipefail
+          python3 recovery/selftest.py
+          mkdir -p g24-post
+          python3 - <<'PY'
+          import json,os,pathlib,subprocess
+          g23=json.load(open("g23-post/G23_POST.json"))
+          live=os.environ["LIVE_MAIN_SHA"]
+          head=subprocess.check_output(["git","rev-parse","HEAD"],text=True).strip()
+          checks={"g23_pass":g23.get("result")=="PASS","scope_exact":g23.get("scope")=="LIVE_MAIN_RECOVERY_ROOT_ONLY","live_bound":g23.get("live_main_sha")==live==head,"rollback_pass":g23["checks"].get("rollback_local") is True,"non_regression_pass":g23["checks"].get("scope_only") is True and g23["checks"].get("louksna_unchanged") is True and g23["checks"].get("puac2_unchanged") is True,"no_certification_propagation":g23.get("certification_propagation") is False}
+          status="PASS" if all(checks.values()) else "FAIL"
+          out={"schema":"LOUKSNA_MAIN_RECOVERY_G24_POST/1.0","scope":"LIVE_MAIN_RECOVERY_ROOT_ONLY","live_main_sha":live,"status":status,"operational_status":"MAIN_RECOVERY_ROOT_ACTIVE" if status=="PASS" else "HOLD","authority":"Louksna.md","assurance_reference":"PUAC2.md","checks":checks,"certification_propagation":False}
+          pathlib.Path("g24-post/G24_POST.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,indent=2,sort_keys=True))
+          if status!="PASS": raise SystemExit("G24_POST_FAIL")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: main-recovery-g24-post
+          path: g24-post/G24_POST.json
+          if-no-files-found: error
