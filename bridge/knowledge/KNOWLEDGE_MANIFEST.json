@@ -1,27 +1,38 @@
 {
-  "schema": "LOUKSNA_KNOWLEDGE_PROVIDER_MANIFEST/1.0",
-  "status": "SKELETON_MATERIALIZED_PROVIDER_PENDING",
+  "activation": false,
   "authority": "Louksna.md",
-  "role": "KNOWLEDGE_OPERATOR",
-  "interface": "KNOWLEDGE_INTERFACE/1.0",
-  "compatible_consumer_interface": "REASONING_INTERFACE/1.0",
-  "provider": {
-    "provider_id": "MARKLOGIC_12",
-    "provider_class": "SWAPPABLE_KNOWLEDGE_PROVIDER",
-    "replaceable": true,
-    "material_binding": null
-  },
   "canonical_authority": false,
+  "compatible_consumer_interface": "REASONING_INTERFACE/1.0",
   "execution_authority": false,
-  "gate_authority": false,
-  "root_authority": false,
-  "self_certification": false,
-  "new_engine_identity_created": false,
   "existing_capability_bindings": {
     "E05": "PROVIDES_BACKEND_FOR_VECTOR_SEARCH",
     "E06": "PROVIDES_BACKEND_FOR_KNOWLEDGE_GRAPH",
     "E07": "PROVIDES_BACKEND_FOR_RDF",
     "E14": "INTEGRATES_WITH_PROVENANCE"
   },
-  "activation": false
+  "gate_authority": false,
+  "interface": "KNOWLEDGE_INTERFACE/1.0",
+  "new_engine_identity_created": false,
+  "provider": {
+    "material_binding": {
+      "acquisition_root_ref": "main",
+      "downloaded": true,
+      "image_id": "sha256:0f7fc7cdbcc81d2270998a8aab01edc46224890378fc2bfad011e788a46511ec",
+      "image_ref": "progressofficial/marklogic-db:latest-12",
+      "license_activation_performed": false,
+      "main_commit": "716f9dc3f45324eb87280954c18b8dc475a451e8",
+      "repo_digest": "progressofficial/marklogic-db@sha256:0110ebe978b1d5c70a5b6bfbb21950bbc2ee4327ca09d5d3bf773337de4abf30",
+      "server_configuration_performed": false,
+      "source": "OFFICIAL_PROGRESS_MARKLOGIC_DOCKER_IMAGE",
+      "source_repository": "progressofficial/marklogic-db"
+    },
+    "provider_class": "SWAPPABLE_KNOWLEDGE_PROVIDER",
+    "provider_id": "MARKLOGIC_12",
+    "replaceable": true
+  },
+  "role": "KNOWLEDGE_OPERATOR",
+  "root_authority": false,
+  "schema": "LOUKSNA_KNOWLEDGE_PROVIDER_MANIFEST/1.0",
+  "self_certification": false,
+  "status": "PROVIDER_MATERIAL_ACQUIRED_NOT_ACTIVE"
 }

@@ -1,0 +1,14 @@
+{
+  "acquisition_root_ref": "main",
+  "activation": false,
+  "assurance": "PUAC2.md",
+  "authority": "Louksna.md",
+  "image_id": "sha256:0f7fc7cdbcc81d2270998a8aab01edc46224890378fc2bfad011e788a46511ec",
+  "main_commit": "716f9dc3f45324eb87280954c18b8dc475a451e8",
+  "main_mutation": false,
+  "official_image": "progressofficial/marklogic-db:latest-12",
+  "qwen_redownload": false,
+  "repo_digest": "progressofficial/marklogic-db@sha256:0110ebe978b1d5c70a5b6bfbb21950bbc2ee4327ca09d5d3bf773337de4abf30",
+  "schema": "LOUKSNA_MARKLOGIC12_ACQUISITION/1.0",
+  "status": "PASS"
+}
