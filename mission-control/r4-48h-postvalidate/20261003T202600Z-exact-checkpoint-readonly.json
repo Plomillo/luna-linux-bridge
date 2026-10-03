@@ -1,0 +1,8 @@
+{
+  "schema": "LOUKSNA_R4_48H_POSTVALIDATE_QUERY/1.0",
+  "requested_at_utc": "2026-10-03T20:26:00Z",
+  "purpose": "READ_ONLY_EXACT_MAESTRO_LAST_CHECKPOINT",
+  "observer": "LOUKSNA_REMOTE_BRIDGE",
+  "desktop_commander_used": false,
+  "material_execution": false
+}
