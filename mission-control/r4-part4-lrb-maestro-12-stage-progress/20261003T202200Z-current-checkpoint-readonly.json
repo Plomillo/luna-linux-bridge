@@ -1,0 +1,15 @@
+{
+  "schema": "LOUKSNA_R4_LRB_CHECKPOINT_QUERY/1.0",
+  "requested_at_utc": "2026-10-03T20:22:00Z",
+  "purpose": "READ_ONLY_CURRENT_MAESTRO_CHECKPOINT",
+  "transport": "LOUKSNA_REMOTE_BRIDGE",
+  "material_execution": false,
+  "requested_fields": [
+    "MASTER_STATUS",
+    "LAST_HEARTBEAT",
+    "PART4_STATE",
+    "SERVICE_STATE",
+    "LRB_STATUS",
+    "LRB_OBSERVE"
+  ]
+}
