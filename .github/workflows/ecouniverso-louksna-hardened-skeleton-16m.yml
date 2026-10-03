@@ -1,0 +1,154 @@
+name: "ECOUNIVERSO LOUKSNA — hardened skeleton 16m"
+
+on:
+  push:
+    branches:
+      - staging/ecouniverso-louksna-hardened-skeleton-16m-20261003
+    paths:
+      - mission-control/ecouniverso-louksna/REQUEST.json
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: ecouniverso-louksna-hardened-skeleton-16m-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  materialize-and-validate:
+    name: "Materialize + auditability + traceability + governance + provenance"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 16
+    steps:
+      - name: Checkout isolated branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - name: Verify isolation from previous workflows
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE_REF: staging/luna-r4-master-part1-part9-20260929
+        run: |
+          set -Eeuo pipefail
+          git fetch origin "$BASE_REF"
+          mkdir -p evidence/ecouniverso-louksna
+          python3 - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+
+          current_run=int(os.environ["GITHUB_RUN_ID"])
+          repo=os.environ["GITHUB_REPOSITORY"]
+          token=os.environ["GH_TOKEN"]
+
+          def api(status):
+              raw=subprocess.check_output([
+                  "gh","api",
+                  f"/repos/{repo}/actions/runs?status={status}&per_page=100"
+              ],text=True,env={**os.environ,"GH_TOKEN":token})
+              return json.loads(raw).get("workflow_runs",[])
+
+          observed=[]
+          for status in ("in_progress","queued"):
+              for x in api(status):
+                  if int(x["id"]) == current_run:
+                      continue
+                  observed.append({
+                      "id":x["id"],
+                      "name":x["name"],
+                      "head_branch":x.get("head_branch"),
+                      "status":x["status"],
+                      "conclusion":x.get("conclusion")
+                  })
+
+          changed=subprocess.check_output(
+              ["git","diff","--name-only",f"origin/{os.environ['BASE_REF']}...HEAD"],
+              text=True
+          ).splitlines()
+          workflow_changes=[
+              p for p in changed
+              if p.startswith(".github/workflows/")
+              and p != ".github/workflows/ecouniverso-louksna-hardened-skeleton-16m.yml"
+          ]
+          if workflow_changes:
+              raise SystemExit("PREVIOUS_WORKFLOW_MUTATION_DETECTED:"+",".join(workflow_changes))
+
+          out={
+              "schema":"LOUKSNA_ECOUNIVERSO_RUN_ISOLATION/1.0",
+              "status":"PASS",
+              "current_run_id":current_run,
+              "current_branch":os.environ["GITHUB_REF_NAME"],
+              "concurrency_cancel_in_progress":False,
+              "other_live_runs_observed":observed,
+              "other_workflow_files_modified":workflow_changes,
+              "previous_process_cancellation_requested":False
+          }
+          Path("evidence/ecouniverso-louksna/ISOLATION_PREFLIGHT.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print("ISOLATION_PREFLIGHT=PASS")
+          print("OTHER_LIVE_RUNS_OBSERVED="+str(len(observed)))
+          print("PREVIOUS_PROCESS_CANCELLATION_REQUESTED=FALSE")
+          PY
+
+      - name: P1 auditability
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          grep -Fq 'AUDITABILITY_REQUIRED = TRUE' architecture/ecouniverso-louksna/ECOUNIVERSO_LOUKSNA_HARDENED_SKELETON.md
+          grep -Fq 'MISSING_AUDIT_RECORD = FAIL_CLOSED' architecture/ecouniverso-louksna/ECOUNIVERSO_LOUKSNA_HARDENED_SKELETON.md
+          echo "AUDITABILITY_PREFLIGHT=PASS"
+
+      - name: P2 traceability
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          grep -Fq 'TRACEABILITY_REQUIRED = TRUE' architecture/ecouniverso-louksna/ECOUNIVERSO_LOUKSNA_HARDENED_SKELETON.md
+          grep -Fq 'TRACE_ID_REQUIRED = TRUE' architecture/ecouniverso-louksna/ECOUNIVERSO_LOUKSNA_HARDENED_SKELETON.md
+          echo "TRACEABILITY_PREFLIGHT=PASS"
+
+      - name: P3 governance
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          grep -Fq 'GOVERNANCE_ROOT = Louksna.md' architecture/ecouniverso-louksna/ECOUNIVERSO_LOUKSNA_HARDENED_SKELETON.md
+          grep -Fq 'NO_SILENT_AUTHORITY_TRANSFER = TRUE' architecture/ecouniverso-louksna/ECOUNIVERSO_LOUKSNA_HARDENED_SKELETON.md
+          echo "GOVERNANCE_PREFLIGHT=PASS"
+
+      - name: P4 provenance
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          grep -Fq 'PROVENANCE_REQUIRED = TRUE' architecture/ecouniverso-louksna/ECOUNIVERSO_LOUKSNA_HARDENED_SKELETON.md
+          grep -Fq 'PROVENANCE_FABRICATION = FORBIDDEN' architecture/ecouniverso-louksna/ECOUNIVERSO_LOUKSNA_HARDENED_SKELETON.md
+          echo "PROVENANCE_PREFLIGHT=PASS"
+
+      - name: Validate complete additive skeleton
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B -I scripts/ci/validate_ecouniverso_louksna_skeleton.py
+
+      - name: Persist validation evidence on isolated branch
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add evidence/ecouniverso-louksna
+          if ! git diff --cached --quiet; then
+            git commit -m "evidence(ecouniverso): record isolated hardened skeleton validation"
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
+
+      - name: Preserve workflow evidence artifact
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ecouniverso-louksna-hardened-skeleton-${{ github.run_id }}
+          path: evidence/ecouniverso-louksna/
+          if-no-files-found: warn
+          retention-days: 30
