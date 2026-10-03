@@ -1,0 +1,105 @@
+name: "LOUKSNA Remote Bridge — priority archive read-only probe"
+on:
+  push:
+    branches:
+      - candidate/louksna-remote-bridge-v0-unreleased
+    paths:
+      - ".github/workflows/louksna-remote-bridge-priority-archive-readonly.yml"
+permissions:
+  contents: read
+concurrency:
+  group: lrb-priority-archive-readonly
+  cancel-in-progress: false
+jobs:
+  inspect:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Checkout bridge candidate read-only
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            bridge
+          sparse-checkout-cone-mode: true
+      - name: Discover priority-project root and inspect split volumes
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(hostname)" = "LOUKSNA"
+          OUT="$RUNNER_TEMP/lrb-priority-archive-${{ github.run_id }}"
+          mkdir -p "$OUT"
+          nice -n 10 timeout 60s python3 -B bridge/lrb_core.py --state-dir "$OUT/state" projects --discover --limit 100 > "$OUT/PROJECTS.json"
+          python3 - "$OUT/PROJECTS.json" "$OUT/ARCHIVE_PROBE.json" <<'PY'
+          import json, os, pathlib, re, sys
+          src=json.load(open(sys.argv[1],encoding="utf-8"))
+          root=pathlib.Path(src["root"])
+          parent=root.parent
+          prefix=root.name + ".7z."
+          rx=re.compile(r"^"+re.escape(prefix)+r"(\d+)$")
+          count=0
+          total=0
+          first=[]
+          last=[]
+          nums=[]
+          base7z=False
+          errors=[]
+          try:
+              with os.scandir(parent) as it:
+                  for e in it:
+                      try:
+                          if e.name == root.name + ".7z":
+                              base7z = e.is_file(follow_symlinks=False)
+                          m=rx.match(e.name)
+                          if not m or not e.is_file(follow_symlinks=False):
+                              continue
+                          st=e.stat(follow_symlinks=False)
+                          count += 1
+                          total += st.st_size
+                          n=int(m.group(1))
+                          nums.append(n)
+                          if len(first)<5: first.append(e.name)
+                          last.append(e.name)
+                          if len(last)>5: last.pop(0)
+                      except OSError as ex:
+                          errors.append(type(ex).__name__)
+          except OSError as ex:
+              raise SystemExit(f"PARENT_SCAN_FAILED:{type(ex).__name__}")
+          nums.sort()
+          missing=[]
+          if nums:
+              expected=set(range(nums[0], nums[-1]+1))
+              missing=sorted(expected-set(nums))
+          out={
+              "schema":"LOUKSNA_REMOTE_BRIDGE_PRIORITY_ARCHIVE_PROBE/1.0",
+              "host":"LOUKSNA",
+              "readonly":True,
+              "project_root":str(root),
+              "archive_parent":str(parent),
+              "prefix":prefix,
+              "volume_count":count,
+              "total_bytes":total,
+              "total_gib":round(total/(1024**3),3),
+              "base_unsplit_7z_present":base7z,
+              "first_suffix":nums[0] if nums else None,
+              "last_suffix":nums[-1] if nums else None,
+              "missing_suffix_count":len(missing),
+              "missing_suffix_sample":missing[:20],
+              "first_files":first,
+              "last_files":last,
+              "scan_errors":errors[:10]
+          }
+          pathlib.Path(sys.argv[2]).write_text(json.dumps(out,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
+          print(json.dumps(out,indent=2,ensure_ascii=False))
+          PY
+          sha256sum "$OUT/PROJECTS.json" "$OUT/ARCHIVE_PROBE.json" > "$OUT/EVIDENCE_SHA256.txt"
+      - name: Preserve read-only evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-priority-archive-readonly-evidence
+          path: ${{ runner.temp }}/lrb-priority-archive-${{ github.run_id }}/
+          if-no-files-found: warn
+          retention-days: 7
+          compression-level: 0
