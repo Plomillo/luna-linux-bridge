@@ -6,6 +6,7 @@ on:
       - staging/consultas-implementation-6m-20261002
     paths:
       - "consultas/inbox/rclone-host-folder-to-github-20261003/CONSULTA_ORIGINAL.md"
+      - ".github/workflows/custosz-consultas-rclone-host-to-github-2m.yml"
 
 permissions:
   contents: read
@@ -226,6 +227,9 @@ jobs:
           (out/"CUSTOSZ_RCLONE_RESPONSE.json").write_text(json.dumps(result,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
           print("CUSTOSZ_CONSULTA_STATE="+result.get("state","UNKNOWN"))
           print("ELAPSED_SECONDS="+str(result["elapsed_seconds"]))
+          print("===== CUSTOSZ_RESPONSE_JSON =====")
+          print(json.dumps(result,ensure_ascii=False,indent=2,sort_keys=True))
+          print("===== END_CUSTOSZ_RESPONSE_JSON =====")
           PY
 
       - name: Preserve consultation evidence
