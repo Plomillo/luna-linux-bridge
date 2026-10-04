@@ -1,0 +1,358 @@
+name: "Dropbox MAIN governed recovery — 20h"
+
+on:
+  push:
+    branches:
+      - staging/dropbox-main-governed-recovery-20h-20261004
+    paths:
+      - .github/workflows/dropbox-main-governed-recovery-20h.yml
+      - mission-control/dropbox-main-governed-recovery-20h/REQUEST.json
+      - scripts/dropbox_governed_recovery_20h.py
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  id-token: write
+
+concurrency:
+  group: dropbox-main-governed-recovery-20h
+  cancel-in-progress: false
+
+env:
+  MISSION_ID: DROPBOX_MAIN_GOVERNED_RECOVERY_20H_20261004
+  TARGET_NAME: "1. PROYECTOS PRIORITARIOS"
+  HARD_CEILING_SECONDS: "72000"
+  DROPBOX_SHARED_LINK: "https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/AIIzeblluaJfhuXh9EnP-10?rlkey=p712fwlkbwn9g0dtybu2sf159&st=3igdng0g&dl=0"
+  MAIN_BASE_SHA: "716f9dc3f45324eb87280954c18b8dc475a451e8"
+
+jobs:
+  acquire:
+    name: "MAIN acquisition root — governed Dropbox recovery"
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 1200
+    steps:
+      - name: Checkout exact mission branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 50
+          persist-credentials: false
+
+      - name: Verify authority, taxonomy and MAIN ancestry
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess
+          req=json.load(open("mission-control/dropbox-main-governed-recovery-20h/REQUEST.json",encoding="utf-8"))
+          assert req["authority"]=="Louksna.md"
+          assert req["assurance"]=="PUAC2.md"
+          assert req["hard_ceiling_seconds"]==72000
+          assert req["acquisition_gates"]["no_custosz_before_complete"] is True
+          assert req["permissions"]["old_7z_read"] is False
+          assert req["permissions"]["downloaded_content_execution"] is False
+          assert req["permissions"]["desktop_commander"] is False
+          domains={x["id"]:x for x in req["domains"]}
+          for required in ("D0","D1","D2","D3","D4","D5","D6","D7","D8","D9","D10","D11","D12","D13","D14"):
+              assert required in domains, required
+          out=pathlib.Path(os.environ["RUNNER_TEMP"])/"dropbox-main-evidence"
+          out.mkdir(parents=True,exist_ok=True)
+          (out/"MISSION_PREFLIGHT.json").write_text(json.dumps({
+            "schema":"LOUKSNA_DROPBOX_MISSION_PREFLIGHT/1.0",
+            "status":"PASS",
+            "authority":"Louksna.md",
+            "assurance":"PUAC2.md",
+            "main_base_sha":os.environ["MAIN_BASE_SHA"],
+            "mission_sha":os.environ["GITHUB_SHA"],
+            "domains_present":sorted(domains),
+            "old_7z_policy":"IGNORED_NOT_INPUT",
+            "custosz_before_complete":False,
+            "hard_ceiling_seconds":72000
+          },indent=2,sort_keys=True)+"\n")
+          PY
+          git merge-base --is-ancestor "$MAIN_BASE_SHA" "$GITHUB_SHA"
+          echo "MAIN_ANCESTRY=PASS"
+
+      - name: Bind certified/supporting architecture evidence without claiming propagation
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          E="$RUNNER_TEMP/dropbox-main-evidence"
+          mkdir -p "$E/architecture"
+          fetch_json () {
+            ref="$1"; path="$2"; out="$3"
+            gh api --method GET "repos/$GITHUB_REPOSITORY/contents/$path" -f ref="$ref" \
+              --jq '.content' | tr -d '\n' | base64 -d > "$out"
+          }
+          fetch_json "release/metacognitive-v1-b91d-certified-20260928" \
+            "ecosystem/metacognitive-operational-v1/CERTIFIED_RELEASE_RECORD.json" \
+            "$E/architecture/METACOGNITIVE_CERTIFIED_RELEASE.json"
+          fetch_json "staging/knowledge-operator-marklogic12-10m-20261003" \
+            "evidence/knowledge-operator-marklogic12/FINAL_SCOPE_CERTIFICATION.json" \
+            "$E/architecture/MARKLOGIC_SCOPE_CERTIFICATION.json"
+          fetch_json "candidate/qwen35-4b-s-integral-20260930" \
+            "bridge/reasoning/MODEL_MANIFEST.json" \
+            "$E/architecture/QWEN_MODEL_MANIFEST.json"
+          cp recovery/RECOVERY_CONTRACT.json "$E/architecture/MAIN_RECOVERY_CONTRACT.json"
+          cp recovery/STATE_MACHINE.json "$E/architecture/MAIN_STATE_MACHINE.json"
+          cp recovery/PROVIDERS.json "$E/architecture/MAIN_PROVIDERS.json"
+          sha256sum "$E"/architecture/* > "$E/architecture/SHA256SUMS.txt"
+          python3 - <<'PY'
+          import json, os, pathlib
+          e=pathlib.Path(os.environ["RUNNER_TEMP"])/"dropbox-main-evidence"/"architecture"
+          release=json.load(open(e/"METACOGNITIVE_CERTIFIED_RELEASE.json"))
+          mark=json.load(open(e/"MARKLOGIC_SCOPE_CERTIFICATION.json"))
+          out={
+            "schema":"LOUKSNA_DROPBOX_ARCHITECTURE_BINDING/1.0",
+            "authority":"Louksna.md",
+            "certification_propagation":False,
+            "metacognitive_release_status":release.get("operational_status") or release.get("status"),
+            "marklogic_g23":(mark.get("g23") or {}).get("status"),
+            "marklogic_g24":(mark.get("g24") or {}).get("status"),
+            "marklogic_active":mark.get("active"),
+            "marklogic_runtime_query_certified":mark.get("runtime_marklogic_query_certified"),
+            "qwen_role":"REASONING_ONLY",
+            "main_role":["TRUST_ROOT","RECOVERY_ROOT","ACQUISITION_ROOT","CONTINUITY_ROOT"],
+            "status":"PASS"
+          }
+          (e/"BINDING.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          PY
+
+      - name: Prepare authorized acquisition dependencies
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export PATH="$HOME/.local/bin:$PATH"
+          E="$RUNNER_TEMP/dropbox-main-evidence"
+          mkdir -p "$E/dependencies"
+
+          if command -v rclone >/dev/null 2>&1; then
+            rclone version | head -20 > "$E/dependencies/rclone.txt"
+          else
+            python3 - <<'PY'
+          import io, os, pathlib, platform, urllib.request, zipfile, stat
+          root=pathlib.Path.home()/".local/bin"; root.mkdir(parents=True,exist_ok=True)
+          arch={"x86_64":"amd64","amd64":"amd64","aarch64":"arm64","arm64":"arm64"}.get(platform.machine().lower())
+          if not arch: raise SystemExit("RCLONE_ARCH_UNSUPPORTED")
+          url=f"https://downloads.rclone.org/rclone-current-linux-{arch}.zip"
+          data=urllib.request.urlopen(url,timeout=120).read()
+          z=zipfile.ZipFile(io.BytesIO(data))
+          member=next(n for n in z.namelist() if n.endswith("/rclone"))
+          dst=root/"rclone"; dst.write_bytes(z.read(member)); dst.chmod(dst.stat().st_mode|stat.S_IXUSR)
+          print(dst)
+          PY
+            "$HOME/.local/bin/rclone" version | head -20 > "$E/dependencies/rclone.txt"
+          fi
+
+          python3 -m pip install --user --disable-pip-version-check --no-input "playwright>=1.50,<2" \
+            >"$E/dependencies/pip-playwright.stdout" 2>"$E/dependencies/pip-playwright.stderr" || true
+          python3 -m playwright install chromium \
+            >"$E/dependencies/playwright-install.stdout" 2>"$E/dependencies/playwright-install.stderr" || true
+
+          {
+            echo "RCLONE=$(command -v rclone || true)"
+            echo "PYTHON=$(python3 --version 2>&1)"
+            echo "PLAYWRIGHT=$((python3 - <<'PY'
+          try:
+              import playwright
+              print("PRESENT")
+          except Exception:
+              print("ABSENT")
+          PY
+          ) 2>/dev/null || true)"
+          } > "$E/dependencies/summary.txt"
+
+      - name: Execute MAIN governed acquisition
+        id: acquisition
+        continue-on-error: true
+        shell: bash
+        env:
+          DROPBOX_ACCESS_TOKEN: ${{ secrets.DROPBOX_ACCESS_TOKEN }}
+          STATE_ROOT: ${{ runner.temp }}/dropbox-main-live-state
+          CORPUS_ROOT: /home/diegoignacionorambuenamiranda/PROYECTOS/1. PROYECTOS PRIORITARIOS
+        run: |
+          set -Eeuo pipefail
+          export PATH="$HOME/.local/bin:$PATH"
+          python3 -B scripts/dropbox_governed_recovery_20h.py
+
+      - name: Snapshot acquisition evidence
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          E="$RUNNER_TEMP/dropbox-main-evidence"
+          mkdir -p "$E/acquisition"
+          if [ -d "$RUNNER_TEMP/dropbox-main-live-state/evidence" ]; then
+            cp -a "$RUNNER_TEMP/dropbox-main-live-state/evidence/." "$E/acquisition/"
+          fi
+          find "$E" -type f -print0 | sort -z | xargs -0 sha256sum > "$E/EVIDENCE_SHA256.txt"
+          python3 - <<'PY'
+          import json, os, pathlib
+          e=pathlib.Path(os.environ["RUNNER_TEMP"])/"dropbox-main-evidence"
+          st=e/"acquisition"/"STATUS.json"
+          state=json.load(open(st)) if st.exists() else {"state":"NO_STATUS"}
+          out={
+            "schema":"LOUKSNA_DROPBOX_ACQUISITION_HANDOFF/1.0",
+            "mission_id":os.environ["MISSION_ID"],
+            "authority":"Louksna.md",
+            "assurance":"PUAC2.md",
+            "acquisition_step_outcome":os.environ.get("ACQ_OUTCOME","UNKNOWN"),
+            "state":state,
+            "custosz_audit_authorized":False,
+            "reason":"G23_AND_G24_ACQUISITION_REQUIRED_BEFORE_CUSTOSZ"
+          }
+          (e/"HANDOFF.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          PY
+        env:
+          ACQ_OUTCOME: ${{ steps.acquisition.outcome }}
+
+      - name: Preserve acquisition evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dropbox-main-governed-recovery-acquisition-evidence
+          path: ${{ runner.temp }}/dropbox-main-evidence
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Enforce acquisition result
+        if: always()
+        shell: bash
+        run: |
+          test "${{ steps.acquisition.outcome }}" = "success"
+
+  g23_acquisition:
+    name: "G23 — independent acquisition validation"
+    needs: acquire
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Download producer evidence as data only
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: dropbox-main-governed-recovery-acquisition-evidence
+          path: ${{ runner.temp }}/producer
+
+      - name: Independently recompute corpus digest and validate gates
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          chmod -R a-w "$RUNNER_TEMP/producer"
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib
+          evidence=pathlib.Path(os.environ["RUNNER_TEMP"])/"producer"
+          corpus=pathlib.Path("/home/diegoignacionorambuenamiranda/PROYECTOS/1. PROYECTOS PRIORITARIOS")
+          ready=json.load(open(evidence/"acquisition"/"READY_FOR_G23.json"))
+          comp=json.load(open(evidence/"acquisition"/"COMPLETENESS.json"))
+          failures=[]
+          if comp.get("status")!="PASS":
+              failures.append("SOURCE_ENUMERATION_COMPLETENESS_NOT_PASS")
+          rows=[]
+          for p in sorted(x for x in corpus.rglob("*") if x.is_file() and not x.name.endswith(".louksna.part")):
+              h=hashlib.sha256()
+              with p.open("rb") as f:
+                  for b in iter(lambda:f.read(1024*1024),b""): h.update(b)
+              rows.append({"path":p.relative_to(corpus).as_posix(),"size":p.stat().st_size,"sha256":h.hexdigest()})
+          digest=hashlib.sha256(json.dumps(rows,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          if digest!=ready.get("materialized_manifest_sha256"):
+              failures.append("CORPUS_DIGEST_MISMATCH")
+          if len(rows)!=ready.get("object_count"):
+              failures.append("OBJECT_COUNT_MISMATCH")
+          result={
+            "schema":"LOUKSNA_DROPBOX_ACQUISITION_G23/1.0",
+            "gate":"G23_INDEPENDENT_VALIDATION",
+            "authority":"Louksna.md",
+            "assurance":"PUAC2.md",
+            "candidate_digest_sha256":digest,
+            "repair_allowed":False,
+            "candidate_mutation":False,
+            "candidate_code_executed":False,
+            "evidence_consumed_as_data_only":True,
+            "failures":failures,
+            "status":"PASS" if not failures else "FAIL",
+            "g24_authorized":not failures
+          }
+          out=pathlib.Path(os.environ["RUNNER_TEMP"])/"g23"; out.mkdir()
+          (out/"G23.json").write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(result,sort_keys=True))
+          if failures: raise SystemExit(3)
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dropbox-main-governed-recovery-g23
+          path: ${{ runner.temp }}/g23
+          if-no-files-found: error
+          retention-days: 90
+
+  g24_acquisition:
+    name: "G24 — digest-bound acquisition certification"
+    needs: g23_acquisition
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: dropbox-main-governed-recovery-g23
+          path: ${{ runner.temp }}/g23
+
+      - name: Certify only exact G23 digest with GitHub OIDC authority evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g24"
+          DIGEST="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["candidate_digest_sha256"])' "$RUNNER_TEMP/g23/G23.json")"
+          STATUS="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$RUNNER_TEMP/g23/G23.json")"
+          AUTH="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["g24_authorized"])' "$RUNNER_TEMP/g23/G23.json")"
+          test "$STATUS" = "PASS"
+          test "$AUTH" = "True"
+          AUD="louksna-dropbox-acquisition-g24:$DIGEST"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(RESP="$RESP" python3 - <<'PY'
+          import json,os
+          print(json.loads(os.environ["RESP"])["value"])
+          PY
+          )"
+          TOKEN="$TOKEN" DIGEST="$DIGEST" AUD="$AUD" python3 - <<'PY'
+          import base64,hashlib,json,os,pathlib
+          tok=os.environ["TOKEN"]; parts=tok.split(".")
+          if len(parts)!=3: raise SystemExit("OIDC_FORMAT")
+          payload=parts[1]+"="*((4-len(parts[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload))
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          aud=claims.get("aud")
+          if aud!=os.environ["AUD"] and not (isinstance(aud,list) and os.environ["AUD"] in aud): raise SystemExit("OIDC_AUDIENCE")
+          cert={
+            "schema":"LOUKSNA_DROPBOX_ACQUISITION_G24/1.0",
+            "gate":"G24_CERTIFICATION",
+            "status":"PASS",
+            "authority":"Louksna.md",
+            "assurance":"PUAC2.md",
+            "candidate_digest_sha256":os.environ["DIGEST"],
+            "scope":"EXACT_ACQUIRED_DROPBOX_CORPUS_ONLY",
+            "certification_propagation":False,
+            "custosz_audit_is_separate_scope":True,
+            "active_authorized_for_custosz_input":True,
+            "authority_signature_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(tok.encode()).hexdigest()
+          }
+          pathlib.Path(os.environ["RUNNER_TEMP"],"g24","G24.json").write_text(json.dumps(cert,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(cert,sort_keys=True))
+          PY
+          unset TOKEN RESP
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dropbox-main-governed-recovery-g24
+          path: ${{ runner.temp }}/g24
+          if-no-files-found: error
+          retention-days: 90
