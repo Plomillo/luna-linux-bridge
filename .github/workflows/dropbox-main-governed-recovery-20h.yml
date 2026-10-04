@@ -36,16 +36,21 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ github.sha }}
+          path: _dropbox_mission_${{ github.run_id }}
           fetch-depth: 50
           persist-credentials: false
 
       - name: Verify authority, taxonomy and MAIN ancestry
         shell: bash
+        working-directory: ${{ github.workspace }}/_dropbox_mission_${{ github.run_id }}
         run: |
           set -Eeuo pipefail
           python3 - <<'PY'
           import json, os, pathlib, subprocess
-          req=json.load(open("mission-control/dropbox-main-governed-recovery-20h/REQUEST.json",encoding="utf-8"))
+          mission_path=pathlib.Path("mission-control/dropbox-main-governed-recovery-20h/REQUEST.json")
+          if not mission_path.is_file():
+              raise SystemExit("ISOLATED_CHECKOUT_MISSION_FILE_MISSING")
+          req=json.load(open(mission_path,encoding="utf-8"))
           assert req["authority"]=="Louksna.md"
           assert req["assurance"]=="PUAC2.md"
           assert req["hard_ceiling_seconds"]==72000
@@ -68,7 +73,10 @@ jobs:
             "domains_present":sorted(domains),
             "old_7z_policy":"IGNORED_NOT_INPUT",
             "custosz_before_complete":False,
-            "hard_ceiling_seconds":72000
+            "hard_ceiling_seconds":72000,
+            "checkout_isolation":"UNIQUE_PATH_PER_RUN",
+            "checkout_root":str(pathlib.Path.cwd()),
+            "mission_file_present":mission_path.is_file()
           },indent=2,sort_keys=True)+"\n")
           PY
           git merge-base --is-ancestor "$MAIN_BASE_SHA" "$GITHUB_SHA"
@@ -76,6 +84,7 @@ jobs:
 
       - name: Bind certified/supporting architecture evidence without claiming propagation
         shell: bash
+        working-directory: ${{ github.workspace }}/_dropbox_mission_${{ github.run_id }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -123,6 +132,7 @@ jobs:
 
       - name: Prepare authorized acquisition dependencies
         shell: bash
+        working-directory: ${{ github.workspace }}/_dropbox_mission_${{ github.run_id }}
         run: |
           set -Eeuo pipefail
           export PATH="$HOME/.local/bin:$PATH"
@@ -169,6 +179,7 @@ jobs:
         id: acquisition
         continue-on-error: true
         shell: bash
+        working-directory: ${{ github.workspace }}/_dropbox_mission_${{ github.run_id }}
         env:
           DROPBOX_ACCESS_TOKEN: ${{ secrets.DROPBOX_ACCESS_TOKEN }}
           STATE_ROOT: ${{ runner.temp }}/dropbox-main-live-state
