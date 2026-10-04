@@ -1,0 +1,202 @@
+{
+  "schema": "LOUKSNA_DROPBOX_MAIN_GOVERNED_RECOVERY_MISSION/1.0",
+  "mission_id": "DROPBOX_MAIN_GOVERNED_RECOVERY_20H_20261004",
+  "authority": "Louksna.md",
+  "assurance": "PUAC2.md",
+  "target": {
+    "name": "1. PROYECTOS PRIORITARIOS",
+    "exact_shared_link": "https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/AIIzeblluaJfhuXh9EnP-10?rlkey=p712fwlkbwn9g0dtybu2sf159&st=3igdng0g&dl=0",
+    "old_7z_policy": "IGNORED_NOT_INPUT"
+  },
+  "hard_ceiling_seconds": 72000,
+  "urgency": "NO_RUSH_WITHIN_CEILING",
+  "doctrine": {
+    "extend_do_not_replace": true,
+    "append_only": true,
+    "fail_closed": true,
+    "no_silent_operations": true,
+    "provenance_required": true,
+    "traceability_required": true,
+    "auditability_required": true,
+    "rollback_required": true,
+    "non_regression_required": true,
+    "certification_propagation_forbidden": true,
+    "self_certification_forbidden": true,
+    "unknown_is_pass": false,
+    "blind_retry_forbidden": true
+  },
+  "puac2": {
+    "C25": "SCOPE",
+    "C26": "EVIDENCE",
+    "C27": "INDEPENDENCE",
+    "C28": "SAFETY_RISK",
+    "C29": "INTEGRITY_REPRODUCIBILITY",
+    "C30": "INTEGRATION_NON_REGRESSION",
+    "C31": "REVERSIBILITY",
+    "C32": "VALIDITY_REEVALUATION"
+  },
+  "domains": [
+    {
+      "id": "D0",
+      "name": "LOUKSNA_AUTHORITY",
+      "component": "Louksna.md",
+      "role": "CANONICAL_AUTHORITY"
+    },
+    {
+      "id": "D1",
+      "name": "ASSURANCE",
+      "components": [
+        "PUAC2",
+        "G23",
+        "G24"
+      ],
+      "role": "VALIDATE_AND_CERTIFY_EXACT_SCOPE"
+    },
+    {
+      "id": "D2",
+      "name": "CERTIFIED_METACOGNITIVE_CORE",
+      "components": [
+        "MetaOS",
+        "CUSTOSZ_RUNTIME",
+        "GitHub",
+        "Mission Compiler",
+        "Observability",
+        "Provenance",
+        "Rollback",
+        "NonRegression",
+        "Rclone Adaptive Engine"
+      ],
+      "role": "CERTIFIED_OPERATIONAL_INFRASTRUCTURE_IN_SCOPE"
+    },
+    {
+      "id": "D3",
+      "name": "MAIN",
+      "components": [
+        "TRUST_ROOT",
+        "RECOVERY_ROOT",
+        "ACQUISITION_ROOT",
+        "CONTINUITY_ROOT"
+      ],
+      "role": "DISCOVER_VERIFY_CHECKPOINT_SELECT_PROVIDER_ATTEMPT_HANDOFF_LIVE_VERIFY"
+    },
+    {
+      "id": "D4",
+      "name": "MARKLOGIC_KNOWLEDGE_OPERATOR",
+      "role": "KNOWLEDGE_EVIDENCE_PROVENANCE_FAILURE_CHECKPOINT_RELATIONSHIP_PLANE",
+      "runtime_query_certified": false
+    },
+    {
+      "id": "D5",
+      "name": "QWEN_SHARED_REASONER",
+      "role": "REASONING_ONLY_DIAGNOSE_COMPARE_PROPOSE_REPLAN",
+      "material_execution": false
+    },
+    {
+      "id": "D6",
+      "name": "METAOS_GOVERNOR",
+      "role": "AUTHORIZE_DENY_HOLD_RETRY_CHANGE_STRATEGY_ROLLBACK"
+    },
+    {
+      "id": "D7",
+      "name": "MISSION_ADMISSION",
+      "components": [
+        "Mission Compiler",
+        "Mission Mailbox",
+        "Runtime Adapter Registry"
+      ],
+      "role": "BOUND_INTENT_TO_EXPLICIT_EXECUTOR_PROVIDER_SCOPE_EVIDENCE_ROLLBACK"
+    },
+    {
+      "id": "D8",
+      "name": "DROPBOX_PROVIDER_PLANE",
+      "providers": [
+        "DROPBOX_NATIVE",
+        "RCLONE_DROPBOX",
+        "BROWSER_MEDIATED_PUBLIC_LINK_FALLBACK"
+      ],
+      "role": "ENUMERATE_AND_TRANSPORT_BYTES"
+    },
+    {
+      "id": "D9",
+      "name": "MATERIAL_ACQUISITION",
+      "role": "ENUMERATE_MANIFEST_DOWNLOAD_VERIFY_HASH_PROVENANCE_TRACE_CHECKPOINT"
+    },
+    {
+      "id": "D10",
+      "name": "ANTI_PARALYSIS_RECOVERY",
+      "role": "NEW_EVIDENCE_BEFORE_RETRY_RESUME_FROM_VALID_CHECKPOINT"
+    },
+    {
+      "id": "D11",
+      "name": "COMPLETENESS_INTEGRITY",
+      "role": "EXPECTED_VS_MATERIALIZED_ZERO_MISSING_ZERO_CORRUPT"
+    },
+    {
+      "id": "D12",
+      "name": "ACQUISITION_ASSURANCE",
+      "components": [
+        "G23",
+        "G24"
+      ],
+      "role": "CERTIFY_EXACT_FROZEN_ACQUIRED_CORPUS"
+    },
+    {
+      "id": "D13",
+      "name": "CUSTOSZ_V7",
+      "role": "FORENSIC_AUDITOR_ONLY_AFTER_COMPLETE_CERTIFIED_CORPUS"
+    },
+    {
+      "id": "D14",
+      "name": "AUDIT_ASSURANCE_AND_LIVE_VALIDITY",
+      "components": [
+        "G23",
+        "G24",
+        "Validity Monitoring"
+      ],
+      "role": "CERTIFY_AUDIT_AND_INVALIDATE_AFFECTED_CLAIMS_ON_CHANGE"
+    }
+  ],
+  "permissions": {
+    "network_access": true,
+    "dependency_download": true,
+    "official_api_sdk_download": true,
+    "package_installation": true,
+    "browser_automation_dependency_download": true,
+    "rclone_install_or_update": true,
+    "dropbox_sdk_install": true,
+    "qwen_support_use_if_available": true,
+    "marklogic_knowledge_binding_use_if_available": true,
+    "main_is_authorized_acquisition_root": true,
+    "direct_main_canonical_overwrite": false,
+    "old_7z_read": false,
+    "downloaded_content_execution": false,
+    "desktop_commander": false
+  },
+  "provider_order": [
+    "EXISTING_AUTHORIZED_DROPBOX_RCLONE_REMOTE_IF_PRESENT",
+    "DROPBOX_API_SHARED_LINK_WITH_AUTHORIZED_TOKEN_IF_PRESENT",
+    "BROWSER_MEDIATED_PUBLIC_SHARED_LINK_DOWNLOAD",
+    "OTHER_OFFICIAL_OR_GOVERNED_PROVIDER_ONLY_WITH_RECORDED_EVIDENCE"
+  ],
+  "acquisition_gates": {
+    "no_custosz_before_complete": true,
+    "complete_requires": [
+      "EXPECTED_OBJECT_SET_RESOLVED",
+      "MISSING_OBJECTS_ZERO",
+      "CORRUPT_OBJECTS_ZERO",
+      "UNRESOLVED_FAILURES_ZERO",
+      "PROVENANCE_COMPLETE",
+      "TRACEABILITY_COMPLETE"
+    ],
+    "custosz_entry_requires": [
+      "DOWNLOAD_COMPLETE",
+      "ACQUISITION_G23_PASS",
+      "ACQUISITION_G24_PASS",
+      "CORPUS_FROZEN",
+      "PROVENANCE_COMPLETE",
+      "TRACEABILITY_COMPLETE"
+    ]
+  },
+  "assistant_stop_condition": "ONCE_REAL_GITHUB_RUN_FOR_THIS_MISSION_IS_QUEUED_OR_IN_PROGRESS_STOP_INTERVENING_AND_RETURN_TO_USER",
+  "execution_goal": "FIND_AND_EXECUTE_A_GOVERNED_SOLUTION_TO_FULLY_ACQUIRE_THE_DROPBOX_FOLDER; DO_NOT RUSH; USE THE 20H CEILING AS A MAXIMUM, NOT A TARGET."
+}
