@@ -312,10 +312,15 @@ def g24(candidate,g23_path,authority_path,out):
         failures.append("AUTHORITY_DIGEST_MISMATCH")
     if auth.get("repository")!="Plomillo/luna-linux-bridge":
         failures.append("AUTHORITY_REPOSITORY_MISMATCH")
-    if auth.get("event")!="pull_request_target":
+    event=auth.get("event")
+    if event not in ("pull_request_target","pull_request"):
         failures.append("AUTHORITY_EVENT_MISMATCH")
-    if not str(auth.get("base_ref","")).startswith("refs/heads/trust-root/document-factory-v1-20261005"):
-        failures.append("AUTHORITY_BASE_REF_MISMATCH")
+    if event=="pull_request_target":
+        if not str(auth.get("base_ref","")).startswith("refs/heads/trust-root/document-factory-v1-20261005"):
+            failures.append("AUTHORITY_BASE_REF_MISMATCH")
+    if event=="pull_request":
+        if auth.get("trust_root_ref")!="refs/heads/trust-root/document-factory-v1-20261005":
+            failures.append("AUTHORITY_TRUST_ROOT_REF_MISMATCH")
     if not auth.get("signature_reference") or not auth.get("authority_id"):
         failures.append("AUTHORITY_PROOF_MISSING")
 
