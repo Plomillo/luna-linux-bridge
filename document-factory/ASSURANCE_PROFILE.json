@@ -1,0 +1,20 @@
+{
+  "schema": "DOCUMENT_FACTORY_ASSURANCE_PROFILE/1.0",
+  "profile": "ELEVATED_INTERNAL",
+  "scope": "FRAMEWORK_CORE_V0.1",
+  "requirements": [
+    "fail_closed",
+    "exact_head_evidence",
+    "negative_tests",
+    "structural_independence",
+    "pinned_primary_build_providers",
+    "demonstrated_rollback",
+    "non_regression",
+    "append_only_audit",
+    "metacognitive_escalation",
+    "G23",
+    "G24"
+  ],
+  "organizational_independence": "NOT_CLAIMED",
+  "external_regulatory_certification": "NOT_CLAIMED"
+}
