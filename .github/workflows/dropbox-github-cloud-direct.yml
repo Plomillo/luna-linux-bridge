@@ -1,0 +1,308 @@
+name: "Dropbox Connected → GitHub Cloud Direct"
+
+on:
+  push:
+    branches:
+      - staging/dropbox-github-cloud-direct-20261005
+    paths:
+      - mission-control/dropbox-github-cloud-direct/EXECUTE.json
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: dropbox-github-cloud-direct
+  cancel-in-progress: false
+
+env:
+  DROPBOX_PROVIDER: DROPBOX_CONNECTED_PLUGIN
+  DROPBOX_SHARED_LINK: "https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/AIIzeblluaJfhuXh9EnP-10?rlkey=p712fwlkbwn9g0dtybu2sf159&dl=0"
+  HARD_CEILING_SECONDS: "20400"
+
+jobs:
+  acquire:
+    name: "GitHub-hosted cloud acquisition"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
+    outputs:
+      artifact_name: ${{ steps.names.outputs.artifact_name }}
+      archive_sha256: ${{ steps.complete.outputs.archive_sha256 }}
+      archive_bytes: ${{ steps.complete.outputs.archive_bytes }}
+      entry_count: ${{ steps.complete.outputs.entry_count }}
+    steps:
+      - name: Checkout exact cloud mission
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Validate connected Dropbox binding and cloud-only boundary
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import json
+          p="mission-control/dropbox-github-cloud-direct/BINDING.json"
+          d=json.load(open(p,encoding="utf-8"))
+          assert d["status"]=="EVIDENCED"
+          assert d["source"]["provider"]=="DROPBOX_CONNECTED_PLUGIN"
+          assert d["source"]["link_type"]=="folder"
+          assert d["source"]["audience"]=="public"
+          assert d["source"]["allow_download"] is True
+          assert d["transport"]["executor"]=="GITHUB_HOSTED_UBUNTU_24_04"
+          assert d["transport"]["local_pc_data_plane"] is False
+          assert d["transport"]["self_hosted_runner_data_plane"] is False
+          assert d["transport"]["local_browser_oauth"] is False
+          print("DROPBOX_CONNECTED_GITHUB_CLOUD_BINDING=PASS")
+          PY
+
+      - id: names
+        name: Initialize cloud acquisition state
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="$RUNNER_TEMP/dropbox-cloud-${GITHUB_RUN_ID}"
+          mkdir -p "$ROOT/evidence" "$ROOT/payload"
+          echo "root=$ROOT" >> "$GITHUB_OUTPUT"
+          echo "artifact_name=dropbox-github-cloud-acquisition-${GITHUB_RUN_ID}" >> "$GITHUB_OUTPUT"
+
+      - name: Download Dropbox folder directly inside GitHub-hosted cloud
+        id: complete
+        shell: bash
+        env:
+          ROOT: ${{ steps.names.outputs.root }}
+        run: |
+          set -Eeuo pipefail
+          ZIP="$ROOT/dropbox-folder.zip"
+          DIRECT_URL="$(python3 - <<'PY'
+          import os,urllib.parse
+          u=urllib.parse.urlsplit(os.environ["DROPBOX_SHARED_LINK"])
+          q=urllib.parse.parse_qsl(u.query,keep_blank_values=True)
+          q=[(k,v) for k,v in q if k!="dl"]
+          q.append(("dl","1"))
+          print(urllib.parse.urlunsplit((u.scheme,u.netloc,u.path,urllib.parse.urlencode(q),u.fragment)))
+          PY
+          )"
+
+          (
+            curl --location --fail --show-error               --retry 5 --retry-all-errors --connect-timeout 30               --max-time "$HARD_CEILING_SECONDS"               --output "$ZIP" "$DIRECT_URL"
+          ) >"$ROOT/evidence/curl.stdout" 2>"$ROOT/evidence/curl.stderr" &
+          pid=$!
+          echo "$pid" > "$ROOT/evidence/download.pid"
+
+          material=false
+          while kill -0 "$pid" 2>/dev/null; do
+            bytes=0
+            [ -f "$ZIP" ] && bytes="$(stat -c '%s' "$ZIP")"
+            if [ "$bytes" -gt 0 ] && [ "$material" = false ]; then
+              python3 - "$ROOT/evidence/MATERIAL_BYTE_FLOW.json" "$bytes" "$pid" <<'PY'
+          import json,pathlib,sys,datetime as dt,os
+          out={
+            "schema":"LOUKSNA_DROPBOX_GITHUB_MATERIAL_BYTE_FLOW/1.0",
+            "status":"PASS",
+            "provider":"DROPBOX_CONNECTED_PLUGIN",
+            "execution_plane":"GITHUB_HOSTED_UBUNTU_24_04",
+            "provider_authenticated_or_publicly_authorized":True,
+            "source_object_identified":True,
+            "observed_bytes":int(sys.argv[2]),
+            "background_process_alive":True,
+            "background_pid":int(sys.argv[3]),
+            "local_pc_data_plane":False,
+            "self_hosted_runner_data_plane":False,
+            "run_id":os.environ.get("GITHUB_RUN_ID"),
+            "observed_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print("MATERIAL_BYTE_FLOW=TRUE")
+          print("PROVIDER=DROPBOX_CONNECTED_PLUGIN")
+          print("EXECUTION_PLANE=GITHUB_HOSTED")
+          print("OBSERVED_BYTES="+str(out["observed_bytes"]))
+          print("BACKGROUND_PROCESS_ALIVE=TRUE")
+          PY
+              material=true
+            fi
+            sleep 5
+          done
+          wait "$pid"
+          test -s "$ZIP"
+          test "$material" = true
+
+          unzip -tq "$ZIP" > "$ROOT/evidence/unzip-test.txt"
+          unzip -Z1 "$ZIP" > "$ROOT/evidence/FILE_INDEX.txt"
+          entries="$(wc -l < "$ROOT/evidence/FILE_INDEX.txt" | tr -d ' ')"
+          test "$entries" -gt 0
+          bytes="$(stat -c '%s' "$ZIP")"
+          sha="$(sha256sum "$ZIP" | awk '{print $1}')"
+
+          python3 - "$ROOT/evidence/ACQUISITION_COMPLETE.json" "$sha" "$bytes" "$entries" <<'PY'
+          import json,pathlib,sys,datetime as dt
+          out={
+            "schema":"LOUKSNA_DROPBOX_GITHUB_ACQUISITION_COMPLETE/1.0",
+            "status":"PASS",
+            "provider":"DROPBOX_CONNECTED_PLUGIN",
+            "execution_plane":"GITHUB_HOSTED_UBUNTU_24_04",
+            "archive_sha256":sys.argv[2],
+            "archive_bytes":int(sys.argv[3]),
+            "entry_count":int(sys.argv[4]),
+            "zip_integrity":"PASS",
+            "downloaded_content_executed":False,
+            "local_pc_data_plane":False,
+            "completed_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+          split -b 400M -d -a 4 "$ZIP" "$ROOT/payload/archive.part."
+          sha256sum "$ROOT"/payload/archive.part.* > "$ROOT/evidence/PART_SHA256.txt"
+          rm -f "$ZIP"
+
+          echo "archive_sha256=$sha" >> "$GITHUB_OUTPUT"
+          echo "archive_bytes=$bytes" >> "$GITHUB_OUTPUT"
+          echo "entry_count=$entries" >> "$GITHUB_OUTPUT"
+
+      - name: Persist acquired Dropbox bytes in GitHub Actions storage
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ${{ steps.names.outputs.artifact_name }}
+          path: ${{ steps.names.outputs.root }}
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+          include-hidden-files: true
+
+  g23:
+    name: "G23 — independent acquired-corpus validation"
+    needs: acquire
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
+    outputs:
+      g23_sha256: ${{ steps.validate.outputs.g23_sha256 }}
+    steps:
+      - name: Recover cloud acquisition artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: ${{ needs.acquire.outputs.artifact_name }}
+          path: ${{ runner.temp }}/acquired
+
+      - id: validate
+        name: Independently reassemble and validate exact bytes
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ needs.acquire.outputs.archive_sha256 }}
+          EXPECTED_BYTES: ${{ needs.acquire.outputs.archive_bytes }}
+          EXPECTED_ENTRIES: ${{ needs.acquire.outputs.entry_count }}
+        run: |
+          set -Eeuo pipefail
+          ROOT="$RUNNER_TEMP/acquired"
+          cat "$ROOT"/payload/archive.part.* > "$RUNNER_TEMP/reassembled.zip"
+          sha="$(sha256sum "$RUNNER_TEMP/reassembled.zip" | awk '{print $1}')"
+          bytes="$(stat -c '%s' "$RUNNER_TEMP/reassembled.zip")"
+          unzip -tq "$RUNNER_TEMP/reassembled.zip" >/dev/null
+          entries="$(unzip -Z1 "$RUNNER_TEMP/reassembled.zip" | wc -l | tr -d ' ')"
+          test "$sha" = "$EXPECTED_SHA"
+          test "$bytes" = "$EXPECTED_BYTES"
+          test "$entries" = "$EXPECTED_ENTRIES"
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/g23/G23.json" "$sha" "$bytes" "$entries" <<'PY'
+          import json,pathlib,sys,datetime as dt
+          r={
+            "schema":"LOUKSNA_DROPBOX_ACQUISITION_G23/1.0",
+            "status":"PASS",
+            "authority":"Louksna.md",
+            "scope":"DROPBOX_CONNECTED_TO_GITHUB_HOSTED_CLOUD_TRANSFER",
+            "candidate_digest_sha256":sys.argv[2],
+            "archive_bytes":int(sys.argv[3]),
+            "entry_count":int(sys.argv[4]),
+            "independent_validator":"SEPARATE_GITHUB_HOSTED_JOB",
+            "repair_allowed":False,
+            "downloaded_content_executed":False,
+            "certification_propagation":False,
+            "canonical_mutation":False,
+            "g24_authorized":True,
+            "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,sort_keys=True))
+          PY
+          h="$(sha256sum "$RUNNER_TEMP/g23/G23.json" | awk '{print $1}')"
+          echo "g23_sha256=$h" >> "$GITHUB_OUTPUT"
+
+      - name: Preserve G23
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dropbox-github-cloud-g23-${{ github.run_id }}
+          path: ${{ runner.temp }}/g23/G23.json
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  g24:
+    name: "G24 — certify exact cloud-acquired corpus"
+    needs: [acquire, g23]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Recover G23
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: dropbox-github-cloud-g23-${{ github.run_id }}
+          path: ${{ runner.temp }}/g23
+
+      - name: Bind G24 to G23 and GitHub OIDC identity
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ needs.acquire.outputs.archive_sha256 }}
+          EXPECTED_G23_SHA: ${{ needs.g23.outputs.g23_sha256 }}
+        run: |
+          set -Eeuo pipefail
+          G23="$RUNNER_TEMP/g23/G23.json"
+          test "$(sha256sum "$G23" | awk '{print $1}')" = "$EXPECTED_G23_SHA"
+          test "$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(d["status"])' "$G23")" = PASS
+          test "$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(d["candidate_digest_sha256"])' "$G23")" = "$EXPECTED_SHA"
+
+          AUD="louksna-dropbox-github-cloud:$EXPECTED_SHA:$EXPECTED_G23_SHA"
+          TOKEN_JSON="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.load(sys.stdin)["value"])' <<<"$TOKEN_JSON")"
+          test -n "$TOKEN"
+          mkdir -p "$RUNNER_TEMP/g24"
+          TOKEN="$TOKEN" python3 - "$G23" "$EXPECTED_G23_SHA" "$RUNNER_TEMP/g24/G24.json" <<'PY'
+          import hashlib,json,os,pathlib,sys,datetime as dt
+          g23p=pathlib.Path(sys.argv[1]); g23sha=sys.argv[2]; token=os.environ["TOKEN"]
+          g=json.load(open(g23p,encoding="utf-8"))
+          checks={
+            "g23_pass":g.get("status")=="PASS",
+            "g23_hash_bound":hashlib.sha256(g23p.read_bytes()).hexdigest()==g23sha,
+            "oidc_present":bool(token),
+            "cloud_only_scope":g.get("scope")=="DROPBOX_CONNECTED_TO_GITHUB_HOSTED_CLOUD_TRANSFER",
+          }
+          ok=all(checks.values())
+          cert={
+            "schema":"LOUKSNA_DROPBOX_ACQUISITION_G24/1.0",
+            "status":"PASS" if ok else "BLOCKED",
+            "operational_status":"CERTIFIED_ACQUIRED_CORPUS" if ok else "HOLD",
+            "authority":"Louksna.md",
+            "scope":"DROPBOX_CONNECTED_TO_GITHUB_HOSTED_CLOUD_TRANSFER",
+            "candidate_digest_sha256":g.get("candidate_digest_sha256"),
+            "g23_sha256":g23sha,
+            "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(token.encode()).hexdigest(),
+            "certification_propagation":False,
+            "canonical_mutation":False,
+            "local_pc_data_plane":False,
+            "checks":checks,
+            "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          pathlib.Path(sys.argv[3]).write_text(json.dumps(cert,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(cert,sort_keys=True))
+          if not ok: raise SystemExit(24)
+          PY
+
+      - name: Preserve G24
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dropbox-github-cloud-g24-${{ github.run_id }}
+          path: ${{ runner.temp }}/g24/G24.json
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
