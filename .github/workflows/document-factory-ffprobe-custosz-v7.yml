@@ -67,7 +67,13 @@ jobs:
           export CUSTOSZ_WORKSPACE_OVERRIDE="$HOME/SYMPHYLAX_LAB/CUSTOSZ_V7_R1_G23_G24_20260927T021532Z/POSIX_COMPATIBILITY_VIEW"
           export MAKEFLAGS="-j2"
           ulimit -v 2097152 || true
-          nice -n 10 python3 -B -I main-root/scripts/missions/document_factory_ffprobe_dispatch.py
+          echo "ANTI_PARALYSIS_L1=RUNTIME_SUPERVISOR_HEARTBEAT_1S"
+          echo "ANTI_PARALYSIS_L1_STALE_THRESHOLD_SECONDS=10"
+          echo "ANTI_PARALYSIS_L2=OUTER_JOB_AND_COMMAND_DEADLINES"
+          echo "ANTI_PARALYSIS_L2_JOB_TIMEOUT_MINUTES=45"
+          echo "ANTI_PARALYSIS_L2_COMMAND_TIMEOUT_SECONDS=2500"
+          echo "BLIND_RETRY=false"
+          timeout 2500s nice -n 10 python3 -B -I main-root/scripts/missions/document_factory_ffprobe_dispatch.py
 
       - name: Expose preserved materializer diagnostics on failure
         if: failure()
@@ -83,6 +89,11 @@ jobs:
           cat "$D/MATERIALIZER.stdout.log" 2>/dev/null || true
           echo "=== MATERIALIZER STDERR ==="
           cat "$D/MATERIALIZER.stderr.log" 2>/dev/null || true
+          echo "=== ANTI-PARALYSIS L2 ==="
+          echo "GITHUB_JOB_TIMEOUT_MINUTES=45"
+          echo "COMMAND_TIMEOUT_SECONDS=2500"
+          echo "CONCURRENCY_SERIAL=true"
+          echo "BLIND_RETRY=false"
 
       - name: Persist FFprobe candidate branch only
         shell: bash
