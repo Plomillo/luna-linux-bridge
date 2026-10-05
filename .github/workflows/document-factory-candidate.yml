@@ -111,3 +111,10 @@ jobs:
           path: ${{ runner.temp }}/frozen
           if-no-files-found: error
           retention-days: 90
+
+  assurance:
+    needs: producer
+    permissions:
+      contents: read
+      id-token: write
+    uses: Plomillo/luna-linux-bridge/.github/workflows/document-factory-cert-reusable.yml@302fccda264c381ef44c6153da79ea7b24d421b6
