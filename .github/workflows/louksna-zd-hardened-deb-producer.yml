@@ -1,0 +1,442 @@
+name: "LOUKSNA ZD — CUSTOSZ V7 Hardened DEB Producer"
+
+on:
+  push:
+    branches:
+      - work/louksna-zona-directiva-candidate-20261005
+    paths:
+      - .github/workflows/louksna-zd-hardened-deb-producer.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: louksna-zd-hardened-deb-producer-20261005
+  cancel-in-progress: false
+
+jobs:
+  produce:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout isolated work branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: work/louksna-zona-directiva-candidate-20261005
+          persist-credentials: false
+          fetch-depth: 1
+          path: target
+
+      - name: Checkout current MAIN read-only
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: main
+          persist-credentials: false
+          fetch-depth: 1
+          path: main-root
+
+      - name: Checkout canonical UI source snapshot
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: 94f999f28f6ac371e1a768312a69704af96fd7a7
+          persist-credentials: false
+          fetch-depth: 1
+          path: source-project
+
+      - name: Checkout pinned CUSTOSZ V7 and Runtime
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: 89822a98ff0311d1904d969ae51cd834a4fadc20
+          persist-credentials: false
+          sparse-checkout: artifacts/custosz-v7
+          path: runtime-source
+
+      - name: Synchronization and CUSTOSZ Runtime telemetry
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/louksna-zd"
+          MAIN_SHA="$(git -C main-root rev-parse HEAD)"
+          WORK_SHA="$(git -C target rev-parse HEAD)"
+          echo "TELEMETRY MAIN_ROOT_SHA=$MAIN_SHA"
+          echo "TELEMETRY WORK_BRANCH_SHA=$WORK_SHA"
+          echo "TELEMETRY MAIN_MODE=READ_ONLY"
+          CUSTOSZ="runtime-source/artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz"
+          RUNTIME="runtime-source/artifacts/custosz-v7/CUSTOSZ_RUNTIME_V1_SR_EXEC_BOUND_FME_01.b.pyz"
+          python3 -B -I "$CUSTOSZ" v07-status
+          python3 -B -I "$CUSTOSZ" v07-selftest
+          python3 - "$RUNTIME" "$GITHUB_WORKSPACE/main-root/Louksna.md" <<'PY'
+          import hashlib,json,sys,tempfile
+          from pathlib import Path
+          runtime=Path(sys.argv[1]); authority=Path(sys.argv[2])
+          sys.path.insert(0,str(runtime))
+          from runtime_core import Runtime
+          digest=hashlib.sha256(authority.read_bytes()).hexdigest()
+          with tempfile.TemporaryDirectory(prefix="louksna-zd-runtime-") as td:
+              rt=Runtime(Path(td)/"state",authority,digest)
+              result=rt.selftest()
+              print("TELEMETRY CUSTOSZ_RUNTIME_V1="+json.dumps(result,sort_keys=True))
+              print("TELEMETRY RUNTIME_EVIDENCE_JOURNAL="+str(rt.journal.verify()))
+              if result.get("status")!="PASS":
+                  raise SystemExit(1)
+          PY
+          printf '%s\n' "$MAIN_SHA" > "$RUNNER_TEMP/louksna-zd/MAIN_ROOT_SHA.txt"
+          printf '%s\n' "$WORK_SHA" > "$RUNNER_TEMP/louksna-zd/WORK_BRANCH_SHA.txt"
+          echo "TELEMETRY CUSTOSZ_RUNTIME_SYNC=PASS"
+
+      - name: Assemble MAIN-synchronized source view
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cp -a source-project synced-source
+          cp main-root/Louksna.md synced-source/Louksna.md
+          cp main-root/PUAC2.md synced-source/PUAC2.md
+          if test -f main-root/SKELETON_CANONICO_REFERENCIA.txt; then
+            cp main-root/SKELETON_CANONICO_REFERENCIA.txt synced-source/SKELETON_CANONICO_REFERENCIA.txt
+          fi
+          echo "TELEMETRY SYNCED_SOURCE_VIEW=PASS"
+
+      - name: Re-materialize same candidate
+        shell: bash
+        env:
+          LOUKSNA_SOURCE_COMMIT: 94f999f28f6ac371e1a768312a69704af96fd7a7
+        run: |
+          set -Eeuo pipefail
+          printf '%s\n' '{"mission_id":"MIS-LOUKSNA-ZD-DEB-HARDENING-20261005","dispatch_id":"GH-HARDENED-DEB-20261005","executor_id":"CUSTOSZ_V7","binding_id":"CUSTOSZ_RUNTIME_V1","expected_effect":{"effect_type":"LOUKSNA_ZD_HARDENED_DEB_PRODUCTION"}}' > "$RUNNER_TEMP/louksna-zd/DISPATCH.json"
+          python3 -B -I target/scripts/missions/louksna_zd_candidate_materializer.py             "$RUNNER_TEMP/louksna-zd/DISPATCH.json"             "$RUNNER_TEMP/louksna-zd/ACK.json"             "$RUNNER_TEMP/louksna-zd/FME.json"             "$RUNNER_TEMP/louksna-zd/MATERIAL_RESULT.json"             "$GITHUB_WORKSPACE/target"             "$GITHUB_WORKSPACE/synced-source"             "$GITHUB_WORKSPACE/target/missions/inbox/louksna-zona-directiva-custosz-v7-20261005/MISSION_DEB_CONTINUATION.md"
+          echo "TELEMETRY CANDIDATE_REMATERIALIZATION=PASS"
+
+      - name: Install isolated build and validation dependencies
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo apt-get install -y             build-essential             libwebkit2gtk-4.1-dev             libgtk-3-dev             libayatana-appindicator3-dev             librsvg2-dev             libssl-dev             patchelf             lintian             desktop-file-utils             imagemagick
+          echo "TELEMETRY DEB_BUILD_DEPENDENCIES=PASS"
+
+      - name: Additive icon repair and second-order anti-paralysis preflight
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          APP="target/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate"
+          SRC="target/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/images/01_louksna_zona_directiva_centro_de_mando_8k.png"
+          ICONS="$APP/src-tauri/icons"
+          EVENTS="$RUNNER_TEMP/louksna-zd/ANTI_PARALYSIS_EVENTS.jsonl"
+          mkdir -p "$ICONS"
+          make_icon() {
+            local size="$1" out="$2"
+            convert "$SRC" -gravity center -resize "${size}x${size}^" -extent "${size}x${size}" "PNG32:$out"
+          }
+          make_icon 512 "$ICONS/icon.png"
+          make_icon 32 "$ICONS/32x32.png"
+          make_icon 128 "$ICONS/128x128.png"
+          make_icon 256 "$ICONS/128x128@2x.png"
+          python3 - <<'PY'
+          import json,os,pathlib
+          p=pathlib.Path(os.environ["RUNNER_TEMP"])/"louksna-zd"/"ANTI_PARALYSIS_EVENTS.jsonl"
+          event={
+            "order":1,
+            "mechanism":"PREVENTIVE_ADDITIVE_REPAIR",
+            "defect":"MISSING_TAURI_ICON_SET",
+            "repair":"DERIVE_BUNDLE_ICONS_FROM_ACCEPTED_CANONICAL_REFERENCE",
+            "canonical_reference_replaced":False,
+            "status":"PASS"
+          }
+          p.write_text(json.dumps(event,sort_keys=True)+"\n")
+          PY
+          test -s "$ICONS/icon.png"
+          identify "$ICONS/icon.png"
+          echo "TELEMETRY ICON_REPAIR=PASS"
+          echo "TELEMETRY SECOND_ORDER_ANTI_PARALYSIS=ARMED"
+
+      - name: Build with bounded second-order recovery
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          APP="target/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate"
+          EVENTS="$RUNNER_TEMP/louksna-zd/ANTI_PARALYSIS_EVENTS.jsonl"
+          cd "$APP"
+          node --version | tee "$RUNNER_TEMP/louksna-zd/NODE_VERSION.txt"
+          npm --version | tee "$RUNNER_TEMP/louksna-zd/NPM_VERSION.txt"
+          rustc --version | tee "$RUNNER_TEMP/louksna-zd/RUSTC_VERSION.txt"
+          cargo --version | tee "$RUNNER_TEMP/louksna-zd/CARGO_VERSION.txt"
+          npm install
+          npm run build
+          echo "TELEMETRY FRONTEND_PRODUCTION_BUILD=PASS"
+          set +e
+          npx tauri build --bundles deb 2>&1 | tee "$RUNNER_TEMP/louksna-zd/TAURI_BUILD_ATTEMPT1.log"
+          RC=${PIPESTATUS[0]}
+          set -e
+          if test "$RC" -ne 0; then
+            CLASSIFIER="UNCLASSIFIED"
+            if grep -qiE 'failed to open icon|icon\.png|icons/' "$RUNNER_TEMP/louksna-zd/TAURI_BUILD_ATTEMPT1.log"; then
+              CLASSIFIER="MISSING_OR_INVALID_TAURI_ICON"
+              SRC="../images/01_louksna_zona_directiva_centro_de_mando_8k.png"
+              mkdir -p src-tauri/icons
+              convert "$SRC" -gravity center -resize 512x512^ -extent 512x512 "PNG32:src-tauri/icons/icon.png"
+            elif grep -qiE 'timed out|network|crates\.io|failed to download|npm ERR' "$RUNNER_TEMP/louksna-zd/TAURI_BUILD_ATTEMPT1.log"; then
+              CLASSIFIER="TRANSIENT_NETWORK_OR_REGISTRY"
+              cargo fetch || true
+            fi
+            CLASSIFIER="$CLASSIFIER" python3 - <<'PY'
+          import json,os,pathlib
+          p=pathlib.Path(os.environ["RUNNER_TEMP"])/"louksna-zd"/"ANTI_PARALYSIS_EVENTS.jsonl"
+          event={
+            "order":2,
+            "mechanism":"SECOND_ORDER_BOUNDED_RECOVERY",
+            "classifier":os.environ["CLASSIFIER"],
+            "retry_budget":1,
+            "status":"RETRY_AUTHORIZED" if os.environ["CLASSIFIER"]!="UNCLASSIFIED" else "FAIL_CLOSED"
+          }
+          with p.open("a") as f: f.write(json.dumps(event,sort_keys=True)+"\n")
+          PY
+            if test "$CLASSIFIER" = "UNCLASSIFIED"; then
+              exit "$RC"
+            fi
+            npx tauri build --bundles deb 2>&1 | tee "$RUNNER_TEMP/louksna-zd/TAURI_BUILD_ATTEMPT2.log"
+            echo "TELEMETRY SECOND_ORDER_RECOVERY=PASS"
+          else
+            python3 - <<'PY'
+          import json,os,pathlib
+          p=pathlib.Path(os.environ["RUNNER_TEMP"])/"louksna-zd"/"ANTI_PARALYSIS_EVENTS.jsonl"
+          event={"order":2,"mechanism":"SECOND_ORDER_BOUNDED_RECOVERY","classifier":"NOT_NEEDED","retry_budget":1,"status":"ARMED_AND_NOT_NEEDED"}
+          with p.open("a") as f: f.write(json.dumps(event,sort_keys=True)+"\n")
+          PY
+          fi
+          echo "TELEMETRY TAURI_RUST_DEB_BUILD=PASS"
+
+      - name: Validate exact Debian package
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          APP="target/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate"
+          DEB="$(find "$APP/src-tauri/target/release/bundle/deb" -type f -name '*.deb' -print -quit)"
+          test -n "$DEB"
+          mkdir -p "$RUNNER_TEMP/louksna-zd/deb-extract"
+          sha256sum "$DEB" | tee "$RUNNER_TEMP/louksna-zd/DEB_SHA256.txt"
+          stat -c '%s' "$DEB" | tee "$RUNNER_TEMP/louksna-zd/DEB_SIZE_BYTES.txt"
+          dpkg-deb -I "$DEB" | tee "$RUNNER_TEMP/louksna-zd/DPKG_INFO.txt"
+          dpkg-deb -c "$DEB" | tee "$RUNNER_TEMP/louksna-zd/DPKG_CONTENTS.txt"
+          dpkg-deb -x "$DEB" "$RUNNER_TEMP/louksna-zd/deb-extract"
+          DESKTOP="$(find "$RUNNER_TEMP/louksna-zd/deb-extract/usr/share/applications" -type f -name '*.desktop' -print -quit || true)"
+          if test -n "$DESKTOP"; then desktop-file-validate "$DESKTOP"; fi
+          lintian "$DEB" 2>&1 | tee "$RUNNER_TEMP/louksna-zd/LINTIAN.txt" || true
+          cp "$DEB" "$RUNNER_TEMP/louksna-zd/"
+          echo "TELEMETRY DEB_STRUCTURAL_VALIDATION=PASS"
+
+      - name: Debian 13 installability and rollback proof
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          DEB="$(find target/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate/src-tauri/target/release/bundle/deb -type f -name '*.deb' -print -quit)"
+          DEB_DIR="$(dirname "$DEB")"
+          DEB_NAME="$(basename "$DEB")"
+          PKG="$(dpkg-deb -f "$DEB" Package)"
+          docker run --rm -v "$GITHUB_WORKSPACE/$DEB_DIR:/pkg:ro" debian:13-slim sh -lc "
+            set -eu
+            apt-get update
+            apt-get install -y /pkg/$DEB_NAME
+            dpkg -s '$PKG'
+            apt-get remove -y '$PKG'
+            if dpkg-query -W -f='\${Status}' '$PKG' 2>/dev/null | grep -q 'install ok installed'; then
+              exit 7
+            fi
+          " | tee "$RUNNER_TEMP/louksna-zd/DEBIAN13_INSTALL_ROLLBACK.txt"
+          echo "TELEMETRY DEBIAN13_INSTALLABILITY=PASS"
+          echo "TELEMETRY ROLLBACK_UNINSTALL=PASS"
+
+      - name: Non-regression and security evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          APP="target/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate"
+          npm audit --prefix "$APP" --json > "$RUNNER_TEMP/louksna-zd/NPM_AUDIT.json" || true
+          python3 - "$APP" "$RUNNER_TEMP/louksna-zd/NPM_AUDIT.json" <<'PY'
+          import json,pathlib,sys
+          app=pathlib.Path(sys.argv[1]); auditp=pathlib.Path(sys.argv[2])
+          source=app.parent
+          manifest=json.loads((source/"images/ASSET_MANIFEST.json").read_text())
+          declared={x["file"]:x["sha256"] for x in manifest["assets"]}
+          import hashlib
+          def sha(p): return hashlib.sha256(p.read_bytes()).hexdigest()
+          for name,digest in declared.items():
+              p=source/"images"/name
+              assert p.is_file() and sha(p)==digest,(name,"CANONICAL_DRIFT")
+          ui=(app/"src/App.tsx").read_text(encoding="utf-8")
+          required=["Centro de mando","Repositorios","Pull Requests","Evidencia","Chat / Llamada","Configuración"]
+          for label in required: assert label in ui,label
+          forbidden=["Josefina","Katya","Ancapi","MetaOS"]
+          assert not any(x in ui for x in forbidden),[x for x in forbidden if x in ui]
+          audit=json.loads(auditp.read_text() or "{}")
+          vulns=(audit.get("metadata") or {}).get("vulnerabilities") or {}
+          critical=int(vulns.get("critical",0) or 0)
+          assert critical==0,("NPM_CRITICAL_VULNERABILITIES",critical)
+          print("TELEMETRY NON_REGRESSION=PASS")
+          print("TELEMETRY OBSERVED_CRITICAL_NPM_VULNS=0")
+          PY
+
+      - name: Freeze candidate assurance package
+        shell: bash
+        env:
+          PRODUCER_RUN_ID: ${{ github.run_id }}
+        run: |
+          set -Eeuo pipefail
+          APP="target/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate"
+          SRCROOT="target/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED"
+          DEB="$(find "$APP/src-tauri/target/release/bundle/deb" -type f -name '*.deb' -print -quit)"
+          FROZEN="$RUNNER_TEMP/frozen-candidate"
+          mkdir -p "$FROZEN/payload" "$FROZEN/evidence" "$FROZEN/locks"
+          cp "$DEB" "$FROZEN/payload/"
+          cp "$RUNNER_TEMP/louksna-zd/ANTI_PARALYSIS_EVENTS.jsonl" "$FROZEN/evidence/"
+          cp "$RUNNER_TEMP/louksna-zd/DPKG_INFO.txt" "$FROZEN/evidence/"
+          cp "$RUNNER_TEMP/louksna-zd/DPKG_CONTENTS.txt" "$FROZEN/evidence/"
+          cp "$RUNNER_TEMP/louksna-zd/LINTIAN.txt" "$FROZEN/evidence/"
+          cp "$RUNNER_TEMP/louksna-zd/DEBIAN13_INSTALL_ROLLBACK.txt" "$FROZEN/evidence/"
+          cp "$RUNNER_TEMP/louksna-zd/NPM_AUDIT.json" "$FROZEN/evidence/"
+          cp "$RUNNER_TEMP/louksna-zd/TAURI_BUILD_ATTEMPT1.log" "$FROZEN/evidence/"
+          cp "$APP/package-lock.json" "$FROZEN/locks/package-lock.json"
+          cp "$APP/src-tauri/Cargo.lock" "$FROZEN/locks/Cargo.lock"
+          python3 - "$FROZEN" "$DEB" "$APP" "$SRCROOT" <<'PY'
+          import hashlib,json,os,pathlib,sys
+          from datetime import datetime,timezone
+          root=pathlib.Path(sys.argv[1]); deb=pathlib.Path(sys.argv[2]); app=pathlib.Path(sys.argv[3]); srcroot=pathlib.Path(sys.argv[4])
+          def sha(p): return hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
+          def dump(name,obj): (root/name).write_text(json.dumps(obj,indent=2,sort_keys=True)+"\n")
+          main_sha=(pathlib.Path(os.environ["RUNNER_TEMP"])/"louksna-zd/MAIN_ROOT_SHA.txt").read_text().strip()
+          work_sha=(pathlib.Path(os.environ["RUNNER_TEMP"])/"louksna-zd/WORK_BRANCH_SHA.txt").read_text().strip()
+          deb_rel="payload/"+deb.name
+          deb_sha=sha(deb); deb_size=deb.stat().st_size
+          pkg=os.popen("dpkg-deb -f "+str(deb)+" Package").read().strip()
+          ver=os.popen("dpkg-deb -f "+str(deb)+" Version").read().strip()
+          arch=os.popen("dpkg-deb -f "+str(deb)+" Architecture").read().strip()
+          dump("BUILD_RESULT.json",{
+            "status":"PASS","frontend_build":"PASS","tauri_rust_build":"PASS","deb_build":"PASS",
+            "candidate_head_sha":work_sha,"main_root_sha":main_sha
+          })
+          dump("DEB_MANIFEST.json",{
+            "status":"PASS","path":deb_rel,"sha256":deb_sha,"size_bytes":deb_size,
+            "package":pkg,"version":ver,"architecture":arch,
+            "dpkg_structural_validation":"PASS","hard_max_bytes":479000000,
+            "within_hard_max":deb_size<=479000000
+          })
+          dump("INSTALL_RESULT.json",{
+            "status":"PASS","environment":"debian:13-slim container on GitHub-hosted ubuntu-24.04",
+            "package_install":"PASS","dpkg_status":"PASS",
+            "gui_launch":"NOT_EXECUTED_HEADLESS_ENVIRONMENT"
+          })
+          dump("ROLLBACK_PROOF.json",{
+            "status":"PASS","method":"apt-get remove inside fresh Debian 13 container",
+            "post_remove_installed_state":False,
+            "scope":"PACKAGE_INSTALLATION_REVERSIBILITY"
+          })
+          dump("NON_REGRESSION.json",{
+            "status":"PASS","canonical_images_hash_preserved":True,
+            "canonical_sections_count":6,"identity":"LOUKSNA_ONLY",
+            "source_branch_mutation":False,"main_mutation":False
+          })
+          audit=json.loads((root/"evidence/NPM_AUDIT.json").read_text() or "{}")
+          vulns=(audit.get("metadata") or {}).get("vulnerabilities") or {}
+          dump("SECURITY_RISK.json",{
+            "status":"PASS","uncontrolled_critical_risks":0,
+            "npm_observed_critical_vulnerabilities":int(vulns.get("critical",0) or 0),
+            "limitations":["NO_CLAIM_OF_ABSENCE_OF_UNKNOWN_VULNERABILITIES","CARGO_VULNERABILITY_DATABASE_SCAN_NOT_EXECUTED"]
+          })
+          dump("PROVENANCE.json",{
+            "status":"PASS","authority":"Louksna.md","main_root_sha":main_sha,
+            "candidate_head_sha":work_sha,"canonical_source_commit":"94f999f28f6ac371e1a768312a69704af96fd7a7",
+            "canonical_asset_manifest_sha256":sha(srcroot/"images/ASSET_MANIFEST.json"),
+            "canonical_mutation":False,"main_mutation":False,
+            "producer_run_id":int(os.environ["PRODUCER_RUN_ID"])
+          })
+          claims=[
+            {"claim_id":"LZD-CLM-001","property":"FRONTEND_PRODUCTION_BUILD","status":"PASS","required":True,"certifiable":True},
+            {"claim_id":"LZD-CLM-002","property":"TAURI_RUST_DEB_BUILD","status":"PASS","required":True,"certifiable":True},
+            {"claim_id":"LZD-CLM-003","property":"DEB_STRUCTURAL_VALIDATION","status":"PASS","required":True,"certifiable":True},
+            {"claim_id":"LZD-CLM-004","property":"DEBIAN13_INSTALLABILITY","status":"PASS","required":True,"certifiable":True},
+            {"claim_id":"LZD-CLM-005","property":"PACKAGE_ROLLBACK_UNINSTALL","status":"PASS","required":True,"certifiable":True},
+            {"claim_id":"LZD-CLM-006","property":"LOUKSNA_ONLY_SIX_CANONICAL_SECTIONS","status":"PASS","required":True,"certifiable":True},
+            {"claim_id":"LZD-CLM-007","property":"EXACT_DEB_UNDER_479000000_BYTES","status":"PASS" if deb_size<=479000000 else "FAIL","required":True,"certifiable":True},
+            {"claim_id":"LZD-CLM-008","property":"SECOND_ORDER_ANTI_PARALYSIS_BOUND_AND_FAIL_CLOSED","status":"PASS","required":True,"certifiable":True}
+          ]
+          excluded=[
+            "PHYSICAL_DEBIAN13_KDE_GUI_LAUNCH",
+            "LIVE_GITHUB_MUTATING_OPERATIONS",
+            "VOICE_CALL_STACK_END_TO_END",
+            "ABSENCE_OF_UNKNOWN_VULNERABILITIES",
+            "EXTERNAL_REGULATORY_CERTIFICATION",
+            "OPERATIONAL_ACTIVE_AUTHORIZATION"
+          ]
+          dump("CLAIMS.json",{"status":"PASS","claims":claims,"claims_excluded":excluded})
+          dump("MONITORING_PROFILE.json",{
+            "status":"PASS","telemetry":"GITHUB_ACTIONS_PLUS_JSONL",
+            "second_order_anti_paralysis":"PASS","retry_budget":1,
+            "unclassified_failure_policy":"FAIL_CLOSED"
+          })
+          dump("REPRODUCIBILITY.json",{
+            "status":"PASS","scope":"EXACT_FROZEN_BUILD_RECONSTRUCTION_INPUTS",
+            "package_lock_preserved":True,"cargo_lock_preserved":True,
+            "canonical_source_commit_pinned":True,"runtime_commit_pinned":True,
+            "bit_for_bit_rebuild_claimed":False
+          })
+          dump("INDEPENDENCE_REQUIREMENT.json",{
+            "status":"PASS","g23_required":True,"g24_required":True,
+            "producer_must_not_be_only_validator":True,
+            "validator_control_plane":"MAIN_CONTROLLED_WORKFLOW_RUN",
+            "candidate_consumption":"READ_ONLY_DATA_ONLY"
+          })
+          evidence_paths=[
+            "payload/"+deb.name,
+            "evidence/ANTI_PARALYSIS_EVENTS.jsonl",
+            "evidence/DPKG_INFO.txt","evidence/DPKG_CONTENTS.txt","evidence/LINTIAN.txt",
+            "evidence/DEBIAN13_INSTALL_ROLLBACK.txt","evidence/NPM_AUDIT.json",
+            "evidence/TAURI_BUILD_ATTEMPT1.log","locks/package-lock.json","locks/Cargo.lock",
+            "BUILD_RESULT.json","DEB_MANIFEST.json","INSTALL_RESULT.json","ROLLBACK_PROOF.json",
+            "NON_REGRESSION.json","SECURITY_RISK.json","PROVENANCE.json","CLAIMS.json",
+            "MONITORING_PROFILE.json","REPRODUCIBILITY.json","INDEPENDENCE_REQUIREMENT.json"
+          ]
+          items=[{"path":p,"sha256":sha(root/p)} for p in evidence_paths]
+          dump("EVIDENCE_INDEX.json",{"status":"PASS","items":items})
+          dump("ASSURANCE_CASE.json",{
+            "status":"READY_FOR_G23","authority":"Louksna.md",
+            "claim_ids":[x["claim_id"] for x in claims if x["required"]],
+            "evidence_paths":evidence_paths,
+            "g23":"REQUIRED","g24":"REQUIRED","active":False
+          })
+          excluded_names={"FROZEN_CANDIDATE.json","CANDIDATE_DIGEST.txt"}
+          rows=[]
+          for f in sorted(x for x in root.rglob("*") if x.is_file() and x.name not in excluded_names):
+              rows.append({"path":f.relative_to(root).as_posix(),"sha256":sha(f),"size":f.stat().st_size})
+          digest=hashlib.sha256(json.dumps(rows,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          dump("FROZEN_CANDIDATE.json",{
+            "schema":"LOUKSNA_ZD_FROZEN_CANDIDATE/1.0","frozen":True,
+            "candidate_head_sha":work_sha,"main_root_sha":main_sha,
+            "candidate_digest_sha256":digest,"deb_sha256":deb_sha,
+            "deb_size_bytes":deb_size,"authority":"Louksna.md",
+            "g23":"PENDING","g24":"PENDING","active":False,
+            "created_at_utc":datetime.now(timezone.utc).isoformat()
+          })
+          (root/"CANDIDATE_DIGEST.txt").write_text(digest+"\n")
+          print("TELEMETRY FROZEN_CANDIDATE=PASS")
+          print("TELEMETRY CANDIDATE_DIGEST_SHA256="+digest)
+          print("TELEMETRY DEB_SHA256="+deb_sha)
+          print("TELEMETRY DEB_SIZE_BYTES="+str(deb_size))
+          PY
+
+      - name: Preserve exact frozen candidate for independent G23 G24
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksna-zd-frozen-candidate
+          path: ${{ runner.temp }}/frozen-candidate
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Producer terminal telemetry
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "TELEMETRY PRODUCER_STATUS=PASS"
+          echo "TELEMETRY NEXT_GATE=G23_INDEPENDENT_VALIDATION"
+          echo "TELEMETRY G23=PENDING_EXTERNAL_MAIN_CONTROLLED"
+          echo "TELEMETRY G24=PENDING_AFTER_G23"
+          echo "TELEMETRY ACTIVE=FALSE"
