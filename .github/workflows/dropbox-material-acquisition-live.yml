@@ -1,0 +1,135 @@
+name: "Dropbox material acquisition LIVE"
+
+on:
+  push:
+    branches:
+      - staging/dropbox-main-governed-recovery-20h-20261004
+    paths:
+      - .github/workflows/dropbox-material-acquisition-live.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  MISSION_ID: DROPBOX_MAIN_GOVERNED_RECOVERY_20H_20261004
+  TARGET_NAME: "1. PROYECTOS PRIORITARIOS"
+  HARD_CEILING_SECONDS: "72000"
+  DROPBOX_SHARED_LINK: "https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/AIIzeblluaJfhuXh9EnP-10?rlkey=p712fwlkbwn9g0dtybu2sf159&st=3igdng0g&dl=0"
+
+jobs:
+  acquire_live:
+    name: "Material Dropbox acquisition — prove bytes then continue"
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 1200
+
+    steps:
+      - name: Checkout acquisition implementation
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          path: _dropbox_live_${{ github.run_id }}
+          persist-credentials: false
+
+      - name: Validate implementation and install browser dependency
+        shell: bash
+        working-directory: ${{ github.workspace }}/_dropbox_live_${{ github.run_id }}
+        run: |
+          set -Eeuo pipefail
+          python3 -m py_compile scripts/dropbox_governed_recovery_20h.py
+          python3 -m pip install --user --break-system-packages --disable-pip-version-check --no-input "playwright>=1.50,<2"
+          python3 -m playwright install chromium
+          python3 -c 'import playwright; print("PLAYWRIGHT=PRESENT")'
+
+      - name: Start Dropbox acquisition and prove real byte flow
+        shell: bash
+        working-directory: ${{ github.workspace }}/_dropbox_live_${{ github.run_id }}
+        env:
+          DROPBOX_ACCESS_TOKEN: ${{ secrets.DROPBOX_ACCESS_TOKEN }}
+          STATE_ROOT: ${{ runner.temp }}/dropbox-live-${{ github.run_id }}
+          CORPUS_ROOT: /home/diegoignacionorambuenamiranda/PROYECTOS/1. PROYECTOS PRIORITARIOS
+        run: |
+          set -Eeuo pipefail
+          PROOF="$RUNNER_TEMP/dropbox-live-proof-${GITHUB_RUN_ID}"
+          rm -rf "$STATE_ROOT" "$PROOF"
+          mkdir -p "$STATE_ROOT" "$PROOF" "$CORPUS_ROOT"
+
+          (
+            set +e
+            python3 -B scripts/dropbox_governed_recovery_20h.py >"$STATE_ROOT/acquisition.stdout" 2>"$STATE_ROOT/acquisition.stderr"
+            rc=$?
+            printf '%s\n' "$rc" > "$STATE_ROOT/acquisition.exit"
+          ) &
+          pid=$!
+          printf '%s\n' "$pid" > "$STATE_ROOT/acquisition.pid"
+
+          deadline=$((SECONDS+300))
+          while [ "$SECONDS" -lt "$deadline" ]; do
+            marker="$STATE_ROOT/evidence/DOWNLOAD_STARTED.json"
+            if [ -f "$marker" ]; then
+              material_file="$(find "$STATE_ROOT/browser-downloads" -type f -size +0c -print -quit 2>/dev/null || true)"
+              if [ -n "$material_file" ]; then
+                bytes="$(stat -c '%s' "$material_file")"
+                cp "$marker" "$PROOF/DOWNLOAD_STARTED.json"
+                {
+                  echo "MATERIAL_DOWNLOAD_STARTED=TRUE"
+                  echo "OBSERVED_FILE=$material_file"
+                  echo "OBSERVED_BYTES=$bytes"
+                  echo "BACKGROUND_PID=$pid"
+                  echo "UTC=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+                } | tee "$PROOF/MATERIAL_BYTE_FLOW.txt"
+                test "$bytes" -gt 0
+                exit 0
+              fi
+            fi
+
+            if [ -f "$STATE_ROOT/acquisition.exit" ]; then
+              echo "Acquisition exited before real byte flow."
+              echo "RC=$(cat "$STATE_ROOT/acquisition.exit")"
+              cat "$STATE_ROOT/acquisition.stdout" || true
+              cat "$STATE_ROOT/acquisition.stderr" || true
+              exit 3
+            fi
+            sleep 1
+          done
+
+          echo "No real byte flow observed inside 300 seconds."
+          cat "$STATE_ROOT/acquisition.stdout" || true
+          cat "$STATE_ROOT/acquisition.stderr" || true
+          exit 124
+
+      - name: Publish proof that files are actually downloading
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dropbox-material-download-start-proof
+          path: ${{ runner.temp }}/dropbox-live-proof-${{ github.run_id }}
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+      - name: Leave acquisition working until completion
+        shell: bash
+        env:
+          STATE_ROOT: ${{ runner.temp }}/dropbox-live-${{ github.run_id }}
+        run: |
+          set -Eeuo pipefail
+          echo "MATERIAL_FLOW_PROVEN=TRUE"
+          echo "Acquisition remains active; waiting for governed completion."
+          while [ ! -f "$STATE_ROOT/acquisition.exit" ]; do
+            sleep 15
+          done
+          rc="$(cat "$STATE_ROOT/acquisition.exit")"
+          echo "ACQUISITION_EXIT=$rc"
+          cat "$STATE_ROOT/acquisition.stdout" || true
+          cat "$STATE_ROOT/acquisition.stderr" || true
+          exit "$rc"
+
+      - name: Preserve final acquisition evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dropbox-material-acquisition-final-evidence
+          path: ${{ runner.temp }}/dropbox-live-${{ github.run_id }}/evidence
+          if-no-files-found: warn
+          retention-days: 90
