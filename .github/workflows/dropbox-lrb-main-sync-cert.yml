@@ -9,6 +9,9 @@ on:
       - mission-control/dropbox-main-governed-recovery-20h/MAIN_SYNC.json
       - mission-control/dropbox-main-governed-recovery-20h/OWNER_AUTHORIZATION.json
       - .github/workflows/dropbox-lrb-main-sync-cert.yml
+      - .github/workflows/dropbox-oauth-refresh-material-flow-live.yml
+      - .github/workflows/dropbox-lrb-rclone-oauth-bootstrap.yml
+      - scripts/dropbox_governed_recovery_20h.py
   workflow_dispatch:
 
 permissions:
