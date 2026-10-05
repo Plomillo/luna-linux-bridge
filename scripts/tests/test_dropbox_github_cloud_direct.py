@@ -14,6 +14,8 @@ required=[
     "actions/upload-artifact@",
     "G23",
     "G24",
+    "CLOUD_DOWNLOAD_DIAGNOSTIC=TRUE",
+    "if: always()",
 ]
 for needle in required:
     if needle not in text:
