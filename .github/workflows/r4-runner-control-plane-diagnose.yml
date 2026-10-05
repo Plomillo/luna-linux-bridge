@@ -17,31 +17,33 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - name: Inspect self-hosted runner allocation from GitHub control plane
+      - name: Inspect current queued self-hosted jobs without host mutation
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          TARGET_JOB_ID: "110626437175"
         run: |
           set -Eeuo pipefail
-          echo "=== TARGET JOB ==="
-          set +e
-          gh api "repos/Plomillo/luna-linux-bridge/actions/jobs/$TARGET_JOB_ID" > job.json 2>job.err
-          JRC=$?
-          set -e
-          echo "job_api_rc=$JRC"
-          cat job.err || true
-          if test -s job.json; then
-            python3 -c 'import json; d=json.load(open("job.json")); print(json.dumps({"id":d.get("id"),"status":d.get("status"),"conclusion":d.get("conclusion"),"runner_id":d.get("runner_id"),"runner_name":d.get("runner_name"),"runner_group_id":d.get("runner_group_id"),"runner_group_name":d.get("runner_group_name"),"labels":d.get("labels"),"started_at":d.get("started_at"),"completed_at":d.get("completed_at")},indent=2,sort_keys=True))'
-          fi
-
-          echo "=== REPOSITORY RUNNERS ==="
-          set +e
-          gh api "repos/Plomillo/luna-linux-bridge/actions/runners?per_page=100" > runners.json 2>runners.err
-          RRC=$?
-          set -e
-          echo "runners_api_rc=$RRC"
-          cat runners.err || true
-          if test -s runners.json; then
-            python3 -c 'import json; d=json.load(open("runners.json")); print(json.dumps({"total_count":d.get("total_count"),"runners":[{"id":x.get("id"),"name":x.get("name"),"os":x.get("os"),"status":x.get("status"),"busy":x.get("busy"),"labels":[y.get("name") for y in x.get("labels",[])]} for x in d.get("runners",[])]},indent=2,sort_keys=True))'
-          fi
+          for TARGET_JOB_ID in 111892111878 111893874604 111898962567; do
+            echo "=== JOB $TARGET_JOB_ID ==="
+            gh api "repos/Plomillo/luna-linux-bridge/actions/jobs/$TARGET_JOB_ID" > "job-$TARGET_JOB_ID.json"
+            python3 - "$TARGET_JOB_ID" "job-$TARGET_JOB_ID.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[2]))
+          print(json.dumps({
+            "id":d.get("id"),
+            "name":d.get("name"),
+            "status":d.get("status"),
+            "conclusion":d.get("conclusion"),
+            "runner_id":d.get("runner_id"),
+            "runner_name":d.get("runner_name"),
+            "runner_group_id":d.get("runner_group_id"),
+            "runner_group_name":d.get("runner_group_name"),
+            "labels":d.get("labels"),
+            "started_at":d.get("started_at"),
+            "completed_at":d.get("completed_at")
+          },sort_keys=True))
+          PY
+          done
+          echo "HOST_MUTATION=FALSE"
+          echo "QUEUE_MUTATION=FALSE"
+          echo "DESKTOP_COMMANDER_USED=FALSE"
