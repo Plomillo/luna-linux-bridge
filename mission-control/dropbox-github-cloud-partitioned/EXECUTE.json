@@ -1,0 +1,24 @@
+{
+  "schema": "LOUKSNA_DROPBOX_GITHUB_CLOUD_PARTITIONED_EXECUTE/1.0",
+  "status": "AUTHORIZED",
+  "authority": "Louksna.md",
+  "scope": "DROPBOX_CONNECTED_TO_GITHUB_HOSTED_PARTITIONED_TRANSFER",
+  "contract": {
+    "head_sha": "988f2e285170912af54e08c454a66779da6a32db",
+    "run_id": 37358407973,
+    "status": "PASS"
+  },
+  "source_binding": "mission-control/dropbox-github-cloud-direct/BINDING.json",
+  "root_inventory": {
+    "observed_top_level_folders": 8,
+    "observed_top_level_files": 0,
+    "evidence_run_id": 37357375818
+  },
+  "prior_root_package_result": "DROPBOX_409_BAD_REQUEST_TOO_MANY_FILES",
+  "execution_plane": "GITHUB_HOSTED_UBUNTU_24_04",
+  "recursive_partitioning": true,
+  "local_pc_data_plane": false,
+  "self_hosted_runner_data_plane": false,
+  "desktop_commander": false,
+  "stop_assistant_intervention_on_material_byte_flow": true
+}
