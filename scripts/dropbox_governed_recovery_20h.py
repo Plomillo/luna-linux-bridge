@@ -540,13 +540,17 @@ def main():
           old_7z_policy="IGNORED_NOT_INPUT",custosz_before_complete=False,
           main_role=["TRUST_ROOT","RECOVERY_ROOT","ACQUISITION_ROOT","CONTINUITY_ROOT"])
     atomic(STATUS,{"state":"DISCOVER","mission_id":MISSION_ID,"utc":utc()})
+    require_refresh=os.environ.get("REQUIRE_DROPBOX_OAUTH_REFRESH","0").strip()=="1"
     providers=[
         ("DROPBOX_API_OAUTH_REFRESH",provider_dropbox_api),
         ("RCLONE_DROPBOX",provider_rclone),
         ("DROPBOX_BROWSER_PACKAGE",browser_download_candidate),
     ]
+    if require_refresh:
+        providers=providers[:1]
     event("PROVIDER_ORDER_BOUND",providers=[x[0] for x in providers],
-          primary="DROPBOX_API_OAUTH_REFRESH",browser_role="FALLBACK_DIAGNOSTIC")
+          primary="DROPBOX_API_OAUTH_REFRESH",browser_role="FALLBACK_DIAGNOSTIC",
+          refresh_validation_mode=require_refresh)
     acquired=False
     for name,fn in providers:
         check_deadline()
