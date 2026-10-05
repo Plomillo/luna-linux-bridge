@@ -1,0 +1,174 @@
+name: "Dropbox OAuth refresh material flow LIVE"
+
+on:
+  push:
+    branches:
+      - staging/dropbox-oauth-refresh-material-flow-20261005
+    paths:
+      - .github/workflows/dropbox-oauth-refresh-material-flow-live.yml
+      - scripts/dropbox_governed_recovery_20h.py
+      - mission-control/dropbox-main-governed-recovery-20h/REQUEST.json
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: dropbox-oauth-refresh-material-flow-live
+  cancel-in-progress: false
+
+env:
+  MISSION_ID: DROPBOX_MAIN_GOVERNED_RECOVERY_20H_20261004
+  TARGET_NAME: "1. PROYECTOS PRIORITARIOS"
+  HARD_CEILING_SECONDS: "72000"
+  REQUIRE_DROPBOX_OAUTH_REFRESH: "1"
+  DROPBOX_SHARED_LINK: "https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/AIIzeblluaJfhuXh9EnP-10?rlkey=p712fwlkbwn9g0dtybu2sf159&st=3igdng0g&dl=0"
+
+jobs:
+  oauth_acquire:
+    name: "OAuth P1 — prove authenticated material byte flow then leave running"
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 1200
+
+    steps:
+      - name: Checkout exact OAuth delta
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          path: _dropbox_oauth_${{ github.run_id }}
+          persist-credentials: false
+
+      - name: Verify OAuth binding presence without revealing credentials
+        shell: bash
+        working-directory: ${{ github.workspace }}/_dropbox_oauth_${{ github.run_id }}
+        env:
+          DROPBOX_APP_KEY: ${{ secrets.DROPBOX_APP_KEY }}
+          DROPBOX_APP_SECRET: ${{ secrets.DROPBOX_APP_SECRET }}
+          DROPBOX_REFRESH_TOKEN: ${{ secrets.DROPBOX_REFRESH_TOKEN }}
+        run: |
+          set -Eeuo pipefail
+          E="$RUNNER_TEMP/dropbox-oauth-binding-${GITHUB_RUN_ID}"
+          mkdir -p "$E"
+          APP_KEY_PRESENT=false
+          APP_SECRET_PRESENT=false
+          REFRESH_TOKEN_PRESENT=false
+          [ -n "${DROPBOX_APP_KEY:-}" ] && APP_KEY_PRESENT=true
+          [ -n "${DROPBOX_APP_SECRET:-}" ] && APP_SECRET_PRESENT=true
+          [ -n "${DROPBOX_REFRESH_TOKEN:-}" ] && REFRESH_TOKEN_PRESENT=true
+          cat > "$E/BINDING_PREFLIGHT.json" <<JSON
+          {
+            "schema": "LOUKSNA_DROPBOX_OAUTH_BINDING_PREFLIGHT/1.0",
+            "provider": "DROPBOX_API_OAUTH_REFRESH",
+            "app_key_present": $APP_KEY_PRESENT,
+            "app_secret_present": $APP_SECRET_PRESENT,
+            "refresh_token_present": $REFRESH_TOKEN_PRESENT,
+            "secret_values_logged": false,
+            "status": "$([ "$APP_KEY_PRESENT" = true ] && [ "$APP_SECRET_PRESENT" = true ] && [ "$REFRESH_TOKEN_PRESENT" = true ] && echo PASS || echo FAIL)"
+          }
+          JSON
+          cat "$E/BINDING_PREFLIGHT.json"
+          test "$APP_KEY_PRESENT" = true
+          test "$APP_SECRET_PRESENT" = true
+          test "$REFRESH_TOKEN_PRESENT" = true
+          python3 -m py_compile scripts/dropbox_governed_recovery_20h.py
+
+      - name: Start OAuth acquisition and prove material byte flow
+        shell: bash
+        working-directory: ${{ github.workspace }}/_dropbox_oauth_${{ github.run_id }}
+        env:
+          DROPBOX_APP_KEY: ${{ secrets.DROPBOX_APP_KEY }}
+          DROPBOX_APP_SECRET: ${{ secrets.DROPBOX_APP_SECRET }}
+          DROPBOX_REFRESH_TOKEN: ${{ secrets.DROPBOX_REFRESH_TOKEN }}
+          STATE_ROOT: ${{ runner.temp }}/dropbox-oauth-live-${{ github.run_id }}
+          CORPUS_ROOT: /home/diegoignacionorambuenamiranda/PROYECTOS/1. PROYECTOS PRIORITARIOS
+        run: |
+          set -Eeuo pipefail
+          PROOF="$RUNNER_TEMP/dropbox-oauth-proof-${GITHUB_RUN_ID}"
+          rm -rf "$STATE_ROOT" "$PROOF"
+          mkdir -p "$STATE_ROOT" "$PROOF" "$CORPUS_ROOT"
+
+          python3 -B scripts/dropbox_governed_recovery_20h.py             > >(tee "$STATE_ROOT/acquisition.stdout")             2> >(tee "$STATE_ROOT/acquisition.stderr" >&2) &
+          pid=$!
+          printf '%s\n' "$pid" > "$STATE_ROOT/acquisition.pid"
+
+          deadline=$((SECONDS+900))
+          proven=false
+          while [ "$SECONDS" -lt "$deadline" ]; do
+            marker="$STATE_ROOT/evidence/DOWNLOAD_STARTED.json"
+            if [ -f "$marker" ]; then
+              readarray -t vals < <(python3 - "$marker" <<'PY'
+          import json, os, sys
+          m=json.load(open(sys.argv[1],encoding="utf-8"))
+          print(str(bool(m.get("provider_authenticated"))).lower())
+          print(str(int(m.get("observed_bytes") or 0)))
+          print(str(m.get("destination") or ""))
+          print(str(m.get("provider") or ""))
+          print(str(m.get("dropbox_request_id") or ""))
+          print(str(m.get("background_pid") or ""))
+          PY
+              )
+              authenticated="${vals[0]}"
+              observed="${vals[1]}"
+              destination="${vals[2]}"
+              provider="${vals[3]}"
+              request_id="${vals[4]}"
+              marker_pid="${vals[5]}"
+              disk_bytes=0
+              [ -n "$destination" ] && [ -f "$destination" ] && disk_bytes="$(stat -c '%s' "$destination")"
+              if [ "$authenticated" = "true" ] && [ "$observed" -gt 0 ] && [ "$disk_bytes" -gt 0 ] && kill -0 "$pid" 2>/dev/null; then
+                cp "$marker" "$PROOF/DOWNLOAD_STARTED.json"
+                {
+                  echo "MATERIAL_DOWNLOAD_STARTED=TRUE"
+                  echo "PROVIDER_AUTHENTICATED=TRUE"
+                  echo "PROVIDER=$provider"
+                  echo "OBSERVED_BYTES=$observed"
+                  echo "DISK_BYTES=$disk_bytes"
+                  echo "SOURCE_OBJECT_IDENTIFIED=TRUE"
+                  echo "BACKGROUND_PROCESS_ALIVE=TRUE"
+                  echo "BACKGROUND_PID=$pid"
+                  echo "MARKER_PID=$marker_pid"
+                  echo "DROPBOX_REQUEST_ID=$request_id"
+                  echo "DESTINATION=$destination"
+                  echo "UTC=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+                } | tee "$PROOF/MATERIAL_BYTE_FLOW.txt"
+                proven=true
+                break
+              fi
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then
+              echo "Acquisition exited before certified material byte flow."
+              wait "$pid" || rc=$?
+              rc="${rc:-0}"
+              echo "ACQUISITION_EXIT=$rc"
+              exit "$rc"
+            fi
+            sleep 1
+          done
+
+          if [ "$proven" != true ]; then
+            echo "No authenticated material byte flow observed inside 900 seconds."
+            kill "$pid" 2>/dev/null || true
+            wait "$pid" || true
+            exit 124
+          fi
+
+          echo "LOUKSNA_STOP_CONDITION_REACHED=TRUE"
+          echo "Assistant must stop intervening; acquisition remains governed by this process."
+          wait "$pid"
+          rc=$?
+          printf '%s\n' "$rc" > "$STATE_ROOT/acquisition.exit"
+          exit "$rc"
+
+      - name: Preserve OAuth material proof
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dropbox-oauth-material-flow-proof
+          path: |
+            ${{ runner.temp }}/dropbox-oauth-proof-${{ github.run_id }}
+            ${{ runner.temp }}/dropbox-oauth-binding-${{ github.run_id }}
+            ${{ runner.temp }}/dropbox-oauth-live-${{ github.run_id }}/evidence
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 0
