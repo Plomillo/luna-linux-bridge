@@ -1,0 +1,55 @@
+{
+  "spec": "LOUKSNA ZONA DIRECTIVA — GitHub Interface Skeleton V0.2 HARDENED",
+  "identity": "LOUKSNA_ONLY",
+  "asset_count": 6,
+  "assets": [
+    {
+      "file": "01_louksna_zona_directiva_centro_de_mando_8k.png",
+      "bytes": 1922132,
+      "width": 1448,
+      "height": 1086,
+      "sha256": "9dbbd4413ce14c5957adede256d465c058759b2a6db5ecae509270e2917b596a",
+      "status": "VERIFIED_PNG"
+    },
+    {
+      "file": "02_louksna_zona_directiva_repositorios_8k.png",
+      "bytes": 2028552,
+      "width": 1448,
+      "height": 1086,
+      "sha256": "afe0647246856a8553622e7d84fa428b5c2bb397191ff5e2b90272113ff461de",
+      "status": "VERIFIED_PNG"
+    },
+    {
+      "file": "03_louksna_zona_directiva_pull_requests_8k.png",
+      "bytes": 2038208,
+      "width": 1448,
+      "height": 1086,
+      "sha256": "479c18b2796c8b36d7d6ce50f0f9fd6fa2e5b093c7b084ed44e5012d6eae06ea",
+      "status": "VERIFIED_PNG"
+    },
+    {
+      "file": "04_louksna_zona_directiva_evidencia_8k.png",
+      "bytes": 2088608,
+      "width": 1448,
+      "height": 1086,
+      "sha256": "a1b9ea9943df0dab923852ce575312aebf7743df99a8bc2ffd22ea4c143293e7",
+      "status": "VERIFIED_PNG"
+    },
+    {
+      "file": "05_louksna_zona_directiva_chat_llamada_8k.png",
+      "bytes": 2091903,
+      "width": 1448,
+      "height": 1086,
+      "sha256": "09cb79ee38099b03d07bd54d492b0dd1404de05155d1ed179c7998d3f459b50d",
+      "status": "VERIFIED_PNG"
+    },
+    {
+      "file": "06_louksna_zona_directiva_configuracion_8k.png",
+      "bytes": 2085221,
+      "width": 1448,
+      "height": 1086,
+      "sha256": "79ede261e2dc0b0246f1ee96d9ff3caf0cf78c4b205fa154f22e64e43512b758",
+      "status": "VERIFIED_PNG"
+    }
+  ]
+}
