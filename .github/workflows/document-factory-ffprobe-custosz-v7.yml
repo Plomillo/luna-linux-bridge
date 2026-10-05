@@ -98,7 +98,13 @@ jobs:
           git config user.name "custosz-v7-runtime-bot"
           git config user.email "custosz-v7-runtime-bot@users.noreply.github.com"
           git commit -m "feat(document-factory): admit PGP-verified FFprobe provider candidate"
-          git push origin HEAD:refs/heads/custosz/document-factory-ffprobe-admission-20261005
+          REMOTE_REF="refs/heads/custosz/document-factory-ffprobe-admission-20261005"
+          REMOTE_SHA="$(git ls-remote origin "$REMOTE_REF" | awk '{print $1}')"
+          if [ -n "$REMOTE_SHA" ]; then
+            git push --force-with-lease="$REMOTE_REF:$REMOTE_SHA" origin HEAD:"$REMOTE_REF"
+          else
+            git push origin HEAD:"$REMOTE_REF"
+          fi
 
       - name: Preserve FFprobe admission evidence
         if: always()
