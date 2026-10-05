@@ -1,4 +1,4 @@
-name: "Dropbox material acquisition LIVE"
+name: "Dropbox material acquisition LIVE"\n# trigger: material-acquisition-live-v2
 
 on:
   push:
