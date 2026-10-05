@@ -1,0 +1,112 @@
+name: "Document Factory — candidate producer"
+
+on:
+  push:
+    branches:
+      - "candidate/document-factory-v1-*"
+    paths:
+      - "document-factory/**"
+      - ".github/workflows/document-factory-candidate.yml"
+  pull_request:
+    paths:
+      - "document-factory/**"
+      - ".github/workflows/document-factory-candidate.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: document-factory-candidate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  producer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - name: Core selftest and profile verification
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B document-factory/src/selftest.py
+          python3 -B document-factory/src/factory.py validate-profile document-factory/profiles/uniacc-neuroplasticidad-u2.json --repo-root .
+
+      - name: Acquire pinned Pandoc 3.12
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          URL="https://github.com/jgm/pandoc/releases/download/3.12/pandoc-3.12-linux-amd64.tar.gz"
+          SHA="67d7d011fed8c8543306022b985b9b2499ab9b74818df91d8727c7e9ebc5ba06"
+          curl -fsSL "$URL" -o "$RUNNER_TEMP/pandoc.tgz"
+          echo "$SHA  $RUNNER_TEMP/pandoc.tgz" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/pandoc"
+          tar -xzf "$RUNNER_TEMP/pandoc.tgz" --strip-components=1 -C "$RUNNER_TEMP/pandoc"
+          echo "$RUNNER_TEMP/pandoc/bin" >> "$GITHUB_PATH"
+
+      - name: Acquire pinned LibreOffice 26.8.0
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          URL="https://download.documentfoundation.org/libreoffice/stable/26.8.0/deb/x86_64/LibreOffice_26.8.0_Linux_x86-64_deb.tar.gz"
+          SHA="d0a6031a3837e48f9854e6d2da6489b9fadbd814afa4741fa32a197741663a22"
+          curl -fsSL "$URL" -o "$RUNNER_TEMP/libreoffice.tgz"
+          echo "$SHA  $RUNNER_TEMP/libreoffice.tgz" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/lo"
+          tar -xzf "$RUNNER_TEMP/libreoffice.tgz" -C "$RUNNER_TEMP/lo"
+          sudo dpkg -i "$RUNNER_TEMP"/lo/*/DEBS/*.deb
+          command -v soffice
+          soffice --version
+
+      - name: Build synthetic governed demonstration
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          W="$RUNNER_TEMP/factory-demo"
+          mkdir -p "$W/source" "$W/data"
+          python3 - <<'PY'
+          import json,os,pathlib
+          w=pathlib.Path(os.environ["RUNNER_TEMP"])/"factory-demo"
+          body=" ".join(["evidence"]*850)
+          (w/"source/report.md").write_text("---\ntitle: Synthetic Demo\n---\n<!-- BODY_START -->\n# Introducción\n"+body+"\n<!-- BODY_END -->\n",encoding="utf-8")
+          (w/"source/slides.md").write_text("---\ntitle: Synthetic Demo\n---\n# Demo\nSynthetic CI fixture.\n",encoding="utf-8")
+          (w/"data/sheets.json").write_text(json.dumps({"sheets":[{"name":"Evidence","rows":[["id","status"],["SELFTEST","PASS"]]}]},indent=2)+"\n",encoding="utf-8")
+          sources={"schema":"DOCUMENT_FACTORY_SOURCE_LEDGER/1.0","fixture":True,"sources":[{"source_id":"TEST-S1","verified":True},{"source_id":"TEST-S2","verified":True},{"source_id":"TEST-S3","verified":True}]}
+          (w/"data/source-ledger.json").write_text(json.dumps(sources,indent=2)+"\n",encoding="utf-8")
+          PY
+          python3 -B document-factory/src/factory.py build "$W" document-factory/profiles/uniacc-neuroplasticidad-u2.json --repo-root .
+          python3 -B document-factory/src/factory.py self-audit "$W" document-factory/profiles/uniacc-neuroplasticidad-u2.json
+          python3 -B document-factory/src/factory.py freeze "$W"
+
+      - name: Assemble frozen framework candidate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          P="$RUNNER_TEMP/frozen"
+          mkdir -p "$P/framework" "$P/workspace"
+          cp -a document-factory/. "$P/framework/"
+          cp -a "$RUNNER_TEMP/factory-demo"/. "$P/workspace/"
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib
+          root=pathlib.Path(os.environ["RUNNER_TEMP"])/"frozen"
+          rows=[]
+          for f in sorted(x for x in root.rglob("*") if x.is_file() and x.name not in {"CANDIDATE_DIGEST.txt","FROZEN_CANDIDATE.json"}):
+              rows.append({"path":f.relative_to(root).as_posix(),"sha256":hashlib.sha256(f.read_bytes()).hexdigest(),"size_bytes":f.stat().st_size})
+          digest=hashlib.sha256(json.dumps(rows,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          (root/"CANDIDATE_DIGEST.txt").write_text(digest+"\n",encoding="utf-8")
+          (root/"FROZEN_CANDIDATE.json").write_text(json.dumps({"schema":"DOCUMENT_FACTORY_FROZEN_CANDIDATE/1.0","frozen":True,"candidate_digest_sha256":digest,"files":rows,"g23":"NOT_EXECUTED","g24":"NOT_EXECUTED"},indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print("CANDIDATE_DIGEST="+digest)
+          PY
+
+      - name: Upload frozen candidate
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: document-factory-v1-frozen-candidate
+          path: ${{ runner.temp }}/frozen
+          if-no-files-found: error
+          retention-days: 90
