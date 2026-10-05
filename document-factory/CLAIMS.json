@@ -1,0 +1,45 @@
+{
+  "schema": "DOCUMENT_FACTORY_CLAIMS/1.0",
+  "scope": "FRAMEWORK_CORE_V0.1",
+  "claims": [
+    {
+      "claim_id": "DF-CLM-001",
+      "property": "Profile-driven task intake preserves task-specific requirements outside engine logic.",
+      "acceptance": "Engine has no neuroplasticity subject logic; current task exists in profile/raw source."
+    },
+    {
+      "claim_id": "DF-CLM-002",
+      "property": "Runtime emits one-second liveness heartbeat and fails closed on bounded timeout.",
+      "acceptance": "Selftest proves heartbeat policy and timeout->HOLD with blind_retry=false."
+    },
+    {
+      "claim_id": "DF-CLM-003",
+      "property": "Reference build path produces structurally valid DOCX, PPTX, PDF and XLSX from source data.",
+      "acceptance": "Exact-head CI creates and independent validator inspects synthetic outputs."
+    },
+    {
+      "claim_id": "DF-CLM-004",
+      "property": "Workspace rollback is demonstrable.",
+      "acceptance": "Selftest mutates a checkpointed source, restores snapshot and verifies original SHA-256."
+    },
+    {
+      "claim_id": "DF-CLM-005",
+      "property": "Metacognitive self-audit cannot self-grant G23 or G24.",
+      "acceptance": "Self-audit record retains g23_granted=false and g24_granted=false and escalates human/source conflicts."
+    },
+    {
+      "claim_id": "DF-CLM-006",
+      "property": "Current UNIACC task profile preserves the declared 38.5-point rubric and explicit mechanical constraints.",
+      "acceptance": "Profile arithmetic, raw source reference and fixed constraints independently checked."
+    }
+  ],
+  "excluded_claims": [
+    "Academic correctness or originality of any future report.",
+    "A grade of 38.5/38.5.",
+    "Human fluency or technical mastery in a video.",
+    "Successful LMS/UNIACC submission.",
+    "Bit-for-bit output reproducibility across arbitrary environments.",
+    "Audiovisual validation until FFprobe provider is pinned and admitted.",
+    "Certification of future task profiles merely because the framework is certified."
+  ]
+}
