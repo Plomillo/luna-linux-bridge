@@ -1,0 +1,47 @@
+{
+  "active_anchor_sha": "43a82aa30607b8775c998fa39b2bc08bfc2a263f",
+  "candidate_digest_sha256": "d3c6b9e548a3cb9bfd3258cb7932ca20d9cff727e9709fd643a5828f4c67932c",
+  "candidate_head_sha": "3774cb102ad6318fc824b2cb87c5055e9f5f4b0b",
+  "candidate_parent_is_active": true,
+  "certification_authority": false,
+  "certification_propagation": false,
+  "changed_paths": [
+    "document-factory/CLAIMS.json",
+    "document-factory/custosz/CURRENT_STATE.json",
+    "document-factory/providers/ffprobe/linux-amd64/PROVENANCE.json",
+    "document-factory/providers/ffprobe/linux-amd64/ffprobe",
+    "document-factory/src/media_validation.py",
+    "document-factory/src/selftest.py",
+    "document-factory/src/test_ffprobe_provider.py",
+    "document-factory/toolchain.lock.json"
+  ],
+  "file_count": 42,
+  "g23": "NOT_EXECUTED",
+  "g24": "NOT_EXECUTED",
+  "next_state": "INDEPENDENT_PRODUCER_G23_G24_REQUIRED",
+  "produced_at_utc": "2026-10-05T22:41:26.487564+00:00",
+  "profile_validation": "PASS",
+  "provider_selftest": "PASS",
+  "schema": "DOCUMENT_FACTORY_FFPROBE_FRESH_PRODUCER/1.0",
+  "selftest": {
+    "passed_count": 13,
+    "schema": "DOCUMENT_FACTORY_SELFTEST/1.0",
+    "status": "PASS",
+    "tests": [
+      "CURRENT_PROFILE_EXACT_CONTRACT",
+      "RUBRIC_ARITHMETIC_FAIL_CLOSED",
+      "HEARTBEAT_POLICY_FAIL_CLOSED",
+      "WORDCOUNT_BOUNDARY",
+      "CHECKPOINT",
+      "VERIFIED_ROLLBACK",
+      "XLSX_OOXML",
+      "ONE_SECOND_HEARTBEAT",
+      "AUDIT_HASH_CHAIN",
+      "INVALID_OOXML_REJECTED",
+      "TIMEOUT_TO_HOLD_NO_BLIND_RETRY",
+      "EXISTING_RECOVERY_ROOT_REUSED",
+      "FFPROBE_PROVIDER_ADMISSION"
+    ]
+  },
+  "status": "PASS_FRESH_PRODUCER_PENDING_INDEPENDENT_G23_G24"
+}
