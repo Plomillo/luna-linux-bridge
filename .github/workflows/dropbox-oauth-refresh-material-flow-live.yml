@@ -40,32 +40,24 @@ jobs:
           path: _dropbox_oauth_${{ github.run_id }}
           persist-credentials: false
 
-      - name: Verify exact MAIN-sync G23 G24 operational authorization
+      - name: Resolve and verify exact MAIN-sync G23 G24 operational authorization
         shell: bash
         working-directory: ${{ github.workspace }}/_dropbox_oauth_${{ github.run_id }}
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -Eeuo pipefail
           E="$RUNNER_TEMP/dropbox-oauth-binding-${GITHUB_RUN_ID}"
           mkdir -p "$E"
           python3 - "$E/AUTHORIZATION_GATE.json" <<'PY'
-          import hashlib,json,pathlib,sys
+          import hashlib,io,json,os,pathlib,sys,urllib.parse,urllib.request,zipfile
           root=pathlib.Path(".")
-          g23p=root/"certification/dropbox-lrb-main-sync/G23.json"
-          g24p=root/"certification/dropbox-lrb-main-sync/G24.json"
-          authp=root/"certification/dropbox-lrb-main-sync/OPERATIONAL_AUTHORIZATION.json"
-          for p in (g23p,g24p,authp):
-              if not p.is_file(): raise SystemExit("CERTIFICATION_RECORD_MISSING:"+str(p))
-          g23=json.loads(g23p.read_text()); g24=json.loads(g24p.read_text()); auth=json.loads(authp.read_text())
+          out_path=pathlib.Path(sys.argv[1])
+          repo=os.environ["GITHUB_REPOSITORY"]
+          token=os.environ["GH_TOKEN"]
           scope="DROPBOX_OAUTH_BINDING_AND_ACQUISITION"
-          failures=[]
-          if g23.get("status")!="PASS" or g23.get("g24_authorized") is not True: failures.append("G23_INVALID")
-          if g24.get("status")!="PASS" or g24.get("active_authorized") is not False: failures.append("G24_INVALID")
-          if auth.get("status")!="PASS" or auth.get("active_authorized") is not True: failures.append("AUTHORIZATION_INVALID")
-          if len({g23.get("scope"),g24.get("scope"),auth.get("scope"),scope})!=1: failures.append("SCOPE_CHAIN_MISMATCH")
-          if auth.get("certification_propagation") is not False or auth.get("canonical_mutation") is not False: failures.append("AUTHORIZATION_INVARIANT_INVALID")
-          if auth.get("desktop_commander_used") is not False or auth.get("main_mutation") is not False: failures.append("BOUNDARY_INVALID")
-          if hashlib.sha256(g23p.read_bytes()).hexdigest()!=auth.get("g23_record_sha256"): failures.append("G23_RECORD_HASH_MISMATCH")
-          if hashlib.sha256(g24p.read_bytes()).hexdigest()!=auth.get("g24_certificate_sha256"): failures.append("G24_RECORD_HASH_MISMATCH")
+          cert_branch="staging/dropbox-lrb-main-sync-cert-20261005"
+          workflow_name="Dropbox LRB MAIN-sync — independent G23 G24 scope certification"
           targets=[
             "scripts/dropbox/lrb_main_sync.py",
             "scripts/dropbox_governed_recovery_20h.py",
@@ -78,21 +70,77 @@ jobs:
           rows=[]
           for rel in targets:
               p=root/rel
-              if not p.is_file(): failures.append("CERTIFIED_TARGET_MISSING:"+rel); continue
+              if not p.is_file(): raise SystemExit("CERTIFIED_TARGET_MISSING:"+rel)
               rows.append({"path":rel,"sha256":hashlib.sha256(p.read_bytes()).hexdigest(),"size":p.stat().st_size})
           digest=hashlib.sha256(json.dumps(rows,sort_keys=True,separators=(",",":")).encode()).hexdigest()
-          if digest!=auth.get("candidate_digest_sha256") or digest!=g24.get("candidate_digest_sha256"): failures.append("CERTIFIED_DIGEST_MISMATCH")
-          out={
-            "schema":"LOUKSNA_DROPBOX_RUNTIME_AUTHORIZATION_GATE/1.0",
+
+          def api(path):
+              req=urllib.request.Request(
+                  "https://api.github.com/repos/"+repo+path,
+                  headers={"Authorization":"Bearer "+token,"Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","User-Agent":"louksna-dropbox-runtime-gate"})
+              with urllib.request.urlopen(req,timeout=30) as r:
+                  return json.load(r)
+          def raw(url):
+              req=urllib.request.Request(url,headers={"Authorization":"Bearer "+token,"Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","User-Agent":"louksna-dropbox-runtime-gate"})
+              with urllib.request.urlopen(req,timeout=60) as r:
+                  return r.read()
+          def artifact_json(artifact,member):
+              zbytes=raw(artifact["archive_download_url"])
+              declared=str(artifact.get("digest") or "")
+              if declared.startswith("sha256:") and hashlib.sha256(zbytes).hexdigest()!=declared.split(":",1)[1]:
+                  raise SystemExit("ARTIFACT_ZIP_DIGEST_MISMATCH:"+artifact["name"])
+              with zipfile.ZipFile(io.BytesIO(zbytes)) as z:
+                  return json.loads(z.read(member)),hashlib.sha256(z.read(member)).hexdigest()
+
+          q=urllib.parse.urlencode({"branch":cert_branch,"status":"success","per_page":30})
+          runs=api("/actions/runs?"+q).get("workflow_runs",[])
+          chosen=None
+          for run in runs:
+              if run.get("name")!=workflow_name or run.get("conclusion")!="success":
+                  continue
+              arts=api("/actions/runs/"+str(run["id"])+"/artifacts?per_page=100").get("artifacts",[])
+              by={a.get("name"):a for a in arts if not a.get("expired")}
+              if "dropbox-lrb-main-sync-g24" not in by: continue
+              try:
+                  g24,_=artifact_json(by["dropbox-lrb-main-sync-g24"],"G24.json")
+              except Exception:
+                  continue
+              if g24.get("status")=="PASS" and g24.get("candidate_digest_sha256")==digest:
+                  chosen=(run,by,g24)
+                  break
+          if chosen is None:
+              raise SystemExit("NO_EXACT_G24_CERTIFICATION_FOR_LOCAL_DIGEST")
+          run,by,g24=chosen
+          required=("dropbox-lrb-main-sync-g23","dropbox-lrb-main-sync-g24","dropbox-lrb-main-sync-operational-authorization")
+          if any(x not in by for x in required): raise SystemExit("CERT_CHAIN_ARTIFACT_MISSING")
+          g23,g23_sha=artifact_json(by["dropbox-lrb-main-sync-g23"],"G23.json")
+          g24,g24_sha=artifact_json(by["dropbox-lrb-main-sync-g24"],"G24.json")
+          auth,_=artifact_json(by["dropbox-lrb-main-sync-operational-authorization"],"OPERATIONAL_AUTHORIZATION.json")
+          failures=[]
+          if g23.get("status")!="PASS" or g23.get("g24_authorized") is not True: failures.append("G23_INVALID")
+          if g24.get("status")!="PASS" or g24.get("active_authorized") is not False: failures.append("G24_INVALID")
+          if auth.get("status")!="PASS" or auth.get("active_authorized") is not True: failures.append("AUTHORIZATION_INVALID")
+          if len({g23.get("scope"),g24.get("scope"),auth.get("scope"),scope})!=1: failures.append("SCOPE_CHAIN_MISMATCH")
+          if g23.get("candidate_digest_sha256")!=digest or g24.get("candidate_digest_sha256")!=digest or auth.get("candidate_digest_sha256")!=digest:
+              failures.append("CERTIFIED_DIGEST_MISMATCH")
+          if auth.get("g23_record_sha256")!=g23_sha: failures.append("G23_RECORD_HASH_MISMATCH")
+          if auth.get("g24_certificate_sha256")!=g24_sha: failures.append("G24_RECORD_HASH_MISMATCH")
+          if auth.get("certification_propagation") is not False or auth.get("canonical_mutation") is not False: failures.append("AUTHORIZATION_INVARIANT_INVALID")
+          if auth.get("desktop_commander_used") is not False or auth.get("main_mutation") is not False: failures.append("BOUNDARY_INVALID")
+          result={
+            "schema":"LOUKSNA_DROPBOX_RUNTIME_AUTHORIZATION_GATE/1.1",
             "status":"PASS" if not failures else "FAIL",
             "scope":scope,
             "candidate_digest_sha256":digest,
-            "certified_source_head_sha":auth.get("candidate_head_sha"),
+            "certification_run_id":run["id"],
+            "certified_source_head_sha":g24.get("candidate_head_sha"),
+            "g23_record_sha256":g23_sha,
+            "g24_certificate_sha256":g24_sha,
             "desktop_commander_used":False,
             "failures":failures,
           }
-          pathlib.Path(sys.argv[1]).write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
-          print(json.dumps(out,sort_keys=True))
+          out_path.write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(result,sort_keys=True))
           raise SystemExit(0 if not failures else 6)
           PY
 
