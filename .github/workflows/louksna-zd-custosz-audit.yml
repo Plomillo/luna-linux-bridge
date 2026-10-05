@@ -1,0 +1,105 @@
+name: "LOUKSNA ZD CUSTOSZ Runtime Audit"
+
+on:
+  push:
+    branches:
+      - work/louksna-zona-directiva-candidate-20261005
+    paths:
+      - .github/workflows/louksna-zd-custosz-audit.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: louksna-zd-custosz-audit-20261005
+  cancel-in-progress: false
+
+jobs:
+  audit-and-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout work branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: work/louksna-zona-directiva-candidate-20261005
+          persist-credentials: false
+          path: target
+
+      - name: Checkout immutable source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: 94f999f28f6ac371e1a768312a69704af96fd7a7
+          persist-credentials: false
+          path: source
+
+      - name: Checkout pinned CUSTOSZ runtime
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: 89822a98ff0311d1904d969ae51cd834a4fadc20
+          persist-credentials: false
+          sparse-checkout: artifacts/custosz-v7
+          path: runtime-source
+
+      - name: Verify CUSTOSZ V7
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          CUSTOSZ="runtime-source/artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz"
+          python3 -B -I "$CUSTOSZ" v07-status
+          python3 -B -I "$CUSTOSZ" v07-selftest
+          echo "TELEMETRY CUSTOSZ_V7 PASS"
+
+      - name: Verify Runtime
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          RUNTIME="runtime-source/artifacts/custosz-v7/CUSTOSZ_RUNTIME_V1_SR_EXEC_BOUND_FME_01.b.pyz"
+          python3 - "$RUNTIME" "$GITHUB_WORKSPACE/source/Louksna.md" <<'PY'
+          import hashlib,json,sys,tempfile
+          from pathlib import Path
+          runtime=Path(sys.argv[1])
+          authority=Path(sys.argv[2])
+          sys.path.insert(0,str(runtime))
+          from runtime_core import Runtime
+          digest=hashlib.sha256(authority.read_bytes()).hexdigest()
+          with tempfile.TemporaryDirectory() as td:
+              rt=Runtime(Path(td)/"state",authority,digest)
+              result=rt.selftest()
+              print("TELEMETRY RUNTIME "+json.dumps(result,sort_keys=True))
+              if result.get("status")!="PASS":
+                  raise SystemExit(1)
+          PY
+
+      - name: Materialize candidate in isolated runner
+        shell: bash
+        env:
+          LOUKSNA_SOURCE_COMMIT: 94f999f28f6ac371e1a768312a69704af96fd7a7
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/louksna-zd"
+          printf '%s\n' '{"mission_id":"MIS-LOUKSNA-ZD-CANDIDATE-20261005","dispatch_id":"GITHUB-AUDIT-20261005","executor_id":"CUSTOSZ_V7","binding_id":"CUSTOSZ_RUNTIME_V1","expected_effect":{"effect_type":"LOUKSNA_ZD_CANDIDATE_MATERIALIZATION"}}' > "$RUNNER_TEMP/louksna-zd/DISPATCH.json"
+          python3 -B -I target/scripts/missions/louksna_zd_candidate_materializer.py "$RUNNER_TEMP/louksna-zd/DISPATCH.json" "$RUNNER_TEMP/louksna-zd/ACK.json" "$RUNNER_TEMP/louksna-zd/FME.json" "$RUNNER_TEMP/louksna-zd/MATERIAL_RESULT.json" "$GITHUB_WORKSPACE/target" "$GITHUB_WORKSPACE/source" "$GITHUB_WORKSPACE/target/missions/inbox/louksna-zona-directiva-custosz-v7-20261005/MISSION_ORIGINAL.md"
+          echo "TELEMETRY MATERIALIZATION PASS"
+          tail -n 20 target/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate/evidence/TELEMETRY.jsonl
+
+      - name: Continue candidate build
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd target/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate
+          npm install
+          npm run build
+          echo "TELEMETRY BUILD PASS"
+
+      - name: Upload working candidate
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksna-zd-custosz-working-candidate
+          path: |
+            target/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate
+            ${{ runner.temp }}/louksna-zd
+          if-no-files-found: warn
+          retention-days: 30
