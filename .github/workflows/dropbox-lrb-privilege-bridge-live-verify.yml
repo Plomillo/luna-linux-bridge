@@ -1,0 +1,133 @@
+name: "Dropbox — LOUKSNA privilege bridge live verify"
+
+on:
+  push:
+    branches:
+      - staging/dropbox-oauth-refresh-material-flow-20261005
+    paths:
+      - .github/workflows/dropbox-lrb-privilege-bridge-live-verify.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 8
+    steps:
+      - name: Verify LRB live and privilege bridge V1.2.1 without mutation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/lrb-privilege-$GITHUB_RUN_ID"
+          mkdir -p "$OUT"
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          mapfile -t LINKS < <(find "$HOME/.local/lib/louksna-remote-bridge" -type f -path '*/bridge/live_link.py' -print 2>/dev/null | sort)
+          test "${#LINKS[@]}" -ge 1
+          LINK="${LINKS[-1]}"
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op status > "$OUT/LRB_STATUS.json"
+
+          EXPECT_RUNUSER="ea71a94cb0097f3e1d5ce2fa8fb775bf1bd1ddd74960fad3ee22d7d8d1ef4488"
+          EXPECT_G23="641955e0a149f99cb4905bb44fbcae29a422b18a6e4cd3b9d210010c9aaa0029"
+          EXPECT_G24="53b882221d31ac3fe4ba14565a9681f47f574c8fffcd9f5da02ddeade6d2c139"
+          G23="/var/lib/louksna/privilege-bridge/g23/G23_V121_20260930T033205Z.json"
+          G24="/var/lib/louksna/privilege-bridge/g24/G24_V121_20260930T033205Z.json"
+
+          runuser_hash="$(sha256sum /usr/sbin/runuser | awk '{print $1}')"
+          sudo_ok=false
+          if sudo -n /usr/bin/true 2>/dev/null; then sudo_ok=true; fi
+
+          g23_present=false; g24_present=false; g23_hash=""; g24_hash=""
+          if sudo -n /usr/bin/test -f "$G23" 2>/dev/null; then
+            g23_present=true
+            g23_hash="$(sudo -n /usr/bin/sha256sum "$G23" | awk '{print $1}')"
+          fi
+          if sudo -n /usr/bin/test -f "$G24" 2>/dev/null; then
+            g24_present=true
+            g24_hash="$(sudo -n /usr/bin/sha256sum "$G24" | awk '{print $1}')"
+          fi
+
+          RUNUSER_HASH="$runuser_hash" SUDO_OK="$sudo_ok" G23_PRESENT="$g23_present" G24_PRESENT="$g24_present" G23_HASH="$g23_hash" G24_HASH="$g24_hash"           EXPECT_RUNUSER="$EXPECT_RUNUSER" EXPECT_G23="$EXPECT_G23" EXPECT_G24="$EXPECT_G24"           python3 - "$OUT/PRIVILEGE_BRIDGE_LIVE.json" <<'PY'
+          import json,os,pathlib,sys
+          checks={
+            "runuser_sha256": os.environ["RUNUSER_HASH"]==os.environ["EXPECT_RUNUSER"],
+            "sudo_noninteractive": os.environ["SUDO_OK"]=="true",
+            "g23_present": os.environ["G23_PRESENT"]=="true",
+            "g24_present": os.environ["G24_PRESENT"]=="true",
+            "g23_sha256": os.environ["G23_HASH"]==os.environ["EXPECT_G23"],
+            "g24_sha256": os.environ["G24_HASH"]==os.environ["EXPECT_G24"],
+          }
+          out={
+            "schema":"LOUKSNA_PRIVILEGE_BRIDGE_LIVE_REVALIDATION/1.0",
+            "source_record":"V121-CERTIFIED-20260930T033205Z",
+            "host":"LOUKSNA",
+            "checks":checks,
+            "status":"PASS" if all(checks.values()) else "HOLD",
+            "mutation_performed":False,
+            "desktop_commander_used":False,
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,sort_keys=True))
+          if out["status"]!="PASS": raise SystemExit(3)
+          PY
+
+      - name: Probe root-governed Dropbox OAuth locations by metadata only
+        if: success()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/lrb-privilege-$GITHUB_RUN_ID"
+          sudo -n /usr/bin/python3 - "$OUT/ROOT_OAUTH_PROBE.json" <<'PY'
+          import json,os,pathlib,sys
+          required=("DROPBOX_APP_KEY","DROPBOX_APP_SECRET","DROPBOX_REFRESH_TOKEN")
+          candidates=[
+            pathlib.Path("/etc/louksna/dropbox-oauth.env"),
+            pathlib.Path("/etc/louksna/secrets/dropbox-oauth.env"),
+            pathlib.Path("/var/lib/louksna/dropbox-oauth.env"),
+            pathlib.Path("/var/lib/louksna/secrets/dropbox-oauth.env"),
+            pathlib.Path("/var/lib/louksna/remote-bridge/dropbox-oauth.env"),
+          ]
+          rows=[]; complete=[]
+          for p in candidates:
+            row={"path":str(p),"exists":p.is_file()}
+            if p.is_file():
+              st=p.stat()
+              row["mode"]=oct(st.st_mode & 0o777)
+              row["owner_uid"]=st.st_uid
+              keys=set()
+              try:
+                for raw in p.read_text(encoding="utf-8").splitlines():
+                  line=raw.strip()
+                  if not line or line.startswith("#") or "=" not in line: continue
+                  k,v=line.split("=",1); k=k.strip()
+                  if k in required and v.strip().strip('"').strip("'"): keys.add(k)
+              except Exception as e:
+                row["parse_error"]=type(e).__name__
+              row.update({k.lower()+"_present":k in keys for k in required})
+              if all(k in keys for k in required): complete.append(str(p))
+            rows.append(row)
+          result={
+            "schema":"LOUKSNA_ROOT_DROPBOX_OAUTH_PROBE/1.0",
+            "status":"PASS" if complete else "HOLD",
+            "complete_binding_count":len(complete),
+            "complete_sources":complete,
+            "candidates":rows,
+            "secret_values_logged":False,
+            "mutation_performed":False,
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(result,sort_keys=True))
+          PY
+          (cd "$OUT" && sha256sum ./* > SHA256SUMS.txt)
+
+      - name: Preserve live verification evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dropbox-lrb-privilege-bridge-live-verify
+          path: ${{ runner.temp }}/lrb-privilege-${{ github.run_id }}/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
