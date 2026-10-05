@@ -1,0 +1,104 @@
+name: "Dropbox cloud browser diagnostics — sanitized read-only"
+
+on:
+  push:
+    branches:
+      - staging/dropbox-cloud-diagnostic-inspect-20261005
+    paths:
+      - .github/workflows/dropbox-cloud-browser-diagnostic-inspect.yml
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Download exact failed browser diagnostics
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: dropbox-github-cloud-browser-diagnostics-37355731169
+          path: ${{ runner.temp }}/diag
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 37355731169
+
+      - name: Sanitize and inspect Dropbox network evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="$RUNNER_TEMP/diag"
+          find "$ROOT" -maxdepth 3 -type f -printf '%P %s bytes\n' | sort
+
+          python3 - "$ROOT" <<'PY'
+          import json,pathlib,re,sys,urllib.parse
+          root=pathlib.Path(sys.argv[1])
+
+          def clean_url(url):
+              try:
+                  u=urllib.parse.urlsplit(url)
+                  q=urllib.parse.parse_qsl(u.query,keep_blank_values=True)
+                  return {
+                      "scheme":u.scheme,
+                      "host":u.hostname,
+                      "path":u.path,
+                      "query_keys":sorted({k for k,_ in q}),
+                  }
+              except Exception:
+                  return {"unparsed":True}
+
+          print("=== JSON EVIDENCE ===")
+          for p in sorted(root.rglob("*.json")):
+              try:
+                  d=json.loads(p.read_text(encoding="utf-8"))
+              except Exception:
+                  continue
+              if p.name=="NETWORK_CANDIDATES.json":
+                  rows=[]
+                  for x in d.get("responses",[]):
+                      url=x.get("url")
+                      if isinstance(url,dict):
+                          surl={
+                              "scheme":url.get("scheme"),
+                              "host":url.get("host"),
+                              "path":url.get("path"),
+                              "query_keys":url.get("query_keys",[]),
+                          }
+                      else:
+                          surl=clean_url(str(url or ""))
+                      rows.append({
+                          "status":x.get("status"),
+                          "url":surl,
+                          "content_type":x.get("content_type"),
+                          "content_disposition":x.get("content_disposition"),
+                          "content_length":x.get("content_length"),
+                          "x_dropbox_request_id_present":bool(x.get("x_dropbox_request_id")),
+                      })
+                  print(json.dumps({"file":p.name,"responses":rows[-200:]},indent=2,sort_keys=True))
+              else:
+                  safe={}
+                  for k,v in d.items():
+                      if k in {"url","shared_link","download_url"}:
+                          safe[k]=clean_url(str(v))
+                      elif "token" in k.lower() or "cookie" in k.lower():
+                          safe[k]="REDACTED"
+                      else:
+                          safe[k]=v
+                  print(json.dumps({"file":p.name,"content":safe},indent=2,sort_keys=True))
+
+          print("=== SANITIZED HTML URL CANDIDATES ===")
+          seen=set()
+          for p in sorted(root.rglob("*.html")):
+              txt=p.read_text(encoding="utf-8",errors="replace")
+              urls=re.findall(r'https?://[^"\'<>\\s]+',txt)
+              for raw in urls:
+                  c=clean_url(raw)
+                  key=(c.get("host"),c.get("path"),tuple(c.get("query_keys",[])))
+                  blob=(" ".join(str(z) for z in key)).lower()
+                  if key in seen: continue
+                  if any(w in blob for w in ("dropbox","download","zip","usercontent","scl","sharing")):
+                      seen.add(key)
+                      print(json.dumps({"source":p.name,"url":c},sort_keys=True))
+          PY
