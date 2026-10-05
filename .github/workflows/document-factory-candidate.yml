@@ -119,7 +119,6 @@ jobs:
       id-token: write
     uses: Plomillo/luna-linux-bridge/.github/workflows/document-factory-cert-reusable.yml@302fccda264c381ef44c6153da79ea7b24d421b6
 
-
   continuation:
     needs: assurance
     if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'candidate/document-factory-v1-20261005' && needs.assurance.result == 'success' }}
@@ -151,18 +150,15 @@ jobs:
           QUERY="repo:$GITHUB_REPOSITORY is:issue is:open in:title AUTONOMOUS-CONTINUATION"
           ISSUE_NUM="$(gh api -X GET search/issues -f q="$QUERY" --jq '.items[0].number // empty')"
           if [ -z "$ISSUE_NUM" ]; then
-            python3 - <<'PY'
-          import json,os,pathlib
-          body=pathlib.Path("document-factory/AUTONOMOUS_CONTINUATION.md").read_text(encoding="utf-8")
-          body += "\n\n## Dispatch evidence\n"
-          body += f"CERTIFIED_START_HEAD={os.environ['CERTIFIED_HEAD']}\n"
-          body += f"DISPATCH_RUN_ID={os.environ['GITHUB_RUN_ID']}\n"
-          body += "OPERATIONAL_AUTHORIZATION=DEVELOPMENT_CONTINUATION_ON_CANDIDATE_ONLY\n"
-          pathlib.Path("/tmp/issue.json").write_text(
-              json.dumps({"title":"[DOCUMENT-FACTORY][AUTONOMOUS-CONTINUATION] Finish governed skeleton","body":body}),
-              encoding="utf-8"
-          )
-          PY
+            cp document-factory/AUTONOMOUS_CONTINUATION.md /tmp/issue-body.md
+            {
+              echo
+              echo '## Dispatch evidence'
+              echo "CERTIFIED_START_HEAD=$CERTIFIED_HEAD"
+              echo "DISPATCH_RUN_ID=$GITHUB_RUN_ID"
+              echo 'OPERATIONAL_AUTHORIZATION=DEVELOPMENT_CONTINUATION_ON_CANDIDATE_ONLY'
+            } >> /tmp/issue-body.md
+            jq -n --arg title "$TITLE" --rawfile body /tmp/issue-body.md '{title:$title,body:$body}' > /tmp/issue.json
             ISSUE_NUM="$(gh api --method POST "repos/$GITHUB_REPOSITORY/issues" --input /tmp/issue.json --jq '.number')"
           fi
           echo "issue_number=$ISSUE_NUM" >> "$GITHUB_OUTPUT"
@@ -178,50 +174,40 @@ jobs:
         run: |
           set -Eeuo pipefail
           if gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUM" --jq '.assignees[].login' | grep -Fx 'copilot-swe-agent[bot]' >/dev/null 2>&1; then
-            echo "COPILOT_ASSIGNMENT=ALREADY_ACTIVE" >> "$GITHUB_STEP_SUMMARY"
+            echo 'COPILOT_ASSIGNMENT=ALREADY_ACTIVE' >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          python3 - <<'PY'
-          import json,os,pathlib
-          instructions=(
-            "Read document-factory/AUTONOMOUS_CONTINUATION.md and execute it exactly. "
-            "Base all work on candidate/document-factory-v1-20261005. "
-            "Create your own working branch and one PR back to that candidate branch. "
-            "Do not modify main, Louksna.md, PUAC2.md, recovery/**, scripts/assurance/**, "
-            "or trust-root/document-factory-v1-20261005. Do not merge your PR. "
-            "Preserve failures and use HOLD/UNKNOWN instead of inventing PASS. "
-            "The existing PR validation will rerun producer, independent G23 and digest-bound G24."
-          )
-          payload={
-            "assignees":["copilot-swe-agent[bot]"],
-            "agent_assignment":{
-              "target_repo":os.environ["GITHUB_REPOSITORY"],
-              "base_branch":os.environ["BASE_BRANCH"],
-              "custom_instructions":instructions,
-              "custom_agent":"",
-              "model":""
-            }
-          }
-          pathlib.Path("/tmp/assign.json").write_text(json.dumps(payload),encoding="utf-8")
-          PY
+          INSTRUCTIONS='Read document-factory/AUTONOMOUS_CONTINUATION.md and execute it exactly. Base all work on candidate/document-factory-v1-20261005. Create your own working branch and one PR back to that candidate branch. Do not modify main, Louksna.md, PUAC2.md, recovery/**, scripts/assurance/**, or trust-root/document-factory-v1-20261005. Do not merge your PR. Preserve failures and use HOLD/UNKNOWN instead of inventing PASS. The existing PR validation must rerun producer, independent G23 and digest-bound G24.'
+          jq -n \
+            --arg repo "$GITHUB_REPOSITORY" \
+            --arg branch "$BASE_BRANCH" \
+            --arg instructions "$INSTRUCTIONS" \
+            '{assignees:["copilot-swe-agent[bot]"],agent_assignment:{target_repo:$repo,base_branch:$branch,custom_instructions:$instructions,custom_agent:"",model:""}}' \
+            > /tmp/assign.json
           set +e
-          gh api --method POST             -H "Accept: application/vnd.github+json"             -H "X-GitHub-Api-Version: 2022-11-28"             "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUM/assignees"             --input /tmp/assign.json >/tmp/assign-response.json 2>/tmp/assign-error.txt
+          gh api --method POST \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUM/assignees" \
+            --input /tmp/assign.json > /tmp/assign-response.json 2> /tmp/assign-error.txt
           RC=$?
           set -e
           if [ "$RC" -ne 0 ]; then
+            ERROR_TEXT="$(tr '\n' ' ' < /tmp/assign-error.txt | head -c 1500)"
             gh issue comment "$ISSUE_NUM" --body "AUTONOMOUS_DISPATCH=HOLD
 
-GitHub-native Copilot coding-agent assignment was not accepted by the repository/API. No substitute executor was used. The certified candidate remains unchanged.
+GitHub-native Copilot coding-agent assignment was not accepted by the repository/API. No substitute executor was used.
 
 CERTIFIED_HEAD=$CERTIFIED_HEAD
-DISPATCH_RUN_ID=$GITHUB_RUN_ID"
-            echo "COPILOT_ASSIGNMENT=HOLD" >> "$GITHUB_STEP_SUMMARY"
+DISPATCH_RUN_ID=$GITHUB_RUN_ID
+ERROR=$ERROR_TEXT"
+            echo 'COPILOT_ASSIGNMENT=HOLD' >> "$GITHUB_STEP_SUMMARY"
             exit 78
           fi
           gh issue comment "$ISSUE_NUM" --body "AUTONOMOUS_DISPATCH=ACTIVE
 
-GitHub Copilot coding agent has been assigned with base branch `$BASE_BRANCH`. It must work in its own branch and open a PR back to the candidate. No main/trust-root mutation and no auto-merge are authorized.
+GitHub Copilot coding agent is assigned with base branch $BASE_BRANCH. It must work in its own branch and open a PR back to the candidate. No main/trust-root mutation and no auto-merge are authorized.
 
 CERTIFIED_HEAD=$CERTIFIED_HEAD
 DISPATCH_RUN_ID=$GITHUB_RUN_ID"
-          echo "COPILOT_ASSIGNMENT=ACTIVE" >> "$GITHUB_STEP_SUMMARY"
+          echo 'COPILOT_ASSIGNMENT=ACTIVE' >> "$GITHUB_STEP_SUMMARY"
