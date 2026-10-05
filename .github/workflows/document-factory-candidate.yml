@@ -144,7 +144,10 @@ jobs:
       - name: Dispatch continuation to GitHub coding agent
         shell: bash
         env:
-          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN_FALLBACK: ${{ github.token }}
+          GH_AW_AGENT_TOKEN: ${{ secrets.GH_AW_AGENT_TOKEN }}
+          GH_AW_GITHUB_TOKEN: ${{ secrets.GH_AW_GITHUB_TOKEN }}
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
           CERTIFIED_HEAD: ${{ github.event.pull_request.head.sha }}
           BASE_BRANCH: candidate/document-factory-v1-20261005
         run: bash document-factory/src/dispatch_github_agent.sh
