@@ -1,0 +1,16 @@
+{
+  "schema": "LOUKSNA_DROPBOX_GITHUB_CLOUD_EXECUTE/1.0",
+  "status": "AUTHORIZED",
+  "authority": "Louksna.md",
+  "scope": "DROPBOX_CONNECTED_TO_GITHUB_HOSTED_CLOUD_TRANSFER",
+  "source_binding": "mission-control/dropbox-github-cloud-direct/BINDING.json",
+  "contract_test_run_id": 37354023220,
+  "contract_test_head_sha": "a23ff0a5a95e9447c3b986351d02edc436ffd93e",
+  "contract_test_status": "PASS",
+  "execution_plane": "GITHUB_HOSTED_UBUNTU_24_04",
+  "local_pc_data_plane": false,
+  "self_hosted_runner_data_plane": false,
+  "desktop_commander": false,
+  "start_authorized": true,
+  "stop_assistant_intervention_on_material_byte_flow": true
+}
