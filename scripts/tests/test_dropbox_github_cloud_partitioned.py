@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import importlib.util
+import os
+import tempfile
 
 workflow=Path(".github/workflows/dropbox-github-cloud-partitioned.yml")
 script=Path("scripts/dropbox_cloud_partitioned_acquire.py")
