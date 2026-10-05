@@ -206,6 +206,96 @@ jobs:
           fi
           echo "TELEMETRY TAURI_RUST_DEB_BUILD=PASS"
 
+      - name: Harden Debian metadata and normalize package filename
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          APP="target/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate"
+          BUNDLE="$APP/src-tauri/target/release/bundle/deb"
+          RAW_DEB="$(find "$BUNDLE" -maxdepth 1 -type f -name '*.deb' -print -quit)"
+          test -n "$RAW_DEB"
+          STAGE="$RUNNER_TEMP/louksna-zd/repack"
+          rm -rf "$STAGE"
+          mkdir -p "$STAGE"
+          dpkg-deb -R "$RAW_DEB" "$STAGE"
+
+          BIN="$STAGE/usr/bin/louksna-zona-directiva"
+          test -x "$BIN"
+          strip --strip-unneeded "$BIN"
+
+          DOC="$STAGE/usr/share/doc/louksna-zona-directiva"
+          MAN="$STAGE/usr/share/man/man1"
+          mkdir -p "$DOC" "$MAN"
+
+          cat > "$DOC/changelog" <<'EOF'
+          louksna-zona-directiva (0.2.0) stable; urgency=medium
+
+            * Hardened candidate package for Debian 13 amd64.
+            * Preserves LOUKSNA-only identity and the six canonical interface sections.
+            * Adds governed provenance, rollback and independent assurance handoff.
+
+           -- Louksna Project <louksna@example.invalid>  Sun, 05 Oct 2026 18:00:00 +0000
+          EOF
+          gzip -n -9 "$DOC/changelog"
+
+          cat > "$DOC/copyright" <<'EOF'
+          Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+          Upstream-Name: LOUKSNA ZONA DIRECTIVA
+          Source: local governed project repository
+
+          Files: *
+          Copyright: 2026 Louksna Project
+          License: Proprietary-project
+           This candidate is governed by the project authority and is not relicensed here.
+          EOF
+
+          cat > "$MAN/louksna-zona-directiva.1" <<'EOF'
+          .TH LOUKSNA-ZONA-DIRECTIVA 1 "October 2026" "0.2.0" "LOUKSNA ZONA DIRECTIVA"
+          .SH NAME
+          louksna-zona-directiva \- governed GitHub desktop interface
+          .SH SYNOPSIS
+          .B louksna-zona-directiva
+          .SH DESCRIPTION
+          Desktop candidate for LOUKSNA ZONA DIRECTIVA — GitHub Interface Skeleton V0.2 HARDENED.
+          .SH GOVERNANCE
+          Louksna.md remains authority. Candidate build, validation, G23, G24 and ACTIVE are distinct states.
+          EOF
+          gzip -n -9 "$MAN/louksna-zona-directiva.1"
+
+          CONTROL="$STAGE/DEBIAN/control"
+          python3 - "$CONTROL" "$STAGE" <<'PY'
+          import pathlib,re,subprocess,sys
+          control=pathlib.Path(sys.argv[1]); stage=pathlib.Path(sys.argv[2])
+          text=control.read_text()
+          def set_field(name,value):
+              global text
+              pattern=rf"(?m)^{re.escape(name)}:.*$"
+              if re.search(pattern,text):
+                  text=re.sub(pattern,f"{name}: {value}",text)
+              else:
+                  text += f"{name}: {value}\n"
+          set_field("Maintainer","Louksna Project <louksna@example.invalid>")
+          set_field("Section","utils")
+          depends=""
+          m=re.search(r"(?m)^Depends:\s*(.*)$",text)
+          if m: depends=m.group(1).strip()
+          parts=[x.strip() for x in depends.split(",") if x.strip()]
+          if not any(x.split()[0]=="libc6" for x in parts):
+              parts.append("libc6")
+          set_field("Depends",", ".join(parts))
+          installed=int(subprocess.check_output(["du","-ks",str(stage/"usr")],text=True).split()[0])
+          set_field("Installed-Size",str(installed))
+          control.write_text(text)
+          PY
+
+          HARDENED="$BUNDLE/louksna-zona-directiva_0.2.0_amd64.deb"
+          rm -f "$BUNDLE"/*.deb
+          dpkg-deb --build --root-owner-group "$STAGE" "$HARDENED"
+          test -s "$HARDENED"
+          echo "TELEMETRY DEB_METADATA_HARDENING=PASS"
+          echo "TELEMETRY DEB_FILENAME_NORMALIZATION=PASS"
+          echo "TELEMETRY SECOND_ORDER_ANTI_PARALYSIS_INSTALL_PATH_FIX=PASS"
+
       - name: Validate exact Debian package
         shell: bash
         run: |
@@ -229,20 +319,25 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          DEB="$(find target/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate/src-tauri/target/release/bundle/deb -type f -name '*.deb' -print -quit)"
-          DEB_DIR="$(dirname "$DEB")"
-          DEB_NAME="$(basename "$DEB")"
+          DEB="$(find target/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate/src-tauri/target/release/bundle/deb -type f -name 'louksna-zona-directiva_*_amd64.deb' -print -quit)"
+          test -n "$DEB"
           PKG="$(dpkg-deb -f "$DEB" Package)"
-          docker run --rm -v "$GITHUB_WORKSPACE/$DEB_DIR:/pkg:ro" debian:13-slim sh -lc "
+          TESTDIR="$RUNNER_TEMP/louksna-zd/debian13-install"
+          rm -rf "$TESTDIR"
+          mkdir -p "$TESTDIR"
+          cp "$DEB" "$TESTDIR/package.deb"
+          docker run --rm -v "$TESTDIR:/pkg:ro" debian:13-slim sh -lc '
             set -eu
             apt-get update
-            apt-get install -y /pkg/$DEB_NAME
-            dpkg -s '$PKG'
-            apt-get remove -y '$PKG'
-            if dpkg-query -W -f='\${Status}' '$PKG' 2>/dev/null | grep -q 'install ok installed'; then
+            apt-get install -y /pkg/package.deb
+            dpkg -s louksna-zona-directiva
+            command -v louksna-zona-directiva
+            apt-get remove -y louksna-zona-directiva
+            if dpkg-query -W -f="${Status}" louksna-zona-directiva 2>/dev/null | grep -q "install ok installed"; then
               exit 7
             fi
-          " | tee "$RUNNER_TEMP/louksna-zd/DEBIAN13_INSTALL_ROLLBACK.txt"
+          ' | tee "$RUNNER_TEMP/louksna-zd/DEBIAN13_INSTALL_ROLLBACK.txt"
+          test "$PKG" = "louksna-zona-directiva"
           echo "TELEMETRY DEBIAN13_INSTALLABILITY=PASS"
           echo "TELEMETRY ROLLBACK_UNINSTALL=PASS"
 
