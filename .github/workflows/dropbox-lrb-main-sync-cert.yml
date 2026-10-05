@@ -1,0 +1,346 @@
+name: "Dropbox LRB MAIN-sync — independent G23 G24 scope certification"
+
+on:
+  push:
+    branches:
+      - staging/dropbox-lrb-main-sync-cert-20261005
+    paths:
+      - scripts/dropbox/lrb_main_sync.py
+      - mission-control/dropbox-main-governed-recovery-20h/MAIN_SYNC.json
+      - mission-control/dropbox-main-governed-recovery-20h/OWNER_AUTHORIZATION.json
+      - .github/workflows/dropbox-lrb-main-sync-cert.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  id-token: write
+
+concurrency:
+  group: dropbox-lrb-main-sync-cert
+  cancel-in-progress: false
+
+env:
+  MAIN_SOURCE_SHA: a7d430a7f9f94eb82c017bf62c3b456ca5b0cdf9
+  SCOPE: DROPBOX_OAUTH_BINDING_AND_ACQUISITION
+
+jobs:
+  g23:
+    name: "G23 — hosted independent read-only validation"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Checkout exact candidate as read-only data
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          path: candidate
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Checkout exact MAIN trust sources read-only
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.MAIN_SOURCE_SHA }}
+          path: main-source
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Validate provenance, exact scope and non-regression
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/dropbox-g23"
+          mkdir -p "$OUT"
+          python3 - "$GITHUB_WORKSPACE/candidate" "$GITHUB_WORKSPACE/main-source" "$OUT/G23.json" <<'PY'
+          import hashlib,json,pathlib,re,subprocess,sys
+          from datetime import datetime,timezone
+          cand,main,out=map(pathlib.Path,sys.argv[1:])
+          manifest=json.loads((cand/"mission-control/dropbox-main-governed-recovery-20h/MAIN_SYNC.json").read_text())
+          owner=json.loads((cand/"mission-control/dropbox-main-governed-recovery-20h/OWNER_AUTHORIZATION.json").read_text())
+          failures=[]
+          scope="DROPBOX_OAUTH_BINDING_AND_ACQUISITION"
+          expected_main="a7d430a7f9f94eb82c017bf62c3b456ca5b0cdf9"
+          actual_main=subprocess.check_output(["git","-C",str(main),"rev-parse","HEAD"],text=True).strip()
+          actual_head=subprocess.check_output(["git","-C",str(cand),"rev-parse","HEAD"],text=True).strip()
+          if actual_main!=expected_main: failures.append("MAIN_HEAD_MISMATCH")
+          if manifest.get("scope")!=scope or owner.get("scope")!=scope: failures.append("SCOPE_MISMATCH")
+          if owner.get("status")!="AUTHORIZED": failures.append("OWNER_SCOPE_NOT_AUTHORIZED")
+          required_constraints={
+            "DESKTOP_COMMANDER_FORBIDDEN",
+            "USE_LOUKSNA_REMOTE_BRIDGE",
+            "DO_NOT_INTERRUPT_EXISTING_REPOSITORY_PROCESSES",
+            "SYNC_RELEVANT_FUNCTIONS_FROM_MAIN",
+            "STOP_ASSISTANT_INTERVENTION_ON_REAL_MATERIAL_TRANSFER",
+          }
+          if not required_constraints.issubset(set(owner.get("constraints",[]))):
+              failures.append("OWNER_CONSTRAINTS_INCOMPLETE")
+          inv=manifest.get("invariants",{})
+          expected_inv={
+            "main_mutation":False,
+            "desktop_commander":False,
+            "certification_propagation":False,
+            "canonical_mutation":False,
+            "branch_isolation":True,
+            "no_secret_value_logging":True,
+            "no_runner_mutation_during_certification":True,
+            "stop_intervention_on_material_byte_flow":True,
+          }
+          for k,v in expected_inv.items():
+              if inv.get(k) is not v: failures.append("INVARIANT_"+k)
+          for src in manifest.get("source_files",[]):
+              path=src["path"]; expected=src["blob_sha"]
+              actual=subprocess.check_output(["git","-C",str(main),"rev-parse","HEAD:"+path],text=True).strip()
+              if actual!=expected: failures.append("MAIN_BLOB_MISMATCH:"+path)
+          targets=[
+            "scripts/dropbox/lrb_main_sync.py",
+            "scripts/dropbox_governed_recovery_20h.py",
+            ".github/workflows/dropbox-lrb-rclone-oauth-bootstrap.yml",
+            ".github/workflows/dropbox-oauth-refresh-material-flow-live.yml",
+            "mission-control/dropbox-main-governed-recovery-20h/MAIN_SYNC.json",
+            "mission-control/dropbox-main-governed-recovery-20h/OWNER_AUTHORIZATION.json",
+            ".github/workflows/dropbox-lrb-main-sync-cert.yml",
+          ]
+          rows=[]
+          for rel in targets:
+              p=cand/rel
+              if not p.is_file():
+                  failures.append("TARGET_MISSING:"+rel); continue
+              rows.append({"path":rel,"sha256":hashlib.sha256(p.read_bytes()).hexdigest(),"size":p.stat().st_size})
+          digest=hashlib.sha256(json.dumps(rows,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          helper=(cand/"scripts/dropbox/lrb_main_sync.py").read_text()
+          if expected_main not in helper: failures.append("HELPER_MAIN_PIN_MISSING")
+          if "verify_exact_authorization" not in helper or "supervise_process" not in helper:
+              failures.append("SYNC_FUNCTIONS_INCOMPLETE")
+          bootstrap=(cand/".github/workflows/dropbox-lrb-rclone-oauth-bootstrap.yml").read_text()
+          for needle in ("VERSION=\"1.75.1\"","SHA256SUMS","sudo -n","token_logged\":false"):
+              if needle not in bootstrap: failures.append("BOOTSTRAP_CONTROL_MISSING:"+needle)
+          live=(cand/".github/workflows/dropbox-oauth-refresh-material-flow-live.yml").read_text()
+          for needle in ("LOUKSNA_STOP_CONDITION_REACHED=TRUE","provider_authenticated","disk_bytes","kill -0"):
+              if needle not in live: failures.append("STOP_CONTROL_MISSING:"+needle)
+          downloader=(cand/"scripts/dropbox_governed_recovery_20h.py").read_text()
+          for needle in ("DOWNLOAD_STARTED.json","DROPBOX_API_VIA_RCLONE_OAUTH","dropbox_content_hash"):
+              if needle not in downloader: failures.append("DOWNLOADER_CONTROL_MISSING:"+needle)
+          status="PASS" if not failures else "FAIL"
+          report={
+            "schema":"LOUKSNA_DROPBOX_G23_INDEPENDENT_VALIDATION/1.0",
+            "status":status,
+            "authority":"Louksna.md",
+            "scope":scope,
+            "candidate_head_sha":actual_head,
+            "candidate_digest_sha256":digest,
+            "main_source_sha":actual_main,
+            "candidate_code_executed":False,
+            "candidate_write_access":False,
+            "validator_execution":"GITHUB_HOSTED_UBUNTU_SEPARATE_JOB",
+            "main_sources_read_only":True,
+            "organizational_independence":"NOT_CLAIMED",
+            "structural_independence":"RUNTIME_SEPARATED_AND_MAIN_SOURCE_PINNED",
+            "repair_allowed":False,
+            "certification_propagation":False,
+            "canonical_mutation":False,
+            "desktop_commander_used":False,
+            "failures":failures,
+            "g24_authorized":status=="PASS",
+            "validated_at_utc":datetime.now(timezone.utc).isoformat(),
+          }
+          pathlib.Path(out).write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(report,sort_keys=True))
+          raise SystemExit(0 if status=="PASS" else 3)
+          PY
+
+      - name: Preserve G23
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dropbox-lrb-main-sync-g23
+          path: ${{ runner.temp }}/dropbox-g23/G23.json
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  g24:
+    name: "G24 — separate certification with OIDC identity binding"
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Checkout exact candidate read-only
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          path: candidate
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Download G23 evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: dropbox-lrb-main-sync-g23
+          path: ${{ runner.temp }}/g23
+
+      - name: Certify exact digest and bind G24 identity
+        shell: bash
+        env:
+          OIDC_URL: ${{ env.ACTIONS_ID_TOKEN_REQUEST_URL }}
+          OIDC_TOKEN: ${{ env.ACTIONS_ID_TOKEN_REQUEST_TOKEN }}
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/dropbox-g24"
+          mkdir -p "$OUT"
+          python3 - "$GITHUB_WORKSPACE/candidate" "$RUNNER_TEMP/g23/G23.json" "$OUT/G24.json" <<'PY'
+          import base64,hashlib,json,os,pathlib,subprocess,sys,urllib.parse,urllib.request
+          from datetime import datetime,timezone
+          cand,g23p,out=map(pathlib.Path,sys.argv[1:])
+          g23=json.loads(g23p.read_text())
+          failures=[]
+          head=subprocess.check_output(["git","-C",str(cand),"rev-parse","HEAD"],text=True).strip()
+          targets=[
+            "scripts/dropbox/lrb_main_sync.py",
+            "scripts/dropbox_governed_recovery_20h.py",
+            ".github/workflows/dropbox-lrb-rclone-oauth-bootstrap.yml",
+            ".github/workflows/dropbox-oauth-refresh-material-flow-live.yml",
+            "mission-control/dropbox-main-governed-recovery-20h/MAIN_SYNC.json",
+            "mission-control/dropbox-main-governed-recovery-20h/OWNER_AUTHORIZATION.json",
+            ".github/workflows/dropbox-lrb-main-sync-cert.yml",
+          ]
+          rows=[{"path":r,"sha256":hashlib.sha256((cand/r).read_bytes()).hexdigest(),"size":(cand/r).stat().st_size} for r in targets]
+          digest=hashlib.sha256(json.dumps(rows,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          if g23.get("status")!="PASS" or g23.get("g24_authorized") is not True: failures.append("G23_NOT_AUTHORIZING")
+          if g23.get("candidate_head_sha")!=head: failures.append("G23_HEAD_MISMATCH")
+          if g23.get("candidate_digest_sha256")!=digest: failures.append("G23_DIGEST_MISMATCH")
+          if g23.get("scope")!="DROPBOX_OAUTH_BINDING_AND_ACQUISITION": failures.append("G23_SCOPE_MISMATCH")
+          oidc_hash=None
+          try:
+              url=os.environ["ACTIONS_ID_TOKEN_REQUEST_URL"]+"&audience="+urllib.parse.quote("louksna-dropbox-g24")
+              req=urllib.request.Request(url,headers={"Authorization":"Bearer "+os.environ["ACTIONS_ID_TOKEN_REQUEST_TOKEN"]})
+              with urllib.request.urlopen(req,timeout=20) as resp:
+                  token=json.load(resp)["value"]
+              oidc_hash=hashlib.sha256(token.encode()).hexdigest()
+          except Exception as e:
+              failures.append("OIDC_BINDING_FAILED:"+type(e).__name__)
+          status="PASS" if not failures else "FAIL"
+          cert={
+            "schema":"LOUKSNA_DROPBOX_G24_CERTIFICATION/1.0",
+            "status":status,
+            "authority":"Louksna.md",
+            "scope":"DROPBOX_OAUTH_BINDING_AND_ACQUISITION",
+            "candidate_head_sha":head,
+            "candidate_digest_sha256":digest,
+            "g23_record_sha256":hashlib.sha256(g23p.read_bytes()).hexdigest(),
+            "g24_authority":"GITHUB_HOSTED_SEPARATE_JOB_OIDC_BOUND",
+            "authority_signature_reference":"GITHUB_OIDC_JWT_SHA256:"+oidc_hash if oidc_hash else None,
+            "owner_authorization_cryptographic":False,
+            "owner_authorization_basis":"EXPLICIT_CURRENT_USER_INSTRUCTION_RECORDED_IN_REPOSITORY",
+            "claims_certified":[
+              "MAIN_SOURCE_HASH_SYNC",
+              "EXACT_SCOPE_BINDING",
+              "NO_DESKTOP_COMMANDER",
+              "NON_SECRET_OAUTH_BOOTSTRAP_CONTROLS",
+              "MATERIAL_BYTE_STOP_CONDITION",
+              "FAIL_CLOSED_DIGEST_CHAIN"
+            ],
+            "claims_excluded":[
+              "DROPBOX_CREDENTIAL_VALIDITY_BEFORE_BOOTSTRAP",
+              "DOWNLOAD_COMPLETENESS_BEFORE_EXECUTION",
+              "FINAL_CORPUS_HASH_EQUIVALENCE_BEFORE_ACQUISITION"
+            ],
+            "certification_propagation":False,
+            "canonical_mutation":False,
+            "active_authorized":False,
+            "failures":failures,
+            "certified_at_utc":datetime.now(timezone.utc).isoformat(),
+          }
+          pathlib.Path(out).write_text(json.dumps(cert,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(cert,sort_keys=True))
+          raise SystemExit(0 if status=="PASS" else 4)
+          PY
+
+      - name: Preserve G24
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dropbox-lrb-main-sync-g24
+          path: ${{ runner.temp }}/dropbox-g24/G24.json
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  authorize:
+    name: "Operational authorization — exact certified digest"
+    needs: g24
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Download G23 and G24
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: dropbox-lrb-main-sync-g*
+          path: ${{ runner.temp }}/certs
+          merge-multiple: true
+
+      - name: Checkout exact owner authorization data only
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          path: candidate
+          persist-credentials: false
+          sparse-checkout: |
+            mission-control/dropbox-main-governed-recovery-20h/OWNER_AUTHORIZATION.json
+          sparse-checkout-cone-mode: false
+
+      - name: Grant exact operational scope without MAIN mutation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/dropbox-auth"
+          mkdir -p "$OUT"
+          python3 - "$RUNNER_TEMP/certs/G23.json" "$RUNNER_TEMP/certs/G24.json" "$GITHUB_WORKSPACE/candidate/mission-control/dropbox-main-governed-recovery-20h/OWNER_AUTHORIZATION.json" "$OUT/OPERATIONAL_AUTHORIZATION.json" <<'PY'
+          import hashlib,json,pathlib,sys
+          from datetime import datetime,timezone
+          g23p,g24p,ownerp,out=map(pathlib.Path,sys.argv[1:])
+          g23=json.loads(g23p.read_text()); g24=json.loads(g24p.read_text()); owner=json.loads(ownerp.read_text())
+          failures=[]
+          if g23.get("status")!="PASS": failures.append("G23_NOT_PASS")
+          if g24.get("status")!="PASS": failures.append("G24_NOT_PASS")
+          if g24.get("active_authorized") is not False: failures.append("G24_SELF_AUTHORIZED")
+          if owner.get("status")!="AUTHORIZED": failures.append("OWNER_NOT_AUTHORIZED")
+          if len({g23.get("scope"),g24.get("scope"),owner.get("scope")})!=1: failures.append("SCOPE_CHAIN_MISMATCH")
+          if g23.get("candidate_digest_sha256")!=g24.get("candidate_digest_sha256"): failures.append("DIGEST_CHAIN_MISMATCH")
+          status="PASS" if not failures else "FAIL"
+          rec={
+            "schema":"LOUKSNA_DROPBOX_OPERATIONAL_AUTHORIZATION/1.0",
+            "status":status,
+            "epistemic_state":"ACTIVE" if status=="PASS" else "HOLD",
+            "authority":"Louksna.md",
+            "scope":g24.get("scope"),
+            "candidate_head_sha":g24.get("candidate_head_sha"),
+            "candidate_digest_sha256":g24.get("candidate_digest_sha256"),
+            "g23_record_sha256":hashlib.sha256(g23p.read_bytes()).hexdigest(),
+            "g24_certificate_sha256":hashlib.sha256(g24p.read_bytes()).hexdigest(),
+            "owner_authorization_sha256":hashlib.sha256(ownerp.read_bytes()).hexdigest(),
+            "owner_authorization_cryptographic":False,
+            "operational_authorization":"GRANTED_FOR_EXACT_CERTIFIED_DIGEST" if status=="PASS" else "DENIED",
+            "active_authorized":status=="PASS",
+            "main_mutation":False,
+            "desktop_commander_used":False,
+            "certification_propagation":False,
+            "canonical_mutation":False,
+            "next_state":"EXECUTE_BINDING_IF_NO_MATERIAL_TRANSFER_ALREADY_ACTIVE" if status=="PASS" else "HOLD",
+            "failures":failures,
+            "authorized_at_utc":datetime.now(timezone.utc).isoformat(),
+          }
+          pathlib.Path(out).write_text(json.dumps(rec,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(rec,sort_keys=True))
+          raise SystemExit(0 if status=="PASS" else 5)
+          PY
+
+      - name: Preserve exact operational authorization
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dropbox-lrb-main-sync-operational-authorization
+          path: ${{ runner.temp }}/dropbox-auth/OPERATIONAL_AUTHORIZATION.json
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
