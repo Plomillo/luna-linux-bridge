@@ -1,0 +1,84 @@
+name: "Dropbox public child-link inventory — cloud read-only"
+
+on:
+  push:
+    branches:
+      - staging/dropbox-cloud-diagnostic-inspect-20261005
+    paths:
+      - .github/workflows/dropbox-cloud-child-link-inventory.yml
+
+permissions:
+  contents: read
+
+jobs:
+  inventory:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Install pinned browser tooling
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -m pip install --disable-pip-version-check --no-input "playwright==1.55.0"
+          python3 -m playwright install --with-deps chromium
+
+      - name: Inventory public child link types only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import hashlib,json,re,urllib.parse
+          from playwright.sync_api import sync_playwright
+
+          URL="https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/AIIzeblluaJfhuXh9EnP-10?rlkey=p712fwlkbwn9g0dtybu2sf159&st=3igdng0g&dl=0"
+          with sync_playwright() as p:
+              browser=p.chromium.launch(headless=True)
+              ctx=browser.new_context(locale="en-US")
+              page=ctx.new_page()
+              page.goto(URL,wait_until="domcontentloaded",timeout=120000)
+              page.wait_for_timeout(12000)
+
+              for txt in ("Accept","Accept all","Reject all","Aceptar","Aceptar todas","Rechazar todas"):
+                  try:
+                      loc=page.get_by_text(txt,exact=True)
+                      if loc.count() and loc.first.is_visible():
+                          loc.first.click(timeout=1500); break
+                  except Exception:
+                      pass
+
+              seen={}
+              stable=0
+              last=-1
+              for _ in range(30):
+                  anchors=page.locator('a[href]')
+                  for i in range(anchors.count()):
+                      try:
+                          a=anchors.nth(i)
+                          href=a.get_attribute("href") or ""
+                          absurl=urllib.parse.urljoin(page.url,href)
+                          u=urllib.parse.urlsplit(absurl)
+                          typ=None
+                          if "/scl/fi/" in u.path: typ="file"
+                          elif "/scl/fo/" in u.path and u.path!=urllib.parse.urlsplit(URL).path: typ="folder"
+                          if not typ: continue
+                          text=(a.inner_text(timeout=500) or "").strip()
+                          key=hashlib.sha256((u.path+"?"+u.query).encode()).hexdigest()
+                          seen[key]={"type":typ,"text_present":bool(text),"text_len":len(text),"path_depth":len([x for x in u.path.split("/") if x])}
+                      except Exception:
+                          pass
+                  if len(seen)==last: stable+=1
+                  else: stable=0; last=len(seen)
+                  if stable>=4: break
+                  page.mouse.wheel(0,3000)
+                  page.wait_for_timeout(1200)
+
+              files=sum(1 for x in seen.values() if x["type"]=="file")
+              folders=sum(1 for x in seen.values() if x["type"]=="folder")
+              print("DROPBOX_CHILD_LINK_INVENTORY="+json.dumps({
+                  "unique_children":len(seen),
+                  "file_links":files,
+                  "folder_links":folders,
+                  "sample_metadata":list(seen.values())[:20]
+              },sort_keys=True))
+              browser.close()
+          PY
