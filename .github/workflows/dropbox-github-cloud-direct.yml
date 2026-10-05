@@ -87,7 +87,13 @@ jobs:
           )"
 
           (
-            curl --location --fail --show-error               --retry 5 --retry-all-errors --connect-timeout 30               --max-time "$HARD_CEILING_SECONDS"               --output "$ZIP" "$DIRECT_URL"
+            curl --location --fail --show-error \
+              --retry 5 --retry-all-errors --connect-timeout 30 \
+              --max-time "$HARD_CEILING_SECONDS" \
+              --user-agent "Mozilla/5.0 LOUKSNA-GitHub-Cloud-Direct/1.1" \
+              --dump-header "$ROOT/evidence/curl.headers" \
+              --write-out '%{http_code} %{url_effective} %{size_download}\n' \
+              --output "$ZIP" "$DIRECT_URL"
           ) >"$ROOT/evidence/curl.stdout" 2>"$ROOT/evidence/curl.stderr" &
           pid=$!
           echo "$pid" > "$ROOT/evidence/download.pid"
@@ -125,7 +131,17 @@ jobs:
             fi
             sleep 5
           done
+          set +e
           wait "$pid"
+          curl_rc=$?
+          set -e
+          echo "CURL_EXIT_CODE=$curl_rc"
+          test -f "$ROOT/evidence/curl.stdout" && cat "$ROOT/evidence/curl.stdout" || true
+          test -f "$ROOT/evidence/curl.stderr" && cat "$ROOT/evidence/curl.stderr" || true
+          test -f "$ROOT/evidence/curl.headers" && tail -80 "$ROOT/evidence/curl.headers" || true
+          if [ "$curl_rc" -ne 0 ]; then
+            exit "$curl_rc"
+          fi
           test -s "$ZIP"
           test "$material" = true
 
@@ -200,6 +216,7 @@ jobs:
           compression-level: 0
 
       - name: Persist acquired Dropbox bytes in GitHub Actions storage
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: ${{ steps.names.outputs.artifact_name }}
