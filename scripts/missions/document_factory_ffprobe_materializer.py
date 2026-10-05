@@ -257,6 +257,28 @@ print("FFPROBE_PROVIDER_ADMISSION_SELFTEST=PASS")
         provider_test.chmod(0o755)
         provider_selftest=run([sys.executable,"-B","document-factory/src/test_ffprobe_provider.py"],cwd=target,timeout=60)
 
+        # Bind provider verification into the canonical factory selftest so the
+        # fresh producer and independent producer cannot pass while silently
+        # omitting the FFprobe provider candidate.
+        selftest_path=target/"document-factory/src/selftest.py"
+        selftest_text=selftest_path.read_text(encoding="utf-8")
+        marker='passed.append("FFPROBE_PROVIDER_ADMISSION")'
+        if marker not in selftest_text:
+            selftest_text=selftest_text.replace(
+                "import json,pathlib,sys,tempfile,time,zipfile",
+                "import json,pathlib,subprocess,sys,tempfile,time,zipfile"
+            )
+            hook='''\n    provider_test=ROOT/"src"/"test_ffprobe_provider.py"\n    if provider_test.is_file():\n        q=subprocess.run([sys.executable,"-B",str(provider_test)],text=True,capture_output=True,timeout=30)\n        assert q.returncode==0,(q.stdout,q.stderr)\n        assert "FFPROBE_PROVIDER_ADMISSION_SELFTEST=PASS" in q.stdout\n        passed.append("FFPROBE_PROVIDER_ADMISSION")\n\n'''
+            selftest_text=selftest_text.replace(
+                '    result={"schema":"DOCUMENT_FACTORY_SELFTEST/1.0","status":"PASS","passed_count":len(passed),"tests":passed}',
+                hook+'    result={"schema":"DOCUMENT_FACTORY_SELFTEST/1.0","status":"PASS","passed_count":len(passed),"tests":passed}'
+            )
+            selftest_path.write_text(selftest_text,encoding="utf-8")
+        integrated_selftest=run([sys.executable,"-B","document-factory/src/selftest.py"],cwd=target,timeout=180)
+        integrated_obj=json.loads(integrated_selftest.splitlines()[-1])
+        if integrated_obj.get("status")!="PASS" or "FFPROBE_PROVIDER_ADMISSION" not in set(integrated_obj.get("tests") or []):
+            raise SystemExit("FFPROBE_NOT_BOUND_TO_CANONICAL_SELFTEST")
+
         claims_path=target/"document-factory/CLAIMS.json"; claims=jload(claims_path)
         if not any(x.get("claim_id")=="DF-CLM-013" for x in claims.get("claims",[])):
             claims["claims"].append({"claim_id":"DF-CLM-013","property":"FFprobe 9.0.2 provider provenance is PGP-verified, binary-hash-pinned and functionally tested for profile-driven audiovisual metadata inspection.","acceptance":"Official FFmpeg release signature verifies against pinned fingerprint; source and binary SHA-256 are recorded; synthetic media probe and provider selftest pass; fresh G23/G24 required."})
@@ -292,6 +314,7 @@ print("FFPROBE_PROVIDER_ADMISSION_SELFTEST=PASS")
           "completion_selftest":completion,
           "synthetic_e2e":e2e,
           "provider_selftest":provider_selftest,
+          "integrated_factory_selftest":integrated_obj,
           "certification_inherited":False,
           "g23":"NOT_EXECUTED_FOR_CHANGE",
           "g24":"NOT_EXECUTED_FOR_CHANGE",
