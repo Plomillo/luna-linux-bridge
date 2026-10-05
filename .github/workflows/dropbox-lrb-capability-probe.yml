@@ -1,0 +1,78 @@
+name: "Dropbox — LOUKSNA Remote Bridge capability probe"
+
+on:
+  push:
+    branches:
+      - staging/dropbox-oauth-refresh-material-flow-20261005
+    paths:
+      - .github/workflows/dropbox-lrb-capability-probe.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dropbox-lrb-capability-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Probe deployed LOUKSNA Remote Bridge read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/dropbox-lrb-probe-$GITHUB_RUN_ID"
+          mkdir -p "$OUT"
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+          mapfile -t LINKS < <(find "$HOME/.local/lib/louksna-remote-bridge" -type f -path '*/bridge/live_link.py' -print 2>/dev/null | sort)
+          test "${#LINKS[@]}" -ge 1
+          LINK="${LINKS[-1]}"
+          STATE_DIR="$HOME/.local/state/louksna/remote-bridge/service"
+          SOCKET_DIR="$XDG_RUNTIME_DIR/lrb-sock"
+
+          printf '%s\n' "$LINK" > "$OUT/LIVE_LINK_PATH.txt"
+          sha256sum "$LINK" > "$OUT/LIVE_LINK_SHA256.txt"
+          python3 -B "$LINK" --help > "$OUT/LIVE_LINK_HELP.txt" 2>&1 || true
+          python3 -B "$LINK" --state-dir "$STATE_DIR" --socket-dir "$SOCKET_DIR" request --help > "$OUT/REQUEST_HELP.txt" 2>&1 || true
+          python3 -B "$LINK" --state-dir "$STATE_DIR" --socket-dir "$SOCKET_DIR" request --op status > "$OUT/LRB_STATUS.json"
+
+          ROOT="$(dirname "$(dirname "$LINK")")"
+          find "$ROOT" -maxdepth 3 -type f -printf '%P\n' | sort | head -300 > "$OUT/INSTALLED_FILE_INDEX.txt"
+
+          python3 - "$OUT/LRB_STATUS.json" "$OUT/SUMMARY.json" <<'PY'
+          import json,pathlib,sys,time
+          s=json.load(open(sys.argv[1],encoding="utf-8"))
+          out={
+            "schema":"LOUKSNA_REMOTE_BRIDGE_DROPBOX_CAPABILITY_PROBE/1.0",
+            "status":"PASS",
+            "bridge_status":s.get("status"),
+            "host":s.get("host"),
+            "boot_id":s.get("boot_id"),
+            "local_transport":s.get("local_transport"),
+            "github_transport":s.get("github_transport"),
+            "root_shell":s.get("bridge_root_shell"),
+            "g23":s.get("g23"),
+            "g24":s.get("g24"),
+            "available_operations":s.get("available_operations") or s.get("operations") or s.get("allowed_ops"),
+            "mutation_authorized":s.get("mutation_authorized"),
+            "captured_at_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
+          }
+          pathlib.Path(sys.argv[2]).write_text(json.dumps(out,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps(out,sort_keys=True))
+          PY
+          (cd "$OUT" && sha256sum ./* > SHA256SUMS.txt)
+
+      - name: Preserve capability evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dropbox-lrb-capability-probe
+          path: ${{ runner.temp }}/dropbox-lrb-probe-${{ github.run_id }}/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
