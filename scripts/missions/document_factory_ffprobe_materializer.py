@@ -11,6 +11,10 @@ SOURCE_URL="https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz"
 SIG_URL="https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz.asc"
 KEY_URL="https://ffmpeg.org/ffmpeg-devel.asc"
 KEY_FPR="FCF986EA15E6E293A5644F10B4322F04D67658D8"
+NASM_VERSION="3.02"
+NASM_SOURCE_URL="https://www.nasm.us/pub/nasm/releasebuilds/3.02/nasm-3.02.tar.xz"
+NASM_TAG_OBJECT_SHA="8f1fb545a582c55c69607f457b4d1e71c19b2ecf"
+NASM_COMMIT_SHA="4a56d66ed9626d5a3ded5414c9d8b7f1a48ce065"
 
 def utc(): return datetime.now(timezone.utc).isoformat()
 def sha(path):
@@ -43,7 +47,7 @@ def main():
     if ledger.get("certification_propagation") is not False: raise SystemExit("CERTIFICATION_PROPAGATION_CONTROL_BROKEN")
     tele("PRECHECK","PASS",active_sha=ACTIVE_SHA,active_digest=ACTIVE_DIGEST)
 
-    for exe in ("curl","gpg","make","cc"):
+    for exe in ("curl","gpg","make","cc","sh"):
         if not shutil.which(exe): raise SystemExit("REQUIRED_BUILD_TOOL_MISSING:"+exe)
 
     with tempfile.TemporaryDirectory(prefix="custosz-ffprobe-") as td:
@@ -67,6 +71,31 @@ def main():
         source_sha=sha(tar)
         tele("VERIFY_PGP_SIGNATURE","PASS",source_sha256=source_sha)
 
+        # Resolve NASM as an explicit, isolated build dependency.  The stable
+        # release identity is additionally anchored to the official project's
+        # annotated tag object and commit recorded above.  NASM 3.02's tag is
+        # unsigned upstream, so we do not manufacture a signature claim.
+        nasm_tar=work/f"nasm-{NASM_VERSION}.tar.xz"
+        tele("FETCH_NASM_OFFICIAL_RELEASE")
+        run(["curl","-fL","--retry","2","--connect-timeout","15",NASM_SOURCE_URL,"-o",str(nasm_tar)],timeout=300)
+        nasm_source_sha=sha(nasm_tar)
+        tele("FETCH_NASM_OFFICIAL_RELEASE","PASS",source_bytes=nasm_tar.stat().st_size,source_sha256=nasm_source_sha,
+             tag_object_sha=NASM_TAG_OBJECT_SHA,commit_sha=NASM_COMMIT_SHA,upstream_tag_signature="UNSIGNED")
+        with tarfile.open(nasm_tar,"r:xz") as tf: tf.extractall(work)
+        nasm_src=work/f"nasm-{NASM_VERSION}"
+        if not nasm_src.is_dir(): raise SystemExit("NASM_SOURCE_EXTRACT_FAIL")
+        nasm_prefix=work/"nasm-install"
+        tele("BUILD_NASM",status="RUNNING",version=NASM_VERSION)
+        run(["sh","configure","--prefix="+str(nasm_prefix)],cwd=nasm_src,timeout=300)
+        run(["make","-j2"],cwd=nasm_src,timeout=900)
+        run(["make","install"],cwd=nasm_src,timeout=300)
+        nasm_bin=nasm_prefix/"bin"/"nasm"
+        if not nasm_bin.is_file(): raise SystemExit("NASM_BINARY_MISSING_AFTER_BUILD")
+        nasm_version_line=run([str(nasm_bin),"-v"],timeout=30)
+        if NASM_VERSION not in nasm_version_line: raise SystemExit("NASM_VERSION_MISMATCH:"+nasm_version_line)
+        nasm_binary_sha=sha(nasm_bin)
+        tele("BUILD_NASM","PASS",version_line=nasm_version_line,binary_sha256=nasm_binary_sha)
+
         with tarfile.open(tar,"r:xz") as tf: tf.extractall(work)
         src=work/f"ffmpeg-{VERSION}"
         if not src.is_dir(): raise SystemExit("SOURCE_EXTRACT_FAIL")
@@ -82,10 +111,12 @@ def main():
           "--enable-ffprobe",
           "--enable-ffmpeg"
         ]
-        tele("CONFIGURE_BUILD")
-        run(configure,cwd=src,timeout=300)
+        build_env=dict(os.environ)
+        build_env["PATH"]=str(nasm_prefix/"bin")+os.pathsep+build_env.get("PATH","")
+        tele("CONFIGURE_BUILD",nasm_version=NASM_VERSION,nasm_binary_sha256=nasm_binary_sha)
+        run(configure,cwd=src,timeout=300,env=build_env)
         tele("BUILD_FFPROBE",status="RUNNING",jobs=2)
-        run(["make","-j2","ffprobe","ffmpeg"],cwd=src,timeout=1800)
+        run(["make","-j2","ffprobe","ffmpeg"],cwd=src,timeout=1800,env=build_env)
         ffprobe=src/"ffprobe"; ffmpeg=src/"ffmpeg"
         if not ffprobe.is_file() or not ffmpeg.is_file(): raise SystemExit("BUILD_OUTPUT_MISSING")
         if shutil.which("strip"):
@@ -133,7 +164,24 @@ def main():
           "binary_path":"document-factory/providers/ffprobe/linux-amd64/ffprobe",
           "binary_sha256":binary_sha,
           "architecture":"linux-amd64",
-          "build":{"configure":configure[1:],"make_jobs":2,"external_autodetect":False,"network":False},
+          "build":{
+            "configure":configure[1:],
+            "make_jobs":2,
+            "external_autodetect":False,
+            "network":False,
+            "dependencies":{
+              "nasm":{
+                "version":NASM_VERSION,
+                "source":NASM_SOURCE_URL,
+                "source_sha256":nasm_source_sha,
+                "official_tag_object_sha":NASM_TAG_OBJECT_SHA,
+                "official_commit_sha":NASM_COMMIT_SHA,
+                "upstream_tag_signature":"UNSIGNED",
+                "binary_sha256":nasm_binary_sha,
+                "version_line":nasm_version_line
+              }
+            }
+          },
           "state":"PGP_VERIFIED_BUILT_FUNCTIONALLY_TESTED_CANDIDATE_PENDING_FRESH_G23_G24",
           "required_for":["video_validation"],
           "certification_inherited":False
@@ -171,7 +219,7 @@ def ffprobe_runtime_admission(lock,repo_root):
 
         provider_test=target/"document-factory/src/test_ffprobe_provider.py"
         provider_test.write_text("""#!/usr/bin/env python3
-import pathlib,sys
+import hashlib,json,pathlib,subprocess,sys,tempfile,wave
 ROOT=pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"src"))
 from media_validation import ffprobe_runtime_admission
@@ -179,6 +227,31 @@ r=ffprobe_runtime_admission(ROOT/"toolchain.lock.json",ROOT.parent)
 assert r["status"]=="PASS", r
 assert r["admitted"] is True
 assert r["certification_state"]=="CANDIDATE_PENDING_FRESH_G23_G24"
+lock=json.loads((ROOT/"toolchain.lock.json").read_text(encoding="utf-8"))
+row=next(x for x in lock["providers"] if x.get("id")=="ffprobe")
+nasm=((row.get("build") or {}).get("dependencies") or {}).get("nasm") or {}
+assert nasm.get("version")=="3.02", nasm
+assert nasm.get("official_commit_sha")=="4a56d66ed9626d5a3ded5414c9d8b7f1a48ce065", nasm
+assert nasm.get("source_sha256"), nasm
+assert nasm.get("binary_sha256"), nasm
+prov=json.loads((ROOT/"providers/ffprobe/linux-amd64/PROVENANCE.json").read_text(encoding="utf-8"))
+assert prov.get("status")=="PASS", prov
+assert prov["upstream"]["pgp_signature_verified"] is True
+assert prov["upstream"]["source_sha256"]==row["sha256"]
+assert prov["build_dependencies"]["nasm"]["source_sha256"]==nasm["source_sha256"]
+assert prov["build_dependencies"]["nasm"]["binary_sha256"]==nasm["binary_sha256"]
+ffprobe=ROOT.parent/pathlib.Path(row["binary_path"])
+assert hashlib.sha256(ffprobe.read_bytes()).hexdigest()==row["binary_sha256"]
+with tempfile.TemporaryDirectory() as td:
+    wav=pathlib.Path(td)/"silence.wav"
+    with wave.open(str(wav),"wb") as w:
+        w.setnchannels(1); w.setsampwidth(2); w.setframerate(8000); w.writeframes(b"\\x00\\x00"*8000)
+    q=subprocess.run([str(ffprobe),"-v","error","-show_entries","stream=codec_type,sample_rate,channels","-show_entries","format=duration","-of","json",str(wav)],text=True,capture_output=True,timeout=10)
+    assert q.returncode==0,(q.stdout,q.stderr)
+    obj=json.loads(q.stdout)
+    audio=next((x for x in obj.get("streams",[]) if x.get("codec_type")=="audio"),None)
+    assert audio and int(audio["sample_rate"])==8000 and int(audio["channels"])==1,obj
+    assert 0.9 <= float(obj["format"]["duration"]) <= 1.1,obj
 print("FFPROBE_PROVIDER_ADMISSION_SELFTEST=PASS")
 """,encoding="utf-8")
         provider_test.chmod(0o755)
@@ -201,6 +274,19 @@ print("FFPROBE_PROVIDER_ADMISSION_SELFTEST=PASS")
           "active_certified_anchor":{"candidate_head_sha":ACTIVE_SHA,"candidate_digest_sha256":ACTIVE_DIGEST,"preserved":True},
           "upstream":{"name":"FFmpeg","version":VERSION,"source":SOURCE_URL,"signature":SIG_URL,"key":KEY_URL,"signing_key_fingerprint":KEY_FPR,"pgp_signature_verified":True,"source_sha256":source_sha},
           "binary":{"path":"document-factory/providers/ffprobe/linux-amd64/ffprobe","sha256":binary_sha,"version_line":version_line,"ldd":ldd},
+          "build_dependencies":{
+            "nasm":{
+              "status":"PASS",
+              "version":NASM_VERSION,
+              "source":NASM_SOURCE_URL,
+              "source_sha256":nasm_source_sha,
+              "official_tag_object_sha":NASM_TAG_OBJECT_SHA,
+              "official_commit_sha":NASM_COMMIT_SHA,
+              "upstream_tag_signature":"UNSIGNED",
+              "binary_sha256":nasm_binary_sha,
+              "version_line":nasm_version_line
+            }
+          },
           "synthetic_probe":{"status":"PASS","probe":probe},
           "baseline_selftest":baseline,
           "completion_selftest":completion,
@@ -222,7 +308,14 @@ print("FFPROBE_PROVIDER_ADMISSION_SELFTEST=PASS")
           "active_certified_anchor_digest_sha256":ACTIVE_DIGEST,
           "active_certification_preserved":True,
           "material_step":"FFPROBE_PROVIDER_PGP_VERIFIED_BUILT_TESTED",
-          "ffprobe_provider_candidate":{"status":"PASS_PENDING_FRESH_G23_G24","version":VERSION,"source_sha256":source_sha,"binary_sha256":binary_sha,"signing_key_fingerprint":KEY_FPR},
+          "ffprobe_provider_candidate":{
+            "status":"PASS_PENDING_FRESH_G23_G24",
+            "version":VERSION,
+            "source_sha256":source_sha,
+            "binary_sha256":binary_sha,
+            "signing_key_fingerprint":KEY_FPR,
+            "nasm":{"version":NASM_VERSION,"source_sha256":nasm_source_sha,"binary_sha256":nasm_binary_sha,"official_commit_sha":NASM_COMMIT_SHA}
+          },
           "g23":"NOT_PROPAGATED",
           "g24":"NOT_PROPAGATED",
           "next_work":["FRESH_PRODUCER_VALIDATION_FOR_FFPROBE_CHANGE","INDEPENDENT_VALIDATION","G23","G24","NEW_OPERATIONAL_AUTHORIZATION"]
@@ -242,6 +335,7 @@ print("FFPROBE_PROVIDER_ADMISSION_SELFTEST=PASS")
           "source_sha256":source_sha,
           "binary_sha256":binary_sha,
           "signature_fingerprint":KEY_FPR,
+          "nasm":{"version":NASM_VERSION,"source":NASM_SOURCE_URL,"source_sha256":nasm_source_sha,"binary_sha256":nasm_binary_sha,"official_tag_object_sha":NASM_TAG_OBJECT_SHA,"official_commit_sha":NASM_COMMIT_SHA,"upstream_tag_signature":"UNSIGNED"},
           "functional_test":"PASS",
           "non_regression":"PASS",
           "certification_inherited":False,
