@@ -56,6 +56,7 @@ def event(kind, **payload):
                             "marklogic_binding":"KNOWLEDGE_OPERATOR_COOPERATION_SCOPE_ONLY",
                             "qwen_role":"REASONING_ONLY","metaos_role":"OPERATIONAL_GOVERNOR",
                             **row},ensure_ascii=False,sort_keys=True)+"\n")
+    print("LOUKSNA_EVENT "+json.dumps(row,ensure_ascii=False,sort_keys=True), flush=True)
     return row
 
 def run(argv, timeout=300, env=None):
@@ -225,41 +226,83 @@ def browser_download_candidate():
     dl_dir=STATE/"browser-downloads"; dl_dir.mkdir(parents=True,exist_ok=True)
     try:
         with sync_playwright() as p:
-            browser=p.chromium.launch(headless=True)
+            browser=p.chromium.launch(headless=True,downloads_path=str(dl_dir))
             page=browser.new_page(accept_downloads=True)
             page.goto(SHARED_LINK,wait_until="domcontentloaded",timeout=120000)
             event("BROWSER_PAGE_LOADED",title=page.title()[:300],url=page.url)
-            for txt in ("Accept","Aceptar","Accept all","Aceptar todas"):
+            for txt in ("Accept","Aceptar","Accept all","Aceptar todas","Reject all","Rechazar todas"):
                 try:
                     loc=page.get_by_text(txt,exact=True)
                     if loc.count(): loc.first.click(timeout=2000)
                 except Exception: pass
-            candidates=[
-                page.get_by_role("button",name=re.compile("download",re.I)),
-                page.get_by_text(re.compile("^Download$",re.I)),
-                page.get_by_text(re.compile("^Descargar$",re.I)),
-            ]
-            got=None
-            for loc in candidates:
+            for pat in (re.compile("close",re.I),re.compile("cerrar",re.I),re.compile("not now",re.I),re.compile("ahora no",re.I)):
                 try:
-                    if not loc.count(): continue
-                    with page.expect_download(timeout=30000) as di:
-                        loc.first.click()
-                    got=di.value; break
-                except Exception:
-                    continue
+                    loc=page.get_by_role("button",name=pat)
+                    if loc.count(): loc.first.click(timeout=1500)
+                except Exception: pass
+            got=None
+            direct=SHARED_LINK
+            if re.search(r"([?&])dl=0(?:&|$)",direct):
+                direct=re.sub(r"([?&])dl=0(?=&|$)",r"\1dl=1",direct)
+            elif "dl=" not in direct:
+                direct += ("&" if "?" in direct else "?")+"dl=1"
+            try:
+                with page.expect_download(timeout=45000) as di:
+                    page.evaluate("(u)=>{ window.location.href=u; }",direct)
+                got=di.value
+            except Exception as e:
+                event("BROWSER_DIRECT_DOWNLOAD_NOT_STARTED",error=type(e).__name__,message=str(e)[:700])
+                try: page.goto(SHARED_LINK,wait_until="domcontentloaded",timeout=120000)
+                except Exception: pass
             if got is None:
-                # Some Dropbox folder UIs expose a menu first.
-                for name in ("Download","Descargar"):
+                candidates=[
+                    page.get_by_role("button",name=re.compile("download|descargar",re.I)),
+                    page.locator('button[aria-label*="download" i]'),
+                    page.locator('button[aria-label*="descargar" i]'),
+                    page.get_by_text(re.compile("^Download$",re.I)),
+                    page.get_by_text(re.compile("^Descargar$",re.I)),
+                ]
+                for loc in candidates:
                     try:
-                        loc=page.get_by_text(name,exact=False)
                         if not loc.count(): continue
-                        with page.expect_download(timeout=30000) as di:
-                            loc.last.click()
+                        with page.expect_download(timeout=45000) as di: loc.first.click()
                         got=di.value; break
                     except Exception: continue
             if got is None:
+                menu_candidates=[
+                    page.get_by_role("button",name=re.compile("more|más|actions|acciones",re.I)),
+                    page.locator('button[aria-label*="more" i]'),
+                    page.locator('button[aria-label*="más" i]'),
+                ]
+                for menu in menu_candidates:
+                    try:
+                        if not menu.count(): continue
+                        menu.first.click(timeout=3000)
+                        for name in ("Download","Descargar"):
+                            loc=page.get_by_text(name,exact=False)
+                            if not loc.count(): continue
+                            with page.expect_download(timeout=45000) as di: loc.last.click()
+                            got=di.value; break
+                        if got is not None: break
+                    except Exception: continue
+            if got is None:
+                try: (EVID/"BROWSER_PAGE.html").write_text(page.content(),encoding="utf-8")
+                except Exception: pass
                 browser.close(); event("BROWSER_DOWNLOAD_NOT_STARTED"); return False
+            marker={
+                "schema":"LOUKSNA_DROPBOX_MATERIAL_DOWNLOAD_STARTED/1.0",
+                "mission_id":MISSION_ID,
+                "authority":"Louksna.md",
+                "provider":"DROPBOX_BROWSER_PACKAGE",
+                "state":"MATERIAL_DOWNLOAD_STARTED",
+                "target":TARGET_NAME,
+                "suggested_filename":got.suggested_filename,
+                "downloads_dir":str(dl_dir),
+                "corpus_root":str(CORPUS),
+                "utc":utc()
+            }
+            atomic(EVID/"DOWNLOAD_STARTED.json",marker)
+            event("BROWSER_DOWNLOAD_STARTED",suggested_filename=got.suggested_filename,downloads_dir=str(dl_dir))
             path=dl_dir/(got.suggested_filename or "dropbox-folder.zip")
             got.save_as(str(path)); browser.close()
         event("BROWSER_DOWNLOAD_SAVED",path=str(path),size=path.stat().st_size)
