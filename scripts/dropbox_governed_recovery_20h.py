@@ -159,15 +159,81 @@ def api_post(url, token, payload, content=False):
     with urllib.request.urlopen(req,timeout=120) as r:
         return json.loads(r.read())
 
+
+def rclone_dropbox_token(refresh_if_needed=True):
+    """Return a short-lived access token from an already-authorized rclone Dropbox remote.
+    Token material never enters logs/evidence."""
+    import configparser, datetime as dt
+    exe=shutil.which("rclone")
+    if not exe:
+        return None,None,None
+    cfg_candidates=[
+        pathlib.Path(os.environ.get("RCLONE_CONFIG","")).expanduser() if os.environ.get("RCLONE_CONFIG") else None,
+        HOME/".config/rclone/rclone.conf",
+        HOME/".rclone.conf",
+    ]
+    cfg=next((p for p in cfg_candidates if p and p.is_file()),None)
+    if not cfg:
+        return None,None,None
+
+    def read_remote():
+        cp=configparser.RawConfigParser()
+        cp.read(cfg,encoding="utf-8")
+        for sec in cp.sections():
+            if cp.get(sec,"type",fallback="").strip().lower()!="dropbox":
+                continue
+            raw=cp.get(sec,"token",fallback="").strip()
+            if not raw: continue
+            try:
+                tok=json.loads(raw)
+            except Exception:
+                continue
+            access=str(tok.get("access_token") or "").strip()
+            if access:
+                return sec,tok
+        return None,None
+
+    remote,tok=read_remote()
+    if not remote or not tok:
+        return None,None,None
+
+    expiry=tok.get("expiry")
+    need_refresh=False
+    if refresh_if_needed and expiry:
+        try:
+            exp=dt.datetime.fromisoformat(str(expiry).replace("Z","+00:00"))
+            now=dt.datetime.now(dt.timezone.utc)
+            need_refresh=(exp-now).total_seconds()<900
+        except Exception:
+            need_refresh=True
+    if refresh_if_needed and (need_refresh or not expiry):
+        rr=run([exe,"about",f"{remote}:"],timeout=120)
+        if rr["returncode"]!=0:
+            # Listing root is an alternate harmless read that also exercises OAuth refresh.
+            rr=run([exe,"lsf",f"{remote}:","--max-depth","1"],timeout=120)
+        if rr["returncode"]!=0:
+            event("RCLONE_TOKEN_REFRESH_FAILED",remote=remote,rc=rr["returncode"])
+            return None,None,None
+        remote,tok=read_remote()
+        if not remote or not tok:
+            return None,None,None
+
+    access=str(tok.get("access_token") or "").strip()
+    refresh_present=bool(str(tok.get("refresh_token") or "").strip())
+    if not access:
+        return None,None,None
+    return access,remote,{"refresh_token_present":refresh_present,"expiry":tok.get("expiry")}
+
 def resolve_dropbox_access_token():
     refresh=os.environ.get("DROPBOX_REFRESH_TOKEN","").strip()
     app_key=os.environ.get("DROPBOX_APP_KEY","").strip()
     app_secret=os.environ.get("DROPBOX_APP_SECRET","").strip()
     legacy=os.environ.get("DROPBOX_ACCESS_TOKEN","").strip()
     require_refresh=os.environ.get("REQUIRE_DROPBOX_OAUTH_REFRESH","0").strip()=="1"
+    allow_rclone=os.environ.get("ALLOW_RCLONE_TOKEN_BINDING","0").strip()=="1"
 
     present={"app_key":bool(app_key),"app_secret":bool(app_secret),"refresh_token":bool(refresh),
-             "legacy_access_token":bool(legacy)}
+             "legacy_access_token":bool(legacy),"rclone_token_binding_allowed":allow_rclone}
     if refresh or app_key or app_secret:
         if not (refresh and app_key and app_secret):
             event("DROPBOX_OAUTH_REFRESH_BINDING_INCOMPLETE",**present)
@@ -216,6 +282,24 @@ def resolve_dropbox_access_token():
                 event("DROPBOX_OAUTH_REFRESH_FAILED",error=type(e).__name__,message=str(e)[:700])
                 return None,None
 
+    if allow_rclone:
+        token,remote,meta=rclone_dropbox_token(refresh_if_needed=True)
+        if token:
+            binding={
+                "schema":"LOUKSNA_DROPBOX_RCLONE_OAUTH_BINDING/1.0",
+                "provider":"DROPBOX_API_VIA_RCLONE_OAUTH",
+                "authenticated":True,
+                "remote":remote,
+                "refresh_token_present":bool((meta or {}).get("refresh_token_present")),
+                "access_token_persisted_by_downloader":False,
+                "token_logged":False,
+                "utc":utc()
+            }
+            atomic(EVID/"RCLONE_OAUTH_BINDING.json",binding)
+            event("DROPBOX_RCLONE_OAUTH_BINDING_PASS",remote=remote,
+                  refresh_token_present=binding["refresh_token_present"],token_logged=False)
+            return token,"rclone_oauth"
+
     if require_refresh:
         event("PROVIDER_DROPBOX_API_UNAVAILABLE",reason="OAUTH_REFRESH_NOT_BOUND",**present)
         return None,None
@@ -230,7 +314,9 @@ def provider_dropbox_api():
     token,auth_mode=resolve_dropbox_access_token()
     if not token:
         return False
-    provider_label="DROPBOX_API_OAUTH_REFRESH" if auth_mode=="oauth_refresh" else "DROPBOX_API_SHARED_LINK"
+    provider_label=("DROPBOX_API_OAUTH_REFRESH" if auth_mode=="oauth_refresh"
+                    else "DROPBOX_API_VIA_RCLONE_OAUTH" if auth_mode=="rclone_oauth"
+                    else "DROPBOX_API_SHARED_LINK")
     event("PROVIDER_DROPBOX_API_START",provider=provider_label,auth_mode=auth_mode,
           token_present=True,token_logged=False)
     queue=[""]; files=[]; seen=set()
@@ -289,6 +375,12 @@ def provider_dropbox_api():
             if tmp.exists() and tmp.stat().st_size>0:
                 event("API_PARTIAL_RESTART_OBJECT",path=rel.as_posix(),partial_bytes=tmp.stat().st_size,
                       ordinal=idx,policy="RESTART_ONLY_CURRENT_OBJECT")
+            if auth_mode=="rclone_oauth":
+                fresh,remote,meta=rclone_dropbox_token(refresh_if_needed=True)
+                if not fresh:
+                    event("RCLONE_OAUTH_ACCESS_TOKEN_UNAVAILABLE",path=rel.as_posix(),ordinal=idx)
+                    return False
+                token=fresh
             arg={"url":SHARED_LINK,"path":x["path"]}
             req=urllib.request.Request("https://content.dropboxapi.com/2/sharing/get_shared_link_file",
                 data=b"",method="POST",headers={
@@ -505,7 +597,7 @@ def completeness():
         try: exp=json.loads(EXPECTED.read_text())
         except Exception: pass
     provider=exp.get("provider")
-    if provider in ("DROPBOX_API_OAUTH_REFRESH","DROPBOX_API_SHARED_LINK","RCLONE_DROPBOX"):
+    if provider in ("DROPBOX_API_OAUTH_REFRESH","DROPBOX_API_VIA_RCLONE_OAUTH","DROPBOX_API_SHARED_LINK","RCLONE_DROPBOX"):
         objs=exp.get("objects",[])
         expected_count=int(exp.get("count") or len(objs))
         expected_bytes=int(exp.get("bytes") or 0)
