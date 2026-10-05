@@ -1,0 +1,365 @@
+name: "Dropbox Connected → GitHub Cloud Partitioned"
+
+on:
+  push:
+    branches:
+      - staging/dropbox-github-cloud-partitioned-20261005
+    paths:
+      - mission-control/dropbox-github-cloud-partitioned/EXECUTE.json
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: dropbox-github-cloud-partitioned
+  cancel-in-progress: false
+
+env:
+  DROPBOX_PROVIDER: "DROPBOX_CONNECTED_PLUGIN"
+  HARD_CEILING_SECONDS: "20400"
+
+jobs:
+  acquire:
+    name: "GitHub-hosted partitioned Dropbox acquisition"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
+    outputs:
+      artifact_name: ${{ steps.names.outputs.artifact_name }}
+      manifest_sha256: ${{ steps.complete.outputs.manifest_sha256 }}
+      payload_count: ${{ steps.complete.outputs.payload_count }}
+      payload_bytes: ${{ steps.complete.outputs.payload_bytes }}
+    steps:
+      - name: Checkout exact partitioned mission
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Validate cloud-only partitioned contract
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 scripts/tests/test_dropbox_github_cloud_partitioned.py
+          python3 -m py_compile scripts/dropbox_cloud_partitioned_acquire.py
+
+      - id: names
+        name: Initialize partitioned cloud state
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="$RUNNER_TEMP/dropbox-partitioned-${GITHUB_RUN_ID}"
+          mkdir -p "$ROOT/evidence" "$ROOT/browser-downloads" "$ROOT/payload"
+          echo "root=$ROOT" >> "$GITHUB_OUTPUT"
+          echo "artifact_name=dropbox-github-cloud-partitioned-${GITHUB_RUN_ID}" >> "$GITHUB_OUTPUT"
+
+      - name: Install pinned Playwright browser tooling
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -m pip install --disable-pip-version-check --no-input "playwright==1.55.0"
+          python3 -m playwright install --with-deps chromium
+          python3 -c 'import importlib.metadata; print("playwright="+importlib.metadata.version("playwright"))'
+
+      - name: Start recursive Dropbox partition acquisition and prove real byte flow
+        shell: bash
+        env:
+          STATE_ROOT: ${{ steps.names.outputs.root }}
+        run: |
+          set -Eeuo pipefail
+          python3 -B scripts/dropbox_cloud_partitioned_acquire.py             >"$STATE_ROOT/evidence/acquisition.stdout"             2>"$STATE_ROOT/evidence/acquisition.stderr" &
+          pid=$!
+          echo "$pid" > "$STATE_ROOT/evidence/acquisition.pid"
+
+          deadline=$((SECONDS+1800))
+          proven=false
+          while [ "$SECONDS" -lt "$deadline" ]; do
+            marker="$STATE_ROOT/evidence/FIRST_DOWNLOAD_EVENT.json"
+            observed="$(find "$STATE_ROOT/browser-downloads" "$STATE_ROOT/payload" -maxdepth 1 -type f -size +0c -print -quit 2>/dev/null || true)"
+            if [ -f "$marker" ] && [ -n "$observed" ] && kill -0 "$pid" 2>/dev/null; then
+              bytes="$(stat -c '%s' "$observed")"
+              if [ "$bytes" -gt 0 ]; then
+                python3 - "$marker" "$STATE_ROOT/evidence/MATERIAL_BYTE_FLOW.json" "$bytes" "$pid" "$(basename "$observed")" <<'PY'
+          import json,pathlib,sys,datetime as dt
+          event=json.load(open(sys.argv[1],encoding="utf-8"))
+          out={
+            "schema":"LOUKSNA_DROPBOX_GITHUB_PARTITIONED_MATERIAL_BYTE_FLOW/1.0",
+            "status":"PASS",
+            "MATERIAL_BYTE_FLOW":True,
+            "provider":"DROPBOX_CONNECTED_PLUGIN",
+            "execution_plane":"GITHUB_HOSTED_UBUNTU_24_04",
+            "source_object_identified":bool(event.get("source_object_identified")),
+            "source_kind":event.get("source_kind"),
+            "source_identity":event.get("source_identity"),
+            "download_event_observed":event.get("download_event_observed") is True,
+            "observed_bytes":int(sys.argv[3]),
+            "observed_file_basename":sys.argv[5],
+            "background_process_alive":True,
+            "background_pid":int(sys.argv[4]),
+            "local_pc_data_plane":False,
+            "self_hosted_runner_data_plane":False,
+            "observed_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          pathlib.Path(sys.argv[2]).write_text(json.dumps(out,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps(out,sort_keys=True))
+          PY
+                echo "MATERIAL_BYTE_FLOW=TRUE"
+                echo "SOURCE_OBJECT_IDENTIFIED=TRUE"
+                echo "OBSERVED_BYTES=$bytes"
+                echo "BACKGROUND_PROCESS_ALIVE=TRUE"
+                echo "EXECUTION_PLANE=GITHUB_HOSTED_UBUNTU_24_04"
+                echo "LOUKSNA_STOP_CONDITION_REACHED=TRUE"
+                proven=true
+                break
+              fi
+            fi
+
+            if ! kill -0 "$pid" 2>/dev/null; then
+              set +e
+              wait "$pid"
+              rc=$?
+              set -e
+              echo "ACQUISITION_EXIT_BEFORE_MATERIAL_PROOF=$rc"
+              cat "$STATE_ROOT/evidence/acquisition.stdout" || true
+              cat "$STATE_ROOT/evidence/acquisition.stderr" || true
+              exit "$rc"
+            fi
+            sleep 1
+          done
+
+          if [ "$proven" != true ]; then
+            echo "NO_REAL_PARTITION_BYTE_FLOW_INSIDE_GATE"
+            kill "$pid" 2>/dev/null || true
+            wait "$pid" || true
+            exit 124
+          fi
+
+          # User stop condition has been reached. Workflow continues autonomously;
+          # no external intervention is required or expected.
+          set +e
+          wait "$pid"
+          rc=$?
+          set -e
+          echo "PARTITIONED_ACQUISITION_EXIT=$rc"
+          cat "$STATE_ROOT/evidence/acquisition.stdout" || true
+          cat "$STATE_ROOT/evidence/acquisition.stderr" || true
+          exit "$rc"
+
+      - id: complete
+        name: Validate complete partition set without executing downloaded content
+        shell: bash
+        env:
+          STATE_ROOT: ${{ steps.names.outputs.root }}
+        run: |
+          set -Eeuo pipefail
+          python3 - "$STATE_ROOT" <<'PY'
+          import hashlib,json,pathlib,sys,zipfile
+          root=pathlib.Path(sys.argv[1])
+          manifest_path=root/"evidence/MANIFEST.json"
+          m=json.load(open(manifest_path,encoding="utf-8"))
+          assert m.get("status")=="PASS",m.get("status")
+          completed=m.get("completed") or []
+          assert completed
+          total=0
+          for item in completed:
+              p=root/"payload"/item["payload_name"]
+              assert p.is_file() and p.stat().st_size==int(item["bytes"]) and p.stat().st_size>0,item
+              h=hashlib.sha256()
+              with p.open("rb") as f:
+                  for chunk in iter(lambda:f.read(8*1024*1024),b""): h.update(chunk)
+              assert h.hexdigest()==item["sha256"],item["payload_name"]
+              if item["kind"]=="folder_zip":
+                  assert zipfile.is_zipfile(p),item["payload_name"]
+                  with zipfile.ZipFile(p) as z:
+                      assert z.testzip() is None,item["payload_name"]
+                      assert len(z.infolist())==int(item["entry_count"]),item["payload_name"]
+              total+=p.stat().st_size
+          assert int(m.get("payload_count"))==len(completed)
+          assert int(m.get("payload_bytes"))==total
+          print(json.dumps({"status":"PASS","payload_count":len(completed),"payload_bytes":total},sort_keys=True))
+          PY
+          manifest_sha="$(sha256sum "$STATE_ROOT/evidence/MANIFEST.json" | awk '{print $1}')"
+          payload_count="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["payload_count"])' "$STATE_ROOT/evidence/MANIFEST.json")"
+          payload_bytes="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["payload_bytes"])' "$STATE_ROOT/evidence/MANIFEST.json")"
+          echo "manifest_sha256=$manifest_sha" >> "$GITHUB_OUTPUT"
+          echo "payload_count=$payload_count" >> "$GITHUB_OUTPUT"
+          echo "payload_bytes=$payload_bytes" >> "$GITHUB_OUTPUT"
+
+      - name: Preserve partitioned corpus and evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ${{ steps.names.outputs.artifact_name }}
+          path: |
+            ${{ steps.names.outputs.root }}/payload
+            ${{ steps.names.outputs.root }}/evidence
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 0
+          include-hidden-files: true
+
+  G23:
+    name: "G23 — independent partitioned corpus validation"
+    needs: acquire
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
+    outputs:
+      g23_sha256: ${{ steps.validate.outputs.g23_sha256 }}
+    steps:
+      - name: Recover exact partitioned acquisition artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: ${{ needs.acquire.outputs.artifact_name }}
+          path: ${{ runner.temp }}/acquired
+
+      - id: validate
+        name: Independently verify manifest, bytes, hashes and ZIP CRCs
+        shell: bash
+        env:
+          EXPECTED_MANIFEST_SHA: ${{ needs.acquire.outputs.manifest_sha256 }}
+          EXPECTED_PAYLOAD_COUNT: ${{ needs.acquire.outputs.payload_count }}
+          EXPECTED_PAYLOAD_BYTES: ${{ needs.acquire.outputs.payload_bytes }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/acquired" "$RUNNER_TEMP/g23/G23.json" <<'PY'
+          import hashlib,json,os,pathlib,sys,zipfile,datetime as dt
+          root=pathlib.Path(sys.argv[1]); out=pathlib.Path(sys.argv[2])
+          mp=root/"evidence/MANIFEST.json"
+          m=json.load(open(mp,encoding="utf-8"))
+          checks={}
+          checks["manifest_sha"]=hashlib.sha256(mp.read_bytes()).hexdigest()==os.environ["EXPECTED_MANIFEST_SHA"]
+          checks["manifest_status"]=m.get("status")=="PASS"
+          completed=m.get("completed") or []
+          checks["count"]=len(completed)==int(os.environ["EXPECTED_PAYLOAD_COUNT"])
+          total=0
+          details=[]
+          for item in completed:
+              p=root/"payload"/item["payload_name"]
+              ok=p.is_file() and p.stat().st_size==int(item["bytes"]) and p.stat().st_size>0
+              h=None
+              if ok:
+                  hh=hashlib.sha256()
+                  with p.open("rb") as f:
+                      for chunk in iter(lambda:f.read(8*1024*1024),b""): hh.update(chunk)
+                  h=hh.hexdigest()
+                  ok=ok and h==item["sha256"]
+              if ok and item["kind"]=="folder_zip":
+                  ok=zipfile.is_zipfile(p)
+                  if ok:
+                      with zipfile.ZipFile(p) as z:
+                          ok=z.testzip() is None and len(z.infolist())==int(item["entry_count"])
+              total += p.stat().st_size if p.is_file() else 0
+              details.append({"payload_name":item["payload_name"],"status":"PASS" if ok else "FAIL","sha256":h})
+          checks["all_payloads"]=all(x["status"]=="PASS" for x in details)
+          checks["bytes"]=total==int(os.environ["EXPECTED_PAYLOAD_BYTES"])
+          ok=all(checks.values())
+          report={
+            "schema":"LOUKSNA_DROPBOX_GITHUB_PARTITIONED_G23/1.0",
+            "status":"PASS" if ok else "FAIL",
+            "authority":"Louksna.md",
+            "scope":"DROPBOX_CONNECTED_TO_GITHUB_HOSTED_PARTITIONED_TRANSFER",
+            "manifest_sha256":hashlib.sha256(mp.read_bytes()).hexdigest(),
+            "payload_count":len(completed),
+            "payload_bytes":total,
+            "independent_validator":"SEPARATE_GITHUB_HOSTED_JOB",
+            "repair_allowed":False,
+            "downloaded_content_executed":False,
+            "certification_propagation":False,
+            "canonical_mutation":False,
+            "checks":checks,
+            "g24_authorized":ok,
+            "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          out.write_text(json.dumps(report,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps(report,sort_keys=True))
+          if not ok: raise SystemExit(23)
+          PY
+          h="$(sha256sum "$RUNNER_TEMP/g23/G23.json" | awk '{print $1}')"
+          echo "g23_sha256=$h" >> "$GITHUB_OUTPUT"
+
+      - name: Preserve G23
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dropbox-github-cloud-partitioned-g23-${{ github.run_id }}
+          path: ${{ runner.temp }}/g23/G23.json
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  G24:
+    name: "G24 — certify exact partitioned corpus"
+    needs: [acquire, G23]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    steps:
+      - name: Recover exact G23
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: dropbox-github-cloud-partitioned-g23-${{ github.run_id }}
+          path: ${{ runner.temp }}/g23
+
+      - name: Bind G24 to G23 and GitHub OIDC identity
+        shell: bash
+        env:
+          EXPECTED_MANIFEST_SHA: ${{ needs.acquire.outputs.manifest_sha256 }}
+          EXPECTED_G23_SHA: ${{ needs.G23.outputs.g23_sha256 }}
+        run: |
+          set -Eeuo pipefail
+          G23="$RUNNER_TEMP/g23/G23.json"
+          test "$(sha256sum "$G23" | awk '{print $1}')" = "$EXPECTED_G23_SHA"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$G23")" = PASS
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["manifest_sha256"])' "$G23")" = "$EXPECTED_MANIFEST_SHA"
+
+          AUD="louksna-dropbox-partitioned:$EXPECTED_MANIFEST_SHA:$EXPECTED_G23_SHA"
+          TOKEN_JSON="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.load(sys.stdin)["value"])' <<<"$TOKEN_JSON")"
+          test -n "$TOKEN"
+          mkdir -p "$RUNNER_TEMP/g24"
+          TOKEN="$TOKEN" python3 - "$G23" "$EXPECTED_G23_SHA" "$RUNNER_TEMP/g24/G24.json" <<'PY'
+          import hashlib,json,os,pathlib,sys,datetime as dt
+          p=pathlib.Path(sys.argv[1]); gsha=sys.argv[2]; tok=os.environ["TOKEN"]
+          g=json.load(open(p,encoding="utf-8"))
+          checks={
+            "g23_pass":g.get("status")=="PASS",
+            "g23_hash_bound":hashlib.sha256(p.read_bytes()).hexdigest()==gsha,
+            "oidc_present":bool(tok),
+            "scope_exact":g.get("scope")=="DROPBOX_CONNECTED_TO_GITHUB_HOSTED_PARTITIONED_TRANSFER",
+          }
+          ok=all(checks.values())
+          cert={
+            "schema":"LOUKSNA_DROPBOX_GITHUB_PARTITIONED_G24/1.0",
+            "status":"PASS" if ok else "BLOCKED",
+            "operational_status":"CERTIFIED_ACQUIRED_PARTITIONED_CORPUS" if ok else "HOLD",
+            "authority":"Louksna.md",
+            "scope":"DROPBOX_CONNECTED_TO_GITHUB_HOSTED_PARTITIONED_TRANSFER",
+            "manifest_sha256":g.get("manifest_sha256"),
+            "payload_count":g.get("payload_count"),
+            "payload_bytes":g.get("payload_bytes"),
+            "g23_sha256":gsha,
+            "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(tok.encode()).hexdigest(),
+            "certification_propagation":False,
+            "canonical_mutation":False,
+            "local_pc_data_plane":False,
+            "self_hosted_runner_data_plane":False,
+            "checks":checks,
+            "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          pathlib.Path(sys.argv[3]).write_text(json.dumps(cert,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps(cert,sort_keys=True))
+          if not ok: raise SystemExit(24)
+          PY
+
+      - name: Preserve G24
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dropbox-github-cloud-partitioned-g24-${{ github.run_id }}
+          path: ${{ runner.temp }}/g24/G24.json
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
