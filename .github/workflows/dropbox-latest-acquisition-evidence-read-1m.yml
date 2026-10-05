@@ -1,0 +1,41 @@
+name: "Dropbox latest acquisition evidence read — 1m"
+
+on:
+  push:
+    branches:
+      - staging/dropbox-main-governed-recovery-20h-20261004
+    paths:
+      - .github/workflows/dropbox-latest-acquisition-evidence-read-1m.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  read_latest:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    steps:
+      - name: Read latest acquisition ledger exactly
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_ID: "11354789958"
+        run: |
+          set -Eeuo pipefail
+          mkdir -p /tmp/dbxev
+          curl -fsSL             -H "Authorization: Bearer ${GH_TOKEN}"             -H "Accept: application/vnd.github+json"             -H "X-GitHub-Api-Version: 2022-11-28"             "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}/zip"             -o /tmp/dbxev/evidence.zip
+          python3 - <<'PY'
+          import zipfile, pathlib
+          z=zipfile.ZipFile('/tmp/dbxev/evidence.zip')
+          z.extractall('/tmp/dbxev/unpacked')
+          root=pathlib.Path('/tmp/dbxev/unpacked')
+          for name in ('acquisition/STATUS.json','acquisition/LEDGER.jsonl','dependencies/summary.txt','dependencies/pip-playwright.stderr','dependencies/playwright-install.stderr'):
+              p=root/name
+              print("\n===== "+name+" =====")
+              if p.exists():
+                  print(p.read_text(encoding='utf-8',errors='replace'))
+              else:
+                  print("MISSING")
+          PY
