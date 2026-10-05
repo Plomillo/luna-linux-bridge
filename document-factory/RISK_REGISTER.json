@@ -1,41 +1,62 @@
 {
-  "schema": "DOCUMENT_FACTORY_RISK_REGISTER/1.0",
-  "uncontrolled_critical_risks": 0,
   "risks": [
     {
       "id": "DF-RISK-001",
+      "residual": "MEDIUM",
       "risk": "Repository main branch is observed unprotected in current GitHub metadata.",
       "severity": "HIGH",
-      "treatment": "No direct main mutation; candidate remains draft; G23/G24 execute against exact digest from a separate trust-root branch.",
-      "residual": "MEDIUM"
+      "treatment": "No direct main mutation; candidate remains draft; G23/G24 execute against exact digest from a separate trust-root branch."
     },
     {
       "id": "DF-RISK-002",
+      "residual": "MEDIUM",
       "risk": "Repository rulesets are unavailable on the observed private-repository plan/API response.",
       "severity": "MEDIUM",
-      "treatment": "Enforce invariants inside workflows, frozen digests and explicit authorization; do not claim repository-level ruleset enforcement.",
-      "residual": "MEDIUM"
+      "treatment": "Enforce invariants inside workflows, frozen digests and explicit authorization; do not claim repository-level ruleset enforcement."
     },
     {
       "id": "DF-RISK-003",
+      "residual": "LOW_WITH_SCOPE_EXCLUSION",
       "risk": "FFprobe provider is not pinned in toolchain lock.",
       "severity": "MEDIUM",
-      "treatment": "Audiovisual-validation claim excluded from framework certification until provider admission.",
-      "residual": "LOW_WITH_SCOPE_EXCLUSION"
+      "treatment": "Audiovisual-validation claim excluded from framework certification until provider admission."
     },
     {
       "id": "DF-RISK-004",
+      "residual": "LOW_WITH_FAIL_CLOSED",
       "risk": "Human academic quality cannot be mechanically certified.",
       "severity": "HIGH",
-      "treatment": "Rubric criteria requiring disciplinary judgment remain G23/human obligations and block assignment-level certification.",
-      "residual": "LOW_WITH_FAIL_CLOSED"
+      "treatment": "Rubric criteria requiring disciplinary judgment remain G23/human obligations and block assignment-level certification."
     },
     {
       "id": "DF-RISK-005",
+      "residual": "MEDIUM",
       "risk": "AI or human writer may introduce unsupported claims or references.",
       "severity": "HIGH",
-      "treatment": "Writer has no certification authority; source ledger, citations, content review and G23 remain separate.",
-      "residual": "MEDIUM"
+      "treatment": "Writer has no certification authority; source ledger, citations, content review and G23 remain separate."
+    },
+    {
+      "id": "DF-RISK-006",
+      "residual": "LOW_WITH_FAIL_CLOSED",
+      "risk": "Citation metadata may be incomplete or unverifiable.",
+      "severity": "HIGH",
+      "treatment": "Never synthesize absent DOI/author/page/URL; unknown or unverified citation identifiers fail closed."
+    },
+    {
+      "id": "DF-RISK-007",
+      "residual": "LOW",
+      "risk": "DPI and pixel dimensions may be semantically conflated.",
+      "severity": "MEDIUM",
+      "treatment": "Keep both concepts separate and preserve ambiguous source wording as UNKNOWN."
+    },
+    {
+      "id": "DF-RISK-008",
+      "residual": "LOW",
+      "risk": "Malformed OOXML/PDF may pass superficial file-extension checks.",
+      "severity": "MEDIUM",
+      "treatment": "Validate archive integrity, required parts/XML and PDF structural markers."
     }
-  ]
+  ],
+  "schema": "DOCUMENT_FACTORY_RISK_REGISTER/1.0",
+  "uncontrolled_critical_risks": 0
 }

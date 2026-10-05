@@ -1,11 +1,16 @@
 {
-  "schema": "DOCUMENT_FACTORY_WRITING_CONTRACT/1.0",
-  "source_first": true,
   "allowed_provider_classes": [
     "HUMAN",
     "CHATGPT",
     "GOVERNED_AGENT",
     "DECLARED_EXTERNAL_PROVIDER"
+  ],
+  "forbidden": [
+    "FABRICATED_REFERENCE",
+    "SILENT_METADATA_COMPLETION",
+    "WRITER_SELF_G23",
+    "WRITER_SELF_G24",
+    "CERTIFICATION_PROPAGATION"
   ],
   "required_evidence": [
     "provider_id",
@@ -15,12 +20,9 @@
     "task_profile",
     "source_ledger"
   ],
-  "forbidden": [
-    "FABRICATED_REFERENCE",
-    "SILENT_METADATA_COMPLETION",
-    "WRITER_SELF_G23",
-    "WRITER_SELF_G24",
-    "CERTIFICATION_PROPAGATION"
-  ],
-  "rule": "Writer output remains candidate content until profile validation and applicable independent review."
+  "rule": "Writer output remains candidate content until profile validation and applicable independent review.",
+  "schema": "DOCUMENT_FACTORY_WRITING_CONTRACT/1.0",
+  "source_first": true,
+  "unknown_reference_metadata_policy": "DO_NOT_INFER_OR_COMPLETE",
+  "writer_certification_authority": false
 }

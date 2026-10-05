@@ -1,41 +1,77 @@
 {
-  "schema": "DOCUMENT_FACTORY_TRACEABILITY/1.0",
   "edges": [
     {
-      "requirement": "GENERIC_TASK_SUPPORT",
       "claim": "DF-CLM-001",
       "implementation": "profiles/* + factory.py",
+      "requirement": "GENERIC_TASK_SUPPORT",
       "test": "CURRENT_PROFILE_EXACT_CONTRACT"
     },
     {
-      "requirement": "ONE_SECOND_AUTOMATION_ANTI_PARALYSIS",
       "claim": "DF-CLM-002",
       "implementation": "runtime.py",
+      "requirement": "ONE_SECOND_AUTOMATION_ANTI_PARALYSIS",
       "test": "ONE_SECOND_HEARTBEAT + TIMEOUT_TO_HOLD_NO_BLIND_RETRY"
     },
     {
-      "requirement": "MULTIFORMAT",
       "claim": "DF-CLM-003",
       "implementation": "factory.py + runtime.py",
+      "requirement": "MULTIFORMAT",
       "test": "EXACT_HEAD_SYNTHETIC_BUILD"
     },
     {
-      "requirement": "ROLLBACK",
       "claim": "DF-CLM-004",
       "implementation": "runtime.checkpoint + restore_checkpoint",
+      "requirement": "ROLLBACK",
       "test": "VERIFIED_ROLLBACK"
     },
     {
-      "requirement": "METACOGNITIVE_NO_SELF_CERT",
       "claim": "DF-CLM-005",
       "implementation": "factory.self_audit",
+      "requirement": "METACOGNITIVE_NO_SELF_CERT",
       "test": "INDEPENDENT_G23_INSPECTION"
     },
     {
-      "requirement": "CURRENT_UNIACC_RUBRIC",
       "claim": "DF-CLM-006",
       "implementation": "profiles/uniacc-neuroplasticidad-u2.json",
+      "requirement": "CURRENT_UNIACC_RUBRIC",
       "test": "RUBRIC_ARITHMETIC_FAIL_CLOSED"
+    },
+    {
+      "claim": "DF-CLM-007",
+      "implementation": "src/source_pipeline.py",
+      "requirement": "SOURCE_LEDGER_CSL",
+      "test": "COMPLETION_SOURCE_PIPELINE"
+    },
+    {
+      "claim": "DF-CLM-008",
+      "implementation": "src/media_validation.py + toolchain.lock.json",
+      "requirement": "AUDIOVISUAL_VALIDATION",
+      "test": "COMPLETION_MEDIA_VALIDATION"
+    },
+    {
+      "claim": "DF-CLM-009",
+      "implementation": "src/image_validation.py",
+      "requirement": "IMAGE_CONSTRAINTS",
+      "test": "COMPLETION_IMAGE_VALIDATION"
+    },
+    {
+      "claim": "DF-CLM-010",
+      "implementation": "src/artifact_validation.py",
+      "requirement": "STRUCTURAL_VALIDATION_HARDENING",
+      "test": "COMPLETION_ARTIFACT_VALIDATION"
+    },
+    {
+      "claim": "DF-CLM-011",
+      "implementation": "src/writer_policy.py + src/writer.py",
+      "requirement": "WRITER_PROVIDER_SEPARATION",
+      "test": "COMPLETION_WRITER_POLICY"
+    },
+    {
+      "claim": "DF-CLM-012",
+      "implementation": "src/synthetic_e2e.py",
+      "requirement": "SYNTHETIC_E2E",
+      "test": "SYNTHETIC_END_TO_END"
     }
-  ]
+  ],
+  "schema": "DOCUMENT_FACTORY_TRACEABILITY/1.0"
 }

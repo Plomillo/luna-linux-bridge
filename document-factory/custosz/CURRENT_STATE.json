@@ -1,13 +1,18 @@
 {
+  "backlog_items_completed": [
+    "SOURCE_LEDGER_AND_CSL_PIPELINE",
+    "FFMPEG_FFPROBE_PROVIDER_ADMISSION_LOGIC",
+    "IMAGE_DPI_AND_PIXEL_VALIDATION",
+    "OOXML_AND_PDF_VALIDATION_HARDENING",
+    "WRITER_PROVIDER_SEPARATION",
+    "CLAIMS_RISK_TRACEABILITY_MONITORING_TESTS",
+    "END_TO_END_SYNTHETIC_REPRODUCIBILITY"
+  ],
   "baseline_selftest": "{\"passed_count\": 12, \"schema\": \"DOCUMENT_FACTORY_SELFTEST/1.0\", \"status\": \"PASS\", \"tests\": [\"CURRENT_PROFILE_EXACT_CONTRACT\", \"RUBRIC_ARITHMETIC_FAIL_CLOSED\", \"HEARTBEAT_POLICY_FAIL_CLOSED\", \"WORDCOUNT_BOUNDARY\", \"CHECKPOINT\", \"VERIFIED_ROLLBACK\", \"XLSX_OOXML\", \"ONE_SECOND_HEARTBEAT\", \"AUDIT_HASH_CHAIN\", \"INVALID_OOXML_REJECTED\", \"TIMEOUT_TO_HOLD_NO_BLIND_RETRY\", \"EXISTING_RECOVERY_ROOT_REUSED\"]}",
-  "before_hashes": {
-    "document-factory/AUTONOMOUS_CONTINUATION.md": "1dd448f26b0d616bb0b5978d5a0199da451853dabf4fc01764bc58519e84a80e",
-    "document-factory/src/factory.py": "810bd7a13b857eb418dc51e09f1ed6c29f5be4aabd65287f3f2941a4adb64737",
-    "document-factory/src/runtime.py": "25ab1089bcc6e2fbebb5f4d930fd58e2f6fe6a18e8bd340ab4c1023672ffbdb9",
-    "document-factory/src/selftest.py": "fc68e95039e8e313479dd73ffb9bbe17cd7f6949697bcef7f3c621e3e71fb19c"
-  },
   "capability_count": 72,
   "certified_checkpoint_sha": "067e1be0b13d9400c2c78d6174138c10ce980dd7",
+  "completion_selftest": "{\"ffprobe_admission\": \"EXCLUDED\", \"status\": \"PASS\"}",
+  "continued_from_head": "e4073004eee5776a2f953794b90276818f1adc91",
   "desktop_commander": "FORBIDDEN",
   "families": [
     "F01_IO_KNOWLEDGE",
@@ -21,22 +26,44 @@
     "F09_CAPABILITY_GAPS_EVOLUTION"
   ],
   "family_count": 9,
+  "ffprobe_provider_admission": {
+    "admitted": false,
+    "declared": {
+      "id": "ffprobe",
+      "required_for": [
+        "video_validation"
+      ],
+      "sha256": null,
+      "source": null,
+      "state": "UNRESOLVED_MUST_BE_PINNED_BEFORE_REPRODUCIBILITY_PASS",
+      "version": null
+    },
+    "observed_binary": null,
+    "reason": "FFPROBE_PROVENANCE_NOT_PINNED",
+    "status": "EXCLUDED"
+  },
   "g23": "NOT_PROPAGATED",
   "g24": "NOT_PROPAGATED",
   "main_dispatch_head": "716f9dc3f45324eb87280954c18b8dc475a451e8",
   "main_role": "DEPENDENCY_AND_DOWNLOAD_DISPATCH_SOURCE",
-  "material_step": "GENERIC_RUBRIC_COMPILER_IMPLEMENTED",
-  "material_step_test": "RUBRIC_COMPILER_SELFTEST=PASS",
+  "material_step": "GENERIC_TECHNICAL_BACKLOG_COMPLETED",
   "next_work": [
-    "SOURCE_LEDGER_AND_CSL_PIPELINE",
-    "FFMPEG_FFPROBE_PROVIDER_ADMISSION",
-    "IMAGE_DPI_AND_PIXEL_VALIDATION",
-    "OOXML_AND_PDF_VALIDATION_HARDENING",
-    "END_TO_END_SYNTHETIC_REPRODUCIBILITY"
+    "FRESH_PRODUCER_VALIDATION",
+    "INDEPENDENT_VALIDATION",
+    "G23",
+    "G24",
+    "OPERATIONAL_AUTHORIZATION"
   ],
   "profile_validation": "{\"failures\": [], \"status\": \"PASS\"}",
+  "rubric_compiler_selftest": "RUBRIC_COMPILER_SELFTEST=PASS",
   "runtime": "CUSTOSZ_RUNTIME_V1",
-  "schema": "DOCUMENT_FACTORY_CUSTOSZ_WORK_STATE/1.0",
-  "target_head_before": "067e1be0b13d9400c2c78d6174138c10ce980dd7",
+  "schema": "DOCUMENT_FACTORY_CUSTOSZ_WORK_STATE/2.0",
+  "scope_exclusions": [
+    "STUDENT_ASSIGNMENT_GENERATION",
+    "ACADEMIC_CORRECTNESS",
+    "LMS_SUBMISSION",
+    "FFPROBE_RUNTIME_CLAIM_UNTIL_PROVIDER_PROVENANCE_PINNED"
+  ],
+  "synthetic_e2e": "{\"citations\": {\"cited_ids\": [\"A\", \"B\", \"C\"], \"failures\": [], \"status\": \"PASS\"}, \"csl_count\": 3, \"g23\": \"NOT_EXECUTED\", \"g24\": \"NOT_EXECUTED\", \"image\": {\"dpi_and_pixel_dimensions_are_distinct\": true, \"failures\": [], \"status\": \"PASS\", \"unknown\": []}, \"ledger\": {\"distinct_verified\": 3, \"failures\": [], \"status\": \"PASS\"}, \"pdf\": {\"failures\": [], \"status\": \"PASS\"}, \"status\": \"PASS\", \"student_assignment_generated\": false, \"synthetic_only\": true, \"video\": {\"duration_seconds\": 120.0, \"failures\": [], \"height\": 1080, \"status\": \"PASS\", \"width\": 1920}, \"writer\": {\"failures\": [], \"status\": \"PASS\"}}",
   "worker": "CUSTOSZ_V7"
 }

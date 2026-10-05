@@ -1,0 +1,75 @@
+{
+  "certification_propagated": false,
+  "certified_checkpoint_ancestor": "067e1be0b13d9400c2c78d6174138c10ce980dd7",
+  "completion_selftest": {
+    "ffprobe_admission": "EXCLUDED",
+    "status": "PASS"
+  },
+  "ffprobe_provider_admission": {
+    "admitted": false,
+    "declared": {
+      "id": "ffprobe",
+      "required_for": [
+        "video_validation"
+      ],
+      "sha256": null,
+      "source": null,
+      "state": "UNRESOLVED_MUST_BE_PINNED_BEFORE_REPRODUCIBILITY_PASS",
+      "version": null
+    },
+    "observed_binary": null,
+    "reason": "FFPROBE_PROVENANCE_NOT_PINNED",
+    "status": "EXCLUDED"
+  },
+  "g23": "NOT_EXECUTED",
+  "g24": "NOT_EXECUTED",
+  "head_before": "e4073004eee5776a2f953794b90276818f1adc91",
+  "main_dispatch_sha": "716f9dc3f45324eb87280954c18b8dc475a451e8",
+  "nine_families_verified": true,
+  "schema": "DOCUMENT_FACTORY_CUSTOSZ_COMPLETION/1.0",
+  "status": "PASS",
+  "student_assignment_generated": false,
+  "synthetic_e2e": {
+    "citations": {
+      "cited_ids": [
+        "A",
+        "B",
+        "C"
+      ],
+      "failures": [],
+      "status": "PASS"
+    },
+    "csl_count": 3,
+    "g23": "NOT_EXECUTED",
+    "g24": "NOT_EXECUTED",
+    "image": {
+      "dpi_and_pixel_dimensions_are_distinct": true,
+      "failures": [],
+      "status": "PASS",
+      "unknown": []
+    },
+    "ledger": {
+      "distinct_verified": 3,
+      "failures": [],
+      "status": "PASS"
+    },
+    "pdf": {
+      "failures": [],
+      "status": "PASS"
+    },
+    "status": "PASS",
+    "student_assignment_generated": false,
+    "synthetic_only": true,
+    "video": {
+      "duration_seconds": 120.0,
+      "failures": [],
+      "height": 1080,
+      "status": "PASS",
+      "width": 1920
+    },
+    "writer": {
+      "failures": [],
+      "status": "PASS"
+    }
+  }
+}
