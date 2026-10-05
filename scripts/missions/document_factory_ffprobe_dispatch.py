@@ -80,42 +80,42 @@ def main():
         remote_line=run(["git","-C",str(target_root),"ls-remote","origin",PRECERT_CANDIDATE_REF])
         remote_candidate_sha=remote_line.split()[0] if remote_line else ""
         if remote_candidate_sha==PRECERT_CANDIDATE_SHA:
-            precert=main_root/"scripts/missions/document_factory_ffprobe_precert.py"
-            cp=rt.checkpoints.capture_file("FFPROBE_PRECERT_SOURCE",precert)
+            fresh=main_root/"scripts/missions/document_factory_ffprobe_fresh_producer.py"
+            cp=rt.checkpoints.capture_file("FFPROBE_FRESH_PRODUCER_SOURCE",fresh)
             print(json.dumps({
-              "status":"CUSTOSZ_V7_PRECERT_CONTINUATION_DISPATCHED",
+              "status":"CUSTOSZ_V7_FRESH_PRODUCER_DISPATCHED",
               "candidate_sha":PRECERT_CANDIDATE_SHA,
               "active_sha":ACTIVE_SHA,
               "checkpoint_id":cp["checkpoint_id"],
               "certification_authority":False
             },sort_keys=True),flush=True)
             p=subprocess.Popen([
-              sys.executable,"-B","-I",str(precert),str(target_root),str(outdir),PRECERT_CANDIDATE_SHA
+              sys.executable,"-B","-I",str(fresh),str(target_root),str(outdir),PRECERT_CANDIDATE_SHA
             ])
             started=time.monotonic(); seq=0
             while p.poll() is None:
                 seq+=1
                 print(json.dumps({
-                  "status":"CUSTOSZ_V7_PRECERT_HEARTBEAT",
+                  "status":"CUSTOSZ_V7_FRESH_PRODUCER_HEARTBEAT",
                   "sequence":seq,
                   "state":"RUNNING",
                   "elapsed_seconds":round(time.monotonic()-started,3),
                   "candidate_sha":PRECERT_CANDIDATE_SHA
                 },sort_keys=True),flush=True)
-                if time.monotonic()-started>1200:
+                if time.monotonic()-started>1800:
                     p.terminate()
-                    raise SystemExit("PRECERT_CONTINUATION_TIMEOUT")
+                    raise SystemExit("FRESH_PRODUCER_TIMEOUT")
                 time.sleep(2)
             if p.returncode!=0:
-                raise SystemExit("PRECERT_CONTINUATION_FAILED:"+str(p.returncode))
-            ep=outdir/"PRECERT_CONTINUATION.json"
-            if not ep.is_file(): raise SystemExit("PRECERT_EVIDENCE_MISSING")
+                raise SystemExit("FRESH_PRODUCER_FAILED:"+str(p.returncode))
+            ep=outdir/"FRESH_PRODUCER.json"
+            if not ep.is_file(): raise SystemExit("FRESH_PRODUCER_EVIDENCE_MISSING")
             evidence=json.loads(ep.read_text(encoding="utf-8"))
-            if evidence.get("status")!="PASS_PRECERT_NOT_G23_G24":
-                raise SystemExit("PRECERT_EVIDENCE_NOT_PASS")
+            if evidence.get("status")!="PASS_FRESH_PRODUCER_PENDING_INDEPENDENT_G23_G24":
+                raise SystemExit("FRESH_PRODUCER_EVIDENCE_NOT_PASS")
             report={
-              "schema":"CUSTOSZ_FFPROBE_PRECERT_RUNTIME_RUN/1.0",
-              "status":"PASS_PRECERT_NOT_G23_G24",
+              "schema":"CUSTOSZ_FFPROBE_FRESH_PRODUCER_RUNTIME_RUN/1.0",
+              "status":"PASS_FRESH_PRODUCER_PENDING_INDEPENDENT_G23_G24",
               "mission_id":mission_state["mission_id"],
               "custosz_checks":checks,
               "runtime_selftest":selftest,
@@ -126,11 +126,11 @@ def main():
               "certification_authority":False,
               "desktop_commander":"FORBIDDEN",
               "heartbeat_last_sequence":seq,
-              "next_state":"FRESH_PRODUCER_INDEPENDENT_G23_G24_REQUIRED"
+              "next_state":"INDEPENDENT_PRODUCER_G23_G24_REQUIRED"
             }
-            (outdir/"CUSTOSZ_FFPROBE_PRECERT_RUNTIME_RESULT.json").write_text(json.dumps(report,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+            (outdir/"CUSTOSZ_FFPROBE_FRESH_PRODUCER_RUNTIME_RESULT.json").write_text(json.dumps(report,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
             print(json.dumps({
-              "status":"CUSTOSZ_V7_PRECERT_CONTINUATION_PASS",
+              "status":"CUSTOSZ_V7_FRESH_PRODUCER_PASS",
               "candidate_sha":PRECERT_CANDIDATE_SHA,
               "next_state":report["next_state"]
             },sort_keys=True),flush=True)
