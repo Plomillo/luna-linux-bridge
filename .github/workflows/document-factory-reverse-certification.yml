@@ -1,0 +1,322 @@
+name: "Document Factory — reverse trust-root certification"
+
+on:
+  pull_request:
+    branches:
+      - "candidate/document-factory-v1-20261005"
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: document-factory-reverse-cert-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  DOCUMENT_FACTORY_BASELINE_SHA: 716f9dc3f45324eb87280954c18b8dc475a451e8
+
+jobs:
+  producer:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'trust-root/document-factory-v1-20261005'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact candidate base as producer input
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+          path: candidate-src
+
+      - name: Execute bounded candidate selftests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd candidate-src
+          python3 -B document-factory/src/selftest.py | tee "$RUNNER_TEMP/selftest.json"
+          python3 -B document-factory/src/factory.py validate-profile document-factory/profiles/uniacc-neuroplasticidad-u2.json --repo-root .
+
+      - name: Acquire and verify Pandoc 3.12
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          URL="https://github.com/jgm/pandoc/releases/download/3.12/pandoc-3.12-linux-amd64.tar.gz"
+          SHA="67d7d011fed8c8543306022b985b9b2499ab9b74818df91d8727c7e9ebc5ba06"
+          curl -fsSL "$URL" -o "$RUNNER_TEMP/pandoc.tgz"
+          echo "$SHA  $RUNNER_TEMP/pandoc.tgz" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/pandoc"
+          tar -xzf "$RUNNER_TEMP/pandoc.tgz" --strip-components=1 -C "$RUNNER_TEMP/pandoc"
+          echo "$RUNNER_TEMP/pandoc/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/pandoc/bin/pandoc" --version | head -n 1 > "$RUNNER_TEMP/pandoc-version.txt"
+
+      - name: Acquire and verify LibreOffice 26.8.0
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          URL="https://download.documentfoundation.org/libreoffice/stable/26.8.0/deb/x86_64/LibreOffice_26.8.0_Linux_x86-64_deb.tar.gz"
+          SHA="d0a6031a3837e48f9854e6d2da6489b9fadbd814afa4741fa32a197741663a22"
+          curl -fsSL "$URL" -o "$RUNNER_TEMP/libreoffice.tgz"
+          echo "$SHA  $RUNNER_TEMP/libreoffice.tgz" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/lo"
+          tar -xzf "$RUNNER_TEMP/libreoffice.tgz" -C "$RUNNER_TEMP/lo"
+          sudo dpkg -i "$RUNNER_TEMP"/lo/*/DEBS/*.deb || { sudo apt-get update; sudo apt-get -f install -y; sudo dpkg -i "$RUNNER_TEMP"/lo/*/DEBS/*.deb; }
+          test -x /opt/libreoffice26.8/program/soffice
+          echo "/opt/libreoffice26.8/program" >> "$GITHUB_PATH"
+          /opt/libreoffice26.8/program/soffice --version | head -n 1 > "$RUNNER_TEMP/libreoffice-version.txt"
+
+      - name: Build synthetic multiformat reference
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          W="$RUNNER_TEMP/factory-demo"
+          mkdir -p "$W/source" "$W/data"
+          python3 - <<'PY'
+          import json,os,pathlib
+          w=pathlib.Path(os.environ["RUNNER_TEMP"])/"factory-demo"
+          body=" ".join(["evidence"]*850)
+          (w/"source/report.md").write_text("---\ntitle: Synthetic Demo\n---\n<!-- BODY_START -->\n# Introducción\n"+body+"\n<!-- BODY_END -->\n",encoding="utf-8")
+          (w/"source/slides.md").write_text("---\ntitle: Synthetic Demo\n---\n# Demo\nSynthetic CI fixture.\n",encoding="utf-8")
+          (w/"data/sheets.json").write_text(json.dumps({"sheets":[{"name":"Evidence","rows":[["id","status"],["SELFTEST","PASS"]]}]},indent=2)+"\n",encoding="utf-8")
+          ledger={"schema":"DOCUMENT_FACTORY_SOURCE_LEDGER/1.0","fixture":True,"sources":[{"source_id":"TEST-S1","verified":True},{"source_id":"TEST-S2","verified":True},{"source_id":"TEST-S3","verified":True}]}
+          (w/"data/source-ledger.json").write_text(json.dumps(ledger,indent=2)+"\n",encoding="utf-8")
+          PY
+          cd candidate-src
+          python3 -B document-factory/src/factory.py build "$W" document-factory/profiles/uniacc-neuroplasticidad-u2.json --repo-root .
+          python3 -B document-factory/src/factory.py self-audit "$W" document-factory/profiles/uniacc-neuroplasticidad-u2.json
+          python3 -B document-factory/src/factory.py freeze "$W"
+
+      - name: Assemble producer package and changeset evidence
+        shell: bash
+        env:
+          CANDIDATE_SHA: ${{ github.event.pull_request.base.sha }}
+          TRUST_ROOT_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -Eeuo pipefail
+          P="$RUNNER_TEMP/frozen"
+          mkdir -p "$P/framework" "$P/workspace"
+          cp -a candidate-src/document-factory/. "$P/framework/"
+          cp -a "$RUNNER_TEMP/factory-demo"/. "$P/workspace/"
+          cd candidate-src
+          git cat-file -e "$DOCUMENT_FACTORY_BASELINE_SHA^{commit}"
+          git diff --name-only "$DOCUMENT_FACTORY_BASELINE_SHA" "$CANDIDATE_SHA" > "$RUNNER_TEMP/changed-paths.txt"
+          cd ..
+          python3 - <<'PY'
+          import json,os,pathlib
+          rt=pathlib.Path(os.environ["RUNNER_TEMP"])
+          selftest=json.loads((rt/"selftest.json").read_text(encoding="utf-8").splitlines()[-1])
+          obj={
+            "schema":"DOCUMENT_FACTORY_PRODUCER_EVIDENCE/1.0",
+            "status":"PASS",
+            "candidate_head_sha":os.environ["CANDIDATE_SHA"],
+            "base_sha":os.environ["DOCUMENT_FACTORY_BASELINE_SHA"],
+            "trust_root_sha":os.environ["TRUST_ROOT_SHA"],
+            "selftest":selftest,
+            "changed_paths":[x for x in (rt/"changed-paths.txt").read_text().splitlines() if x],
+            "provider_archive_sha256":{
+              "pandoc":"67d7d011fed8c8543306022b985b9b2499ab9b74818df91d8727c7e9ebc5ba06",
+              "libreoffice":"d0a6031a3837e48f9854e6d2da6489b9fadbd814afa4741fa32a197741663a22"
+            },
+            "pandoc_version":(rt/"pandoc-version.txt").read_text().strip(),
+            "libreoffice_version":(rt/"libreoffice-version.txt").read_text().strip(),
+            "runner":"ubuntu-24.04",
+            "bitwise_cross_environment_reproducibility_claimed":False
+          }
+          (rt/"frozen"/"PRODUCER_EVIDENCE.json").write_text(json.dumps(obj,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          PY
+
+      - name: Freeze candidate package
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib
+          root=pathlib.Path(os.environ["RUNNER_TEMP"])/"frozen"
+          rows=[]
+          for f in sorted(x for x in root.rglob("*") if x.is_file() and x.name not in {"CANDIDATE_DIGEST.txt","FROZEN_CANDIDATE.json"}):
+              rows.append({"path":f.relative_to(root).as_posix(),"sha256":hashlib.sha256(f.read_bytes()).hexdigest(),"size_bytes":f.stat().st_size})
+          digest=hashlib.sha256(json.dumps(rows,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          (root/"CANDIDATE_DIGEST.txt").write_text(digest+"\n",encoding="utf-8")
+          frozen={"schema":"DOCUMENT_FACTORY_FROZEN_CANDIDATE/1.0","frozen":True,"candidate_digest_sha256":digest,"files":rows,"g23":"NOT_EXECUTED","g24":"NOT_EXECUTED"}
+          (root/"FROZEN_CANDIDATE.json").write_text(json.dumps(frozen,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print("FROZEN_DIGEST="+digest)
+          PY
+
+      - name: Upload producer package
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: document-factory-reverse-frozen-candidate
+          path: ${{ runner.temp }}/frozen
+          if-no-files-found: error
+          retention-days: 90
+
+  g23:
+    needs: producer
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact trust-root head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          path: trust
+          sparse-checkout: |
+            scripts/assurance/document_factory_trust_root.py
+            recovery
+          sparse-checkout-cone-mode: false
+
+      - name: Download candidate package as read-only data
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: document-factory-reverse-frozen-candidate
+          path: ${{ runner.temp }}/candidate
+
+      - name: Create G23 independence record
+        shell: bash
+        env:
+          CANDIDATE_SHA: ${{ github.event.pull_request.base.sha }}
+          TRUST_ROOT_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          DIGEST="$(tr -d "\r\n" < "$RUNNER_TEMP/candidate/CANDIDATE_DIGEST.txt")"
+          DIGEST="$DIGEST" python3 - <<'PY'
+          import json,os,pathlib
+          obj={
+            "schema":"DOCUMENT_FACTORY_INDEPENDENCE/1.0",
+            "status":"PASS",
+            "candidate_head_sha":os.environ["CANDIDATE_SHA"],
+            "validator_trust_root_sha":os.environ["TRUST_ROOT_SHA"],
+            "candidate_digest_sha256":os.environ["DIGEST"],
+            "producer_job":"producer",
+            "validator_job":"g23",
+            "candidate_code_executed_in_g23":False,
+            "candidate_write_access_in_g23":False,
+            "repair_allowed_in_g23":False,
+            "candidate_artifact_consumed_as_data_only":True,
+            "organizational_independence":"NOT_CLAIMED",
+            "structural_independence":"PASS"
+          }
+          p=pathlib.Path(os.environ["RUNNER_TEMP"])/"g23"/"INDEPENDENCE.json"
+          p.write_text(json.dumps(obj,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          PY
+          chmod -R a-w "$RUNNER_TEMP/candidate"
+
+      - name: Execute G23 from trust-root code only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B -I trust/scripts/assurance/document_factory_trust_root.py g23 \
+            --candidate "$RUNNER_TEMP/candidate" \
+            --independence "$RUNNER_TEMP/g23/INDEPENDENCE.json" \
+            --repo-root trust \
+            --out "$RUNNER_TEMP/g23/G23.json"
+          cat "$RUNNER_TEMP/g23/G23.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload G23
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: document-factory-reverse-g23
+          path: ${{ runner.temp }}/g23
+          if-no-files-found: error
+          retention-days: 90
+
+  g24:
+    needs: [producer, g23]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout exact trust-root head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          path: trust
+          sparse-checkout: scripts/assurance/document_factory_trust_root.py
+          sparse-checkout-cone-mode: false
+
+      - name: Download candidate and G23
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: document-factory-reverse-*
+          path: ${{ runner.temp }}/downloaded
+
+      - name: Normalize downloaded evidence paths
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mv "$RUNNER_TEMP/downloaded/document-factory-reverse-frozen-candidate" "$RUNNER_TEMP/candidate"
+          mv "$RUNNER_TEMP/downloaded/document-factory-reverse-g23" "$RUNNER_TEMP/g23"
+          mkdir -p "$RUNNER_TEMP/g24"
+
+      - name: Authenticate G24 with GitHub OIDC
+        shell: bash
+        env:
+          CANDIDATE_SHA: ${{ github.event.pull_request.base.sha }}
+          TRUST_ROOT_SHA: ${{ github.event.pull_request.head.sha }}
+          TRUST_ROOT_REF: refs/heads/${{ github.event.pull_request.head.ref }}
+        run: |
+          set -Eeuo pipefail
+          DIGEST="$(tr -d "\r\n" < "$RUNNER_TEMP/candidate/CANDIDATE_DIGEST.txt")"
+          AUD="louksna-document-factory-g24:$DIGEST"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(RESP="$RESP" python3 - <<'PY'
+          import json,os
+          print(json.loads(os.environ["RESP"])["value"])
+          PY
+          )"
+          TOKEN="$TOKEN" DIGEST="$DIGEST" AUD="$AUD" python3 - <<'PY'
+          import base64,hashlib,json,os,pathlib
+          token=os.environ["TOKEN"]
+          parts=token.split(".")
+          if len(parts)!=3: raise SystemExit("OIDC_TOKEN_FORMAT_INVALID")
+          payload=parts[1]+"="*((4-len(parts[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload))
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY_MISMATCH")
+          aud=claims.get("aud")
+          if aud!=os.environ["AUD"] and not (isinstance(aud,list) and os.environ["AUD"] in aud): raise SystemExit("OIDC_AUDIENCE_MISMATCH")
+          obj={
+            "schema":"DOCUMENT_FACTORY_G24_AUTHORITY_EVIDENCE/1.0",
+            "status":"PASS",
+            "authority_authenticated":True,
+            "authority_id":"LOUKSNA_DOCUMENT_FACTORY_G24::"+claims.get("sub","UNKNOWN"),
+            "candidate_digest_sha256":os.environ["DIGEST"],
+            "signature_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(token.encode()).hexdigest(),
+            "repository":claims.get("repository"),
+            "event":"pull_request",
+            "trust_root_ref":os.environ["TRUST_ROOT_REF"],
+            "candidate_head_sha":os.environ["CANDIDATE_SHA"],
+            "trust_root_sha":os.environ["TRUST_ROOT_SHA"],
+            "oidc_subject":claims.get("sub"),
+            "oidc_job_workflow_ref":claims.get("job_workflow_ref"),
+            "raw_token_persisted":False
+          }
+          p=pathlib.Path(os.environ["RUNNER_TEMP"])/"g24"/"AUTHORITY_EVIDENCE.json"
+          p.write_text(json.dumps(obj,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          PY
+          unset TOKEN RESP
+
+      - name: Execute digest-bound G24
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B -I trust/scripts/assurance/document_factory_trust_root.py g24 \
+            --candidate "$RUNNER_TEMP/candidate" \
+            --g23 "$RUNNER_TEMP/g23/G23.json" \
+            --authority "$RUNNER_TEMP/g24/AUTHORITY_EVIDENCE.json" \
+            --out "$RUNNER_TEMP/g24/G24_CERTIFICATE.json"
+          cat "$RUNNER_TEMP/g24/G24_CERTIFICATE.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload G24 certificate
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: document-factory-reverse-g24
+          path: ${{ runner.temp }}/g24
+          if-no-files-found: error
+          retention-days: 90
