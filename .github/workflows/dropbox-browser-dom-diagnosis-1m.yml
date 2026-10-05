@@ -20,7 +20,7 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          ARTIFACT_ID: "11357220112"
+          ARTIFACT_ID: "11356868309"
         run: |
           set -Eeuo pipefail
           mkdir -p /tmp/dbxdom
@@ -36,7 +36,7 @@ jobs:
           text=p.read_text(encoding='utf-8',errors='replace')
           print("HTML_BYTES=",len(text.encode('utf-8')))
           pats=[
-              r'.{0,300}download.{0,500}',
+              r'.{0,500}download anyway.{0,900}',\n              r'.{0,500}continue with download only.{0,900}',\n              r'.{0,500}too large.{0,900}',\n              r'.{0,500}download.{0,700}',
               r'.{0,300}descargar.{0,500}',
               r'.{0,300}aria-label=.{0,500}',
               r'.{0,300}data-testid=.{0,500}',
