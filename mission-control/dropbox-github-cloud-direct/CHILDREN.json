@@ -1,0 +1,72 @@
+{
+  "schema": "LOUKSNA_DROPBOX_GITHUB_CHILDREN/1.0",
+  "status": "EVIDENCED",
+  "authority": "Louksna.md",
+  "parent_name": "1. PROYECTOS PRIORITARIOS",
+  "source": "DROPBOX_CONNECTED_PLUGIN",
+  "observed_child_count": 8,
+  "children": [
+    {
+      "name": "1. PROYECTO LUNA",
+      "id": "id:3C2Vtkj41nkAAAAAAAAANw",
+      "url": "https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/ABywGpl7zyaoCIWHBH2DP48/1.%20PROYECTO%20LUNA?rlkey=p712fwlkbwn9g0dtybu2sf159&dl=0",
+      "audience": "public",
+      "allow_download": true
+    },
+    {
+      "name": "2. LUNITA_MATERIALIZATION",
+      "id": "id:3C2Vtkj41nkAAAAAAAAAOw",
+      "url": "https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/AB_Ud_ps_WswbZvHomgEzGU/2.%20LUNITA_MATERIALIZATION?rlkey=p712fwlkbwn9g0dtybu2sf159&dl=0",
+      "audience": "public",
+      "allow_download": true
+    },
+    {
+      "name": "3. LunaCore - APP",
+      "id": "id:3C2Vtkj41nkAAAAAAAAAPw",
+      "url": "https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/AHOlWImej64bdnWZ3YDyvy4/3.%20LunaCore%20-%20APP?rlkey=p712fwlkbwn9g0dtybu2sf159&dl=0",
+      "audience": "public",
+      "allow_download": true
+    },
+    {
+      "name": "4. DEPENDENCIAS",
+      "id": "id:3C2Vtkj41nkAAAAAAAAAQw",
+      "url": "https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/AMI1HQE43xGiyAQhY8e44k0/4.%20DEPENDENCIAS?rlkey=p712fwlkbwn9g0dtybu2sf159&dl=0",
+      "audience": "public",
+      "allow_download": true
+    },
+    {
+      "name": "5. CUSTOSZ",
+      "id": "id:3C2Vtkj41nkAAAAAAAAARg",
+      "url": "https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/ANyfzEeUOyrSs4X7_aOENuw/5.%20CUSTOSZ?rlkey=p712fwlkbwn9g0dtybu2sf159&dl=0",
+      "audience": "public",
+      "allow_download": true
+    },
+    {
+      "name": "6. LOUKSNA PLATAFORM - PC",
+      "id": "id:3C2Vtkj41nkAAAAAAAAATA",
+      "url": "https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/AOelzGJTW-L1_yGG6XiQ6eQ/6.%20LOUKSNA%20PLATAFORM%20-%20PC?rlkey=p712fwlkbwn9g0dtybu2sf159&dl=0",
+      "audience": "public",
+      "allow_download": true
+    },
+    {
+      "name": "7. Cápsulas Contenidas",
+      "id": "id:3C2Vtkj41nkAAAAAAAAAWQ",
+      "url": "https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/AEHdz-aIfa5VBPWxW8XtLiI/7.%20C%C3%A1psulas%20Contenidas?rlkey=p712fwlkbwn9g0dtybu2sf159&dl=0",
+      "audience": "public",
+      "allow_download": true
+    },
+    {
+      "name": "8. META OS",
+      "id": "id:3C2Vtkj41nkAAAAAAAAAXQ",
+      "url": "https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/AFlrQdNPUUfhI5kxk-DHWPg/8.%20META%20OS?rlkey=p712fwlkbwn9g0dtybu2sf159&dl=0",
+      "audience": "public",
+      "allow_download": true
+    }
+  ],
+  "invariants": {
+    "github_hosted_only": true,
+    "local_pc_data_plane": false,
+    "self_hosted_runner_data_plane": false,
+    "desktop_commander": false
+  }
+}
