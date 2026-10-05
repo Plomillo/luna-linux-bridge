@@ -6,6 +6,7 @@ on:
       - work/louksna-zona-directiva-candidate-20261005
     paths:
       - .github/workflows/louksna-zd-hardened-deb-producer.yml
+      - missions/inbox/louksna-zona-directiva-custosz-v7-20261005/MISSION_FINAL_SANITIZATION.md
   workflow_dispatch:
 
 permissions:
@@ -234,7 +235,7 @@ jobs:
             * Preserves LOUKSNA-only identity and the six canonical interface sections.
             * Adds governed provenance, rollback and independent assurance handoff.
 
-           -- Louksna Project <louksna@example.invalid>  Sun, 05 Oct 2026 18:00:00 +0000
+           -- Louksna Project <louksna@example.invalid>  Mon, 05 Oct 2026 18:00:00 +0000
           EOF
           gzip -n -9 "$DOC/changelog"
 
@@ -288,6 +289,15 @@ jobs:
           control.write_text(text)
           PY
 
+          # Rebuild Debian md5sums only after every payload mutation.
+          (
+            cd "$STAGE"
+            find . -type f ! -path './DEBIAN/*' -printf '%P\0' \
+              | sort -z \
+              | xargs -0 md5sum > DEBIAN/md5sums
+          )
+          test -s "$STAGE/DEBIAN/md5sums"
+
           HARDENED="$BUNDLE/louksna-zona-directiva_0.2.0_amd64.deb"
           rm -f "$BUNDLE"/*.deb
           dpkg-deb --build --root-owner-group "$STAGE" "$HARDENED"
@@ -312,6 +322,12 @@ jobs:
           DESKTOP="$(find "$RUNNER_TEMP/louksna-zd/deb-extract/usr/share/applications" -type f -name '*.desktop' -print -quit || true)"
           if test -n "$DESKTOP"; then desktop-file-validate "$DESKTOP"; fi
           lintian "$DEB" 2>&1 | tee "$RUNNER_TEMP/louksna-zd/LINTIAN.txt" || true
+          if grep -Eq 'md5sum-mismatch|file-missing-in-md5sums|debian-changelog-has-wrong-day-of-week|malformed-contact|missing-dependency-on-libc|no-changelog|no-copyright-file|unstripped-binary-or-object' "$RUNNER_TEMP/louksna-zd/LINTIAN.txt"; then
+            echo "TELEMETRY LINTIAN_KNOWN_RESIDUALS=FAIL"
+            cat "$RUNNER_TEMP/louksna-zd/LINTIAN.txt"
+            exit 41
+          fi
+          echo "TELEMETRY LINTIAN_KNOWN_RESIDUALS=PASS"
           cp "$DEB" "$RUNNER_TEMP/louksna-zd/"
           echo "TELEMETRY DEB_STRUCTURAL_VALIDATION=PASS"
 
@@ -333,11 +349,14 @@ jobs:
             dpkg -s louksna-zona-directiva
             command -v louksna-zona-directiva
             apt-get remove -y louksna-zona-directiva
-            if dpkg-query -W -f="${Status}" louksna-zona-directiva 2>/dev/null | grep -q "install ok installed"; then
+            if dpkg -s louksna-zona-directiva 2>/dev/null | grep -q "^Status: install ok installed$"; then
+              echo "ROLLBACK_CHECK=FAIL_STILL_INSTALLED"
               exit 7
             fi
+            echo "ROLLBACK_CHECK=PASS_NOT_INSTALLED"
           ' | tee "$RUNNER_TEMP/louksna-zd/DEBIAN13_INSTALL_ROLLBACK.txt"
           test "$PKG" = "louksna-zona-directiva"
+          grep -q 'ROLLBACK_CHECK=PASS_NOT_INSTALLED' "$RUNNER_TEMP/louksna-zd/DEBIAN13_INSTALL_ROLLBACK.txt"
           echo "TELEMETRY DEBIAN13_INSTALLABILITY=PASS"
           echo "TELEMETRY ROLLBACK_UNINSTALL=PASS"
 
@@ -534,4 +553,5 @@ jobs:
           echo "TELEMETRY NEXT_GATE=G23_INDEPENDENT_VALIDATION"
           echo "TELEMETRY G23=PENDING_EXTERNAL_MAIN_CONTROLLED"
           echo "TELEMETRY G24=PENDING_AFTER_G23"
+          echo "TELEMETRY PHYSICAL_DEBIAN13_KDE_GUI_TEST=PREPARED_NOT_EXECUTED"
           echo "TELEMETRY ACTIVE=FALSE"
