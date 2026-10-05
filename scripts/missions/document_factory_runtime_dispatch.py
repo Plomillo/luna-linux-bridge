@@ -59,6 +59,27 @@ def main():
     worker.PROFILES={k:([x.replace(chr(92),"/") for x in v[0]],[x.replace(chr(92),"/") for x in v[1]]) for k,v in worker.PROFILES.items()}
     worker.workspace=lambda: workspace
     worker.discover=lambda:{"workspace":str(workspace),"projects":{"LUNA_PROJECT":{"status":"RESOLVED","path":str(workspace),"score":999}}}
+    def _sources_adapter(large=False):
+        observed=sha(authority)
+        st=authority.stat()
+        expected_rel,expected_bytes,expected_sha,expected_role=worker.PINS["LOUKSNA"]
+        integrity="PASS" if observed==expected_sha and st.st_size==expected_bytes else "DRIFT"
+        return {
+          "observed_at":"MAILBOX_VERIFIED",
+          "sources":{"LOUKSNA":{
+            "relative":expected_rel,
+            "bytes":expected_bytes,
+            "sha256":expected_sha,
+            "role":expected_role,
+            "path":str(authority),
+            "exists":True,
+            "observed_bytes":st.st_size,
+            "observed_sha256":observed,
+            "integrity":integrity,
+            "binding":"MAILBOX_VERIFIED_REPOSITORY_AUTHORITY"
+          }}
+        }
+    worker.sources=_sources_adapter
     mission_state=worker.mission_start(
         1200/3600.0,
         "LUNA_PROJECT",
