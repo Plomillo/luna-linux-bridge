@@ -1,0 +1,109 @@
+name: "Dropbox generate_download_url 409 probe — cloud read-only"
+
+on:
+  push:
+    branches:
+      - staging/dropbox-cloud-diagnostic-inspect-20261005
+    paths:
+      - .github/workflows/dropbox-cloud-generate-url-error-probe.yml
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Install pinned browser tooling
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -m pip install --disable-pip-version-check --no-input "playwright==1.55.0"
+          python3 -m playwright install --with-deps chromium
+
+      - name: Capture sanitized generate_download_url response
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import json,re
+          from playwright.sync_api import sync_playwright
+
+          URL="https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/AIIzeblluaJfhuXh9EnP-10?rlkey=p712fwlkbwn9g0dtybu2sf159&st=3igdng0g&dl=0"
+          allow={"error_summary","error",".tag","tag","message","user_message","reason","code","status","display_text","title"}
+          secretish=re.compile(r"(token|cookie|csrf|session|rlkey|auth|secret|key|url)",re.I)
+
+          def sanitize(v, depth=0):
+              if depth>8:
+                  return "MAX_DEPTH"
+              if isinstance(v,dict):
+                  out={}
+                  for k,val in v.items():
+                      if secretish.search(str(k)):
+                          continue
+                      if k in allow or depth>0:
+                          sv=sanitize(val,depth+1)
+                          if sv not in ({},[],None,""):
+                              out[k]=sv
+                  return out
+              if isinstance(v,list):
+                  return [sanitize(x,depth+1) for x in v[:20]]
+              if isinstance(v,(str,int,float,bool)) or v is None:
+                  s=v
+                  if isinstance(s,str) and len(s)>500:
+                      s=s[:500]
+                  return s
+              return str(type(v).__name__)
+
+          with sync_playwright() as p:
+              browser=p.chromium.launch(headless=True)
+              ctx=browser.new_context(accept_downloads=True,locale="en-US")
+              page=ctx.new_page()
+              page.goto(URL,wait_until="domcontentloaded",timeout=120000)
+
+              for txt in ("Accept","Accept all","Reject all","Aceptar","Aceptar todas","Rechazar todas"):
+                  try:
+                      loc=page.get_by_text(txt,exact=True)
+                      if loc.count() and loc.first.is_visible():
+                          loc.first.click(timeout=1500); break
+                  except Exception:
+                      pass
+
+              primary=page.locator('button[data-testid="action-bar-download-button"]')
+              if not primary.count():
+                  raise SystemExit("DOWNLOAD_BUTTON_NOT_FOUND")
+              primary.first.click(timeout=10000)
+
+              cont=None
+              for selector in (
+                  'button:has-text("Or continue with download only")',
+                  'button:has-text("Continue with download only")',
+                  'button:has-text("continuar solo con la descarga")',
+              ):
+                  loc=page.locator(selector)
+                  try:
+                      loc.wait_for(state="visible",timeout=20000)
+                      cont=loc.first
+                      break
+                  except Exception:
+                      pass
+              if cont is None:
+                  raise SystemExit("CONTINUATION_NOT_FOUND")
+
+              with page.expect_response(lambda r:"/2/sharing_receiving/generate_download_url" in r.url,timeout=60000) as info:
+                  cont.click(timeout=10000)
+              resp=info.value
+              result={"status":resp.status,"content_type":resp.headers.get("content-type","")}
+              try:
+                  data=resp.json()
+                  result["body"]=sanitize(data)
+              except Exception:
+                  try:
+                      txt=resp.text()
+                  except Exception:
+                      txt=""
+                  result["body_text_prefix"]=txt[:500]
+              print("DROPBOX_GENERATE_DOWNLOAD_URL_RESPONSE="+json.dumps(result,ensure_ascii=False,sort_keys=True))
+              browser.close()
+          PY
