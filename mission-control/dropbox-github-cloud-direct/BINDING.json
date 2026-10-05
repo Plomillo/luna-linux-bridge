@@ -1,0 +1,38 @@
+{
+  "schema": "LOUKSNA_DROPBOX_CONNECTED_GITHUB_CLOUD_BINDING/1.0",
+  "authority": "Louksna.md",
+  "assurance": "PUAC2.md",
+  "status": "EVIDENCED",
+  "scope": "DROPBOX_CONNECTED_TO_GITHUB_HOSTED_CLOUD_TRANSFER",
+  "source": {
+    "provider": "DROPBOX_CONNECTED_PLUGIN",
+    "link_type": "folder",
+    "name": "1. PROYECTOS PRIORITARIOS",
+    "shared_link": "https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/AIIzeblluaJfhuXh9EnP-10?rlkey=p712fwlkbwn9g0dtybu2sf159&dl=0",
+    "audience": "public",
+    "access_level": "edit",
+    "allow_download": true,
+    "password_protected": false,
+    "dropbox_object_id": "id:3C2Vtkj41nkAAAAAAAAAKQ"
+  },
+  "transport": {
+    "executor": "GITHUB_HOSTED_UBUNTU_24_04",
+    "runner_class": "github-hosted",
+    "direct_download_parameter": "dl=1",
+    "local_pc_data_plane": false,
+    "self_hosted_runner_data_plane": false,
+    "desktop_commander": false,
+    "local_browser_oauth": false
+  },
+  "invariants": {
+    "main_mutation": false,
+    "no_secret_logging": true,
+    "no_downloaded_content_execution": true,
+    "certification_propagation": false,
+    "canonical_mutation": false,
+    "stop_assistant_intervention_on_material_byte_flow": true
+  },
+  "epistemic_state": "EVIDENCED",
+  "g23": "PENDING_AFTER_MATERIAL_ACQUISITION",
+  "g24": "PENDING_AFTER_G23"
+}
