@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import html as html_lib
 import json
 import os
 import pathlib
@@ -71,7 +72,7 @@ def record_event(kind: str, **kwargs) -> None:
         os.fsync(f.fileno())
 
 def children_from_html_text(text: str, parent_url: str) -> list[dict]:
-    text = html.unescape(text)
+    text = html_lib.unescape(text)
     candidates: list[str] = []
     for pat in (
         r'''href=["']([^"']*(?:/scl/(?:fo|fi)/)[^"']+)["']''',
