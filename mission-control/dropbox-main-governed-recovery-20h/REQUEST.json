@@ -173,10 +173,9 @@
     "desktop_commander": false
   },
   "provider_order": [
-    "EXISTING_AUTHORIZED_DROPBOX_RCLONE_REMOTE_IF_PRESENT",
-    "DROPBOX_API_SHARED_LINK_WITH_AUTHORIZED_TOKEN_IF_PRESENT",
-    "BROWSER_MEDIATED_PUBLIC_SHARED_LINK_DOWNLOAD",
-    "OTHER_OFFICIAL_OR_GOVERNED_PROVIDER_ONLY_WITH_RECORDED_EVIDENCE"
+    "DROPBOX_API_OAUTH_REFRESH",
+    "RCLONE_DROPBOX_AUTHORIZED",
+    "BROWSER_PUBLIC_LINK_FALLBACK_DIAGNOSTIC"
   ],
   "acquisition_gates": {
     "no_custosz_before_complete": true,
@@ -197,6 +196,27 @@
       "TRACEABILITY_COMPLETE"
     ]
   },
-  "assistant_stop_condition": "ONCE_REAL_GITHUB_RUN_FOR_THIS_MISSION_IS_QUEUED_OR_IN_PROGRESS_STOP_INTERVENING_AND_RETURN_TO_USER",
-  "execution_goal": "FIND_AND_EXECUTE_A_GOVERNED_SOLUTION_TO_FULLY_ACQUIRE_THE_DROPBOX_FOLDER; DO_NOT RUSH; USE THE 20H CEILING AS A MAXIMUM, NOT A TARGET."
+  "assistant_stop_condition": "ONCE LIVE RUN EVIDENCES AUTHENTICATED DROPBOX API MATERIAL BYTE FLOW (>0 LOCAL BYTES WITH LIVE PROCESS), STOP INTERVENING AND LEAVE ACQUISITION RUNNING",
+  "execution_goal": "FIND_AND_EXECUTE_A_GOVERNED_SOLUTION_TO_FULLY_ACQUIRE_THE_DROPBOX_FOLDER; DO_NOT RUSH; USE THE 20H CEILING AS A MAXIMUM, NOT A TARGET.",
+  "transport_binding_delta": {
+    "classification": "PROVIDER_BINDING / TRANSPORT_IDENTITY",
+    "normative_provider": "DROPBOX_API_OAUTH_REFRESH",
+    "github_secrets": [
+      "DROPBOX_APP_KEY",
+      "DROPBOX_APP_SECRET",
+      "DROPBOX_REFRESH_TOKEN"
+    ],
+    "access_token_policy": "SHORT_LIVED_JOB_MEMORY_ONLY",
+    "secret_logging_forbidden": true,
+    "repository_secret_persistence_forbidden": true,
+    "material_download_started_requires": [
+      "PROVIDER_AUTHENTICATED_TRUE",
+      "SOURCE_OBJECT_IDENTIFIED",
+      "LOCAL_PARTIAL_FILE_EXISTS",
+      "LOCAL_BYTES_GT_0",
+      "BACKGROUND_PROCESS_ALIVE"
+    ],
+    "browser_role": "FALLBACK_DIAGNOSTIC_ONLY",
+    "blind_browser_retry_forbidden": true
+  }
 }
