@@ -7,6 +7,8 @@ on:
     paths:
       - scripts/tests/test_dropbox_github_cloud_direct.py
       - .github/workflows/dropbox-github-cloud-direct.yml
+      - .github/workflows/dropbox-github-cloud-browser.yml
+      - scripts/dropbox_cloud_browser_acquire.py
       - .github/workflows/dropbox-github-cloud-direct-test.yml
 
 permissions:
