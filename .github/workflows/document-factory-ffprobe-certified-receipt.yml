@@ -1,0 +1,98 @@
+name: "Document Factory — record certified FFprobe candidate"
+
+on:
+  workflow_run:
+    workflows:
+      - "Document Factory — candidate producer"
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: document-factory-ffprobe-certified-receipt
+  cancel-in-progress: false
+
+jobs:
+  record:
+    if: ${{ github.event.workflow_run.event == 'pull_request' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Checkout main certification ledger
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Download exact G24 certificate
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: document-factory-cert-g24
+          path: ${{ runner.temp }}/g24
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Verify FFprobe claim and record certified-not-active state
+        shell: bash
+        env:
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+          SOURCE_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib
+          from datetime import datetime,timezone
+          p=pathlib.Path(os.environ["RUNNER_TEMP"])/"g24"/"G24_CERTIFICATE.json"
+          cert=json.loads(p.read_text())
+          failures=[]
+          if cert.get("status")!="PASS": failures.append("G24_NOT_PASS")
+          if cert.get("candidate_head_sha")!=os.environ["SOURCE_HEAD_SHA"]: failures.append("HEAD_MISMATCH")
+          if "DF-CLM-013" not in set(cert.get("claims_certified") or []): failures.append("FFPROBE_CLAIM_NOT_CERTIFIED")
+          if cert.get("active_authorized") is not False: failures.append("G24_SELF_ACTIVATION_INVALID")
+          if cert.get("certification_propagation") is not False: failures.append("CERTIFICATION_PROPAGATION_INVALID")
+          if failures: raise SystemExit("FAIL_CLOSED:"+",".join(failures))
+          obj={
+            "schema":"DOCUMENT_FACTORY_CERTIFIED_CANDIDATE_RECEIPT/1.0",
+            "status":"PASS",
+            "epistemic_state":"CERTIFIED_NOT_ACTIVE",
+            "authority":"Louksna.md",
+            "candidate_head_sha":cert["candidate_head_sha"],
+            "candidate_digest_sha256":cert["candidate_digest_sha256"],
+            "claims_certified":cert.get("claims_certified",[]),
+            "claims_excluded":cert.get("claims_excluded",[]),
+            "g24_certificate_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),
+            "g24_authority":cert.get("g24_authority"),
+            "authority_signature_reference":cert.get("authority_signature_reference"),
+            "source_certification_run_id":int(os.environ["SOURCE_RUN_ID"]),
+            "active_authorized":False,
+            "operational_authorization":"NOT_GRANTED_BY_CERTIFICATION",
+            "certification_propagation":False,
+            "canonical_mutation":False,
+            "recorded_at_utc":datetime.now(timezone.utc).isoformat()
+          }
+          out=pathlib.Path("certified-candidates/document-factory-ffprobe")
+          out.mkdir(parents=True,exist_ok=True)
+          payload=json.dumps(obj,indent=2,sort_keys=True)+"\n"
+          (out/"CURRENT.json").write_text(payload)
+          (out/(obj["candidate_digest_sha256"]+".json")).write_text(payload)
+          print("FFPROBE_CERTIFIED_CANDIDATE=PASS")
+          print("STATE=CERTIFIED_NOT_ACTIVE")
+          print("CANDIDATE_SHA="+obj["candidate_head_sha"])
+          print("CANDIDATE_DIGEST_SHA256="+obj["candidate_digest_sha256"])
+          PY
+
+      - name: Persist certified candidate receipt on main
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git add certified-candidates/document-factory-ffprobe
+          git diff --cached --quiet && exit 0
+          git config user.name "louksna-certification-ledger"
+          git config user.email "louksna-certification-ledger@users.noreply.github.com"
+          git commit -m "cert(document-factory): record FFprobe certified candidate"
+          git pull --rebase origin main
+          git push origin HEAD:main
