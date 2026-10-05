@@ -1,0 +1,31 @@
+name: "Dropbox GitHub cloud-partitioned contract test"
+
+on:
+  push:
+    branches:
+      - staging/dropbox-github-cloud-partitioned-20261005
+    paths:
+      - scripts/dropbox_cloud_partitioned_acquire.py
+      - scripts/tests/test_dropbox_github_cloud_partitioned.py
+      - .github/workflows/dropbox-github-cloud-partitioned.yml
+      - .github/workflows/dropbox-github-cloud-partitioned-test.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Compile and validate exact cloud-partitioned surface
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -m py_compile scripts/dropbox_cloud_partitioned_acquire.py scripts/tests/test_dropbox_github_cloud_partitioned.py
+          python3 scripts/tests/test_dropbox_github_cloud_partitioned.py
