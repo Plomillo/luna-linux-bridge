@@ -65,6 +65,12 @@ jobs:
           pathlib.Path(sys.argv[2]).write_text(json.dumps(out,indent=2,sort_keys=True)+"\n",encoding="utf-8")
           print(json.dumps(out,sort_keys=True))
           PY
+          echo "=== LRB REQUEST HELP ==="
+          cat "$OUT/REQUEST_HELP.txt"
+          echo "=== LRB INSTALLED FILE INDEX ==="
+          cat "$OUT/INSTALLED_FILE_INDEX.txt"
+          echo "=== LRB STATUS ==="
+          cat "$OUT/LRB_STATUS.json"
           (cd "$OUT" && sha256sum ./* > SHA256SUMS.txt)
 
       - name: Preserve capability evidence
