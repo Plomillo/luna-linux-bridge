@@ -246,15 +246,34 @@ def browser_download_candidate():
             # data-testid=action-bar-download-button -> modal ->
             # "Or continue with download only" -> browser download event.
             try:
-                primary=page.get_by_test_id("action-bar-download-button")
+                primary=page.locator('button[data-testid="action-bar-download-button"]')
                 if primary.count():
                     primary.first.click(timeout=5000)
-                    event("BROWSER_DOWNLOAD_ACTION_CLICKED",selector="data-testid:action-bar-download-button")
-                    continuation=page.get_by_role("button",name=re.compile("continue with download only",re.I))
-                    continuation.wait_for(state="visible",timeout=10000)
-                    with page.expect_download(timeout=60000) as di:
-                        continuation.click()
-                    got=di.value
+                    event("BROWSER_DOWNLOAD_ACTION_CLICKED",selector='button[data-testid="action-bar-download-button"]')
+                    continuation=None
+                    selectors=[
+                        'button:has-text("Or continue with download only")',
+                        'button:has-text("Continue with download only")',
+                    ]
+                    deadline=time.time()+30
+                    while time.time()<deadline and continuation is None:
+                        for selector in selectors:
+                            loc=page.locator(selector)
+                            try:
+                                if loc.count() and loc.first.is_visible():
+                                    continuation=loc.first
+                                    break
+                            except Exception:
+                                pass
+                        if continuation is None:
+                            time.sleep(0.25)
+                    if continuation is None:
+                        event("BROWSER_DOWNLOAD_CONTINUATION_NOT_VISIBLE",page_has_text=("Or continue with download only" in page.content()))
+                    else:
+                        event("BROWSER_DOWNLOAD_CONTINUATION_VISIBLE",selector="button:has-text(continue with download only)")
+                        with page.expect_download(timeout=60000) as di:
+                            continuation.click(timeout=5000)
+                        got=di.value
             except Exception as e:
                 event("BROWSER_DOWNLOAD_MODAL_FLOW_FAILED",error=type(e).__name__,message=str(e)[:900])
 
