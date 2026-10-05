@@ -71,6 +71,14 @@ jobs:
           cat "$OUT/INSTALLED_FILE_INDEX.txt"
           echo "=== LRB STATUS ==="
           cat "$OUT/LRB_STATUS.json"
+          echo "=== LRB MUTATION/GATE INTERFACE INDEX ==="
+          for rel in bridge/one_time_scope.py bridge/external_gates.py bridge/continuous_assurance.py bridge/owner_time_lease.py bridge/ASSURANCE_MATRIX.json bridge/ONE_TIME_SCOPE.md bridge/OWNER_TIME_LEASE.md bridge/LIVE_TRANSPORT.md; do
+            p="$ROOT/$rel"
+            if [ -f "$p" ]; then
+              echo "--- $rel ---"
+              grep -nE '^(def |class |# |## )|G23|G24|mutation|scope|lease|authorize|authoriz|execute|operation|allow|deny|secret|credential|command|write|readonly|read_only' "$p" | head -220 || true
+            fi
+          done
           (cd "$OUT" && sha256sum ./* > SHA256SUMS.txt)
 
       - name: Preserve capability evidence
