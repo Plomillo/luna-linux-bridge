@@ -6,7 +6,7 @@ REPO=SRC.parents[1]
 ROOT=SRC.parent
 sys.path.insert(0,str(SRC))
 from factory import validate_profile,body_word_count
-from runtime import Heartbeat,append_audit,checkpoint,run_stage,write_xlsx,verify_ooxml
+from runtime import Heartbeat,append_audit,checkpoint,restore_checkpoint,run_stage,sha256_file,write_xlsx,verify_ooxml
 
 def main():
     passed=[]
@@ -49,6 +49,11 @@ def main():
         assert body_word_count(root/"source"/"report.md")==3
         cp=checkpoint(root)
         assert cp["checkpoint_digest_sha256"]
+        original_hash=sha256_file(root/"source"/"report.md")
+        (root/"source"/"report.md").write_text("MUTATED",encoding="utf-8")
+        proof=restore_checkpoint(root,cp["checkpoint_digest_sha256"])
+        assert proof["status"]=="PASS"
+        assert sha256_file(root/"source"/"report.md")==original_hash
 
         spec={"sheets":[{"name":"Audit","rows":[["id","status"],["T01","PASS"]]}]}
         write_xlsx(root/"a.xlsx",spec)
@@ -64,7 +69,7 @@ def main():
         rows=[json.loads(x) for x in (root/"evidence"/"audit.jsonl").read_text(encoding="utf-8").splitlines()]
         assert rows[-1]["previous_event_hash"]==h1
         assert rows[-1]["current_event_hash"]==h2
-    passed.extend(["WORDCOUNT_BOUNDARY","CHECKPOINT","XLSX_OOXML","ONE_SECOND_HEARTBEAT","AUDIT_HASH_CHAIN"])
+    passed.extend(["WORDCOUNT_BOUNDARY","CHECKPOINT","VERIFIED_ROLLBACK","XLSX_OOXML","ONE_SECOND_HEARTBEAT","AUDIT_HASH_CHAIN"])
 
     with tempfile.TemporaryDirectory() as td:
         bad=pathlib.Path(td)/"bad.docx"
