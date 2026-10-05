@@ -90,8 +90,9 @@ def dismiss_overlays(page) -> None:
 
 def inventory_children(page, url: str) -> list[dict]:
     page.goto(url, wait_until="domcontentloaded", timeout=120000)
-    page.wait_for_timeout(3000)
+    page.wait_for_timeout(12000)
     dismiss_overlays(page)
+    page.wait_for_timeout(1000)
     current_path = urllib.parse.urlsplit(url).path
     seen: dict[str, dict] = {}
     stable = 0
