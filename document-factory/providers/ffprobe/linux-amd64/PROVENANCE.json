@@ -1,0 +1,106 @@
+{
+  "active_certified_anchor": {
+    "candidate_digest_sha256": "b0c59f37c70e58ca42f7fd215fad890e9a24b255d369110665e7141f26f57404",
+    "candidate_head_sha": "43a82aa30607b8775c998fa39b2bc08bfc2a263f",
+    "preserved": true
+  },
+  "baseline_selftest": "{\"passed_count\": 12, \"schema\": \"DOCUMENT_FACTORY_SELFTEST/1.0\", \"status\": \"PASS\", \"tests\": [\"CURRENT_PROFILE_EXACT_CONTRACT\", \"RUBRIC_ARITHMETIC_FAIL_CLOSED\", \"HEARTBEAT_POLICY_FAIL_CLOSED\", \"WORDCOUNT_BOUNDARY\", \"CHECKPOINT\", \"VERIFIED_ROLLBACK\", \"XLSX_OOXML\", \"ONE_SECOND_HEARTBEAT\", \"AUDIT_HASH_CHAIN\", \"INVALID_OOXML_REJECTED\", \"TIMEOUT_TO_HOLD_NO_BLIND_RETRY\", \"EXISTING_RECOVERY_ROOT_REUSED\"]}",
+  "binary": {
+    "ldd": "linux-vdso.so.1 (0x00007f80ed150000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f80ed037000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f80eaa0c000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007f80ed152000)",
+    "path": "document-factory/providers/ffprobe/linux-amd64/ffprobe",
+    "sha256": "5962c9451824b559c6acd695e27698fe965525a66e4263d1f2a18a52ec04d368",
+    "version_line": "ffprobe version 9.0.2 Copyright (c) 2007-2026 the FFmpeg developers"
+  },
+  "build_dependencies": {
+    "nasm": {
+      "binary_sha256": "1e0d3cae8ef5b372b649b9d9cd272c71e9facdadae67b4ccf2d035c821db1cf3",
+      "official_commit_sha": "4a56d66ed9626d5a3ded5414c9d8b7f1a48ce065",
+      "official_tag_object_sha": "8f1fb545a582c55c69607f457b4d1e71c19b2ecf",
+      "source": "https://www.nasm.us/pub/nasm/releasebuilds/3.02/nasm-3.02.tar.xz",
+      "source_sha256": "87336eba53b4acfe917424ab5d500d2b0054d9f5148d35c2273ccf2cfb712f0d",
+      "status": "PASS",
+      "upstream_tag_signature": "UNSIGNED",
+      "version": "3.02",
+      "version_line": "NASM version 3.02 compiled on Oct  5 2026"
+    }
+  },
+  "certification_inherited": false,
+  "completion_selftest": "{\"ffprobe_admission\": \"EXCLUDED\", \"status\": \"PASS\"}",
+  "final_integrated_factory_selftest": {
+    "passed_count": 13,
+    "schema": "DOCUMENT_FACTORY_SELFTEST/1.0",
+    "status": "PASS",
+    "tests": [
+      "CURRENT_PROFILE_EXACT_CONTRACT",
+      "RUBRIC_ARITHMETIC_FAIL_CLOSED",
+      "HEARTBEAT_POLICY_FAIL_CLOSED",
+      "WORDCOUNT_BOUNDARY",
+      "CHECKPOINT",
+      "VERIFIED_ROLLBACK",
+      "XLSX_OOXML",
+      "ONE_SECOND_HEARTBEAT",
+      "AUDIT_HASH_CHAIN",
+      "INVALID_OOXML_REJECTED",
+      "TIMEOUT_TO_HOLD_NO_BLIND_RETRY",
+      "EXISTING_RECOVERY_ROOT_REUSED",
+      "FFPROBE_PROVIDER_ADMISSION"
+    ]
+  },
+  "final_provider_selftest": "FFPROBE_PROVIDER_ADMISSION_SELFTEST=PASS",
+  "g23": "NOT_EXECUTED_FOR_CHANGE",
+  "g24": "NOT_EXECUTED_FOR_CHANGE",
+  "integrated_factory_selftest": {
+    "passed_count": 13,
+    "schema": "DOCUMENT_FACTORY_SELFTEST/1.0",
+    "status": "PASS",
+    "tests": [
+      "CURRENT_PROFILE_EXACT_CONTRACT",
+      "RUBRIC_ARITHMETIC_FAIL_CLOSED",
+      "HEARTBEAT_POLICY_FAIL_CLOSED",
+      "WORDCOUNT_BOUNDARY",
+      "CHECKPOINT",
+      "VERIFIED_ROLLBACK",
+      "XLSX_OOXML",
+      "ONE_SECOND_HEARTBEAT",
+      "AUDIT_HASH_CHAIN",
+      "INVALID_OOXML_REJECTED",
+      "TIMEOUT_TO_HOLD_NO_BLIND_RETRY",
+      "EXISTING_RECOVERY_ROOT_REUSED",
+      "FFPROBE_PROVIDER_ADMISSION"
+    ]
+  },
+  "observed_at_utc": "2026-10-05T19:02:25.804241+00:00",
+  "provider_selftest": "FFPROBE_PROVIDER_ADMISSION_SELFTEST=PASS",
+  "runtime": "CUSTOSZ_RUNTIME_V1",
+  "schema": "DOCUMENT_FACTORY_FFPROBE_PROVIDER_EVIDENCE/1.0",
+  "status": "PASS",
+  "synthetic_e2e": "{\"citations\": {\"cited_ids\": [\"A\", \"B\", \"C\"], \"failures\": [], \"status\": \"PASS\"}, \"csl_count\": 3, \"g23\": \"NOT_EXECUTED\", \"g24\": \"NOT_EXECUTED\", \"image\": {\"dpi_and_pixel_dimensions_are_distinct\": true, \"failures\": [], \"status\": \"PASS\", \"unknown\": []}, \"ledger\": {\"distinct_verified\": 3, \"failures\": [], \"status\": \"PASS\"}, \"pdf\": {\"failures\": [], \"status\": \"PASS\"}, \"status\": \"PASS\", \"student_assignment_generated\": false, \"synthetic_only\": true, \"video\": {\"duration_seconds\": 120.0, \"failures\": [], \"height\": 1080, \"status\": \"PASS\", \"width\": 1920}, \"writer\": {\"failures\": [], \"status\": \"PASS\"}}",
+  "synthetic_probe": {
+    "probe": {
+      "format": {
+        "duration": "1.000000"
+      },
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_type": "video",
+          "height": 360,
+          "width": 640
+        }
+      ]
+    },
+    "status": "PASS"
+  },
+  "upstream": {
+    "key": "https://ffmpeg.org/ffmpeg-devel.asc",
+    "name": "FFmpeg",
+    "pgp_signature_verified": true,
+    "signature": "https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz.asc",
+    "signing_key_fingerprint": "FCF986EA15E6E293A5644F10B4322F04D67658D8",
+    "source": "https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz",
+    "source_sha256": "8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e",
+    "version": "9.0.2"
+  },
+  "worker": "CUSTOSZ_V7"
+}

@@ -59,6 +59,11 @@
       "acceptance": "synthetic_e2e.py passes source/citation/media/image/PDF/writer checks with student_assignment_generated=false.",
       "claim_id": "DF-CLM-012",
       "property": "Synthetic end-to-end infrastructure demonstration is reproducible without generating student assignment content."
+    },
+    {
+      "acceptance": "Official FFmpeg release signature verifies against pinned fingerprint; source and binary SHA-256 are recorded; synthetic media probe and provider selftest pass; fresh G23/G24 required.",
+      "claim_id": "DF-CLM-013",
+      "property": "FFprobe 9.0.2 provider provenance is PGP-verified, binary-hash-pinned and functionally tested for profile-driven audiovisual metadata inspection."
     }
   ],
   "excluded_claims": [
@@ -67,8 +72,8 @@
     "Human fluency or technical mastery in a video.",
     "Successful LMS/UNIACC submission.",
     "Bit-for-bit output reproducibility across arbitrary environments.",
-    "Audiovisual validation until FFprobe provider is pinned and admitted.",
-    "Certification of future task profiles merely because the framework is certified."
+    "Certification of future task profiles merely because the framework is certified.",
+    "Semantic or disciplinary assessment of audiovisual content beyond mechanically observable media metadata."
   ],
   "schema": "DOCUMENT_FACTORY_CLAIMS/1.0",
   "scope": "FRAMEWORK_CORE_V0.1"

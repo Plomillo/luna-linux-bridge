@@ -1,32 +1,66 @@
 {
-  "schema": "LOUKSNA_DOCUMENT_FACTORY_TOOLCHAIN_LOCK/1.0",
   "architecture": "linux-amd64",
   "providers": [
     {
       "id": "pandoc",
-      "version": "3.12",
-      "source": "https://github.com/jgm/pandoc/releases/download/3.12/pandoc-3.12-linux-amd64.tar.gz",
       "sha256": "67d7d011fed8c8543306022b985b9b2499ab9b74818df91d8727c7e9ebc5ba06",
-      "state": "SOURCE_RESOLVED_UPSTREAM_HASH_RECORDED"
+      "source": "https://github.com/jgm/pandoc/releases/download/3.12/pandoc-3.12-linux-amd64.tar.gz",
+      "state": "SOURCE_RESOLVED_UPSTREAM_HASH_RECORDED",
+      "version": "3.12"
     },
     {
       "id": "libreoffice",
-      "version": "26.8.0",
-      "source": "https://download.documentfoundation.org/libreoffice/stable/26.8.0/deb/x86_64/LibreOffice_26.8.0_Linux_x86-64_deb.tar.gz",
-      "size_bytes": 219786895,
       "sha256": "d0a6031a3837e48f9854e6d2da6489b9fadbd814afa4741fa32a197741663a22",
-      "state": "SOURCE_RESOLVED_UPSTREAM_HASH_RECORDED"
+      "size_bytes": 219786895,
+      "source": "https://download.documentfoundation.org/libreoffice/stable/26.8.0/deb/x86_64/LibreOffice_26.8.0_Linux_x86-64_deb.tar.gz",
+      "state": "SOURCE_RESOLVED_UPSTREAM_HASH_RECORDED",
+      "version": "26.8.0"
     },
     {
+      "architecture": "linux-amd64",
+      "binary_path": "document-factory/providers/ffprobe/linux-amd64/ffprobe",
+      "binary_sha256": "5962c9451824b559c6acd695e27698fe965525a66e4263d1f2a18a52ec04d368",
+      "build": {
+        "configure": [
+          "--prefix=/tmp/custosz-ffprobe-_77r47bf/install",
+          "--disable-ffplay",
+          "--disable-doc",
+          "--disable-debug",
+          "--disable-network",
+          "--disable-autodetect",
+          "--enable-ffprobe",
+          "--enable-ffmpeg"
+        ],
+        "dependencies": {
+          "nasm": {
+            "binary_sha256": "1e0d3cae8ef5b372b649b9d9cd272c71e9facdadae67b4ccf2d035c821db1cf3",
+            "official_commit_sha": "4a56d66ed9626d5a3ded5414c9d8b7f1a48ce065",
+            "official_tag_object_sha": "8f1fb545a582c55c69607f457b4d1e71c19b2ecf",
+            "source": "https://www.nasm.us/pub/nasm/releasebuilds/3.02/nasm-3.02.tar.xz",
+            "source_sha256": "87336eba53b4acfe917424ab5d500d2b0054d9f5148d35c2273ccf2cfb712f0d",
+            "upstream_tag_signature": "UNSIGNED",
+            "version": "3.02",
+            "version_line": "NASM version 3.02 compiled on Oct  5 2026"
+          }
+        },
+        "external_autodetect": false,
+        "make_jobs": 2,
+        "network": false
+      },
+      "certification_inherited": false,
       "id": "ffprobe",
-      "version": null,
-      "source": null,
-      "sha256": null,
-      "state": "UNRESOLVED_MUST_BE_PINNED_BEFORE_REPRODUCIBILITY_PASS",
       "required_for": [
         "video_validation"
-      ]
+      ],
+      "sha256": "8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e",
+      "signing_key": "https://ffmpeg.org/ffmpeg-devel.asc",
+      "signing_key_fingerprint": "FCF986EA15E6E293A5644F10B4322F04D67658D8",
+      "source": "https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz",
+      "source_signature": "https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz.asc",
+      "state": "PGP_VERIFIED_BUILT_FUNCTIONALLY_TESTED_CANDIDATE_PENDING_FRESH_G23_G24",
+      "version": "9.0.2"
     }
   ],
-  "rule": "UNKNOWN_OR_UNPINNED_PROVIDER_CANNOT_SUPPORT_REPRODUCIBILITY_PASS"
+  "rule": "UNKNOWN_OR_UNPINNED_PROVIDER_CANNOT_SUPPORT_REPRODUCIBILITY_PASS",
+  "schema": "LOUKSNA_DOCUMENT_FACTORY_TOOLCHAIN_LOCK/1.0"
 }

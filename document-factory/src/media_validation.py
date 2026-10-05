@@ -21,3 +21,26 @@ def validate_probe_metadata(probe,c):
     if c.get("orientation")=="horizontal" and not width>height: failures.append("VIDEO_ORIENTATION_NOT_HORIZONTAL")
     if c.get("orientation")=="vertical" and not height>width: failures.append("VIDEO_ORIENTATION_NOT_VERTICAL")
     return {"status":"PASS" if not failures else "FAIL","failures":failures,"width":width,"height":height,"duration_seconds":dur}
+
+
+def ffprobe_runtime_admission(lock,repo_root):
+    import hashlib,subprocess
+    from pathlib import Path
+    obj=_load(lock)
+    row=next((x for x in obj.get("providers",[]) if x.get("id")=="ffprobe"),None)
+    failures=[]
+    if not row:
+        return {"status":"FAIL","admitted":False,"failures":["FFPROBE_NOT_DECLARED"]}
+    for key in ("version","source","source_signature","signing_key_fingerprint","sha256","binary_path","binary_sha256"):
+        if not row.get(key): failures.append("FFPROBE_LOCK_FIELD_MISSING:"+key)
+    p=Path(repo_root)/str(row.get("binary_path",""))
+    if not p.is_file(): failures.append("FFPROBE_BINARY_MISSING")
+    else:
+        h=hashlib.sha256(p.read_bytes()).hexdigest()
+        if h!=row.get("binary_sha256"): failures.append("FFPROBE_BINARY_HASH_MISMATCH")
+        q=subprocess.run([str(p),"-version"],text=True,capture_output=True,timeout=10)
+        if q.returncode!=0 or ("ffprobe version "+str(row.get("version"))) not in q.stdout:
+            failures.append("FFPROBE_BINARY_VERSION_MISMATCH")
+    if row.get("certification_inherited") is not False:
+        failures.append("CERTIFICATION_INHERITANCE_FORBIDDEN")
+    return {"status":"PASS" if not failures else "FAIL","admitted":not failures,"failures":failures,"provider":row.get("id"),"version":row.get("version"),"binary_path":row.get("binary_path"),"binary_sha256":row.get("binary_sha256"),"certification_state":"CANDIDATE_PENDING_FRESH_G23_G24"}

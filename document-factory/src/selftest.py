@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import json,pathlib,sys,tempfile,time,zipfile
+import json,pathlib,subprocess,sys,tempfile,time,zipfile
 SRC=pathlib.Path(__file__).resolve().parent
 REPO=SRC.parents[1]
 ROOT=SRC.parent
@@ -99,6 +99,14 @@ def main():
     assert recovery["duplicate_recovery_root"] is False
     assert recovery["reuse"]["contract"]=="recovery/RECOVERY_CONTRACT.json"
     passed.append("EXISTING_RECOVERY_ROOT_REUSED")
+
+
+    provider_test=ROOT/"src"/"test_ffprobe_provider.py"
+    if provider_test.is_file():
+        q=subprocess.run([sys.executable,"-B",str(provider_test)],text=True,capture_output=True,timeout=30)
+        assert q.returncode==0,(q.stdout,q.stderr)
+        assert "FFPROBE_PROVIDER_ADMISSION_SELFTEST=PASS" in q.stdout
+        passed.append("FFPROBE_PROVIDER_ADMISSION")
 
     result={"schema":"DOCUMENT_FACTORY_SELFTEST/1.0","status":"PASS","passed_count":len(passed),"tests":passed}
     print(json.dumps(result,ensure_ascii=False,sort_keys=True))
