@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import hashlib,json,os,subprocess,sys,tempfile
+import hashlib,json,os,subprocess,sys,tempfile,time
 from pathlib import Path
 
 ACTIVE_SHA="43a82aa30607b8775c998fa39b2bc08bfc2a263f"
@@ -85,7 +85,7 @@ def main():
           "authority_context":{"authority":"Louksna.md","sha256":sha(authority)},
           "policy_context":{"policy_id":"DOCUMENT_FACTORY_FFPROBE_ADMISSION","scope":"WORK_BRANCH_ONLY_ACTIVE_CERT_PRESERVED","allow":True},
           "execution_payload_digest":sha(executor),
-          "expected_effect":{"target":str(result_file),"effect_type":"FFPROBE_PROVIDER_ADMISSION_CANDIDATE"},
+          "expected_effect":{"target":str(result_file),"effect_type":"FFPROBE_PROVIDER_ADMISSION_EXECUTION_BINDING"},
           "checkpoint_pointer":cp["checkpoint_id"],
           "runtime_digest":sha(runtime),
           "mission_state":"DISPATCH_READY",
@@ -95,25 +95,85 @@ def main():
           "dispatch":{
             "cwd":str(tmp),
             "argv_template":["{COMMAND}","-B","-I",str(executor),"{DISPATCH_PATH}","{ACK_PATH}","{FME_PATH}","{TARGET}",str(main_root),str(target_root),str(mailbox_root),str(outdir)],
-            "timeout_s":2400,"ack_timeout_s":20,"fme_timeout_s":60
+            "timeout_s":120,"ack_timeout_s":20,"fme_timeout_s":20
           }
         }
         print(json.dumps({"status":"CUSTOSZ_V7_FFPROBE_RUNTIME_DISPATCHED","mission_id":mission_state["mission_id"],"active_sha":ACTIVE_SHA,"active_digest":ACTIVE_DIGEST},sort_keys=True),flush=True)
         rr=SRExecBoundFME01(rt).establish_material_execution(spec)
+        if rr.get("result")!="PASS" or rr.get("material_execution_proven") is not True:
+            raise SystemExit("FFPROBE_EXECUTION_BINDING_NOT_PROVEN")
+        lease=json.loads(result_file.read_text(encoding="utf-8"))
+        if lease.get("status")!="RUNNING" or lease.get("final_material_pass") is not False:
+            raise SystemExit("FFPROBE_EXECUTION_BINDING_INVALID")
+        heartbeat=Path(lease["heartbeat_path"])
+        completion=Path(lease["completion_path"])
+        final_result=Path(lease["final_result_path"])
+        supervisor_pid=int(lease["supervisor_pid"])
+        print(json.dumps({
+          "status":"CUSTOSZ_V7_FFPROBE_SUPERVISOR_BOUND",
+          "supervisor_pid":supervisor_pid,
+          "heartbeat_path":str(heartbeat),
+          "final_result_path":str(final_result),
+          "anti_paralysis":{"heartbeat_seconds":1,"stale_threshold_seconds":10,"global_timeout_seconds":2400,"blind_retry":False}
+        },sort_keys=True),flush=True)
+
+        started=time.monotonic()
+        last_sequence=-1
+        while True:
+            if completion.is_file():
+                done=json.loads(completion.read_text(encoding="utf-8"))
+                if done.get("status")!="PASS":
+                    raise SystemExit("FFPROBE_SUPERVISOR_COMPLETION_FAIL:"+json.dumps(done,sort_keys=True))
+                break
+            if time.monotonic()-started>2400:
+                try: os.kill(supervisor_pid,15)
+                except Exception: pass
+                raise SystemExit("FFPROBE_SUPERVISOR_GLOBAL_TIMEOUT")
+            if not heartbeat.is_file():
+                raise SystemExit("FFPROBE_HEARTBEAT_DISAPPEARED")
+            hb=json.loads(heartbeat.read_text(encoding="utf-8"))
+            seq=int(hb.get("sequence",-1))
+            age=time.time()-heartbeat.stat().st_mtime
+            if age>10:
+                try: os.kill(supervisor_pid,15)
+                except Exception: pass
+                raise SystemExit("FFPROBE_HEARTBEAT_STALE:"+str(round(age,3)))
+            if seq!=last_sequence:
+                last_sequence=seq
+                print(json.dumps({
+                  "status":"CUSTOSZ_V7_FFPROBE_HEARTBEAT",
+                  "sequence":seq,
+                  "state":hb.get("state"),
+                  "elapsed_seconds":hb.get("elapsed_seconds"),
+                  "materializer_pid":hb.get("materializer_pid")
+                },sort_keys=True),flush=True)
+            time.sleep(2)
+
+        if not final_result.is_file():
+            raise SystemExit("FFPROBE_FINAL_RESULT_MISSING")
+        material=json.loads(final_result.read_text(encoding="utf-8"))
+        if material.get("status")!="PASS":
+            raise SystemExit("FFPROBE_FINAL_RESULT_NOT_PASS")
         report={
-          "schema":"CUSTOSZ_FFPROBE_RUNTIME_RUN/1.0",
-          "status":"PASS" if rr.get("result")=="PASS" else "FAIL",
+          "schema":"CUSTOSZ_FFPROBE_RUNTIME_RUN/2.0",
+          "status":"PASS",
           "mission_id":mission_state["mission_id"],
           "heartbeat_state":tick.get("state"),
           "custosz_checks":checks,
           "runtime_selftest":selftest,
           "runtime_dispatch":{k:rr.get(k) for k in ("result","global_step_gate","material_execution_proven","evidence_chain_head")},
           "runtime_evidence_ledger":rt.journal.verify(),
+          "supervisor":{"pid":supervisor_pid,"heartbeat_last_sequence":last_sequence,"completion":done},
+          "material_result":material,
           "active_certified_anchor":{"sha":ACTIVE_SHA,"digest":ACTIVE_DIGEST,"preserved":True},
           "certification_propagated":False,
-          "desktop_commander":"FORBIDDEN"
+          "desktop_commander":"FORBIDDEN",
+          "anti_paralysis":{"heartbeat_seconds":1,"stale_threshold_seconds":10,"global_timeout_seconds":2400,"blind_retry":False}
         }
         (outdir/"CUSTOSZ_FFPROBE_RUNTIME_RESULT.json").write_text(json.dumps(report,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
-        if report["status"]!="PASS": raise SystemExit("FFPROBE_RUNTIME_DISPATCH_FAILED")
-        print(json.dumps({"status":"CUSTOSZ_V7_FFPROBE_RUNTIME_PASS","material_execution_proven":rr.get("material_execution_proven")},sort_keys=True),flush=True)
+        print(json.dumps({
+          "status":"CUSTOSZ_V7_FFPROBE_RUNTIME_PASS",
+          "material_execution_proven":rr.get("material_execution_proven"),
+          "next_state":material.get("next_state")
+        },sort_keys=True),flush=True)
 if __name__=="__main__": main()
