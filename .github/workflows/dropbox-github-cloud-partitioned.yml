@@ -54,6 +54,25 @@ jobs:
           echo "root=$ROOT" >> "$GITHUB_OUTPUT"
           echo "artifact_name=dropbox-github-cloud-partitioned-${GITHUB_RUN_ID}" >> "$GITHUB_OUTPUT"
 
+      - name: Recover frozen root child-link evidence from prior GitHub cloud run
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: dropbox-github-cloud-browser-diagnostics-37355731169
+          path: ${{ runner.temp }}/frozen-root
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 37355731169
+
+      - name: Bind frozen root HTML fallback
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          FROZEN="$(find "$RUNNER_TEMP/frozen-root" -type f -name 'PAGE_AFTER_CONTINUATION_TIMEOUT.html' -print -quit)"
+          test -n "$FROZEN"
+          test -s "$FROZEN"
+          echo "FROZEN_ROOT_HTML=$FROZEN" >> "$GITHUB_ENV"
+          echo "FROZEN_ROOT_EVIDENCE=BOUND"
+
       - name: Install pinned Playwright browser tooling
         shell: bash
         run: |
