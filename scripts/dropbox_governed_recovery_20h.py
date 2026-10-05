@@ -246,10 +246,16 @@ def provider_dropbox_api():
             while True:
                 for x in d.get("entries",[]):
                     tag=x.get(".tag")
-                    p=x.get("path_display") or x.get("path_lower") or x.get("name")
-                    if tag=="folder": queue.append(p)
+                    name=str(x.get("name") or "")
+                    if not name:
+                        event("DROPBOX_API_ENTRY_WITHOUT_NAME",tag=tag,current_relative_path=rel)
+                        continue
+                    child=((rel.rstrip("/") if rel else "")+"/"+name)
+                    if not child.startswith("/"): child="/"+child
+                    if tag=="folder":
+                        queue.append(child)
                     elif tag=="file":
-                        files.append({"path":p,"size":int(x.get("size") or 0),
+                        files.append({"path":child,"size":int(x.get("size") or 0),
                                       "id":x.get("id"),"rev":x.get("rev"),
                                       "content_hash":x.get("content_hash")})
                 if not d.get("has_more"): break
