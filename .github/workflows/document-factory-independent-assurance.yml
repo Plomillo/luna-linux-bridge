@@ -61,8 +61,9 @@ jobs:
           mkdir -p "$RUNNER_TEMP/lo"
           tar -xzf "$RUNNER_TEMP/libreoffice.tgz" -C "$RUNNER_TEMP/lo"
           sudo dpkg -i "$RUNNER_TEMP"/lo/*/DEBS/*.deb || { sudo apt-get update; sudo apt-get -f install -y; sudo dpkg -i "$RUNNER_TEMP"/lo/*/DEBS/*.deb; }
-          command -v soffice
-          soffice --version | head -n 1 > "$RUNNER_TEMP/libreoffice-version.txt"
+          test -x /opt/libreoffice26.8/program/soffice
+          echo "/opt/libreoffice26.8/program" >> "$GITHUB_PATH"
+          /opt/libreoffice26.8/program/soffice --version | head -n 1 > "$RUNNER_TEMP/libreoffice-version.txt"
 
       - name: Build synthetic reference workspace
         shell: bash
