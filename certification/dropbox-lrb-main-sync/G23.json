@@ -1,0 +1,22 @@
+{
+  "authority": "Louksna.md",
+  "candidate_code_executed": false,
+  "candidate_digest_sha256": "647387025da0c806480ddf742d8d08449f821605032ad7c62f52aba9daa71b57",
+  "candidate_head_sha": "97e82362bb4ea2ac50e609e2911d7d5f48859837",
+  "candidate_write_access": false,
+  "canonical_mutation": false,
+  "certification_propagation": false,
+  "desktop_commander_used": false,
+  "failures": [],
+  "g24_authorized": true,
+  "main_source_sha": "a7d430a7f9f94eb82c017bf62c3b456ca5b0cdf9",
+  "main_sources_read_only": true,
+  "organizational_independence": "NOT_CLAIMED",
+  "repair_allowed": false,
+  "schema": "LOUKSNA_DROPBOX_G23_INDEPENDENT_VALIDATION/1.0",
+  "scope": "DROPBOX_OAUTH_BINDING_AND_ACQUISITION",
+  "status": "PASS",
+  "structural_independence": "RUNTIME_SEPARATED_AND_MAIN_SOURCE_PINNED",
+  "validated_at_utc": "2026-10-05T17:35:38.496496+00:00",
+  "validator_execution": "GITHUB_HOSTED_UBUNTU_SEPARATE_JOB"
+}
