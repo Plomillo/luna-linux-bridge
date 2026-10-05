@@ -60,8 +60,9 @@ jobs:
           mkdir -p "$RUNNER_TEMP/lo"
           tar -xzf "$RUNNER_TEMP/libreoffice.tgz" -C "$RUNNER_TEMP/lo"
           sudo dpkg -i "$RUNNER_TEMP"/lo/*/DEBS/*.deb
-          command -v soffice
-          soffice --version
+          test -x /opt/libreoffice26.8/program/soffice
+          echo "/opt/libreoffice26.8/program" >> "$GITHUB_PATH"
+          /opt/libreoffice26.8/program/soffice --version
 
       - name: Build synthetic governed demonstration
         shell: bash
