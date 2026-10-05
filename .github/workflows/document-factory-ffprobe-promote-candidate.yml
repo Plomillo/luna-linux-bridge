@@ -1,0 +1,104 @@
+name: "Document Factory — promote FFprobe candidate"
+
+on:
+  workflow_run:
+    workflows:
+      - "CUSTOSZ V7 + Runtime — FFprobe governed admission"
+    types: [completed]
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: document-factory-ffprobe-promotion
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout main coordinator
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: true
+          path: main-root
+
+      - name: Reject obsolete materializer revisions
+        shell: bash
+        env:
+          TRIGGER_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -Eeuo pipefail
+          cd main-root
+          git cat-file -e "$TRIGGER_SHA^{commit}"
+          if ! git diff --quiet "$TRIGGER_SHA"..HEAD -- \
+            scripts/missions/document_factory_ffprobe_materializer.py \
+            scripts/missions/document_factory_ffprobe_dispatch.py \
+            scripts/missions/document_factory_ffprobe_executor.py \
+            scripts/missions/document_factory_ffprobe_supervisor.py \
+            missions/document-factory-ffprobe-admission-20261005/MISSION.md \
+            .github/workflows/document-factory-ffprobe-custosz-v7.yml
+          then
+            echo "PROMOTION_STATE=OBSOLETE_TRIGGER_NEWER_RELEVANT_REVISION_EXISTS"
+            exit 78
+          fi
+
+      - name: Checkout material FFprobe work branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: custosz/document-factory-ffprobe-admission-20261005
+          fetch-depth: 0
+          persist-credentials: true
+          path: candidate-src
+
+      - name: Verify candidate material evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd candidate-src
+          ACTIVE_SHA="43a82aa30607b8775c998fa39b2bc08bfc2a263f"
+          git merge-base --is-ancestor "$ACTIVE_SHA" HEAD
+          test "$(git rev-list --count "$ACTIVE_SHA"..HEAD)" -eq 1
+          test -f document-factory/providers/ffprobe/linux-amd64/ffprobe
+          test -f document-factory/providers/ffprobe/linux-amd64/PROVENANCE.json
+          python3 -B document-factory/src/test_ffprobe_provider.py
+          SELF="$(python3 -B document-factory/src/selftest.py)"
+          echo "$SELF"
+          SELF="$SELF" python3 - <<'PY'
+          import json,os
+          o=json.loads(os.environ["SELF"].splitlines()[-1])
+          assert o["status"]=="PASS",o
+          assert "FFPROBE_PROVIDER_ADMISSION" in set(o.get("tests") or []),o
+          PY
+          python3 - <<'PY'
+          import json,pathlib
+          p=pathlib.Path("document-factory/providers/ffprobe/linux-amd64/PROVENANCE.json")
+          o=json.loads(p.read_text())
+          assert o["status"]=="PASS",o
+          assert o["upstream"]["pgp_signature_verified"] is True,o
+          assert o["build_dependencies"]["nasm"]["status"]=="PASS",o
+          s=json.loads(pathlib.Path("document-factory/custosz/CURRENT_STATE.json").read_text())
+          assert s["active_certification_preserved"] is True,s
+          assert s["ffprobe_provider_candidate"]["status"]=="PASS_PENDING_FRESH_G23_G24",s
+          assert s["g23"]=="NOT_PROPAGATED" and s["g24"]=="NOT_PROPAGATED",s
+          PY
+          BAD="$(git diff --name-only "$ACTIVE_SHA"..HEAD | grep -Ev '^document-factory/' || true)"
+          test -z "$BAD" || { echo "$BAD"; exit 1; }
+
+      - name: Promote exact work commit to candidate with lease
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd candidate-src
+          ACTIVE_SHA="43a82aa30607b8775c998fa39b2bc08bfc2a263f"
+          DEST="refs/heads/candidate/document-factory-v1-20261005"
+          CURRENT="$(git ls-remote origin "$DEST" | awk '{print $1}')"
+          test "$CURRENT" = "$ACTIVE_SHA"
+          git push --force-with-lease="$DEST:$CURRENT" origin HEAD:"$DEST"
+          echo "PROMOTION_STATE=CANDIDATE_ADVANCED_FOR_FRESH_CERTIFICATION"
+          echo "PROMOTED_SHA=$(git rev-parse HEAD)"
