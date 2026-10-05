@@ -70,6 +70,36 @@ def record_event(kind: str, **kwargs) -> None:
         f.flush()
         os.fsync(f.fileno())
 
+def children_from_html_text(text: str, parent_url: str) -> list[dict]:
+    text = html.unescape(text)
+    candidates: list[str] = []
+    for pat in (
+        r'''href=["']([^"']*(?:/scl/(?:fo|fi)/)[^"']+)["']''',
+        r'''["'](https://www\\.dropbox\\.com/scl/(?:fo|fi)/[^"']+)["']''',
+        r'''["'](/scl/(?:fo|fi)/[^"']+)["']''',
+    ):
+        candidates.extend(re.findall(pat, text, re.I))
+
+    parent_path = urllib.parse.urlsplit(parent_url).path
+    seen: dict[str, dict] = {}
+    for raw in candidates:
+        raw = raw.replace("\\u0026", "&").replace("\\u003d", "=").replace("\\/", "/")
+        absolute = urllib.parse.urljoin("https://www.dropbox.com/", raw)
+        u = urllib.parse.urlsplit(absolute)
+        if u.hostname != "www.dropbox.com":
+            continue
+        typ = "file" if "/scl/fi/" in u.path else "folder" if "/scl/fo/" in u.path else None
+        if typ is None or u.path == parent_path:
+            continue
+        key = link_key(absolute)
+        seen[key] = {
+            "kind": typ,
+            "url": absolute,
+            "label": typ + "-" + key[:10],
+            "key": key,
+        }
+    return sorted(seen.values(), key=lambda x: (x["kind"], x["key"]))
+
 def dismiss_overlays(page) -> None:
     for txt in ("Accept", "Accept all", "Reject all", "Aceptar", "Aceptar todas", "Rechazar todas"):
         try:
@@ -145,6 +175,25 @@ def inventory_children(page, url: str) -> list[dict]:
         if stable >= 8:
             break
     rows = sorted(seen.values(), key=lambda x: (x["kind"], x["label"].casefold(), x["key"]))
+
+    if not rows:
+        try:
+            html_rows = children_from_html_text(page.content(), url)
+        except Exception:
+            html_rows = []
+        if html_rows:
+            rows = html_rows
+            record_event("CHILD_INVENTORY_HTML_FALLBACK", parent=sanitize_url(url), count=len(rows))
+
+    if not rows and urllib.parse.urlsplit(url).path == urllib.parse.urlsplit(ROOT_LINK).path:
+        frozen = os.environ.get("FROZEN_ROOT_HTML", "").strip()
+        if frozen:
+            fp = pathlib.Path(frozen)
+            if fp.is_file():
+                rows = children_from_html_text(fp.read_text(encoding="utf-8", errors="replace"), url)
+                if rows:
+                    record_event("CHILD_INVENTORY_FROZEN_ROOT_FALLBACK", parent=sanitize_url(url), count=len(rows))
+
     record_event("CHILD_INVENTORY", parent=sanitize_url(url), count=len(rows),
                  files=sum(x["kind"] == "file" for x in rows),
                  folders=sum(x["kind"] == "folder" for x in rows))
