@@ -1,0 +1,111 @@
+name: "Dropbox — LOUKSNA Remote Bridge rclone binding probe"
+
+on:
+  push:
+    branches:
+      - staging/dropbox-oauth-refresh-material-flow-20261005
+    paths:
+      - .github/workflows/dropbox-lrb-rclone-binding-probe.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dropbox-lrb-rclone-binding-probe
+  cancel-in-progress: false
+
+env:
+  TARGET_NAME: "1. PROYECTOS PRIORITARIOS"
+
+jobs:
+  probe:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 8
+    steps:
+      - name: Verify LOUKSNA Remote Bridge live status
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/lrb-rclone-$GITHUB_RUN_ID"
+          mkdir -p "$OUT"
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          mapfile -t LINKS < <(find "$HOME/.local/lib/louksna-remote-bridge" -type f -path '*/bridge/live_link.py' -print 2>/dev/null | sort)
+          test "${#LINKS[@]}" -ge 1
+          LINK="${LINKS[-1]}"
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op status > "$OUT/LRB_STATUS.json"
+          python3 - "$OUT/LRB_STATUS.json" <<'PY'
+          import json,sys
+          s=json.load(open(sys.argv[1]))
+          assert s.get("local_transport")=="CONNECTED_SAME_UID"
+          print("LRB_LIVE=PASS")
+          print("LRB_STATUS="+str(s.get("status")))
+          PY
+
+      - name: Probe existing rclone Dropbox transport without exposing config
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/lrb-rclone-$GITHUB_RUN_ID"
+          if ! command -v rclone >/dev/null 2>&1; then
+            printf '%s\n' '{"schema":"LRB_RCLONE_BINDING/1.0","status":"FAIL","reason":"BINARY_MISSING"}' | tee "$OUT/RCLONE_BINDING.json"
+            exit 0
+          fi
+          rclone version | head -20 > "$OUT/RCLONE_VERSION.txt"
+          python3 - "$OUT/RCLONE_BINDING.json" <<'PY'
+          import json,os,pathlib,re,subprocess,sys
+          out=pathlib.Path(sys.argv[1])
+          def run(a,t=60):
+              return subprocess.run(a,text=True,capture_output=True,timeout=t)
+          rem=run(["rclone","listremotes"],30)
+          if rem.returncode!=0:
+              result={"schema":"LRB_RCLONE_BINDING/1.0","status":"FAIL","reason":"LISTREMOTES_FAILED","rc":rem.returncode}
+              out.write_text(json.dumps(result,indent=2)+"\n"); print(json.dumps(result)); raise SystemExit(0)
+          names=[x.strip().rstrip(":") for x in rem.stdout.splitlines() if x.strip().endswith(":")]
+          dropbox=[]
+          for name in names:
+              show=run(["rclone","config","show",name],30)
+              typ=None
+              if show.returncode==0:
+                  for line in show.stdout.splitlines():
+                      if line.strip().lower().startswith("type ="):
+                          typ=line.split("=",1)[1].strip().lower()
+                          break
+              if typ=="dropbox":
+                  dropbox.append(name)
+          probes=[]
+          target=os.environ["TARGET_NAME"]
+          for name in dropbox:
+              src=f"{name}:{target}"
+              p=run(["rclone","lsf",src,"--max-depth","1"],90)
+              probes.append({
+                  "remote":name,
+                  "target":target,
+                  "authenticated_and_target_resolved":p.returncode==0,
+                  "rc":p.returncode,
+                  "entry_count_sample":len([x for x in p.stdout.splitlines() if x.strip()]) if p.returncode==0 else 0
+              })
+          ok=any(x["authenticated_and_target_resolved"] for x in probes)
+          result={
+              "schema":"LRB_RCLONE_BINDING/1.0",
+              "status":"PASS" if ok else "HOLD",
+              "rclone_present":True,
+              "dropbox_remote_count":len(dropbox),
+              "probes":probes,
+              "secret_values_logged":False
+          }
+          out.write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(result,sort_keys=True))
+          PY
+          (cd "$OUT" && sha256sum ./* > SHA256SUMS.txt)
+
+      - name: Preserve binding evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dropbox-lrb-rclone-binding-probe
+          path: ${{ runner.temp }}/lrb-rclone-${{ github.run_id }}/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
