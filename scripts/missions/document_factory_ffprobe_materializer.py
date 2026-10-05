@@ -289,7 +289,7 @@ print("FFPROBE_PROVIDER_ADMISSION_SELFTEST=PASS")
           "observed_at_utc":utc()
         }
         jwrite(provider_dir/"PROVENANCE.json",evidence)
-        tele("PROVENANCE_PRECOMMIT","PASS",status=evidence["status"])
+        tele("PROVENANCE_PRECOMMIT","PASS",evidence_status=evidence["status"])
         provider_selftest=run([sys.executable,"-B","document-factory/src/test_ffprobe_provider.py"],cwd=target,timeout=60)
 
         # Bind provider verification into the canonical factory selftest so the
