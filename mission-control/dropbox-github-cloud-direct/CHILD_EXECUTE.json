@@ -1,0 +1,16 @@
+{
+  "schema": "LOUKSNA_DROPBOX_GITHUB_CHILD_FANOUT_EXECUTE/1.0",
+  "status": "AUTHORIZED",
+  "authority": "Louksna.md",
+  "scope": "DROPBOX_CONNECTED_TO_GITHUB_HOSTED_CHILD_FANOUT",
+  "children_binding": "mission-control/dropbox-github-cloud-direct/CHILDREN.json",
+  "validated_child_count": 8,
+  "execution_plane": "GITHUB_HOSTED_UBUNTU_24_04",
+  "max_parallel": 4,
+  "local_pc_data_plane": false,
+  "self_hosted_runner_data_plane": false,
+  "desktop_commander": false,
+  "start_authorized": true,
+  "stop_assistant_intervention_on_material_byte_flow": true,
+  "requested_from_current_user_instruction": true
+}
