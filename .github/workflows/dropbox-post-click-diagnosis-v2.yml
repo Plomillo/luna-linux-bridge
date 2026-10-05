@@ -42,6 +42,13 @@ jobs:
               'too large',
               'Download the folder now',
               'action-bar-download-button',
+              'download_url',
+              'content_download',
+              'downloadZip',
+              'zip_download',
+              '/sharing/',
+              '/scl/fo/',
+              'href=',
               'Cancel',
               'Try again',
               'Something went wrong',
@@ -57,4 +64,15 @@ jobs:
                   count+=1
                   if count>=8: break
               print("COUNT_SHOWN",count)
+          print("\n### URL CANDIDATES")
+          urls=sorted(set(html.unescape(x) for x in re.findall(r'https?://[^"<>\\s]+',t)))
+          for x in urls:
+              lx=x.lower()
+              if any(k in lx for k in ('download','dropboxusercontent','/scl/fo/','zip','sharing')):
+                  print(x[:2200])
+          print("\n### HREF CANDIDATES")
+          for m in re.finditer(r'href=["\\\']([^"\\\']+)["\\\']',t,re.I):
+              x=html.unescape(m.group(1))
+              if any(k in x.lower() for k in ('download','/scl/fo/','zip','sharing')):
+                  print(x[:2200])
           PY
