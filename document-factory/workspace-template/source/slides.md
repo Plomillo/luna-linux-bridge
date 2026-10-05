@@ -1,0 +1,15 @@
+---
+title: "TITLE_FROM_PROFILE"
+---
+
+# Apertura
+
+CONTENT_FROM_REPORT_SOURCE.
+
+# Desarrollo
+
+CONTENT_FROM_REPORT_SOURCE.
+
+# Conclusiones
+
+CONTENT_FROM_REPORT_SOURCE.

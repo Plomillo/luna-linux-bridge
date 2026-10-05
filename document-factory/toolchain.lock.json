@@ -1,0 +1,32 @@
+{
+  "schema": "LOUKSNA_DOCUMENT_FACTORY_TOOLCHAIN_LOCK/1.0",
+  "architecture": "linux-amd64",
+  "providers": [
+    {
+      "id": "pandoc",
+      "version": "3.12",
+      "source": "https://github.com/jgm/pandoc/releases/download/3.12/pandoc-3.12-linux-amd64.tar.gz",
+      "sha256": "67d7d011fed8c8543306022b985b9b2499ab9b74818df91d8727c7e9ebc5ba06",
+      "state": "SOURCE_RESOLVED_UPSTREAM_HASH_RECORDED"
+    },
+    {
+      "id": "libreoffice",
+      "version": "26.8.0",
+      "source": "https://download.documentfoundation.org/libreoffice/stable/26.8.0/deb/x86_64/LibreOffice_26.8.0_Linux_x86-64_deb.tar.gz",
+      "size_bytes": 219786895,
+      "sha256": "d0a6031a3837e48f9854e6d2da6489b9fadbd814afa4741fa32a197741663a22",
+      "state": "SOURCE_RESOLVED_UPSTREAM_HASH_RECORDED"
+    },
+    {
+      "id": "ffprobe",
+      "version": null,
+      "source": null,
+      "sha256": null,
+      "state": "UNRESOLVED_MUST_BE_PINNED_BEFORE_REPRODUCIBILITY_PASS",
+      "required_for": [
+        "video_validation"
+      ]
+    }
+  ],
+  "rule": "UNKNOWN_OR_UNPINNED_PROVIDER_CANNOT_SUPPORT_REPRODUCIBILITY_PASS"
+}

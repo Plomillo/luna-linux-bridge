@@ -1,0 +1,75 @@
+{
+  "claims": [
+    {
+      "acceptance": "Engine has no neuroplasticity subject logic; current task exists in profile/raw source.",
+      "claim_id": "DF-CLM-001",
+      "property": "Profile-driven task intake preserves task-specific requirements outside engine logic."
+    },
+    {
+      "acceptance": "Selftest proves heartbeat policy and timeout->HOLD with blind_retry=false.",
+      "claim_id": "DF-CLM-002",
+      "property": "Runtime emits one-second liveness heartbeat and fails closed on bounded timeout."
+    },
+    {
+      "acceptance": "Exact-head CI creates and independent validator inspects synthetic outputs.",
+      "claim_id": "DF-CLM-003",
+      "property": "Reference build path produces structurally valid DOCX, PPTX, PDF and XLSX from source data."
+    },
+    {
+      "acceptance": "Selftest mutates a checkpointed source, restores snapshot and verifies original SHA-256.",
+      "claim_id": "DF-CLM-004",
+      "property": "Workspace rollback is demonstrable."
+    },
+    {
+      "acceptance": "Self-audit record retains g23_granted=false and g24_granted=false and escalates human/source conflicts.",
+      "claim_id": "DF-CLM-005",
+      "property": "Metacognitive self-audit cannot self-grant G23 or G24."
+    },
+    {
+      "acceptance": "Profile arithmetic, raw source reference and fixed constraints independently checked.",
+      "claim_id": "DF-CLM-006",
+      "property": "Current UNIACC task profile preserves the declared 38.5-point rubric and explicit mechanical constraints."
+    },
+    {
+      "acceptance": "Completion selftest covers verified ledger, unknown citation rejection and CSL JSON compilation.",
+      "claim_id": "DF-CLM-007",
+      "property": "Source ledger and citation/CSL pipeline fail closed without fabricating metadata."
+    },
+    {
+      "acceptance": "FFprobe is admitted only when version/source/SHA-256 are pinned; otherwise capability remains excluded while metadata logic is tested.",
+      "claim_id": "DF-CLM-008",
+      "property": "Audiovisual metadata validation is profile-driven and provider admission is provenance-gated."
+    },
+    {
+      "acceptance": "Ambiguous stated dimensions remain UNKNOWN; explicit DPI/pixel constraints are separately checked.",
+      "claim_id": "DF-CLM-009",
+      "property": "Image DPI and pixel dimensions are distinct validation concepts."
+    },
+    {
+      "acceptance": "Completion selftest covers ZIP parts/XML parsing and PDF header/object/EOF checks.",
+      "claim_id": "DF-CLM-010",
+      "property": "OOXML/PDF structural validators reject malformed artifacts."
+    },
+    {
+      "acceptance": "Negative writer-policy test rejects authority-bearing writer evidence.",
+      "claim_id": "DF-CLM-011",
+      "property": "Writer providers cannot self-grant G23/G24 or certification."
+    },
+    {
+      "acceptance": "synthetic_e2e.py passes source/citation/media/image/PDF/writer checks with student_assignment_generated=false.",
+      "claim_id": "DF-CLM-012",
+      "property": "Synthetic end-to-end infrastructure demonstration is reproducible without generating student assignment content."
+    }
+  ],
+  "excluded_claims": [
+    "Academic correctness or originality of any future report.",
+    "A grade of 38.5/38.5.",
+    "Human fluency or technical mastery in a video.",
+    "Successful LMS/UNIACC submission.",
+    "Bit-for-bit output reproducibility across arbitrary environments.",
+    "Audiovisual validation until FFprobe provider is pinned and admitted.",
+    "Certification of future task profiles merely because the framework is certified."
+  ],
+  "schema": "DOCUMENT_FACTORY_CLAIMS/1.0",
+  "scope": "FRAMEWORK_CORE_V0.1"
+}
