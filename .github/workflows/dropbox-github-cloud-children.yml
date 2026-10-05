@@ -1,0 +1,327 @@
+name: "Dropbox Connected → GitHub Cloud Child Fanout"
+
+on:
+  push:
+    branches:
+      - staging/dropbox-github-cloud-direct-20261005
+    paths:
+      - mission-control/dropbox-github-cloud-direct/CHILD_EXECUTE.json
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  id-token: write
+
+concurrency:
+  group: dropbox-github-cloud-child-fanout
+  cancel-in-progress: false
+
+jobs:
+  discover:
+    name: "Discover validated Dropbox child bindings"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.children.outputs.matrix }}
+      count: ${{ steps.children.outputs.count }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - id: children
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import json,os
+          d=json.load(open("mission-control/dropbox-github-cloud-direct/CHILDREN.json",encoding="utf-8"))
+          assert d["status"]=="EVIDENCED"
+          assert d["source"]=="DROPBOX_CONNECTED_PLUGIN"
+          xs=d["children"]
+          assert len(xs)==8
+          out=[]
+          for i,x in enumerate(xs,1):
+              assert x["audience"]=="public"
+              assert x["allow_download"] is True
+              assert x["id"].startswith("id:")
+              assert x["url"].startswith("https://www.dropbox.com/scl/fo/")
+              out.append({"index":i,"name":x["name"],"id":x["id"],"url":x["url"]})
+          with open(os.environ["GITHUB_OUTPUT"],"a",encoding="utf-8") as f:
+              f.write("matrix="+json.dumps({"include":out},separators=(",",":"))+"\n")
+              f.write("count="+str(len(out))+"\n")
+          print("VALIDATED_CHILD_COUNT="+str(len(out)))
+          PY
+
+  acquire:
+    name: "Acquire child ${{ matrix.index }} — ${{ matrix.name }}"
+    needs: discover
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix: ${{ fromJSON(needs.discover.outputs.matrix) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 330
+    steps:
+      - name: Initialize isolated child state
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="$RUNNER_TEMP/dropbox-child-${{ matrix.index }}"
+          mkdir -p "$ROOT/evidence" "$ROOT/payload"
+          echo "ROOT=$ROOT" >> "$GITHUB_ENV"
+
+      - name: Download validated child directly from Dropbox into GitHub Cloud
+        shell: bash
+        env:
+          CHILD_URL: ${{ matrix.url }}
+          CHILD_NAME: ${{ matrix.name }}
+          CHILD_ID: ${{ matrix.id }}
+          CHILD_INDEX: ${{ matrix.index }}
+        run: |
+          set -Eeuo pipefail
+          URL="$(python3 - <<'PY'
+          import os,urllib.parse
+          u=urllib.parse.urlsplit(os.environ["CHILD_URL"])
+          q=[(k,v) for k,v in urllib.parse.parse_qsl(u.query,keep_blank_values=True) if k!="dl"]
+          q.append(("dl","1"))
+          print(urllib.parse.urlunsplit((u.scheme,u.netloc,u.path,urllib.parse.urlencode(q),u.fragment)))
+          PY
+          )"
+          PART="$ROOT/payload/child-${CHILD_INDEX}.zip.part"
+          FINAL="$ROOT/payload/child-${CHILD_INDEX}.zip"
+          HEADERS="$ROOT/evidence/HTTP_HEADERS.txt"
+          STDERR="$ROOT/evidence/curl.stderr"
+          STDOUT="$ROOT/evidence/curl.stdout"
+
+          (
+            curl --location --fail --show-error --silent \
+              --retry 5 --retry-all-errors --retry-delay 2 \
+              --connect-timeout 30 --speed-time 120 --speed-limit 1024 \
+              --user-agent "LOUKSNA-GitHub-Cloud-Child/1.0" \
+              --dump-header "$HEADERS" \
+              --write-out '%{http_code} %{url_effective} %{size_download}\n' \
+              --output "$PART" "$URL"
+          ) >"$STDOUT" 2>"$STDERR" &
+          pid=$!
+          echo "$pid" > "$ROOT/evidence/download.pid"
+
+          proven=false
+          while kill -0 "$pid" 2>/dev/null; do
+            bytes=0
+            [ -f "$PART" ] && bytes="$(stat -c '%s' "$PART")"
+            if [ "$bytes" -ge 4096 ] && [ "$proven" = false ]; then
+              if python3 - "$PART" <<'PY'
+          import pathlib,sys
+          p=pathlib.Path(sys.argv[1])
+          b=p.read_bytes()[:4]
+          raise SystemExit(0 if b[:2]==b"PK" else 1)
+          PY
+              then
+                python3 - "$ROOT/evidence/MATERIAL_BYTE_FLOW.json" "$bytes" "$pid" <<'PY'
+          import json,os,pathlib,sys,datetime as dt
+          r={
+            "schema":"LOUKSNA_DROPBOX_GITHUB_CHILD_MATERIAL_BYTE_FLOW/1.0",
+            "status":"PASS",
+            "MATERIAL_BYTE_FLOW":True,
+            "provider":"DROPBOX_CONNECTED_PLUGIN",
+            "execution_plane":"GITHUB_HOSTED_UBUNTU_24_04",
+            "source_object_identified":True,
+            "source_child_name":os.environ["CHILD_NAME"],
+            "source_child_id":os.environ["CHILD_ID"],
+            "source_child_index":int(os.environ["CHILD_INDEX"]),
+            "observed_bytes":int(sys.argv[2]),
+            "zip_signature_observed":True,
+            "background_process_alive":True,
+            "background_pid":int(sys.argv[3]),
+            "local_pc_data_plane":False,
+            "self_hosted_runner_data_plane":False,
+            "run_id":os.environ.get("GITHUB_RUN_ID"),
+            "observed_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(r,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print("MATERIAL_BYTE_FLOW=TRUE")
+          print("EXECUTION_PLANE=GITHUB_HOSTED_UBUNTU_24_04")
+          print("SOURCE_CHILD="+r["source_child_name"])
+          print("OBSERVED_BYTES="+str(r["observed_bytes"]))
+          print("ZIP_SIGNATURE=TRUE")
+          print("BACKGROUND_PROCESS_ALIVE=TRUE")
+          print("LOUKSNA_STOP_CONDITION_REACHED=TRUE")
+          PY
+                proven=true
+              fi
+            fi
+            sleep 0.2
+          done
+
+          set +e
+          wait "$pid"
+          rc=$?
+          set -e
+          echo "CURL_EXIT_CODE=$rc"
+          cat "$STDOUT" || true
+          cat "$STDERR" || true
+          if [ "$rc" -ne 0 ]; then exit "$rc"; fi
+          test -s "$PART"
+          if ! python3 - "$PART" <<'PY'
+          import pathlib,sys,zipfile
+          p=pathlib.Path(sys.argv[1])
+          if not zipfile.is_zipfile(p): raise SystemExit(1)
+          with zipfile.ZipFile(p) as z:
+              bad=z.testzip()
+              if bad: raise SystemExit("ZIP_CRC_FAIL:"+bad)
+              if not z.infolist(): raise SystemExit("ZIP_EMPTY")
+          PY
+          then
+            echo "CHILD_RESULT=NOT_ZIP"
+            exit 71
+          fi
+          mv "$PART" "$FINAL"
+          sha="$(sha256sum "$FINAL" | awk '{print $1}')"
+          bytes="$(stat -c '%s' "$FINAL")"
+          entries="$(unzip -Z1 "$FINAL" | wc -l | tr -d ' ')"
+          python3 - "$ROOT/evidence/ACQUISITION_COMPLETE.json" "$sha" "$bytes" "$entries" <<'PY'
+          import json,os,pathlib,sys,datetime as dt
+          r={
+            "schema":"LOUKSNA_DROPBOX_GITHUB_CHILD_ACQUISITION_COMPLETE/1.0",
+            "status":"PASS",
+            "provider":"DROPBOX_CONNECTED_PLUGIN",
+            "execution_plane":"GITHUB_HOSTED_UBUNTU_24_04",
+            "source_child_name":os.environ["CHILD_NAME"],
+            "source_child_id":os.environ["CHILD_ID"],
+            "source_child_index":int(os.environ["CHILD_INDEX"]),
+            "sha256":sys.argv[2],
+            "bytes":int(sys.argv[3]),
+            "entry_count":int(sys.argv[4]),
+            "zip_integrity":"PASS",
+            "downloaded_content_executed":False,
+            "completed_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(r,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps(r,sort_keys=True))
+          PY
+          split -b 400M -d -a 4 "$FINAL" "$ROOT/payload/child-${CHILD_INDEX}.part."
+          rm -f "$FINAL"
+
+      - name: Preserve child package
+        if: success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dropbox-child-${{ matrix.index }}-${{ github.run_id }}
+          path: ${{ env.ROOT }}
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+          include-hidden-files: true
+
+      - name: Preserve child diagnostics
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dropbox-child-diagnostics-${{ matrix.index }}-${{ github.run_id }}
+          path: ${{ env.ROOT }}/evidence
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 0
+
+  G23:
+    name: "G23 — independent child fanout validation"
+    needs: [discover, acquire]
+    if: ${{ always() && needs.acquire.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Recover all child artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: dropbox-child-*-${{ github.run_id }}
+          path: ${{ runner.temp }}/children
+      - name: Validate eight exact child packages independently
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - "$RUNNER_TEMP/children" "$RUNNER_TEMP/G23.json" <<'PY'
+          import hashlib,json,pathlib,sys,zipfile,datetime as dt
+          root=pathlib.Path(sys.argv[1]); failures=[]; rows=[]
+          dirs=sorted([p for p in root.iterdir() if p.is_dir() and "diagnostics" not in p.name])
+          if len(dirs)!=8: failures.append("CHILD_ARTIFACT_COUNT:"+str(len(dirs)))
+          for d in dirs:
+              ev=d/"evidence"/"ACQUISITION_COMPLETE.json"
+              if not ev.is_file():
+                  failures.append("MISSING_COMPLETE:"+d.name); continue
+              rec=json.loads(ev.read_text())
+              parts=sorted((d/"payload").glob("child-*.part.*"))
+              if not parts:
+                  failures.append("MISSING_PARTS:"+d.name); continue
+              tmp=root/(d.name+".zip")
+              h=hashlib.sha256()
+              with tmp.open("wb") as out:
+                  for p in parts:
+                      b=p.read_bytes(); out.write(b); h.update(b)
+              if h.hexdigest()!=rec["sha256"]: failures.append("SHA_MISMATCH:"+d.name)
+              if tmp.stat().st_size!=rec["bytes"]: failures.append("SIZE_MISMATCH:"+d.name)
+              try:
+                  with zipfile.ZipFile(tmp) as z:
+                      bad=z.testzip()
+                      if bad: failures.append("CRC_FAIL:"+d.name)
+                      entries=len(z.infolist())
+                  if entries!=rec["entry_count"]: failures.append("ENTRY_MISMATCH:"+d.name)
+              except Exception as e: failures.append("ZIP_FAIL:"+d.name+":"+type(e).__name__)
+              rows.append({"index":rec["source_child_index"],"name":rec["source_child_name"],"sha256":rec["sha256"],"bytes":rec["bytes"],"entries":rec["entry_count"]})
+              tmp.unlink()
+          corpus=hashlib.sha256(json.dumps(sorted(rows,key=lambda x:x["index"]),sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          status="PASS" if not failures and len(rows)==8 else "FAIL"
+          r={"schema":"LOUKSNA_DROPBOX_GITHUB_CHILD_FANOUT_G23/1.0","status":status,"authority":"Louksna.md","scope":"DROPBOX_CONNECTED_TO_GITHUB_HOSTED_CHILD_FANOUT","child_count":len(rows),"corpus_digest_sha256":corpus,"rows":rows,"failures":failures,"repair_allowed":False,"g24_authorized":status=="PASS","validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          pathlib.Path(sys.argv[2]).write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,sort_keys=True))
+          raise SystemExit(0 if status=="PASS" else 23)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dropbox-child-fanout-g23-${{ github.run_id }}
+          path: ${{ runner.temp }}/G23.json
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  G24:
+    name: "G24 — certify child fanout corpus"
+    needs: G23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: dropbox-child-fanout-g23-${{ github.run_id }}
+          path: ${{ runner.temp }}/g23
+      - name: Certify G23-bound corpus with GitHub OIDC
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G23="$RUNNER_TEMP/g23/G23.json"
+          test "$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(d["status"])' "$G23")" = PASS
+          test "$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(d["g24_authorized"])' "$G23")" = True
+          DIGEST="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["corpus_digest_sha256"])' "$G23")"
+          G23SHA="$(sha256sum "$G23" | awk '{print $1}')"
+          AUD="louksna-dropbox-child-fanout:$DIGEST:$G23SHA"
+          TOKEN_JSON="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.load(sys.stdin)["value"])' <<<"$TOKEN_JSON")"
+          test -n "$TOKEN"
+          TOKEN="$TOKEN" python3 - "$G23" "$G23SHA" "$RUNNER_TEMP/G24.json" <<'PY'
+          import hashlib,json,os,pathlib,sys,datetime as dt
+          p=pathlib.Path(sys.argv[1]); gsha=sys.argv[2]; tok=os.environ["TOKEN"]; g=json.load(open(p))
+          checks={"g23_pass":g["status"]=="PASS","g23_hash_bound":hashlib.sha256(p.read_bytes()).hexdigest()==gsha,"oidc_present":bool(tok),"child_count":g["child_count"]==8}
+          ok=all(checks.values())
+          r={"schema":"LOUKSNA_DROPBOX_GITHUB_CHILD_FANOUT_G24/1.0","status":"PASS" if ok else "BLOCKED","authority":"Louksna.md","scope":"DROPBOX_CONNECTED_TO_GITHUB_HOSTED_CHILD_FANOUT","corpus_digest_sha256":g["corpus_digest_sha256"],"g23_sha256":gsha,"authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(tok.encode()).hexdigest(),"certification_propagation":False,"canonical_mutation":False,"checks":checks,"certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          pathlib.Path(sys.argv[3]).write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,sort_keys=True))
+          raise SystemExit(0 if ok else 24)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dropbox-child-fanout-g24-${{ github.run_id }}
+          path: ${{ runner.temp }}/G24.json
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
