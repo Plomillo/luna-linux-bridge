@@ -2,7 +2,7 @@
 from __future__ import annotations
 import argparse,json,pathlib,re,shutil,sys
 sys.path.insert(0,str(pathlib.Path(__file__).parent))
-from runtime import checkpoint,run_stage,sha256_file,sha256_bytes,write_json,write_xlsx,verify_ooxml,append_audit,utc,hold
+from runtime import checkpoint,restore_checkpoint,run_stage,sha256_file,sha256_bytes,write_json,write_xlsx,verify_ooxml,append_audit,utc,hold
 
 def load(path):
     return json.loads(pathlib.Path(path).read_text(encoding="utf-8"))
@@ -158,6 +158,7 @@ def main():
     p=sub.add_parser("validate"); p.add_argument("workspace"); p.add_argument("profile"); p.add_argument("--repo-root",default=".")
     p=sub.add_parser("self-audit"); p.add_argument("workspace"); p.add_argument("profile")
     p=sub.add_parser("freeze"); p.add_argument("workspace")
+    p=sub.add_parser("rollback"); p.add_argument("workspace"); p.add_argument("checkpoint_digest")
     args=ap.parse_args()
     if args.command=="validate-profile":
         _,failures=validate_profile(args.profile,args.repo_root)
@@ -169,6 +170,8 @@ def main():
         print(json.dumps(validate_workspace(args.workspace,args.profile,args.repo_root),ensure_ascii=False,sort_keys=True)); return
     if args.command=="self-audit":
         print(json.dumps(self_audit(args.workspace,args.profile),ensure_ascii=False,sort_keys=True)); return
+    if args.command=="rollback":
+        print(json.dumps(restore_checkpoint(args.workspace,args.checkpoint_digest),ensure_ascii=False,sort_keys=True)); return
     print(json.dumps(freeze(args.workspace),ensure_ascii=False,sort_keys=True))
 
 if __name__=="__main__":
