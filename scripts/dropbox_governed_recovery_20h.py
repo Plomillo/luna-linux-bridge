@@ -241,6 +241,23 @@ def browser_download_candidate():
                     if loc.count(): loc.first.click(timeout=1500)
                 except Exception: pass
             got=None
+
+            # Exact public-folder flow observed in Dropbox DOM:
+            # data-testid=action-bar-download-button -> modal ->
+            # "Or continue with download only" -> browser download event.
+            try:
+                primary=page.get_by_test_id("action-bar-download-button")
+                if primary.count():
+                    primary.first.click(timeout=5000)
+                    event("BROWSER_DOWNLOAD_ACTION_CLICKED",selector="data-testid:action-bar-download-button")
+                    continuation=page.get_by_role("button",name=re.compile("continue with download only",re.I))
+                    continuation.wait_for(state="visible",timeout=10000)
+                    with page.expect_download(timeout=60000) as di:
+                        continuation.click()
+                    got=di.value
+            except Exception as e:
+                event("BROWSER_DOWNLOAD_MODAL_FLOW_FAILED",error=type(e).__name__,message=str(e)[:900])
+
             direct=SHARED_LINK
             if re.search(r"([?&])dl=0(?:&|$)",direct):
                 direct=re.sub(r"([?&])dl=0(?=&|$)",r"\1dl=1",direct)
