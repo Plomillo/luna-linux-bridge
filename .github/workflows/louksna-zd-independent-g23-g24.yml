@@ -1,0 +1,179 @@
+name: "LOUKSNA ZD — independent PUAC2 G23 G24"
+
+on:
+  workflow_run:
+    workflows:
+      - "LOUKSNA ZD — CUSTOSZ V7 Hardened DEB Producer"
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: read
+  id-token: write
+
+concurrency:
+  group: louksna-zd-independent-g23-g24
+  cancel-in-progress: false
+
+jobs:
+  g23:
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'work/louksna-zona-directiva-candidate-20261005' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Checkout MAIN-controlled trust root only
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+          sparse-checkout: scripts/louksna_zd_assurance/louksna_zd_trust_root.py
+          sparse-checkout-cone-mode: false
+
+      - name: Download frozen candidate as data only
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: louksna-zd-frozen-candidate
+          path: ${{ runner.temp }}/candidate
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Build structural independence evidence
+        shell: bash
+        env:
+          CANDIDATE_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          PRODUCER_RUN_ID: ${{ github.event.workflow_run.id }}
+          TRUST_ROOT_SHA: ${{ github.workflow_sha }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          DIGEST="$(tr -d '\r\n' < "$RUNNER_TEMP/candidate/CANDIDATE_DIGEST.txt")"
+          TRUST_SCRIPT_SHA="$(sha256sum scripts/louksna_zd_assurance/louksna_zd_trust_root.py | awk '{print $1}')"
+          python3 - "$RUNNER_TEMP/g23/INDEPENDENCE.json" "$DIGEST" "$TRUST_SCRIPT_SHA" <<'PY'
+          import json,os,sys
+          out,digest,script_sha=sys.argv[1:]
+          obj={
+            "schema":"LOUKSNA_ZD_PUAC2_C27_INDEPENDENCE/1.0",
+            "status":"PASS",
+            "distinct_evaluator_identity":"MAIN_CONTROLLED_WORKFLOW_RUN_G23",
+            "event":"workflow_run",
+            "validator_trust_root_sha":os.environ["TRUST_ROOT_SHA"],
+            "validator_script_sha256":script_sha,
+            "candidate_head_sha":os.environ["CANDIDATE_HEAD_SHA"],
+            "candidate_digest_sha256":digest,
+            "producer_run_id":int(os.environ["PRODUCER_RUN_ID"]),
+            "write_access_to_candidate":False,
+            "repair_allowed":False,
+            "candidate_code_executed":False,
+            "candidate_artifact_consumed_as_data_only":True,
+            "producer_can_modify_running_validator":False,
+            "organizational_independence":"NOT_CLAIMED",
+            "structural_independence":"PASS"
+          }
+          json.dump(obj,open(out,"w"),indent=2,sort_keys=True)
+          PY
+          chmod -R a-w "$RUNNER_TEMP/candidate"
+
+      - name: G23 independent validation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B -I scripts/louksna_zd_assurance/louksna_zd_trust_root.py g23             --candidate "$RUNNER_TEMP/candidate"             --independence "$RUNNER_TEMP/g23/INDEPENDENCE.json"             --out "$RUNNER_TEMP/g23/G23.json"
+          cat "$RUNNER_TEMP/g23/G23.json"
+          echo "TELEMETRY G23=PASS"
+
+      - name: Preserve G23
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksna-zd-independent-g23
+          path: ${{ runner.temp }}/g23
+          if-no-files-found: error
+          retention-days: 90
+
+  g24:
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Checkout MAIN-controlled trust root only
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+          sparse-checkout: scripts/louksna_zd_assurance/louksna_zd_trust_root.py
+          sparse-checkout-cone-mode: false
+
+      - name: Download frozen candidate as data only
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: louksna-zd-frozen-candidate
+          path: ${{ runner.temp }}/candidate
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Download G23 record
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: louksna-zd-independent-g23
+          path: ${{ runner.temp }}/g23
+
+      - name: Obtain digest-bound G24 authority evidence
+        shell: bash
+        env:
+          CANDIDATE_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          TRUST_ROOT_SHA: ${{ github.workflow_sha }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g24"
+          DIGEST="$(tr -d '\r\n' < "$RUNNER_TEMP/candidate/CANDIDATE_DIGEST.txt")"
+          AUD="louksna-zd-g24:$DIGEST"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(RESP="$RESP" python3 - <<'PY'
+          import json,os
+          print(json.loads(os.environ["RESP"])["value"])
+          PY
+          )"
+          TOKEN="$TOKEN" DIGEST="$DIGEST" AUD="$AUD" python3 - <<'PY'
+          import base64,hashlib,json,os,pathlib
+          tok=os.environ["TOKEN"]; parts=tok.split(".")
+          if len(parts)!=3: raise SystemExit("OIDC_TOKEN_FORMAT_INVALID")
+          payload=parts[1]+"="*((4-len(parts[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload))
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY_MISMATCH")
+          aud=claims.get("aud")
+          if aud!=os.environ["AUD"] and not (isinstance(aud,list) and os.environ["AUD"] in aud): raise SystemExit("OIDC_AUDIENCE_MISMATCH")
+          obj={
+            "schema":"LOUKSNA_ZD_G24_AUTHORITY_EVIDENCE/1.0",
+            "status":"PASS",
+            "authority_authenticated":True,
+            "authority_id":"LOUKSNA_G24_MAIN_WORKFLOW::"+claims.get("sub","UNKNOWN"),
+            "candidate_digest_sha256":os.environ["DIGEST"],
+            "signature_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(tok.encode()).hexdigest(),
+            "repository":claims.get("repository"),
+            "event":"workflow_run",
+            "trust_root_sha":os.environ["TRUST_ROOT_SHA"],
+            "candidate_head_sha":os.environ["CANDIDATE_HEAD_SHA"],
+            "oidc_subject":claims.get("sub"),
+            "oidc_job_workflow_ref":claims.get("job_workflow_ref"),
+            "raw_token_persisted":False
+          }
+          pathlib.Path(os.environ["RUNNER_TEMP"],"g24","AUTHORITY_EVIDENCE.json").write_text(json.dumps(obj,indent=2,sort_keys=True)+"\n")
+          PY
+          unset TOKEN RESP
+
+      - name: G24 digest-bound certification
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B -I scripts/louksna_zd_assurance/louksna_zd_trust_root.py g24             --candidate "$RUNNER_TEMP/candidate"             --g23 "$RUNNER_TEMP/g23/G23.json"             --authority "$RUNNER_TEMP/g24/AUTHORITY_EVIDENCE.json"             --out "$RUNNER_TEMP/g24/G24_CERTIFICATE.json"
+          cat "$RUNNER_TEMP/g24/G24_CERTIFICATE.json"
+          echo "TELEMETRY G24=PASS"
+
+      - name: Preserve G24
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksna-zd-independent-g24
+          path: ${{ runner.temp }}/g24
+          if-no-files-found: error
+          retention-days: 90
