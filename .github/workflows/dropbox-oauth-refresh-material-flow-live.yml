@@ -23,6 +23,7 @@ env:
   TARGET_NAME: "1. PROYECTOS PRIORITARIOS"
   HARD_CEILING_SECONDS: "72000"
   REQUIRE_DROPBOX_OAUTH_REFRESH: "1"
+  ALLOW_RCLONE_TOKEN_BINDING: "1"
   DROPBOX_SHARED_LINK: "https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/AIIzeblluaJfhuXh9EnP-10?rlkey=p712fwlkbwn9g0dtybu2sf159&st=3igdng0g&dl=0"
 
 jobs:
@@ -39,7 +40,63 @@ jobs:
           path: _dropbox_oauth_${{ github.run_id }}
           persist-credentials: false
 
-      - name: Verify OAuth binding presence without revealing credentials
+      - name: Verify exact MAIN-sync G23 G24 operational authorization
+        shell: bash
+        working-directory: ${{ github.workspace }}/_dropbox_oauth_${{ github.run_id }}
+        run: |
+          set -Eeuo pipefail
+          E="$RUNNER_TEMP/dropbox-oauth-binding-${GITHUB_RUN_ID}"
+          mkdir -p "$E"
+          python3 - "$E/AUTHORIZATION_GATE.json" <<'PY'
+          import hashlib,json,pathlib,sys
+          root=pathlib.Path(".")
+          g23p=root/"certification/dropbox-lrb-main-sync/G23.json"
+          g24p=root/"certification/dropbox-lrb-main-sync/G24.json"
+          authp=root/"certification/dropbox-lrb-main-sync/OPERATIONAL_AUTHORIZATION.json"
+          for p in (g23p,g24p,authp):
+              if not p.is_file(): raise SystemExit("CERTIFICATION_RECORD_MISSING:"+str(p))
+          g23=json.loads(g23p.read_text()); g24=json.loads(g24p.read_text()); auth=json.loads(authp.read_text())
+          scope="DROPBOX_OAUTH_BINDING_AND_ACQUISITION"
+          failures=[]
+          if g23.get("status")!="PASS" or g23.get("g24_authorized") is not True: failures.append("G23_INVALID")
+          if g24.get("status")!="PASS" or g24.get("active_authorized") is not False: failures.append("G24_INVALID")
+          if auth.get("status")!="PASS" or auth.get("active_authorized") is not True: failures.append("AUTHORIZATION_INVALID")
+          if len({g23.get("scope"),g24.get("scope"),auth.get("scope"),scope})!=1: failures.append("SCOPE_CHAIN_MISMATCH")
+          if auth.get("certification_propagation") is not False or auth.get("canonical_mutation") is not False: failures.append("AUTHORIZATION_INVARIANT_INVALID")
+          if auth.get("desktop_commander_used") is not False or auth.get("main_mutation") is not False: failures.append("BOUNDARY_INVALID")
+          if hashlib.sha256(g23p.read_bytes()).hexdigest()!=auth.get("g23_record_sha256"): failures.append("G23_RECORD_HASH_MISMATCH")
+          if hashlib.sha256(g24p.read_bytes()).hexdigest()!=auth.get("g24_certificate_sha256"): failures.append("G24_RECORD_HASH_MISMATCH")
+          targets=[
+            "scripts/dropbox/lrb_main_sync.py",
+            "scripts/dropbox_governed_recovery_20h.py",
+            ".github/workflows/dropbox-lrb-rclone-oauth-bootstrap.yml",
+            ".github/workflows/dropbox-oauth-refresh-material-flow-live.yml",
+            "mission-control/dropbox-main-governed-recovery-20h/MAIN_SYNC.json",
+            "mission-control/dropbox-main-governed-recovery-20h/OWNER_AUTHORIZATION.json",
+            ".github/workflows/dropbox-lrb-main-sync-cert.yml",
+          ]
+          rows=[]
+          for rel in targets:
+              p=root/rel
+              if not p.is_file(): failures.append("CERTIFIED_TARGET_MISSING:"+rel); continue
+              rows.append({"path":rel,"sha256":hashlib.sha256(p.read_bytes()).hexdigest(),"size":p.stat().st_size})
+          digest=hashlib.sha256(json.dumps(rows,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          if digest!=auth.get("candidate_digest_sha256") or digest!=g24.get("candidate_digest_sha256"): failures.append("CERTIFIED_DIGEST_MISMATCH")
+          out={
+            "schema":"LOUKSNA_DROPBOX_RUNTIME_AUTHORIZATION_GATE/1.0",
+            "status":"PASS" if not failures else "FAIL",
+            "scope":scope,
+            "candidate_digest_sha256":digest,
+            "certified_source_head_sha":auth.get("candidate_head_sha"),
+            "desktop_commander_used":False,
+            "failures":failures,
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,sort_keys=True))
+          raise SystemExit(0 if not failures else 6)
+          PY
+
+      - name: Verify OAuth or rclone binding presence without revealing credentials
         shell: bash
         working-directory: ${{ github.workspace }}/_dropbox_oauth_${{ github.run_id }}
         env:
@@ -48,6 +105,7 @@ jobs:
           DROPBOX_REFRESH_TOKEN: ${{ secrets.DROPBOX_REFRESH_TOKEN }}
         run: |
           set -Eeuo pipefail
+          export PATH="$HOME/.local/bin:$PATH"
           E="$RUNNER_TEMP/dropbox-oauth-binding-${GITHUB_RUN_ID}"
           mkdir -p "$E"
           APP_KEY_PRESENT=false
@@ -56,22 +114,47 @@ jobs:
           [ -n "${DROPBOX_APP_KEY:-}" ] && APP_KEY_PRESENT=true
           [ -n "${DROPBOX_APP_SECRET:-}" ] && APP_SECRET_PRESENT=true
           [ -n "${DROPBOX_REFRESH_TOKEN:-}" ] && REFRESH_TOKEN_PRESENT=true
+          RCLONE_BINDING_PRESENT="$(python3 - <<'PY'
+          import configparser,json,pathlib,shutil
+          p=pathlib.Path.home()/".config/rclone/rclone.conf"
+          ok=False
+          if p.is_file() and shutil.which("rclone"):
+              cp=configparser.RawConfigParser()
+              try:
+                  cp.read(p,encoding="utf-8")
+                  for sec in cp.sections():
+                      if cp.get(sec,"type",fallback="").strip().lower()!="dropbox": continue
+                      raw=cp.get(sec,"token",fallback="").strip()
+                      if not raw: continue
+                      tok=json.loads(raw)
+                      if str(tok.get("access_token") or "").strip():
+                          ok=True; break
+              except Exception:
+                  ok=False
+          print("true" if ok else "false")
+          PY
+          )"
+          DIRECT=false
+          [ "$APP_KEY_PRESENT" = true ] && [ "$APP_SECRET_PRESENT" = true ] && [ "$REFRESH_TOKEN_PRESENT" = true ] && DIRECT=true
+          STATUS=FAIL
+          AUTH_MODE=NONE
+          if [ "$DIRECT" = true ]; then STATUS=PASS; AUTH_MODE=DROPBOX_API_OAUTH_REFRESH; fi
+          if [ "$RCLONE_BINDING_PRESENT" = true ]; then STATUS=PASS; AUTH_MODE=DROPBOX_API_VIA_RCLONE_OAUTH; fi
           cat > "$E/BINDING_PREFLIGHT.json" <<JSON
           {
-            "schema": "LOUKSNA_DROPBOX_OAUTH_BINDING_PREFLIGHT/1.0",
-            "provider": "DROPBOX_API_OAUTH_REFRESH",
+            "schema": "LOUKSNA_DROPBOX_OAUTH_BINDING_PREFLIGHT/1.1",
+            "provider": "$AUTH_MODE",
             "app_key_present": $APP_KEY_PRESENT,
             "app_secret_present": $APP_SECRET_PRESENT,
             "refresh_token_present": $REFRESH_TOKEN_PRESENT,
+            "rclone_oauth_binding_present": $RCLONE_BINDING_PRESENT,
             "secret_values_logged": false,
-            "status": "$([ "$APP_KEY_PRESENT" = true ] && [ "$APP_SECRET_PRESENT" = true ] && [ "$REFRESH_TOKEN_PRESENT" = true ] && echo PASS || echo FAIL)"
+            "status": "$STATUS"
           }
           JSON
           cat "$E/BINDING_PREFLIGHT.json"
-          test "$APP_KEY_PRESENT" = true
-          test "$APP_SECRET_PRESENT" = true
-          test "$REFRESH_TOKEN_PRESENT" = true
-          python3 -m py_compile scripts/dropbox_governed_recovery_20h.py
+          test "$STATUS" = PASS
+          python3 -m py_compile scripts/dropbox_governed_recovery_20h.py scripts/dropbox/lrb_main_sync.py
 
       - name: Start OAuth acquisition and prove material byte flow
         shell: bash
@@ -84,6 +167,7 @@ jobs:
           CORPUS_ROOT: /home/diegoignacionorambuenamiranda/PROYECTOS/1. PROYECTOS PRIORITARIOS
         run: |
           set -Eeuo pipefail
+          export PATH="$HOME/.local/bin:$PATH"
           PROOF="$RUNNER_TEMP/dropbox-oauth-proof-${GITHUB_RUN_ID}"
           rm -rf "$STATE_ROOT" "$PROOF"
           mkdir -p "$STATE_ROOT" "$PROOF" "$CORPUS_ROOT"
@@ -98,7 +182,7 @@ jobs:
             marker="$STATE_ROOT/evidence/DOWNLOAD_STARTED.json"
             if [ -f "$marker" ]; then
               readarray -t vals < <(python3 - "$marker" <<'PY'
-          import json, os, sys
+          import json,sys
           m=json.load(open(sys.argv[1],encoding="utf-8"))
           print(str(bool(m.get("provider_authenticated"))).lower())
           print(str(int(m.get("observed_bytes") or 0)))
