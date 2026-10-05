@@ -1,0 +1,75 @@
+name: "LOUKSNA ZD — assurance reseed exact candidate"
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/louksna-zd-assurance-reseed.yml
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: louksna-zd-assurance-reseed-final
+  cancel-in-progress: false
+
+jobs:
+  reseed:
+    runs-on: macos-15
+    timeout-minutes: 8
+    steps:
+      - name: Download exact frozen candidate from successful producer
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: louksna-zd-frozen-candidate
+          path: ${{ runner.temp }}/candidate
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 37362040140
+
+      - name: Verify frozen candidate identity and digest
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          EXPECTED_DIGEST="a8180e82edc420cbce0a0e434a006602ca3221b7e1d10963c7ef031f53b5fd7a"
+          EXPECTED_DEB_SHA="1dfaad222ba0bd5b221e6d15df6d3bc1a3c82da8db5637c2c61904a57372509a"
+          ACTUAL_DIGEST="$(tr -d '\r\n' < "$RUNNER_TEMP/candidate/CANDIDATE_DIGEST.txt")"
+          test "$ACTUAL_DIGEST" = "$EXPECTED_DIGEST"
+          python3 - "$RUNNER_TEMP/candidate" "$EXPECTED_DEB_SHA" <<'PY'
+          import hashlib,json,pathlib,sys
+          root=pathlib.Path(sys.argv[1])
+          expected=sys.argv[2]
+          frozen=json.loads((root/"FROZEN_CANDIDATE.json").read_text())
+          deb=json.loads((root/"DEB_MANIFEST.json").read_text())
+          payload=root/deb["path"]
+          actual=hashlib.sha256(payload.read_bytes()).hexdigest()
+          assert frozen["candidate_digest_sha256"]=="a8180e82edc420cbce0a0e434a006602ca3221b7e1d10963c7ef031f53b5fd7a"
+          assert actual==expected
+          assert deb["sha256"]==expected
+          assert deb["size_bytes"]==14562896
+          assert deb["within_hard_max"] is True
+          print("TELEMETRY RESEED_EXACT_CANDIDATE=PASS")
+          print("TELEMETRY CANDIDATE_DIGEST="+frozen["candidate_digest_sha256"])
+          print("TELEMETRY DEB_SHA256="+actual)
+          print("TELEMETRY DEB_SIZE_BYTES="+str(payload.stat().st_size))
+          PY
+
+      - name: Re-publish exact frozen candidate for independent workflow_run chain
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksna-zd-frozen-candidate
+          path: ${{ runner.temp }}/candidate
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Terminal telemetry
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "TELEMETRY ASSURANCE_RESEED=PASS"
+          echo "TELEMETRY NEXT_GATE=G23_INDEPENDENT"
+          echo "TELEMETRY G24_AFTER_G23=ARMED"
+          echo "TELEMETRY ACTIVE=FALSE"
