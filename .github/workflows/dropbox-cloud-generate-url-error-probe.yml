@@ -70,8 +70,18 @@ jobs:
                   except Exception:
                       pass
 
+              for pat in (re.compile("close",re.I),re.compile("not now",re.I),re.compile("cerrar",re.I),re.compile("ahora no",re.I)):
+                  try:
+                      loc=page.get_by_role("button",name=pat)
+                      if loc.count() and loc.first.is_visible():
+                          loc.first.click(timeout=1500)
+                  except Exception:
+                      pass
+
               primary=page.locator('button[data-testid="action-bar-download-button"]')
-              if not primary.count():
+              try:
+                  primary.first.wait_for(state="visible",timeout=60000)
+              except Exception:
                   raise SystemExit("DOWNLOAD_BUTTON_NOT_FOUND")
               primary.first.click(timeout=10000)
 
