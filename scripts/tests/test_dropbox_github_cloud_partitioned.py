@@ -58,3 +58,17 @@ for forbidden in [
         raise SystemExit("FORBIDDEN_LOCAL_OR_SECRET_CONTROL:"+forbidden)
 
 print("DROPBOX_GITHUB_CLOUD_PARTITIONED_CONTRACT=PASS")
+
+
+# Runtime parser selftest: compilation alone does not catch missing module bindings.
+with tempfile.TemporaryDirectory() as td:
+    os.environ["STATE_ROOT"]=td
+    spec=importlib.util.spec_from_file_location("dropbox_cloud_partitioned_acquire", script)
+    mod=importlib.util.module_from_spec(spec)
+    assert spec and spec.loader
+    spec.loader.exec_module(mod)
+    sample='<a href="/scl/fo/child-id/child-token?rlkey=abc&dl=0">Child</a>'
+    rows=mod.children_from_html_text(sample, mod.ROOT_LINK)
+    assert len(rows)==1, rows
+    assert rows[0]["kind"]=="folder", rows
+print("DROPBOX_GITHUB_CLOUD_PARTITIONED_HTML_PARSER_SELFTEST=PASS")
