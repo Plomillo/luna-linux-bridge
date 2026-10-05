@@ -1,0 +1,83 @@
+name: "Dropbox — LOUKSNA Remote Bridge local OAuth probe"
+
+on:
+  push:
+    branches:
+      - staging/dropbox-oauth-refresh-material-flow-20261005
+    paths:
+      - .github/workflows/dropbox-lrb-local-oauth-probe.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Verify LRB and probe local OAuth binding presence only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/lrb-local-oauth-$GITHUB_RUN_ID"
+          mkdir -p "$OUT"
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          mapfile -t LINKS < <(find "$HOME/.local/lib/louksna-remote-bridge" -type f -path '*/bridge/live_link.py' -print 2>/dev/null | sort)
+          test "${#LINKS[@]}" -ge 1
+          LINK="${LINKS[-1]}"
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op status > "$OUT/LRB_STATUS.json"
+
+          python3 - "$OUT/OAUTH_LOCAL_PROBE.json" <<'PY'
+          import json,os,pathlib,re,sys
+          home=pathlib.Path.home()
+          candidates=[
+              home/".config/louksna/dropbox-oauth.env",
+              home/".config/louksna/secrets/dropbox-oauth.env",
+              home/".local/state/louksna/dropbox-oauth.env",
+              home/".config/dropbox/oauth.env",
+              home/".dropbox-oauth.env",
+          ]
+          required=("DROPBOX_APP_KEY","DROPBOX_APP_SECRET","DROPBOX_REFRESH_TOKEN")
+          rows=[]; complete=[]
+          for p in candidates:
+              row={"path":str(p),"exists":p.is_file()}
+              if p.is_file():
+                  st=p.stat()
+                  row["mode"]=oct(st.st_mode & 0o777)
+                  row["owner_is_current_uid"]=st.st_uid==os.getuid()
+                  keys=set()
+                  try:
+                      for raw in p.read_text(encoding="utf-8").splitlines():
+                          line=raw.strip()
+                          if not line or line.startswith("#") or "=" not in line: continue
+                          k,v=line.split("=",1)
+                          if k.strip() in required and v.strip().strip('"').strip("'"):
+                              keys.add(k.strip())
+                  except Exception as e:
+                      row["parse_error"]=type(e).__name__
+                  row.update({k.lower()+"_present": k in keys for k in required})
+                  if all(k in keys for k in required):
+                      complete.append(str(p))
+              rows.append(row)
+          result={
+              "schema":"LRB_LOCAL_DROPBOX_OAUTH_PROBE/1.0",
+              "status":"PASS" if complete else "HOLD",
+              "complete_binding_count":len(complete),
+              "complete_sources":complete,
+              "candidates":rows,
+              "secret_values_logged":False
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(result,sort_keys=True))
+          PY
+          (cd "$OUT" && sha256sum ./* > SHA256SUMS.txt)
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dropbox-lrb-local-oauth-probe
+          path: ${{ runner.temp }}/lrb-local-oauth-${{ github.run_id }}/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
