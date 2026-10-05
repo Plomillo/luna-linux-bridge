@@ -1,0 +1,41 @@
+{
+  "schema": "DOCUMENT_FACTORY_RISK_REGISTER/1.0",
+  "uncontrolled_critical_risks": 0,
+  "risks": [
+    {
+      "id": "DF-RISK-001",
+      "risk": "Repository main branch is observed unprotected in current GitHub metadata.",
+      "severity": "HIGH",
+      "treatment": "No direct main mutation; candidate remains draft; G23/G24 execute against exact digest from a separate trust-root branch.",
+      "residual": "MEDIUM"
+    },
+    {
+      "id": "DF-RISK-002",
+      "risk": "Repository rulesets are unavailable on the observed private-repository plan/API response.",
+      "severity": "MEDIUM",
+      "treatment": "Enforce invariants inside workflows, frozen digests and explicit authorization; do not claim repository-level ruleset enforcement.",
+      "residual": "MEDIUM"
+    },
+    {
+      "id": "DF-RISK-003",
+      "risk": "FFprobe provider is not pinned in toolchain lock.",
+      "severity": "MEDIUM",
+      "treatment": "Audiovisual-validation claim excluded from framework certification until provider admission.",
+      "residual": "LOW_WITH_SCOPE_EXCLUSION"
+    },
+    {
+      "id": "DF-RISK-004",
+      "risk": "Human academic quality cannot be mechanically certified.",
+      "severity": "HIGH",
+      "treatment": "Rubric criteria requiring disciplinary judgment remain G23/human obligations and block assignment-level certification.",
+      "residual": "LOW_WITH_FAIL_CLOSED"
+    },
+    {
+      "id": "DF-RISK-005",
+      "risk": "AI or human writer may introduce unsupported claims or references.",
+      "severity": "HIGH",
+      "treatment": "Writer has no certification authority; source ledger, citations, content review and G23 remain separate.",
+      "residual": "MEDIUM"
+    }
+  ]
+}
