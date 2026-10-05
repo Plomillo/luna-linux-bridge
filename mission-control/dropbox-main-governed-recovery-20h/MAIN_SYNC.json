@@ -1,0 +1,82 @@
+{
+  "schema": "LOUKSNA_DROPBOX_LRB_MAIN_SYNC/1.0",
+  "status": "CANDIDATE_UNCERTIFIED",
+  "authority": "Louksna.md",
+  "scope": "DROPBOX_OAUTH_BINDING_AND_ACQUISITION",
+  "source_branch": "main",
+  "source_head_sha": "a7d430a7f9f94eb82c017bf62c3b456ca5b0cdf9",
+  "source_files": [
+    {
+      "path": ".github/workflows/document-factory-operational-authorization.yml",
+      "blob_sha": "c909d8cf82fa3c8cbae3d5a10033f111dada2c62",
+      "functions": [
+        "exact certified digest authorization",
+        "separate activation after G24"
+      ]
+    },
+    {
+      "path": ".github/workflows/document-factory-exact-g24-activation-20261005.yml",
+      "blob_sha": "5874a880d6169e3bec8eee4c016eb6c0525e658f",
+      "functions": [
+        "G23->G24 chain verification",
+        "no certification propagation",
+        "exact digest binding"
+      ]
+    },
+    {
+      "path": "scripts/assurance/metacognitive_trust_root.py",
+      "blob_sha": "eb1a8034addb92927289bd9d6a9cf123990fe9fd",
+      "functions": [
+        "candidate digest",
+        "G23/G24 fail-closed controls",
+        "structural independence model"
+      ]
+    },
+    {
+      "path": "scripts/missions/document_factory_ffprobe_dispatch.py",
+      "blob_sha": "0183c165eec646efcc164a1a01a30d20ca2bdb4b",
+      "functions": [
+        "checked synchronous subprocess",
+        "exact authorization lookup",
+        "anti-paralysis dispatch"
+      ]
+    },
+    {
+      "path": "scripts/missions/document_factory_ffprobe_supervisor.py",
+      "blob_sha": "7d8ecfa250487588d8217b1ce62b274abcb0ffcd",
+      "functions": [
+        "atomic heartbeat",
+        "child-process supervision",
+        "completion receipt"
+      ]
+    }
+  ],
+  "target_files": [
+    "scripts/dropbox/lrb_main_sync.py",
+    "scripts/dropbox_governed_recovery_20h.py",
+    ".github/workflows/dropbox-lrb-rclone-oauth-bootstrap.yml",
+    ".github/workflows/dropbox-oauth-refresh-material-flow-live.yml"
+  ],
+  "invariants": {
+    "main_mutation": false,
+    "desktop_commander": false,
+    "certification_propagation": false,
+    "canonical_mutation": false,
+    "branch_isolation": true,
+    "no_secret_value_logging": true,
+    "no_runner_mutation_during_certification": true,
+    "stop_intervention_on_material_byte_flow": true
+  },
+  "stop_condition": {
+    "provider_authenticated": true,
+    "source_object_identified": true,
+    "observed_bytes_gt": 0,
+    "disk_bytes_gt": 0,
+    "background_process_alive": true,
+    "action": "STOP_ALL_ASSISTANT_MUTATION_AND_INTERVENTION"
+  },
+  "epistemic_state": "DECLARED",
+  "g23": "NOT_EXECUTED",
+  "g24": "NOT_EXECUTED",
+  "operational_authorization": "NOT_GRANTED"
+}
