@@ -18,6 +18,7 @@ concurrency:
 env:
   DROPBOX_PROVIDER: DROPBOX_CONNECTED_PLUGIN
   DROPBOX_SHARED_LINK: "https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/AIIzeblluaJfhuXh9EnP-10?rlkey=p712fwlkbwn9g0dtybu2sf159&dl=0"
+  DROPBOX_DIRECT_DOWNLOAD_QUERY: "dl=1"
   HARD_CEILING_SECONDS: "20400"
 
 jobs:
