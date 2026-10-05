@@ -1,0 +1,24 @@
+name: "Dropbox GitHub cloud-direct contract test"
+
+on:
+  push:
+    branches:
+      - staging/dropbox-github-cloud-direct-20261005
+    paths:
+      - scripts/tests/test_dropbox_github_cloud_direct.py
+      - .github/workflows/dropbox-github-cloud-direct.yml
+      - .github/workflows/dropbox-github-cloud-direct-test.yml
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - run: python3 scripts/tests/test_dropbox_github_cloud_direct.py
