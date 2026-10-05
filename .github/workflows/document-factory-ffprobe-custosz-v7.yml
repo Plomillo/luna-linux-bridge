@@ -69,6 +69,21 @@ jobs:
           ulimit -v 2097152 || true
           nice -n 10 python3 -B -I main-root/scripts/missions/document_factory_ffprobe_dispatch.py
 
+      - name: Expose preserved materializer diagnostics on failure
+        if: failure()
+        shell: bash
+        run: |
+          set +e
+          D="$RUNNER_TEMP/document-factory-ffprobe-admission"
+          echo "=== SUPERVISOR COMPLETION ==="
+          cat "$D/SUPERVISOR_COMPLETION.json" 2>/dev/null || true
+          echo "=== SUPERVISOR HEARTBEAT ==="
+          cat "$D/SUPERVISOR_HEARTBEAT.json" 2>/dev/null || true
+          echo "=== MATERIALIZER STDOUT ==="
+          cat "$D/MATERIALIZER.stdout.log" 2>/dev/null || true
+          echo "=== MATERIALIZER STDERR ==="
+          cat "$D/MATERIALIZER.stderr.log" 2>/dev/null || true
+
       - name: Persist FFprobe candidate branch only
         shell: bash
         run: |
