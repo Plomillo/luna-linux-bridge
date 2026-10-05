@@ -1,0 +1,150 @@
+name: "Dropbox — LOUKSNA Remote Bridge rclone OAuth bootstrap"
+
+on:
+  push:
+    branches:
+      - staging/dropbox-oauth-refresh-material-flow-20261005
+    paths:
+      - .github/workflows/dropbox-lrb-rclone-oauth-bootstrap.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dropbox-lrb-rclone-oauth-bootstrap
+  cancel-in-progress: false
+
+jobs:
+  bootstrap:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 20
+    steps:
+      - name: Revalidate LOUKSNA Remote Bridge privilege prerequisites
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/lrb-rclone-oauth-$GITHUB_RUN_ID"
+          mkdir -m 700 "$OUT"
+          test "$(hostname)" = "LOUKSNA"
+          test "$(sha256sum /usr/sbin/runuser | awk '{print $1}')" = "ea71a94cb0097f3e1d5ce2fa8fb775bf1bd1ddd74960fad3ee22d7d8d1ef4488"
+          sudo -n /usr/bin/true
+          test "$(sudo -n /usr/bin/sha256sum /var/lib/louksna/privilege-bridge/g23/G23_V121_20260930T033205Z.json | awk '{print $1}')" = "641955e0a149f99cb4905bb44fbcae29a422b18a6e4cd3b9d210010c9aaa0029"
+          test "$(sudo -n /usr/bin/sha256sum /var/lib/louksna/privilege-bridge/g24/G24_V121_20260930T033205Z.json | awk '{print $1}')" = "53b882221d31ac3fe4ba14565a9681f47f574c8fffcd9f5da02ddeade6d2c139"
+          printf '%s\n' '{"schema":"LOUKSNA_LRB_PRIVILEGE_REVALIDATION/1.0","status":"PASS","desktop_commander_used":false}' > "$OUT/PRIVILEGE_PASS.json"
+
+      - name: Install pinned official rclone with SHA256 verification
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          OUT="$RUNNER_TEMP/lrb-rclone-oauth-$GITHUB_RUN_ID"
+          VERSION="1.75.1"
+          BASE="https://downloads.rclone.org/v${VERSION}"
+          ZIP="rclone-v${VERSION}-linux-amd64.zip"
+          TMP="$(mktemp -d)"
+          trap 'rm -rf "$TMP"' EXIT
+          curl -fsSLo "$TMP/$ZIP" "$BASE/$ZIP"
+          curl -fsSLo "$TMP/SHA256SUMS" "$BASE/SHA256SUMS"
+          expected="$(awk -v n="$ZIP" '$2==n {print $1}' "$TMP/SHA256SUMS")"
+          test -n "$expected"
+          actual="$(sha256sum "$TMP/$ZIP" | awk '{print $1}')"
+          test "$actual" = "$expected"
+          python3 - "$TMP/$ZIP" "$TMP" <<'PY'
+          import pathlib,sys,zipfile
+          z=zipfile.ZipFile(sys.argv[1])
+          root=pathlib.Path(sys.argv[2])
+          member=next(n for n in z.namelist() if n.endswith("/rclone"))
+          dst=root/"rclone"
+          dst.write_bytes(z.read(member))
+          dst.chmod(0o755)
+          PY
+          mkdir -p "$HOME/.local/bin"
+          install -m 0755 "$TMP/rclone" "$HOME/.local/bin/rclone"
+          "$HOME/.local/bin/rclone" version | head -8 | tee "$OUT/RCLONE_VERSION.txt"
+          printf '%s  %s\n' "$actual" "$ZIP" > "$OUT/RCLONE_SHA256.txt"
+
+      - name: Bootstrap persistent Dropbox OAuth using local browser session
+        id: oauth
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          export PATH="$HOME/.local/bin:$PATH"
+          OUT="$RUNNER_TEMP/lrb-rclone-oauth-$GITHUB_RUN_ID"
+          CONFIG="$HOME/.config/rclone/rclone.conf"
+          mkdir -p "$(dirname "$CONFIG")"
+          touch "$CONFIG"
+          chmod 0600 "$CONFIG"
+
+          if rclone config show louksna_dropbox --config "$CONFIG" 2>/dev/null | grep -Eq '^type = dropbox$'; then
+            if rclone lsf louksna_dropbox: --max-depth 1 --config "$CONFIG" >/dev/null 2>&1; then
+              printf '%s\n' '{"schema":"LOUKSNA_RCLONE_OAUTH_BOOTSTRAP/1.0","status":"REUSE_EXISTING_VALID","remote":"louksna_dropbox","token_logged":false}' | tee "$OUT/OAUTH_BOOTSTRAP.json"
+              echo "bound=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+          USERENV="$(systemctl --user show-environment 2>/dev/null || true)"
+          DISPLAY_VALUE="$(printf '%s\n' "$USERENV" | sed -n 's/^DISPLAY=//p' | head -1)"
+          WAYLAND_VALUE="$(printf '%s\n' "$USERENV" | sed -n 's/^WAYLAND_DISPLAY=//p' | head -1)"
+          [ -n "$DISPLAY_VALUE" ] && export DISPLAY="$DISPLAY_VALUE"
+          [ -n "$WAYLAND_VALUE" ] && export WAYLAND_DISPLAY="$WAYLAND_VALUE"
+
+          PRIVATE="$OUT/oauth-private.log"
+          set +e
+          timeout 900s rclone config create louksna_dropbox dropbox             config_is_local=true             --config "$CONFIG"             --no-output >"$PRIVATE" 2>&1
+          rc=$?
+          set -e
+
+          if [ "$rc" -ne 0 ]; then
+            reason="RCLONE_OAUTH_FAILED"
+            [ "$rc" -eq 124 ] && reason="RCLONE_OAUTH_CONSENT_TIMEOUT"
+            rm -f "$PRIVATE"
+            printf '{"schema":"LOUKSNA_RCLONE_OAUTH_BOOTSTRAP/1.0","status":"HOLD","reason":"%s","rc":%s,"token_logged":false}\n' "$reason" "$rc" | tee "$OUT/OAUTH_BOOTSTRAP.json"
+            exit "$rc"
+          fi
+          rm -f "$PRIVATE"
+
+          chmod 0600 "$CONFIG"
+          rclone config redacted louksna_dropbox --config "$CONFIG" > "$OUT/RCLONE_REDACTED.txt"
+          grep -Fq 'type = dropbox' "$OUT/RCLONE_REDACTED.txt"
+          rclone lsf louksna_dropbox: --max-depth 1 --config "$CONFIG" >/dev/null
+          python3 - "$CONFIG" "$OUT/OAUTH_BOOTSTRAP.json" <<'PY'
+          import configparser,json,pathlib,sys
+          cp=configparser.RawConfigParser()
+          cp.read(sys.argv[1],encoding="utf-8")
+          raw=cp.get("louksna_dropbox","token",fallback="")
+          tok=json.loads(raw) if raw else {}
+          out={
+            "schema":"LOUKSNA_RCLONE_OAUTH_BOOTSTRAP/1.0",
+            "status":"PASS",
+            "remote":"louksna_dropbox",
+            "token_present":bool(tok.get("access_token")),
+            "refresh_token_present":bool(tok.get("refresh_token")),
+            "token_logged":False,
+            "config_mode":"0600"
+          }
+          pathlib.Path(sys.argv[2]).write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,sort_keys=True))
+          if not out["token_present"]: raise SystemExit("RCLONE_TOKEN_ABSENT")
+          PY
+          echo "bound=true" >> "$GITHUB_OUTPUT"
+
+      - name: Preserve non-secret bootstrap evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dropbox-lrb-rclone-oauth-bootstrap
+          path: |
+            ${{ runner.temp }}/lrb-rclone-oauth-${{ github.run_id }}/PRIVILEGE_PASS.json
+            ${{ runner.temp }}/lrb-rclone-oauth-${{ github.run_id }}/RCLONE_VERSION.txt
+            ${{ runner.temp }}/lrb-rclone-oauth-${{ github.run_id }}/RCLONE_SHA256.txt
+            ${{ runner.temp }}/lrb-rclone-oauth-${{ github.run_id }}/OAUTH_BOOTSTRAP.json
+            ${{ runner.temp }}/lrb-rclone-oauth-${{ github.run_id }}/RCLONE_REDACTED.txt
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 0
