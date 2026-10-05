@@ -1,0 +1,26 @@
+{
+  "schema": "DOCUMENT_FACTORY_WRITING_CONTRACT/1.0",
+  "source_first": true,
+  "allowed_provider_classes": [
+    "HUMAN",
+    "CHATGPT",
+    "GOVERNED_AGENT",
+    "DECLARED_EXTERNAL_PROVIDER"
+  ],
+  "required_evidence": [
+    "provider_id",
+    "provider_version_or_identity",
+    "input_hash",
+    "output_hash",
+    "task_profile",
+    "source_ledger"
+  ],
+  "forbidden": [
+    "FABRICATED_REFERENCE",
+    "SILENT_METADATA_COMPLETION",
+    "WRITER_SELF_G23",
+    "WRITER_SELF_G24",
+    "CERTIFICATION_PROPAGATION"
+  ],
+  "rule": "Writer output remains candidate content until profile validation and applicable independent review."
+}
