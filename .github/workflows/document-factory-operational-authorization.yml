@@ -1,0 +1,108 @@
+name: "Document Factory — operational authorization gate"
+
+on:
+  workflow_run:
+    workflows:
+      - "Document Factory — independent PUAC2 G23 G24"
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: document-factory-operational-authorization
+  cancel-in-progress: false
+
+jobs:
+  authorize:
+    if: \${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout main authorization ledger
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: true
+          path: main-ledger
+
+      - name: Checkout exact current candidate read-only
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: candidate/document-factory-v1-20261005
+          persist-credentials: false
+          path: candidate
+
+      - name: Download exact G24 evidence from triggering assurance run
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: document-factory-v1-g24
+          path: \${{ runner.temp }}/g24
+          github-token: \${{ github.token }}
+          repository: \${{ github.repository }}
+          run-id: \${{ github.event.workflow_run.id }}
+
+      - name: Authorize exact certified candidate only
+        shell: bash
+        env:
+          ASSURANCE_RUN_ID: \${{ github.event.workflow_run.id }}
+          ASSURANCE_RUN_URL: \${{ github.event.workflow_run.html_url }}
+        run: |
+          set -Eeuo pipefail
+          CERT="$RUNNER_TEMP/g24/G24_CERTIFICATE.json"
+          test -f "$CERT"
+          CANDIDATE_SHA="$(git -C candidate rev-parse HEAD)"
+          CERT_SHA="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["candidate_head_sha"])' "$CERT")"
+          CERT_STATUS="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["status"])' "$CERT")"
+          CERT_DIGEST="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["candidate_digest_sha256"])' "$CERT")"
+          test "$CERT_STATUS" = "PASS"
+          test "$CERT_SHA" = "$CANDIDATE_SHA"
+          python3 - "$CERT" "$CANDIDATE_SHA" "$CERT_DIGEST" "$ASSURANCE_RUN_ID" "$ASSURANCE_RUN_URL" <<'PY'
+          import hashlib,json,pathlib,sys
+          from datetime import datetime,timezone
+          cert_path,candidate_sha,digest,run_id,run_url=sys.argv[1:]
+          cert=json.loads(pathlib.Path(cert_path).read_text())
+          if cert.get("status")!="PASS":
+              raise SystemExit("G24_NOT_PASS")
+          if cert.get("active_authorized") is not False:
+              raise SystemExit("G24_MUST_NOT_SELF_AUTHORIZE_ACTIVE")
+          obj={
+            "schema":"DOCUMENT_FACTORY_OPERATIONAL_AUTHORIZATION/1.0",
+            "status":"PASS",
+            "authority":"Louksna.md",
+            "scope":cert.get("scope"),
+            "candidate_head_sha":candidate_sha,
+            "candidate_digest_sha256":digest,
+            "g24_certificate_sha256":hashlib.sha256(pathlib.Path(cert_path).read_bytes()).hexdigest(),
+            "g24_assurance_run_id":int(run_id),
+            "g24_assurance_run_url":run_url,
+            "claims_certified":cert.get("claims_certified",[]),
+            "claims_excluded":cert.get("claims_excluded",[]),
+            "certification_propagation":False,
+            "canonical_mutation":False,
+            "operational_authorization":"GRANTED_FOR_EXACT_CERTIFIED_DIGEST",
+            "active_authorized":True,
+            "main_role":"OPERATIONAL_AUTHORIZATION_LEDGER_AND_DISPATCH",
+            "authorized_at_utc":datetime.now(timezone.utc).isoformat()
+          }
+          out=pathlib.Path("main-ledger/operational-authorizations/document-factory")
+          out.mkdir(parents=True,exist_ok=True)
+          (out/"CURRENT.json").write_text(json.dumps(obj,indent=2,sort_keys=True)+"\n")
+          (out/(digest+".json")).write_text(json.dumps(obj,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(obj,sort_keys=True))
+          PY
+
+      - name: Persist operational authorization on main
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd main-ledger
+          git add operational-authorizations/document-factory
+          git diff --cached --quiet && exit 0
+          git config user.name "louksna-operational-gate"
+          git config user.email "louksna-operational-gate@users.noreply.github.com"
+          git commit -m "cert(document-factory): operational authorization for exact G24 digest"
+          git pull --rebase origin main
+          git push origin HEAD:main
