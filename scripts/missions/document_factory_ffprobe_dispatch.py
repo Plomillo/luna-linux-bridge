@@ -3,7 +3,9 @@ import hashlib,json,os,subprocess,sys,tempfile,time
 from pathlib import Path
 
 ACTIVE_SHA="43a82aa30607b8775c998fa39b2bc08bfc2a263f"
-ACTIVE_DIGEST="b0c59f37c70e58ca42f7fd215fad890e9a24b255d369110665e7141f26f57404"\nPRECERT_CANDIDATE_SHA="3774cb102ad6318fc824b2cb87c5055e9f5f4b0b"\nPRECERT_CANDIDATE_REF="refs/heads/candidate/document-factory-v1-ffprobe-20261005"
+ACTIVE_DIGEST="b0c59f37c70e58ca42f7fd215fad890e9a24b255d369110665e7141f26f57404"
+PRECERT_CANDIDATE_SHA="3774cb102ad6318fc824b2cb87c5055e9f5f4b0b"
+PRECERT_CANDIDATE_REF="refs/heads/candidate/document-factory-v1-ffprobe-20261005"
 
 def sha(p):
     return hashlib.sha256(Path(p).read_bytes()).hexdigest()
