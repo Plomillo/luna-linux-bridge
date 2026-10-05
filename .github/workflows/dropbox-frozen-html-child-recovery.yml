@@ -1,0 +1,80 @@
+name: "Dropbox frozen HTML child-link recovery — read-only"
+
+on:
+  push:
+    branches:
+      - staging/dropbox-cloud-diagnostic-inspect-20261005
+    paths:
+      - .github/workflows/dropbox-frozen-html-child-recovery.yml
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  recover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Download frozen browser diagnostic artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: dropbox-github-cloud-browser-diagnostics-37355731169
+          path: ${{ runner.temp }}/diag
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 37355731169
+
+      - name: Recover child shared-link structure from frozen HTML
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - "$RUNNER_TEMP/diag" <<'PY'
+          import hashlib,html,json,pathlib,re,sys,urllib.parse
+          root=pathlib.Path(sys.argv[1])
+          files=list(root.rglob("PAGE_AFTER_CONTINUATION_TIMEOUT.html"))
+          if not files:
+              raise SystemExit("FROZEN_HTML_MISSING")
+          text=files[0].read_text(encoding="utf-8",errors="replace")
+          text=html.unescape(text)
+
+          candidates=[]
+          patterns=[
+              r'''href=["']([^"']*(?:/scl/(?:fo|fi)/)[^"']+)["']''',
+              r'''["'](https://www\.dropbox\.com/scl/(?:fo|fi)/[^"']+)["']''',
+              r'''["'](/scl/(?:fo|fi)/[^"']+)["']''',
+          ]
+          for pat in patterns:
+              candidates.extend(re.findall(pat,text,re.I))
+
+          root_path="/scl/fo/0dhs5jhwksqtmwl26vusi/AIIzeblluaJfhuXh9EnP-10"
+          seen={}
+          for raw in candidates:
+              raw=raw.replace("\\u0026","&").replace("\\u003d","=").replace("\\/","/")
+              url=urllib.parse.urljoin("https://www.dropbox.com/",raw)
+              u=urllib.parse.urlsplit(url)
+              if u.hostname!="www.dropbox.com":
+                  continue
+              typ="folder" if "/scl/fo/" in u.path else "file" if "/scl/fi/" in u.path else None
+              if not typ or u.path==root_path:
+                  continue
+              qkeys=sorted({k for k,_ in urllib.parse.parse_qsl(u.query,keep_blank_values=True)})
+              ident=hashlib.sha256(url.encode()).hexdigest()
+              seen[ident]={
+                  "type":typ,
+                  "path_depth":len([x for x in u.path.split("/") if x]),
+                  "query_keys":qkeys,
+                  "host":u.hostname,
+                  "identity_sha256":ident,
+              }
+
+          out={
+              "schema":"LOUKSNA_DROPBOX_FROZEN_CHILD_LINK_RECOVERY/1.0",
+              "status":"PASS" if seen else "EMPTY",
+              "unique_children":len(seen),
+              "folders":sum(x["type"]=="folder" for x in seen.values()),
+              "files":sum(x["type"]=="file" for x in seen.values()),
+              "sample":list(seen.values())[:30],
+          }
+          print("FROZEN_CHILD_LINK_RECOVERY="+json.dumps(out,sort_keys=True))
+          PY
