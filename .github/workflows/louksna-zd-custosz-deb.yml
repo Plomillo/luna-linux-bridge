@@ -1,0 +1,197 @@
+name: "LOUKSNA ZD — CUSTOSZ V7 DEB Continuation"
+
+on:
+  push:
+    branches:
+      - work/louksna-zona-directiva-candidate-20261005
+    paths:
+      - missions/inbox/louksna-zona-directiva-custosz-v7-20261005/MISSION_DEB_CONTINUATION.md
+      - .github/workflows/louksna-zd-custosz-deb.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: louksna-zd-deb-continuation-20261005
+  cancel-in-progress: false
+
+jobs:
+  deb-candidate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout isolated work branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: work/louksna-zona-directiva-candidate-20261005
+          persist-credentials: false
+          fetch-depth: 1
+          path: target
+
+      - name: Synchronize read-only with MAIN root
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: main
+          persist-credentials: false
+          fetch-depth: 1
+          path: main-root
+
+      - name: Checkout canonical UI source snapshot
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: 94f999f28f6ac371e1a768312a69704af96fd7a7
+          persist-credentials: false
+          fetch-depth: 1
+          path: source-project
+
+      - name: Checkout pinned CUSTOSZ V7 and Runtime
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: 89822a98ff0311d1904d969ae51cd834a4fadc20
+          persist-credentials: false
+          sparse-checkout: artifacts/custosz-v7
+          path: runtime-source
+
+      - name: MAIN synchronization telemetry
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          MAIN_SHA="$(git -C main-root rev-parse HEAD)"
+          WORK_SHA="$(git -C target rev-parse HEAD)"
+          printf 'TELEMETRY MAIN_ROOT_SHA=%s\n' "$MAIN_SHA"
+          printf 'TELEMETRY WORK_BRANCH_SHA=%s\n' "$WORK_SHA"
+          printf 'TELEMETRY MAIN_MODE=READ_ONLY\n'
+          printf 'TELEMETRY CANCEL_IN_PROGRESS=FALSE\n'
+          mkdir -p "$RUNNER_TEMP/louksna-zd-evidence"
+          printf '%s\n' "$MAIN_SHA" > "$RUNNER_TEMP/louksna-zd-evidence/MAIN_ROOT_SHA.txt"
+          printf '%s\n' "$WORK_SHA" > "$RUNNER_TEMP/louksna-zd-evidence/WORK_BRANCH_SHA.txt"
+
+      - name: Verify CUSTOSZ V7 and Runtime
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          CUSTOSZ="runtime-source/artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz"
+          RUNTIME="runtime-source/artifacts/custosz-v7/CUSTOSZ_RUNTIME_V1_SR_EXEC_BOUND_FME_01.b.pyz"
+          python3 -B -I "$CUSTOSZ" v07-status
+          python3 -B -I "$CUSTOSZ" v07-selftest
+          python3 - "$RUNTIME" "$GITHUB_WORKSPACE/main-root/Louksna.md" <<'PY'
+          import hashlib,json,sys,tempfile
+          from pathlib import Path
+          runtime=Path(sys.argv[1])
+          authority=Path(sys.argv[2])
+          sys.path.insert(0,str(runtime))
+          from runtime_core import Runtime
+          digest=hashlib.sha256(authority.read_bytes()).hexdigest()
+          with tempfile.TemporaryDirectory(prefix="louksna-deb-runtime-") as td:
+              rt=Runtime(Path(td)/"state",authority,digest)
+              result=rt.selftest()
+              print("TELEMETRY CUSTOSZ_RUNTIME_V1="+json.dumps(result,sort_keys=True))
+              print("TELEMETRY RUNTIME_EVIDENCE_JOURNAL="+str(rt.journal.verify()))
+              if result.get("status")!="PASS":
+                  raise SystemExit(1)
+          PY
+          echo "TELEMETRY CUSTOSZ_RUNTIME_SYNC=PASS"
+
+      - name: Assemble MAIN-synchronized source view
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cp -a source-project synced-source
+          cp main-root/Louksna.md synced-source/Louksna.md
+          cp main-root/PUAC2.md synced-source/PUAC2.md
+          if test -f main-root/SKELETON_CANONICO_REFERENCIA.txt; then
+            cp main-root/SKELETON_CANONICO_REFERENCIA.txt synced-source/SKELETON_CANONICO_REFERENCIA.txt
+          fi
+          echo "TELEMETRY SYNCED_SOURCE_VIEW=PASS"
+
+      - name: Materialize same hardened candidate
+        shell: bash
+        env:
+          LOUKSNA_SOURCE_COMMIT: 94f999f28f6ac371e1a768312a69704af96fd7a7
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/louksna-zd-dispatch"
+          printf '%s\n' '{"mission_id":"MIS-LOUKSNA-ZD-DEB-HARDENING-20261005","dispatch_id":"GH-DEB-CONT-20261005","executor_id":"CUSTOSZ_V7","binding_id":"CUSTOSZ_RUNTIME_V1","expected_effect":{"effect_type":"LOUKSNA_ZD_DEB_CANDIDATE_CONTINUATION"}}' > "$RUNNER_TEMP/louksna-zd-dispatch/DISPATCH.json"
+          python3 -B -I target/scripts/missions/louksna_zd_candidate_materializer.py             "$RUNNER_TEMP/louksna-zd-dispatch/DISPATCH.json"             "$RUNNER_TEMP/louksna-zd-dispatch/ACK.json"             "$RUNNER_TEMP/louksna-zd-dispatch/FME.json"             "$RUNNER_TEMP/louksna-zd-dispatch/MATERIAL_RESULT.json"             "$GITHUB_WORKSPACE/target"             "$GITHUB_WORKSPACE/synced-source"             "$GITHUB_WORKSPACE/target/missions/inbox/louksna-zona-directiva-custosz-v7-20261005/MISSION_DEB_CONTINUATION.md"
+          echo "TELEMETRY CANDIDATE_REMATERIALIZATION=PASS"
+          tail -n 20 target/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate/evidence/TELEMETRY.jsonl
+
+      - name: Install isolated Debian build dependencies
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo apt-get install -y             libwebkit2gtk-4.1-dev             libgtk-3-dev             libayatana-appindicator3-dev             librsvg2-dev             patchelf             lintian             desktop-file-utils
+          echo "TELEMETRY DEB_BUILD_DEPENDENCIES=PASS"
+
+      - name: Build frontend and Tauri Debian package
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          APP="target/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate"
+          cd "$APP"
+          node --version
+          npm --version
+          rustc --version
+          cargo --version
+          npm install
+          npm run build
+          echo "TELEMETRY FRONTEND_PRODUCTION_BUILD=PASS"
+          npx tauri build --bundles deb
+          echo "TELEMETRY TAURI_RUST_DEB_BUILD=PASS"
+
+      - name: Validate Debian candidate structurally
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          APP="target/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate"
+          DEB="$(find "$APP/src-tauri/target/release/bundle/deb" -type f -name '*.deb' -print -quit)"
+          test -n "$DEB"
+          mkdir -p "$RUNNER_TEMP/louksna-zd-evidence"
+          cp "$DEB" "$RUNNER_TEMP/louksna-zd-evidence/"
+          sha256sum "$DEB" | tee "$RUNNER_TEMP/louksna-zd-evidence/DEB_SHA256.txt"
+          stat -c '%s' "$DEB" | tee "$RUNNER_TEMP/louksna-zd-evidence/DEB_SIZE_BYTES.txt"
+          dpkg-deb -I "$DEB" | tee "$RUNNER_TEMP/louksna-zd-evidence/DPKG_INFO.txt"
+          dpkg-deb -c "$DEB" | tee "$RUNNER_TEMP/louksna-zd-evidence/DPKG_CONTENTS.txt"
+          lintian "$DEB" 2>&1 | tee "$RUNNER_TEMP/louksna-zd-evidence/LINTIAN.txt" || true
+          echo "TELEMETRY DEB_STRUCTURAL_VALIDATION=PASS"
+
+      - name: Validate installability on ephemeral Debian-compatible runner
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          DEB="$(find target/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate/src-tauri/target/release/bundle/deb -type f -name '*.deb' -print -quit)"
+          PKG="$(dpkg-deb -f "$DEB" Package)"
+          sudo apt-get install -y "$DEB"
+          dpkg -s "$PKG" | tee "$RUNNER_TEMP/louksna-zd-evidence/DPKG_STATUS.txt"
+          dpkg -L "$PKG" | tee "$RUNNER_TEMP/louksna-zd-evidence/DPKG_FILELIST.txt"
+          echo "TELEMETRY DEB_INSTALLABILITY=PASS"
+
+      - name: Record pending certification gates
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cat > "$RUNNER_TEMP/louksna-zd-evidence/PENDING_GATES.txt" <<'EOF'
+          PUAC2=REQUIRED
+          NON_REGRESSION=REQUIRED
+          ROLLBACK=REQUIRED
+          G23=NOT_GRANTED
+          G24=NOT_GRANTED
+          CERTIFIED=FALSE
+          ACTIVE=FALSE
+          MAIN_MUTATION=FALSE
+          EOF
+
+      - name: Preserve candidate and evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksna-zd-custosz-deb-candidate
+          path: |
+            target/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate
+            ${{ runner.temp }}/louksna-zd-evidence
+            ${{ runner.temp }}/louksna-zd-dispatch
+          if-no-files-found: warn
+          retention-days: 30
