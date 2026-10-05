@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import hashlib,json,pathlib,subprocess,threading,time,zipfile
+import hashlib,json,pathlib,shutil,subprocess,threading,time,zipfile
 from datetime import datetime,timezone
 from xml.sax.saxutils import escape
 
@@ -87,10 +87,56 @@ def checkpoint(root):
                 "size_bytes":f.stat().st_size
             })
     digest=sha256_bytes(json.dumps(rows,sort_keys=True,separators=(",",":")).encode())
-    obj={"schema":"DOCUMENT_FACTORY_CHECKPOINT/1.0","created_at_utc":utc(),"files":rows,"checkpoint_digest_sha256":digest}
+    snapshot=root/"runtime"/"checkpoints"/digest/"snapshot"
+    if snapshot.exists():
+        shutil.rmtree(snapshot)
+    for base in ("source","data"):
+        p=root/base
+        if p.exists():
+            shutil.copytree(p,snapshot/base,dirs_exist_ok=True)
+    obj={
+        "schema":"DOCUMENT_FACTORY_CHECKPOINT/2.0",
+        "created_at_utc":utc(),
+        "files":rows,
+        "checkpoint_digest_sha256":digest,
+        "snapshot_path":snapshot.relative_to(root).as_posix()
+    }
     write_json(root/"runtime"/"checkpoint.json",obj)
+    write_json(root/"runtime"/"checkpoints"/digest/"checkpoint.json",obj)
     append_audit(root,{"event_type":"CHECKPOINT","checkpoint_digest_sha256":digest})
     return obj
+
+def restore_checkpoint(root,checkpoint_digest):
+    root=pathlib.Path(root)
+    cp_path=root/"runtime"/"checkpoints"/checkpoint_digest/"checkpoint.json"
+    if not cp_path.is_file():
+        raise ValueError("CHECKPOINT_NOT_FOUND")
+    cp=json.loads(cp_path.read_text(encoding="utf-8"))
+    snapshot=root/cp["snapshot_path"]
+    if not snapshot.is_dir():
+        raise ValueError("CHECKPOINT_SNAPSHOT_MISSING")
+    for base in ("source","data"):
+        target=root/base
+        if target.exists():
+            shutil.rmtree(target)
+        source=snapshot/base
+        if source.exists():
+            shutil.copytree(source,target)
+    failures=[]
+    for row in cp["files"]:
+        p=root/row["path"]
+        if not p.is_file() or sha256_file(p)!=row["sha256"]:
+            failures.append(row["path"])
+    if failures:
+        raise ValueError("RESTORATION_VERIFY_FAIL:"+",".join(failures))
+    append_audit(root,{"event_type":"ROLLBACK_RESTORE","checkpoint_digest_sha256":checkpoint_digest,"status":"PASS"})
+    return {
+        "schema":"DOCUMENT_FACTORY_ROLLBACK_PROOF/1.0",
+        "status":"PASS",
+        "checkpoint_digest_sha256":checkpoint_digest,
+        "verified_files":len(cp["files"]),
+        "restored_at_utc":utc()
+    }
 
 def hold(root,stage,reason,detail=None):
     obj={
