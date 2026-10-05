@@ -31,11 +31,13 @@ jobs:
           ref: 3774cb102ad6318fc824b2cb87c5055e9f5f4b0b
           fetch-depth: 0
           persist-credentials: false
+          path: fresh-candidate-${{ github.run_id }}
 
       - name: Fresh producer with live telemetry
         shell: bash
         run: |
           set -Eeuo pipefail
+          cd "$GITHUB_WORKSPACE/fresh-candidate-$GITHUB_RUN_ID"
           emit() {
             printf 'CUSTOSZ_FRESH_PRODUCER_TELEMETRY {"phase":"%s","status":"%s","candidate_sha":"%s","at":"%s"}\n' "$1" "$2" "$CANDIDATE_SHA" "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           }
