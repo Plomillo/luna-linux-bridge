@@ -1,0 +1,140 @@
+name: "Document Factory — exact G24 operational activation"
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/document-factory-exact-g24-activation-20261005.yml"
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: document-factory-exact-g24-activation-20261005
+  cancel-in-progress: false
+
+jobs:
+  authorize-and-activate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout main ledger
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Checkout exact certified candidate read-only
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: 43a82aa30607b8775c998fa39b2bc08bfc2a263f
+          persist-credentials: false
+          path: exact-candidate
+
+      - name: Acquire G23 and G24 evidence from exact certification run
+        shell: bash
+        env:
+          GH_TOKEN_EXACT: "${{ github.token }}"
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23" "$RUNNER_TEMP/g24"
+          curl -fsSL -H "Authorization: Bearer $GH_TOKEN_EXACT" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/Plomillo/luna-linux-bridge/actions/artifacts/11355385906/zip" \
+            -o "$RUNNER_TEMP/g23.zip"
+          curl -fsSL -H "Authorization: Bearer $GH_TOKEN_EXACT" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/Plomillo/luna-linux-bridge/actions/artifacts/11355091763/zip" \
+            -o "$RUNNER_TEMP/g24.zip"
+          echo "b86ce6be00dfa7189c15bba40eaf7cb52b05dc98a288f1f1c39509b76f46b775  $RUNNER_TEMP/g23.zip" | sha256sum -c -
+          echo "1d74cec666010ddaa5206d2daa6ea6df01a1cc060b82fae609f8faa8c19c47ff  $RUNNER_TEMP/g24.zip" | sha256sum -c -
+          unzip -q "$RUNNER_TEMP/g23.zip" -d "$RUNNER_TEMP/g23"
+          unzip -q "$RUNNER_TEMP/g24.zip" -d "$RUNNER_TEMP/g24"
+          test -f "$RUNNER_TEMP/g23/G23.json"
+          test -f "$RUNNER_TEMP/g24/G24_CERTIFICATE.json"
+
+      - name: Cryptographic and epistemic gate
+        shell: bash
+        env:
+          SOURCE_RUN_ID: "37332815883"
+          SOURCE_HEAD_SHA: "43a82aa30607b8775c998fa39b2bc08bfc2a263f"
+          G23_ZIP_SHA256: "b86ce6be00dfa7189c15bba40eaf7cb52b05dc98a288f1f1c39509b76f46b775"
+          G24_ZIP_SHA256: "1d74cec666010ddaa5206d2daa6ea6df01a1cc060b82fae609f8faa8c19c47ff"
+        run: |
+          set -Eeuo pipefail
+          ACTUAL_HEAD="$(git -C exact-candidate rev-parse HEAD)"
+          test "$ACTUAL_HEAD" = "$SOURCE_HEAD_SHA"
+          python3 - "$RUNNER_TEMP/g23/G23.json" "$RUNNER_TEMP/g24/G24_CERTIFICATE.json" <<'PY'
+          import hashlib,json,os,pathlib,sys
+          from datetime import datetime,timezone
+          g23p=pathlib.Path(sys.argv[1]); g24p=pathlib.Path(sys.argv[2])
+          g23=json.loads(g23p.read_text()); g24=json.loads(g24p.read_text())
+          expected=os.environ["SOURCE_HEAD_SHA"]
+          failures=[]
+          if g23.get("status")!="PASS": failures.append("G23_NOT_PASS")
+          if g23.get("g24_authorized") is not True: failures.append("G23_NOT_AUTHORIZING_G24")
+          if g24.get("status")!="PASS": failures.append("G24_NOT_PASS")
+          if g23.get("candidate_head_sha")!=expected: failures.append("G23_HEAD_MISMATCH")
+          if g24.get("candidate_head_sha")!=expected: failures.append("G24_HEAD_MISMATCH")
+          if g23.get("candidate_digest_sha256")!=g24.get("candidate_digest_sha256"): failures.append("DIGEST_CHAIN_MISMATCH")
+          if g24.get("g23_record_sha256")!=hashlib.sha256(g23p.read_bytes()).hexdigest(): failures.append("G23_RECORD_HASH_MISMATCH")
+          if g24.get("certification_propagation") is not False: failures.append("CERT_PROPAGATION_INVALID")
+          if g24.get("canonical_mutation") is not False: failures.append("CANONICAL_MUTATION_INVALID")
+          if g24.get("active_authorized") is not False: failures.append("G24_SELF_ACTIVE_INVALID")
+          if not str(g24.get("authority_signature_reference","")).startswith("GITHUB_OIDC_JWT_SHA256:"): failures.append("OIDC_SIGNATURE_REFERENCE_MISSING")
+          if failures:
+              raise SystemExit("FAIL_CLOSED:"+",".join(failures))
+          digest=g24["candidate_digest_sha256"]
+          cert_sha=hashlib.sha256(g24p.read_bytes()).hexdigest()
+          g23_sha=hashlib.sha256(g23p.read_bytes()).hexdigest()
+          obj={
+            "schema":"DOCUMENT_FACTORY_OPERATIONAL_AUTHORIZATION/2.0",
+            "status":"PASS",
+            "epistemic_state":"ACTIVE",
+            "authority":"Louksna.md",
+            "scope":g24.get("scope"),
+            "candidate_head_sha":expected,
+            "candidate_digest_sha256":digest,
+            "source_certification_run_id":int(os.environ["SOURCE_RUN_ID"]),
+            "g23_record_sha256":g23_sha,
+            "g24_certificate_sha256":cert_sha,
+            "g23_artifact_zip_sha256":os.environ["G23_ZIP_SHA256"],
+            "g24_artifact_zip_sha256":os.environ["G24_ZIP_SHA256"],
+            "g24_authority":g24.get("g24_authority"),
+            "authority_signature_reference":g24.get("authority_signature_reference"),
+            "claims_certified":g24.get("claims_certified",[]),
+            "claims_excluded":g24.get("claims_excluded",[]),
+            "certification_propagation":False,
+            "canonical_mutation":False,
+            "operational_authorization":"GRANTED_FOR_EXACT_CERTIFIED_DIGEST",
+            "active_authorized":True,
+            "main_role":"OPERATIONAL_AUTHORIZATION_LEDGER_AND_DISPATCH",
+            "next_operational_state":"ACTIVE_DOCUMENT_FACTORY_GOVERNED_OPERATION",
+            "authorized_at_utc":datetime.now(timezone.utc).isoformat()
+          }
+          out=pathlib.Path("operational-authorizations/document-factory")
+          out.mkdir(parents=True,exist_ok=True)
+          payload=json.dumps(obj,indent=2,sort_keys=True)+"\n"
+          (out/"CURRENT.json").write_text(payload)
+          (out/(digest+".json")).write_text(payload)
+          print("OPERATIONAL_AUTHORIZATION=PASS")
+          print("ACTIVE_AUTHORIZED=true")
+          print("CANDIDATE_SHA="+expected)
+          print("CANDIDATE_DIGEST_SHA256="+digest)
+          print("G23_RECORD_SHA256="+g23_sha)
+          print("G24_CERTIFICATE_SHA256="+cert_sha)
+          print("NEXT_STATE=ACTIVE_DOCUMENT_FACTORY_GOVERNED_OPERATION")
+          PY
+
+      - name: Persist exact authorization on main
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git add operational-authorizations/document-factory
+          git diff --cached --quiet && exit 0
+          git config user.name "louksna-operational-gate"
+          git config user.email "louksna-operational-gate@users.noreply.github.com"
+          git commit -m "cert(document-factory): activate exact G24-certified digest"
+          git pull --rebase origin main
+          git push origin HEAD:main
