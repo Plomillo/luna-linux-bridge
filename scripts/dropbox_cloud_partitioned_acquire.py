@@ -38,7 +38,11 @@ def clean_label(text: str, fallback: str) -> str:
 
 def link_key(url: str) -> str:
     u = urllib.parse.urlsplit(url)
-    q = [(k, v) for k, v in urllib.parse.parse_qsl(u.query, keep_blank_values=True) if k in {"rlkey", "st"}]
+    q = sorted(
+        (k, v)
+        for k, v in urllib.parse.parse_qsl(u.query, keep_blank_values=True)
+        if k != "dl"
+    )
     raw = urllib.parse.urlunsplit((u.scheme, u.netloc, u.path, urllib.parse.urlencode(q), ""))
     return hashlib.sha256(raw.encode()).hexdigest()
 
@@ -115,8 +119,11 @@ def inventory_children(page, url: str) -> list[dict]:
                     typ = "folder"
                 if typ is None:
                     continue
-                text = (a.inner_text(timeout=300) or "").strip()
                 key = link_key(absolute)
+                try:
+                    text = (a.inner_text(timeout=1000) or "").strip()
+                except Exception:
+                    text = ""
                 seen[key] = {
                     "kind": typ,
                     "url": absolute,
