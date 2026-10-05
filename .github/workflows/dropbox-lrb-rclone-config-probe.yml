@@ -1,0 +1,85 @@
+name: "Dropbox — LOUKSNA Remote Bridge rclone config probe"
+
+on:
+  push:
+    branches:
+      - staging/dropbox-oauth-refresh-material-flow-20261005
+    paths:
+      - .github/workflows/dropbox-lrb-rclone-config-probe.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Verify live LOUKSNA Remote Bridge and inspect rclone config metadata only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/lrb-rclone-config-$GITHUB_RUN_ID"
+          mkdir -p "$OUT"
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          mapfile -t LINKS < <(find "$HOME/.local/lib/louksna-remote-bridge" -type f -path '*/bridge/live_link.py' -print 2>/dev/null | sort)
+          test "${#LINKS[@]}" -ge 1
+          LINK="${LINKS[-1]}"
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op status > "$OUT/LRB_STATUS.json"
+
+          python3 - "$OUT/RCLONE_CONFIG_PROBE.json" <<'PY'
+          import configparser,json,os,pathlib,sys
+          candidates=[
+              pathlib.Path.home()/".config/rclone/rclone.conf",
+              pathlib.Path.home()/".rclone.conf",
+          ]
+          rows=[]
+          usable=[]
+          for p in candidates:
+              row={"path":str(p),"exists":p.is_file()}
+              if p.is_file():
+                  st=p.stat()
+                  row["mode"]=oct(st.st_mode & 0o777)
+                  row["owner_is_current_uid"]=st.st_uid==os.getuid()
+                  cp=configparser.RawConfigParser()
+                  try:
+                      cp.read(p,encoding="utf-8")
+                      remotes=[]
+                      for sec in cp.sections():
+                          if cp.get(sec,"type",fallback="").strip().lower()=="dropbox":
+                              token=cp.get(sec,"token",fallback="").strip()
+                              client_id=cp.get(sec,"client_id",fallback="").strip()
+                              client_secret=cp.get(sec,"client_secret",fallback="").strip()
+                              remotes.append({
+                                  "remote":sec,
+                                  "token_present":bool(token),
+                                  "client_id_present":bool(client_id),
+                                  "client_secret_present":bool(client_secret)
+                              })
+                              if token: usable.append({"path":str(p),"remote":sec})
+                      row["dropbox_remotes"]=remotes
+                  except Exception as e:
+                      row["parse_error"]=type(e).__name__
+              rows.append(row)
+          result={
+              "schema":"LRB_RCLONE_CONFIG_PROBE/1.0",
+              "status":"PASS" if usable else "HOLD",
+              "usable_dropbox_binding_count":len(usable),
+              "usable_bindings":usable,
+              "candidates":rows,
+              "secret_values_logged":False
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(result,sort_keys=True))
+          PY
+          (cd "$OUT" && sha256sum ./* > SHA256SUMS.txt)
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dropbox-lrb-rclone-config-probe
+          path: ${{ runner.temp }}/lrb-rclone-config-${{ github.run_id }}/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
