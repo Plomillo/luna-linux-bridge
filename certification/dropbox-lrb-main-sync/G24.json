@@ -1,12 +1,12 @@
 {
   "active_authorized": false,
   "authority": "Louksna.md",
-  "authority_signature_reference": "GITHUB_OIDC_JWT_SHA256:ec8ba2c09bb596055ecf6448c5eb067aa3dac8d3dd31d41ea817a0d012bd8a3d",
-  "candidate_digest_sha256": "647387025da0c806480ddf742d8d08449f821605032ad7c62f52aba9daa71b57",
-  "candidate_head_sha": "97e82362bb4ea2ac50e609e2911d7d5f48859837",
+  "authority_signature_reference": "GITHUB_OIDC_JWT_SHA256:56dd5c858dad8bf7a05e744d2218cbd81947923c2fe1a5a1527480634ea5b07e",
+  "candidate_digest_sha256": "42b7f5ca6665f5042e8ebcb11b7d072ca7fdf74a11069d20797a78bae1c04c75",
+  "candidate_head_sha": "f2305f195973bcd8dbae0837951d0ac8c6b01132",
   "canonical_mutation": false,
   "certification_propagation": false,
-  "certified_at_utc": "2026-10-05T17:35:49.015558+00:00",
+  "certified_at_utc": "2026-10-05T17:47:50.930527+00:00",
   "claims_certified": [
     "MAIN_SOURCE_HASH_SYNC",
     "EXACT_SCOPE_BINDING",
@@ -21,7 +21,7 @@
     "FINAL_CORPUS_HASH_EQUIVALENCE_BEFORE_ACQUISITION"
   ],
   "failures": [],
-  "g23_record_sha256": "64f4c45deba2579d4f271e2d1f39ad53ed7db22118a0ed645686ceb22a144e02",
+  "g23_record_sha256": "5878921f8c13331256baf26e63460002b8fb0a5439f55d5cde6f64c043246074",
   "g24_authority": "GITHUB_HOSTED_SEPARATE_JOB_OIDC_BOUND",
   "owner_authorization_basis": "EXPLICIT_CURRENT_USER_INSTRUCTION_RECORDED_IN_REPOSITORY",
   "owner_authorization_cryptographic": false,
