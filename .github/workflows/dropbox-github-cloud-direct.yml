@@ -163,6 +163,42 @@ jobs:
           echo "archive_bytes=$bytes" >> "$GITHUB_OUTPUT"
           echo "entry_count=$entries" >> "$GITHUB_OUTPUT"
 
+      - name: Emit cloud download diagnostics
+        if: always()
+        shell: bash
+        env:
+          ROOT: ${{ steps.names.outputs.root }}
+        run: |
+          set -u
+          echo "CLOUD_DOWNLOAD_DIAGNOSTIC=TRUE"
+          echo "EXECUTION_PLANE=GITHUB_HOSTED"
+          if [ -f "$ROOT/evidence/curl.stderr" ]; then
+            echo "===== curl.stderr ====="
+            tail -200 "$ROOT/evidence/curl.stderr" || true
+          fi
+          if [ -f "$ROOT/evidence/curl.stdout" ]; then
+            echo "===== curl.stdout ====="
+            tail -100 "$ROOT/evidence/curl.stdout" || true
+          fi
+          if [ -f "$ROOT/evidence/MATERIAL_BYTE_FLOW.json" ]; then
+            echo "===== MATERIAL_BYTE_FLOW.json ====="
+            cat "$ROOT/evidence/MATERIAL_BYTE_FLOW.json" || true
+          fi
+          if [ -f "$ROOT/evidence/ACQUISITION_COMPLETE.json" ]; then
+            echo "===== ACQUISITION_COMPLETE.json ====="
+            cat "$ROOT/evidence/ACQUISITION_COMPLETE.json" || true
+          fi
+
+      - name: Preserve cloud diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dropbox-github-cloud-diagnostics-${{ github.run_id }}
+          path: ${{ steps.names.outputs.root }}/evidence
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 0
+
       - name: Persist acquired Dropbox bytes in GitHub Actions storage
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
