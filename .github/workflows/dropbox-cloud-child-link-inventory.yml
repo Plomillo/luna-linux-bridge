@@ -63,7 +63,16 @@ jobs:
                           if not typ: continue
                           text=(a.inner_text(timeout=500) or "").strip()
                           key=hashlib.sha256((u.path+"?"+u.query).encode()).hexdigest()
-                          seen[key]={"type":typ,"text_present":bool(text),"text_len":len(text),"path_depth":len([x for x in u.path.split("/") if x])}
+                          seen[key]={
+                              "type":typ,
+                              "text_present":bool(text),
+                              "text_len":len(text),
+                              "path_depth":len([x for x in u.path.split("/") if x]),
+                              "host":u.hostname,
+                              "path_equals_root":u.path==urllib.parse.urlsplit(URL).path,
+                              "query_keys":sorted({k for k,_ in urllib.parse.parse_qsl(u.query,keep_blank_values=True)}),
+                              "href_absolute":href.startswith("http"),
+                          }
                       except Exception:
                           pass
                   if len(seen)==last: stable+=1
