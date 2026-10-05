@@ -6,6 +6,11 @@ on:
       - main
     paths:
       - ".github/workflows/document-factory-ffprobe-custosz-v7.yml"
+      - "scripts/missions/document_factory_ffprobe_dispatch.py"
+      - "scripts/missions/document_factory_ffprobe_executor.py"
+      - "scripts/missions/document_factory_ffprobe_supervisor.py"
+      - "scripts/missions/document_factory_ffprobe_materializer.py"
+      - "missions/document-factory-ffprobe-admission-20261005/MISSION.md"
   workflow_dispatch:
 
 permissions:
@@ -85,6 +90,6 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: document-factory-ffprobe-custosz-v7
-          path: \${{ runner.temp }}/document-factory-ffprobe-admission
+          path: ${{ runner.temp }}/document-factory-ffprobe-admission
           if-no-files-found: warn
           retention-days: 90
