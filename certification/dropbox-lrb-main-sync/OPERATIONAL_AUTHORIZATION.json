@@ -1,0 +1,22 @@
+{
+  "active_authorized": true,
+  "authority": "Louksna.md",
+  "authorized_at_utc": "2026-10-05T17:35:59.679670+00:00",
+  "candidate_digest_sha256": "647387025da0c806480ddf742d8d08449f821605032ad7c62f52aba9daa71b57",
+  "candidate_head_sha": "97e82362bb4ea2ac50e609e2911d7d5f48859837",
+  "canonical_mutation": false,
+  "certification_propagation": false,
+  "desktop_commander_used": false,
+  "epistemic_state": "ACTIVE",
+  "failures": [],
+  "g23_record_sha256": "64f4c45deba2579d4f271e2d1f39ad53ed7db22118a0ed645686ceb22a144e02",
+  "g24_certificate_sha256": "104efd875e342fcc7aede1ca626f1aa0b786b5bbb2d2a08440507e918d805bfd",
+  "main_mutation": false,
+  "next_state": "EXECUTE_BINDING_IF_NO_MATERIAL_TRANSFER_ALREADY_ACTIVE",
+  "operational_authorization": "GRANTED_FOR_EXACT_CERTIFIED_DIGEST",
+  "owner_authorization_cryptographic": false,
+  "owner_authorization_sha256": "dfd0bb9c9e06702c143dc1bbd38ad7a2e280eb1c8f8191c6179d15f03bb310af",
+  "schema": "LOUKSNA_DROPBOX_OPERATIONAL_AUTHORIZATION/1.0",
+  "scope": "DROPBOX_OAUTH_BINDING_AND_ACQUISITION",
+  "status": "PASS"
+}
