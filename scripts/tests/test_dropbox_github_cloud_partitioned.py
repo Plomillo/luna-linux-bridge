@@ -21,6 +21,8 @@ required_workflow=[
     'name: "G23',
     'name: "G24',
     "scripts/dropbox_cloud_partitioned_acquire.py",
+    "FROZEN_ROOT_HTML",
+    "37355731169",
 ]
 for needle in required_workflow:
     if needle not in w:
@@ -36,6 +38,8 @@ required_script=[
     "zipfile.is_zipfile",
     "DROPBOX_CONNECTED_PLUGIN",
     "GITHUB_HOSTED_UBUNTU_24_04",
+    "children_from_html_text",
+    "CHILD_INVENTORY_FROZEN_ROOT_FALLBACK",
 ]
 for needle in required_script:
     if needle not in s:
