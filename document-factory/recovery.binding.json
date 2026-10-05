@@ -1,0 +1,16 @@
+{
+  "schema": "LOUKSNA_DOCUMENT_FACTORY_RECOVERY_BINDING/1.0",
+  "authority": "Louksna.md",
+  "reuse": {
+    "contract": "recovery/RECOVERY_CONTRACT.json",
+    "state_machine": "recovery/STATE_MACHINE.json",
+    "providers": "recovery/PROVIDERS.json",
+    "runtime": "recovery/recovery.py"
+  },
+  "duplicate_recovery_root": false,
+  "checkpoint_required": true,
+  "rollback_required": true,
+  "no_blind_retry": true,
+  "no_indefinite_hold": true,
+  "certification_inheritance": false
+}
