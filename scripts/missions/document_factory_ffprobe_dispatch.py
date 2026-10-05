@@ -3,7 +3,7 @@ import hashlib,json,os,subprocess,sys,tempfile,time
 from pathlib import Path
 
 ACTIVE_SHA="43a82aa30607b8775c998fa39b2bc08bfc2a263f"
-ACTIVE_DIGEST="b0c59f37c70e58ca42f7fd215fad890e9a24b255d369110665e7141f26f57404"
+ACTIVE_DIGEST="b0c59f37c70e58ca42f7fd215fad890e9a24b255d369110665e7141f26f57404"\nPRECERT_CANDIDATE_SHA="3774cb102ad6318fc824b2cb87c5055e9f5f4b0b"\nPRECERT_CANDIDATE_REF="refs/heads/candidate/document-factory-v1-ffprobe-20261005"
 
 def sha(p):
     return hashlib.sha256(Path(p).read_bytes()).hexdigest()
@@ -61,7 +61,7 @@ def main():
     worker.sources=sources
     mission_state=worker.mission_start(
         1.0,"LUNA_PROJECT",
-        "FFPROBE provider admission from exact ACTIVE Document Factory; official FFmpeg 9.0.2 PGP verification; branch-only additive mutation; existing certification preserved; fresh G23/G24 required.",
+        "FFPROBE provider admission and pre-certification continuation from exact ACTIVE Document Factory; exact material candidate revalidation; existing certification preserved; fresh producer/G23/G24 required.",
         report_minutes=1
     )
     tick=worker.mission_tick(mission_state["mission_id"])
@@ -74,6 +74,66 @@ def main():
         selftest=rt.selftest()
         if selftest.get("status")!="PASS": raise SystemExit("RUNTIME_SELFTEST_FAILED")
         rt.budget=TimeBudgetController(3300); rt.mission.transition("PRECHECK")
+
+        remote_line=run(["git","-C",str(target_root),"ls-remote","origin",PRECERT_CANDIDATE_REF])
+        remote_candidate_sha=remote_line.split()[0] if remote_line else ""
+        if remote_candidate_sha==PRECERT_CANDIDATE_SHA:
+            precert=main_root/"scripts/missions/document_factory_ffprobe_precert.py"
+            cp=rt.checkpoints.capture_file("FFPROBE_PRECERT_SOURCE",precert)
+            print(json.dumps({
+              "status":"CUSTOSZ_V7_PRECERT_CONTINUATION_DISPATCHED",
+              "candidate_sha":PRECERT_CANDIDATE_SHA,
+              "active_sha":ACTIVE_SHA,
+              "checkpoint_id":cp["checkpoint_id"],
+              "certification_authority":False
+            },sort_keys=True),flush=True)
+            p=subprocess.Popen([
+              sys.executable,"-B","-I",str(precert),str(target_root),str(outdir),PRECERT_CANDIDATE_SHA
+            ])
+            started=time.monotonic(); seq=0
+            while p.poll() is None:
+                seq+=1
+                print(json.dumps({
+                  "status":"CUSTOSZ_V7_PRECERT_HEARTBEAT",
+                  "sequence":seq,
+                  "state":"RUNNING",
+                  "elapsed_seconds":round(time.monotonic()-started,3),
+                  "candidate_sha":PRECERT_CANDIDATE_SHA
+                },sort_keys=True),flush=True)
+                if time.monotonic()-started>1200:
+                    p.terminate()
+                    raise SystemExit("PRECERT_CONTINUATION_TIMEOUT")
+                time.sleep(2)
+            if p.returncode!=0:
+                raise SystemExit("PRECERT_CONTINUATION_FAILED:"+str(p.returncode))
+            ep=outdir/"PRECERT_CONTINUATION.json"
+            if not ep.is_file(): raise SystemExit("PRECERT_EVIDENCE_MISSING")
+            evidence=json.loads(ep.read_text(encoding="utf-8"))
+            if evidence.get("status")!="PASS_PRECERT_NOT_G23_G24":
+                raise SystemExit("PRECERT_EVIDENCE_NOT_PASS")
+            report={
+              "schema":"CUSTOSZ_FFPROBE_PRECERT_RUNTIME_RUN/1.0",
+              "status":"PASS_PRECERT_NOT_G23_G24",
+              "mission_id":mission_state["mission_id"],
+              "custosz_checks":checks,
+              "runtime_selftest":selftest,
+              "runtime_evidence_ledger":rt.journal.verify(),
+              "candidate_head_sha":PRECERT_CANDIDATE_SHA,
+              "active_certified_anchor":{"sha":ACTIVE_SHA,"digest":ACTIVE_DIGEST,"preserved":True},
+              "certification_propagated":False,
+              "certification_authority":False,
+              "desktop_commander":"FORBIDDEN",
+              "heartbeat_last_sequence":seq,
+              "next_state":"FRESH_PRODUCER_INDEPENDENT_G23_G24_REQUIRED"
+            }
+            (outdir/"CUSTOSZ_FFPROBE_PRECERT_RUNTIME_RESULT.json").write_text(json.dumps(report,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+            print(json.dumps({
+              "status":"CUSTOSZ_V7_PRECERT_CONTINUATION_PASS",
+              "candidate_sha":PRECERT_CANDIDATE_SHA,
+              "next_state":report["next_state"]
+            },sort_keys=True),flush=True)
+            return
+
         eid="CUSTOSZ_V7_FFPROBE_PROVIDER_ADMISSION"
         rt.executors.register(ExecutorAdapter(eid,"LOCAL_SUBPROCESS",sys.executable,capabilities={"FFPROBE_PROVIDER_ADMISSION":1.0}))
         cp=rt.checkpoints.capture_file("FFPROBE_MISSION_SOURCE",mission)
