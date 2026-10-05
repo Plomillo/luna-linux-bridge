@@ -1,0 +1,38 @@
+{
+  "sheets": [
+    {
+      "name": "Rubrica",
+      "rows": [
+        [
+          "criterion_id",
+          "points",
+          "status",
+          "evidence_ref"
+        ],
+        [
+          "R01",
+          1.75,
+          "UNKNOWN",
+          ""
+        ]
+      ]
+    },
+    {
+      "name": "Fuentes",
+      "rows": [
+        [
+          "source_id",
+          "title",
+          "doi_or_url",
+          "verified"
+        ],
+        [
+          "S001",
+          "",
+          "",
+          false
+        ]
+      ]
+    }
+  ]
+}
