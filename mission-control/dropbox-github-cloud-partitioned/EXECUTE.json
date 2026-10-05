@@ -4,8 +4,8 @@
   "authority": "Louksna.md",
   "scope": "DROPBOX_CONNECTED_TO_GITHUB_HOSTED_PARTITIONED_TRANSFER",
   "contract": {
-    "head_sha": "be21ff5087a2bb798968c40dd9341923b7a7a19e",
-    "run_id": 37359050810,
+    "head_sha": "e60346e4311578105f5b6ba20a2345acebc900a2",
+    "run_id": 37359923092,
     "status": "PASS"
   },
   "source_binding": "mission-control/dropbox-github-cloud-direct/BINDING.json",
@@ -22,7 +22,8 @@
   "desktop_commander": false,
   "stop_assistant_intervention_on_material_byte_flow": true,
   "retry": {
-    "ordinal": 3,
-    "reason": "CHILD_LINK_IDENTITY_AND_LABEL_TIMEOUT_FIXED"
+    "ordinal": 4,
+    "reason": "FROZEN_GITHUB_CLOUD_ROOT_CHILD_LINK_FALLBACK_BOUND",
+    "evidence_run_id": 37355731169
   }
 }
