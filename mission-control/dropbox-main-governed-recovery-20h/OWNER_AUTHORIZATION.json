@@ -1,0 +1,23 @@
+{
+  "schema": "LOUKSNA_DROPBOX_OWNER_AUTHORIZATION/1.0",
+  "status": "AUTHORIZED",
+  "scope": "DROPBOX_OAUTH_BINDING_AND_ACQUISITION",
+  "constraints": [
+    "DESKTOP_COMMANDER_FORBIDDEN",
+    "USE_LOUKSNA_REMOTE_BRIDGE",
+    "DO_NOT_INTERRUPT_EXISTING_REPOSITORY_PROCESSES",
+    "SYNC_RELEVANT_FUNCTIONS_FROM_MAIN",
+    "STOP_ASSISTANT_INTERVENTION_ON_REAL_MATERIAL_TRANSFER"
+  ],
+  "material_stop_condition": {
+    "provider_authenticated": true,
+    "source_object_identified": true,
+    "observed_bytes_gt": 0,
+    "disk_bytes_gt": 0,
+    "background_process_alive": true
+  },
+  "authorization_origin": "CURRENT_USER_INSTRUCTION",
+  "cryptographic_owner_signature": false,
+  "certification_propagation": false,
+  "canonical_mutation": false
+}
