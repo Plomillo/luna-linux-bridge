@@ -1,0 +1,105 @@
+name: "Document Factory — PR operational authorization gate"
+
+on:
+  workflow_run:
+    workflows:
+      - "Document Factory — candidate producer"
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: document-factory-pr-operational-authorization
+  cancel-in-progress: false
+
+jobs:
+  authorize:
+    if: \${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout main authorization ledger
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: true
+          path: main-ledger
+
+      - name: Checkout exact current candidate read-only
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: candidate/document-factory-v1-20261005
+          persist-credentials: false
+          path: candidate
+
+      - name: Download exact G24 evidence from triggering PR certification
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: document-factory-cert-g24
+          path: \${{ runner.temp }}/g24
+          github-token: \${{ github.token }}
+          repository: \${{ github.repository }}
+          run-id: \${{ github.event.workflow_run.id }}
+
+      - name: Authorize exact certified digest
+        shell: bash
+        env:
+          ASSURANCE_RUN_ID: \${{ github.event.workflow_run.id }}
+          ASSURANCE_RUN_URL: \${{ github.event.workflow_run.html_url }}
+        run: |
+          set -Eeuo pipefail
+          CERT="$RUNNER_TEMP/g24/G24_CERTIFICATE.json"
+          test -f "$CERT"
+          CANDIDATE_SHA="$(git -C candidate rev-parse HEAD)"
+          python3 - "$CERT" "$CANDIDATE_SHA" "$ASSURANCE_RUN_ID" "$ASSURANCE_RUN_URL" <<'PY'
+          import hashlib,json,pathlib,sys
+          from datetime import datetime,timezone
+          cert_path,candidate_sha,run_id,run_url=sys.argv[1:]
+          p=pathlib.Path(cert_path)
+          cert=json.loads(p.read_text())
+          if cert.get("status")!="PASS": raise SystemExit("G24_NOT_PASS")
+          if cert.get("candidate_head_sha")!=candidate_sha: raise SystemExit("CERTIFIED_HEAD_DRIFT")
+          if cert.get("active_authorized") is not False: raise SystemExit("G24_SELF_AUTH_INVALID")
+          digest=cert["candidate_digest_sha256"]
+          obj={
+            "schema":"DOCUMENT_FACTORY_OPERATIONAL_AUTHORIZATION/1.0",
+            "status":"PASS",
+            "authority":"Louksna.md",
+            "scope":cert.get("scope"),
+            "candidate_head_sha":candidate_sha,
+            "candidate_digest_sha256":digest,
+            "g24_certificate_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),
+            "g24_assurance_run_id":int(run_id),
+            "g24_assurance_run_url":run_url,
+            "claims_certified":cert.get("claims_certified",[]),
+            "claims_excluded":cert.get("claims_excluded",[]),
+            "certification_propagation":False,
+            "canonical_mutation":False,
+            "operational_authorization":"GRANTED_FOR_EXACT_CERTIFIED_DIGEST",
+            "active_authorized":True,
+            "main_role":"OPERATIONAL_AUTHORIZATION_LEDGER_AND_DISPATCH",
+            "authorized_at_utc":datetime.now(timezone.utc).isoformat()
+          }
+          out=pathlib.Path("main-ledger/operational-authorizations/document-factory")
+          out.mkdir(parents=True,exist_ok=True)
+          text=json.dumps(obj,indent=2,sort_keys=True)+"\n"
+          (out/"CURRENT.json").write_text(text)
+          (out/(digest+".json")).write_text(text)
+          print(json.dumps(obj,sort_keys=True))
+          PY
+
+      - name: Persist authorization on main
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd main-ledger
+          git add operational-authorizations/document-factory
+          git diff --cached --quiet && exit 0
+          git config user.name "louksna-operational-gate"
+          git config user.email "louksna-operational-gate@users.noreply.github.com"
+          git commit -m "cert(document-factory): authorize exact G24 digest"
+          git pull --rebase origin main
+          git push origin HEAD:main
