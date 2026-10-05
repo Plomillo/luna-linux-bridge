@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import os, sys, json, time, hashlib, pathlib, subprocess, shutil, urllib.request, urllib.error, urllib.parse, zipfile, tempfile, re
+import os, sys, json, time, hashlib, pathlib, subprocess, shutil, urllib.request, urllib.error, urllib.parse, zipfile, tempfile, re, base64
 
 MISSION_ID=os.environ.get("MISSION_ID","DROPBOX_MAIN_GOVERNED_RECOVERY_20H_20261004")
 SHARED_LINK=os.environ.get("DROPBOX_SHARED_LINK","")
@@ -32,6 +32,16 @@ def sha_file(p:pathlib.Path)->str:
     with p.open("rb") as f:
         for b in iter(lambda:f.read(1024*1024),b""): h.update(b)
     return h.hexdigest()
+
+def dropbox_content_hash(p:pathlib.Path)->str:
+    """Dropbox content_hash: SHA256(concat(SHA256(each 4 MiB block)))."""
+    outer=hashlib.sha256()
+    with p.open("rb") as f:
+        while True:
+            block=f.read(4*1024*1024)
+            if not block: break
+            outer.update(hashlib.sha256(block).digest())
+    return outer.hexdigest()
 
 def atomic(path, obj):
     path=pathlib.Path(path); path.parent.mkdir(parents=True,exist_ok=True)
@@ -149,13 +159,80 @@ def api_post(url, token, payload, content=False):
     with urllib.request.urlopen(req,timeout=120) as r:
         return json.loads(r.read())
 
+def resolve_dropbox_access_token():
+    refresh=os.environ.get("DROPBOX_REFRESH_TOKEN","").strip()
+    app_key=os.environ.get("DROPBOX_APP_KEY","").strip()
+    app_secret=os.environ.get("DROPBOX_APP_SECRET","").strip()
+    legacy=os.environ.get("DROPBOX_ACCESS_TOKEN","").strip()
+    require_refresh=os.environ.get("REQUIRE_DROPBOX_OAUTH_REFRESH","0").strip()=="1"
+
+    present={"app_key":bool(app_key),"app_secret":bool(app_secret),"refresh_token":bool(refresh),
+             "legacy_access_token":bool(legacy)}
+    if refresh or app_key or app_secret:
+        if not (refresh and app_key and app_secret):
+            event("DROPBOX_OAUTH_REFRESH_BINDING_INCOMPLETE",**present)
+            if require_refresh:
+                return None,None
+        else:
+            body=urllib.parse.urlencode({
+                "grant_type":"refresh_token",
+                "refresh_token":refresh
+            }).encode()
+            basic=base64.b64encode((app_key+":"+app_secret).encode()).decode()
+            req=urllib.request.Request(
+                "https://api.dropbox.com/oauth2/token",
+                data=body,
+                method="POST",
+                headers={
+                    "Authorization":"Basic "+basic,
+                    "Content-Type":"application/x-www-form-urlencoded",
+                    "User-Agent":"LouksnaDropboxRecovery/1.1"
+                })
+            try:
+                with urllib.request.urlopen(req,timeout=120) as r:
+                    d=json.loads(r.read())
+                token=str(d.get("access_token") or "").strip()
+                if not token:
+                    event("DROPBOX_OAUTH_REFRESH_FAILED",reason="ACCESS_TOKEN_MISSING")
+                    return None,None
+                binding={
+                    "schema":"LOUKSNA_DROPBOX_OAUTH_BINDING/1.0",
+                    "provider":"DROPBOX_API_OAUTH_REFRESH",
+                    "authenticated":True,
+                    "refresh_token_persisted_in_repo":False,
+                    "access_token_persisted":False,
+                    "access_token_scope":"JOB_MEMORY_ONLY",
+                    "token_type":d.get("token_type"),
+                    "expires_in":d.get("expires_in"),
+                    "scope":d.get("scope"),
+                    "utc":utc()
+                }
+                atomic(EVID/"OAUTH_BINDING.json",binding)
+                event("DROPBOX_OAUTH_REFRESH_PASS",
+                      expires_in=d.get("expires_in"),scope=d.get("scope"),
+                      token_type=d.get("token_type"),token_logged=False)
+                return token,"oauth_refresh"
+            except Exception as e:
+                event("DROPBOX_OAUTH_REFRESH_FAILED",error=type(e).__name__,message=str(e)[:700])
+                return None,None
+
+    if require_refresh:
+        event("PROVIDER_DROPBOX_API_UNAVAILABLE",reason="OAUTH_REFRESH_NOT_BOUND",**present)
+        return None,None
+    if legacy:
+        event("DROPBOX_LEGACY_ACCESS_TOKEN_FALLBACK",token_present=True,token_logged=False)
+        return legacy,"legacy_access_token"
+    event("PROVIDER_DROPBOX_API_UNAVAILABLE",reason="TOKEN_NOT_BOUND",**present)
+    return None,None
+
 def provider_dropbox_api():
     check_deadline()
-    token=os.environ.get("DROPBOX_ACCESS_TOKEN","").strip()
+    token,auth_mode=resolve_dropbox_access_token()
     if not token:
-        event("PROVIDER_DROPBOX_API_UNAVAILABLE",reason="TOKEN_NOT_BOUND")
         return False
-    event("PROVIDER_DROPBOX_API_START",token_present=True,token_logged=False)
+    provider_label="DROPBOX_API_OAUTH_REFRESH" if auth_mode=="oauth_refresh" else "DROPBOX_API_SHARED_LINK"
+    event("PROVIDER_DROPBOX_API_START",provider=provider_label,auth_mode=auth_mode,
+          token_present=True,token_logged=False)
     queue=[""]; files=[]; seen=set()
     try:
         while queue:
@@ -180,20 +257,32 @@ def provider_dropbox_api():
         if not files:
             event("DROPBOX_API_ENUMERATION_EMPTY")
             return False
-        atomic(EXPECTED,{"provider":"DROPBOX_API_SHARED_LINK","count":len(files),
+        atomic(EXPECTED,{"provider":provider_label,"count":len(files),
                          "bytes":sum(x["size"] for x in files),"objects":files,"utc":utc()})
-        event("EXPECTED_MANIFEST_CREATED",provider="DROPBOX_API_SHARED_LINK",
+        event("EXPECTED_MANIFEST_CREATED",provider=provider_label,
               count=len(files),bytes=sum(x["size"] for x in files))
         for idx,x in enumerate(files,1):
             check_deadline()
             rel=safe_rel(x["path"])
             dest=CORPUS/rel; dest.parent.mkdir(parents=True,exist_ok=True)
             if dest.is_file() and dest.stat().st_size==x["size"]:
-                if x.get("content_hash"):
-                    # Dropbox content_hash is not SHA-256; size+later manifest remains independently recorded.
-                    event("API_OBJECT_REUSE_EXISTING",path=rel.as_posix(),size=x["size"],ordinal=idx)
+                source_hash=(x.get("content_hash") or "").lower()
+                if source_hash:
+                    local_dbx=dropbox_content_hash(dest)
+                    if local_dbx==source_hash:
+                        event("API_OBJECT_REUSE_EXISTING",path=rel.as_posix(),size=x["size"],
+                              ordinal=idx,validation="DROPBOX_CONTENT_HASH")
+                        continue
+                    event("API_OBJECT_EXISTING_MISMATCH",path=rel.as_posix(),size=x["size"],
+                          ordinal=idx,source_content_hash=source_hash,local_content_hash=local_dbx)
+                else:
+                    event("API_OBJECT_REUSE_EXISTING",path=rel.as_posix(),size=x["size"],
+                          ordinal=idx,validation="SIZE_ONLY_NO_SOURCE_CONTENT_HASH")
                     continue
             tmp=dest.with_suffix(dest.suffix+".louksna.part")
+            if tmp.exists() and tmp.stat().st_size>0:
+                event("API_PARTIAL_RESTART_OBJECT",path=rel.as_posix(),partial_bytes=tmp.stat().st_size,
+                      ordinal=idx,policy="RESTART_ONLY_CURRENT_OBJECT")
             arg={"url":SHARED_LINK,"path":x["path"]}
             req=urllib.request.Request("https://content.dropboxapi.com/2/sharing/get_shared_link_file",
                 data=b"",method="POST",headers={
@@ -201,16 +290,51 @@ def provider_dropbox_api():
                     "Dropbox-API-Arg":json.dumps(arg,separators=(",",":")),
                     "User-Agent":"LouksnaDropboxRecovery/1.0"})
             with urllib.request.urlopen(req,timeout=300) as r, tmp.open("wb") as f:
+                request_id=r.headers.get("X-Dropbox-Request-Id") or r.headers.get("x-dropbox-request-id")
+                material_marked=(EVID/"DOWNLOAD_STARTED.json").exists()
                 while True:
                     b=r.read(1024*1024)
                     if not b: break
                     f.write(b)
+                    if not material_marked:
+                        f.flush(); os.fsync(f.fileno())
+                        observed=tmp.stat().st_size
+                        if observed>0:
+                            marker={
+                                "schema":"LOUKSNA_DROPBOX_MATERIAL_DOWNLOAD_STARTED/1.1",
+                                "mission_id":MISSION_ID,
+                                "authority":"Louksna.md",
+                                "provider":provider_label,
+                                "provider_authenticated":True,
+                                "auth_mode":auth_mode,
+                                "source_link":SHARED_LINK,
+                                "source_object":{"path":x["path"],"id":x.get("id"),"rev":x.get("rev"),
+                                                 "content_hash":x.get("content_hash")},
+                                "destination":str(tmp),
+                                "observed_bytes":observed,
+                                "background_pid":os.getpid(),
+                                "dropbox_request_id":request_id,
+                                "utc":utc()
+                            }
+                            atomic(EVID/"DOWNLOAD_STARTED.json",marker)
+                            event("API_MATERIAL_DOWNLOAD_STARTED",provider=provider_label,
+                                  path=rel.as_posix(),observed_bytes=observed,
+                                  background_pid=os.getpid(),dropbox_request_id=request_id)
+                            material_marked=True
             if tmp.stat().st_size!=x["size"]:
                 event("API_OBJECT_SIZE_MISMATCH",path=rel.as_posix(),expected=x["size"],actual=tmp.stat().st_size)
                 return False
+            source_hash=(x.get("content_hash") or "").lower()
+            if source_hash:
+                actual_hash=dropbox_content_hash(tmp)
+                if actual_hash!=source_hash:
+                    event("API_OBJECT_CONTENT_HASH_MISMATCH",path=rel.as_posix(),
+                          expected=source_hash,actual=actual_hash)
+                    return False
             os.replace(tmp,dest)
-            event("API_OBJECT_ACQUIRED",path=rel.as_posix(),size=x["size"],ordinal=idx,total=len(files))
-        atomic(STATUS,{"state":"ACQUIRED_PENDING_COMPLETENESS","provider":"DROPBOX_API_SHARED_LINK","utc":utc()})
+            event("API_OBJECT_ACQUIRED",provider=provider_label,path=rel.as_posix(),size=x["size"],
+                  ordinal=idx,total=len(files),dropbox_request_id=request_id)
+        atomic(STATUS,{"state":"ACQUIRED_PENDING_COMPLETENESS","provider":provider_label,"utc":utc()})
         return True
     except Exception as e:
         event("PROVIDER_DROPBOX_API_FAILED",error=type(e).__name__,message=str(e)[:1000])
@@ -375,7 +499,7 @@ def completeness():
         try: exp=json.loads(EXPECTED.read_text())
         except Exception: pass
     provider=exp.get("provider")
-    if provider in ("DROPBOX_API_SHARED_LINK","RCLONE_DROPBOX"):
+    if provider in ("DROPBOX_API_OAUTH_REFRESH","DROPBOX_API_SHARED_LINK","RCLONE_DROPBOX"):
         objs=exp.get("objects",[])
         expected_count=int(exp.get("count") or len(objs))
         expected_bytes=int(exp.get("bytes") or 0)
@@ -411,10 +535,12 @@ def main():
           main_role=["TRUST_ROOT","RECOVERY_ROOT","ACQUISITION_ROOT","CONTINUITY_ROOT"])
     atomic(STATUS,{"state":"DISCOVER","mission_id":MISSION_ID,"utc":utc()})
     providers=[
+        ("DROPBOX_API_OAUTH_REFRESH",provider_dropbox_api),
         ("RCLONE_DROPBOX",provider_rclone),
-        ("DROPBOX_API_SHARED_LINK",provider_dropbox_api),
         ("DROPBOX_BROWSER_PACKAGE",browser_download_candidate),
     ]
+    event("PROVIDER_ORDER_BOUND",providers=[x[0] for x in providers],
+          primary="DROPBOX_API_OAUTH_REFRESH",browser_role="FALLBACK_DIAGNOSTIC")
     acquired=False
     for name,fn in providers:
         check_deadline()
