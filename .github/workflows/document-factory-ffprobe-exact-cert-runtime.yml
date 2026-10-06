@@ -1,0 +1,43 @@
+name: "CUSTOSZ V7 — FFprobe exact certification candidate"
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: custosz-document-factory-ffprobe-exact-cert
+  cancel-in-progress: false
+
+jobs:
+  identity-gate:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact mission candidate surface
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: candidate/document-factory-ffprobe-exact-cert-runtime-20261006
+          persist-credentials: false
+      - name: CUSTOSZ V7 Runtime exact mission identity gate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export CUSTOSZ_WORKSPACE_OVERRIDE="$HOME/SYMPHYLAX_LAB/CUSTOSZ_V7_R1_G23_G24_20260927T021532Z/POSIX_COMPATIBILITY_VIEW"
+          echo "WORKER=CUSTOSZ_V7"
+          echo "RUNTIME=CUSTOSZ_RUNTIME_V1"
+          echo "IDENTITY_GATE=RUNNING"
+          python3 -B - <<'PY'
+          from pathlib import Path
+          import importlib.util, json
+          p=Path('scripts/mission_mailbox/adapters/document_factory_ffprobe_exact_cert.py')
+          spec=importlib.util.spec_from_file_location('binding',p)
+          m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+          print(json.dumps(m.validate(Path('.')),sort_keys=True))
+          PY
+          git cat-file -e 3cc413cea40d77c7bb119e29d09d72b4eac44909^{commit}
+          git cat-file -e 3774cb102ad6318fc824b2cb87c5055e9f5f4b0b^{commit}
+          echo "IDENTITY_GATE=MATERIAL_COMPARISON_REQUIRED"
+          git diff --stat 3cc413cea40d77c7bb119e29d09d72b4eac44909 3774cb102ad6318fc824b2cb87c5055e9f5f4b0b
+          echo "CUSTOSZ_REAL_TELEMETRY=PASS"
