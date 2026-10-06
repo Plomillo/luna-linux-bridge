@@ -55,6 +55,11 @@ required_script=[
     "too many files",
     "inventory_children",
     "attempt_folder_download",
+    "attempt_direct_folder_download",
+    "FOLDER_DIRECT_DL1_ATTEMPT",
+    "FOLDER_DIRECT_DL1_PASS",
+    "FOLDER_DOWNLOAD_UI_CONTROL_UNAVAILABLE",
+    "DROPBOX_DOCUMENTED_DL1_DIRECT",
     "download_file_link",
     "FIRST_DOWNLOAD_EVENT.json",
     "zipfile.is_zipfile",
@@ -84,6 +89,8 @@ required_resilience=[
     "apply_safe_runtime_repair",
     "CODE_EVENT_KIND_COLLISION",
     "RUNTIME_PATCH_EVENT_KIND_COLLISION",
+    "DROPBOX_UI_SELECTOR_DRIFT",
+    "DIRECT_DL1_THEN_SPLIT",
     "CHECKPOINT_HASH_MISMATCH",
     "RECOVERY_PLAN",
 ]
@@ -162,4 +169,7 @@ with tempfile.TemporaryDirectory() as td:
     category,action,missing=rmod.classify_bug("TypeError: record_event() got multiple values for argument 'kind'")
     assert category=="CODE_EVENT_KIND_COLLISION"
     assert action=="RUNTIME_PATCH_EVENT_KIND_COLLISION"
+    category,action,missing=rmod.classify_bug('playwright TimeoutError waiting for button[data-testid="action-bar-download-button"]')
+    assert category=="DROPBOX_UI_SELECTOR_DRIFT"
+    assert action=="DIRECT_DL1_THEN_SPLIT"
 print("DROPBOX_GITHUB_CLOUD_PARTITIONED_BUG_CLASSIFIER_SELFTEST=PASS")
