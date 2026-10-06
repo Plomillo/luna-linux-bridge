@@ -49,7 +49,7 @@ conf=json.loads((candidate/"src-tauri"/"tauri.conf.json").read_text(encoding="ut
 conf["version"]="0.3.0"
 conf["productName"]="LOUKSNA ZONA DIRECTIVA"
 conf["bundle"]["shortDescription"]="Interfaz GitHub funcional gobernada por Louksna"
-conf["bundle"]["longDescription"]="LOUKSNA ZONA DIRECTIVA V0.3 functional candidate with local evidence, persistent settings and GitHub read-only integration"
+conf["bundle"]["longDescription"]="Functional LOUKSNA interface with local evidence and GitHub read-only access."
 (candidate/"src-tauri"/"tauri.conf.json").write_text(json.dumps(conf,indent=2,sort_keys=True)+"\n",encoding="utf-8")
 
 (candidate/"README_FUNCTIONAL_V03.md").write_text(
