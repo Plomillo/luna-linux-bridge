@@ -307,6 +307,41 @@ def load_resume_state(
                 state["source"].append("PRIOR_RUN_CHECKPOINT_WITH_ARTIFACT_BINDING")
     return state
 
+def load_fix_kb() -> dict:
+    explicit = os.environ.get("TRANSFER_FIX_KB", "").strip()
+    candidates = []
+    if explicit:
+        candidates.append(pathlib.Path(explicit))
+    repo_root = pathlib.Path(__file__).resolve().parent.parent
+    candidates.append(repo_root / "mission-control" / "dropbox-github-cloud-partitioned" / "TRANSFER_FIX_KB.json")
+    for path in candidates:
+        if path.is_file():
+            try:
+                kb = json.loads(path.read_text(encoding="utf-8"))
+                if kb.get("schema") == "PUAC2_TRANSFER_FIX_KB/1.0":
+                    return kb
+            except Exception:
+                pass
+    return {"schema":"PUAC2_TRANSFER_FIX_KB/1.0","status":"UNAVAILABLE","entries":[]}
+
+
+def lookup_known_fix(category: str, signal: str) -> dict | None:
+    kb = load_fix_kb()
+    for entry in kb.get("entries", []):
+        if entry.get("category") != category:
+            continue
+        if not str(entry.get("validation_status") or "").startswith("VALIDATED"):
+            continue
+        pattern = str(entry.get("signal_regex") or "")
+        try:
+            matched = bool(pattern and re.search(pattern, signal, flags=re.I))
+        except re.error:
+            matched = False
+        if matched:
+            return entry
+    return None
+
+
 def classify_bug(stderr_text: str) -> tuple[str, str, str | None]:
     text = stderr_text[-16000:]
     lower = text.lower()
@@ -407,7 +442,21 @@ def diagnose(stderr_path: pathlib.Path, out_dir: pathlib.Path) -> dict:
     signal = " | ".join(nonempty[-8:])[-2000:] or "unknown transfer failure"
     category, action, missing = classify_bug(text)
     fingerprint = hashlib.sha256((category + "\n" + signal).encode("utf-8")).hexdigest()
-    research = live_research(signal)
+    known_fix = lookup_known_fix(category, signal)
+    if known_fix:
+        action = str(known_fix.get("action") or action)
+        research = {
+            "schema": SCHEMA_RESEARCH,
+            "query": signal,
+            "searched_at_utc": utc(),
+            "results": [],
+            "errors": [],
+            "live_search_performed": False,
+            "research_skipped_reason": "KNOWN_VERIFIED_FIX",
+            "known_fix_id": known_fix.get("fix_id"),
+        }
+    else:
+        research = live_research(signal)
     bug = {
         "schema": SCHEMA_BUG,
         "bug_id": "BUG-" + fingerprint[:16],
@@ -423,6 +472,9 @@ def diagnose(stderr_path: pathlib.Path, out_dir: pathlib.Path) -> dict:
         "evidence_preserved": True,
         "live_research_file": "LIVE_RESEARCH.json",
         "live_research_result_count": len(research["results"]),
+        "known_fix_reused": bool(known_fix),
+        "known_fix_id": known_fix.get("fix_id") if known_fix else None,
+        "known_fix_validation_status": known_fix.get("validation_status") if known_fix else None,
         "status": "DIAGNOSED",
     }
     atomic_json(out_dir / "BUG_RECORD.json", bug)
