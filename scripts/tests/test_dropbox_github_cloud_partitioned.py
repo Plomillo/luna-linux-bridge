@@ -10,12 +10,14 @@ workflow=Path(".github/workflows/dropbox-github-cloud-partitioned.yml")
 script=Path("scripts/dropbox_cloud_partitioned_acquire.py")
 resilience=Path("scripts/dropbox_transfer_resilience.py")
 seed=Path("mission-control/dropbox-github-cloud-partitioned/RESUME_SEED.json")
+fix_kb=Path("mission-control/dropbox-github-cloud-partitioned/TRANSFER_FIX_KB.json")
 
 for p,label in (
     (workflow,"PARTITIONED_WORKFLOW_MISSING"),
     (script,"PARTITIONED_SCRIPT_MISSING"),
     (resilience,"RESILIENCE_SCRIPT_MISSING"),
     (seed,"RESUME_SEED_MISSING"),
+    (fix_kb,"TRANSFER_FIX_KB_MISSING"),
 ):
     if not p.is_file():
         raise SystemExit(label)
@@ -24,6 +26,7 @@ w=workflow.read_text(encoding="utf-8")
 s=script.read_text(encoding="utf-8")
 r=resilience.read_text(encoding="utf-8")
 seed_obj=json.loads(seed.read_text(encoding="utf-8"))
+fix_kb_obj=json.loads(fix_kb.read_text(encoding="utf-8"))
 
 required_workflow=[
     "runs-on: ubuntu-24.04",
@@ -86,6 +89,9 @@ required_resilience=[
     "write_checkpoint",
     "diagnose",
     "live_research",
+    "load_fix_kb",
+    "lookup_known_fix",
+    "KNOWN_VERIFIED_FIX",
     "apply_safe_runtime_repair",
     "CODE_EVENT_KIND_COLLISION",
     "RUNTIME_PATCH_EVENT_KIND_COLLISION",
@@ -122,6 +128,11 @@ for item in completed:
         raise SystemExit("RESUME_SEED_ARTIFACT_DIGEST_MISSING")
     if int(item.get("artifact_size_bytes") or 0)<=0:
         raise SystemExit("RESUME_SEED_ARTIFACT_SIZE_INVALID")
+
+if fix_kb_obj.get("schema")!="PUAC2_TRANSFER_FIX_KB/1.0":
+    raise SystemExit("TRANSFER_FIX_KB_SCHEMA_MISMATCH")
+if not any(x.get("category")=="DROPBOX_UI_SELECTOR_DRIFT" and x.get("action")=="DIRECT_DL1_THEN_SPLIT" for x in fix_kb_obj.get("entries",[])):
+    raise SystemExit("TRANSFER_FIX_KB_UI_DRIFT_FIX_MISSING")
 
 tree=ast.parse(s)
 for node in ast.walk(tree):
@@ -172,4 +183,6 @@ with tempfile.TemporaryDirectory() as td:
     category,action,missing=rmod.classify_bug('playwright TimeoutError waiting for button[data-testid="action-bar-download-button"]')
     assert category=="DROPBOX_UI_SELECTOR_DRIFT"
     assert action=="DIRECT_DL1_THEN_SPLIT"
+    known=rmod.lookup_known_fix(category,'playwright TimeoutError waiting for button[data-testid="action-bar-download-button"]')
+    assert known and known["action"]=="DIRECT_DL1_THEN_SPLIT"
 print("DROPBOX_GITHUB_CLOUD_PARTITIONED_BUG_CLASSIFIER_SELFTEST=PASS")
