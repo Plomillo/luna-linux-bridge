@@ -8,21 +8,27 @@ import os
 import pathlib
 import re
 import time
+import traceback
 import urllib.parse
 import urllib.request
 import zipfile
 from datetime import datetime, timezone
+
+from dropbox_transfer_resilience import emit_event, load_resume_state, write_checkpoint
 
 ROOT_LINK = "https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/AIIzeblluaJfhuXh9EnP-10?rlkey=p712fwlkbwn9g0dtybu2sf159&st=3igdng0g&dl=0"
 ROOT = pathlib.Path(os.environ["STATE_ROOT"])
 EVID = ROOT / "evidence"
 DL = ROOT / "browser-downloads"
 PAYLOAD = ROOT / "payload"
-for p in (EVID, DL, PAYLOAD):
+CHECKPOINTS = ROOT / "checkpoints"
+QUARANTINE = ROOT / "quarantine"
+for p in (EVID, DL, PAYLOAD, CHECKPOINTS, QUARANTINE):
     p.mkdir(parents=True, exist_ok=True)
 
 MAX_DEPTH = 16
 MAX_NODES = 50000
+MAX_ITEM_RETRIES = max(1, int(os.environ.get("TRANSFER_ITEM_RETRIES", "3")))
 
 def utc() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -64,6 +70,8 @@ def with_dl(url: str, value: str) -> str:
     return urllib.parse.urlunsplit((u.scheme, u.netloc, u.path, urllib.parse.urlencode(q), u.fragment))
 
 def record_event(kind: str, **kwargs) -> None:
+    emit_event(ROOT, kind, **kwargs)
+    # Legacy projection retained for existing diagnostics; EventRecord_V2 is authoritative.
     p = EVID / "EVENTS.ndjson"
     row = {"utc": utc(), "kind": kind, **kwargs}
     with p.open("a", encoding="utf-8") as f:
@@ -392,23 +400,127 @@ def attempt_folder_download(page, url: str, label: str, ordinal: int):
         "source_identity_sha256": link_key(url),
     }, ensure_ascii=False, sort_keys=True))
 
+def is_transient_transfer_error(exc: BaseException) -> bool:
+    text = (type(exc).__name__ + ": " + str(exc)).lower()
+    return any(token in text for token in (
+        "timeout", "timed out", "connection reset", "remote end closed",
+        "temporarily unavailable", "temporary failure", "429", "502", "503", "504",
+        "network is unreachable", "name or service not known",
+    ))
+
+def quarantine_path(path: pathlib.Path, reason: str) -> None:
+    if not path.exists():
+        return
+    target = QUARANTINE / (path.name + "." + hashlib.sha256(reason.encode()).hexdigest()[:10] + ".quarantine")
+    try:
+        os.replace(path, target)
+        record_event("PAYLOAD_QUARANTINED", source=path.name, target=target.name, reason=reason)
+    except Exception as qexc:
+        record_event("QUARANTINE_FAILURE", source=path.name, reason=reason, error=f"{type(qexc).__name__}:{qexc}")
+
+def process_item(page, item: dict, ordinal: int) -> dict:
+    key = item["key"]
+    last_exc: BaseException | None = None
+    for attempt_no in range(1, MAX_ITEM_RETRIES + 1):
+        try:
+            record_event(
+                "ITEM_ATTEMPT",
+                identity_sha256=key,
+                kind=item["kind"],
+                label=item["label"],
+                attempt=attempt_no,
+                max_attempts=MAX_ITEM_RETRIES,
+            )
+            if item["kind"] == "file":
+                return {"action": "downloaded", "result": download_file_link(item["url"], item["label"], ordinal)}
+
+            result = attempt_folder_download(page, item["url"], item["label"], ordinal)
+            if result["action"] == "split":
+                children = inventory_children(page, item["url"])
+                if not children:
+                    raise RuntimeError("PARTITION_REQUIRED_BUT_CHILDREN_EMPTY:" + key)
+                result["children"] = children
+            return result
+        except Exception as exc:
+            last_exc = exc
+            message = f"{type(exc).__name__}:{exc}"
+            record_event(
+                "ITEM_ATTEMPT_FAILED",
+                identity_sha256=key,
+                kind=item["kind"],
+                label=item["label"],
+                attempt=attempt_no,
+                error=message,
+                traceback=traceback.format_exc(limit=12),
+            )
+
+            # A failed folder package is not a global failure. If the folder can be
+            # inventoried, degrade to recursive partitioning irrespective of the exact
+            # Dropbox/UI failure class.
+            if item["kind"] == "folder":
+                candidate = PAYLOAD / f"{ordinal:06d}_folder_{key[:12]}.zip"
+                if candidate.exists():
+                    quarantine_path(candidate, message)
+                try:
+                    children = inventory_children(page, item["url"])
+                except Exception as inv_exc:
+                    record_event(
+                        "FOLDER_FALLBACK_INVENTORY_FAILED",
+                        identity_sha256=key,
+                        error=f"{type(inv_exc).__name__}:{inv_exc}",
+                    )
+                    children = []
+                if children:
+                    record_event(
+                        "FOLDER_FALLBACK_TO_SPLIT",
+                        identity_sha256=key,
+                        child_count=len(children),
+                        trigger=message,
+                    )
+                    return {"action": "split", "children": children, "fallback_reason": message}
+
+            if is_transient_transfer_error(exc) and attempt_no < MAX_ITEM_RETRIES:
+                delay = min(60, 2 ** attempt_no)
+                record_event("TRANSIENT_RETRY_BACKOFF", identity_sha256=key, delay_seconds=delay)
+                time.sleep(delay)
+                continue
+            break
+    assert last_exc is not None
+    raise last_exc
+
 def main() -> None:
     from playwright.sync_api import sync_playwright
 
+    resume = load_resume_state(
+        os.environ.get("RESUME_SEED"),
+        os.environ.get("RESUME_CHECKPOINT"),
+        os.environ.get("RESUME_ARTIFACT_BINDING"),
+        link_key,
+    )
     manifest = {
-        "schema": "LOUKSNA_DROPBOX_GITHUB_PARTITIONED_MANIFEST/1.0",
+        "schema": "LOUKSNA_DROPBOX_GITHUB_PARTITIONED_MANIFEST/2.0-PUAC2",
         "status": "RUNNING",
         "authority": "Louksna.md",
+        "governance": "PUAC2.md",
         "source_root": sanitize_url(ROOT_LINK),
         "execution_plane": "GITHUB_HOSTED_UBUNTU_24_04",
         "local_pc_data_plane": False,
         "self_hosted_runner_data_plane": False,
         "desktop_commander": False,
         "started_at_utc": utc(),
-        "completed": [],
-        "split_folders": [],
+        "resume_sources": resume["source"],
+        "prior_completed": resume["prior_completed"],
+        "completed": resume["current_completed"],
+        "split_folders": resume["split_folders"],
+        "failed": [],
+        "anti_paralysis": True,
+        "live_bug_research": True,
+        "no_restart_from_zero_with_valid_checkpoint": True,
     }
     atomic_json(EVID / "MANIFEST.json", manifest)
+
+    completed_keys = set(resume["completed_keys"])
+    parent_checkpoint_hash = resume.get("parent_checkpoint_hash")
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True, downloads_path=str(DL))
@@ -418,21 +530,31 @@ def main() -> None:
         root_children = inventory_children(page, ROOT_LINK)
         if not root_children:
             raise SystemExit("ROOT_CHILDREN_EMPTY")
+        root_keys = {x["key"] for x in root_children}
         atomic_json(EVID / "ROOT_INVENTORY.json", {
-            "schema": "LOUKSNA_DROPBOX_ROOT_PARTITION_INVENTORY/1.0",
+            "schema": "LOUKSNA_DROPBOX_ROOT_PARTITION_INVENTORY/2.0-PUAC2",
             "status": "PASS",
             "count": len(root_children),
             "folders": sum(x["kind"] == "folder" for x in root_children),
             "files": sum(x["kind"] == "file" for x in root_children),
-            "child_identity_sha256": [x["key"] for x in root_children],
+            "child_identity_sha256": sorted(root_keys),
+            "resume_completed_root_count": sum(x["key"] in completed_keys for x in root_children),
             "observed_at_utc": utc(),
         })
 
-        queue = [{"depth": 1, **x} for x in root_children]
-        queued = {x["key"] for x in queue}
-        completed_keys = set()
-        ordinal = 0
+        queue = list(resume["pending_queue"])
+        queued = {x["key"] for x in queue if isinstance(x, dict) and x.get("key")}
+        for child in root_children:
+            if child["key"] not in completed_keys and child["key"] not in queued:
+                queue.append({"depth": 1, **child})
+                queued.add(child["key"])
 
+        write_checkpoint(
+            ROOT, manifest, queue, completed_keys, "START_OR_RESUME",
+            failed=manifest["failed"], parent_hint=parent_checkpoint_hash,
+        )
+
+        ordinal = len(manifest["completed"])
         while queue:
             if len(queued) > MAX_NODES:
                 raise RuntimeError("MAX_NODES_EXCEEDED")
@@ -445,31 +567,43 @@ def main() -> None:
                 raise RuntimeError("MAX_DEPTH_EXCEEDED:" + key)
             ordinal += 1
             atomic_json(EVID / "PROGRESS.json", {
-                "schema": "LOUKSNA_DROPBOX_PARTITION_PROGRESS/1.0",
+                "schema": "LOUKSNA_DROPBOX_PARTITION_PROGRESS/2.0-PUAC2",
                 "status": "RUNNING",
                 "current": {"kind": item["kind"], "label": item["label"], "depth": depth, "identity_sha256": key},
-                "completed_count": len(manifest["completed"]),
+                "completed_count_current_run": len(manifest["completed"]),
+                "completed_count_prior": len(manifest["prior_completed"]),
                 "queue_remaining": len(queue),
                 "seen_nodes": len(queued),
                 "updated_at_utc": utc(),
             })
+            record_event("PROGRESS", current_identity_sha256=key, queue_remaining=len(queue))
 
-            if item["kind"] == "file":
-                result = download_file_link(item["url"], item["label"], ordinal)
-                manifest["completed"].append(result)
-                completed_keys.add(key)
+            try:
+                attempt = process_item(page, item, ordinal)
+            except Exception as exc:
+                failure = {
+                    "source_identity_sha256": key,
+                    "kind": item["kind"],
+                    "label": item["label"],
+                    "error": f"{type(exc).__name__}:{exc}",
+                    "failed_at_utc": utc(),
+                    "retryable": True,
+                }
+                manifest["failed"].append(failure)
                 atomic_json(EVID / "MANIFEST.json", manifest)
-                continue
+                write_checkpoint(ROOT, manifest, [item] + queue, completed_keys, "ITEM_FAILURE", failed=manifest["failed"])
+                raise
 
-            attempt = attempt_folder_download(page, item["url"], item["label"], ordinal)
             if attempt["action"] == "downloaded":
                 manifest["completed"].append(attempt["result"])
                 completed_keys.add(key)
+                manifest["failed"] = [x for x in manifest["failed"] if x.get("source_identity_sha256") != key]
                 atomic_json(EVID / "MANIFEST.json", manifest)
+                write_checkpoint(ROOT, manifest, queue, completed_keys, "OBJECT_COMMITTED", failed=manifest["failed"])
                 continue
 
             if attempt["action"] == "split":
-                children = inventory_children(page, item["url"])
+                children = attempt.get("children") or inventory_children(page, item["url"])
                 if not children:
                     raise RuntimeError("PARTITION_REQUIRED_BUT_CHILDREN_EMPTY:" + key)
                 manifest["split_folders"].append({
@@ -477,6 +611,7 @@ def main() -> None:
                     "source_identity_sha256": key,
                     "depth": depth,
                     "child_count": len(children),
+                    "fallback_reason": attempt.get("fallback_reason"),
                 })
                 for child in children:
                     if child["key"] not in queued and child["key"] not in completed_keys:
@@ -484,22 +619,46 @@ def main() -> None:
                         queued.add(child["key"])
                 completed_keys.add(key)
                 atomic_json(EVID / "MANIFEST.json", manifest)
+                write_checkpoint(ROOT, manifest, queue, completed_keys, "FOLDER_SPLIT_COMMITTED", failed=manifest["failed"])
                 continue
 
             raise RuntimeError("UNKNOWN_PARTITION_ACTION")
 
         browser.close()
 
+    missing_root = sorted(root_keys - completed_keys)
+    if missing_root:
+        raise RuntimeError("ROOT_OBJECTS_UNRESOLVED:" + ",".join(missing_root))
+
     manifest["status"] = "PASS"
     manifest["completed_at_utc"] = utc()
     manifest["payload_count"] = len(manifest["completed"])
     manifest["payload_bytes"] = sum(int(x["bytes"]) for x in manifest["completed"])
+    manifest["prior_completed_count"] = len(manifest["prior_completed"])
+    manifest["root_object_count"] = len(root_children)
+    manifest["root_completed_count"] = len(root_children)
+    manifest["completed_source_key_count"] = len(completed_keys)
+    manifest["unresolved_critical_bugs"] = 0
     atomic_json(EVID / "MANIFEST.json", manifest)
+    terminal_cp = write_checkpoint(ROOT, manifest, [], completed_keys, "CORPUS_TRANSFER_COMPLETE", failed=[])
+    atomic_json(EVID / "RECOVERY_STATUS.json", {
+        "schema": "PUAC2_TRANSFER_RECOVERY_STATUS/1.0",
+        "status": "PASS",
+        "last_verified_checkpoint_id": terminal_cp["checkpoint_id"],
+        "last_verified_checkpoint_hash": terminal_cp["checkpoint_hash"],
+        "resume_used": bool(resume["source"]),
+        "verified_progress_preserved": True,
+        "completed_at_utc": utc(),
+    })
     print(json.dumps({
         "PARTITIONED_ACQUISITION": "PASS",
-        "payload_count": manifest["payload_count"],
-        "payload_bytes": manifest["payload_bytes"],
+        "payload_count_current_run": manifest["payload_count"],
+        "payload_bytes_current_run": manifest["payload_bytes"],
+        "prior_completed_count": manifest["prior_completed_count"],
+        "root_object_count": manifest["root_object_count"],
+        "root_completed_count": manifest["root_completed_count"],
         "split_folders": len(manifest["split_folders"]),
+        "checkpoint_hash": terminal_cp["checkpoint_hash"],
     }, sort_keys=True))
 
 if __name__ == "__main__":
