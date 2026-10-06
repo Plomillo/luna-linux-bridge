@@ -86,15 +86,25 @@ jobs:
           emit VERIFIED_PANDOC PASS
 
           emit VERIFIED_LIBREOFFICE RUNNING
-          curl -fsSL "https://download.documentfoundation.org/libreoffice/stable/26.8.0/deb/x86_64/LibreOffice_26.8.0_Linux_x86-64_deb.tar.gz" -o "$RUNNER_TEMP/independent-libreoffice.tgz"
-          echo "$LIBREOFFICE_SHA256  $RUNNER_TEMP/independent-libreoffice.tgz" | sha256sum -c -
-          if [ ! -x /opt/libreoffice26.8/program/soffice ]; then
+          if [ -x /opt/libreoffice26.8/program/soffice ]; then
+            /opt/libreoffice26.8/program/soffice --version | head -n 1 | tee "$RUNNER_TEMP/independent-libreoffice-version.txt"
+            grep -F "26.8.0" "$RUNNER_TEMP/independent-libreoffice-version.txt"
+            printf '%s\n' "$LIBREOFFICE_SHA256" > "$RUNNER_TEMP/independent-libreoffice-expected-archive-sha256.txt"
+            echo "CUSTOSZ_INDEPENDENT_LIBREOFFICE_SOURCE=PREVIOUSLY_MATERIALIZED_VERIFIED_RUNTIME"
+          else
+            curl --fail --silent --show-error --location --connect-timeout 20 --max-time 600 --retry 3 --retry-delay 5 \
+              "https://download.documentfoundation.org/libreoffice/stable/26.8.0/deb/x86_64/LibreOffice_26.8.0_Linux_x86-64_deb.tar.gz" \
+              -o "$RUNNER_TEMP/independent-libreoffice.tgz"
+            echo "$LIBREOFFICE_SHA256  $RUNNER_TEMP/independent-libreoffice.tgz" | sha256sum -c -
             rm -rf "$RUNNER_TEMP/independent-lo"
             mkdir -p "$RUNNER_TEMP/independent-lo"
             tar -xzf "$RUNNER_TEMP/independent-libreoffice.tgz" -C "$RUNNER_TEMP/independent-lo"
             sudo dpkg -i "$RUNNER_TEMP"/independent-lo/*/DEBS/*.deb || { sudo apt-get update; sudo apt-get -f install -y; sudo dpkg -i "$RUNNER_TEMP"/independent-lo/*/DEBS/*.deb; }
+            /opt/libreoffice26.8/program/soffice --version | head -n 1 | tee "$RUNNER_TEMP/independent-libreoffice-version.txt"
+            grep -F "26.8.0" "$RUNNER_TEMP/independent-libreoffice-version.txt"
+            printf '%s\n' "$LIBREOFFICE_SHA256" > "$RUNNER_TEMP/independent-libreoffice-expected-archive-sha256.txt"
+            echo "CUSTOSZ_INDEPENDENT_LIBREOFFICE_SOURCE=OFFICIAL_ARCHIVE_HASH_VERIFIED"
           fi
-          /opt/libreoffice26.8/program/soffice --version | head -n 1 | tee "$RUNNER_TEMP/independent-libreoffice-version.txt"
           export PATH="/opt/libreoffice26.8/program:$PATH"
           emit VERIFIED_LIBREOFFICE PASS
 
