@@ -388,6 +388,12 @@ jobs:
     outputs:
       g23_sha256: ${{ steps.validate.outputs.g23_sha256 }}
     steps:
+      - name: Checkout validator code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
       - name: Recover exact partitioned acquisition artifact
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
@@ -395,27 +401,29 @@ jobs:
           path: ${{ runner.temp }}/acquired
 
       - id: validate
-        name: Independently verify manifest, bytes, hashes and ZIP CRCs
+        name: Independently verify PUAC2 manifest, prior artifacts, hashes, checkpoint and ZIP CRCs
         shell: bash
         env:
           EXPECTED_MANIFEST_SHA: ${{ needs.acquire.outputs.manifest_sha256 }}
           EXPECTED_PAYLOAD_COUNT: ${{ needs.acquire.outputs.payload_count }}
           EXPECTED_PAYLOAD_BYTES: ${{ needs.acquire.outputs.payload_bytes }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -Eeuo pipefail
           mkdir -p "$RUNNER_TEMP/g23"
           python3 - "$RUNNER_TEMP/acquired" "$RUNNER_TEMP/g23/G23.json" <<'PY'
-          import hashlib,json,os,pathlib,sys,zipfile,datetime as dt
+          import hashlib,json,os,pathlib,sys,urllib.request,zipfile,datetime as dt
           root=pathlib.Path(sys.argv[1]); out=pathlib.Path(sys.argv[2])
           mp=root/"evidence/MANIFEST.json"
           m=json.load(open(mp,encoding="utf-8"))
           checks={}
           checks["manifest_sha"]=hashlib.sha256(mp.read_bytes()).hexdigest()==os.environ["EXPECTED_MANIFEST_SHA"]
           checks["manifest_status"]=m.get("status")=="PASS"
+          checks["root_8_of_8"]=int(m.get("root_object_count") or 0)==8 and int(m.get("root_completed_count") or 0)==8
           completed=m.get("completed") or []
-          checks["count"]=len(completed)==int(os.environ["EXPECTED_PAYLOAD_COUNT"])
-          total=0
-          details=[]
+          prior=m.get("prior_completed") or []
+          checks["current_count"]=len(completed)==int(os.environ["EXPECTED_PAYLOAD_COUNT"])
+          total=0; details=[]
           for item in completed:
               p=root/"payload"/item["payload_name"]
               ok=p.is_file() and p.stat().st_size==int(item["bytes"]) and p.stat().st_size>0
@@ -424,8 +432,7 @@ jobs:
                   hh=hashlib.sha256()
                   with p.open("rb") as f:
                       for chunk in iter(lambda:f.read(8*1024*1024),b""): hh.update(chunk)
-                  h=hh.hexdigest()
-                  ok=ok and h==item["sha256"]
+                  h=hh.hexdigest(); ok=ok and h==item["sha256"]
               if ok and item["kind"]=="folder_zip":
                   ok=zipfile.is_zipfile(p)
                   if ok:
@@ -433,23 +440,73 @@ jobs:
                           ok=z.testzip() is None and len(z.infolist())==int(item["entry_count"])
               total += p.stat().st_size if p.is_file() else 0
               details.append({"payload_name":item["payload_name"],"status":"PASS" if ok else "FAIL","sha256":h})
-          checks["all_payloads"]=all(x["status"]=="PASS" for x in details)
-          checks["bytes"]=total==int(os.environ["EXPECTED_PAYLOAD_BYTES"])
+          checks["all_current_payloads"]=all(x["status"]=="PASS" for x in details)
+          checks["current_bytes"]=total==int(os.environ["EXPECTED_PAYLOAD_BYTES"])
+
+          prior_checks=[]
+          token=os.environ.get("GITHUB_TOKEN","")
+          repo=os.environ.get("GITHUB_REPOSITORY","")
+          for item in prior:
+              b=item.get("artifact_binding") or item
+              aid=str(b.get("artifact_id") or "")
+              expected_digest=str(b.get("artifact_digest") or "")
+              expected_size=int(b.get("artifact_size_bytes") or 0)
+              ok=bool(aid and expected_digest.startswith("sha256:") and expected_size>0)
+              observed={}
+              if ok:
+                  req=urllib.request.Request(
+                      f"https://api.github.com/repos/{repo}/actions/artifacts/{aid}",
+                      headers={"Accept":"application/vnd.github+json","Authorization":"Bearer "+token,"User-Agent":"Louksna-PUAC2-G23/1.0"}
+                  )
+                  try:
+                      with urllib.request.urlopen(req,timeout=30) as resp:
+                          observed=json.loads(resp.read().decode())
+                      ok=not bool(observed.get("expired"))
+                      if observed.get("digest"):
+                          ok=ok and observed.get("digest")==expected_digest
+                      if item.get("top_level_ordinal"):
+                          ok=ok and int(observed.get("size_in_bytes") or 0)==expected_size
+                  except Exception as e:
+                      observed={"error":f"{type(e).__name__}:{e}"}; ok=False
+              prior_checks.append({"artifact_id":aid,"status":"PASS" if ok else "FAIL","observed":observed})
+          checks["prior_artifacts"]=len(prior)>=5 and all(x["status"]=="PASS" for x in prior_checks)
+
+          cp=root/"checkpoints/LATEST.json"
+          checks["checkpoint_present"]=cp.is_file()
+          checkpoint_hash=None
+          if cp.is_file():
+              c=json.load(open(cp,encoding="utf-8"))
+              expected=c.get("checkpoint_hash")
+              body=dict(c); body.pop("checkpoint_hash",None); body.pop("_hash_normalization",None)
+              rp=dict(body.get("recovery_plan_v2") or {}); rp["checkpoint_hash"]=None; body["recovery_plan_v2"]=rp
+              raw=json.dumps(body,ensure_ascii=False,sort_keys=True,separators=(",",":")).encode()
+              checkpoint_hash=hashlib.sha256(raw).hexdigest()
+              checks["checkpoint_hash"]=checkpoint_hash==expected
+          else:
+              checks["checkpoint_hash"]=False
+
+          checks["no_unresolved_critical_bugs"]=int(m.get("unresolved_critical_bugs") or 0)==0
           ok=all(checks.values())
           report={
-            "schema":"LOUKSNA_DROPBOX_GITHUB_PARTITIONED_G23/1.0",
+            "schema":"PUAC2_DROPBOX_GITHUB_G23/2.0",
             "status":"PASS" if ok else "FAIL",
             "authority":"Louksna.md",
+            "governance":"PUAC2.md",
             "scope":"DROPBOX_CONNECTED_TO_GITHUB_HOSTED_PARTITIONED_TRANSFER",
             "manifest_sha256":hashlib.sha256(mp.read_bytes()).hexdigest(),
-            "payload_count":len(completed),
-            "payload_bytes":total,
+            "checkpoint_hash":checkpoint_hash,
+            "root_object_count":m.get("root_object_count"),
+            "root_completed_count":m.get("root_completed_count"),
+            "current_payload_count":len(completed),
+            "current_payload_bytes":total,
+            "prior_artifact_count":len(prior),
             "independent_validator":"SEPARATE_GITHUB_HOSTED_JOB",
             "repair_allowed":False,
             "downloaded_content_executed":False,
             "certification_propagation":False,
             "canonical_mutation":False,
             "checks":checks,
+            "prior_artifact_checks":prior_checks,
             "g24_authorized":ok,
             "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
           }
@@ -541,6 +598,93 @@ jobs:
         with:
           name: dropbox-github-cloud-partitioned-g24-${{ github.run_id }}
           path: ${{ runner.temp }}/g24/G24.json
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+
+  terminal_general:
+    name: "Terminal General Certification — exact transfer mission"
+    needs: [acquire, G23, G24]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Recover acquisition evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: ${{ needs.acquire.outputs.artifact_name }}
+          path: ${{ runner.temp }}/acquired
+
+      - name: Recover G23
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: dropbox-github-cloud-partitioned-g23-${{ github.run_id }}
+          path: ${{ runner.temp }}/g23
+
+      - name: Recover G24
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: dropbox-github-cloud-partitioned-g24-${{ github.run_id }}
+          path: ${{ runner.temp }}/g24
+
+      - name: Issue local terminal general certificate after exact chain closure
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/terminal"
+          python3 - "$RUNNER_TEMP/acquired" "$RUNNER_TEMP/g23/G23.json" "$RUNNER_TEMP/g24/G24.json" "$RUNNER_TEMP/terminal/TERMINAL_GENERAL_CERTIFICATION.json" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,sys
+          root=pathlib.Path(sys.argv[1]); g23p=pathlib.Path(sys.argv[2]); g24p=pathlib.Path(sys.argv[3]); out=pathlib.Path(sys.argv[4])
+          mpath=root/"evidence/MANIFEST.json"; cppath=root/"checkpoints/LATEST.json"
+          m=json.load(open(mpath,encoding="utf-8"))
+          g23=json.load(open(g23p,encoding="utf-8"))
+          g24=json.load(open(g24p,encoding="utf-8"))
+          cp=json.load(open(cppath,encoding="utf-8"))
+          checks={
+            "transfer_8_of_8":int(m.get("root_object_count") or 0)==8 and int(m.get("root_completed_count") or 0)==8,
+            "unresolved_critical_bugs_zero":int(m.get("unresolved_critical_bugs") or 0)==0,
+            "checkpoint_chain_tip_present":bool(cp.get("checkpoint_hash")),
+            "g23_pass":g23.get("status")=="PASS",
+            "g24_pass":g24.get("status")=="PASS",
+            "scope_match":g23.get("scope")==g24.get("scope")=="DROPBOX_CONNECTED_TO_GITHUB_HOSTED_PARTITIONED_TRANSFER",
+            "manifest_binding":g23.get("manifest_sha256")==hashlib.sha256(mpath.read_bytes()).hexdigest()==g24.get("manifest_sha256"),
+            "no_certification_propagation":g23.get("certification_propagation") is False and g24.get("certification_propagation") is False,
+          }
+          ok=all(checks.values())
+          cert={
+            "schema":"LOUKSNA_TRANSFER_TERMINAL_GENERAL_CERTIFICATION_LOCAL/1.0",
+            "status":"PASS" if ok else "BLOCKED",
+            "canonical_status":"LOCAL_TERMINAL_CERTIFICATE_NOT_CANONICAL_ADMISSION",
+            "authority":"Louksna.md",
+            "governance":"PUAC2.md",
+            "scope":"DROPBOX_CONNECTED_TO_GITHUB_HOSTED_PARTITIONED_TRANSFER",
+            "final_corpus_manifest_hash":hashlib.sha256(mpath.read_bytes()).hexdigest(),
+            "checkpoint_chain_tip_hash":cp.get("checkpoint_hash"),
+            "g23_record_hash":hashlib.sha256(g23p.read_bytes()).hexdigest(),
+            "g24_record_hash":hashlib.sha256(g24p.read_bytes()).hexdigest(),
+            "root_object_count":m.get("root_object_count"),
+            "root_completed_count":m.get("root_completed_count"),
+            "current_payload_bytes":m.get("payload_bytes"),
+            "prior_completed_count":m.get("prior_completed_count"),
+            "checks":checks,
+            "certification_propagation":False,
+            "authority_transfer":False,
+            "operational_authorization_separate":True,
+            "issued_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          out.write_text(json.dumps(cert,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps(cert,sort_keys=True))
+          if not ok: raise SystemExit(32)
+          PY
+
+      - name: Preserve terminal general certification
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dropbox-transfer-terminal-general-${{ github.run_id }}
+          path: ${{ runner.temp }}/terminal/TERMINAL_GENERAL_CERTIFICATION.json
           if-no-files-found: error
           retention-days: 90
           compression-level: 0
