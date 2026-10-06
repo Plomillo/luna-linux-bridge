@@ -1,0 +1,265 @@
+{
+  "authority_context": {
+    "authority": "Louksna.md",
+    "authority_transfer": false,
+    "canonical_mutation_authorized": false
+  },
+  "declared_mission_id": "MIS-DOCUMENT-FACTORY-CUSTOSZ-V7-20261005",
+  "execution_contract": {
+    "default_profile": "LUNA_PROJECT",
+    "fail_closed": true,
+    "governor": "MetaOS",
+    "no_silent_executor_substitution": true,
+    "protected_scopes": [
+      "WINDOWS",
+      "EFI",
+      "GPT",
+      "PARTITIONS",
+      "PROYECTOS",
+      "F3-DISK",
+      "CANONICAL_ARCHITECTURE",
+      "FROZEN_ARTIFACTS"
+    ],
+    "runtime": "CUSTOSZ_RUNTIME_V1",
+    "supervisor": "SYMPHYLAX_R1",
+    "validation_reserve_seconds": 240,
+    "wallclock_seconds": 1200,
+    "worker": "CUSTOSZ_V7",
+    "workflow_success_is_not_mission_success": true
+  },
+  "mail_id": "MAIL-5FA6287AC594C82234A7",
+  "mailbox_version": "0.1.0",
+  "mission_payload": {
+    "byte_exact_preservation": true,
+    "directives_observed": {
+      "ASSURANCE": [
+        {
+          "line": 6,
+          "value": "PUAC2.md"
+        }
+      ],
+      "AUDITABILITY": [
+        {
+          "line": 15,
+          "value": "REQUIRED"
+        }
+      ],
+      "AUTHORITY": [
+        {
+          "line": 5,
+          "value": "Louksna.md"
+        }
+      ],
+      "AUTO_CERTIFICATION": [
+        {
+          "line": 20,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "AUTO_MERGE": [
+        {
+          "line": 34,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "CERTIFICATION_PROPAGATION": [
+        {
+          "line": 21,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "CERTIFIED_CHECKPOINT_RUN": [
+        {
+          "line": 25,
+          "value": "37318811748"
+        }
+      ],
+      "CERTIFIED_CHECKPOINT_SHA": [
+        {
+          "line": 24,
+          "value": "067e1be0b13d9400c2c78d6174138c10ce980dd7"
+        }
+      ],
+      "CUSTOSZ_CAPABILITY_POLICY": [
+        {
+          "line": 41,
+          "value": ""
+        }
+      ],
+      "DESKTOP_COMMANDER": [
+        {
+          "line": 13,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "EXECUTION_MODE": [
+        {
+          "line": 11,
+          "value": "CONTINUOUS_GOVERNED_CONTINUATION"
+        }
+      ],
+      "FAILURE_POSTURE": [
+        {
+          "line": 12,
+          "value": "FAIL_CLOSED"
+        }
+      ],
+      "GOVERNOR": [
+        {
+          "line": 10,
+          "value": "MetaOS"
+        }
+      ],
+      "MAIN_BRANCH": [
+        {
+          "line": 28,
+          "value": "main"
+        }
+      ],
+      "MAIN_CANONICAL_MUTATION": [
+        {
+          "line": 32,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "MAIN_DEPENDENCY_DOWNLOAD_DISPATCH": [
+        {
+          "line": 31,
+          "value": "AUTHORIZED"
+        }
+      ],
+      "MAIN_READ_FETCH_FOR_DEPENDENCIES": [
+        {
+          "line": 30,
+          "value": "AUTHORIZED"
+        }
+      ],
+      "MAIN_ROLE": [
+        {
+          "line": 29,
+          "value": "DEPENDENCY_AND_DOWNLOAD_DISPATCH_SOURCE"
+        }
+      ],
+      "MISSION_CLASS": [
+        {
+          "line": 4,
+          "value": "DOCUMENT_FACTORY_GOVERNED_CONTINUATION_V1"
+        }
+      ],
+      "MISSION_ID": [
+        {
+          "line": 3,
+          "value": "MIS-DOCUMENT-FACTORY-CUSTOSZ-V7-20261005"
+        }
+      ],
+      "NON_REGRESSION": [
+        {
+          "line": 18,
+          "value": "REQUIRED"
+        }
+      ],
+      "NO_SILENT_OPERATIONS": [
+        {
+          "line": 19,
+          "value": "ABSOLUTE"
+        }
+      ],
+      "OBJECTIVE": [
+        {
+          "line": 36,
+          "value": ""
+        }
+      ],
+      "PROVENANCE": [
+        {
+          "line": 16,
+          "value": "REQUIRED"
+        }
+      ],
+      "REPOSITORY": [
+        {
+          "line": 23,
+          "value": "Plomillo/luna-linux-bridge"
+        }
+      ],
+      "ROLLBACK": [
+        {
+          "line": 17,
+          "value": "REQUIRED"
+        }
+      ],
+      "RUNTIME": [
+        {
+          "line": 8,
+          "value": "CUSTOSZ_RUNTIME_V1"
+        }
+      ],
+      "START_STATE": [
+        {
+          "line": 56,
+          "value": ""
+        }
+      ],
+      "SUPERVISOR": [
+        {
+          "line": 9,
+          "value": "SYMPHYLAX_R1"
+        }
+      ],
+      "TARGET_BRANCH": [
+        {
+          "line": 26,
+          "value": "candidate/document-factory-v1-20261005"
+        }
+      ],
+      "TARGET_MUTATION": [
+        {
+          "line": 33,
+          "value": "AUTHORIZED_ONLY_THROUGH_WORK_BRANCH"
+        }
+      ],
+      "TERMINAL": [
+        {
+          "line": 87,
+          "value": ""
+        }
+      ],
+      "TRACEABILITY": [
+        {
+          "line": 14,
+          "value": "REQUIRED"
+        }
+      ],
+      "WORKER": [
+        {
+          "line": 7,
+          "value": "CUSTOSZ_V7"
+        }
+      ],
+      "WORK_BRANCH": [
+        {
+          "line": 27,
+          "value": "custosz/document-factory-runtime-20261005"
+        }
+      ]
+    },
+    "required_capabilities_explicit": [],
+    "routing_hints": {
+      "authoritative": false,
+      "values": [
+        "CUSTOSZ_RUNTIME",
+        "GITHUB",
+        "ROLLBACK"
+      ]
+    },
+    "source_utf8_b64": "IyBNSVNJw5NOIOKAlCBDVVNUT1NaIFY3IC8gRE9DVU1FTlQgRkFDVE9SWSBDT05USU5VQVRJT04KCk1JU1NJT05fSUQgPSBNSVMtRE9DVU1FTlQtRkFDVE9SWS1DVVNUT1NaLVY3LTIwMjYxMDA1Ck1JU1NJT05fQ0xBU1MgPSBET0NVTUVOVF9GQUNUT1JZX0dPVkVSTkVEX0NPTlRJTlVBVElPTl9WMQpBVVRIT1JJVFkgPSBMb3Vrc25hLm1kCkFTU1VSQU5DRSA9IFBVQUMyLm1kCldPUktFUiA9IENVU1RPU1pfVjcKUlVOVElNRSA9IENVU1RPU1pfUlVOVElNRV9WMQpTVVBFUlZJU09SID0gU1lNUEhZTEFYX1IxCkdPVkVSTk9SID0gTWV0YU9TCkVYRUNVVElPTl9NT0RFID0gQ09OVElOVU9VU19HT1ZFUk5FRF9DT05USU5VQVRJT04KRkFJTFVSRV9QT1NUVVJFID0gRkFJTF9DTE9TRUQKREVTS1RPUF9DT01NQU5ERVIgPSBGT1JCSURERU4KVFJBQ0VBQklMSVRZID0gUkVRVUlSRUQKQVVESVRBQklMSVRZID0gUkVRVUlSRUQKUFJPVkVOQU5DRSA9IFJFUVVJUkVEClJPTExCQUNLID0gUkVRVUlSRUQKTk9OX1JFR1JFU1NJT04gPSBSRVFVSVJFRApOT19TSUxFTlRfT1BFUkFUSU9OUyA9IEFCU09MVVRFCkFVVE9fQ0VSVElGSUNBVElPTiA9IEZPUkJJRERFTgpDRVJUSUZJQ0FUSU9OX1BST1BBR0FUSU9OID0gRk9SQklEREVOCgpSRVBPU0lUT1JZID0gUGxvbWlsbG8vbHVuYS1saW51eC1icmlkZ2UKQ0VSVElGSUVEX0NIRUNLUE9JTlRfU0hBID0gMDY3ZTFiZTBiMTNkOTQwMGMyYzc4ZDYxNzQxMzhjMTBjZTk4MGRkNwpDRVJUSUZJRURfQ0hFQ0tQT0lOVF9SVU4gPSAzNzMxODgxMTc0OApUQVJHRVRfQlJBTkNIID0gY2FuZGlkYXRlL2RvY3VtZW50LWZhY3RvcnktdjEtMjAyNjEwMDUKV09SS19CUkFOQ0ggPSBjdXN0b3N6L2RvY3VtZW50LWZhY3RvcnktcnVudGltZS0yMDI2MTAwNQpNQUlOX0JSQU5DSCA9IG1haW4KTUFJTl9ST0xFID0gREVQRU5ERU5DWV9BTkRfRE9XTkxPQURfRElTUEFUQ0hfU09VUkNFCk1BSU5fUkVBRF9GRVRDSF9GT1JfREVQRU5ERU5DSUVTID0gQVVUSE9SSVpFRApNQUlOX0RFUEVOREVOQ1lfRE9XTkxPQURfRElTUEFUQ0ggPSBBVVRIT1JJWkVECk1BSU5fQ0FOT05JQ0FMX01VVEFUSU9OID0gRk9SQklEREVOClRBUkdFVF9NVVRBVElPTiA9IEFVVEhPUklaRURfT05MWV9USFJPVUdIX1dPUktfQlJBTkNICkFVVE9fTUVSR0UgPSBGT1JCSURERU4KCk9CSkVDVElWRToKQ29udGludWUgdGhlIGV4aXN0aW5nIHNvdXJjZS1maXJzdCBHaXQtbmF0aXZlIG11bHRpZm9ybWF0IERvY3VtZW50IEZhY3RvcnkgZnJvbSB0aGUgZXhhY3QgY2VydGlmaWVkIGNoZWNrcG9pbnQuCkRvIG5vdCByZXN0YXJ0IGNvbXBsZXRlZCB3b3JrIGFuZCBkbyBub3QgcmVwbGFjZSB0aGUgZXhpc3Rpbmcgc2tlbGV0b24uClVzZSBkb2N1bWVudC1mYWN0b3J5L0FVVE9OT01PVVNfQ09OVElOVUFUSU9OLm1kIGFzIHRoZSBpbW1lZGlhdGUgY29udGludWF0aW9uIHNwZWNpZmljYXRpb24gYWZ0ZXIgcmVjb25jaWxpbmcgaXQgd2l0aCB0aGUgY2VydGlmaWVkIGNoZWNrcG9pbnQuCgpDVVNUT1NaX0NBUEFCSUxJVFlfUE9MSUNZOgpVc2UgYWxsIG5pbmUgQ1VTVE9TWiBWNyBmYW1pbGllcyBhcyBwZXJ0aW5lbnQ6CkYwMV9JT19LTk9XTEVER0UKRjAyX0VYRUNVVElPTl9SRVNPVVJDRVMKRjAzX1NFQ1VSSVRZX1RSVVNUCkYwNF9JTlRFTExJR0VOQ0VfU1lOVEhFU0lTCkYwNV9BU1NVUkFOQ0VfRVBJU1RFTUlDCkYwNl9DT05USU5VSVRZX0lOVEVST1AKRjA3X01FTU9SWV9ET0NVTUVOVEFUSU9OCkYwOF9GT1JNQUxfQ09SRQpGMDlfQ0FQQUJJTElUWV9HQVBTX0VWT0xVVElPTgoKUmVxdWlyZSBmYW1pbHlfY291bnQ9OSwgY2FwYWJpbGl0eV9jb3VudD03MiBhbmQgdW5pcXVlX2NhcGFiaWxpdHlfY291bnQ9NzIgYmVmb3JlIG1hdGVyaWFsIHdvcmsuCkZhbWlseSA5IGdvdmVybnMgY2FwYWJpbGl0eS1nYXAvZXZvbHV0aW9uIHJldmlldy4gTm8gZmFtaWx5IG1heSBtYW51ZmFjdHVyZSBjZXJ0aWZpY2F0aW9uLgoKU1RBUlRfU1RBVEU6ClRoZSBHaXRIdWIgQ29waWxvdC9Db2RleCBQUiByb3V0ZSBpcyBub3QgYW4gYWN0aXZlIHdvcmtlciBwYXRoLgpUaGUgbGFzdCBhY2NlcHRlZCBEb2N1bWVudCBGYWN0b3J5IGNoZWNrcG9pbnQgaXMgdGhlIGNlcnRpZmllZCBTSEEgYWJvdmUuCkJlZm9yZSBtdXRhdGlvbjogdmVyaWZ5IGNoZWNrcG9pbnQ7IHJlY29uY2lsZSB0YXJnZXQ7IGNyZWF0ZSBpc29sYXRlZCB3b3JrIGJyYW5jaDsgY2hlY2twb2ludDsgcnVuIGV4aXN0aW5nIHRlc3RzOyB2ZXJpZnkgQ1VTVE9TWiBzdGF0dXMvc2VsZnRlc3Q7IHZlcmlmeSBSdW50aW1lIHNlbGZ0ZXN0OyB2ZXJpZnkgdGhlIG5pbmUtZmFtaWx5IGNlbnN1cy4KCk1BSU4gREVQRU5ERU5DWSBDT09SRElOQVRJT046CkZvciBlYWNoIHJlcXVpcmVkIGRlcGVuZGVuY3kvZG93bmxvYWQ6CkNIRUNLX1dPUktUUkVFIC0+IENIRUNLX01BSU4gLT4gQ0hFQ0tfRVhJU1RJTkdfSEFTSF9WQUxJRF9BUlRJRkFDVCAtPiBSRVVTRV9JRl9WQUxJRAotPiBvdGhlcndpc2UgcmVzb2x2ZSBvZmZpY2lhbCBzb3VyY2UvdmVyc2lvbi9oYXNoIC0+IGRvd25sb2FkIG9uY2UgLT4gcmVjb3JkIHByb3ZlbmFuY2UvaGFzaC9saWNlbnNlLgpObyBzaWxlbnQgZGVwZW5kZW5jeSBzdWJzdGl0dXRpb24uIG1haW4gaXMgYXV0aG9yaXplZCBhcyB0aGUgZGVwZW5kZW5jeS9kb3dubG9hZCBkaXNwYXRjaCBzb3VyY2UsIG5vdCBhcyBhIHBsYWNlIHRvIHJld3JpdGUgY2Fub25pY2FsIGF1dGhvcml0eS4KCk1BVEVSSUFMIFdPUks6CkNvbnRpbnVlIHRoZSBnZW5lcmljIGJhY2tsb2csIHByaW9yaXRpemluZzoKMS4gZ2VuZXJpYyBwcm9maWxlL3J1YnJpYyBjb21waWxlcjsKMi4gc291cmNlLWxlZGdlciBhbmQgY2l0YXRpb24vQ1NMIHBpcGVsaW5lOwozLiBGRm1wZWcvZmZwcm9iZSBwcm92aWRlciBhZG1pc3Npb24gd2hlbiBwcm92ZW5hbmNlIGlzIHZlcmlmaWFibGU7CjQuIHNlcGFyYXRlIGltYWdlIERQSSBhbmQgcGl4ZWwtZGltZW5zaW9uIGNoZWNrczsKNS4gc3Ryb25nZXIgRE9DWC9QUFRYL1BERi9YTFNYIHZhbGlkYXRpb247CjYuIHdyaXRlci1wcm92aWRlciBzZXBhcmF0aW9uOwo3LiBjbGFpbXMvcmlzay90cmFjZWFiaWxpdHkvbW9uaXRvcmluZy90ZXN0cyBmb3IgZWFjaCBuZXcgY2FwYWJpbGl0eTsKOC4gcmVwcm9kdWNpYmxlIHN5bnRoZXRpYyBlbmQtdG8tZW5kIGRlbW9uc3RyYXRpb24uCgpGb3IgZWFjaCBjaGFuZ2U6Ck9CU0VSVkUgLT4gUkVDT05DSUxFIC0+IEFOVElfRFVQTElDQVRJT04gLT4gUFJPVkVOQU5DRSAtPiBDSEVDS1BPSU5UCi0+IE1JTklNVU1fQURESVRJVkVfREVMVEEgLT4gVEVTVCAtPiBORUdBVElWRV9URVNUIC0+IE5PTl9SRUdSRVNTSU9OIC0+IEVWSURFTkNFIC0+IENPTlRJTlVFLgoKRG8gbm90IGdlbmVyYXRlIG9yIHN1Ym1pdCB0aGUgc3R1ZGVudCdzIGFjdHVhbCBhc3NpZ25tZW50LgpEbyBub3QgdXNlIERlc2t0b3AgQ29tbWFuZGVyLgpEbyBub3QgbXV0YXRlIExvdWtzbmEubWQsIFBVQUMyLm1kLCByZWNvdmVyeS8qKiwgc2NyaXB0cy9hc3N1cmFuY2UvKiogb3IgdHJ1c3Qtcm9vdCBicmFuY2hlcy4KTm8gbWVyZ2UgdG8gdGFyZ2V0IG9yIG1haW4gaXMgYXV0aG9yaXplZC4KClRFUk1JTkFMOgpMZWF2ZSBjaGFuZ2VzIG9uIFdPUktfQlJBTkNIIGZvciByZXZpZXcgdG93YXJkIFRBUkdFVF9CUkFOQ0guCkV2ZXJ5IGNoYW5nZWQgY2FuZGlkYXRlIHJlcXVpcmVzIGZyZXNoIHByb2R1Y2VyIC0+IGluZGVwZW5kZW50IHZhbGlkYXRpb24gLT4gRzIzIC0+IEcyNC4KT24gYmxvY2tlcjogcHJlc2VydmUgZXhhY3QgZXZpZGVuY2UgYW5kIEhPTEQ7IG5vIGJsaW5kIHJldHJ5Lgo="
+  },
+  "schema_version": "1.0",
+  "source": {
+    "bytes": 3821,
+    "encoding": "utf-8",
+    "path": "missions/inbox/document-factory-custosz-v7-continuation-20261005/MISSION_ORIGINAL.md",
+    "sha256": "5fa6287ac594c82234a78b7c6e8934bb41ce2f88e236df3e1ec0b4da9c93aee7",
+    "source_commit": "9952e1f3465e5ad1dd247bb1c2f1117acc04b599"
+  }
+}
