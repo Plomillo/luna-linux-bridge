@@ -6,6 +6,7 @@ on:
       - staging/dropbox-github-cloud-partitioned-20261005
     paths:
       - mission-control/dropbox-github-cloud-partitioned/EXECUTE.json
+      - .github/workflows/dropbox-github-cloud-partitioned.yml
   workflow_dispatch:
 
 permissions:
