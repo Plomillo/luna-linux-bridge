@@ -41,6 +41,8 @@ required_workflow=[
     'name: "G23',
     'name: "G24',
     "FROZEN_ROOT_HTML",
+    "terminal_general",
+    "TERMINAL_GENERAL_CERTIFICATION",
     "37355731169",
 ]
 for needle in required_workflow:
@@ -62,7 +64,7 @@ required_script=[
     "write_checkpoint",
     "process_item",
     "FOLDER_FALLBACK_TO_SPLIT",
-    "NO_RESTART_FROM_ZERO",
+    "no_restart_from_zero_with_valid_checkpoint",
     "RECOVERY_STATUS.json",
 ]
 for needle in required_script:
