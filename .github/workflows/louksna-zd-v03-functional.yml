@@ -1,0 +1,159 @@
+name: "LOUKSNA ZD — V0.3 Functionalization"
+
+on:
+  push:
+    branches:
+      - work/louksna-zona-directiva-v0.3-functional-20261006
+    paths:
+      - missions/inbox/louksna-zona-directiva-v03-functional-20261006/MISSION.md
+      - scripts/missions/louksna_zd_v03_preflight.py
+      - .github/workflows/louksna-zd-v03-functional.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: louksna-zd-v03-functional-20261006
+  cancel-in-progress: false
+
+jobs:
+  functionalize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout V0.3 isolated work branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: work/louksna-zona-directiva-v0.3-functional-20261006
+          persist-credentials: false
+          fetch-depth: 1
+          path: target
+
+      - name: Checkout MAIN read-only authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: main
+          persist-credentials: false
+          fetch-depth: 1
+          path: main-root
+
+      - name: Checkout canonical V0.2 visual source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: 94f999f28f6ac371e1a768312a69704af96fd7a7
+          persist-credentials: false
+          fetch-depth: 1
+          path: source-project
+
+      - name: Checkout pinned CUSTOSZ V7 and Runtime
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: 89822a98ff0311d1904d969ae51cd834a4fadc20
+          persist-credentials: false
+          sparse-checkout: artifacts/custosz-v7
+          path: runtime-source
+
+      - name: Runtime synchronization telemetry
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/louksna-v03"
+          MAIN_SHA="$(git -C main-root rev-parse HEAD)"
+          WORK_SHA="$(git -C target rev-parse HEAD)"
+          echo "TELEMETRY MAIN_ROOT_SHA=$MAIN_SHA"
+          echo "TELEMETRY WORK_BRANCH_SHA=$WORK_SHA"
+          echo "TELEMETRY MAIN_MODE=READ_ONLY"
+          CUSTOSZ="runtime-source/artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz"
+          RUNTIME="runtime-source/artifacts/custosz-v7/CUSTOSZ_RUNTIME_V1_SR_EXEC_BOUND_FME_01.b.pyz"
+          python3 -B -I "$CUSTOSZ" v07-status
+          python3 -B -I "$CUSTOSZ" v07-selftest
+          python3 - "$RUNTIME" "$GITHUB_WORKSPACE/main-root/Louksna.md" <<'PY'
+          import hashlib,sys,tempfile
+          from pathlib import Path
+          runtime=Path(sys.argv[1]); authority=Path(sys.argv[2])
+          sys.path.insert(0,str(runtime))
+          from runtime_core import Runtime
+          digest=hashlib.sha256(authority.read_bytes()).hexdigest()
+          with tempfile.TemporaryDirectory(prefix="louksna-v03-runtime-") as td:
+              rt=Runtime(Path(td)/"state",authority,digest)
+              result=rt.selftest()
+              print("TELEMETRY RUNTIME_STATUS="+str(result.get("status")))
+              print("TELEMETRY RUNTIME_EVIDENCE_JOURNAL="+str(rt.journal.verify()))
+              if result.get("status")!="PASS":
+                  raise SystemExit(1)
+          PY
+          echo "TELEMETRY FUNCTIONALIZATION_RUNTIME_SYNC=PASS"
+
+      - name: Assemble synchronized source view
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cp -a source-project synced-source
+          cp main-root/Louksna.md synced-source/Louksna.md
+          cp main-root/PUAC2.md synced-source/PUAC2.md
+          if test -f main-root/SKELETON_CANONICO_REFERENCIA.txt; then
+            cp main-root/SKELETON_CANONICO_REFERENCIA.txt synced-source/SKELETON_CANONICO_REFERENCIA.txt
+          fi
+          echo "TELEMETRY SYNCED_SOURCE_VIEW=PASS"
+
+      - name: Re-materialize certified V0.2 shell as immutable baseline input
+        shell: bash
+        env:
+          LOUKSNA_SOURCE_COMMIT: 94f999f28f6ac371e1a768312a69704af96fd7a7
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/louksna-v03"
+          printf '%s\n' '{"mission_id":"MIS-LOUKSNA-ZD-V03-FUNCTIONAL-20261006","dispatch_id":"GH-V03-FUNCTIONAL-20261006","executor_id":"CUSTOSZ_V7","binding_id":"CUSTOSZ_RUNTIME_V1","expected_effect":{"effect_type":"LOUKSNA_ZD_V03_FUNCTIONALIZATION"}}' > "$RUNNER_TEMP/louksna-v03/DISPATCH.json"
+          python3 -B -I target/scripts/missions/louksna_zd_candidate_materializer.py \
+            "$RUNNER_TEMP/louksna-v03/DISPATCH.json" \
+            "$RUNNER_TEMP/louksna-v03/ACK.json" \
+            "$RUNNER_TEMP/louksna-v03/FME.json" \
+            "$RUNNER_TEMP/louksna-v03/MATERIAL_RESULT.json" \
+            "$GITHUB_WORKSPACE/target" \
+            "$GITHUB_WORKSPACE/synced-source" \
+            "$GITHUB_WORKSPACE/target/missions/inbox/louksna-zona-directiva-v03-functional-20261006/MISSION.md"
+          echo "TELEMETRY V02_BASELINE_REMATERIALIZATION=PASS"
+
+      - name: Forensic functionalization preflight
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          CANDIDATE="target/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate"
+          MONOLITH="target/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/LOUKSNA_ZONA_DIRECTIVA_PACKAGING_MONOLITH.md"
+          MISSION="target/missions/inbox/louksna-zona-directiva-v03-functional-20261006/MISSION.md"
+          OUT="$RUNNER_TEMP/louksna-v03/FUNCTIONAL_PREFLIGHT.json"
+          python3 -B -I target/scripts/missions/louksna_zd_v03_preflight.py "$CANDIDATE" "$MONOLITH" "$MISSION" "$OUT"
+          cat "$OUT"
+
+      - name: Freeze implementation checkpoint
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/louksna-v03/checkpoint"
+          cp "$RUNNER_TEMP/louksna-v03/FUNCTIONAL_PREFLIGHT.json" "$RUNNER_TEMP/louksna-v03/checkpoint/"
+          cp "$RUNNER_TEMP/louksna-v03/ACK.json" "$RUNNER_TEMP/louksna-v03/checkpoint/"
+          cp "$RUNNER_TEMP/louksna-v03/FME.json" "$RUNNER_TEMP/louksna-v03/checkpoint/"
+          python3 - <<'PY'
+          import json,os,pathlib
+          p=pathlib.Path(os.environ["RUNNER_TEMP"])/"louksna-v03"/"checkpoint"/"IMPLEMENTATION_CHECKPOINT.json"
+          obj={
+            "status":"PASS",
+            "stage":"V03_FUNCTIONAL_IMPLEMENTATION_AUTHORIZED",
+            "next":["LOCAL_SQLITE_BACKEND","PERSISTENT_SETTINGS","SECRET_SERVICE","GITHUB_READ_ONLY","LIVE_EVIDENCE_LEDGER","CHAT_BRIDGE"],
+            "voice_gate":"OPEN_NOT_CLAIMED",
+            "active":False
+          }
+          p.write_text(json.dumps(obj,indent=2,sort_keys=True)+"\n")
+          PY
+          echo "TELEMETRY IMPLEMENTATION_CHECKPOINT=PASS"
+          echo "TELEMETRY NEXT_WORK=LOCAL_BACKEND_PLUS_GITHUB_READ_ONLY"
+          echo "TELEMETRY ACTIVE=FALSE"
+
+      - name: Preserve V0.3 preflight evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksna-zd-v03-functionalization-checkpoint
+          path: \${{ runner.temp }}/louksna-v03/checkpoint
+          if-no-files-found: error
+          retention-days: 90
