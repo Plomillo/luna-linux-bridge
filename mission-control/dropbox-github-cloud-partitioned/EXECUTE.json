@@ -1,11 +1,11 @@
 {
-  "schema": "LOUKSNA_DROPBOX_GITHUB_CLOUD_PARTITIONED_EXECUTE/1.0",
+  "schema": "LOUKSNA_DROPBOX_GITHUB_CLOUD_PARTITIONED_EXECUTE/2.0-PUAC2",
   "status": "AUTHORIZED",
   "authority": "Louksna.md",
   "scope": "DROPBOX_CONNECTED_TO_GITHUB_HOSTED_PARTITIONED_TRANSFER",
   "contract": {
-    "head_sha": "e60346e4311578105f5b6ba20a2345acebc900a2",
-    "run_id": 37359923092,
+    "head_sha": "f84189d72fe1b700368e97bf4eff7e15a50db54c",
+    "run_id": 37502461044,
     "status": "PASS"
   },
   "source_binding": "mission-control/dropbox-github-cloud-direct/BINDING.json",
@@ -22,8 +22,29 @@
   "desktop_commander": false,
   "stop_assistant_intervention_on_material_byte_flow": true,
   "retry": {
-    "ordinal": 4,
-    "reason": "FROZEN_GITHUB_CLOUD_ROOT_CHILD_LINK_FALLBACK_BOUND",
-    "evidence_run_id": 37355731169
-  }
+    "ordinal": 5,
+    "reason": "PUAC2_DURABLE_RESUME_ANTI_PARALYSIS_LIVE_BUG_RECOVERY_ACTIVATED",
+    "evidence_run_id": 37502461044
+  },
+  "resilience": {
+    "puac2_governed": true,
+    "durable_checkpoint_resume": true,
+    "anti_paralysis_watchdog": true,
+    "live_bug_research": true,
+    "safe_runtime_repair": true,
+    "partial_failure_isolation": true,
+    "no_restart_from_zero": true,
+    "terminal_general_certification": true
+  },
+  "resume": {
+    "bootstrap_verified_prior_partitions": 5,
+    "pending_top_level_ordinals": [
+      1,
+      5,
+      8
+    ],
+    "seed": "mission-control/dropbox-github-cloud-partitioned/RESUME_SEED.json",
+    "policy": "VERIFY_CHECKPOINT_THEN_CONTINUE_ONLY_PENDING"
+  },
+  "authorized_at_utc": "2026-10-06T17:18:30Z"
 }
