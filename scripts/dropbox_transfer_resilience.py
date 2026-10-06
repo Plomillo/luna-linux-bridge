@@ -441,6 +441,7 @@ def apply_safe_runtime_repair(target: pathlib.Path, bug_path: pathlib.Path, out_
     if action == "RUNTIME_PATCH_EVENT_KIND_COLLISION":
         source = target.read_text(encoding="utf-8")
         patched = source.replace('kind=item["kind"],', 'item_kind=item["kind"],')
+        patched = patched.replace('record_event("DOWNLOAD_EVENT", kind=kind,', 'record_event("DOWNLOAD_EVENT", source_kind=kind,')
         if patched == source:
             result["status"] = "DENIED_NO_COLLISION_PATTERN"
             atomic_json(out_path, result)
