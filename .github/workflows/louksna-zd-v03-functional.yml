@@ -8,6 +8,7 @@ on:
       - missions/inbox/louksna-zona-directiva-v03-functional-20261006/MISSION.md
       - scripts/missions/louksna_zd_v03_preflight.py
       - scripts/missions/louksna_zd_v03_functionalizer.py
+      - scripts/missions/louksna_zd_v03_deb_sanitize.py
       - scripts/missions/v03_templates/**
       - .github/workflows/louksna-zd-v03-functional.yml
   workflow_dispatch:
@@ -261,6 +262,22 @@ jobs:
           lintian "$HARDENED" 2>&1 | tee "$RUNNER_TEMP/louksna-v03/LINTIAN.txt" || true
           echo "TELEMETRY V03_DEB_HARDENING=PASS"
 
+      - name: Sanitize V0.3 Debian residuals
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          DEB="$(find target/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate/src-tauri/target/release/bundle/deb -type f -name 'louksna-zona-directiva_0.3.0-functional_amd64.deb' -print -quit)"
+          test -n "$DEB"
+          python3 -B -I target/scripts/missions/louksna_zd_v03_deb_sanitize.py "$DEB"
+          lintian "$DEB" 2>&1 | tee "$RUNNER_TEMP/louksna-v03/LINTIAN_SANITIZED.txt" || true
+          if grep -Eq 'debian-changelog-line-too-long|extended-description-line-too-long|no-manual-page' "$RUNNER_TEMP/louksna-v03/LINTIAN_SANITIZED.txt"; then
+            echo "TELEMETRY V03_SANITIZED_LINT=FAIL"
+            exit 42
+          fi
+          sha256sum "$DEB" | tee "$RUNNER_TEMP/louksna-v03/DEB_SHA256.txt"
+          stat -c '%s' "$DEB" | tee "$RUNNER_TEMP/louksna-v03/DEB_SIZE_BYTES.txt"
+          cp "$RUNNER_TEMP/louksna-v03/LINTIAN_SANITIZED.txt" "$RUNNER_TEMP/louksna-v03/LINTIAN.txt"
+          echo "TELEMETRY V03_SANITIZED_LINT=PASS"
       - name: Debian 13 V0.3 installability check
         shell: bash
         run: |
