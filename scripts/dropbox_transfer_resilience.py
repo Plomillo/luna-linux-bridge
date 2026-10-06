@@ -316,6 +316,8 @@ def classify_bug(stderr_text: str) -> tuple[str, str, str | None]:
         return "CODE_NAMEERROR", "RUNTIME_PATCH_STANDARD_IMPORT" if missing in SAFE_STDLIB_IMPORTS else "RETRY_FROM_CHECKPOINT_ONCE", missing
     if "record_event() got multiple values for argument 'kind'" in text:
         return "CODE_EVENT_KIND_COLLISION", "RUNTIME_PATCH_EVENT_KIND_COLLISION", None
+    if "action-bar-download-button" in lower or "folder_download_ui_control_unavailable" in lower or "ui_control_unavailable_after_direct_dl1" in lower:
+        return "DROPBOX_UI_SELECTOR_DRIFT", "DIRECT_DL1_THEN_SPLIT", None
     if any(x in lower for x in ["too many files", "partition_not_zip", "returned_html", "folder_download_no_material", "continuation_not_found"]):
         return "PARTITION_STRATEGY", "SPLIT_FALLBACK_AND_RETRY", None
     if any(x in lower for x in ["timed out", "timeout", "connection reset", "remote end closed", "temporary failure", "429", "502", "503", "504"]):
