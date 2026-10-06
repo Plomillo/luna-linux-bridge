@@ -82,6 +82,8 @@ required_resilience=[
     "diagnose",
     "live_research",
     "apply_safe_runtime_repair",
+    "CODE_EVENT_KIND_COLLISION",
+    "RUNTIME_PATCH_EVENT_KIND_COLLISION",
     "CHECKPOINT_HASH_MISMATCH",
     "RECOVERY_PLAN",
 ]
