@@ -428,7 +428,7 @@ def process_item(page, item: dict, ordinal: int) -> dict:
             record_event(
                 "ITEM_ATTEMPT",
                 identity_sha256=key,
-                kind=item["kind"],
+                item_kind=item["kind"],
                 label=item["label"],
                 attempt=attempt_no,
                 max_attempts=MAX_ITEM_RETRIES,
@@ -449,7 +449,7 @@ def process_item(page, item: dict, ordinal: int) -> dict:
             record_event(
                 "ITEM_ATTEMPT_FAILED",
                 identity_sha256=key,
-                kind=item["kind"],
+                item_kind=item["kind"],
                 label=item["label"],
                 attempt=attempt_no,
                 error=message,
