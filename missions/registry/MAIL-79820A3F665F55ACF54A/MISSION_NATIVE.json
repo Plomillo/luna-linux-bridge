@@ -1,0 +1,216 @@
+{
+  "authority_context": {
+    "authority": "Louksna.md",
+    "authority_transfer": false,
+    "canonical_mutation_authorized": false
+  },
+  "declared_mission_id": "MIS-DOCUMENT-FACTORY-FFPROBE-EXACT-CERT-V2-20261006",
+  "execution_contract": {
+    "default_profile": "LUNA_PROJECT",
+    "fail_closed": true,
+    "governor": "MetaOS",
+    "no_silent_executor_substitution": true,
+    "protected_scopes": [
+      "WINDOWS",
+      "EFI",
+      "GPT",
+      "PARTITIONS",
+      "PROYECTOS",
+      "F3-DISK",
+      "CANONICAL_ARCHITECTURE",
+      "FROZEN_ARTIFACTS"
+    ],
+    "runtime": "CUSTOSZ_RUNTIME_V1",
+    "supervisor": "SYMPHYLAX_R1",
+    "validation_reserve_seconds": 240,
+    "wallclock_seconds": 1200,
+    "worker": "CUSTOSZ_V7",
+    "workflow_success_is_not_mission_success": true
+  },
+  "mail_id": "MAIL-79820A3F665F55ACF54A",
+  "mailbox_version": "0.1.0",
+  "mission_payload": {
+    "byte_exact_preservation": true,
+    "directives_observed": {
+      "AUTHORITY": [
+        {
+          "line": 3,
+          "value": "Louksna.md"
+        }
+      ],
+      "AUTO_MERGE": [
+        {
+          "line": 12,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "CERTIFICATION_PROPAGATION": [
+        {
+          "line": 11,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "DESKTOP_EXECUTION": [
+        {
+          "line": 10,
+          "value": "PROHIBITED"
+        }
+      ],
+      "EVIDENCE_POINTERS": [
+        {
+          "line": 42,
+          "value": "<immutable refs>"
+        }
+      ],
+      "EXACT_CANDIDATE_DIGEST": [
+        {
+          "line": 36,
+          "value": "<sha256>"
+        }
+      ],
+      "EXACT_CANDIDATE_SHA": [
+        {
+          "line": 35,
+          "value": "<sha>"
+        }
+      ],
+      "EXECUTION_LOCATION": [
+        {
+          "line": 6,
+          "value": "SELF_HOSTED_LUNA_AUX"
+        }
+      ],
+      "FAILURE_POSTURE": [
+        {
+          "line": 7,
+          "value": "FAIL_CLOSED"
+        }
+      ],
+      "FRESH_PRODUCER": [
+        {
+          "line": 37,
+          "value": "{RUNNING|PASS|FAIL};RUN_ID=<id>"
+        }
+      ],
+      "FRESH_PRODUCER_EVIDENCE_SHA": [
+        {
+          "line": 22,
+          "value": "3cc413cea40d77c7bb119e29d09d72b4eac44909"
+        }
+      ],
+      "G23": [
+        {
+          "line": 39,
+          "value": "{RUNNING|PASS|FAIL};RUN_ID=<id>"
+        }
+      ],
+      "G24": [
+        {
+          "line": 40,
+          "value": "{RUNNING|PASS|FAIL};RUN_ID=<id>"
+        }
+      ],
+      "IDENTITY_GATE": [
+        {
+          "line": 34,
+          "value": "{RUNNING|PASS|FAIL}"
+        }
+      ],
+      "IDENTITY_RELATION": [
+        {
+          "line": 23,
+          "value": "DIVERGED_FROM_COMMON_ACTIVE_ANCHOR_WITH_FRESH_PRODUCER_EVIDENCE_ADDITION"
+        }
+      ],
+      "INDEPENDENT_PRODUCER": [
+        {
+          "line": 38,
+          "value": "{RUNNING|PASS|FAIL};RUN_ID=<id>"
+        }
+      ],
+      "MATERIAL_CANDIDATE_SHA": [
+        {
+          "line": 21,
+          "value": "3774cb102ad6318fc824b2cb87c5055e9f5f4b0b"
+        }
+      ],
+      "MISSION_CLASS": [
+        {
+          "line": 2,
+          "value": "DOCUMENT_FACTORY_FFPROBE_EXACT_CERT_V1"
+        }
+      ],
+      "MISSION_ID": [
+        {
+          "line": 1,
+          "value": "MIS-DOCUMENT-FACTORY-FFPROBE-EXACT-CERT-V2-20261006"
+        }
+      ],
+      "NO_SILENT_OPERATIONS": [
+        {
+          "line": 8,
+          "value": "TRUE"
+        }
+      ],
+      "OPERATIONAL_ACTIVATION": [
+        {
+          "line": 13,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "REMOTE_DESKTOP_COMMANDER": [
+        {
+          "line": 9,
+          "value": "PROHIBITED"
+        }
+      ],
+      "RUNTIME": [
+        {
+          "line": 5,
+          "value": "CUSTOSZ_RUNTIME_V1"
+        }
+      ],
+      "TARGET_TERMINAL_STATE": [
+        {
+          "line": 14,
+          "value": "CERTIFIED_NOT_ACTIVE"
+        }
+      ],
+      "TERMINAL_STATE": [
+        {
+          "line": 41,
+          "value": "{CERTIFIED_NOT_ACTIVE|ABORTED}"
+        }
+      ],
+      "WALLCLOCK_CEILING_SECONDS": [
+        {
+          "line": 15,
+          "value": "1200"
+        }
+      ],
+      "WORKER": [
+        {
+          "line": 4,
+          "value": "CUSTOSZ_V7"
+        }
+      ]
+    },
+    "required_capabilities_explicit": [],
+    "routing_hints": {
+      "authoritative": false,
+      "values": [
+        "CUSTOSZ_RUNTIME",
+        "GITHUB"
+      ]
+    },
+    "source_utf8_b64": "TUlTU0lPTl9JRCA9IE1JUy1ET0NVTUVOVC1GQUNUT1JZLUZGUFJPQkUtRVhBQ1QtQ0VSVC1WMi0yMDI2MTAwNgpNSVNTSU9OX0NMQVNTID0gRE9DVU1FTlRfRkFDVE9SWV9GRlBST0JFX0VYQUNUX0NFUlRfVjEKQVVUSE9SSVRZID0gTG91a3NuYS5tZApXT1JLRVIgPSBDVVNUT1NaX1Y3ClJVTlRJTUUgPSBDVVNUT1NaX1JVTlRJTUVfVjEKRVhFQ1VUSU9OX0xPQ0FUSU9OID0gU0VMRl9IT1NURURfTFVOQV9BVVgKRkFJTFVSRV9QT1NUVVJFID0gRkFJTF9DTE9TRUQKTk9fU0lMRU5UX09QRVJBVElPTlMgPSBUUlVFClJFTU9URV9ERVNLVE9QX0NPTU1BTkRFUiA9IFBST0hJQklURUQKREVTS1RPUF9FWEVDVVRJT04gPSBQUk9ISUJJVEVECkNFUlRJRklDQVRJT05fUFJPUEFHQVRJT04gPSBGT1JCSURERU4KQVVUT19NRVJHRSA9IEZPUkJJRERFTgpPUEVSQVRJT05BTF9BQ1RJVkFUSU9OID0gRk9SQklEREVOClRBUkdFVF9URVJNSU5BTF9TVEFURSA9IENFUlRJRklFRF9OT1RfQUNUSVZFCldBTExDTE9DS19DRUlMSU5HX1NFQ09ORFMgPSAxMjAwCgpPQkpFQ1RJVkUKQ2xvc2UgdGhlIGV4YWN0IERvY3VtZW50IEZhY3RvcnkgRkZwcm9iZSBjYW5kaWRhdGUgY2VydGlmaWNhdGlvbiBjaGFpbiB3aXRob3V0IGNoYW5naW5nIGNhbm9uaWNhbCBhdXRob3JpdHkgb3IgaW5oZXJpdGluZyBjZXJ0aWZpY2F0aW9uIGZyb20gYW5vdGhlciBvYmplY3QuCgpNQVRFUklBTCBBTkNIT1JTCk1BVEVSSUFMX0NBTkRJREFURV9TSEEgPSAzNzc0Y2IxMDJhZDYzMThmYzgyNGIyY2I4N2M1MDU1ZTlmNWY0YjBiCkZSRVNIX1BST0RVQ0VSX0VWSURFTkNFX1NIQSA9IDNjYzQxM2NlYTQwZDc3YzdiYjExOWUyOWQwOWQ3MmI0ZWFjNDQ5MDkKSURFTlRJVFlfUkVMQVRJT04gPSBESVZFUkdFRF9GUk9NX0NPTU1PTl9BQ1RJVkVfQU5DSE9SX1dJVEhfRlJFU0hfUFJPRFVDRVJfRVZJREVOQ0VfQURESVRJT04KCk1BTkRBVE9SWSBPUkRFUgoxLiBJREVOVElUWV9HQVRFOiB2ZXJpZnkgdGhlIG1hdGVyaWFsIGNhbmRpZGF0ZSBhbmQgZnJlc2gtcHJvZHVjZXIgZXZpZGVuY2UgcmVsYXRpb25zaGlwIGNyeXB0b2dyYXBoaWNhbGx5OyBubyBjb21taXQtbWVzc2FnZSBlcXVpdmFsZW5jZS4KMi4gRlJFU0hfUFJPRFVDRVI6IHZhbGlkYXRlIGV2aWRlbmNlIGZvciB0aGUgZXhhY3QgbWF0ZXJpYWwgY2FuZGlkYXRlIGFuZCBmcmVlemUgaW1tdXRhYmxlIGFydGlmYWN0IGRpZ2VzdC4KMy4gSU5ERVBFTkRFTlRfUFJPRFVDRVI6IGluZGVwZW5kZW50bHkgcHJvZHVjZS92YWxpZGF0ZSB0aGUgc2FtZSBleGFjdCBtYXRlcmlhbCBjYW5kaWRhdGUgYW5kIHByZXNlcnZlIGltbXV0YWJsZSBvdXRwdXQgZGlnZXN0Lgo0LiBHMjNfSU5ERVBFTkRFTlRfVkFMSURBVElPTjogdmFsaWRhdGUgZXhhY3RseSB0aGUgaW5kZXBlbmRlbnRseSBwcm9kdWNlZCBTSEEvZGlnZXN0IHdpdGggY29tcGxldGUgZXZpZGVuY2UgYW5kIG5vbi1yZWdyZXNzaW9uLgo1LiBHMjRfQ0VSVElGSUNBVElPTjogZXhlY3V0ZSBvbmx5IGFmdGVyIEcyMz1QQVNTIG9uIGV4YWN0bHkgdGhlIHNhbWUgU0hBL2RpZ2VzdDsgbm8gaW5oZXJpdGFuY2Ugb3IgcHJvcGFnYXRpb24uCjYuIFRFUk1JTkFMX1JFQ09SRDogb25seSBhZnRlciBHMjQ9UEFTUyByZWNvcmQgQ0VSVElGSUVEX05PVF9BQ1RJVkUuIE5vIG1haW4gbWVyZ2UgYW5kIG5vIG9wZXJhdGlvbmFsIGFjdGl2YXRpb24uCgpSRVFVSVJFRCBMSVZFIFRFTEVNRVRSWQpJREVOVElUWV9HQVRFPXtSVU5OSU5HfFBBU1N8RkFJTH0KRVhBQ1RfQ0FORElEQVRFX1NIQT08c2hhPgpFWEFDVF9DQU5ESURBVEVfRElHRVNUPTxzaGEyNTY+CkZSRVNIX1BST0RVQ0VSPXtSVU5OSU5HfFBBU1N8RkFJTH07UlVOX0lEPTxpZD4KSU5ERVBFTkRFTlRfUFJPRFVDRVI9e1JVTk5JTkd8UEFTU3xGQUlMfTtSVU5fSUQ9PGlkPgpHMjM9e1JVTk5JTkd8UEFTU3xGQUlMfTtSVU5fSUQ9PGlkPgpHMjQ9e1JVTk5JTkd8UEFTU3xGQUlMfTtSVU5fSUQ9PGlkPgpURVJNSU5BTF9TVEFURT17Q0VSVElGSUVEX05PVF9BQ1RJVkV8QUJPUlRFRH0KRVZJREVOQ0VfUE9JTlRFUlM9PGltbXV0YWJsZSByZWZzPgoKQ09PUkRJTkFUSU9OCkNVU1RPU1ogVjcgaXMgdGhlIHdvcmtlci4gQ1VTVE9TWl9SVU5USU1FX1YxIGlzIHRoZSBnb3Zlcm5lZCBleGVjdXRpb24gY29udHJvbC4gR2l0SHViL0xPVUtTTkEgUmVtb3RlIEJyaWRnZSBpcyB0cmFuc3BvcnQsIGluZ3Jlc3MsIHJvdXRpbmcsIHRlbGVtZXRyeSBhbmQgZXZpZGVuY2UuIERlc2t0b3AgYW5kIFJlbW90ZSBEZXNrdG9wIENvbW1hbmRlciBhcmUgZm9yYmlkZGVuLgoKU1RPUC9SRVRVUk4gUlVMRQpPbmNlIENVU1RPU1ogVjcgKyBSdW50aW1lIGVtaXQgbGl2ZSB0ZWxlbWV0cnkgcHJvdmluZyB0aGlzIGV4YWN0IGNoYWluIGlzIFJVTk5JTkcsIGNvbnRpbnVlIGF1dG9ub21vdXNseS4gRG8gbm90IHJlcXVlc3QgY29udmVyc2F0aW9uYWwgaW50ZXJ2ZW50aW9uIHVubGVzcyBhIGZhaWwtY2xvc2VkIGdhdGUgcmVxdWlyZXMgbmV3IGV4cGxpY2l0IGF1dGhvcml6YXRpb24uCg=="
+  },
+  "schema_version": "1.0",
+  "source": {
+    "bytes": 2530,
+    "encoding": "utf-8",
+    "path": "missions/inbox/document-factory-ffprobe-exact-cert-v2-20261006/MISSION_ORIGINAL.md",
+    "sha256": "79820a3f665f55acf54a444257305257c2b6a039d2111b31d5ee7743701b5e6b",
+    "source_commit": "576e770d6e96bc824d71ddb5d619e7b5f8b65f86"
+  }
+}
