@@ -161,6 +161,25 @@
       "source_sha256": "5fa6287ac594c82234a78b7c6e8934bb41ce2f88e236df3e1ec0b4da9c93aee7",
       "status": "ACTIVE_PINNED",
       "terminal_rule": "WORK_BRANCH_ONLY_FAIL_CLOSED_FRESH_G23_G24_REQUIRED"
+    },
+    {
+      "adapter_id": "DOCUMENT_FACTORY_FFPROBE_EXACT_CERT_V1",
+      "backend": "CUSTOSZ_RUNTIME",
+      "dedicated_workflow": ".github/workflows/document-factory-ffprobe-exact-cert-runtime.yml",
+      "execution_location": "SELF_HOSTED_LUNA_AUX",
+      "hard_ceiling_seconds": 1200,
+      "mission_classes": [
+        "DOCUMENT_FACTORY_FFPROBE_EXACT_CERT_V1"
+      ],
+      "path": "scripts/mission_mailbox/adapters/document_factory_ffprobe_exact_cert_v1.py",
+      "provides_executor_binding": true,
+      "required_capabilities": [],
+      "requires_prebound_executor": false,
+      "scope": "DOCUMENT_FACTORY_FFPROBE_EXACT_CERT",
+      "sha256": "4ee1afcbab3fb2d352a31a156dacf0d646a55f7d",
+      "source_sha256": "ce993849b3fd55a775145e19ae14c24850e3700288cc017d6d74531ddfddc31c",
+      "status": "ACTIVE_PINNED",
+      "terminal_rule": "FAIL_CLOSED_EXACT_OBJECT_G23_BEFORE_G24_CERTIFIED_NOT_ACTIVE"
     }
   ],
   "policy": {
