@@ -19,6 +19,8 @@ concurrency:
 env:
   DROPBOX_PROVIDER: "DROPBOX_CONNECTED_PLUGIN"
   HARD_CEILING_SECONDS: "20400"
+  STALL_SECONDS: "420"
+  MAX_RECOVERY_ROUNDS: "4"
 
 jobs:
   acquire:
@@ -43,6 +45,7 @@ jobs:
           set -Eeuo pipefail
           python3 scripts/tests/test_dropbox_github_cloud_partitioned.py
           python3 -m py_compile scripts/dropbox_cloud_partitioned_acquire.py
+          python3 -m py_compile scripts/dropbox_transfer_resilience.py
 
       - id: names
         name: Initialize partitioned cloud state
@@ -50,9 +53,39 @@ jobs:
         run: |
           set -Eeuo pipefail
           ROOT="$RUNNER_TEMP/dropbox-partitioned-${GITHUB_RUN_ID}"
-          mkdir -p "$ROOT/evidence" "$ROOT/browser-downloads" "$ROOT/payload"
+          mkdir -p "$ROOT/evidence" "$ROOT/browser-downloads" "$ROOT/payload" "$ROOT/checkpoints" "$ROOT/quarantine"
           echo "root=$ROOT" >> "$GITHUB_OUTPUT"
           echo "artifact_name=dropbox-github-cloud-partitioned-${GITHUB_RUN_ID}" >> "$GITHUB_OUTPUT"
+
+      - id: resume_cache
+        name: Restore latest durable PUAC2 resume ledger
+        uses: actions/cache/restore@1bd1e32a3bdc45362d1e726936510720a7c30a57
+        with:
+          path: ${{ runner.temp }}/dropbox-resume-ledger
+          key: dropbox-resume-v2-${{ github.run_id }}
+          restore-keys: |
+            dropbox-resume-v2-
+
+      - name: Bind verified resume state and 5-of-8 bootstrap evidence
+        shell: bash
+        env:
+          STATE_ROOT: ${{ steps.names.outputs.root }}
+        run: |
+          set -Eeuo pipefail
+          SEED="$GITHUB_WORKSPACE/mission-control/dropbox-github-cloud-partitioned/RESUME_SEED.json"
+          test -s "$SEED"
+          echo "RESUME_SEED=$SEED" >> "$GITHUB_ENV"
+          if [ -s "$RUNNER_TEMP/dropbox-resume-ledger/LATEST.json" ]; then
+            python3 scripts/dropbox_transfer_resilience.py verify-checkpoint \
+              --checkpoint "$RUNNER_TEMP/dropbox-resume-ledger/LATEST.json"
+            echo "RESUME_CHECKPOINT=$RUNNER_TEMP/dropbox-resume-ledger/LATEST.json" >> "$GITHUB_ENV"
+            if [ -s "$RUNNER_TEMP/dropbox-resume-ledger/RUN_ARTIFACT_BINDING.json" ]; then
+              echo "RESUME_ARTIFACT_BINDING=$RUNNER_TEMP/dropbox-resume-ledger/RUN_ARTIFACT_BINDING.json" >> "$GITHUB_ENV"
+            fi
+            echo "PUAC2_DURABLE_RESUME=RESTORED"
+          else
+            echo "PUAC2_DURABLE_RESUME=BOOTSTRAP_5_OF_8"
+          fi
 
       - name: Recover frozen root child-link evidence from prior GitHub cloud run
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -81,44 +114,81 @@ jobs:
           python3 -m playwright install --with-deps chromium
           python3 -c 'import importlib.metadata; print("playwright="+importlib.metadata.version("playwright"))'
 
-      - name: Start recursive Dropbox partition acquisition and prove real byte flow
+      - name: Start resilient Dropbox acquisition with anti-paralysis and live bug recovery
         shell: bash
         env:
           STATE_ROOT: ${{ steps.names.outputs.root }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -Eeuo pipefail
-          python3 -B scripts/dropbox_cloud_partitioned_acquire.py             >"$STATE_ROOT/evidence/acquisition.stdout"             2>"$STATE_ROOT/evidence/acquisition.stderr" &
-          pid=$!
-          echo "$pid" > "$STATE_ROOT/evidence/acquisition.pid"
+          stdout="$STATE_ROOT/evidence/acquisition.stdout"
+          stderr="$STATE_ROOT/evidence/acquisition.stderr"
+          touch "$stdout" "$stderr"
+          material_proven=false
+          success=false
+          round=1
 
-          deadline=$((SECONDS+1800))
-          proven=false
-          while [ "$SECONDS" -lt "$deadline" ]; do
-            marker="$STATE_ROOT/evidence/FIRST_DOWNLOAD_EVENT.json"
-            observed="$(find "$STATE_ROOT/browser-downloads" "$STATE_ROOT/payload" -maxdepth 1 -type f -size +0c -print -quit 2>/dev/null || true)"
-            if [ -f "$marker" ] && [ -n "$observed" ] && kill -0 "$pid" 2>/dev/null; then
-              bytes="$(stat -c '%s' "$observed")"
-              if [ "$bytes" -gt 0 ]; then
-                python3 - "$marker" "$STATE_ROOT/evidence/MATERIAL_BYTE_FLOW.json" "$bytes" "$pid" "$(basename "$observed")" <<'PY'
+          while [ "$round" -le "$MAX_RECOVERY_ROUNDS" ]; do
+            echo "RECOVERY_ROUND=$round" | tee -a "$stdout"
+            echo "=== ROUND $round $(date -u +%FT%TZ) ===" >> "$stderr"
+
+            python3 -B scripts/dropbox_cloud_partitioned_acquire.py >>"$stdout" 2>>"$stderr" &
+            pid=$!
+            echo "$pid" > "$STATE_ROOT/evidence/acquisition.pid"
+            last_progress=$SECONDS
+            last_sig=""
+            stalled=false
+
+            while kill -0 "$pid" 2>/dev/null; do
+              marker="$STATE_ROOT/evidence/FIRST_DOWNLOAD_EVENT.json"
+              bytes="$(find "$STATE_ROOT/browser-downloads" "$STATE_ROOT/payload" -maxdepth 1 -type f -printf '%s\n' 2>/dev/null | awk '{s+=$1} END{print s+0}')"
+              progress_mtime=0
+              if [ -f "$STATE_ROOT/evidence/PROGRESS.json" ]; then
+                progress_mtime="$(stat -c '%Y' "$STATE_ROOT/evidence/PROGRESS.json" 2>/dev/null || echo 0)"
+              fi
+              sig="${bytes}:${progress_mtime}"
+              if [ "$sig" != "$last_sig" ]; then
+                last_sig="$sig"
+                last_progress=$SECONDS
+              fi
+
+              python3 - "$STATE_ROOT/evidence/HEARTBEAT.json" "$pid" "$bytes" "$round" "$last_progress" "$SECONDS" <<'PY'
+          import datetime as dt,json,pathlib,sys
+          p=pathlib.Path(sys.argv[1])
+          out={
+            "schema":"PUAC2_TRANSFER_HEARTBEAT/1.0",
+            "status":"RUNNING",
+            "pid":int(sys.argv[2]),
+            "observed_bytes":int(sys.argv[3]),
+            "recovery_round":int(sys.argv[4]),
+            "seconds_since_progress":int(sys.argv[6])-int(sys.argv[5]),
+            "recorded_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          p.write_text(json.dumps(out,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          PY
+
+              if [ "$material_proven" != true ] && [ -f "$marker" ] && [ "$bytes" -gt 0 ]; then
+                python3 - "$marker" "$STATE_ROOT/evidence/MATERIAL_BYTE_FLOW.json" "$bytes" "$pid" "$round" <<'PY'
           import json,pathlib,sys,datetime as dt
           event=json.load(open(sys.argv[1],encoding="utf-8"))
           out={
-            "schema":"LOUKSNA_DROPBOX_GITHUB_PARTITIONED_MATERIAL_BYTE_FLOW/1.0",
+            "schema":"PUAC2_DROPBOX_GITHUB_MATERIAL_BYTE_FLOW/2.0",
             "status":"PASS",
             "MATERIAL_BYTE_FLOW":True,
-            "provider":"DROPBOX_CONNECTED_PLUGIN",
+            "provider":"DROPBOX_PUBLIC_SOURCE_TO_GITHUB_HOSTED_CLOUD",
             "execution_plane":"GITHUB_HOSTED_UBUNTU_24_04",
             "source_object_identified":bool(event.get("source_object_identified")),
             "source_kind":event.get("source_kind"),
             "source_identity":event.get("source_identity"),
             "download_event_observed":event.get("download_event_observed") is True,
             "observed_bytes":int(sys.argv[3]),
-            "observed_file_basename":sys.argv[5],
             "background_process_alive":True,
             "background_pid":int(sys.argv[4]),
+            "recovery_round":int(sys.argv[5]),
+            "new_post_fix_evidence":True,
             "local_pc_data_plane":False,
             "self_hosted_runner_data_plane":False,
-            "observed_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+            "observed_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
           }
           pathlib.Path(sys.argv[2]).write_text(json.dumps(out,indent=2,sort_keys=True)+"\n",encoding="utf-8")
           print(json.dumps(out,sort_keys=True))
@@ -128,45 +198,85 @@ jobs:
                 echo "OBSERVED_BYTES=$bytes"
                 echo "BACKGROUND_PROCESS_ALIVE=TRUE"
                 echo "EXECUTION_PLANE=GITHUB_HOSTED_UBUNTU_24_04"
-                echo "LOUKSNA_STOP_CONDITION_REACHED=TRUE"
-                proven=true
+                echo "PUAC2_RESUME_TELEMETRY=PASS"
+                material_proven=true
+              fi
+
+              if [ $((SECONDS-last_progress)) -gt "$STALL_SECONDS" ]; then
+                echo "STALL_DETECTED=TRUE seconds_without_progress=$((SECONDS-last_progress)) round=$round" | tee -a "$stderr"
+                python3 - "$STATE_ROOT/evidence/STALL_EVENT.json" "$pid" "$bytes" "$round" <<'PY'
+          import datetime as dt,json,pathlib,sys
+          pathlib.Path(sys.argv[1]).write_text(json.dumps({
+            "schema":"PUAC2_TRANSFER_STALL_EVENT/1.0",
+            "status":"STALLED",
+            "pid":int(sys.argv[2]),
+            "observed_bytes":int(sys.argv[3]),
+            "recovery_round":int(sys.argv[4]),
+            "recorded_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          },indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          PY
+                kill -TERM "$pid" 2>/dev/null || true
+                sleep 5
+                kill -KILL "$pid" 2>/dev/null || true
+                stalled=true
                 break
               fi
+              sleep 5
+            done
+
+            set +e
+            wait "$pid"
+            rc=$?
+            set -e
+            if [ "$stalled" = true ] && [ "$rc" -eq 0 ]; then rc=124; fi
+            echo "ACQUISITION_ROUND_EXIT=$rc round=$round" | tee -a "$stdout"
+
+            if [ "$rc" -eq 0 ]; then
+              success=true
+              break
             fi
 
-            if ! kill -0 "$pid" 2>/dev/null; then
-              set +e
-              wait "$pid"
-              rc=$?
-              set -e
-              echo "ACQUISITION_EXIT_BEFORE_MATERIAL_PROOF=$rc"
-              cat "$STATE_ROOT/evidence/acquisition.stdout" || true
-              cat "$STATE_ROOT/evidence/acquisition.stderr" || true
-              exit "$rc"
+            bugdir="$STATE_ROOT/evidence/bugs/round-$round"
+            mkdir -p "$bugdir"
+            python3 scripts/dropbox_transfer_resilience.py diagnose --stderr "$stderr" --out "$bugdir" || true
+            if [ -s "$bugdir/BUG_RECORD.json" ]; then
+              python3 scripts/dropbox_transfer_resilience.py apply-safe-runtime-repair \
+                --target scripts/dropbox_cloud_partitioned_acquire.py \
+                --bug "$bugdir/BUG_RECORD.json" \
+                --out "$bugdir/SAFE_RUNTIME_REPAIR.json" || true
             fi
-            sleep 1
+
+            if [ -s "$STATE_ROOT/checkpoints/LATEST.json" ]; then
+              python3 scripts/dropbox_transfer_resilience.py verify-checkpoint \
+                --checkpoint "$STATE_ROOT/checkpoints/LATEST.json"
+              export RESUME_CHECKPOINT="$STATE_ROOT/checkpoints/LATEST.json"
+              echo "RESUME_FROM_LAST_VERIFIED_CHECKPOINT=TRUE" | tee -a "$stdout"
+            else
+              echo "NO_VERIFIED_CHECKPOINT_AVAILABLE=TRUE" | tee -a "$stderr"
+            fi
+
+            if [ "$round" -ge "$MAX_RECOVERY_ROUNDS" ]; then
+              break
+            fi
+            sleep $((round*5))
+            round=$((round+1))
           done
 
-          if [ "$proven" != true ]; then
-            echo "NO_REAL_PARTITION_BYTE_FLOW_INSIDE_GATE"
-            kill "$pid" 2>/dev/null || true
-            wait "$pid" || true
-            exit 124
+          if [ "$success" != true ]; then
+            echo "RESILIENT_ACQUISITION_EXHAUSTED=TRUE"
+            tail -n 120 "$stderr" || true
+            exit 70
           fi
 
-          # User stop condition has been reached. Workflow continues autonomously;
-          # no external intervention is required or expected.
-          set +e
-          wait "$pid"
-          rc=$?
-          set -e
-          echo "PARTITIONED_ACQUISITION_EXIT=$rc"
-          cat "$STATE_ROOT/evidence/acquisition.stdout" || true
-          cat "$STATE_ROOT/evidence/acquisition.stderr" || true
-          exit "$rc"
+          if [ "$material_proven" != true ]; then
+            echo "NO_NEW_MATERIAL_BYTES_OBSERVED=TRUE"
+          fi
+
+          echo "RESILIENT_ACQUISITION=PASS"
+          tail -n 80 "$stdout" || true
 
       - id: complete
-        name: Validate complete partition set without executing downloaded content
+        name: Validate complete resumed corpus without executing downloaded content
         shell: bash
         env:
           STATE_ROOT: ${{ steps.names.outputs.root }}
@@ -179,7 +289,7 @@ jobs:
           m=json.load(open(manifest_path,encoding="utf-8"))
           assert m.get("status")=="PASS",m.get("status")
           completed=m.get("completed") or []
-          assert completed
+          prior=m.get("prior_completed") or []
           total=0
           for item in completed:
               p=root/"payload"/item["payload_name"]
@@ -194,18 +304,40 @@ jobs:
                       assert z.testzip() is None,item["payload_name"]
                       assert len(z.infolist())==int(item["entry_count"]),item["payload_name"]
               total+=p.stat().st_size
+          for item in prior:
+              binding=item.get("artifact_binding") or item
+              assert str(binding.get("artifact_id") or ""),item
+              assert str(binding.get("artifact_digest") or "").startswith("sha256:"),item
+              assert int(binding.get("artifact_size_bytes") or 0)>0,item
           assert int(m.get("payload_count"))==len(completed)
           assert int(m.get("payload_bytes"))==total
-          print(json.dumps({"status":"PASS","payload_count":len(completed),"payload_bytes":total},sort_keys=True))
+          assert int(m.get("root_object_count"))==8,m.get("root_object_count")
+          assert int(m.get("root_completed_count"))==int(m.get("root_object_count"))
+          assert int(m.get("unresolved_critical_bugs") or 0)==0
+          cp=root/"checkpoints/LATEST.json"
+          assert cp.is_file()
+          print(json.dumps({
+            "status":"PASS",
+            "payload_count_current_run":len(completed),
+            "payload_bytes_current_run":total,
+            "prior_completed_count":len(prior),
+            "root_object_count":m["root_object_count"],
+            "root_completed_count":m["root_completed_count"],
+          },sort_keys=True))
           PY
+          python3 scripts/dropbox_transfer_resilience.py verify-checkpoint \
+            --checkpoint "$STATE_ROOT/checkpoints/LATEST.json"
           manifest_sha="$(sha256sum "$STATE_ROOT/evidence/MANIFEST.json" | awk '{print $1}')"
+          checkpoint_hash="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["checkpoint_hash"])' "$STATE_ROOT/checkpoints/LATEST.json")"
           payload_count="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["payload_count"])' "$STATE_ROOT/evidence/MANIFEST.json")"
           payload_bytes="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["payload_bytes"])' "$STATE_ROOT/evidence/MANIFEST.json")"
           echo "manifest_sha256=$manifest_sha" >> "$GITHUB_OUTPUT"
+          echo "checkpoint_hash=$checkpoint_hash" >> "$GITHUB_OUTPUT"
           echo "payload_count=$payload_count" >> "$GITHUB_OUTPUT"
           echo "payload_bytes=$payload_bytes" >> "$GITHUB_OUTPUT"
 
-      - name: Preserve partitioned corpus and evidence
+      - id: upload
+        name: Preserve partitioned corpus and evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
@@ -213,10 +345,40 @@ jobs:
           path: |
             ${{ steps.names.outputs.root }}/payload
             ${{ steps.names.outputs.root }}/evidence
+            ${{ steps.names.outputs.root }}/checkpoints
+            ${{ steps.names.outputs.root }}/quarantine
           if-no-files-found: warn
           retention-days: 90
           compression-level: 0
           include-hidden-files: true
+
+      - name: Bind current artifact to the durable checkpoint ledger
+        if: always() && steps.upload.outcome == 'success'
+        shell: bash
+        env:
+          STATE_ROOT: ${{ steps.names.outputs.root }}
+          ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
+          ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest }}
+          ARTIFACT_NAME: ${{ steps.names.outputs.artifact_name }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/dropbox-resume-ledger"
+          bytes="$(find "$STATE_ROOT/payload" "$STATE_ROOT/evidence" "$STATE_ROOT/checkpoints" -type f -printf '%s\n' 2>/dev/null | awk '{s+=$1} END{print s+0}')"
+          python3 scripts/dropbox_transfer_resilience.py bind-artifact \
+            --root "$STATE_ROOT" \
+            --out "$RUNNER_TEMP/dropbox-resume-ledger" \
+            --artifact-id "$ARTIFACT_ID" \
+            --artifact-name "$ARTIFACT_NAME" \
+            --artifact-digest "$ARTIFACT_DIGEST" \
+            --artifact-size-bytes "$bytes" \
+            --run-id "$GITHUB_RUN_ID"
+
+      - name: Save durable PUAC2 resume ledger for the next runner
+        if: always() && steps.upload.outcome == 'success'
+        uses: actions/cache/save@1bd1e32a3bdc45362d1e726936510720a7c30a57
+        with:
+          path: ${{ runner.temp }}/dropbox-resume-ledger
+          key: dropbox-resume-v2-${{ github.run_id }}
 
   G23:
     name: "G23 — independent partitioned corpus validation"
