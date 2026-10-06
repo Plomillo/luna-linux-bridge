@@ -7,6 +7,7 @@ import json
 import os
 import pathlib
 import re
+import sys
 import time
 import traceback
 import urllib.parse
@@ -14,6 +15,7 @@ import urllib.request
 import zipfile
 from datetime import datetime, timezone
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from dropbox_transfer_resilience import emit_event, load_resume_state, write_checkpoint
 
 ROOT_LINK = "https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/AIIzeblluaJfhuXh9EnP-10?rlkey=p712fwlkbwn9g0dtybu2sf159&st=3igdng0g&dl=0"
