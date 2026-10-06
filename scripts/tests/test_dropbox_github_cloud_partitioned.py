@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import ast
 import importlib.util
 import json
 import os
@@ -113,6 +114,13 @@ for item in completed:
     if int(item.get("artifact_size_bytes") or 0)<=0:
         raise SystemExit("RESUME_SEED_ARTIFACT_SIZE_INVALID")
 
+tree=ast.parse(s)
+for node in ast.walk(tree):
+    if isinstance(node,ast.Call) and isinstance(node.func,ast.Name) and node.func.id=="record_event":
+        if any(k.arg=="kind" for k in node.keywords):
+            raise SystemExit("RECORD_EVENT_KIND_KEYWORD_COLLISION")
+print("DROPBOX_GITHUB_CLOUD_PARTITIONED_EVENT_CALLSITE_SELFTEST=PASS")
+
 print("DROPBOX_GITHUB_CLOUD_PARTITIONED_CONTRACT=PASS")
 
 with tempfile.TemporaryDirectory() as td:
@@ -149,4 +157,7 @@ with tempfile.TemporaryDirectory() as td:
     assert category=="CODE_NAMEERROR"
     assert action=="RUNTIME_PATCH_STANDARD_IMPORT"
     assert missing=="html"
+    category,action,missing=rmod.classify_bug("TypeError: record_event() got multiple values for argument 'kind'")
+    assert category=="CODE_EVENT_KIND_COLLISION"
+    assert action=="RUNTIME_PATCH_EVENT_KIND_COLLISION"
 print("DROPBOX_GITHUB_CLOUD_PARTITIONED_BUG_CLASSIFIER_SELFTEST=PASS")
