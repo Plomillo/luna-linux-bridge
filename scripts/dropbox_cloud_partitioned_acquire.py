@@ -283,37 +283,140 @@ def download_file_link(url: str, label: str, ordinal: int) -> dict:
         "sha256": h.hexdigest(),
     }
 
+def attempt_direct_folder_download(url: str, label: str, ordinal: int) -> dict:
+    """Try Dropbox's documented dl=1 transport before depending on preview-page UI."""
+    key = link_key(url)
+    target_url = with_dl(url, "1")
+    part = PAYLOAD / f"{ordinal:06d}_folder_{key[:12]}.direct.part"
+    final = PAYLOAD / f"{ordinal:06d}_folder_{key[:12]}.zip"
+    req = urllib.request.Request(
+        target_url,
+        headers={"User-Agent": "LOUKSNA-GitHub-Cloud-Partitioned/2.0"},
+    )
+    record_event(
+        "FOLDER_DIRECT_DL1_ATTEMPT",
+        label=label,
+        source=sanitize_url(url),
+        source_identity_sha256=key,
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            ctype = (resp.headers.get("Content-Type") or "").lower()
+            effective_url = resp.geturl()
+            first = resp.read(1024 * 1024)
+            if not first:
+                record_event(
+                    "FOLDER_DIRECT_DL1_FALLBACK",
+                    label=label,
+                    source_identity_sha256=key,
+                    reason="EMPTY_RESPONSE",
+                    content_type=ctype,
+                )
+                return {"action": "fallback", "reason": "EMPTY_RESPONSE"}
+
+            zip_signature = first[:4] in (b"PK\x03\x04", b"PK\x05\x06", b"PK\x07\x08")
+            if "text/html" in ctype or not zip_signature:
+                record_event(
+                    "FOLDER_DIRECT_DL1_FALLBACK",
+                    label=label,
+                    source_identity_sha256=key,
+                    reason="NON_ZIP_RESPONSE",
+                    content_type=ctype,
+                    first4_hex=first[:4].hex(),
+                    effective_host=urllib.parse.urlsplit(effective_url).hostname,
+                )
+                return {"action": "fallback", "reason": "NON_ZIP_RESPONSE"}
+
+            with part.open("wb") as f:
+                f.write(first)
+                f.flush()
+                os.fsync(f.fileno())
+                write_download_event("folder-direct-dl1", url, label, final.name)
+                while True:
+                    chunk = resp.read(8 * 1024 * 1024)
+                    if not chunk:
+                        break
+                    f.write(chunk)
+            os.replace(part, final)
+
+        try:
+            entries, sha = validate_zip(final)
+        except Exception as exc:
+            quarantine_path(final, f"DIRECT_DL1_INVALID_ZIP:{type(exc).__name__}:{exc}")
+            record_event(
+                "FOLDER_DIRECT_DL1_FALLBACK",
+                label=label,
+                source_identity_sha256=key,
+                reason="ZIP_VALIDATION_FAILED",
+                error=f"{type(exc).__name__}:{exc}",
+            )
+            return {"action": "fallback", "reason": "ZIP_VALIDATION_FAILED"}
+
+        record_event(
+            "FOLDER_DIRECT_DL1_PASS",
+            label=label,
+            source_identity_sha256=key,
+            bytes=final.stat().st_size,
+            sha256=sha,
+            entry_count=entries,
+        )
+        return {
+            "action": "downloaded",
+            "result": {
+                "kind": "folder_zip",
+                "label": label,
+                "source_identity_sha256": key,
+                "payload_name": final.name,
+                "bytes": final.stat().st_size,
+                "sha256": sha,
+                "entry_count": entries,
+                "transfer_method": "DROPBOX_DOCUMENTED_DL1_DIRECT",
+            },
+        }
+    except urllib.error.HTTPError as exc:
+        body = b""
+        try:
+            body = exc.read(128 * 1024)
+        except Exception:
+            pass
+        record_event(
+            "FOLDER_DIRECT_DL1_FALLBACK",
+            label=label,
+            source_identity_sha256=key,
+            reason="HTTP_ERROR",
+            status_code=exc.code,
+            response_excerpt_sha256=hashlib.sha256(body).hexdigest() if body else None,
+        )
+        return {"action": "fallback", "reason": f"HTTP_{exc.code}"}
+    except (urllib.error.URLError, TimeoutError, ConnectionError, OSError) as exc:
+        if part.exists():
+            quarantine_path(part, f"DIRECT_DL1_TRANSPORT_ERROR:{type(exc).__name__}:{exc}")
+        record_event(
+            "FOLDER_DIRECT_DL1_TRANSPORT_ERROR",
+            label=label,
+            source_identity_sha256=key,
+            error=f"{type(exc).__name__}:{exc}",
+        )
+        return {"action": "fallback", "reason": "TRANSPORT_ERROR"}
+
+
 def attempt_folder_download(page, url: str, label: str, ordinal: int):
+    # Primary path: Dropbox's documented forced-download parameter. This avoids
+    # coupling the transfer to preview-page DOM selectors.
+    direct = attempt_direct_folder_download(url, label, ordinal)
+    if direct["action"] == "downloaded":
+        return direct
+
     page.goto(url, wait_until="domcontentloaded", timeout=120000)
     page.wait_for_timeout(2500)
     dismiss_overlays(page)
-
-    primary = page.locator('button[data-testid="action-bar-download-button"]')
-    primary.first.wait_for(state="visible", timeout=60000)
-    primary.first.click(timeout=10000)
-
-    continuation = None
-    for selector in (
-        'button:has-text("Or continue with download only")',
-        'button:has-text("Continue with download only")',
-        'button:has-text("continuar solo con la descarga")',
-    ):
-        loc = page.locator(selector)
-        try:
-            loc.first.wait_for(state="visible", timeout=20000)
-            continuation = loc.first
-            break
-        except Exception:
-            pass
-    if continuation is None:
-        raise RuntimeError("FOLDER_DOWNLOAD_CONTINUATION_NOT_FOUND:" + link_key(url))
 
     state = {"download": None, "generate": None}
 
     def on_download(download):
         if state["download"] is None:
             state["download"] = download
-            write_download_event("folder", url, label, download.suggested_filename)
+            write_download_event("folder-ui", url, label, download.suggested_filename)
 
     def on_response(resp):
         try:
@@ -335,10 +438,71 @@ def attempt_folder_download(page, url: str, label: str, ordinal: int):
         except Exception:
             pass
 
+    # Register listeners before clicking so a direct UI-triggered download is
+    # never missed.
     page.on("download", on_download)
     page.on("response", on_response)
     try:
-        continuation.click(timeout=10000)
+        primary = None
+        candidates = [
+            page.locator('button[data-testid="action-bar-download-button"]'),
+            page.get_by_role("button", name=re.compile(r"download|descargar", re.I)),
+            page.locator('button:has-text("Download")'),
+            page.locator('button:has-text("Descargar")'),
+        ]
+        for loc in candidates:
+            try:
+                if loc.count():
+                    loc.first.wait_for(state="visible", timeout=5000)
+                    primary = loc.first
+                    break
+            except Exception:
+                pass
+
+        if primary is None:
+            record_event(
+                "FOLDER_DOWNLOAD_UI_CONTROL_UNAVAILABLE",
+                label=label,
+                source=sanitize_url(url),
+                source_identity_sha256=link_key(url),
+                direct_fallback_reason=direct.get("reason"),
+            )
+            return {"action": "split", "fallback_reason": "UI_CONTROL_UNAVAILABLE_AFTER_DIRECT_DL1"}
+
+        primary.click(timeout=10000)
+
+        # Some Dropbox surfaces start the download immediately; others show a
+        # continuation control. Give the direct event a short chance first.
+        immediate_deadline = time.time() + 5
+        while time.time() < immediate_deadline and state["download"] is None:
+            page.wait_for_timeout(250)
+
+        continuation = None
+        if state["download"] is None:
+            for selector in (
+                'button:has-text("Or continue with download only")',
+                'button:has-text("Continue with download only")',
+                'button:has-text("continuar solo con la descarga")',
+            ):
+                loc = page.locator(selector)
+                try:
+                    loc.first.wait_for(state="visible", timeout=5000)
+                    continuation = loc.first
+                    break
+                except Exception:
+                    pass
+
+            if continuation is None:
+                record_event(
+                    "FOLDER_DOWNLOAD_CONTINUATION_UNAVAILABLE",
+                    label=label,
+                    source_identity_sha256=link_key(url),
+                    direct_fallback_reason=direct.get("reason"),
+                )
+                return {"action": "split", "fallback_reason": "CONTINUATION_UNAVAILABLE"}
+
+            continuation.click(timeout=10000)
+
         deadline = time.time() + 190
         while time.time() < deadline:
             if state["download"] is not None:
@@ -361,6 +525,7 @@ def attempt_folder_download(page, url: str, label: str, ordinal: int):
         download.save_as(str(final))
         failure = download.failure()
         if failure:
+            quarantine_path(final, "FOLDER_UI_DOWNLOAD_FAILURE:" + str(failure))
             raise RuntimeError("FOLDER_DOWNLOAD_FAILURE:" + str(failure))
         entries, sha = validate_zip(final)
         return {
@@ -373,6 +538,7 @@ def attempt_folder_download(page, url: str, label: str, ordinal: int):
                 "bytes": final.stat().st_size,
                 "sha256": sha,
                 "entry_count": entries,
+                "transfer_method": "DROPBOX_UI_FALLBACK",
             },
         }
 
@@ -393,14 +559,23 @@ def attempt_folder_download(page, url: str, label: str, ordinal: int):
     normalized = (msg + " " + summary + " " + tag).lower()
     if int(gen.get("status") or 0) == 409 and "too many files" in normalized:
         record_event("PARTITION_REQUIRED", label=label, source=sanitize_url(url), reason="TOO_MANY_FILES")
-        return {"action": "split"}
-    raise RuntimeError("FOLDER_DOWNLOAD_NO_MATERIAL:" + json.dumps({
-        "status": gen.get("status"),
-        "error_summary": summary,
-        "tag": tag,
-        "message": msg,
-        "source_identity_sha256": link_key(url),
-    }, ensure_ascii=False, sort_keys=True))
+        return {"action": "split", "fallback_reason": "DROPBOX_409_TOO_MANY_FILES"}
+
+    # Any folder path that produced no material is degradable to recursive
+    # partitioning. process_item() will inventory children and keep progress.
+    record_event(
+        "FOLDER_DOWNLOAD_NO_MATERIAL_SPLIT",
+        label=label,
+        source=sanitize_url(url),
+        source_identity_sha256=link_key(url),
+        status=gen.get("status"),
+        error_summary=summary,
+        tag=tag,
+        message=msg,
+        direct_fallback_reason=direct.get("reason"),
+    )
+    return {"action": "split", "fallback_reason": "NO_MATERIAL_AFTER_DIRECT_AND_UI"}
+
 
 def is_transient_transfer_error(exc: BaseException) -> bool:
     text = (type(exc).__name__ + ": " + str(exc)).lower()
