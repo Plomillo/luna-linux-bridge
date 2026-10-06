@@ -7,6 +7,8 @@ on:
     paths:
       - missions/inbox/louksna-zona-directiva-v03-functional-20261006/MISSION.md
       - scripts/missions/louksna_zd_v03_preflight.py
+      - scripts/missions/louksna_zd_v03_functionalizer.py
+      - scripts/missions/v03_templates/**
       - .github/workflows/louksna-zd-v03-functional.yml
   workflow_dispatch:
 
@@ -125,6 +127,203 @@ jobs:
           OUT="$RUNNER_TEMP/louksna-v03/FUNCTIONAL_PREFLIGHT.json"
           python3 -B -I target/scripts/missions/louksna_zd_v03_preflight.py "$CANDIDATE" "$MONOLITH" "$MISSION" "$OUT"
           cat "$OUT"
+
+      - name: Apply V0.3 functional implementation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          CANDIDATE="target/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate"
+          python3 -B -I target/scripts/missions/louksna_zd_v03_functionalizer.py "$CANDIDATE" | tee "$RUNNER_TEMP/louksna-v03/FUNCTIONALIZATION.log"
+          grep -q 'LOUKSNA_V03_FUNCTIONALIZATION=PASS' "$RUNNER_TEMP/louksna-v03/FUNCTIONALIZATION.log"
+          ! grep -Eq 'CUSTOSZ|CUSTOSZ_RUNTIME|Josefina|Katya|Ancapi|MetaOS' "$CANDIDATE/src/App.tsx"
+          grep -q '@tauri-apps/api/core' "$CANDIDATE/src/App.tsx"
+          grep -q 'github_repositories' "$CANDIDATE/src-tauri/src/main.rs"
+          grep -q 'rusqlite' "$CANDIDATE/src-tauri/Cargo.toml"
+          echo "TELEMETRY V03_FUNCTIONAL_SOURCE=PASS"
+
+      - name: Install V0.3 build and packaging dependencies
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libssl-dev \
+            patchelf \
+            lintian \
+            desktop-file-utils \
+            imagemagick
+          echo "TELEMETRY V03_BUILD_DEPENDENCIES=PASS"
+
+      - name: Add bundle icons from accepted canonical reference
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          APP="target/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate"
+          SRC="target/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/images/01_louksna_zona_directiva_centro_de_mando_8k.png"
+          ICONS="$APP/src-tauri/icons"
+          mkdir -p "$ICONS"
+          convert "$SRC" -gravity center -resize 512x512^ -extent 512x512 "PNG32:$ICONS/icon.png"
+          convert "$SRC" -gravity center -resize 32x32^ -extent 32x32 "PNG32:$ICONS/32x32.png"
+          convert "$SRC" -gravity center -resize 128x128^ -extent 128x128 "PNG32:$ICONS/128x128.png"
+          convert "$SRC" -gravity center -resize 256x256^ -extent 256x256 "PNG32:$ICONS/128x128@2x.png"
+          test -s "$ICONS/icon.png"
+          echo "TELEMETRY V03_ICON_SET=PASS"
+
+      - name: Build real V0.3 Tauri Rust application
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          APP="target/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate"
+          cd "$APP"
+          node --version
+          npm --version
+          rustc --version
+          cargo --version
+          npm install
+          npm run build
+          echo "TELEMETRY V03_FRONTEND_BUILD=PASS"
+          cargo check --manifest-path src-tauri/Cargo.toml
+          echo "TELEMETRY V03_RUST_CHECK=PASS"
+          npx tauri build --bundles deb 2>&1 | tee "$RUNNER_TEMP/louksna-v03/TAURI_V03_BUILD.log"
+          echo "TELEMETRY V03_TAURI_DEB_BUILD=PASS"
+
+      - name: Harden V0.3 development Debian package
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          APP="target/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate"
+          BUNDLE="$APP/src-tauri/target/release/bundle/deb"
+          RAW="$(find "$BUNDLE" -maxdepth 1 -type f -name '*.deb' -print -quit)"
+          test -n "$RAW"
+          STAGE="$RUNNER_TEMP/louksna-v03/repack"
+          rm -rf "$STAGE"
+          mkdir -p "$STAGE"
+          dpkg-deb -R "$RAW" "$STAGE"
+          BIN="$STAGE/usr/bin/louksna-zona-directiva"
+          test -x "$BIN"
+          strip --strip-unneeded "$BIN"
+          CONTROL="$STAGE/DEBIAN/control"
+          python3 - "$CONTROL" "$STAGE" <<'PY'
+          import pathlib,re,subprocess,sys
+          control=pathlib.Path(sys.argv[1]); stage=pathlib.Path(sys.argv[2])
+          text=control.read_text()
+          def set_field(name,value):
+              global text
+              p=rf"(?m)^{re.escape(name)}:.*$"
+              if re.search(p,text): text=re.sub(p,f"{name}: {value}",text)
+              else: text += f"{name}: {value}\n"
+          set_field("Maintainer","Louksna Project <louksna@example.invalid>")
+          set_field("Section","utils")
+          m=re.search(r"(?m)^Depends:\s*(.*)$",text)
+          parts=[x.strip() for x in (m.group(1) if m else "").split(",") if x.strip()]
+          for dep in ["libc6","libsecret-tools","ca-certificates"]:
+              if not any(x.split()[0]==dep for x in parts): parts.append(dep)
+          set_field("Depends",", ".join(parts))
+          installed=int(subprocess.check_output(["du","-ks",str(stage/"usr")],text=True).split()[0])
+          set_field("Installed-Size",str(installed))
+          control.write_text(text)
+          PY
+          DOC="$STAGE/usr/share/doc/louksna-zona-directiva"
+          mkdir -p "$DOC"
+          cat > "$DOC/changelog" <<'EOF'
+          louksna-zona-directiva (0.3.0) experimental; urgency=medium
+
+            * Functional candidate with local SQLite state and GitHub read-only integration.
+
+           -- Louksna Project <louksna@example.invalid>  Tue, 06 Oct 2026 07:30:00 +0000
+          EOF
+          gzip -n -9 "$DOC/changelog"
+          cat > "$DOC/copyright" <<'EOF'
+          Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+          Upstream-Name: LOUKSNA ZONA DIRECTIVA
+          Source: governed project repository
+
+          Files: *
+          Copyright: 2026 Louksna Project
+          License: Proprietary-project
+           This functional candidate is not relicensed by this packaging metadata.
+          EOF
+          (
+            cd "$STAGE"
+            find . -type f ! -path './DEBIAN/*' -printf '%P\0' | sort -z | xargs -0 md5sum > DEBIAN/md5sums
+          )
+          HARDENED="$BUNDLE/louksna-zona-directiva_0.3.0-functional_amd64.deb"
+          rm -f "$BUNDLE"/*.deb
+          dpkg-deb --build --root-owner-group "$STAGE" "$HARDENED"
+          sha256sum "$HARDENED" | tee "$RUNNER_TEMP/louksna-v03/DEB_SHA256.txt"
+          stat -c '%s' "$HARDENED" | tee "$RUNNER_TEMP/louksna-v03/DEB_SIZE_BYTES.txt"
+          dpkg-deb -I "$HARDENED" | tee "$RUNNER_TEMP/louksna-v03/DPKG_INFO.txt"
+          lintian "$HARDENED" 2>&1 | tee "$RUNNER_TEMP/louksna-v03/LINTIAN.txt" || true
+          echo "TELEMETRY V03_DEB_HARDENING=PASS"
+
+      - name: Debian 13 V0.3 installability check
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          DEB="$(find target/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate/src-tauri/target/release/bundle/deb -type f -name 'louksna-zona-directiva_0.3.0-functional_amd64.deb' -print -quit)"
+          test -n "$DEB"
+          TESTDIR="$RUNNER_TEMP/louksna-v03/install"
+          mkdir -p "$TESTDIR"
+          cp "$DEB" "$TESTDIR/package.deb"
+          docker run --rm -v "$TESTDIR:/pkg:ro" debian:13-slim sh -lc '
+            set -eu
+            apt-get update
+            apt-get install -y /pkg/package.deb
+            dpkg -s louksna-zona-directiva
+            command -v louksna-zona-directiva
+            apt-get remove -y louksna-zona-directiva
+            if dpkg -s louksna-zona-directiva 2>/dev/null | grep -q "^Status: install ok installed$"; then
+              exit 7
+            fi
+            echo V03_ROLLBACK_CHECK=PASS_NOT_INSTALLED
+          ' | tee "$RUNNER_TEMP/louksna-v03/DEBIAN13_INSTALL_ROLLBACK.txt"
+          grep -q 'V03_ROLLBACK_CHECK=PASS_NOT_INSTALLED' "$RUNNER_TEMP/louksna-v03/DEBIAN13_INSTALL_ROLLBACK.txt"
+          echo "TELEMETRY V03_DEBIAN13_INSTALLABILITY=PASS"
+          echo "TELEMETRY V03_ROLLBACK=PASS"
+
+      - name: Preserve V0.3 functional development candidate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/louksna-v03/dev-artifact"
+          APP="target/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate"
+          mkdir -p "$OUT/payload" "$OUT/evidence"
+          cp "$APP/src-tauri/target/release/bundle/deb/louksna-zona-directiva_0.3.0-functional_amd64.deb" "$OUT/payload/"
+          cp "$RUNNER_TEMP/louksna-v03/FUNCTIONAL_PREFLIGHT.json" "$OUT/evidence/"
+          cp "$RUNNER_TEMP/louksna-v03/FUNCTIONALIZATION.log" "$OUT/evidence/"
+          cp "$RUNNER_TEMP/louksna-v03/DEB_SHA256.txt" "$OUT/evidence/"
+          cp "$RUNNER_TEMP/louksna-v03/DEB_SIZE_BYTES.txt" "$OUT/evidence/"
+          cp "$RUNNER_TEMP/louksna-v03/LINTIAN.txt" "$OUT/evidence/"
+          cp "$RUNNER_TEMP/louksna-v03/DEBIAN13_INSTALL_ROLLBACK.txt" "$OUT/evidence/"
+          cat > "$OUT/STATUS.json" <<'EOF'
+          {
+            "status": "DEVELOPMENT_CANDIDATE_BUILT",
+            "version": "0.3.0-functional",
+            "github_read_only_code": "IMPLEMENTED_NOT_YET_PHYSICALLY_AUTHENTICATED",
+            "settings_sqlite": "IMPLEMENTED_NOT_YET_PHYSICALLY_RESTART_TESTED",
+            "evidence_ledger": "IMPLEMENTED",
+            "chat_local": "IMPLEMENTED",
+            "chat_remote_bridge": "PREPARED_NOT_VALIDATED",
+            "voice": "OPEN_NOT_CLAIMED",
+            "g23": "NOT_RUN_FOR_V03",
+            "g24": "NOT_RUN_FOR_V03",
+            "active": false
+          }
+          EOF
+          echo "TELEMETRY V03_DEV_ARTIFACT=READY"
+
+      - name: Upload V0.3 functional development candidate
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksna-zd-v03-functional-development
+          path: ${{ runner.temp }}/louksna-v03/dev-artifact
+          if-no-files-found: error
+          retention-days: 30
 
       - name: Freeze implementation checkpoint
         shell: bash
