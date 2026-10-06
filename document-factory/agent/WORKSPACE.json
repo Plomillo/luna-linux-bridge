@@ -1,0 +1,15 @@
+{
+  "schema": "LOUKSNA_DOCUMENT_FACTORY_AGENT_WORKSPACE/1.0",
+  "mission_id": "DOCUMENT_FACTORY_AUTONOMOUS_CONTINUATION_V1",
+  "certified_start_head": "067e1be0b13d9400c2c78d6174138c10ce980dd7",
+  "certified_run_id": 37318811748,
+  "base_branch": "candidate/document-factory-v1-20261005",
+  "worker": "GITHUB_COPILOT_CLOUD_AGENT",
+  "scope": "DOCUMENT_FACTORY_ONLY",
+  "main_mutation": false,
+  "trust_root_mutation": false,
+  "canonical_mutation": false,
+  "auto_merge": false,
+  "certification_propagation": false,
+  "status": "DISPATCH_CANDIDATE"
+}
