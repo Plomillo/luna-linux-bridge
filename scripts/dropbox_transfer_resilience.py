@@ -314,6 +314,8 @@ def classify_bug(stderr_text: str) -> tuple[str, str, str | None]:
     if m:
         missing = m.group(1)
         return "CODE_NAMEERROR", "RUNTIME_PATCH_STANDARD_IMPORT" if missing in SAFE_STDLIB_IMPORTS else "RETRY_FROM_CHECKPOINT_ONCE", missing
+    if "record_event() got multiple values for argument 'kind'" in text:
+        return "CODE_EVENT_KIND_COLLISION", "RUNTIME_PATCH_EVENT_KIND_COLLISION", None
     if any(x in lower for x in ["too many files", "partition_not_zip", "returned_html", "folder_download_no_material", "continuation_not_found"]):
         return "PARTITION_STRATEGY", "SPLIT_FALLBACK_AND_RETRY", None
     if any(x in lower for x in ["timed out", "timeout", "connection reset", "remote end closed", "temporary failure", "429", "502", "503", "504"]):
@@ -435,7 +437,34 @@ def apply_safe_runtime_repair(target: pathlib.Path, bug_path: pathlib.Path, out_
         "bug_id": bug.get("bug_id"),
         "applied_at_utc": utc(),
     }
-    if bug.get("recommended_action") != "RUNTIME_PATCH_STANDARD_IMPORT":
+    action = bug.get("recommended_action")
+    if action == "RUNTIME_PATCH_EVENT_KIND_COLLISION":
+        source = target.read_text(encoding="utf-8")
+        patched = source.replace('kind=item["kind"],', 'item_kind=item["kind"],')
+        if patched == source:
+            result["status"] = "DENIED_NO_COLLISION_PATTERN"
+            atomic_json(out_path, result)
+            return result
+        original_hash = hashlib.sha256(source.encode("utf-8")).hexdigest()
+        target.write_text(patched, encoding="utf-8")
+        try:
+            py_compile.compile(str(target), doraise=True)
+        except Exception:
+            target.write_text(source, encoding="utf-8")
+            result["status"] = "ROLLBACK_AFTER_COMPILE_FAILURE"
+            atomic_json(out_path, result)
+            return result
+        result.update({
+            "status": "PASS",
+            "repair_type": "EVENT_KIND_KEYWORD_COLLISION",
+            "original_sha256": original_hash,
+            "patched_sha256": file_sha256(target),
+            "targeted_test": "PY_COMPILE_PASS",
+            "persistent_repo_mutation": False,
+        })
+        atomic_json(out_path, result)
+        return result
+    if action != "RUNTIME_PATCH_STANDARD_IMPORT":
         atomic_json(out_path, result)
         return result
     missing = str(bug.get("missing_symbol") or "")
@@ -477,6 +506,9 @@ def apply_safe_runtime_repair(target: pathlib.Path, bug_path: pathlib.Path, out_
 
 def bind_artifact(root: pathlib.Path, out_dir: pathlib.Path, artifact_id: str, artifact_name: str, artifact_digest: str, artifact_size_bytes: int, run_id: str) -> dict:
     out_dir.mkdir(parents=True, exist_ok=True)
+    artifact_digest = str(artifact_digest or "")
+    if artifact_digest and not artifact_digest.startswith("sha256:"):
+        artifact_digest = "sha256:" + artifact_digest
     latest = root / "checkpoints" / "LATEST.json"
     if not latest.is_file():
         raise SystemExit("LATEST_CHECKPOINT_MISSING_FOR_BINDING")
