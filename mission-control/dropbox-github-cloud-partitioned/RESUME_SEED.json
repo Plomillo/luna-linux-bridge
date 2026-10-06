@@ -1,0 +1,68 @@
+{
+  "schema": "PUAC2_DROPBOX_TRANSFER_RESUME_SEED/1.0",
+  "status": "BOOTSTRAP_EVIDENCE",
+  "authority": "Louksna.md",
+  "governance": "PUAC2.md",
+  "source_run_id": 37356959689,
+  "source_workflow": "Dropbox Connected → GitHub Cloud Child Fanout",
+  "note": "Bootstrap only from prior successful child artifacts. Artifact digests are GitHub artifact digests, not silently reclassified as Dropbox source-content hashes.",
+  "completed": [
+    {
+      "top_level_ordinal": 2,
+      "label": "2. LUNITA_MATERIALIZATION",
+      "source_url": "https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/AB_Ud_ps_WswbZvHomgEzGU/2.%20LUNITA_MATERIALIZATION?rlkey=p712fwlkbwn9g0dtybu2sf159&dl=0",
+      "artifact_id": 11364459989,
+      "artifact_name": "dropbox-child-2-37356959689",
+      "artifact_size_bytes": 2658222649,
+      "artifact_digest": "sha256:e23626578e0fc4132d436b36f3a6d8b84b3ef181aec7b918da478e334cdbb2a4",
+      "evidence_status": "COMPLETED_VERIFIED_PRIOR_RUN"
+    },
+    {
+      "top_level_ordinal": 3,
+      "label": "3. LunaCore - APP",
+      "source_url": "https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/AHOlWImej64bdnWZ3YDyvy4/3.%20LunaCore%20-%20APP?rlkey=p712fwlkbwn9g0dtybu2sf159&dl=0",
+      "artifact_id": 11364489680,
+      "artifact_name": "dropbox-child-3-37356959689",
+      "artifact_size_bytes": 61883893,
+      "artifact_digest": "sha256:3659b136719e72de1f3579504f234551c50aaf1dcd0f6bb83c5d0f18b73409ad",
+      "evidence_status": "COMPLETED_VERIFIED_PRIOR_RUN"
+    },
+    {
+      "top_level_ordinal": 4,
+      "label": "4. DEPENDENCIAS",
+      "source_url": "https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/AMI1HQE43xGiyAQhY8e44k0/4.%20DEPENDENCIAS?rlkey=p712fwlkbwn9g0dtybu2sf159&dl=0",
+      "artifact_id": 11364673450,
+      "artifact_name": "dropbox-child-4-37356959689",
+      "artifact_size_bytes": 7511,
+      "artifact_digest": "sha256:efd3c8bd94574648644e93f35b167b0fbf0ca892da0369964d462f34cbbe1ebb",
+      "evidence_status": "COMPLETED_VERIFIED_PRIOR_RUN"
+    },
+    {
+      "top_level_ordinal": 6,
+      "label": "6. LOUKSNA PLATAFORM - PC",
+      "source_url": "https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/AOelzGJTW-L1_yGG6XiQ6eQ/6.%20LOUKSNA%20PLATAFORM%20-%20PC?rlkey=p712fwlkbwn9g0dtybu2sf159&dl=0",
+      "artifact_id": 11364538532,
+      "artifact_name": "dropbox-child-6-37356959689",
+      "artifact_size_bytes": 90042,
+      "artifact_digest": "sha256:68bcd12f19907592cf75bab4d87cc6bad9f7d1163abde903f384ab30c10e6fbc",
+      "source_payload_sha256": "4261a3d241c6227c7f15167c9a63e2b4c25f74873ce5b68d20c251a783e65190",
+      "evidence_status": "COMPLETED_VERIFIED_PRIOR_RUN"
+    },
+    {
+      "top_level_ordinal": 7,
+      "label": "7. Cápsulas Contenidas",
+      "source_url": "https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/AEHdz-aIfa5VBPWxW8XtLiI/7.%20C%C3%A1psulas%20Contenidas?rlkey=p712fwlkbwn9g0dtybu2sf159&dl=0",
+      "artifact_id": 11364643823,
+      "artifact_name": "dropbox-child-7-37356959689",
+      "artifact_size_bytes": 98455,
+      "artifact_digest": "sha256:ee32dc54eebed254b6328b9636da61395ad475608a0587d8bfacabbcfa6fa0c4",
+      "evidence_status": "COMPLETED_VERIFIED_PRIOR_RUN"
+    }
+  ],
+  "pending_top_level_ordinals": [
+    1,
+    5,
+    8
+  ],
+  "generated_for": "PUAC2_DURABLE_RESUME_BOOTSTRAP"
+}
