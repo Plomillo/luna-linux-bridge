@@ -230,7 +230,7 @@ def write_download_event(kind: str, source_url: str, label: str, suggested: str 
     if not first.exists():
         atomic_json(first, marker)
     atomic_json(EVID / "CURRENT_DOWNLOAD_EVENT.json", marker)
-    record_event("DOWNLOAD_EVENT", kind=kind, label=label, source=sanitize_url(source_url), suggested_filename=suggested)
+    record_event("DOWNLOAD_EVENT", source_kind=kind, label=label, source=sanitize_url(source_url), suggested_filename=suggested)
 
 def validate_zip(path: pathlib.Path) -> tuple[int, str]:
     if not zipfile.is_zipfile(path):
