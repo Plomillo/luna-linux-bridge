@@ -1,0 +1,77 @@
+{
+  "schema": "PUAC2_TRANSFER_FIX_KB/1.0",
+  "status": "GOVERNED_LOCAL_KNOWLEDGE_BASE",
+  "authority": "Louksna.md",
+  "governance": "PUAC2.md",
+  "certification_propagation": false,
+  "purpose": "Reuse previously validated transfer remediations before repeating live research. Unknown bugs still require live research, validation and evidence.",
+  "entries": [
+    {
+      "fix_id": "FIX-STDIMPORT-HTML-001",
+      "category": "CODE_NAMEERROR",
+      "signal_regex": "NameError: name ['\\\"]html['\\\"] is not defined",
+      "action": "RUNTIME_PATCH_STANDARD_IMPORT",
+      "applicability": "Python stdlib html binding missing in transfer runtime",
+      "validation_status": "VALIDATED",
+      "validated_by": [
+        "DROPBOX_GITHUB_CLOUD_PARTITIONED_HTML_PARSER_SELFTEST"
+      ],
+      "rollback": "restore original source bytes",
+      "provenance": [
+        "commit:26958cadc6ffafd0d033ffc1a03cb7ae648befd1",
+        "commit:68d7afd7d51a0758a5cd468c735d2366f47149d3"
+      ]
+    },
+    {
+      "fix_id": "FIX-EVENT-KIND-COLLISION-001",
+      "category": "CODE_EVENT_KIND_COLLISION",
+      "signal_regex": "record_event\\(\\) got multiple values for argument ['\\\"]kind['\\\"]",
+      "action": "RUNTIME_PATCH_EVENT_KIND_COLLISION",
+      "applicability": "EventRecord callsite passes kind both positionally and by keyword",
+      "validation_status": "VALIDATED",
+      "validated_by": [
+        "DROPBOX_GITHUB_CLOUD_PARTITIONED_EVENT_CALLSITE_SELFTEST",
+        "DROPBOX_GITHUB_CLOUD_PARTITIONED_BUG_CLASSIFIER_SELFTEST"
+      ],
+      "rollback": "restore original source bytes",
+      "provenance": [
+        "commit:b1969aa7ecfc34111286bd9409509e9ffcff66eb",
+        "commit:e10e31f26df1847fb1a1bade6ace901bed671fe2"
+      ]
+    },
+    {
+      "fix_id": "FIX-DROPBOX-UI-DRIFT-001",
+      "category": "DROPBOX_UI_SELECTOR_DRIFT",
+      "signal_regex": "action-bar-download-button|FOLDER_DOWNLOAD_UI_CONTROL_UNAVAILABLE|UI_CONTROL_UNAVAILABLE_AFTER_DIRECT_DL1",
+      "action": "DIRECT_DL1_THEN_SPLIT",
+      "applicability": "Dropbox public shared-folder preview UI lacks or changes download control",
+      "validation_status": "VALIDATED",
+      "validated_by": [
+        "DROPBOX_GITHUB_CLOUD_PARTITIONED_CONTRACT",
+        "DROPBOX_GITHUB_CLOUD_PARTITIONED_BUG_CLASSIFIER_SELFTEST"
+      ],
+      "rollback": "restore prior transfer strategy; preserve checkpoint",
+      "provenance": [
+        "Dropbox Help: force shared-link download with dl=1",
+        "commit:c5e07ce78e55294e998c6fb7adbc68a07f5c4339",
+        "commit:39770990376ef8c186bf1d73872efbe3e99c9989",
+        "commit:40a1deebcea334b0ca6746138d8ba60de0e1261c"
+      ]
+    },
+    {
+      "fix_id": "FIX-TRANSIENT-NETWORK-001",
+      "category": "TRANSIENT_NETWORK",
+      "signal_regex": "timeout|timed out|connection reset|remote end closed|429|502|503|504",
+      "action": "RETRY_BACKOFF",
+      "applicability": "Transient transport or service availability failure",
+      "validation_status": "VALIDATED_POLICY",
+      "validated_by": [
+        "PUAC2_CHECKPOINT_RESUME_POLICY"
+      ],
+      "rollback": "none; no state promotion until verified",
+      "provenance": [
+        "PUAC2.md"
+      ]
+    }
+  ]
+}
