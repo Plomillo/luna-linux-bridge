@@ -1,0 +1,19 @@
+{
+  "resume_authorization": "D01_ONLY",
+  "mission_id": "MIS-SUPER1200-D01-RESUME-20261007",
+  "parent_run": 37652954550,
+  "checkpoint_head": "4e957f2d4a388a87f8dca17053e5f2ec8693c5a2",
+  "worker": "CUSTOSZ_V7",
+  "execution_plane": "CUSTOSZ_RUNTIME_V1",
+  "governance_plane": "METAOS",
+  "objective": "resume exact stopped D01 foundation materialization after isolated-mode import failure",
+  "do_not_replay_domains": ["D02","D03","D04","D05","D06","D07","D08","D09","D10","D11","D12","D13","D14","D15","D16","D17","D18","D19","D20","D21","D22"],
+  "previous_progress": {"D01_evidenced":17,"total_remaining":1183},
+  "root_cause": "PYTHONPATH ignored by python -I",
+  "correction": "test_foundation.py self-bootstraps implementation/super1200/core before importing super1200_core",
+  "g23": "DO_NOT_EXECUTE",
+  "g24": "DO_NOT_EXECUTE",
+  "fail_closed": true,
+  "ownership_transfer": false,
+  "canonical_mutation": false
+}
