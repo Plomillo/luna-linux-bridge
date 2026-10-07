@@ -4,20 +4,26 @@
     {
       "canonical_name": "STATE_REGISTRY",
       "capability_id": 1,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_artifact": "implementation/super1200/core/super1200_core/foundation.py",
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "test_artifact": "implementation/super1200/core/tests/test_foundation.py"
     },
     {
       "canonical_name": "CAPABILITY_REGISTRY",
       "capability_id": 2,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_artifact": "implementation/super1200/core/super1200_core/foundation.py",
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "test_artifact": "implementation/super1200/core/tests/test_foundation.py"
     },
     {
       "canonical_name": "DEPENDENCY_MANAGER",
       "capability_id": 3,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_artifact": "implementation/super1200/core/super1200_core/foundation.py",
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "test_artifact": "implementation/super1200/core/tests/test_foundation.py"
     },
     {
       "canonical_name": "ENVIRONMENT_MANAGER",
@@ -28,8 +34,10 @@
     {
       "canonical_name": "ARTIFACT_STORE",
       "capability_id": 5,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_artifact": "implementation/super1200/core/super1200_core/foundation.py",
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "test_artifact": "implementation/super1200/core/tests/test_foundation.py"
     },
     {
       "canonical_name": "MODEL_STORE",
@@ -58,14 +66,18 @@
     {
       "canonical_name": "SERVICE_REGISTRY",
       "capability_id": 10,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_artifact": "implementation/super1200/core/super1200_core/foundation.py",
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "test_artifact": "implementation/super1200/core/tests/test_foundation.py"
     },
     {
       "canonical_name": "HEALTH_READINESS_ENGINE",
       "capability_id": 11,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_artifact": "implementation/super1200/core/super1200_core/foundation.py",
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "test_artifact": "implementation/super1200/core/tests/test_foundation.py"
     },
     {
       "canonical_name": "JOB_QUEUE_INTERFACE",
@@ -88,8 +100,10 @@
     {
       "canonical_name": "RESOURCE_ENVELOPE_ENGINE",
       "capability_id": 15,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_artifact": "implementation/super1200/core/super1200_core/foundation.py",
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "test_artifact": "implementation/super1200/core/tests/test_foundation.py"
     },
     {
       "canonical_name": "REMOTE_BRIDGE_APP_PROTOCOL",
@@ -106,14 +120,18 @@
     {
       "canonical_name": "OBSERVABILITY_FABRIC",
       "capability_id": 18,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_artifact": "implementation/super1200/core/super1200_core/foundation.py",
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "test_artifact": "implementation/super1200/core/tests/test_foundation.py"
     },
     {
       "canonical_name": "PROVENANCE_HISTORY_ENGINE",
       "capability_id": 19,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_artifact": "implementation/super1200/core/super1200_core/foundation.py",
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "test_artifact": "implementation/super1200/core/tests/test_foundation.py"
     },
     {
       "canonical_name": "BUG_KNOWLEDGE_BASE",
@@ -124,50 +142,66 @@
     {
       "canonical_name": "HOLD_REASON_ENGINE",
       "capability_id": 21,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_artifact": "implementation/super1200/core/super1200_core/foundation.py",
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "test_artifact": "implementation/super1200/core/tests/test_foundation.py"
     },
     {
       "canonical_name": "METACOGNITIVE_STATE_ENGINE",
       "capability_id": 22,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_artifact": "implementation/super1200/core/super1200_core/foundation.py",
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "test_artifact": "implementation/super1200/core/tests/test_foundation.py"
     },
     {
       "canonical_name": "KNOWLEDGE_GRAPH",
       "capability_id": 23,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_artifact": "implementation/super1200/core/super1200_core/foundation.py",
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "test_artifact": "implementation/super1200/core/tests/test_foundation.py"
     },
     {
       "canonical_name": "DEPENDENCY_GRAPH",
       "capability_id": 24,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_artifact": "implementation/super1200/core/super1200_core/foundation.py",
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "test_artifact": "implementation/super1200/core/tests/test_foundation.py"
     },
     {
       "canonical_name": "CAPABILITY_GRAPH",
       "capability_id": 25,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_artifact": "implementation/super1200/core/super1200_core/foundation.py",
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "test_artifact": "implementation/super1200/core/tests/test_foundation.py"
     },
     {
       "canonical_name": "CERTIFICATION_GRAPH",
       "capability_id": 26,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_artifact": "implementation/super1200/core/super1200_core/foundation.py",
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "test_artifact": "implementation/super1200/core/tests/test_foundation.py"
     },
     {
       "canonical_name": "ARCHITECTURAL_COST_LEDGER",
       "capability_id": 27,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_artifact": "implementation/super1200/core/super1200_core/foundation.py",
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "test_artifact": "implementation/super1200/core/tests/test_foundation.py"
     },
     {
       "canonical_name": "COST_PREDICTION_ENGINE",
       "capability_id": 28,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_artifact": "implementation/super1200/core/super1200_core/foundation.py",
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "test_artifact": "implementation/super1200/core/tests/test_foundation.py"
     },
     {
       "canonical_name": "REPOSITORY_ACQUISITION_ENGINE",
@@ -184,9 +218,11 @@
   ],
   "count": 30,
   "domain_id": "D01",
+  "evidenced_capabilities": 17,
   "governance": "BOUND",
   "metacognitive": "BOUND",
   "owner": "REPOSITORY",
+  "pending_capabilities": 13,
   "provenance": "BOUND",
   "range": [
     1,

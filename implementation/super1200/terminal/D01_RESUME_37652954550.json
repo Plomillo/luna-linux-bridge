@@ -1,0 +1,42 @@
+{
+  "checkpoint_head": "4e957f2d4a388a87f8dca17053e5f2ec8693c5a2",
+  "corrective_action": "test_foundation.py inserts implementation/super1200/core into sys.path before package import",
+  "domain_id": "D01",
+  "evidenced_capabilities": [
+    1,
+    2,
+    3,
+    5,
+    10,
+    11,
+    15,
+    18,
+    19,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28
+  ],
+  "evidenced_count": 17,
+  "g23": "BLOCKED_UNTIL_FUNCTIONAL_CLOSURE",
+  "g24": "BLOCKED_UNTIL_G23_SAME_DIGEST",
+  "generated_utc": "2026-10-07T18:32:42.544647+00:00",
+  "implementation_sha256": "79244b2c335b090ac52ea0d8a356cb313ff4804c9e1aac99cb66b52eb5f91b14",
+  "mission_run": 37652954550,
+  "owner": "REPOSITORY",
+  "remaining_capabilities": 1183,
+  "root_cause": "PYTHONPATH_IGNORED_BY_ISOLATED_MODE",
+  "schema": "SUPER1200_D01_RESUME_EVIDENCE/1.0",
+  "terminal_certification": false,
+  "test_command": [
+    "/usr/bin/python3",
+    "-B",
+    "-I",
+    "implementation/super1200/core/tests/test_foundation.py"
+  ],
+  "test_sha256": "c2f0c40ef4e3df7361612fd2d8624943ff635addc0410a41627ef05ad07ae9c7"
+}
