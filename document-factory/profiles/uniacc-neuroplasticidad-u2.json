@@ -1,0 +1,196 @@
+{
+  "schema": "LOUKSNA_ASSIGNMENT_PROFILE/1.0",
+  "profile_id": "UNIACC_NEUROPLASTICIDAD_U2_2026",
+  "profile_version": "1.0",
+  "status": "SOURCE_MAPPED_PROFILE_NOT_CERTIFIED",
+  "raw_instruction_ref": "document-factory/profiles/raw/uniacc-neuroplasticidad-u2-2026.md",
+  "title": "NEUROPLASTICIDAD: DE LA CÉLULA AL COMPORTAMIENTO",
+  "open_at": "2026-09-08T00:00:00-03:00",
+  "close_at": "2026-10-05T23:55:00-03:00",
+  "unresolved_source_conflicts": [
+    {
+      "id": "SRC-CONFLICT-001",
+      "text": "La fuente incluye una referencia a 'síndromes de desconexión' junto a instrucciones y rúbrica centradas en neuroplasticidad.",
+      "state": "CONFLICT",
+      "resolution": "NOT_INFERRED"
+    }
+  ],
+  "required_research": {
+    "minimum_distinct_sources": 3,
+    "source_priority": "Comenzar por biblioteca digital y bases CREA-UNIACC; priorizar enfoque desde neurociencias.",
+    "required_topics": [
+      "Establecer una definición de neuroplasticidad.",
+      "Identificar los diferentes tipos de neuroplasticidad.",
+      "Seleccionar dos tipos con publicaciones sobre factores etiológicos, mecanismos fisiológicos o fisiopatológicos y consecuencias funcionales."
+    ]
+  },
+  "deliverables": [
+    {
+      "id": "REPORT_DOCX",
+      "kind": "docx",
+      "submission_required": true
+    },
+    {
+      "id": "AUDIOVISUAL",
+      "kind": "video_or_link",
+      "submission_required": true
+    },
+    {
+      "id": "VIDEO_LINK_ON_COVER",
+      "kind": "url_on_cover",
+      "submission_required": true
+    },
+    {
+      "id": "AUX_PDF",
+      "kind": "pdf",
+      "submission_required": false
+    },
+    {
+      "id": "AUX_PPTX",
+      "kind": "pptx",
+      "submission_required": false
+    },
+    {
+      "id": "AUX_XLSX",
+      "kind": "xlsx",
+      "submission_required": false
+    }
+  ],
+  "constraints": {
+    "report_word_count": {
+      "min": 800,
+      "max": 1200,
+      "exclude": [
+        "cover",
+        "bibliography"
+      ]
+    },
+    "video": {
+      "max_duration_seconds": 300,
+      "orientation": "horizontal",
+      "required_parts": [
+        "saludo inicial con presentación",
+        "explicaciones solicitadas",
+        "conclusiones",
+        "despedida"
+      ]
+    },
+    "images": {
+      "source_text": "resolución mínima de 300 dpi (600x900)",
+      "minimum_dpi": 300,
+      "stated_dimensions": "600x900"
+    },
+    "submission": {
+      "only_report_docx_uploaded": true,
+      "video_link_on_cover": true,
+      "file_name_example": "Trabajo2nombre // Trabajo2JuanaRosal"
+    },
+    "group_work": {
+      "required": true,
+      "group_size": "VERIFY_WITH_ONLINE_TEACHER"
+    }
+  },
+  "rubric": {
+    "declared_total_points": 38.5,
+    "criteria": [
+      {
+        "id": "R01",
+        "points": 1.75,
+        "text": "Envía o entrega su informe en Word en el plazo indicado, respetando la extensión solicitada.",
+        "validation": "AUTOMATED_PARTIAL_PLUS_PLATFORM_EVIDENCE"
+      },
+      {
+        "id": "R02",
+        "points": 3.5,
+        "text": "El trabajo escrito y video muestran un orden claro y cumple completamente con el desarrollo de todos los puntos solicitados en las instrucciones.",
+        "validation": "G23_HUMAN_DISCIPLINARY"
+      },
+      {
+        "id": "R03",
+        "points": 3.5,
+        "text": "En el informe y video expresa sus ideas con riqueza lingüística y manejo conceptual. Su redacción no presenta errores gramaticales u ortográficos.",
+        "validation": "AUTOMATED_ASSIST_PLUS_G23_HUMAN"
+      },
+      {
+        "id": "R04",
+        "points": 3.5,
+        "text": "En el informe y video referencia correctamente de acuerdo con la norma APA, todas las fuentes bibliográficas incorporadas. Diferenciando claramente sus opiniones de las de otros autores citados.",
+        "validation": "AUTOMATED_CITATION_CHECK_PLUS_G23"
+      },
+      {
+        "id": "R05",
+        "points": 3.5,
+        "text": "En la introducción realiza una adecuada y acotada presentación del tema de interés.",
+        "validation": "G23_HUMAN_DISCIPLINARY"
+      },
+      {
+        "id": "R06",
+        "points": 7,
+        "text": "En el desarrollo elabora una definición de neuroplasticidad precisa y basada en bibliografía, que es coherente con el listado de tipos de neuroplasticidad.",
+        "validation": "G23_HUMAN_DISCIPLINARY"
+      },
+      {
+        "id": "R07",
+        "points": 7,
+        "text": "En desarrollo da cuenta cabalmente sobre los dos tipos de neuroplasticidad, indicando en qué casos ocurre y cómo potenciar una neuroplasticidad negativa o positiva, dejando claramente establecido el propósito funcional y conductual.",
+        "validation": "G23_HUMAN_DISCIPLINARY"
+      },
+      {
+        "id": "R08",
+        "points": 3.5,
+        "text": "La conclusión en el informe y video es precisa y sintetiza los puntos más relevantes de su presentación.",
+        "validation": "G23_HUMAN_DISCIPLINARY"
+      },
+      {
+        "id": "R09",
+        "points": 1.75,
+        "text": "El video cumple con el tiempo e instrucciones solicitadas.",
+        "validation": "AUTOMATED_METADATA_PLUS_G23"
+      },
+      {
+        "id": "R10",
+        "points": 3.5,
+        "text": "En el video hace una explicación fluida que da cuenta de un dominio técnico de los contenidos.",
+        "validation": "G23_HUMAN_DISCIPLINARY"
+      }
+    ]
+  },
+  "runtime_policy": {
+    "heartbeat_interval_seconds": 1,
+    "stages": {
+      "PROFILE_VALIDATE": {
+        "timeout_seconds": 30,
+        "max_attempts": 1
+      },
+      "WRITE": {
+        "timeout_seconds": 900,
+        "max_attempts": 1
+      },
+      "BUILD_DOCX": {
+        "timeout_seconds": 180,
+        "max_attempts": 1
+      },
+      "BUILD_PPTX": {
+        "timeout_seconds": 180,
+        "max_attempts": 1
+      },
+      "BUILD_PDF": {
+        "timeout_seconds": 300,
+        "max_attempts": 1
+      },
+      "BUILD_XLSX": {
+        "timeout_seconds": 60,
+        "max_attempts": 1
+      },
+      "VERIFY": {
+        "timeout_seconds": 180,
+        "max_attempts": 1
+      },
+      "FREEZE": {
+        "timeout_seconds": 60,
+        "max_attempts": 1
+      }
+    }
+  },
+  "no_subject_matter_inference": true
+}

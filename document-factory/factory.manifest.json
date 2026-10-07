@@ -1,0 +1,45 @@
+{
+  "schema": "LOUKSNA_DOCUMENT_FACTORY_MANIFEST/1.0",
+  "module_id": "LOUKSNA_DOCUMENT_FACTORY_V1",
+  "version": "0.1.0-candidate",
+  "status": "IMPLEMENTED_CANDIDATE_NOT_CERTIFIED",
+  "authority": "Louksna.md",
+  "assurance_reference": "PUAC2.md",
+  "doctrine": "EXTEND_DO_NOT_REPLACE",
+  "fail_closed": true,
+  "canonical_mutation": false,
+  "certification_inheritance": false,
+  "source_first": true,
+  "git_native": true,
+  "profile_driven": true,
+  "generic_task_support": true,
+  "heartbeat_interval_seconds": 1,
+  "anti_paralysis": {
+    "no_blind_retry": true,
+    "no_indefinite_hold": true,
+    "checkpoint_before_build": true,
+    "timeout_required": true,
+    "max_attempts_required": true,
+    "resume_from_last_verified_checkpoint": true
+  },
+  "providers": {
+    "docx": "pandoc",
+    "pptx": "pandoc",
+    "pdf": "libreoffice_headless_from_docx",
+    "xlsx": "stdlib_ooxml",
+    "audiovisual_validation": "ffprobe_external"
+  },
+  "assurance_chain": [
+    "SPECIFICATION",
+    "EVIDENCE",
+    "VERIFICATION",
+    "SELF_AUDIT",
+    "FREEZE",
+    "G23",
+    "G24",
+    "OPERATIONAL_AUTHORIZATION",
+    "ACTIVE"
+  ],
+  "g23": "NOT_EXECUTED",
+  "g24": "NOT_EXECUTED"
+}

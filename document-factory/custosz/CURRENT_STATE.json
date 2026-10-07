@@ -1,0 +1,85 @@
+{
+  "active_certification_preserved": true,
+  "active_certified_anchor_digest_sha256": "b0c59f37c70e58ca42f7fd215fad890e9a24b255d369110665e7141f26f57404",
+  "active_certified_anchor_sha": "43a82aa30607b8775c998fa39b2bc08bfc2a263f",
+  "backlog_items_completed": [
+    "SOURCE_LEDGER_AND_CSL_PIPELINE",
+    "FFMPEG_FFPROBE_PROVIDER_ADMISSION_LOGIC",
+    "IMAGE_DPI_AND_PIXEL_VALIDATION",
+    "OOXML_AND_PDF_VALIDATION_HARDENING",
+    "WRITER_PROVIDER_SEPARATION",
+    "CLAIMS_RISK_TRACEABILITY_MONITORING_TESTS",
+    "END_TO_END_SYNTHETIC_REPRODUCIBILITY"
+  ],
+  "baseline_selftest": "{\"passed_count\": 12, \"schema\": \"DOCUMENT_FACTORY_SELFTEST/1.0\", \"status\": \"PASS\", \"tests\": [\"CURRENT_PROFILE_EXACT_CONTRACT\", \"RUBRIC_ARITHMETIC_FAIL_CLOSED\", \"HEARTBEAT_POLICY_FAIL_CLOSED\", \"WORDCOUNT_BOUNDARY\", \"CHECKPOINT\", \"VERIFIED_ROLLBACK\", \"XLSX_OOXML\", \"ONE_SECOND_HEARTBEAT\", \"AUDIT_HASH_CHAIN\", \"INVALID_OOXML_REJECTED\", \"TIMEOUT_TO_HOLD_NO_BLIND_RETRY\", \"EXISTING_RECOVERY_ROOT_REUSED\"]}",
+  "capability_count": 72,
+  "certified_checkpoint_sha": "067e1be0b13d9400c2c78d6174138c10ce980dd7",
+  "completion_selftest": "{\"ffprobe_admission\": \"EXCLUDED\", \"status\": \"PASS\"}",
+  "continued_from_head": "e4073004eee5776a2f953794b90276818f1adc91",
+  "desktop_commander": "FORBIDDEN",
+  "families": [
+    "F01_IO_KNOWLEDGE",
+    "F02_EXECUTION_RESOURCES",
+    "F03_SECURITY_TRUST",
+    "F04_INTELLIGENCE_SYNTHESIS",
+    "F05_ASSURANCE_EPISTEMIC",
+    "F06_CONTINUITY_INTEROP",
+    "F07_MEMORY_DOCUMENTATION",
+    "F08_FORMAL_CORE",
+    "F09_CAPABILITY_GAPS_EVOLUTION"
+  ],
+  "family_count": 9,
+  "ffprobe_provider_admission": {
+    "admitted": false,
+    "declared": {
+      "id": "ffprobe",
+      "required_for": [
+        "video_validation"
+      ],
+      "sha256": null,
+      "source": null,
+      "state": "UNRESOLVED_MUST_BE_PINNED_BEFORE_REPRODUCIBILITY_PASS",
+      "version": null
+    },
+    "observed_binary": null,
+    "reason": "FFPROBE_PROVENANCE_NOT_PINNED",
+    "status": "EXCLUDED"
+  },
+  "ffprobe_provider_candidate": {
+    "binary_sha256": "5962c9451824b559c6acd695e27698fe965525a66e4263d1f2a18a52ec04d368",
+    "nasm": {
+      "binary_sha256": "1e0d3cae8ef5b372b649b9d9cd272c71e9facdadae67b4ccf2d035c821db1cf3",
+      "official_commit_sha": "4a56d66ed9626d5a3ded5414c9d8b7f1a48ce065",
+      "source_sha256": "87336eba53b4acfe917424ab5d500d2b0054d9f5148d35c2273ccf2cfb712f0d",
+      "version": "3.02"
+    },
+    "signing_key_fingerprint": "FCF986EA15E6E293A5644F10B4322F04D67658D8",
+    "source_sha256": "8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e",
+    "status": "PASS_PENDING_FRESH_G23_G24",
+    "version": "9.0.2"
+  },
+  "g23": "NOT_PROPAGATED",
+  "g24": "NOT_PROPAGATED",
+  "main_dispatch_head": "716f9dc3f45324eb87280954c18b8dc475a451e8",
+  "main_role": "DEPENDENCY_AND_DOWNLOAD_DISPATCH_SOURCE",
+  "material_step": "FFPROBE_PROVIDER_PGP_VERIFIED_BUILT_TESTED",
+  "next_work": [
+    "FRESH_PRODUCER_VALIDATION_FOR_FFPROBE_CHANGE",
+    "INDEPENDENT_VALIDATION",
+    "G23",
+    "G24",
+    "NEW_OPERATIONAL_AUTHORIZATION"
+  ],
+  "profile_validation": "{\"failures\": [], \"status\": \"PASS\"}",
+  "rubric_compiler_selftest": "RUBRIC_COMPILER_SELFTEST=PASS",
+  "runtime": "CUSTOSZ_RUNTIME_V1",
+  "schema": "DOCUMENT_FACTORY_CUSTOSZ_WORK_STATE/3.0",
+  "scope_exclusions": [
+    "ACADEMIC_CORRECTNESS",
+    "FFPROBE_CHANGE_NOT_IN_ACTIVE_CERTIFIED_SCOPE_UNTIL_FRESH_G23_G24",
+    "LMS_SUBMISSION",
+    "STUDENT_ASSIGNMENT_GENERATION"
+  ],
+  "synthetic_e2e": "{\"citations\": {\"cited_ids\": [\"A\", \"B\", \"C\"], \"failures\": [], \"status\": \"PASS\"}, \"csl_count\": 3, \"g23\": \"NOT_EXECUTED\", \"g24\": \"NOT_EXECUTED\", \"image\": {\"dpi_and_pixel_dimensions_are_distinct\": true, \"failures\": [], \"status\": \"PASS\", \"unknown\": []}, \"ledger\": {\"distinct_verified\": 3, \"failures\": [], \"status\": \"PASS\"}, \"pdf\": {\"failures\": [], \"status\": \"PASS\"}, \"status\": \"PASS\", \"student_assignment_generated\": false, \"synthetic_only\": true, \"video\": {\"duration_seconds\": 120.0, \"failures\": [], \"height\": 1080, \"status\": \"PASS\", \"width\": 1920}, \"writer\": {\"failures\": [], \"status\": \"PASS\"}}",
+  "worker": "CUSTOSZ_V7"
+}

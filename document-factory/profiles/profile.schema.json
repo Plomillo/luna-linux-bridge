@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "louksna.document-factory.profile/1.0",
+  "type": "object",
+  "required": [
+    "profile_id",
+    "profile_version",
+    "raw_instruction_ref",
+    "deliverables",
+    "constraints",
+    "rubric",
+    "runtime_policy"
+  ],
+  "properties": {
+    "profile_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "profile_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "raw_instruction_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "deliverables": {
+      "type": "array",
+      "minItems": 1
+    },
+    "constraints": {
+      "type": "object"
+    },
+    "rubric": {
+      "type": "object",
+      "required": [
+        "declared_total_points",
+        "criteria"
+      ],
+      "properties": {
+        "declared_total_points": {
+          "type": "number"
+        },
+        "criteria": {
+          "type": "array",
+          "minItems": 1
+        }
+      }
+    },
+    "runtime_policy": {
+      "type": "object",
+      "required": [
+        "heartbeat_interval_seconds",
+        "stages"
+      ],
+      "properties": {
+        "heartbeat_interval_seconds": {
+          "const": 1
+        },
+        "stages": {
+          "type": "object",
+          "minProperties": 1
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+}

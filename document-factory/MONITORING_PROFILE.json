@@ -1,0 +1,50 @@
+{
+  "certification_inheritance": false,
+  "collection_method": "EXACT_HEAD_GITHUB_ACTIONS_AND_ARTIFACT_EVIDENCE",
+  "event_triggers": [
+    "SOURCE_CHANGE",
+    "PROFILE_CHANGE",
+    "TOOLCHAIN_CHANGE",
+    "BUILD_CHANGE",
+    "TEST_FAILURE",
+    "HASH_MISMATCH",
+    "POLICY_VIOLATION",
+    "EXPIRED_EVIDENCE",
+    "OBSERVABILITY_FAILURE"
+  ],
+  "frequency": {
+    "build": "EVERY_CANDIDATE_HEAD",
+    "certification": "EVERY_CERTIFIED_DIGEST",
+    "operation": "EVERY_TASK_RELEASE",
+    "runtime_heartbeat_seconds": 1
+  },
+  "incident_policy": "DETECT->RECORD->HOLD->PRESERVE_EVIDENCE->RESTORE_OR_REPAIR->VERIFY->NON_REGRESSION->G23_IF_REQUIRED->G24_IF_REQUIRED",
+  "max_evidence_age": "EXACT_HEAD_ONLY_FOR_BUILD_AND_CERTIFICATION",
+  "properties": [
+    "candidate_digest",
+    "toolchain_lock",
+    "task_profile",
+    "raw_instruction_source",
+    "selftests",
+    "build_validation",
+    "audit_chain",
+    "recovery_binding",
+    "g23_record",
+    "g24_record",
+    "source_ledger",
+    "citation_coverage",
+    "ffprobe_admission",
+    "image_constraints",
+    "artifact_structure",
+    "writer_authority_boundary",
+    "synthetic_e2e"
+  ],
+  "responsible_roles": {
+    "certifier": "G24_TRUST_ROOT",
+    "executor": "DOCUMENT_FACTORY_PRODUCER",
+    "independent_validator": "G23_TRUST_ROOT",
+    "verifier": "DOCUMENT_FACTORY_VERIFIER"
+  },
+  "schema": "DOCUMENT_FACTORY_MONITORING_PROFILE/1.0",
+  "status": "DEFINED_FOR_INITIAL_CERTIFICATION"
+}
