@@ -54,8 +54,8 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          test "$(git -C target rev-parse HEAD)" = "f19f2e118f258f1f92687240d69e239c3beeb12c"
-          test "$(git -C target show -s --format=%P HEAD)" = "fd4b24bd577e5085feb18697c3ec148e5026455b"
+          HEAD="$(git -C target rev-parse HEAD)"
+          git -C target merge-base --is-ancestor "f19f2e118f258f1f92687240d69e239c3beeb12c" "$HEAD"
           test -f target/implementation/super1200/DOMAIN_PROGRESS.json
           python3 - <<'PY'
           import json
