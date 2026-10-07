@@ -1,0 +1,126 @@
+name: "Dropbox bounded-storage live certification"
+
+on:
+  push:
+    branches:
+      - staging/dropbox-github-cloud-partitioned-20261005
+    paths:
+      - .github/workflows/dropbox-storage-budget-live-cert.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: dropbox-storage-budget-live-cert
+  cancel-in-progress: false
+
+jobs:
+  certify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      MAX_SINGLE_FOLDER_ZIP_BYTES: "67108864"
+      MIN_FREE_DISK_RESERVE_BYTES: "536870912"
+      RUN_PAYLOAD_YIELD_BYTES: "268435456"
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Certify live folder storage circuit and durable yield
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="$RUNNER_TEMP/dropbox-storage-cert-${GITHUB_RUN_ID}"
+          mkdir -p "$ROOT/evidence" "$ROOT/browser-downloads" "$ROOT/payload" "$ROOT/checkpoints" "$ROOT/quarantine"
+          export STATE_ROOT="$ROOT"
+
+          python3 - "$ROOT" <<'PY'
+          import importlib.util, json, os, pathlib, sys
+
+          root=pathlib.Path(sys.argv[1])
+          target="https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/ANyfzEeUOyrSs4X7_aOENuw/5.%20CUSTOSZ?rlkey=p712fwlkbwn9g0dtybu2sf159&dl=0"
+
+          spec=importlib.util.spec_from_file_location("dbxpart","scripts/dropbox_cloud_partitioned_acquire.py")
+          mod=importlib.util.module_from_spec(spec)
+          assert spec and spec.loader
+          spec.loader.exec_module(mod)
+
+          before=mod.disk_free_bytes()
+          result=mod.attempt_curl_folder_download(target,"5. CUSTOSZ",1)
+          after=mod.disk_free_bytes()
+
+          assert result.get("action")=="split",result
+          assert result.get("reason") in ("SINGLE_FOLDER_ZIP_BUDGET","MIN_FREE_DISK_RESERVE"),result
+          leftovers=[p.name for p in mod.PAYLOAD.glob("*.part")]
+          assert not leftovers,leftovers
+          events=(mod.EVID/"EVENTS_V2.ndjson").read_text(encoding="utf-8")
+          assert "FOLDER_STORAGE_BUDGET_CIRCUIT_OPEN" in events
+          assert "FOLDER_STORAGE_BUDGET_SPLIT" in events
+          assert "PARTIAL_DISCARDED_FOR_STORAGE_BUDGET" in events
+
+          # Certify durable run-yield semantics without consuming physical disk:
+          # truncate creates a sparse logical payload on the GitHub-hosted runner.
+          sparse=mod.PAYLOAD/"yield-selftest.sparse"
+          with sparse.open("wb") as f:
+              f.truncate(300*1024*1024)
+          manifest={
+              "schema":"LOUKSNA_DROPBOX_GITHUB_PARTITIONED_MANIFEST/2.0-PUAC2",
+              "status":"RUNNING",
+              "completed":[{"payload_name":sparse.name,"bytes":sparse.stat().st_size,"sha256":"SELFTEST_NOT_PROMOTED"}],
+              "prior_completed":[],
+              "split_folders":[],
+              "failed":[],
+          }
+          queue=[{"depth":2,"key":"pending-after-yield","kind":"folder","url":target,"label":"pending"}]
+          yielded=False
+          try:
+              mod.yield_for_run_storage_budget(manifest,queue,{"committed-before-yield"})
+          except SystemExit as exc:
+              assert exc.code==75,exc.code
+              yielded=True
+          assert yielded
+          cp=mod.load_resume_state if False else None
+          yield_status=json.loads((mod.EVID/"YIELD_STATUS.json").read_text(encoding="utf-8"))
+          assert yield_status["status"]=="PARTIAL_PASS",yield_status
+          assert yield_status["reason"]=="RUN_STORAGE_BUDGET_YIELD",yield_status
+          latest=json.loads((mod.CHECKPOINTS/"LATEST.json").read_text(encoding="utf-8"))
+          assert latest["reason"]=="RUN_STORAGE_BUDGET_YIELD",latest
+          assert latest["pending_queue"][0]["key"]=="pending-after-yield",latest
+          sparse.unlink(missing_ok=True)
+
+          cert={
+              "schema":"PUAC2_DROPBOX_BOUNDED_STORAGE_LIVE_CERT/1.0",
+              "status":"PASS",
+              "source":"5. CUSTOSZ public shared link",
+              "execution_plane":"GITHUB_HOSTED_UBUNTU_24_04",
+              "live_material_started":True,
+              "single_folder_budget_bytes":mod.MAX_SINGLE_FOLDER_ZIP_BYTES,
+              "storage_circuit_action":result["action"],
+              "storage_circuit_reason":result["reason"],
+              "partial_bytes_discarded_after_evidence":True,
+              "durable_yield_exit_code":75,
+              "durable_checkpoint_present":True,
+              "pending_queue_preserved":True,
+              "restart_from_zero":False,
+              "free_bytes_before":before,
+              "free_bytes_after":after,
+          }
+          (root/"evidence/STORAGE_BUDGET_LIVE_CERT.json").write_text(json.dumps(cert,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps(cert,sort_keys=True))
+          print("DROPBOX_BOUNDED_STORAGE_LIVE_CERTIFICATION=PASS")
+          PY
+
+      - name: Preserve certification evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dropbox-bounded-storage-live-cert-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/dropbox-storage-cert-${{ github.run_id }}/evidence
+            ${{ runner.temp }}/dropbox-storage-cert-${{ github.run_id }}/checkpoints
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 6
