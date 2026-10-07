@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import json, os, sys, time
+import json, os, sys
 from pathlib import Path
 from datetime import datetime, timezone
 
@@ -11,15 +11,36 @@ MISSION_FILE = MISSION_ROOT / "missions/inbox/dropbox-transfer-live-recovery-202
 def utc():
     return datetime.now(timezone.utc).isoformat()
 
+def find_workspace():
+    home = Path.home()
+    candidates = []
+    for parent in (home, home/"Proyectos", home/"PROYECTOS", Path("/mnt"), Path("/media")):
+        if not parent.is_dir():
+            continue
+        candidates.append(parent)
+        try:
+            candidates.extend(list(parent.iterdir())[:160])
+        except OSError:
+            pass
+    found = []
+    for item in candidates:
+        try:
+            q = item.resolve()
+            marker = (q/"1. PROYECTOS PRIORITARIOS").is_dir()
+            secondary = (q/"4. PENDIENTES").exists() or (q/"2. CORPUS").exists()
+            if marker and secondary and q not in found:
+                found.append(q)
+        except OSError:
+            pass
+    if len(found) != 1:
+        raise RuntimeError("REAL_WORKSPACE_NOT_UNIQUELY_RESOLVED:" + repr([str(x) for x in found]))
+    return found[0]
+
 def main():
     if not MISSION_FILE.is_file():
         raise SystemExit("MISSION_FILE_MISSING")
     mission_text = MISSION_FILE.read_text(encoding="utf-8")
-    workspace = Path(os.environ["CUSTOSZ_WORKSPACE_OVERRIDE"]).expanduser().resolve()
-    if not workspace.is_dir():
-        raise SystemExit("CUSTOSZ_WORKSPACE_MISSING")
-    if not (workspace / "1. PROYECTOS PRIORITARIOS").is_dir():
-        raise SystemExit("CUSTOSZ_WORKSPACE_INVALID")
+    workspace = find_workspace()
 
     state = Path.home()/".local/state/louksna"/("custosz-dropbox-transfer-"+os.environ.get("GITHUB_RUN_ID","manual"))
     state.mkdir(parents=True, mode=0o700, exist_ok=False)
@@ -59,6 +80,7 @@ def main():
         "worker":"CUSTOSZ_V7",
         "runtime":"CUSTOSZ_RUNTIME_V1",
         "governor":"MetaOS",
+        "workspace":str(workspace),
         "transfer_branch":"staging/dropbox-github-cloud-partitioned-20261005",
         "preserved_progress":"5/8",
         "pending":[1,5,8],
