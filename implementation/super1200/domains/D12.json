@@ -1,0 +1,348 @@
+{
+  "anti_paralysis": "BOUND",
+  "capabilities": [
+    {
+      "canonical_name": "CHAOS_ENGINEERING_FABRIC",
+      "capability_id": 531,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "FAULT_INJECTION",
+      "capability_id": 532,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "NETWORK_PARTITION_SIMULATOR",
+      "capability_id": 533,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "DISK_FAILURE_SIMULATOR",
+      "capability_id": 534,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "MEMORY_PRESSURE_SIMULATOR",
+      "capability_id": 535,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "CPU_PRESSURE_SIMULATOR",
+      "capability_id": 536,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "CLOCK_DRIFT_SIMULATOR",
+      "capability_id": 537,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "DEPENDENCY_FAILURE_SIMULATOR",
+      "capability_id": 538,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "CORRUPTION_SIMULATOR",
+      "capability_id": 539,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "CERTIFICATE_EXPIRY_SIMULATOR",
+      "capability_id": 540,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "REBOOT_SIMULATOR",
+      "capability_id": 541,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "POWER_LOSS_SIMULATOR",
+      "capability_id": 542,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "PARTIAL_WRITE_SIMULATOR",
+      "capability_id": 543,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "RECOVERY_TIME_OBJECTIVE",
+      "capability_id": 544,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "RECOVERY_POINT_OBJECTIVE",
+      "capability_id": 545,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "RESILIENCE_SCORE",
+      "capability_id": 546,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "ADR_REGISTRY",
+      "capability_id": 547,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "DECISION_ID",
+      "capability_id": 548,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "DECISION_CONTEXT",
+      "capability_id": 549,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "ALTERNATIVES_CONSIDERED",
+      "capability_id": 550,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "DECISION_EVIDENCE",
+      "capability_id": 551,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "DECISION_REVERSIBILITY",
+      "capability_id": 552,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "DECISION_EXPIRATION",
+      "capability_id": 553,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "DECISION_SUPERSESSION",
+      "capability_id": 554,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "C4_ARCHITECTURE_VIEWS",
+      "capability_id": 555,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "MACHINE_READABLE_ARCHITECTURE_DOCS",
+      "capability_id": 556,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "LIVE_DEPENDENCY_DIAGRAMS",
+      "capability_id": 557,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "ARCHITECTURE_DRIFT_DOC_CHECK",
+      "capability_id": 558,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "OPENAPI_REGISTRY",
+      "capability_id": 559,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "ASYNCAPI_REGISTRY",
+      "capability_id": 560,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "PROTOBUF_REGISTRY",
+      "capability_id": 561,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "GRPC_PROVIDER",
+      "capability_id": 562,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SCHEMA_COMPATIBILITY",
+      "capability_id": 563,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "API_VERSIONING",
+      "capability_id": 564,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "API_CONTRACT_TESTING",
+      "capability_id": 565,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "API_FUZZING",
+      "capability_id": 566,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "API_BACKWARD_COMPATIBILITY",
+      "capability_id": 567,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "PROTOCOL_STATE_MACHINE",
+      "capability_id": 568,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "PROTOCOL_FORMAL_VERIFICATION",
+      "capability_id": 569,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "CAPABILITY_NEGOTIATION",
+      "capability_id": 570,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "OPENSSF_SCORECARD_ADAPTER",
+      "capability_id": 571,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "BEST_PRACTICES_SELF_AUDIT",
+      "capability_id": 572,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "REPOSITORY_HEALTH_SCORE",
+      "capability_id": 573,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "MAINTAINABILITY_SCORE",
+      "capability_id": 574,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "DEPENDENCY_RISK_SCORE",
+      "capability_id": 575,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SECURITY_POSTURE_SCORE",
+      "capability_id": 576,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "REPRODUCIBILITY_SCORE",
+      "capability_id": 577,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "TRACEABILITY_SCORE",
+      "capability_id": 578,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "AUDITABILITY_SCORE",
+      "capability_id": 579,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "CERTIFIABILITY_SCORE",
+      "capability_id": 580,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "PORTABILITY_SCORE",
+      "capability_id": 581,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SELF_HOSTING_SCORE",
+      "capability_id": 582,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "ARCHITECTURAL_COST_SCORE",
+      "capability_id": 583,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "AUTONOMY_SCORE",
+      "capability_id": 584,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "MODEL_DEPENDENCE_SCORE",
+      "capability_id": 585,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    }
+  ],
+  "count": 55,
+  "domain_id": "D12",
+  "governance": "BOUND",
+  "metacognitive": "BOUND",
+  "owner": "REPOSITORY",
+  "provenance": "BOUND",
+  "range": [
+    531,
+    585
+  ],
+  "state": "IN_PROGRESS",
+  "telemetry": "LIVE",
+  "terminal_certification": false
+}

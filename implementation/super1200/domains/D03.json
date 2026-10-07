@@ -1,0 +1,228 @@
+{
+  "anti_paralysis": "BOUND",
+  "capabilities": [
+    {
+      "canonical_name": "MODEL_RUNTIME_FABRIC",
+      "capability_id": 46,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "MODEL_OPTIMIZATION_ENGINE",
+      "capability_id": 47,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "MODEL_EVALUATION_LAB",
+      "capability_id": 48,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "MODEL_CAPABILITY_ENVELOPE",
+      "capability_id": 49,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "REASONING_INTERPRETATION_ADAPTER",
+      "capability_id": 50,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "STATIC_ANALYSIS_FABRIC",
+      "capability_id": 51,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "LANGUAGE_ENGINEERING_TOOLCHAIN",
+      "capability_id": 52,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "POLYGLOT_TOOLCHAIN",
+      "capability_id": 53,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "BUILD_FABRIC",
+      "capability_id": 54,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "REPRODUCIBLE_ENVIRONMENT_PROVIDER",
+      "capability_id": 55,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "TERMINAL_CONSOLE_FABRIC",
+      "capability_id": 56,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "VIRTUALIZATION_LAB",
+      "capability_id": 57,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "MACHINE_IMAGE_FACTORY",
+      "capability_id": 58,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "DISK_FILESYSTEM_LAB",
+      "capability_id": 59,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "INSTALLER_FACTORY",
+      "capability_id": 60,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "PORTABILITY_MIGRATION_ENGINE",
+      "capability_id": 61,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "AUDIO_FABRIC",
+      "capability_id": 62,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SPEECH_TO_TEXT_ENGINE",
+      "capability_id": 63,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "TEXT_TO_SPEECH_ENGINE",
+      "capability_id": 64,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "VOICE_SESSION_ENGINE",
+      "capability_id": 65,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "IMAGE_PROCESSING_FABRIC",
+      "capability_id": 66,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "GENERATIVE_MEDIA_PROVIDER_INTERFACE",
+      "capability_id": 67,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SOFTWARE_GAME_OPTIMIZATION_FABRIC",
+      "capability_id": 68,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "DATA_SCIENTIFIC_COMPUTING_FABRIC",
+      "capability_id": 69,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "FORMAL_VALIDATION_ENGINE",
+      "capability_id": 70,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "TEST_FABRIC",
+      "capability_id": 71,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "AUTOMATED_USER_REPLACEMENT_LAB",
+      "capability_id": 72,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SERVICE_RECOVERY_ENGINE",
+      "capability_id": 73,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "PROVIDER_REGISTRY",
+      "capability_id": 74,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "OFFLINE_CONTINUITY_ENGINE",
+      "capability_id": 75,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "GITHUB_CAPABILITY_REGISTRY",
+      "capability_id": 76,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "GITHUB_SELF_HOSTED_EXECUTION",
+      "capability_id": 77,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "CUSTOSZ_CAPABILITY_COMPILER",
+      "capability_id": 78,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "CUSTOSZ_EVOLUTION_FACTORY",
+      "capability_id": 79,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "ARCHITECTURE_EMBEDDING_AUTHORITY_ADAPTER",
+      "capability_id": 80,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    }
+  ],
+  "count": 35,
+  "domain_id": "D03",
+  "governance": "BOUND",
+  "metacognitive": "BOUND",
+  "owner": "REPOSITORY",
+  "provenance": "BOUND",
+  "range": [
+    46,
+    80
+  ],
+  "state": "IN_PROGRESS",
+  "telemetry": "LIVE",
+  "terminal_certification": false
+}

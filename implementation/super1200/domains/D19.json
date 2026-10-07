@@ -1,0 +1,618 @@
+{
+  "anti_paralysis": "BOUND",
+  "capabilities": [
+    {
+      "canonical_name": "SECURITY_METACOGNITIVE_DEFENSE_FABRIC",
+      "capability_id": 861,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SECURITY_ADVISER_REGISTRY",
+      "capability_id": 862,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "DOMAIN_SECURITY_ADVISER",
+      "capability_id": 863,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SECURITY_OBSERVER",
+      "capability_id": 864,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SECURITY_ANALYST",
+      "capability_id": 865,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SECURITY_RECOMMENDER",
+      "capability_id": 866,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SECURITY_EXECUTOR_BOUNDARY",
+      "capability_id": 867,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SECURITY_AUTHORIZATION_GATE",
+      "capability_id": 868,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SECURITY_EVIDENCE_LEDGER",
+      "capability_id": 869,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SECURITY_FINDING_IDENTITY",
+      "capability_id": 870,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SECURITY_CONFIDENCE_ENGINE",
+      "capability_id": 871,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SECURITY_UNCERTAINTY_ADAPTER",
+      "capability_id": 872,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SECURITY_HYPOTHESIS_ENGINE",
+      "capability_id": 873,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SECURITY_CONSENSUS_ENGINE",
+      "capability_id": 874,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SECURITY_DISAGREEMENT_ENGINE",
+      "capability_id": 875,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "FALSE_POSITIVE_REGISTRY",
+      "capability_id": 876,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "FALSE_NEGATIVE_REGISTRY",
+      "capability_id": 877,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SECURITY_REGRESSION_ENGINE",
+      "capability_id": 878,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SECURITY_SELF_CRITIC",
+      "capability_id": 879,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SECURITY_NON_SELF_CERTIFICATION",
+      "capability_id": 880,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "MALWARE_DEFENSE_FABRIC",
+      "capability_id": 881,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SIGNATURE_SCANNER_INTERFACE",
+      "capability_id": 882,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "CLAMAV_PROVIDER",
+      "capability_id": 883,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "YARA_PROVIDER",
+      "capability_id": 884,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "BEHAVIORAL_MALWARE_ANALYZER",
+      "capability_id": 885,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "STATIC_MALWARE_ANALYZER",
+      "capability_id": 886,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "DYNAMIC_MALWARE_ANALYZER",
+      "capability_id": 887,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "MALWARE_SANDBOX",
+      "capability_id": 888,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "FILE_REPUTATION_ENGINE",
+      "capability_id": 889,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "HASH_REPUTATION_ENGINE",
+      "capability_id": 890,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "PACKER_DETECTOR",
+      "capability_id": 891,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SCRIPT_MALWARE_ANALYZER",
+      "capability_id": 892,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "DOCUMENT_MALWARE_ANALYZER",
+      "capability_id": 893,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "ARCHIVE_MALWARE_ANALYZER",
+      "capability_id": 894,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "EXECUTABLE_MALWARE_ANALYZER",
+      "capability_id": 895,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "MEMORY_MALWARE_ANALYZER",
+      "capability_id": 896,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "PERSISTENCE_DETECTOR",
+      "capability_id": 897,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "MALICIOUS_BEHAVIOR_GRAPH",
+      "capability_id": 898,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "MALWARE_FAMILY_CLASSIFIER",
+      "capability_id": 899,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "MALWARE_ANALYSIS_RECEIPT",
+      "capability_id": 900,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "VULNERABILITY_MANAGEMENT_FABRIC",
+      "capability_id": 901,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "OSV_PROVIDER",
+      "capability_id": 902,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "NVD_ADAPTER",
+      "capability_id": 903,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "CVE_IDENTITY_REGISTRY",
+      "capability_id": 904,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "VULNERABILITY_APPLICABILITY_ENGINE",
+      "capability_id": 905,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "REACHABILITY_SECURITY_ANALYZER",
+      "capability_id": 906,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "EXPLOITABILITY_CONTEXT_ENGINE",
+      "capability_id": 907,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "VULNERABILITY_PRIORITY_ENGINE",
+      "capability_id": 908,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "PATCH_AVAILABILITY_ENGINE",
+      "capability_id": 909,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SECURITY_PATCH_PLANNER",
+      "capability_id": 910,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SECURITY_CONFIGURATION_ANALYZER",
+      "capability_id": 911,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SECRET_EXPOSURE_DETECTOR",
+      "capability_id": 912,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SBOM_SECURITY_ANALYZER",
+      "capability_id": 913,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "DEPENDENCY_VULNERABILITY_ENGINE",
+      "capability_id": 914,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "MALICIOUS_DEPENDENCY_DETECTOR",
+      "capability_id": 915,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "TYPOSQUATTING_DETECTOR",
+      "capability_id": 916,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "DEPENDENCY_CONFUSION_DETECTOR",
+      "capability_id": 917,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "PROVENANCE_SECURITY_GATE",
+      "capability_id": 918,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "BUILD_INTEGRITY_SECURITY_GATE",
+      "capability_id": 919,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SUPPLY_CHAIN_INCIDENT_GRAPH",
+      "capability_id": 920,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "HOST_INTRUSION_DETECTION_FABRIC",
+      "capability_id": 921,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "PROCESS_BEHAVIOR_BASELINE",
+      "capability_id": 922,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "PROCESS_ANOMALY_DETECTOR",
+      "capability_id": 923,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "FILESYSTEM_INTEGRITY_MONITOR",
+      "capability_id": 924,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "CRITICAL_FILE_PROTECTION",
+      "capability_id": 925,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "PRIVILEGE_ESCALATION_MONITOR",
+      "capability_id": 926,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SECURITY_EVENT_CORRELATOR",
+      "capability_id": 927,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "NETWORK_SECURITY_FABRIC",
+      "capability_id": 928,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "NETWORK_BEHAVIOR_BASELINE",
+      "capability_id": 929,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "NETWORK_ANOMALY_DETECTOR",
+      "capability_id": 930,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "DNS_SECURITY_ANALYZER",
+      "capability_id": 931,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "TLS_SECURITY_ANALYZER",
+      "capability_id": 932,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "OUTBOUND_CONNECTION_POLICY",
+      "capability_id": 933,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "UNEXPECTED_EGRESS_DETECTOR",
+      "capability_id": 934,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "REPOSITORY_SECURITY_ADVISER",
+      "capability_id": 935,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "COMMIT_INTEGRITY_ANALYZER",
+      "capability_id": 936,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "WORKFLOW_SECURITY_ANALYZER",
+      "capability_id": 937,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "BRANCH_PROTECTION_AUDITOR",
+      "capability_id": 938,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "REPOSITORY_TAMPER_DETECTOR",
+      "capability_id": 939,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "CANONICAL_ARTIFACT_SECURITY_GUARD",
+      "capability_id": 940,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "LUNA_DEFENDER",
+      "capability_id": 941,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "LUNA_DEFENDER_RULE_ENGINE",
+      "capability_id": 942,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "LUNA_DEFENDER_BEHAVIOR_ENGINE",
+      "capability_id": 943,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "LUNA_DEFENDER_REPUTATION_ENGINE",
+      "capability_id": 944,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "LUNA_DEFENDER_MULTI_SCANNER",
+      "capability_id": 945,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "LUNA_DEFENDER_CONSENSUS",
+      "capability_id": 946,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "LUNA_DEFENDER_MACHINE_BASELINE",
+      "capability_id": 947,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "LUNA_DEFENDER_REPOSITORY_BASELINE",
+      "capability_id": 948,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "LUNA_DEFENDER_CAPABILITY_BASELINE",
+      "capability_id": 949,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "LUNA_DEFENDER_CUSTOM_RULE_FACTORY",
+      "capability_id": 950,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "LUNA_DEFENDER_RULE_TEST_LAB",
+      "capability_id": 951,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "LUNA_DEFENDER_FALSE_POSITIVE_GATE",
+      "capability_id": 952,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "LUNA_DEFENDER_FALSE_NEGATIVE_GATE",
+      "capability_id": 953,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "LUNA_DEFENDER_ADVERSARIAL_EVALUATION",
+      "capability_id": 954,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "LUNA_DEFENDER_SELF_AUDIT",
+      "capability_id": 955,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "LUNA_DEFENDER_SELF_UPDATE",
+      "capability_id": 956,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "LUNA_DEFENDER_RULE_ROLLBACK",
+      "capability_id": 957,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "LUNA_DEFENDER_INDEPENDENT_VALIDATION",
+      "capability_id": 958,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "LUNA_DEFENDER_CERTIFICATION",
+      "capability_id": 959,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "LUNA_DEFENDER_EVOLUTION_ENGINE",
+      "capability_id": 960,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    }
+  ],
+  "count": 100,
+  "domain_id": "D19",
+  "governance": "BOUND",
+  "metacognitive": "BOUND",
+  "owner": "REPOSITORY",
+  "provenance": "BOUND",
+  "range": [
+    861,
+    960
+  ],
+  "state": "IN_PROGRESS",
+  "telemetry": "LIVE",
+  "terminal_certification": false
+}

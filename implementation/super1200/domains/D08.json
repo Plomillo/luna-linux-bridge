@@ -1,0 +1,378 @@
+{
+  "anti_paralysis": "BOUND",
+  "capabilities": [
+    {
+      "canonical_name": "CLAIM_REGISTRY",
+      "capability_id": 301,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "CLAIM_IDENTITY",
+      "capability_id": 302,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "CLAIM_EVIDENCE_GRAPH",
+      "capability_id": 303,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "CLAIM_SUPPORT",
+      "capability_id": 304,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "CLAIM_CONTRADICTION",
+      "capability_id": 305,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "CLAIM_UNCERTAINTY",
+      "capability_id": 306,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "CLAIM_SCOPE",
+      "capability_id": 307,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "CLAIM_TEMPORAL_VALIDITY",
+      "capability_id": 308,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "CLAIM_SOURCE_QUALITY",
+      "capability_id": 309,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "EVIDENCE_TRIANGULATION",
+      "capability_id": 310,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SOURCE_INDEPENDENCE",
+      "capability_id": 311,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SOURCE_CONFLICT_RESOLUTION",
+      "capability_id": 312,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "EPISTEMIC_STATUS_MACHINE",
+      "capability_id": 313,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "HYPOTHESIS_REGISTRY",
+      "capability_id": 314,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "HYPOTHESIS_TESTING",
+      "capability_id": 315,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "FALSIFICATION_RECORD",
+      "capability_id": 316,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "NEGATIVE_RESULT_REGISTRY",
+      "capability_id": 317,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "UNKNOWN_REGISTRY",
+      "capability_id": 318,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "HISTORICAL_METHOD_ENGINE",
+      "capability_id": 319,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "PRIMARY_SOURCE_REGISTRY",
+      "capability_id": 320,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SECONDARY_SOURCE_REGISTRY",
+      "capability_id": 321,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "MANUSCRIPT_REGISTRY",
+      "capability_id": 322,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "TEXTUAL_VARIANT_ENGINE",
+      "capability_id": 323,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "STEMMATIC_ANALYSIS",
+      "capability_id": 324,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "PALEOGRAPHY_PROVIDER",
+      "capability_id": 325,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "CHRONOLOGY_ENGINE",
+      "capability_id": 326,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "GEOGRAPHICAL_CONTEXT_ENGINE",
+      "capability_id": 327,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "ARCHAEOLOGICAL_EVIDENCE_ADAPTER",
+      "capability_id": 328,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "HISTORICAL_CLAIM_GRAPH",
+      "capability_id": 329,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "ANACHRONISM_DETECTOR",
+      "capability_id": 330,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "COMPRESSION_FABRIC",
+      "capability_id": 331,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "ARCHIVE_CLASSIFIER",
+      "capability_id": 332,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "ENTROPY_ESTIMATOR",
+      "capability_id": 333,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "COMPRESSIBILITY_PROBE",
+      "capability_id": 334,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "COMPRESSION_BENCHMARK_ENGINE",
+      "capability_id": 335,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "ZSTD_PROVIDER",
+      "capability_id": 336,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "LZ4_PROVIDER",
+      "capability_id": 337,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "XZ_LZMA_PROVIDER",
+      "capability_id": 338,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "BROTLI_PROVIDER",
+      "capability_id": 339,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SEVEN_ZIP_PROVIDER",
+      "capability_id": 340,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "ZPAQ_PROVIDER",
+      "capability_id": 341,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "LONG_RANGE_COMPRESSION_PROVIDER",
+      "capability_id": 342,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "DOMAIN_SPECIFIC_COMPRESSOR",
+      "capability_id": 343,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "MODEL_WEIGHT_COMPRESSION",
+      "capability_id": 344,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "TEXT_CORPUS_COMPRESSION",
+      "capability_id": 345,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SOURCE_TREE_COMPRESSION",
+      "capability_id": 346,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "BINARY_COMPRESSION",
+      "capability_id": 347,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SOLID_ARCHIVE_ENGINE",
+      "capability_id": 348,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "CHUNKED_ARCHIVE_ENGINE",
+      "capability_id": 349,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "STREAMING_COMPRESSION",
+      "capability_id": 350,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SEEKABLE_COMPRESSION",
+      "capability_id": 351,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "DEDUPE_BEFORE_COMPRESSION",
+      "capability_id": 352,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "COMPRESSION_DICTIONARY_TRAINING",
+      "capability_id": 353,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "ARCHIVE_INTEGRITY_MANIFEST",
+      "capability_id": 354,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "PARTIAL_EXTRACTION_INTERFACE",
+      "capability_id": 355,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "RANGE_FETCH_INTERFACE",
+      "capability_id": 356,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "MULTIPART_ARCHIVE",
+      "capability_id": 357,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "ERROR_RECOVERY_RECORDS",
+      "capability_id": 358,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "TRANSPORT_OPTIMIZER",
+      "capability_id": 359,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "COMPRESSION_PARETO_SELECTOR",
+      "capability_id": 360,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    }
+  ],
+  "count": 60,
+  "domain_id": "D08",
+  "governance": "BOUND",
+  "metacognitive": "BOUND",
+  "owner": "REPOSITORY",
+  "provenance": "BOUND",
+  "range": [
+    301,
+    360
+  ],
+  "state": "IN_PROGRESS",
+  "telemetry": "LIVE",
+  "terminal_certification": false
+}

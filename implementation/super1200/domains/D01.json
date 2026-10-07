@@ -1,0 +1,198 @@
+{
+  "anti_paralysis": "BOUND",
+  "capabilities": [
+    {
+      "canonical_name": "STATE_REGISTRY",
+      "capability_id": 1,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "CAPABILITY_REGISTRY",
+      "capability_id": 2,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "DEPENDENCY_MANAGER",
+      "capability_id": 3,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "ENVIRONMENT_MANAGER",
+      "capability_id": 4,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "ARTIFACT_STORE",
+      "capability_id": 5,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "MODEL_STORE",
+      "capability_id": 6,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SERVICE_PLATFORM",
+      "capability_id": 7,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "API_RUNTIME_REGISTRY",
+      "capability_id": 8,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SERVICE_MATERIALIZER",
+      "capability_id": 9,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SERVICE_REGISTRY",
+      "capability_id": 10,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "HEALTH_READINESS_ENGINE",
+      "capability_id": 11,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "JOB_QUEUE_INTERFACE",
+      "capability_id": 12,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "LOCAL_DURABLE_QUEUE",
+      "capability_id": 13,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "BACKPRESSURE_ENGINE",
+      "capability_id": 14,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "RESOURCE_ENVELOPE_ENGINE",
+      "capability_id": 15,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "REMOTE_BRIDGE_APP_PROTOCOL",
+      "capability_id": 16,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SUPPLY_CHAIN_ASSURANCE",
+      "capability_id": 17,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "OBSERVABILITY_FABRIC",
+      "capability_id": 18,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "PROVENANCE_HISTORY_ENGINE",
+      "capability_id": 19,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "BUG_KNOWLEDGE_BASE",
+      "capability_id": 20,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "HOLD_REASON_ENGINE",
+      "capability_id": 21,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "METACOGNITIVE_STATE_ENGINE",
+      "capability_id": 22,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "KNOWLEDGE_GRAPH",
+      "capability_id": 23,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "DEPENDENCY_GRAPH",
+      "capability_id": 24,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "CAPABILITY_GRAPH",
+      "capability_id": 25,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "CERTIFICATION_GRAPH",
+      "capability_id": 26,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "ARCHITECTURAL_COST_LEDGER",
+      "capability_id": 27,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "COST_PREDICTION_ENGINE",
+      "capability_id": 28,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "REPOSITORY_ACQUISITION_ENGINE",
+      "capability_id": 29,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "REPOSITORY_EXPORT_ENGINE",
+      "capability_id": 30,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    }
+  ],
+  "count": 30,
+  "domain_id": "D01",
+  "governance": "BOUND",
+  "metacognitive": "BOUND",
+  "owner": "REPOSITORY",
+  "provenance": "BOUND",
+  "range": [
+    1,
+    30
+  ],
+  "state": "IN_PROGRESS",
+  "telemetry": "LIVE",
+  "terminal_certification": false
+}

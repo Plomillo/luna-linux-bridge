@@ -1,0 +1,738 @@
+{
+  "anti_paralysis": "BOUND",
+  "capabilities": [
+    {
+      "canonical_name": "THREAT_LIFECYCLE_FABRIC",
+      "capability_id": 1081,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "QUARANTINE_NECESSITY_ENGINE",
+      "capability_id": 1082,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "QUARANTINE_RISK_SCORER",
+      "capability_id": 1083,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "QUARANTINE_RETENTION_POLICY",
+      "capability_id": 1084,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "MINIMUM_EVIDENCE_RETENTION",
+      "capability_id": 1085,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SAFE_EVIDENCE_DISTILLATION",
+      "capability_id": 1086,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "MALWARE_KNOWLEDGE_EXTRACTION",
+      "capability_id": 1087,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "THREAT_BEHAVIOR_SUMMARY",
+      "capability_id": 1088,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "THREAT_FINGERPRINT",
+      "capability_id": 1089,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "THREAT_LINEAGE_RECORD",
+      "capability_id": 1090,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "QUARANTINE_ESCAPE_ASSUMPTION_TEST",
+      "capability_id": 1091,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "QUARANTINE_BOUNDARY_TEST",
+      "capability_id": 1092,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "QUARANTINE_NETWORK_ESCAPE_TEST",
+      "capability_id": 1093,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "QUARANTINE_PRIVILEGE_TEST",
+      "capability_id": 1094,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "QUARANTINE_PERSISTENCE_TEST",
+      "capability_id": 1095,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "QUARANTINE_HOST_CONTAMINATION_TEST",
+      "capability_id": 1096,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SANDBOX_INTEGRITY_MONITOR",
+      "capability_id": 1097,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "ANALYZER_COMPROMISE_MONITOR",
+      "capability_id": 1098,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SECURITY_TOOL_ISOLATION",
+      "capability_id": 1099,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "DISPOSABLE_ANALYSIS_ENVIRONMENT",
+      "capability_id": 1100,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SAMPLE_RELEASE_PROHIBITION",
+      "capability_id": 1101,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "THREAT_DESTRUCTION_GATE",
+      "capability_id": 1102,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "THREAT_DESTRUCTION_AUTHORIZATION",
+      "capability_id": 1103,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SECURE_SAMPLE_DISPOSAL",
+      "capability_id": 1104,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "DESTRUCTION_RECEIPT",
+      "capability_id": 1105,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "POST_DESTRUCTION_VERIFICATION",
+      "capability_id": 1106,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "RESIDUAL_ARTIFACT_SCANNER",
+      "capability_id": 1107,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "REINFECTION_VECTOR_CHECK",
+      "capability_id": 1108,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "THREAT_KNOWLEDGE_PRESERVATION_GATE",
+      "capability_id": 1109,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "NON_EXECUTABLE_THREAT_ARCHIVE",
+      "capability_id": 1110,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "EXTERNAL_REFERENCE_ADAPTER",
+      "capability_id": 1111,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "THREAT_REACQUISITION_POLICY",
+      "capability_id": 1112,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "QUARANTINE_PRESSURE_MONITOR",
+      "capability_id": 1113,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "QUARANTINE_BACKLOG_ENGINE",
+      "capability_id": 1114,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "QUARANTINE_STALENESS_DETECTOR",
+      "capability_id": 1115,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "QUARANTINE_AUTO_ESCALATION",
+      "capability_id": 1116,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "THREAT_DISPOSITION_ENGINE",
+      "capability_id": 1117,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "DISPOSITION_INDEPENDENT_VALIDATION",
+      "capability_id": 1118,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "THREAT_LIFECYCLE_AUDIT",
+      "capability_id": 1119,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "ZERO_UNNECESSARY_LIVE_MALWARE_GATE",
+      "capability_id": 1120,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "HISTORICAL_THREAT_INTELLIGENCE_FABRIC",
+      "capability_id": 1121,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "MALWARE_HISTORY_REGISTRY",
+      "capability_id": 1122,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "MALWARE_TAXONOMY_ENGINE",
+      "capability_id": 1123,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "MALWARE_FAMILY_REGISTRY",
+      "capability_id": 1124,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "MALWARE_VARIANT_GRAPH",
+      "capability_id": 1125,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "MALWARE_LINEAGE_ENGINE",
+      "capability_id": 1126,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "MALWARE_TIMELINE_ENGINE",
+      "capability_id": 1127,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "MALWARE_BEHAVIOR_KB",
+      "capability_id": 1128,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "MALWARE_TTP_KB",
+      "capability_id": 1129,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "ATTACK_KNOWLEDGE_ADAPTER",
+      "capability_id": 1130,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "IOC_KNOWLEDGE_BASE",
+      "capability_id": 1131,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "IOC_EXPIRATION_ENGINE",
+      "capability_id": 1132,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "BEHAVIORAL_INDICATOR_REGISTRY",
+      "capability_id": 1133,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "PERSISTENCE_TECHNIQUE_REGISTRY",
+      "capability_id": 1134,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "INITIAL_ACCESS_KB",
+      "capability_id": 1135,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "PRIVILEGE_ESCALATION_KB",
+      "capability_id": 1136,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "DEFENSE_EVASION_KB",
+      "capability_id": 1137,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "LATERAL_MOVEMENT_KB",
+      "capability_id": 1138,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "COMMAND_CONTROL_INDICATOR_KB",
+      "capability_id": 1139,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "IMPACT_PATTERN_KB",
+      "capability_id": 1140,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "EXPLOITED_VULNERABILITY_LINKER",
+      "capability_id": 1141,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "PLATFORM_TARGET_GRAPH",
+      "capability_id": 1142,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "MALWARE_TECHNOLOGY_EVOLUTION",
+      "capability_id": 1143,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "THREAT_SIMILARITY_ENGINE",
+      "capability_id": 1144,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "BEHAVIORAL_NEAREST_NEIGHBOR",
+      "capability_id": 1145,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "NOVELTY_DETECTOR",
+      "capability_id": 1146,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "HISTORICAL_PRIOR_ENGINE",
+      "capability_id": 1147,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "THREAT_PATTERN_GENERALIZER",
+      "capability_id": 1148,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "DEFENSIVE_RULE_COMPILER",
+      "capability_id": 1149,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "PREVENTIVE_CONTROL_SYNTHESIS",
+      "capability_id": 1150,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "THREAT_KNOWLEDGE_DEDUPLICATION",
+      "capability_id": 1151,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "THREAT_KNOWLEDGE_COMPRESSION",
+      "capability_id": 1152,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "THREAT_KNOWLEDGE_LOCAL_CACHE",
+      "capability_id": 1153,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "THREAT_KNOWLEDGE_INCREMENTAL_UPDATE",
+      "capability_id": 1154,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "THREAT_INTELLIGENCE_PROVENANCE",
+      "capability_id": 1155,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "THREAT_INTELLIGENCE_CONFIDENCE",
+      "capability_id": 1156,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "THREAT_INTELLIGENCE_CONFLICT_RESOLUTION",
+      "capability_id": 1157,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "THREAT_KNOWLEDGE_STALENESS_ENGINE",
+      "capability_id": 1158,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "OFFLINE_THREAT_REASONING_ENGINE",
+      "capability_id": 1159,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "PREDICTIVE_DEFENSE_ENGINE",
+      "capability_id": 1160,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "HUMAN_ORIGIN_THREAT_FABRIC",
+      "capability_id": 1161,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "HUMAN_HARM_ONTOLOGY",
+      "capability_id": 1162,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "PHILOSOPHY_OF_EVIL_ENGINE",
+      "capability_id": 1163,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "THEOLOGY_OF_EVIL_ENGINE",
+      "capability_id": 1164,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "ANTHROPOLOGY_OF_HARM_ENGINE",
+      "capability_id": 1165,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "MORAL_PSYCHOLOGY_ADAPTER",
+      "capability_id": 1166,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "CRIMINOLOGY_ADAPTER",
+      "capability_id": 1167,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SOCIOLOGY_OF_CYBERCRIME",
+      "capability_id": 1168,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "ECONOMICS_OF_CYBERCRIME",
+      "capability_id": 1169,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "HISTORY_OF_CYBERCRIME",
+      "capability_id": 1170,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "THREAT_ACTOR_MOTIVATION_TAXONOMY",
+      "capability_id": 1171,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "THREAT_OBJECTIVE_ENGINE",
+      "capability_id": 1172,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "INCENTIVE_STRUCTURE_ANALYZER",
+      "capability_id": 1173,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "OPPORTUNITY_STRUCTURE_ANALYZER",
+      "capability_id": 1174,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "TARGET_SELECTION_ANALYZER",
+      "capability_id": 1175,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SOCIAL_ENGINEERING_KB",
+      "capability_id": 1176,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "DECEPTION_PATTERN_REGISTRY",
+      "capability_id": 1177,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "TRUST_ABUSE_ANALYZER",
+      "capability_id": 1178,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "HUMAN_VULNERABILITY_MODEL",
+      "capability_id": 1179,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "SECURITY_DECISION_BIAS_ANALYZER",
+      "capability_id": 1180,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "CYBERCRIME_ECOSYSTEM_MODEL",
+      "capability_id": 1181,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "DARK_WEB_DEFENSIVE_INTELLIGENCE_INTERFACE",
+      "capability_id": 1182,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "ILLICIT_MARKET_SIGNAL_ANALYZER",
+      "capability_id": 1183,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "CAMPAIGN_INTENT_ANALYZER",
+      "capability_id": 1184,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "ATTRIBUTION_UNCERTAINTY_GATE",
+      "capability_id": 1185,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "HUMAN_INTENT_TECHNICAL_MAPPING",
+      "capability_id": 1186,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "PRE_ATTACK_INDICATOR_ENGINE",
+      "capability_id": 1187,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "PREVENTION_HYPOTHESIS_ENGINE",
+      "capability_id": 1188,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "PREVENTION_SIMULATION_ENGINE",
+      "capability_id": 1189,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "PREVENTIVE_SECURITY_POLICY_SYNTHESIS",
+      "capability_id": 1190,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "ATTACK_SURFACE_MOTIVATION_LINKER",
+      "capability_id": 1191,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "PREDICTIVE_THREAT_HYPOTHESIS",
+      "capability_id": 1192,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "THREAT_EARLY_WARNING_ENGINE",
+      "capability_id": 1193,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "PREVENT_BEFORE_DOWNLOAD_ENGINE",
+      "capability_id": 1194,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "PREVENT_BEFORE_EXECUTION_ENGINE",
+      "capability_id": 1195,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "PREVENT_BEFORE_PRIVILEGE_ENGINE",
+      "capability_id": 1196,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "HUMAN_THREAT_KNOWLEDGE_PROVENANCE",
+      "capability_id": 1197,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "INTERDISCIPLINARY_THREAT_SYNTHESIS",
+      "capability_id": 1198,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "EVIL_TO_CYBER_HERMENEUTIC_BOUNDARY",
+      "capability_id": 1199,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    },
+    {
+      "canonical_name": "PREINFECTION_PREVENTION_GATE",
+      "capability_id": 1200,
+      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "owner": "REPOSITORY"
+    }
+  ],
+  "count": 120,
+  "domain_id": "D22",
+  "governance": "BOUND",
+  "metacognitive": "BOUND",
+  "owner": "REPOSITORY",
+  "provenance": "BOUND",
+  "range": [
+    1081,
+    1200
+  ],
+  "state": "IN_PROGRESS",
+  "telemetry": "LIVE",
+  "terminal_certification": false
+}

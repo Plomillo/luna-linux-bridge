@@ -1,0 +1,9 @@
+{
+  "capability_owner": "REPOSITORY",
+  "custosz": "WORKER_ORCHESTRATOR",
+  "g23": "INDEPENDENT_VALIDATION",
+  "g24": "CERTIFICATION",
+  "metaos": "GOVERNANCE_PLANE",
+  "ownership_transfer": false,
+  "runtime": "EXECUTION_PLANE"
+}

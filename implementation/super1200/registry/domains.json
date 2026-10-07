@@ -1,0 +1,138 @@
+{
+  "items": [
+    {
+      "count": 30,
+      "domain_id": "D01",
+      "from": 1,
+      "to": 30
+    },
+    {
+      "count": 15,
+      "domain_id": "D02",
+      "from": 31,
+      "to": 45
+    },
+    {
+      "count": 35,
+      "domain_id": "D03",
+      "from": 46,
+      "to": 80
+    },
+    {
+      "count": 40,
+      "domain_id": "D04",
+      "from": 81,
+      "to": 120
+    },
+    {
+      "count": 56,
+      "domain_id": "D05",
+      "from": 121,
+      "to": 176
+    },
+    {
+      "count": 54,
+      "domain_id": "D06",
+      "from": 177,
+      "to": 230
+    },
+    {
+      "count": 70,
+      "domain_id": "D07",
+      "from": 231,
+      "to": 300
+    },
+    {
+      "count": 60,
+      "domain_id": "D08",
+      "from": 301,
+      "to": 360
+    },
+    {
+      "count": 77,
+      "domain_id": "D09",
+      "from": 361,
+      "to": 437
+    },
+    {
+      "count": 39,
+      "domain_id": "D10",
+      "from": 438,
+      "to": 476
+    },
+    {
+      "count": 54,
+      "domain_id": "D11",
+      "from": 477,
+      "to": 530
+    },
+    {
+      "count": 55,
+      "domain_id": "D12",
+      "from": 531,
+      "to": 585
+    },
+    {
+      "count": 55,
+      "domain_id": "D13",
+      "from": 586,
+      "to": 640
+    },
+    {
+      "count": 20,
+      "domain_id": "D14",
+      "from": 641,
+      "to": 660
+    },
+    {
+      "count": 40,
+      "domain_id": "D15",
+      "from": 661,
+      "to": 700
+    },
+    {
+      "count": 20,
+      "domain_id": "D16",
+      "from": 701,
+      "to": 720
+    },
+    {
+      "count": 40,
+      "domain_id": "D17",
+      "from": 721,
+      "to": 760
+    },
+    {
+      "count": 100,
+      "domain_id": "D18",
+      "from": 761,
+      "to": 860
+    },
+    {
+      "count": 100,
+      "domain_id": "D19",
+      "from": 861,
+      "to": 960
+    },
+    {
+      "count": 40,
+      "domain_id": "D20",
+      "from": 961,
+      "to": 1000
+    },
+    {
+      "count": 80,
+      "domain_id": "D21",
+      "from": 1001,
+      "to": 1080
+    },
+    {
+      "count": 120,
+      "domain_id": "D22",
+      "from": 1081,
+      "to": 1200
+    }
+  ],
+  "owner": "REPOSITORY",
+  "schema": "SUPER1200_DOMAINS/1.0"
+}
