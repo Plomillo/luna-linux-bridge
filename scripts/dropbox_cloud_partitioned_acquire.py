@@ -410,16 +410,27 @@ def dismiss_overlays(page) -> None:
             pass
 
 def inventory_children(page, url: str) -> list[dict]:
+    """Governed public shared-link inventory.
+
+    Critical invariant: an empty first paint is NOT an empty Dropbox folder.
+    The Dropbox shared-folder app hydrates rows asynchronously. We only accept
+    stability after at least one child has been observed, otherwise wait through
+    the bounded hydration window before declaring no public children.
+    """
     page.goto(url, wait_until="domcontentloaded", timeout=120000)
-    page.wait_for_timeout(12000)
     dismiss_overlays(page)
-    page.wait_for_timeout(1000)
     current_path = urllib.parse.urlsplit(url).path
     seen: dict[str, dict] = {}
     stable = 0
     prior = -1
-    for _ in range(180):
-        anchors = page.locator("a[href]")
+    started = time.time()
+    hydration_deadline = started + 60
+
+    while time.time() < hydration_deadline:
+        # Prefer Dropbox's stable shared-link name column; fall back to all hrefs
+        # to preserve compatibility with older renderers.
+        preferred = page.locator('a[data-testid="sl-list-column--name"][href]')
+        anchors = preferred if preferred.count() else page.locator("a[href]")
         count = anchors.count()
         for i in range(count):
             try:
@@ -446,21 +457,28 @@ def inventory_children(page, url: str) -> list[dict]:
                     "url": absolute,
                     "label": clean_label(text, typ + "-" + key[:10]),
                     "key": key,
+                    "transport": "public_shared_link",
                 }
             except Exception:
                 pass
+
         if len(seen) == prior:
             stable += 1
         else:
             stable = 0
             prior = len(seen)
+
+        # Zero is not a stable inventory state. This is the specific defect that
+        # caused META OS to be misclassified before hydration completed.
+        if len(seen) > 0 and stable >= 8:
+            break
+
         try:
             page.mouse.wheel(0, 4500)
             page.wait_for_timeout(700)
         except Exception:
-            pass
-        if stable >= 8:
-            break
+            time.sleep(0.7)
+
     rows = sorted(seen.values(), key=lambda x: (x["kind"], x["label"].casefold(), x["key"]))
 
     if not rows:
@@ -469,6 +487,8 @@ def inventory_children(page, url: str) -> list[dict]:
         except Exception:
             html_rows = []
         if html_rows:
+            for row in html_rows:
+                row["transport"] = "public_shared_link_html_fallback"
             rows = html_rows
             record_event("CHILD_INVENTORY_HTML_FALLBACK", parent=sanitize_url(url), count=len(rows))
 
@@ -479,12 +499,57 @@ def inventory_children(page, url: str) -> list[dict]:
             if fp.is_file():
                 rows = children_from_html_text(fp.read_text(encoding="utf-8", errors="replace"), url)
                 if rows:
+                    for row in rows:
+                        row["transport"] = "frozen_root_evidence"
                     record_event("CHILD_INVENTORY_FROZEN_ROOT_FALLBACK", parent=sanitize_url(url), count=len(rows))
 
-    record_event("CHILD_INVENTORY", parent=sanitize_url(url), count=len(rows),
-                 files=sum(x["kind"] == "file" for x in rows),
-                 folders=sum(x["kind"] == "folder" for x in rows))
+    provider = "DROPBOX_PUBLIC_RENDERED_SHARED_LINK_INVENTORY" if rows else "NO_PUBLIC_INVENTORY"
+    record_event(
+        "CHILD_INVENTORY",
+        parent=sanitize_url(url),
+        count=len(rows),
+        files=sum(x["kind"] == "file" for x in rows),
+        folders=sum(x["kind"] == "folder" for x in rows),
+        provider=provider,
+        hydration_wait_seconds=round(time.time() - started, 3),
+        zero_stability_terminal=False,
+    )
     return rows
+
+def inventory_children_governed(page, url: str) -> list[dict]:
+    """Prefer API when authorized; otherwise use the public rendered inventory."""
+    token, mode = _oauth_token_refresh()
+    if token:
+        try:
+            rows = inventory_children_api(url, "")
+            record_event(
+                "GOVERNED_INVENTORY_PROVIDER_SELECTED",
+                provider="DROPBOX_API_LIST_FOLDER_SHARED_LINK",
+                auth_mode=mode,
+                count=len(rows),
+                parent=sanitize_url(url),
+            )
+            return rows
+        except Exception as exc:
+            record_event(
+                "DROPBOX_API_INVENTORY_DEGRADED",
+                parent=sanitize_url(url),
+                error=f"{type(exc).__name__}:{exc}",
+                fallback="DROPBOX_PUBLIC_RENDERED_SHARED_LINK_INVENTORY",
+            )
+
+    rows = inventory_children(page, url)
+    if rows:
+        record_event(
+            "GOVERNED_INVENTORY_PROVIDER_SELECTED",
+            provider="DROPBOX_PUBLIC_RENDERED_SHARED_LINK_INVENTORY",
+            auth_mode=None,
+            count=len(rows),
+            parent=sanitize_url(url),
+        )
+        return rows
+    raise RuntimeError("GOVERNED_INVENTORY_EMPTY_AFTER_API_AND_PUBLIC_RENDER:" + link_key(url))
+
 
 def write_download_event(kind: str, source_url: str, label: str, suggested: str | None = None) -> None:
     marker = {
@@ -1028,7 +1093,7 @@ def process_item(page, item: dict, ordinal: int) -> dict:
                 # Authoritative path: the Dropbox API enumerates objects relative to
                 # the shared-link root. DOM/HTML is diagnostic only.
                 try:
-                    children = inventory_children_api(item["url"], "")
+                    children = inventory_children_governed(page, item["url"])
                 except Exception as api_exc:
                     record_event(
                         "DROPBOX_API_INVENTORY_FAILED",
