@@ -112,7 +112,7 @@ jobs:
         shell: bash
         env:
           TARGET_ROOT: ${{ github.workspace }}/target
-          CAP_ROOT: ${{ github.workspace }}
+          CAP_ROOT: ${{ github.workspace }}/capabilities
           OUT_DIR: ${{ runner.temp }}/super1200
         run: |
           set -Eeuo pipefail
