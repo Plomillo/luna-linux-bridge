@@ -1,0 +1,136 @@
+name: "SUPER1200 continuation — LOUKSNA Remote Bridge / CUSTOSZ V7"
+
+on:
+  push:
+    branches:
+      - custosz/super-1200-implementation-20261007
+    paths:
+      - "implementation/super1200/CONTINUE_NEXT_DOMAIN"
+      - "implementation/super1200/runtime/super1200_continuation_worker.py"
+      - ".github/workflows/super1200-continuation-lrb-live.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: super1200-continuation-lrb-live
+  cancel-in-progress: false
+
+jobs:
+  continue:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 30
+    steps:
+      - name: Checkout target work branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: custosz/super-1200-implementation-20261007
+          fetch-depth: 0
+          path: target
+
+      - name: Checkout governed CUSTOSZ Runtime plane
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: staging/custosz-mission-mailbox-20260928
+          fetch-depth: 1
+          path: mission
+
+      - name: Checkout LOUKSNA Remote Bridge observer
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: certification/lrb-terminal-60s-r3-20260930
+          fetch-depth: 1
+          path: bridge
+
+      - name: Last-checkpoint preflight
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git -C target log -n 50 --format=%H | grep -m1 'a72cd683481ed64da7fbcd40c5d76de28681c665'
+          python3 -B -I mission/artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz v07-status
+          python3 -B -I mission/artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz v07-selftest
+          python3 - <<'PY'
+          import hashlib,sys,tempfile
+          from pathlib import Path
+          runtime=Path('mission/artifacts/custosz-v7/CUSTOSZ_RUNTIME_V1_SR_EXEC_BOUND_FME_01.b.pyz').resolve()
+          authority=Path('target/Louksna.md').resolve()
+          sys.path.insert(0,str(runtime))
+          from runtime_core import Runtime
+          rt=Runtime(Path(tempfile.mkdtemp(prefix='super1200-cont-'))/'state',authority,hashlib.sha256(authority.read_bytes()).hexdigest())
+          assert rt.selftest().get('status')=='PASS'
+          print('SUPER1200_TELEMETRY CONTROL_PLANES=PASS CUSTOSZ=PASS RUNTIME=PASS CHECKPOINT=a72cd683481ed64da7fbcd40c5d76de28681c665')
+          PY
+
+      - name: Start LOUKSNA Remote Bridge readonly observer
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          S="$RUNNER_TEMP/lrb-super1200-$GITHUB_RUN_ID"
+          mkdir -p "$S/state" "$S/socket" "$S/evidence"
+          nice -n 12 python3 -B bridge/bridge/live_link.py --state-dir "$S/state" --socket-dir "$S/socket" serve > "$S/BRIDGE.stdout" 2> "$S/BRIDGE.stderr" &
+          echo $! > "$S/BRIDGE.pid"
+          for n in $(seq 1 50); do test -S "$S/socket/BRIDGE.sock" && break; kill -0 "$(cat "$S/BRIDGE.pid")"; sleep 0.1; done
+          test -S "$S/socket/BRIDGE.sock"
+          python3 -B bridge/bridge/live_link.py --state-dir "$S/state" --socket-dir "$S/socket" request --op status | tee "$S/evidence/LRB_STATUS_BEFORE.json"
+          printf '%s\n' "$S/state" > "$RUNNER_TEMP/lrb_state_path"
+          printf '%s\n' "$S/socket" > "$RUNNER_TEMP/lrb_socket_path"
+          echo "SUPER1200_TELEMETRY LRB_OBSERVER=CONNECTED SCOPE=READONLY"
+
+      - name: CUSTOSZ V7 controlled continuation
+        shell: bash
+        env:
+          TARGET_ROOT: ${{ github.workspace }}/target
+          CAP_ROOT: ${{ github.workspace }}/mission
+          OUT_DIR: ${{ runner.temp }}/super1200
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$OUT_DIR"
+          python3 - <<'PY'
+          import os,sys
+          from pathlib import Path
+          custosz=Path('mission/artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz').resolve()
+          sys.path.insert(0,str(custosz))
+          import custosz_v05_legacy as worker
+          goal=('SUPER1200 governed continuation from checkpoint a72cd683481ed64da7fbcd40c5d76de28681c665; '\
+                'continue the first still-pending repository domain; preserve D01; no canonical mutation; '\
+                'LOUKSNA Remote Bridge observation only; G23/G24 remain independent.')
+          m=worker.mission_start(1200.0/3600.0,'LUNA_PROJECT',goal,report_minutes=1)
+          t=worker.mission_tick(m['mission_id'])
+          print('SUPER1200_TELEMETRY '+str({'event':'CUSTOSZ_MISSION_STARTED','mission_id':m['mission_id'],'executor':m.get('executor'),'heartbeat':t.get('state'),'owner':'REPOSITORY'}),flush=True)
+          PY
+          python3 -B -I target/implementation/super1200/runtime/super1200_continuation_worker.py
+          echo "SUPER1200_TELEMETRY MATERIAL_WORKER=PASS EXECUTION_PLANE=CUSTOSZ_RUNTIME_V1"
+
+      - name: Observe live result through LOUKSNA Remote Bridge
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          S="$(cat "$RUNNER_TEMP/lrb_state_path")"
+          P="$(cat "$RUNNER_TEMP/lrb_socket_path")"
+          python3 -B bridge/bridge/live_link.py --state-dir "$S" --socket-dir "$P" request --op watch --frames 3 --interval-sec 1 | tee "$RUNNER_TEMP/super1200/LRB_LIVE.jsonl"
+          python3 -B bridge/bridge/live_link.py --state-dir "$S" --socket-dir "$P" request --op status | tee "$RUNNER_TEMP/super1200/LRB_STATUS_AFTER.json"
+
+      - name: Functional validation and repository persistence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B -I target/implementation/super1200/tests/test_d02_runtime.py
+          cd target
+          git diff --check
+          git add implementation/super1200
+          git config user.name "custosz-v7-runtime-bot"
+          git config user.email "custosz-v7-runtime-bot@users.noreply.github.com"
+          git commit -m "feat(super1200): continue D02 governed material implementation"
+          git push origin HEAD:refs/heads/custosz/super-1200-implementation-20261007
+          echo "SUPER1200_TELEMETRY REPOSITORY_PERSISTENCE=PASS DOMAIN=D02 G23=BLOCKED G24=BLOCKED HEAD=$(git rev-parse HEAD)"
+
+      - name: Preserve live telemetry
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: super1200-lrb-continuation-live
+          path: ${{ runner.temp }}/super1200
+          if-no-files-found: warn
+          retention-days: 90
