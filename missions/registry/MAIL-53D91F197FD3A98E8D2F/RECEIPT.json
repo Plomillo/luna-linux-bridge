@@ -1,0 +1,12 @@
+{
+  "github_run_attempt": "1",
+  "github_run_id": "37583685784",
+  "mail_id": "MAIL-53D91F197FD3A98E8D2F",
+  "received_utc": "2026-10-07T06:49:52.310736+00:00",
+  "schema": "CUSTOSZ_MAILBOX_RECEIPT/1.0",
+  "source_bytes": 3841,
+  "source_commit": "4cd0f6601189b1dc4c7aeecff2f79a5efcadcfdf",
+  "source_path": "missions/inbox/super1200-repository-implementation-20261007/MISSION_ORIGINAL.md",
+  "source_sha256": "53d91f197fd3a98e8d2f597d380f30e568bbe6d1f94de01adeb37cdcf0043d17",
+  "status": "RECEIVED"
+}

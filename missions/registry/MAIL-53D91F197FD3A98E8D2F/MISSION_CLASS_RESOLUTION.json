@@ -1,0 +1,10 @@
+{
+  "bound_mission_class": null,
+  "direct_mission_class": "SUPER1200_REPOSITORY_GOVERNED_IMPLEMENTATION_V1",
+  "matches": [],
+  "mission_class": "SUPER1200_REPOSITORY_GOVERNED_IMPLEMENTATION_V1",
+  "origin": "MISSION_DIRECTIVE",
+  "result": "PASS",
+  "root_blocker": null,
+  "source_sha256": "53d91f197fd3a98e8d2f597d380f30e568bbe6d1f94de01adeb37cdcf0043d17"
+}
