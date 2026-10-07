@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import base64
 import hashlib
 import html as html_lib
 import json
@@ -10,6 +11,7 @@ import re
 import sys
 import time
 import traceback
+import urllib.error
 import urllib.parse
 import urllib.request
 import zipfile
@@ -70,6 +72,279 @@ def with_dl(url: str, value: str) -> str:
     q = [(k, v) for k, v in urllib.parse.parse_qsl(u.query, keep_blank_values=True) if k != "dl"]
     q.append(("dl", value))
     return urllib.parse.urlunsplit((u.scheme, u.netloc, u.path, urllib.parse.urlencode(q), u.fragment))
+
+
+_DROPBOX_API_TOKEN_CACHE: dict = {"token": None, "expires_at": 0.0, "mode": None}
+
+def _oauth_token_refresh() -> tuple[str | None, str | None]:
+    now = time.time()
+    cached = str(_DROPBOX_API_TOKEN_CACHE.get("token") or "")
+    expires_at = float(_DROPBOX_API_TOKEN_CACHE.get("expires_at") or 0.0)
+    if cached and (expires_at == 0.0 or expires_at - now > 300):
+        return cached, str(_DROPBOX_API_TOKEN_CACHE.get("mode") or "cached")
+
+    refresh = os.environ.get("DROPBOX_REFRESH_TOKEN", "").strip()
+    app_key = os.environ.get("DROPBOX_APP_KEY", "").strip()
+    app_secret = os.environ.get("DROPBOX_APP_SECRET", "").strip()
+    legacy = os.environ.get("DROPBOX_ACCESS_TOKEN", "").strip()
+
+    if refresh and app_key and app_secret:
+        body = urllib.parse.urlencode({
+            "grant_type": "refresh_token",
+            "refresh_token": refresh,
+        }).encode("ascii")
+        basic = base64.b64encode((app_key + ":" + app_secret).encode("utf-8")).decode("ascii")
+        req = urllib.request.Request(
+            "https://api.dropbox.com/oauth2/token",
+            data=body,
+            method="POST",
+            headers={
+                "Authorization": "Basic " + basic,
+                "Content-Type": "application/x-www-form-urlencoded",
+                "User-Agent": "Louksna-PUAC2-Partitioned/3.0",
+            },
+        )
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        token = str(data.get("access_token") or "").strip()
+        if not token:
+            raise RuntimeError("DROPBOX_OAUTH_REFRESH_ACCESS_TOKEN_MISSING")
+        ttl = int(data.get("expires_in") or 14400)
+        _DROPBOX_API_TOKEN_CACHE.update({
+            "token": token,
+            "expires_at": now + max(600, ttl),
+            "mode": "OAUTH_REFRESH",
+        })
+        record_event(
+            "DROPBOX_API_AUTH_BOUND",
+            auth_mode="OAUTH_REFRESH",
+            token_present=True,
+            token_logged=False,
+            token_persisted=False,
+        )
+        return token, "OAUTH_REFRESH"
+
+    if legacy:
+        _DROPBOX_API_TOKEN_CACHE.update({
+            "token": legacy,
+            "expires_at": 0.0,
+            "mode": "LEGACY_ACCESS_TOKEN",
+        })
+        record_event(
+            "DROPBOX_API_AUTH_BOUND",
+            auth_mode="LEGACY_ACCESS_TOKEN",
+            token_present=True,
+            token_logged=False,
+            token_persisted=False,
+        )
+        return legacy, "LEGACY_ACCESS_TOKEN"
+
+    return None, None
+
+def _dropbox_api_post_json(endpoint: str, payload: dict, *, refresh_on_401: bool = True) -> dict:
+    token, mode = _oauth_token_refresh()
+    if not token:
+        raise RuntimeError("DROPBOX_API_AUTH_UNAVAILABLE")
+    req = urllib.request.Request(
+        endpoint,
+        data=json.dumps(payload, separators=(",", ":")).encode("utf-8"),
+        method="POST",
+        headers={
+            "Authorization": "Bearer " + token,
+            "Content-Type": "application/json",
+            "User-Agent": "Louksna-PUAC2-Partitioned/3.0",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            request_id = resp.headers.get("X-Dropbox-Request-Id") or resp.headers.get("x-dropbox-request-id")
+            if request_id:
+                data["_louksna_request_id"] = request_id
+            return data
+    except urllib.error.HTTPError as exc:
+        if exc.code == 401 and refresh_on_401 and mode == "OAUTH_REFRESH":
+            _DROPBOX_API_TOKEN_CACHE.update({"token": None, "expires_at": 0.0, "mode": None})
+            return _dropbox_api_post_json(endpoint, payload, refresh_on_401=False)
+        body = exc.read(8192).decode("utf-8", errors="replace")
+        raise RuntimeError(f"DROPBOX_API_HTTP_{exc.code}:{body[:1200]}") from exc
+
+def _api_item_key(shared_url: str, relative_path: str, item_kind: str) -> str:
+    identity = "\n".join((link_key(shared_url), item_kind, relative_path))
+    return hashlib.sha256(identity.encode("utf-8")).hexdigest()
+
+def inventory_children_api(shared_url: str, relative_path: str = "") -> list[dict]:
+    """Authoritative direct-child inventory for a Dropbox shared folder."""
+    token, mode = _oauth_token_refresh()
+    if not token:
+        raise RuntimeError("DROPBOX_API_AUTH_UNAVAILABLE")
+    rel = relative_path or ""
+    payload = {
+        "path": rel,
+        "recursive": False,
+        "include_deleted": False,
+        "shared_link": {"url": shared_url},
+        "limit": 2000,
+    }
+    data = _dropbox_api_post_json("https://api.dropboxapi.com/2/files/list_folder", payload)
+    entries: list[dict] = []
+    request_ids: list[str] = []
+    if data.get("_louksna_request_id"):
+        request_ids.append(str(data["_louksna_request_id"]))
+
+    while True:
+        for raw in data.get("entries", []):
+            tag = str(raw.get(".tag") or "")
+            name = str(raw.get("name") or "").strip()
+            if tag not in ("file", "folder") or not name:
+                continue
+            child = ((rel.rstrip("/") if rel else "") + "/" + name)
+            if not child.startswith("/"):
+                child = "/" + child
+            key = _api_item_key(shared_url, child, tag)
+            row = {
+                "kind": tag,
+                "transport": "dropbox_api",
+                "shared_url": shared_url,
+                "relative_path": child,
+                "url": shared_url,
+                "label": clean_label(name, tag + "-" + key[:10]),
+                "key": key,
+                "dropbox_id": raw.get("id"),
+            }
+            if tag == "file":
+                row.update({
+                    "size": int(raw.get("size") or 0),
+                    "rev": raw.get("rev"),
+                    "content_hash": raw.get("content_hash"),
+                })
+            entries.append(row)
+
+        if not data.get("has_more"):
+            break
+        cursor = str(data.get("cursor") or "")
+        if not cursor:
+            raise RuntimeError("DROPBOX_API_CURSOR_MISSING")
+        data = _dropbox_api_post_json(
+            "https://api.dropboxapi.com/2/files/list_folder/continue",
+            {"cursor": cursor},
+        )
+        if data.get("_louksna_request_id"):
+            request_ids.append(str(data["_louksna_request_id"]))
+
+    rows = sorted(entries, key=lambda x: (x["kind"], x["label"].casefold(), x["key"]))
+    record_event(
+        "DROPBOX_API_AUTHORITATIVE_INVENTORY",
+        provider="DROPBOX_API_LIST_FOLDER_SHARED_LINK",
+        auth_mode=mode,
+        parent=sanitize_url(shared_url),
+        relative_path=rel,
+        count=len(rows),
+        files=sum(x["kind"] == "file" for x in rows),
+        folders=sum(x["kind"] == "folder" for x in rows),
+        request_ids=request_ids,
+        dom_authoritative=False,
+    )
+    return rows
+
+def dropbox_content_hash(path: pathlib.Path) -> str:
+    block_hashes: list[bytes] = []
+    with path.open("rb") as f:
+        while True:
+            block = f.read(4 * 1024 * 1024)
+            if not block:
+                break
+            block_hashes.append(hashlib.sha256(block).digest())
+    return hashlib.sha256(b"".join(block_hashes)).hexdigest()
+
+def download_file_api(item: dict, ordinal: int) -> dict:
+    shared_url = str(item["shared_url"])
+    relative_path = str(item["relative_path"])
+    key = str(item["key"])
+    expected_size = int(item.get("size") or 0)
+    expected_content_hash = str(item.get("content_hash") or "").lower()
+    token, mode = _oauth_token_refresh()
+    if not token:
+        raise RuntimeError("DROPBOX_API_AUTH_UNAVAILABLE")
+
+    safe = clean_label(pathlib.PurePosixPath(relative_path).name, "file")
+    part = PAYLOAD / f"{ordinal:06d}_api_{key[:12]}_{safe}.part"
+    final = PAYLOAD / f"{ordinal:06d}_api_{key[:12]}_{safe}"
+    arg = {"url": shared_url, "path": relative_path}
+    req = urllib.request.Request(
+        "https://content.dropboxapi.com/2/sharing/get_shared_link_file",
+        data=b"",
+        method="POST",
+        headers={
+            "Authorization": "Bearer " + token,
+            "Dropbox-API-Arg": json.dumps(arg, separators=(",", ":")),
+            "User-Agent": "Louksna-PUAC2-Partitioned/3.0",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=300) as resp, part.open("wb") as out:
+            request_id = resp.headers.get("X-Dropbox-Request-Id") or resp.headers.get("x-dropbox-request-id")
+            material_marked = False
+            while True:
+                chunk = resp.read(1024 * 1024)
+                if not chunk:
+                    break
+                out.write(chunk)
+                if not material_marked:
+                    out.flush()
+                    os.fsync(out.fileno())
+                    observed = part.stat().st_size
+                    if observed > 0:
+                        write_download_event("file-api", shared_url, item["label"], final.name)
+                        record_event(
+                            "DROPBOX_API_MATERIAL_DOWNLOAD_STARTED",
+                            provider="DROPBOX_API_SHARED_LINK",
+                            auth_mode=mode,
+                            relative_path=relative_path,
+                            source_identity_sha256=key,
+                            observed_bytes=observed,
+                            dropbox_request_id=request_id,
+                            token_logged=False,
+                        )
+                        material_marked = True
+    except urllib.error.HTTPError as exc:
+        if exc.code == 401 and mode == "OAUTH_REFRESH":
+            _DROPBOX_API_TOKEN_CACHE.update({"token": None, "expires_at": 0.0, "mode": None})
+        raise RuntimeError(f"DROPBOX_API_FILE_HTTP_{exc.code}:{relative_path}") from exc
+
+    actual_size = part.stat().st_size
+    if expected_size and actual_size != expected_size:
+        quarantine_path(part, f"DROPBOX_API_SIZE_MISMATCH:{expected_size}:{actual_size}")
+        raise RuntimeError(f"DROPBOX_API_SIZE_MISMATCH:{relative_path}:{expected_size}:{actual_size}")
+    if expected_content_hash:
+        actual_content_hash = dropbox_content_hash(part)
+        if actual_content_hash != expected_content_hash:
+            quarantine_path(part, "DROPBOX_API_CONTENT_HASH_MISMATCH")
+            raise RuntimeError(f"DROPBOX_API_CONTENT_HASH_MISMATCH:{relative_path}")
+    h = hashlib.sha256()
+    with part.open("rb") as src:
+        for chunk in iter(lambda: src.read(8 * 1024 * 1024), b""):
+            h.update(chunk)
+    os.replace(part, final)
+    record_event(
+        "DROPBOX_API_OBJECT_COMMITTED",
+        relative_path=relative_path,
+        source_identity_sha256=key,
+        bytes=final.stat().st_size,
+        sha256=h.hexdigest(),
+        source_content_hash=expected_content_hash or None,
+    )
+    return {
+        "kind": "file",
+        "label": item["label"],
+        "source_identity_sha256": key,
+        "relative_path": relative_path,
+        "payload_name": final.name,
+        "bytes": final.stat().st_size,
+        "sha256": h.hexdigest(),
+        "source_content_hash": expected_content_hash or None,
+        "transfer_method": "DROPBOX_API_GET_SHARED_LINK_FILE",
+    }
 
 def record_event(kind: str, **kwargs) -> None:
     emit_event(ROOT, kind, **kwargs)
@@ -597,6 +872,20 @@ def quarantine_path(path: pathlib.Path, reason: str) -> None:
 
 def process_item(page, item: dict, ordinal: int) -> dict:
     key = item["key"]
+
+    if item.get("transport") == "dropbox_api":
+        if item["kind"] == "file":
+            return {"action": "downloaded", "result": download_file_api(item, ordinal)}
+        children = inventory_children_api(item["shared_url"], item.get("relative_path") or "")
+        if not children:
+            record_event(
+                "DROPBOX_API_EMPTY_FOLDER_VERIFIED",
+                identity_sha256=key,
+                relative_path=item.get("relative_path"),
+            )
+            return {"action": "folder_complete", "children": [], "fallback_reason": "API_VERIFIED_EMPTY_FOLDER"}
+        return {"action": "split", "children": children, "fallback_reason": "DROPBOX_API_AUTHORITATIVE_INVENTORY"}
+
     last_exc: BaseException | None = None
     for attempt_no in range(1, MAX_ITEM_RETRIES + 1):
         try:
@@ -613,10 +902,27 @@ def process_item(page, item: dict, ordinal: int) -> dict:
 
             result = attempt_folder_download(page, item["url"], item["label"], ordinal)
             if result["action"] == "split":
-                children = inventory_children(page, item["url"])
+                # Authoritative path: the Dropbox API enumerates objects relative to
+                # the shared-link root. DOM/HTML is diagnostic only.
+                try:
+                    children = inventory_children_api(item["url"], "")
+                except Exception as api_exc:
+                    record_event(
+                        "DROPBOX_API_INVENTORY_FAILED",
+                        identity_sha256=key,
+                        error=f"{type(api_exc).__name__}:{api_exc}",
+                        dom_authoritative=False,
+                    )
+                    raise
                 if not children:
-                    raise RuntimeError("PARTITION_REQUIRED_BUT_CHILDREN_EMPTY:" + key)
+                    record_event(
+                        "DROPBOX_API_EMPTY_FOLDER_VERIFIED",
+                        identity_sha256=key,
+                        relative_path="",
+                    )
+                    return {"action": "folder_complete", "children": [], "fallback_reason": "API_VERIFIED_EMPTY_FOLDER"}
                 result["children"] = children
+                result["fallback_reason"] = "DROPBOX_API_AUTHORITATIVE_INVENTORY"
             return result
         except Exception as exc:
             last_exc = exc
@@ -630,32 +936,10 @@ def process_item(page, item: dict, ordinal: int) -> dict:
                 error=message,
                 traceback=traceback.format_exc(limit=12),
             )
-
-            # A failed folder package is not a global failure. If the folder can be
-            # inventoried, degrade to recursive partitioning irrespective of the exact
-            # Dropbox/UI failure class.
-            if item["kind"] == "folder":
-                candidate = PAYLOAD / f"{ordinal:06d}_folder_{key[:12]}.zip"
-                if candidate.exists():
-                    quarantine_path(candidate, message)
-                try:
-                    children = inventory_children(page, item["url"])
-                except Exception as inv_exc:
-                    record_event(
-                        "FOLDER_FALLBACK_INVENTORY_FAILED",
-                        identity_sha256=key,
-                        error=f"{type(inv_exc).__name__}:{inv_exc}",
-                    )
-                    children = []
-                if children:
-                    record_event(
-                        "FOLDER_FALLBACK_TO_SPLIT",
-                        identity_sha256=key,
-                        child_count=len(children),
-                        trigger=message,
-                    )
-                    return {"action": "split", "children": children, "fallback_reason": message}
-
+            # Never repeat a deterministic DOM-inventory strategy. API auth or
+            # deterministic API schema failures must be surfaced for governed repair.
+            if "DROPBOX_API_AUTH_UNAVAILABLE" in message:
+                break
             if is_transient_transfer_error(exc) and attempt_no < MAX_ITEM_RETRIES:
                 delay = min(60, 2 ** attempt_no)
                 record_event("TRANSIENT_RETRY_BACKOFF", identity_sha256=key, delay_seconds=delay)
@@ -664,6 +948,7 @@ def process_item(page, item: dict, ordinal: int) -> dict:
             break
     assert last_exc is not None
     raise last_exc
+
 
 def main() -> None:
     from playwright.sync_api import sync_playwright
@@ -779,8 +1064,24 @@ def main() -> None:
                 write_checkpoint(ROOT, manifest, queue, completed_keys, "OBJECT_COMMITTED", failed=manifest["failed"])
                 continue
 
+            if attempt["action"] == "folder_complete":
+                manifest["split_folders"].append({
+                    "label": item["label"],
+                    "source_identity_sha256": key,
+                    "depth": depth,
+                    "child_count": 0,
+                    "fallback_reason": attempt.get("fallback_reason"),
+                    "inventory_provider": "DROPBOX_API_LIST_FOLDER_SHARED_LINK",
+                })
+                completed_keys.add(key)
+                atomic_json(EVID / "MANIFEST.json", manifest)
+                write_checkpoint(ROOT, manifest, queue, completed_keys, "API_EMPTY_FOLDER_COMMITTED", failed=manifest["failed"])
+                continue
+
             if attempt["action"] == "split":
-                children = attempt.get("children") or inventory_children(page, item["url"])
+                children = attempt.get("children")
+                if children is None:
+                    raise RuntimeError("SPLIT_CHILDREN_NOT_BOUND_BY_AUTHORITATIVE_PROVIDER")
                 if not children:
                     raise RuntimeError("PARTITION_REQUIRED_BUT_CHILDREN_EMPTY:" + key)
                 manifest["split_folders"].append({
