@@ -90,7 +90,7 @@ jobs:
           umask 077
           S="$RUNNER_TEMP/lrb-super1200-$GITHUB_RUN_ID"
           mkdir -p "$S/state" "$S/socket" "$S/evidence"
-          nice -n 12 python3 -B bridge/live_link.py --state-dir "$S/state" --socket-dir "$S/socket" serve > "$S/BRIDGE.stdout" 2> "$S/BRIDGE.stderr" &
+          nice -n 12 python3 -B bridge/bridge/live_link.py --state-dir "$S/state" --socket-dir "$S/socket" serve > "$S/BRIDGE.stdout" 2> "$S/BRIDGE.stderr" &
           echo $! > "$S/BRIDGE.pid"
           for n in $(seq 1 50); do
             if test -S "$S/socket/BRIDGE.sock"; then break; fi
@@ -103,7 +103,7 @@ jobs:
             sleep 0.1
           done
           test -S "$S/socket/BRIDGE.sock"
-          python3 -B bridge/live_link.py --state-dir "$S/state" --socket-dir "$S/socket" request --op status | tee "$S/evidence/LRB_STATUS_BEFORE.json"
+          python3 -B bridge/bridge/live_link.py --state-dir "$S/state" --socket-dir "$S/socket" request --op status | tee "$S/evidence/LRB_STATUS_BEFORE.json"
           printf '%s\n' "$S/state" > "$RUNNER_TEMP/lrb_state_path"
           printf '%s\n' "$S/socket" > "$RUNNER_TEMP/lrb_socket_path"
           echo "SUPER1200_TELEMETRY LRB_OBSERVER=CONNECTED SCOPE=READONLY"
@@ -139,8 +139,8 @@ jobs:
           set -Eeuo pipefail
           S="$(cat "$RUNNER_TEMP/lrb_state_path")"
           P="$(cat "$RUNNER_TEMP/lrb_socket_path")"
-          python3 -B bridge/live_link.py --state-dir "$S" --socket-dir "$P" request --op watch --frames 3 --interval-sec 1 | tee "$RUNNER_TEMP/super1200/LRB_LIVE.jsonl"
-          python3 -B bridge/live_link.py --state-dir "$S" --socket-dir "$P" request --op status | tee "$RUNNER_TEMP/super1200/LRB_STATUS_AFTER.json"
+          python3 -B bridge/bridge/live_link.py --state-dir "$S" --socket-dir "$P" request --op watch --frames 3 --interval-sec 1 | tee "$RUNNER_TEMP/super1200/LRB_LIVE.jsonl"
+          python3 -B bridge/bridge/live_link.py --state-dir "$S" --socket-dir "$P" request --op status | tee "$RUNNER_TEMP/super1200/LRB_STATUS_AFTER.json"
 
       - name: Functional validation and repository persistence
         shell: bash
