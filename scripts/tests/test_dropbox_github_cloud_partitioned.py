@@ -132,7 +132,14 @@ for secret_name in ("DROPBOX_APP_KEY","DROPBOX_APP_SECRET","DROPBOX_REFRESH_TOKE
     binding="${{ secrets."+secret_name+" }}"
     if binding not in w:
         raise SystemExit("DROPBOX_API_SECRET_BINDING_MISSING:"+secret_name)
-    if ('echo "
+    forbidden_echoes=(
+        'echo "$'+secret_name+'"',
+        'printf "%s" "$'+secret_name+'"',
+        'print(os.environ["'+secret_name+'"])',
+    )
+    if any(x in w or x in s or x in r for x in forbidden_echoes):
+        raise SystemExit("DROPBOX_API_SECRET_VALUE_LOGGING_FORBIDDEN:"+secret_name)
+
 completed=seed_obj.get("completed") or []
 if len(completed)!=5:
     raise SystemExit("RESUME_SEED_MUST_BIND_EXACTLY_FIVE_PRIOR_SUCCESSES")
