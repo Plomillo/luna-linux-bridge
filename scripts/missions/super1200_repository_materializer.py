@@ -26,7 +26,7 @@ class Ledger:
         print("SUPER1200_TELEMETRY "+json.dumps({"seq":self.seq,"event":event,**payload},sort_keys=True),flush=True)
 
 def parse_caps(text):
-    rx=re.compile(r"^(\\d+)\\.\\s+([A-Z0-9_]+)\\s+\\|\\s+TYPE=(.+)$")
+    rx=re.compile(r"^(\d+)\.\s+([A-Z0-9_]+)\s+\|\s+TYPE=(.+)$")
     out={}
     for line in text.splitlines():
         s=line.strip()
