@@ -1,0 +1,93 @@
+name: "Dropbox partitioned artifact forensic read — 2m"
+
+on:
+  push:
+    branches:
+      - staging/dropbox-github-cloud-partitioned-20261005
+    paths:
+      - .github/workflows/dropbox-partitioned-artifact-forensic-read.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: dropbox-partitioned-artifact-forensic-read
+  cancel-in-progress: false
+
+env:
+  SOURCE_RUN_ID: "37507212796"
+  SOURCE_ARTIFACT_ID: "11435425831"
+  BLOCKED_KEY: "2bef57a917f57d4bff748154ef4a80858581e67eb40815dcfa0e8c5f464ef5de"
+
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Download and inspect preserved evidence only
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p /tmp/dbx-inspect/in /tmp/dbx-inspect/out
+          curl -fsSL             -H "Authorization: Bearer ${GH_TOKEN}"             -H "Accept: application/vnd.github+json"             -H "X-GitHub-Api-Version: 2022-11-28"             "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/${SOURCE_ARTIFACT_ID}/zip"             -o /tmp/dbx-inspect/in/evidence.zip
+          python3 - <<'PY'
+          import json, pathlib, zipfile, os, hashlib
+          zpath=pathlib.Path('/tmp/dbx-inspect/in/evidence.zip')
+          print('ARTIFACT_ZIP_SHA256='+hashlib.sha256(zpath.read_bytes()).hexdigest())
+          with zipfile.ZipFile(zpath) as z:
+              bad=z.testzip()
+              print('ARTIFACT_ZIP_CRC='+('PASS' if bad is None else 'FAIL:'+str(bad)))
+              z.extractall('/tmp/dbx-inspect/out')
+          root=pathlib.Path('/tmp/dbx-inspect/out')
+          print('FILE_COUNT='+str(sum(1 for p in root.rglob('*') if p.is_file())))
+          key=os.environ['BLOCKED_KEY']
+          print('BLOCKED_KEY='+key)
+
+          def show(path):
+              p=root/path
+              print('\n===== '+path+' =====')
+              if not p.is_file():
+                  print('MISSING')
+                  return
+              txt=p.read_text(encoding='utf-8',errors='replace')
+              print(txt[:250000])
+
+          for path in [
+              'evidence/MANIFEST.json',
+              'evidence/ROOT_INVENTORY.json',
+              'evidence/PROGRESS.json',
+              'evidence/FIRST_DOWNLOAD_EVENT.json',
+              'evidence/MATERIAL_BYTE_FLOW.json',
+              'evidence/LAST_GENERATE_DOWNLOAD_URL.json',
+              'evidence/acquisition.stdout',
+              'evidence/acquisition.stderr',
+              'checkpoints/LATEST.json',
+          ]:
+              show(path)
+
+          print('\n===== FILTERED_EVENTS_V2 =====')
+          p=root/'evidence/EVENTS_V2.ndjson'
+          if p.is_file():
+              for line in p.read_text(encoding='utf-8',errors='replace').splitlines():
+                  if key in line or any(tok in line for tok in [
+                      'FOLDER_DIRECT_DL1',
+                      'FOLDER_DOWNLOAD_UI',
+                      'FOLDER_DOWNLOAD_CONTINUATION',
+                      'FOLDER_DOWNLOAD_NO_MATERIAL',
+                      'CHILD_INVENTORY',
+                      'PARTITION_REQUIRED',
+                      'ITEM_ATTEMPT',
+                      'FOLDER_FALLBACK',
+                      'PAYLOAD_QUARANTINED'
+                  ]):
+                      print(line)
+
+          print('\n===== BUG_RECORDS =====')
+          for p in sorted(root.glob('evidence/bugs/**/BUG_RECORD.json')):
+              print('--- '+p.relative_to(root).as_posix()+' ---')
+              print(p.read_text(encoding='utf-8',errors='replace')[:20000])
+          PY
