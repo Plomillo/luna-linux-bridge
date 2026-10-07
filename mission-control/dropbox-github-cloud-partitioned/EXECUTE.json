@@ -22,14 +22,14 @@
   "desktop_commander": false,
   "stop_assistant_intervention_on_material_byte_flow": true,
   "retry": {
-    "ordinal": 11,
-    "reason": "CERTIFIED_HYDRATED_PUBLIC_INVENTORY_FALLBACK",
-    "prior_failed_run_id": 37585705809,
-    "public_probe_run_id": 37585254356,
-    "public_probe_artifact_id": 11466490492,
+    "ordinal": 12,
+    "reason": "CERTIFY_HYDRATED_PUBLIC_METAOS_INVENTORY_AND_RESUME",
+    "prior_bug_id": "BUG-d9d3f33d2184dfc4",
     "target_identity_sha256": "2bef57a917f57d4bff748154ef4a80858581e67eb40815dcfa0e8c5f464ef5de",
     "resume_from_verified_checkpoint": true,
-    "contract_sha": "c6294667853f781e100ed88491087153c1b88ed0"
+    "api_if_authorized": true,
+    "public_hydrated_fallback": true,
+    "zero_stability_terminal": false
   },
   "resilience": {
     "puac2_governed": true,
@@ -47,7 +47,11 @@
     "fallback_inventory_provider": "DROPBOX_PUBLIC_RENDERED_SHARED_LINK_INVENTORY",
     "hydration_wait_seconds": 60,
     "zero_stability_terminal": false,
-    "direct_dl1_fast_path": true
+    "direct_dl1_fast_path": true,
+    "authoritative_inventory_preference": "DROPBOX_API_IF_AUTHORIZED",
+    "governed_inventory_fallback": "DROPBOX_PUBLIC_RENDERED_SHARED_LINK_INVENTORY",
+    "public_probe_run_id": 37585254356,
+    "public_probe_artifact_id": 11466490492
   },
   "resume": {
     "bootstrap_verified_prior_partitions": 5,
