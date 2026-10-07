@@ -156,10 +156,12 @@
       "signal_regex": "No space left on device|ENOSPC|ERR_INSUFFICIENT_RESOURCES",
       "action": "SPLIT_AND_YIELD_FROM_CHECKPOINT",
       "applicability": "GitHub-hosted runner approaches local disk/resource ceiling while a Dropbox folder package or accumulated payload is being materialized",
-      "validation_status": "VALIDATED_BY_CONTRACT_PENDING_LIVE_YIELD_PROBE",
+      "validation_status": "VALIDATED_LIVE_GITHUB_HOSTED_RUNNER",
       "validated_by": [
         "DROPBOX_GITHUB_CLOUD_PARTITIONED_STORAGE_BUDGET_CONTRACT",
-        "DROPBOX_GITHUB_CLOUD_PARTITIONED_CHECKPOINT_SELFTEST"
+        "DROPBOX_GITHUB_CLOUD_PARTITIONED_CHECKPOINT_SELFTEST",
+        "DROPBOX_BOUNDED_STORAGE_LIVE_CERTIFICATION_RUN_37587627714",
+        "DROPBOX_GITHUB_CLOUD_PARTITIONED_CONTRACT_37588495799"
       ],
       "rollback": "discard only uncommitted partial bytes after preserving bounded evidence; retain last verified checkpoint and committed artifacts",
       "provenance": [
@@ -167,7 +169,13 @@
         "bug:BUG-2fc4d232d7568620",
         "observed_material_bytes:185651200",
         "artifact:11467375319",
-        "root_cause:unbounded local payload accumulation on GitHub-hosted runner"
+        "root_cause:unbounded local payload accumulation on GitHub-hosted runner",
+        "run:37587627714",
+        "result:PASS",
+        "storage_guard_stream:LOCAL_SYNTHETIC_STREAM_ON_LIVE_GITHUB_RUNNER",
+        "dropbox_live_material_evidence_run:37585796683",
+        "dropbox_live_material_observed_bytes:185651200",
+        "checkpointed_yield:PASS"
       ],
       "invariants": {
         "max_single_folder_zip_bytes": 1073741824,
