@@ -161,6 +161,24 @@
       "source_sha256": "5fa6287ac594c82234a78b7c6e8934bb41ce2f88e236df3e1ec0b4da9c93aee7",
       "status": "ACTIVE_PINNED",
       "terminal_rule": "WORK_BRANCH_ONLY_FAIL_CLOSED_FRESH_G23_G24_REQUIRED"
+    },
+    {
+      "adapter_id": "SUPER1200_REPOSITORY_IMPLEMENTATION_V1",
+      "backend": "CUSTOSZ_RUNTIME",
+      "dedicated_workflow": ".github/workflows/super1200-repository-implementation.yml",
+      "execution_location": "SELF_HOSTED_LUNA_AUX",
+      "hard_ceiling_seconds": 1800,
+      "mission_classes": [
+        "SUPER1200_REPOSITORY_GOVERNED_IMPLEMENTATION_V1"
+      ],
+      "path": "scripts/mission_mailbox/adapters/super1200_repository_implementation.py",
+      "provides_executor_binding": true,
+      "required_capabilities": [],
+      "requires_prebound_executor": false,
+      "scope": "REPOSITORY_OWNED_1200_CAPABILITY_IMPLEMENTATION",
+      "status": "ACTIVE_PINNED",
+      "source_binding": "MISSION_FILE_AT_TRIGGER_COMMIT",
+      "terminal_rule": "CAPABILITY_OWNER_REPOSITORY;FAIL_CLOSED;G23_BEFORE_G24;NO_CERTIFICATION_PROPAGATION"
     }
   ],
   "policy": {
