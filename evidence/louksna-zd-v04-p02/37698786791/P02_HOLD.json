@@ -1,0 +1,9 @@
+{
+  "status": "HOLD",
+  "mission_id": "MIS-LOUKSNA-ZD-V04-P02-20261007",
+  "reason": "RuntimeError:NO_MATERIAL_P02_DELTA",
+  "resume_from": "CHECKPOINT_01",
+  "blind_retry": false,
+  "active": false,
+  "certified": false
+}

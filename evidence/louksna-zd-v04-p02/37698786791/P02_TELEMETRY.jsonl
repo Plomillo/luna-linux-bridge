@@ -1,0 +1,20 @@
+{"event": "STAGE", "mission_id": "MIS-LOUKSNA-ZD-V04-P02-20261007", "stage": "ADMIT", "state": "RUNNING", "utc": "2026-10-07T22:51:56.394636Z"}
+{"command": "v07-status", "event": "CUSTOSZ_CHECK", "exit_code": 0, "mission_id": "MIS-LOUKSNA-ZD-V04-P02-20261007", "utc": "2026-10-07T22:51:56.836433Z"}
+{"command": "v07-selftest", "event": "CUSTOSZ_CHECK", "exit_code": 0, "mission_id": "MIS-LOUKSNA-ZD-V04-P02-20261007", "utc": "2026-10-07T22:51:57.237709Z"}
+{"custosz_mission_id": "MIS-ade6eb7899634408a35f", "event": "CUSTOSZ_MISSION_LIVE", "mission_id": "MIS-LOUKSNA-ZD-V04-P02-20261007", "state": "SUPERVISORY_ACTIVE", "utc": "2026-10-07T22:51:57.365016Z"}
+{"event": "RUNTIME_LIVE", "journal": true, "mission_id": "MIS-LOUKSNA-ZD-V04-P02-20261007", "state": "PASS", "utc": "2026-10-07T22:51:57.412177Z"}
+{"event": "STAGE", "mission_id": "MIS-LOUKSNA-ZD-V04-P02-20261007", "stage": "COPY_SUBSTRATE", "state": "RUNNING", "utc": "2026-10-07T22:51:57.412317Z"}
+{"event": "SUBSTRATE_COPIED", "hashes": {"live_link.py": "c10cc77ff590e37cf303c7992ec8cb9f5c76e762de22db8aa3519b5b62c7b463", "lrb_core.py": "87dfa7ef81157154c2b9a49410b2b632559a17414a611849475fcd565f0da2d1", "mtls_gateway.py": "8ddaa0602feddb5d9bed84cb86056a856b0f0f39ce577e82eaa0a8edb1bbcf2d"}, "mission_id": "MIS-LOUKSNA-ZD-V04-P02-20261007", "source_sha": "ad95248dd78fadf45645774e0338df0f1bbc128b", "utc": "2026-10-07T22:51:57.412607Z"}
+{"event": "STAGE", "mission_id": "MIS-LOUKSNA-ZD-V04-P02-20261007", "stage": "MATERIALIZE", "state": "RUNNING", "utc": "2026-10-07T22:51:57.412681Z"}
+{"app_sha256": "aeef054c875f9617c35e4b4e774dd20812b8250af9e917e727674858cce8a967", "event": "APP_LAYER_MATERIALIZED", "message_types": 7, "mission_id": "MIS-LOUKSNA-ZD-V04-P02-20261007", "test_sha256": "33e8a176a2be3b930996a847b76fb6a385477b742c9b12526747fcdcb6a87a5c", "utc": "2026-10-07T22:51:57.413113Z"}
+{"event": "STAGE", "mission_id": "MIS-LOUKSNA-ZD-V04-P02-20261007", "stage": "TEST_TYPED", "state": "RUNNING", "utc": "2026-10-07T22:51:57.413297Z"}
+{"event": "TYPED_TESTS_FINISHED", "exit_code": 0, "mission_id": "MIS-LOUKSNA-ZD-V04-P02-20261007", "state": "PASS", "tests": 13, "utc": "2026-10-07T22:51:57.685063Z"}
+{"event": "STAGE", "mission_id": "MIS-LOUKSNA-ZD-V04-P02-20261007", "stage": "TEST_REGRESSION", "state": "RUNNING", "utc": "2026-10-07T22:51:57.685342Z"}
+{"event": "HEARTBEAT", "mission_id": "MIS-LOUKSNA-ZD-V04-P02-20261007", "sequence": 1, "stage": "TEST_REGRESSION", "state": "RUNNING", "utc": "2026-10-07T22:51:58.391856Z"}
+{"event": "HEARTBEAT", "mission_id": "MIS-LOUKSNA-ZD-V04-P02-20261007", "sequence": 2, "stage": "TEST_REGRESSION", "state": "RUNNING", "utc": "2026-10-07T22:52:00.392396Z"}
+{"event": "HEARTBEAT", "mission_id": "MIS-LOUKSNA-ZD-V04-P02-20261007", "sequence": 3, "stage": "TEST_REGRESSION", "state": "RUNNING", "utc": "2026-10-07T22:52:02.392828Z"}
+{"event": "HEARTBEAT", "mission_id": "MIS-LOUKSNA-ZD-V04-P02-20261007", "sequence": 4, "stage": "TEST_REGRESSION", "state": "RUNNING", "utc": "2026-10-07T22:52:04.393357Z"}
+{"event": "HEARTBEAT", "mission_id": "MIS-LOUKSNA-ZD-V04-P02-20261007", "sequence": 5, "stage": "TEST_REGRESSION", "state": "RUNNING", "utc": "2026-10-07T22:52:06.393874Z"}
+{"event": "FULL_REGRESSION_FINISHED", "mission_id": "MIS-LOUKSNA-ZD-V04-P02-20261007", "prior_suite_floor": 165, "state": "PASS", "tests": 178, "utc": "2026-10-07T22:52:07.086789Z"}
+{"event": "STAGE", "mission_id": "MIS-LOUKSNA-ZD-V04-P02-20261007", "stage": "PRE_COMMIT", "state": "RUNNING", "utc": "2026-10-07T22:52:07.087112Z"}
+{"event": "HOLD", "mission_id": "MIS-LOUKSNA-ZD-V04-P02-20261007", "reason": "RuntimeError:NO_MATERIAL_P02_DELTA", "resume_from": "CHECKPOINT_01", "state": "FAIL_CLOSED", "utc": "2026-10-07T22:52:07.109956Z"}
