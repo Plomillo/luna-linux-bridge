@@ -276,11 +276,11 @@ with tempfile.TemporaryDirectory() as td:
     category,action,missing=rmod.classify_bug("curl: (23) Failure writing output to destination")
     assert category=="DROPBOX_PUBLIC_DL1_WRITE_INTERRUPTION"
     assert action=="ISOLATED_CURL_RETRY_VALIDATE_ZIP_CRC"
+    known=rmod.lookup_known_fix(category,"curl: (23) Failure writing output to destination")
+    assert known and known["action"]=="ISOLATED_CURL_RETRY_VALIDATE_ZIP_CRC"
     category,action,missing=rmod.classify_bug("OSError: [Errno 28] No space left on device")
     assert category=="RUNNER_DISK_PRESSURE"
     assert action=="SPLIT_AND_YIELD_FROM_CHECKPOINT"
     known=rmod.lookup_known_fix(category,"No space left on device")
     assert known and known["action"]=="SPLIT_AND_YIELD_FROM_CHECKPOINT"
-    known=rmod.lookup_known_fix(category,"curl: (23) Failure writing output to destination")
-    assert known and known["action"]=="ISOLATED_CURL_RETRY_VALIDATE_ZIP_CRC"
 print("DROPBOX_GITHUB_CLOUD_PARTITIONED_BUG_CLASSIFIER_SELFTEST=PASS")
