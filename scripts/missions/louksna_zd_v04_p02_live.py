@@ -471,8 +471,7 @@ def main():
               "next_point":"P03_CUSTOSZ_RUNTIME_METAOS_EXECUTION_PLANE",
               "anti_paralysis":{"heartbeat_seconds":2,"stale_threshold_seconds":10,"blind_retry":False,"resume_from_last_verified_checkpoint":True}
             }
-            # CHECKPOINT_02 is emitted as runtime evidence; it must not dirty the committed worktree.
-            emit(out,"CHECKPOINT_02_PREPARED",state="PASS",next_point=checkpoint["next_point"],commit_sha=commit)
+            # Prepare the implementation commit first; the commit SHA is unknown until Git creates it.
             run(["git","add","bridge"],cwd=root)
             if run(["git","diff","--cached","--quiet"],cwd=root,check=False).returncode==0:
                 raise RuntimeError("NO_MATERIAL_P02_DELTA")
