@@ -175,6 +175,24 @@ jobs:
           print("FROZEN_METAOS_37_LINK_INVENTORY=PASS")
           PY
           echo "FROZEN_METAOS_INVENTORY=$FROZEN_META" >> "$GITHUB_ENV"
+      - name: Recover exact META OS 37-of-37 public network inventory evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: dropbox-metaos-public-inventory-probe-37585254356
+          path: ${{ runner.temp }}/metaos-frozen
+          run-id: 37585254356
+          github-token: ${{ github.token }}
+
+      - name: Bind frozen META OS network inventory
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          f="$RUNNER_TEMP/metaos-frozen/json_candidates.json"
+          test -s "$f"
+          echo "FROZEN_METAOS_NETWORK_INVENTORY=$f" >> "$GITHUB_ENV"
+          echo "FROZEN_METAOS_ARTIFACT_ID=11466490492"
+          echo "FROZEN_METAOS_ARTIFACT_DIGEST=sha256:ed4621c1418b64a329df6f1aedd3ef26df4c9646de01006abaae4c425c6430b4"
+
       - name: Install pinned Playwright browser tooling
         shell: bash
         run: |
