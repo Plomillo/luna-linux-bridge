@@ -1,0 +1,70 @@
+name: "LOUKSNA Remote Bridge candidate — host read-only channel probe"
+on:
+  push:
+    branches:
+      - candidate/louksna-remote-bridge-v0-unreleased
+    paths:
+      - ".github/workflows/louksna-remote-bridge-host-readonly-probe.yml"
+permissions:
+  contents: read
+concurrency:
+  group: lrb-host-readonly-only
+  cancel-in-progress: false
+jobs:
+  prove-github-to-louksna-readonly:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Checkout candidate without saved GitHub credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            bridge
+          sparse-checkout-cone-mode: true
+      - name: Read-only checkout integrity diagnosis
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          printf 'WORKSPACE=%s\\n' "$GITHUB_WORKSPACE"
+          git rev-parse HEAD
+          git ls-tree -r HEAD --name-only bridge | head -30
+          git ls-files bridge/lrb_core.py
+          test -f "$GITHUB_WORKSPACE/bridge/lrb_core.py" || {
+            echo "HOLD_CHECKOUT_WORKTREE_MISSING_FILE"
+            git status --short
+            exit 22
+          }
+      - name: Read-only identity, resource and sudo availability probe
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(hostname)" = "LOUKSNA"
+          test "$(id -u)" -ne 0
+          OUT="$RUNNER_TEMP/lrb-host-readonly-${{ github.run_id }}"
+          mkdir -p "$OUT"
+          umask 077
+          nice -n 10 timeout 75s python3 -B bridge/lrb_core.py --state-dir "$OUT/state" observe --sudo-probe > "$OUT/HOST_OBSERVE.json"
+          nice -n 10 timeout 15s python3 -B bridge/lrb_core.py --state-dir "$OUT/state" status > "$OUT/HOST_STATUS.json"
+          python3 - "$OUT/HOST_OBSERVE.json" "$OUT/HOST_STATUS.json" <<'PY'
+          import json,sys
+          obs=json.load(open(sys.argv[1]))
+          state=json.load(open(sys.argv[2]))
+          assert obs["host"]=="LOUKSNA"
+          assert obs["project_partition"]=="NOT_LIVE_VERIFIED"
+          assert obs["bridge_root_shell"]=="NOT_DEPLOYED"
+          assert state["g23"]=="NOT_EXECUTED" and state["g24"]=="NOT_EXECUTED"
+          print("GITHUB_TO_LIVE_HOST_READONLY=PASS; NO_PARTITION_ACTION=TRUE")
+          PY
+          printf 'run=%s\ncommit=%s\nreadonly_only=true\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" > "$OUT/RECEIPT.txt"
+          sha256sum "$OUT/HOST_OBSERVE.json" "$OUT/HOST_STATUS.json" > "$OUT/EVIDENCE_SHA256.txt"
+      - name: Preserve bounded host receipts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-host-readonly-evidence
+          path: ${{ runner.temp }}/lrb-host-readonly-${{ github.run_id }}/
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 0

@@ -1,0 +1,129 @@
+{
+  "schema": "LOUKSNA_REMOTE_BRIDGE_CONTRACT/0.1",
+  "status": "DRAFT_UNCERTIFIED",
+  "authority": "Louksna.md",
+  "doctrine": [
+    "EXTEND_DO_NOT_REPLACE",
+    "APPEND_ONLY",
+    "FAIL_CLOSED",
+    "NO_SILENT_OPERATIONS",
+    "NON_REGRESSION",
+    "NO_CERTIFICATION_PROPAGATION"
+  ],
+  "roles": {
+    "human": "OWNER",
+    "governor": "Maestro/MetaOS",
+    "senior_programmer": "CUSTOSZ_V7",
+    "runtime": "CUSTOSZ_RUNTIME_V1",
+    "orchestrator": "Johnson",
+    "validator": "G23",
+    "certifier": "G24",
+    "second_order": [
+      "G23_2",
+      "G24_2"
+    ],
+    "bridge": "OPERATIONAL_EXECUTOR_NOT_CANONICAL_AUTHORITY",
+    "llm": "ADVISORY_AND_PROPOSAL"
+  },
+  "priority_contract": {
+    "user_objective_over_model_preference": true,
+    "immutable_authority_preserved": true,
+    "higher_priority_safety_and_platform_controls_preserved": true,
+    "record_user_expectation_separately_from_llm_expectation": true,
+    "no_scope_expansion_without_new_authorization": true
+  },
+  "resource_defaults": {
+    "heartbeat_sec": 15,
+    "min_heartbeat_sec": 5,
+    "max_heartbeat_sec": 300,
+    "max_cpu_percent": 10,
+    "max_memory_mib": 128,
+    "max_log_bytes": 10485760,
+    "max_work_seconds": 1200,
+    "hard_deadline_sec": 3600,
+    "thermal_hold_celsius": 85,
+    "max_observation_threads": 1,
+    "forbid_recursive_project_crawls_by_default": true
+  },
+  "time_policy": {
+    "hot_reload": true,
+    "revisioned": true,
+    "atomic_write": true,
+    "updates_apply_at_safe_checkpoints": true,
+    "deadline_increase_requires_fresh_authorization": true,
+    "existing_g23_g24_never_extended_implicitly": true
+  },
+  "privilege_policy": {
+    "requested": "sudo bash persistent governed",
+    "reuse_existing_apc": true,
+    "apc_binary": "/usr/local/sbin/louksna-apc",
+    "local_root_lease_design": true,
+    "remote_arbitrary_root_shell_by_default": false,
+    "only_fresh_scope_specific_g23_g24_for_mutations": true,
+    "second_order_required_for_strong_certification": true,
+    "no_authorization_on_tool_block": true
+  },
+  "realtime": {
+    "state_snapshots": true,
+    "event_stream": true,
+    "screen_stream_on_explicit_opt_in": true,
+    "no_implicit_mic_camera_capture": true,
+    "heartbeat_is_not_guaranteed_direct_llm_stream": true,
+    "remote_telemetry_requires_transport": true
+  },
+  "github": {
+    "repository": "Plomillo/luna-linux-bridge",
+    "runner_labels": [
+      "self-hosted",
+      "Linux",
+      "x64",
+      "luna-aux"
+    ],
+    "default_write": false,
+    "artifact_evidence": true,
+    "oidc_planned": true,
+    "checks_planned": true,
+    "repository_dispatch_planned": true,
+    "no_long_lived_token_in_repo": true
+  },
+  "project_scopes": {
+    "priority_projects_root": "DISCOVER_ON_HOST_NO_GUESSED_PATH",
+    "web_navigation": "USER_SPECIFIED_HTTPS_URL_ONLY_WITH_SAFE_LOCAL_BROWSER",
+    "parts": [
+      "PART_5_LABORATORY",
+      "PART_6_GAMING",
+      "PART_7_STUDY_AND_DEVOTIONAL",
+      "PART_8_SYSTEM_HYGIENE_RECOVERY",
+      "PART_9_GLOBAL_INTEGRATION_CERTIFICATION_REBOOT"
+    ],
+    "current_part4_gate": "NOT_INHERITED_FROM_V8_OR_V9"
+  },
+  "llm_contract": {
+    "declared_model_required": true,
+    "declared_version_required": true,
+    "version_self_report_is_unverified": true,
+    "tool_inventory_required": true,
+    "distinguish_expected_and_observed": true,
+    "contradiction_review": true,
+    "pro_effort_equivalent_is_review_budget_not_chatgpt_pro_entitlement": true
+  },
+  "invariants": [
+    "NO_PREPARED_AS_EXECUTED",
+    "NO_SELF_CERTIFICATION",
+    "NO_OLD_CHECKPOINT_AS_LIVE_PROBE",
+    "NO_DISK_MUTATION_DURING_BRIDGE_BOOTSTRAP",
+    "NO_AUTONOMOUS_REBOOT",
+    "NO_AUTO_G23_G24_SUBSTITUTION",
+    "NO_LLM_TOOL_SECURITY_EVASION",
+    "NO_UNATTESTED_SUCCESS"
+  ],
+  "release": {
+    "phase": "SPEC_AND_READONLY_REFERENCE_CORE",
+    "g23": "NOT_EXECUTED",
+    "g24": "NOT_EXECUTED",
+    "g23_2": "NOT_EXECUTED",
+    "g24_2": "NOT_EXECUTED",
+    "host_install": "NOT_EXECUTED",
+    "certified": false
+  }
+}

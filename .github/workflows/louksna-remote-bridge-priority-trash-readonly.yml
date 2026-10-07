@@ -1,0 +1,91 @@
+name: "LOUKSNA Remote Bridge — priority archive trash read-only probe"
+on:
+  push:
+    branches:
+      - candidate/louksna-remote-bridge-v0-unreleased
+    paths:
+      - ".github/workflows/louksna-remote-bridge-priority-trash-readonly.yml"
+permissions:
+  contents: read
+concurrency:
+  group: lrb-priority-trash-readonly
+  cancel-in-progress: false
+jobs:
+  inspect:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Checkout bridge candidate read-only
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            bridge
+          sparse-checkout-cone-mode: true
+      - name: Inspect only matching Trash entries
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(hostname)" = "LOUKSNA"
+          OUT="$RUNNER_TEMP/lrb-priority-trash-${{ github.run_id }}"
+          mkdir -p "$OUT"
+          python3 - "$OUT/TRASH_PROBE.json" <<'PY'
+          import json,os,pathlib,re,sys
+          home=pathlib.Path.home()
+          roots=[
+            home/".local/share/Trash",
+            home/".Trash-"+str(os.getuid()),
+          ]
+          prefix="1. PROYECTOS PRIORITARIOS.7z."
+          rx=re.compile(r"^"+re.escape(prefix)+r"\d+$")
+          found=[]
+          for trash in roots:
+              files=trash/"files"; info=trash/"info"
+              if not files.is_dir():
+                  continue
+              count=0; total=0; sample=[]
+              try:
+                  with os.scandir(files) as it:
+                      for e in it:
+                          if not rx.match(e.name) or not e.is_file(follow_symlinks=False):
+                              continue
+                          st=e.stat(follow_symlinks=False)
+                          count+=1; total+=st.st_size
+                          if len(sample)<10: sample.append(e.name)
+              except OSError as ex:
+                  found.append({"trash_root":str(trash),"error":type(ex).__name__}); continue
+              info_count=0
+              if info.is_dir():
+                  try:
+                      with os.scandir(info) as it:
+                          for e in it:
+                              n=e.name[:-10] if e.name.endswith(".trashinfo") else None
+                              if n and rx.match(n) and e.is_file(follow_symlinks=False):
+                                  info_count+=1
+                  except OSError:
+                      pass
+              found.append({
+                  "trash_root":str(trash),
+                  "files_dir":str(files),
+                  "info_dir":str(info),
+                  "matching_files":count,
+                  "matching_bytes":total,
+                  "matching_gib":round(total/(1024**3),3),
+                  "matching_trashinfo":info_count,
+                  "sample":sample
+              })
+          out={"schema":"LOUKSNA_REMOTE_BRIDGE_TRASH_PROBE/1.0","host":"LOUKSNA","readonly":True,"prefix":prefix,"locations":found}
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(out,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
+          print(json.dumps(out,indent=2,ensure_ascii=False))
+          PY
+          sha256sum "$OUT/TRASH_PROBE.json" > "$OUT/EVIDENCE_SHA256.txt"
+      - name: Preserve read-only evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-priority-trash-readonly-evidence
+          path: ${{ runner.temp }}/lrb-priority-trash-${{ github.run_id }}/
+          if-no-files-found: warn
+          retention-days: 7
+          compression-level: 0
