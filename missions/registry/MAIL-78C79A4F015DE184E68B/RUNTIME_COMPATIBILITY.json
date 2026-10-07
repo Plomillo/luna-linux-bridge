@@ -1,0 +1,212 @@
+{
+  "adapter_provides_binding": false,
+  "adapter_rejections": [
+    {
+      "adapter_id": "SERVER_READY_CANDIDATE_V1",
+      "reasons": [
+        "EXECUTION_LOCATION_MISMATCH",
+        "MISSION_CLASS_MISMATCH",
+        "SOURCE_SHA256_MISMATCH"
+      ]
+    },
+    {
+      "adapter_id": "FINAL_SERVER_READY_CLOSURE_V1",
+      "reasons": [
+        "MISSION_CLASS_MISMATCH",
+        "SOURCE_SHA256_MISMATCH"
+      ]
+    },
+    {
+      "adapter_id": "SERVER_READY_TERMINAL_10M_V1",
+      "reasons": [
+        "MISSION_CLASS_MISMATCH",
+        "SOURCE_SHA256_MISMATCH"
+      ]
+    },
+    {
+      "adapter_id": "META_ECOSYSTEM_V1_ADMISSION",
+      "reasons": [
+        "MISSION_CLASS_MISMATCH",
+        "SOURCE_SHA256_MISMATCH"
+      ]
+    },
+    {
+      "adapter_id": "SYMPHYLAX_FINAL_GUARANTEED_60M_V1",
+      "reasons": [
+        "MISSION_CLASS_MISMATCH",
+        "SOURCE_SHA256_MISMATCH"
+      ]
+    },
+    {
+      "adapter_id": "SYMPHYLAX_FINAL_REMEDIATION_6M_V1",
+      "reasons": [
+        "MISSION_CLASS_MISMATCH",
+        "SOURCE_SHA256_MISMATCH"
+      ]
+    },
+    {
+      "adapter_id": "LUNA_R4_PART1_RESUME_APC48_V2_36519487206",
+      "reasons": [
+        "MISSION_CLASS_MISMATCH",
+        "SOURCE_SHA256_MISMATCH"
+      ]
+    },
+    {
+      "adapter_id": "LUNA_R4_PART4_PART9_PLAN_DEFINITIVO_24H_V1",
+      "reasons": [
+        "MISSION_CLASS_MISMATCH",
+        "SOURCE_SHA256_MISMATCH"
+      ]
+    },
+    {
+      "adapter_id": "DOCUMENT_FACTORY_CUSTOSZ_V7_CONTINUATION_V1",
+      "reasons": [
+        "MISSION_CLASS_MISMATCH",
+        "SOURCE_SHA256_MISMATCH"
+      ]
+    },
+    {
+      "adapter_id": "SUPER1200_REPOSITORY_IMPLEMENTATION_V1",
+      "reasons": [
+        "MISSION_CLASS_MISMATCH",
+        "SHA256_MISMATCH",
+        "SOURCE_SHA256_MISSING"
+      ]
+    }
+  ],
+  "adapter_selected": null,
+  "capability_inventory": {
+    "capabilities": [
+      "api.gateway",
+      "assurance.fabric",
+      "backpressure.control",
+      "benchmark.contamination",
+      "benchmark.ephemeral",
+      "benchmark.gap",
+      "cache.semantic",
+      "composition.engine",
+      "conformance.harness",
+      "content.identity",
+      "continuity.fabric",
+      "continuity.heartbeat_watchdog",
+      "continuity.oob",
+      "continuity.preinstall_contract",
+      "continuity.reboot_state",
+      "continuity.session_resume",
+      "desktop.internal",
+      "documentation.generated",
+      "duplication.anti",
+      "epistemic.failure_detection",
+      "errors.taxonomy",
+      "evidence.completeness",
+      "evidence.graph",
+      "evolution.admission",
+      "execution.resumable",
+      "gap.evolution",
+      "gap.proof",
+      "handoff.remote_source",
+      "handoff.transaction",
+      "ingestion.universal",
+      "interfaces.cross_family",
+      "invariants.engine",
+      "io.query_plan",
+      "io.resumable_reader",
+      "knowledge.high_throughput",
+      "knowledge.remote",
+      "languages.intelligence",
+      "lifecycle.manager",
+      "logic.arithmetic",
+      "logic.formal",
+      "maintainability.engine",
+      "memory.capability",
+      "memory.currentness",
+      "memory.decision",
+      "memory.evidence",
+      "memory.failure",
+      "memory.governed",
+      "memory.invalidation",
+      "memory.state",
+      "memory.versioned",
+      "normalization.structured",
+      "optimization.intelligence",
+      "overlap.semantic",
+      "placement.engine",
+      "process.sessions",
+      "resources.adaptive",
+      "resources.budget_policy",
+      "security.credentials",
+      "security.crypto",
+      "security.fabric",
+      "security.risk_classification",
+      "security.sandbox_contract",
+      "security.supply_chain",
+      "security.threat_currentness",
+      "security.trust_policy",
+      "source.resolve",
+      "streaming.range",
+      "systems.intelligence",
+      "technology.synthesis",
+      "terminal.native",
+      "validation.adversarial",
+      "volume.intelligence"
+    ],
+    "census_path": "/home/diegoignacionorambuenamiranda/actions-runner/_work/luna-linux-bridge/luna-linux-bridge/ecosystem/metacognitive-operational-v1/CUSTOSZ72_CENSUS.json",
+    "custosz_sha256": "dacf1f8c13b2fcbfc617cf0d4d780b30502c13395224691e6b0f05f53d9816a2",
+    "dedup_evidence_available": true,
+    "reason": null,
+    "source": "PINNED_CUSTOSZ72_CENSUS"
+  },
+  "executor_bound": false,
+  "identities": {
+    "AUTHORITY": "5270c3d643339c283edf13b414f335f23f921c4dac023b06d38de62927e29bf9",
+    "CUSTOSZ": "dacf1f8c13b2fcbfc617cf0d4d780b30502c13395224691e6b0f05f53d9816a2",
+    "METAOS": "5d8f1239e3a0b452be722078760b000afc22af0a64f93ffb0a1f74024f15aed0",
+    "RUNTIME": "a79e13869601d68fe801b85ad421719b79d4afa5520ae34b91b419bd8834ae67"
+  },
+  "mail_id": "MAIL-78C79A4F015DE184E68B",
+  "mission_class_resolution": {
+    "bound_mission_class": null,
+    "direct_mission_class": "SUPER1200_TERMINAL_CLOSURE_G23_G24_V1",
+    "matches": [],
+    "mission_class": "SUPER1200_TERMINAL_CLOSURE_G23_G24_V1",
+    "origin": "MISSION_DIRECTIVE",
+    "result": "PASS",
+    "root_blocker": null,
+    "source_sha256": "78c79a4f015de184e68bbd888e4674fbe876b69b4fe83e32e8d552c863ded5a8"
+  },
+  "protected_scopes": [
+    "WINDOWS",
+    "EFI",
+    "GPT",
+    "PARTITIONS",
+    "PROYECTOS",
+    "F3-DISK",
+    "CANONICAL_ARCHITECTURE",
+    "FROZEN_ARTIFACTS"
+  ],
+  "result": "HOLD",
+  "root_blocker": "NO_UNIQUE_PINNED_RUNTIME_ADAPTER",
+  "route_execution_location": "SELF_HOSTED_LUNA_AUX",
+  "runtime_selftest": {
+    "anatomy": [
+      "GovernanceKernel",
+      "MissionController",
+      "CognitivePlane",
+      "MetacognitivePlane",
+      "ExecutorRegistry",
+      "ProcessSupervisor",
+      "TimeBudgetController",
+      "CheckpointStore",
+      "EvidenceJournal",
+      "TelemetryFabric",
+      "SourceRegistry",
+      "ResumeManager",
+      "FailureController",
+      "ValidationPipeline"
+    ],
+    "journal": true,
+    "runtime_id": "CUSTOSZ_RUNTIME_V1",
+    "status": "PASS"
+  },
+  "schema": "CUSTOSZ_RUNTIME_COMPATIBILITY/1.0"
+}
