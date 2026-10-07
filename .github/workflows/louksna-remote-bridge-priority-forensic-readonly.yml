@@ -3,10 +3,12 @@ name: "LOUKSNA Remote Bridge — PROYECTOS PRIORITARIOS forensic readonly audit"
 on:
   push:
     branches:
-      - candidate/louksna-remote-bridge-v0-unreleased
+      - mission/priority-folder-forensic-audit
     paths:
       - ".github/workflows/louksna-remote-bridge-priority-forensic-readonly.yml"
   pull_request:
+    branches:
+      - main
     paths:
       - ".github/workflows/louksna-remote-bridge-priority-forensic-readonly.yml"
 
@@ -52,7 +54,8 @@ jobs:
           root=d.get("root")
           if not root:
               raise SystemExit("DISCOVERY_ROOT_MISSING")
-          pathlib.Path(sys.argv[2]).write_text(root+"\n",encoding="utf-8")
+          pathlib.Path(sys.argv[2]).write_text(root+"
+",encoding="utf-8")
           print(root)
           PY
 
@@ -87,19 +90,23 @@ jobs:
                           base["kind"]="symlink"
                           try: base["target"]=os.readlink(cur)
                           except OSError as e: base["target_error"]=f"{type(e).__name__}:{e}"
-                          fi.write(json.dumps(base,ensure_ascii=False,sort_keys=True)+"\n"); continue
+                          fi.write(json.dumps(base,ensure_ascii=False,sort_keys=True)+"
+"); continue
                       if stat.S_ISDIR(st.st_mode):
                           counts["directories"]+=1; base["kind"]="directory"
-                          fi.write(json.dumps(base,ensure_ascii=False,sort_keys=True)+"\n")
+                          fi.write(json.dumps(base,ensure_ascii=False,sort_keys=True)+"
+")
                           try: children=list(cur.iterdir())
                           except OSError as e:
-                              counts["errors"]+=1; fe.write(json.dumps({"path":rel,"operation":"listdir","error_type":type(e).__name__,"error":str(e)},ensure_ascii=False)+"\n"); continue
+                              counts["errors"]+=1; fe.write(json.dumps({"path":rel,"operation":"listdir","error_type":type(e).__name__,"error":str(e)},ensure_ascii=False)+"
+"); continue
                           for child in sorted(children,key=lambda p:p.name,reverse=True):
                               stack.append((child,depth+1))
                           continue
                       if stat.S_ISREG(st.st_mode):
                           counts["regular_files"]+=1; total_bytes+=st.st_size; base["kind"]="regular_file"
-                          fi.write(json.dumps(base,ensure_ascii=False,sort_keys=True)+"\n")
+                          fi.write(json.dumps(base,ensure_ascii=False,sort_keys=True)+"
+")
                           try:
                               h=hashlib.sha256(); rb=0
                               with cur.open("rb",buffering=0) as f:
@@ -108,20 +115,25 @@ jobs:
                                       if not chunk: break
                                       h.update(chunk); rb+=len(chunk)
                               hashed_files+=1; hashed_bytes+=rb
-                              fh.write(json.dumps({"path":rel,"sha256":h.hexdigest(),"size_bytes":rb,"inode":st.st_ino,"dev":st.st_dev},ensure_ascii=False,sort_keys=True)+"\n")
+                              fh.write(json.dumps({"path":rel,"sha256":h.hexdigest(),"size_bytes":rb,"inode":st.st_ino,"dev":st.st_dev},ensure_ascii=False,sort_keys=True)+"
+")
                           except OSError as e:
-                              counts["errors"]+=1; fe.write(json.dumps({"path":rel,"operation":"sha256","error_type":type(e).__name__,"error":str(e),"size_bytes":st.st_size},ensure_ascii=False)+"\n")
+                              counts["errors"]+=1; fe.write(json.dumps({"path":rel,"operation":"sha256","error_type":type(e).__name__,"error":str(e),"size_bytes":st.st_size},ensure_ascii=False)+"
+")
                           continue
                       counts["other"]+=1; base["kind"]="other"
-                      fi.write(json.dumps(base,ensure_ascii=False,sort_keys=True)+"\n")
+                      fi.write(json.dumps(base,ensure_ascii=False,sort_keys=True)+"
+")
                   except OSError as e:
                       counts["errors"]+=1
                       try: rel=cur.relative_to(root).as_posix()
                       except Exception: rel=str(cur)
-                      fe.write(json.dumps({"path":rel,"operation":"lstat","error_type":type(e).__name__,"error":str(e)},ensure_ascii=False)+"\n")
+                      fe.write(json.dumps({"path":rel,"operation":"lstat","error_type":type(e).__name__,"error":str(e)},ensure_ascii=False)+"
+")
           finished=time.time()
           summary={"schema":"LOUKSNA_REMOTE_BRIDGE_FORENSIC_PRIORITY_AUDIT/1.0","status":"PASS" if counts["errors"]==0 else "PASS_WITH_READ_ERRORS","readonly":True,"host":os.uname().nodename,"uid":os.getuid(),"root":str(root),"started_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime(started)),"finished_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime(finished)),"duration_seconds":round(finished-started,3),"counts":counts,"total_regular_file_bytes":total_bytes,"hashed_files":hashed_files,"hashed_bytes":hashed_bytes,"max_depth":max_depth,"symlinks_followed":False,"mutations_performed":False,"deletions_performed":False,"writes_to_project_tree":False,"g23":"NOT_EXECUTED","g24":"NOT_EXECUTED"}
-          (out/"AUDIT_SUMMARY.json").write_text(json.dumps(summary,indent=2,ensure_ascii=False,sort_keys=True)+"\n",encoding="utf-8")
+          (out/"AUDIT_SUMMARY.json").write_text(json.dumps(summary,indent=2,ensure_ascii=False,sort_keys=True)+"
+",encoding="utf-8")
           print(json.dumps(summary,indent=2,ensure_ascii=False,sort_keys=True))
           PY
 
@@ -141,7 +153,8 @@ jobs:
                       for c in iter(lambda:f.read(1024*1024),b""): h.update(c)
                   rows.append({"path":p.name,"size_bytes":p.stat().st_size,"sha256":h.hexdigest()})
           m={"schema":"LOUKSNA_REMOTE_BRIDGE_EVIDENCE_MANIFEST/1.0","run_id":os.environ["GITHUB_RUN_ID"],"commit":os.environ["GITHUB_SHA"],"workflow":os.environ["GITHUB_WORKFLOW"],"generated_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),"files":rows}
-          (out/"EVIDENCE_MANIFEST.json").write_text(json.dumps(m,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          (out/"EVIDENCE_MANIFEST.json").write_text(json.dumps(m,indent=2,sort_keys=True)+"
+",encoding="utf-8")
           PY
 
       - name: Upload forensic evidence
