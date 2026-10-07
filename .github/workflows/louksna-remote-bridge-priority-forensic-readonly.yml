@@ -66,54 +66,70 @@ jobs:
           print(root)
           PY
 
-      - name: Full recursive read-only forensic inventory and SHA-256 audit
+      - name: Select requested priority folders 1, 2, 3, 6 and 7
         shell: bash
         run: |
           set -Eeuo pipefail
           OUT="$GITHUB_WORKSPACE/.lrb-audit-$GITHUB_RUN_ID"
           ROOT="$(cat "$OUT/ROOT.txt")"
           export ROOT OUT
-          nice -n 15 timeout 25m python3 -B - <<'PY'
-          import hashlib, json, os, pathlib, stat, time
+          python3 - <<'PY'
+          import json, os, pathlib, re
           root=pathlib.Path(os.environ["ROOT"]).resolve()
           out=pathlib.Path(os.environ["OUT"])
-          if not root.is_dir() or root.is_symlink():
-              raise SystemExit("ROOT_NOT_DIRECTORY_OR_SYMLINK")
+          selected=[]
+          for p in sorted(root.iterdir(), key=lambda x:x.name):
+              if p.is_dir() and not p.is_symlink() and re.match(r"^[12367]\\.", p.name):
+                  selected.append({"number":p.name.split(".",1)[0],"name":p.name,"path":str(p),"relative":p.name})
+          expected={"1","2","3","6","7"}
+          got={x["number"] for x in selected}
+          missing=sorted(expected-got)
+          if missing:
+              raise SystemExit("REQUESTED_PRIORITY_FOLDERS_MISSING:"+",".join(missing))
+          selected=[x for x in selected if x["number"] in expected]
+          (out/"TARGETS.json").write_text(json.dumps({"root":str(root),"requested_numbers":["1","2","3","6","7"],"targets":selected},indent=2,ensure_ascii=False,sort_keys=True)+"\\n",encoding="utf-8")
+          print(json.dumps({"root":str(root),"targets":selected},ensure_ascii=False,indent=2))
+          PY
+
+      - name: Full recursive read-only forensic inventory and SHA-256 audit of selected folders
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$GITHUB_WORKSPACE/.lrb-audit-$GITHUB_RUN_ID"
+          export OUT
+          nice -n 15 timeout 25m python3 -B - <<'PY'
+          import hashlib, json, os, pathlib, stat, time
+          out=pathlib.Path(os.environ["OUT"])
+          targets=json.loads((out/"TARGETS.json").read_text(encoding="utf-8"))
           started=time.time()
           counts={"directories":0,"regular_files":0,"symlinks":0,"other":0,"errors":0}
           total_bytes=hashed_files=hashed_bytes=max_depth=0
           inv=out/"INVENTORY.jsonl"; errs=out/"ERRORS.jsonl"; hashes=out/"HASHES.jsonl"
           with inv.open("w",encoding="utf-8") as fi, errs.open("w",encoding="utf-8") as fe, hashes.open("w",encoding="utf-8") as fh:
-              stack=[(root,0)]
+              stack=[(pathlib.Path(t["path"]),0,t["number"],t["name"]) for t in reversed(targets["targets"])]
               while stack:
-                  cur,depth=stack.pop()
+                  cur,depth,num,tname=stack.pop()
                   max_depth=max(max_depth,depth)
                   try:
                       st=cur.lstat()
-                      rel="." if cur==root else cur.relative_to(root).as_posix()
-                      base={"path":rel,"depth":depth,"mode":stat.filemode(st.st_mode),"uid":st.st_uid,"gid":st.st_gid,"size_bytes":st.st_size,"mtime_ns":st.st_mtime_ns,"dev":st.st_dev,"inode":st.st_ino}
+                      rel=cur.relative_to(pathlib.Path(targets["root"])).as_posix()
+                      base={"target_number":num,"target_name":tname,"path":rel,"depth":depth,"mode":stat.filemode(st.st_mode),"uid":st.st_uid,"gid":st.st_gid,"size_bytes":st.st_size,"mtime_ns":st.st_mtime_ns,"dev":st.st_dev,"inode":st.st_ino}
                       if stat.S_ISLNK(st.st_mode):
-                          counts["symlinks"]+=1
-                          base["kind"]="symlink"
+                          counts["symlinks"]+=1; base["kind"]="symlink"
                           try: base["target"]=os.readlink(cur)
                           except OSError as e: base["target_error"]=f"{type(e).__name__}:{e}"
-                          fi.write(json.dumps(base,ensure_ascii=False,sort_keys=True)+"
-"); continue
+                          fi.write(json.dumps(base,ensure_ascii=False,sort_keys=True)+"\\n"); continue
                       if stat.S_ISDIR(st.st_mode):
                           counts["directories"]+=1; base["kind"]="directory"
-                          fi.write(json.dumps(base,ensure_ascii=False,sort_keys=True)+"
-")
+                          fi.write(json.dumps(base,ensure_ascii=False,sort_keys=True)+"\\n")
                           try: children=list(cur.iterdir())
                           except OSError as e:
-                              counts["errors"]+=1; fe.write(json.dumps({"path":rel,"operation":"listdir","error_type":type(e).__name__,"error":str(e)},ensure_ascii=False)+"
-"); continue
-                          for child in sorted(children,key=lambda p:p.name,reverse=True):
-                              stack.append((child,depth+1))
+                              counts["errors"]+=1; fe.write(json.dumps({**base,"operation":"listdir","error_type":type(e).__name__,"error":str(e)},ensure_ascii=False)+"\\n"); continue
+                          for child in sorted(children,key=lambda p:p.name,reverse=True): stack.append((child,depth+1,num,tname))
                           continue
                       if stat.S_ISREG(st.st_mode):
                           counts["regular_files"]+=1; total_bytes+=st.st_size; base["kind"]="regular_file"
-                          fi.write(json.dumps(base,ensure_ascii=False,sort_keys=True)+"
-")
+                          fi.write(json.dumps(base,ensure_ascii=False,sort_keys=True)+"\\n")
                           try:
                               h=hashlib.sha256(); rb=0
                               with cur.open("rb",buffering=0) as f:
@@ -122,25 +138,17 @@ jobs:
                                       if not chunk: break
                                       h.update(chunk); rb+=len(chunk)
                               hashed_files+=1; hashed_bytes+=rb
-                              fh.write(json.dumps({"path":rel,"sha256":h.hexdigest(),"size_bytes":rb,"inode":st.st_ino,"dev":st.st_dev},ensure_ascii=False,sort_keys=True)+"
-")
+                              fh.write(json.dumps({**base,"sha256":h.hexdigest(),"hashed_size_bytes":rb},ensure_ascii=False,sort_keys=True)+"\\n")
                           except OSError as e:
-                              counts["errors"]+=1; fe.write(json.dumps({"path":rel,"operation":"sha256","error_type":type(e).__name__,"error":str(e),"size_bytes":st.st_size},ensure_ascii=False)+"
-")
+                              counts["errors"]+=1; fe.write(json.dumps({**base,"operation":"sha256","error_type":type(e).__name__,"error":str(e)},ensure_ascii=False)+"\\n")
                           continue
-                      counts["other"]+=1; base["kind"]="other"
-                      fi.write(json.dumps(base,ensure_ascii=False,sort_keys=True)+"
-")
+                      counts["other"]+=1; base["kind"]="other"; fi.write(json.dumps(base,ensure_ascii=False,sort_keys=True)+"\\n")
                   except OSError as e:
                       counts["errors"]+=1
-                      try: rel=cur.relative_to(root).as_posix()
-                      except Exception: rel=str(cur)
-                      fe.write(json.dumps({"path":rel,"operation":"lstat","error_type":type(e).__name__,"error":str(e)},ensure_ascii=False)+"
-")
+                      fe.write(json.dumps({"path":str(cur),"operation":"lstat","error_type":type(e).__name__,"error":str(e)},ensure_ascii=False)+"\\n")
           finished=time.time()
-          summary={"schema":"LOUKSNA_REMOTE_BRIDGE_FORENSIC_PRIORITY_AUDIT/1.0","status":"PASS" if counts["errors"]==0 else "PASS_WITH_READ_ERRORS","readonly":True,"host":os.uname().nodename,"uid":os.getuid(),"root":str(root),"started_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime(started)),"finished_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime(finished)),"duration_seconds":round(finished-started,3),"counts":counts,"total_regular_file_bytes":total_bytes,"hashed_files":hashed_files,"hashed_bytes":hashed_bytes,"max_depth":max_depth,"symlinks_followed":False,"mutations_performed":False,"deletions_performed":False,"writes_to_project_tree":False,"g23":"NOT_EXECUTED","g24":"NOT_EXECUTED"}
-          (out/"AUDIT_SUMMARY.json").write_text(json.dumps(summary,indent=2,ensure_ascii=False,sort_keys=True)+"
-",encoding="utf-8")
+          summary={"schema":"LOUKSNA_REMOTE_BRIDGE_FORENSIC_PRIORITY_AUDIT/1.1","status":"PASS" if counts["errors"]==0 else "PASS_WITH_READ_ERRORS","readonly":True,"host":os.uname().nodename,"uid":os.getuid(),"root":targets["root"],"targets":targets["targets"],"started_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime(started)),"finished_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime(finished)),"duration_seconds":round(finished-started,3),"counts":counts,"total_regular_file_bytes":total_bytes,"hashed_files":hashed_files,"hashed_bytes":hashed_bytes,"max_depth":max_depth,"symlinks_followed":False,"mutations_performed":False,"deletions_performed":False,"writes_to_project_tree":False,"g23":"NOT_EXECUTED","g24":"NOT_EXECUTED"}
+          (out/"AUDIT_SUMMARY.json").write_text(json.dumps(summary,indent=2,ensure_ascii=False,sort_keys=True)+"\\n",encoding="utf-8")
           print(json.dumps(summary,indent=2,ensure_ascii=False,sort_keys=True))
           PY
 
