@@ -54,6 +54,10 @@ required_workflow=[
     "GOVERNED_METAOS_INVENTORY_CERT.json",
     "DROPBOX_PUBLIC_RENDERED_FALLBACK=ENABLED",
     "GOVERNED_METAOS_INVENTORY_CERTIFICATION=PASS",
+    "dropbox-metaos-public-inventory-probe-37585254356",
+    "FROZEN_METAOS_NETWORK_INVENTORY",
+    "11466490492",
+    "sha256:ed4621c1418b64a329df6f1aedd3ef26df4c9646de01006abaae4c425c6430b4",
     "FROZEN_METAOS_37_LINK_INVENTORY=PASS",
     "dropbox-metaos-reconciled-inventory-37590018410",
     "95bc707c8fbb8888b3f6e2e0feed2526e164bf2b55a5b51553c1ba681a8e8765",
@@ -116,6 +120,12 @@ required_script=[
     "DROPBOX_PUBLIC_NETWORK_INVENTORY_COUNT_MISMATCH",
     "page.expect_response",
     "EXPECT_RESPONSE_TRANSACTION",
+    "inventory_children_frozen_network",
+    "METAOS_SOURCE_IDENTITY",
+    "2bef57a917f57d4bff748154ef4a80858581e67eb40815dcfa0e8c5f464ef5de",
+    "c0793fda60a0739bda5bf228cbc0f4eb3223e58fc6f4953d26e593155bf34c91",
+    "METAOS_FROZEN_EXPECTED_ENTRIES = 37",
+    "DROPBOX_FROZEN_NETWORK_INVENTORY",
     "DROPBOX_PUBLIC_NETWORK_PAGINATION_REQUIRED",
 ]
 for needle in required_script:
