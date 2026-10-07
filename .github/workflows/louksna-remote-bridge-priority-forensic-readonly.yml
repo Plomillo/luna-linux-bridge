@@ -6,6 +6,9 @@ on:
       - candidate/louksna-remote-bridge-v0-unreleased
     paths:
       - ".github/workflows/louksna-remote-bridge-priority-forensic-readonly.yml"
+  pull_request:
+    paths:
+      - ".github/workflows/louksna-remote-bridge-priority-forensic-readonly.yml"
 
 permissions:
   contents: read
