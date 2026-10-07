@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import json, os, sys
+import json, os, sys, hashlib
 from pathlib import Path
 from datetime import datetime, timezone
 
@@ -53,6 +53,28 @@ def main():
 
     worker.PINS = {k:(v[0].replace(chr(92),"/") if v[0] else None,v[1],v[2],v[3]) for k,v in worker.PINS.items()}
     worker.PROFILES = {k:([x.replace(chr(92),"/") for x in v[0]],[x.replace(chr(92),"/") for x in v[1]]) for k,v in worker.PROFILES.items()}
+    authority = MISSION_ROOT / "Louksna.md"
+    def _sources_adapter(large=False):
+        observed = hashlib.sha256(authority.read_bytes()).hexdigest()
+        st = authority.stat()
+        expected_rel, expected_bytes, expected_sha, expected_role = worker.PINS["LOUKSNA"]
+        integrity = "PASS" if observed == expected_sha and st.st_size == expected_bytes else "DRIFT"
+        return {
+            "observed_at":"MAILBOX_VERIFIED",
+            "sources":{"LOUKSNA":{
+                "relative":expected_rel,
+                "bytes":expected_bytes,
+                "sha256":expected_sha,
+                "role":expected_role,
+                "path":str(authority),
+                "exists":True,
+                "observed_bytes":st.st_size,
+                "observed_sha256":observed,
+                "integrity":integrity,
+                "binding":"MAILBOX_VERIFIED_REPOSITORY_AUTHORITY"
+            }}
+        }
+    worker.sources = _sources_adapter
 
     goal = (
         "EJECUTAR la misión byte-exact adjunta para recuperar y mantener viva la transferencia Dropbox->GitHub "
