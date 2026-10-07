@@ -1,0 +1,166 @@
+name: "Dropbox META OS public inventory probe"
+
+on:
+  push:
+    branches:
+      - staging/dropbox-github-cloud-partitioned-20261005
+    paths:
+      - .github/workflows/dropbox-metaos-public-inventory-probe.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: dropbox-metaos-public-inventory-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Install pinned browser
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -m pip install --disable-pip-version-check --no-input "playwright==1.55.0"
+          python3 -m playwright install --with-deps chromium
+
+      - name: Probe public META OS inventory surfaces
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/metaos-probe"
+          python3 - "$RUNNER_TEMP/metaos-probe" <<'PY'
+          import asyncio, hashlib, json, pathlib, re, sys, urllib.parse
+          from playwright.async_api import async_playwright
+
+          OUT=pathlib.Path(sys.argv[1])
+          URL="https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/AFlrQdNPUUfhI5kxk-DHWPg/8.%20META%20OS?rlkey=p712fwlkbwn9g0dtybu2sf159&dl=0"
+
+          def sanitize_url(u):
+              p=urllib.parse.urlsplit(u)
+              q=[k for k,_ in urllib.parse.parse_qsl(p.query,keep_blank_values=True)]
+              return {"host":p.hostname,"path":p.path,"query_keys":sorted(set(q))}
+
+          def scrub_text(t):
+              t=re.sub(r'(?i)(access_token|refresh_token|authorization|bearer)[^\s\"\']*',r'\1=<redacted>',t)
+              return t
+
+          async def main():
+              async with async_playwright() as p:
+                  browser=await p.chromium.launch(headless=True)
+                  context=await browser.new_context(locale="en-US")
+                  page=await context.new_page()
+                  network=[]
+                  json_candidates=[]
+
+                  async def capture(resp):
+                      try:
+                          ct=(await resp.all_headers()).get("content-type","").lower()
+                          u=resp.url
+                          if not ("dropbox" in (urllib.parse.urlsplit(u).hostname or "")):
+                              return
+                          rec={"status":resp.status,"url":sanitize_url(u),"content_type":ct}
+                          network.append(rec)
+                          if "json" in ct or any(tok in u.lower() for tok in ("sharing","list","folder","browse","metadata","content")):
+                              try:
+                                  raw=await resp.body()
+                                  if len(raw)<=4_000_000:
+                                      txt=raw.decode("utf-8","replace")
+                                      rec2={"status":resp.status,"url":sanitize_url(u),"content_type":ct,
+                                            "bytes":len(raw),"sha256":hashlib.sha256(raw).hexdigest(),
+                                            "body":scrub_text(txt[:1_000_000])}
+                                      json_candidates.append(rec2)
+                              except Exception:
+                                  pass
+                      except Exception:
+                          pass
+
+                  page.on("response",capture)
+                  await page.goto(URL,wait_until="domcontentloaded",timeout=120000)
+                  await page.wait_for_timeout(15000)
+
+                  for txt in ("Accept","Aceptar","Accept all","Aceptar todas","Reject all","Rechazar todas","Not now","Ahora no"):
+                      try:
+                          loc=page.get_by_role("button",name=re.compile("^"+re.escape(txt)+"$",re.I))
+                          if await loc.count() and await loc.first.is_visible():
+                              await loc.first.click(timeout=1000)
+                      except Exception:
+                          pass
+                  await page.wait_for_timeout(5000)
+
+                  html=await page.content()
+                  body=(await page.locator("body").inner_text(timeout=5000))[:250000]
+                  rows=[]
+                  for selector in ('[role="row"]','[role="gridcell"]','[data-testid]','button','a'):
+                      try:
+                          loc=page.locator(selector)
+                          n=min(await loc.count(),1500)
+                          for i in range(n):
+                              el=loc.nth(i)
+                              try:
+                                  txt=(await el.inner_text(timeout=200)).strip()
+                              except Exception:
+                                  txt=""
+                              try:
+                                  testid=await el.get_attribute("data-testid")
+                              except Exception:
+                                  testid=None
+                              try:
+                                  role=await el.get_attribute("role")
+                              except Exception:
+                                  role=None
+                              try:
+                                  href=await el.get_attribute("href")
+                              except Exception:
+                                  href=None
+                              if txt or testid or href:
+                                  rows.append({"selector":selector,"text":txt[:500],"data_testid":testid,"role":role,
+                                               "href":sanitize_url(urllib.parse.urljoin(page.url,href)) if href else None})
+                      except Exception:
+                          pass
+
+                  (OUT/"page.html").write_text(scrub_text(html),encoding="utf-8")
+                  (OUT/"body.txt").write_text(scrub_text(body),encoding="utf-8")
+                  (OUT/"network.json").write_text(json.dumps(network,indent=2,sort_keys=True),encoding="utf-8")
+                  (OUT/"json_candidates.json").write_text(json.dumps(json_candidates,indent=2,sort_keys=True),encoding="utf-8")
+                  (OUT/"elements.json").write_text(json.dumps(rows,indent=2,ensure_ascii=False,sort_keys=True),encoding="utf-8")
+
+                  interesting=[r for r in rows if re.search(r'(?i)meta|\.wasm|\.json|\.apk|\.zip|\.7z|folder|file|download',r.get("text") or "") or r.get("data_testid")]
+                  summary={
+                      "schema":"PUAC2_METAOS_PUBLIC_INVENTORY_PROBE/1.0",
+                      "status":"PASS",
+                      "page_title":await page.title(),
+                      "page_url":sanitize_url(page.url),
+                      "body_chars":len(body),
+                      "html_bytes":len(html.encode("utf-8")),
+                      "network_response_count":len(network),
+                      "candidate_response_count":len(json_candidates),
+                      "element_count":len(rows),
+                      "interesting_element_count":len(interesting),
+                      "body_excerpt":body[:10000],
+                      "interesting_elements":interesting[:200],
+                      "candidate_urls":[x["url"] for x in json_candidates[:200]],
+                  }
+                  (OUT/"summary.json").write_text(json.dumps(summary,indent=2,ensure_ascii=False,sort_keys=True),encoding="utf-8")
+                  print(json.dumps(summary,ensure_ascii=False,sort_keys=True))
+                  await browser.close()
+          asyncio.run(main())
+          PY
+
+      - name: Preserve public inventory probe
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dropbox-metaos-public-inventory-probe-${{ github.run_id }}
+          path: ${{ runner.temp }}/metaos-probe
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 6
