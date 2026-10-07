@@ -92,7 +92,16 @@ jobs:
           mkdir -p "$S/state" "$S/socket" "$S/evidence"
           nice -n 12 python3 -B bridge/live_link.py --state-dir "$S/state" --socket-dir "$S/socket" serve > "$S/BRIDGE.stdout" 2> "$S/BRIDGE.stderr" &
           echo $! > "$S/BRIDGE.pid"
-          for n in $(seq 1 50); do test -S "$S/socket/BRIDGE.sock" && break; kill -0 "$(cat "$S/BRIDGE.pid")"; sleep 0.1; done
+          for n in $(seq 1 50); do
+            if test -S "$S/socket/BRIDGE.sock"; then break; fi
+            if ! kill -0 "$(cat "$S/BRIDGE.pid")" 2>/dev/null; then
+              echo "SUPER1200_TELEMETRY LRB_START=FAIL"
+              cat "$S/BRIDGE.stdout" || true
+              cat "$S/BRIDGE.stderr" || true
+              exit 1
+            fi
+            sleep 0.1
+          done
           test -S "$S/socket/BRIDGE.sock"
           python3 -B bridge/live_link.py --state-dir "$S/state" --socket-dir "$S/socket" request --op status | tee "$S/evidence/LRB_STATUS_BEFORE.json"
           printf '%s\n' "$S/state" > "$RUNNER_TEMP/lrb_state_path"
