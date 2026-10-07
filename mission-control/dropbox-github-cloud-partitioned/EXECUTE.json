@@ -4,8 +4,8 @@
   "authority": "Louksna.md",
   "scope": "DROPBOX_CONNECTED_TO_GITHUB_HOSTED_PARTITIONED_TRANSFER",
   "contract": {
-    "head_sha": "4d8f874ff68bdddf0c82655679d5f6a0f1702f1c",
-    "run_id": 37589384552,
+    "head_sha": "2ceb009da42fa149bfd80f7955ec5dc89f7a2ebd",
+    "run_id": 37593865815,
     "status": "PASS"
   },
   "source_binding": "mission-control/dropbox-github-cloud-direct/BINDING.json",
@@ -22,16 +22,15 @@
   "desktop_commander": false,
   "stop_assistant_intervention_on_material_byte_flow": true,
   "retry": {
-    "ordinal": 15,
-    "reason": "TRANSACTIONAL_PUBLIC_NETWORK_INVENTORY_PLUS_BOUNDED_STORAGE_RESUME",
-    "prior_failed_run_id": 37588937342,
+    "ordinal": 16,
+    "reason": "FROZEN_NETWORK_21_EXACT_THEN_RECONCILED_37_WITH_OPAQUE_UNKNOWN",
+    "prior_failed_run_id": 37590763783,
+    "prior_checkpoint_hash": "932f5e227a9fbaac0e2617e668f448c460b76e62c9dbfd935834010b7711058e",
     "resume_from_verified_checkpoint": true,
-    "target_identity_sha256": "2bef57a917f57d4bff748154ef4a80858581e67eb40815dcfa0e8c5f464ef5de",
-    "expected_metaos_entries": 37,
-    "expected_has_more_entries": false,
-    "public_inventory_capture": "EXPECT_RESPONSE_TRANSACTION",
-    "bounded_storage": true,
-    "automatic_batch_continuation": true
+    "exact_network_classifications": 21,
+    "reconciled_entries": 37,
+    "opaque_unknown_entries": 16,
+    "false_folder_classification_forbidden": true
   },
   "resilience": {
     "puac2_governed": true,
@@ -65,7 +64,15 @@
     "no_late_playwright_response_body_read": true,
     "public_network_inventory_expected_metaos_entries": 37,
     "public_network_inventory_count_must_match": true,
-    "automatic_batch_continuation": true
+    "automatic_batch_continuation": true,
+    "inventory_fallback_chain": [
+      "DROPBOX_API_IF_AUTHORIZED",
+      "LIVE_PUBLIC_NETWORK",
+      "FROZEN_PUBLIC_NETWORK_21_EXACT",
+      "FROZEN_METAOS_RECONCILED_37"
+    ],
+    "unknown_objects_action": "OPAQUE_DOWNLOAD_FIRST",
+    "no_false_folder_classification": true
   },
   "resume": {
     "bootstrap_verified_prior_partitions": 5,
