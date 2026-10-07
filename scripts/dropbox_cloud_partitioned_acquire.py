@@ -543,51 +543,62 @@ def inventory_children(page, url: str) -> list[dict]:
     network_meta: dict = {}
     network_response_hashes: list[str] = []
     network_complete = False
+    network_response_queue: list = []
 
     def on_response(resp):
-        nonlocal network_meta, network_complete
+        # Do not call resp.body() from inside the synchronous Playwright event
+        # callback. Store the response and consume it from the main control flow.
         try:
             p = urllib.parse.urlsplit(resp.url)
-            if p.hostname != "www.dropbox.com" or p.path != "/list_shared_link_folder_entries":
-                return
-            if int(resp.status) != 200:
+            if p.hostname == "www.dropbox.com" and p.path == "/list_shared_link_folder_entries":
+                network_response_queue.append(resp)
+        except Exception:
+            pass
+
+    def drain_network_responses() -> None:
+        nonlocal network_meta, network_complete
+        while network_response_queue:
+            resp = network_response_queue.pop(0)
+            try:
+                status = int(resp.status)
+                if status != 200:
+                    record_event(
+                        "DROPBOX_PUBLIC_NETWORK_INVENTORY_HTTP",
+                        parent=sanitize_url(url),
+                        status=status,
+                    )
+                    continue
+                body = resp.body()
+                if not body:
+                    continue
+                body_hash = hashlib.sha256(body).hexdigest()
+                data = json.loads(body.decode("utf-8", errors="strict"))
+                rows, meta = rows_from_public_network_inventory(data, url)
+                for row in rows:
+                    network_seen[row["key"]] = row
+                network_meta = meta
+                network_response_hashes.append(body_hash)
+                total = int(meta.get("total_num_entries") or 0)
+                if not meta.get("has_more_entries") and total > 0 and len(network_seen) >= total:
+                    network_complete = True
                 record_event(
-                    "DROPBOX_PUBLIC_NETWORK_INVENTORY_HTTP",
+                    "DROPBOX_PUBLIC_NETWORK_INVENTORY_RESPONSE",
+                    provider="DROPBOX_PUBLIC_LIST_SHARED_LINK_FOLDER_ENTRIES",
                     parent=sanitize_url(url),
-                    status=int(resp.status),
+                    status=status,
+                    response_sha256=body_hash,
+                    entries_in_response=len(rows),
+                    accumulated_count=len(network_seen),
+                    total_num_entries=total,
+                    has_more_entries=bool(meta.get("has_more_entries")),
+                    response_body_persisted=False,
                 )
-                return
-            body = resp.body()
-            if not body:
-                return
-            body_hash = hashlib.sha256(body).hexdigest()
-            data = json.loads(body.decode("utf-8", errors="strict"))
-            rows, meta = rows_from_public_network_inventory(data, url)
-            for row in rows:
-                network_seen[row["key"]] = row
-            network_meta = meta
-            network_response_hashes.append(body_hash)
-            total = int(meta.get("total_num_entries") or 0)
-            if not meta.get("has_more_entries") and total > 0 and len(network_seen) >= total:
-                network_complete = True
-            record_event(
-                "DROPBOX_PUBLIC_NETWORK_INVENTORY_RESPONSE",
-                provider="DROPBOX_PUBLIC_LIST_SHARED_LINK_FOLDER_ENTRIES",
-                parent=sanitize_url(url),
-                status=200,
-                response_sha256=body_hash,
-                entries_in_response=len(rows),
-                accumulated_count=len(network_seen),
-                total_num_entries=total,
-                has_more_entries=bool(meta.get("has_more_entries")),
-                response_body_persisted=False,
-            )
-        except Exception as exc:
-            record_event(
-                "DROPBOX_PUBLIC_NETWORK_INVENTORY_PARSE_FAILURE",
-                parent=sanitize_url(url),
-                error=f"{type(exc).__name__}:{exc}",
-            )
+            except Exception as exc:
+                record_event(
+                    "DROPBOX_PUBLIC_NETWORK_INVENTORY_PARSE_FAILURE",
+                    parent=sanitize_url(url),
+                    error=f"{type(exc).__name__}:{exc}",
+                )
 
     page.on("response", on_response)
     started = time.time()
@@ -600,6 +611,7 @@ def inventory_children(page, url: str) -> list[dict]:
         hydration_deadline = started + 75
 
         while time.time() < hydration_deadline:
+            drain_network_responses()
             # The JSON response is authoritative for the public page load when
             # it declares the complete entry count.
             if network_complete:
@@ -657,6 +669,9 @@ def inventory_children(page, url: str) -> list[dict]:
             if len(seen) > 0 and stable >= 12 and not network_seen:
                 break
     finally:
+        # One final drain captures a response that arrived during the last
+        # Playwright wait/scroll tick.
+        drain_network_responses()
         try:
             page.remove_listener("response", on_response)
         except Exception:
