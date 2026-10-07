@@ -10,7 +10,7 @@ on:
       - "scripts/missions/louksna_zd_v04_master_live.py"
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: louksna-zd-v04-master-20261007
@@ -25,7 +25,7 @@ jobs:
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
-          persist-credentials: false
+          persist-credentials: true
           path: mission-root
 
       - name: Checkout exact CUSTOSZ V7 mailbox
@@ -61,22 +61,44 @@ jobs:
           V03_ROOT: ${{ github.workspace }}/v03
           BRIDGE_ROOT: ${{ github.workspace }}/bridge-source
           OUT_DIR: ${{ runner.temp }}/louksna-v04-master
-          CUSTOSZ_WORKSPACE_OVERRIDE: ${{ runner.home }}/SYMPHYLAX_LAB/CUSTOSZ_V7_R1_G23_G24_20260927T021532Z/POSIX_COMPATIBILITY_VIEW
         run: |
           set -Eeuo pipefail
+          export CUSTOSZ_WORKSPACE_OVERRIDE="$HOME/SYMPHYLAX_LAB/CUSTOSZ_V7_R1_G23_G24_20260927T021532Z/POSIX_COMPATIBILITY_VIEW"
           mkdir -p "$OUT_DIR"
           echo "TELEMETRY MISSION=LOUKSNA_ZD_V04_MASTER"
           echo "TELEMETRY EXECUTOR=CUSTOSZ_V7"
           echo "TELEMETRY RUNTIME=CUSTOSZ_RUNTIME_V1"
           echo "TELEMETRY BLIND_RETRY=false"
           echo "TELEMETRY CANONICAL_MUTATION=false"
+          echo "TELEMETRY CUSTOSZ_WORKSPACE_BOUND=true"
           nice -n 10 python3 -B -I mission-root/scripts/missions/louksna_zd_v04_master_live.py
 
-      - name: Preserve live mission evidence
+      - name: Preserve mission evidence in isolated work branch
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: louksna-zd-v04-master-live-evidence
-          path: ${{ runner.temp }}/louksna-v04-master
-          if-no-files-found: warn
-          retention-days: 90
+        shell: bash
+        env:
+          OUT_DIR: ${{ runner.temp }}/louksna-v04-master
+        run: |
+          set -Eeuo pipefail
+          cd mission-root
+          DEST="evidence/louksna-zd-v04-master/${GITHUB_RUN_ID}"
+          mkdir -p "$DEST"
+          if [ -d "$OUT_DIR" ]; then
+            cp -a "$OUT_DIR"/. "$DEST"/
+          fi
+          {
+            echo "RUN_ID=${GITHUB_RUN_ID}"
+            echo "RUN_ATTEMPT=${GITHUB_RUN_ATTEMPT}"
+            echo "SOURCE_SHA=${GITHUB_SHA}"
+            echo "BRANCH=work/louksna-zd-v04-master-20261007"
+          } > "$DEST/RUN_IDENTITY.txt"
+          git add "$DEST"
+          if git diff --cached --quiet; then
+            echo "TELEMETRY EVIDENCE_BRANCH_DELTA=0"
+            exit 0
+          fi
+          git config user.name "custosz-v7-runtime-bot"
+          git config user.email "custosz-v7-runtime-bot@users.noreply.github.com"
+          git commit -m "evidence(louksna): preserve V0.4 live mission run ${GITHUB_RUN_ID}"
+          git push origin HEAD:work/louksna-zd-v04-master-20261007
+          echo "TELEMETRY EVIDENCE_PERSISTED_TO_WORK_BRANCH=true"
