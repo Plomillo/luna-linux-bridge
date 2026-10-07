@@ -1,0 +1,9 @@
+{
+  "status": "HOLD",
+  "mission_id": "MIS-LOUKSNA-ZD-V04-P02-20261007",
+  "reason": "RuntimeError:TARGET_BRIDGE_ALREADY_EXISTS_UNEXPECTED",
+  "resume_from": "CHECKPOINT_01",
+  "blind_retry": false,
+  "active": false,
+  "certified": false
+}

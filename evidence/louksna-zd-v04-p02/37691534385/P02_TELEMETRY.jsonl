@@ -1,0 +1,7 @@
+{"event": "STAGE", "mission_id": "MIS-LOUKSNA-ZD-V04-P02-20261007", "stage": "ADMIT", "state": "RUNNING", "utc": "2026-10-07T21:45:17.654515Z"}
+{"command": "v07-status", "event": "CUSTOSZ_CHECK", "exit_code": 0, "mission_id": "MIS-LOUKSNA-ZD-V04-P02-20261007", "utc": "2026-10-07T21:45:18.026653Z"}
+{"command": "v07-selftest", "event": "CUSTOSZ_CHECK", "exit_code": 0, "mission_id": "MIS-LOUKSNA-ZD-V04-P02-20261007", "utc": "2026-10-07T21:45:18.364911Z"}
+{"custosz_mission_id": "MIS-ab3c5b100a97461a88a6", "event": "CUSTOSZ_MISSION_LIVE", "mission_id": "MIS-LOUKSNA-ZD-V04-P02-20261007", "state": "SUPERVISORY_ACTIVE", "utc": "2026-10-07T21:45:18.490754Z"}
+{"event": "RUNTIME_LIVE", "journal": true, "mission_id": "MIS-LOUKSNA-ZD-V04-P02-20261007", "state": "PASS", "utc": "2026-10-07T21:45:18.528368Z"}
+{"event": "STAGE", "mission_id": "MIS-LOUKSNA-ZD-V04-P02-20261007", "stage": "COPY_SUBSTRATE", "state": "RUNNING", "utc": "2026-10-07T21:45:18.528501Z"}
+{"event": "HOLD", "mission_id": "MIS-LOUKSNA-ZD-V04-P02-20261007", "reason": "RuntimeError:TARGET_BRIDGE_ALREADY_EXISTS_UNEXPECTED", "resume_from": "CHECKPOINT_01", "state": "FAIL_CLOSED", "utc": "2026-10-07T21:45:18.547422Z"}
