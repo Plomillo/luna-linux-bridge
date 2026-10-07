@@ -352,7 +352,7 @@ def classify_bug(stderr_text: str) -> tuple[str, str, str | None]:
     if "record_event() got multiple values for argument 'kind'" in text:
         return "CODE_EVENT_KIND_COLLISION", "RUNTIME_PATCH_EVENT_KIND_COLLISION", None
     if "partition_required_but_children_empty" in lower or "dropbox_api_authoritative_inventory" in lower:
-        return "DROPBOX_SHARED_FOLDER_INVENTORY_INCOMPATIBLE", "GOVERNED_API_THEN_PUBLIC_NETWORK_THEN_RENDERED_INVENTORY", None
+        return "DROPBOX_SHARED_FOLDER_INVENTORY_INCOMPATIBLE", "GOVERNED_API_PUBLIC_LIVE_THEN_FROZEN37", None
     if "action-bar-download-button" in lower or "folder_download_ui_control_unavailable" in lower or "ui_control_unavailable_after_direct_dl1" in lower:
         return "DROPBOX_UI_SELECTOR_DRIFT", "DIRECT_DL1_THEN_SPLIT", None
     if any(x in lower for x in ["too many files", "partition_not_zip", "returned_html", "folder_download_no_material", "continuation_not_found"]):
