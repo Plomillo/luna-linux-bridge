@@ -4,8 +4,8 @@
   "authority": "Louksna.md",
   "scope": "DROPBOX_CONNECTED_TO_GITHUB_HOSTED_PARTITIONED_TRANSFER",
   "contract": {
-    "head_sha": "40a1deebcea334b0ca6746138d8ba60de0e1261c",
-    "run_id": 37507128823,
+    "head_sha": "9efa1e920172cc1e97640246d30d44ed14126c02",
+    "run_id": 37584546027,
     "status": "PASS"
   },
   "source_binding": "mission-control/dropbox-github-cloud-direct/BINDING.json",
@@ -22,11 +22,12 @@
   "desktop_commander": false,
   "stop_assistant_intervention_on_material_byte_flow": true,
   "retry": {
-    "ordinal": 7,
-    "reason": "DROPBOX_DOCUMENTED_DL1_DIRECT_PLUS_UI_DRIFT_SPLIT_REPAIR",
-    "evidence_run_id": 37503735400,
-    "prior_bug_id": "BUG-03008e73eecfd325",
-    "resume_from_verified_checkpoint": true
+    "ordinal": 8,
+    "reason": "AUTHORITATIVE_DROPBOX_API_SHARED_LINK_INVENTORY_META_OS",
+    "prior_bug_id": "BUG-d9d3f33d2184dfc4",
+    "target_identity_sha256": "2bef57a917f57d4bff748154ef4a80858581e67eb40815dcfa0e8c5f464ef5de",
+    "resume_from_verified_checkpoint": true,
+    "dom_source_of_truth": false
   },
   "resilience": {
     "puac2_governed": true,
@@ -67,9 +68,11 @@
     "anti_paralysis": true,
     "durable_checkpoint": true,
     "live_bug_research": true,
-    "direct_dl1_primary": true,
-    "ui_fallback_secondary": true,
-    "recursive_split_on_ui_drift": true,
+    "persistent_fix_kb": true,
+    "authoritative_inventory_provider": "DROPBOX_API_LIST_FOLDER_SHARED_LINK",
+    "direct_dl1_fast_path": true,
+    "dom_diagnostic_only": true,
+    "per_object_api_download": true,
     "terminal_general_certification": true
   }
 }
