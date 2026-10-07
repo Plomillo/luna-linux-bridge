@@ -43,6 +43,31 @@ jobs:
                   for i,x in enumerate(hits):
                       print("=== NETWORK_HIT_"+str(i)+" ===")
                       print(json.dumps(x,ensure_ascii=False,sort_keys=True))
+                      try:
+                          data=json.loads(x.get("body") or "{}")
+                          normalized={
+                              "schema":"PUAC2_DROPBOX_FROZEN_PUBLIC_INVENTORY/1.0",
+                              "source_run_id":37585254356,
+                              "source_artifact_id":11466490492,
+                              "response_sha256":x.get("sha256"),
+                              "status_code":x.get("status"),
+                              "content_type":x.get("content_type"),
+                              "total_num_entries":data.get("total_num_entries"),
+                              "has_more_entries":data.get("has_more_entries"),
+                              "next_request_voucher":data.get("next_request_voucher"),
+                              "folder":data.get("folder"),
+                              "entries":[{
+                                  "filename":e.get("filename"),
+                                  "href":e.get("href"),
+                                  "is_dir":bool(e.get("is_dir")),
+                                  "bytes":e.get("bytes"),
+                                  "file_id":e.get("file_id"),
+                                  "folder_id":e.get("folder_id"),
+                              } for e in (data.get("entries") or [])],
+                          }
+                          print("NORMALIZED_INVENTORY="+json.dumps(normalized,ensure_ascii=False,separators=(",",":"),sort_keys=True))
+                      except Exception as exc:
+                          print("NORMALIZED_INVENTORY_ERROR="+type(exc).__name__+":"+str(exc))
               if name.endswith("elements.json"):
                   rows=json.loads(z.read(name))
                   hits=[]
