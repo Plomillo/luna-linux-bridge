@@ -31,103 +31,94 @@ jobs:
           repository: ${{ github.repository }}
           run-id: 37585254356
 
-      - name: Reconcile network metadata with rendered rows
+      - name: Reconcile network metadata with frozen hydrated HTML
         shell: bash
         run: |
           set -Eeuo pipefail
           mkdir -p "$RUNNER_TEMP/reconciled"
+          export STATE_ROOT="$RUNNER_TEMP/reconcile-state"
+          mkdir -p "$STATE_ROOT/evidence" "$STATE_ROOT/browser-downloads" "$STATE_ROOT/payload" "$STATE_ROOT/checkpoints" "$STATE_ROOT/quarantine"
           python3 - "$RUNNER_TEMP/metaos-probe" "$RUNNER_TEMP/reconciled/METAOS_FROZEN_INVENTORY.json" <<'PY'
-          import hashlib,json,pathlib,sys,urllib.parse
+          import hashlib,importlib.util,json,pathlib,sys,urllib.parse
           root=pathlib.Path(sys.argv[1]); out=pathlib.Path(sys.argv[2])
+          target="https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/AFlrQdNPUUfhI5kxk-DHWPg/8.%20META%20OS?rlkey=p712fwlkbwn9g0dtybu2sf159&dl=0"
 
           jc=next(root.rglob("json_candidates.json"))
-          el=next(root.rglob("elements.json"))
+          htmlp=next(root.rglob("page.html"))
           candidates=json.loads(jc.read_text(encoding="utf-8"))
-          elements=json.loads(el.read_text(encoding="utf-8"))
-
-          hit=None
-          for row in candidates:
-              u=row.get("url") or {}
-              if u.get("path")=="/list_shared_link_folder_entries" and int(row.get("status") or 0)==200:
-                  hit=row; break
-          assert hit is not None
+          hit=next(x for x in candidates if (x.get("url") or {}).get("path")=="/list_shared_link_folder_entries" and int(x.get("status") or 0)==200)
           assert hit.get("sha256")=="c0793fda60a0739bda5bf228cbc0f4eb3223e58fc6f4953d26e593155bf34c91"
           payload=json.loads(hit["body"])
           assert int(payload.get("total_num_entries") or 0)==37
           assert payload.get("has_more_entries") is False
 
-          def canon(url):
-              p=urllib.parse.urlsplit(url)
-              q=[(k,v) for k,v in urllib.parse.parse_qsl(p.query,keep_blank_values=True) if k!="dl"]
-              q.sort()
-              qs=urllib.parse.urlencode(q)
-              return urllib.parse.urlunsplit((p.scheme,p.netloc,p.path,qs,""))
+          spec=importlib.util.spec_from_file_location("dbxpart","scripts/dropbox_cloud_partitioned_acquire.py")
+          mod=importlib.util.module_from_spec(spec); assert spec and spec.loader; spec.loader.exec_module(mod)
+          html_rows=mod.children_from_html_text(htmlp.read_text(encoding="utf-8",errors="replace"),target)
 
           network={}
           for raw in payload.get("entries") or []:
-              href=str(raw.get("href") or "")
+              href=str(raw.get("href") or "").strip()
               if not href: continue
-              key=hashlib.sha256(canon(href).encode()).hexdigest()
+              key=mod.link_key(href)
               network[key]={
-                  "key":key,
-                  "name":str(raw.get("filename") or ""),
-                  "href":href,
                   "kind":"folder" if raw.get("is_dir") else "file",
-                  "bytes":None if raw.get("is_dir") else int(raw.get("bytes") or 0),
-                  "object_id":raw.get("folder_id") if raw.get("is_dir") else raw.get("file_id"),
+                  "url":href,
+                  "label":mod.clean_label(str(raw.get("filename") or ""),"object-"+key[:10]),
+                  "key":key,
+                  "transport":"frozen_metaos_network_exact",
+                  "dropbox_id":raw.get("folder_id") if raw.get("is_dir") else raw.get("file_id"),
+                  "size":None if raw.get("is_dir") else int(raw.get("bytes") or 0),
                   "classification_source":"DROPBOX_PUBLIC_NETWORK_JSON",
               }
 
-          rendered={}
-          for raw in elements:
-              href=(raw.get("href") or {})
-              if not isinstance(href,dict): continue
-              if href.get("host")!="www.dropbox.com": continue
-              path=str(href.get("path") or "")
-              if "/8.%20META%20OS/" not in path: continue
-              # The probe sanitized query values, so rebuild from the original href
-              # exposed on the element is not possible here. Use the text and path
-              # only to reconcile identity against network objects and count rows.
-              text=str(raw.get("text") or "").strip()
-              testid=str(raw.get("data_testid") or "")
-              marker=(path,text,testid)
-              rendered[str(marker)]={
-                  "path":path,
-                  "name":text,
-                  "data_testid":testid,
-              }
+          merged={}
+          for row in html_rows:
+              key=row["key"]
+              if key in network:
+                  merged[key]=network[key]
+              else:
+                  merged[key]={
+                      "kind":"unknown",
+                      "url":row["url"],
+                      "label":row["label"],
+                      "key":key,
+                      "transport":"frozen_metaos_hydrated_html_unknown",
+                      "classification_source":"FROZEN_HYDRATED_HTML_LINK_ONLY",
+                  }
+          for key,row in network.items():
+              merged.setdefault(key,row)
 
-          # The public probe's summary already recorded 37 hydrated rows; preserve
-          # exact observable counts separately from object-classification coverage.
-          summary_path=next(root.rglob("summary.json"))
-          summary=json.loads(summary_path.read_text(encoding="utf-8"))
-          interesting=summary.get("interesting_elements") or []
-          row_hits=[]
-          for raw in interesting:
-              href=raw.get("href") or {}
-              if isinstance(href,dict) and href.get("host")=="www.dropbox.com" and "/8.%20META%20OS/" in str(href.get("path") or ""):
-                  row_hits.append(raw)
-
+          entries=sorted(merged.values(),key=lambda x:(x["label"].casefold(),x["key"]))
+          assert len(entries)==37,(len(entries),len(html_rows),len(network))
+          exact=sum(x["kind"]!="unknown" for x in entries)
+          unknown=sum(x["kind"]=="unknown" for x in entries)
           cert={
-              "schema":"PUAC2_METAOS_FROZEN_INVENTORY_EVIDENCE/1.0",
+              "schema":"PUAC2_METAOS_FROZEN_INVENTORY_EVIDENCE/2.0",
               "status":"PASS",
               "source_run_id":37585254356,
               "source_artifact_id":11466490492,
               "network_response_sha256":hit["sha256"],
+              "page_html_sha256":hashlib.sha256(htmlp.read_bytes()).hexdigest(),
               "declared_total_num_entries":37,
-              "network_entries_materialized":len(network),
+              "resolved_entry_count":len(entries),
+              "network_exact_classification_count":exact,
+              "unknown_link_only_count":unknown,
               "network_has_more_entries":False,
-              "rendered_probe_element_candidates":len(row_hits),
-              "network_entries":sorted(network.values(),key=lambda x:(x["kind"],x["name"].casefold(),x["key"])),
-              "note":"This artifact does not falsely equate declared_total_num_entries with network_entries_materialized. It is evidence for deterministic fallback and reconciliation only.",
+              "entries":entries,
+              "invariants":{
+                  "no_false_folder_classification":True,
+                  "unknown_objects_are_opaque_download_first":True,
+                  "source_identity_bound":mod.link_key(target),
+              },
           }
           raw=json.dumps(cert,ensure_ascii=False,indent=2,sort_keys=True)+"\n"
           out.write_text(raw,encoding="utf-8")
-          print("METAOS_FROZEN_NETWORK_ENTRIES="+str(len(network)))
-          print("METAOS_DECLARED_TOTAL=37")
-          print("METAOS_RENDERED_CANDIDATES="+str(len(row_hits)))
+          print("METAOS_FROZEN_RESOLVED_ENTRIES="+str(len(entries)))
+          print("METAOS_FROZEN_EXACT_CLASSIFICATIONS="+str(exact))
+          print("METAOS_FROZEN_UNKNOWN_OBJECTS="+str(unknown))
           print("METAOS_FROZEN_INVENTORY_SHA256="+hashlib.sha256(raw.encode()).hexdigest())
-          print(json.dumps({"status":"PASS","network_entries":len(network),"declared_total":37,"rendered_candidates":len(row_hits)},sort_keys=True))
+          print(json.dumps({"status":"PASS","resolved":len(entries),"exact":exact,"unknown":unknown},sort_keys=True))
           PY
 
       - name: Preserve reconciled inventory evidence
