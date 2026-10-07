@@ -93,11 +93,11 @@
     "evidence_preserved": true
   },
   "execution_pulse": {
-    "ordinal": 7,
-    "reason": "FORCE_FRESH_RUN_AFTER_VALIDATED_EVENT_COLLISION_REPAIR",
-    "contract_run_id": 37503569229,
-    "contract_head_sha": "e10e31f26df1847fb1a1bade6ace901bed671fe2",
-    "issued_at_utc": "2026-10-06T17:27:40Z"
+    "ordinal": 8,
+    "reason": "RESUME_FROM_VERIFIED_CHECKPOINT_AFTER_NON_ENUMERABLE_DESCENDANT_REPAIR",
+    "contract_run_id": 37642779758,
+    "contract_head_sha": "5604e5fe984436cfd9c8e775d101f86e9c56c10e",
+    "issued_at_utc": "2026-10-07T16:37:00Z"
   },
   "puac2_resilience": {
     "anti_paralysis": true,
