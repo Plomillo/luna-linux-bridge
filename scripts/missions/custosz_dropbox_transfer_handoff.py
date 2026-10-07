@@ -48,6 +48,8 @@ def main():
     os.environ["CUSTOSZ_STATE_DIR"] = str(state)
     sys.path.insert(0, str(CUSTOSZ))
     import custosz_v05_legacy as worker
+    worker.workspace=lambda: workspace
+    worker.discover=lambda:{"workspace":str(workspace),"projects":{"LUNA_PROJECT":{"status":"RESOLVED","path":str(workspace),"score":999}}}
 
     worker.PINS = {k:(v[0].replace(chr(92),"/") if v[0] else None,v[1],v[2],v[3]) for k,v in worker.PINS.items()}
     worker.PROFILES = {k:([x.replace(chr(92),"/") for x in v[0]],[x.replace(chr(92),"/") for x in v[1]]) for k,v in worker.PROFILES.items()}
