@@ -125,7 +125,15 @@ jobs:
           import custosz_v05_legacy as worker
           workspace=Path('target').resolve()
           worker.workspace=lambda:workspace
+          worker.PINS={k:(v[0].replace(chr(92),'/') if v[0] else None,v[1],v[2],v[3]) for k,v in worker.PINS.items()}
+          worker.PROFILES={k:([x.replace(chr(92),'/') for x in v[0]],[x.replace(chr(92),'/') for x in v[1]]) for k,v in worker.PROFILES.items()}
+          authority=workspace/'Louksna.md'
+          rel,size,expected,role=worker.PINS['LOUKSNA']
+          observed_sha=__import__('hashlib').sha256(authority.read_bytes()).hexdigest()
+          observed_size=authority.stat().st_size
+          if observed_sha!=expected or observed_size!=size: raise RuntimeError('LOUKSNA_AUTHORITY_DRIFT')
           worker.discover=lambda:{'workspace':str(workspace),'projects':{'LUNA_PROJECT':{'status':'RESOLVED','path':str(workspace),'score':999}}}
+          worker.sources=lambda _large=False:{'observed_at':'SUPER1200_VERIFIED','sources':{'LOUKSNA':{'relative':rel,'bytes':size,'sha256':expected,'role':role,'path':str(authority),'exists':True,'observed_bytes':observed_size,'observed_sha256':observed_sha,'integrity':'PASS','binding':'SUPER1200_BRANCH_AUTHORITY'}}}
           goal=('SUPER1200 governed continuation from the validated D01-closed repository state; '\
                 'continue the first still-pending repository domain; preserve D01; no canonical mutation; '\
                 'LOUKSNA Remote Bridge observation only; G23/G24 remain independent.')
