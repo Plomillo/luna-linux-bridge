@@ -770,52 +770,111 @@ def frozen_metaos_inventory(url: str) -> list[dict]:
     return rows
 
 
+
+METAOS_SOURCE_IDENTITY = "2bef57a917f57d4bff748154ef4a80858581e67eb40815dcfa0e8c5f464ef5de"
+METAOS_FROZEN_NETWORK_RESPONSE_SHA256 = "c0793fda60a0739bda5bf228cbc0f4eb3223e58fc6f4953d26e593155bf34c91"
+METAOS_FROZEN_EXPECTED_ENTRIES = 37
+
+def inventory_children_frozen_network(url: str) -> list[dict]:
+    """Mission-bound fallback from the exact successful public probe artifact."""
+    if link_key(url) != METAOS_SOURCE_IDENTITY:
+        return []
+    frozen = os.environ.get("FROZEN_METAOS_NETWORK_INVENTORY", "").strip()
+    if not frozen:
+        return []
+    fp = pathlib.Path(frozen)
+    if not fp.is_file():
+        raise RuntimeError("FROZEN_METAOS_NETWORK_INVENTORY_MISSING")
+    rows = json.loads(fp.read_text(encoding="utf-8"))
+    hits = [
+        x for x in rows
+        if isinstance(x, dict)
+        and (x.get("url") or {}).get("path") == "/list_shared_link_folder_entries"
+        and int(x.get("status") or 0) == 200
+    ]
+    if len(hits) != 1:
+        raise RuntimeError(f"FROZEN_METAOS_NETWORK_HIT_COUNT_MISMATCH:{len(hits)}")
+    hit = hits[0]
+    if str(hit.get("sha256") or "") != METAOS_FROZEN_NETWORK_RESPONSE_SHA256:
+        raise RuntimeError("FROZEN_METAOS_NETWORK_RESPONSE_SHA256_MISMATCH")
+    body = str(hit.get("body") or "")
+    if hashlib.sha256(body.encode("utf-8")).hexdigest() != METAOS_FROZEN_NETWORK_RESPONSE_SHA256:
+        raise RuntimeError("FROZEN_METAOS_NETWORK_BODY_SHA256_MISMATCH")
+    data = json.loads(body)
+    folder = data.get("folder") or {}
+    folder_href = str(folder.get("href") or "")
+    if not folder_href or link_key(folder_href) != METAOS_SOURCE_IDENTITY:
+        raise RuntimeError("FROZEN_METAOS_NETWORK_PARENT_IDENTITY_MISMATCH")
+    out, meta = rows_from_public_network_inventory(data, url)
+    total = int(meta.get("total_num_entries") or 0)
+    if total != METAOS_FROZEN_EXPECTED_ENTRIES or len(out) != METAOS_FROZEN_EXPECTED_ENTRIES:
+        raise RuntimeError(f"FROZEN_METAOS_NETWORK_COUNT_MISMATCH:{len(out)}:{total}")
+    if bool(meta.get("has_more_entries")):
+        raise RuntimeError("FROZEN_METAOS_NETWORK_UNEXPECTED_PAGINATION")
+    record_event(
+        "DROPBOX_FROZEN_NETWORK_INVENTORY",
+        provider="DROPBOX_PUBLIC_PROBE_ARTIFACT_11466490492",
+        parent=sanitize_url(url),
+        source_identity_sha256=METAOS_SOURCE_IDENTITY,
+        response_sha256=METAOS_FROZEN_NETWORK_RESPONSE_SHA256,
+        count=len(out),
+        total_num_entries=total,
+        has_more_entries=False,
+        artifact_id=11466490492,
+        artifact_digest="sha256:ed4621c1418b64a329df6f1aedd3ef26df4c9646de01006abaae4c425c6430b4",
+        artifact_run_id=37585254356,
+        frozen_evidence=True,
+    )
+    for row in out:
+        row["transport"] = "dropbox_frozen_public_network_inventory"
+    return out
+
 def inventory_children_governed(page, url: str) -> list[dict]:
-    """Provider order: authorized API, live public network/render, frozen 37-link evidence."""
+    """API if authorized; live public inventory; exact frozen mission evidence last."""
     token, mode = _oauth_token_refresh()
     if token:
         try:
             rows = inventory_children_api(url, "")
-            record_event(
-                "GOVERNED_INVENTORY_PROVIDER_SELECTED",
-                provider="DROPBOX_API_LIST_FOLDER_SHARED_LINK",
-                auth_mode=mode,
-                count=len(rows),
-                parent=sanitize_url(url),
-            )
-            return rows
+            if rows:
+                record_event(
+                    "GOVERNED_INVENTORY_PROVIDER_SELECTED",
+                    provider="DROPBOX_API_LIST_FOLDER_SHARED_LINK",
+                    auth_mode=mode,
+                    count=len(rows),
+                    parent=sanitize_url(url),
+                )
+                return rows
         except Exception as exc:
             record_event(
                 "DROPBOX_API_INVENTORY_DEGRADED",
                 parent=sanitize_url(url),
                 error=f"{type(exc).__name__}:{exc}",
-                fallback="DROPBOX_PUBLIC_NETWORK_THEN_FROZEN_EVIDENCE",
+                fallback="DROPBOX_PUBLIC_NETWORK_THEN_FROZEN_MISSION_EVIDENCE",
             )
 
-    try:
-        rows = inventory_children(page, url)
-        if rows:
-            record_event(
-                "GOVERNED_INVENTORY_PROVIDER_SELECTED",
-                provider=str(rows[0].get("transport") or "DROPBOX_PUBLIC_FALLBACK"),
-                auth_mode=None,
-                count=len(rows),
-                parent=sanitize_url(url),
-            )
-            return rows
-    except Exception as exc:
+    rows = inventory_children(page, url)
+    if rows:
         record_event(
-            "DROPBOX_PUBLIC_INVENTORY_DEGRADED",
+            "GOVERNED_INVENTORY_PROVIDER_SELECTED",
+            provider=str(rows[0].get("transport") or "DROPBOX_PUBLIC_FALLBACK"),
+            auth_mode=None,
+            count=len(rows),
             parent=sanitize_url(url),
-            error=f"{type(exc).__name__}:{exc}",
-            fallback="FROZEN_METAOS_RECONCILED_37" if link_key(url) == link_key(METAOS_LINK) else None,
         )
+        return rows
 
-    frozen = frozen_metaos_inventory(url)
-    if frozen:
-        return frozen
-    raise RuntimeError("GOVERNED_INVENTORY_EMPTY_AFTER_ALL_PROVIDERS:" + link_key(url))
+    frozen_rows = inventory_children_frozen_network(url)
+    if frozen_rows:
+        record_event(
+            "GOVERNED_INVENTORY_PROVIDER_SELECTED",
+            provider="DROPBOX_FROZEN_PUBLIC_NETWORK_INVENTORY",
+            auth_mode=None,
+            count=len(frozen_rows),
+            parent=sanitize_url(url),
+        )
+        return frozen_rows
 
+    raise RuntimeError("GOVERNED_INVENTORY_EMPTY_AFTER_API_PUBLIC_AND_FROZEN:" + link_key(url))
 
 def write_download_event(kind: str, source_url: str, label: str, suggested: str | None = None) -> None:
     marker = {
