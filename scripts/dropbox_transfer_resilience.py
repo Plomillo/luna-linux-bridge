@@ -359,7 +359,9 @@ def classify_bug(stderr_text: str) -> tuple[str, str, str | None]:
         return "PARTITION_STRATEGY", "SPLIT_FALLBACK_AND_RETRY", None
     if any(x in lower for x in ["timed out", "timeout", "connection reset", "remote end closed", "temporary failure", "429", "502", "503", "504"]):
         return "TRANSIENT_NETWORK", "RETRY_BACKOFF", None
-    if any(x in lower for x in ["no space left", "enospc", "curl: (23)", "failure writing output"]):
+    if "curl: (23)" in lower or "failure writing output" in lower:
+        return "DROPBOX_PUBLIC_DL1_WRITE_INTERRUPTION", "ISOLATED_CURL_RETRY_VALIDATE_ZIP_CRC", None
+    if any(x in lower for x in ["no space left", "enospc"]):
         return "IO_STORAGE", "CLEAN_PARTIAL_AND_RETRY", None
     if "root_children_empty" in lower or "children_empty" in lower:
         return "INVENTORY_FAILURE", "RELOAD_INVENTORY_AND_RETRY", None
