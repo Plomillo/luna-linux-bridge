@@ -72,6 +72,33 @@
       "provenance": [
         "PUAC2.md"
       ]
+    },
+    {
+      "fix_id": "FIX-DROPBOX-SHARED-FOLDER-INVENTORY-001",
+      "category": "DROPBOX_SHARED_FOLDER_INVENTORY_INCOMPATIBLE",
+      "signal_regex": "PARTITION_REQUIRED_BUT_CHILDREN_EMPTY|DROPBOX_API_AUTHORITATIVE_INVENTORY",
+      "action": "DROPBOX_API_LIST_FOLDER_SHARED_LINK",
+      "applicability": "Dropbox shared-folder web DOM does not expose nested objects as /scl/fo or /scl/fi anchors",
+      "validation_status": "VALIDATED_BY_CONTRACT_PENDING_LIVE_API_PROBE",
+      "validated_by": [
+        "DROPBOX_GITHUB_CLOUD_PARTITIONED_API_INVENTORY_CONTRACT",
+        "DROPBOX_GITHUB_CLOUD_PARTITIONED_BUG_CLASSIFIER_SELFTEST"
+      ],
+      "rollback": "restore prior code while preserving last verified checkpoint; never reinterpret empty DOM as empty Dropbox folder",
+      "provenance": [
+        "incident:BUG-d9d3f33d2184dfc4",
+        "object:8. META OS",
+        "source_identity_sha256:2bef57a917f57d4bff748154ef4a80858581e67eb40815dcfa0e8c5f464ef5de",
+        "existing-provider:scripts/dropbox_governed_recovery_20h.py",
+        "Dropbox API: files/list_folder with shared_link",
+        "Dropbox API: sharing/get_shared_link_file"
+      ],
+      "invariants": {
+        "authoritative_inventory_provider": "DROPBOX_API",
+        "dom_source_of_truth": false,
+        "repeat_identical_dom_inventory": false,
+        "checkpoint_preserved": true
+      }
     }
   ]
 }
