@@ -4,8 +4,8 @@
   "authority": "Louksna.md",
   "scope": "DROPBOX_CONNECTED_TO_GITHUB_HOSTED_PARTITIONED_TRANSFER",
   "contract": {
-    "head_sha": "c6294667853f781e100ed88491087153c1b88ed0",
-    "run_id": 37585722348,
+    "head_sha": "12a71439c68d3405826e9b841ffd433ef7163805",
+    "run_id": 37588495799,
     "status": "PASS"
   },
   "source_binding": "mission-control/dropbox-github-cloud-direct/BINDING.json",
@@ -22,14 +22,19 @@
   "desktop_commander": false,
   "stop_assistant_intervention_on_material_byte_flow": true,
   "retry": {
-    "ordinal": 12,
-    "reason": "CERTIFY_HYDRATED_PUBLIC_METAOS_INVENTORY_AND_RESUME",
-    "prior_bug_id": "BUG-d9d3f33d2184dfc4",
+    "ordinal": 13,
+    "reason": "PUBLIC_NETWORK_37_OF_37_INVENTORY_PLUS_BOUNDED_STORAGE_AUTO_CONTINUATION",
+    "prior_failed_run_id": 37587158279,
+    "public_probe_run_id": 37585254356,
+    "public_probe_artifact_id": 11466490492,
+    "forensic_read_run_id": 37588080815,
     "target_identity_sha256": "2bef57a917f57d4bff748154ef4a80858581e67eb40815dcfa0e8c5f464ef5de",
     "resume_from_verified_checkpoint": true,
-    "api_if_authorized": true,
-    "public_hydrated_fallback": true,
-    "zero_stability_terminal": false
+    "network_inventory_provider": "DROPBOX_PUBLIC_LIST_SHARED_LINK_FOLDER_ENTRIES",
+    "expected_metaos_entries": 37,
+    "expected_has_more_entries": false,
+    "bounded_storage": true,
+    "automatic_batch_continuation": true
   },
   "resilience": {
     "puac2_governed": true,
@@ -51,7 +56,14 @@
     "authoritative_inventory_preference": "DROPBOX_API_IF_AUTHORIZED",
     "governed_inventory_fallback": "DROPBOX_PUBLIC_RENDERED_SHARED_LINK_INVENTORY",
     "public_probe_run_id": 37585254356,
-    "public_probe_artifact_id": 11466490492
+    "public_probe_artifact_id": 11466490492,
+    "public_authoritative_provider": "DROPBOX_PUBLIC_LIST_SHARED_LINK_FOLDER_ENTRIES",
+    "network_inventory_count_must_match": true,
+    "network_pagination_fail_closed": true,
+    "dom_secondary_fallback": true,
+    "max_single_folder_zip_bytes": 1073741824,
+    "min_free_disk_reserve_bytes": 5368709120,
+    "run_payload_yield_bytes": 2147483648
   },
   "resume": {
     "bootstrap_verified_prior_partitions": 5,
