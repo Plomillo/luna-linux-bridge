@@ -1,0 +1,82 @@
+name: "LOUKSNA V0.4 — CUSTOSZ V7 live master mission"
+
+on:
+  push:
+    branches:
+      - work/louksna-zd-v04-master-20261007
+    paths:
+      - ".github/workflows/louksna-zd-v04-master-live.yml"
+      - "missions/inbox/louksna-zd-v04-master-20261007/MISSION_ORIGINAL.md"
+      - "scripts/missions/louksna_zd_v04_master_live.py"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: louksna-zd-v04-master-20261007
+  cancel-in-progress: false
+
+jobs:
+  custosz-v04-live:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    steps:
+      - name: Checkout V0.4 mission branch with full history
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+          path: mission-root
+
+      - name: Checkout exact CUSTOSZ V7 mailbox
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: staging/custosz-mission-mailbox-20260928
+          persist-credentials: false
+          sparse-checkout: |
+            artifacts/custosz-v7
+            ecosystem/metacognitive-operational-v1/CUSTOSZ72_CENSUS.json
+          sparse-checkout-cone-mode: false
+          path: mailbox
+
+      - name: Checkout frozen Zona Directiva V0.3
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: 7a1449a5d6194b6cbc3e083bf1c7ba55533ad196
+          persist-credentials: false
+          path: v03
+
+      - name: Checkout frozen Remote Bridge candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ad95248dd78fadf45645774e0338df0f1bbc128b
+          persist-credentials: false
+          path: bridge-source
+
+      - name: Launch CUSTOSZ V7 mission with live telemetry
+        shell: bash
+        env:
+          MISSION_ROOT: ${{ github.workspace }}/mission-root
+          MAILBOX_ROOT: ${{ github.workspace }}/mailbox
+          V03_ROOT: ${{ github.workspace }}/v03
+          BRIDGE_ROOT: ${{ github.workspace }}/bridge-source
+          OUT_DIR: ${{ runner.temp }}/louksna-v04-master
+          CUSTOSZ_WORKSPACE_OVERRIDE: ${{ runner.home }}/SYMPHYLAX_LAB/CUSTOSZ_V7_R1_G23_G24_20260927T021532Z/POSIX_COMPATIBILITY_VIEW
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$OUT_DIR"
+          echo "TELEMETRY MISSION=LOUKSNA_ZD_V04_MASTER"
+          echo "TELEMETRY EXECUTOR=CUSTOSZ_V7"
+          echo "TELEMETRY RUNTIME=CUSTOSZ_RUNTIME_V1"
+          echo "TELEMETRY BLIND_RETRY=false"
+          echo "TELEMETRY CANONICAL_MUTATION=false"
+          nice -n 10 python3 -B -I mission-root/scripts/missions/louksna_zd_v04_master_live.py
+
+      - name: Preserve live mission evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksna-zd-v04-master-live-evidence
+          path: ${{ runner.temp }}/louksna-v04-master
+          if-no-files-found: warn
+          retention-days: 90
