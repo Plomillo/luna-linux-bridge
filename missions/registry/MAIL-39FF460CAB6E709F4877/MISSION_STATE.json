@@ -1,0 +1,46 @@
+{
+  "current_gate": "MATERIAL_EXECUTION",
+  "current_state": "BINDING_PROVIDER_SELECTED",
+  "history": [
+    {
+      "state": "RECEIVED",
+      "utc": "2026-09-29T14:42:16.772710+00:00"
+    },
+    {
+      "state": "VALIDATED",
+      "utc": "2026-09-29T14:42:16.773948+00:00"
+    },
+    {
+      "state": "COMPILED",
+      "utc": "2026-09-29T14:42:16.773957+00:00"
+    },
+    {
+      "state": "SEMANTICALLY_EQUIVALENT_BY_BYTE_PRESERVATION",
+      "utc": "2026-09-29T14:42:16.773959+00:00"
+    },
+    {
+      "custosz_mission_id": "MIS-193a1390080b447eb70b",
+      "state": "ROUTED",
+      "utc": "2026-09-29T14:42:44.730425+00:00"
+    },
+    {
+      "state": "RUNTIME_COMPATIBLE",
+      "utc": "2026-09-29T14:42:44.730570+00:00"
+    },
+    {
+      "adapter_id": "SYMPHYLAX_FINAL_GUARANTEED_60M_V1",
+      "state": "ADAPTER_SELECTED",
+      "utc": "2026-09-29T14:42:44.730576+00:00"
+    },
+    {
+      "adapter_id": "SYMPHYLAX_FINAL_GUARANTEED_60M_V1",
+      "state": "BINDING_PROVIDER_SELECTED",
+      "utc": "2026-09-29T14:42:44.730579+00:00"
+    }
+  ],
+  "mail_id": "MAIL-39FF460CAB6E709F4877",
+  "mission_terminal_status": null,
+  "root_blocker": null,
+  "schema_version": "1.0",
+  "workflow_technical_status": "PASS"
+}

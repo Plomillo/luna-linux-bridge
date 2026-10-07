@@ -1,0 +1,46 @@
+{
+  "current_gate": "MATERIAL_EXECUTION",
+  "current_state": "BINDING_PROVIDER_SELECTED",
+  "history": [
+    {
+      "state": "RECEIVED",
+      "utc": "2026-09-29T14:42:16.536075+00:00"
+    },
+    {
+      "state": "VALIDATED",
+      "utc": "2026-09-29T14:42:16.536593+00:00"
+    },
+    {
+      "state": "COMPILED",
+      "utc": "2026-09-29T14:42:16.536598+00:00"
+    },
+    {
+      "state": "SEMANTICALLY_EQUIVALENT_BY_BYTE_PRESERVATION",
+      "utc": "2026-09-29T14:42:16.536600+00:00"
+    },
+    {
+      "custosz_mission_id": "MIS-e076c7ff160a4064b102",
+      "state": "ROUTED",
+      "utc": "2026-09-29T14:42:36.097412+00:00"
+    },
+    {
+      "state": "RUNTIME_COMPATIBLE",
+      "utc": "2026-09-29T14:42:36.097556+00:00"
+    },
+    {
+      "adapter_id": "LUNA_R4_PART1_RESUME_APC48_V2_36519487206",
+      "state": "ADAPTER_SELECTED",
+      "utc": "2026-09-29T14:42:36.097562+00:00"
+    },
+    {
+      "adapter_id": "LUNA_R4_PART1_RESUME_APC48_V2_36519487206",
+      "state": "BINDING_PROVIDER_SELECTED",
+      "utc": "2026-09-29T14:42:36.097565+00:00"
+    }
+  ],
+  "mail_id": "MAIL-4820CF7D5CA873F59174",
+  "mission_terminal_status": null,
+  "root_blocker": null,
+  "schema_version": "1.0",
+  "workflow_technical_status": "PASS"
+}

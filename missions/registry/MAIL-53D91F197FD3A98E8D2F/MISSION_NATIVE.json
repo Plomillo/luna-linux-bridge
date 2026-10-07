@@ -1,0 +1,374 @@
+{
+  "authority_context": {
+    "authority": "Louksna.md",
+    "authority_transfer": false,
+    "canonical_mutation_authorized": false
+  },
+  "declared_mission_id": "MIS-SUPER1200-REPOSITORY-IMPLEMENTATION-20261007",
+  "execution_contract": {
+    "default_profile": "LUNA_PROJECT",
+    "fail_closed": true,
+    "governor": "MetaOS",
+    "no_silent_executor_substitution": true,
+    "protected_scopes": [
+      "WINDOWS",
+      "EFI",
+      "GPT",
+      "PARTITIONS",
+      "PROYECTOS",
+      "F3-DISK",
+      "CANONICAL_ARCHITECTURE",
+      "FROZEN_ARTIFACTS"
+    ],
+    "runtime": "CUSTOSZ_RUNTIME_V1",
+    "supervisor": "SYMPHYLAX_R1",
+    "validation_reserve_seconds": 240,
+    "wallclock_seconds": 1200,
+    "worker": "CUSTOSZ_V7",
+    "workflow_success_is_not_mission_success": true
+  },
+  "mail_id": "MAIL-53D91F197FD3A98E8D2F",
+  "mailbox_version": "0.1.0",
+  "mission_payload": {
+    "byte_exact_preservation": true,
+    "directives_observed": {
+      "ANTI_PARALYSIS": [
+        {
+          "line": 40,
+          "value": "REQUIRED"
+        },
+        {
+          "line": 75,
+          "value": ""
+        }
+      ],
+      "ASSURANCE": [
+        {
+          "line": 7,
+          "value": "PUAC2.md"
+        }
+      ],
+      "AUDITABILITY": [
+        {
+          "line": 35,
+          "value": "REQUIRED"
+        }
+      ],
+      "AUTHORITY": [
+        {
+          "line": 6,
+          "value": "Louksna.md"
+        }
+      ],
+      "AUTO_MERGE": [
+        {
+          "line": 44,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "BASE_MAIN_SHA": [
+        {
+          "line": 11,
+          "value": "84fbec427b7e067cc226ba868fbcd7c9675a862b"
+        }
+      ],
+      "BLIND_RETRY": [
+        {
+          "line": 78,
+          "value": "FORBIDDEN."
+        }
+      ],
+      "CANONICAL_MUTATION": [
+        {
+          "line": 46,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "CAPABILITY_COUNT": [
+        {
+          "line": 23,
+          "value": "1200"
+        }
+      ],
+      "CAPABILITY_OWNER": [
+        {
+          "line": 8,
+          "value": "REPOSITORY"
+        }
+      ],
+      "CAPABILITY_OWNERSHIP_TRANSFER_TO_CUSTOSZ": [
+        {
+          "line": 25,
+          "value": "FALSE"
+        }
+      ],
+      "CAPABILITY_OWNERSHIP_TRANSFER_TO_METAOS": [
+        {
+          "line": 27,
+          "value": "FALSE"
+        }
+      ],
+      "CAPABILITY_OWNERSHIP_TRANSFER_TO_RUNTIME": [
+        {
+          "line": 26,
+          "value": "FALSE"
+        }
+      ],
+      "CAPABILITY_SOURCE_BRANCH": [
+        {
+          "line": 19,
+          "value": "candidate/capability-1200-hardening-20261007"
+        }
+      ],
+      "CAPABILITY_SOURCE_PATH": [
+        {
+          "line": 21,
+          "value": "capabilities/hardening/1200_definitivo.txt"
+        }
+      ],
+      "CAPABILITY_SOURCE_SHA": [
+        {
+          "line": 20,
+          "value": "bf683949eaa52087725a672d1cc0297b5a09e346"
+        }
+      ],
+      "CAPABILITY_SOURCE_SHA256": [
+        {
+          "line": 22,
+          "value": "eeb3b32e170cd2780c25ce65156978fa58682b6faef0d5da50b35e50993e652e"
+        }
+      ],
+      "CERTIFICATION": [
+        {
+          "line": 17,
+          "value": "G24"
+        }
+      ],
+      "CERTIFICATION_PROPAGATION": [
+        {
+          "line": 42,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "CUSTOSZ_INTERNALIZATION_OF_1200": [
+        {
+          "line": 28,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "D01": [
+        {
+          "line": 70,
+          "value": "1-30; D02=31-45; D03=46-80; D04=81-120; D05=121-176; D06=177-230;"
+        }
+      ],
+      "D07": [
+        {
+          "line": 71,
+          "value": "231-300; D08=301-360; D09=361-437; D10=438-476; D11=477-530; D12=531-585;"
+        }
+      ],
+      "D13": [
+        {
+          "line": 72,
+          "value": "586-640; D14=641-660; D15=661-700; D16=701-720; D17=721-760; D18=761-860;"
+        }
+      ],
+      "D19": [
+        {
+          "line": 73,
+          "value": "861-960; D20=961-1000; D21=1001-1080; D22=1081-1200."
+        }
+      ],
+      "DOMAINS": [
+        {
+          "line": 69,
+          "value": ""
+        }
+      ],
+      "EMINENCE": [
+        {
+          "line": 41,
+          "value": "ADVISORY_ONLY"
+        }
+      ],
+      "EXECUTION_PLANE": [
+        {
+          "line": 14,
+          "value": "CUSTOSZ_RUNTIME_V1"
+        }
+      ],
+      "FAILURE_POSTURE": [
+        {
+          "line": 32,
+          "value": "FAIL_CLOSED"
+        }
+      ],
+      "G23_G24": [
+        {
+          "line": 84,
+          "value": ""
+        }
+      ],
+      "GOVERNANCE_PLANE": [
+        {
+          "line": 15,
+          "value": "METAOS"
+        }
+      ],
+      "INDEPENDENT_VALIDATION": [
+        {
+          "line": 16,
+          "value": "G23"
+        }
+      ],
+      "MAIN_MUTATION": [
+        {
+          "line": 45,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "METACOGNITION": [
+        {
+          "line": 39,
+          "value": "REQUIRED"
+        }
+      ],
+      "METAOS_INTERNALIZATION_OF_1200": [
+        {
+          "line": 30,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "MISSION_CLASS": [
+        {
+          "line": 4,
+          "value": "SUPER1200_REPOSITORY_GOVERNED_IMPLEMENTATION_V1"
+        }
+      ],
+      "MISSION_ID": [
+        {
+          "line": 3,
+          "value": "MIS-SUPER1200-REPOSITORY-IMPLEMENTATION-20261007"
+        }
+      ],
+      "NON_REGRESSION": [
+        {
+          "line": 38,
+          "value": "REQUIRED"
+        }
+      ],
+      "NO_SILENT_OPERATIONS": [
+        {
+          "line": 33,
+          "value": "ABSOLUTE"
+        }
+      ],
+      "OBJECTIVE": [
+        {
+          "line": 48,
+          "value": ""
+        }
+      ],
+      "PROVENANCE": [
+        {
+          "line": 36,
+          "value": "REQUIRED"
+        }
+      ],
+      "PROVIDER_SUBSTITUTION": [
+        {
+          "line": 80,
+          "value": "> NEW_PROVENANCE."
+        }
+      ],
+      "RESOURCE_RED": [
+        {
+          "line": 82,
+          "value": "> STOP_NEW_ADMISSIONS."
+        }
+      ],
+      "ROLLBACK": [
+        {
+          "line": 37,
+          "value": "REQUIRED"
+        },
+        {
+          "line": 81,
+          "value": "> VERIFY_RESTORATION."
+        }
+      ],
+      "RUNTIME_INTERNALIZATION_OF_1200": [
+        {
+          "line": 29,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "SELF_CERTIFICATION": [
+        {
+          "line": 43,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "STALL": [
+        {
+          "line": 79,
+          "value": "> DIAGNOSE."
+        }
+      ],
+      "TERMINAL_RULE": [
+        {
+          "line": 91,
+          "value": ""
+        }
+      ],
+      "TRACEABILITY": [
+        {
+          "line": 34,
+          "value": "REQUIRED"
+        }
+      ],
+      "UNKNOWN_EFFECT": [
+        {
+          "line": 77,
+          "value": "> HOLD."
+        }
+      ],
+      "WORKER": [
+        {
+          "line": 13,
+          "value": "CUSTOSZ_V7"
+        }
+      ],
+      "WORK_BRANCH": [
+        {
+          "line": 10,
+          "value": "custosz/super-1200-implementation-20261007"
+        }
+      ],
+      "WORK_REPOSITORY": [
+        {
+          "line": 9,
+          "value": "Plomillo/luna-linux-bridge"
+        }
+      ]
+    },
+    "required_capabilities_explicit": [],
+    "routing_hints": {
+      "authoritative": false,
+      "values": [
+        "CUSTOSZ_RUNTIME",
+        "ROLLBACK"
+      ]
+    },
+    "source_utf8_b64": "IyBNSVNJw5NOIE1BRVNUUkEg4oCUIFNVUEVSIElNUExFTUVOVEFDScOTTiBSRVBPU0lUT1JZLU9XTkVEIDEuLjEyMDAKCk1JU1NJT05fSUQgPSBNSVMtU1VQRVIxMjAwLVJFUE9TSVRPUlktSU1QTEVNRU5UQVRJT04tMjAyNjEwMDcKTUlTU0lPTl9DTEFTUyA9IFNVUEVSMTIwMF9SRVBPU0lUT1JZX0dPVkVSTkVEX0lNUExFTUVOVEFUSU9OX1YxCgpBVVRIT1JJVFkgPSBMb3Vrc25hLm1kCkFTU1VSQU5DRSA9IFBVQUMyLm1kCkNBUEFCSUxJVFlfT1dORVIgPSBSRVBPU0lUT1JZCldPUktfUkVQT1NJVE9SWSA9IFBsb21pbGxvL2x1bmEtbGludXgtYnJpZGdlCldPUktfQlJBTkNIID0gY3VzdG9zei9zdXBlci0xMjAwLWltcGxlbWVudGF0aW9uLTIwMjYxMDA3CkJBU0VfTUFJTl9TSEEgPSA4NGZiZWM0MjdiN2UwNjdjYzIyNmJhODY4ZmJjZDdjOTY3NWE4NjJiCgpXT1JLRVIgPSBDVVNUT1NaX1Y3CkVYRUNVVElPTl9QTEFORSA9IENVU1RPU1pfUlVOVElNRV9WMQpHT1ZFUk5BTkNFX1BMQU5FID0gTUVUQU9TCklOREVQRU5ERU5UX1ZBTElEQVRJT04gPSBHMjMKQ0VSVElGSUNBVElPTiA9IEcyNAoKQ0FQQUJJTElUWV9TT1VSQ0VfQlJBTkNIID0gY2FuZGlkYXRlL2NhcGFiaWxpdHktMTIwMC1oYXJkZW5pbmctMjAyNjEwMDcKQ0FQQUJJTElUWV9TT1VSQ0VfU0hBID0gYmY2ODM5NDllYWE1MjA4NzcyNWE2NzJkMWNjMDI5N2I1YTA5ZTM0NgpDQVBBQklMSVRZX1NPVVJDRV9QQVRIID0gY2FwYWJpbGl0aWVzL2hhcmRlbmluZy8xMjAwX2RlZmluaXRpdm8udHh0CkNBUEFCSUxJVFlfU09VUkNFX1NIQTI1NiA9IGVlYjNiMzJlMTcwY2QyNzgwYzI1Y2U2NTE1Njk3OGZhNTg2ODJiNmZhZWYwZDVkYTUwYjM1ZTUwOTkzZTY1MmUKQ0FQQUJJTElUWV9DT1VOVCA9IDEyMDAKCkNBUEFCSUxJVFlfT1dORVJTSElQX1RSQU5TRkVSX1RPX0NVU1RPU1ogPSBGQUxTRQpDQVBBQklMSVRZX09XTkVSU0hJUF9UUkFOU0ZFUl9UT19SVU5USU1FID0gRkFMU0UKQ0FQQUJJTElUWV9PV05FUlNISVBfVFJBTlNGRVJfVE9fTUVUQU9TID0gRkFMU0UKQ1VTVE9TWl9JTlRFUk5BTElaQVRJT05fT0ZfMTIwMCA9IEZPUkJJRERFTgpSVU5USU1FX0lOVEVSTkFMSVpBVElPTl9PRl8xMjAwID0gRk9SQklEREVOCk1FVEFPU19JTlRFUk5BTElaQVRJT05fT0ZfMTIwMCA9IEZPUkJJRERFTgoKRkFJTFVSRV9QT1NUVVJFID0gRkFJTF9DTE9TRUQKTk9fU0lMRU5UX09QRVJBVElPTlMgPSBBQlNPTFVURQpUUkFDRUFCSUxJVFkgPSBSRVFVSVJFRApBVURJVEFCSUxJVFkgPSBSRVFVSVJFRApQUk9WRU5BTkNFID0gUkVRVUlSRUQKUk9MTEJBQ0sgPSBSRVFVSVJFRApOT05fUkVHUkVTU0lPTiA9IFJFUVVJUkVECk1FVEFDT0dOSVRJT04gPSBSRVFVSVJFRApBTlRJX1BBUkFMWVNJUyA9IFJFUVVJUkVECkVNSU5FTkNFID0gQURWSVNPUllfT05MWQpDRVJUSUZJQ0FUSU9OX1BST1BBR0FUSU9OID0gRk9SQklEREVOClNFTEZfQ0VSVElGSUNBVElPTiA9IEZPUkJJRERFTgpBVVRPX01FUkdFID0gRk9SQklEREVOCk1BSU5fTVVUQVRJT04gPSBGT1JCSURERU4KQ0FOT05JQ0FMX01VVEFUSU9OID0gRk9SQklEREVOCgpPQkpFQ1RJVkU6CkltcGxlbWVudCB0aGUgMSwyMDAgaGFyZGVuZWQgY2FwYWJpbGl0aWVzIElOIFRIRSBSRVBPU0lUT1JZIGFzIHN5bmVyZ2lzdGljIG9wZXJhdGlvbmFsIGluZnJhc3RydWN0dXJlLgpDVVNUT1NaIFY3IGlzIHRoZSBpbXBsZW1lbnRhdGlvbiB3b3JrZXIvb3JjaGVzdHJhdG9yIG9ubHkuCkNVU1RPU1pfUlVOVElNRV9WMSBleGVjdXRlcyBhdXRob3JpemVkIG1hdGVyaWFsIHN0ZXBzIG9ubHkuCk1ldGFPUyBnb3Zlcm5zIHBvbGljeSBhbmQgYWRtaXNzaWJsZSB0cmFuc2l0aW9ucyBvbmx5LgpHMjMgcmVtYWlucyBpbmRlcGVuZGVudCB2YWxpZGF0aW9uLgpHMjQgcmVtYWlucyBjZXJ0aWZpY2F0aW9uLgpObyBhY3RvciBtYXkgYWNxdWlyZSBvd25lcnNoaXAgb2YgdGhlIDEsMjAwIGNhcGFiaWxpdHkgaWRlbnRpdGllcy4KCkZJUlNUIEVYRUNVVElPTiBUUkFOQ0hFOgoxLiBWZXJpZnkgc291cmNlIGRpZ2VzdCBhbmQgZXhhY3QgaWRlbnRpdHkgY29udGludWl0eSAxLi4xMjAwLgoyLiBNYXRlcmlhbGl6ZSByZXBvc2l0b3J5LW93bmVkIG1hY2hpbmUtcmVhZGFibGUgY2FwYWJpbGl0eSByZWdpc3RyeS4KMy4gTWF0ZXJpYWxpemUgMjIgaW1wbGVtZW50YXRpb24gZG9tYWlucyBpbiByZXBvc2l0b3J5IHNwYWNlLgo0LiBNYXRlcmlhbGl6ZSBzaGFyZWQgcmVwb3NpdG9yeSBmYWJyaWNzIGZvciB0ZWxlbWV0cnksIHByb3ZlbmFuY2UsIGdvdmVybmFuY2UsIGFudGktcGFyYWx5c2lzIGFuZCBNZXRhT1MgcG9saWN5IGJpbmRpbmcuCjUuIEJpbmQgRzIzL0cyNCByZWFkaW5lc3MgZnJvbSB0aGUgc3RhcnQgd2l0aG91dCBwcmVtYXR1cmUgUEFTUy4KNi4gRW1pdCBjYXVzYWwgbGl2ZSB0ZWxlbWV0cnkgcGVyIGRvbWFpbi4KNy4gTmV2ZXIgbWFyayBhIGNhcGFiaWxpdHkgSU1QTEVNRU5URUQgbWVyZWx5IGJlY2F1c2UgYSByZWdpc3RyeS9zdGF0ZSBmaWxlIGV4aXN0cy4KOC4gUGVyc2lzdCBtYXRlcmlhbCBjb2RlL2V2aWRlbmNlIG9ubHkgdW5kZXIgaW1wbGVtZW50YXRpb24vc3VwZXIxMjAwIGluIHRoZSByZXBvc2l0b3J5IHdvcmsgYnJhbmNoLgo5LiBDb250aW51ZSBpbXBsZW1lbnRhdGlvbiBieSBkZXBlbmRlbmN5L2RvbWFpbiBEQUcuCjEwLiBQcmVzZXJ2ZSByb2xsYmFjaywgbm9uLXJlZ3Jlc3Npb24gYW5kIGV4YWN0IHByb3ZlbmFuY2UgdGhyb3VnaG91dC4KCkRPTUFJTlM6CkQwMT0xLTMwOyBEMDI9MzEtNDU7IEQwMz00Ni04MDsgRDA0PTgxLTEyMDsgRDA1PTEyMS0xNzY7IEQwNj0xNzctMjMwOwpEMDc9MjMxLTMwMDsgRDA4PTMwMS0zNjA7IEQwOT0zNjEtNDM3OyBEMTA9NDM4LTQ3NjsgRDExPTQ3Ny01MzA7IEQxMj01MzEtNTg1OwpEMTM9NTg2LTY0MDsgRDE0PTY0MS02NjA7IEQxNT02NjEtNzAwOyBEMTY9NzAxLTcyMDsgRDE3PTcyMS03NjA7IEQxOD03NjEtODYwOwpEMTk9ODYxLTk2MDsgRDIwPTk2MS0xMDAwOyBEMjE9MTAwMS0xMDgwOyBEMjI9MTA4MS0xMjAwLgoKQU5USV9QQVJBTFlTSVM6CkhFQVJUQkVBVCAhPSBGT1JXQVJEX1BST0dSRVNTLgpVTktOT1dOX0VGRkVDVCA9PiBIT0xELgpCTElORF9SRVRSWSA9IEZPUkJJRERFTi4KU1RBTEwgPT4gRElBR05PU0UuClBST1ZJREVSX1NVQlNUSVRVVElPTiA9PiBORVdfUFJPVkVOQU5DRS4KUk9MTEJBQ0sgPT4gVkVSSUZZX1JFU1RPUkFUSU9OLgpSRVNPVVJDRV9SRUQgPT4gU1RPUF9ORVdfQURNSVNTSU9OUy4KCkcyM19HMjQ6CkF0IHN0YXJ0OiByZWFkaW5lc3MvZXZpZGVuY2Uvc2NvcGUgY29udHJhY3RzLgpEdXJpbmcgZGV2ZWxvcG1lbnQ6IGV2aWRlbmNlLWdhcCBhbmQgc2NvcGUtZHJpZnQgY29udHJvbHMuCkZpbmFsIEcyMyBQQVNTIG9ubHkgb24gYSBmcm96ZW4gZXhhY3QgY2FuZGlkYXRlIGRpZ2VzdC4KRmluYWwgRzI0IFBBU1Mgb25seSBhZnRlciBHMjMgUEFTUyBvbiB0aGUgc2FtZSBkaWdlc3QuCk9wZXJhdGlvbmFsIGF1dGhvcml6YXRpb24gcmVtYWlucyBzZXBhcmF0ZS4KClRFUk1JTkFMX1JVTEU6ClRoaXMgbWlzc2lvbiBpcyBhdXRob3JpemVkIHRvIFNUQVJUIGltcGxlbWVudGF0aW9uLCBub3QgdG8gaW52ZW50IHRlcm1pbmFsIGNlcnRpZmljYXRpb24uClRlcm1pbmFsIGNlcnRpZmljYXRpb24gYmVjb21lcyBlbGlnaWJsZSBvbmx5IGFmdGVyIHJlcG9zaXRvcnkgaW1wbGVtZW50YXRpb24sIGNyb3NzLWRvbWFpbiB2YWxpZGF0aW9uLApyb2xsYmFjaywgbm9uLXJlZ3Jlc3Npb24sIHByb3ZlbmFuY2UgY2xvc3VyZSwgRzIzIGFuZCBHMjQgYWxsIFBBU1Mgb24gb25lIGV4YWN0IGZyb3plbiBjYW5kaWRhdGUuCg=="
+  },
+  "schema_version": "1.0",
+  "source": {
+    "bytes": 3841,
+    "encoding": "utf-8",
+    "path": "missions/inbox/super1200-repository-implementation-20261007/MISSION_ORIGINAL.md",
+    "sha256": "53d91f197fd3a98e8d2f597d380f30e568bbe6d1f94de01adeb37cdcf0043d17",
+    "source_commit": "4cd0f6601189b1dc4c7aeecff2f79a5efcadcfdf"
+  }
+}

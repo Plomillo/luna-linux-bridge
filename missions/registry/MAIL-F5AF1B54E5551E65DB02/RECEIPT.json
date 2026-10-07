@@ -1,0 +1,12 @@
+{
+  "github_run_attempt": "1",
+  "github_run_id": "36609343530",
+  "mail_id": "MAIL-F5AF1B54E5551E65DB02",
+  "received_utc": "2026-09-29T18:03:48.107012+00:00",
+  "schema": "CUSTOSZ_MAILBOX_RECEIPT/1.0",
+  "source_bytes": 3881,
+  "source_commit": "13367be637631871c2726474fefac94e4f853241",
+  "source_path": "missions/inbox/r4-part4-musol-freeze-proyectos-retire-windows-20260929/MISSION_ORIGINAL.md",
+  "source_sha256": "f5af1b54e5551e65db02d008d6065a3ff39f573b997a9870dce877bb1015e071",
+  "status": "RECEIVED"
+}

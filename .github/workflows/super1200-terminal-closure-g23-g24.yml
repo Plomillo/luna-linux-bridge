@@ -1,0 +1,119 @@
+name: "SUPER1200 terminal closure — functional work toward G23 G24"
+
+on:
+  push:
+    branches:
+      - staging/custosz-mission-mailbox-20260928
+    paths:
+      - .github/workflows/super1200-terminal-closure-g23-g24.yml
+      - missions/inbox/super1200-terminal-closure-g23-g24-20261007/MISSION_ORIGINAL.md
+      - scripts/missions/super1200_terminal_closure_worker.py
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: super1200-terminal-closure-g23-g24
+  cancel-in-progress: false
+
+jobs:
+  closure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout mission control plane
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          path: mission
+
+      - name: Checkout exact repository implementation checkpoint
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: custosz/super-1200-implementation-20261007
+          fetch-depth: 0
+          persist-credentials: true
+          path: target
+
+      - name: Verify exact forensic checkpoint
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ACTUAL="$(git -C target rev-parse HEAD)"
+          test "$ACTUAL" = "4e957f2d4a388a87f8dca17053e5f2ec8693c5a2"
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("target/implementation/super1200/registry/capabilities.json").read_text())
+          p=json.loads(Path("target/implementation/super1200/DOMAIN_PROGRESS.json").read_text())
+          w=json.loads(Path("target/implementation/super1200/graphs/WIRING_VALIDATION.json").read_text())
+          assert r["owner"]=="REPOSITORY" and r["count"]==1200
+          assert sum(1 for x in r["items"] if x["implementation_state"]=="DECLARED")==1200
+          assert all(x["state"]=="IN_PROGRESS" for x in p["domains"])
+          assert w["node_count"]==1200 and w["edge_count"]==8193
+          print("SUPER1200_TERMINAL_TELEMETRY FORENSIC_CHECKPOINT=PASS DECLARED=1200 DOMAINS=22 EDGES=8193")
+          PY
+
+      - name: Revalidate CUSTOSZ V7 Runtime and MetaOS boundaries
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B -I mission/artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz v07-selftest
+          python3 - <<'PY'
+          import hashlib,sys,tempfile
+          from pathlib import Path
+          runtime=Path("mission/artifacts/custosz-v7/CUSTOSZ_RUNTIME_V1_SR_EXEC_BOUND_FME_01.b.pyz").resolve()
+          authority=Path("target/Louksna.md").resolve()
+          sys.path.insert(0,str(runtime))
+          from runtime_core import Runtime
+          result=Runtime(Path(tempfile.mkdtemp(prefix="super1200-terminal-"))/"state",authority,hashlib.sha256(authority.read_bytes()).hexdigest()).selftest()
+          assert result.get("status")=="PASS",result
+          raw=Path("mission/artifacts/custosz-v7/MetaOS.wasm").read_bytes()
+          for token in (b"implementation-gate",b"implementation-authorized",b"active-allowed",b"checkpoint-trusted",b"network-default-deny"):
+              assert token in raw,token
+          print("SUPER1200_TERMINAL_TELEMETRY CUSTOSZ=PASS RUNTIME=PASS METAOS=PASS OWNER=REPOSITORY")
+          print("SUPER1200_TERMINAL_TELEMETRY G23=BLOCKED_UNTIL_FUNCTIONAL_CLOSURE G24=BLOCKED_UNTIL_G23_SAME_DIGEST")
+          PY
+
+      - name: Start terminal functional closure stream
+        shell: bash
+        env:
+          TARGET_ROOT: ${{ github.workspace }}/target
+          EXPECTED_HEAD: 4e957f2d4a388a87f8dca17053e5f2ec8693c5a2
+        run: |
+          set -Eeuo pipefail
+          nice -n 10 python3 -B -I mission/scripts/missions/super1200_terminal_closure_worker.py
+
+      - name: Execute D01 foundation tests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          PYTHONPATH="target/implementation/super1200/core" python3 -B -I target/implementation/super1200/core/tests/test_foundation.py
+          echo "SUPER1200_TERMINAL_TELEMETRY D01_FOUNDATION=VALIDATED G23=NOT_YET_ELIGIBLE G24=NOT_YET_ELIGIBLE"
+
+      - name: Persist terminal closure progress in repository
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd target
+          git add implementation/super1200
+          BAD="$(git diff --cached --name-only | grep -v '^implementation/super1200/' || true)"
+          test -z "$BAD"
+          git config user.name "custosz-v7-runtime-bot"
+          git config user.email "custosz-v7-runtime-bot@users.noreply.github.com"
+          git commit -m "feat(super1200): begin terminal functional closure toward G23 G24"
+          git push origin HEAD:refs/heads/custosz/super-1200-implementation-20261007
+          echo "SUPER1200_TERMINAL_TELEMETRY REPOSITORY_PROGRESS_PERSISTED=PASS"
+
+      - name: Preserve closure telemetry
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: super1200-terminal-closure-evidence
+          path: |
+            target/implementation/super1200/terminal
+            target/implementation/super1200/core
+          if-no-files-found: warn
+          retention-days: 90

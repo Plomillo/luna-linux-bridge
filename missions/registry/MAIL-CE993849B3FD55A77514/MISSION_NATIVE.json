@@ -1,0 +1,211 @@
+{
+  "authority_context": {
+    "authority": "Louksna.md",
+    "authority_transfer": false,
+    "canonical_mutation_authorized": false
+  },
+  "declared_mission_id": "MIS-DOCUMENT-FACTORY-FFPROBE-EXACT-CERT-20261006",
+  "execution_contract": {
+    "default_profile": "LUNA_PROJECT",
+    "fail_closed": true,
+    "governor": "MetaOS",
+    "no_silent_executor_substitution": true,
+    "protected_scopes": [
+      "WINDOWS",
+      "EFI",
+      "GPT",
+      "PARTITIONS",
+      "PROYECTOS",
+      "F3-DISK",
+      "CANONICAL_ARCHITECTURE",
+      "FROZEN_ARTIFACTS"
+    ],
+    "runtime": "CUSTOSZ_RUNTIME_V1",
+    "supervisor": "SYMPHYLAX_R1",
+    "validation_reserve_seconds": 240,
+    "wallclock_seconds": 1200,
+    "worker": "CUSTOSZ_V7",
+    "workflow_success_is_not_mission_success": true
+  },
+  "mail_id": "MAIL-CE993849B3FD55A77514",
+  "mailbox_version": "0.1.0",
+  "mission_payload": {
+    "byte_exact_preservation": true,
+    "directives_observed": {
+      "AUTHORITY": [
+        {
+          "line": 3,
+          "value": "Louksna.md"
+        }
+      ],
+      "AUTO_MERGE": [
+        {
+          "line": 12,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "CERTIFICATION_PROPAGATION": [
+        {
+          "line": 11,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "DESKTOP_EXECUTION": [
+        {
+          "line": 10,
+          "value": "PROHIBITED"
+        }
+      ],
+      "EVIDENCE_POINTERS": [
+        {
+          "line": 56,
+          "value": "<immutable refs>"
+        }
+      ],
+      "EXACT_CANDIDATE_DIGEST": [
+        {
+          "line": 50,
+          "value": "<sha256>"
+        }
+      ],
+      "EXACT_CANDIDATE_SHA": [
+        {
+          "line": 49,
+          "value": "<sha>"
+        }
+      ],
+      "EXECUTION_LOCATION": [
+        {
+          "line": 6,
+          "value": "SELF_HOSTED_LUNA_AUX"
+        }
+      ],
+      "FAILURE_POSTURE": [
+        {
+          "line": 7,
+          "value": "FAIL_CLOSED"
+        }
+      ],
+      "FRESH_PRODUCER": [
+        {
+          "line": 51,
+          "value": "{RUNNING|PASS|FAIL};RUN_ID=<id>"
+        }
+      ],
+      "G23": [
+        {
+          "line": 53,
+          "value": "{RUNNING|PASS|FAIL};RUN_ID=<id>"
+        }
+      ],
+      "G24": [
+        {
+          "line": 54,
+          "value": "{RUNNING|PASS|FAIL};RUN_ID=<id>"
+        }
+      ],
+      "IDENTITY_GATE": [
+        {
+          "line": 48,
+          "value": "{RUNNING|PASS|FAIL}"
+        }
+      ],
+      "INDEPENDENT_PRODUCER": [
+        {
+          "line": 52,
+          "value": "{RUNNING|PASS|FAIL};RUN_ID=<id>"
+        }
+      ],
+      "LEGACY_CANDIDATE_SHA": [
+        {
+          "line": 22,
+          "value": "3774cb102ad6318fc824b2cb87c5055e9f5f4b0b"
+        }
+      ],
+      "MISSION_CLASS": [
+        {
+          "line": 2,
+          "value": "DOCUMENT_FACTORY_GOVERNED_CONTINUATION_V1"
+        }
+      ],
+      "MISSION_ID": [
+        {
+          "line": 1,
+          "value": "MIS-DOCUMENT-FACTORY-FFPROBE-EXACT-CERT-20261006"
+        }
+      ],
+      "NO_SILENT_OPERATIONS": [
+        {
+          "line": 8,
+          "value": "TRUE"
+        }
+      ],
+      "OPERATIONAL_ACTIVATION": [
+        {
+          "line": 13,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "REMOTE_DESKTOP_COMMANDER": [
+        {
+          "line": 9,
+          "value": "PROHIBITED"
+        }
+      ],
+      "RUNTIME": [
+        {
+          "line": 5,
+          "value": "CUSTOSZ_RUNTIME_V1"
+        }
+      ],
+      "TARGET_TERMINAL_STATE": [
+        {
+          "line": 14,
+          "value": "CERTIFIED_NOT_ACTIVE"
+        }
+      ],
+      "TERMINAL_STATE": [
+        {
+          "line": 55,
+          "value": "{CERTIFIED_NOT_ACTIVE|ABORTED}"
+        }
+      ],
+      "WALLCLOCK_CEILING_SECONDS": [
+        {
+          "line": 15,
+          "value": "1200"
+        }
+      ],
+      "WORKER": [
+        {
+          "line": 4,
+          "value": "CUSTOSZ_V7"
+        }
+      ],
+      "WORK_SHA": [
+        {
+          "line": 21,
+          "value": "3cc413cea40d77c7bb119e29d09d72b4eac44909"
+        }
+      ]
+    },
+    "required_capabilities_explicit": [],
+    "routing_hints": {
+      "authoritative": false,
+      "values": [
+        "CUSTOSZ_RUNTIME",
+        "GITHUB",
+        "ROLLBACK"
+      ]
+    },
+    "source_utf8_b64": "TUlTU0lPTl9JRCA9IE1JUy1ET0NVTUVOVC1GQUNUT1JZLUZGUFJPQkUtRVhBQ1QtQ0VSVC0yMDI2MTAwNgpNSVNTSU9OX0NMQVNTID0gRE9DVU1FTlRfRkFDVE9SWV9HT1ZFUk5FRF9DT05USU5VQVRJT05fVjEKQVVUSE9SSVRZID0gTG91a3NuYS5tZApXT1JLRVIgPSBDVVNUT1NaX1Y3ClJVTlRJTUUgPSBDVVNUT1NaX1JVTlRJTUVfVjEKRVhFQ1VUSU9OX0xPQ0FUSU9OID0gU0VMRl9IT1NURURfTFVOQV9BVVgKRkFJTFVSRV9QT1NUVVJFID0gRkFJTF9DTE9TRUQKTk9fU0lMRU5UX09QRVJBVElPTlMgPSBUUlVFClJFTU9URV9ERVNLVE9QX0NPTU1BTkRFUiA9IFBST0hJQklURUQKREVTS1RPUF9FWEVDVVRJT04gPSBQUk9ISUJJVEVECkNFUlRJRklDQVRJT05fUFJPUEFHQVRJT04gPSBGT1JCSURERU4KQVVUT19NRVJHRSA9IEZPUkJJRERFTgpPUEVSQVRJT05BTF9BQ1RJVkFUSU9OID0gRk9SQklEREVOClRBUkdFVF9URVJNSU5BTF9TVEFURSA9IENFUlRJRklFRF9OT1RfQUNUSVZFCldBTExDTE9DS19DRUlMSU5HX1NFQ09ORFMgPSAxMjAwCgpPQkpFQ1RJVkUKQ2xvc2UgdGhlIGV4YWN0IERvY3VtZW50IEZhY3RvcnkgRkZwcm9iZSBjYW5kaWRhdGUgY2VydGlmaWNhdGlvbiBjaGFpbiB3aXRob3V0IGNoYW5naW5nIGNhbm9uaWNhbCBhdXRob3JpdHkgb3IgaW5oZXJpdGluZyBjZXJ0aWZpY2F0aW9uIGZyb20gYW5vdGhlciBvYmplY3QuCgpNQVRFUklBTCBBTkNIT1JTCldPUktfU0hBID0gM2NjNDEzY2VhNDBkNzdjN2JiMTE5ZTI5ZDA5ZDcyYjRlYWM0NDkwOQpMRUdBQ1lfQ0FORElEQVRFX1NIQSA9IDM3NzRjYjEwMmFkNjMxOGZjODI0YjJjYjg3YzUwNTVlOWY1ZjRiMGIKCk1BTkRBVE9SWSBPUkRFUgoxLiBJREVOVElUWV9HQVRFCiAgIENvbXBhcmUgV09SS19TSEEgYW5kIExFR0FDWV9DQU5ESURBVEVfU0hBIG1hdGVyaWFsbHkgYW5kIGNyeXB0b2dyYXBoaWNhbGx5LiBDb21taXQtbWVzc2FnZSBlcXVhbGl0eSBpcyBub3QgZXZpZGVuY2Ugb2YgbWF0ZXJpYWwgZXF1YWxpdHkuIFJlY29yZCBjb21taXQvdHJlZS9maWxlL2RpZ2VzdCBldmlkZW5jZS4KICAgSWYgZXhhY3QgYWRtaXNzaWJsZSBlcXVpdmFsZW5jZSBpcyBub3QgZGVtb25zdHJhdGVkLCBkZXJpdmUvcHJvbW90ZSBFWEFDVF9DQU5ESURBVEVfU0hBIGZyb20gV09SS19TSEEuCiAgIEZyZWV6ZSBFWEFDVF9DQU5ESURBVEVfU0hBIGFuZCBpdHMgYXJ0aWZhY3QgU0hBLTI1Ni4KCjIuIEZSRVNIX1BST0RVQ0VSCiAgIFJ1biBvbmx5IGFnYWluc3QgRVhBQ1RfQ0FORElEQVRFX1NIQS4gUHJlc2VydmUgcHJvdmVuYW5jZSwgZGVwZW5kZW5jeSBwaW5zLCBydW4gSUQsIGxvZ3MgYW5kIGFydGlmYWN0IGRpZ2VzdC4gQW55IG1pc21hdGNoID0+IEFCT1JULgoKMy4gSU5ERVBFTkRFTlRfUFJPRFVDRVIKICAgUnVuIGluZGVwZW5kZW50bHkgYWdhaW5zdCB0aGUgc2FtZSBFWEFDVF9DQU5ESURBVEVfU0hBLiBQcmVzZXJ2ZSBpbmRlcGVuZGVuY2UgZXZpZGVuY2UgYW5kIGltbXV0YWJsZSBvdXRwdXQgZGlnZXN0LiBBbnkgaWRlbnRpdHkgZHJpZnQgPT4gQUJPUlQuCgo0LiBHMjNfSU5ERVBFTkRFTlRfVkFMSURBVElPTgogICBWYWxpZGF0ZSBleGFjdGx5IHRoZSBpbmRlcGVuZGVudGx5IHByb2R1Y2VkIFNIQS9kaWdlc3QuIFJlcXVpcmUgY29tcGxldGUgZXZpZGVuY2UgY2hhaW4gYW5kIG5vbi1yZWdyZXNzaW9uLiBHMjMgbWF5IG5vdCB2YWxpZGF0ZSBhIGRpZmZlcmVudCBvYmplY3QuCgo1LiBHMjRfQ0VSVElGSUNBVElPTgogICBFeGVjdXRlIG9ubHkgYWZ0ZXIgRzIzPVBBU1MgYW5kIG9uIGV4YWN0bHkgdGhlIHNhbWUgU0hBL2RpZ2VzdC4gTm8gaW5oZXJpdGFuY2UgYW5kIG5vIHByb3BhZ2F0aW9uLgoKNi4gVEVSTUlOQUxfUkVDT1JECiAgIE9ubHkgYWZ0ZXIgRzI0PVBBU1MgcmVjb3JkIENFUlRJRklFRF9OT1RfQUNUSVZFLgogICBEbyBub3QgbWVyZ2UgdG8gbWFpbi4gRG8gbm90IG9wZXJhdGlvbmFsbHkgYWN0aXZhdGUuIERvIG5vdCBtdXRhdGUgTG91a3NuYS5tZCwgUFVBQzIsIGZyb3plbiBhdXRob3JpdHksIG9yIHByaW9yIEFDVElWRSBjZXJ0aWZpY2F0aW9uLgogICBQcmVzZXJ2ZSBjaGVja3BvaW50LCByb2xsYmFjayBhbmQgaW1tdXRhYmxlIGV2aWRlbmNlIHBvaW50ZXJzLgoKUkVRVUlSRUQgTElWRSBURUxFTUVUUlkKSURFTlRJVFlfR0FURT17UlVOTklOR3xQQVNTfEZBSUx9CkVYQUNUX0NBTkRJREFURV9TSEE9PHNoYT4KRVhBQ1RfQ0FORElEQVRFX0RJR0VTVD08c2hhMjU2PgpGUkVTSF9QUk9EVUNFUj17UlVOTklOR3xQQVNTfEZBSUx9O1JVTl9JRD08aWQ+CklOREVQRU5ERU5UX1BST0RVQ0VSPXtSVU5OSU5HfFBBU1N8RkFJTH07UlVOX0lEPTxpZD4KRzIzPXtSVU5OSU5HfFBBU1N8RkFJTH07UlVOX0lEPTxpZD4KRzI0PXtSVU5OSU5HfFBBU1N8RkFJTH07UlVOX0lEPTxpZD4KVEVSTUlOQUxfU1RBVEU9e0NFUlRJRklFRF9OT1RfQUNUSVZFfEFCT1JURUR9CkVWSURFTkNFX1BPSU5URVJTPTxpbW11dGFibGUgcmVmcz4KCkNPT1JESU5BVElPTgpDVVNUT1NaIFY3IGlzIHRoZSB3b3JrZXIuIENVU1RPU1pfUlVOVElNRV9WMSBpcyB0aGUgZ292ZXJuZWQgZXhlY3V0aW9uIGNvbnRyb2wuIEdpdEh1Yi9MT1VLU05BIFJlbW90ZSBCcmlkZ2UgaXMgdHJhbnNwb3J0LCBpbmdyZXNzLCByb3V0aW5nLCB0ZWxlbWV0cnkgYW5kIGV2aWRlbmNlLiBEZXNrdG9wIGFuZCBSZW1vdGUgRGVza3RvcCBDb21tYW5kZXIgYXJlIGZvcmJpZGRlbiBhcyB3b3JrZXIsIGZhbGxiYWNrLCBhdXhpbGlhcnkgZXhlY3V0b3IsIGV2aWRlbmNlIHRyYW5zcG9ydGVyIG9yIHJlY292ZXJ5IHBhdGguCgpTVE9QL1JFVFVSTiBSVUxFCk9uY2UgQ1VTVE9TWiBWNyArIFJ1bnRpbWUgZW1pdCBsaXZlIHRlbGVtZXRyeSBwcm92aW5nIHRoaXMgZXhhY3QgY2hhaW4gaXMgUlVOTklORywgY29udGludWUgYXV0b25vbW91c2x5LiBEbyBub3QgcmVxdWVzdCBjb252ZXJzYXRpb25hbCBpbnRlcnZlbnRpb24gdW5sZXNzIGEgZmFpbC1jbG9zZWQgZ2F0ZSByZXF1aXJlcyBuZXcgZXhwbGljaXQgYXV0aG9yaXphdGlvbi4K"
+  },
+  "schema_version": "1.0",
+  "source": {
+    "bytes": 3036,
+    "encoding": "utf-8",
+    "path": "missions/inbox/document-factory-ffprobe-exact-cert-20261006/MISSION_ORIGINAL.md",
+    "sha256": "ce993849b3fd55a775145e19ae14c24850e3700288cc017d6d74531ddfddc31c",
+    "source_commit": "9952e1f3465e5ad1dd247bb1c2f1117acc04b599"
+  }
+}

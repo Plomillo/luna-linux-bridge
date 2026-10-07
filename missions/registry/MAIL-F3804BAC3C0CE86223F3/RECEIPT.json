@@ -1,0 +1,12 @@
+{
+  "github_run_attempt": "1",
+  "github_run_id": "36584631845",
+  "mail_id": "MAIL-F3804BAC3C0CE86223F3",
+  "received_utc": "2026-09-29T14:42:16.676367+00:00",
+  "schema": "CUSTOSZ_MAILBOX_RECEIPT/1.0",
+  "source_bytes": 6489,
+  "source_commit": "af38a955885516b9938de29dc2e22308209491db",
+  "source_path": "missions/inbox/server-ready-g09-state-recovery-15m/MISSION_ORIGINAL.md",
+  "source_sha256": "f3804bac3c0ce86223f3057d4d52c3adbf6a41b9d7d2c097e64e4ee86a627384",
+  "status": "RECEIVED"
+}

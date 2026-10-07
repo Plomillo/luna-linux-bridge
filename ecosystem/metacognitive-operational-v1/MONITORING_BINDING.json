@@ -1,0 +1,42 @@
+{
+  "schema": "LOUKSNA_METACOGNITIVE_MONITORING_BINDING/1.0",
+  "release_id": "META-ECO-V1-B91D-20260928",
+  "watch": "Louksna Lab Watch",
+  "candidate_digest_sha256": "b91d04bf79cd98eda846a8d0435f20323013f7ef647d9b288ab4cf29dcc35240",
+  "monitor": [
+    "candidate_digest",
+    "Louksna.md authority identity",
+    "MetaOS/CUSTOSZ/Runtime bindings",
+    "CUSTOSZ72 capability census",
+    "MCAP59 capability graph",
+    "G16 non-duplication",
+    "PUAC2 C25-C32",
+    "G23 validity",
+    "G24 validity",
+    "cloud lane regressions",
+    "dependency/version currentness",
+    "security findings",
+    "evidence expiry and artifact availability"
+  ],
+  "invalidating_events": [
+    "candidate digest changes",
+    "authority content changes affecting the release",
+    "runtime identity or binding changes",
+    "capability graph/binding changes",
+    "critical dependency/security change",
+    "mandatory lane regression",
+    "evidence corruption or expiry without replacement",
+    "training modifies an active candidate"
+  ],
+  "on_invalidation": [
+    "HOLD affected release claims",
+    "record BLOCKER_EVENT and impacted evidence",
+    "run impact/non-regression analysis",
+    "repeat affected validation",
+    "repeat G23 when required",
+    "repeat G24 when required"
+  ],
+  "automatic_certification_propagation": false,
+  "automatic_recertification": false,
+  "fail_closed": true
+}

@@ -1,0 +1,51 @@
+name: "CUSTOSZ Mailbox — reroute PLAN DEFINITIVO after pinned adapter"
+
+on:
+  push:
+    branches:
+      - staging/custosz-mission-mailbox-20260928
+    paths:
+      - .github/workflows/custosz-mailbox-reroute-plan-definitivo.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reroute:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Re-evaluate immutable native envelope after exact adapter remediation
+        shell: bash
+        env:
+          ROUTE_EXECUTION_LOCATION: SELF_HOSTED_LUNA_AUX
+        run: |
+          set -Eeuo pipefail
+          SRC="missions/registry/MAIL-A4CDC89F3CCBA6754919"
+          OUT="$RUNNER_TEMP/plan-definitivo-reroute"
+          test "$(cat "$SRC/SOURCE_SHA256")" = "a4cdc89f3ccba6754919ae55b4e4f8bc16ae584587a595f5403ac180d74a3b50"
+          mkdir -p "$OUT"
+          python3 -B -I scripts/mission_mailbox/route_mission.py --compiled "$SRC" --out "$OUT" --repo-root .
+          python3 - "$OUT/RUNTIME_COMPATIBILITY.json" "$OUT/MISSION_STATE.json" <<'PY'
+          import json,sys
+          c=json.load(open(sys.argv[1])); s=json.load(open(sys.argv[2]))
+          assert c["result"]=="PASS", c
+          a=c["adapter_selected"]
+          assert a["adapter_id"]=="LUNA_R4_PART4_PART9_PLAN_DEFINITIVO_24H_V1"
+          assert a["source_sha256"]=="a4cdc89f3ccba6754919ae55b4e4f8bc16ae584587a595f5403ac180d74a3b50"
+          assert a["sha256"]=="ee340deb9bf9ccc4e6eeb28f3e0fb6c548b3550a0c00e558b04c5c4fd227f397"
+          assert s["current_gate"]=="MATERIAL_EXECUTION"
+          assert s["current_state"] in {"BINDING_PROVIDER_SELECTED","EXECUTOR_BOUND"}
+          print("PLAN_DEFINITIVO_MAILBOX_REROUTE=PASS")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: plan-definitivo-mailbox-reroute
+          path: ${{ runner.temp }}/plan-definitivo-reroute/
+          if-no-files-found: error
+          retention-days: 90

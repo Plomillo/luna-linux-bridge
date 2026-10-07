@@ -1,0 +1,50 @@
+name: "CUSTOSZ V7 — FFprobe exact mission operational probe"
+
+on:
+  push:
+    branches:
+      - staging/custosz-mission-mailbox-20260928
+    paths:
+      - missions/triggers/document-factory-ffprobe-exact-cert-operational/**
+
+permissions:
+  contents: read
+
+jobs:
+  exact-operational-probe:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 20
+    steps:
+      - name: Checkout governed exact mission surface
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: staging/custosz-mission-mailbox-20260928
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prove CUSTOSZ Runtime and exact FFprobe identity gate are operational
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export CUSTOSZ_WORKSPACE_OVERRIDE="$HOME/SYMPHYLAX_LAB/CUSTOSZ_V7_R1_G23_G24_20260927T021532Z/POSIX_COMPATIBILITY_VIEW"
+          test -d "$CUSTOSZ_WORKSPACE_OVERRIDE"
+          echo "WORKER=CUSTOSZ_V7"
+          echo "RUNTIME=CUSTOSZ_RUNTIME_V1"
+          echo "MISSION_ID=MIS-DOCUMENT-FACTORY-FFPROBE-EXACT-CERT-20261006"
+          echo "IDENTITY_GATE=RUNNING"
+          test -f missions/inbox/document-factory-ffprobe-exact-cert-20261006/MISSION_ORIGINAL.md
+          grep -F "WORK_SHA = 3cc413cea40d77c7bb119e29d09d72b4eac44909" missions/inbox/document-factory-ffprobe-exact-cert-20261006/MISSION_ORIGINAL.md
+          grep -F "LEGACY_CANDIDATE_SHA = 3774cb102ad6318fc824b2cb87c5055e9f5f4b0b" missions/inbox/document-factory-ffprobe-exact-cert-20261006/MISSION_ORIGINAL.md
+          git cat-file -e 3cc413cea40d77c7bb119e29d09d72b4eac44909^{commit}
+          git cat-file -e 3774cb102ad6318fc824b2cb87c5055e9f5f4b0b^{commit}
+          WORK_TREE="$(git show -s --format=%T 3cc413cea40d77c7bb119e29d09d72b4eac44909)"
+          CAND_TREE="$(git show -s --format=%T 3774cb102ad6318fc824b2cb87c5055e9f5f4b0b)"
+          echo "WORK_TREE=$WORK_TREE"
+          echo "CANDIDATE_TREE=$CAND_TREE"
+          if [ "$WORK_TREE" = "$CAND_TREE" ]; then
+            echo "IDENTITY_GATE=PASS"
+          else
+            echo "IDENTITY_GATE=FAIL"
+            git diff --stat 3cc413cea40d77c7bb119e29d09d72b4eac44909 3774cb102ad6318fc824b2cb87c5055e9f5f4b0b
+            exit 42
+          fi
+          echo "OPERATIONAL_NOT_DECORATIVE=PASS"

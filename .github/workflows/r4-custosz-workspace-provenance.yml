@@ -1,0 +1,48 @@
+name: "R4 CUSTOSZ — workspace candidate provenance audit"
+
+on:
+  push:
+    branches:
+      - staging/custosz-mission-mailbox-20260928
+    paths:
+      - .github/workflows/r4-custosz-workspace-provenance.yml
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 3
+    steps:
+      - name: Compare bounded workspace candidates read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          CANDIDATES=(
+            "/home/diegoignacionorambuenamiranda/MISION_PUAC_20260926/V7_WORKSPACE_PROJECTION"
+            "/home/diegoignacionorambuenamiranda/SYMPHYLAX_LAB/CUSTOSZ_V7_R1_G23_G24_20260927T021509Z/POSIX_COMPATIBILITY_VIEW"
+            "/home/diegoignacionorambuenamiranda/SYMPHYLAX_LAB/CUSTOSZ_V7_R1_G23_G24_20260927T021532Z/POSIX_COMPATIBILITY_VIEW"
+          )
+          for root in "${CANDIDATES[@]}"; do
+            echo "===== ROOT=$root ====="
+            test -d "$root" || { echo "MISSING"; continue; }
+            echo "MARKER=$(test -d "$root/1. PROYECTOS PRIORITARIOS" && echo PASS || echo FAIL)"
+            echo "PENDIENTES=$(test -e "$root/4. PENDIENTES" && echo PASS || echo FAIL)"
+            echo "CORPUS=$(test -e "$root/2. CORPUS" && echo PASS || echo FAIL)"
+            stat -Lc 'MODE=%a OWNER=%U:%G MTIME=%y' "$root"
+            echo "-- TOP FILES --"
+            find "$root" -maxdepth 1 -type f -printf '%f\t%s\n' | sort | head -n 100
+            echo "-- SMALL TEXT EVIDENCE --"
+            while IFS= read -r f; do
+              size="$(stat -c %s "$f" 2>/dev/null || echo 999999)"
+              if [ "$size" -le 32768 ]; then
+                case "$f" in
+                  *.json|*.md|*.txt|*.log)
+                    echo "### $f"
+                    sed -n '1,160p' "$f" || true
+                    ;;
+                esac
+              fi
+            done < <(find "$root" -maxdepth 2 -type f | sort | head -n 120)
+          done

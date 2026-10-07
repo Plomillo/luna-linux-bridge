@@ -1,0 +1,46 @@
+{
+  "current_gate": "MATERIAL_EXECUTION",
+  "current_state": "BINDING_PROVIDER_SELECTED",
+  "history": [
+    {
+      "state": "RECEIVED",
+      "utc": "2026-09-29T14:42:16.601080+00:00"
+    },
+    {
+      "state": "VALIDATED",
+      "utc": "2026-09-29T14:42:16.601606+00:00"
+    },
+    {
+      "state": "COMPILED",
+      "utc": "2026-09-29T14:42:16.601611+00:00"
+    },
+    {
+      "state": "SEMANTICALLY_EQUIVALENT_BY_BYTE_PRESERVATION",
+      "utc": "2026-09-29T14:42:16.601613+00:00"
+    },
+    {
+      "custosz_mission_id": "MIS-74cb10f6aa1741c298c0",
+      "state": "ROUTED",
+      "utc": "2026-09-29T14:42:38.926245+00:00"
+    },
+    {
+      "state": "RUNTIME_COMPATIBLE",
+      "utc": "2026-09-29T14:42:38.926388+00:00"
+    },
+    {
+      "adapter_id": "META_ECOSYSTEM_V1_ADMISSION",
+      "state": "ADAPTER_SELECTED",
+      "utc": "2026-09-29T14:42:38.926394+00:00"
+    },
+    {
+      "adapter_id": "META_ECOSYSTEM_V1_ADMISSION",
+      "state": "BINDING_PROVIDER_SELECTED",
+      "utc": "2026-09-29T14:42:38.926398+00:00"
+    }
+  ],
+  "mail_id": "MAIL-1F8BA16E26789CC4BA3C",
+  "mission_terminal_status": null,
+  "root_blocker": null,
+  "schema_version": "1.0",
+  "workflow_technical_status": "PASS"
+}

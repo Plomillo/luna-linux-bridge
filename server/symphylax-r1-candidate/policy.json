@@ -1,0 +1,57 @@
+{
+  "schema": "SYMPHYLAX_R1_CANDIDATE_POLICY/1.0",
+  "status": "CANDIDATE_NOT_DEPLOYED",
+  "authority": "Louksna.md",
+  "governor": "MetaOS",
+  "worker": "CUSTOSZ_V7",
+  "runtime": "CUSTOSZ_RUNTIME_V1",
+  "authorization": {
+    "mode": "HMAC_SHA256_EXTERNAL_SECRET",
+    "secret_storage": "OUTSIDE_REPOSITORY",
+    "required_fields": [
+      "mission_id",
+      "mission_sha256",
+      "source_commit",
+      "scope",
+      "expires_utc",
+      "executor",
+      "policy",
+      "checkpoint"
+    ],
+    "push_is_authorization": false,
+    "issue_is_authorization": false,
+    "workflow_is_authorization": false
+  },
+  "execution": {
+    "allowed_scopes": [
+      "TEST_ONLY",
+      "SERVER_READY_VALIDATION"
+    ],
+    "arbitrary_shell": false,
+    "require_executor_binding": true,
+    "require_checkpoint": true,
+    "require_post_validation": true,
+    "require_rollback_where_mutating": true
+  },
+  "resources": {
+    "memory_max_bytes": 268435456,
+    "cpu_quota_percent": 50,
+    "tasks_max": 64,
+    "restart_limit": 3
+  },
+  "protected_scopes": [
+    "WINDOWS",
+    "EFI",
+    "GPT",
+    "PARTITIONS",
+    "PROYECTOS",
+    "F3-DISK",
+    "CANONICAL_ARCHITECTURE",
+    "FROZEN_ARTIFACTS"
+  ],
+  "evidence": {
+    "hash_chain": "SHA256",
+    "persist_outside_rollback_scope": true,
+    "required": true
+  }
+}

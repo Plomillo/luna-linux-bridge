@@ -1,0 +1,27 @@
+{
+  "adapter": {
+    "adapter_id": "SYMPHYLAX_FINAL_GUARANTEED_60M_V1",
+    "backend": "CUSTOSZ_RUNTIME",
+    "dedicated_workflow": ".github/workflows/symphylax-final-guaranteed-certification-60m.yml",
+    "execution_location": "SELF_HOSTED_LUNA_AUX",
+    "hard_ceiling_seconds": 3600,
+    "mission_classes": [
+      "SYMPHYLAX_FINAL_GUARANTEED_CERTIFICATION_60M"
+    ],
+    "path": "scripts/mission_mailbox/adapters/symphylax_final_guaranteed_60m.py",
+    "provides_executor_binding": true,
+    "required_capabilities": [],
+    "requires_prebound_executor": false,
+    "scope": "SYMPHYLAX_FINAL_GUARANTEED_CERTIFICATION_G08_G09_PUAC2_G23_G24",
+    "sha256": "138194ff7409cb3b9b48a32e98ec6362f0857fe87e667a5501fd4aa5bc939d85",
+    "source_sha256": "39ff460cab6e709f48775361ccb76996acc7a3cfc26e4c7399faf126c61ab0f6",
+    "status": "ACTIVE_PINNED"
+  },
+  "binding_mode": "ADAPTER_PROVIDED_PENDING",
+  "custosz_mission_id": "MIS-193a1390080b447eb70b",
+  "mail_id": "MAIL-39FF460CAB6E709F4877",
+  "observed_executor_bound": false,
+  "rule": "Material execution must occur only through the pinned Runtime adapter and produce terminal evidence. Selecting a binding-providing adapter does not itself prove EXECUTOR_BINDING=PASS.",
+  "schema": "CUSTOSZ_EXECUTION_PLAN/1.1",
+  "status": "ROUTED_READY_NOT_YET_EXECUTED"
+}

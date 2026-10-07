@@ -1,0 +1,139 @@
+{
+  "schema": "SERVER_READY_TERMINAL_CHAIN_CONTRACT/1.1",
+  "contract_id": "SR_TERMINAL_G08_G09_G23_G24_V1",
+  "authority": "Louksna.md",
+  "mission_source": "missions/inbox/server-ready-final-g23-g24-20260928/MISSION_ORIGINAL.md",
+  "mission_sha256": "8191840debd98f8775e530a37d3d23770f148693af64689f8e0d187be037cb21",
+  "mail_id": "MAIL-8191840DEBD98F8775E5",
+  "governor": "MetaOS",
+  "worker": "CUSTOSZ_V7",
+  "runtime": "CUSTOSZ_RUNTIME_V1",
+  "supervisor": "SYMPHYLAX_R1",
+  "doctrine": "EXTEND_DO_NOT_REPLACE",
+  "failure_posture": "FAIL_CLOSED",
+  "taxonomy": {
+    "T00_AUTHORITY_IDENTITY": "authority, mission identity, canonical invariants",
+    "T01_PROVENANCE": "hashes, source, lineage, frozen evidence",
+    "T02_CONTINUITY": "checkpoint, resume, persistent state, no silent stop",
+    "T03_G08": "boot persistence and service continuity",
+    "T04_G09": "controlled failure and recovery",
+    "T05_FREEZE": "binary 15-gate recomputation and frozen bundle",
+    "T06_G23": "independent validation, no repair",
+    "T07_G24": "certification after G23 PASS only",
+    "T08_FINAL": "terminal certified/failed state",
+    "T09_RESOURCES_SECURITY": "minimum sufficient resources, protected scopes",
+    "T10_AUDIT": "chronology, evidence chain, blocker ledger"
+  },
+  "binary_language": {
+    "true_value": 1,
+    "false_value": 0,
+    "unknown_value": 0,
+    "rule": "UNKNOWN_NEVER_PASS",
+    "server_ready": "PRODUCT(GATE_01..GATE_15)",
+    "certification": "SERVER_TECHNICAL_READY * G23_PASS * G24_PASS",
+    "genuine_terminal_pass": "G08_PASS * G09_PASS * PRODUCT(GATE_01..GATE_15) * G23_PASS * G24_PASS",
+    "artificial_pass": "FORBIDDEN_IF_ANY_REQUIRED_EVIDENCE_IS_MISSING_UNKNOWN_UNEXECUTED_OR_CONTRADICTED"
+  },
+  "invariants": {
+    "NO_SKIP": 1,
+    "NO_GATE_REORDER": 1,
+    "NO_PARALLEL_CERTIFICATION": 1,
+    "HOLD_IS_GLOBAL_TERMINAL": 0,
+    "HOLD_IS_PERSISTENT_CHECKPOINT": 1,
+    "CONTINUE_AFTER_SUBGATE_HOLD_WHEN_RESUMPTION_CONDITION_IS_MET": 1,
+    "NO_FALSE_PASS": 1,
+    "NO_SELF_CERTIFICATION": 1,
+    "CERTIFICATION_PROPAGATION_FORBIDDEN": 1,
+    "WORKFLOW_SUCCESS_NE_MISSION_SUCCESS": 1,
+    "UNKNOWN_TO_PASS_FORBIDDEN": 1,
+    "PROTECTED_SCOPE_MUTATION_FORBIDDEN": 1,
+    "NO_EXIT_WITHOUT_GENUINE_PASS": 1,
+    "NO_ARTIFICIAL_PASS": 1,
+    "PASS_REQUIRES_MATERIAL_EVIDENCE": 1,
+    "HARD_CEILING_DOES_NOT_AUTHORIZE_TERMINAL_EXIT": 1,
+    "TIME_EXHAUSTION_REQUIRES_CHECKPOINT_NOT_COMPLETION": 1
+  },
+  "sequence": [
+    {
+      "order": 1,
+      "id": "G08",
+      "name": "SERVICE_PERSISTENCE",
+      "prerequisite": "DEPLOYED=1",
+      "executor_plane": "SELF_HOSTED_LUNA_AUX",
+      "completion": "BOOT_PERSISTENCE_EVIDENCE.result=PASS"
+    },
+    {
+      "order": 2,
+      "id": "G09",
+      "name": "FAILURE_RECOVERY",
+      "prerequisite": "G08=PASS",
+      "executor_plane": "GOVERNED_HOST_EXECUTOR",
+      "completion": "G09_FAILURE_RECOVERY_EVIDENCE.result=PASS"
+    },
+    {
+      "order": 3,
+      "id": "FREEZE",
+      "name": "SERVER_READY_FREEZE",
+      "prerequisite": "G08=PASS AND G09=PASS",
+      "executor_plane": "SELF_HOSTED_LUNA_AUX",
+      "completion": "PRODUCT(GATE_01..GATE_15)=1"
+    },
+    {
+      "order": 4,
+      "id": "G23",
+      "name": "INDEPENDENT_VALIDATION",
+      "prerequisite": "SERVER_TECHNICAL_READY=1",
+      "executor_plane": "FRESH_GITHUB_HOSTED_READER",
+      "completion": "G23=PASS"
+    },
+    {
+      "order": 5,
+      "id": "G24",
+      "name": "CERTIFICATION",
+      "prerequisite": "G23=PASS",
+      "executor_plane": "FRESH_GITHUB_HOSTED_CERTIFIER",
+      "completion": "G24=PASS"
+    }
+  ],
+  "continuity": {
+    "state_model": "ACTIVE -> WAITING_RESUME | ADVANCING -> TERMINAL_PASS",
+    "subgate_hold_behavior": "persist checkpoint, exact blocker, remediation, verification test; mission remains ACTIVE",
+    "global_terminal_conditions": [
+      "G24_PASS_WITH_COMPLETE_EVIDENCE_CHAIN"
+    ],
+    "retry_policy": "RECHECK_FROM_LAST_VERIFIED_CHECKPOINT; DO_NOT_REPEAT_CLOSED_WORK",
+    "heartbeat_rule": "HEARTBEAT != PROGRESS",
+    "progress_rule": "gate transition or new evidence hash required",
+    "non_terminal_attempt_end_conditions": [
+      "TIME_CEILING_REACHED",
+      "RECOVERABLE_BLOCKER",
+      "TOOL_GUARD",
+      "UNRESOLVED_EVIDENCE_GAP",
+      "TEMPORARY_EXECUTOR_UNAVAILABLE"
+    ],
+    "non_terminal_attempt_end_behavior": "PERSIST CHECKPOINT + EXACT BLOCKER + REMEDIATION + VERIFICATION_TEST + KEEP GLOBAL MISSION ACTIVE",
+    "exit_clause": "PROHIBITED_TO_DECLARE_MISSION_TERMINAL_WITHOUT_GENUINE_PASS; EQUALLY_PROHIBITED_TO_CREATE_INFER_ASSUME_OR_PROPAGATE_A_PASS_NOT_PROVEN_BY_MATERIAL_EVIDENCE"
+  },
+  "resource_policy": {
+    "policy": "MINIMUM_SUFFICIENT_RESOURCES",
+    "heavy_work": "GITHUB_HOSTED_WHEN_HOST_OBSERVATION_NOT_REQUIRED",
+    "host_work": "ONLY_HOST_SPECIFIC_G08_G09_OBSERVATION",
+    "no_busy_polling": 1
+  },
+  "assurance": {
+    "process_guarantees": [
+      "NO_SILENT_STOP",
+      "NO_SKIP",
+      "NO_FALSE_PASS",
+      "CHECKPOINT_RESUME",
+      "HASHED_EVIDENCE",
+      "G23_INDEPENDENCE",
+      "G24_DEPENDENCY_ON_G23",
+      "NO_EXIT_WITHOUT_GENUINE_PASS",
+      "NO_ARTIFICIAL_PASS",
+      "TIME_CEILING_CHECKPOINT_CONTINUITY"
+    ],
+    "forbidden_guarantee": "PRECOMMITTED_G23_OR_G24_PASS",
+    "terminal_clause": "TERMINAL_PASS_ONLY_IF_G08=PASS AND G09=PASS AND ALL_15_GATES=PASS AND G23=PASS AND G24=PASS; OTHERWISE MISSION_REMAINS_ACTIVE_AT_A_CHECKPOINT"
+  }
+}

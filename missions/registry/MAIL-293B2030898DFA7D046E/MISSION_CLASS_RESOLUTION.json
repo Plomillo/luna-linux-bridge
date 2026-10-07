@@ -1,0 +1,10 @@
+{
+  "bound_mission_class": null,
+  "direct_mission_class": "MAIN_RECOVERY_SKELETON_IMPLEMENTATION_CONSULTATION",
+  "matches": [],
+  "mission_class": "MAIN_RECOVERY_SKELETON_IMPLEMENTATION_CONSULTATION",
+  "origin": "MISSION_DIRECTIVE",
+  "result": "PASS",
+  "root_blocker": null,
+  "source_sha256": "293b2030898dfa7d046e153f7ddf002297c22b04fce5ba1a98ee8f9f3fe7f87a"
+}

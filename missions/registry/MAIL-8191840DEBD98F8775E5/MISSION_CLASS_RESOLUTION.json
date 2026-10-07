@@ -1,0 +1,10 @@
+{
+  "bound_mission_class": null,
+  "direct_mission_class": "FINAL_SERVER_READY_CLOSURE",
+  "matches": [],
+  "mission_class": "FINAL_SERVER_READY_CLOSURE",
+  "origin": "MISSION_DIRECTIVE",
+  "result": "PASS",
+  "root_blocker": null,
+  "source_sha256": "8191840debd98f8775e530a37d3d23770f148693af64689f8e0d187be037cb21"
+}

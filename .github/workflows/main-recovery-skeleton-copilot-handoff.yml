@@ -1,0 +1,60 @@
+name: "MAIN recovery skeleton — handoff to GitHub coding agent"
+
+on:
+  push:
+    branches:
+      - staging/custosz-mission-mailbox-20260928
+    paths:
+      - mission-control/main-recovery-copilot-handoff/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: main-recovery-copilot-handoff
+  cancel-in-progress: false
+
+jobs:
+  handoff:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 10
+    steps:
+      - name: Verify user-authenticated GitHub CLI
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          unset GH_TOKEN GITHUB_TOKEN
+          gh auth status
+          test "$(gh api user --jq .login)" = "Plomillo"
+
+      - name: Assign issue 37 to GitHub Copilot coding agent
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          unset GH_TOKEN GITHUB_TOKEN
+          cat > "$RUNNER_TEMP/copilot-assignment.json" <<'JSON'
+          {
+            "assignees": ["copilot-swe-agent[bot]"],
+            "agent_assignment": {
+              "target_repo": "Plomillo/luna-linux-bridge",
+              "base_branch": "main",
+              "custom_instructions": "Execute issue #37 exactly. Work from main on a new branch. Gross mission ceiling: 600 seconds. Preserve Louksna.md authority, PUAC2 declared status, EXTEND_DO_NOT_REPLACE, fail-closed-with-continuation, bounded anti-paralysis, informative/resumable HOLD, rollback, provenance, traceability, auditability, non-regression, G23/G24 separation, and NEXT gates. Implement functional minimum, add deterministic selftests, and open a PR to main. Do not claim certification or merge if required evidence is missing; leave HOLD with exact NEXT.",
+              "custom_agent": "",
+              "model": ""
+            }
+          }
+          JSON
+          gh api --method POST             -H "Accept: application/vnd.github+json"             -H "X-GitHub-Api-Version: 2022-11-28"             /repos/Plomillo/luna-linux-bridge/issues/37/assignees             --input "$RUNNER_TEMP/copilot-assignment.json"             > "$RUNNER_TEMP/copilot-assignment-response.json"
+          cat "$RUNNER_TEMP/copilot-assignment-response.json"
+
+      - name: Verify agent assignment is visible
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          unset GH_TOKEN GITHUB_TOKEN
+          LOGIN="$(gh api /repos/Plomillo/luna-linux-bridge/issues/37 --jq '.assignees[].login' | grep -Fx 'copilot-swe-agent[bot]' || true)"
+          test "$LOGIN" = "copilot-swe-agent[bot]"
+          echo "GITHUB_CODING_AGENT_ASSIGNMENT=PASS"
+          echo "ISSUE=37"
+          echo "BASE_BRANCH=main"
+          echo "GROSS_CEILING_SECONDS=600"

@@ -1,0 +1,20 @@
+{
+  "schema": "LOUKSNA_R4_POSTINSTALL_LOCAL_REQUEST/1.0",
+  "request_id": "R4-APC48-V2-20260929T035510Z-16163",
+  "actor": "diegoignacionorambuenamiranda",
+  "host": "LOUKSNA",
+  "requested_action": "POSTINSTALL_CERTIFY_AND_HANDOFF_TO_CUSTOSZ",
+  "checkpoint": "/home/diegoignacionorambuenamiranda/LOUKSNA_MAESTRO_20260925/MISSION3_OPERATIVE/R4_PART1_DESKTOP_V1/runs/20260926T034746Z-38579",
+  "candidate_digest_sha256": "ed3c4267f94b3c53f1fec64b331f72dc657ebcc5e2c62a9314321c67c89684b7",
+  "part": "PART_1",
+  "mode": "DIFFERENTIAL",
+  "part2_gate": "PART1_POST_VALIDATION_PASS",
+  "do_not_repeat": [
+    "PART_0",
+    "PART_1_FULL_REINSTALL",
+    "SERVER_READY_G08_G09_G23_G24"
+  ],
+  "password_authorization": false,
+  "privileged_interface": "sudo -n /usr/local/sbin/louksna-apc",
+  "requested_at_utc": "2026-09-29T03:55:10Z"
+}

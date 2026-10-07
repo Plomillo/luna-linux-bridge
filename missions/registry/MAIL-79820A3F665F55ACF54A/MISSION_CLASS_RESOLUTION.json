@@ -1,0 +1,10 @@
+{
+  "bound_mission_class": null,
+  "direct_mission_class": "DOCUMENT_FACTORY_FFPROBE_EXACT_CERT_V1",
+  "matches": [],
+  "mission_class": "DOCUMENT_FACTORY_FFPROBE_EXACT_CERT_V1",
+  "origin": "MISSION_DIRECTIVE",
+  "result": "PASS",
+  "root_blocker": null,
+  "source_sha256": "79820a3f665f55acf54a444257305257c2b6a039d2111b31d5ee7743701b5e6b"
+}

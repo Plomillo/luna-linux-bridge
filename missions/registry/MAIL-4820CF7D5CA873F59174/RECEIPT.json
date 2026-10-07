@@ -1,0 +1,12 @@
+{
+  "github_run_attempt": "1",
+  "github_run_id": "36584631845",
+  "mail_id": "MAIL-4820CF7D5CA873F59174",
+  "received_utc": "2026-09-29T14:42:16.536075+00:00",
+  "schema": "CUSTOSZ_MAILBOX_RECEIPT/1.0",
+  "source_bytes": 2116,
+  "source_commit": "af38a955885516b9938de29dc2e22308209491db",
+  "source_path": "missions/inbox/luna-r4-part1-resume-apc48-v2-36519487206/MISSION_ORIGINAL.md",
+  "source_sha256": "4820cf7d5ca873f5917466a76e9b57fd46f84344a4a9f1fa3e47d144e9a01456",
+  "status": "RECEIVED"
+}

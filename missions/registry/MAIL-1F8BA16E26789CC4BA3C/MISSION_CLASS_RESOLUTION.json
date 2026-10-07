@@ -1,0 +1,21 @@
+{
+  "bound_mission_class": "METACOGNITIVE_ECOSYSTEM_V1",
+  "direct_mission_class": null,
+  "matches": [
+    {
+      "authority": "Louksna.md",
+      "canonical_mutation": false,
+      "mission_class": "METACOGNITIVE_ECOSYSTEM_V1",
+      "mission_id": "MIS-META-ECO-20260928-V1",
+      "origin": "EXPLICIT_ADDITIVE_SOURCE_BOUND_CLASSIFICATION",
+      "reason": "MISSION_ORIGINAL is immutable and predates the mailbox MISSION_CLASS requirement; bind exact source hash without altering source bytes.",
+      "scope": "METACOGNITIVE_ECOSYSTEM_CONTROL_PLANE_AND_CLOUD_MATERIALIZATION",
+      "source_sha256": "1f8ba16e26789cc4ba3c9329357ac7c866af50177ccbf5915ca1dd5355c511d0"
+    }
+  ],
+  "mission_class": "METACOGNITIVE_ECOSYSTEM_V1",
+  "origin": "SOURCE_BOUND_REGISTRY",
+  "result": "PASS",
+  "root_blocker": null,
+  "source_sha256": "1f8ba16e26789cc4ba3c9329357ac7c866af50177ccbf5915ca1dd5355c511d0"
+}

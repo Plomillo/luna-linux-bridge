@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://louksna.local/schemas/MISSION_NATIVE.schema.json",
+  "title": "CUSTOSZ Mission Native Envelope",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "mail_id",
+    "source",
+    "authority_context",
+    "mission_payload",
+    "execution_contract"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "mail_id": {
+      "type": "string",
+      "pattern": "^MAIL-[A-F0-9]{20}$"
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "path",
+        "sha256",
+        "bytes",
+        "encoding"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "encoding": {
+          "const": "utf-8"
+        }
+      },
+      "additionalProperties": true
+    },
+    "authority_context": {
+      "type": "object"
+    },
+    "mission_payload": {
+      "type": "object",
+      "required": [
+        "source_utf8_b64",
+        "byte_exact_preservation"
+      ],
+      "properties": {
+        "source_utf8_b64": {
+          "type": "string"
+        },
+        "byte_exact_preservation": {
+          "const": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "execution_contract": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": true
+}

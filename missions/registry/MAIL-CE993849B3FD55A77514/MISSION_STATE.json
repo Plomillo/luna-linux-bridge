@@ -1,0 +1,38 @@
+{
+  "current_gate": "RUNTIME_ADAPTER",
+  "current_state": "HOLD",
+  "history": [
+    {
+      "state": "RECEIVED",
+      "utc": "2026-10-06T06:29:37.801290+00:00"
+    },
+    {
+      "state": "VALIDATED",
+      "utc": "2026-10-06T06:29:37.801754+00:00"
+    },
+    {
+      "state": "COMPILED",
+      "utc": "2026-10-06T06:29:37.801759+00:00"
+    },
+    {
+      "state": "SEMANTICALLY_EQUIVALENT_BY_BYTE_PRESERVATION",
+      "utc": "2026-10-06T06:29:37.801760+00:00"
+    },
+    {
+      "custosz_mission_id": "MIS-5414c00beb0b465c9f3d",
+      "state": "ROUTED",
+      "utc": "2026-10-06T06:56:36.504914+00:00"
+    },
+    {
+      "gate": "RUNTIME_ADAPTER",
+      "reason": "NO_UNIQUE_PINNED_RUNTIME_ADAPTER",
+      "state": "HOLD",
+      "utc": "2026-10-06T06:56:36.504928+00:00"
+    }
+  ],
+  "mail_id": "MAIL-CE993849B3FD55A77514",
+  "mission_terminal_status": "HOLD",
+  "root_blocker": "NO_UNIQUE_PINNED_RUNTIME_ADAPTER",
+  "schema_version": "1.0",
+  "workflow_technical_status": "PASS"
+}

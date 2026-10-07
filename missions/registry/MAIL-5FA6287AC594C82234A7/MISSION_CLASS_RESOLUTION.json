@@ -1,0 +1,10 @@
+{
+  "bound_mission_class": null,
+  "direct_mission_class": "DOCUMENT_FACTORY_GOVERNED_CONTINUATION_V1",
+  "matches": [],
+  "mission_class": "DOCUMENT_FACTORY_GOVERNED_CONTINUATION_V1",
+  "origin": "MISSION_DIRECTIVE",
+  "result": "PASS",
+  "root_blocker": null,
+  "source_sha256": "5fa6287ac594c82234a78b7c6e8934bb41ce2f88e236df3e1ec0b4da9c93aee7"
+}

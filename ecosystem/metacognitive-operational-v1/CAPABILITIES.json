@@ -1,0 +1,1277 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "LOUKSNA_METACOGNITIVE_OPERATIONAL_ECOSYSTEM_V1",
+  "mission_id": "MIS-META-ECO-20260928-V1",
+  "authority": "Louksna.md",
+  "authority_transfer": false,
+  "canonical_mutation": false,
+  "canonical_status": "NON_CANONICAL_OPERATIONAL_CANDIDATE",
+  "doctrine": "EXTEND_DO_NOT_REPLACE",
+  "build_policy": "APPEND_ONLY",
+  "failure_posture": "FAIL_CLOSED",
+  "no_silent_operations": true,
+  "traceability_required": true,
+  "auditability_required": true,
+  "provenance_required": true,
+  "rollback_required": true,
+  "non_regression_required": true,
+  "certification_propagation": "FORBIDDEN",
+  "training_last": true,
+  "heavy_compute_default": "GITHUB_HOSTED_OR_EXTERNAL_CLOUD_DATA_PLANE",
+  "local_heavy_compute": "FORBIDDEN_BY_DEFAULT",
+  "capability_count": 59,
+  "capabilities": [
+    {
+      "id": "MCAP-001",
+      "ordinal": 1,
+      "name": "COGNITIVE_KERNEL",
+      "boundary": "Common cognitive state and bounded reasoning contracts.",
+      "classification": "EXISTING_PROFILE",
+      "consumers": [
+        "Louksna",
+        "MetaOS",
+        "CUSTOSZ_RUNTIME"
+      ],
+      "github_surface": [
+        "GitHub Actions",
+        "Runtime API"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-002",
+      "ordinal": 2,
+      "name": "METACOGNITIVE_SUPERVISOR",
+      "boundary": "Second-order supervision of reasoning quality, contradictions, loops and false certainty.",
+      "classification": "EXISTING_PROFILE",
+      "consumers": [
+        "Louksna",
+        "MetaOS",
+        "PUAC2"
+      ],
+      "github_surface": [
+        "GitHub Checks",
+        "Telemetry"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-003",
+      "ordinal": 3,
+      "name": "EPISTEMIC_ENGINE",
+      "boundary": "Typed epistemic states: fact, observation, inference, hypothesis, unknown, contradiction, validation.",
+      "classification": "EXISTING_PROFILE",
+      "consumers": [
+        "Louksna",
+        "PUAC2",
+        "CUSTOSZ_RUNTIME"
+      ],
+      "github_surface": [
+        "JSON evidence",
+        "GitHub Checks"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-004",
+      "ordinal": 4,
+      "name": "REASONING_ORCHESTRATOR",
+      "boundary": "Decompose missions and select the minimum sufficient capability set.",
+      "classification": "EXISTING_PROFILE",
+      "consumers": [
+        "MetaOS",
+        "CUSTOSZ",
+        "Louksna"
+      ],
+      "github_surface": [
+        "Actions matrix",
+        "Runtime dispatch"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-005",
+      "ordinal": 5,
+      "name": "SYSTEMS_ENGINEERING_ENGINE",
+      "boundary": "Systems engineering for Linux, Windows, Android, storage, networking and runtimes.",
+      "classification": "EXISTING_PROFILE",
+      "consumers": [
+        "CUSTOSZ",
+        "MetaOS",
+        "CROSS_PLATFORM_VIRTUAL_LAB"
+      ],
+      "github_surface": [
+        "GitHub-hosted runners",
+        "Containers"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-006",
+      "ordinal": 6,
+      "name": "SOFTWARE_ENGINEERING_INTELLIGENCE",
+      "boundary": "Code, Git, CI/CD, build, test, dependency and architecture intelligence.",
+      "classification": "EXISTING_PROFILE",
+      "consumers": [
+        "CUSTOSZ",
+        "GitHub",
+        "PUAC2"
+      ],
+      "github_surface": [
+        "GitHub Actions",
+        "Code review"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-007",
+      "ordinal": 7,
+      "name": "DIAGNOSTIC_AND_ROOT_CAUSE_ENGINE",
+      "boundary": "Reproduce failures, isolate causal mechanisms and verify remediation.",
+      "classification": "EXISTING_PROFILE",
+      "consumers": [
+        "CUSTOSZ_RUNTIME",
+        "PUAC2",
+        "MetaOS"
+      ],
+      "github_surface": [
+        "Workflow logs",
+        "Evidence ledger"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-008",
+      "ordinal": 8,
+      "name": "COGNITIVE_MEMORY",
+      "boundary": "Versioned mission, architectural, procedural and episodic continuity.",
+      "classification": "EXISTING_PROFILE",
+      "consumers": [
+        "Louksna",
+        "MetaOS",
+        "CUSTOSZ_RUNTIME"
+      ],
+      "github_surface": [
+        "External state store",
+        "Git refs"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-009",
+      "ordinal": 9,
+      "name": "EXPERIENCE_DISTILLATION",
+      "boundary": "Convert validated executions into reusable patterns without training by default.",
+      "classification": "EXISTING_PROFILE",
+      "consumers": [
+        "Louksna",
+        "MetaOS",
+        "GOVERNED_TRAINING_AND_CONTINUOUS_LEARNING"
+      ],
+      "github_surface": [
+        "Evidence artifacts",
+        "Knowledge registry"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-010",
+      "ordinal": 10,
+      "name": "ADVERSARIAL_VALIDATION",
+      "boundary": "Negative, hostile and boundary tests without granting certification.",
+      "classification": "EXISTING_PROFILE",
+      "consumers": [
+        "PUAC2",
+        "CUSTOSZ",
+        "G23_INDEPENDENT_VALIDATION_FABRIC"
+      ],
+      "github_surface": [
+        "GitHub Actions",
+        "Test harness"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-011",
+      "ordinal": 11,
+      "name": "RESOURCE_AND_EFFICIENCY_GOVERNOR",
+      "boundary": "Govern CPU, RAM, network, storage, time, concurrency and cost.",
+      "classification": "EXISTING_PROFILE",
+      "consumers": [
+        "MetaOS",
+        "CUSTOSZ_RUNTIME",
+        "RUNNER_FLEET_AND_WORKER_SCHEDULER"
+      ],
+      "github_surface": [
+        "Actions concurrency",
+        "Telemetry"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-012",
+      "ordinal": 12,
+      "name": "CAPABILITY_GRAPH",
+      "boundary": "Non-duplicative graph of capabilities, dependencies, consumers and contracts.",
+      "classification": "EXISTING_PROFILE",
+      "consumers": [
+        "Louksna",
+        "MetaOS",
+        "PUAC2"
+      ],
+      "github_surface": [
+        "Manifest",
+        "Graph export"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-013",
+      "ordinal": 13,
+      "name": "METACOGNITIVE_NODE_FAMILY",
+      "boundary": "Governed registry of model and agentic harness references versus real executors.",
+      "classification": "EXISTING_PROFILE",
+      "consumers": [
+        "MetaOS",
+        "CUSTOSZ",
+        "Louksna"
+      ],
+      "github_surface": [
+        "Provider adapters",
+        "GitHub Actions"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-014",
+      "ordinal": 14,
+      "name": "MISSION_COMPILER",
+      "boundary": "Compile human intent into bounded governed missions with gates and rollback.",
+      "classification": "EXISTING_PROFILE",
+      "consumers": [
+        "MetaOS",
+        "CUSTOSZ",
+        "PUAC2"
+      ],
+      "github_surface": [
+        "Mission mailbox",
+        "Schemas"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-015",
+      "ordinal": 15,
+      "name": "COGNITIVE_OBSERVABILITY",
+      "boundary": "Operational logs, metrics and traces for workers, tools and decisions.",
+      "classification": "EXISTING_PROFILE",
+      "consumers": [
+        "MetaOS",
+        "CUSTOSZ_RUNTIME",
+        "PUAC2"
+      ],
+      "github_surface": [
+        "OpenTelemetry",
+        "GitHub Actions"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-016",
+      "ordinal": 16,
+      "name": "RCLONE_ADAPTIVE_MAX_THROUGHPUT_ENGINE",
+      "boundary": "Adaptive remote transfer concurrency with measured 8→16→32→48→64 escalation.",
+      "classification": "EXISTING_PROFILE",
+      "consumers": [
+        "CUSTOSZ",
+        "RESOURCE_AND_EFFICIENCY_GOVERNOR",
+        "GitHub"
+      ],
+      "github_surface": [
+        "rclone",
+        "GitHub-hosted runners"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-017",
+      "ordinal": 17,
+      "name": "META_CAPABILITY_EVOLUTION_ENGINE",
+      "boundary": "NetKaizen discovery of capability gaps with mandatory duplicate checks.",
+      "classification": "EXISTING_PROFILE",
+      "consumers": [
+        "Louksna",
+        "MetaOS",
+        "CAPABILITY_GRAPH"
+      ],
+      "github_surface": [
+        "Pull requests",
+        "Evidence ledger"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-018",
+      "ordinal": 18,
+      "name": "CROSS_PLATFORM_VIRTUAL_LAB",
+      "boundary": "Disposable Debian 13, Android API 36/37 and Windows build/test lanes.",
+      "classification": "EXISTING_PROFILE",
+      "consumers": [
+        "CUSTOSZ",
+        "PUAC2",
+        "GitHub"
+      ],
+      "github_surface": [
+        "GitHub-hosted runners",
+        "Containers",
+        "Android emulator"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-019",
+      "ordinal": 19,
+      "name": "REUSABLE_AUTOMATION_FABRIC",
+      "boundary": "Reusable workflows and composite actions with SHA-pinned dependencies.",
+      "classification": "EXISTING_PROFILE",
+      "consumers": [
+        "GitHub",
+        "CUSTOSZ",
+        "PUAC2"
+      ],
+      "github_surface": [
+        "Reusable workflows",
+        "Composite actions"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-020",
+      "ordinal": 20,
+      "name": "GITHUB_AGENTIC_WORKFLOW_FABRIC",
+      "boundary": "Governed invocation of authorized agentic CLIs from GitHub execution lanes.",
+      "classification": "EXISTING_PROFILE",
+      "consumers": [
+        "CUSTOSZ",
+        "MetaOS",
+        "GitHub"
+      ],
+      "github_surface": [
+        "GitHub Actions",
+        "Agentic CLI adapters"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-021",
+      "ordinal": 21,
+      "name": "RUNNER_FLEET_AND_WORKER_SCHEDULER",
+      "boundary": "Schedule cloud workers, matrices, queues and ephemeral execution capacity.",
+      "classification": "EXISTING_PROFILE",
+      "consumers": [
+        "MetaOS",
+        "CUSTOSZ_RUNTIME",
+        "RESOURCE_AND_EFFICIENCY_GOVERNOR"
+      ],
+      "github_surface": [
+        "Actions matrix",
+        "Runner groups"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-022",
+      "ordinal": 22,
+      "name": "ZERO_TRUST_IDENTITY_AND_AUTHORIZATION_PLANE",
+      "boundary": "Least privilege, ephemeral identity and explicit authorization boundaries.",
+      "classification": "EXISTING_PROFILE",
+      "consumers": [
+        "MetaOS",
+        "PUAC2",
+        "GitHub"
+      ],
+      "github_surface": [
+        "GITHUB_TOKEN permissions",
+        "OIDC"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-023",
+      "ordinal": 23,
+      "name": "POLICY_AS_CODE_AND_CHANGE_CONTROL",
+      "boundary": "Machine-enforced change policy, pinning, allowed actions and admission rules.",
+      "classification": "EXISTING_PROFILE",
+      "consumers": [
+        "PUAC2",
+        "GitHub",
+        "MetaOS"
+      ],
+      "github_surface": [
+        "Policy checks",
+        "Required checks"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-024",
+      "ordinal": 24,
+      "name": "SUPPLY_CHAIN_PROVENANCE_AND_ATTESTATION",
+      "boundary": "Build lineage, hashes, SBOM references and attestable artifact identity.",
+      "classification": "EXISTING_PROFILE",
+      "consumers": [
+        "PUAC2",
+        "G23_INDEPENDENT_VALIDATION_FABRIC",
+        "GitHub"
+      ],
+      "github_surface": [
+        "SHA-256",
+        "SBOM",
+        "Attestations when available"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-025",
+      "ordinal": 25,
+      "name": "DEPENDENCY_LICENSE_AND_CURRENTNESS_GOVERNOR",
+      "boundary": "Dependency identity, vulnerability, license and currentness control.",
+      "classification": "EXISTING_PROFILE",
+      "consumers": [
+        "PUAC2",
+        "SOFTWARE_ENGINEERING_INTELLIGENCE",
+        "GitHub"
+      ],
+      "github_surface": [
+        "Dependency review",
+        "Lockfiles"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-026",
+      "ordinal": 26,
+      "name": "CODE_SECRET_AND_STATIC_SECURITY_GUARD",
+      "boundary": "Static security, secret leakage and source-code scanning controls.",
+      "classification": "EXISTING_PROFILE",
+      "consumers": [
+        "PUAC2",
+        "SOFTWARE_ENGINEERING_INTELLIGENCE",
+        "GitHub"
+      ],
+      "github_surface": [
+        "SARIF",
+        "Code scanning",
+        "Secret scanning when available"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-027",
+      "ordinal": 27,
+      "name": "FORENSIC_EVIDENCE_CHAIN_LEDGER",
+      "boundary": "Hash-linked evidence lineage with actor, run, commit, parent and result.",
+      "classification": "EXISTING_PROFILE",
+      "consumers": [
+        "PUAC2",
+        "G23_INDEPENDENT_VALIDATION_FABRIC",
+        "G24_CERTIFICATION_AND_PROMOTION_GATEWAY"
+      ],
+      "github_surface": [
+        "JSONL",
+        "SHA-256",
+        "Artifacts"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-028",
+      "ordinal": 28,
+      "name": "ASSURANCE_CASE_COMPILER",
+      "boundary": "Compile claim→predicate→evidence→evaluation→limitation dossiers.",
+      "classification": "EXISTING_PROFILE",
+      "consumers": [
+        "PUAC2",
+        "G23_INDEPENDENT_VALIDATION_FABRIC",
+        "MetaOS"
+      ],
+      "github_surface": [
+        "Assurance manifest",
+        "README"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-029",
+      "ordinal": 29,
+      "name": "G23_INDEPENDENT_VALIDATION_FABRIC",
+      "boundary": "Independent fresh-reader validation with no repair path.",
+      "classification": "EXISTING_PROFILE",
+      "consumers": [
+        "PUAC2",
+        "Louksna",
+        "G24_CERTIFICATION_AND_PROMOTION_GATEWAY"
+      ],
+      "github_surface": [
+        "Fresh runner",
+        "Read-only evidence"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-030",
+      "ordinal": 30,
+      "name": "G24_CERTIFICATION_AND_PROMOTION_GATEWAY",
+      "boundary": "Certification/promotion boundary for one frozen digest after G23.",
+      "classification": "EXISTING_PROFILE",
+      "consumers": [
+        "PUAC2",
+        "Louksna",
+        "GitHub"
+      ],
+      "github_surface": [
+        "Protected environment when available",
+        "Release gate"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-031",
+      "ordinal": 31,
+      "name": "ROLLBACK_AND_RECOVERY_PROOF_ENGINE",
+      "boundary": "Prove checkpoint→mutation/test→restore→state/hash verification.",
+      "classification": "EXISTING_PROFILE",
+      "consumers": [
+        "PUAC2",
+        "CUSTOSZ_RUNTIME",
+        "MetaOS"
+      ],
+      "github_surface": [
+        "Checkpoint store",
+        "Recovery tests"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-032",
+      "ordinal": 32,
+      "name": "VALIDITY_NONREGRESSION_AND_RECERTIFICATION_ENGINE",
+      "boundary": "Track evidence validity, invalidation and recertification after change.",
+      "classification": "EXISTING_PROFILE",
+      "consumers": [
+        "PUAC2",
+        "Louksna",
+        "MetaOS"
+      ],
+      "github_surface": [
+        "Diff analysis",
+        "Continuity report"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-033",
+      "ordinal": 33,
+      "name": "ECOSYSTEM_FEDERATION_AND_CONTRACT_MESH",
+      "boundary": "Versioned contracts among Louksna, MetaOS, CUSTOSZ, Runtime, PUAC2, GitHub and future canonical architectures.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "consumers": [
+        "Louksna",
+        "MetaOS",
+        "CUSTOSZ",
+        "CUSTOSZ_RUNTIME",
+        "PUAC2",
+        "GitHub"
+      ],
+      "github_surface": [
+        "JSON contracts",
+        "Adapters"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-034",
+      "ordinal": 34,
+      "name": "ARCHITECTURAL_MIRROR_AND_DRIFT_CONTROL",
+      "boundary": "Materialize INTENDED_MODEL↔OBSERVED_MODEL and detect architectural drift.",
+      "classification": "CANONICAL_MATERIALIZATION",
+      "consumers": [
+        "Louksna",
+        "MetaOS",
+        "PUAC2"
+      ],
+      "github_surface": [
+        "Architecture snapshots",
+        "Diff reports"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-035",
+      "ordinal": 35,
+      "name": "DIGITAL_ARCHITECTURAL_SHADOW_AND_PRECHANGE_SIMULATION",
+      "boundary": "Simulate candidate changes, blast radius and evidence invalidation before commitment.",
+      "classification": "CANONICAL_MATERIALIZATION",
+      "consumers": [
+        "Louksna",
+        "MetaOS",
+        "PUAC2"
+      ],
+      "github_surface": [
+        "Ephemeral simulation",
+        "GitHub Actions"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-036",
+      "ordinal": 36,
+      "name": "FORMAL_INVARIANT_AND_MODEL_CHECKING",
+      "boundary": "Turn critical invariants and state transitions into executable formal checks.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "consumers": [
+        "PUAC2",
+        "Louksna",
+        "G23_INDEPENDENT_VALIDATION_FABRIC"
+      ],
+      "github_surface": [
+        "Property tests",
+        "SMT/model checking adapters"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-037",
+      "ordinal": 37,
+      "name": "LIFECYCLE_HYGIENE_AND_RESIDUE_GOVERNOR",
+      "boundary": "Detect superseded, orphaned, duplicate or temporary artifacts without silent deletion.",
+      "classification": "WATCH_MATERIALIZATION",
+      "consumers": [
+        "MetaOS",
+        "CUSTOSZ",
+        "Louksna"
+      ],
+      "github_surface": [
+        "Repository scan",
+        "Residue ledger"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-038",
+      "ordinal": 38,
+      "name": "HUMAN_APPROVAL_BLOCKER_AND_RESUME_CONTROLLER",
+      "boundary": "Represent approval blockers, HOLD checkpoints and exact resume conditions.",
+      "classification": "WATCH_MATERIALIZATION",
+      "consumers": [
+        "MetaOS",
+        "CUSTOSZ_RUNTIME",
+        "PUAC2"
+      ],
+      "github_surface": [
+        "Mission state",
+        "GitHub environments when available"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-039",
+      "ordinal": 39,
+      "name": "EXTERNAL_CAPABILITY_AND_PLUGIN_BROKER",
+      "boundary": "Discover external integrations only for evidenced gaps; never auto-install/connect.",
+      "classification": "WATCH_MATERIALIZATION",
+      "consumers": [
+        "MetaOS",
+        "CUSTOSZ",
+        "CAPABILITY_GRAPH"
+      ],
+      "github_surface": [
+        "Plugin registry",
+        "Adapter registry"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-040",
+      "ordinal": 40,
+      "name": "DATA_RIGHTS_PRIVACY_AND_USAGE_GOVERNOR",
+      "boundary": "Govern corpus rights, privacy, PII, licensing, retention and permitted transformations.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "consumers": [
+        "PUAC2",
+        "REMOTE_CORPUS_STREAMING_FABRIC",
+        "MetaOS"
+      ],
+      "github_surface": [
+        "Policy manifests",
+        "Data classifications"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-041",
+      "ordinal": 41,
+      "name": "REMOTE_CORPUS_STREAMING_FABRIC",
+      "boundary": "Stream/query massive remote corpora without full local materialization.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "consumers": [
+        "CUSTOSZ",
+        "MetaOS",
+        "DISTRIBUTED_SEMANTIC_INDEX_AND_QUERY_PLANE"
+      ],
+      "github_surface": [
+        "HTTP Range",
+        "hf://",
+        "Parquet streaming"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-042",
+      "ordinal": 42,
+      "name": "MASSIVE_DOCUMENT_MAP_AND_STRUCTURE_ENGINE",
+      "boundary": "Build hierarchical maps for huge PDF/EPUB/document corpora before deep reading.",
+      "classification": "CANONICAL_MATERIALIZATION",
+      "consumers": [
+        "CUSTOSZ",
+        "Louksna",
+        "EXTREME_SCALE_TRANSLATION_ORCHESTRATOR"
+      ],
+      "github_surface": [
+        "Document maps",
+        "Structural indexes"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-043",
+      "ordinal": 43,
+      "name": "DISTRIBUTED_SEMANTIC_INDEX_AND_QUERY_PLANE",
+      "boundary": "Distributed lexical/vector/graph retrieval over remote shards with provenance.",
+      "classification": "CANONICAL_MATERIALIZATION",
+      "consumers": [
+        "Louksna",
+        "CUSTOSZ",
+        "PUAC2"
+      ],
+      "github_surface": [
+        "RAG",
+        "Vector search",
+        "Knowledge graph"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-044",
+      "ordinal": 44,
+      "name": "EXTREME_SCALE_TRANSLATION_ORCHESTRATOR",
+      "boundary": "Shard, translate, checkpoint and reassemble extremely large books deterministically.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "consumers": [
+        "CUSTOSZ",
+        "Katya",
+        "PUAC2"
+      ],
+      "github_surface": [
+        "GitHub-hosted matrix",
+        "XLIFF"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-045",
+      "ordinal": 45,
+      "name": "TRANSLATION_FIDELITY_VALIDATION_ENGINE",
+      "boundary": "Validate semantic, syntactic, terminological, entity, numeric and structural fidelity.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "consumers": [
+        "Katya",
+        "PUAC2",
+        "G23_INDEPENDENT_VALIDATION_FABRIC"
+      ],
+      "github_surface": [
+        "XLIFF validation",
+        "QA metrics"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-046",
+      "ordinal": 46,
+      "name": "TERMINOLOGY_TRANSLATION_MEMORY_AND_ONTOLOGY_PLANE",
+      "boundary": "Versioned terminology, translation memory and domain ontology with provenance.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "consumers": [
+        "Katya",
+        "Louksna",
+        "EXTREME_SCALE_TRANSLATION_ORCHESTRATOR"
+      ],
+      "github_surface": [
+        "XLIFF glossary",
+        "External DB"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-047",
+      "ordinal": 47,
+      "name": "MULTISCALE_MULTI_INTER_TRANSDISCIPLINARY_SYNTHESIS",
+      "boundary": "Preserve methods and evidence while synthesizing micro/meso/macro and cross-disciplinary analysis.",
+      "classification": "WATCH_MATERIALIZATION",
+      "consumers": [
+        "Louksna",
+        "MetaOS",
+        "PUAC2"
+      ],
+      "github_surface": [
+        "Discipline matrix",
+        "Synthesis records"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-048",
+      "ordinal": 48,
+      "name": "CAUSAL_COUNTERFACTUAL_AND_SCENARIO_ENGINE",
+      "boundary": "Separate association, mechanism, causal claims, counterfactuals and scenario sensitivity.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "consumers": [
+        "Louksna",
+        "PUAC2",
+        "ECONOMIC_THEORY_MULTI_LENS_REASONING"
+      ],
+      "github_surface": [
+        "Causal graphs",
+        "Scenario runs"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-049",
+      "ordinal": 49,
+      "name": "REALTIME_EVENT_STREAM_AND_DATA_INGESTION",
+      "boundary": "Ingest governed webhooks/streams with sequence, latency, staleness and replay semantics.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "consumers": [
+        "MetaOS",
+        "CUSTOSZ_RUNTIME",
+        "ECONOMIC_AND_MARKET_DATA_FABRIC"
+      ],
+      "github_surface": [
+        "Webhooks",
+        "WebSocket adapters",
+        "Event bus"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-050",
+      "ordinal": 50,
+      "name": "DURABLE_LONG_RUNNING_WORKFLOW_ENGINE",
+      "boundary": "Durable state, retries, resumability and idempotency for hours/days workflows.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "consumers": [
+        "CUSTOSZ_RUNTIME",
+        "MetaOS",
+        "EXTREME_SCALE_TRANSLATION_ORCHESTRATOR"
+      ],
+      "github_surface": [
+        "Durable workflow adapter",
+        "Checkpoint store"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-051",
+      "ordinal": 51,
+      "name": "CONTENT_ADDRESSED_OBJECT_AND_DATA_PLANE",
+      "boundary": "Keep large payloads outside Git while Git stores hashes, manifests and lineage.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "consumers": [
+        "GitHub",
+        "CUSTOSZ",
+        "FORENSIC_EVIDENCE_CHAIN_LEDGER"
+      ],
+      "github_surface": [
+        "Object storage",
+        "CAS manifests"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-052",
+      "ordinal": 52,
+      "name": "HIGH_RESOLUTION_AI_METACOGNITIVE_TELEMETRY",
+      "boundary": "High-resolution traces for agents, models, tools, evidence, uncertainty and evaluation.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "consumers": [
+        "MetaOS",
+        "CUSTOSZ_RUNTIME",
+        "PUAC2"
+      ],
+      "github_surface": [
+        "OpenTelemetry",
+        "Trace export"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-053",
+      "ordinal": 53,
+      "name": "AI_EVALUATION_CALIBRATION_AND_RELIABILITY_HARNESS",
+      "boundary": "Measure factuality, calibration, consistency, robustness, abstention and tool use.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "consumers": [
+        "PUAC2",
+        "METACOGNITIVE_SUPERVISOR",
+        "G23_INDEPENDENT_VALIDATION_FABRIC"
+      ],
+      "github_surface": [
+        "Evaluation suites",
+        "Regression corpus"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-054",
+      "ordinal": 54,
+      "name": "ECONOMIC_AND_MARKET_DATA_FABRIC",
+      "boundary": "Normalize governed macro, FX, equity, rates, commodity and crypto market data.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "consumers": [
+        "MetaOS",
+        "Louksna",
+        "PUAC2"
+      ],
+      "github_surface": [
+        "Official APIs",
+        "Market data adapters"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-055",
+      "ordinal": 55,
+      "name": "MONETARY_STABLECOIN_AND_LIQUIDITY_INTELLIGENCE",
+      "boundary": "Separate issuer, on-chain and market evidence for stablecoins, pegs, reserves and liquidity.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "consumers": [
+        "Louksna",
+        "PUAC2",
+        "ECONOMIC_AND_MARKET_DATA_FABRIC"
+      ],
+      "github_surface": [
+        "Issuer APIs",
+        "On-chain adapters"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-056",
+      "ordinal": 56,
+      "name": "LABOR_MARKET_AND_OPPORTUNITY_INTELLIGENCE",
+      "boundary": "Govern employment, vacancy, wage, skills and opportunity data with freshness/provenance.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "consumers": [
+        "Louksna",
+        "MetaOS",
+        "PUAC2"
+      ],
+      "github_surface": [
+        "Official labor APIs",
+        "Job-source adapters"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-057",
+      "ordinal": 57,
+      "name": "ECONOMIC_THEORY_MULTI_LENS_REASONING",
+      "boundary": "Apply Austrian, mainstream, institutional, historical and other lenses without epistemic collapse.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "consumers": [
+        "Louksna",
+        "PUAC2",
+        "MULTISCALE_MULTI_INTER_TRANSDISCIPLINARY_SYNTHESIS"
+      ],
+      "github_surface": [
+        "Lens manifests",
+        "Evidence separation"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-058",
+      "ordinal": 58,
+      "name": "METACOGNITIVE_OPERATIONAL_INTELLIGENCE_FABRIC",
+      "boundary": "Compose general and domain-specific metacognitive operational intelligence without claiming human-level AGI.",
+      "classification": "NEW_EXTENSION_CANDIDATE",
+      "consumers": [
+        "Louksna",
+        "MetaOS",
+        "CUSTOSZ",
+        "CUSTOSZ_RUNTIME",
+        "PUAC2"
+      ],
+      "github_surface": [
+        "Capability graph",
+        "Agent/model adapters",
+        "Telemetry"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    },
+    {
+      "id": "MCAP-059",
+      "ordinal": 59,
+      "name": "GOVERNED_TRAINING_AND_CONTINUOUS_LEARNING",
+      "boundary": "Last-stage governed learning from admitted evidence; every trained candidate re-enters full validation and certification.",
+      "classification": "TRAINING_LAST",
+      "consumers": [
+        "Louksna",
+        "PUAC2",
+        "MetaOS"
+      ],
+      "github_surface": [
+        "Training pipeline adapters",
+        "Evaluation gates"
+      ],
+      "creates_authority": false,
+      "self_certifies": false,
+      "admission_state": "DECLARED",
+      "duplicate_check": "REQUIRED",
+      "evidence_required": true
+    }
+  ]
+}
