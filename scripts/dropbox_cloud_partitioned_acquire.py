@@ -23,6 +23,8 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from dropbox_transfer_resilience import emit_event, load_resume_state, write_checkpoint
 
 ROOT_LINK = "https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/AIIzeblluaJfhuXh9EnP-10?rlkey=p712fwlkbwn9g0dtybu2sf159&st=3igdng0g&dl=0"
+METAOS_LINK = "https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/AFlrQdNPUUfhI5kxk-DHWPg/8.%20META%20OS?rlkey=p712fwlkbwn9g0dtybu2sf159&dl=0"
+METAOS_FROZEN_INVENTORY_SHA256 = "95bc707c8fbb8888b3f6e2e0feed2526e164bf2b55a5b51553c1ba681a8e8765"
 ROOT = pathlib.Path(os.environ["STATE_ROOT"])
 EVID = ROOT / "evidence"
 DL = ROOT / "browser-downloads"
@@ -723,8 +725,53 @@ def inventory_children(page, url: str) -> list[dict]:
     return rows
 
 
+def frozen_metaos_inventory(url: str) -> list[dict]:
+    if link_key(url) != link_key(METAOS_LINK):
+        return []
+    path = os.environ.get("FROZEN_METAOS_INVENTORY", "").strip()
+    if not path:
+        return []
+    p = pathlib.Path(path)
+    if not p.is_file():
+        raise RuntimeError("FROZEN_METAOS_INVENTORY_MISSING")
+    raw = p.read_bytes()
+    actual = hashlib.sha256(raw).hexdigest()
+    if actual != METAOS_FROZEN_INVENTORY_SHA256:
+        raise RuntimeError("FROZEN_METAOS_INVENTORY_HASH_MISMATCH:" + actual)
+    obj = json.loads(raw.decode("utf-8"))
+    if obj.get("schema") != "PUAC2_METAOS_FROZEN_INVENTORY_EVIDENCE/2.0":
+        raise RuntimeError("FROZEN_METAOS_INVENTORY_SCHEMA_MISMATCH")
+    if obj.get("status") != "PASS":
+        raise RuntimeError("FROZEN_METAOS_INVENTORY_NOT_PASS")
+    entries = obj.get("entries") or []
+    if int(obj.get("resolved_entry_count") or 0) != 37 or len(entries) != 37:
+        raise RuntimeError("FROZEN_METAOS_INVENTORY_COUNT_MISMATCH")
+    rows = []
+    for raw_item in entries:
+        kind = str(raw_item.get("kind") or "")
+        if kind not in ("file", "folder", "unknown"):
+            raise RuntimeError("FROZEN_METAOS_INVENTORY_KIND_INVALID")
+        href = str(raw_item.get("url") or "").strip()
+        key = str(raw_item.get("key") or "").strip()
+        if not href or not key or link_key(href) != key:
+            raise RuntimeError("FROZEN_METAOS_INVENTORY_IDENTITY_MISMATCH")
+        rows.append(dict(raw_item))
+    record_event(
+        "GOVERNED_INVENTORY_FROZEN_METAOS_SELECTED",
+        provider="FROZEN_METAOS_RECONCILED_37",
+        parent=sanitize_url(url),
+        count=len(rows),
+        network_exact=sum(x.get("kind") != "unknown" for x in rows),
+        unknown=sum(x.get("kind") == "unknown" for x in rows),
+        evidence_sha256=actual,
+        source_run_id=obj.get("source_run_id"),
+        source_artifact_id=obj.get("source_artifact_id"),
+    )
+    return rows
+
+
 def inventory_children_governed(page, url: str) -> list[dict]:
-    """Prefer API when authorized; otherwise public network JSON then rendered UI."""
+    """Provider order: authorized API, live public network/render, frozen 37-link evidence."""
     token, mode = _oauth_token_refresh()
     if token:
         try:
@@ -742,20 +789,32 @@ def inventory_children_governed(page, url: str) -> list[dict]:
                 "DROPBOX_API_INVENTORY_DEGRADED",
                 parent=sanitize_url(url),
                 error=f"{type(exc).__name__}:{exc}",
-                fallback="DROPBOX_PUBLIC_LIST_SHARED_LINK_FOLDER_ENTRIES_THEN_RENDERED",
+                fallback="DROPBOX_PUBLIC_NETWORK_THEN_FROZEN_EVIDENCE",
             )
 
-    rows = inventory_children(page, url)
-    if rows:
+    try:
+        rows = inventory_children(page, url)
+        if rows:
+            record_event(
+                "GOVERNED_INVENTORY_PROVIDER_SELECTED",
+                provider=str(rows[0].get("transport") or "DROPBOX_PUBLIC_FALLBACK"),
+                auth_mode=None,
+                count=len(rows),
+                parent=sanitize_url(url),
+            )
+            return rows
+    except Exception as exc:
         record_event(
-            "GOVERNED_INVENTORY_PROVIDER_SELECTED",
-            provider=str(rows[0].get("transport") or "DROPBOX_PUBLIC_FALLBACK"),
-            auth_mode=None,
-            count=len(rows),
+            "DROPBOX_PUBLIC_INVENTORY_DEGRADED",
             parent=sanitize_url(url),
+            error=f"{type(exc).__name__}:{exc}",
+            fallback="FROZEN_METAOS_RECONCILED_37" if link_key(url) == link_key(METAOS_LINK) else None,
         )
-        return rows
-    raise RuntimeError("GOVERNED_INVENTORY_EMPTY_AFTER_API_AND_PUBLIC_RENDER:" + link_key(url))
+
+    frozen = frozen_metaos_inventory(url)
+    if frozen:
+        return frozen
+    raise RuntimeError("GOVERNED_INVENTORY_EMPTY_AFTER_ALL_PROVIDERS:" + link_key(url))
 
 
 def write_download_event(kind: str, source_url: str, label: str, suggested: str | None = None) -> None:
@@ -1329,8 +1388,102 @@ def quarantine_path(path: pathlib.Path, reason: str) -> None:
     except Exception as qexc:
         record_event("QUARANTINE_FAILURE", source=path.name, reason=reason, error=f"{type(qexc).__name__}:{qexc}")
 
+def attempt_opaque_shared_link_download(item: dict, ordinal: int) -> dict:
+    """Download a frozen link whose file/folder type was not proven by network JSON."""
+    url = str(item["url"])
+    label = str(item["label"])
+    key = str(item["key"])
+    target_url = with_dl(url, "1")
+    part = PAYLOAD / f"{ordinal:06d}_opaque_{key[:12]}.part"
+    final = PAYLOAD / f"{ordinal:06d}_opaque_{key[:12]}.bin"
+    req = urllib.request.Request(target_url, headers={"User-Agent": "LOUKSNA-GitHub-Cloud-Opaque/1.0"})
+    record_event(
+        "OPAQUE_SHARED_LINK_ATTEMPT",
+        label=label,
+        source=sanitize_url(url),
+        source_identity_sha256=key,
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=180) as resp:
+            ctype = (resp.headers.get("Content-Type") or "").lower()
+            first = resp.read(1024 * 1024)
+            if not first:
+                return {"action": "split", "reason": "OPAQUE_EMPTY_RESPONSE"}
+            if "text/html" in ctype:
+                return {"action": "split", "reason": "OPAQUE_HTML_RESPONSE"}
+            with part.open("wb") as out:
+                out.write(first)
+                out.flush(); os.fsync(out.fileno())
+                write_download_event("opaque-shared-link", url, label, final.name)
+                while True:
+                    chunk = resp.read(8 * 1024 * 1024)
+                    if not chunk:
+                        break
+                    projected = out.tell() + len(chunk)
+                    if projected >= MAX_SINGLE_FOLDER_ZIP_BYTES or disk_free_bytes() <= MIN_FREE_DISK_RESERVE_BYTES:
+                        out.flush(); os.fsync(out.fileno())
+                        discard_partial_for_storage_budget(part, "OPAQUE_STORAGE_BUDGET")
+                        return {"action": "split", "reason": "OPAQUE_STORAGE_BUDGET"}
+                    out.write(chunk)
+                out.flush(); os.fsync(out.fileno())
+        os.replace(part, final)
+    except urllib.error.HTTPError as exc:
+        if part.exists():
+            discard_partial_for_storage_budget(part, f"OPAQUE_HTTP_{exc.code}")
+        return {"action": "split", "reason": f"OPAQUE_HTTP_{exc.code}"}
+    except (urllib.error.URLError, TimeoutError, ConnectionError, OSError) as exc:
+        if part.exists():
+            discard_partial_for_storage_budget(part, f"OPAQUE_TRANSPORT:{type(exc).__name__}")
+        raise
+
+    h = hashlib.sha256()
+    with final.open("rb") as src:
+        for chunk in iter(lambda: src.read(8 * 1024 * 1024), b""):
+            h.update(chunk)
+    is_zip = zipfile.is_zipfile(final)
+    entry_count = None
+    if is_zip:
+        with zipfile.ZipFile(final) as z:
+            bad = z.testzip()
+            if bad is not None:
+                quarantine_path(final, "OPAQUE_ZIP_CRC_FAILURE:" + bad)
+                raise RuntimeError("OPAQUE_ZIP_CRC_FAILURE:" + key)
+            entry_count = len(z.infolist())
+    result = {
+        "kind": "opaque_shared_link",
+        "label": label,
+        "source_identity_sha256": key,
+        "payload_name": final.name,
+        "bytes": final.stat().st_size,
+        "sha256": h.hexdigest(),
+        "zip_detected": is_zip,
+        "transfer_method": "DROPBOX_FROZEN_LINK_OPAQUE_DL1",
+    }
+    if entry_count is not None:
+        result["entry_count"] = entry_count
+    record_event(
+        "OPAQUE_SHARED_LINK_COMMITTED",
+        source_identity_sha256=key,
+        bytes=result["bytes"],
+        sha256=result["sha256"],
+        zip_detected=is_zip,
+        entry_count=entry_count,
+    )
+    return {"action": "downloaded", "result": result}
+
+
 def process_item(page, item: dict, ordinal: int) -> dict:
     key = item["key"]
+
+    if item.get("kind") == "unknown":
+        attempt = attempt_opaque_shared_link_download(item, ordinal)
+        if attempt["action"] == "split":
+            children = inventory_children_governed(page, item["url"])
+            if not children:
+                raise RuntimeError("OPAQUE_SPLIT_WITHOUT_CHILDREN:" + key)
+            attempt["children"] = children
+            attempt["fallback_reason"] = attempt.get("reason") or "OPAQUE_SPLIT"
+        return attempt
 
     if item.get("transport") == "dropbox_api":
         if item["kind"] == "file":
