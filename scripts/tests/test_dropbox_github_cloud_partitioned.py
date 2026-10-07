@@ -79,7 +79,6 @@ required_script=[
     "load_resume_state",
     "write_checkpoint",
     "process_item",
-    "FOLDER_FALLBACK_TO_SPLIT",
     "no_restart_from_zero_with_valid_checkpoint",
     "RECOVERY_STATUS.json",
     "inventory_children_api",
