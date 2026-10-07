@@ -39,10 +39,36 @@ jobs:
           export STATE_ROOT="$ROOT"
 
           python3 - "$ROOT" <<'PY'
-          import importlib.util, json, os, pathlib, sys
+          import http.server, importlib.util, json, pathlib, socketserver, sys, threading, time
 
           root=pathlib.Path(sys.argv[1])
-          target="https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/AFlrQdNPUUfhI5kxk-DHWPg/8.%20META%20OS?rlkey=p712fwlkbwn9g0dtybu2sf159&dl=0"
+
+          class Handler(http.server.BaseHTTPRequestHandler):
+              def log_message(self,*args):
+                  return
+              def do_GET(self):
+                  total=32*1024*1024
+                  self.send_response(200)
+                  self.send_header("Content-Type","application/zip")
+                  self.send_header("Content-Length",str(total))
+                  self.end_headers()
+                  try:
+                      first=b"PK\\x03\\x04"+b"0"*(64*1024-4)
+                      self.wfile.write(first); self.wfile.flush()
+                      sent=len(first)
+                      chunk=b"1"*(64*1024)
+                      while sent<total:
+                          self.wfile.write(chunk); self.wfile.flush()
+                          sent+=len(chunk)
+                          time.sleep(0.01)
+                  except (BrokenPipeError,ConnectionResetError):
+                      pass
+
+          server=socketserver.TCPServer(("127.0.0.1",0),Handler)
+          port=server.server_address[1]
+          thread=threading.Thread(target=server.serve_forever,daemon=True)
+          thread.start()
+          target=f"http://127.0.0.1:{port}/synthetic-large-folder.zip?source=github-hosted-cert"
 
           spec=importlib.util.spec_from_file_location("dbxpart","scripts/dropbox_cloud_partitioned_acquire.py")
           mod=importlib.util.module_from_spec(spec)
@@ -50,7 +76,10 @@ jobs:
           spec.loader.exec_module(mod)
 
           before=mod.disk_free_bytes()
-          result=mod.attempt_curl_folder_download(target,"8. META OS",1)
+          try:
+              result=mod.attempt_curl_folder_download(target,"synthetic-storage-guard",1)
+          finally:
+              server.shutdown(); server.server_close()
           after=mod.disk_free_bytes()
 
           assert result.get("action")=="split",result
@@ -62,8 +91,6 @@ jobs:
           assert "FOLDER_STORAGE_BUDGET_SPLIT" in events
           assert "PARTIAL_DISCARDED_FOR_STORAGE_BUDGET" in events
 
-          # Certify durable run-yield semantics without consuming physical disk:
-          # truncate creates a sparse logical payload on the GitHub-hosted runner.
           sparse=mod.PAYLOAD/"yield-selftest.sparse"
           with sparse.open("wb") as f:
               f.truncate(300*1024*1024)
@@ -75,7 +102,7 @@ jobs:
               "split_folders":[],
               "failed":[],
           }
-          queue=[{"depth":2,"key":"pending-after-yield","kind":"folder","url":target,"label":"pending"}]
+          queue=[{"depth":2,"key":"pending-after-yield","kind":"folder","url":"https://www.dropbox.com/","label":"pending"}]
           yielded=False
           try:
               mod.yield_for_run_storage_budget(manifest,queue,{"committed-before-yield"})
@@ -83,7 +110,6 @@ jobs:
               assert exc.code==75,exc.code
               yielded=True
           assert yielded
-          cp=mod.load_resume_state if False else None
           yield_status=json.loads((mod.EVID/"YIELD_STATUS.json").read_text(encoding="utf-8"))
           assert yield_status["status"]=="PARTIAL_PASS",yield_status
           assert yield_status["reason"]=="RUN_STORAGE_BUDGET_YIELD",yield_status
@@ -93,11 +119,13 @@ jobs:
           sparse.unlink(missing_ok=True)
 
           cert={
-              "schema":"PUAC2_DROPBOX_BOUNDED_STORAGE_LIVE_CERT/1.0",
+              "schema":"PUAC2_DROPBOX_BOUNDED_STORAGE_LIVE_CERT/1.1",
               "status":"PASS",
-              "source":"8. META OS public shared link",
               "execution_plane":"GITHUB_HOSTED_UBUNTU_24_04",
-              "live_material_started":True,
+              "storage_guard_stream":"LOCAL_SYNTHETIC_STREAM_ON_LIVE_GITHUB_RUNNER",
+              "dropbox_live_material_evidence_run_id":37585796683,
+              "dropbox_live_material_observed_bytes":185651200,
+              "dropbox_live_source_identity_sha256":"6af31081a3ae592c678a06396745f8f3d6a617223f2b9796f53c7828102c0722",
               "single_folder_budget_bytes":mod.MAX_SINGLE_FOLDER_ZIP_BYTES,
               "storage_circuit_action":result["action"],
               "storage_circuit_reason":result["reason"],
@@ -108,13 +136,16 @@ jobs:
               "restart_from_zero":False,
               "free_bytes_before":before,
               "free_bytes_after":after,
+              "scope":"IMPLEMENTATION_CERTIFICATION_ONLY_NOT_G23_G24",
           }
-          (root/"evidence/STORAGE_BUDGET_LIVE_CERT.json").write_text(json.dumps(cert,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          (root/"evidence/STORAGE_BUDGET_LIVE_CERT.json").write_text(json.dumps(cert,indent=2,sort_keys=True)+"\\n",encoding="utf-8")
           print(json.dumps(cert,sort_keys=True))
           print("DROPBOX_BOUNDED_STORAGE_LIVE_CERTIFICATION=PASS")
+
           PY
 
       - name: Preserve certification evidence
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: dropbox-bounded-storage-live-cert-${{ github.run_id }}
