@@ -8,6 +8,7 @@ import json
 import os
 import pathlib
 import re
+import subprocess
 import sys
 import time
 import traceback
@@ -558,6 +559,122 @@ def download_file_link(url: str, label: str, ordinal: int) -> dict:
         "sha256": h.hexdigest(),
     }
 
+def attempt_curl_folder_download(url: str, label: str, ordinal: int) -> dict:
+    """Historically proven public-link transport with isolated retries and ZIP validation."""
+    key = link_key(url)
+    target_url = with_dl(url, "1")
+    final = PAYLOAD / f"{ordinal:06d}_folder_{key[:12]}.zip"
+    for attempt_no in range(1, 4):
+        part = PAYLOAD / f"{ordinal:06d}_folder_{key[:12]}.curl{attempt_no}.part"
+        stderr_path = EVID / f"CURL_DL1_{key[:12]}_{attempt_no}.stderr"
+        if part.exists():
+            part.unlink()
+        record_event(
+            "FOLDER_CURL_DL1_ATTEMPT",
+            label=label,
+            source=sanitize_url(url),
+            source_identity_sha256=key,
+            attempt=attempt_no,
+        )
+        with stderr_path.open("wb") as err:
+            proc = subprocess.Popen(
+                [
+                    "curl", "--location", "--fail", "--show-error", "--silent",
+                    "--connect-timeout", "30",
+                    "--speed-time", "120", "--speed-limit", "1024",
+                    "--user-agent", "LOUKSNA-GitHub-Cloud-Child/1.0",
+                    "--output", str(part), target_url,
+                ],
+                stdout=subprocess.DEVNULL,
+                stderr=err,
+            )
+            material_marked = False
+            while proc.poll() is None:
+                try:
+                    if part.is_file() and part.stat().st_size >= 4096:
+                        with part.open("rb") as src:
+                            sig = src.read(4)
+                        if sig[:2] == b"PK" and not material_marked:
+                            write_download_event("folder-curl-dl1", url, label, final.name)
+                            record_event(
+                                "FOLDER_CURL_DL1_MATERIAL_STARTED",
+                                label=label,
+                                source_identity_sha256=key,
+                                attempt=attempt_no,
+                                observed_bytes=part.stat().st_size,
+                                zip_signature=True,
+                                background_process_alive=True,
+                                background_pid=proc.pid,
+                            )
+                            material_marked = True
+                except Exception:
+                    pass
+                time.sleep(0.2)
+            rc = proc.wait()
+
+        size = part.stat().st_size if part.exists() else 0
+        first4 = ""
+        if part.exists() and size:
+            try:
+                with part.open("rb") as src:
+                    first4 = src.read(4).hex()
+            except Exception:
+                pass
+
+        valid = False
+        entries = 0
+        sha = None
+        if part.exists() and size > 0 and zipfile.is_zipfile(part):
+            try:
+                entries, sha = validate_zip(part)
+                valid = entries > 0
+            except Exception:
+                valid = False
+
+        if valid:
+            os.replace(part, final)
+            record_event(
+                "FOLDER_CURL_DL1_PASS",
+                label=label,
+                source_identity_sha256=key,
+                attempt=attempt_no,
+                curl_exit_code=rc,
+                bytes=final.stat().st_size,
+                sha256=sha,
+                entry_count=entries,
+                zip_integrity="PASS",
+            )
+            return {
+                "action": "downloaded",
+                "result": {
+                    "kind": "folder_zip",
+                    "label": label,
+                    "source_identity_sha256": key,
+                    "payload_name": final.name,
+                    "bytes": final.stat().st_size,
+                    "sha256": sha,
+                    "entry_count": entries,
+                    "transfer_method": "DROPBOX_PUBLIC_CURL_DL1_ISOLATED_RETRY",
+                },
+            }
+
+        record_event(
+            "FOLDER_CURL_DL1_REJECTED",
+            label=label,
+            source_identity_sha256=key,
+            attempt=attempt_no,
+            curl_exit_code=rc,
+            bytes=size,
+            first4_hex=first4,
+            reason="INVALID_OR_INCOMPLETE_ZIP",
+        )
+        if part.exists():
+            quarantine_path(part, f"CURL_DL1_INVALID_ATTEMPT_{attempt_no}")
+        if attempt_no < 3:
+            time.sleep(min(10, attempt_no * 2))
+
+    return {"action": "fallback", "reason": "CURL_DL1_EXHAUSTED"}
+
 def attempt_direct_folder_download(url: str, label: str, ordinal: int) -> dict:
     """Try Dropbox's documented dl=1 transport before depending on preview-page UI."""
     key = link_key(url)
@@ -676,8 +793,14 @@ def attempt_direct_folder_download(url: str, label: str, ordinal: int) -> dict:
 
 
 def attempt_folder_download(page, url: str, label: str, ordinal: int):
-    # Primary path: Dropbox's documented forced-download parameter. This avoids
-    # coupling the transfer to preview-page DOM selectors.
+    # Primary public path: reuse the transport that previously demonstrated
+    # real ZIP bytes for META OS, but with isolated retries and strict CRC gates.
+    curl_direct = attempt_curl_folder_download(url, label, ordinal)
+    if curl_direct["action"] == "downloaded":
+        return curl_direct
+
+    # Secondary public path: stdlib direct download. Neither HTTP 200 nor process
+    # exit status alone is accepted as success.
     direct = attempt_direct_folder_download(url, label, ordinal)
     if direct["action"] == "downloaded":
         return direct
