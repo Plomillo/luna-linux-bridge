@@ -54,7 +54,21 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          git -C target log -n 50 --format=%H | grep -m1 'a72cd683481ed64da7fbcd40c5d76de28681c665'
+          test "$(git -C target rev-parse HEAD)" = "f19f2e118f258f1f92687240d69e239c3beeb12c"
+          test "$(git -C target show -s --format=%P HEAD)" = "fd4b24bd577e5085feb18697c3ec148e5026455b"
+          test -f target/implementation/super1200/DOMAIN_PROGRESS.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          reg=json.loads(Path('target/implementation/super1200/registry/capabilities.json').read_text())
+          d01=json.loads(Path('target/implementation/super1200/domains/D01.json').read_text())
+          assert reg.get('source_sha256') == 'eeb3b32e170cd2780c25ce65156978fa58682b6faef0d5da50b35e50993e652e'
+          assert reg.get('count') == 1200
+          assert sum(x.get('implementation_state') == 'EVIDENCED' for x in reg['items'] if 1 <= x['capability_id'] <= 30) == 30
+          assert d01.get('pending_capabilities') == 0
+          assert d01.get('state') == 'FUNCTIONALLY_CLOSED_PENDING_INDEPENDENT_VALIDATION'
+          print('SUPER1200_TELEMETRY CHECKPOINT=VALIDATED_FROM_D01_CLOSED_STATE D01=30/30')
+          PY
           python3 -B -I mission/artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz v07-status
           python3 -B -I mission/artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz v07-selftest
           python3 - <<'PY'
@@ -100,7 +114,7 @@ jobs:
           custosz=Path('mission/artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz').resolve()
           sys.path.insert(0,str(custosz))
           import custosz_v05_legacy as worker
-          goal=('SUPER1200 governed continuation from checkpoint a72cd683481ed64da7fbcd40c5d76de28681c665; '\
+          goal=('SUPER1200 governed continuation from the validated D01-closed repository state; '\
                 'continue the first still-pending repository domain; preserve D01; no canonical mutation; '\
                 'LOUKSNA Remote Bridge observation only; G23/G24 remain independent.')
           m=worker.mission_start(1200.0/3600.0,'LUNA_PROJECT',goal,report_minutes=1)
