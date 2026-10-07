@@ -107,6 +107,11 @@ required_script=[
     "PARTIAL_DISCARDED_FOR_STORAGE_BUDGET",
     "RUN_STORAGE_BUDGET_YIELD",
     "yield_for_run_storage_budget",
+    "rows_from_public_network_inventory",
+    "DROPBOX_PUBLIC_LIST_SHARED_LINK_FOLDER_ENTRIES",
+    "DROPBOX_PUBLIC_NETWORK_INVENTORY",
+    "DROPBOX_PUBLIC_NETWORK_INVENTORY_COUNT_MISMATCH",
+    "DROPBOX_PUBLIC_NETWORK_PAGINATION_REQUIRED",
 ]
 for needle in required_script:
     if needle not in s:
@@ -237,6 +242,46 @@ with tempfile.TemporaryDirectory() as td:
     assert calls and calls[0][0].endswith("/files/list_folder"),calls
     assert calls[0][1]["shared_link"]["url"].startswith("https://www.dropbox.com/scl/fo/"),calls
 print("DROPBOX_GITHUB_CLOUD_PARTITIONED_API_INVENTORY_CONTRACT=PASS")
+
+with tempfile.TemporaryDirectory() as td:
+    os.environ["STATE_ROOT"]=td
+    spec=importlib.util.spec_from_file_location("dropbox_cloud_partitioned_public_network_selftest", script)
+    net_mod=importlib.util.module_from_spec(spec)
+    assert spec and spec.loader
+    spec.loader.exec_module(net_mod)
+    parent="https://www.dropbox.com/scl/fo/root-id/root-token/8.%20META%20OS?rlkey=test&dl=0"
+    payload={
+        "entries":[
+            {
+                "filename":"child-folder",
+                "href":"https://www.dropbox.com/scl/fo/root-id/folder-token/8.%20META%20OS/child-folder?rlkey=test&dl=0",
+                "is_dir":True,
+                "folder_id":"folder-id",
+            },
+            {
+                "filename":"file.py",
+                "href":"https://www.dropbox.com/scl/fo/root-id/file-token/8.%20META%20OS/file.py?rlkey=test&dl=0",
+                "is_dir":False,
+                "file_id":"file-id",
+                "bytes":366,
+            },
+        ],
+        "total_num_entries":2,
+        "has_more_entries":False,
+        "next_request_voucher":None,
+        "folder":{"folder_id":"root-folder-id"},
+    }
+    rows,meta=net_mod.rows_from_public_network_inventory(payload,parent)
+    assert len(rows)==2,rows
+    assert meta["total_num_entries"]==2,meta
+    assert meta["has_more_entries"] is False,meta
+    file_row=next(x for x in rows if x["label"]=="file.py")
+    folder_row=next(x for x in rows if x["label"]=="child-folder")
+    assert file_row["kind"]=="file",file_row
+    assert file_row["size"]==366,file_row
+    assert file_row["transport"]=="dropbox_public_network_inventory",file_row
+    assert folder_row["kind"]=="folder",folder_row
+print("DROPBOX_GITHUB_CLOUD_PARTITIONED_PUBLIC_NETWORK_INVENTORY_CONTRACT=PASS")
 
 with tempfile.TemporaryDirectory() as td:
     root=Path(td)
