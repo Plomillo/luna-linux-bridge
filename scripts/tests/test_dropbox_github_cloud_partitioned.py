@@ -54,6 +54,12 @@ required_workflow=[
     "GOVERNED_METAOS_INVENTORY_CERT.json",
     "DROPBOX_PUBLIC_RENDERED_FALLBACK=ENABLED",
     "GOVERNED_METAOS_INVENTORY_CERTIFICATION=PASS",
+    "MAX_SINGLE_FOLDER_ZIP_BYTES",
+    "MIN_FREE_DISK_RESERVE_BYTES",
+    "RUN_PAYLOAD_YIELD_BYTES",
+    "GOVERNED_PARTIAL_YIELD=TRUE",
+    "continue_partial",
+    "GOVERNED_CONTINUATION_DISPATCH=PASS",
     "${{ secrets.DROPBOX_APP_KEY }}",
     "${{ secrets.DROPBOX_APP_SECRET }}",
     "${{ secrets.DROPBOX_REFRESH_TOKEN }}",
@@ -93,6 +99,14 @@ required_script=[
     "https://api.dropboxapi.com/2/files/list_folder",
     "https://content.dropboxapi.com/2/sharing/get_shared_link_file",
     "dom_authoritative=False",
+    "MAX_SINGLE_FOLDER_ZIP_BYTES",
+    "MIN_FREE_DISK_RESERVE_BYTES",
+    "RUN_PAYLOAD_YIELD_BYTES",
+    "FOLDER_STORAGE_BUDGET_CIRCUIT_OPEN",
+    "FOLDER_STORAGE_BUDGET_SPLIT",
+    "PARTIAL_DISCARDED_FOR_STORAGE_BUDGET",
+    "RUN_STORAGE_BUDGET_YIELD",
+    "yield_for_run_storage_budget",
 ]
 for needle in required_script:
     if needle not in s:
@@ -120,6 +134,8 @@ required_resilience=[
     "DROPBOX_PUBLIC_DL1_WRITE_INTERRUPTION",
     "ISOLATED_CURL_RETRY_VALIDATE_ZIP_CRC",
     "CHECKPOINT_HASH_MISMATCH",
+    "RUNNER_DISK_PRESSURE",
+    "SPLIT_AND_YIELD_FROM_CHECKPOINT",
     "RECOVERY_PLAN",
 ]
 for needle in required_resilience:
@@ -168,6 +184,8 @@ if not any(x.get("category")=="DROPBOX_SHARED_FOLDER_INVENTORY_INCOMPATIBLE" and
     raise SystemExit("TRANSFER_FIX_KB_SHARED_FOLDER_API_FIX_MISSING")
 if not any(x.get("category")=="DROPBOX_PUBLIC_DL1_WRITE_INTERRUPTION" and x.get("action")=="ISOLATED_CURL_RETRY_VALIDATE_ZIP_CRC" for x in fix_kb_obj.get("entries",[])):
     raise SystemExit("TRANSFER_FIX_KB_PUBLIC_DL1_RETRY_FIX_MISSING")
+if not any(x.get("category")=="RUNNER_DISK_PRESSURE" and x.get("action")=="SPLIT_AND_YIELD_FROM_CHECKPOINT" for x in fix_kb_obj.get("entries",[])):
+    raise SystemExit("TRANSFER_FIX_KB_RUNNER_DISK_PRESSURE_FIX_MISSING")
 
 tree=ast.parse(s)
 for node in ast.walk(tree):
@@ -258,6 +276,11 @@ with tempfile.TemporaryDirectory() as td:
     category,action,missing=rmod.classify_bug("curl: (23) Failure writing output to destination")
     assert category=="DROPBOX_PUBLIC_DL1_WRITE_INTERRUPTION"
     assert action=="ISOLATED_CURL_RETRY_VALIDATE_ZIP_CRC"
+    category,action,missing=rmod.classify_bug("OSError: [Errno 28] No space left on device")
+    assert category=="RUNNER_DISK_PRESSURE"
+    assert action=="SPLIT_AND_YIELD_FROM_CHECKPOINT"
+    known=rmod.lookup_known_fix(category,"No space left on device")
+    assert known and known["action"]=="SPLIT_AND_YIELD_FROM_CHECKPOINT"
     known=rmod.lookup_known_fix(category,"curl: (23) Failure writing output to destination")
     assert known and known["action"]=="ISOLATED_CURL_RETRY_VALIDATE_ZIP_CRC"
 print("DROPBOX_GITHUB_CLOUD_PARTITIONED_BUG_CLASSIFIER_SELFTEST=PASS")
