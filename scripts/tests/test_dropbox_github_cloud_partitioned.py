@@ -48,9 +48,9 @@ required_workflow=[
     "terminal_general",
     "TERMINAL_GENERAL_CERTIFICATION",
     "37355731169",
-    "Certify authoritative Dropbox API inventory on META OS",
-    "API_INVENTORY_PROBE.json",
-    "DROPBOX_API_INVENTORY_CERTIFICATION=PASS",
+    "Certify governed Dropbox provider on META OS",
+    "PROVIDER_PROBE.json",
+    "DROPBOX_GOVERNED_PROVIDER_CERTIFICATION=PASS",
     "${{ secrets.DROPBOX_APP_KEY }}",
     "${{ secrets.DROPBOX_APP_SECRET }}",
     "${{ secrets.DROPBOX_REFRESH_TOKEN }}",
@@ -66,6 +66,9 @@ required_script=[
     "inventory_children",
     "attempt_folder_download",
     "attempt_direct_folder_download",
+    "attempt_curl_folder_download",
+    "FOLDER_CURL_DL1_MATERIAL_STARTED",
+    "DROPBOX_PUBLIC_CURL_DL1_ISOLATED_RETRY",
     "FOLDER_DIRECT_DL1_ATTEMPT",
     "FOLDER_DIRECT_DL1_PASS",
     "FOLDER_DOWNLOAD_UI_CONTROL_UNAVAILABLE",
@@ -111,6 +114,8 @@ required_resilience=[
     "DIRECT_DL1_THEN_SPLIT",
     "DROPBOX_SHARED_FOLDER_INVENTORY_INCOMPATIBLE",
     "DROPBOX_API_LIST_FOLDER_SHARED_LINK",
+    "DROPBOX_PUBLIC_DL1_WRITE_INTERRUPTION",
+    "ISOLATED_CURL_RETRY_VALIDATE_ZIP_CRC",
     "CHECKPOINT_HASH_MISMATCH",
     "RECOVERY_PLAN",
 ]
@@ -158,6 +163,8 @@ if not any(x.get("category")=="DROPBOX_UI_SELECTOR_DRIFT" and x.get("action")=="
     raise SystemExit("TRANSFER_FIX_KB_UI_DRIFT_FIX_MISSING")
 if not any(x.get("category")=="DROPBOX_SHARED_FOLDER_INVENTORY_INCOMPATIBLE" and x.get("action")=="DROPBOX_API_LIST_FOLDER_SHARED_LINK" for x in fix_kb_obj.get("entries",[])):
     raise SystemExit("TRANSFER_FIX_KB_SHARED_FOLDER_API_FIX_MISSING")
+if not any(x.get("category")=="DROPBOX_PUBLIC_DL1_WRITE_INTERRUPTION" and x.get("action")=="ISOLATED_CURL_RETRY_VALIDATE_ZIP_CRC" for x in fix_kb_obj.get("entries",[])):
+    raise SystemExit("TRANSFER_FIX_KB_PUBLIC_DL1_RETRY_FIX_MISSING")
 
 tree=ast.parse(s)
 for node in ast.walk(tree):
@@ -245,4 +252,9 @@ with tempfile.TemporaryDirectory() as td:
     assert action=="DROPBOX_API_LIST_FOLDER_SHARED_LINK"
     known=rmod.lookup_known_fix(category,"PARTITION_REQUIRED_BUT_CHILDREN_EMPTY")
     assert known and known["action"]=="DROPBOX_API_LIST_FOLDER_SHARED_LINK"
+    category,action,missing=rmod.classify_bug("curl: (23) Failure writing output to destination")
+    assert category=="DROPBOX_PUBLIC_DL1_WRITE_INTERRUPTION"
+    assert action=="ISOLATED_CURL_RETRY_VALIDATE_ZIP_CRC"
+    known=rmod.lookup_known_fix(category,"curl: (23) Failure writing output to destination")
+    assert known and known["action"]=="ISOLATED_CURL_RETRY_VALIDATE_ZIP_CRC"
 print("DROPBOX_GITHUB_CLOUD_PARTITIONED_BUG_CLASSIFIER_SELFTEST=PASS")
