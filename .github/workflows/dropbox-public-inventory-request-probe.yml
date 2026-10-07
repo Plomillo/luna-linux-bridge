@@ -1,0 +1,98 @@
+name: "Dropbox public inventory request probe"
+
+on:
+  push:
+    branches:
+      - staging/dropbox-github-cloud-partitioned-20261005
+    paths:
+      - .github/workflows/dropbox-public-inventory-request-probe.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -m pip install --disable-pip-version-check --no-input "playwright==1.55.0"
+          python3 -m playwright install --with-deps chromium
+      - name: Capture and replay exact public inventory request
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import asyncio,json,re,urllib.parse
+          from playwright.async_api import async_playwright
+
+          URL="https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/AFlrQdNPUUfhI5kxk-DHWPg/8.%20META%20OS?rlkey=p712fwlkbwn9g0dtybu2sf159&dl=0"
+          captured=None
+
+          async def main():
+              global captured
+              async with async_playwright() as p:
+                  browser=await p.chromium.launch(headless=True)
+                  context=await browser.new_context(locale="en-US")
+                  for attempt in range(1,6):
+                      page=await context.new_page()
+                      def on_request(req):
+                          global captured
+                          try:
+                              u=urllib.parse.urlsplit(req.url)
+                              if u.hostname=="www.dropbox.com" and u.path=="/list_shared_link_folder_entries":
+                                  h={k:v for k,v in req.headers.items() if k.lower() not in ("cookie","authorization","x-csrf-token")}
+                                  captured={
+                                      "method":req.method,
+                                      "url":req.url,
+                                      "post_data":req.post_data,
+                                      "headers":h,
+                                  }
+                          except Exception:
+                              pass
+                      page.on("request",on_request)
+                      await page.goto(URL,wait_until="domcontentloaded",timeout=120000)
+                      for _ in range(50):
+                          if captured: break
+                          await page.mouse.wheel(0,4000)
+                          await page.wait_for_timeout(500)
+                      if captured:
+                          print("PUBLIC_INVENTORY_REQUEST_CAPTURED=TRUE")
+                          print("METHOD="+captured["method"])
+                          print("URL_PATH="+urllib.parse.urlsplit(captured["url"]).path)
+                          print("POST_DATA="+json.dumps(captured["post_data"]))
+                          print("SAFE_HEADERS="+json.dumps(captured["headers"],sort_keys=True))
+                          # Replay in the same anonymous browser context. Cookie jar is
+                          # inherited by context.request but no cookie value is logged.
+                          resp=await context.request.fetch(
+                              captured["url"],
+                              method=captured["method"],
+                              data=captured["post_data"] or None,
+                              headers={k:v for k,v in captured["headers"].items()
+                                       if k.lower() not in ("content-length","host","cookie")},
+                              timeout=120000,
+                          )
+                          body=await resp.body()
+                          data=json.loads(body)
+                          print("REPLAY_STATUS="+str(resp.status))
+                          print("REPLAY_TOTAL="+str(data.get("total_num_entries")))
+                          print("REPLAY_HAS_MORE="+str(bool(data.get("has_more_entries"))).lower())
+                          print("REPLAY_ENTRIES="+str(len(data.get("entries") or [])))
+                          assert resp.status==200
+                          assert int(data.get("total_num_entries") or 0)==37
+                          assert len(data.get("entries") or [])==37
+                          assert data.get("has_more_entries") is False
+                          print("PUBLIC_INVENTORY_REQUEST_REPLAY=PASS")
+                          await browser.close()
+                          return
+                      await page.close()
+                  raise SystemExit("PUBLIC_INVENTORY_REQUEST_NOT_CAPTURED_AFTER_5_ATTEMPTS")
+          asyncio.run(main())
+          PY
