@@ -361,8 +361,8 @@ def classify_bug(stderr_text: str) -> tuple[str, str, str | None]:
         return "TRANSIENT_NETWORK", "RETRY_BACKOFF", None
     if "curl: (23)" in lower or "failure writing output" in lower:
         return "DROPBOX_PUBLIC_DL1_WRITE_INTERRUPTION", "ISOLATED_CURL_RETRY_VALIDATE_ZIP_CRC", None
-    if any(x in lower for x in ["no space left", "enospc"]):
-        return "IO_STORAGE", "CLEAN_PARTIAL_AND_RETRY", None
+    if any(x in lower for x in ["no space left", "enospc", "err_insufficient_resources"]):
+        return "RUNNER_DISK_PRESSURE", "SPLIT_AND_YIELD_FROM_CHECKPOINT", None
     if "root_children_empty" in lower or "children_empty" in lower:
         return "INVENTORY_FAILURE", "RELOAD_INVENTORY_AND_RETRY", None
     return "UNKNOWN_TRANSFER_BUG", "RETRY_FROM_CHECKPOINT_ONCE", None
