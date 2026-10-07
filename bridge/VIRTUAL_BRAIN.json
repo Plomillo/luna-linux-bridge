@@ -1,0 +1,22 @@
+{
+  "schema": "LRB_VIRTUAL_BRAIN/0.1",
+  "status": "CANDIDATE_UNCERTIFIED",
+  "authority": "Louksna.md",
+  "remote_inference_default": false,
+  "no_weight_download": true,
+  "fallback_policy": "NO_SILENT_PROVIDER_SWITCH",
+  "providers": {
+    "groq": {
+      "endpoint": "https://api.groq.com/openai/v1/chat/completions",
+      "credential_env": "GROQ_API_KEY",
+      "model": "openai/gpt-oss-120b",
+      "cost_gate": "FREE_PLAN_RATE_LIMITED"
+    },
+    "huggingface": {
+      "endpoint": "https://router.huggingface.co/v1/chat/completions",
+      "credential_env": "HF_TOKEN",
+      "model": "openai/gpt-oss-120b",
+      "cost_gate": "OWNER_ACKNOWLEDGES_USAGE_BILLING"
+    }
+  }
+}

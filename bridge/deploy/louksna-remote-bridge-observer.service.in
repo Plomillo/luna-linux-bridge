@@ -1,0 +1,23 @@
+# REVIEWED TEMPLATE ONLY. DO NOT INSTALL BEFORE INDEPENDENT G23/G24.
+# Replace @PROJECT_ROOT@ with verified absolute path of digest-bound repository.
+[Unit]
+Description=LOUKSNA Remote Bridge bounded local observer (UNRELEASED)
+After=default.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 -B @PROJECT_ROOT@/bridge/lrb_core.py monitor --cycles 0
+Restart=always
+RestartSec=10
+NoNewPrivileges=yes
+MemoryMax=128M
+CPUQuota=10%
+TasksMax=12
+Nice=12
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+RestrictAddressFamilies=AF_UNIX
+PrivateTmp=true
+
+[Install]
+WantedBy=default.target
