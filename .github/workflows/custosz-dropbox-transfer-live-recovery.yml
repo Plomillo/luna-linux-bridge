@@ -6,6 +6,7 @@ on:
       - staging/custosz-mission-mailbox-20260928
     paths:
       - missions/inbox/dropbox-transfer-live-recovery-20261007/MISSION_ORIGINAL.md
+      - .github/workflows/custosz-dropbox-transfer-live-recovery.yml
   workflow_dispatch:
 
 permissions:
@@ -66,10 +67,9 @@ jobs:
 
       - name: Register live recovery mission in real CUSTOSZ state
         shell: bash
-        env:
-          CUSTOSZ_WORKSPACE_OVERRIDE: ${{ runner.home }}/SYMPHYLAX_LAB/CUSTOSZ_V7_R1_G23_G24_20260927T021532Z/POSIX_COMPATIBILITY_VIEW
         run: |
           set -Eeuo pipefail
+          export CUSTOSZ_WORKSPACE_OVERRIDE="$HOME/SYMPHYLAX_LAB/CUSTOSZ_V7_R1_G23_G24_20260927T021532Z/POSIX_COMPATIBILITY_VIEW"
           ulimit -v 262144 || true
           nice -n 10 python3 -B -I mission/scripts/missions/custosz_dropbox_transfer_handoff.py
 
