@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
-      MAX_SINGLE_FOLDER_ZIP_BYTES: "67108864"
+      MAX_SINGLE_FOLDER_ZIP_BYTES: "262144"
       MIN_FREE_DISK_RESERVE_BYTES: "536870912"
       RUN_PAYLOAD_YIELD_BYTES: "268435456"
     steps:
@@ -42,7 +42,7 @@ jobs:
           import importlib.util, json, os, pathlib, sys
 
           root=pathlib.Path(sys.argv[1])
-          target="https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/ANyfzEeUOyrSs4X7_aOENuw/5.%20CUSTOSZ?rlkey=p712fwlkbwn9g0dtybu2sf159&dl=0"
+          target="https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/AFlrQdNPUUfhI5kxk-DHWPg/8.%20META%20OS?rlkey=p712fwlkbwn9g0dtybu2sf159&dl=0"
 
           spec=importlib.util.spec_from_file_location("dbxpart","scripts/dropbox_cloud_partitioned_acquire.py")
           mod=importlib.util.module_from_spec(spec)
@@ -50,7 +50,7 @@ jobs:
           spec.loader.exec_module(mod)
 
           before=mod.disk_free_bytes()
-          result=mod.attempt_curl_folder_download(target,"5. CUSTOSZ",1)
+          result=mod.attempt_curl_folder_download(target,"8. META OS",1)
           after=mod.disk_free_bytes()
 
           assert result.get("action")=="split",result
@@ -95,7 +95,7 @@ jobs:
           cert={
               "schema":"PUAC2_DROPBOX_BOUNDED_STORAGE_LIVE_CERT/1.0",
               "status":"PASS",
-              "source":"5. CUSTOSZ public shared link",
+              "source":"8. META OS public shared link",
               "execution_plane":"GITHUB_HOSTED_UBUNTU_24_04",
               "live_material_started":True,
               "single_folder_budget_bytes":mod.MAX_SINGLE_FOLDER_ZIP_BYTES,
