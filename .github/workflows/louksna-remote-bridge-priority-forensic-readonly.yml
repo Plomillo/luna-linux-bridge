@@ -1,0 +1,152 @@
+name: "LOUKSNA Remote Bridge — PROYECTOS PRIORITARIOS forensic readonly audit"
+
+on:
+  push:
+    branches:
+      - candidate/louksna-remote-bridge-v0-unreleased
+    paths:
+      - ".github/workflows/louksna-remote-bridge-priority-forensic-readonly.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lrb-priority-forensic-readonly
+  cancel-in-progress: false
+
+jobs:
+  forensic-audit:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 30
+    steps:
+      - name: Checkout bridge candidate without credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            bridge
+          sparse-checkout-cone-mode: true
+
+      - name: Verify bridge host and non-root posture
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(hostname)" = "LOUKSNA"
+          test "$(id -u)" -ne 0
+          test -f "$GITHUB_WORKSPACE/bridge/lrb_core.py"
+
+      - name: Discover exact priority root through LOUKSNA Remote Bridge
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$GITHUB_WORKSPACE/.lrb-audit-$GITHUB_RUN_ID"
+          mkdir -p "$OUT"
+          nice -n 10 timeout 60s python3 -B bridge/lrb_core.py --state-dir "$OUT/state" projects --discover --limit 100 > "$OUT/DISCOVERY.json"
+          python3 - "$OUT/DISCOVERY.json" "$OUT/ROOT.txt" <<'PY'
+          import json, pathlib, sys
+          d=json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+          root=d.get("root")
+          if not root:
+              raise SystemExit("DISCOVERY_ROOT_MISSING")
+          pathlib.Path(sys.argv[2]).write_text(root+"\n",encoding="utf-8")
+          print(root)
+          PY
+
+      - name: Full recursive read-only forensic inventory and SHA-256 audit
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$GITHUB_WORKSPACE/.lrb-audit-$GITHUB_RUN_ID"
+          ROOT="$(cat "$OUT/ROOT.txt")"
+          export ROOT OUT
+          nice -n 15 timeout 25m python3 -B - <<'PY'
+          import hashlib, json, os, pathlib, stat, time
+          root=pathlib.Path(os.environ["ROOT"]).resolve()
+          out=pathlib.Path(os.environ["OUT"])
+          if not root.is_dir() or root.is_symlink():
+              raise SystemExit("ROOT_NOT_DIRECTORY_OR_SYMLINK")
+          started=time.time()
+          counts={"directories":0,"regular_files":0,"symlinks":0,"other":0,"errors":0}
+          total_bytes=hashed_files=hashed_bytes=max_depth=0
+          inv=out/"INVENTORY.jsonl"; errs=out/"ERRORS.jsonl"; hashes=out/"HASHES.jsonl"
+          with inv.open("w",encoding="utf-8") as fi, errs.open("w",encoding="utf-8") as fe, hashes.open("w",encoding="utf-8") as fh:
+              stack=[(root,0)]
+              while stack:
+                  cur,depth=stack.pop()
+                  max_depth=max(max_depth,depth)
+                  try:
+                      st=cur.lstat()
+                      rel="." if cur==root else cur.relative_to(root).as_posix()
+                      base={"path":rel,"depth":depth,"mode":stat.filemode(st.st_mode),"uid":st.st_uid,"gid":st.st_gid,"size_bytes":st.st_size,"mtime_ns":st.st_mtime_ns,"dev":st.st_dev,"inode":st.st_ino}
+                      if stat.S_ISLNK(st.st_mode):
+                          counts["symlinks"]+=1
+                          base["kind"]="symlink"
+                          try: base["target"]=os.readlink(cur)
+                          except OSError as e: base["target_error"]=f"{type(e).__name__}:{e}"
+                          fi.write(json.dumps(base,ensure_ascii=False,sort_keys=True)+"\n"); continue
+                      if stat.S_ISDIR(st.st_mode):
+                          counts["directories"]+=1; base["kind"]="directory"
+                          fi.write(json.dumps(base,ensure_ascii=False,sort_keys=True)+"\n")
+                          try: children=list(cur.iterdir())
+                          except OSError as e:
+                              counts["errors"]+=1; fe.write(json.dumps({"path":rel,"operation":"listdir","error_type":type(e).__name__,"error":str(e)},ensure_ascii=False)+"\n"); continue
+                          for child in sorted(children,key=lambda p:p.name,reverse=True):
+                              stack.append((child,depth+1))
+                          continue
+                      if stat.S_ISREG(st.st_mode):
+                          counts["regular_files"]+=1; total_bytes+=st.st_size; base["kind"]="regular_file"
+                          fi.write(json.dumps(base,ensure_ascii=False,sort_keys=True)+"\n")
+                          try:
+                              h=hashlib.sha256(); rb=0
+                              with cur.open("rb",buffering=0) as f:
+                                  while True:
+                                      chunk=f.read(1024*1024)
+                                      if not chunk: break
+                                      h.update(chunk); rb+=len(chunk)
+                              hashed_files+=1; hashed_bytes+=rb
+                              fh.write(json.dumps({"path":rel,"sha256":h.hexdigest(),"size_bytes":rb,"inode":st.st_ino,"dev":st.st_dev},ensure_ascii=False,sort_keys=True)+"\n")
+                          except OSError as e:
+                              counts["errors"]+=1; fe.write(json.dumps({"path":rel,"operation":"sha256","error_type":type(e).__name__,"error":str(e),"size_bytes":st.st_size},ensure_ascii=False)+"\n")
+                          continue
+                      counts["other"]+=1; base["kind"]="other"
+                      fi.write(json.dumps(base,ensure_ascii=False,sort_keys=True)+"\n")
+                  except OSError as e:
+                      counts["errors"]+=1
+                      try: rel=cur.relative_to(root).as_posix()
+                      except Exception: rel=str(cur)
+                      fe.write(json.dumps({"path":rel,"operation":"lstat","error_type":type(e).__name__,"error":str(e)},ensure_ascii=False)+"\n")
+          finished=time.time()
+          summary={"schema":"LOUKSNA_REMOTE_BRIDGE_FORENSIC_PRIORITY_AUDIT/1.0","status":"PASS" if counts["errors"]==0 else "PASS_WITH_READ_ERRORS","readonly":True,"host":os.uname().nodename,"uid":os.getuid(),"root":str(root),"started_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime(started)),"finished_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime(finished)),"duration_seconds":round(finished-started,3),"counts":counts,"total_regular_file_bytes":total_bytes,"hashed_files":hashed_files,"hashed_bytes":hashed_bytes,"max_depth":max_depth,"symlinks_followed":False,"mutations_performed":False,"deletions_performed":False,"writes_to_project_tree":False,"g23":"NOT_EXECUTED","g24":"NOT_EXECUTED"}
+          (out/"AUDIT_SUMMARY.json").write_text(json.dumps(summary,indent=2,ensure_ascii=False,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps(summary,indent=2,ensure_ascii=False,sort_keys=True))
+          PY
+
+      - name: Build content-addressed evidence manifest
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$GITHUB_WORKSPACE/.lrb-audit-$GITHUB_RUN_ID"
+          python3 - "$OUT" <<'PY'
+          import hashlib,json,pathlib,sys,time,os
+          out=pathlib.Path(sys.argv[1]); rows=[]
+          for p in sorted(out.iterdir()):
+              if p.is_file() and p.name!="EVIDENCE_MANIFEST.json":
+                  h=hashlib.sha256()
+                  with p.open("rb") as f:
+                      for c in iter(lambda:f.read(1024*1024),b""): h.update(c)
+                  rows.append({"path":p.name,"size_bytes":p.stat().st_size,"sha256":h.hexdigest()})
+          m={"schema":"LOUKSNA_REMOTE_BRIDGE_EVIDENCE_MANIFEST/1.0","run_id":os.environ["GITHUB_RUN_ID"],"commit":os.environ["GITHUB_SHA"],"workflow":os.environ["GITHUB_WORKFLOW"],"generated_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),"files":rows}
+          (out/"EVIDENCE_MANIFEST.json").write_text(json.dumps(m,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          PY
+
+      - name: Upload forensic evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-priority-forensic-audit
+          path: .lrb-audit-*
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
