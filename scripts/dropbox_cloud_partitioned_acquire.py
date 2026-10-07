@@ -863,7 +863,16 @@ def inventory_children_governed(page, url: str) -> list[dict]:
         )
         return rows
 
-    frozen_rows = inventory_children_frozen_network(url)
+    try:
+        frozen_rows = inventory_children_frozen_network(url)
+    except Exception as exc:
+        record_event(
+            "DROPBOX_FROZEN_NETWORK_INVENTORY_DEGRADED",
+            parent=sanitize_url(url),
+            error=f"{type(exc).__name__}:{exc}",
+            fallback="FROZEN_METAOS_RECONCILED_37",
+        )
+        frozen_rows = []
     if frozen_rows:
         record_event(
             "GOVERNED_INVENTORY_PROVIDER_SELECTED",
@@ -873,6 +882,19 @@ def inventory_children_governed(page, url: str) -> list[dict]:
             parent=sanitize_url(url),
         )
         return frozen_rows
+
+    reconciled_rows = frozen_metaos_inventory(url)
+    if reconciled_rows:
+        record_event(
+            "GOVERNED_INVENTORY_PROVIDER_SELECTED",
+            provider="FROZEN_METAOS_RECONCILED_37",
+            auth_mode=None,
+            count=len(reconciled_rows),
+            exact_count=sum(x.get("kind") != "unknown" for x in reconciled_rows),
+            opaque_count=sum(x.get("kind") == "unknown" for x in reconciled_rows),
+            parent=sanitize_url(url),
+        )
+        return reconciled_rows
 
     raise RuntimeError("GOVERNED_INVENTORY_EMPTY_AFTER_API_PUBLIC_AND_FROZEN:" + link_key(url))
 
