@@ -1,0 +1,37 @@
+{
+  "schema":"LOUKSNA_CAPABILITY_REGISTRY_CANDIDATE/1.0",
+  "status":"PARTIAL_IDENTITY_RECOVERY",
+  "authority":"Louksna.md",
+  "assurance":"PUAC2.md",
+  "operational_governor":"CUSTOSZ_V7",
+  "count_expected":1200,
+  "ranges":[
+    {"from":1,"to":640,"identity_state":"PARTIAL_SOURCE_RECOVERY","rule":"PRESERVE_EXISTING_IDENTITY; DO_NOT_INVENT_MISSING_NAMES"},
+    {"from":641,"to":760,"identity_state":"RECOVERED_FROM_PRIOR_SPECIFICATION"},
+    {"from":761,"to":860,"identity_state":"RECOVERED_FROM_PRIOR_SPECIFICATION"},
+    {"from":861,"to":960,"identity_state":"RECOVERED_FROM_PRIOR_SPECIFICATION"},
+    {"from":961,"to":1000,"identity_state":"RECOVERED_FROM_PRIOR_SPECIFICATION"},
+    {"from":1001,"to":1040,"identity_state":"RECOVERED_FROM_PRIOR_SPECIFICATION"},
+    {"from":1041,"to":1080,"identity_state":"RECOVERED_FROM_PRIOR_SPECIFICATION"},
+    {"from":1081,"to":1120,"identity_state":"RECOVERED_FROM_PRIOR_SPECIFICATION"},
+    {"from":1121,"to":1160,"identity_state":"RECOVERED_FROM_PRIOR_SPECIFICATION"},
+    {"from":1161,"to":1200,"identity_state":"RECOVERED_FROM_PRIOR_SPECIFICATION"}
+  ],
+  "hardening_profile":{
+    "required_contract_version":"1.0",
+    "puac2_controls":["PUAC.C25","PUAC.C26","PUAC.C27","PUAC.C28","PUAC.C29","PUAC.C30","PUAC.C31","PUAC.C32"],
+    "canonical_gates":["G01","G02","G03","G04","G05","G06","G07","G08","G09","G10","G11","G12","G13","G14","G15","G16","G17","G18","G19","G20","G21","G22","G23","G24"],
+    "wiring_required":true,
+    "isolated_capability_forbidden":true,
+    "rollback_required":true,
+    "non_regression_required":true,
+    "provenance_required":true,
+    "traceability_required":true,
+    "auditability_required":true,
+    "security_boundary_required":true,
+    "resource_budget_required":true,
+    "observability_required":true,
+    "diagnosability_required":true,
+    "repairability_required":true
+  }
+}
