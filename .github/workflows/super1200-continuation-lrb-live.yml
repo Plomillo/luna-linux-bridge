@@ -123,6 +123,9 @@ jobs:
           custosz=Path('mission/artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz').resolve()
           sys.path.insert(0,str(custosz))
           import custosz_v05_legacy as worker
+          workspace=Path('target').resolve()
+          worker.workspace=lambda:workspace
+          worker.discover=lambda:{'workspace':str(workspace),'projects':{'LUNA_PROJECT':{'status':'RESOLVED','path':str(workspace),'score':999}}}
           goal=('SUPER1200 governed continuation from the validated D01-closed repository state; '\
                 'continue the first still-pending repository domain; preserve D01; no canonical mutation; '\
                 'LOUKSNA Remote Bridge observation only; G23/G24 remain independent.')
