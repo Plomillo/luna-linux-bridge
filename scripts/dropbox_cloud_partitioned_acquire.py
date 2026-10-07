@@ -1606,6 +1606,14 @@ def process_item(page, item: dict, ordinal: int) -> dict:
                         error=f"{type(api_exc).__name__}:{api_exc}",
                         dom_authoritative=False,
                     )
+                    if "GOVERNED_INVENTORY_EMPTY_AFTER_API_PUBLIC_AND_FROZEN:" in f"{type(api_exc).__name__}:{api_exc}":
+                        opaque_item = dict(item)
+                        opaque_item["kind"] = "unknown"
+                        opaque = attempt_opaque_shared_link_download(opaque_item, ordinal)
+                        if opaque["action"] == "downloaded":
+                            opaque["result"]["classification_repair"] = "FOLDER_TO_OPAQUE_AFTER_NON_ENUMERABLE_INVENTORY"
+                            record_event("NON_ENUMERABLE_DESCENDANT_OPAQUE_FALLBACK_PASS", identity_sha256=key, no_false_folder_classification=True)
+                            return opaque
                     raise
                 if not children:
                     record_event(

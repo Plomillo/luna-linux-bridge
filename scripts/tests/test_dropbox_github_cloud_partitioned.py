@@ -344,3 +344,25 @@ with tempfile.TemporaryDirectory() as td:
     known=rmod.lookup_known_fix(category,"No space left on device")
     assert known and known["action"]=="SPLIT_AND_YIELD_FROM_CHECKPOINT"
 print("DROPBOX_GITHUB_CLOUD_PARTITIONED_BUG_CLASSIFIER_SELFTEST=PASS")
+
+
+with tempfile.TemporaryDirectory() as td:
+    os.environ["STATE_ROOT"]=td
+    spec=importlib.util.spec_from_file_location("dropbox_cloud_partitioned_non_enumerable_selftest", script)
+    fb_mod=importlib.util.module_from_spec(spec)
+    assert spec and spec.loader
+    spec.loader.exec_module(fb_mod)
+    item={
+        "key":"6af31081a3ae592c678a06396745f8f3d6a617223f2b9796f53c7828102c0722",
+        "kind":"folder",
+        "url":"https://www.dropbox.com/scl/fo/test/non-enumerable?rlkey=x&dl=0",
+        "label":"opaque-descendant",
+    }
+    fb_mod.MAX_ITEM_RETRIES=1
+    fb_mod.attempt_folder_download=lambda page,url,label,ordinal: {"action":"split","fallback_reason":"NO_MATERIAL_AFTER_DIRECT_AND_UI"}
+    fb_mod.inventory_children_governed=lambda page,url: (_ for _ in ()).throw(RuntimeError("GOVERNED_INVENTORY_EMPTY_AFTER_API_PUBLIC_AND_FROZEN:"+item["key"]))
+    fb_mod.attempt_opaque_shared_link_download=lambda candidate,ordinal: {"action":"downloaded","result":{"kind":"opaque_shared_link","bytes":1,"sha256":"0"*64}}
+    out=fb_mod.process_item(None,item,1)
+    assert out["action"]=="downloaded",out
+    assert out["result"]["classification_repair"]=="FOLDER_TO_OPAQUE_AFTER_NON_ENUMERABLE_INVENTORY",out
+print("DROPBOX_GITHUB_CLOUD_PARTITIONED_NON_ENUMERABLE_DESCENDANT_FALLBACK=PASS")
