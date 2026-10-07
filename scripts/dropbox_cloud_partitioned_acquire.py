@@ -8,6 +8,7 @@ import json
 import os
 import pathlib
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -34,6 +35,9 @@ for p in (EVID, DL, PAYLOAD, CHECKPOINTS, QUARANTINE):
 MAX_DEPTH = 16
 MAX_NODES = 50000
 MAX_ITEM_RETRIES = max(1, int(os.environ.get("TRANSFER_ITEM_RETRIES", "3")))
+MAX_SINGLE_FOLDER_ZIP_BYTES = max(64 * 1024 * 1024, int(os.environ.get("MAX_SINGLE_FOLDER_ZIP_BYTES", "1073741824")))
+MIN_FREE_DISK_RESERVE_BYTES = max(512 * 1024 * 1024, int(os.environ.get("MIN_FREE_DISK_RESERVE_BYTES", "5368709120")))
+RUN_PAYLOAD_YIELD_BYTES = max(256 * 1024 * 1024, int(os.environ.get("RUN_PAYLOAD_YIELD_BYTES", "2147483648")))
 
 def utc() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -357,6 +361,78 @@ def record_event(kind: str, **kwargs) -> None:
         f.flush()
         os.fsync(f.fileno())
 
+
+def payload_bytes_total() -> int:
+    total = 0
+    for p in PAYLOAD.iterdir():
+        try:
+            if p.is_file():
+                total += p.stat().st_size
+        except FileNotFoundError:
+            pass
+    return total
+
+def disk_free_bytes() -> int:
+    return int(shutil.disk_usage(PAYLOAD).free)
+
+def discard_partial_for_storage_budget(path: pathlib.Path, reason: str) -> None:
+    size = path.stat().st_size if path.exists() else 0
+    sample_sha256 = None
+    if path.exists() and size:
+        h = hashlib.sha256()
+        with path.open("rb") as f:
+            h.update(f.read(min(size, 4 * 1024 * 1024)))
+        sample_sha256 = h.hexdigest()
+    record_event(
+        "PARTIAL_DISCARDED_FOR_STORAGE_BUDGET",
+        file_name=path.name,
+        bytes=size,
+        first_4mib_sha256=sample_sha256,
+        reason=reason,
+        max_single_folder_zip_bytes=MAX_SINGLE_FOLDER_ZIP_BYTES,
+        min_free_disk_reserve_bytes=MIN_FREE_DISK_RESERVE_BYTES,
+        free_bytes_before_delete=disk_free_bytes(),
+    )
+    try:
+        path.unlink(missing_ok=True)
+    except TypeError:
+        if path.exists():
+            path.unlink()
+
+def yield_for_run_storage_budget(manifest: dict, queue: list[dict], completed_keys: set[str]) -> None:
+    current_payload_bytes = payload_bytes_total()
+    if not queue or current_payload_bytes < RUN_PAYLOAD_YIELD_BYTES:
+        return
+    manifest["status"] = "PARTIAL_PASS"
+    manifest["partial_reason"] = "RUN_STORAGE_BUDGET_YIELD"
+    manifest["payload_count"] = len(manifest.get("completed") or [])
+    manifest["payload_bytes"] = current_payload_bytes
+    manifest["yielded_at_utc"] = utc()
+    atomic_json(EVID / "MANIFEST.json", manifest)
+    cp = write_checkpoint(
+        ROOT, manifest, queue, completed_keys,
+        "RUN_STORAGE_BUDGET_YIELD", failed=manifest.get("failed") or [],
+    )
+    atomic_json(EVID / "YIELD_STATUS.json", {
+        "schema": "PUAC2_TRANSFER_STORAGE_YIELD/1.0",
+        "status": "PARTIAL_PASS",
+        "reason": "RUN_STORAGE_BUDGET_YIELD",
+        "payload_bytes": current_payload_bytes,
+        "run_payload_yield_bytes": RUN_PAYLOAD_YIELD_BYTES,
+        "queue_remaining": len(queue),
+        "checkpoint_id": cp["checkpoint_id"],
+        "checkpoint_hash": cp["checkpoint_hash"],
+        "recorded_at_utc": utc(),
+    })
+    print(json.dumps({
+        "PARTITIONED_ACQUISITION": "PARTIAL_PASS",
+        "reason": "RUN_STORAGE_BUDGET_YIELD",
+        "payload_bytes_current_run": current_payload_bytes,
+        "queue_remaining": len(queue),
+        "checkpoint_hash": cp["checkpoint_hash"],
+    }, sort_keys=True))
+    raise SystemExit(75)
+
 def children_from_html_text(text: str, parent_url: str) -> list[dict]:
     text = html_lib.unescape(text)
     candidates: list[str] = []
@@ -625,7 +701,7 @@ def download_file_link(url: str, label: str, ordinal: int) -> dict:
     }
 
 def attempt_curl_folder_download(url: str, label: str, ordinal: int) -> dict:
-    """Historically proven public-link transport with isolated retries and ZIP validation."""
+    """Public dl=1 fast-path with hard local-storage circuit breaker."""
     key = link_key(url)
     target_url = with_dl(url, "1")
     final = PAYLOAD / f"{ordinal:06d}_folder_{key[:12]}.zip"
@@ -640,7 +716,10 @@ def attempt_curl_folder_download(url: str, label: str, ordinal: int) -> dict:
             source=sanitize_url(url),
             source_identity_sha256=key,
             attempt=attempt_no,
+            max_single_folder_zip_bytes=MAX_SINGLE_FOLDER_ZIP_BYTES,
+            min_free_disk_reserve_bytes=MIN_FREE_DISK_RESERVE_BYTES,
         )
+        storage_split_reason = None
         with stderr_path.open("wb") as err:
             proc = subprocess.Popen(
                 [
@@ -656,7 +735,30 @@ def attempt_curl_folder_download(url: str, label: str, ordinal: int) -> dict:
             material_marked = False
             while proc.poll() is None:
                 try:
-                    if part.is_file() and part.stat().st_size >= 4096:
+                    current_size = part.stat().st_size if part.is_file() else 0
+                    free_now = disk_free_bytes()
+                    if current_size >= MAX_SINGLE_FOLDER_ZIP_BYTES:
+                        storage_split_reason = "SINGLE_FOLDER_ZIP_BUDGET"
+                    elif free_now <= MIN_FREE_DISK_RESERVE_BYTES:
+                        storage_split_reason = "MIN_FREE_DISK_RESERVE"
+                    if storage_split_reason:
+                        record_event(
+                            "FOLDER_STORAGE_BUDGET_CIRCUIT_OPEN",
+                            label=label,
+                            source_identity_sha256=key,
+                            attempt=attempt_no,
+                            bytes=current_size,
+                            free_bytes=free_now,
+                            reason=storage_split_reason,
+                        )
+                        proc.terminate()
+                        try:
+                            proc.wait(timeout=10)
+                        except subprocess.TimeoutExpired:
+                            proc.kill()
+                            proc.wait(timeout=5)
+                        break
+                    if current_size >= 4096:
                         with part.open("rb") as src:
                             sig = src.read(4)
                         if sig[:2] == b"PK" and not material_marked:
@@ -666,7 +768,7 @@ def attempt_curl_folder_download(url: str, label: str, ordinal: int) -> dict:
                                 label=label,
                                 source_identity_sha256=key,
                                 attempt=attempt_no,
-                                observed_bytes=part.stat().st_size,
+                                observed_bytes=current_size,
                                 zip_signature=True,
                                 background_process_alive=True,
                                 background_pid=proc.pid,
@@ -676,6 +778,19 @@ def attempt_curl_folder_download(url: str, label: str, ordinal: int) -> dict:
                     pass
                 time.sleep(0.2)
             rc = proc.wait()
+
+        if storage_split_reason:
+            size = part.stat().st_size if part.exists() else 0
+            discard_partial_for_storage_budget(part, storage_split_reason)
+            record_event(
+                "FOLDER_STORAGE_BUDGET_SPLIT",
+                label=label,
+                source_identity_sha256=key,
+                attempt=attempt_no,
+                bytes_before_delete=size,
+                reason=storage_split_reason,
+            )
+            return {"action": "split", "reason": storage_split_reason}
 
         size = part.stat().st_size if part.exists() else 0
         first4 = ""
@@ -734,29 +849,32 @@ def attempt_curl_folder_download(url: str, label: str, ordinal: int) -> dict:
             reason="INVALID_OR_INCOMPLETE_ZIP",
         )
         if part.exists():
-            quarantine_path(part, f"CURL_DL1_INVALID_ATTEMPT_{attempt_no}")
+            discard_partial_for_storage_budget(part, f"CURL_DL1_INVALID_ATTEMPT_{attempt_no}")
         if attempt_no < 3:
             time.sleep(min(10, attempt_no * 2))
 
     return {"action": "fallback", "reason": "CURL_DL1_EXHAUSTED"}
 
 def attempt_direct_folder_download(url: str, label: str, ordinal: int) -> dict:
-    """Try Dropbox's documented dl=1 transport before depending on preview-page UI."""
+    """Documented dl=1 path with bounded disk use; oversized folders are split."""
     key = link_key(url)
     target_url = with_dl(url, "1")
     part = PAYLOAD / f"{ordinal:06d}_folder_{key[:12]}.direct.part"
     final = PAYLOAD / f"{ordinal:06d}_folder_{key[:12]}.zip"
     req = urllib.request.Request(
         target_url,
-        headers={"User-Agent": "LOUKSNA-GitHub-Cloud-Partitioned/2.0"},
+        headers={"User-Agent": "LOUKSNA-GitHub-Cloud-Partitioned/3.0"},
     )
     record_event(
         "FOLDER_DIRECT_DL1_ATTEMPT",
         label=label,
         source=sanitize_url(url),
         source_identity_sha256=key,
+        max_single_folder_zip_bytes=MAX_SINGLE_FOLDER_ZIP_BYTES,
+        min_free_disk_reserve_bytes=MIN_FREE_DISK_RESERVE_BYTES,
     )
     try:
+        budget_reason = None
         with urllib.request.urlopen(req, timeout=120) as resp:
             ctype = (resp.headers.get("Content-Type") or "").lower()
             effective_url = resp.geturl()
@@ -793,13 +911,36 @@ def attempt_direct_folder_download(url: str, label: str, ordinal: int) -> dict:
                     chunk = resp.read(8 * 1024 * 1024)
                     if not chunk:
                         break
+                    projected = f.tell() + len(chunk)
+                    free_now = disk_free_bytes()
+                    if projected >= MAX_SINGLE_FOLDER_ZIP_BYTES:
+                        budget_reason = "SINGLE_FOLDER_ZIP_BUDGET"
+                        break
+                    if free_now <= MIN_FREE_DISK_RESERVE_BYTES:
+                        budget_reason = "MIN_FREE_DISK_RESERVE"
+                        break
                     f.write(chunk)
-            os.replace(part, final)
+                f.flush()
+                os.fsync(f.fileno())
 
+        if budget_reason:
+            size = part.stat().st_size if part.exists() else 0
+            discard_partial_for_storage_budget(part, budget_reason)
+            record_event(
+                "FOLDER_STORAGE_BUDGET_SPLIT",
+                label=label,
+                source_identity_sha256=key,
+                bytes_before_delete=size,
+                reason=budget_reason,
+                transport="stdlib_dl1",
+            )
+            return {"action": "split", "reason": budget_reason}
+
+        os.replace(part, final)
         try:
             entries, sha = validate_zip(final)
         except Exception as exc:
-            quarantine_path(final, f"DIRECT_DL1_INVALID_ZIP:{type(exc).__name__}:{exc}")
+            discard_partial_for_storage_budget(final, f"DIRECT_DL1_INVALID_ZIP:{type(exc).__name__}:{exc}")
             record_event(
                 "FOLDER_DIRECT_DL1_FALLBACK",
                 label=label,
@@ -847,7 +988,7 @@ def attempt_direct_folder_download(url: str, label: str, ordinal: int) -> dict:
         return {"action": "fallback", "reason": f"HTTP_{exc.code}"}
     except (urllib.error.URLError, TimeoutError, ConnectionError, OSError) as exc:
         if part.exists():
-            quarantine_path(part, f"DIRECT_DL1_TRANSPORT_ERROR:{type(exc).__name__}:{exc}")
+            discard_partial_for_storage_budget(part, f"DIRECT_DL1_TRANSPORT_ERROR:{type(exc).__name__}:{exc}")
         record_event(
             "FOLDER_DIRECT_DL1_TRANSPORT_ERROR",
             label=label,
@@ -856,18 +997,17 @@ def attempt_direct_folder_download(url: str, label: str, ordinal: int) -> dict:
         )
         return {"action": "fallback", "reason": "TRANSPORT_ERROR"}
 
-
 def attempt_folder_download(page, url: str, label: str, ordinal: int):
     # Primary public path: reuse the transport that previously demonstrated
     # real ZIP bytes for META OS, but with isolated retries and strict CRC gates.
     curl_direct = attempt_curl_folder_download(url, label, ordinal)
-    if curl_direct["action"] == "downloaded":
+    if curl_direct["action"] in ("downloaded", "split"):
         return curl_direct
 
     # Secondary public path: stdlib direct download. Neither HTTP 200 nor process
     # exit status alone is accepted as success.
     direct = attempt_direct_folder_download(url, label, ordinal)
-    if direct["action"] == "downloaded":
+    if direct["action"] in ("downloaded", "split"):
         return direct
 
     page.goto(url, wait_until="domcontentloaded", timeout=120000)
@@ -1250,6 +1390,7 @@ def main() -> None:
                 manifest["failed"] = [x for x in manifest["failed"] if x.get("source_identity_sha256") != key]
                 atomic_json(EVID / "MANIFEST.json", manifest)
                 write_checkpoint(ROOT, manifest, queue, completed_keys, "OBJECT_COMMITTED", failed=manifest["failed"])
+                yield_for_run_storage_budget(manifest, queue, completed_keys)
                 continue
 
             if attempt["action"] == "folder_complete":
