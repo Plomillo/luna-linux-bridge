@@ -26,17 +26,39 @@ class Ledger:
         print("SUPER1200_TELEMETRY "+json.dumps({"seq":self.seq,"event":event,**payload},sort_keys=True),flush=True)
 
 def parse_caps(text):
-    rx=re.compile(r"^(\d+)\.\s+([A-Z0-9_]+)\s+[—-]\s+(.+)$")
+    rx=re.compile(r"^(\\d+)\\.\\s+([A-Z0-9_]+)\\s+\\|\\s+TYPE=(.+)$")
     out={}
     for line in text.splitlines():
-        m=rx.match(line.strip())
-        if m:
-            i=int(m.group(1))
-            if 1<=i<=1200 and i not in out:
-                out[i]={"capability_id":i,"canonical_name":m.group(2),"description":m.group(3),"owner":"REPOSITORY","implementation_state":"DECLARED"}
+        s=line.strip()
+        m=rx.match(s)
+        if not m:
+            continue
+        i=int(m.group(1))
+        if not 1<=i<=1200 or i in out:
+            continue
+        fields={}
+        for part in s.split(" | ")[1:]:
+            if "=" in part:
+                k,v=part.split("=",1)
+                fields[k]=v.rstrip(".")
+        out[i]={
+            "capability_id":i,
+            "canonical_name":m.group(2),
+            "owner":"REPOSITORY",
+            "type":fields.get("TYPE"),
+            "materialization":fields.get("MAT"),
+            "acquire":fields.get("ACQUIRE"),
+            "assurance":fields.get("ASSURE"),
+            "hardening":fields.get("HARDEN"),
+            "wire":fields.get("WIRE"),
+            "repository_binding":fields.get("REPO"),
+            "implementation_state":"DECLARED"
+        }
     if sorted(out)!=list(range(1,1201)):
-        raise SystemExit("CAPABILITY_ID_CONTINUITY_FAIL")
+        missing=[i for i in range(1,1201) if i not in out]
+        raise SystemExit("CAPABILITY_ID_CONTINUITY_FAIL:"+",".join(map(str,missing[:30])))
     return out
+
 
 def main():
     target=Path(os.environ["TARGET_ROOT"]).resolve()
