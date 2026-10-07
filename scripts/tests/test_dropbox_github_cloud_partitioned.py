@@ -48,9 +48,12 @@ required_workflow=[
     "terminal_general",
     "TERMINAL_GENERAL_CERTIFICATION",
     "37355731169",
-    "Certify governed Dropbox provider on META OS",
-    "PROVIDER_PROBE.json",
-    "DROPBOX_GOVERNED_PROVIDER_CERTIFICATION=PASS",
+    "Record governed Dropbox provider capabilities",
+    "Certify governed META OS inventory live",
+    "PROVIDER_CAPABILITIES.json",
+    "GOVERNED_METAOS_INVENTORY_CERT.json",
+    "DROPBOX_PUBLIC_RENDERED_FALLBACK=ENABLED",
+    "GOVERNED_METAOS_INVENTORY_CERTIFICATION=PASS",
     "${{ secrets.DROPBOX_APP_KEY }}",
     "${{ secrets.DROPBOX_APP_SECRET }}",
     "${{ secrets.DROPBOX_REFRESH_TOKEN }}",
@@ -113,7 +116,7 @@ required_resilience=[
     "DROPBOX_UI_SELECTOR_DRIFT",
     "DIRECT_DL1_THEN_SPLIT",
     "DROPBOX_SHARED_FOLDER_INVENTORY_INCOMPATIBLE",
-    "DROPBOX_API_LIST_FOLDER_SHARED_LINK",
+    "GOVERNED_API_THEN_HYDRATED_PUBLIC_INVENTORY",
     "DROPBOX_PUBLIC_DL1_WRITE_INTERRUPTION",
     "ISOLATED_CURL_RETRY_VALIDATE_ZIP_CRC",
     "CHECKPOINT_HASH_MISMATCH",
@@ -161,7 +164,7 @@ if fix_kb_obj.get("schema")!="PUAC2_TRANSFER_FIX_KB/1.0":
     raise SystemExit("TRANSFER_FIX_KB_SCHEMA_MISMATCH")
 if not any(x.get("category")=="DROPBOX_UI_SELECTOR_DRIFT" and x.get("action")=="DIRECT_DL1_THEN_SPLIT" for x in fix_kb_obj.get("entries",[])):
     raise SystemExit("TRANSFER_FIX_KB_UI_DRIFT_FIX_MISSING")
-if not any(x.get("category")=="DROPBOX_SHARED_FOLDER_INVENTORY_INCOMPATIBLE" and x.get("action")=="DROPBOX_API_LIST_FOLDER_SHARED_LINK" for x in fix_kb_obj.get("entries",[])):
+if not any(x.get("category")=="DROPBOX_SHARED_FOLDER_INVENTORY_INCOMPATIBLE" and x.get("action")=="GOVERNED_API_THEN_HYDRATED_PUBLIC_INVENTORY" for x in fix_kb_obj.get("entries",[])):
     raise SystemExit("TRANSFER_FIX_KB_SHARED_FOLDER_API_FIX_MISSING")
 if not any(x.get("category")=="DROPBOX_PUBLIC_DL1_WRITE_INTERRUPTION" and x.get("action")=="ISOLATED_CURL_RETRY_VALIDATE_ZIP_CRC" for x in fix_kb_obj.get("entries",[])):
     raise SystemExit("TRANSFER_FIX_KB_PUBLIC_DL1_RETRY_FIX_MISSING")
@@ -249,9 +252,9 @@ with tempfile.TemporaryDirectory() as td:
     assert known and known["action"]=="DIRECT_DL1_THEN_SPLIT"
     category,action,missing=rmod.classify_bug("RuntimeError: PARTITION_REQUIRED_BUT_CHILDREN_EMPTY:2bef57a917f57d4bff748154ef4a80858581e67eb40815dcfa0e8c5f464ef5de")
     assert category=="DROPBOX_SHARED_FOLDER_INVENTORY_INCOMPATIBLE"
-    assert action=="DROPBOX_API_LIST_FOLDER_SHARED_LINK"
+    assert action=="GOVERNED_API_THEN_HYDRATED_PUBLIC_INVENTORY"
     known=rmod.lookup_known_fix(category,"PARTITION_REQUIRED_BUT_CHILDREN_EMPTY")
-    assert known and known["action"]=="DROPBOX_API_LIST_FOLDER_SHARED_LINK"
+    assert known and known["action"]=="GOVERNED_API_THEN_HYDRATED_PUBLIC_INVENTORY"
     category,action,missing=rmod.classify_bug("curl: (23) Failure writing output to destination")
     assert category=="DROPBOX_PUBLIC_DL1_WRITE_INTERRUPTION"
     assert action=="ISOLATED_CURL_RETRY_VALIDATE_ZIP_CRC"
