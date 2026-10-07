@@ -77,15 +77,17 @@
       "fix_id": "FIX-DROPBOX-SHARED-FOLDER-INVENTORY-001",
       "category": "DROPBOX_SHARED_FOLDER_INVENTORY_INCOMPATIBLE",
       "signal_regex": "PARTITION_REQUIRED_BUT_CHILDREN_EMPTY|DROPBOX_API_AUTHORITATIVE_INVENTORY",
-      "action": "GOVERNED_API_THEN_PUBLIC_NETWORK_THEN_RENDERED_INVENTORY",
+      "action": "GOVERNED_API_PUBLIC_LIVE_THEN_FROZEN37",
       "applicability": "Dropbox shared-folder web DOM does not expose nested objects as /scl/fo or /scl/fi anchors",
-      "validation_status": "VALIDATED_LIVE_PUBLIC_NETWORK_PROBE",
+      "validation_status": "VALIDATED_RECONCILED_37_LINK_EVIDENCE",
       "validated_by": [
         "DROPBOX_GITHUB_CLOUD_PARTITIONED_API_INVENTORY_CONTRACT",
         "DROPBOX_GITHUB_CLOUD_PARTITIONED_PUBLIC_NETWORK_INVENTORY_CONTRACT",
         "DROPBOX_METAOS_PUBLIC_INVENTORY_PROBE_37585254356",
         "DROPBOX_METAOS_PROBE_ARTIFACT_READ_37588080815",
-        "DROPBOX_GITHUB_CLOUD_PARTITIONED_BUG_CLASSIFIER_SELFTEST"
+        "DROPBOX_GITHUB_CLOUD_PARTITIONED_BUG_CLASSIFIER_SELFTEST",
+        "DROPBOX_METAOS_RECONCILED_FROZEN_INVENTORY_RUN_37590018410",
+        "DROPBOX_GITHUB_CLOUD_PARTITIONED_CONTRACT_37590229199"
       ],
       "rollback": "restore prior code while preserving last verified checkpoint; never reinterpret empty DOM as empty Dropbox folder",
       "provenance": [
@@ -106,7 +108,13 @@
         "network_response_content_type:application/json",
         "network_response_sha256:c0793fda60a0739bda5bf228cbc0f4eb3223e58fc6f4953d26e593155bf34c91",
         "network_total_num_entries:37",
-        "network_has_more_entries:false"
+        "network_has_more_entries:false",
+        "run:37590018410",
+        "artifact:11468107626",
+        "frozen_inventory_sha256:95bc707c8fbb8888b3f6e2e0feed2526e164bf2b55a5b51553c1ba681a8e8765",
+        "resolved_entry_count:37",
+        "network_exact_classification_count:21",
+        "unknown_link_only_count:16"
       ],
       "invariants": {
         "authoritative_preference": "DROPBOX_API_IF_AUTHORIZED",
@@ -118,7 +126,11 @@
         "public_authoritative_provider": "DROPBOX_PUBLIC_LIST_SHARED_LINK_FOLDER_ENTRIES",
         "network_count_must_match_total": true,
         "network_pagination_fail_closed": true,
-        "dom_is_secondary_fallback": true
+        "dom_is_secondary_fallback": true,
+        "frozen_reconciled_fallback": true,
+        "frozen_resolved_count": 37,
+        "unknown_objects_false_typed_as_folder": false,
+        "unknown_objects_opaque_download_first": true
       }
     },
     {
