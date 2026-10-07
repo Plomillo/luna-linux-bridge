@@ -1,0 +1,10 @@
+{
+  "bound_mission_class": null,
+  "direct_mission_class": "CUSTOSZ_DROPBOX_TRANSFER_LIVE_RECOVERY_V1",
+  "matches": [],
+  "mission_class": "CUSTOSZ_DROPBOX_TRANSFER_LIVE_RECOVERY_V1",
+  "origin": "MISSION_DIRECTIVE",
+  "result": "PASS",
+  "root_blocker": null,
+  "source_sha256": "b01d39e2d8960b2568bde7727f079c9bc0eaf053f5e19a712a28fe6b0080e507"
+}
