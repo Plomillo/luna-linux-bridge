@@ -473,14 +473,22 @@ def main():
             }
             # Prepare the implementation commit first; the commit SHA is unknown until Git creates it.
             run(["git","add","bridge"],cwd=root)
+            run(["git","status","--porcelain"],cwd=root)
             staged=run(["git","diff","--cached","--quiet"],cwd=root,check=False).returncode==0
             if staged:
                 emit(out,"P02_MATERIAL_DELTA",state="ALREADY_PRESENT_HASH_VERIFIED",bridge_identity_hashes=bridge_hashes)
             else:
                 emit(out,"P02_MATERIAL_DELTA",state="NEW_FILES_STAGED",bridge_identity_hashes=bridge_hashes)
-            run(["git","config","user.name","custosz-v7-runtime-bot"],cwd=root)
-            run(["git","config","user.email","custosz-v7-runtime-bot@users.noreply.github.com"],cwd=root)
-            run(["git","commit","-m","feat(louksna): materialize P02 LRB_APP 0.4 typed protocol"],cwd=root)
+            if staged:
+                emit(out,"P02_MATERIAL_DELTA",state="ALREADY_PRESENT_HASH_VERIFIED",bridge_identity_hashes=bridge_hashes)
+                run(["git","config","user.name","custosz-v7-runtime-bot"],cwd=root)
+                run(["git","config","user.email","custosz-v7-runtime-bot@users.noreply.github.com"],cwd=root)
+                run(["git","commit","--allow-empty","-m","feat(louksna): materialize P02 LRB_APP 0.4 typed protocol (verified state)"],cwd=root)
+            else:
+                emit(out,"P02_MATERIAL_DELTA",state="NEW_FILES_STAGED",bridge_identity_hashes=bridge_hashes)
+                run(["git","config","user.name","custosz-v7-runtime-bot"],cwd=root)
+                run(["git","config","user.email","custosz-v7-runtime-bot@users.noreply.github.com"],cwd=root)
+                run(["git","commit","-m","feat(louksna): materialize P02 LRB_APP 0.4 typed protocol"],cwd=root)
             commit=run(["git","rev-parse","HEAD"],cwd=root).stdout.strip()
             hb.set("COMMIT")
             run(["git","push","origin","HEAD:work/louksna-zd-v04-master-20261007"],cwd=root,timeout=180)
