@@ -495,7 +495,9 @@ def main():
             emit(out,"P02_IMPLEMENTATION_COMMITTED",commit_sha=commit,state="PASS")
 
             hb.set("POST_VALIDATE")
-            if run(["git","status","--porcelain"],cwd=root).stdout.strip(): raise RuntimeError("POST_COMMIT_WORKTREE_DIRTY")
+            status_lines=run(["git","status","--porcelain","--untracked-files=all"],cwd=root).stdout.splitlines()
+            unexpected=[line for line in status_lines if ".CUSTOSZ_STATE/" not in line]
+            if unexpected: raise RuntimeError("POST_COMMIT_WORKTREE_DIRTY:"+repr(unexpected))
             checkpoint["implementation_commit_sha"]=commit
             # CHECKPOINT_02 is an evidence output; writing it here after commit dirties the worktree.
             # The immutable implementation commit remains the P02 materialization receipt.
