@@ -145,6 +145,36 @@ jobs:
           echo "FROZEN_ROOT_HTML=$FROZEN" >> "$GITHUB_ENV"
           echo "FROZEN_ROOT_EVIDENCE=BOUND"
 
+      - name: Recover reconciled META OS 37-link inventory evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: dropbox-metaos-reconciled-inventory-37590018410
+          path: ${{ runner.temp }}/metaos-frozen
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 37590018410
+
+      - name: Bind and verify reconciled META OS frozen inventory
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          FROZEN_META="$(find "$RUNNER_TEMP/metaos-frozen" -type f -name 'METAOS_FROZEN_INVENTORY.json' -print -quit)"
+          test -n "$FROZEN_META"
+          test -s "$FROZEN_META"
+          actual="$(sha256sum "$FROZEN_META" | awk '{print $1}')"
+          test "$actual" = "95bc707c8fbb8888b3f6e2e0feed2526e164bf2b55a5b51553c1ba681a8e8765"
+          python3 - "$FROZEN_META" <<'PY'
+          import json,sys
+          obj=json.load(open(sys.argv[1],encoding="utf-8"))
+          assert obj.get("schema")=="PUAC2_METAOS_FROZEN_INVENTORY_EVIDENCE/2.0"
+          assert obj.get("status")=="PASS"
+          assert int(obj.get("resolved_entry_count") or 0)==37
+          assert len(obj.get("entries") or [])==37
+          assert int(obj.get("network_exact_classification_count") or 0)==21
+          assert int(obj.get("unknown_link_only_count") or 0)==16
+          print("FROZEN_METAOS_37_LINK_INVENTORY=PASS")
+          PY
+          echo "FROZEN_METAOS_INVENTORY=$FROZEN_META" >> "$GITHUB_ENV"
       - name: Install pinned Playwright browser tooling
         shell: bash
         run: |
@@ -178,12 +208,15 @@ jobs:
           transports=sorted(set(str(x.get("transport") or "dropbox_api") for x in rows))
           out={
             "schema":"PUAC2_GOVERNED_METAOS_INVENTORY_CERT/1.0",
-            "status":"PASS" if len(rows)>0 else "FAIL",
+            "status":"PASS" if len(rows)==37 else "FAIL",
             "target_name":"8. META OS",
             "target_identity_sha256":mod.link_key(target),
             "child_count":len(rows),
             "file_count":sum(x["kind"]=="file" for x in rows),
             "folder_count":sum(x["kind"]=="folder" for x in rows),
+            "unknown_count":sum(x["kind"]=="unknown" for x in rows),
+            "expected_child_count":37,
+            "frozen_fallback_bound":bool(__import__("os").environ.get("FROZEN_METAOS_INVENTORY")),
             "transports":transports,
             "zero_stability_accepted":False,
             "execution_plane":"GITHUB_HOSTED_UBUNTU_24_04",
