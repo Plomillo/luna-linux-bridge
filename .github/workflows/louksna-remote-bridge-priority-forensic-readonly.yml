@@ -1,6 +1,13 @@
 name: "LOUKSNA Remote Bridge — PROYECTOS PRIORITARIOS forensic readonly audit"
 
 on:
+  workflow_dispatch:
+    inputs:
+      full_hash:
+        description: "Perform recursive SHA-256 hashing"
+        required: false
+        default: true
+        type: boolean
   push:
     branches:
       - mission/priority-folder-forensic-audit
