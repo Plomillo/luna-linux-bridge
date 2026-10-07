@@ -531,185 +531,157 @@ def rows_from_public_network_inventory(payload: dict, parent_url: str) -> tuple[
 def inventory_children(page, url: str) -> list[dict]:
     """Governed unauthenticated shared-link inventory.
 
-    Provider order inside the public path:
-      1) Dropbox public JSON response backing the shared-folder UI.
-      2) Hydrated rendered rows.
-      3) HTML parser/frozen root evidence.
-
-    A zero DOM count is never treated as an empty folder.
+    Primary public provider is Dropbox's own JSON response used by the shared
+    folder UI. The response body is consumed transactionally while Playwright
+    still owns the Response object; rendered DOM is only a secondary fallback.
     """
     current_path = urllib.parse.urlsplit(url).path
-    network_seen: dict[str, dict] = {}
-    network_meta: dict = {}
-    network_response_hashes: list[str] = []
-    network_complete = False
-    network_response_queue: list = []
+    started = time.time()
 
-    def on_response(resp):
-        # Do not call resp.body() from inside the synchronous Playwright event
-        # callback. Store the response and consume it from the main control flow.
+    def is_inventory_response(resp) -> bool:
         try:
             p = urllib.parse.urlsplit(resp.url)
-            if p.hostname == "www.dropbox.com" and p.path == "/list_shared_link_folder_entries":
-                network_response_queue.append(resp)
+            return (
+                p.hostname == "www.dropbox.com"
+                and p.path == "/list_shared_link_folder_entries"
+                and int(resp.status) == 200
+            )
         except Exception:
-            pass
+            return False
 
-    def drain_network_responses() -> None:
-        nonlocal network_meta, network_complete
-        while network_response_queue:
-            resp = network_response_queue.pop(0)
-            try:
-                status = int(resp.status)
-                if status != 200:
-                    record_event(
-                        "DROPBOX_PUBLIC_NETWORK_INVENTORY_HTTP",
-                        parent=sanitize_url(url),
-                        status=status,
-                    )
-                    continue
-                body = resp.body()
-                if not body:
-                    continue
-                body_hash = hashlib.sha256(body).hexdigest()
-                data = json.loads(body.decode("utf-8", errors="strict"))
-                rows, meta = rows_from_public_network_inventory(data, url)
-                for row in rows:
-                    network_seen[row["key"]] = row
-                network_meta = meta
-                network_response_hashes.append(body_hash)
-                total = int(meta.get("total_num_entries") or 0)
-                if not meta.get("has_more_entries") and total > 0 and len(network_seen) >= total:
-                    network_complete = True
-                record_event(
-                    "DROPBOX_PUBLIC_NETWORK_INVENTORY_RESPONSE",
-                    provider="DROPBOX_PUBLIC_LIST_SHARED_LINK_FOLDER_ENTRIES",
-                    parent=sanitize_url(url),
-                    status=status,
-                    response_sha256=body_hash,
-                    entries_in_response=len(rows),
-                    accumulated_count=len(network_seen),
-                    total_num_entries=total,
-                    has_more_entries=bool(meta.get("has_more_entries")),
-                    response_body_persisted=False,
-                )
-            except Exception as exc:
-                record_event(
-                    "DROPBOX_PUBLIC_NETWORK_INVENTORY_PARSE_FAILURE",
-                    parent=sanitize_url(url),
-                    error=f"{type(exc).__name__}:{exc}",
-                )
-
-    page.on("response", on_response)
-    started = time.time()
+    # Critical fix: do not retain Playwright Response objects for later body()
+    # access. Bind the exact response to this navigation and consume it before
+    # leaving the expect_response transaction.
+    network_rows: list[dict] = []
+    network_meta: dict = {}
+    network_body_hash = None
+    network_error = None
+    navigated = False
     try:
-        page.goto(url, wait_until="domcontentloaded", timeout=120000)
-        dismiss_overlays(page)
-        seen: dict[str, dict] = {}
-        stable = 0
-        prior = -1
-        hydration_deadline = started + 75
-
-        while time.time() < hydration_deadline:
-            drain_network_responses()
-            # The JSON response is authoritative for the public page load when
-            # it declares the complete entry count.
-            if network_complete:
-                break
-
-            preferred = page.locator('a[data-testid="sl-list-column--name"][href]')
-            anchors = preferred if preferred.count() else page.locator("a[href]")
-            count = anchors.count()
-            for i in range(count):
-                try:
-                    a = anchors.nth(i)
-                    href = a.get_attribute("href") or ""
-                    absolute = urllib.parse.urljoin(page.url, href)
-                    u = urllib.parse.urlsplit(absolute)
-                    if u.hostname != "www.dropbox.com":
-                        continue
-                    typ = None
-                    if "/scl/fi/" in u.path:
-                        typ = "file"
-                    elif "/scl/fo/" in u.path and u.path != current_path:
-                        # Rendered rows cannot reliably infer file-vs-folder from
-                        # /scl/fo alone. Network JSON supersedes this classification.
-                        typ = "folder"
-                    if typ is None:
-                        continue
-                    key = link_key(absolute)
-                    try:
-                        text = (a.inner_text(timeout=1000) or "").strip()
-                    except Exception:
-                        text = ""
-                    seen[key] = {
-                        "kind": typ,
-                        "url": absolute,
-                        "label": clean_label(text, typ + "-" + key[:10]),
-                        "key": key,
-                        "transport": "public_shared_link",
-                    }
-                except Exception:
-                    pass
-
-            if len(seen) == prior:
-                stable += 1
-            else:
-                stable = 0
-                prior = len(seen)
-
-            # Keep scrolling long enough to provoke the public inventory request
-            # and any lazy rendering. DOM stability is only a fallback signal.
-            try:
-                page.mouse.wheel(0, 4500)
-                page.wait_for_timeout(700)
-            except Exception:
-                time.sleep(0.7)
-
-            if len(seen) > 0 and stable >= 12 and not network_seen:
-                break
-    finally:
-        # One final drain captures a response that arrived during the last
-        # Playwright wait/scroll tick.
-        drain_network_responses()
-        try:
-            page.remove_listener("response", on_response)
-        except Exception:
-            pass
-
-    if network_seen:
-        total = int(network_meta.get("total_num_entries") or len(network_seen))
+        with page.expect_response(is_inventory_response, timeout=90000) as response_info:
+            page.goto(url, wait_until="domcontentloaded", timeout=120000)
+            navigated = True
+            dismiss_overlays(page)
+        resp = response_info.value
+        body = resp.body()
+        if not body:
+            raise RuntimeError("DROPBOX_PUBLIC_NETWORK_EMPTY_BODY")
+        network_body_hash = hashlib.sha256(body).hexdigest()
+        data = json.loads(body.decode("utf-8", errors="strict"))
+        network_rows, network_meta = rows_from_public_network_inventory(data, url)
+        total = int(network_meta.get("total_num_entries") or len(network_rows))
         has_more = bool(network_meta.get("has_more_entries"))
+        record_event(
+            "DROPBOX_PUBLIC_NETWORK_INVENTORY_RESPONSE",
+            provider="DROPBOX_PUBLIC_LIST_SHARED_LINK_FOLDER_ENTRIES",
+            parent=sanitize_url(url),
+            status=int(resp.status),
+            response_sha256=network_body_hash,
+            entries_in_response=len(network_rows),
+            total_num_entries=total,
+            has_more_entries=has_more,
+            response_body_persisted=False,
+            response_consumption="EXPECT_RESPONSE_TRANSACTION",
+        )
         if has_more:
-            # Do not silently certify a truncated public inventory. Pagination
-            # must be observed or separately implemented before promotion.
             raise RuntimeError(
                 "DROPBOX_PUBLIC_NETWORK_PAGINATION_REQUIRED:"
                 + link_key(url)
-                + f":observed={len(network_seen)}:total={total}"
+                + f":observed={len(network_rows)}:total={total}"
             )
-        if total != len(network_seen):
+        if total != len(network_rows):
             raise RuntimeError(
                 "DROPBOX_PUBLIC_NETWORK_INVENTORY_COUNT_MISMATCH:"
                 + link_key(url)
-                + f":observed={len(network_seen)}:total={total}"
+                + f":observed={len(network_rows)}:total={total}"
             )
-        rows = sorted(network_seen.values(), key=lambda x: (x["kind"], x["label"].casefold(), x["key"]))
+        if network_rows:
+            rows = sorted(network_rows, key=lambda x: (x["kind"], x["label"].casefold(), x["key"]))
+            record_event(
+                "DROPBOX_PUBLIC_NETWORK_INVENTORY",
+                provider="DROPBOX_PUBLIC_LIST_SHARED_LINK_FOLDER_ENTRIES",
+                parent=sanitize_url(url),
+                count=len(rows),
+                files=sum(x["kind"] == "file" for x in rows),
+                folders=sum(x["kind"] == "folder" for x in rows),
+                total_num_entries=total,
+                has_more_entries=False,
+                response_sha256=network_body_hash,
+                response_count=1,
+                dom_authoritative=False,
+                hydration_wait_seconds=round(time.time() - started, 3),
+                response_consumption="EXPECT_RESPONSE_TRANSACTION",
+            )
+            return rows
+    except Exception as exc:
+        network_error = f"{type(exc).__name__}:{exc}"
         record_event(
-            "DROPBOX_PUBLIC_NETWORK_INVENTORY",
-            provider="DROPBOX_PUBLIC_LIST_SHARED_LINK_FOLDER_ENTRIES",
+            "DROPBOX_PUBLIC_NETWORK_INVENTORY_CAPTURE_DEGRADED",
             parent=sanitize_url(url),
-            count=len(rows),
-            files=sum(x["kind"] == "file" for x in rows),
-            folders=sum(x["kind"] == "folder" for x in rows),
-            total_num_entries=total,
-            has_more_entries=False,
-            response_sha256=network_response_hashes[-1] if network_response_hashes else None,
-            response_count=len(network_response_hashes),
-            dom_authoritative=False,
-            hydration_wait_seconds=round(time.time() - started, 3),
+            error=network_error,
+            fallback="HYDRATED_RENDERED_ROWS",
+            response_consumption="EXPECT_RESPONSE_TRANSACTION",
         )
-        return rows
+
+    # If the response transaction timed out before navigation completed, load the
+    # page once for the rendered fallback. Otherwise reuse the already-loaded page.
+    if not navigated:
+        page.goto(url, wait_until="domcontentloaded", timeout=120000)
+        dismiss_overlays(page)
+
+    seen: dict[str, dict] = {}
+    stable = 0
+    prior = -1
+    hydration_deadline = time.time() + 75
+
+    while time.time() < hydration_deadline:
+        preferred = page.locator('a[data-testid="sl-list-column--name"][href]')
+        anchors = preferred if preferred.count() else page.locator("a[href]")
+        count = anchors.count()
+        for i in range(count):
+            try:
+                a = anchors.nth(i)
+                href = a.get_attribute("href") or ""
+                absolute = urllib.parse.urljoin(page.url, href)
+                u = urllib.parse.urlsplit(absolute)
+                if u.hostname != "www.dropbox.com":
+                    continue
+                typ = None
+                if "/scl/fi/" in u.path:
+                    typ = "file"
+                elif "/scl/fo/" in u.path and u.path != current_path:
+                    typ = "folder"
+                if typ is None:
+                    continue
+                key = link_key(absolute)
+                try:
+                    text = (a.inner_text(timeout=1000) or "").strip()
+                except Exception:
+                    text = ""
+                seen[key] = {
+                    "kind": typ,
+                    "url": absolute,
+                    "label": clean_label(text, typ + "-" + key[:10]),
+                    "key": key,
+                    "transport": "public_shared_link_rendered",
+                }
+            except Exception:
+                pass
+
+        if len(seen) == prior:
+            stable += 1
+        else:
+            stable = 0
+            prior = len(seen)
+
+        try:
+            page.mouse.wheel(0, 4500)
+            page.wait_for_timeout(700)
+        except Exception:
+            time.sleep(0.7)
+
+        if len(seen) > 0 and stable >= 12:
+            break
 
     rows = sorted(seen.values(), key=lambda x: (x["kind"], x["label"].casefold(), x["key"]))
 
@@ -746,8 +718,10 @@ def inventory_children(page, url: str) -> list[dict]:
         hydration_wait_seconds=round(time.time() - started, 3),
         zero_stability_terminal=False,
         dom_authoritative=False,
+        public_network_capture_error=network_error,
     )
     return rows
+
 
 def inventory_children_governed(page, url: str) -> list[dict]:
     """Prefer API when authorized; otherwise public network JSON then rendered UI."""
