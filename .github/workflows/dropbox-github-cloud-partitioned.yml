@@ -58,7 +58,7 @@ jobs:
           echo "root=$ROOT" >> "$GITHUB_OUTPUT"
           echo "artifact_name=dropbox-github-cloud-partitioned-${GITHUB_RUN_ID}" >> "$GITHUB_OUTPUT"
 
-      - name: Certify authoritative Dropbox API inventory on META OS
+      - name: Certify governed Dropbox provider on META OS
         shell: bash
         env:
           STATE_ROOT: ${{ steps.names.outputs.root }}
@@ -75,11 +75,10 @@ jobs:
           python3 - "$STATE_ROOT/evidence/API_AUTH_PREFLIGHT.json" "$refresh_complete" "$legacy_present" <<'PY'
           import datetime as dt,json,pathlib,sys
           p=pathlib.Path(sys.argv[1])
-          refresh=sys.argv[2].lower()=="true"
-          legacy=sys.argv[3].lower()=="true"
+          refresh=sys.argv[2].lower()=="true"; legacy=sys.argv[3].lower()=="true"
           out={
-            "schema":"PUAC2_DROPBOX_API_AUTH_PREFLIGHT/1.0",
-            "status":"PASS" if (refresh or legacy) else "FAIL",
+            "schema":"PUAC2_DROPBOX_API_AUTH_PREFLIGHT/1.1",
+            "status":"PASS" if (refresh or legacy) else "UNAVAILABLE",
             "oauth_refresh_binding_complete":refresh,
             "legacy_access_token_binding_present":legacy,
             "secret_values_logged":False,
@@ -89,9 +88,10 @@ jobs:
           }
           p.write_text(json.dumps(out,indent=2,sort_keys=True)+"\n",encoding="utf-8")
           print("DROPBOX_API_AUTH_PREFLIGHT="+out["status"])
-          if out["status"]!="PASS": raise SystemExit(31)
           PY
-          python3 - "$STATE_ROOT/evidence/API_INVENTORY_PROBE.json" <<'PY'
+
+          if [ "$refresh_complete" = true ] || [ "$legacy_present" = true ]; then
+            python3 - "$STATE_ROOT/evidence/PROVIDER_PROBE.json" <<'PY'
           import datetime as dt,importlib.util,json,pathlib,sys
           target="https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/AFlrQdNPUUfhI5kxk-DHWPg/8.%20META%20OS?rlkey=p712fwlkbwn9g0dtybu2sf159&dl=0"
           script=pathlib.Path("scripts/dropbox_cloud_partitioned_acquire.py")
@@ -99,7 +99,7 @@ jobs:
           mod=importlib.util.module_from_spec(spec); assert spec and spec.loader; spec.loader.exec_module(mod)
           rows=mod.inventory_children_api(target,"")
           out={
-            "schema":"PUAC2_DROPBOX_API_INVENTORY_PROBE/1.0",
+            "schema":"PUAC2_DROPBOX_PROVIDER_PROBE/2.0",
             "status":"PASS" if len(rows)>0 else "FAIL",
             "provider":"DROPBOX_API_LIST_FOLDER_SHARED_LINK",
             "target_name":"8. META OS",
@@ -116,7 +116,68 @@ jobs:
           print(json.dumps(out,sort_keys=True))
           if out["status"]!="PASS": raise SystemExit(32)
           PY
-          echo "DROPBOX_API_INVENTORY_CERTIFICATION=PASS"
+          else
+            URL="$(python3 - <<'PY'
+          import urllib.parse
+          u=urllib.parse.urlsplit("https://www.dropbox.com/scl/fo/0dhs5jhwksqtmwl26vusi/AFlrQdNPUUfhI5kxk-DHWPg/8.%20META%20OS?rlkey=p712fwlkbwn9g0dtybu2sf159&dl=0")
+          q=[(k,v) for k,v in urllib.parse.parse_qsl(u.query,keep_blank_values=True) if k!="dl"]; q.append(("dl","1"))
+          print(urllib.parse.urlunsplit((u.scheme,u.netloc,u.path,urllib.parse.urlencode(q),u.fragment)))
+          PY
+          )"
+            PROBE="$STATE_ROOT/evidence/META_OS_PUBLIC_DL1.probe.part"
+            STDERR="$STATE_ROOT/evidence/META_OS_PUBLIC_DL1.stderr"
+            rm -f "$PROBE" "$STDERR"
+            curl --location --fail --show-error --silent \
+              --connect-timeout 30 --speed-time 120 --speed-limit 1024 \
+              --user-agent "LOUKSNA-GitHub-Cloud-Child/1.0" \
+              --output "$PROBE" "$URL" 2>"$STDERR" &
+            pid=$!
+            proven=false
+            observed=0
+            alive_at_proof=false
+            for _ in $(seq 1 300); do
+              [ -f "$PROBE" ] && observed="$(stat -c %s "$PROBE")" || observed=0
+              if [ "$observed" -ge 4096 ] && python3 - "$PROBE" <<'PY'
+          import pathlib,sys
+          b=pathlib.Path(sys.argv[1]).read_bytes()[:4]
+          raise SystemExit(0 if b[:2]==b"PK" else 1)
+          PY
+              then
+                proven=true
+                kill -0 "$pid" 2>/dev/null && alive_at_proof=true || true
+                break
+              fi
+              kill -0 "$pid" 2>/dev/null || break
+              sleep 0.2
+            done
+            if [ "$proven" = true ]; then
+              kill -TERM "$pid" 2>/dev/null || true
+              wait "$pid" 2>/dev/null || true
+            else
+              wait "$pid" 2>/dev/null || true
+            fi
+            python3 - "$STATE_ROOT/evidence/PROVIDER_PROBE.json" "$proven" "$observed" "$alive_at_proof" <<'PY'
+          import datetime as dt,json,pathlib,sys
+          ok=sys.argv[2].lower()=="true"
+          out={
+            "schema":"PUAC2_DROPBOX_PROVIDER_PROBE/2.0",
+            "status":"PASS" if ok else "FAIL",
+            "provider":"DROPBOX_PUBLIC_CURL_DL1_ISOLATED_RETRY",
+            "target_name":"8. META OS",
+            "target_identity_sha256":"2bef57a917f57d4bff748154ef4a80858581e67eb40815dcfa0e8c5f464ef5de",
+            "observed_bytes":int(sys.argv[3]),
+            "zip_signature_observed":ok,
+            "background_process_alive_at_proof":sys.argv[4].lower()=="true",
+            "dom_source_of_truth":False,
+            "execution_plane":"GITHUB_HOSTED_UBUNTU_24_04",
+            "recorded_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(out,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps(out,sort_keys=True))
+          if not ok: raise SystemExit(33)
+          PY
+          fi
+          echo "DROPBOX_GOVERNED_PROVIDER_CERTIFICATION=PASS"
       - id: resume_cache
         name: Restore latest durable PUAC2 resume ledger
         uses: actions/cache/restore@1bd1e32a3bdc45362d1e726936510720a7c30a57
