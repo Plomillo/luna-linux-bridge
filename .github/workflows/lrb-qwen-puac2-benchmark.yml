@@ -1,0 +1,75 @@
+name: "LOUKSNA Qwen PUAC2 bounded comparison"
+on:
+  push:
+    branches:
+      - candidate/lrb-elastic-metacognition-v1
+    paths:
+      - "bridge/benchmarks/qwen_puac2_benchmark.py"
+      - ".github/workflows/lrb-qwen-puac2-benchmark.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: lrb-qwen-puac2-benchmark
+  cancel-in-progress: false
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      LLAMA_COMMIT: bec4772f6a2527d371557b5d2032641e5ff7619c
+      MODEL_2B_URL: https://huggingface.co/TheStageAI/Qwen3.5-2B-GGUF/resolve/main/Qwen3.5-2B-M-TS-Q4_K_M.gguf
+      MODEL_4B_URL: https://huggingface.co/TheStageAI/Qwen3.5-4B-GGUF/resolve/main/Qwen3.5-4B-S-TS-Q4_K_S.gguf
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Record benchmark contract
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/evidence"
+          printf 'source_commit=%s\nrun=%s\ntime_limit_min=30\nhost=github-hosted-ephemeral\nlouksna_host_mutated=false\nlfs_used=false\n' "$GITHUB_SHA" "$GITHUB_RUN_ID" > "$RUNNER_TEMP/evidence/CONTRACT.txt"
+          sha256sum PUAC2.md server/r4-master/MASTER_MISSION.md bridge/benchmarks/qwen_puac2_benchmark.py > "$RUNNER_TEMP/evidence/INPUT_SHA256.txt"
+      - name: Build pinned llama.cpp CPU runtime
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git clone --filter=blob:none https://github.com/ggml-org/llama.cpp "$RUNNER_TEMP/llama.cpp"
+          git -C "$RUNNER_TEMP/llama.cpp" checkout --detach "$LLAMA_COMMIT"
+          cmake -S "$RUNNER_TEMP/llama.cpp" -B "$RUNNER_TEMP/llama.cpp/build" -DGGML_NATIVE=OFF -DGGML_OPENMP=ON -DLLAMA_CURL=OFF -DCMAKE_BUILD_TYPE=Release
+          cmake --build "$RUNNER_TEMP/llama.cpp/build" --target llama-cli -j2
+          "$RUNNER_TEMP/llama.cpp/build/bin/llama-cli" --version | tee "$RUNNER_TEMP/evidence/LLAMA_VERSION.txt"
+      - name: Download temporary candidate weights
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/models"
+          curl -fL --retry 3 --retry-delay 2 "$MODEL_2B_URL" -o "$RUNNER_TEMP/models/qwen35-2b-M.gguf"
+          curl -fL --retry 3 --retry-delay 2 "$MODEL_4B_URL" -o "$RUNNER_TEMP/models/qwen35-4b-S.gguf"
+          sha256sum "$RUNNER_TEMP/models/"*.gguf | tee "$RUNNER_TEMP/evidence/MODEL_SHA256.txt"
+          du -B1 "$RUNNER_TEMP/models/"*.gguf | tee "$RUNNER_TEMP/evidence/MODEL_BYTES.txt"
+      - name: Run identical bounded PUAC2 benchmark
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B bridge/benchmarks/qwen_puac2_benchmark.py --llama-cli "$RUNNER_TEMP/llama.cpp/build/bin/llama-cli" --model QWEN35_2B_M "$RUNNER_TEMP/models/qwen35-2b-M.gguf" --model QWEN35_4B_S "$RUNNER_TEMP/models/qwen35-4b-S.gguf" --timeout-per-case 75 --out "$RUNNER_TEMP/evidence/results"
+          cat "$RUNNER_TEMP/evidence/results/SUMMARY.json"
+      - name: Hash evidence and delete weights
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          find "$RUNNER_TEMP/evidence" -type f -print0 | sort -z | xargs -0 sha256sum > "$RUNNER_TEMP/EVIDENCE_SHA256.txt" || true
+          cp "$RUNNER_TEMP/EVIDENCE_SHA256.txt" "$RUNNER_TEMP/evidence/" || true
+          rm -f -- "$RUNNER_TEMP/models/"*.gguf || true
+          test ! -e "$RUNNER_TEMP/models/qwen35-2b-M.gguf"
+          test ! -e "$RUNNER_TEMP/models/qwen35-4b-S.gguf"
+      - name: Preserve reproducible comparison evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lrb-qwen-puac2-comparison
+          path: ${{ runner.temp }}/evidence/
+          retention-days: 30
+          compression-level: 0
