@@ -22,6 +22,9 @@ env:
   HARD_CEILING_SECONDS: "20400"
   STALL_SECONDS: "420"
   MAX_RECOVERY_ROUNDS: "4"
+  MAX_SINGLE_FOLDER_ZIP_BYTES: "1073741824"
+  MIN_FREE_DISK_RESERVE_BYTES: "5368709120"
+  RUN_PAYLOAD_YIELD_BYTES: "2147483648"
 
 jobs:
   acquire:
@@ -33,6 +36,8 @@ jobs:
       manifest_sha256: ${{ steps.complete.outputs.manifest_sha256 }}
       payload_count: ${{ steps.complete.outputs.payload_count }}
       payload_bytes: ${{ steps.complete.outputs.payload_bytes }}
+      partial: ${{ steps.acquire_run.outputs.partial }}
+      complete: ${{ steps.acquire_run.outputs.complete }}
     steps:
       - name: Checkout exact partitioned mission
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -189,7 +194,8 @@ jobs:
           if out["status"]!="PASS": raise SystemExit(33)
           PY
           echo "GOVERNED_METAOS_INVENTORY_CERTIFICATION=PASS"
-      - name: Start resilient Dropbox acquisition with anti-paralysis and live bug recovery
+      - id: acquire_run
+        name: Start resilient Dropbox acquisition with anti-paralysis and live bug recovery
         shell: bash
         env:
           STATE_ROOT: ${{ steps.names.outputs.root }}
@@ -205,6 +211,7 @@ jobs:
           touch "$stdout" "$stderr"
           material_proven=false
           success=false
+          partial=false
           round=1
 
           while [ "$round" -le "$MAX_RECOVERY_ROUNDS" ]; do
@@ -312,6 +319,13 @@ jobs:
 
             if [ "$rc" -eq 0 ]; then
               success=true
+              partial=false
+              break
+            fi
+            if [ "$rc" -eq 75 ]; then
+              success=true
+              partial=true
+              echo "GOVERNED_PARTIAL_YIELD=TRUE" | tee -a "$stdout"
               break
             fi
 
@@ -351,11 +365,20 @@ jobs:
             echo "NO_NEW_MATERIAL_BYTES_OBSERVED=TRUE"
           fi
 
-          echo "RESILIENT_ACQUISITION=PASS"
+          if [ "$partial" = true ]; then
+            echo "partial=true" >> "$GITHUB_OUTPUT"
+            echo "complete=false" >> "$GITHUB_OUTPUT"
+            echo "RESILIENT_ACQUISITION=PARTIAL_PASS"
+          else
+            echo "partial=false" >> "$GITHUB_OUTPUT"
+            echo "complete=true" >> "$GITHUB_OUTPUT"
+            echo "RESILIENT_ACQUISITION=PASS"
+          fi
           tail -n 80 "$stdout" || true
 
       - id: complete
         name: Validate complete resumed corpus without executing downloaded content
+        if: steps.acquire_run.outputs.partial != 'true'
         shell: bash
         env:
           STATE_ROOT: ${{ steps.names.outputs.root }}
@@ -460,9 +483,43 @@ jobs:
           path: ${{ runner.temp }}/dropbox-resume-ledger
           key: dropbox-resume-v2-${{ github.run_id }}
 
+  continue_partial:
+    name: "Governed continuation — next durable transfer batch"
+    needs: acquire
+    if: needs.acquire.result == 'success' && needs.acquire.outputs.partial == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - name: Dispatch next checkpointed batch after artifact persistence
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          body='{"ref":"staging/dropbox-github-cloud-partitioned-20261005"}'
+          code="$(curl --silent --show-error --output "$RUNNER_TEMP/dispatch.out" --write-out '%{http_code}' \
+            --request POST \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header "Accept: application/vnd.github+json" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/workflows/dropbox-github-cloud-partitioned.yml/dispatches" \
+            --data "$body")"
+          if [ "$code" != "204" ]; then
+            echo "GOVERNED_CONTINUATION_DISPATCH=FAIL http=$code"
+            cat "$RUNNER_TEMP/dispatch.out" || true
+            exit 41
+          fi
+          echo "GOVERNED_CONTINUATION_DISPATCH=PASS"
+          echo "SOURCE_RUN_ID=$GITHUB_RUN_ID"
+          echo "RESUME_MODE=LATEST_VERIFIED_CHECKPOINT"
+
   G23:
     name: "G23 — independent partitioned corpus validation"
     needs: acquire
+    if: needs.acquire.outputs.partial != 'true' && needs.acquire.outputs.complete == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 350
     outputs:
