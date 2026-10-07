@@ -1,0 +1,118 @@
+name: "LOUKSNA V0.4 P02 — CUSTOSZ typed protocol live"
+
+on:
+  push:
+    branches:
+      - work/louksna-zd-v04-master-20261007
+    paths:
+      - ".github/workflows/louksna-zd-v04-p02-live.yml"
+      - "missions/inbox/louksna-zd-v04-p02-20261007/MISSION_ORIGINAL.md"
+      - "scripts/missions/louksna_zd_v04_p02_live.py"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: louksna-zd-v04-p02-20261007
+  cancel-in-progress: false
+
+jobs:
+  p02-materialize:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 25
+    steps:
+      - name: Checkout isolated V0.4 work branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+          path: mission-root
+
+      - name: Checkout exact CUSTOSZ V7 mailbox
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: staging/custosz-mission-mailbox-20260928
+          persist-credentials: false
+          sparse-checkout: |
+            artifacts/custosz-v7
+            ecosystem/metacognitive-operational-v1/CUSTOSZ72_CENSUS.json
+          sparse-checkout-cone-mode: false
+          path: mailbox
+
+      - name: Checkout exact Remote Bridge substrate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ad95248dd78fadf45645774e0338df0f1bbc128b
+          persist-credentials: false
+          path: bridge-source
+
+      - name: Checkout exact V0.3 evidence source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: 7a1449a5d6194b6cbc3e083bf1c7ba55533ad196
+          persist-credentials: false
+          path: v03
+
+      - name: Run CUSTOSZ V7 P02 materializer with live watchdog
+        shell: bash
+        env:
+          MISSION_ROOT: ${{ github.workspace }}/mission-root
+          MAILBOX_ROOT: ${{ github.workspace }}/mailbox
+          BRIDGE_ROOT: ${{ github.workspace }}/bridge-source
+          V03_ROOT: ${{ github.workspace }}/v03
+          OUT_DIR: ${{ runner.temp }}/louksna-v04-p02
+        run: |
+          set -Eeuo pipefail
+          export CUSTOSZ_WORKSPACE_OVERRIDE="$HOME/SYMPHYLAX_LAB/CUSTOSZ_V7_R1_G23_G24_20260927T021532Z/POSIX_COMPATIBILITY_VIEW"
+          mkdir -p "$OUT_DIR"
+          echo "P02_TELEMETRY EXECUTOR=CUSTOSZ_V7"
+          echo "P02_TELEMETRY RUNTIME=CUSTOSZ_RUNTIME_V1"
+          echo "P02_TELEMETRY HEARTBEAT_SECONDS=2"
+          echo "P02_TELEMETRY STALE_THRESHOLD_SECONDS=10"
+          echo "P02_TELEMETRY BLIND_RETRY=false"
+          echo "P02_TELEMETRY PARTIAL_COMMIT=false"
+          timeout --signal=TERM --kill-after=30s 1200s nice -n 10             python3 -B -I mission-root/scripts/missions/louksna_zd_v04_p02_live.py
+
+      - name: Preserve P02 evidence and rollback any uncommitted partial state
+        if: always()
+        shell: bash
+        env:
+          OUT_DIR: ${{ runner.temp }}/louksna-v04-p02
+        run: |
+          set -Eeuo pipefail
+          cd mission-root
+
+          if [ -n "$(git status --porcelain --untracked-files=all)" ]; then
+            echo "P02_TELEMETRY PARTIAL_STATE_DETECTED=true"
+            git reset --hard HEAD
+            git clean -fd
+            echo "P02_TELEMETRY PARTIAL_STATE_ROLLED_BACK=true"
+          else
+            echo "P02_TELEMETRY PARTIAL_STATE_DETECTED=false"
+          fi
+
+          DEST="evidence/louksna-zd-v04-p02/${GITHUB_RUN_ID}"
+          mkdir -p "$DEST"
+          if [ -d "$OUT_DIR" ]; then
+            cp -a "$OUT_DIR"/. "$DEST"/
+          fi
+          {
+            echo "RUN_ID=${GITHUB_RUN_ID}"
+            echo "RUN_ATTEMPT=${GITHUB_RUN_ATTEMPT}"
+            echo "SOURCE_SHA=${GITHUB_SHA}"
+            echo "BRANCH=work/louksna-zd-v04-master-20261007"
+            echo "PARENT_CHECKPOINT=CHECKPOINT_01"
+          } > "$DEST/RUN_IDENTITY.txt"
+
+          git add "$DEST"
+          if git diff --cached --quiet; then
+            echo "P02_TELEMETRY EVIDENCE_DELTA=0"
+            exit 0
+          fi
+
+          git config user.name "custosz-v7-runtime-bot"
+          git config user.email "custosz-v7-runtime-bot@users.noreply.github.com"
+          git commit -m "evidence(louksna): preserve V0.4 P02 run ${GITHUB_RUN_ID}"
+          git push origin HEAD:work/louksna-zd-v04-master-20261007
+          echo "P02_TELEMETRY EVIDENCE_PERSISTED=true"
