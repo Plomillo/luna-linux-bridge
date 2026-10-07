@@ -28,8 +28,10 @@
     {
       "canonical_name": "ENVIRONMENT_MANAGER",
       "capability_id": 4,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_artifact": "implementation/super1200/core/super1200_core/foundation.py",
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "test_artifact": "implementation/super1200/core/tests/test_d01_continuation.py"
     },
     {
       "canonical_name": "ARTIFACT_STORE",
@@ -42,26 +44,34 @@
     {
       "canonical_name": "MODEL_STORE",
       "capability_id": 6,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_artifact": "implementation/super1200/core/super1200_core/foundation.py",
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "test_artifact": "implementation/super1200/core/tests/test_d01_continuation.py"
     },
     {
       "canonical_name": "SERVICE_PLATFORM",
       "capability_id": 7,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_artifact": "implementation/super1200/core/super1200_core/foundation.py",
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "test_artifact": "implementation/super1200/core/tests/test_d01_continuation.py"
     },
     {
       "canonical_name": "API_RUNTIME_REGISTRY",
       "capability_id": 8,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_artifact": "implementation/super1200/core/super1200_core/foundation.py",
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "test_artifact": "implementation/super1200/core/tests/test_d01_continuation.py"
     },
     {
       "canonical_name": "SERVICE_MATERIALIZER",
       "capability_id": 9,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_artifact": "implementation/super1200/core/super1200_core/foundation.py",
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "test_artifact": "implementation/super1200/core/tests/test_d01_continuation.py"
     },
     {
       "canonical_name": "SERVICE_REGISTRY",
@@ -82,20 +92,26 @@
     {
       "canonical_name": "JOB_QUEUE_INTERFACE",
       "capability_id": 12,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_artifact": "implementation/super1200/core/super1200_core/foundation.py",
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "test_artifact": "implementation/super1200/core/tests/test_d01_continuation.py"
     },
     {
       "canonical_name": "LOCAL_DURABLE_QUEUE",
       "capability_id": 13,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_artifact": "implementation/super1200/core/super1200_core/foundation.py",
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "test_artifact": "implementation/super1200/core/tests/test_d01_continuation.py"
     },
     {
       "canonical_name": "BACKPRESSURE_ENGINE",
       "capability_id": 14,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_artifact": "implementation/super1200/core/super1200_core/foundation.py",
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "test_artifact": "implementation/super1200/core/tests/test_d01_continuation.py"
     },
     {
       "canonical_name": "RESOURCE_ENVELOPE_ENGINE",
@@ -108,14 +124,18 @@
     {
       "canonical_name": "REMOTE_BRIDGE_APP_PROTOCOL",
       "capability_id": 16,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_artifact": "implementation/super1200/core/super1200_core/foundation.py",
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "test_artifact": "implementation/super1200/core/tests/test_d01_continuation.py"
     },
     {
       "canonical_name": "SUPPLY_CHAIN_ASSURANCE",
       "capability_id": 17,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_artifact": "implementation/super1200/core/super1200_core/foundation.py",
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "test_artifact": "implementation/super1200/core/tests/test_d01_continuation.py"
     },
     {
       "canonical_name": "OBSERVABILITY_FABRIC",
@@ -136,8 +156,10 @@
     {
       "canonical_name": "BUG_KNOWLEDGE_BASE",
       "capability_id": 20,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_artifact": "implementation/super1200/core/super1200_core/foundation.py",
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "test_artifact": "implementation/super1200/core/tests/test_d01_continuation.py"
     },
     {
       "canonical_name": "HOLD_REASON_ENGINE",
@@ -206,29 +228,33 @@
     {
       "canonical_name": "REPOSITORY_ACQUISITION_ENGINE",
       "capability_id": 29,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_artifact": "implementation/super1200/core/super1200_core/foundation.py",
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "test_artifact": "implementation/super1200/core/tests/test_d01_continuation.py"
     },
     {
       "canonical_name": "REPOSITORY_EXPORT_ENGINE",
       "capability_id": 30,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_artifact": "implementation/super1200/core/super1200_core/foundation.py",
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "test_artifact": "implementation/super1200/core/tests/test_d01_continuation.py"
     }
   ],
   "count": 30,
   "domain_id": "D01",
-  "evidenced_capabilities": 17,
+  "evidenced_capabilities": 30,
   "governance": "BOUND",
   "metacognitive": "BOUND",
   "owner": "REPOSITORY",
-  "pending_capabilities": 13,
+  "pending_capabilities": 0,
   "provenance": "BOUND",
   "range": [
     1,
     30
   ],
-  "state": "IN_PROGRESS",
+  "state": "FUNCTIONALLY_CLOSED_PENDING_INDEPENDENT_VALIDATION",
   "telemetry": "LIVE",
   "terminal_certification": false
 }
