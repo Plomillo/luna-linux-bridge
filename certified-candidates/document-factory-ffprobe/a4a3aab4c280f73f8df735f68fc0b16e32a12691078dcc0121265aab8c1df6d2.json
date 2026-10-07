@@ -1,0 +1,41 @@
+{
+  "active_authorized": false,
+  "authority": "Louksna.md",
+  "authority_signature_reference": "GITHUB_OIDC_JWT_SHA256:15a5cac49360ac13d6e9d6681116a2e6b9f508dee181993c015700cc99b5fd1e",
+  "candidate_digest_sha256": "a4a3aab4c280f73f8df735f68fc0b16e32a12691078dcc0121265aab8c1df6d2",
+  "candidate_head_sha": "3774cb102ad6318fc824b2cb87c5055e9f5f4b0b",
+  "canonical_mutation": false,
+  "certification_propagation": false,
+  "claims_certified": [
+    "DF-CLM-001",
+    "DF-CLM-002",
+    "DF-CLM-003",
+    "DF-CLM-004",
+    "DF-CLM-005",
+    "DF-CLM-006",
+    "DF-CLM-007",
+    "DF-CLM-008",
+    "DF-CLM-009",
+    "DF-CLM-010",
+    "DF-CLM-011",
+    "DF-CLM-012",
+    "DF-CLM-013"
+  ],
+  "claims_excluded": [
+    "Academic correctness or originality of any future report.",
+    "A grade of 38.5/38.5.",
+    "Human fluency or technical mastery in a video.",
+    "Successful LMS/UNIACC submission.",
+    "Bit-for-bit output reproducibility across arbitrary environments.",
+    "Certification of future task profiles merely because the framework is certified.",
+    "Semantic or disciplinary assessment of audiovisual content beyond mechanically observable media metadata."
+  ],
+  "epistemic_state": "CERTIFIED_NOT_ACTIVE",
+  "g24_authority": "LOUKSNA_DOCUMENT_FACTORY_G24::repo:Plomillo@177490054/luna-linux-bridge@1391334801:pull_request",
+  "g24_certificate_sha256": "eea1aae6de63554673a9c468e2c0f3dd11c3a9b738aa26b75b1e346ac82d703e",
+  "operational_authorization": "NOT_GRANTED_BY_CERTIFICATION",
+  "recorded_at_utc": "2026-10-07T16:29:03.050045+00:00",
+  "schema": "DOCUMENT_FACTORY_CERTIFIED_CANDIDATE_RECEIPT/1.0",
+  "source_certification_run_id": 37651940882,
+  "status": "PASS"
+}
