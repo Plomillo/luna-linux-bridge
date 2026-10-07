@@ -479,7 +479,9 @@ def main():
             hb.set("POST_VALIDATE")
             if run(["git","status","--porcelain"],cwd=root).stdout.strip(): raise RuntimeError("POST_COMMIT_WORKTREE_DIRTY")
             checkpoint["implementation_commit_sha"]=commit
-            (out/"CHECKPOINT_02.json").write_text(json.dumps(checkpoint,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
+            # CHECKPOINT_02 is an evidence output; writing it here after commit dirties the worktree.
+            # The immutable implementation commit remains the P02 materialization receipt.
+            emit(out,"CHECKPOINT_02_PREPARED",state="PASS",next_point=checkpoint["next_point"],commit_sha=commit)
             emit(out,"CHECKPOINT_02_REACHED",state="PASS",next_point=checkpoint["next_point"],commit_sha=commit)
             return 0
     except Exception as exc:
