@@ -1,0 +1,122 @@
+name: "SUPER1200 D01 terminal resume — isolated import recovery"
+
+on:
+  push:
+    branches:
+      - staging/super1200-d01-recovery-20261007
+    paths:
+      - "missions/inbox/super1200-terminal-resume-d01-20261007/RESUME_TOKEN.json"
+  workflow_dispatch:
+
+concurrency:
+  group: super1200-d01-terminal-resume
+  cancel-in-progress: false
+
+jobs:
+  resume-d01:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout recovery mission control plane
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          path: mission
+
+      - name: Checkout exact SUPER1200 work branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: custosz/super-1200-implementation-20261007
+          fetch-depth: 0
+          persist-credentials: true
+          path: target
+
+      - name: Verify exact forensic checkpoint
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ACTUAL="$(git -C target rev-parse HEAD)"
+          test "$ACTUAL" = "4e957f2d4a388a87f8dca17053e5f2ec8693c5a2"
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("target/implementation/super1200/registry/capabilities.json").read_text())
+          p=json.loads(Path("target/implementation/super1200/DOMAIN_PROGRESS.json").read_text())
+          w=json.loads(Path("target/implementation/super1200/graphs/WIRING_VALIDATION.json").read_text())
+          g23=json.loads(Path("target/implementation/super1200/governance/G23_READINESS.json").read_text())
+          g24=json.loads(Path("target/implementation/super1200/governance/G24_READINESS.json").read_text())
+          assert r["owner"]=="REPOSITORY" and r["count"]==1200
+          assert sum(1 for x in r["items"] if x["implementation_state"]=="DECLARED")==1200
+          assert all(x["state"]=="IN_PROGRESS" for x in p["domains"])
+          assert w["node_count"]==1200 and w["edge_count"]==8193
+          assert g23["pass"] is False and g24["pass"] is False
+          print("SUPER1200_TELEMETRY FORENSIC_CHECKPOINT=PASS HEAD=4e957f2d4a388a87f8dca17053e5f2ec8693c5a2 DECLARED=1200 DOMAINS=22 EDGES=8193")
+          print("SUPER1200_TELEMETRY G23=BLOCKED_UNTIL_FUNCTIONAL_CLOSURE G24=BLOCKED_UNTIL_G23_SAME_DIGEST")
+          PY
+
+      - name: Revalidate CUSTOSZ V7 Runtime and MetaOS boundary
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B -I mission/artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz v07-selftest
+          python3 - <<'PY'
+          import hashlib,sys,tempfile
+          from pathlib import Path
+          runtime=Path("mission/artifacts/custosz-v7/CUSTOSZ_RUNTIME_V1_SR_EXEC_BOUND_FME_01.b.pyz").resolve()
+          authority=Path("target/Louksna.md").resolve()
+          sys.path.insert(0,str(runtime))
+          from runtime_core import Runtime
+          Runtime(Path(tempfile.mkdtemp(prefix="super1200-terminal-resume-"))/"state",authority,hashlib.sha256(authority.read_bytes()).hexdigest()).selftest()
+          raw=Path("mission/artifacts/custosz-v7/MetaOS.wasm").read_bytes()
+          print("SUPER1200_TELEMETRY CONTROL_PLANES=PASS CUSTOSZ=PASS RUNTIME=PASS METAOS=PASS OWNER=REPOSITORY")
+          print("SUPER1200_TELEMETRY METAOS_SHA256="+hashlib.sha256(raw).hexdigest())
+          PY
+
+      - name: Resume D01 from stopped state
+        shell: bash
+        env:
+          TARGET_ROOT: ${{ github.workspace }}/target
+        run: |
+          set -Eeuo pipefail
+          nice -n 10 python3 -B -I mission/scripts/missions/super1200_terminal_resume_d01.py
+
+      - name: Post-validate D01 and persist only governed implementation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B -I target/implementation/super1200/core/tests/test_foundation.py
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          base=Path("target/implementation/super1200")
+          reg=json.loads((base/"registry/capabilities.json").read_text())
+          d01=json.loads((base/"domains/D01.json").read_text())
+          g23=json.loads((base/"governance/G23_READINESS.json").read_text())
+          g24=json.loads((base/"governance/G24_READINESS.json").read_text())
+          ids={1,2,3,5,10,11,15,18,19,21,22,23,24,25,26,27,28}
+          evidenced={x["capability_id"] for x in reg["items"] if x.get("implementation_state")=="EVIDENCED"}
+          assert ids.issubset(evidenced)
+          assert sum(1 for x in reg["items"] if x.get("implementation_state")=="EVIDENCED")==17
+          assert d01.get("evidenced_capabilities")==17
+          assert d01.get("pending_capabilities")==13
+          assert d01.get("state")=="IN_PROGRESS"
+          assert g23.get("pass") is False and g24.get("pass") is False
+          print("SUPER1200_TELEMETRY POST_VALIDATION=PASS D01_EVIDENCED=17 D01_PENDING=13 TOTAL_REMAINING=1183 G23=BLOCKED G24=BLOCKED")
+          PY
+          find target/implementation/super1200 -type d -name __pycache__ -prune -exec rm -rf {} +
+          cd target
+          git add implementation/super1200
+          BAD="$(git diff --cached --name-only | grep -v '^implementation/super1200/' || true)"
+          test -z "$BAD"
+          git diff --cached --check
+          git config user.name "custosz-v7-runtime-bot"
+          git config user.email "custosz-v7-runtime-bot@users.noreply.github.com"
+          git commit -m "feat(super1200): persist resumed D01 foundation materialization"
+          git push origin HEAD:refs/heads/custosz/super-1200-implementation-20261007
+          test -z "$(git status --porcelain --untracked-files=all)"
+          NEW_HEAD="$(git rev-parse HEAD)"
+          echo "SUPER1200_TELEMETRY REPOSITORY_PERSISTENCE=PASS NEW_HEAD=$NEW_HEAD"
