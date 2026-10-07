@@ -355,16 +355,23 @@ class Heartbeat:
 
 def copy_bridge_exact(source:Path,target:Path):
     src=source/"bridge"; dst=target/"bridge"
-    if dst.exists():
-        raise RuntimeError("TARGET_BRIDGE_ALREADY_EXISTS_UNEXPECTED")
-    shutil.copytree(src,dst,symlinks=True)
-    observed={
-      "lrb_core.py":sha256(dst/"lrb_core.py"),
-      "live_link.py":sha256(dst/"live_link.py"),
-      "mtls_gateway.py":sha256(dst/"mtls_gateway.py")
-    }
     expected={"lrb_core.py":EXPECTED_CORE,"live_link.py":EXPECTED_LIVE,"mtls_gateway.py":EXPECTED_MTLS}
-    if observed!=expected: raise RuntimeError("COPIED_BRIDGE_IDENTITY_DRIFT:"+json.dumps(observed,sort_keys=True))
+    if dst.exists():
+        if not dst.is_dir():
+            raise RuntimeError("TARGET_BRIDGE_PATH_TYPE_DRIFT")
+        observed={}
+        for name in expected:
+            p=dst/name
+            if not p.is_file():
+                raise RuntimeError("TARGET_BRIDGE_INCOMPLETE:"+name)
+            observed[name]=sha256(p)
+        if observed!=expected:
+            raise RuntimeError("TARGET_BRIDGE_IDENTITY_DRIFT:"+json.dumps(observed,sort_keys=True))
+        return observed
+    shutil.copytree(src,dst,symlinks=True)
+    observed={name:sha256(dst/name) for name in expected}
+    if observed!=expected:
+        raise RuntimeError("COPIED_BRIDGE_IDENTITY_DRIFT:"+json.dumps(observed,sort_keys=True))
     return observed
 
 def main():
