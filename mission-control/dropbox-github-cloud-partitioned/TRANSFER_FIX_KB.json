@@ -99,6 +99,35 @@
         "repeat_identical_dom_inventory": false,
         "checkpoint_preserved": true
       }
+    },
+    {
+      "fix_id": "FIX-DROPBOX-PUBLIC-DL1-WRITE-001",
+      "category": "DROPBOX_PUBLIC_DL1_WRITE_INTERRUPTION",
+      "signal_regex": "curl: \\(23\\)|Failure writing output to destination",
+      "action": "ISOLATED_CURL_RETRY_VALIDATE_ZIP_CRC",
+      "applicability": "Dropbox public dl=1 stream begins as ZIP but one transport attempt is interrupted or leaves invalid output",
+      "validation_status": "VALIDATED_BY_HISTORICAL_BYTE_FLOW_AND_CONTRACT_PENDING_LIVE_PROVIDER_PROBE",
+      "validated_by": [
+        "historical run 37356959689 child 8: ZIP signature + 8192 bytes",
+        "DROPBOX_GITHUB_CLOUD_PARTITIONED_CONTRACT"
+      ],
+      "rollback": "quarantine only the failed .part; retry current object from zero; preserve prior checkpoint",
+      "provenance": [
+        "run:37356959689",
+        "job:111921770873",
+        "source:8. META OS",
+        "observed_bytes:8192",
+        "zip_signature:true",
+        "curl_error:23"
+      ],
+      "invariants": {
+        "internal_curl_retry_all_errors": false,
+        "each_attempt_new_partial": true,
+        "http_200_is_success": false,
+        "curl_exit_zero_is_success": false,
+        "zip_crc_required": true,
+        "prior_verified_progress_preserved": true
+      }
     }
   ]
 }
