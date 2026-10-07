@@ -77,13 +77,14 @@
       "fix_id": "FIX-DROPBOX-SHARED-FOLDER-INVENTORY-001",
       "category": "DROPBOX_SHARED_FOLDER_INVENTORY_INCOMPATIBLE",
       "signal_regex": "PARTITION_REQUIRED_BUT_CHILDREN_EMPTY|DROPBOX_API_AUTHORITATIVE_INVENTORY",
-      "action": "GOVERNED_API_THEN_HYDRATED_PUBLIC_INVENTORY",
+      "action": "GOVERNED_API_THEN_PUBLIC_NETWORK_THEN_RENDERED_INVENTORY",
       "applicability": "Dropbox shared-folder web DOM does not expose nested objects as /scl/fo or /scl/fi anchors",
-      "validation_status": "VALIDATED_LIVE_PUBLIC_PROBE",
+      "validation_status": "VALIDATED_LIVE_PUBLIC_NETWORK_PROBE",
       "validated_by": [
         "DROPBOX_GITHUB_CLOUD_PARTITIONED_API_INVENTORY_CONTRACT",
+        "DROPBOX_GITHUB_CLOUD_PARTITIONED_PUBLIC_NETWORK_INVENTORY_CONTRACT",
         "DROPBOX_METAOS_PUBLIC_INVENTORY_PROBE_37585254356",
-        "DROPBOX_GITHUB_CLOUD_PARTITIONED_HYDRATION_POLICY_CONTRACT",
+        "DROPBOX_METAOS_PROBE_ARTIFACT_READ_37588080815",
         "DROPBOX_GITHUB_CLOUD_PARTITIONED_BUG_CLASSIFIER_SELFTEST"
       ],
       "rollback": "restore prior code while preserving last verified checkpoint; never reinterpret empty DOM as empty Dropbox folder",
@@ -98,7 +99,14 @@
         "artifact:11466490492",
         "public_endpoint_observed:/list_shared_link_folder_entries",
         "public_rows_observed:data-testid=sl-list-column--name",
-        "root_cause:zero-stability cutoff before Dropbox shared-folder hydration"
+        "root_cause:zero-stability cutoff before Dropbox shared-folder hydration",
+        "run:37588080815",
+        "network_endpoint:/list_shared_link_folder_entries",
+        "network_response_status:200",
+        "network_response_content_type:application/json",
+        "network_response_sha256:c0793fda60a0739bda5bf228cbc0f4eb3223e58fc6f4953d26e593155bf34c91",
+        "network_total_num_entries:37",
+        "network_has_more_entries:false"
       ],
       "invariants": {
         "authoritative_preference": "DROPBOX_API_IF_AUTHORIZED",
@@ -106,7 +114,11 @@
         "generic_html_source_of_truth": false,
         "zero_stability_terminal": false,
         "repeat_identical_empty_inventory": false,
-        "checkpoint_preserved": true
+        "checkpoint_preserved": true,
+        "public_authoritative_provider": "DROPBOX_PUBLIC_LIST_SHARED_LINK_FOLDER_ENTRIES",
+        "network_count_must_match_total": true,
+        "network_pagination_fail_closed": true,
+        "dom_is_secondary_fallback": true
       }
     },
     {
