@@ -1,0 +1,125 @@
+name: "SUPER1200 repository implementation — CUSTOSZ V7 Runtime MetaOS"
+
+on:
+  push:
+    branches:
+      - staging/custosz-mission-mailbox-20260928
+    paths:
+      - missions/inbox/super1200-repository-implementation-20261007/MISSION_ORIGINAL.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: super1200-repository-implementation
+  cancel-in-progress: false
+
+jobs:
+  super1200:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 30
+    steps:
+      - name: Checkout governed mission plane
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          path: mission
+
+      - name: Checkout exact 1200 capability source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: bf683949eaa52087725a672d1cc0297b5a09e346
+          persist-credentials: false
+          path: capabilities
+
+      - name: Checkout repository-owned work branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: custosz/super-1200-implementation-20261007
+          fetch-depth: 0
+          persist-credentials: true
+          path: target
+
+      - name: Verify immutable ownership boundary
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git -C target rev-parse HEAD)" = "84fbec427b7e067cc226ba868fbcd7c9675a862b"
+          test "$(git -C capabilities rev-parse HEAD)" = "bf683949eaa52087725a672d1cc0297b5a09e346"
+          test ! -e target/implementation/super1200
+          echo "SUPER1200_TELEMETRY OWNERSHIP=REPOSITORY STATE=PRECHECK_PASS"
+
+      - name: Synchronize CUSTOSZ V7 Runtime and MetaOS control planes
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          CUSTOSZ="mission/artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz"
+          RUNTIME="mission/artifacts/custosz-v7/CUSTOSZ_RUNTIME_V1_SR_EXEC_BOUND_FME_01.b.pyz"
+          METAOS="mission/artifacts/custosz-v7/MetaOS.wasm"
+          test "$(sha256sum "$CUSTOSZ" | awk '{print $1}')" = "dacf1f8c13b2fcbfc617cf0d4d780b30502c13395224691e6b0f05f53d9816a2"
+          test "$(sha256sum "$RUNTIME" | awk '{print $1}')" = "a79e13869601d68fe801b85ad421719b79d4afa5520ae34b91b419bd8834ae67"
+          test "$(sha256sum "$METAOS" | awk '{print $1}')" = "5d8f1239e3a0b452be722078760b000afc22af0a64f93ffb0a1f74024f15aed0"
+          python3 -B -I "$CUSTOSZ" v07-status
+          python3 -B -I "$CUSTOSZ" v07-selftest
+          python3 - <<'PY'
+          import hashlib,sys,tempfile
+          from pathlib import Path
+          runtime=Path("mission/artifacts/custosz-v7/CUSTOSZ_RUNTIME_V1_SR_EXEC_BOUND_FME_01.b.pyz").resolve()
+          authority=Path("target/Louksna.md").resolve()
+          sys.path.insert(0,str(runtime))
+          from runtime_core import Runtime
+          rt=Runtime(Path(tempfile.mkdtemp(prefix="super1200-runtime-"))/"state",authority,hashlib.sha256(authority.read_bytes()).hexdigest())
+          result=rt.selftest()
+          assert result.get("status")=="PASS", result
+          print("SUPER1200_TELEMETRY RUNTIME=PASS ROLE=EXECUTION_PLANE")
+          PY
+          python3 - <<'PY'
+          import hashlib
+          from pathlib import Path
+          p=Path("mission/artifacts/custosz-v7/MetaOS.wasm")
+          raw=p.read_bytes()
+          assert hashlib.sha256(raw).hexdigest()=="5d8f1239e3a0b452be722078760b000afc22af0a64f93ffb0a1f74024f15aed0"
+          for token in (b"knowledge-gate",b"formalization-gate",b"implementation-gate",b"implementation-authorized",b"active-allowed",b"checkpoint-trusted",b"network-default-deny"):
+              assert token in raw, token
+          print("SUPER1200_TELEMETRY METAOS=PASS ROLE=GOVERNANCE_PLANE")
+          PY
+          echo "SUPER1200_TELEMETRY CUSTOSZ=PASS ROLE=WORKER_ORCHESTRATOR"
+          echo "SUPER1200_TELEMETRY G23=READINESS G24=READINESS CERTIFICATION_PROPAGATION=FALSE"
+
+      - name: Start repository-owned 1200-domain implementation stream
+        shell: bash
+        env:
+          TARGET_ROOT: ${{ github.workspace }}/target
+          CAP_ROOT: ${{ github.workspace }}/capabilities
+          OUT_DIR: ${{ runner.temp }}/super1200
+        run: |
+          set -Eeuo pipefail
+          ulimit -v 1048576 || true
+          nice -n 10 python3 -B -I mission/scripts/missions/super1200_repository_materializer.py
+
+      - name: Validate and persist repository changes
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B -I target/implementation/super1200/tests/test_shared.py
+          cd target
+          BAD="$(git status --porcelain | awk '{print $2}' | grep -v '^implementation/super1200/' || true)"
+          test -z "$BAD"
+          git add implementation/super1200
+          git config user.name "custosz-v7-runtime-bot"
+          git config user.email "custosz-v7-runtime-bot@users.noreply.github.com"
+          git commit -m "feat(super1200): begin repository-owned governed implementation"
+          git push origin HEAD:refs/heads/custosz/super-1200-implementation-20261007
+          echo "SUPER1200_TELEMETRY REPOSITORY_PERSISTENCE=PASS CAPABILITY_OWNER=REPOSITORY"
+
+      - name: Preserve telemetry evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: super1200-live-telemetry
+          path: ${{ runner.temp }}/super1200
+          if-no-files-found: warn
+          retention-days: 90
