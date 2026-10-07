@@ -1,0 +1,9 @@
+{
+  "status": "HOLD",
+  "mission_id": "MIS-LOUKSNA-ZD-V04-P02-20261007",
+  "reason": "RuntimeError:COMMAND_FAIL:['git', 'commit', '-m', 'feat(louksna): materialize P02 LRB_APP 0.4 typed protocol']\nHEAD desacoplada en 25e00dd\nArchivos sin seguimiento:\n  (usa \"git add <archivo>...\" para incluirlo a lo que ser\u00e1 confirmado)\n\tscripts/missions/.CUSTOSZ_STATE/\n\nno hay nada agregado al commit pero hay archivos sin seguimiento presentes (usa \"git add\" para hacerles seguimiento)\n\n",
+  "resume_from": "CHECKPOINT_01",
+  "blind_retry": false,
+  "active": false,
+  "certified": false
+}
