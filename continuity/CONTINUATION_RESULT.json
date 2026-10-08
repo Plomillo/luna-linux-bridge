@@ -1,23 +1,70 @@
 {
   "active": false,
-  "bridge_head": "ad95248dd78fadf45645774e0338df0f1bbc128b2",
+  "bridge_head": "ad95248dd78fadf45645774e0338df0f1bbc128b",
   "certified": false,
-  "checkpoint": "CHECKPOINT_04",
+  "checkpoint": "CHECKPOINT_05",
   "g23": "SEPARATE_REQUIRED",
   "g24": "SEPARATE_REQUIRED",
   "material_evidence": {
-    "bridge_ledger": {
-      "EvidenceLedger": true,
-      "entry_hash": true
+    "artifact_transfer": {
+      "content_addressed": true,
+      "negative": {
+        "ack_missing": true,
+        "corrupt_hash": true,
+        "false_mime": true,
+        "oversized": true,
+        "path_traversal": true,
+        "provenance_missing": true,
+        "symlink": true
+      },
+      "pipeline": [
+        "SELECT",
+        "IDENTIFY",
+        "VALIDATE",
+        "HASH",
+        "PROVENANCE",
+        "TRUST_CLASSIFICATION",
+        "DEDUP",
+        "LOCAL_REGISTER",
+        "PREVIEW",
+        "CONFIRM",
+        "NEGOTIATE",
+        "TRANSFER",
+        "ACK",
+        "EVIDENCE"
+      ],
+      "positive": {
+        "duplicate": {
+          "deduplicated": true,
+          "evidence_head": "95f7bb19e99cb8da6e95914303f53745a50e52c134a2ec9f4cda6d8610a33e32",
+          "sha256": "0940c5ee117cc7c73eea62b1579fd1f4908f11cc7a78ed3beca9c62bd4743779",
+          "size": 46000,
+          "status": "PASS"
+        },
+        "first": {
+          "deduplicated": false,
+          "evidence_head": "8fecb6bbc67e94fc6ea5e6e0c1d76a1b4b0ec89ff3583f33d475a67a1be06cd2",
+          "sha256": "0940c5ee117cc7c73eea62b1579fd1f4908f11cc7a78ed3beca9c62bd4743779",
+          "size": 46000,
+          "status": "PASS"
+        }
+      },
+      "schema": "LOUKSNA_ZD_ARTIFACT_TRANSFER/1.0",
+      "sha256": "0940c5ee117cc7c73eea62b1579fd1f4908f11cc7a78ed3beca9c62bd4743779",
+      "size": 46000,
+      "status": "PASS"
     },
-    "v03_event_log": {
-      "CREATE TABLE IF NOT EXISTS evidence": true,
-      "INSERT INTO evidence": true
+    "substrate": {
+      "bridge_EvidenceLedger": true,
+      "bridge_entry_hash": true,
+      "v03_event_evidence_table": true,
+      "v03_event_insert": true
     }
   },
-  "next_point": "P05",
-  "parent_checkpoint": "CHECKPOINT_03",
+  "next_point": "P06",
+  "parent_checkpoint": "CHECKPOINT_04",
+  "scope": "P05 governed attachment transfer operational closure; P06 remains next.",
   "status": "PASS",
-  "transition_id": "P04-CHECKPOINT-TO-P05-001",
+  "transition_id": "P05-CHECKPOINT-TO-P06-001",
   "v03_head": "7a1449a5d6194b6cbc3e083bf1c7ba55533ad196"
 }
