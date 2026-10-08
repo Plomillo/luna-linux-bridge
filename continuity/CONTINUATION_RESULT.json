@@ -8,7 +8,7 @@
     "checks": [
       {
         "source": "continuity/runtime-evidence/p10/P10_TRANSPORT_ECHO_RUN_37839883915.json",
-        "status": "HOLD",
+        "status": "PASS",
         "test": "P10_OFF_HOST_RELAY_EVIDENCE"
       },
       {
@@ -25,7 +25,7 @@
       },
       {
         "branch": "work/louksna-zd-v04-master-20261007",
-        "commit": "7b9f407af394d9074cf01f55637e1c089cc3f1d2",
+        "commit": "cc4e87df30f47ea68ed0bb64782c3441bb2b9bb4",
         "status": "PASS",
         "test": "RELEASE_SOURCE_IDENTITY"
       },
@@ -42,21 +42,21 @@
       }
     ],
     "open_blockers": [
-      "P10_OFF_HOST_RELAY_UNPROVEN",
       "P12_BUILD_SUBSTRATE_NOT_PRESENT"
     ],
     "reason": "Release, G23 and G24 remain forbidden until all material prerequisites are satisfied.",
     "schema": "LOUKSNA_ZD_P12_RELEASE_GATE/1.0",
     "status": "HOLD",
-    "timestamp_utc": "2026-10-08T20:34:16Z"
+    "timestamp_utc": "2026-10-08T20:34:19Z"
   },
   "next_point": "P12",
   "open_blockers": [
-    "P10_OFF_HOST_RELAY_UNPROVEN",
     "P12_BUILD_SUBSTRATE_NOT_PRESENT"
   ],
   "parent_checkpoint": "CHECKPOINT_11",
-  "resolved_blockers": [],
+  "resolved_blockers": [
+    "P10_OFF_HOST_RELAY_UNPROVEN"
+  ],
   "status": "HOLD_INDEPENDENT_CONTINUATION",
   "transition_id": "P12-HOLD-RETRY-001"
 }
