@@ -26,7 +26,9 @@ try:
     state=json.loads(STATE.read_text())
     next_point=r["next_point"]
     next_worker=ex.get(next_point)
-    blockers=list(dict.fromkeys(list(state.get("open_blockers",[]))+list(r.get("open_blockers",[]))))
+    resolved=set(r.get("resolved_blockers",[]))
+    blockers=[b for b in state.get("open_blockers",[]) if b not in resolved]
+    blockers=list(dict.fromkeys(blockers+list(r.get("open_blockers",[]))))
     same_point_hold=(r.get("status")=="HOLD_INDEPENDENT_CONTINUATION" and next_point==nxt)
     state.update({
         "active_worker":False,
