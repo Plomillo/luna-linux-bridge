@@ -1,10 +1,11 @@
 {
-  "schema":"LOUKSNA_CONTINUITY_EXECUTORS/1.0",
-  "branch":"work/louksna-zd-v04-master-20261007",
-  "executors":{
-    "P01":"scripts/missions/louksna_zd_v04_master_live.py",
-    "P02":"scripts/missions/louksna_zd_v04_p02_live.py"
+  "schema": "LOUKSNA_CONTINUITY_EXECUTORS/1.0",
+  "branch": "work/louksna-zd-v04-master-20261007",
+  "executors": {
+    "P01": "scripts/missions/louksna_zd_v04_master_live.py",
+    "P02": "scripts/missions/louksna_zd_v04_p02_live.py",
+    "P03_CUSTOSZ_RUNTIME_METAOS_EXECUTION_PLANE": "scripts/missions/louksna_zd_v04_p03_live.py"
   },
-  "unregistered_points_must_not_be_invented":true,
-  "missing_executor_state":"BLOCKED"
+  "unregistered_points_must_not_be_invented": true,
+  "missing_executor_state": "BLOCKED"
 }
