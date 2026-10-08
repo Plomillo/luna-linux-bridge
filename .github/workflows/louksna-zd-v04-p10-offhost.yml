@@ -61,7 +61,7 @@ jobs:
           npm install --global pinggy@latest
           pinggy --type tcp -l 18443 --b >"$RUNNER_TEMP/p10/pinggy.stdout" 2>"$RUNNER_TEMP/p10/pinggy.stderr"
           cat "$RUNNER_TEMP/p10/pinggy.stdout" "$RUNNER_TEMP/p10/pinggy.stderr" || true
-          endpoint="$(grep -hEo 'tcp://[^[:space:]]+' "$RUNNER_TEMP/p10/pinggy.stdout" "$RUNNER_TEMP/p10/pinggy.stderr" 2>/dev/null | head -n1 | sed 's#tcp://##' || true)"
+          endpoint="$(grep -hEo 'tcp://[^[:space:]]+' "$RUNNER_TEMP/p10/pinggy.stdout" "$RUNNER_TEMP/p10/pinggy.stderr" 2>/dev/null | head -n1 | sed -E 's#\x1B\\[[0-9;]*[[:alpha:]]##g; s#tcp://##' || true)"
           test -n "$endpoint" || { echo "PINGGY_ENDPOINT_NOT_FOUND"; exit 1; }
           echo "P10_ENDPOINT=$endpoint"
           host="${endpoint%:*}"
