@@ -1,70 +1,47 @@
 {
   "active": false,
-  "bridge_head": "ad95248dd78fadf45645774e0338df0f1bbc128b",
   "certified": false,
-  "checkpoint": "CHECKPOINT_05",
+  "checkpoint": "CHECKPOINT_06",
   "g23": "SEPARATE_REQUIRED",
   "g24": "SEPARATE_REQUIRED",
   "material_evidence": {
-    "artifact_transfer": {
-      "content_addressed": true,
-      "negative": {
-        "ack_missing": true,
-        "corrupt_hash": true,
-        "false_mime": true,
-        "oversized": true,
-        "path_traversal": true,
-        "provenance_missing": true,
-        "symlink": true
-      },
-      "pipeline": [
-        "SELECT",
-        "IDENTIFY",
-        "VALIDATE",
-        "HASH",
-        "PROVENANCE",
-        "TRUST_CLASSIFICATION",
-        "DEDUP",
-        "LOCAL_REGISTER",
-        "PREVIEW",
-        "CONFIRM",
-        "NEGOTIATE",
-        "TRANSFER",
-        "ACK",
-        "EVIDENCE"
-      ],
-      "positive": {
-        "duplicate": {
-          "deduplicated": true,
-          "evidence_head": "95f7bb19e99cb8da6e95914303f53745a50e52c134a2ec9f4cda6d8610a33e32",
-          "sha256": "0940c5ee117cc7c73eea62b1579fd1f4908f11cc7a78ed3beca9c62bd4743779",
-          "size": 46000,
-          "status": "PASS"
-        },
-        "first": {
-          "deduplicated": false,
-          "evidence_head": "8fecb6bbc67e94fc6ea5e6e0c1d76a1b4b0ec89ff3583f33d475a67a1be06cd2",
-          "sha256": "0940c5ee117cc7c73eea62b1579fd1f4908f11cc7a78ed3beca9c62bd4743779",
-          "size": 46000,
-          "status": "PASS"
-        }
-      },
-      "schema": "LOUKSNA_ZD_ARTIFACT_TRANSFER/1.0",
-      "sha256": "0940c5ee117cc7c73eea62b1579fd1f4908f11cc7a78ed3beca9c62bd4743779",
-      "size": 46000,
-      "status": "PASS"
+    "primary_requested": "CHATTERBOX_ES_ES_SELF_HOSTED_API",
+    "sabela": {
+      "artifact_sha256": "b7df43263c2eefffa79b841431d542957c8c6478b41448be679ef36036087f22",
+      "implementation": "HiTZ/aHoTTS",
+      "language": "gl",
+      "license": "Apache-2.0",
+      "model_path": "/home/runner/.cache/huggingface/hub/models--HiTZ--TTS-gl_sabela/snapshots/574ece65e9aeed6b7b04d9c66ccff7381c2090eb/vits.onnx",
+      "model_verified": true,
+      "output_sha256": "3fa9d7037a3cdc050cf250be56d837c468919d0d2866125866210a12a1ffa78e",
+      "output_size": 110472,
+      "repo": "HiTZ/TTS-gl_sabela",
+      "repo_commit": "db56c5dd27a692b76cd23f7d784c9c465f6a9a18",
+      "revision": "db56c5dd27a692b76cd23f7d784c9c465f6a9a18"
     },
-    "substrate": {
-      "bridge_EvidenceLedger": true,
-      "bridge_entry_hash": true,
-      "v03_event_evidence_table": true,
-      "v03_event_insert": true
+    "schema": "LOUKSNA_ZD_P06_VOICE/1.0",
+    "status": "PASS",
+    "stt": {
+      "commit": "d1be6fde11ac6e0407606b4e42fe72d34add8037",
+      "e2e_generated_audio_transcript": "This is a test controlled by Luke's Nine in Spanish.read_audio_data: reading audio data from '/home/runner/work/_temp/louksna-v04-P06-1/p06_chatterbox_es_es.wav' ...\nread_audio_data: trying to decode with miniaudio",
+      "implementation": "ggml-org/whisper.cpp",
+      "model_sha256": "60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe",
+      "probe": "samples/jfk.wav",
+      "text_excerpt": "And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country.read_audio_data: reading audio data from 'samples/jfk.wav' ...\nread_audio_data: trying to decode with miniaudio"
+    },
+    "tts": {
+      "device_line": "DEVICE=cpu\nSR=24000\nAPI=(device: torch.device, t3_model: str | None = None) -> 'ChatterboxMultilingualTTS'",
+      "implementation": "ResembleAI/chatterbox",
+      "language": "es",
+      "model": "ChatterboxMultilingual V3",
+      "output_sha256": "f200cfde289cac8d5b5b9e830e809d75be06175210d210c0da38b614845f382c",
+      "output_size": 322640,
+      "silent_failover": false,
+      "source_commit": "5de7a54aa4e5e2baadb0182dde554908b48b85c2"
     }
   },
-  "next_point": "P06",
-  "parent_checkpoint": "CHECKPOINT_04",
-  "scope": "P05 governed attachment transfer operational closure; P06 remains next.",
+  "next_point": "P07",
+  "parent_checkpoint": "CHECKPOINT_05",
   "status": "PASS",
-  "transition_id": "P05-CHECKPOINT-TO-P06-001",
-  "v03_head": "7a1449a5d6194b6cbc3e083bf1c7ba55533ad196"
+  "transition_id": "P06-CHECKPOINT-TO-P07-001"
 }
