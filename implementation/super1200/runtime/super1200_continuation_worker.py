@@ -22,12 +22,19 @@ def main():
     if reg.get("source_sha256")!=SOURCE_SHA256 or reg.get("count")!=1200: raise SystemExit("REGISTRY_PIN_MISMATCH")
     requested=os.environ.get("NEXT_POINT","").strip()
     selected=None
-    for dom,a,b in DOMAINS:
+    ordered=DOMAINS
+    if requested and requested not in ("","NONE"):
+        ordered=[x for x in DOMAINS if x[0]==requested]
+        if not ordered: raise SystemExit("NEXT_POINT_UNKNOWN")
+    for dom,a,b in ordered:
         d=json.loads((base/"domains"/f"{dom}.json").read_text())
         pending=[c["capability_id"] for c in d["capabilities"] if next(r for r in reg["items"] if r["capability_id"]==c["capability_id"])["implementation_state"]!="EVIDENCED"]
         if pending:
-            if requested and requested not in ("",dom): raise SystemExit("NEXT_POINT_MISMATCH")
             selected=(dom,a,b,d,pending); break
+    if not selected and requested in ("","NONE"):
+        raise SystemExit("NO_PENDING_DOMAIN")
+    if not selected:
+        raise SystemExit("REQUESTED_DOMAIN_ALREADY_CLOSED")
     if not selected: raise SystemExit("NO_PENDING_DOMAIN")
     dom,a,b,d,pending=selected
     emit(out,"CONTINUATION_START",checkpoint=CHECKPOINT,domain=dom,pending=len(pending),from_capability=a,to_capability=b)
