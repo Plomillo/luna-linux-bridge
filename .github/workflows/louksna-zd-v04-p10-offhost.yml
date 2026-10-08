@@ -64,8 +64,8 @@ jobs:
           endpoint="$(grep -hEo 'tcp://[^[:space:]]+' "$RUNNER_TEMP/p10/pinggy.stdout" "$RUNNER_TEMP/p10/pinggy.stderr" 2>/dev/null | head -n1 | sed -E 's#\x1B\\[[0-9;]*[[:alpha:]]##g; s#tcp://##' || true)"
           test -n "$endpoint" || { echo "PINGGY_ENDPOINT_NOT_FOUND"; exit 1; }
           echo "P10_ENDPOINT=$endpoint"
-          host="${endpoint%:*}"
-          port="${endpoint##*:}"
+          host="$(printf '%s' "$endpoint" | sed -E 's/:([0-9]+).*$/ /' | sed 's/[[:space:]]*$//')"
+          port="$(printf '%s' "$endpoint" | sed -nE 's/.*:([0-9]+).*/\1/p')"
           echo "LOUKSNA_REMOTE_RELAY_HOST=$host" >> "$GITHUB_ENV"
           echo "LOUKSNA_REMOTE_RELAY_PORT=$port" >> "$GITHUB_ENV"
           echo "LOUKSNA_MTLS_CA_FILE=$RUNNER_TEMP/p10/ca.pem" >> "$GITHUB_ENV"
