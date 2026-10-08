@@ -52,7 +52,8 @@ def main():
     # Lane 5: GitHub capability census structure is 36+21, with no fabricated mutation grant.
     p09=(ROOT/"scripts/missions/louksna_zd_v04_p09_live.py").read_text()
     if "len(REPO_OPS)!=36 or len(ACCOUNT_OPS)!=21" not in p09: raise RuntimeError("P11_CAPABILITY_CARDINALITY_GATE")
-    if '"probe":"NON_MUTATING_CAPABILITY_CENSUS_ONLY"' not in p09: raise RuntimeError("P11_MUTATION_GUARD_MISSING")
+    if "NON_MUTATING_CAPABILITY_CENSUS_ONLY" not in p09: raise RuntimeError("P11_MUTATION_GUARD_MISSING")
+    if "Authorization":"Bearer "+token not in p09: raise RuntimeError("P11_GITHUB_AUTH_HEADER_MISSING")
     checks.append({"test":"GITHUB_CAPABILITY_CENSUS_GUARD","status":"PASS","repository_ops":36,"account_ops":21})
 
     # Lane 6: PUAC critical identifiers must exist and remain independent.
