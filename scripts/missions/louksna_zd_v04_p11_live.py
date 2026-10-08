@@ -31,13 +31,14 @@ def main():
 
     # Lane 3: governed artifact-transfer controls.
     transfer=ROOT/"scripts/missions/louksna_zd_v04_artifact_transfer.py"
+    import importlib.util
+    spec=importlib.util.spec_from_file_location("p05_transfer",transfer)
+    mod=importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
     with tempfile.TemporaryDirectory(prefix="louksna-p11-") as td:
         out=Path(td)
-        code=("import sys;sys.path.insert(0,%r);from louksna_zd_v04_artifact_transfer import run_p05_selftest;"
-              "r=run_p05_selftest(%r);print(r['status'])")%(str(transfer.parent),str(out))
-        r=run([sys.executable,"-c",code],timeout=600)
-        checks.append({"test":"ARTIFACT_TRANSFER_SELFTEST","status":"PASS" if r["returncode"]==0 and "PASS" in r["stdout"] else "FAIL","result":r})
-        if r["returncode"]: raise RuntimeError("P11_ARTIFACT_TRANSFER_REGRESSION")
+        report=mod.run_p05_selftest(out)
+        checks.append({"test":"ARTIFACT_TRANSFER_SELFTEST","status":report.get("status"),"result":report})
+        if report.get("status")!="PASS": raise RuntimeError("P11_ARTIFACT_TRANSFER_REGRESSION")
 
     # Lane 4: effort profiles must be exactly the five governed profiles and preserve authority/context.
     p08=ROOT/"scripts/missions/louksna_zd_v04_p08_live.py"
