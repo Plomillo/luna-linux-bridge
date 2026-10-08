@@ -18,7 +18,8 @@
     "G24": "scripts/missions/louksna_zd_v04_g24_certification.py",
     "POST_G24_VALIDATION": "scripts/missions/louksna_zd_v04_post_g24_validation.py",
     "SEPARATE_OPERATIONAL_AUTHORIZATION": "scripts/missions/louksna_zd_v04_operational_authorization.py",
-    "POSTBOOT_VERIFICATION": "scripts/missions/louksna_zd_v04_postboot_verification.py"
+    "POSTBOOT_VERIFICATION": "scripts/missions/louksna_zd_v04_postboot_verification.py",
+    "ACTIVE_AUTHORIZATION_REVIEW": "scripts/missions/louksna_zd_v04_active_authorization_review.py"
   },
   "unregistered_points_must_not_be_invented": true,
   "missing_executor_state": "BLOCKED"
