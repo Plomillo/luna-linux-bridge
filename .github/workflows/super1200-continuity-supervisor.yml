@@ -1,3 +1,4 @@
+# CONTINUITY_RETRY_AFTER_RUNTIME_FIX
 name: "SUPER1200 — continuity supervisor"
 on:
   push:
