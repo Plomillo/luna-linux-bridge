@@ -67,8 +67,18 @@ jobs:
           git pull --rebase origin work/louksna-zd-v04-master-20261007
           git push origin HEAD:work/louksna-zd-v04-master-20261007
 
-  meta:
+  worker_p05:
     needs: supervise
+    if: always()
+    permissions:
+      contents: write
+    uses: ./.github/workflows/louksna-zd-v04-continuation-worker.yml
+    with:
+      transition_id: P04-CHECKPOINT-TO-P05-001
+      next_point: P05
+
+  meta:
+    needs: [supervise, worker_p05]
     if: always()
     permissions:
       contents: write
