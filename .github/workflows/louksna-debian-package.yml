@@ -43,7 +43,7 @@ jobs:
       - name: Package integrity and install-root smoke test
         run: |
           set -eux
-          DEB="$(realpath ../louksna-linux-bridge_0.4.0-1_all.deb)"
+          DEB="$(realpath ../louksna-linux-bridge_0.4.0-2_all.deb)"
           dpkg-deb --info "$DEB"
           dpkg-deb --contents "$DEB"
           rm -rf /tmp/louksna-deb-root
@@ -52,6 +52,10 @@ jobs:
           test -f /tmp/louksna-deb-root/usr/lib/louksna/bridge/mtls_gateway.py
           test -f /tmp/louksna-deb-root/lib/systemd/system/louksna-mtls-readonly.service
           test -f /tmp/louksna-deb-root/usr/share/doc/louksna-linux-bridge/CONTRACT.v0.json
+          dpkg-deb --control "$DEB" /tmp/louksna-deb-control
+          if [ -f /tmp/louksna-deb-control/postinst ]; then
+            ! grep -E 'deb-systemd-helper.*enable|deb-systemd-invoke.*start' /tmp/louksna-deb-control/postinst
+          fi
           PYTHONPATH=/tmp/louksna-deb-root/usr/lib/louksna/bridge             python3 -m py_compile /tmp/louksna-deb-root/usr/lib/louksna/bridge/*.py
           sha256sum "$DEB" | tee debian-package.sha256
           lintian --no-tag-display-limit "$DEB" | tee lintian.txt || true
@@ -60,7 +64,7 @@ jobs:
         run: |
           python3 - <<'PY'
           import hashlib, json, pathlib, subprocess, time
-          deb=pathlib.Path("../louksna-linux-bridge_0.4.0-1_all.deb")
+          deb=pathlib.Path("../louksna-linux-bridge_0.4.0-2_all.deb")
           evidence={
             "schema":"LOUKSNA_ZD_DEBIAN_PACKAGE_EVIDENCE/1.0",
             "status":"PASS",
@@ -85,17 +89,17 @@ jobs:
       - name: Stage Debian package for artifact upload
         run: |
           mkdir -p dist/debian
-          cp ../louksna-linux-bridge_0.4.0-1_all.deb dist/debian/
+          cp ../louksna-linux-bridge_0.4.0-2_all.deb dist/debian/
           cp debian-package.sha256 debian-package-evidence.json lintian.txt dist/debian/
 
       - name: Upload Debian package and evidence
         uses: actions/upload-artifact@v4
         with:
-          name: louksna-linux-bridge_0.4.0-1_debian
+          name: louksna-linux-bridge_0.4.0-2_debian
           if-no-files-found: error
           retention-days: 30
           path: |
-            dist/debian/louksna-linux-bridge_0.4.0-1_all.deb
+            dist/debian/louksna-linux-bridge_0.4.0-2_all.deb
             dist/debian/debian-package.sha256
             dist/debian/debian-package-evidence.json
             dist/debian/lintian.txt
