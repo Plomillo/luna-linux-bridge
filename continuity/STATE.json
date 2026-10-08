@@ -1,0 +1,16 @@
+{
+  "schema":"SUPER1200_CONTINUITY_STATE/1.0",
+  "branch":"custosz/super-1200-implementation-20261007",
+  "mission_id":"SUPER1200-CONTINUATION-20261007",
+  "current_checkpoint":"D02_FUNCTIONALLY_CLOSED",
+  "next_point":"D03",
+  "status":"DISPATCH_PENDING",
+  "terminal":false,
+  "blocked":false,
+  "active_worker":false,
+  "g23":"BLOCKED_UNTIL_INDEPENDENT_VALIDATION",
+  "g24":"BLOCKED_UNTIL_G23",
+  "certified":false,
+  "active":false,
+  "transition_id":"D02-CHECKPOINT-TO-D03-001"
+}
