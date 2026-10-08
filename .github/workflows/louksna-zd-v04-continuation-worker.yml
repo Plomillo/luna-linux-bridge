@@ -18,6 +18,7 @@ on:
         type: string
 permissions:
   contents: write
+  actions: write
 concurrency:
   group: louksna-v04-worker-${{ inputs.transition_id }}
   cancel-in-progress: true
@@ -55,6 +56,19 @@ jobs:
           set -Eeuo pipefail
           export CUSTOSZ_WORKSPACE_OVERRIDE="$HOME/SYMPHYLAX_LAB/CUSTOSZ_V7_R1_G23_G24_20260927T021532Z/POSIX_COMPATIBILITY_VIEW"
           python3 -B scripts/continuity/louksna_zd_v04_continuation_worker.py
+      - name: Emit worker completion signal
+        if: always()
+        env:
+          TRANSITION_ID: ${{ inputs.transition_id }}
+          NEXT_POINT: ${{ inputs.next_point }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p continuity/signals
+          python3 - <<'PY'
+          import json, os, time
+          p=f"continuity/signals/{os.environ['TRANSITION_ID']}.json"
+          json.dump({"transition_id":os.environ["TRANSITION_ID"],"next_point":os.environ["NEXT_POINT"],"utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),"source":"continuation-worker"},open(p,"w"),indent=2,sort_keys=True)
+          PY
       - name: Persist continuation evidence
         if: always()
         run: |
