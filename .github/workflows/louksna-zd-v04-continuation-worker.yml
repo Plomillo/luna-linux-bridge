@@ -1,0 +1,41 @@
+name: "LOUKSNA V0.4 — continuation worker"
+on:
+  workflow_dispatch:
+    inputs:
+      transition_id:
+        required: true
+        type: string
+      next_point:
+        required: true
+        type: string
+permissions:
+  contents: write
+concurrency:
+  group: louksna-v04-worker
+  cancel-in-progress: false
+jobs:
+  worker:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: work/louksna-zd-v04-master-20261007
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Execute registered continuation
+        env:
+          NEXT_POINT: ${{ inputs.next_point }}
+        run: |
+          set -Eeuo pipefail
+          python3 -B scripts/continuity/louksna_zd_v04_continuation_worker.py
+      - name: Persist continuation evidence
+        if: always()
+        run: |
+          set -Eeuo pipefail
+          git add continuity
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name "custosz-v7-runtime-bot"
+          git config user.email "custosz-v7-runtime-bot@users.noreply.github.com"
+          git commit -m "evidence(louksna): persist continuation checkpoint"
+          git push origin HEAD:work/louksna-zd-v04-master-20261007
