@@ -16,7 +16,9 @@
     "P12": "scripts/missions/louksna_zd_v04_p12_live.py",
     "G23": "scripts/missions/louksna_zd_v04_g23_independent_validation.py",
     "G24": "scripts/missions/louksna_zd_v04_g24_certification.py",
-    "POST_G24_VALIDATION": "scripts/missions/louksna_zd_v04_post_g24_validation.py"
+    "POST_G24_VALIDATION": "scripts/missions/louksna_zd_v04_post_g24_validation.py",
+    "SEPARATE_OPERATIONAL_AUTHORIZATION": "scripts/missions/louksna_zd_v04_operational_authorization.py",
+    "POSTBOOT_VERIFICATION": "scripts/missions/louksna_zd_v04_postboot_verification.py"
   },
   "unregistered_points_must_not_be_invented": true,
   "missing_executor_state": "BLOCKED"
