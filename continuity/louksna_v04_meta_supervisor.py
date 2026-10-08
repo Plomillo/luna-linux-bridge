@@ -6,5 +6,5 @@ if s.get("blocked"): verdict="ESCALATE_BLOCKED"
 elif s.get("active_worker"): verdict="WATCH_WORKER"
 elif s.get("status")=="DISPATCH_PENDING": verdict="REDISPATCH_REQUIRED"
 else: verdict="OBSERVE"
-(R/"META_REPORT.txt").write_text("\n".join(["LOUKSNA V0.4 META-SUPERVISOR REPORT","TIMESTAMP_UTC="+ts,"VERDICT="+verdict,"PRIMARY_SUPERVISOR_STATE="+s.get("status","UNKNOWN"),"NEXT_POINT="+s.get("next_point","UNKNOWN"),"CERTIFIED=false","ACTIVE=false"])+"\n")
+(R/"continuity"/"META_REPORT.txt").write_text("\n".join(["LOUKSNA V0.4 META-SUPERVISOR REPORT","TIMESTAMP_UTC="+ts,"VERDICT="+verdict,"PRIMARY_SUPERVISOR_STATE="+s.get("status","UNKNOWN"),"NEXT_POINT="+s.get("next_point","UNKNOWN"),"CERTIFIED=false","ACTIVE=false"])+"\n")
 print("LOUKSNA_META "+verdict,flush=True)
