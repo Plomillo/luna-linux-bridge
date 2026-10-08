@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import json,os,subprocess
 from pathlib import Path
-ROOT=Path(__file__).resolve().parents[2]
+ROOT=Path(__file__).resolve().parents[1]
 state=json.loads((ROOT/"continuity/STATE.json").read_text()); ex=json.loads((ROOT/"continuity/EXECUTORS.json").read_text())["executors"]
 nxt=os.environ["NEXT_POINT"]
 if nxt!=state["next_point"]: raise SystemExit("TRANSITION_MISMATCH")
