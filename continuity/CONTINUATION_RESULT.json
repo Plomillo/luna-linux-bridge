@@ -1,0 +1,12 @@
+{
+  "active": false,
+  "certified": false,
+  "checkpoint": "CHECKPOINT_03",
+  "custosz_mission_id": "MIS-d1624d48a21b48f5b826",
+  "g23": "SEPARATE_REQUIRED",
+  "g24": "SEPARATE_REQUIRED",
+  "next_point": "P04",
+  "parent_checkpoint": "CHECKPOINT_02",
+  "status": "PASS",
+  "transition_id": "P03-CHECKPOINT-TO-P04-001"
+}
