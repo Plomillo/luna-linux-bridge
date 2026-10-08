@@ -4,7 +4,6 @@ on:
   push:
     branches: [work/louksna-zd-v04-master-20261007]
     paths:
-      - "continuity/**"
       - ".github/workflows/louksna-zd-v04-continuity-supervisor.yml"
       - "scripts/continuity/**"
   repository_dispatch:
