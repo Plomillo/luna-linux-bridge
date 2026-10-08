@@ -50,8 +50,14 @@ def main():
 
     # Build-system presence is checked without inventing a package.
     build_files=[p for p in ["Cargo.toml","debian/control","packaging","scripts/build"] if (ROOT/p).exists()]
-    checks.append({"test":"BUILD_SUBSTRATE_DISCOVERY","status":"PASS" if build_files else "HOLD","paths":build_files})
-    if not build_files: blockers.append("P12_BUILD_SUBSTRATE_NOT_PRESENT")
+    if build_files:
+        blockers=[b for b in blockers if b!="P12_BUILD_SUBSTRATE_NOT_PRESENT"]
+        build_run=sh(["python3","scripts/build"],timeout=900) if (ROOT/"scripts/build").exists() else {"returncode":0,"stdout":"","stderr":""}
+        checks.append({"test":"BUILD_SUBSTRATE_DISCOVERY","status":"PASS" if build_run["returncode"]==0 else "FAIL","paths":build_files,"execution":build_run})
+        if build_run["returncode"]!=0: blockers.append("P12_BUILD_SUBSTRATE_EXECUTION_FAILED")
+    else:
+        checks.append({"test":"BUILD_SUBSTRATE_DISCOVERY","status":"HOLD","paths":[]})
+        blockers.append("P12_BUILD_SUBSTRATE_NOT_PRESENT")
 
     # Independent G23/G24 trigger contract is a separate workflow; this point may not
     # mark either gate as passed. It records the prerequisites only.
