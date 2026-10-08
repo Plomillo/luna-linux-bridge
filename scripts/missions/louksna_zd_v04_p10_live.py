@@ -29,7 +29,7 @@ def main():
             if not (1<=remote_port<=65535): raise RuntimeError("REMOTE_RELAY_PORT_INVALID")
             if not expected_pin or len(expected_pin)!=64: raise RuntimeError("REMOTE_SERVER_CERT_PIN_REQUIRED")
             ctx=ssl.create_default_context(ssl.Purpose.SERVER_AUTH,cafile=ca)
-            ctx.minimum_version=ssl.TLSVersion.TLSv1_3; ctx.maximum_version=ssl.TLSVersion.TLSv3
+            ctx.minimum_version=ssl.TLSVersion.TLSv1_3; ctx.maximum_version=ssl.TLSVersion.TLSv1_3
             ctx.load_cert_chain(cert,key)
             def probe():
                 with socket.create_connection((remote_host,remote_port),timeout=8) as raw:
