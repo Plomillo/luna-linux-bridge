@@ -8,7 +8,7 @@ REPORT=ROOT/"continuity/CONTINUITY_REPORT.txt"
 def sh(*cmd): return subprocess.run(cmd,text=True,capture_output=True,check=False)
 def main():
  state=json.loads(STATE.read_text());
- if state.get("block_reason")=="DISPATCH_COMMAND_FAILED": state.update({"blocked":False,"block_reason":None,"status":"DISPATCH_PENDING"})
+ if state.get("block_reason")=="DISPATCH_COMMAND_FAILED": state.update({"blocked":False,"block_reason":"NONE","status":"DISPATCH_PENDING","dispatch_stderr":None})
  executors=json.loads(EXEC.read_text())["executors"]; nxt=state["next_point"]; worker=bool(state.get("active_worker")); ts=time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
  safe_pending=(not state["terminal"] and not state["blocked"] and nxt not in ("","NONE","TERMINAL"))
  if safe_pending and not worker and nxt not in executors:
@@ -17,7 +17,7 @@ def main():
   status="DISPATCH_REQUIRED"; state["status"]=status; state["dispatch_requested_at"]=ts; STATE.write_text(json.dumps(state,indent=2,sort_keys=True)+"\n")
  elif worker: status="WORKER_ACTIVE"
  else: status="TERMINAL" if state["terminal"] else "BLOCKED"
- REPORT.write_text("\n".join(["LOUKSNA V0.4 CONTINUITY REPORT","BRANCH=work/louksna-zd-v04-master-20261007","TIMESTAMP_UTC="+ts,"CURRENT_CHECKPOINT="+state["current_checkpoint"],"NEXT_POINT="+nxt,"WHAT_WAS_DONE=durable continuation reconciliation","WHAT_WAS_VALIDATED=state executor registry terminal worker invariants","WHAT_FAILED="+state.get("block_reason","NONE"),"WHAT_REMAINS_UNKNOWN="+("executor implementation for "+nxt if status=="BLOCKED" else "NONE"),"NEXT_ACTION="+("REGISTER_EXECUTOR_AND_REDISPATCH" if status=="BLOCKED" else status),"NEXT_WORKER="+executors.get(nxt,"NONE"),"DISPATCH_STATUS="+status,"SUPERVISOR_STATUS=ACTIVE","META_SUPERVISOR_STATUS=REQUIRED","WATCHDOG_STATUS=EXTERNAL_REQUIRED","G23=SEPARATE","G24=SEPARATE","CERTIFIED=false","ACTIVE=false"])+"\n")
+ REPORT.write_text("\n".join(["LOUKSNA V0.4 CONTINUITY REPORT","BRANCH=work/louksna-zd-v04-master-20261007","TIMESTAMP_UTC="+ts,"CURRENT_CHECKPOINT="+state["current_checkpoint"],"NEXT_POINT="+nxt,"WHAT_WAS_DONE=durable continuation reconciliation","WHAT_WAS_VALIDATED=state executor registry terminal worker invariants","WHAT_FAILED="+state.get("block_reason") or "NONE","WHAT_REMAINS_UNKNOWN="+("executor implementation for "+nxt if status=="BLOCKED" else "NONE"),"NEXT_ACTION="+("REGISTER_EXECUTOR_AND_REDISPATCH" if status=="BLOCKED" else status),"NEXT_WORKER="+executors.get(nxt,"NONE"),"DISPATCH_STATUS="+status,"SUPERVISOR_STATUS=ACTIVE","META_SUPERVISOR_STATUS=REQUIRED","WATCHDOG_STATUS=EXTERNAL_REQUIRED","G23=SEPARATE","G24=SEPARATE","CERTIFIED=false","ACTIVE=false"])+"\n")
  STATE.write_text(json.dumps(state,indent=2,sort_keys=True)+"\n")
  print("LOUKSNA_CONTINUITY "+status+" next="+nxt,flush=True); return 0
 if __name__=="__main__": raise SystemExit(main())
