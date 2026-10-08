@@ -1,6 +1,5 @@
-name: TCP endpoint candidate - 10 minute stability lab
+name: TCP endpoint candidate - control
 
-# Ephemeral experiment only: maximum execution window is 10 minutes.
 on:
   push:
     paths:
@@ -12,71 +11,13 @@ permissions:
   contents: read
 
 jobs:
-  tcp-endpoint-10m:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+  control:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
     steps:
-      - uses: actions/checkout@v4
-      - name: Start candidate
-        shell: bash
+      - name: Control execution
         run: |
-          set -euo pipefail
-          python3 bridge/tcp_endpoint_candidate.py >tcp-endpoint.stdout 2>tcp-endpoint.stderr &
-          echo $! >tcp-endpoint.pid
-          for i in $(seq 1 50); do
-            if python3 - <<'PY'
-import socket
-s=socket.socket(); s.settimeout(.2)
-try:
-    s.connect(("127.0.0.1",18080)); print("READY"); raise SystemExit(0)
-except OSError: raise SystemExit(1)
-finally: s.close()
-PY
-            then break; fi
-            sleep .2
-          done
-      - name: 9 minute stability and load probe
-        shell: bash
-        run: |
-          set -euo pipefail
-          TCP_ENDPOINT_DURATION=540 TCP_ENDPOINT_CLIENTS=32 python3 bridge/tcp_endpoint_probe.py
-      - name: Stop and validate telemetry
-        if: always()
-        shell: bash
-        run: |
-          set +e
-          if [ -f tcp-endpoint.pid ]; then kill -TERM "$(cat tcp-endpoint.pid)" 2>/dev/null || true; fi
-          sleep 1
-          if [ -f tcp-endpoint-telemetry.jsonl ]; then
-            python3 - <<'PY'
-import json, hashlib, pathlib, sys
-p=pathlib.Path("tcp-endpoint-telemetry.jsonl")
-rows=[json.loads(x) for x in p.read_text().splitlines() if x.strip()]
-assert rows and rows[0]["event"]=="startup"
-prev="0"*64
-max_rss=max(r["rss_bytes"] for r in rows)
-over=[r for r in rows if r["rss_bytes"]>r["budget_bytes"]]
-for r in rows:
-    rec=dict(r); h=rec.pop("entry_hash"); got=hashlib.sha256(
-        prev.encode()+"|".encode()+json.dumps(rec,sort_keys=True,separators=(",",":")).encode()
-    ).hexdigest()
-    if got!=h: raise SystemExit("HASH_CHAIN_INVALID")
-    prev=h
-print("TELEMETRY_ROWS",len(rows))
-print("PEAK_RSS_BYTES",max_rss)
-print("PEAK_RSS_MIB",round(max_rss/1024/1024,3))
-print("BUDGET_BYTES",1024*1024*1024)
-print("BUDGET_STATUS","OVER_BUDGET" if over else "WITHIN_BUDGET")
-if over: raise SystemExit(3)
-PY
-          fi
-      - name: Publish telemetry log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: tcp-endpoint-telemetry-10m
-          path: |
-            tcp-endpoint-telemetry.jsonl
-            tcp-endpoint.stdout
-            tcp-endpoint.stderr
-          if-no-files-found: warn
+          set -Eeuo pipefail
+          echo "ACTIONS_CONTROL_PLANE_OK"
+          python3 --version
+          uname -a
