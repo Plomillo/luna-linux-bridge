@@ -24,19 +24,21 @@ try:
     if r.get("status") not in ("PASS","HOLD_INDEPENDENT_CONTINUATION") or not r.get("next_point"):
         raise SystemExit("INVALID_CONTINUATION_RESULT")
     state=json.loads(STATE.read_text())
-    next_worker=ex.get(r["next_point"])
+    next_point=r["next_point"]
+    next_worker=ex.get(next_point)
     blockers=list(dict.fromkeys(list(state.get("open_blockers",[]))+list(r.get("open_blockers",[]))))
+    same_point_hold=(r.get("status")=="HOLD_INDEPENDENT_CONTINUATION" and next_point==nxt)
     state.update({
         "active_worker":False,
-        "blocked":False,
-        "status":"DISPATCH_PENDING" if next_worker else "BLOCKED",
-        "block_reason":"NONE" if next_worker else "NO_REGISTERED_EXECUTOR_FOR_NEXT_POINT",
+        "blocked":same_point_hold or not next_worker,
+        "status":"BLOCKED" if (same_point_hold or not next_worker) else "DISPATCH_PENDING",
+        "block_reason":("HOLD_REQUIRES_NEW_EVIDENCE" if same_point_hold else ("NO_REGISTERED_EXECUTOR_FOR_NEXT_POINT" if not next_worker else "NONE")),
         "current_checkpoint":r.get("checkpoint",state["current_checkpoint"]),
-        "next_point":r["next_point"],
+        "next_point":next_point,
         "next_worker":next_worker,
         "open_blockers":blockers,
         "certified":False,
-        "transition_id":r.get("transition_id",state["transition_id"]+"->"+r["next_point"])
+        "transition_id":r.get("transition_id",state["transition_id"]+"->"+next_point)
     })
     STATE.write_text(json.dumps(state,indent=2,sort_keys=True)+"\n")
 except BaseException:
