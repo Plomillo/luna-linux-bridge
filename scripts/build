@@ -1,0 +1,29 @@
+#!/usr/bin/env python3
+from pathlib import Path
+import hashlib
+import json
+import subprocess
+import sys
+
+ROOT=Path(__file__).resolve().parents[1]
+subprocess.run([sys.executable,"-m","compileall","-q","bridge","scripts","continuity"],cwd=ROOT,check=True)
+subprocess.run([sys.executable,"-m","unittest","bridge/tests/test_mtls_gateway.py"],cwd=ROOT,check=True)
+files=[]
+for base in ("bridge","scripts/missions","scripts/continuity"):
+    for p in sorted((ROOT/base).rglob("*.py")):
+        files.append({
+            "path":p.relative_to(ROOT).as_posix(),
+            "bytes":p.stat().st_size,
+            "sha256":hashlib.sha256(p.read_bytes()).hexdigest()
+        })
+manifest={
+    "schema":"LOUKSNA_ZD_V04_BUILD_MANIFEST/1.0",
+    "branch":subprocess.check_output(["git","branch","--show-current"],cwd=ROOT,text=True).strip(),
+    "commit":subprocess.check_output(["git","rev-parse","HEAD"],cwd=ROOT,text=True).strip(),
+    "python":sys.version.split()[0],
+    "files":files
+}
+out=ROOT/"dist"/"louksna-zd-v04-build-manifest.json"
+out.parent.mkdir(parents=True,exist_ok=True)
+out.write_text(json.dumps(manifest,indent=2,sort_keys=True)+"\n")
+print("LOUKSNA_BUILD_PASS")
