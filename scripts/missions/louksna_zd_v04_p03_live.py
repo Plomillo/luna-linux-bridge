@@ -48,6 +48,6 @@ def main():
         if (journal is False) or (isinstance(journal, dict) and journal.get("status")!="PASS"): raise SystemExit("P03_RUNTIME_JOURNAL_VERIFY_FAIL")
         emit(out,"RUNTIME_LIVE",state="PASS",journal=journal)
     result={"status":"PASS","checkpoint":"CHECKPOINT_03","parent_checkpoint":CHECKPOINT,"next_point":NEXT_POINT,"transition_id":"P03-CHECKPOINT-TO-P04-001","custosz_mission_id":ms["mission_id"],"g23":"SEPARATE_REQUIRED","g24":"SEPARATE_REQUIRED","certified":False,"active":False}
-    (out/"CONTINUATION_RESULT.json").write_text(json.dumps(result,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+    (root/"continuity"/"CONTINUATION_RESULT.json").write_text(json.dumps(result,indent=2,sort_keys=True)+"\n",encoding="utf-8")
     emit(out,"CHECKPOINT_03_REACHED",state="PASS",next_point=NEXT_POINT,certified=False)
 if __name__=="__main__": raise SystemExit(main())
