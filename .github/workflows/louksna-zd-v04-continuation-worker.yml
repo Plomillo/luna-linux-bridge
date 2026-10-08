@@ -1,5 +1,13 @@
 name: "LOUKSNA V0.4 — continuation worker"
 on:
+  workflow_call:
+    inputs:
+      transition_id:
+        required: true
+        type: string
+      next_point:
+        required: true
+        type: string
   workflow_dispatch:
     inputs:
       transition_id:
