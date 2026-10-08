@@ -1,6 +1,16 @@
 name: "LOUKSNA V0.4 — continuation worker"
 on:
   workflow_call:
+    outputs:
+      checkpoint:
+        description: "Checkpoint reached by the registered executor"
+        value: ${{ jobs.worker.outputs.checkpoint }}
+      next_point:
+        description: "Next registered point"
+        value: ${{ jobs.worker.outputs.next_point }}
+      status:
+        description: "Continuation result status"
+        value: ${{ jobs.worker.outputs.status }}
     inputs:
       transition_id:
         required: true
@@ -24,6 +34,10 @@ concurrency:
   cancel-in-progress: true
 jobs:
   worker:
+    outputs:
+      checkpoint: ${{ steps.result.outputs.checkpoint }}
+      next_point: ${{ steps.result.outputs.next_point }}
+      status: ${{ steps.result.outputs.status }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -56,6 +70,19 @@ jobs:
           set -Eeuo pipefail
           export CUSTOSZ_WORKSPACE_OVERRIDE="$HOME/SYMPHYLAX_LAB/CUSTOSZ_V7_R1_G23_G24_20260927T021532Z/POSIX_COMPATIBILITY_VIEW"
           python3 -B scripts/continuity/louksna_zd_v04_continuation_worker.py
+      - name: Read continuation result
+        id: result
+        if: success()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          r=json.load(open("continuity/CONTINUATION_RESULT.json"))
+          print("checkpoint="+str(r.get("checkpoint","")))
+          print("next_point="+str(r.get("next_point","")))
+          print("status="+str(r.get("status","")))
+          PY
       - name: Emit worker completion signal
         if: always()
         env:
@@ -80,16 +107,3 @@ jobs:
           git commit -m "evidence(louksna): persist continuation checkpoint"
           git pull --rebase origin work/louksna-zd-v04-master-20261007
           git push origin HEAD:work/louksna-zd-v04-master-20261007
-      - name: Explicitly trigger next supervisor evaluation
-        if: always()
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TRANSITION_ID: ${{ inputs.transition_id }}
-        run: |
-          set -Eeuo pipefail
-          gh api --method POST \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2026-03-10" \
-            "/repos/${GITHUB_REPOSITORY}/actions/workflows/louksna-zd-v04-continuity-supervisor.yml/dispatches" \
-            -f ref="work/louksna-zd-v04-master-20261007" \
-            -f "inputs[transition_id]=${TRANSITION_ID}"
