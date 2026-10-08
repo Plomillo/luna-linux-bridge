@@ -13,7 +13,9 @@ if [ -z "${SUDO_UID:-}" ] || [ "$SUDO_UID" -eq 0 ]; then
 fi
 
 OWNER_UID="$SUDO_UID"
-OWNER_HOME="$(getent passwd "$OWNER_UID" | cut -d: -f6)"
+OWNER_ENTRY="$(getent passwd "$OWNER_UID")"
+OWNER_HOME="$(printf '%s' "$OWNER_ENTRY" | cut -d: -f6)"
+OWNER_GID="$(printf '%s' "$OWNER_ENTRY" | cut -d: -f4)"
 [ -n "$OWNER_HOME" ] && [ -d "$OWNER_HOME" ] || { echo "ERROR: owner home not found" >&2; exit 2; }
 
 BASE=/etc/louksna/remote-bridge
@@ -31,9 +33,9 @@ done
 
 install -d -o root -g root -m 0755 "$BASE"
 install -d -o root -g root -m 0700 "$TLS"
-install -d -o "$OWNER_UID" -g "$(id -gn "$OWNER_UID")" -m 0700 "$OWNER_HOME/.config"
-install -d -o "$OWNER_UID" -g "$(id -gn "$OWNER_UID")" -m 0700 "$OWNER_HOME/.config/louksna"
-install -d -o "$OWNER_UID" -g "$(id -gn "$OWNER_UID")" -m 0700 "$CLIENT"
+install -d -o "$OWNER_UID" -g "$OWNER_GID" -m 0700 "$OWNER_HOME/.config"
+install -d -o "$OWNER_UID" -g "$OWNER_GID" -m 0700 "$OWNER_HOME/.config/louksna"
+install -d -o "$OWNER_UID" -g "$OWNER_GID" -m 0700 "$CLIENT"
 
 cleanup() {
   # Partial provisioning must never be mistaken for a complete config.
@@ -81,7 +83,7 @@ openssl x509 -req -sha256 -in "$TLS/client.csr" \
   -out "$CLIENT/client.pem" -days 180 -extfile "$TLS/client.ext"
 chmod 0644 "$CLIENT/client.pem"
 cp "$TLS/ca.pem" "$CLIENT/ca.pem"
-chown "$OWNER_UID:$(id -gn "$OWNER_UID")" "$CLIENT/client.key" "$CLIENT/client.pem" "$CLIENT/ca.pem"
+chown "$OWNER_UID:$OWNER_GID" "$CLIENT/client.key" "$CLIENT/client.pem" "$CLIENT/ca.pem"
 chmod 0600 "$CLIENT/client.key"
 chmod 0644 "$CLIENT/client.pem" "$CLIENT/ca.pem"
 
