@@ -12,7 +12,7 @@
         "stale_state_blockers": [
           "P12_BUILD_SUBSTRATE_NOT_PRESENT"
         ],
-        "status": "FAIL",
+        "status": "PASS",
         "test": "P12_RELEASE_OBJECT"
       },
       {
@@ -54,19 +54,17 @@
       }
     ],
     "failures": [
-      "G23_P12_RESULT_NOT_PASS",
       "G23_BUILD_REPROBE_FAILED"
     ],
     "g24": "SEPARATE_REQUIRED",
     "schema": "LOUKSNA_ZD_G23_INDEPENDENT_VALIDATION/1.0",
     "status": "HOLD",
-    "timestamp_utc": "2026-10-08T20:43:05Z",
-    "validated_object_commit": "1f3cf0e8da622d95b094f8e919c7f1e5ca276f23",
+    "timestamp_utc": "2026-10-08T20:43:07Z",
+    "validated_object_commit": "b5f06d2166b21eba17d89a80f6ccc0278250bd46",
     "validation_profile": "G23-R1-INDEPENDENT"
   },
   "next_point": "G23",
   "open_blockers": [
-    "G23_P12_RESULT_NOT_PASS",
     "G23_BUILD_REPROBE_FAILED"
   ],
   "status": "HOLD_INDEPENDENT_CONTINUATION",
