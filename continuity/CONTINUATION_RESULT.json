@@ -1,9 +1,9 @@
 {
   "active": false,
   "certified": false,
-  "checkpoint": "CHECKPOINT_12_PREPARED",
-  "g23": "SEPARATE_REQUIRED",
-  "g24": "SEPARATE_REQUIRED",
+  "checkpoint": "CHECKPOINT_12",
+  "g23": "REQUIRED",
+  "g24": "REQUIRED",
   "material_evidence": {
     "checks": [
       {
@@ -25,11 +25,16 @@
       },
       {
         "branch": "work/louksna-zd-v04-master-20261007",
-        "commit": "a40192a54e99301a5c5eb5723dd9a56c0ef14515",
+        "commit": "b053fdc842da506f253df741602a5598e1475822",
         "status": "PASS",
         "test": "RELEASE_SOURCE_IDENTITY"
       },
       {
+        "execution": {
+          "returncode": 0,
+          "stderr": "..........\n----------------------------------------------------------------------\nRan 10 tests in 6.218s\n\nOK\n",
+          "stdout": "LOUKSNA_BUILD_PASS\n"
+        },
         "paths": [
           "scripts/build"
         ],
@@ -43,22 +48,16 @@
         "test": "G23_G24_SEPARATION"
       }
     ],
-    "open_blockers": [
-      "P12_BUILD_SUBSTRATE_NOT_PRESENT"
-    ],
-    "reason": "Release, G23 and G24 remain forbidden until all material prerequisites are satisfied.",
     "schema": "LOUKSNA_ZD_P12_RELEASE_GATE/1.0",
-    "status": "HOLD",
-    "timestamp_utc": "2026-10-08T20:35:24Z"
+    "source_digest": "b06791494fe75e6742ac59776e1c56a2a2753b807c61b64d571aa75ef9af54ba",
+    "status": "READY_FOR_INDEPENDENT_GATES",
+    "timestamp_utc": "2026-10-08T20:36:00Z"
   },
-  "next_point": "P12",
-  "open_blockers": [
-    "P12_BUILD_SUBSTRATE_NOT_PRESENT"
-  ],
+  "next_point": "G23",
   "parent_checkpoint": "CHECKPOINT_11",
   "resolved_blockers": [
     "P10_OFF_HOST_RELAY_UNPROVEN"
   ],
-  "status": "HOLD_INDEPENDENT_CONTINUATION",
-  "transition_id": "P12-HOLD-RETRY-001"
+  "status": "PASS",
+  "transition_id": "P12-TO-G23-001"
 }
