@@ -50,15 +50,15 @@ def emit(event: str, **fields):
     global prev_hash
     with emit_lock:
         rec = {
-        "ts_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "event": event,
-        "pid": os.getpid(),
-        "rss_bytes": rss_bytes(),
-        "budget_bytes": BUDGET_BYTES,
-        "budget_used_pct": round(rss_bytes() * 100.0 / BUDGET_BYTES, 6),
-        **fields,
-    }
-    rec["prev_hash"] = prev_hash
+            "ts_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "event": event,
+            "pid": os.getpid(),
+            "rss_bytes": rss_bytes(),
+            "budget_bytes": BUDGET_BYTES,
+            "budget_used_pct": round(rss_bytes() * 100.0 / BUDGET_BYTES, 6),
+            **fields,
+        }
+        rec["prev_hash"] = prev_hash
         canonical = json.dumps(rec, sort_keys=True, separators=(",", ":")).encode()
         rec["entry_hash"] = hashlib.sha256(canonical).hexdigest()
         prev_hash = rec["entry_hash"]
