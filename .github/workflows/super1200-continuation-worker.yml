@@ -11,8 +11,8 @@ on:
 permissions:
   contents: write
 concurrency:
-  group: super1200-continuation-worker
-  cancel-in-progress: false
+  group: super1200-continuation-worker-${{ inputs.transition_id }}
+  cancel-in-progress: true
 jobs:
   worker:
     runs-on: ubuntu-24.04
