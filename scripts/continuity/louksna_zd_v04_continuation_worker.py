@@ -32,8 +32,9 @@ try:
     same_point_hold=(r.get("status")=="HOLD_INDEPENDENT_CONTINUATION" and next_point==nxt)
     state.update({
         "active_worker":False,
-        "blocked":same_point_hold or not next_worker,
-        "status":"BLOCKED" if (same_point_hold or not next_worker) else "DISPATCH_PENDING",
+        "terminal":bool(r.get("terminal",False)),
+        "blocked":(not bool(r.get("terminal",False))) and (same_point_hold or not next_worker),
+        "status":"TERMINAL" if r.get("terminal",False) else ("BLOCKED" if (same_point_hold or not next_worker) else "DISPATCH_PENDING"),
         "block_reason":("HOLD_REQUIRES_NEW_EVIDENCE" if same_point_hold else ("NO_REGISTERED_EXECUTOR_FOR_NEXT_POINT" if not next_worker else "NONE")),
         "current_checkpoint":r.get("checkpoint",state["current_checkpoint"]),
         "next_point":next_point,
