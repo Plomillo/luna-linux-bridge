@@ -56,11 +56,9 @@ def emit(event: str, **fields):
         "budget_used_pct": round(rss_bytes() * 100.0 / BUDGET_BYTES, 6),
         **fields,
     }
-    canonical = json.dumps(rec, sort_keys=True, separators=(",", ":")).encode()
     rec["prev_hash"] = prev_hash
-    rec["entry_hash"] = hashlib.sha256(
-        prev_hash.encode() + b"|" + canonical
-    ).hexdigest()
+    canonical = json.dumps(rec, sort_keys=True, separators=(",", ":")).encode()
+    rec["entry_hash"] = hashlib.sha256(canonical).hexdigest()
     prev_hash = rec["entry_hash"]
     LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
     with LOG_PATH.open("a", encoding="utf-8") as f:
