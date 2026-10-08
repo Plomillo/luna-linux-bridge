@@ -58,7 +58,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ssh -p 443 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ExitOnForwardFailure=yes -N -T -R0:127.0.0.1:18443 tcp@free.pinggy.io >"$RUNNER_TEMP/p10/pinggy.stdout" 2>"$RUNNER_TEMP/p10/pinggy.stderr" &
+          ssh -p 443 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ExitOnForwardFailure=yes -R0:127.0.0.1:18443 tcp@free.pinggy.io >"$RUNNER_TEMP/p10/pinggy.stdout" 2>"$RUNNER_TEMP/p10/pinggy.stderr" &
           echo $! >"$RUNNER_TEMP/p10/pinggy.pid"
           for i in {1..40}; do
             endpoint="$(grep -Eo 'tcp://[^[:space:]]+' "$RUNNER_TEMP/p10/pinggy.stdout" "$RUNNER_TEMP/p10/pinggy.stderr" 2>/dev/null | head -n1 | sed 's#tcp://##' || true)"
@@ -78,7 +78,7 @@ jobs:
             fi
             sleep 0.5
           done
-          test -n "${LOUKSNA_REMOTE_RELAY_HOST:-}"
+          test -n "${LOUKSNA_REMOTE_RELAY_HOST:-}" || { echo "--- pinggy stdout ---"; cat "$RUNNER_TEMP/p10/pinggy.stdout" || true; echo "--- pinggy stderr ---"; cat "$RUNNER_TEMP/p10/pinggy.stderr" || true; exit 1; }
       - name: Execute governed P10
         shell: bash
         run: |
