@@ -34,7 +34,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix="louksna-p11-") as td:
         out=Path(td)
         code=("import sys;sys.path.insert(0,%r);from louksna_zd_v04_artifact_transfer import run_p05_selftest;"
-              "print(run_p05_selftest(%r)[\\"status\\"])")%(str(transfer.parent),str(out))
+              "r=run_p05_selftest(%r);print(r['status'])")%(str(transfer.parent),str(out))
         r=run([sys.executable,"-c",code],timeout=600)
         checks.append({"test":"ARTIFACT_TRANSFER_SELFTEST","status":"PASS" if r["returncode"]==0 and "PASS" in r["stdout"] else "FAIL","result":r})
         if r["returncode"]: raise RuntimeError("P11_ARTIFACT_TRANSFER_REGRESSION")
