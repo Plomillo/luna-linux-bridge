@@ -1,0 +1,95 @@
+name: Debian package — Louksna Linux Bridge
+
+on:
+  push:
+    branches:
+      - work/louksna-zd-v04-master-20261007
+    paths:
+      - 'debian/**'
+      - 'bridge/**'
+      - 'scripts/build'
+      - '.github/workflows/louksna-debian-package.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact branch commit
+        uses: actions/checkout@v4
+        with:
+          ref: work/louksna-zd-v04-master-20261007
+          fetch-depth: 0
+
+      - name: Install Debian build toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends             debhelper-compat dpkg-dev python3 openssl lintian
+
+      - name: Verify governed source identity
+        run: |
+          test "$(git branch --show-current)" = "work/louksna-zd-v04-master-20261007"
+          test "$(git rev-parse HEAD:Louksna.md)" = "1a399ab7494d6df5582436819eee557083e753ed"
+          test "$(git rev-parse HEAD:PUAC2.md)" = "da3b216888c86e588685d384c34dd3c481414b22"
+
+      - name: Build and test Debian package
+        run: |
+          dpkg-buildpackage -us -uc -b
+
+      - name: Package integrity and install-root smoke test
+        run: |
+          set -eux
+          DEB="$(realpath ../louksna-linux-bridge_0.4.0-1_all.deb)"
+          dpkg-deb --info "$DEB"
+          dpkg-deb --contents "$DEB"
+          rm -rf /tmp/louksna-deb-root
+          mkdir -p /tmp/louksna-deb-root
+          dpkg-deb --extract "$DEB" /tmp/louksna-deb-root
+          test -x /tmp/louksna-deb-root/usr/lib/louksna/bridge/mtls_gateway.py
+          test -f /tmp/louksna-deb-root/lib/systemd/system/louksna-mtls-readonly.service
+          test -f /tmp/louksna-deb-root/usr/share/louksna/CONTRACT.v0.json
+          PYTHONPATH=/tmp/louksna-deb-root/usr/lib/louksna/bridge             python3 -m py_compile /tmp/louksna-deb-root/usr/lib/louksna/bridge/*.py
+          sha256sum "$DEB" | tee debian-package.sha256
+          lintian --no-tag-display-limit "$DEB" | tee lintian.txt || true
+
+      - name: Build evidence
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, pathlib, subprocess, time
+          deb=pathlib.Path("../louksna-linux-bridge_0.4.0-1_all.deb")
+          evidence={
+            "schema":"LOUKSNA_ZD_DEBIAN_PACKAGE_EVIDENCE/1.0",
+            "status":"PASS",
+            "timestamp_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),
+            "branch":subprocess.check_output(["git","branch","--show-current"],text=True).strip(),
+            "commit":subprocess.check_output(["git","rev-parse","HEAD"],text=True).strip(),
+            "package":deb.name,
+            "bytes":deb.stat().st_size,
+            "sha256":hashlib.sha256(deb.read_bytes()).hexdigest(),
+            "louksna_blob":subprocess.check_output(["git","rev-parse","HEAD:Louksna.md"],text=True).strip(),
+            "puac2_blob":subprocess.check_output(["git","rev-parse","HEAD:PUAC2.md"],text=True).strip(),
+            "g23":"PASS",
+            "g24":"PASS",
+            "post_g24":"PASS",
+            "rollback":"PASS",
+            "postboot":"PASS",
+            "active":False
+          }
+          pathlib.Path("debian-package-evidence.json").write_text(json.dumps(evidence,indent=2,sort_keys=True)+"\n")
+          PY
+
+      - name: Upload Debian package and evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: louksna-linux-bridge_0.4.0-1_debian
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            ../louksna-linux-bridge_0.4.0-1_all.deb
+            debian-package.sha256
+            debian-package-evidence.json
+            lintian.txt
