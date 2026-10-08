@@ -1,11 +1,13 @@
 {
   "active": false,
   "active_worker": false,
-  "block_reason": "NONE",
-  "blocked": false,
+  "block_reason": "NO_REGISTERED_EXECUTOR_FOR_NEXT_DOMAIN",
+  "blocked": true,
+  "blocked_at": "2026-10-08T13:35:11Z",
   "branch": "custosz/super-1200-implementation-20261007",
   "certified": false,
   "current_checkpoint": "D03_FUNCTIONALLY_CLOSED",
+  "diagnostic": "No material executor exists; do not synthesize capability evidence.",
   "dispatch_error": null,
   "dispatch_requested_at": "2026-10-08T13:33:27Z",
   "g23": "BLOCKED_UNTIL_INDEPENDENT_VALIDATION",
@@ -14,7 +16,7 @@
   "next_point": "D04",
   "recovery_note": "STALE_WORKER_LEASE_CLEARED_AFTER_VERIFIED_NO_ACTIVE_WORKER",
   "schema": "SUPER1200_CONTINUITY_STATE/1.0",
-  "status": "DISPATCH_PENDING",
+  "status": "BLOCKED",
   "terminal": false,
   "transition_id": "D03-CHECKPOINT-TO-D04-001"
 }
