@@ -25,6 +25,14 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Cancel obsolete queued continuity runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          for run_id in 37784973829 37783759402 37782748942 37781146384; do
+            gh api --method POST -H "Accept: application/vnd.github+json" "/repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/cancel" >/dev/null 2>&1
+          done
         with:
           ref: custosz/super-1200-implementation-20261007
           fetch-depth: 0
