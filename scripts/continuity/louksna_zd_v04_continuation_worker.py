@@ -39,7 +39,7 @@ try:
         "next_point":next_point,
         "next_worker":next_worker,
         "open_blockers":blockers,
-        "certified":False,
+        "certified":bool(r.get("certified",False)),
         "transition_id":r.get("transition_id",state["transition_id"]+"->"+next_point)
     })
     STATE.write_text(json.dumps(state,indent=2,sort_keys=True)+"\n")
