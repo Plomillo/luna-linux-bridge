@@ -1,5 +1,6 @@
 name: "SUPER1200 — second-order meta-supervisor"
 on:
+  workflow_call:
   workflow_dispatch:
   repository_dispatch:
     types: [super1200_meta_watch]
