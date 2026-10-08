@@ -58,27 +58,22 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ssh -tt -p 443 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ExitOnForwardFailure=yes -o ServerAliveInterval=10 -R0:127.0.0.1:18443 tcp@free.pinggy.io >"$RUNNER_TEMP/p10/pinggy.stdout" 2>"$RUNNER_TEMP/p10/pinggy.stderr" &
-          echo $! >"$RUNNER_TEMP/p10/pinggy.pid"
-          for i in {1..40}; do
-            endpoint="$(grep -hEo 'tcp://[^[:space:]]+' "$RUNNER_TEMP/p10/pinggy.stdout" "$RUNNER_TEMP/p10/pinggy.stderr" 2>/dev/null | head -n1 | sed 's#tcp://##' || true)"
-            if test -n "$endpoint"; then
-              echo "P10_ENDPOINT=$endpoint"
-              host="${endpoint%:*}"
-              port="${endpoint##*:}"
-              echo "LOUKSNA_REMOTE_RELAY_HOST=$host" >> "$GITHUB_ENV"
-              echo "LOUKSNA_REMOTE_RELAY_PORT=$port" >> "$GITHUB_ENV"
-              echo "LOUKSNA_MTLS_CA_FILE=$RUNNER_TEMP/p10/ca.pem" >> "$GITHUB_ENV"
-              echo "LOUKSNA_MTLS_CLIENT_CERT_FILE=$RUNNER_TEMP/p10/client.pem" >> "$GITHUB_ENV"
-              echo "LOUKSNA_MTLS_CLIENT_KEY_FILE=$RUNNER_TEMP/p10/client.key" >> "$GITHUB_ENV"
-              pin="$(python3 -c 'import json; print(json.load(open("'"$RUNNER_TEMP/p10/transport.json"'"))["server_cert_sha256"])')"
-              echo "LOUKSNA_REMOTE_SERVER_CERT_SHA256=$pin" >> "$GITHUB_ENV"
-              echo "LOUKSNA_REMOTE_SERVER_NAME=localhost" >> "$GITHUB_ENV"
-              break
-            fi
-            sleep 0.5
-          done
-          test -n "${LOUKSNA_REMOTE_RELAY_HOST:-}" || { echo "--- pinggy stdout ---"; cat "$RUNNER_TEMP/p10/pinggy.stdout" || true; echo "--- pinggy stderr ---"; cat "$RUNNER_TEMP/p10/pinggy.stderr" || true; exit 1; }
+          npm install --global pinggy@latest
+          pinggy --type tcp -l 18443 --b >"$RUNNER_TEMP/p10/pinggy.stdout" 2>"$RUNNER_TEMP/p10/pinggy.stderr"
+          cat "$RUNNER_TEMP/p10/pinggy.stdout" "$RUNNER_TEMP/p10/pinggy.stderr" || true
+          endpoint="$(grep -hEo 'tcp://[^[:space:]]+' "$RUNNER_TEMP/p10/pinggy.stdout" "$RUNNER_TEMP/p10/pinggy.stderr" 2>/dev/null | head -n1 | sed 's#tcp://##' || true)"
+          test -n "$endpoint" || { echo "PINGGY_ENDPOINT_NOT_FOUND"; exit 1; }
+          echo "P10_ENDPOINT=$endpoint"
+          host="${endpoint%:*}"
+          port="${endpoint##*:}"
+          echo "LOUKSNA_REMOTE_RELAY_HOST=$host" >> "$GITHUB_ENV"
+          echo "LOUKSNA_REMOTE_RELAY_PORT=$port" >> "$GITHUB_ENV"
+          echo "LOUKSNA_MTLS_CA_FILE=$RUNNER_TEMP/p10/ca.pem" >> "$GITHUB_ENV"
+          echo "LOUKSNA_MTLS_CLIENT_CERT_FILE=$RUNNER_TEMP/p10/client.pem" >> "$GITHUB_ENV"
+          echo "LOUKSNA_MTLS_CLIENT_KEY_FILE=$RUNNER_TEMP/p10/client.key" >> "$GITHUB_ENV"
+          pin="$(python3 -c 'import json; print(json.load(open("'"$RUNNER_TEMP/p10/transport.json"'"))["server_cert_sha256"])')"
+          echo "LOUKSNA_REMOTE_SERVER_CERT_SHA256=$pin" >> "$GITHUB_ENV"
+          echo "LOUKSNA_REMOTE_SERVER_NAME=localhost" >> "$GITHUB_ENV"
       - name: Execute governed P10
         shell: bash
         run: |
@@ -100,7 +95,7 @@ jobs:
         shell: bash
         run: |
           set +e
-          test -f "$RUNNER_TEMP/p10/pinggy.pid" && kill "$(cat "$RUNNER_TEMP/p10/pinggy.pid")" 2>/dev/null || true
+          command -v pinggy >/dev/null 2>&1 && pinggy daemon stop >/dev/null 2>&1 || true
           test -f "$RUNNER_TEMP/p10/server.pid" && kill "$(cat "$RUNNER_TEMP/p10/server.pid")" 2>/dev/null || true
           sleep 1
       - name: Upload P10 evidence
