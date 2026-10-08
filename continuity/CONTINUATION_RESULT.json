@@ -10,7 +10,8 @@
         "checkpoint": "CHECKPOINT_12",
         "result_status": "HOLD_INDEPENDENT_CONTINUATION",
         "stale_state_blockers": [
-          "P12_BUILD_SUBSTRATE_NOT_PRESENT"
+          "P12_BUILD_SUBSTRATE_NOT_PRESENT",
+          "G23_P12_RESULT_NOT_PASS"
         ],
         "status": "PASS",
         "test": "P12_RELEASE_OBJECT"
@@ -59,8 +60,8 @@
     "g24": "SEPARATE_REQUIRED",
     "schema": "LOUKSNA_ZD_G23_INDEPENDENT_VALIDATION/1.0",
     "status": "HOLD",
-    "timestamp_utc": "2026-10-08T20:43:07Z",
-    "validated_object_commit": "b5f06d2166b21eba17d89a80f6ccc0278250bd46",
+    "timestamp_utc": "2026-10-08T20:43:08Z",
+    "validated_object_commit": "75f2ecc40f8f84aec896e452565b78641a364de9",
     "validation_profile": "G23-R1-INDEPENDENT"
   },
   "next_point": "G23",
