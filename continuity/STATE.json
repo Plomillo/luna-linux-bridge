@@ -8,7 +8,7 @@
   "certified": false,
   "current_checkpoint": "CHECKPOINT_03",
   "diagnostic": "No material executor exists for P04; invention of work is forbidden.",
-  "dispatch_requested_at": "2026-10-08T13:41:16Z",
+  "dispatch_requested_at": "2026-10-08T13:46:21Z",
   "dispatch_stderr": null,
   "g23": "SEPARATE_REQUIRED",
   "g24": "SEPARATE_REQUIRED",
@@ -18,7 +18,7 @@
   "recovery_note": "P04_RETRY_AFTER_WORKER_TRIGGER_ISOLATION",
   "schema": "LOUKSNA_CONTINUITY_STATE/1.0",
   "stall_threshold_seconds": 10,
-  "status": "DISPATCH_PENDING",
+  "status": "DISPATCH_REQUIRED",
   "terminal": false,
   "transition_id": "P03-CHECKPOINT-TO-P04-001"
 }
