@@ -1,138 +1,158 @@
 {
   "active": false,
   "certified": false,
-  "checkpoint": "CHECKPOINT_07",
+  "checkpoint": "CHECKPOINT_08",
   "g23": "SEPARATE_REQUIRED",
   "g24": "SEPARATE_REQUIRED",
   "material_evidence": {
-    "events": [
+    "authority": "Louksna.md",
+    "context_hash": "2f4f62728e3cf89a2e4fc1c545f12d8b1d79e931337dfc11e138b5969f1d2d8d",
+    "profiles": [
       {
-        "details": {
-          "active_windows": 123,
-          "first_active_window": 5,
-          "last_active_window": 146
+        "answer_hash": "e9db568002958edffeca9d51743fe60ee876b6c96ac6042e91c691e6d451a0a2",
+        "authority_hash": "10a04b1bc5aafcb3482bc29f425ea36544da67936077af75d789b5808797ac62",
+        "context_hash": "2f4f62728e3cf89a2e4fc1c545f12d8b1d79e931337dfc11e138b5969f1d2d8d",
+        "profile": {
+          "adversarial_passes": 0,
+          "name": "Instantáneo",
+          "retrieval_passes": 1,
+          "time_budget_ms": 500,
+          "token_budget": 256,
+          "validation_passes": 1
         },
-        "event": "VAD_PASS",
-        "sha256": "f8a3d386d34d8e974951ce73cbd0bbf55f71166b397ee8e2939253ef9b304717"
+        "surface": [
+          "CHAT",
+          "CALL"
+        ],
+        "trace": [
+          "R1:2f4f62728e3c",
+          "V1:e9db56800295"
+        ]
       },
       {
-        "audio": {
-          "channels": 2,
-          "duration": 2.972154195011338,
-          "frames": 131072,
-          "rate": 44100,
-          "sample_width": 2
+        "answer_hash": "e9db568002958edffeca9d51743fe60ee876b6c96ac6042e91c691e6d451a0a2",
+        "authority_hash": "10a04b1bc5aafcb3482bc29f425ea36544da67936077af75d789b5808797ac62",
+        "context_hash": "2f4f62728e3cf89a2e4fc1c545f12d8b1d79e931337dfc11e138b5969f1d2d8d",
+        "profile": {
+          "adversarial_passes": 1,
+          "name": "Medio",
+          "retrieval_passes": 2,
+          "time_budget_ms": 1000,
+          "token_budget": 512,
+          "validation_passes": 2
         },
-        "event": "PIPEWIRE_CAPTURE_PASS",
-        "sha256": "cfd463996285244cbfdfb6f1abe2a0e7f35535e90a5fc2168ac54b607bcb383e"
+        "surface": [
+          "CHAT",
+          "CALL"
+        ],
+        "trace": [
+          "R1:2f4f62728e3c",
+          "R2:2f4f62728e3c",
+          "V1:e9db56800295",
+          "V2:e9db56800295",
+          "A1:same-authority"
+        ]
       },
       {
-        "adapter": "P07_DETERMINISTIC_LOCAL",
-        "event": "REASONING_ADAPTER_PASS",
-        "response_sha256": "ed3301c0fe15dbe777c2fc1f8508af35b495fe121eea1b077c6ef330f2030d33"
-      },
-      {
-        "audio": {
-          "channels": 1,
-          "duration": 14.36,
-          "frames": 344640,
-          "rate": 24000,
-          "sample_width": 2
+        "answer_hash": "e9db568002958edffeca9d51743fe60ee876b6c96ac6042e91c691e6d451a0a2",
+        "authority_hash": "10a04b1bc5aafcb3482bc29f425ea36544da67936077af75d789b5808797ac62",
+        "context_hash": "2f4f62728e3cf89a2e4fc1c545f12d8b1d79e931337dfc11e138b5969f1d2d8d",
+        "profile": {
+          "adversarial_passes": 2,
+          "name": "Alto",
+          "retrieval_passes": 3,
+          "time_budget_ms": 2000,
+          "token_budget": 1024,
+          "validation_passes": 3
         },
-        "commit": "5de7a54aa4e5e2baadb0182dde554908b48b85c2",
-        "event": "TTS_ROUTER_PASS",
-        "implementation": "ResembleAI/chatterbox",
-        "sha256": "8971eea2377874f153d6a4089b088b902e830ea613575681731c10323a7044ca"
+        "surface": [
+          "CHAT",
+          "CALL"
+        ],
+        "trace": [
+          "R1:2f4f62728e3c",
+          "R2:2f4f62728e3c",
+          "R3:2f4f62728e3c",
+          "V1:e9db56800295",
+          "V2:e9db56800295",
+          "V3:e9db56800295",
+          "A1:same-authority",
+          "A2:same-authority"
+        ]
       },
       {
-        "event": "SESSION_TRANSITION",
-        "from": "START",
-        "session_id": "P07-72cbc52691654125978d39ab04d312d3",
-        "to": "CAPTURE"
+        "answer_hash": "e9db568002958edffeca9d51743fe60ee876b6c96ac6042e91c691e6d451a0a2",
+        "authority_hash": "10a04b1bc5aafcb3482bc29f425ea36544da67936077af75d789b5808797ac62",
+        "context_hash": "2f4f62728e3cf89a2e4fc1c545f12d8b1d79e931337dfc11e138b5969f1d2d8d",
+        "profile": {
+          "adversarial_passes": 3,
+          "name": "Muy alto",
+          "retrieval_passes": 4,
+          "time_budget_ms": 4000,
+          "token_budget": 2048,
+          "validation_passes": 4
+        },
+        "surface": [
+          "CHAT",
+          "CALL"
+        ],
+        "trace": [
+          "R1:2f4f62728e3c",
+          "R2:2f4f62728e3c",
+          "R3:2f4f62728e3c",
+          "R4:2f4f62728e3c",
+          "V1:e9db56800295",
+          "V2:e9db56800295",
+          "V3:e9db56800295",
+          "V4:e9db56800295",
+          "A1:same-authority",
+          "A2:same-authority",
+          "A3:same-authority"
+        ]
       },
       {
-        "event": "SESSION_TRANSITION",
-        "from": "CAPTURE",
-        "session_id": "P07-72cbc52691654125978d39ab04d312d3",
-        "to": "VAD"
-      },
-      {
-        "event": "SESSION_TRANSITION",
-        "from": "VAD",
-        "session_id": "P07-72cbc52691654125978d39ab04d312d3",
-        "to": "STT"
-      },
-      {
-        "event": "SESSION_TRANSITION",
-        "from": "STT",
-        "session_id": "P07-72cbc52691654125978d39ab04d312d3",
-        "to": "REASONING"
-      },
-      {
-        "event": "SESSION_TRANSITION",
-        "from": "REASONING",
-        "session_id": "P07-72cbc52691654125978d39ab04d312d3",
-        "to": "TTS"
-      },
-      {
-        "event": "SESSION_TRANSITION",
-        "from": "TTS",
-        "session_id": "P07-72cbc52691654125978d39ab04d312d3",
-        "to": "OUTPUT"
-      },
-      {
-        "event": "SESSION_TRANSITION",
-        "from": "OUTPUT",
-        "session_id": "P07-72cbc52691654125978d39ab04d312d3",
-        "to": "INTERRUPT"
-      },
-      {
-        "event": "SESSION_TRANSITION",
-        "from": "INTERRUPT",
-        "session_id": "P07-72cbc52691654125978d39ab04d312d3",
-        "to": "CANCEL"
-      },
-      {
-        "event": "SESSION_TRANSITION",
-        "from": "CANCEL",
-        "session_id": "P07-72cbc52691654125978d39ab04d312d3",
-        "to": "RECONNECT"
-      },
-      {
-        "event": "SESSION_TRANSITION",
-        "from": "RECONNECT",
-        "session_id": "P07-72cbc52691654125978d39ab04d312d3",
-        "to": "END"
-      },
-      {
-        "event": "SESSION_TRANSITION",
-        "from": "END",
-        "session_id": "P07-72cbc52691654125978d39ab04d312d3",
-        "to": "DONE"
-      },
-      {
-        "event": "MUTE_PROBE",
-        "status": "OBSERVABLE_STATE_ONLY"
-      },
-      {
-        "event": "TIMEOUT_PROBE",
-        "status": "OBSERVABLE_STATE_ONLY"
+        "answer_hash": "e9db568002958edffeca9d51743fe60ee876b6c96ac6042e91c691e6d451a0a2",
+        "authority_hash": "10a04b1bc5aafcb3482bc29f425ea36544da67936077af75d789b5808797ac62",
+        "context_hash": "2f4f62728e3cf89a2e4fc1c545f12d8b1d79e931337dfc11e138b5969f1d2d8d",
+        "profile": {
+          "adversarial_passes": 4,
+          "name": "Pro",
+          "retrieval_passes": 5,
+          "time_budget_ms": 8000,
+          "token_budget": 4096,
+          "validation_passes": 5
+        },
+        "surface": [
+          "CHAT",
+          "CALL"
+        ],
+        "trace": [
+          "R1:2f4f62728e3c",
+          "R2:2f4f62728e3c",
+          "R3:2f4f62728e3c",
+          "R4:2f4f62728e3c",
+          "R5:2f4f62728e3c",
+          "V1:e9db56800295",
+          "V2:e9db56800295",
+          "V3:e9db56800295",
+          "V4:e9db56800295",
+          "V5:e9db56800295",
+          "A1:same-authority",
+          "A2:same-authority",
+          "A3:same-authority",
+          "A4:same-authority"
+        ]
       }
     ],
-    "schema": "LOUKSNA_ZD_P07_VOICE_CALL/1.0",
-    "session_id": "P07-72cbc52691654125978d39ab04d312d3",
+    "schema": "LOUKSNA_ZD_P08_EFFORT/1.0",
     "status": "PASS",
-    "turns": [
-      {
-        "session_id": "P07-72cbc52691654125978d39ab04d312d3",
-        "stt_model_sha256": "60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe",
-        "stt_text": "Hello, Luxna, this is a test of the name.read_audio_data: reading audio data from '/home/runner/work/_temp/louksna-v04-P07-1/captured.wav' ...\nread_audio_data: trying to decode with miniaudio",
-        "turn_id": "T1-7698bbde21864c15b70e19dc3755b5df"
-      }
+    "surface": [
+      "CHAT",
+      "CALL"
     ]
   },
-  "next_point": "P08",
-  "parent_checkpoint": "CHECKPOINT_06",
+  "next_point": "P09",
+  "parent_checkpoint": "CHECKPOINT_07",
   "status": "PASS",
-  "transition_id": "P07-CHECKPOINT-TO-P08-001"
+  "transition_id": "P08-CHECKPOINT-TO-P09-001"
 }
