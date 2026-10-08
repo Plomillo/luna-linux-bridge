@@ -1,0 +1,7 @@
+louksna-linux-bridge (0.4.0-1) unstable; urgency=medium
+
+  * First Debian package for the certified Louksna Linux Bridge runtime.
+  * Preserve loopback-only mTLS, bounded local transport, evidence ledger,
+    fail-closed behavior and external G23/G24 authority.
+
+ -- Louksna Project <maintainers@louksna.invalid>  Thu, 08 Oct 2026 21:15:00 +0000
