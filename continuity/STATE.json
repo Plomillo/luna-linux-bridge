@@ -6,17 +6,17 @@
   "branch": "work/louksna-zd-v04-master-20261007",
   "certified": false,
   "current_checkpoint": "CHECKPOINT_02",
-  "dispatch_requested_at": "2026-10-08T13:29:51Z",
+  "dispatch_requested_at": "2026-10-08T13:32:13Z",
   "dispatch_stderr": null,
   "g23": "SEPARATE_REQUIRED",
   "g24": "SEPARATE_REQUIRED",
   "heartbeat_required_seconds": 2,
   "mission_id": "MIS-LOUKSNA-ZD-V04-MASTER-20261007",
   "next_point": "P03_CUSTOSZ_RUNTIME_METAOS_EXECUTION_PLANE",
+  "recovery_note": "STALE_WORKER_LEASE_CLEARED_AFTER_VERIFIED_NO_ACTIVE_WORKER",
   "schema": "LOUKSNA_CONTINUITY_STATE/1.0",
   "stall_threshold_seconds": 10,
-  "status": "DISPATCH_PENDING",
+  "status": "DISPATCH_REQUIRED",
   "terminal": false,
-  "transition_id": "P02-CHECKPOINT-TO-P03-001",
-  "recovery_note": "STALE_WORKER_LEASE_CLEARED_AFTER_VERIFIED_NO_ACTIVE_WORKER"
+  "transition_id": "P02-CHECKPOINT-TO-P03-001"
 }
