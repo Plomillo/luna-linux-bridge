@@ -17,6 +17,8 @@ SABELA_REPO="HiTZ/TTS-gl_sabela"
 SABELA_COMMIT="b513a2e957d53c3e5bcf32bb51fce01688decd92"
 SABELA_ONNX_SHA256="b7df43263c2eefffa79b841431d542957c8c6478b41448be679ef36036087f22"
 SABELA_LICENSE="Apache-2.0"
+CHATTERBOX_REPO="https://github.com/resemble-ai/chatterbox.git"
+CHATTERBOX_COMMIT="5de7a54aa4e5e2baadb0182dde554908b48b85c2"
 
 def sh(cmd,cwd=None,env=None,timeout=None):
     print("P06_EXEC "+ " ".join(map(str,cmd)),flush=True)
@@ -63,12 +65,18 @@ def main():
     venv_dir=work/"venv"; py=venv_dir/"bin/python"
     if not py.exists(): venv.EnvBuilder(with_pip=True).create(venv_dir)
     sh([str(py),"-m","pip","install","--upgrade","pip","setuptools","wheel"],timeout=600)
-    sh([str(py),"-m","pip","install","chatterbox-tts","soundfile"],timeout=1800)
+    cb_src=work/"chatterbox"
+    if not cb_src.exists():
+        sh(["git","clone",CHATTERBOX_REPO,str(cb_src)],timeout=600)
+    sh(["git","checkout","--detach",CHATTERBOX_COMMIT],cwd=cb_src,timeout=120)
+    cb_head=subprocess.check_output(["git","rev-parse","HEAD"],cwd=cb_src,text=True).strip()
+    if cb_head != CHATTERBOX_COMMIT: raise RuntimeError("CHATTERBOX_SOURCE_COMMIT_MISMATCH")
+    sh([str(py),"-m","pip","install","-e",".","soundfile"],cwd=cb_src,timeout=1800)
     probe=OUT/"p06_chatterbox_es_es.wav"
-    code='''import torch, torchaudio as ta\nfrom chatterbox.mtl_tts import ChatterboxMultilingualTTS\ndevice="cuda" if torch.cuda.is_available() else "cpu"\ntorch.manual_seed(1234)\nmodel=ChatterboxMultilingualTTS.from_pretrained(device=device,t3_model="v3")\ntext="Esta es una prueba controlada de la voz de Louksna en español."\nwav=model.generate(text,language_id="es")\nta.save(r"%s",wav,model.sr)\nprint("DEVICE="+device)\nprint("SR="+str(model.sr))\n''' % str(probe)
+    code='''import inspect, torch, torchaudio as ta\nfrom chatterbox.mtl_tts import ChatterboxMultilingualTTS\nsig=inspect.signature(ChatterboxMultilingualTTS.from_pretrained)\nif "t3_model" not in sig.parameters: raise RuntimeError("CHATTERBOX_API_MISSING_T3_MODEL")\ndevice="cuda" if torch.cuda.is_available() else "cpu"\ntorch.manual_seed(1234)\nmodel=ChatterboxMultilingualTTS.from_pretrained(device=device,t3_model="v3")\ntext="Esta es una prueba controlada de la voz de Louksna en español."\nwav=model.generate(text,language_id="es")\nta.save(r"%s",wav,model.sr)\nprint("DEVICE="+device)\nprint("SR="+str(model.sr))\nprint("API="+str(sig))\n''' % str(probe)
     r=sh([str(py),"-c",code],timeout=3600)
     if not probe.is_file() or probe.stat().st_size<1000: raise RuntimeError("CHATTERBOX_READ_ALOUD_EMPTY")
-    evidence["tts"]={"implementation":"ResembleAI/chatterbox","model":"ChatterboxMultilingual V3","language":"es","device_line":r.stdout.strip()[-200:],"output_sha256":sha256(probe),"output_size":probe.stat().st_size,"silent_failover":False}
+    evidence["tts"]={"implementation":"ResembleAI/chatterbox","source_commit":CHATTERBOX_COMMIT,"model":"ChatterboxMultilingual V3","language":"es","device_line":r.stdout.strip()[-200:],"output_sha256":sha256(probe),"output_size":probe.stat().st_size,"silent_failover":False}
 
     # ---- E2E STT of generated Spanish audio ----
     e2e=sh([str(whisper/"build/bin/whisper-cli"),"-m",str(model),"-f",str(probe),"-nt","-np"],cwd=whisper,timeout=600)
