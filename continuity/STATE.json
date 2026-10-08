@@ -3,7 +3,7 @@
   "active_worker": false,
   "block_reason": "NO_REGISTERED_EXECUTOR_FOR_NEXT_POINT",
   "blocked": true,
-  "blocked_at": "2026-10-08T13:50:17Z",
+  "blocked_at": "2026-10-08T14:12:45Z",
   "branch": "work/louksna-zd-v04-master-20261007",
   "certified": false,
   "current_checkpoint": "CHECKPOINT_04",
