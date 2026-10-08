@@ -1,6 +1,6 @@
 {
   "active": false,
-  "active_worker": true,
+  "active_worker": false,
   "block_reason": "NONE",
   "blocked": false,
   "blocked_at": "2026-10-08T13:35:05Z",
@@ -15,10 +15,10 @@
   "heartbeat_required_seconds": 2,
   "mission_id": "MIS-LOUKSNA-ZD-V04-MASTER-20261007",
   "next_point": "P04",
-  "recovery_note": "STALE_WORKER_LEASE_CLEARED_AFTER_VERIFIED_NO_ACTIVE_WORKER",
+  "recovery_note": "P04_RETRY_AFTER_WORKER_TRIGGER_ISOLATION",
   "schema": "LOUKSNA_CONTINUITY_STATE/1.0",
   "stall_threshold_seconds": 10,
-  "status": "RUNNING",
+  "status": "DISPATCH_PENDING",
   "terminal": false,
   "transition_id": "P03-CHECKPOINT-TO-P04-001"
 }
