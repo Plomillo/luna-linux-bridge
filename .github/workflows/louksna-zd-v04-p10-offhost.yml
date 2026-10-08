@@ -27,7 +27,7 @@ jobs:
           cd "$RUNNER_TEMP/p10"
           openssl req -x509 -newkey rsa:2048 -nodes -days 1 -keyout ca.key -out ca.pem -subj "/CN=Louksna-P10-Ephemeral-CA" -addext "basicConstraints=critical,CA:TRUE" -addext "keyUsage=critical,keyCertSign,cRLSign"
           openssl req -new -newkey rsa:2048 -nodes -keyout server.key -out server.csr -subj "/CN=localhost"
-          printf '%s\n' 'basicConstraints=critical,CA:FALSE' 'keyUsage=critical,digitalSignature,keyEncipherment' 'extendedKeyUsage=serverAuth' 'subjectAltName=DNS:localhost,IP:127.0.0.1' > server.ext
+          printf '%s\n' 'basicConstraints=critical,CA:FALSE' 'keyUsage=critical,digitalSignature,keyEncipherment' 'extendedKeyUsage=serverAuth' 'subjectAltName=DNS:localhost,IP:127.0.0.1,DNS:*.a.pinggy.link,DNS:*.run.pinggy-free.link' > server.ext
           openssl x509 -req -in server.csr -CA ca.pem -CAkey ca.key -CAcreateserial -out server.pem -days 1 -extfile server.ext
           openssl req -new -newkey rsa:2048 -nodes -keyout client.key -out client.csr -subj "/CN=louksna-p10-client"
           printf '%s\n' 'basicConstraints=critical,CA:FALSE' 'keyUsage=critical,digitalSignature,keyEncipherment' 'extendedKeyUsage=clientAuth' 'subjectAltName=DNS:louksna-p10-client' > client.ext
@@ -59,13 +59,13 @@ jobs:
         run: |
           set -euo pipefail
           npm install --global pinggy@latest
-          pinggy --type tcp -l 18443 --b >"$RUNNER_TEMP/p10/pinggy.stdout" 2>"$RUNNER_TEMP/p10/pinggy.stderr"
+          pinggy --type tls -l 18443 --b >"$RUNNER_TEMP/p10/pinggy.stdout" 2>"$RUNNER_TEMP/p10/pinggy.stderr"
           cat "$RUNNER_TEMP/p10/pinggy.stdout" "$RUNNER_TEMP/p10/pinggy.stderr" || true
-          endpoint="$(grep -hEo 'tcp://[^[:space:]]+' "$RUNNER_TEMP/p10/pinggy.stdout" "$RUNNER_TEMP/p10/pinggy.stderr" 2>/dev/null | head -n1 | sed -E 's#\x1B\\[[0-9;]*[[:alpha:]]##g; s#tcp://##' || true)"
+          endpoint="$(grep -hEo '[A-Za-z0-9.-]+\\.(a\\.)?pinggy(-free)?\\.link' "$RUNNER_TEMP/p10/pinggy.stdout" "$RUNNER_TEMP/p10/pinggy.stderr" 2>/dev/null | head -n1 | sed -E 's#\\x1B\\[[0-9;]*[[:alpha:]]##g' || true)"
           test -n "$endpoint" || { echo "PINGGY_ENDPOINT_NOT_FOUND"; exit 1; }
           echo "P10_ENDPOINT=$endpoint"
           host="$(printf '%s' "$endpoint" | sed -E 's/:([0-9]+).*$/ /' | sed 's/[[:space:]]*$//')"
-          port="$(printf '%s' "$endpoint" | sed -nE 's/.*:([0-9]+).*/\1/p')"
+          port="443"
           echo "LOUKSNA_REMOTE_RELAY_HOST=$host" >> "$GITHUB_ENV"
           echo "LOUKSNA_REMOTE_RELAY_PORT=$port" >> "$GITHUB_ENV"
           echo "LOUKSNA_MTLS_CA_FILE=$RUNNER_TEMP/p10/ca.pem" >> "$GITHUB_ENV"
@@ -73,7 +73,7 @@ jobs:
           echo "LOUKSNA_MTLS_CLIENT_KEY_FILE=$RUNNER_TEMP/p10/client.key" >> "$GITHUB_ENV"
           pin="$(openssl x509 -in "$RUNNER_TEMP/p10/server.pem" -outform DER | sha256sum | awk '{print $1}')"
           echo "LOUKSNA_REMOTE_SERVER_CERT_SHA256=$pin" >> "$GITHUB_ENV"
-          echo "LOUKSNA_REMOTE_SERVER_NAME=localhost" >> "$GITHUB_ENV"
+          echo "LOUKSNA_REMOTE_SERVER_NAME=$host" >> "$GITHUB_ENV"
       - name: Execute governed P10
         shell: bash
         run: |
