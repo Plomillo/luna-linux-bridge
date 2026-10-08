@@ -19,6 +19,7 @@ override_dh_auto_install:
 	install -d debian/louksna-linux-bridge/usr/lib/louksna/bridge
 	cp -a bridge/*.py debian/louksna-linux-bridge/usr/lib/louksna/bridge/
 	cp -a bridge/*.json debian/louksna-linux-bridge/usr/lib/louksna/bridge/
+	install -m 0750 scripts/provision-mtls-local.sh debian/louksna-linux-bridge/usr/lib/louksna/bridge/provision-mtls-local.sh
 	install -d debian/louksna-linux-bridge/usr/share/louksna/deploy
 	cp -a bridge/deploy/*.service.in bridge/deploy/*.timer.in debian/louksna-linux-bridge/usr/share/louksna/deploy/
 	install -d debian/louksna-linux-bridge/usr/share/louksna
