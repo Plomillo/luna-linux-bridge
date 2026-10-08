@@ -1,0 +1,43 @@
+name: "SUPER1200 — continuity supervisor"
+on:
+  push:
+    branches: [custosz/super-1200-implementation-20261007]
+    paths:
+      - "continuity/**"
+      - ".github/workflows/super1200-continuity-supervisor.yml"
+      - "implementation/super1200/runtime/**"
+  repository_dispatch:
+    types: [super1200_continuity_watch]
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: super1200-continuity-supervisor
+  cancel-in-progress: false
+jobs:
+  supervise:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: custosz/super-1200-implementation-20261007
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Run metacognitive supervisor
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          python3 -B continuity/super1200_continuity_supervisor.py
+      - name: Persist report
+        if: always()
+        run: |
+          set -Eeuo pipefail
+          git add continuity
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name "custosz-v7-runtime-bot"
+          git config user.email "custosz-v7-runtime-bot@users.noreply.github.com"
+          git commit -m "evidence(super1200): persist continuity supervisor state"
+          git push origin HEAD:custosz/super-1200-implementation-20261007
