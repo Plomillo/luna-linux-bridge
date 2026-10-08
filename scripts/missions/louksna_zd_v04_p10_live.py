@@ -18,7 +18,8 @@ def main():
     remote_host=os.environ.get("LOUKSNA_REMOTE_RELAY_HOST")
     remote_port=int(os.environ.get("LOUKSNA_REMOTE_RELAY_PORT","0") or "0")
     ca=os.environ.get("LOUKSNA_MTLS_CA_FILE"); cert=os.environ.get("LOUKSNA_MTLS_CLIENT_CERT_FILE"); key=os.environ.get("LOUKSNA_MTLS_CLIENT_KEY_FILE")
-    expected_pin=os.environ.get("LOUKSNA_REMOTE_SERVER_CERT_SHA256","").lower()\n    server_name=os.environ.get("LOUKSNA_REMOTE_SERVER_NAME",remote_host)
+    expected_pin=os.environ.get("LOUKSNA_REMOTE_SERVER_CERT_SHA256","").lower()
+    server_name=os.environ.get("LOUKSNA_REMOTE_SERVER_NAME",remote_host)
     remote={}
     if remote_host and remote_port and ca and cert and key:
         try:
