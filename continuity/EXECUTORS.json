@@ -3,7 +3,8 @@
   "branch": "custosz/super-1200-implementation-20261007",
   "executors": {
     "D02": "implementation/super1200/runtime/super1200_continuation_worker.py",
-    "D03": "implementation/super1200/runtime/super1200_continuation_worker.py"
+    "D03": "implementation/super1200/runtime/super1200_continuation_worker.py",
+    "D04": "continuity/super1200_continuation_worker.py"
   },
   "missing_executor_state": "BLOCKED",
   "unregistered_domain_must_not_be_invented": true
