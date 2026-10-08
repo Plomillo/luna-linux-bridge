@@ -10,7 +10,8 @@
     "P06": "scripts/missions/louksna_zd_v04_p06_live.py",
     "P07": "scripts/missions/louksna_zd_v04_p07_live.py",
     "P08": "scripts/missions/louksna_zd_v04_p08_live.py",
-    "P09": "scripts/missions/louksna_zd_v04_p09_live.py"
+    "P09": "scripts/missions/louksna_zd_v04_p09_live.py",
+    "P10": "scripts/missions/louksna_zd_v04_p10_live.py"
   },
   "unregistered_points_must_not_be_invented": true,
   "missing_executor_state": "BLOCKED"
