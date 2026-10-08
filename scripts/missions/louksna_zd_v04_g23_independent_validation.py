@@ -60,7 +60,7 @@ def main():
     if not independent: failures.append("G23_EXECUTOR_NOT_INDEPENDENT")
 
     evidence={
-        "schema":"LOUKSNA_ZD_G23_INDEPENDENT_VALIDATION/1.0",
+        "schema":"LOUKSNA_ZD_G23_INDEPENDENT_VALIDATION/1.0","validation_profile":"G23-R1-INDEPENDENT",
         "status":"PASS" if not failures else "HOLD",
         "timestamp_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),
         "checks":checks,
