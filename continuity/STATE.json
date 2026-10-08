@@ -12,7 +12,7 @@
   "mission_id": "SUPER1200-CONTINUATION-20261007",
   "next_point": "D03",
   "schema": "SUPER1200_CONTINUITY_STATE/1.0",
-  "status": "DISPATCH_FAILED",
+  "status": "BLOCKED",
   "terminal": false,
   "transition_id": "D02-CHECKPOINT-TO-D03-001"
 }
