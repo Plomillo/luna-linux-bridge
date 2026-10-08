@@ -32,12 +32,23 @@ def main():
             ctx=ssl.create_default_context(ssl.Purpose.SERVER_AUTH,cafile=ca)
             ctx.minimum_version=ssl.TLSVersion.TLSv1_3; ctx.maximum_version=ssl.TLSVersion.TLSv1_3
             ctx.load_cert_chain(cert,key)
+            mode=os.environ.get("LOUKSNA_REMOTE_PROBE_MODE","HTTP_STATUS").upper()
             def probe():
                 with socket.create_connection((remote_host,remote_port),timeout=8) as raw:
                     with ctx.wrap_socket(raw,server_hostname=server_name) as s:
                         if s.version()!="TLSv1.3": raise RuntimeError("REMOTE_TLS_VERSION_INVALID")
                         peer=hashlib.sha256(s.getpeercert(binary_form=True)).hexdigest()
                         if peer!=expected_pin: raise RuntimeError("REMOTE_SERVER_CERT_PIN_MISMATCH")
+                        if mode=="TLS_ECHO":
+                            payload=b"LOUKSNA_P10_TRANSPORT_ECHO/1"
+                            s.sendall(payload)
+                            data=b""
+                            while len(data)<len(payload):
+                                block=s.recv(len(payload)-len(data))
+                                if not block: break
+                                data+=block
+                            if data!=payload: raise RuntimeError("REMOTE_ECHO_ROUNDTRIP_FAILURE")
+                            return {"mode":mode,"tls_version":s.version(),"peer_cert_sha256":peer,"server_name":server_name,"peer":s.getpeername(),"bytes":len(data),"roundtrip_sha256":hashlib.sha256(data).hexdigest()}
                         s.sendall(b"GET /v1/status HTTP/1.0\\r\\nHost: "+remote_host.encode()+b"\\r\\nConnection: close\\r\\n\\r\\n")
                         data=b""
                         while True:
@@ -45,14 +56,15 @@ def main():
                             if not block: break
                             data+=block
                         if b"200 OK" not in data.split(b"\\r\\n",1)[0]: raise RuntimeError("REMOTE_STATUS_HTTP_FAILURE")
-                        return {"tls_version":s.version(),"peer_cert_sha256":peer,"server_name":server_name,"peer":s.getpeername(),"bytes":len(data)}
+                        return {"mode":mode,"tls_version":s.version(),"peer_cert_sha256":peer,"server_name":server_name,"peer":s.getpeername(),"bytes":len(data)}
+            remote["mode"]=mode
             remote["first"]=probe(); time.sleep(1); remote["reconnect"]=probe(); remote["status"]="PASS"
         except Exception as exc:
             remote={"status":"FAIL","error":type(exc).__name__+":"+str(exc)}
     else:
         remote={"status":"NOT_CONFIGURED"}
     proven=(remote.get("status")=="PASS" and tls13 and loopback)
-    evidence={"schema":"LOUKSNA_ZD_P10_TRANSPORT/1.0","status":"PASS" if proven else "HOLD","local_mtls_test":local,"tls13_source_gate":tls13,"loopback_binding_source_gate":loopback,"off_host_relay_host_configured":bool(remote_host),"off_host_relay_materially_proven":proven,"remote_probe":remote,"blocker":None if proven else "P10_OFF_HOST_RELAY_UNPROVEN","reason":"Off-host TCP relay is proven only when the remote endpoint completes the pinned TLS 1.3 mTLS handshake and status probe twice."}
+    evidence={"schema":"LOUKSNA_ZD_P10_TRANSPORT/1.0","status":"PASS" if proven else "HOLD","local_mtls_test":local,"tls13_source_gate":tls13,"loopback_binding_source_gate":loopback,"off_host_relay_host_configured":bool(remote_host),"off_host_relay_materially_proven":proven,"remote_probe":remote,"blocker":None if proven else "P10_OFF_HOST_RELAY_UNPROVEN","reason":"Off-host relay is proven only when the remote endpoint completes the pinned TLS 1.3 mTLS handshake and the configured transport/application probe twice."}
     (OUT/"P10_TRANSPORT_EVIDENCE.json").write_text(json.dumps(evidence,indent=2,sort_keys=True)+"\n")
     result={"status":"PASS" if proven else "HOLD_INDEPENDENT_CONTINUATION","checkpoint":"CHECKPOINT_10" if proven else "CHECKPOINT_10","parent_checkpoint":"CHECKPOINT_09","next_point":"P11" if not proven else "P11","transition_id":"P10-TO-P11-001" if proven else "P10-HOLD-TO-P11-INDEPENDENT-001","certified":False,"active":False,"g23":"SEPARATE_REQUIRED","g24":"SEPARATE_REQUIRED","open_blockers":[] if proven else ["P10_OFF_HOST_RELAY_UNPROVEN"],"material_evidence":evidence}
     (ROOT/"continuity/CONTINUATION_RESULT.json").write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
