@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   worker:
-    runs-on: [self-hosted, Linux, x64, luna-aux]
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -32,6 +32,10 @@ jobs:
             artifacts/custosz-v7
           sparse-checkout-cone-mode: false
           path: mailbox
+      - name: Prepare isolated CUSTOSZ compatibility workspace
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$HOME/SYMPHYLAX_LAB/CUSTOSZ_V7_R1_G23_G24_20260927T021532Z/POSIX_COMPATIBILITY_VIEW"
       - name: Execute registered continuation
         env:
           NEXT_POINT: ${{ inputs.next_point }}
