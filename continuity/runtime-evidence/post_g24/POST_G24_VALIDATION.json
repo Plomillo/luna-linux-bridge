@@ -1,0 +1,66 @@
+{
+  "activation": "SEPARATE_OPERATIONAL_AUTHORIZATION_REQUIRED",
+  "checks": [
+    {
+      "status": "PASS",
+      "test": "G24_CERTIFICATION_OBJECT"
+    },
+    {
+      "status": "PASS",
+      "test": "P10_EVIDENCE_PRESENT"
+    },
+    {
+      "status": "PASS",
+      "test": "P12_EVIDENCE_PRESENT"
+    },
+    {
+      "path": "Louksna.md",
+      "status": "PASS",
+      "test": "FROZEN_SOURCE"
+    },
+    {
+      "path": "PUAC2.md",
+      "status": "PASS",
+      "test": "FROZEN_SOURCE"
+    },
+    {
+      "execution": {
+        "returncode": 0,
+        "stderr": "..........\n----------------------------------------------------------------------\nRan 10 tests in 7.379s\n\nOK\n",
+        "stdout": "LOUKSNA_BUILD_PASS\n"
+      },
+      "status": "PASS",
+      "test": "NON_REGRESSION_BUILD"
+    },
+    {
+      "bytes": 1375159,
+      "status": "PASS",
+      "test": "RELEASE_PACKAGE"
+    },
+    {
+      "mutated": true,
+      "restored": true,
+      "status": "PASS",
+      "test": "VERIFIED_ROLLBACK"
+    },
+    {
+      "execution": {
+        "returncode": 0,
+        "stderr": "..........\n----------------------------------------------------------------------\nRan 10 tests in 6.813s\n\nOK\n",
+        "stdout": ""
+      },
+      "status": "PASS",
+      "test": "POSTBOOT_VERIFICATION"
+    }
+  ],
+  "failures": [],
+  "operational_non_regression": true,
+  "schema": "LOUKSNA_ZD_POST_G24_VALIDATION/1.0",
+  "source_commit": "b3a0a36fba8c8022e940a13b4a2469f6fef88457",
+  "source_hashes": {
+    "Louksna.md": "1a399ab7494d6df5582436819eee557083e753ed",
+    "PUAC2.md": "da3b216888c86e588685d384c34dd3c481414b22"
+  },
+  "status": "PASS",
+  "timestamp_utc": "2026-10-08T20:57:54Z"
+}

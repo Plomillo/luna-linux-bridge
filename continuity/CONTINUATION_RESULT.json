@@ -1,57 +1,77 @@
 {
   "active": false,
   "certified": true,
-  "checkpoint": "G24",
+  "checkpoint": "POST_G24_VALIDATION",
   "g23": "PASS",
   "g24": "PASS",
   "material_evidence": {
-    "activation": "FORBIDDEN_UNTIL_POST_VALIDATION_AND_OPERATIONAL_AUTHORIZATION",
-    "certified_claim": "P12_RELEASE_OBJECT",
+    "activation": "SEPARATE_OPERATIONAL_AUTHORIZATION_REQUIRED",
     "checks": [
       {
-        "source": "continuity/runtime-evidence/g23/G23_INDEPENDENT_VALIDATION.json",
         "status": "PASS",
-        "test": "G23_INDEPENDENT_VALIDATION_EVIDENCE"
+        "test": "G24_CERTIFICATION_OBJECT"
       },
       {
         "status": "PASS",
-        "test": "TRANSPORT_EVIDENCE_RECHECK"
+        "test": "P10_EVIDENCE_PRESENT"
       },
       {
-        "blob": "1a399ab7494d6df5582436819eee557083e753ed",
+        "status": "PASS",
+        "test": "P12_EVIDENCE_PRESENT"
+      },
+      {
         "path": "Louksna.md",
         "status": "PASS",
-        "test": "FROZEN_SOURCE_RECHECK"
+        "test": "FROZEN_SOURCE"
       },
       {
-        "blob": "da3b216888c86e588685d384c34dd3c481414b22",
         "path": "PUAC2.md",
         "status": "PASS",
-        "test": "FROZEN_SOURCE_RECHECK"
+        "test": "FROZEN_SOURCE"
       },
       {
         "execution": {
           "returncode": 0,
-          "stderr": "..........\n----------------------------------------------------------------------\nRan 10 tests in 6.761s\n\nOK\n",
+          "stderr": "..........\n----------------------------------------------------------------------\nRan 10 tests in 7.379s\n\nOK\n",
           "stdout": "LOUKSNA_BUILD_PASS\n"
         },
         "status": "PASS",
-        "test": "BUILD_RECHECK"
+        "test": "NON_REGRESSION_BUILD"
       },
       {
+        "bytes": 1375159,
         "status": "PASS",
-        "test": "G23_G24_EXECUTOR_SEPARATION"
+        "test": "RELEASE_PACKAGE"
+      },
+      {
+        "mutated": true,
+        "restored": true,
+        "status": "PASS",
+        "test": "VERIFIED_ROLLBACK"
+      },
+      {
+        "execution": {
+          "returncode": 0,
+          "stderr": "..........\n----------------------------------------------------------------------\nRan 10 tests in 6.813s\n\nOK\n",
+          "stdout": ""
+        },
+        "status": "PASS",
+        "test": "POSTBOOT_VERIFICATION"
       }
     ],
-    "decision": "CERTIFIED_FOR_POST_VALIDATION",
     "failures": [],
-    "g23_evidence": "continuity/runtime-evidence/g23/G23_INDEPENDENT_VALIDATION.json",
-    "schema": "LOUKSNA_ZD_G24_CERTIFICATION/1.0",
+    "operational_non_regression": true,
+    "schema": "LOUKSNA_ZD_POST_G24_VALIDATION/1.0",
+    "source_commit": "b3a0a36fba8c8022e940a13b4a2469f6fef88457",
+    "source_hashes": {
+      "Louksna.md": "1a399ab7494d6df5582436819eee557083e753ed",
+      "PUAC2.md": "da3b216888c86e588685d384c34dd3c481414b22"
+    },
     "status": "PASS",
-    "timestamp_utc": "2026-10-08T20:44:43Z"
+    "timestamp_utc": "2026-10-08T20:57:54Z"
   },
-  "next_point": "POST_G24_VALIDATION",
-  "parent_checkpoint": "G23",
+  "next_point": "SEPARATE_OPERATIONAL_AUTHORIZATION",
+  "parent_checkpoint": "G24",
   "status": "PASS",
-  "transition_id": "G24-TO-POST-001"
+  "transition_id": "POST_G24-TO-AUTH-001"
 }
