@@ -7,14 +7,14 @@
   "certified": false,
   "current_checkpoint": "D02_FUNCTIONALLY_CLOSED",
   "dispatch_error": null,
-  "dispatch_requested_at": "2026-10-08T13:30:09Z",
+  "dispatch_requested_at": "2026-10-08T13:33:27Z",
   "g23": "BLOCKED_UNTIL_INDEPENDENT_VALIDATION",
   "g24": "BLOCKED_UNTIL_G23",
   "mission_id": "SUPER1200-CONTINUATION-20261007",
   "next_point": "D03",
+  "recovery_note": "STALE_WORKER_LEASE_CLEARED_AFTER_VERIFIED_NO_ACTIVE_WORKER",
   "schema": "SUPER1200_CONTINUITY_STATE/1.0",
-  "status": "DISPATCH_PENDING",
+  "status": "DISPATCH_REQUIRED",
   "terminal": false,
-  "transition_id": "D02-CHECKPOINT-TO-D03-001",
-  "recovery_note": "STALE_WORKER_LEASE_CLEARED_AFTER_VERIFIED_NO_ACTIVE_WORKER"
+  "transition_id": "D02-CHECKPOINT-TO-D03-001"
 }
