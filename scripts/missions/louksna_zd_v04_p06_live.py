@@ -14,7 +14,7 @@ OUT.mkdir(parents=True,exist_ok=True)
 V03_SHA="7a1449a5d6194b6cbc3e083bf1c7ba55533ad196"
 BRIDGE_SHA="ad95248dd78fadf45645774e0338df0f1bbc128b"
 SABELA_REPO="HiTZ/TTS-gl_sabela"
-SABELA_COMMIT="b513a2e957d53c3e5bcf32bb51fce01688decd92"
+SABELA_COMMIT="db56c5dd27a692b76cd23f7d784c9c465f6a9a18"
 SABELA_ONNX_SHA256="b7df43263c2eefffa79b841431d542957c8c6478b41448be679ef36036087f22"
 SABELA_LICENSE="Apache-2.0"
 CHATTERBOX_REPO="https://github.com/resemble-ai/chatterbox.git"
@@ -88,10 +88,10 @@ def main():
     ahot=work/"aHoTTS"
     if not ahot.exists(): sh(["git","clone","--depth","1","https://github.com/hitz-zentroa/aHoTTS.git",str(ahot)],timeout=600)
     ahot_head=subprocess.check_output(["git","rev-parse","HEAD"],cwd=ahot,text=True).strip()
-    sh([str(py),"-m","pip","install","-r","requirements.txt"],cwd=ahot,timeout=1200)
-    sabela_out=OUT/"p06_sabela.wav"
-    sh([str(py),"synthesize.py","-t","Esta es una prueba de Sabela.","-l","gl","-m","sabela","-o",str(sabela_out)],cwd=ahot,timeout=1200)
-    candidates=list(OUT.glob("p06_sabela*.wav"))+[sabela_out]
+    sh([str(py),"-m","pip","install","huggingface_hub"],timeout=600)
+    sabela_out=ahot/"output"/"p06_sabela.wav"
+    sh([str(py),"synthesize.py","-t","Esta es una prueba de Sabela.","-l","gl","-m","sabela","-o","p06_sabela"],cwd=ahot,timeout=1200)
+    candidates=list(ahot.glob("output/p06_sabela*.wav"))+[sabela_out]
     existing=next((p for p in candidates if p.is_file() and p.stat().st_size>1000),None)
     if existing is None: raise RuntimeError("SABELA_SYNTHESIS_OUTPUT_MISSING")
     # Locate the downloaded Sabela ONNX and verify its published SHA-256.
