@@ -26,7 +26,12 @@ jobs:
       - name: Execute registered domain worker
         env:
           NEXT_POINT: ${{ inputs.next_point }}
-        run: python3 -B continuity/super1200_continuation_worker.py
+          TARGET_ROOT: ${{ github.workspace }}
+          CAP_ROOT: ${{ github.workspace }}
+          OUT_DIR: ${{ runner.temp }}/super1200-continuation
+        run: |
+          set -Eeuo pipefail
+          python3 -B continuity/super1200_continuation_worker.py
       - name: Persist continuation evidence
         if: always()
         run: |
