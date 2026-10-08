@@ -2,11 +2,11 @@
   "checks": [
     {
       "checkpoint": "CHECKPOINT_12",
-      "result_status": "PASS",
+      "result_status": "HOLD_INDEPENDENT_CONTINUATION",
       "stale_state_blockers": [
         "P12_BUILD_SUBSTRATE_NOT_PRESENT"
       ],
-      "status": "PASS",
+      "status": "FAIL",
       "test": "P12_RELEASE_OBJECT"
     },
     {
@@ -48,12 +48,13 @@
     }
   ],
   "failures": [
+    "G23_P12_RESULT_NOT_PASS",
     "G23_BUILD_REPROBE_FAILED"
   ],
   "g24": "SEPARATE_REQUIRED",
   "schema": "LOUKSNA_ZD_G23_INDEPENDENT_VALIDATION/1.0",
   "status": "HOLD",
-  "timestamp_utc": "2026-10-08T20:42:08Z",
-  "validated_object_commit": "c0c4d5ce263cd539b243970f2128dc6236b8722b",
+  "timestamp_utc": "2026-10-08T20:42:10Z",
+  "validated_object_commit": "e63d88252c2d7e202210ce4836d0e2f2d91f58e2",
   "validation_profile": "G23-R1-INDEPENDENT"
 }
