@@ -55,6 +55,7 @@ def main():
         build_run=sh(["python3","scripts/build"],timeout=900) if (ROOT/"scripts/build").exists() else {"returncode":0,"stdout":"","stderr":""}
         checks.append({"test":"BUILD_SUBSTRATE_DISCOVERY","status":"PASS" if build_run["returncode"]==0 else "FAIL","paths":build_files,"execution":build_run})
         if build_run["returncode"]!=0: blockers.append("P12_BUILD_SUBSTRATE_EXECUTION_FAILED")
+        else: resolved_blockers.append("P12_BUILD_SUBSTRATE_NOT_PRESENT")
     else:
         checks.append({"test":"BUILD_SUBSTRATE_DISCOVERY","status":"HOLD","paths":[]})
         blockers.append("P12_BUILD_SUBSTRATE_NOT_PRESENT")
