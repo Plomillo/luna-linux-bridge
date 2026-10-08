@@ -1,0 +1,112 @@
+name: Louksna V0.4 P10 transport echo proof
+
+on:
+  push:
+    paths:
+      - 'scripts/missions/louksna_zd_v04_p10_live.py'
+      - 'scripts/missions/p10_ephemeral_server.py'
+      - '.github/workflows/louksna-zd-v04-p10-echo.yml'
+
+jobs:
+  p10-echo:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact branch
+        uses: actions/checkout@v4
+        with:
+          ref: work/louksna-zd-v04-master-20261007
+          fetch-depth: 1
+      - name: Build ephemeral mTLS identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf "$RUNNER_TEMP/p10" && mkdir -p "$RUNNER_TEMP/p10"
+          cd "$RUNNER_TEMP/p10"
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 -keyout ca.key -out ca.pem -subj "/CN=Louksna-P10-Ephemeral-CA" -addext "basicConstraints=critical,CA:TRUE" -addext "keyUsage=critical,keyCertSign,cRLSign"
+          openssl req -new -newkey rsa:2048 -nodes -keyout server.key -out server.csr -subj "/CN=localhost"
+          printf '%s\n' 'basicConstraints=critical,CA:FALSE' 'keyUsage=critical,digitalSignature,keyEncipherment' 'extendedKeyUsage=serverAuth' 'subjectAltName=DNS:localhost,IP:127.0.0.1' > server.ext
+          openssl x509 -req -in server.csr -CA ca.pem -CAkey ca.key -CAcreateserial -out server.pem -days 1 -extfile server.ext
+          openssl req -new -newkey rsa:2048 -nodes -keyout client.key -out client.csr -subj "/CN=louksna-p10-client"
+          printf '%s\n' 'basicConstraints=critical,CA:FALSE' 'keyUsage=critical,digitalSignature,keyEncipherment' 'extendedKeyUsage=clientAuth' 'subjectAltName=DNS:louksna-p10-client' > client.ext
+          openssl x509 -req -in client.csr -CA ca.pem -CAkey ca.key -CAcreateserial -out client.pem -days 1 -extfile client.ext
+          chmod 600 *.key
+          python3 - <<'PY'
+          import hashlib, json, ssl, pathlib
+          p=pathlib.Path(".")
+          der=ssl.PEM_cert_to_DER_cert((p/"client.pem").read_text())
+          cfg={"schema":"LRB_MTLS_READONLY_GATEWAY/0.3","server_cert":str((p/"server.pem").resolve()),"server_key":str((p/"server.key").resolve()),"client_ca":str((p/"ca.pem").resolve()),"client_cert_sha256":hashlib.sha256(der).hexdigest(),"server_cert_sha256":hashlib.sha256((p/"server.pem").read_bytes()).hexdigest(),"client_ca_sha256":hashlib.sha256((p/"ca.pem").read_bytes()).hexdigest()}
+          (p/"transport.json").write_text(json.dumps(cfg)+"\n")
+          PY
+      - name: Start minimal TLS echo gateway
+        shell: bash
+        run: |
+          set -euo pipefail
+          export MISSION_ROOT="$GITHUB_WORKSPACE"
+          export LOUKSNA_P10_CONFIG="$RUNNER_TEMP/p10/transport.json"
+          export LOUKSNA_P10_STATE="$RUNNER_TEMP/p10/state"
+          export LOUKSNA_P10_READY="$RUNNER_TEMP/p10/ready.json"
+          export LOUKSNA_P10_LOCAL_PORT=18443
+          mkdir -p "$LOUKSNA_P10_STATE"
+          python3 scripts/missions/p10_ephemeral_server.py >"$RUNNER_TEMP/p10/server.stdout" 2>"$RUNNER_TEMP/p10/server.stderr" &
+          echo $! >"$RUNNER_TEMP/p10/server.pid"
+          for i in {1..40}; do test -s "$RUNNER_TEMP/p10/ready.json" && break; sleep 0.25; done
+          test -s "$RUNNER_TEMP/p10/ready.json"
+      - name: Establish ephemeral off-host TCP relay
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --global pinggy@latest
+          pinggy --type tcp -l 18443 --b >"$RUNNER_TEMP/p10/pinggy.stdout" 2>"$RUNNER_TEMP/p10/pinggy.stderr"
+          cat "$RUNNER_TEMP/p10/pinggy.stdout" "$RUNNER_TEMP/p10/pinggy.stderr" || true
+          endpoint="$(grep -hEo 'tcp://[^[:space:]]+' "$RUNNER_TEMP/p10/pinggy.stdout" "$RUNNER_TEMP/p10/pinggy.stderr" 2>/dev/null | head -n1 | sed -E 's#\x1B\[[0-9;]*[[:alpha:]]##g; s#tcp://##' || true)"
+          test -n "$endpoint" || { echo "PINGGY_ENDPOINT_NOT_FOUND"; exit 1; }
+          host="$(printf '%s' "$endpoint" | sed -E 's/:([0-9]+).*$/ /' | sed 's/[[:space:]]*$//')"
+          port="$(printf '%s' "$endpoint" | sed -nE 's/.*:([0-9]+).*/\1/p')"
+          echo "LOUKSNA_REMOTE_RELAY_HOST=$host" >> "$GITHUB_ENV"
+          echo "LOUKSNA_REMOTE_RELAY_PORT=$port" >> "$GITHUB_ENV"
+          echo "LOUKSNA_MTLS_CA_FILE=$RUNNER_TEMP/p10/ca.pem" >> "$GITHUB_ENV"
+          echo "LOUKSNA_MTLS_CLIENT_CERT_FILE=$RUNNER_TEMP/p10/client.pem" >> "$GITHUB_ENV"
+          echo "LOUKSNA_MTLS_CLIENT_KEY_FILE=$RUNNER_TEMP/p10/client.key" >> "$GITHUB_ENV"
+          echo "LOUKSNA_REMOTE_SERVER_CERT_SHA256=$(openssl x509 -in "$RUNNER_TEMP/p10/server.pem" -outform DER | sha256sum | awk '{print $1}')" >> "$GITHUB_ENV"
+          echo "LOUKSNA_REMOTE_SERVER_NAME=localhost" >> "$GITHUB_ENV"
+          echo "LOUKSNA_REMOTE_PROBE_MODE=TLS_ECHO" >> "$GITHUB_ENV"
+      - name: Execute governed P10
+        shell: bash
+        run: |
+          set -euo pipefail
+          export MISSION_ROOT="$GITHUB_WORKSPACE"
+          export OUT_DIR="$RUNNER_TEMP/p10/evidence"
+          mkdir -p "$OUT_DIR"
+          python3 scripts/missions/louksna_zd_v04_p10_live.py
+          python3 - <<'PY'
+          import json, pathlib
+          r=json.loads(pathlib.Path("continuity/CONTINUATION_RESULT.json").read_text())
+          assert r["status"]=="PASS", r
+          assert r["material_evidence"]["off_host_relay_materially_proven"] is True, r
+          assert r["material_evidence"]["remote_probe"]["status"]=="PASS", r
+          assert r["material_evidence"]["remote_probe"]["mode"]=="TLS_ECHO", r
+          print("P10_OFF_HOST_TLS_ECHO_PROOF=PASS")
+          PY
+      - name: Stop ephemeral relay and gateway
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          command -v pinggy >/dev/null 2>&1 && pinggy daemon stop >/dev/null 2>&1 || true
+          test -f "$RUNNER_TEMP/p10/server.pid" && kill "$(cat "$RUNNER_TEMP/p10/server.pid")" 2>/dev/null || true
+          sleep 1
+      - name: Upload P10 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: louksna-p10-transport-echo-evidence
+          path: |
+            \${{ runner.temp }}/p10/*.json
+            \${{ runner.temp }}/p10/*.stdout
+            \${{ runner.temp }}/p10/*.stderr
+            continuity/CONTINUATION_RESULT.json
+            continuity/runtime-evidence/p10/P10_TRANSPORT_EVIDENCE.json
+          if-no-files-found: warn
