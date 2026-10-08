@@ -36,7 +36,7 @@
       "execution": {
         "returncode": 1,
         "stderr": "Traceback (most recent call last):\n  File \"/home/runner/work/luna-linux-bridge/luna-linux-bridge/scripts/build\", line 9, in <module>\n    subprocess.run([sys.executable,\"-m\",\"compileall\",\"-q\",\"bridge\",\"scripts\",\"continuity\"],cwd=ROOT,check=True)\n  File \"/usr/lib/python3.12/subprocess.py\", line 571, in run\n    raise CalledProcessError(retcode, process.args,\nsubprocess.CalledProcessError: Command '['/usr/bin/python3', '-m', 'compileall', '-q', 'bridge', 'scripts', 'continuity']' returned non-zero exit status 1.\n",
-        "stdout": "*** Error compiling 'scripts/missions/louksna_zd_v04_g24_certification.py'...\n  File \"scripts/missions/louksna_zd_v04_g24_certification.py\", line 67\n    (OUT/\"G24_CERTIFICATION_DECISION.json\").write_text(json.dumps(evidence,indent=2,sort_keys=True)+\"\n                                                                                                    ^\nSyntaxError: unterminated string literal (detected at line 67)\n\n"
+        "stdout": "*** Error compiling 'scripts/missions/louksna_zd_v04_g24_certification.py'...\n  File \"scripts/missions/louksna_zd_v04_g24_certification.py\", line 72\n    (ROOT/\"continuity/CONTINUATION_RESULT.json\").write_text(json.dumps(out,indent=2,sort_keys=True)+\"\n                                                                                                    ^\nSyntaxError: unterminated string literal (detected at line 72)\n\n"
       },
       "status": "FAIL",
       "test": "BUILD_REPROBE"
@@ -54,7 +54,7 @@
   "g24": "SEPARATE_REQUIRED",
   "schema": "LOUKSNA_ZD_G23_INDEPENDENT_VALIDATION/1.0",
   "status": "HOLD",
-  "timestamp_utc": "2026-10-08T20:43:10Z",
-  "validated_object_commit": "f2fbd4bd1369c6a43f7b6912a1de12e82d7915f3",
+  "timestamp_utc": "2026-10-08T20:43:30Z",
+  "validated_object_commit": "411ae72da26d94c6cf24c98304cfef28ccf407bf",
   "validation_profile": "G23-R1-INDEPENDENT"
 }
