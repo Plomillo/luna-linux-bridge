@@ -1,29 +1,30 @@
 {
   "active": false,
   "active_worker": false,
-  "block_reason": "NO_REGISTERED_EXECUTOR_FOR_NEXT_POINT",
+  "block_reason": "NONE",
   "blocked": false,
   "blocked_at": "2026-10-08T14:12:45Z",
   "branch": "work/louksna-zd-v04-master-20261007",
   "certified": false,
-  "current_checkpoint": "CHECKPOINT_11",
+  "current_checkpoint": "CHECKPOINT_12_PREPARED",
   "diagnostic": "P05 material executor registered; awaiting governed worker dispatch.",
   "dispatch_error": null,
-  "dispatch_requested_at": "2026-10-08T17:38:36Z",
+  "dispatch_requested_at": "2026-10-08T17:40:39Z",
   "dispatch_stderr": null,
   "g23": "SEPARATE_REQUIRED",
   "g24": "SEPARATE_REQUIRED",
   "heartbeat_required_seconds": 2,
   "mission_id": "MIS-LOUKSNA-ZD-V04-MASTER-20261007",
   "next_point": "P12",
-  "next_worker": null,
+  "next_worker": "scripts/missions/louksna_zd_v04_p12_live.py",
   "open_blockers": [
-    "P10_OFF_HOST_RELAY_UNPROVEN"
+    "P10_OFF_HOST_RELAY_UNPROVEN",
+    "P12_BUILD_SUBSTRATE_NOT_PRESENT"
   ],
   "recovery_note": "P04_RETRY_AFTER_WORKER_TRIGGER_ISOLATION",
   "schema": "LOUKSNA_CONTINUITY_STATE/1.0",
   "stall_threshold_seconds": 10,
-  "status": "BLOCKED",
+  "status": "DISPATCH_PENDING",
   "terminal": false,
-  "transition_id": "P11-CHECKPOINT-TO-P12-001"
+  "transition_id": "P12-HOLD-RETRY-001"
 }

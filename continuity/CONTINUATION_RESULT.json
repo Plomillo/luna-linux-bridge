@@ -1,182 +1,56 @@
 {
   "active": false,
   "certified": false,
-  "checkpoint": "CHECKPOINT_11",
+  "checkpoint": "CHECKPOINT_12_PREPARED",
   "g23": "SEPARATE_REQUIRED",
   "g24": "SEPARATE_REQUIRED",
   "material_evidence": {
-    "checkpoint": "CHECKPOINT_11",
-    "current_open_blockers": [
-      "P10_OFF_HOST_RELAY_UNPROVEN"
-    ],
-    "schema": "LOUKSNA_ZD_P11_LAB/1.0",
-    "second_order_note": "P10_OFF_HOST_RELAY_UNPROVEN remains open and is not converted to PASS.",
-    "status": "PASS",
-    "tests": [
+    "checks": [
       {
-        "path": "bridge/mtls_gateway.py",
+        "blob": "1a399ab7494d6df5582436819eee557083e753ed",
+        "path": "Louksna.md",
         "status": "PASS",
-        "test": "PYTHON_PARSE"
+        "test": "FROZEN_SOURCE"
       },
       {
-        "path": "bridge/lrb_core.py",
+        "blob": "da3b216888c86e588685d384c34dd3c481414b22",
+        "path": "PUAC2.md",
         "status": "PASS",
-        "test": "PYTHON_PARSE"
+        "test": "FROZEN_SOURCE"
       },
       {
-        "path": "bridge/live_link.py",
+        "branch": "work/louksna-zd-v04-master-20261007",
+        "commit": "83d45057e8e1fb75b382b4b5650f12952c262beb",
         "status": "PASS",
-        "test": "PYTHON_PARSE"
+        "test": "RELEASE_SOURCE_IDENTITY"
       },
       {
-        "path": "scripts/missions/louksna_zd_v04_p05_live.py",
-        "status": "PASS",
-        "test": "PYTHON_PARSE"
+        "paths": [],
+        "status": "HOLD",
+        "test": "BUILD_SUBSTRATE_DISCOVERY"
       },
       {
-        "path": "scripts/missions/louksna_zd_v04_p06_live.py",
+        "g23": "SEPARATE_REQUIRED",
+        "g24": "SEPARATE_REQUIRED",
         "status": "PASS",
-        "test": "PYTHON_PARSE"
-      },
-      {
-        "path": "scripts/missions/louksna_zd_v04_p07_live.py",
-        "status": "PASS",
-        "test": "PYTHON_PARSE"
-      },
-      {
-        "path": "scripts/missions/louksna_zd_v04_p08_live.py",
-        "status": "PASS",
-        "test": "PYTHON_PARSE"
-      },
-      {
-        "path": "scripts/missions/louksna_zd_v04_p09_live.py",
-        "status": "PASS",
-        "test": "PYTHON_PARSE"
-      },
-      {
-        "path": "scripts/missions/louksna_zd_v04_p10_live.py",
-        "status": "PASS",
-        "test": "PYTHON_PARSE"
-      },
-      {
-        "result": {
-          "returncode": 0,
-          "stderr": "..........\n----------------------------------------------------------------------\nRan 10 tests in 6.368s\n\nOK\n",
-          "stdout": ""
-        },
-        "status": "PASS",
-        "test": "MTLS_GATEWAY_TESTS"
-      },
-      {
-        "result": {
-          "content_addressed": true,
-          "negative": {
-            "ack_missing": true,
-            "corrupt_hash": true,
-            "false_mime": true,
-            "oversized": true,
-            "path_traversal": true,
-            "provenance_missing": true,
-            "symlink": true
-          },
-          "pipeline": [
-            "SELECT",
-            "IDENTIFY",
-            "VALIDATE",
-            "HASH",
-            "PROVENANCE",
-            "TRUST_CLASSIFICATION",
-            "DEDUP",
-            "LOCAL_REGISTER",
-            "PREVIEW",
-            "CONFIRM",
-            "NEGOTIATE",
-            "TRANSFER",
-            "ACK",
-            "EVIDENCE"
-          ],
-          "positive": {
-            "duplicate": {
-              "deduplicated": true,
-              "evidence_head": "ecf379ee4e08a3975723b3adec6c8245adfe2b729ddf2995098a8da00a8481b3",
-              "sha256": "0940c5ee117cc7c73eea62b1579fd1f4908f11cc7a78ed3beca9c62bd4743779",
-              "size": 46000,
-              "status": "PASS"
-            },
-            "first": {
-              "deduplicated": false,
-              "evidence_head": "2442622e17174c189abede50cadf10305768ba33f40ff27543402b72936dcef4",
-              "sha256": "0940c5ee117cc7c73eea62b1579fd1f4908f11cc7a78ed3beca9c62bd4743779",
-              "size": 46000,
-              "status": "PASS"
-            }
-          },
-          "schema": "LOUKSNA_ZD_ARTIFACT_TRANSFER/1.0",
-          "sha256": "0940c5ee117cc7c73eea62b1579fd1f4908f11cc7a78ed3beca9c62bd4743779",
-          "size": 46000,
-          "status": "PASS"
-        },
-        "status": "PASS",
-        "test": "ARTIFACT_TRANSFER_SELFTEST"
-      },
-      {
-        "context_authority_hashes": [
-          "10a04b1bc5aafcb3482bc29f425ea36544da67936077af75d789b5808797ac62",
-          "2f4f62728e3cf89a2e4fc1c545f12d8b1d79e931337dfc11e138b5969f1d2d8d"
-        ],
-        "profiles": [
-          "Instantáneo",
-          "Medio",
-          "Alto",
-          "Muy alto",
-          "Pro"
-        ],
-        "status": "PASS",
-        "test": "EFFORT_PROFILE_INVARIANTS"
-      },
-      {
-        "account_ops": 21,
-        "repository_ops": 36,
-        "status": "PASS",
-        "test": "GITHUB_CAPABILITY_CENSUS_GUARD"
-      },
-      {
-        "required": [
-          "T01",
-          "T13",
-          "T21",
-          "T28",
-          "G23",
-          "G24"
-        ],
-        "status": "PASS",
-        "test": "PUAC2_CRITICAL_CHAIN"
-      },
-      {
-        "registered_points": [
-          "P01",
-          "P02",
-          "P03_CUSTOSZ_RUNTIME_METAOS_EXECUTION_PLANE",
-          "P04",
-          "P05",
-          "P06",
-          "P07",
-          "P08",
-          "P09",
-          "P10",
-          "P11"
-        ],
-        "status": "PASS",
-        "test": "EXECUTOR_NO_SELF_CERTIFICATION"
+        "test": "G23_G24_SEPARATION"
       }
     ],
-    "timestamp_utc": "2026-10-08T17:38:43Z"
+    "open_blockers": [
+      "P10_OFF_HOST_RELAY_UNPROVEN",
+      "P12_BUILD_SUBSTRATE_NOT_PRESENT"
+    ],
+    "reason": "Release, G23 and G24 remain forbidden until all material prerequisites are satisfied.",
+    "schema": "LOUKSNA_ZD_P12_RELEASE_GATE/1.0",
+    "status": "HOLD",
+    "timestamp_utc": "2026-10-08T17:40:39Z"
   },
   "next_point": "P12",
   "open_blockers": [
-    "P10_OFF_HOST_RELAY_UNPROVEN"
+    "P10_OFF_HOST_RELAY_UNPROVEN",
+    "P12_BUILD_SUBSTRATE_NOT_PRESENT"
   ],
-  "parent_checkpoint": "CHECKPOINT_10",
-  "status": "PASS",
-  "transition_id": "P11-CHECKPOINT-TO-P12-001"
+  "parent_checkpoint": "CHECKPOINT_11",
+  "status": "HOLD_INDEPENDENT_CONTINUATION",
+  "transition_id": "P12-HOLD-RETRY-001"
 }
