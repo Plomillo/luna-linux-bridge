@@ -25,13 +25,15 @@
       },
       {
         "branch": "work/louksna-zd-v04-master-20261007",
-        "commit": "2e17aee690e1ba6cad6afb02b1cdc7549ce45a69",
+        "commit": "d0d460ed5f8a85ae4c6677c0391206fbd0ba1ec8",
         "status": "PASS",
         "test": "RELEASE_SOURCE_IDENTITY"
       },
       {
-        "paths": [],
-        "status": "HOLD",
+        "paths": [
+          "scripts/build"
+        ],
+        "status": "PASS",
         "test": "BUILD_SUBSTRATE_DISCOVERY"
       },
       {
@@ -47,7 +49,7 @@
     "reason": "Release, G23 and G24 remain forbidden until all material prerequisites are satisfied.",
     "schema": "LOUKSNA_ZD_P12_RELEASE_GATE/1.0",
     "status": "HOLD",
-    "timestamp_utc": "2026-10-08T20:35:11Z"
+    "timestamp_utc": "2026-10-08T20:35:12Z"
   },
   "next_point": "P12",
   "open_blockers": [
