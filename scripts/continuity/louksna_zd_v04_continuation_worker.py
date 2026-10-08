@@ -23,7 +23,7 @@ try:
     r=json.loads(result.read_text())
     if r.get("status")!="PASS" or not r.get("next_point"): raise SystemExit("INVALID_CONTINUATION_RESULT")
     state=json.loads(STATE.read_text())
-    state.update({"active_worker":False,"blocked":False,"block_reason":"NONE","status":"DISPATCH_PENDING","current_checkpoint":r.get("checkpoint",state["current_checkpoint"]),"next_point":r["next_point"],"transition_id":r.get("transition_id",state["transition_id"]+"->"+r["next_point"])})
+    next_worker = ex.get(r["next_point"])\n    state.update({"active_worker":False,"blocked":False,"block_reason":"NONE","status":"DISPATCH_PENDING","current_checkpoint":r.get("checkpoint",state["current_checkpoint"]),"next_point":r["next_point"],"next_worker":next_worker,"transition_id":r.get("transition_id",state["transition_id"]+"->"+r["next_point"])})
     STATE.write_text(json.dumps(state,indent=2,sort_keys=True)+"\n")
 except BaseException:
     raise
