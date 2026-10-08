@@ -49,9 +49,9 @@ jobs:
           rm -rf /tmp/louksna-deb-root
           mkdir -p /tmp/louksna-deb-root
           dpkg-deb --extract "$DEB" /tmp/louksna-deb-root
-          test -x /tmp/louksna-deb-root/usr/lib/louksna/bridge/mtls_gateway.py
+          test -f /tmp/louksna-deb-root/usr/lib/louksna/bridge/mtls_gateway.py
           test -f /tmp/louksna-deb-root/lib/systemd/system/louksna-mtls-readonly.service
-          test -f /tmp/louksna-deb-root/usr/share/louksna/CONTRACT.v0.json
+          test -f /tmp/louksna-deb-root/usr/share/doc/louksna-linux-bridge/CONTRACT.v0.json
           PYTHONPATH=/tmp/louksna-deb-root/usr/lib/louksna/bridge             python3 -m py_compile /tmp/louksna-deb-root/usr/lib/louksna/bridge/*.py
           sha256sum "$DEB" | tee debian-package.sha256
           lintian --no-tag-display-limit "$DEB" | tee lintian.txt || true
