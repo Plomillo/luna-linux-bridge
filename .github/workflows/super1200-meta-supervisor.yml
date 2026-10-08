@@ -1,1 +1,26 @@
-.github/workflows/super1200-meta-supervisor.yml
+name: "SUPER1200 — second-order meta-supervisor"
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [super1200_meta_watch]
+permissions:
+  contents: write
+jobs:
+  meta:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: custosz/super-1200-implementation-20261007
+          fetch-depth: 0
+          persist-credentials: true
+      - run: python3 -B continuity/super1200_meta_supervisor.py
+      - if: always()
+        run: |
+          git add continuity/META_REPORT.txt
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name "custosz-v7-runtime-bot"
+          git config user.email "custosz-v7-runtime-bot@users.noreply.github.com"
+          git commit -m "evidence(super1200): persist second-order supervision"
+          git push origin HEAD:custosz/super-1200-implementation-20261007
