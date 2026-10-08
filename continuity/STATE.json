@@ -1,6 +1,6 @@
 {
   "active": false,
-  "active_worker": false,
+  "active_worker": true,
   "block_reason": "NONE",
   "blocked": false,
   "blocked_at": "2026-10-08T13:35:05Z",
@@ -18,7 +18,7 @@
   "recovery_note": "STALE_WORKER_LEASE_CLEARED_AFTER_VERIFIED_NO_ACTIVE_WORKER",
   "schema": "LOUKSNA_CONTINUITY_STATE/1.0",
   "stall_threshold_seconds": 10,
-  "status": "DISPATCH_REQUIRED",
+  "status": "RUNNING",
   "terminal": false,
   "transition_id": "P03-CHECKPOINT-TO-P04-001"
 }
