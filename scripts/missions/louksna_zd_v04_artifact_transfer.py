@@ -38,7 +38,7 @@ def safe_name(name:str)->str:
     p=Path(name)
     if not name or p.is_absolute() or name.startswith("/") or ".." in p.parts or p.name!=name:
         raise TransferDenied("PATH_TRAVERSAL_DENIED")
-    if "\\x00" in name: raise TransferDenied("NUL_NAME_DENIED")
+    if "\x00" in name: raise TransferDenied("NUL_NAME_DENIED")
     return name
 
 class Evidence:
@@ -90,6 +90,7 @@ class ArtifactStore:
             raise TransferDenied("PROVENANCE_INCOMPLETE")
         if trust not in {"TRUSTED","REVIEW","UNTRUSTED"}: raise TransferDenied("TRUST_CLASS_INVALID")
         if not confirm: raise TransferDenied("CONFIRMATION_REQUIRED")
+        if not ack: raise TransferDenied("ACK_REQUIRED")
         final=self.blobs/actual
         stage=self.staging/(actual+".part")
         evidence=Evidence(self.root/"EVENTS.jsonl")
