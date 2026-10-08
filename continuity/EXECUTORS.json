@@ -14,7 +14,8 @@
     "P10": "scripts/missions/louksna_zd_v04_p10_live.py",
     "P11": "scripts/missions/louksna_zd_v04_p11_live.py",
     "P12": "scripts/missions/louksna_zd_v04_p12_live.py",
-    "G23": "scripts/missions/louksna_zd_v04_g23_independent_validation.py"
+    "G23": "scripts/missions/louksna_zd_v04_g23_independent_validation.py",
+    "G24": "scripts/missions/louksna_zd_v04_g24_certification.py"
   },
   "unregistered_points_must_not_be_invented": true,
   "missing_executor_state": "BLOCKED"
