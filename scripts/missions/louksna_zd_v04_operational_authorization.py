@@ -20,11 +20,11 @@ def main():
     head=subprocess.check_output(["git","rev-parse","HEAD"],cwd=ROOT,text=True).strip()
     checks.append({"test":"SOURCE_IDENTITY","status":"PASS","commit":head})
     evidence={"schema":"LOUKSNA_ZD_SEPARATE_OPERATIONAL_AUTHORIZATION/1.0","status":"PASS" if not failures else "HOLD","timestamp_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),"source_commit":head,"checks":checks,"failures":failures,"authorization":"OPERATIONAL_POSTBOOT_AUTHORIZED" if not failures else "DENIED","active":"FORBIDDEN"}
-    (OUT/"OPERATIONAL_AUTHORIZATION.json").write_text(json.dumps(evidence,indent=2,sort_keys=True)+"\\n")
+    (OUT/"OPERATIONAL_AUTHORIZATION.json").write_text(json.dumps(evidence,indent=2,sort_keys=True)+"\n")
     if failures:
         out={"status":"HOLD_INDEPENDENT_CONTINUATION","checkpoint":"POST_G24_VALIDATION","next_point":"SEPARATE_OPERATIONAL_AUTHORIZATION","transition_id":"AUTH-HOLD-NEW-EVIDENCE-001","certified":True,"active":False,"g23":"PASS","g24":"PASS","open_blockers":failures,"material_evidence":evidence}
     else:
         out={"status":"PASS","checkpoint":"SEPARATE_OPERATIONAL_AUTHORIZATION","parent_checkpoint":"POST_G24_VALIDATION","next_point":"POSTBOOT_VERIFICATION","transition_id":"AUTH-TO-POSTBOOT-001","certified":True,"active":False,"g23":"PASS","g24":"PASS","material_evidence":evidence}
-    (ROOT/"continuity/CONTINUATION_RESULT.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\\n")
+    (ROOT/"continuity/CONTINUATION_RESULT.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
     print("LOUKSNA_AUTH_TELEMETRY "+json.dumps({"status":out["status"],"next_point":out["next_point"],"failures":failures},sort_keys=True),flush=True)
 if __name__=="__main__": main()
