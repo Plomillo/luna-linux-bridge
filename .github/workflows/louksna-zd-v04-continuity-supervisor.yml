@@ -1,4 +1,4 @@
-# CONTINUITY_RETRY_P04_SUBSTRATE_ISOLATION
+# CONTINUITY_POINT_BY_POINT_GOVERNED_DRIVER
 name: "LOUKSNA V0.4 — continuity supervisor"
 
 on:
@@ -6,7 +6,9 @@ on:
     branches: [work/louksna-zd-v04-master-20261007]
     paths:
       - ".github/workflows/louksna-zd-v04-continuity-supervisor.yml"
-      - "continuity/signals/**"
+      - "continuity/**"
+      - "scripts/missions/louksna_zd_v04_*.py"
+      - "scripts/continuity/**"
   repository_dispatch:
     types: [louksna_continuity_watch]
   workflow_dispatch:
@@ -25,60 +27,99 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  supervise:
-    outputs:
-      dispatch: ${{ steps.route.outputs.dispatch }}
-      next_point: ${{ steps.route.outputs.next_point }}
-      transition_id: ${{ steps.route.outputs.transition_id }}
+  continuation:
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 360
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: work/louksna-zd-v04-master-20261007
           fetch-depth: 0
           persist-credentials: true
-      - name: Run metacognitive continuity supervisor
+
+      - name: Checkout exact CUSTOSZ V7 mailbox
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: staging/custosz-mission-mailbox-20260928
+          persist-credentials: false
+          sparse-checkout: |
+            artifacts/custosz-v7
+          sparse-checkout-cone-mode: false
+          path: mailbox
+
+      - name: Prepare governed runtime workspace
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$HOME/SYMPHYLAX_LAB/CUSTOSZ_V7_R1_G23_G24_20260927T021532Z/POSIX_COMPATIBILITY_VIEW"
+
+      - name: Run governed point-by-point continuation
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          MISSION_ROOT: ${{ github.workspace }}
+          MAILBOX_ROOT: ${{ github.workspace }}/mailbox
+          CUSTOSZ_WORKSPACE_OVERRIDE: ${{ env.HOME }}/SYMPHYLAX_LAB/CUSTOSZ_V7_R1_G23_G24_20260927T021532Z/POSIX_COMPATIBILITY_VIEW
         run: |
           set -Eeuo pipefail
-          python3 -B scripts/continuity/louksna_zd_v04_supervisor.py
-      - name: Route continuation
-        id: route
-        run: |
-          python3 - <<'PY'
-          import json, os
-          s=json.load(open("continuity/STATE.json"))
-          with open(os.environ["GITHUB_OUTPUT"],"a") as o:
-              o.write("dispatch=" + ("true" if s.get("status")=="DISPATCH_REQUIRED" else "false") + "\n")
-              o.write("next_point=" + s.get("next_point","") + "\n")
-              o.write("transition_id=" + s.get("transition_id","") + "\n")
-          PY
-      - name: Persist checkpoint report and state
-        if: always()
-        run: |
-          set -Eeuo pipefail
-          git add continuity/STATE.json continuity/CONTINUITY_REPORT.txt
-          if git diff --cached --quiet; then exit 0; fi
-          git config user.name "custosz-v7-runtime-bot"
-          git config user.email "custosz-v7-runtime-bot@users.noreply.github.com"
-          git commit -m "evidence(louksna): persist continuity supervisor state"
-          git pull --rebase origin work/louksna-zd-v04-master-20261007
-          git push origin HEAD:work/louksna-zd-v04-master-20261007
+          export CUSTOSZ_WORKSPACE_OVERRIDE="$HOME/SYMPHYLAX_LAB/CUSTOSZ_V7_R1_G23_G24_20260927T021532Z/POSIX_COMPATIBILITY_VIEW"
+          for cycle in $(seq 1 20); do
+            echo "CONTINUITY_DRIVER cycle=$cycle"
 
-  worker_p05:
-    needs: supervise
-    if: always()
-    permissions:
-      contents: write
-    uses: ./.github/workflows/louksna-zd-v04-continuation-worker.yml
-    with:
-      transition_id: P04-CHECKPOINT-TO-P05-001
-      next_point: P05
+            python3 -B scripts/continuity/louksna_zd_v04_supervisor.py
+
+            status="$(python3 -c 'import json; print(json.load(open("continuity/STATE.json"))["status"])')"
+            next="$(python3 -c 'import json; print(json.load(open("continuity/STATE.json"))["next_point"])')"
+            active="$(python3 -c 'import json; print(str(json.load(open("continuity/STATE.json")).get("active_worker",False)).lower())')"
+
+            echo "CONTINUITY_DRIVER status=$status next=$next active_worker=$active"
+
+            if [ "$status" = "TERMINAL" ]; then
+              echo "CONTINUITY_DRIVER terminal"
+              break
+            fi
+
+            if [ "$active" = "true" ]; then
+              echo "CONTINUITY_DRIVER external_worker_active_wait"
+              sleep 15
+              continue
+            fi
+
+            if [ "$status" != "DISPATCH_REQUIRED" ]; then
+              echo "CONTINUITY_DRIVER stop status=$status next=$next"
+              break
+            fi
+
+            export NEXT_POINT="$next"
+            export OUT_DIR="$RUNNER_TEMP/louksna-v04-${next}-${cycle}"
+            mkdir -p "$OUT_DIR"
+
+            python3 -B scripts/continuity/louksna_zd_v04_continuation_worker.py
+
+            git add continuity
+            if git diff --cached --quiet; then
+              echo "CONTINUITY_DRIVER evidence_delta=0"
+            else
+              git config user.name "custosz-v7-runtime-bot"
+              git config user.email "custosz-v7-runtime-bot@users.noreply.github.com"
+              git commit -m "evidence(louksna): persist governed continuation checkpoint $next"
+              git pull --rebase origin work/louksna-zd-v04-master-20261007
+              git push origin HEAD:work/louksna-zd-v04-master-20261007
+            fi
+
+            echo "CONTINUITY_DRIVER checkpoint completed next=$next"
+          done
+
+      - name: Final continuity state
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cat continuity/STATE.json
+          cat continuity/CONTINUITY_REPORT.txt
 
   meta:
-    needs: [supervise, worker_p05]
+    needs: continuation
     if: always()
     permissions:
       contents: write
