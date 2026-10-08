@@ -6,6 +6,7 @@ on:
     branches: [work/louksna-zd-v04-master-20261007]
     paths:
       - ".github/workflows/louksna-zd-v04-continuity-supervisor.yml"
+      - "continuity/signals/**"
   repository_dispatch:
     types: [louksna_continuity_watch]
   workflow_dispatch:
