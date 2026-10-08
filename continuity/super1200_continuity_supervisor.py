@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import json,subprocess,time
 from pathlib import Path
-ROOT=Path(__file__).resolve().parents[2]; state=json.loads((ROOT/"continuity/STATE.json").read_text()); ex=json.loads((ROOT/"continuity/EXECUTORS.json").read_text())["executors"]; nxt=state["next_point"]; ts=time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()); worker=bool(state.get("active_worker")); safe=not state["terminal"] and not state["blocked"] and nxt not in ("","NONE","TERMINAL")
+ROOT=Path(__file__).resolve().parents[1]; state=json.loads((ROOT/"continuity/STATE.json").read_text()); ex=json.loads((ROOT/"continuity/EXECUTORS.json").read_text())["executors"]; nxt=state["next_point"]; ts=time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()); worker=bool(state.get("active_worker")); safe=not state["terminal"] and not state["blocked"] and nxt not in ("","NONE","TERMINAL")
 if safe and not worker and nxt not in ex: status="BLOCKED"; state.update({"status":"BLOCKED","blocked":True,"block_reason":"NO_REGISTERED_EXECUTOR_FOR_NEXT_DOMAIN","blocked_at":ts,"diagnostic":"No material D03 executor exists; do not synthesize capability evidence."})
 elif safe and not worker: status="DISPATCH_REQUIRED"; state["status"]=status; state["dispatch_requested_at"]=ts; r=subprocess.run(["gh","workflow","run","super1200-continuation-worker.yml","--ref","custosz/super-1200-implementation-20261007","-f","transition_id="+state["transition_id"],"-f","next_point="+nxt],text=True,capture_output=True); state["dispatch_error"]=r.stderr[-2000:] if r.returncode else None; status="DISPATCH_FAILED" if r.returncode else status; state["blocked"]=bool(r.returncode)
 elif worker: status="WORKER_ACTIVE"
