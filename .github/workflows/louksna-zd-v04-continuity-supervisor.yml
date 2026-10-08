@@ -1,0 +1,47 @@
+name: "LOUKSNA V0.4 — continuity supervisor"
+
+on:
+  push:
+    branches: [work/louksna-zd-v04-master-20261007]
+    paths:
+      - "continuity/**"
+      - ".github/workflows/louksna-zd-v04-continuity-supervisor.yml"
+      - "scripts/continuity/**"
+  repository_dispatch:
+    types: [louksna_continuity_watch]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: louksna-v04-continuity-supervisor
+  cancel-in-progress: false
+
+jobs:
+  supervise:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: work/louksna-zd-v04-master-20261007
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Run metacognitive continuity supervisor
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          python3 -B scripts/continuity/louksna_zd_v04_supervisor.py
+      - name: Persist checkpoint report and state
+        if: always()
+        run: |
+          set -Eeuo pipefail
+          git add continuity/STATE.json continuity/CONTINUITY_REPORT.txt
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name "custosz-v7-runtime-bot"
+          git config user.email "custosz-v7-runtime-bot@users.noreply.github.com"
+          git commit -m "evidence(louksna): persist continuity supervisor state"
+          git push origin HEAD:work/louksna-zd-v04-master-20261007
