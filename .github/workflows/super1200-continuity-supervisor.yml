@@ -5,7 +5,6 @@ on:
     branches: [custosz/super-1200-implementation-20261007]
     paths:
       - ".github/workflows/super1200-continuity-supervisor.yml"
-      - "implementation/super1200/runtime/**"
   repository_dispatch:
     types: [super1200_continuity_watch]
   workflow_dispatch:
