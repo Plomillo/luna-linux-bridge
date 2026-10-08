@@ -68,7 +68,7 @@ def main():
         "validated_object_commit":subprocess.check_output(["git","rev-parse","HEAD"],cwd=ROOT,text=True).strip(),
         "g24":"SEPARATE_REQUIRED"
     }
-    (OUT/"G23_INDEPENDENT_VALIDATION.json").write_text(json.dumps(evidence,indent=2,sort_keys=True)+"\\n")
+    (OUT/"G23_INDEPENDENT_VALIDATION.json").write_text(json.dumps(evidence,indent=2,sort_keys=True)+"\n")
     if failures:
         out={"status":"HOLD_INDEPENDENT_CONTINUATION","checkpoint":"CHECKPOINT_12","next_point":"G23","transition_id":"G23-HOLD-NEW-EVIDENCE-001","certified":False,"active":False,"g23":"REQUIRED","g24":"REQUIRED","open_blockers":failures,"material_evidence":evidence}
     else:
