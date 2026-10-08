@@ -1,158 +1,22 @@
 {
   "active": false,
   "certified": false,
-  "checkpoint": "CHECKPOINT_08",
+  "checkpoint": "CHECKPOINT_09",
   "g23": "SEPARATE_REQUIRED",
   "g24": "SEPARATE_REQUIRED",
   "material_evidence": {
-    "authority": "Louksna.md",
-    "context_hash": "2f4f62728e3cf89a2e4fc1c545f12d8b1d79e931337dfc11e138b5969f1d2d8d",
-    "profiles": [
-      {
-        "answer_hash": "e9db568002958edffeca9d51743fe60ee876b6c96ac6042e91c691e6d451a0a2",
-        "authority_hash": "10a04b1bc5aafcb3482bc29f425ea36544da67936077af75d789b5808797ac62",
-        "context_hash": "2f4f62728e3cf89a2e4fc1c545f12d8b1d79e931337dfc11e138b5969f1d2d8d",
-        "profile": {
-          "adversarial_passes": 0,
-          "name": "Instantáneo",
-          "retrieval_passes": 1,
-          "time_budget_ms": 500,
-          "token_budget": 256,
-          "validation_passes": 1
-        },
-        "surface": [
-          "CHAT",
-          "CALL"
-        ],
-        "trace": [
-          "R1:2f4f62728e3c",
-          "V1:e9db56800295"
-        ]
-      },
-      {
-        "answer_hash": "e9db568002958edffeca9d51743fe60ee876b6c96ac6042e91c691e6d451a0a2",
-        "authority_hash": "10a04b1bc5aafcb3482bc29f425ea36544da67936077af75d789b5808797ac62",
-        "context_hash": "2f4f62728e3cf89a2e4fc1c545f12d8b1d79e931337dfc11e138b5969f1d2d8d",
-        "profile": {
-          "adversarial_passes": 1,
-          "name": "Medio",
-          "retrieval_passes": 2,
-          "time_budget_ms": 1000,
-          "token_budget": 512,
-          "validation_passes": 2
-        },
-        "surface": [
-          "CHAT",
-          "CALL"
-        ],
-        "trace": [
-          "R1:2f4f62728e3c",
-          "R2:2f4f62728e3c",
-          "V1:e9db56800295",
-          "V2:e9db56800295",
-          "A1:same-authority"
-        ]
-      },
-      {
-        "answer_hash": "e9db568002958edffeca9d51743fe60ee876b6c96ac6042e91c691e6d451a0a2",
-        "authority_hash": "10a04b1bc5aafcb3482bc29f425ea36544da67936077af75d789b5808797ac62",
-        "context_hash": "2f4f62728e3cf89a2e4fc1c545f12d8b1d79e931337dfc11e138b5969f1d2d8d",
-        "profile": {
-          "adversarial_passes": 2,
-          "name": "Alto",
-          "retrieval_passes": 3,
-          "time_budget_ms": 2000,
-          "token_budget": 1024,
-          "validation_passes": 3
-        },
-        "surface": [
-          "CHAT",
-          "CALL"
-        ],
-        "trace": [
-          "R1:2f4f62728e3c",
-          "R2:2f4f62728e3c",
-          "R3:2f4f62728e3c",
-          "V1:e9db56800295",
-          "V2:e9db56800295",
-          "V3:e9db56800295",
-          "A1:same-authority",
-          "A2:same-authority"
-        ]
-      },
-      {
-        "answer_hash": "e9db568002958edffeca9d51743fe60ee876b6c96ac6042e91c691e6d451a0a2",
-        "authority_hash": "10a04b1bc5aafcb3482bc29f425ea36544da67936077af75d789b5808797ac62",
-        "context_hash": "2f4f62728e3cf89a2e4fc1c545f12d8b1d79e931337dfc11e138b5969f1d2d8d",
-        "profile": {
-          "adversarial_passes": 3,
-          "name": "Muy alto",
-          "retrieval_passes": 4,
-          "time_budget_ms": 4000,
-          "token_budget": 2048,
-          "validation_passes": 4
-        },
-        "surface": [
-          "CHAT",
-          "CALL"
-        ],
-        "trace": [
-          "R1:2f4f62728e3c",
-          "R2:2f4f62728e3c",
-          "R3:2f4f62728e3c",
-          "R4:2f4f62728e3c",
-          "V1:e9db56800295",
-          "V2:e9db56800295",
-          "V3:e9db56800295",
-          "V4:e9db56800295",
-          "A1:same-authority",
-          "A2:same-authority",
-          "A3:same-authority"
-        ]
-      },
-      {
-        "answer_hash": "e9db568002958edffeca9d51743fe60ee876b6c96ac6042e91c691e6d451a0a2",
-        "authority_hash": "10a04b1bc5aafcb3482bc29f425ea36544da67936077af75d789b5808797ac62",
-        "context_hash": "2f4f62728e3cf89a2e4fc1c545f12d8b1d79e931337dfc11e138b5969f1d2d8d",
-        "profile": {
-          "adversarial_passes": 4,
-          "name": "Pro",
-          "retrieval_passes": 5,
-          "time_budget_ms": 8000,
-          "token_budget": 4096,
-          "validation_passes": 5
-        },
-        "surface": [
-          "CHAT",
-          "CALL"
-        ],
-        "trace": [
-          "R1:2f4f62728e3c",
-          "R2:2f4f62728e3c",
-          "R3:2f4f62728e3c",
-          "R4:2f4f62728e3c",
-          "R5:2f4f62728e3c",
-          "V1:e9db56800295",
-          "V2:e9db56800295",
-          "V3:e9db56800295",
-          "V4:e9db56800295",
-          "V5:e9db56800295",
-          "A1:same-authority",
-          "A2:same-authority",
-          "A3:same-authority",
-          "A4:same-authority"
-        ]
-      }
-    ],
-    "schema": "LOUKSNA_ZD_P08_EFFORT/1.0",
-    "status": "PASS",
-    "surface": [
-      "CHAT",
-      "CALL"
-    ]
+    "account": 21,
+    "repo": 36,
+    "states": {
+      "NOT_GRANTED": 25,
+      "UNKNOWN": 8,
+      "VERIFIED_AVAILABLE": 24,
+      "VERIFIED_DENIED": 0
+    },
+    "total": 57
   },
-  "next_point": "P09",
-  "parent_checkpoint": "CHECKPOINT_07",
+  "next_point": "P10",
+  "parent_checkpoint": "CHECKPOINT_08",
   "status": "PASS",
-  "transition_id": "P08-CHECKPOINT-TO-P09-001"
+  "transition_id": "P09-CHECKPOINT-TO-P10-001"
 }
