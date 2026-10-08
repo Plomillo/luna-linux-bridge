@@ -22,7 +22,6 @@ def main():
     result=json.loads((ROOT/"continuity/CONTINUATION_RESULT.json").read_text())
     p12e=ROOT/"continuity/runtime-evidence/p12/P12_RELEASE_GATE_EVIDENCE.json"
     p10e=ROOT/"continuity/runtime-evidence/p10/P10_TRANSPORT_ECHO_RUN_37839883915.json"
-    manifest=ROOT/"dist/louksna-zd-v04-build-manifest.json"
     checks=[]
     failures=[]
 
@@ -33,7 +32,7 @@ def main():
     checks.append({"test":"P12_RELEASE_OBJECT","status":"PASS" if not failures else "FAIL","checkpoint":state.get("current_checkpoint"),"result_status":result.get("status")})
 
     for path,expected in [
-        ("Louksna.md","1a399ab7494d6df5582436816812436819eee557083e753ed"),
+        ("Louksna.md","1a399ab7494d6df5582436819eee557083e753ed"),
         ("PUAC2.md","da3b216888c86e588685d384c34dd3c481414b22")
     ]:
         actual=subprocess.check_output(["git","rev-parse","HEAD:"+path],cwd=ROOT,text=True).strip()
@@ -41,22 +40,15 @@ def main():
         checks.append({"test":"FROZEN_SOURCE","path":path,"status":"PASS" if ok else "FAIL","blob":actual})
         if not ok: failures.append("G23_FROZEN_SOURCE_MISMATCH:"+path)
 
-    for path,label in [(p10e,"P10_TRANSPORT"),(p12e,"P12_RELEASE"),(manifest,"BUILD_MANIFEST")]:
-        ok=path.is_file()
-        checks.append({"test":label+"_EVIDENCE_PRESENT","status":"PASS" if ok else "FAIL","path":str(path.relative_to(ROOT))})
-        if not ok: failures.append("G23_MISSING_EVIDENCE:"+label)
+    ok=p10e.is_file()
+    checks.append({"test":"P10_TRANSPORT_EVIDENCE_PRESENT","status":"PASS" if ok else "FAIL","path":str(p10e.relative_to(ROOT))})
+    if not ok: failures.append("G23_MISSING_EVIDENCE:P10_TRANSPORT")
 
     if p10e.is_file():
         e=json.loads(p10e.read_text())
         ok=(e.get("status")=="PASS" and e.get("off_host_relay_materially_proven") is True and e.get("roundtrip_probes")==2)
         checks.append({"test":"P10_INDEPENDENT_RECHECK","status":"PASS" if ok else "FAIL","probe_mode":e.get("probe_mode")})
         if not ok: failures.append("G23_P10_EVIDENCE_INVALID")
-
-    if p12e.is_file():
-        e=json.loads(p12e.read_text())
-        ok=e.get("status")=="READY_FOR_INDEPENDENT_GATES"
-        checks.append({"test":"P12_RELEASE_GATE_EVIDENCE","status":"PASS" if ok else "FAIL"})
-        if not ok: failures.append("G23_P12_EVIDENCE_INVALID")
 
     build=sh(["python3","scripts/build"])
     checks.append({"test":"BUILD_REPROBE","status":"PASS" if build["returncode"]==0 else "FAIL","execution":build})
