@@ -1,6 +1,6 @@
 {
   "active": false,
-  "active_worker": false,
+  "active_worker": true,
   "block_reason": "NONE",
   "blocked": false,
   "branch": "custosz/super-1200-implementation-20261007",
@@ -13,7 +13,7 @@
   "mission_id": "SUPER1200-CONTINUATION-20261007",
   "next_point": "D03",
   "schema": "SUPER1200_CONTINUITY_STATE/1.0",
-  "status": "DISPATCH_REQUIRED",
+  "status": "RUNNING",
   "terminal": false,
   "transition_id": "D02-CHECKPOINT-TO-D03-001"
 }
