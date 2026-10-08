@@ -1,15 +1,15 @@
 {
   "active": false,
   "active_worker": false,
-  "block_reason": "NONE",
-  "blocked": false,
+  "block_reason": "HOLD_REQUIRES_NEW_EVIDENCE",
+  "blocked": true,
   "blocked_at": "2026-10-08T14:12:45Z",
   "branch": "work/louksna-zd-v04-master-20261007",
   "certified": false,
   "current_checkpoint": "CHECKPOINT_12_PREPARED",
   "diagnostic": "P05 material executor registered; awaiting governed worker dispatch.",
   "dispatch_error": null,
-  "dispatch_requested_at": "2026-10-08T17:42:02Z",
+  "dispatch_requested_at": "2026-10-08T17:43:48Z",
   "dispatch_stderr": null,
   "g23": "SEPARATE_REQUIRED",
   "g24": "SEPARATE_REQUIRED",
@@ -24,7 +24,7 @@
   "recovery_note": "P04_RETRY_AFTER_WORKER_TRIGGER_ISOLATION",
   "schema": "LOUKSNA_CONTINUITY_STATE/1.0",
   "stall_threshold_seconds": 10,
-  "status": "DISPATCH_PENDING",
+  "status": "BLOCKED",
   "terminal": false,
   "transition_id": "P12-HOLD-RETRY-001"
 }
