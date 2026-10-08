@@ -26,7 +26,11 @@ def main():
     failures=[]
 
     if state.get("current_checkpoint")!="CHECKPOINT_12": failures.append("G23_P12_CHECKPOINT_REQUIRED")
-    if result.get("status")!="PASS": failures.append("G23_P12_RESULT_NOT_PASS")
+    p12e=ROOT/"continuity/runtime-evidence/p12/P12_RELEASE_GATE_EVIDENCE.json"
+    if not p12e.is_file(): failures.append("G23_P12_EVIDENCE_MISSING")
+    else:
+        p12gate=json.loads(p12e.read_text())
+        if p12gate.get("status")!="READY_FOR_INDEPENDENT_GATES": failures.append("G23_P12_EVIDENCE_NOT_READY")
     if result.get("next_point")!="G23": failures.append("G23_TRANSITION_NOT_READY")
     current_blockers=list(state.get("open_blockers",[]))
     stale_blockers=[b for b in current_blockers if b not in result.get("open_blockers",[])]
