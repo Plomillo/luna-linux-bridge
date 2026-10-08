@@ -1,5 +1,6 @@
 name: "LOUKSNA V0.4 — second-order meta-supervisor"
 on:
+  workflow_call:
   workflow_dispatch:
   repository_dispatch:
     types: [louksna_meta_watch]
