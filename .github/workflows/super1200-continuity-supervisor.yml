@@ -17,6 +17,10 @@ concurrency:
   cancel-in-progress: true
 jobs:
   supervise:
+    outputs:
+      dispatch: ${{ steps.route.outputs.dispatch }}
+      next_point: ${{ steps.route.outputs.next_point }}
+      transition_id: ${{ steps.route.outputs.transition_id }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -31,6 +35,17 @@ jobs:
         run: |
           set -Eeuo pipefail
           python3 -B continuity/super1200_continuity_supervisor.py
+      - name: Route continuation
+        id: route
+        run: |
+          python3 - <<'PY'
+          import json, os
+          s=json.load(open("continuity/STATE.json"))
+          with open(os.environ["GITHUB_OUTPUT"],"a") as o:
+              o.write("dispatch=" + ("true" if s.get("status")=="DISPATCH_REQUIRED" else "false") + "\n")
+              o.write("next_point=" + s.get("next_point","") + "\n")
+              o.write("transition_id=" + s.get("transition_id","") + "\n")
+          PY
       - name: Persist report
         if: always()
         run: |
@@ -41,3 +56,20 @@ jobs:
           git config user.email "custosz-v7-runtime-bot@users.noreply.github.com"
           git commit -m "evidence(super1200): persist continuity supervisor state"
           git push origin HEAD:custosz/super-1200-implementation-20261007
+
+  continue:
+    needs: supervise
+    if: needs.supervise.outputs.dispatch == 'true'
+    permissions:
+      contents: write
+    uses: ./.github/workflows/super1200-continuation-worker.yml
+    with:
+      transition_id: ${{ needs.supervise.outputs.transition_id }}
+      next_point: ${{ needs.supervise.outputs.next_point }}
+
+  meta:
+    needs: supervise
+    if: always()
+    permissions:
+      contents: write
+    uses: ./.github/workflows/super1200-meta-supervisor.yml
