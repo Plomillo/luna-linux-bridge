@@ -64,8 +64,7 @@ def main():
         "certified_claim":"P12_RELEASE_OBJECT" if not failures else None,
         "activation":"FORBIDDEN_UNTIL_POST_VALIDATION_AND_OPERATIONAL_AUTHORIZATION"
     }
-    (OUT/"G24_CERTIFICATION_DECISION.json").write_text(json.dumps(evidence,indent=2,sort_keys=True)+"
-")
+    (OUT/"G24_CERTIFICATION_DECISION.json").write_text(json.dumps(evidence,indent=2,sort_keys=True)+"\n")
     if failures:
         out={"status":"HOLD_INDEPENDENT_CONTINUATION","checkpoint":"G23","next_point":"G24","transition_id":"G24-HOLD-NEW-EVIDENCE-001","certified":False,"active":False,"g23":"PASS","g24":"REQUIRED","open_blockers":failures,"material_evidence":evidence}
     else:
