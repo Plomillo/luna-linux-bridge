@@ -33,8 +33,16 @@ done
 
 install -d -o root -g root -m 0755 "$BASE"
 install -d -o root -g root -m 0700 "$TLS"
-install -d -o "$OWNER_UID" -g "$OWNER_GID" -m 0700 "$OWNER_HOME/.config"
-install -d -o "$OWNER_UID" -g "$OWNER_GID" -m 0700 "$OWNER_HOME/.config/louksna"
+for d in "$OWNER_HOME/.config" "$OWNER_HOME/.config/louksna"; do
+  if [ -e "$d" ] || [ -L "$d" ]; then
+    [ -d "$d" ] && [ ! -L "$d" ] && [ "$(stat -c %u "$d")" = "$OWNER_UID" ] || {
+      echo "ERROR: owner config directory has unexpected type/ownership: $d" >&2
+      exit 3
+    }
+  else
+    install -d -o "$OWNER_UID" -g "$OWNER_GID" -m 0700 "$d"
+  fi
+done
 install -d -o "$OWNER_UID" -g "$OWNER_GID" -m 0700 "$CLIENT"
 
 VALIDATED=0
