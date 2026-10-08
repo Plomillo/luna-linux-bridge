@@ -1,14 +1,14 @@
 {
   "active": false,
   "active_worker": false,
-  "block_reason": "NO_REGISTERED_EXECUTOR_FOR_NEXT_POINT",
-  "blocked": true,
+  "block_reason": "NONE",
+  "blocked": false,
   "blocked_at": "2026-10-08T13:35:05Z",
   "branch": "work/louksna-zd-v04-master-20261007",
   "certified": false,
   "current_checkpoint": "CHECKPOINT_03",
   "diagnostic": "No material executor exists for P04; invention of work is forbidden.",
-  "dispatch_requested_at": "2026-10-08T13:32:13Z",
+  "dispatch_requested_at": "2026-10-08T13:39:09Z",
   "dispatch_stderr": null,
   "g23": "SEPARATE_REQUIRED",
   "g24": "SEPARATE_REQUIRED",
@@ -18,7 +18,7 @@
   "recovery_note": "STALE_WORKER_LEASE_CLEARED_AFTER_VERIFIED_NO_ACTIVE_WORKER",
   "schema": "LOUKSNA_CONTINUITY_STATE/1.0",
   "stall_threshold_seconds": 10,
-  "status": "BLOCKED",
+  "status": "DISPATCH_REQUIRED",
   "terminal": false,
   "transition_id": "P03-CHECKPOINT-TO-P04-001"
 }
