@@ -1,5 +1,6 @@
 name: TCP endpoint candidate - 10 minute stability lab
 
+# Ephemeral experiment only: maximum execution window is 10 minutes.
 on:
   push:
     paths:
