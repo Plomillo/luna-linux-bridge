@@ -25,3 +25,8 @@ override_dh_auto_install:
 	cp bridge/MTLS_READONLY_GATEWAY.md bridge/LIVE_TRANSPORT.md bridge/README.md debian/louksna-linux-bridge/usr/share/louksna/
 	install -d debian/louksna-linux-bridge/lib/systemd/system
 	sed -e 's#@REVIEWED_PROJECT_ROOT@#/usr/lib/louksna#' -e 's#@ROOT_PROVISIONED_MTLS_CONFIG@#/etc/louksna/remote-bridge/mtls.json#' -e 's#@OWNER_PRIVATE_STATE@#/var/lib/louksna/remote-bridge#' -e 's#@OWNER_CHOSEN_PORT@#8443#' bridge/deploy/louksna-mtls-readonly.service.in > debian/louksna-linux-bridge/lib/systemd/system/louksna-mtls-readonly.service
+
+# The service requires an owner-provisioned mTLS config and private key.
+# Never enable or start it as a side effect of installing the package.
+override_dh_installsystemd:
+	dh_installsystemd --no-enable --no-start
