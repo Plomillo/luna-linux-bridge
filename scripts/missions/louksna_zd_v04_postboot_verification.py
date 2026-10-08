@@ -18,13 +18,11 @@ def main():
     if test.returncode!=0: failures.append("POSTBOOT_FRESH_PROCESS_FAILED")
     head=subprocess.check_output(["git","rev-parse","HEAD"],cwd=ROOT,text=True).strip()
     evidence={"schema":"LOUKSNA_ZD_POSTBOOT_VERIFICATION/1.0","status":"PASS" if not failures else "HOLD","timestamp_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),"source_commit":head,"checks":checks,"failures":failures,"active":"FORBIDDEN_FROM_CI"}
-    (OUT/"POSTBOOT_VERIFICATION.json").write_text(json.dumps(evidence,indent=2,sort_keys=True)+"
-")
+    (OUT/"POSTBOOT_VERIFICATION.json").write_text(json.dumps(evidence,indent=2,sort_keys=True)+"\n")
     if failures:
         out={"status":"HOLD_INDEPENDENT_CONTINUATION","checkpoint":"SEPARATE_OPERATIONAL_AUTHORIZATION","next_point":"POSTBOOT_VERIFICATION","transition_id":"POSTBOOT-HOLD-NEW-EVIDENCE-001","certified":True,"active":False,"g23":"PASS","g24":"PASS","open_blockers":failures,"material_evidence":evidence}
     else:
         out={"status":"PASS","checkpoint":"POSTBOOT_VERIFICATION","parent_checkpoint":"SEPARATE_OPERATIONAL_AUTHORIZATION","next_point":"ACTIVE_AUTHORIZATION_REVIEW","transition_id":"POSTBOOT-TO-ACTIVE-REVIEW-001","certified":True,"active":False,"g23":"PASS","g24":"PASS","material_evidence":evidence}
-    (ROOT/"continuity/CONTINUATION_RESULT.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"
-")
+    (ROOT/"continuity/CONTINUATION_RESULT.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
     print("LOUKSNA_POSTBOOT_TELEMETRY "+json.dumps({"status":out["status"],"next_point":out["next_point"],"failures":failures},sort_keys=True),flush=True)
 if __name__=="__main__": main()
