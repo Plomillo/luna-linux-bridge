@@ -64,4 +64,5 @@ jobs:
           git config user.name "custosz-v7-runtime-bot"
           git config user.email "custosz-v7-runtime-bot@users.noreply.github.com"
           git commit -m "evidence(louksna): persist continuation checkpoint"
+          git pull --rebase origin work/louksna-zd-v04-master-20261007
           git push origin HEAD:work/louksna-zd-v04-master-20261007
