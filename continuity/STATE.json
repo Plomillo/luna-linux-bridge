@@ -1,12 +1,12 @@
 {
   "active": false,
   "active_worker": false,
-  "block_reason": "DISPATCH_COMMAND_FAILED",
-  "blocked": true,
+  "block_reason": null,
+  "blocked": false,
   "branch": "work/louksna-zd-v04-master-20261007",
   "certified": false,
   "current_checkpoint": "CHECKPOINT_02",
-  "dispatch_requested_at": "2026-10-08T13:23:04Z",
+  "dispatch_requested_at": "2026-10-08T13:25:21Z",
   "dispatch_stderr": "HTTP 404: workflow louksna-zd-v04-continuation-worker.yml not found on the default branch (https://api.github.com/repos/Plomillo/luna-linux-bridge/actions/workflows/louksna-zd-v04-continuation-worker.yml)\n",
   "g23": "SEPARATE_REQUIRED",
   "g24": "SEPARATE_REQUIRED",
@@ -15,7 +15,7 @@
   "next_point": "P03_CUSTOSZ_RUNTIME_METAOS_EXECUTION_PLANE",
   "schema": "LOUKSNA_CONTINUITY_STATE/1.0",
   "stall_threshold_seconds": 10,
-  "status": "DISPATCH_FAILED",
+  "status": "DISPATCH_REQUIRED",
   "terminal": false,
   "transition_id": "P02-CHECKPOINT-TO-P03-001"
 }
