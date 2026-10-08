@@ -31,7 +31,7 @@ def main():
     else:
         p12gate=json.loads(p12e.read_text())
         if p12gate.get("status")!="READY_FOR_INDEPENDENT_GATES": failures.append("G23_P12_EVIDENCE_NOT_READY")
-    if result.get("next_point")!="G23": failures.append("G23_TRANSITION_NOT_READY")
+    if state.get("next_point")!="G23": failures.append("G23_TRANSITION_NOT_READY")
     current_blockers=list(state.get("open_blockers",[]))
     stale_blockers=[b for b in current_blockers if b not in result.get("open_blockers",[])]
     checks.append({"test":"P12_RELEASE_OBJECT","status":"PASS" if not failures else "FAIL","checkpoint":state.get("current_checkpoint"),"result_status":result.get("status"),"stale_state_blockers":stale_blockers})
