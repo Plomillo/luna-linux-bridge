@@ -1,23 +1,55 @@
-name: TCP endpoint candidate - control
+name: TCP endpoint candidate - 10 minute stability lab
 
 on:
   push:
     paths:
       - 'bridge/tcp_endpoint_candidate.py'
       - 'bridge/tcp_endpoint_probe.py'
+      - 'bridge/tcp_endpoint_validate.py'
       - '.github/workflows/tcp-endpoint-candidate-10m.yml'
 
 permissions:
   contents: read
 
 jobs:
-  control:
+  tcp_endpoint_10m:
     runs-on: ubuntu-24.04
-    timeout-minutes: 2
+    timeout-minutes: 10
     steps:
-      - name: Control execution
+      - uses: actions/checkout@v4
+      - name: Start endpoint
         run: |
           set -Eeuo pipefail
-          echo "ACTIONS_CONTROL_PLANE_OK"
-          python3 --version
-          uname -a
+          python3 bridge/tcp_endpoint_candidate.py >tcp-endpoint.stdout 2>tcp-endpoint.stderr &
+          echo $! >tcp-endpoint.pid
+          for i in $(seq 1 50); do
+            python3 -c 'import socket; s=socket.socket(); s.settimeout(.2); s.connect(("127.0.0.1",18080)); s.close()' && exit 0
+            sleep .2
+          done
+          echo "ENDPOINT_NOT_READY" >&2
+          exit 1
+      - name: Run stability probe
+        run: |
+          set -Eeuo pipefail
+          TCP_ENDPOINT_DURATION=540 TCP_ENDPOINT_CLIENTS=32 python3 bridge/tcp_endpoint_probe.py
+      - name: Stop endpoint
+        if: always()
+        run: |
+          set +e
+          test -f tcp-endpoint.pid && kill -TERM "$(cat tcp-endpoint.pid)" 2>/dev/null || true
+          sleep 1
+      - name: Validate telemetry
+        if: always()
+        run: |
+          set -Eeuo pipefail
+          python3 bridge/tcp_endpoint_validate.py
+      - name: Upload telemetry
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tcp-endpoint-telemetry-10m
+          path: |
+            tcp-endpoint-telemetry.jsonl
+            tcp-endpoint.stdout
+            tcp-endpoint.stderr
+          if-no-files-found: warn
