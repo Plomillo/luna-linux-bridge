@@ -44,7 +44,7 @@ jobs:
         if: always()
         run: |
           set -Eeuo pipefail
-          git add continuity
+          git add continuity implementation/super1200
           if git diff --cached --quiet; then exit 0; fi
           git config user.name "custosz-v7-runtime-bot"
           git config user.email "custosz-v7-runtime-bot@users.noreply.github.com"
