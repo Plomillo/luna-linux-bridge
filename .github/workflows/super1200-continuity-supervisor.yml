@@ -28,15 +28,6 @@ jobs:
           ref: custosz/super-1200-implementation-20261007
           fetch-depth: 0
           persist-credentials: true
-      - name: Cancel obsolete queued continuity runs
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set +e
-          for run_id in 37784973829 37783759402 37782748942 37781146384; do
-            gh api --method POST -H "Accept: application/vnd.github+json" "/repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/cancel" >/dev/null 2>&1
-          done
-          true
       - name: Run metacognitive supervisor
         env:
           GH_TOKEN: ${{ github.token }}
@@ -63,6 +54,7 @@ jobs:
           git config user.name "custosz-v7-runtime-bot"
           git config user.email "custosz-v7-runtime-bot@users.noreply.github.com"
           git commit -m "evidence(super1200): persist continuity supervisor state"
+          git pull --rebase origin custosz/super-1200-implementation-20261007
           git push origin HEAD:custosz/super-1200-implementation-20261007
 
   continue:
