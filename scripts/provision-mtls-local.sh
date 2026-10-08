@@ -37,11 +37,13 @@ install -d -o "$OWNER_UID" -g "$OWNER_GID" -m 0700 "$OWNER_HOME/.config"
 install -d -o "$OWNER_UID" -g "$OWNER_GID" -m 0700 "$OWNER_HOME/.config/louksna"
 install -d -o "$OWNER_UID" -g "$OWNER_GID" -m 0700 "$CLIENT"
 
+VALIDATED=0
 cleanup() {
-  # Partial provisioning must never be mistaken for a complete config.
-  if [ ! -f "$CONFIG" ]; then
-    rm -f "$TLS/ca.key" "$TLS/ca.pem" "$TLS/server.key" "$TLS/server.pem" "$TLS/server.csr" "$TLS/server.ext" "$TLS/client.csr" "$TLS/client.ext" "$TLS/client.pem" "$TLS/client.key" "$TLS/ca.srl"
-    rm -rf "$CLIENT"
+  # TLS and client directories were confirmed absent before this script created them.
+  # Any failure before runtime validation removes only this script's partial output.
+  if [ "$VALIDATED" -ne 1 ]; then
+    rm -f "$CONFIG"
+    rm -rf "$TLS" "$CLIENT"
   fi
 }
 trap cleanup EXIT HUP INT TERM
@@ -129,6 +131,7 @@ cfg = mtls_gateway.read_config(sys.argv[1], enforce_root=True)
 print("CONFIG_VALIDATED schema=" + cfg["schema"])
 PY
 
+VALIDATED=1
 # Remove signing key and transient CSRs/extensions; retain CA certificate for server trust.
 rm -f "$TLS/ca.key" "$TLS/server.csr" "$TLS/server.ext" "$TLS/client.csr" "$TLS/client.ext" "$TLS/ca.srl"
 trap - EXIT HUP INT TERM
