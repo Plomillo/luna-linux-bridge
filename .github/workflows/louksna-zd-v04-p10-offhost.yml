@@ -58,10 +58,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ssh -p 443 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ExitOnForwardFailure=yes -R0:127.0.0.1:18443 tcp@free.pinggy.io >"$RUNNER_TEMP/p10/pinggy.stdout" 2>"$RUNNER_TEMP/p10/pinggy.stderr" &
+          ssh -tt -p 443 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ExitOnForwardFailure=yes -o ServerAliveInterval=10 -R0:127.0.0.1:18443 tcp@free.pinggy.io >"$RUNNER_TEMP/p10/pinggy.stdout" 2>"$RUNNER_TEMP/p10/pinggy.stderr" &
           echo $! >"$RUNNER_TEMP/p10/pinggy.pid"
           for i in {1..40}; do
-            endpoint="$(grep -Eo 'tcp://[^[:space:]]+' "$RUNNER_TEMP/p10/pinggy.stdout" "$RUNNER_TEMP/p10/pinggy.stderr" 2>/dev/null | head -n1 | sed 's#tcp://##' || true)"
+            endpoint="$(grep -hEo 'tcp://[^[:space:]]+' "$RUNNER_TEMP/p10/pinggy.stdout" "$RUNNER_TEMP/p10/pinggy.stderr" 2>/dev/null | head -n1 | sed 's#tcp://##' || true)"
             if test -n "$endpoint"; then
               echo "P10_ENDPOINT=$endpoint"
               host="${endpoint%:*}"
