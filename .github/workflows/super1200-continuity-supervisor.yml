@@ -1,4 +1,4 @@
-# CONTINUITY_RETRY_AFTER_EXECUTOR_BLOCK_FIX_2
+# D04_WORKER_TRIGGER_ISOLATION
 name: "SUPER1200 — continuity supervisor"
 on:
   push:
