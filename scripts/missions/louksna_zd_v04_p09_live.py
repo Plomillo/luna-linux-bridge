@@ -37,7 +37,8 @@ def probe(op,token):
     rec={"operation_id":oid,"scope":scope,"endpoint":url.replace(OWNER,"{owner}").replace(REPO,"{repo}"),"operation":kind,"mutability":"MUTATING" if kind=="MUTATE" else "READ","risk":"HIGH" if kind=="MUTATE" else "LOW","confirmation_policy":"REQUIRED" if kind=="MUTATE" else "NONE","reversible":kind!="GET","last_probe_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())}
     if kind=="MUTATE":
         rec["state"]="UNKNOWN"; rec["probe"]="NON_MUTATING_CAPABILITY_CENSUS_ONLY"; return rec
-    req=urllib.request.Request(url,headers={"Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","User-Agent":"Louksna-P09-Capability-Census"},method="GET")
+    if not token: raise RuntimeError("GITHUB_TOKEN_MISSING")
+    req=urllib.request.Request(url,headers={"Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","User-Agent":"Louksna-P09-Capability-Census","Authorization":"Bearer "+token},method="GET")
     try:
         with urllib.request.urlopen(req,timeout=15) as resp:
             rec["http_status"]=resp.status; rec["state"]="VERIFIED_AVAILABLE" if 200<=resp.status<300 else "UNKNOWN"; rec["response_hash"]=hashlib.sha256(resp.read(1024*1024)).hexdigest()
