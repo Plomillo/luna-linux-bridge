@@ -1,0 +1,14 @@
+{
+  "active": false,
+  "certified": false,
+  "checkpoint": "D03_FUNCTIONALLY_CLOSED",
+  "domain": "D03",
+  "evidenced": 35,
+  "g23": "BLOCKED_UNTIL_INDEPENDENT_VALIDATION",
+  "g24": "BLOCKED_UNTIL_G23",
+  "next_point": "D04",
+  "pending": 0,
+  "status": "PASS",
+  "total_remaining": 1120,
+  "transition_id": "D03-CHECKPOINT-TO-D04-001"
+}
