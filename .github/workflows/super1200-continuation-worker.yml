@@ -18,6 +18,7 @@ on:
         type: string
 permissions:
   contents: write
+  actions: write
 concurrency:
   group: super1200-continuation-worker-${{ inputs.transition_id }}
   cancel-in-progress: true
@@ -40,6 +41,19 @@ jobs:
         run: |
           set -Eeuo pipefail
           python3 -B continuity/super1200_continuation_worker.py
+      - name: Emit worker completion signal
+        if: always()
+        env:
+          TRANSITION_ID: ${{ inputs.transition_id }}
+          NEXT_POINT: ${{ inputs.next_point }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p continuity/signals
+          python3 - <<'PY'
+          import json, os, time
+          p=f"continuity/signals/{os.environ['TRANSITION_ID']}.json"
+          json.dump({"transition_id":os.environ["TRANSITION_ID"],"next_point":os.environ["NEXT_POINT"],"utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),"source":"continuation-worker"},open(p,"w"),indent=2,sort_keys=True)
+          PY
       - name: Persist continuation evidence
         if: always()
         run: |
