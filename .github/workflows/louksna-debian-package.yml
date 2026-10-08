@@ -82,6 +82,12 @@ jobs:
           pathlib.Path("debian-package-evidence.json").write_text(json.dumps(evidence,indent=2,sort_keys=True)+"\n")
           PY
 
+      - name: Stage Debian package for artifact upload
+        run: |
+          mkdir -p dist/debian
+          cp ../louksna-linux-bridge_0.4.0-1_all.deb dist/debian/
+          cp debian-package.sha256 debian-package-evidence.json lintian.txt dist/debian/
+
       - name: Upload Debian package and evidence
         uses: actions/upload-artifact@v4
         with:
@@ -89,7 +95,7 @@ jobs:
           if-no-files-found: error
           retention-days: 30
           path: |
-            ../louksna-linux-bridge_0.4.0-1_all.deb
-            debian-package.sha256
-            debian-package-evidence.json
-            lintian.txt
+            dist/debian/louksna-linux-bridge_0.4.0-1_all.deb
+            dist/debian/debian-package.sha256
+            dist/debian/debian-package-evidence.json
+            dist/debian/lintian.txt
