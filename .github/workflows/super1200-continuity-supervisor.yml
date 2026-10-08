@@ -52,7 +52,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -Eeuo pipefail
-          gh workflow run super1200-continuation-worker.yml --ref custosz/super-1200-implementation-20261007 -f transition_id="${{ steps.route.outputs.transition_id }}" -f next_point="${{ steps.route.outputs.next_point }}"
+          gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" "/repos/${GITHUB_REPOSITORY}/actions/workflows/super1200-continuation-worker.yml/dispatches" -f ref="custosz/super-1200-implementation-20261007" -f "inputs[transition_id]=${{ steps.route.outputs.transition_id }}" -f "inputs[next_point]=${{ steps.route.outputs.next_point }}"
       - name: Persist report
         if: always()
         run: |
