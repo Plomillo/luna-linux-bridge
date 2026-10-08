@@ -8,6 +8,7 @@ on:
       - 'debian/**'
       - 'bridge/**'
       - 'scripts/build'
+      - 'scripts/provision-mtls-local.sh'
       - '.github/workflows/louksna-debian-package.yml'
   workflow_dispatch:
 
