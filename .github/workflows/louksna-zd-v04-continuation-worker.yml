@@ -23,11 +23,25 @@ jobs:
           ref: work/louksna-zd-v04-master-20261007
           fetch-depth: 0
           persist-credentials: true
+      - name: Checkout exact CUSTOSZ V7 mailbox
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: staging/custosz-mission-mailbox-20260928
+          persist-credentials: false
+          sparse-checkout: |
+            artifacts/custosz-v7
+          sparse-checkout-cone-mode: false
+          path: mailbox
       - name: Execute registered continuation
         env:
           NEXT_POINT: ${{ inputs.next_point }}
+          MISSION_ROOT: ${{ github.workspace }}
+          MAILBOX_ROOT: ${{ github.workspace }}/mailbox
+          OUT_DIR: ${{ runner.temp }}/louksna-v04-p03
+          CUSTOSZ_WORKSPACE_OVERRIDE: ${{ env.HOME }}/SYMPHYLAX_LAB/CUSTOSZ_V7_R1_G23_G24_20260927T021532Z/POSIX_COMPATIBILITY_VIEW
         run: |
           set -Eeuo pipefail
+          export CUSTOSZ_WORKSPACE_OVERRIDE="$HOME/SYMPHYLAX_LAB/CUSTOSZ_V7_R1_G23_G24_20260927T021532Z/POSIX_COMPATIBILITY_VIEW"
           python3 -B scripts/continuity/louksna_zd_v04_continuation_worker.py
       - name: Persist continuation evidence
         if: always()
