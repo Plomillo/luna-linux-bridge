@@ -1,0 +1,19 @@
+{
+  "schema":"LOUKSNA_ZD_P12_RELEASE_GATE/1.0",
+  "status":"READY_FOR_INDEPENDENT_GATES",
+  "checkpoint":"CHECKPOINT_12",
+  "validated_commit":"b053fdc842da506f253df741602a5598e1475822",
+  "frozen_sources":{
+    "Louksna.md":"1a399ab7494d6df5582436819eee557083e753ed",
+    "PUAC2.md":"da3b216888c86e588685d384c34dd3c481414b22"
+  },
+  "p10_off_host_relay":"PASS",
+  "build_substrate":"scripts/build",
+  "build_execution":"PASS",
+  "build_tests":10,
+  "g23":"REQUIRED",
+  "g24":"REQUIRED",
+  "activation":"FORBIDDEN",
+  "evidence_origin":"P12 governed continuation run 37840617993",
+  "verified_at_utc":"2026-10-08T20:36:00Z"
+}
