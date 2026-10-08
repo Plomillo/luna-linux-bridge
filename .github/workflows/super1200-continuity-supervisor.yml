@@ -65,3 +65,10 @@ jobs:
           git pull --rebase origin custosz/super-1200-implementation-20261007
           git push origin HEAD:custosz/super-1200-implementation-20261007
 
+
+  meta:
+    needs: supervise
+    if: always()
+    permissions:
+      contents: write
+    uses: ./.github/workflows/super1200-meta-supervisor.yml
