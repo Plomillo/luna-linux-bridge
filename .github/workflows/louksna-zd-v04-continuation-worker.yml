@@ -80,3 +80,16 @@ jobs:
           git commit -m "evidence(louksna): persist continuation checkpoint"
           git pull --rebase origin work/louksna-zd-v04-master-20261007
           git push origin HEAD:work/louksna-zd-v04-master-20261007
+      - name: Explicitly trigger next supervisor evaluation
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TRANSITION_ID: ${{ inputs.transition_id }}
+        run: |
+          set -Eeuo pipefail
+          gh api --method POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2026-03-10" \
+            "/repos/${GITHUB_REPOSITORY}/actions/workflows/louksna-zd-v04-continuity-supervisor.yml/dispatches" \
+            -f ref="work/louksna-zd-v04-master-20261007" \
+            -f "inputs[transition_id]=${TRANSITION_ID}"
