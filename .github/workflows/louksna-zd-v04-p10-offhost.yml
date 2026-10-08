@@ -37,7 +37,7 @@ jobs:
           import hashlib, json, ssl, pathlib
           p=pathlib.Path(".")
           der=ssl.PEM_cert_to_DER_cert((p/"client.pem").read_text())
-          cfg={"schema":"LRB_MTLS_READONLY_GATEWAY/0.3","server_cert":str((p/"server.pem").resolve()),"server_key":str((p/"server.key").resolve()),"client_ca":str((p/"ca.pem").resolve()),"client_cert_sha256":hashlib.sha256(der).hexdigest(),"server_cert_sha256":hashlib.sha256(ssl.PEM_cert_to_DER_cert((p/"server.pem").read_text())).hexdigest(),"client_ca_sha256":hashlib.sha256((p/"ca.pem").read_bytes()).hexdigest()}
+          cfg={"schema":"LRB_MTLS_READONLY_GATEWAY/0.3","server_cert":str((p/"server.pem").resolve()),"server_key":str((p/"server.key").resolve()),"client_ca":str((p/"ca.pem").resolve()),"client_cert_sha256":hashlib.sha256(der).hexdigest(),"server_cert_sha256":hashlib.sha256((p/"server.pem").read_bytes()).hexdigest(),"client_ca_sha256":hashlib.sha256((p/"ca.pem").read_bytes()).hexdigest()}
           (p/"transport.json").write_text(json.dumps(cfg)+"\n")
           PY
       - name: Start ephemeral TLS gateway
@@ -71,7 +71,7 @@ jobs:
           echo "LOUKSNA_MTLS_CA_FILE=$RUNNER_TEMP/p10/ca.pem" >> "$GITHUB_ENV"
           echo "LOUKSNA_MTLS_CLIENT_CERT_FILE=$RUNNER_TEMP/p10/client.pem" >> "$GITHUB_ENV"
           echo "LOUKSNA_MTLS_CLIENT_KEY_FILE=$RUNNER_TEMP/p10/client.key" >> "$GITHUB_ENV"
-          pin="$(python3 -c 'import json; print(json.load(open("'"$RUNNER_TEMP/p10/transport.json"'"))["server_cert_sha256"])')"
+          pin="$(python3 -c 'import hashlib, ssl; print(hashlib.sha256(ssl.PEM_cert_to_DER_cert(open("$RUNNER_TEMP/p10/server.pem").read())).hexdigest())'')"
           echo "LOUKSNA_REMOTE_SERVER_CERT_SHA256=$pin" >> "$GITHUB_ENV"
           echo "LOUKSNA_REMOTE_SERVER_NAME=localhost" >> "$GITHUB_ENV"
       - name: Execute governed P10
