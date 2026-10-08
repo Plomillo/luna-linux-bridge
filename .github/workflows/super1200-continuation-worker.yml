@@ -49,4 +49,5 @@ jobs:
           git config user.name "custosz-v7-runtime-bot"
           git config user.email "custosz-v7-runtime-bot@users.noreply.github.com"
           git commit -m "evidence(super1200): persist continuation checkpoint"
+          git pull --rebase origin custosz/super-1200-implementation-20261007
           git push origin HEAD:custosz/super-1200-implementation-20261007
