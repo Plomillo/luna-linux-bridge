@@ -1,0 +1,18 @@
+{
+  "schema":"LOUKSNA_CONTINUITY_STATE/1.0",
+  "branch":"work/louksna-zd-v04-master-20261007",
+  "mission_id":"MIS-LOUKSNA-ZD-V04-MASTER-20261007",
+  "current_checkpoint":"CHECKPOINT_02",
+  "next_point":"P03_CUSTOSZ_RUNTIME_METAOS_EXECUTION_PLANE",
+  "status":"DISPATCH_PENDING",
+  "terminal":false,
+  "blocked":false,
+  "active_worker":false,
+  "heartbeat_required_seconds":2,
+  "stall_threshold_seconds":10,
+  "g23":"SEPARATE_REQUIRED",
+  "g24":"SEPARATE_REQUIRED",
+  "certified":false,
+  "active":false,
+  "transition_id":"P02-CHECKPOINT-TO-P03-001"
+}
