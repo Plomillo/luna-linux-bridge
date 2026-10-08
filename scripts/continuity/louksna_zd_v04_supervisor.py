@@ -10,6 +10,8 @@ def main():
  state=json.loads(STATE.read_text());
  if state.get("block_reason")=="DISPATCH_COMMAND_FAILED": state.update({"blocked":False,"block_reason":"NONE","status":"DISPATCH_PENDING","dispatch_stderr":None})
  executors=json.loads(EXEC.read_text())["executors"]; nxt=state["next_point"]; worker=bool(state.get("active_worker")); ts=time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
+ if state.get("blocked") and nxt in executors:
+  state.update({"blocked":False,"block_reason":"NONE","status":"DISPATCH_PENDING"})
  safe_pending=(not state["terminal"] and not state["blocked"] and nxt not in ("","NONE","TERMINAL"))
  if safe_pending and not worker and nxt not in executors:
   status="BLOCKED"; state.update({"status":"BLOCKED","blocked":True,"block_reason":"NO_REGISTERED_EXECUTOR_FOR_NEXT_POINT","blocked_at":ts,"diagnostic":"No material executor exists for "+nxt+"; invention of work is forbidden."})
