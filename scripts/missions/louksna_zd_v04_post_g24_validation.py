@@ -58,7 +58,7 @@ def main():
         (t/"manifest.json").write_text(json.dumps({"schema":"LOUKSNA_ZD_RELEASE_MANIFEST/1.0","source_commit":head,"files":manifest},indent=2,sort_keys=True)+"\n")
         (t/"sbom.json").write_text(json.dumps(sbom,indent=2,sort_keys=True)+"\n")
         (t/"locks.json").write_text(json.dumps(locks,indent=2,sort_keys=True)+"\n")
-        archive=t/"louksna-zd-v04-"+head[:12]+".tar.gz"
+        archive=t/f"louksna-zd-v04-{head[:12]}.tar.gz"
         tar=run(["tar","-czf",str(archive),"-C",str(payload),"."])
         checks.append({"test":"RELEASE_PACKAGE","status":"PASS" if tar["returncode"]==0 else "FAIL","bytes":archive.stat().st_size if archive.exists() else 0})
         if tar["returncode"]!=0: failures.append("POST_G24_RELEASE_PACKAGE_FAILED")
