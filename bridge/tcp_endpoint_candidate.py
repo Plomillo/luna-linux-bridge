@@ -27,6 +27,7 @@ counters_lock = threading.Lock()
 prev_cpu = time.process_time()
 prev_wall = time.monotonic()
 prev_hash = "0" * 64
+emit_lock = threading.Lock()
 
 def rss_bytes() -> int:
     # Linux ru_maxrss is KiB. Use current VmRSS when available.
@@ -47,7 +48,8 @@ def cpu_pct() -> float:
 
 def emit(event: str, **fields):
     global prev_hash
-    rec = {
+    with emit_lock:
+        rec = {
         "ts_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "event": event,
         "pid": os.getpid(),
@@ -57,14 +59,14 @@ def emit(event: str, **fields):
         **fields,
     }
     rec["prev_hash"] = prev_hash
-    canonical = json.dumps(rec, sort_keys=True, separators=(",", ":")).encode()
-    rec["entry_hash"] = hashlib.sha256(canonical).hexdigest()
-    prev_hash = rec["entry_hash"]
-    LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with LOG_PATH.open("a", encoding="utf-8") as f:
-        f.write(json.dumps(rec, sort_keys=True) + "\n")
-        f.flush()
-        os.fsync(f.fileno())
+        canonical = json.dumps(rec, sort_keys=True, separators=(",", ":")).encode()
+        rec["entry_hash"] = hashlib.sha256(canonical).hexdigest()
+        prev_hash = rec["entry_hash"]
+        LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with LOG_PATH.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, sort_keys=True) + "\n")
+            f.flush()
+            os.fsync(f.fileno())
 
 class Handler(socketserver.BaseRequestHandler):
     def handle(self):
