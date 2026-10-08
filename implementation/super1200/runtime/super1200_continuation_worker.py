@@ -74,5 +74,5 @@ def main():
         if any(next(r for r in reg["items"] if r["capability_id"]==c["capability_id"])["implementation_state"]!="EVIDENCED" for c in dd["capabilities"]):
             remaining=sum(1 for r in reg["items"] if r["implementation_state"]!="EVIDENCED"); next_domain=nd; break
     result={"status":"PASS","checkpoint":f"{dom}_FUNCTIONALLY_CLOSED","domain":dom,"evidenced":len(pending),"pending":0,"total_remaining":remaining,"next_point":next_domain,"transition_id":f"{dom}-CHECKPOINT-TO-{next_domain}-001","g23":"BLOCKED_UNTIL_INDEPENDENT_VALIDATION","g24":"BLOCKED_UNTIL_G23","certified":False,"active":False}
-    writej(out/"CONTINUATION_RESULT.json",result); emit(out,"DOMAIN_FUNCTIONAL_IMPLEMENTATION_PROGRESS",domain=dom,evidenced=len(pending),pending=0,next_point=next_domain,g23=result["g23"],g24=result["g24"])
+    writej(target/"continuity/CONTINUATION_RESULT.json",result); emit(out,"DOMAIN_FUNCTIONAL_IMPLEMENTATION_PROGRESS",domain=dom,evidenced=len(pending),pending=0,next_point=next_domain,g23=result["g23"],g24=result["g24"])
 if __name__=="__main__": raise SystemExit(main())
