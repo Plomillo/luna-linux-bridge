@@ -1,18 +1,19 @@
 {
   "active": false,
   "active_worker": false,
-  "blocked": true,
+  "block_reason": "NONE",
+  "blocked": false,
   "branch": "custosz/super-1200-implementation-20261007",
   "certified": false,
   "current_checkpoint": "D02_FUNCTIONALLY_CLOSED",
-  "dispatch_error": "HTTP 404: workflow super1200-continuation-worker.yml not found on the default branch (https://api.github.com/repos/Plomillo/luna-linux-bridge/actions/workflows/super1200-continuation-worker.yml)\n",
-  "dispatch_requested_at": "2026-10-08T13:23:57Z",
+  "dispatch_error": null,
+  "dispatch_requested_at": "2026-10-08T13:30:09Z",
   "g23": "BLOCKED_UNTIL_INDEPENDENT_VALIDATION",
   "g24": "BLOCKED_UNTIL_G23",
   "mission_id": "SUPER1200-CONTINUATION-20261007",
   "next_point": "D03",
   "schema": "SUPER1200_CONTINUITY_STATE/1.0",
-  "status": "BLOCKED",
+  "status": "DISPATCH_REQUIRED",
   "terminal": false,
   "transition_id": "D02-CHECKPOINT-TO-D03-001"
 }
