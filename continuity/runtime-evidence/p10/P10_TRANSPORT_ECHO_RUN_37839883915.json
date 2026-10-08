@@ -1,0 +1,19 @@
+{
+  "schema": "LOUKSNA_ZD_P10_TRANSPORT/1.0",
+  "status": "PASS",
+  "probe_mode": "TLS_ECHO",
+  "off_host_relay_materially_proven": true,
+  "tls_version": "TLSv1.3",
+  "mtls": true,
+  "certificate_pin_verified": true,
+  "roundtrip_probes": 2,
+  "first_probe": "PASS",
+  "reconnect_probe": "PASS",
+  "remote_endpoint": "ezjup-20-172-111-217.run.pinggy-free.link:33341",
+  "server_identity": "localhost",
+  "workflow_run_id": 37839883915,
+  "workflow_head_sha": "6fe10eb83896dcbbfcd6510ab325a016244f1fb6",
+  "artifact_id": 11576468795,
+  "artifact_sha256": "31b7483a8bdd502d8a54bb24f45bef47d0de3914f947dda908c7860ce783db5a",
+  "verified_at_utc": "2026-10-08T20:30:22Z"
+}
