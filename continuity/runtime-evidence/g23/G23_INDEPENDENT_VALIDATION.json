@@ -54,7 +54,7 @@
   "g24": "SEPARATE_REQUIRED",
   "schema": "LOUKSNA_ZD_G23_INDEPENDENT_VALIDATION/1.0",
   "status": "HOLD",
-  "timestamp_utc": "2026-10-08T20:42:20Z",
-  "validated_object_commit": "8d2135b8dc4d83665bd5979a0f4764280e32ab83",
+  "timestamp_utc": "2026-10-08T20:42:22Z",
+  "validated_object_commit": "65b8cb77fea9219c00f23208c1d0178cf8fcaf62",
   "validation_profile": "G23-R1-INDEPENDENT"
 }
