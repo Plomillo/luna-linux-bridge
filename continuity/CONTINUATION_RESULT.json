@@ -1,32 +1,48 @@
 {
   "active": false,
   "certified": true,
-  "checkpoint": "POSTBOOT_VERIFICATION",
-  "g23": "PASS",
-  "g24": "PASS",
+  "checkpoint": "ACTIVE_AUTHORIZATION_REVIEW",
   "material_evidence": {
-    "active": "FORBIDDEN_FROM_CI",
+    "activation": "EXPLICIT_EXTERNAL_OPERATIONAL_ACTIVATION_REQUIRED",
+    "active": false,
+    "certified": true,
     "checks": [
       {
+        "path": "continuity/runtime-evidence/g23/G23_INDEPENDENT_VALIDATION.json",
         "status": "PASS",
-        "test": "OPERATIONAL_AUTHORIZATION"
+        "test": "G23_EVIDENCE"
       },
       {
-        "returncode": 0,
+        "path": "continuity/runtime-evidence/g24/G24_CERTIFICATION_DECISION.json",
         "status": "PASS",
-        "stderr": "..........\n----------------------------------------------------------------------\nRan 10 tests in 6.615s\n\nOK\n",
-        "stdout": "",
-        "test": "POSTBOOT_FRESH_PROCESS"
+        "test": "G24_EVIDENCE"
+      },
+      {
+        "path": "continuity/runtime-evidence/post_g24/POST_G24_VALIDATION.json",
+        "status": "PASS",
+        "test": "POST_EVIDENCE"
+      },
+      {
+        "path": "continuity/runtime-evidence/authorization/OPERATIONAL_AUTHORIZATION.json",
+        "status": "PASS",
+        "test": "AUTH_EVIDENCE"
+      },
+      {
+        "path": "continuity/runtime-evidence/postboot/POSTBOOT_VERIFICATION.json",
+        "status": "PASS",
+        "test": "POSTBOOT_EVIDENCE"
       }
     ],
     "failures": [],
-    "schema": "LOUKSNA_ZD_POSTBOOT_VERIFICATION/1.0",
-    "source_commit": "d9a815d6522a5f7495cb5b75967c15a2e33b424d",
+    "schema": "LOUKSNA_ZD_ACTIVE_AUTHORIZATION_REVIEW/1.0",
+    "source_commit": "71da8a6e7846cfaf6c8287a4f3e6d1e35ef5a09e",
     "status": "PASS",
-    "timestamp_utc": "2026-10-08T21:01:35Z"
+    "timestamp_utc": "2026-10-08T21:03:10Z"
   },
-  "next_point": "ACTIVE_AUTHORIZATION_REVIEW",
-  "parent_checkpoint": "SEPARATE_OPERATIONAL_AUTHORIZATION",
+  "next_point": "NONE",
+  "operationally_ready": true,
+  "parent_checkpoint": "POSTBOOT_VERIFICATION",
   "status": "PASS",
-  "transition_id": "POSTBOOT-TO-ACTIVE-REVIEW-001"
+  "terminal": true,
+  "transition_id": "ACTIVE-REVIEW-READY-001"
 }

@@ -1,0 +1,37 @@
+{
+  "activation": "EXPLICIT_EXTERNAL_OPERATIONAL_ACTIVATION_REQUIRED",
+  "active": false,
+  "certified": true,
+  "checks": [
+    {
+      "path": "continuity/runtime-evidence/g23/G23_INDEPENDENT_VALIDATION.json",
+      "status": "PASS",
+      "test": "G23_EVIDENCE"
+    },
+    {
+      "path": "continuity/runtime-evidence/g24/G24_CERTIFICATION_DECISION.json",
+      "status": "PASS",
+      "test": "G24_EVIDENCE"
+    },
+    {
+      "path": "continuity/runtime-evidence/post_g24/POST_G24_VALIDATION.json",
+      "status": "PASS",
+      "test": "POST_EVIDENCE"
+    },
+    {
+      "path": "continuity/runtime-evidence/authorization/OPERATIONAL_AUTHORIZATION.json",
+      "status": "PASS",
+      "test": "AUTH_EVIDENCE"
+    },
+    {
+      "path": "continuity/runtime-evidence/postboot/POSTBOOT_VERIFICATION.json",
+      "status": "PASS",
+      "test": "POSTBOOT_EVIDENCE"
+    }
+  ],
+  "failures": [],
+  "schema": "LOUKSNA_ZD_ACTIVE_AUTHORIZATION_REVIEW/1.0",
+  "source_commit": "71da8a6e7846cfaf6c8287a4f3e6d1e35ef5a09e",
+  "status": "PASS",
+  "timestamp_utc": "2026-10-08T21:03:10Z"
+}
