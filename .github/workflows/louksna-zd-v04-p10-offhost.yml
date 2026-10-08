@@ -71,7 +71,7 @@ jobs:
           echo "LOUKSNA_MTLS_CA_FILE=$RUNNER_TEMP/p10/ca.pem" >> "$GITHUB_ENV"
           echo "LOUKSNA_MTLS_CLIENT_CERT_FILE=$RUNNER_TEMP/p10/client.pem" >> "$GITHUB_ENV"
           echo "LOUKSNA_MTLS_CLIENT_KEY_FILE=$RUNNER_TEMP/p10/client.key" >> "$GITHUB_ENV"
-          pin="$(python3 -c 'import hashlib, ssl; print(hashlib.sha256(ssl.PEM_cert_to_DER_cert(open("$RUNNER_TEMP/p10/server.pem").read())).hexdigest())'')"
+          pin="$(openssl x509 -in "$RUNNER_TEMP/p10/server.pem" -outform DER | sha256sum | awk '{print $1}')"
           echo "LOUKSNA_REMOTE_SERVER_CERT_SHA256=$pin" >> "$GITHUB_ENV"
           echo "LOUKSNA_REMOTE_SERVER_NAME=localhost" >> "$GITHUB_ENV"
       - name: Execute governed P10
