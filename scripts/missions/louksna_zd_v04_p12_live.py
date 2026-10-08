@@ -18,6 +18,20 @@ def main():
     puac=(ROOT/"PUAC2.md").read_text()
     blockers=list(state.get("open_blockers",[]))
     checks=[]
+    resolved_blockers=[]
+    p10e=ROOT/"continuity/runtime-evidence/p10/P10_TRANSPORT_ECHO_RUN_37839883915.json"
+    if p10e.is_file():
+        pe=json.loads(p10e.read_text())
+        p10_ok=(pe.get("status")=="PASS" and pe.get("probe_mode")=="TLS_ECHO" and pe.get("off_host_relay_materially_proven") is True)
+        checks.append({"test":"P10_OFF_HOST_RELAY_EVIDENCE","status":"PASS" if p10_ok else "FAIL","source":str(p10e.relative_to(ROOT))})
+        if p10_ok:
+            resolved_blockers.append("P10_OFF_HOST_RELAY_UNPROVEN")
+            blockers=[b for b in blockers if b!="P10_OFF_HOST_RELAY_UNPROVEN"]
+        else:
+            blockers.append("P10_OFF_HOST_RELAY_UNPROVEN")
+    else:
+        checks.append({"test":"P10_OFF_HOST_RELAY_EVIDENCE","status":"HOLD","source":str(p10e.relative_to(ROOT))})
+        blockers.append("P10_OFF_HOST_RELAY_UNPROVEN")
 
     if "G23" not in mission or "G24" not in mission: raise RuntimeError("P12_CERTIFICATION_CHAIN_NOT_DECLARED")
     if "ACTIVE únicamente" not in mission: raise RuntimeError("P12_ACTIVE_GATE_MISSING")
@@ -53,7 +67,7 @@ def main():
         (OUT/"P12_RELEASE_GATE_EVIDENCE.json").write_text(json.dumps(evidence,indent=2,sort_keys=True)+"\n")
         result={"status":"HOLD_INDEPENDENT_CONTINUATION","checkpoint":"CHECKPOINT_12_PREPARED","parent_checkpoint":"CHECKPOINT_11",
                 "next_point":"P12","transition_id":"P12-HOLD-RETRY-001","certified":False,"active":False,
-                "g23":"SEPARATE_REQUIRED","g24":"SEPARATE_REQUIRED","open_blockers":blockers,"material_evidence":evidence}
+                "g23":"SEPARATE_REQUIRED","g24":"SEPARATE_REQUIRED","open_blockers":blockers,"resolved_blockers":resolved_blockers,"material_evidence":evidence}
     else:
         evidence={"schema":"LOUKSNA_ZD_P12_RELEASE_GATE/1.0","status":"READY_FOR_INDEPENDENT_GATES",
                   "timestamp_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),"checks":checks,
@@ -61,7 +75,7 @@ def main():
         (OUT/"P12_RELEASE_GATE_EVIDENCE.json").write_text(json.dumps(evidence,indent=2,sort_keys=True)+"\n")
         result={"status":"PASS","checkpoint":"CHECKPOINT_12","parent_checkpoint":"CHECKPOINT_11","next_point":"G23",
                 "transition_id":"P12-TO-G23-001","certified":False,"active":False,
-                "g23":"REQUIRED","g24":"REQUIRED","material_evidence":evidence}
+                "g23":"REQUIRED","g24":"REQUIRED","material_evidence":evidence,"resolved_blockers":resolved_blockers}
     (ROOT/"continuity/CONTINUATION_RESULT.json").write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
     print("LOUKSNA_P12_TELEMETRY "+json.dumps({"event":"P12_GATE","status":result["status"],"next_point":result["next_point"],"open_blockers":result.get("open_blockers",[])},sort_keys=True),flush=True)
 
