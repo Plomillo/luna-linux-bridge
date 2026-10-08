@@ -68,3 +68,10 @@ jobs:
           git commit -m "evidence(louksna): persist continuity supervisor state"
           git pull --rebase origin work/louksna-zd-v04-master-20261007
           git push origin HEAD:work/louksna-zd-v04-master-20261007
+
+  meta:
+    needs: supervise
+    if: always()
+    permissions:
+      contents: write
+    uses: ./.github/workflows/louksna-zd-v04-meta-supervisor.yml
