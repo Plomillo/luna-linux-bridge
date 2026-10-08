@@ -3,7 +3,7 @@ name: Debian package — Louksna Linux Bridge
 on:
   push:
     branches:
-      - work/louksna-zd-v04-master-20261007
+      - work/louksna-zd-v04-03-mtls-provisioning-20261008
     paths:
       - 'debian/**'
       - 'bridge/**'
@@ -22,7 +22,7 @@ jobs:
       - name: Checkout exact branch commit
         uses: actions/checkout@v4
         with:
-          ref: work/louksna-zd-v04-master-20261007
+          ref: work/louksna-zd-v04-03-mtls-provisioning-20261008
           fetch-depth: 0
 
       - name: Install Debian build toolchain
@@ -32,7 +32,7 @@ jobs:
 
       - name: Verify governed source identity
         run: |
-          test "$(git branch --show-current)" = "work/louksna-zd-v04-master-20261007"
+          test "$(git branch --show-current)" = "work/louksna-zd-v04-03-mtls-provisioning-20261008"
           test "$(git rev-parse HEAD:Louksna.md)" = "1a399ab7494d6df5582436819eee557083e753ed"
           test "$(git rev-parse HEAD:PUAC2.md)" = "da3b216888c86e588685d384c34dd3c481414b22"
 
@@ -43,13 +43,15 @@ jobs:
       - name: Package integrity and install-root smoke test
         run: |
           set -eux
-          DEB="$(realpath ../louksna-linux-bridge_0.4.0-2_all.deb)"
+          DEB="$(realpath ../louksna-linux-bridge_0.4.0-3_all.deb)"
           dpkg-deb --info "$DEB"
           dpkg-deb --contents "$DEB"
           rm -rf /tmp/louksna-deb-root
           mkdir -p /tmp/louksna-deb-root
           dpkg-deb --extract "$DEB" /tmp/louksna-deb-root
           test -f /tmp/louksna-deb-root/usr/lib/louksna/bridge/mtls_gateway.py
+          test -x /tmp/louksna-deb-root/usr/lib/louksna/bridge/provision-mtls-local.sh
+          sh -n /tmp/louksna-deb-root/usr/lib/louksna/bridge/provision-mtls-local.sh
           test -f /tmp/louksna-deb-root/lib/systemd/system/louksna-mtls-readonly.service
           test -f /tmp/louksna-deb-root/usr/share/doc/louksna-linux-bridge/CONTRACT.v0.json
           dpkg-deb --control "$DEB" /tmp/louksna-deb-control
@@ -64,7 +66,7 @@ jobs:
         run: |
           python3 - <<'PY'
           import hashlib, json, pathlib, subprocess, time
-          deb=pathlib.Path("../louksna-linux-bridge_0.4.0-2_all.deb")
+          deb=pathlib.Path("../louksna-linux-bridge_0.4.0-3_all.deb")
           evidence={
             "schema":"LOUKSNA_ZD_DEBIAN_PACKAGE_EVIDENCE/1.0",
             "status":"PASS",
@@ -76,11 +78,11 @@ jobs:
             "sha256":hashlib.sha256(deb.read_bytes()).hexdigest(),
             "louksna_blob":subprocess.check_output(["git","rev-parse","HEAD:Louksna.md"],text=True).strip(),
             "puac2_blob":subprocess.check_output(["git","rev-parse","HEAD:PUAC2.md"],text=True).strip(),
-            "g23":"PASS",
-            "g24":"PASS",
-            "post_g24":"PASS",
-            "rollback":"PASS",
-            "postboot":"PASS",
+            "g23":"NOT_EXECUTED",
+            "g24":"NOT_EXECUTED",
+            "post_g24":"NOT_EXECUTED",
+            "rollback":"NOT_TESTED_ON_HOST",
+            "postboot":"NOT_TESTED_ON_HOST",
             "active":False
           }
           pathlib.Path("debian-package-evidence.json").write_text(json.dumps(evidence,indent=2,sort_keys=True)+"\n")
@@ -89,17 +91,17 @@ jobs:
       - name: Stage Debian package for artifact upload
         run: |
           mkdir -p dist/debian
-          cp ../louksna-linux-bridge_0.4.0-2_all.deb dist/debian/
+          cp ../louksna-linux-bridge_0.4.0-3_all.deb dist/debian/
           cp debian-package.sha256 debian-package-evidence.json lintian.txt dist/debian/
 
       - name: Upload Debian package and evidence
         uses: actions/upload-artifact@v4
         with:
-          name: louksna-linux-bridge_0.4.0-2_debian
+          name: louksna-linux-bridge_0.4.0-3_debian
           if-no-files-found: error
           retention-days: 30
           path: |
-            dist/debian/louksna-linux-bridge_0.4.0-2_all.deb
+            dist/debian/louksna-linux-bridge_0.4.0-3_all.deb
             dist/debian/debian-package.sha256
             dist/debian/debian-package-evidence.json
             dist/debian/lintian.txt
