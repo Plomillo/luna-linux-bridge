@@ -6,7 +6,7 @@
   "blocked_at": "2026-10-08T13:35:05Z",
   "branch": "work/louksna-zd-v04-master-20261007",
   "certified": false,
-  "current_checkpoint": "CHECKPOINT_03",
+  "current_checkpoint": "CHECKPOINT_04",
   "diagnostic": "No material executor exists for P04; invention of work is forbidden.",
   "dispatch_requested_at": "2026-10-08T13:46:21Z",
   "dispatch_stderr": null,
@@ -14,11 +14,11 @@
   "g24": "SEPARATE_REQUIRED",
   "heartbeat_required_seconds": 2,
   "mission_id": "MIS-LOUKSNA-ZD-V04-MASTER-20261007",
-  "next_point": "P04",
+  "next_point": "P05",
   "recovery_note": "P04_RETRY_AFTER_WORKER_TRIGGER_ISOLATION",
   "schema": "LOUKSNA_CONTINUITY_STATE/1.0",
   "stall_threshold_seconds": 10,
-  "status": "DISPATCH_REQUIRED",
+  "status": "DISPATCH_PENDING",
   "terminal": false,
-  "transition_id": "P03-CHECKPOINT-TO-P04-001"
+  "transition_id": "P04-CHECKPOINT-TO-P05-001"
 }

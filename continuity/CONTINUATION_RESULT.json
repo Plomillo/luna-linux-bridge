@@ -1,12 +1,23 @@
 {
   "active": false,
+  "bridge_head": "ad95248dd78fadf45645774e0338df0f1bbc128b2",
   "certified": false,
-  "checkpoint": "CHECKPOINT_03",
-  "custosz_mission_id": "MIS-d1624d48a21b48f5b826",
+  "checkpoint": "CHECKPOINT_04",
   "g23": "SEPARATE_REQUIRED",
   "g24": "SEPARATE_REQUIRED",
-  "next_point": "P04",
-  "parent_checkpoint": "CHECKPOINT_02",
+  "material_evidence": {
+    "bridge_ledger": {
+      "EvidenceLedger": true,
+      "entry_hash": true
+    },
+    "v03_event_log": {
+      "CREATE TABLE IF NOT EXISTS evidence": true,
+      "INSERT INTO evidence": true
+    }
+  },
+  "next_point": "P05",
+  "parent_checkpoint": "CHECKPOINT_03",
   "status": "PASS",
-  "transition_id": "P03-CHECKPOINT-TO-P04-001"
+  "transition_id": "P04-CHECKPOINT-TO-P05-001",
+  "v03_head": "7a1449a5d6194b6cbc3e083bf1c7ba55533ad196"
 }
