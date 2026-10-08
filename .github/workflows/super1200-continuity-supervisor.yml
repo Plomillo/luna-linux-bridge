@@ -35,6 +35,13 @@ jobs:
         run: |
           set -Eeuo pipefail
           python3 -B continuity/super1200_continuity_supervisor.py
+      - name: Dispatch registered continuation worker
+        if: steps.route.outputs.dispatch == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          gh workflow run super1200-continuation-worker.yml --ref custosz/super-1200-implementation-20261007 -f transition_id="${{ steps.route.outputs.transition_id }}" -f next_point="${{ steps.route.outputs.next_point }}"
       - name: Route continuation
         id: route
         run: |
@@ -58,19 +65,3 @@ jobs:
           git pull --rebase origin custosz/super-1200-implementation-20261007
           git push origin HEAD:custosz/super-1200-implementation-20261007
 
-  continue:
-    needs: supervise
-    if: needs.supervise.outputs.dispatch == 'true'
-    permissions:
-      contents: write
-    uses: ./.github/workflows/super1200-continuation-worker.yml
-    with:
-      transition_id: ${{ needs.supervise.outputs.transition_id }}
-      next_point: ${{ needs.supervise.outputs.next_point }}
-
-  meta:
-    needs: supervise
-    if: always()
-    permissions:
-      contents: write
-    uses: ./.github/workflows/super1200-meta-supervisor.yml
