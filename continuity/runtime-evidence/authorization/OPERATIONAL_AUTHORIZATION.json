@@ -1,0 +1,24 @@
+{
+  "active": "FORBIDDEN",
+  "authorization": "OPERATIONAL_POSTBOOT_AUTHORIZED",
+  "checks": [
+    {
+      "status": "PASS",
+      "test": "CERTIFIED_POST_G24_GATE"
+    },
+    {
+      "status": "PASS",
+      "test": "POST_G24_VALIDATION"
+    },
+    {
+      "commit": "7930d8ce35925aaec15b313352ad88fd5bd5f77e",
+      "status": "PASS",
+      "test": "SOURCE_IDENTITY"
+    }
+  ],
+  "failures": [],
+  "schema": "LOUKSNA_ZD_SEPARATE_OPERATIONAL_AUTHORIZATION/1.0",
+  "source_commit": "7930d8ce35925aaec15b313352ad88fd5bd5f77e",
+  "status": "PASS",
+  "timestamp_utc": "2026-10-08T21:00:13Z"
+}
