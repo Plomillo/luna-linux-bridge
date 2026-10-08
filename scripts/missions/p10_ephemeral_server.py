@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import json, os, signal, sys
+import json, os, signal, sys, hashlib, hmac
 from pathlib import Path
 ROOT=Path(os.environ["MISSION_ROOT"]).resolve()
 sys.path.insert(0,str(ROOT/"bridge"))
@@ -24,7 +24,23 @@ class ProbeBridge:
 
 config=gate.read_config(os.environ["LOUKSNA_P10_CONFIG"],enforce_root=False)
 bridge=ProbeBridge()
-server=gate.Server(bridge,config,int(os.environ.get("LOUKSNA_P10_LOCAL_PORT","18443")),testing=True)
+class ProbeServer(gate.Server):
+    """Ephemeral transport harness: preserves mTLS fingerprint/slot gates, not production bind policy."""
+    def verify_request(self,request,client_address):
+        if not self.slots.acquire(blocking=False):
+            return False
+        try:
+            cert=request.getpeercert(binary_form=True)
+            got=hashlib.sha256(cert or b"").hexdigest()
+            if not cert or not hmac.compare_digest(got,self.client_fingerprint):
+                self.slots.release()
+                return False
+            return True
+        except Exception:
+            self.slots.release()
+            return False
+
+server=ProbeServer(bridge,config,int(os.environ.get("LOUKSNA_P10_LOCAL_PORT","18443")),testing=True)
 Path(os.environ["LOUKSNA_P10_READY"]).write_text(
     json.dumps({"bind":"127.0.0.1","port":server.server_address[1],
                 "tls13":True,"runtime":"TRANSPORT_PROBE_ONLY"})+"\n")
