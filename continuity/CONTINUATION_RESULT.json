@@ -1,47 +1,138 @@
 {
   "active": false,
   "certified": false,
-  "checkpoint": "CHECKPOINT_06",
+  "checkpoint": "CHECKPOINT_07",
   "g23": "SEPARATE_REQUIRED",
   "g24": "SEPARATE_REQUIRED",
   "material_evidence": {
-    "primary_requested": "CHATTERBOX_ES_ES_SELF_HOSTED_API",
-    "sabela": {
-      "artifact_sha256": "b7df43263c2eefffa79b841431d542957c8c6478b41448be679ef36036087f22",
-      "implementation": "HiTZ/aHoTTS",
-      "language": "gl",
-      "license": "Apache-2.0",
-      "model_path": "/home/runner/.cache/huggingface/hub/models--HiTZ--TTS-gl_sabela/snapshots/574ece65e9aeed6b7b04d9c66ccff7381c2090eb/vits.onnx",
-      "model_verified": true,
-      "output_sha256": "3fa9d7037a3cdc050cf250be56d837c468919d0d2866125866210a12a1ffa78e",
-      "output_size": 110472,
-      "repo": "HiTZ/TTS-gl_sabela",
-      "repo_commit": "db56c5dd27a692b76cd23f7d784c9c465f6a9a18",
-      "revision": "db56c5dd27a692b76cd23f7d784c9c465f6a9a18"
-    },
-    "schema": "LOUKSNA_ZD_P06_VOICE/1.0",
+    "events": [
+      {
+        "details": {
+          "active_windows": 123,
+          "first_active_window": 5,
+          "last_active_window": 146
+        },
+        "event": "VAD_PASS",
+        "sha256": "f8a3d386d34d8e974951ce73cbd0bbf55f71166b397ee8e2939253ef9b304717"
+      },
+      {
+        "audio": {
+          "channels": 2,
+          "duration": 2.972154195011338,
+          "frames": 131072,
+          "rate": 44100,
+          "sample_width": 2
+        },
+        "event": "PIPEWIRE_CAPTURE_PASS",
+        "sha256": "cfd463996285244cbfdfb6f1abe2a0e7f35535e90a5fc2168ac54b607bcb383e"
+      },
+      {
+        "adapter": "P07_DETERMINISTIC_LOCAL",
+        "event": "REASONING_ADAPTER_PASS",
+        "response_sha256": "ed3301c0fe15dbe777c2fc1f8508af35b495fe121eea1b077c6ef330f2030d33"
+      },
+      {
+        "audio": {
+          "channels": 1,
+          "duration": 14.36,
+          "frames": 344640,
+          "rate": 24000,
+          "sample_width": 2
+        },
+        "commit": "5de7a54aa4e5e2baadb0182dde554908b48b85c2",
+        "event": "TTS_ROUTER_PASS",
+        "implementation": "ResembleAI/chatterbox",
+        "sha256": "8971eea2377874f153d6a4089b088b902e830ea613575681731c10323a7044ca"
+      },
+      {
+        "event": "SESSION_TRANSITION",
+        "from": "START",
+        "session_id": "P07-72cbc52691654125978d39ab04d312d3",
+        "to": "CAPTURE"
+      },
+      {
+        "event": "SESSION_TRANSITION",
+        "from": "CAPTURE",
+        "session_id": "P07-72cbc52691654125978d39ab04d312d3",
+        "to": "VAD"
+      },
+      {
+        "event": "SESSION_TRANSITION",
+        "from": "VAD",
+        "session_id": "P07-72cbc52691654125978d39ab04d312d3",
+        "to": "STT"
+      },
+      {
+        "event": "SESSION_TRANSITION",
+        "from": "STT",
+        "session_id": "P07-72cbc52691654125978d39ab04d312d3",
+        "to": "REASONING"
+      },
+      {
+        "event": "SESSION_TRANSITION",
+        "from": "REASONING",
+        "session_id": "P07-72cbc52691654125978d39ab04d312d3",
+        "to": "TTS"
+      },
+      {
+        "event": "SESSION_TRANSITION",
+        "from": "TTS",
+        "session_id": "P07-72cbc52691654125978d39ab04d312d3",
+        "to": "OUTPUT"
+      },
+      {
+        "event": "SESSION_TRANSITION",
+        "from": "OUTPUT",
+        "session_id": "P07-72cbc52691654125978d39ab04d312d3",
+        "to": "INTERRUPT"
+      },
+      {
+        "event": "SESSION_TRANSITION",
+        "from": "INTERRUPT",
+        "session_id": "P07-72cbc52691654125978d39ab04d312d3",
+        "to": "CANCEL"
+      },
+      {
+        "event": "SESSION_TRANSITION",
+        "from": "CANCEL",
+        "session_id": "P07-72cbc52691654125978d39ab04d312d3",
+        "to": "RECONNECT"
+      },
+      {
+        "event": "SESSION_TRANSITION",
+        "from": "RECONNECT",
+        "session_id": "P07-72cbc52691654125978d39ab04d312d3",
+        "to": "END"
+      },
+      {
+        "event": "SESSION_TRANSITION",
+        "from": "END",
+        "session_id": "P07-72cbc52691654125978d39ab04d312d3",
+        "to": "DONE"
+      },
+      {
+        "event": "MUTE_PROBE",
+        "status": "OBSERVABLE_STATE_ONLY"
+      },
+      {
+        "event": "TIMEOUT_PROBE",
+        "status": "OBSERVABLE_STATE_ONLY"
+      }
+    ],
+    "schema": "LOUKSNA_ZD_P07_VOICE_CALL/1.0",
+    "session_id": "P07-72cbc52691654125978d39ab04d312d3",
     "status": "PASS",
-    "stt": {
-      "commit": "d1be6fde11ac6e0407606b4e42fe72d34add8037",
-      "e2e_generated_audio_transcript": "This is a test controlled by Luke's Nine in Spanish.read_audio_data: reading audio data from '/home/runner/work/_temp/louksna-v04-P06-1/p06_chatterbox_es_es.wav' ...\nread_audio_data: trying to decode with miniaudio",
-      "implementation": "ggml-org/whisper.cpp",
-      "model_sha256": "60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe",
-      "probe": "samples/jfk.wav",
-      "text_excerpt": "And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country.read_audio_data: reading audio data from 'samples/jfk.wav' ...\nread_audio_data: trying to decode with miniaudio"
-    },
-    "tts": {
-      "device_line": "DEVICE=cpu\nSR=24000\nAPI=(device: torch.device, t3_model: str | None = None) -> 'ChatterboxMultilingualTTS'",
-      "implementation": "ResembleAI/chatterbox",
-      "language": "es",
-      "model": "ChatterboxMultilingual V3",
-      "output_sha256": "f200cfde289cac8d5b5b9e830e809d75be06175210d210c0da38b614845f382c",
-      "output_size": 322640,
-      "silent_failover": false,
-      "source_commit": "5de7a54aa4e5e2baadb0182dde554908b48b85c2"
-    }
+    "turns": [
+      {
+        "session_id": "P07-72cbc52691654125978d39ab04d312d3",
+        "stt_model_sha256": "60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe",
+        "stt_text": "Hello, Luxna, this is a test of the name.read_audio_data: reading audio data from '/home/runner/work/_temp/louksna-v04-P07-1/captured.wav' ...\nread_audio_data: trying to decode with miniaudio",
+        "turn_id": "T1-7698bbde21864c15b70e19dc3755b5df"
+      }
+    ]
   },
-  "next_point": "P07",
-  "parent_checkpoint": "CHECKPOINT_05",
+  "next_point": "P08",
+  "parent_checkpoint": "CHECKPOINT_06",
   "status": "PASS",
-  "transition_id": "P06-CHECKPOINT-TO-P07-001"
+  "transition_id": "P07-CHECKPOINT-TO-P08-001"
 }
