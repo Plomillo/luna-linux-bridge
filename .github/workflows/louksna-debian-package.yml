@@ -28,7 +28,7 @@ jobs:
       - name: Install Debian build toolchain
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends             debhelper-compat dpkg-dev python3 openssl lintian
+          sudo apt-get install -y --no-install-recommends build-essential debhelper-compat dpkg-dev python3 openssl lintian
 
       - name: Verify governed source identity
         run: |
