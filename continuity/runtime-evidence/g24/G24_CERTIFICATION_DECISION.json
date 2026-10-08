@@ -1,0 +1,46 @@
+{
+  "activation": "FORBIDDEN_UNTIL_POST_VALIDATION_AND_OPERATIONAL_AUTHORIZATION",
+  "certified_claim": "P12_RELEASE_OBJECT",
+  "checks": [
+    {
+      "source": "continuity/runtime-evidence/g23/G23_INDEPENDENT_VALIDATION.json",
+      "status": "PASS",
+      "test": "G23_INDEPENDENT_VALIDATION_EVIDENCE"
+    },
+    {
+      "status": "PASS",
+      "test": "TRANSPORT_EVIDENCE_RECHECK"
+    },
+    {
+      "blob": "1a399ab7494d6df5582436819eee557083e753ed",
+      "path": "Louksna.md",
+      "status": "PASS",
+      "test": "FROZEN_SOURCE_RECHECK"
+    },
+    {
+      "blob": "da3b216888c86e588685d384c34dd3c481414b22",
+      "path": "PUAC2.md",
+      "status": "PASS",
+      "test": "FROZEN_SOURCE_RECHECK"
+    },
+    {
+      "execution": {
+        "returncode": 0,
+        "stderr": "..........\n----------------------------------------------------------------------\nRan 10 tests in 6.761s\n\nOK\n",
+        "stdout": "LOUKSNA_BUILD_PASS\n"
+      },
+      "status": "PASS",
+      "test": "BUILD_RECHECK"
+    },
+    {
+      "status": "PASS",
+      "test": "G23_G24_EXECUTOR_SEPARATION"
+    }
+  ],
+  "decision": "CERTIFIED_FOR_POST_VALIDATION",
+  "failures": [],
+  "g23_evidence": "continuity/runtime-evidence/g23/G23_INDEPENDENT_VALIDATION.json",
+  "schema": "LOUKSNA_ZD_G24_CERTIFICATION/1.0",
+  "status": "PASS",
+  "timestamp_utc": "2026-10-08T20:44:43Z"
+}

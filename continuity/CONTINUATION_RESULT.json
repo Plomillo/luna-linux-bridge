@@ -1,74 +1,57 @@
 {
   "active": false,
-  "certified": false,
-  "checkpoint": "G23",
+  "certified": true,
+  "checkpoint": "G24",
   "g23": "PASS",
-  "g24": "REQUIRED",
+  "g24": "PASS",
   "material_evidence": {
+    "activation": "FORBIDDEN_UNTIL_POST_VALIDATION_AND_OPERATIONAL_AUTHORIZATION",
+    "certified_claim": "P12_RELEASE_OBJECT",
     "checks": [
       {
-        "checkpoint": "CHECKPOINT_12",
-        "result_status": "HOLD_INDEPENDENT_CONTINUATION",
-        "stale_state_blockers": [
-          "P12_BUILD_SUBSTRATE_NOT_PRESENT",
-          "G23_P12_RESULT_NOT_PASS"
-        ],
+        "source": "continuity/runtime-evidence/g23/G23_INDEPENDENT_VALIDATION.json",
         "status": "PASS",
-        "test": "P12_RELEASE_OBJECT"
+        "test": "G23_INDEPENDENT_VALIDATION_EVIDENCE"
+      },
+      {
+        "status": "PASS",
+        "test": "TRANSPORT_EVIDENCE_RECHECK"
       },
       {
         "blob": "1a399ab7494d6df5582436819eee557083e753ed",
         "path": "Louksna.md",
         "status": "PASS",
-        "test": "FROZEN_SOURCE"
+        "test": "FROZEN_SOURCE_RECHECK"
       },
       {
         "blob": "da3b216888c86e588685d384c34dd3c481414b22",
         "path": "PUAC2.md",
         "status": "PASS",
-        "test": "FROZEN_SOURCE"
-      },
-      {
-        "path": "continuity/runtime-evidence/p10/P10_TRANSPORT_ECHO_RUN_37839883915.json",
-        "status": "PASS",
-        "test": "P10_TRANSPORT_EVIDENCE_PRESENT"
-      },
-      {
-        "probe_mode": "TLS_ECHO",
-        "status": "PASS",
-        "test": "P10_INDEPENDENT_RECHECK"
+        "test": "FROZEN_SOURCE_RECHECK"
       },
       {
         "execution": {
           "returncode": 0,
-          "stderr": "..........\n----------------------------------------------------------------------\nRan 10 tests in 6.752s\n\nOK\n",
+          "stderr": "..........\n----------------------------------------------------------------------\nRan 10 tests in 6.761s\n\nOK\n",
           "stdout": "LOUKSNA_BUILD_PASS\n"
         },
         "status": "PASS",
-        "test": "BUILD_REPROBE"
+        "test": "BUILD_RECHECK"
       },
       {
-        "g23_executor": "scripts/missions/louksna_zd_v04_g23_independent_validation.py",
-        "p12_executor": "scripts/missions/louksna_zd_v04_p12_live.py",
         "status": "PASS",
-        "test": "EXECUTOR_SEPARATION"
+        "test": "G23_G24_EXECUTOR_SEPARATION"
       }
     ],
+    "decision": "CERTIFIED_FOR_POST_VALIDATION",
     "failures": [],
-    "g24": "SEPARATE_REQUIRED",
-    "schema": "LOUKSNA_ZD_G23_INDEPENDENT_VALIDATION/1.0",
+    "g23_evidence": "continuity/runtime-evidence/g23/G23_INDEPENDENT_VALIDATION.json",
+    "schema": "LOUKSNA_ZD_G24_CERTIFICATION/1.0",
     "status": "PASS",
-    "timestamp_utc": "2026-10-08T20:44:33Z",
-    "validated_object_commit": "95fe4f4e4f8c5c969ede1b00c9aa251c36aa375b",
-    "validation_profile": "G23-R1-INDEPENDENT"
+    "timestamp_utc": "2026-10-08T20:44:43Z"
   },
-  "next_point": "G24",
-  "parent_checkpoint": "CHECKPOINT_12",
-  "resolved_blockers": [
-    "P12_BUILD_SUBSTRATE_NOT_PRESENT",
-    "G23_BUILD_REPROBE_FAILED",
-    "G23_P12_RESULT_NOT_PASS"
-  ],
+  "next_point": "POST_G24_VALIDATION",
+  "parent_checkpoint": "G23",
   "status": "PASS",
-  "transition_id": "G23-TO-G24-001"
+  "transition_id": "G24-TO-POST-001"
 }
