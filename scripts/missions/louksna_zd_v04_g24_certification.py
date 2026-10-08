@@ -69,8 +69,7 @@ def main():
         out={"status":"HOLD_INDEPENDENT_CONTINUATION","checkpoint":"G23","next_point":"G24","transition_id":"G24-HOLD-NEW-EVIDENCE-001","certified":False,"active":False,"g23":"PASS","g24":"REQUIRED","open_blockers":failures,"material_evidence":evidence}
     else:
         out={"status":"PASS","checkpoint":"G24","parent_checkpoint":"G23","next_point":"POST_G24_VALIDATION","transition_id":"G24-TO-POST-001","certified":True,"active":False,"g23":"PASS","g24":"PASS","material_evidence":evidence}
-    (ROOT/"continuity/CONTINUATION_RESULT.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"
-")
+    (ROOT/"continuity/CONTINUATION_RESULT.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
     print("LOUKSNA_G24_TELEMETRY "+json.dumps({"status":out["status"],"next_point":out["next_point"],"certified":out["certified"],"failures":failures},sort_keys=True),flush=True)
 
 if __name__=="__main__":
