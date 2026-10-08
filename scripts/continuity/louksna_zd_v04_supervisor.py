@@ -19,5 +19,6 @@ def main():
  else: status="TERMINAL" if state["terminal"] else "BLOCKED"
  REPORT.write_text("\n".join(["LOUKSNA V0.4 CONTINUITY REPORT","BRANCH=work/louksna-zd-v04-master-20261007","TIMESTAMP_UTC="+ts,"CURRENT_CHECKPOINT="+state["current_checkpoint"],"NEXT_POINT="+nxt,"WHAT_WAS_DONE=durable continuation reconciliation","WHAT_WAS_VALIDATED=state executor registry terminal worker invariants","WHAT_FAILED="+state.get("block_reason","NONE"),"WHAT_REMAINS_UNKNOWN="+("executor implementation for "+nxt if status=="BLOCKED" else "NONE"),"NEXT_ACTION="+("REGISTER_EXECUTOR_AND_REDISPATCH" if status=="BLOCKED" else status),"NEXT_WORKER="+executors.get(nxt,"NONE"),"DISPATCH_STATUS="+status,"SUPERVISOR_STATUS=ACTIVE","META_SUPERVISOR_STATUS=REQUIRED","WATCHDOG_STATUS=EXTERNAL_REQUIRED","G23=SEPARATE","G24=SEPARATE","CERTIFIED=false","ACTIVE=false"])+"\n")
  STATE.write_text(json.dumps(state,indent=2,sort_keys=True)+"\n")
+ sh("gh","workflow","run","louksna-zd-v04-meta-supervisor.yml","--ref","work/louksna-zd-v04-master-20261007")
  print("LOUKSNA_CONTINUITY "+status+" next="+nxt,flush=True); return 0
 if __name__=="__main__": raise SystemExit(main())
