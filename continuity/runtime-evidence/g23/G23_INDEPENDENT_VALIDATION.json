@@ -1,0 +1,59 @@
+{
+  "checks": [
+    {
+      "checkpoint": "CHECKPOINT_12",
+      "result_status": "PASS",
+      "stale_state_blockers": [
+        "P12_BUILD_SUBSTRATE_NOT_PRESENT"
+      ],
+      "status": "PASS",
+      "test": "P12_RELEASE_OBJECT"
+    },
+    {
+      "blob": "1a399ab7494d6df5582436819eee557083e753ed",
+      "path": "Louksna.md",
+      "status": "PASS",
+      "test": "FROZEN_SOURCE"
+    },
+    {
+      "blob": "da3b216888c86e588685d384c34dd3c481414b22",
+      "path": "PUAC2.md",
+      "status": "PASS",
+      "test": "FROZEN_SOURCE"
+    },
+    {
+      "path": "continuity/runtime-evidence/p10/P10_TRANSPORT_ECHO_RUN_37839883915.json",
+      "status": "PASS",
+      "test": "P10_TRANSPORT_EVIDENCE_PRESENT"
+    },
+    {
+      "probe_mode": "TLS_ECHO",
+      "status": "PASS",
+      "test": "P10_INDEPENDENT_RECHECK"
+    },
+    {
+      "execution": {
+        "returncode": 1,
+        "stderr": "Traceback (most recent call last):\n  File \"/home/runner/work/luna-linux-bridge/luna-linux-bridge/scripts/build\", line 9, in <module>\n    subprocess.run([sys.executable,\"-m\",\"compileall\",\"-q\",\"bridge\",\"scripts\",\"continuity\"],cwd=ROOT,check=True)\n  File \"/usr/lib/python3.12/subprocess.py\", line 571, in run\n    raise CalledProcessError(retcode, process.args,\nsubprocess.CalledProcessError: Command '['/usr/bin/python3', '-m', 'compileall', '-q', 'bridge', 'scripts', 'continuity']' returned non-zero exit status 1.\n",
+        "stdout": "*** Error compiling 'scripts/missions/louksna_zd_v04_g24_certification.py'...\n  File \"scripts/missions/louksna_zd_v04_g24_certification.py\", line 67\n    (OUT/\"G24_CERTIFICATION_DECISION.json\").write_text(json.dumps(evidence,indent=2,sort_keys=True)+\"\n                                                                                                    ^\nSyntaxError: unterminated string literal (detected at line 67)\n\n"
+      },
+      "status": "FAIL",
+      "test": "BUILD_REPROBE"
+    },
+    {
+      "g23_executor": "scripts/missions/louksna_zd_v04_g23_independent_validation.py",
+      "p12_executor": "scripts/missions/louksna_zd_v04_p12_live.py",
+      "status": "PASS",
+      "test": "EXECUTOR_SEPARATION"
+    }
+  ],
+  "failures": [
+    "G23_BUILD_REPROBE_FAILED"
+  ],
+  "g24": "SEPARATE_REQUIRED",
+  "schema": "LOUKSNA_ZD_G23_INDEPENDENT_VALIDATION/1.0",
+  "status": "HOLD",
+  "timestamp_utc": "2026-10-08T20:42:08Z",
+  "validated_object_commit": "c0c4d5ce263cd539b243970f2128dc6236b8722b",
+  "validation_profile": "G23-R1-INDEPENDENT"
+}

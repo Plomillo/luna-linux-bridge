@@ -7,9 +7,13 @@
   "material_evidence": {
     "checks": [
       {
-        "source": "continuity/runtime-evidence/p10/P10_TRANSPORT_ECHO_RUN_37839883915.json",
+        "checkpoint": "CHECKPOINT_12",
+        "result_status": "PASS",
+        "stale_state_blockers": [
+          "P12_BUILD_SUBSTRATE_NOT_PRESENT"
+        ],
         "status": "PASS",
-        "test": "P10_OFF_HOST_RELAY_EVIDENCE"
+        "test": "P12_RELEASE_OBJECT"
       },
       {
         "blob": "1a399ab7494d6df5582436819eee557083e753ed",
@@ -24,40 +28,45 @@
         "test": "FROZEN_SOURCE"
       },
       {
-        "branch": "work/louksna-zd-v04-master-20261007",
-        "commit": "b053fdc842da506f253df741602a5598e1475822",
+        "path": "continuity/runtime-evidence/p10/P10_TRANSPORT_ECHO_RUN_37839883915.json",
         "status": "PASS",
-        "test": "RELEASE_SOURCE_IDENTITY"
+        "test": "P10_TRANSPORT_EVIDENCE_PRESENT"
+      },
+      {
+        "probe_mode": "TLS_ECHO",
+        "status": "PASS",
+        "test": "P10_INDEPENDENT_RECHECK"
       },
       {
         "execution": {
-          "returncode": 0,
-          "stderr": "..........\n----------------------------------------------------------------------\nRan 10 tests in 6.218s\n\nOK\n",
-          "stdout": "LOUKSNA_BUILD_PASS\n"
+          "returncode": 1,
+          "stderr": "Traceback (most recent call last):\n  File \"/home/runner/work/luna-linux-bridge/luna-linux-bridge/scripts/build\", line 9, in <module>\n    subprocess.run([sys.executable,\"-m\",\"compileall\",\"-q\",\"bridge\",\"scripts\",\"continuity\"],cwd=ROOT,check=True)\n  File \"/usr/lib/python3.12/subprocess.py\", line 571, in run\n    raise CalledProcessError(retcode, process.args,\nsubprocess.CalledProcessError: Command '['/usr/bin/python3', '-m', 'compileall', '-q', 'bridge', 'scripts', 'continuity']' returned non-zero exit status 1.\n",
+          "stdout": "*** Error compiling 'scripts/missions/louksna_zd_v04_g24_certification.py'...\n  File \"scripts/missions/louksna_zd_v04_g24_certification.py\", line 67\n    (OUT/\"G24_CERTIFICATION_DECISION.json\").write_text(json.dumps(evidence,indent=2,sort_keys=True)+\"\n                                                                                                    ^\nSyntaxError: unterminated string literal (detected at line 67)\n\n"
         },
-        "paths": [
-          "scripts/build"
-        ],
-        "status": "PASS",
-        "test": "BUILD_SUBSTRATE_DISCOVERY"
+        "status": "FAIL",
+        "test": "BUILD_REPROBE"
       },
       {
-        "g23": "SEPARATE_REQUIRED",
-        "g24": "SEPARATE_REQUIRED",
+        "g23_executor": "scripts/missions/louksna_zd_v04_g23_independent_validation.py",
+        "p12_executor": "scripts/missions/louksna_zd_v04_p12_live.py",
         "status": "PASS",
-        "test": "G23_G24_SEPARATION"
+        "test": "EXECUTOR_SEPARATION"
       }
     ],
-    "schema": "LOUKSNA_ZD_P12_RELEASE_GATE/1.0",
-    "source_digest": "b06791494fe75e6742ac59776e1c56a2a2753b807c61b64d571aa75ef9af54ba",
-    "status": "READY_FOR_INDEPENDENT_GATES",
-    "timestamp_utc": "2026-10-08T20:36:00Z"
+    "failures": [
+      "G23_BUILD_REPROBE_FAILED"
+    ],
+    "g24": "SEPARATE_REQUIRED",
+    "schema": "LOUKSNA_ZD_G23_INDEPENDENT_VALIDATION/1.0",
+    "status": "HOLD",
+    "timestamp_utc": "2026-10-08T20:42:08Z",
+    "validated_object_commit": "c0c4d5ce263cd539b243970f2128dc6236b8722b",
+    "validation_profile": "G23-R1-INDEPENDENT"
   },
   "next_point": "G23",
-  "parent_checkpoint": "CHECKPOINT_11",
-  "resolved_blockers": [
-    "P10_OFF_HOST_RELAY_UNPROVEN"
+  "open_blockers": [
+    "G23_BUILD_REPROBE_FAILED"
   ],
-  "status": "PASS",
-  "transition_id": "P12-TO-G23-001"
+  "status": "HOLD_INDEPENDENT_CONTINUATION",
+  "transition_id": "G23-HOLD-NEW-EVIDENCE-001"
 }
