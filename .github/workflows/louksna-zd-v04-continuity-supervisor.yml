@@ -16,8 +16,8 @@ permissions:
   actions: write
 
 concurrency:
-  group: louksna-v04-continuity-supervisor
-  cancel-in-progress: false
+  group: louksna-v04-continuity-supervisor-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   supervise:
