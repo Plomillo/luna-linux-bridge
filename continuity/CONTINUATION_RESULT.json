@@ -1,29 +1,182 @@
 {
   "active": false,
   "certified": false,
-  "checkpoint": "CHECKPOINT_10",
+  "checkpoint": "CHECKPOINT_11",
   "g23": "SEPARATE_REQUIRED",
   "g24": "SEPARATE_REQUIRED",
   "material_evidence": {
-    "blocker": "P10_OFF_HOST_RELAY_UNPROVEN",
-    "local_mtls_test": {
-      "returncode": 0,
-      "stderr": "..........\n----------------------------------------------------------------------\nRan 10 tests in 6.365s\n\nOK\n",
-      "stdout": ""
-    },
-    "loopback_binding_source_gate": true,
-    "off_host_relay_host_configured": false,
-    "off_host_relay_materially_proven": false,
-    "reason": "Current governed gateway is loopback-only; no independently authenticated owner-managed off-host relay endpoint is configured in the runtime.",
-    "schema": "LOUKSNA_ZD_P10_TRANSPORT/1.0",
-    "status": "HOLD",
-    "tls13_source_gate": true
+    "checkpoint": "CHECKPOINT_11",
+    "current_open_blockers": [
+      "P10_OFF_HOST_RELAY_UNPROVEN"
+    ],
+    "schema": "LOUKSNA_ZD_P11_LAB/1.0",
+    "second_order_note": "P10_OFF_HOST_RELAY_UNPROVEN remains open and is not converted to PASS.",
+    "status": "PASS",
+    "tests": [
+      {
+        "path": "bridge/mtls_gateway.py",
+        "status": "PASS",
+        "test": "PYTHON_PARSE"
+      },
+      {
+        "path": "bridge/lrb_core.py",
+        "status": "PASS",
+        "test": "PYTHON_PARSE"
+      },
+      {
+        "path": "bridge/live_link.py",
+        "status": "PASS",
+        "test": "PYTHON_PARSE"
+      },
+      {
+        "path": "scripts/missions/louksna_zd_v04_p05_live.py",
+        "status": "PASS",
+        "test": "PYTHON_PARSE"
+      },
+      {
+        "path": "scripts/missions/louksna_zd_v04_p06_live.py",
+        "status": "PASS",
+        "test": "PYTHON_PARSE"
+      },
+      {
+        "path": "scripts/missions/louksna_zd_v04_p07_live.py",
+        "status": "PASS",
+        "test": "PYTHON_PARSE"
+      },
+      {
+        "path": "scripts/missions/louksna_zd_v04_p08_live.py",
+        "status": "PASS",
+        "test": "PYTHON_PARSE"
+      },
+      {
+        "path": "scripts/missions/louksna_zd_v04_p09_live.py",
+        "status": "PASS",
+        "test": "PYTHON_PARSE"
+      },
+      {
+        "path": "scripts/missions/louksna_zd_v04_p10_live.py",
+        "status": "PASS",
+        "test": "PYTHON_PARSE"
+      },
+      {
+        "result": {
+          "returncode": 0,
+          "stderr": "..........\n----------------------------------------------------------------------\nRan 10 tests in 6.368s\n\nOK\n",
+          "stdout": ""
+        },
+        "status": "PASS",
+        "test": "MTLS_GATEWAY_TESTS"
+      },
+      {
+        "result": {
+          "content_addressed": true,
+          "negative": {
+            "ack_missing": true,
+            "corrupt_hash": true,
+            "false_mime": true,
+            "oversized": true,
+            "path_traversal": true,
+            "provenance_missing": true,
+            "symlink": true
+          },
+          "pipeline": [
+            "SELECT",
+            "IDENTIFY",
+            "VALIDATE",
+            "HASH",
+            "PROVENANCE",
+            "TRUST_CLASSIFICATION",
+            "DEDUP",
+            "LOCAL_REGISTER",
+            "PREVIEW",
+            "CONFIRM",
+            "NEGOTIATE",
+            "TRANSFER",
+            "ACK",
+            "EVIDENCE"
+          ],
+          "positive": {
+            "duplicate": {
+              "deduplicated": true,
+              "evidence_head": "ecf379ee4e08a3975723b3adec6c8245adfe2b729ddf2995098a8da00a8481b3",
+              "sha256": "0940c5ee117cc7c73eea62b1579fd1f4908f11cc7a78ed3beca9c62bd4743779",
+              "size": 46000,
+              "status": "PASS"
+            },
+            "first": {
+              "deduplicated": false,
+              "evidence_head": "2442622e17174c189abede50cadf10305768ba33f40ff27543402b72936dcef4",
+              "sha256": "0940c5ee117cc7c73eea62b1579fd1f4908f11cc7a78ed3beca9c62bd4743779",
+              "size": 46000,
+              "status": "PASS"
+            }
+          },
+          "schema": "LOUKSNA_ZD_ARTIFACT_TRANSFER/1.0",
+          "sha256": "0940c5ee117cc7c73eea62b1579fd1f4908f11cc7a78ed3beca9c62bd4743779",
+          "size": 46000,
+          "status": "PASS"
+        },
+        "status": "PASS",
+        "test": "ARTIFACT_TRANSFER_SELFTEST"
+      },
+      {
+        "context_authority_hashes": [
+          "10a04b1bc5aafcb3482bc29f425ea36544da67936077af75d789b5808797ac62",
+          "2f4f62728e3cf89a2e4fc1c545f12d8b1d79e931337dfc11e138b5969f1d2d8d"
+        ],
+        "profiles": [
+          "Instantáneo",
+          "Medio",
+          "Alto",
+          "Muy alto",
+          "Pro"
+        ],
+        "status": "PASS",
+        "test": "EFFORT_PROFILE_INVARIANTS"
+      },
+      {
+        "account_ops": 21,
+        "repository_ops": 36,
+        "status": "PASS",
+        "test": "GITHUB_CAPABILITY_CENSUS_GUARD"
+      },
+      {
+        "required": [
+          "T01",
+          "T13",
+          "T21",
+          "T28",
+          "G23",
+          "G24"
+        ],
+        "status": "PASS",
+        "test": "PUAC2_CRITICAL_CHAIN"
+      },
+      {
+        "registered_points": [
+          "P01",
+          "P02",
+          "P03_CUSTOSZ_RUNTIME_METAOS_EXECUTION_PLANE",
+          "P04",
+          "P05",
+          "P06",
+          "P07",
+          "P08",
+          "P09",
+          "P10",
+          "P11"
+        ],
+        "status": "PASS",
+        "test": "EXECUTOR_NO_SELF_CERTIFICATION"
+      }
+    ],
+    "timestamp_utc": "2026-10-08T17:38:43Z"
   },
-  "next_point": "P11",
+  "next_point": "P12",
   "open_blockers": [
     "P10_OFF_HOST_RELAY_UNPROVEN"
   ],
-  "parent_checkpoint": "CHECKPOINT_09",
-  "status": "HOLD_INDEPENDENT_CONTINUATION",
-  "transition_id": "P10-HOLD-TO-P11-INDEPENDENT-001"
+  "parent_checkpoint": "CHECKPOINT_10",
+  "status": "PASS",
+  "transition_id": "P11-CHECKPOINT-TO-P12-001"
 }
