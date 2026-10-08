@@ -1,13 +1,13 @@
 {
   "active": false,
   "active_worker": false,
-  "block_reason": "NO_REGISTERED_EXECUTOR_FOR_NEXT_POINT",
-  "blocked": true,
+  "block_reason": "NONE",
+  "blocked": false,
   "blocked_at": "2026-10-08T14:12:45Z",
   "branch": "work/louksna-zd-v04-master-20261007",
   "certified": true,
   "current_checkpoint": "ACTIVE_AUTHORIZATION_REVIEW",
-  "diagnostic": "P05 material executor registered; awaiting governed worker dispatch.",
+  "diagnostic": "Terminal certified operational-readiness state; ACTIVE remains explicitly external.",
   "dispatch_error": null,
   "dispatch_requested_at": "2026-10-08T21:03:10Z",
   "dispatch_stderr": null,
@@ -21,7 +21,7 @@
   "recovery_note": "P04_RETRY_AFTER_WORKER_TRIGGER_ISOLATION",
   "schema": "LOUKSNA_CONTINUITY_STATE/1.0",
   "stall_threshold_seconds": 10,
-  "status": "BLOCKED",
-  "terminal": false,
+  "status": "TERMINAL",
+  "terminal": true,
   "transition_id": "ACTIVE-REVIEW-READY-001"
 }
