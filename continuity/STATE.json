@@ -1,6 +1,6 @@
 {
   "active": false,
-  "active_worker": true,
+  "active_worker": false,
   "block_reason": "NONE",
   "blocked": false,
   "branch": "custosz/super-1200-implementation-20261007",
@@ -13,7 +13,8 @@
   "mission_id": "SUPER1200-CONTINUATION-20261007",
   "next_point": "D03",
   "schema": "SUPER1200_CONTINUITY_STATE/1.0",
-  "status": "WORKER_ACTIVE",
+  "status": "DISPATCH_PENDING",
   "terminal": false,
-  "transition_id": "D02-CHECKPOINT-TO-D03-001"
+  "transition_id": "D02-CHECKPOINT-TO-D03-001",
+  "recovery_note": "STALE_WORKER_LEASE_CLEARED_AFTER_VERIFIED_NO_ACTIVE_WORKER"
 }
