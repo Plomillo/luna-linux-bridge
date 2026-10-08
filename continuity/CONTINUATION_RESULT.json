@@ -1,22 +1,29 @@
 {
   "active": false,
   "certified": false,
-  "checkpoint": "CHECKPOINT_09",
+  "checkpoint": "CHECKPOINT_10",
   "g23": "SEPARATE_REQUIRED",
   "g24": "SEPARATE_REQUIRED",
   "material_evidence": {
-    "account": 21,
-    "repo": 36,
-    "states": {
-      "NOT_GRANTED": 25,
-      "UNKNOWN": 8,
-      "VERIFIED_AVAILABLE": 24,
-      "VERIFIED_DENIED": 0
+    "blocker": "P10_OFF_HOST_RELAY_UNPROVEN",
+    "local_mtls_test": {
+      "returncode": 0,
+      "stderr": "..........\n----------------------------------------------------------------------\nRan 10 tests in 6.365s\n\nOK\n",
+      "stdout": ""
     },
-    "total": 57
+    "loopback_binding_source_gate": true,
+    "off_host_relay_host_configured": false,
+    "off_host_relay_materially_proven": false,
+    "reason": "Current governed gateway is loopback-only; no independently authenticated owner-managed off-host relay endpoint is configured in the runtime.",
+    "schema": "LOUKSNA_ZD_P10_TRANSPORT/1.0",
+    "status": "HOLD",
+    "tls13_source_gate": true
   },
-  "next_point": "P10",
-  "parent_checkpoint": "CHECKPOINT_08",
-  "status": "PASS",
-  "transition_id": "P09-CHECKPOINT-TO-P10-001"
+  "next_point": "P11",
+  "open_blockers": [
+    "P10_OFF_HOST_RELAY_UNPROVEN"
+  ],
+  "parent_checkpoint": "CHECKPOINT_09",
+  "status": "HOLD_INDEPENDENT_CONTINUATION",
+  "transition_id": "P10-HOLD-TO-P11-INDEPENDENT-001"
 }
