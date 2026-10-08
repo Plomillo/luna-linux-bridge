@@ -8,6 +8,8 @@ ts=time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
 worker=bool(state.get("active_worker"))
 if state.get("block_reason")=="DISPATCH_COMMAND_FAILED" or state.get("dispatch_error"):
     state.update({"blocked":False,"block_reason":"NONE","status":"DISPATCH_PENDING","dispatch_error":None})
+if state.get("blocked") and nxt in executors:
+  state.update({"blocked":False,"block_reason":"NONE","status":"DISPATCH_PENDING"})
 safe=not state["terminal"] and not state["blocked"] and nxt not in ("","NONE","TERMINAL")
 if safe and not worker and nxt not in ex:
     status="BLOCKED"
