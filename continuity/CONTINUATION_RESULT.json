@@ -1,35 +1,32 @@
 {
   "active": false,
   "certified": true,
-  "checkpoint": "SEPARATE_OPERATIONAL_AUTHORIZATION",
+  "checkpoint": "POSTBOOT_VERIFICATION",
   "g23": "PASS",
   "g24": "PASS",
   "material_evidence": {
-    "active": "FORBIDDEN",
-    "authorization": "OPERATIONAL_POSTBOOT_AUTHORIZED",
+    "active": "FORBIDDEN_FROM_CI",
     "checks": [
       {
         "status": "PASS",
-        "test": "CERTIFIED_POST_G24_GATE"
+        "test": "OPERATIONAL_AUTHORIZATION"
       },
       {
+        "returncode": 0,
         "status": "PASS",
-        "test": "POST_G24_VALIDATION"
-      },
-      {
-        "commit": "7930d8ce35925aaec15b313352ad88fd5bd5f77e",
-        "status": "PASS",
-        "test": "SOURCE_IDENTITY"
+        "stderr": "..........\n----------------------------------------------------------------------\nRan 10 tests in 6.615s\n\nOK\n",
+        "stdout": "",
+        "test": "POSTBOOT_FRESH_PROCESS"
       }
     ],
     "failures": [],
-    "schema": "LOUKSNA_ZD_SEPARATE_OPERATIONAL_AUTHORIZATION/1.0",
-    "source_commit": "7930d8ce35925aaec15b313352ad88fd5bd5f77e",
+    "schema": "LOUKSNA_ZD_POSTBOOT_VERIFICATION/1.0",
+    "source_commit": "d9a815d6522a5f7495cb5b75967c15a2e33b424d",
     "status": "PASS",
-    "timestamp_utc": "2026-10-08T21:00:13Z"
+    "timestamp_utc": "2026-10-08T21:01:35Z"
   },
-  "next_point": "POSTBOOT_VERIFICATION",
-  "parent_checkpoint": "POST_G24_VALIDATION",
+  "next_point": "ACTIVE_AUTHORIZATION_REVIEW",
+  "parent_checkpoint": "SEPARATE_OPERATIONAL_AUTHORIZATION",
   "status": "PASS",
-  "transition_id": "AUTH-TO-POSTBOOT-001"
+  "transition_id": "POSTBOOT-TO-ACTIVE-REVIEW-001"
 }

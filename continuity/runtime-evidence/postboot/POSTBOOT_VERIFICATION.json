@@ -1,0 +1,21 @@
+{
+  "active": "FORBIDDEN_FROM_CI",
+  "checks": [
+    {
+      "status": "PASS",
+      "test": "OPERATIONAL_AUTHORIZATION"
+    },
+    {
+      "returncode": 0,
+      "status": "PASS",
+      "stderr": "..........\n----------------------------------------------------------------------\nRan 10 tests in 6.615s\n\nOK\n",
+      "stdout": "",
+      "test": "POSTBOOT_FRESH_PROCESS"
+    }
+  ],
+  "failures": [],
+  "schema": "LOUKSNA_ZD_POSTBOOT_VERIFICATION/1.0",
+  "source_commit": "d9a815d6522a5f7495cb5b75967c15a2e33b424d",
+  "status": "PASS",
+  "timestamp_utc": "2026-10-08T21:01:35Z"
+}
