@@ -8,18 +8,19 @@
   "certified": false,
   "current_checkpoint": "CHECKPOINT_04",
   "diagnostic": "P05 material executor registered; awaiting governed worker dispatch.",
-  "dispatch_requested_at": null,
+  "dispatch_error": null,
+  "dispatch_requested_at": "2026-10-08T16:29:16Z",
   "dispatch_stderr": null,
   "g23": "SEPARATE_REQUIRED",
   "g24": "SEPARATE_REQUIRED",
   "heartbeat_required_seconds": 2,
   "mission_id": "MIS-LOUKSNA-ZD-V04-MASTER-20261007",
   "next_point": "P05",
+  "next_worker": "scripts/missions/louksna_zd_v04_p05_live.py",
   "recovery_note": "P04_RETRY_AFTER_WORKER_TRIGGER_ISOLATION",
   "schema": "LOUKSNA_CONTINUITY_STATE/1.0",
   "stall_threshold_seconds": 10,
   "status": "DISPATCH_REQUIRED",
   "terminal": false,
-  "transition_id": "P04-CHECKPOINT-TO-P05-001",
-  "next_worker": "scripts/missions/louksna_zd_v04_p05_live.py"
+  "transition_id": "P04-CHECKPOINT-TO-P05-001"
 }
