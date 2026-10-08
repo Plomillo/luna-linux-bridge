@@ -41,6 +41,7 @@ jobs:
           for run_id in 37783736762 37781057464; do
             gh api --method POST -H "Accept: application/vnd.github+json" "/repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/cancel" >/dev/null 2>&1
           done
+          true
       - name: Run metacognitive continuity supervisor
         env:
           GH_TOKEN: ${{ github.token }}
