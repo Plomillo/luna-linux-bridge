@@ -7,11 +7,9 @@ try:
     state=json.loads(STATE.read_text())
     ex=json.loads((ROOT/"continuity/EXECUTORS.json").read_text())["executors"]
     nxt=os.environ.get("NEXT_POINT","")
-    if nxt!=state["next_point"]:
-        raise SystemExit("TRANSITION_MISMATCH")
+    if nxt!=state["next_point"]: raise SystemExit("TRANSITION_MISMATCH")
     cmd=ex.get(nxt)
-    if not cmd:
-        raise SystemExit("EXECUTOR_NOT_REGISTERED")
+    if not cmd: raise SystemExit("EXECUTOR_NOT_REGISTERED")
     state.update({"active_worker":True,"blocked":False,"status":"RUNNING","block_reason":"NONE","next_worker":cmd})
     STATE.write_text(json.dumps(state,indent=2,sort_keys=True)+"\n")
     p=subprocess.run(["python3","-B",cmd],cwd=ROOT,text=True)
@@ -21,22 +19,23 @@ try:
         STATE.write_text(json.dumps(state,indent=2,sort_keys=True)+"\n")
         raise SystemExit(p.returncode)
     result=ROOT/"continuity/CONTINUATION_RESULT.json"
-    if not result.is_file():
-        raise SystemExit("MISSING_CONTINUATION_RESULT")
+    if not result.is_file(): raise SystemExit("MISSING_CONTINUATION_RESULT")
     r=json.loads(result.read_text())
-    if r.get("status")!="PASS" or not r.get("next_point"):
+    if r.get("status") not in ("PASS","HOLD_INDEPENDENT_CONTINUATION") or not r.get("next_point"):
         raise SystemExit("INVALID_CONTINUATION_RESULT")
     state=json.loads(STATE.read_text())
     next_worker=ex.get(r["next_point"])
+    blockers=list(dict.fromkeys(list(state.get("open_blockers",[]))+list(r.get("open_blockers",[]))))
     state.update({
         "active_worker":False,
         "blocked":False,
-        "block_reason":"NONE",
         "status":"DISPATCH_PENDING" if next_worker else "BLOCKED",
+        "block_reason":"NONE" if next_worker else "NO_REGISTERED_EXECUTOR_FOR_NEXT_POINT",
         "current_checkpoint":r.get("checkpoint",state["current_checkpoint"]),
         "next_point":r["next_point"],
         "next_worker":next_worker,
-        "block_reason":"NONE" if next_worker else "NO_REGISTERED_EXECUTOR_FOR_NEXT_POINT",
+        "open_blockers":blockers,
+        "certified":False,
         "transition_id":r.get("transition_id",state["transition_id"]+"->"+r["next_point"])
     })
     STATE.write_text(json.dumps(state,indent=2,sort_keys=True)+"\n")
