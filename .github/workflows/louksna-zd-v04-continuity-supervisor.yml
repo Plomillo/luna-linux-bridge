@@ -39,13 +39,6 @@ jobs:
         run: |
           set -Eeuo pipefail
           python3 -B scripts/continuity/louksna_zd_v04_supervisor.py
-      - name: Dispatch registered continuation worker
-        if: steps.route.outputs.dispatch == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -Eeuo pipefail
-          gh workflow run louksna-zd-v04-continuation-worker.yml --ref work/louksna-zd-v04-master-20261007 -f transition_id="${{ steps.route.outputs.transition_id }}" -f next_point="${{ steps.route.outputs.next_point }}"
       - name: Route continuation
         id: route
         run: |
@@ -57,6 +50,13 @@ jobs:
               o.write("next_point=" + s.get("next_point","") + "\n")
               o.write("transition_id=" + s.get("transition_id","") + "\n")
           PY
+      - name: Dispatch registered continuation worker
+        if: steps.route.outputs.dispatch == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          gh workflow run louksna-zd-v04-continuation-worker.yml --ref work/louksna-zd-v04-master-20261007 -f transition_id="${{ steps.route.outputs.transition_id }}" -f next_point="${{ steps.route.outputs.next_point }}"
       - name: Persist checkpoint report and state
         if: always()
         run: |
