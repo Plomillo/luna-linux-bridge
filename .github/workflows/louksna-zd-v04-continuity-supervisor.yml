@@ -55,13 +55,6 @@ jobs:
               o.write("next_point=" + s.get("next_point","") + "\n")
               o.write("transition_id=" + s.get("transition_id","") + "\n")
           PY
-      - name: Dispatch registered continuation worker
-        if: steps.route.outputs.dispatch == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -Eeuo pipefail
-          gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" "/repos/${GITHUB_REPOSITORY}/actions/workflows/louksna-zd-v04-continuation-worker.yml/dispatches" -f ref="work/louksna-zd-v04-master-20261007" -f "inputs[transition_id]=${{ steps.route.outputs.transition_id }}" -f "inputs[next_point]=${{ steps.route.outputs.next_point }}"
       - name: Persist checkpoint report and state
         if: always()
         run: |
