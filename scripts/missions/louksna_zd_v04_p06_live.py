@@ -20,7 +20,12 @@ SABELA_LICENSE="Apache-2.0"
 
 def sh(cmd,cwd=None,env=None,timeout=None):
     print("P06_EXEC "+ " ".join(map(str,cmd)),flush=True)
-    return subprocess.run(cmd,cwd=cwd,env=env,text=True,check=True,timeout=timeout,capture_output=True)
+    try:
+        return subprocess.run(cmd,cwd=cwd,env=env,text=True,check=True,timeout=timeout,capture_output=True)
+    except subprocess.CalledProcessError as e:
+        print("P06_SUBPROCESS_STDOUT "+(e.stdout or "")[-12000:],flush=True)
+        print("P06_SUBPROCESS_STDERR "+(e.stderr or "")[-12000:],file=sys.stderr,flush=True)
+        raise
 
 def sha256(p):
     h=hashlib.sha256()
