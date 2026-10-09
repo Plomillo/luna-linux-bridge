@@ -19,8 +19,11 @@ SOURCES = (
     "jonas_hott_api/README.md",
     "docs/jonas-hott-live-telemetry.md",
     "docs/jonas-three-track-completion-plan.md",
+    "docs/jonas-family-deployment.md",
+    "scripts/missions/backup_restore_jonas_state.py",
     "tests/test_jonas_hott_api.py",
     "tests/test_jonas_account_state.py",
+    "tests/test_jonas_backup_restore.py",
 )
 SECRET_PATTERNS = (
     re.compile(rb"gh[pousr]_[A-Za-z0-9_]{20,}"),
