@@ -8,7 +8,7 @@ Rules-Requires-Root: no
 
 Package: louksna-linux-bridge
 Architecture: all
-Depends: python3 (>= 3.10), openssl, util-linux
+Depends: python3 (>= 3.10), openssl, util-linux (>= 2.15)
 Recommends: systemd
 Description: bounded read-only LOUKSNA local bridge
  LOUKSNA Linux Bridge provides the governed, read-only local transport,
