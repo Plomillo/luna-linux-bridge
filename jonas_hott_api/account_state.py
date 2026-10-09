@@ -44,7 +44,11 @@ def initialize_account_state_db() -> None:
           source_reference TEXT NOT NULL,
           actor TEXT NOT NULL,
           evidence_sha256 TEXT NOT NULL,
-          notes TEXT NOT NULL
+          notes TEXT NOT NULL,
+          shared_pool_id TEXT NOT NULL DEFAULT 'family-shared',
+          unit TEXT NOT NULL DEFAULT 'credits',
+          consent_confirmed INTEGER NOT NULL DEFAULT 0 CHECK(consent_confirmed IN (0,1)),
+          validation_status TEXT NOT NULL DEFAULT 'UNVALIDATED'
         );
         CREATE TABLE IF NOT EXISTS model_catalog_snapshots (
           snapshot_id TEXT PRIMARY KEY,
@@ -57,6 +61,17 @@ def initialize_account_state_db() -> None:
           evidence_sha256 TEXT NOT NULL
         );
         """)
+        # Additive migration for databases created by earlier branch versions.
+        columns = {row["name"] for row in conn.execute("PRAGMA table_info(credit_observations)")}
+        migrations = {
+            "shared_pool_id": "ALTER TABLE credit_observations ADD COLUMN shared_pool_id TEXT NOT NULL DEFAULT 'family-shared'",
+            "unit": "ALTER TABLE credit_observations ADD COLUMN unit TEXT NOT NULL DEFAULT 'credits'",
+            "consent_confirmed": "ALTER TABLE credit_observations ADD COLUMN consent_confirmed INTEGER NOT NULL DEFAULT 0",
+            "validation_status": "ALTER TABLE credit_observations ADD COLUMN validation_status TEXT NOT NULL DEFAULT 'UNVALIDATED'",
+        }
+        for name, statement in migrations.items():
+            if name not in columns:
+                conn.execute(statement)
 
 
 def _require_digest(value: str) -> str:
@@ -65,15 +80,28 @@ def _require_digest(value: str) -> str:
     return value.lower()
 
 
+AUTHORIZED_RESPONDENTS = {"Sebastián", "Diego", "Catalina", "Marjorie", "Cristóbal"}
+
+
 class CreditObservation(BaseModel):
     observation_id: str = Field(min_length=1, max_length=128)
     observed_at_utc: str = Field(min_length=20, max_length=40)
     balance_credits: int = Field(ge=0)
-    source_kind: Literal["manual", "official_api"]
+    source_kind: Literal["manual"] = "manual"
     source_reference: str = Field(min_length=1, max_length=500)
     actor: str = Field(min_length=1, max_length=120)
+    shared_pool_id: Literal["family-shared"] = "family-shared"
+    unit: Literal["credits"] = "credits"
+    consent_confirmed: bool
     evidence_sha256: str
     notes: str = Field(default="", max_length=1000)
+
+    @field_validator("actor")
+    @classmethod
+    def authorized_family_respondent(cls, value: str) -> str:
+        if value not in AUTHORIZED_RESPONDENTS:
+            raise ValueError("actor must be one of the authorized family respondents")
+        return value
 
     @field_validator("observed_at_utc")
     @classmethod
@@ -156,6 +184,10 @@ def record_credit_observation(payload: CreditObservation) -> dict:
                     and old["source_kind"] == payload.source_kind
                     and old["source_reference"] == payload.source_reference
                     and old["evidence_sha256"] == payload.evidence_sha256
+                    and old["actor"] == payload.actor
+                    and old["shared_pool_id"] == payload.shared_pool_id
+                    and old["unit"] == payload.unit
+                    and bool(old["consent_confirmed"]) == payload.consent_confirmed
                 )
                 conn.rollback()
                 if not same:
@@ -164,12 +196,14 @@ def record_credit_observation(payload: CreditObservation) -> dict:
             conn.execute("""
                 INSERT INTO credit_observations
                 (observation_id, observed_at_utc, recorded_at_utc, balance_credits,
-                 source_kind, source_reference, actor, evidence_sha256, notes)
-                VALUES(?,?,?,?,?,?,?,?,?)
+                 source_kind, source_reference, actor, evidence_sha256, notes,
+                 shared_pool_id, unit, consent_confirmed, validation_status)
+                VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)
             """, (
                 payload.observation_id, payload.observed_at_utc, utc_now(),
                 payload.balance_credits, payload.source_kind, payload.source_reference,
                 payload.actor, payload.evidence_sha256, payload.notes,
+                payload.shared_pool_id, payload.unit, int(payload.consent_confirmed), "SELF_REPORTED_UNVERIFIED",
             ))
             conn.commit()
         return {"observation_id": payload.observation_id, "recorded": True, "history_mutated": False}
@@ -189,10 +223,24 @@ def latest_credit_observation() -> dict:
             """).fetchone()
         if row is None:
             return {"status": "UNKNOWN", "balance_credits": None, "certified": False}
+        freshness = _freshness(row["observed_at_utc"])
         result = dict(row)
-        result.update(_freshness(row["observed_at_utc"]))
+        result.update(freshness)
+        # Fail closed: distinct reported values mean the shared pool is unconfirmed.
+        if freshness["freshness"] == "FRESH":
+            with _db() as conn:
+                recent = conn.execute(
+                    "SELECT DISTINCT balance_credits FROM credit_observations WHERE shared_pool_id=? AND unit=?",
+                    (row["shared_pool_id"], row["unit"]),
+                ).fetchall()
+            if len({item["balance_credits"] for item in recent}) > 1:
+                result.update({"status": "CONFLICTING", "balance_credits": None,
+                               "confirmed_balance_credits": None, "certified": False,
+                               "conflict_resolution_required": True})
+                return result
         result["status"] = "OBSERVED"
         result["balance_is_estimate"] = False
+        result["shared_pool"] = True
         result["certified"] = False
         return result
     except (sqlite3.Error, OSError):
