@@ -52,7 +52,7 @@ def test_shared_pool_observations_are_append_only_and_not_summed(monkeypatch, tm
         first_payload = observation("credit-001", "Diego", 3936630)
         second_payload = observation("credit-002", "Catalina", 3936630)
         first = client.post("/v1/account/credits/observations", headers=respondent_auth("Diego"), json=first_payload)
-        replay = client.post("/v1/account/credits/observations", headers=auth(), json=first_payload)
+        replay = client.post("/v1/account/credits/observations", headers=respondent_auth("Diego"), json=first_payload)
         second = client.post("/v1/account/credits/observations", headers=respondent_auth("Catalina"), json=second_payload)
         latest = client.get("/v1/account/credits", headers=auth())
         history = client.get("/v1/account/credits/history", headers=auth())
