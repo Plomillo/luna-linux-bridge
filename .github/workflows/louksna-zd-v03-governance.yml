@@ -11,6 +11,7 @@ on:
       - scripts/missions/louksna_zd_v03_functionalizer.py
       - scripts/missions/repo_forensic_census.py
       - scripts/missions/debian_build_evidence.py
+      - scripts/missions/debian_package_canonicalize.py
       - scripts/missions/louksna_zd_candidate_materializer.py
       - scripts/missions/louksna_zd_v03_playwright_ui_e2e.mjs
       - scripts/missions/debian13_package_smoke.sh
@@ -26,6 +27,7 @@ on:
       - scripts/missions/louksna_zd_v03_functionalizer.py
       - scripts/missions/repo_forensic_census.py
       - scripts/missions/debian_build_evidence.py
+      - scripts/missions/debian_package_canonicalize.py
       - scripts/missions/louksna_zd_candidate_materializer.py
       - scripts/missions/louksna_zd_v03_playwright_ui_e2e.mjs
       - scripts/missions/debian13_package_smoke.sh
@@ -583,6 +585,7 @@ jobs:
           export SOURCE_DATE_EPOCH="$(git -C "$GITHUB_WORKSPACE" show -s --format=%ct "$GITHUB_SHA")"
           export TZ=UTC LC_ALL=C CARGO_INCREMENTAL=0
           export CARGO_TARGET_DIR="$RUNNER_TEMP/louksna-v03/cargo-target-build-1"
+          export RUSTFLAGS="--remap-path-prefix=$GITHUB_WORKSPACE=/louksna-src"
           if test -f package-lock.json; then
             npm ci
           else
@@ -594,6 +597,10 @@ jobs:
           npx tauri build --bundles deb
           DEB="$(realpath "$(find "$CARGO_TARGET_DIR/release/bundle/deb" -maxdepth 1 -type f -name '*.deb' -print -quit)")"
           test -n "$DEB"
+          RAW_DEB="$DEB"
+          NORMALIZED_DEB="${DEB%.deb}.canonical.deb"
+          python3 -B -I "$GITHUB_WORKSPACE/scripts/missions/debian_package_canonicalize.py" --package "$RAW_DEB" --output "$NORMALIZED_DEB" --source-date-epoch "$SOURCE_DATE_EPOCH"
+          DEB="$NORMALIZED_DEB"
           sha256sum "$DEB"
           stat -c 'package_size_bytes=%s' "$DEB"
           cp "$DEB" "$EVIDENCE_DIR/"
@@ -633,12 +640,17 @@ jobs:
             export SOURCE_DATE_EPOCH="$(git -C "$GITHUB_WORKSPACE" show -s --format=%ct "$GITHUB_SHA")"
             export TZ=UTC LC_ALL=C CARGO_INCREMENTAL=0
             export CARGO_TARGET_DIR="$RUNNER_TEMP/louksna-v03/cargo-target-build-2"
+            export RUSTFLAGS="--remap-path-prefix=$SECOND_ROOT=/louksna-src"
             npm ci
             npm run build
             cargo check --manifest-path src-tauri/Cargo.toml
             npx tauri build --bundles deb
             DEB2="$(realpath "$(find "$CARGO_TARGET_DIR/release/bundle/deb" -maxdepth 1 -type f -name '*.deb' -print -quit)")"
             test -n "$DEB2"
+            RAW_DEB2="$DEB2"
+            NORMALIZED_DEB2="${DEB2%.deb}.canonical.deb"
+            python3 -B -I "$SECOND_ROOT/scripts/missions/debian_package_canonicalize.py" --package "$RAW_DEB2" --output "$NORMALIZED_DEB2" --source-date-epoch "$SOURCE_DATE_EPOCH"
+            DEB2="$NORMALIZED_DEB2"
             python3 -B -I "$GITHUB_WORKSPACE/scripts/missions/debian_build_evidence.py" digest --package "$DEB2" --output "$RESULT"
           ); then
             python3 -B -I "$GITHUB_WORKSPACE/scripts/missions/debian_build_evidence.py" finalize --report "$EVIDENCE_DIR/CP-08-build-package.json" --second-result "$RESULT"
