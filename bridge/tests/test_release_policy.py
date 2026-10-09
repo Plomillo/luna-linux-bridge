@@ -23,12 +23,16 @@ class ReleasePolicyTests(unittest.TestCase):
         self.assertIn("trap 'exit 130' INT", PROVISIONER)
         self.assertIn("trap 'exit 143' TERM", PROVISIONER)
 
-    def test_client_directory_is_root_private_until_validation(self):
-        private_creation = 'install -d -o root -g root -m 0700 "$CLIENT"'
-        publish_owner = 'chown "$OWNER_UID:$OWNER_GID" "$CLIENT"'
-        self.assertIn(private_creation, PROVISIONER)
-        self.assertIn(publish_owner, PROVISIONER)
-        self.assertLess(PROVISIONER.index(publish_owner), PROVISIONER.rindex("VALIDATED=1"))
+    def test_client_identity_paths_are_written_as_owner_not_root(self):
+        owner_creation = 'runuser -u "$OWNER_UID" -- mkdir -m 0700 "$CLIENT"'
+        owner_keygen = 'runuser -u "$OWNER_UID" -- openssl req -new'
+        owner_publish = 'runuser -u "$OWNER_UID" -- cp "$TLS/client.pem" "$CLIENT/client.pem"'
+        self.assertIn(owner_creation, PROVISIONER)
+        self.assertIn(owner_keygen, PROVISIONER)
+        self.assertIn(owner_publish, PROVISIONER)
+        self.assertNotIn('chown "$OWNER_UID:$OWNER_GID" "$CLIENT"', PROVISIONER)
+        self.assertLess(PROVISIONER.index('runuser -u "$OWNER_UID" -- chmod 0700 "$CLIENT"'),
+                        PROVISIONER.rindex("VALIDATED=1"))
 
     def test_lintian_is_not_silenced_and_errors_block_release(self):
         self.assertNotIn('lintian --no-tag-display-limit "$DEB" | tee lintian.txt || true', WORKFLOW)
