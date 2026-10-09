@@ -376,7 +376,13 @@ jobs:
           python3 -B -I scripts/missions/louksna_zd_v03_functionalizer.py "$CANDIDATE"
           python3 -B -I scripts/missions/test_louksna_zd_v03_backend.py scripts/missions/v03_templates/main.rs
           cd "$CANDIDATE"
-          npm ci
+          if test -f package-lock.json; then
+            npm ci
+          else
+            echo "CP-08 NOTE: generated candidate has no lockfile; materializing lockfile before clean install."
+            npm install --package-lock-only --ignore-scripts
+            npm ci
+          fi
           npm run build
           cargo check --manifest-path src-tauri/Cargo.toml
           npx tauri build --bundles deb
