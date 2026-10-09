@@ -31,7 +31,7 @@ for d in /etc/louksna "$BASE"; do
   fi
   if [ -e "$d" ]; then
     [ -d "$d" ] && [ "$(stat -c %u "$d")" = 0 ] &&
-      [ $(( $(stat -c %a "$d") & 22 )) -eq 0 ] || {
+      [ $(( 0$(stat -c %a "$d") & 022 )) -eq 0 ] || {
         echo "ERROR: unsafe trust-policy directory ownership/mode: $d" >&2
         exit 3
       }
