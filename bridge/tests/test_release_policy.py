@@ -41,6 +41,13 @@ class ReleasePolicyTests(unittest.TestCase):
         self.assertIn("owner=os.getuid() if field==\"server_key\"", (ROOT / "bridge/mtls_gateway.py").read_text())
         self.assertIn("ProtectSystem=strict", SERVICE)
         self.assertIn("NoNewPrivileges=yes", SERVICE)
+        self.assertIn("CapabilityBoundingSet=", SERVICE)
+        self.assertIn("AmbientCapabilities=", SERVICE)
+        self.assertIn("ProtectProc=invisible", SERVICE)
+        self.assertIn("ProcSubset=pid", SERVICE)
+        self.assertIn("RestrictNamespaces=yes", SERVICE)
+        self.assertIn("SystemCallArchitectures=native", SERVICE)
+        self.assertIn("MemoryDenyWriteExecute=yes", SERVICE)
         self.assertIn("RestrictAddressFamilies=AF_UNIX AF_INET", SERVICE)
         self.assertIn("ReadWritePaths=@OWNER_PRIVATE_STATE@", SERVICE)
 
