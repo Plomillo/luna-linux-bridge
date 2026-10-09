@@ -12,10 +12,11 @@ Scope: repository tree at branch `work/louksna-zd-v04-03-mtls-provisioning-20261
 5. `PUAC2.md` concerns architectural governance and expressly says the proposal is pending formal admission; it does not establish a license for this bridge's source code.
 6. The current `debian/control` previously used `Louksna Project <maintainers@louksna.invalid>`. The repository's recent commits repeatedly record the Git author/committer as `Plomillo <diegonorambuenamiranda2@gmail.com>`. This supports attribution of that address to repository commits, but does not independently prove mailbox deliverability, legal identity, copyright ownership, or authorization to license all source files.
 
-## Change made
+## Packaging contact disposition
 
-- Set `debian/control` Maintainer to `Plomillo <diegonorambuenamiranda2@gmail.com>`.
-- Updated only the current 0.4.0-3 changelog trailer to match. Historical 0.4.0-2 and 0.4.0-1 entries were preserved.
+A provisional change briefly set `debian/control` and the 0.4.0-3 changelog trailer to `Plomillo <diegonorambuenamiranda2@gmail.com>`, because that address appears in commit metadata. Further inspection of `docs/PACKAGE_COMPONENT_INVENTORY.md` showed an explicit requirement that the real authorized maintenance contact must not be replaced by an inferred address. The provisional assignment was therefore reversed in subsequent additive commits. Current `debian/control` and the current changelog trailer retain `Louksna Project <maintainers@louksna.invalid>` as an explicit HOLD marker until the authorized maintainer supplies a real contact. Historical changelog entries remain preserved.
+
+The commit-attributed email is a lead to confirm with the responsible human, not an authorized maintainer identity. It must not be represented as validated or operational.
 
 ## Unresolved — release-blocking
 
@@ -46,9 +47,9 @@ Repository-scoped GitHub code searches for `license copyright SPDX`, `Copyright 
 
 ### CI failure diagnosis and correction
 
-Workflow run [37871381167](https://github.com/Plomillo/luna-linux-bridge/actions/runs/37871381167) checked out commit `d3bfdf39331680bc6bc7ad515d544221e8a9fede`. The package build failed in `bridge.tests.test_release_policy.ReleasePolicyTests.test_release_stays_blocked_without_authoritative_legal_and_contact_metadata`, because the regression test hard-coded the former synthetic `maintainers@louksna.invalid` address after `debian/control` was changed to the repository-attributed contact. The test was corrected in commit `02bff3c42bb7e87ef0f0df52365bdfcd8195e3df` to check that the contact remains unverified, legal metadata remains absent, and the release hold remains in place. That correction is not itself evidence of a passing test; a new workflow result must confirm it.
+Workflow run [37871381167](https://github.com/Plomillo/luna-linux-bridge/actions/runs/37871381167) checked out commit `d3bfdf39331680bc6bc7ad515d544221e8a9fede`. The package build failed in `bridge.tests.test_release_policy.ReleasePolicyTests.test_release_stays_blocked_without_authoritative_legal_and_contact_metadata`, because the regression test expected the synthetic `maintainers@louksna.invalid` marker after the provisional contact assignment. Commit `02bff3c42bb7e87ef0f0df52365bdfcd8195e3df` temporarily changed the test expectation; subsequent review found that this would conflict with the component inventory's explicit rule against substituting an inferred email. The control field and current changelog trailer were restored to the HOLD marker, and the regression test was restored to enforce that hold in commits `f56542a02b2662f6b3387fae6e4973b964a6926f`, `8a8aabf40e3a0b47c42e0c064619344eb27a1bfb`, and `3ddad80f44bd3c09dce17b9117395969c8b9add5`.
 
-The same failed run did not reach Lintian evidence collection or later integration tests. The release remains blocked until the next run establishes build/test results and legal provenance is resolved. The known `no-copyright-file` Lintian finding from earlier runs remains applicable until verified otherwise.
+The same failed run did not reach Lintian evidence collection or later integration tests. A new workflow result must confirm the corrected test state. The known `no-copyright-file` Lintian finding from earlier runs remains applicable until verified otherwise.
 
 ### Evidence still required
 
