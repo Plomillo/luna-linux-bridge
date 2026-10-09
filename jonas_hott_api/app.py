@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import json
 import os
 import re
 import sqlite3
@@ -77,6 +78,7 @@ def initialize_db() -> None:
           request_id TEXT PRIMARY KEY,
           estimated_micro_usd INTEGER NOT NULL CHECK (estimated_micro_usd > 0),
           actual_micro_usd INTEGER,
+          usage_evidence_sha256 TEXT,
           model_id TEXT NOT NULL,
           policy_version TEXT NOT NULL,
           evidence_sha256 TEXT NOT NULL,
@@ -100,6 +102,10 @@ def initialize_db() -> None:
         INSERT OR IGNORE INTO control_state(singleton, halted, halt_reason, updated_at_utc)
           VALUES(1, 0, NULL, CURRENT_TIMESTAMP);
         """)
+        # Additive migration for databases created before settlement evidence was persisted.
+        columns = {row["name"] for row in conn.execute("PRAGMA table_info(reservations)")}
+        if "usage_evidence_sha256" not in columns:
+            conn.execute("ALTER TABLE reservations ADD COLUMN usage_evidence_sha256 TEXT")
 
 
 def event(conn: sqlite3.Connection, event_type: str, request_id: str | None, details_json: str) -> None:
@@ -232,21 +238,26 @@ def settle_reservation(request_id: str, payload: SettlementRequest) -> dict:
                 raise HTTPException(404, "Reservation not found.")
             if row["status"] != "RESERVED":
                 conn.rollback()
-                if row["actual_micro_usd"] == payload.actual_micro_usd:
+                same_settlement = (
+                    row["actual_micro_usd"] == payload.actual_micro_usd
+                    and row["usage_evidence_sha256"] == payload.usage_evidence_sha256
+                )
+                if same_settlement:
                     return {"request_id": request_id, "status": row["status"], "idempotent_replay": True}
-                raise HTTPException(409, "Reservation already reconciled with different usage.")
+                raise HTTPException(409, "Reservation already reconciled with different cost or evidence.")
             overrun = payload.actual_micro_usd > row["estimated_micro_usd"]
             status = "OVERRUN" if overrun else "SETTLED"
             conn.execute(
-                "UPDATE reservations SET actual_micro_usd=?,status=?,settled_at_utc=? WHERE request_id=?",
-                (payload.actual_micro_usd, status, utc_now(), request_id),
+                "UPDATE reservations SET actual_micro_usd=?,usage_evidence_sha256=?,status=?,settled_at_utc=? WHERE request_id=?",
+                (payload.actual_micro_usd, payload.usage_evidence_sha256, status, utc_now(), request_id),
             )
             if overrun:
                 conn.execute("UPDATE control_state SET halted=1,halt_reason=?,updated_at_utc=? WHERE singleton=1",
                              ("actual cost exceeded reserved upper bound", utc_now()))
             event(conn, "RESERVATION_OVERRUN" if overrun else "RESERVATION_SETTLED",
-                  request_id, '{"actual_micro_usd":%d,"usage_evidence_sha256":"%s"}' %
-                  (payload.actual_micro_usd, payload.usage_evidence_sha256))
+                  request_id, json.dumps({"actual_micro_usd": payload.actual_micro_usd,
+                                          "usage_evidence_sha256": payload.usage_evidence_sha256},
+                                         sort_keys=True, separators=(",", ":")))
             conn.commit()
             if overrun:
                 raise HTTPException(409, "Actual cost exceeded reservation; ledger reconciled and new reservations halted.")
