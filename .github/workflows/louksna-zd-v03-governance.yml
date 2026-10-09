@@ -427,10 +427,10 @@ jobs:
           test -n "$CANDIDATE"
           REPORT="$GITHUB_WORKSPACE/evidence/zona-directiva-v03/CP-07-playwright-ui-e2e.json"
           set +e
-          timeout --signal=TERM --kill-after=5s 180s node scripts/missions/louksna_zd_v03_playwright_ui_e2e.mjs "$CANDIDATE" "$REPORT"
-          E2E_EXIT=$?
+          timeout --signal=TERM --kill-after=5s 180s node scripts/missions/louksna_zd_v03_playwright_ui_e2e.mjs "$CANDIDATE" "$REPORT" 2>&1 | tee "$GITHUB_WORKSPACE/evidence/zona-directiva-v03/CP-07-playwright-ui-e2e.log"
+          E2E_EXIT=${PIPESTATUS[0]}
           set -e
-          if [[ ! -s "$REPORT" ]]; then
+          if [[ ! -s "$REPORT" ]] || grep -q '"status": "STARTED"' "$REPORT"; then
             python3 - "$REPORT" "$E2E_EXIT" <<'PY'
           import datetime, json, pathlib, sys
           report = {
@@ -510,6 +510,7 @@ jobs:
           path: |
             evidence/zona-directiva-v03/CP-07-playwright-ui-e2e.json
             evidence/zona-directiva-v03/CP-07-playwright-ui-e2e.png
+            evidence/zona-directiva-v03/CP-07-playwright-ui-e2e.log
           if-no-files-found: warn
           retention-days: 90
 
