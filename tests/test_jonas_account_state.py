@@ -145,7 +145,7 @@ def test_guided_family_checkin_page_is_served_without_provider_api(monkeypatch, 
     assert response.status_code == 200
     assert "Sebastián" in response.text
     assert "Cristóbal" in response.text
-    assert "no consulta ninguna API de saldo" in response.text
+    assert "No consulta ninguna API de saldo" in response.text
 
 
 def test_family_credit_write_fails_closed_without_all_respondent_tokens(monkeypatch, tmp_path):
