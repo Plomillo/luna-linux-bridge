@@ -20,10 +20,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - name: Checkout exact branch commit
+      - name: Checkout exact triggering commit
         uses: actions/checkout@v4
         with:
-          ref: work/louksna-zd-v04-03-mtls-provisioning-20261008
+          ref: ${{ github.sha }}
           fetch-depth: 0
 
       - name: Install Debian build toolchain
@@ -33,7 +33,7 @@ jobs:
 
       - name: Verify governed source identity
         run: |
-          test "$(git branch --show-current)" = "work/louksna-zd-v04-03-mtls-provisioning-20261008"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git rev-parse HEAD:Louksna.md)" = "1a399ab7494d6df5582436819eee557083e753ed"
           test "$(git rev-parse HEAD:PUAC2.md)" = "da3b216888c86e588685d384c34dd3c481414b22"
 
@@ -84,7 +84,9 @@ jobs:
             "lintian_exit_code":lintian_rc,
             "lintian_errors":lintian_errors,
             "timestamp_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),
-            "branch":subprocess.check_output(["git","branch","--show-current"],text=True).strip(),
+            "branch":__import__("os").environ.get("GITHUB_REF_NAME",""),
+            "trigger_sha":__import__("os").environ.get("GITHUB_SHA",""),
+            "workflow_ref":__import__("os").environ.get("GITHUB_WORKFLOW_REF",""),
             "commit":subprocess.check_output(["git","rev-parse","HEAD"],text=True).strip(),
             "package":deb.name,
             "bytes":deb.stat().st_size,
