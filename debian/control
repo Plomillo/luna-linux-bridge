@@ -1,7 +1,7 @@
 Source: louksna-linux-bridge
 Section: net
 Priority: optional
-Maintainer: Plomillo <diegonorambuenamiranda2@gmail.com>
+Maintainer: Louksna Project <maintainers@louksna.invalid>
 Build-Depends: build-essential, debhelper-compat (= 13), dpkg-dev, python3, openssl
 Standards-Version: 4.7.0
 Rules-Requires-Root: no
