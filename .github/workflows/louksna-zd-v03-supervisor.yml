@@ -4,11 +4,6 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "*/15 * * * *"
-  pull_request:
-    branches:
-      - work/louksna-zona-directiva-v0.3-functional-20261006
-    paths:
-      - .github/workflows/louksna-zd-v03-supervisor.yml
 
 permissions:
   actions: write
