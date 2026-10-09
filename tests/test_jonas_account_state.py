@@ -15,8 +15,18 @@ def auth():
     return {"Authorization": "Bearer account-state-test-token"}
 
 
+def respondent_token(actor):
+    return {
+        "Sebastián": "family-test-token:sebastian",
+        "Diego": "family-test-token:diego",
+        "Catalina": "family-test-token:catalina",
+        "Marjorie": "family-test-token:marjorie",
+        "Cristóbal": "family-test-token:cristobal",
+    }[actor]
+
+
 def respondent_auth(actor):
-    return {"Authorization": "Bearer family-test-token:" + actor}
+    return {"Authorization": "Bearer " + respondent_token(actor)}
 
 
 def observation(observation_id, actor, balance, observed_at=None):
@@ -39,7 +49,7 @@ def setup_state(monkeypatch, tmp_path):
     import jonas_hott_api.app as module
     monkeypatch.setenv("JONAS_API_TOKEN", "account-state-test-token")
     monkeypatch.setenv("JONAS_ACCOUNT_STATE_TTL_SECONDS", "3600")
-    tokens = {name: "family-test-token:" + name for name in
+    tokens = {name: respondent_token(name) for name in
               ("Sebastián", "Diego", "Catalina", "Marjorie", "Cristóbal")}
     monkeypatch.setenv("JONAS_FAMILY_RESPONDENT_TOKENS_JSON", json.dumps(tokens, ensure_ascii=False))
     module.TOKEN = "account-state-test-token"
