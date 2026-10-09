@@ -58,3 +58,12 @@ The branch contains routes for credit observations and catalog snapshots. The sh
 - The local Jonas budget MVP is separate from the shared-account API; no provider billing reconciliation or actual savings measurement is established.
 - This CI pass is implementation-level evidence only. G23 independent validation, G24 certification, production authorization and merge remain **NOT EXECUTED / NOT AUTHORIZED**.
 
+## Package and reproducibility evidence — 2026-10-09
+
+- CI run [37975961011](https://github.com/Plomillo/luna-linux-bridge/actions/runs/37975961011) completed successfully for the current family API candidate.
+- API/shared-account suite: **20 passed, 0 failed**. The same 20 tests passed again after extracting the generated archive into a fresh directory and installing its declared dependencies in a new virtual environment.
+- Deterministic source-candidate archive SHA-256: `7dd62823a8fc68214be3340b07cd81bc83e283e7a5acad7c845709665663bf28`.
+- CI evidence report SHA-256: `40d7a97edb6b7e91a3ab20e5a896aeceed92b098e61f790b0dc3a7a9c8d2b86a`.
+- Uploaded evidence artifact SHA-256: `sha256:8016e9e549855e6f314bb5d1134cf685a6ca7a86d27bfb7408a91fa1b521af8e`.
+- Package status remains `SOURCE_CANDIDATE_NOT_PRODUCTION_DEPLOYABLE`; this evidence does not close deployment, TLS, family outreach, provider catalog, backup/restore, or G23/G24 gates.
+
