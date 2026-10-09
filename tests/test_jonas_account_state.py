@@ -128,6 +128,67 @@ def test_all_five_family_members_have_individual_write_identity(monkeypatch, tmp
     assert set(latest.json()["respondents_reporting"]) == set(respondents)
 
 
+def test_family_credit_write_fails_closed_without_all_respondent_tokens(monkeypatch, tmp_path):
+    setup_state(monkeypatch, tmp_path)
+    monkeypatch.delenv("JONAS_FAMILY_RESPONDENT_TOKENS_JSON")
+    with TestClient(app) as client:
+        response = client.post(
+            "/v1/account/credits/observations",
+            headers=respondent_auth("Diego"),
+            json=observation("missing-family-token-map", "Diego", 100),
+        )
+    assert response.status_code == 503
+
+
+def test_stale_family_observation_is_marked_stale(monkeypatch, tmp_path):
+    setup_state(monkeypatch, tmp_path)
+    old_time = (datetime.now(timezone.utc).replace(year=datetime.now(timezone.utc).year - 1)).isoformat()
+    with TestClient(app) as client:
+        saved = client.post(
+            "/v1/account/credits/observations",
+            headers=respondent_auth("Diego"),
+            json=observation("stale-credit-001", "Diego", 1000, old_time),
+        )
+        latest = client.get("/v1/account/credits", headers=auth())
+    assert saved.status_code == 200
+    assert latest.json()["freshness"] == "STALE"
+
+
+def test_catalog_rejects_duplicate_model_ids(monkeypatch, tmp_path):
+    setup_state(monkeypatch, tmp_path)
+    payload = {
+        "snapshot_id": "duplicate-model-ids",
+        "observed_at_utc": datetime.now(timezone.utc).isoformat(),
+        "source_kind": "manual",
+        "source_reference": "local-fixture",
+        "actor": "test-importer",
+        "models": [{"model_id": "same-id"}, {"model_id": "same-id"}],
+        "evidence_sha256": digest("duplicate-catalog-fixture"),
+    }
+    with TestClient(app) as client:
+        response = client.post("/v1/models/catalog/snapshots", headers=auth(), json=payload)
+    assert response.status_code == 422
+
+
+def test_catalog_snapshot_id_cannot_be_replayed_with_changed_content(monkeypatch, tmp_path):
+    setup_state(monkeypatch, tmp_path)
+    payload = {
+        "snapshot_id": "immutable-catalog-001",
+        "observed_at_utc": datetime.now(timezone.utc).isoformat(),
+        "source_kind": "manual",
+        "source_reference": "local-fixture",
+        "actor": "test-importer",
+        "models": [{"model_id": "model-a"}],
+        "evidence_sha256": digest("catalog-source-evidence"),
+    }
+    changed = {**payload, "models": [{"model_id": "model-b"}]}
+    with TestClient(app) as client:
+        first = client.post("/v1/models/catalog/snapshots", headers=auth(), json=payload)
+        replay = client.post("/v1/models/catalog/snapshots", headers=auth(), json=changed)
+    assert first.status_code == 200
+    assert replay.status_code == 409
+
+
 def test_catalog_snapshot_is_not_certified_by_source_label_alone(monkeypatch, tmp_path):
     import jonas_hott_api.app as module
     monkeypatch.setenv("JONAS_API_TOKEN", "account-state-test-token")
