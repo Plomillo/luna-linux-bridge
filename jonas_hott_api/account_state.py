@@ -18,14 +18,15 @@ from typing import Literal
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from pydantic import BaseModel, Field, field_validator
 
-from .app import DB_PATH, SHA256_RE, require_auth, utc_now
+from . import app as app_module
+from .app import SHA256_RE, require_auth, utc_now
 
 router = APIRouter(tags=["shared-account-state"])
 
 
 def _db() -> sqlite3.Connection:
-    Path(DB_PATH).parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(DB_PATH, timeout=5, isolation_level=None)
+    Path(app_module.DB_PATH).parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(app_module.DB_PATH, timeout=5, isolation_level=None)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA busy_timeout=5000")
     return conn
