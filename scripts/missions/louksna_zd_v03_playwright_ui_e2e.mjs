@@ -12,12 +12,26 @@ import { createRequire } from "node:module";
 
 const candidate = path.resolve(process.argv[2] || "");
 const reportPath = path.resolve(process.argv[3] || "evidence/zona-directiva-v03/CP-07-playwright-ui-e2e.json");
+const started = new Date().toISOString();
+fs.mkdirSync(path.dirname(reportPath), { recursive: true });
+const bootstrapReport = {
+  schema: "louksna.zd.v03.playwright-ui-e2e.v1",
+  stage_id: "07", checkpoint_id: "CP-07",
+  started_at_utc: started, finished_at_utc: null,
+  repository: process.env.GITHUB_REPOSITORY || null,
+  commit_sha: process.env.GITHUB_SHA || null,
+  run_id: process.env.GITHUB_RUN_ID || null,
+  frontend_browser_e2e_executed: false,
+  native_tauri_runtime_tested: false, voice_e2e_executed: false,
+  status: "STARTED", failures: ["e2e_not_completed"]
+};
+fs.writeFileSync(reportPath, JSON.stringify(bootstrapReport, null, 2) + "\\n");
+console.log("CP-07 startup: candidate=" + candidate);
 if (!fs.existsSync(path.join(candidate, "package.json"))) throw new Error("candidate package.json missing");
+console.log("CP-07 startup: resolving Playwright from candidate package");
 const requireFromCandidate = createRequire(path.join(candidate, "package.json"));
 const { chromium } = requireFromCandidate("playwright");
-fs.mkdirSync(path.dirname(reportPath), { recursive: true });
-
-const started = new Date().toISOString();
+console.log("CP-07 startup: Playwright module loaded");
 const baseURL = "http://127.0.0.1:4173";
 const evidenceDir = path.dirname(reportPath);
 const failures = [];
