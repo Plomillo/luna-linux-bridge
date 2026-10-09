@@ -13,5 +13,7 @@ Recommends: systemd
 Description: bounded read-only LOUKSNA local bridge
  LOUKSNA Linux Bridge provides the governed, read-only local transport,
  evidence ledger and loopback TLS 1.3/mTLS telemetry gateway.
- The package does not provision certificates, private keys, trust roots,
- privileged execution brokers, or remote ingress.
+ Package installation does not automatically create certificates, private
+ keys, trust roots, privileged execution brokers, or remote ingress. An
+ explicit local provisioning utility is shipped for a separate owner-reviewed
+ action; it does not enable or start the service.
