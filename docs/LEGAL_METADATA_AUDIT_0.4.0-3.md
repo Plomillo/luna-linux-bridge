@@ -33,3 +33,23 @@ The maintainer email is sourced from public commit metadata but has not been tes
 ## Required next evidence
 
 Locate an existing, applicable license/authorization and copyright provenance in source history or upstream origin, or obtain an explicit rights-holder decision. Then create `debian/copyright` in Debian copyright-format 1.0, with accurate file coverage, copyright statements, license text, and third-party notices. Run the package build and fail-closed Lintian checks again. Do not release while the license and copyright evidence remain unknown.
+
+## Expanded search and CI findings — 2026-10-09 UTC
+
+### Additional repository refs checked
+
+The exact paths `LICENSE`, `COPYING`, `NOTICE`, and `debian/copyright` were also queried on `main`, `candidate/louksna-remote-bridge-v0-unreleased`, and `candidate/lrb-apc-trust-readonly-preflight-20260930`. All 12 path/ref checks returned not found. This is additional negative evidence for those refs, not a claim that every historical Git object or every branch has been exhaustively inspected.
+
+### Search queries
+
+Repository-scoped GitHub code searches for `license copyright SPDX`, `Copyright Plomillo`, `SPDX-License-Identifier`, `third-party license dependency notice`, `COPYING`, and `author rights ownership` returned no matching files on the default-branch search surface. Public web searches for the exact repository and its license/copyright terms produced no authoritative license or upstream-origin record. Unrelated repositories named “Luna” are not evidence for this project and were excluded.
+
+### CI failure diagnosis and correction
+
+Workflow run [37871381167](https://github.com/Plomillo/luna-linux-bridge/actions/runs/37871381167) checked out commit `d3bfdf39331680bc6bc7ad515d544221e8a9fede`. The package build failed in `bridge.tests.test_release_policy.ReleasePolicyTests.test_release_stays_blocked_without_authoritative_legal_and_contact_metadata`, because the regression test hard-coded the former synthetic `maintainers@louksna.invalid` address after `debian/control` was changed to the repository-attributed contact. The test was corrected in commit `02bff3c42bb7e87ef0f0df52365bdfcd8195e3df` to check that the contact remains unverified, legal metadata remains absent, and the release hold remains in place. That correction is not itself evidence of a passing test; a new workflow result must confirm it.
+
+The same failed run did not reach Lintian evidence collection or later integration tests. The release remains blocked until the next run establishes build/test results and legal provenance is resolved. The known `no-copyright-file` Lintian finding from earlier runs remains applicable until verified otherwise.
+
+### Evidence still required
+
+The public repository data located so far does not determine (a) the legal person/entity owning the bridge copyright, (b) the intended license grant, (c) whether all packaged code was authored by that rights holder, or (d) whether any copied/adapted code or bundled assets require third-party notices. These are not facts that Git author metadata or a project architecture document can establish. Do not create a guessed license or represent the package as redistributable without a rights-holder decision or an applicable existing license record.
