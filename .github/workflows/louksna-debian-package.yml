@@ -13,6 +13,7 @@ on:
       - 'PUAC2.md'
       - 'scripts/build'
       - 'scripts/provision-mtls-local.sh'
+      - 'scripts/audit_distribution_evidence.py'
       - '.github/workflows/louksna-debian-package.yml'
   workflow_dispatch:
 
@@ -77,6 +78,23 @@ jobs:
           set -e
           printf '%s\n' "$lintian_rc" > lintian.exit
           cat lintian.txt
+
+      - name: Run hash-bound file-level distribution audit
+        run: |
+          set -eu
+          python3 -m py_compile scripts/audit_distribution_evidence.py
+          python3 scripts/audit_distribution_evidence.py \
+            --package ../louksna-linux-bridge_0.4.0-3_all.deb \
+            --output distribution-audit.json
+          python3 - <<'PY'
+          import json, pathlib
+          report=json.loads(pathlib.Path("distribution-audit.json").read_text())
+          assert report["package"]["sha256"], "package digest missing"
+          assert report["commit_sha"], "commit identity missing"
+          assert report["source_coverage"]["source_file_count"] == 30, "expected 30 packaged source files"
+          assert report["source_coverage"]["source_mapping_complete"], "packaged source mapping incomplete"
+          print("DISTRIBUTION_AUDIT=STRUCTURAL_PASS; LEGAL_CLEARANCE=" + report["distribution_rights"]["status"])
+          PY
 
       - name: Install and exercise provisioner on ephemeral runner
         run: |
@@ -222,6 +240,7 @@ jobs:
           mkdir -p dist/candidate
           cp ../louksna-linux-bridge_0.4.0-3_all.deb dist/candidate/
           cp debian-package.sha256 debian-package-evidence.json lintian.txt lintian.exit dist/candidate/
+          cp distribution-audit.json dist/candidate/
 
       - name: Upload internal build candidate (not for redistribution)
         uses: actions/upload-artifact@v4
@@ -235,10 +254,20 @@ jobs:
             dist/candidate/debian-package-evidence.json
             dist/candidate/lintian.txt
             dist/candidate/lintian.exit
+            dist/candidate/distribution-audit.json
 
       - name: Enforce distribution clearance before artifact staging
         run: |
           set -eu
+          test -s distribution-audit.json || { echo "::error::Missing file-level distribution audit evidence"; exit 1; }
+          python3 - <<'PY'
+          import json, pathlib, sys
+          report=json.loads(pathlib.Path("distribution-audit.json").read_text())
+          if report.get("source_coverage", {}).get("source_mapping_complete") is not True:
+              print("::error::DISTRIBUTION_GATE=HOLD; source-to-package mapping is incomplete")
+              sys.exit(1)
+          print("Source inventory and package mapping are structurally complete; this does not establish legal rights.")
+          PY
           if [ ! -s debian/copyright ]; then
             echo "::error::DISTRIBUTION_GATE=HOLD; debian/copyright is absent."
             exit 1
