@@ -29,6 +29,7 @@ cleanup() {
   elif [ "$ROLLBACK_STATUS" = "NOT_RUN" ] && [ "$INSTALL_STATUS" = "PASS" ]; then
     ROLLBACK_STATUS="PASS"
   fi
+  if [ "$rc" -eq 0 ] && [ "$ROLLBACK_STATUS" != "PASS" ]; then rc=38; fi
   set +e
   python3 - "$REPORT" "$LOG" "$PKG" "$EXPECTED_COMMIT" "$INSTALL_STATUS" "$LAUNCH_STATUS" "$ROLLBACK_STATUS" "$rc" <<'PY'
 import datetime,hashlib,json,os,pathlib,subprocess,sys
@@ -86,7 +87,7 @@ if ! grep -q '^ID=debian$' /etc/os-release || ! grep -q '^VERSION_ID="13"$\|^VER
   echo "Runner is not Debian 13" | tee -a "$LOG"
   exit 32
 fi
-DESKTOP="$((printf '%s %s' "${XDG_CURRENT_DESKTOP:-}" "${DESKTOP_SESSION:-}") | tr '[:lower:]' '[:upper:]')"
+DESKTOP="$(printf '%s %s' "${XDG_CURRENT_DESKTOP:-}" "${DESKTOP_SESSION:-}" | tr '[:lower:]' '[:upper:]')"
 if [[ "$DESKTOP" != *KDE* || "${KDE_FULL_SESSION:-}" != "true" || -z "${DISPLAY:-}" || -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]]; then
   echo "No active KDE graphical session (DISPLAY/DBUS/KDE_FULL_SESSION required)" | tee -a "$LOG"
   exit 33
