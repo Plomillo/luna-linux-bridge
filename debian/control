@@ -8,10 +8,10 @@ Rules-Requires-Root: no
 
 Package: louksna-linux-bridge
 Architecture: all
-Depends: python3 (>= 3.10), openssl, util-linux (>= 2.15)
+Depends: python3 (>= 3.10), python3-tk, openssl, util-linux (>= 2.15)
 Recommends: systemd
-Description: bounded read-only LOUKSNA local bridge
- LOUKSNA Linux Bridge provides the governed, read-only local transport,
+Description: bounded read-only LOUKSNA local bridge with desktop panel
+ LOUKSNA Linux Bridge provides a desktop control panel for the governed,\n read-only local transport,
  evidence ledger and loopback TLS 1.3/mTLS telemetry gateway.
  Package installation does not automatically create certificates, private
  keys, trust roots, privileged execution brokers, or remote ingress. An
