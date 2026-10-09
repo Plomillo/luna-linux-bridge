@@ -9,7 +9,7 @@ The three remaining tracks proceed in parallel but use separate evidence and acc
 
 Scope correction: do not integrate with a 1min.AI balance API. The intended workflow is to ask family members directly for the balance they can currently see and record their answers as attributable observations.
 
-1. Provide a guided check-in for each authorized respondent: Sebastián, Diego, Catalina, and Marjorie. Ask for the displayed balance, applicable account/plan, unit, time checked and timezone, and whether the answer is self-reported or supported by optional evidence.
+1. Provide a guided check-in for each authorized respondent: Sebastián, Diego, Catalina, Marjorie, and Cristóbal. Ask for the displayed balance, applicable account/plan, unit, time checked and timezone, and whether the answer is self-reported or supported by optional evidence.
 2. Store each answer as a separate append-only observation with respondent, account scope, observed/recorded timestamps, balance, unit, source type, evidence digest if supplied, and validation status.
 3. Never assume family members share one account or credit pool. Keep balances separate by person/account unless scope, units, and permission to aggregate are all established.
 4. Show FRESH/STALE/UNKNOWN using a documented freshness window. Reminders may request a new check-in, but the system must not claim to know a new balance before the person confirms it.
