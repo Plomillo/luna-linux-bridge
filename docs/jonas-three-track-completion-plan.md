@@ -40,3 +40,21 @@ Scope correction: do not integrate with a 1min.AI balance API. The intended work
 
 ## Current known state
 The branch contains routes for credit observations and catalog snapshots. The shared-pool rule is one family balance, never a sum of reports; only manual family confirmations are in scope, and provider balance-API integration is prohibited. Test execution and review remain required. Deployment, family package, and certification remain incomplete.
+
+## Execution update — 2026-10-09 (append-only; not certified)
+
+### Materialized and tested
+- Track A: added the guided manual form at `/family-check-in`; submissions are bound to one of five distinct respondent credentials (Sebastián, Diego, Catalina, Marjorie, Cristóbal). A respondent cannot submit under another person's identity. Incomplete token configuration fails closed.
+- Track A: preserved the single `family-shared` pool; reports are never summed. Fresh conflicting reports produce `CONFLICTING` with no balance. Stale reports are surfaced separately. `confirmed_balance_credits` remains null until all five respondents have fresh matching reports.
+- Track B: added deterministic `GET /v1/models/recommendations`. Capability constraints are explicit; quality/latency/cost constraints exclude candidates when the corresponding metric or a valid evidence digest is absent. Unknown credit cost remains null. Recommendations remain unverified and uncertified.
+- Cross-track: hardened immutable/idempotent replay checks, rejected duplicate catalog model IDs, and added a hash-bound CI evidence artifact.
+- CI run [37975433850](https://github.com/Plomillo/luna-linux-bridge/actions/runs/37975433850) completed with **20 passed, 0 failed** for the API/shared-account test suite; compile passed. CI report digest: `82a8d5f454ea7d3775756eec720c90d51496197f592246f33b5bb7691b7a4c12`. Artifact digest: `sha256:bb76cfdda07c9c17ee7d832baa9dac14c6e369ba2a50dce5da6c2e41293ce8a6`.
+
+### Explicit remaining blockers
+- No direct messages have been sent to family members; each person must open the check-in page on the configured shared service and submit their own observation.
+- The API is not deployed as a family-accessible shared service. Production TLS, rate limits, deployment secret management, access-control review, backup/restore and recovery testing remain unproven.
+- No verified complete official model-list endpoint or pagination/completeness contract has been implemented. A saved snapshot or `source_kind=official_api` label does not prove provider authenticity or catalog completeness.
+- A reproducible, installable family distribution and clean-environment install/uninstall/rollback evidence remain incomplete.
+- The local Jonas budget MVP is separate from the shared-account API; no provider billing reconciliation or actual savings measurement is established.
+- This CI pass is implementation-level evidence only. G23 independent validation, G24 certification, production authorization and merge remain **NOT EXECUTED / NOT AUTHORIZED**.
+
