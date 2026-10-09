@@ -5,12 +5,17 @@ Authority: this branch and PR #49 only. Do not merge, deploy, or claim global ce
 
 The three remaining tracks proceed in parallel but use separate evidence and acceptance gates.
 
-## Track A — 1min.AI credit balance source and synchronization
-1. Verify from official 1min.AI documentation or authenticated account access whether an endpoint returns remaining account/team credits. Record exact endpoint, auth scope, response schema, rate limits, and source URL as evidence.
-2. If the endpoint is verified, implement a least-privilege scheduled poller with secret storage, bounded frequency, timeout, no retry storm, request idempotency, UTC timestamps, response schema validation, and append-only observations. Never commit credentials or raw sensitive responses.
-3. If no supported endpoint is verified, keep manual authenticated observations; clearly label source_kind=manual. Do not infer remaining credits from tokens, estimates, or API request counts.
-4. Mark observations FRESH/STALE/UNKNOWN. Alert or fail closed for spending authorization when stale/unknown. Distinguish observed balance, usage events, reserved amount, and projections.
-5. Acceptance: fixture tests for valid/malformed/unauthorized responses, stale/unknown state, duplicates, clock/timezone handling, secret redaction, source provenance, and concurrency. Provider integration remains disabled until source verification.
+## Track A — family-confirmed balance check-ins and shared telemetry
+
+Scope correction: do not integrate with a 1min.AI balance API. The intended workflow is to ask family members directly for the balance they can currently see and record their answers as attributable observations.
+
+1. Provide a guided check-in for each authorized respondent: Sebastián, Diego, Catalina, and Marjorie. Ask for the displayed balance, applicable account/plan, unit, time checked and timezone, and whether the answer is self-reported or supported by optional evidence.
+2. Store each answer as a separate append-only observation with respondent, account scope, observed/recorded timestamps, balance, unit, source type, evidence digest if supplied, and validation status.
+3. Never assume family members share one account or credit pool. Keep balances separate by person/account unless scope, units, and permission to aggregate are all established.
+4. Show FRESH/STALE/UNKNOWN using a documented freshness window. Reminders may request a new check-in, but the system must not claim to know a new balance before the person confirms it.
+5. Resolve conflicting or ambiguous answers by asking the relevant respondent to confirm. Never infer credits from tokens or poll a provider billing API.
+6. Acceptance tests: attribution, duplicate submissions, stale/missing/conflicting observations, timezone normalization, consent/privacy, safe aggregation, audit history, and access control.
+
 
 ## Track B — complete model catalog and recommendations
 1. Use the documented official model-list endpoint if verified; capture response schema and pagination/completeness semantics.
@@ -34,4 +39,4 @@ The three remaining tracks proceed in parallel but use separate evidence and acc
 - Keep work on this feature branch and PR #49. Do not modify canonical Louksna artifacts or merge this PR as a side effect of implementation.
 
 ## Current known state
-The current branch contains initial API routes for recording and reading manual credit observations and catalog snapshots. It does not yet prove a live 1min.AI balance API, automatic synchronization, full catalog ingestion, successful test execution, deployment, family-ready packaging, or certification. The `official_api` source label supplied by a caller is not itself proof of authenticity; ingestion must validate provenance before treating data as authoritative.
+The current branch contains initial service routes for credit observations and catalog snapshots. The required balance workflow is family-confirmed check-ins; provider balance-API integration is out of scope. Check-in prompts, consent-aware views, safe aggregation, full catalog ingestion, test execution, deployment, family package, and certification remain incomplete.
