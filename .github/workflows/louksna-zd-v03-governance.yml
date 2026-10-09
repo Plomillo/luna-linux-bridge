@@ -625,6 +625,10 @@ jobs:
             CANDIDATE2="$SECOND_ROOT/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate"
             python3 -B -I "$SECOND_ROOT/scripts/missions/louksna_zd_v03_functionalizer.py" "$CANDIDATE2"
             cp "$GITHUB_WORKSPACE/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate/package-lock.json" "$CANDIDATE2/package-lock.json"
+            CARGO_LOCK1="$GITHUB_WORKSPACE/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate/src-tauri/Cargo.lock"
+            test -s "$CARGO_LOCK1"
+            cp "$CARGO_LOCK1" "$CANDIDATE2/src-tauri/Cargo.lock"
+            cmp -s "$CARGO_LOCK1" "$CANDIDATE2/src-tauri/Cargo.lock"
             cd "$CANDIDATE2"
             export SOURCE_DATE_EPOCH="$(git -C "$GITHUB_WORKSPACE" show -s --format=%ct "$GITHUB_SHA")"
             export TZ=UTC LC_ALL=C CARGO_INCREMENTAL=0
