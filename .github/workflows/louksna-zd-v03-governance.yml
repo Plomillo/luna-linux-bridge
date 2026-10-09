@@ -28,8 +28,8 @@ permissions:
   contents: read
 
 concurrency:
-  # Isolate immutable candidate snapshots so a stale queued run cannot block newer evidence; cancel-in-progress remains disabled.
-  group: louksna-zd-v03-governance-${{ github.ref }}-${{ github.sha }}
+  # Serialize runs per Git ref; PR merge refs and branch-push refs do not block each other.
+  group: louksna-zd-v03-governance-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
