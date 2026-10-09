@@ -83,6 +83,26 @@ def _require_digest(value: str) -> str:
 AUTHORIZED_RESPONDENTS = {"Sebastián", "Diego", "Catalina", "Marjorie", "Cristóbal"}
 
 
+def require_respondent_identity(authorization: str | None = Header(default=None)) -> str:
+    """Bind a manual balance submission to a distinct respondent credential."""
+    raw = os.environ.get("JONAS_FAMILY_RESPONDENT_TOKENS_JSON", "")
+    try:
+        tokens = json.loads(raw)
+    except (TypeError, json.JSONDecodeError):
+        tokens = None
+    if (not isinstance(tokens, dict)
+            or set(tokens) != AUTHORIZED_RESPONDENTS
+            or any(not isinstance(tokens.get(name), str) or not tokens[name] for name in AUTHORIZED_RESPONDENTS)):
+        raise HTTPException(503, "Family respondent credentials are not fully configured; write denied.")
+    scheme, _, token = (authorization or "").partition(" ")
+    if scheme.lower() != "bearer" or not token:
+        raise HTTPException(401, "A respondent-specific bearer token is required.")
+    matches = [name for name, expected in tokens.items() if hmac.compare_digest(token, expected)]
+    if len(matches) != 1:
+        raise HTTPException(401, "Respondent credential is invalid or ambiguous.")
+    return matches[0]
+
+
 class CreditObservation(BaseModel):
     observation_id: str = Field(min_length=1, max_length=128)
     observed_at_utc: str = Field(min_length=20, max_length=40)
@@ -136,6 +156,14 @@ class CatalogSnapshot(BaseModel):
     models: list[CatalogModel] = Field(min_length=1, max_length=1000)
     evidence_sha256: str
 
+    @field_validator("models")
+    @classmethod
+    def unique_model_ids(cls, value: list[CatalogModel]) -> list[CatalogModel]:
+        identifiers = [model.model_id for model in value]
+        if len(identifiers) != len(set(identifiers)):
+            raise ValueError("catalog snapshot contains duplicate model_id values")
+        return value
+
     @field_validator("observed_at_utc")
     @classmethod
     def valid_utc_timestamp(cls, value: str) -> str:
@@ -168,9 +196,14 @@ def _freshness(observed_at_utc: str) -> dict:
     }
 
 
-@router.post("/v1/account/credits/observations", dependencies=[Depends(require_auth)])
-def record_credit_observation(payload: CreditObservation) -> dict:
-    """Append an observation. It does not claim automatic provider synchronization."""
+@router.post("/v1/account/credits/observations")
+def record_credit_observation(
+    payload: CreditObservation,
+    authenticated_respondent: str = Depends(require_respondent_identity),
+) -> dict:
+    """Append an observation bound to the respondent's own credential."""
+    if payload.actor != authenticated_respondent:
+        raise HTTPException(403, "Authenticated respondent cannot submit for another family member.")
     try:
         with _db() as conn:
             conn.execute("BEGIN IMMEDIATE")
@@ -180,11 +213,13 @@ def record_credit_observation(payload: CreditObservation) -> dict:
             ).fetchone()
             if old:
                 same = (
-                    old["balance_credits"] == payload.balance_credits
+                    old["observed_at_utc"] == payload.observed_at_utc
+                    and old["balance_credits"] == payload.balance_credits
                     and old["source_kind"] == payload.source_kind
                     and old["source_reference"] == payload.source_reference
                     and old["evidence_sha256"] == payload.evidence_sha256
                     and old["actor"] == payload.actor
+                    and old["notes"] == payload.notes
                     and old["shared_pool_id"] == payload.shared_pool_id
                     and old["unit"] == payload.unit
                     and bool(old["consent_confirmed"]) == payload.consent_confirmed
@@ -291,13 +326,21 @@ def record_model_catalog(payload: CatalogSnapshot) -> dict:
         with _db() as conn:
             conn.execute("BEGIN IMMEDIATE")
             old = conn.execute(
-                "SELECT evidence_sha256 FROM model_catalog_snapshots WHERE snapshot_id=?",
+                "SELECT * FROM model_catalog_snapshots WHERE snapshot_id=?",
                 (payload.snapshot_id,),
             ).fetchone()
             if old:
+                same = (
+                    old["observed_at_utc"] == payload.observed_at_utc
+                    and old["source_kind"] == payload.source_kind
+                    and old["source_reference"] == payload.source_reference
+                    and old["actor"] == payload.actor
+                    and old["models_json"] == canonical
+                    and old["evidence_sha256"] == payload.evidence_sha256
+                )
                 conn.rollback()
-                if old["evidence_sha256"] != payload.evidence_sha256:
-                    raise HTTPException(409, "Catalog snapshot ID conflict.")
+                if not same:
+                    raise HTTPException(409, "Catalog snapshot ID conflict; snapshots are immutable.")
                 return {"snapshot_id": payload.snapshot_id, "idempotent_replay": True}
             conn.execute("""
                 INSERT INTO model_catalog_snapshots
