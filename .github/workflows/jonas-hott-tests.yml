@@ -1,0 +1,50 @@
+name: Jonas HoTT API tests
+
+on:
+  pull_request:
+    paths:
+      - "jonas_hott_api/**"
+      - "tests/test_jonas_*.py"
+      - ".github/workflows/jonas-hott-tests.yml"
+  push:
+    branches:
+      - "feature/jonas-hott-live-telemetry-v1"
+    paths:
+      - "jonas_hott_api/**"
+      - "tests/test_jonas_*.py"
+      - ".github/workflows/jonas-hott-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: jonas-hott-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Python API and shared-account tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: jonas_hott_api/requirements.txt
+      - name: Install declared dependencies
+        run: python -m pip install --upgrade pip && python -m pip install -r jonas_hott_api/requirements.txt
+      - name: Compile application and tests
+        run: python -m compileall -q jonas_hott_api tests
+      - name: Run Jonas API and shared-account tests
+        env:
+          JONAS_API_TOKEN: ci-test-token
+          JONAS_PERIOD_LIMIT_MICRO_USD: "1000000"
+          JONAS_PROTECTED_RESERVE_MICRO_USD: "200000"
+          JONAS_DB_PATH: "${{ runner.temp }}/jonas-ci.sqlite3"
+          JONAS_ACCOUNT_STATE_TTL_SECONDS: "3600"
+        run: python -m pytest -q tests/test_jonas_hott_api.py tests/test_jonas_account_state.py
