@@ -74,7 +74,7 @@ data={
 pathlib.Path(report).write_text(json.dumps(data,indent=2,sort_keys=True)+"\n")
 print(json.dumps(data,indent=2))
 with open(os.environ["GITHUB_OUTPUT"],"a",encoding="utf-8") as out:
-    out.write("status="+status+"\\n")
+    out.write("status="+status+"\n")
 PY
   exit "$rc"
 }
