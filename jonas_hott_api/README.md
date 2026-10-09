@@ -14,6 +14,8 @@ export JONAS_API_TOKEN='replace-with-a-long-random-secret'
 export JONAS_PERIOD_LIMIT_MICRO_USD='1000000'
 export JONAS_PROTECTED_RESERVE_MICRO_USD='200000'
 export JONAS_DB_PATH='./state/jonas-telemetry.sqlite3'
+# Set five distinct tokens via a local secret manager; never commit actual values.
+export JONAS_FAMILY_RESPONDENT_TOKENS_JSON='{"Sebastián":"<secret-1>","Diego":"<secret-2>","Catalina":"<secret-3>","Marjorie":"<secret-4>","Cristóbal":"<secret-5>"}'
 uvicorn jonas_hott_api.app:app --host 127.0.0.1 --port 8787
 ```
 
@@ -24,6 +26,12 @@ Run tests from the repository root:
 ```bash
 pytest -q tests/test_jonas_hott_api.py tests/test_jonas_account_state.py
 ```
+
+## Family respondent identity and secret handling
+
+Balance submissions require a separate bearer token for each authorized respondent. The server binds the authenticated token to the submitted actor and rejects attempts to submit for another family member. Configure all five entries in `JONAS_FAMILY_RESPONDENT_TOKENS_JSON` through a local secret manager or deployment environment; never commit actual token values. If the mapping is absent, malformed, incomplete, or ambiguous, writes fail closed. The generic API token remains for other authenticated API routes and does not establish a respondent's identity.
+
+The values above are placeholders only. Do not deploy the example budget values or any sample credential.
 
 ## Family-confirmed shared balance observations (initial implementation)
 
