@@ -42,7 +42,7 @@ La rama y las reglas de empaquetado inspeccionadas no identifican un archivo de 
 1. Declaración del titular autorizado para el código original y los documentos/contratos originales incluidos.
 2. Licencia exacta aplicable a cada grupo de archivos y el texto completo que deba acompañar al paquete.
 3. Revisión de historial y de cualquier contenido copiado/derivado para detectar copyright de terceros.
-4. Contacto real autorizado de mantenimiento. maintainer email actual maintainer@louksna.invalid no es un contacto operativo y no se sustituirá por una dirección inferida.
+4. Contacto real autorizado de mantenimiento. maintainer email actual maintainers@louksna.invalid no es un contacto operativo y no se sustituirá por una dirección inferida.
 5. Generación de debian/copyright DEP-5 desde esos datos, seguida de Lintian y revisión independiente.
 
 **Regla de salida:** este inventario no autoriza redistribución. Mientras los derechos del material original no estén acreditados y Lintian no pase, el paquete permanece en HOLD y los artefactos de CI son diagnósticos, no releases.
