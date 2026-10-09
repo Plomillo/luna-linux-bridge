@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import math
 import os
 import sqlite3
 from datetime import datetime, timezone
@@ -83,6 +84,29 @@ def _require_digest(value: str) -> str:
 AUTHORIZED_RESPONDENTS = {"Sebastián", "Diego", "Catalina", "Marjorie", "Cristóbal"}
 
 
+def require_respondent_identity(authorization: str | None = Header(default=None)) -> str:
+    """Bind a manual balance submission to a distinct respondent credential."""
+    raw = os.environ.get("JONAS_FAMILY_RESPONDENT_TOKENS_JSON", "")
+    try:
+        tokens = json.loads(raw)
+    except (TypeError, json.JSONDecodeError):
+        tokens = None
+    if (not isinstance(tokens, dict)
+            or set(tokens) != AUTHORIZED_RESPONDENTS
+            or any(not isinstance(tokens.get(name), str) or not tokens[name] for name in AUTHORIZED_RESPONDENTS)):
+        raise HTTPException(503, "Family respondent credentials are not fully configured; write denied.")
+    scheme, _, token = (authorization or "").partition(" ")
+    if scheme.lower() != "bearer" or not token:
+        raise HTTPException(401, "A respondent-specific bearer token is required.")
+    matches = [
+        name for name, expected in tokens.items()
+        if hmac.compare_digest(token.encode("utf-8"), expected.encode("utf-8"))
+    ]
+    if len(matches) != 1:
+        raise HTTPException(401, "Respondent credential is invalid or ambiguous.")
+    return matches[0]
+
+
 class CreditObservation(BaseModel):
     observation_id: str = Field(min_length=1, max_length=128)
     observed_at_utc: str = Field(min_length=20, max_length=40)
@@ -136,6 +160,14 @@ class CatalogSnapshot(BaseModel):
     models: list[CatalogModel] = Field(min_length=1, max_length=1000)
     evidence_sha256: str
 
+    @field_validator("models")
+    @classmethod
+    def unique_model_ids(cls, value: list[CatalogModel]) -> list[CatalogModel]:
+        identifiers = [model.model_id for model in value]
+        if len(identifiers) != len(set(identifiers)):
+            raise ValueError("catalog snapshot contains duplicate model_id values")
+        return value
+
     @field_validator("observed_at_utc")
     @classmethod
     def valid_utc_timestamp(cls, value: str) -> str:
@@ -168,9 +200,14 @@ def _freshness(observed_at_utc: str) -> dict:
     }
 
 
-@router.post("/v1/account/credits/observations", dependencies=[Depends(require_auth)])
-def record_credit_observation(payload: CreditObservation) -> dict:
-    """Append an observation. It does not claim automatic provider synchronization."""
+@router.post("/v1/account/credits/observations")
+def record_credit_observation(
+    payload: CreditObservation,
+    authenticated_respondent: str = Depends(require_respondent_identity),
+) -> dict:
+    """Append an observation bound to the respondent's own credential."""
+    if payload.actor != authenticated_respondent:
+        raise HTTPException(403, "Authenticated respondent cannot submit for another family member.")
     try:
         with _db() as conn:
             conn.execute("BEGIN IMMEDIATE")
@@ -180,11 +217,13 @@ def record_credit_observation(payload: CreditObservation) -> dict:
             ).fetchone()
             if old:
                 same = (
-                    old["balance_credits"] == payload.balance_credits
+                    old["observed_at_utc"] == payload.observed_at_utc
+                    and old["balance_credits"] == payload.balance_credits
                     and old["source_kind"] == payload.source_kind
                     and old["source_reference"] == payload.source_reference
                     and old["evidence_sha256"] == payload.evidence_sha256
                     and old["actor"] == payload.actor
+                    and old["notes"] == payload.notes
                     and old["shared_pool_id"] == payload.shared_pool_id
                     and old["unit"] == payload.unit
                     and bool(old["consent_confirmed"]) == payload.consent_confirmed
@@ -291,13 +330,21 @@ def record_model_catalog(payload: CatalogSnapshot) -> dict:
         with _db() as conn:
             conn.execute("BEGIN IMMEDIATE")
             old = conn.execute(
-                "SELECT evidence_sha256 FROM model_catalog_snapshots WHERE snapshot_id=?",
+                "SELECT * FROM model_catalog_snapshots WHERE snapshot_id=?",
                 (payload.snapshot_id,),
             ).fetchone()
             if old:
+                same = (
+                    old["observed_at_utc"] == payload.observed_at_utc
+                    and old["source_kind"] == payload.source_kind
+                    and old["source_reference"] == payload.source_reference
+                    and old["actor"] == payload.actor
+                    and old["models_json"] == canonical
+                    and old["evidence_sha256"] == payload.evidence_sha256
+                )
                 conn.rollback()
-                if old["evidence_sha256"] != payload.evidence_sha256:
-                    raise HTTPException(409, "Catalog snapshot ID conflict.")
+                if not same:
+                    raise HTTPException(409, "Catalog snapshot ID conflict; snapshots are immutable.")
                 return {"snapshot_id": payload.snapshot_id, "idempotent_replay": True}
             conn.execute("""
                 INSERT INTO model_catalog_snapshots
@@ -342,3 +389,104 @@ def latest_model_catalog() -> dict:
         return result
     except (sqlite3.Error, OSError, json.JSONDecodeError):
         raise HTTPException(503, "Shared model catalog unavailable.")
+
+
+def _evidenced_number(metadata: dict, field: str) -> float | None:
+    """Return a metric only when a valid evidence digest accompanies it."""
+    value = metadata.get(field)
+    evidence = metadata.get(field + "_evidence_sha256")
+    if (isinstance(value, bool) or not isinstance(value, (int, float))
+            or not math.isfinite(float(value))
+            or not isinstance(evidence, str) or not SHA256_RE.fullmatch(evidence)):
+        return None
+    return float(value)
+
+
+@router.get("/v1/models/recommendations", dependencies=[Depends(require_auth)])
+def recommend_models(
+    task: str = Query(min_length=1, max_length=200),
+    required_capabilities: list[str] = Query(default=[]),
+    min_quality_score: float | None = Query(default=None, ge=0, le=1),
+    max_latency_ms: float | None = Query(default=None, gt=0),
+    max_estimated_cost_credits: float | None = Query(default=None, gt=0),
+) -> dict:
+    """Deterministic, evidence-aware shortlist; never invent missing cost/quality/latency."""
+    catalog = latest_model_catalog()
+    if catalog.get("status") == "UNKNOWN":
+        return {
+            "status": "UNKNOWN",
+            "task": task,
+            "recommendations": [],
+            "excluded": [],
+            "reason": "No catalog snapshot has been recorded.",
+            "certified": False,
+        }
+    requested = sorted({item.strip().casefold() for item in required_capabilities if item.strip()})
+    recommendations = []
+    excluded = []
+    for model in catalog.get("models", []):
+        model_id = model.get("model_id", "")
+        capabilities = model.get("capabilities", [])
+        normalized = {item.casefold() for item in capabilities if isinstance(item, str)}
+        missing = sorted(set(requested) - normalized)
+        if missing:
+            excluded.append({"model_id": model_id, "reason": "CAPABILITY_MISMATCH", "missing_capabilities": missing})
+            continue
+        metadata = model.get("metadata", {})
+        quality = _evidenced_number(metadata, "quality_score")
+        latency = _evidenced_number(metadata, "latency_ms")
+        cost = _evidenced_number(metadata, "estimated_cost_credits")
+        failures = []
+        if min_quality_score is not None:
+            if quality is None:
+                failures.append("QUALITY_UNKNOWN_OR_UNEVIDENCED")
+            elif quality < min_quality_score:
+                failures.append("QUALITY_CONSTRAINT_FAILED")
+        if max_latency_ms is not None:
+            if latency is None:
+                failures.append("LATENCY_UNKNOWN_OR_UNEVIDENCED")
+            elif latency > max_latency_ms:
+                failures.append("LATENCY_CONSTRAINT_FAILED")
+        if max_estimated_cost_credits is not None:
+            if cost is None:
+                failures.append("COST_UNKNOWN_OR_UNEVIDENCED")
+            elif cost > max_estimated_cost_credits:
+                failures.append("COST_CONSTRAINT_FAILED")
+        if failures:
+            excluded.append({"model_id": model_id, "reason": "CONSTRAINT_NOT_MET_OR_UNKNOWN", "details": failures})
+            continue
+        recommendations.append({
+            "model_id": model_id,
+            "display_name": model.get("display_name"),
+            "capabilities": sorted(normalized),
+            "matched_capabilities": sorted(set(requested) & normalized),
+            "quality_score": quality,
+            "latency_ms": latency,
+            "estimated_cost_credits": cost,
+            "metric_evidence_status": "DIGEST_ATTACHED_NOT_INDEPENDENTLY_VALIDATED",
+            "catalog_source_verified": False,
+            "certified": False,
+        })
+    recommendations.sort(key=lambda item: (
+        -len(item["matched_capabilities"]),
+        -(item["quality_score"] if item["quality_score"] is not None else -1),
+        item["latency_ms"] if item["latency_ms"] is not None else math.inf,
+        item["estimated_cost_credits"] if item["estimated_cost_credits"] is not None else math.inf,
+        item["model_id"].casefold(),
+    ))
+    return {
+        "status": "CANDIDATES_UNVERIFIED" if recommendations else "NO_ELIGIBLE_CANDIDATES",
+        "task": task,
+        "required_capabilities": requested,
+        "constraints": {
+            "min_quality_score": min_quality_score,
+            "max_latency_ms": max_latency_ms,
+            "max_estimated_cost_credits": max_estimated_cost_credits,
+        },
+        "catalog_snapshot_id": catalog.get("snapshot_id"),
+        "catalog_freshness": catalog.get("freshness", "UNKNOWN"),
+        "catalog_source_verified": False,
+        "recommendations": recommendations,
+        "excluded": excluded,
+        "certified": False,
+    }
