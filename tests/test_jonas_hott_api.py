@@ -121,14 +121,14 @@ def test_settlement_replay_cannot_change_actual_cost(monkeypatch, tmp_path):
             headers=headers(),
             json={"actual_micro_usd": 260000, "usage_evidence_sha256": digest("usage-v2")},
         )
+        different_evidence = client.post(
+            "/v1/reservations/r-001/settle",
+            headers=headers(),
+            json={"actual_micro_usd": 250000, "usage_evidence_sha256": digest("different-evidence")},
+        )
     assert created.status_code == 200
     assert settled.status_code == 200
     assert replay.status_code == 200
     assert replay.json()["idempotent_replay"] is True
-    different_evidence = client.post(
-        "/v1/reservations/r-001/settle",
-        headers=headers(),
-        json={"actual_micro_usd": 250000, "usage_evidence_sha256": digest("different-evidence")},
-    )
     assert different_evidence.status_code == 409
     assert conflict.status_code == 409
