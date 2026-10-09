@@ -193,26 +193,26 @@ jobs:
                       "detail": "Could not inspect latest-run jobs/artifacts: " + type(inspect_exc).__name__ + ": " + str(inspect_exc)[:400]
                   })
               if latest.get("status") != "completed":
-                      result["observation"] = "IN_PROGRESS"
-                      result["findings"].append({
-                          "severity": "INFO",
-                          "id": "LATEST_GOVERNANCE_RUN_IN_PROGRESS",
-                          "detail": "Latest governance run has not completed; no PASS or certification is inferred."
-                      })
-                  elif latest.get("conclusion") != "success":
-                      result["observation"] = "FAIL"
-                      result["findings"].append({
-                          "severity": "BLOCKER",
-                          "id": "LATEST_GOVERNANCE_RUN_NOT_SUCCESSFUL",
-                          "detail": "Latest governance run concluded " + str(latest.get("conclusion")) + "; older successful runs cannot override it."
-                      })
-                  else:
-                      result["observation"] = "PASS_WITH_OPEN_GATES"
-                      result["findings"].append({
-                          "severity": "WARNING",
-                          "id": "GOVERNANCE_SUCCESS_IS_NOT_CERTIFICATION",
-                          "detail": "Workflow success proves only that configured jobs completed; CP-07 HOLD, CP-09 host evidence, CP-11 G23, and CP-12 G24 must be checked independently."
-                      })
+                  result["observation"] = "IN_PROGRESS"
+                  result["findings"].append({
+                      "severity": "INFO",
+                      "id": "LATEST_GOVERNANCE_RUN_IN_PROGRESS",
+                      "detail": "Latest governance run has not completed; no PASS or certification is inferred."
+                  })
+              elif latest.get("conclusion") != "success":
+                  result["observation"] = "FAIL"
+                  result["findings"].append({
+                      "severity": "BLOCKER",
+                      "id": "LATEST_GOVERNANCE_RUN_NOT_SUCCESSFUL",
+                      "detail": "Latest governance run concluded " + str(latest.get("conclusion")) + "; older successful runs cannot override it."
+                  })
+              else:
+                  result["observation"] = "PASS_WITH_OPEN_GATES"
+                  result["findings"].append({
+                      "severity": "WARNING",
+                      "id": "GOVERNANCE_SUCCESS_IS_NOT_CERTIFICATION",
+                      "detail": "Workflow success proves only that configured jobs completed; CP-07 HOLD, CP-09 host evidence, CP-11 G23, and CP-12 G24 must be checked independently."
+                  })
           except Exception as exc:
               result["observation"] = "ERROR"
               result["findings"].append({
