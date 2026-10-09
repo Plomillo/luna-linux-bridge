@@ -83,6 +83,10 @@ jobs:
           OWNER_GID="$(id -g)"
           OWNER_HOME="$(getent passwd "$OWNER_UID" | cut -d: -f6)"
           test -n "$OWNER_HOME"
+          OWNER_CONFIG_CREATED=0
+          LOUKSNA_CONFIG_CREATED=0
+          [ -e "$OWNER_HOME/.config" ] || OWNER_CONFIG_CREATED=1
+          [ -e "$OWNER_HOME/.config/louksna" ] || LOUKSNA_CONFIG_CREATED=1
           test ! -e "$OWNER_HOME/.config/louksna/mtls"
           test ! -L "$OWNER_HOME/.config/louksna/mtls"
           cleanup_provisioning_test() {
@@ -104,7 +108,8 @@ jobs:
             sudo rmdir /etc/louksna/remote-bridge 2>/dev/null || true
             sudo rmdir /etc/louksna 2>/dev/null || true
             rmdir "$OWNER_HOME/.config/louksna/mtls" 2>/dev/null || true
-            rmdir "$OWNER_HOME/.config/louksna" 2>/dev/null || true
+            [ "$LOUKSNA_CONFIG_CREATED" -eq 1 ] && rmdir "$OWNER_HOME/.config/louksna" 2>/dev/null || true
+            [ "$OWNER_CONFIG_CREATED" -eq 1 ] && rmdir "$OWNER_HOME/.config" 2>/dev/null || true
           }
           trap cleanup_provisioning_test EXIT
           sudo apt-get install -y "$DEB"
@@ -164,7 +169,8 @@ jobs:
           test ! -e /etc/louksna
           test ! -L /etc/louksna
           test ! -e "$OWNER_HOME/.config/louksna/mtls"
-          rmdir "$OWNER_HOME/.config/louksna" 2>/dev/null || true
+          [ "$LOUKSNA_CONFIG_CREATED" -eq 1 ] && rmdir "$OWNER_HOME/.config/louksna" 2>/dev/null || true
+          [ "$OWNER_CONFIG_CREATED" -eq 1 ] && rmdir "$OWNER_HOME/.config" 2>/dev/null || true
           rm -rf "$FAIL_BIN"
           echo "PROVISIONER_FAULT_INJECTION=PASS; PARTIAL_STATE_ROLLED_BACK=true"
       - name: Build evidence
