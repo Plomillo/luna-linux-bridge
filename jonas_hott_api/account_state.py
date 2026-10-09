@@ -282,16 +282,24 @@ def latest_credit_observation() -> dict:
                 ORDER BY observed_at_utc DESC, recorded_at_utc DESC LIMIT 1
             """).fetchone()
         if row is None:
-            return {"status": "UNKNOWN", "balance_credits": None, "certified": False}
-        freshness = _freshness(row["observed_at_utc"])
-        result = dict(row)
-        result.update(freshness)
-        # Compare each respondent's latest report for the ONE shared family pool.
-        # Older observations remain in history but do not permanently block a later
-        # reconfirmation. Any disagreement among current reports fails closed.
+            return {
+                "status": "UNKNOWN",
+                "balance_credits": None,
+                "confirmed_balance_credits": None,
+                "freshness": "UNKNOWN",
+                "confirmation_state": "AWAITING_FAMILY_CONFIRMATIONS",
+                "current_report_count": 0,
+                "respondents_reporting": [],
+                "respondents_stale": [],
+                "respondents_missing": sorted(AUTHORIZED_RESPONDENTS),
+                "certified": False,
+                "shared_pool": True,
+            }
+        # Compare the newest recorded observation from each respondent, but stale
+        # reports do not count as current confirmations or create a current conflict.
         with _db() as conn:
             current_reports = conn.execute("""
-                SELECT c.actor, c.balance_credits, c.observed_at_utc, c.recorded_at_utc
+                SELECT c.*
                 FROM credit_observations c
                 JOIN (
                     SELECT actor, MAX(recorded_at_utc) AS latest_recorded
@@ -302,25 +310,66 @@ def latest_credit_observation() -> dict:
                   ON latest.actor=c.actor AND latest.latest_recorded=c.recorded_at_utc
                 WHERE c.shared_pool_id=? AND c.unit=?
             """, (row["shared_pool_id"], row["unit"], row["shared_pool_id"], row["unit"])).fetchall()
-        distinct_balances = {item["balance_credits"] for item in current_reports}
+        reported_names = {item["actor"] for item in current_reports}
+        fresh_reports = [
+            item for item in current_reports
+            if _freshness(item["observed_at_utc"])["freshness"] == "FRESH"
+        ]
+        fresh_names = {item["actor"] for item in fresh_reports}
+        stale_names = sorted(reported_names - fresh_names)
+        missing_names = sorted(AUTHORIZED_RESPONDENTS - reported_names)
+        if not fresh_reports:
+            result = dict(row)
+            result.update({
+                "status": "STALE",
+                "balance_credits": None,
+                "last_observed_balance_credits": row["balance_credits"],
+                "confirmed_balance_credits": None,
+                "freshness": "STALE",
+                "confirmation_state": "AWAITING_FAMILY_CONFIRMATIONS",
+                "current_report_count": 0,
+                "respondents_reporting": [],
+                "respondents_stale": stale_names,
+                "respondents_missing": missing_names,
+                "certified": False,
+                "shared_pool": True,
+            })
+            result.update(_freshness(row["observed_at_utc"]))
+            result["freshness"] = "STALE"
+            result["balance_credits"] = None
+            return result
+        latest_fresh = max(fresh_reports, key=lambda item: item["recorded_at_utc"])
+        result = dict(latest_fresh)
+        result.update(_freshness(latest_fresh["observed_at_utc"]))
+        distinct_balances = {item["balance_credits"] for item in fresh_reports}
+        common = {
+            "shared_pool": True,
+            "current_report_count": len(fresh_reports),
+            "respondents_reporting": sorted(fresh_names),
+            "respondents_stale": stale_names,
+            "respondents_missing": missing_names,
+            "certified": False,
+        }
         if len(distinct_balances) > 1:
+            result.update(common)
             result.update({
                 "status": "CONFLICTING",
                 "balance_credits": None,
                 "confirmed_balance_credits": None,
-                "certified": False,
-                "shared_pool": True,
+                "confirmation_state": "RECONFIRMATION_REQUIRED",
                 "conflict_resolution_required": True,
-                "current_report_count": len(current_reports),
-                "respondents_reporting": sorted({item["actor"] for item in current_reports}),
             })
             return result
-        result["status"] = "OBSERVED"
-        result["balance_is_estimate"] = False
-        result["shared_pool"] = True
-        result["current_report_count"] = len(current_reports)
-        result["respondents_reporting"] = sorted({item["actor"] for item in current_reports})
-        result["certified"] = False
+        balance = next(iter(distinct_balances))
+        all_five_confirmed = fresh_names == AUTHORIZED_RESPONDENTS
+        result.update(common)
+        result.update({
+            "status": "OBSERVED",
+            "balance_credits": balance,
+            "confirmed_balance_credits": balance if all_five_confirmed else None,
+            "confirmation_state": "CONFIRMED_BY_ALL_FIVE" if all_five_confirmed else "AWAITING_FAMILY_CONFIRMATIONS",
+            "balance_is_estimate": False,
+        })
         return result
     except (sqlite3.Error, OSError):
         raise HTTPException(503, "Shared account-state ledger unavailable; balance is unknown.")
