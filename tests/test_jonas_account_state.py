@@ -132,10 +132,20 @@ def test_all_five_family_members_have_individual_write_identity(monkeypatch, tmp
             )
             for index, name in enumerate(respondents)
         ]
-        latest = client.get("/v1/account/credits", headers=auth())
+        latest = client.get("/v1/account/credits", headers=respondent_auth("Cristóbal"))
     assert all(response.status_code == 200 for response in responses)
     assert latest.json()["current_report_count"] == 5
     assert set(latest.json()["respondents_reporting"]) == set(respondents)
+
+
+def test_guided_family_checkin_page_is_served_without_provider_api(monkeypatch, tmp_path):
+    setup_state(monkeypatch, tmp_path)
+    with TestClient(app) as client:
+        response = client.get("/family-check-in")
+    assert response.status_code == 200
+    assert "Sebastián" in response.text
+    assert "Cristóbal" in response.text
+    assert "no consulta ninguna API de saldo" in response.text
 
 
 def test_family_credit_write_fails_closed_without_all_respondent_tokens(monkeypatch, tmp_path):
