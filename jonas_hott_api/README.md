@@ -25,17 +25,18 @@ Run tests from the repository root:
 pytest -q tests/test_jonas_hott_api.py tests/test_jonas_account_state.py
 ```
 
-## Shared 1min.AI account state (initial implementation)
+## Family-confirmed shared balance observations (initial implementation)
 
-The additive routes store a shared, append-only history of observed credits and model-catalog snapshots in the configured SQLite database:
+The service stores a shared, append-only history of balance observations and model-catalog snapshots in the configured SQLite database. The balance workflow is to ask each authorized family member directly for the balance they can currently see; there is no integration with a 1min.AI balance API.
 
-- `POST /v1/account/credits/observations` records an authenticated observation with UTC timestamp, source type (`manual` or `official_api`), actor, source reference, and evidence digest.
-- `GET /v1/account/credits` returns the latest observation plus its age and `FRESH`/`STALE` status. No observation means `UNKNOWN`.
-- `GET /v1/account/credits/history` returns the observation history.
-- `POST /v1/models/catalog/snapshots` stores a versioned catalog snapshot with provenance.
-- `GET /v1/models/catalog` returns the latest saved catalog snapshot and freshness metadata.
+- `POST /v1/account/credits/observations` records an authenticated observation. Current schema supports source type, timestamp, actor, source reference, balance, and evidence digest.
+- `GET /v1/account/credits` returns the latest observation plus age and `FRESH`/`STALE`; no observation means `UNKNOWN`.
+- `GET /v1/account/credits/history` returns observation history.
+- `POST /v1/models/catalog/snapshots` stores a versioned catalog snapshot.
+- `GET /v1/models/catalog` returns the latest saved snapshot and freshness metadata.
 
-Set `JONAS_ACCOUNT_STATE_TTL_SECONDS` to the approved freshness window (default: 3600 seconds). A manual observation is explicitly labeled manual; the service does not infer credits from token usage. **Automatic account-balance synchronization is not implemented** because an official, authenticated 1min.AI balance endpoint has not yet been verified. Likewise, saving a catalog snapshot is not the same as automatically fetching the complete live catalog. These endpoints share observations among clients connected to the same service/database; separate installations do not magically share state unless deployed against an authorized shared service or synchronized through a controlled channel.
+A complete family check-in flow must capture respondent identity, account scope, unit, observation time/timezone, and whether evidence was supplied. Keep per-person/account balances separate unless compatibility and consent to aggregate are verified. Reminders may ask for a fresh confirmation; they must not fabricate a new balance. A manual record is not proof of provider-side truth. The service only shares state among clients connected to the same service/database; separate installations need an explicitly configured shared service or controlled synchronization.
+
 
 ## Safety boundary
 
