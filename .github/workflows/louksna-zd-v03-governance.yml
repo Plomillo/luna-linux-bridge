@@ -1,0 +1,135 @@
+name: "LOUKSNA ZD V0.3 — Sequential Governance Gate"
+
+on:
+  push:
+    branches:
+      - governance/louksna-zd-v03-12-stage-gates-20261009
+    paths:
+      - governance/zona-directiva-v03/12_STAGE_GOVERNANCE_CONTRACT.md
+      - .github/workflows/louksna-zd-v03-governance.yml
+  pull_request:
+    branches:
+      - work/louksna-zona-directiva-v0.3-functional-20261006
+    paths:
+      - governance/zona-directiva-v03/12_STAGE_GOVERNANCE_CONTRACT.md
+      - .github/workflows/louksna-zd-v03-governance.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: louksna-zd-v03-governance
+  cancel-in-progress: false
+
+jobs:
+  stage-01-audit:
+    name: "Stage 01 / CP-01 — Repository mechanism audit"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      audit_status: ${{ steps.audit.outputs.status }}
+    steps:
+      - name: Checkout governance candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: governance/louksna-zd-v03-12-stage-gates-20261009
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Emit live run identity
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "TELEMETRY event=EVENT_STARTED stage=01 checkpoint=CP-01"
+          echo "TELEMETRY repository=$GITHUB_REPOSITORY"
+          echo "TELEMETRY ref=$GITHUB_REF"
+          echo "TELEMETRY commit=$GITHUB_SHA"
+          echo "TELEMETRY run_id=$GITHUB_RUN_ID"
+          echo "TELEMETRY run_attempt=$GITHUB_RUN_ATTEMPT"
+          echo "TELEMETRY timestamp_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+      - name: Audit observable repository mechanisms
+        id: audit
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p evidence/zona-directiva-v03
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,subprocess,datetime
+          root=pathlib.Path(".")
+          def run(*args):
+              p=subprocess.run(args,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+              return {"returncode":p.returncode,"output":p.stdout.strip()}
+          workflows=sorted(str(p) for p in pathlib.Path(".github/workflows").glob("*.yml")) + sorted(str(p) for p in pathlib.Path(".github/workflows").glob("*.yaml"))
+          mission=pathlib.Path("missions/inbox/louksna-zona-directiva-v03-functional-20261006/MISSION.md")
+          contract=pathlib.Path("governance/zona-directiva-v03/12_STAGE_GOVERNANCE_CONTRACT.md")
+          findings=[]
+          if not mission.exists(): findings.append({"severity":"BLOCKER","id":"MISSION_MISSING","detail":"Mission file not found in governance checkout."})
+          if not contract.exists(): findings.append({"severity":"BLOCKER","id":"CONTRACT_MISSING","detail":"Contract file not found."})
+          if not pathlib.Path(".github/workflows/louksna-zd-v03-functional.yml").exists():
+              findings.append({"severity":"BLOCKER","id":"FUNCTIONAL_WORKFLOW_MISSING","detail":"Expected functional workflow not found."})
+          branch=os.environ.get("GITHUB_REF_NAME","")
+          report={
+            "schema":"louksna.zd.v03.repo-audit.v1",
+            "contract_id":"LOUKSNA-ZD-V03-12-STAGE-GOVERNANCE-20261009",
+            "mission_id":"MIS-LOUKSNA-ZD-V03-FUNCTIONAL-20261006",
+            "stage_id":"01","checkpoint_id":"CP-01",
+            "timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "repository":os.environ.get("GITHUB_REPOSITORY"),
+            "ref":os.environ.get("GITHUB_REF"),
+            "branch":branch,
+            "commit_sha":os.environ.get("GITHUB_SHA"),
+            "run_id":os.environ.get("GITHUB_RUN_ID"),
+            "run_attempt":os.environ.get("GITHUB_RUN_ATTEMPT"),
+            "main_mutation":"NOT_PERFORMED",
+            "workflow_inventory":workflows,
+            "mission_sha256":hashlib.sha256(mission.read_bytes()).hexdigest() if mission.exists() else None,
+            "contract_sha256":hashlib.sha256(contract.read_bytes()).hexdigest() if contract.exists() else None,
+            "functional_workflow_sha256":hashlib.sha256(pathlib.Path(".github/workflows/louksna-zd-v03-functional.yml").read_bytes()).hexdigest() if pathlib.Path(".github/workflows/louksna-zd-v03-functional.yml").exists() else None,
+            "observable_git": {
+              "head":run("git","rev-parse","HEAD"),
+              "status":run("git","status","--short"),
+              "branches":run("git","branch","--all","--no-color"),
+              "tracked_workflows":run("git","ls-files",".github/workflows")
+            },
+            "limits":["Repository settings/branch protection and external GitHub Actions history require API permissions not supplied by this checkout job.","A CI checkout audit does not prove physical Debian 13 KDE GUI runtime."],
+            "findings":findings,
+            "status":"HOLD" if findings else "PASS_WITH_SCOPE_LIMITS"
+          }
+          out=pathlib.Path("evidence/zona-directiva-v03/CP-01-repository-audit.json")
+          out.write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+          print("TELEMETRY stage=01 checkpoint=CP-01 status="+report["status"])
+          print("TELEMETRY workflow_count="+str(len(workflows)))
+          print("TELEMETRY finding_count="+str(len(findings)))
+          print("TELEMETRY audit_path="+str(out))
+          with open(os.environ["GITHUB_OUTPUT"],"a") as f: f.write("status="+report["status"]+"\n")
+          if findings: raise SystemExit(1)
+          PY
+
+      - name: Upload immutable audit evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksna-zd-v03-cp01-repository-audit
+          path: evidence/zona-directiva-v03/CP-01-repository-audit.json
+          if-no-files-found: error
+          retention-days: 90
+
+  stages-02-to-12-guard:
+    name: "Stages 02–12 / BLOCKED until evidence-gated implementation"
+    needs: stage-01-audit
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Fail closed until CP-01 is reviewed and stages have concrete executors
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "TELEMETRY event=CHECKPOINT_HOLD stage=02 checkpoint=CP-01"
+          echo "TELEMETRY next_stage=02"
+          echo "TELEMETRY reason=Stages 02-12 must not be marked complete without stage-specific executors and digest-bound evidence."
+          echo "TELEMETRY stage01_job_result=${{ needs.stage-01-audit.result }}"
+          echo "TELEMETRY active=false"
+          echo "Governance guard is intentionally fail-closed. It does not fabricate PASS for stages 02-12."
+          exit 1
