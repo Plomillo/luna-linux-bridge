@@ -154,3 +154,23 @@ Therefore, the gate remains:
 `RELEASE=HOLD`
 
 This does not mean infringement has been found. It means redistribution permission has not yet been established. The next evidence-bearing step is a file-by-file source-origin comparison and a documented creator/rights declaration for the material whose origin remains unknown; only then can any necessary specific contact be made.
+
+
+## 7. CI distribution artifact gate — 2026-10-09 UTC
+
+A fail-closed CI gate was added after diagnostic build/test/evidence generation and before artifact staging. It requires both a DEP-5 `debian/copyright` file and `docs/DISTRIBUTION_CLEARANCE.json` tied to the exact checked-out commit and the SHA-256 of the copyright file. The record must declare `status=CLEARED`, include evidence references and reviewer/timestamp fields, and assert completion of file coverage, third-party clearance, redistribution authorization, maintainer verification, and independent review. The release-policy regression test now checks that this gate precedes artifact staging.
+
+The gate is a workflow control, not a substitute for underlying evidence or legal review. A JSON declaration cannot make an unsupported assertion true. No clearance JSON or `debian/copyright` was fabricated. With both absent, the expected behavior is to stop the workflow before the .deb is staged/uploaded as an artifact. Diagnostic build/test steps may still execute first.
+
+Commits implementing the control:
+- `de7af3d943d10200465bedbe8491070064fb4a36` — workflow gate before artifact staging.
+- `7b11fb6218652c47b1a4ff51b5c4cfaea788878b` — regression test for gate ordering and required record.
+
+Verification status at report update: source files were fetched back from the PR branch and the gate's presence/order was confirmed. The GitHub connector returned no workflow runs or commit status for `7b11fb6218652c47b1a4ff51b5c4cfaea788878b`; execution of the updated workflow and tests is therefore **NOT VERIFIED**. Do not claim CI pass.
+
+Updated gate:
+`CI_ARTIFACT_UPLOAD_GATE=IMPLEMENTED`
+`CI_EXECUTION=NOT_VERIFIED`
+`DEBIAN_COPYRIGHT=BLOCKED`
+`DISTRIBUTION_CLEARANCE=NOT_ESTABLISHED`
+`RELEASE=HOLD`
