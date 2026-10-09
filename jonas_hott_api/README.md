@@ -22,8 +22,20 @@ Amounts are integer micro-USD. The example numbers above are for local tests onl
 Run tests from the repository root:
 
 ```bash
-pytest -q tests/test_jonas_hott_api.py
+pytest -q tests/test_jonas_hott_api.py tests/test_jonas_account_state.py
 ```
+
+## Shared 1min.AI account state (initial implementation)
+
+The additive routes store a shared, append-only history of observed credits and model-catalog snapshots in the configured SQLite database:
+
+- `POST /v1/account/credits/observations` records an authenticated observation with UTC timestamp, source type (`manual` or `official_api`), actor, source reference, and evidence digest.
+- `GET /v1/account/credits` returns the latest observation plus its age and `FRESH`/`STALE` status. No observation means `UNKNOWN`.
+- `GET /v1/account/credits/history` returns the observation history.
+- `POST /v1/models/catalog/snapshots` stores a versioned catalog snapshot with provenance.
+- `GET /v1/models/catalog` returns the latest saved catalog snapshot and freshness metadata.
+
+Set `JONAS_ACCOUNT_STATE_TTL_SECONDS` to the approved freshness window (default: 3600 seconds). A manual observation is explicitly labeled manual; the service does not infer credits from token usage. **Automatic account-balance synchronization is not implemented** because an official, authenticated 1min.AI balance endpoint has not yet been verified. Likewise, saving a catalog snapshot is not the same as automatically fetching the complete live catalog. These endpoints share observations among clients connected to the same service/database; separate installations do not magically share state unless deployed against an authorized shared service or synchronized through a controlled channel.
 
 ## Safety boundary
 
