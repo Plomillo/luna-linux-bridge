@@ -90,7 +90,7 @@ $("checkin").addEventListener("submit",async event=>{
     digest_kind:externalDigest?"external_evidence_digest":"self_report_record_digest_not_external_proof"
    })
   };
-  const canonical=JSON.stringify(payload,Object.keys(payload).sort());
+  const canonical=JSON.stringify(payload);
   payload.evidence_sha256=externalDigest||await digest(canonical);
   const response=await fetch("/v1/account/credits/observations",{
    method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},body:JSON.stringify(payload)
