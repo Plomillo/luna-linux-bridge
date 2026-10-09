@@ -46,6 +46,8 @@ try {
   browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
   const page = await context.newPage();
+  page.setDefaultTimeout(8000);
+  page.setDefaultNavigationTimeout(15000);
   const pageErrors = [];
   page.on("pageerror", e => pageErrors.push(String(e)));
   await page.addInitScript(() => {
@@ -77,7 +79,7 @@ try {
     };
   });
 
-  await page.goto(baseURL, { waitUntil: "networkidle", timeout: 30000 });
+  await page.goto(baseURL, { waitUntil: "networkidle", timeout: 15000 });
   await page.getByRole("heading", { name: "Centro de mando" }).waitFor();
   check("dashboard_renders", await page.getByText("Estado real, no decorativo.").isVisible());
   for (const label of ["Repositorios", "Pull Requests", "Evidencia", "Chat / Llamada", "Configuracion"]) {
@@ -88,8 +90,11 @@ try {
 
   await page.getByRole("button", { name: "Repositorios", exact: true }).click();
   await page.getByRole("button", { name: "Actualizar", exact: true }).click();
-  await page.getByText("Plomillo/luna-linux-bridge", { exact: true }).waitFor();
-  check("repository_list_interaction", await page.getByText("Plomillo/luna-linux-bridge", { exact: true }).isVisible());
+  const repositoryRow = page.getByText("Plomillo/luna-linux-bridge", { exact: true });
+  await repositoryRow.waitFor();
+  check("repository_list_interaction", await repositoryRow.isVisible());
+  await repositoryRow.click(); // select the fixture repo before asking the PR endpoint
+
 
   await page.getByRole("button", { name: "Pull Requests", exact: true }).click();
   await page.getByRole("button", { name: "Actualizar", exact: true }).click();
