@@ -8,6 +8,7 @@ WORKFLOW = (ROOT / ".github/workflows/louksna-debian-package.yml").read_text()
 SERVICE = (ROOT / "bridge/deploy/louksna-mtls-readonly.service.in").read_text()
 CONTROL = (ROOT / "debian/control").read_text()
 REPORT = (ROOT / "docs/ROOT_CAUSE_REMEDIATION_0.4.0-3.md").read_text()
+MTLS_DOC = (ROOT / "bridge/MTLS_READONLY_GATEWAY.md").read_text()
 
 
 class ReleasePolicyTests(unittest.TestCase):
@@ -34,6 +35,7 @@ class ReleasePolicyTests(unittest.TestCase):
         self.assertIn("grep -q '^E:' lintian.txt", WORKFLOW)
         self.assertIn('"HOLD_LINTIAN"', WORKFLOW)
         self.assertIn("lintian.exit", WORKFLOW)
+        self.assertIn("--tag-display-limit 0", WORKFLOW)
 
     def test_runtime_identity_matches_root_owned_key_policy_and_is_explicit(self):
         self.assertIn("User=root", SERVICE)
@@ -50,6 +52,7 @@ class ReleasePolicyTests(unittest.TestCase):
         self.assertIn("MemoryDenyWriteExecute=yes", SERVICE)
         self.assertIn("RestrictAddressFamilies=AF_UNIX AF_INET", SERVICE)
         self.assertIn("ReadWritePaths=@OWNER_PRIVATE_STATE@", SERVICE)
+        self.assertIn("server_key (absolute root-owned private mode-0600 file", MTLS_DOC)
 
     def test_release_stays_blocked_without_authoritative_legal_and_contact_metadata(self):
         self.assertIn("maintainers@louksna.invalid", CONTROL)
