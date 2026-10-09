@@ -37,7 +37,7 @@ class InfrastructureReadinessTests(unittest.TestCase):
         report = audit(Path(__file__).resolve().parents[1])
         self.assertEqual(report["main_mutation"], "NOT_PERFORMED")
         self.assertEqual(report["activation"], "FALSE")
-        self.assertTrue(any("not G23" in x.lower() or "g23" in x.lower()
+        self.assertTrue(any("not g23" in x.lower() or "g23" in x.lower()
                             for x in report["limitations"]))
 
 
