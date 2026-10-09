@@ -70,10 +70,10 @@ jobs:
           import pathlib, re, sys
           lines=pathlib.Path(sys.argv[1]).read_text(errors="replace").splitlines()
           text="\n".join(lines)
-          if re.search(r"\\bdeb-systemd-invoke\\s+(?:start|restart|try-restart)\\b", text):
+          if re.search(r"\bdeb-systemd-invoke\s+(?:start|restart|try-restart)\b", text):
               raise SystemExit("package postinst invokes service start/restart")
           for index, line in enumerate(lines):
-              if re.search(r"\\bdeb-systemd-helper\\s+enable\\b", line):
+              if re.search(r"\bdeb-systemd-helper\s+enable\b", line):
                   context="\n".join(lines[max(0,index-3):index])
                   if "was-enabled" not in context:
                       raise SystemExit("unconditional systemd enable in postinst")
