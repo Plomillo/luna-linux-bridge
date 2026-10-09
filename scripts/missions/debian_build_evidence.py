@@ -52,7 +52,7 @@ def finalize(report_path: pathlib.Path, second_result: pathlib.Path | None, fail
     report["revalidated_at_utc"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
     report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps({"status": report["status"], "reproducibility": report["reproducibility"]}, indent=2, sort_keys=True))
-    if not failed and report["status"] != "PASS_REPRODUCIBLE_BUILD":
+    if failed or report["status"] != "PASS_REPRODUCIBLE_BUILD":
         raise SystemExit(1)
 
 
