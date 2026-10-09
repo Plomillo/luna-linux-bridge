@@ -8,7 +8,7 @@ louksna-linux-bridge (0.4.0-3) unstable; urgency=high
   * Add packaging checks for provisioning syntax and identity-preservation.
   * Report build evidence separately from G23/G24 certification and host tests.
 
- -- Plomillo <diegonorambuenamiranda2@gmail.com>  Thu, 08 Oct 2026 23:00:00 +0000
+ -- Louksna Project <maintainers@louksna.invalid>  Thu, 08 Oct 2026 23:00:00 +0000
 
 louksna-linux-bridge (0.4.0-2) unstable; urgency=high
 
