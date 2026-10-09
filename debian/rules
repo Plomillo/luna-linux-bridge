@@ -12,6 +12,7 @@ override_dh_auto_test:
 	python3 -m unittest bridge/tests/test_lrb_core.py
 	python3 -m unittest bridge/tests/test_live_link.py
 	python3 -m unittest bridge/tests/test_release_policy.py
+	python3 -m unittest bridge/tests/test_gui.py
 
 override_dh_auto_build:
 	python3 scripts/build
@@ -21,10 +22,12 @@ override_dh_auto_install:
 	cp -a bridge/*.py debian/louksna-linux-bridge/usr/lib/louksna/bridge/
 	cp -a bridge/*.json debian/louksna-linux-bridge/usr/lib/louksna/bridge/
 	install -m 0750 scripts/provision-mtls-local.sh debian/louksna-linux-bridge/usr/lib/louksna/bridge/provision-mtls-local.sh
+	install -m 0644 bridge/MTLS_READONLY_GATEWAY.md bridge/LIVE_TRANSPORT.md bridge/README.md debian/louksna-linux-bridge/usr/share/louksna/
+	install -d debian/louksna-linux-bridge/usr/bin debian/louksna-linux-bridge/usr/share/applications
+	install -m 0755 debian/louksna-linux-bridge.louksna debian/louksna-linux-bridge/usr/bin/louksna
+	install -m 0644 debian/louksna-linux-bridge.desktop debian/louksna-linux-bridge/usr/share/applications/louksna-linux-bridge.desktop
 	install -d debian/louksna-linux-bridge/usr/share/louksna/deploy
 	cp -a bridge/deploy/*.service.in bridge/deploy/*.timer.in debian/louksna-linux-bridge/usr/share/louksna/deploy/
-	install -d debian/louksna-linux-bridge/usr/share/louksna
-	cp bridge/MTLS_READONLY_GATEWAY.md bridge/LIVE_TRANSPORT.md bridge/README.md debian/louksna-linux-bridge/usr/share/louksna/
 	install -d debian/louksna-linux-bridge/lib/systemd/system
 	sed -e 's#@REVIEWED_PROJECT_ROOT@#/usr/lib/louksna#' -e 's#@ROOT_PROVISIONED_MTLS_CONFIG@#/etc/louksna/remote-bridge/mtls.json#' -e 's#@OWNER_PRIVATE_STATE@#/var/lib/louksna/remote-bridge#' -e 's#@OWNER_CHOSEN_PORT@#8443#' bridge/deploy/louksna-mtls-readonly.service.in > debian/louksna-linux-bridge/lib/systemd/system/louksna-mtls-readonly.service
 
