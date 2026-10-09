@@ -79,15 +79,19 @@ try {
     };
   });
 
-  await page.goto(baseURL, { waitUntil: "networkidle", timeout: 15000 });
+  console.log("CP-07 E2E: opening local candidate");
+  await page.goto(baseURL, { waitUntil: "domcontentloaded", timeout: 15000 });
   await page.getByRole("heading", { name: "Centro de mando" }).waitFor();
+  console.log("CP-07 E2E: dashboard rendered");
   check("dashboard_renders", await page.getByText("Estado real, no decorativo.").isVisible());
   for (const label of ["Repositorios", "Pull Requests", "Evidencia", "Chat / Llamada", "Configuracion"]) {
+    console.log("CP-07 E2E: navigating to " + label);
     await page.getByRole("button", { name: label, exact: true }).click();
     const heading = await page.locator("header h1").innerText();
     check("navigation_" + label.toLowerCase().replace(/[^a-z0-9]+/g, "_"), heading === label, "Rendered heading: " + heading);
   }
 
+  console.log("CP-07 E2E: verifying repository list");
   await page.getByRole("button", { name: "Repositorios", exact: true }).click();
   await page.getByRole("button", { name: "Actualizar", exact: true }).click();
   const repositoryRow = page.getByText("Plomillo/luna-linux-bridge", { exact: true });
@@ -96,11 +100,13 @@ try {
   await repositoryRow.click(); // select the fixture repo before asking the PR endpoint
 
 
+  console.log("CP-07 E2E: verifying pull request list");
   await page.getByRole("button", { name: "Pull Requests", exact: true }).click();
   await page.getByRole("button", { name: "Actualizar", exact: true }).click();
   await page.getByText("#54 · Governance automation E2E fixture").waitFor();
   check("pull_request_list_interaction", await page.getByText("#54 · Governance automation E2E fixture").isVisible());
 
+  console.log("CP-07 E2E: verifying chat and disabled voice control");
   await page.getByRole("button", { name: "Chat / Llamada", exact: true }).click();
   const mic = page.getByRole("button", { name: "Microfono — gate abierto" });
   check("microphone_remains_disabled", await mic.isDisabled(), "Voice is intentionally not represented as active");
@@ -109,6 +115,7 @@ try {
   await page.getByText("CP-07 browser E2E", { exact: true }).waitFor();
   check("chat_interaction_with_explicit_test_double", await page.getByText("CP-07 browser E2E", { exact: true }).isVisible());
 
+  console.log("CP-07 E2E: verifying evidence ledger view");
   await page.getByRole("button", { name: "Evidencia", exact: true }).click();
   await page.getByText("E2E_TEST", { exact: true }).waitFor();
   check("evidence_view_renders", await page.getByText("E2E_TEST", { exact: true }).isVisible());
