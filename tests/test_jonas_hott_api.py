@@ -76,3 +76,53 @@ def test_missing_budget_fails_closed(monkeypatch, tmp_path):
     with TestClient(module.app) as client:
         response = client.post("/v1/reservations", headers=headers(), json=reservation())
         assert response.status_code == 503
+
+
+def test_invalid_or_missing_token_is_rejected(monkeypatch, tmp_path):
+    module = configured_app(monkeypatch, tmp_path)
+    with TestClient(module.app) as client:
+        missing = client.get("/v1/telemetry")
+        invalid = client.get("/v1/telemetry", headers={"Authorization": "Bearer wrong"})
+    assert missing.status_code == 401
+    assert invalid.status_code == 401
+
+
+def test_manual_halt_blocks_reservations_until_explicit_resume(monkeypatch, tmp_path):
+    module = configured_app(monkeypatch, tmp_path)
+    with TestClient(module.app) as client:
+        halted = client.post("/v1/halt", headers=headers(), json={"reason": "test safety stop"})
+        blocked = client.post("/v1/reservations", headers=headers(), json=reservation())
+        resumed = client.post("/v1/resume", headers=headers(), json={"reason": "test reconciliation attestation"})
+        allowed = client.post("/v1/reservations", headers=headers(), json=reservation())
+    assert halted.status_code == 200
+    assert halted.json()["halted"] is True
+    assert blocked.status_code == 423
+    assert resumed.status_code == 200
+    assert resumed.json()["halted"] is False
+    assert allowed.status_code == 200
+
+
+def test_settlement_replay_cannot_change_actual_cost(monkeypatch, tmp_path):
+    module = configured_app(monkeypatch, tmp_path)
+    with TestClient(module.app) as client:
+        created = client.post("/v1/reservations", headers=headers(), json=reservation())
+        settled = client.post(
+            "/v1/reservations/r-001/settle",
+            headers=headers(),
+            json={"actual_micro_usd": 250000, "usage_evidence_sha256": digest("usage-v1")},
+        )
+        replay = client.post(
+            "/v1/reservations/r-001/settle",
+            headers=headers(),
+            json={"actual_micro_usd": 250000, "usage_evidence_sha256": digest("different-evidence")},
+        )
+        conflict = client.post(
+            "/v1/reservations/r-001/settle",
+            headers=headers(),
+            json={"actual_micro_usd": 260000, "usage_evidence_sha256": digest("usage-v2")},
+        )
+    assert created.status_code == 200
+    assert settled.status_code == 200
+    assert replay.status_code == 200
+    assert replay.json()["idempotent_replay"] is True
+    assert conflict.status_code == 409
