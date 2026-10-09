@@ -90,10 +90,21 @@ jobs:
                   "created_at": r.get("created_at"),
                   "updated_at": r.get("updated_at"),
               } for r in runs[:10]]
+              encoded_branch = urllib.parse.quote(branch, safe="")
+              _, branch_data = request(f"{api}/repos/{repo}/branches/{encoded_branch}")
+              current_branch_sha = branch_data.get("commit", {}).get("sha")
+              result["target_branch_head_sha"] = current_branch_sha
               candidates = [r for r in runs if r.get("status") == "completed"
                             and r.get("conclusion") == "failure"
                             and int(r.get("run_attempt") or 1) < 2]
               for run in candidates:
+                  if not current_branch_sha or run.get("head_sha") != current_branch_sha:
+                      result["actions"].append({
+                          "run_id": run["id"], "decision": "NO_RETRY_STALE_SHA",
+                          "reason": "A newer governance-branch commit exists; validate the queued current SHA instead of retrying stale code.",
+                          "failed_sha": run.get("head_sha"), "current_branch_sha": current_branch_sha
+                      })
+                      continue
                   _, jobs_data = request(f"{api}/repos/{repo}/actions/runs/{run['id']}/jobs?per_page=100")
                   jobs = jobs_data.get("jobs", [])
                   cp08 = [j for j in jobs if "CP-08" in j.get("name", "") or "Stage 08" in j.get("name", "")]
