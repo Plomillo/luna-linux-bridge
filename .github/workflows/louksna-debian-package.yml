@@ -210,6 +210,29 @@ jobs:
           pathlib.Path("debian-package-evidence.json").write_text(json.dumps(evidence,indent=2,sort_keys=True)+"\n")
           PY
 
+      # This private Actions artifact exists only to deliver the requested build candidate.
+      # It is explicitly not a release/redistribution artifact; release upload remains behind clearance.
+      - name: Stage internal build candidate (not for redistribution)
+        run: |
+          set -eu
+          test -s ../louksna-linux-bridge_0.4.0-3_all.deb
+          mkdir -p dist/candidate
+          cp ../louksna-linux-bridge_0.4.0-3_all.deb dist/candidate/
+          cp debian-package.sha256 debian-package-evidence.json lintian.txt lintian.exit dist/candidate/
+
+      - name: Upload internal build candidate (not for redistribution)
+        uses: actions/upload-artifact@v4
+        with:
+          name: louksna-linux-bridge_0.4.0-3_candidate-not-cleared
+          if-no-files-found: error
+          retention-days: 7
+          path: |
+            dist/candidate/louksna-linux-bridge_0.4.0-3_all.deb
+            dist/candidate/debian-package.sha256
+            dist/candidate/debian-package-evidence.json
+            dist/candidate/lintian.txt
+            dist/candidate/lintian.exit
+
       - name: Enforce distribution clearance before artifact staging
         run: |
           set -eu
