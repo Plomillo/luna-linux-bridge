@@ -71,6 +71,75 @@ jobs:
           printf '%s\n' "$lintian_rc" > lintian.exit
           cat lintian.txt
 
+      - name: Install and exercise provisioner on ephemeral runner
+        run: |
+          set -eux
+          DEB="$(realpath ../louksna-linux-bridge_0.4.0-3_all.deb)"
+          # Never use a runner that already has Louksna trust material: this test
+          # must not touch pre-existing host state.
+          test ! -e /etc/louksna
+          test ! -L /etc/louksna
+          OWNER_UID="$(id -u)"
+          OWNER_GID="$(id -g)"
+          OWNER_HOME="$(getent passwd "$OWNER_UID" | cut -d: -f6)"
+          test -n "$OWNER_HOME"
+          test ! -e "$OWNER_HOME/.config/louksna/mtls"
+          test ! -L "$OWNER_HOME/.config/louksna/mtls"
+          cleanup_provisioning_test() {
+            sudo rm -f /etc/louksna/remote-bridge/mtls.json \
+              /etc/louksna/remote-bridge/tls/ca.key \
+              /etc/louksna/remote-bridge/tls/ca.pem \
+              /etc/louksna/remote-bridge/tls/ca.srl \
+              /etc/louksna/remote-bridge/tls/server.key \
+              /etc/louksna/remote-bridge/tls/server.pem \
+              "$OWNER_HOME/.config/louksna/mtls/client.key" \
+              "$OWNER_HOME/.config/louksna/mtls/client.pem" \
+              "$OWNER_HOME/.config/louksna/mtls/ca.pem"
+            sudo rmdir /etc/louksna/remote-bridge/tls 2>/dev/null || true
+            sudo rmdir /etc/louksna/remote-bridge 2>/dev/null || true
+            sudo rmdir /etc/louksna 2>/dev/null || true
+            rmdir "$OWNER_HOME/.config/louksna/mtls" 2>/dev/null || true
+            rmdir "$OWNER_HOME/.config/louksna" 2>/dev/null || true
+          }
+          trap cleanup_provisioning_test EXIT
+          sudo apt-get install -y "$DEB"
+          sudo env SUDO_UID="$OWNER_UID" SUDO_GID="$OWNER_GID" \
+            /usr/lib/louksna/bridge/provision-mtls-local.sh
+          sudo python3 - <<'PY'
+          import json, os, pathlib, stat, subprocess
+          base=pathlib.Path("/etc/louksna/remote-bridge")
+          cfg=base/"mtls.json"
+          data=json.loads(cfg.read_text())
+          assert data["schema"]=="LRB_MTLS_READONLY_GATEWAY/0.3"
+          assert cfg.stat().st_uid==0 and stat.S_IMODE(cfg.stat().st_mode)==0o600
+          for name in ("server_cert","server_key","client_ca"):
+              p=pathlib.Path(data[name])
+              assert p.is_absolute() and p.is_file() and not p.is_symlink()
+          assert stat.S_IMODE(pathlib.Path(data["server_key"]).stat().st_mode)==0o600
+          for cert, expected in ((data["server_cert"],"TLS Web Server Authentication"),
+                                 (data["client_ca"],None)):
+              result=subprocess.run(["openssl","x509","-in",cert,"-noout","-text"],
+                                    text=True,capture_output=True,check=True).stdout
+              if expected: assert expected in result
+          owner_home=pathlib.Path(subprocess.check_output(
+              ["getent","passwd",os.environ["RUNNER_UID"]],text=True).split(":")[5])
+          client=owner_home/".config/louksna/mtls"
+          assert client.is_dir() and client.stat().st_uid==int(os.environ["RUNNER_UID"])
+          assert stat.S_IMODE(client.stat().st_mode)==0o700
+          assert stat.S_IMODE((client/"client.key").stat().st_mode)==0o600
+          subprocess.run(["openssl","verify","-CAfile",data["client_ca"],data["server_cert"]],
+                         check=True,capture_output=True,text=True)
+          unit="/lib/systemd/system/louksna-mtls-readonly.service"
+          assert pathlib.Path(unit).is_file()
+          state=subprocess.run(["systemctl","is-active","--quiet","louksna-mtls-readonly.service"])
+          assert state.returncode != 0, "provisioner unexpectedly activated the service"
+          enabled=subprocess.run(["systemctl","is-enabled","--quiet","louksna-mtls-readonly.service"])
+          assert enabled.returncode != 0, "package unexpectedly enabled the service"
+          print("PROVISIONER_INTEGRATION=PASS; SERVICE_ACTIVE=false; SERVICE_ENABLED=false")
+          PY
+        env:
+          RUNNER_UID: ${{ github.actor == '' && '1000' || '1000' }}
+
       - name: Build evidence
         run: |
           python3 - <<'PY'
