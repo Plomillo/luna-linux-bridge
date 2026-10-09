@@ -43,6 +43,8 @@ class ReleasePolicyTests(unittest.TestCase):
         self.assertIn("Install and exercise provisioner on ephemeral runner", WORKFLOW)
         self.assertIn("SERVICE_ACTIVE=false; SERVICE_ENABLED=false", WORKFLOW)
         self.assertIn("test ! -e /etc/louksna", WORKFLOW)
+        self.assertIn("PROVISIONER_FAULT_INJECTION=PASS", WORKFLOW)
+        self.assertIn('test "$failure_rc" -eq 71', WORKFLOW)
 
     def test_runtime_identity_matches_root_owned_key_policy_and_is_explicit(self):
         self.assertIn("User=root", SERVICE)
