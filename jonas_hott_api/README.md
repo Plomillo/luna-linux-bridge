@@ -38,6 +38,10 @@ The values above are placeholders only. Do not deploy the example budget values 
 The service stores a shared, append-only history of balance observations and model-catalog snapshots in the configured SQLite database. The balance workflow is to ask each authorized family member directly for the balance they can currently see; there is no integration with a 1min.AI balance API.
 
 - `POST /v1/account/credits/observations` records an authenticated observation. Current schema supports source type, timestamp, actor, source reference, balance, and evidence digest.
+- `GET /family-check-in` serves the guided Spanish form for manual check-ins, including respondent identity, displayed balance, account/plan, local observation time/timezone, consent, and optional external-evidence digest.
+- Writes require a distinct private token for each of Sebastián, Diego, Catalina, Marjorie, and Cristóbal. A submitted actor must match the token identity; missing/incomplete token configuration denies writes.
+- The pool is `CONFIRMED_BY_ALL_FIVE` only when all five have fresh matching reports. Until then, the latest matching value may be shown as `OBSERVED`, while `confirmed_balance_credits` remains null. Conflicting fresh reports return no balance; stale reports are disclosed separately and do not create a current conflict.
+- If no external evidence is attached, the form records a SHA-256 digest of the self-report payload and labels it as such; that digest is not proof that the provider-side balance is true.
 - `GET /v1/account/credits` returns the latest observation plus age and `FRESH`/`STALE`; no observation means `UNKNOWN`.
 - `GET /v1/account/credits/history` returns observation history.
 - `POST /v1/models/catalog/snapshots` stores a versioned catalog snapshot.
