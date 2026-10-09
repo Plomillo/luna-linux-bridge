@@ -359,6 +359,16 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
+      - name: Install native Linux build dependencies
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends \
+            build-essential curl wget file pkg-config patchelf \
+            libssl-dev libgtk-3-dev libglib2.0-dev libgobject-2.0-dev \
+            libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev
+          pkg-config --modversion glib-2.0 gobject-2.0
       - name: Run real candidate build
         shell: bash
         run: |
