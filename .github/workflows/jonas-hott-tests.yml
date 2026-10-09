@@ -99,9 +99,9 @@ jobs:
               ],
           }
           out = evidence / "ci-evidence.json"
-          out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\\n")
+          out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
           report["evidence_sha256"] = hashlib.sha256(json.dumps(report, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
-          out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\\n")
+          out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
           print(json.dumps(report, indent=2))
           PY
       - name: Preserve hash-bound CI evidence
