@@ -11,7 +11,7 @@ mapfile -t PACKAGES < <(find "$INPUT_DIR" -type f -name '*.deb' -print | sort)
 if [ "${#PACKAGES[@]}" -ne 1 ]; then
   python3 - "$REPORT" "${#PACKAGES[@]}" <<'PY'
 import json,sys
-json.dump({"schema":"louksna.zd.v03.debian13-smoke.v1","status":"HOLD","reason":"Expected exactly one CP-08 .deb; found "+sys.argv[1],"package_count":int(sys.argv[1])},open(sys.argv[2],"w"),indent=2)
+json.dump({"schema":"louksna.zd.v03.debian13-smoke.v1","status":"HOLD","reason":"Expected exactly one CP-08 .deb; found "+sys.argv[2],"package_count":int(sys.argv[2])},open(sys.argv[1],"w"),indent=2)
 PY
   echo "CP-09 Debian 13 smoke HOLD: expected one .deb, found ${#PACKAGES[@]}"
   exit 0
