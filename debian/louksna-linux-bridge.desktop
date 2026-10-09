@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=LOUKSNA Linux Bridge
+Comment=Panel gráfico local de estado y diagnóstico del puente Louksna
+Exec=/usr/bin/louksna
+Icon=utilities-system-monitor
+Terminal=false
+Categories=System;Utility;
+StartupNotify=true
