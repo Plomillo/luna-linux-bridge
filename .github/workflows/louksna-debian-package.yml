@@ -1,6 +1,14 @@
 name: Debian package — Louksna Linux Bridge
 
 on:
+  pull_request:
+    branches:
+      - work/louksna-zd-v04-master-20261007
+    paths:
+      - 'debian/**'
+      - 'bridge/**'
+      - 'scripts/**'
+      - '.github/workflows/louksna-debian-package.yml'
   push:
     branches:
       - work/louksna-zd-v04-master-20261007
@@ -19,10 +27,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - name: Checkout exact branch commit
+      - name: Checkout exact triggering commit
         uses: actions/checkout@v4
         with:
-          ref: work/louksna-zd-v04-master-20261007
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
 
       - name: Install Debian build toolchain
@@ -32,7 +40,7 @@ jobs:
 
       - name: Verify governed source identity
         run: |
-          test "$(git branch --show-current)" = "work/louksna-zd-v04-master-20261007"
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}" || test "${GITHUB_EVENT_NAME}" = "pull_request"
           test "$(git rev-parse HEAD:Louksna.md)" = "1a399ab7494d6df5582436819eee557083e753ed"
           test "$(git rev-parse HEAD:PUAC2.md)" = "da3b216888c86e588685d384c34dd3c481414b22"
 
@@ -43,7 +51,8 @@ jobs:
       - name: Package integrity and install-root smoke test
         run: |
           set -eux
-          DEB="$(realpath ../louksna-linux-bridge_0.4.0-2_all.deb)"
+          VERSION="$(dpkg-parsechangelog -S Version)"
+          DEB="$(realpath ../louksna-linux-bridge_${VERSION}_all.deb)"
           dpkg-deb --info "$DEB"
           dpkg-deb --contents "$DEB"
           rm -rf /tmp/louksna-deb-root
@@ -64,7 +73,8 @@ jobs:
         run: |
           python3 - <<'PY'
           import hashlib, json, pathlib, subprocess, time
-          deb=pathlib.Path("../louksna-linux-bridge_0.4.0-2_all.deb")
+          version=subprocess.check_output(["dpkg-parsechangelog","-S","Version"],text=True).strip()
+          deb=pathlib.Path(f"../louksna-linux-bridge_{version}_all.deb")
           evidence={
             "schema":"LOUKSNA_ZD_DEBIAN_PACKAGE_EVIDENCE/1.0",
             "status":"PASS",
@@ -89,17 +99,18 @@ jobs:
       - name: Stage Debian package for artifact upload
         run: |
           mkdir -p dist/debian
-          cp ../louksna-linux-bridge_0.4.0-2_all.deb dist/debian/
+          VERSION="$(dpkg-parsechangelog -S Version)"
+          cp "../louksna-linux-bridge_${VERSION}_all.deb" dist/debian/
           cp debian-package.sha256 debian-package-evidence.json lintian.txt dist/debian/
 
       - name: Upload Debian package and evidence
         uses: actions/upload-artifact@v4
         with:
-          name: louksna-linux-bridge_0.4.0-2_debian
+          name: louksna-linux-bridge_${{ github.event.pull_request.number || github.ref_name }}_debian
           if-no-files-found: error
           retention-days: 30
           path: |
-            dist/debian/louksna-linux-bridge_0.4.0-2_all.deb
+            dist/debian/louksna-linux-bridge_*.deb
             dist/debian/debian-package.sha256
             dist/debian/debian-package-evidence.json
             dist/debian/lintian.txt
