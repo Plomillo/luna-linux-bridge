@@ -4,13 +4,16 @@ on:
   pull_request:
     paths:
       - "jonas_hott_api/**"
+      - "jonas_app/**"
       - "tests/test_jonas_*.py"
       - ".github/workflows/jonas-hott-tests.yml"
   push:
     branches:
       - "feature/jonas-hott-live-telemetry-v1"
+      - "feature/jonas-budget-telemetry-app-v1"
     paths:
       - "jonas_hott_api/**"
+      - "jonas_app/**"
       - "tests/test_jonas_*.py"
       - ".github/workflows/jonas-hott-tests.yml"
   workflow_dispatch:
@@ -39,7 +42,9 @@ jobs:
       - name: Install declared dependencies
         run: python -m pip install --upgrade pip && python -m pip install -r jonas_hott_api/requirements.txt
       - name: Compile application and tests
-        run: python -m compileall -q jonas_hott_api tests
+        run: python -m compileall -q jonas_app jonas_hott_api tests
+      - name: Run Jonas local budget and telemetry MVP tests
+        run: cd jonas_app && python -m unittest -v
       - name: Run Jonas API and shared-account tests
         env:
           JONAS_API_TOKEN: ci-test-token
