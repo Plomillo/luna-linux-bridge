@@ -10,6 +10,8 @@ on:
     paths:
       - ".github/workflows/louksna-cp09-debian13-kde-vm.yml"
       - "governance/zona-directiva-v03/CP-09-DEBIAN13-KDE-VM-CI.md"
+      - "governance/zona-directiva-v03/DEBIAN13-CROSS-CP-OPERATIONAL-PROFILE.md"
+      - ".github/PULL_REQUEST_TEMPLATE.md"
 
 permissions:
   contents: read
