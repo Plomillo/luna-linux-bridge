@@ -477,10 +477,10 @@ jobs:
                              "reason": "Required target-runtime fields and SHA-256 references are present; independent validation remains required."})
             else:
               report["reason"] = "Runtime evidence is incomplete or invalid: " + ",".join(missing)
-          target.write_text(json.dumps(report, indent=2, sort_keys=True) + "\\n", encoding="utf-8")
+          target.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
           print(json.dumps(report, indent=2))
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
-            f.write("status=" + report["result"] + "\\n")
+            f.write("status=" + report["result"] + "\n")
           PY
       - name: Preserve CP-09 runtime gate evidence
         if: always()
