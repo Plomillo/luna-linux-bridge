@@ -1,0 +1,475 @@
+name: "LOUKSNA ZD V0.3 — Sequential Governance Gate"
+
+on:
+  push:
+    branches:
+      - governance/louksna-zd-v03-12-stage-gates-20261009
+    paths:
+      - governance/zona-directiva-v03/12_STAGE_GOVERNANCE_CONTRACT.md
+      - .github/workflows/louksna-zd-v03-governance.yml
+      - scripts/missions/louksna_zd_v03_functionalizer.py
+      - scripts/missions/louksna_zd_candidate_materializer.py
+      - scripts/missions/v03_templates/**
+  pull_request:
+    branches:
+      - work/louksna-zona-directiva-v0.3-functional-20261006
+    paths:
+      - governance/zona-directiva-v03/12_STAGE_GOVERNANCE_CONTRACT.md
+      - .github/workflows/louksna-zd-v03-governance.yml
+      - scripts/missions/louksna_zd_v03_functionalizer.py
+      - scripts/missions/louksna_zd_candidate_materializer.py
+      - scripts/missions/v03_templates/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: louksna-zd-v03-governance
+  cancel-in-progress: false
+
+jobs:
+  stage-01-audit:
+    name: "Stage 01 / CP-01 — Repository mechanism audit"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      audit_status: ${{ steps.audit.outputs.status }}
+    steps:
+      - name: Checkout governance candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: governance/louksna-zd-v03-12-stage-gates-20261009
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Emit live run identity
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "TELEMETRY event=EVENT_STARTED stage=01 checkpoint=CP-01"
+          echo "TELEMETRY repository=$GITHUB_REPOSITORY"
+          echo "TELEMETRY ref=$GITHUB_REF"
+          echo "TELEMETRY commit=$GITHUB_SHA"
+          echo "TELEMETRY run_id=$GITHUB_RUN_ID"
+          echo "TELEMETRY run_attempt=$GITHUB_RUN_ATTEMPT"
+          echo "TELEMETRY timestamp_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+      - name: Audit observable repository mechanisms
+        id: audit
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p evidence/zona-directiva-v03
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,subprocess,datetime
+          root=pathlib.Path(".")
+          def run(*args):
+              p=subprocess.run(args,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+              return {"returncode":p.returncode,"output":p.stdout.strip()}
+          workflows=sorted(str(p) for p in pathlib.Path(".github/workflows").glob("*.yml")) + sorted(str(p) for p in pathlib.Path(".github/workflows").glob("*.yaml"))
+          mission=pathlib.Path("missions/inbox/louksna-zona-directiva-v03-functional-20261006/MISSION.md")
+          contract=pathlib.Path("governance/zona-directiva-v03/12_STAGE_GOVERNANCE_CONTRACT.md")
+          findings=[]
+          if not mission.exists(): findings.append({"severity":"BLOCKER","id":"MISSION_MISSING","detail":"Mission file not found in governance checkout."})
+          if not contract.exists(): findings.append({"severity":"BLOCKER","id":"CONTRACT_MISSING","detail":"Contract file not found."})
+          if not pathlib.Path(".github/workflows/louksna-zd-v03-functional.yml").exists():
+              findings.append({"severity":"BLOCKER","id":"FUNCTIONAL_WORKFLOW_MISSING","detail":"Expected functional workflow not found."})
+          branch=os.environ.get("GITHUB_REF_NAME","")
+          report={
+            "schema":"louksna.zd.v03.repo-audit.v1",
+            "contract_id":"LOUKSNA-ZD-V03-12-STAGE-GOVERNANCE-20261009",
+            "mission_id":"MIS-LOUKSNA-ZD-V03-FUNCTIONAL-20261006",
+            "stage_id":"01","checkpoint_id":"CP-01",
+            "timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "repository":os.environ.get("GITHUB_REPOSITORY"),
+            "ref":os.environ.get("GITHUB_REF"),
+            "branch":branch,
+            "commit_sha":os.environ.get("GITHUB_SHA"),
+            "run_id":os.environ.get("GITHUB_RUN_ID"),
+            "run_attempt":os.environ.get("GITHUB_RUN_ATTEMPT"),
+            "main_mutation":"NOT_PERFORMED",
+            "workflow_inventory":workflows,
+            "mission_sha256":hashlib.sha256(mission.read_bytes()).hexdigest() if mission.exists() else None,
+            "contract_sha256":hashlib.sha256(contract.read_bytes()).hexdigest() if contract.exists() else None,
+            "functional_workflow_sha256":hashlib.sha256(pathlib.Path(".github/workflows/louksna-zd-v03-functional.yml").read_bytes()).hexdigest() if pathlib.Path(".github/workflows/louksna-zd-v03-functional.yml").exists() else None,
+            "observable_git": {
+              "head":run("git","rev-parse","HEAD"),
+              "status":run("git","status","--short"),
+              "branches":run("git","branch","--all","--no-color"),
+              "tracked_workflows":run("git","ls-files",".github/workflows")
+            },
+            "limits":["Repository settings/branch protection and external GitHub Actions history require API permissions not supplied by this checkout job.","A CI checkout audit does not prove physical Debian 13 KDE GUI runtime."],
+            "findings":findings,
+            "status":"HOLD" if findings else "PASS_WITH_SCOPE_LIMITS"
+          }
+          out=pathlib.Path("evidence/zona-directiva-v03/CP-01-repository-audit.json")
+          out.write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+          print("TELEMETRY stage=01 checkpoint=CP-01 status="+report["status"])
+          print("TELEMETRY workflow_count="+str(len(workflows)))
+          print("TELEMETRY finding_count="+str(len(findings)))
+          print("TELEMETRY audit_path="+str(out))
+          with open(os.environ["GITHUB_OUTPUT"],"a") as f: f.write("status="+report["status"]+"\n")
+          if findings: raise SystemExit(1)
+          PY
+
+      - name: Upload immutable audit evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksna-zd-v03-cp01-repository-audit
+          path: evidence/zona-directiva-v03/CP-01-repository-audit.json
+          if-no-files-found: error
+          retention-days: 90
+
+  stage-02-contract-linkage:
+    name: "Stage 02 / CP-02 — Contract and mission linkage"
+    needs: stage-01-audit
+    if: needs.stage-01-audit.result == 'success' && needs.stage-01-audit.outputs.audit_status == 'PASS_WITH_SCOPE_LIMITS'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      status: ${{ steps.verify.outputs.status }}
+    steps:
+      - name: Checkout exact governance candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Verify contract, mission linkage, and protected branch boundaries
+        id: verify
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p evidence/zona-directiva-v03
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,datetime,subprocess
+          contract=pathlib.Path("governance/zona-directiva-v03/12_STAGE_GOVERNANCE_CONTRACT.md")
+          mission=pathlib.Path("missions/inbox/louksna-zona-directiva-v03-functional-20261006/MISSION.md")
+          authority=pathlib.Path("Louksna.md")
+          assurance=pathlib.Path("PUAC2.md")
+          required=["EXTEND_DO_NOT_REPLACE","FAIL_CLOSED","NO_MAIN_MUTATION = TRUE","NO_AUTO_MERGE = TRUE","NO_AUTO_CERTIFICATION = TRUE","G23_INDEPENDENT_VALIDATION_REQUIRED = TRUE","G24_CERTIFICATION_REQUIRED = TRUE"]
+          findings=[]
+          for p in [contract,mission,authority,assurance]:
+              if not p.is_file(): findings.append({"severity":"BLOCKER","id":"REQUIRED_FILE_MISSING","path":str(p)})
+          if contract.is_file():
+              text=contract.read_text()
+              for item in required:
+                  if item not in text: findings.append({"severity":"BLOCKER","id":"CONTRACT_INVARIANT_MISSING","detail":item})
+              if "### ETAPA 01" not in text or "### ETAPA 12" not in text: findings.append({"severity":"BLOCKER","id":"STAGE_SEQUENCE_INCOMPLETE"})
+          if mission.is_file():
+              mt=mission.read_text()
+              if "MISSION_ID = MIS-LOUKSNA-ZD-V03-FUNCTIONAL-20261006" not in mt: findings.append({"severity":"BLOCKER","id":"MISSION_ID_MISMATCH"})
+              if "NO_MAIN_MUTATION = TRUE" not in mt: findings.append({"severity":"BLOCKER","id":"MAIN_PROTECTION_CONTRACT_MISSING"})
+          def digest(p): return hashlib.sha256(p.read_bytes()).hexdigest() if p.is_file() else None
+          result={"schema":"louksna.zd.v03.checkpoint.v1","contract_id":"LOUKSNA-ZD-V03-12-STAGE-GOVERNANCE-20261009","mission_id":"MIS-LOUKSNA-ZD-V03-FUNCTIONAL-20261006","stage_id":"02","checkpoint_id":"CP-02","timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"repository":os.getenv("GITHUB_REPOSITORY"),"run_id":os.getenv("GITHUB_RUN_ID"),"run_url":f"https://github.com/{os.getenv('GITHUB_REPOSITORY')}/actions/runs/{os.getenv('GITHUB_RUN_ID')}","commit_sha":os.getenv("GITHUB_SHA"),"candidate_branch":os.getenv("GITHUB_REF_NAME"),"status":"PASS" if not findings else "HOLD","requirements":required,"evidence":{"contract_sha256":digest(contract),"mission_sha256":digest(mission),"authority_sha256":digest(authority),"assurance_sha256":digest(assurance)},"findings":findings,"previous_checkpoint":"CP-01","next_authorized_stage":"03" if not findings else "NONE","rollback_pointer":os.getenv("GITHUB_SHA")}
+          path=pathlib.Path("evidence/zona-directiva-v03/CP-02-contract-linkage.json")
+          path.write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(result,indent=2))
+          with open(os.environ["GITHUB_OUTPUT"],"a") as f: f.write("status="+result["status"]+"\n")
+          if findings: raise SystemExit(1)
+          PY
+      - name: Preserve CP-02 evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksna-zd-v03-cp02-contract-linkage
+          path: evidence/zona-directiva-v03/CP-02-contract-linkage.json
+          if-no-files-found: error
+          retention-days: 90
+
+  stage-03-backend-ledger:
+    name: "Stage 03 / CP-03 — SQLite backend and evidence ledger"
+    needs: stage-02-contract-linkage
+    if: needs.stage-02-contract-linkage.result == 'success' && needs.stage-02-contract-linkage.outputs.status == 'PASS'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Run material backend and ledger tests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -f scripts/missions/test_louksna_zd_v03_backend.py || { echo "CP-03 HOLD: backend test harness missing"; exit 1; }
+          test -f scripts/missions/louksna_zd_v03_functionalizer.py || { echo "CP-03 HOLD: functionalizer missing"; exit 1; }
+          python3 -B -I scripts/missions/test_louksna_zd_v03_backend.py scripts/missions/v03_templates/main.rs
+          echo "CP-03 backend test harness completed; result is limited to the assertions actually exercised."
+
+  stage-04-github-bridge:
+    name: "Stage 04 / CP-04 — Read-only GitHub bridge and credential safety"
+    needs: stage-03-backend-ledger
+    if: needs.stage-03-backend-ledger.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Verify bridge security and real read-only API access
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -Eeuo pipefail
+          test -n "${GH_TOKEN:-}" || { echo "CP-04 HOLD: GitHub API credential unavailable"; exit 1; }
+          curl --fail --silent --show-error --max-time 15 -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$GITHUB_REPOSITORY" -o "$RUNNER_TEMP/repo-api.json"
+          python3 - "$RUNNER_TEMP/repo-api.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1]))
+          assert d.get("full_name")
+          assert isinstance(d.get("private"),bool)
+          print("CP-04 live GitHub repository API read PASS; no mutation performed")
+          PY
+          if grep -RniE 'println!.*token|print.*github_token|INSERT.*token|UPDATE.*token' --include='*.rs' --include='*.py' scripts src-tauri 2>/dev/null; then
+            echo "CP-04 HOLD: possible credential disclosure/storage pattern requires review"
+            exit 1
+          fi
+
+  stage-05-ui-telemetry:
+    name: "Stage 05 / CP-05 — UI state and telemetry"
+    needs: stage-04-github-bridge
+    if: needs.stage-04-github-bridge.result == 'success'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Materialize the exact candidate and verify UI/backend state
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/louksna-v03"
+          printf '%s\n' '{"mission_id":"MIS-LOUKSNA-ZD-V03-FUNCTIONAL-20261006","dispatch_id":"GH-GOVERNANCE-CP05","binding_id":"GOVERNANCE_CP05","executor_id":"CI_CHECKPOINT","expected_effect":{"effect_type":"CHECKPOINT_VALIDATION"}}' > "$RUNNER_TEMP/louksna-v03/DISPATCH.json"
+          python3 -B -I scripts/missions/louksna_zd_candidate_materializer.py \
+            "$RUNNER_TEMP/louksna-v03/DISPATCH.json" \
+            "$RUNNER_TEMP/louksna-v03/ACK.json" \
+            "$RUNNER_TEMP/louksna-v03/FME.json" \
+            "$RUNNER_TEMP/louksna-v03/MATERIAL_RESULT.json" \
+            "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE" \
+            "$GITHUB_WORKSPACE/missions/inbox/louksna-zona-directiva-v03-functional-20261006/MISSION.md"
+          CANDIDATE="$GITHUB_WORKSPACE/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate"
+          python3 -B -I scripts/missions/louksna_zd_v03_functionalizer.py "$CANDIDATE"
+          python3 -B -I scripts/missions/test_louksna_zd_v03_backend.py scripts/missions/v03_templates/main.rs
+          grep -q '@tauri-apps/api/core' "$CANDIDATE/src/App.tsx"
+          grep -q 'github_repositories' "$CANDIDATE/src/App.tsx"
+          grep -q 'evidence_recent' "$CANDIDATE/src/App.tsx"
+          grep -q 'rusqlite' "$CANDIDATE/src-tauri/Cargo.toml"
+          grep -q 'DEGRADED' "$CANDIDATE/src-tauri/src/main.rs"
+          ! grep -Eq 'CUSTOSZ|CUSTOSZ_RUNTIME|Josefina|Katya|Ancapi|MetaOS' "$CANDIDATE/src/App.tsx"
+          echo "CP-05 PASS: candidate generated from tracked source; assertions exercised and identity boundary checked."
+
+  stage-06-functions-attachments:
+    name: "Stage 06 / CP-06 — Offline, persistence, chat and attachments"
+    needs: stage-05-ui-telemetry
+    if: needs.stage-05-ui-telemetry.result == 'success'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Materialize candidate and run functional regression checks
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/louksna-v03"
+          printf '%s\n' '{"mission_id":"MIS-LOUKSNA-ZD-V03-FUNCTIONAL-20261006","dispatch_id":"GH-GOVERNANCE-CP06","binding_id":"GOVERNANCE_CP06","executor_id":"CI_CHECKPOINT","expected_effect":{"effect_type":"CHECKPOINT_VALIDATION"}}' > "$RUNNER_TEMP/louksna-v03/DISPATCH.json"
+          python3 -B -I scripts/missions/louksna_zd_candidate_materializer.py \
+            "$RUNNER_TEMP/louksna-v03/DISPATCH.json" \
+            "$RUNNER_TEMP/louksna-v03/ACK.json" \
+            "$RUNNER_TEMP/louksna-v03/FME.json" \
+            "$RUNNER_TEMP/louksna-v03/MATERIAL_RESULT.json" \
+            "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE" \
+            "$GITHUB_WORKSPACE/missions/inbox/louksna-zona-directiva-v03-functional-20261006/MISSION.md"
+          CANDIDATE="$GITHUB_WORKSPACE/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate"
+          python3 -B -I scripts/missions/louksna_zd_v03_functionalizer.py "$CANDIDATE"
+          python3 -B -I scripts/missions/test_louksna_zd_v03_backend.py scripts/missions/v03_templates/main.rs
+          test -s "$CANDIDATE/src/App.tsx"
+          test -s "$CANDIDATE/src-tauri/src/main.rs"
+          test -s "$CANDIDATE/src-tauri/tauri.conf.json"
+          grep -q 'offline_mode' "$CANDIDATE/src-tauri/src/main.rs"
+          grep -q 'chat_send' "$CANDIDATE/src-tauri/src/main.rs"
+          grep -q 'evidence_recent' "$CANDIDATE/src-tauri/src/main.rs"
+          grep -q 'github_pull_requests' "$CANDIDATE/src-tauri/src/main.rs"
+          echo "CP-06 PASS limited to reproducible source/backend assertions; interactive GUI, persistence-across-restart, and attachment E2E remain unproven."
+
+  stage-07-voice-security:
+    name: "Stage 07 / CP-07 — Voice E2E and security regression"
+    needs: stage-06-functions-attachments
+    if: needs.stage-06-functions-attachments.result == 'success'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Record voice gate honestly and continue non-voice validation
+        id: voice_gate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p evidence/zona-directiva-v03
+          HARNESS_PATH="$(find . -type f \( -iname '*voice*e2e*' -o -iname '*audio*integration*' \) -not -path './.git/*' -print -quit || true)"
+          python3 - "$HARNESS_PATH" <<'PY'
+          import datetime,hashlib,json,os,pathlib,sys
+          harness=sys.argv[1]
+          p=pathlib.Path(harness) if harness else None
+          report={
+            "schema":"louksna.zd.v03.voice-gate.v1",
+            "stage_id":"07","checkpoint_id":"CP-07",
+            "timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "repository":os.getenv("GITHUB_REPOSITORY"),
+            "commit_sha":os.getenv("GITHUB_SHA"),
+            "run_id":os.getenv("GITHUB_RUN_ID"),
+            "voice_gate":"OPEN",
+            "voice_active":False,
+            "harness_discovered":bool(p and p.is_file()),
+            "harness_path":harness or None,
+            "harness_sha256":hashlib.sha256(p.read_bytes()).hexdigest() if p and p.is_file() else None,
+            "e2e_executed":False,
+            "result":"HOLD_OPEN",
+            "reason":"No verified Louksna-specific end-to-end voice harness was executed. Discovery alone is not evidence.",
+            "certification_effect":"G23_G24_MUST_REMAIN_BLOCKED_WHILE_VOICE_IS_MANDATORY"
+          }
+          out=pathlib.Path("evidence/zona-directiva-v03/CP-07-voice-gate.json")
+          out.write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(report,indent=2))
+          with open(os.environ["GITHUB_OUTPUT"],"a") as f: f.write("voice_gate=OPEN\n")
+          PY
+          echo "CP-07 recorded HOLD_OPEN; continuing only to run independent build/package/evidence checks. Voice remains unverified and inactive."
+      - name: Preserve CP-07 voice gate evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksna-zd-v03-cp07-voice-gate-open
+          path: evidence/zona-directiva-v03/CP-07-voice-gate.json
+          if-no-files-found: error
+          retention-days: 90
+
+  stage-08-reproducible-build:
+    name: "Stage 08 / CP-08 — Build and Debian package"
+    needs: stage-07-voice-security
+    if: needs.stage-07-voice-security.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Install native Linux build dependencies
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export DEBIAN_FRONTEND=noninteractive
+          timeout 360s sudo -E apt-get -o Acquire::Retries=3 update
+          timeout 360s sudo -E apt-get -o Acquire::Retries=3 install --yes --no-install-recommends \
+            build-essential curl wget file pkg-config patchelf \
+            libssl-dev libgtk-3-dev libglib2.0-dev \
+            libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev
+          pkg-config --modversion glib-2.0 gobject-2.0
+      - name: Run real candidate build
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/louksna-v03"
+          printf '%s\n' '{"mission_id":"MIS-LOUKSNA-ZD-V03-FUNCTIONAL-20261006","dispatch_id":"GH-GOVERNANCE-CP08","binding_id":"GOVERNANCE_CP08","executor_id":"CI_CHECKPOINT","expected_effect":{"effect_type":"BUILD_VALIDATION"}}' > "$RUNNER_TEMP/louksna-v03/DISPATCH.json"
+          python3 -B -I scripts/missions/louksna_zd_candidate_materializer.py \
+            "$RUNNER_TEMP/louksna-v03/DISPATCH.json" \
+            "$RUNNER_TEMP/louksna-v03/ACK.json" \
+            "$RUNNER_TEMP/louksna-v03/FME.json" \
+            "$RUNNER_TEMP/louksna-v03/MATERIAL_RESULT.json" \
+            "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE" \
+            "$GITHUB_WORKSPACE/missions/inbox/louksna-zona-directiva-v03-functional-20261006/MISSION.md"
+          CANDIDATE="$GITHUB_WORKSPACE/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate"
+          python3 -B -I scripts/missions/louksna_zd_v03_functionalizer.py "$CANDIDATE"
+          python3 -B -I scripts/missions/test_louksna_zd_v03_backend.py scripts/missions/v03_templates/main.rs
+          cd "$CANDIDATE"
+          if test -f package-lock.json; then
+            npm ci
+          else
+            echo "CP-08 NOTE: generated candidate has no lockfile; materializing lockfile before clean install."
+            npm install --package-lock-only --ignore-scripts
+            npm ci
+          fi
+          npm run build
+          cargo check --manifest-path src-tauri/Cargo.toml
+          npx tauri build --bundles deb
+          DEB="$(find src-tauri/target/release/bundle/deb -maxdepth 1 -type f -name '*.deb' -print -quit)"
+          test -n "$DEB"
+          sha256sum "$DEB"
+          stat -c 'package_size_bytes=%s' "$DEB"
+
+  stage-09-physical-runtime:
+    name: "Stage 09 / CP-09 — Debian 13 KDE install, runtime and rollback"
+    needs: stage-08-reproducible-build
+    if: needs.stage-08-reproducible-build.result == 'success'
+    runs-on: [self-hosted, linux, debian-13, kde]
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Verify declared physical Debian 13 KDE environment
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          . /etc/os-release
+          test "$ID" = debian
+          test "$VERSION_ID" = "13"
+          test "${XDG_CURRENT_DESKTOP:-}" != ""
+          echo "CP-09 host environment verified: $PRETTY_NAME; desktop=$XDG_CURRENT_DESKTOP"
+          echo "The installer/runtime/rollback test must be run by the authorized host operator; no installation is performed by this guard."
+
+  stage-10-evidence-freeze:
+    name: "Stage 10 / CP-10 — Evidence dossier and candidate freeze"
+    needs: stage-09-physical-runtime
+    if: needs.stage-09-physical-runtime.result == 'success'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Validate evidence prerequisites
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -d evidence/zona-directiva-v03
+          echo "CP-10 HOLD unless all prior checkpoint artifacts are available and digest-consistent."
+          echo "No candidate freeze or certification is inferred from this step."
+
+  stage-11-independent-validation:
+    name: "Stage 11 / CP-11 — G23 independent validation"
+    needs: stage-10-evidence-freeze
+    if: needs.stage-10-evidence-freeze.result == 'success'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Refuse self-certification
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "CP-11 HOLD: independent validator identity and independent digest-bound report are not configured."
+          exit 1
+
+  stage-12-certification:
+    name: "Stage 12 / CP-12 — G24 certification and release decision"
+    needs: stage-11-independent-validation
+    if: needs.stage-11-independent-validation.result == 'success'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require independent G23 evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "CP-12 HOLD: G23 evidence absent; no automatic certification or activation."
+          exit 1
