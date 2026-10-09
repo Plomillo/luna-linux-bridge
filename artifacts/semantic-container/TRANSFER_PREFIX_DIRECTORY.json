@@ -1,0 +1,627 @@
+{
+  "schema": "louksna.semantic-container.drive-directory/v1",
+  "purpose": "Staging source index for authorized transfer of the remaining CAS objects, not proof of content integrity",
+  "source": "Google Drive CONTENEDOR SEMANTICO/18_HASH_INDEX/OBJECTS",
+  "prefix_folders": [
+    {
+      "prefix": "00",
+      "id": "1oCzBcQTaL9xSf_XUG7LgxtJJ7TTcj8_l"
+    },
+    {
+      "prefix": "03",
+      "id": "1r9TtVCYngzNaHzbgbS0k0eJm1wHlhbri"
+    },
+    {
+      "prefix": "04",
+      "id": "1sMc0HcP1gppC12qMNsOoUEc_XGxvu-_a"
+    },
+    {
+      "prefix": "05",
+      "id": "1sLSj9Ke9OuEVhsGBBaQ5v7ZEygQ8W7DG"
+    },
+    {
+      "prefix": "06",
+      "id": "1jOX0_soWgyAos7_-fmDeC1dhC_qzBBru"
+    },
+    {
+      "prefix": "08",
+      "id": "1N0xid4d9zh4g5vs4l54Da1-FeoVDzJSR"
+    },
+    {
+      "prefix": "09",
+      "id": "1Jig1yWCuvSBMgL93pY797ItiTxzK6Zfc"
+    },
+    {
+      "prefix": "0a",
+      "id": "16peTeiFaITZX7cNqJsp-RbvVJJy2dq3H"
+    },
+    {
+      "prefix": "0b",
+      "id": "1rXUp7vNbz5AeAkjKfbucxrQq0s3Lpihd"
+    },
+    {
+      "prefix": "0c",
+      "id": "14axEyj0n1IwlFeGxB9XEMeDqbtLiUYJE"
+    },
+    {
+      "prefix": "0d",
+      "id": "1eqfma7w-2aMkfRtQ-rnydGnQGRQp109P"
+    },
+    {
+      "prefix": "10",
+      "id": "1hFtvk4sYVzcEqtOVzuK64eg_WC4_3xNv"
+    },
+    {
+      "prefix": "13",
+      "id": "14p2NXVJyMM_m5huZ6WlwfPhOlxKejXdt"
+    },
+    {
+      "prefix": "14",
+      "id": "15COo7WeeQQmYXYqfUp8bTAW83jbKcpWh"
+    },
+    {
+      "prefix": "15",
+      "id": "1nJYCerVE1r95fJIQtnrWbuYOlzHIXRa6"
+    },
+    {
+      "prefix": "16",
+      "id": "1Ozj6D4C74aU4mgFt0UnufAxL6pPKfu8b"
+    },
+    {
+      "prefix": "17",
+      "id": "1NG9otPr5XeLejYXHlh4kkYgtjZbEYntH"
+    },
+    {
+      "prefix": "19",
+      "id": "1xTUAJOScxX2Q8p4aPR_1Ns-C-RJiR40x"
+    },
+    {
+      "prefix": "1c",
+      "id": "1dv9pf58-hOLTl5WdKU2QLhONbnfr0yaG"
+    },
+    {
+      "prefix": "1e",
+      "id": "1rWx2GPb-ahCkIpSc34DzoQPZC6vwlE5B"
+    },
+    {
+      "prefix": "21",
+      "id": "1fLEddXbyl3aaQYxkExDMdZqGv1Wy_VyA"
+    },
+    {
+      "prefix": "24",
+      "id": "1bczPqMidPYAbNGX1i9a09OhTwi1epNdJ"
+    },
+    {
+      "prefix": "25",
+      "id": "1pXxpCis5z16d62AmTFfHnyUVUTllxIJg"
+    },
+    {
+      "prefix": "26",
+      "id": "1tbFxDrYdA_RyRX2xPnkUHhpE8BExCeS8"
+    },
+    {
+      "prefix": "27",
+      "id": "1CDDibrHXOksSQtG4VrygOt_glGXgltp3"
+    },
+    {
+      "prefix": "28",
+      "id": "1fXfcKjlFdJxlnzD1W1uA8Rm5-MbEvJ_K"
+    },
+    {
+      "prefix": "2a",
+      "id": "1VAljtRb57xRfsjFX6nJxqcmtDHMS91yn"
+    },
+    {
+      "prefix": "2b",
+      "id": "1Zp-6GRJQV6maHsbYolDuq5FYYbk2-gYi"
+    },
+    {
+      "prefix": "2c",
+      "id": "1oLnvM6w5wDweuantAAu0fHtj4xD_wD-8"
+    },
+    {
+      "prefix": "2d",
+      "id": "1xURnMgehHBSjOp3LC6KrgBhJEbWQaI83"
+    },
+    {
+      "prefix": "2f",
+      "id": "1AZI4qM-v8HJr1HPJy8NOews4g72TxKd2"
+    },
+    {
+      "prefix": "31",
+      "id": "1iX5QIUmb56RbiYSkUdOtFgEkrLi1rxN7"
+    },
+    {
+      "prefix": "32",
+      "id": "14ObpVhur9nc8KRuSGr24fQ1NrEH0YyWy"
+    },
+    {
+      "prefix": "33",
+      "id": "1CZlA-pOjUZm9POEsiqZZXK0K-R9-4MIA"
+    },
+    {
+      "prefix": "34",
+      "id": "1DSe_qe2IGSapKb-zxugV5UDFbpAbKacV"
+    },
+    {
+      "prefix": "35",
+      "id": "1XuEtMlkBY9ZeHi0-Q2d3sC1rHJ14cVM1"
+    },
+    {
+      "prefix": "36",
+      "id": "1EQMlMNGZqzmdoFXDDFk_ljMTegrONgJ0"
+    },
+    {
+      "prefix": "37",
+      "id": "10ywaXtcnrdA1n-c8QlCs_IQmmQ5EKsWJ"
+    },
+    {
+      "prefix": "38",
+      "id": "1wOIvD01ca34NgpZOFZWZxguWSWc9prJ5"
+    },
+    {
+      "prefix": "3a",
+      "id": "1UAOiDghEu0L5FpCnzm0R_vw2l2sP-PGs"
+    },
+    {
+      "prefix": "3f",
+      "id": "1IS4qQ5xRGgvaXWxHRCoQ4VHRCYjwIIY_"
+    },
+    {
+      "prefix": "40",
+      "id": "1XjG3M5mWJvQWTEuuy1Jhj6CeMeBuNBrS"
+    },
+    {
+      "prefix": "41",
+      "id": "1fmOJSa02s8He4fvqSD4-PKWZxc9oZKYa"
+    },
+    {
+      "prefix": "42",
+      "id": "1kxMWNfjahxjlgzoBUSngncdWrjqso9km"
+    },
+    {
+      "prefix": "43",
+      "id": "1mFp9hnkHXqK2VFczPdcm3y9k2X5LVJyZ"
+    },
+    {
+      "prefix": "47",
+      "id": "1mLzkC_IHYfoctxUFgVONF8FQUoyUVco3"
+    },
+    {
+      "prefix": "48",
+      "id": "1N8MuJ-8vrxOBijO1vw4Wxpi_3Wxopvru"
+    },
+    {
+      "prefix": "4a",
+      "id": "16akjWPm1KJhbaR0rITUn_2LjxVHPKsnW"
+    },
+    {
+      "prefix": "4b",
+      "id": "1n-joa4n-7kCS_NV_c9NHgcvZgl2vF6da"
+    },
+    {
+      "prefix": "4d",
+      "id": "1GHGVGjFyRJCwgiblvvdfNCvWh7LEoPc4"
+    },
+    {
+      "prefix": "52",
+      "id": "1NsqTQYWc7IpKETboki3qmC9WCzqF4nim"
+    },
+    {
+      "prefix": "53",
+      "id": "1ZIFuDGh4VxAiZu22Z_ri4-GYVxvry8nR"
+    },
+    {
+      "prefix": "54",
+      "id": "1g91g9udu5YvNDtUUV-ec3fIz52gni6z2"
+    },
+    {
+      "prefix": "55",
+      "id": "1-P1vfcYmuglzAr5IopTRRk6giFGMd25o"
+    },
+    {
+      "prefix": "57",
+      "id": "1LhO2e3BOmvr51tA1qsvGAFa9TZFZRiig"
+    },
+    {
+      "prefix": "58",
+      "id": "1IAIK29SJaOvqGvsXvFXHsgk9zy0xHXKC"
+    },
+    {
+      "prefix": "59",
+      "id": "1u3mK9a3wXg5z8SsRtMokMkxR4kcnWHun"
+    },
+    {
+      "prefix": "5c",
+      "id": "1ylFVaYtB0AutDDq9ZOl1dAG9kQtJljG2"
+    },
+    {
+      "prefix": "5d",
+      "id": "1vTq61gzy728qZJooYbaleBieFmc0fEPv"
+    },
+    {
+      "prefix": "5e",
+      "id": "1QLMDOxIfNgBODQHolLNNj0n8bClTlA4p"
+    },
+    {
+      "prefix": "60",
+      "id": "15Ra0mPayhGLLvOv7IHHOcSnSXryqnn5a"
+    },
+    {
+      "prefix": "61",
+      "id": "1npKmF8eXDdccwtn0LMRIivB8v_EmKMdF"
+    },
+    {
+      "prefix": "62",
+      "id": "1dQirdhtpIWYyy_TzYyNxdAcf5wmLHFo9"
+    },
+    {
+      "prefix": "63",
+      "id": "198_f8ldBpZUA-QnuTN9JAS_lJKYwn4NN"
+    },
+    {
+      "prefix": "64",
+      "id": "1l0tR2Jk50OAwHze9ZE2a8QAysqqliyhd"
+    },
+    {
+      "prefix": "65",
+      "id": "1D-RXFKz8Z703CbZRy1umju5K0cptwaa9"
+    },
+    {
+      "prefix": "67",
+      "id": "1PFWFgcTxl5tNNQx2EKw5uR-21Rl1Rvfr"
+    },
+    {
+      "prefix": "68",
+      "id": "1c64NERB7PAQlT4v0pA99pMt24KTd4mPT"
+    },
+    {
+      "prefix": "69",
+      "id": "1-N9q0sSWNmdRWw_a9CXpRMnWwOZXWDWK"
+    },
+    {
+      "prefix": "6a",
+      "id": "1LRVoZqll-1jyTjtkkB_g9mwTiZOnXJmI"
+    },
+    {
+      "prefix": "6c",
+      "id": "1O35KFbxqIC7Cw_w3Yqk_aOXNsWeSrlDO"
+    },
+    {
+      "prefix": "6e",
+      "id": "1HaLLao9JWEPP-ipxfveaWEVMdYfVVhV6"
+    },
+    {
+      "prefix": "71",
+      "id": "1zcle_EbI9XMmfHMk5IuIyHUxhjux4GRo"
+    },
+    {
+      "prefix": "72",
+      "id": "15KL2OLhkZ5KpxScms9T3-LQ01syfAFRf"
+    },
+    {
+      "prefix": "73",
+      "id": "1ZTNEjcFiIe-id4aBR9zccak6an3GN-gC"
+    },
+    {
+      "prefix": "75",
+      "id": "1JyoWcTZC08Q-CgMmJ6e0BUhQAPRUdAR5"
+    },
+    {
+      "prefix": "76",
+      "id": "1YrtrXNr5v_eIhV0RH1lDJALtJaM1DIKP"
+    },
+    {
+      "prefix": "77",
+      "id": "1PN5IKd_e6E1O7Qz-b6dtwQieke1vT2NF"
+    },
+    {
+      "prefix": "78",
+      "id": "1ig1A7yOApYYSy2GGCOMI3gLQ4W5JE3jB"
+    },
+    {
+      "prefix": "79",
+      "id": "1HDIdG0Pk8INrSIMYXX7gN0WQms9tsofX"
+    },
+    {
+      "prefix": "7c",
+      "id": "1mvH5H1y-IE20st_chVb1NjAopUYnI4tk"
+    },
+    {
+      "prefix": "7d",
+      "id": "1a4Hqs1CM-8hMeRj0sT8jJ05noB1dKwUI"
+    },
+    {
+      "prefix": "7e",
+      "id": "15gCN55NTKdT22XrYATe_JZEls5GAMzfQ"
+    },
+    {
+      "prefix": "80",
+      "id": "1Ez46V5Q5lBhg4fm2MSAGeXJ8n_pyPPHS"
+    },
+    {
+      "prefix": "81",
+      "id": "1Tn21E-W1roZyxfQNGt7jUt5dD-i-0w2N"
+    },
+    {
+      "prefix": "82",
+      "id": "1cvnyaLBwYGp88FtoenfGq5lhcUHXLD9V"
+    },
+    {
+      "prefix": "83",
+      "id": "1XObb_rURPXzGD-uPxtvQ9J7fSkXVHcs-"
+    },
+    {
+      "prefix": "86",
+      "id": "1GE98jXJ5scUpXR3mcR3rD7nWDx11caiP"
+    },
+    {
+      "prefix": "88",
+      "id": "1WCM02KHNEZ3_FiUpjYInOzkTqVTc-fBE"
+    },
+    {
+      "prefix": "89",
+      "id": "1wRBQWu4OcHgp8s-4I8x9t7vg67YsA-Gg"
+    },
+    {
+      "prefix": "8a",
+      "id": "1k8MHW61sqohtzMJkfrN30RPd8UDYYXzF"
+    },
+    {
+      "prefix": "8b",
+      "id": "1acx2nwWjjw1uVGok99dAsQV15KUWrUQ9"
+    },
+    {
+      "prefix": "90",
+      "id": "1Ue4nnsYG2ZEmFtWOfagQhOC-4QHD2uip"
+    },
+    {
+      "prefix": "92",
+      "id": "19x5Ew3MJJZUNCpm5Qx8d3ZCwJ5mdOFMG"
+    },
+    {
+      "prefix": "93",
+      "id": "1tn6c101F8HhowMqqr67JS8Ij-QlrjqE7"
+    },
+    {
+      "prefix": "98",
+      "id": "1cj2yn2mS0zEvudWBXKShp2zcs0X7Vyzp"
+    },
+    {
+      "prefix": "9a",
+      "id": "1B_r-zittvPlWCFdznCy8kDzxd6loVyJc"
+    },
+    {
+      "prefix": "9b",
+      "id": "1cNg2VLyPp-mLTNNltMons9UhdfFZBjlG"
+    },
+    {
+      "prefix": "9c",
+      "id": "1g2ftTIDi4zVs9MnCvaxrpZDYsLAWDmIo"
+    },
+    {
+      "prefix": "9d",
+      "id": "15MdIZImKgI54fUMZgNzNSWVn7JQCvxyM"
+    },
+    {
+      "prefix": "9f",
+      "id": "1UFejVpZF1_4q83U6jUXYPRuUYbwk9WsI"
+    },
+    {
+      "prefix": "a2",
+      "id": "1Kpfna2dyf-S-A7l5GJ14UOje0snDr0xy"
+    },
+    {
+      "prefix": "a3",
+      "id": "1gzIyv1N8vLdOqWJVAsZVmvOX_ZUpCdRz"
+    },
+    {
+      "prefix": "a4",
+      "id": "1X9SmKZ3l0v8sf_ubGPuX7nsDG2LhXDfp"
+    },
+    {
+      "prefix": "a6",
+      "id": "1kZYGlqHMNJSCxE481nAMV487nDk_Z8Js"
+    },
+    {
+      "prefix": "ab",
+      "id": "1oX-tM8NbXXY7kO5nwFZ9XvvQ46KLUshd"
+    },
+    {
+      "prefix": "ac",
+      "id": "1tnmZmcubzCjKfkPWGGfICo3Be18lWfuP"
+    },
+    {
+      "prefix": "ad",
+      "id": "1Vxk3eLnxEJaHuhuxb3RKgTvfFe-nqwv6"
+    },
+    {
+      "prefix": "ae",
+      "id": "1sYwmWAwO-FnKxzfLRNPhJTwPYa6LpF5t"
+    },
+    {
+      "prefix": "af",
+      "id": "1_tnfRap61kWQP6UyKl9po7rhTsIkaNS7"
+    },
+    {
+      "prefix": "b0",
+      "id": "1wCi6N3PAYKmApnXAL3VtdJA3q8yy07U-"
+    },
+    {
+      "prefix": "b1",
+      "id": "1FtzGRkqBO_C77D_ZWxKbMjaHyOFBV-A2"
+    },
+    {
+      "prefix": "b4",
+      "id": "1HsXtwBAwUvUq8gZuqkXcVYmuHkfXPLPs"
+    },
+    {
+      "prefix": "b5",
+      "id": "1VZfMcDcrSdxbMa3qjAYxlpz6_u_cS4B6"
+    },
+    {
+      "prefix": "b8",
+      "id": "1fAbCAt8R7p0RHs_kklkAcFH48RsCsvmB"
+    },
+    {
+      "prefix": "ba",
+      "id": "1i6DJ6sVZx6JPhvtw0VtyJCbnxFIVgesd"
+    },
+    {
+      "prefix": "bb",
+      "id": "1IUCpW03Cv9iMmovaMwp_4SorFlq5-Oue"
+    },
+    {
+      "prefix": "bc",
+      "id": "1uhWNCkFw8GK5whjktUKgTLfwSdYuULio"
+    },
+    {
+      "prefix": "bd",
+      "id": "1dCDpws5gX0dOeZZyLb1IRHgxrPLXAgCq"
+    },
+    {
+      "prefix": "be",
+      "id": "1iHLR763MqGj0mc8S5p4TptfhlRZmPc-z"
+    },
+    {
+      "prefix": "c0",
+      "id": "1VXxWPKrQg_Te3gwfs0wly5tYpwdxm6Fh"
+    },
+    {
+      "prefix": "c1",
+      "id": "19D-x96lHZ-sv-dJn9OSskAgPlicGowts"
+    },
+    {
+      "prefix": "c2",
+      "id": "1IORVPjorR6uJrLjx_7GbAshUNlWb7OPq"
+    },
+    {
+      "prefix": "c3",
+      "id": "1WDNWIgNz47GU5zkuNDx90AM6gwlqvXzx"
+    },
+    {
+      "prefix": "c4",
+      "id": "1WDNUPIW2ZlGpcS-D6AnGZzSw29vqSsLT"
+    },
+    {
+      "prefix": "c5",
+      "id": "1W3XQ_x3NCIMl6uNNvJRkpLo6N4FIhrng"
+    },
+    {
+      "prefix": "c7",
+      "id": "1e6_EP-FvWaX8RvaccOFNytaLBIYLiRkg"
+    },
+    {
+      "prefix": "c8",
+      "id": "1w6oo6b09Ke_r1bFtwr1Fx-9Iv8kBh5Zl"
+    },
+    {
+      "prefix": "cb",
+      "id": "1lLR4D4v2gAWZpqIwAtzwgu813XBnAOeF"
+    },
+    {
+      "prefix": "d0",
+      "id": "1cPUUFktclxTnUx9AR5dZ_-tzYang2lI1"
+    },
+    {
+      "prefix": "d2",
+      "id": "1XCcGGYdnOKwCZ8K4YLlCAPWUsqa4XX4y"
+    },
+    {
+      "prefix": "d4",
+      "id": "1T9mkcIJJb5wHR0IdcaDKWtNGvbb1T43i"
+    },
+    {
+      "prefix": "d6",
+      "id": "1xm-I0Q2NOMofyz5AxFNE2V08E8VO-eY8"
+    },
+    {
+      "prefix": "d8",
+      "id": "1q7jRz0soBN6vZPulcPNxqli8njAOI1mk"
+    },
+    {
+      "prefix": "d9",
+      "id": "1cgtyb4csUf3_BOGbtlSCxtjTBU47vwhF"
+    },
+    {
+      "prefix": "db",
+      "id": "1IwgJyde5mCNJC_90xlzPVe8GYVA74Odv"
+    },
+    {
+      "prefix": "dc",
+      "id": "1x_KLLh416txvqbSY3GsfUyNYCl6dMR63"
+    },
+    {
+      "prefix": "de",
+      "id": "1f6L51CEUOc6s2zD1kx5XMx_6vFFSvsnY"
+    },
+    {
+      "prefix": "df",
+      "id": "18sbWn7AyK2dVG8gGChSNjKyfok8604ve"
+    },
+    {
+      "prefix": "e0",
+      "id": "1la5Y_BHAqADELSWEv0fwjyrWxgRByUtn"
+    },
+    {
+      "prefix": "e1",
+      "id": "1pUUXZU6aqWFYvZvMqRe2uuD1pRwVR7Dc"
+    },
+    {
+      "prefix": "e2",
+      "id": "1WKOx1S4RbBH5kQGG2nEmmkVbZZdsCABj"
+    },
+    {
+      "prefix": "e7",
+      "id": "13leSqgB_nCZDSoiyXV379a1qAzY7oq28"
+    },
+    {
+      "prefix": "e9",
+      "id": "1Lu4kQSLOXfTRSoh9cpRRaI5lKHyT44HA"
+    },
+    {
+      "prefix": "ea",
+      "id": "1AcUX2oGhDL9frEY1S7Ho0TnBwlNCBbA5"
+    },
+    {
+      "prefix": "ed",
+      "id": "1diZnFfFFwNd3wPw5Ax0nH1ZP0i49kWFw"
+    },
+    {
+      "prefix": "f0",
+      "id": "1gdXnkOeo7lCXD5TwkIj6LGyHtf5k1NCB"
+    },
+    {
+      "prefix": "f1",
+      "id": "1weJlJdETcMVQODJ5FM_nk9FOA0D8ON0p"
+    },
+    {
+      "prefix": "f2",
+      "id": "1DtvdSx0gnOb63s91B_qY8WPk333ATSW3"
+    },
+    {
+      "prefix": "f8",
+      "id": "1GU1ldwBLL5IKZlk56KmZ-8X_2BDOjqjf"
+    },
+    {
+      "prefix": "f9",
+      "id": "1lwc5ZUP_k6cYUp36FukdTlUAPh1cJdmM"
+    },
+    {
+      "prefix": "fa",
+      "id": "1ZZqnq6r4slSfOVH8iK5Dsdb43jJ4R87m"
+    },
+    {
+      "prefix": "fd",
+      "id": "1GaRW60Q71VdvU8ASNh946gngezhoUhT0"
+    },
+    {
+      "prefix": "fe",
+      "id": "1H68_f9hgugAbtniilcwQSPAlgUzk29E4"
+    },
+    {
+      "prefix": "ff",
+      "id": "1nmxPF8TJTzGfwh_16DLeTGbX7BrV9ZYN"
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "entries": [
+    {
+      "original_path": "C:\\PROYECTOS\\1. PROYECTOS PRIORITARIOS\\5. CUSTOSZ\\0. CUSTOSZ  - OPERADOR\\MISSIONS\\METAOS_S08_FULL_MISSION_MIS-a8818ca7f6444b469d95\\02_KNOWLEDGE\\E809_HYPOTHESES\\HYPOTHESIS_OBJECTS.jsonl.gz",
+      "relative_payload": "18_HASH_INDEX/OBJECTS/19/193817002ecc02b71410d93cb1134ef681c55f127ac3988ec676f0fb7f1bfa98",
+      "sha256": "193817002ecc02b71410d93cb1134ef681c55f127ac3988ec676f0fb7f1bfa98",
+      "validation_state": "PERSISTED_PRE_E822_SNAPSHOT"
+    },
+    {
+      "original_path": "C:\\PROYECTOS\\1. PROYECTOS PRIORITARIOS\\5. CUSTOSZ\\0. CUSTOSZ  - OPERADOR\\MISSIONS\\METAOS_S08_FULL_MISSION_MIS-a8818ca7f6444b469d95\\METAOS_S08_E809_VALIDATION.json",
+      "relative_payload": "18_HASH_INDEX/OBJECTS/4a/4a3983130240ca15bf7dc1acca4b1523eac7dae5bc228a35157fff46e6fd987c",
+      "sha256": "4a3983130240ca15bf7dc1acca4b1523eac7dae5bc228a35157fff46e6fd987c",
+      "validation_state": "PASS"
+    },
+    {
+      "original_path": "C:\\PROYECTOS\\1. PROYECTOS PRIORITARIOS\\5. CUSTOSZ\\0. CUSTOSZ  - OPERADOR\\MISSIONS\\METAOS_S08_FULL_MISSION_MIS-a8818ca7f6444b469d95\\02_KNOWLEDGE\\E809_HYPOTHESES\\OBSERVATION_TO_HYPOTHESIS.jsonl.gz",
+      "relative_payload": "18_HASH_INDEX/OBJECTS/77/7711253d21e05f27bf87f81a59e55e9f19c7b4b77fd5051c251ad5f3f454f56b",
+      "sha256": "7711253d21e05f27bf87f81a59e55e9f19c7b4b77fd5051c251ad5f3f454f56b",
+      "validation_state": "PERSISTED_PRE_E822_SNAPSHOT"
+    },
+    {
+      "original_path": "C:\\PROYECTOS\\1. PROYECTOS PRIORITARIOS\\5. CUSTOSZ\\0. CUSTOSZ  - OPERADOR\\MISSIONS\\METAOS_S08_FULL_MISSION_MIS-a8818ca7f6444b469d95\\02_KNOWLEDGE\\METAOS_E809_HYPOTHESIS_REGISTRY.json",
+      "relative_payload": "18_HASH_INDEX/OBJECTS/81/813eddbcb5fa44fd1c1cebfaf4c23495f54eb852a73bd57bf0dbd832e01bc3a1",
+      "sha256": "813eddbcb5fa44fd1c1cebfaf4c23495f54eb852a73bd57bf0dbd832e01bc3a1",
+      "validation_state": "PERSISTED_PRE_E822_SNAPSHOT"
+    },
+    {
+      "original_path": "C:\\PROYECTOS\\1. PROYECTOS PRIORITARIOS\\5. CUSTOSZ\\0. CUSTOSZ  - OPERADOR\\MISSIONS\\METAOS_S08_FULL_MISSION_MIS-a8818ca7f6444b469d95\\02_KNOWLEDGE\\E809_HYPOTHESES\\E809_NATIVE_MEMORY.jsonl",
+      "relative_payload": "18_HASH_INDEX/OBJECTS/bc/bc14fee244a188efd198e10f1a5cb16507327eb02afbe49ce758b424df27ff5f",
+      "sha256": "bc14fee244a188efd198e10f1a5cb16507327eb02afbe49ce758b424df27ff5f",
+      "validation_state": "PERSISTED_PRE_E822_SNAPSHOT"
+    },
+    {
+      "original_path": "C:\\PROYECTOS\\1. PROYECTOS PRIORITARIOS\\5. CUSTOSZ\\0. CUSTOSZ  - OPERADOR\\MISSIONS\\METAOS_S08_FULL_MISSION_MIS-a8818ca7f6444b469d95\\02_KNOWLEDGE\\E809_HYPOTHESES\\HYPOTHESIS_SOURCE_INDEX.json",
+      "relative_payload": "18_HASH_INDEX/OBJECTS/d0/d0be29626c43b97fa75d5d694670a49a64c60bb7c5041cdbdbb5e717243d052f",
+      "sha256": "d0be29626c43b97fa75d5d694670a49a64c60bb7c5041cdbdbb5e717243d052f",
+      "validation_state": "PERSISTED_PRE_E822_SNAPSHOT"
+    }
+  ],
+  "entry_count": 6,
+  "index_digest": "4b64223cd864e78c2dfe9c98d682a6272329f9ec60e1a10237d371f6d693f50b",
+  "no_semantic_promotion": true,
+  "payload_store_relative": "../../18_HASH_INDEX/OBJECTS",
+  "schema": "metaos.semantic-container.domain-index/v1",
+  "section": "04_HYPOTHESES"
+}

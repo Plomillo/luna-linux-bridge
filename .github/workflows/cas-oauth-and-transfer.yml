@@ -1,0 +1,83 @@
+name: "CAS: autorizar Google Drive y subir los 248 objetos pendientes"
+on:
+  push:
+    branches:
+      - staging/contenedor-semantico-e826-20260927
+    paths:
+      - .github/workflows/cas-oauth-and-transfer.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: "louksna-cas-oauth-and-transfer"
+  cancel-in-progress: false
+
+jobs:
+  authorize-and-transfer:
+    if: >-
+      github.event.head_commit.message ==
+      'ci(CAS): iniciar OAuth Google Drive de solo lectura y transferencia autorizada'
+    runs-on: [self-hosted, linux, x64, luna-aux]
+    timeout-minutes: 120
+    steps:
+      - name: Obtener codigo fijado por commit desde la rama aislada
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+          lfs: false
+
+      - name: Verificar alcance y herramientas ya instaladas
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$GITHUB_REPOSITORY" = "Plomillo/luna-linux-bridge"
+          test "$GITHUB_REF" = "refs/heads/staging/contenedor-semantico-e826-20260927"
+          export PATH="$HOME/.local/bin:$PATH"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          command -v python3
+          command -v git
+          command -v git-lfs
+          command -v rclone
+          test -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}"
+          bash -n scripts/semantic_container/authorize_cas_drive.sh
+          python3 -B -m py_compile scripts/semantic_container/import_cas.py
+          printf 'PRECHECK=PASS; RUNNING_ON_SELF_HOSTED_LOUKSNA\n'
+
+      - name: Solicitar aprobación OAuth en el navegador de KDE
+        shell: bash
+        run: bash scripts/semantic_container/authorize_cas_drive.sh
+
+      - name: Descargar una sola vez, verificar 252 SHA-256 e importar a Git LFS
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export PATH="$HOME/.local/bin:$PATH"
+          python3 -B scripts/semantic_container/import_cas.py \
+            --rclone-source "louksna_cas_drive:" \
+            --allow-network --mode import --authorize-import
+          echo "IMPORT_STAGED_ALL_CAS_SHA256_PASS"
+
+      - name: Registrar commit y subir objetos LFS al repositorio privado
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export PATH="$HOME/.local/bin:$PATH"
+          test "$(git branch --show-current)" = "staging/contenedor-semantico-e826-20260927"
+          git config user.name "louksna-cas-transfer[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -c commit.gpgsign=false commit \
+            -m "feat(CAS): subir 252 objetos verificados con Git LFS"
+          git lfs push origin HEAD
+          git push origin HEAD:refs/heads/staging/contenedor-semantico-e826-20260927
+          echo "GIT_LFS_TRANSFER_COMPLETED_NO_G23_NO_G24" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Archivar informe sin credenciales
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: semantic-cas-import-report
+          path: artifacts/semantic-container/CAS_IMPORT_REPORT.json
+          if-no-files-found: error
+          retention-days: 30

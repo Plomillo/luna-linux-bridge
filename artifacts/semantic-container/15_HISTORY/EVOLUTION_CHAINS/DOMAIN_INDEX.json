@@ -1,0 +1,16 @@
+{
+  "entries": [
+    {
+      "original_path": "C:\\PROYECTOS\\1. PROYECTOS PRIORITARIOS\\5. CUSTOSZ\\0. CUSTOSZ  - OPERADOR\\MISSIONS\\METAOS_S08_FULL_MISSION_MIS-a8818ca7f6444b469d95\\02_KNOWLEDGE\\E817_CONTRADICTION_REGISTRATION_R2\\CONTRADICTION_REGISTRY.jsonl.gz",
+      "relative_payload": "18_HASH_INDEX/OBJECTS/9c/9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "validation_state": "PERSISTED_PRE_E822_SNAPSHOT"
+    }
+  ],
+  "entry_count": 1,
+  "index_digest": "e2add6576cb040bf41080451d38b004f7d089623f13c04ccf9735de950f58d62",
+  "no_semantic_promotion": true,
+  "payload_store_relative": "../../18_HASH_INDEX/OBJECTS",
+  "schema": "metaos.semantic-container.domain-index/v1",
+  "section": "15_HISTORY/EVOLUTION_CHAINS"
+}
