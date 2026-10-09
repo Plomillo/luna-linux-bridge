@@ -142,7 +142,7 @@ jobs:
                   for job in observed_jobs:
                       name = job.get("name", "")
                       import re
-                      match = re.search(r"CP-(\\d\\d)", name)
+                      match = re.search(r"CP-(\d\d)", name)
                       if match:
                           gate_rows.append({
                               "checkpoint": "CP-" + match.group(1),
