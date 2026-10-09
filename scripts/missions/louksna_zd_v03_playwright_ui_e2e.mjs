@@ -29,6 +29,7 @@ const check = (name, condition, detail = "") => {
   if (!condition) failures.push(name);
 };
 try {
+  console.log("CP-07 E2E: starting bounded Vite server");
   // Do not keep child stdout/stderr pipes open: npm/Vite can leave inherited
   // handles alive after the E2E report is written, causing the CI step to hang.
   server = spawn("npm", ["run", "dev", "--", "--host", "127.0.0.1", "--port", "4173", "--strictPort"], {
@@ -41,10 +42,19 @@ try {
     await delay(1000);
   }
   if (!ready) throw new Error("Vite readiness timeout at " + baseURL);
+  console.log("CP-07 E2E: Vite ready; launching pinned Chromium");
 
-  browser = await chromium.launch({ headless: true });
+  // Bound browser startup independently; CI must produce failure evidence rather
+  // than hanging until the outer workflow timeout.
+  browser = await chromium.launch({
+    headless: true,
+    timeout: 20000,
+    args: ["--no-sandbox", "--disable-dev-shm-usage"]
+  });
+  console.log("CP-07 E2E: Chromium launched; initializing page");
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
   const page = await context.newPage();
+  console.log("CP-07 E2E: page initialized; beginning UI assertions");
   page.setDefaultTimeout(8000);
   page.setDefaultNavigationTimeout(15000);
   const pageErrors = [];
