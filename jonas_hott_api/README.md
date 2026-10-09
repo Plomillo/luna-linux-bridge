@@ -33,6 +33,8 @@ Balance submissions require a separate bearer token for each authorized responde
 
 The values above are placeholders only. Do not deploy the example budget values or any sample credential.
 
+Install, health-check, backup, restore, and rollback instructions: [Jonas family deployment guide](../docs/jonas-family-deployment.md). The SQLite backup/restore helper is `scripts/missions/backup_restore_jonas_state.py`; restore requires both explicit authorization and confirmation that the service is stopped.
+
 ## Family-confirmed shared balance observations (initial implementation)
 
 The service stores a shared, append-only history of balance observations and model-catalog snapshots in the configured SQLite database. The balance workflow is to ask each authorized family member directly for the balance they can currently see; there is no integration with a 1min.AI balance API.
