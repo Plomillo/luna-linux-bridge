@@ -141,6 +141,27 @@ jobs:
           assert enabled.returncode != 0, "package unexpectedly enabled the service"
           print("PROVISIONER_INTEGRATION=PASS; SERVICE_ACTIVE=false; SERVICE_ENABLED=false")
           PY
+          # Remove only state created by this test, then inject an OpenSSL failure
+          # to prove that partial provisioning rolls back on the real package script.
+          cleanup_provisioning_test
+          trap - EXIT
+          FAIL_BIN="$(mktemp -d)"
+          printf '#!/bin/sh\nexit 71\n' > "$FAIL_BIN/openssl"
+          chmod 0755 "$FAIL_BIN/openssl"
+          if sudo env PATH="$FAIL_BIN:$PATH" SUDO_UID="$OWNER_UID" SUDO_GID="$OWNER_GID" \
+              /usr/lib/louksna/bridge/provision-mtls-local.sh; then
+            echo "::error::Injected OpenSSL failure was not propagated"
+            exit 1
+          else
+            failure_rc="$?"
+            test "$failure_rc" -eq 71
+          fi
+          test ! -e /etc/louksna
+          test ! -L /etc/louksna
+          test ! -e "$OWNER_HOME/.config/louksna/mtls"
+          rmdir "$OWNER_HOME/.config/louksna" 2>/dev/null || true
+          rm -rf "$FAIL_BIN"
+          echo "PROVISIONER_FAULT_INJECTION=PASS; PARTIAL_STATE_ROLLED_BACK=true"
       - name: Build evidence
         run: |
           python3 - <<'PY'
