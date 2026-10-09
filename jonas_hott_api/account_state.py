@@ -226,21 +226,40 @@ def latest_credit_observation() -> dict:
         freshness = _freshness(row["observed_at_utc"])
         result = dict(row)
         result.update(freshness)
-        # Fail closed: distinct reported values mean the shared pool is unconfirmed.
-        if freshness["freshness"] == "FRESH":
-            with _db() as conn:
-                recent = conn.execute(
-                    "SELECT DISTINCT balance_credits FROM credit_observations WHERE shared_pool_id=? AND unit=?",
-                    (row["shared_pool_id"], row["unit"]),
-                ).fetchall()
-            if len({item["balance_credits"] for item in recent}) > 1:
-                result.update({"status": "CONFLICTING", "balance_credits": None,
-                               "confirmed_balance_credits": None, "certified": False,
-                               "conflict_resolution_required": True})
-                return result
+        # Compare each respondent's latest report for the ONE shared family pool.
+        # Older observations remain in history but do not permanently block a later
+        # reconfirmation. Any disagreement among current reports fails closed.
+        with _db() as conn:
+            current_reports = conn.execute("""
+                SELECT c.actor, c.balance_credits, c.observed_at_utc, c.recorded_at_utc
+                FROM credit_observations c
+                JOIN (
+                    SELECT actor, MAX(recorded_at_utc) AS latest_recorded
+                    FROM credit_observations
+                    WHERE shared_pool_id=? AND unit=?
+                    GROUP BY actor
+                ) latest
+                  ON latest.actor=c.actor AND latest.latest_recorded=c.recorded_at_utc
+                WHERE c.shared_pool_id=? AND c.unit=?
+            """, (row["shared_pool_id"], row["unit"], row["shared_pool_id"], row["unit"])).fetchall()
+        distinct_balances = {item["balance_credits"] for item in current_reports}
+        if len(distinct_balances) > 1:
+            result.update({
+                "status": "CONFLICTING",
+                "balance_credits": None,
+                "confirmed_balance_credits": None,
+                "certified": False,
+                "shared_pool": True,
+                "conflict_resolution_required": True,
+                "current_report_count": len(current_reports),
+                "respondents_reporting": sorted({item["actor"] for item in current_reports}),
+            })
+            return result
         result["status"] = "OBSERVED"
         result["balance_is_estimate"] = False
         result["shared_pool"] = True
+        result["current_report_count"] = len(current_reports)
+        result["respondents_reporting"] = sorted({item["actor"] for item in current_reports})
         result["certified"] = False
         return result
     except (sqlite3.Error, OSError):
@@ -296,7 +315,7 @@ def record_model_catalog(payload: CatalogSnapshot) -> dict:
             "model_count": len(payload.models),
             "canonical_catalog_sha256": computed,
             "recorded": True,
-            "provider_catalog_verified": payload.source_kind == "official_api",
+            "provider_catalog_verified": False,  # Source label alone is not independent verification.
             "certified": False,
         }
     except HTTPException:
