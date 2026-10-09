@@ -105,7 +105,7 @@ jobs:
         run: |
           mkdir -p dist/debian
           cp ../louksna-linux-bridge_0.4.0-3_all.deb dist/debian/
-          cp debian-package.sha256 debian-package-evidence.json lintian.txt dist/debian/
+          cp debian-package.sha256 debian-package-evidence.json lintian.txt lintian.exit dist/debian/
 
       - name: Upload Debian package and evidence
         uses: actions/upload-artifact@v4
@@ -129,4 +129,3 @@ jobs:
             echo "::error::lintian reported an error; package is not releasable."
             exit 1
           fi
-            dist/debian/lintian.exit
