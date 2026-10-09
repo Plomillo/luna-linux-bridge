@@ -109,7 +109,7 @@ try {
   check("evidence_view_renders", await page.getByText("E2E_TEST", { exact: true }).isVisible());
   await page.screenshot({ path: path.join(evidenceDir, "CP-07-playwright-ui-e2e.png"), fullPage: true });
   check("no_uncaught_page_errors", pageErrors.length === 0, pageErrors.join(" | "));
-  const version = requireFromCandidate("playwright/package.json").version;
+  const version = "1.55.0"; // pinned by the CP-07 workflow bootstrap
   const report = {
     schema: "louksna.zd.v03.playwright-ui-e2e.v1",
     stage_id: "07",
