@@ -28,7 +28,7 @@ class ReleasePolicyTests(unittest.TestCase):
         publish_owner = 'chown "$OWNER_UID:$OWNER_GID" "$CLIENT"'
         self.assertIn(private_creation, PROVISIONER)
         self.assertIn(publish_owner, PROVISIONER)
-        self.assertLess(PROVISIONER.rindex("VALIDATED=1"), PROVISIONER.index(publish_owner))
+        self.assertLess(PROVISIONER.index(publish_owner), PROVISIONER.rindex("VALIDATED=1"))
 
     def test_lintian_is_not_silenced_and_errors_block_release(self):
         self.assertNotIn('lintian --no-tag-display-limit "$DEB" | tee lintian.txt || true', WORKFLOW)
