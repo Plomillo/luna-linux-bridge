@@ -88,3 +88,7 @@ Se corrigió además el orden del provisionador: VALIDATED solo se establece des
 El inventario técnico nuevo está en [PACKAGE_COMPONENT_INVENTORY.md](PACKAGE_COMPONENT_INVENTORY.md). Enumera los archivos que se empaquetan y las dependencias declaradas sin fingir que el inventario técnico equivale a autorización legal. No se encontró voz/modelo TTS en los archivos copiados por las reglas del paquete. La licencia de una voz ajena a este paquete no acredita la licencia del código incluido.
 
 **Estado de evidencia:** la ejecución CI que incluye estas pruebas aún debe revisarse. No se declara que hayan pasado hasta observar su resultado real. El bloqueo legal DEP-5 y el contacto de mantenimiento válido continúan abiertos; no se habilita publicación, activación ni G23/G24 por la incorporación de pruebas.
+
+### Ajuste adicional de runtime
+
+La unidad ahora declara `StateDirectory=louksna/remote-bridge` y `StateDirectoryMode=0700`. Esto hace explícita la creación del directorio de estado administrado por systemd bajo /var/lib, en vez de depender de que una ruta permitida por `ReadWritePaths` exista previamente. La directiva se somete a `systemd-analyze verify` en CI y queda incluida en la prueba de regresión; su funcionamiento efectivo todavía debe confirmarse en VM.
