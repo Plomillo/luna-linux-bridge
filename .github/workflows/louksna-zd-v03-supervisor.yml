@@ -42,7 +42,7 @@ jobs:
           set -Eeuo pipefail
           mkdir -p evidence/zona-directiva-v03
           python3 - <<'PY'
-          import datetime, hashlib, json, os, pathlib, urllib.error, urllib.request
+          import datetime, hashlib, json, os, pathlib, urllib.error, urllib.parse, urllib.request
           repo = os.environ["GITHUB_REPOSITORY"]
           token = os.environ["GH_TOKEN"]
           branch = os.environ["TARGET_BRANCH"]
