@@ -1,0 +1,17 @@
+{
+  "artifact": "LOUKSNAMEJORADA.md",
+  "source": "user-controlled Google Drive original; exact file ID recorded privately in workflow",
+  "source_size_bytes": 11542631,
+  "source_sha256": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51",
+  "source_lines": 304498,
+  "destination": "staging/architecture-louksnamejorada-20260927/LOUKSNAMEJORADA.md",
+  "transfer": "byte-exact; no transformations or normalization",
+  "source_integrity_gate": "SHA256_AND_SIZE_AND_LINES_VERIFIED",
+  "canonical_authority": "Louksna.md",
+  "derivative_status": "EVIDENCED; global semantic equivalence and operational certification remain UNVERIFIED",
+  "automatic_certification": false,
+  "g23_granted": false,
+  "g24_granted": false,
+  "not_merged_to_main": true,
+  "recorded_utc": "2026-09-28T01:45:44.073940+00:00"
+}
