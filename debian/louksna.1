@@ -1,0 +1,31 @@
+.TH LOUKSNA 1 "October 2026" "louksna-linux-bridge 0.4.0-3" "User Commands"
+.SH NAME
+louksna \- open the local LOUKSNA Linux Bridge status and diagnostics panel
+.SH SYNOPSIS
+.B louksna
+.SH DESCRIPTION
+.B louksna
+opens the local graphical status and diagnostics panel for the LOUKSNA Linux Bridge package.
+The panel displays the status of the mTLS systemd service, whether the local mTLS configuration exists, and diagnostic information. It provides links to the installed mTLS gateway and local transport documentation.
+.PP
+The panel is a read-only diagnostics interface. It is not a chat client, certification interface, remote privileged command broker, or service provisioning utility. It does not itself create certificates, private keys, trust roots, or remote ingress.
+.SH SECURITY
+Package installation is separate from explicit local certificate provisioning. Do not expose the development gateway to an untrusted network. The service must remain disabled and inactive until the owner completes the separate provisioning and validation process.
+.PP
+The package does not establish G23 independent validation or G24 certification. A displayed status is not certification evidence.
+.SH FILES
+.TP
+.B /etc/louksna/remote-bridge/mtls.json
+Local mTLS configuration, created only by the separate provisioning utility.
+.TP
+.B /usr/share/louksna/MTLS_READONLY_GATEWAY.md
+Installed mTLS gateway documentation.
+.TP
+.B /usr/share/louksna/LIVE_TRANSPORT.md
+Installed local transport documentation.
+.SH SEE ALSO
+.BR systemctl (1),
+.BR systemd (1),
+.BR openssl (1)
+.SH AUTHOR
+LOUKSNA Project maintainers; contact and redistribution rights remain subject to repository release clearance.

@@ -325,7 +325,11 @@ jobs:
           if report.get("source_coverage", {}).get("source_mapping_complete") is not True:
               print("::error::DISTRIBUTION_GATE=HOLD; source-to-package mapping is incomplete")
               sys.exit(1)
-          print("Source inventory and package mapping are structurally complete; this does not establish legal rights.")
+          inventory=report.get("binary_package_inventory", {})
+          if inventory.get("inventory_complete") is not True or inventory.get("unmapped_package_files"):
+              print("::error::DISTRIBUTION_GATE=HOLD; binary package contains unmapped files")
+              sys.exit(1)
+          print("Source-to-package mapping and complete binary/control file inventory are structurally complete; this does not establish legal rights.")
           PY
           if [ ! -s debian/copyright ]; then
             echo "::error::DISTRIBUTION_GATE=HOLD; debian/copyright is absent."

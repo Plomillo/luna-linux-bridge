@@ -174,6 +174,7 @@ def binary_inventory(package: Path, root: Path, source_rows: list[dict]) -> dict
 
         explicit = {
             "usr/bin/louksna": ("debian/louksna-linux-bridge.louksna", "SOURCE_FILE"),
+            "usr/share/man/man1/louksna.1.gz": ("debian/louksna.1", "GENERATED_COMPRESSED_FROM_SOURCE"),
             "usr/share/applications/louksna-linux-bridge.desktop": ("debian/louksna-linux-bridge.desktop", "SOURCE_FILE"),
             "usr/share/doc/louksna-linux-bridge/README.md": ("bridge/README.md", "SOURCE_FILE"),
             "usr/share/doc/louksna-linux-bridge/MTLS_READONLY_GATEWAY.md": ("bridge/MTLS_READONLY_GATEWAY.md", "SOURCE_FILE"),
@@ -335,8 +336,8 @@ def main() -> int:
         "binary_package_inventory": binary_inventory_report,
         "source_coverage": {
             "source_file_count": len(source_rows),
-            "expected_source_file_count_from_prior_review": 31,
-            "count_matches_prior_review": len(source_rows) == 31,
+            "expected_source_file_count_current_package_rules": 31,
+            "count_matches_current_inventory": len(source_rows) == 31,
             "files": source_rows,
             "expected_installed_paths_missing_from_package": missing_from_package,
             "source_mapping_complete": len(source_rows) == 31 and not missing_from_package,
@@ -392,11 +393,16 @@ def main() -> int:
         "package_sha256": package_digest, "source_file_count": len(source_rows),
         "missing_from_package": missing_from_package,
         "unresolved_imports": unresolved_imports,
+        "binary_inventory_complete": binary_inventory_report["inventory_complete"],
+        "binary_data_file_count": binary_inventory_report["data_archive_file_count"],
+        "binary_control_file_count": binary_inventory_report["control_archive_file_count"],
+        "unmapped_binary_files": binary_inventory_report["unmapped_package_files"],
+        "required_binary_files_absent": binary_inventory_report["required_files_absent"],
         "debian_copyright_exists": copyright_path.is_file(),
         "clearance_record_exists": clearance_path.is_file(),
         "result": report["result"], "output": str(args.output),
     }, indent=2))
-    return 0 if report["source_coverage"]["source_mapping_complete"] else 2
+    return 0 if report["source_coverage"]["source_mapping_complete"] and report["binary_package_inventory"]["inventory_complete"] else 2
 
 
 if __name__ == "__main__":
