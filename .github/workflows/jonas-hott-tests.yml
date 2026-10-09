@@ -39,12 +39,76 @@ jobs:
       - name: Install declared dependencies
         run: python -m pip install --upgrade pip && python -m pip install -r jonas_hott_api/requirements.txt
       - name: Compile application and tests
-        run: python -m compileall -q jonas_hott_api tests
+        id: compile
+        run: |
+          mkdir -p evidence/jonas
+          python -m compileall -q jonas_hott_api tests
       - name: Run Jonas API and shared-account tests
+        id: api_tests
         env:
           JONAS_API_TOKEN: ci-test-token
           JONAS_PERIOD_LIMIT_MICRO_USD: "1000000"
           JONAS_PROTECTED_RESERVE_MICRO_USD: "200000"
           JONAS_DB_PATH: "${{ runner.temp }}/jonas-ci.sqlite3"
           JONAS_ACCOUNT_STATE_TTL_SECONDS: "3600"
-        run: python -m pytest -q tests/test_jonas_hott_api.py tests/test_jonas_account_state.py
+        run: |
+          set -o pipefail
+          python -m pytest -q tests/test_jonas_hott_api.py tests/test_jonas_account_state.py 2>&1 | tee evidence/jonas/pytest.log
+      - name: Capture hash-bound CI evidence
+        if: always()
+        env:
+          COMPILE_OUTCOME: ${{ steps.compile.outcome }}
+          API_TEST_OUTCOME: ${{ steps.api_tests.outcome }}
+        shell: bash
+        run: |
+          python - <<'PY'
+          import datetime, hashlib, json, os, pathlib
+          root = pathlib.Path(".")
+          evidence = root / "evidence" / "jonas"
+          evidence.mkdir(parents=True, exist_ok=True)
+          tracked = [
+              "jonas_hott_api/app.py",
+              "jonas_hott_api/account_state.py",
+              "tests/test_jonas_hott_api.py",
+              "tests/test_jonas_account_state.py",
+          ]
+          hashes = {}
+          for name in tracked:
+              path = root / name
+              hashes[name] = hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else None
+          log = evidence / "pytest.log"
+          report = {
+              "schema": "jonas.ci-evidence.v1",
+              "repository": os.environ.get("GITHUB_REPOSITORY"),
+              "branch": os.environ.get("GITHUB_REF_NAME"),
+              "commit_sha": os.environ.get("GITHUB_SHA"),
+              "run_id": os.environ.get("GITHUB_RUN_ID"),
+              "run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT"),
+              "timestamp_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+              "compile_outcome": os.environ.get("COMPILE_OUTCOME"),
+              "api_test_outcome": os.environ.get("API_TEST_OUTCOME"),
+              "test_log_sha256": hashlib.sha256(log.read_bytes()).hexdigest() if log.is_file() else None,
+              "source_sha256": hashes,
+              "status": "PASS" if os.environ.get("COMPILE_OUTCOME") == "success" and os.environ.get("API_TEST_OUTCOME") == "success" else "FAIL",
+              "certified": False,
+              "production_authorized": False,
+              "limits": [
+                  "CI tests do not verify an official provider catalog or billing endpoint.",
+                  "CI does not deploy a shared family service or prove TLS, per-user production authorization, backup/restore, or external billing reconciliation.",
+                  "No G23/G24 independent validation or certification is inferred."
+              ],
+          }
+          out = evidence / "ci-evidence.json"
+          out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\\n")
+          report["evidence_sha256"] = hashlib.sha256(json.dumps(report, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+          out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\\n")
+          print(json.dumps(report, indent=2))
+          PY
+      - name: Preserve hash-bound CI evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: jonas-hott-ci-${{ github.run_id }}-${{ github.run_attempt }}
+          path: evidence/jonas/
+          if-no-files-found: error
+          retention-days: 90
