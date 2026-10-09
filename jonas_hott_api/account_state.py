@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Literal
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, field_validator
 
 from . import app as app_module
@@ -105,6 +106,26 @@ def require_respondent_identity(authorization: str | None = Header(default=None)
     if len(matches) != 1:
         raise HTTPException(401, "Respondent credential is invalid or ambiguous.")
     return matches[0]
+
+
+def require_family_read_identity(authorization: str | None = Header(default=None)) -> str:
+    """Permit the configured service token or any individually authenticated family member to read the shared pool."""
+    scheme, _, token = (authorization or "").partition(" ")
+    if scheme.lower() == "bearer" and token and TOKEN_FOR_READS():
+        if hmac.compare_digest(token.encode("utf-8"), TOKEN_FOR_READS().encode("utf-8")):
+            return "service"
+    return require_respondent_identity(authorization)
+
+
+def TOKEN_FOR_READS() -> str:
+    # Resolve the generic token from the same canonical app module used by require_auth.
+    return str(getattr(app_module, "TOKEN", "") or "")
+
+
+@router.get("/family-check-in", include_in_schema=False)
+def family_check_in_page():
+    """Serve the guided, manual family check-in form; no provider balance API is called."""
+    return FileResponse(Path(__file__).with_name("family_checkin.html"), media_type="text/html")
 
 
 class CreditObservation(BaseModel):
@@ -252,7 +273,7 @@ def record_credit_observation(
         raise HTTPException(503, "Shared account-state ledger unavailable; observation not accepted.")
 
 
-@router.get("/v1/account/credits", dependencies=[Depends(require_auth)])
+@router.get("/v1/account/credits", dependencies=[Depends(require_family_read_identity)])
 def latest_credit_observation() -> dict:
     try:
         with _db() as conn:
@@ -305,7 +326,7 @@ def latest_credit_observation() -> dict:
         raise HTTPException(503, "Shared account-state ledger unavailable; balance is unknown.")
 
 
-@router.get("/v1/account/credits/history", dependencies=[Depends(require_auth)])
+@router.get("/v1/account/credits/history", dependencies=[Depends(require_family_read_identity)])
 def credit_observation_history(limit: int = Query(default=100, ge=1, le=1000)) -> dict:
     try:
         with _db() as conn:
