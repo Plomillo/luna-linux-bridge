@@ -97,7 +97,10 @@ def require_respondent_identity(authorization: str | None = Header(default=None)
     scheme, _, token = (authorization or "").partition(" ")
     if scheme.lower() != "bearer" or not token:
         raise HTTPException(401, "A respondent-specific bearer token is required.")
-    matches = [name for name, expected in tokens.items() if hmac.compare_digest(token, expected)]
+    matches = [
+        name for name, expected in tokens.items()
+        if hmac.compare_digest(token.encode("utf-8"), expected.encode("utf-8"))
+    ]
     if len(matches) != 1:
         raise HTTPException(401, "Respondent credential is invalid or ambiguous.")
     return matches[0]
