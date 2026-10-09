@@ -29,19 +29,18 @@ const check = (name, condition, detail = "") => {
   if (!condition) failures.push(name);
 };
 try {
+  // Do not keep child stdout/stderr pipes open: npm/Vite can leave inherited
+  // handles alive after the E2E report is written, causing the CI step to hang.
   server = spawn("npm", ["run", "dev", "--", "--host", "127.0.0.1", "--port", "4173", "--strictPort"], {
-    cwd: candidate, stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, CI: "true" }
+    cwd: candidate, stdio: "ignore", env: { ...process.env, CI: "true" }
   });
-  let serverOutput = "";
-  server.stdout.on("data", d => { serverOutput += d.toString(); });
-  server.stderr.on("data", d => { serverOutput += d.toString(); });
   let ready = false;
-  for (let i = 0; i < 90; i++) {
-    if (server.exitCode !== null) throw new Error("Vite exited before ready: " + serverOutput.slice(-5000));
+  for (let i = 0; i < 30; i++) {
+    if (server.exitCode !== null) throw new Error("Vite exited before ready (exit code " + server.exitCode + ")");
     try { const r = await fetch(baseURL); if (r.ok) { ready = true; break; } } catch {}
     await delay(1000);
   }
-  if (!ready) throw new Error("Vite readiness timeout: " + serverOutput.slice(-5000));
+  if (!ready) throw new Error("Vite readiness timeout at " + baseURL);
 
   browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
@@ -172,5 +171,15 @@ try {
   process.exitCode = 1;
 } finally {
   if (browser) await browser.close().catch(() => {});
-  if (server && server.exitCode === null) { server.kill("SIGTERM"); await delay(500); if (server.exitCode === null) server.kill("SIGKILL"); }
+  if (server) {
+    if (server.exitCode === null) {
+      server.kill("SIGTERM");
+      await delay(250);
+      if (server.exitCode === null) server.kill("SIGKILL");
+    }
+    // Close all parent-held streams and release Node's event loop deterministically.
+    server.stdout?.destroy();
+    server.stderr?.destroy();
+    server.unref();
+  }
 }
