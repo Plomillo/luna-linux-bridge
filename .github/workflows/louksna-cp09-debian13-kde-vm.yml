@@ -164,6 +164,12 @@ jobs:
                     Modes "1920x1080"
                   EndSubSection
                 EndSection
+            - path: /etc/X11/Xwrapper.config
+              permissions: '0644'
+              content: |
+                # Disposable CI guest only: permit the test user to start its isolated Xorg session.
+                allowed_users=anybody
+                needs_root_rights=yes
             - path: /etc/sddm.conf.d/10-louksna-autologin.conf
               permissions: '0644'
               content: |
