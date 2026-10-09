@@ -203,6 +203,21 @@ jobs:
           test -f scripts/missions/louksna_zd_v03_functionalizer.py || { echo "CP-03 HOLD: functionalizer missing"; exit 1; }
           python3 -B -I scripts/missions/test_louksna_zd_v03_backend.py scripts/missions/v03_templates/main.rs
           echo "CP-03 backend test harness completed; result is limited to the assertions actually exercised."
+          mkdir -p evidence/zona-directiva-v03
+          python3 - <<'PY'
+          import datetime,hashlib,json,os,pathlib
+          p=pathlib.Path("scripts/missions/test_louksna_zd_v03_backend.py")
+          d={"schema":"louksna.zd.v03.checkpoint-evidence.v1","stage_id":"03","checkpoint_id":"CP-03","status":"STATIC_REGRESSION_PASS_RUNTIME_TESTS_NOT_YET_PROVEN","scope":"Eight static source assertions passed; this is not runtime SQLite integration evidence.","timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"repository":os.getenv("GITHUB_REPOSITORY"),"commit_sha":os.getenv("GITHUB_SHA"),"run_id":os.getenv("GITHUB_RUN_ID"),"test_harness_sha256":hashlib.sha256(p.read_bytes()).hexdigest()}
+          pathlib.Path("evidence/zona-directiva-v03/CP-03-backend-ledger.json").write_text(json.dumps(d,indent=2,sort_keys=True)+"\n")
+          PY
+      - name: Upload CP-03 evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksna-zd-v03-cp03-backend-ledger
+          path: evidence/zona-directiva-v03/CP-03-backend-ledger.json
+          if-no-files-found: error
+          retention-days: 90
 
   stage-04-github-bridge:
     name: "Stage 04 / CP-04 — Read-only GitHub bridge and credential safety"
@@ -235,6 +250,20 @@ jobs:
             echo "CP-04 HOLD: possible credential disclosure/storage pattern requires review"
             exit 1
           fi
+          mkdir -p evidence/zona-directiva-v03
+          python3 - <<'PY'
+          import datetime,json,os,pathlib
+          d={"schema":"louksna.zd.v03.checkpoint-evidence.v1","stage_id":"04","checkpoint_id":"CP-04","status":"PASS_WITH_SCOPE_LIMITS","scope":"Authenticated live GitHub API read and credential-pattern scan passed; broader credential-store round-trip is not proven.","timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"repository":os.getenv("GITHUB_REPOSITORY"),"commit_sha":os.getenv("GITHUB_SHA"),"run_id":os.getenv("GITHUB_RUN_ID")}
+          pathlib.Path("evidence/zona-directiva-v03/CP-04-github-bridge.json").write_text(json.dumps(d,indent=2,sort_keys=True)+"\n")
+          PY
+      - name: Upload CP-04 evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksna-zd-v03-cp04-github-bridge
+          path: evidence/zona-directiva-v03/CP-04-github-bridge.json
+          if-no-files-found: error
+          retention-days: 90
 
   stage-05-ui-telemetry:
     name: "Stage 05 / CP-05 — UI state and telemetry"
@@ -269,6 +298,22 @@ jobs:
           grep -q 'DEGRADED' "$CANDIDATE/src-tauri/src/main.rs"
           ! grep -Eq 'CUSTOSZ|CUSTOSZ_RUNTIME|Josefina|Katya|Ancapi|MetaOS' "$CANDIDATE/src/App.tsx"
           echo "CP-05 PASS: candidate generated from tracked source; assertions exercised and identity boundary checked."
+          mkdir -p evidence/zona-directiva-v03
+          python3 - <<'PY'
+          import datetime,hashlib,json,os,pathlib
+          root=pathlib.Path("LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate")
+          files=["src/App.tsx","src-tauri/Cargo.toml","src-tauri/src/main.rs"]
+          d={"schema":"louksna.zd.v03.checkpoint-evidence.v1","stage_id":"05","checkpoint_id":"CP-05","status":"PASS_WITH_SCOPE_LIMITS","scope":"Source assertions passed; interactive UI state/telemetry behavior is not proven.","timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"repository":os.getenv("GITHUB_REPOSITORY"),"commit_sha":os.getenv("GITHUB_SHA"),"run_id":os.getenv("GITHUB_RUN_ID"),"source_sha256":{p:hashlib.sha256((root/p).read_bytes()).hexdigest() for p in files}}
+          pathlib.Path("evidence/zona-directiva-v03/CP-05-ui-telemetry.json").write_text(json.dumps(d,indent=2,sort_keys=True)+"\n")
+          PY
+      - name: Upload CP-05 evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksna-zd-v03-cp05-ui-telemetry
+          path: evidence/zona-directiva-v03/CP-05-ui-telemetry.json
+          if-no-files-found: error
+          retention-days: 90
 
   stage-06-functions-attachments:
     name: "Stage 06 / CP-06 — Offline, persistence, chat and attachments"
@@ -304,6 +349,22 @@ jobs:
           grep -q 'evidence_recent' "$CANDIDATE/src-tauri/src/main.rs"
           grep -q 'github_pull_requests' "$CANDIDATE/src-tauri/src/main.rs"
           echo "CP-06 PASS limited to reproducible source/backend assertions; interactive GUI, persistence-across-restart, and attachment E2E remain unproven."
+          mkdir -p evidence/zona-directiva-v03
+          python3 - <<'PY'
+          import datetime,hashlib,json,os,pathlib
+          root=pathlib.Path("LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate")
+          files=["src/App.tsx","src-tauri/src/main.rs","src-tauri/tauri.conf.json"]
+          d={"schema":"louksna.zd.v03.checkpoint-evidence.v1","stage_id":"06","checkpoint_id":"CP-06","status":"PASS_WITH_SCOPE_LIMITS","scope":"Offline/chat source assertions passed; GUI, restart persistence and attachment E2E are unproven.","timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"repository":os.getenv("GITHUB_REPOSITORY"),"commit_sha":os.getenv("GITHUB_SHA"),"run_id":os.getenv("GITHUB_RUN_ID"),"source_sha256":{p:hashlib.sha256((root/p).read_bytes()).hexdigest() for p in files}}
+          pathlib.Path("evidence/zona-directiva-v03/CP-06-functions-attachments.json").write_text(json.dumps(d,indent=2,sort_keys=True)+"\n")
+          PY
+      - name: Upload CP-06 evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksna-zd-v03-cp06-functions-attachments
+          path: evidence/zona-directiva-v03/CP-06-functions-attachments.json
+          if-no-files-found: error
+          retention-days: 90
 
   stage-07-voice-security:
     name: "Stage 07 / CP-07 — Voice E2E and security regression"
@@ -419,6 +480,24 @@ jobs:
           test -n "$DEB"
           sha256sum "$DEB"
           stat -c 'package_size_bytes=%s' "$DEB"
+          mkdir -p evidence/zona-directiva-v03
+          cp "$DEB" evidence/zona-directiva-v03/
+          python3 - "$DEB" <<'PY'
+          import datetime,hashlib,json,os,pathlib,sys
+          p=pathlib.Path(sys.argv[1])
+          d={"schema":"louksna.zd.v03.checkpoint-evidence.v1","stage_id":"08","checkpoint_id":"CP-08","status":"BUILD_PASS_REPRODUCIBILITY_NOT_PROVEN","scope":"A .deb was produced; one build is not a reproducibility comparison.","timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"repository":os.getenv("GITHUB_REPOSITORY"),"commit_sha":os.getenv("GITHUB_SHA"),"run_id":os.getenv("GITHUB_RUN_ID"),"package":{"name":p.name,"size_bytes":p.stat().st_size,"sha256":hashlib.sha256(p.read_bytes()).hexdigest()}}
+          pathlib.Path("evidence/zona-directiva-v03/CP-08-build-package.json").write_text(json.dumps(d,indent=2,sort_keys=True)+"\n")
+          PY
+      - name: Upload CP-08 build package and evidence
+        if: success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksna-zd-v03-cp08-build-package
+          path: |
+            evidence/zona-directiva-v03/CP-08-build-package.json
+            evidence/zona-directiva-v03/*.deb
+          if-no-files-found: error
+          retention-days: 90
 
   stage-09-physical-runtime:
     name: "Stage 09 / CP-09 — Debian 13 KDE install, runtime and rollback evidence gate"
@@ -501,13 +580,47 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
+      - name: Download same-run checkpoint artifacts
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
+        with:
+          pattern: louksna-zd-v03-cp*
+          path: evidence/zona-directiva-v03/imported
+          merge-multiple: false
       - name: Validate evidence prerequisites
         shell: bash
         run: |
           set -Eeuo pipefail
-          test -d evidence/zona-directiva-v03
-          echo "CP-10 HOLD unless all prior checkpoint artifacts are available and digest-consistent."
-          echo "No candidate freeze or certification is inferred from this step."
+          python3 - <<'PY'
+          import json,pathlib,sys
+          root=pathlib.Path("evidence/zona-directiva-v03/imported")
+          required=["louksna-zd-v03-cp01-repository-audit","louksna-zd-v03-cp02-contract-linkage","louksna-zd-v03-cp03-backend-ledger","louksna-zd-v03-cp04-github-bridge","louksna-zd-v03-cp05-ui-telemetry","louksna-zd-v03-cp06-functions-attachments","louksna-zd-v03-cp07-voice-gate-open","louksna-zd-v03-cp08-build-package"]
+          missing=[n for n in required if not (root/n).is_dir()]
+          if missing:
+              print("CP-10 HOLD: missing same-run evidence artifacts: "+", ".join(missing))
+              raise SystemExit(1)
+          files=sorted(root.rglob("*.json"))
+          if not files:
+              print("CP-10 HOLD: no JSON evidence documents downloaded")
+              raise SystemExit(1)
+          records=[]
+          for p in files:
+              try: d=json.loads(p.read_text())
+              except Exception as e: raise SystemExit(f"CP-10 HOLD: invalid JSON {p}: {e}")
+              if d.get("commit_sha") and d["commit_sha"] != __import__("os").environ["GITHUB_SHA"]:
+                  raise SystemExit(f"CP-10 HOLD: stale commit evidence {p}")
+              records.append({"path":str(p.relative_to(root)),"sha256":__import__("hashlib").sha256(p.read_bytes()).hexdigest()})
+          out=pathlib.Path("evidence/zona-directiva-v03/CP-10-evidence-manifest.json")
+          out.write_text(json.dumps({"schema":"louksna.zd.v03.evidence-manifest.v1","stage_id":"10","checkpoint_id":"CP-10","status":"HOLD_REQUIRES_CP09_RUNTIME_AND_CP11_CP12","candidate_commit_sha":__import__("os").environ["GITHUB_SHA"],"run_id":__import__("os").environ["GITHUB_RUN_ID"],"evidence_count":len(records),"evidence":records,"next_authorized_stage":"NONE"},indent=2,sort_keys=True)+"\n")
+          print("CP-10 manifest created; candidate freeze remains HOLD until CP-09 physical runtime, independent G23 and G24 are separately validated.")
+          PY
+      - name: Preserve CP-10 evidence manifest
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksna-zd-v03-cp10-evidence-manifest
+          path: evidence/zona-directiva-v03/CP-10-evidence-manifest.json
+          if-no-files-found: error
+          retention-days: 90
 
   stage-11-independent-validation:
     name: "Stage 11 / CP-11 — G23 independent validation"
