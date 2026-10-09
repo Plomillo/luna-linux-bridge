@@ -575,6 +575,8 @@ jobs:
     needs: stage-09-physical-runtime
     if: needs.stage-09-physical-runtime.outputs.runtime_status == 'PASS'
     runs-on: ubuntu-24.04
+    outputs:
+      status: ${{ steps.validate.outputs.status }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
@@ -587,6 +589,7 @@ jobs:
           path: evidence/zona-directiva-v03/imported
           merge-multiple: false
       - name: Validate evidence prerequisites
+        id: validate
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -611,7 +614,9 @@ jobs:
               records.append({"path":str(p.relative_to(root)),"sha256":__import__("hashlib").sha256(p.read_bytes()).hexdigest()})
           out=pathlib.Path("evidence/zona-directiva-v03/CP-10-evidence-manifest.json")
           out.write_text(json.dumps({"schema":"louksna.zd.v03.evidence-manifest.v1","stage_id":"10","checkpoint_id":"CP-10","status":"HOLD_REQUIRES_CP09_RUNTIME_AND_CP11_CP12","candidate_commit_sha":__import__("os").environ["GITHUB_SHA"],"run_id":__import__("os").environ["GITHUB_RUN_ID"],"evidence_count":len(records),"evidence":records,"next_authorized_stage":"NONE"},indent=2,sort_keys=True)+"\n")
-          print("CP-10 manifest created; candidate freeze remains HOLD until CP-09 physical runtime, independent G23 and G24 are separately validated.")
+          print("CP-10 manifest created; candidate freeze remains HOLD while any required prior checkpoint lacks complete evidence.")
+          with open(__import__("os").environ["GITHUB_OUTPUT"],"a") as f:
+              f.write("status=HOLD\\n")
           PY
       - name: Preserve CP-10 evidence manifest
         if: always()
@@ -625,7 +630,7 @@ jobs:
   stage-11-independent-validation:
     name: "Stage 11 / CP-11 — G23 independent validation"
     needs: stage-10-evidence-freeze
-    if: needs.stage-10-evidence-freeze.result == 'success'
+    if: needs.stage-10-evidence-freeze.result == 'success' && needs.stage-10-evidence-freeze.outputs.status == 'PASS'
     runs-on: ubuntu-24.04
     steps:
       - name: Refuse self-certification
