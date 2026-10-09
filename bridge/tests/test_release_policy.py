@@ -31,7 +31,7 @@ class ReleasePolicyTests(unittest.TestCase):
         self.assertIn(owner_keygen, PROVISIONER)
         self.assertIn(owner_publish, PROVISIONER)
         self.assertNotIn('chown "$OWNER_UID:$OWNER_GID" "$CLIENT"', PROVISIONER)
-        self.assertLess(PROVISIONER.index('runuser -u "$OWNER_UID" -- chmod 0700 "$CLIENT"'),
+        self.assertLess(PROVISIONER.index('runuser -u "$OWNER_USER" -- chmod 0700 "$CLIENT"'),
                         PROVISIONER.rindex("VALIDATED=1"))
 
     def test_lintian_is_not_silenced_and_errors_block_release(self):
