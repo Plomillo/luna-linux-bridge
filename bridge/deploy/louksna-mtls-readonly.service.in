@@ -1,5 +1,8 @@
 # REVIEW TEMPLATE ONLY. Root-managed certificate policy and owner approval required.
 # HTTPS/mTLS binds 127.0.0.1 ONLY. No public firewall or tunnel changes.
+# Root is explicit because the gateway enforces root-owned policy/config ancestors
+# and requires the server private key owner to equal its effective UID. Changing
+# this identity requires a separate privilege-boundary redesign, not chmod relaxation.
 [Unit]
 Description=LOUKSNA bounded localhost mTLS read-only telemetry candidate
 After=network.target
@@ -8,17 +11,28 @@ StartLimitBurst=3
 
 [Service]
 Type=simple
+User=root
+Group=root
 ExecStart=/usr/bin/python3 -B @REVIEWED_PROJECT_ROOT@/bridge/mtls_gateway.py --config @ROOT_PROVISIONED_MTLS_CONFIG@ --state-dir @OWNER_PRIVATE_STATE@ --port @OWNER_CHOSEN_PORT@
 Restart=on-failure
 RestartSec=10
 NoNewPrivileges=yes
+PrivateTmp=true
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+LockPersonality=yes
+RestrictSUIDSGID=yes
+RestrictAddressFamilies=AF_UNIX AF_INET
+ReadWritePaths=@OWNER_PRIVATE_STATE@
 MemoryMax=128M
 CPUQuota=10%
 TasksMax=8
 Nice=12
 IOSchedulingClass=idle
-RestrictAddressFamilies=AF_UNIX AF_INET
-PrivateTmp=true
 UMask=0077
 
 [Install]
