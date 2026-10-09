@@ -15,6 +15,10 @@ on:
         description: "Expected SHA-256 of the candidate .deb"
         required: true
         type: string
+  pull_request:
+    paths:
+      - ".github/workflows/louksna-cp09-debian13-kde-vm.yml"
+      - "governance/zona-directiva-v03/CP-09-DEBIAN13-KDE-VM-CI.md"
 
 permissions:
   contents: read
@@ -24,7 +28,24 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  validate-workflow:
+    name: "Validate workflow syntax and expressions"
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout without credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Run pinned actionlint version
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 .github/workflows/louksna-cp09-debian13-kde-vm.yml
+
   disposable-vm:
+    if: github.event_name == 'workflow_dispatch'
     name: "Boot Debian 13 VM, start KDE/Xorg session, install/launch/rollback candidate"
     runs-on: ubuntu-24.04
     timeout-minutes: 55
