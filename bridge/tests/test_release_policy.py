@@ -76,6 +76,14 @@ class ReleasePolicyTests(unittest.TestCase):
         self.assertIn("G23", REPORT)
         self.assertIn("G24", REPORT)
         self.assertIn("PACKAGE_COMPONENT_INVENTORY.md", REPORT)
+        self.assertIn("Enforce distribution clearance before artifact staging", WORKFLOW)
+        self.assertIn("docs/DISTRIBUTION_CLEARANCE.json", WORKFLOW)
+        self.assertIn('record.get("status") != "CLEARED"', WORKFLOW)
+        self.assertLess(
+            WORKFLOW.index("Enforce distribution clearance before artifact staging"),
+            WORKFLOW.index("Stage Debian package for artifact upload"),
+        )
+        self.assertTrue((ROOT / "docs/DISTRIBUTION_CLEARANCE_GATE.md").is_file())
         self.assertIn("debian/copyright", (ROOT / "docs/PACKAGE_COMPONENT_INVENTORY.md").read_text())
 
 
