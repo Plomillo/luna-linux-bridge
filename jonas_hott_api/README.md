@@ -42,6 +42,10 @@ The service stores a shared, append-only history of balance observations and mod
 - `GET /v1/account/credits/history` returns observation history.
 - `POST /v1/models/catalog/snapshots` stores a versioned catalog snapshot.
 - `GET /v1/models/catalog` returns the latest saved snapshot and freshness metadata.
+- `GET /v1/models/recommendations?task=chat&required_capabilities=chat` returns a deterministic shortlist from the saved snapshot.
+- Optional recommendation constraints: `min_quality_score`, `max_latency_ms`, and `max_estimated_cost_credits`. When a constraint is requested, a metric without a valid attached evidence digest fails closed and excludes that candidate.
+- Cost, latency, and quality remain `UNKNOWN` unless the catalog entry carries the corresponding metric and `<metric>_evidence_sha256`. A digest being present is not independent validation.
+- Recommendations return `catalog_source_verified=false` and `certified=false`; this branch does not yet fetch or verify a complete official model catalog endpoint. A saved snapshot is not proof of catalog completeness.
 
 The family uses one shared pool (`family-shared`, unit `credits`) for Sebastián, Diego, Catalina, Marjorie, and Cristóbal. Every participant's response is a separate observation of the same balance; never sum responses. The API compares the latest report per respondent. If current reports disagree, it returns `CONFLICTING` with no confirmed balance and preserves history until participants reconfirm. Each observation records consent, respondent, observation and recording timestamps, and evidence digest. A manual record is not proof of provider-side truth. The service only shares state among clients connected to the same service/database; separate installations need an explicitly configured shared service or controlled synchronization.
 
