@@ -291,7 +291,9 @@ jobs:
           python3 - <<'PY'
           import datetime,hashlib,json,os,pathlib,platform
           root=pathlib.Path("evidence/cp09-vm")
-          files=sorted(p for p in root.rglob("*") if p.is_file() and p.name not in {"evidence-manifest.json","vm_ssh_key"})
+          # Hash durable evidence only; omit disposable VM disks/media, credentials, and process-control files.
+          excluded={"evidence-manifest.json","vm_ssh_key","debian-13-genericcloud-amd64.qcow2","debian-vm.qcow2","seed.iso","qemu.pid"}
+          files=sorted(p for p in root.rglob("*") if p.is_file() and p.name not in excluded)
           hashes={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in files}
           report={
             "schema":"louksna.zd.v03.cp09.debian13-kde-vm.v1",
@@ -325,6 +327,12 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: louksna-cp09-debian13-kde-vm-${{ github.run_id }}-${{ github.run_attempt }}
-          path: evidence/cp09-vm/
+          path: |
+            evidence/cp09-vm/
+            !evidence/cp09-vm/debian-13-genericcloud-amd64.qcow2
+            !evidence/cp09-vm/debian-vm.qcow2
+            !evidence/cp09-vm/seed.iso
+            !evidence/cp09-vm/vm_ssh_key
+            !evidence/cp09-vm/qemu.pid
           if-no-files-found: warn
           retention-days: 90
