@@ -78,3 +78,14 @@ The three workstreams have been advanced as far as repository/web evidence permi
 ## Authorization scope recorded — 2026-10-09 UTC
 
 The project user explicitly authorized continuation of the technical and documentary investigation for the three closure workstreams in the active conversation. This authorization permits further repository/source-history inspection, provenance documentation, and preparation of evidence templates within the existing candidate branch and project governance constraints. It is **not** itself a rights-holder attestation, a license grant, proof of authority over third-party materials, maintainer-contact confirmation, or authorization to merge, publish, release, or redistribute the package. Those gates remain closed until the corresponding evidence is supplied and independently checked.
+
+
+## Bounded packaged-source Git-history review — 2026-10-09 UTC
+
+After the user authorized continuation of the technical/documentary investigation, per-path Git history was queried for the packaged Python modules, contract, README, service templates, and mTLS provisioning script. The detailed file-group findings and commit identifiers are recorded in `docs/SOURCE_PROVENANCE_REGISTER.md`.
+
+Key result: multiple core packaged files (including `bridge/lrb_core.py`, `bridge/mtls_gateway.py`, `bridge/live_link.py`, `bridge/app_protocol.py`, `bridge/virtual_brain.py`, the contract, README, and several service templates) have their first/only recorded history entry in commit `099ae35cb5ced2dde74d49545f57223b52102d30`, attributed to `custosz-v7-runtime-bot` and explicitly marked unsigned by GitHub. Some later changes to `bridge/deploy/louksna-mtls-readonly.service.in` and `scripts/provision-mtls-local.sh` are attributed to `Plomillo`, also unsigned. These records establish commit metadata and edit history only, not legal authorship, assignment, exclusive ownership, or absence of third-party material.
+
+Inspected opening sections of representative Python files showed no visible copyright/SPDX/license notice; inspected README and contract content did not provide a software license grant. This bounded inspection does not rule out an applicable external rights instrument.
+
+**Disposition unchanged:** no license is inferred; no `debian/copyright` is fabricated; legal redistribution, merge, and release gates remain HOLD pending an authorized rights-holder declaration, exact license decision, and completed third-party clearance. The user's authorization to investigate is not itself that declaration.
