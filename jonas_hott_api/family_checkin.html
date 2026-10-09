@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Jonas · Confirmación familiar de saldo</title>
+<style>
+:root{font-family:system-ui,sans-serif;color:#172033;background:#f2f5f9}body{margin:0;padding:24px}.wrap{max-width:760px;margin:auto}.card{background:#fff;border:1px solid #dce3ed;border-radius:14px;padding:22px;margin:16px 0;box-shadow:0 4px 18px #1e293b0a}h1{font-size:1.5rem;margin:0 0 8px}h2{font-size:1.05rem}p{line-height:1.5}.muted{color:#59677b;font-size:.92rem}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}label{display:block;font-size:.9rem;font-weight:600;margin:12px 0 5px}input,select,textarea,button{font:inherit;width:100%;box-sizing:border-box;border:1px solid #c8d2df;border-radius:8px;padding:10px;background:white}textarea{min-height:75px}button{background:#174a7e;color:white;border:0;font-weight:650;cursor:pointer;margin-top:14px}button:disabled{opacity:.55;cursor:wait}.check{display:flex;gap:10px;align-items:flex-start;margin-top:16px}.check input{width:auto;margin-top:5px}.notice{padding:12px;border-radius:8px;background:#eaf1f8;white-space:pre-wrap;overflow-wrap:anywhere}.danger{background:#fff0ef;color:#922b21}.ok{background:#e9f7ef;color:#14532d}code{overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<main class="wrap">
+<section class="card">
+<h1>Jonas · Confirmación familiar de saldo</h1>
+<p class="muted">Registro manual de un saldo que la persona ve en su propia cuenta. No consulta ninguna API de saldo del proveedor y no estima créditos a partir de tokens.</p>
+<div class="notice">Pool único: <strong>family-shared</strong> · unidad: <strong>credits</strong>.
+Cada persona confirma el mismo saldo. Las respuestas nunca se suman. Si hay discrepancias, el sistema muestra CONFLICTING y no presenta un saldo confirmado.</div>
+</section>
+<section class="card">
+<h2>Confirmación individual</h2>
+<form id="checkin">
+<div class="grid">
+<div><label for="actor">Quién confirma</label><select id="actor" required>
+<option>Sebastián</option><option>Diego</option><option>Catalina</option><option>Marjorie</option><option>Cristóbal</option>
+</select></div>
+<div><label for="token">Token privado de esta persona</label><input id="token" type="password" autocomplete="current-password" required placeholder="Token individual; no lo compartas"></div>
+<div><label for="balance">Saldo visible (créditos enteros)</label><input id="balance" type="number" min="0" step="1" required></div>
+<div><label for="account">Cuenta / plan visible</label><input id="account" maxlength="200" required placeholder="Nombre de cuenta o plan"></div>
+<div><label for="observed">Fecha y hora en que se revisó</label><input id="observed" type="datetime-local" required></div>
+<div><label for="source">Referencia del origen</label><input id="source" maxlength="500" required value="confirmacion-manual-en-pantalla"></div>
+</div>
+<label for="externalDigest">SHA-256 de evidencia externa (opcional)</label>
+<input id="externalDigest" pattern="[a-fA-F0-9]{64}" maxlength="64" placeholder="Solo si existe una captura/archivo cuya huella ya calculaste">
+<label for="notes">Notas (opcional; no incluyas contraseñas ni datos personales innecesarios)</label>
+<textarea id="notes" maxlength="800" placeholder="Observaciones breves"></textarea>
+<label class="check"><input id="consent" type="checkbox" required><span>Confirmo que este saldo fue observado por mí y autorizo registrar esta observación en el pool familiar compartido.</span></label>
+<button id="submit" type="submit">Registrar mi confirmación</button>
+</form>
+</section>
+<section class="card">
+<h2>Resultado y telemetría</h2>
+<div id="result" class="notice" role="status">Sin operaciones en esta sesión.</div>
+<button id="refresh" type="button" class="secondary">Consultar estado compartido</button>
+<p class="muted">La huella SHA-256 protege la integridad del registro enviado; no demuestra por sí sola que el saldo sea verdadero. Un estado OBSERVED no equivale a certificación.</p>
+</section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const digest=async text=>Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(text)))).map(x=>x.toString(16).padStart(2,"0")).join("");
+const nowLocal=()=>{const d=new Date(Date.now()-new Date().getTimezoneOffset()*60000);return d.toISOString().slice(0,16)};
+$("observed").value=nowLocal();
+const status=(message,kind="")=>{$("result").className="notice "+kind;$("result").textContent=message};
+async function readShared(){
+ const token=$("token").value.trim();
+ if(!token){status("Introduce tu token individual para consultar el estado compartido.");return}
+ try{
+  const r=await fetch("/v1/account/credits",{headers:{Authorization:"Bearer "+token}});
+  const d=await r.json();
+  if(!r.ok)throw new Error(d.detail||("HTTP "+r.status));
+  const balance=d.balance_credits===null||d.balance_credits===undefined?"sin saldo confirmado":d.balance_credits+" créditos";
+  status("Estado: "+d.status+"\nSaldo: "+balance+"\nFrescura: "+(d.freshness||"UNKNOWN")+"\nConfirmaciones actuales: "+(d.current_report_count??0)+"\nPersonas que informaron: "+((d.respondents_reporting||[]).join(", ")||"ninguna")+"\nCertificado: "+String(d.certified===true),"");
+ }catch(e){status("No se pudo consultar el pool: "+String(e.message||e),"danger")}
+}
+$("refresh").addEventListener("click",readShared);
+$("checkin").addEventListener("submit",async event=>{
+ event.preventDefault();
+ const button=$("submit");button.disabled=true;
+ try{
+  const actor=$("actor").value, token=$("token").value.trim();
+  const observed=new Date($("observed").value);
+  if(Number.isNaN(observed.getTime()))throw new Error("Fecha/hora inválida.");
+  const externalDigest=$("externalDigest").value.trim().toLowerCase();
+  if(externalDigest&&!/^[a-f0-9]{64}$/.test(externalDigest))throw new Error("El SHA-256 externo debe tener 64 caracteres hexadecimales.");
+  const payload={
+   observation_id:crypto.randomUUID(),
+   observed_at_utc:observed.toISOString(),
+   balance_credits:Number($("balance").value),
+   source_kind:"manual",
+   source_reference:$("source").value.trim(),
+   actor,
+   shared_pool_id:"family-shared",
+   unit:"credits",
+   consent_confirmed:$("consent").checked,
+   notes:JSON.stringify({
+    account_or_plan:$("account").value.trim(),
+    timezone:Intl.DateTimeFormat().resolvedOptions().timeZone,
+    source:"self_reported",
+    external_evidence_sha256:externalDigest||null,
+    notes:$("notes").value.trim(),
+    digest_kind:externalDigest?"external_evidence_digest":"self_report_record_digest_not_external_proof"
+   })
+  };
+  const canonical=JSON.stringify(payload,Object.keys(payload).sort());
+  payload.evidence_sha256=externalDigest||await digest(canonical);
+  const response=await fetch("/v1/account/credits/observations",{
+   method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},body:JSON.stringify(payload)
+  });
+  const data=await response.json();
+  if(!response.ok)throw new Error(data.detail||("HTTP "+response.status));
+  status("Confirmación registrada. ID: "+data.observation_id+"\nEstado: guardado como observación manual; no certificado.\nConsultando el estado compartido…","ok");
+  await readShared();
+ }catch(e){status("Confirmación rechazada: "+String(e.message||e),"danger")}
+ finally{button.disabled=false}
+});
+</script>
+</body>
+</html>
