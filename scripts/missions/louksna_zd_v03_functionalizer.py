@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import struct, zlib
 import json, shutil, sys
 
 if len(sys.argv)!=2:
@@ -70,6 +71,30 @@ Not claimed:
 - voice/call end-to-end;
 - ACTIVE authorization.
 """,encoding="utf-8")
+
+# Tauri's configured icon is a build input. Preserve any supplied icon; if the
+# inherited skeleton omits it, generate a deterministic, valid PNG fallback.
+icon_path=candidate/"src-tauri"/"icons"/"icon.png"
+if not icon_path.is_file():
+    icon_path.parent.mkdir(parents=True,exist_ok=True)
+    width=height=64
+    rows=[]
+    for y in range(height):
+        row=bytearray([0])
+        for x in range(width):
+            is_mark=(16 <= x < 24 and 14 <= y < 50) or (16 <= x < 46 and 42 <= y < 50)
+            row.extend((35,211,238,255) if is_mark else (12,18,36,255))
+        rows.append(bytes(row))
+    def png_chunk(kind,data):
+        return struct.pack(">I",len(data))+kind+data+struct.pack(">I",zlib.crc32(kind+data)&0xffffffff)
+    png=(b"\x89PNG\r\n\x1a\n"
+         +png_chunk(b"IHDR",struct.pack(">IIBBBBB",width,height,8,6,0,0,0))
+         +png_chunk(b"IDAT",zlib.compress(b"".join(rows),9))
+         +png_chunk(b"IEND",b""))
+    icon_path.write_bytes(png)
+    print("TELEMETRY V03_TAURI_ICON=DETERMINISTIC_FALLBACK_CREATED")
+else:
+    print("TELEMETRY V03_TAURI_ICON=SOURCE_ASSET_PRESERVED")
 
 ui=(candidate/"src"/"App.tsx").read_text(encoding="utf-8")
 backend=(candidate/"src-tauri"/"src"/"main.rs").read_text(encoding="utf-8")
