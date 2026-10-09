@@ -30,6 +30,7 @@ class ReleasePolicyTests(unittest.TestCase):
         self.assertIn(owner_creation, PROVISIONER)
         self.assertIn(owner_keygen, PROVISIONER)
         self.assertIn(owner_publish, PROVISIONER)
+        self.assertIn('chmod 0644 "$TLS/client.pem"', PROVISIONER)
         self.assertNotIn('chown "$OWNER_UID:$OWNER_GID" "$CLIENT"', PROVISIONER)
         self.assertLess(PROVISIONER.index('runuser -u "$OWNER_USER" -- chmod 0700 "$CLIENT"'),
                         PROVISIONER.rindex("VALIDATED=1"))
