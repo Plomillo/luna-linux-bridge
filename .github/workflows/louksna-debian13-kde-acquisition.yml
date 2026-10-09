@@ -65,7 +65,7 @@ jobs:
               libx11-6 libxext6 libxrender1 libxrandr2 libxcomposite1 \
               libxcursor1 libxdamage1 libxi6 libxtst6 libnss3 \
               libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
-              libglib2.0-0 libgdk-pixbuf-2.0-0 libpango-1.0-0 lib cairo2 2>/dev/null || true
+              libglib2.0-0 libgdk-pixbuf-2.0-0 libpango-1.0-0 libcairo2
             apt-get install --yes --no-install-recommends plasma-workspace kwin-x11
             dpkg-query -W -f="${Package}\t${Version}\t${Architecture}\n" | sort
           ' > evidence/infra-acquisition/dpkg-installed.tsv 2> evidence/infra-acquisition/install.log
