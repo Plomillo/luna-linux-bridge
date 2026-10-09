@@ -11,7 +11,7 @@ Scope correction: do not integrate with a 1min.AI balance API. The intended work
 
 1. Provide a guided check-in for each authorized respondent: Sebastián, Diego, Catalina, Marjorie, and Cristóbal. Ask for the displayed balance, applicable account/plan, unit, time checked and timezone, and whether the answer is self-reported or supported by optional evidence.
 2. Store each answer as a separate append-only observation with respondent, account scope, observed/recorded timestamps, balance, unit, source type, evidence digest if supplied, and validation status.
-3. Never assume family members share one account or credit pool. Keep balances separate by person/account unless scope, units, and permission to aggregate are all established.
+3. Treat this as exactly one shared family credit pool (`family-shared`, unit `credits`) for Sebastián, Diego, Catalina, Marjorie, and Cristóbal. Each answer is a separate confirmation of the same pool; never sum reports. Record who confirmed and when. Compare each respondent's latest report, preserve all prior observations, and mark the pool CONFLICTING with no confirmed balance when current reports disagree. Do not silently select a value; ask participants to reconfirm until the current reports agree.
 4. Show FRESH/STALE/UNKNOWN using a documented freshness window. Reminders may request a new check-in, but the system must not claim to know a new balance before the person confirms it.
 5. Resolve conflicting or ambiguous answers by asking the relevant respondent to confirm. Never infer credits from tokens or poll a provider billing API.
 6. Acceptance tests: attribution, duplicate submissions, stale/missing/conflicting observations, timezone normalization, consent/privacy, safe aggregation, audit history, and access control.
@@ -39,4 +39,4 @@ Scope correction: do not integrate with a 1min.AI balance API. The intended work
 - Keep work on this feature branch and PR #49. Do not modify canonical Louksna artifacts or merge this PR as a side effect of implementation.
 
 ## Current known state
-The current branch contains initial service routes for credit observations and catalog snapshots. The required balance workflow is family-confirmed check-ins; provider balance-API integration is out of scope. Check-in prompts, consent-aware views, safe aggregation, full catalog ingestion, test execution, deployment, family package, and certification remain incomplete.
+The branch contains routes for credit observations and catalog snapshots. The shared-pool rule is one family balance, never a sum of reports; only manual family confirmations are in scope, and provider balance-API integration is prohibited. Test execution and review remain required. Deployment, family package, and certification remain incomplete.
