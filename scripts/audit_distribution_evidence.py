@@ -223,11 +223,11 @@ def main() -> int:
         },
         "source_coverage": {
             "source_file_count": len(source_rows),
-            "expected_source_file_count_from_prior_review": 30,
-            "count_matches_prior_review": len(source_rows) == 30,
+            "expected_source_file_count_from_prior_review": 31,
+            "count_matches_prior_review": len(source_rows) == 31,
             "files": source_rows,
             "expected_installed_paths_missing_from_package": missing_from_package,
-            "source_mapping_complete": len(source_rows) == 30 and not missing_from_package,
+            "source_mapping_complete": len(source_rows) == 31 and not missing_from_package,
         },
         "dependencies": {
             "debian_control": parse_control(root),
@@ -261,7 +261,7 @@ def main() -> int:
             "rollback_and_postboot": "NOT_TESTED_ON_HOST",
         },
         "result": "HOLD" if (
-            len(source_rows) != 30 or missing_from_package or not copyright_path.is_file()
+            len(source_rows) != 31 or missing_from_package or not copyright_path.is_file()
             or not clearance_path.is_file() or unresolved_imports
         ) else "REQUIRES_INDEPENDENT_VALIDATION",
         "limitations": [
