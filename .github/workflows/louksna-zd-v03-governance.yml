@@ -723,7 +723,9 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: louksna-zd-v03-cp09-runtime-gate-${{ github.run_id }}-${{ github.run_attempt }}
-          path: evidence/zona-directiva-v03/CP-09-runtime-gate.json
+          path: |
+            evidence/zona-directiva-v03/CP-09-debian13-kde-runtime.json
+            evidence/zona-directiva-v03/CP-09-debian13-kde-runtime.log
           if-no-files-found: error
           retention-days: 90
 
@@ -751,9 +753,10 @@ jobs:
         run: |
           set -Eeuo pipefail
           python3 - <<'PY'
-          import json,pathlib,sys
+          import hashlib,json,os,pathlib,sys
           root=pathlib.Path("evidence/zona-directiva-v03/imported")
           required=["louksna-zd-v03-cp01-repository-audit","louksna-zd-v03-cp02-contract-linkage","louksna-zd-v03-cp03-backend-ledger","louksna-zd-v03-cp04-github-bridge","louksna-zd-v03-cp05-ui-telemetry","louksna-zd-v03-cp06-functions-attachments","louksna-zd-v03-cp07-voice-gate-open","louksna-zd-v03-cp07-playwright-ui-e2e","louksna-zd-v03-cp08-build-package","louksna-zd-v03-cp09-debian13-container-smoke"]
+          required.append(f"louksna-zd-v03-cp09-runtime-gate-{os.environ['GITHUB_RUN_ID']}-{os.environ['GITHUB_RUN_ATTEMPT']}")
           missing=[n for n in required if not (root/n).is_dir()]
           if missing:
               print("CP-10 HOLD: missing same-run evidence artifacts: "+", ".join(missing))
@@ -781,6 +784,24 @@ jobs:
               if name.startswith("CP-07-voice") and (d.get("voice_gate") != "PASS" or d.get("result") not in ("PASS","PASS_WITH_SCOPE_LIMITS")): blocking.append("CP-07 voice E2E gate remains open")
               if name.startswith("CP-07-playwright") and status != "PASS_WITH_SCOPE_LIMITS": blocking.append("CP-07 Playwright browser UI E2E did not pass")
               if name.startswith("CP-08") and status != "PASS_REPRODUCIBLE_BUILD": blocking.append("CP-08 reproducible build evidence incomplete")
+              if name == "CP-09-debian13-kde-runtime.json":
+                  if status != "PASS" or d.get("physical_runtime_verified") is not True:
+                      blocking.append("CP-09 real Debian 13 KDE runtime evidence is not PASS")
+                  if d.get("commit_sha") != os.environ["GITHUB_SHA"]:
+                      blocking.append("CP-09 report is not bound to the current candidate commit")
+                  if d.get("install_test") != "PASS" or d.get("launch_test") != "PASS" or d.get("rollback_test") != "PASS":
+                      blocking.append("CP-09 install/launch/rollback evidence incomplete")
+                  log_path=p.with_name("CP-09-debian13-kde-runtime.log")
+                  if not log_path.is_file():
+                      blocking.append("CP-09 runtime log missing from evidence artifact")
+                  elif hashlib.sha256(log_path.read_bytes()).hexdigest() != d.get("log_sha256"):
+                      blocking.append("CP-09 runtime log SHA-256 mismatch")
+                  package_dir=root/"louksna-zd-v03-cp08-build-package"
+                  packages=sorted(package_dir.rglob("*.deb")) if package_dir.is_dir() else []
+                  if len(packages) != 1:
+                      blocking.append("CP-09 must bind exactly one same-run CP-08 Debian package")
+                  elif hashlib.sha256(packages[0].read_bytes()).hexdigest() != d.get("candidate_sha256"):
+                      blocking.append("CP-09 package digest does not match the same-run CP-08 package")
           blocking=sorted(set(blocking))
           final_status="PASS" if not blocking else "HOLD"
           out=pathlib.Path("evidence/zona-directiva-v03/CP-10-evidence-manifest.json")
