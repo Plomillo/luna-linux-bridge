@@ -15,6 +15,7 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 SOURCE_GROUPS = (
@@ -155,6 +156,115 @@ def package_paths(package: Path, root: Path) -> set[str]:
     return paths
 
 
+def binary_inventory(package: Path, root: Path, source_rows: list[dict]) -> dict:
+    """Hash every file in the binary data/control archives and classify its source."""
+    with tempfile.TemporaryDirectory(prefix="louksna-deb-audit-") as temp:
+        temp_root = Path(temp)
+        data_root = temp_root / "data"
+        control_root = temp_root / "control"
+        data_root.mkdir()
+        control_root.mkdir()
+        run(["dpkg-deb", "--extract", str(package.resolve()), str(data_root)], cwd=root)
+        run(["dpkg-deb", "--control", str(package.resolve()), str(control_root)], cwd=root)
+
+        reverse = {}
+        for row in source_rows:
+            for destination in row["installed_destinations"]:
+                reverse[destination] = row["source_path"]
+
+        explicit = {
+            "usr/bin/louksna": ("debian/louksna-linux-bridge.louksna", "SOURCE_FILE"),
+            "usr/share/applications/louksna-linux-bridge.desktop": ("debian/louksna-linux-bridge.desktop", "SOURCE_FILE"),
+            "usr/share/doc/louksna-linux-bridge/README.md": ("bridge/README.md", "SOURCE_FILE"),
+            "usr/share/doc/louksna-linux-bridge/MTLS_READONLY_GATEWAY.md": ("bridge/MTLS_READONLY_GATEWAY.md", "SOURCE_FILE"),
+            "usr/share/doc/louksna-linux-bridge/LIVE_TRANSPORT.md": ("bridge/LIVE_TRANSPORT.md", "SOURCE_FILE"),
+            "usr/share/doc/louksna-linux-bridge/CONTRACT.v0.json": ("bridge/CONTRACT.v0.json", "SOURCE_FILE"),
+            "usr/share/doc/louksna-linux-bridge/provision-mtls-local.sh": ("scripts/provision-mtls-local.sh", "SOURCE_FILE"),
+            "usr/share/doc/louksna-linux-bridge/changelog.Debian.gz": ("debian/changelog", "GENERATED_COMPRESSED_FROM_SOURCE"),
+            "lib/systemd/system/louksna-mtls-readonly.service": ("bridge/deploy/louksna-mtls-readonly.service.in", "GENERATED_FROM_TEMPLATE"),
+        }
+
+        def describe(path: Path, base: Path, area: str) -> dict:
+            rel = path.relative_to(base).as_posix()
+            if path.is_symlink():
+                target = os.readlink(path)
+                digest = hashlib.sha256(target.encode("utf-8")).hexdigest()
+                size = len(target.encode("utf-8"))
+                file_type = "symlink"
+                mode = oct(path.lstat().st_mode & 0o7777)
+            elif path.is_file():
+                digest = sha256(path)
+                size = path.stat().st_size
+                file_type = "regular"
+                mode = oct(path.stat().st_mode & 0o7777)
+            else:
+                return {}
+            if area == "data":
+                mapped = explicit.get(rel)
+                if mapped:
+                    source, classification = mapped
+                elif rel in reverse:
+                    source, classification = reverse[rel], "SOURCE_FILE"
+                elif rel.startswith("usr/share/doc/louksna-linux-bridge/"):
+                    source, classification = None, "UNMAPPED_REQUIRES_REVIEW"
+                else:
+                    source, classification = None, "GENERATED_OR_UNMAPPED_REQUIRES_REVIEW"
+            else:
+                if rel == "control":
+                    source, classification = "debian/control", "GENERATED_CONTROL_METADATA"
+                elif rel in ("postinst", "postrm", "prerm", "preinst"):
+                    source, classification = "debian/rules + debhelper", "GENERATED_MAINTAINER_SCRIPT"
+                elif rel == "md5sums":
+                    source, classification = "dpkg-deb package contents", "GENERATED_INTEGRITY_METADATA"
+                else:
+                    source, classification = None, "GENERATED_OR_UNMAPPED_REQUIRES_REVIEW"
+            return {
+                "archive_area": area,
+                "package_path": rel,
+                "file_type": file_type,
+                "mode_octal": mode,
+                "size_bytes": size,
+                "sha256_or_symlink_target_sha256": digest,
+                "source_path_or_generator": source,
+                "mapping_classification": classification,
+            }
+
+        data_rows = []
+        for item in sorted(data_root.rglob("*")):
+            if item.is_dir() and not item.is_symlink():
+                continue
+            row = describe(item, data_root, "data")
+            if row:
+                data_rows.append(row)
+        control_rows = []
+        for item in sorted(control_root.rglob("*")):
+            if item.is_dir() and not item.is_symlink():
+                continue
+            row = describe(item, control_root, "control")
+            if row:
+                control_rows.append(row)
+
+        unmapped = [
+            row["package_path"] for row in data_rows + control_rows
+            if "UNMAPPED_REQUIRES_REVIEW" in row["mapping_classification"]
+        ]
+        required_absent = []
+        for rel in ("usr/share/doc/louksna-linux-bridge/copyright",):
+            if not (data_root / rel).exists():
+                required_absent.append(rel)
+        return {
+            "data_archive_file_count": len(data_rows),
+            "control_archive_file_count": len(control_rows),
+            "data_archive_files": data_rows,
+            "control_archive_files": control_rows,
+            "unmapped_package_files": unmapped,
+            "required_files_absent": required_absent,
+            "inventory_complete": not unmapped,
+            "copyright_file_present": "usr/share/doc/louksna-linux-bridge/copyright" not in required_absent,
+            "interpretation": "Every regular file/symlink in the binary data and control archives is hashed. Generated maintainer scripts are identified as generated, not falsely attributed to a source author.",
+        }
+
+
 def parse_control(root: Path) -> dict:
     text = (root / "debian/control").read_text(encoding="utf-8")
     fields = {}
@@ -206,6 +316,7 @@ def main() -> int:
         if item["classification"] == "REQUIRES_REVIEW"
     })
     package_digest = sha256(package)
+    binary_inventory_report = binary_inventory(package, root, source_rows)
     clearance_path = root / "docs/DISTRIBUTION_CLEARANCE.json"
     copyright_path = root / "debian/copyright"
     report = {
@@ -221,6 +332,7 @@ def main() -> int:
             "sha256": package_digest,
             "dpkg_deb_version": run(["dpkg-deb", "--version"], cwd=root).splitlines()[0],
         },
+        "binary_package_inventory": binary_inventory_report,
         "source_coverage": {
             "source_file_count": len(source_rows),
             "expected_source_file_count_from_prior_review": 31,
@@ -261,7 +373,8 @@ def main() -> int:
             "rollback_and_postboot": "NOT_TESTED_ON_HOST",
         },
         "result": "HOLD" if (
-            len(source_rows) != 31 or missing_from_package or not copyright_path.is_file()
+            len(source_rows) != 31 or missing_from_package or not binary_inventory_report["inventory_complete"]
+            or binary_inventory_report["required_files_absent"] or not copyright_path.is_file()
             or not clearance_path.is_file() or unresolved_imports
         ) else "REQUIRES_INDEPENDENT_VALIDATION",
         "limitations": [
