@@ -6,6 +6,9 @@ on:
       - "jonas_hott_api/**"
       - "tests/test_jonas_*.py"
       - "scripts/missions/package_jonas_family.py"
+      - "scripts/missions/backup_restore_jonas_state.py"
+      - "tests/test_jonas_backup_restore.py"
+      - "docs/jonas-family-deployment.md"
       - ".github/workflows/jonas-hott-tests.yml"
   push:
     branches:
@@ -44,7 +47,7 @@ jobs:
         id: compile
         run: |
           mkdir -p evidence/jonas
-          python -m compileall -q jonas_hott_api tests scripts/missions/package_jonas_family.py
+          python -m compileall -q jonas_hott_api tests scripts/missions/package_jonas_family.py scripts/missions/backup_restore_jonas_state.py
       - name: Run Jonas API and shared-account tests
         id: api_tests
         env:
@@ -55,7 +58,7 @@ jobs:
           JONAS_ACCOUNT_STATE_TTL_SECONDS: "3600"
         run: |
           set -o pipefail
-          python -m pytest -q tests/test_jonas_hott_api.py tests/test_jonas_account_state.py 2>&1 | tee evidence/jonas/pytest.log
+          python -m pytest -q tests/test_jonas_hott_api.py tests/test_jonas_account_state.py tests/test_jonas_backup_restore.py 2>&1 | tee evidence/jonas/pytest.log
       - name: Build and clean-environment test the family source candidate
         id: package_check
         if: always()
@@ -78,7 +81,7 @@ jobs:
           "$PACKAGE_VENV/bin/python" -m pip install --disable-pip-version-check -r "$PACKAGE_ROOT/jonas_hott_api/requirements.txt"
           cd "$PACKAGE_ROOT"
           set -o pipefail
-          "$PACKAGE_VENV/bin/python" -m pytest -q tests/test_jonas_hott_api.py tests/test_jonas_account_state.py 2>&1 | tee "$GITHUB_WORKSPACE/evidence/jonas/package-pytest.log"
+          "$PACKAGE_VENV/bin/python" -m pytest -q tests/test_jonas_hott_api.py tests/test_jonas_account_state.py tests/test_jonas_backup_restore.py 2>&1 | tee "$GITHUB_WORKSPACE/evidence/jonas/package-pytest.log"
       - name: Capture hash-bound CI evidence
         if: always()
         env:
