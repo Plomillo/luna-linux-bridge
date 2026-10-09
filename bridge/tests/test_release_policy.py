@@ -67,6 +67,7 @@ class ReleasePolicyTests(unittest.TestCase):
 
     def test_release_stays_blocked_without_authoritative_legal_and_contact_metadata(self):
         self.assertIn("maintainers@louksna.invalid", CONTROL)
+        self.assertIn("util-linux", CONTROL)
         self.assertIn("debian/copyright", REPORT)
         self.assertIn("titular autorizado", REPORT)
         self.assertIn("G23", REPORT)
