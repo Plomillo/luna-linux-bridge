@@ -44,7 +44,13 @@ The reference API exposes:
 
 All non-health routes require a bearer token from `JONAS_API_TOKEN`. Budget settings are explicit environment variables: `JONAS_PERIOD_LIMIT_MICRO_USD` and `JONAS_PROTECTED_RESERVE_MICRO_USD`. If unset or invalid, new reservations are denied. Do not expose this service publicly without TLS, network restrictions, secret management, and deployment-specific authentication review.
 
-## 6. HoTT / univalence and observability boundaries
+## 6. Shared 1min.AI credit state and model catalog (implementation started)
+
+The branch now adds `jonas_hott_api/account_state.py` with authenticated endpoints for append-only credit observations and versioned model-catalog snapshots. The latest credit view reports source type, observation time, age, and `FRESH`/`STALE`; missing data is `UNKNOWN`. Observations carry actor/source provenance and a SHA-256 evidence digest. Snapshot history is stored in the same configured SQLite database as the budget ledger.
+
+This is shared state only for clients that reach the same service/database or a controlled synchronization layer. GitHub is the version-control and review surface, not a source of live account balance by itself. Automatic balance polling is **not implemented**: do not invent a balance endpoint or treat token usage as remaining credits. Verify an official 1min.AI account/billing endpoint and its authentication/permissions before adding a scheduled sync. Until then, a manually entered observation must remain labeled `manual`. Similarly, a saved catalog snapshot is not proof that the entire current catalog has been fetched. These additions are unverified and not certified.
+
+## 7. HoTT / univalence and observability boundaries
 
 - Types/contracts describe admissible actions; runtime validation checks concrete values.
 - Evidence digests establish content identity only, not authorship, correctness, or equivalence.
@@ -52,7 +58,7 @@ All non-health routes require a bearer token from `JONAS_API_TOKEN`. Budget sett
 - Telemetry is “live” only for events observed by this process. Provider-side billing, out-of-band credentials, and calls bypassing the gateway remain outside its visibility and must be isolated or separately reconciled.
 - The service starts in a non-authorizing state until configuration is explicit. This branch is not production-certified.
 
-## 7. Validation gate before production
+## 8. Validation gate before production
 
 1. Configure nonzero/explicit spend limit and protected reserve through an authorized operator.
 2. Verify current provider prices and billing semantics from official sources; record URL, retrieval time, version/hash, and reviewer.
@@ -62,6 +68,6 @@ All non-health routes require a bearer token from `JONAS_API_TOKEN`. Budget sett
 6. Independent review, release manifest/hash, access-control review, rollback drill, and explicit approval.
 7. Until all gates pass: keep automatic provider calls disabled.
 
-## 8. Provenance
+## 9. Provenance
 
 This document is an additive design record for `Plomillo/luna-linux-bridge`. It does not modify `Jonas.yml` or any canonical Louksna artifact. The source of truth for the implementation is the version-controlled branch and its review history; a pull request must be reviewed before merging.
