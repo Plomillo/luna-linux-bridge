@@ -27,22 +27,23 @@ const bootstrapReport = {
 };
 fs.writeFileSync(reportPath, JSON.stringify(bootstrapReport, null, 2) + "\n");
 console.log("CP-07 startup: candidate=" + candidate);
-if (!fs.existsSync(path.join(candidate, "package.json"))) throw new Error("candidate package.json missing");
-console.log("CP-07 startup: resolving Playwright from candidate package");
-const requireFromCandidate = createRequire(path.join(candidate, "package.json"));
-const { chromium } = requireFromCandidate("playwright");
-console.log("CP-07 startup: Playwright module loaded");
 const baseURL = "http://127.0.0.1:4173";
 const evidenceDir = path.dirname(reportPath);
 const failures = [];
 const assertions = [];
 let server;
 let browser;
+let chromium;
 const check = (name, condition, detail = "") => {
   assertions.push({ name, status: condition ? "PASS" : "FAIL", detail });
   if (!condition) failures.push(name);
 };
 try {
+  if (!fs.existsSync(path.join(candidate, "package.json"))) throw new Error("candidate package.json missing");
+  console.log("CP-07 startup: resolving Playwright from candidate package");
+  const requireFromCandidate = createRequire(path.join(candidate, "package.json"));
+  ({ chromium } = requireFromCandidate("playwright"));
+  console.log("CP-07 startup: Playwright module loaded");
   console.log("CP-07 E2E: starting bounded Vite server");
   // Do not keep child stdout/stderr pipes open: npm/Vite can leave inherited
   // handles alive after the E2E report is written, causing the CI step to hang.
