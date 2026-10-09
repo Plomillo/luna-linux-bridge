@@ -44,11 +44,14 @@ The reference API exposes:
 
 All non-health routes require a bearer token from `JONAS_API_TOKEN`. Budget settings are explicit environment variables: `JONAS_PERIOD_LIMIT_MICRO_USD` and `JONAS_PROTECTED_RESERVE_MICRO_USD`. If unset or invalid, new reservations are denied. Do not expose this service publicly without TLS, network restrictions, secret management, and deployment-specific authentication review.
 
-## 6. Shared 1min.AI credit state and model catalog (implementation started)
+## 6. Family-confirmed shared balance observations and model catalog (implementation started)
 
-The branch now adds `jonas_hott_api/account_state.py` with authenticated endpoints for append-only credit observations and versioned model-catalog snapshots. The latest credit view reports source type, observation time, age, and `FRESH`/`STALE`; missing data is `UNKNOWN`. Observations carry actor/source provenance and a SHA-256 evidence digest. Snapshot history is stored in the same configured SQLite database as the budget ledger.
+The branch adds authenticated endpoints for append-only balance observations and versioned model-catalog snapshots. The intended balance workflow is to ask each authorized family member directly for the balance they can currently see. Integration with a 1min.AI account/billing balance API is out of scope and must not be implemented.
 
-This is shared state only for clients that reach the same service/database or a controlled synchronization layer. GitHub is the version-control and review surface, not a source of live account balance by itself. Automatic balance polling is **not implemented**: do not invent a balance endpoint or treat token usage as remaining credits. Verify an official 1min.AI account/billing endpoint and its authentication/permissions before adding a scheduled sync. Until then, a manually entered observation must remain labeled `manual`. Similarly, a saved catalog snapshot is not proof that the entire current catalog has been fetched. These additions are unverified and not certified.
+A complete check-in must record respondent, account scope, balance and unit, observed time and timezone, recorded time, source type (self-reported or supported by supplied evidence), validation status, and evidence digest when applicable. Keep each person's/account's balance separate unless account scope, units, and permission to aggregate are established. A freshness window can mark observations FRESH/STALE/UNKNOWN; reminders may ask people to reconfirm but cannot generate a newer balance without their response. Do not infer credits from tokens.
+
+This is shared state only for clients that reach the same service/database or an explicitly configured synchronization layer. GitHub preserves code and review history; it is not itself a live shared database. A saved catalog snapshot is not proof that the full current catalog has been fetched. These additions remain unverified and uncertified.
+
 
 ## 7. HoTT / univalence and observability boundaries
 
