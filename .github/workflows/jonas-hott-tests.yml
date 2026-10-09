@@ -10,6 +10,7 @@ on:
       - "scripts/missions/backup_restore_jonas_state.py"
       - "tests/test_jonas_backup_restore.py"
       - "docs/jonas-family-deployment.md"
+      - "docs/jonas-three-track-completion-plan.md"
       - ".github/workflows/jonas-hott-tests.yml"
   push:
     branches:
@@ -23,6 +24,7 @@ on:
       - "scripts/missions/backup_restore_jonas_state.py"
       - "tests/test_jonas_backup_restore.py"
       - "docs/jonas-family-deployment.md"
+      - "docs/jonas-three-track-completion-plan.md"
       - ".github/workflows/jonas-hott-tests.yml"
   workflow_dispatch:
 
