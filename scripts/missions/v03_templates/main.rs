@@ -52,9 +52,12 @@ fn db() -> Result<Connection,String> {
 }
 
 fn log_event(operation:&str,status:&str,detail:&str) {
-    if let Ok(c)=db() {
-        let _=c.execute("INSERT INTO evidence(utc,operation,status,detail) VALUES(?1,?2,?3,?4)",
-            params![Utc::now().to_rfc3339(),operation,status,detail]);
+    match db().and_then(|c| c.execute(
+        "INSERT INTO evidence(utc,operation,status,detail) VALUES(?1,?2,?3,?4)",
+        params![Utc::now().to_rfc3339(),operation,status,detail]
+    ).map(|_|()).map_err(|e|e.to_string())) {
+        Ok(()) => {},
+        Err(e) => eprintln!("LOUKSNA_EVIDENCE_WRITE_FAILED operation={operation} error={e}"),
     }
 }
 
@@ -118,7 +121,12 @@ fn store_github_token(token:String)->Result<(),String>{
 fn remove_github_token()->Result<(),String>{
     let out=Command::new("secret-tool").args(["clear","service",APP_ID,"account","github"]).output().map_err(|_|"SECRET_TOOL_UNAVAILABLE".to_string())?;
     if !out.status.success() && out.status.code()!=Some(1){return Err("SECRET_CLEAR_FAILED".into());}
-    log_event("GITHUB_SECRET_REMOVE","PASS","Credencial GitHub eliminada de Secret Service.");
+    match secret_lookup() {
+        Err(e) if e == "GITHUB_TOKEN_NOT_STORED" => {},
+        Ok(_) => return Err("SECRET_CLEAR_NOT_VERIFIED".into()),
+        Err(e) => return Err(format!("SECRET_CLEAR_VERIFICATION_FAILED:{e}")),
+    }
+    log_event("GITHUB_SECRET_REMOVE","PASS","Ausencia de credencial verificada en Secret Service.");
     Ok(())
 }
 
@@ -236,7 +244,16 @@ async fn chat_send(message:String)->Result<String,String>{
         return Ok(reply);
     }
     if settings.offline_mode{return Err("OFFLINE_MODE_ENABLED".into());}
-    let resp=gh_client()?.post(settings.remote_chat_bridge.trim())
+    let bridge=settings.remote_chat_bridge.trim();
+    let parsed=reqwest::Url::parse(bridge).map_err(|_|"CHAT_BRIDGE_URL_INVALID".to_string())?;
+    if parsed.scheme()!="https" || parsed.host_str().is_none() || !parsed.username().is_empty() || parsed.password().is_some() {
+        return Err("CHAT_BRIDGE_URL_REQUIRES_HTTPS_VALID_HOST_NO_USERINFO".into());
+    }
+    let client=Client::builder().user_agent("LOUKSNA-ZONA-DIRECTIVA/0.3")
+        .connect_timeout(std::time::Duration::from_secs(5))
+        .timeout(std::time::Duration::from_secs(20))
+        .https_only(true).build().map_err(|e|e.to_string())?;
+    let resp=client.post(parsed)
         .json(&serde_json::json!({"message":msg,"source":"LOUKSNA_ZONA_DIRECTIVA","mode":"GOVERNED"}))
         .send().await.map_err(|e|format!("CHAT_BRIDGE_NETWORK_ERROR:{e}"))?;
     if resp.status()!=StatusCode::OK{
@@ -244,7 +261,11 @@ async fn chat_send(message:String)->Result<String,String>{
         return Err(format!("CHAT_BRIDGE_HTTP_{}",resp.status().as_u16()));
     }
     let text=resp.text().await.map_err(|e|e.to_string())?;
-    let reply=serde_json::from_str::<Value>(&text).ok().and_then(|v|v.get("response").and_then(|x|x.as_str()).map(str::to_string)).unwrap_or(text);
+    let reply=serde_json::from_str::<Value>(&text).ok().and_then(|v|v.get("response").and_then(|x|x.as_str()).map(str::to_string)).unwrap_or(text.clone());
+    if reply.trim().is_empty() || reply.len()>200_000 {
+        log_event("CHAT_BRIDGE","FAIL","Respuesta remota vacia o superior al limite de 200000 bytes.");
+        return Err("CHAT_BRIDGE_RESPONSE_INVALID".into());
+    }
     insert_chat("louksna",&reply,"remote-bridge")?;
     log_event("CHAT_BRIDGE","PASS","Round-trip remoto completado.");
     Ok(reply)
@@ -253,9 +274,14 @@ async fn chat_send(message:String)->Result<String,String>{
 #[tauri::command]
 fn runtime_probe()->Result<Value,String>{
     let data=data_dir()?; let db_path=data.join("louksna.db");
+    let database=match db() {
+        Ok(c) => c.query_row("SELECT 1",[],|r|r.get::<_,i64>(0)).map(|v|v==1).unwrap_or(false),
+        Err(_) => false,
+    };
     let secret_tool=Command::new("secret-tool").arg("--help").stdout(Stdio::null()).stderr(Stdio::null())
         .status().map(|s|s.success()).unwrap_or(false);
-    Ok(serde_json::json!({"status":"PASS","data_dir":data,"db_exists":db_path.exists(),"secret_service_tool":secret_tool,"identity":"LOUKSNA","version":"0.3.0"}))
+    let ready=database && secret_tool;
+    Ok(serde_json::json!({"status":if ready {"PASS"} else {"DEGRADED"},"data_dir":data,"db_exists":db_path.exists(),"database_query":database,"secret_service_tool":secret_tool,"identity":"LOUKSNA","version":"0.3.0"}))
 }
 
 fn main(){
