@@ -11,6 +11,7 @@ override_dh_auto_test:
 	python3 -m unittest bridge/tests/test_mtls_gateway.py
 	python3 -m unittest bridge/tests/test_lrb_core.py
 	python3 -m unittest bridge/tests/test_live_link.py
+	python3 -m unittest bridge/tests/test_release_policy.py
 
 override_dh_auto_build:
 	python3 scripts/build
