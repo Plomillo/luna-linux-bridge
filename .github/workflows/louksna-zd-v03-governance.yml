@@ -409,8 +409,35 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          CANDIDATE="$GITHUB_WORKSPACE/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate"
-          node scripts/missions/louksna_zd_v03_playwright_ui_e2e.mjs "$CANDIDATE" "$GITHUB_WORKSPACE/evidence/zona-directiva-v03/CP-07-playwright-ui-e2e.json"
+          CANDIDATE="$(find "$RUNNER_TEMP" -type f -path '*/src-tauri/tauri.conf.json' -print -quit | sed 's#/src-tauri/tauri.conf.json##')"
+          test -n "$CANDIDATE"
+          REPORT="$GITHUB_WORKSPACE/evidence/zona-directiva-v03/CP-07-playwright-ui-e2e.json"
+          set +e
+          timeout --signal=TERM --kill-after=5s 180s node scripts/missions/louksna_zd_v03_playwright_ui_e2e.mjs "$CANDIDATE" "$REPORT"
+          E2E_EXIT=$?
+          set -e
+          if [[ ! -s "$REPORT" ]]; then
+            python3 - "$REPORT" "$E2E_EXIT" <<'PY'
+          import datetime, json, pathlib, sys
+          report = {
+              "schema": "louksna.zd.v03.playwright-ui-e2e.v1",
+              "stage_id": "07",
+              "checkpoint_id": "CP-07",
+              "finished_at_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+              "repository": "Plomillo/luna-linux-bridge",
+              "commit_sha": "${{ github.sha }}",
+              "run_id": "${{ github.run_id }}",
+              "frontend_browser_e2e_executed": False,
+              "native_tauri_runtime_tested": False,
+              "voice_e2e_executed": False,
+              "status": "FAIL",
+              "error": "Playwright process exited without writing its report; exit_code=" + sys.argv[2],
+              "failures": ["browser_e2e_report_missing"]
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(report, indent=2) + "\n")
+          PY
+          fi
+          exit "$E2E_EXIT"
       - name: Execute voice-gate contract regression harness
         shell: bash
         run: |
