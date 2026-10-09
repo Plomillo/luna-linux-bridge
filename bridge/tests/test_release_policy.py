@@ -66,6 +66,13 @@ class ReleasePolicyTests(unittest.TestCase):
         self.assertIn("ReadWritePaths=@OWNER_PRIVATE_STATE@", SERVICE)
         self.assertIn("server_key (absolute root-owned private mode-0600 file", MTLS_DOC)
 
+    def test_gui_assets_are_included_in_package_build(self):
+        rules = (ROOT / "debian/rules").read_text()
+        self.assertIn("bridge/*.py", rules)
+        self.assertIn("usr/bin/louksna", rules)
+        self.assertIn("usr/share/applications/louksna-linux-bridge.desktop", rules)
+        self.assertIn("python3-tk", CONTROL)
+
     def test_release_stays_blocked_without_authoritative_legal_and_contact_metadata(self):
         legal_audit = (ROOT / "docs/LEGAL_METADATA_AUDIT_0.4.0-3.md").read_text()
         self.assertIn("maintainers@louksna.invalid", CONTROL)
