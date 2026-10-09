@@ -39,3 +39,26 @@ The reviewed packaging rules do not copy these Debian dependency binaries or the
 ## Current gate
 
 No repository evidence located so far establishes the rights holder, applicable copyright years, redistribution license, or all third-party obligations. `debian/copyright` must remain absent rather than contain invented legal data. Release, merge, and redistribution remain blocked until evidence closes the gate.
+
+
+## Git-history evidence review — 2026-10-09 UTC
+
+Review performed against candidate HEAD `3d4ed85aecd43dd58274082e6441be84cf51fded`, using the repository's per-path commit history. This is a bounded review of packaged paths, not proof of legal ownership.
+
+### First recorded introduction found
+
+The following packaged paths currently return the same first/only history entry in the queried branch history: commit `099ae35cb5ced2dde74d49545f57223b52102d30`, dated 2026-10-07 18:01:44 UTC, message `feat(louksna): materialize P02 LRB_APP 0.4 typed protocol`. GitHub marks the commit signature as **unsigned** (`verified=false`, reason `unsigned`). Its recorded author/committer is `custosz-v7-runtime-bot <custosz-v7-runtime-bot@users.noreply.github.com>`; this is commit metadata, not a legal person, assignment, or proof of authorship.
+
+- Python modules: `bridge/apc_inventory.py`, `bridge/app_protocol.py`, `bridge/continuous_assurance.py`, `bridge/elastic_automation.py`, `bridge/elastic_tick.py`, `bridge/external_gates.py`, `bridge/github_adapter.py`, `bridge/global_scope_register.py`, `bridge/live_link.py`, `bridge/lrb_core.py`, `bridge/mtls_gateway.py`, `bridge/virtual_brain.py`.
+- Other packaged paths: `bridge/CONTRACT.v0.json`, `bridge/README.md`, `bridge/deploy/louksna-elastic-readonly.service.in`, `bridge/deploy/louksna-elastic-readonly.timer.in`, `bridge/deploy/louksna-live-socket.service.in`, and `bridge/deploy/louksna-remote-bridge-observer.service.in`.
+
+The checked source headers for `bridge/lrb_core.py`, `bridge/mtls_gateway.py`, `bridge/live_link.py`, `bridge/app_protocol.py`, and `bridge/virtual_brain.py` contain module descriptions/imports but no visible copyright, SPDX identifier, or license grant in the inspected opening sections. `bridge/CONTRACT.v0.json` and `bridge/README.md` also do not grant a software license in the inspected content. This is a finding about those inspected contents, not proof that no applicable external instrument exists.
+
+### Paths with subsequent human-attributed commits
+
+- `bridge/deploy/louksna-mtls-readonly.service.in` has later commits by `Plomillo <diegonorambuenamiranda2@gmail.com>` on 2026-10-09, including `19b87f448fa3e6295411c1780c390e80e9335d55`, `ceb77b8ec0444d7226cf3937d943cb22c4909690`, and `f3f0ccdbdf9168ef042547c0b50a82892dad4178`. Those commits are also unsigned. They establish recorded editing activity, not exclusive authorship or rights to all material in the file.
+- `scripts/provision-mtls-local.sh` has subsequent edits attributed to `Plomillo <diegonorambuenamiranda2@gmail.com>`, including `7d23af61901e28477273c7bb71ae6da0141dabb1`, `cd1d9a9123055969c508de099bb66725f2e6eb57`, and `aa7c64b277e1c01976c0f81c08d28df8ad2f2bac`; those commits are unsigned as well. The script's first-introduction record and any source material it may derive from still need review before claiming sole authorship.
+
+### Consequence
+
+The history supports the narrower statement that the core packaged implementation was first recorded in this repository in an unsigned bot-attributed commit, followed by some unsigned human-attributed edits. It does **not** establish who legally owns the generated/edited material, whether any prompt or source terms affect it, whether all authors had authority, or whether third-party material is absent. Therefore the license and copyright gate remains **HOLD**. Do not infer a license from the bot account, repository control, or subsequent edits.
