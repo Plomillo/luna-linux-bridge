@@ -32,9 +32,9 @@ permissions:
   contents: read
 
 concurrency:
-  # Serialize runs per Git ref; PR merge refs and branch-push refs do not block each other.
+  # Keep the newest candidate moving; obsolete runs on the same ref must not block its evidence collection.
   group: louksna-zd-v03-governance-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   stage-01-audit:
