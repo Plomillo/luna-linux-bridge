@@ -107,10 +107,17 @@ jobs:
               groups: [sudo, adm, audio, video, plugdev]
               shell: /bin/bash
               sudo: ALL=(ALL) NOPASSWD:ALL
-              lock_passwd: true
+              # SDDM's PAM account phase rejects a password-locked account on some Debian builds.
+              # Give this disposable guest a cloud-init-generated password; SSH password auth remains disabled.
+              lock_passwd: false
               ssh_authorized_keys:
                 - ${PUBKEY}
           ssh_pwauth: false
+          chpasswd:
+            expire: false
+            users:
+              - name: louksna-test
+                type: RANDOM
           package_update: true
           packages:
             - openssh-server
@@ -163,7 +170,8 @@ jobs:
                 DisplayServer=x11
                 [Autologin]
                 User=louksna-test
-                Session=plasmax11.desktop
+                # SDDM's Autologin Session value is the session identifier, not the desktop filename.
+                Session=plasmax11
                 Relogin=false
           runcmd:
             - systemctl enable ssh
