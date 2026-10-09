@@ -192,7 +192,7 @@ PY
 # Remove signing key and transient CSRs/extensions; retain CA certificate for server trust.
 # Keep VALIDATED=0 until every publication/permission operation has succeeded, so
 # any failure still takes the bounded rollback path.
-rm -f "$TLS/ca.key" "$TLS/server.csr" "$TLS/server.ext" "$TLS/client.ext" "$TLS/ca.srl"
+rm -f "$TLS/ca.key" "$TLS/server.csr" "$TLS/server.ext" "$TLS/client.pem" "$TLS/client.ext" "$TLS/ca.srl"
 runuser -u "$OWNER_UID" -- rm -f "$CLIENT/client.csr"
 # Client directory and files already belong to the owner; root did not write
 # through that owner-controlled path.
