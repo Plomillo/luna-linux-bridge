@@ -5,6 +5,7 @@ on:
     paths:
       - "jonas_hott_api/**"
       - "tests/test_jonas_*.py"
+      - "scripts/missions/package_jonas_family.py"
       - ".github/workflows/jonas-hott-tests.yml"
   push:
     branches:
@@ -42,7 +43,7 @@ jobs:
         id: compile
         run: |
           mkdir -p evidence/jonas
-          python -m compileall -q jonas_hott_api tests
+          python -m compileall -q jonas_hott_api tests scripts/missions/package_jonas_family.py
       - name: Run Jonas API and shared-account tests
         id: api_tests
         env:
@@ -54,11 +55,35 @@ jobs:
         run: |
           set -o pipefail
           python -m pytest -q tests/test_jonas_hott_api.py tests/test_jonas_account_state.py 2>&1 | tee evidence/jonas/pytest.log
+      - name: Build and clean-environment test the family source candidate
+        id: package_check
+        if: always()
+        shell: bash
+        env:
+          JONAS_API_TOKEN: ci-test-token
+          JONAS_PERIOD_LIMIT_MICRO_USD: "1000000"
+          JONAS_PROTECTED_RESERVE_MICRO_USD: "200000"
+          JONAS_ACCOUNT_STATE_TTL_SECONDS: "3600"
+        run: |
+          set -Eeuo pipefail
+          mkdir -p dist evidence/jonas
+          python scripts/missions/package_jonas_family.py --output-dir dist
+          PACKAGE_ROOT="$RUNNER_TEMP/jonas-package-check"
+          PACKAGE_VENV="$RUNNER_TEMP/jonas-package-venv"
+          rm -rf "$PACKAGE_ROOT" "$PACKAGE_VENV"
+          mkdir -p "$PACKAGE_ROOT"
+          python -m zipfile -e dist/jonas-family-source-candidate.zip "$PACKAGE_ROOT"
+          python -m venv "$PACKAGE_VENV"
+          "$PACKAGE_VENV/bin/python" -m pip install --disable-pip-version-check -r "$PACKAGE_ROOT/jonas_hott_api/requirements.txt"
+          cd "$PACKAGE_ROOT"
+          set -o pipefail
+          "$PACKAGE_VENV/bin/python" -m pytest -q tests/test_jonas_hott_api.py tests/test_jonas_account_state.py 2>&1 | tee "$GITHUB_WORKSPACE/evidence/jonas/package-pytest.log"
       - name: Capture hash-bound CI evidence
         if: always()
         env:
           COMPILE_OUTCOME: ${{ steps.compile.outcome }}
           API_TEST_OUTCOME: ${{ steps.api_tests.outcome }}
+          PACKAGE_OUTCOME: ${{ steps.package_check.outcome }}
         shell: bash
         run: |
           python - <<'PY'
@@ -87,9 +112,11 @@ jobs:
               "timestamp_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
               "compile_outcome": os.environ.get("COMPILE_OUTCOME"),
               "api_test_outcome": os.environ.get("API_TEST_OUTCOME"),
+              "package_outcome": os.environ.get("PACKAGE_OUTCOME"),
+              "source_package_sha256": (json.loads((root / "dist" / "jonas-family-source-package.json").read_text()).get("archive_sha256") if (root / "dist" / "jonas-family-source-package.json").is_file() else None),
               "test_log_sha256": hashlib.sha256(log.read_bytes()).hexdigest() if log.is_file() else None,
               "source_sha256": hashes,
-              "status": "PASS" if os.environ.get("COMPILE_OUTCOME") == "success" and os.environ.get("API_TEST_OUTCOME") == "success" else "FAIL",
+              "status": "PASS" if all(os.environ.get(key) == "success" for key in ("COMPILE_OUTCOME", "API_TEST_OUTCOME", "PACKAGE_OUTCOME")) else "FAIL",
               "certified": False,
               "production_authorized": False,
               "limits": [
@@ -109,6 +136,10 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: jonas-hott-ci-${{ github.run_id }}-${{ github.run_attempt }}
-          path: evidence/jonas/
-          if-no-files-found: error
+          path: |
+            evidence/jonas/
+            dist/jonas-family-source-candidate.zip
+            dist/jonas-family-source-candidate.zip.sha256
+            dist/jonas-family-source-package.json
+          if-no-files-found: warn
           retention-days: 90
