@@ -191,7 +191,7 @@ jobs:
           else
             echo "KVM_DEVICE=ABSENT; using QEMU TCG"
           fi
-          printf 'QEMU_ACCEL=%s\\n' "$ACCEL" | tee virtualization-mode-actual.txt
+          printf 'QEMU_ACCEL=%s\n' "$ACCEL" | tee virtualization-mode-actual.txt
           "${QEMU_PREFIX[@]}" qemu-system-x86_64 \
             -machine "q35,accel=$ACCEL" \
             -cpu max -smp 2 -m 4096 \
@@ -254,7 +254,7 @@ jobs:
           uid="$(id -u louksna-test)"
           test -S "/run/user/$uid/bus" || { echo "KDE user bus missing"; exit 2; }
           test -n "$(pgrep -x Xorg)" && test -n "$(pgrep -x kwin_x11)" || { echo "KDE/Xorg session process missing"; exit 3; }
-          XAUTH="$(pgrep -a Xorg | sed -n 's/.*-auth \\([^ ]*\\).*/\\1/p' | head -n 1)"
+          XAUTH="$(pgrep -a Xorg | sed -n 's/.*-auth \([^ ]*\).*/\1/p' | head -n 1)"
           if [ -n "$XAUTH" ] && sudo test -r "$XAUTH"; then
             sudo cp "$XAUTH" /home/louksna-test/.Xauthority
             sudo chown louksna-test:louksna-test /home/louksna-test/.Xauthority
