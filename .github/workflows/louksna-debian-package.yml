@@ -61,16 +61,28 @@ jobs:
           fi
           PYTHONPATH=/tmp/louksna-deb-root/usr/lib/louksna/bridge             python3 -m py_compile /tmp/louksna-deb-root/usr/lib/louksna/bridge/*.py
           sha256sum "$DEB" | tee debian-package.sha256
-          lintian --no-tag-display-limit "$DEB" | tee lintian.txt || true
+          # Preserve the exact linter exit status and output, but continue far enough
+          # to publish diagnostic evidence. A later gate fails the job on any E: tag.
+          set +e
+          lintian --no-tag-display-limit "$DEB" > lintian.txt 2>&1
+          lintian_rc=$?
+          set -e
+          printf '%s\n' "$lintian_rc" > lintian.exit
+          cat lintian.txt
 
       - name: Build evidence
         run: |
           python3 - <<'PY'
           import hashlib, json, pathlib, subprocess, time
           deb=pathlib.Path("../louksna-linux-bridge_0.4.0-3_all.deb")
+          lintian_rc=int(pathlib.Path("lintian.exit").read_text().strip())
+          lintian_output=pathlib.Path("lintian.txt").read_text(errors="replace")
+          lintian_errors=[line for line in lintian_output.splitlines() if line.startswith("E:")]
           evidence={
-            "schema":"LOUKSNA_ZD_DEBIAN_PACKAGE_EVIDENCE/1.0",
-            "status":"PASS",
+            "schema":"LOUKSNA_ZD_DEBIAN_PACKAGE_EVIDENCE/1.1",
+            "status":"PASS" if lintian_rc == 0 and not lintian_errors else "HOLD_LINTIAN",
+            "lintian_exit_code":lintian_rc,
+            "lintian_errors":lintian_errors,
             "timestamp_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),
             "branch":subprocess.check_output(["git","branch","--show-current"],text=True).strip(),
             "commit":subprocess.check_output(["git","rev-parse","HEAD"],text=True).strip(),
@@ -106,3 +118,15 @@ jobs:
             dist/debian/debian-package.sha256
             dist/debian/debian-package-evidence.json
             dist/debian/lintian.txt
+            dist/debian/lintian.exit
+
+      - name: Enforce fail-closed package policy
+        if: always()
+        run: |
+          test -s lintian.exit || { echo "::error::Missing lintian exit evidence"; exit 1; }
+          test -s lintian.txt || { echo "::error::Missing lintian output"; exit 1; }
+          if [ "$(cat lintian.exit)" -ne 0 ] || grep -q '^E:' lintian.txt; then
+            echo "::error::lintian reported an error; package is not releasable."
+            exit 1
+          fi
+            dist/debian/lintian.exit
