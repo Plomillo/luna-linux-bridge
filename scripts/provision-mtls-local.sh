@@ -66,10 +66,13 @@ cleanup() {
     rm -f "$CONFIG" \
       "$TLS/ca.key" "$TLS/ca.pem" "$TLS/ca.srl" \
       "$TLS/server.key" "$TLS/server.pem" "$TLS/server.csr" "$TLS/server.ext" \
-      "$TLS/client.csr" "$TLS/client.ext" \
-      "$CLIENT/client.key" "$CLIENT/client.pem" "$CLIENT/ca.pem"
+      "$TLS/client.pem" "$TLS/client.ext"
+    if [ -n "$OWNER_UID" ]; then
+      runuser -u "$OWNER_UID" -- rm -f "$CLIENT/client.key" "$CLIENT/client.csr" "$CLIENT/client.pem" "$CLIENT/ca.pem" 2>/dev/null || true
+      [ "$CLIENT_CREATED" -eq 1 ] && runuser -u "$OWNER_UID" -- rmdir "$CLIENT" 2>/dev/null || true
+    fi
+    [ "$TLS_CREATED" -eq 1 ] && chmod 0700 "$TLS" 2>/dev/null || true
     [ "$TLS_CREATED" -eq 1 ] && rmdir "$TLS" 2>/dev/null || true
-    [ "$CLIENT_CREATED" -eq 1 ] && rmdir "$CLIENT" 2>/dev/null || true
     [ "$BASE_CREATED" -eq 1 ] && rmdir "$BASE" 2>/dev/null || true
     [ "$BASE_PARENT_CREATED" -eq 1 ] && rmdir /etc/louksna 2>/dev/null || true
   fi
@@ -91,12 +94,13 @@ install -d -o root -g root -m 0700 "$TLS"
 TLS_CREATED=1
 for d in "$OWNER_HOME/.config" "$OWNER_HOME/.config/louksna"; do
   if [ ! -e "$d" ]; then
-    install -d -o "$OWNER_UID" -g "$OWNER_GID" -m 0700 "$d"
+    runuser -u "$OWNER_UID" -- mkdir -m 0700 "$d"
   fi
 done
-# Keep the client directory root-private while root writes into it. This blocks
-# the invoking user from racing generated filenames with symlinks.
-install -d -o root -g root -m 0700 "$CLIENT"
+# All client-side paths are written by the invoking UID, never by root through
+# an owner-controlled parent directory. This prevents a parent-path symlink
+# race from redirecting privileged writes.
+runuser -u "$OWNER_UID" -- mkdir -m 0700 "$CLIENT"
 CLIENT_CREATED=1
 
 openssl req -x509 -newkey rsa:3072 -nodes -sha256 \
@@ -122,25 +126,28 @@ openssl x509 -req -sha256 -in "$TLS/server.csr" \
   -out "$TLS/server.pem" -days 180 -extfile "$TLS/server.ext"
 chmod 0644 "$TLS/server.pem"
 
-openssl req -new -newkey rsa:3072 -nodes -sha256 \
-  -keyout "$CLIENT/client.key" -out "$TLS/client.csr" \
+runuser -u "$OWNER_UID" -- openssl req -new -newkey rsa:3072 -nodes -sha256 \
+  -keyout "$CLIENT/client.key" -out "$CLIENT/client.csr" \
   -subj "/CN=LOUKSNA Local Owner Client"
-chmod 0600 "$CLIENT/client.key"
+runuser -u "$OWNER_UID" -- chmod 0600 "$CLIENT/client.key"
 cat > "$TLS/client.ext" <<'EOF'
 basicConstraints=critical,CA:FALSE
 keyUsage=critical,digitalSignature
 extendedKeyUsage=clientAuth
 EOF
-openssl x509 -req -sha256 -in "$TLS/client.csr" \
+openssl x509 -req -sha256 -in "$CLIENT/client.csr" \
   -CA "$TLS/ca.pem" -CAkey "$TLS/ca.key" -CAcreateserial \
-  -out "$CLIENT/client.pem" -days 180 -extfile "$TLS/client.ext"
-chmod 0644 "$CLIENT/client.pem"
-cp "$TLS/ca.pem" "$CLIENT/ca.pem"
-chown "$OWNER_UID:$OWNER_GID" "$CLIENT/client.key" "$CLIENT/client.pem" "$CLIENT/ca.pem"
-chmod 0600 "$CLIENT/client.key"
-chmod 0644 "$CLIENT/client.pem" "$CLIENT/ca.pem"
+  -out "$TLS/client.pem" -days 180 -extfile "$TLS/client.ext"
+# Publish only public certificates, with writes performed as the owner UID.
+# The CA and server private keys remain mode 0600 and are not readable by owner.
+chmod 0711 "$TLS"
+runuser -u "$OWNER_UID" -- cp "$TLS/client.pem" "$CLIENT/client.pem"
+runuser -u "$OWNER_UID" -- cp "$TLS/ca.pem" "$CLIENT/ca.pem"
+chmod 0700 "$TLS"
+runuser -u "$OWNER_UID" -- chmod 0600 "$CLIENT/client.key"
+runuser -u "$OWNER_UID" -- chmod 0644 "$CLIENT/client.pem" "$CLIENT/ca.pem"
 
-CLIENT_PIN="$(openssl x509 -in "$CLIENT/client.pem" -outform DER | sha256sum | cut -d' ' -f1)"
+CLIENT_PIN="$(openssl x509 -in "$TLS/client.pem" -outform DER | sha256sum | cut -d' ' -f1)"
 SERVER_PIN="$(sha256sum "$TLS/server.pem" | cut -d' ' -f1)"
 CA_PIN="$(sha256sum "$TLS/ca.pem" | cut -d' ' -f1)"
 python3 - "$CONFIG" "$TLS/server.pem" "$TLS/server.key" "$TLS/ca.pem" "$CLIENT_PIN" "$SERVER_PIN" "$CA_PIN" <<'PY'
@@ -186,9 +193,9 @@ PY
 # Keep VALIDATED=0 until every publication/permission operation has succeeded, so
 # any failure still takes the bounded rollback path.
 rm -f "$TLS/ca.key" "$TLS/server.csr" "$TLS/server.ext" "$TLS/client.csr" "$TLS/client.ext" "$TLS/ca.srl"
-# Publish the client identity only after all runtime-policy checks passed.
-chown "$OWNER_UID:$OWNER_GID" "$CLIENT"
-chmod 0700 "$CLIENT"
+# Client directory and files already belong to the owner; root did not write
+# through that owner-controlled path.
+runuser -u "$OWNER_UID" -- chmod 0700 "$CLIENT"
 VALIDATED=1
 trap - EXIT HUP INT TERM
 echo "PROVISIONED: $CONFIG"
