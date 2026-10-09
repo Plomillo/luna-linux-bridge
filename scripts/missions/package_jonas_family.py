@@ -18,7 +18,6 @@ SOURCES = (
     "jonas_hott_api/requirements.txt",
     "jonas_hott_api/README.md",
     "docs/jonas-hott-live-telemetry.md",
-    "docs/jonas-three-track-completion-plan.md",
     "docs/jonas-family-deployment.md",
     "scripts/missions/backup_restore_jonas_state.py",
     "tests/test_jonas_hott_api.py",
