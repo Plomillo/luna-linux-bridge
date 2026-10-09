@@ -36,6 +36,9 @@ class ReleasePolicyTests(unittest.TestCase):
         self.assertIn('"HOLD_LINTIAN"', WORKFLOW)
         self.assertIn("lintian.exit", WORKFLOW)
         self.assertIn("--tag-display-limit 0", WORKFLOW)
+        self.assertIn("Install and exercise provisioner on ephemeral runner", WORKFLOW)
+        self.assertIn("SERVICE_ACTIVE=false; SERVICE_ENABLED=false", WORKFLOW)
+        self.assertIn("test ! -e /etc/louksna", WORKFLOW)
 
     def test_runtime_identity_matches_root_owned_key_policy_and_is_explicit(self):
         self.assertIn("User=root", SERVICE)
