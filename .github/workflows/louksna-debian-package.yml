@@ -81,6 +81,7 @@ jobs:
 
       - name: Run hash-bound file-level distribution audit
         run: |
+          set +e
           set -u
           AUDIT_LOG=distribution-audit.log
           : > "$AUDIT_LOG"
