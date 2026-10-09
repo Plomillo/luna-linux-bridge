@@ -92,3 +92,9 @@ El inventario técnico nuevo está en [PACKAGE_COMPONENT_INVENTORY.md](PACKAGE_C
 ### Ajuste adicional de runtime
 
 La unidad ahora declara `StateDirectory=louksna/remote-bridge` y `StateDirectoryMode=0700`. Esto hace explícita la creación del directorio de estado administrado por systemd bajo /var/lib, en vez de depender de que una ruta permitida por `ReadWritePaths` exista previamente. La directiva se somete a `systemd-analyze verify` en CI y queda incluida en la prueba de regresión; su funcionamiento efectivo todavía debe confirmarse en VM.
+
+### Corrección adicional de frontera de privilegios
+
+La creación de la clave privada de cliente, la escritura de CSR, la copia de certificados públicos y la limpieza de los archivos del cliente ahora se ejecutan bajo el UID invocante mediante `runuser`. Root ya no crea ni modifica archivos dentro de la ruta de configuración del usuario a través de ancestros controlados por este, evitando convertir una carrera de symlink de esa ruta en una escritura privilegiada. El directorio TLS root-only se vuelve temporalmente searchable, no listable, solo para copiar certificados públicos; la ruta de salida de fallos restaura su modo 0700 antes de la limpieza. El CSR de cliente y la copia de certificado de cliente en el directorio de staging se eliminan antes del punto de commit `VALIDATED=1`.
+
+La prueba de CI se amplió para verificar que el provisionador realmente genera la identidad bajo el UID propietario y para inyectar un fallo temprano de OpenSSL, exigiendo código 71 y ausencia de estado parcial. Sigue pendiente observar un run real que ejecute la nueva prueba; la modificación de código no se presenta como resultado de prueba.
