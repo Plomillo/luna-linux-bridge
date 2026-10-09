@@ -163,7 +163,7 @@ jobs:
                 DisplayServer=x11
                 [Autologin]
                 User=louksna-test
-                Session=plasma.desktop
+                Session=plasmax11.desktop
                 Relogin=false
           runcmd:
             - systemctl enable ssh
