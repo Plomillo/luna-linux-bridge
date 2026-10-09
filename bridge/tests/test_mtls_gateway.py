@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import time
 import unittest
 
 ROOT=Path(__file__).resolve().parent.parent
@@ -176,15 +177,22 @@ class MTLSGatewayTests(unittest.TestCase):
     def test_rejected_clients_do_not_leak_or_double_release_slots(self):
         # Repeated authenticated-but-unpinned clients must be rejected without
         # exhausting or over-releasing the bounded concurrency semaphore.
+        # The peer can observe EOF just before the server thread's finally block
+        # releases its slot, so assert eventual restoration within a bounded wait.
+        def wait_for_all_slots():
+            deadline=time.monotonic()+2.0
+            while self.server.slots._value != gate.MAX_CLIENTS and time.monotonic() < deadline:
+                time.sleep(0.01)
+            self.assertEqual(self.server.slots._value,gate.MAX_CLIENTS)
         for _ in range(12):
             try:
                 reply=self.client("/v1/status",cert=True,other=True)
                 self.assertNotIn(b"200 OK",reply.split(b"\r\n",1)[0])
             except (ssl.SSLError,ConnectionResetError,BrokenPipeError,OSError):
                 pass
-        self.assertEqual(self.server.slots._value,gate.MAX_CLIENTS)
+        wait_for_all_slots()
         self.assertIn(b"200 OK",self.client("/v1/status").split(b"\r\n",1)[0])
-        self.assertEqual(self.server.slots._value,gate.MAX_CLIENTS)
+        wait_for_all_slots()
 
     def test_client_rejects_server_certificate_with_wrong_hostname(self):
         bad=dict(self.config)
