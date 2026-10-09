@@ -1,0 +1,139 @@
+name: "LOUKSNA ZD V0.3 — Second-order automation supervisor"
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/15 * * * *"
+  pull_request:
+    branches:
+      - work/louksna-zona-directiva-v0.3-functional-20261006
+    paths:
+      - .github/workflows/louksna-zd-v03-supervisor.yml
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: louksna-zd-v03-supervisor
+  cancel-in-progress: false
+
+jobs:
+  supervise:
+    name: "Observe telemetry, preserve evidence, retry only recoverable CP-08 failures"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Inspect governance runs and apply bounded recovery policy
+        id: supervise
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TARGET_BRANCH: governance/louksna-zd-v03-12-stage-gates-20261009
+          WORKFLOW_FILE: louksna-zd-v03-governance.yml
+        run: |
+          set -Eeuo pipefail
+          mkdir -p evidence/zona-directiva-v03
+          python3 - <<'PY'
+          import datetime, hashlib, json, os, pathlib, urllib.error, urllib.request
+          repo = os.environ["GITHUB_REPOSITORY"]
+          token = os.environ["GH_TOKEN"]
+          branch = os.environ["TARGET_BRANCH"]
+          workflow = os.environ["WORKFLOW_FILE"]
+          api = "https://api.github.com"
+          headers = {
+              "Accept": "application/vnd.github+json",
+              "Authorization": "Bearer " + token,
+              "X-GitHub-Api-Version": "2022-11-28",
+              "User-Agent": "louksna-zd-v03-supervisor",
+          }
+          def request(url, method="GET", payload=None):
+              data = json.dumps(payload).encode() if payload is not None else None
+              req = urllib.request.Request(url, data=data, headers=headers, method=method)
+              with urllib.request.urlopen(req, timeout=20) as response:
+                  raw = response.read()
+                  return response.status, json.loads(raw) if raw else {}
+          now = datetime.datetime.now(datetime.timezone.utc)
+          result = {
+              "schema": "louksna.zd.v03.supervisor.v1",
+              "mission_id": "MIS-LOUKSNA-ZD-V03-FUNCTIONAL-20261006",
+              "timestamp_utc": now.isoformat(),
+              "repository": repo,
+              "supervisor_run_id": os.environ.get("GITHUB_RUN_ID"),
+              "supervisor_commit": os.environ.get("GITHUB_SHA"),
+              "target_branch": branch,
+              "workflow_file": workflow,
+              "observation": "STARTED",
+              "retry_policy": "CP-08 failure only; at most one automatic retry per workflow run; never retry CP-07 voice HOLD, CP-09 host absence, CP-11 independent-validation HOLD, or CP-12 certification HOLD",
+              "actions": [],
+              "findings": [],
+          }
+          try:
+              _, data = request(f"{api}/repos/{repo}/actions/workflows/{workflow}/runs?branch={branch}&per_page=20")
+              runs = data.get("workflow_runs", [])
+              result["observed_runs"] = len(runs)
+              result["runs"] = [{
+                  "id": r.get("id"),
+                  "run_number": r.get("run_number"),
+                  "status": r.get("status"),
+                  "conclusion": r.get("conclusion"),
+                  "run_attempt": r.get("run_attempt"),
+                  "head_sha": r.get("head_sha"),
+                  "html_url": r.get("html_url"),
+                  "created_at": r.get("created_at"),
+                  "updated_at": r.get("updated_at"),
+              } for r in runs[:10]]
+              candidates = [r for r in runs if r.get("status") == "completed"
+                            and r.get("conclusion") == "failure"
+                            and int(r.get("run_attempt") or 1) < 2]
+              for run in candidates:
+                  _, jobs_data = request(f"{api}/repos/{repo}/actions/runs/{run['id']}/jobs?per_page=100")
+                  jobs = jobs_data.get("jobs", [])
+                  cp08 = [j for j in jobs if "CP-08" in j.get("name", "") or "Stage 08" in j.get("name", "")]
+                  failed_cp08 = [j for j in cp08 if j.get("conclusion") == "failure"]
+                  if not failed_cp08:
+                      result["actions"].append({
+                          "run_id": run["id"], "decision": "NO_RETRY",
+                          "reason": "Failure is not an eligible CP-08 recoverable build/install failure."
+                      })
+                      continue
+                  status, _ = request(f"{api}/repos/{repo}/actions/runs/{run['id']}/rerun-failed-jobs",
+                                      method="POST", payload={})
+                  result["actions"].append({
+                      "run_id": run["id"], "decision": "RERUN_FAILED_JOBS",
+                      "http_status": status, "attempt_before": run.get("run_attempt"),
+                      "failed_jobs": [{"name": j.get("name"), "id": j.get("id")} for j in failed_cp08]
+                  })
+              result["observation"] = "PASS" if runs else "NO_GOVERNANCE_RUNS_FOUND"
+              if not runs:
+                  result["findings"].append({
+                      "severity": "BLOCKER",
+                      "id": "NO_GOVERNANCE_RUNS",
+                      "detail": "Supervisor is alive but cannot certify that the governance pipeline is running."
+                  })
+          except Exception as exc:
+              result["observation"] = "ERROR"
+              result["findings"].append({
+                  "severity": "BLOCKER",
+                  "id": "SUPERVISOR_API_OR_PERMISSION_FAILURE",
+                  "detail": type(exc).__name__ + ": " + str(exc)[:500]
+              })
+          result["evidence_sha256"] = hashlib.sha256(
+              json.dumps(result, sort_keys=True, separators=(",", ":")).encode()
+          ).hexdigest()
+          path = pathlib.Path("evidence/zona-directiva-v03/supervisor-telemetry.json")
+          path.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
+          print(json.dumps(result, indent=2))
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write("status=" + result["observation"] + "\n")
+          if result["observation"] == "ERROR":
+              raise SystemExit(1)
+          PY
+      - name: Preserve supervisor telemetry
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksna-zd-v03-supervisor-${{ github.run_id }}-${{ github.run_attempt }}
+          path: evidence/zona-directiva-v03/supervisor-telemetry.json
+          if-no-files-found: error
+          retention-days: 90
