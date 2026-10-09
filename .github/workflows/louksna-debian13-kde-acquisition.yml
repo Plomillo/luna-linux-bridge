@@ -46,25 +46,31 @@ jobs:
         run: |
           set -Eeuo pipefail
           mkdir -p evidence/infra-acquisition
-          # Retry transient registry/token gateway failures; preserve every attempt.
-          for attempt in 1 2 3 4 5; do
-            if podman pull docker.io/library/debian:13 2>&1 | tee "evidence/infra-acquisition/podman-pull-attempt-${attempt}.log"; then
+          # Try Docker Hub, then the public ECR mirror of the official Debian image.
+          IMAGE_REF=""
+          attempt=0
+          for image in docker.io/library/debian:13 public.ecr.aws/docker/library/debian:13; do
+            attempt=$((attempt + 1))
+            if podman pull "$image" 2>&1 | tee "evidence/infra-acquisition/podman-pull-${attempt}.log"; then
+              IMAGE_REF="$image"
               break
-            fi
-            if [ "$attempt" -eq 5 ]; then
-              echo "Debian image pull failed after 5 attempts" >&2
-              exit 1
             fi
             sleep $((attempt * 5))
           done
-          podman image inspect docker.io/library/debian:13 --format '{{.Digest}}' | tee evidence/infra-acquisition/debian-image-digest.txt
-          podman image inspect docker.io/library/debian:13 > evidence/infra-acquisition/debian-image-inspect.json
+          if [ -z "$IMAGE_REF" ]; then
+            echo "Debian 13 image pull failed from both configured registries" >&2
+            exit 1
+          fi
+          printf '%s\n' "$IMAGE_REF" | tee evidence/infra-acquisition/debian-image-reference.txt
+          podman image inspect "$IMAGE_REF" --format '{{.Digest}}' | tee evidence/infra-acquisition/debian-image-digest.txt
+          podman image inspect "$IMAGE_REF" > evidence/infra-acquisition/debian-image-inspect.json
 
       - name: Download and install runtime plus KDE/X11 test dependencies
         shell: bash
         run: |
           set -Eeuo pipefail
-          podman run --rm --volume "$PWD/evidence/infra-acquisition:/evidence:Z" docker.io/library/debian:13 bash -Eeuc '
+          IMAGE_REF="$(cat evidence/infra-acquisition/debian-image-reference.txt)"
+          podman run --rm --volume "$PWD/evidence/infra-acquisition:/evidence:Z" "$IMAGE_REF" bash -Eeuc '
             export DEBIAN_FRONTEND=noninteractive
             apt-get update
             apt-get install --yes --no-install-recommends \
@@ -86,6 +92,7 @@ jobs:
               dpkg-query -W -f="\${Package}\t\${Version}\n" plasma-workspace kwin-x11 xvfb dbus-x11
               timeout 15s xvfb-run -a dbus-run-session -- bash -c "echo DISPLAY=\$DISPLAY; xdpyinfo >/dev/null"
             } > /evidence/runtime-smoke.log 2>&1
+            touch /evidence/INSTALL_SMOKE_PASS
           ' 2> evidence/infra-acquisition/install.log
 
       - name: Bind hashes, commit, environment, and verdict
@@ -113,7 +120,7 @@ jobs:
             "workflow_run_attempt":os.environ["RUN_ATTEMPT"],
             "runner_os":platform.platform(),
             "scope":"ephemeral Debian 13 container; package installation and headless X11/DBus smoke test",
-            "status":"PASS" if (root/"runtime-smoke.log").is_file() and (root/"dpkg-installed.tsv").is_file() else "HOLD",
+            "status":"PASS" if (root/"INSTALL_SMOKE_PASS").is_file() and (root/"runtime-smoke.log").is_file() and (root/"dpkg-installed.tsv").is_file() and (root/"debian-image-digest.txt").read_text().strip() else "HOLD",
             "physical_debian_kde_host_provisioned":False,
             "real_microphone_or_remote_voice_test":False,
             "self_hosted_runner_registered":False,
