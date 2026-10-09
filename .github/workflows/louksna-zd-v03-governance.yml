@@ -9,6 +9,7 @@ on:
       - .github/workflows/louksna-zd-v03-governance.yml
       - .github/workflows/louksna-zd-v03-supervisor.yml
       - scripts/missions/louksna_zd_v03_functionalizer.py
+      - scripts/missions/repo_forensic_census.py
       - scripts/missions/louksna_zd_candidate_materializer.py
       - scripts/missions/louksna_zd_v03_playwright_ui_e2e.mjs
       - scripts/missions/debian13_package_smoke.sh
@@ -62,6 +63,17 @@ jobs:
           echo "TELEMETRY run_id=$GITHUB_RUN_ID"
           echo "TELEMETRY run_attempt=$GITHUB_RUN_ATTEMPT"
           echo "TELEMETRY timestamp_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+      - name: Census all Git-tracked files and hash repository contents
+        id: census
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p evidence/zona-directiva-v03
+          python3 -B scripts/missions/repo_forensic_census.py \
+            --root "$GITHUB_WORKSPACE" \
+            --output-dir evidence/zona-directiva-v03 \
+            2>&1 | tee evidence/zona-directiva-v03/CP-01-repository-census.log
 
       - name: Audit observable repository mechanisms
         id: audit
@@ -126,8 +138,12 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: louksna-zd-v03-cp01-repository-audit
-          path: evidence/zona-directiva-v03/CP-01-repository-audit.json
-          if-no-files-found: error
+          path: |
+            evidence/zona-directiva-v03/CP-01-repository-audit.json
+            evidence/zona-directiva-v03/CP-01-repository-census-summary.json
+            evidence/zona-directiva-v03/CP-01-repository-census.jsonl
+            evidence/zona-directiva-v03/CP-01-repository-census.log
+          if-no-files-found: warn
           retention-days: 90
 
   stage-02-contract-linkage:
