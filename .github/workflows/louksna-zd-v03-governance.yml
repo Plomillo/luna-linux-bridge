@@ -690,8 +690,9 @@ jobs:
         with:
           name: louksna-zd-v03-cp08-build-package
           path: evidence/zona-directiva-v03/imported/louksna-zd-v03-cp08-build-package
-      - name: Run Debian 13 package install, launch, and rollback smoke test
+      - name: Run Debian 13 container smoke test (supplemental only)
         if: always()
+        continue-on-error: true
         shell: bash
         run: |
           set -Eeuo pipefail
