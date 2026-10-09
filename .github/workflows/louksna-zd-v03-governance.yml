@@ -28,7 +28,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: louksna-zd-v03-governance
+  # Serialize repeated runs for the same Git ref; do not let a stale PR-merge ref queue block branch-push validation.
+  group: louksna-zd-v03-governance-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
