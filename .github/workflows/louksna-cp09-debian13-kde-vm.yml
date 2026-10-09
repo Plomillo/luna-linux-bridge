@@ -231,6 +231,7 @@ jobs:
           test -f cloud-init-ready.txt || { tail -n 200 vm-serial.log || true; echo "Debian VM cloud-init did not finish in time"; exit 20; }
           SSH=(ssh -i vm_ssh_key -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ServerAliveInterval=15 louksna-test@127.0.0.1)
           "${SSH[@]}" 'sudo cloud-init status --wait; cat /etc/os-release; dpkg-query -W plasma-workspace kwin-x11 sddm xserver-xorg-video-dummy' | tee guest-os-desktop-inventory.txt
+          # shellcheck disable=SC2016
           "${SSH[@]}" 'set -x; sudo loginctl enable-linger louksna-test; sudo -u louksna-test mkdir -p /home/louksna-test/.local/share; sudo -u louksna-test nohup env HOME=/home/louksna-test USER=louksna-test LOGNAME=louksna-test startx /usr/bin/startplasma-x11 -- :0 vt1 -keeptty -nolisten tcp > /home/louksna-test/.local/share/cp09-kde-session.log 2>&1 < /dev/null & echo $! | sudo tee /run/cp09-startx.pid >/dev/null; for i in $(seq 1 45); do pgrep -x Xorg >/dev/null && pgrep -x kwin_x11 >/dev/null && break; sleep 2; done; echo "=== session processes ==="; pgrep -a Xorg || true; pgrep -af "startplasma|plasmashell" || true; pgrep -a kwin_x11 || true; echo "=== startx log ==="; sudo tail -n 120 /home/louksna-test/.local/share/cp09-kde-session.log || true; echo "=== session files ==="; find /usr/share/xsessions /usr/share/wayland-sessions -maxdepth 1 -type f -print 2>/dev/null || true' | tee kde-session-smoke.txt
           "${SSH[@]}" bash -s <<'GUEST_VALIDATE'
           set -Eeuo pipefail
