@@ -1,0 +1,49 @@
+name: "LOUKSNA ZD V0.3 — Debian reproducibility tooling self-test"
+
+on:
+  push:
+    branches:
+      - governance/louksna-zd-v03-12-stage-gates-20261009
+    paths:
+      - scripts/missions/debian_package_canonicalize.py
+      - scripts/missions/test_debian_package_canonicalize.sh
+      - scripts/missions/debian13_kde_host_runtime.sh
+      - .github/workflows/louksna-zd-v03-runtime-tools.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: louksna-zd-v03-runtime-tools-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate-runtime-tools:
+    name: "Syntax, deterministic package normalization, and payload integrity"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Emit telemetry
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "TELEMETRY event=STARTED"
+          echo "TELEMETRY repository=$GITHUB_REPOSITORY"
+          echo "TELEMETRY commit=$GITHUB_SHA"
+          echo "TELEMETRY run_id=$GITHUB_RUN_ID"
+          echo "TELEMETRY timestamp_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+      - name: Validate Python and Bash syntax
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B -m py_compile scripts/missions/debian_package_canonicalize.py
+          bash -n scripts/missions/debian13_kde_host_runtime.sh
+          bash -n scripts/missions/test_debian_package_canonicalize.sh
+      - name: Test canonicalization against two timestamp-divergent .deb packages
+        shell: bash
+        run: bash scripts/missions/test_debian_package_canonicalize.sh
