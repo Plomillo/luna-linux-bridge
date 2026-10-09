@@ -92,6 +92,11 @@ jobs:
               /etc/louksna/remote-bridge/tls/ca.srl \
               /etc/louksna/remote-bridge/tls/server.key \
               /etc/louksna/remote-bridge/tls/server.pem \
+              /etc/louksna/remote-bridge/tls/server.csr \
+              /etc/louksna/remote-bridge/tls/server.ext \
+              /etc/louksna/remote-bridge/tls/client.pem \
+              /etc/louksna/remote-bridge/tls/client.ext \
+              /etc/louksna/remote-bridge/tls/ca.srl \
               "$OWNER_HOME/.config/louksna/mtls/client.key" \
               "$OWNER_HOME/.config/louksna/mtls/client.pem" \
               "$OWNER_HOME/.config/louksna/mtls/ca.pem"
