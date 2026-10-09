@@ -39,3 +39,32 @@
 ## 4. Límites y decisión actual
 
 Las correcciones de CI, procedencia, limpieza y declaración explícita de identidad reducen fallos de raíz, pero no prueban la seguridad completa. El titular de copyright/licencia, el contacto mantenedor válido, la VM de integración/rollback y los roles G23/G24 son dependencias distintas; no deben colapsarse en un solo “PASS”. Mantener PR abierto, no fusionar, no publicar release y no activar systemd hasta que cada salida esté respaldada por evidencia.
+
+## 5. Actualización de evidencia CI — 2026-10-09 UTC
+
+Los runs #27, #28 y #29 finalizaron. En los tres, las etapas de build/test, comprobación de integridad y extracción del paquete, compilación Python, y `systemd-analyze verify` completaron con éxito. Los tres fallan exclusivamente en la compuerta final de Lintian por el mismo error observado en el log:
+
+`E: louksna-linux-bridge: no-copyright-file`
+
+- [Run #27](https://github.com/Plomillo/luna-linux-bridge/actions/runs/37866918714), evento SHA `ceb77b8ec0444d7226cf3937d943cb22c4909690`.
+- [Run #28](https://github.com/Plomillo/luna-linux-bridge/actions/runs/37866926737), evento SHA `812a222dd39f03c1e100a6018cb72069b6a0f9b7`.
+- [Run #29](https://github.com/Plomillo/luna-linux-bridge/actions/runs/37866936716), evento SHA `e36059660a371082b92ae906d97e43c14eaa5202`. SHA-256 del paquete de diagnóstico construido por ese run: `a7a744221e8f67355236ff7c46e7d144c634ef53dde0bcba4fc2997e9affda27`. No es un artefacto de release.
+
+Los logs también avisaron que `--no-tag-display-limit` está obsoleto. Se cambió el workflow a `--tag-display-limit 0`; el nuevo commit debe producir una ejecución que compruebe ese cambio. Este arreglo de CLI no altera el bloqueo de copyright.
+
+## 6. Alcance de la voz y del paquete Debian
+
+La unidad empaquetada actual es `louksna-linux-bridge`, descrita como puente local de telemetría mTLS de solo lectura. El conjunto de instalación declarado en `debian/rules` contiene módulos Python, JSON de runtime, scripts de provisión, plantillas systemd y documentación. La evidencia disponible no identifica un archivo de voz ni incorpora la licencia exacta de la voz seleccionada. Por tanto, la autorización de esa voz no puede sustituir el inventario de copyright de todos los archivos incluidos en este paquete. Debe añadirse al inventario de componentes solo si la voz/modelo/artefactos relacionados realmente se distribuyen en este paquete o son una dependencia descargada/instalada por él.
+
+## 7. Matriz operativa pendiente
+
+- **Bloqueo Debian crítico:** obtener la declaración autorizada de titularidad y licencia del código/documentación efectivamente incluidos; producir `debian/copyright` en formato DEP-5; volver a ejecutar Lintian sin silenciar errores.
+- **Contacto del paquete:** reemplazar `maintainers@louksna.invalid` únicamente con un contacto real autorizado y actualizar coherentemente `debian/control` y `debian/changelog`.
+- **Inventario de terceros:** registrar versiones, origen, copyright y licencia de cada dependencia/componente realmente distribuido; confirmar que las dependencias de sistema se declaran correctamente y que no se incrustan sin licencia.
+- **Pruebas de provisión:** ejecutar fault injection e interrupciones en VM desechable/restaurable; demostrar que no se sobrescriben ni eliminan archivos ajenos.
+- **Prueba de runtime:** `systemd-analyze verify` pasa en CI, pero sigue faltando instalar y probar el servicio en VM, bajo el usuario explícito, con configuración/clave de prueba, aislamiento efectivo y sin activación involuntaria.
+- **Host/rollback/postboot:** falta evidencia en host/VM autorizada con checkpoint, hashes, ausencia de listener inesperado y restauración comprobada.
+- **G23/G24:** permanecen `NOT_EXECUTED`; requieren validación y certificación independientes sobre un bundle inmutable.
+- **Publicación/activación:** prohibidas hasta resolver las compuertas aplicables. Los artefactos CI actuales son solo diagnósticos.
+
+No se elige ni se infiere una licencia para el proyecto a partir de que una voz pueda usarse legalmente. Tampoco se inventa un contacto mantenedor. El cierre debe basarse en evidencia de los titulares/derechos aplicables y de la composición real del paquete.
