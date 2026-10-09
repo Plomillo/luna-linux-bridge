@@ -1,0 +1,22 @@
+{
+  "artifact": "SKELETON_CANONICO_REFERENCIA.txt",
+  "spec_id": "LUNA_WORKSTATION_REFERENCE_V1",
+  "declared_spec_status": "SPECIFIED_NOT_CERTIFIED",
+  "source_type": "USER_UPLOADED_FILE",
+  "source_declared_windows_path": "C:\\PROYECTOS\\1. PROYECTOS PRIORITARIOS\\8. META OS\\UI y SKELETON\\Skeleton\\SKELETON_CANONICO_REFERENCIA.txt",
+  "source_declared_path_independently_checked": false,
+  "sha256": "fb9fad37994e684ad54b1ffc2762660eebcb8e41bd9c4ba685ffac55217d5b0f",
+  "size_bytes": 24964,
+  "lines": 832,
+  "destination": "docs/luna-r4/source/SKELETON_CANONICO_REFERENCIA.txt",
+  "git_remote_content_readback_match": true,
+  "integrity_comparison": "The uploaded document's UTF-8 text plus its source-matched terminal LF reproduces exactly 24,964 bytes and the recorded source SHA-256. GitHub readback returned identical text.",
+  "release_authority": "Louksna.md",
+  "github_branch": "staging/luna-r4-context-recovery-20260927",
+  "pull_request": 3,
+  "github_main_modified": false,
+  "canonical_mutation": false,
+  "g23_independent_validation_granted": false,
+  "g24_certification_granted": false,
+  "notes": "Source document sections 00-28 are preserved verbatim. Equivalence with any separate earlier PART 0-9 progress document has not been established."
+}

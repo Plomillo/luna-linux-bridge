@@ -1,0 +1,24 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_CERTIFIED_CONTINUATION_V2_TRIGGER/1.0",
+  "status": "AUTHORIZED_EXECUTION",
+  "source_checkpoint": {
+    "plan_run": 36659004136,
+    "readiness_run": 36659723187,
+    "plan_sha256": "1ad470bee8355836a2492858a9ab1e485923bb1d5de9691d246d3ff813a62b80",
+    "script_sha256": "c3b508b92fd6eceda1d74f427b3e0384be4ca2f886efde6cf4416ac1e10032c3"
+  },
+  "governance": {
+    "failure_posture": "FAIL_CLOSED",
+    "chain": [
+      "EVIDENCE",
+      "VALIDATION",
+      "G23",
+      "G24",
+      "NEXT_STAGE"
+    ],
+    "authority": "Louksna.md",
+    "canonical_mutation": false,
+    "authority_transfer": false
+  },
+  "requested_action": "EXECUTE_CERTIFIED_CONTINUATION_TO_FINAL_MERGE_HANDOFF"
+}

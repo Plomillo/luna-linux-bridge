@@ -1,0 +1,11 @@
+{
+  "failure_posture": "FAIL_CLOSED",
+  "install_id": "20260929T234934Z-91791",
+  "maestro_live_sudo_probe_run_id": 36647224141,
+  "privileged_execution": "sudo -n",
+  "requested_at_utc": "2026-09-29T23:50:20.620972+00:00",
+  "schema": "LOUKSNA_R4_PART4_R2_RESUME_AFTER_CERTIFIED_SUDO/1.0",
+  "status": "AUTHORIZED_RESUME",
+  "sudo_postinstall_g24_run_id": 36647246047,
+  "target": "/dev/nvme0n1"
+}

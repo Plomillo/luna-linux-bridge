@@ -1,0 +1,13 @@
+{
+  "schema": "LOUKSNA_R4_15P_DEPLOY_REQUEST/1.0",
+  "status": "AUTHORIZED",
+  "purpose": "DEPLOY_CERTIFIED_15_POINT_PERSISTENT_COORDINATION",
+  "authority": "Louksna.md",
+  "maestro_primary_worker": true,
+  "louksna_remote_bridge_observation_only": true,
+  "desktop_plugin_used": false,
+  "part4_reopen_authorized": false,
+  "partitioning_authorized": false,
+  "repeat_certified_parts": false,
+  "created_at_utc": "2026-10-02T19:16:00Z"
+}

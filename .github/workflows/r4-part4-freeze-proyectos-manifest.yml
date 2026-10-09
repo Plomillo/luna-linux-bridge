@@ -1,0 +1,147 @@
+name: "R4 PART4 — freeze PROYECTOS cryptographic manifest"
+
+on:
+  push:
+    branches: [staging/luna-r4-master-part1-part9-20260929]
+    paths:
+      - .github/workflows/r4-part4-freeze-proyectos-manifest.yml
+      - mission-control/r4-part4-freeze-proyectos/**
+
+permissions:
+  contents: read
+
+jobs:
+  freeze:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 180
+    steps:
+      - name: Build complete read-only SHA256 manifest
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="/media/diegoignacionorambuenamiranda/Windows/PROYECTOS"
+          EXPECTED_SOURCE="/dev/nvme0n1p3"
+          EXPECTED_UUID="F2848A148489DC0B"
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9/PART_4_PROYECTOS_FREEZE"
+          RUN="$STATE/$GITHUB_RUN_ID"
+          mkdir -p "$RUN"
+          chmod 700 "$STATE" "$RUN"
+
+          test -d "$ROOT"
+          test ! -L "$ROOT"
+          test "$(findmnt -T "$ROOT" -n -o SOURCE)" = "$EXPECTED_SOURCE"
+          test "$(/usr/sbin/blkid -s UUID -o value "$EXPECTED_SOURCE")" = "$EXPECTED_UUID"
+          findmnt -T "$ROOT" -n -o OPTIONS | tr ',' '\n' | grep -qx rw
+
+          nice -n 10 python3 - "$ROOT" "$RUN" <<'PY'
+          import os, sys, json, hashlib, gzip, stat, time
+          from pathlib import Path
+
+          root=Path(sys.argv[1]).resolve()
+          out=Path(sys.argv[2])
+          manifest=out/"PROYECTOS_MANIFEST.jsonl.gz"
+          summary=out/"FREEZE_SUMMARY.json"
+          started=time.time()
+          root_dev=root.stat().st_dev
+          counts={"file":0,"dir":0,"symlink":0,"other":0}
+          total_bytes=0
+          errors=[]
+          observed=[]
+
+          def hfile(p):
+              h=hashlib.sha256()
+              with open(p,"rb",buffering=0) as f:
+                  while True:
+                      b=f.read(8*1024*1024)
+                      if not b: break
+                      h.update(b)
+              return h.hexdigest()
+
+          with gzip.open(manifest,"wt",encoding="utf-8",compresslevel=6) as z:
+              stack=[root]
+              while stack:
+                  d=stack.pop()
+                  try:
+                      entries=sorted(os.scandir(d),key=lambda e:e.name.casefold())
+                  except Exception as e:
+                      errors.append({"path":str(d),"op":"scandir","error":repr(e)})
+                      continue
+                  for e in entries:
+                      p=Path(e.path)
+                      rel=p.relative_to(root).as_posix()
+                      try:
+                          st=e.stat(follow_symlinks=False)
+                          if st.st_dev != root_dev:
+                              errors.append({"path":rel,"op":"device_boundary","error":"ST_DEV_CHANGED"})
+                              continue
+                          mode=stat.S_IMODE(st.st_mode)
+                          rec={"path":rel,"mode":oct(mode),"uid":st.st_uid,"gid":st.st_gid,
+                               "size":st.st_size,"mtime_ns":st.st_mtime_ns,"inode":st.st_ino}
+                          if stat.S_ISREG(st.st_mode):
+                              rec["type"]="file"
+                              rec["sha256"]=hfile(p)
+                              counts["file"]+=1
+                              total_bytes+=st.st_size
+                              observed.append((str(p),st.st_size,st.st_mtime_ns,rec["sha256"]))
+                          elif stat.S_ISDIR(st.st_mode):
+                              rec["type"]="dir"
+                              counts["dir"]+=1
+                              stack.append(p)
+                          elif stat.S_ISLNK(st.st_mode):
+                              rec["type"]="symlink"
+                              rec["target"]=os.readlink(p)
+                              counts["symlink"]+=1
+                          else:
+                              rec["type"]="other"
+                              counts["other"]+=1
+                          z.write(json.dumps(rec,ensure_ascii=False,sort_keys=True,separators=(",",":"))+"\n")
+                      except Exception as e:
+                          errors.append({"path":rel,"op":"inspect_or_hash","error":repr(e)})
+
+          changed=[]
+          for p,size,mtime_ns,expected in observed:
+              try:
+                  st=os.stat(p,follow_symlinks=False)
+                  if st.st_size!=size or st.st_mtime_ns!=mtime_ns:
+                      changed.append({"path":p,"reason":"SIZE_OR_MTIME_CHANGED"})
+              except Exception as e:
+                  changed.append({"path":p,"reason":"RESTAT_FAILED","error":repr(e)})
+
+          mh=hashlib.sha256()
+          with open(manifest,"rb") as f:
+              for b in iter(lambda:f.read(8*1024*1024),b""): mh.update(b)
+
+          result={
+            "schema":"LOUKSNA_R4_PART4_PROYECTOS_FREEZE/1.0",
+            "root":str(root),
+            "mode":"READ_ONLY_SOURCE",
+            "source_mutated":False,
+            "root_device":root_dev,
+            "counts":counts,
+            "regular_file_bytes":total_bytes,
+            "manifest_path":str(manifest),
+            "manifest_sha256":mh.hexdigest(),
+            "errors":errors[:200],
+            "error_count":len(errors),
+            "changed_during_capture":changed[:200],
+            "changed_count":len(changed),
+            "elapsed_seconds":round(time.time()-started,3),
+            "status":"PASS" if not errors and not changed else "HOLD"
+          }
+          summary.write_text(json.dumps(result,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps(result,ensure_ascii=False,indent=2,sort_keys=True))
+          if result["status"]!="PASS":
+              raise SystemExit(2)
+          PY
+
+          sha256sum "$RUN"/FREEZE_SUMMARY.json "$RUN"/PROYECTOS_MANIFEST.jsonl.gz > "$RUN/SHA256SUMS.txt"
+
+      - name: Preserve freeze evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: R4-PART4-PROYECTOS-freeze-${{ github.run_id }}
+          path: ~/.local/state/louksna/r4-master-part1-part9/PART_4_PROYECTOS_FREEZE/${{ github.run_id }}/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0

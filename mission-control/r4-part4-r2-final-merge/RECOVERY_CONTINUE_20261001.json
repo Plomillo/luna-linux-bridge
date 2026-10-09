@@ -1,0 +1,20 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_FINAL_MERGE_TRIGGER/1.0",
+  "status": "AUTHORIZED_CONTINUATION",
+  "source_recovery_run": 36833882109,
+  "source_bug_g24_artifact_id": 11147684689,
+  "source_bug_g24_digest": "sha256:432c0b02a04c28f53f361e3107d697270aa9431b3acfe7768a2fea8a712b865c",
+  "source_postretire_g23_artifact_id": 11147343800,
+  "source_postretire_g23_digest": "sha256:9b7dee3952e9d644c382f72db39b66f974d18efdfd125d72ce4bafb57b473402",
+  "source_postretire_g24_artifact_id": 11148650051,
+  "source_postretire_g24_digest": "sha256:472176b4ab8e95f343d4818b64e086e4a4de133945d8920796f0a9723179d5d6",
+  "source_handoff_artifact_id": 11148423155,
+  "source_handoff_digest": "sha256:e3482b78f12c34bca5ac297a8699b6d0b47a9c3326a8789bb93f2a6d9959a21b",
+  "material_replay": false,
+  "migration_replay": false,
+  "p2_p4_replay": false,
+  "next": "R4_PART4_R2_FINAL_MERGE_PREBOOT",
+  "authority": "Louksna.md",
+  "assurance": "PUAC2.md",
+  "failure_posture": "FAIL_CLOSED"
+}

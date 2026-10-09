@@ -1,0 +1,8 @@
+{
+  "schema": "LOUKSNA_R4_MASTER_PROCESS_AUDIT_REQUEST/1.0",
+  "reason": "OBSERVE_PART5_AFTER_PART4_CERTIFICATION",
+  "expected_previous_state": "PART_4_CERTIFIED",
+  "expected_target_part": "PART_5",
+  "read_only": true,
+  "requested_at_utc": "2026-10-01T21:41:00Z"
+}

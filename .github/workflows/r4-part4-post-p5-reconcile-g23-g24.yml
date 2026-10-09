@@ -1,0 +1,405 @@
+name: "R4 PART4 — certify POST-P5 reconciliation and reactivate Maestro"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-part4-post-p5-reconcile-g23-g24.yml
+      - mission-control/r4-part4-post-p5-reconcile/**
+
+permissions:
+  contents: read
+  actions: read
+  id-token: write
+
+concurrency:
+  group: r4-part4-post-p5-reconcile
+  cancel-in-progress: false
+
+env:
+  PREVIOUS_CHECKPOINT_SHA: "3d28671e5fd1ade54121742b8f3c88aca91fd776"
+  EXPECTED_MANIFEST_SHA: "99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e"
+  EXPECTED_RECORDS: "498092"
+  EXPECTED_BYTES: "200490852057"
+  EXPECTED_P3_UUID: "e084ec2a-af39-48b5-bb89-db2dc6a98332"
+  EXPECTED_P3_START: "567296"
+  EXPECTED_DISK_BYTES: "512110190592"
+  EXPECTED_TRAILING_FREE_BYTES: "74652494848"
+
+jobs:
+  delta:
+    name: G23A validate exact controller delta
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prove PART4-only additive reconciliation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/delta"
+          python3 - "$PREVIOUS_CHECKPOINT_SHA" "$RUNNER_TEMP/delta/DELTA.json" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,subprocess,sys
+          base,out=sys.argv[1],pathlib.Path(sys.argv[2])
+          path="server/r4-master/master_controller.py"
+          old=subprocess.run(["git","show",f"{base}:{path}"],text=True,capture_output=True,check=True).stdout
+          new=pathlib.Path(path).read_text()
+          def tail(s):
+              return s[s.index("\ndef part5(mid):"):]
+          p4=new[new.index("def part4(mid):"):new.index("\ndef part5(mid):")]
+          changed=subprocess.run(["git","diff","--name-only",base,"HEAD"],text=True,capture_output=True,check=True).stdout.splitlines()
+          checks={
+            "controller_changed":path in changed,
+            "part5_part9_byte_equal_to_previous_checkpoint":tail(old)==tail(new),
+            "post_p5_reconciliation_present":"live_post_p5" in p4 and "post_p5_live_reconciled" in p4,
+            "historical_flags_preserved":"historical_ntfs_shrunk_flag" in p4 and "historical_ext4_created_flag" in p4,
+            "effective_ntfs_transition_present":"ntfs_transition_satisfied" in p4,
+            "effective_ext4_root_present":"ext4_root_effective" in p4,
+            "fail_closed_observation":"live_post_p5={\"status\":\"HOLD\"" in p4,
+            "no_part5_to_part9_edit":tail(old)==tail(new),
+          }
+          ok=all(checks.values())
+          q={
+            "schema":"LOUKSNA_R4_PART4_POST_P5_CONTROLLER_DELTA/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "previous_checkpoint_sha":base,
+            "current_sha":subprocess.check_output(["git","rev-parse","HEAD"],text=True).strip(),
+            "controller_sha256":hashlib.sha256(new.encode()).hexdigest(),
+            "changed_paths":changed,
+            "checks":checks,
+            "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          out.write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(23)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-post-p5-controller-delta
+          path: ${{ runner.temp }}/delta/DELTA.json
+          retention-days: 90
+          compression-level: 0
+
+  live:
+    name: Remote Bridge + live POST-P5 evidence
+    needs: delta
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: server/r4-master
+          sparse-checkout-cone-mode: true
+      - name: Observe exact live checkpoint without disk mutation
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+          OUT="$RUNNER_TEMP/post-p5-live"
+          FREEZE="$RUNNER_TEMP/freeze"
+          mkdir -p "$OUT" "$FREEZE"
+
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+          mapfile -t LINKS < <(find "$HOME/.local/lib/louksna-remote-bridge" -type f -path '*/bridge/live_link.py' -print 2>/dev/null | sort)
+          test "${#LINKS[@]}" -ge 1
+          LINK="${LINKS[-1]}"
+          STATE_DIR="$HOME/.local/state/louksna/remote-bridge/service"
+          SOCKET_DIR="$XDG_RUNTIME_DIR/lrb-sock"
+          python3 -B "$LINK" --state-dir "$STATE_DIR" --socket-dir "$SOCKET_DIR" request --op status > "$OUT/LRB_STATUS.json"
+          python3 -B "$LINK" --state-dir "$STATE_DIR" --socket-dir "$SOCKET_DIR" request --op observe > "$OUT/LRB_OBSERVE.json"
+
+          gh run download 36619942178 --repo Plomillo/luna-linux-bridge -n R4-PART4-PROYECTOS-freeze-36619942178 -D "$FREEZE"
+          test "$(sha256sum "$FREEZE/PROYECTOS_MANIFEST.jsonl.gz"|awk '{print $1}')" = "$EXPECTED_MANIFEST_SHA"
+
+          test "$(readlink -f "$(findmnt -n -o SOURCE /)")" = "/dev/nvme0n1p3"
+          test "$(findmnt -n -o FSTYPE /)" = "ext4"
+          test "$(readlink -f "$(findmnt -T /boot/efi -n -o SOURCE)")" = "/dev/nvme0n1p1"
+          test "$(findmnt -T /boot/efi -n -o FSTYPE)" = "vfat"
+          test ! -b /dev/nvme0n1p5
+
+          lsblk -b -J -o NAME,PATH,TYPE,SIZE,FSTYPE,FSAVAIL,FSUSE%,MOUNTPOINTS,UUID,PARTUUID,START /dev/nvme0n1 > "$OUT/LSBLK.json"
+          sudo -n parted -m /dev/nvme0n1 unit B print free > "$OUT/PARTED_FREE.txt"
+          df -B1 -T / /boot/efi "$HOME/PROYECTOS" > "$OUT/DF.txt"
+
+          python3 server/r4-master/part4_r2_verify_tree.py             --root "$HOME/PROYECTOS"             --manifest "$FREEZE/PROYECTOS_MANIFEST.jsonl.gz"             --out "$OUT/VERIFY_PROJECTS.json"
+
+          python3 - "$OUT" "$OUT/MATERIAL.json" <<'PY'
+          import datetime as dt,json,os,pathlib,re,subprocess,sys
+          root,out=map(pathlib.Path,sys.argv[1:])
+          l=json.loads((root/"LSBLK.json").read_text())
+          flat=[]
+          def walk(xs):
+              for x in xs:
+                  flat.append(x); walk(x.get("children",[]))
+          walk(l.get("blockdevices",[]))
+          disk=next(x for x in flat if x.get("path")=="/dev/nvme0n1")
+          p3=next(x for x in flat if x.get("path")=="/dev/nvme0n1p3")
+          parts=sorted(x.get("path") for x in flat if (x.get("path") or "").startswith("/dev/nvme0n1p"))
+          free=(root/"PARTED_FREE.txt").read_text()
+          rows=[]
+          for line in free.splitlines():
+              cols=line.rstrip(";").split(":")
+              if len(cols)>=5 and cols[4]=="free":
+                  try: rows.append((int(cols[1].rstrip("B")),int(cols[2].rstrip("B")),int(cols[3].rstrip("B"))))
+                  except: pass
+          trailing=max((r for r in rows if r[0] > int(p3["size"])), default=(0,0,0), key=lambda r:r[0])
+          v=json.loads((root/"VERIFY_PROJECTS.json").read_text())
+          s=json.loads((root/"LRB_STATUS.json").read_text()); o=json.loads((root/"LRB_OBSERVE.json").read_text())
+          q={
+            "schema":"LOUKSNA_R4_PART4_POST_P5_LIVE_MATERIAL/1.0",
+            "status":"PASS",
+            "host":s.get("host"),
+            "boot_id":s.get("boot_id"),
+            "bridge_status":s.get("status"),
+            "observe_status":o.get("status"),
+            "bridge_evidence_seq":o.get("evidence_seq"),
+            "bridge_evidence_sha256":o.get("evidence_sha256"),
+            "root_source":os.path.realpath(subprocess.check_output(["findmnt","-n","-o","SOURCE","/"],text=True).strip()),
+            "root_fstype":subprocess.check_output(["findmnt","-n","-o","FSTYPE","/"],text=True).strip(),
+            "partitions_present":parts,
+            "p5_absent":not pathlib.Path("/dev/nvme0n1p5").exists(),
+            "disk_bytes":int(disk["size"]),
+            "p3_bytes":int(p3["size"]),
+            "p3_start_sector":int(p3["start"]),
+            "p3_uuid":p3.get("uuid"),
+            "p3_partuuid":p3.get("partuuid"),
+            "trailing_free_bytes":trailing[2],
+            "projects_status":v.get("status"),
+            "projects_mismatch_count":v.get("mismatch_count"),
+            "projects_manifest_sha256":v.get("manifest_sha256"),
+            "projects_records":v.get("seen_records"),
+            "projects_regular_file_bytes":v.get("regular_file_bytes"),
+            "disk_mutation_performed":False,
+            "captured_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          expected={
+            "host":"LOUKSNA","root_source":"/dev/nvme0n1p3","root_fstype":"ext4",
+            "partitions_present":["/dev/nvme0n1p1","/dev/nvme0n1p3"],"p5_absent":True,
+            "disk_bytes":int(os.environ["EXPECTED_DISK_BYTES"]),
+            "p3_start_sector":int(os.environ["EXPECTED_P3_START"]),
+            "p3_uuid":os.environ["EXPECTED_P3_UUID"],
+            "trailing_free_bytes":int(os.environ["EXPECTED_TRAILING_FREE_BYTES"]),
+            "projects_status":"PASS","projects_mismatch_count":0,
+            "projects_manifest_sha256":os.environ["EXPECTED_MANIFEST_SHA"],
+            "projects_records":int(os.environ["EXPECTED_RECORDS"]),
+            "projects_regular_file_bytes":int(os.environ["EXPECTED_BYTES"]),
+            "disk_mutation_performed":False,
+          }
+          q["checks"]={k:q.get(k)==v for k,v in expected.items()}
+          if not all(q["checks"].values()): q["status"]="HOLD"
+          out.write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if q["status"]!="PASS": raise SystemExit(24)
+          PY
+          (cd "$OUT"; sha256sum ./* > SHA256SUMS.txt)
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-post-p5-live-material
+          path: ${{ runner.temp }}/post-p5-live/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  g23:
+    name: G23 independently validate reconciled POST-P5 checkpoint
+    needs: live
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-post-p5-controller-delta
+          path: ${{ runner.temp }}/delta
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-post-p5-live-material
+          path: ${{ runner.temp }}/live
+      - name: Independent reconciliation gate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/delta/DELTA.json" "$RUNNER_TEMP/live/MATERIAL.json" "$RUNNER_TEMP/g23/G23_POST_P5.json" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,sys
+          dp,mp,out=map(pathlib.Path,sys.argv[1:])
+          d=json.loads(dp.read_text()); m=json.loads(mp.read_text())
+          checks={
+            "delta_pass":d.get("status")=="PASS" and all(d.get("checks",{}).values()),
+            "live_pass":m.get("status")=="PASS" and all(m.get("checks",{}).values()),
+            "remote_bridge_observed":m.get("host")=="LOUKSNA" and bool(m.get("bridge_evidence_sha256")),
+            "root_p3_ext4":m.get("root_source")=="/dev/nvme0n1p3" and m.get("root_fstype")=="ext4",
+            "p5_absent":m.get("p5_absent") is True,
+            "only_p1_p3":m.get("partitions_present")==["/dev/nvme0n1p1","/dev/nvme0n1p3"],
+            "projects_non_regression":m.get("projects_status")=="PASS" and m.get("projects_mismatch_count")==0,
+            "no_disk_mutation":m.get("disk_mutation_performed") is False,
+            "part5_part9_unchanged":d.get("checks",{}).get("part5_part9_byte_equal_to_previous_checkpoint") is True,
+          }
+          ok=all(checks.values())
+          q={
+            "schema":"LOUKSNA_R4_PART4_POST_P5_RECONCILIATION_G23/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "scope":"POST_P5_STATE_RECONCILIATION_AND_MASTER_CONTROLLER_DELTA_ONLY",
+            "delta_sha256":hashlib.sha256(dp.read_bytes()).hexdigest(),
+            "live_material_sha256":hashlib.sha256(mp.read_bytes()).hexdigest(),
+            "checks":checks,
+            "repair_allowed":False,
+            "g24_allowed":ok,
+            "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          out.write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(23)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-post-p5-g23
+          path: ${{ runner.temp }}/g23/G23_POST_P5.json
+          retention-days: 90
+          compression-level: 0
+
+  g24:
+    name: G24 certify POST-P5 reconciled baseline
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-post-p5-g23
+          path: ${{ runner.temp }}/g23
+      - name: Issue digest-bound certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/G23_POST_P5.json"
+          test "$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d["status"] if d.get("g24_allowed") else "HOLD")' "$G")" = PASS
+          H="$(sha256sum "$G"|awk '{print $1}')"
+          AUD="louksna-r4-part4-post-p5-reconcile:$H"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export H AUD TOKEN
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$RUNNER_TEMP/g24/G24_POST_P5.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          t=os.environ["TOKEN"]; p=t.split(".")
+          payload=p[1]+"="*((4-len(p[1])%4)%4); c=json.loads(base64.urlsafe_b64decode(payload))
+          aud=c.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if c.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          q={
+            "schema":"LOUKSNA_R4_PART4_POST_P5_RECONCILIATION_G24/1.0",
+            "status":"PASS",
+            "scope":"POST_P5_RECONCILED_BASELINE_ONLY",
+            "g23_sha256":os.environ["H"],
+            "authority_authenticated":True,
+            "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
+            "disk_mutation_authorized":False,
+            "certification_propagated":False,
+            "canonical_mutation":False,
+            "authority_transfer":False,
+            "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-post-p5-g24
+          path: ${{ runner.temp }}/g24/G24_POST_P5.json
+          retention-days: 90
+          compression-level: 0
+
+  activate:
+    name: Deploy certified reconciliation and prove Maestro works
+    needs: g24
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: server/r4-master
+          sparse-checkout-cone-mode: true
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-post-p5-g24
+          path: ${{ runner.temp }}/g24
+      - name: Activate controller and verify fresh PART4 evaluation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          CERT="$RUNNER_TEMP/g24/G24_POST_P5.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$CERT")" = PASS
+          HOME_REAL="/home/diegoignacionorambuenamiranda"
+          DST="$HOME_REAL/.local/lib/louksna/r4-master-part1-part9"
+          STATE="$HOME_REAL/.local/state/louksna/r4-master-part1-part9"
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+
+          install -d -m 0700 "$DST" "$STATE"
+          install -m 0700 server/r4-master/master_controller.py "$DST/master_controller.py"
+          python3 -m py_compile "$DST/master_controller.py"
+          systemctl --user restart luna-r4-master-part1-part9.service
+          test "$(systemctl --user is-active luna-r4-master-part1-part9.service)" = active
+
+          BEFORE="$(date -u +%s)"
+          for i in $(seq 1 45); do
+            test -f "$STATE/MASTER_STATUS.json" || { sleep 2; continue; }
+            TS="$(python3 -c 'import json,sys,datetime as d; x=json.load(open(sys.argv[1])); print(int(d.datetime.fromisoformat(x["updated_at_utc"].replace("Z","+00:00")).timestamp()))' "$STATE/MASTER_STATUS.json" 2>/dev/null || echo 0)"
+            [ "$TS" -ge "$BEFORE" ] && break
+            sleep 2
+          done
+          mkdir -p "$RUNNER_TEMP/activation"
+          cp "$STATE/MASTER_STATUS.json" "$RUNNER_TEMP/activation/MASTER_STATUS.json"
+          systemctl --user show luna-r4-master-part1-part9.service -p ActiveState -p SubState -p Result -p MainPID -p NRestarts > "$RUNNER_TEMP/activation/SERVICE.txt"
+
+          python3 - "$RUNNER_TEMP/activation/MASTER_STATUS.json" "$RUNNER_TEMP/activation/MAESTRO_OPERATIONAL.json" <<'PY'
+          import datetime as dt,json,pathlib,sys
+          sp,out=map(pathlib.Path,sys.argv[1:])
+          s=json.loads(sp.read_text())
+          blockers=set(s.get("blockers",[]))
+          stale={"ntfs_shrunk","ext4_created","ntfs_transition_satisfied","ext4_root_effective","post_p5_live_reconciled"}
+          expected={"final_linux_layout","part4_r2_final_g24","final_merge_g24","verified_root_on_consolidated_linux"}
+          checks={
+            "part4":s.get("current_part")=="PART_4",
+            "fresh_status":bool(s.get("updated_at_utc")),
+            "service_evaluated":s.get("status")=="HOLD",
+            "stale_or_reconciled_blockers_absent":not bool(blockers & stale),
+            "remaining_blockers_exact":blockers==expected,
+            "next_retry_after_remediation":s.get("next")=="RETRY_AFTER_REMEDIATION",
+          }
+          ok=all(checks.values())
+          q={
+            "schema":"LOUKSNA_R4_PART4_POST_P5_MAESTRO_OPERATIONAL_PROOF/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "mission_id":s.get("mission_id"),
+            "current_part":s.get("current_part"),
+            "master_status":s.get("status"),
+            "remaining_blockers":sorted(blockers),
+            "checks":checks,
+            "post_p5_g24":"PASS",
+            "disk_mutation_performed":False,
+            "proved_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          out.write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(31)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-post-p5-maestro-operational
+          path: ${{ runner.temp }}/activation/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0

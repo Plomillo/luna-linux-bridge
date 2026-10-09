@@ -1,0 +1,16 @@
+{
+  "schema": "LOUKSNA_R4_MASTER_RESUME_REQUEST/1.0",
+  "reason": "DEPLOY_PART6_PROTON_OFFICIAL_SOURCE_BUILD_FALLBACK",
+  "worker_commit": "35b9b6f1451175c2c254964c6aec9edf3c7a1902",
+  "controller_commit": "19a0e773f3010b545ebb40caf48e44bb72e7bf80",
+  "expected_current_part": "PART_6",
+  "resume_from_existing_checkpoint": true,
+  "preserve_waydroid_and_valid_components": true,
+  "proton_release": "proton-11.0-2",
+  "proton_commit": "db9e6ffbf24a95b104fb699dd62532c70a2f9a51",
+  "build_jobs": 2,
+  "worker": "MAESTRO",
+  "observer": "LOUKSNA_REMOTE_BRIDGE",
+  "require_g23_g24": true,
+  "requested_at_utc": "2026-10-01T22:42:00Z"
+}

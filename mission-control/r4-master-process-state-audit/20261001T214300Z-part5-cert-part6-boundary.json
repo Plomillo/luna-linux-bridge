@@ -1,0 +1,7 @@
+{
+  "schema": "LOUKSNA_R4_MASTER_PROCESS_AUDIT_REQUEST/1.0",
+  "reason": "CONFIRM_PART5_LOCAL_CERT_AND_PART6_BOUNDARY",
+  "expected_previous_part": "PART_5",
+  "read_only": true,
+  "requested_at_utc": "2026-10-01T21:43:00Z"
+}

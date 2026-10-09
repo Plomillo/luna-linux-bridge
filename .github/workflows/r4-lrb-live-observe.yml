@@ -1,0 +1,80 @@
+name: "R4 — LOUKSNA Remote Bridge live observe"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-lrb-live-observe/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r4-lrb-live-observe
+  cancel-in-progress: false
+
+jobs:
+  observe:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 8
+    steps:
+      - name: Observe host only through LOUKSNA Remote Bridge
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          HOME_REAL="/home/diegoignacionorambuenamiranda"
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+
+          mapfile -t LINKS < <(find "$HOME_REAL/.local/lib/louksna-remote-bridge" -type f -path '*/bridge/live_link.py' -print 2>/dev/null | sort)
+          test "${#LINKS[@]}" -ge 1
+          LINK="${LINKS[-1]}"
+
+          STATUS="$(python3 -B "$LINK"             --state-dir "$HOME_REAL/.local/state/louksna/remote-bridge/service"             --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op status)"
+          OBSERVE="$(python3 -B "$LINK"             --state-dir "$HOME_REAL/.local/state/louksna/remote-bridge/service"             --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op observe)"
+          MISSION_ID="MIS-cf38037f1f114012af53"
+          REPORT="$(python3 -B "$LINK"             --state-dir "$HOME_REAL/.local/state/louksna/remote-bridge/service"             --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op report --mission-id "$MISSION_ID" 2>&1 || true)"
+          DIAGNOSE="$(python3 -B "$LINK"             --state-dir "$HOME_REAL/.local/state/louksna/remote-bridge/service"             --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op diagnose --mission-id "$MISSION_ID" 2>&1 || true)"
+
+          OUT="$RUNNER_TEMP/LRB_OBSERVATION.json"
+          python3 - "$STATUS" "$OBSERVE" "$REPORT" "$DIAGNOSE" "$MISSION_ID" "$OUT" <<'PY'
+          import hashlib,json,pathlib,sys
+          status=json.loads(sys.argv[1]); observe=json.loads(sys.argv[2])
+          raw_report,raw_diagnose,mission_id,out_path=sys.argv[3],sys.argv[4],sys.argv[5],sys.argv[6]
+          def maybe_json(raw):
+              try:return {"available":True,"payload":json.loads(raw)}
+              except Exception:return {"available":False,"raw":raw[-4000:]}
+          if status.get("host")!="LOUKSNA":
+              raise SystemExit("LRB_HOST_MISMATCH")
+          if not observe.get("evidence_sha256"):
+              raise SystemExit("LRB_EVIDENCE_SHA_MISSING")
+          out={
+            "schema":"LOUKSNA_R4_LRB_LIVE_OBSERVATION/1.0",
+            "status":"PASS",
+            "transport":"LOUKSNA_REMOTE_BRIDGE",
+            "desktop_commander_used":False,
+            "material_execution":False,
+            "lrb_status":status,
+            "lrb_observe":observe,
+            "mission_id":mission_id,
+            "lrb_report":maybe_json(raw_report),
+            "lrb_diagnose":maybe_json(raw_diagnose),
+            "observation_binding_sha256":hashlib.sha256(
+              (json.dumps(status,sort_keys=True,separators=(",",":"))+
+               json.dumps(observe,sort_keys=True,separators=(",",":"))).encode()
+            ).hexdigest()
+          }
+          raw=json.dumps(out,indent=2,sort_keys=True)+"\n"
+          pathlib.Path(out_path).write_text(raw,encoding="utf-8")
+          print(raw,end="")
+          PY
+
+      - name: Persist exact LRB observation for GitHub-hosted reasoners
+        uses: actions/upload-artifact@v4
+        with:
+          name: r4-lrb-observation
+          path: ${{ runner.temp }}/LRB_OBSERVATION.json
+          if-no-files-found: error
+          retention-days: 7

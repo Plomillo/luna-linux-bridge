@@ -1,0 +1,15 @@
+{
+  "schema": "LOUKSNA_R4_QWEN_REASONER_TRIGGER/1.0",
+  "status": "AUTHORIZED",
+  "purpose": "EXECUTE_QWEN_REASONING_ONLY_ON_LATEST_LRB_ARTIFACT",
+  "lrb_run_id": 37007893031,
+  "provider_class": "SWAPPABLE_SHARED_REASONER",
+  "provider_current": "QWEN",
+  "execution_plane": "GITHUB_HOSTED_RUNNER",
+  "input_source": "LOUKSNA_REMOTE_BRIDGE_EVIDENCE_ONLY",
+  "material_execution_authorized": false,
+  "host_observation_authorized": false,
+  "desktop_commander_used": false,
+  "partitioning_authorized": false,
+  "created_at_utc": "2026-10-02T12:40:00Z"
+}

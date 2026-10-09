@@ -1,0 +1,25 @@
+{
+  "schema": "LOUKSNA_R4_15P_DEPLOY_AMENDMENT/1.0",
+  "status": "AUTHORIZED",
+  "scope": "PART7_P25_P26_DEDUPLICATED_OPERATIONAL_PRODUCER",
+  "preserve_certified_points": [
+    "P01",
+    "P02",
+    "P03",
+    "P04",
+    "P05",
+    "P06",
+    "P07"
+  ],
+  "implementation_cardinality": {
+    "p25": 1,
+    "p26": 1
+  },
+  "repeat_certified_points": false,
+  "local_model_reuse": true,
+  "docling_local_wheel_reuse": true,
+  "only_missing_dependencies_may_be_acquired": true,
+  "part4_reopen_authorized": false,
+  "partitioning_authorized": false,
+  "created_at_utc": "2026-10-02T11:03:00Z"
+}

@@ -1,0 +1,58 @@
+name: "R4 PART4 R2 — audit WinRE activation rollback"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-part4-r2-winre-rollback-audit.yml
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 8
+    steps:
+      - name: Read-only rollback audit
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+          ROOT=/var/lib/louksna-governance/winre-repair
+          P4M="$RUNNER_TEMP/winre-p4"
+          mkdir -p "$P4M"
+          echo "--- EFI STATE ---"
+          sudo -n efibootmgr -v
+          echo "--- TEMP ENTRY CHECK ---"
+          if sudo -n efibootmgr | grep -F "LOUKSNA WinRE OneShot"; then echo TEMP_ENTRY_PRESENT=YES; else echo TEMP_ENTRY_PRESENT=NO; fi
+          BN="$(sudo -n efibootmgr | awk -F': ' '/^BootNext:/{print $2}')"
+          echo "BOOTNEXT=${BN:-NONE}"
+          BO="$(sudo -n efibootmgr | awk -F': ' '/^BootOrder:/{print $2}')"
+          echo "BOOTORDER=$BO"
+          echo "--- ACTIVE STATE ---"
+          if [ -f "$ROOT/ACTIVE.json" ]; then
+            echo ACTIVE_JSON_PRESENT=YES
+            sudo -n cat "$ROOT/ACTIVE.json"
+          else
+            echo ACTIVE_JSON_PRESENT=NO
+          fi
+          echo "--- POSTBOOT SERVICE ---"
+          systemctl is-enabled louksna-winre-postboot.service 2>&1 || true
+          systemctl is-active louksna-winre-postboot.service 2>&1 || true
+          echo "--- BCD HASH ---"
+          sha256sum /boot/efi/EFI/Microsoft/Boot/BCD /boot/efi/EFI/Microsoft/Recovery/BCD
+          echo "--- WIM HASH ---"
+          sudo -n mount -t ntfs3 -o ro /dev/nvme0n1p4 "$P4M"
+          trap 'sudo -n umount "$P4M" >/dev/null 2>&1 || true' EXIT
+          sha256sum "$P4M/Recovery/WindowsRE/winre.wim"
+          sudo -n umount "$P4M"
+          trap - EXIT
+          echo "--- UUIDS ---"
+          sudo -n blkid -p -s UUID -o value /dev/nvme0n1p3
+          sudo -n blkid -p -s UUID -o value /dev/nvme0n1p4
+          echo "--- PROJECTS ---"
+          findmnt -T /media/diegoignacionorambuenamiranda/Windows -n -o SOURCE,FSTYPE,OPTIONS
+          test -d /media/diegoignacionorambuenamiranda/Windows/PROYECTOS
+          echo PROJECTS_PRESENT=YES

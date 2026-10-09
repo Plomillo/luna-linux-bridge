@@ -1,0 +1,215 @@
+{
+  "schema": "LOUKSNA_R4_MASTER_CONTRACT/1.0",
+  "status": "STAGED_GOVERNED_MASTER",
+  "authority": "Louksna.md",
+  "doctrine": "EXTEND_DO_NOT_REPLACE",
+  "failure_posture": "FAIL_CLOSED",
+  "checkpoint": {
+    "part": "PART_1",
+    "path": "/home/diegoignacionorambuenamiranda/LOUKSNA_MAESTRO_20260925/MISSION3_OPERATIVE/R4_PART1_DESKTOP_V1/runs/20260926T034746Z-38579",
+    "resume_mode": "DIFFERENTIAL",
+    "full_reinstall_forbidden": true
+  },
+  "server_ready": {
+    "certified_run": 36503769931,
+    "repeat": false
+  },
+  "apc48_v2": {
+    "candidate_digest_sha256": "ed3c4267f94b3c53f1fec64b331f72dc657ebcc5e2c62a9314321c67c89684b7",
+    "postinstall_g23_g24_run": 36519487206,
+    "required_status": "ACTIVE",
+    "privileged_interface": "sudo -n /usr/local/sbin/louksna-apc"
+  },
+  "ui_reference": {
+    "image_sha256": "8a9852c4155d64fd74059c7239e67c82e16e5acd556627d70575db85078d4ed4",
+    "kde_snapshot_sha256": "c21e04d5447e123b59fc9b94d2e9684bc03ea164999ef6f60210e257557a16dc"
+  },
+  "roles": {
+    "governor": "MetaOS",
+    "worker": "CUSTOSZ_V7",
+    "runtime": "CUSTOSZ_RUNTIME_V1",
+    "supervisor": "SYMPHYLAX_R1",
+    "validator": "G23",
+    "certifier": "G24"
+  },
+  "sequence": [
+    {
+      "part": "PART_1",
+      "name": "DESKTOP_KDE_CHECKPOINT_CLOSURE",
+      "mode": "VERIFY_EXISTING_ONLY",
+      "entry": "CHECKPOINT_PRESENT",
+      "exit": "PART1_POST_VALIDATION_PASS"
+    },
+    {
+      "part": "PART_2",
+      "name": "ENGINEERING",
+      "mode": "DIFFERENTIAL",
+      "entry": "PART1_POST_VALIDATION_PASS",
+      "exit": "PART2_CERTIFIED"
+    },
+    {
+      "part": "PART_3",
+      "name": "CORE_ORCHESTRATION_AND_PROJECTS",
+      "mode": "DIFFERENTIAL",
+      "entry": "PART2_CERTIFIED",
+      "exit": "PART3_CERTIFIED"
+    },
+    {
+      "part": "PART_4",
+      "name": "PROJECTS_PROTECTION_AND_WINDOWS_RETIREMENT",
+      "mode": "HUMAN_GATED_DESTRUCTIVE_R2",
+      "entry": "PART3_CERTIFIED",
+      "exit": "PART4_R2_CERTIFIED",
+      "human_gates": [
+        "H2",
+        "H4"
+      ],
+      "operational_amendment": "server/r4-master/PART4_R2_AMENDMENT.json",
+      "required_chain": [
+        "FREEZE_G24",
+        "PURGE_SCOPE_G23_G24",
+        "WINDOWS_PURGED",
+        "POST_PURGE_INTEGRITY",
+        "NTFS_TO_EXT4_STORAGE_MIGRATION_G23_G24",
+        "FINAL_MERGE_PLAN_G23_G24",
+        "NEW_ROOT_PREBOOT_G23_G24",
+        "VERIFIED_BOOT_FROM_NEW_ROOT",
+        "OLD_ROOT_RETIREMENT_G23_G24",
+        "EFI_PLUS_ONE_MAIN_LINUX_ROOT_LAYOUT_PASS",
+        "PART4_FINAL_G23",
+        "PART4_FINAL_G24"
+      ]
+    },
+    {
+      "part": "PART_5",
+      "name": "LABORATORY",
+      "mode": "DIFFERENTIAL",
+      "entry": "PART4_CERTIFIED",
+      "exit": "PART5_CERTIFIED"
+    },
+    {
+      "part": "PART_6",
+      "name": "GAMING",
+      "mode": "DIFFERENTIAL",
+      "entry": "PART5_CERTIFIED",
+      "exit": "PART6_CERTIFIED"
+    },
+    {
+      "part": "PART_7",
+      "name": "STUDY_AND_DEVOTIONAL",
+      "mode": "DIFFERENTIAL",
+      "entry": "PART6_CERTIFIED",
+      "exit": "PART7_CERTIFIED"
+    },
+    {
+      "part": "PART_8",
+      "name": "SYSTEM_HYGIENE_RECOVERY",
+      "mode": "DIFFERENTIAL",
+      "entry": "PART7_CERTIFIED",
+      "exit": "PART8_CERTIFIED"
+    },
+    {
+      "part": "PART_9",
+      "name": "GLOBAL_INTEGRATION_CERTIFICATION_REBOOT",
+      "mode": "FINAL",
+      "entry": "PART8_CERTIFIED",
+      "exit": "GLOBAL_MISSION_COMPLETE"
+    }
+  ],
+  "certification": {
+    "per_part": true,
+    "chain": [
+      "EVIDENCE",
+      "VALIDATION",
+      "G23",
+      "G24",
+      "ACTIVE_OR_NEXT_PART"
+    ],
+    "self_certification": false,
+    "certification_propagation": false
+  },
+  "invariants": {
+    "chronological_order": true,
+    "traceability_required": true,
+    "provenance_required": true,
+    "auditability_required": true,
+    "rollback_required": true,
+    "non_regression_required": true,
+    "no_silent_operations": true,
+    "no_canonical_mutation": true,
+    "no_authority_transfer": true,
+    "no_fake_pass": true,
+    "no_part0_repeat": true,
+    "no_part1_full_reinstall": true,
+    "no_server_ready_repeat": true
+  },
+  "destructive_scope": {
+    "automatic_without_specific_gate": false,
+    "operational_amendment": "PART4-R2-20260929",
+    "pre_destruction_required": [
+      "H2",
+      "H4",
+      "CERTIFIED_PROYECTOS_FREEZE",
+      "EXACT_SCOPE_PREVALIDATION",
+      "STEP_G23",
+      "STEP_G24"
+    ],
+    "superseded_preconditions": [
+      "TWO_VERIFIED_BACKUPS_BEFORE_WINDOWS_RETIREMENT",
+      "RESTORE_PROOF_BEFORE_WINDOWS_RETIREMENT"
+    ],
+    "purge_partition": "/dev/nvme0n1p3",
+    "exact_preserve": "/media/diegoignacionorambuenamiranda/Windows/PROYECTOS",
+    "purge_partitions_out_of_scope": [
+      "/dev/nvme0n1p1",
+      "/dev/nvme0n1p2",
+      "/dev/nvme0n1p4",
+      "/dev/nvme0n1p5"
+    ],
+    "partition_mutation_after_purge_requires": [
+      "POST_PURGE_INTEGRITY_PASS",
+      "GEOMETRY_PREVALIDATION",
+      "STEP_G23",
+      "STEP_G24"
+    ],
+    "migration_source_retirement_requires": "COMPLETE_TREE_HASH_EQUIVALENCE_PASS",
+    "final_merge": {
+      "target_disk": "/dev/nvme0n1",
+      "preserve": [
+        "EFI_SYSTEM_PARTITION_REQUIRED_FOR_DEBIAN_BOOT",
+        "PROYECTOS",
+        "VALID_DEBIAN_INSTALLATION"
+      ],
+      "retire_only_after_certified_transition": [
+        "OLD_DEBIAN_ROOT",
+        "WINDOWS_MSR",
+        "WINDOWS_RECOVERY",
+        "TEMPORARY_MIGRATION_PARTITIONS"
+      ],
+      "pre_irreversible_required": [
+        "FRESH_GEOMETRY_PREVALIDATION",
+        "STEP_G23",
+        "STEP_G24",
+        "CHECKPOINT_OR_ROLLBACK_WHERE_TECHNICALLY_APPLICABLE"
+      ]
+    }
+  },
+  "part4_r2": {
+    "amendment_id": "PART4-R2-20260929",
+    "certified_freeze_manifest_sha256": "99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+    "freeze_certification_run_id": 36621093750,
+    "part5_to_part9_unchanged": true,
+    "autopilot_addendum": "server/r4-master/PART4_R2_AUTOPILOT_ADDENDUM.json",
+    "autonomous_execution": true,
+    "autonomous_handoff_to_part5_after_part4_g24": true,
+    "master_continues_existing_part5_to_part9_sequence": true,
+    "assistant_polling_required": false,
+    "failure_behavior": "HOLD_FAIL_CLOSED_WITH_EVIDENCE_NO_SILENT_BYPASS",
+    "final_merge_addendum": "server/r4-master/PART4_R2_FINAL_MERGE_ADDENDUM.json",
+    "final_merge_authorization": "mission-control/r4-part4-r2-final-merge/AUTHORIZATION-20260929.json",
+    "final_layout_goal": "EFI_PLUS_ONE_MAIN_LINUX_ROOT_PARTITION_FOR_DEBIAN_AND_PROYECTOS",
+    "part4_close_requires_final_merge_g24": true,
+    "old_debian_root_retirement_requires": "VERIFIED_BOOT_FROM_NEW_ROOT_PLUS_G23_G24",
+    "efi_preserved": true
+  }
+}

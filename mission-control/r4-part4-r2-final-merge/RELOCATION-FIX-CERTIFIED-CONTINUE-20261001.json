@@ -1,0 +1,33 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_FINAL_MERGE_RESUME/1.0",
+  "status": "AUTHORIZED_CONTINUATION",
+  "source_diagnosis_run": 36857403996,
+  "source_fix_cert_run": 36858227857,
+  "diagnosis_g24_artifact": {
+    "id": 11158609925,
+    "digest": "sha256:06b591073abb7bd987bb03c617e794e34f098adf3fe6d50327d6ed8416700a52"
+  },
+  "fix_g23_artifact": {
+    "id": 11160066116,
+    "digest": "sha256:a2848bb420152fa08c403718fac3319121223aab2195393a6bf378b1504e07cb"
+  },
+  "fix_g24_artifact": {
+    "id": 11159981244,
+    "digest": "sha256:1668e10695b3a210a63677ee1377055aab659849c3c13f42798071fdf513a614"
+  },
+  "bug_class": "RESUME_IDEMPOTENCY_STATE_MISMATCH",
+  "observed_material_state": "POST_RELOCATION",
+  "fix_commits": [
+    "467445231a1f7d56e8364ccfb03b6a38c0bcfe07",
+    "e54a3ac984e182f44c4bc7f2c0ef231efc2a998a"
+  ],
+  "bug_governance_commit": "618caa6a837edcd3c88c9484f607de34148af380",
+  "repeat_projects_migration": false,
+  "repeat_partition_migration": false,
+  "repeat_certified_work": false,
+  "resume": "FINAL_MERGE_PREBOOT_FROM_CERTIFIED_POST_RELOCATION_STATE",
+  "authority": "Louksna.md",
+  "assurance": "PUAC2.md",
+  "plan": "PLAN DEFINITIVO",
+  "failure_posture": "FAIL_CLOSED"
+}

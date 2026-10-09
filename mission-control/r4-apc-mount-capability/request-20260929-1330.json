@@ -1,0 +1,4 @@
+{
+  "scope": "READ_ONLY",
+  "purpose": "Check whether APC48 can authorize read-only Windows/PROYECTOS mount"
+}

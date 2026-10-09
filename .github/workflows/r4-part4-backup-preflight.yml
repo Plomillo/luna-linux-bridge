@@ -1,0 +1,61 @@
+name: "R4 PART4 — PROYECTOS backup preflight"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-backup-preflight/**
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 12
+    steps:
+      - name: Inventory PROYECTOS and backup destinations read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          PROJ="$HOME/Proyectos"
+          REAL="$(readlink -f "$PROJ")"
+          echo "=== PROYECTOS ==="
+          echo "logical=$PROJ"
+          echo "real=$REAL"
+          test -d "$REAL"
+          findmnt -T "$REAL" -o TARGET,SOURCE,FSTYPE,OPTIONS
+          echo
+          echo "=== SIZE ==="
+          du -sx --block-size=1 "$REAL" 2>/dev/null || true
+          du -sh "$REAL" 2>/dev/null || true
+          echo
+          echo "=== TOP LEVEL ==="
+          find "$REAL" -maxdepth 1 -mindepth 1 -printf '%y\t%f\n' 2>/dev/null | head -n 200
+          echo
+          echo "=== FILE COUNT ==="
+          find "$REAL" -xdev -type f -printf '.' 2>/dev/null | wc -c || true
+          echo
+          echo "=== BLOCK DEVICES ==="
+          lsblk -o NAME,PATH,TYPE,FSTYPE,LABEL,UUID,SIZE,FSAVAIL,FSUSE%,MOUNTPOINTS
+          echo
+          echo "=== FILESYSTEM FREE ==="
+          df -B1 -T "$HOME" "$REAL" /tmp 2>/dev/null || true
+          echo
+          echo "=== MOUNTS UNDER MEDIA/MNT ==="
+          findmnt -rn -o TARGET,SOURCE,FSTYPE,OPTIONS | grep -E '^(/media|/mnt)' || true
+          echo
+          echo "=== LIKELY BACKUP DIRECTORIES ==="
+          for d in "$HOME/Backups" "$HOME/Respaldos" "$HOME/backup" "$HOME/respaldo" "$HOME/LOUKSNA_BACKUPS" "$HOME/Descargas"; do
+            if [ -e "$d" ]; then
+              echo "--- $d"
+              du -sh "$d" 2>/dev/null || true
+              df -B1 -T "$d" 2>/dev/null | tail -n 1 || true
+            fi
+          done
+          echo
+          echo "=== EXISTING PART4/BACKUP EVIDENCE ==="
+          find "$HOME/.local/state/louksna" "$HOME/SYMPHYLAX_LAB" -maxdepth 6 \
+            \( -iname '*backup*' -o -iname '*respaldo*' -o -iname '*restore*proof*' -o -iname '*part4*' \) \
+            -printf '%y\t%p\t%s\n' 2>/dev/null | head -n 400

@@ -1,0 +1,19 @@
+{
+  "schema": "LOUKSNA_R4_MASTER_SERVICE_RECOVERY/1.0",
+  "reason": "USER_SYSTEMD_SANDBOX_BREAKS_SETUID_SUDO",
+  "evidence": {
+    "direct_apc_rc": 0,
+    "lockpersonality_rc": 1,
+    "privatetmp_rc": 1,
+    "master_error": "APC48_NOT_AVAILABLE"
+  },
+  "preserve_checkpoint": "20260926T034746Z-38579",
+  "do_not_repeat": [
+    "PART_0",
+    "PART_1_FULL_REINSTALL",
+    "SERVER_READY",
+    "APC48_G23_G24"
+  ],
+  "action": "REMOVE_PRIVATE_TMP_AND_LOCK_PERSONALITY_FROM_USER_UNIT_THEN_RESUME",
+  "fail_closed": true
+}

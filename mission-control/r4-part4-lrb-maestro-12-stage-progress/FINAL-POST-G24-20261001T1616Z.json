@@ -1,0 +1,6 @@
+{
+  "schema": "R4_STAGE_PROGRESS_CHECK/1.0",
+  "contract": "PART4-P3-GROWTH-HARDENED-ANTI-PARALYSIS-20261001",
+  "mode": "READ_ONLY",
+  "mutation": false
+}

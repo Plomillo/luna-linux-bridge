@@ -1,0 +1,13 @@
+{
+  "schema": "LOUKSNA_R4_MASTER_RESUME_REQUEST/1.0",
+  "reason": "DEPLOY_PART6_WORKER_V2_1_WAYDROID_ARGV_FIX",
+  "worker_commit": "ea2030453cba6412cc2c76cc6cf1ddff3382f1a4",
+  "expected_current_part": "PART_6",
+  "resume_from_existing_checkpoint": true,
+  "preserve_valid_installs": true,
+  "worker": "MAESTRO",
+  "observer": "LOUKSNA_REMOTE_BRIDGE",
+  "prohibit_disk_partition_mutation": true,
+  "prohibit_filesystem_format_resize": true,
+  "requested_at_utc": "2026-10-01T22:35:00Z"
+}

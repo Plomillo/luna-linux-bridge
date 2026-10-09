@@ -1,0 +1,6 @@
+{
+  "mission_id": "MIS-e5963403a3b44ee8be96",
+  "action": "READ_ONLY_DIAGNOSE_PRE_STAGE7_HEALTH_TOOL_INSTALL_STATE",
+  "authority": "Louksna.md",
+  "mutation_authorized": false
+}

@@ -1,0 +1,6 @@
+{
+  "schema": "LOUKSNA_R4_MASTER_PROBE/1.0",
+  "reason": "continue_from_last_active_checkpoint",
+  "requested_by": "user",
+  "checkpoint": "20260926T034746Z-38579"
+}

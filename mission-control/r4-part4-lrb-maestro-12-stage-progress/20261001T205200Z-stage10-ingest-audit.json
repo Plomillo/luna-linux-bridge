@@ -1,0 +1,8 @@
+{
+  "schema": "LOUKSNA_R4_PART4_PROGRESS_AUDIT_REQUEST/1.0",
+  "reason": "CONFIRM_STAGE10_INGESTION_AFTER_HANDLER_DEPLOY",
+  "expected_last_completed_stage": 10,
+  "expected_current_stage": 11,
+  "read_only": true,
+  "requested_at_utc": "2026-10-01T20:52:00Z"
+}

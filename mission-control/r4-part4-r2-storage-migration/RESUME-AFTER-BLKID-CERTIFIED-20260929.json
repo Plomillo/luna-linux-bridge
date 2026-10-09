@@ -1,0 +1,9 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_STORAGE_RESUME/1.0",
+  "reason": "BLKID_REMEDIATION_G23_G24_PASS",
+  "remediation_run": 36640950351,
+  "remediation_g24_sha256": "f5ca93393c70e5cbe4381219a0b0f86e6a918bb69d89fe51f491c0c69c5c3cac",
+  "patched_commit": "d2a7ab86735c91bbb05cb592f228ab4ebf911bbf",
+  "authorization_scope": "EXISTING_PART4_R2_FINAL_MERGE_MANDATE",
+  "requested_action": "RESUME_STORAGE_MIGRATION_FROM_CERTIFIED_POST_PURGE_STATE"
+}

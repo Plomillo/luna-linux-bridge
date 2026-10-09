@@ -1,0 +1,11 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_CONTINUATION/1.0",
+  "status": "AUTHORIZED_CONTINUATION",
+  "source_failed_run": 36834032810,
+  "script_fix_commit": "246f76c462891a0fa5f1c22467cf8e0124faf559",
+  "governance_binding_commit": "e2282eab0738a8bcca25a00ab235181c20f6df3e",
+  "authority": "Louksna.md",
+  "assurance": "PUAC2.md",
+  "plan": "PLAN DEFINITIVO",
+  "fail_closed": true
+}

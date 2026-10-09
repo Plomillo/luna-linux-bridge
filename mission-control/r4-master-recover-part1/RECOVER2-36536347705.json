@@ -1,0 +1,10 @@
+{
+  "schema": "LOUKSNA_R4_PART1_CERT_RECOVERY/1.0",
+  "source_g24_run": 36536347705,
+  "evidence_commit": "1e3d6154a52added449a37c24885bad5acf0cddc",
+  "part": "PART_1",
+  "checkpoint": "20260926T034746Z-38579",
+  "action": "BIND_EXACT_PUBLISHED_EVIDENCE_AND_G24_THEN_CONTINUE",
+  "repeat_certification": false,
+  "fail_closed": true
+}

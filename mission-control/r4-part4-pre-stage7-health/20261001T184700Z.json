@@ -1,0 +1,12 @@
+{
+  "mission_id": "MIS-e5963403a3b44ee8be96",
+  "directive_id": "PRE-STAGE7-NVME-HEALTH-GATE-HARDENED-20261001",
+  "authority": "Louksna.md",
+  "action": "EXECUTE_HARDENED_PRE_STAGE7_NVME_HEALTH_GATE_WITH_MAESTRO_AND_LRB",
+  "expected_current_stage": 7,
+  "expected_last_completed_stage": 6,
+  "stage7_commit_authorized": false,
+  "partition_geometry_mutation_authorized": false,
+  "filesystem_resize_authorized": false,
+  "start_immediately": true
+}

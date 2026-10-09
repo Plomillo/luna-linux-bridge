@@ -1,0 +1,730 @@
+name: "R4 PART4 R2 — certified continuation v3"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-r2-certified-continuation-v3/**
+
+permissions:
+  contents: write
+  actions: read
+  id-token: write
+
+concurrency:
+  group: r4-part4-r2-certified-continuation-v3
+  cancel-in-progress: false
+
+env:
+  FREEZE_RUN: "36619942178"
+  EXPECTED_MANIFEST_SHA: "99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e"
+  EXPECTED_RECORDS: "498092"
+  EXPECTED_BYTES: "200490852057"
+
+jobs:
+  restore_plan:
+    name: Restore exact pre-mutation checkpoint and generate remediated plan
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            server/r4-master
+            mission-control/r4-part4-r2-final-merge
+            mission-control/r4-part4-r2-failures
+          sparse-checkout-cone-mode: true
+
+      - name: Prove failed v2 stopped before irreversible mutation and restore mount
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/remediated-plan"; mkdir -p "$OUT"
+          P3=/dev/nvme0n1p3
+          WINROOT=/media/diegoignacionorambuenamiranda/Windows
+          STALE="$HOME/.local/state/louksna/r4-master-part1-part9/PART_4_R2/migration/source-ntfs"
+          FAIL="mission-control/r4-part4-r2-failures/FAILURE-36660964872.json"
+          SCRIPT="server/r4-master/part4_r2_storage_migrate_v2.sh"
+          AUTH="mission-control/r4-part4-r2-final-merge/AUTHORIZATION-20260929.json"
+
+          test "$(hostname)" = LOUKSNA
+          test "$(id -un)" = diegoignacionorambuenamiranda
+          sudo -n true
+          sudo -n visudo -cf /etc/sudoers.d/90-louksna-permanent-nopasswd
+          test "$(systemctl is-active actions.runner.Plomillo-luna-linux-bridge.luna-linux.service)" = active
+          test "$(systemctl is-active louksna-maestro-guardian.timer)" = active
+
+          python3 - "$FAIL" "$AUTH" <<'PY'
+          import json,sys
+          f=json.load(open(sys.argv[1])); a=json.load(open(sys.argv[2]))
+          assert f["status"]=="FAIL_CLOSED_HOLD"
+          assert f["irreversible_mutation_reached"] is False
+          assert f["boundary"].endswith("before NTFS_FILESYSTEM_SHRUNK")
+          assert a["status"]=="AUTHORIZED"
+          assert a["authorized_target_disk"]=="/dev/nvme0n1"
+          assert a["failure_posture"]=="FAIL_CLOSED"
+          assert "RETIRE_WINDOWS_RESIDUAL_PARTITIONS" in a["allows"]
+          PY
+
+          sudo -n sfdisk --dump /dev/nvme0n1 > "$OUT/PARTITION_TABLE_RECOVERY_ENTRY.sfdisk"
+          python3 - "$OUT/PARTITION_TABLE_RECOVERY_ENTRY.sfdisk" <<'PY'
+          import re,sys
+          p={}
+          for line in open(sys.argv[1],errors="replace"):
+              m=re.match(r"^/dev/nvme0n1p(\d+)\s*:\s*start=\s*(\d+),\s*size=\s*(\d+)",line)
+              if m:p[int(m.group(1))]=(int(m.group(2)),int(m.group(3)))
+          exp={1:(2048,532480),2:(534528,32768),3:(567296,853844280),5:(854411576,144420552),4:(998832128,1368064)}
+          assert p==exp,(p,exp)
+          PY
+          test "$(sudo -n blkid -p -s UUID -o value "$P3")" = F2848A148489DC0B
+
+          if findmnt -n -M "$STALE" >/dev/null 2>&1; then
+            test "$(findmnt -n -M "$STALE" -o SOURCE)" = "$P3"
+            sudo -n umount "$STALE"
+          fi
+          while read -r target; do
+            [ -z "$target" ] && continue
+            [ "$target" = "$WINROOT" ] || sudo -n umount "$target"
+          done < <(findmnt -n -S "$P3" -o TARGET || true)
+
+          if ! findmnt -n -M "$WINROOT" >/dev/null 2>&1; then
+            sudo -n mount "$WINROOT"
+          fi
+          test "$(findmnt -n -M "$WINROOT" -o SOURCE)" = "$P3"
+          test "$(findmnt -n -M "$WINROOT" -o FSTYPE)" = ntfs3
+          test "$(sudo -n blkid -p -s UUID -o value "$P3")" = F2848A148489DC0B
+
+          bash "$SCRIPT" plan /dev/null "$OUT" /dev/null
+          SCRIPT_SHA="$(sha256sum "$SCRIPT"|awk '{print $1}')"
+          PLAN_SHA="$(sha256sum "$OUT/STORAGE_PLAN.json"|awk '{print $1}')"
+          export SCRIPT_SHA PLAN_SHA
+          python3 - "$OUT/REMEDIATION_BINDING.json" <<'PY'
+          import json,os,pathlib,time,sys
+          r={
+            "schema":"LOUKSNA_R4_PART4_R2_REMEDIATION_BINDING/1.0",
+            "status":"PASS",
+            "source_failure_run":36660964872,
+            "irreversible_mutation_reached":False,
+            "remediation":"UID_GID_BOUND_READ_ONLY_NTFS_STAGING_MOUNTS",
+            "script":"server/r4-master/part4_r2_storage_migrate_v2.sh",
+            "script_sha256":os.environ["SCRIPT_SHA"],
+            "plan_sha256":os.environ["PLAN_SHA"],
+            "mount_policy":"ro,uid=RUNNER_UID,gid=RUNNER_GID,umask=0077",
+            "sudo_rsync":True,
+            "restored_original_p3_uuid":"F2848A148489DC0B",
+            "generated_at_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          PY
+          sudo -n sfdisk --dump /dev/nvme0n1 > "$OUT/PARTITION_TABLE_RECOVERY_EXIT.sfdisk"
+          sha256sum "$OUT"/* | sort > "$OUT/PLAN_EVIDENCE.sha256"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-v3-remediated-plan
+          path: ${{ runner.temp }}/remediated-plan/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  g23_plan:
+    name: G23 independently validate remediated execution plan
+    needs: restore_plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: server/r4-master
+          sparse-checkout-cone-mode: true
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-v3-remediated-plan
+          path: ${{ runner.temp }}/plan
+
+      - name: Validate geometry, remediation, provenance and rollback
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/plan" server/r4-master/part4_r2_storage_migrate_v2.sh "$RUNNER_TEMP/g23/G23_PLAN_V3.json" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,re,sys
+          root=pathlib.Path(sys.argv[1]); script=pathlib.Path(sys.argv[2]); out=pathlib.Path(sys.argv[3])
+          p=json.loads((root/"STORAGE_PLAN.json").read_text()); b=json.loads((root/"REMEDIATION_BINDING.json").read_text())
+          s=script.read_text()
+          def table(path):
+              d={}
+              for line in path.read_text(errors="replace").splitlines():
+                  m=re.match(r"^/dev/nvme0n1p(\d+)\s*:\s*start=\s*(\d+),\s*size=\s*(\d+)",line)
+                  if m:d[int(m.group(1))]=(int(m.group(2)),int(m.group(3)))
+              return d
+          entry=table(root/"PARTITION_TABLE_RECOVERY_ENTRY.sfdisk"); exitp=table(root/"PARTITION_TABLE_RECOVERY_EXIT.sfdisk")
+          exact={1:(2048,532480),2:(534528,32768),3:(567296,853844280),5:(854411576,144420552),4:(998832128,1368064)}
+          checks={
+            "binding_pass":b.get("status")=="PASS",
+            "failure_pre_mutation":b.get("irreversible_mutation_reached") is False,
+            "script_hash":b.get("script_sha256")==hashlib.sha256(script.read_bytes()).hexdigest(),
+            "plan_hash":b.get("plan_sha256")==hashlib.sha256((root/"STORAGE_PLAN.json").read_bytes()).hexdigest(),
+            "permission_fix_twice":s.count('ro,uid=$(id -u),gid=$(id -g),umask=0077')==2,
+            "sudo_rsync_twice":s.count("sudo -n rsync -aHAX --delete --numeric-ids")==2,
+            "entry_geometry":entry==exact,
+            "exit_geometry":exitp==exact,
+            "plan_pass":p.get("status")=="PASS",
+            "disk":p.get("disk")=="/dev/nvme0n1",
+            "p3":p.get("source_partition")=="/dev/nvme0n1p3",
+            "uuid":p.get("source_uuid")=="F2848A148489DC0B",
+            "manifest":p.get("certified_manifest_sha256")=="99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+            "source_bytes":p.get("source_regular_file_bytes")==200490852057,
+            "p3_original":p.get("p3_original",{}).get("start_sector")==567296 and p.get("p3_original",{}).get("end_sector")==854411575,
+            "p5":p.get("p5",{}).get("start_sector")==854411576 and p.get("p5",{}).get("end_sector")==998832127,
+            "p4":p.get("p4_original",{}).get("start_sector")==998832128 and p.get("p4_original",{}).get("end_sector")==1000200191,
+            "temp_capacity":p.get("temp_bytes",0)>=208490852057,
+            "rollback_table":p.get("rollback_contract",{}).get("partition_table_dump_before_mutation") is True,
+            "rollback_temp":p.get("rollback_contract",{}).get("after_p3_reformat_until_final_verify")=="VERIFIED_TEMP_EXT4_REMAINS_RECOVERY_COPY",
+          }
+          ok=all(checks.values())
+          r={"schema":"LOUKSNA_R4_PART4_R2_REMEDIATED_PLAN_G23/1.0","status":"PASS" if ok else "HOLD",
+             "scope":"PERMISSION_REMEDIATED_P3_NTFS_TO_EXT4_PLAN",
+             "checks":checks,
+             "plan_sha256":hashlib.sha256((root/"STORAGE_PLAN.json").read_bytes()).hexdigest(),
+             "script_sha256":hashlib.sha256(script.read_bytes()).hexdigest(),
+             "binding_sha256":hashlib.sha256((root/"REMEDIATION_BINDING.json").read_bytes()).hexdigest(),
+             "repair_allowed":False,"g24_allowed":ok,
+             "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          out.write_text(json.dumps(r,indent=2,sort_keys=True)+"\n"); print(json.dumps(r,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(3)
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-v3-plan-g23
+          path: ${{ runner.temp }}/g23/G23_PLAN_V3.json
+          retention-days: 90
+          compression-level: 0
+
+  g24_plan:
+    name: G24 certify remediated execution plan
+    needs: g23_plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-v3-plan-g23
+          path: ${{ runner.temp }}/g23
+
+      - name: Issue digest-bound remediation certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/G23_PLAN_V3.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$G")" = PASS
+          H="$(sha256sum "$G"|awk '{print $1}')"
+          P="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["plan_sha256"])' "$G")"
+          S="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["script_sha256"])' "$G")"
+          AUD="louksna-r4-part4-r2-remediated-plan:$P:$S:$H"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export H P S AUD TOKEN
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$RUNNER_TEMP/g24/G24_PLAN_V3.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib
+          t=os.environ["TOKEN"]; p=t.split("."); payload=p[1]+"="*((4-len(p[1])%4)%4)
+          c=json.loads(base64.urlsafe_b64decode(payload)); aud=c.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if c.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          r={"schema":"LOUKSNA_R4_PART4_R2_REMEDIATED_PLAN_G24/1.0","status":"PASS",
+             "scope":"PERMISSION_REMEDIATED_P3_NTFS_TO_EXT4_PLAN",
+             "plan_sha256":os.environ["P"],"script_sha256":os.environ["S"],"g23_sha256":os.environ["H"],
+             "authority_authenticated":True,
+             "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
+             "canonical_mutation":False,"authority_transfer":False,
+             "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          pathlib.Path(os.environ["RUNNER_TEMP"]+"/g24/G24_PLAN_V3.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-v3-plan-g24
+          path: ${{ runner.temp }}/g24/G24_PLAN_V3.json
+          retention-days: 90
+          compression-level: 0
+
+  migrate:
+    name: Execute G24-certified remediated P3 migration
+    needs: g24_plan
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: server/r4-master
+          sparse-checkout-cone-mode: true
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-v3-remediated-plan
+          path: ${{ runner.temp }}/plan
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-v3-plan-g24
+          path: ${{ runner.temp }}/g24
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: R4-PART4-PROYECTOS-freeze-36619942178
+          path: ${{ runner.temp }}/freeze
+          run-id: ${{ env.FREEZE_RUN }}
+          github-token: ${{ github.token }}
+
+      - name: Rebind live checkpoint then execute
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          PLAN="$RUNNER_TEMP/plan/STORAGE_PLAN.json"
+          CERT="$RUNNER_TEMP/g24/G24_PLAN_V3.json"
+          SCRIPT="server/r4-master/part4_r2_storage_migrate_v2.sh"
+          MANIFEST="$RUNNER_TEMP/freeze/PROYECTOS_MANIFEST.jsonl.gz"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$CERT")" = PASS
+          test "$(sha256sum "$PLAN"|awk '{print $1}')" = "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["plan_sha256"])' "$CERT")"
+          test "$(sha256sum "$SCRIPT"|awk '{print $1}')" = "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["script_sha256"])' "$CERT")"
+          test "$(sha256sum "$MANIFEST"|awk '{print $1}')" = "$EXPECTED_MANIFEST_SHA"
+          test "$(sudo -n blkid -p -s UUID -o value /dev/nvme0n1p3)" = F2848A148489DC0B
+          test "$(findmnt -n -M /media/diegoignacionorambuenamiranda/Windows -o SOURCE)" = /dev/nvme0n1p3
+          OUT="$RUNNER_TEMP/storage-v3"; mkdir -p "$OUT"
+          bash "$SCRIPT" execute "$PLAN" "$OUT" "$MANIFEST"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: r4-part4-r2-v3-migration-material
+          path: ${{ runner.temp }}/storage-v3/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  g23_migration:
+    name: G23 validate P3 ext4 and preserve P2 P4 P5
+    needs: migrate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-v3-migration-material
+          path: ${{ runner.temp }}/m
+
+      - name: Independently validate migration evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/m" "$RUNNER_TEMP/g23/G23_MIGRATION_V3.json" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,re,sys
+          root=pathlib.Path(sys.argv[1]); out=pathlib.Path(sys.argv[2])
+          r=json.loads((root/"MIGRATION_RESULT.json").read_text()); v=json.loads((root/"VERIFY_FINAL.json").read_text()); l=json.loads((root/"LSBLK_FINAL.json").read_text())
+          flat=[]
+          def walk(xs):
+              for x in xs: flat.append(x); walk(x.get("children",[]))
+          walk(l.get("blockdevices",[])); by={x.get("path"):x for x in flat}
+          def parts(p):
+              d={}
+              for line in p.read_text(errors="replace").splitlines():
+                  m=re.match(r"^/dev/nvme0n1p(\d+)\s*:\s*start=\s*(\d+),\s*size=\s*(\d+)",line)
+                  if m:d[int(m.group(1))]=(int(m.group(2)),int(m.group(3)))
+              return d
+          b=parts(root/"PARTITION_TABLE_BEFORE.sfdisk"); a=parts(root/"PARTITION_TABLE_AFTER.sfdisk")
+          p3=by.get("/dev/nvme0n1p3",{})
+          checks={
+            "migration_pass":r.get("status")=="PASS",
+            "verify_pass":v.get("status")=="PASS" and v.get("mismatch_count")==0,
+            "manifest":v.get("manifest_sha256")=="99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+            "records":v.get("seen_records")==498092,
+            "bytes":v.get("regular_file_bytes")==200490852057,
+            "p3_ext4":p3.get("fstype")=="ext4",
+            "p3_old_uuid_gone":p3.get("uuid")!="F2848A148489DC0B",
+            "p2_preserved":b.get(2)==a.get(2)==(534528,32768),
+            "p4_preserved":b.get(4)==a.get(4)==(998832128,1368064),
+            "p5_preserved":b.get(5)==a.get(5)==(854411576,144420552),
+            "p1_preserved":b.get(1)==a.get(1)==(2048,532480),
+            "p3_final_geometry":a.get(3)==(567296,853842233),
+            "mount":"/home/diegoignacionorambuenamiranda/PROYECTOS" in [x for x in (p3.get("mountpoints") or []) if x],
+            "checkpoint":(root/"PARTITION_TABLE_BEFORE.sfdisk").is_file(),
+          }
+          ok=all(checks.values())
+          q={"schema":"LOUKSNA_R4_PART4_R2_MIGRATION_V3_G23/1.0","status":"PASS" if ok else "HOLD",
+             "scope":"P3_EXT4_VERIFIED_P2_P4_P5_PRESERVED",
+             "checks":checks,
+             "migration_sha256":hashlib.sha256((root/"MIGRATION_RESULT.json").read_bytes()).hexdigest(),
+             "verify_sha256":hashlib.sha256((root/"VERIFY_FINAL.json").read_bytes()).hexdigest(),
+             "before_sha256":hashlib.sha256((root/"PARTITION_TABLE_BEFORE.sfdisk").read_bytes()).hexdigest(),
+             "after_sha256":hashlib.sha256((root/"PARTITION_TABLE_AFTER.sfdisk").read_bytes()).hexdigest(),
+             "repair_allowed":False,"g24_allowed":ok,
+             "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          out.write_text(json.dumps(q,indent=2,sort_keys=True)+"\n"); print(json.dumps(q,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(3)
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-v3-migration-g23
+          path: ${{ runner.temp }}/g23/G23_MIGRATION_V3.json
+          retention-days: 90
+          compression-level: 0
+
+  g24_migration:
+    name: G24 certify verified P3 ext4 intermediate state
+    needs: g23_migration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-v3-migration-g23
+          path: ${{ runner.temp }}/g23
+      - name: Certify migration state
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/G23_MIGRATION_V3.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$G")" = PASS
+          H="$(sha256sum "$G"|awk '{print $1}')"; AUD="louksna-r4-part4-r2-migration-v3:$H"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export H AUD TOKEN
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$RUNNER_TEMP/g24/G24_MIGRATION_V3.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib
+          t=os.environ["TOKEN"]; p=t.split("."); payload=p[1]+"="*((4-len(p[1])%4)%4); c=json.loads(base64.urlsafe_b64decode(payload))
+          aud=c.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if c.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          r={"schema":"LOUKSNA_R4_PART4_R2_MIGRATION_V3_G24/1.0","status":"PASS",
+             "scope":"P3_EXT4_VERIFIED_P2_P4_P5_PRESERVED","g23_sha256":os.environ["H"],
+             "authority_authenticated":True,"authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
+             "canonical_mutation":False,"authority_transfer":False,
+             "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          pathlib.Path(os.environ["RUNNER_TEMP"]+"/g24/G24_MIGRATION_V3.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-v3-migration-g24
+          path: ${{ runner.temp }}/g24/G24_MIGRATION_V3.json
+          retention-days: 90
+          compression-level: 0
+
+  retire_plan:
+    name: Build exact P2 P4 retirement plan
+    needs: g24_migration
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 20
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-v3-migration-g24
+          path: ${{ runner.temp }}/mg24
+      - name: Capture exact live retirement plan without mutation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$RUNNER_TEMP/mg24/G24_MIGRATION_V3.json")" = PASS
+          OUT="$RUNNER_TEMP/retire-plan"; mkdir -p "$OUT"
+          sudo -n sfdisk --dump /dev/nvme0n1 > "$OUT/BEFORE.sfdisk"
+          P1="$(sudo -n blkid -p -s UUID -o value /dev/nvme0n1p1)"; P3="$(sudo -n blkid -p -s UUID -o value /dev/nvme0n1p3)"; P5="$(sudo -n blkid -p -s UUID -o value /dev/nvme0n1p5)"
+          export P1 P3 P5
+          python3 - "$OUT/BEFORE.sfdisk" "$OUT/RETIRE_PLAN.json" <<'PY'
+          import datetime as dt,hashlib,json,os,re,sys,pathlib
+          p=pathlib.Path(sys.argv[1]); d={}
+          for line in p.read_text(errors="replace").splitlines():
+              m=re.match(r"^/dev/nvme0n1p(\d+)\s*:\s*start=\s*(\d+),\s*size=\s*(\d+)",line)
+              if m:d[int(m.group(1))]=(int(m.group(2)),int(m.group(3)))
+          exp={1:(2048,532480),2:(534528,32768),3:(567296,853842233),5:(854411576,144420552),4:(998832128,1368064)}
+          if d!=exp: raise SystemExit("HOLD:RETIRE_GEOMETRY:"+repr(d))
+          r={"schema":"LOUKSNA_R4_PART4_R2_RETIRE_PLAN_V3/1.0","status":"PASS","disk":"/dev/nvme0n1",
+             "remove":[2,4],"preserve":[1,3,5],"geometry":{str(k):list(v) for k,v in d.items()},
+             "p1_uuid":os.environ["P1"],"p3_uuid":os.environ["P3"],"p5_uuid":os.environ["P5"],
+             "checkpoint_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),
+             "rollback":"RESTORE_GPT_CHECKPOINT_BEFORE_ANY_SUBSEQUENT_EXPANSION",
+             "generated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          pathlib.Path(sys.argv[2]).write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-v3-retire-plan
+          path: ${{ runner.temp }}/retire-plan/
+          retention-days: 90
+          compression-level: 0
+
+  g23_retire_plan:
+    name: G23 validate P2 P4 retirement plan
+    needs: retire_plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-v3-retire-plan
+          path: ${{ runner.temp }}/p
+      - name: Independent exact-scope validation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/p/RETIRE_PLAN.json" "$RUNNER_TEMP/g23/G23_RETIRE_PLAN_V3.json" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,sys
+          p=pathlib.Path(sys.argv[1]); d=json.loads(p.read_text()); out=pathlib.Path(sys.argv[2])
+          g={int(k):tuple(v) for k,v in d["geometry"].items()}
+          checks={"status":d.get("status")=="PASS","disk":d.get("disk")=="/dev/nvme0n1","remove":d.get("remove")==[2,4],
+                  "preserve":d.get("preserve")==[1,3,5],
+                  "geometry":g=={1:(2048,532480),2:(534528,32768),3:(567296,853842233),5:(854411576,144420552),4:(998832128,1368064)},
+                  "uuids":all(d.get(k) for k in ("p1_uuid","p3_uuid","p5_uuid"))}
+          ok=all(checks.values())
+          r={"schema":"LOUKSNA_R4_PART4_R2_RETIRE_PLAN_V3_G23/1.0","status":"PASS" if ok else "HOLD",
+             "scope":"REMOVE_P2_P4_ONLY_PRESERVE_P1_P3_P5","checks":checks,
+             "plan_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),"repair_allowed":False,"g24_allowed":ok,
+             "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          out.write_text(json.dumps(r,indent=2,sort_keys=True)+"\n"); print(json.dumps(r,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(3)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-v3-retire-plan-g23
+          path: ${{ runner.temp }}/g23/G23_RETIRE_PLAN_V3.json
+          retention-days: 90
+          compression-level: 0
+
+  g24_retire_plan:
+    name: G24 certify P2 P4 retirement plan
+    needs: g23_retire_plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-v3-retire-plan-g23
+          path: ${{ runner.temp }}/g23
+      - name: Issue retirement-plan certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/G23_RETIRE_PLAN_V3.json"; test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$G")" = PASS
+          H="$(sha256sum "$G"|awk '{print $1}')"; P="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["plan_sha256"])' "$G")"; AUD="louksna-r4-retire-v3:$P:$H"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"; TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export H P AUD TOKEN; mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$RUNNER_TEMP/g24/G24_RETIRE_PLAN_V3.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib
+          t=os.environ["TOKEN"]; q=t.split("."); payload=q[1]+"="*((4-len(q[1])%4)%4); c=json.loads(base64.urlsafe_b64decode(payload)); exp=os.environ["AUD"]; aud=c.get("aud")
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if c.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          r={"schema":"LOUKSNA_R4_PART4_R2_RETIRE_PLAN_V3_G24/1.0","status":"PASS","scope":"REMOVE_P2_P4_ONLY_PRESERVE_P1_P3_P5",
+             "plan_sha256":os.environ["P"],"g23_sha256":os.environ["H"],"authority_authenticated":True,
+             "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),"canonical_mutation":False,"authority_transfer":False,
+             "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          pathlib.Path(os.environ["RUNNER_TEMP"]+"/g24/G24_RETIRE_PLAN_V3.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-v3-retire-plan-g24
+          path: ${{ runner.temp }}/g24/G24_RETIRE_PLAN_V3.json
+          retention-days: 90
+          compression-level: 0
+
+  retire:
+    name: Execute certified P2 P4 retirement
+    needs: g24_retire_plan
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: server/r4-master
+          sparse-checkout-cone-mode: true
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-v3-retire-plan
+          path: ${{ runner.temp }}/p
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-v3-retire-plan-g24
+          path: ${{ runner.temp }}/g24
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: R4-PART4-PROYECTOS-freeze-36619942178
+          path: ${{ runner.temp }}/freeze
+          run-id: ${{ env.FREEZE_RUN }}
+          github-token: ${{ github.token }}
+      - name: Verify data, checkpoint GPT, remove P2 P4 only, verify again
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          PLAN="$RUNNER_TEMP/p/RETIRE_PLAN.json"; CERT="$RUNNER_TEMP/g24/G24_RETIRE_PLAN_V3.json"; OUT="$RUNNER_TEMP/retired"; mkdir -p "$OUT"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$CERT")" = PASS
+          test "$(sha256sum "$PLAN"|awk '{print $1}')" = "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["plan_sha256"])' "$CERT")"
+          python3 server/r4-master/part4_r2_verify_tree.py --root "$HOME/PROYECTOS" --manifest "$RUNNER_TEMP/freeze/PROYECTOS_MANIFEST.jsonl.gz" --out "$OUT/VERIFY_PRE.json"
+          sudo -n sfdisk --dump /dev/nvme0n1 > "$OUT/CHECKPOINT.sfdisk"
+          P1="$(sudo -n blkid -p -s UUID -o value /dev/nvme0n1p1)"; P3="$(sudo -n blkid -p -s UUID -o value /dev/nvme0n1p3)"; P5="$(sudo -n blkid -p -s UUID -o value /dev/nvme0n1p5)"
+          export P1 P3 P5
+          python3 - "$PLAN" <<'PY'
+          import json,os,sys
+          d=json.load(open(sys.argv[1])); assert d["p1_uuid"]==os.environ["P1"]; assert d["p3_uuid"]==os.environ["P3"]; assert d["p5_uuid"]==os.environ["P5"]
+          PY
+          sudo -n parted -s /dev/nvme0n1 rm 2
+          sudo -n parted -s /dev/nvme0n1 rm 4
+          sudo -n partprobe /dev/nvme0n1 || true
+          sudo -n partx -u /dev/nvme0n1 || true
+          sudo -n udevadm settle
+          if [ -b /dev/nvme0n1p2 ]; then sudo -n partx -d --nr 2 /dev/nvme0n1 || true; fi
+          if [ -b /dev/nvme0n1p4 ]; then sudo -n partx -d --nr 4 /dev/nvme0n1 || true; fi
+          sudo -n udevadm settle
+          test ! -b /dev/nvme0n1p2
+          test ! -b /dev/nvme0n1p4
+          test "$(sudo -n blkid -p -s UUID -o value /dev/nvme0n1p1)" = "$P1"
+          test "$(sudo -n blkid -p -s UUID -o value /dev/nvme0n1p3)" = "$P3"
+          test "$(sudo -n blkid -p -s UUID -o value /dev/nvme0n1p5)" = "$P5"
+          sudo -n sfdisk --dump /dev/nvme0n1 > "$OUT/AFTER.sfdisk"
+          lsblk -b -J -o NAME,PATH,TYPE,SIZE,FSTYPE,MOUNTPOINTS,UUID,PARTUUID,START > "$OUT/LSBLK.json"
+          python3 server/r4-master/part4_r2_verify_tree.py --root "$HOME/PROYECTOS" --manifest "$RUNNER_TEMP/freeze/PROYECTOS_MANIFEST.jsonl.gz" --out "$OUT/VERIFY_POST.json"
+          sha256sum "$OUT"/* | sort > "$OUT/EVIDENCE.sha256"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-v3-retired-material
+          path: ${{ runner.temp }}/retired/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  g23_retire:
+    name: G23 validate retirement and non-regression
+    needs: retire
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-v3-retired-material
+          path: ${{ runner.temp }}/r
+      - name: Independently validate final intermediate geometry
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/r" "$RUNNER_TEMP/g23/G23_RETIRED_V3.json" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,re,sys
+          root=pathlib.Path(sys.argv[1]); out=pathlib.Path(sys.argv[2])
+          pre=json.loads((root/"VERIFY_PRE.json").read_text()); post=json.loads((root/"VERIFY_POST.json").read_text())
+          def parts(p):
+              d={}
+              for line in p.read_text(errors="replace").splitlines():
+                  m=re.match(r"^/dev/nvme0n1p(\d+)\s*:\s*start=\s*(\d+),\s*size=\s*(\d+)",line)
+                  if m:d[int(m.group(1))]=(int(m.group(2)),int(m.group(3)))
+              return d
+          b=parts(root/"CHECKPOINT.sfdisk"); a=parts(root/"AFTER.sfdisk")
+          checks={"pre":pre.get("status")=="PASS" and pre.get("mismatch_count")==0,
+                  "post":post.get("status")=="PASS" and post.get("mismatch_count")==0,
+                  "manifest":post.get("manifest_sha256")=="99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+                  "records":post.get("seen_records")==498092,"bytes":post.get("regular_file_bytes")==200490852057,
+                  "only_1_3_5":set(a)=={1,3,5},"p1":a.get(1)==b.get(1),"p3":a.get(3)==b.get(3),"p5":a.get(5)==b.get(5),
+                  "p2_removed":2 in b and 2 not in a,"p4_removed":4 in b and 4 not in a}
+          ok=all(checks.values())
+          r={"schema":"LOUKSNA_R4_PART4_R2_RETIRED_V3_G23/1.0","status":"PASS" if ok else "HOLD",
+             "scope":"P2_P4_RETIRED_P1_P3_P5_PRESERVED","checks":checks,
+             "checkpoint_sha256":hashlib.sha256((root/"CHECKPOINT.sfdisk").read_bytes()).hexdigest(),
+             "after_sha256":hashlib.sha256((root/"AFTER.sfdisk").read_bytes()).hexdigest(),
+             "post_verify_sha256":hashlib.sha256((root/"VERIFY_POST.json").read_bytes()).hexdigest(),
+             "repair_allowed":False,"g24_allowed":ok,"validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          out.write_text(json.dumps(r,indent=2,sort_keys=True)+"\n"); print(json.dumps(r,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(3)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-v3-retired-g23
+          path: ${{ runner.temp }}/g23/G23_RETIRED_V3.json
+          retention-days: 90
+          compression-level: 0
+
+  g24_retire:
+    name: G24 certify retirement and final-merge readiness
+    needs: g23_retire
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-v3-retired-g23
+          path: ${{ runner.temp }}/g23
+      - name: Issue final intermediate certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/G23_RETIRED_V3.json"; test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$G")" = PASS
+          H="$(sha256sum "$G"|awk '{print $1}')"; AUD="louksna-r4-retired-v3:$H"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"; TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export H AUD TOKEN; mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$RUNNER_TEMP/g24/G24_RETIRED_V3.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib
+          t=os.environ["TOKEN"]; q=t.split("."); payload=q[1]+"="*((4-len(q[1])%4)%4); c=json.loads(base64.urlsafe_b64decode(payload)); exp=os.environ["AUD"]; aud=c.get("aud")
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if c.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          r={"schema":"LOUKSNA_R4_PART4_R2_RETIRED_V3_G24/1.0","status":"PASS","scope":"P2_P4_RETIRED_P1_P3_P5_PRESERVED_FINAL_MERGE_READY",
+             "g23_sha256":os.environ["H"],"authority_authenticated":True,"authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
+             "canonical_mutation":False,"authority_transfer":False,"final_merge_ready":True,
+             "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          pathlib.Path(os.environ["RUNNER_TEMP"]+"/g24/G24_RETIRED_V3.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-v3-retired-g24
+          path: ${{ runner.temp }}/g24/G24_RETIRED_V3.json
+          retention-days: 90
+          compression-level: 0
+
+  handoff:
+    name: Persist G24 state and handoff to existing final merge
+    needs: g24_retire
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-v3-migration-g24
+          path: ${{ runner.temp }}/mg24
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-v3-retired-g24
+          path: ${{ runner.temp }}/rg24
+      - name: Persist certified state and push handoff
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          M="$RUNNER_TEMP/mg24/G24_MIGRATION_V3.json"; R="$RUNNER_TEMP/rg24/G24_RETIRED_V3.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$M")" = PASS
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$R")" = PASS
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9/PART_4_R2/STATE.json"
+          python3 - "$STATE" "$M" "$R" <<'PY'
+          import hashlib,json,os,sys,time
+          sp,mp,rp=sys.argv[1:]; d=json.load(open(sp))
+          d.update({"storage_migration_g24":True,"storage_migration_g24_sha256":hashlib.sha256(open(mp,"rb").read()).hexdigest(),
+                    "p2_p4_retirement_g24":True,"p2_p4_retirement_g24_sha256":hashlib.sha256(open(rp,"rb").read()).hexdigest(),
+                    "projects_migrated_hash_equivalent":True,"ntfs_retired":True,"final_linux_layout":False,
+                    "final_merge_g24":False,"part4_r2_final_g24":False,"verified_root_on_consolidated_linux":False,
+                    "updated_at_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())})
+          t=sp+".tmp"; json.dump(d,open(t,"w"),indent=2,sort_keys=True); os.replace(t,sp)
+          PY
+          TRIGGER="mission-control/r4-part4-r2-final-merge/HANDOFF-V3-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.json"
+          BODY="$(printf '{"schema":"LOUKSNA_R4_PART4_R2_HANDOFF_V3/1.0","status":"PASS","from":"P2_P4_RETIRED_G24","to":"FINAL_MERGE_PREBOOT","source_run":%s}' "$GITHUB_RUN_ID" | base64 -w0)"
+          gh api --method PUT "repos/Plomillo/luna-linux-bridge/contents/$TRIGGER" -f message="handoff(PART4-R2): v3 certified route to final merge" -f content="$BODY" -f branch="staging/luna-r4-master-part1-part9-20260929"
+          echo "PART4_R2_V3_G24=PASS"
+          echo "FINAL_MERGE_HANDOFF=PUSHED"

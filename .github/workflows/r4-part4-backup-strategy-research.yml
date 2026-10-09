@@ -1,0 +1,134 @@
+name: "R4 PART4 — backup strategy 2m research"
+on:
+  push:
+    branches: [staging/luna-r4-master-part1-part9-20260929]
+    paths:
+      - "mission-control/r4-part4-backup-research/**"
+permissions:
+  contents: read
+jobs:
+  research:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 2
+    steps:
+      - name: Two-minute forensic backup strategy research
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          PROJ="$HOME/Proyectos"
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9"
+          ANALYSIS="$STATE/analysis/PART_4_PROYECTOS_DEDUP"
+          OUT="$RUNNER_TEMP/part4-backup-research-$GITHUB_RUN_ID"
+          mkdir -p "$OUT"
+          test -d "$PROJ"
+          test -f "$ANALYSIS/SUMMARY.json"
+          test -f "$ANALYSIS/proyectos.sqlite3"
+
+          df -B1 "$PROJ" > "$OUT/DF_SOURCE.txt"
+          df -B1 "$HOME" > "$OUT/DF_HOME.txt"
+          command -v 7z > "$OUT/TOOLS.txt" 2>/dev/null || true
+          command -v zstd >> "$OUT/TOOLS.txt" 2>/dev/null || true
+          command -v tar >> "$OUT/TOOLS.txt" 2>/dev/null || true
+          command -v borg >> "$OUT/TOOLS.txt" 2>/dev/null || true
+          command -v restic >> "$OUT/TOOLS.txt" 2>/dev/null || true
+
+          python3 - "$ANALYSIS/proyectos.sqlite3" "$ANALYSIS/SUMMARY.json" "$OUT" <<'PY'
+          import collections, json, os, sqlite3, subprocess, sys, tempfile, time, shutil
+          from pathlib import Path
+          db, summary_path, out = sys.argv[1:]
+          started=time.monotonic()
+          budget=85.0
+          summary=json.load(open(summary_path,encoding="utf-8"))
+          con=sqlite3.connect(db)
+          rows=con.execute("SELECT path,size,sha256 FROM files ORDER BY size DESC").fetchall()
+          ext=collections.defaultdict(lambda:[0,0])
+          for p,s,h in rows:
+              suffix=Path(p).suffix.lower() or "<none>"
+              ext[suffix][0]+=1; ext[suffix][1]+=s
+          top=sorted(({"extension":k,"files":v[0],"bytes":v[1]} for k,v in ext.items()),key=lambda x:x["bytes"],reverse=True)[:40]
+
+          # Deterministic bounded sample: unique SHA when available, spanning large/medium/small.
+          seen=set(); sample=[]
+          for p,s,h in rows:
+              key=h or ("PATH",p)
+              if key in seen or s<=0: continue
+              seen.add(key)
+              suf=Path(p).suffix.lower()
+              sample.append((p,s,suf))
+              if len(sample)>=48: break
+          # Add deterministic representatives from common extensions.
+          for item in top[:20]:
+              if len(sample)>=64: break
+              suf=item["extension"]
+              q=con.execute("SELECT path,size FROM files WHERE path LIKE ? AND size>0 ORDER BY size DESC LIMIT 1",("%"+suf,)).fetchone() if suf!="<none>" else None
+              if q and all(q[0]!=x[0] for x in sample): sample.append((q[0],q[1],suf))
+
+          compressor=shutil.which("7z")
+          tested=[]; raw=packed=0
+          if compressor:
+              for i,(p,s,suf) in enumerate(sample):
+                  if time.monotonic()-started>budget: break
+                  if not os.path.isfile(p): continue
+                  # Cap individual sampling work; huge files are sampled by first 32 MiB to avoid 2m overrun.
+                  limit=min(s,32*1024*1024)
+                  tmpbase=os.path.join(out,f"s{i:03d}")
+                  chunk=tmpbase+".bin"; arc=tmpbase+".7z"
+                  try:
+                      with open(p,"rb") as src, open(chunk,"wb") as dst:
+                          remain=limit
+                          while remain:
+                              b=src.read(min(1024*1024,remain))
+                              if not b: break
+                              dst.write(b); remain-=len(b)
+                      actual=os.path.getsize(chunk)
+                      subprocess.run([compressor,"a","-t7z","-mx=5","-m0=lzma2",arc,chunk],
+                                     stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=8,check=True)
+                      psz=os.path.getsize(arc)
+                      raw+=actual; packed+=psz
+                      tested.append({"path":p,"extension":suf,"original_size":s,"sample_bytes":actual,"packed_bytes":psz,"ratio":round(psz/actual,5) if actual else None})
+                  except Exception as e:
+                      tested.append({"path":p,"extension":suf,"error":type(e).__name__})
+                  finally:
+                      for q in (chunk,arc):
+                          try: os.remove(q)
+                          except FileNotFoundError: pass
+
+          total=summary["total_bytes"]; reclaim=summary["theoretical_reclaimable_bytes"]
+          unique_floor=max(0,total-reclaim)
+          sample_ratio=(packed/raw) if raw else None
+          projected_after_dedup_and_sample_compression=int(unique_floor*sample_ratio) if sample_ratio else None
+          report={
+            "schema":"LOUKSNA_R4_PART4_BACKUP_STRATEGY_RESEARCH/1.0",
+            "mode":"READ_ONLY_BOUNDED_RESEARCH",
+            "source_mutated":False,
+            "time_budget_seconds":120,
+            "existing_forensic_summary":summary,
+            "unique_content_floor_bytes_before_compression":unique_floor,
+            "sample":{"files_attempted":len(sample),"raw_bytes":raw,"packed_bytes":packed,"ratio":round(sample_ratio,6) if sample_ratio else None,"results":tested},
+            "projection":{"dedup_plus_sample_compression_bytes":projected_after_dedup_and_sample_compression,
+                          "warning":"SAMPLE_ESTIMATE_NOT_CERTIFICATION; exact backup size requires materialization"},
+            "top_extensions_by_bytes":top,
+            "gate_analysis":{
+              "two_verified_backups":"NOT_YET_SATISFIED_BY_RESEARCH",
+              "restore_proof":"NOT_YET_SATISFIED_BY_RESEARCH",
+              "destructive_scope_prevalidated":"REQUIRES_SEPARATE_SCOPE_PROOF",
+              "certification_propagation":False
+            }
+          }
+          json.dump(report,open(os.path.join(out,"REPORT.json"),"w",encoding="utf-8"),indent=2,ensure_ascii=False)
+          print(json.dumps({k:v for k,v in report.items() if k not in ("sample","top_extensions_by_bytes")},indent=2,ensure_ascii=False))
+          PY
+
+          sha256sum "$OUT"/* > "$OUT/SHA256SUMS.txt"
+          echo "=== SOURCE SPACE ==="; cat "$OUT/DF_SOURCE.txt"
+          echo "=== HOME SPACE ==="; cat "$OUT/DF_HOME.txt"
+          echo "=== TOOLS ==="; cat "$OUT/TOOLS.txt"
+          echo "=== REPORT ==="; cat "$OUT/REPORT.json"
+      - name: Preserve research evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: R4-PART4-backup-research-${{ github.run_id }}
+          path: ${{ runner.temp }}/part4-backup-research-${{ github.run_id }}
+          if-no-files-found: error
+          retention-days: 7

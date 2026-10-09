@@ -1,0 +1,9 @@
+{
+  "schema": "LOUKSNA_R4_PART6_PRECOMMIT_REQUEST/1.0",
+  "candidate_run_id": 36931385125,
+  "candidate_artifact_id": 11196131025,
+  "operation": "INDEPENDENT_G23_THEN_DIGEST_BOUND_G24",
+  "authorize_host_mutation": false,
+  "require_no_certification_propagation": true,
+  "requested_at_utc": "2026-10-01T21:53:00Z"
+}

@@ -1,0 +1,44 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_FAILURE_RECORD/1.0",
+  "status": "FAIL_CLOSED_HOLD",
+  "source_run": 36661752109,
+  "source_job": 109718030513,
+  "source_workflow": "R4 PART4 R2 — certified continuation v3",
+  "head_sha": "41f6276018c8580fb9e7fe141e17782ff190f9d6",
+  "failure_at_utc": "2026-09-30T03:28:49Z",
+  "irreversible_mutation_reached": true,
+  "last_confirmed_pass_event": "NTFS_FILESYSTEM_SHRUNK",
+  "observed_boundary": "NTFS filesystem successfully shrunk; P3 partition-boundary shrink command then stopped on GNU parted shrink confirmation with exit code 1. Partition-boundary mutation is NOT assumed and must be live-probed before any continuation.",
+  "ntfs": {
+    "device": "/dev/nvme0n1p3",
+    "uuid_before": "F2848A148489DC0B",
+    "plan_fs_target_bytes": 228137631744,
+    "log_reported_new_volume_size_bytes": 228137628160,
+    "log_reported_device_size_bytes": 437168271360,
+    "ntfsresize_result": "SUCCESS"
+  },
+  "failed_command_class": "P3_PARTITION_BOUNDARY_SHRINK",
+  "failure_cause": "GNU parted -s still refused shrink without an explicit destructive confirmation and exited 1.",
+  "recovery_contract": {
+    "fail_closed": true,
+    "no_blind_rerun": true,
+    "live_geometry_probe_required": true,
+    "live_ntfs_probe_required": true,
+    "source_manifest_reverification_required": true,
+    "new_G23_required": true,
+    "new_G24_required": true,
+    "rollback_source_of_truth": "Original shrunk NTFS P3 remains source of truth until a separately verified temporary ext4 copy exists."
+  },
+  "evidence": {
+    "migration_artifact_id": 11075457079,
+    "migration_artifact_digest": "sha256:ddab38ca084c9edf9e7aea2bbcdeb76a1deca3a8ec187053203fef87017f67d9",
+    "plan_artifact_id": 11073888917,
+    "plan_artifact_digest": "sha256:929f3db4f405f763a3b2dfb7a6f46a9d6c9739d1a38e1764bc34f5f853736eea",
+    "plan_g23_artifact_id": 11074936018,
+    "plan_g23_artifact_digest": "sha256:92bd97fd6011651d9af30191709f34a1af4b7cc37cade3ea21f41df04b12b248",
+    "plan_g24_artifact_id": 11074736501,
+    "plan_g24_artifact_digest": "sha256:ab210e81cebaadf029405afd099f6beec750b58df99bde330304f85ff5218f02"
+  },
+  "canonical_mutation": false,
+  "authority_transfer": false
+}

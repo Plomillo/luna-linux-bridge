@@ -1,0 +1,368 @@
+name: "R4 PART4 — Stage12 terminal G23 G24 certification"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-stage12-certify/**
+
+permissions:
+  contents: read
+  actions: read
+  id-token: write
+
+concurrency:
+  group: r4-part4-stage12-terminal-certification
+  cancel-in-progress: false
+
+env:
+  CANDIDATE_RUN_ID: "36927333844"
+
+jobs:
+  g23:
+    name: G23 independent terminal validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Download terminal candidate
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/candidate" "$RUNNER_TEMP/g23"
+          gh run download "$CANDIDATE_RUN_ID" \
+            --repo Plomillo/luna-linux-bridge \
+            -n r4-part4-stage12-terminal-candidate \
+            -D "$RUNNER_TEMP/candidate"
+          test -f "$RUNNER_TEMP/candidate/STAGE12_CANDIDATE.json"
+
+      - name: Independently validate terminal effective state
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - "$RUNNER_TEMP/candidate/STAGE12_CANDIDATE.json" "$RUNNER_TEMP/g23/G23.json" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,sys
+          p,o=map(pathlib.Path,sys.argv[1:])
+          c=json.loads(p.read_text())
+          required={
+              "auditability","boot_id_present","efi_mount","ext4_clean","ext4_grown",
+              "four_final_blockers_exact","gpt_verify","lrb_pass","maestro_operational",
+              "master_service","non_regression","p1_efi_partition","p3_grown",
+              "p3_single_main_root","p3_start_567296","p5_absent","partuuid_preserved",
+              "provenance_contract","provenance_directive","proyectos_pass",
+              "rollback_reevaluated","runner_service","stage11_chain","stage12_boundary",
+              "stages_1_11_passed","symphylax_service","traceability",
+              "uefi_runtime_present","uuid_preserved"
+          }
+          checks={
+              "candidate_ready":c.get("status")=="CANDIDATE_READY",
+              "scope":c.get("scope")=="PART4_TERMINAL_EFFECTIVE_STATE_CERTIFICATION_ONLY",
+              "all_candidate_checks":all(c.get("checks",{}).values()),
+              "required_checks_present":required.issubset(set(c.get("checks",{}))),
+              "mission":c.get("mission_id")=="MIS-e5963403a3b44ee8be96",
+              "p1":c.get("efi_source")=="/dev/nvme0n1p1" and c.get("efi_fstype")=="vfat",
+              "p3":c.get("root_source")=="/dev/nvme0n1p3" and c.get("root_fstype")=="ext4",
+              "partitions":c.get("partitions_present")==["/dev/nvme0n1p1","/dev/nvme0n1p3"],
+              "p3_start":int(c.get("p3_start_sector",-1))==567296,
+              "p3_size":int(c.get("p3_size_sectors",-1))==999647887,
+              "uuid":c.get("p3_uuid")=="e084ec2a-af39-48b5-bb89-db2dc6a98332",
+              "partuuid":c.get("p3_partuuid")=="8e0b4274-21ff-4b16-8180-495381efb1d9",
+              "contract":c.get("contract_sha256")=="da4c5296d0e19585e61d6867fee651c0c951965accb9b144ab4504caa93cc0a9",
+              "directive":c.get("directive_sha256")=="2b2a70605ba57bdd70be44042cb12534d22b296d17d115ef79ace07f740177fa",
+              "all_prior_stages":c.get("passed_stages")==list(range(1,12)),
+              "four_blockers":set(c.get("four_final_blockers_before",[]))=={
+                  "final_linux_layout","part4_r2_final_g24","final_merge_g24","verified_root_on_consolidated_linux"
+              },
+              "rollback_reevaluated":c.get("rollback",{}).get("reevaluated") is True
+                  and c.get("rollback",{}).get("automatic_gpt_restore_after_ext4_growth_allowed") is False
+                  and c.get("rollback",{}).get("shrink_rollback_allowed") is False,
+              "no_disk_auth":c.get("disk_mutation_authorized") is False,
+              "no_fs_auth":c.get("filesystem_mutation_authorized") is False,
+              "no_state_auth_from_candidate":c.get("state_flag_update_authorized") is False,
+              "no_propagation":c.get("certification_propagated") is False,
+          }
+          ok=all(checks.values())
+          q={
+              "schema":"LOUKSNA_R4_PART4_STAGE12_TERMINAL_G23/1.0",
+              "status":"PASS" if ok else "HOLD",
+              "scope":"PART4_TERMINAL_EFFECTIVE_STATE_INDEPENDENT_VALIDATION",
+              "candidate_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),
+              "checks":checks,
+              "final_merge_g24_allowed":ok,
+              "part4_final_g24_allowed":ok,
+              "disk_mutation_allowed":False,
+              "filesystem_mutation_allowed":False,
+              "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          o.write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(23)
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-stage12-g23
+          path: ${{ runner.temp }}/g23/G23.json
+          retention-days: 90
+          compression-level: 0
+
+  final_merge_g24:
+    name: G24 certify final merge effective state
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-stage12-g23
+          path: ${{ runner.temp }}/g23
+
+      - name: Issue final-merge-only OIDC certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/G23.json"
+          test "$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(d["status"] if d.get("final_merge_g24_allowed") else "HOLD")' "$G")" = PASS
+          GHASH="$(sha256sum "$G" | awk '{print $1}')"
+          CHASH="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["candidate_sha256"])' "$G")"
+          AUD="louksna-r4-part4-final-merge:$GHASH:$CHASH"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export GHASH CHASH AUD TOKEN
+          mkdir -p "$RUNNER_TEMP/final-merge-g24"
+          python3 - "$RUNNER_TEMP/final-merge-g24/G24.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          t=os.environ["TOKEN"]; p=t.split("."); payload=p[1]+"="*((4-len(p[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload))
+          aud=claims.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          q={
+              "schema":"LOUKSNA_R4_PART4_STAGE12_FINAL_MERGE_G24/1.0",
+              "status":"PASS",
+              "scope":"PART4_R2_FINAL_MERGE_EFFECTIVE_STATE_ONLY",
+              "candidate_sha256":os.environ["CHASH"],
+              "g23_sha256":os.environ["GHASH"],
+              "authority_authenticated":True,
+              "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
+              "effective_state_certified":True,
+              "certified_state_flags":[
+                  "final_linux_layout",
+                  "final_merge_g24",
+                  "verified_root_on_consolidated_linux"
+              ],
+              "disk_mutation_authorized":False,
+              "filesystem_mutation_authorized":False,
+              "certification_propagated":False,
+              "canonical_mutation":False,
+              "authority_transfer":False,
+              "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-stage12-final-merge-g24
+          path: ${{ runner.temp }}/final-merge-g24/G24.json
+          retention-days: 90
+          compression-level: 0
+
+  part4_final_g24:
+    name: G24 certify PART4 terminal state only
+    needs: [g23, final_merge_g24]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-stage12-g23
+          path: ${{ runner.temp }}/g23
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-stage12-final-merge-g24
+          path: ${{ runner.temp }}/final-merge-g24
+
+      - name: Issue terminal PART4 OIDC certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/G23.json"
+          M="$RUNNER_TEMP/final-merge-g24/G24.json"
+          test "$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(d["status"] if d.get("part4_final_g24_allowed") else "HOLD")' "$G")" = PASS
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$M")" = PASS
+          GHASH="$(sha256sum "$G" | awk '{print $1}')"
+          MHASH="$(sha256sum "$M" | awk '{print $1}')"
+          CHASH="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["candidate_sha256"])' "$G")"
+          AUD="louksna-r4-part4-terminal:$GHASH:$MHASH:$CHASH"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export GHASH MHASH CHASH AUD TOKEN
+          mkdir -p "$RUNNER_TEMP/part4-g24"
+          python3 - "$RUNNER_TEMP/part4-g24/G24.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          t=os.environ["TOKEN"]; p=t.split("."); payload=p[1]+"="*((4-len(p[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload))
+          aud=claims.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          q={
+              "schema":"LOUKSNA_R4_PART4_STAGE12_PART4_FINAL_G24/1.0",
+              "status":"PASS",
+              "scope":"PART4_TERMINAL_CERTIFICATION_ONLY",
+              "candidate_sha256":os.environ["CHASH"],
+              "g23_sha256":os.environ["GHASH"],
+              "final_merge_g24_sha256":os.environ["MHASH"],
+              "authority_authenticated":True,
+              "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
+              "part4_terminal_state_certified":True,
+              "certified_state_flags":["part4_r2_final_g24"],
+              "disk_mutation_authorized":False,
+              "filesystem_mutation_authorized":False,
+              "certification_propagated":False,
+              "canonical_mutation":False,
+              "authority_transfer":False,
+              "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-stage12-part4-final-g24
+          path: ${{ runner.temp }}/part4-g24/G24.json
+          retention-days: 90
+          compression-level: 0
+
+  materialize:
+    name: Materialize terminal evidence on LOUKSNA
+    needs: [g23, final_merge_g24, part4_final_g24]
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 12
+    steps:
+      - name: Download terminal candidate
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/candidate"
+          gh run download "$CANDIDATE_RUN_ID" \
+            --repo Plomillo/luna-linux-bridge \
+            -n r4-part4-stage12-terminal-candidate \
+            -D "$RUNNER_TEMP/candidate"
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-stage12-g23
+          path: ${{ runner.temp }}/g23
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-stage12-final-merge-g24
+          path: ${{ runner.temp }}/final-merge-g24
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-stage12-part4-final-g24
+          path: ${{ runner.temp }}/part4-g24
+
+      - name: Revalidate live boundary and persist evidence only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/stage12-materialized-$GITHUB_RUN_ID"
+          EXEC_DIR="$HOME/.local/state/louksna/r4-master-part1-part9/PART_4_P3_HARDENED"
+          C="$RUNNER_TEMP/candidate/STAGE12_CANDIDATE.json"
+          G="$RUNNER_TEMP/g23/G23.json"
+          M="$RUNNER_TEMP/final-merge-g24/G24.json"
+          P="$RUNNER_TEMP/part4-g24/G24.json"
+          mkdir -p "$OUT" "$EXEC_DIR"
+
+          C="$C" G="$G" M="$M" P="$P" EXEC_DIR="$EXEC_DIR" OUT="$OUT" python3 - <<'PY'
+          import datetime as dt,hashlib,json,os,pathlib,subprocess
+          C,G,M,P=[pathlib.Path(os.environ[x]) for x in ("C","G","M","P")]
+          d=pathlib.Path(os.environ["EXEC_DIR"]); out=pathlib.Path(os.environ["OUT"])
+          c=json.loads(C.read_text()); g=json.loads(G.read_text()); m=json.loads(M.read_text()); p=json.loads(P.read_text())
+          ex=json.loads((d/"EXECUTION.json").read_text())
+          s11=json.loads((d/"STAGE11_RESULT.json").read_text())
+          h=lambda x: hashlib.sha256(pathlib.Path(x).read_bytes()).hexdigest()
+          root=subprocess.check_output(["findmnt","-n","-o","SOURCE,FSTYPE","/"],text=True).split()
+          efi=subprocess.check_output(["findmnt","-n","-o","SOURCE,FSTYPE","/boot/efi"],text=True).split()
+          parts=subprocess.check_output(["lsblk","-ln","-o","PATH,TYPE","/dev/nvme0n1"],text=True).splitlines()
+          partitions=sorted(x.split()[0] for x in parts if len(x.split())>=2 and x.split()[1]=="part")
+          uuid=subprocess.check_output(["lsblk","-n","-o","UUID","/dev/nvme0n1p3"],text=True).strip()
+          puid=subprocess.check_output(["lsblk","-n","-o","PARTUUID","/dev/nvme0n1p3"],text=True).strip()
+          p3_start=int(pathlib.Path("/sys/class/block/nvme0n1p3/start").read_text())
+          p3_size=int(pathlib.Path("/sys/class/block/nvme0n1p3/size").read_text())
+          checks={
+              "stage_boundary":int(ex.get("last_completed_stage",0))==11 and int(ex.get("current_stage",0))==12,
+              "candidate_ready":c.get("status")=="CANDIDATE_READY" and all(c.get("checks",{}).values()),
+              "g23_pass":g.get("status")=="PASS",
+              "g23_candidate_bound":g.get("candidate_sha256")==h(C),
+              "merge_g24_pass":m.get("status")=="PASS" and m.get("scope")=="PART4_R2_FINAL_MERGE_EFFECTIVE_STATE_ONLY",
+              "merge_g23_bound":m.get("g23_sha256")==h(G),
+              "merge_candidate_bound":m.get("candidate_sha256")==h(C),
+              "part4_g24_pass":p.get("status")=="PASS" and p.get("scope")=="PART4_TERMINAL_CERTIFICATION_ONLY",
+              "part4_g23_bound":p.get("g23_sha256")==h(G),
+              "part4_merge_bound":p.get("final_merge_g24_sha256")==h(M),
+              "part4_candidate_bound":p.get("candidate_sha256")==h(C),
+              "root":len(root)>=2 and root[0]=="/dev/nvme0n1p3" and root[1]=="ext4",
+              "efi":len(efi)>=2 and efi[0]=="/dev/nvme0n1p1" and efi[1]=="vfat",
+              "partitions":partitions==["/dev/nvme0n1p1","/dev/nvme0n1p3"],
+              "p3_start":p3_start==567296,
+              "p3_size":p3_size==999647887,
+              "uuid":uuid=="e084ec2a-af39-48b5-bb89-db2dc6a98332",
+              "partuuid":puid=="8e0b4274-21ff-4b16-8180-495381efb1d9",
+              "stage11_unchanged":h(d/"STAGE11_RESULT.json")==c.get("stage11_result_sha256") and s11.get("status")=="PASS",
+              "no_disk_auth":m.get("disk_mutation_authorized") is False and p.get("disk_mutation_authorized") is False,
+              "no_fs_auth":m.get("filesystem_mutation_authorized") is False and p.get("filesystem_mutation_authorized") is False,
+              "no_propagation":m.get("certification_propagated") is False and p.get("certification_propagated") is False,
+          }
+          ok=all(checks.values())
+          result={
+              "schema":"LOUKSNA_R4_PART4_STAGE12_TERMINAL_RESULT/1.0",
+              "status":"PASS" if ok else "HOLD",
+              "scope":"PART4_TERMINAL_CERTIFICATION_AND_MONOTONIC_HANDOFF",
+              "checks":checks,
+              "candidate_sha256":h(C),
+              "g23_sha256":h(G),
+              "final_merge_g24_sha256":h(M),
+              "part4_final_g24_sha256":h(P),
+              "stage11_result_sha256":h(d/"STAGE11_RESULT.json"),
+              "four_final_blockers_close_eligible":ok,
+              "disk_mutation_performed":False,
+              "filesystem_mutation_performed":False,
+              "state_flags_mutated":False,
+              "next_authorized_action":"INGEST_STAGE12_AND_CLOSE_PART4" if ok else "DIAGNOSE_STAGE12",
+              "recorded_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          mapping={
+              "STAGE12_CANDIDATE.json":C,
+              "STAGE12_G23.json":G,
+              "STAGE12_FINAL_MERGE_G24.json":M,
+              "STAGE12_PART4_G24.json":P,
+          }
+          for name,src in mapping.items():
+              raw=src.read_bytes()
+              (out/name).write_bytes(raw)
+              (d/name).write_bytes(raw)
+          raw=json.dumps(result,indent=2,sort_keys=True)+"\n"
+          (out/"STAGE12_RESULT.json").write_text(raw)
+          (d/"STAGE12_RESULT.json").write_text(raw)
+          print(raw)
+          if not ok: raise SystemExit(31)
+          PY
+          sha256sum "$OUT"/* | sort > "$OUT/SHA256SUMS.txt"
+
+      - name: Upload terminal evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-stage12-terminal-result
+          path: ${{ runner.temp }}/stage12-materialized-${{ github.run_id }}
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 0

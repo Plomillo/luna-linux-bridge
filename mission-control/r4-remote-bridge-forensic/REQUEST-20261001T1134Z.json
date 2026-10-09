@@ -1,0 +1,8 @@
+{
+  "schema": "LOUKSNA_REMOTE_BRIDGE_FORENSIC_REQUEST/1.0",
+  "mode": "READ_ONLY",
+  "purpose": "Fresh forensic snapshot including Maestro and PART4 logical state",
+  "prohibit_desktop_commander": true,
+  "authority": "Louksna.md",
+  "assurance": "PUAC2.md"
+}

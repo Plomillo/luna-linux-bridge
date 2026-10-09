@@ -1,0 +1,516 @@
+{
+  "authority": "Louksna.md",
+  "blockers": [],
+  "checks": {
+    "authority": true,
+    "bad_refresh_not_promoted": true,
+    "checkpoint_present": true,
+    "contract_v2": true,
+    "debian_redownload_denied": true,
+    "dependencies": true,
+    "desktop_plugin_denied": true,
+    "g23_required": true,
+    "g24_required": true,
+    "kde_redownload_denied": true,
+    "maestro_material_result": true,
+    "mojo_1_1_0_functional": true,
+    "mojo_command_live": true,
+    "no_debian_redownload": true,
+    "no_kde_redownload": true,
+    "no_partition": true,
+    "part4_closed": true,
+    "part4_stages_1_12": true,
+    "part7_g24": true,
+    "partitioning_denied": true,
+    "protected_reference": true,
+    "third_order": true,
+    "vendor_ram_deviation_explicit": true,
+    "windows_correct_iso": true,
+    "windows_exact_size": true
+  },
+  "control_plane": "GITHUB",
+  "created_at_utc": "2026-10-02T12:39:09.057235Z",
+  "debian_redownload_performed": false,
+  "details": {
+    "lrb": {
+      "certified": false,
+      "evidence_seq": 384,
+      "evidence_sha256": "d6c46f168ec9afbf3fd11d47e5332679e463458796b9b3e3b182ecc9b5098b6d",
+      "observation": {
+        "boot_id": "340911cd-6eae-41b0-bcf1-ea6d2eb6e493",
+        "bridge_root_shell": "NOT_DEPLOYED",
+        "gid": 1001,
+        "github_transport": "NOT_DEPLOYED",
+        "host": "LOUKSNA",
+        "load": [
+          0.2158203125,
+          0.2470703125,
+          0.93896484375
+        ],
+        "memory_bytes": {
+          "MemAvailable": 1695236096,
+          "MemTotal": 6125785088,
+          "SwapFree": 0,
+          "SwapTotal": 0
+        },
+        "observed_utc": "2026-10-02T12:39:02.283448Z",
+        "pid": 1232,
+        "project_partition": "NOT_LIVE_VERIFIED",
+        "root_fs_bytes": {
+          "available": 196926910464,
+          "total": 510059147264
+        },
+        "screen": "NOT_ENABLED",
+        "sudo_noninteractive": "NOT_PROBED",
+        "uid": 1000
+      },
+      "schema": "LRB_LOCAL_TRANSPORT/0.3",
+      "status": "OBSERVED_NOT_CERTIFIED"
+    },
+    "master_service": {
+      "ActiveState": "inactive",
+      "MainPID": "0",
+      "NRestarts": "0",
+      "SubState": "dead",
+      "returncode": 0
+    },
+    "material_result": {
+      "blockers": [],
+      "checkpoint": "/home/diegoignacionorambuenamiranda/.local/state/louksna/r4-48h/rollback/20261002T122249Z-P11",
+      "checks": {
+        "checkpoint": true,
+        "debian_redownload_performed": false,
+        "kde_redownload_performed": false,
+        "mojo_actual_host_test": true,
+        "mojo_exact_version": true,
+        "mojo_functional": true,
+        "partitioning_performed": false,
+        "windows_exact": true
+      },
+      "completed_at_utc": "2026-10-02T12:34:45.100199Z",
+      "custosz_bound": true,
+      "debian_redownload_performed": false,
+      "executor": "MAESTRO",
+      "kde_redownload_performed": false,
+      "mission_id": "MIS-cf38037f1f114012af53",
+      "mojo": {
+        "actions": [
+          {
+            "operation": "CREATE_MOJO_VENV",
+            "result": {
+              "argv": [
+                "python3",
+                "-m",
+                "venv",
+                "/home/diegoignacionorambuenamiranda/.local/share/louksna/mojo-1.1.0-p11"
+              ],
+              "returncode": 0,
+              "stderr": "",
+              "stdout": ""
+            }
+          },
+          {
+            "operation": "MODULAR_MOJO_1_1_0_WHEELHOUSE_ACQUIRE",
+            "result": {
+              "argv": [
+                "/home/diegoignacionorambuenamiranda/.local/share/louksna/mojo-1.1.0-p11/bin/pip",
+                "download",
+                "--disable-pip-version-check",
+                "--dest",
+                "/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-p11/mojo-wheelhouse-1.1.0",
+                "mojo==1.1.0"
+              ],
+              "returncode": 0,
+              "stderr": "",
+              "stdout": "Collecting mojo==1.1.0\n  Using cached mojo-1.1.0-py3-none-manylinux_2_34_x86_64.whl.metadata (2.7 kB)\nCollecting mojo-compiler==1.1.0 (from mojo==1.1.0)\n  Using cached mojo_compiler-1.1.0-py3-none-manylinux_2_34_x86_64.whl.metadata (3.1 kB)\nCollecting mblack==26.6.0 (from mojo==1.1.0)\n  Using cached mblack-26.6.0-py3-none-any.whl.metadata (614 bytes)\nCollecting mojo-lldb-libs==1.1.0 (from mojo==1.1.0)\n  Using cached mojo_lldb_libs-1.1.0-py3-none-manylinux_2_34_x86_64.whl.metadata (200 bytes)\nCollecting click>=8.0.0 (from mblack==26.6.0->mojo==1.1.0)\n  Using cached click-8.5.0-py3-none-any.whl.metadata (2.6 kB)\nCollecting mypy-extensions>=0.4.3 (from mblack==26.6.0->mojo==1.1.0)\n  Using cached mypy_extensions-1.1.0-py3-none-any.whl.metadata (1.1 kB)\nCollecting pathspec>=1.1.0 (from mblack==26.6.0->mojo==1.1.0)\n  Using cached pathspec-1.1.1-py3-none-any.whl.metadata (14 kB)\nCollecting platformdirs>=2 (from mblack==26.6.0->mojo==1.1.0)\n  Downloading platformdirs-4.12.2-py3-none-any.whl.metadata (5.5 kB)\nCollecting mojo-compiler-mojo-libs==1.1.0 (from mojo-compiler==1.1.0->mojo==1.1.0)\n  Using cached mojo_compiler_mojo_libs-1.1.0-py3-none-any.whl.metadata (209 bytes)\nUsing cached mojo-1.1.0-py3-none-manylinux_2_34_x86_64.whl (48.9 MB)\nUsing cached mblack-26.6.0-py3-none-any.whl (164 kB)\nUsing cached mojo_compiler-1.1.0-py3-none-manylinux_2_34_x86_64.whl (80.7 MB)\nUsing cached mojo_compiler_mojo_libs-1.1.0-py3-none-any.whl (3.2 MB)\nUsing cached mojo_lldb_libs-1.1.0-py3-none-manylinux_2_34_x86_64.whl (93.6 MB)\nUsing cached click-8.5.0-py3-none-any.whl (125 kB)\nUsing cached mypy_extensions-1.1.0-py3-none-any.whl (5.0 kB)\nUsing cached pathspec-1.1.1-py3-none-any.whl (57 kB)\nDownloading platformdirs-4.12.2-py3-none-any.whl (32 kB)\nSaved /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-p11/mojo-wheelhouse-1.1.0/mojo-1.1.0-py3-none-manylinux_2_34_x86_64.whl\nSaved /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-p11/mojo-wheelhouse-1.1.0/mblack-26.6.0-py3-none-any.whl\nSaved /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-p11/mojo-wheelhouse-1.1.0/mojo_compiler-1.1.0-py3-none-manylinux_2_34_x86_64.whl\nSaved /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-p11/mojo-wheelhouse-1.1.0/mojo_compiler_mojo_libs-1.1.0-py3-none-any.whl\nSaved /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-p11/mojo-wheelhouse-1.1.0/mojo_lldb_libs-1.1.0-py3-none-manylinux_2_34_x86_64.whl\nSaved /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-p11/mojo-wheelhouse-1.1.0/click-8.5.0-py3-none-any.whl\nSaved /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-p11/mojo-wheelhouse-1.1.0/mypy_extensions-1.1.0-py3-none-any.whl\nSaved /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-p11/mojo-wheelhouse-1.1.0/pathspec-1.1.1-py3-none-any.whl\nSaved /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-p11/mojo-wheelhouse-1.1.0/platformdirs-4.12.2-py3-none-any.whl\nSuccessfully downloaded mojo mblack mojo-compiler mojo-compiler-mojo-libs mojo-lldb-libs click mypy-extensions pathspec platformdirs\n"
+            }
+          },
+          {
+            "operation": "MOJO_INSTALL_FROM_LOCAL_WHEELHOUSE",
+            "result": {
+              "argv": [
+                "/home/diegoignacionorambuenamiranda/.local/share/louksna/mojo-1.1.0-p11/bin/pip",
+                "install",
+                "--disable-pip-version-check",
+                "--no-index",
+                "--find-links",
+                "/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-p11/mojo-wheelhouse-1.1.0",
+                "mojo==1.1.0"
+              ],
+              "returncode": 0,
+              "stderr": "",
+              "stdout": "Looking in links: /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-p11/mojo-wheelhouse-1.1.0\nProcessing /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-p11/mojo-wheelhouse-1.1.0/mojo-1.1.0-py3-none-manylinux_2_34_x86_64.whl\nProcessing /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-p11/mojo-wheelhouse-1.1.0/mojo_compiler-1.1.0-py3-none-manylinux_2_34_x86_64.whl (from mojo==1.1.0)\nProcessing /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-p11/mojo-wheelhouse-1.1.0/mblack-26.6.0-py3-none-any.whl (from mojo==1.1.0)\nProcessing /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-p11/mojo-wheelhouse-1.1.0/mojo_lldb_libs-1.1.0-py3-none-manylinux_2_34_x86_64.whl (from mojo==1.1.0)\nProcessing /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-p11/mojo-wheelhouse-1.1.0/click-8.5.0-py3-none-any.whl (from mblack==26.6.0->mojo==1.1.0)\nProcessing /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-p11/mojo-wheelhouse-1.1.0/mypy_extensions-1.1.0-py3-none-any.whl (from mblack==26.6.0->mojo==1.1.0)\nProcessing /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-p11/mojo-wheelhouse-1.1.0/pathspec-1.1.1-py3-none-any.whl (from mblack==26.6.0->mojo==1.1.0)\nProcessing /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-p11/mojo-wheelhouse-1.1.0/platformdirs-4.12.2-py3-none-any.whl (from mblack==26.6.0->mojo==1.1.0)\nProcessing /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-p11/mojo-wheelhouse-1.1.0/mojo_compiler_mojo_libs-1.1.0-py3-none-any.whl (from mojo-compiler==1.1.0->mojo==1.1.0)\nInstalling collected packages: mojo-lldb-libs, mojo-compiler-mojo-libs, platformdirs, pathspec, mypy-extensions, mojo-compiler, click, mblack, mojo\n\nSuccessfully installed click-8.5.0 mblack-26.6.0 mojo-1.1.0 mojo-compiler-1.1.0 mojo-compiler-mojo-libs-1.1.0 mojo-lldb-libs-1.1.0 mypy-extensions-1.1.0 pathspec-1.1.1 platformdirs-4.12.2\n"
+            },
+            "wheelhouse": [
+              {
+                "bytes": 125251,
+                "path": "/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-p11/mojo-wheelhouse-1.1.0/click-8.5.0-py3-none-any.whl",
+                "sha256": "255bc9599cf7748b4b1a446ccc735421bd08a2ae529a8b88597d3de5664ee360"
+              },
+              {
+                "bytes": 164080,
+                "path": "/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-p11/mojo-wheelhouse-1.1.0/mblack-26.6.0-py3-none-any.whl",
+                "sha256": "4edda4c1bd7d75d03709280777ff3bbdeb92891568340029015fd39f213120e0"
+              },
+              {
+                "bytes": 48859714,
+                "path": "/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-p11/mojo-wheelhouse-1.1.0/mojo-1.1.0-py3-none-manylinux_2_34_x86_64.whl",
+                "sha256": "aa95383d960d2d7a8738117ed808df745fa5fc92d24566ac73e775a8defe832d"
+              },
+              {
+                "bytes": 80657416,
+                "path": "/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-p11/mojo-wheelhouse-1.1.0/mojo_compiler-1.1.0-py3-none-manylinux_2_34_x86_64.whl",
+                "sha256": "b47442278eb39705075f23d058b38a364bd68bdaa542ad514c187cee633beab7"
+              },
+              {
+                "bytes": 3216162,
+                "path": "/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-p11/mojo-wheelhouse-1.1.0/mojo_compiler_mojo_libs-1.1.0-py3-none-any.whl",
+                "sha256": "dd8c5382e27fe5c1ffe0834d267f549abbffee35bf1a8d605cf24252ff95a2e6"
+              },
+              {
+                "bytes": 93562266,
+                "path": "/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-p11/mojo-wheelhouse-1.1.0/mojo_lldb_libs-1.1.0-py3-none-manylinux_2_34_x86_64.whl",
+                "sha256": "782ff566b14100634a717d5b59602e6b310f4480107e391047db31d14f3497aa"
+              },
+              {
+                "bytes": 4963,
+                "path": "/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-p11/mojo-wheelhouse-1.1.0/mypy_extensions-1.1.0-py3-none-any.whl",
+                "sha256": "1be4cccdb0f2482337c4743e60421de3a356cd97508abadd57d47403e94f5505"
+              },
+              {
+                "bytes": 57328,
+                "path": "/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-p11/mojo-wheelhouse-1.1.0/pathspec-1.1.1-py3-none-any.whl",
+                "sha256": "a00ce642f577bf7f473932318056212bc4f8bfdf53128c78bbd5af0b9b20b189"
+              },
+              {
+                "bytes": 32457,
+                "path": "/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-p11/mojo-wheelhouse-1.1.0/platformdirs-4.12.2-py3-none-any.whl",
+                "sha256": "29dbf06d96c500bc6bdbce75fb0a14d63279c93b1842f97e72a135b33e856983"
+              }
+            ]
+          },
+          {
+            "operation": "ACTIVATE_MOJO_USER_BIN",
+            "path": "/home/diegoignacionorambuenamiranda/.local/bin/mojo",
+            "target": "/home/diegoignacionorambuenamiranda/.local/share/louksna/mojo-1.1.0-p11/bin/mojo"
+          }
+        ],
+        "build_test": {
+          "argv": [
+            "/home/diegoignacionorambuenamiranda/.local/share/louksna/mojo-1.1.0-p11/bin/mojo",
+            "build",
+            "/home/diegoignacionorambuenamiranda/.local/state/louksna/r4-48h/p11/mojo-functional/hello.mojo",
+            "-o",
+            "/home/diegoignacionorambuenamiranda/.local/state/louksna/r4-48h/p11/mojo-functional/hello"
+          ],
+          "returncode": 0,
+          "stderr": "Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable\n",
+          "stdout": ""
+        },
+        "c_linker": "/usr/bin/gcc",
+        "compatibility_state": "FUNCTIONAL_ON_ACTUAL_HOST_WITH_VENDOR_RAM_MINIMUM_DEVIATION",
+        "cpu": {
+          "missing": [],
+          "present": [
+            "3dnowprefetch",
+            "abm",
+            "adx",
+            "aes",
+            "aperfmperf",
+            "apic",
+            "arat",
+            "avic",
+            "avx",
+            "avx2",
+            "bmi1",
+            "bmi2",
+            "bpext",
+            "clflush",
+            "clflushopt",
+            "clzero",
+            "cmov",
+            "cmp_legacy",
+            "constant_tsc",
+            "cpb",
+            "cpuid",
+            "cr8_legacy",
+            "cx16",
+            "cx8",
+            "de",
+            "decodeassists",
+            "extapic",
+            "extd_apicid",
+            "f16c",
+            "flushbyasid",
+            "fma",
+            "fpu",
+            "fsgsbase",
+            "fxsr",
+            "fxsr_opt",
+            "ht",
+            "hw_pstate",
+            "ibpb",
+            "lahf_lm",
+            "lbrv",
+            "lm",
+            "mca",
+            "mce",
+            "misalignsse",
+            "mmx",
+            "mmxext",
+            "monitor",
+            "movbe",
+            "msr",
+            "mtrr",
+            "mwaitx",
+            "nonstop_tsc",
+            "nopl",
+            "npt",
+            "nrip_save",
+            "nx",
+            "osvw",
+            "overflow_recov",
+            "pae",
+            "pat",
+            "pausefilter",
+            "pclmulqdq",
+            "pdpe1gb",
+            "perfctr_core",
+            "perfctr_llc",
+            "perfctr_nb",
+            "pfthreshold",
+            "pge",
+            "pni",
+            "popcnt",
+            "pse",
+            "pse36",
+            "rapl",
+            "rdrand",
+            "rdseed",
+            "rdtscp",
+            "rep_good",
+            "sep",
+            "sev",
+            "sev_es",
+            "sha_ni",
+            "skinit",
+            "smap",
+            "smca",
+            "smep",
+            "ssbd",
+            "sse",
+            "sse2",
+            "sse4_1",
+            "sse4_2",
+            "sse4a",
+            "ssse3",
+            "succor",
+            "svm",
+            "svm_lock",
+            "syscall",
+            "tce",
+            "topoext",
+            "tsc",
+            "tsc_scale",
+            "v_vmsave_vmload",
+            "vgif",
+            "vmcb_clean",
+            "vme",
+            "vmmcall",
+            "wdt",
+            "xgetbv1",
+            "xsave",
+            "xsavec",
+            "xsaveerptr",
+            "xsaveopt"
+          ],
+          "required": [
+            "avx",
+            "avx2",
+            "bmi1",
+            "bmi2",
+            "f16c",
+            "fma",
+            "lzcnt",
+            "movbe",
+            "xsave"
+          ],
+          "x86_64_v3": true
+        },
+        "executable_test": {
+          "argv": [
+            "/home/diegoignacionorambuenamiranda/.local/state/louksna/r4-48h/p11/mojo-functional/hello"
+          ],
+          "returncode": 0,
+          "stderr": "",
+          "stdout": "LOUKSNA_MOJO_1_1_0_PASS\n"
+        },
+        "glibc": {
+          "argv": [
+            "getconf",
+            "GNU_LIBC_VERSION"
+          ],
+          "returncode": 0,
+          "stderr": "",
+          "stdout": "glibc 2.41\n"
+        },
+        "mem_total_bytes": 6125785088,
+        "official_release": "MOJO_1_1_0_STABLE_2026_09_17",
+        "run_test": {
+          "argv": [
+            "/home/diegoignacionorambuenamiranda/.local/share/louksna/mojo-1.1.0-p11/bin/mojo",
+            "/home/diegoignacionorambuenamiranda/.local/state/louksna/r4-48h/p11/mojo-functional/hello.mojo"
+          ],
+          "returncode": 0,
+          "stderr": "Failed to initialize Crashpad.  Crash reporting will not be available.  Cause: while locating crashpad handler: unable to locate crashpad handler executable\n",
+          "stdout": "LOUKSNA_MOJO_1_1_0_PASS\n"
+        },
+        "selected": "/home/diegoignacionorambuenamiranda/.local/share/louksna/mojo-1.1.0-p11/bin/mojo",
+        "status": "PASS",
+        "vendor_minimum_ram_bytes": 8589934592,
+        "vendor_ram_minimum_met": false,
+        "version_required": "1.1.0",
+        "version_test": {
+          "argv": [
+            "/home/diegoignacionorambuenamiranda/.local/share/louksna/mojo-1.1.0-p11/bin/mojo",
+            "--version"
+          ],
+          "returncode": 0,
+          "stderr": "",
+          "stdout": "Mojo 1.1.0 (8189361e)\n"
+        }
+      },
+      "partitioning_performed": false,
+      "point_id": "P11",
+      "request_id": "REQ-001c1f6e894148ee81e2c4852afccf51",
+      "schema": "LOUKSNA_R4_MAESTRO_POINT_RESULT/1.0",
+      "status": "PASS",
+      "windows": {
+        "actions": [
+          {
+            "operation": "MICROSOFT_OFFICIAL_CDN_DOWNLOAD",
+            "result": {
+              "argv": [
+                "/usr/bin/curl",
+                "--location",
+                "--fail",
+                "--show-error",
+                "--silent",
+                "--retry",
+                "5",
+                "--retry-delay",
+                "5",
+                "--retry-all-errors",
+                "--connect-timeout",
+                "30",
+                "--continue-at",
+                "-",
+                "--output",
+                "/home/diegoignacionorambuenamiranda/PROYECTOS/1. PROYECTOS PRIORITARIOS/8. META OS/COMPONENTS/26100.1.240331-1435.ge_release_CLIENT_IOT_LTSC_EVAL_x64FRE_en-us.iso.louksna.part",
+                "https://software-static.download.prss.microsoft.com/dbazure/888969d5-f34g-4e03-ac9d-1f9786c66749/26100.1.240331-1435.ge_release_CLIENT_IOT_LTSC_EVAL_x64FRE_en-us.iso"
+              ],
+              "returncode": 0,
+              "stderr": "",
+              "stdout": ""
+            },
+            "resumable": true
+          }
+        ],
+        "bytes": 4428627968,
+        "existing_scan": [],
+        "expected_bytes": 4428627968,
+        "expected_sha256": "8abf91c9cd408368dc73aab3425d5e3c02dae74900742072eb5c750fc637c195",
+        "known_bad_refresh": {
+          "bytes": 5060020224,
+          "known_refresh_hash": true,
+          "matches_required_hash": false,
+          "path": "/home/diegoignacionorambuenamiranda/PROYECTOS/1. PROYECTOS PRIORITARIOS/8. META OS/COMPONENTS/Windows11_IoT_Enterprise_LTSC_2024_Eval_x64.iso.reacquire.part",
+          "sha256": "2cee70bd183df42b92a2e0da08cc2bb7a2a9ce3a3841955a012c0f77aeb3cb29"
+        },
+        "media_test": {
+          "argv": [
+            "/usr/bin/7z",
+            "t",
+            "-bd",
+            "/home/diegoignacionorambuenamiranda/PROYECTOS/1. PROYECTOS PRIORITARIOS/8. META OS/COMPONENTS/26100.1.240331-1435.ge_release_CLIENT_IOT_LTSC_EVAL_x64FRE_en-us.iso"
+          ],
+          "returncode": 0,
+          "stderr": "",
+          "stdout": "\n7-Zip 25.01 (x64) : Copyright (c) 1999-2025 Igor Pavlov : 2025-08-03\n 64-bit locale=es_MX.UTF-8 Threads:8 OPEN_MAX:1024, ASM\n\nScanning the drive for archives:\n1 file, 4428627968 bytes (4224 MiB)\n\nTesting archive: /home/diegoignacionorambuenamiranda/PROYECTOS/1. PROYECTOS PRIORITARIOS/8. META OS/COMPONENTS/26100.1.240331-1435.ge_release_CLIENT_IOT_LTSC_EVAL_x64FRE_en-us.iso\n--\nPath = /home/diegoignacionorambuenamiranda/PROYECTOS/1. PROYECTOS PRIORITARIOS/8. META OS/COMPONENTS/26100.1.240331-1435.ge_release_CLIENT_IOT_LTSC_EVAL_x64FRE_en-us.iso\nType = Udf\nPhysical Size = 4428627968\nVersion = 1.02\nCluster Size = 2048\nSector Size = 2048\nCreated = 2024-04-01 21:00:00.000000\nModified = 2024-04-01 21:00:00.000000\nComment = \n{\nPrimary Volumes:\n  PrimaryVolumeDescriptorNumber: 0\n  VolumeSequenceNumber: 1\n  VolumeId: UDF Volume\n  VolumeSetId: b48ac000MS UDFBridge\n  ApplicationId: \n  ImplementationId: *Microsoft CDIMAGE UDF::Windows NT\nPartitions:\n  PartitionIndex: 0\n  PartitionNumber: 2989\n  ContentsId: +NSR02\n  ImplementationId: *Microsoft CDIMAGE UDF::Windows NT\n  AccessType: Read-Only\n  Size: 4428005376\n  Pos: 622592\nLogical Volumes:\n  Id: CESE_X64FREE_EN-US_DV9\n  BlockSize: 2048\n  DomainId: *OSTA UDF Compliant::1.02\n  ImplementationId: *Microsoft CDIMAGE UDF::Windows NT\n  Partition Maps:\n    PartitionMap: 0\n    Type: 1\n    VolumeSequenceNumber: 1\n    PartitionNumber: 2989\n  File Sets:\n    FileSetNumber: 0\n    FileSetDescNumber: 0\n    LogicalVolumeId: CESE_X64FREE_EN-US_DV9\n    Id: CESE_X64FREE_EN\n    CopyrightId: \n    AbstractId: \n    DomainId: *OSTA UDF Compliant::1.02\n}\n\nEverything is Ok\n\nFolders: 87\nFiles: 961\nSize:       4423065553\nCompressed: 4428627968\n"
+        },
+        "official_hash_document_sha256_value": "8abf91c9cd408368dc73aab3425d5e3c02dae74900742072eb5c750fc637c195",
+        "path": "/home/diegoignacionorambuenamiranda/PROYECTOS/1. PROYECTOS PRIORITARIOS/8. META OS/COMPONENTS/26100.1.240331-1435.ge_release_CLIENT_IOT_LTSC_EVAL_x64FRE_en-us.iso",
+        "sha256": "8abf91c9cd408368dc73aab3425d5e3c02dae74900742072eb5c750fc637c195",
+        "source_owner": "MICROSOFT",
+        "source_url": "https://software-static.download.prss.microsoft.com/dbazure/888969d5-f34g-4e03-ac9d-1f9786c66749/26100.1.240331-1435.ge_release_CLIENT_IOT_LTSC_EVAL_x64FRE_en-us.iso",
+        "status": "PASS"
+      }
+    },
+    "mojo_live": {
+      "path": "/home/diegoignacionorambuenamiranda/.local/bin/mojo",
+      "version_test": {
+        "argv": [
+          "/home/diegoignacionorambuenamiranda/.local/bin/mojo",
+          "--version"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "Mojo 1.1.0 (8189361e)\n"
+      }
+    },
+    "part7_certificate": {
+      "authority_authenticated": true,
+      "authority_reference": "GITHUB_OIDC_JWT_SHA256:8cd2f5eca215e38cfd780690d0aa4ac1a3e55414feec2c3bf538a70eea0ffa12",
+      "authority_transfer": false,
+      "canonical_mutation": false,
+      "certificate_scope": "LUNA_R4_PART_7_ACTUAL_EVIDENCE",
+      "certified_at_utc": "2026-10-02T12:21:40.093069+00:00",
+      "evidence_commit_sha": "2aded3740220e10e3b5e426a00c5495b6a80de2e",
+      "evidence_sha256": "f9530953180322fb4775b4915bbcc53fa66d28d107833c26aa9bcb28e1223682",
+      "g23_status": "PASS",
+      "part": "PART_7",
+      "schema": "LOUKSNA_R4_PART_G24/1.0",
+      "status": "PASS",
+      "workflow_run_id": 37006190959
+    },
+    "runner_service": {
+      "ActiveState": "active",
+      "MainPID": "303661",
+      "NRestarts": "1",
+      "SubState": "running",
+      "returncode": 0
+    },
+    "windows_live": {
+      "expected": "8abf91c9cd408368dc73aab3425d5e3c02dae74900742072eb5c750fc637c195",
+      "path": "/home/diegoignacionorambuenamiranda/PROYECTOS/1. PROYECTOS PRIORITARIOS/8. META OS/COMPONENTS/26100.1.240331-1435.ge_release_CLIENT_IOT_LTSC_EVAL_x64FRE_en-us.iso",
+      "sha256": "8abf91c9cd408368dc73aab3425d5e3c02dae74900742072eb5c750fc637c195"
+    }
+  },
+  "executor": "MAESTRO",
+  "kde_redownload_performed": false,
+  "observer": "LOUKSNA_REMOTE_BRIDGE",
+  "partitioning_performed": false,
+  "point_id": "P11",
+  "point_name": "P01_WINDOWS_LTSC_AND_P12_MOJO",
+  "protected_reference": "LOUKSNAMEJORADA.md",
+  "provenance": {
+    "authority_sha256": "5270c3d643339c283edf13b414f335f23f921c4dac023b06d38de62927e29bf9",
+    "contract_sha256": "9ebd7faf9bfe6dd8d01c11eb38d332bda4e3fd82f01508453b3e4bac178ee1cc",
+    "ledger_head_sha256": "77a4f27fa41a1341fcdace0832594cc5e31e693182beeb99179159213ff1c3b9",
+    "lrb_evidence_sha256": "d6c46f168ec9afbf3fd11d47e5332679e463458796b9b3e3b182ecc9b5098b6d",
+    "master_controller_sha256": "9b67595a70df187375f64d85776d5780a97d28d8254140bab057c6342914a862"
+  },
+  "puac2": {
+    "C25": true,
+    "C26": true,
+    "C27": true,
+    "C28": true,
+    "C29": true,
+    "C30": true,
+    "C31": true,
+    "C32": true
+  },
+  "schema": "LOUKSNA_R4_15_POINT_EVIDENCE/1.0",
+  "self_certified": false,
+  "status": "PASS"
+}

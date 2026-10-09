@@ -1,0 +1,31 @@
+name: "R4 PART4 R2 — geometry only diagnostic"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-r2-geometry-only/**
+
+permissions:
+  contents: read
+
+jobs:
+  geometry:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Read exact disk geometry without mutation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "--- LSBLK ---"
+          lsblk -b -o NAME,PATH,SIZE,TYPE,FSTYPE,FSAVAIL,FSUSE%,MOUNTPOINTS,UUID /dev/nvme0n1
+          echo "--- PARTED SECTORS ---"
+          sudo -n parted -m /dev/nvme0n1 unit s print
+          echo "--- PARTED BYTES ---"
+          sudo -n parted -m /dev/nvme0n1 unit B print
+          echo "--- FREE SPACE ---"
+          sudo -n parted -m /dev/nvme0n1 unit B print free
+          echo "--- DF ---"
+          df -B1 -T

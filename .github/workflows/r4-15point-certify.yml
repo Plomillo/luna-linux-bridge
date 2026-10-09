@@ -1,0 +1,170 @@
+name: "R4 15P — independent G23 G24 point certification"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - evidence/r4-15point/**/POINT_EVIDENCE.json
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: r4-15point-certify-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  g23:
+    name: G23 independent point validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      point_id: ${{ steps.validate.outputs.point_id }}
+      evidence_path: ${{ steps.validate.outputs.evidence_path }}
+      evidence_sha256: ${{ steps.validate.outputs.evidence_sha256 }}
+      g23_sha256: ${{ steps.validate.outputs.g23_sha256 }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+
+      - id: validate
+        name: Reconstruct point evidence from commit
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          E="$(git show --pretty='' --name-only "$GITHUB_SHA" | grep -E '^evidence/r4-15point/.*/POINT_EVIDENCE\.json$' | head -n1)"
+          test -n "$E"
+          export E
+          python3 - <<'PY'
+          import datetime as dt,hashlib,json,os,pathlib,re
+          p=pathlib.Path(os.environ["E"])
+          raw=p.read_bytes()
+          d=json.loads(raw)
+          point=d.get("point_id","")
+          if not re.fullmatch(r"P(0[1-9]|1[0-5])",point):
+              raise SystemExit("INVALID_POINT_ID")
+          required_puac=[f"C{i}" for i in range(25,33)]
+          checks={
+              "schema":d.get("schema")=="LOUKSNA_R4_15_POINT_EVIDENCE/1.0",
+              "status":d.get("status")=="PASS",
+              "authority":d.get("authority")=="Louksna.md",
+              "protected_reference":d.get("protected_reference")=="LOUKSNAMEJORADA.md",
+              "observer":d.get("observer")=="LOUKSNA_REMOTE_BRIDGE",
+              "control_plane":d.get("control_plane")=="GITHUB",
+              "self_certified_false":d.get("self_certified") is False,
+              "puac2_all":all(d.get("puac2",{}).get(x) is True for x in required_puac),
+              "checks_all":bool(d.get("checks")) and all(bool(v) for v in d["checks"].values()),
+              "no_blockers":d.get("blockers")==[],
+              "partitioning_false":d.get("partitioning_performed") is False,
+              "debian_redownload_false":d.get("debian_redownload_performed") is False,
+              "kde_redownload_false":d.get("kde_redownload_performed") is False,
+              "contract_hash":bool(d.get("provenance",{}).get("contract_sha256")),
+              "lrb_hash":bool(d.get("provenance",{}).get("lrb_evidence_sha256")),
+              "ledger_hash":bool(d.get("provenance",{}).get("ledger_head_sha256")),
+          }
+          ok=all(checks.values())
+          out={
+              "schema":"LOUKSNA_R4_15_POINT_G23/1.0",
+              "status":"PASS" if ok else "HOLD",
+              "point_id":point,
+              "evidence_path":str(p),
+              "evidence_sha256":hashlib.sha256(raw).hexdigest(),
+              "checks":checks,
+              "validator":"GITHUB_HOSTED_UBUNTU_G23",
+              "independent_from_material_executor":True,
+              "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          canon=(json.dumps(out,sort_keys=True,separators=(",",":"))+"\n").encode()
+          pathlib.Path("/tmp/G23.json").write_bytes(canon)
+          g23=hashlib.sha256(canon).hexdigest()
+          with open(os.environ["GITHUB_OUTPUT"],"a") as f:
+              f.write("point_id="+point+"\n")
+              f.write("evidence_path="+str(p)+"\n")
+              f.write("evidence_sha256="+out["evidence_sha256"]+"\n")
+              f.write("g23_sha256="+g23+"\n")
+          print(json.dumps(out,indent=2,sort_keys=True))
+          if not ok:
+              raise SystemExit(23)
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-15point-g23
+          path: /tmp/G23.json
+          retention-days: 90
+          compression-level: 0
+
+  g24:
+    name: G24 point certification
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-15point-g23
+          path: ${{ runner.temp }}/g23
+
+      - name: Independently rebind evidence and certify
+        env:
+          POINT_ID: ${{ needs.g23.outputs.point_id }}
+          EVIDENCE_PATH: ${{ needs.g23.outputs.evidence_path }}
+          EXPECTED_EVIDENCE_SHA: ${{ needs.g23.outputs.evidence_sha256 }}
+          EXPECTED_G23_SHA: ${{ needs.g23.outputs.g23_sha256 }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import datetime as dt,hashlib,json,os,pathlib
+          ev=pathlib.Path(os.environ["EVIDENCE_PATH"])
+          g23p=pathlib.Path(os.environ["RUNNER_TEMP"])/"g23/G23.json"
+          raw=ev.read_bytes()
+          graw=g23p.read_bytes()
+          d=json.loads(raw); g=json.loads(graw)
+          checks={
+              "evidence_hash_rebound":hashlib.sha256(raw).hexdigest()==os.environ["EXPECTED_EVIDENCE_SHA"],
+              "g23_hash_rebound":hashlib.sha256(graw).hexdigest()==os.environ["EXPECTED_G23_SHA"],
+              "point_match":d.get("point_id")==g.get("point_id")==os.environ["POINT_ID"],
+              "g23_pass":g.get("status")=="PASS",
+              "g23_independent":g.get("independent_from_material_executor") is True,
+              "evidence_pass":d.get("status")=="PASS",
+              "self_certification_denied":d.get("self_certified") is False,
+              "puac2_preserved":all(d.get("puac2",{}).get(f"C{i}") is True for i in range(25,33)),
+              "no_partition":d.get("partitioning_performed") is False,
+          }
+          ok=all(checks.values())
+          cert={
+              "schema":"LOUKSNA_R4_15_POINT_G24/1.0",
+              "status":"PASS" if ok else "BLOCKED",
+              "point_id":os.environ["POINT_ID"],
+              "evidence_sha256":os.environ["EXPECTED_EVIDENCE_SHA"],
+              "g23_sha256":os.environ["EXPECTED_G23_SHA"],
+              "checks":checks,
+              "certifier":"GITHUB_HOSTED_UBUNTU_G24",
+              "certification_propagated":False,
+              "authority_transfer":False,
+              "active_authorization":ok,
+              "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          out=pathlib.Path("/tmp/G24.json")
+          out.write_text(json.dumps(cert,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(cert,indent=2,sort_keys=True))
+          if not ok:
+              raise SystemExit(24)
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-15point-g24
+          path: /tmp/G24.json
+          retention-days: 90
+          compression-level: 0

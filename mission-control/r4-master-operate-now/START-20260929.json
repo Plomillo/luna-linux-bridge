@@ -1,0 +1,30 @@
+{
+  "schema": "LOUKSNA_R4_OPERATE_NOW/1.0",
+  "authority": "Louksna.md",
+  "requested_by": "user",
+  "requested_action": "START_WORKERS_FROM_CERTIFIED_PART1_CHECKPOINT_AND_ADVANCE_CHRONOLOGICALLY",
+  "checkpoint": "/home/diegoignacionorambuenamiranda/LOUKSNA_MAESTRO_20260925/MISSION3_OPERATIVE/R4_PART1_DESKTOP_V1/runs/20260926T034746Z-38579",
+  "mode": "DIFFERENTIAL",
+  "sequence": [
+    "PART_1",
+    "PART_2",
+    "PART_3",
+    "PART_4",
+    "PART_5",
+    "PART_6",
+    "PART_7",
+    "PART_8",
+    "PART_9"
+  ],
+  "no_repeat": [
+    "PART_0",
+    "PART_1_FULL_REINSTALL",
+    "SERVER_READY_G08_G09_G23_G24"
+  ],
+  "operator_policy": "WORK_UNTIL_PERMISSION_GATE",
+  "notify_user_only_on": [
+    "NEEDS_PRIVILEGE",
+    "NEEDS_HUMAN_AUTHORIZATION"
+  ],
+  "fail_closed": true
+}

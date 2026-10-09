@@ -1,0 +1,6 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_ALL_BLOCK_DEVICES_REQUEST/1.0",
+  "status": "REQUESTED",
+  "destructive": false,
+  "purpose": "Find any secondary physical storage large enough for a verified temporary PROYECTOS copy."
+}

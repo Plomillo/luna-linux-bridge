@@ -1,0 +1,7 @@
+{
+  "schema": "LOUKSNA_R4_MASTER_STATE_SNAPSHOT_REQUEST/1.0",
+  "scope": "PART6_POST_LUTRIS_PATH_FIX",
+  "repeat_certified_points": false,
+  "partitioning_authorized": false,
+  "created_at_utc": "2026-10-02T10:42:00Z"
+}

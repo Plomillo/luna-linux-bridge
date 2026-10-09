@@ -1,0 +1,38 @@
+name: "R4 PART3 — inspect PROYECTOS aliases"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-proyectos-alias-inspect/**
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 4
+    steps:
+      - name: Inspect PROYECTOS surfaces read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "=== LAUNCHERS ==="
+          for f in             "$HOME/.local/share/applications/luna-r4-part1-proyectos.desktop"             "$HOME/.local/share/applications/luna-r4-v7-proyectos.desktop"             "$HOME/.local/share/louksna-r4/Launchers/Proyectos.desktop"
+          do
+            if test -f "$f"; then
+              echo "### $f"
+              cat "$f"
+            fi
+          done
+
+          echo "=== PROYECTOS PRIORITARIOS DIRECTORIES ==="
+          find "$HOME/SYMPHYLAX_LAB" "$HOME/MISION_PUAC_20260926" -maxdepth 5 -type d -iname '*PROYECTOS*' -print 2>/dev/null | while read -r d; do
+            echo "### DIR=$d"
+            find "$d" -maxdepth 2 -mindepth 1 -printf '%y\t%p\t%s\n' 2>/dev/null | head -n 250
+          done
+
+          echo "=== POSSIBLE PROJECT ROOT BINDINGS ==="
+          grep -RIl --exclude-dir='.git' -E 'PROYECTOS|Proyectos|projects_center|Projects Center'             "$HOME/LOUKSNA_MAESTRO_20260925" "$HOME/.local/share/louksna-r4"             2>/dev/null | head -n 200

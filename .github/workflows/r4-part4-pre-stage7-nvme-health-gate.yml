@@ -1,0 +1,519 @@
+name: "R4 PART4 — hardened pre-Stage7 NVMe health gate"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-pre-stage7-health/**
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: r4-part4-pre-stage7-health
+  cancel-in-progress: false
+
+env:
+  MISSION_ID: "MIS-e5963403a3b44ee8be96"
+  DIRECTIVE_ID: "PRE-STAGE7-NVME-HEALTH-GATE-HARDENED-20261001"
+
+jobs:
+  preflight:
+    name: Preflight package delta and live Stage7 state
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Capture governed preinstall state
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/preflight"; mkdir -p "$OUT"
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9"
+          DIR="$STATE/PART_4_P3_HARDENED"
+
+          cp server/r4-master/PRE_STAGE7_NVME_HEALTH_GATE_HARDENED.json "$OUT/DIRECTIVE.json"
+          cp "$DIR/EXECUTION.json" "$OUT/EXECUTION.json"
+          cp "$DIR/STAGE6_G24.json" "$OUT/STAGE6_G24.json"
+
+          cat /etc/os-release > "$OUT/OS_RELEASE.txt"
+          { grep -RhsEv '^[[:space:]]*(#|$)' /etc/apt/sources.list /etc/apt/sources.list.d 2>/dev/null || true; } > "$OUT/APT_SOURCES.txt"
+          dpkg-query -W -f='${Package}	${Version}	${Architecture}	${Status}\n' > "$OUT/DPKG_BEFORE.tsv"
+          apt-cache policy nvme-cli smartmontools > "$OUT/APT_POLICY.txt"
+
+          sudo -n apt-get -s install --no-install-recommends nvme-cli smartmontools > "$OUT/APT_SIMULATION.txt" 2> "$OUT/APT_SIMULATION.stderr"
+
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+          mapfile -t LINKS < <(find "$HOME/.local/lib/louksna-remote-bridge" -type f -path '*/bridge/live_link.py' -print 2>/dev/null | sort)
+          test "${#LINKS[@]}" -ge 1
+          LINK="${LINKS[-1]}"
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op status > "$OUT/LRB_STATUS.json"
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op observe > "$OUT/LRB_OBSERVE.json"
+
+          python3 - "$OUT" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,re,sys
+          root=pathlib.Path(sys.argv[1]); h=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+          e=json.loads((root/"EXECUTION.json").read_text())
+          d=json.loads((root/"DIRECTIVE.json").read_text())
+          l=json.loads((root/"LRB_STATUS.json").read_text())
+          o=json.loads((root/"LRB_OBSERVE.json").read_text())
+          sim=(root/"APT_SIMULATION.txt").read_text(errors="replace")
+          policy=(root/"APT_POLICY.txt").read_text(errors="replace")
+          inst=re.findall(r"^Inst\s+(\S+)\s+(?:\[[^\]]+\]\s+)?\(([^ )]+)",sim,re.M)
+          rem=re.findall(r"^Remv\s+(\S+)",sim,re.M)
+          conf=re.findall(r"^Conf\s+(\S+)\s+\(([^ )]+)",sim,re.M)
+          touched=sorted(set([x[0] for x in inst]+rem+[x[0] for x in conf]))
+          critical=re.compile(r"^(linux-image|linux-headers|grub|shim|systemd|udev|initramfs-tools|e2fsprogs|util-linux|parted|gdisk|cloud-guest-utils|firmware-)",re.I)
+          critical_touched=[p for p in touched if critical.search(p)]
+          checks={
+            "directive_id":d.get("directive_id")=="PRE-STAGE7-NVME-HEALTH-GATE-HARDENED-20261001",
+            "mission":e.get("mission_id")=="MIS-e5963403a3b44ee8be96",
+            "stage7_boundary":int(e.get("current_stage",0))==7 and int(e.get("last_completed_stage",0))>=6,
+            "lrb_host":l.get("host")=="LOUKSNA",
+            "lrb_evidence":bool(o.get("evidence_sha256")),
+            "packages_named":("nvme-cli" in policy and "smartmontools" in policy),
+            "no_removals":len(rem)==0,
+            "no_critical_package_delta":len(critical_touched)==0,
+          }
+          q={
+            "schema":"LOUKSNA_R4_PART4_PRE_STAGE7_PACKAGE_PREFLIGHT/1.0",
+            "status":"PASS" if all(checks.values()) else "HOLD",
+            "mission_id":e.get("mission_id"),
+            "current_stage":e.get("current_stage"),
+            "last_completed_stage":e.get("last_completed_stage"),
+            "lrb_evidence_seq":o.get("evidence_seq"),
+            "lrb_evidence_sha256":o.get("evidence_sha256"),
+            "install_plan":[{"package":a,"version":b} for a,b in inst],
+            "remove_plan":rem,
+            "configure_plan":[{"package":a,"version":b} for a,b in conf],
+            "critical_package_delta":critical_touched,
+            "checks":checks,
+            "directive_sha256":h(root/"DIRECTIVE.json"),
+            "stage6_g24_sha256":h(root/"STAGE6_G24.json"),
+            "apt_simulation_sha256":h(root/"APT_SIMULATION.txt"),
+            "apt_sources_sha256":h(root/"APT_SOURCES.txt"),
+            "dpkg_before_sha256":h(root/"DPKG_BEFORE.tsv"),
+            "package_filesystem_writes_performed":False,
+            "partition_geometry_mutation_performed":False,
+            "filesystem_resize_performed":False,
+            "observed_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          (root/"PREFLIGHT.json").write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if q["status"]!="PASS": raise SystemExit(23)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-pre-stage7-health-preflight
+          path: ${{ runner.temp }}/preflight/
+          retention-days: 90
+          compression-level: 0
+
+  g23_install:
+    name: G23 independent package-delta validation
+    needs: preflight
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-pre-stage7-health-preflight
+          path: ${{ runner.temp }}/preflight
+      - name: Validate exact installation scope
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/preflight" "$RUNNER_TEMP/g23/G23.json" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,sys
+          root=pathlib.Path(sys.argv[1]); out=pathlib.Path(sys.argv[2]); h=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+          p=json.loads((root/"PREFLIGHT.json").read_text())
+          d=json.loads((root/"DIRECTIVE.json").read_text())
+          plan={x["package"] for x in p.get("install_plan",[])}
+          requested={"nvme-cli","smartmontools"}
+          checks={
+            "preflight_pass":p.get("status")=="PASS",
+            "all_preflight_checks":all(p.get("checks",{}).values()),
+            "directive_bound":p.get("directive_sha256")==h(root/"DIRECTIVE.json"),
+            "directive_exact":d.get("directive_id")=="PRE-STAGE7-NVME-HEALTH-GATE-HARDENED-20261001",
+            "requested_packages_present_or_already_installed":requested.issubset(plan) or len(plan)==0 or bool(requested & plan),
+            "no_removals":len(p.get("remove_plan",[]))==0,
+            "no_critical_delta":len(p.get("critical_package_delta",[]))==0,
+            "stage7_boundary":int(p.get("current_stage",0))==7,
+            "no_geometry_mutation":p.get("partition_geometry_mutation_performed") is False,
+            "no_fs_resize":p.get("filesystem_resize_performed") is False,
+          }
+          ok=all(checks.values())
+          q={
+            "schema":"LOUKSNA_R4_PART4_PRE_STAGE7_INSTALL_G23/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "scope":"INSTALL_NVME_CLI_SMARTMONTOOLS_FROM_CONFIGURED_DEBIAN_REPOS_ONLY",
+            "preflight_sha256":h(root/"PREFLIGHT.json"),
+            "apt_simulation_sha256":p.get("apt_simulation_sha256"),
+            "checks":checks,
+            "g24_allowed":ok,
+            "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          out.write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(23)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-pre-stage7-health-install-g23
+          path: ${{ runner.temp }}/g23/G23.json
+          retention-days: 90
+          compression-level: 0
+
+  g24_install:
+    name: G24 certify microscopic package install
+    needs: g23_install
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-pre-stage7-health-install-g23
+          path: ${{ runner.temp }}/g23
+      - name: Issue exact package-scope certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/G23.json"
+          test "$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(d["status"] if d.get("g24_allowed") else "HOLD")' "$G")" = PASS
+          H="$(sha256sum "$G"|awk '{print $1}')"
+          P="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["preflight_sha256"])' "$G")"
+          AUD="louksna-r4-pre-stage7-health-install:$H:$P"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export H P AUD TOKEN
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$RUNNER_TEMP/g24/G24.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          t=os.environ["TOKEN"]; p=t.split("."); payload=p[1]+"="*((4-len(p[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload))
+          aud=claims.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          q={
+            "schema":"LOUKSNA_R4_PART4_PRE_STAGE7_INSTALL_G24/1.0",
+            "status":"PASS",
+            "scope":"INSTALL_NVME_CLI_SMARTMONTOOLS_FROM_CONFIGURED_DEBIAN_REPOS_ONLY",
+            "g23_sha256":os.environ["H"],
+            "preflight_sha256":os.environ["P"],
+            "authorized_packages":["nvme-cli","smartmontools"],
+            "package_removals_authorized":False,
+            "partition_geometry_mutation_authorized":False,
+            "filesystem_resize_authorized":False,
+            "reboot_authorized":False,
+            "active_device_test_authorized":False,
+            "certification_propagated":False,
+            "authority_authenticated":True,
+            "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
+            "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-pre-stage7-health-install-g24
+          path: ${{ runner.temp }}/g24/G24.json
+          retention-days: 90
+          compression-level: 0
+
+  install_and_observe:
+    name: Maestro install minimal tools and LRB health observation
+    needs: g24_install
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-pre-stage7-health-preflight
+          path: ${{ runner.temp }}/preflight
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-pre-stage7-health-install-g24
+          path: ${{ runner.temp }}/g24
+      - name: Execute package-only microtransaction and interrogate NVMe
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/health"; mkdir -p "$OUT"
+          PRE="$RUNNER_TEMP/preflight/PREFLIGHT.json"
+          CERT="$RUNNER_TEMP/g24/G24.json"
+
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$CERT")" = PASS
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["partition_geometry_mutation_authorized"])' "$CERT")" = False
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["filesystem_resize_authorized"])' "$CERT")" = False
+
+          sha256sum "$CERT" > "$OUT/G24_INSTALL.sha256"
+          cp "$CERT" "$OUT/G24_INSTALL.json"
+          cp "$PRE" "$OUT/PREFLIGHT.json"
+
+          dpkg-query -W -f='${Package}	${Version}	${Architecture}	${Status}\n' > "$OUT/DPKG_BEFORE.tsv"
+          sudo -n apt-get install -y --no-install-recommends nvme-cli smartmontools > "$OUT/APT_INSTALL.stdout" 2> "$OUT/APT_INSTALL.stderr"
+          dpkg-query -W -f='${Package}	${Version}	${Architecture}	${Status}\n' > "$OUT/DPKG_AFTER.tsv"
+          dpkg-query -W -f='nvme-cli=${Version}\nsmartmontools=${Version}\n' nvme-cli smartmontools > "$OUT/INSTALLED_VERSIONS.txt"
+
+          NVME_BIN="$(command -v nvme)"
+          SMART_BIN="$(command -v smartctl)"
+          test -x "$NVME_BIN"
+          test -x "$SMART_BIN"
+          sha256sum "$NVME_BIN" "$SMART_BIN" > "$OUT/BINARY_SHA256.txt"
+          "$NVME_BIN" version > "$OUT/NVME_VERSION.txt"
+          "$SMART_BIN" --version > "$OUT/SMARTCTL_VERSION.txt"
+
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+          mapfile -t LINKS < <(find "$HOME/.local/lib/louksna-remote-bridge" -type f -path '*/bridge/live_link.py' -print 2>/dev/null | sort)
+          test "${#LINKS[@]}" -ge 1
+          LINK="${LINKS[-1]}"
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op status > "$OUT/LRB_STATUS.json"
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op observe > "$OUT/LRB_OBSERVE.json"
+
+          sudo -n "$NVME_BIN" smart-log -o json /dev/nvme0n1 > "$OUT/NVME_SMART.json"
+          sudo -n "$NVME_BIN" error-log -e 64 -o json /dev/nvme0n1 > "$OUT/NVME_ERROR_LOG.json"
+          sudo -n "$NVME_BIN" id-ctrl -o json /dev/nvme0n1 > "$OUT/NVME_ID_CTRL.json"
+          sudo -n "$NVME_BIN" id-ns -n 1 -o json /dev/nvme0n1 > "$OUT/NVME_ID_NS.json"
+          sudo -n "$SMART_BIN" -x -j /dev/nvme0n1 > "$OUT/SMARTCTL.json"
+          sudo -n /usr/sbin/sgdisk -v /dev/nvme0n1 > "$OUT/SGDISK_VERIFY.txt" 2>&1
+          sudo -n /usr/sbin/sfdisk --dump /dev/nvme0n1 > "$OUT/SFDISK.txt"
+          sudo -n /usr/sbin/parted -sm /dev/nvme0n1 unit s print free > "$OUT/PARTED.txt"
+          lsblk -J -b -o NAME,PATH,TYPE,SIZE,START,FSTYPE,FSAVAIL,FSUSE%,MOUNTPOINTS,UUID,PARTUUID /dev/nvme0n1 > "$OUT/LSBLK.json"
+          findmnt -n -o SOURCE,FSTYPE,OPTIONS / > "$OUT/ROOT_MOUNT.txt"
+          sudo -n tune2fs -l /dev/nvme0n1p3 > "$OUT/TUNE2FS.txt"
+          sudo -n journalctl -k --since "7 days ago" --no-pager -o short-iso > "$OUT/KERNEL_7D.txt" || true
+
+          python3 - "$OUT" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,re,sys
+          root=pathlib.Path(sys.argv[1]); h=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+          nv=json.loads((root/"NVME_SMART.json").read_text())
+          er=json.loads((root/"NVME_ERROR_LOG.json").read_text())
+          sc=json.loads((root/"SMARTCTL.json").read_text())
+          l=json.loads((root/"LRB_STATUS.json").read_text())
+          o=json.loads((root/"LRB_OBSERVE.json").read_text())
+          kern=(root/"KERNEL_7D.txt").read_text(errors="replace")
+          tune=(root/"TUNE2FS.txt").read_text(errors="replace")
+          sg=(root/"SGDISK_VERIFY.txt").read_text(errors="replace")
+          pre=json.loads((root/"PREFLIGHT.json").read_text())
+          g24=json.loads((root/"G24_INSTALL.json").read_text())
+
+          def pick(d,*keys):
+              for k in keys:
+                  if isinstance(d,dict) and k in d: return d[k]
+              return None
+          def iv(v):
+              if v is None: return None
+              if isinstance(v,bool): return int(v)
+              if isinstance(v,(int,float)): return int(v)
+              m=re.search(r"-?\d+",str(v).replace(",",""))
+              return int(m.group()) if m else None
+
+          smartlog=sc.get("nvme_smart_health_information_log",{}) if isinstance(sc,dict) else {}
+          metrics={
+            "critical_warning":pick(nv,"critical_warning"),
+            "temperature_c":pick(nv,"temperature"),
+            "available_spare_pct":pick(nv,"avail_spare","available_spare"),
+            "available_spare_threshold_pct":pick(nv,"spare_thresh","available_spare_threshold"),
+            "percentage_used":pick(nv,"percent_used","percentage_used"),
+            "media_errors":pick(nv,"media_errors"),
+            "num_err_log_entries":pick(nv,"num_err_log_entries"),
+            "unsafe_shutdowns":pick(nv,"unsafe_shutdowns"),
+            "power_on_hours":pick(nv,"power_on_hours"),
+            "power_cycles":pick(nv,"power_cycles"),
+            "warning_temp_time":pick(nv,"warning_temp_time"),
+            "critical_comp_time":pick(nv,"critical_comp_time"),
+            "smartctl_passed":sc.get("smart_status",{}).get("passed") if isinstance(sc,dict) else None
+          }
+          for k,v in list(metrics.items()):
+              if v is None and k in smartlog: metrics[k]=smartlog[k]
+
+          crit=iv(metrics["critical_warning"]); media=iv(metrics["media_errors"])
+          spare=iv(metrics["available_spare_pct"]); thresh=iv(metrics["available_spare_threshold_pct"])
+          used=iv(metrics["percentage_used"]); temp=iv(metrics["temperature_c"])
+
+          patterns={
+            "nvme_reset_or_timeout":r"nvme.*(reset|timeout|abort|I/O|failed|error)",
+            "block_io_error":r"(blk_update_request|I/O error|Buffer I/O error|end_request: I/O error)",
+            "ext4_error":r"EXT4-fs (error|warning)|EXT4-fs.*(corrupt|aborted)",
+            "pcie_aer_error":r"(AER:.*error|PCIe Bus Error|pcieport.*error)",
+            "read_only_remount":r"Remounting filesystem read-only|re-mounted.*read-only"
+          }
+          kh={k:len(re.findall(p,kern,re.I)) for k,p in patterns.items()}
+
+          error_entries=er if isinstance(er,list) else er.get("errors",[]) if isinstance(er,dict) else []
+          meaningful=[]
+          for x in error_entries:
+              if not isinstance(x,dict): continue
+              ec=iv(x.get("error_count"))
+              sf=iv(x.get("status_field"))
+              if (ec or 0)>0 or (sf or 0)!=0:
+                  meaningful.append(x)
+
+          fm=re.search(r"^Filesystem state:\s*(.+)$",tune,re.M)
+          fs_state=fm.group(1).strip() if fm else None
+
+          checks={
+            "preflight_pass":pre.get("status")=="PASS",
+            "g24_install_pass":g24.get("status")=="PASS",
+            "lrb_host":l.get("host")=="LOUKSNA",
+            "lrb_evidence":bool(o.get("evidence_sha256")),
+            "critical_warning_known_zero":crit==0,
+            "media_errors_known_zero":media==0,
+            "spare_known_above_threshold":spare is not None and thresh is not None and spare>=thresh,
+            "wear_known_below_100":used is not None and used<100,
+            "temperature_known_noncritical":temp is not None and temp<80,
+            "kernel_no_nvme_reset_timeout":kh["nvme_reset_or_timeout"]==0,
+            "kernel_no_block_io_error":kh["block_io_error"]==0,
+            "kernel_no_ext4_error":kh["ext4_error"]==0,
+            "kernel_no_pcie_aer_error":kh["pcie_aer_error"]==0,
+            "kernel_no_ro_remount":kh["read_only_remount"]==0,
+            "gpt_verify_clean":"No problems found" in sg,
+            "root_identity":"/dev/nvme0n1p3" in (root/"ROOT_MOUNT.txt").read_text(),
+          }
+          status="PASS" if all(checks.values()) and len(meaningful)==0 else ("REVIEW" if all(checks.values()) else "HOLD")
+          q={
+            "schema":"LOUKSNA_R4_PART4_PRE_STAGE7_NVME_HEALTH_OBSERVATION/1.0",
+            "status":status,
+            "mission_id":"MIS-e5963403a3b44ee8be96",
+            "scope":"PASSIVE_CONTROLLER_HEALTH_AFTER_GOVERNED_TOOL_INSTALL",
+            "metrics":metrics,
+            "nvme_error_log_meaningful_entries":meaningful,
+            "kernel_hits_7d":kh,
+            "ext4_metadata":{"filesystem_state":fs_state},
+            "checks":checks,
+            "lrb_evidence_seq":o.get("evidence_seq"),
+            "lrb_evidence_sha256":o.get("evidence_sha256"),
+            "package_filesystem_writes_performed":True,
+            "partition_geometry_mutation_performed":False,
+            "filesystem_resize_performed":False,
+            "active_device_test_performed":False,
+            "raw_sha256":{p.name:h(p) for p in root.iterdir() if p.is_file()},
+            "observed_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          (root/"HEALTH_OBSERVATION.json").write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if status=="HOLD": raise SystemExit(23)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: r4-part4-pre-stage7-health-observation
+          path: ${{ runner.temp }}/health/
+          retention-days: 90
+          compression-level: 0
+
+  g23_final:
+    name: G23 independent final health assessment
+    needs: install_and_observe
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-pre-stage7-health-observation
+          path: ${{ runner.temp }}/health
+      - name: Validate health evidence without collapsing unknowns
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/health" "$RUNNER_TEMP/g23/G23.json" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,sys
+          root=pathlib.Path(sys.argv[1]); out=pathlib.Path(sys.argv[2]); h=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+          q=json.loads((root/"HEALTH_OBSERVATION.json").read_text())
+          checks={
+            "observation_not_hold":q.get("status") in ("PASS","REVIEW"),
+            "all_core_checks":all(q.get("checks",{}).values()),
+            "no_meaningful_error_entries":len(q.get("nvme_error_log_meaningful_entries",[]))==0,
+            "lrb_evidence_present":bool(q.get("lrb_evidence_sha256")),
+            "package_write_only":q.get("package_filesystem_writes_performed") is True,
+            "no_geometry_mutation":q.get("partition_geometry_mutation_performed") is False,
+            "no_fs_resize":q.get("filesystem_resize_performed") is False,
+            "no_active_device_test":q.get("active_device_test_performed") is False,
+          }
+          ok=all(checks.values())
+          r={
+            "schema":"LOUKSNA_R4_PART4_PRE_STAGE7_HEALTH_G23/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "scope":"PRE_STAGE7_NVME_HEALTH_GATE_ONLY",
+            "health_observation_sha256":h(root/"HEALTH_OBSERVATION.json"),
+            "checks":checks,
+            "g24_allowed":ok,
+            "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          out.write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(23)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-pre-stage7-health-final-g23
+          path: ${{ runner.temp }}/g23/G23.json
+          retention-days: 90
+          compression-level: 0
+
+  g24_final:
+    name: G24 certify health gate only
+    needs: g23_final
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-pre-stage7-health-final-g23
+          path: ${{ runner.temp }}/g23
+      - name: Issue non-propagating health certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/G23.json"
+          test "$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(d["status"] if d.get("g24_allowed") else "HOLD")' "$G")" = PASS
+          H="$(sha256sum "$G"|awk '{print $1}')"
+          O="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["health_observation_sha256"])' "$G")"
+          AUD="louksna-r4-pre-stage7-health-final:$H:$O"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export H O AUD TOKEN
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$RUNNER_TEMP/g24/G24.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          t=os.environ["TOKEN"]; p=t.split("."); payload=p[1]+"="*((4-len(p[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload))
+          aud=claims.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          q={
+            "schema":"LOUKSNA_R4_PART4_PRE_STAGE7_HEALTH_G24/1.0",
+            "status":"PASS",
+            "scope":"PRE_STAGE7_NVME_HEALTH_GATE_ONLY",
+            "g23_sha256":os.environ["H"],
+            "health_observation_sha256":os.environ["O"],
+            "next_authorized_action":"STAGE7_FRESH_PRECOMMIT_READ_ONLY",
+            "stage7_commit_authorized":False,
+            "partition_geometry_mutation_authorized":False,
+            "filesystem_resize_authorized":False,
+            "certification_propagated":False,
+            "authority_authenticated":True,
+            "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
+            "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-pre-stage7-health-final-g24
+          path: ${{ runner.temp }}/g24/G24.json
+          retention-days: 90
+          compression-level: 0

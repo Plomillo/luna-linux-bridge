@@ -1,0 +1,40 @@
+name: "R4 master — CUSTOSZ API read-only audit"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-master-custosz-api-audit.yml
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz
+          sparse-checkout-cone-mode: false
+      - name: Inspect public worker callables only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B -I - <<'PY'
+          import sys, inspect, json
+          sys.path.insert(0,"artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz")
+          import custosz_v05_legacy as w
+          names=[]
+          for n in dir(w):
+              if n.startswith("_"): continue
+              v=getattr(w,n)
+              if callable(v):
+                  try: sig=str(inspect.signature(v))
+                  except Exception: sig="?"
+                  names.append({"name":n,"signature":sig})
+          print(json.dumps(names,indent=2,sort_keys=True))
+          PY

@@ -1,0 +1,5 @@
+{
+  "request": "MASTER_LIVE_STATUS",
+  "mode": "READ_ONLY",
+  "include": ["service","master_status","permission_request","part4_authorization"]
+}

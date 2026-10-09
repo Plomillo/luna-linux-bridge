@@ -1,0 +1,199 @@
+name: "R4 PART4 — Stage8 GPT/kernel reconciliation"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-stage8-gpt-kernel-reconcile/**
+
+permissions:
+  contents: read
+
+jobs:
+  reconcile:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Reconcile GPT physical truth with kernel-visible geometry
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/stage8-$GITHUB_RUN_ID"
+          mkdir -p "$OUT"
+
+          sudo -n /usr/sbin/sfdisk --dump /dev/nvme0n1 > "$OUT/SFDISK.txt"
+          sudo -n /usr/sbin/sgdisk -p /dev/nvme0n1 > "$OUT/SGDISK_PRINT.txt"
+          set +e
+          sudo -n /usr/sbin/sgdisk -v /dev/nvme0n1 > "$OUT/SGDISK_VERIFY.txt" 2>&1
+          SGVERIFY_RC=$?
+          set -e
+          sudo -n /usr/sbin/parted -sm /dev/nvme0n1 unit s print free > "$OUT/PARTED.txt"
+          lsblk -J -b -o NAME,PATH,TYPE,SIZE,START,FSTYPE,FSAVAIL,FSUSE%,MOUNTPOINTS,UUID,PARTUUID /dev/nvme0n1 > "$OUT/LSBLK.json"
+          findmnt -n -o SOURCE,FSTYPE / > "$OUT/FINDMNT_ROOT.txt"
+          findmnt -n -o SOURCE,FSTYPE /boot/efi > "$OUT/FINDMNT_EFI.txt"
+
+          SGVERIFY_RC="$SGVERIFY_RC" OUT="$OUT" python3 - <<'PY'
+          import datetime as dt
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import re
+          import subprocess
+          import time
+
+          TARGET_START=567296
+          TARGET_END=1000215182
+          TARGET_SIZE=999647887
+          P1_EXPECTED=(2048,534527,532480)
+          UUID_EXPECTED="e084ec2a-af39-48b5-bb89-db2dc6a98332"
+          PARTUUID_EXPECTED="8e0b4274-21ff-4b16-8180-495381efb1d9"
+
+          outdir=pathlib.Path(os.environ["OUT"])
+          home=pathlib.Path.home()
+          state=home/".local/state/louksna/r4-master-part1-part9"
+          d=state/"PART_4_P3_HARDENED"
+          execution=d/"EXECUTION.json"
+          stage7=d/"STAGE7_RESULT.json"
+
+          def sha256(p):
+              h=hashlib.sha256()
+              with pathlib.Path(p).open("rb") as f:
+                  for chunk in iter(lambda:f.read(1024*1024),b""):
+                      h.update(chunk)
+              return h.hexdigest()
+
+          def sh(argv):
+              return subprocess.run(argv,text=True,capture_output=True,check=True).stdout.strip()
+
+          if not execution.is_file() or not stage7.is_file():
+              raise SystemExit("STAGE8_PREREQUISITE_MISSING")
+
+          ex=json.loads(execution.read_text())
+          s7=json.loads(stage7.read_text())
+
+          sfd=(outdir/"SFDISK.txt").read_text()
+          m3=re.search(r"/dev/nvme0n1p3\s*:\s*start=\s*(\d+),\s*size=\s*(\d+)",sfd)
+          m1=re.search(r"/dev/nvme0n1p1\s*:\s*start=\s*(\d+),\s*size=\s*(\d+)",sfd)
+          if not m3 or not m1:
+              print(sfd)
+              raise SystemExit("STAGE8_SFDISK_PARSE_FAILED")
+
+          gpt_start,gpt_size=map(int,m3.groups())
+          gpt_end=gpt_start+gpt_size-1
+          gpt_p1_start,gpt_p1_size=map(int,m1.groups())
+          gpt_p1_end=gpt_p1_start+gpt_p1_size-1
+
+          kernel_start=int(pathlib.Path("/sys/class/block/nvme0n1p3/start").read_text())
+          kernel_size=int(pathlib.Path("/sys/class/block/nvme0n1p3/size").read_text())
+          kernel_end=kernel_start+kernel_size-1
+          p1_start=int(pathlib.Path("/sys/class/block/nvme0n1p1/start").read_text())
+          p1_size=int(pathlib.Path("/sys/class/block/nvme0n1p1/size").read_text())
+          p1_end=p1_start+p1_size-1
+
+          uuid=sh(["lsblk","-n","-o","UUID","/dev/nvme0n1p3"])
+          partuuid=sh(["lsblk","-n","-o","PARTUUID","/dev/nvme0n1p3"])
+          root=sh(["findmnt","-n","-o","SOURCE,FSTYPE","/"]).split()
+          efi=sh(["findmnt","-n","-o","SOURCE,FSTYPE","/boot/efi"]).split()
+
+          gpt_target=(gpt_start==TARGET_START and gpt_end==TARGET_END and gpt_size==TARGET_SIZE)
+          kernel_target=(kernel_start==TARGET_START and kernel_end==TARGET_END and kernel_size==TARGET_SIZE)
+
+          checks={
+              "execution_boundary": int(ex.get("current_stage",0))==8 and int(ex.get("last_completed_stage",0))==7,
+              "stage7_pass": s7.get("status")=="PASS",
+              "stage7_scope": s7.get("scope")=="P3_TRAILING_END_EXTENSION_ONLY",
+              "stage7_no_filesystem_resize": s7.get("filesystem_resize_performed") is False,
+              "gpt_target": gpt_target,
+              "kernel_target": kernel_target,
+              "gpt_kernel_start_match": gpt_start==kernel_start,
+              "gpt_kernel_end_match": gpt_end==kernel_end,
+              "gpt_kernel_size_match": gpt_size==kernel_size,
+              "sgdisk_verify_rc": int(os.environ["SGVERIFY_RC"])==0,
+              "p1_gpt_expected": (gpt_p1_start,gpt_p1_end,gpt_p1_size)==P1_EXPECTED,
+              "p1_kernel_expected": (p1_start,p1_end,p1_size)==P1_EXPECTED,
+              "p5_absent": not pathlib.Path("/dev/nvme0n1p5").exists(),
+              "uuid_preserved": uuid==UUID_EXPECTED,
+              "partuuid_preserved": partuuid==PARTUUID_EXPECTED,
+              "root_on_p3": len(root)>=2 and root[0]=="/dev/nvme0n1p3" and root[1]=="ext4",
+              "efi_on_p1": len(efi)>=2 and efi[0]=="/dev/nvme0n1p1" and efi[1]=="vfat",
+          }
+
+          status="PASS" if all(checks.values()) else "HOLD"
+          raw_files=["SFDISK.txt","SGDISK_PRINT.txt","SGDISK_VERIFY.txt","PARTED.txt","LSBLK.json","FINDMNT_ROOT.txt","FINDMNT_EFI.txt"]
+          rec={
+              "schema":"LOUKSNA_R4_PART4_STAGE8_GPT_KERNEL_RECONCILIATION/1.0",
+              "status":status,
+              "scope":"POST_STAGE7_GPT_KERNEL_RECONCILIATION_READ_ONLY",
+              "disk":"/dev/nvme0n1",
+              "partition":3,
+              "p3_start_sector":kernel_start,
+              "p3_end_sector":kernel_end,
+              "p3_size_sectors":kernel_size,
+              "gpt_start_sector":gpt_start,
+              "gpt_end_sector":gpt_end,
+              "gpt_size_sectors":gpt_size,
+              "gpt_target":gpt_target,
+              "kernel_target":kernel_target,
+              "gpt_kernel_match":gpt_start==kernel_start and gpt_end==kernel_end and gpt_size==kernel_size,
+              "p1_unchanged":checks["p1_gpt_expected"] and checks["p1_kernel_expected"],
+              "p5_absent":checks["p5_absent"],
+              "uuid_preserved":checks["uuid_preserved"],
+              "partuuid_preserved":checks["partuuid_preserved"],
+              "root_source":root[0] if root else None,
+              "root_fstype":root[1] if len(root)>1 else None,
+              "efi_source":efi[0] if efi else None,
+              "efi_fstype":efi[1] if len(efi)>1 else None,
+              "reboot_required": not kernel_target,
+              "disk_mutation_performed":False,
+              "filesystem_mutation_performed":False,
+              "kernel_reread_command_performed":False,
+              "blind_retry_performed":False,
+              "stage7_result_sha256":sha256(stage7),
+              "checks":checks,
+              "raw_sha256":{name:sha256(outdir/name) for name in raw_files},
+              "recorded_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          (outdir/"STAGE8_RECONCILIATION.json").write_text(json.dumps(rec,indent=2,sort_keys=True)+"\n")
+          (d/"STAGE8_RECONCILIATION.json").write_text(json.dumps(rec,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(rec,indent=2,sort_keys=True))
+
+          if status!="PASS":
+              raise SystemExit(23)
+
+          uid=os.getuid()
+          env=os.environ.copy()
+          env["XDG_RUNTIME_DIR"]=f"/run/user/{uid}"
+          env["DBUS_SESSION_BUS_ADDRESS"]=f"unix:path=/run/user/{uid}/bus"
+          subprocess.run(["systemctl","--user","restart","luna-r4-master-part1-part9.service"],env=env,check=True)
+
+          final=None
+          for _ in range(30):
+              final=json.loads(execution.read_text())
+              if int(final.get("last_completed_stage",0))>=8:
+                  break
+              time.sleep(1)
+
+          summary={
+              "status":final.get("status"),
+              "current_stage":final.get("current_stage"),
+              "last_completed_stage":final.get("last_completed_stage"),
+              "next_authorized_action":final.get("next_authorized_action"),
+              "disk_mutation_performed":final.get("disk_mutation_performed"),
+              "filesystem_mutation_performed":final.get("filesystem_mutation_performed"),
+          }
+          (outdir/"MAESTRO_AFTER_STAGE8.json").write_text(json.dumps(summary,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(summary,indent=2,sort_keys=True))
+          if int(final.get("last_completed_stage",0))<8:
+              raise SystemExit(31)
+          PY
+
+      - name: Upload Stage8 reconciliation evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-stage8-gpt-kernel-reconciliation
+          path: ${{ runner.temp }}/stage8-${{ github.run_id }}
+          if-no-files-found: warn
+          retention-days: 90

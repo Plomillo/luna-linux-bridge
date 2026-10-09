@@ -1,0 +1,253 @@
+name: "R4 definitive — P01-P32 read-only inventory"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-definitive-p01-p32-readonly-inventory.yml
+      - mission-control/r4-definitive-p01-p32-readonly-inventory/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r4-definitive-p01-p32-readonly-inventory
+  cancel-in-progress: false
+
+jobs:
+  inventory:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 20
+    steps:
+      - name: Inventory P01-P32 with LRB pre/post observation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C LANG=C
+          HOME_REAL="/home/diegoignacionorambuenamiranda"
+          OUT="$RUNNER_TEMP/r4-p01-p32-$GITHUB_RUN_ID"
+          T="$OUT/tmp"
+          mkdir -p "$OUT" "$T"
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+
+          mapfile -t LINKS < <(find "$HOME_REAL/.local/lib/louksna-remote-bridge" -type f -path '*/bridge/live_link.py' -print 2>/dev/null | sort)
+          test "${#LINKS[@]}" -ge 1
+          LINK="${LINKS[-1]}"
+          python3 -B "$LINK" --state-dir "$HOME_REAL/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op observe > "$OUT/LRB_PRE.json"
+
+          {
+            echo "HOST=$(hostname)"
+            echo "USER=$(id -un)"
+            echo "ARCH=$(uname -m)"
+            cat /etc/os-release
+            echo "KVM_DEVICE=$([ -e /dev/kvm ] && echo PRESENT || echo ABSENT)"
+          } > "$OUT/HOST.txt"
+
+          cmds=(chromium chromium-browser google-chrome brave-browser node npm npx python3 pip3 pipx git 7z 7zz java javac mojo gcc g++ cmake ninja gdb qemu-system-x86_64 qemu-img virsh virt-host-validate virt-manager nmcli NetworkManager wpctl pipewire vulkaninfo)
+          : > "$OUT/COMMANDS.tsv"
+          for c in "${cmds[@]}"; do
+            p="$(command -v "$c" 2>/dev/null || true)"
+            printf '%s\t%s\n' "$c" "$p" >> "$OUT/COMMANDS.tsv"
+          done
+
+          pkgs=(nodejs npm python3 python3-venv python3-pip pipx git p7zip-full openjdk-17-jdk openjdk-21-jdk gcc g++ cmake ninja-build gdb qemu-system-x86 qemu-utils libvirt-daemon-system libvirt-clients virt-manager firmware-amd-graphics firmware-realtek mesa-vulkan-drivers network-manager pipewire plasma-desktop plasma-workspace dolphin kwin-wayland)
+          : > "$OUT/DPKG.tsv"
+          for p in "${pkgs[@]}"; do
+            v="$(dpkg-query -W -f='${Status}\t${Version}' "$p" 2>/dev/null || true)"
+            printf '%s\t%s\n' "$p" "$v" >> "$OUT/DPKG.tsv"
+          done
+
+          {
+            echo "NetworkManager=$(systemctl is-active NetworkManager 2>/dev/null || true)"
+            echo "libvirtd=$(systemctl is-active libvirtd 2>/dev/null || true)"
+            echo "waydroid-container=$(systemctl is-active waydroid-container.service 2>/dev/null || true)"
+            echo "github-runner=$(systemctl is-active actions.runner.Plomillo-luna-linux-bridge.luna-linux.service 2>/dev/null || true)"
+            echo "pipewire_user=$(systemctl --user is-active pipewire.service 2>/dev/null || true)"
+            echo "symphylax_user=$(systemctl --user is-active symphylax-r1.service 2>/dev/null || true)"
+            echo "maestro_user=$(systemctl --user is-active luna-r4-master-part1-part9.service 2>/dev/null || true)"
+          } > "$OUT/SERVICES.txt"
+
+          # Tiny functional probes only; everything is confined to RUNNER_TEMP.
+          : > "$OUT/FUNCTIONAL.tsv"
+          probe() { local id="$1"; shift; set +e; "$@" >"$T/$id.out" 2>"$T/$id.err"; rc=$?; set -e; printf '%s\t%s\n' "$id" "$rc" >> "$OUT/FUNCTIONAL.tsv"; }
+          command -v node >/dev/null && probe NODE node -e 'console.log("R4_NODE_OK")' || true
+          command -v npm >/dev/null && probe NPM npm --version || true
+          command -v npx >/dev/null && probe NPX npx --version || true
+          if command -v python3 >/dev/null; then
+            probe PYTHON python3 -c 'print("R4_PYTHON_OK")'
+            set +e; python3 -m venv "$T/venv" >"$T/VENV.out" 2>"$T/VENV.err"; rc=$?; set -e; printf 'VENV\t%s\n' "$rc" >> "$OUT/FUNCTIONAL.tsv"
+            if [ "$rc" -eq 0 ]; then probe VENV_PIP "$T/venv/bin/python" -m pip --version; fi
+          fi
+          command -v pip3 >/dev/null && probe PIP3 pip3 --version || true
+          command -v pipx >/dev/null && probe PIPX pipx --version || true
+          if command -v git >/dev/null; then
+            mkdir -p "$T/git"; probe GIT_INIT git -C "$T/git" init -q
+            git -C "$T/git" config user.email audit@localhost
+            git -C "$T/git" config user.name R4-Audit
+            touch "$T/git/a"; git -C "$T/git" add a
+            probe GIT_COMMIT git -C "$T/git" commit -qm audit
+          fi
+          if command -v 7z >/dev/null || command -v 7zz >/dev/null; then
+            Z="$(command -v 7z || command -v 7zz)"
+            echo test > "$T/z.txt"; probe ZIP_CREATE "$Z" a -bd "$T/z.7z" "$T/z.txt"; probe ZIP_TEST "$Z" t -bd "$T/z.7z"
+          fi
+          if command -v javac >/dev/null && command -v java >/dev/null; then
+            printf 'public class R4Audit { public static void main(String[] a){System.out.println("OK");}}\n' > "$T/R4Audit.java"
+            probe JAVAC javac -d "$T" "$T/R4Audit.java"; probe JAVA java -cp "$T" R4Audit
+          fi
+          if command -v g++ >/dev/null; then
+            printf '#include <iostream>\nint main(){std::cout<<"OK";}\n' > "$T/a.cpp"
+            probe CPP23 g++ -std=c++23 -O0 -g "$T/a.cpp" -o "$T/a"
+            [ -x "$T/a" ] && probe CPP23_RUN "$T/a" || true
+            command -v gdb >/dev/null && [ -x "$T/a" ] && probe GDB gdb -q -batch -ex run "$T/a" || true
+          fi
+          command -v cmake >/dev/null && probe CMAKE cmake --version || true
+          command -v ninja >/dev/null && probe NINJA ninja --version || true
+          command -v mojo >/dev/null && probe MOJO_VERSION mojo --version || true
+          command -v qemu-system-x86_64 >/dev/null && probe QEMU qemu-system-x86_64 --version || true
+          command -v virsh >/dev/null && probe VIRSH virsh --version || true
+          command -v virt-host-validate >/dev/null && probe VIRT_HOST_VALIDATE virt-host-validate qemu || true
+          command -v virt-manager >/dev/null && probe VIRT_MANAGER virt-manager --version || true
+          command -v nmcli >/dev/null && probe NETWORKMANAGER nmcli general status || true
+          command -v wpctl >/dev/null && probe PIPEWIRE wpctl status || true
+          command -v vulkaninfo >/dev/null && probe VULKAN vulkaninfo --summary || true
+
+          # Bounded discovery of required payloads/components. No content mutation.
+          ROOTS=("$HOME_REAL/Descargas" "$HOME_REAL/Downloads" "$HOME_REAL/.local/share/louksna" "$HOME_REAL/LOUKSNA_MAESTRO_20260925" "$HOME_REAL/PROYECTOS")
+          : > "$OUT/CANDIDATES.tsv"
+          for root in "${ROOTS[@]}"; do
+            [ -e "$root" ] || continue
+            nice -n 19 ionice -c3 find "$root" -maxdepth 9 \
+              \( -iname '*Windows*LTSC*.iso*' -o -iname '*Ubuntu*24*.img*' -o -iname '*Ubuntu*24*.qcow2*' -o -iname '*Arch*.iso*' \
+                 -o -iname '*Android*16*' -o -iname '*Android*17*' -o -iname '*.gguf' -o -iname '*.safetensors' \
+                 -o -iname '*document*ingest*' -o -iname '*cognitive*backend*' -o -iname '*custos*gui*' -o -iname '*projects*center*' \
+                 -o -iname '*devocional*.desktop' -o -iname '*devotional*.desktop' -o -iname '*version*manager*' -o -iname '*hygiene*engine*' \
+                 -o -iname '*higiene*' -o -iname '*MetaOS.wasm' -o -iname 'CUSTOSZ*.pyz' \) \
+              -printf '%y\t%s\t%p\n' 2>/dev/null | head -n 12000 >> "$OUT/CANDIDATES.tsv" || true
+          done
+
+          # Exact Windows target hashes only for complete-looking candidates; low priority.
+          : > "$OUT/WINDOWS_HASHES.tsv"
+          while IFS=$'\t' read -r typ size p; do
+            case "$p" in
+              *Windows*LTSC*.iso)
+                if [ "$typ" = f ] && [ "$size" -gt 3000000000 ]; then
+                  h="$(nice -n 19 ionice -c3 sha256sum "$p" 2>/dev/null | awk '{print $1}' || true)"
+                  printf '%s\t%s\t%s\n' "$size" "$h" "$p" >> "$OUT/WINDOWS_HASHES.tsv"
+                fi
+              ;;
+            esac
+          done < "$OUT/CANDIDATES.tsv"
+
+          {
+            echo "PROYECTOS_REAL=$([ -d "$HOME_REAL/PROYECTOS" ] && [ ! -L "$HOME_REAL/PROYECTOS" ] && echo PASS || echo FAIL)"
+            for p in "$HOME_REAL/Proyectos" "$HOME_REAL/Luna R4/Proyectos"; do
+              if [ -L "$p" ]; then printf 'LINK=%s TARGET=%s RESOLVES=%s\n' "$p" "$(readlink "$p")" "$([ -e "$p" ] && echo YES || echo NO)"; else printf 'LINK=%s ABSENT_OR_NOT_SYMLINK\n' "$p"; fi
+            done
+            grep -nEi 'proyectos|projects' "$HOME_REAL/.local/share/user-places.xbel" 2>/dev/null || true
+            find "$HOME_REAL/.local/share/applications" -maxdepth 2 -type f -name '*.desktop' -print0 2>/dev/null | xargs -0 grep -HnEi 'devocional|devotional|proyectos|projects|custos' 2>/dev/null || true
+          } > "$OUT/UI_COMPONENTS.txt"
+
+          sudo -n true >"$T/sudo.out" 2>"$T/sudo.err" && echo PASS > "$OUT/SUDO.txt" || echo FAIL > "$OUT/SUDO.txt"
+
+          python3 - "$OUT" <<'PY'
+          import json,pathlib,sys,re,datetime as dt,os
+          out=pathlib.Path(sys.argv[1])
+          cmds={}
+          for line in (out/"COMMANDS.tsv").read_text().splitlines():
+              a=line.split("\t",1); cmds[a[0]]=a[1] if len(a)>1 else ""
+          dpkg={}
+          for line in (out/"DPKG.tsv").read_text().splitlines():
+              a=line.split("\t",1); dpkg[a[0]]=a[1] if len(a)>1 else ""
+          func={}
+          for line in (out/"FUNCTIONAL.tsv").read_text().splitlines():
+              a=line.split("\t"); func[a[0]]=int(a[1])
+          cand=(out/"CANDIDATES.tsv").read_text(errors="replace").splitlines()
+          wh=(out/"WINDOWS_HASHES.tsv").read_text(errors="replace").splitlines()
+          ui=(out/"UI_COMPONENTS.txt").read_text(errors="replace")
+          services=(out/"SERVICES.txt").read_text(errors="replace")
+          host=(out/"HOST.txt").read_text(errors="replace")
+          expected_win="8abf91c9cd408368dc73aab3425d5e3c02dae74900742072eb5c750fc637c195"
+          win_ok=any(("\t"+expected_win+"\t") in ("\t"+x+"\t") for x in wh)
+          def installed_pkg(p): return "install ok installed" in dpkg.get(p,"")
+          def cmd(c): return bool(cmds.get(c))
+          def fp(k): return func.get(k)==0
+          def paths(*terms):
+              terms=[x.casefold() for x in terms]
+              return [x for x in cand if all(t in x.casefold() for t in terms)][:100]
+          p={}
+          p["P01"]={"name":"Windows 11 LTSC correct complete ISO","state":"VERIFIED_PRESENT" if win_ok else ("CANDIDATE_PRESENT_UNVERIFIED_OR_MISMATCH" if wh or paths("windows","ltsc") else "ABSENT"),"evidence":wh or paths("windows","ltsc")}
+          browsers=[c for c in ("chromium","chromium-browser","google-chrome","brave-browser") if cmd(c)]
+          p["P02"]={"name":"Chromium-family browser selection","state":"PRESENT" if browsers else "ABSENT","evidence":browsers}
+          p["P03"]={"name":"Node.js closure","state":"FUNCTIONAL" if fp("NODE") else ("PRESENT_UNVERIFIED" if cmd("node") else "ABSENT")}
+          p["P04"]={"name":"npm/npx closure","state":"FUNCTIONAL" if fp("NPM") and fp("NPX") else ("PARTIAL" if cmd("npm") or cmd("npx") else "ABSENT")}
+          p["P05"]={"name":"Python 3 closure","state":"FUNCTIONAL" if fp("PYTHON") else ("PRESENT_UNVERIFIED" if cmd("python3") else "ABSENT")}
+          p["P06"]={"name":"python3-venv","state":"FUNCTIONAL" if fp("VENV") else ("PACKAGE_PRESENT" if installed_pkg("python3-venv") else "ABSENT")}
+          p["P07"]={"name":"python3-pip","state":"FUNCTIONAL" if fp("PIP3") or fp("VENV_PIP") else ("PACKAGE_PRESENT" if installed_pkg("python3-pip") else "ABSENT")}
+          p["P08"]={"name":"pipx","state":"FUNCTIONAL" if fp("PIPX") else ("PACKAGE_PRESENT" if installed_pkg("pipx") else "ABSENT")}
+          p["P09"]={"name":"Git","state":"FUNCTIONAL" if fp("GIT_INIT") and fp("GIT_COMMIT") else ("PRESENT_UNVERIFIED" if cmd("git") else "ABSENT")}
+          p["P10"]={"name":"Linux 7-Zip","state":"FUNCTIONAL" if fp("ZIP_CREATE") and fp("ZIP_TEST") else ("PRESENT_UNVERIFIED" if cmd("7z") or cmd("7zz") else "ABSENT")}
+          p["P11"]={"name":"OpenJDK","state":"FUNCTIONAL" if fp("JAVAC") and fp("JAVA") else ("PRESENT_UNVERIFIED" if cmd("java") else "ABSENT")}
+          p["P12"]={"name":"exact current Linux Mojo SDK","state":"PRESENT_VERSION_PROBED" if fp("MOJO_VERSION") else ("PRESENT_UNVERIFIED" if cmd("mojo") else "ABSENT")}
+          p["P13"]={"name":"GCC/G++ C++23 closure","state":"FUNCTIONAL" if fp("CPP23") and fp("CPP23_RUN") else ("PRESENT_UNVERIFIED" if cmd("g++") else "ABSENT")}
+          p["P14"]={"name":"CMake","state":"FUNCTIONAL_VERSION" if fp("CMAKE") else ("PRESENT_UNVERIFIED" if cmd("cmake") else "ABSENT")}
+          p["P15"]={"name":"Ninja","state":"FUNCTIONAL_VERSION" if fp("NINJA") else ("PRESENT_UNVERIFIED" if cmd("ninja") else "ABSENT")}
+          p["P16"]={"name":"GDB","state":"FUNCTIONAL" if fp("GDB") else ("PRESENT_UNVERIFIED" if cmd("gdb") else "ABSENT")}
+          p["P17"]={"name":"QEMU","state":"FUNCTIONAL_VERSION" if fp("QEMU") else ("PACKAGE_PRESENT" if installed_pkg("qemu-system-x86") else "ABSENT")}
+          p["P18"]={"name":"libvirt","state":"PRESENT" if cmd("virsh") and installed_pkg("libvirt-daemon-system") else "ABSENT_OR_INCOMPLETE","service_evidence":services}
+          p["P19"]={"name":"virt-manager","state":"FUNCTIONAL_VERSION" if fp("VIRT_MANAGER") else ("PACKAGE_PRESENT" if installed_pkg("virt-manager") else "ABSENT")}
+          p["P20"]={"name":"AMD firmware inclusion","state":"PACKAGE_PRESENT" if installed_pkg("firmware-amd-graphics") else "NOT_PROVEN","package":dpkg.get("firmware-amd-graphics","")}
+          p["P21"]={"name":"Realtek firmware inclusion","state":"PACKAGE_PRESENT" if installed_pkg("firmware-realtek") else "NOT_PROVEN","package":dpkg.get("firmware-realtek","")}
+          p["P22"]={"name":"Mesa/Vulkan inclusion","state":"FUNCTIONAL" if fp("VULKAN") else ("PACKAGE_PRESENT" if installed_pkg("mesa-vulkan-drivers") else "ABSENT_OR_UNPROVEN")}
+          p["P23"]={"name":"NetworkManager inclusion","state":"FUNCTIONAL" if fp("NETWORKMANAGER") and "NetworkManager=active" in services else ("PRESENT" if cmd("nmcli") else "ABSENT")}
+          p["P24"]={"name":"PipeWire inclusion","state":"FUNCTIONAL" if fp("PIPEWIRE") and "pipewire_user=active" in services else ("PRESENT" if cmd("pipewire") or cmd("wpctl") else "ABSENT")}
+          cognitive=paths(".gguf")+paths(".safetensors")+paths("cognitive","backend")
+          p["P25"]={"name":"local cognitive backend","state":"CANDIDATE_BYTES_PRESENT_UNCERTIFIED" if cognitive else "ABSENT","evidence":cognitive[:100],"hosted_qwen_substitution":False}
+          ingestion=paths("document","ingest")
+          p["P26"]={"name":"document ingestion stack","state":"CANDIDATE_PRESENT_UNCERTIFIED" if ingestion else "UNRESOLVED_REQUIREMENT","evidence":ingestion[:100],"note":"No exact stack identity established by queue name alone"}
+          custosgui=paths("custos","gui")
+          p["P27"]={"name":"CUSTOS Local GUI","state":"CANDIDATE_PRESENT_UNCERTIFIED" if custosgui else "ABSENT_OR_UNIDENTIFIED","evidence":custosgui[:100]}
+          projects_center=paths("projects","center")
+          p["P28"]={"name":"Projects Center","state":"PRESENT_BUT_BINDING_BROKEN" if "PROYECTOS_REAL=PASS" in ui and "RESOLVES=NO" in ui else ("CANDIDATE_PRESENT_UNCERTIFIED" if projects_center else "ABSENT_OR_UNIDENTIFIED"),"evidence":projects_center[:100]}
+          devo=[x for x in cand if "devoc" in x.casefold()]
+          p["P29"]={"name":"Devotional application","state":"CANDIDATE_PRESENT_UNCERTIFIED" if devo else "ABSENT_OR_UNIDENTIFIED","evidence":devo[:100]}
+          vmgr=[x for x in cand if "version" in x.casefold() and "manager" in x.casefold()]
+          p["P30"]={"name":"CUSTOS version manager","state":"CANDIDATE_PRESENT_UNCERTIFIED" if any("custos" in x.casefold() for x in vmgr) else "ABSENT_OR_UNIDENTIFIED","evidence":[x for x in vmgr if "custos" in x.casefold()][:100]}
+          p["P31"]={"name":"Architecture version manager","state":"CANDIDATE_PRESENT_UNCERTIFIED" if any("architect" in x.casefold() for x in vmgr) else "ABSENT_OR_UNIDENTIFIED","evidence":[x for x in vmgr if "architect" in x.casefold()][:100]}
+          hyg=[x for x in cand if "hygiene" in x.casefold() or "higiene" in x.casefold()]
+          p["P32"]={"name":"Luna Hygiene Engine","state":"CANDIDATE_PRESENT_UNCERTIFIED" if hyg else "ABSENT_OR_UNIDENTIFIED","evidence":hyg[:100]}
+          obj={
+            "schema":"LOUKSNA_R4_P01_P32_READONLY_INVENTORY/1.0",
+            "status":"OBSERVED_NOT_CERTIFIED",
+            "mutation_performed":False,
+            "downloads_performed":False,
+            "installs_performed":False,
+            "partitioning_performed":False,
+            "desktop_plugin_used":False,
+            "sudo_available":(out/"SUDO.txt").read_text().strip()=="PASS",
+            "host":host,
+            "services":services,
+            "queue":p,
+            "candidate_line_count":len(cand),
+            "windows_hashes":wh,
+            "functional_results":func,
+            "observed_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          (out/"INVENTORY.json").write_text(json.dumps(obj,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(obj,indent=2,sort_keys=True))
+          PY
+
+          python3 -B "$LINK" --state-dir "$HOME_REAL/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op observe > "$OUT/LRB_POST.json"
+
+      - name: Preserve inventory evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-definitive-p01-p32-readonly-inventory
+          path: ${{ runner.temp }}/r4-p01-p32-${{ github.run_id }}
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0

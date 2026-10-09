@@ -1,0 +1,14 @@
+{
+  "schema": "LOUKSNA_R4_SUDO_LIVE_PROBE_REQUEST/1.0",
+  "status": "REQUESTED",
+  "purpose": "Verify whether Maestro self-hosted runner currently has sudo noninteractive capability after explicit user authorization and manual sudo use.",
+  "target_host": "LOUKSNA",
+  "target_user": "diegoignacionorambuenamiranda",
+  "checks": [
+    "sudo -n true",
+    "visudo -c",
+    "blockdev --getss /dev/nvme0n1",
+    "blkid /dev/nvme0n1p3"
+  ],
+  "destructive": false
+}

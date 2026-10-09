@@ -1,0 +1,213 @@
+name: "R4 PART4 R2 — certify and activate autonomous continuation"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - server/r4-master/PART4_R2_AUTOPILOT_ADDENDUM.json
+      - server/r4-master/R4_MASTER_CONTRACT.json
+      - server/r4-master/MASTER_RUN.sh
+      - server/r4-master/part4_r2_verify_tree.py
+      - server/r4-master/part4_r2_storage_migrate.sh
+      - mission-control/r4-part4-r2-autopilot/**
+
+permissions:
+  contents: read
+  actions: write
+  id-token: write
+
+concurrency:
+  group: r4-part4-r2-autopilot-certification
+  cancel-in-progress: false
+
+jobs:
+  g23:
+    name: G23 validate autonomous continuation addendum
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Retrieve current protected-scope checkpoint evidence
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          test "$(gh api repos/Plomillo/luna-linux-bridge/actions/runs/36623383678 --jq .conclusion)" = success
+          test "$(gh api repos/Plomillo/luna-linux-bridge/actions/runs/36621903764 --jq .conclusion)" = success
+          test "$(gh api repos/Plomillo/luna-linux-bridge/actions/runs/36621093750 --jq .conclusion)" = success
+          mkdir -p "$RUNNER_TEMP/checkpoint"
+          gh run download 36623383678 --repo Plomillo/luna-linux-bridge -n r4-part4-r2-partial-purge-integrity -D "$RUNNER_TEMP/checkpoint"
+
+      - name: Validate governance, checkpoint, tooling and PART5-PART9 non-regression
+        shell: bash
+        env:
+          BASELINE_SHA: "7a3684ce77c49d8a70f8de5c6081101e7e11c726"
+        run: |
+          set -Eeuo pipefail
+          bash -n server/r4-master/MASTER_RUN.sh
+          bash -n server/r4-master/part4_r2_storage_migrate.sh
+          python3 -m py_compile server/r4-master/master_controller.py server/r4-master/part4_r2_verify_tree.py
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/checkpoint/PARTIAL_PURGE_INTEGRITY.json" "$RUNNER_TEMP/g23/G23_AUTOPILOT.json" <<'PY'
+          import hashlib,json,os,pathlib,subprocess,sys,datetime as dt
+          checkpoint=json.load(open(sys.argv[1],encoding="utf-8")); out=pathlib.Path(sys.argv[2])
+          add=json.load(open("server/r4-master/PART4_R2_AUTOPILOT_ADDENDUM.json",encoding="utf-8"))
+          contract=json.load(open("server/r4-master/R4_MASTER_CONTRACT.json",encoding="utf-8"))
+          ctl=pathlib.Path("server/r4-master/master_controller.py").read_text(encoding="utf-8")
+          baseline=os.environ["BASELINE_SHA"]
+          q=subprocess.run(["git","show",f"{baseline}:server/r4-master/master_controller.py"],text=True,capture_output=True,check=True)
+          old=q.stdout
+          def tail(s):
+              i=s.index("\ndef part5(mid):")
+              return s[i:]
+          q=subprocess.run(["git","show",f"{baseline}:server/r4-master/R4_MASTER_CONTRACT.json"],text=True,capture_output=True,check=True)
+          oldc=json.loads(q.stdout)
+          oldtail=json.dumps([x for x in oldc["sequence"] if x["part"] in {"PART_5","PART_6","PART_7","PART_8","PART_9"}],sort_keys=True)
+          newtail=json.dumps([x for x in contract["sequence"] if x["part"] in {"PART_5","PART_6","PART_7","PART_8","PART_9"}],sort_keys=True)
+          checks={
+            "addendum_schema":add.get("schema")=="LOUKSNA_R4_PART4_R2_AUTOPILOT_ADDENDUM/1.0",
+            "owner_authorized":add.get("owner_authorized") is True,
+            "authority":add.get("authority")=="Louksna.md",
+            "parent":add.get("parent_amendment")=="PART4-R2-20260929",
+            "fail_closed":add.get("failure_posture")=="FAIL_CLOSED",
+            "no_authority_transfer":add.get("authority_transfer") is False,
+            "no_canonical_mutation":add.get("canonical_mutation") is False,
+            "part5_9_semantics_declared_unchanged":add.get("semantic_change_to_parts_5_9") is False,
+            "part5_9_controller_unchanged":tail(old)==tail(ctl),
+            "part5_9_contract_sequence_unchanged":oldtail==newtail,
+            "autonomous_contract":contract.get("part4_r2",{}).get("autonomous_execution") is True,
+            "master_handoff_contract":contract.get("part4_r2",{}).get("master_continues_existing_part5_to_part9_sequence") is True,
+            "checkpoint_pass":checkpoint.get("status")=="PASS",
+            "checkpoint_zero_mismatch":checkpoint.get("mismatch_count")==0,
+            "checkpoint_manifest":checkpoint.get("manifest_sha256")=="99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+            "checkpoint_records":checkpoint.get("seen_records")==498092,
+            "checkpoint_bytes":checkpoint.get("regular_file_bytes")==200490852057,
+            "controller_final_g24_gate":"part4_r2_final_g24" in ctl,
+            "migration_no_source_retire_before_verify":"NO_TEMP_EXT4_RETIREMENT_UNTIL_VERIFIED_FINAL_EXT4_COPY_EXISTS" in add.get("invariants",[]),
+          }
+          passed=all(checks.values())
+          r={"schema":"LOUKSNA_R4_PART4_R2_AUTOPILOT_G23/1.0","status":"PASS" if passed else "HOLD",
+             "scope":"AUTONOMOUS_EXECUTION_CONTROL_ONLY","checks":checks,
+             "addendum_sha256":hashlib.sha256(pathlib.Path("server/r4-master/PART4_R2_AUTOPILOT_ADDENDUM.json").read_bytes()).hexdigest(),
+             "contract_sha256":hashlib.sha256(pathlib.Path("server/r4-master/R4_MASTER_CONTRACT.json").read_bytes()).hexdigest(),
+             "checkpoint_sha256":hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes()).hexdigest(),
+             "repair_allowed":False,"g24_allowed":passed,
+             "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          out.write_text(json.dumps(r,indent=2,sort_keys=True)+"\n"); print(json.dumps(r,indent=2,sort_keys=True))
+          if not passed: raise SystemExit(3)
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-autopilot-g23
+          path: ${{ runner.temp }}/g23/G23_AUTOPILOT.json
+          retention-days: 90
+          compression-level: 0
+
+  g24:
+    name: G24 certify autonomous continuation control
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-autopilot-g23
+          path: ${{ runner.temp }}/g23
+      - name: Issue digest-bound autonomous-control certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G23="$RUNNER_TEMP/g23/G23_AUTOPILOT.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$G23")" = PASS
+          G23_SHA="$(sha256sum "$G23"|awk '{print $1}')"
+          ADD_SHA="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["addendum_sha256"])' "$G23")"
+          AUD="louksna-r4-part4-r2-autopilot:$ADD_SHA:$G23_SHA"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export TOKEN G23_SHA ADD_SHA AUD
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$RUNNER_TEMP/g24/G24_AUTOPILOT.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          token=os.environ["TOKEN"]; parts=token.split(".")
+          if len(parts)!=3: raise SystemExit("OIDC_FORMAT")
+          payload=parts[1]+"="*((4-len(parts[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload)); aud=claims.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          r={"schema":"LOUKSNA_R4_PART4_R2_AUTOPILOT_G24/1.0","status":"PASS",
+             "scope":"AUTONOMOUS_EXECUTION_CONTROL_ONLY","addendum_id":"PART4-R2-AUTOPILOT-20260929",
+             "addendum_sha256":os.environ["ADD_SHA"],"g23_sha256":os.environ["G23_SHA"],
+             "authority_authenticated":True,
+             "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(token.encode()).hexdigest(),
+             "canonical_mutation":False,"authority_transfer":False,"part5_to_part9_unchanged":True,
+             "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(r,indent=2,sort_keys=True)+"\n"); print(json.dumps(r,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-autopilot-g24
+          path: ${{ runner.temp }}/g24/G24_AUTOPILOT.json
+          retention-days: 90
+          compression-level: 0
+
+  activate:
+    name: Activate autonomous chain on LOUKSNA server
+    needs: g24
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: server/r4-master
+          sparse-checkout-cone-mode: true
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-autopilot-g24
+          path: ${{ runner.temp }}/g24
+      - name: Persist authorization, deploy Master bundle and dispatch PART4 continuation
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          CERT="$RUNNER_TEMP/g24/G24_AUTOPILOT.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$CERT")" = PASS
+          STATE_DIR="$HOME/.local/state/louksna/r4-master-part1-part9/PART_4_R2"
+          STATE="$STATE_DIR/STATE.json"
+          mkdir -p "$STATE_DIR"; chmod 700 "$STATE_DIR"
+          python3 - "$STATE" "$CERT" <<'PY'
+          import hashlib,json,os,sys,time
+          sp,cp=sys.argv[1:]; s=json.load(open(sp)) if os.path.exists(sp) else {"schema":"LOUKSNA_R4_PART4_R2_STATE/1.0"}
+          s.update({
+            "r2_owner_authorized":True,
+            "freeze_g24":True,
+            "amendment_g24":True,
+            "autopilot_g24":True,
+            "autopilot_g24_sha256":hashlib.sha256(open(cp,"rb").read()).hexdigest(),
+            "autonomous_execution":True,
+            "assistant_polling_required":False,
+            "updated_at_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
+          })
+          t=sp+".tmp"; json.dump(s,open(t,"w"),indent=2,sort_keys=True); os.replace(t,sp)
+          PY
+
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+          test -S "$XDG_RUNTIME_DIR/bus"
+          bash server/r4-master/MASTER_RUN.sh
+          systemctl --user restart luna-r4-master-part1-part9.service
+          test "$(systemctl --user is-active luna-r4-master-part1-part9.service)" = active
+
+          echo "AUTOPILOT=ACTIVE"
+          echo "ROUTING=DEDICATED_STAGE_PUSH_HANDOFFS"
+          echo "CHAIN=PART4_R2->FINAL_MERGE->MASTER_PART4_G23_G24->PART5->PART6->PART7->PART8->PART9"

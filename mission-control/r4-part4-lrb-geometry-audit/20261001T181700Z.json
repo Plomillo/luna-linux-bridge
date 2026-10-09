@@ -1,0 +1,17 @@
+{
+  "mission_id": "MIS-e5963403a3b44ee8be96",
+  "action": "LRB_READ_ONLY_DISK_GEOMETRY_FORENSIC_AUDIT",
+  "authority": "Louksna.md",
+  "expected_stage": 7,
+  "mutation_authorized": false,
+  "scope": [
+    "LRB_STATUS",
+    "LRB_OBSERVE",
+    "SFDISK",
+    "SGDISK",
+    "PARTED",
+    "LSBLK",
+    "SYSFS",
+    "FINDMNT"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "schema": "LOUKSNA_R4_LIVE_STATE_REQUEST/1.0",
+  "mode": "READ_ONLY",
+  "purpose": "VERIFY_P25_V8_STALE_PROBE_RETIRE_AND_REAL_INFERENCE_RESULT",
+  "deployed_bundle_head": "0f0bfe68e06d6815271c4843373fd9b7874fe0e6",
+  "branch_head_at_request": "58d2e3d0c1aab47f8fb232f04a36f0c08a684d6a",
+  "desktop_commander_used": false,
+  "material_execution": false,
+  "repeat_certified_work": false,
+  "partitioning_authorized": false,
+  "part4_reopen_authorized": false,
+  "created_at_utc": "2026-10-02T12:20:00Z"
+}

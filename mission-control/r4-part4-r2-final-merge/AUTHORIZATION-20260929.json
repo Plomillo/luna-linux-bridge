@@ -1,0 +1,31 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_FINAL_MERGE_AUTHORIZATION/1.0",
+  "status": "AUTHORIZED",
+  "authorization_scope": "PART4_R2_FINAL_MERGE_ONLY",
+  "authorized_target_disk": "/dev/nvme0n1",
+  "preserve": [
+    "EFI_REQUIRED_FOR_DEBIAN_BOOT",
+    "PROYECTOS_BIT_INTEGRITY",
+    "VALID_DEBIAN_INSTALLATION"
+  ],
+  "final_layout_goal": "EFI_PLUS_ONE_MAIN_LINUX_PARTITION_FOR_DEBIAN_AND_PROYECTOS",
+  "allows": [
+    "GPT_MODIFICATION_WITHIN_CERTIFIED_PLAN",
+    "PARTITION_BOUNDARY_MOVE_OR_RESIZE_WHEN_CERTIFIED",
+    "ROOT_FILESYSTEM_MIGRATION_WHEN_CERTIFIED",
+    "UUID_AND_FSTAB_UPDATE",
+    "GRUB_AND_BOOT_REFERENCE_UPDATE",
+    "RETIRE_WINDOWS_RESIDUAL_PARTITIONS",
+    "RETIRE_TEMPORARY_LINUX_MIGRATION_PARTITIONS"
+  ],
+  "pre_irreversible_requirements": [
+    "FRESH_GEOMETRY_PREVALIDATION",
+    "EVIDENCE",
+    "TECHNICALLY_APPLICABLE_CHECKPOINT_OR_ROLLBACK",
+    "G23",
+    "G24"
+  ],
+  "failure_posture": "FAIL_CLOSED",
+  "continuation_after_part4": "PART5_TO_PART9_EXISTING_CONTRACT_AUTOMATIC",
+  "authorization_text": "AUTORIZO PART4-R2-FINAL-MERGE: una vez que PROYECTOS haya sido migrado a Linux/ext4, verificado íntegramente contra su manifiesto criptográfico certificado y hayan pasado los G23/G24 correspondientes, autorizo al Maestro, CUSTOSZ V7 y GitHub a ejecutar automáticamente la reorganización final del NVMe /dev/nvme0n1 para retirar todas las particiones residuales de Windows y las particiones Linux temporales utilizadas durante la migración, mover y/o redimensionar la partición raíz de Debian cuando sea técnicamente necesario y consolidar todo el espacio utilizable en una única partición Linux principal para Debian, preservando únicamente la partición EFI necesaria para el arranque. PROYECTOS deberá permanecer íntegro, verificable y recuperable durante toda la transición. Se autoriza modificar la tabla GPT, mover límites de partición, redimensionar sistemas de archivos, actualizar UUID, /etc/fstab, GRUB y cualquier referencia de montaje necesaria dentro de este alcance. Antes de cada operación irreversible deberán existir prevalidación geométrica, evidencia, checkpoint/rollback técnicamente aplicable, G23 y G24. Queda prohibido eliminar o corromper PROYECTOS, la instalación Debian válida o la EFI necesaria para el arranque. Cualquier discrepancia de hashes, geometría, dispositivo, UUID, capacidad, filesystem, montaje o estado de arranque implica FAIL_CLOSED y HOLD. Una vez certificado el estado final, PART4 deberá cerrarse y el Maestro continuará automáticamente con PART5, PART6, PART7, PART8 y PART9 conforme al contrato vigente, sin solicitar nuevas autorizaciones humanas para operaciones ya cubiertas por este mandato."
+}

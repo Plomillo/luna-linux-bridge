@@ -1,0 +1,331 @@
+name: "R4 PART4 — G23 G24 hardened P3 plan ingest into Maestro"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-part4-p3-hardened-ingest-g23-g24.yml
+      - mission-control/r4-part4-p3-hardened-ingest/**
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: r4-part4-p3-hardened-ingest
+  cancel-in-progress: false
+
+env:
+  CONTROLLER_BASE_SHA: "03ad701959f5788c8ba9a188f6810b1ec7201205"
+  CONTRACT_ID: "PART4-P3-GROWTH-HARDENED-ANTI-PARALYSIS-20261001"
+
+jobs:
+  material:
+    name: Validate hardened contract and exact Maestro delta
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Static material validation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/material"
+          python3 -m py_compile server/r4-master/master_controller.py
+          python3 - "$CONTROLLER_BASE_SHA" "$RUNNER_TEMP/material/MATERIAL.json" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,subprocess,sys
+          base,out=sys.argv[1],pathlib.Path(sys.argv[2])
+          cp=pathlib.Path("server/r4-master/master_controller.py")
+          mp=pathlib.Path("server/r4-master/MASTER_MISSION.md")
+          rp=pathlib.Path(".github/workflows/luna-r4-master-resume-now.yml")
+          hp=pathlib.Path("server/r4-master/PART4_P3_GROWTH_HARDENED_ANTI_PARALYSIS.json")
+          new=cp.read_text()
+          old=subprocess.run(["git","show",f"{base}:server/r4-master/master_controller.py"],text=True,capture_output=True,check=True).stdout
+          h=json.loads(hp.read_text())
+          def part5_9_handlers(s):
+              return s[s.index("\ndef part5(mid):"):s.index("\nHANDLERS=")]
+          expected_ids=[
+            "LIVE_POST_P5_CHECKPOINT_AND_CONTINUITY",
+            "GROWPART_CAPABILITY_MICROTRANSACTION",
+            "GROWPART_DETERMINISTIC_DRY_RUN",
+            "PARTITION_TABLE_RECOVERY_CAPSULE_OFF_HOST",
+            "G23_P3_GROWTH_CANDIDATE",
+            "G24_P3_TRAILING_END_EXTENSION_ONLY",
+            "MAESTRO_SINGLE_P3_GEOMETRY_COMMIT",
+            "POST_COMMIT_REMOTE_BRIDGE_AND_KERNEL_RECONCILIATION",
+            "CONTROLLED_REBOOT_WITH_RESUME_TOKEN_IF_REQUIRED",
+            "PROYECTOS_NON_REGRESSION_BARRIER_PRE_RESIZE2FS",
+            "INDEPENDENT_G23_G24_EXT4_GROWTH_AND_SINGLE_RESIZE2FS",
+            "PART4_TERMINAL_CERTIFICATION_AND_AUTOPROGRESSION",
+          ]
+          inv=set(h.get("global_invariants",[]))
+          anti=h.get("anti_paralysis",{})
+          checks={
+            "contract_id":h.get("contract_id")=="PART4-P3-GROWTH-HARDENED-ANTI-PARALYSIS-20261001",
+            "authority":h.get("authority")=="Louksna.md",
+            "worker":h.get("worker")=="CUSTOSZ_V7_MAESTRO",
+            "resume_differential":h.get("resume_mode")=="DIFFERENTIAL_FROM_LAST_VALID_POST_P5_CHECKPOINT",
+            "desktop_commander_prohibited":h.get("desktop_commander")=="PROHIBITED" and h.get("remote_desktop_commander")=="PROHIBITED",
+            "remote_bridge_observation":h.get("observation_authority")=="LOUKSNA_REMOTE_BRIDGE",
+            "twelve_stages":[x.get("id") for x in h.get("stages",[])]==expected_ids,
+            "no_mutation_authorized_by_contract":h.get("disk_mutation_authorized_by_this_contract") is False,
+            "no_format":"NO_FORMAT" in inv,
+            "no_shrink":"NO_SHRINK" in inv,
+            "p3_start_immutable":"P3_START_SECTOR_567296_IMMUTABLE" in inv,
+            "no_p5_replay":"NO_P5_REPLAY" in inv,
+            "no_migration_replay":"NO_PROJECTS_MIGRATION_REPLAY" in inv,
+            "no_blind_retry":"NO_BLIND_DESTRUCTIVE_RETRY" in inv,
+            "no_indefinite_hold":"NO_INDEFINITE_HOLD" in inv,
+            "safe_work_while_hold":"SAFE_WORK_WHILE_HOLD_MANDATORY" in inv,
+            "minimal_delta_recovery":"MINIMAL_DELTA_RECOVERY_MANDATORY" in inv,
+            "auto_advance":"AUTO_ADVANCE_AFTER_GATES_MANDATORY" in inv,
+            "hold_not_deadlock":anti.get("hold_is_not_deadlock") is True,
+            "fail_closed_not_stop_all":anti.get("fail_closed_is_not_stop_all_work") is True,
+            "controller_ingests_contract":"p3_hardened=read_json(PART4_P3_HARDENED_CONTRACT" in new,
+            "controller_marks_anti_paralysis":'"safe_work_while_hold":part=="PART_4"' in new,
+            "part5_part9_byte_equal":part5_9_handlers(old)==part5_9_handlers(new),
+            "mission_binds_contract":"PART4-P3-GROWTH-HARDENED-ANTI-PARALYSIS-20261001" in mp.read_text(),
+            "mission_prohibits_desktop_commander":"REMOTE_DESKTOP_COMMANDER = PROHIBITED" in mp.read_text(),
+            "resume_deploys_contract":"PART4_P3_GROWTH_HARDENED_ANTI_PARALYSIS.json" in rp.read_text(),
+          }
+          ok=all(checks.values())
+          q={
+            "schema":"LOUKSNA_R4_PART4_P3_HARDENED_INGEST_MATERIAL/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "scope":"MAESTRO_PART4_HARDENED_PLAN_INGEST_ONLY",
+            "contract_sha256":hashlib.sha256(hp.read_bytes()).hexdigest(),
+            "controller_sha256":hashlib.sha256(cp.read_bytes()).hexdigest(),
+            "mission_sha256":hashlib.sha256(mp.read_bytes()).hexdigest(),
+            "resume_workflow_sha256":hashlib.sha256(rp.read_bytes()).hexdigest(),
+            "controller_base_sha":base,
+            "checks":checks,
+            "disk_mutation_authorized":False,
+            "disk_mutation_performed":False,
+            "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          out.write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(23)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-p3-hardened-ingest-material
+          path: ${{ runner.temp }}/material/MATERIAL.json
+          retention-days: 90
+          compression-level: 0
+
+  g23:
+    name: G23 independent hardened-ingest validation
+    needs: material
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-p3-hardened-ingest-material
+          path: ${{ runner.temp }}/material
+      - name: Independent gate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/material/MATERIAL.json" "$RUNNER_TEMP/g23/G23.json" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,sys
+          mp,out=map(pathlib.Path,sys.argv[1:])
+          m=json.loads(mp.read_text())
+          checks={
+            "material_pass":m.get("status")=="PASS",
+            "all_checks":all(m.get("checks",{}).values()),
+            "scope_exact":m.get("scope")=="MAESTRO_PART4_HARDENED_PLAN_INGEST_ONLY",
+            "no_disk_authorization":m.get("disk_mutation_authorized") is False,
+            "no_disk_mutation":m.get("disk_mutation_performed") is False,
+          }
+          ok=all(checks.values())
+          q={
+            "schema":"LOUKSNA_R4_PART4_P3_HARDENED_INGEST_G23/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "scope":"MAESTRO_PART4_HARDENED_PLAN_INGEST_ONLY",
+            "material_sha256":hashlib.sha256(mp.read_bytes()).hexdigest(),
+            "checks":checks,
+            "g24_allowed":ok,
+            "disk_mutation_allowed":False,
+            "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          out.write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(23)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-p3-hardened-ingest-g23
+          path: ${{ runner.temp }}/g23/G23.json
+          retention-days: 90
+          compression-level: 0
+
+  g24:
+    name: G24 certify hardened plan ingest only
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-p3-hardened-ingest-g23
+          path: ${{ runner.temp }}/g23
+      - name: Digest-bound certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/G23.json"
+          test "$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(d["status"] if d.get("g24_allowed") else "HOLD")' "$G")" = PASS
+          H="$(sha256sum "$G"|awk '{print $1}')"
+          AUD="louksna-r4-part4-p3-hardened-ingest:$H"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export H AUD TOKEN
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$RUNNER_TEMP/g24/G24.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          t=os.environ["TOKEN"]; p=t.split(".")
+          payload=p[1]+"="*((4-len(p[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload))
+          aud=claims.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          q={
+            "schema":"LOUKSNA_R4_PART4_P3_HARDENED_INGEST_G24/1.0",
+            "status":"PASS",
+            "scope":"MAESTRO_PART4_HARDENED_PLAN_INGEST_ONLY",
+            "g23_sha256":os.environ["H"],
+            "authority_authenticated":True,
+            "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
+            "disk_mutation_authorized":False,
+            "filesystem_mutation_authorized":False,
+            "certification_propagated":False,
+            "canonical_mutation":False,
+            "authority_transfer":False,
+            "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-p3-hardened-ingest-g24
+          path: ${{ runner.temp }}/g24/G24.json
+          retention-days: 90
+          compression-level: 0
+
+  activate:
+    name: Deliver contract to live Maestro and prove receipt
+    needs: g24
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: staging/luna-r4-master-part1-part9-20260929
+          persist-credentials: false
+          sparse-checkout: |
+            server/r4-master
+          sparse-checkout-cone-mode: true
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-p3-hardened-ingest-g24
+          path: ${{ runner.temp }}/g24
+      - name: Activate without disk mutation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          CERT="$RUNNER_TEMP/g24/G24.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$CERT")" = PASS
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["disk_mutation_authorized"])' "$CERT")" = False
+
+          HOME_REAL="/home/diegoignacionorambuenamiranda"
+          DST="$HOME_REAL/.local/lib/louksna/r4-master-part1-part9"
+          STATE="$HOME_REAL/.local/state/louksna/r4-master-part1-part9"
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+
+          OLD_MISSION="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1])).get("mission_id",""))' "$STATE/MASTER_STATUS.json" 2>/dev/null || true)"
+          install -d -m 0700 "$DST" "$STATE"
+          install -m 0700 server/r4-master/master_controller.py "$DST/master_controller.py"
+          install -m 0600 server/r4-master/MASTER_MISSION.md "$DST/MASTER_MISSION.md"
+          install -m 0600 server/r4-master/PART4_P3_GROWTH_HARDENED_ANTI_PARALYSIS.json "$DST/PART4_P3_GROWTH_HARDENED_ANTI_PARALYSIS.json"
+          python3 -m py_compile "$DST/master_controller.py"
+
+          BEFORE="$(date -u +%s)"
+          systemctl --user restart luna-r4-master-part1-part9.service
+          test "$(systemctl --user is-active luna-r4-master-part1-part9.service)" = active
+          for i in $(seq 1 45); do
+            test -f "$STATE/MASTER_STATUS.json" || { sleep 2; continue; }
+            TS="$(python3 -c 'import json,sys,datetime as d;x=json.load(open(sys.argv[1]));print(int(d.datetime.fromisoformat(x["updated_at_utc"].replace("Z","+00:00")).timestamp()))' "$STATE/MASTER_STATUS.json" 2>/dev/null || echo 0)"
+            [ "$TS" -ge "$BEFORE" ] && break
+            sleep 2
+          done
+
+          OUT="$RUNNER_TEMP/receipt"
+          mkdir -p "$OUT"
+          cp "$STATE/MASTER_STATUS.json" "$OUT/MASTER_STATUS.json"
+          cp "$DST/PART4_P3_GROWTH_HARDENED_ANTI_PARALYSIS.json" "$OUT/HARDENED_CONTRACT.json"
+          systemctl --user show luna-r4-master-part1-part9.service -p ActiveState -p SubState -p Result -p MainPID -p NRestarts > "$OUT/SERVICE.txt"
+
+          mapfile -t LINKS < <(find "$HOME/.local/lib/louksna-remote-bridge" -type f -path '*/bridge/live_link.py' -print 2>/dev/null | sort)
+          test "${#LINKS[@]}" -ge 1
+          LINK="${LINKS[-1]}"
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op status > "$OUT/LRB_STATUS.json"
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op observe > "$OUT/LRB_OBSERVE.json"
+
+          export OLD_MISSION
+          python3 - "$OUT" "$OUT/RECEIPT.json" <<'PY'
+          import datetime as dt,hashlib,json,os,pathlib,sys
+          root,out=map(pathlib.Path,sys.argv[1:])
+          s=json.loads((root/"MASTER_STATUS.json").read_text())
+          h=json.loads((root/"HARDENED_CONTRACT.json").read_text())
+          l=json.loads((root/"LRB_STATUS.json").read_text())
+          o=json.loads((root/"LRB_OBSERVE.json").read_text())
+          blockers=set(s.get("blockers",[]))
+          expected={"final_linux_layout","part4_r2_final_g24","final_merge_g24","verified_root_on_consolidated_linux"}
+          checks={
+            "same_mission_id":bool(os.environ.get("OLD_MISSION")) and s.get("mission_id")==os.environ.get("OLD_MISSION"),
+            "part4":s.get("current_part")=="PART_4",
+            "hold_is_operational":s.get("status")=="HOLD",
+            "exact_final_blockers":blockers==expected,
+            "anti_paralysis_next":s.get("next")=="PART4_P3_HARDENED_CONTINUE_SAFE_REMEDIATION",
+            "safe_work_while_hold":s.get("safe_work_while_hold") is True,
+            "hold_scope_only":s.get("hold_semantics")=="BLOCK_ONLY_UNSAFE_DEPENDENT_TRANSITION",
+            "contract_bound":s.get("anti_paralysis_contract")=="PART4-P3-GROWTH-HARDENED-ANTI-PARALYSIS-20261001",
+            "contract_twelve_stages":len(h.get("stages",[]))==12,
+            "desktop_commander_prohibited":h.get("desktop_commander")=="PROHIBITED" and h.get("remote_desktop_commander")=="PROHIBITED",
+            "remote_bridge_connected":l.get("host")=="LOUKSNA" and bool(o.get("evidence_sha256")),
+          }
+          ok=all(checks.values())
+          q={
+            "schema":"LOUKSNA_R4_PART4_P3_HARDENED_MAESTRO_RECEIPT/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "mission_id":s.get("mission_id"),
+            "contract_id":h.get("contract_id"),
+            "contract_sha256":hashlib.sha256((root/"HARDENED_CONTRACT.json").read_bytes()).hexdigest(),
+            "remote_bridge_evidence_seq":o.get("evidence_seq"),
+            "remote_bridge_evidence_sha256":o.get("evidence_sha256"),
+            "checks":checks,
+            "disk_mutation_performed":False,
+            "received_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          out.write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(31)
+          PY
+          (cd "$OUT"; sha256sum ./* > SHA256SUMS.txt)
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-p3-hardened-maestro-receipt
+          path: ${{ runner.temp }}/receipt/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0

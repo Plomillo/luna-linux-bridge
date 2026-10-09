@@ -1,0 +1,101 @@
+name: "R4 PART4 — recover canonical targets for three symlinks"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-part4-recover-three-symlink-targets.yml
+      - mission-control/r4-part4-recover-three-symlink-targets/**
+
+permissions:
+  contents: read
+
+jobs:
+  recover:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 20
+    steps:
+      - name: Recover link targets from local provenance only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="/media/diegoignacionorambuenamiranda/Windows/PROYECTOS"
+          BASE="$ROOT/1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/0. JSON/FORENSIC_V1_20260909/a080_runtime_closure_v1"
+          OUT="$RUNNER_TEMP/r4-part4-recover-three-$GITHUB_RUN_ID"
+          mkdir -p "$OUT"
+          test -d "$BASE"
+
+          python3 - "$BASE" "$OUT" <<'PY'
+          import os,sys,json,subprocess,hashlib,tarfile,tempfile
+          from pathlib import Path
+          base=Path(sys.argv[1]); out=Path(sys.argv[2])
+          wanted={
+            "usr/share/doc/libopengl0/changelog.Debian.gz",
+            "usr/lib/x86_64-linux-gnu/libGLdispatch.so.0",
+            "usr/lib/x86_64-linux-gnu/libOpenGL.so.0",
+          }
+          report={"schema":"LOUKSNA_R4_PART4_SYMLINK_TARGET_RECOVERY/1.0","mode":"READ_ONLY","source_mutated":False,"deb_candidates":[],"matches":[],"peer_matches":[]}
+
+          # Search local .deb provenance within the exact forensic closure.
+          debs=sorted(base.rglob("*.deb"))
+          for deb in debs:
+              try:
+                  q=subprocess.run(["dpkg-deb","--fsys-tarfile",str(deb)],stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=30)
+                  if q.returncode!=0:
+                      report["deb_candidates"].append({"path":str(deb),"rc":q.returncode,"stderr":q.stderr.decode(errors="replace")[-1000:]})
+                      continue
+                  import io
+                  tf=tarfile.open(fileobj=io.BytesIO(q.stdout),mode="r:*")
+                  local=[]
+                  for m in tf.getmembers():
+                      n=m.name.lstrip("./")
+                      if n in wanted:
+                          rec={"deb":str(deb),"member":n,"type":"symlink" if m.issym() else "hardlink" if m.islnk() else "file","linkname":m.linkname,"size":m.size}
+                          local.append(rec); report["matches"].append(rec)
+                  report["deb_candidates"].append({"path":str(deb),"matches":local})
+              except Exception as e:
+                  report["deb_candidates"].append({"path":str(deb),"error":repr(e)})
+
+          # Search same basenames elsewhere inside exact closure for valid peers.
+          basenames={Path(x).name for x in wanted}
+          for p in base.rglob("*"):
+              if p.name not in basenames: continue
+              try:
+                  if p.is_symlink():
+                      try: target=os.readlink(p)
+                      except Exception: target=None
+                      if target:
+                          report["peer_matches"].append({"path":str(p),"type":"symlink","target":target})
+                  elif p.is_file():
+                      h=hashlib.sha256()
+                      with open(p,"rb") as f:
+                          for b in iter(lambda:f.read(1024*1024),b""): h.update(b)
+                      report["peer_matches"].append({"path":str(p),"type":"file","size":p.stat().st_size,"sha256":h.hexdigest()})
+              except Exception:
+                  pass
+
+          # Determine whether each wanted member has one unique canonical symlink target.
+          resolved={}
+          for w in sorted(wanted):
+              targets=sorted({m["linkname"] for m in report["matches"] if m["member"]==w and m["type"] in ("symlink","hardlink") and m["linkname"]})
+              resolved[w]={"targets":targets,"unique":len(targets)==1,"target":targets[0] if len(targets)==1 else None}
+          report["resolved"]=resolved
+          report["status"]="PASS" if all(v["unique"] for v in resolved.values()) else "HOLD"
+          data=json.dumps(report,ensure_ascii=False,indent=2,sort_keys=True)+"\n"
+          (out/"RECOVERY.json").write_text(data,encoding="utf-8")
+          (out/"RECOVERY.sha256").write_text(hashlib.sha256(data.encode()).hexdigest()+"  RECOVERY.json\n",encoding="utf-8")
+          print(data)
+          if report["status"]!="PASS":
+              raise SystemExit(2)
+          PY
+
+      - name: Preserve recovery evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: R4-PART4-recover-three-symlinks-${{ github.run_id }}
+          path: ${{ runner.temp }}/r4-part4-recover-three-${{ github.run_id }}/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0

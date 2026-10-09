@@ -1,0 +1,51 @@
+name: R4 PART4 — diagnose RW path
+on:
+  push:
+    branches: [ "staging/luna-r4-master-part1-part9-20260929" ]
+    paths:
+      - "mission-control/r4-part4-rw-diagnose/**"
+
+jobs:
+  diagnose:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Inspect mount and authorization only
+        shell: bash
+        run: |
+          set -u
+          OUT="$RUNNER_TEMP/r4-part4-rw-diagnose-$GITHUB_RUN_ID"
+          mkdir -p "$OUT"
+          TARGET="/media/diegoignacionorambuenamiranda/Windows"
+          DEV="/dev/nvme0n1p3"
+          {
+            echo "timestamp_utc=$(date -u +%FT%TZ)"
+            echo "whoami=$(whoami)"
+            id
+            echo "--- findmnt target ---"
+            findmnt -T "$TARGET" -o SOURCE,FSTYPE,OPTIONS,TARGET || true
+            echo "--- findmnt device ---"
+            findmnt "$DEV" -o SOURCE,FSTYPE,OPTIONS,TARGET || true
+            echo "--- lsblk ---"
+            lsblk -f "$DEV" || true
+            echo "--- mount proc ---"
+            grep -F "$DEV" /proc/mounts || true
+            echo "--- target perms ---"
+            ls -ld "$TARGET" "$TARGET/PROYECTOS" 2>&1 || true
+            test -w "$TARGET/PROYECTOS" && echo "shell_test_writable=YES" || echo "shell_test_writable=NO"
+            echo "--- sudo noninteractive capability ---"
+            if sudo -n true 2>/dev/null; then echo "sudo_nopasswd=YES"; else echo "sudo_nopasswd=NO"; fi
+            echo "--- udisks info ---"
+            command -v udisksctl || true
+            udisksctl info -b "$DEV" 2>&1 || true
+            echo "--- mount binary ---"
+            command -v mount || true
+          } | tee "$OUT/DIAG.txt"
+          sha256sum "$OUT/DIAG.txt" > "$OUT/SHA256SUMS.txt"
+      - name: Upload diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: R4-PART4-rw-diagnose-${{ github.run_id }}
+          path: ${{ runner.temp }}/r4-part4-rw-diagnose-${{ github.run_id }}
+          if-no-files-found: warn

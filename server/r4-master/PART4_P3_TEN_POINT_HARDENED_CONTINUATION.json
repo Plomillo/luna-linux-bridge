@@ -1,0 +1,315 @@
+{
+  "schema": "LOUKSNA_R4_PART4_P3_TEN_POINT_HARDENED_CONTINUATION/1.0",
+  "directive_id": "PART4-P3-TEN-POINT-HARDENED-CONTINUATION-20261001",
+  "authority": "Louksna.md",
+  "subordinate_to_contract": {
+    "contract_id": "PART4-P3-GROWTH-HARDENED-ANTI-PARALYSIS-20261001",
+    "expected_sha256": "da4c5296d0e19585e61d6867fee651c0c951965accb9b144ab4504caa93cc0a9",
+    "mutation_of_parent_contract": false
+  },
+  "worker": "CUSTOSZ_V7_MAESTRO",
+  "mission_id": "MIS-e5963403a3b44ee8be96",
+  "resume_from": {
+    "part": "PART_4",
+    "stage": 4,
+    "last_completed_stage": 3
+  },
+  "doctrine": {
+    "extend_do_not_replace": true,
+    "append_only": true,
+    "fail_closed_with_continuation": true,
+    "no_silent_operations": true,
+    "no_automatic_certification_propagation": true,
+    "g23_independent": true,
+    "g24_scope_bound": true,
+    "physical_truth_over_stale_state": true,
+    "checkpoint_continuity": true,
+    "minimal_delta_recovery": true,
+    "safe_work_while_hold": true,
+    "no_blind_destructive_retry": true,
+    "desktop_commander_prohibited": true,
+    "remote_desktop_commander_prohibited": true
+  },
+  "puac2_operational_mapping": {
+    "C25": "SCOPE_AND_CLAIM_BOUNDARY",
+    "C26": "PRIMARY_EVIDENCE_AND_PROVENANCE",
+    "C27": "INDEPENDENT_VALIDATION",
+    "C28": "RISK_AND_FAILURE_EXPOSURE",
+    "C29": "INTEGRITY_DETERMINISM_REPRODUCIBILITY",
+    "C30": "INTEGRATION_AND_NON_REGRESSION",
+    "C31": "REVERSIBILITY_RECOVERY_ROLLBACK",
+    "C32": "VALIDITY_REEVALUATION_AND_CONTINUITY",
+    "note": "Applied as the project operational PUAC2 mapping already in use; no unsupported canonical PUAC2 wording is asserted by this directive."
+  },
+  "immutable": {
+    "disk": "/dev/nvme0n1",
+    "root": "/dev/nvme0n1p3",
+    "p3_start_sector": 567296,
+    "p3_uuid": "e084ec2a-af39-48b5-bb89-db2dc6a98332",
+    "no_format": true,
+    "no_shrink": true,
+    "no_move_start": true,
+    "no_p5_replay": true,
+    "no_projects_migration_replay": true
+  },
+  "proyectos_baseline": {
+    "manifest_sha256": "99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+    "records": 498092,
+    "dirs": 62016,
+    "files": 436072,
+    "symlinks": 4,
+    "other": 0,
+    "regular_file_bytes": 200490852057
+  },
+  "evidence_record_required": [
+    "mission_id",
+    "stage_id",
+    "attempt_id",
+    "checkpoint_id",
+    "authority",
+    "scope",
+    "inputs",
+    "input_hashes",
+    "live_state_before",
+    "hypothesis",
+    "intended_delta",
+    "command_or_method",
+    "tool_versions",
+    "timestamps",
+    "outputs",
+    "output_hashes",
+    "live_state_after",
+    "invariant_matrix",
+    "negative_tests",
+    "uncertainty",
+    "contradictions",
+    "rollback_pointer",
+    "g23_status",
+    "g24_status",
+    "next_authorized_action",
+    "status"
+  ],
+  "ten_points": [
+    {
+      "n": 1,
+      "stage": 4,
+      "id": "RECOVERY_CAPSULE_FORENSIC",
+      "mode": "READ_ONLY_TO_DISK",
+      "require": [
+        "SFDISK_DUMP",
+        "SGDISK_BINARY_GPT_BACKUP",
+        "LSBLK",
+        "BLKID",
+        "PARTED_PRINT_FREE",
+        "SYSFS_GEOMETRY",
+        "UUID_PARTUUID",
+        "BOOT_ID",
+        "TOOL_VERSIONS",
+        "SHA256_MANIFEST",
+        "OFF_HOST_ARTIFACT",
+        "OFF_HOST_DIGEST_VERIFY"
+      ],
+      "success": "CAPSULE_COMPLETE_AND_OFF_HOST_VERIFIED"
+    },
+    {
+      "n": 2,
+      "stage": 4,
+      "id": "RECOVERY_CAPSULE_INDEPENDENT_CERTIFICATION",
+      "mode": "G23_G24",
+      "require": [
+        "G23_INDEPENDENT",
+        "G24_CAPSULE_ONLY",
+        "NO_DISK_GEOMETRY_AUTH",
+        "NO_FILESYSTEM_AUTH"
+      ],
+      "success": "STAGE4_PASS"
+    },
+    {
+      "n": 3,
+      "stage": 5,
+      "id": "EXACT_P3_GROWTH_CANDIDATE",
+      "mode": "NO_MUTATION",
+      "require": [
+        "OLD_START",
+        "OLD_END",
+        "OLD_SIZE_SECTORS",
+        "TARGET_START",
+        "TARGET_END",
+        "TARGET_SIZE_SECTORS",
+        "DELTA_SECTORS",
+        "DELTA_BYTES",
+        "GPT_LAST_USABLE_SECTOR",
+        "DRYRUN_SHA256",
+        "P3_START_567296",
+        "P1_UNCHANGED",
+        "P5_ABSENT"
+      ],
+      "success": "STAGE5_G23_PASS"
+    },
+    {
+      "n": 4,
+      "stage": 6,
+      "id": "MICROSCOPIC_G24_SCOPE",
+      "mode": "CERTIFICATION_ONLY",
+      "require": [
+        "DEVICE_EXACT",
+        "PARTITION_3_EXACT",
+        "START_567296_EXACT",
+        "OLD_END_EXACT",
+        "NEW_END_EXACT",
+        "FORMAT_FALSE",
+        "SHRINK_FALSE",
+        "MOVE_START_FALSE",
+        "FILESYSTEM_RESIZE_FALSE",
+        "P5_REPLAY_FALSE",
+        "MIGRATION_REPLAY_FALSE"
+      ],
+      "success": "STAGE6_PASS"
+    },
+    {
+      "n": 5,
+      "stage": 7,
+      "id": "SINGLE_GEOMETRY_COMMIT",
+      "mode": "ONE_CONSEQUENTIAL_COMMIT",
+      "require": [
+        "PRECOMMIT_LRB",
+        "PRECOMMIT_GPT_HASH",
+        "CAPSULE_HASH",
+        "G24_HASH",
+        "LIVE_BASELINE_EQUALS_CERTIFIED",
+        "EXECUTE_ONCE",
+        "OBSERVE_AFTER_COMMAND",
+        "NO_BLIND_RETRY"
+      ],
+      "success": "PHYSICAL_GEOMETRY_EQUALS_CERTIFIED_TARGET"
+    },
+    {
+      "n": 6,
+      "stage": 8,
+      "id": "MULTISOURCE_GPT_KERNEL_RECONCILIATION",
+      "mode": "OBSERVE_AND_SAFE_VISIBILITY_REMEDIATION",
+      "require": [
+        "GPT_ON_DISK",
+        "KERNEL_VIEW",
+        "SYSFS",
+        "LSBLK",
+        "PARTED",
+        "SFDISK",
+        "BLKID",
+        "FINDMNT",
+        "UUID_PRESERVED",
+        "PARTUUID_PRESERVED",
+        "P1_INTACT",
+        "P5_ABSENT"
+      ],
+      "success": "GPT_AND_KERNEL_RECONCILED"
+    },
+    {
+      "n": 7,
+      "stage": 9,
+      "id": "CONDITIONAL_REBOOT_WITH_RESUME_TOKEN",
+      "mode": "ONLY_IF_REQUIRED",
+      "require": [
+        "SKIP_IF_KERNEL_CURRENT",
+        "RESUME_TOKEN",
+        "MISSION_ID",
+        "EXPECTED_GEOMETRY",
+        "EVIDENCE_HASHES",
+        "SAME_P3_ROOT",
+        "NEW_BOOT_ID_IF_REBOOT",
+        "NO_PART4_REPLAY"
+      ],
+      "success": "KERNEL_SEES_CERTIFIED_GEOMETRY"
+    },
+    {
+      "n": 8,
+      "stage": 10,
+      "id": "PROYECTOS_FORENSIC_NON_REGRESSION_BARRIER",
+      "mode": "READ_ONLY_FULL_VERIFY",
+      "require": [
+        "498092_RECORDS",
+        "62016_DIRS",
+        "436072_FILES",
+        "4_SYMLINKS",
+        "0_OTHER",
+        "200490852057_BYTES",
+        "MANIFEST_SHA256_EXACT",
+        "MISSING_ZERO",
+        "UNEXPECTED_ZERO",
+        "HASH_MISMATCH_ZERO",
+        "TYPE_MISMATCH_ZERO",
+        "SIZE_MISMATCH_ZERO"
+      ],
+      "success": "RESIZE2FS_AUTHORIZATION_ELIGIBLE"
+    },
+    {
+      "n": 9,
+      "stage": 11,
+      "id": "INDEPENDENT_EXT4_TRANSACTION",
+      "mode": "FRESH_G23_G24_THEN_SINGLE_RESIZE2FS",
+      "require": [
+        "BLOCK_DEVICE_GREW",
+        "KERNEL_SEES_NEW_SIZE",
+        "PROYECTOS_PASS",
+        "EXT4_HEALTH_PASS",
+        "ROOT_IDENTITY_PASS",
+        "NEW_G23_FS",
+        "NEW_G24_FS_ONLY",
+        "RESIZE2FS_ONCE",
+        "NO_SHRINK_ROLLBACK",
+        "POST_FS_PROYECTOS_REVERIFY"
+      ],
+      "success": "EXT4_GROWN_AND_NON_REGRESSION_PASS"
+    },
+    {
+      "n": 10,
+      "stage": 12,
+      "id": "PART4_TERMINAL_CERTIFICATION_AND_MONOTONIC_HANDOFF",
+      "mode": "FINAL_G23_G24",
+      "require": [
+        "P1_EFI_PASS",
+        "P3_SINGLE_MAIN_ROOT_PASS",
+        "P5_ABSENT",
+        "P3_START_567296",
+        "P3_GROWN",
+        "EXT4_GROWN",
+        "UUID_PARTUUID_PRESERVED",
+        "BOOT_PASS",
+        "SERVICES_PASS",
+        "LRB_PASS",
+        "MAESTRO_PASS",
+        "PROYECTOS_PASS",
+        "TRACEABILITY_PASS",
+        "PROVENANCE_PASS",
+        "AUDITABILITY_PASS",
+        "ROLLBACK_REEVALUATED",
+        "NON_REGRESSION_PASS",
+        "G23_FINAL",
+        "G24_FINAL",
+        "FOUR_FINAL_BLOCKERS_CLOSED"
+      ],
+      "success": "PART4_CERTIFIED_THEN_PART5"
+    }
+  ],
+  "on_failure": [
+    "ABORT_CURRENT_MUTATION",
+    "PRESERVE_EVIDENCE",
+    "OBSERVE_PHYSICAL_TRUTH",
+    "CLASSIFY_FAILURE",
+    "PRESERVE_LAST_VALID_CHECKPOINT",
+    "CALCULATE_MINIMAL_REMEDIATION_DELTA",
+    "APPLY_ONLY_AUTHORIZED_SAFE_WORK",
+    "REVALIDATE_AFFECTED_SCOPE",
+    "RESUME_SAME_STAGE"
+  ],
+  "never": [
+    "REPLAY_WHOLE_PIPELINE_IF_NOT_REQUIRED",
+    "BLINDLY_REPEAT_DESTRUCTIVE_ACTION",
+    "ERASE_FAILED_ATTEMPT",
+    "SILENTLY_CHANGE_SCOPE",
+    "SILENTLY_DOWNGRADE_GATE"
+  ],
+  "issue_status": "OWNER_AUTHORIZED_FOR_IMMEDIATE_MAESTRO_INGESTION",
+  "disk_mutation_authorized_by_this_directive": false,
+  "filesystem_mutation_authorized_by_this_directive": false
+}

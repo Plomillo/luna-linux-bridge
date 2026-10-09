@@ -1,0 +1,314 @@
+name: "R4 PART4 — recover pre-Stage7 NVMe health observation"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-pre-stage7-health-recover/**
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: r4-part4-pre-stage7-health-recover
+  cancel-in-progress: false
+
+env:
+  MISSION_ID: "MIS-e5963403a3b44ee8be96"
+
+jobs:
+  observe:
+    name: Minimal-delta passive recovery observation
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 10
+    steps:
+      - name: Inspect installed state and collect passive health with per-command RC
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/recover"; mkdir -p "$OUT"
+
+          dpkg-query -W -f='${Package}	${Version}	${Architecture}	${Status}\n' nvme-cli smartmontools > "$OUT/PACKAGES.txt" 2> "$OUT/PACKAGES.stderr" || true
+          NVME_BIN="/usr/sbin/nvme"
+          SMART_BIN="/usr/sbin/smartctl"
+          printf 'nvme=%s\nsmartctl=%s\n' "$NVME_BIN" "$SMART_BIN" > "$OUT/BINARIES.txt"
+          test -x "$NVME_BIN"
+          test -x "$SMART_BIN"
+          sha256sum "$NVME_BIN" "$SMART_BIN" > "$OUT/BINARY_SHA256.txt"
+
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+          mapfile -t LINKS < <(find "$HOME/.local/lib/louksna-remote-bridge" -type f -path '*/bridge/live_link.py' -print 2>/dev/null | sort)
+          test "${#LINKS[@]}" -ge 1
+          LINK="${LINKS[-1]}"
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op status > "$OUT/LRB_STATUS.json"
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op observe > "$OUT/LRB_OBSERVE.json"
+
+          capture() {
+            local name="$1"; shift
+            set +e
+            "$@" > "$OUT/$name.stdout" 2> "$OUT/$name.stderr"
+            local rc=$?
+            set -e
+            printf '%s=%s\n' "$name" "$rc" >> "$OUT/RETURN_CODES.txt"
+            return 0
+          }
+
+          capture NVME_SMART sudo -n "$NVME_BIN" smart-log -o json /dev/nvme0n1
+          capture NVME_ERROR sudo -n "$NVME_BIN" error-log -e 64 -o json /dev/nvme0n1
+          capture NVME_ID_CTRL sudo -n "$NVME_BIN" id-ctrl -o json /dev/nvme0n1
+          capture NVME_ID_NS sudo -n "$NVME_BIN" id-ns -n 1 -o json /dev/nvme0n1
+          capture SMARTCTL sudo -n "$SMART_BIN" -x -j /dev/nvme0n1
+          capture SGDISK_VERIFY sudo -n /usr/sbin/sgdisk -v /dev/nvme0n1
+          capture SFDISK sudo -n /usr/sbin/sfdisk --dump /dev/nvme0n1
+          capture PARTED sudo -n /usr/sbin/parted -sm /dev/nvme0n1 unit s print free
+          capture LSBLK lsblk -J -b -o NAME,PATH,TYPE,SIZE,START,FSTYPE,FSAVAIL,FSUSE%,MOUNTPOINTS,UUID,PARTUUID /dev/nvme0n1
+          capture ROOT_MOUNT findmnt -n -o SOURCE,FSTYPE,OPTIONS /
+          capture TUNE2FS sudo -n tune2fs -l /dev/nvme0n1p3
+          capture KERNEL7D sudo -n journalctl -k --since "7 days ago" --no-pager -o short-iso
+
+          python3 - "$OUT" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,re,sys
+          root=pathlib.Path(sys.argv[1]); h=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+          l=json.loads((root/"LRB_STATUS.json").read_text())
+          o=json.loads((root/"LRB_OBSERVE.json").read_text())
+          rcs={}
+          for line in (root/"RETURN_CODES.txt").read_text().splitlines():
+              k,v=line.split("=",1); rcs[k]=int(v)
+
+          def j(name):
+              p=root/(name+".stdout")
+              try: return json.loads(p.read_text(errors="replace"))
+              except: return {}
+          nv=j("NVME_SMART"); er=j("NVME_ERROR"); sc=j("SMARTCTL")
+          sg=(root/"SGDISK_VERIFY.stdout").read_text(errors="replace")
+          kern=(root/"KERNEL7D.stdout").read_text(errors="replace")
+          tune=(root/"TUNE2FS.stdout").read_text(errors="replace")
+
+          def pick(d,*keys):
+              for k in keys:
+                  if isinstance(d,dict) and k in d: return d[k]
+              return None
+          def iv(v):
+              if v is None:return None
+              if isinstance(v,bool):return int(v)
+              if isinstance(v,(int,float)):return int(v)
+              m=re.search(r"-?\d+",str(v).replace(",",""))
+              return int(m.group()) if m else None
+
+          slog=sc.get("nvme_smart_health_information_log",{}) if isinstance(sc,dict) else {}
+          metrics={
+            "critical_warning":pick(nv,"critical_warning"),
+            "temperature_c":pick(nv,"temperature"),
+            "available_spare_pct":pick(nv,"avail_spare","available_spare"),
+            "available_spare_threshold_pct":pick(nv,"spare_thresh","available_spare_threshold"),
+            "percentage_used":pick(nv,"percent_used","percentage_used"),
+            "media_errors":pick(nv,"media_errors"),
+            "num_err_log_entries":pick(nv,"num_err_log_entries"),
+            "unsafe_shutdowns":pick(nv,"unsafe_shutdowns"),
+            "power_on_hours":pick(nv,"power_on_hours"),
+            "power_cycles":pick(nv,"power_cycles"),
+            "warning_temp_time":pick(nv,"warning_temp_time"),
+            "critical_comp_time":pick(nv,"critical_comp_time"),
+            "smartctl_passed":sc.get("smart_status",{}).get("passed") if isinstance(sc,dict) else None
+          }
+          aliases={
+            "critical_warning":"critical_warning","temperature_c":"temperature",
+            "available_spare_pct":"available_spare","available_spare_threshold_pct":"available_spare_threshold",
+            "percentage_used":"percentage_used","media_errors":"media_errors",
+            "num_err_log_entries":"num_err_log_entries","unsafe_shutdowns":"unsafe_shutdowns",
+            "power_on_hours":"power_on_hours","power_cycles":"power_cycles",
+            "warning_temp_time":"warning_temp_time","critical_comp_time":"critical_comp_time"
+          }
+          for outk,ink in aliases.items():
+              if metrics[outk] is None and ink in slog: metrics[outk]=slog[ink]
+
+          crit=iv(metrics["critical_warning"]); media=iv(metrics["media_errors"])
+          spare=iv(metrics["available_spare_pct"]); thresh=iv(metrics["available_spare_threshold_pct"])
+          used=iv(metrics["percentage_used"]); temp_raw=iv(metrics["temperature_c"])
+          temp_c=(temp_raw-273.15) if temp_raw is not None and temp_raw>=200 else temp_raw
+          metrics["temperature_raw"]=temp_raw
+          metrics["temperature_c_normalized"]=round(temp_c,2) if temp_c is not None else None
+
+          patterns={
+            "nvme_reset_or_timeout":r"nvme.*(reset|timeout|abort|I/O|failed|error)",
+            "block_io_error":r"(blk_update_request|I/O error|Buffer I/O error|end_request: I/O error)",
+            "ext4_error":r"EXT4-fs (error|warning)|EXT4-fs.*(corrupt|aborted)",
+            "pcie_aer_error":r"(AER:.*error|PCIe Bus Error|pcieport.*error)",
+            "read_only_remount":r"Remounting filesystem read-only|re-mounted.*read-only"
+          }
+          kh={k:len(re.findall(p,kern,re.I)) for k,p in patterns.items()}
+
+          entries=er if isinstance(er,list) else er.get("errors",[]) if isinstance(er,dict) else []
+          meaningful=[]
+          for x in entries:
+              if isinstance(x,dict):
+                  ec=iv(x.get("error_count")); sf=iv(x.get("status_field"))
+                  if (ec or 0)>0 or (sf or 0)!=0: meaningful.append(x)
+
+          fm=re.search(r"^Filesystem state:\s*(.+)$",tune,re.M)
+          fs_state=fm.group(1).strip() if fm else None
+          root_mount=(root/"ROOT_MOUNT.stdout").read_text(errors="replace")
+          tool_data_ok=rcs.get("NVME_SMART")==0 and len(nv)>0 and len(sc)>0
+          checks={
+            "packages_present":"install ok installed" in (root/"PACKAGES.txt").read_text(errors="replace"),
+            "lrb_host":l.get("host")=="LOUKSNA",
+            "lrb_evidence":bool(o.get("evidence_sha256")),
+            "controller_data_available":tool_data_ok,
+            "critical_warning_zero":crit==0,
+            "media_errors_zero":media==0,
+            "spare_above_threshold":spare is not None and thresh is not None and spare>=thresh,
+            "wear_below_100":used is not None and used<100,
+            "temperature_noncritical":temp_c is not None and temp_c<80,
+            "smartctl_health_passed":metrics.get("smartctl_passed") is True,
+            "kernel_no_nvme_reset_timeout":kh["nvme_reset_or_timeout"]==0,
+            "kernel_no_block_io_error":kh["block_io_error"]==0,
+            "kernel_no_ext4_error":kh["ext4_error"]==0,
+            "kernel_no_pcie_aer_error":kh["pcie_aer_error"]==0,
+            "kernel_no_ro_remount":kh["read_only_remount"]==0,
+            "gpt_verify_clean":"No problems found" in sg,
+            "root_identity":"/dev/nvme0n1p3" in root_mount
+          }
+          status="PASS" if all(checks.values()) and len(meaningful)==0 else ("REVIEW" if all(checks.values()) else "HOLD")
+          q={
+            "schema":"LOUKSNA_R4_PART4_PRE_STAGE7_NVME_HEALTH_RECOVERY/1.0",
+            "status":status,
+            "metrics":metrics,
+            "command_return_codes":rcs,
+            "meaningful_error_entries":meaningful,
+            "error_log_classification":"NO_CURRENT_MATERIAL_ERROR_ENTRY" if len(meaningful)==0 else "MATERIAL_ERROR_ENTRY_PRESENT",
+            "kernel_hits_7d":kh,
+            "ext4_filesystem_state":fs_state,
+            "checks":checks,
+            "lrb_evidence_seq":o.get("evidence_seq"),
+            "lrb_evidence_sha256":o.get("evidence_sha256"),
+            "package_installation_repeated":False,
+            "partition_geometry_mutation_performed":False,
+            "filesystem_resize_performed":False,
+            "active_device_test_performed":False,
+            "raw_sha256":{p.name:h(p) for p in root.iterdir() if p.is_file()},
+            "observed_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          (root/"RECOVERY_HEALTH.json").write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if status=="HOLD": raise SystemExit(23)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: r4-part4-pre-stage7-health-recovery
+          path: ${{ runner.temp }}/recover/
+          retention-days: 90
+          compression-level: 0
+
+  g23:
+    name: G23 independent recovered health validation
+    needs: observe
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-pre-stage7-health-recovery
+          path: ${{ runner.temp }}/recover
+      - name: Validate recovered health evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/recover/RECOVERY_HEALTH.json" "$RUNNER_TEMP/g23/G23.json" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,sys
+          p=pathlib.Path(sys.argv[1]); out=pathlib.Path(sys.argv[2])
+          q=json.loads(p.read_text())
+          h=hashlib.sha256(p.read_bytes()).hexdigest()
+          checks={
+            "health_pass":q.get("status")=="PASS",
+            "all_checks":all(q.get("checks",{}).values()),
+            "no_meaningful_errors":len(q.get("meaningful_error_entries",[]))==0,
+            "no_reinstall":q.get("package_installation_repeated") is False,
+            "no_geometry_mutation":q.get("partition_geometry_mutation_performed") is False,
+            "no_fs_resize":q.get("filesystem_resize_performed") is False,
+            "no_active_device_test":q.get("active_device_test_performed") is False,
+            "lrb_evidence":bool(q.get("lrb_evidence_sha256"))
+          }
+          ok=all(checks.values())
+          r={
+            "schema":"LOUKSNA_R4_PART4_PRE_STAGE7_HEALTH_RECOVERY_G23/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "scope":"PRE_STAGE7_NVME_HEALTH_GATE_ONLY",
+            "health_sha256":h,
+            "checks":checks,
+            "g24_allowed":ok,
+            "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          out.write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(23)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-pre-stage7-health-recovery-g23
+          path: ${{ runner.temp }}/g23/G23.json
+          retention-days: 90
+          compression-level: 0
+
+  g24:
+    name: G24 certify recovered health gate
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-pre-stage7-health-recovery-g23
+          path: ${{ runner.temp }}/g23
+      - name: Issue non-propagating recovered health certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/G23.json"
+          test "$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(d["status"] if d.get("g24_allowed") else "HOLD")' "$G")" = PASS
+          H="$(sha256sum "$G"|awk '{print $1}')"
+          O="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["health_sha256"])' "$G")"
+          AUD="louksna-r4-pre-stage7-health-recovery:$H:$O"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export H O AUD TOKEN
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$RUNNER_TEMP/g24/G24.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          t=os.environ["TOKEN"]; p=t.split("."); payload=p[1]+"="*((4-len(p[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload))
+          aud=claims.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          q={
+            "schema":"LOUKSNA_R4_PART4_PRE_STAGE7_HEALTH_RECOVERY_G24/1.0",
+            "status":"PASS",
+            "scope":"PRE_STAGE7_NVME_HEALTH_GATE_ONLY",
+            "g23_sha256":os.environ["H"],
+            "health_sha256":os.environ["O"],
+            "next_authorized_action":"STAGE7_FRESH_PRECOMMIT_READ_ONLY",
+            "stage7_commit_authorized":False,
+            "partition_geometry_mutation_authorized":False,
+            "filesystem_resize_authorized":False,
+            "certification_propagated":False,
+            "authority_authenticated":True,
+            "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
+            "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-pre-stage7-health-recovery-g24
+          path: ${{ runner.temp }}/g24/G24.json
+          retention-days: 90
+          compression-level: 0

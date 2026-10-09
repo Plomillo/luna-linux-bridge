@@ -1,0 +1,9 @@
+{
+  "mission_id": "MIS-e5963403a3b44ee8be96",
+  "action": "DIAGNOSE_OPERATOR_STAGE7_ACTION_NO_EFFECT",
+  "authority": "Louksna.md",
+  "read_only": true,
+  "no_retry": true,
+  "no_disk_mutation": true,
+  "no_filesystem_mutation": true
+}

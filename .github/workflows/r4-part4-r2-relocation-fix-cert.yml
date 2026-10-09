@@ -1,0 +1,224 @@
+name: "R4 PART4 R2 — certify relocation-idempotency fix"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-r2-relocation-fix-cert/**
+
+permissions:
+  contents: read
+  actions: read
+  id-token: write
+
+concurrency:
+  group: r4-part4-r2-relocation-fix-cert
+  cancel-in-progress: false
+
+env:
+  DIAGNOSIS_RUN: "36857403996"
+  SCRIPT: "server/r4-master/part4_r2_final_merge_prepare.sh"
+  POLICY: "mission-control/r4-plan-definitivo/BUG_AUTONOMY_POLICY.json"
+
+jobs:
+  verify_fix:
+    name: "Verify exact remediation against certified diagnosis"
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            server/r4-master
+            mission-control/r4-plan-definitivo
+          sparse-checkout-cone-mode: true
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-relocation-g23
+          path: ${{ runner.temp }}/diag-g23
+          github-token: ${{ github.token }}
+          repository: Plomillo/luna-linux-bridge
+          run-id: ${{ env.DIAGNOSIS_RUN }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-relocation-g24
+          path: ${{ runner.temp }}/diag-g24
+          github-token: ${{ github.token }}
+          repository: Plomillo/luna-linux-bridge
+          run-id: ${{ env.DIAGNOSIS_RUN }}
+      - name: Static, policy and live-plan verification
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/fix"; mkdir -p "$OUT"
+          bash -n "$SCRIPT"
+          python3 - "$SCRIPT" "$POLICY" "$RUNNER_TEMP/diag-g23/G23.json" "$RUNNER_TEMP/diag-g24/G24.json" "$OUT/FIX_VALIDATION.json" <<'PY'
+          import hashlib,json,pathlib,subprocess,sys,time
+          script,policy,g23p,g24p,out=map(pathlib.Path,sys.argv[1:])
+          s=script.read_text(); p=json.loads(policy.read_text()); g23=json.loads(g23p.read_text()); g24=json.loads(g24p.read_text())
+          checks={
+            "diagnosis_g23_pass":g23.get("status")=="PASS",
+            "diagnosis_exact":g23.get("classification")=="RESUME_IDEMPOTENCY_STATE_MISMATCH",
+            "material_state_post_relocation":g23.get("observed_material_state")=="POST_RELOCATION",
+            "diagnosis_g24_pass":g24.get("status")=="PASS",
+            "fix_scope_certified":g24.get("authorized_fix")=="state-aware PRE_RELOCATION/POST_RELOCATION reconciliation only",
+            "state_classifier_present":"classify_relocation_state()" in s,
+            "entry_state_recorded":"RELOCATION_RECONCILIATION.json" in s and "RELOCATION_ENTRY_STATE" in s,
+            "post_relocation_reused":'RELOCATION_REUSE=POST_RELOCATION_ALREADY_MATERIALIZED' in s,
+            "unsafe_states_hold":'RELOCATION_STATE_AT_NEWROOT_UNSAFE' in s,
+            "postcondition_required":'RELOCATION_POSTCONDITION_FAILED' in s,
+            "privileged_verify_preserved":'verify_tree_privileged "$NEWROOT_MNT/home/$OWNER/PROYECTOS"' in s,
+            "compatibility_record_explicit":'POST_RELOCATION_RESUME_BASELINE_COMPATIBILITY_RECORD' in s and 'literal_pre_relocation_observation' in s,
+            "complex_bug_policy_active":p.get("bug_governance_v2",{}).get("status")=="AUTHORIZED_WITHIN_CURRENT_MISSION_SCOPE",
+            "g23_before_g24_preserved":"G23_PRECEDES_G24" in p.get("bug_governance_v2",{}).get("global_invariants",[]),
+            "no_certified_replay":p.get("hard_rules",{}).get("repeat_certified_work") is False,
+            "no_partition_replay":p.get("hard_rules",{}).get("repeat_partition_migration") is False
+          }
+          ok=all(checks.values())
+          q={
+            "schema":"LOUKSNA_R4_PART4_R2_RELOCATION_FIX_VALIDATION/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "checks":checks,
+            "script_sha256":hashlib.sha256(script.read_bytes()).hexdigest(),
+            "policy_sha256":hashlib.sha256(policy.read_bytes()).hexdigest(),
+            "diagnosis_g23_sha256":hashlib.sha256(g23p.read_bytes()).hexdigest(),
+            "diagnosis_g24_sha256":hashlib.sha256(g24p.read_bytes()).hexdigest(),
+            "repeat_projects_migration":False,
+            "repeat_partition_migration":False,
+            "scope_expansion":False,
+            "validated_at_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
+          }
+          out.write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(42)
+          PY
+          # Read-only fresh plan proves the patched script accepts the actual staged P3 mount context.
+          bash "$SCRIPT" plan /dev/null "$OUT" /dev/null
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$OUT/FINAL_MERGE_PLAN.json")" = PASS
+          python3 - "$OUT/FINAL_MERGE_PLAN.json" "$OUT/LIVE_PLAN_BINDING.json" <<'PY'
+          import hashlib,json,pathlib,sys,time
+          p,o=map(pathlib.Path,sys.argv[1:])
+          d=json.loads(p.read_text())
+          q={
+            "schema":"LOUKSNA_R4_PART4_R2_RELOCATION_FIX_LIVE_PLAN_BINDING/1.0",
+            "status":"PASS",
+            "p3_mount_context":d.get("p3_mount_context"),
+            "p3_mount_target":d.get("p3_mount_target"),
+            "resume_from_staged_newroot_allowed":d.get("resume_from_staged_newroot_allowed"),
+            "plan_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),
+            "captured_at_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
+          }
+          o.write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          PY
+          sha256sum "$OUT/"* > "$OUT/SHA256SUMS.txt"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-relocation-fix-validation
+          path: ${{ runner.temp }}/fix/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  g23:
+    name: "G23 independently validate remediation"
+    needs: verify_fix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-relocation-fix-validation
+          path: ${{ runner.temp }}/fix
+      - name: G23
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/fix/FIX_VALIDATION.json" "$RUNNER_TEMP/fix/LIVE_PLAN_BINDING.json" "$RUNNER_TEMP/g23/G23_FIX.json" <<'PY'
+          import hashlib,json,pathlib,sys,time
+          vf,pf,out=map(pathlib.Path,sys.argv[1:])
+          v=json.loads(vf.read_text()); p=json.loads(pf.read_text())
+          checks={
+            "fix_validation_pass":v.get("status")=="PASS",
+            "live_plan_pass":p.get("status")=="PASS",
+            "staged_resume_supported":p.get("resume_from_staged_newroot_allowed") is True,
+            "known_p3_context":p.get("p3_mount_context") in {"PROJECTS_MOUNT","FINAL_MERGE_STAGED_NEWROOT"},
+            "no_projects_replay":v.get("repeat_projects_migration") is False,
+            "no_partition_replay":v.get("repeat_partition_migration") is False,
+            "no_scope_expansion":v.get("scope_expansion") is False
+          }
+          ok=all(checks.values())
+          q={
+            "schema":"LOUKSNA_R4_PART4_R2_RELOCATION_FIX_G23/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "checks":checks,
+            "fix_validation_sha256":hashlib.sha256(vf.read_bytes()).hexdigest(),
+            "live_plan_binding_sha256":hashlib.sha256(pf.read_bytes()).hexdigest(),
+            "g24_allowed":ok,
+            "validated_at_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
+          }
+          out.write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(23)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-relocation-fix-g23
+          path: ${{ runner.temp }}/g23/G23_FIX.json
+          retention-days: 90
+          compression-level: 0
+
+  g24:
+    name: "G24 certify exact remediation"
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-relocation-fix-g23
+          path: ${{ runner.temp }}/g23
+      - name: G24
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/G23_FIX.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$G")" = PASS
+          H="$(sha256sum "$G"|awk '{print $1}')"
+          AUD="louksna-r4-relocation-idempotency-fix:$H"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export H AUD TOKEN
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$RUNNER_TEMP/g24/G24_FIX.json" <<'PY'
+          import base64,hashlib,json,os,pathlib,sys,time
+          t=os.environ["TOKEN"]; p=t.split(".")[1]; p += "="*((4-len(p)%4)%4); c=json.loads(base64.urlsafe_b64decode(p))
+          aud=c.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if c.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          q={
+            "schema":"LOUKSNA_R4_PART4_R2_RELOCATION_FIX_G24/1.0",
+            "status":"PASS",
+            "certified_scope":"STATE_AWARE_RELOCATION_RESUME_AND_EXISTING_SUDO_PROPAGATION_ONLY",
+            "g23_sha256":os.environ["H"],
+            "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
+            "repeat_projects_migration":False,
+            "repeat_partition_migration":False,
+            "scope_expansion":False,
+            "privilege_expansion":False,
+            "downstream_resume_allowed":True,
+            "certified_at_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-relocation-fix-g24
+          path: ${{ runner.temp }}/g24/G24_FIX.json
+          retention-days: 90
+          compression-level: 0

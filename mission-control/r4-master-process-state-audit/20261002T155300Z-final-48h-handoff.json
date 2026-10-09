@@ -1,0 +1,32 @@
+{
+  "schema": "LOUKSNA_R4_FINAL_48H_HANDOFF_AUDIT/1.0",
+  "purpose": "FINAL_LIVE_VERIFICATION_AFTER_G23_G24_CERTIFIED_COORDINATOR_DEPLOY",
+  "expected_roles": {
+    "maestro": "PRIMARY_WORKER",
+    "louksna_remote_bridge": [
+      "COMPANION",
+      "TELEMETRY",
+      "OBSERVATION"
+    ],
+    "lrb_companion_worker": "AUXILIARY_WORKER"
+  },
+  "part4_closed": true,
+  "part4_stages_closed": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
+  ],
+  "partitioning_forbidden": true,
+  "resume_from_last_checkpoint": true,
+  "deadline_utc": "2026-10-04T03:28:00Z",
+  "requested_at_utc": "2026-10-02T15:53:00Z"
+}

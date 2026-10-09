@@ -1,0 +1,121 @@
+name: "R4 PART4 — remediate four verified duplicate residuals"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-part4-remediate-four-residuals.yml
+      - mission-control/r4-part4-remediate-four-residuals/**
+
+permissions:
+  contents: read
+
+jobs:
+  remediate:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 10
+    steps:
+      - name: Verify duplicate identity, temporarily unlock exact parents, delete only four residuals
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="/media/diegoignacionorambuenamiranda/Windows/PROYECTOS"
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9/analysis/PART_4_PROYECTOS_DEDUP"
+          DB="$STATE/proyectos.sqlite3"
+          OUT="$RUNNER_TEMP/r4-part4-remediate-four-$GITHUB_RUN_ID"
+          mkdir -p "$OUT"
+          test -f "$DB"
+          findmnt -T "$ROOT" -n -o OPTIONS | tr ',' '\n' | grep -qx rw
+
+          python3 - "$ROOT" "$DB" "$OUT" <<'PY'
+          import hashlib, json, os, pathlib, sqlite3, stat, sys
+          root=pathlib.Path(sys.argv[1]); db=sys.argv[2]; out=pathlib.Path(sys.argv[3])
+          rels=[
+            "6. UNIVERSIDAD UNIACC/Trabajos Universitarios/Primer Año/desktop.ini",
+            "6. UNIVERSIDAD UNIACC/Trabajos Universitarios/Primer Año/Portada Uniacc/UNIACCPORTADA.png",
+            "6. UNIVERSIDAD UNIACC/Trabajos Universitarios/Primer Año/Portada Uniacc/TrabajonU2 DiegoNorambuena_WilliamNavarrete.jpg.jpeg",
+            "6. UNIVERSIDAD UNIACC/Trabajos Universitarios/Primer Año/Portada Uniacc/desktop.ini",
+          ]
+          def sha256(p):
+              h=hashlib.sha256()
+              with open(p,"rb") as f:
+                  for b in iter(lambda:f.read(8*1024*1024),b""): h.update(b)
+              return h.hexdigest()
+          con=sqlite3.connect("file:"+db+"?mode=ro",uri=True)
+          originals={}
+          report={"schema":"LOUKSNA_R4_PART4_RESIDUAL_REMEDIATION/1.0","status":"HOLD","targets":[],"parent_modes":{}}
+          try:
+              verified=[]
+              for rel in rels:
+                  p=root/rel
+                  if not p.is_file():
+                      raise RuntimeError("TARGET_MISSING:"+str(p))
+                  row=con.execute("SELECT size,sha256 FROM files WHERE path=? AND sha256 IS NOT NULL",(str(p),)).fetchone()
+                  if not row:
+                      raise RuntimeError("DB_IDENTITY_MISSING:"+str(p))
+                  size,expected=row
+                  if p.stat().st_size!=size:
+                      raise RuntimeError("SIZE_CHANGED:"+str(p))
+                  actual=sha256(p)
+                  if actual!=expected:
+                      raise RuntimeError("HASH_CHANGED:"+str(p))
+                  peers=[pathlib.Path(x[0]) for x in con.execute(
+                      "SELECT path FROM files WHERE sha256=? AND size=? AND path<>? ORDER BY path",
+                      (expected,size,str(p))).fetchall()]
+                  canonical=None
+                  for q in peers:
+                      if q.is_file() and q.stat().st_size==size and sha256(q)==expected:
+                          canonical=q; break
+                  if canonical is None:
+                      raise RuntimeError("NO_LIVE_IDENTICAL_CANONICAL:"+str(p))
+                  verified.append((p,size,expected,canonical))
+                  report["targets"].append({"path":str(p),"size":size,"sha256":expected,"live_identical_canonical":str(canonical)})
+              parents=sorted({p.parent for p,_,_,_ in verified},key=lambda x:len(x.parts))
+              for d in parents:
+                  st=d.stat()
+                  mode=stat.S_IMODE(st.st_mode)
+                  originals[str(d)]=mode
+                  report["parent_modes"][str(d)]={"before":oct(mode)}
+                  if not (mode & stat.S_IWUSR):
+                      os.chmod(d, mode | stat.S_IWUSR)
+                  after=stat.S_IMODE(d.stat().st_mode)
+                  report["parent_modes"][str(d)]["temporary"]=oct(after)
+                  if not os.access(d,os.W_OK):
+                      raise PermissionError("PARENT_STILL_NOT_WRITABLE:"+str(d))
+              deleted=[]
+              for p,size,h,canonical in verified:
+                  os.unlink(p)
+                  if p.exists():
+                      raise RuntimeError("DELETE_POSTCONDITION_FAILED:"+str(p))
+                  deleted.append({"path":str(p),"size":size,"sha256":h,"canonical":str(canonical)})
+              report["deleted"]=deleted
+              report["deleted_files"]=len(deleted)
+              report["reclaimed_bytes"]=sum(x["size"] for x in deleted)
+              report["status"]="PASS"
+          finally:
+              restore_errors=[]
+              for s,mode in originals.items():
+                  try:
+                      os.chmod(s,mode)
+                      report["parent_modes"][s]["restored"]=oct(stat.S_IMODE(pathlib.Path(s).stat().st_mode))
+                  except Exception as e:
+                      restore_errors.append({"path":s,"error":repr(e)})
+              report["restore_errors"]=restore_errors
+              if restore_errors:
+                  report["status"]="FAIL"
+              (out/"REPORT.json").write_text(json.dumps(report,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+              print(json.dumps(report,ensure_ascii=False,indent=2))
+          if report["status"]!="PASS":
+              raise SystemExit(2)
+          PY
+          sha256sum "$OUT"/* > "$OUT/SHA256SUMS.txt"
+
+      - name: Preserve remediation evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: R4-PART4-remediate-four-${{ github.run_id }}
+          path: ${{ runner.temp }}/r4-part4-remediate-four-${{ github.run_id }}/
+          if-no-files-found: error
+          retention-days: 30

@@ -1,0 +1,10 @@
+{
+  "schema": "LOUKSNA_R4_MASTER_PROCESS_AUDIT_REQUEST/1.0",
+  "reason": "FINAL_CONFIRM_PART6_LIVE_PROGRESS_AFTER_48H_COORDINATOR_G24",
+  "expected_current_part": "PART_6",
+  "worker": "MAESTRO",
+  "observer": "LOUKSNA_REMOTE_BRIDGE",
+  "read_only": true,
+  "partitioning_prohibited": true,
+  "requested_at_utc": "2026-10-02T03:51:00Z"
+}

@@ -1,0 +1,6 @@
+{
+  "schema": "R4_STAGE_ENGINE_START/1.0",
+  "contract": "PART4-P3-GROWTH-HARDENED-ANTI-PARALYSIS-20261001",
+  "scope": "SAFE_STAGE_ENGINE_ACTIVATION_ONLY",
+  "mutation": false
+}

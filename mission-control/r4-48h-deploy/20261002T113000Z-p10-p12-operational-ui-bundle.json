@@ -1,0 +1,35 @@
+{
+  "schema": "LOUKSNA_R4_15P_DEPLOY_AMENDMENT/1.0",
+  "status": "AUTHORIZED",
+  "scope": "P10_P12_OPERATIONAL_UI_MAESTRO_BUNDLE",
+  "exact_source_head_sha": "adcf643b573e5c693e8ae945a37c890ac76764de",
+  "preserve_existing_point_certificates": [
+    "P01",
+    "P02",
+    "P03",
+    "P04",
+    "P05",
+    "P06",
+    "P07"
+  ],
+  "preserve_part_certificates": [
+    "PART_1",
+    "PART_2",
+    "PART_3",
+    "PART_4",
+    "PART_5",
+    "PART_6"
+  ],
+  "material_execution_before_dependencies": false,
+  "ui_material_execution_authorized_only_after_point_dependencies": true,
+  "no_duplicate_launchers": true,
+  "preserve_wallpaper": true,
+  "canonical_projects_root": "/home/diegoignacionorambuenamiranda/PROYECTOS",
+  "downloads_authorized": false,
+  "debian_reinstall_authorized": false,
+  "kde_reinstall_authorized": false,
+  "lrb_material_execution_authorized": false,
+  "part4_reopen_authorized": false,
+  "partitioning_authorized": false,
+  "created_at_utc": "2026-10-02T11:30:00Z"
+}

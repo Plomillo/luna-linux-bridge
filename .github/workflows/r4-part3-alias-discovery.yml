@@ -1,0 +1,57 @@
+name: "R4 PART3 — alias-aware local discovery"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part3-alias-discovery/**
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Search real aliases read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "=== PROJECTS / PROYECTOS CANDIDATES ==="
+          ROOTS=(
+            "$HOME/LOUKSNA_MAESTRO_20260925"
+            "$HOME/.local"
+            "$HOME/SYMPHYLAX_LAB"
+            "$HOME/MISION_PUAC_20260926"
+            "$HOME/Descargas"
+            "/media/$USER/Windows"
+            "/media/$USER/Windows/PROYECTOS"
+          )
+          for r in "${ROOTS[@]}"; do
+            test -e "$r" || continue
+            echo "--- ROOT=$r"
+            find "$r" -xdev -maxdepth 10 \( -type d -o -type f \) \
+              \( -iname 'PROYECTOS' -o -iname '*PROYECTOS*' -o -iname '*PROJECTS*' -o -iname '*PROJECT*CENTER*' -o -iname '*PROJECTS*CENTER*' -o -iname 'project.manifest.json' -o -iname 'semantic.binding.json' \) \
+              -printf '%y\t%p\t%s\n' 2>/dev/null | head -n 1000
+          done
+
+          echo "=== SEMANTIC / CONTENEDOR SEMANTICO CANDIDATES ==="
+          for r in "${ROOTS[@]}"; do
+            test -e "$r" || continue
+            echo "--- ROOT=$r"
+            find "$r" -xdev -maxdepth 10 \( -type d -o -type f \) \
+              \( -iname '*semantic*container*' -o -iname '*contenedor*semantic*' -o -iname '*contenedor*semantico*' -o -iname '*contenedor*semántico*' -o -iname '*semantic*' -o -iname 'SOURCE_REGISTRY.json' -o -iname 'semantic_container.json' \) \
+              -printf '%y\t%p\t%s\n' 2>/dev/null | head -n 1500
+          done
+
+          echo "=== EXACT PROYECTOS MOUNT CHECK ==="
+          for p in "/media/$USER/Windows/PROYECTOS" "$HOME/PROYECTOS" "$HOME/LOUKSNA_MAESTRO_20260925/PROYECTOS"; do
+            if test -e "$p"; then
+              printf 'EXISTS\t%s\t' "$p"
+              stat -c 'type=%F bytes=%s mode=%a' "$p" || true
+            else
+              echo "MISSING $p"
+            fi
+          done

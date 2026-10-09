@@ -1,0 +1,11 @@
+{
+  "schema": "LOUKSNA_R4_48H_DEPLOY_REQUEST/1.0",
+  "reason": "RECERTIFY_COORDINATOR_LIFECYCLE_AND_BACKOFF_HARDENING",
+  "preserve_live_part6_build": true,
+  "do_not_restart_maestro_while_part6_child_active": true,
+  "coordinator_only_restart_allowed": true,
+  "deadline_utc": "2026-10-04T03:28:00Z",
+  "part4_closed": true,
+  "partitioning_forbidden": true,
+  "requested_at_utc": "2026-10-02T03:49:00Z"
+}

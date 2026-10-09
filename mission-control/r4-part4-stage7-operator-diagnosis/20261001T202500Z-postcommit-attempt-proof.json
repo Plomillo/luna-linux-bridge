@@ -1,0 +1,7 @@
+{
+  "mission_id": "MIS-e5963403a3b44ee8be96",
+  "action": "VERIFY_SINGLE_STAGE7_ATTEMPT_AND_NO_FS_RESIZE",
+  "authority": "Louksna.md",
+  "read_only": true,
+  "no_retry": true
+}

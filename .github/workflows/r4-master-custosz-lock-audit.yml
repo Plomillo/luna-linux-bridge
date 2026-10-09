@@ -1,0 +1,65 @@
+name: "R4 master — CUSTOSZ ledger lock audit"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-master-custosz-lock-audit.yml
+      - mission-control/r4-master-custosz-lock-audit/**
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Inspect CUSTOSZ mission and ledger lock read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9"
+          LOCK="$STATE/custosz/.ledger.lock"
+          PYZ="$HOME/.local/lib/louksna/symphylax-r1/CUSTOSZ.v07.f04_b.pyz"
+
+          echo "=== MASTER CUSTOSZ MISSION ==="
+          cat "$STATE/MASTER_CUSTOSZ_MISSION.json" 2>/dev/null || echo MISSING
+
+          echo "=== LOCK STAT ==="
+          if [ -e "$LOCK" ]; then
+            stat -c 'path=%n size=%s uid=%u gid=%g mode=%a mtime=%y ctime=%z inode=%i' "$LOCK"
+            echo "=== LOCK CONTENT HEX ==="
+            od -An -tx1 -v "$LOCK" || true
+            echo "=== FUSER ==="
+            fuser -v "$LOCK" 2>&1 || true
+            echo "=== LSOF ==="
+            lsof "$LOCK" 2>&1 || true
+          else
+            echo LOCK_ABSENT
+          fi
+
+          echo "=== RELEVANT PROCESSES ==="
+          ps -eo pid,ppid,stat,lstart,etime,args | grep -E 'CUSTOSZ|custosz|master_controller|symphylax' | grep -v grep || true
+
+          echo "=== CUSTOSZ SOURCE EXCERPTS ==="
+          PYZ="$PYZ" python3 - <<'PY'
+          import os, zipfile
+          p=os.environ["PYZ"]
+          with zipfile.ZipFile(p) as z:
+              names=z.namelist()
+              candidates=[n for n in names if n.endswith("custosz_v05_legacy.py")]
+              print("SOURCE_MEMBER=", candidates)
+              if not candidates:
+                  raise SystemExit(0)
+              text=z.read(candidates[0]).decode("utf-8","replace")
+          lines=text.splitlines()
+          for marker in ("def evidence(", "def load_mission(", "def mission_start("):
+              hits=[i for i,x in enumerate(lines) if marker in x]
+              print("\n###",marker,hits)
+              for i in hits:
+                  lo=max(0,i-8); hi=min(len(lines),i+35)
+                  for n in range(lo,hi):
+                      print(f"{n+1:05d}: {lines[n]}")
+          PY

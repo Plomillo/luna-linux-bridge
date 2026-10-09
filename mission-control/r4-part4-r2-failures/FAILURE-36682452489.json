@@ -1,0 +1,17 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_FAILURE_EVIDENCE/1.0",
+  "status": "FAIL_CLOSED_HOLD",
+  "source_run": 36682452489,
+  "source_job": 109780694344,
+  "source_commit": "1be8fe34cc639666a18cd39ef25f99ce9b6f9bc4",
+  "failed_step": "Prove exact post-failure physical state and source integrity",
+  "bug_class": "FAILURE_EVIDENCE_SCHEMA_FIELD_OMISSION",
+  "exact_error": "KeyError: 'p3_ntfs_preserved'",
+  "physical_probe_reached": false,
+  "material_mutation_reached": false,
+  "g23_issued": false,
+  "g24_issued": false,
+  "required_fix": "Add explicit p3_ntfs_preserved=true and related physical checkpoint fields to source V6 failure evidence, then rerun V7 from a fresh GitHub run.",
+  "certification_propagation": false,
+  "authority_transfer": false
+}

@@ -1,0 +1,175 @@
+name: "R4 PART4 R2 — amendment G23 G24"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - server/r4-master/PART4_R2_AMENDMENT.json
+      - server/r4-master/MASTER_MISSION.md
+      - server/r4-master/R4_MASTER_CONTRACT.json
+      - mission-control/r4-part4-r2-authorization/**
+
+permissions:
+  contents: read
+  actions: read
+  id-token: write
+
+jobs:
+  g23:
+    name: G23 validate PART4-R2 amendment
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Download certified freeze G24
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/freeze-g24"
+          gh run download 36621093750 --repo Plomillo/luna-linux-bridge -n r4-part4-freeze-g24 -D "$RUNNER_TEMP/freeze-g24"
+
+      - name: Validate amendment, authority boundaries, and PART5-PART9 non-regression
+        shell: bash
+        env:
+          BASELINE_SHA: "7a3684ce77c49d8a70f8de5c6081101e7e11c726"
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/freeze-g24/G24_FREEZE.json" "$RUNNER_TEMP/g23/G23_PART4_R2.json" <<'PY'
+          import hashlib,json,os,pathlib,re,subprocess,sys,datetime as dt
+          baseline=os.environ["BASELINE_SHA"]
+          g24=json.load(open(sys.argv[1],encoding="utf-8"))
+          out=pathlib.Path(sys.argv[2])
+          amendment=json.load(open("server/r4-master/PART4_R2_AMENDMENT.json",encoding="utf-8"))
+          contract=json.load(open("server/r4-master/R4_MASTER_CONTRACT.json",encoding="utf-8"))
+          mission=pathlib.Path("server/r4-master/MASTER_MISSION.md").read_text(encoding="utf-8")
+          controller=pathlib.Path("server/r4-master/master_controller.py").read_text(encoding="utf-8")
+
+          def git_show(path):
+              q=subprocess.run(["git","show",f"{baseline}:{path}"],text=True,capture_output=True)
+              if q.returncode: raise SystemExit("BASELINE_FETCH_FAILED:"+path+":"+q.stderr)
+              return q.stdout
+          old_mission=git_show("server/r4-master/MASTER_MISSION.md")
+          old_contract=json.loads(git_show("server/r4-master/R4_MASTER_CONTRACT.json"))
+          old_controller=git_show("server/r4-master/master_controller.py")
+
+          def mission_tail(s):
+              i=s.index("PART_5 — LABORATORY:")
+              return s[i:]
+          def controller_tail(s):
+              i=s.index("\ndef part5(mid):")
+              return s[i:]
+          old_tail=json.dumps([x for x in old_contract["sequence"] if x["part"] in {"PART_5","PART_6","PART_7","PART_8","PART_9"}],sort_keys=True)
+          new_tail=json.dumps([x for x in contract["sequence"] if x["part"] in {"PART_5","PART_6","PART_7","PART_8","PART_9"}],sort_keys=True)
+
+          checks={
+            "amendment_schema":amendment.get("schema")=="LOUKSNA_R4_PART4_OPERATIONAL_AMENDMENT/2.0",
+            "amendment_id":amendment.get("amendment_id")=="PART4-R2-20260929",
+            "authority_louksna":amendment.get("authority")=="Louksna.md",
+            "authority_transfer_false":amendment.get("authority_transfer") is False,
+            "canonical_mutation_false":amendment.get("canonical_mutation") is False,
+            "fail_closed":amendment.get("failure_posture")=="FAIL_CLOSED",
+            "owner_authorized":amendment.get("authorized_by_user") is True,
+            "freeze_g24_status":g24.get("status")=="PASS",
+            "freeze_scope":g24.get("scope")=="PROYECTOS_CRYPTOGRAPHIC_FREEZE_ONLY",
+            "freeze_manifest_bound":g24.get("manifest_sha256")==amendment["certified_freeze"]["manifest_sha256"]=="99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+            "freeze_not_global_part4":g24.get("does_not_certify_global_part4") is True,
+            "part5_9_contract_unchanged":old_tail==new_tail,
+            "part5_9_mission_unchanged":mission_tail(old_mission)==mission_tail(mission),
+            "part5_9_controller_unchanged":controller_tail(old_controller)==controller_tail(controller),
+            "no_backup_predelete_gate":set(amendment.get("supersedes_operational_part4_preconditions",[]))=={"TWO_VERIFIED_BACKUPS_BEFORE_WINDOWS_RETIREMENT","RESTORE_PROOF_BEFORE_WINDOWS_RETIREMENT"},
+            "keeps_g23_g24":all(x in amendment.get("does_not_supersede",[]) for x in ["G23","G24","H2","H4","FAIL_CLOSED"]),
+            "exact_p3":amendment["protected_scope"]["source_partition"]=="/dev/nvme0n1p3",
+            "exact_keep":amendment["protected_scope"]["path"]=="/media/diegoignacionorambuenamiranda/Windows/PROYECTOS",
+            "p5_out_of_purge_scope":"/dev/nvme0n1p5" in amendment["partitions_initial_scope"]["purge_out_of_scope"],
+            "transactional_migration":all(x in amendment["migration_invariants"] for x in ["NO_DELETE_SOURCE_OBJECT_UNTIL_DESTINATION_OBJECT_VALIDATED","NO_RETIRE_NTFS_UNTIL_COMPLETE_TREE_EQUIVALENCE_PASS"]),
+          }
+          passed=all(checks.values())
+          result={
+            "schema":"LOUKSNA_R4_PART4_R2_G23/1.0",
+            "status":"PASS" if passed else "HOLD",
+            "scope":"PART4_R2_OPERATIONAL_AMENDMENT_ONLY",
+            "baseline_sha":baseline,
+            "current_sha":os.environ.get("GITHUB_SHA"),
+            "checks":checks,
+            "freeze_g24_sha256":hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes()).hexdigest(),
+            "amendment_sha256":hashlib.sha256(pathlib.Path("server/r4-master/PART4_R2_AMENDMENT.json").read_bytes()).hexdigest(),
+            "repair_allowed":False,
+            "g24_allowed":passed,
+            "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          out.write_text(json.dumps(result,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps(result,indent=2,sort_keys=True))
+          if not passed: raise SystemExit(3)
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-g23
+          path: ${{ runner.temp }}/g23/G23_PART4_R2.json
+          retention-days: 90
+          compression-level: 0
+
+  g24:
+    name: G24 certify PART4-R2 amendment
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-g23
+          path: ${{ runner.temp }}/g23
+      - name: Issue digest-bound certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g24"
+          G23_SHA="$(sha256sum "$RUNNER_TEMP/g23/G23_PART4_R2.json" | awk '{print $1}')"
+          AMEND_SHA="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["amendment_sha256"])' "$RUNNER_TEMP/g23/G23_PART4_R2.json")"
+          STATUS="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$RUNNER_TEMP/g23/G23_PART4_R2.json")"
+          test "$STATUS" = PASS
+          AUD="louksna-r4-part4-r2-g24:$AMEND_SHA:$G23_SHA"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export TOKEN G23_SHA AMEND_SHA AUD
+          python3 - "$RUNNER_TEMP/g24/G24_PART4_R2.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          token=os.environ["TOKEN"]; parts=token.split(".")
+          if len(parts)!=3: raise SystemExit("OIDC_FORMAT")
+          payload=parts[1]+"="*((4-len(parts[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload))
+          aud=claims.get("aud"); expected=os.environ["AUD"]
+          if aud!=expected and not (isinstance(aud,list) and expected in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          cert={
+            "schema":"LOUKSNA_R4_PART4_R2_G24/1.0",
+            "status":"PASS",
+            "scope":"PART4_R2_OPERATIONAL_AMENDMENT_ONLY",
+            "amendment_id":"PART4-R2-20260929",
+            "amendment_sha256":os.environ["AMEND_SHA"],
+            "g23_sha256":os.environ["G23_SHA"],
+            "g23_status":"PASS",
+            "authority_authenticated":True,
+            "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(token.encode()).hexdigest(),
+            "canonical_mutation":False,
+            "authority_transfer":False,
+            "part5_to_part9_unchanged":True,
+            "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(cert,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps(cert,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-g24
+          path: ${{ runner.temp }}/g24/G24_PART4_R2.json
+          retention-days: 90
+          compression-level: 0

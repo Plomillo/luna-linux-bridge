@@ -1,0 +1,33 @@
+name: "R4 PART4 — diagnose pre-Stage7 tool installation state"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-pre-stage7-tool-diagnose/**
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Read package and binary state
+        shell: bash
+        run: |
+          set -u
+          echo "=== DPKG QUERY ==="
+          dpkg-query -W -f='${Package}	${Version}	${Architecture}	${Status}\n' nvme-cli smartmontools 2>&1 || true
+          echo "=== COMMAND PATHS ==="
+          command -v nvme 2>&1 || true
+          command -v smartctl 2>&1 || true
+          ls -l /usr/sbin/nvme /usr/bin/nvme /usr/sbin/smartctl /usr/bin/smartctl 2>&1 || true
+          echo "=== APT POLICY ==="
+          apt-cache policy nvme-cli smartmontools 2>&1 || true
+          echo "=== APT HISTORY TAIL ==="
+          tail -n 120 /var/log/apt/history.log 2>&1 || true
+          echo "=== DPKG LOG TAIL ==="
+          tail -n 160 /var/log/dpkg.log 2>&1 || true

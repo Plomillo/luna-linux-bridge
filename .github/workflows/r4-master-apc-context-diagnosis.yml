@@ -1,0 +1,45 @@
+name: "R4 master — APC systemd context diagnosis"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-master-apc-context-diagnosis.yml
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 3
+    steps:
+      - name: Diagnose APC from normal and user-systemd contexts
+        shell: bash
+        run: |
+          set +e
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+
+          echo "=== UNIT ==="
+          systemctl --user cat luna-r4-master-part1-part9.service || true
+          echo "=== UNIT SHOW ==="
+          systemctl --user show luna-r4-master-part1-part9.service -p ActiveState -p SubState -p Result -p ExecMainStatus -p MainPID -p NRestarts || true
+
+          echo "=== DIRECT APC ==="
+          sudo -n /usr/local/sbin/louksna-apc status
+          echo "DIRECT_RC=$?"
+
+          echo "=== SUDO LIST ==="
+          sudo -n -l 2>&1 | sed -n '1,160p'
+          rc="${PIPESTATUS[0]}"
+          echo "SUDO_LIST_RC=$rc"
+
+          echo "=== TRANSIENT USER SYSTEMD APC ==="
+          systemd-run --user --wait --pipe --collect             -p PrivateTmp=yes             -p LockPersonality=yes             /usr/bin/sudo -n /usr/local/sbin/louksna-apc status
+          echo "TRANSIENT_RC=$?"
+
+          echo "=== JOURNAL TAIL ==="
+          journalctl --user -u luna-r4-master-part1-part9.service -n 40 --no-pager || true

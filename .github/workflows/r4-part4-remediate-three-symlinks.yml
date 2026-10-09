@@ -1,0 +1,162 @@
+name: "R4 PART4 — remediate three malformed symlinks"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-part4-remediate-three-symlinks.yml
+      - mission-control/r4-part4-remediate-three-symlinks/**
+
+permissions:
+  contents: read
+
+jobs:
+  remediate:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 20
+    steps:
+      - name: Reconstruct exact symlinks from local signed-package provenance
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="/media/diegoignacionorambuenamiranda/Windows/PROYECTOS"
+          EXPECTED_SOURCE="/dev/nvme0n1p3"
+          EXPECTED_UUID="F2848A148489DC0B"
+          BASE="$ROOT/1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/0. JSON/FORENSIC_V1_20260909/a080_runtime_closure_v1/libopengl_staging"
+          OUT="$RUNNER_TEMP/r4-part4-remediate-three-$GITHUB_RUN_ID"
+          mkdir -p "$OUT"
+
+          test -d "$ROOT"
+          test "$(findmnt -T "$ROOT" -n -o SOURCE)" = "$EXPECTED_SOURCE"
+          test "$(/usr/sbin/blkid -s UUID -o value "$EXPECTED_SOURCE")" = "$EXPECTED_UUID"
+          findmnt -T "$ROOT" -n -o OPTIONS | tr ',' '\n' | grep -qx rw
+
+          python3 - "$BASE" "$OUT" <<'PY'
+          import os,sys,json,stat,hashlib,tarfile,subprocess,io,time
+          from pathlib import Path
+
+          base=Path(sys.argv[1]); out=Path(sys.argv[2])
+          extracted=base/"extracted"
+          spec=[
+            {
+              "rel":"usr/share/doc/libopengl0/changelog.Debian.gz",
+              "deb":base/"libopengl0_1.7.0-1build1_amd64.deb",
+              "target":"../libglvnd0/changelog.Debian.gz"
+            },
+            {
+              "rel":"usr/lib/x86_64-linux-gnu/libGLdispatch.so.0",
+              "deb":base/"libglvnd0_1.7.0-1build1_amd64.deb",
+              "target":"libGLdispatch.so.0.0.0"
+            },
+            {
+              "rel":"usr/lib/x86_64-linux-gnu/libOpenGL.so.0",
+              "deb":base/"libopengl0_1.7.0-1build1_amd64.deb",
+              "target":"libOpenGL.so.0.0.0"
+            }
+          ]
+          def sha_file(p):
+              h=hashlib.sha256()
+              with open(p,"rb") as f:
+                  for b in iter(lambda:f.read(1024*1024),b""): h.update(b)
+              return h.hexdigest()
+          def package_member(deb,rel):
+              q=subprocess.run(["dpkg-deb","--fsys-tarfile",str(deb)],stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=30)
+              if q.returncode!=0: raise RuntimeError("DPKG_DEB_FAILED:"+str(deb))
+              tf=tarfile.open(fileobj=io.BytesIO(q.stdout),mode="r:*")
+              found=[]
+              for m in tf.getmembers():
+                  if m.name.lstrip("./")==rel:
+                      found.append({"type":"symlink" if m.issym() else "hardlink" if m.islnk() else "file","linkname":m.linkname,"size":m.size})
+              if len(found)!=1: raise RuntimeError("PACKAGE_MEMBER_NOT_UNIQUE:"+rel)
+              return found[0]
+
+          report={"schema":"LOUKSNA_R4_PART4_THREE_SYMLINK_REMEDIATION/1.0","status":"HOLD","authority":"Louksna.md",
+                  "mode":"BOUNDED_MUTATION","authorized_scope":"EXACT_THREE_MALFORMED_SYMLINKS","source_root":str(extracted),
+                  "canonical_mutation":False,"authority_transfer":False,"self_certified":False,
+                  "metacognitive_rationale":{
+                    "observed_failure":"THREE_NTFS_SYMLINKS_CLASSIFIED_BY_LSTAT_BUT_READLINK_RETURNS_EINVAL",
+                    "chosen_strategy":"RECONSTRUCT_ONLY_FROM_LOCAL_DEB_PAYLOAD_PROVENANCE",
+                    "rejected_strategy":["GUESS_LINK_TARGETS","DELETE_WITHOUT_RECONSTRUCTION","NETWORK_SUBSTITUTION","IGNORE_MANIFEST_GAP"],
+                    "failure_posture":"FAIL_CLOSED"
+                  },"targets":[],"package_sha256":{}}
+          for s in spec:
+              deb=Path(s["deb"])
+              if not deb.is_file(): raise RuntimeError("PROVENANCE_DEB_MISSING:"+str(deb))
+              report["package_sha256"][str(deb)]=sha_file(deb)
+              member=package_member(deb,s["rel"])
+              if member["type"]!="symlink" or member["linkname"]!=s["target"]:
+                  raise RuntimeError("PROVENANCE_MISMATCH:"+s["rel"]+":"+json.dumps(member))
+
+          completed=[]
+          try:
+              for s in spec:
+                  p=extracted/s["rel"]; expected=s["target"]
+                  st=os.lstat(p)
+                  if not stat.S_ISLNK(st.st_mode):
+                      raise RuntimeError("TARGET_NOT_SYMLINK:"+str(p))
+                  current=None
+                  try: current=os.readlink(p)
+                  except OSError as e:
+                      if e.errno!=22: raise
+                  rec={"path":str(p),"rel":s["rel"],"before":{"inode":st.st_ino,"mode":oct(stat.S_IMODE(st.st_mode)),"size":st.st_size,
+                       "readlink":current,"readlink_einval":current is None},"expected_target":expected,"provenance_deb":str(s["deb"])}
+                  if current==expected:
+                      rec["action"]="NOOP_ALREADY_CORRECT"
+                      rec["after_target"]=current
+                      report["targets"].append(rec); completed.append((p,None,rec)); continue
+                  backup=p.with_name(p.name+".louksna-malformed-backup-"+os.environ.get("GITHUB_RUN_ID","run"))
+                  if os.path.lexists(backup): raise RuntimeError("BACKUP_COLLISION:"+str(backup))
+                  os.rename(p,backup)
+                  try:
+                      os.symlink(expected,p)
+                      actual=os.readlink(p)
+                      if actual!=expected: raise RuntimeError("POST_READLINK_MISMATCH:"+str(p))
+                      target_resolved=(p.parent/actual).resolve(strict=True)
+                      if not target_resolved.exists(): raise RuntimeError("POST_TARGET_MISSING:"+str(target_resolved))
+                      rec["action"]="RECONSTRUCTED_FROM_LOCAL_DEB"
+                      rec["after_target"]=actual
+                      rec["resolved_target"]=str(target_resolved)
+                      rec["resolved_target_sha256"]=sha_file(target_resolved) if target_resolved.is_file() else None
+                      completed.append((p,backup,rec))
+                      report["targets"].append(rec)
+                  except Exception:
+                      if os.path.lexists(p): os.unlink(p)
+                      os.rename(backup,p)
+                      raise
+
+              # Commit transaction: remove malformed backups only after every postcondition passed.
+              for p,backup,rec in completed:
+                  if backup is not None and os.path.lexists(backup):
+                      os.unlink(backup)
+              report["status"]="PASS"
+          except Exception as e:
+              report["error"]=repr(e)
+              # Roll back any completed mutation that still has backup present.
+              for p,backup,rec in reversed(completed):
+                  if backup is not None and os.path.lexists(backup):
+                      try:
+                          if os.path.lexists(p): os.unlink(p)
+                          os.rename(backup,p)
+                          rec["rollback"]="RESTORED_MALFORMED_ORIGINAL"
+                      except Exception as re:
+                          rec["rollback_error"]=repr(re)
+              report["status"]="FAIL"
+
+          report["timestamp_utc"]=time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
+          data=json.dumps(report,ensure_ascii=False,indent=2,sort_keys=True)+"\n"
+          (out/"REMEDIATION.json").write_text(data,encoding="utf-8")
+          (out/"REMEDIATION.sha256").write_text(hashlib.sha256(data.encode()).hexdigest()+"  REMEDIATION.json\n",encoding="utf-8")
+          print(data)
+          if report["status"]!="PASS": raise SystemExit(2)
+          PY
+
+      - name: Preserve remediation evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: R4-PART4-remediate-three-symlinks-${{ github.run_id }}
+          path: ${{ runner.temp }}/r4-part4-remediate-three-${{ github.run_id }}/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0

@@ -1,0 +1,15 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_RELOCATION_FIX_CERT_REQUEST/1.0",
+  "purpose": "Verify and certify the state-aware relocation resume fix plus bounded bug-governance policy before resuming final merge.",
+  "diagnosis_run": 36857403996,
+  "script_fix_commits": [
+    "467445231a1f7d56e8364ccfb03b6a38c0bcfe07",
+    "e54a3ac984e182f44c4bc7f2c0ef231efc2a998a"
+  ],
+  "policy_commit": "618caa6a837edcd3c88c9484f607de34148af380",
+  "repeat_projects_migration": false,
+  "repeat_partition_migration": false,
+  "authority": "Louksna.md",
+  "assurance": "PUAC2.md",
+  "fail_closed": true
+}

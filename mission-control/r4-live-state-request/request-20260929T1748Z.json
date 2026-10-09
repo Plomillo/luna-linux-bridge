@@ -1,0 +1,6 @@
+{
+  "schema": "LOUKSNA_R4_LIVE_STATE_REQUEST/1.0",
+  "purpose": "Resume Maestro after PART4 permission preparation; capture current governed state",
+  "scope": "READ_ONLY",
+  "requested_part": "PART_4"
+}

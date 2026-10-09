@@ -1,0 +1,294 @@
+name: "R4 PART4 — certify and activate hardened 12-stage Maestro engine"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-part4-p3-stage-engine-activate-g23-g24.yml
+      - mission-control/r4-part4-p3-stage-engine-activate/**
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: r4-part4-p3-stage-engine-activate
+  cancel-in-progress: false
+
+env:
+  BASE_SHA: "d580b6d1aa03e6fc54ee4784c12a97b2a66c58b3"
+  CONTRACT_ID: "PART4-P3-GROWTH-HARDENED-ANTI-PARALYSIS-20261001"
+
+jobs:
+  material:
+    name: Validate NEXT-consuming 12-stage engine
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Static exact-scope validation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/material"
+          python3 -m py_compile server/r4-master/master_controller.py
+          python3 - "$BASE_SHA" "$RUNNER_TEMP/material/MATERIAL.json" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,re,subprocess,sys
+          base,out=sys.argv[1],pathlib.Path(sys.argv[2])
+          p=pathlib.Path("server/r4-master/master_controller.py")
+          c=p.read_text()
+          old=subprocess.run(["git","show",f"{base}:server/r4-master/master_controller.py"],text=True,capture_output=True,check=True).stdout
+          def handlers(s):
+              return s[s.index("\ndef part5(mid):"):s.index("\nHANDLERS=")]
+          engine=c[c.index("def part4_hardened_progress(mid):"):c.index("\ndef part5(mid):")]
+          supervise=c[c.index("def supervise_once(worker,mid):"):c.index("\ndef main():")]
+          checks={
+            "engine_present":"def part4_hardened_progress(mid):" in c,
+            "execution_state_present":"PART4_P3_EXEC_STATE" in c,
+            "stage1_live_checkpoint":"if stage==1:" in engine and "/sys/class/block/nvme0n1p3/start" in engine,
+            "stage2_candidate_only":"if stage==2:" in engine and '["apt-get","-s","install","cloud-guest-utils","gdisk"]' in engine,
+            "stage3_dry_run_only":"if stage==3:" in engine and '[growpart,"-N","/dev/nvme0n1","3"]' in engine,
+            "no_resize2fs_execution":"resize2fs" not in engine,
+            "no_parted_resize_execution":"resizepart" not in engine,
+            "no_sfdisk_write_execution":"sfdisk" not in engine,
+            "no_sgdisk_write_execution":"sgdisk" not in engine,
+            "no_reboot_execution":'["reboot"]' not in engine and '"systemctl","reboot"' not in engine,
+            "hold_consumes_next":"part4_progress=part4_hardened_progress(mid)" in supervise,
+            "master_status_exports_stage":'ms["stage_current"]' in supervise and 'ms["stage_next"]' in supervise,
+            "part5_part9_unchanged":handlers(old)==handlers(c),
+          }
+          ok=all(checks.values())
+          q={
+            "schema":"LOUKSNA_R4_PART4_P3_STAGE_ENGINE_MATERIAL/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "scope":"ACTIVATE_NEXT_CONSUMING_12_STAGE_ENGINE_SAFE_STAGES_ONLY",
+            "base_sha":base,
+            "controller_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),
+            "checks":checks,
+            "disk_mutation_authorized":False,
+            "filesystem_mutation_authorized":False,
+            "package_install_authorized":False,
+            "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          out.write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(23)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-p3-stage-engine-material
+          path: ${{ runner.temp }}/material/MATERIAL.json
+          retention-days: 90
+          compression-level: 0
+
+  g23:
+    name: G23 independent validate active stage engine
+    needs: material
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-p3-stage-engine-material
+          path: ${{ runner.temp }}/material
+      - name: Independent gate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/material/MATERIAL.json" "$RUNNER_TEMP/g23/G23.json" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,sys
+          mpath,out=map(pathlib.Path,sys.argv[1:])
+          m=json.loads(mpath.read_text())
+          checks={
+            "material_pass":m.get("status")=="PASS",
+            "all_static_checks":all(m.get("checks",{}).values()),
+            "scope_exact":m.get("scope")=="ACTIVATE_NEXT_CONSUMING_12_STAGE_ENGINE_SAFE_STAGES_ONLY",
+            "no_disk_mutation_auth":m.get("disk_mutation_authorized") is False,
+            "no_fs_mutation_auth":m.get("filesystem_mutation_authorized") is False,
+            "no_package_install_auth":m.get("package_install_authorized") is False,
+          }
+          ok=all(checks.values())
+          q={
+            "schema":"LOUKSNA_R4_PART4_P3_STAGE_ENGINE_G23/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "scope":"ACTIVATE_NEXT_CONSUMING_12_STAGE_ENGINE_SAFE_STAGES_ONLY",
+            "material_sha256":hashlib.sha256(mpath.read_bytes()).hexdigest(),
+            "checks":checks,
+            "g24_allowed":ok,
+            "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          out.write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(23)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-p3-stage-engine-g23
+          path: ${{ runner.temp }}/g23/G23.json
+          retention-days: 90
+          compression-level: 0
+
+  g24:
+    name: G24 certify activation of safe stage engine
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-p3-stage-engine-g23
+          path: ${{ runner.temp }}/g23
+      - name: Digest-bound activation certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/G23.json"
+          test "$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(d["status"] if d.get("g24_allowed") else "HOLD")' "$G")" = PASS
+          H="$(sha256sum "$G"|awk '{print $1}')"
+          AUD="louksna-r4-part4-p3-stage-engine:$H"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export H AUD TOKEN
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$RUNNER_TEMP/g24/G24.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          t=os.environ["TOKEN"]; p=t.split(".")
+          payload=p[1]+"="*((4-len(p[1])%4)%4); claims=json.loads(base64.urlsafe_b64decode(payload))
+          aud=claims.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          q={
+            "schema":"LOUKSNA_R4_PART4_P3_STAGE_ENGINE_G24/1.0",
+            "status":"PASS",
+            "scope":"ACTIVATE_NEXT_CONSUMING_12_STAGE_ENGINE_SAFE_STAGES_ONLY",
+            "g23_sha256":os.environ["H"],
+            "authority_authenticated":True,
+            "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
+            "disk_mutation_authorized":False,
+            "filesystem_mutation_authorized":False,
+            "package_install_authorized":False,
+            "certification_propagated":False,
+            "canonical_mutation":False,
+            "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-p3-stage-engine-g24
+          path: ${{ runner.temp }}/g24/G24.json
+          retention-days: 90
+          compression-level: 0
+
+  activate:
+    name: Deploy engine and prove Maestro started stage execution
+    needs: g24
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: staging/luna-r4-master-part1-part9-20260929
+          persist-credentials: false
+          sparse-checkout: |
+            server/r4-master
+          sparse-checkout-cone-mode: true
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-p3-stage-engine-g24
+          path: ${{ runner.temp }}/g24
+      - name: Activate and verify stage 1 to stage 2 transition
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          CERT="$RUNNER_TEMP/g24/G24.json"
+          test "$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(d["status"])' "$CERT")" = PASS
+          test "$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(d["disk_mutation_authorized"])' "$CERT")" = False
+          HOME_REAL="/home/diegoignacionorambuenamiranda"
+          DST="$HOME_REAL/.local/lib/louksna/r4-master-part1-part9"
+          STATE="$HOME_REAL/.local/state/louksna/r4-master-part1-part9"
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+
+          install -m 0700 server/r4-master/master_controller.py "$DST/master_controller.py"
+          python3 -m py_compile "$DST/master_controller.py"
+          systemctl --user restart luna-r4-master-part1-part9.service
+          test "$(systemctl --user is-active luna-r4-master-part1-part9.service)" = active
+
+          EXEC="$STATE/PART_4_P3_HARDENED/EXECUTION.json"
+          for i in $(seq 1 60); do
+            if [ -f "$EXEC" ]; then
+              STAGE="$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(d.get("current_stage",0))' "$EXEC" 2>/dev/null || echo 0)"
+              LAST="$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(d.get("last_completed_stage",0))' "$EXEC" 2>/dev/null || echo 0)"
+              [ "$STAGE" -ge 2 ] && [ "$LAST" -ge 1 ] && break
+            fi
+            sleep 2
+          done
+
+          OUT="$RUNNER_TEMP/activation"
+          mkdir -p "$OUT"
+          cp "$EXEC" "$OUT/EXECUTION.json"
+          cp "$STATE/MASTER_STATUS.json" "$OUT/MASTER_STATUS.json"
+          cp "$STATE/PART_4_P3_HARDENED/STAGE2_CANDIDATE.json" "$OUT/STAGE2_CANDIDATE.json" 2>/dev/null || true
+          systemctl --user show luna-r4-master-part1-part9.service -p ActiveState -p SubState -p Result -p MainPID -p NRestarts > "$OUT/SERVICE.txt"
+
+          mapfile -t LINKS < <(find "$HOME/.local/lib/louksna-remote-bridge" -type f -path '*/bridge/live_link.py' -print 2>/dev/null | sort)
+          test "${#LINKS[@]}" -ge 1
+          LINK="${LINKS[-1]}"
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op status > "$OUT/LRB_STATUS.json"
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op observe > "$OUT/LRB_OBSERVE.json"
+
+          python3 - "$OUT" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,sys
+          root=pathlib.Path(sys.argv[1])
+          e=json.loads((root/"EXECUTION.json").read_text())
+          s=json.loads((root/"MASTER_STATUS.json").read_text())
+          l=json.loads((root/"LRB_STATUS.json").read_text())
+          o=json.loads((root/"LRB_OBSERVE.json").read_text())
+          c=json.loads((root/"STAGE2_CANDIDATE.json").read_text()) if (root/"STAGE2_CANDIDATE.json").exists() else {}
+          checks={
+            "host":l.get("host")=="LOUKSNA",
+            "same_mission":e.get("mission_id")==s.get("mission_id")=="MIS-e5963403a3b44ee8be96",
+            "contract":e.get("contract_id")=="PART4-P3-GROWTH-HARDENED-ANTI-PARALYSIS-20261001",
+            "stage1_completed":int(e.get("last_completed_stage",0))>=1,
+            "stage2_active":int(e.get("current_stage",0))==2,
+            "stage2_candidate_ready":c.get("status")=="CANDIDATE_READY",
+            "master_exports_stage":s.get("stage_current")==2 and s.get("stage_last_completed")==1,
+            "remote_bridge_evidence":bool(o.get("evidence_sha256")),
+            "no_disk_mutation":e.get("disk_mutation_performed") is False,
+            "no_fs_mutation":e.get("filesystem_mutation_performed") is False,
+          }
+          ok=all(checks.values())
+          q={
+            "schema":"LOUKSNA_R4_PART4_P3_STAGE_ENGINE_ACTIVATION_PROOF/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "classification":"MAESTRO_12_STAGE_EXECUTION_STARTED" if ok else "MAESTRO_STAGE_ENGINE_NOT_PROVEN",
+            "mission_id":s.get("mission_id"),
+            "current_stage":e.get("current_stage"),
+            "last_completed_stage":e.get("last_completed_stage"),
+            "next_authorized_action":e.get("next_authorized_action"),
+            "stage2_candidate_sha256":hashlib.sha256((root/"STAGE2_CANDIDATE.json").read_bytes()).hexdigest() if (root/"STAGE2_CANDIDATE.json").exists() else None,
+            "remote_bridge_evidence_seq":o.get("evidence_seq"),
+            "remote_bridge_evidence_sha256":o.get("evidence_sha256"),
+            "checks":checks,
+            "disk_mutation_performed":False,
+            "proved_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          (root/"ACTIVATION_PROOF.json").write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(31)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-p3-stage-engine-activation-proof
+          path: ${{ runner.temp }}/activation/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0

@@ -1,0 +1,206 @@
+{
+  "authority": "Louksna.md",
+  "blockers": [],
+  "checks": {
+    "alias_1": true,
+    "alias_2": true,
+    "authority": true,
+    "canonical_root": true,
+    "checkpoint_present": true,
+    "contract_v2": true,
+    "debian_redownload_denied": true,
+    "dependencies": true,
+    "desktop_plugin_denied": true,
+    "dolphin_bookmark": true,
+    "executor_is_maestro": true,
+    "g23_required": true,
+    "g24_required": true,
+    "kde_redownload_denied": true,
+    "maestro_executed": true,
+    "negative_guard_semantics_reconciled": true,
+    "no_data_copy": true,
+    "no_network_download": true,
+    "no_partition": true,
+    "part4_closed": true,
+    "part4_stages_1_12": true,
+    "partitioning_denied": true,
+    "protected_reference": true,
+    "third_order": true
+  },
+  "control_plane": "GITHUB",
+  "created_at_utc": "2026-10-02T10:36:53.165391Z",
+  "debian_redownload_performed": false,
+  "details": {
+    "lrb": {
+      "certified": false,
+      "evidence_seq": 223,
+      "evidence_sha256": "4bb4f22d7b0211e8c10492fab96b72ba45c16b5010f83179cbba7422c2961608",
+      "observation": {
+        "boot_id": "340911cd-6eae-41b0-bcf1-ea6d2eb6e493",
+        "bridge_root_shell": "NOT_DEPLOYED",
+        "gid": 1001,
+        "github_transport": "NOT_DEPLOYED",
+        "host": "LOUKSNA",
+        "load": [
+          0.8525390625,
+          0.67138671875,
+          0.38037109375
+        ],
+        "memory_bytes": {
+          "MemAvailable": 3791171584,
+          "MemTotal": 6125785088,
+          "SwapFree": 0,
+          "SwapTotal": 0
+        },
+        "observed_utc": "2026-10-02T10:36:52.958709Z",
+        "pid": 1232,
+        "project_partition": "NOT_LIVE_VERIFIED",
+        "root_fs_bytes": {
+          "available": 202759483392,
+          "total": 510059147264
+        },
+        "screen": "NOT_ENABLED",
+        "sudo_noninteractive": "NOT_PROBED",
+        "uid": 1000
+      },
+      "schema": "LRB_LOCAL_TRANSPORT/0.3",
+      "status": "OBSERVED_NOT_CERTIFIED"
+    },
+    "maestro_result": {
+      "actions": [
+        {
+          "action": "REPOINT",
+          "path": "/home/diegoignacionorambuenamiranda/Proyectos",
+          "target": "/home/diegoignacionorambuenamiranda/PROYECTOS"
+        },
+        {
+          "action": "REUSE_CORRECT",
+          "path": "/home/diegoignacionorambuenamiranda/Luna R4/Proyectos"
+        }
+      ],
+      "blockers": [
+        "partitioning_performed",
+        "data_copy_performed",
+        "network_download_performed"
+      ],
+      "checkpoint": "/home/diegoignacionorambuenamiranda/.local/state/louksna/r4-48h/rollback/20261002T103411Z-P06_PROJECTS",
+      "checkpoint_manifest": [
+        {
+          "exists": true,
+          "is_symlink": true,
+          "path": "/home/diegoignacionorambuenamiranda/Proyectos",
+          "symlink_target": "/media/diegoignacionorambuenamiranda/Windows/PROYECTOS"
+        },
+        {
+          "exists": true,
+          "is_symlink": true,
+          "path": "/home/diegoignacionorambuenamiranda/Luna R4/Proyectos",
+          "symlink_target": "/home/diegoignacionorambuenamiranda/Proyectos"
+        },
+        {
+          "backup": "/home/diegoignacionorambuenamiranda/.local/state/louksna/r4-48h/rollback/20261002T103411Z-P06_PROJECTS/cc63e93e9463bc5a-user-places.xbel",
+          "backup_sha256": "02164379e135f5ae1833c9e94deca06d93b95c752a84f55ce8e9e736bacbc673",
+          "exists": true,
+          "is_symlink": false,
+          "path": "/home/diegoignacionorambuenamiranda/.local/share/user-places.xbel",
+          "sha256": "02164379e135f5ae1833c9e94deca06d93b95c752a84f55ce8e9e736bacbc673"
+        },
+        {
+          "backup": "/home/diegoignacionorambuenamiranda/.local/state/louksna/r4-48h/rollback/20261002T103411Z-P06_PROJECTS/5dd1b811380b9fc6-luna-r4-part1-proyectos.desktop",
+          "backup_sha256": "4e86b2705b0f285cb24c2225c4564447df4b85248a3f00196e917f9e7d45ccab",
+          "exists": true,
+          "is_symlink": false,
+          "path": "/home/diegoignacionorambuenamiranda/.local/share/applications/luna-r4-part1-proyectos.desktop",
+          "sha256": "4e86b2705b0f285cb24c2225c4564447df4b85248a3f00196e917f9e7d45ccab"
+        },
+        {
+          "backup": "/home/diegoignacionorambuenamiranda/.local/state/louksna/r4-48h/rollback/20261002T103411Z-P06_PROJECTS/3f91ef42cfc7c658-luna-r4-v7-proyectos.desktop",
+          "backup_sha256": "32791fdf75ec55f4fc9add11c22eb25b10a9e532bbe3d76b005d314ed587d7ad",
+          "exists": true,
+          "is_symlink": false,
+          "path": "/home/diegoignacionorambuenamiranda/.local/share/applications/luna-r4-v7-proyectos.desktop",
+          "sha256": "32791fdf75ec55f4fc9add11c22eb25b10a9e532bbe3d76b005d314ed587d7ad"
+        }
+      ],
+      "checks": {
+        "aliases": true,
+        "canonical_root": true,
+        "data_copy_performed": false,
+        "launchers_no_direct_old_media": true,
+        "network_download_performed": false,
+        "partitioning_performed": false,
+        "projects_bookmark_canonical": true,
+        "xbel_parse": true
+      },
+      "completed_at_utc": "2026-10-02T10:34:11.113872Z",
+      "custosz_bound": true,
+      "executor": "MAESTRO",
+      "launcher_audit": [
+        {
+          "exec": [
+            "Exec=/usr/bin/python3 /home/diegoignacionorambuenamiranda/.local/share/louksna-r4/part1/dispatcher.py proyectos"
+          ],
+          "old_media_projects_reference": false,
+          "path": "/home/diegoignacionorambuenamiranda/.local/share/applications/luna-r4-part1-proyectos.desktop",
+          "sha256": "4e86b2705b0f285cb24c2225c4564447df4b85248a3f00196e917f9e7d45ccab"
+        },
+        {
+          "exec": [
+            "Exec=/usr/bin/python3 /home/diegoignacionorambuenamiranda/LOUKSNA_MAESTRO_20260925/MISSION3_OPERATIVE/R4_UI_DOLPHIN_V7/R4_AREAS_V7.py --open proyectos"
+          ],
+          "old_media_projects_reference": false,
+          "path": "/home/diegoignacionorambuenamiranda/.local/share/applications/luna-r4-v7-proyectos.desktop",
+          "sha256": "32791fdf75ec55f4fc9add11c22eb25b10a9e532bbe3d76b005d314ed587d7ad"
+        }
+      ],
+      "mission_id": "MIS-cf38037f1f114012af53",
+      "point_id": "P06",
+      "request_id": "REQ-7032aabb9de445b3a8f02d64033edd41",
+      "schema": "LOUKSNA_R4_MAESTRO_POINT_RESULT/1.0",
+      "status": "HOLD",
+      "xbel_action": "UPDATED_1"
+    },
+    "master_service": {
+      "ActiveState": "active",
+      "MainPID": "286284",
+      "NRestarts": "0",
+      "SubState": "running",
+      "returncode": 0
+    },
+    "result_status_interpretation": "MATERIAL_PASS_DESPITE_LEGACY_NEGATIVE_GUARD_STATUS",
+    "runner_service": {
+      "ActiveState": "active",
+      "MainPID": "2369",
+      "NRestarts": "0",
+      "SubState": "running",
+      "returncode": 0
+    }
+  },
+  "executor": "MAESTRO",
+  "kde_redownload_performed": false,
+  "observer": "LOUKSNA_REMOTE_BRIDGE",
+  "partitioning_performed": false,
+  "point_id": "P06",
+  "point_name": "PROYECTOS_CANONICAL_REPAIR",
+  "protected_reference": "LOUKSNAMEJORADA.md",
+  "provenance": {
+    "authority_sha256": "5270c3d643339c283edf13b414f335f23f921c4dac023b06d38de62927e29bf9",
+    "contract_sha256": "4c7e2d06791744fcc0ebc26178ae1d31600e35721cb8d3bec45a8a1d1c5bf54e",
+    "ledger_head_sha256": "7c8f6dc5b2f27ec214fc6c7037b891117a758fa0c0ba97e34eec60d416249918",
+    "lrb_evidence_sha256": "4bb4f22d7b0211e8c10492fab96b72ba45c16b5010f83179cbba7422c2961608",
+    "master_controller_sha256": "745b6a45fe345128b3b15ae024b918e776be3d121863e3bf847fd3cfd20b221c"
+  },
+  "puac2": {
+    "C25": true,
+    "C26": true,
+    "C27": true,
+    "C28": true,
+    "C29": true,
+    "C30": true,
+    "C31": true,
+    "C32": true
+  },
+  "schema": "LOUKSNA_R4_15_POINT_EVIDENCE/1.0",
+  "self_certified": false,
+  "status": "PASS"
+}

@@ -1,0 +1,250 @@
+name: "R4 UI — PART5-PART9 live audit"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-ui-part5-part9-live-audit.yml
+      - mission-control/r4-ui-part5-part9-live-audit/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r4-ui-part5-part9-live-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 10
+    steps:
+      - name: Audit live KDE/Luna UI and canonical PROYECTOS target read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/r4-ui-live-$GITHUB_RUN_ID"
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9"
+          mkdir -p "$OUT/config"
+
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+
+          cp "$STATE/MASTER_STATUS.json" "$OUT/MASTER_STATUS.json"
+          for p in PART_4 PART_5 PART_6; do
+            if test -f "$STATE/certificates/$p.json"; then
+              cp "$STATE/certificates/$p.json" "$OUT/$p-CERT.json"
+            fi
+          done
+
+          for f in \
+            "$HOME/.config/plasma-org.kde.plasma.desktop-appletsrc" \
+            "$HOME/.config/dolphinrc" \
+            "$HOME/.config/kdeglobals" \
+            "$HOME/.local/share/user-places.xbel"; do
+            if test -f "$f"; then
+              cp -- "$f" "$OUT/config/$(basename "$f")"
+            fi
+          done
+
+          find "$HOME/.local/share/applications" -maxdepth 2 -type f -name '*.desktop' -print 2>/dev/null | sort > "$OUT/DESKTOP_FILES.txt" || true
+          while IFS= read -r f; do
+            grep -HnEi '^(Name|Exec|URL)=.*(proyectos|projects)|proyectos|projects' "$f" 2>/dev/null || true
+          done < "$OUT/DESKTOP_FILES.txt" > "$OUT/PROJECT_DESKTOP_MATCHES.txt"
+
+          {
+            echo "=== EXACT CANDIDATES ==="
+            for p in "$HOME/PROYECTOS" "$HOME/Proyectos" "$HOME/Luna R4/Proyectos"; do
+              printf 'PATH=%q\n' "$p"
+              if test -e "$p" || test -L "$p"; then
+                stat -Lc 'TYPE=%F MODE=%a UID=%u GID=%g DEV=%d INO=%i' "$p" 2>&1 || true
+                readlink "$p" 2>/dev/null || true
+                realpath -e "$p" 2>/dev/null || true
+                findmnt -T "$p" -n -o SOURCE,FSTYPE,TARGET,OPTIONS 2>/dev/null || true
+              else
+                echo "MISSING"
+              fi
+              echo
+            done
+          } > "$OUT/PROJECT_PATHS.txt"
+
+          {
+            echo "plasmashell=$(plasmashell --version 2>/dev/null || true)"
+            echo "dolphin=$(dolphin --version 2>/dev/null || true)"
+            echo "kde_session_version=$(printenv KDE_SESSION_VERSION 2>/dev/null || true)"
+            echo "desktop_session=$(printenv DESKTOP_SESSION 2>/dev/null || true)"
+          } > "$OUT/KDE_VERSION.txt"
+
+          systemctl --user show plasma-plasmashell.service -p ActiveState -p SubState -p MainPID > "$OUT/PLASMASHELL_SERVICE.txt" 2>/dev/null || true
+
+          echo "=== P10 NAVIGATION AND SEARCH DIAGNOSTIC ==="
+          python3 - "$HOME/.local/share/user-places.xbel" <<'PY'
+          import pathlib,sys,urllib.parse,xml.etree.ElementTree as ET
+          p=pathlib.Path(sys.argv[1])
+          print("XBEL_PATH="+str(p))
+          if p.is_file():
+              root=ET.parse(p).getroot()
+              for bm in root.iter():
+                  if not bm.tag.endswith("bookmark"): continue
+                  title=""
+                  for ch in bm:
+                      if ch.tag.endswith("title"): title=ch.text or ""
+                  href=bm.attrib.get("href","")
+                  print("PLACE title="+repr(title)+" href="+repr(href)+" decoded="+repr(urllib.parse.unquote(href)))
+          else:
+              print("XBEL_MISSING")
+          PY
+          for cmd in krunner plasmawindowed plasmashell kstart6 kstart dolphin; do
+            printf 'COMMAND %s=' "$cmd"
+            command -v "$cmd" || true
+          done
+          for pkg in org.kde.plasma.kickoff org.kde.plasma.kicker org.kde.plasma.milou; do
+            printf 'PLASMOID %s=' "$pkg"
+            find /usr/share/plasma/plasmoids "$HOME/.local/share/plasma/plasmoids" -maxdepth 1 -type d -name "$pkg" -print 2>/dev/null | head -n 1 || true
+          done
+          echo "PLASMA_APPLET_BINDINGS"
+          grep -nE 'org\.kde\.plasma\.(kickoff|kicker|milou)' "$HOME/.config/plasma-org.kde.plasma.desktop-appletsrc" 2>/dev/null || true
+
+          echo "=== LIVE UI SOURCES ==="
+          SOURCES=(
+            "$HOME/LOUKSNA_MAESTRO_20260925/MISSION3_OPERATIVE/R4_UI_DOLPHIN_V7/R4_AREAS_V7.py"
+            "$HOME/.local/share/louksna-r4/part1/dispatcher.py"
+          )
+          for src in "${SOURCES[@]}"; do
+            if test -f "$src"; then
+              echo "--- SOURCE $src ---"
+              sha256sum "$src"
+              sed -n '1,260p' "$src"
+            else
+              echo "MISSING_SOURCE=$src"
+            fi
+          done
+          echo "=== UI DELTA SPECS ==="
+          find "$HOME/LOUKSNA_MAESTRO_20260925" "$HOME/.local/state/louksna" "$HOME/.local/share/louksna-r4" \
+            -maxdepth 8 -type f -name 'PART5_PART9_UI_DELTA_SPEC.json' -print 2>/dev/null | while read -r spec; do
+              echo "--- SPEC $spec ---"; sha256sum "$spec"; cat "$spec"
+            done
+
+          mapfile -t LINKS < <(find "$HOME/.local/lib/louksna-remote-bridge" -type f -path '*/bridge/live_link.py' -print 2>/dev/null | sort)
+          test "${#LINKS[@]}" -ge 1
+          LINK="${LINKS[-1]}"
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op status > "$OUT/LRB_STATUS.json"
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op observe > "$OUT/LRB_OBSERVE.json"
+
+          OUT="$OUT" HOME="$HOME" python3 - <<'PY'
+          import json,os,pathlib,urllib.parse,xml.etree.ElementTree as ET,datetime as dt,hashlib
+          out=pathlib.Path(os.environ["OUT"]); home=pathlib.Path(os.environ["HOME"])
+          ms=json.loads((out/"MASTER_STATUS.json").read_text())
+          lrb=json.loads((out/"LRB_STATUS.json").read_text())
+          obs=json.loads((out/"LRB_OBSERVE.json").read_text())
+
+          def sha(p):
+              h=hashlib.sha256()
+              with pathlib.Path(p).open("rb") as f:
+                  for b in iter(lambda:f.read(1024*1024),b""):
+                      h.update(b)
+              return h.hexdigest()
+
+          candidates=[]
+          for p in [home/"PROYECTOS",home/"Proyectos",home/"Luna R4"/"Proyectos"]:
+              rec={"path":str(p),"lexists":p.exists() or p.is_symlink(),"is_symlink":p.is_symlink()}
+              try:
+                  if rec["lexists"]:
+                      rec["resolved"]=str(p.resolve(strict=True))
+                      rec["is_dir"]=p.resolve(strict=True).is_dir()
+              except Exception as e:
+                  rec["resolve_error"]=type(e).__name__+":"+str(e)
+              candidates.append(rec)
+
+          canonical=None
+          primary=home/"PROYECTOS"
+          if primary.exists() and not primary.is_symlink() and primary.is_dir():
+              canonical=str(primary.resolve())
+          else:
+              valid=[x for x in candidates if x.get("is_dir")]
+              resolved={x.get("resolved") for x in valid if x.get("resolved")}
+              if len(resolved)==1:
+                  canonical=next(iter(resolved))
+
+          places=[]
+          xbel=out/"config/user-places.xbel"
+          if xbel.is_file():
+              try:
+                  root=ET.parse(xbel).getroot()
+                  for bm in root.iter():
+                      if bm.tag.endswith("bookmark"):
+                          href=bm.attrib.get("href")
+                          title=None
+                          for child in bm:
+                              if child.tag.endswith("title"):
+                                  title=child.text
+                          places.append({"href":href,"title":title})
+              except Exception as e:
+                  places=[{"parse_error":type(e).__name__+":"+str(e)}]
+
+          canonical_uri="file://"+urllib.parse.quote(canonical) if canonical else None
+          proyectos_places=[x for x in places if str(x.get("title","")).casefold()=="proyectos" or "proyectos" in str(x.get("href","")).casefold()]
+          matching_place=canonical_uri is not None and any(x.get("href")==canonical_uri for x in proyectos_places)
+
+          desktop_matches=(out/"PROJECT_DESKTOP_MATCHES.txt").read_text(errors="replace").splitlines()
+          cert4=(out/"PART_4-CERT.json").is_file()
+          cert5=(out/"PART_5-CERT.json").is_file()
+          cert6=(out/"PART_6-CERT.json").is_file()
+
+          checks={
+              "host_louksna":lrb.get("host")=="LOUKSNA",
+              "lrb_observation":bool(obs.get("evidence_sha256")),
+              "part4_cert_present":cert4,
+              "part5_cert_present":cert5,
+              "canonical_projects_resolved":canonical is not None,
+              "canonical_projects_is_primary_uppercase":canonical==str(primary.resolve()) if canonical else False,
+              "kde_config_readable":any((out/"config"/n).is_file() for n in ["plasma-org.kde.plasma.desktop-appletsrc","dolphinrc","kdeglobals"]),
+              "projects_place_matches":matching_place,
+          }
+          sequence_gate=cert6 or ms.get("current_part") not in ("PART_6",None)
+          q={
+              "schema":"LOUKSNA_R4_PART5_PART9_UI_LIVE_AUDIT/1.0",
+              "status":"PASS",
+              "mutation_performed":False,
+              "debian_download_performed":False,
+              "kde_download_or_reinstall_performed":False,
+              "wallpaper_mutation_performed":False,
+              "current_part":ms.get("current_part"),
+              "master_status":ms.get("status"),
+              "part6_cert_present":cert6,
+              "ui_apply_sequence_gate":sequence_gate,
+              "canonical_projects_root":canonical,
+              "canonical_projects_uri":canonical_uri,
+              "candidates":candidates,
+              "projects_places":proyectos_places,
+              "projects_place_matches_canonical":matching_place,
+              "project_desktop_matches":desktop_matches[:200],
+              "checks":checks,
+              "config_sha256":{
+                  p.name:sha(p) for p in (out/"config").iterdir() if p.is_file()
+              },
+              "lrb_evidence_seq":obs.get("evidence_seq"),
+              "lrb_evidence_sha256":obs.get("evidence_sha256"),
+              "next_authorized_action":(
+                  "PREPARE_UI_DELTA_APPLY"
+                  if sequence_gate and canonical and not matching_place
+                  else "NO_UI_MUTATION_WHILE_PART6_OPEN"
+                  if not sequence_gate
+                  else "VERIFY_OTHER_INCOMPLETE_UI_ITEMS"
+              ),
+              "audited_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          (out/"AUDIT.json").write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: r4-ui-part5-part9-live-audit
+          path: ${{ runner.temp }}/r4-ui-live-${{ github.run_id }}
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 0

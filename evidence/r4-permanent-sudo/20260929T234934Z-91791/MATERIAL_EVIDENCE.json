@@ -1,0 +1,26 @@
+{
+  "authority": "Louksna.md",
+  "authority_transfer": false,
+  "candidate_g24_run_id": 36646296648,
+  "candidate_g24_sha256": "e1af95dc5db38aca19affba79d0484885bfc6e20c84590afc64b1883baee058a",
+  "canonical_mutation": false,
+  "checkpoint": "/var/lib/louksna-governance/permanent-sudo/checkpoints/20260929T234934Z-91791",
+  "checks": {
+    "sudo_k_then_sudo_n_true": "PASS",
+    "visudo_global": "PASS"
+  },
+  "host": "LOUKSNA",
+  "install_id": "20260929T234934Z-91791",
+  "installer_sha256": "6ff3a02d9618862d89d194018848f6883f6004a01cdd3e45d82d40e711a623e1",
+  "live_probe_run_id": 36647224141,
+  "persistence": "UNTIL_EXPLICIT_REVOCATION",
+  "policy_sha256": "a9c108562e58059e85879bdfc4ad730fa6c033795b8b2925589dcacde6d04308",
+  "rollback_pointer": "/usr/local/sbin/louksna-sudo-governance rollback",
+  "schema": "LOUKSNA_PERMANENT_SUDO_MATERIAL_EVIDENCE/1.0",
+  "scope": "UNRESTRICTED_ROOT_VIA_SUDO",
+  "self_certified": false,
+  "status": "MATERIALIZED_PENDING_G23_G24",
+  "sudoers_rule": "diegoignacionorambuenamiranda ALL=(ALL:ALL) NOPASSWD: ALL",
+  "target_user": "diegoignacionorambuenamiranda",
+  "timestamp_utc": "2026-09-29T23:49:50.667880+00:00"
+}

@@ -1,0 +1,33 @@
+{
+  "schema": "LOUKSNA_R4_15P_DEPLOY_AMENDMENT/1.0",
+  "status": "AUTHORIZED",
+  "scope": "PART7_P25_FINAL_ISOLATED_FILEBACKED_MEMORY_GOVERNOR",
+  "source_head": "fdcdf01f194819968c9a55ab16df5a07769ce490",
+  "preserve_existing_point_certificates": [
+    "P01",
+    "P02",
+    "P03",
+    "P04",
+    "P05",
+    "P06",
+    "P07"
+  ],
+  "preserve_part_certificates": [
+    "PART_1",
+    "PART_2",
+    "PART_3",
+    "PART_4",
+    "PART_5",
+    "PART_6"
+  ],
+  "same_qwen_model_required": true,
+  "hosted_backend_authorized": false,
+  "chromium_relief_executor": "MAESTRO_ONLY",
+  "lrb_role": "OBSERVATION_ONLY",
+  "desktop_commander_used": false,
+  "model_redownload_authorized": false,
+  "runtime_redownload_authorized": false,
+  "partitioning_authorized": false,
+  "part4_reopen_authorized": false,
+  "created_at_utc": "2026-10-02T11:49:00Z"
+}

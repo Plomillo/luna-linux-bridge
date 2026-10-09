@@ -1,0 +1,123 @@
+name: "R4 48H — scope and LRB capability audit"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-48h-scope-audit/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r4-48h-scope-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 10
+    steps:
+      - name: Low-impact live audit
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/r4-48h-scope-$GITHUB_RUN_ID"
+          HOME_REAL="/home/diegoignacionorambuenamiranda"
+          STATE="$HOME_REAL/.local/state/louksna/r4-master-part1-part9"
+          mkdir -p "$OUT"
+
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+
+          mapfile -t LINKS < <(find "$HOME_REAL/.local/lib/louksna-remote-bridge" -type f -path '*/bridge/live_link.py' -print 2>/dev/null | sort)
+          test "${#LINKS[@]}" -ge 1
+          LINK="${LINKS[-1]}"
+          printf '%s\n' "$LINK" > "$OUT/LRB_LINK.txt"
+          python3 -B "$LINK" --help > "$OUT/LRB_HELP.txt" 2>&1 || true
+          python3 -B "$LINK" request --help > "$OUT/LRB_REQUEST_HELP.txt" 2>&1 || true
+          python3 - "$LINK" "$OUT/LRB_SOURCE_CAPABILITIES.txt" <<'PY'
+          import pathlib,re,sys
+          p=pathlib.Path(sys.argv[1]); out=pathlib.Path(sys.argv[2])
+          s=p.read_text(encoding="utf-8",errors="replace")
+          rows=[]
+          for i,line in enumerate(s.splitlines(),1):
+              if re.search(r'(choices\s*=|--op|status|observe|execute|dispatch|apply|write|command|mission|worker|operation)',line,re.I):
+                  rows.append(f"{i}: {line[:1200]}")
+          out.write_text("\n".join(rows)+"\n",encoding="utf-8")
+          PY
+
+          python3 -B "$LINK" --state-dir "$HOME_REAL/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op status > "$OUT/LRB_STATUS.json"
+          python3 -B "$LINK" --state-dir "$HOME_REAL/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op observe > "$OUT/LRB_OBSERVE.json"
+
+          cp "$STATE/MASTER_STATUS.json" "$OUT/MASTER_STATUS.json"
+          find "$STATE/certificates" -maxdepth 1 -type f -printf '%f\n' 2>/dev/null | sort > "$OUT/CERTIFICATES.txt"
+
+          {
+            for root in               "$HOME_REAL/PROYECTOS"               "$HOME_REAL/Descargas/LUNA_R4_UI_REFERENCE"               "$HOME_REAL/LOUKSNA_MAESTRO_20260925"               "$HOME_REAL/.local/share/louksna"; do
+              echo "=== ROOT $root ==="
+              test -e "$root" || { echo MISSING; continue; }
+              nice -n 19 ionice -c3 find "$root" -maxdepth 5 \
+                \( -iname '*estudio*' -o -iname '*study*' -o -iname '*devocional*' -o -iname '*hermeneut*' \
+                   -o -iname '*backup*' -o -iname '*respaldo*' -o -iname '*recovery*' -o -iname '*rollback*' \
+                   -o -iname '*hygiene*' -o -iname '*higiene*' -o -iname '*runtime*' -o -iname '*metaos*' \
+                   -o -iname '*architecture*' -o -iname '*evidence*' -o -iname '*roadmap*' -o -iname '*checkpoint*' \) \
+                -printf '%y|%s|%p\n' 2>/dev/null | head -n 4000
+            done
+          } > "$OUT/RELEVANT_PATHS.txt"
+
+          {
+            for f in               "$HOME_REAL/Descargas/LUNA_R4_UI_REFERENCE/PLAN DEFINITIVO"               "$HOME_REAL/Descargas/LUNA_R4_UI_REFERENCE/SKELETON_CANONICO_REFERENCIA.txt"               "$HOME_REAL/Descargas/LUNA_R4_UI_REFERENCE/LUNA_R4_UI_REFERENCE_PARTS_1_9.jpg"               "$HOME_REAL/Descargas/LUNA_R4_UI_REFERENCE/source/SKELETON_CANONICO_REFERENCIA.txt"               "$HOME_REAL/Descargas/LUNA_R4_UI_REFERENCE/ui-reference/LUNA_R4_UI_REFERENCE_PARTS_1_9.jpg"; do
+              if test -f "$f"; then
+                sha256sum "$f"
+              fi
+            done
+          } > "$OUT/LOCAL_REFERENCE_HASHES.txt"
+
+          ps -eo pid,ppid,etimes,comm,rss,args --sort=ppid | grep -E 'master_controller|part6_hardened_worker|make build_name=louksna-proton' | grep -v grep > "$OUT/MAESTRO_PROCESS.txt" || true
+
+          echo "=== LRB_REQUEST_HELP ==="
+          cat "$OUT/LRB_REQUEST_HELP.txt"
+          echo "=== LRB_SOURCE_CAPABILITIES ==="
+          cat "$OUT/LRB_SOURCE_CAPABILITIES.txt"
+          echo "=== LOCAL_REFERENCE_FILES ==="
+          find "$HOME_REAL/Descargas/LUNA_R4_UI_REFERENCE" -maxdepth 4 -type f -printf '%s|%p\n' 2>/dev/null | sort | head -n 300
+          echo "=== RELEVANT_PATHS ==="
+          sed -n '1,1200p' "$OUT/RELEVANT_PATHS.txt"
+
+          python3 - "$OUT" <<'PY'
+          import json,pathlib,sys,datetime as dt
+          out=pathlib.Path(sys.argv[1])
+          status=json.loads((out/"LRB_STATUS.json").read_text())
+          observe=json.loads((out/"LRB_OBSERVE.json").read_text())
+          ms=json.loads((out/"MASTER_STATUS.json").read_text())
+          q={
+            "schema":"LOUKSNA_R4_48H_SCOPE_AUDIT/1.0",
+            "status":"PASS",
+            "host":status.get("host"),
+            "lrb_status":status.get("status"),
+            "lrb_observe_status":observe.get("status"),
+            "lrb_evidence_seq":observe.get("evidence_seq"),
+            "lrb_evidence_sha256":observe.get("evidence_sha256"),
+            "master_status":ms.get("status"),
+            "master_current_part":ms.get("current_part"),
+            "master_process_lines":(out/"MAESTRO_PROCESS.txt").read_text(errors="replace").splitlines(),
+            "certificates":(out/"CERTIFICATES.txt").read_text(errors="replace").splitlines(),
+            "local_reference_hashes":(out/"LOCAL_REFERENCE_HASHES.txt").read_text(errors="replace").splitlines(),
+            "partitioning_performed":False,
+            "downloads_performed":False,
+            "audited_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          (out/"SUMMARY.json").write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: r4-48h-scope-audit
+          path: ${{ runner.temp }}/r4-48h-scope-${{ github.run_id }}
+          retention-days: 30
+          compression-level: 0

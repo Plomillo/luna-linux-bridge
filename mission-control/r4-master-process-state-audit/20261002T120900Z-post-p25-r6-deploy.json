@@ -1,0 +1,28 @@
+{
+  "schema": "LOUKSNA_R4_LIVE_STATE_REQUEST/1.0",
+  "mode": "READ_ONLY",
+  "purpose": "VERIFY_P25_R6_LIVE_AND_CURRENT_UNCERTIFIED_FRONTIER",
+  "source_head": "36b00a7a34af438ce9ecb19560649e824c1eae0c",
+  "desktop_commander_used": false,
+  "repeat_certified_work": false,
+  "preserve_certified_points": [
+    "P01",
+    "P02",
+    "P03",
+    "P04",
+    "P05",
+    "P06",
+    "P07"
+  ],
+  "preserve_certified_parts": [
+    "PART_1",
+    "PART_2",
+    "PART_3",
+    "PART_4",
+    "PART_5",
+    "PART_6"
+  ],
+  "partitioning_authorized": false,
+  "part4_reopen_authorized": false,
+  "created_at_utc": "2026-10-02T12:09:00Z"
+}

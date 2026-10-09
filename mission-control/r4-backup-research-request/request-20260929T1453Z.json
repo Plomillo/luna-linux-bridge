@@ -1,0 +1,14 @@
+{
+  "mission": "PART4_PROYECTOS_BACKUP_STRATEGY_RESEARCH",
+  "time_ceiling_seconds": 120,
+  "mode": "READ_ONLY",
+  "objectives": [
+    "use prior forensic inventory",
+    "measure available storage",
+    "estimate deduplication and compression",
+    "select safest space-efficient backup architecture",
+    "support two_verified_backups, restore_proof, destructive_scope_prevalidated",
+    "preserve G23/G24 independence"
+  ],
+  "prohibitions": ["delete","deduplicate_source","modify_PROYECTOS","claim_certification"]
+}

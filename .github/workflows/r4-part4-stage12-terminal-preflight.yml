@@ -1,0 +1,245 @@
+name: "R4 PART4 — Stage12 terminal preflight"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-stage12-preflight/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r4-part4-stage12-terminal-preflight
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 12
+    steps:
+      - name: Build terminal read-only candidate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/stage12-preflight-$GITHUB_RUN_ID"
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9"
+          EXEC_DIR="$STATE/PART_4_P3_HARDENED"
+          DST="$HOME/.local/lib/louksna/r4-master-part1-part9"
+          mkdir -p "$OUT"
+
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+
+          cp "$EXEC_DIR/EXECUTION.json" "$OUT/EXECUTION.json"
+          cp "$EXEC_DIR/STAGE11_RESULT.json" "$OUT/STAGE11_RESULT.json"
+          cp "$EXEC_DIR/STAGE11_G23.json" "$OUT/STAGE11_G23.json"
+          cp "$EXEC_DIR/STAGE11_G24.json" "$OUT/STAGE11_G24.json"
+          cp "$STATE/MASTER_STATUS.json" "$OUT/MASTER_STATUS.json"
+          cp "$STATE/PART_4_R2/STATE.json" "$OUT/PART4_R2_STATE.json"
+          cp "$DST/PART4_P3_GROWTH_HARDENED_ANTI_PARALYSIS.json" "$OUT/CONTRACT.json"
+          cp "$DST/PART4_P3_TEN_POINT_HARDENED_CONTINUATION.json" "$OUT/DIRECTIVE.json"
+
+          findmnt -n -o SOURCE,FSTYPE,OPTIONS / > "$OUT/FINDMNT_ROOT.txt"
+          findmnt -n -o SOURCE,FSTYPE,OPTIONS /boot/efi > "$OUT/FINDMNT_EFI.txt"
+          lsblk -J -b -o NAME,PATH,TYPE,SIZE,START,FSTYPE,FSAVAIL,FSUSE%,MOUNTPOINTS,UUID,PARTUUID /dev/nvme0n1 > "$OUT/LSBLK.json"
+          cat /sys/class/block/nvme0n1p1/start > "$OUT/P1_START.txt"
+          cat /sys/class/block/nvme0n1p1/size > "$OUT/P1_SIZE.txt"
+          cat /sys/class/block/nvme0n1p3/start > "$OUT/P3_START.txt"
+          cat /sys/class/block/nvme0n1p3/size > "$OUT/P3_SIZE.txt"
+          cat /proc/sys/kernel/random/boot_id > "$OUT/BOOT_ID.txt"
+          cat /proc/cmdline > "$OUT/CMDLINE.txt"
+
+          sudo -n /usr/sbin/sgdisk -v /dev/nvme0n1 > "$OUT/SGDISK_VERIFY.txt" 2>&1
+          sudo -n /usr/sbin/tune2fs -l /dev/nvme0n1p3 > "$OUT/TUNE2FS.txt"
+          sudo -n /usr/sbin/blockdev --getsize64 /dev/nvme0n1p3 > "$OUT/BLOCKDEV_BYTES.txt"
+          if test -r /sys/fs/ext4/nvme0n1p3/errors_count; then cat /sys/fs/ext4/nvme0n1p3/errors_count > "$OUT/EXT4_ERRORS_COUNT.txt"; else echo UNAVAILABLE > "$OUT/EXT4_ERRORS_COUNT.txt"; fi
+          sudo -n dmesg --level=err,warn 2>/dev/null | grep -Ei 'EXT4-fs|nvme0n1p3' | tail -n 200 > "$OUT/EXT4_DMESG_WARN_ERR.txt" || true
+
+          systemctl is-active actions.runner.Plomillo-luna-linux-bridge.luna-linux.service > "$OUT/RUNNER_ACTIVE.txt"
+          systemctl --user is-active luna-r4-master-part1-part9.service > "$OUT/MASTER_SERVICE_ACTIVE.txt"
+          systemctl --user is-active symphylax-r1.service > "$OUT/SYMPHYLAX_ACTIVE.txt"
+
+          mapfile -t LINKS < <(find "$HOME/.local/lib/louksna-remote-bridge" -type f -path '*/bridge/live_link.py' -print 2>/dev/null | sort)
+          test "${#LINKS[@]}" -ge 1
+          LINK="${LINKS[-1]}"
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op status > "$OUT/LRB_STATUS.json"
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op observe > "$OUT/LRB_OBSERVE.json"
+
+          OUT="$OUT" EXEC_DIR="$EXEC_DIR" python3 - <<'PY'
+          import datetime as dt
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import re
+          import subprocess
+
+          out=pathlib.Path(os.environ["OUT"])
+          d=pathlib.Path(os.environ["EXEC_DIR"])
+          ex=json.loads((out/"EXECUTION.json").read_text())
+          s11=json.loads((out/"STAGE11_RESULT.json").read_text())
+          g23=json.loads((out/"STAGE11_G23.json").read_text())
+          g24=json.loads((out/"STAGE11_G24.json").read_text())
+          ms=json.loads((out/"MASTER_STATUS.json").read_text())
+          r2=json.loads((out/"PART4_R2_STATE.json").read_text())
+          lrb=json.loads((out/"LRB_STATUS.json").read_text())
+          obs=json.loads((out/"LRB_OBSERVE.json").read_text())
+
+          def sha256(p):
+              h=hashlib.sha256()
+              with pathlib.Path(p).open("rb") as f:
+                  for b in iter(lambda:f.read(1024*1024),b""):
+                      h.update(b)
+              return h.hexdigest()
+
+          tune=(out/"TUNE2FS.txt").read_text(errors="replace")
+          def field(name):
+              m=re.search(r"^"+re.escape(name)+r":\s*(.+)$",tune,re.M)
+              return m.group(1).strip() if m else None
+
+          root=(out/"FINDMNT_ROOT.txt").read_text().split()
+          efi=(out/"FINDMNT_EFI.txt").read_text().split()
+          p1_start=int((out/"P1_START.txt").read_text().strip())
+          p1_size=int((out/"P1_SIZE.txt").read_text().strip())
+          p3_start=int((out/"P3_START.txt").read_text().strip())
+          p3_size=int((out/"P3_SIZE.txt").read_text().strip())
+          dev_bytes=int((out/"BLOCKDEV_BYTES.txt").read_text().strip())
+          block_count=int(field("Block count"))
+          block_size=int(field("Block size"))
+          fs_bytes=block_count*block_size
+          fs_state=field("Filesystem state")
+          er=(out/"EXT4_ERRORS_COUNT.txt").read_text().strip()
+          errors_count=None if er=="UNAVAILABLE" else int(er)
+          dmesg=(out/"EXT4_DMESG_WARN_ERR.txt").read_text(errors="replace").lower()
+          fatal=any(x in dmesg for x in ["ext4-fs error","remounting filesystem read-only","aborting journal","i/o error"])
+          uuid=subprocess.check_output(["lsblk","-n","-o","UUID","/dev/nvme0n1p3"],text=True).strip()
+          partuuid=subprocess.check_output(["lsblk","-n","-o","PARTUUID","/dev/nvme0n1p3"],text=True).strip()
+          parts=subprocess.check_output(["lsblk","-ln","-o","PATH,TYPE","/dev/nvme0n1"],text=True).splitlines()
+          partitions=sorted(x.split()[0] for x in parts if len(x.split())>=2 and x.split()[1]=="part")
+          passed_stages=sorted({int(x.get("stage")) for x in ex.get("history",[]) if x.get("status")=="PASS" and isinstance(x.get("stage"),int)})
+          expected_blockers={"final_linux_layout","part4_r2_final_g24","final_merge_g24","verified_root_on_consolidated_linux"}
+
+          evidence_paths=[
+              d/"STAGE3_DRYRUN.json",
+              d/"STAGE4_CAPSULE"/"CAPSULE_MANIFEST.json",
+              d/"STAGE4_G24.json",
+              d/"STAGE5_CANDIDATE.json",
+              d/"STAGE5_G23.json",
+              d/"STAGE6_G24.json",
+              d/"STAGE7_RESULT.json",
+              d/"STAGE8_RECONCILIATION.json",
+              d/"STAGE10_PROYECTOS_NON_REGRESSION.json",
+              d/"STAGE11_PRECOMMIT.json",
+              d/"STAGE11_G23.json",
+              d/"STAGE11_G24.json",
+              d/"STAGE11_RESULT.json",
+          ]
+          evidence_present=all(p.is_file() for p in evidence_paths)
+          evidence_hashes={str(p.relative_to(d)):sha256(p) for p in evidence_paths if p.is_file()}
+
+          stage11_chain=(
+              s11.get("status")=="PASS"
+              and s11.get("scope")=="ONE_ONLINE_EXT4_GROW_ONLY"
+              and all(s11.get("checks",{}).values())
+              and s11.get("g23_sha256")==sha256(out/"STAGE11_G23.json")
+              and s11.get("g24_sha256")==sha256(out/"STAGE11_G24.json")
+              and g24.get("g23_sha256")==sha256(out/"STAGE11_G23.json")
+              and s11.get("candidate_sha256")==g23.get("candidate_sha256")==g24.get("candidate_sha256")
+          )
+
+          checks={
+              "stage12_boundary":int(ex.get("last_completed_stage",0))==11 and int(ex.get("current_stage",0))==12,
+              "stages_1_11_passed":all(i in passed_stages for i in range(1,12)),
+              "p1_efi_partition":p1_start==2048 and p1_size==532480,
+              "efi_mount":len(efi)>=2 and efi[0]=="/dev/nvme0n1p1" and efi[1]=="vfat",
+              "p3_single_main_root":partitions==["/dev/nvme0n1p1","/dev/nvme0n1p3"] and len(root)>=2 and root[0]=="/dev/nvme0n1p3" and root[1]=="ext4",
+              "p5_absent":not pathlib.Path("/dev/nvme0n1p5").exists(),
+              "p3_start_567296":p3_start==567296,
+              "p3_grown":p3_size==999647887,
+              "ext4_grown":fs_bytes==int(s11.get("filesystem_bytes_after",0)) and fs_bytes>int(s11.get("filesystem_bytes_before",0)) and 0<=dev_bytes-fs_bytes<block_size,
+              "uuid_preserved":uuid=="e084ec2a-af39-48b5-bb89-db2dc6a98332",
+              "partuuid_preserved":partuuid=="8e0b4274-21ff-4b16-8180-495381efb1d9",
+              "gpt_verify":(out/"SGDISK_VERIFY.txt").is_file(),
+              "ext4_clean":fs_state=="clean" and errors_count in (None,0) and not fatal,
+              "boot_id_present":bool((out/"BOOT_ID.txt").read_text().strip()),
+              "uefi_runtime_present":pathlib.Path("/sys/firmware/efi").is_dir(),
+              "runner_service":(out/"RUNNER_ACTIVE.txt").read_text().strip()=="active",
+              "master_service":(out/"MASTER_SERVICE_ACTIVE.txt").read_text().strip()=="active",
+              "symphylax_service":(out/"SYMPHYLAX_ACTIVE.txt").read_text().strip()=="active",
+              "lrb_pass":lrb.get("host")=="LOUKSNA" and bool(obs.get("evidence_sha256")),
+              "maestro_operational":ms.get("status")=="HOLD" and ms.get("current_part")=="PART_4" and set(ms.get("blockers",[]))==expected_blockers,
+              "proyectos_pass":int(s11.get("post_proyectos_records",-1))==498092 and int(s11.get("post_proyectos_mismatch_count",-1))==0,
+              "stage11_chain":stage11_chain,
+              "traceability":evidence_present and len(evidence_hashes)==len(evidence_paths),
+              "provenance_contract":sha256(out/"CONTRACT.json")=="da4c5296d0e19585e61d6867fee651c0c951965accb9b144ab4504caa93cc0a9",
+              "provenance_directive":sha256(out/"DIRECTIVE.json")=="2b2a70605ba57bdd70be44042cb12534d22b296d17d115ef79ace07f740177fa",
+              "auditability":len(ex.get("history",[]))>0 and evidence_present,
+              "rollback_reevaluated":(d/"STAGE4_CAPSULE"/"GPT_BACKUP.bin").is_file() and s11.get("shrink_performed") is False and fs_bytes>int(s11.get("filesystem_bytes_before",0)),
+              "non_regression":stage11_chain and int(s11.get("post_proyectos_mismatch_count",-1))==0,
+              "four_final_blockers_exact":set(ms.get("blockers",[]))==expected_blockers,
+          }
+
+          candidate={
+              "schema":"LOUKSNA_R4_PART4_STAGE12_TERMINAL_CANDIDATE/1.0",
+              "status":"CANDIDATE_READY" if all(checks.values()) else "HOLD",
+              "scope":"PART4_TERMINAL_EFFECTIVE_STATE_CERTIFICATION_ONLY",
+              "mission_id":ex.get("mission_id"),
+              "checks":checks,
+              "passed_stages":passed_stages,
+              "partitions_present":partitions,
+              "root_source":root[0] if root else None,
+              "root_fstype":root[1] if len(root)>1 else None,
+              "efi_source":efi[0] if efi else None,
+              "efi_fstype":efi[1] if len(efi)>1 else None,
+              "p1_start_sector":p1_start,
+              "p1_size_sectors":p1_size,
+              "p3_start_sector":p3_start,
+              "p3_size_sectors":p3_size,
+              "p3_uuid":uuid,
+              "p3_partuuid":partuuid,
+              "filesystem_bytes":fs_bytes,
+              "block_device_bytes":dev_bytes,
+              "filesystem_state":fs_state,
+              "ext4_errors_count":errors_count,
+              "stage11_result_sha256":sha256(out/"STAGE11_RESULT.json"),
+              "stage11_g23_sha256":sha256(out/"STAGE11_G23.json"),
+              "stage11_g24_sha256":sha256(out/"STAGE11_G24.json"),
+              "contract_sha256":sha256(out/"CONTRACT.json"),
+              "directive_sha256":sha256(out/"DIRECTIVE.json"),
+              "evidence_hashes":evidence_hashes,
+              "lrb_evidence_seq":obs.get("evidence_seq"),
+              "lrb_evidence_sha256":obs.get("evidence_sha256"),
+              "four_final_blockers_before":sorted(ms.get("blockers",[])),
+              "rollback":{
+                  "reevaluated":checks["rollback_reevaluated"],
+                  "automatic_gpt_restore_after_ext4_growth_allowed":False,
+                  "shrink_rollback_allowed":False,
+                  "strategy":"PRESERVE_CURRENT_GROWN_ROOT; FAIL_CLOSED; USE_CERTIFIED_EVIDENCE_AND_DATA_RECOVERY; NO_BLIND_GEOMETRY_RESTORE"
+              },
+              "disk_mutation_authorized":False,
+              "filesystem_mutation_authorized":False,
+              "state_flag_update_authorized":False,
+              "certification_propagated":False,
+              "recorded_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          raw=json.dumps(candidate,indent=2,sort_keys=True)+"\n"
+          (out/"STAGE12_CANDIDATE.json").write_text(raw)
+          print(raw)
+          if candidate["status"]!="CANDIDATE_READY":
+              raise SystemExit(23)
+          PY
+
+          sha256sum "$OUT"/* | sort > "$OUT/SHA256SUMS.txt"
+
+      - name: Upload Stage12 terminal candidate
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-stage12-terminal-candidate
+          path: ${{ runner.temp }}/stage12-preflight-${{ github.run_id }}
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 0

@@ -1,0 +1,54 @@
+name: "R4 PART4 R2 — ntfsresize double-force info diagnostic"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-r2-ntfs-double-force/**
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 10
+    steps:
+      - name: Run double-force info only while unmounted and restore mount
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          WINROOT=/media/diegoignacionorambuenamiranda/Windows
+          P3=/dev/nvme0n1p3
+          findmnt -T "$WINROOT" -o SOURCE,FSTYPE,OPTIONS,TARGET
+
+          NEED_REMOUNT=0
+          restore(){
+            rc=$?
+            if [ "$NEED_REMOUNT" -eq 1 ]; then
+              sudo -n mount "$WINROOT" || true
+            fi
+            exit "$rc"
+          }
+          trap restore EXIT
+
+          sudo -n umount "$WINROOT"
+          NEED_REMOUNT=1
+          ! findmnt -S "$P3" >/dev/null 2>&1
+
+          echo "--- NTFSRESIZE DOUBLE FORCE INFO ---"
+          set +e
+          LC_ALL=C sudo -n ntfsresize --info --force --force "$P3" 2>&1
+          rc=$?
+          set -e
+          echo "NTFSRESIZE_DOUBLE_FORCE_INFO_RC=$rc"
+
+          sudo -n mount "$WINROOT"
+          NEED_REMOUNT=0
+          trap - EXIT
+
+          echo "--- RESTORED ---"
+          findmnt -T "$WINROOT" -o SOURCE,FSTYPE,OPTIONS,TARGET
+          test -d "$WINROOT/PROYECTOS"
+          exit "$rc"

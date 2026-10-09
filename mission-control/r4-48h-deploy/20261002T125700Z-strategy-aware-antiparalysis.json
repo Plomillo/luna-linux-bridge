@@ -1,0 +1,36 @@
+{
+  "schema": "LOUKSNA_R4_15P_DEPLOY_AMENDMENT/1.0",
+  "status": "AUTHORIZED",
+  "scope": "COORDINATION_ONLY_STRATEGY_AWARE_ANTI_PARALYSIS_AND_TERMINAL_MASTER_LIFECYCLE",
+  "source_head": "29e17672432ade89e542b6d242406895cccedc8f",
+  "preserve_existing_point_certificates": [
+    "P01",
+    "P02",
+    "P03",
+    "P04",
+    "P05",
+    "P06",
+    "P07",
+    "P08",
+    "P09",
+    "P11"
+  ],
+  "preserve_part_certificates": [
+    "PART_1",
+    "PART_2",
+    "PART_3",
+    "PART_4",
+    "PART_5",
+    "PART_6",
+    "PART_7",
+    "PART_8",
+    "PART_9"
+  ],
+  "identical_retry": false,
+  "material_replay_authorized": false,
+  "desktop_commander_used": false,
+  "lrb_observation_only": true,
+  "part4_reopen_authorized": false,
+  "partitioning_authorized": false,
+  "created_at_utc": "2026-10-02T12:57:00Z"
+}

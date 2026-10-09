@@ -1,0 +1,9 @@
+{
+  "schema": "LOUKSNA_R4_15P_POSTVALIDATION_REQUEST/1.0",
+  "status": "AUTHORIZED",
+  "scope": "LIVE_CONTROL_FABRIC_ONLY",
+  "repeat_historical_certification": false,
+  "desktop_plugin_used": false,
+  "partitioning_authorized": false,
+  "created_at_utc": "2026-10-02T19:30:00Z"
+}

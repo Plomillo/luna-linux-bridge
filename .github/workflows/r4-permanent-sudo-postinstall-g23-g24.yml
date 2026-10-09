@@ -1,0 +1,157 @@
+name: "R4 permanent sudo — postinstall G23 G24"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - evidence/r4-permanent-sudo/**/MATERIAL_EVIDENCE.json
+
+permissions:
+  contents: read
+  actions: read
+  id-token: write
+
+jobs:
+  g23:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Independent validation of materialized sudo
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          mapfile -t files < <(git diff-tree --no-commit-id --name-only -r "$GITHUB_SHA" | grep '^evidence/r4-permanent-sudo/.*/MATERIAL_EVIDENCE.json$' || true)
+          test "${#files[@]}" -eq 1
+          E="${files[0]}"
+          mkdir -p "$RUNNER_TEMP/pre" "$RUNNER_TEMP/g23"
+
+          CAND_RUN="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["candidate_g24_run_id"])' "$E")"
+          PROBE_RUN="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["live_probe_run_id"])' "$E")"
+
+          gh run download "$CAND_RUN" --repo Plomillo/luna-linux-bridge -n r4-permanent-sudo-candidate-g24 -D "$RUNNER_TEMP/pre"
+          gh api "repos/Plomillo/luna-linux-bridge/actions/runs/$PROBE_RUN" > "$RUNNER_TEMP/PROBE_RUN.json"
+          gh api "repos/Plomillo/luna-linux-bridge/actions/runs/$PROBE_RUN/jobs?per_page=100" > "$RUNNER_TEMP/PROBE_JOBS.json"
+
+          python3 - "$E" "$RUNNER_TEMP/pre/G24_CANDIDATE.json" "$RUNNER_TEMP/PROBE_RUN.json" "$RUNNER_TEMP/PROBE_JOBS.json" "$RUNNER_TEMP/g23/G23.json" <<'PY'
+          import hashlib,json,pathlib,sys
+          ep,cp,rp,jp,out=map(pathlib.Path,sys.argv[1:])
+          ev=json.loads(ep.read_text()); cert=json.loads(cp.read_text()); run=json.loads(rp.read_text()); jobs=json.loads(jp.read_text())
+          cert_sha=hashlib.sha256(cp.read_bytes()).hexdigest()
+          probe_jobs=[j for j in jobs.get("jobs",[]) if j.get("name")=="probe"]
+          checks={
+            "schema":ev.get("schema")=="LOUKSNA_PERMANENT_SUDO_MATERIAL_EVIDENCE/1.0",
+            "status":ev.get("status")=="MATERIALIZED_PENDING_G23_G24",
+            "authority":ev.get("authority")=="Louksna.md",
+            "host":ev.get("host")=="LOUKSNA",
+            "user":ev.get("target_user")=="diegoignacionorambuenamiranda",
+            "scope":ev.get("scope")=="UNRESTRICTED_ROOT_VIA_SUDO",
+            "persistence":ev.get("persistence")=="UNTIL_EXPLICIT_REVOCATION",
+            "rule":ev.get("sudoers_rule")=="diegoignacionorambuenamiranda ALL=(ALL:ALL) NOPASSWD: ALL",
+            "candidate_g24":cert.get("status")=="PASS" and cert.get("scope")=="PERMANENT_NOPASSWD_ALL_CANDIDATE",
+            "candidate_cert_hash":cert_sha==ev.get("candidate_g24_sha256"),
+            "installer_hash":cert.get("installer_sha256")==ev.get("installer_sha256"),
+            "policy_hash":len(ev.get("policy_sha256",""))==64,
+            "local_visudo":ev.get("checks",{}).get("visudo_global")=="PASS",
+            "local_sudo":ev.get("checks",{}).get("sudo_k_then_sudo_n_true")=="PASS",
+            "probe_workflow":run.get("path")==".github/workflows/r4-sudo-live-probe.yml",
+            "probe_branch":run.get("head_branch")=="staging/luna-r4-master-part1-part9-20260929",
+            "probe_run_success":run.get("conclusion")=="success",
+            "probe_job_success":len(probe_jobs)==1 and probe_jobs[0].get("conclusion")=="success",
+            "checkpoint":bool(ev.get("checkpoint")),
+            "rollback":bool(ev.get("rollback_pointer")),
+            "self_certified_false":ev.get("self_certified") is False,
+            "canonical_mutation_false":ev.get("canonical_mutation") is False,
+            "authority_transfer_false":ev.get("authority_transfer") is False,
+          }
+          ok=all(checks.values())
+          result={
+            "schema":"LOUKSNA_PERMANENT_SUDO_POSTINSTALL_G23/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "install_id":ev["install_id"],
+            "material_evidence_sha256":hashlib.sha256(ep.read_bytes()).hexdigest(),
+            "candidate_g24_sha256":cert_sha,
+            "installer_sha256":ev["installer_sha256"],
+            "policy_sha256":ev["policy_sha256"],
+            "live_probe_run_id":ev["live_probe_run_id"],
+            "checks":checks,
+            "repair_allowed":False,
+            "g24_allowed":ok
+          }
+          out.write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(result,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(4)
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-permanent-sudo-postinstall-g23
+          path: ${{ runner.temp }}/g23/G23.json
+          retention-days: 90
+          compression-level: 0
+
+  g24:
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-permanent-sudo-postinstall-g23
+          path: ${{ runner.temp }}/g23
+      - name: Issue digest-bound final certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/G23.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$G")" = PASS
+          H="$(sha256sum "$G" | awk '{print $1}')"
+          AUD="louksna-r4-permanent-sudo-postinstall:$H"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export H AUD TOKEN
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$G" "$RUNNER_TEMP/g24/G24_ACTIVE.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          g=json.loads(pathlib.Path(sys.argv[1]).read_text())
+          token=os.environ["TOKEN"]; parts=token.split(".")
+          if len(parts)!=3: raise SystemExit("OIDC_FORMAT")
+          payload=parts[1]+"="*((4-len(parts[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload))
+          aud=claims.get("aud"); expected=os.environ["AUD"]
+          if aud!=expected and not (isinstance(aud,list) and expected in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          cert={
+            "schema":"LOUKSNA_PERMANENT_SUDO_POSTINSTALL_G24/1.0",
+            "status":"PASS",
+            "epistemic_state":"CERTIFIED",
+            "scope":"PERMANENT_NOPASSWD_ALL_MATERIALIZATION",
+            "install_id":g["install_id"],
+            "material_evidence_sha256":g["material_evidence_sha256"],
+            "candidate_g24_sha256":g["candidate_g24_sha256"],
+            "installer_sha256":g["installer_sha256"],
+            "policy_sha256":g["policy_sha256"],
+            "live_probe_run_id":g["live_probe_run_id"],
+            "g23_sha256":os.environ["H"],
+            "authority_authenticated":True,
+            "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(token.encode()).hexdigest(),
+            "canonical_mutation":False,
+            "authority_transfer":False,
+            "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          pathlib.Path(sys.argv[2]).write_text(json.dumps(cert,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(cert,indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-permanent-sudo-postinstall-g24
+          path: ${{ runner.temp }}/g24/G24_ACTIVE.json
+          retention-days: 90
+          compression-level: 0

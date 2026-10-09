@@ -1,0 +1,231 @@
+name: "R4 15P — protected reference host crypto binding"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-protected-reference-host-binding.yml
+      - mission-control/r4-protected-reference-host-binding/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r4-protected-reference-host-binding
+  cancel-in-progress: false
+
+jobs:
+  bind:
+    name: Bind protected external reference to LOUKSNA host
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            server/r4-48h/R4_48H_CONTRACT.json
+          sparse-checkout-cone-mode: false
+
+      - name: Fail-closed protected reference host binding
+        env:
+          EXPECTED_SOURCE_NAME: LOUKSNAMEJORADA.md
+          EXPECTED_SOURCE_FILE_ID: file_000000001c48820eb53e4091e5b9dc62
+          EXPECTED_SOURCE_SIZE: "11542631"
+          EXPECTED_SOURCE_SHA256: 2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51
+          EXPECTED_SHA: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          HOME_REAL="/home/diegoignacionorambuenamiranda"
+          STATE="$HOME_REAL/.local/state/louksna/r4-48h"
+          LIVE_CONTRACT="$HOME_REAL/.local/lib/louksna/r4-48h/R4_48H_CONTRACT.json"
+          REPO_CONTRACT="$GITHUB_WORKSPACE/server/r4-48h/R4_48H_CONTRACT.json"
+          P14="$STATE/point-certificates/P14.json"
+          OUT="$STATE/PROTECTED_REFERENCE_HOST_BINDING.json"
+          EVID="$STATE/PROTECTED_REFERENCE_HOST_BINDING_EVIDENCE.json"
+
+          test "$(hostname)" = "LOUKSNA"
+          test "$(id -un)" = "diegoignacionorambuenamiranda"
+          test -r "$LIVE_CONTRACT"
+          test -r "$REPO_CONTRACT"
+          test -r "$P14"
+          mkdir -p "$STATE"
+
+          python3 - "$REPO_CONTRACT" "$LIVE_CONTRACT" "$P14" "$OUT" "$EVID" <<'PY'
+          import datetime as dt, hashlib, json, os, pathlib, sys
+
+          repo_contract, live_contract, p14_path, out_path, evid_path = map(pathlib.Path, sys.argv[1:])
+          source = {
+              "name": os.environ["EXPECTED_SOURCE_NAME"],
+              "source_file_id": os.environ["EXPECTED_SOURCE_FILE_ID"],
+              "source_size_bytes": int(os.environ["EXPECTED_SOURCE_SIZE"]),
+              "sha256": os.environ["EXPECTED_SOURCE_SHA256"],
+          }
+
+          def load(p):
+              return json.loads(p.read_text(encoding="utf-8"))
+
+          def sha_file(p):
+              h=hashlib.sha256()
+              with p.open("rb") as f:
+                  for b in iter(lambda:f.read(1024*1024),b""):
+                      h.update(b)
+              return h.hexdigest()
+
+          rc=load(repo_contract)
+          lc=load(live_contract)
+          p14=load(p14_path)
+          rb=rc.get("references",{}).get("protected_reference_binding",{})
+          lb=lc.get("references",{}).get("protected_reference_binding",{})
+
+          expected_contract = {
+              "name": source["name"],
+              "mode": "EXTERNAL_PROTECTED_REFERENCE",
+              "source_surface": "CHATGPT_PROJECT_FILE",
+              "source_file_id": source["source_file_id"],
+              "source_size_bytes": source["source_size_bytes"],
+              "content_copy_required": False,
+              "cryptographic_host_binding_required_before_final_g24": True,
+              "provenance_required": True,
+          }
+
+          checks={
+              "repo_contract_schema": rc.get("schema")=="LOUKSNA_R4_REMAINDER_48H_CONTRACT/2.0",
+              "live_contract_schema": lc.get("schema")=="LOUKSNA_R4_REMAINDER_48H_CONTRACT/2.0",
+              "repo_binding_exact": all(rb.get(k)==v for k,v in expected_contract.items()),
+              "live_binding_exact": all(lb.get(k)==v for k,v in expected_contract.items()),
+              "repo_live_binding_equal": all(rb.get(k)==lb.get(k) for k in expected_contract),
+              "source_sha256_shape": len(source["sha256"])==64 and all(c in "0123456789abcdef" for c in source["sha256"]),
+              "source_size_exact": source["source_size_bytes"]==11542631,
+              "p14_pass": p14.get("status")=="PASS",
+              "p14_point": p14.get("point")=="P14" or p14.get("point_id")=="P14",
+              "host_name": os.uname().nodename=="LOUKSNA",
+              "part4_closed": rc.get("immutable_boundaries",{}).get("part4_closed") is True,
+              "desktop_plugin_forbidden": rc.get("immutable_boundaries",{}).get("desktop_plugin_forbidden") is True,
+          }
+          if not all(checks.values()):
+              raise SystemExit("PROTECTED_REFERENCE_BINDING_PRECHECK_FAILED:"+json.dumps(checks,sort_keys=True))
+
+          machine_id=pathlib.Path("/etc/machine-id").read_text().strip()
+          boot_id=pathlib.Path("/proc/sys/kernel/random/boot_id").read_text().strip()
+          authority=pathlib.Path("/home/diegoignacionorambuenamiranda/.local/lib/louksna/symphylax-r1/Louksna.md")
+          if not authority.is_file():
+              raise SystemExit("AUTHORITY_HOST_COPY_MISSING")
+
+          core={
+              "schema":"LOUKSNA_R4_PROTECTED_REFERENCE_HOST_BINDING_CORE/1.0",
+              "source":source,
+              "external_reference_mode":True,
+              "content_copy_required":False,
+              "provenance":{
+                  "source_surface":"CHATGPT_PROJECT_FILE",
+                  "source_file_id":source["source_file_id"],
+                  "source_size_bytes":source["source_size_bytes"],
+                  "source_sha256":source["sha256"],
+                  "hash_derivation":"FULL_PROJECT_FILE_CONTENT_SHA256_WITH_EXACT_BYTE_SIZE_MATCH",
+              },
+              "host":{
+                  "hostname":os.uname().nodename,
+                  "machine_id_sha256":hashlib.sha256(machine_id.encode()).hexdigest(),
+                  "boot_id_sha256":hashlib.sha256(boot_id.encode()).hexdigest(),
+              },
+              "authority_sha256":sha_file(authority),
+              "repo_contract_sha256":sha_file(repo_contract),
+              "live_contract_sha256":sha_file(live_contract),
+              "p14_certificate_sha256":sha_file(p14_path),
+              "github":{
+                  "repository":os.environ["GITHUB_REPOSITORY"],
+                  "workflow":os.environ["GITHUB_WORKFLOW"],
+                  "commit_sha":os.environ["EXPECTED_SHA"],
+                  "run_id":os.environ["RUN_ID"],
+                  "run_attempt":os.environ["RUN_ATTEMPT"],
+                  "runner_name":os.environ.get("RUNNER_NAME"),
+              },
+              "desktop_commander_used":False,
+              "lrb_material_execution_used":False,
+              "partitioning_authorized":False,
+              "part4_reopen_authorized":False,
+          }
+          canonical=json.dumps(core,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()
+          binding_sha=hashlib.sha256(canonical).hexdigest()
+          now=dt.datetime.now(dt.timezone.utc).isoformat().replace("+00:00","Z")
+          out={
+              **core,
+              "schema":"LOUKSNA_R4_PROTECTED_REFERENCE_HOST_BINDING/1.0",
+              "status":"PASS",
+              "binding_sha256":binding_sha,
+              "bound_at_utc":now,
+              "checks":checks,
+          }
+
+          def atomic(path,obj):
+              tmp=path.with_suffix(path.suffix+".tmp")
+              tmp.write_text(json.dumps(obj,sort_keys=True,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
+              os.replace(tmp,path)
+
+          atomic(out_path,out)
+          evidence={
+              "schema":"LOUKSNA_R4_PROTECTED_REFERENCE_HOST_BINDING_EVIDENCE/1.0",
+              "status":"PASS",
+              "binding_sha256":binding_sha,
+              "binding_file_sha256":sha_file(out_path),
+              "source_sha256":source["sha256"],
+              "source_size_bytes":source["source_size_bytes"],
+              "host_machine_id_sha256":core["host"]["machine_id_sha256"],
+              "p14_certificate_sha256":core["p14_certificate_sha256"],
+              "created_at_utc":now,
+          }
+          atomic(evid_path,evidence)
+
+          rebound=load(out_path)
+          core2={k:v for k,v in rebound.items() if k not in {"schema","status","binding_sha256","bound_at_utc","checks"}}
+          core2["schema"]="LOUKSNA_R4_PROTECTED_REFERENCE_HOST_BINDING_CORE/1.0"
+          rebound_sha=hashlib.sha256(json.dumps(core2,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()).hexdigest()
+          if rebound.get("status")!="PASS" or rebound_sha!=binding_sha:
+              raise SystemExit("HOST_BINDING_REBOUND_FAILED")
+          print(json.dumps(evidence,indent=2,sort_keys=True))
+          PY
+
+          sync
+          cat "$OUT"
+
+          # Wake only the still-incomplete P15 coordinator; never recertify P01-P14.
+          if [ ! -f "$STATE/point-certificates/P15.json" ]; then
+            UIDN="$(id -u)"
+            export XDG_RUNTIME_DIR="/run/user/$UIDN"
+            export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+            systemctl --user restart luna-r4-48h-coordinator.service
+          fi
+
+      - name: Wait for P15 G23/G24 certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          STATE="/home/diegoignacionorambuenamiranda/.local/state/louksna/r4-48h"
+          for i in $(seq 1 72); do
+            if python3 - "$STATE/point-certificates/P15.json" <<'PY'
+          import json,pathlib,sys
+          p=pathlib.Path(sys.argv[1])
+          if not p.is_file():
+              raise SystemExit(1)
+          d=json.loads(p.read_text())
+          raise SystemExit(0 if d.get("status")=="PASS" else 1)
+          PY
+            then
+              echo "P15_CERTIFICATE=PASS"
+              cat "$STATE/point-certificates/P15.json"
+              cat "$STATE/STATUS.json"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "P15_CERTIFICATE_TIMEOUT"
+          cat "$STATE/STATUS.json" || true
+          tail -n 120 "$STATE/LEDGER.jsonl" || true
+          exit 15

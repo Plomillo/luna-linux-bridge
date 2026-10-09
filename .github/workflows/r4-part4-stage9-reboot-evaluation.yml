@@ -1,0 +1,117 @@
+name: "R4 PART4 — Stage9 reboot requirement evaluation"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-stage9-reboot-evaluation/**
+
+permissions:
+  contents: read
+
+jobs:
+  evaluate:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Evaluate Stage9 without reboot when kernel is current
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/stage9-$GITHUB_RUN_ID"
+          mkdir -p "$OUT"
+          OUT="$OUT" python3 - <<'PY'
+          import datetime as dt
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import subprocess
+          import time
+
+          outdir=pathlib.Path(os.environ["OUT"])
+          home=pathlib.Path.home()
+          state=home/".local/state/louksna/r4-master-part1-part9"
+          d=state/"PART_4_P3_HARDENED"
+          execution=d/"EXECUTION.json"
+          rec=d/"STAGE8_RECONCILIATION.json"
+
+          def sha256(p):
+              h=hashlib.sha256()
+              with pathlib.Path(p).open("rb") as f:
+                  for chunk in iter(lambda:f.read(1024*1024),b""):
+                      h.update(chunk)
+              return h.hexdigest()
+
+          if not execution.is_file() or not rec.is_file():
+              raise SystemExit("STAGE9_PREREQUISITE_MISSING")
+
+          before=json.loads(execution.read_text())
+          s8=json.loads(rec.read_text())
+          checks={
+              "stage9_boundary": int(before.get("current_stage",0))==9 and int(before.get("last_completed_stage",0))==8,
+              "stage8_pass": s8.get("status")=="PASS",
+              "gpt_target": s8.get("gpt_target") is True,
+              "kernel_target": s8.get("kernel_target") is True,
+              "reboot_not_required": s8.get("reboot_required") is False,
+              "no_stage8_disk_mutation": s8.get("disk_mutation_performed") is False,
+              "no_stage8_filesystem_mutation": s8.get("filesystem_mutation_performed") is False,
+          }
+          evidence={
+              "schema":"LOUKSNA_R4_PART4_STAGE9_REBOOT_EVALUATION/1.0",
+              "status":"PASS" if all(checks.values()) else "HOLD",
+              "scope":"STAGE9_REBOOT_REQUIREMENT_EVALUATION_ONLY",
+              "checks":checks,
+              "stage8_sha256":sha256(rec),
+              "reboot_performed":False,
+              "reboot_required":False if all(checks.values()) else None,
+              "disk_mutation_performed":False,
+              "filesystem_mutation_performed":False,
+              "recorded_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          (outdir/"STAGE9_PRE_EVALUATION.json").write_text(json.dumps(evidence,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(evidence,indent=2,sort_keys=True))
+          if evidence["status"]!="PASS":
+              raise SystemExit(23)
+
+          uid=os.getuid()
+          env=os.environ.copy()
+          env["XDG_RUNTIME_DIR"]=f"/run/user/{uid}"
+          env["DBUS_SESSION_BUS_ADDRESS"]=f"unix:path=/run/user/{uid}/bus"
+          subprocess.run(["systemctl","--user","restart","luna-r4-master-part1-part9.service"],env=env,check=True)
+
+          final=None
+          for _ in range(30):
+              final=json.loads(execution.read_text())
+              if int(final.get("last_completed_stage",0))>=9:
+                  break
+              time.sleep(1)
+
+          after={
+              "schema":"LOUKSNA_R4_PART4_STAGE9_RESULT/1.0",
+              "status":"PASS" if int(final.get("last_completed_stage",0))>=9 else "HOLD",
+              "current_stage":final.get("current_stage"),
+              "last_completed_stage":final.get("last_completed_stage"),
+              "next_authorized_action":final.get("next_authorized_action"),
+              "reboot_performed":False,
+              "reboot_required":False,
+              "disk_mutation_performed":False,
+              "filesystem_mutation_performed":False,
+              "stage8_sha256":sha256(rec),
+              "recorded_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          (outdir/"STAGE9_RESULT.json").write_text(json.dumps(after,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(after,indent=2,sort_keys=True))
+          if after["status"]!="PASS":
+              raise SystemExit(31)
+          PY
+
+      - name: Upload Stage9 evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-stage9-reboot-evaluation
+          path: ${{ runner.temp }}/stage9-${{ github.run_id }}
+          if-no-files-found: warn
+          retention-days: 90

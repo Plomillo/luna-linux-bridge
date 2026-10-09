@@ -1,0 +1,49 @@
+name: "R4 V5 workflow syntax diagnosis"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-v5-syntax-diagnose.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Parse YAML and inspect workflow structure
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          F=.github/workflows/r4-part4-r2-certified-continuation-v6.yml
+          ruby -e 'require "yaml"; x=YAML.load_file(ARGV[0]); raise "jobs missing" unless x.is_a?(Hash) && x["jobs"].is_a?(Hash); puts "YAML_PARSE=PASS"; puts "JOBS="+x["jobs"].keys.join(",")' "$F"
+          python3 - "$F" <<'PY'
+          import pathlib,sys
+          s=pathlib.Path(sys.argv[1]).read_text()
+          needle=chr(36)+"{{"
+          assert s.count(needle)==s.count("}}"), (s.count(needle),s.count("}}"))
+          assert "jobs:" in s
+          print("EXPRESSION_DELIMITER_CHECK=PASS")
+          PY
+          ruby - "$F" <<'RB'
+          require "yaml"
+          x=YAML.load_file(ARGV[0])
+          x["jobs"].each{|k,v| puts "NEEDS #{k}=#{v["needs"].inspect}"}
+          RB
+          GOBIN="$RUNNER_TEMP/bin" go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
+          bash -n server/r4-master/part4_r2_storage_resume_after_v5_mount_guard_v6.sh
+          grep -F 'preexisting_mounts.p3' server/r4-master/part4_r2_storage_resume_after_v5_mount_guard_v6.sh
+          grep -F 'df --output=iavail' server/r4-master/part4_r2_storage_resume_after_v5_mount_guard_v6.sh
+          ! grep -F 'df -i --output=iavail' server/r4-master/part4_r2_storage_resume_after_v5_mount_guard_v6.sh
+          "$RUNNER_TEMP/bin/actionlint" -color -ignore 'label "luna-aux" is unknown' -ignore 'shellcheck reported issue' "$F"
+
+# validation generation: v6-definition

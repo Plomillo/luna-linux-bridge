@@ -1,0 +1,286 @@
+{
+  "actions": [
+    {
+      "network": false,
+      "operation": "REUSE_BASE_PACKAGES",
+      "packages": [
+        "wine",
+        "wine64",
+        "wine32:i386",
+        "flatpak",
+        "curl",
+        "ca-certificates",
+        "libc6:i386",
+        "libstdc++6:i386",
+        "libgcc-s1:i386",
+        "libgl1-mesa-dri:i386"
+      ],
+      "reinstall": false
+    },
+    {
+      "argv": [
+        "sudo",
+        "-n",
+        "/usr/bin/systemctl",
+        "enable",
+        "--now",
+        "waydroid-container.service"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/steamcmd/steamcmd.sh",
+        "+@sSteamCmdForcePlatformType",
+        "linux",
+        "+force_install_dir",
+        "/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-11.0",
+        "+login",
+        "anonymous",
+        "+app_update",
+        "4628710",
+        "validate",
+        "+quit"
+      ],
+      "returncode": 8,
+      "stderr": "steamcmd.sh[298761]: Starting  /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/steamcmd/linux32/steamcmd\n",
+      "stdout": "Redirecting stderr to '/home/diegoignacionorambuenamiranda/Steam/logs/stderr.txt'\nLogging directory: '/home/diegoignacionorambuenamiranda/Steam/logs'\n[  0%] Checking for available updates...\n[----] Verifying installation...\nUpdateUI: skip show logo\nSteam Console Client (c) Valve Corporation - version 1788292693\n-- type 'quit' to exit --\nLoading Steam API...\u001b[0mOK\n\u001b[0m\"@sSteamCmdForcePlatformType\" = \"linux\"\n\u001b[0m\nConnecting anonymously to Steam Public...\u001b[0mOK\n\u001b[0mWaiting for client config...\u001b[0mOK\n\u001b[0mWaiting for user info...\u001b[0mOK\n\u001b[0mERROR! Failed to install app '4628710' (No subscription)\n\u001b[0mUnloading Steam API...\u001b[0mOK\n\u001b[0m"
+    },
+    {
+      "commit": "db9e6ffbf24a95b104fb699dd62532c70a2f9a51",
+      "network": false,
+      "operation": "REUSE_PROTON_SOURCE_COMMIT",
+      "path": "/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2"
+    },
+    {
+      "network": false,
+      "operation": "REUSE_PROTON_SUBMODULES",
+      "path": "/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2"
+    },
+    {
+      "argv": [
+        "make",
+        "build_name=louksna-proton-11.0-2",
+        "enable_ccache=0",
+        "redist"
+      ],
+      "ended_at_utc": "2026-10-02T10:42:10.122878Z",
+      "log_bytes": 12992,
+      "log_path": "/home/diegoignacionorambuenamiranda/.local/state/louksna/r4-master-part1-part9/PART_6_HARDENED/PROTON_BUILD.log",
+      "log_sha256": "4a9686d0e79ed4b5691954dcbb11d3220bb7244ee8c231c436a514fdd587f9cb",
+      "returncode": 0,
+      "started_at_utc": "2026-10-02T10:41:50.662176Z",
+      "stderr": "",
+      "stdout_tail": "a/r4-part6/components/Proton-source-11.0-2:/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2 -v /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2:/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2 -w /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2 -e MAKEFLAGS -v /home/diegoignacionorambuenamiranda/.cargo:/home/diegoignacionorambuenamiranda/.cargo -e CARGO_HOME=/home/diegoignacionorambuenamiranda/.cargo  -e CCACHE_DISABLE=1  registry.gitlab.steamos.cloud/proton/steamrt4/sdk/x86_64:4.0.20260331.220802-0 make -j8 -j2 -f Makefile -j2 V=1 VERBOSE=1 BASE_SOURCE_DATE_EPOCH=1790937711 build_name=louksna-proton-11.0-2 enable_ccache=0 CONTAINER=1 redist\nmake: warning: -j2 forced in submake: resetting jobserver mode.\nsyncing dav1d... done\nsyncing libsoup... done\nsyncing gst_orc... done\nsyncing gstreamer... done\nsyncing graphene... done\nsyncing gst_base... done\nsyncing gst_good... done\nsyncing gst_bad... done\nsyncing ffmpeg... done\n../../Makefile.in:335: warning: overriding recipe for target '/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/.ffmpeg-i386-dist'\n../../Makefile.in:329: warning: ignoring old recipe for target '/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/.ffmpeg-i386-dist'\n../../Makefile.in:337: warning: overriding recipe for target '/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/.ffmpeg-x86_64-dist'\n../../Makefile.in:330: warning: ignoring old recipe for target '/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/.ffmpeg-x86_64-dist'\nsyncing gst_libav... done\nsyncing gst_plugins_rs... done\nsyncing vulkan-headers... done\nsyncing spirv-headers... done\nsyncing glslang... done\nsyncing lsteamclient... done\nsyncing openxr... done\nsyncing wineopenxr... done\nsyncing steamexe... done\nsyncing piper... done\nsyncing openfst... done\n../../Makefile.in:536: warning: overriding recipe for target '/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/src-openfst/configure'\n../../Makefile.in:535: warning: ignoring old recipe for target '/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/src-openfst/configure'\nsyncing kaldi... done\nsyncing vosk... done\nsyncing wine... done\n../../Makefile.in:648: warning: overriding recipe for target '/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/src-wine/configure'\n../../Makefile.in:647: warning: ignoring old recipe for target '/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/src-wine/configure'\nsyncing vrclient... done\nsyncing dxvk... done\nsyncing dxvk-nvapi... done\nsyncing vkd3d... done\n../../Makefile.in:780: warning: overriding recipe for target '/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/src-vkd3d/configure'\n../../Makefile.in:779: warning: ignoring old recipe for target '/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/src-vkd3d/configure'\nsyncing vkd3d-proton... done\nsyncing symstore... done\n:: building symstore helper...\nrsync -arx \"/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/src-symstore/\" \"/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/obj-symstore-x86_64/\"\nmkdir -p /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/dist/files/share/fonts\ncp ./obj-fonts/*.ttf \"/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/dist/files/share/fonts\"\ncp ./obj-fonts/source-han/msyh.ttf \"/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/dist/files/share/fonts\"\nmake -C \"/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/obj-symstore-x86_64\" SYMSTORE_CFLAGS=\"-I/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/src-wine/include -I/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/obj-wine-x86_64/include\"\nmake[1]: Entering directory '/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/obj-symstore-x86_64'\nmake[1]: Nothing to be done for 'all'.\nmake[1]: Leaving directory '/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/obj-symstore-x86_64'\ntouch /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/.symstore-x86_64-build\nfind /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/dist/files/lib/wine -type f -execdir chmod a-w '{}' '+'\ncp ./obj-fonts/source-han/simsun.ttc \"/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/dist/files/share/fonts\"\nrm -rf /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/dist/files/share/default_pfx\ncp ./obj-fonts/ume-gothic/msgothic.ttc \"/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/dist/files/share/fonts\"\ncp ./obj-fonts/source-han/malgun.ttf \"/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/dist/files/share/fonts\"\nrm -rf /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/dist/files/share/default_pfx_arm64\npython3 ../../default_pfx.py /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/dist/files/share/default_pfx /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/dist/files 0\ncp -r ./obj-fonts/alt \"/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/dist/files/share/fonts\"\ntouch /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/.symstore-x86_64-post-build\n:: installing symstore-x86_64...\nif [ -f \"/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/obj-symstore-x86_64/compile_commands.json\" ]; then mkdir -p \"/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/compile_commands/symstore-x86_64/\"; sed \"s#/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/src-symstore#/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/symstore#g\" \"/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/obj-symstore-x86_64/compile_commands.json\" > \"/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/compile_commands/symstore-x86_64/compile_commands.json\"; fi\nmkdir -p /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/dst-symstore-x86_64/lib/ /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/dist/files/lib/\ncd /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/dst-symstore-x86_64/lib && find -type f -printf '/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/dist/files/lib/%h\\0' | sort -z | uniq -z | xargs --verbose -0 -r -P2 mkdir -p\ncd /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/dst-symstore-x86_64/lib && find -type l -printf '%p\\0/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/dist/files/lib/%p\\0' | xargs --verbose -0 -r -P2 -n2 cp -a\ncd /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/dst-symstore-x86_64/lib && find -type f -not '(' -iname '*.pc' -or -iname '*.cmake' -or -iname '*.a' -or -iname '*.la' -or -iname '*.def' -or -iname '*.h' ')' -printf '/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/dist/files/lib/%p.debug\\0' | xargs --verbose -0 -r -P2 rm -f\ncd /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/dst-symstore-x86_64/lib && find -type f -not '(' -iname '*.pc' -or -iname '*.cmake' -or -iname '*.a' -or -iname '*.la' -or -iname '*.def' -or -iname '*.h' ')' -printf '--strip-debug\\0%p\\0/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/dist/files/lib/%p\\0' | xargs --verbose -0 -r -P2 -n3 objcopy -p --set-section-flags .text=contents,alloc,load,readonly,code\ntouch /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/.symstore-x86_64-dist\nwine: created the configuration directory '/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/dist/files/share/default_pfx'\nwineserver: using server-side synchronization.\nFailed to open /etc/machine-id, error No such file or directory.\necho `date '+%s'` `GIT_DIR=/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/.git git describe --tags` > /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/dist/version\nmkdir -p ./redist\nrsync --delete -arx /home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2/dist/ ./redist\nmake[1]: se sale del directorio '/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/build-louksna-proton-11.0-2'\nProton build available at build/louksna-proton-11.0-2\n"
+    }
+  ],
+  "certification_propagated": false,
+  "checks": {
+    "all_components_functional": true,
+    "component_set_exact": true,
+    "part5_certificate_present": true,
+    "privilege_chain_active": true,
+    "rollback_checkpoint": true,
+    "rollback_script": true,
+    "root_layout_preserved": true
+  },
+  "components": {
+    "bottles": {
+      "flatpak_commit": "b63354d6e95377f11796244da517df58866c708aeab2b13cf81082ba5a14c1dd",
+      "functional_test_pass": true,
+      "provenance": {
+        "app_id": "com.usebottles.bottles",
+        "flatpak_commit": "b63354d6e95377f11796244da517df58866c708aeab2b13cf81082ba5a14c1dd",
+        "remote": "flathub",
+        "repo": "https://dl.flathub.org/repo/flathub.flatpakrepo",
+        "source": "BOTTLES_SUPPORTED_FLATPAK"
+      },
+      "status": "PASS",
+      "test": {
+        "argv": [
+          "flatpak",
+          "run",
+          "--command=bottles-cli",
+          "com.usebottles.bottles",
+          "--version"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "Bottles 67.3\n"
+      },
+      "version": "Bottles 67.3"
+    },
+    "lutris": {
+      "artifact_path": "/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/sources/lutris_0.5.22_all.deb",
+      "artifact_sha256": "88a350357e0438b423cdf93108f27942de094dc19f973df73839f3b0b0bafaa0",
+      "functional_test_pass": true,
+      "provenance": {
+        "artifact_sha256": "88a350357e0438b423cdf93108f27942de094dc19f973df73839f3b0b0bafaa0",
+        "release_tag": "v0.5.22",
+        "source": "LUTRIS_OFFICIAL_GITHUB_RELEASE",
+        "url": "https://github.com/lutris/lutris/releases/download/v0.5.22/lutris_0.5.22_all.deb"
+      },
+      "status": "PASS",
+      "test": {
+        "argv": [
+          "/usr/games/lutris",
+          "--version"
+        ],
+        "resolved_path": "/usr/games/lutris",
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "lutris-0.5.22\n"
+      },
+      "version": "0.5.22"
+    },
+    "prism": {
+      "artifact_path": "/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/PrismLauncher.AppImage",
+      "artifact_sha256": "bb81038c56a09e944659e4b808dbfbc52d52d5e3a3ffe32216689a3ca1508d3d",
+      "functional_test_pass": true,
+      "provenance": {
+        "artifact_sha256": "bb81038c56a09e944659e4b808dbfbc52d52d5e3a3ffe32216689a3ca1508d3d",
+        "release_tag": "11.1.1",
+        "source": "PRISMLAUNCHER_OFFICIAL_GITHUB_RELEASE",
+        "url": "https://github.com/PrismLauncher/PrismLauncher/releases/download/11.1.1/PrismLauncher-Linux-x86_64.AppImage"
+      },
+      "status": "PASS",
+      "test": {
+        "argv": [
+          "/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/PrismLauncher.AppImage",
+          "--version"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "PrismLauncher 11.1.1\n\n"
+      },
+      "version": "11.1.1"
+    },
+    "proton": {
+      "functional_test_pass": true,
+      "provenance": {
+        "build_engine": "podman-rootless",
+        "build_jobs": 2,
+        "build_name": "louksna-proton-11.0-2",
+        "release_tag": "proton-11.0-2",
+        "source": "VALVE_OFFICIAL_SOURCE_BUILD",
+        "source_commit": "db9e6ffbf24a95b104fb699dd62532c70a2f9a51",
+        "source_repository": "https://github.com/ValveSoftware/Proton.git",
+        "steam_app_id": 4628710,
+        "steamcmd_no_subscription_fallback": true,
+        "submodule_status_sha256": "c08b530d0119fce30ec8b66eba49ab28d187faa0253231c4acf1c447a5909031"
+      },
+      "runtime_path": "/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/louksna-proton-11.0-2",
+      "runtime_wine": "/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/louksna-proton-11.0-2/files/bin/wine",
+      "status": "PASS",
+      "test": {
+        "argv": [
+          "/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/components/Proton-source-11.0-2/build/louksna-proton-11.0-2/files/bin/wine",
+          "--version"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "wine-11.0\n"
+      },
+      "version": "wine-11.0"
+    },
+    "steam": {
+      "artifact_path": "/home/diegoignacionorambuenamiranda/.local/share/louksna/r4-part6/sources/steam_latest.deb",
+      "artifact_sha256": "765aba9a0ed339a50226ceb614fcc9879a991ba184098bc8de920efb12c714a4",
+      "executable": "/usr/bin/steam",
+      "functional_test_pass": true,
+      "provenance": {
+        "artifact_sha256": "765aba9a0ed339a50226ceb614fcc9879a991ba184098bc8de920efb12c714a4",
+        "dpkg_metadata": "Package: steam-launcher\nVersion: 1:1.0.0.87",
+        "package": "steam-launcher",
+        "source": "VALVE_OFFICIAL_STEAM_REPOSITORY",
+        "url": "https://repo.steampowered.com/steam/archive/stable/steam_latest.deb",
+        "version": "1:1.0.0.87"
+      },
+      "status": "PASS",
+      "test": {
+        "argv": [
+          "dpkg",
+          "-V",
+          "steam-launcher"
+        ],
+        "executable": "/usr/bin/steam",
+        "returncode": 0,
+        "stderr": "",
+        "stdout": ""
+      },
+      "version": "1:1.0.0.87"
+    },
+    "waydroid": {
+      "functional_test_pass": true,
+      "provenance": {
+        "package": "waydroid",
+        "repo_bootstrap_sha256": "2cf79f3cc82adb8c235faca0240c1312867afab0221e9aaf7a539a8614a503fd",
+        "source": "WAYDROID_OFFICIAL_APT_REPOSITORY",
+        "url": "https://repo.waydro.id",
+        "version": "1.6.2"
+      },
+      "status": "PASS",
+      "test": {
+        "argv": [
+          "waydroid",
+          "--version"
+        ],
+        "container_service": {
+          "argv": [
+            "systemctl",
+            "is-active",
+            "waydroid-container.service"
+          ],
+          "returncode": 0,
+          "stderr": "",
+          "stdout": "active\n"
+        },
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "1.6.2\n"
+      },
+      "version": "1.6.2"
+    },
+    "wine": {
+      "functional_test_pass": true,
+      "provenance": {
+        "package": "wine",
+        "repository": "http://deb.debian.org/debian trixie main",
+        "source": "DEBIAN_TRIXIE_OFFICIAL_APT",
+        "version": "10.0~repack-6"
+      },
+      "status": "PASS",
+      "test": {
+        "argv": [
+          "wine",
+          "--version"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "wine-10.0 (Debian 10.0~repack-6)\n"
+      },
+      "version": "10.0~repack-6"
+    }
+  },
+  "disk_partition_mutation_performed": false,
+  "filesystem_format_or_resize_performed": false,
+  "host": "LOUKSNA",
+  "mission_id": "MIS-cf38037f1f114012af53",
+  "p3_size_sectors": 999647887,
+  "p3_start_sector": 567296,
+  "recorded_at_utc": "2026-10-02T10:42:14.102105Z",
+  "repo_candidate_path": "evidence/r4-master-part6/20261002T104214Z-MIS-cf38037f1f114012af53/FULL_CANDIDATE_V2.json",
+  "rollback_checkpoint_path": "/home/diegoignacionorambuenamiranda/.local/state/louksna/r4-master-part1-part9/PART_6_HARDENED/ROLLBACK_CHECKPOINT.json",
+  "rollback_checkpoint_sha256": "93bdc49d60291066c6026dd4f1d2ddca70df88dc22a957bf54999dffa5502753",
+  "rollback_ready": true,
+  "rollback_script_path": "/home/diegoignacionorambuenamiranda/.local/state/louksna/r4-master-part1-part9/PART_6_HARDENED/ROLLBACK.sh",
+  "rollback_script_sha256": "cba12355457e35b8d7c4f1337a0d8c826c5c5b3f50fa8c4d396725fdcbae6d25",
+  "root_fstype": "ext4",
+  "root_source": "/dev/nvme0n1p3",
+  "schema": "LOUKSNA_R4_PART6_FULL_CANDIDATE_V2/1.0",
+  "status": "PASS",
+  "unrelated_user_data_deleted": false,
+  "worker_version": "2.3"
+}

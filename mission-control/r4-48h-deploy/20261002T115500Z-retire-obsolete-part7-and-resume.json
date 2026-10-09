@@ -1,0 +1,33 @@
+{
+  "schema": "LOUKSNA_R4_15P_DEPLOY_AMENDMENT/1.0",
+  "status": "AUTHORIZED",
+  "scope": "ANTI_PARALYSIS_RETIRE_OBSOLETE_UNCERTIFIED_PART7_AND_RESUME_CURRENT_BUNDLE",
+  "source_head": "390fc0f2a5dd21b870a4f7ec27f03904e139fdd5",
+  "preserve_existing_point_certificates": [
+    "P01",
+    "P02",
+    "P03",
+    "P04",
+    "P05",
+    "P06",
+    "P07"
+  ],
+  "preserve_part_certificates": [
+    "PART_1",
+    "PART_2",
+    "PART_3",
+    "PART_4",
+    "PART_5",
+    "PART_6"
+  ],
+  "obsolete_part7_retirement_authorized_only_if_live_differs_from_g24_staged": true,
+  "part7_certificate_must_be_absent": true,
+  "other_material_children_must_be_absent": true,
+  "desktop_commander_used": false,
+  "lrb_observation_only": true,
+  "partitioning_authorized": false,
+  "part4_reopen_authorized": false,
+  "debian_redownload_authorized": false,
+  "kde_redownload_authorized": false,
+  "created_at_utc": "2026-10-02T11:55:00Z"
+}

@@ -1,0 +1,95 @@
+name: "R4 PART4 — prevalidate Windows purge preserving PROYECTOS"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-part4-prevalidate-windows-purge.yml
+      - mission-control/r4-part4-prevalidate-windows-purge/**
+
+permissions:
+  contents: read
+
+jobs:
+  prevalidate:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 10
+    steps:
+      - name: Build exact non-destructive purge scope
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="/media/diegoignacionorambuenamiranda/Windows"
+          KEEP="$ROOT/PROYECTOS"
+          EXPECTED_SOURCE="/dev/nvme0n1p3"
+          EXPECTED_UUID="F2848A148489DC0B"
+          OUT="$RUNNER_TEMP/r4-part4-windows-purge-prevalidation-$GITHUB_RUN_ID"
+          mkdir -p "$OUT"
+
+          test -d "$ROOT"
+          test -d "$KEEP"
+          test ! -L "$KEEP"
+          test "$(findmnt -T "$ROOT" -n -o SOURCE)" = "$EXPECTED_SOURCE"
+          test "$(findmnt -T "$ROOT" -n -o FSTYPE)" = "ntfs3"
+          findmnt -T "$ROOT" -n -o OPTIONS | tr ',' '\n' | grep -qx rw
+          test "$(/usr/sbin/blkid -s UUID -o value "$EXPECTED_SOURCE")" = "$EXPECTED_UUID"
+
+          python3 - "$ROOT" "$KEEP" "$OUT" <<'PY'
+          import json, os, pathlib, subprocess, sys, hashlib
+          root=pathlib.Path(sys.argv[1]).resolve()
+          keep=pathlib.Path(sys.argv[2]).resolve()
+          out=pathlib.Path(sys.argv[3])
+          if keep.parent != root or keep.name != "PROYECTOS":
+              raise SystemExit("HOLD:KEEP_SCOPE_NOT_EXACT")
+          entries=[]
+          total=0
+          for p in sorted(root.iterdir(), key=lambda x:x.name.casefold()):
+              rp=p.resolve()
+              if rp == keep:
+                  entries.append({"name":p.name,"path":str(p),"action":"KEEP_FROZEN_SCOPE"})
+                  continue
+              q=subprocess.run(["du","-sx","--block-size=1",str(p)],text=True,capture_output=True,timeout=240)
+              size=None
+              if q.returncode==0 and q.stdout.strip():
+                  try:size=int(q.stdout.split()[0])
+                  except:pass
+              entries.append({"name":p.name,"path":str(p),"action":"DELETE_TOP_LEVEL_ONLY","bytes_on_disk":size})
+              if size is not None: total+=size
+          nested=[]
+          q=subprocess.run(["findmnt","-R","-n","-o","TARGET",str(root)],text=True,capture_output=True)
+          for line in q.stdout.splitlines():
+              t=line.strip()
+              if t and pathlib.Path(t).resolve()!=root:
+                  nested.append(t)
+          report={
+            "schema":"LOUKSNA_R4_PART4_WINDOWS_PURGE_PREVALIDATION/1.0",
+            "mode":"READ_ONLY",
+            "source_mutated":False,
+            "root":str(root),
+            "keep_exact":str(keep),
+            "keep_policy":"NO_DELETE_NO_RENAME_NO_TRAVERSE_FOR_DELETION",
+            "delete_rule":"DELETE_EVERY_DIRECT_CHILD_OF_WINDOWS_EXCEPT_EXACT_PROYECTOS",
+            "partitions_in_scope":["/dev/nvme0n1p3"],
+            "partitions_explicitly_out_of_scope":["/dev/nvme0n1p1","/dev/nvme0n1p2","/dev/nvme0n1p4","/dev/nvme0n1p5"],
+            "nested_mounts":nested,
+            "delete_estimated_bytes":total,
+            "entries":entries,
+            "status":"PASS" if not nested and any(e["action"]=="KEEP_FROZEN_SCOPE" for e in entries) else "HOLD"
+          }
+          data=json.dumps(report,ensure_ascii=False,indent=2)+"\n"
+          (out/"PURGE_SCOPE.json").write_text(data,encoding="utf-8")
+          (out/"PURGE_SCOPE.sha256").write_text(hashlib.sha256(data.encode()).hexdigest()+"  PURGE_SCOPE.json\n")
+          print(data)
+          if report["status"]!="PASS":
+              raise SystemExit(2)
+          PY
+
+      - name: Preserve prevalidation evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: R4-PART4-windows-purge-prevalidation-${{ github.run_id }}
+          path: ${{ runner.temp }}/r4-part4-windows-purge-prevalidation-${{ github.run_id }}/
+          if-no-files-found: error
+          retention-days: 30

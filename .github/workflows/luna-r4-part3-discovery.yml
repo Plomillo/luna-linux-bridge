@@ -1,0 +1,48 @@
+name: "LUNA R4 — PART3 component discovery"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part3-discovery/**
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 4
+    steps:
+      - name: Discover PART3 candidates read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOTS=(
+            "$HOME/LOUKSNA_MAESTRO_20260925"
+            "$HOME/.local/lib/louksna"
+            "$HOME/.local/share/louksna"
+            "$HOME/SYMPHYLAX_LAB"
+            "$HOME/MISION_PUAC_20260926"
+          )
+          echo "=== PROJECTS CENTER CANDIDATES ==="
+          for r in "${ROOTS[@]}"; do
+            test -d "$r" || continue
+            find "$r" -xdev -maxdepth 8 \
+              \( -type d -o -type f \) \
+              \( -iname '*projects*center*' -o -iname '*project*center*' -o -iname '*centro*proyecto*' -o -iname '*centro*proyectos*' \) \
+              -printf '%y\t%p\n' 2>/dev/null | head -n 200
+          done
+          echo "=== SEMANTIC CONTAINER CANDIDATES ==="
+          for r in "${ROOTS[@]}"; do
+            test -d "$r" || continue
+            find "$r" -xdev -maxdepth 10 \
+              \( -type d -o -type f \) \
+              \( -iname '*semantic*container*' -o -iname '*contenedor*semantic*' -o -iname 'SOURCE_REGISTRY.json' -o -iname '*knowledge*graph*' \) \
+              -printf '%y\t%p\n' 2>/dev/null | head -n 300
+          done
+          echo "=== R4 PART3 RELATED FILES ==="
+          find "$HOME/LOUKSNA_MAESTRO_20260925" -xdev -maxdepth 7 -type f \
+            \( -iname '*.json' -o -iname '*.md' -o -iname '*.txt' \) \
+            -print 2>/dev/null | grep -Ei 'part.?3|project|semantic|metaos|custosz|symphylax' | head -n 400 || true

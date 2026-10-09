@@ -1,0 +1,10 @@
+{
+  "schema": "LOUKSNA_R4_LRB_REASONER_INPUT_REQUEST/1.0",
+  "status": "AUTHORIZED",
+  "purpose": "PERSIST_EXACT_LRB_OBSERVATION_FOR_GITHUB_HOSTED_QWEN_REASONER",
+  "material_execution": false,
+  "desktop_commander_used": false,
+  "partitioning_authorized": false,
+  "repeat_certified_work": false,
+  "created_at_utc": "2026-10-02T12:39:00Z"
+}

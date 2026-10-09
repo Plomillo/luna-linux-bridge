@@ -1,0 +1,7 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_LIVE_LAYOUT_OBSERVE_REQUEST/1.0",
+  "mode": "READ_ONLY",
+  "purpose": "CERTIFY_CURRENT_LIVE_LAYOUT_AFTER_RETIRE_EXPAND_FAILURE",
+  "source_run": 36863003361,
+  "source_attempt": 3
+}

@@ -1,0 +1,13 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_FAILURE_RECORD/1.0",
+  "failed_run": 36661683524,
+  "failed_job": 109717632393,
+  "failed_step": "Prove failed v2 stopped before irreversible mutation and restore mount",
+  "status": "FAIL_CLOSED_HOLD",
+  "irreversible_mutation_reached": false,
+  "observed_failure": "NameError: sys not imported in remediation binding writer after successful read-only plan generation",
+  "storage_state": "ORIGINAL_NTFS_GEOMETRY_RESTORED_AND_PLAN_READ_ONLY",
+  "remediation": "Import sys; rerun exact recovery/plan/G23/G24 chain.",
+  "canonical_mutation": false,
+  "authority_transfer": false
+}

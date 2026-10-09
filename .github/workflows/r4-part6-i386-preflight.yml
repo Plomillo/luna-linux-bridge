@@ -1,0 +1,131 @@
+name: "R4 PART6 — i386 prerequisite preflight"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part6-i386-preflight/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r4-part6-i386-preflight
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 10
+    steps:
+      - name: Build exact i386 prerequisite candidate read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+          export LANG=C
+          OUT="$RUNNER_TEMP/r4-part6-i386-preflight-$GITHUB_RUN_ID"
+          D="$HOME/.local/state/louksna/r4-master-part1-part9/PART_6_HARDENED"
+          MS="$HOME/.local/state/louksna/r4-master-part1-part9/MASTER_STATUS.json"
+          mkdir -p "$OUT"
+
+          cp "$D/CANDIDATE.json" "$OUT/PART6_CANDIDATE.json"
+          cp "$D/G23.json" "$OUT/PART6_G23.json"
+          cp "$D/G24.json" "$OUT/PART6_G24.json"
+          cp "$D/PRECOMMIT.json" "$OUT/PART6_PRECOMMIT.json"
+          cp "$MS" "$OUT/MASTER_STATUS.json"
+
+          dpkg --print-foreign-architectures > "$OUT/FOREIGN_ARCHES.txt"
+          curl -fsSL --retry 3 "https://repo.steampowered.com/steam/archive/stable/steam_latest.deb" -o "$OUT/steam_latest.deb"
+          curl -fsSL --retry 3 "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz" -o "$OUT/steamcmd_linux.tar.gz"
+          mkdir -p "$OUT/steamcmd"
+          tar -xzf "$OUT/steamcmd_linux.tar.gz" -C "$OUT/steamcmd"
+          dpkg-deb -f "$OUT/steam_latest.deb" Package Version Architecture Depends Recommends > "$OUT/STEAM_CONTROL.txt"
+          file "$OUT/steamcmd/linux32/steamcmd" > "$OUT/STEAMCMD_FILE.txt"
+          grep -aom1 '/lib/ld-linux.so.2' "$OUT/steamcmd/linux32/steamcmd" > "$OUT/STEAMCMD_INTERPRETER.txt" || true
+          test -e /lib/ld-linux.so.2 && echo PRESENT > "$OUT/LD32.txt" || echo ABSENT > "$OUT/LD32.txt"
+
+          OUT="$OUT" python3 - <<'PY'
+          import datetime as dt,hashlib,json,os,pathlib
+          out=pathlib.Path(os.environ["OUT"])
+          c=json.loads((out/"PART6_CANDIDATE.json").read_text())
+          g=json.loads((out/"PART6_G23.json").read_text())
+          a=json.loads((out/"PART6_G24.json").read_text())
+          p=json.loads((out/"PART6_PRECOMMIT.json").read_text())
+          ms=json.loads((out/"MASTER_STATUS.json").read_text())
+
+          def sha(x):
+              h=hashlib.sha256()
+              with pathlib.Path(x).open("rb") as f:
+                  for b in iter(lambda:f.read(1024*1024),b""):
+                      h.update(b)
+              return h.hexdigest()
+
+          foreign=[x.strip() for x in (out/"FOREIGN_ARCHES.txt").read_text().splitlines() if x.strip()]
+          steam_control=(out/"STEAM_CONTROL.txt").read_text(errors="replace")
+          file_text=(out/"STEAMCMD_FILE.txt").read_text(errors="replace").lower()
+          interp=(out/"STEAMCMD_INTERPRETER.txt").read_text(errors="replace").strip()
+          ld32=(out/"LD32.txt").read_text().strip()
+          pins=g["source_pins"]
+          exact={"wine","steam","proton","bottles","lutris","prism","waydroid"}
+          checks={
+              "part6_boundary":ms.get("current_part")=="PART_6" and ms.get("status")=="HOLD" and set(ms.get("blockers",[]))==exact,
+              "precommit_pass":p.get("status")=="PASS",
+              "candidate_bound":p.get("candidate_sha256")==sha(out/"PART6_CANDIDATE.json")==g.get("candidate_sha256")==a.get("candidate_sha256"),
+              "g23_bound":p.get("g23_sha256")==sha(out/"PART6_G23.json")==a.get("g23_sha256"),
+              "g24_bound":p.get("g24_sha256")==sha(out/"PART6_G24.json"),
+              "steam_source_bound":sha(out/"steam_latest.deb")==pins.get("steam_latest_deb_sha256"),
+              "steamcmd_source_bound":sha(out/"steamcmd_linux.tar.gz")==pins.get("steamcmd_tar_sha256"),
+              "steam_recommends_i386":"steam-libs-i386" in steam_control,
+              "steamcmd_is_32bit":"32-bit" in file_text,
+              "steamcmd_interpreter":interp=="/lib/ld-linux.so.2",
+              "i386_not_already_enabled":"i386" not in foreign,
+              "ld32_absent":ld32=="ABSENT",
+          }
+          q={
+              "schema":"LOUKSNA_R4_PART6_I386_PREREQUISITE_CANDIDATE/1.0",
+              "status":"CANDIDATE_READY" if all(checks.values()) else "HOLD",
+              "scope":"ADD_I386_FOREIGN_ARCHITECTURE_AND_REFRESH_APT_INDEX_ONLY",
+              "mission_id":ms.get("mission_id"),
+              "checks":checks,
+              "foreign_architectures_before":foreign,
+              "source_pins":{
+                  "steam_latest_deb_sha256":sha(out/"steam_latest.deb"),
+                  "steamcmd_tar_sha256":sha(out/"steamcmd_linux.tar.gz")
+              },
+              "postconditions_required":[
+                  "i386 present in dpkg foreign architectures",
+                  "APT update success",
+                  "libc6:i386 candidate exists",
+                  "libstdc++6:i386 candidate exists",
+                  "libgcc-s1:i386 candidate exists",
+                  "wine32:i386 candidate exists"
+              ],
+              "rollback":{
+                  "on_postcondition_failure":"dpkg --remove-architecture i386 then apt-get update",
+                  "package_install_authorized":False,
+                  "source_file_mutation_authorized":False
+              },
+              "package_install_authorized":False,
+              "apt_source_mutation_authorized":False,
+              "disk_partition_mutation_authorized":False,
+              "filesystem_format_or_resize_authorized":False,
+              "mutation_performed":False,
+              "recorded_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          (out/"CANDIDATE.json").write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if q["status"]!="CANDIDATE_READY":
+              raise SystemExit(23)
+          PY
+
+      - name: Upload i386 candidate
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part6-i386-candidate
+          path: ${{ runner.temp }}/r4-part6-i386-preflight-${{ github.run_id }}
+          if-no-files-found: warn
+          retention-days: 60
+          compression-level: 0

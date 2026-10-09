@@ -1,0 +1,22 @@
+{
+  "schema":"LOUKSNA_R4_MAESTRO_RESILIENCE_CERT_REF/1.0",
+  "status":"CERTIFIED_ACTIVE",
+  "scope":"MAESTRO_RUNNER_PERSISTENCE_AND_SELF_RECOVERY",
+  "run_id":36657541169,
+  "g23":"PASS",
+  "g24":"PASS",
+  "install":"PASS",
+  "runner_unit":"actions.runner.Plomillo-luna-linux-bridge.luna-linux.service",
+  "restart_policy":"always",
+  "restart_sec":5,
+  "guardian_timer_sec":120,
+  "guardian_initial_status":"HEALTHY",
+  "guardian_initial_action":"NONE",
+  "runner_pid_unchanged":2225,
+  "runner_restart_during_install":false,
+  "partition_mutation":false,
+  "filesystem_format":false,
+  "g23_artifact":"sha256:4ff85c78873358e75e8ce5e7f509be168a3e17038456067da1ec665cfab247d3",
+  "g24_artifact":"sha256:63675a2ee17f74d28b2c5ab6c2ac5b13a23821611e15a342d355b184ac45b7fc",
+  "install_artifact":"sha256:c4abe493544423dbafb0d9b9f962d7aad8a3bd5dca2f2898e60c387a701c95ed"
+}

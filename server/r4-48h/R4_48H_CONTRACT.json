@@ -1,0 +1,604 @@
+{
+  "schema": "LOUKSNA_R4_REMAINDER_48H_CONTRACT/2.0",
+  "status": "PROGRAMMED_PENDING_G23_G24_DEPLOY",
+  "owner": "USER",
+  "authority": {
+    "canonical": "Louksna.md",
+    "protected_reference": "LOUKSNAMEJORADA.md",
+    "doctrine": "EXTEND_DO_NOT_REPLACE",
+    "user_expectations_primary_within_scope": true,
+    "authority_transfer": false
+  },
+  "window": {
+    "start_utc": "2026-10-02T03:28:00Z",
+    "deadline_utc": "2026-10-04T03:28:00Z",
+    "ceiling_seconds": 172800,
+    "hard_ceiling": true,
+    "global_window_preserved": true,
+    "internal_lease_policy": "<=RUNTIME_VERIFIED_LIMIT",
+    "default_max_internal_lease_hours": 24,
+    "checkpoint_renewal": true
+  },
+  "control_fabric": {
+    "github": "CONTROL_PLANE_EVIDENCE_G23_G24",
+    "maestro": "PRIMARY_MATERIAL_WORKER",
+    "custosz_v7": "GOVERNED_EXECUTION_KERNEL_BOUND_TO_MAESTRO",
+    "custosz_runtime": "EXECUTION_BOUNDARY",
+    "meta_os": "OPERATIONAL_STATE_ENVIRONMENT",
+    "louksna_remote_bridge": "READ_ONLY_EYES_TELEMETRY_DIAGNOSIS",
+    "g23": "INDEPENDENT_VALIDATOR",
+    "g24": "CERTIFIER",
+    "qwen_reasoner": "GITHUB_REASONING_ONLY_SWAPPABLE_PROVIDER"
+  },
+  "epistemic": {
+    "declaration_ne_evidence": true,
+    "evidence_ne_validation": true,
+    "validation_ne_independent_validation": true,
+    "independent_validation_ne_certification": true,
+    "certification_ne_active": true,
+    "unknown_is_not_pass": true,
+    "self_certification_forbidden": true
+  },
+  "formal_assurance": {
+    "dependent_types": "PROOF_CARRYING_STATE_TRANSITIONS",
+    "higher_order": true,
+    "hott_univalence": "CERTIFIED_EQUIVALENCE_ONLY",
+    "unsafe_equivalence_forbidden": true,
+    "second_order_assurance": true,
+    "third_order_automation": true,
+    "audit_of_audit": true
+  },
+  "puac2": {
+    "C25": "SCOPE",
+    "C26": "EVIDENCE",
+    "C27": "INDEPENDENCE",
+    "C28": "SAFETY_RISK",
+    "C29": "INTEGRITY_REPRODUCIBILITY",
+    "C30": "INTEGRATION_NON_REGRESSION",
+    "C31": "REVERSIBILITY",
+    "C32": "VALIDITY_REEVALUATION",
+    "all_mandatory": true
+  },
+  "immutable_boundaries": {
+    "part4_closed": true,
+    "part4_stages_closed": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ],
+    "partitioning_reopen": false,
+    "partitioning_operations_forbidden": true,
+    "debian_download_forbidden": true,
+    "debian_reinstall_forbidden": true,
+    "kde_download_forbidden": true,
+    "kde_reinstall_forbidden": true,
+    "preserve_existing_wallpaper": true,
+    "preserve_projects_data": true,
+    "canonical_projects_root": "/home/diegoignacionorambuenamiranda/PROYECTOS",
+    "desktop_plugin_forbidden": true
+  },
+  "anti_duplication": {
+    "default": "NO_REDOWNLOAD",
+    "states": [
+      "INSTALLED_FUNCTIONAL",
+      "INSTALLED_UNVERIFIED",
+      "MATERIALIZED_FUNCTIONAL",
+      "BYTES_PRESENT_UNADOPTED",
+      "PARTIAL_RESUMABLE",
+      "BROKEN_BINDING",
+      "QUARANTINED_BAD_HASH",
+      "ABSENT_REQUIRED",
+      "UNKNOWN_HOLD"
+    ],
+    "acquisition_requires": [
+      "ABSENT_REQUIRED",
+      "EXACT_IDENTITY",
+      "NO_LOCAL_EQUIVALENT",
+      "OFFICIAL_SOURCE",
+      "PROVENANCE",
+      "COMPATIBILITY",
+      "LICENSE",
+      "ROLLBACK",
+      "PUAC2_PASS"
+    ],
+    "lutris_existing_artifact_reuse_required": true,
+    "p25_local_candidates_before_download": true,
+    "p25_reasoner_download_forbidden_without_separate_authorization": true
+  },
+  "anti_paralysis": {
+    "contract_id": "R4_15P_ANTI_PARALYSIS_V1",
+    "mandatory_non_null": true,
+    "identical_retry_without_new_evidence": false,
+    "circuit_breaker": true,
+    "failure_localization": true,
+    "safe_independent_work_continues": true,
+    "pid_alive_not_progress": true,
+    "log_growth_not_progress": true,
+    "restart_not_progress": true
+  },
+  "namespace": {
+    "execution": {
+      "EXEC_PART_5": "LABORATORY_MATERIAL_EXECUTION",
+      "EXEC_PART_6": "GAMING_MATERIAL_EXECUTION",
+      "EXEC_PART_7": "STUDY_DEVOTIONAL_EXECUTION",
+      "EXEC_PART_8": "SYSTEM_EXECUTION",
+      "EXEC_PART_9": "TERMINAL_INTEGRATION_CERTIFICATION"
+    },
+    "ui": {
+      "UI_PANEL_4": "PRESENTATION_DEBT_ONLY",
+      "UI_PANEL_5": "JUEGOS",
+      "UI_PANEL_6": "INGENIERIA",
+      "UI_PANEL_7": "LABORATORIO",
+      "UI_PANEL_8": "PROYECTOS",
+      "UI_PANEL_9": "SISTEMA"
+    },
+    "implicit_coercion": false
+  },
+  "ui_reference": {
+    "path": "docs/luna-r4/ui-reference/LUNA_R4_UI_REFERENCE_PARTS_1_9.jpg",
+    "sha256": "8a9852c4155d64fd74059c7239e67c82e16e5acd556627d70575db85078d4ed4",
+    "pixel_perfect_required": false,
+    "semantic_visual_equivalence_required": true,
+    "lrb_visual_evidence_required_for_final_g24": true
+  },
+  "state_machine": {
+    "states": [
+      "DECLARED",
+      "DISCOVERED",
+      "INVENTORIED",
+      "EVIDENCED",
+      "FUNCTIONALLY_VALIDATED",
+      "VALIDATED",
+      "INDEPENDENTLY_VALIDATED",
+      "CERTIFIED",
+      "ACTIVE",
+      "HOLD",
+      "FAILED",
+      "ROLLED_BACK",
+      "QUARANTINED"
+    ],
+    "active_requires": [
+      "EVIDENCE",
+      "VERIFICATION",
+      "VALIDATION",
+      "G23",
+      "G24",
+      "NON_REGRESSION",
+      "ROLLBACK"
+    ],
+    "failure_pipeline": [
+      "FAIL",
+      "LOCALIZE",
+      "CIRCUIT_BREAK_IF_REPEATED",
+      "ABORT",
+      "RESTORE_CHECKPOINT_IF_REQUIRED",
+      "VERIFY_RESTORATION",
+      "LRB_REOBSERVE",
+      "RECORD_FAILURE",
+      "EVIDENCE_DEBT",
+      "REPLAN_DIFFERENTIAL"
+    ]
+  },
+  "points": [
+    {
+      "id": "P01",
+      "ordinal": 1,
+      "name": "SINGLE_SOURCE_OF_OPERATIONAL_TRUTH",
+      "depends_on": [],
+      "puac2": [
+        "C25",
+        "C26",
+        "C27",
+        "C28",
+        "C29",
+        "C30",
+        "C31",
+        "C32"
+      ],
+      "g23_required": true,
+      "g24_required": true
+    },
+    {
+      "id": "P02",
+      "ordinal": 2,
+      "name": "ANTI_DUPLICATION_AND_ACQUISITION_CONTROL",
+      "depends_on": [
+        "P01"
+      ],
+      "puac2": [
+        "C25",
+        "C26",
+        "C27",
+        "C28",
+        "C29",
+        "C30",
+        "C31",
+        "C32"
+      ],
+      "g23_required": true,
+      "g24_required": true
+    },
+    {
+      "id": "P03",
+      "ordinal": 3,
+      "name": "ANTI_PARALYSIS_AND_RESILIENT_CONTINUATION",
+      "depends_on": [
+        "P01"
+      ],
+      "puac2": [
+        "C25",
+        "C26",
+        "C27",
+        "C28",
+        "C29",
+        "C30",
+        "C31",
+        "C32"
+      ],
+      "g23_required": true,
+      "g24_required": true
+    },
+    {
+      "id": "P04",
+      "ordinal": 4,
+      "name": "ROLE_AND_CONTROL_FABRIC",
+      "depends_on": [
+        "P01"
+      ],
+      "puac2": [
+        "C25",
+        "C26",
+        "C27",
+        "C28",
+        "C29",
+        "C30",
+        "C31",
+        "C32"
+      ],
+      "g23_required": true,
+      "g24_required": true
+    },
+    {
+      "id": "P05",
+      "ordinal": 5,
+      "name": "EXECUTION_UI_NAMESPACE_SEPARATION",
+      "depends_on": [
+        "P01",
+        "P04"
+      ],
+      "puac2": [
+        "C25",
+        "C26",
+        "C27",
+        "C28",
+        "C29",
+        "C30",
+        "C31",
+        "C32"
+      ],
+      "g23_required": true,
+      "g24_required": true
+    },
+    {
+      "id": "P06",
+      "ordinal": 6,
+      "name": "PROYECTOS_CANONICAL_REPAIR",
+      "depends_on": [
+        "P01",
+        "P02",
+        "P03",
+        "P04",
+        "P05"
+      ],
+      "puac2": [
+        "C25",
+        "C26",
+        "C27",
+        "C28",
+        "C29",
+        "C30",
+        "C31",
+        "C32"
+      ],
+      "g23_required": true,
+      "g24_required": true
+    },
+    {
+      "id": "P07",
+      "ordinal": 7,
+      "name": "EXEC_PART_6_GAMING_COMPLETION",
+      "depends_on": [
+        "P01",
+        "P02",
+        "P03",
+        "P04",
+        "P05"
+      ],
+      "puac2": [
+        "C25",
+        "C26",
+        "C27",
+        "C28",
+        "C29",
+        "C30",
+        "C31",
+        "C32"
+      ],
+      "g23_required": true,
+      "g24_required": true
+    },
+    {
+      "id": "P08",
+      "ordinal": 8,
+      "name": "EXEC_PART_7_STUDY_DEVOTIONAL_LOCAL_COGNITION",
+      "depends_on": [
+        "P07"
+      ],
+      "puac2": [
+        "C25",
+        "C26",
+        "C27",
+        "C28",
+        "C29",
+        "C30",
+        "C31",
+        "C32"
+      ],
+      "g23_required": true,
+      "g24_required": true
+    },
+    {
+      "id": "P09",
+      "ordinal": 9,
+      "name": "EXEC_PART_8_SYSTEM_COMPLETION",
+      "depends_on": [
+        "P08"
+      ],
+      "puac2": [
+        "C25",
+        "C26",
+        "C27",
+        "C28",
+        "C29",
+        "C30",
+        "C31",
+        "C32"
+      ],
+      "g23_required": true,
+      "g24_required": true
+    },
+    {
+      "id": "P10",
+      "ordinal": 10,
+      "name": "UI_PANEL_4_9_MOCKUP_ACCEPTANCE",
+      "depends_on": [
+        "P05",
+        "P06",
+        "P07",
+        "P08",
+        "P09"
+      ],
+      "puac2": [
+        "C25",
+        "C26",
+        "C27",
+        "C28",
+        "C29",
+        "C30",
+        "C31",
+        "C32"
+      ],
+      "g23_required": true,
+      "g24_required": true
+    },
+    {
+      "id": "P11",
+      "ordinal": 11,
+      "name": "P01_WINDOWS_LTSC_AND_P12_MOJO",
+      "depends_on": [
+        "P01",
+        "P02",
+        "P03",
+        "P04",
+        "P08"
+      ],
+      "puac2": [
+        "C25",
+        "C26",
+        "C27",
+        "C28",
+        "C29",
+        "C30",
+        "C31",
+        "C32"
+      ],
+      "g23_required": true,
+      "g24_required": true
+    },
+    {
+      "id": "P12",
+      "ordinal": 12,
+      "name": "UI_PANEL_8_PROJECTS_CENTER",
+      "depends_on": [
+        "P06",
+        "P10"
+      ],
+      "puac2": [
+        "C25",
+        "C26",
+        "C27",
+        "C28",
+        "C29",
+        "C30",
+        "C31",
+        "C32"
+      ],
+      "g23_required": true,
+      "g24_required": true
+    },
+    {
+      "id": "P13",
+      "ordinal": 13,
+      "name": "EXEC_PART_9_TERMINAL_INTEGRATION",
+      "depends_on": [
+        "P07",
+        "P08",
+        "P09",
+        "P10",
+        "P11",
+        "P12"
+      ],
+      "puac2": [
+        "C25",
+        "C26",
+        "C27",
+        "C28",
+        "C29",
+        "C30",
+        "C31",
+        "C32"
+      ],
+      "g23_required": true,
+      "g24_required": true
+    },
+    {
+      "id": "P14",
+      "ordinal": 14,
+      "name": "SECOND_ORDER_PROMISE_REGISTER",
+      "depends_on": [
+        "P01",
+        "P02",
+        "P03",
+        "P04",
+        "P05",
+        "P06",
+        "P07",
+        "P08",
+        "P09",
+        "P10",
+        "P11",
+        "P12",
+        "P13"
+      ],
+      "puac2": [
+        "C25",
+        "C26",
+        "C27",
+        "C28",
+        "C29",
+        "C30",
+        "C31",
+        "C32"
+      ],
+      "g23_required": true,
+      "g24_required": true
+    },
+    {
+      "id": "P15",
+      "ordinal": 15,
+      "name": "THIRD_ORDER_AUTOMATION_AND_FINAL_CERTIFICATION",
+      "depends_on": [
+        "P14"
+      ],
+      "puac2": [
+        "C25",
+        "C26",
+        "C27",
+        "C28",
+        "C29",
+        "C30",
+        "C31",
+        "C32"
+      ],
+      "g23_required": true,
+      "g24_required": true
+    }
+  ],
+  "safe_parallel_groups": [
+    [
+      "P02",
+      "P03",
+      "P04"
+    ],
+    [
+      "P06",
+      "P07",
+      "P11"
+    ]
+  ],
+  "certification": {
+    "chain": [
+      "EVIDENCE",
+      "VALIDATION",
+      "SECOND_ORDER_AUDIT",
+      "THIRD_ORDER_AUDIT",
+      "G23",
+      "G24",
+      "ACTIVE"
+    ],
+    "no_automatic_propagation": true,
+    "global_g24_requires_all_15": true
+  },
+  "checkpoint": {
+    "mode": "RESUME_EXISTING_LIVE_STATE",
+    "master_checkpoint": "/home/diegoignacionorambuenamiranda/LOUKSNA_MAESTRO_20260925/MISSION3_OPERATIVE/R4_PART1_DESKTOP_V1/runs/20260926T034746Z-38579",
+    "part4_is_input_only": true,
+    "current_material_frontier": "PART_7_REASONING_ROLE_CORRECTION_THEN_PART_8_PART_9"
+  },
+  "references": {
+    "plan": "docs/luna-r4/PLAN DEFINITIVO",
+    "skeleton": "docs/luna-r4/source/SKELETON_CANONICO_REFERENCIA.txt",
+    "protected_reference_binding": {
+      "name": "LOUKSNAMEJORADA.md",
+      "mode": "EXTERNAL_PROTECTED_REFERENCE",
+      "source_surface": "CHATGPT_PROJECT_FILE",
+      "source_file_id": "file_000000001c48820eb53e4091e5b9dc62",
+      "source_size_bytes": 11542631,
+      "content_copy_required": false,
+      "cryptographic_host_binding_required_before_final_g24": true,
+      "provenance_required": true
+    },
+    "canonical_source_binding": {
+      "name": "Louksna.md",
+      "source_surface": "CHATGPT_PROJECT_FILE",
+      "source_file_id": "file_000000006ca0820ebb296160fb48f4d0",
+      "operational_host_copy_required": true,
+      "operational_host_hash_recorded_each_evidence": true
+    }
+  },
+  "created_from_user_authorization_utc": "2026-10-02T09:49:00Z",
+  "serialization": {
+    "P11": {
+      "after_point": "P08",
+      "after_part": "PART_7",
+      "rationale": "Prevent P11 ISO/Mojo material work from racing local cognition/document ingestion and PART_7 certification.",
+      "resumable_partial_bytes_preserved": true,
+      "repeat_download_forbidden": true
+    }
+  },
+  "reasoning_operator": {
+    "schema": "LOUKSNA_SHARED_REASONER_OPERATOR/1.0",
+    "provider_current": "QWEN",
+    "provider_class": "SWAPPABLE_SHARED_REASONER",
+    "role": "REASONING_ONLY",
+    "operator_plane": "GITHUB",
+    "input_source": "LOUKSNA_REMOTE_BRIDGE_EVIDENCE_ONLY",
+    "output_contract": "REASONING_DECISION_ENVELOPE_ONLY",
+    "material_execution_authority": false,
+    "host_observation_authority": false,
+    "direct_host_tooling_authority": false,
+    "maestro_is_material_executor": true,
+    "provider_swappable": true,
+    "replacement_preserves_interface": true,
+    "desktop_commander_forbidden": true
+  }
+}

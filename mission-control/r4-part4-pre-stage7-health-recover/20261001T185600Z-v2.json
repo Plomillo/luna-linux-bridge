@@ -1,0 +1,12 @@
+{
+  "mission_id": "MIS-e5963403a3b44ee8be96",
+  "directive_id": "PRE-STAGE7-NVME-HEALTH-GATE-HARDENED-20261001",
+  "action": "RESUME_PRE_STAGE7_HEALTH_WITH_ABSOLUTE_TOOL_PATHS_AND_CLOSE_G23_G24",
+  "authority": "Louksna.md",
+  "expected_current_stage": 7,
+  "reinstall_packages": false,
+  "partition_geometry_mutation_authorized": false,
+  "filesystem_resize_authorized": false,
+  "active_device_test_authorized": false,
+  "stage7_commit_authorized": false
+}

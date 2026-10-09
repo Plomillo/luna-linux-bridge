@@ -1,0 +1,7 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_NTFS_TOOL_CAPABILITY_REQUEST/1.0",
+  "status": "REQUESTED",
+  "target": "/dev/nvme0n1p3",
+  "destructive": false,
+  "purpose": "Read installed ntfsresize/ntfsfix capability flags before any further storage mutation."
+}

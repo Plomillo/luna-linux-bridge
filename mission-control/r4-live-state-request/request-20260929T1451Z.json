@@ -1,0 +1,5 @@
+{
+  "request": "MASTER_LIVE_STATUS",
+  "mode": "READ_ONLY",
+  "reason": "resume_from_latest_checkpoint"
+}

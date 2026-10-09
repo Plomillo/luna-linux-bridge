@@ -1,0 +1,102 @@
+name: "R4 PART3 — bounded artifact discovery"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part3-artifact-discovery/**
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 4
+    steps:
+      - name: Discover Projects Center and semantic container candidates
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9"
+          echo "=== CURRENT PART3 EVIDENCE ==="
+          test -f "$STATE/evidence/PART_3.json" && cat "$STATE/evidence/PART_3.json" || true
+
+          echo "=== CUSTOSZ DISCOVERY SOURCE ==="
+          PYZ="$HOME/.local/lib/louksna/symphylax-r1/CUSTOSZ.v07.f04_b.pyz"
+          python3 -B -I - "$PYZ" <<'PY'
+          import inspect, sys
+          sys.path.insert(0,sys.argv[1])
+          import custosz_v05_legacy as w
+          for name in ("workspace","discover","sources","resources"):
+              obj=getattr(w,name,None)
+              if obj is None:
+                  continue
+              print("===",name,inspect.signature(obj))
+              try:
+                  print(inspect.getsource(obj)[:12000])
+              except Exception as e:
+                  print(type(e).__name__,e)
+          PY
+
+          echo "=== BOUNDED NAME SEARCH ==="
+          python3 - <<'PY'
+          import os, pathlib, re
+          home=pathlib.Path.home()
+          roots=[
+              home/"LOUKSNA_MAESTRO_20260925",
+              home/"LOUKSNA_FREEZE_20260925",
+              home/".local/share",
+              home/".local/lib/louksna",
+              home/"Descargas",
+          ]
+          needles=[
+              ("projects_center",("projectscenter","projects_center","projects center","centrodeproyectos","centro_proyectos","proyectoscenter","proyectos_center")),
+              ("semantic_container",("semanticcontainer","semantic_container","semantic container","contenedorsemantico","contenedor_semantico","source_registry.json")),
+              ("architecture_manager",("architecturemanager","architecture_manager","gestorarquitectura","gestor_arquitectura","versionmanager","version_manager")),
+          ]
+          skip={".git","node_modules","venv",".venv","__pycache__","cache","Caches"}
+          hits=[]
+          def norm(s):
+              return re.sub(r"[^a-z0-9_.]+","",s.lower())
+          for root in roots:
+              if not root.exists():
+                  continue
+              for dirpath, dirnames, filenames in os.walk(root):
+                  rel=pathlib.Path(dirpath).relative_to(root)
+                  if len(rel.parts)>8:
+                      dirnames[:] = []
+                      continue
+                  dirnames[:] = [d for d in dirnames if d not in skip]
+                  names=list(dirnames)+filenames
+                  for n in names:
+                      nn=norm(n)
+                      for kind, pats in needles:
+                          if any(norm(p) in nn for p in pats):
+                              p=pathlib.Path(dirpath)/n
+                              try:
+                                  st=p.stat()
+                                  hits.append((kind,str(p),st.st_size if p.is_file() else -1))
+                              except OSError:
+                                  hits.append((kind,str(p),-2))
+                              if len(hits)>=250:
+                                  break
+                      if len(hits)>=250:
+                          break
+                  if len(hits)>=250:
+                      break
+              if len(hits)>=250:
+                  break
+          if not hits:
+              print("NO_CANDIDATES")
+          else:
+              for kind,p,size in hits:
+                  print(f"{kind}\t{size}\t{p}")
+          PY
+
+          echo "=== PROJECT ROOT TOP LEVEL ==="
+          find "$HOME/LOUKSNA_MAESTRO_20260925" -maxdepth 3 -mindepth 1 -printf '%y\t%p\n' 2>/dev/null | head -n 400
+
+          echo "=== STATE STATUS ==="
+          cat "$STATE/MASTER_STATUS.json" 2>/dev/null || true

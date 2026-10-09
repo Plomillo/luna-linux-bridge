@@ -1,0 +1,219 @@
+{
+  "authority": "Louksna.md",
+  "authority_transfer": false,
+  "blockers": [],
+  "canonical_mutation": false,
+  "checkpoint": "/home/diegoignacionorambuenamiranda/LOUKSNA_MAESTRO_20260925/MISSION3_OPERATIVE/R4_PART1_DESKTOP_V1/runs/20260926T034746Z-38579",
+  "checks": {
+    "7zip": true,
+    "cmake": true,
+    "default-jdk": true,
+    "g++": true,
+    "gdb": true,
+    "git": true,
+    "mojo": true,
+    "ninja-build": true,
+    "nodejs": true,
+    "npm": true,
+    "pipx": true,
+    "pkg-config": true,
+    "python3": true,
+    "python3-pip": true,
+    "python3-venv": true,
+    "test_7zip": true,
+    "test_cmake": true,
+    "test_cpp23": true,
+    "test_gdb": true,
+    "test_git": true,
+    "test_java": true,
+    "test_ninja": true,
+    "test_node": true,
+    "test_pkg-config": true,
+    "test_python": true
+  },
+  "details": {
+    "actions": [
+      {
+        "argv": [
+          "sudo",
+          "-n",
+          "/usr/local/sbin/louksna-apc",
+          "apt-update"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "Hit:1 http://security.debian.org/debian-security trixie-security InRelease\nGet:2 http://deb.debian.org/debian trixie InRelease [140 kB]\nGet:3 http://deb.debian.org/debian trixie-updates InRelease [47.3 kB]\nGet:4 http://deb.debian.org/debian trixie-backports InRelease [54.0 kB]\nGet:5 http://deb.debian.org/debian trixie-backports/main Sources.diff/Index [63.3 kB]\nGet:6 http://deb.debian.org/debian trixie-backports/main amd64 Packages.diff/Index [63.3 kB]\nGet:7 http://deb.debian.org/debian trixie-backports/main Translation-en.diff/Index [63.3 kB]\nGet:8 https://persistent.oaistatic.com/codex-app-prod/linux/deb stable InRelease [2797 B]\nGet:9 https://persistent.oaistatic.com/codex-app-prod/linux/deb stable/main amd64 Packages [903 B]\nGet:10 http://deb.debian.org/debian trixie-backports/main Sources T-2026-09-29-0211.21-F-2026-09-29-0211.21.pdiff [29 B]\nGet:10 http://deb.debian.org/debian trixie-backports/main Sources T-2026-09-29-0211.21-F-2026-09-29-0211.21.pdiff [29 B]\nGet:11 http://deb.debian.org/debian trixie-backports/main amd64 Packages T-2026-09-29-0211.21-F-2026-09-29-0211.21.pdiff [2967 B]\nGet:11 http://deb.debian.org/debian trixie-backports/main amd64 Packages T-2026-09-29-0211.21-F-2026-09-29-0211.21.pdiff [2967 B]\nGet:12 http://deb.debian.org/debian trixie-backports/main Translation-en T-2026-09-29-0211.21-F-2026-09-29-0211.21.pdiff [692 B]\nGet:12 http://deb.debian.org/debian trixie-backports/main Translation-en T-2026-09-29-0211.21-F-2026-09-29-0211.21.pdiff [692 B]\nFetched 439 kB in 1s (563 kB/s)\nReading package lists...\n"
+      },
+      {
+        "argv": [
+          "sudo",
+          "-n",
+          "/usr/local/sbin/louksna-apc",
+          "apt-install",
+          "nodejs",
+          "npm",
+          "python3-venv",
+          "python3-pip",
+          "pipx",
+          "pkg-config"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "3) ...\nSetting up node-hosted-git-info (6.1.1-2) ...\nSetting up node-aproba (2.0.0-3) ...\nSetting up node-unicode-property-aliases-ecmascript (2.1.0+ds-1) ...\nSetting up node-binary-extensions (2.2.0-2) ...\nSetting up node-is-plain-object (5.0.0-7) ...\nSetting up node-eslint-utils (3.0.0-3) ...\nSetting up node-mimic-fn (4.0.0-5) ...\nSetting up node-path-dirname (1.0.2-2) ...\nSetting up node-ip-regex (4.3.0+~4.1.1-1) ...\nSetting up node-spdx-license-ids (3.0.12-1) ...\nSetting up node-string-decoder (1.3.0-6) ...\nSetting up node-esutils (2.0.3+~2.0.0-1) ...\nSetting up node-time-stamp (2.2.0-2) ...\nSetting up node-commondir (1.0.1+~1.0.0-1) ...\nSetting up libjs-prettify (2015.12.04+dfsg-1.1) ...\nSetting up libjs-events (3.3.0+~3.0.0-3) ...\nSetting up node-run-queue (2.0.0-3) ...\nSetting up node-core-util-is (1.0.3-1) ...\nSetting up node-json-schema (0.4.0+~7.0.11-1) ...\nSetting up node-uri-js (4.4.0+dfsg-8) ...\nSetting up node-prelude-ls (1.2.1+dfsg-3) ...\nSetting up node-minimatch (9.0.3-6) ...\nSetting up node-imurmurhash (0.1.4+dfsg+~0.1.1-2) ...\nSetting up node-xtend (4.0.2-3) ...\nSetting up node-set-immediate-shim (2.0.0-2) ...\nSetting up node-foreground-child (3.1.1-2) ...\nSetting up python3-argcomplete (3.6.2-1) ...\nSetting up node-wordwrap (1.0.0-4) ...\nSetting up node-read (1.0.7-5) ...\nSetting up node-regexpp (3.2.0-5) ...\nSetting up node-is-arrayish (0.3.2-3) ...\nSetting up node-base64-js (1.5.1+dfsg+~1.3.0-2) ...\nSetting up node-esquery (1.4.2~ds-1) ...\nSetting up node-npm-run-path (5.1.0+~4.0.0-8) ...\nSetting up node-is-buffer (2.0.5-2) ...\nSetting up node-color-convert (2.0.1+~cs2.0.0-2) ...\nSetting up node-data-uri-to-buffer (6.0.2~0~2024040606-6+deb13u1) ...\nSetting up node-async-each (1.0.3-3) ...\nSetting up node-isarray (2.0.5-4) ...\nSetting up node-osenv (0.1.5+~0.1.1-1) ...\nSetting up python3-userpath (1.9.2-1) ...\nSetting up node-is-plain-obj (3.0.0-2) ...\nSetting up node-is-extglob (2.1.1-5) ...\nSetting up node-tapable (2.2.1-3) ...\nSetting up node-shebang-command (2.0.0-1) ...\nSetting up libjs-is-typedarray (1.0.0-4) ...\nSetting up node-lowercase-keys (2.0.0-2) ...\nSetting up node-babel-plugin-add-module-exports (1.0.4+dfsg1~cs5.8.0-4) ...\nSetting up node-decompress-response (6.0.0-3) ...\nSetting up node-strip-eof (3.0.0-5) ...\nSetting up node-process-nextick-args (2.0.1-3) ...\nSetting up node-has-unicode (2.0.1-5) ...\nSetting up gyp (0.16.2-2) ...\nSetting up node-readable-stream (3.6.0+~cs3.0.0-4) ...\nSetting up node-promise-retry (2.0.1-4) ...\nSetting up node-supports-color (8.1.1+~8.1.1-1) ...\nSetting up node-error-ex (1.3.2-4) ...\nSetting up node-once (1.4.1-1) ...\nSetting up node-webpack-sources (3.2.3+~3.2.0-2) ...\nSetting up node-n3 (1.16.3+~1.2.3+~1.10.4-1) ...\nSetting up node-serialize-javascript (6.0.2-1) ...\nSetting up node-are-we-there-yet (3.0.1+~1.1.0-1) ...\nSetting up node-find-up (6.3.0-7) ...\nSetting up node-kind-of (6.0.3+dfsg-2) ...\nSetting up node-is-binary-path (2.1.0-5) ...\nSetting up node-events (3.3.0+~3.0.0-3) ...\nSetting up pipx (1.7.1-1) ...\nSetting up node-minimist (1.2.8+~cs5.3.5-1) ...\nSetting up python3-wheel (0.46.1-2) ...\nSetting up node-fancy-log (1.3.3+~cs1.3.1-2) ...\nSetting up node-define-property (2.0.2+really+2.0.2-3) ...\nSetting up node-promzard (0.3.0-2) ...\nSetting up node-wcwidth.js (1.0.2-2) ...\nSetting up node-resolve-cwd (3.0.0-2) ...\nSetting up node-fetch (3.3.2+~cs11.4.11-3) ...\nSetting up node-babel7-runtime (7.20.15+ds1+~cs214.269.168-8) ...\nSetting up node-iconv-lite (0.6.3-3) ...\nSetting up node-type-check (0.4.0+dfsg-3) ...\nSetting up node-ansi-styles (6.2.1-3) ...\nSetting up node-pkg-dir (5.0.0-2) ...\nSetting up node-got (11.8.5+~cs58.13.36-5) ...\nSetting up node-optimist (0.6.1+~0.0.30-2) ...\nSetting up node-spdx-expression-parse (3.0.1+~3.0.1-1) ...\nSetting up python3-pip (25.1.1+dfsg-1) ...\nSetting up node-concat-stream (2.0.0+~2.0.0-2) ...\nSetting up node-is-typedarray (1.0.0-4) ...\nSetting up node-inflight (1.0.6-2) ...\nSetting up node-encoding (0.1.13-2) ...\nSetting up node-slice-ansi (5.0.0+~cs9.0.0-5) ...\nSetting up node-fs-write-stream-atomic (1.0.10-6) ...\nSetting up node-regenerator-transform (0.15.2+~0.10.8-1) ...\nSetting up node-levn (0.4.1+dfsg-2) ...\nSetting up node-spdx-correct (3.1.1-2) ...\nSetting up node-glob (8.1.0+~cs8.5.15-1) ...\nSetting up node-typedarray-to-buffer (4.0.0-2) ...\nSetting up node-minipass (5.0.0+~cs10.3.21-3) ...\nSetting up node-validate-npm-package-license (3.0.4-2) ...\nSetting up node-optionator (0.9.1+dfsg+~cs1.2.3-1) ...\nSetting up node-ssri (9.0.1-3) ...\nSetting up node-write-file-atomic (4.0.2+~4.0.0-2) ...\nSetting up node-acorn (8.8.1+ds+~cs25.17.7-2) ...\nSetting up node-espree (9.4.1~dfsg-2) ...\nSetting up node-debbundle-es-to-primitive (1.2.1+~cs9.7.25-2) ...\nSetting up node-corepack (0.24.0-5) ...\nSetting up libnode115:amd64 (20.19.2+dfsg-1+deb13u3) ...\nSetting up node-define-properties (1.2.1+~cs2.2.3-1) ...\nSetting up libnode-dev (20.19.2+dfsg-1+deb13u3) ...\nSetting up nodejs (20.19.2+dfsg-1+deb13u3) ...\nupdate-alternatives: using /usr/bin/nodejs to provide /usr/bin/js (js) in auto mode\nSetting up node-argparse (2.0.1-2) ...\nSetting up terser (5.38.0-1) ...\nSetting up node-mime (3.0.0+dfsg+~cs6.97.2-2) ...\nSetting up node-source-map-support (0.5.21+ds+~0.5.10-1) ...\nSetting up node-unique-filename (1.1.1+ds-2) ...\nSetting up node-unicode-match-property-ecmascript (2.0.0-2) ...\nSetting up node-defined (1.0.1+~1.0.0-1) ...\nSetting up node-mime-types (2.1.35-2) ...\nSetting up node-ansi-escapes (5.0.0+really.4.3.1-1) ...\nSetting up node-strip-ansi (6.0.1-2) ...\nSetting up node-write (2.0.0~6.0.1+~3.0.4+~2.0.0+~1.0.0+~2.0.1-1) ...\nSetting up node-ignore (5.2.1-1) ...\nSetting up node-chalk (5.3.0-1) ...\nSetting up node-which (2.0.2+~cs1.3.2-3) ...\nSetting up node-css-selector-tokenizer (0.8.0+~cs4.8.3-1) ...\nSetting up node-esprima (4.0.1+ds+~4.0.3-2) ...\nSetting up node-is-path-inside (3.0.3-2) ...\nSetting up node-neo-async (2.6.2+~cs3.0.0-3) ...\nSetting up node-mkdirp (2.1.6+~cs5.2.1-2) ...\nSetting up node-es6-error (4.1.1-5) ...\nSetting up node-archy (1.0.0-6) ...\nSetting up node-js-yaml (4.1.0+dfsg+~4.0.5-7) ...\nSetting up node-nopt (5.0.0-4) ...\nSetting up node-lodash (4.17.21+dfsg+~cs8.31.198.20210220-9+deb13u1) ...\nSetting up node-progress (2.0.3-2) ...\nSetting up node-json5 (2.2.3+dfsg-1) ...\nSetting up node-ms (2.1.3+~cs0.7.31-3) ...\nSetting up node-rimraf (3.0.2-2) ...\nSetting up node-string-width (4.2.3+~cs13.2.3-1) ...\nSetting up node-regenerate (1.4.2-3) ...\nSetting up node-semver (7.6.1+~7.5.8-2) ...\nSetting up node-picocolors (1.0.0-4) ...\nSetting up node-es-abstract (1.20.4+~cs26.27.47-2) ...\nSetting up node-builtins (5.0.1-1) ...\nSetting up handlebars (3:4.7.7+~4.1.0-1) ...\nSetting up node-object-assign (4.1.1-7) ...\nSetting up node-is-glob (4.0.3-2) ...\nSetting up node-v8-compile-cache (2.4.0-2) ...\nSetting up node-flat-cache (3.0.4~6.0.1+~3.0.4+~2.0.0+~1.0.0+~2.0.1-1) ...\nSetting up node-is-number (7.0.0-4) ...\nSetting up node-for-in (1.0.2-4) ...\nSetting up node-webassemblyjs (1.11.4+dfsg+~cs10.11.17-2) ...\nSetting up node-execa (8.0.1+dfsg1+~cs12.0.0-1) ...\nSetting up node-strip-json-comments (4.0.0-4) ...\nSetting up node-is-extendable (1.0.1-3) ...\nSetting up node-columnify (1.6.0+~1.5.1-1) ...\nSetting up node-tape (5.6.1+~cs8.20.19-3) ...\nSetting up node-doctrine (3.0.0-4) ...\nSetting up node-copy-concurrently (1.0.5-9) ...\nSetting up node-ajv (8.12.0~ds+~2.1.1-5) ...\nSetting up node-jsesc (3.0.2+~3.0.1-1) ...\nSetting up node-regjsparser (0.9.1+ds-2) ...\nSetting up node-errno (1.0.0-3) ...\nSetting up node-decamelize (4.0.0-2) ...\nSetting up node-move-concurrently (1.0.1-5) ...\nSetting up node-normalize-path (3.0.0+~3.0.0-1) ...\nSetting up node-functional-red-black-tree (1.0.1+20181105-7) ...\nSetting up node-debug (4.3.4+~cs4.1.7-1) ...\nSetting up node-agent-base (7.1.1~0~2024040606-6+deb13u1) ...\nSetting up node-browserslist (4.25.0+~cs6.3.22-1) ...\nSetting up node-yargs-parser (21.1.1+~21.0.0-4) ...\nSetting up node-make-dir (3.1.0-3) ...\nSetting up node-validate-npm-package-name (5.0.0+~4.0.0-1) ...\nSetting up node-esrecurse (4.3.0-2) ...\nSetting up node-file-entry-cache (6.0.1+~3.0.4+~2.0.0+~1.0.0+~2.0.1-1) ...\nSetting up node-wrap-ansi (8.0.1+~8.0.1-3) ...\nSetting up node-normalize-package-data (4.0.1+~2.4.1-1) ...\nSetting up node-for-own (1.0.0-3) ...\nSetting up node-eslint-scope (7.1.1+~3.7.4-1) ...\nSetting up node-escodegen (2.1.0+dfsg+~0.0.8-1) ...\nSetting up node-memory-fs (0.5.0+~0.3.3-2) ...\nSetting up node-babel-helper-define-polyfill-provider (0.3.3~0~20220913+ds1-1) ...\nSetting up node-cli-table (0.3.11+~cs0.13.4-3) ...\nSetting up node-tar (6.2.1+~cs7.0.8-1+deb13u1) ...\nSetting up node-regenerate-unicode-properties (10.1.0+ds-1) ...\nSetting up node-glob-parent (6.0.2+~5.1.1-2) ...\nSetting up node-enhanced-resolve (5.15.0-1) ...\nSetting up node-postcss (8.4.49+~cs9.2.32-1) ...\nSetting up node-wide-align (1.1.3-4) ...\nSetting up node-npm-package-arg (10.0.0+~3.0.0-2) ...\nSetting up node-anymatch (3.1.3+~cs4.6.1-2) ...\nSetting up node-postcss-modules-extract-imports (3.0.0-2) ...\nSetting up node-https-proxy-agent (7.0.4~0~2024040606-6+deb13u1) ...\nSetting up node-cliui (7.0.4+repack+1+~cs1.4.2-2) ...\nSetting up node-deep-equal (2.2.3+~cs43.15.94-1) ...\nSetting up node-regexpu-core (5.2.2-3) ...\nSetting up node-yargs (16.2.0+~16.0.4-7) ...\nSetting up node-to-regex-range (5.0.1-4) ...\nSetting up node-cacache (17.0.3+~cs10.3.7-2) ...\nSetting up node-babel-plugin-polyfill-corejs2 (0.3.3~0~20220913+ds1-1) ...\nSetting up node-envinfo (7.11.0+~cs14.3.0-3) ...\nSetting up node-ajv-keywords (5.1.0-4) ...\nSetting up node-read-package-json (5.0.2+~2.0.0-2) ...\nSetting up node-core-js-compat (3.33.2-1) ...\nSetting up node-http-proxy-agent (7.0.2~0~2024040606-6+deb13u1) ...\nSetting up node-clone-deep (4.0.1+~cs7.0.2-1) ...\nSetting up eslint (6.4.0~dfsg+~6.1.9-12) ...\nSetting up libjs-util (0.12.5+~1.0.10-1) ...\nSetting up node-babel-plugin-polyfill-regenerator (0.4.1~0~20220913+ds1-1) ...\nSetting up node-gauge (4.0.4-2) ...\nSetting up node-readdirp (3.6.0-1) ...\nSetting up node-icss-utils (5.1.0+~5.1.0-1) ...\nSetting up node-npm-bundled (2.0.1-2) ...\nSetting up node-schema-utils (4.2.0~ds-3) ...\nSetting up node-jest-worker (29.6.2~ds1+~cs73.45.28-5) ...\nSetting up node-npmlog (7.0.1+~4.1.4-1) ...\nSetting up node-babel-plugin-polyfill-corejs3 (0.6.0~0~20220913+ds1-1) ...\nSetting up node-postcss-modules-values (4.0.0+~4.0.0-1) ...\nSetting up node-fill-range (7.1.1+~7.0.3-1) ...\nSetting up node-util (0.12.5+~1.0.10-1) ...\nSetting up node-assert (2.0.0+~cs3.9.8-2) ...\nSetting up node-gyp (11.1.0+~5.0.0-1) ...\nSetting up node-braces (3.0.3+~3.0.5-1) ...\nSetting up node-chokidar (3.6.0-3) ...\nSetting up node-watchpack (2.4.0+~cs2.8.1-1) ...\nSetting up node-micromatch (4.0.7+~4.0.9-1) ...\nSetting up node-globby (13.1.3+~cs16.25.40-3) ...\nSetting up node-del (7.1.0-1) ...\nSetting up node-find-cache-dir (3.3.2+~3.2.1-1) ...\nSetting up node-babel7 (7.20.15+ds1+~cs214.269.168-8) ...\nupdate-alternatives: using /usr/bin/babeljs-7 to provide /usr/bin/babeljs (babeljs) in auto mode\nupdate-alternatives: using /usr/bin/babeljs-7-external-helpers to provide /usr/bin/babeljs-external-helpers (babeljs-external-helpers) in auto mode\nupdate-alternatives: using /usr/bin/babeljs-7-node to provide /usr/bin/babeljs-node (babeljs-node) in auto mode\nupdate-alternatives: using /usr/bin/babeljs-7-parser to provide /usr/bin/babeljs-parser (babeljs-parser) in auto mode\nSetting up node-babel-plugin-lodash (3.3.4+~cs2.0.1-7) ...\nSetting up node-jest-debbundle (29.6.2~ds1+~cs73.45.28-5) ...\nSetting up node-parse-json (5.2.0+~cs5.1.7-2) ...\nSetting up node-read-pkg (5.2.0-2) ...\nSetting up node-istanbul (0.4.5+repack10+~cs98.25.59-3) ...\nSetting up webpack (5.97.1+dfsg1+~cs11.18.27-3) ...\nSetting up node-css-loader (6.8.1+~cs14.0.17-1) ...\nSetting up npm (9.2.0~ds1-3) ...\nProcessing triggers for libc-bin (2.41-12+deb13u4) ...\nProcessing triggers for man-db (2.13.1-1) ...\n"
+      },
+      {
+        "argv": [
+          "/home/diegoignacionorambuenamiranda/.local/share/louksna/mojo-1.1.0/bin/pip",
+          "install",
+          "--disable-pip-version-check",
+          "mojo==1.1.0"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "Collecting mojo==1.1.0\n  Downloading mojo-1.1.0-py3-none-manylinux_2_34_x86_64.whl.metadata (2.7 kB)\nCollecting mojo-compiler==1.1.0 (from mojo==1.1.0)\n  Downloading mojo_compiler-1.1.0-py3-none-manylinux_2_34_x86_64.whl.metadata (3.1 kB)\nCollecting mblack==26.6.0 (from mojo==1.1.0)\n  Downloading mblack-26.6.0-py3-none-any.whl.metadata (614 bytes)\nCollecting mojo-lldb-libs==1.1.0 (from mojo==1.1.0)\n  Downloading mojo_lldb_libs-1.1.0-py3-none-manylinux_2_34_x86_64.whl.metadata (200 bytes)\nCollecting click>=8.0.0 (from mblack==26.6.0->mojo==1.1.0)\n  Downloading click-8.5.0-py3-none-any.whl.metadata (2.6 kB)\nCollecting mypy-extensions>=0.4.3 (from mblack==26.6.0->mojo==1.1.0)\n  Downloading mypy_extensions-1.1.0-py3-none-any.whl.metadata (1.1 kB)\nCollecting pathspec>=1.1.0 (from mblack==26.6.0->mojo==1.1.0)\n  Downloading pathspec-1.1.1-py3-none-any.whl.metadata (14 kB)\nCollecting platformdirs>=2 (from mblack==26.6.0->mojo==1.1.0)\n  Downloading platformdirs-4.12.1-py3-none-any.whl.metadata (5.5 kB)\nCollecting mojo-compiler-mojo-libs==1.1.0 (from mojo-compiler==1.1.0->mojo==1.1.0)\n  Downloading mojo_compiler_mojo_libs-1.1.0-py3-none-any.whl.metadata (209 bytes)\nDownloading mojo-1.1.0-py3-none-manylinux_2_34_x86_64.whl (48.9 MB)\n   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 48.9/48.9 MB 5.6 MB/s eta 0:00:00\nDownloading mblack-26.6.0-py3-none-any.whl (164 kB)\nDownloading mojo_compiler-1.1.0-py3-none-manylinux_2_34_x86_64.whl (80.7 MB)\n   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 80.7/80.7 MB 6.9 MB/s eta 0:00:00\nDownloading mojo_compiler_mojo_libs-1.1.0-py3-none-any.whl (3.2 MB)\n   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3.2/3.2 MB 7.3 MB/s eta 0:00:00\nDownloading mojo_lldb_libs-1.1.0-py3-none-manylinux_2_34_x86_64.whl (93.6 MB)\n   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 93.6/93.6 MB 6.3 MB/s eta 0:00:00\nDownloading click-8.5.0-py3-none-any.whl (125 kB)\nDownloading mypy_extensions-1.1.0-py3-none-any.whl (5.0 kB)\nDownloading pathspec-1.1.1-py3-none-any.whl (57 kB)\nDownloading platformdirs-4.12.1-py3-none-any.whl (33 kB)\nInstalling collected packages: mojo-lldb-libs, mojo-compiler-mojo-libs, platformdirs, pathspec, mypy-extensions, mojo-compiler, click, mblack, mojo\n\nSuccessfully installed click-8.5.0 mblack-26.6.0 mojo-1.1.0 mojo-compiler-1.1.0 mojo-compiler-mojo-libs-1.1.0 mojo-lldb-libs-1.1.0 mypy-extensions-1.1.0 pathspec-1.1.1 platformdirs-4.12.1\n"
+      }
+    ],
+    "missing_before": [
+      "nodejs",
+      "npm",
+      "python3-venv",
+      "python3-pip",
+      "pipx",
+      "pkg-config"
+    ],
+    "mojo_selected_version": "1.1.0",
+    "mojo_source_reference": "https://mojolang.static.modular.com/install/",
+    "packages": [
+      "nodejs",
+      "npm",
+      "python3",
+      "python3-venv",
+      "python3-pip",
+      "pipx",
+      "git",
+      "7zip",
+      "default-jdk",
+      "g++",
+      "cmake",
+      "ninja-build",
+      "gdb",
+      "pkg-config"
+    ],
+    "tests": {
+      "7zip": {
+        "argv": [
+          "/usr/bin/7z",
+          "i"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "\n7-Zip 25.01 (x64) : Copyright (c) 1999-2025 Igor Pavlov : 2025-08-03\n 64-bit locale=es_MX.UTF-8 Threads:8 OPEN_MAX:1024, ASM\n\n\nLibs:\n 0 : 25.01 : /usr/lib/7zip/7z.so\n\nFormats:\n 0 C...F..........c.a.m+.. w...0  7z       7z            7 z BC AF ' 1C\n 0  ......................  APFS     apfs img      offset=32 N X S B 00\n 0  ......................  APM      apm           E R\n 0  ......................  Ar       ar a deb udeb lib ! < a r c h > 0A\n 0  ......................  Arj      arj           ` EA\n 0  K.....O.....X.........  Base64   b64           \n 0  ......O...............  COFF     obj           \n 0  ...F..................  Cab      cab           M S C F 00 00 00 00\n 0  ......................  Chm      chm chi chq chw I T S F 03 00 00 00 ` 00 00 00\n 0  ......................  Compound msi msp doc xls ppt D0 CF 11 E0 A1 B1 1A E1\n 0  ....M.................  Cpio     cpio          0 7 0 7 0  ||  C7 q  ||  q C7\n 0  ......................  CramFS   cramfs        offset=16 C o m p r e s s e d 20 R O M F S\n 0  .....G..B.............  Dmg      dmg           k o l y 00 00 00 04 00 00 02 00\n 0  .........E............  ELF      elf            E L F\n 0  ......................  Ext      ext ext2 ext3 ext4 img offset=1080 S EF\n 0  ......................  FAT      fat img       offset=510 U AA\n 0  ......................  FLV      flv           F L V 01\n 0  ......................  GPT      gpt mbr       offset=512 E F I 20 P A R T 00 00 01 00\n 0  ....M.................  HFS      hfs hfsx      offset=1024 B D  ||  H + 00 04  ||  H X 00 05\n 0  ...F..................  Hxs      hxs hxi hxr hxq hxw lit I T O L I T L S 01 00 00 00 ( 00 00 00\n 0  ......O...............  IHex     ihex          \n 0  ......................  Iso      iso img       offset=32769 C D 0 0 1\n 0  ......................  LP       lpimg img     offset=4096 g D l a 4 00 00 00\n 0  ......................  Lzh      lzh lha       offset=2 - l h\n 0  .......P..............  MBR      mbr           \n 0  ....M....E............  MachO    macho         CE FA ED FE  ||  CF FA ED FE  ||  FE ED FA CE  ||  FE ED FA CF\n 0  ......................  MsLZ     mslz          S Z D D 88 F0 ' 3 A\n 0  ....M.................  Mub      mub           CA FE BA BE 00 00 00  ||  B9 FA F1 0E\n 0  ......................  NTFS     ntfs img      offset=3 N T F S 20 20 20 20 00\n 0  ...F.G................  Nsis     nsis          offset=4 EF BE AD DE N u l l s o f t I n s t\n 0  .........E............  PE       exe dll sys   M Z\n 0  ......................  Ppmd     pmd           8F AF AC 84\n 0  ......................  QCOW     qcow qcow2 qcow2c Q F I FB 00 00 00\n 0  ...F..................  Rar      rar r00       R a r ! 1A 07 00\n 0  ...F..................  Rar5     rar r00       R a r ! 1A 07 01 00\n 0  ......................  Rpm      rpm           ED AB EE DB\n 0  K.....................  SWF      swf           F W S\n 0  ....M.................  SWFc     swf (~.swf)   C W S  ||  Z W S\n 0  ......................  Sparse   simg img      : FF & ED 01 00\n 0  ......................  Split    001           \n 0  ....M.................  SquashFS squashfs      h s q s  ||  s q s h  ||  s h s q  ||  q s h s\n 0  .........E............  TE       te            V Z\n 0  ...FM.................  UEFIc    scap          BD 86 f ; v 0D 0 @ B7 0E B5 Q 9E / C5 A0  ||  8B A6 < J # w FB H 80 = W 8C C1 FE C4 M  ||  B9 82 91 S B5 AB 91 C B6 9A E3 A9 C F7 / CC\n 0  ...FM.................  UEFIf    uefif         offset=16 D9 T 93 z h 04 J D 81 CE 0B F6 17 D8 90 DF  ||  x E5 8C 8C = 8A 1C O 99 5 89 a 85 C3 - D3\n 0  ....M.O...............  Udf      udf iso img   offset=32768 00 B E A 0 1 01 00  ||  01 C D 0 0 1\n 0  ......................  VDI      vdi           offset=64  10 DA BE\n 0  .....G................  VHD      vhd           c o n e c t i x 00 00\n 0  ......................  VHDX     vhdx avhdx    v h d x f i l e\n 0  ......................  VMDK     vmdk          K D M V\n 0  ......................  Xar      xar pkg xip   x a r ! 00\n 0  ......................  Z        z taz (.tar)  1F 9D\n 0 CK.....................  bzip2    bz2 bzip2 tbz2 (.tar) tbz (.tar) B Z h\n 0 CK.................m+.. .u..1  gzip     gz gzip tgz (.tar) tpz (.tar) apk (.tar) 1F 8B 08\n 0  K.....O...............  lzma     lzma          \n 0  K.....................  lzma86   lzma86        \n 0 C......O...LH......m+.. wu.n1  tar      tar ova       offset=257 u s t a r\n 0 C.SN.......LH..c.a.m+.. w...0  wim      wim swm esd ppkg M S W I M 00 00 00\n 0 CK.....................  xz       xz txz (.tar) FD 7 z X Z 00\n 0 C...FMG........c.a.m+.. wud.0  zip      zip z01 zipx jar xpi odt ods docx xlsx epub ipa apk appx P K 03 04  ||  P K 05 06  ||  P K 06 06  ||  P K 07 08 P K  ||  P K 0 0 P K\n 0  K.....................  zstd     zst tzst (.tar) ( B5 / FD\n   CK.....O.....XC........  Hash     sha256 sha512 sha384 sha224 sha512-224 sha512-256 sha3-224 sha3-256 sha3-384 sha3-512 sha1 sha2 sha3 sha md5 blake2s blake2b blake2sp xxh64 crc32 crc64 cksum asc \n\nCodecs:\n 0 4ED   303011B BCJ2\n 0  EDF  3030103 BCJ\n 0  EDF  3030205 PPC\n 0  EDF  3030401 IA64\n 0  EDF  3030501 ARM\n 0  EDF  3030701 ARMT\n 0  EDF  3030805 SPARC\n 0  EDF        A ARM64\n 0  EDF        B RISCV\n 0  EDF    20302 Swap2\n 0  EDF    20304 Swap4\n 0  ED     40202 BZip2\n 0  ED         0 Copy\n 0  ED     40109 Deflate64\n 0  ED     40108 Deflate\n 0  EDF        3 Delta\n 0  ED        21 LZMA2\n 0  ED     30101 LZMA\n 0  ED     30401 PPMD\n 0  EDF  6F10701 7zAES\n 0  EDF  6F00181 AES256CBC\n\nHashers:\n      4        1 CRC32\n 0    4        1 CRC32\n 0   16      208 MD5\n 0   20      201 SHA1\n 0   32        A SHA256\n 0   32      231 SHA3-256\n 0   48      222 SHA384\n 0   64      223 SHA512\n 0    8      211 XXH64\n 0    8        4 CRC64\n 0   32      202 BLAKE2sp\n"
+      },
+      "cmake": {
+        "argv": [
+          "cmake",
+          "--version"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "cmake version 3.31.6\n\nCMake suite maintained and supported by Kitware (kitware.com/cmake).\n"
+      },
+      "cpp23": {
+        "argv": [
+          "g++",
+          "-std=c++23",
+          "--version"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "g++ (Debian 14.2.0-19) 14.2.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n"
+      },
+      "gdb": {
+        "argv": [
+          "gdb",
+          "--version"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "GNU gdb (Debian 16.3-1) 16.3\nCopyright (C) 2024 Free Software Foundation, Inc.\nLicense GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.\n"
+      },
+      "git": {
+        "argv": [
+          "git",
+          "--version"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "git version 2.47.3\n"
+      },
+      "java": {
+        "argv": [
+          "java",
+          "-version"
+        ],
+        "returncode": 0,
+        "stderr": "openjdk version \"21.0.12.1\" 2026-08-18\nOpenJDK Runtime Environment (build 21.0.12.1+1-1-deb13u1-Debian)\nOpenJDK 64-Bit Server VM (build 21.0.12.1+1-1-deb13u1-Debian, mixed mode, sharing)\n",
+        "stdout": ""
+      },
+      "mojo": {
+        "argv": [
+          "/home/diegoignacionorambuenamiranda/.local/share/louksna/mojo-1.1.0/bin/mojo",
+          "--version"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "Mojo 1.1.0 (8189361e)\n"
+      },
+      "ninja": {
+        "argv": [
+          "ninja",
+          "--version"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "1.12.1\n"
+      },
+      "node": {
+        "argv": [
+          "node",
+          "-e",
+          "console.log('LUNA_R4_NODE_PASS')"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "LUNA_R4_NODE_PASS\n"
+      },
+      "pkg-config": {
+        "argv": [
+          "pkg-config",
+          "--version"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "1.8.1\n"
+      },
+      "python": {
+        "argv": [
+          "python3",
+          "-c",
+          "print('LUNA_R4_PYTHON_PASS')"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "LUNA_R4_PYTHON_PASS\n"
+      }
+    }
+  },
+  "mission_id": "MIS-dd341bc9c1524d7d9598",
+  "non_regression": "PASS",
+  "operation_id": "OP-0dc8e720e31341e5bd8d64c14f01510b",
+  "part": "PART_2",
+  "part_name": "ENGINEERING",
+  "previous_part_g24_sha256": "d465f301bcc72d3e8aa0c0390cc070b2fbf377f06f50a1195426a892fbd43414",
+  "rollback_pointer": "/home/diegoignacionorambuenamiranda/.local/state/louksna/r4-master-part1-part9/rollback/PART_2",
+  "schema": "LOUKSNA_R4_PART_MATERIAL_EVIDENCE/1.0",
+  "self_certified": false,
+  "status": "PASS",
+  "timestamp_utc": "2026-09-29T07:29:41.727023Z",
+  "validation": "PASS"
+}

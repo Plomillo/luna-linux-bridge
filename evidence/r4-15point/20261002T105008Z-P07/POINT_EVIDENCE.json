@@ -1,0 +1,117 @@
+{
+  "authority": "Louksna.md",
+  "blockers": [],
+  "checks": {
+    "authority": true,
+    "contract_v2": true,
+    "debian_redownload_denied": true,
+    "dependencies": true,
+    "desktop_plugin_denied": true,
+    "g23_required": true,
+    "g24_required": true,
+    "kde_redownload_denied": true,
+    "no_redownload_policy_bound": true,
+    "part4_closed": true,
+    "part4_stages_1_12": true,
+    "part6_g24": true,
+    "partitioning_denied": true,
+    "protected_reference": true,
+    "third_order": true
+  },
+  "control_plane": "GITHUB",
+  "created_at_utc": "2026-10-02T10:50:08.145391Z",
+  "debian_redownload_performed": false,
+  "details": {
+    "lrb": {
+      "certified": false,
+      "evidence_seq": 235,
+      "evidence_sha256": "6208daa69197c9208ec536a56c4ad6db8e1186056bec73d8413c0d154ee51616",
+      "observation": {
+        "boot_id": "340911cd-6eae-41b0-bcf1-ea6d2eb6e493",
+        "bridge_root_shell": "NOT_DEPLOYED",
+        "gid": 1001,
+        "github_transport": "NOT_DEPLOYED",
+        "host": "LOUKSNA",
+        "load": [
+          0.111328125,
+          0.3125,
+          0.376953125
+        ],
+        "memory_bytes": {
+          "MemAvailable": 3659984896,
+          "MemTotal": 6125785088,
+          "SwapFree": 0,
+          "SwapTotal": 0
+        },
+        "observed_utc": "2026-10-02T10:50:08.057470Z",
+        "pid": 1232,
+        "project_partition": "NOT_LIVE_VERIFIED",
+        "root_fs_bytes": {
+          "available": 202754011136,
+          "total": 510059147264
+        },
+        "screen": "NOT_ENABLED",
+        "sudo_noninteractive": "NOT_PROBED",
+        "uid": 1000
+      },
+      "schema": "LRB_LOCAL_TRANSPORT/0.3",
+      "status": "OBSERVED_NOT_CERTIFIED"
+    },
+    "master_service": {
+      "ActiveState": "active",
+      "MainPID": "298503",
+      "NRestarts": "0",
+      "SubState": "running",
+      "returncode": 0
+    },
+    "part6_certificate": {
+      "authority_authenticated": true,
+      "authority_reference": "GITHUB_OIDC_JWT_SHA256:57ca07c8794ca5fb4736c098b18e63545ad2ed61723508fd003b7285eddea081",
+      "authority_transfer": false,
+      "canonical_mutation": false,
+      "certificate_scope": "LUNA_R4_PART_6_ACTUAL_EVIDENCE",
+      "certified_at_utc": "2026-10-02T10:46:07.115727+00:00",
+      "evidence_commit_sha": "327f2da481e39209515ba46f807ff0842dee830b",
+      "evidence_sha256": "cff8984b305f5c0301fc0dbf77efb6a3a63c06ded1a04c2b7137a2e83953891d",
+      "g23_status": "PASS",
+      "part": "PART_6",
+      "schema": "LOUKSNA_R4_PART_G24/1.0",
+      "status": "PASS",
+      "workflow_run_id": 36997259877
+    },
+    "runner_service": {
+      "ActiveState": "active",
+      "MainPID": "2369",
+      "NRestarts": "0",
+      "SubState": "running",
+      "returncode": 0
+    }
+  },
+  "executor": "MAESTRO",
+  "kde_redownload_performed": false,
+  "observer": "LOUKSNA_REMOTE_BRIDGE",
+  "partitioning_performed": false,
+  "point_id": "P07",
+  "point_name": "EXEC_PART_6_GAMING_COMPLETION",
+  "protected_reference": "LOUKSNAMEJORADA.md",
+  "provenance": {
+    "authority_sha256": "5270c3d643339c283edf13b414f335f23f921c4dac023b06d38de62927e29bf9",
+    "contract_sha256": "4c7e2d06791744fcc0ebc26178ae1d31600e35721cb8d3bec45a8a1d1c5bf54e",
+    "ledger_head_sha256": "b4af542eaad3379d89a72c6e806ba15c29568ddf5db37598cd2c1b9f1c503a11",
+    "lrb_evidence_sha256": "6208daa69197c9208ec536a56c4ad6db8e1186056bec73d8413c0d154ee51616",
+    "master_controller_sha256": "745b6a45fe345128b3b15ae024b918e776be3d121863e3bf847fd3cfd20b221c"
+  },
+  "puac2": {
+    "C25": true,
+    "C26": true,
+    "C27": true,
+    "C28": true,
+    "C29": true,
+    "C30": true,
+    "C31": true,
+    "C32": true
+  },
+  "schema": "LOUKSNA_R4_15_POINT_EVIDENCE/1.0",
+  "self_certified": false,
+  "status": "PASS"
+}

@@ -1,0 +1,24 @@
+name: "R4 P01 — Windows LTSC exact hash read-only"
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-p01-windows-ltsc-hash-readonly.yml
+permissions:
+  contents: read
+jobs:
+  hash:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 15
+    steps:
+      - name: Hash existing candidate without mutation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          P="$HOME/PROYECTOS/1. PROYECTOS PRIORITARIOS/8. META OS/COMPONENTS/Windows11_IoT_Enterprise_LTSC_2024_Eval_x64.iso.reacquire.part"
+          E="8abf91c9cd408368dc73aab3425d5e3c02dae74900742072eb5c750fc637c195"
+          test -f "$P"
+          S="$(stat -c %s "$P")"
+          H="$(nice -n 19 ionice -c3 sha256sum "$P" | awk '{print $1}')"
+          printf 'PATH=%s\nSIZE=%s\nSHA256=%s\nEXPECTED=%s\nMATCH=%s\n' "$P" "$S" "$H" "$E" "$([ "$H" = "$E" ] && echo PASS || echo FAIL)"

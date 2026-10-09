@@ -1,0 +1,9 @@
+{
+  "schema": "LOUKSNA_R4_AUDIT_REQUEST/1.0",
+  "mode": "READ_ONLY",
+  "scope": "GLOBAL_SCOPE_AND_REFERENCE_STATE",
+  "downloads": false,
+  "installs": false,
+  "partitioning": false,
+  "desktop_forbidden": true
+}

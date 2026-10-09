@@ -1,0 +1,12 @@
+{
+  "schema": "LOUKSNA_R4_PART4_STAGE10_PREFLIGHT_REQUEST/1.0",
+  "requested_stage": 10,
+  "operation": "LOCATE_PROYECTOS_AND_BASELINE_BINDING",
+  "retry_reason": "USER_BUS_ENV_FIX_ONLY",
+  "workflow_fix_commit": "e3b0995d846c658bfcd26efdced5f6b42c5d26e9",
+  "require_read_only": true,
+  "expected_manifest_sha256": "99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+  "expected_records": 498092,
+  "fail_closed": true,
+  "requested_at_utc": "2026-10-01T20:41:00Z"
+}

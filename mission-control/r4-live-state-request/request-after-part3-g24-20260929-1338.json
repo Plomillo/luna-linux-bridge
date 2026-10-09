@@ -1,0 +1,9 @@
+{
+  "scope": "READ_ONLY",
+  "purpose": "Confirm live state after PART3 G23/G24 success",
+  "requested_files": [
+    "MASTER_STATUS.json",
+    "evidence/PART_3.json",
+    "PERMISSION_REQUEST.json"
+  ]
+}

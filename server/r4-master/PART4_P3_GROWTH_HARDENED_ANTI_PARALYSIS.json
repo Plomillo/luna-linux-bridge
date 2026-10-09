@@ -1,0 +1,261 @@
+{
+  "schema": "LOUKSNA_R4_PART4_P3_GROWTH_HARDENED_ANTI_PARALYSIS/1.0",
+  "contract_id": "PART4-P3-GROWTH-HARDENED-ANTI-PARALYSIS-20261001",
+  "authority": "Louksna.md",
+  "worker": "CUSTOSZ_V7_MAESTRO",
+  "current_part": "PART_4",
+  "resume_mode": "DIFFERENTIAL_FROM_LAST_VALID_POST_P5_CHECKPOINT",
+  "doctrine": "EXTEND_DO_NOT_REPLACE",
+  "failure_posture": "FAIL_CLOSED_WITH_CONTINUATION",
+  "desktop_commander": "PROHIBITED",
+  "remote_desktop_commander": "PROHIBITED",
+  "observation_authority": "LOUKSNA_REMOTE_BRIDGE",
+  "validation": "G23_INDEPENDENT",
+  "certification": "G24_SCOPE_BOUND",
+  "baseline": {
+    "root": "/dev/nvme0n1p3",
+    "root_fstype": "ext4",
+    "p3_start_sector": 567296,
+    "p3_uuid": "e084ec2a-af39-48b5-bb89-db2dc6a98332",
+    "p5_absent": true,
+    "proyectos_manifest_sha256": "99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+    "proyectos_records": 498092,
+    "proyectos_regular_file_bytes": 200490852057
+  },
+  "global_invariants": [
+    "NO_FORMAT",
+    "NO_SHRINK",
+    "P3_START_SECTOR_567296_IMMUTABLE",
+    "NO_P5_REPLAY",
+    "NO_PROJECTS_MIGRATION_REPLAY",
+    "NO_BLIND_DESTRUCTIVE_RETRY",
+    "NO_INDEFINITE_HOLD",
+    "CHECKPOINT_CONTINUITY_MANDATORY",
+    "SAFE_WORK_WHILE_HOLD_MANDATORY",
+    "STALE_STATE_RECONCILIATION_MANDATORY",
+    "MINIMAL_DELTA_RECOVERY_MANDATORY",
+    "AUTO_ADVANCE_AFTER_GATES_MANDATORY",
+    "NO_AUTOMATIC_CERTIFICATION_PROPAGATION",
+    "NO_DESKTOP_COMMANDER"
+  ],
+  "anti_paralysis": {
+    "rule": "HOLD_BLOCKS_ONLY_THE_UNSAFE_DEPENDENT_TRANSITION",
+    "hold_is_not_deadlock": true,
+    "fail_closed_is_not_stop_all_work": true,
+    "on_block": [
+      "PRESERVE_LAST_VALID_CHECKPOINT",
+      "IDENTIFY_EXACT_BLOCKER",
+      "CONTINUE_SAFE_OBSERVATION",
+      "CONTINUE_SAFE_DIAGNOSIS",
+      "RECONCILE_STALE_STATE_WITH_LIVE_EVIDENCE",
+      "CALCULATE_MINIMAL_REMEDIATION_DELTA",
+      "VALIDATE_ONLY_THE_AFFECTED_DELTA",
+      "RESUME_FROM_SAME_CHECKPOINT"
+    ],
+    "every_hold_must_expose": [
+      "BLOCKER",
+      "EVIDENCE",
+      "LAST_VALID_CHECKPOINT",
+      "NEXT_AUTHORIZED_ACTION",
+      "RESUME_CONDITION",
+      "MISSION_ID",
+      "TIMESTAMP"
+    ],
+    "destructive_retry": "FORBIDDEN_UNTIL_LIVE_OBSERVATION_PROVES_OPERATION_DID_NOT_COMMIT",
+    "safe_non_destructive_retry": "ALLOWED_BOUNDED_AND_EVIDENCED",
+    "full_pipeline_replay": "FORBIDDEN_WHEN_DIFFERENTIAL_RECOVERY_IS_POSSIBLE",
+    "connection_loss": "DOES_NOT_INVALIDATE_CHECKPOINT"
+  },
+  "stages": [
+    {
+      "n": 1,
+      "id": "LIVE_POST_P5_CHECKPOINT_AND_CONTINUITY",
+      "mutation": false,
+      "requirements": [
+        "REMOTE_BRIDGE_STATUS_AND_OBSERVE",
+        "ROOT_P3_EXT4",
+        "P5_ABSENT",
+        "P1_EFI_INTACT",
+        "P3_START_567296",
+        "EXPECTED_UUID_PARTUUID",
+        "MAESTRO_PART4",
+        "FOUR_FINAL_BLOCKERS_ONLY"
+      ],
+      "on_fail": "RECONCILE_NOT_REPLAY"
+    },
+    {
+      "n": 2,
+      "id": "GROWPART_CAPABILITY_MICROTRANSACTION",
+      "mutation": "PACKAGE_INSTALL_ONLY",
+      "requirements": [
+        "SIMULATE_APT",
+        "PIN_CLOUD_GUEST_UTILS_AND_GDISK",
+        "NO_AUTOREMOVE",
+        "NO_UNRELATED_UPGRADE_OR_REMOVE",
+        "PROVENANCE_AND_VERSION_EVIDENCE"
+      ],
+      "on_fail": "DEPENDENCY_REMEDIATION_CONTINUES_FROM_CHECKPOINT"
+    },
+    {
+      "n": 3,
+      "id": "GROWPART_DETERMINISTIC_DRY_RUN",
+      "mutation": false,
+      "requirements": [
+        "GROWPART_DRY_RUN_ONLY",
+        "P3_START_UNCHANGED",
+        "P1_UNCHANGED",
+        "P5_ABSENT",
+        "TYPE_UUID_PARTUUID_PRESERVED",
+        "ONLY_RIGHT_EDGE_CHANGES",
+        "REPLAY_EQUIVALENCE"
+      ],
+      "on_fail": "DIAGNOSE_ENVIRONMENT_OR_TOOL_NO_MUTATION"
+    },
+    {
+      "n": 4,
+      "id": "PARTITION_TABLE_RECOVERY_CAPSULE_OFF_HOST",
+      "mutation": false,
+      "requirements": [
+        "SFDISK_DUMP",
+        "SGDISK_GPT_BINARY_BACKUP",
+        "LSBLK",
+        "PARTED_GEOMETRY",
+        "UUID_PARTUUID",
+        "SHA256",
+        "UPLOAD_OFF_HOST",
+        "VERIFY_ARTIFACT_INTEGRITY"
+      ],
+      "on_fail": "RETRY_CAPSULE_ONLY_NO_PIPELINE_REPLAY"
+    },
+    {
+      "n": 5,
+      "id": "G23_P3_GROWTH_CANDIDATE",
+      "mutation": false,
+      "requirements": [
+        "BASELINE_LIVE",
+        "CAPSULE_VERIFIED",
+        "DRY_RUN_EXACT",
+        "RIGHTWARD_GROWTH_ONLY",
+        "NO_GPT_BACKUP_OVERLAP",
+        "NO_FORMAT_SHRINK_MOVE_RECREATE",
+        "NO_REPLAY"
+      ],
+      "on_fail": "MINIMAL_DIFFERENTIAL_REMEDIATION"
+    },
+    {
+      "n": 6,
+      "id": "G24_P3_TRAILING_END_EXTENSION_ONLY",
+      "mutation": false,
+      "requirements": [
+        "DIGEST_BOUND_G23",
+        "EXACT_DEVICE_PARTITION_START_AND_TARGET",
+        "FORMAT_FALSE",
+        "SHRINK_FALSE",
+        "MOVE_START_FALSE",
+        "FILESYSTEM_RESIZE_FALSE",
+        "P5_REPLAY_FALSE",
+        "MIGRATION_REPLAY_FALSE"
+      ],
+      "on_fail": "EXPOSE_MISSING_PREDICATE_AND_RESUME_CONDITION"
+    },
+    {
+      "n": 7,
+      "id": "MAESTRO_SINGLE_P3_GEOMETRY_COMMIT",
+      "mutation": true,
+      "requirements": [
+        "G24_EXACT_SCOPE",
+        "PRECOMMIT_GEOMETRY_EQUALS_CERTIFIED_BASELINE",
+        "EXECUTE_ONCE",
+        "NO_BLIND_RETRY"
+      ],
+      "on_fail": "OBSERVE_PHYSICAL_REALITY_BEFORE_ANY_RETRY"
+    },
+    {
+      "n": 8,
+      "id": "POST_COMMIT_REMOTE_BRIDGE_AND_KERNEL_RECONCILIATION",
+      "mutation": false,
+      "requirements": [
+        "COMPARE_GPT_ON_DISK_AND_KERNEL",
+        "P3_START_567296",
+        "P1_INTACT",
+        "P5_ABSENT",
+        "UUID_PARTUUID_PRESERVED",
+        "PARTX_PARTPROBE_UDEV_ONLY_IF_NEEDED"
+      ],
+      "on_fail": "CLASSIFY_GPT_CORRECT_KERNEL_STALE_OR_ACTUAL_GEOMETRY_FAILURE"
+    },
+    {
+      "n": 9,
+      "id": "CONTROLLED_REBOOT_WITH_RESUME_TOKEN_IF_REQUIRED",
+      "mutation": "REBOOT_ONLY_IF_KERNEL_REREAD_REQUIRED",
+      "requirements": [
+        "PERSIST_RESUME_TOKEN",
+        "MISSION_ID",
+        "EXPECTED_GEOMETRY",
+        "EVIDENCE_HASHES",
+        "REBOOT_TO_SAME_P3",
+        "REMOTE_BRIDGE_REAPPEAR",
+        "NEW_BOOT_ID",
+        "ROOT_P3_EXT4"
+      ],
+      "on_fail": "RECOVERY_FROM_CAPSULE_OR_DIAGNOSIS_NO_REPLAY"
+    },
+    {
+      "n": 10,
+      "id": "PROYECTOS_NON_REGRESSION_BARRIER_PRE_RESIZE2FS",
+      "mutation": false,
+      "requirements": [
+        "FULL_498092_RECORD_VERIFY",
+        "436072_FILES",
+        "62016_DIRS",
+        "4_SYMLINKS",
+        "200490852057_BYTES",
+        "MANIFEST_SHA256_EXACT",
+        "MISMATCH_ZERO"
+      ],
+      "on_fail": "BLOCK_RESIZE2FS_AND_EMIT_DIFFERENTIAL_DAMAGE_SET"
+    },
+    {
+      "n": 11,
+      "id": "INDEPENDENT_G23_G24_EXT4_GROWTH_AND_SINGLE_RESIZE2FS",
+      "mutation": true,
+      "requirements": [
+        "NEW_G23_NOT_REUSED",
+        "NEW_G24_EXT4_ONLY",
+        "KERNEL_SEES_NEW_BLOCK_DEVICE_SIZE",
+        "EXT4_FEATURES_COMPATIBLE",
+        "E2FSPROGS_1_47_2",
+        "RUN_RESIZE2FS_ONCE",
+        "NO_SHRINK_ROLLBACK"
+      ],
+      "on_fail": "OBSERVE_EXT4_REALITY_THEN_RECOVER_WITH_ENLARGED_GEOMETRY"
+    },
+    {
+      "n": 12,
+      "id": "PART4_TERMINAL_CERTIFICATION_AND_AUTOPROGRESSION",
+      "mutation": "STATE_UPDATE_ONLY_AFTER_PROOF",
+      "requirements": [
+        "REMOTE_BRIDGE_FINAL",
+        "FULL_PROYECTOS_REVERIFY",
+        "DF_LSBLK_GPT_EXT4_UUID_PARTUUID_EFI_BOOT_SERVICES",
+        "G23_FINAL",
+        "G24_FINAL",
+        "NON_REGRESSION",
+        "ROLLBACK_CAPABILITY_REEVALUATION",
+        "SET_FOUR_FINAL_GATES_FROM_DIGEST_BOUND_EVIDENCE",
+        "AUTO_ADVANCE_PART4_CERTIFIED_TO_PART5"
+      ],
+      "on_fail": "EXPOSE_EXACT_BLOCKER_AND_CONTINUE_SAFE_REMEDIATION"
+    }
+  ],
+  "terminal_condition": {
+    "final_linux_layout": true,
+    "verified_root_on_consolidated_linux": true,
+    "final_merge_g24": true,
+    "part4_r2_final_g24": true,
+    "then": "PART_4_CERTIFIED_THEN_AUTOMATIC_PART_5"
+  },
+  "status": "OWNER_AUTHORIZED_FOR_MAESTRO_INGESTION",
+  "disk_mutation_authorized_by_this_contract": false,
+  "note": "Each destructive mutation still requires its own fresh exact-scope G23 and G24."
+}

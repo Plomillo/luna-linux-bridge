@@ -1,0 +1,42 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_FAILURE_EVIDENCE/1.0",
+  "status": "FAIL_CLOSED_HOLD",
+  "source_run": 36682665542,
+  "source_job": 109784043711,
+  "source_commit": "6b0cb7e3804550618b761bfd47345b66733450a1",
+  "failed_step": "Bind V7 certificate and resume from exact checkpoint",
+  "bug_class": "V7_TEMP_FREE_CAPACITY_PRECHECK_WITH_PARTIAL_COPY",
+  "exact_error": "HOLD:TEMP_BYTES_TOO_SMALL; exit 20",
+  "origin": "df available measured remaining free bytes on partially populated V6 ext4; precheck required full 200490852057+1000000000 bytes of fresh space instead of first verifying reusable/free space or cleaning only the known partial",
+  "source_integrity": {
+    "status": "PASS",
+    "records": 498092,
+    "regular_file_bytes": 200490852057,
+    "mismatches": 0,
+    "manifest_sha256": "99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e"
+  },
+  "observed_xattrs": {
+    "records_scanned": 498092,
+    "paths_with_lx_metadata": 5,
+    "unexpected_count": 0
+  },
+  "v7_recovery_g23": "PASS_SCOPE_RECOVERY_PLAN_ONLY",
+  "v7_recovery_g24": "PASS_SCOPE_RECOVERY_PLAN_ONLY",
+  "p3_ntfs_preserved": true,
+  "temporary_ext4_partial_copy": true,
+  "v7_rsync_started": false,
+  "p3_reformatted_ext4": false,
+  "p2_p4_retired": false,
+  "final_merge_dispatched": false,
+  "reboot_dispatched": false,
+  "rollback_source_of_truth": "P3_SHRUNK_NTFS",
+  "physical_postfailure_probe": "REQUIRED_BEFORE_V8",
+  "fix": "Independent V8 live physical + source probe; temp root quarantine; G23/G24 cleanup-only; delete only identified temp PROYECTOS partial; remeasure usable bytes/inodes; new independent G23/G24 migration; full SHA-tree and POSIX equivalence before P3 mkfs.",
+  "certification_propagation": false,
+  "authority_transfer": false,
+  "artifact": {
+    "name": "r4-part4-r2-v7-migration-material",
+    "id": 11082997744,
+    "digest": "sha256:a26c1949823df5571076320d7358da19e9367305ff62c9f3e0f358cef774d4ca"
+  }
+}

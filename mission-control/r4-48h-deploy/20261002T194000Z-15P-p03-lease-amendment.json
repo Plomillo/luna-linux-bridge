@@ -1,0 +1,15 @@
+{
+  "schema": "LOUKSNA_R4_15P_DEPLOY_AMENDMENT/1.0",
+  "status": "AUTHORIZED",
+  "scope": "P03_LEASE_CLASSIFICATION_AND_POSTVALIDATION_ONLY",
+  "preserve_existing_point_certificates": [
+    "P01",
+    "P02",
+    "P04"
+  ],
+  "repeat_certified_points": false,
+  "maestro_restart_only_if_handoff_required": true,
+  "part4_reopen_authorized": false,
+  "partitioning_authorized": false,
+  "created_at_utc": "2026-10-02T19:40:00Z"
+}

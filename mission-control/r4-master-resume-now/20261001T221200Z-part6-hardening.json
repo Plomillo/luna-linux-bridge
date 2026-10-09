@@ -1,0 +1,11 @@
+{
+  "schema": "LOUKSNA_R4_MASTER_RESUME_REQUEST/1.0",
+  "reason": "DEPLOY_HARDENED_PART6_FUNCTIONAL_EVIDENCE_GATE",
+  "controller_commit": "7a8355c73bc8afdf90cbf7e2e6f9f6a6d8982942",
+  "preserve_part1_part5_certificates": true,
+  "preserve_part6_precommit_v2": true,
+  "require_no_host_package_mutation": true,
+  "expected_current_part": "PART_6",
+  "expected_status": "HOLD",
+  "requested_at_utc": "2026-10-01T22:12:00Z"
+}

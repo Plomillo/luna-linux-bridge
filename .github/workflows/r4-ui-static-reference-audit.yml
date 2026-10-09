@@ -1,0 +1,80 @@
+name: "R4 UI — static canonical reference audit"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-ui-static-reference-audit.yml
+      - mission-control/r4-ui-static-reference-audit/**
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout historical UI reference only
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: staging/luna-r4-ui-reference-20260929
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            docs/luna-r4
+          sparse-checkout-cone-mode: true
+
+      - name: Verify identities and inspect KDE snapshot without host mutation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/r4-ui-static-$GITHUB_RUN_ID"
+          ROOT="docs/luna-r4/ui-reference"
+          ARC="$ROOT/KDE_UI_REFERENCE_20260929T020349Z.7z"
+          IMG="$ROOT/LUNA_R4_UI_REFERENCE_PARTS_1_9.jpg"
+          mkdir -p "$OUT/extract"
+
+          test "$(sha256sum "$IMG" | awk '{print $1}')" = "8a9852c4155d64fd74059c7239e67c82e16e5acd556627d70575db85078d4ed4"
+          test "$(sha256sum "$ARC" | awk '{print $1}')" = "c21e04d5447e123b59fc9b94d2e9684bc03ea164999ef6f60210e257557a16dc"
+
+          command -v 7z > "$OUT/7Z_PATH.txt"
+          7z l -slt "$ARC" > "$OUT/ARCHIVE_LIST.txt"
+          7z x -y -o"$OUT/extract" "$ARC" > "$OUT/EXTRACT.log"
+
+          find "$OUT/extract" -type f -printf '%P\n' | sort > "$OUT/FILES.txt"
+          grep -RInsE --binary-files=without-match \
+            'PROYECTOS|Proyectos|projects|Places|user-places|plasma|panel|launcher|dolphin|luna|PART[_ -]?[5-9]' \
+            "$OUT/extract" > "$OUT/MATCHES.txt" || true
+
+          python3 - "$OUT" <<'PY'
+          import json,pathlib,sys,hashlib,datetime as dt
+          out=pathlib.Path(sys.argv[1])
+          files=(out/"FILES.txt").read_text(errors="replace").splitlines()
+          matches=(out/"MATCHES.txt").read_text(errors="replace").splitlines()
+          interesting=[x for x in files if any(k in x.casefold() for k in [
+              "plasma","dolphin","kdeglobals","user-places","kickoff","desktop","panel","folder","bookmark","place"
+          ])]
+          q={
+              "schema":"LOUKSNA_R4_UI_STATIC_REFERENCE_AUDIT/1.0",
+              "status":"PASS",
+              "reference_only":True,
+              "host_mutation_performed":False,
+              "debian_download_performed":False,
+              "kde_download_performed":False,
+              "file_count":len(files),
+              "interesting_files":interesting[:500],
+              "matches":matches[:1000],
+              "audited_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          (out/"AUDIT.json").write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-ui-static-reference-audit
+          path: ${{ runner.temp }}/r4-ui-static-${{ github.run_id }}
+          retention-days: 30
+          compression-level: 0

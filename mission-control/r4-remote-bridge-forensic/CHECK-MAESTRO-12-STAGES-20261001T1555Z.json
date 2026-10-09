@@ -1,0 +1,8 @@
+{
+  "schema": "LOUKSNA_R4_LRB_MAESTRO_12_STAGE_STATUS_CHECK/1.0",
+  "authority": "Louksna.md",
+  "scope": "READ_ONLY_MAESTRO_12_STAGE_OPERATION_STATUS",
+  "contract_id": "PART4-P3-GROWTH-HARDENED-ANTI-PARALYSIS-20261001",
+  "disk_mutation": false,
+  "purpose": "Determine whether Maestro has begun operating the twelve hardened PART4 stages or is only holding."
+}

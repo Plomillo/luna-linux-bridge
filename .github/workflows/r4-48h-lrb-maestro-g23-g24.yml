@@ -1,0 +1,448 @@
+name: "R4 48H — 15P Louksna Maestro + LRB G23 G24 deploy"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-48h-deploy/**
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: r4-48h-lrb-maestro-deploy-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  g23:
+    name: G23 independent program validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    outputs:
+      bundle_sha256: ${{ steps.validate.outputs.bundle_sha256 }}
+      g23_sha256: ${{ steps.validate.outputs.g23_sha256 }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            server/r4-48h
+            server/r4-master
+            .github/workflows/r4-15point-certify.yml
+            .github/workflows/r4-48h-lrb-maestro-g23-g24.yml
+          sparse-checkout-cone-mode: false
+
+      - id: validate
+        name: Validate 15-point proof-carrying program
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -m py_compile             server/r4-48h/maestro_48h_coordinator.py             server/r4-master/master_controller.py             server/r4-master/part6_hardened_worker.py             server/r4-master/part789_hardened_worker.py             server/r4-master/ui_p10_p12_hardened_worker.py
+
+          python3 - <<'PY'
+          import ast,datetime as dt,hashlib,json,os,pathlib,re
+          root=pathlib.Path(".")
+          cp=root/"server/r4-48h/R4_48H_CONTRACT.json"
+          coordp=root/"server/r4-48h/maestro_48h_coordinator.py"
+          masterp=root/"server/r4-master/master_controller.py"
+          workerp=root/"server/r4-master/part6_hardened_worker.py"
+          worker789p=root/"server/r4-master/part789_hardened_worker.py"
+          uiworkerp=root/"server/r4-master/ui_p10_p12_hardened_worker.py"
+          pointw=root/".github/workflows/r4-15point-certify.yml"
+          deployw=root/".github/workflows/r4-48h-lrb-maestro-g23-g24.yml"
+          c=json.loads(cp.read_text())
+          coord=coordp.read_text()
+          master=masterp.read_text()
+          pointwf=pointw.read_text()
+          worker789=worker789p.read_text()
+          uiworker=uiworkerp.read_text()
+
+          checks={
+            "schema_v2":c.get("schema")=="LOUKSNA_R4_REMAINDER_48H_CONTRACT/2.0",
+            "points_15":len(c.get("points",[]))==15 and [x["id"] for x in c["points"]]==[f"P{i:02d}" for i in range(1,16)],
+            "puac2_all":all(x.get("puac2")==[f"C{i}" for i in range(25,33)] for x in c["points"]),
+            "g23_all":all(x.get("g23_required") is True for x in c["points"]),
+            "g24_all":all(x.get("g24_required") is True for x in c["points"]),
+            "part4_closed":c["immutable_boundaries"]["part4_closed"] is True and c["immutable_boundaries"]["part4_stages_closed"]==list(range(1,13)),
+            "partitioning_denied":c["immutable_boundaries"]["partitioning_operations_forbidden"] is True,
+            "debian_kde_denied":c["immutable_boundaries"]["debian_download_forbidden"] is True and c["immutable_boundaries"]["kde_download_forbidden"] is True,
+            "desktop_plugin_denied":c["immutable_boundaries"]["desktop_plugin_forbidden"] is True,
+            "maestro_primary":c["control_fabric"]["maestro"]=="PRIMARY_MATERIAL_WORKER",
+            "lrb_read_only":c["control_fabric"]["louksna_remote_bridge"]=="READ_ONLY_EYES_TELEMETRY_DIAGNOSIS",
+            "second_order":c["formal_assurance"]["second_order_assurance"] is True,
+            "third_order":c["formal_assurance"]["third_order_automation"] is True,
+            "audit_of_audit":c["formal_assurance"]["audit_of_audit"] is True,
+            "anti_paralysis":c["anti_paralysis"]["mandatory_non_null"] is True and c["anti_paralysis"]["identical_retry_without_new_evidence"] is False,
+            "no_runtime_48_call":'mission_start(48,"LUNA_PROJECT"' not in master,
+            "renewable_lease":'LOUKSNA_R4_GLOBAL_MISSION_LEASE/2.0' in master and 'min(24,configured' in master,
+            "maestro_point_request":'handle_r48_point_request' in master and 'maestro_projects_repair' in master,
+            "maestro_anti_paralysis_non_null":'"anti_paralysis_contract":"R4_15P_ANTI_PARALYSIS_V1"' in master,
+            "coordinator_direct_lrb":'request","--op",op' in coord and 'lrb_companion_worker.py' not in coord,
+            "hash_chain_ledger":'previous_event_sha256' in coord and 'LEDGER_HEAD.json' in coord,
+            "point_certification":'publish_and_wait_certificate' in coord and 'r4-15point-certify.yml' in coord,
+            "point_workflow_hosted_g23":'G23 independent point validation' in pointwf and 'runs-on: ubuntu-24.04' in pointwf,
+            "point_workflow_hosted_g24":'G24 point certification' in pointwf,
+            "part789_maestro_owned":'"executor":"MAESTRO"' in worker789 and '"observer":"LOUKSNA_REMOTE_BRIDGE"' in worker789,
+            "part789_lrb_read_only":'op not in {"status","observe"}' in worker789 and "LRB_MUTATING_OP_DENIED" in worker789,
+            "part789_no_download_client":all(x not in worker789 for x in ('["curl"', '["wget"')),
+            "part789_no_partition_mutator":all(x not in worker789 for x in ("sfdisk","fdisk","parted","growpart","resize2fs","ntfsresize","mkfs","wipefs","blkdiscard")),
+            "ui_worker_maestro_owned":'EXECUTOR="MAESTRO"' in uiworker and 'OBSERVER="LOUKSNA_REMOTE_BRIDGE"' in uiworker,
+            "ui_worker_lrb_read_only":'op not in {"status","observe"}' in uiworker and "LRB_MUTATING_OP_DENIED" in uiworker,
+            "ui_worker_no_download_client":all(x not in uiworker for x in ('["curl"', '["wget"')),
+            "ui_worker_no_duplicate_launchers":'"no_duplicate_launcher_creation":True' in uiworker,
+            "ui_worker_projects_canonical":'"proyectos":PROYECTOS' in uiworker,
+            "p10_navigation_exact_uri":'"comparison":"EXACT_CANONICAL_FILE_URI"' in uiworker and '"policy":"FIXED_DOMAIN_NAVIGATION_EXISTENCE_NO_XBEL_REWRITE"' in uiworker,
+            "p10_search_semantic_not_pixel_clone":'"mode":"KDE_FAMILIAR_SEARCH_SEMANTIC_EQUIVALENCE"' in uiworker and '"reference_policy":"REFERENCE_ONLY_NOT_PIXEL_PERFECT"' in uiworker and '"panel_mutation_required":False' in uiworker,
+            "p10_changed_strategy_retry_only":'RETRY_ONLY_IF_WORKER_SHA_CHANGED_AFTER_HOLD' in coord and 'current_worker_sha!=prior_worker_sha' in coord,
+            "anti_paralysis_strategy_fingerprint":'def strategy_fingerprint(point):' in coord and 'd.get("strategy_fingerprint")!=strategy_fingerprint(point)' in coord and '"strategy_fingerprint":current_strategy' in coord,
+            "terminal_complete_no_handoff_churn":'def master_terminal_complete():' in coord and 'MASTER_TERMINAL_COMPLETE_HEALTHY_NO_RESTART' in coord and 'if drift or unhealthy' not in coord,
+            "pending_request_reactivates_maestro":'def pending_maestro_request():' in coord and 'def start_master_for_pending_request():' in coord and 'MASTER_STARTED_FOR_PENDING_REQUEST' in coord,
+            "inactive_recovery_without_recopy":'MASTER_RECOVERED_IN_PLACE_NO_HANDOFF' in coord,
+            "p10_producer_bound":'PRODUCER_REVISION="2026-10-02.P10.3-URI-SEARCH-SEMANTIC-DETECTOR"' in uiworker and '"producer_sha256":sha(pathlib.Path(__file__))' in uiworker,
+            "deploy_stale_head_guard":"STALE_TRIGGER_HEAD_DEPLOY_DENIED" in deployw.read_text() and "CURRENT_BRANCH_HEAD" in deployw.read_text(),
+            "per_sha_concurrency":"group: r4-48h-lrb-maestro-deploy-" in deployw.read_text() and "github.sha" in deployw.read_text(),
+            "obsolete_part7_guard_present":'def obsolete_part7_only_active(drift):' in coord and 'def retire_obsolete_part7_for_handoff(drift):' in coord,
+            "obsolete_part7_uncertified_only":'part_cert("PART_7") is not None' in coord and '"--part PART_7"' in coord,
+            "obsolete_part7_hash_drift_required":'"part789_hardened_worker.py" not in drift' in coord and 'if live_sha==staged_sha' in coord,
+            "obsolete_part7_other_material_denied":'"part6_hardened_worker.py","ui_p10_p12_hardened_worker.py"' in coord and '"software-static.download.prss.microsoft.com"' in coord,
+            "obsolete_part7_master_cgroup_only":'OBSOLETE_PART7_RETIRE_BEGIN' in coord and 'systemctl_user("stop",MASTER_SERVICE)' in coord and 'desktop_commander_used":False' in coord,
+            "part789_attempt_receipt_bound":'LOUKSNA_R4_PART789_ATTEMPT/1.0' in master and 'attempt_dir=R48_STATE/"material-attempts"' in master,
+            "part789_identical_retry_denied":'REUSE_HOLD_NO_REPLAY' in master and 'requires_new_causal_worker_sha' in master and 'attempt.get("status") in {"RUNNING","PASS","HOLD","ERROR"}' in master,
+            "part789_material_replay_false":'"material_replayed":False' in master,
+            "p25_reasoning_contract_present":(
+                c.get("reasoning_operator",{}).get("schema")=="LOUKSNA_SHARED_REASONER_OPERATOR/1.0"
+                and c.get("control_fabric",{}).get("qwen_reasoner")=="GITHUB_REASONING_ONLY_SWAPPABLE_PROVIDER"
+            ),
+            "p25_qwen_reasoning_only":(
+                '"provider_current":"QWEN"' in worker789
+                and '"role":"REASONING_ONLY"' in worker789
+                and '"operator_plane":"GITHUB"' in worker789
+                and '"input_source":"LOUKSNA_REMOTE_BRIDGE_EVIDENCE_ONLY"' in worker789
+            ),
+            "p25_lrb_evidence_only":(
+                c.get("reasoning_operator",{}).get("input_source")=="LOUKSNA_REMOTE_BRIDGE_EVIDENCE_ONLY"
+                and 'lrb_evidence_sha256' in worker789
+            ),
+            "p25_no_material_or_host_authority":(
+                '"material_execution_authorized":False' in worker789
+                and '"host_observation_authorized":False' in worker789
+                and '"direct_host_tooling_authorized":False' in worker789
+                and '"inference_executed_on_host":False' in worker789
+                and c.get("reasoning_operator",{}).get("material_execution_authority") is False
+                and c.get("reasoning_operator",{}).get("host_observation_authority") is False
+            ),
+            "p25_maestro_material_executor":(
+                '"maestro_material_executor":True' in worker789
+                and c.get("reasoning_operator",{}).get("maestro_is_material_executor") is True
+            ),
+            "p25_provider_swappable":(
+                '"provider_swappable":True' in worker789
+                and c.get("reasoning_operator",{}).get("provider_swappable") is True
+                and c.get("reasoning_operator",{}).get("replacement_preserves_interface") is True
+            ),
+            "p25_no_local_backend_gate":(
+                'def p25_local_backend()' not in worker789
+                and 'def p25_reasoning_operator()' in worker789
+                and 'p25=p25_reasoning_operator()' in worker789
+            ),
+            "p25_no_model_runtime_download":(
+                '"model_download_performed":False' in worker789
+                and '"runtime_download_performed":False' in worker789
+                and c.get("anti_duplication",{}).get("p25_reasoner_download_forbidden_without_separate_authorization") is True
+            ),
+            "p25_desktop_commander_denied":(
+                '"desktop_commander_used":False' in worker789
+                and c.get("reasoning_operator",{}).get("desktop_commander_forbidden") is True
+            ),
+          }
+
+          # Static AST safety for coordinator: it may coordinate services and GitHub,
+          # but it may never contain disk-partition tools or network download clients.
+          tree=ast.parse(coord)
+          forbidden_literals=["sfdisk","fdisk","parted","growpart","resize2fs","ntfsresize","mkfs","wipefs","blkdiscard","curl","wget"]
+          checks["coordinator_no_forbidden_ops"]=not any(re.search(r'["\']'+re.escape(x)+r'["\']',coord) for x in forbidden_literals)
+          checks["coordinator_no_shell_true"]="shell=True" not in coord
+          checks["master_no_part4_reopen"]='PART4_CERT_MISSING_REOPEN_DENIED' in master
+
+          start=dt.datetime.fromisoformat(c["window"]["start_utc"].replace("Z","+00:00"))
+          deadline=dt.datetime.fromisoformat(c["window"]["deadline_utc"].replace("Z","+00:00"))
+          checks["global_48h_preserved"]=(deadline-start).total_seconds()==172800 and c["window"]["global_window_preserved"] is True
+
+          ok=all(checks.values())
+          files=[cp,coordp,masterp,workerp,worker789p,uiworkerp,pointw,deployw]
+          rows=[]
+          for p in files:
+              b=p.read_bytes()
+              rows.append({"path":str(p),"sha256":hashlib.sha256(b).hexdigest(),"bytes":len(b)})
+          bundle=hashlib.sha256(json.dumps(rows,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          out={
+              "schema":"LOUKSNA_R4_15P_PROGRAM_G23/1.0",
+              "status":"PASS" if ok else "HOLD",
+              "bundle_sha256":bundle,
+              "files":rows,
+              "checks":checks,
+              "independent_validator":"GITHUB_HOSTED_UBUNTU_G23",
+              "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          raw=(json.dumps(out,sort_keys=True,separators=(",",":"))+"\n").encode()
+          pathlib.Path("/tmp/G23.json").write_bytes(raw)
+          g23=hashlib.sha256(raw).hexdigest()
+          with open(os.environ["GITHUB_OUTPUT"],"a") as f:
+              f.write("bundle_sha256="+bundle+"\n")
+              f.write("g23_sha256="+g23+"\n")
+          print(json.dumps(out,indent=2,sort_keys=True))
+          if not ok:
+              raise SystemExit(23)
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-15p-program-g23
+          path: /tmp/G23.json
+          retention-days: 90
+          compression-level: 0
+
+  g24:
+    name: G24 program certification
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      certificate_sha256: ${{ steps.certify.outputs.certificate_sha256 }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            server/r4-48h
+            server/r4-master
+            .github/workflows/r4-15point-certify.yml
+            .github/workflows/r4-48h-lrb-maestro-g23-g24.yml
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-15p-program-g23
+          path: ${{ runner.temp }}/g23
+
+      - id: certify
+        env:
+          EXPECTED_BUNDLE: ${{ needs.g23.outputs.bundle_sha256 }}
+          EXPECTED_G23_SHA: ${{ needs.g23.outputs.g23_sha256 }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import datetime as dt,hashlib,json,os,pathlib
+          paths=[
+            pathlib.Path("server/r4-48h/R4_48H_CONTRACT.json"),
+            pathlib.Path("server/r4-48h/maestro_48h_coordinator.py"),
+            pathlib.Path("server/r4-master/master_controller.py"),
+            pathlib.Path("server/r4-master/part6_hardened_worker.py"),
+            pathlib.Path("server/r4-master/part789_hardened_worker.py"),
+            pathlib.Path("server/r4-master/ui_p10_p12_hardened_worker.py"),
+            pathlib.Path(".github/workflows/r4-15point-certify.yml"),
+            pathlib.Path(".github/workflows/r4-48h-lrb-maestro-g23-g24.yml"),
+          ]
+          rows=[]
+          for p in paths:
+              b=p.read_bytes(); rows.append({"path":str(p),"sha256":hashlib.sha256(b).hexdigest(),"bytes":len(b)})
+          bundle=hashlib.sha256(json.dumps(rows,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+          g23p=pathlib.Path(os.environ["RUNNER_TEMP"])/"g23/G23.json"
+          g23raw=g23p.read_bytes(); g23=json.loads(g23raw)
+          checks={
+              "bundle_rebound":bundle==os.environ["EXPECTED_BUNDLE"],
+              "g23_hash_rebound":hashlib.sha256(g23raw).hexdigest()==os.environ["EXPECTED_G23_SHA"],
+              "g23_pass":g23.get("status")=="PASS",
+              "g23_independent":g23.get("independent_validator")=="GITHUB_HOSTED_UBUNTU_G23",
+          }
+          ok=all(checks.values())
+          cert={
+            "schema":"LOUKSNA_R4_15P_PROGRAM_G24/1.0",
+            "status":"PASS" if ok else "BLOCKED",
+            "bundle_sha256":bundle,
+            "g23_sha256":os.environ["EXPECTED_G23_SHA"],
+            "authority":"Louksna.md",
+            "scope":"R4_15_POINT_PERSISTENT_COORDINATION_PROGRAM",
+            "activation":"AUTHORIZED_FOR_STAGED_DEPLOY" if ok else "DENIED",
+            "partitioning_authorized":False,
+            "part4_reopen_authorized":False,
+            "debian_kde_download_authorized":False,
+            "lrb_material_execution_authorized":False,
+            "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          raw=(json.dumps(cert,sort_keys=True,separators=(",",":"))+"\n").encode()
+          pathlib.Path("/tmp/G24.json").write_bytes(raw)
+          digest=hashlib.sha256(raw).hexdigest()
+          with open(os.environ["GITHUB_OUTPUT"],"a") as f:
+              f.write("certificate_sha256="+digest+"\n")
+          print(json.dumps(cert,indent=2,sort_keys=True))
+          if not ok:
+              raise SystemExit(24)
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-15p-program-g24
+          path: /tmp/G24.json
+          retention-days: 90
+          compression-level: 0
+
+  deploy:
+    name: Deploy certified coordinator and stage Maestro
+    needs: [g23,g24]
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 12
+    env:
+      BUNDLE_SHA256: ${{ needs.g23.outputs.bundle_sha256 }}
+      G23_SHA256: ${{ needs.g23.outputs.g23_sha256 }}
+      G24_SHA256: ${{ needs.g24.outputs.certificate_sha256 }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            server/r4-48h
+            server/r4-master
+          sparse-checkout-cone-mode: true
+
+      - name: Reject stale trigger before any host mutation
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          EXPECTED_SHA: ${{ github.sha }}
+          REPOSITORY: ${{ github.repository }}
+          BRANCH: staging/luna-r4-master-part1-part9-20260929
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import json,os,urllib.request
+          url=f"https://api.github.com/repos/{os.environ['REPOSITORY']}/git/ref/heads/{os.environ['BRANCH']}"
+          req=urllib.request.Request(url,headers={
+              "Authorization":"Bearer "+os.environ["GITHUB_TOKEN"],
+              "Accept":"application/vnd.github+json",
+              "X-GitHub-Api-Version":"2022-11-28",
+              "User-Agent":"louksna-r4-stale-deploy-guard",
+          })
+          with urllib.request.urlopen(req,timeout=30) as r:
+              current=json.load(r)["object"]["sha"]
+          expected=os.environ["EXPECTED_SHA"]
+          print("EXPECTED_SHA="+expected)
+          print("CURRENT_BRANCH_HEAD="+current)
+          if current!=expected:
+              raise SystemExit("STALE_TRIGGER_HEAD_DEPLOY_DENIED")
+          print("STALE_TRIGGER_GUARD=PASS")
+          PY
+
+      - name: Deploy without using Desktop or LRB as executor
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          HOME_REAL="/home/diegoignacionorambuenamiranda"
+          ROOT="$HOME_REAL/.local/lib/louksna/r4-48h"
+          STAGED="$ROOT/staged"
+          STATE="$HOME_REAL/.local/state/louksna/r4-48h"
+          UNIT_DIR="$HOME_REAL/.config/systemd/user"
+          UNIT="$UNIT_DIR/luna-r4-48h-coordinator.service"
+
+          test "$(hostname)" = LOUKSNA
+          test "$(id -un)" = diegoignacionorambuenamiranda
+          mkdir -p "$ROOT" "$STAGED" "$STATE" "$UNIT_DIR"
+
+          COORD_CHANGED=1
+          if [ -f "$ROOT/maestro_48h_coordinator.py" ] && cmp -s server/r4-48h/maestro_48h_coordinator.py "$ROOT/maestro_48h_coordinator.py"; then
+            COORD_CHANGED=0
+          fi
+
+          install -m 0700 server/r4-48h/maestro_48h_coordinator.py "$ROOT/maestro_48h_coordinator.py"
+          install -m 0600 server/r4-48h/R4_48H_CONTRACT.json "$ROOT/R4_48H_CONTRACT.json"
+          install -m 0700 server/r4-master/master_controller.py "$STAGED/master_controller.py"
+          install -m 0700 server/r4-master/part6_hardened_worker.py "$STAGED/part6_hardened_worker.py"
+          install -m 0700 server/r4-master/part789_hardened_worker.py "$STAGED/part789_hardened_worker.py"
+          install -m 0700 server/r4-master/ui_p10_p12_hardened_worker.py "$STAGED/ui_p10_p12_hardened_worker.py"
+          install -m 0600 server/r4-48h/R4_48H_CONTRACT.json "$STAGED/R4_48H_CONTRACT.json"
+
+          python3 -m py_compile             "$ROOT/maestro_48h_coordinator.py"             "$STAGED/master_controller.py"             "$STAGED/part6_hardened_worker.py"             "$STAGED/part789_hardened_worker.py"             "$STAGED/ui_p10_p12_hardened_worker.py"
+
+          python3 - "$STATE/G24_DEPLOY_BINDING.json" <<'PY'
+          import datetime as dt,json,os,pathlib,sys
+          pathlib.Path(sys.argv[1]).write_text(json.dumps({
+            "schema":"LOUKSNA_R4_15P_PROGRAM_DEPLOY_BINDING/1.0",
+            "status":"PASS",
+            "bundle_sha256":os.environ["BUNDLE_SHA256"],
+            "g23_sha256":os.environ["G23_SHA256"],
+            "g24_sha256":os.environ["G24_SHA256"],
+            "maestro_primary_worker":True,
+            "lrb_observation_only":True,
+            "desktop_plugin_used":False,
+            "part4_reopen_authorized":False,
+            "partitioning_authorized":False,
+            "deployed_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          },indent=2,sort_keys=True)+"\n")
+          PY
+
+          cat > "$UNIT" <<UNIT
+          [Unit]
+          Description=LOUKSNA R4 15-point persistent Maestro/LRB coordinator
+          After=default.target
+          Wants=luna-r4-master-part1-part9.service
+          StartLimitIntervalSec=900
+          StartLimitBurst=5
+
+          [Service]
+          Type=simple
+          WorkingDirectory=$ROOT
+          Environment=HOME=$HOME_REAL
+          Environment=PATH=/usr/local/bin:/usr/bin:/bin:$HOME_REAL/.local/bin
+          ExecStart=/usr/bin/python3 -B $ROOT/maestro_48h_coordinator.py
+          Restart=on-failure
+          RestartSec=30
+
+          [Install]
+          WantedBy=default.target
+          UNIT
+          sed -i 's/^          //' "$UNIT"
+          chmod 0600 "$UNIT"
+
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+
+          systemctl --user daemon-reload
+          systemctl --user enable luna-r4-48h-coordinator.service
+
+          CURRENT_STATE="$(systemctl --user is-active luna-r4-48h-coordinator.service 2>/dev/null || true)"
+          if [ "$CURRENT_STATE" = active ] && [ "$COORD_CHANGED" = 0 ]; then
+            echo "COORDINATOR_ACTIVATION=NOOP_ALREADY_ACTIVE_IDENTICAL"
+          else
+            # Clear only systemd failure/rate-limit state, then perform exactly one
+            # governed activation for a changed or inactive certified coordinator.
+            systemctl --user reset-failed luna-r4-48h-coordinator.service || true
+            if [ "$CURRENT_STATE" = active ]; then
+              systemctl --user restart luna-r4-48h-coordinator.service
+              echo "COORDINATOR_ACTIVATION=RESTART_CHANGED"
+            else
+              systemctl --user start luna-r4-48h-coordinator.service
+              echo "COORDINATOR_ACTIVATION=START_INACTIVE"
+            fi
+          fi
+
+          sleep 5
+          test "$(systemctl --user is-active luna-r4-48h-coordinator.service)" = active
+          systemctl --user show luna-r4-48h-coordinator.service             -p ActiveState -p SubState -p MainPID -p NRestarts -p StartLimitBurst
+
+          # Explicit negative guard: no live partition mutator.
+          if pgrep -af '(^|/)(sfdisk|fdisk|parted|growpart|resize2fs|ntfsresize|mkfs[^ ]*|wipefs|blkdiscard)( |$)' >/tmp/r4-15p-partition-procs.txt; then
+            cat /tmp/r4-15p-partition-procs.txt
+            exit 91
+          fi
+
+          cat "$STATE/G24_DEPLOY_BINDING.json"

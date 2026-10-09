@@ -1,0 +1,13 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_V8_RECOVERY_TRIGGER/1.0",
+  "status": "AUTHORIZED",
+  "source_run": 36687767779,
+  "failure": "EXT4_LOST_FOUND_FALSE_POSITIVE_ONLY",
+  "migration_replay": false,
+  "resume_from": "EXISTING_P3_POST_MIGRATION_STATE",
+  "next": "G23_EXISTING_P3->G24_EXISTING_P3->RETIRE_P2_P4->G23->G24->FINAL_MERGE",
+  "authority": "Louksna.md",
+  "assurance": "PUAC2.md",
+  "plan": "PLAN DEFINITIVO",
+  "fail_closed": true
+}

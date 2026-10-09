@@ -1,0 +1,88 @@
+{
+  "schema": "LOUKSNA_R4_PART4_OPERATIONAL_AMENDMENT/2.0",
+  "amendment_id": "PART4-R2-20260929",
+  "status": "PROPOSED_FOR_G23_G24",
+  "authority": "Louksna.md",
+  "authority_transfer": false,
+  "canonical_mutation": false,
+  "doctrine": "EXTEND_DO_NOT_REPLACE",
+  "failure_posture": "FAIL_CLOSED",
+  "authorized_by_user": true,
+  "authorization_intent": "Update only PART_4 to replace the pre-destruction full-backup gate with a cryptographically certified freeze and transactional Linux migration plan; PART_5 through PART_9 remain unchanged.",
+  "supersedes_operational_part4_preconditions": [
+    "TWO_VERIFIED_BACKUPS_BEFORE_WINDOWS_RETIREMENT",
+    "RESTORE_PROOF_BEFORE_WINDOWS_RETIREMENT"
+  ],
+  "does_not_supersede": [
+    "H2",
+    "H4",
+    "EXACT_DESTRUCTIVE_SCOPE",
+    "G23",
+    "G24",
+    "TRACEABILITY",
+    "AUDITABILITY",
+    "PROVENANCE",
+    "ROLLBACK",
+    "NON_REGRESSION",
+    "FAIL_CLOSED"
+  ],
+  "certified_freeze": {
+    "source_run_id": 36619942178,
+    "certification_run_id": 36621093750,
+    "manifest_sha256": "99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+    "regular_file_bytes": 200490852057,
+    "file_count": 436072,
+    "dir_count": 62016,
+    "symlink_count": 4,
+    "error_count": 0,
+    "changed_count": 0,
+    "g23": "PASS",
+    "g24": "PASS",
+    "scope": "PROYECTOS_CRYPTOGRAPHIC_FREEZE_ONLY"
+  },
+  "protected_scope": {
+    "path": "/media/diegoignacionorambuenamiranda/Windows/PROYECTOS",
+    "source_partition": "/dev/nvme0n1p3",
+    "source_uuid": "F2848A148489DC0B",
+    "policy": "NO_DELETE_NO_RENAME_NO_DESTRUCTIVE_TRAVERSE"
+  },
+  "sequence": [
+    "P4R2_01_FREEZE_CERTIFIED",
+    "P4R2_02_PREVALIDATE_EXACT_WINDOWS_PURGE",
+    "P4R2_03_G23_G24_PURGE_SCOPE",
+    "P4R2_04_PURGE_ALL_P3_CONTENT_EXCEPT_EXACT_PROYECTOS",
+    "P4R2_05_POST_PURGE_PROYECTOS_INTEGRITY",
+    "P4R2_06_UNMOUNT_AND_SHRINK_NTFS_FILESYSTEM",
+    "P4R2_07_SHRINK_P3_PARTITION_BOUNDARY",
+    "P4R2_08_CREATE_NEW_LINUX_EXT4_SPACE",
+    "P4R2_09_MIGRATE_PROYECTOS_NTFS_TO_EXT4_TRANSACTIONALLY",
+    "P4R2_10_FULL_SOURCE_DESTINATION_HASH_EQUIVALENCE",
+    "P4R2_11_RETIRE_REMAINING_NTFS_AND_WINDOWS_RECOVERY_RESIDUALS",
+    "P4R2_12_REASSIGN_RECLAIMED_SPACE_TO_LINUX_LAYOUT",
+    "P4R2_13_FINAL_STORAGE_NON_REGRESSION",
+    "P4R2_14_PART4_G23",
+    "P4R2_15_PART4_G24"
+  ],
+  "migration_invariants": [
+    "NO_DELETE_SOURCE_OBJECT_UNTIL_DESTINATION_OBJECT_VALIDATED",
+    "NO_RETIRE_NTFS_UNTIL_COMPLETE_TREE_EQUIVALENCE_PASS",
+    "NO_TOUCH_EFI_DURING_WINDOWS_CONTENT_PURGE",
+    "NO_TOUCH_DEBIAN_ROOT_PARTITION_DURING_WINDOWS_CONTENT_PURGE",
+    "NO_SILENT_CROSS_DEVICE_TRAVERSAL",
+    "NO_PARTITION_TABLE_MUTATION_BEFORE_EXPLICIT_GEOMETRY_PREVALIDATION",
+    "ROLLBACK_OR_HOLD_ON_ANY_MISMATCH"
+  ],
+  "partitions_initial_scope": {
+    "purge_in_scope": [
+      "/dev/nvme0n1p3"
+    ],
+    "purge_out_of_scope": [
+      "/dev/nvme0n1p1",
+      "/dev/nvme0n1p2",
+      "/dev/nvme0n1p4",
+      "/dev/nvme0n1p5"
+    ]
+  },
+  "part5_to_part9_change": false,
+  "part5_to_part9_required_byte_semantic_stability": true
+}

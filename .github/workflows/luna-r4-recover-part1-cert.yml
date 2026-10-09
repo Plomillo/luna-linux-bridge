@@ -1,0 +1,105 @@
+name: "LUNA R4 — recover PART1 certificate and continue"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-master-recover-part1/**
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  recover:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: staging/luna-r4-master-part1-part9-20260929
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            server/r4-master
+          sparse-checkout-cone-mode: true
+
+      - name: Download already-issued PART1 G24
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-master-g24
+          path: ${{ runner.temp }}/part1-g24
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 36536347705
+
+      - name: Bind certificate locally and resume
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9"
+          CERTS="$STATE/certificates"
+          EVID="$STATE/evidence/PART_1.json"
+          PUBLISHED_EVID="$RUNNER_TEMP/PART_1_PUBLISHED.json"
+          PUBLISHED_PATH="evidence/r4-master/20260929T072332Z-MIS-dd341bc9c1524d7d9598/PART_1/MATERIAL_EVIDENCE.json"
+          DST="$HOME/.local/lib/louksna/r4-master-part1-part9"
+          SRC="$GITHUB_WORKSPACE/server/r4-master"
+          UNIT="luna-r4-master-part1-part9.service"
+          G24="$RUNNER_TEMP/part1-g24/G24.json"
+
+          test -f "$G24"
+          mkdir -p "$CERTS" "$STATE/evidence"
+
+          gh api "repos/Plomillo/luna-linux-bridge/contents/$PUBLISHED_PATH?ref=1e3d6154a52added449a37c24885bad5acf0cddc" --jq '.content' | tr -d '\n' | base64 -d > "$PUBLISHED_EVID"
+          test -s "$PUBLISHED_EVID"
+
+          python3 - "$G24" "$PUBLISHED_EVID" "$CERTS/PART_1.json" "$EVID" <<'PY'
+          import hashlib,json,pathlib,sys
+          g24p=pathlib.Path(sys.argv[1]); evidp=pathlib.Path(sys.argv[2]); out=pathlib.Path(sys.argv[3]); local_evid=pathlib.Path(sys.argv[4])
+          g=json.loads(g24p.read_text(encoding="utf-8"))
+          if g.get("status")!="PASS" or g.get("part")!="PART_1" or g.get("g23_status")!="PASS":
+              raise SystemExit("PART1_G24_INVALID")
+          digest=hashlib.sha256(evidp.read_bytes()).hexdigest()
+          if g.get("evidence_sha256")!=digest:
+              raise SystemExit("PART1_G24_EVIDENCE_MISMATCH")
+          g["workflow_run_id"]=36536347705
+          g["evidence_commit_sha"]="1e3d6154a52added449a37c24885bad5acf0cddc"
+          etmp=local_evid.with_suffix(".json.tmp")
+          etmp.write_bytes(evidp.read_bytes())
+          etmp.replace(local_evid)
+          tmp=out.with_suffix(".json.tmp")
+          tmp.write_text(json.dumps(g,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          tmp.replace(out)
+          print("PART1_LOCAL_G24_BINDING=PASS")
+          print("PART1_CERT_SHA256="+hashlib.sha256(out.read_bytes()).hexdigest())
+          PY
+
+          systemctl --user stop "$UNIT" || true
+          install -m 0700 "$SRC/master_controller.py" "$DST/master_controller.py"
+          install -m 0600 "$SRC/MASTER_MISSION.md" "$DST/MASTER_MISSION.md"
+          install -m 0600 "$SRC/R4_MASTER_CONTRACT.json" "$DST/R4_MASTER_CONTRACT.json"
+          install -m 0600 "$SRC/UPSTREAM_PINS.json" "$DST/UPSTREAM_PINS.json"
+          python3 -m py_compile "$DST/master_controller.py"
+
+          rm -f "$STATE/MASTER_STATUS.json" "$STATE/PERMISSION_REQUEST.json"
+          systemctl --user reset-failed "$UNIT" || true
+          systemctl --user start "$UNIT"
+
+          for _ in $(seq 1 60); do
+            if test -f "$STATE/MASTER_STATUS.json"; then break; fi
+            sleep 2
+          done
+
+          echo "SERVICE=$(systemctl --user is-active "$UNIT" || true)"
+          if test -f "$STATE/MASTER_STATUS.json"; then cat "$STATE/MASTER_STATUS.json"; fi
+          if test -f "$STATE/PERMISSION_REQUEST.json"; then
+            echo "=== PERMISSION_REQUEST ==="
+            cat "$STATE/PERMISSION_REQUEST.json"
+          fi

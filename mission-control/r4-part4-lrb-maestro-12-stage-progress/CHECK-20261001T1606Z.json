@@ -1,0 +1,7 @@
+{
+  "schema": "LOUKSNA_R4_PART4_MAESTRO_12_STAGE_PROGRESS_DISPATCH/1.0",
+  "authority": "Louksna.md",
+  "mode": "READ_ONLY",
+  "contract_id": "PART4-P3-GROWTH-HARDENED-ANTI-PARALYSIS-20261001",
+  "disk_mutation": false
+}

@@ -1,0 +1,262 @@
+name: "R4 PART4 — Stage2 growpart capability G23 G24"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-part4-p3-stage2-growpart-g23-g24.yml
+      - mission-control/r4-part4-p3-stage2-growpart/**
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: r4-part4-p3-stage2-growpart
+  cancel-in-progress: false
+
+env:
+  EXPECTED_CLOUD_VERSION: "0.33-1"
+  EXPECTED_GDISK_VERSION: "1.0.10-2"
+
+jobs:
+  live:
+    name: Stage2 live candidate and package simulation
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 8
+    steps:
+      - name: Collect exact Stage2 candidate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/live"; mkdir -p "$OUT"
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9"
+          EXEC="$STATE/PART_4_P3_HARDENED/EXECUTION.json"
+          CAND="$STATE/PART_4_P3_HARDENED/STAGE2_CANDIDATE.json"
+          test -f "$EXEC" -a -f "$CAND"
+          cp "$EXEC" "$OUT/EXECUTION.json"
+          cp "$CAND" "$OUT/STAGE2_CANDIDATE.json"
+          apt-cache policy cloud-guest-utils gdisk > "$OUT/APT_POLICY.txt"
+          apt-get -s install cloud-guest-utils="$EXPECTED_CLOUD_VERSION" gdisk="$EXPECTED_GDISK_VERSION" > "$OUT/APT_SIMULATION.txt"
+          python3 - "$OUT" <<'PY'
+          import datetime as dt,hashlib,json,os,pathlib,sys
+          root=pathlib.Path(sys.argv[1])
+          e=json.loads((root/"EXECUTION.json").read_text())
+          c=json.loads((root/"STAGE2_CANDIDATE.json").read_text())
+          sim=(root/"APT_SIMULATION.txt").read_text()
+          policy=(root/"APT_POLICY.txt").read_text()
+          inst=[line.split()[1] for line in sim.splitlines() if line.startswith("Inst ")]
+          checks={
+            "stage2_active":int(e.get("current_stage",0))==2,
+            "stage1_completed":int(e.get("last_completed_stage",0))>=1,
+            "candidate_ready":c.get("status")=="CANDIDATE_READY",
+            "candidate_no_mutation":c.get("disk_mutation_performed") is False,
+            "exact_install_set":set(inst)=={"cloud-guest-utils","gdisk"},
+            "cloud_version_available":os.environ["EXPECTED_CLOUD_VERSION"] in policy,
+            "gdisk_version_available":os.environ["EXPECTED_GDISK_VERSION"] in policy,
+            "no_removals":"Remv " not in sim,
+          }
+          ok=all(checks.values())
+          q={
+            "schema":"LOUKSNA_R4_PART4_STAGE2_GROWPART_LIVE/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "scope":"INSTALL_GROWPART_CAPABILITY_ONLY",
+            "mission_id":e.get("mission_id"),
+            "candidate_sha256":hashlib.sha256((root/"STAGE2_CANDIDATE.json").read_bytes()).hexdigest(),
+            "simulation_sha256":hashlib.sha256((root/"APT_SIMULATION.txt").read_bytes()).hexdigest(),
+            "install_set":inst,
+            "versions":{"cloud-guest-utils":os.environ["EXPECTED_CLOUD_VERSION"],"gdisk":os.environ["EXPECTED_GDISK_VERSION"]},
+            "checks":checks,
+            "disk_geometry_mutation_authorized":False,
+            "filesystem_mutation_authorized":False,
+            "package_install_candidate":True,
+            "observed_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          (root/"LIVE.json").write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(23)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-stage2-growpart-live
+          path: ${{ runner.temp }}/live/
+          retention-days: 90
+          compression-level: 0
+
+  g23:
+    name: G23 Stage2 independent validation
+    needs: live
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-stage2-growpart-live
+          path: ${{ runner.temp }}/live
+      - name: Validate exact package microtransaction
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/live/LIVE.json" "$RUNNER_TEMP/g23/G23.json" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,sys
+          lp,out=map(pathlib.Path,sys.argv[1:])
+          l=json.loads(lp.read_text())
+          checks={
+            "live_pass":l.get("status")=="PASS",
+            "scope":l.get("scope")=="INSTALL_GROWPART_CAPABILITY_ONLY",
+            "all_checks":all(l.get("checks",{}).values()),
+            "exact_set":set(l.get("install_set",[]))=={"cloud-guest-utils","gdisk"},
+            "no_disk_geometry_auth":l.get("disk_geometry_mutation_authorized") is False,
+            "no_fs_auth":l.get("filesystem_mutation_authorized") is False,
+          }
+          ok=all(checks.values())
+          q={
+            "schema":"LOUKSNA_R4_PART4_STAGE2_GROWPART_G23/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "scope":"INSTALL_GROWPART_CAPABILITY_ONLY",
+            "live_sha256":hashlib.sha256(lp.read_bytes()).hexdigest(),
+            "checks":checks,
+            "g24_allowed":ok,
+            "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          out.write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(23)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-stage2-growpart-g23
+          path: ${{ runner.temp }}/g23/G23.json
+          retention-days: 90
+          compression-level: 0
+
+  g24:
+    name: G24 authorize Stage2 package microtransaction
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-stage2-growpart-g23
+          path: ${{ runner.temp }}/g23
+      - name: Issue exact-scope package certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/G23.json"
+          test "$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(d["status"] if d.get("g24_allowed") else "HOLD")' "$G")" = PASS
+          H="$(sha256sum "$G"|awk '{print $1}')"
+          AUD="louksna-r4-part4-stage2-growpart:$H"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export H AUD TOKEN
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$RUNNER_TEMP/g24/G24.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          t=os.environ["TOKEN"]; p=t.split("."); payload=p[1]+"="*((4-len(p[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload))
+          aud=claims.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          q={
+            "schema":"LOUKSNA_R4_PART4_STAGE2_GROWPART_G24/1.0",
+            "status":"PASS",
+            "scope":"INSTALL_GROWPART_CAPABILITY_ONLY",
+            "g23_sha256":os.environ["H"],
+            "authorized_packages":{"cloud-guest-utils":"0.33-1","gdisk":"1.0.10-2"},
+            "disk_geometry_mutation_authorized":False,
+            "filesystem_mutation_authorized":False,
+            "package_install_authorized":True,
+            "certification_propagated":False,
+            "authority_authenticated":True,
+            "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
+            "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-stage2-growpart-g24
+          path: ${{ runner.temp }}/g24/G24.json
+          retention-days: 90
+          compression-level: 0
+
+  execute:
+    name: Maestro Stage2 install and advance
+    needs: g24
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 12
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-stage2-growpart-g24
+          path: ${{ runner.temp }}/g24
+      - name: Execute exact package install then let Maestro continue
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          CERT="$RUNNER_TEMP/g24/G24.json"
+          test "$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(d["status"])' "$CERT")" = PASS
+          test "$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(d["package_install_authorized"])' "$CERT")" = True
+          test "$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(d["disk_geometry_mutation_authorized"])' "$CERT")" = False
+
+          SIM="$(apt-get -s install cloud-guest-utils="$EXPECTED_CLOUD_VERSION" gdisk="$EXPECTED_GDISK_VERSION")"
+          test "$(printf '%s\n' "$SIM" | awk '/^Inst /{print $2}' | sort | tr '\n' ' ')" = "cloud-guest-utils gdisk "
+
+          sudo -n /usr/bin/apt-get install -y --no-install-recommends             cloud-guest-utils="$EXPECTED_CLOUD_VERSION" gdisk="$EXPECTED_GDISK_VERSION"
+
+          command -v growpart
+          test "$(dpkg-query -W -f='${Version}' cloud-guest-utils)" = "$EXPECTED_CLOUD_VERSION"
+          test "$(dpkg-query -W -f='${Version}' gdisk)" = "$EXPECTED_GDISK_VERSION"
+
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+          systemctl --user restart luna-r4-master-part1-part9.service
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9"
+          EXEC="$STATE/PART_4_P3_HARDENED/EXECUTION.json"
+
+          for i in $(seq 1 75); do
+            if [ -f "$EXEC" ]; then
+              STAGE="$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(d.get("current_stage",0))' "$EXEC")"
+              LAST="$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(d.get("last_completed_stage",0))' "$EXEC")"
+              [ "$LAST" -ge 2 ] && [ "$STAGE" -ge 3 ] && break
+            fi
+            sleep 2
+          done
+
+          OUT="$RUNNER_TEMP/result"; mkdir -p "$OUT"
+          cp "$EXEC" "$OUT/EXECUTION.json"
+          cp "$STATE/MASTER_STATUS.json" "$OUT/MASTER_STATUS.json"
+          cp "$STATE/PART_4_P3_HARDENED/STAGE3_DRYRUN.json" "$OUT/STAGE3_DRYRUN.json" 2>/dev/null || true
+          command -v growpart > "$OUT/GROWPART_PATH.txt"
+          dpkg-query -W -f='cloud-guest-utils=${Version}\ngdisk=${Version}\n' cloud-guest-utils gdisk > "$OUT/PACKAGES.txt"
+
+          python3 - "$OUT" <<'PY'
+          import datetime as dt,json,pathlib,sys
+          root=pathlib.Path(sys.argv[1]); e=json.loads((root/"EXECUTION.json").read_text())
+          q={
+            "schema":"LOUKSNA_R4_PART4_STAGE2_EXECUTION_RESULT/1.0",
+            "status":"PASS" if int(e.get("last_completed_stage",0))>=2 and int(e.get("current_stage",0))>=3 else "HOLD",
+            "last_completed_stage":e.get("last_completed_stage"),
+            "current_stage":e.get("current_stage"),
+            "next_authorized_action":e.get("next_authorized_action"),
+            "growpart_path":(root/"GROWPART_PATH.txt").read_text().strip(),
+            "disk_geometry_mutation_performed":False,
+            "filesystem_mutation_performed":False,
+            "observed_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          (root/"RESULT.json").write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          if q["status"]!="PASS": raise SystemExit(31)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-stage2-growpart-result
+          path: ${{ runner.temp }}/result/
+          retention-days: 90
+          compression-level: 0

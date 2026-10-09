@@ -1,0 +1,554 @@
+name: "R4 PART4 R2 — activate certified WinRE repair"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-part4-r2-winre-activate.yml
+
+permissions:
+  contents: read
+  actions: read
+  id-token: write
+
+concurrency:
+  group: r4-part4-r2-winre-activation
+  cancel-in-progress: false
+
+env:
+  CANDIDATE_RUN: "36653416856"
+  FREEZE_RUN: "36619942178"
+  FREEZE_MANIFEST_SHA256: "99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e"
+
+jobs:
+  checkpoint:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 20
+    steps:
+      - name: Build mutation-free activation checkpoint
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+          LOCAL="$HOME/.local/state/louksna/r4-master-part1-part9/PART_4_R2/winre-repair"
+          P4M="$RUNNER_TEMP/winre-p4"
+          DL="$RUNNER_TEMP/certified"
+          OUT="$RUNNER_TEMP/winre-activation-checkpoint"
+          mkdir -p "$P4M" "$DL/candidate" "$DL/g24" "$OUT"
+
+          gh run download "$CANDIDATE_RUN" --repo Plomillo/luna-linux-bridge -n r4-part4-r2-winre-repair-candidate -D "$DL/candidate"
+          gh run download "$CANDIDATE_RUN" --repo Plomillo/luna-linux-bridge -n r4-part4-r2-winre-repair-g24 -D "$DL/g24"
+          C="$DL/candidate/CANDIDATE.json"
+          G="$DL/g24/G24_WINRE_REPAIR.json"
+          test -f "$C"; test -f "$G"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$G")" = PASS
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["scope"])' "$G")" = AUTOMATED_CHKDSK_P3_WINRE_CANDIDATE
+
+          SRC_SHA="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["source_wim_sha256"])' "$C")"
+          CAND_SHA="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["candidate_wim_sha256"])' "$C")"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["candidate_wim_sha256"])' "$G")" = "$CAND_SHA"
+          test -f "$LOCAL/winre.candidate.wim"
+          test -f "$LOCAL/winre.before-update.wim"
+          test "$(sha256sum "$LOCAL/winre.candidate.wim"|awk '{print $1}')" = "$CAND_SHA"
+          test "$(sha256sum "$LOCAL/winre.before-update.wim"|awk '{print $1}')" = "$SRC_SHA"
+
+          test "$(sudo -n /usr/sbin/blkid -p -s UUID -o value /dev/nvme0n1p3)" = F2848A148489DC0B
+          test "$(sudo -n /usr/sbin/blkid -p -s UUID -o value /dev/nvme0n1p4)" = CADE667DDE666225
+          test -d /media/diegoignacionorambuenamiranda/Windows/PROYECTOS
+          mapfile -t top < <(find /media/diegoignacionorambuenamiranda/Windows -mindepth 1 -maxdepth 1 -printf '%f\n' | sort)
+          test "${#top[@]}" -eq 1
+          test "${top[0]}" = PROYECTOS
+
+          sudo -n mount -t ntfs3 -o ro /dev/nvme0n1p4 "$P4M"
+          trap 'sudo -n umount "$P4M" >/dev/null 2>&1 || true' EXIT
+          LIVE_WIM="$P4M/Recovery/WindowsRE/winre.wim"
+          test "$(sha256sum "$LIVE_WIM"|awk '{print $1}')" = "$SRC_SHA"
+          sudo -n umount "$P4M"
+          trap - EXIT
+
+          test -f /boot/efi/EFI/Microsoft/Boot/BCD
+          test -f /boot/efi/EFI/Microsoft/Recovery/BCD
+          test -f /boot/efi/EFI/Microsoft/Boot/bootmgfw.efi
+          ! sudo -n efibootmgr | grep -F "LOUKSNA WinRE OneShot"
+          sudo -n sfdisk --dump /dev/nvme0n1 > "$OUT/PARTITION_TABLE.sfdisk"
+          sudo -n efibootmgr -v > "$OUT/EFIBOOTMGR_BEFORE.txt"
+          BOOTORDER="$(sudo -n efibootmgr | awk -F': ' '/^BootOrder:/{print $2}')"
+          test -n "$BOOTORDER"
+          test "${BOOTORDER%%,*}" = 0000
+
+          # Static hardening: root-owned STATE must never be written by an unprivileged shell redirection.
+          SELF="$GITHUB_WORKSPACE/.github/workflows/r4-part4-r2-winre-activate.yml"
+          if [ -f "$SELF" ]; then
+            if grep -nE '>+[[:space:]]*"\\$STATE/' "$SELF" | grep -v 'sudo -n tee'; then
+              echo "HOLD:UNPRIVILEGED_STATE_REDIRECTION"
+              exit 41
+            fi
+          fi
+          BOOT_BCD_SHA="$(sha256sum /boot/efi/EFI/Microsoft/Boot/BCD|awk '{print $1}')"
+          REC_BCD_SHA="$(sha256sum /boot/efi/EFI/Microsoft/Recovery/BCD|awk '{print $1}')"
+          BOOTMGFW_SHA="$(sha256sum /boot/efi/EFI/Microsoft/Boot/bootmgfw.efi|awk '{print $1}')"
+          CAND_G24_SHA="$(sha256sum "$G"|awk '{print $1}')"
+
+          export SRC_SHA CAND_SHA BOOTORDER BOOT_BCD_SHA REC_BCD_SHA BOOTMGFW_SHA CAND_G24_SHA
+          python3 - "$OUT/ACTIVATION_PLAN.json" <<'PY'
+          import datetime as dt,json,os,pathlib,sys
+          r={
+            "schema":"LOUKSNA_R4_PART4_R2_WINRE_ACTIVATION_PLAN/1.0",
+            "status":"PASS",
+            "candidate_run":36653416856,
+            "candidate_g24_sha256":os.environ["CAND_G24_SHA"],
+            "source_wim_sha256":os.environ["SRC_SHA"],
+            "candidate_wim_sha256":os.environ["CAND_SHA"],
+            "boot_bcd_sha256":os.environ["BOOT_BCD_SHA"],
+            "recovery_bcd_sha256":os.environ["REC_BCD_SHA"],
+            "bootmgfw_sha256":os.environ["BOOTMGFW_SHA"],
+            "original_bootorder":os.environ["BOOTORDER"],
+            "target_disk":"/dev/nvme0n1",
+            "target_partition":"/dev/nvme0n1p3",
+            "target_uuid":"F2848A148489DC0B",
+            "recovery_partition":"/dev/nvme0n1p4",
+            "recovery_uuid":"CADE667DDE666225",
+            "efi_partition":"/dev/nvme0n1p1",
+            "boot_strategy":"TEMP_RECOVERY_BCD_PLUS_UEFI_BOOTNEXT",
+            "permanent_bootorder_change":False,
+            "partition_resize":False,
+            "format_operation":False,
+            "postboot_restore_required":True,
+            "postboot_ntfs_info_required":True,
+            "postboot_manifest_verify_required":True,
+            "planned_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,indent=2,sort_keys=True))
+          PY
+          cp "$C" "$OUT/CANDIDATE.json"
+          cp "$G" "$OUT/CANDIDATE_G24.json"
+          sha256sum "$OUT"/* > "$OUT/CHECKPOINT.sha256"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-winre-activation-checkpoint
+          path: ${{ runner.temp }}/winre-activation-checkpoint/
+          retention-days: 90
+          compression-level: 0
+
+  g23:
+    needs: checkpoint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-winre-activation-checkpoint
+          path: ${{ runner.temp }}/checkpoint
+      - name: Independent activation validation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/checkpoint/ACTIVATION_PLAN.json" "$RUNNER_TEMP/checkpoint/CANDIDATE_G24.json" "$RUNNER_TEMP/g23/G23_ACTIVATION.json" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,sys
+          pp,gp,out=map(pathlib.Path,sys.argv[1:4]); p=json.loads(pp.read_text()); g=json.loads(gp.read_text())
+          checks={
+            "plan_pass":p.get("status")=="PASS",
+            "candidate_g24_pass":g.get("status")=="PASS",
+            "candidate_scope":g.get("scope")=="AUTOMATED_CHKDSK_P3_WINRE_CANDIDATE",
+            "candidate_hash_bound":p.get("candidate_wim_sha256")==g.get("candidate_wim_sha256"),
+            "disk_exact":p.get("target_disk")=="/dev/nvme0n1",
+            "p3_exact":p.get("target_partition")=="/dev/nvme0n1p3" and p.get("target_uuid")=="F2848A148489DC0B",
+            "p4_exact":p.get("recovery_partition")=="/dev/nvme0n1p4" and p.get("recovery_uuid")=="CADE667DDE666225",
+            "efi_exact":p.get("efi_partition")=="/dev/nvme0n1p1",
+            "one_shot_strategy":p.get("boot_strategy")=="TEMP_RECOVERY_BCD_PLUS_UEFI_BOOTNEXT",
+            "no_permanent_bootorder":p.get("permanent_bootorder_change") is False,
+            "no_resize":p.get("partition_resize") is False,
+            "no_format":p.get("format_operation") is False,
+            "postboot_restore":p.get("postboot_restore_required") is True,
+            "postboot_ntfs":p.get("postboot_ntfs_info_required") is True,
+            "postboot_manifest":p.get("postboot_manifest_verify_required") is True,
+            "debian_first":str(p.get("original_bootorder","")).split(",")[0]=="0000",
+          }
+          ok=all(checks.values())
+          r={
+            "schema":"LOUKSNA_R4_PART4_R2_WINRE_ACTIVATION_G23/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "scope":"ONE_SHOT_WINRE_ACTIVATION",
+            "plan_sha256":hashlib.sha256(pp.read_bytes()).hexdigest(),
+            "candidate_g24_sha256":hashlib.sha256(gp.read_bytes()).hexdigest(),
+            "checks":checks,
+            "g24_allowed":ok,
+            "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          out.write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(3)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-winre-activation-g23
+          path: ${{ runner.temp }}/g23/G23_ACTIVATION.json
+          retention-days: 90
+          compression-level: 0
+
+  g24:
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-winre-activation-g23
+          path: ${{ runner.temp }}/g23
+      - name: Certify one-shot activation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/G23_ACTIVATION.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$G")" = PASS
+          H="$(sha256sum "$G"|awk '{print $1}')"
+          AUD="louksna-r4-part4-r2-winre-activate:$H"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export H AUD TOKEN
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$G" "$RUNNER_TEMP/g24/G24_ACTIVATION.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          g=json.loads(pathlib.Path(sys.argv[1]).read_text()); t=os.environ["TOKEN"]; p=t.split(".")
+          payload=p[1]+"="*((4-len(p[1])%4)%4); claims=json.loads(base64.urlsafe_b64decode(payload))
+          aud=claims.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          r={
+            "schema":"LOUKSNA_R4_PART4_R2_WINRE_ACTIVATION_G24/1.0",
+            "status":"PASS",
+            "scope":"ONE_SHOT_WINRE_ACTIVATION",
+            "g23_sha256":os.environ["H"],
+            "plan_sha256":g["plan_sha256"],
+            "authority_authenticated":True,
+            "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
+            "activation_authorized":True,
+            "partition_resize_authorized":False,
+            "format_authorized":False,
+            "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          pathlib.Path(sys.argv[2]).write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-winre-activation-g24
+          path: ${{ runner.temp }}/g24/G24_ACTIVATION.json
+          retention-days: 90
+          compression-level: 0
+
+  activate:
+    needs: g24
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: server/r4-master
+          sparse-checkout-cone-mode: true
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-winre-activation-checkpoint
+          path: ${{ runner.temp }}/checkpoint
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-winre-activation-g24
+          path: ${{ runner.temp }}/g24
+      - name: Activate certified one-shot WinRE transaction
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+          USER_NAME=diegoignacionorambuenamiranda
+          USER_HOME=/home/diegoignacionorambuenamiranda
+          LOCAL="$USER_HOME/.local/state/louksna/r4-master-part1-part9/PART_4_R2/winre-repair"
+          ROOT=/var/lib/louksna-governance/winre-repair
+          INSTALL_ID="$(date -u +%Y%m%dT%H%M%SZ)-$GITHUB_RUN_ID"
+          STATE="$ROOT/$INSTALL_ID"
+          P4M=/run/louksna-winre-p4
+          EFI=/boot/efi
+          PLAN="$RUNNER_TEMP/checkpoint/ACTIVATION_PLAN.json"
+          CERT="$RUNNER_TEMP/g24/G24_ACTIVATION.json"
+          OUT="$RUNNER_TEMP/winre-activation-$GITHUB_RUN_ID"
+          mkdir -p "$OUT"
+
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$CERT")" = PASS
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["activation_authorized"])' "$CERT")" = True
+          test "$(sha256sum "$PLAN"|awk '{print $1}')" = "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["plan_sha256"])' "$CERT")"
+
+          SRC_SHA="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["source_wim_sha256"])' "$PLAN")"
+          CAND_SHA="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["candidate_wim_sha256"])' "$PLAN")"
+          BOOT_BCD_SHA="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["boot_bcd_sha256"])' "$PLAN")"
+          REC_BCD_SHA="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["recovery_bcd_sha256"])' "$PLAN")"
+          ORIG_ORDER="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["original_bootorder"])' "$PLAN")"
+
+          test "$(sudo -n /usr/sbin/blkid -p -s UUID -o value /dev/nvme0n1p3)" = F2848A148489DC0B
+          test "$(sudo -n /usr/sbin/blkid -p -s UUID -o value /dev/nvme0n1p4)" = CADE667DDE666225
+          test "$(sha256sum "$LOCAL/winre.candidate.wim"|awk '{print $1}')" = "$CAND_SHA"
+          test "$(sha256sum "$EFI/EFI/Microsoft/Boot/BCD"|awk '{print $1}')" = "$BOOT_BCD_SHA"
+          test "$(sha256sum "$EFI/EFI/Microsoft/Recovery/BCD"|awk '{print $1}')" = "$REC_BCD_SHA"
+          ! sudo -n efibootmgr | grep -F "LOUKSNA WinRE OneShot"
+
+          sudo -n mkdir -p "$STATE" "$ROOT/postboot" "$P4M"
+          sudo -n chmod 700 "$ROOT" "$STATE"
+          sudo -n cp "$PLAN" "$STATE/ACTIVATION_PLAN.json"
+          sudo -n cp "$CERT" "$STATE/G24_ACTIVATION.json"
+          sudo -n cp "$EFI/EFI/Microsoft/Boot/BCD" "$STATE/BCD_BOOT.original"
+          sudo -n cp "$EFI/EFI/Microsoft/Recovery/BCD" "$STATE/BCD_RECOVERY.certified"
+          sudo -n cp server/r4-master/part4_r2_verify_tree.py "$STATE/part4_r2_verify_tree.py"
+          sudo -n sfdisk --dump /dev/nvme0n1 | sudo -n tee "$STATE/PARTITION_TABLE.before" >/dev/null
+          sudo -n efibootmgr -v | sudo -n tee "$STATE/EFIBOOTMGR.before" >/dev/null
+
+          gh run download "$FREEZE_RUN" --repo Plomillo/luna-linux-bridge -n "R4-PART4-PROYECTOS-freeze-$FREEZE_RUN" -D "$RUNNER_TEMP/freeze"
+          test "$(sha256sum "$RUNNER_TEMP/freeze/PROYECTOS_MANIFEST.jsonl.gz"|awk '{print $1}')" = "$FREEZE_MANIFEST_SHA256"
+          sudo -n cp "$RUNNER_TEMP/freeze/PROYECTOS_MANIFEST.jsonl.gz" "$STATE/PROYECTOS_MANIFEST.jsonl.gz"
+
+          sudo -n cp --sparse=always "$LOCAL/winre.before-update.wim" "$STATE/winre.original.wim"
+          test "$(sudo -n sha256sum "$STATE/winre.original.wim"|awk '{print $1}')" = "$SRC_SHA"
+
+          MUTATED=0
+          BOOTNUM=""
+          rollback(){
+            rc=$?
+            set +e
+            if [ "$MUTATED" -eq 1 ]; then
+              sudo -n cp "$STATE/BCD_BOOT.original" "$EFI/EFI/Microsoft/Boot/BCD"
+              sudo -n mkdir -p "$P4M"
+              sudo -n mount -t ntfs3 -o rw /dev/nvme0n1p4 "$P4M" 2>/dev/null || true
+              if mountpoint -q "$P4M"; then
+                sudo -n cp --sparse=always "$STATE/winre.original.wim" "$P4M/Recovery/WindowsRE/winre.wim"
+                sync
+                sudo -n umount "$P4M"
+              fi
+              if [ -n "$BOOTNUM" ]; then sudo -n efibootmgr -b "$BOOTNUM" -B >/dev/null 2>&1 || true; fi
+              sudo -n efibootmgr -N >/dev/null 2>&1 || true
+              sudo -n efibootmgr -o "$ORIG_ORDER" >/dev/null 2>&1 || true
+              sudo -n systemctl disable louksna-winre-postboot.service >/dev/null 2>&1 || true
+            fi
+            exit "$rc"
+          }
+          trap rollback ERR
+
+          sudo -n tee /usr/local/sbin/louksna-winre-postboot >/dev/null <<'POST'
+          #!/bin/bash
+          set -Eeuo pipefail
+          export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+          ROOT=/var/lib/louksna-governance/winre-repair
+          ACTIVE="$ROOT/ACTIVE.json"
+          [ -f "$ACTIVE" ] || exit 0
+          INSTALL_ID="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["install_id"])' "$ACTIVE")"
+          STATE="$ROOT/$INSTALL_ID"
+          OUT="$ROOT/postboot/$INSTALL_ID"
+          EFI=/boot/efi
+          P4M=/run/louksna-winre-p4-post
+          WINROOT=/media/diegoignacionorambuenamiranda/Windows
+          mkdir -p "$OUT" "$P4M" "$WINROOT"
+          ORIG_ORDER="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["original_bootorder"])' "$ACTIVE")"
+          BOOTNUM="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["temporary_bootnum"])' "$ACTIVE")"
+          SRC_SHA="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["source_wim_sha256"])' "$ACTIVE")"
+          BOOT_BCD_SHA="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["boot_bcd_sha256"])' "$ACTIVE")"
+
+          efibootmgr -v > "$OUT/EFIBOOTMGR_POSTBOOT_BEFORE.txt" || true
+          CHKDSK_FINISHED=false
+          [ -f "$EFI/EFI/LOUKSNA/WINRE_REPAIR_FINISHED.txt" ] && CHKDSK_FINISHED=true
+          cp -f "$EFI/EFI/LOUKSNA/"* "$OUT/" 2>/dev/null || true
+
+          cp "$STATE/BCD_BOOT.original" "$EFI/EFI/Microsoft/Boot/BCD"
+          sync
+          BCD_RESTORED=false
+          [ "$(sha256sum "$EFI/EFI/Microsoft/Boot/BCD"|awk '{print $1}')" = "$BOOT_BCD_SHA" ] && BCD_RESTORED=true
+
+          mount -t ntfs3 -o rw /dev/nvme0n1p4 "$P4M"
+          cp --sparse=always "$STATE/winre.original.wim" "$P4M/Recovery/WindowsRE/winre.wim"
+          sync
+          WIM_RESTORED=false
+          [ "$(sha256sum "$P4M/Recovery/WindowsRE/winre.wim"|awk '{print $1}')" = "$SRC_SHA" ] && WIM_RESTORED=true
+          umount "$P4M"
+
+          efibootmgr -N >/dev/null 2>&1 || true
+          efibootmgr -b "$BOOTNUM" -B >/dev/null 2>&1 || true
+          efibootmgr -o "$ORIG_ORDER"
+          efibootmgr -v > "$OUT/EFIBOOTMGR_RESTORED.txt"
+          NOW_ORDER="$(efibootmgr | awk -F': ' '/^BootOrder:/{print $2}')"
+          BOOTORDER_RESTORED=false
+          [ "$NOW_ORDER" = "$ORIG_ORDER" ] && BOOTORDER_RESTORED=true
+          TEMP_REMOVED=true
+          efibootmgr | grep -F "LOUKSNA WinRE OneShot" >/dev/null 2>&1 && TEMP_REMOVED=false
+          DEBIAN_PRESENT=false
+          efibootmgr | grep -F "Boot0000* Debian" >/dev/null 2>&1 && DEBIAN_PRESENT=true
+
+          if findmnt -S /dev/nvme0n1p3 >/dev/null 2>&1; then umount /dev/nvme0n1p3 || umount "$WINROOT"; fi
+          set +e
+          LC_ALL=C ntfsresize --info --force /dev/nvme0n1p3 > "$OUT/NTFS_INFO.txt" 2>&1
+          NTFS_RC=$?
+          set -e
+          export NTFS_RC
+          MISMATCHES="$(python3 - "$OUT/NTFS_INFO.txt" <<'PY'
+          import re,sys
+          s=open(sys.argv[1],encoding="utf-8",errors="replace").read()
+          m=re.search(r"Totally\s+(\d+)\s+cluster accounting mismatches",s,re.I)
+          if m: print(int(m.group(1)))
+          elif re.search(r"Cluster accounting failed",s,re.I): print(max(1,len(re.findall(r"Cluster accounting failed",s,re.I))))
+          else: print(0)
+          PY
+          )"
+          NTFS_PASS=false
+          if [ "$NTFS_RC" -eq 0 ] && [ "$MISMATCHES" -eq 0 ] && ! grep -q 'ERROR:' "$OUT/NTFS_INFO.txt"; then NTFS_PASS=true; fi
+
+          mount "$WINROOT"
+          test "$(blkid -p -s UUID -o value /dev/nvme0n1p3)" = F2848A148489DC0B
+          test -d "$WINROOT/PROYECTOS"
+
+          set +e
+          python3 "$STATE/part4_r2_verify_tree.py" --root "$WINROOT/PROYECTOS" --manifest "$STATE/PROYECTOS_MANIFEST.jsonl.gz" --out "$OUT/VERIFY_PROYECTOS.json"
+          VERIFY_RC=$?
+          set -e
+          PROJECT_STATUS="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1])).get("status","HOLD"))' "$OUT/VERIFY_PROYECTOS.json" 2>/dev/null || echo HOLD)"
+          P3_UUID="$(blkid -p -s UUID -o value /dev/nvme0n1p3)"
+          P4_UUID="$(blkid -p -s UUID -o value /dev/nvme0n1p4)"
+          CHKLOG_SHA="$(sha256sum "$OUT/CHKDSK_P3.txt" 2>/dev/null | awk '{print $1}' || true)"
+          NTFS_SHA="$(sha256sum "$OUT/NTFS_INFO.txt"|awk '{print $1}')"
+          VERIFY_SHA="$(sha256sum "$OUT/VERIFY_PROYECTOS.json"|awk '{print $1}')"
+          export INSTALL_ID CHKDSK_FINISHED BCD_RESTORED WIM_RESTORED BOOTORDER_RESTORED TEMP_REMOVED DEBIAN_PRESENT NTFS_PASS MISMATCHES PROJECT_STATUS P3_UUID P4_UUID CHKLOG_SHA NTFS_SHA VERIFY_SHA VERIFY_RC
+          python3 - "$OUT/POSTBOOT_EVIDENCE.json" <<'PY'
+          import datetime as dt,json,os,pathlib,sys
+          b=lambda n: os.environ[n].lower()=="true"
+          ok=all([b("CHKDSK_FINISHED"),b("BCD_RESTORED"),b("WIM_RESTORED"),b("BOOTORDER_RESTORED"),b("TEMP_REMOVED"),b("DEBIAN_PRESENT"),b("NTFS_PASS"),os.environ["PROJECT_STATUS"]=="PASS",int(os.environ["MISMATCHES"])==0])
+          r={
+            "schema":"LOUKSNA_R4_PART4_R2_WINRE_POSTBOOT/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "install_id":os.environ["INSTALL_ID"],
+            "repair_scope":"NTFS_METADATA_P3_ONLY",
+            "chkdsk_finished":b("CHKDSK_FINISHED"),
+            "chkdsk_log_sha256":os.environ["CHKLOG_SHA"],
+            "ntfs_info_pass":b("NTFS_PASS"),
+            "ntfs_info_sha256":os.environ["NTFS_SHA"],
+            "bitmap_mismatches":int(os.environ["MISMATCHES"]),
+            "projects_manifest_status":os.environ["PROJECT_STATUS"],
+            "projects_verify_sha256":os.environ["VERIFY_SHA"],
+            "projects_verify_rc":int(os.environ["VERIFY_RC"]),
+            "boot_bcd_restored":b("BCD_RESTORED"),
+            "winre_wim_restored":b("WIM_RESTORED"),
+            "bootorder_restored":b("BOOTORDER_RESTORED"),
+            "temporary_boot_removed":b("TEMP_REMOVED"),
+            "debian_boot_present":b("DEBIAN_PRESENT"),
+            "p3_uuid":os.environ["P3_UUID"],
+            "p4_uuid":os.environ["P4_UUID"],
+            "partition_resize_performed":False,
+            "format_performed":False,
+            "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,indent=2,sort_keys=True))
+          PY
+          sha256sum "$OUT"/* > "$OUT/EVIDENCE.sha256"
+
+          TRIGGER="$OUT/TRIGGER.json"
+          python3 - "$OUT/POSTBOOT_EVIDENCE.json" "$TRIGGER" <<'PY'
+          import hashlib,json,pathlib,sys
+          p=pathlib.Path(sys.argv[1]); d=json.loads(p.read_text())
+          t={"schema":"LOUKSNA_R4_PART4_R2_WINRE_POSTBOOT_TRIGGER/1.0","install_id":d["install_id"],"status":d["status"],"postboot_evidence_sha256":hashlib.sha256(p.read_bytes()).hexdigest()}
+          pathlib.Path(sys.argv[2]).write_text(json.dumps(t,separators=(",",":"))+"\n")
+          PY
+          B64="$(base64 -w0 "$TRIGGER")"
+          set +e
+          runuser -u diegoignacionorambuenamiranda -- env HOME=/home/diegoignacionorambuenamiranda gh api --method PUT             "repos/Plomillo/luna-linux-bridge/contents/mission-control/r4-part4-r2-winre-postboot/RESULT-$INSTALL_ID.json"             -f "message=postboot(PART4-R2): WinRE repair result $INSTALL_ID"             -f "content=$B64"             -f "branch=staging/luna-r4-master-part1-part9-20260929" > "$OUT/GITHUB_TRIGGER_RESPONSE.json" 2> "$OUT/GITHUB_TRIGGER_ERROR.txt"
+          GHRC=$?
+          set -e
+          echo "$GHRC" > "$OUT/GITHUB_TRIGGER.rc"
+          mv "$ACTIVE" "$ROOT/COMPLETED-$INSTALL_ID.json"
+          systemctl disable louksna-winre-postboot.service >/dev/null 2>&1 || true
+          exit 0
+          POST
+          sudo -n chmod 0755 /usr/local/sbin/louksna-winre-postboot
+
+          sudo -n tee /etc/systemd/system/louksna-winre-postboot.service >/dev/null <<'UNIT'
+          [Unit]
+          Description=Louksna PART4-R2 WinRE postboot restore and validation
+          Wants=network-online.target
+          After=local-fs.target network-online.target
+          ConditionPathExists=/var/lib/louksna-governance/winre-repair/ACTIVE.json
+
+          [Service]
+          Type=oneshot
+          ExecStart=/usr/local/sbin/louksna-winre-postboot
+          TimeoutStartSec=45min
+
+          [Install]
+          WantedBy=multi-user.target
+          UNIT
+          sudo -n systemctl daemon-reload
+          sudo -n systemctl enable louksna-winre-postboot.service
+
+          MUTATED=1
+          sudo -n mount -t ntfs3 -o rw /dev/nvme0n1p4 "$P4M"
+          sudo -n cp --sparse=always "$LOCAL/winre.candidate.wim" "$P4M/Recovery/WindowsRE/winre.wim"
+          sync
+          test "$(sudo -n sha256sum "$P4M/Recovery/WindowsRE/winre.wim"|awk '{print $1}')" = "$CAND_SHA"
+          sudo -n umount "$P4M"
+
+          sudo -n cp "$EFI/EFI/Microsoft/Recovery/BCD" "$EFI/EFI/Microsoft/Boot/BCD"
+          sync
+          test "$(sha256sum "$EFI/EFI/Microsoft/Boot/BCD"|awk '{print $1}')" = "$REC_BCD_SHA"
+
+          sudo -n efibootmgr -c -d /dev/nvme0n1 -p 1 -L "LOUKSNA WinRE OneShot" -l '\EFI\Microsoft\Boot\bootmgfw.efi' | sudo -n tee "$STATE/EFIBOOTMGR.create.txt" >/dev/null
+          mapfile -t boots < <(sudo -n efibootmgr | sed -n 's/^Boot\([0-9A-Fa-f]\{4\}\)\* LOUKSNA WinRE OneShot.*/\1/p')
+          test "${#boots[@]}" -eq 1
+          BOOTNUM="${boots[0]}"
+          sudo -n efibootmgr -o "$ORIG_ORDER"
+          sudo -n efibootmgr -n "$BOOTNUM"
+          AFTER="$(sudo -n efibootmgr)"
+          test "$(printf '%s\n' "$AFTER"|awk -F': ' '/^BootOrder:/{print $2}')" = "$ORIG_ORDER"
+          test "$(printf '%s\n' "$AFTER"|awk -F': ' '/^BootNext:/{print $2}')" = "$BOOTNUM"
+          printf '%s\n' "$AFTER" | sudo -n tee "$STATE/EFIBOOTMGR.armed.txt" >/dev/null
+
+          export INSTALL_ID BOOTNUM ORIG_ORDER SRC_SHA CAND_SHA BOOT_BCD_SHA REC_BCD_SHA
+          sudo -n -E python3 - "$ROOT/ACTIVE.json" <<'PY'
+          import datetime as dt,json,os,pathlib,sys
+          r={
+            "schema":"LOUKSNA_R4_PART4_R2_WINRE_ACTIVE/1.0",
+            "install_id":os.environ["INSTALL_ID"],
+            "status":"ARMED",
+            "temporary_bootnum":os.environ["BOOTNUM"],
+            "original_bootorder":os.environ["ORIG_ORDER"],
+            "source_wim_sha256":os.environ["SRC_SHA"],
+            "candidate_wim_sha256":os.environ["CAND_SHA"],
+            "boot_bcd_sha256":os.environ["BOOT_BCD_SHA"],
+            "recovery_bcd_sha256":os.environ["REC_BCD_SHA"],
+            "armed_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          PY
+
+          sudo -n cp "$ROOT/ACTIVE.json" "$OUT/ACTIVE.json"
+          sudo -n cp "$STATE/EFIBOOTMGR.armed.txt" "$OUT/EFIBOOTMGR.armed.txt"
+          sha256sum "$OUT"/* > "$OUT/ACTIVATION.sha256"
+          trap - ERR
+          echo "INSTALL_ID=$INSTALL_ID"
+          echo "TEMP_BOOTNUM=$BOOTNUM"
+          echo "BOOTNEXT_ARMED=PASS"
+          echo "ROLLBACK_SERVICE=ENABLED"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-winre-activation
+          path: ${{ runner.temp }}/winre-activation-${{ github.run_id }}/
+          retention-days: 90
+          compression-level: 0
+
+      - name: Schedule one-shot reboot after evidence upload
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo -n systemd-run --unit=louksna-winre-reboot --on-active=45s /usr/bin/systemctl reboot
+          echo "REBOOT_SCHEDULED_IN=45s"

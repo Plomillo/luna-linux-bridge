@@ -1,0 +1,438 @@
+name: "R4 — certify and install Maestro resilience layer"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-maestro-resilience-g23-g24.yml
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: r4-maestro-resilience
+  cancel-in-progress: false
+
+env:
+  RUNNER_UNIT: "actions.runner.Plomillo-luna-linux-bridge.luna-linux.service"
+  RUNNER_USER: "diegoignacionorambuenamiranda"
+  RUNNER_ROOT: "/home/diegoignacionorambuenamiranda/actions-runner"
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Build immutable resilience payload
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/maestro-resilience-plan"
+          mkdir -p "$OUT"
+
+          cat > "$OUT/10-louksna-resilience.conf" <<'CONF'
+          [Unit]
+          Wants=network-online.target
+          After=network-online.target
+          StartLimitIntervalSec=0
+
+          [Service]
+          Restart=always
+          RestartSec=5s
+          CONF
+
+          cat > "$OUT/louksna-maestro-guardian" <<'SCRIPT'
+          #!/bin/bash
+          set -Eeuo pipefail
+          export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+          UNIT="actions.runner.Plomillo-luna-linux-bridge.luna-linux.service"
+          RUNNER_USER="diegoignacionorambuenamiranda"
+          RUNNER_ROOT="/home/diegoignacionorambuenamiranda/actions-runner"
+          STATE="/var/lib/louksna-governance/maestro-guardian"
+          LOCK="/run/louksna-maestro-guardian.lock"
+          mkdir -p "$STATE"
+          chmod 700 "$STATE"
+          exec 9>"$LOCK"
+          flock -n 9 || exit 0
+
+          TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          ACTIVE="$(systemctl is-active "$UNIT" 2>/dev/null || true)"
+          MAINPID="$(systemctl show "$UNIT" -p MainPID --value 2>/dev/null || echo 0)"
+          LISTENER=false
+          if pgrep -u "$RUNNER_USER" -f "$RUNNER_ROOT/bin/Runner.Listener run --startuptype service" >/dev/null 2>&1; then
+            LISTENER=true
+          fi
+          DNS=false
+          if getent ahosts api.github.com >/dev/null 2>&1; then DNS=true; fi
+
+          ACTION="NONE"
+          RESULT="HEALTHY"
+          if [ "$ACTIVE" != "active" ] || [ "$MAINPID" = "0" ] || [ "$LISTENER" != "true" ]; then
+            ACTION="RESTART"
+            RESULT="RECOVERY_ATTEMPT"
+            systemctl reset-failed "$UNIT" >/dev/null 2>&1 || true
+            systemctl restart "$UNIT"
+            sleep 5
+            ACTIVE="$(systemctl is-active "$UNIT" 2>/dev/null || true)"
+            MAINPID="$(systemctl show "$UNIT" -p MainPID --value 2>/dev/null || echo 0)"
+            LISTENER=false
+            if pgrep -u "$RUNNER_USER" -f "$RUNNER_ROOT/bin/Runner.Listener run --startuptype service" >/dev/null 2>&1; then
+              LISTENER=true
+            fi
+            if [ "$ACTIVE" = "active" ] && [ "$MAINPID" != "0" ] && [ "$LISTENER" = "true" ]; then
+              RESULT="RECOVERED"
+            else
+              RESULT="HOLD"
+            fi
+          fi
+
+          printf '{"ts":"%s","unit":"%s","active":"%s","mainpid":"%s","listener":%s,"github_dns":%s,"action":"%s","result":"%s"}\n'             "$TS" "$UNIT" "$ACTIVE" "$MAINPID" "$LISTENER" "$DNS" "$ACTION" "$RESULT" >> "$STATE/events.jsonl"
+
+          cat > "$STATE/LAST_STATUS.json.tmp" <<EOF
+          {
+            "schema":"LOUKSNA_R4_MAESTRO_GUARDIAN_STATUS/1.0",
+            "timestamp_utc":"$TS",
+            "unit":"$UNIT",
+            "active":"$ACTIVE",
+            "mainpid":"$MAINPID",
+            "listener":$LISTENER,
+            "github_dns":$DNS,
+            "action":"$ACTION",
+            "result":"$RESULT"
+          }
+          EOF
+          mv "$STATE/LAST_STATUS.json.tmp" "$STATE/LAST_STATUS.json"
+
+          [ "$RESULT" != "HOLD" ]
+          SCRIPT
+
+          cat > "$OUT/louksna-maestro-guardian.service" <<'SERVICE'
+          [Unit]
+          Description=Louksna Maestro self-hosted runner guardian
+          Wants=network-online.target
+          After=network-online.target actions.runner.Plomillo-luna-linux-bridge.luna-linux.service
+
+          [Service]
+          Type=oneshot
+          ExecStart=/usr/local/sbin/louksna-maestro-guardian
+          User=root
+          Group=root
+          Nice=10
+          IOSchedulingClass=best-effort
+          IOSchedulingPriority=7
+          SERVICE
+
+          cat > "$OUT/louksna-maestro-guardian.timer" <<'TIMER'
+          [Unit]
+          Description=Periodic health check for Louksna Maestro runner
+
+          [Timer]
+          OnBootSec=90s
+          OnUnitActiveSec=120s
+          AccuracySec=15s
+          RandomizedDelaySec=5s
+          Persistent=true
+          Unit=louksna-maestro-guardian.service
+
+          [Install]
+          WantedBy=timers.target
+          TIMER
+
+          chmod 0755 "$OUT/louksna-maestro-guardian"
+          sha256sum "$OUT/10-louksna-resilience.conf" "$OUT/louksna-maestro-guardian"             "$OUT/louksna-maestro-guardian.service" "$OUT/louksna-maestro-guardian.timer" > "$OUT/PAYLOAD.sha256"
+
+          export OUT
+          python3 - <<'PY'
+          import datetime as dt,hashlib,json,os,pathlib
+          out=pathlib.Path(os.environ["OUT"])
+          hashes={}
+          for line in (out/"PAYLOAD.sha256").read_text().splitlines():
+              h,p=line.split(None,1); hashes[pathlib.Path(p).name]=h
+          plan={
+            "schema":"LOUKSNA_R4_MAESTRO_RESILIENCE_PLAN/1.0",
+            "status":"PROPOSED",
+            "target_host":"LOUKSNA",
+            "runner_unit":"actions.runner.Plomillo-luna-linux-bridge.luna-linux.service",
+            "runner_user":"diegoignacionorambuenamiranda",
+            "runner_root":"/home/diegoignacionorambuenamiranda/actions-runner",
+            "policy":{
+              "restart":"always",
+              "restart_sec":5,
+              "start_limit_interval_sec":0,
+              "network_online_dependency":True,
+              "guardian_interval_sec":120,
+              "guardian_restart_only_if_runner_unhealthy":True,
+              "no_restart_during_install":True,
+              "migration_partition_mutation":False,
+              "filesystem_format":False
+            },
+            "payload_sha256":hashes,
+            "rollback_required":True,
+            "audit_log":"/var/lib/louksna-governance/maestro-guardian/events.jsonl",
+            "last_status":"/var/lib/louksna-governance/maestro-guardian/LAST_STATUS.json",
+            "created_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          (out/"PLAN.json").write_text(json.dumps(plan,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(plan,indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-maestro-resilience-plan
+          path: ${{ runner.temp }}/maestro-resilience-plan/
+          retention-days: 90
+          compression-level: 0
+
+  g23:
+    needs: plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-maestro-resilience-plan
+          path: ${{ runner.temp }}/plan
+      - name: Independent resilience validation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/plan/PLAN.json"             "$RUNNER_TEMP/plan/10-louksna-resilience.conf"             "$RUNNER_TEMP/plan/louksna-maestro-guardian"             "$RUNNER_TEMP/plan/louksna-maestro-guardian.service"             "$RUNNER_TEMP/plan/louksna-maestro-guardian.timer"             "$RUNNER_TEMP/g23/G23_MAESTRO_RESILIENCE.json" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,sys
+          pp,op,sp,svp,tp,out=map(pathlib.Path,sys.argv[1:7])
+          p=json.loads(pp.read_text()); o=op.read_text(); s=sp.read_text(); sv=svp.read_text(); t=tp.read_text()
+          h=lambda x: hashlib.sha256(x.read_bytes()).hexdigest()
+          checks={
+            "plan_schema":p.get("schema")=="LOUKSNA_R4_MAESTRO_RESILIENCE_PLAN/1.0",
+            "host_exact":p.get("target_host")=="LOUKSNA",
+            "unit_exact":p.get("runner_unit")=="actions.runner.Plomillo-luna-linux-bridge.luna-linux.service",
+            "user_exact":p.get("runner_user")=="diegoignacionorambuenamiranda",
+            "restart_always":"Restart=always" in o,
+            "restart_sec":"RestartSec=5s" in o,
+            "unlimited_start_window":"StartLimitIntervalSec=0" in o,
+            "network_dependency":"Wants=network-online.target" in o and "After=network-online.target" in o,
+            "guardian_exact_unit":'UNIT="actions.runner.Plomillo-luna-linux-bridge.luna-linux.service"' in s,
+            "guardian_listener_check":"Runner.Listener run --startuptype service" in s,
+            "guardian_restart_conditional":'if [ "$ACTIVE" != "active" ] || [ "$MAINPID" = "0" ] || [ "$LISTENER" != "true" ]' in s,
+            "guardian_audit_log":"events.jsonl" in s and "LAST_STATUS.json" in s,
+            "guardian_lock":"flock -n 9" in s,
+            "timer_120s":"OnUnitActiveSec=120s" in t,
+            "timer_persistent":"Persistent=true" in t,
+            "service_root":"User=root" in sv and "ExecStart=/usr/local/sbin/louksna-maestro-guardian" in sv,
+            "no_disk_tools":not any(x in (o+s+sv+t) for x in ["parted ","sfdisk ","mkfs","resize2fs","ntfsresize"]),
+            "no_reboot":not any(x in (o+s+sv+t) for x in ["systemctl reboot","shutdown -r","reboot\n"]),
+            "no_repo_mutation":not any(x in s for x in ["gh api","git push","git commit"]),
+            "payload_override_hash":p["payload_sha256"].get("10-louksna-resilience.conf")==h(op),
+            "payload_guardian_hash":p["payload_sha256"].get("louksna-maestro-guardian")==h(sp),
+            "payload_service_hash":p["payload_sha256"].get("louksna-maestro-guardian.service")==h(svp),
+            "payload_timer_hash":p["payload_sha256"].get("louksna-maestro-guardian.timer")==h(tp),
+          }
+          ok=all(checks.values())
+          r={
+            "schema":"LOUKSNA_R4_MAESTRO_RESILIENCE_G23/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "scope":"MAESTRO_RUNNER_PERSISTENCE_AND_SELF_RECOVERY",
+            "plan_sha256":h(pp),
+            "checks":checks,
+            "g24_allowed":ok,
+            "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          out.write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(3)
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-maestro-resilience-g23
+          path: ${{ runner.temp }}/g23/G23_MAESTRO_RESILIENCE.json
+          retention-days: 90
+          compression-level: 0
+
+  g24:
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-maestro-resilience-g23
+          path: ${{ runner.temp }}/g23
+      - name: Digest-bound resilience certification
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/G23_MAESTRO_RESILIENCE.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$G")" = PASS
+          H="$(sha256sum "$G"|awk '{print $1}')"
+          AUD="louksna-r4-maestro-resilience:$H"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export H AUD TOKEN
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$G" "$RUNNER_TEMP/g24/G24_MAESTRO_RESILIENCE.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          g=json.loads(pathlib.Path(sys.argv[1]).read_text()); t=os.environ["TOKEN"]; p=t.split(".")
+          payload=p[1]+"="*((4-len(p[1])%4)%4); claims=json.loads(base64.urlsafe_b64decode(payload))
+          aud=claims.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          r={
+            "schema":"LOUKSNA_R4_MAESTRO_RESILIENCE_G24/1.0",
+            "status":"PASS",
+            "scope":"MAESTRO_RUNNER_PERSISTENCE_AND_SELF_RECOVERY",
+            "g23_sha256":os.environ["H"],
+            "plan_sha256":g["plan_sha256"],
+            "authority_authenticated":True,
+            "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
+            "install_authorized":True,
+            "runner_restart_during_install_authorized":False,
+            "partition_mutation_authorized":False,
+            "filesystem_format_authorized":False,
+            "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          pathlib.Path(sys.argv[2]).write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-maestro-resilience-g24
+          path: ${{ runner.temp }}/g24/G24_MAESTRO_RESILIENCE.json
+          retention-days: 90
+          compression-level: 0
+
+  install:
+    needs: g24
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-maestro-resilience-plan
+          path: ${{ runner.temp }}/plan
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-maestro-resilience-g24
+          path: ${{ runner.temp }}/g24
+      - name: Install certified resilience layer without restarting Maestro
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+          UNIT="$RUNNER_UNIT"
+          PLAN="$RUNNER_TEMP/plan/PLAN.json"
+          CERT="$RUNNER_TEMP/g24/G24_MAESTRO_RESILIENCE.json"
+          DROPIN="/etc/systemd/system/$UNIT.d/10-louksna-resilience.conf"
+          SCRIPT="/usr/local/sbin/louksna-maestro-guardian"
+          GSVC="/etc/systemd/system/louksna-maestro-guardian.service"
+          GTIMER="/etc/systemd/system/louksna-maestro-guardian.timer"
+          CKPT="/var/lib/louksna-governance/maestro-guardian/checkpoint-$GITHUB_RUN_ID"
+          OUT="$RUNNER_TEMP/maestro-resilience-install"
+          mkdir -p "$OUT"
+
+          test "$(hostname)" = LOUKSNA
+          test "$(id -un)" = "$RUNNER_USER"
+          sudo -k
+          sudo -n true
+          sudo -n visudo -c
+          test "$(systemctl is-active "$UNIT")" = active
+          test "$(systemctl is-enabled "$UNIT")" = enabled
+          test "$(systemctl show "$UNIT" -p User --value)" = "$RUNNER_USER"
+          test -x "$RUNNER_ROOT/bin/Runner.Listener"
+          pgrep -u "$RUNNER_USER" -f "$RUNNER_ROOT/bin/Runner.Listener run --startuptype service" >/dev/null
+
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$CERT")" = PASS
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["install_authorized"])' "$CERT")" = True
+          PLAN_SHA="$(sha256sum "$PLAN"|awk '{print $1}')"
+          test "$PLAN_SHA" = "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["plan_sha256"])' "$CERT")"
+
+          for f in 10-louksna-resilience.conf louksna-maestro-guardian louksna-maestro-guardian.service louksna-maestro-guardian.timer; do
+            ACT="$(sha256sum "$RUNNER_TEMP/plan/$f"|awk '{print $1}')"
+            EXP="$(python3 - "$PLAN" "$f" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1])); print(d["payload_sha256"][sys.argv[2]])
+          PY
+          )"
+            test "$ACT" = "$EXP"
+          done
+
+          BEFORE_PID="$(systemctl show "$UNIT" -p MainPID --value)"
+          test "$BEFORE_PID" != 0
+
+          sudo -n mkdir -p "$CKPT" "$(dirname "$DROPIN")" /var/lib/louksna-governance/maestro-guardian
+          sudo -n chmod 700 /var/lib/louksna-governance/maestro-guardian "$CKPT"
+          for target in "$DROPIN" "$SCRIPT" "$GSVC" "$GTIMER"; do
+            if sudo -n test -e "$target"; then
+              sudo -n cp -a "$target" "$CKPT/$(basename "$target").before"
+              echo "$(basename "$target")=PRESENT" >> "$OUT/BASELINE.txt"
+            else
+              echo "$(basename "$target")=ABSENT" >> "$OUT/BASELINE.txt"
+            fi
+          done
+          sudo -n systemctl cat "$UNIT" > "$OUT/RUNNER_UNIT_BEFORE.txt"
+          systemctl show "$UNIT" -p MainPID -p Restart -p RestartUSec -p StartLimitIntervalUSec -p StartLimitBurst > "$OUT/RUNNER_SHOW_BEFORE.txt"
+
+          INSTALLED=0
+          rollback(){
+            rc=$?
+            set +e
+            if [ "$INSTALLED" -eq 1 ]; then
+              sudo -n systemctl disable --now louksna-maestro-guardian.timer >/dev/null 2>&1 || true
+              for target in "$DROPIN" "$SCRIPT" "$GSVC" "$GTIMER"; do
+                b="$CKPT/$(basename "$target").before"
+                if sudo -n test -e "$b"; then sudo -n cp -a "$b" "$target"; else sudo -n rm -f "$target"; fi
+              done
+              sudo -n systemctl daemon-reload
+            fi
+            exit "$rc"
+          }
+          trap rollback ERR
+
+          sudo -n install -o root -g root -m 0644 "$RUNNER_TEMP/plan/10-louksna-resilience.conf" "$DROPIN"
+          sudo -n install -o root -g root -m 0755 "$RUNNER_TEMP/plan/louksna-maestro-guardian" "$SCRIPT"
+          sudo -n install -o root -g root -m 0644 "$RUNNER_TEMP/plan/louksna-maestro-guardian.service" "$GSVC"
+          sudo -n install -o root -g root -m 0644 "$RUNNER_TEMP/plan/louksna-maestro-guardian.timer" "$GTIMER"
+          INSTALLED=1
+          sudo -n systemctl daemon-reload
+
+          # Verify the live unit received resilience policy without restarting it.
+          test "$(systemctl show "$UNIT" -p Restart --value)" = always
+          test "$(systemctl show "$UNIT" -p RestartUSec --value)" = 5s
+          test "$(systemctl show "$UNIT" -p StartLimitIntervalUSec --value)" = 0
+          AFTER_PID="$(systemctl show "$UNIT" -p MainPID --value)"
+          test "$AFTER_PID" = "$BEFORE_PID"
+          test "$(systemctl is-active "$UNIT")" = active
+          pgrep -u "$RUNNER_USER" -f "$RUNNER_ROOT/bin/Runner.Listener run --startuptype service" >/dev/null
+
+          sudo -n systemctl enable --now louksna-maestro-guardian.timer
+          test "$(systemctl is-enabled louksna-maestro-guardian.timer)" = enabled
+          test "$(systemctl is-active louksna-maestro-guardian.timer)" = active
+
+          # Explicit health execution must be a no-op while Maestro is healthy.
+          sudo -n systemctl start louksna-maestro-guardian.service
+          test "$(systemctl show louksna-maestro-guardian.service -p Result --value)" = success
+          sudo -n cp /var/lib/louksna-governance/maestro-guardian/LAST_STATUS.json "$OUT/LAST_STATUS.json"
+          sudo -n chown "$(id -u):$(id -g)" "$OUT/LAST_STATUS.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["result"])' "$OUT/LAST_STATUS.json")" = HEALTHY
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["action"])' "$OUT/LAST_STATUS.json")" = NONE
+
+          systemctl show "$UNIT" -p MainPID -p Restart -p RestartUSec -p StartLimitIntervalUSec -p StartLimitBurst -p ActiveState -p SubState > "$OUT/RUNNER_SHOW_AFTER.txt"
+          systemctl status louksna-maestro-guardian.timer --no-pager -l > "$OUT/GUARDIAN_TIMER.txt"
+          systemctl status louksna-maestro-guardian.service --no-pager -l > "$OUT/GUARDIAN_SERVICE.txt" || true
+          sha256sum "$DROPIN" "$SCRIPT" "$GSVC" "$GTIMER" > "$OUT/INSTALLED.sha256"
+
+          trap - ERR
+          echo "MAESTRO_RESILIENCE_INSTALL=PASS"
+          echo "RUNNER_PID_UNCHANGED=$AFTER_PID"
+          echo "GUARDIAN_TIMER=ACTIVE"
+          echo "GUARDIAN_INITIAL_ACTION=NONE"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-maestro-resilience-install
+          path: ${{ runner.temp }}/maestro-resilience-install/
+          retention-days: 90
+          compression-level: 0

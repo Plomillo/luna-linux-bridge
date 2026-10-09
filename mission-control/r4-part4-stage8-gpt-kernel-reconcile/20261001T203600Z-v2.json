@@ -1,0 +1,21 @@
+{
+  "schema": "LOUKSNA_R4_PART4_STAGE8_REQUEST/1.0",
+  "requested_stage": 8,
+  "operation": "RECONCILE_STAGE8_GPT_AND_KERNEL",
+  "source_stage7": "CLOSED_PASS",
+  "retry_reason": "PARSER_FIX_ONLY_NO_HOST_MUTATION_OCCURRED",
+  "workflow_fix_commit": "6d8c1bb874234aca0d5c4a410ac76c6e23cd368d",
+  "mutation_scope": "NONE_DISK_NONE_FILESYSTEM",
+  "expected_p3_start_sector": 567296,
+  "expected_p3_end_sector": 1000215182,
+  "expected_p3_size_sectors": 999647887,
+  "require_gpt_kernel_match": true,
+  "require_p1_unchanged": true,
+  "require_p5_absent": true,
+  "require_uuid_partuuid_preserved": true,
+  "allow_resize2fs": false,
+  "allow_geometry_retry": false,
+  "allow_reboot": false,
+  "fail_closed": true,
+  "requested_at_utc": "2026-10-01T20:36:00Z"
+}

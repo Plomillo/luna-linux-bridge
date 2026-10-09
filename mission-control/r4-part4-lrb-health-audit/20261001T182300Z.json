@@ -1,0 +1,21 @@
+{
+  "mission_id": "MIS-e5963403a3b44ee8be96",
+  "action": "LRB_PASSIVE_NVME_HEALTH_PRE_STAGE7",
+  "authority": "Louksna.md",
+  "expected_stage": 7,
+  "mutation_authorized": false,
+  "package_installation_authorized": false,
+  "active_device_self_test_authorized": false,
+  "scope": [
+    "LRB_STATUS",
+    "LRB_OBSERVE",
+    "SMARTCTL_IF_PRESENT",
+    "NVME_CLI_IF_PRESENT",
+    "NVME_ERROR_LOG_IF_PRESENT",
+    "SGDISK_VERIFY",
+    "KERNEL_STORAGE_ERRORS_7D",
+    "TUNE2FS_READ_ONLY_METADATA",
+    "SYSFS_QUEUE",
+    "ROOT_MOUNT_STATE"
+  ]
+}

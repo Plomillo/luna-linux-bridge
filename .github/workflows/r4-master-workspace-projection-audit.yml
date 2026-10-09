@@ -1,0 +1,23 @@
+name: "R4 master — inspect V7 workspace projection"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-master-workspace-projection-audit.yml
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 3
+    steps:
+      - shell: bash
+        run: |
+          set -Eeuo pipefail
+          R="/home/diegoignacionorambuenamiranda/MISION_PUAC_20260926/V7_WORKSPACE_PROJECTION"
+          test -d "$R"
+          find "$R" -maxdepth 5 -printf '%y\t%p\n' | sort | head -n 600

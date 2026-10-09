@@ -1,0 +1,236 @@
+name: "R4 PART4 — Remote Bridge P3 growth planning probe"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-part4-lrb-p3-growth-planning.yml
+      - mission-control/r4-part4-lrb-p3-growth-planning/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r4-part4-lrb-p3-growth-planning
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 12
+    steps:
+      - name: Remote Bridge + read-only growth planning telemetry
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+          OUT="$RUNNER_TEMP/lrb-p3-plan-$GITHUB_RUN_ID"
+          mkdir -p "$OUT"
+
+          test "$(hostname)" = "LOUKSNA"
+          test "$(id -un)" = "diegoignacionorambuenamiranda"
+
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+
+          mapfile -t LINKS < <(find "$HOME/.local/lib/louksna-remote-bridge" -type f -path '*/bridge/live_link.py' -print 2>/dev/null | sort)
+          test "${#LINKS[@]}" -ge 1
+          LINK="${LINKS[-1]}"
+          STATE_DIR="$HOME/.local/state/louksna/remote-bridge/service"
+          SOCKET_DIR="$XDG_RUNTIME_DIR/lrb-sock"
+
+          python3 -B "$LINK" --state-dir "$STATE_DIR" --socket-dir "$SOCKET_DIR" request --op status > "$OUT/LRB_STATUS.json"
+          python3 -B "$LINK" --state-dir "$STATE_DIR" --socket-dir "$SOCKET_DIR" request --op observe > "$OUT/LRB_OBSERVE.json"
+
+          MASTER="$HOME/.local/state/louksna/r4-master-part1-part9/MASTER_STATUS.json"
+          test -f "$MASTER"
+          cp "$MASTER" "$OUT/MASTER_STATUS.json"
+
+          echo "=== ROOT ===" | tee "$OUT/ROOT.txt"
+          findmnt -n -o SOURCE,FSTYPE,OPTIONS / | tee -a "$OUT/ROOT.txt"
+          findmnt -n -o SOURCE,FSTYPE,OPTIONS /boot/efi | tee -a "$OUT/ROOT.txt"
+
+          echo "=== LSBLK ===" | tee "$OUT/LSBLK.txt"
+          lsblk -b -o NAME,PATH,START,SIZE,TYPE,FSTYPE,FSAVAIL,FSUSE%,MOUNTPOINTS,UUID,PARTUUID,LOG-SEC,PHY-SEC,MIN-IO,OPT-IO,ALIGNMENT /dev/nvme0n1 | tee -a "$OUT/LSBLK.txt"
+
+          sudo -n sfdisk --dump /dev/nvme0n1 > "$OUT/SFDISK_DUMP.txt"
+          sudo -n sfdisk --json /dev/nvme0n1 > "$OUT/SFDISK_JSON.json"
+          sudo -n parted -m /dev/nvme0n1 unit s print free > "$OUT/PARTED_FREE_SECTORS.txt"
+          sudo -n parted -m /dev/nvme0n1 unit B print free > "$OUT/PARTED_FREE_BYTES.txt"
+
+          for c in growpart resize2fs dumpe2fs tune2fs partprobe partx udevadm sfdisk parted blockdev findmnt lsblk; do
+            p="$(command -v "$c" 2>/dev/null || true)"
+            printf '%s=%s\n' "$c" "$p" >> "$OUT/TOOLS.txt"
+          done
+
+          {
+            growpart --help 2>&1 || true
+          } > "$OUT/GROWPART_HELP.txt"
+          {
+            command -v resize2fs || true
+            ls -l /usr/sbin/resize2fs /sbin/resize2fs /usr/bin/resize2fs /bin/resize2fs 2>&1 || true
+            dpkg-query -S '*/resize2fs' 2>&1 || true
+            dpkg-query -W -f='e2fsprogs_status=${Status}\ne2fsprogs_version=${Version}\n' e2fsprogs 2>&1 || true
+            /usr/sbin/resize2fs -V 2>&1 || /sbin/resize2fs -V 2>&1 || resize2fs -V 2>&1 || true
+          } > "$OUT/RESIZE2FS_DIAGNOSTIC.txt"
+          {
+            sfdisk --version 2>&1 || true
+            parted --version 2>&1 || true
+            lsblk --version 2>&1 || true
+          } > "$OUT/TOOL_VERSIONS.txt"
+          {
+            echo "=== APT POLICY cloud-guest-utils ==="
+            apt-cache policy cloud-guest-utils 2>&1 || true
+            echo "=== INSTALLED STATUS ==="
+            dpkg-query -W -f='status=${Status}\nversion=${Version}\n' cloud-guest-utils 2>&1 || true
+            echo "=== SIMULATED INSTALL ==="
+            sudo -n apt-get -s install cloud-guest-utils 2>&1 || true
+          } > "$OUT/GROWPART_PACKAGE_SIMULATION.txt"
+
+          if command -v growpart >/dev/null 2>&1; then
+            if grep -Eq -- 'dry-run|--dry-run|-N' "$OUT/GROWPART_HELP.txt"; then
+              growpart -N /dev/nvme0n1 3 > "$OUT/GROWPART_DRYRUN.txt" 2>&1 || true
+            else
+              echo "DRY_RUN_SWITCH_NOT_PROVEN_FROM_HELP" > "$OUT/GROWPART_DRYRUN.txt"
+            fi
+          else
+            echo "GROWPART_NOT_INSTALLED" > "$OUT/GROWPART_DRYRUN.txt"
+          fi
+          echo "=== GROWPART HELP ==="
+          cat "$OUT/GROWPART_HELP.txt"
+          echo "=== GROWPART DRY RUN ==="
+          cat "$OUT/GROWPART_DRYRUN.txt"
+          echo "=== GROWPART PACKAGE SIMULATION ==="
+          cat "$OUT/GROWPART_PACKAGE_SIMULATION.txt"
+          echo "=== RESIZE2FS DIAGNOSTIC ==="
+          cat "$OUT/RESIZE2FS_DIAGNOSTIC.txt"
+          echo "=== RESIZE2FS MINIMUM READ-ONLY ESTIMATE ==="
+          cat "$OUT/RESIZE2FS_MIN.txt" 2>/dev/null || true
+          echo "=== EXT4 FEATURES ==="
+          grep -E '^(Filesystem features|Block count|Block size|Reserved block count):' "$OUT/TUNE2FS.txt" 2>/dev/null || true
+
+          sudo -n dumpe2fs -h /dev/nvme0n1p3 > "$OUT/DUMPE2FS_HEADER.txt" 2>&1
+          if [ -x /usr/sbin/resize2fs ]; then
+            sudo -n /usr/sbin/resize2fs -P /dev/nvme0n1p3 > "$OUT/RESIZE2FS_MIN.txt" 2>&1 || true
+          elif [ -x /sbin/resize2fs ]; then
+            sudo -n /sbin/resize2fs -P /dev/nvme0n1p3 > "$OUT/RESIZE2FS_MIN.txt" 2>&1 || true
+          else
+            echo "RESIZE2FS_BINARY_ABSENT" > "$OUT/RESIZE2FS_MIN.txt"
+          fi
+          sudo -n tune2fs -l /dev/nvme0n1p3 > "$OUT/TUNE2FS.txt" 2>&1
+          sudo -n blockdev --getsize64 /dev/nvme0n1 > "$OUT/DISK_SIZE64.txt"
+          sudo -n blockdev --getss /dev/nvme0n1 > "$OUT/LOGICAL_SECTOR.txt"
+          sudo -n blockdev --getpbsz /dev/nvme0n1 > "$OUT/PHYSICAL_SECTOR.txt"
+          cat /sys/class/block/nvme0n1p3/start > "$OUT/P3_SYS_START.txt"
+          cat /sys/class/block/nvme0n1p3/size > "$OUT/P3_SYS_SIZE_SECTORS.txt"
+          cat /proc/filesystems > "$OUT/PROC_FILESYSTEMS.txt"
+          uname -a > "$OUT/UNAME.txt"
+          df -B1 -T / "$HOME/PROYECTOS" > "$OUT/DF.txt"
+
+          python3 - "$OUT" <<'PY'
+          import json,pathlib,re,sys,time,os
+          out=pathlib.Path(sys.argv[1])
+          status=json.loads((out/"LRB_STATUS.json").read_text())
+          obs=json.loads((out/"LRB_OBSERVE.json").read_text())
+          master=json.loads((out/"MASTER_STATUS.json").read_text())
+          sj=json.loads((out/"SFDISK_JSON.json").read_text())
+          pt=sj["partitiontable"]
+          parts=pt.get("partitions",[])
+          p3=next(p for p in parts if p.get("node")=="/dev/nvme0n1p3")
+          disk_bytes=int((out/"DISK_SIZE64.txt").read_text().strip())
+          sector=int((out/"LOGICAL_SECTOR.txt").read_text().strip())
+          p3_start=int(p3["start"])
+          p3_size=int(p3["size"])
+          p3_end=p3_start+p3_size-1
+          parted=(out/"PARTED_FREE_SECTORS.txt").read_text(errors="replace")
+          free=[]
+          for line in parted.splitlines():
+              cols=line.rstrip(";").split(":")
+              if len(cols)>=5 and cols[4]=="free":
+                  def n(v): return int(v[:-1]) if v.endswith("s") else int(v)
+                  try: free.append((n(cols[1]),n(cols[2]),n(cols[3])))
+                  except Exception: pass
+          trailing=[x for x in free if x[0]>p3_end]
+          tail=max(trailing,key=lambda x:x[0]) if trailing else None
+          tools={}
+          for line in (out/"TOOLS.txt").read_text().splitlines():
+              if "=" in line:
+                  k,v=line.split("=",1); tools[k]=v
+          grow_help=(out/"GROWPART_HELP.txt").read_text(errors="replace")
+          grow_dry=(out/"GROWPART_DRYRUN.txt").read_text(errors="replace")
+          resize_diag=(out/"RESIZE2FS_DIAGNOSTIC.txt").read_text(errors="replace")
+          tune=(out/"TUNE2FS.txt").read_text(errors="replace")
+          root=os.popen("readlink -f $(findmnt -n -o SOURCE /)").read().strip()
+          rootfs=os.popen("findmnt -n -o FSTYPE /").read().strip()
+          p5_absent=not pathlib.Path("/dev/nvme0n1p5").exists()
+          blockers=set(master.get("blockers",[]))
+          expected={"final_linux_layout","final_merge_g24","part4_r2_final_g24","verified_root_on_consolidated_linux"}
+          checks={
+            "lrb_host":status.get("host")=="LOUKSNA",
+            "lrb_evidence_bound":bool(obs.get("evidence_sha256")),
+            "root_p3_ext4":root=="/dev/nvme0n1p3" and rootfs=="ext4",
+            "p5_absent":p5_absent,
+            "master_part4":master.get("current_part")=="PART_4",
+            "master_expected_blockers":blockers==expected,
+            "trailing_free_present":bool(tail and tail[2]>0),
+            "resize2fs_present":bool(tools.get("resize2fs")) or ("/resize2fs" in resize_diag and "No such file" not in resize_diag),
+            "sfdisk_present":bool(tools.get("sfdisk")),
+            "parted_present":bool(tools.get("parted")),
+            "ext4_64bit_or_resize_feature":("64bit" in tune) or ("resize_inode" in tune),
+          }
+          recommendation={
+            "preferred_partition_tool":"growpart" if tools.get("growpart") and ("CHANGED:" in grow_dry or "NOCHANGE:" in grow_dry) else "sfdisk_candidate_required",
+            "growpart_installed":bool(tools.get("growpart")),
+            "growpart_dry_run_observed":("CHANGED:" in grow_dry or "NOCHANGE:" in grow_dry),
+            "kernel_partition_reread_tooling":{
+              "partprobe":bool(tools.get("partprobe")),
+              "partx":bool(tools.get("partx")),
+              "udevadm":bool(tools.get("udevadm")),
+            },
+            "filesystem_growth_tool":"resize2fs" if checks["resize2fs_present"] else None,
+            "reboot_fallback_required_if_kernel_keeps_old_partition_size":True,
+            "never_reformat":True,
+            "never_shrink":True,
+            "preserve_p3_start_sector":p3_start,
+          }
+          q={
+            "schema":"LOUKSNA_R4_PART4_LRB_P3_GROWTH_PLANNING/1.0",
+            "status":"PASS" if all(checks.values()) else "HOLD",
+            "scope":"READ_ONLY_PREMUTATION_PLANNING",
+            "bridge_status":status.get("status"),
+            "observe_status":obs.get("status"),
+            "bridge_evidence_seq":obs.get("evidence_seq"),
+            "bridge_evidence_sha256":obs.get("evidence_sha256"),
+            "boot_id":status.get("boot_id"),
+            "master_status":master.get("status"),
+            "master_updated_at_utc":master.get("updated_at_utc"),
+            "disk_bytes":disk_bytes,
+            "logical_sector_bytes":sector,
+            "p3_start_sector":p3_start,
+            "p3_size_sectors":p3_size,
+            "p3_end_sector":p3_end,
+            "trailing_free_sectors":tail[2] if tail else 0,
+            "trailing_free_start_sector":tail[0] if tail else None,
+            "trailing_free_end_sector":tail[1] if tail else None,
+            "candidate_new_p3_end_sector":tail[1] if tail else None,
+            "candidate_added_bytes":tail[2]*sector if tail else 0,
+            "checks":checks,
+            "recommendation":recommendation,
+            "disk_mutation_performed":False,
+            "captured_at_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
+          }
+          (out/"PLAN.json").write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          PY
+
+          (cd "$OUT"; sha256sum ./* > SHA256SUMS.txt)
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-lrb-p3-growth-planning
+          path: ${{ runner.temp }}/lrb-p3-plan-${{ github.run_id }}/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0

@@ -1,0 +1,56 @@
+name: "R4 — LOUKSNA Remote Bridge capability probe"
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-louksna-remote-bridge-capability-probe.yml
+      - mission-control/r4-lrb-capability-probe/**
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 4
+    steps:
+      - name: Inspect installed Remote Bridge command and visual surface read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+          mapfile -t LINKS < <(find "$HOME/.local/lib/louksna-remote-bridge" -type f -path '*/bridge/live_link.py' -print 2>/dev/null | sort)
+          test "${#LINKS[@]}" -ge 1
+          LINK="${LINKS[-1]}"
+          echo "LINK=$LINK"
+          sha256sum "$LINK"
+          python3 -B "$LINK" --help || true
+          echo "=== REQUEST HELP ==="
+          python3 -B "$LINK" request --help || true
+          echo "=== VISUAL / OPERATION TOKENS ==="
+          python3 - "$LINK" <<'PY'
+          import pathlib,re,sys
+          p=pathlib.Path(sys.argv[1]); lines=p.read_text(encoding="utf-8",errors="replace").splitlines()
+          hits=[]
+          for i,line in enumerate(lines):
+              if re.search(r'(screen|screenshot|spectacle|grim|import|observe|status|request|allowed|operation|op|socket)',line,re.I):
+                  hits.append(i)
+          seen=set()
+          for i in hits:
+              for n in range(max(0,i-4),min(len(lines),i+8)):
+                  if n in seen: continue
+                  seen.add(n); print(f"{n+1}: {lines[n][:800]}")
+          PY
+          echo "=== EXISTING CAPTURE BINARIES ==="
+          for c in spectacle grim slurp import scrot gnome-screenshot flameshot; do
+            printf '%s=' "$c"; command -v "$c" || true
+          done
+          echo "=== KDE SESSION ==="
+          printf 'XDG_SESSION_TYPE=%s\nWAYLAND_DISPLAY=%s\nDISPLAY=%s\n' "${XDG_SESSION_TYPE:-}" "${WAYLAND_DISPLAY:-}" "${DISPLAY:-}"
+          loginctl show-user "$(id -u)" -p Display -p State -p Linger || true
+          echo "=== LRB STATUS / OBSERVE ==="
+          STATE="$HOME/.local/state/louksna/remote-bridge/service"
+          SOCK="$XDG_RUNTIME_DIR/lrb-sock"
+          python3 -B "$LINK" --state-dir "$STATE" --socket-dir "$SOCK" request --op status
+          python3 -B "$LINK" --state-dir "$STATE" --socket-dir "$SOCK" request --op observe

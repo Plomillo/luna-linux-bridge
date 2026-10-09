@@ -1,0 +1,13 @@
+{
+  "schema": "LOUKSNA_R4_LIVE_STATE_SNAPSHOT_REQUEST/1.0",
+  "scope": "READ_ONLY",
+  "requested_files": [
+    "MASTER_STATUS.json",
+    "LAST_HEARTBEAT.json",
+    "evidence/PART_3.json",
+    "PERMISSION_REQUEST.json"
+  ],
+  "include_service_status": true,
+  "mutation_of_host_state": false,
+  "purpose": "Produce an auditable GitHub Actions artifact containing the current LUNA R4 master state."
+}

@@ -1,0 +1,22 @@
+{
+  "schema": "LOUKSNA_R4_15P_DEPLOY_AMENDMENT/1.0",
+  "status": "AUTHORIZED",
+  "scope": "P11_WINDOWS_LTSC_MOJO_MAESTRO_HANDLER",
+  "preserve_certified_points": [
+    "P01",
+    "P02",
+    "P03",
+    "P04",
+    "P05",
+    "P06"
+  ],
+  "preserve_active_part6_worker": true,
+  "exact_windows_sha256": "8abf91c9cd408368dc73aab3425d5e3c02dae74900742072eb5c750fc637c195",
+  "exact_mojo_version": "1.1.0",
+  "no_duplicate_downloads": true,
+  "lrb_observation_only": true,
+  "desktop_plugin_used": false,
+  "part4_reopen_authorized": false,
+  "partitioning_authorized": false,
+  "created_at_utc": "2026-10-02T10:50:00Z"
+}

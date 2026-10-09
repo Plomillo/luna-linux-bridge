@@ -1,0 +1,30 @@
+{
+  "schema": "LOUKSNA_R4_LIVE_STATE_REQUEST/1.0",
+  "mode": "READ_ONLY",
+  "purpose": "VERIFY_P15_AFTER_PROTECTED_REFERENCE_HOST_BINDING",
+  "source_head": "21f59e011f5ce0222d9eea80f262ed0a423ea228",
+  "protected_reference_sha256": "2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51",
+  "protected_reference_size_bytes": 11542631,
+  "certified_points_preserved": [
+    "P01",
+    "P02",
+    "P03",
+    "P04",
+    "P05",
+    "P06",
+    "P07",
+    "P08",
+    "P09",
+    "P10",
+    "P11",
+    "P12",
+    "P13",
+    "P14"
+  ],
+  "repeat_certified_work": false,
+  "desktop_commander_used": false,
+  "lrb_observation_only": true,
+  "partitioning_authorized": false,
+  "part4_reopen_authorized": false,
+  "created_at_utc": "2026-10-02T16:52:30Z"
+}

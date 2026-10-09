@@ -1,0 +1,12 @@
+{
+  "schema": "LOUKSNA_R4_PART6_FRESH_AUDIT_REQUEST/1.0",
+  "operation": "AUDIT_EXISTING_PROGRAMS_AND_DOWNLOAD_ONLY_MISSING",
+  "worker": "MAESTRO",
+  "observer": "LOUKSNA_REMOTE_BRIDGE",
+  "prohibit_reinstall_present": true,
+  "prohibit_redownload_present": true,
+  "prohibit_debian_download": true,
+  "prohibit_kde_download": true,
+  "preserve_part4_closed": true,
+  "requested_at_utc": "2026-10-01T23:03:00Z"
+}

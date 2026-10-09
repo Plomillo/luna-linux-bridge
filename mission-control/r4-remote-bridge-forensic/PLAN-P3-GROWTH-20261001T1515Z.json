@@ -1,0 +1,8 @@
+{
+  "schema": "LOUKSNA_R4_LRB_PLANNING_TRIGGER/1.0",
+  "authority": "Louksna.md",
+  "scope": "PART4_P3_GROWTH_PREMUTATION_OBSERVATION",
+  "mode": "READ_ONLY",
+  "disk_mutation": false,
+  "purpose": "Fresh Remote Bridge state before planning P3 growth and ext4 expansion"
+}

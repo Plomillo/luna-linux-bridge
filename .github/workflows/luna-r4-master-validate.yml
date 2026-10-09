@@ -1,0 +1,147 @@
+name: "LUNA R4 master — current 15P bundle and host preflight"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - server/r4-master/**
+      - server/r4-48h/**
+      - .github/workflows/luna-r4-master-validate.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: luna-r4-master-current-validate
+  cancel-in-progress: false
+
+jobs:
+  static:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Validate current 15-point control bundle
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -m py_compile             server/r4-master/master_controller.py             server/r4-master/part6_hardened_worker.py             server/r4-master/part789_hardened_worker.py             server/r4-master/ui_p10_p12_hardened_worker.py             server/r4-48h/maestro_48h_coordinator.py
+          python3 - <<'PY'
+          import json,pathlib
+          root=pathlib.Path(".")
+          master=(root/"server/r4-master/master_controller.py").read_text()
+          worker=(root/"server/r4-master/part6_hardened_worker.py").read_text()
+          worker789=(root/"server/r4-master/part789_hardened_worker.py").read_text()
+          uiworker=(root/"server/r4-master/ui_p10_p12_hardened_worker.py").read_text()
+          coord=(root/"server/r4-48h/maestro_48h_coordinator.py").read_text()
+          c=json.loads((root/"server/r4-48h/R4_48H_CONTRACT.json").read_text())
+          assert c["schema"]=="LOUKSNA_R4_REMAINDER_48H_CONTRACT/2.0"
+          assert [x["id"] for x in c["points"]]==[f"P{i:02d}" for i in range(1,16)]
+          assert c["immutable_boundaries"]["part4_closed"] is True
+          assert c["immutable_boundaries"]["part4_stages_closed"]==list(range(1,13))
+          assert c["immutable_boundaries"]["partitioning_operations_forbidden"] is True
+          assert c["immutable_boundaries"]["debian_download_forbidden"] is True
+          assert c["immutable_boundaries"]["kde_download_forbidden"] is True
+          assert c["control_fabric"]["maestro"]=="PRIMARY_MATERIAL_WORKER"
+          assert c["control_fabric"]["louksna_remote_bridge"]=="READ_ONLY_EYES_TELEMETRY_DIAGNOSIS"
+          assert c["anti_paralysis"]["mandatory_non_null"] is True
+          assert 'mission_start(48,"LUNA_PROJECT"' not in master
+          assert "LOUKSNA_R4_GLOBAL_MISSION_LEASE/2.0" in master
+          assert "R4_15P_ANTI_PARALYSIS_V1" in master
+          assert '("/usr/local/games","/usr/games")' in worker
+          assert 'lutris_exec=command("lutris")' in worker
+          assert "part6_hardened_worker.py" in coord
+          assert "part789_hardened_worker.py" in coord
+          assert "HANDOFF_DEFERRED_ACTIVE_MATERIAL" in coord
+          assert "material_child_active()" in coord
+          assert "software-static.download.prss.microsoft.com" in coord
+          assert '"part7_g24":part7_cert is not None' in coord
+          assert 'part7_cert is not None and deps_pass(point)' in coord
+          assert "producer_sha256" in worker789
+          assert 'EXECUTOR="MAESTRO"' in uiworker
+          assert 'OBSERVER="LOUKSNA_REMOTE_BRIDGE"' in uiworker
+          assert 'EXPECTED_UI_SHA="8a9852c4155d64fd74059c7239e67c82e16e5acd556627d70575db85078d4ed4"' in uiworker
+          assert '"no_duplicate_launcher_creation":True' in uiworker
+          assert 'point in {"P10","P12"}' in master
+          assert "ui_p10_p12_hardened_worker.py" in coord
+          assert "V2_15_POINT_ATOMIC_BUNDLE_RECONCILIATION" in coord
+          assert "lrb_companion_worker.py" not in coord
+          print("R4_MASTER_CURRENT_STATIC=PASS")
+          PY
+
+  host_preflight:
+    needs: static
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 6
+    steps:
+      - name: Current live read-only readiness check
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          HOME_REAL="/home/diegoignacionorambuenamiranda"
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+
+          test "$(hostname)" = LOUKSNA
+          test "$(id -un)" = diegoignacionorambuenamiranda
+          test "$(systemctl is-active actions.runner.Plomillo-luna-linux-bridge.luna-linux.service)" = active
+          test "$(systemctl --user is-active luna-r4-48h-coordinator.service)" = active
+          MASTER_SERVICE_STATE="$(systemctl --user is-active luna-r4-master-part1-part9.service || true)"
+          MASTER_MAINPID="$(systemctl --user show luna-r4-master-part1-part9.service -p MainPID --value)"
+          test "$(systemctl --user is-active symphylax-r1.service)" = active
+
+          sudo -n /usr/local/sbin/louksna-sudo-governance status > "$RUNNER_TEMP/SUDO_GOVERNANCE.json"
+          test "$(sudo -n id -u)" = 0
+          python3 - "$RUNNER_TEMP/SUDO_GOVERNANCE.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1]))
+          assert d["status"]=="ACTIVE"
+          assert d["policy_exact"] is True
+          assert d["g24_certificate_local"] is True
+          assert d["scope"]=="UNRESTRICTED_ROOT_VIA_SUDO"
+          print("SUDO_GOVERNANCE=PASS")
+          PY
+
+          test -f "$HOME_REAL/.local/lib/louksna/symphylax-r1/Louksna.md"
+          test -f "$HOME_REAL/.local/lib/louksna/symphylax-r1/CUSTOSZ.v07.f04_b.pyz"
+          test -f "$HOME_REAL/.local/lib/louksna/symphylax-r1/CUSTOSZ_RUNTIME_V1_SR_EXEC_BOUND_FME_01.b.pyz"
+          test -f "$HOME_REAL/.local/lib/louksna/symphylax-r1/MetaOS.wasm"
+
+          CONTRACT="$HOME_REAL/.local/lib/louksna/r4-48h/R4_48H_CONTRACT.json"
+          STATUS="$HOME_REAL/.local/state/louksna/r4-master-part1-part9/MASTER_STATUS.json"
+          test -f "$CONTRACT"
+          test -f "$STATUS"
+          python3 - "$CONTRACT" "$STATUS" "$MASTER_SERVICE_STATE" "$MASTER_MAINPID" <<'PY'
+          import json,sys
+          c=json.load(open(sys.argv[1])); s=json.load(open(sys.argv[2]))
+          service_state=sys.argv[3]; mainpid=sys.argv[4]
+          assert c["schema"]=="LOUKSNA_R4_REMAINDER_48H_CONTRACT/2.0"
+          assert c["immutable_boundaries"]["part4_closed"] is True
+          assert c["immutable_boundaries"]["partitioning_operations_forbidden"] is True
+          assert len(c["points"])==15
+          part=s.get("current_part") or s.get("part")
+          assert part in {"PART_6","PART_7","PART_8","PART_9",None}
+          terminal=(s.get("status")=="COMPLETE" and s.get("global_mission_status")=="COMPLETE")
+          if terminal:
+              assert service_state=="inactive"
+              assert mainpid in {"0",""}
+          else:
+              assert service_state=="active"
+              assert s.get("anti_paralysis_contract")=="R4_15P_ANTI_PARALYSIS_V1"
+          print("CURRENT_PART="+str(part))
+          print("MASTER_STATUS="+str(s.get("status")))
+          print("MASTER_TERMINAL_COMPLETE="+str(terminal))
+          PY
+
+          if pgrep -af '(^|/)(sfdisk|fdisk|parted|growpart|resize2fs|ntfsresize|mkfs[^ ]*|wipefs|blkdiscard)( |$)' >/tmp/r4-current-partition-procs.txt; then
+            cat /tmp/r4-current-partition-procs.txt
+            exit 91
+          fi
+
+          echo "R4_MASTER_CURRENT_HOST_PREFLIGHT=PASS"

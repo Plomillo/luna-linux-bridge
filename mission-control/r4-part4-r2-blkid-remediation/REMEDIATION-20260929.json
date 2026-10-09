@@ -1,0 +1,48 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_BLKID_REMEDIATION/1.0",
+  "status": "CANDIDATE",
+  "authority": "Louksna.md",
+  "doctrine": "EXTEND_DO_NOT_REPLACE",
+  "failure_posture": "FAIL_CLOSED",
+  "incident": {
+    "workflow_run": 36628834483,
+    "job_id": 109612602709,
+    "observed_hold": "HOLD:MISSING_COMMAND:blkid",
+    "failed_stage": "Generate exact geometry plan read-only",
+    "disk_mutation_before_hold": false
+  },
+  "prior_positive_evidence": {
+    "workflow_run": 36628709421,
+    "result": "SUCCESS",
+    "observed_command": "/usr/sbin/blkid -s UUID -o value \"$DEV\"",
+    "observed_uuid": "F2848A148489DC0B"
+  },
+  "diagnosis": "PATH_RESOLUTION_MISMATCH_WITH_CANONICAL_USR_SBIN_BLKID",
+  "remediation": {
+    "controlled_path": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+    "canonical_blkid": "/usr/sbin/blkid",
+    "direct_probe": "sudo -n /usr/sbin/blkid -p -s UUID -o value <device>",
+    "remove_blkid_from_generic_command_v_precheck": true,
+    "require_executable_absolute_path": true,
+    "require_noninteractive_sudo_before_probe": true
+  },
+  "files": {
+    "server/r4-master/part4_r2_storage_migrate.sh": {
+      "old_git_blob": "c7d2087a2cb48c9bb87f2b542042cd1a6b612155",
+      "new_git_blob": "d571000fc26539bc7bce4b5b08415e54bf1715c4"
+    },
+    "server/r4-master/part4_r2_final_merge_prepare.sh": {
+      "old_git_blob": "11b3324f2906305b370233a8f91e7889df5933ab",
+      "new_git_blob": "c911daca997bd764cddb1aee1819e297c8bde576"
+    }
+  },
+  "invariants": [
+    "NO_CANONICAL_AUTHORITY_CHANGE",
+    "NO_AUTHORIZATION_SCOPE_EXPANSION",
+    "NO_DISK_MUTATION_BY_REMEDIATION_COMMIT",
+    "NO_COMMAND_INSTALL_REQUIRED",
+    "G23_REQUIRED",
+    "G24_REQUIRED_BEFORE_STORAGE_RESUME"
+  ],
+  "continuation": "DISPATCH_STORAGE_MIGRATION_ONLY_AFTER_REMEDIATION_G24"
+}

@@ -1,0 +1,7 @@
+{
+  "schema": "LOUKSNA_R4_PART6_I386_PREFLIGHT_REQUEST/1.0",
+  "reason": "PROVE_EXPLICIT_I386_PREREQUISITE_BEFORE_SCOPE_EXTENSION",
+  "authorize_mutation": false,
+  "fail_closed": true,
+  "requested_at_utc": "2026-10-01T21:58:00Z"
+}

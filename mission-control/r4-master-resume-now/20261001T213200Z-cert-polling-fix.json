@@ -1,0 +1,11 @@
+{
+  "schema": "LOUKSNA_R4_MASTER_RESUME_REQUEST/1.0",
+  "reason": "DEPLOY_DETERMINISTIC_CERT_WORKFLOW_POLLING",
+  "controller_commit": "cc17ed1a99cda0af7428c7b0054722c985776323",
+  "preserve_stage12_closed": true,
+  "preserve_part4_evidence": true,
+  "require_no_disk_mutation": true,
+  "require_no_filesystem_mutation": true,
+  "expected_next_operation": "PART4_CANONICAL_CERTIFICATION_THEN_PART5_HANDOFF",
+  "requested_at_utc": "2026-10-01T21:32:00Z"
+}

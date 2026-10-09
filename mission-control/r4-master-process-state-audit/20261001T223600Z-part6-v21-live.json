@@ -1,0 +1,8 @@
+{
+  "schema": "LOUKSNA_R4_MASTER_PROCESS_AUDIT_REQUEST/1.0",
+  "reason": "OBSERVE_PART6_WORKER_V2_1",
+  "expected_current_part": "PART_6",
+  "worker": "MAESTRO",
+  "read_only": true,
+  "requested_at_utc": "2026-10-01T22:36:00Z"
+}

@@ -1,0 +1,35 @@
+name: "R4 master — service state audit"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-master-service-state-audit.yml
+      - mission-control/r4-master-service-state-audit/**
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Read Maestro service state
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+          echo "=== SERVICE ==="
+          systemctl --user show luna-r4-master-part1-part9.service \
+            -p ActiveState -p SubState -p Result -p MainPID -p NRestarts \
+            -p ExecMainCode -p ExecMainStatus -p StateChangeTimestamp
+          echo "=== IS ACTIVE ==="
+          systemctl --user is-active luna-r4-master-part1-part9.service || true
+          echo "=== MASTER STATUS ==="
+          cat "$HOME/.local/state/louksna/r4-master-part1-part9/MASTER_STATUS.json" || true
+          echo "=== JOURNAL ==="
+          journalctl --user -u luna-r4-master-part1-part9.service --since "2026-10-01 21:25:00 UTC" --no-pager -o short-iso || true

@@ -1,0 +1,269 @@
+name: "R4 PART4 — forensic PROYECTOS dedup audit"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-forensic-dedup/**
+
+permissions:
+  contents: read
+
+jobs:
+  forensic:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 180
+    steps:
+      - name: Full read-only forensic inventory and exact-duplicate analysis
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          PROJ="$HOME/Proyectos"
+          REAL="$(readlink -f "$PROJ")"
+          OUT="$RUNNER_TEMP/r4-part4-proyectos-forensic-$GITHUB_RUN_ID"
+          DB="$OUT/proyectos.sqlite3"
+          mkdir -p "$OUT"
+
+          test -d "$REAL"
+          findmnt -T "$REAL" -o TARGET,SOURCE,FSTYPE,OPTIONS | tee "$OUT/MOUNT.txt"
+
+          OPTS="$(findmnt -rn -T "$REAL" -o OPTIONS)"
+          case ",$OPTS," in
+            *,ro,*) ;;
+            *) echo "FAIL_CLOSED: PROYECTOS source is not read-only"; exit 20 ;;
+          esac
+
+          printf 'captured_at_utc=%s\nrun_id=%s\nhost=%s\nlogical=%s\nreal=%s\n' \
+            "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$GITHUB_RUN_ID" "$(hostname)" "$PROJ" "$REAL" \
+            > "$OUT/METADATA.txt"
+
+          nice -n 10 ionice -c2 -n7 python3 - "$REAL" "$DB" "$OUT" <<'PY'
+          import os, sys, sqlite3, hashlib, json, csv
+          from collections import defaultdict
+
+          root, db_path, out = sys.argv[1:4]
+          con = sqlite3.connect(db_path)
+          con.execute("PRAGMA journal_mode=WAL")
+          con.execute("PRAGMA synchronous=NORMAL")
+          con.execute("""
+            CREATE TABLE files(
+              path TEXT PRIMARY KEY,
+              size INTEGER NOT NULL,
+              ext TEXT,
+              mtime_ns INTEGER,
+              inode INTEGER,
+              dev INTEGER,
+              sha256 TEXT
+            )
+          """)
+          con.execute("CREATE INDEX idx_files_size ON files(size)")
+          con.execute("CREATE INDEX idx_files_sha ON files(sha256)")
+          con.execute("CREATE TABLE symlinks(path TEXT PRIMARY KEY,target TEXT)")
+
+          total_files=0
+          total_bytes=0
+          total_symlinks=0
+          errors=[]
+          batch=[]
+
+          def ext_of(name):
+              base=os.path.basename(name)
+              if "." not in base or (base.startswith(".") and base.count(".")==1):
+                  return ""
+              return "."+base.rsplit(".",1)[1].lower()
+
+          stack=[root]
+          while stack:
+              d=stack.pop()
+              try:
+                  with os.scandir(d) as it:
+                      for e in it:
+                          try:
+                              if e.is_symlink():
+                                  total_symlinks += 1
+                                  try:
+                                      target=os.readlink(e.path)
+                                  except Exception as ex:
+                                      target=f"ERROR:{ex}"
+                                  con.execute("INSERT OR REPLACE INTO symlinks(path,target) VALUES(?,?)",(e.path,target))
+                                  continue
+                              if e.is_dir(follow_symlinks=False):
+                                  stack.append(e.path)
+                                  continue
+                              if e.is_file(follow_symlinks=False):
+                                  st=e.stat(follow_symlinks=False)
+                                  total_files += 1
+                                  total_bytes += st.st_size
+                                  batch.append((e.path,st.st_size,ext_of(e.name),st.st_mtime_ns,st.st_ino,st.st_dev,None))
+                                  if len(batch)>=5000:
+                                      con.executemany("INSERT INTO files VALUES(?,?,?,?,?,?,?)",batch)
+                                      con.commit()
+                                      batch.clear()
+                          except Exception as ex:
+                              errors.append({"path":e.path,"error":repr(ex)})
+              except Exception as ex:
+                  errors.append({"path":d,"error":repr(ex)})
+
+          if batch:
+              con.executemany("INSERT INTO files VALUES(?,?,?,?,?,?,?)",batch)
+              con.commit()
+
+          sizes=con.execute("""
+            SELECT size,COUNT(*) FROM files
+            WHERE size>0
+            GROUP BY size HAVING COUNT(*)>1
+            ORDER BY size DESC
+          """).fetchall()
+
+          candidate_files=0
+          candidate_bytes=0
+          hashed_files=0
+          hash_errors=[]
+
+          def sha256_file(path):
+              h=hashlib.sha256()
+              with open(path,'rb',buffering=0) as f:
+                  while True:
+                      b=f.read(8*1024*1024)
+                      if not b:
+                          break
+                      h.update(b)
+              return h.hexdigest()
+
+          for size,count in sizes:
+              rows=con.execute("SELECT path FROM files WHERE size=? ORDER BY path",(size,)).fetchall()
+              candidate_files += len(rows)
+              candidate_bytes += size*len(rows)
+              for (p,) in rows:
+                  try:
+                      dig=sha256_file(p)
+                      con.execute("UPDATE files SET sha256=? WHERE path=?",(dig,p))
+                      hashed_files += 1
+                  except Exception as ex:
+                      hash_errors.append({"path":p,"error":repr(ex)})
+              con.commit()
+
+          dup_groups=con.execute("""
+            SELECT sha256,size,COUNT(*) AS n
+            FROM files
+            WHERE sha256 IS NOT NULL
+            GROUP BY sha256,size
+            HAVING COUNT(*)>1
+            ORDER BY ((COUNT(*)-1)*size) DESC
+          """).fetchall()
+
+          theoretical_savings=sum((n-1)*size for sha,size,n in dup_groups)
+          duplicate_physical_bytes=sum(n*size for sha,size,n in dup_groups)
+          duplicate_files=sum(n for sha,size,n in dup_groups)
+          duplicate_extra_copies=sum(n-1 for sha,size,n in dup_groups)
+
+          ext_rows=con.execute("""
+            SELECT ext,COUNT(*),SUM(size)
+            FROM files
+            GROUP BY ext
+            ORDER BY SUM(size) DESC
+          """).fetchall()
+
+          top=defaultdict(lambda:[0,0])
+          prefix=root.rstrip(os.sep)+os.sep
+          for p,size in con.execute("SELECT path,size FROM files"):
+              rel=p[len(prefix):] if p.startswith(prefix) else p
+              topname=rel.split(os.sep,1)[0]
+              top[topname][0]+=1
+              top[topname][1]+=size
+
+          with open(os.path.join(out,"DUPLICATE_GROUPS.csv"),"w",newline="",encoding="utf-8") as f:
+              w=csv.writer(f)
+              w.writerow(["sha256","size_bytes","copies","potential_savings_bytes","paths"])
+              for sha,size,n in dup_groups:
+                  paths=[r[0] for r in con.execute(
+                      "SELECT path FROM files WHERE sha256=? AND size=? ORDER BY path",(sha,size)
+                  )]
+                  w.writerow([sha,size,n,(n-1)*size," | ".join(paths)])
+
+          with open(os.path.join(out,"TOP_LEVEL.csv"),"w",newline="",encoding="utf-8") as f:
+              w=csv.writer(f)
+              w.writerow(["entry","file_count","bytes"])
+              for k,(cnt,b) in sorted(top.items(),key=lambda kv:kv[1][1],reverse=True):
+                  w.writerow([k,cnt,b])
+
+          with open(os.path.join(out,"EXTENSIONS.csv"),"w",newline="",encoding="utf-8") as f:
+              w=csv.writer(f)
+              w.writerow(["extension","file_count","bytes"])
+              for ext,cnt,b in ext_rows:
+                  w.writerow([ext,cnt,b or 0])
+
+          summary={
+            "schema":"LOUKSNA_R4_PROYECTOS_FORENSIC_DEDUP/1.0",
+            "status":"PASS" if not errors and not hash_errors else "PASS_WITH_READ_ERRORS",
+            "root":root,
+            "read_only":True,
+            "mutation_performed":False,
+            "deletion_performed":False,
+            "total_files":total_files,
+            "total_bytes":total_bytes,
+            "total_symlinks":total_symlinks,
+            "same_size_candidate_files":candidate_files,
+            "same_size_candidate_bytes":candidate_bytes,
+            "hashed_candidate_files":hashed_files,
+            "exact_duplicate_groups":len(dup_groups),
+            "exact_duplicate_files":duplicate_files,
+            "redundant_extra_copies":duplicate_extra_copies,
+            "duplicate_physical_bytes":duplicate_physical_bytes,
+            "theoretical_reclaimable_bytes_if_one_copy_kept_per_group":theoretical_savings,
+            "theoretical_reclaimable_percent_of_total":round((theoretical_savings/total_bytes*100),4) if total_bytes else 0,
+            "read_errors":errors[:1000],
+            "hash_errors":hash_errors[:1000],
+            "method":"streaming inventory -> SQLite-on-disk -> size grouping -> SHA-256 only for same-size candidates",
+            "note":"REPORT_ONLY; no duplicates removed"
+          }
+
+          with open(os.path.join(out,"SUMMARY.json"),"w",encoding="utf-8") as f:
+              json.dump(summary,f,indent=2,ensure_ascii=False)
+              f.write("\n")
+
+          def gib(n):
+              return n/(1024**3)
+
+          lines=[
+            "# PROYECTOS — auditoría forense de duplicados",
+            "",
+            f"- Archivos: {total_files:,}",
+            f"- Tamaño total: {total_bytes:,} bytes ({gib(total_bytes):.2f} GiB)",
+            f"- Grupos duplicados exactos: {len(dup_groups):,}",
+            f"- Archivos dentro de grupos duplicados: {duplicate_files:,}",
+            f"- Copias redundantes teóricas: {duplicate_extra_copies:,}",
+            f"- Espacio recuperable teórico: {theoretical_savings:,} bytes ({gib(theoretical_savings):.2f} GiB)",
+            f"- Porcentaje recuperable teórico: {summary['theoretical_reclaimable_percent_of_total']:.4f}%",
+            "",
+            "No se eliminó, movió ni modificó ningún archivo.",
+            "El ahorro es teórico: requiere revisión de semántica/procedencia antes de cualquier deduplicación real."
+          ]
+          open(os.path.join(out,"REPORT.md"),"w",encoding="utf-8").write("\n".join(lines)+"\n")
+          print(json.dumps(summary,indent=2,ensure_ascii=False))
+          PY
+
+          (
+            cd "$OUT"
+            sha256sum METADATA.txt MOUNT.txt SUMMARY.json REPORT.md DUPLICATE_GROUPS.csv TOP_LEVEL.csv EXTENSIONS.csv > SHA256SUMS.txt
+          )
+
+          echo "=== REPORT ==="
+          cat "$OUT/REPORT.md"
+          echo "=== TOP DUPLICATE GROUPS ==="
+          python3 - "$OUT/DUPLICATE_GROUPS.csv" <<'PY'
+          import csv,sys
+          with open(sys.argv[1],encoding="utf-8") as f:
+              r=csv.DictReader(f)
+              for i,row in zip(range(25),r):
+                  print(row["potential_savings_bytes"], row["copies"], row["size_bytes"], row["paths"][:500])
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-proyectos-forensic-${{ github.run_id }}
+          path: ${{ runner.temp }}/r4-part4-proyectos-forensic-${{ github.run_id }}
+          if-no-files-found: error
+          retention-days: 30

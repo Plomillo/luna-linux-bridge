@@ -1,0 +1,12 @@
+{
+  "schema": "LOUKSNA_R4_OPERATE_NOW_RETRY/1.0",
+  "checkpoint": "20260926T034746Z-38579",
+  "mode": "DIFFERENTIAL",
+  "reason": "RESOURCE_ADAPTER_AND_STALE_STATUS_FIXED",
+  "action": "RESUME_SERVER_AND_WORKERS",
+  "notify_user_only_on": [
+    "NEEDS_PRIVILEGE",
+    "NEEDS_HUMAN_AUTHORIZATION"
+  ],
+  "fail_closed": true
+}

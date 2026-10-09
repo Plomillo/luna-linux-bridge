@@ -1,0 +1,15 @@
+{
+  "mission": "PART4_PROYECTOS_BACKUP_STRATEGY_RESEARCH",
+  "time_ceiling_seconds": 120,
+  "mode": "READ_ONLY",
+  "priority": "CERTIFICATION_SUPPORT",
+  "requirements": [
+    "use_existing_forensic_inventory",
+    "measure_real_free_space",
+    "estimate_deduplication_impact_without_deleting",
+    "sample_compressibility_deterministically",
+    "inventory_available_backup_tools",
+    "do_not_claim_backup_or_restore_gates_as_passed",
+    "preserve_evidence_and_hashes"
+  ]
+}

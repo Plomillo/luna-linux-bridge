@@ -1,0 +1,67 @@
+{
+  "schema": "LOUKSNA_R4_MASTER_RELEASE_MANIFEST/1.0",
+  "status": "VALIDATED_READY_FOR_OWNER_BOOTSTRAP",
+  "branch": "staging/luna-r4-master-part1-part9-20260929",
+  "validation_run": 36522917965,
+  "validation_result": "PASS",
+  "static_validation": "PASS",
+  "host_preflight": "PASS",
+  "bundle_digest_sha256": "d33adf364452560dedb3c2872b7a2c2d36b188903fe036f42efb701a3298219b",
+  "files": [
+    {
+      "path": "server/r4-master/MASTER_MISSION.md",
+      "bytes": 4741,
+      "sha256": "0935311de88d18de043961dcc2aa53c0fd268bede4bc3b9ca3df7533ba76bd05"
+    },
+    {
+      "path": "server/r4-master/MASTER_RUN.sh",
+      "bytes": 3261,
+      "sha256": "b3b4c0ba9f99bcf61cc8327f8900e3b43b79a210c6751c4ae93d83a5b2491116"
+    },
+    {
+      "path": "server/r4-master/R4_MASTER_CONTRACT.json",
+      "bytes": 3814,
+      "sha256": "2edfbd43586fbeb2dac6742f459a83b2d4b41d24c50e684ba2169586736a596e"
+    },
+    {
+      "path": "server/r4-master/UPSTREAM_PINS.json",
+      "bytes": 636,
+      "sha256": "38d250661cc29386cea903351f88e78dfe588868ebffa1b6254d5633da4dbd18"
+    },
+    {
+      "path": "server/r4-master/master_controller.py",
+      "bytes": 20819,
+      "sha256": "0187e99fc2dfbf2aee7982841ba74372753b4db4ead5d2bc825f353c2cab6491"
+    }
+  ],
+  "starting_state": {
+    "checkpoint": "20260926T034746Z-38579",
+    "part": "PART_1",
+    "mode": "DIFFERENTIAL",
+    "no_part0_repeat": true,
+    "no_part1_full_reinstall": true,
+    "server_ready_repeat": false
+  },
+  "sequence": [
+    "PART_1",
+    "PART_2",
+    "PART_3",
+    "PART_4",
+    "PART_5",
+    "PART_6",
+    "PART_7",
+    "PART_8",
+    "PART_9"
+  ],
+  "certification": "PER_PART_EVIDENCE_VALIDATION_G23_G24",
+  "destructive_scope": "PART_4_RETAINS_H2_H4_AND_SPECIFIC_G23_G24",
+  "guarantees": {
+    "chronological_gate_enforcement": true,
+    "fail_closed": true,
+    "traceability": true,
+    "auditability": true,
+    "rollback_contract": true,
+    "fake_pass_forbidden": true,
+    "completion_guarantee": false
+  }
+}

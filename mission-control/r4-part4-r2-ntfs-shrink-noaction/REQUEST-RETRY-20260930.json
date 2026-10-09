@@ -1,0 +1,7 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_NTFS_SHRINK_NOACTION_REQUEST/1.0",
+  "status": "REQUESTED",
+  "retry_after_workflow_fix": true,
+  "target": "/dev/nvme0n1p3",
+  "destructive": false
+}

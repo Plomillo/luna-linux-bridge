@@ -1,0 +1,129 @@
+name: "R4 master — process state audit"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-master-process-state-audit.yml
+      - mission-control/r4-master-process-state-audit/**
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Inspect Maestro process tree read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+
+          PID="$(systemctl --user show luna-r4-master-part1-part9.service -p MainPID --value)"
+          echo "MAINPID=$PID"
+          echo "=== SERVICE ==="
+          systemctl --user show luna-r4-master-part1-part9.service -p ActiveState -p SubState -p Result -p ExecMainStatus -p MainPID -p NRestarts
+
+          if [ "$PID" -gt 0 ] && [ -r "/proc/$PID/status" ]; then
+            echo "=== MAIN CMDLINE ==="
+            tr '\0' ' ' < "/proc/$PID/cmdline"; echo
+            echo "=== MAIN STATUS ==="
+            grep -E '^(Name|State|Pid|PPid|Threads|VmRSS):' "/proc/$PID/status" || true
+            echo "=== MAIN WCHAN ==="
+            cat "/proc/$PID/wchan" || true
+            echo
+            CHILDREN="$(cat "/proc/$PID/task/$PID/children" 2>/dev/null || true)"
+          else
+            echo "=== MAIN PROCESS ABSENT ==="
+            CHILDREN=""
+          fi
+
+          echo "=== CHILDREN ==="
+          echo "$CHILDREN"
+          for C in $CHILDREN; do
+            echo "--- CHILD $C ---"
+            tr '\0' ' ' < "/proc/$C/cmdline" 2>/dev/null || true; echo
+            grep -E '^(Name|State|Pid|PPid|Threads|VmRSS):' "/proc/$C/status" 2>/dev/null || true
+            cat "/proc/$C/wchan" 2>/dev/null || true; echo
+            GC="$(cat "/proc/$C/task/$C/children" 2>/dev/null || true)"
+            echo "GRANDCHILDREN=$GC"
+            for G in $GC; do
+              echo "----- GRANDCHILD $G -----"
+              tr '\0' ' ' < "/proc/$G/cmdline" 2>/dev/null || true; echo
+              grep -E '^(Name|State|Pid|PPid|Threads|VmRSS):' "/proc/$G/status" 2>/dev/null || true
+              cat "/proc/$G/wchan" 2>/dev/null || true; echo
+            done
+          done
+
+          echo "=== MASTER STATUS ==="
+          cat "$HOME/.local/state/louksna/r4-master-part1-part9/MASTER_STATUS.json"
+          echo "=== 15P COORDINATOR ==="
+          systemctl --user show luna-r4-48h-coordinator.service -p ActiveState -p SubState -p MainPID -p NRestarts || true
+          cat "$HOME/.local/state/louksna/r4-48h/STATUS.json" 2>/dev/null || echo STATUS_MISSING
+          echo "=== MAESTRO POINT REQUEST/RESULT ==="
+          cat "$HOME/.local/state/louksna/r4-48h/MAESTRO_POINT_REQUEST.json" 2>/dev/null || echo REQUEST_MISSING
+          cat "$HOME/.local/state/louksna/r4-48h/MAESTRO_POINT_RESULT.json" 2>/dev/null || echo RESULT_MISSING
+          echo "=== PART6 RESULT/CERTIFICATE ==="
+          cat "$HOME/.local/state/louksna/r4-master-part1-part9/certificates/PART_6.json" 2>/dev/null || echo PART6_CERT_MISSING
+          cat "$HOME/.local/state/louksna/r4-master-part1-part9/part6/RESULT.json" 2>/dev/null || true
+          find "$HOME/.local/state/louksna/r4-master-part1-part9" -maxdepth 4 -type f \( -name 'RESULT.json' -o -name 'LAST_FAILURE.json' \) -path '*PART_6*' -print -exec tail -n 80 {} \; 2>/dev/null || true
+          echo "=== LIVE/STAGED BUNDLE HASHES ==="
+          for N in master_controller.py part6_hardened_worker.py part789_hardened_worker.py ui_p10_p12_hardened_worker.py R4_48H_CONTRACT.json; do
+            L="$HOME/.local/lib/louksna/r4-master-part1-part9/$N"
+            S="$HOME/.local/lib/louksna/r4-48h/staged/$N"
+            printf '%s live=' "$N"; [ -f "$L" ] && sha256sum "$L" | awk '{print $1}' || echo MISSING
+            printf '%s staged=' "$N"; [ -f "$S" ] && sha256sum "$S" | awk '{print $1}' || echo MISSING
+          done
+
+          echo "=== P10 HANDOFF/ANTI-PARALYSIS ==="
+          cat "$HOME/.local/state/louksna/r4-48h/HANDOFF_COMPLETE.json" 2>/dev/null || echo HANDOFF_COMPLETE_MISSING
+          cat "$HOME/.local/state/louksna/r4-48h/anti-paralysis/P10.json" 2>/dev/null || echo P10_ANTI_PARALYSIS_MISSING
+          echo "--- LEDGER TAIL ---"
+          tail -n 80 "$HOME/.local/state/louksna/r4-48h/LEDGER.jsonl" 2>/dev/null || true
+
+          echo "=== PART7/8/9 MATERIAL EVIDENCE ==="
+          for F in PART7_AUX_EVIDENCE.json PART8_AUX_EVIDENCE.json PART9_MATRIX.json; do
+            P="$HOME/.local/state/louksna/r4-48h/evidence/$F"
+            echo "--- $F ---"
+            if [ -f "$P" ]; then
+              sha256sum "$P"
+              cat "$P"
+            else
+              echo MISSING
+            fi
+          done
+          echo "=== PART7/8/9 CERTIFICATES ==="
+          for P in 7 8 9; do
+            F="$HOME/.local/state/louksna/r4-master-part1-part9/certificates/PART_$P.json"
+            echo "--- PART_$P ---"
+            [ -f "$F" ] && cat "$F" || echo MISSING
+          done
+
+          echo "=== P11 DOWNLOAD PROGRESS ==="
+          P11DIR="$HOME/PROYECTOS/1. PROYECTOS PRIORITARIOS/8. META OS/COMPONENTS"
+          P11PART="$P11DIR/26100.1.240331-1435.ge_release_CLIENT_IOT_LTSC_EVAL_x64FRE_en-us.iso.louksna.part"
+          P11FINAL="$P11DIR/26100.1.240331-1435.ge_release_CLIENT_IOT_LTSC_EVAL_x64FRE_en-us.iso"
+          EXPECTED=4428627968
+          for P in "$P11PART" "$P11FINAL"; do
+            if [ -f "$P" ]; then
+              SZ="$(stat -c %s "$P")"
+              echo "path=$P bytes=$SZ expected=$EXPECTED"
+            else
+              echo "path=$P MISSING"
+            fi
+          done
+
+          echo "=== P12 ROADMAP CANDIDATES ==="
+          ROOT="$HOME/PROYECTOS"
+          if [ -d "$ROOT" ]; then
+            find "$ROOT" -maxdepth 8 \( -type f -o -type d \) -print 2>/dev/null | \
+              grep -Eai '/([^/]*(roadmap|road map|hoja[ _-]*de[ _-]*ruta|plan|programa[ _-]*maestro|fases?|milestones?|hitos?)[^/]*)$' | \
+              head -n 200 || true
+          fi
+          echo "=== RECENT JOURNAL ==="
+          journalctl --user -u luna-r4-master-part1-part9.service -n 120 --no-pager -o short-iso || true

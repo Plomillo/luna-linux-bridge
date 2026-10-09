@@ -1,0 +1,104 @@
+{
+  "authority": "Louksna.md",
+  "blockers": [],
+  "checks": {
+    "acquisition_requires_absence": true,
+    "authority": true,
+    "contract_v2": true,
+    "debian_redownload_denied": true,
+    "default_no_redownload": true,
+    "dependency_P01": true,
+    "desktop_plugin_denied": true,
+    "g23_required": true,
+    "g24_required": true,
+    "kde_redownload_denied": true,
+    "local_p25_first": true,
+    "lutris_reuse_required": true,
+    "part4_closed": true,
+    "part4_stages_1_12": true,
+    "partitioning_denied": true,
+    "protected_reference": true,
+    "third_order": true
+  },
+  "control_plane": "GITHUB",
+  "created_at_utc": "2026-10-02T10:29:37.608604Z",
+  "debian_redownload_performed": false,
+  "details": {
+    "lrb": {
+      "certified": false,
+      "evidence_seq": 196,
+      "evidence_sha256": "13ee127e8955404474840deb5b588e2624af11e53b6417e5fc168a66dce8c213",
+      "observation": {
+        "boot_id": "340911cd-6eae-41b0-bcf1-ea6d2eb6e493",
+        "bridge_root_shell": "NOT_DEPLOYED",
+        "gid": 1001,
+        "github_transport": "NOT_DEPLOYED",
+        "host": "LOUKSNA",
+        "load": [
+          0.640625,
+          0.2568359375,
+          0.138671875
+        ],
+        "memory_bytes": {
+          "MemAvailable": 3625299968,
+          "MemTotal": 6125785088,
+          "SwapFree": 0,
+          "SwapTotal": 0
+        },
+        "observed_utc": "2026-10-02T10:29:37.517978Z",
+        "pid": 1232,
+        "project_partition": "NOT_LIVE_VERIFIED",
+        "root_fs_bytes": {
+          "available": 203680301056,
+          "total": 510059147264
+        },
+        "screen": "NOT_ENABLED",
+        "sudo_noninteractive": "NOT_PROBED",
+        "uid": 1000
+      },
+      "schema": "LRB_LOCAL_TRANSPORT/0.3",
+      "status": "OBSERVED_NOT_CERTIFIED"
+    },
+    "master_service": {
+      "ActiveState": "active",
+      "MainPID": "286284",
+      "NRestarts": "0",
+      "SubState": "running",
+      "returncode": 0
+    },
+    "runner_service": {
+      "ActiveState": "active",
+      "MainPID": "2369",
+      "NRestarts": "0",
+      "SubState": "running",
+      "returncode": 0
+    }
+  },
+  "executor": "CONTROL_FABRIC",
+  "kde_redownload_performed": false,
+  "observer": "LOUKSNA_REMOTE_BRIDGE",
+  "partitioning_performed": false,
+  "point_id": "P02",
+  "point_name": "ANTI_DUPLICATION_AND_ACQUISITION_CONTROL",
+  "protected_reference": "LOUKSNAMEJORADA.md",
+  "provenance": {
+    "authority_sha256": "5270c3d643339c283edf13b414f335f23f921c4dac023b06d38de62927e29bf9",
+    "contract_sha256": "4c7e2d06791744fcc0ebc26178ae1d31600e35721cb8d3bec45a8a1d1c5bf54e",
+    "ledger_head_sha256": "d6e73140aa86d36d205a3513b8e3b9d0b4c03ed7fdec8e8f6cc69e154bcb20eb",
+    "lrb_evidence_sha256": "13ee127e8955404474840deb5b588e2624af11e53b6417e5fc168a66dce8c213",
+    "master_controller_sha256": "745b6a45fe345128b3b15ae024b918e776be3d121863e3bf847fd3cfd20b221c"
+  },
+  "puac2": {
+    "C25": true,
+    "C26": true,
+    "C27": true,
+    "C28": true,
+    "C29": true,
+    "C30": true,
+    "C31": true,
+    "C32": true
+  },
+  "schema": "LOUKSNA_R4_15_POINT_EVIDENCE/1.0",
+  "self_certified": false,
+  "status": "PASS"
+}

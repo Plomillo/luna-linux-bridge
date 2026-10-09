@@ -1,0 +1,33 @@
+name: "R4 PART4 R2 — installed NTFS docs"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-r2-ntfs-docs/**
+
+permissions:
+  contents: read
+
+jobs:
+  docs:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Read installed ntfsfix and ntfsresize documentation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "--- NTFSFIX MAN ---"
+          if [ -f /usr/share/man/man8/ntfsfix.8.gz ]; then
+            zcat /usr/share/man/man8/ntfsfix.8.gz | col -b | sed -n '1,180p'
+          else
+            ntfsfix --help || true
+          fi
+          echo "--- NTFSRESIZE MAN FORCE/NO-ACTION ---"
+          if [ -f /usr/share/man/man8/ntfsresize.8.gz ]; then
+            zcat /usr/share/man/man8/ntfsresize.8.gz | col -b | grep -i -A8 -B4 -E 'force|no-action|consisten|chkdsk|info' | head -220
+          else
+            ntfsresize --help || true
+          fi

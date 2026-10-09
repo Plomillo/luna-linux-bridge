@@ -1,0 +1,16 @@
+{
+  "schema":"LOUKSNA_R4_PART4_R2_STORAGE_EXEC_READY_REF/1.0",
+  "status":"CERTIFIED_READY",
+  "plan_run":36659004136,
+  "readiness_run":36659723187,
+  "plan_sha256":"1ad470bee8355836a2492858a9ab1e485923bb1d5de9691d246d3ff813a62b80",
+  "script_sha256":"c3b508b92fd6eceda1d74f427b3e0384be4ca2f886efde6cf4416ac1e10032c3",
+  "g23":"PASS",
+  "g24":"PASS",
+  "execution_ready":true,
+  "mutation_performed":false,
+  "p2_preserve":true,
+  "p4_preserve":true,
+  "p5_preserve":true,
+  "g24_artifact":"sha256:1b1175d5026d5c0307ba4142d2afd526416f77057cb4bdce891ca52ce4f5458a"
+}

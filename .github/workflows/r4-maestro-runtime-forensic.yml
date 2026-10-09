@@ -1,0 +1,114 @@
+name: "R4 — Maestro runtime forensic audit"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-maestro-runtime-forensic.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r4-maestro-runtime-forensic
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 10
+    steps:
+      - name: Read-only audit of Maestro runner
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+          OUT="$RUNNER_TEMP/maestro-runtime-forensic"
+          mkdir -p "$OUT"
+
+          echo "HOST=$(hostname)" | tee "$OUT/HOST.txt"
+          echo "USER=$(id -un)" | tee -a "$OUT/HOST.txt"
+          echo "BOOT_ID=$(cat /proc/sys/kernel/random/boot_id)" | tee -a "$OUT/HOST.txt"
+          echo "RUNNER_NAME=$RUNNER_NAME" | tee -a "$OUT/HOST.txt"
+          echo "RUNNER_OS=$RUNNER_OS" | tee -a "$OUT/HOST.txt"
+          echo "RUNNER_ARCH=$RUNNER_ARCH" | tee -a "$OUT/HOST.txt"
+          echo "RUNNER_TEMP=$RUNNER_TEMP" | tee -a "$OUT/HOST.txt"
+          echo "RUNNER_TOOL_CACHE=$RUNNER_TOOL_CACHE" | tee -a "$OUT/HOST.txt"
+
+          sudo -k
+          sudo -n true
+          sudo -n visudo -c | tee "$OUT/VISUDO.txt"
+
+          echo "--- RUNNER PROCESSES ---" | tee "$OUT/PROCESSES.txt"
+          ps -eo pid,ppid,user,group,lstart,etime,cmd | grep -E 'Runner\.(Listener|Worker)|run\.sh|svc\.sh' | grep -v grep | tee -a "$OUT/PROCESSES.txt" || true
+
+          echo "--- SYSTEMD CANDIDATES ---" | tee "$OUT/SYSTEMD.txt"
+          systemctl list-unit-files --type=service --no-pager | grep -Ei 'actions\.runner|github.*runner|runner' | tee -a "$OUT/SYSTEMD.txt" || true
+          systemctl list-units --type=service --all --no-pager | grep -Ei 'actions\.runner|github.*runner|runner' | tee -a "$OUT/SYSTEMD.txt" || true
+
+          mapfile -t units < <(systemctl list-unit-files --type=service --no-legend | awk '{print $1}' | grep -Ei '^actions\.runner\.|github.*runner|runner.*service' || true)
+          : > "$OUT/UNIT_DETAILS.txt"
+          for u in "${units[@]}"; do
+            echo "### $u" | tee -a "$OUT/UNIT_DETAILS.txt"
+            systemctl is-enabled "$u" 2>&1 | tee -a "$OUT/UNIT_DETAILS.txt" || true
+            systemctl is-active "$u" 2>&1 | tee -a "$OUT/UNIT_DETAILS.txt" || true
+            sudo -n systemctl status "$u" --no-pager -l 2>&1 | tee -a "$OUT/UNIT_DETAILS.txt" || true
+            sudo -n systemctl cat "$u" 2>&1 | tee -a "$OUT/UNIT_DETAILS.txt" || true
+            systemctl show "$u"               -p Id -p User -p Group -p FragmentPath -p DropInPaths               -p Restart -p RestartUSec -p StartLimitIntervalUSec -p StartLimitBurst               -p TimeoutStartUSec -p TimeoutStopUSec -p KillMode               -p After -p Wants -p Requires -p WantedBy               -p ActiveState -p SubState -p MainPID -p ExecMainStartTimestamp               2>&1 | tee -a "$OUT/UNIT_DETAILS.txt" || true
+          done
+
+          echo "--- RUNNER ROOTS ---" | tee "$OUT/RUNNER_ROOTS.txt"
+          find /home/diegoignacionorambuenamiranda -maxdepth 4 -type f \( -name '.runner' -o -name '.credentials' -o -name 'svc.sh' -o -name 'run.sh' \) -printf '%p\n' 2>/dev/null | sort | tee -a "$OUT/RUNNER_ROOTS.txt" || true
+
+          echo "--- NETWORK ---" | tee "$OUT/NETWORK.txt"
+          systemctl is-active NetworkManager 2>&1 | tee -a "$OUT/NETWORK.txt" || true
+          systemctl is-active systemd-networkd 2>&1 | tee -a "$OUT/NETWORK.txt" || true
+          systemctl is-active network-online.target 2>&1 | tee -a "$OUT/NETWORK.txt" || true
+          ip -brief address | tee -a "$OUT/NETWORK.txt"
+          ip route | tee -a "$OUT/NETWORK.txt"
+          getent ahosts github.com | head -10 | tee -a "$OUT/NETWORK.txt" || true
+          getent ahosts api.github.com | head -10 | tee -a "$OUT/NETWORK.txt" || true
+
+          echo "--- JOURNAL RUNNER LAST BOOT ---" | tee "$OUT/JOURNAL.txt"
+          for u in "${units[@]}"; do
+            echo "### $u" | tee -a "$OUT/JOURNAL.txt"
+            sudo -n journalctl -b -u "$u" --no-pager -o short-iso -n 300 2>&1 | tee -a "$OUT/JOURNAL.txt" || true
+          done
+
+          python3 - "$OUT" <<'PY'
+          import datetime as dt,json,pathlib,re,sys
+          out=pathlib.Path(sys.argv[1])
+          sysd=(out/"SYSTEMD.txt").read_text(errors="replace")
+          det=(out/"UNIT_DETAILS.txt").read_text(errors="replace")
+          proc=(out/"PROCESSES.txt").read_text(errors="replace")
+          net=(out/"NETWORK.txt").read_text(errors="replace")
+          roots=(out/"RUNNER_ROOTS.txt").read_text(errors="replace")
+          units=sorted(set(re.findall(r'actions\.runner\.[^\s]+\.service',sysd+det)))
+          obj={
+            "schema":"LOUKSNA_R4_MAESTRO_RUNTIME_FORENSIC/1.0",
+            "status":"OBSERVED",
+            "host":"LOUKSNA",
+            "runner_name":"luna-linux",
+            "systemd_units":units,
+            "runner_listener_present":"Runner.Listener" in proc,
+            "runner_worker_present":"Runner.Worker" in proc,
+            "runner_root_discovered":".runner" in roots and "svc.sh" in roots,
+            "network_online_target_active":"network-online.target" not in net or "active" in net,
+            "github_dns_resolves":"github.com" in net or bool(re.search(r'^\d',net,re.M)),
+            "restart_policy_present":bool(re.search(r'^Restart=(?!no$).+',det,re.M)),
+            "enabled_unit_present":"enabled" in det,
+            "audit_timestamp_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          (out/"FORENSIC.json").write_text(json.dumps(obj,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(obj,indent=2,sort_keys=True))
+          PY
+
+          sha256sum "$OUT"/* > "$OUT/EVIDENCE.sha256"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-maestro-runtime-forensic
+          path: ${{ runner.temp }}/maestro-runtime-forensic/
+          retention-days: 90
+          compression-level: 0

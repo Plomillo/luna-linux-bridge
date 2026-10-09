@@ -1,0 +1,226 @@
+name: "R4 PART4 R2 — certify sudo absolute sfdisk bugfix"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-r2-sfdisk-path-bugfix/**
+
+permissions:
+  contents: write
+  actions: read
+  id-token: write
+
+concurrency:
+  group: r4-part4-r2-sfdisk-path-bugfix
+  cancel-in-progress: false
+
+env:
+  TARGET: .github/workflows/r4-part4-r2-final-merge-postboot.yml
+  AUTH: mission-control/r4-part4-r2-sfdisk-path-bugfix/AUTHORIZATION-20261001.json
+
+jobs:
+  patch:
+    name: Apply bounded sudo absolute-sfdisk patch
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    outputs:
+      patch_sha: ${{ steps.commit.outputs.patch_sha }}
+      parent_sha: ${{ steps.commit.outputs.parent_sha }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 2
+      - name: Validate authorization and patch exact legacy calls
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - "$AUTH" "$TARGET" <<'PY'
+          import json,pathlib,sys
+          auth=pathlib.Path(sys.argv[1]); target=pathlib.Path(sys.argv[2])
+          a=json.loads(auth.read_text(encoding="utf-8"))
+          assert a["schema"]=="LOUKSNA_R4_PART4_R2_SFDISK_PATH_BUGFIX_AUTH/1.0"
+          assert a["status"]=="OWNER_AUTHORIZED"
+          assert a["preserve_sudo"] is True
+          assert a["failure_posture"]=="FAIL_CLOSED"
+          s=target.read_text(encoding="utf-8")
+          old_verify='          sfdisk --dump /dev/nvme0n1 > "$OUT/PARTITION_TABLE_POSTBOOT.sfdisk"'
+          new_verify='          sudo -n /usr/sbin/sfdisk --dump /dev/nvme0n1 > "$OUT/PARTITION_TABLE_POSTBOOT.sfdisk"'
+          old_priv='sudo -n sfdisk --dump /dev/nvme0n1'
+          new_priv='sudo -n /usr/sbin/sfdisk --dump /dev/nvme0n1'
+          if s.count(old_verify)!=1: raise SystemExit("LEGACY_VERIFY_CALL_COUNT_NOT_ONE")
+          if s.count(old_priv)!=2: raise SystemExit("LEGACY_PRIV_CALL_COUNT_NOT_TWO")
+          marker='      - name: Download certified PROYECTOS manifest\n'
+          if s.count(marker)!=1: raise SystemExit("MANIFEST_MARKER_COUNT_NOT_ONE")
+          pre=(
+            '      - name: Precheck privileged absolute sfdisk\n'
+            '        shell: bash\n'
+            '        run: |\n'
+            '          set -Eeuo pipefail\n'
+            '          sudo -n true\n'
+            '          test -x /usr/sbin/sfdisk\n'
+            '          sudo -n /usr/sbin/sfdisk --version\n\n'
+          )
+          s=s.replace(marker,pre+marker,1)
+          s=s.replace(old_verify,new_verify,1)
+          s=s.replace(old_priv,new_priv)
+          target.write_text(s,encoding="utf-8")
+          PY
+          python3 - "$TARGET" <<'PY'
+          import pathlib,re,sys
+          s=pathlib.Path(sys.argv[1]).read_text(encoding="utf-8")
+          assert s.count('sudo -n /usr/sbin/sfdisk --dump /dev/nvme0n1')==3
+          assert '          sfdisk --dump /dev/nvme0n1' not in s
+          assert 'sudo -n sfdisk --dump /dev/nvme0n1' not in s
+          assert s.count('sudo -n /usr/sbin/sfdisk --version')==1
+          assert s.count('test -x /usr/sbin/sfdisk')==1
+          print("STATIC_PATCH_CHECK=PASS")
+          PY
+      - name: Commit bounded patch
+        id: commit
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          PARENT="$(git rev-parse HEAD)"
+          test "$(git diff --name-only | wc -l)" -eq 1
+          test "$(git diff --name-only)" = "$TARGET"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$TARGET"
+          git commit -m "fix(PART4-R2): preserve sudo and pin absolute sfdisk"
+          PATCH="$(git rev-parse HEAD)"
+          git push origin HEAD:staging/luna-r4-master-part1-part9-20260929
+          echo "parent_sha=$PARENT" >> "$GITHUB_OUTPUT"
+          echo "patch_sha=$PATCH" >> "$GITHUB_OUTPUT"
+
+  g23:
+    name: G23 independently validate sfdisk path bugfix
+    needs: patch
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ needs.patch.outputs.patch_sha }}
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Validate exact diff and invariants
+        shell: bash
+        env:
+          PATCH_SHA: ${{ needs.patch.outputs.patch_sha }}
+          PARENT_SHA: ${{ needs.patch.outputs.parent_sha }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$TARGET" "$AUTH" "$PARENT_SHA" "$PATCH_SHA" "$RUNNER_TEMP/g23/G23_SFDISK_PATH_BUGFIX.json" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,subprocess,sys
+          target,auth,parent,patch,out=sys.argv[1:]
+          t=pathlib.Path(target); a=pathlib.Path(auth)
+          s=t.read_text(encoding="utf-8")
+          names=subprocess.check_output(["git","diff","--name-only",parent,patch],text=True).splitlines()
+          diff=subprocess.check_output(["git","diff","--unified=0",parent,patch,"--",target],text=True)
+          checks={
+            "single_file_scope":names==[target],
+            "three_privileged_absolute_dump_calls":s.count('sudo -n /usr/sbin/sfdisk --dump /dev/nvme0n1')==3,
+            "legacy_unprivileged_dump_absent":'          sfdisk --dump /dev/nvme0n1' not in s,
+            "legacy_ambiguous_sudo_dump_absent":'sudo -n sfdisk --dump /dev/nvme0n1' not in s,
+            "sudo_noninteractive_precheck":'sudo -n true' in s,
+            "absolute_binary_precheck":'test -x /usr/sbin/sfdisk' in s,
+            "version_precheck":'sudo -n /usr/sbin/sfdisk --version' in s,
+            "no_authority_change":"Louksna.md" in a.read_text(),
+            "authorization_bound":json.loads(a.read_text()).get("preserve_sudo") is True,
+            "no_partition_commands_added":all(x not in diff for x in ["+          sudo -n parted ","+          sudo -n resize2fs ","+          sudo -n partx "])
+          }
+          ok=all(checks.values())
+          r={"schema":"LOUKSNA_R4_PART4_R2_SFDISK_PATH_BUGFIX_G23/1.0",
+             "status":"PASS" if ok else "HOLD","scope":"SFDISK_PATH_AND_SUDO_PRESERVATION_ONLY",
+             "checks":checks,"parent_sha":parent,"patch_sha":patch,
+             "target_sha256":hashlib.sha256(t.read_bytes()).hexdigest(),
+             "authorization_sha256":hashlib.sha256(a.read_bytes()).hexdigest(),
+             "repair_allowed":False,"g24_allowed":ok,
+             "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          pathlib.Path(out).write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(3)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-sfdisk-path-bugfix-g23
+          path: ${{ runner.temp }}/g23/G23_SFDISK_PATH_BUGFIX.json
+          retention-days: 90
+          compression-level: 0
+
+  g24:
+    name: G24 certify sfdisk path bugfix
+    needs: [patch, g23]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-sfdisk-path-bugfix-g23
+          path: ${{ runner.temp }}/g23
+      - name: Issue digest-bound bugfix certificate
+        shell: bash
+        env:
+          PATCH_SHA: ${{ needs.patch.outputs.patch_sha }}
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/G23_SFDISK_PATH_BUGFIX.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$G")" = PASS
+          H="$(sha256sum "$G"|awk '{print $1}')"
+          AUD="louksna-r4-part4-r2-sfdisk-path-bugfix:$H"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export H AUD TOKEN PATCH_SHA
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$RUNNER_TEMP/g24/G24_SFDISK_PATH_BUGFIX.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          t=os.environ["TOKEN"]; parts=t.split("."); payload=parts[1]+"="*((4-len(parts[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload)); aud=claims.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          r={"schema":"LOUKSNA_R4_PART4_R2_SFDISK_PATH_BUGFIX_G24/1.0","status":"PASS",
+             "scope":"SFDISK_PATH_AND_SUDO_PRESERVATION_ONLY","g23_sha256":os.environ["H"],
+             "patch_sha":os.environ["PATCH_SHA"],"authority_authenticated":True,
+             "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(t.encode()).hexdigest(),
+             "disk_mutation_certified":False,"authorization_scope_expanded":False,
+             "continuation_authorized":"EXISTING_PART4_R2_POSTBOOT_CHAIN_ONLY",
+             "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-sfdisk-path-bugfix-g24
+          path: ${{ runner.temp }}/g24/G24_SFDISK_PATH_BUGFIX.json
+          retention-days: 90
+          compression-level: 0
+
+  dispatch:
+    name: Dispatch corrected Maestro PART4 postboot chain
+    needs: [patch, g24]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-sfdisk-path-bugfix-g24
+          path: ${{ runner.temp }}/g24
+      - name: Emit certified continuation trigger
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PATCH_SHA: ${{ needs.patch.outputs.patch_sha }}
+        run: |
+          set -Eeuo pipefail
+          CERT="$RUNNER_TEMP/g24/G24_SFDISK_PATH_BUGFIX.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$CERT")" = PASS
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["patch_sha"])' "$CERT")" = "$PATCH_SHA"
+          CERT_SHA="$(sha256sum "$CERT"|awk '{print $1}')"
+          TRIGGER="mission-control/r4-part4-r2-final-merge-postboot/START-AFTER-SFDISK-PATH-G24-${GITHUB_RUN_ID}.json"
+          BODY="$(printf '{"schema":"LOUKSNA_R4_PART4_R2_POSTBOOT_RESUME/1.0","reason":"SFDISK_PATH_BUGFIX_G24_PASS","patch_sha":"%s","certificate_sha256":"%s","source_run":%s,"preserve_sudo":true,"no_migration_replay":true,"existing_gates_preserved":true}' "$PATCH_SHA" "$CERT_SHA" "$GITHUB_RUN_ID" | base64 -w0)"
+          gh api --method PUT "repos/Plomillo/luna-linux-bridge/contents/$TRIGGER"             -f message="handoff(PART4-R2): start Maestro after certified sudo sfdisk path fix"             -f content="$BODY"             -f branch="staging/luna-r4-master-part1-part9-20260929"
+          echo "SFDISK_PATH_BUGFIX_G24=PASS"
+          echo "MAESTRO_CORRECTED_POSTBOOT=DISPATCHED"

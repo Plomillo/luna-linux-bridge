@@ -1,0 +1,20 @@
+{
+  "schema": "LOUKSNA_R4_LIVE_STATE_REQUEST/1.0",
+  "mode": "READ_ONLY",
+  "purpose": "VERIFY_PART7_P08_AFTER_QWEN_REASONING_ONLY_DEPLOY",
+  "source_head": "2aded3740220e10e3b5e426a00c5495b6a80de2e",
+  "desktop_commander_used": false,
+  "repeat_certified_work": false,
+  "preserve_certified_points": [
+    "P01",
+    "P02",
+    "P03",
+    "P04",
+    "P05",
+    "P06",
+    "P07"
+  ],
+  "partitioning_authorized": false,
+  "part4_reopen_authorized": false,
+  "created_at_utc": "2026-10-02T12:22:00Z"
+}

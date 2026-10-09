@@ -1,0 +1,133 @@
+name: "LUNA R4 — resume master from last checkpoint now"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-master-resume-now/**
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: luna-r4-master-live-resume
+  cancel-in-progress: false
+
+jobs:
+  resume:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 8
+    steps:
+      - name: Checkout frozen master surface
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: staging/luna-r4-master-part1-part9-20260929
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            server/r4-master
+          sparse-checkout-cone-mode: true
+
+      - name: Resume from latest checkpoint without asking for privilege
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          HOME_REAL="/home/diegoignacionorambuenamiranda"
+          DST="$HOME_REAL/.local/lib/louksna/r4-master-part1-part9"
+          STATE="$HOME_REAL/.local/state/louksna/r4-master-part1-part9"
+          UNIT_DIR="$HOME_REAL/.config/systemd/user"
+          UNIT="$UNIT_DIR/luna-r4-master-part1-part9.service"
+          CHECKPOINT="$HOME_REAL/LOUKSNA_MAESTRO_20260925/MISSION3_OPERATIVE/R4_PART1_DESKTOP_V1/runs/20260926T034746Z-38579"
+
+          test "$(hostname)" = "LOUKSNA"
+          test "$(id -un)" = "diegoignacionorambuenamiranda"
+          test -d "$CHECKPOINT"
+          for f in CHECKPOINT.json LAUNCHERS.json PANEL_CREATED.json RUNTIME_VERIFY.json; do
+            test -f "$CHECKPOINT/$f"
+          done
+
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+
+          systemctl --user stop luna-r4-master-part1-part9.service 2>/dev/null || true
+
+          install -d -m 0700 "$DST" "$STATE"
+          install -d -m 0755 "$UNIT_DIR"
+          install -m 0700 server/r4-master/master_controller.py "$DST/master_controller.py"
+          install -m 0700 server/r4-master/part6_hardened_worker.py "$DST/part6_hardened_worker.py"
+          install -m 0600 server/r4-master/MASTER_MISSION.md "$DST/MASTER_MISSION.md"
+          install -m 0600 server/r4-master/PART4_P3_GROWTH_HARDENED_ANTI_PARALYSIS.json "$DST/PART4_P3_GROWTH_HARDENED_ANTI_PARALYSIS.json"
+          install -m 0600 server/r4-master/R4_MASTER_CONTRACT.json "$DST/R4_MASTER_CONTRACT.json"
+          install -m 0600 server/r4-master/UPSTREAM_PINS.json "$DST/UPSTREAM_PINS.json"
+          python3 -m py_compile "$DST/master_controller.py" "$DST/part6_hardened_worker.py"
+
+          cat > "$UNIT.tmp" <<UNIT
+          [Unit]
+          Description=LOUKSNA R4 master PART1-PART9
+          After=network-online.target
+          Wants=network-online.target
+
+          [Service]
+          Type=simple
+          WorkingDirectory=$DST
+          Environment=HOME=$HOME_REAL
+          Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$HOME_REAL/.local/bin
+          ExecStart=/usr/bin/python3 -B -I $DST/master_controller.py --loop --sleep 60
+          Restart=on-failure
+          RestartSec=15
+          ProtectHome=false
+
+          [Install]
+          WantedBy=default.target
+          UNIT
+
+          sed -i 's/^          //' "$UNIT.tmp"
+          mv "$UNIT.tmp" "$UNIT"
+          chmod 0600 "$UNIT"
+
+          systemctl --user daemon-reload
+          systemctl --user reset-failed luna-r4-master-part1-part9.service || true
+          systemctl --user enable --now luna-r4-master-part1-part9.service
+
+          for i in $(seq 1 45); do
+            ACTIVE="$(systemctl --user is-active luna-r4-master-part1-part9.service 2>/dev/null || true)"
+            if [ "$ACTIVE" = "active" ] && [ -f "$STATE/MASTER_STATUS.json" ]; then
+              break
+            fi
+            sleep 2
+          done
+
+          echo "=== SERVICE ==="
+          systemctl --user show luna-r4-master-part1-part9.service             -p ActiveState -p SubState -p Result -p ExecMainStatus -p MainPID -p NRestarts
+
+          echo "=== MASTER STATUS ==="
+          if [ -f "$STATE/MASTER_STATUS.json" ]; then
+            cat "$STATE/MASTER_STATUS.json"
+          else
+            echo "MASTER_STATUS_MISSING"
+            journalctl --user -u luna-r4-master-part1-part9.service -n 100 --no-pager
+            exit 1
+          fi
+
+          python3 - "$STATE/MASTER_STATUS.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding="utf-8"))
+          status=d.get("status")
+          allowed={
+            "PASS","PART_CERTIFIED","NEEDS_PRIVILEGE",
+            "NEEDS_HUMAN_AUTHORIZATION","HOLD","COMPLETE"
+          }
+          if status not in allowed:
+              raise SystemExit("UNEXPECTED_MASTER_STATUS:"+str(status))
+          print("MASTER_LIVE_STATUS="+str(status))
+          print("CURRENT_PART="+str(d.get("current_part") or d.get("part") or "UNKNOWN"))
+          if status in {"NEEDS_PRIVILEGE","NEEDS_HUMAN_AUTHORIZATION"}:
+              print("USER_PERMISSION_REQUIRED=TRUE")
+          else:
+              print("USER_PERMISSION_REQUIRED=FALSE")
+          PY
+
+          echo "R4_MASTER_RESUME_DISPATCH=PASS"

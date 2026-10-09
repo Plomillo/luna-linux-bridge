@@ -1,0 +1,183 @@
+name: "R4 PART6 — differential gaming discovery"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-part6-discovery.yml
+      - mission-control/r4-part6-discovery/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r4-part6-discovery
+  cancel-in-progress: false
+
+jobs:
+  discover:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 10
+    steps:
+      - name: Discover existing PART6 state read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/r4-part6-discovery-$GITHUB_RUN_ID"
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9"
+          mkdir -p "$OUT"
+
+          {
+            echo "HOST=$(hostname)"
+            echo "USER=$(id -un)"
+            echo "ARCH=$(dpkg --print-architecture 2>/dev/null || uname -m)"
+            . /etc/os-release
+            echo "OS=$PRETTY_NAME"
+          } > "$OUT/HOST.txt"
+
+          cp "$STATE/MASTER_STATUS.json" "$OUT/MASTER_STATUS.json"
+          if test -f "$STATE/evidence/PART_6.json"; then
+            cp "$STATE/evidence/PART_6.json" "$OUT/PART6_EVIDENCE.json"
+          fi
+          if test -f "$STATE/certificates/PART_5.json"; then
+            cp "$STATE/certificates/PART_5.json" "$OUT/PART5_CERTIFICATE.json"
+          fi
+
+          {
+            for p in wine wine64 wine32 steam steam-installer lutris flatpak; do
+              echo "### DPKG $p"
+              dpkg-query -W -f='${Status} ${Version}\n' "$p" 2>&1 || true
+            done
+          } > "$OUT/DPKG.txt"
+
+          {
+            for p in wine wine64 steam steam-installer lutris flatpak; do
+              echo "### APT_POLICY $p"
+              apt-cache policy "$p" 2>&1 || true
+            done
+          } > "$OUT/APT_POLICY.txt"
+
+          {
+            for c in wine wine64 steam steam-runtime lutris flatpak flatpak-spawn waydroid prismlauncher prism-launcher; do
+              printf '%s=' "$c"
+              command -v "$c" 2>/dev/null || true
+            done
+          } > "$OUT/COMMANDS.txt"
+
+          {
+            echo "### FLATPAK_VERSION"
+            flatpak --version 2>&1 || true
+            echo "### FLATPAK_APPS"
+            flatpak list --app --columns=application,ref,version,origin 2>&1 || true
+            echo "### FLATPAK_REMOTES"
+            flatpak remotes --columns=name,url,filter 2>&1 || true
+          } > "$OUT/FLATPAK.txt"
+
+          {
+            echo "### USER_APPLICATIONS"
+            find "$HOME/.local/share/applications" -maxdepth 2 -type f \
+              \( -iname '*steam*' -o -iname '*bottle*' -o -iname '*lutris*' -o -iname '*prism*' -o -iname '*waydroid*' -o -iname '*wine*' \) \
+              -printf '%p\n' 2>/dev/null | sort || true
+            echo "### USER_DATA"
+            find "$HOME/.local/share" -maxdepth 4 \
+              \( -iname '*steam*' -o -iname '*bottle*' -o -iname '*lutris*' -o -iname '*prism*' -o -iname '*waydroid*' -o -iname '*wine*' -o -iname '*proton*' \) \
+              -printf '%y %p\n' 2>/dev/null | sort | head -n 2000 || true
+            echo "### LOUKSNA_LIB"
+            find "$HOME/.local/lib/louksna" -maxdepth 6 \
+              \( -iname '*steam*' -o -iname '*bottle*' -o -iname '*lutris*' -o -iname '*prism*' -o -iname '*waydroid*' -o -iname '*wine*' -o -iname '*proton*' \) \
+              -printf '%y %p\n' 2>/dev/null | sort | head -n 2000 || true
+            echo "### DOWNLOADS"
+            find "$HOME/Descargas" "$HOME/Downloads" -maxdepth 4 \
+              \( -iname '*steam*' -o -iname '*bottle*' -o -iname '*lutris*' -o -iname '*prism*' -o -iname '*waydroid*' -o -iname '*wine*' -o -iname '*proton*' \) \
+              -printf '%y %s %p\n' 2>/dev/null | sort | head -n 2000 || true
+            echo "### PROJECT_ROOT_BOUNDED"
+            find "$HOME/LOUKSNA_MAESTRO_20260925" -maxdepth 8 \
+              \( -iname '*steam*' -o -iname '*bottle*' -o -iname '*lutris*' -o -iname '*prism*' -o -iname '*waydroid*' -o -iname '*wine*' -o -iname '*proton*' \) \
+              -printf '%y %s %p\n' 2>/dev/null | sort | head -n 3000 || true
+          } > "$OUT/FILES.txt"
+
+          {
+            echo "### APT_SOURCES"
+            grep -RhsE '^[[:space:]]*(deb|Types:|URIs:|Suites:|Components:|Signed-By:)' /etc/apt/sources.list /etc/apt/sources.list.d 2>/dev/null || true
+          } > "$OUT/APT_SOURCES.txt"
+
+          OUT="$OUT" python3 - <<'PY'
+          import datetime as dt, json, os, pathlib
+          out=pathlib.Path(os.environ["OUT"])
+          ms=json.loads((out/"MASTER_STATUS.json").read_text())
+          ev=json.loads((out/"PART6_EVIDENCE.json").read_text()) if (out/"PART6_EVIDENCE.json").is_file() else {}
+          txt=(out/"FILES.txt").read_text(errors="replace")
+          cmds=(out/"COMMANDS.txt").read_text(errors="replace")
+          flat=(out/"FLATPAK.txt").read_text(errors="replace")
+          dpkg=(out/"DPKG.txt").read_text(errors="replace")
+          apt=(out/"APT_POLICY.txt").read_text(errors="replace")
+          names=["wine","steam","proton","bottles","lutris","prism","waydroid"]
+          found={}
+          for n in names:
+              found[n]={
+                  "file_mentions":[line for line in txt.splitlines() if n.casefold() in line.casefold()][:100],
+                  "command_mentions":[line for line in cmds.splitlines() if n.casefold() in line.casefold() and line.split("=",1)[-1].strip()][:20],
+                  "flatpak_mentions":[line for line in flat.splitlines() if n.casefold() in line.casefold()][:50],
+                  "dpkg_mentions":[line for line in dpkg.splitlines() if n.casefold() in line.casefold()][:50],
+                  "apt_mentions":[line for line in apt.splitlines() if n.casefold() in line.casefold()][:80],
+              }
+          q={
+              "schema":"LOUKSNA_R4_PART6_DISCOVERY/1.0",
+              "status":"PASS",
+              "master_status":ms.get("status"),
+              "current_part":ms.get("current_part"),
+              "master_blockers":ms.get("blockers",[]),
+              "part6_evidence_status":ev.get("status"),
+              "part6_checks":ev.get("checks",{}),
+              "part6_blockers":ev.get("blockers",[]),
+              "part6_details":ev.get("details",{}),
+              "discovery":found,
+              "mutation_performed":False,
+              "observed_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          (out/"DISCOVERY.json").write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          PY
+
+      - name: Surface exact candidates and observe through LOUKSNA Remote Bridge
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/r4-part6-discovery-$GITHUB_RUN_ID"
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+
+          echo "=== APT POLICY ==="
+          cat "$OUT/APT_POLICY.txt"
+          echo "=== APT SOURCES ==="
+          cat "$OUT/APT_SOURCES.txt"
+          echo "=== FLATPAK ==="
+          cat "$OUT/FLATPAK.txt"
+          echo "=== COMMANDS ==="
+          cat "$OUT/COMMANDS.txt"
+          echo "=== PART6 WORKER STATE ==="
+          P6="$HOME/.local/state/louksna/r4-master-part1-part9/PART_6_HARDENED"
+          for f in ROLLBACK_CHECKPOINT.json LAST_FAILURE.json FULL_CANDIDATE_V2.json CANDIDATE_PUBLISHED.json RESULT.json; do
+            if test -f "$P6/$f"; then
+              echo "--- $f ---"
+              cat "$P6/$f"
+            fi
+          done
+
+          mapfile -t LINKS < <(find "$HOME/.local/lib/louksna-remote-bridge" -type f -path '*/bridge/live_link.py' -print 2>/dev/null | sort)
+          test "${#LINKS[@]}" -ge 1
+          LINK="${LINKS[-1]}"
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op status | tee "$OUT/LRB_STATUS.json"
+          python3 -B "$LINK" --state-dir "$HOME/.local/state/louksna/remote-bridge/service" --socket-dir "$XDG_RUNTIME_DIR/lrb-sock" request --op observe | tee "$OUT/LRB_OBSERVE.json"
+
+      - name: Upload PART6 discovery
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part6-discovery
+          path: ${{ runner.temp }}/r4-part6-discovery-${{ github.run_id }}
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 0

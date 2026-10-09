@@ -1,0 +1,246 @@
+name: "R4 PART6 — governed remediation preflight"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-part6-preflight.yml
+      - mission-control/r4-part6-preflight/**
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: r4-part6-preflight
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 12
+    steps:
+      - name: Build PART6 remediation candidate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export LC_ALL=C
+          export LANG=C
+          OUT="$RUNNER_TEMP/r4-part6-preflight-$GITHUB_RUN_ID"
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9"
+          mkdir -p "$OUT"
+
+          cp "$STATE/MASTER_STATUS.json" "$OUT/MASTER_STATUS.json"
+          cp "$STATE/evidence/PART_6.json" "$OUT/PART6_EVIDENCE.json"
+          cp "$STATE/certificates/PART_5.json" "$OUT/PART5_CERTIFICATE.json"
+
+          sudo -n /usr/local/sbin/louksna-sudo-governance status > "$OUT/PRIVILEGE.json"
+          sudo -n id -u > "$OUT/SUDO_UID.txt"
+
+          {
+            echo "ARCH=$(dpkg --print-architecture)"
+            echo "FOREIGN_ARCHES=$(dpkg --print-foreign-architectures | tr '\n' ' ')"
+            echo "KERNEL=$(uname -r)"
+            echo "DISK_FREE_BYTES=$(df -B1 --output=avail "$HOME" | tail -n1 | tr -d ' ')"
+            echo "MEM_AVAILABLE_KIB=$(awk '/^MemAvailable:/{print $2}' /proc/meminfo)"
+          } > "$OUT/HOST.txt"
+
+          {
+            for p in wine wine64 flatpak curl ca-certificates; do
+              echo "### $p"
+              apt-cache policy "$p" 2>&1 || true
+            done
+          } > "$OUT/APT_POLICY.txt"
+
+          {
+            loginctl list-sessions --no-legend 2>/dev/null || true
+            for sid in $(loginctl list-sessions --no-legend 2>/dev/null | awk '{print $1}'); do
+              echo "### SESSION $sid"
+              loginctl show-session "$sid" -p Name -p User -p Type -p Class -p State -p Remote 2>/dev/null || true
+            done
+          } > "$OUT/SESSIONS.txt"
+
+          {
+            echo "BINDERFS_DIR=$(test -d /dev/binderfs && echo yes || echo no)"
+            echo "BINDER_CONTROL=$(test -e /dev/binder-control && echo yes || echo no)"
+            echo "BINDER_MODULE=$(test -d /sys/module/binder_linux && echo yes || echo no)"
+            grep -i binder /proc/filesystems 2>/dev/null || true
+            test -r "/boot/config-$(uname -r)" && grep -E 'CONFIG_ANDROID_BINDER|CONFIG_ASHMEM' "/boot/config-$(uname -r)" || true
+          } > "$OUT/WAYDROID_KERNEL.txt"
+
+          python3 - <<'PY' > "$OUT/APT_CANDIDATES.json"
+          import json,subprocess
+          out={}
+          for p in ["wine","wine64","flatpak","curl","ca-certificates"]:
+              r=subprocess.run(["apt-cache","policy",p],text=True,capture_output=True)
+              cand=None; inst=None
+              for line in r.stdout.splitlines():
+                  s=line.strip()
+                  if s.startswith("Candidate:"): cand=s.split(":",1)[1].strip()
+                  if s.startswith("Installed:"): inst=s.split(":",1)[1].strip()
+              out[p]={"candidate":cand,"installed":inst,"returncode":r.returncode}
+          print(json.dumps(out,indent=2,sort_keys=True))
+          PY
+
+          cat > "$OUT/SOURCES.json" <<'JSON'
+          {
+            "wine": {
+              "method": "DEBIAN_TRIXIE_CONFIGURED_APT",
+              "package": "wine"
+            },
+            "steam": {
+              "method": "VALVE_OFFICIAL_DEB",
+              "version": "1.0.0.87",
+              "url": "https://repo.steampowered.com/steam/archive/stable/steam_latest.deb"
+            },
+            "proton": {
+              "method": "VALVE_OFFICIAL_STEAM_TOOL",
+              "version": "11.0-2",
+              "release_tag": "proton-11.0-2",
+              "source_url": "https://github.com/ValveSoftware/Proton/archive/refs/tags/proton-11.0-2.tar.gz",
+              "steam_app_id": 4628710,
+              "steamcmd_url": "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz"
+            },
+            "bottles": {
+              "method": "FLATPAK_USER",
+              "app_id": "com.usebottles.bottles",
+              "remote": "https://dl.flathub.org/repo/flathub.flatpakrepo"
+            },
+            "lutris": {
+              "method": "FLATPAK_USER",
+              "version": "0.5.22",
+              "app_id": "net.lutris.Lutris",
+              "remote": "https://dl.flathub.org/repo/flathub.flatpakrepo",
+              "upstream_deb_sha256": "88a350357e0438b423cdf93108f27942de094dc19f973df73839f3b0b0bafaa0"
+            },
+            "prism": {
+              "method": "FLATPAK_USER",
+              "version": "11.1.1",
+              "app_id": "org.prismlauncher.PrismLauncher",
+              "remote": "https://dl.flathub.org/repo/flathub.flatpakrepo",
+              "upstream_appimage_sha256": "bb81038c56a09e944659e4b808dbfbc52d52d5e3a3ffe32216689a3ca1508d3d"
+            },
+            "waydroid": {
+              "method": "WAYDROID_OFFICIAL_APT_REPOSITORY",
+              "version": "1.6.3",
+              "repo_script_url": "https://repo.waydro.id",
+              "suite": "trixie"
+            }
+          }
+          JSON
+
+          {
+            set +e
+            for url in \
+              "https://repo.steampowered.com/steam/archive/stable/steam_latest.deb" \
+              "https://github.com/ValveSoftware/Proton/archive/refs/tags/proton-11.0-2.tar.gz" \
+              "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz" \
+              "https://dl.flathub.org/repo/flathub.flatpakrepo" \
+              "https://repo.waydro.id" \
+              "https://api.github.com/repos/lutris/lutris/releases/tags/v0.5.22" \
+              "https://api.github.com/repos/PrismLauncher/PrismLauncher/releases/tags/11.1.1" \
+              "https://api.github.com/repos/waydroid/waydroid/releases/tags/1.6.3"; do
+              code="$(curl -LIsS --max-time 20 -o /dev/null -w '%{http_code}' "$url")"
+              rc=$?
+              printf '%s\t%s\t%s\n' "$rc" "$code" "$url"
+            done
+            set -e
+          } > "$OUT/NETWORK.txt"
+
+          OUT="$OUT" python3 - <<'PY'
+          import datetime as dt,json,os,pathlib,re
+          out=pathlib.Path(os.environ["OUT"])
+          ms=json.loads((out/"MASTER_STATUS.json").read_text())
+          ev=json.loads((out/"PART6_EVIDENCE.json").read_text())
+          cert5=json.loads((out/"PART5_CERTIFICATE.json").read_text())
+          priv=json.loads((out/"PRIVILEGE.json").read_text())
+          apt=json.loads((out/"APT_CANDIDATES.json").read_text())
+          sources=json.loads((out/"SOURCES.json").read_text())
+          host={}
+          for line in (out/"HOST.txt").read_text().splitlines():
+              if "=" in line:
+                  k,v=line.split("=",1); host[k]=v
+          net=[]
+          for line in (out/"NETWORK.txt").read_text().splitlines():
+              a=line.split("\t",2)
+              if len(a)==3: net.append({"rc":int(a[0]),"http":a[1],"url":a[2]})
+          sessions=(out/"SESSIONS.txt").read_text(errors="replace")
+          kernel=(out/"WAYDROID_KERNEL.txt").read_text(errors="replace")
+          exact_blockers={"wine","steam","proton","bottles","lutris","prism","waydroid"}
+          checks={
+              "part6_boundary":ms.get("current_part")=="PART_6" and ms.get("status")=="HOLD",
+              "exact_blockers":set(ms.get("blockers",[]))==exact_blockers and set(ev.get("blockers",[]))==exact_blockers,
+              "part5_certified":cert5.get("status")=="PASS" and cert5.get("part")=="PART_5",
+              "privilege_active":priv.get("status")=="ACTIVE" and priv.get("policy_exact") is True and priv.get("g24_certificate_local") is True,
+              "sudo_root":(out/"SUDO_UID.txt").read_text().strip()=="0",
+              "amd64":host.get("ARCH")=="amd64",
+              "disk_margin":int(host.get("DISK_FREE_BYTES","0"))>=12_000_000_000,
+              "wine_candidate":apt.get("wine",{}).get("candidate") not in (None,"(none)"),
+              "flatpak_candidate":apt.get("flatpak",{}).get("candidate") not in (None,"(none)"),
+              "network_all":all(x["rc"]==0 and x["http"].startswith(("2","3")) for x in net),
+              "wayland_session":("Type=wayland" in sessions.lower()) or ("type=wayland" in sessions.lower()),
+              "binder_capability":("binder" in kernel.lower()),
+          }
+          rollback={
+              "checkpoint_before": [
+                "/etc/apt/sources.list",
+                "/etc/apt/sources.list.d",
+                "/etc/apt/keyrings",
+                "~/.local/share/flatpak",
+                "~/.local/share/louksna/PART_6"
+              ],
+              "system_packages":"record dpkg package delta; remove only packages introduced by PART6",
+              "flatpak":"record preexisting refs; uninstall only refs introduced by PART6; restore previous remote set",
+              "waydroid":"stop container/session; remove introduced package/repo; restore apt-source checkpoint; do not delete unrelated user data",
+              "steam":"remove only Valve launcher package and PART6-created compatibility/runtime paths",
+              "proton":"remove only app 4628710 content materialized by PART6",
+              "no_blind_recursive_delete":True
+          }
+          candidate={
+              "schema":"LOUKSNA_R4_PART6_REMEDIATION_CANDIDATE/1.0",
+              "status":"CANDIDATE_READY" if all(checks.values()) else "HOLD",
+              "scope":"PART6_GAMING_DIFFERENTIAL_INSTALL_AND_FUNCTIONAL_VALIDATION",
+              "mission_id":ms.get("mission_id"),
+              "checks":checks,
+              "host":host,
+              "apt_candidates":apt,
+              "network":net,
+              "sources":sources,
+              "rollback":rollback,
+              "planned_mutations":[
+                "install Debian wine and flatpak if absent",
+                "add Flathub user remote if absent",
+                "install Bottles, Lutris, Prism user Flatpaks",
+                "download and install official Valve Steam launcher",
+                "materialize Proton 11.0 via Valve Steam tool distribution and retain official source tarball",
+                "add official Waydroid trixie repository and install Waydroid 1.6.x",
+                "write governed PART6 provenance and rollback manifests"
+              ],
+              "forbidden":[
+                "delete unrelated user data",
+                "replace Louksna authority",
+                "propagate certification",
+                "claim functional PASS from filename presence alone"
+              ],
+              "mutation_performed":False,
+              "recorded_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          raw=json.dumps(candidate,indent=2,sort_keys=True)+"\n"
+          (out/"CANDIDATE.json").write_text(raw)
+          print(raw)
+          if candidate["status"]!="CANDIDATE_READY":
+              raise SystemExit(23)
+          PY
+
+          sha256sum "$OUT"/* | sort > "$OUT/SHA256SUMS.txt"
+
+      - name: Upload PART6 candidate
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part6-remediation-candidate
+          path: ${{ runner.temp }}/r4-part6-preflight-${{ github.run_id }}
+          if-no-files-found: warn
+          retention-days: 60
+          compression-level: 0

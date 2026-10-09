@@ -1,0 +1,406 @@
+name: "R4 PART4 R2 — final merge preboot"
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-r2-final-merge/**
+
+permissions:
+  contents: read
+  actions: read
+  id-token: write
+
+concurrency:
+  group: r4-part4-r2-final-merge
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    name: Build final merge plan
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            server/r4-master
+            mission-control/r4-plan-definitivo
+          sparse-checkout-cone-mode: true
+
+      - name: Require certified storage migration and final-merge authorization
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9/PART_4_R2/STATE.json"
+          test -f "$STATE"
+          python3 - "$STATE" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1]))
+          assert d.get("r2_owner_authorized") is True
+          assert d.get("autopilot_g24") is True
+          assert d.get("final_merge_owner_authorized") is True
+          assert d.get("final_merge_authorization_g24") is True
+          assert d.get("storage_migration_g24") is True
+          assert d.get("projects_migrated_hash_equivalent") is True
+          assert d.get("ntfs_retired") is True
+          assert d.get("final_merge_g24") is not True
+          PY
+
+      - name: Generate fresh final merge geometry and capacity plan
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/r4-part4-r2-final-merge-plan-$GITHUB_RUN_ID"
+          mkdir -p "$OUT"
+          bash server/r4-master/part4_r2_final_merge_prepare.sh plan /dev/null "$OUT" /dev/null
+          python3 - server/r4-master/part4_r2_final_merge_prepare.sh mission-control/r4-plan-definitivo/BUG_AUTONOMY_POLICY.json "$OUT/IMPLEMENTATION_BINDING.json" <<'PY'
+          import hashlib,json,pathlib,subprocess,sys,time
+          script,policy,out=map(pathlib.Path,sys.argv[1:])
+          s=script.read_text(encoding="utf-8")
+          p=json.loads(policy.read_text(encoding="utf-8"))
+          checks={
+            "script_syntax":subprocess.run(["bash","-n",str(script)]).returncode==0,
+            "oldroot_grub_privileged_read":'sudo -n cat /boot/grub/grub.cfg > "$OUT/grub.cfg.oldroot.before"' in s,
+            "newroot_grub_privileged_read":'sudo -n cat "$NEWROOT_MNT/boot/grub/grub.cfg" > "$OUT/grub.cfg.newroot"' in s,
+            "newroot_grub_privileged_validation":'sudo -n grep -F "$P3_UUID" "$NEWROOT_MNT/boot/grub/grub.cfg"' in s,
+            "efibootmgr_privileged":s.count("sudo -n efibootmgr -v")==2,
+            "old_unprivileged_read_removed":'cp -a /boot/grub/grub.cfg "$OUT/grub.cfg.oldroot.before"' not in s,
+            "new_unprivileged_read_removed":'cp "$NEWROOT_MNT/boot/grub/grub.cfg" "$OUT/grub.cfg.newroot"' not in s,
+            "policy_authorized":p.get("status")=="AUTHORIZED_OPERATIONAL_POLICY",
+            "policy_authority":p.get("authority")=="Louksna.md",
+            "policy_assurance":p.get("assurance")=="PUAC2.md",
+            "policy_no_repeat_certified":p.get("hard_rules",{}).get("repeat_certified_work") is False,
+            "policy_no_repeat_migration":p.get("hard_rules",{}).get("repeat_partition_migration") is False,
+            "policy_keeps_g23":p.get("hard_rules",{}).get("bypass_g23") is False,
+            "policy_keeps_g24":p.get("hard_rules",{}).get("bypass_g24") is False
+          }
+          ok=all(checks.values())
+          q={
+            "schema":"LOUKSNA_R4_PART4_R2_IMPLEMENTATION_BINDING/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "source_failed_run":36834032810,
+            "source_failed_job":110277217174,
+            "bug_class":"READ_ONLY_PRIVILEGE_BOUNDARY_MISMATCH",
+            "script_sha256":hashlib.sha256(script.read_bytes()).hexdigest(),
+            "policy_sha256":hashlib.sha256(policy.read_bytes()).hexdigest(),
+            "checks":checks,
+            "repeat_projects_migration":False,
+            "scope_expansion":False,
+            "generated_at_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
+          }
+          out.write_text(json.dumps(q,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          if not ok: raise SystemExit(42)
+          PY
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-final-merge-plan
+          path: ${{ runner.temp }}/r4-part4-r2-final-merge-plan-${{ github.run_id }}/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  g23_plan:
+    name: G23 independently validate final merge plan
+    needs: plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-final-merge-plan
+          path: ${{ runner.temp }}/plan
+      - name: Validate exact devices, capacity and rollback boundary
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/plan/FINAL_MERGE_PLAN.json" "$RUNNER_TEMP/plan/IMPLEMENTATION_BINDING.json" "$RUNNER_TEMP/g23/G23_FINAL_MERGE_PLAN.json" <<'PY'
+          import hashlib,json,pathlib,sys,datetime as dt
+          p=pathlib.Path(sys.argv[1]); b=pathlib.Path(sys.argv[2]); out=pathlib.Path(sys.argv[3])
+          d=json.loads(p.read_text()); ib=json.loads(b.read_text())
+          parts={int(k):v for k,v in d.get("partitions",{}).items()}
+          checks={
+            "plan_pass":d.get("status")=="PASS",
+            "disk":d.get("disk")=="/dev/nvme0n1",
+            "efi":d.get("efi")=="/dev/nvme0n1p1",
+            "candidate_root":d.get("new_root")=="/dev/nvme0n1p3",
+            "old_root":d.get("old_root")=="/dev/nvme0n1p5",
+            "only_p1_p3_p5":set(parts)=={1,3,5},
+            "geometry_order":parts[1]["end_sector"]<parts[3]["start_sector"]<parts[3]["end_sector"]<parts[5]["start_sector"]<parts[5]["end_sector"],
+            "capacity":d.get("new_root_free_bytes",0)>d.get("old_root_used_bytes",0)+d.get("required_margin_bytes",0),
+            "manifest":d.get("certified_projects_manifest_sha256")=="99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e",
+            "final_layout":d.get("final_layout")=="EFI_P1_PLUS_SINGLE_MAIN_EXT4_ROOT_P3",
+            "old_root_guard":d.get("old_root_retirement_condition")=="VERIFIED_BOOT_FROM_P3_PLUS_POSTBOOT_G23_G24",
+            "rollback_before_reboot":d.get("rollback_contract",{}).get("before_reboot")=="P5_REMAINS_UNMODIFIED_BOOTABLE_ROOT",
+            "rollback_after_reboot":d.get("rollback_contract",{}).get("after_reboot_before_p5_delete")=="P5_REMAINS_RECOVERY_ROOT",
+            "implementation_binding_pass":ib.get("status")=="PASS",
+            "privilege_bug_class":ib.get("bug_class")=="READ_ONLY_PRIVILEGE_BOUNDARY_MISMATCH",
+            "privilege_bug_source_run":ib.get("source_failed_run")==36834032810,
+            "privilege_bug_source_job":ib.get("source_failed_job")==110277217174,
+            "no_projects_migration_replay":ib.get("repeat_projects_migration") is False,
+            "no_scope_expansion":ib.get("scope_expansion") is False,
+          }
+          passed=all(checks.values())
+          r={"schema":"LOUKSNA_R4_PART4_R2_FINAL_MERGE_PLAN_G23/1.0","status":"PASS" if passed else "HOLD",
+             "plan_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),
+             "implementation_binding_sha256":hashlib.sha256(b.read_bytes()).hexdigest(),
+             "implementation_script_sha256":ib.get("script_sha256"),
+             "bug_autonomy_policy_sha256":ib.get("policy_sha256"),
+             "checks":checks,
+             "repair_allowed":False,"g24_allowed":passed,
+             "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          out.write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,indent=2,sort_keys=True))
+          if not passed: raise SystemExit(3)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-final-merge-plan-g23
+          path: ${{ runner.temp }}/g23/G23_FINAL_MERGE_PLAN.json
+          retention-days: 90
+          compression-level: 0
+
+  g24_plan:
+    name: G24 certify final merge plan
+    needs: g23_plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-final-merge-plan-g23
+          path: ${{ runner.temp }}/g23
+      - name: Issue digest-bound plan certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G23="$RUNNER_TEMP/g23/G23_FINAL_MERGE_PLAN.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$G23")" = PASS
+          H="$(sha256sum "$G23"|awk '{print $1}')"
+          P="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["plan_sha256"])' "$G23")"
+          I="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["implementation_binding_sha256"])' "$G23")"
+          AUD="louksna-r4-part4-r2-final-merge-plan:$P:$I:$H"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export TOKEN H P I AUD
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$RUNNER_TEMP/g24/G24_FINAL_MERGE_PLAN.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          token=os.environ["TOKEN"]; parts=token.split(".")
+          payload=parts[1]+"="*((4-len(parts[1])%4)%4); claims=json.loads(base64.urlsafe_b64decode(payload))
+          aud=claims.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          r={"schema":"LOUKSNA_R4_PART4_R2_FINAL_MERGE_PLAN_G24/1.0","status":"PASS",
+             "scope":"P3_NEW_ROOT_P5_OLD_ROOT_P1_EFI_EXACT_PLAN","plan_sha256":os.environ["P"],
+             "implementation_binding_sha256":os.environ["I"],"g23_sha256":os.environ["H"],
+             "privilege_boundary_bug_fix_certified":True,"banal_bug_autonomy_policy_bound":True,
+             "authority_authenticated":True,"authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(token.encode()).hexdigest(),
+             "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-final-merge-plan-g24
+          path: ${{ runner.temp }}/g24/G24_FINAL_MERGE_PLAN.json
+          retention-days: 90
+          compression-level: 0
+
+  prepare:
+    name: Materialize candidate Debian root on P3
+    needs: g24_plan
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: server/r4-master
+          sparse-checkout-cone-mode: true
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-final-merge-plan
+          path: ${{ runner.temp }}/plan
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-final-merge-plan-g24
+          path: ${{ runner.temp }}/g24
+      - name: Download certified PROYECTOS manifest
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/freeze"
+          gh run download 36619942178 --repo Plomillo/luna-linux-bridge -n R4-PART4-PROYECTOS-freeze-36619942178 -D "$RUNNER_TEMP/freeze"
+          test "$(sha256sum "$RUNNER_TEMP/freeze/PROYECTOS_MANIFEST.jsonl.gz"|awk '{print $1}')" = "99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e"
+      - name: Verify plan certificate and prepare candidate root
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          PLAN="$RUNNER_TEMP/plan/FINAL_MERGE_PLAN.json"
+          CERT="$RUNNER_TEMP/g24/G24_FINAL_MERGE_PLAN.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$CERT")" = PASS
+          test "$(sha256sum "$PLAN"|awk '{print $1}')" = "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["plan_sha256"])' "$CERT")"
+          OUT="$RUNNER_TEMP/r4-part4-r2-final-merge-preboot-$GITHUB_RUN_ID"
+          mkdir -p "$OUT"
+          bash server/r4-master/part4_r2_final_merge_prepare.sh prepare "$PLAN" "$OUT" "$RUNNER_TEMP/freeze/PROYECTOS_MANIFEST.jsonl.gz"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: r4-part4-r2-final-merge-preboot
+          path: ${{ runner.temp }}/r4-part4-r2-final-merge-preboot-${{ github.run_id }}/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+  g23_preboot:
+    name: G23 validate candidate root before boot switch
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-final-merge-preboot
+          path: ${{ runner.temp }}/pre
+      - name: Validate project integrity, boot rollback and candidate root evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/pre/PREBOOT_STATE.json" "$RUNNER_TEMP/pre/CANDIDATE_BOOT_ENTRY.json" "$RUNNER_TEMP/g23/G23_PREBOOT.json" <<'PY'
+          import hashlib,json,pathlib,sys,datetime as dt
+          sp=pathlib.Path(sys.argv[1]); bp=pathlib.Path(sys.argv[2]); out=pathlib.Path(sys.argv[3])
+          s=json.loads(sp.read_text()); b=json.loads(bp.read_text())
+          verifies=[]
+          for n in ("VERIFY_PROJECTS_BEFORE_RELOCATION.json","VERIFY_PROJECTS_AFTER_RELOCATION.json","VERIFY_PROJECTS_AFTER_ROOT_COPY.json"):
+              p=sp.parent/n; d=json.loads(p.read_text()); verifies.append((n,d))
+          checks={
+            "preboot_pass":s.get("status")=="PASS",
+            "candidate_p3":s.get("candidate_root")=="/dev/nvme0n1p3",
+            "oldroot_p5":s.get("current_root")=="/dev/nvme0n1p5",
+            "efi_p1":s.get("efi")=="/dev/nvme0n1p1",
+            "oldroot_preserved":s.get("old_root_preserved") is True,
+            "old_efi_preserved":s.get("existing_efi_entry_preserved") is True,
+            "candidate_label":b.get("label")=="LOUKSNA-P3",
+            "candidate_bootnum":isinstance(b.get("bootnum"),str) and len(b["bootnum"])==4,
+            "projects_all_pass":all(d.get("status")=="PASS" and d.get("mismatch_count")==0 for _,d in verifies),
+            "projects_manifest":all(d.get("manifest_sha256")=="99346fd6032b548b8de0b9bf7d8a671d1ccd048dd6d2309cd82b754866916d0e" for _,d in verifies),
+            "postboot_dispatch":s.get("postboot_dispatch_installed") is True,
+            "checkpoints":all((sp.parent/n).is_file() for n in ("PARTITION_TABLE_PREBOOT.sfdisk","fstab.oldroot.before","grub.cfg.oldroot.before","efibootmgr.before.txt")),
+          }
+          passed=all(checks.values())
+          r={"schema":"LOUKSNA_R4_PART4_R2_PREBOOT_G23/1.0","status":"PASS" if passed else "HOLD",
+             "checks":checks,"preboot_sha256":hashlib.sha256(sp.read_bytes()).hexdigest(),
+             "boot_entry_sha256":hashlib.sha256(bp.read_bytes()).hexdigest(),
+             "candidate_bootnum":b.get("bootnum"),"candidate_root_uuid":s.get("candidate_root_uuid"),
+             "g24_allowed":passed,"validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          out.write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,indent=2,sort_keys=True))
+          if not passed: raise SystemExit(3)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-preboot-g23
+          path: ${{ runner.temp }}/g23/G23_PREBOOT.json
+          retention-days: 90
+          compression-level: 0
+
+  g24_preboot:
+    name: G24 certify one-shot boot switch
+    needs: g23_preboot
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-preboot-g23
+          path: ${{ runner.temp }}/g23
+      - name: Issue preboot certificate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G23="$RUNNER_TEMP/g23/G23_PREBOOT.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$G23")" = PASS
+          H="$(sha256sum "$G23"|awk '{print $1}')"
+          B="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["candidate_bootnum"])' "$G23")"
+          U="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["candidate_root_uuid"])' "$G23")"
+          AUD="louksna-r4-part4-r2-preboot:$B:$U:$H"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export TOKEN H B U AUD
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$RUNNER_TEMP/g24/G24_PREBOOT.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          token=os.environ["TOKEN"]; parts=token.split("."); payload=parts[1]+"="*((4-len(parts[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload)); aud=claims.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          r={"schema":"LOUKSNA_R4_PART4_R2_PREBOOT_G24/1.0","status":"PASS","scope":"ONE_SHOT_BOOT_TO_P3_WITH_P5_ROLLBACK_PRESERVED",
+             "candidate_bootnum":os.environ["B"],"candidate_root_uuid":os.environ["U"],"g23_sha256":os.environ["H"],
+             "authority_authenticated":True,"authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(token.encode()).hexdigest(),
+             "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()}
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-preboot-g24
+          path: ${{ runner.temp }}/g24/G24_PREBOOT.json
+          retention-days: 90
+          compression-level: 0
+
+  switch_boot:
+    name: Set one-shot BootNext to P3 and reboot
+    needs: g24_preboot
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-preboot-g24
+          path: ${{ runner.temp }}/g24
+      - name: Bind certified boot target into both states and reboot
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          CERT="$RUNNER_TEMP/g24/G24_PREBOOT.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$CERT")" = PASS
+          BOOTNUM="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["candidate_bootnum"])' "$CERT")"
+          ROOTUUID="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["candidate_root_uuid"])' "$CERT")"
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9/PART_4_R2/STATE.json"
+          MNT="$RUNNER_TEMP/louksna-p3-preboot-state"
+          mkdir -p "$MNT"
+          sudo -n mount -t ext4 /dev/nvme0n1p3 "$MNT"
+          export CERT STATE MNT BOOTNUM ROOTUUID
+          python3 - <<'PY'
+          import hashlib,json,os,time
+          cert=os.environ["CERT"]; boot=os.environ["BOOTNUM"]; uuid=os.environ["ROOTUUID"]
+          targets=[
+            os.environ["STATE"],
+            os.path.join(os.environ["MNT"],"home/diegoignacionorambuenamiranda/.local/state/louksna/r4-master-part1-part9/PART_4_R2/STATE.json")
+          ]
+          for sp in targets:
+              s=json.load(open(sp))
+              s.update({
+                "final_merge_preboot_g24":True,
+                "final_merge_preboot_g24_sha256":hashlib.sha256(open(cert,"rb").read()).hexdigest(),
+                "candidate_root_uuid":uuid,"candidate_bootnum":boot,
+                "boot_switch_pending":True,
+                "updated_at_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
+              })
+              t=sp+".tmp"; json.dump(s,open(t,"w"),indent=2,sort_keys=True); os.replace(t,sp)
+          PY
+          sync
+          sudo -n umount "$MNT"
+          sudo -n efibootmgr -n "$BOOTNUM"
+          efibootmgr -v
+          sudo -n systemctl reboot --no-block
+          echo "BOOT_SWITCH=DISPATCHED_TO_P3"

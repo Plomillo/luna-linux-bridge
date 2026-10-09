@@ -1,0 +1,11 @@
+{
+  "schema": "LOUKSNA_R4_MASTER_RESUME_REQUEST/1.0",
+  "reason": "DEPLOY_FULL_GITHUB_JSON_CERT_DISCOVERY_FIX",
+  "controller_commit": "483f0d335b4760e6ac7833410c274ad88d74416c",
+  "preserve_stage12_closed": true,
+  "preserve_part4_evidence": true,
+  "require_no_disk_mutation": true,
+  "require_no_filesystem_mutation": true,
+  "expected_next_operation": "PART4_CANONICAL_CERTIFICATION",
+  "requested_at_utc": "2026-10-01T21:27:00Z"
+}

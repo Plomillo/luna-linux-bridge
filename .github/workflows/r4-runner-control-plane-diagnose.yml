@@ -1,0 +1,49 @@
+name: "R4 — runner control-plane diagnosis"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-runner-control-plane-diagnose.yml
+      - mission-control/r4-runner-control-plane-diagnose/**
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Inspect current queued self-hosted jobs without host mutation
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          for TARGET_JOB_ID in 111892111878 111893874604 111898962567; do
+            echo "=== JOB $TARGET_JOB_ID ==="
+            gh api "repos/Plomillo/luna-linux-bridge/actions/jobs/$TARGET_JOB_ID" > "job-$TARGET_JOB_ID.json"
+            python3 - "$TARGET_JOB_ID" "job-$TARGET_JOB_ID.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[2]))
+          print(json.dumps({
+            "id":d.get("id"),
+            "name":d.get("name"),
+            "status":d.get("status"),
+            "conclusion":d.get("conclusion"),
+            "runner_id":d.get("runner_id"),
+            "runner_name":d.get("runner_name"),
+            "runner_group_id":d.get("runner_group_id"),
+            "runner_group_name":d.get("runner_group_name"),
+            "labels":d.get("labels"),
+            "started_at":d.get("started_at"),
+            "completed_at":d.get("completed_at")
+          },sort_keys=True))
+          PY
+          done
+          echo "HOST_MUTATION=FALSE"
+          echo "QUEUE_MUTATION=FALSE"
+          echo "DESKTOP_COMMANDER_USED=FALSE"

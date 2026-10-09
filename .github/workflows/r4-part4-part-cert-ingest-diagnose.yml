@@ -1,0 +1,101 @@
+name: "R4 PART4 — diagnose local G24 ingest"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - .github/workflows/r4-part4-part-cert-ingest-diagnose.yml
+      - mission-control/r4-part4-part-cert-ingest-diagnose/**
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  diagnose:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 8
+    steps:
+      - name: Diagnose without state mutation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/part4-cert-ingest-diag-$GITHUB_RUN_ID"
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9"
+          mkdir -p "$OUT/download"
+
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+
+          cp "$STATE/MASTER_STATUS.json" "$OUT/MASTER_STATUS.json"
+          cp "$STATE/evidence/PART_4.json" "$OUT/PART4_EVIDENCE.json"
+          if test -f "$STATE/certificates/PART_4.json"; then cp "$STATE/certificates/PART_4.json" "$OUT/PART4_CERTIFICATE.json"; fi
+          systemctl --user show luna-r4-master-part1-part9.service -p ActiveState -p SubState -p MainPID -p Result -p NRestarts > "$OUT/SERVICE.txt"
+          journalctl --user -u luna-r4-master-part1-part9.service --since "2026-10-01 21:19:00 UTC" --no-pager -o short-iso > "$OUT/JOURNAL.txt" || true
+          ps -eo pid,ppid,stat,etime,args --forest > "$OUT/PROCESS_TREE.txt"
+          grep -E 'master_controller|gh run watch|gh run download|luna-r4-master' "$OUT/PROCESS_TREE.txt" > "$OUT/PROCESS_RELEVANT.txt" || true
+          gh --version > "$OUT/GH_VERSION.txt" 2>&1 || true
+
+          set +e
+          gh run download 36928131667 --repo Plomillo/luna-linux-bridge -n r4-master-g24 -D "$OUT/download" > "$OUT/GH_DOWNLOAD.stdout" 2> "$OUT/GH_DOWNLOAD.stderr"
+          GHRC=$?
+          set -e
+          echo "$GHRC" > "$OUT/GH_DOWNLOAD.rc"
+
+          find "$OUT/download" -maxdepth 3 -printf '%y %p\n' | sort > "$OUT/DOWNLOAD_TREE.txt" || true
+
+          OUT="$OUT" python3 - <<'PY'
+          import hashlib,json,os,pathlib,datetime as dt
+          out=pathlib.Path(os.environ["OUT"])
+          ms=json.loads((out/"MASTER_STATUS.json").read_text())
+          ev=json.loads((out/"PART4_EVIDENCE.json").read_text())
+          local_cert=json.loads((out/"PART4_CERTIFICATE.json").read_text()) if (out/"PART4_CERTIFICATE.json").is_file() else None
+          candidates=list((out/"download").rglob("G24.json"))
+          remote=json.loads(candidates[0].read_text()) if len(candidates)==1 else None
+
+          def sha(p):
+              h=hashlib.sha256()
+              with pathlib.Path(p).open("rb") as f:
+                  for b in iter(lambda:f.read(1024*1024),b""):
+                      h.update(b)
+              return h.hexdigest()
+
+          ev_sha=sha(out/"PART4_EVIDENCE.json")
+          q={
+              "schema":"LOUKSNA_R4_PART4_CERT_INGEST_DIAG/1.0",
+              "status":"PASS",
+              "master_status":ms.get("status"),
+              "master_error":ms.get("error"),
+              "master_traceback":ms.get("traceback"),
+              "master_updated_at_utc":ms.get("updated_at_utc"),
+              "part4_evidence_status":ev.get("status"),
+              "part4_evidence_sha256":ev_sha,
+              "local_certificate_present":local_cert is not None,
+              "gh_download_rc":int((out/"GH_DOWNLOAD.rc").read_text().strip()),
+              "gh_download_stdout":(out/"GH_DOWNLOAD.stdout").read_text(errors="replace")[-4000:],
+              "gh_download_stderr":(out/"GH_DOWNLOAD.stderr").read_text(errors="replace")[-4000:],
+              "downloaded_g24_candidates":[str(x.relative_to(out)) for x in candidates],
+              "downloaded_g24_present":remote is not None,
+              "downloaded_g24_status":remote.get("status") if remote else None,
+              "downloaded_g24_part":remote.get("part") if remote else None,
+              "downloaded_g24_evidence_sha256":remote.get("evidence_sha256") if remote else None,
+              "downloaded_g24_matches_local_evidence":remote is not None and remote.get("evidence_sha256")==ev_sha,
+              "downloaded_g24_sha256":sha(candidates[0]) if len(candidates)==1 else None,
+              "process_relevant":(out/"PROCESS_RELEVANT.txt").read_text(errors="replace")[-8000:],
+              "observed_at_utc":dt.datetime.now(dt.timezone.utc).isoformat(),
+          }
+          (out/"DIAG.json").write_text(json.dumps(q,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(q,indent=2,sort_keys=True))
+          PY
+
+      - name: Upload diagnosis
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-cert-ingest-diagnosis
+          path: ${{ runner.temp }}/part4-cert-ingest-diag-${{ github.run_id }}
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 0

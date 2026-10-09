@@ -1,0 +1,36 @@
+name: "LUNA R4 — live master probe"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-master-probe/**
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 3
+    steps:
+      - name: Read current master state
+        shell: bash
+        run: |
+          set +e
+          UIDN="$(id -u)"
+          export XDG_RUNTIME_DIR="/run/user/$UIDN"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$UIDN/bus"
+          STATE="$HOME/.local/state/louksna/r4-master-part1-part9"
+          UNIT="luna-r4-master-part1-part9.service"
+          echo "=== SERVICE ==="
+          systemctl --user show "$UNIT" -p ActiveState -p SubState -p Result -p ExecMainStatus -p MainPID -p NRestarts
+          echo "=== STATUS ==="
+          test -f "$STATE/MASTER_STATUS.json" && cat "$STATE/MASTER_STATUS.json" || echo MISSING
+          echo "=== IDENTITY ==="
+          test -f "$STATE/IDENTITY.json" && cat "$STATE/IDENTITY.json" || echo MISSING
+          echo "=== PERMISSION ==="
+          test -f "$STATE/PERMISSION_REQUEST.json" && cat "$STATE/PERMISSION_REQUEST.json" || echo NONE
+          echo "=== JOURNAL ==="
+          journalctl --user -u "$UNIT" -n 120 --no-pager

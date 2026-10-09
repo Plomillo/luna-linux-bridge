@@ -1,0 +1,19 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_FAILURE_RECORD/1.0",
+  "failed_run": 36660964872,
+  "failed_job": 109715411014,
+  "failed_step": "Execute certified storage transaction",
+  "status": "FAIL_CLOSED_HOLD",
+  "irreversible_mutation_reached": false,
+  "observed_failure": "PermissionError traversing read-only NTFS staging mount source-ntfs/PROYECTOS",
+  "boundary": "failure occurred during VERIFY_SOURCE_PREMUTATION before NTFS_FILESYSTEM_SHRUNK",
+  "source_checkpoint": {
+    "plan_run": 36659004136,
+    "readiness_run": 36659723187,
+    "plan_sha256": "1ad470bee8355836a2492858a9ab1e485923bb1d5de9691d246d3ff813a62b80",
+    "original_script_sha256": "c3b508b92fd6eceda1d74f427b3e0384be4ca2f886efde6cf4416ac1e10032c3"
+  },
+  "remediation": "Use append-only part4_r2_storage_migrate_v2.sh with UID/GID-bound read-only NTFS mounts; restore exact original checkpoint and re-certify fresh plan before mutation.",
+  "canonical_mutation": false,
+  "authority_transfer": false
+}

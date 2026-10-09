@@ -1,0 +1,9 @@
+{
+  "schema": "LOUKSNA_R4_PART4_R2_AUTOPILOT_RESUME/1.0",
+  "status": "AUTHORIZED_TRIGGER",
+  "reason": "G23_G24_AUTOPILOT_CERTIFIED_AND_LOCAL_STATE_PERSISTED; recover from dispatch-only trigger mismatch using existing push path",
+  "autopilot_certification_run": 36625874952,
+  "protected_integrity_run": 36623383678,
+  "failure_posture": "FAIL_CLOSED",
+  "assistant_polling_required": false
+}

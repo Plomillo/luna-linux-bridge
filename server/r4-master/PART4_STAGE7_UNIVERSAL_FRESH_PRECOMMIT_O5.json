@@ -1,0 +1,93 @@
+{
+  "schema": "LOUKSNA_R4_PART4_STAGE7_UNIVERSAL_FRESH_PRECOMMIT_O5/1.0",
+  "directive_id": "PART4-STAGE7-UFPC-O5-20261001",
+  "authority": "Louksna.md",
+  "mission_id": "MIS-e5963403a3b44ee8be96",
+  "worker": {
+    "id": "CUSTOSZ_V7_MAESTRO",
+    "role": "WORKER"
+  },
+  "observer": {
+    "id": "LOUKSNA_REMOTE_BRIDGE",
+    "role": "EYES_AND_LIGHT_READ_ONLY"
+  },
+  "purpose": "PROVE_CURRENT_PHYSICAL_OPERATIONAL_STATE_BEFORE_SINGLE_GPT_COMMIT",
+  "maximum_work_seconds": 90,
+  "expected_state": {
+    "part": "PART_4",
+    "current_stage": 7,
+    "last_completed_stage": 6
+  },
+  "doctrine": {
+    "extend_do_not_replace": true,
+    "append_only": true,
+    "fail_closed_with_antiparalysis": true,
+    "no_silent_operations": true,
+    "physical_truth_over_stale_state": true,
+    "no_automatic_certification_propagation": true,
+    "g23_required": true,
+    "g24_required": true
+  },
+  "puac2_operational_mapping": {
+    "C25": "SCOPE_AND_CLAIM_BOUNDARY",
+    "C26": "PRIMARY_EVIDENCE_AND_PROVENANCE",
+    "C27": "INDEPENDENT_VALIDATION",
+    "C28": "RISK_AND_FAILURE_EXPOSURE",
+    "C29": "INTEGRITY_DETERMINISM_REPRODUCIBILITY",
+    "C30": "INTEGRATION_AND_NON_REGRESSION",
+    "C31": "REVERSIBILITY_RECOVERY_ROLLBACK",
+    "C32": "VALIDITY_REEVALUATION_AND_CONTINUITY",
+    "status": "PROJECT_OPERATIONAL_MAPPING_NOT_CLAIMED_AS_VERBATIM_CANONICAL_TEXT"
+  },
+  "required_domains": [
+    "TEMPORAL_COHERENCE",
+    "PHYSICAL_HEALTH",
+    "GPT_GEOMETRY",
+    "KERNEL_VIEW",
+    "FILESYSTEM_STATE",
+    "ROOT_IDENTITY",
+    "OPERATIONAL_STATE",
+    "AUTHORIZATION_STATE",
+    "EVIDENCE_STATE",
+    "RECOVERY_READINESS",
+    "CONTRADICTION_MATRIX",
+    "EXPECTED_DELTA"
+  ],
+  "expected_geometry": {
+    "disk": "/dev/nvme0n1",
+    "partition": 3,
+    "p1_start": 2048,
+    "p1_end": 534527,
+    "p3_start": 567296,
+    "p3_current_end": 854409528,
+    "free_tail_start": 854409529,
+    "authorized_new_end": 1000215182
+  },
+  "expected_identity": {
+    "root": "/dev/nvme0n1p3",
+    "fstype": "ext4",
+    "uuid": "e084ec2a-af39-48b5-bb89-db2dc6a98332",
+    "partuuid": "8e0b4274-21ff-4b16-8180-495381efb1d9"
+  },
+  "expected_delta": {
+    "only_change_if_later_committed": "P3_TRAILING_END",
+    "old_end": 854409528,
+    "new_end": 1000215182,
+    "delta_sectors": 145805654
+  },
+  "boundaries": {
+    "partition_geometry_mutation_authorized": false,
+    "filesystem_resize_authorized": false,
+    "reboot_authorized": false,
+    "active_device_test_authorized": false,
+    "package_installation_authorized": false,
+    "stage7_commit_authorized_by_this_directive": false
+  },
+  "start_certification": {
+    "evidence_required": true,
+    "g23_independent_required": true,
+    "g24_required": true,
+    "after_start_g24": "ALLOW_UFPC_O5_READ_ONLY_WORK_TO_CONTINUE_UNATTENDED"
+  },
+  "terminal_next_action_on_pass": "AWAIT_EXPLICIT_STAGE7_COMMIT_AUTHORIZATION"
+}

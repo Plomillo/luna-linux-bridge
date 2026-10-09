@@ -1,0 +1,15 @@
+{
+  "schema": "LOUKSNA_R4_OPERATE_NOW/1.0",
+  "purpose": "Deploy PART3 alias-aware PROYECTOS-first discovery correction",
+  "priority": [
+    "PROYECTOS",
+    "SEMANTIC_CONTAINER"
+  ],
+  "authorized_by_user": true,
+  "constraints": [
+    "FAIL_CLOSED",
+    "NO_FAKE_PASS",
+    "ROLLBACK_REQUIRED",
+    "LOUKSNA_AUTHORITY"
+  ]
+}

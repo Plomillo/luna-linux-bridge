@@ -1,0 +1,7 @@
+{
+  "mission": "PART4_DETERMINISTIC_PAYLOAD_DEDUP",
+  "authority": "explicit user authorization",
+  "policy": "mission-control/r4-part4-dedup-policy/DETERMINISTIC_POLICY_20260929.md",
+  "execution": "produce exact KEEP/DELETE set; prevalidate; execute only proven SHA-256 duplicates and authorized Debian/KDE installation media; post-validate; G23/G24",
+  "fail_closed": true
+}

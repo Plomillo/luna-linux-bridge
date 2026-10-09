@@ -1,0 +1,11 @@
+{
+  "mission_id": "MIS-e5963403a3b44ee8be96",
+  "directive_id": "PRE-STAGE7-NVME-HEALTH-GATE-HARDENED-20261001",
+  "action": "RECOVER_HEALTH_OBSERVATION_FROM_SAME_GATE_WITHOUT_REINSTALL",
+  "authority": "Louksna.md",
+  "expected_current_stage": 7,
+  "package_installation_repetition_authorized": false,
+  "partition_geometry_mutation_authorized": false,
+  "filesystem_resize_authorized": false,
+  "active_device_test_authorized": false
+}

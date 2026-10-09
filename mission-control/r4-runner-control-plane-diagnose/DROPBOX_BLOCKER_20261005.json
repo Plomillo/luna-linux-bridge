@@ -1,0 +1,9 @@
+{
+  "schema": "LOUKSNA_R4_RUNNER_CONTROL_PLANE_DIAGNOSIS_REQUEST/1.0",
+  "requested_at_utc": "2026-10-05T17:51:00Z",
+  "mode": "READ_ONLY_GITHUB_HOSTED",
+  "purpose": "Determine whether self-hosted luna-linux is online/offline/busy while preserving queued repository processes.",
+  "desktop_commander_used": false,
+  "host_mutation": false,
+  "queue_mutation": false
+}

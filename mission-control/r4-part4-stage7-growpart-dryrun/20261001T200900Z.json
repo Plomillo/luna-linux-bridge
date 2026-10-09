@@ -1,0 +1,7 @@
+{
+  "mission_id": "MIS-e5963403a3b44ee8be96",
+  "action": "FRESH_STAGE7_GROWPART_DRYRUN",
+  "authority": "Louksna.md",
+  "read_only": true,
+  "no_disk_mutation": true
+}

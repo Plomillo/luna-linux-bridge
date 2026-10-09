@@ -1,0 +1,221 @@
+name: "R4 PART4 R2 — internal WinRE certified audit"
+
+on:
+  push:
+    branches:
+      - staging/luna-r4-master-part1-part9-20260929
+    paths:
+      - mission-control/r4-part4-r2-winre-inventory/**
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: r4-part4-r2-winre-certified-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 15
+    steps:
+      - name: Forensic read-only audit and checkpoint
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+          DISK=/dev/nvme0n1
+          P3=/dev/nvme0n1p3
+          P4=/dev/nvme0n1p4
+          WINROOT=/media/diegoignacionorambuenamiranda/Windows
+          EFI=/boot/efi
+          TMP="$RUNNER_TEMP/winre-p4"
+          OUT="$RUNNER_TEMP/winre-audit"
+          mkdir -p "$TMP" "$OUT"
+
+          test "$(hostname)" = LOUKSNA
+          test "$(id -un)" = diegoignacionorambuenamiranda
+          sudo -k
+          sudo -n true
+          sudo -n /usr/sbin/visudo -c
+          test "$(sudo -n /usr/sbin/blkid -p -s UUID -o value "$P3")" = F2848A148489DC0B
+          test "$(sudo -n /usr/sbin/blkid -p -s UUID -o value "$P4")" = CADE667DDE666225
+          test "$(findmnt -T "$WINROOT" -n -o SOURCE)" = "$P3"
+          test "$(findmnt -T "$WINROOT" -n -o FSTYPE)" = ntfs3
+          test -d "$WINROOT/PROYECTOS"
+          mapfile -t top < <(find "$WINROOT" -mindepth 1 -maxdepth 1 -printf '%f\n' | sort)
+          test "${#top[@]}" -eq 1
+          test "${top[0]}" = PROYECTOS
+
+          sudo -n sfdisk --dump "$DISK" > "$OUT/PARTITION_TABLE.sfdisk"
+          sudo -n efibootmgr -v > "$OUT/EFIBOOTMGR.txt"
+          lsblk -b -J -o NAME,PATH,TYPE,SIZE,FSTYPE,MOUNTPOINTS,UUID,PARTUUID,START > "$OUT/LSBLK.json"
+
+          sudo -n mount -t ntfs3 -o ro "$P4" "$TMP"
+          trap 'sudo -n umount "$TMP" >/dev/null 2>&1 || true' EXIT
+
+          WIM="$TMP/Recovery/WindowsRE/winre.wim"
+          SDI="$TMP/Recovery/WindowsRE/boot.sdi"
+          REAG="$TMP/Recovery/WindowsRE/ReAgent.xml"
+          BCD_BOOT="$EFI/EFI/Microsoft/Boot/BCD"
+          BCD_REC="$EFI/EFI/Microsoft/Recovery/BCD"
+          BOOTMGFW="$EFI/EFI/Microsoft/Boot/bootmgfw.efi"
+
+          for x in "$WIM" "$SDI" "$REAG" "$BCD_BOOT" "$BCD_REC" "$BOOTMGFW"; do
+            test -f "$x"
+          done
+
+          sha256sum "$WIM" "$SDI" "$REAG" "$BCD_BOOT" "$BCD_REC" "$BOOTMGFW" > "$OUT/HASHES.sha256"
+          cp "$REAG" "$OUT/ReAgent.xml"
+          strings -el "$BCD_REC" > "$OUT/BCD_RECOVERY.strings.txt" || true
+          strings -el "$BCD_BOOT" > "$OUT/BCD_BOOT.strings.txt" || true
+
+          python3 - "$OUT" "$TMP" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,sys
+          out=pathlib.Path(sys.argv[1]); tmp=pathlib.Path(sys.argv[2])
+          reag=(out/"ReAgent.xml").read_text(encoding="utf-8",errors="replace")
+          rec=(out/"BCD_RECOVERY.strings.txt").read_text(encoding="utf-8",errors="replace")
+          boot=(out/"BCD_BOOT.strings.txt").read_text(encoding="utf-8",errors="replace")
+          efi=(out/"EFIBOOTMGR.txt").read_text(encoding="utf-8",errors="replace")
+          checks={
+            "winre_wim":(tmp/"Recovery/WindowsRE/winre.wim").stat().st_size==624309008,
+            "boot_sdi":(tmp/"Recovery/WindowsRE/boot.sdi").stat().st_size==3170304,
+            "reagent_xml":"WinreBCD" in reag and "WinreLocation" in reag,
+            "recovery_bcd":len(rec.strip())>0,
+            "boot_bcd":len(boot.strip())>0,
+            "debian_entry":"Boot0000* Debian" in efi,
+            "debian_bootorder_first":"BootOrder: 0000" in efi,
+          }
+          obj={
+            "schema":"LOUKSNA_R4_PART4_R2_WINRE_AUDIT/1.0",
+            "status":"PASS" if all(checks.values()) else "HOLD",
+            "mode":"READ_ONLY",
+            "p3_uuid":"F2848A148489DC0B",
+            "p4_uuid":"CADE667DDE666225",
+            "protected_scope":"/media/diegoignacionorambuenamiranda/Windows/PROYECTOS",
+            "checks":checks,
+            "partition_table_sha256":hashlib.sha256((out/"PARTITION_TABLE.sfdisk").read_bytes()).hexdigest(),
+            "efibootmgr_sha256":hashlib.sha256((out/"EFIBOOTMGR.txt").read_bytes()).hexdigest(),
+            "hash_inventory_sha256":hashlib.sha256((out/"HASHES.sha256").read_bytes()).hexdigest(),
+            "reagent_sha256":hashlib.sha256((out/"ReAgent.xml").read_bytes()).hexdigest(),
+            "recovery_bcd_strings_sha256":hashlib.sha256(rec.encode()).hexdigest(),
+            "boot_bcd_strings_sha256":hashlib.sha256(boot.encode()).hexdigest(),
+            "source_mutated":False,
+            "audited_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          (out/"WINRE_AUDIT.json").write_text(json.dumps(obj,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(obj,indent=2,sort_keys=True))
+          if obj["status"]!="PASS": raise SystemExit(20)
+          PY
+
+          sudo -n umount "$TMP"
+          trap - EXIT
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-winre-audit
+          path: ${{ runner.temp }}/winre-audit/
+          retention-days: 90
+          compression-level: 0
+
+  g23:
+    needs: audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-winre-audit
+          path: ${{ runner.temp }}/audit
+      - name: Independent validation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 - "$RUNNER_TEMP/audit/WINRE_AUDIT.json" "$RUNNER_TEMP/g23/G23_WINRE.json" <<'PY'
+          import datetime as dt,hashlib,json,pathlib,sys
+          p=pathlib.Path(sys.argv[1]); d=json.loads(p.read_text()); out=pathlib.Path(sys.argv[2])
+          checks={
+            "producer_pass":d.get("status")=="PASS",
+            "read_only":d.get("mode")=="READ_ONLY" and d.get("source_mutated") is False,
+            "p3_uuid":d.get("p3_uuid")=="F2848A148489DC0B",
+            "p4_uuid":d.get("p4_uuid")=="CADE667DDE666225",
+            "protected_scope":d.get("protected_scope")=="/media/diegoignacionorambuenamiranda/Windows/PROYECTOS",
+            "all_checks":all(d.get("checks",{}).values()),
+            "partition_checkpoint":len(d.get("partition_table_sha256",""))==64,
+            "efi_checkpoint":len(d.get("efibootmgr_sha256",""))==64,
+            "asset_hash_checkpoint":len(d.get("hash_inventory_sha256",""))==64,
+          }
+          ok=all(checks.values())
+          r={
+            "schema":"LOUKSNA_R4_PART4_R2_WINRE_G23/1.0",
+            "status":"PASS" if ok else "HOLD",
+            "scope":"INTERNAL_WINRE_AUDIT",
+            "audit_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),
+            "checks":checks,
+            "repair_allowed":False,
+            "g24_allowed":ok,
+            "validated_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          out.write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,indent=2,sort_keys=True))
+          if not ok: raise SystemExit(3)
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-winre-g23
+          path: ${{ runner.temp }}/g23/G23_WINRE.json
+          retention-days: 90
+          compression-level: 0
+
+  g24:
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: r4-part4-r2-winre-g23
+          path: ${{ runner.temp }}/g23
+      - name: Digest-bound certification
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          G="$RUNNER_TEMP/g23/G23_WINRE.json"
+          test "$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["status"])' "$G")" = PASS
+          H="$(sha256sum "$G" | awk '{print $1}')"
+          AUD="louksna-r4-part4-r2-winre:$H"
+          RESP="$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$AUD")"
+          TOKEN="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["value"])' "$RESP")"
+          export H AUD TOKEN
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 - "$RUNNER_TEMP/g24/G24_WINRE.json" <<'PY'
+          import base64,datetime as dt,hashlib,json,os,pathlib,sys
+          token=os.environ["TOKEN"]; parts=token.split(".")
+          if len(parts)!=3: raise SystemExit("OIDC_FORMAT")
+          payload=parts[1]+"="*((4-len(parts[1])%4)%4)
+          claims=json.loads(base64.urlsafe_b64decode(payload))
+          aud=claims.get("aud"); exp=os.environ["AUD"]
+          if aud!=exp and not (isinstance(aud,list) and exp in aud): raise SystemExit("OIDC_AUDIENCE")
+          if claims.get("repository")!="Plomillo/luna-linux-bridge": raise SystemExit("OIDC_REPOSITORY")
+          cert={
+            "schema":"LOUKSNA_R4_PART4_R2_WINRE_G24/1.0",
+            "status":"PASS",
+            "scope":"INTERNAL_WINRE_ASSETS_AUDITED",
+            "g23_sha256":os.environ["H"],
+            "authority_authenticated":True,
+            "authority_reference":"GITHUB_OIDC_JWT_SHA256:"+hashlib.sha256(token.encode()).hexdigest(),
+            "does_not_authorize_reboot":True,
+            "does_not_authorize_bcd_mutation":True,
+            "certified_at_utc":dt.datetime.now(dt.timezone.utc).isoformat()
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(cert,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(cert,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: r4-part4-r2-winre-g24
+          path: ${{ runner.temp }}/g24/G24_WINRE.json
+          retention-days: 90
+          compression-level: 0

@@ -1,0 +1,41 @@
+{
+  "schema": "LOUKSNA_R4_15P_DEPLOY_AMENDMENT/1.0",
+  "status": "AUTHORIZED",
+  "scope": "P10_URI_NAVIGATION_AND_SEMANTIC_SEARCH_DETECTOR_ONLY",
+  "source_head": "0f901856b7a25b2418ce27542b082745924edc04",
+  "preserve_existing_point_certificates": [
+    "P01",
+    "P02",
+    "P03",
+    "P04",
+    "P05",
+    "P06",
+    "P07",
+    "P08",
+    "P09",
+    "P11"
+  ],
+  "preserve_part_certificates": [
+    "PART_1",
+    "PART_2",
+    "PART_3",
+    "PART_4",
+    "PART_5",
+    "PART_6",
+    "PART_7",
+    "PART_8",
+    "PART_9"
+  ],
+  "identical_retry": false,
+  "changed_strategy_required": true,
+  "kde_panel_mutation_authorized": false,
+  "xbel_rewrite_authorized": false,
+  "wallpaper_mutation_authorized": false,
+  "debian_redownload_authorized": false,
+  "kde_redownload_authorized": false,
+  "desktop_commander_used": false,
+  "lrb_observation_only": true,
+  "part4_reopen_authorized": false,
+  "partitioning_authorized": false,
+  "created_at_utc": "2026-10-02T12:47:00Z"
+}
