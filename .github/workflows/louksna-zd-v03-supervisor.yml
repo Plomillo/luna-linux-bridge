@@ -116,7 +116,83 @@ jobs:
                       "created_at": latest.get("created_at"),
                       "html_url": latest.get("html_url"),
                   }
-                  if latest.get("status") != "completed":
+                  # Second-order monitor: inspect real job states and same-run artifacts, not only the workflow conclusion.
+              try:
+                  _, job_data = request(f"{api}/repos/{repo}/actions/runs/{latest['id']}/jobs?per_page=100")
+                  _, artifact_data = request(f"{api}/repos/{repo}/actions/runs/{latest['id']}/artifacts?per_page=100")
+                  observed_jobs = job_data.get("jobs", [])
+                  observed_artifacts = [a for a in artifact_data.get("artifacts", []) if not a.get("expired")]
+                  expected_artifacts = [
+                      "louksna-zd-v03-cp01-repository-audit",
+                      "louksna-zd-v03-cp02-contract-linkage",
+                      "louksna-zd-v03-cp03-backend-ledger",
+                      "louksna-zd-v03-cp04-github-bridge",
+                      "louksna-zd-v03-cp05-ui-telemetry",
+                      "louksna-zd-v03-cp06-functions-attachments",
+                      "louksna-zd-v03-cp07-voice-gate-open",
+                      "louksna-zd-v03-cp07-playwright-ui-e2e",
+                      "louksna-zd-v03-cp08-build-package",
+                      "louksna-zd-v03-cp09-debian13-container-smoke",
+                  ]
+                  artifact_names = [a.get("name", "") for a in observed_artifacts]
+                  counts = {name: artifact_names.count(name) for name in set(artifact_names)}
+                  duplicate_names = sorted(name for name, count in counts.items() if count > 1)
+                  missing_artifacts = [name for name in expected_artifacts if name not in artifact_names]
+                  gate_rows = []
+                  for job in observed_jobs:
+                      name = job.get("name", "")
+                      import re
+                      match = re.search(r"CP-(\\d\\d)", name)
+                      if match:
+                          gate_rows.append({
+                              "checkpoint": "CP-" + match.group(1),
+                              "job_name": name,
+                              "status": job.get("status"),
+                              "conclusion": job.get("conclusion"),
+                              "job_id": job.get("id"),
+                              "html_url": job.get("html_url"),
+                          })
+                  same_sha_runs = [
+                      {"id": r.get("id"), "status": r.get("status"), "conclusion": r.get("conclusion"), "html_url": r.get("html_url")}
+                      for r in runs if r.get("head_sha") == latest.get("head_sha")
+                  ]
+                  result["monitoring"] = {
+                      "target_run_id": latest.get("id"),
+                      "target_run_url": latest.get("html_url"),
+                      "candidate_sha": latest.get("head_sha"),
+                      "jobs": gate_rows,
+                      "active_artifacts": [{"name": a.get("name"), "size_in_bytes": a.get("size_in_bytes"), "expired": a.get("expired")} for a in observed_artifacts],
+                      "missing_expected_artifacts": missing_artifacts,
+                      "duplicate_artifact_names": duplicate_names,
+                      "runs_for_same_sha": same_sha_runs,
+                      "anti_duplication": "PASS" if not duplicate_names else "HOLD_DUPLICATE_ARTIFACT_NAMES",
+                      "evidence_completeness": "INCOMPLETE" if missing_artifacts else "EXPECTED_ARTIFACTS_PRESENT",
+                      "certification_inferred": False,
+                  }
+                  if duplicate_names:
+                      result["findings"].append({
+                          "severity": "BLOCKER", "id": "DUPLICATE_EVIDENCE_ARTIFACT_NAMES",
+                          "detail": "Duplicate artifact names detected within the observed run: " + ", ".join(duplicate_names)
+                      })
+                  if missing_artifacts:
+                      result["findings"].append({
+                          "severity": "INFO" if latest.get("status") != "completed" else "WARNING",
+                          "id": "EXPECTED_EVIDENCE_ARTIFACTS_NOT_YET_PRESENT",
+                          "detail": "Missing same-run artifacts (may indicate stages not reached or evidence not uploaded): " + ", ".join(missing_artifacts)
+                      })
+                  failed_jobs = [j for j in observed_jobs if j.get("conclusion") == "failure"]
+                  if failed_jobs:
+                      result["findings"].append({
+                          "severity": "BLOCKER", "id": "FAILED_CHECKPOINT_JOBS",
+                          "detail": "; ".join(j.get("name", "unknown") + " [" + str(j.get("id")) + "]" for j in failed_jobs)
+                      })
+              except Exception as inspect_exc:
+                  result["monitoring"] = {"status": "MONITOR_QUERY_FAILED", "error": type(inspect_exc).__name__ + ": " + str(inspect_exc)[:400]}
+                  result["findings"].append({
+                      "severity": "BLOCKER", "id": "CHECKPOINT_TELEMETRY_QUERY_FAILED",
+                      "detail": "Could not inspect latest-run jobs/artifacts: " + type(inspect_exc).__name__ + ": " + str(inspect_exc)[:400]
+                  })
+              if latest.get("status") != "completed":
                       result["observation"] = "IN_PROGRESS"
                       result["findings"].append({
                           "severity": "INFO",
