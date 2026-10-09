@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Louksna
+GenericName=Louksna Linux Bridge
+Comment=Panel de control del puente local de solo lectura
+Exec=/usr/bin/louksna-linux-bridge
+Icon=network-server
+Terminal=false
+Categories=Network;System;
+StartupNotify=true

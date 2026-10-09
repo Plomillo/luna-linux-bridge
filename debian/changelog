@@ -1,3 +1,24 @@
+louksna-linux-bridge (0.4.0-4) unstable; urgency=high
+
+  * Add a real Debian desktop launcher named Louksna.
+  * Add a Tkinter control panel for service state, explicit start/stop, and logs.
+  * Refuse to start the service from the UI when the mTLS configuration is absent.
+  * Keep service disabled on package install and preserve existing trust material.
+
+ -- Louksna Project <maintainers@louksna.invalid>  Fri, 09 Oct 2026 00:15:00 +0000
+
+louksna-linux-bridge (0.4.0-3) unstable; urgency=high
+
+  * Add an explicit, fail-closed local mTLS provisioning command.
+  * Generate separate CA, serverAuth and clientAuth identities; never reuse
+    OpenSSH G23/G24/OWNER public keys as X.509 certificates.
+  * Compute and validate all gateway pins using the runtime's exact schema.
+  * Keep service installation disabled; provisioning never starts the service.
+  * Add packaging checks for provisioning syntax and identity-preservation.
+  * Report build evidence separately from G23/G24 certification and host tests.
+
+ -- Louksna Project <maintainers@louksna.invalid>  Thu, 08 Oct 2026 23:00:00 +0000
+
 louksna-linux-bridge (0.4.0-2) unstable; urgency=high
 
   * Do not enable or start the mTLS service during package installation.
