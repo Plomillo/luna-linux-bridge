@@ -14,6 +14,8 @@ export JONAS_API_TOKEN='replace-with-a-long-random-secret'
 export JONAS_PERIOD_LIMIT_MICRO_USD='1000000'
 export JONAS_PROTECTED_RESERVE_MICRO_USD='200000'
 export JONAS_DB_PATH='./state/jonas-telemetry.sqlite3'
+# Set five distinct tokens via a local secret manager; never commit actual values.
+export JONAS_FAMILY_RESPONDENT_TOKENS_JSON='{"Sebastián":"<secret-1>","Diego":"<secret-2>","Catalina":"<secret-3>","Marjorie":"<secret-4>","Cristóbal":"<secret-5>"}'
 uvicorn jonas_hott_api.app:app --host 127.0.0.1 --port 8787
 ```
 
@@ -25,6 +27,12 @@ Run tests from the repository root:
 pytest -q tests/test_jonas_hott_api.py tests/test_jonas_account_state.py
 ```
 
+## Family respondent identity and secret handling
+
+Balance submissions require a separate bearer token for each authorized respondent. The server binds the authenticated token to the submitted actor and rejects attempts to submit for another family member. Configure all five entries in `JONAS_FAMILY_RESPONDENT_TOKENS_JSON` through a local secret manager or deployment environment; never commit actual token values. If the mapping is absent, malformed, incomplete, or ambiguous, writes fail closed. The generic API token remains for other authenticated API routes and does not establish a respondent's identity.
+
+The values above are placeholders only. Do not deploy the example budget values or any sample credential.
+
 ## Family-confirmed shared balance observations (initial implementation)
 
 The service stores a shared, append-only history of balance observations and model-catalog snapshots in the configured SQLite database. The balance workflow is to ask each authorized family member directly for the balance they can currently see; there is no integration with a 1min.AI balance API.
@@ -34,6 +42,10 @@ The service stores a shared, append-only history of balance observations and mod
 - `GET /v1/account/credits/history` returns observation history.
 - `POST /v1/models/catalog/snapshots` stores a versioned catalog snapshot.
 - `GET /v1/models/catalog` returns the latest saved snapshot and freshness metadata.
+- `GET /v1/models/recommendations?task=chat&required_capabilities=chat` returns a deterministic shortlist from the saved snapshot.
+- Optional recommendation constraints: `min_quality_score`, `max_latency_ms`, and `max_estimated_cost_credits`. When a constraint is requested, a metric without a valid attached evidence digest fails closed and excludes that candidate.
+- Cost, latency, and quality remain `UNKNOWN` unless the catalog entry carries the corresponding metric and `<metric>_evidence_sha256`. A digest being present is not independent validation.
+- Recommendations return `catalog_source_verified=false` and `certified=false`; this branch does not yet fetch or verify a complete official model catalog endpoint. A saved snapshot is not proof of catalog completeness.
 
 The family uses one shared pool (`family-shared`, unit `credits`) for Sebastián, Diego, Catalina, Marjorie, and Cristóbal. Every participant's response is a separate observation of the same balance; never sum responses. The API compares the latest report per respondent. If current reports disagree, it returns `CONFLICTING` with no confirmed balance and preserves history until participants reconfirm. Each observation records consent, respondent, observation and recording timestamps, and evidence digest. A manual record is not proof of provider-side truth. The service only shares state among clients connected to the same service/database; separate installations need an explicitly configured shared service or controlled synchronization.
 
