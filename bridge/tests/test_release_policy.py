@@ -5,6 +5,9 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 PROVISIONER = (ROOT / "scripts/provision-mtls-local.sh").read_text()
 WORKFLOW = (ROOT / ".github/workflows/louksna-debian-package.yml").read_text()
+SERVICE = (ROOT / "bridge/deploy/louksna-mtls-readonly.service.in").read_text()
+CONTROL = (ROOT / "debian/control").read_text()
+REPORT = (ROOT / "docs/ROOT_CAUSE_REMEDIATION_0.4.0-3.md").read_text()
 
 
 class ReleasePolicyTests(unittest.TestCase):
@@ -27,10 +30,26 @@ class ReleasePolicyTests(unittest.TestCase):
         self.assertLess(PROVISIONER.rindex("VALIDATED=1"), PROVISIONER.index(publish_owner))
 
     def test_lintian_is_not_silenced_and_errors_block_release(self):
-        self.assertNotIn("lintian --no-tag-display-limit \"$DEB\" | tee lintian.txt || true", WORKFLOW)
-        self.assertIn('grep -q \'^E:\' lintian.txt', WORKFLOW)
+        self.assertNotIn('lintian --no-tag-display-limit "$DEB" | tee lintian.txt || true', WORKFLOW)
+        self.assertIn("grep -q '^E:' lintian.txt", WORKFLOW)
         self.assertIn('"HOLD_LINTIAN"', WORKFLOW)
         self.assertIn("lintian.exit", WORKFLOW)
+
+    def test_runtime_identity_matches_root_owned_key_policy_and_is_explicit(self):
+        self.assertIn("User=root", SERVICE)
+        self.assertIn("Group=root", SERVICE)
+        self.assertIn("owner=os.getuid() if field==\"server_key\"", (ROOT / "bridge/mtls_gateway.py").read_text())
+        self.assertIn("ProtectSystem=strict", SERVICE)
+        self.assertIn("NoNewPrivileges=yes", SERVICE)
+        self.assertIn("RestrictAddressFamilies=AF_UNIX AF_INET", SERVICE)
+        self.assertIn("ReadWritePaths=@OWNER_PRIVATE_STATE@", SERVICE)
+
+    def test_release_stays_blocked_without_authoritative_legal_and_contact_metadata(self):
+        self.assertIn("maintainers@louksna.invalid", CONTROL)
+        self.assertIn("debian/copyright", REPORT)
+        self.assertIn("titular autorizado", REPORT)
+        self.assertIn("G23", REPORT)
+        self.assertIn("G24", REPORT)
 
 
 if __name__ == "__main__":
