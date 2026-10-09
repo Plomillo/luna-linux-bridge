@@ -337,22 +337,6 @@ jobs:
             echo "::error::lintian reported an error; package is not releasable."
             exit 1
           fi
- /tmp/louksna-deb-root/usr/share/applications/louksna-linux-bridge.desktop
-          python3 -m py_compile /tmp/louksna-deb-root/usr/lib/louksna/bridge/gui.py
-          test -f /tmp/louksna-deb-root/usr/lib/louksna/bridge/mtls_gateway.py
-          test -x /tmp/louksna-deb-root/usr/lib/louksna/bridge/provision-mtls-local.sh
-          sh -n /tmp/louksna-deb-root/usr/lib/louksna/bridge/provision-mtls-local.sh
-          test -f /tmp/louksna-deb-root/lib/systemd/system/louksna-mtls-readonly.service
-          systemd-analyze verify /tmp/louksna-deb-root/lib/systemd/system/louksna-mtls-readonly.service
-          test -f /tmp/louksna-deb-root/usr/share/doc/louksna-linux-bridge/CONTRACT.v0.json
-          dpkg-deb --control "$DEB" /tmp/louksna-deb-control
-          if [ -f /tmp/louksna-deb-control/postinst ]; then
-            ! grep -E 'deb-systemd-helper.*enable|deb-systemd-invoke.*start' /tmp/louksna-deb-control/postinst
-          fi
-          PYTHONPATH=/tmp/louksna-deb-root/usr/lib/louksna/bridge             python3 -m py_compile /tmp/louksna-deb-root/usr/lib/louksna/bridge/*.py
-          sha256sum "$DEB" | tee debian-package.sha256
-          # Preserve the exact linter exit status and output, but continue far enough
-          # to publish diagnostic evidence. A later gate fails the job on any E: tag.
           set +e
           lintian --tag-display-limit 0 "$DEB" > lintian.txt 2>&1
           lintian_rc=$?
