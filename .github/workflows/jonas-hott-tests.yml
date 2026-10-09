@@ -106,10 +106,13 @@ jobs:
               "jonas_hott_api/family_checkin.html",
               "jonas_hott_api/README.md",
               "scripts/missions/package_jonas_family.py",
+              "scripts/missions/backup_restore_jonas_state.py",
+              "docs/jonas-family-deployment.md",
               "docs/jonas-hott-live-telemetry.md",
               "docs/jonas-three-track-completion-plan.md",
               "tests/test_jonas_hott_api.py",
               "tests/test_jonas_account_state.py",
+              "tests/test_jonas_backup_restore.py",
           ]
           hashes = {}
           for name in tracked:
