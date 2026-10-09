@@ -65,7 +65,7 @@ jobs:
           # Preserve the exact linter exit status and output, but continue far enough
           # to publish diagnostic evidence. A later gate fails the job on any E: tag.
           set +e
-          lintian --no-tag-display-limit "$DEB" > lintian.txt 2>&1
+          lintian --tag-display-limit 0 "$DEB" > lintian.txt 2>&1
           lintian_rc=$?
           set -e
           printf '%s\n' "$lintian_rc" > lintian.exit
