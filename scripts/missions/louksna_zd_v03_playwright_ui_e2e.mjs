@@ -32,7 +32,7 @@ try {
   // Do not keep child stdout/stderr pipes open: npm/Vite can leave inherited
   // handles alive after the E2E report is written, causing the CI step to hang.
   server = spawn("npm", ["run", "dev", "--", "--host", "127.0.0.1", "--port", "4173", "--strictPort"], {
-    cwd: candidate, stdio: "ignore", env: { ...process.env, CI: "true" }
+    cwd: candidate, stdio: "ignore", detached: true, env: { ...process.env, CI: "true" }
   });
   let ready = false;
   for (let i = 0; i < 30; i++) {
@@ -170,14 +170,17 @@ try {
   console.error(error);
   process.exitCode = 1;
 } finally {
-  if (browser) await browser.close().catch(() => {});
+  // Browser shutdown is not part of the test assertion surface. Bound it so the
+  // completed report cannot be held hostage by a stuck Chromium close handshake.
+  if (browser) {
+    await Promise.race([browser.close().catch(() => {}), delay(1500)]);
+  }
   if (server) {
-    if (server.exitCode === null) {
-      server.kill("SIGTERM");
-      await delay(250);
-      if (server.exitCode === null) server.kill("SIGKILL");
-    }
-    // Close all parent-held streams and release Node's event loop deterministically.
+    // npm may leave Vite as a child; terminate the detached process group, not
+    // only the npm parent. All cleanup waits are bounded.
+    try { process.kill(-server.pid, "SIGTERM"); } catch { server.kill("SIGTERM"); }
+    await Promise.race([new Promise(resolve => server.once("exit", resolve)), delay(750)]);
+    try { process.kill(-server.pid, "SIGKILL"); } catch { if (server.exitCode === null) server.kill("SIGKILL"); }
     server.stdout?.destroy();
     server.stderr?.destroy();
     server.unref();
