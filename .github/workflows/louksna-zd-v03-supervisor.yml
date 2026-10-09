@@ -14,6 +14,11 @@ on:
       - scripts/missions/debian13_package_smoke.sh
       - governance/zona-directiva-v03/12_STAGE_GOVERNANCE_CONTRACT.md
   workflow_dispatch:
+  workflow_run:
+    workflows:
+      - "LOUKSNA ZD V0.3 — Sequential Governance Gate"
+    types:
+      - completed
   schedule:
     - cron: "*/15 * * * *"
 
