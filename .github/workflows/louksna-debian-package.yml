@@ -7,6 +7,10 @@ on:
     paths:
       - 'debian/**'
       - 'bridge/**'
+      - 'bridge/tests/**'
+      - 'docs/**'
+      - 'Louksna.md'
+      - 'PUAC2.md'
       - 'scripts/build'
       - 'scripts/provision-mtls-local.sh'
       - '.github/workflows/louksna-debian-package.yml'
