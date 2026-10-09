@@ -626,10 +626,10 @@ jobs:
           blocking=sorted(set(blocking))
           final_status="PASS" if not blocking else "HOLD"
           out=pathlib.Path("evidence/zona-directiva-v03/CP-10-evidence-manifest.json")
-          out.write_text(json.dumps({"schema":"louksna.zd.v03.evidence-manifest.v1","stage_id":"10","checkpoint_id":"CP-10","status":final_status,"candidate_commit_sha":__import__("os").environ["GITHUB_SHA"],"run_id":__import__("os").environ["GITHUB_RUN_ID"],"evidence_count":len(records),"evidence":records,"blocking_reasons":blocking,"next_authorized_stage":"11" if not blocking else "NONE"},indent=2,sort_keys=True)+"\\n")
+          out.write_text(json.dumps({"schema":"louksna.zd.v03.evidence-manifest.v1","stage_id":"10","checkpoint_id":"CP-10","status":final_status,"candidate_commit_sha":__import__("os").environ["GITHUB_SHA"],"run_id":__import__("os").environ["GITHUB_RUN_ID"],"evidence_count":len(records),"evidence":records,"blocking_reasons":blocking,"next_authorized_stage":"11" if not blocking else "NONE"},indent=2,sort_keys=True)+"\n")
           print(json.dumps({"CP-10_status":final_status,"blocking_reasons":blocking},indent=2))
           with open(__import__("os").environ["GITHUB_OUTPUT"],"a") as f:
-              f.write("status="+final_status+"\\n")
+              f.write("status="+final_status+"\n")
           PY
       - name: Preserve CP-10 evidence manifest
         if: always()
