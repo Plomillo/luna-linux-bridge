@@ -54,3 +54,22 @@ The same failed run did not reach Lintian evidence collection or later integrati
 ### Evidence still required
 
 The public repository data located so far does not determine (a) the legal person/entity owning the bridge copyright, (b) the intended license grant, (c) whether all packaged code was authored by that rights holder, or (d) whether any copied/adapted code or bundled assets require third-party notices. These are not facts that Git author metadata or a project architecture document can establish. Do not create a guessed license or represent the package as redistributable without a rights-holder decision or an applicable existing license record.
+
+## Execution of the three closure workstreams — 2026-10-09 UTC
+
+Two actionable repository artifacts have now been committed to this candidate branch:
+
+- `docs/RIGHTS_HOLDER_ATTESTATION_TEMPLATE.md`: structured declaration for rights holder/authorized signer, copyright years and covered paths, explicit license grant, third-party exclusions, and operational maintainer contact. It is deliberately blank where human authority/evidence is required; it is not a license.
+- `docs/SOURCE_PROVENANCE_REGISTER.md`: maps each file group copied by `debian/rules` to its package destination, records what packaging files establish, marks unresolved copyright/license/provenance questions, distinguishes system dependencies from bundled code, and defines the per-file history/content review needed before DEP-5 generation.
+
+### Workstream 1 — rights-holder declaration
+Repository and public web searches did not reveal an applicable rights-holder instrument. The declaration template is ready, but the actual legal name, authority, covered files, copyright years, and explicit redistribution grant cannot be filled from repository commit metadata. No legal declaration was fabricated.
+
+### Workstream 2 — per-file source and third-party provenance
+The register maps the installed file groups from `debian/rules` and `docs/PACKAGE_COMPONENT_INVENTORY.md`. It explicitly records that the packaging rules do not identify a bundled voice/TTS asset and do not copy Debian dependency binaries, while also withholding an unsupported claim that every source file is original or free of copied snippets. Full per-file history/blame and packaged-output comparison remain required; the current connector evidence did not provide a complete file-by-file blame/export suitable to close those questions.
+
+### Workstream 3 — maintainer confirmation
+The public GitHub profile has no public email field, and the commit-attributed email is not proof of a designated package-maintainer contact. No authenticated confirmation from the rights holder/maintainer was found. The template specifies the evidence required. `Louksna Project <maintainers@louksna.invalid>` remains an explicit HOLD marker, not a usable contact.
+
+### Result
+The three workstreams have been advanced as far as repository/web evidence permits and their remaining human-evidence requirements are explicit. This is not legal closure: `debian/copyright` is not generated, and merge/release/redistribution remain blocked. CI must be checked against the latest branch HEAD before any test status is claimed.
