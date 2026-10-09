@@ -1,6 +1,11 @@
 name: "LOUKSNA ZD V0.3 — Second-order automation supervisor"
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/louksna-zd-v03-supervisor.yml"
   workflow_dispatch:
   schedule:
     - cron: "*/15 * * * *"
