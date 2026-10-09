@@ -174,7 +174,19 @@ jobs:
           EOF
           cloud-localds seed.iso user-data meta-data
           qemu-img create -f qcow2 -F qcow2 -b debian-13-genericcloud-amd64.qcow2 debian-vm.qcow2 24G
-          if test -e /dev/kvm; then ACCEL=kvm; else ACCEL=tcg; fi
+          ACCEL=tcg
+          if test -e /dev/kvm; then
+            if qemu-system-x86_64 -machine q35,accel=kvm -cpu max -m 128 -nodefaults -display none -S -daemonize -pidfile /tmp/louksna-kvm-probe.pid 2>kvm-probe.log; then
+              ACCEL=kvm
+              kill "$(cat /tmp/louksna-kvm-probe.pid)" 2>/dev/null || true
+              echo "KVM_PROBE=PASS"
+            else
+              echo "KVM_PROBE=FAIL; falling back to QEMU TCG"
+              cat kvm-probe.log
+            fi
+          else
+            echo "KVM_DEVICE=ABSENT; using QEMU TCG"
+          fi
           printf 'QEMU_ACCEL=%s\n' "$ACCEL" | tee virtualization-mode-actual.txt
           qemu-system-x86_64 \
             -machine "q35,accel=$ACCEL" \
