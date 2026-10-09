@@ -26,7 +26,7 @@ set -Eeuo pipefail
 export DEBIAN_FRONTEND=noninteractive
 apt-get -o Acquire::Retries=3 update
 apt-get -o Acquire::Retries=3 install -y --no-install-recommends \
-  ca-certificates dbus-x11 xvfb timeout file \
+  ca-certificates dbus-x11 xvfb file \
   libwebkit2gtk-4.1-0 libgtk-3-0t64 libayatana-appindicator3-1 \
   libssl3t64 libsecret-1-0 librsvg2-2 libxdo3 libnotify4 libgbm1
 DEB="$(find /input -type f -name "*.deb" -print -quit)"
