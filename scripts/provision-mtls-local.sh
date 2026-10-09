@@ -182,12 +182,14 @@ cfg = mtls_gateway.read_config(sys.argv[1], enforce_root=True)
 print("CONFIG_VALIDATED schema=" + cfg["schema"])
 PY
 
-VALIDATED=1
 # Remove signing key and transient CSRs/extensions; retain CA certificate for server trust.
+# Keep VALIDATED=0 until every publication/permission operation has succeeded, so
+# any failure still takes the bounded rollback path.
 rm -f "$TLS/ca.key" "$TLS/server.csr" "$TLS/server.ext" "$TLS/client.csr" "$TLS/client.ext" "$TLS/ca.srl"
 # Publish the client identity only after all runtime-policy checks passed.
 chown "$OWNER_UID:$OWNER_GID" "$CLIENT"
 chmod 0700 "$CLIENT"
+VALIDATED=1
 trap - EXIT HUP INT TERM
 echo "PROVISIONED: $CONFIG"
 echo "CLIENT_IDENTITY: $CLIENT"
