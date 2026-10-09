@@ -66,7 +66,19 @@ jobs:
           test -f /tmp/louksna-deb-root/usr/share/doc/louksna-linux-bridge/CONTRACT.v0.json
           dpkg-deb --control "$DEB" /tmp/louksna-deb-control
           if [ -f /tmp/louksna-deb-control/postinst ]; then
-            ! grep -E 'deb-systemd-helper.*enable|deb-systemd-invoke.*start' /tmp/louksna-deb-control/postinst
+            python3 - /tmp/louksna-deb-control/postinst <<'PY'
+          import pathlib, re, sys
+          lines=pathlib.Path(sys.argv[1]).read_text(errors="replace").splitlines()
+          text="\n".join(lines)
+          if re.search(r"\\bdeb-systemd-invoke\\s+(?:start|restart|try-restart)\\b", text):
+              raise SystemExit("package postinst invokes service start/restart")
+          for index, line in enumerate(lines):
+              if re.search(r"\\bdeb-systemd-helper\\s+enable\\b", line):
+                  context="\n".join(lines[max(0,index-3):index])
+                  if "was-enabled" not in context:
+                      raise SystemExit("unconditional systemd enable in postinst")
+          print("PACKAGE_SERVICE_POLICY=PASS; no start/restart and no unconditional enable")
+          PY
           fi
           PYTHONPATH=/tmp/louksna-deb-root/usr/lib/louksna/bridge             python3 -m py_compile /tmp/louksna-deb-root/usr/lib/louksna/bridge/*.py
           sha256sum "$DEB" | tee debian-package.sha256
