@@ -122,6 +122,9 @@ jobs:
               "docs/jonas-three-track-completion-plan.md",
               "tests/test_jonas_hott_api.py",
               "tests/test_jonas_account_state.py",
+              "scripts/missions/backup_restore_jonas_state.py",
+              "docs/jonas-family-deployment.md",
+              "tests/test_jonas_backup_restore.py",
           ]
           hashes = {}
           for name in tracked:
