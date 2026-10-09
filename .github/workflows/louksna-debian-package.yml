@@ -29,7 +29,7 @@ jobs:
       - name: Install Debian build toolchain
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends build-essential debhelper-compat dpkg-dev python3 openssl lintian
+          sudo apt-get install -y --no-install-recommends build-essential debhelper-compat dpkg-dev python3 openssl lintian systemd
 
       - name: Verify governed source identity
         run: |
@@ -54,6 +54,7 @@ jobs:
           test -x /tmp/louksna-deb-root/usr/lib/louksna/bridge/provision-mtls-local.sh
           sh -n /tmp/louksna-deb-root/usr/lib/louksna/bridge/provision-mtls-local.sh
           test -f /tmp/louksna-deb-root/lib/systemd/system/louksna-mtls-readonly.service
+          systemd-analyze verify /tmp/louksna-deb-root/lib/systemd/system/louksna-mtls-readonly.service
           test -f /tmp/louksna-deb-root/usr/share/doc/louksna-linux-bridge/CONTRACT.v0.json
           dpkg-deb --control "$DEB" /tmp/louksna-deb-control
           if [ -f /tmp/louksna-deb-control/postinst ]; then
