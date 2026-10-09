@@ -58,7 +58,8 @@ jobs:
           test -f /tmp/louksna-deb-root/usr/lib/louksna/bridge/gui.py
           test -x /tmp/louksna-deb-root/usr/bin/louksna
           test -f /tmp/louksna-deb-root/usr/share/applications/louksna-linux-bridge.desktop
-          grep -q '^Exec=/usr/bin/louksna
+          grep -q '^Exec=/usr/bin/louksna$' /tmp/louksna-deb-root/usr/share/applications/louksna-linux-bridge.desktop
+          test -x /tmp/louksna-deb-root/usr/lib/louksna/bridge/provision-mtls-local.sh
           sh -n /tmp/louksna-deb-root/usr/lib/louksna/bridge/provision-mtls-local.sh
           test -f /tmp/louksna-deb-root/lib/systemd/system/louksna-mtls-readonly.service
           systemd-analyze verify /tmp/louksna-deb-root/lib/systemd/system/louksna-mtls-readonly.service
