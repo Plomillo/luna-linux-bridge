@@ -25,7 +25,7 @@ const bootstrapReport = {
   native_tauri_runtime_tested: false, voice_e2e_executed: false,
   status: "STARTED", failures: ["e2e_not_completed"]
 };
-fs.writeFileSync(reportPath, JSON.stringify(bootstrapReport, null, 2) + "\\n");
+fs.writeFileSync(reportPath, JSON.stringify(bootstrapReport, null, 2) + "\n");
 console.log("CP-07 startup: candidate=" + candidate);
 if (!fs.existsSync(path.join(candidate, "package.json"))) throw new Error("candidate package.json missing");
 console.log("CP-07 startup: resolving Playwright from candidate package");
