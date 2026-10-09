@@ -612,11 +612,24 @@ jobs:
               if d.get("commit_sha") and d["commit_sha"] != __import__("os").environ["GITHUB_SHA"]:
                   raise SystemExit(f"CP-10 HOLD: stale commit evidence {p}")
               records.append({"path":str(p.relative_to(root)),"sha256":__import__("hashlib").sha256(p.read_bytes()).hexdigest()})
+          blocking=[]
+          for p in files:
+              d=json.loads(p.read_text())
+              name=p.name
+              status=d.get("status")
+              if name.startswith("CP-03") and status != "PASS": blocking.append("CP-03 runtime backend evidence incomplete")
+              if name.startswith("CP-04") and status != "PASS": blocking.append("CP-04 credential/bridge evidence incomplete")
+              if name.startswith("CP-05") and status != "PASS": blocking.append("CP-05 live UI telemetry evidence incomplete")
+              if name.startswith("CP-06") and status != "PASS": blocking.append("CP-06 GUI/persistence/attachment E2E evidence incomplete")
+              if name.startswith("CP-07") and (d.get("voice_gate") != "PASS" or d.get("result") not in ("PASS","PASS_WITH_SCOPE_LIMITS")): blocking.append("CP-07 voice E2E gate remains open")
+              if name.startswith("CP-08") and status != "PASS_REPRODUCIBLE_BUILD": blocking.append("CP-08 reproducible build evidence incomplete")
+          blocking=sorted(set(blocking))
+          final_status="PASS" if not blocking else "HOLD"
           out=pathlib.Path("evidence/zona-directiva-v03/CP-10-evidence-manifest.json")
-          out.write_text(json.dumps({"schema":"louksna.zd.v03.evidence-manifest.v1","stage_id":"10","checkpoint_id":"CP-10","status":"HOLD_REQUIRES_CP09_RUNTIME_AND_CP11_CP12","candidate_commit_sha":__import__("os").environ["GITHUB_SHA"],"run_id":__import__("os").environ["GITHUB_RUN_ID"],"evidence_count":len(records),"evidence":records,"next_authorized_stage":"NONE"},indent=2,sort_keys=True)+"\n")
-          print("CP-10 manifest created; candidate freeze remains HOLD while any required prior checkpoint lacks complete evidence.")
+          out.write_text(json.dumps({"schema":"louksna.zd.v03.evidence-manifest.v1","stage_id":"10","checkpoint_id":"CP-10","status":final_status,"candidate_commit_sha":__import__("os").environ["GITHUB_SHA"],"run_id":__import__("os").environ["GITHUB_RUN_ID"],"evidence_count":len(records),"evidence":records,"blocking_reasons":blocking,"next_authorized_stage":"11" if not blocking else "NONE"},indent=2,sort_keys=True)+"\\n")
+          print(json.dumps({"CP-10_status":final_status,"blocking_reasons":blocking},indent=2))
           with open(__import__("os").environ["GITHUB_OUTPUT"],"a") as f:
-              f.write("status=HOLD\\n")
+              f.write("status="+final_status+"\\n")
           PY
       - name: Preserve CP-10 evidence manifest
         if: always()
