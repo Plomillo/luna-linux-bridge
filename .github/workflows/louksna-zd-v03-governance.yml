@@ -7,12 +7,18 @@ on:
     paths:
       - governance/zona-directiva-v03/12_STAGE_GOVERNANCE_CONTRACT.md
       - .github/workflows/louksna-zd-v03-governance.yml
+      - scripts/missions/louksna_zd_v03_functionalizer.py
+      - scripts/missions/louksna_zd_candidate_materializer.py
+      - scripts/missions/v03_templates/**
   pull_request:
     branches:
       - work/louksna-zona-directiva-v0.3-functional-20261006
     paths:
       - governance/zona-directiva-v03/12_STAGE_GOVERNANCE_CONTRACT.md
       - .github/workflows/louksna-zd-v03-governance.yml
+      - scripts/missions/louksna_zd_v03_functionalizer.py
+      - scripts/missions/louksna_zd_candidate_materializer.py
+      - scripts/missions/v03_templates/**
   workflow_dispatch:
 
 permissions:
