@@ -1,6 +1,18 @@
 name: "LOUKSNA ZD V0.3 — Second-order automation supervisor"
 
 on:
+  push:
+    branches:
+      - governance/louksna-zd-v03-12-stage-gates-20261009
+    paths:
+      - .github/workflows/louksna-zd-v03-governance.yml
+      - .github/workflows/louksna-zd-v03-supervisor.yml
+      - scripts/missions/louksna_zd_v03_functionalizer.py
+      - scripts/missions/louksna_zd_candidate_materializer.py
+      - scripts/missions/louksna_zd_v03_playwright_ui_e2e.mjs
+      - scripts/missions/repo_forensic_census.py
+      - scripts/missions/debian13_package_smoke.sh
+      - governance/zona-directiva-v03/12_STAGE_GOVERNANCE_CONTRACT.md
   workflow_dispatch:
   schedule:
     - cron: "*/15 * * * *"
