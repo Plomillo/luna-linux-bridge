@@ -1,20 +1,11 @@
 name: "Louksna CP-09 — Debian 13 KDE disposable VM"
 
 on:
-  workflow_dispatch:
-    inputs:
-      candidate_commit:
-        description: "Exact source commit SHA being tested"
-        required: true
-        type: string
-      candidate_deb_url:
-        description: "HTTPS URL to the exact candidate .deb (GitHub release asset)"
-        required: true
-        type: string
-      candidate_deb_sha256:
-        description: "Expected SHA-256 of the candidate .deb"
-        required: true
-        type: string
+  push:
+    branches:
+      - ops/debian13-kde-vm-20261009
+    paths:
+      - ".github/workflows/louksna-cp09-debian13-kde-vm.yml"
   pull_request:
     paths:
       - ".github/workflows/louksna-cp09-debian13-kde-vm.yml"
@@ -22,6 +13,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: louksna-cp09-debian13-kde-vm
@@ -45,51 +37,50 @@ jobs:
           go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 .github/workflows/louksna-cp09-debian13-kde-vm.yml
 
   disposable-vm:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'push'
     name: "Boot Debian 13 VM, start KDE/Xorg session, install/launch/rollback candidate"
     runs-on: ubuntu-24.04
     timeout-minutes: 55
     env:
-      CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
-      CANDIDATE_DEB_URL: ${{ inputs.candidate_deb_url }}
-      CANDIDATE_DEB_SHA256: ${{ inputs.candidate_deb_sha256 }}
+      CANDIDATE_COMMIT: 844557c693ad7aae5dcefc86ba4658550bbffb3f
+      CANDIDATE_ARTIFACT_ID: 11640183861
+      CANDIDATE_ARTIFACT_RUN_ID: 37980888484
     steps:
       - name: Checkout exact source revision for traceability
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ${{ inputs.candidate_commit }}
+          ref: 844557c693ad7aae5dcefc86ba4658550bbffb3f
           persist-credentials: false
 
-      - name: Validate inputs and install VM tooling
+      - name: Validate pinned candidate and install VM tooling
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -Eeuo pipefail
-          [[ "$CANDIDATE_COMMIT" =~ ^[0-9a-f]{40}$ ]] || { echo "candidate_commit must be a full 40-character SHA"; exit 10; }
-          [[ "$CANDIDATE_DEB_SHA256" =~ ^[0-9a-fA-F]{64}$ ]] || { echo "candidate_deb_sha256 must be 64 hex characters"; exit 11; }
-          python3 - "$CANDIDATE_DEB_URL" <<'PY'
-          import sys, urllib.parse
-          u=urllib.parse.urlparse(sys.argv[1])
-          allowed={"github.com","objects.githubusercontent.com","release-assets.githubusercontent.com"}
-          if u.scheme!="https" or u.hostname not in allowed or not u.path.lower().endswith(".deb"):
-              raise SystemExit("candidate_deb_url must be an HTTPS .deb URL hosted on an approved GitHub asset domain")
-          PY
+          [[ "$CANDIDATE_COMMIT" =~ ^[0-9a-f]{40}$ ]]
           sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends qemu-system-x86 qemu-utils cloud-image-utils openssh-client sshpass jq curl ca-certificates
-          mkdir -p evidence/cp09-vm
-          qemu-system-x86_64 --version | tee evidence/cp09-vm/qemu-version.txt
-          uname -a > evidence/cp09-vm/host-runner.txt
-          if test -e /dev/kvm; then echo "KVM_AVAILABLE=true" | tee evidence/cp09-vm/virtualization-mode.txt; else echo "KVM_AVAILABLE=false; MODE=QEMU_TCG_SOFTWARE_EMULATION" | tee evidence/cp09-vm/virtualization-mode.txt; fi
-
-      - name: Download candidate and verify its cryptographic identity
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          curl --fail --show-error --location --proto '=https' --proto-redir '=https' --retry 3 "$CANDIDATE_DEB_URL" -o evidence/cp09-vm/candidate.deb
-          printf '%s  %s\n' "$CANDIDATE_DEB_SHA256" evidence/cp09-vm/candidate.deb | sha256sum --check -
+          sudo apt-get install --yes --no-install-recommends qemu-system-x86 qemu-utils cloud-image-utils openssh-client sshpass jq curl ca-certificates unzip gh
+          mkdir -p evidence/cp09-vm candidate-artifact
+          gh api "repos/Plomillo/luna-linux-bridge/actions/runs/$CANDIDATE_ARTIFACT_RUN_ID/artifacts" > evidence/cp09-vm/source-artifacts.json
+          jq -e --argjson id "$CANDIDATE_ARTIFACT_ID" '.artifacts[] | select(.id == $id and .expired == false and .name == "louksna-linux-bridge_0.4.0-3_candidate-not-cleared")' evidence/cp09-vm/source-artifacts.json >/dev/null
+          gh api "repos/Plomillo/luna-linux-bridge/actions/artifacts/$CANDIDATE_ARTIFACT_ID/zip" > candidate-artifact.zip
+          unzip -q candidate-artifact.zip -d candidate-artifact
+          DEB="$(find candidate-artifact -type f -name 'louksna-linux-bridge_0.4.0-3_all.deb' -print -quit)"
+          EVIDENCE="$(find candidate-artifact -type f -name 'debian-package-evidence.json' -print -quit)"
+          test -s "$DEB" && test -s "$EVIDENCE"
+          EXPECTED="$(jq -er '.sha256' "$EVIDENCE")"
+          [[ "$EXPECTED" =~ ^[0-9a-f]{64}$ ]]
+          printf '%s  %s\n' "$EXPECTED" "$DEB" | sha256sum --check -
+          cp "$DEB" evidence/cp09-vm/candidate.deb
+          cp "$EVIDENCE" evidence/cp09-vm/source-package-evidence.json
+          sha256sum evidence/cp09-vm/candidate.deb | tee evidence/cp09-vm/candidate-package-sha256.txt
           dpkg-deb --info evidence/cp09-vm/candidate.deb | tee evidence/cp09-vm/candidate-package-info.txt
           dpkg-deb --field evidence/cp09-vm/candidate.deb Package | tee evidence/cp09-vm/candidate-package-name.txt
           dpkg-deb --field evidence/cp09-vm/candidate.deb Version | tee evidence/cp09-vm/candidate-package-version.txt
-          sha256sum evidence/cp09-vm/candidate.deb | tee evidence/cp09-vm/candidate-package-sha256.txt
+          qemu-system-x86_64 --version | tee evidence/cp09-vm/qemu-version.txt
+          uname -a > evidence/cp09-vm/host-runner.txt
+          if test -e /dev/kvm; then echo "KVM_AVAILABLE=true" | tee evidence/cp09-vm/virtualization-mode.txt; else echo "KVM_AVAILABLE=false; MODE=QEMU_TCG_SOFTWARE_EMULATION" | tee evidence/cp09-vm/virtualization-mode.txt; fi
 
       - name: Create disposable Debian 13 VM and configure real Xorg/KDE login
         shell: bash
