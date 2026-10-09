@@ -236,13 +236,29 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
-      - name: Verify real state and telemetry test coverage
+      - name: Materialize the exact candidate and verify UI/backend state
         shell: bash
         run: |
           set -Eeuo pipefail
-          test -f scripts/missions/test_louksna_zd_v03_backend.py
-          grep -RniE 'telemetry|evidence|health|DEGRADED|UNVERIFIED' --include='*.rs' --include='*.tsx' --include='*.ts' LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate
+          mkdir -p "$RUNNER_TEMP/louksna-v03"
+          printf '%s\n' '{"mission_id":"MIS-LOUKSNA-ZD-V03-FUNCTIONAL-20261006","dispatch_id":"GH-GOVERNANCE-CP","executor_id":"CI_CHECKPOINT","expected_effect":{"effect_type":"CHECKPOINT_VALIDATION"}}' > "$RUNNER_TEMP/louksna-v03/DISPATCH.json"
+          python3 -B -I scripts/missions/louksna_zd_candidate_materializer.py \
+            "$RUNNER_TEMP/louksna-v03/DISPATCH.json" \
+            "$RUNNER_TEMP/louksna-v03/ACK.json" \
+            "$RUNNER_TEMP/louksna-v03/FME.json" \
+            "$RUNNER_TEMP/louksna-v03/MATERIAL_RESULT.json" \
+            "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE" \
+            "$GITHUB_WORKSPACE/missions/inbox/louksna-zona-directiva-v03-functional-20261006/MISSION.md"
+          CANDIDATE="$GITHUB_WORKSPACE/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate"
+          python3 -B -I scripts/missions/louksna_zd_v03_functionalizer.py "$CANDIDATE"
           python3 -B -I scripts/missions/test_louksna_zd_v03_backend.py scripts/missions/v03_templates/main.rs
+          grep -q '@tauri-apps/api/core' "$CANDIDATE/src/App.tsx"
+          grep -q 'github_repositories' "$CANDIDATE/src/App.tsx"
+          grep -q 'evidence_recent' "$CANDIDATE/src/App.tsx"
+          grep -q 'rusqlite' "$CANDIDATE/src-tauri/Cargo.toml"
+          grep -q 'DEGRADED' "$CANDIDATE/src-tauri/src/main.rs"
+          ! grep -Eq 'CUSTOSZ|CUSTOSZ_RUNTIME|Josefina|Katya|Ancapi|MetaOS' "$CANDIDATE/src/App.tsx"
+          echo "CP-05 PASS: candidate generated from tracked source; assertions exercised and identity boundary checked."
 
   stage-06-functions-attachments:
     name: "Stage 06 / CP-06 — Offline, persistence, chat and attachments"
@@ -254,14 +270,30 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
-      - name: Run functional regression tests
+      - name: Materialize candidate and run functional regression checks
         shell: bash
         run: |
           set -Eeuo pipefail
-          test -f scripts/missions/test_louksna_zd_v03_backend.py
+          mkdir -p "$RUNNER_TEMP/louksna-v03"
+          printf '%s\n' '{"mission_id":"MIS-LOUKSNA-ZD-V03-FUNCTIONAL-20261006","dispatch_id":"GH-GOVERNANCE-CP","executor_id":"CI_CHECKPOINT","expected_effect":{"effect_type":"CHECKPOINT_VALIDATION"}}' > "$RUNNER_TEMP/louksna-v03/DISPATCH.json"
+          python3 -B -I scripts/missions/louksna_zd_candidate_materializer.py \
+            "$RUNNER_TEMP/louksna-v03/DISPATCH.json" \
+            "$RUNNER_TEMP/louksna-v03/ACK.json" \
+            "$RUNNER_TEMP/louksna-v03/FME.json" \
+            "$RUNNER_TEMP/louksna-v03/MATERIAL_RESULT.json" \
+            "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE" \
+            "$GITHUB_WORKSPACE/missions/inbox/louksna-zona-directiva-v03-functional-20261006/MISSION.md"
+          CANDIDATE="$GITHUB_WORKSPACE/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate"
+          python3 -B -I scripts/missions/louksna_zd_v03_functionalizer.py "$CANDIDATE"
           python3 -B -I scripts/missions/test_louksna_zd_v03_backend.py scripts/missions/v03_templates/main.rs
-          test -f LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate/src/App.tsx
-          test -f LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate/src-tauri/src/main.rs
+          test -s "$CANDIDATE/src/App.tsx"
+          test -s "$CANDIDATE/src-tauri/src/main.rs"
+          test -s "$CANDIDATE/src-tauri/tauri.conf.json"
+          grep -q 'offline_mode' "$CANDIDATE/src-tauri/src/main.rs"
+          grep -q 'chat_send' "$CANDIDATE/src-tauri/src/main.rs"
+          grep -q 'evidence_recent' "$CANDIDATE/src-tauri/src/main.rs"
+          grep -q 'github_pull_requests' "$CANDIDATE/src-tauri/src/main.rs"
+          echo "CP-06 PASS limited to reproducible source/backend assertions; interactive GUI, persistence-across-restart, and attachment E2E remain unproven."
 
   stage-07-voice-security:
     name: "Stage 07 / CP-07 — Voice E2E and security regression"
@@ -298,9 +330,19 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          test -f LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate/package.json
-          test -f LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate/src-tauri/Cargo.toml
-          cd LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate
+          mkdir -p "$RUNNER_TEMP/louksna-v03"
+          printf '%s\n' '{"mission_id":"MIS-LOUKSNA-ZD-V03-FUNCTIONAL-20261006","dispatch_id":"GH-GOVERNANCE-CP08","executor_id":"CI_CHECKPOINT","expected_effect":{"effect_type":"BUILD_VALIDATION"}}' > "$RUNNER_TEMP/louksna-v03/DISPATCH.json"
+          python3 -B -I scripts/missions/louksna_zd_candidate_materializer.py \
+            "$RUNNER_TEMP/louksna-v03/DISPATCH.json" \
+            "$RUNNER_TEMP/louksna-v03/ACK.json" \
+            "$RUNNER_TEMP/louksna-v03/FME.json" \
+            "$RUNNER_TEMP/louksna-v03/MATERIAL_RESULT.json" \
+            "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE" \
+            "$GITHUB_WORKSPACE/missions/inbox/louksna-zona-directiva-v03-functional-20261006/MISSION.md"
+          CANDIDATE="$GITHUB_WORKSPACE/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate"
+          python3 -B -I scripts/missions/louksna_zd_v03_functionalizer.py "$CANDIDATE"
+          python3 -B -I scripts/missions/test_louksna_zd_v03_backend.py scripts/missions/v03_templates/main.rs
+          cd "$CANDIDATE"
           npm ci
           npm run build
           cargo check --manifest-path src-tauri/Cargo.toml
