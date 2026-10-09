@@ -1,0 +1,138 @@
+name: "CUSTOSZ V7: entrega acotada R4 20 minutos"
+on:
+  push:
+    branches: [staging/custosz-v7-metaos-20260927]
+    paths: [.github/workflows/custosz-r4-research-handoff.yml]
+permissions:
+  contents: write
+concurrency:
+  group: custosz-r4-readonly-research
+  cancel-in-progress: false
+jobs:
+  deliver:
+    if: github.repository == 'Plomillo/luna-linux-bridge' && github.actor == 'Plomillo'
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 20
+    steps:
+      - name: Checkout del commit exacto en carpeta aislada
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          clean: false
+          path: mission-${{ github.run_id }}
+      - name: Registrar mision y obtener plan del entrypoint CUSTOSZ
+        shell: bash
+        env:
+          MISSION_DIR: ${{ github.workspace }}/mission-${{ github.run_id }}
+          REPORT_FILE: ${{ runner.temp }}/custosz-r4-report.json
+        run: |
+          set -Eeuo pipefail
+          python3 -B -I - <<'PY'
+          import sys,os,json,hashlib,subprocess,time
+          from datetime import datetime,timezone
+          from pathlib import Path
+          started=time.monotonic()
+          stamp=lambda:datetime.now(timezone.utc).isoformat()
+          repo=Path(os.environ['MISSION_DIR'])
+          out=Path(os.environ['REPORT_FILE'])
+          root=repo/'artifacts/custosz-v7'
+          c=root/'CUSTOSZ.v07.f04_b.pyz'
+          rt=root/'CUSTOSZ_RUNTIME_V1_SR_EXEC_BOUND_FME_01.b.pyz'
+          m=root/'MetaOS.wasm'
+          mission=repo/'docs/missions/LUNA_R4_CUSTOSZ_V7/MISION_MAESTRA_DEFINITIVA.md'
+          digest=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+          r={'run_id':os.environ['GITHUB_RUN_ID'],'received_at_utc':stamp(),
+             'max_research_seconds':1200,'scope':'DOCUMENTARY_RESEARCH_ONLY',
+             'custosz_receipt':'NOT_VERIFIED','worker_research':'NOT_EXECUTED',
+             'runtime_execution':'NOT_AUTHORIZED_UNTIL_PIN_RECONCILED',
+             'install_authorized':False,'disk_authorized':False,'observations':{},'blockers':[]}
+          try:
+              for name,p in [('CUSTOSZ',c),('RUNTIME',rt),('METAOS',m),('MISSION',mission)]:
+                  r['observations'][name]={'sha256':digest(p),'bytes':p.stat().st_size}
+              if digest(c)!='dacf1f8c13b2fcbfc617cf0d4d780b30502c13395224691e6b0f05f53d9816a2':
+                  raise RuntimeError('CUSTOSZ_PIN_MISMATCH')
+              if digest(rt)!='4e9bf0e799487ea0fd6a6d32359176bdce996010e33ed151ce0f186155d11df0':
+                  r['blockers'].append('RUNTIME_STAGING_SHA_DIFFERS_FROM_SKELETON; do not activate')
+              if digest(m)!='5d8f1239e3a0b452be722078760b000afc22af0a64f93ffb0a1f74024f15aed0':
+                  r['blockers'].append('METAOS_STAGING_SHA_DIFFERS_FROM_SKELETON; do not activate')
+              z=subprocess.run(['python3','-B','-I',str(c),'v07-status'],
+                               check=True,capture_output=True,text=True,timeout=12)
+              info=json.loads(z.stdout)
+              r['observations']['custosz_version']=info.get('version')
+              r['observations']['custosz_entrypoint']='EXECUTED'
+              home=Path.home()
+              candidates=[]
+              for parent in (home,home/'Proyectos',home/'PROYECTOS',Path('/mnt'),Path('/media')):
+                  if not parent.is_dir():continue
+                  candidates.append(parent)
+                  try:candidates.extend(list(parent.iterdir())[:100])
+                  except OSError:pass
+              found=[]
+              for p in candidates:
+                  try:
+                      p=p.resolve()
+                      if (p/'1. PROYECTOS PRIORITARIOS').is_dir() and ((p/'4. PENDIENTES').exists() or (p/'2. CORPUS').exists()) and p not in found:found.append(p)
+                  except OSError:pass
+              r['observations']['workspace_candidate_count']=len(found)
+              if len(found)!=1:raise RuntimeError('REAL_WORKSPACE_NOT_UNIQUELY_RESOLVED')
+              os.environ['CUSTOSZ_WORKSPACE']=str(found[0])
+              state=home/'.local/state/louksna'/('custosz-r4-'+os.environ['GITHUB_RUN_ID'])
+              state.mkdir(parents=True,mode=0o700,exist_ok=False)
+              os.environ['CUSTOSZ_STATE_DIR']=str(state)
+              sys.path.insert(0,str(c))
+              import custosz_v05_legacy as worker
+              worker.PINS={k:(v[0].replace(chr(92),'/') if v[0] else None,v[1],v[2],v[3]) for k,v in worker.PINS.items()}
+              worker.PROFILES={k:([x.replace(chr(92),'/') for x in v[0]],[x.replace(chr(92),'/') for x in v[1]]) for k,v in worker.PROFILES.items()}
+              r['observations']['adapter']='LINUX_PATH_TRANSLATION_IN_MEMORY_ONLY'
+              goal='Ejecutar investigación documental de máximo veinte minutos de la misión maestra GitHub issue #5: A0/A1/PUAC2, servidor SYMPHYLAX, CUSTOSZ/MetaOS/runtime, CAS y R4. Producir conclusiones reales para README. Sin instalación ni F3-DISK.'
+              z=worker.mission_start(1190/3600,'LUNA_PROJECT',goal,report_minutes=1)
+              r['custosz_receipt']='MISSION_REGISTERED'
+              r['custosz_mission_id']=z['mission_id']
+              r['custosz_mission_deadline_utc']=z['deadline_utc']
+              r['executor_status']=z['executor']
+              plan=worker.architect(goal,'LUNA_PROJECT')
+              policy=worker.reasoning_policy(goal,'LUNA_PROJECT')
+              r['worker_research']='ARCHITECTURAL_PLAN_AND_REASONING_POLICY_EXECUTED'
+              r['observations']['classes']=plan.get('classes')
+              r['observations']['decision_rule']=plan.get('decision_rule')
+              r['observations']['reasoning_effort']=policy.get('recommended_external_reasoning_effort')
+              r['observations']['heartbeat']=worker.mission_tick(z['mission_id']).get('state')
+              r['status']='CUSTOSZ_REGISTERED_PLAN_RETURNED_EXECUTOR_NOT_AUTOMATICALLY_BOUND'
+          except Exception as e:
+              r['status']='HOLD_FAIL_CLOSED'
+              r['blockers'].append(type(e).__name__+':'+str(e)[:180])
+          finally:
+              r['finished_at_utc']=stamp()
+              r['elapsed_seconds']=round(time.monotonic()-started,3)
+              out.write_text(json.dumps(r,ensure_ascii=False,indent=2,sort_keys=True)+'\n')
+              print('ACTUAL_RESULT='+json.dumps(r,ensure_ascii=False,sort_keys=True))
+          PY
+      - name: Incorporar resultado real al README de GitHub
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPORT_FILE: ${{ runner.temp }}/custosz-r4-report.json
+        run: |
+          set -Eeuo pipefail
+          python3 -B -I - <<'PY'
+          import os,json,base64,urllib.request
+          from pathlib import Path
+          rid=os.environ['GITHUB_RUN_ID']
+          f=Path(os.environ['REPORT_FILE'])
+          report=json.loads(f.read_text()) if f.exists() else {'status':'NO_REPORT_FROM_RUN','custosz_receipt':'NOT_VERIFIED','run_id':rid}
+          branch='staging/custosz-v7-metaos-20260927'
+          url='https://api.github.com/repos/Plomillo/luna-linux-bridge/contents/docs/missions/LUNA_R4_CUSTOSZ_V7/README.md'
+          h={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','Content-Type':'application/json'}
+          def api(method,url,payload=None):
+              body=None if payload is None else json.dumps(payload).encode()
+              with urllib.request.urlopen(urllib.request.Request(url,headers=h,method=method,data=body),timeout=25) as response:return json.load(response)
+          existing=api('GET',url+'?ref='+branch)
+          text=base64.b64decode(existing['content']).decode()
+          title='## Resultado ejecutado: GitHub Actions '+rid
+          addition='\n\n'+title+'\n\nEvidencia: https://github.com/Plomillo/luna-linux-bridge/actions/runs/'+rid+'\n\nEl registro de una misión supervisora NO acredita un ejecutor material integrado, investigación externa exhaustiva ni certificación.\n\n~~~json\n'+json.dumps(report,ensure_ascii=False,indent=2,sort_keys=True)+'\n~~~\n'
+          if title not in text:
+              updated=api('PUT',url,{'message':'docs(custosz): resultado de despacho investigativo real '+rid,'branch':branch,'sha':existing['sha'],'content':base64.b64encode((text+addition).encode()).decode()})
+              print('README_RESULT_COMMIT='+updated['commit']['sha'])
+          else:print('README_ALREADY_RECORDED='+rid)
+          PY

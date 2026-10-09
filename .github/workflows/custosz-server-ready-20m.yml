@@ -1,0 +1,98 @@
+name: "CUSTOSZ V7: SERVER_READY #7 — ejecución real 20m"
+
+on:
+  push:
+    branches:
+      - staging/custosz-v7-metaos-20260927
+    paths:
+      - .github/workflows/custosz-server-ready-20m.yml
+      - docs/missions/CUSTOSZ_V7_SERVER_READY_20M/MISION_SERVER_READY_FINAL.md
+      - scripts/missions/custosz_server_ready_register.py
+      - scripts/missions/custosz_server_ready_live.py
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: custosz-server-ready-issue-7
+  cancel-in-progress: false
+
+jobs:
+  register:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 3
+    steps:
+      - name: Checkout mínimo de misión y trabajador
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            artifacts/custosz-v7
+            docs/missions/CUSTOSZ_V7_SERVER_READY_20M/MISION_SERVER_READY_FINAL.md
+            scripts/missions/custosz_server_ready_register.py
+          sparse-checkout-cone-mode: false
+
+      - name: Registrar recepción real en CUSTOSZ V7
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ulimit -v 262144 || true
+          nice -n 10 python3 -B -I scripts/missions/custosz_server_ready_register.py
+
+      - name: Publicar recibo gobernado
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: server-ready-receipt
+          path: ${{ runner.temp }}/SERVER_READY_RECEIPT.json
+          if-no-files-found: error
+
+      - name: Dejar acuse auditable en issue #7
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          MID=$(python3 -c 'import json,os;print(json.load(open(os.path.join(os.environ["RUNNER_TEMP"],"SERVER_READY_RECEIPT.json")))["mission_id"])')
+          gh issue comment 7 --repo "${GITHUB_REPOSITORY}" --body "RECEIPT_VERIFIED — CUSTOSZ V7 registró la misión SERVER_READY. MISSION_ID=${MID}. RUN_ID=${GITHUB_RUN_ID}. SHA=${GITHUB_SHA}. Techo global=1200s. Sin F3-DISK/Windows/EFI/GPT/PROYECTOS."
+
+  live:
+    needs: register
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 17
+    steps:
+      - name: Checkout mínimo para continuidad real
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            artifacts/custosz-v7
+            docs/missions/CUSTOSZ_V7_SERVER_READY_20M/MISION_SERVER_READY_FINAL.md
+            scripts/missions/custosz_server_ready_live.py
+          sparse-checkout-cone-mode: false
+
+      - name: Recuperar recibo de la fase de registro
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: server-ready-receipt
+          path: ${{ runner.temp }}/server-ready-receipt
+
+      - name: Mantener misión y ejecutar pruebas TEST_ONLY gobernadas
+        shell: bash
+        env:
+          RECEIPT_FILE: ${{ runner.temp }}/server-ready-receipt/SERVER_READY_RECEIPT.json
+        run: |
+          set -Eeuo pipefail
+          ulimit -v 262144 || true
+          nice -n 10 python3 -B -I scripts/missions/custosz_server_ready_live.py
+
+      - name: Conservar estado vivo y heartbeats
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: server-ready-live-evidence
+          path: |
+            ${{ runner.temp }}/SERVER_READY_LIVE_STATE.json
+            ${{ runner.temp }}/SERVER_READY_HEARTBEATS.jsonl
+          if-no-files-found: warn
