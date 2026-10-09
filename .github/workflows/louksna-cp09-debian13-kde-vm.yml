@@ -266,12 +266,9 @@ jobs:
             fi
           }
           trap rollback EXIT
-          sudo dpkg -i /tmp/candidate.deb > /tmp/package-install.log 2>&1
+          # Use APT's local-file mode so candidate dependencies are resolved before package configuration.
+          sudo apt-get install -y /tmp/candidate.deb > /tmp/package-install.log 2>&1
           RC=$?
-          if [ "$RC" -ne 0 ]; then
-            sudo apt-get -y --fix-broken install >> /tmp/package-install.log 2>&1
-            RC=$?
-          fi
           if [ "$RC" -ne 0 ] || ! dpkg-query -W -f='${Status}' "$PKG" 2>/dev/null | grep -q 'install ok installed'; then
             echo INSTALL_FAIL
             cat /tmp/package-install.log
