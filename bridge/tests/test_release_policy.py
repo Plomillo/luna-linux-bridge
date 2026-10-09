@@ -66,8 +66,16 @@ class ReleasePolicyTests(unittest.TestCase):
         self.assertIn("server_key (absolute root-owned private mode-0600 file", MTLS_DOC)
 
     def test_release_stays_blocked_without_authoritative_legal_and_contact_metadata(self):
-        self.assertIn("maintainers@louksna.invalid", CONTROL)
-        self.assertIn("util-linux", CONTROL)
+        # A commit-attributed contact is not the same as a legally verified
+        # maintainer contact. Keep the release hold tied to explicit evidence,
+        # not to the presence of a synthetic .invalid placeholder.
+        legal_audit = (ROOT / "docs/LEGAL_METADATA_AUDIT_0.4.0-3.md").read_text()
+        self.assertIn("Maintainer: Plomillo <", CONTROL)
+        self.assertNotIn("maintainers@louksna.invalid", CONTROL)
+        self.assertIn("not been tested for delivery", legal_audit)
+        self.assertIn("copyright holder(s)", legal_audit)
+        self.assertIn("license under which the project code may be redistributed", legal_audit)
+        self.assertFalse((ROOT / "debian/copyright").exists())
         self.assertIn("debian/copyright", REPORT)
         self.assertIn("titular autorizado", REPORT)
         self.assertIn("G23", REPORT)
