@@ -312,6 +312,13 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
+      - name: Execute voice-gate contract regression harness
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B scripts/missions/voice_e2e_gate_contract_test.py \
+            scripts/missions/v03_templates/App.tsx \
+            .github/workflows/louksna-zd-v03-governance.yml
       - name: Record voice gate honestly and continue non-voice validation
         id: voice_gate
         shell: bash
@@ -335,9 +342,10 @@ jobs:
             "harness_discovered":bool(p and p.is_file()),
             "harness_path":harness or None,
             "harness_sha256":hashlib.sha256(p.read_bytes()).hexdigest() if p and p.is_file() else None,
+            "contract_regression_executed":True,
             "e2e_executed":False,
             "result":"HOLD_OPEN",
-            "reason":"No verified Louksna-specific end-to-end voice harness was executed. Discovery alone is not evidence.",
+            "reason":"The executable contract harness checks that voice stays disabled and unclaimed. It does not test microphone capture, transport, remote response, or end-to-end voice.",
             "certification_effect":"G23_G24_MUST_REMAIN_BLOCKED_WHILE_VOICE_IS_MANDATORY"
           }
           out=pathlib.Path("evidence/zona-directiva-v03/CP-07-voice-gate.json")
