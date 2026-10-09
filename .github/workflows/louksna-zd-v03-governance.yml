@@ -12,6 +12,7 @@ on:
       - scripts/missions/repo_forensic_census.py
       - scripts/missions/debian_build_evidence.py
       - scripts/missions/debian_package_canonicalize.py
+      - scripts/missions/debian13_kde_host_runtime.sh
       - scripts/missions/louksna_zd_candidate_materializer.py
       - scripts/missions/louksna_zd_v03_playwright_ui_e2e.mjs
       - scripts/missions/debian13_package_smoke.sh
@@ -28,6 +29,7 @@ on:
       - scripts/missions/repo_forensic_census.py
       - scripts/missions/debian_build_evidence.py
       - scripts/missions/debian_package_canonicalize.py
+      - scripts/missions/debian13_kde_host_runtime.sh
       - scripts/missions/louksna_zd_candidate_materializer.py
       - scripts/missions/louksna_zd_v03_playwright_ui_e2e.mjs
       - scripts/missions/debian13_package_smoke.sh
@@ -672,8 +674,10 @@ jobs:
     name: "Stage 09 / CP-09 — Debian 13 KDE install, runtime and rollback evidence gate"
     needs: stage-08-reproducible-build
     if: needs.stage-08-reproducible-build.result == 'success'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    # This gate intentionally waits for a dedicated, disposable Debian 13 KDE host runner.
+    # No hosted/container fallback is allowed to impersonate the required target runtime.
+    runs-on: [self-hosted, linux, debian-13, kde, disposable]
+    timeout-minutes: 30
     outputs:
       runtime_status: ${{ steps.runtime_gate.outputs.status }}
     steps:
@@ -704,55 +708,15 @@ jobs:
             evidence/zona-directiva-v03/CP-09-debian13-container-smoke.log
           if-no-files-found: warn
           retention-days: 90
-      - name: Require real Debian 13 KDE runtime and rollback evidence
+      - name: Execute target Debian 13 KDE install, launch, and rollback
         id: runtime_gate
         shell: bash
         run: |
           set -Eeuo pipefail
-          mkdir -p evidence/zona-directiva-v03
-          REPORT="evidence/zona-directiva-v03/CP-09-runtime-gate.json"
-          INPUT="evidence/zona-directiva-v03/CP-09-debian13-kde-runtime.json"
-          python3 - "$INPUT" "$REPORT" <<'PY'
-          import datetime, hashlib, json, os, pathlib, sys
-          source, target = map(pathlib.Path, sys.argv[1:])
-          report = {
-            "schema": "louksna.zd.v03.cp09-runtime-gate.v1",
-            "stage_id": "09", "checkpoint_id": "CP-09",
-            "timestamp_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-            "repository": os.getenv("GITHUB_REPOSITORY"),
-            "commit_sha": os.getenv("GITHUB_SHA"),
-            "run_id": os.getenv("GITHUB_RUN_ID"),
-            "physical_runtime_verified": False,
-            "result": "HOLD",
-            "reason": "No external, digest-bound Debian 13 KDE install/launch/rollback evidence is present. Hosted CI is not substituted for the required target runtime.",
-            "source_evidence_sha256": None
-          }
-          if source.is_file():
-            raw = source.read_bytes()
-            evidence = json.loads(raw)
-            required = {
-              "status": "PASS", "os_id": "debian", "os_version": "13",
-              "desktop": "KDE", "install_test": "PASS",
-              "launch_test": "PASS", "rollback_test": "PASS"
-            }
-            missing = [k for k, v in required.items() if evidence.get(k) != v]
-            digest = evidence.get("candidate_sha256", "")
-            if not isinstance(digest, str) or len(digest) != 64 or any(ch not in "0123456789abcdef" for ch in digest.lower()):
-              missing.append("candidate_sha256")
-            logs = evidence.get("evidence_sha256")
-            if not isinstance(logs, list) or not logs or any(not isinstance(v, str) or len(v) != 64 for v in logs):
-              missing.append("evidence_sha256")
-            report["source_evidence_sha256"] = hashlib.sha256(raw).hexdigest()
-            if not missing:
-              report.update({"physical_runtime_verified": True, "result": "PASS",
-                             "reason": "Required target-runtime fields and SHA-256 references are present; independent validation remains required."})
-            else:
-              report["reason"] = "Runtime evidence is incomplete or invalid: " + ",".join(missing)
-          target.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-          print(json.dumps(report, indent=2))
-          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
-            f.write("status=" + report["result"] + "\n")
-          PY
+          bash scripts/missions/debian13_kde_host_runtime.sh \
+            "$GITHUB_WORKSPACE/evidence/zona-directiva-v03/imported/louksna-zd-v03-cp08-build-package" \
+            "$GITHUB_WORKSPACE/evidence/zona-directiva-v03" \
+            "$GITHUB_SHA"
       - name: Preserve CP-09 runtime gate evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
