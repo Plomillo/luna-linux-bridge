@@ -16,7 +16,8 @@ permissions:
   actions: read
 
 concurrency:
-  group: louksna-cp09-debian13-kde-vm
+  # Isolate runs by immutable commit so a stalled old VM cannot block a corrected run.
+  group: louksna-cp09-debian13-kde-vm-${{ github.sha }}
   cancel-in-progress: false
 
 jobs:
