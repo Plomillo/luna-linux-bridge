@@ -17,6 +17,9 @@ on:
       - "jonas_hott_api/**"
       - "tests/test_jonas_*.py"
       - "scripts/missions/package_jonas_family.py"
+      - "scripts/missions/backup_restore_jonas_state.py"
+      - "tests/test_jonas_backup_restore.py"
+      - "docs/jonas-family-deployment.md"
       - ".github/workflows/jonas-hott-tests.yml"
   workflow_dispatch:
 
