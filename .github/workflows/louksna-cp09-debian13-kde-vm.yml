@@ -129,6 +129,7 @@ jobs:
             - xserver-xorg-video-dummy
             - x11-xserver-utils
             - xauth
+            - xinit
             - sddm
             - plasma-workspace
             - kwin-x11
@@ -224,14 +225,14 @@ jobs:
           test -f cloud-init-ready.txt || { tail -n 200 vm-serial.log || true; echo "Debian VM cloud-init did not finish in time"; exit 20; }
           SSH=(ssh -i vm_ssh_key -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ServerAliveInterval=15 louksna-test@127.0.0.1)
           "${SSH[@]}" 'sudo cloud-init status --wait; cat /etc/os-release; dpkg-query -W plasma-workspace kwin-x11 sddm xserver-xorg-video-dummy' | tee guest-os-desktop-inventory.txt
-          "${SSH[@]}" 'sudo systemctl restart sddm; sleep 15; echo "=== sessions ==="; loginctl list-sessions --no-legend || true; echo "=== processes ==="; pgrep -a Xorg || true; pgrep -af "startplasma|plasmashell" || true; pgrep -a kwin_x11 || true; echo "=== sddm status ==="; sudo systemctl status sddm --no-pager || true; echo "=== sddm journal ==="; sudo journalctl -b -u sddm --no-pager -n 100 || true; echo "=== Xorg journal ==="; sudo journalctl -b _COMM=Xorg --no-pager -n 100 || true; echo "=== Xorg log ==="; sudo find /var/log /home/louksna-test -maxdepth 4 -type f \( -iname "*Xorg*.log" -o -iname "*sddm*.log" \) -print -exec tail -n 80 {} \; 2>/dev/null || true; echo "=== sessions installed ==="; find /usr/share/xsessions /usr/share/wayland-sessions -maxdepth 1 -type f -print 2>/dev/null || true' | tee kde-session-smoke.txt
+          "${SSH[@]}" 'set -x; sudo loginctl enable-linger louksna-test; sudo -u louksna-test mkdir -p /home/louksna-test/.local/share; sudo -u louksna-test nohup env HOME=/home/louksna-test USER=louksna-test LOGNAME=louksna-test startx /usr/bin/startplasma-x11 -- :0 vt1 -keeptty -nolisten tcp > /home/louksna-test/.local/share/cp09-kde-session.log 2>&1 < /dev/null & echo $! | sudo tee /run/cp09-startx.pid >/dev/null; for i in $(seq 1 45); do pgrep -x Xorg >/dev/null && pgrep -x kwin_x11 >/dev/null && break; sleep 2; done; echo "=== session processes ==="; pgrep -a Xorg || true; pgrep -af "startplasma|plasmashell" || true; pgrep -a kwin_x11 || true; echo "=== startx log ==="; sudo tail -n 120 /home/louksna-test/.local/share/cp09-kde-session.log || true; echo "=== session files ==="; find /usr/share/xsessions /usr/share/wayland-sessions -maxdepth 1 -type f -print 2>/dev/null || true' | tee kde-session-smoke.txt
           "${SSH[@]}" bash -s <<'GUEST_VALIDATE'
           set -Eeuo pipefail
           . /etc/os-release
           test "$ID:$VERSION_ID" = "debian:13"
           pgrep -x Xorg >/dev/null
           pgrep -x kwin_x11 >/dev/null
-          loginctl list-sessions --no-legend | grep -q louksna-test
+          pgrep -af startplasma-x11 >/dev/null
           GUEST_VALIDATE
 
       - name: Install, launch in KDE session, and verify package rollback
