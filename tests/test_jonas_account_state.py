@@ -73,6 +73,8 @@ def test_shared_pool_observations_are_append_only_and_not_summed(monkeypatch, tm
     assert latest.json()["shared_pool"] is True
     assert latest.json()["current_report_count"] == 2
     assert latest.json()["status"] == "OBSERVED"
+    assert latest.json()["confirmed_balance_credits"] is None
+    assert latest.json()["confirmation_state"] == "AWAITING_FAMILY_CONFIRMATIONS"
     assert latest.json()["certified"] is False
     assert len(history.json()["observations"]) == 2
 
@@ -135,6 +137,8 @@ def test_all_five_family_members_have_individual_write_identity(monkeypatch, tmp
         latest = client.get("/v1/account/credits", headers=respondent_auth("Cristóbal"))
     assert all(response.status_code == 200 for response in responses)
     assert latest.json()["current_report_count"] == 5
+    assert latest.json()["confirmed_balance_credits"] == 1200
+    assert latest.json()["confirmation_state"] == "CONFIRMED_BY_ALL_FIVE"
     assert set(latest.json()["respondents_reporting"]) == set(respondents)
 
 
@@ -172,6 +176,9 @@ def test_stale_family_observation_is_marked_stale(monkeypatch, tmp_path):
         latest = client.get("/v1/account/credits", headers=auth())
     assert saved.status_code == 200
     assert latest.json()["freshness"] == "STALE"
+    assert latest.json()["status"] == "STALE"
+    assert latest.json()["balance_credits"] is None
+    assert latest.json()["last_observed_balance_credits"] == 1000
 
 
 def test_catalog_rejects_duplicate_model_ids(monkeypatch, tmp_path):
