@@ -23,6 +23,8 @@ class InfrastructureReadinessTests(unittest.TestCase):
             self.assertIn(by_code[code]["status"], {"BLOCKED", "UNVERIFIED"})
         self.assertNotEqual(by_code["G23_INDEPENDENT_VALIDATION"]["status"], "PASS")
         self.assertNotEqual(by_code["G24_CERTIFICATION"]["status"], "PASS")
+        self.assertEqual(by_code["CP09_REPORT_PATH_MATCH"]["status"], "PASS")
+        self.assertEqual(by_code["CP10_BINDS_PHYSICAL_EVIDENCE"]["status"], "PASS")
 
     def test_missing_contract_is_a_structural_failure(self):
         with tempfile.TemporaryDirectory() as td:
