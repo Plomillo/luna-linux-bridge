@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import math
 import os
 import sqlite3
 from datetime import datetime, timezone
@@ -388,3 +389,104 @@ def latest_model_catalog() -> dict:
         return result
     except (sqlite3.Error, OSError, json.JSONDecodeError):
         raise HTTPException(503, "Shared model catalog unavailable.")
+
+
+def _evidenced_number(metadata: dict, field: str) -> float | None:
+    """Return a metric only when a valid evidence digest accompanies it."""
+    value = metadata.get(field)
+    evidence = metadata.get(field + "_evidence_sha256")
+    if (isinstance(value, bool) or not isinstance(value, (int, float))
+            or not math.isfinite(float(value))
+            or not isinstance(evidence, str) or not SHA256_RE.fullmatch(evidence)):
+        return None
+    return float(value)
+
+
+@router.get("/v1/models/recommendations", dependencies=[Depends(require_auth)])
+def recommend_models(
+    task: str = Query(min_length=1, max_length=200),
+    required_capabilities: list[str] = Query(default=[]),
+    min_quality_score: float | None = Query(default=None, ge=0, le=1),
+    max_latency_ms: float | None = Query(default=None, gt=0),
+    max_estimated_cost_credits: float | None = Query(default=None, gt=0),
+) -> dict:
+    """Deterministic, evidence-aware shortlist; never invent missing cost/quality/latency."""
+    catalog = latest_model_catalog()
+    if catalog.get("status") == "UNKNOWN":
+        return {
+            "status": "UNKNOWN",
+            "task": task,
+            "recommendations": [],
+            "excluded": [],
+            "reason": "No catalog snapshot has been recorded.",
+            "certified": False,
+        }
+    requested = sorted({item.strip().casefold() for item in required_capabilities if item.strip()})
+    recommendations = []
+    excluded = []
+    for model in catalog.get("models", []):
+        model_id = model.get("model_id", "")
+        capabilities = model.get("capabilities", [])
+        normalized = {item.casefold() for item in capabilities if isinstance(item, str)}
+        missing = sorted(set(requested) - normalized)
+        if missing:
+            excluded.append({"model_id": model_id, "reason": "CAPABILITY_MISMATCH", "missing_capabilities": missing})
+            continue
+        metadata = model.get("metadata", {})
+        quality = _evidenced_number(metadata, "quality_score")
+        latency = _evidenced_number(metadata, "latency_ms")
+        cost = _evidenced_number(metadata, "estimated_cost_credits")
+        failures = []
+        if min_quality_score is not None:
+            if quality is None:
+                failures.append("QUALITY_UNKNOWN_OR_UNEVIDENCED")
+            elif quality < min_quality_score:
+                failures.append("QUALITY_CONSTRAINT_FAILED")
+        if max_latency_ms is not None:
+            if latency is None:
+                failures.append("LATENCY_UNKNOWN_OR_UNEVIDENCED")
+            elif latency > max_latency_ms:
+                failures.append("LATENCY_CONSTRAINT_FAILED")
+        if max_estimated_cost_credits is not None:
+            if cost is None:
+                failures.append("COST_UNKNOWN_OR_UNEVIDENCED")
+            elif cost > max_estimated_cost_credits:
+                failures.append("COST_CONSTRAINT_FAILED")
+        if failures:
+            excluded.append({"model_id": model_id, "reason": "CONSTRAINT_NOT_MET_OR_UNKNOWN", "details": failures})
+            continue
+        recommendations.append({
+            "model_id": model_id,
+            "display_name": model.get("display_name"),
+            "capabilities": sorted(normalized),
+            "matched_capabilities": sorted(set(requested) & normalized),
+            "quality_score": quality,
+            "latency_ms": latency,
+            "estimated_cost_credits": cost,
+            "metric_evidence_status": "DIGEST_ATTACHED_NOT_INDEPENDENTLY_VALIDATED",
+            "catalog_source_verified": False,
+            "certified": False,
+        })
+    recommendations.sort(key=lambda item: (
+        -len(item["matched_capabilities"]),
+        -(item["quality_score"] if item["quality_score"] is not None else -1),
+        item["latency_ms"] if item["latency_ms"] is not None else math.inf,
+        item["estimated_cost_credits"] if item["estimated_cost_credits"] is not None else math.inf,
+        item["model_id"].casefold(),
+    ))
+    return {
+        "status": "CANDIDATES_UNVERIFIED" if recommendations else "NO_ELIGIBLE_CANDIDATES",
+        "task": task,
+        "required_capabilities": requested,
+        "constraints": {
+            "min_quality_score": min_quality_score,
+            "max_latency_ms": max_latency_ms,
+            "max_estimated_cost_credits": max_estimated_cost_credits,
+        },
+        "catalog_snapshot_id": catalog.get("snapshot_id"),
+        "catalog_freshness": catalog.get("freshness", "UNKNOWN"),
+        "catalog_source_verified": False,
+        "recommendations": recommendations,
+        "excluded": excluded,
+        "certified": False,
+    }
