@@ -29,6 +29,7 @@
 
 - python3 (>= 3.10)
 - openssl
+- util-linux (runuser, utilizado para generar y publicar la identidad de cliente sin escrituras privilegiadas en la ruta del usuario)
 - systemd recomendado, no dependencia obligatoria.
 
 No se encontró requirements.txt ni requirements.lock en la ruta raíz de bridge/; la instalación declarada no copia paquetes Python de terceros ni un árbol site-packages. El código de runtime debe seguir verificándose contra sus importaciones reales antes de afirmar que el inventario de dependencias está completo. Las dependencias del sistema se obtienen de los repositorios Debian; no se incrustan sus binarios ni sus textos de licencia en este paquete según las reglas de instalación revisadas.
