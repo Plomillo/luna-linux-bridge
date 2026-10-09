@@ -179,11 +179,11 @@ class MTLSGatewayTests(unittest.TestCase):
         for _ in range(12):
             try:
                 reply=self.client("/v1/status",cert=True,other=True)
-                self.assertNotIn(b"200 OK",reply.split(b"\\r\\n",1)[0])
+                self.assertNotIn(b"200 OK",reply.split(b"\r\n",1)[0])
             except (ssl.SSLError,ConnectionResetError,BrokenPipeError,OSError):
                 pass
         self.assertEqual(self.server.slots._value,gate.MAX_CLIENTS)
-        self.assertIn(b"200 OK",self.client("/v1/status").split(b"\\r\\n",1)[0])
+        self.assertIn(b"200 OK",self.client("/v1/status").split(b"\r\n",1)[0])
         self.assertEqual(self.server.slots._value,gate.MAX_CLIENTS)
 
     def test_client_rejects_server_certificate_with_wrong_hostname(self):
@@ -201,7 +201,7 @@ class MTLSGatewayTests(unittest.TestCase):
             try:
                 with self.assertRaises(ssl.SSLCertVerificationError):
                     with context.wrap_socket(raw,server_hostname="localhost") as tls:
-                        tls.sendall(b"GET /v1/status HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n")
+                        tls.sendall(b"GET /v1/status HTTP/1.0\r\nHost: localhost\r\n\r\n")
             finally:
                 raw.close()
         finally:
