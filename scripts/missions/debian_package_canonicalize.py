@@ -46,10 +46,6 @@ def canonicalize(source: pathlib.Path, destination: pathlib.Path, epoch: int) ->
                 except (NotImplementedError, PermissionError) as exc:
                     raise RuntimeError(f"could not normalize timestamp for {path}: {exc}") from exc
             os.utime(base, (epoch, epoch), follow_symlinks=False)
-        run(["dpkg-deb", "--build", "--root-owner-group", str(data_dir), str(rebuilt)], env=env)
-        # dpkg-deb --build uses the sibling control directory when building a
-        # package root; place the control files into DEBIAN before rebuilding.
-        # This second build is intentionally done below after a complete tree is staged.
         staged = root / "package-root"
         shutil.copytree(data_dir, staged, symlinks=True)
         (staged / "DEBIAN").mkdir()
