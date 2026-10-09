@@ -405,6 +405,7 @@ jobs:
           npm --version
           npx playwright --version
       - name: Execute real Chromium browser UI E2E with explicit Tauri IPC test double
+        timeout-minutes: 4
         shell: bash
         run: |
           set -Eeuo pipefail
