@@ -24,8 +24,9 @@ def audit(root: Path = ROOT) -> dict:
     wf_path = root / ".github/workflows/louksna-zd-v03-governance.yml"
     contract_path = root / "governance/zona-directiva-v03/12_STAGE_GOVERNANCE_CONTRACT.md"
     runner_path = root / "governance/zona-directiva-v03/CP-09-DISPOSABLE-KDE-RUNNER.md"
+    runtime_script_path = root / "scripts/missions/debian13_kde_host_runtime.sh"
     findings: list[dict] = []
-    required = [(wf_path, "governance workflow"), (contract_path, "governance contract"), (runner_path, "CP-09 runner runbook")]
+    required = [(wf_path, "governance workflow"), (contract_path, "governance contract"), (runner_path, "CP-09 runner runbook"), (runtime_script_path, "CP-09 host runtime script")]
     missing = [label for path, label in required if not path.is_file()]
     if missing:
         findings.append(finding("REPO_CONTROL_FILES", "FAIL", "Missing required control files: " + ", ".join(missing)))
@@ -34,12 +35,17 @@ def audit(root: Path = ROOT) -> dict:
     wf = wf_path.read_text(encoding="utf-8")
     contract = contract_path.read_text(encoding="utf-8")
     runner = runner_path.read_text(encoding="utf-8")
+    runtime_script = runtime_script_path.read_text(encoding="utf-8")
 
     checks = [
         ("CP09_TARGET_RUNNER", all(x in wf for x in ["self-hosted", "debian-13", "kde", "disposable"]),
          "CP-09 targets a dedicated self-hosted Debian 13/KDE/disposable runner."),
         ("CP09_FAIL_CLOSED", "HOLD" in wf and "stage-09-physical-runtime" in wf,
          "The physical runtime stage and HOLD state are represented in the workflow."),
+        ("CP09_REPORT_PATH_MATCH", "CP-09-debian13-kde-runtime.json" in wf and "CP-09-debian13-kde-runtime.json" in runtime_script and "CP-09-debian13-kde-runtime.log" in wf,
+         "Workflow upload paths match the actual CP-09 report and log names."),
+        ("CP10_BINDS_PHYSICAL_EVIDENCE", all(x in wf for x in ["physical_runtime_verified", "candidate_sha256", "log_sha256", "GITHUB_RUN_ID", "GITHUB_RUN_ATTEMPT"]),
+         "CP-10 requires same-run CP-09 evidence and validates physical runtime, package digest, and log digest."),
         ("CP10_EVIDENCE_FREEZE", "stage-10-evidence-freeze" in wf and "CP-10-evidence-manifest.json" in wf,
          "CP-10 evidence-manifest stage exists."),
         ("G23_NO_SELF_CERTIFICATION", "independent validator identity" in wf and "exit 1" in wf,
