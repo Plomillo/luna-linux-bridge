@@ -73,3 +73,8 @@ The public GitHub profile has no public email field, and the commit-attributed e
 
 ### Result
 The three workstreams have been advanced as far as repository/web evidence permits and their remaining human-evidence requirements are explicit. This is not legal closure: `debian/copyright` is not generated, and merge/release/redistribution remain blocked. CI must be checked against the latest branch HEAD before any test status is claimed.
+
+
+## Authorization scope recorded — 2026-10-09 UTC
+
+The project user explicitly authorized continuation of the technical and documentary investigation for the three closure workstreams in the active conversation. This authorization permits further repository/source-history inspection, provenance documentation, and preparation of evidence templates within the existing candidate branch and project governance constraints. It is **not** itself a rights-holder attestation, a license grant, proof of authority over third-party materials, maintainer-contact confirmation, or authorization to merge, publish, release, or redistribute the package. Those gates remain closed until the corresponding evidence is supplied and independently checked.
