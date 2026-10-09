@@ -24,9 +24,9 @@ class ReleasePolicyTests(unittest.TestCase):
         self.assertIn("trap 'exit 143' TERM", PROVISIONER)
 
     def test_client_identity_paths_are_written_as_owner_not_root(self):
-        owner_creation = 'runuser -u "$OWNER_UID" -- mkdir -m 0700 "$CLIENT"'
-        owner_keygen = 'runuser -u "$OWNER_UID" -- openssl req -new'
-        owner_publish = 'runuser -u "$OWNER_UID" -- cp "$TLS/client.pem" "$CLIENT/client.pem"'
+        owner_creation = 'runuser -u "$OWNER_USER" -- mkdir -m 0700 "$CLIENT"'
+        owner_keygen = 'runuser -u "$OWNER_USER" -- openssl req -new'
+        owner_publish = 'runuser -u "$OWNER_USER" -- cp "$TLS/client.pem" "$CLIENT/client.pem"'
         self.assertIn(owner_creation, PROVISIONER)
         self.assertIn(owner_keygen, PROVISIONER)
         self.assertIn(owner_publish, PROVISIONER)
