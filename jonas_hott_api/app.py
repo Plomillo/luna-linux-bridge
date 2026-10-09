@@ -112,6 +112,8 @@ def event(conn: sqlite3.Connection, event_type: str, request_id: str | None, det
 @app.on_event("startup")
 def startup() -> None:
     initialize_db()
+    from .account_state import initialize_account_state_db
+    initialize_account_state_db()
 
 
 class ReservationRequest(BaseModel):
@@ -316,3 +318,8 @@ def resume(payload: HaltRequest) -> dict:
         return {"halted": False, "warning": "Operator attestation recorded; this API cannot independently prove reconciliation."}
     except (sqlite3.Error, OSError):
         raise HTTPException(503, "Cannot verify durable resume state.")
+
+
+# Additive shared account-credit and model-catalog ledger.
+from .account_state import router as account_state_router
+app.include_router(account_state_router)
