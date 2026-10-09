@@ -147,7 +147,7 @@ jobs:
                 DisplayServer=x11
                 [Autologin]
                 User=louksna-test
-                Session=plasma
+                Session=plasma.desktop
                 Relogin=false
           runcmd:
             - systemctl enable ssh
@@ -162,8 +162,10 @@ jobs:
           EOF
           cloud-localds seed.iso user-data meta-data
           qemu-img create -f qcow2 -F qcow2 -b debian-13-genericcloud-amd64.qcow2 debian-vm.qcow2 24G
+          if test -e /dev/kvm; then ACCEL=kvm; else ACCEL=tcg; fi
+          printf 'QEMU_ACCEL=%s\n' "$ACCEL" | tee virtualization-mode-actual.txt
           qemu-system-x86_64 \
-            -machine q35,accel=tcg \
+            -machine "q35,accel=$ACCEL" \
             -cpu max -smp 2 -m 4096 \
             -drive file=debian-vm.qcow2,if=virtio,format=qcow2 \
             -drive file=seed.iso,media=cdrom,readonly=on \
@@ -192,17 +194,63 @@ jobs:
           cd evidence/cp09-vm
           SSH=(ssh -i vm_ssh_key -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null louksna-test@127.0.0.1)
           SCP=(scp -i vm_ssh_key -P 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null)
-          "${SCP[@]}" candidate.deb louksna-test@127.0.0.1:/tmp/candidate.deb
-          "${SSH[@]}" 'sudo dpkg -i /tmp/candidate.deb || sudo apt-get -y --fix-broken install'
-          PKG="$(cat candidate-package-name.txt)"
-          "${SSH[@]}" "dpkg-query -W -f='${Package}\t${Version}\t${Status}\n' '$PKG' | tee /tmp/package-installed.tsv"
-          "${SSH[@]}" "dpkg-query -W -f='${Status}' '$PKG' | grep -q 'install ok installed'"
-          "${SSH[@]}" 'uid="$(id -u louksna-test)"; test -S "/run/user/$uid/bus"; test -n "$(pgrep -x Xorg)"; test -n "$(pgrep -x kwin_x11)"'
-          "${SSH[@]}" "sudo -u louksna-test env DISPLAY=:0 XAUTHORITY=/home/louksna-test/.Xauthority XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus XDG_CURRENT_DESKTOP=KDE KDE_FULL_SESSION=true XDG_SESSION_TYPE=x11 timeout --signal=TERM --kill-after=5s 20s bash -lc 'BIN=\$(find /usr/bin /usr/local/bin -maxdepth 1 -type f -iname "*louksna*" -print -quit); test -n "\$BIN"; test -x "\$BIN"; \"\$BIN\"' 2>&1 | tee /tmp/louksna-launch.log"
-          "${SSH[@]}" 'cat /tmp/louksna-launch.log; cat /tmp/package-installed.tsv' | tee kde-launch-evidence.log
-          "${SSH[@]}" "sudo apt-get remove -y '$PKG'"
-          "${SSH[@]}" "if dpkg-query -W -f='${Status}' '$PKG' 2>/dev/null | grep -q 'install ok installed'; then echo ROLLBACK_FAIL; exit 30; else echo ROLLBACK_PASS; fi" | tee rollback-evidence.log
-
+          "\${SCP[@]}" candidate.deb louksna-test@127.0.0.1:/tmp/candidate.deb
+          cat > guest-test.sh <<'GUEST'
+          #!/usr/bin/env bash
+          set -uo pipefail
+          PKG="$(dpkg-deb -f /tmp/candidate.deb Package)"
+          rollback() {
+            set +e
+            sudo apt-get remove -y "$PKG" > /tmp/rollback.log 2>&1
+            RC=$?
+            if [ "$RC" -eq 0 ] && ! dpkg-query -W -f='\${Status}' "$PKG" 2>/dev/null | grep -q 'install ok installed'; then
+              echo ROLLBACK_PASS | tee /tmp/rollback-result.txt
+            else
+              echo ROLLBACK_FAIL | tee /tmp/rollback-result.txt
+              touch /tmp/rollback-failed
+            fi
+          }
+          trap rollback EXIT
+          sudo dpkg -i /tmp/candidate.deb > /tmp/package-install.log 2>&1
+          RC=$?
+          if [ "$RC" -ne 0 ]; then
+            sudo apt-get -y --fix-broken install >> /tmp/package-install.log 2>&1
+            RC=$?
+          fi
+          if [ "$RC" -ne 0 ] || ! dpkg-query -W -f='\${Status}' "$PKG" 2>/dev/null | grep -q 'install ok installed'; then
+            echo INSTALL_FAIL
+            cat /tmp/package-install.log
+            exit 1
+          fi
+          dpkg-query -W -f='\${Package}\\t\${Version}\\t\${Status}\\n' "$PKG" > /tmp/package-installed.tsv
+          uid="$(id -u louksna-test)"
+          test -S "/run/user/$uid/bus" || { echo "KDE user bus missing"; exit 2; }
+          test -n "$(pgrep -x Xorg)" && test -n "$(pgrep -x kwin_x11)" || { echo "KDE/Xorg session process missing"; exit 3; }
+          XAUTH="$(pgrep -a Xorg | sed -n 's/.*-auth \\([^ ]*\\).*/\\1/p' | head -n 1)"
+          if [ -n "$XAUTH" ] && sudo test -r "$XAUTH"; then
+            sudo cp "$XAUTH" /home/louksna-test/.Xauthority
+            sudo chown louksna-test:louksna-test /home/louksna-test/.Xauthority
+            sudo chmod 600 /home/louksna-test/.Xauthority
+          fi
+          sudo -u louksna-test env DISPLAY=:0 XAUTHORITY=/home/louksna-test/.Xauthority XDG_RUNTIME_DIR="/run/user/$uid" DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$uid/bus" XDG_CURRENT_DESKTOP=KDE KDE_FULL_SESSION=true XDG_SESSION_TYPE=x11 timeout --signal=TERM --kill-after=5s 20s bash -lc 'BIN=$(find /usr/bin /usr/local/bin -maxdepth 1 -type f -iname "*louksna*" -print -quit); test -n "$BIN" && test -x "$BIN" && "$BIN"' > /tmp/louksna-launch.log 2>&1
+          RC=$?
+          if [ "$RC" -eq 0 ] || [ "$RC" -eq 124 ]; then
+            echo "LAUNCH_PASS exit_code=$RC"
+          else
+            echo "LAUNCH_FAIL exit_code=$RC"
+            cat /tmp/louksna-launch.log
+            exit 4
+          fi
+          cat /tmp/louksna-launch.log
+          GUEST
+          "\${SCP[@]}" guest-test.sh louksna-test@127.0.0.1:/tmp/guest-test.sh
+          set +e
+          "\${SSH[@]}" 'chmod +x /tmp/guest-test.sh && bash /tmp/guest-test.sh' 2>&1 | tee guest-install-launch-rollback.log
+          TEST_RC=\${PIPESTATUS[0]}
+          set -e
+          "\${SSH[@]}" 'cat /tmp/package-install.log /tmp/package-installed.tsv /tmp/louksna-launch.log /tmp/rollback.log /tmp/rollback-result.txt 2>/dev/null || true' | tee guest-package-evidence.log
+          if [ "$TEST_RC" -ne 0 ]; then exit "$TEST_RC"; fi
+          grep -q ROLLBACK_PASS guest-package-evidence.log
       - name: Create evidence manifest with hashes and explicit scope
         if: always()
         shell: bash
