@@ -1,3 +1,12 @@
+louksna-linux-bridge (0.4.0-4) unstable; urgency=high
+
+  * Add a real Debian desktop launcher named Louksna.
+  * Add a Tkinter control panel for service state, explicit start/stop, and logs.
+  * Refuse to start the service from the UI when the mTLS configuration is absent.
+  * Keep service disabled on package install and preserve existing trust material.
+
+ -- Louksna Project <maintainers@louksna.invalid>  Fri, 09 Oct 2026 00:15:00 +0000
+
 louksna-linux-bridge (0.4.0-3) unstable; urgency=high
 
   * Add an explicit, fail-closed local mTLS provisioning command.
