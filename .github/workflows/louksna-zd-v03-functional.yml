@@ -8,6 +8,7 @@ on:
       - missions/inbox/louksna-zona-directiva-v03-functional-20261006/MISSION.md
       - scripts/missions/louksna_zd_v03_preflight.py
       - scripts/missions/louksna_zd_v03_functionalizer.py
+      - scripts/missions/test_louksna_zd_v03_backend.py
       - scripts/missions/louksna_zd_v03_deb_sanitize.py
       - scripts/missions/v03_templates/**
       - .github/workflows/louksna-zd-v03-functional.yml
@@ -141,6 +142,12 @@ jobs:
           grep -q 'github_repositories' "$CANDIDATE/src-tauri/src/main.rs"
           grep -q 'rusqlite' "$CANDIDATE/src-tauri/Cargo.toml"
           echo "TELEMETRY V03_FUNCTIONAL_SOURCE=PASS"
+
+      - name: Verify V0.3 backend security regressions
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B -I target/scripts/missions/test_louksna_zd_v03_backend.py target/scripts/missions/v03_templates/main.rs
 
       - name: Install V0.3 build and packaging dependencies
         shell: bash
