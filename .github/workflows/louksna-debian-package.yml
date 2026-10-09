@@ -210,6 +210,50 @@ jobs:
           pathlib.Path("debian-package-evidence.json").write_text(json.dumps(evidence,indent=2,sort_keys=True)+"\n")
           PY
 
+      - name: Enforce distribution clearance before artifact staging
+        run: |
+          set -eu
+          if [ ! -s debian/copyright ]; then
+            echo "::error::DISTRIBUTION_GATE=HOLD; debian/copyright is absent."
+            exit 1
+          fi
+          if [ ! -s docs/DISTRIBUTION_CLEARANCE.json ]; then
+            echo "::error::DISTRIBUTION_GATE=HOLD; independent clearance record is absent."
+            exit 1
+          fi
+          python3 - <<'PY'
+          import hashlib, json, pathlib, subprocess, sys
+          path = pathlib.Path("docs/DISTRIBUTION_CLEARANCE.json")
+          record = json.loads(path.read_text())
+          required_text = ("candidate_commit", "debian_copyright_sha256", "reviewer", "reviewed_at_utc")
+          required_true = ("file_coverage_complete", "third_party_clearance_complete",
+                           "redistribution_authorized", "maintainer_contact_verified",
+                           "independent_review_passed")
+          errors = []
+          if record.get("status") != "CLEARED":
+              errors.append("status must be CLEARED")
+          for key in required_text:
+              if not isinstance(record.get(key), str) or not record[key].strip():
+                  errors.append(f"{key} must be non-empty")
+          if record.get("candidate_commit") != subprocess.check_output(
+                  ["git", "rev-parse", "HEAD"], text=True).strip():
+              errors.append("candidate_commit does not match checked-out HEAD")
+          actual = hashlib.sha256(pathlib.Path("debian/copyright").read_bytes()).hexdigest()
+          if record.get("debian_copyright_sha256") != actual:
+              errors.append("debian_copyright_sha256 does not match current file")
+          if not isinstance(record.get("evidence_refs"), list) or not record["evidence_refs"]:
+              errors.append("evidence_refs must be a non-empty list")
+          for key in required_true:
+              if record.get(key) is not True:
+                  errors.append(f"{key} must be true")
+          if errors:
+              print("DISTRIBUTION_GATE=HOLD")
+              for error in errors:
+                  print(f"::error::{error}")
+              sys.exit(1)
+          print("DISTRIBUTION_GATE=CLEARED (record present; underlying evidence still requires independent human verification)")
+          PY
+
       - name: Stage Debian package for artifact upload
         run: |
           mkdir -p dist/debian
