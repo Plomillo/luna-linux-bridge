@@ -8,7 +8,7 @@ mkdir -p "$OUTPUT_DIR"
 REPORT="$OUTPUT_DIR/CP-09-debian13-container-smoke.json"
 LOG="$OUTPUT_DIR/CP-09-debian13-container-smoke.log"
 mapfile -t PACKAGES < <(find "$INPUT_DIR" -type f -name '*.deb' -print | sort)
-if (("${#PACKAGES[@]}" != 1)); then
+if [ "${#PACKAGES[@]}" -ne 1 ]; then
   python3 - "$REPORT" "${#PACKAGES[@]}" <<'PY'
 import json,sys
 json.dump({"schema":"louksna.zd.v03.debian13-smoke.v1","status":"HOLD","reason":"Expected exactly one CP-08 .deb; found "+sys.argv[1],"package_count":int(sys.argv[1])},open(sys.argv[2],"w"),indent=2)
@@ -19,7 +19,7 @@ fi
 PKG="$(realpath "${PACKAGES[0]}")"
 set +e
 docker run --rm \
-  -v "$PKG:/input/candidate.deb:ro" \
+  -v "$(realpath "$INPUT_DIR"):/input:ro" \
   -v "$(realpath "$OUTPUT_DIR"):/out" \
   debian:13-slim bash -s >"$LOG" 2>&1 <<'IN_CONTAINER'
 set -Eeuo pipefail
@@ -29,12 +29,14 @@ apt-get -o Acquire::Retries=3 install -y --no-install-recommends \
   ca-certificates dbus-x11 xvfb timeout file \
   libwebkit2gtk-4.1-0 libgtk-3-0t64 libayatana-appindicator3-1 \
   libssl3t64 libsecret-1-0 librsvg2-2 libxdo3 libnotify4 libgbm1
-PACKAGE="$(dpkg-deb -f /input/candidate.deb Package)"
-VERSION="$(dpkg-deb -f /input/candidate.deb Version)"
-ARCH="$(dpkg-deb -f /input/candidate.deb Architecture)"
-SHA256="$(sha256sum /input/candidate.deb | awk '{print $1}')"
+DEB="$(find /input -type f -name "*.deb" -print -quit)"
+test -n "$DEB"
+PACKAGE="$(dpkg-deb -f "$DEB" Package)"
+VERSION="$(dpkg-deb -f "$DEB" Version)"
+ARCH="$(dpkg-deb -f "$DEB" Architecture)"
+SHA256="$(sha256sum "$DEB" | awk '{print $1}')"
 printf 'PACKAGE=%s\nVERSION=%s\nARCH=%s\nSHA256=%s\n' "$PACKAGE" "$VERSION" "$ARCH" "$SHA256"
-apt-get -o Acquire::Retries=3 install -y /input/candidate.deb
+apt-get -o Acquire::Retries=3 install -y "$DEB"
 echo "INSTALL_STATUS=PASS"
 DESKTOP="$(find /usr/share/applications -type f -iname '*louksna*.desktop' -print -quit || true)"
 if [ -n "$DESKTOP" ]; then
