@@ -550,6 +550,29 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
+      - name: Download exact CP-08 package artifact
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
+        with:
+          name: louksna-zd-v03-cp08-build-package
+          path: evidence/zona-directiva-v03/imported/louksna-zd-v03-cp08-build-package
+      - name: Run Debian 13 package install, launch, and rollback smoke test
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          bash scripts/missions/debian13_package_smoke.sh \
+            "$GITHUB_WORKSPACE/evidence/zona-directiva-v03/imported/louksna-zd-v03-cp08-build-package" \
+            "$GITHUB_WORKSPACE/evidence/zona-directiva-v03"
+      - name: Preserve Debian 13 container smoke evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksna-zd-v03-cp09-debian13-container-smoke
+          path: |
+            evidence/zona-directiva-v03/CP-09-debian13-container-smoke.json
+            evidence/zona-directiva-v03/CP-09-debian13-container-smoke.log
+          if-no-files-found: warn
+          retention-days: 90
       - name: Require real Debian 13 KDE runtime and rollback evidence
         id: runtime_gate
         shell: bash
@@ -634,7 +657,7 @@ jobs:
           python3 - <<'PY'
           import json,pathlib,sys
           root=pathlib.Path("evidence/zona-directiva-v03/imported")
-          required=["louksna-zd-v03-cp01-repository-audit","louksna-zd-v03-cp02-contract-linkage","louksna-zd-v03-cp03-backend-ledger","louksna-zd-v03-cp04-github-bridge","louksna-zd-v03-cp05-ui-telemetry","louksna-zd-v03-cp06-functions-attachments","louksna-zd-v03-cp07-voice-gate-open","louksna-zd-v03-cp07-playwright-ui-e2e","louksna-zd-v03-cp08-build-package"]
+          required=["louksna-zd-v03-cp01-repository-audit","louksna-zd-v03-cp02-contract-linkage","louksna-zd-v03-cp03-backend-ledger","louksna-zd-v03-cp04-github-bridge","louksna-zd-v03-cp05-ui-telemetry","louksna-zd-v03-cp06-functions-attachments","louksna-zd-v03-cp07-voice-gate-open","louksna-zd-v03-cp07-playwright-ui-e2e","louksna-zd-v03-cp08-build-package","louksna-zd-v03-cp09-debian13-container-smoke"]
           missing=[n for n in required if not (root/n).is_dir()]
           if missing:
               print("CP-10 HOLD: missing same-run evidence artifacts: "+", ".join(missing))
