@@ -199,6 +199,87 @@ def test_catalog_snapshot_id_cannot_be_replayed_with_changed_content(monkeypatch
     assert replay.status_code == 409
 
 
+def test_model_recommendations_require_evidence_for_constrained_metrics(monkeypatch, tmp_path):
+    setup_state(monkeypatch, tmp_path)
+    snapshot = {
+        "snapshot_id": "recommendation-catalog-001",
+        "observed_at_utc": datetime.now(timezone.utc).isoformat(),
+        "source_kind": "manual",
+        "source_reference": "local-fixture-not-an-official-catalog",
+        "actor": "test-importer",
+        "models": [
+            {
+                "model_id": "vision-good",
+                "display_name": "Vision Good",
+                "capabilities": ["chat", "vision"],
+                "metadata": {
+                    "quality_score": 0.92,
+                    "quality_score_evidence_sha256": digest("quality-evidence"),
+                    "latency_ms": 250,
+                    "latency_ms_evidence_sha256": digest("latency-evidence"),
+                    "estimated_cost_credits": 2.5,
+                    "estimated_cost_credits_evidence_sha256": digest("cost-evidence"),
+                },
+            },
+            {
+                "model_id": "vision-unknown-cost",
+                "capabilities": ["vision"],
+                "metadata": {
+                    "quality_score": 0.95,
+                    "quality_score_evidence_sha256": digest("quality-evidence-2"),
+                    "latency_ms": 100,
+                    "latency_ms_evidence_sha256": digest("latency-evidence-2"),
+                },
+            },
+        ],
+        "evidence_sha256": digest("snapshot-source-evidence"),
+    }
+    with TestClient(app) as client:
+        saved = client.post("/v1/models/catalog/snapshots", headers=auth(), json=snapshot)
+        response = client.get(
+            "/v1/models/recommendations",
+            headers=auth(),
+            params={
+                "task": "image understanding",
+                "required_capabilities": ["vision"],
+                "min_quality_score": 0.8,
+                "max_latency_ms": 300,
+                "max_estimated_cost_credits": 5,
+            },
+        )
+    assert saved.status_code == 200
+    assert response.status_code == 200
+    result = response.json()
+    assert result["status"] == "CANDIDATES_UNVERIFIED"
+    assert result["catalog_source_verified"] is False
+    assert [item["model_id"] for item in result["recommendations"]] == ["vision-good"]
+    assert result["recommendations"][0]["estimated_cost_credits"] == 2.5
+    assert result["excluded"][0]["reason"] == "CONSTRAINT_NOT_MET_OR_UNKNOWN"
+    assert "COST_UNKNOWN_OR_UNEVIDENCED" in result["excluded"][0]["details"]
+
+
+def test_model_recommendations_leave_unpriced_cost_unknown(monkeypatch, tmp_path):
+    setup_state(monkeypatch, tmp_path)
+    snapshot = {
+        "snapshot_id": "recommendation-catalog-unknown-cost",
+        "observed_at_utc": datetime.now(timezone.utc).isoformat(),
+        "source_kind": "manual",
+        "source_reference": "local-fixture",
+        "actor": "test-importer",
+        "models": [{"model_id": "unpriced", "capabilities": ["chat"], "metadata": {}}],
+        "evidence_sha256": digest("unknown-cost-catalog"),
+    }
+    with TestClient(app) as client:
+        client.post("/v1/models/catalog/snapshots", headers=auth(), json=snapshot)
+        response = client.get(
+            "/v1/models/recommendations",
+            headers=auth(),
+            params={"task": "chat", "required_capabilities": ["chat"]},
+        )
+    assert response.json()["recommendations"][0]["estimated_cost_credits"] is None
+    assert response.json()["recommendations"][0]["catalog_source_verified"] is False
+
+
 def test_catalog_snapshot_is_not_certified_by_source_label_alone(monkeypatch, tmp_path):
     import jonas_hott_api.app as module
     monkeypatch.setenv("JONAS_API_TOKEN", "account-state-test-token")
