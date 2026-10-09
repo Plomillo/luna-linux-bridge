@@ -67,3 +67,12 @@ The branch contains routes for credit observations and catalog snapshots. The sh
 - Uploaded evidence artifact SHA-256: `sha256:8016e9e549855e6f314bb5d1134cf685a6ca7a86d27bfb7408a91fa1b521af8e`.
 - Package status remains `SOURCE_CANDIDATE_NOT_PRODUCTION_DEPLOYABLE`; this evidence does not close deployment, TLS, family outreach, provider catalog, backup/restore, or G23/G24 gates.
 
+## Backup/restore and package regression evidence — 2026-10-09
+
+- CI run [37976334899](https://github.com/Plomillo/luna-linux-bridge/actions/runs/37976334899): compile passed; **23 API/shared-account/backup tests passed**; source archive extracted into a clean directory, dependencies installed in a fresh virtual environment, and the same **23 tests passed again**.
+- Deterministic family source-candidate archive SHA-256: `819e43b14fd5fd56ac6caffe5c5594ce827dbf130ec0bf9fad0d4072355a74df`.
+- CI evidence report SHA-256: `86feb5ec403d78599ced8d047a59c7f7937394b722b1814fc569e19340763006`.
+- Uploaded artifact SHA-256: `sha256:b3de822d81e0d70db4a974968fead5ca8b793ef66cf5ace565abe3f675f9d34e`.
+- The packager scans for common secret patterns, includes source/test/deployment/recovery documentation, and labels the archive `SOURCE_CANDIDATE_NOT_PRODUCTION_DEPLOYABLE`.
+- Backup/restore tests verify SQLite integrity, SHA-256 matching, pre-restore checkpoint preservation, and explicit fail-closed restore authorization. These are automated local tests, not a production recovery drill.
+
