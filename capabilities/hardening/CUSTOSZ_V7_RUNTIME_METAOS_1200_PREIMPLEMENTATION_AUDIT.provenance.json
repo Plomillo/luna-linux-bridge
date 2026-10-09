@@ -1,0 +1,103 @@
+{
+  "schema": "LOUKSNA_PREIMPLEMENTATION_AUDIT_PROVENANCE/1.0",
+  "status": "CANDIDATE_ONLY",
+  "authority": "Louksna.md",
+  "assurance": "PUAC2.md",
+  "doctrine": "EXTEND_DO_NOT_REPLACE",
+  "failure_posture": "FAIL_CLOSED",
+  "repository": "Plomillo/luna-linux-bridge",
+  "branch": "candidate/capability-1200-hardening-20261007",
+  "pull_request": 45,
+  "source_capability_registry": {
+    "path": "capabilities/hardening/1200_definitivo.txt",
+    "sha256": "eeb3b32e170cd2780c25ce65156978fa58682b6faef0d5da50b35e50993e652e",
+    "identity_count": 1200
+  },
+  "audited_execution_chain": {
+    "custosz_v7": {
+      "source_branch": "staging/custosz-v7-metaos-20260927",
+      "path": "artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz",
+      "bytes": 49379,
+      "sha256": "dacf1f8c13b2fcbfc617cf0d4d780b30502c13395224691e6b0f05f53d9816a2",
+      "skeleton_pin_match": true
+    },
+    "runtime": {
+      "source_branch": "staging/custosz-v7-metaos-20260927",
+      "path": "artifacts/custosz-v7/CUSTOSZ_RUNTIME_V1_SR_EXEC_BOUND_FME_01.b.pyz",
+      "bytes": 10376,
+      "observed_sha256": "a79e13869601d68fe801b85ad421719b79d4afa5520ae34b91b419bd8834ae67",
+      "skeleton_sha256": "4e9bf0e799487ea0fd6a6d32359176bdce996010e33ed151ce0f186155d11df0",
+      "decision_for_new_1200_scope": "HOLD_EXPLICIT_RECONCILIATION_REQUIRED"
+    },
+    "metaos": {
+      "source_branch": "staging/custosz-v7-metaos-20260927",
+      "path": "artifacts/custosz-v7/MetaOS.wasm",
+      "bytes": 2442,
+      "sha256": "5d8f1239e3a0b452be722078760b000afc22af0a64f93ffb0a1f74024f15aed0",
+      "skeleton_pin_match": true
+    }
+  },
+  "historical_operational_evidence": {
+    "issue": 7,
+    "server_ready_terminal_run": 36503769931,
+    "source_commit": "f835faf9cc5448e29e73ae20778103c957349511",
+    "g08": "PASS",
+    "g09": "PASS",
+    "g23": "PASS",
+    "g24": "PASS",
+    "server_certified": true,
+    "certification_propagation": false,
+    "note": "historical SERVER_READY scope only; no inheritance into 1200 implementation"
+  },
+  "current_trust_root_assessment": {
+    "existing_validator": "scripts/assurance/metacognitive_trust_root.py",
+    "existing_workflow": ".github/workflows/metacognitive-independent-assurance.yml",
+    "existing_scope": "MCAP59/metacognitive operational ecosystem",
+    "limitation": "hard-coded 59 capability count and branch-specific G24 base-ref policy; not valid as-is for 1200",
+    "required_action": "create additive 1200-specific independent trust root; do not weaken or silently repurpose existing one"
+  },
+  "findings": {
+    "capability_identity_coverage": "PASS_1200_OF_1200",
+    "incomplete_source_record": {
+      "capability_id": 1162,
+      "canonical_name": "HUMAN_HARM_ONTOLOGY",
+      "missing": [
+        "WIRE",
+        "REPO"
+      ],
+      "action": "HOLD_DO_NOT_INVENT"
+    },
+    "implementation_authorized": false,
+    "g23_1200_executed": false,
+    "g24_1200_executed": false,
+    "terminal_general_certification": "NOT_GRANTED"
+  },
+  "outputs": {
+    "human_audit": {
+      "path": "capabilities/hardening/CUSTOSZ_V7_RUNTIME_METAOS_1200_PREIMPLEMENTATION_AUDIT.txt",
+      "commit": "d2de255cb04c7962dfdf92240a141d49386e014c",
+      "git_blob_sha": "052e61d5c206d483095c40028083640d81e9567f",
+      "size_bytes": 517191,
+      "sha256": "b8624d5db1322643390826da4fff0e0406440a1bdd09726bca6ae04352172cd3"
+    },
+    "machine_matrix": {
+      "path": "capabilities/hardening/CAPABILITY_1200_EXECUTION_MATRIX.json",
+      "commit": "9966fc9a28e1f6393b02f91fc7398d2a5848e77e",
+      "git_blob_sha": "a4f36390013b654406677b2ccba7a6e81604bf6b",
+      "size_bytes": 1863154,
+      "sha256": "fd472b6d44834548fa94bd323b5bf5ad83d76be70e695d6d4cf2ff084bd17d44",
+      "capability_count": 1200,
+      "domain_count": 23
+    }
+  },
+  "non_actions": {
+    "runtime_modified": false,
+    "metaos_modified": false,
+    "custosz_modified": false,
+    "main_modified": false,
+    "louksna_modified": false,
+    "puac2_modified": false,
+    "certification_granted": false,
+    "activation_granted": false
+  }
+}
