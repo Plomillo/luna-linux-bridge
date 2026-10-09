@@ -54,6 +54,8 @@ class ReleasePolicyTests(unittest.TestCase):
         self.assertIn("SystemCallArchitectures=native", SERVICE)
         self.assertIn("MemoryDenyWriteExecute=yes", SERVICE)
         self.assertIn("RestrictAddressFamilies=AF_UNIX AF_INET", SERVICE)
+        self.assertIn("StateDirectory=louksna/remote-bridge", SERVICE)
+        self.assertIn("StateDirectoryMode=0700", SERVICE)
         self.assertIn("ReadWritePaths=@OWNER_PRIVATE_STATE@", SERVICE)
         self.assertIn("server_key (absolute root-owned private mode-0600 file", MTLS_DOC)
 
@@ -63,6 +65,8 @@ class ReleasePolicyTests(unittest.TestCase):
         self.assertIn("titular autorizado", REPORT)
         self.assertIn("G23", REPORT)
         self.assertIn("G24", REPORT)
+        self.assertIn("PACKAGE_COMPONENT_INVENTORY.md", REPORT)
+        self.assertIn("debian/copyright", (ROOT / "docs/PACKAGE_COMPONENT_INVENTORY.md").read_text())
 
 
 if __name__ == "__main__":
