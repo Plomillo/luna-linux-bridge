@@ -32,9 +32,9 @@ permissions:
   contents: read
 
 concurrency:
-  # Keep the newest candidate moving; obsolete runs on the same ref must not block its evidence collection.
+  # Preserve active evidence-producing runs; candidate revisions queue without cancelling checkpoints.
   group: louksna-zd-v03-governance-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   stage-01-audit:
