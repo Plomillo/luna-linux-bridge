@@ -46,7 +46,17 @@ jobs:
         run: |
           set -Eeuo pipefail
           mkdir -p evidence/infra-acquisition
-          podman pull docker.io/library/debian:13
+          # Retry transient registry/token gateway failures; preserve every attempt.
+          for attempt in 1 2 3 4 5; do
+            if podman pull docker.io/library/debian:13 2>&1 | tee "evidence/infra-acquisition/podman-pull-attempt-${attempt}.log"; then
+              break
+            fi
+            if [ "$attempt" -eq 5 ]; then
+              echo "Debian image pull failed after 5 attempts" >&2
+              exit 1
+            fi
+            sleep $((attempt * 5))
+          done
           podman image inspect docker.io/library/debian:13 --format '{{.Digest}}' | tee evidence/infra-acquisition/debian-image-digest.txt
           podman image inspect docker.io/library/debian:13 > evidence/infra-acquisition/debian-image-inspect.json
 
