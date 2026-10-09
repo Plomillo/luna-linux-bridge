@@ -76,3 +76,10 @@ The branch contains routes for credit observations and catalog snapshots. The sh
 - The packager scans for common secret patterns, includes source/test/deployment/recovery documentation, and labels the archive `SOURCE_CANDIDATE_NOT_PRODUCTION_DEPLOYABLE`.
 - Backup/restore tests verify SQLite integrity, SHA-256 matching, pre-restore checkpoint preservation, and explicit fail-closed restore authorization. These are automated local tests, not a production recovery drill.
 
+## Superseding CI evidence — source package and recovery tests — 2026-10-09
+
+- Candidate: PR #50 local MVP plus API candidate; GitHub Actions run [37978354010](https://github.com/Plomillo/luna-linux-bridge/actions/runs/37978354010) completed with **PASS**.
+- API/shared-account/backup-restore tests: **23 passed** in checkout and **23 passed** again from the extracted archive in a clean virtual environment.
+- Deterministic source archive SHA-256: `5ce5d77e1c76f7b54b862439df29c0b74f8c4f27f8d73f909aaabd7e4de735cf`.
+- Hash-bound CI evidence SHA-256: `9a0d6f4d186ad460102662ea3580ae365c438985c737ccf7150f763e7b0752e9`.
+- This supersedes earlier 20-test package evidence for the current candidate. It does not establish provider billing reconciliation, production deployment, G23, G24, or production authorization.
