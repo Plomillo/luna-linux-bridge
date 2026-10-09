@@ -118,3 +118,39 @@ Closure sequence:
 `BUILD_AND_LINTIAN_CURRENT_HEAD=NOT_RUN_FOR_LEGAL_CLOSURE`  
 `INDEPENDENT_REVIEW=PENDING`  
 `RELEASE=HOLD`
+
+
+## 6. Supplemental public-web legal and provenance investigation (2026-10-09)
+
+This addendum records an additional bounded public-web search after the file/history review above. It does not replace the report's evidence limitations or constitute a legal opinion.
+
+### Public source results
+
+- GitHub's official licensing guidance states that a public repository without a license remains subject to default copyright rules; public visibility alone does not grant permission to reproduce, distribute, or create derivative works: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/licensing-a-repository
+- Chile's Departamento de Derechos Intelectuales explains that copyright authorship and ownership/entitlement to exploit a work are distinct; its software-registration guidance asks for source code, operating manual, third-party software licenses, and identification of natural-person creators when author and owner differ: https://www.propiedadintelectual.gob.cl/faq and https://www.propiedadintelectual.gob.cl/node/1234
+- The same Chilean authority describes the general rule that public use of a privately owned work requires express authorization, subject to statutory exceptions, and says an authorization should specify the granted rights and limits: https://www.propiedadintelectual.gob.cl/node/554
+- Chilean Law 17.336 expressly includes computer programs and preparatory documentation within protected works; its Article 8 contains particular rules for programs created by employees or commissioned, subject to contrary written stipulation. Those rules cannot be applied to this repository without knowing the actual working/commissioning arrangements: https://www.bcn.cl/leychile/navegar?idNorma=28933
+- Debian Policy requires the package's distribution license(s) to be included in `/usr/share/doc/PACKAGE/copyright` and a corresponding `debian/copyright` in the source package. It also describes upstream source location and contact information: https://www.debian.org/doc/debian-policy/ch-source.html and https://www.debian.org/doc/debian-policy/ch-docs.html
+- DEP-5 provides the standard machine-readable format for the Debian copyright file: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+
+### Search outcome and limits
+
+Exact-string public web searches for `maintainers@louksna.invalid`, `LRB_MTLS_READONLY_GATEWAY/0.3`, `LRB_APP`, `custosz-v7-runtime-bot`, and the repository's project name did not surface an independently verifiable third-party rights holder or upstream source. GitHub code search for these distinctive strings returned no indexed matches. These are negative search results only: search engines and code indexes are incomplete, and no match does not establish original authorship or absence of third-party content.
+
+The reviewed repository metadata identifies the repository as public and the repository license field as absent/null. The PR branch's legal report is a documentation-only change; no license, rights-holder declaration, or contact confirmation was discovered by this supplemental search. No external party was contacted because no specific third-party rights holder could be identified responsibly from the evidence. No guessed address or legal declaration has been sent.
+
+### Legal closure determination
+
+The public sources clarify the applicable process but do not themselves grant rights to this project's files. Remaining project-specific facts cannot be established by web research alone: who authored each file; whether any source was copied, generated from, or adapted from third-party material; whether any employment/commission/assignment agreement applies; and which person/entity can grant the required permissions. These require file-level provenance evidence and/or declarations and agreements from the relevant people/entities.
+
+Therefore, the gate remains:
+
+`PUBLIC_WEB_LEGAL_RESEARCH=COMPLETED_BOUNDED`
+`EXTERNAL_RIGHTS_HOLDER_IDENTIFIED=NO`
+`THIRD_PARTY_CLEARANCE=INCOMPLETE`
+`RIGHTS_HOLDER=UNKNOWN`
+`REDISTRIBUTION_LICENSE=NOT_ESTABLISHED`
+`DEBIAN_COPYRIGHT=BLOCKED_PENDING_EVIDENCE`
+`RELEASE=HOLD`
+
+This does not mean infringement has been found. It means redistribution permission has not yet been established. The next evidence-bearing step is a file-by-file source-origin comparison and a documented creator/rights declaration for the material whose origin remains unknown; only then can any necessary specific contact be made.
