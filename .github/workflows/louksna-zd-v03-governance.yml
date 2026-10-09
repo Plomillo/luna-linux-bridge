@@ -386,6 +386,20 @@ jobs:
         run: |
           set -Eeuo pipefail
           mkdir -p "$RUNNER_TEMP/louksna-v03" evidence/zona-directiva-v03
+          # Always preserve a fail-closed voice-gate record even if browser E2E fails early.
+          python3 - <<'PY'
+          import datetime, json, pathlib
+          p = pathlib.Path("evidence/zona-directiva-v03/CP-07-voice-gate.json")
+          p.write_text(json.dumps({
+            "schema": "louksna.zd.v03.voice-gate.v1",
+            "stage_id": "07", "checkpoint_id": "CP-07",
+            "timestamp_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "voice_gate": "OPEN", "voice_active": False,
+            "e2e_executed": False, "result": "HOLD_OPEN",
+            "reason": "Provisional fail-closed record; voice E2E not evidenced.",
+            "certification_effect": "G23_G24_BLOCKED"
+          }, indent=2) + "\\n")
+          PY
           printf '%s\n' '{"mission_id":"MIS-LOUKSNA-ZD-V03-FUNCTIONAL-20261006","dispatch_id":"GH-GOVERNANCE-CP07-PLAYWRIGHT","binding_id":"GOVERNANCE_CP07_PLAYWRIGHT","executor_id":"CI_CHECKPOINT","expected_effect":{"effect_type":"BROWSER_E2E_VALIDATION"}}' > "$RUNNER_TEMP/louksna-v03/DISPATCH.json"
           python3 -B -I scripts/missions/louksna_zd_candidate_materializer.py \
             "$RUNNER_TEMP/louksna-v03/DISPATCH.json" \
@@ -486,7 +500,7 @@ jobs:
         with:
           name: louksna-zd-v03-cp07-voice-gate-open
           path: evidence/zona-directiva-v03/CP-07-voice-gate.json
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 90
       - name: Preserve CP-07 browser E2E report and screenshot
         if: always()
