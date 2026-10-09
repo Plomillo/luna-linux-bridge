@@ -213,8 +213,8 @@ jobs:
           test -f cloud-init-ready.txt || { tail -n 200 vm-serial.log || true; echo "Debian VM cloud-init did not finish in time"; exit 20; }
           SSH=(ssh -i vm_ssh_key -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ServerAliveInterval=15 louksna-test@127.0.0.1)
           "${SSH[@]}" 'sudo cloud-init status --wait; cat /etc/os-release; dpkg-query -W plasma-workspace kwin-x11 sddm xserver-xorg-video-dummy' | tee guest-os-desktop-inventory.txt
-          "${SSH[@]}" 'sudo systemctl restart sddm; sleep 15; loginctl list-sessions --no-legend; pgrep -a Xorg; pgrep -a startplasma-x11; pgrep -a kwin_x11' | tee kde-session-smoke.txt
-          "${SSH[@]}" 'test "$( . /etc/os-release; echo "$ID:$VERSION_ID" )" = "debian:13"; pgrep -x Xorg >/dev/null; pgrep -f startplasma-x11 >/dev/null; pgrep -x kwin_x11 >/dev/null; loginctl list-sessions --no-legend | grep -q louksna-test' 
+          "${SSH[@]}" 'sudo systemctl restart sddm; sleep 15; echo "=== sessions ==="; loginctl list-sessions --no-legend || true; echo "=== processes ==="; pgrep -a Xorg || true; pgrep -af "startplasma|plasmashell" || true; pgrep -a kwin_x11 || true; echo "=== sddm status ==="; sudo systemctl status sddm --no-pager || true; echo "=== sddm journal ==="; sudo journalctl -b -u sddm --no-pager -n 100 || true; echo "=== Xorg journal ==="; sudo journalctl -b _COMM=Xorg --no-pager -n 100 || true; echo "=== Xorg log ==="; sudo find /var/log /home/louksna-test -maxdepth 4 -type f \( -iname "*Xorg*.log" -o -iname "*sddm*.log" \) -print -exec tail -n 80 {} \; 2>/dev/null || true; echo "=== sessions installed ==="; find /usr/share/xsessions /usr/share/wayland-sessions -maxdepth 1 -type f -print 2>/dev/null || true' | tee kde-session-smoke.txt
+          "${SSH[@]}" 'test "$( . /etc/os-release; echo "$ID:$VERSION_ID" )" = "debian:13"; pgrep -x Xorg >/dev/null; pgrep -x kwin_x11 >/dev/null; loginctl list-sessions --no-legend | grep -q louksna-test' 
 
       - name: Install, launch in KDE session, and verify package rollback
         shell: bash
@@ -285,6 +285,9 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
+          if test -f evidence/cp09-vm/qemu.pid; then sudo kill "$(sudo cat evidence/cp09-vm/qemu.pid)" 2>/dev/null || true; fi
+          # QEMU uses sudo when KVM is available; restore runner ownership before hashing/uploading evidence.
+          sudo chown -R "$(id -u):$(id -g)" evidence/cp09-vm
           python3 - <<'PY'
           import datetime,hashlib,json,os,pathlib,platform
           root=pathlib.Path("evidence/cp09-vm")
@@ -316,7 +319,6 @@ jobs:
           (root/"evidence-manifest.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
           print(json.dumps(report,indent=2))
           PY
-          if test -f evidence/cp09-vm/qemu.pid; then sudo kill "$(cat evidence/cp09-vm/qemu.pid)" 2>/dev/null || true; fi
 
       - name: Upload VM, package, KDE session, launch, rollback, and hash evidence
         if: always()
