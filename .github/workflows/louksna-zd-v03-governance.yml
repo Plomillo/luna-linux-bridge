@@ -424,8 +424,8 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          CANDIDATE="$(find "$RUNNER_TEMP" -type f -path '*/src-tauri/tauri.conf.json' -print -quit | sed 's#/src-tauri/tauri.conf.json##')"
-          test -n "$CANDIDATE"
+          CANDIDATE="$GITHUB_WORKSPACE/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate"
+          test -f "$CANDIDATE/package.json" || { echo "CP-07 candidate package.json missing at expected materialized path: $CANDIDATE"; find "$GITHUB_WORKSPACE" -type f -path '*/src-tauri/tauri.conf.json' -print; exit 1; }
           REPORT="$GITHUB_WORKSPACE/evidence/zona-directiva-v03/CP-07-playwright-ui-e2e.json"
           E2E_LOG="$GITHUB_WORKSPACE/evidence/zona-directiva-v03/CP-07-playwright-ui-e2e.log"
           echo "CP-07 candidate=$CANDIDATE"
