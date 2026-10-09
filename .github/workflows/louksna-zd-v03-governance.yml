@@ -398,7 +398,7 @@ jobs:
             "e2e_executed": False, "result": "HOLD_OPEN",
             "reason": "Provisional fail-closed record; voice E2E not evidenced.",
             "certification_effect": "G23_G24_BLOCKED"
-          }, indent=2) + "\\n")
+          }, indent=2) + "\n")
           PY
           printf '%s\n' '{"mission_id":"MIS-LOUKSNA-ZD-V03-FUNCTIONAL-20261006","dispatch_id":"GH-GOVERNANCE-CP07-PLAYWRIGHT","binding_id":"GOVERNANCE_CP07_PLAYWRIGHT","executor_id":"CI_CHECKPOINT","expected_effect":{"effect_type":"BROWSER_E2E_VALIDATION"}}' > "$RUNNER_TEMP/louksna-v03/DISPATCH.json"
           python3 -B -I scripts/missions/louksna_zd_candidate_materializer.py \
