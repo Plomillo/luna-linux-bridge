@@ -68,3 +68,23 @@ La unidad empaquetada actual es `louksna-linux-bridge`, descrita como puente loc
 - **Publicación/activación:** prohibidas hasta resolver las compuertas aplicables. Los artefactos CI actuales son solo diagnósticos.
 
 No se elige ni se infiere una licencia para el proyecto a partir de que una voz pueda usarse legalmente. Tampoco se inventa un contacto mantenedor. El cierre debe basarse en evidencia de los titulares/derechos aplicables y de la composición real del paquete.
+
+
+## 8. Pruebas operacionales añadidas a CI (pendientes de resultado)
+
+Se añadió al workflow una prueba en el runner efímero de GitHub que instala el .deb construido en esa misma ejecución, ejecuta el provisionador real con identidad de usuario explícita y valida:
+- schema y permisos/propiedad root del fichero de política;
+- existencia y tipo de las rutas de certificado/clave;
+- permisos 0600 de la clave privada del servidor;
+- EKU serverAuth y clientAuth;
+- coincidencia del pin SHA-256 del certificado de cliente;
+- validación de la cadena del certificado de servidor;
+- servicio desactivado y detenido después de instalar/provisionar.
+
+La misma etapa elimina únicamente el estado que ella misma creó y luego inyecta un fallo controlado en la primera llamada a OpenSSL. El criterio es que el error se propague con código 71 y no quede /etc/louksna ni el directorio de identidad de cliente parcialmente creado. La prueba no utiliza datos de confianza preexistentes: aborta antes de modificar el runner si /etc/louksna ya existe. Esto prueba el camino de éxito y un rollback temprano en CI, pero no sustituye pruebas de señales, fallos tardíos, carrera de directorios ni rollback/postboot en una VM restaurable.
+
+Se corrigió además el orden del provisionador: VALIDATED solo se establece después de completar limpieza de temporales y publicación de permisos/propiedad de la identidad de cliente, manteniendo el trap de rollback activo hasta ese punto. La documentación de identidad de servicio ya no afirma simultáneamente que la clave es del usuario y que la unidad corre como root.
+
+El inventario técnico nuevo está en [PACKAGE_COMPONENT_INVENTORY.md](PACKAGE_COMPONENT_INVENTORY.md). Enumera los archivos que se empaquetan y las dependencias declaradas sin fingir que el inventario técnico equivale a autorización legal. No se encontró voz/modelo TTS en los archivos copiados por las reglas del paquete. La licencia de una voz ajena a este paquete no acredita la licencia del código incluido.
+
+**Estado de evidencia:** la ejecución CI que incluye estas pruebas aún debe revisarse. No se declara que hayan pasado hasta observar su resultado real. El bloqueo legal DEP-5 y el contacto de mantenimiento válido continúan abiertos; no se habilita publicación, activación ni G23/G24 por la incorporación de pruebas.
