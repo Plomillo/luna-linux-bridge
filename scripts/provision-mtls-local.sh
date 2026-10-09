@@ -141,6 +141,7 @@ openssl x509 -req -sha256 -in "$CLIENT/client.csr" \
   -out "$TLS/client.pem" -days 180 -extfile "$TLS/client.ext"
 # Publish only public certificates, with writes performed as the owner UID.
 # The CA and server private keys remain mode 0600 and are not readable by owner.
+chmod 0644 "$TLS/client.pem"
 chmod 0711 "$TLS"
 runuser -u "$OWNER_USER" -- cp "$TLS/client.pem" "$CLIENT/client.pem"
 runuser -u "$OWNER_USER" -- cp "$TLS/ca.pem" "$CLIENT/ca.pem"
