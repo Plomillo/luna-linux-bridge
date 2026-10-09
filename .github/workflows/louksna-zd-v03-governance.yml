@@ -646,14 +646,14 @@ jobs:
             python3 -B -I "$GITHUB_WORKSPACE/scripts/missions/debian_build_evidence.py" finalize --report "$EVIDENCE_DIR/CP-08-build-package.json" --second-build-failed
           fi
       - name: Upload CP-08 build package and evidence
-        if: success()
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: louksna-zd-v03-cp08-build-package
           path: |
             evidence/zona-directiva-v03/CP-08-build-package.json
             evidence/zona-directiva-v03/*.deb
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 90
 
   stage-09-physical-runtime:
