@@ -3,21 +3,15 @@ louksna-linux-bridge (0.4.0-3) unstable; urgency=high
   * Add a local graphical status and diagnostics panel with a desktop launcher.
   * Display mTLS configuration and systemd state without auto-starting services.
   * Add python3-tk dependency and GUI packaging regression tests.
-  * Keep the bridge read-only, uncertified until G23/G24, and fail-closed.
-
- -- Louksna Project <maintainers@louksna.invalid>  Fri, 09 Oct 2026 03:15:00 +0000
-
-louksna-linux-bridge (0.4.0-3) unstable; urgency=high
-
   * Add an explicit, fail-closed local mTLS provisioning command.
   * Generate separate CA, serverAuth and clientAuth identities; never reuse
     OpenSSH G23/G24/OWNER public keys as X.509 certificates.
   * Compute and validate all gateway pins using the runtime's exact schema.
   * Keep service installation disabled; provisioning never starts the service.
-  * Add packaging checks for provisioning syntax and identity-preservation.
   * Report build evidence separately from G23/G24 certification and host tests.
+  * Preserve fail-closed behavior and all existing runtime trust boundaries.
 
- -- Louksna Project <maintainers@louksna.invalid>  Thu, 08 Oct 2026 23:00:00 +0000
+ -- Louksna Project <maintainers@louksna.invalid>  Fri, 09 Oct 2026 03:15:00 +0000
 
 louksna-linux-bridge (0.4.0-2) unstable; urgency=high
 
@@ -30,7 +24,7 @@ louksna-linux-bridge (0.4.0-2) unstable; urgency=high
 
 louksna-linux-bridge (0.4.0-1) unstable; urgency=medium
 
-  * First Debian package for the certified Louksna Linux Bridge runtime.
+  * First Debian package for the Louksna Linux Bridge runtime.
   * Preserve loopback-only mTLS, bounded local transport, evidence ledger,
     fail-closed behavior and external G23/G24 authority.
 
