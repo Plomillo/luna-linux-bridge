@@ -421,31 +421,80 @@ jobs:
           stat -c 'package_size_bytes=%s' "$DEB"
 
   stage-09-physical-runtime:
-    name: "Stage 09 / CP-09 — Debian 13 KDE install, runtime and rollback"
+    name: "Stage 09 / CP-09 — Debian 13 KDE install, runtime and rollback evidence gate"
     needs: stage-08-reproducible-build
     if: needs.stage-08-reproducible-build.result == 'success'
-    runs-on: [self-hosted, linux, debian-13, kde]
-    timeout-minutes: 20
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      runtime_status: ${{ steps.runtime_gate.outputs.status }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
-      - name: Verify declared physical Debian 13 KDE environment
+      - name: Require real Debian 13 KDE runtime and rollback evidence
+        id: runtime_gate
         shell: bash
         run: |
           set -Eeuo pipefail
-          . /etc/os-release
-          test "$ID" = debian
-          test "$VERSION_ID" = "13"
-          test "${XDG_CURRENT_DESKTOP:-}" != ""
-          echo "CP-09 host environment verified: $PRETTY_NAME; desktop=$XDG_CURRENT_DESKTOP"
-          echo "The installer/runtime/rollback test must be run by the authorized host operator; no installation is performed by this guard."
+          mkdir -p evidence/zona-directiva-v03
+          REPORT="evidence/zona-directiva-v03/CP-09-runtime-gate.json"
+          INPUT="evidence/zona-directiva-v03/CP-09-debian13-kde-runtime.json"
+          python3 - "$INPUT" "$REPORT" <<'PY'
+          import datetime, hashlib, json, os, pathlib, sys
+          source, target = map(pathlib.Path, sys.argv[1:])
+          report = {
+            "schema": "louksna.zd.v03.cp09-runtime-gate.v1",
+            "stage_id": "09", "checkpoint_id": "CP-09",
+            "timestamp_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "repository": os.getenv("GITHUB_REPOSITORY"),
+            "commit_sha": os.getenv("GITHUB_SHA"),
+            "run_id": os.getenv("GITHUB_RUN_ID"),
+            "physical_runtime_verified": False,
+            "result": "HOLD",
+            "reason": "No external, digest-bound Debian 13 KDE install/launch/rollback evidence is present. Hosted CI is not substituted for the required target runtime.",
+            "source_evidence_sha256": None
+          }
+          if source.is_file():
+            raw = source.read_bytes()
+            evidence = json.loads(raw)
+            required = {
+              "status": "PASS", "os_id": "debian", "os_version": "13",
+              "desktop": "KDE", "install_test": "PASS",
+              "launch_test": "PASS", "rollback_test": "PASS"
+            }
+            missing = [k for k, v in required.items() if evidence.get(k) != v]
+            digest = evidence.get("candidate_sha256", "")
+            if not isinstance(digest, str) or len(digest) != 64 or any(ch not in "0123456789abcdef" for ch in digest.lower()):
+              missing.append("candidate_sha256")
+            logs = evidence.get("evidence_sha256")
+            if not isinstance(logs, list) or not logs or any(not isinstance(v, str) or len(v) != 64 for v in logs):
+              missing.append("evidence_sha256")
+            report["source_evidence_sha256"] = hashlib.sha256(raw).hexdigest()
+            if not missing:
+              report.update({"physical_runtime_verified": True, "result": "PASS",
+                             "reason": "Required target-runtime fields and SHA-256 references are present; independent validation remains required."})
+            else:
+              report["reason"] = "Runtime evidence is incomplete or invalid: " + ",".join(missing)
+          target.write_text(json.dumps(report, indent=2, sort_keys=True) + "\\n", encoding="utf-8")
+          print(json.dumps(report, indent=2))
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
+            f.write("status=" + report["result"] + "\\n")
+          PY
+      - name: Preserve CP-09 runtime gate evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksna-zd-v03-cp09-runtime-gate-${{ github.run_id }}-${{ github.run_attempt }}
+          path: evidence/zona-directiva-v03/CP-09-runtime-gate.json
+          if-no-files-found: error
+          retention-days: 90
 
   stage-10-evidence-freeze:
     name: "Stage 10 / CP-10 — Evidence dossier and candidate freeze"
     needs: stage-09-physical-runtime
-    if: needs.stage-09-physical-runtime.result == 'success'
+    if: needs.stage-09-physical-runtime.outputs.runtime_status == 'PASS'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
