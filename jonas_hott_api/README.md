@@ -35,7 +35,7 @@ The service stores a shared, append-only history of balance observations and mod
 - `POST /v1/models/catalog/snapshots` stores a versioned catalog snapshot.
 - `GET /v1/models/catalog` returns the latest saved snapshot and freshness metadata.
 
-A complete family check-in flow must capture respondent identity, account scope, unit, observation time/timezone, and whether evidence was supplied. Keep per-person/account balances separate unless compatibility and consent to aggregate are verified. Reminders may ask for a fresh confirmation; they must not fabricate a new balance. A manual record is not proof of provider-side truth. The service only shares state among clients connected to the same service/database; separate installations need an explicitly configured shared service or controlled synchronization.
+The family uses one shared pool (`family-shared`, unit `credits`) for Sebastián, Diego, Catalina, Marjorie, and Cristóbal. Every participant's response is a separate observation of the same balance; never sum responses. The API compares the latest report per respondent. If current reports disagree, it returns `CONFLICTING` with no confirmed balance and preserves history until participants reconfirm. Each observation records consent, respondent, observation and recording timestamps, and evidence digest. A manual record is not proof of provider-side truth. The service only shares state among clients connected to the same service/database; separate installations need an explicitly configured shared service or controlled synchronization.
 
 
 ## Safety boundary
