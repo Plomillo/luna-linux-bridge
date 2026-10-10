@@ -39,7 +39,9 @@ jobs:
           echo "SOURCE_RUN_ID=$SOURCE_RUN_ID"
           echo "CANDIDATE_COMMIT=$CANDIDATE_COMMIT"
           gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID" > "$RUNNER_TEMP/source-run.json"
-          jq -e --arg sha "$CANDIDATE_COMMIT" --argjson id "$SOURCE_RUN_ID"             '.id == $id and .head_sha == $sha and .event != "pull_request" and .head_branch == "governance/louksna-zd-v03-12-stage-gates-20261009" and .name == "LOUKSNA ZD V0.3 — Sequential Governance Gate"'             "$RUNNER_TEMP/source-run.json" >/dev/null
+          jq -e --arg sha "$CANDIDATE_COMMIT" --argjson id "$SOURCE_RUN_ID" \
+            '.id == $id and .head_sha == $sha and .event != "pull_request" and .head_branch == "governance/louksna-zd-v03-12-stage-gates-20261009" and .name == "LOUKSNA ZD V0.3 — Sequential Governance Gate"' \
+            "$RUNNER_TEMP/source-run.json" >/dev/null
           git init candidate-source
           git -C candidate-source remote add origin "https://github.com/$GITHUB_REPOSITORY.git"
           AUTH="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
@@ -60,7 +62,9 @@ jobs:
           EVIDENCE="$(find candidate-artifact -type f -name 'CP-08-build-package.json' -print -quit)"
           DEB="$(find candidate-artifact -type f -name '*.deb' -print -quit)"
           test -s "$EVIDENCE" && test -s "$DEB"
-          jq -e --arg sha "$CANDIDATE_COMMIT" --argjson run "$SOURCE_RUN_ID"             '.commit_sha == $sha and .run_id == $run and .checkpoint_id == "CP-08" and .status == "PASS_REPRODUCIBLE_BUILD"'             "$EVIDENCE" >/dev/null || {
+          jq -e --arg sha "$CANDIDATE_COMMIT" --argjson run "$SOURCE_RUN_ID" \
+            '.commit_sha == $sha and .run_id == $run and .checkpoint_id == "CP-08" and .status == "PASS_REPRODUCIBLE_BUILD"' \
+            "$EVIDENCE" >/dev/null || {
               echo "CP-09 LAB HOLD: CP-08 evidence is absent, incomplete, or not bound to this exact run/SHA."
               jq '{checkpoint_id,status,commit_sha,run_id}' "$EVIDENCE" || true
               exit 1
@@ -71,7 +75,6 @@ jobs:
           cp "$DEB" evidence/cp09-lab/candidate.deb
           cp "$EVIDENCE" evidence/cp09-lab/CP-08-build-package.json
           echo "artifact_id=$ARTIFACT_ID" >> "$GITHUB_OUTPUT"
-          echo "ARTIFACT_ID=$ARTIFACT_ID" >> "$GITHUB_ENV"
           echo "ARTIFACT_ID=$ARTIFACT_ID" >> "$GITHUB_ENV"
           echo "package_path=evidence/cp09-lab/candidate.deb" >> "$GITHUB_OUTPUT"
           sha256sum evidence/cp09-lab/candidate.deb | tee evidence/cp09-lab/package-sha256.txt
