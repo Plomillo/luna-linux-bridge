@@ -652,7 +652,7 @@ jobs:
           missing=[name for name in required if name not in text]
           ok=("test result: ok." in text and not missing)
           report={"schema":"louksna.zd.v03.runtime-backend-tests.v1","stage_id":"08","checkpoint_id":"CP-08","status":"PASS" if ok else "HOLD","scope":"Production Rust functions tested against isolated SQLite; no native Tauri IPC, Secret Service, GUI, attachment or voice claim.","timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"repository":os.getenv("GITHUB_REPOSITORY"),"commit_sha":os.getenv("CANDIDATE_SHA"),"run_id":os.getenv("GITHUB_RUN_ID"),"test_names":required,"missing_test_names":missing,"test_log_sha256":hashlib.sha256(log.read_bytes()).hexdigest()}
-          pathlib.Path(sys.argv[2]).write_text(json.dumps(report,indent=2,sort_keys=True)+"\\n")
+          pathlib.Path(sys.argv[2]).write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
           print(json.dumps(report,indent=2))
           if not ok: raise SystemExit("CP-08 runtime backend test evidence incomplete")
           PY
