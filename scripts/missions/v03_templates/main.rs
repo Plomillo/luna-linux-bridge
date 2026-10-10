@@ -399,6 +399,21 @@ mod louksna_runtime_tests {
     }
 
     #[test]
+    fn secret_service_store_lookup_remove_round_trip() {
+        // Enabled only in CP-04's disposable CI Secret Service session.
+        // Uses a test-only token; never prints or persists the value outside Secret Service.
+        if std::env::var("LOUKSNA_TEST_SECRET_SERVICE").as_deref() != Ok("1") {
+            eprintln!("SKIP_SECRET_SERVICE_INTEGRATION: CP-04 disposable session not enabled");
+            return;
+        }
+        let token = "louksna-ci-test-token-never-authorized-for-network-use-0123456789";
+        store_github_token(token.to_string()).expect("production command must store test credential");
+        assert_eq!(secret_lookup().expect("production lookup must retrieve test credential"), token);
+        remove_github_token().expect("production remove command must verify absence");
+        assert_eq!(secret_lookup().expect_err("removed credential must be absent"), "GITHUB_TOKEN_NOT_STORED");
+    }
+
+    #[test]
     fn evidence_ledger_failure_prevents_success_status() {
         let root = std::env::temp_dir().join(format!(
             "louksna-zd-v03-evidence-fail-{}-{}",
