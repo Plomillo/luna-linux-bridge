@@ -643,7 +643,19 @@ jobs:
           npm run build
           cargo check --manifest-path src-tauri/Cargo.toml
           # Execute production Rust backend functions against isolated on-disk SQLite; this is not native GUI/voice proof.
-          cargo test --manifest-path src-tauri/Cargo.toml --bin louksna-zona-directiva -- --nocapture --test-threads=1
+          cargo test --manifest-path src-tauri/Cargo.toml --bin louksna-zona-directiva -- --nocapture --test-threads=1 2>&1 | tee "$EVIDENCE_DIR/CP-08-runtime-backend-tests.log"
+          python3 - "$EVIDENCE_DIR/CP-08-runtime-backend-tests.log" "$EVIDENCE_DIR/CP-08-runtime-backend-tests.json" <<'PY'
+          import datetime,hashlib,json,os,pathlib,sys
+          log=pathlib.Path(sys.argv[1])
+          text=log.read_text(errors="replace")
+          required=["sqlite_settings_chat_and_evidence_round_trip","empty_chat_message_is_rejected_without_network_access","evidence_ledger_failure_prevents_success_status"]
+          missing=[name for name in required if name not in text]
+          ok=("test result: ok." in text and not missing)
+          report={"schema":"louksna.zd.v03.runtime-backend-tests.v1","stage_id":"08","checkpoint_id":"CP-08","status":"PASS" if ok else "HOLD","scope":"Production Rust functions tested against isolated SQLite; no native Tauri IPC, Secret Service, GUI, attachment or voice claim.","timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"repository":os.getenv("GITHUB_REPOSITORY"),"commit_sha":os.getenv("CANDIDATE_SHA"),"run_id":os.getenv("GITHUB_RUN_ID"),"test_names":required,"missing_test_names":missing,"test_log_sha256":hashlib.sha256(log.read_bytes()).hexdigest()}
+          pathlib.Path(sys.argv[2]).write_text(json.dumps(report,indent=2,sort_keys=True)+"\\n")
+          print(json.dumps(report,indent=2))
+          if not ok: raise SystemExit("CP-08 runtime backend test evidence incomplete")
+          PY
           npx tauri build --bundles deb
           DEB="$(realpath "$(find "$CARGO_TARGET_DIR/release/bundle/deb" -maxdepth 1 -type f -name '*.deb' -print -quit)")"
           test -n "$DEB"
@@ -828,7 +840,17 @@ jobs:
               d=json.loads(p.read_text())
               name=p.name
               status=d.get("status")
-              if name.startswith("CP-03") and status != "PASS": blocking.append("CP-03 runtime backend evidence incomplete")
+              if name.startswith("CP-03") and status != "PASS":
+                  runtime_report=root/"louksna-zd-v03-cp08-build-package"/"CP-08-runtime-backend-tests.json"
+                  if not runtime_report.is_file():
+                      blocking.append("CP-03 runtime backend evidence incomplete; no same-run CP-08 runtime test report")
+                  else:
+                      runtime=json.loads(runtime_report.read_text())
+                      if runtime.get("status") != "PASS" or runtime.get("commit_sha") != os.environ["CANDIDATE_SHA"] or runtime.get("run_id") != os.environ["GITHUB_RUN_ID"]:
+                          blocking.append("CP-03 supplemental runtime evidence is not PASS or not bound to this candidate/run")
+                      log_path=runtime_report.with_name("CP-08-runtime-backend-tests.log")
+                      if not log_path.is_file() or hashlib.sha256(log_path.read_bytes()).hexdigest() != runtime.get("test_log_sha256"):
+                          blocking.append("CP-03 supplemental runtime test log missing or digest mismatch")
               if name.startswith("CP-04") and status != "PASS": blocking.append("CP-04 credential/bridge evidence incomplete")
               if name.startswith("CP-05") and status != "PASS": blocking.append("CP-05 live UI telemetry evidence incomplete")
               if name.startswith("CP-06") and status != "PASS": blocking.append("CP-06 GUI/persistence/attachment E2E evidence incomplete")
