@@ -51,7 +51,8 @@ async function main() {
   server = spawn("npm", ["run", "dev", "--", "--host", "127.0.0.1"], {
     cwd: candidate,
     env: { ...process.env, CI: "1" },
-    stdio: ["ignore", "pipe", "pipe"]
+    stdio: ["ignore", "pipe", "pipe"],
+    detached: process.platform !== "win32"
   });
   server.stdout.on("data", chunk => log.push(String(chunk)));
   server.stderr.on("data", chunk => log.push(String(chunk)));
@@ -139,8 +140,10 @@ async function main() {
 
   await page.screenshot({ path: screenshotPath, fullPage: true });
   await page.reload({ waitUntil: "networkidle" });
-  await page.getByRole("heading", { name: "Configuracion" }).waitFor({ timeout: 10000 });
-  record("fixture_reload_state", await page.getByLabel(/Modo offline/).isChecked(), "Fixture-backed setting survives reload; this is not proof of native SQLite persistence.");
+  await page.getByRole("heading", { name: "Centro de mando" }).waitFor({ timeout: 10000 });
+  await navButtons.filter({ hasText: "Configuracion" }).click();
+  await page.getByRole("heading", { name: "Configuracion persistente" }).waitFor({ timeout: 10000 });
+  record("fixture_reload_state", await page.getByLabel(/Modo offline/).isChecked(), "Fixture-backed setting survives reload and reselecting the settings section; this is not proof of native SQLite persistence.");
 
   const report = {
     schema: "louksna.zd.v03.playwright-ui-e2e.v1",
@@ -201,8 +204,18 @@ try {
 } finally {
   if (browser) await browser.close().catch(() => {});
   if (server && server.exitCode === null) {
-    server.kill("SIGTERM");
+    if (process.platform !== "win32" && server.pid) {
+      try { process.kill(-server.pid, "SIGTERM"); } catch {}
+    } else {
+      server.kill("SIGTERM");
+    }
     await Promise.race([new Promise(resolve => server.once("exit", resolve)), sleep(3000)]);
-    if (server.exitCode === null) server.kill("SIGKILL");
+    if (server.exitCode === null) {
+      if (process.platform !== "win32" && server.pid) {
+        try { process.kill(-server.pid, "SIGKILL"); } catch {}
+      } else {
+        server.kill("SIGKILL");
+      }
+    }
   }
 }
