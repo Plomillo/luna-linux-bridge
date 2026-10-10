@@ -302,6 +302,12 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
+      - name: Checkout frozen V0.2 source inputs
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: 6e34fddaae985bd9041be107b80e056f806092d2
+          path: source-v02
+          persist-credentials: false
       - name: Materialize the exact candidate and verify UI/backend state
         shell: bash
         run: |
@@ -313,7 +319,7 @@ jobs:
             "$RUNNER_TEMP/louksna-v03/ACK.json" \
             "$RUNNER_TEMP/louksna-v03/FME.json" \
             "$RUNNER_TEMP/louksna-v03/MATERIAL_RESULT.json" \
-            "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE" \
+            "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE/source-v02" \
             "$GITHUB_WORKSPACE/missions/inbox/louksna-zona-directiva-v03-functional-20261006/MISSION.md"
           CANDIDATE="$GITHUB_WORKSPACE/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate"
           python3 -B -I scripts/missions/louksna_zd_v03_functionalizer.py "$CANDIDATE"
@@ -352,6 +358,12 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
+      - name: Checkout frozen V0.2 source inputs
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: 6e34fddaae985bd9041be107b80e056f806092d2
+          path: source-v02
+          persist-credentials: false
       - name: Materialize candidate and run functional regression checks
         shell: bash
         run: |
@@ -363,7 +375,7 @@ jobs:
             "$RUNNER_TEMP/louksna-v03/ACK.json" \
             "$RUNNER_TEMP/louksna-v03/FME.json" \
             "$RUNNER_TEMP/louksna-v03/MATERIAL_RESULT.json" \
-            "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE" \
+            "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE/source-v02" \
             "$GITHUB_WORKSPACE/missions/inbox/louksna-zona-directiva-v03-functional-20261006/MISSION.md"
           CANDIDATE="$GITHUB_WORKSPACE/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate"
           python3 -B -I scripts/missions/louksna_zd_v03_functionalizer.py "$CANDIDATE"
@@ -404,6 +416,12 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
+      - name: Checkout frozen V0.2 source inputs
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: 6e34fddaae985bd9041be107b80e056f806092d2
+          path: source-v02
+          persist-credentials: false
       - name: Materialize candidate and install pinned browser E2E toolchain
         shell: bash
         run: |
@@ -429,7 +447,7 @@ jobs:
             "$RUNNER_TEMP/louksna-v03/ACK.json" \
             "$RUNNER_TEMP/louksna-v03/FME.json" \
             "$RUNNER_TEMP/louksna-v03/MATERIAL_RESULT.json" \
-            "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE" \
+            "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE/source-v02" \
             "$GITHUB_WORKSPACE/missions/inbox/louksna-zona-directiva-v03-functional-20261006/MISSION.md"
           CANDIDATE="$GITHUB_WORKSPACE/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate"
           python3 -B -I scripts/missions/louksna_zd_v03_functionalizer.py "$CANDIDATE"
@@ -555,6 +573,12 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
+      - name: Checkout frozen V0.2 source inputs
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: 6e34fddaae985bd9041be107b80e056f806092d2
+          path: source-v02
+          persist-credentials: false
       - name: Install native Linux build dependencies
         shell: bash
         run: |
@@ -578,7 +602,7 @@ jobs:
             "$RUNNER_TEMP/louksna-v03/ACK.json" \
             "$RUNNER_TEMP/louksna-v03/FME.json" \
             "$RUNNER_TEMP/louksna-v03/MATERIAL_RESULT.json" \
-            "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE" \
+            "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE/source-v02" \
             "$GITHUB_WORKSPACE/missions/inbox/louksna-zona-directiva-v03-functional-20261006/MISSION.md"
           CANDIDATE="$GITHUB_WORKSPACE/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate"
           python3 -B -I scripts/missions/louksna_zd_v03_functionalizer.py "$CANDIDATE"
