@@ -40,8 +40,9 @@ permissions:
   contents: read
 
 concurrency:
-  # Preserve active evidence-producing runs; candidate revisions queue without cancelling checkpoints.
-  group: louksna-zd-v03-governance-${{ github.ref }}
+  # Isolate each candidate run: a CP-09 job waiting for the disposable lab runner must not block CP-01..CP-08 for a newer SHA.
+  # Do not cancel evidence-producing runs. CP-09 still requires the exact real Debian 13 KDE runner.
+  group: louksna-zd-v03-governance-${{ github.ref }}-${{ github.run_id }}
   cancel-in-progress: false
 
 jobs:
