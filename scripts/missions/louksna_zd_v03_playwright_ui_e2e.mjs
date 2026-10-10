@@ -69,16 +69,17 @@ async function main() {
     const state = {
       settings: saved?.settings || seed.settings,
       chats: saved?.chats || [],
+      healthStatus: saved?.healthStatus || "PASS",
       calls: [],
       evidence: [{ id: 1, utc: "2026-10-10T00:00:00Z", operation: "UI_E2E_FIXTURE", status: "PASS", detail: "Explicit browser-only IPC test double; not native runtime evidence." }]
     };
-    const persist = () => localStorage.setItem(key, JSON.stringify({ settings: state.settings, chats: state.chats }));
+    const persist = () => localStorage.setItem(key, JSON.stringify({ settings: state.settings, chats: state.chats, healthStatus: state.healthStatus }));
     window.__louksnaTestState = state;
     window.__TAURI_INTERNALS__ = {
       invoke: async (command, args = {}) => {
         state.calls.push({ command, args });
         switch (command) {
-          case "runtime_probe": return { status: "PASS", data_dir: "/test-only", db_exists: true, database_query: true, secret_service_tool: true, identity: "LOUKSNA", version: "0.3.0" };
+          case "runtime_probe": return { status: state.healthStatus, data_dir: "/test-only", db_exists: true, database_query: state.healthStatus !== "FAIL", secret_service_tool: state.healthStatus === "PASS", identity: "LOUKSNA", version: "0.3.0" };
           case "get_settings": return state.settings;
           case "save_settings": state.settings = args.settings; persist(); return null;
           case "evidence_recent": return state.evidence;
@@ -138,6 +139,28 @@ async function main() {
   await page.getByRole("button", { name: "Guardar configuracion" }).click();
   await page.getByText("Configuracion persistida localmente.").waitFor({ timeout: 5000 });
   record("settings_save", true, "Settings-save command is invoked and UI acknowledges the test-double response.");
+
+  for (const status of ["DEGRADED", "FAIL", "UNVERIFIED"]) {
+    await page.evaluate((nextStatus) => {
+      const state = window.__louksnaTestState;
+      state.healthStatus = nextStatus;
+      localStorage.setItem("__louksna_cp07_ipc_fixture", JSON.stringify({
+        settings: state.settings, chats: state.chats, healthStatus: nextStatus
+      }));
+    }, status);
+    await page.reload({ waitUntil: "networkidle" });
+    await page.locator('[data-health-status="' + status + '"]').waitFor({ timeout: 5000 });
+    record("health_state_" + status.toLowerCase(), true, "UI displays the " + status + " runtime-probe state from the explicit IPC test double.");
+  }
+  await page.evaluate(() => {
+    const state = window.__louksnaTestState;
+    state.healthStatus = "PASS";
+    localStorage.setItem("__louksna_cp07_ipc_fixture", JSON.stringify({
+      settings: state.settings, chats: state.chats, healthStatus: "PASS"
+    }));
+  });
+  await page.reload({ waitUntil: "networkidle" });
+  await page.locator('[data-health-status="PASS"]').waitFor({ timeout: 5000 });
 
   const calls = await page.evaluate(() => window.__louksnaTestState.calls.map(x => x.command));
   record("ipc_commands_observed", ["get_settings", "evidence_recent", "chat_history", "github_repositories", "github_pull_requests", "chat_send", "save_settings"].every(x => calls.includes(x)), "Required UI commands were observed: " + calls.join(","));
