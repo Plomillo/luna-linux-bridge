@@ -14,6 +14,7 @@ on:
       - scripts/missions/debian_build_evidence.py
       - scripts/missions/debian_package_canonicalize.py
       - scripts/missions/debian13_kde_host_runtime.sh
+      - scripts/missions/debian13_kde_qemu_runtime.sh
       - scripts/missions/louksna_zd_candidate_materializer.py
       - scripts/missions/louksna_zd_v03_playwright_ui_e2e.mjs
       - scripts/missions/debian13_package_smoke.sh
@@ -32,6 +33,7 @@ on:
       - scripts/missions/debian_build_evidence.py
       - scripts/missions/debian_package_canonicalize.py
       - scripts/missions/debian13_kde_host_runtime.sh
+      - scripts/missions/debian13_kde_qemu_runtime.sh
       - scripts/missions/louksna_zd_candidate_materializer.py
       - scripts/missions/louksna_zd_v03_playwright_ui_e2e.mjs
       - scripts/missions/debian13_package_smoke.sh
@@ -42,8 +44,8 @@ permissions:
   contents: read
 
 concurrency:
-  # Isolate each candidate run: a CP-09 job waiting for the disposable lab runner must not block CP-01..CP-08 for a newer SHA.
-  # Do not cancel evidence-producing runs. CP-09 still requires the exact real Debian 13 KDE runner.
+  # Isolate each candidate run so evidence-producing CP-09 VM tests cannot block newer candidate validation.
+  # CP-09 uses an explicitly declared disposable QEMU guest; it does not certify physical GPU, display, audio, or microphone hardware.
   group: louksna-zd-v03-governance-${{ github.ref }}-${{ github.run_id }}
   cancel-in-progress: false
 
