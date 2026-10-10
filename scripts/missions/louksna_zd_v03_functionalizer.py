@@ -52,6 +52,40 @@ conf["bundle"]["shortDescription"]="Interfaz GitHub funcional gobernada por Louk
 conf["bundle"]["longDescription"]="Functional LOUKSNA interface with local evidence and GitHub read-only access."
 (candidate/"src-tauri"/"tauri.conf.json").write_text(json.dumps(conf,indent=2,sort_keys=True)+"\n",encoding="utf-8")
 
+# Tauri's context macro resolves configured bundle icons at compile time.
+# Keep frozen reference art untouched; add a deterministic, build-only fallback
+# icon only when the candidate has no icon asset, then configure it explicitly.
+import struct, zlib, binascii
+icon_dir = candidate / "src-tauri" / "icons"
+icon_dir.mkdir(parents=True, exist_ok=True)
+icon_path = icon_dir / "icon.png"
+if not icon_path.exists():
+    width = height = 64
+    rows = []
+    for y in range(height):
+        row = bytearray([0])
+        for x in range(width):
+            # Dark navy field with a simple violet L mark and cyan baseline.
+            is_l = (12 <= x < 20 and 14 <= y < 49) or (12 <= x < 43 and 41 <= y < 49)
+            is_base = 12 <= x < 52 and 52 <= y < 56
+            if is_l:
+                row.extend((190, 140, 255, 255))
+            elif is_base:
+                row.extend((56, 189, 248, 255))
+            else:
+                row.extend((8, 10, 28, 255))
+        rows.append(bytes(row))
+    raw = b"".join(rows)
+    def png_chunk(kind, data):
+        return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", binascii.crc32(kind + data) & 0xffffffff)
+    png = (b"\\x89PNG\\r\\n\\x1a\\n"
+           + png_chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0))
+           + png_chunk(b"IDAT", zlib.compress(raw, 9))
+           + png_chunk(b"IEND", b""))
+    icon_path.write_bytes(png)
+conf["bundle"]["icon"] = ["icons/icon.png"]
+(candidate/"src-tauri"/"tauri.conf.json").write_text(json.dumps(conf,indent=2,sort_keys=True)+"\\n",encoding="utf-8")
+
 (candidate/"README_FUNCTIONAL_V03.md").write_text(
 """# LOUKSNA ZONA DIRECTIVA V0.3 — FUNCTIONAL CANDIDATE
 
