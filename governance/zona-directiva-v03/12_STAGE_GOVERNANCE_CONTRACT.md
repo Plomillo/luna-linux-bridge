@@ -121,3 +121,15 @@ NEXT_STAGE = NONE_UNTIL_CP01_PASS
 ## 7. CRITERIO DE CIERRE
 
 Solo puede declararse completado el proceso si las doce etapas y sus doce checkpoints se encuentran ligados al mismo candidato o a una secuencia explícita de nuevos digests, con invalidación correcta de evidencias obsoletas, sin mutación no autorizada y con G23/G24 documentados.
+
+## Enmienda operativa CP-09 — ejecución integrada en VM desechable (2026-10-10)
+
+Autorización explícita del usuario para ejecutar la prueba integrada CP-09 dentro del mismo workflow de GitHub Actions mediante una máquina virtual QEMU desechable con Debian 13 y KDE Plasma/Xorg.
+
+- La prueba instala el paquete Debian producido por CP-08 en la misma ejecución, verifica el entorno invitado, intenta iniciar el ejecutable instalado y verifica la desinstalación/rollback.
+- El informe debe identificar `runtime_environment = DISPOSABLE_QEMU_VM` y `virtual_runtime_verified = true` únicamente cuando instalación, inicio y rollback pasen y la evidencia corresponda al SHA y run exactos.
+- La VM es evidencia real de ejecución en un sistema invitado Debian 13 KDE/Xorg, pero NO se presenta como prueba de GPU, monitor, audio, micrófono ni GUI física en hardware dedicado.
+- CP-10 puede consumir esta evidencia virtual del mismo run si sus hashes, estado, SHA del candidato, paquete CP-08 y log coinciden. CP-11/G23 y CP-12/G24 siguen siendo puertas independientes; no hay certificación ni activación automática.
+- La prueba de contenedor continúa siendo suplementaria y no sustituye a la VM.
+
+Esta enmienda modifica el modo de ejecución de CP-09 de forma explícita y trazable; no afirma ni hereda una certificación de hardware físico.
