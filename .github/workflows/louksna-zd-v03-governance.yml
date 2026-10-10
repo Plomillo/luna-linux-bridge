@@ -528,7 +528,7 @@ jobs:
           text=log.read_text(errors="replace")
           ok=sys.argv[1]=="0" and "test result: ok. 1 passed" in text and "sqlite_persistence_survives_process_restart" in text
           report={"schema":"louksna.zd.v03.cp06-runtime-test.v1","checkpoint_id":"CP-06","runtime_restart_persistence":"PASS" if ok else "FAIL","test_exit_code":int(sys.argv[1]),"test_log_sha256":hashlib.sha256(log.read_bytes()).hexdigest(),"scope":"Real Rust production functions verified settings, chat and evidence ledger survive writer-process exit and independent process reopen; attachment import/storage/retrieval and native GUI E2E remain unimplemented/unproven."}
-          pathlib.Path("evidence/zona-directiva-v03/CP-06-restart-persistence.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\\n")
+          pathlib.Path("evidence/zona-directiva-v03/CP-06-restart-persistence.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
           print(json.dumps(report,indent=2))
           if not ok: raise SystemExit("CP-06 restart persistence test failed")
           PY
@@ -540,7 +540,7 @@ jobs:
           grep -q 'chat_send' "$CANDIDATE/src-tauri/src/main.rs"
           grep -q 'evidence_recent' "$CANDIDATE/src-tauri/src/main.rs"
           grep -q 'github_pull_requests' "$CANDIDATE/src-tauri/src/main.rs"
-          echo "CP-06 PASS limited to reproducible source/backend assertions; interactive GUI, persistence-across-restart, and attachment E2E remain unproven."
+          echo "CP-06 source checks and process-restart persistence test passed; attachment import/storage/retrieval and native GUI E2E remain unproven."
           mkdir -p evidence/zona-directiva-v03
           python3 - <<'PY'
           import datetime,hashlib,json,os,pathlib
