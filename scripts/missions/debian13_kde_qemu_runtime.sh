@@ -46,7 +46,7 @@ d={"schema":"louksna.zd.v03.cp09-runtime-gate.v2","stage_id":"09","checkpoint_id
 pathlib.Path(report).write_text(json.dumps(d,indent=2,sort_keys=True)+"\n")
 print(json.dumps(d,indent=2))
 with open(os.environ["GITHUB_OUTPUT"],"a",encoding="utf-8") as out:
-    out.write("status="+status+"\\n")
+    out.write("status="+status+"\n")
 PY
   if [[ "$rc" -eq 0 ]] && ! jq -e '.status == "PASS"' "$REPORT" >/dev/null; then rc=1; fi
   exit "$rc"
