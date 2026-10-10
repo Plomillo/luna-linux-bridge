@@ -252,6 +252,7 @@ export default function App(){
       {active==="chat-llamada"&&<section className="chat-grid">
         <article className="panel chat">
           <h3>Chat gobernado</h3>
+          <p data-capability="attachments" data-status="NOT_IMPLEMENTED">Adjuntos: no implementado/no verificado. No se aceptan ni almacenan archivos.</p>
           <div className="messages">
             {chats.map(c=><div key={c.id} className={"bubble "+c.role}><b>{c.role==="user"?"Tu":"LOUKSNA"}</b><p>{c.content}</p><small>{c.transport}</small></div>)}
           </div>
