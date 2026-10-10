@@ -443,6 +443,24 @@ jobs:
           CANDIDATE="$GITHUB_WORKSPACE/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate"
           python3 -B -I scripts/missions/louksna_zd_v03_functionalizer.py "$CANDIDATE"
           python3 -B -I scripts/missions/test_louksna_zd_v03_backend.py scripts/missions/v03_templates/main.rs
+          export DEBIAN_FRONTEND=noninteractive
+          timeout 360s sudo -E apt-get -o Acquire::Retries=3 update
+          timeout 360s sudo -E apt-get -o Acquire::Retries=3 install --yes --no-install-recommends build-essential pkg-config libssl-dev libgtk-3-dev libglib2.0-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev
+          mkdir -p evidence/zona-directiva-v03
+          set +e
+          cargo test --manifest-path "$CANDIDATE/src-tauri/Cargo.toml" --bin louksna-zona-directiva louksna_runtime_tests::health_status_covers_pass_degraded_fail_and_unverified -- --exact --nocapture --test-threads=1 2>&1 | tee evidence/zona-directiva-v03/CP-05-health-status-tests.log
+          HEALTH_RC=${PIPESTATUS[0]}
+          set -e
+          python3 - "$HEALTH_RC" <<'PY'
+          import hashlib,json,pathlib,sys
+          log=pathlib.Path("evidence/zona-directiva-v03/CP-05-health-status-tests.log")
+          text=log.read_text(errors="replace")
+          ok=sys.argv[1]=="0" and "test result: ok. 1 passed" in text and "health_status_covers_pass_degraded_fail_and_unverified" in text
+          report={"schema":"louksna.zd.v03.cp05-health-test.v1","checkpoint_id":"CP-05","status":"PASS" if ok else "FAIL","test_exit_code":int(sys.argv[1]),"test_log_sha256":hashlib.sha256(log.read_bytes()).hexdigest(),"states":["PASS","DEGRADED","FAIL","UNVERIFIED"],"scope":"Production health-status derivation tested against positive, degraded, failed and unavailable probe inputs."}
+          pathlib.Path("evidence/zona-directiva-v03/CP-05-health-status.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\\n")
+          print(json.dumps(report,indent=2))
+          if not ok: raise SystemExit("CP-05 health status test failed")
+          PY
           cd "$CANDIDATE"
           npm install --no-audit --no-fund
           npm install --no-save --no-audit --no-fund playwright@1.55.0
@@ -464,7 +482,8 @@ jobs:
           root=pathlib.Path("LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate")
           files=["src/App.tsx","src-tauri/Cargo.toml","src-tauri/src/main.rs"]
           ui_report=pathlib.Path("evidence/zona-directiva-v03/CP-05-playwright-ui-e2e.json")
-          d={"schema":"louksna.zd.v03.checkpoint-evidence.v1","stage_id":"05","checkpoint_id":"CP-05","status":"PASS","scope":"Interactive frontend navigation, state changes, command invocation, rendering, reload behavior and browser errors verified in Chromium with an explicit Tauri IPC test double; native backend/runtime, SQLite restart persistence, live GitHub responses, attachments and voice are outside CP-05 scope.","timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"repository":os.getenv("GITHUB_REPOSITORY"),"commit_sha":os.getenv("CANDIDATE_SHA"),"run_id":os.getenv("GITHUB_RUN_ID"),"ui_report_sha256":hashlib.sha256(ui_report.read_bytes()).hexdigest(),"source_sha256":{p:hashlib.sha256((root/p).read_bytes()).hexdigest() for p in files}}
+          health_report=pathlib.Path("evidence/zona-directiva-v03/CP-05-health-status.json")
+          d={"schema":"louksna.zd.v03.checkpoint-evidence.v1","stage_id":"05","checkpoint_id":"CP-05","status":"PASS","scope":"Chromium interaction checks and production health-status failure tests cover PASS/DEGRADED/FAIL/UNVERIFIED; browser UI uses explicit IPC test double, so native Tauri startup and live runtime integration are not claimed.","timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"repository":os.getenv("GITHUB_REPOSITORY"),"commit_sha":os.getenv("CANDIDATE_SHA"),"run_id":os.getenv("GITHUB_RUN_ID"),"ui_report_sha256":hashlib.sha256(ui_report.read_bytes()).hexdigest(),"health_report_sha256":hashlib.sha256(health_report.read_bytes()).hexdigest(),"source_sha256":{p:hashlib.sha256((root/p).read_bytes()).hexdigest() for p in files}}
           pathlib.Path("evidence/zona-directiva-v03/CP-05-ui-telemetry.json").write_text(json.dumps(d,indent=2,sort_keys=True)+"\n")
           with open(os.environ["GITHUB_OUTPUT"],"a") as f: f.write("status="+d["status"]+"\n")
           PY
@@ -477,6 +496,8 @@ jobs:
             evidence/zona-directiva-v03/CP-05-ui-telemetry.json
             evidence/zona-directiva-v03/CP-05-playwright-ui-e2e.json
             evidence/zona-directiva-v03/CP-05-playwright-ui-e2e.png
+            evidence/zona-directiva-v03/CP-05-health-status.json
+            evidence/zona-directiva-v03/CP-05-health-status-tests.log
           if-no-files-found: error
           retention-days: 90
 
