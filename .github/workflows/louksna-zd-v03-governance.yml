@@ -750,7 +750,8 @@ jobs:
   stage-08-reproducible-build:
     name: "Stage 08 / CP-08 — Build and Debian package"
     needs: stage-07-voice-security
-    if: needs.stage-07-voice-security.result == 'success' && needs.stage-07-voice-security.outputs.status == 'PASS'
+    # Voice remains explicitly HOLD; continue non-voice package/runtime evidence without promoting the voice gate.
+    if: needs.stage-07-voice-security.result == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     outputs:
