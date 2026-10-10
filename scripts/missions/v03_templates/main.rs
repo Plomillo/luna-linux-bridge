@@ -296,3 +296,54 @@ fn main(){
       .run(tauri::generate_context!())
       .expect("error while running LOUKSNA ZONA DIRECTIVA");
 }
+
+
+#[cfg(test)]
+mod louksna_runtime_tests {
+    use super::*;
+
+    // Exercises the production Rust functions against an isolated on-disk SQLite database.
+    // It intentionally does not claim native Tauri IPC, Secret Service, GUI, or voice coverage.
+    #[test]
+    fn sqlite_settings_chat_and_evidence_round_trip() {
+        let root = std::env::temp_dir().join(format!(
+            "louksna-zd-v03-runtime-test-{}-{}",
+            std::process::id(),
+            Utc::now().timestamp_nanos_opt().unwrap_or_default()
+        ));
+        std::fs::create_dir_all(&root).expect("create isolated test data directory");
+        std::env::set_var("XDG_DATA_HOME", &root);
+
+        let expected = Settings {
+            offline_mode: true,
+            preferred_repo: "Plomillo/luna-linux-bridge".to_string(),
+            github_owner_filter: "Plomillo".to_string(),
+            remote_chat_bridge: String::new(),
+        };
+        save_settings(expected.clone()).expect("persist settings through production command");
+        let actual = load_settings_inner().expect("load settings through production backend");
+        assert_eq!(actual.offline_mode, expected.offline_mode);
+        assert_eq!(actual.preferred_repo, expected.preferred_repo);
+        assert_eq!(actual.github_owner_filter, expected.github_owner_filter);
+        assert_eq!(actual.remote_chat_bridge, expected.remote_chat_bridge);
+
+        insert_chat("user", "runtime round-trip marker", "test")
+            .expect("persist chat through production backend");
+        let history = chat_history(Some(10)).expect("read chat through production backend");
+        assert!(history.iter().any(|row|
+            row.role == "user"
+                && row.content == "runtime round-trip marker"
+                && row.transport == "test"
+        ));
+
+        log_event("RUNTIME_SQLITE_TEST", "PASS", "Isolated production-function round-trip.");
+        let evidence = evidence_recent(Some(50)).expect("read evidence ledger");
+        assert!(evidence.iter().any(|row|
+            row.operation == "RUNTIME_SQLITE_TEST" && row.status == "PASS"
+        ));
+
+        drop(evidence);
+        drop(history);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+}
