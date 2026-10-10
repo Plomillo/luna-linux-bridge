@@ -10,7 +10,9 @@ if (!process.argv[2] || !process.argv[3]) {
   console.error("usage: node louksna_zd_v03_playwright_ui_e2e.mjs <candidate-root> <report-path>");
   process.exit(2);
 }
-const screenshotPath = path.join(path.dirname(reportPath), "CP-07-playwright-ui-e2e.png");
+const checkpointId = process.env.LOUKSNA_UI_CHECKPOINT === "CP-05" ? "CP-05" : "CP-07";
+const stageId = checkpointId === "CP-05" ? "05" : "07";
+const screenshotPath = path.join(path.dirname(reportPath), `${checkpointId}-playwright-ui-e2e.png`);
 const log = [];
 let server;
 let browser;
@@ -147,8 +149,8 @@ async function main() {
 
   const report = {
     schema: "louksna.zd.v03.playwright-ui-e2e.v1",
-    stage_id: "07",
-    checkpoint_id: "CP-07",
+    stage_id: stageId,
+    checkpoint_id: checkpointId,
     started_at_utc: started,
     finished_at_utc: new Date().toISOString(),
     repository: process.env.GITHUB_REPOSITORY || "Plomillo/luna-linux-bridge",
@@ -158,10 +160,11 @@ async function main() {
     native_tauri_runtime_tested: false,
     tauri_ipc_mode: "EXPLICIT_BROWSER_TEST_DOUBLE",
     voice_e2e_executed: false,
-    status: "PASS_WITH_SCOPE_LIMITS",
+    status: checkpointId === "CP-05" ? "PASS" : "PASS_WITH_SCOPE_LIMITS",
     checks,
     page_errors: pageErrors,
     screenshot: screenshotPath,
+    scope: checkpointId === "CP-05" ? "Interactive frontend navigation, state changes, command invocation, rendering, reload behavior, and browser errors tested in Chromium using an explicit Tauri IPC test double; native backend/runtime is outside CP-05 scope." : undefined,
     limitations: [
       "The UI was exercised in Chromium with an explicit Tauri IPC test double; this is not a native Tauri process test.",
       "Fixture-backed localStorage across reload is not evidence of SQLite persistence across native application restart.",
@@ -179,8 +182,8 @@ try {
 } catch (error) {
   const report = {
     schema: "louksna.zd.v03.playwright-ui-e2e.v1",
-    stage_id: "07",
-    checkpoint_id: "CP-07",
+    stage_id: stageId,
+    checkpoint_id: checkpointId,
     started_at_utc: started,
     finished_at_utc: new Date().toISOString(),
     repository: process.env.GITHUB_REPOSITORY || "Plomillo/luna-linux-bridge",
