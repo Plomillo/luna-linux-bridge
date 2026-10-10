@@ -23,7 +23,7 @@ finish(){
   rc=$?
   set +e
   if [[ -n "$QEMU_PID" ]]; then sudo kill "$QEMU_PID" >/dev/null 2>&1; fi
-  if [[ -f "$WORK/qemu.pid" ]]; then sudo kill "$(cat "$WORK/qemu.pid")" >/dev/null 2>&1; fi
+  if [[ -f "$WORK/qemu.pid" ]]; then sudo kill "$(sudo cat "$WORK/qemu.pid")" >/dev/null 2>&1; fi
   python3 - "$REPORT" "$LOG" "$PKG" "$EXPECTED_COMMIT" "$INSTALL_STATUS" "$LAUNCH_STATUS" "$ROLLBACK_STATUS" "$GUEST_STATUS" "$rc" <<'PY'
 import datetime,hashlib,json,os,pathlib,sys
 report,log_path,pkg,commit,install,launch,rollback,guest,rc=sys.argv[1:]
@@ -136,7 +136,7 @@ cloud-localds "$WORK/seed.iso" "$WORK/user-data" "$WORK/meta-data"
 qemu-img create -f qcow2 -F qcow2 -b "$WORK/debian-13.qcow2" "$WORK/guest.qcow2" 24G >>"$LOG" 2>&1
 ACCEL=tcg
 if [[ -e /dev/kvm ]] && sudo qemu-system-x86_64 -machine q35,accel=kvm -cpu max -m 128 -nodefaults -display none -S -daemonize -pidfile "$WORK/probe.pid" 2>>"$LOG"; then
-  ACCEL=kvm; sudo kill "$(cat "$WORK/probe.pid")" >/dev/null 2>&1 || true
+  ACCEL=kvm; sudo kill "$(sudo cat "$WORK/probe.pid")" >/dev/null 2>&1 || true
 fi
 log "QEMU_ACCEL=$ACCEL"
 sudo qemu-system-x86_64 -machine "q35,accel=$ACCEL" -cpu max -smp 2 -m 4096 \
@@ -144,7 +144,7 @@ sudo qemu-system-x86_64 -machine "q35,accel=$ACCEL" -cpu max -smp 2 -m 4096 \
   -drive "file=$WORK/seed.iso,media=cdrom,readonly=on" \
   -netdev user,id=net0,hostfwd=tcp:127.0.0.1:2222-:22 -device virtio-net-pci,netdev=net0 \
   -vga std -display none -serial "file:$WORK/vm-serial.log" -daemonize -pidfile "$WORK/qemu.pid"
-QEMU_PID="$(cat "$WORK/qemu.pid")"
+QEMU_PID="$(sudo cat "$WORK/qemu.pid")"
 SSH=(ssh -i "$VM_KEY" -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=5 louksna-test@127.0.0.1)
 READY=0
 for _ in $(seq 1 120); do
