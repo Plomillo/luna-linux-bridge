@@ -1,0 +1,361 @@
+name: "Louksna CP-09 — Debian 13 KDE disposable VM"
+
+on:
+  push:
+    branches:
+      - ops/debian13-kde-vm-20261009
+    paths:
+      - ".github/workflows/louksna-cp09-debian13-kde-vm.yml"
+  pull_request:
+    paths:
+      - ".github/workflows/louksna-cp09-debian13-kde-vm.yml"
+      - "governance/zona-directiva-v03/CP-09-DEBIAN13-KDE-VM-CI.md"
+      - "governance/zona-directiva-v03/DEBIAN13-CROSS-CP-OPERATIONAL-PROFILE.md"
+      - ".github/PULL_REQUEST_TEMPLATE.md"
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  # Isolate runs by immutable commit so a stalled old VM cannot block a corrected run.
+  group: louksna-cp09-debian13-kde-vm-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  validate-workflow:
+    name: "Validate workflow syntax and expressions"
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout without credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Run pinned actionlint version
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 .github/workflows/louksna-cp09-debian13-kde-vm.yml
+
+  disposable-vm:
+    if: github.event_name == 'push'
+    name: "Boot Debian 13 VM, start KDE/Xorg session, install/launch/rollback candidate"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      CANDIDATE_COMMIT: 844557c693ad7aae5dcefc86ba4658550bbffb3f
+      CANDIDATE_ARTIFACT_ID: 11640183861
+      CANDIDATE_ARTIFACT_RUN_ID: 37980888484
+    steps:
+      - name: Checkout exact source revision for traceability
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: 844557c693ad7aae5dcefc86ba4658550bbffb3f
+          persist-credentials: false
+
+      - name: Validate pinned candidate and install VM tooling
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          [[ "$CANDIDATE_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends qemu-system-x86 qemu-utils cloud-image-utils openssh-client sshpass jq curl ca-certificates unzip gh
+          mkdir -p evidence/cp09-vm candidate-artifact
+          gh api "repos/Plomillo/luna-linux-bridge/actions/runs/$CANDIDATE_ARTIFACT_RUN_ID/artifacts" > evidence/cp09-vm/source-artifacts.json
+          jq -e --argjson id "$CANDIDATE_ARTIFACT_ID" '.artifacts[] | select(.id == $id and .expired == false and .name == "louksna-linux-bridge_0.4.0-3_candidate-not-cleared")' evidence/cp09-vm/source-artifacts.json >/dev/null
+          gh api "repos/Plomillo/luna-linux-bridge/actions/artifacts/$CANDIDATE_ARTIFACT_ID/zip" > candidate-artifact.zip
+          unzip -q candidate-artifact.zip -d candidate-artifact
+          DEB="$(find candidate-artifact -type f -name 'louksna-linux-bridge_0.4.0-3_all.deb' -print -quit)"
+          EVIDENCE="$(find candidate-artifact -type f -name 'debian-package-evidence.json' -print -quit)"
+          test -s "$DEB" && test -s "$EVIDENCE"
+          EXPECTED="$(jq -er '.sha256' "$EVIDENCE")"
+          [[ "$EXPECTED" =~ ^[0-9a-f]{64}$ ]]
+          printf '%s  %s\n' "$EXPECTED" "$DEB" | sha256sum --check -
+          cp "$DEB" evidence/cp09-vm/candidate.deb
+          cp "$EVIDENCE" evidence/cp09-vm/source-package-evidence.json
+          sha256sum evidence/cp09-vm/candidate.deb | tee evidence/cp09-vm/candidate-package-sha256.txt
+          dpkg-deb --info evidence/cp09-vm/candidate.deb | tee evidence/cp09-vm/candidate-package-info.txt
+          dpkg-deb --field evidence/cp09-vm/candidate.deb Package | tee evidence/cp09-vm/candidate-package-name.txt
+          dpkg-deb --field evidence/cp09-vm/candidate.deb Version | tee evidence/cp09-vm/candidate-package-version.txt
+          qemu-system-x86_64 --version | tee evidence/cp09-vm/qemu-version.txt
+          uname -a > evidence/cp09-vm/host-runner.txt
+          if test -e /dev/kvm; then echo "KVM_AVAILABLE=true" | tee evidence/cp09-vm/virtualization-mode.txt; else echo "KVM_AVAILABLE=false; MODE=QEMU_TCG_SOFTWARE_EMULATION" | tee evidence/cp09-vm/virtualization-mode.txt; fi
+
+      - name: Create disposable Debian 13 VM and configure real Xorg/KDE login
+        shell: bash
+        run: |
+          # shellcheck disable=SC2016
+          set -Eeuo pipefail
+          cd evidence/cp09-vm
+          curl --fail --show-error --location --retry 3 \
+            https://cloud.debian.org/images/cloud/trixie/latest/debian-13-genericcloud-amd64.qcow2 \
+            -o debian-13-genericcloud-amd64.qcow2
+          qemu-img info debian-13-genericcloud-amd64.qcow2 | tee vm-image-info.txt
+          ssh-keygen -q -t ed25519 -N '' -f vm_ssh_key
+          PUBKEY="$(cat vm_ssh_key.pub)"
+          cat > user-data <<EOF
+          #cloud-config
+          hostname: louksna-cp09-vm
+          manage_etc_hosts: true
+          users:
+            - name: louksna-test
+              uid: 1000
+              groups: [sudo, adm, audio, video, plugdev]
+              shell: /bin/bash
+              sudo: ALL=(ALL) NOPASSWD:ALL
+              # SDDM's PAM account phase rejects a password-locked account on some Debian builds.
+              # Give this disposable guest a cloud-init-generated password; SSH password auth remains disabled.
+              lock_passwd: false
+              ssh_authorized_keys:
+                - ${PUBKEY}
+          ssh_pwauth: false
+          chpasswd:
+            expire: false
+            users:
+              - name: louksna-test
+                type: RANDOM
+          package_update: true
+          packages:
+            - openssh-server
+            - sudo
+            - dbus
+            - dbus-x11
+            - xserver-xorg-core
+            - xserver-xorg
+            - xserver-xorg-video-dummy
+            - x11-xserver-utils
+            - xauth
+            - xinit
+            - sddm
+            - plasma-workspace
+            - kwin-x11
+            - konsole
+            - xdg-utils
+            - python3
+            - ca-certificates
+            - curl
+            - file
+          write_files:
+            - path: /etc/X11/xorg.conf.d/20-dummy.conf
+              permissions: '0644'
+              content: |
+                Section "Device"
+                  Identifier "DummyDevice"
+                  Driver "dummy"
+                  VideoRam 256000
+                EndSection
+                Section "Monitor"
+                  Identifier "DummyMonitor"
+                  HorizSync 5.0-1000.0
+                  VertRefresh 5.0-200.0
+                  Modeline "1920x1080" 172.80 1920 2040 2248 2576 1080 1083 1088 1120
+                EndSection
+                Section "Screen"
+                  Identifier "DummyScreen"
+                  Device "DummyDevice"
+                  Monitor "DummyMonitor"
+                  DefaultDepth 24
+                  SubSection "Display"
+                    Depth 24
+                    Modes "1920x1080"
+                  EndSubSection
+                EndSection
+            - path: /etc/X11/Xwrapper.config
+              permissions: '0644'
+              content: |
+                # Disposable CI guest only: permit the test user to start its isolated Xorg session.
+                allowed_users=anybody
+                needs_root_rights=yes
+            - path: /etc/sddm.conf.d/10-louksna-autologin.conf
+              permissions: '0644'
+              content: |
+                [General]
+                DisplayServer=x11
+                [Autologin]
+                User=louksna-test
+                # SDDM's Autologin Session value is the session identifier, not the desktop filename.
+                Session=plasmax11
+                Relogin=false
+          runcmd:
+            - systemctl enable ssh
+            - systemctl set-default graphical.target
+            - systemctl enable sddm
+            - systemctl restart ssh
+            - touch /var/lib/cloud/instance/louksna-cloud-init-complete
+          EOF
+          cat > meta-data <<EOF
+          instance-id: louksna-cp09-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}
+          local-hostname: louksna-cp09-vm
+          EOF
+          cloud-localds seed.iso user-data meta-data
+          qemu-img create -f qcow2 -F qcow2 -b debian-13-genericcloud-amd64.qcow2 debian-vm.qcow2 24G
+          ACCEL=tcg
+          QEMU_PREFIX=()
+          if test -e /dev/kvm; then
+            # GitHub-hosted runners can expose /dev/kvm without granting the runner user access.
+            # Probe as root to distinguish device-permission issues from unavailable host virtualization.
+            if sudo qemu-system-x86_64 -machine q35,accel=kvm -cpu max -m 128 -nodefaults -display none -S -daemonize -pidfile /tmp/louksna-kvm-probe.pid 2>kvm-probe.log; then
+              ACCEL=kvm
+              QEMU_PREFIX=(sudo)
+              sudo kill "$(cat /tmp/louksna-kvm-probe.pid)" 2>/dev/null || true
+              echo "KVM_PROBE=PASS (sudo)"
+            else
+              echo "KVM_PROBE=FAIL; falling back to QEMU TCG"
+              cat kvm-probe.log
+            fi
+          else
+            echo "KVM_DEVICE=ABSENT; using QEMU TCG"
+          fi
+          printf 'QEMU_ACCEL=%s\n' "$ACCEL" | tee virtualization-mode-actual.txt
+          "${QEMU_PREFIX[@]}" qemu-system-x86_64 \
+            -machine "q35,accel=$ACCEL" \
+            -cpu max -smp 2 -m 4096 \
+            -drive file=debian-vm.qcow2,if=virtio,format=qcow2 \
+            -drive file=seed.iso,media=cdrom,readonly=on \
+            -netdev user,id=net0,hostfwd=tcp:127.0.0.1:2222-:22 \
+            -device virtio-net-pci,netdev=net0 \
+            -vga std -display none -serial file:vm-serial.log \
+            -daemonize -pidfile qemu.pid
+          echo "VM_STARTED=true" | tee vm-started.txt
+          for _ in $(seq 1 90); do
+            if ssh -i vm_ssh_key -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=3 louksna-test@127.0.0.1 'test -f /var/lib/cloud/instance/louksna-cloud-init-complete' 2>/dev/null; then
+              echo "CLOUD_INIT_READY=true" | tee cloud-init-ready.txt
+              break
+            fi
+            sleep 10
+          done
+          test -f cloud-init-ready.txt || { tail -n 200 vm-serial.log || true; echo "Debian VM cloud-init did not finish in time"; exit 20; }
+          SSH=(ssh -i vm_ssh_key -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ServerAliveInterval=15 louksna-test@127.0.0.1)
+          "${SSH[@]}" 'sudo cloud-init status --wait; cat /etc/os-release; dpkg-query -W plasma-workspace kwin-x11 sddm xserver-xorg-video-dummy' | tee guest-os-desktop-inventory.txt
+          # shellcheck disable=SC2016
+          "${SSH[@]}" 'set -x; sudo loginctl enable-linger louksna-test; sudo -u louksna-test mkdir -p /home/louksna-test/.local/share; sudo -u louksna-test nohup env HOME=/home/louksna-test USER=louksna-test LOGNAME=louksna-test startx /usr/bin/startplasma-x11 -- :0 vt1 -keeptty -nolisten tcp > /home/louksna-test/.local/share/cp09-kde-session.log 2>&1 < /dev/null & echo $! | sudo tee /run/cp09-startx.pid >/dev/null; for i in $(seq 1 45); do pgrep -x Xorg >/dev/null && pgrep -x kwin_x11 >/dev/null && break; sleep 2; done; echo "=== session processes ==="; pgrep -a Xorg || true; pgrep -af "startplasma|plasmashell" || true; pgrep -a kwin_x11 || true; echo "=== startx log ==="; sudo tail -n 120 /home/louksna-test/.local/share/cp09-kde-session.log || true; echo "=== session files ==="; find /usr/share/xsessions /usr/share/wayland-sessions -maxdepth 1 -type f -print 2>/dev/null || true' | tee kde-session-smoke.txt
+          "${SSH[@]}" bash -s <<'GUEST_VALIDATE'
+          set -Eeuo pipefail
+          . /etc/os-release
+          test "$ID:$VERSION_ID" = "debian:13"
+          pgrep -x Xorg >/dev/null
+          pgrep -x kwin_x11 >/dev/null
+          pgrep -af startplasma-x11 >/dev/null
+          GUEST_VALIDATE
+
+      - name: Install, launch in KDE session, and verify package rollback
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd evidence/cp09-vm
+          SSH=(ssh -i vm_ssh_key -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null louksna-test@127.0.0.1)
+          SCP=(scp -i vm_ssh_key -P 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null)
+          "${SCP[@]}" candidate.deb louksna-test@127.0.0.1:/tmp/candidate.deb
+          cat > guest-test.sh <<'GUEST'
+          #!/usr/bin/env bash
+          set -uo pipefail
+          PKG="$(dpkg-deb -f /tmp/candidate.deb Package)"
+          rollback() {
+            set +e
+            sudo apt-get remove -y "$PKG" > /tmp/rollback.log 2>&1
+            RC=$?
+            if [ "$RC" -eq 0 ] && ! dpkg-query -W -f='${Status}' "$PKG" 2>/dev/null | grep -q 'install ok installed'; then
+              echo ROLLBACK_PASS | tee /tmp/rollback-result.txt
+            else
+              echo ROLLBACK_FAIL | tee /tmp/rollback-result.txt
+              touch /tmp/rollback-failed
+            fi
+          }
+          trap rollback EXIT
+          # Use APT's local-file mode so candidate dependencies are resolved before package configuration.
+          sudo apt-get install -y /tmp/candidate.deb > /tmp/package-install.log 2>&1
+          RC=$?
+          if [ "$RC" -ne 0 ] || ! dpkg-query -W -f='${Status}' "$PKG" 2>/dev/null | grep -q 'install ok installed'; then
+            echo INSTALL_FAIL
+            cat /tmp/package-install.log
+            exit 1
+          fi
+          dpkg-query -W -f='${Package}\t${Version}\t${Status}\n' "$PKG" > /tmp/package-installed.tsv
+          uid="$(id -u louksna-test)"
+          test -S "/run/user/$uid/bus" || { echo "KDE user bus missing"; exit 2; }
+          test -n "$(pgrep -x Xorg)" && test -n "$(pgrep -x kwin_x11)" || { echo "KDE/Xorg session process missing"; exit 3; }
+          XAUTH="$(pgrep -a Xorg | sed -n 's/.*-auth \([^ ]*\).*/\1/p' | head -n 1)"
+          if [ -n "$XAUTH" ] && sudo test -r "$XAUTH"; then
+            sudo cp "$XAUTH" /home/louksna-test/.Xauthority
+            sudo chown louksna-test:louksna-test /home/louksna-test/.Xauthority
+            sudo chmod 600 /home/louksna-test/.Xauthority
+          fi
+          sudo -u louksna-test env DISPLAY=:0 XAUTHORITY=/home/louksna-test/.Xauthority XDG_RUNTIME_DIR="/run/user/$uid" DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$uid/bus" XDG_CURRENT_DESKTOP=KDE KDE_FULL_SESSION=true XDG_SESSION_TYPE=x11 timeout --signal=TERM --kill-after=5s 20s bash -lc 'BIN=$(find /usr/bin /usr/local/bin -maxdepth 1 -type f -iname "*louksna*" -print -quit); test -n "$BIN" && test -x "$BIN" && "$BIN"' > /tmp/louksna-launch.log 2>&1
+          RC=$?
+          if [ "$RC" -eq 0 ] || [ "$RC" -eq 124 ]; then
+            echo "LAUNCH_PASS exit_code=$RC"
+          else
+            echo "LAUNCH_FAIL exit_code=$RC"
+            cat /tmp/louksna-launch.log
+            exit 4
+          fi
+          cat /tmp/louksna-launch.log
+          GUEST
+          "${SCP[@]}" guest-test.sh louksna-test@127.0.0.1:/tmp/guest-test.sh
+          set +e
+          "${SSH[@]}" 'chmod +x /tmp/guest-test.sh && bash /tmp/guest-test.sh' 2>&1 | tee guest-install-launch-rollback.log
+          TEST_RC=${PIPESTATUS[0]}
+          set -e
+          "${SSH[@]}" 'cat /tmp/package-install.log /tmp/package-installed.tsv /tmp/louksna-launch.log /tmp/rollback.log /tmp/rollback-result.txt 2>/dev/null || true' | tee guest-package-evidence.log
+          if [ "$TEST_RC" -ne 0 ]; then exit "$TEST_RC"; fi
+          grep -q ROLLBACK_PASS guest-package-evidence.log
+      - name: Create evidence manifest with hashes and explicit scope
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          if test -f evidence/cp09-vm/qemu.pid; then sudo kill "$(sudo cat evidence/cp09-vm/qemu.pid)" 2>/dev/null || true; fi
+          # QEMU uses sudo when KVM is available; restore runner ownership before hashing/uploading evidence.
+          sudo chown -R "$(id -u):$(id -g)" evidence/cp09-vm
+          python3 - <<'PY'
+          import datetime,hashlib,json,os,pathlib,platform
+          root=pathlib.Path("evidence/cp09-vm")
+          # Hash durable evidence only; omit disposable VM disks/media, credentials, and process-control files.
+          excluded={"evidence-manifest.json","vm_ssh_key","debian-13-genericcloud-amd64.qcow2","debian-vm.qcow2","seed.iso","qemu.pid"}
+          files=sorted(p for p in root.rglob("*") if p.is_file() and p.name not in excluded)
+          hashes={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in files}
+          report={
+            "schema":"louksna.zd.v03.cp09.debian13-kde-vm.v1",
+            "timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "repository":os.environ.get("GITHUB_REPOSITORY"),
+            "candidate_commit":os.environ.get("CANDIDATE_COMMIT"),
+            "workflow_commit":os.environ.get("GITHUB_SHA"),
+            "run_id":os.environ.get("GITHUB_RUN_ID"),
+            "run_attempt":os.environ.get("GITHUB_RUN_ATTEMPT"),
+            "runner":platform.platform(),
+            "virtualization": next((p.read_text().strip().split("=",1)[1] for p in root.glob("virtualization-mode-actual.txt")), "UNKNOWN"),
+            "guest_target":"Debian 13 / KDE Plasma / Xorg dummy virtual display / SDDM autologin",
+            "status":"EVIDENCE_COLLECTED_REQUIRES_REVIEW",
+            "certification":"NOT_GRANTED",
+            "activation":False,
+            "sha256":hashes,
+            "limitations":[
+              "This is a disposable Debian 13 VM executed inside GitHub Actions; it is not a dedicated physical host.",
+              "The KDE desktop is a guest Xorg session on a virtual dummy display, not a physical monitor/GPU.",
+              "Audio hardware and microphone/remote voice behavior are not proven by this workflow.",
+              "Package launch success is only a process smoke test; it is not full interactive functional validation.",
+              "G23 independent validation and G24 certification are not granted automatically."
+            ]
+          }
+          (root/"evidence-manifest.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(report,indent=2))
+          PY
+
+      - name: Upload VM, package, KDE session, launch, rollback, and hash evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksna-cp09-debian13-kde-vm-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            evidence/cp09-vm/
+            !evidence/cp09-vm/debian-13-genericcloud-amd64.qcow2
+            !evidence/cp09-vm/debian-vm.qcow2
+            !evidence/cp09-vm/seed.iso
+            !evidence/cp09-vm/vm_ssh_key
+            !evidence/cp09-vm/qemu.pid
+          if-no-files-found: warn
+          retention-days: 90

@@ -1,0 +1,93 @@
+name: "Louksna infrastructure readiness audit"
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/louksna-infrastructure-readiness.yml"
+      - ".github/workflows/louksna-zd-v03-governance.yml"
+      - "governance/zona-directiva-v03/**"
+      - "scripts/missions/louksna_infrastructure_readiness_audit.py"
+      - "tests/test_louksna_infrastructure_readiness.py"
+  push:
+    branches:
+      - "automation/infra-readiness-cp09-cp10-20261009"
+      - "governance/louksna-zd-v03-12-stage-gates-20261009"
+    paths:
+      - ".github/workflows/louksna-infrastructure-readiness.yml"
+      - ".github/workflows/louksna-zd-v03-governance.yml"
+      - "governance/zona-directiva-v03/**"
+      - "scripts/missions/louksna_infrastructure_readiness_audit.py"
+      - "tests/test_louksna_infrastructure_readiness.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: louksna-infrastructure-readiness-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  static-readiness:
+    name: "Static controls and honest external-gate inventory"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+
+      - name: Compile audit and test sources
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -m py_compile scripts/missions/louksna_infrastructure_readiness_audit.py tests/test_louksna_infrastructure_readiness.py
+
+      - name: Run negative and fail-closed tests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -m unittest discover -s tests -p 'test_louksna_infrastructure_readiness.py' -v
+
+      - name: Generate candidate-bound infrastructure report
+        id: audit
+        shell: bash
+        env:
+          CANDIDATE_SHA: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p evidence/infrastructure-readiness
+          python scripts/missions/louksna_infrastructure_readiness_audit.py \
+            --output evidence/infrastructure-readiness/readiness.json
+          python - <<'PY'
+          import hashlib,json,os,pathlib
+          p=pathlib.Path("evidence/infrastructure-readiness/readiness.json")
+          data=json.loads(p.read_text())
+          data["candidate_commit_sha"]=os.environ["CANDIDATE_SHA"]
+          data["workflow_run_id"]=os.environ["RUN_ID"]
+          data["workflow_run_attempt"]=os.environ["RUN_ATTEMPT"]
+          data["report_sha256_before_binding"]=hashlib.sha256(p.read_bytes()).hexdigest()
+          p.write_text(json.dumps(data,indent=2,sort_keys=True)+"\n")
+          print("READINESS_STATUS="+data["overall_status"])
+          print("BLOCKED="+str(data["counts"]["blocked"]))
+          print("UNVERIFIED="+str(data["counts"]["unverified"]))
+          PY
+
+      - name: Preserve report even when a gate is blocked
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksna-infrastructure-readiness-${{ github.run_id }}-${{ github.run_attempt }}
+          path: evidence/infrastructure-readiness/readiness.json
+          if-no-files-found: error
+          retention-days: 90
