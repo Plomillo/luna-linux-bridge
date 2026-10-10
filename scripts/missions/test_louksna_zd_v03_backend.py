@@ -9,7 +9,7 @@ checks = {
     "credential_removal_is_verified": "SECRET_CLEAR_NOT_VERIFIED" in source and "secret_lookup()" in source,
     "remote_bridge_requires_https": 'parsed.scheme()!="https"' in source and ".https_only(true)" in source,
     "remote_bridge_has_bounded_timeout": "Duration::from_secs(20)" in source and "Duration::from_secs(5)" in source,
-    "remote_response_size_is_bounded": "reply.len()>200_000" in source,
+    "remote_response_size_is_bounded": "body.len().saturating_add(chunk.len()) > 200_000" in source and "body.len().saturating_add(chunk.len()) > 2_000_000" in source,
     "runtime_probe_can_report_degraded": '"DEGRADED"' in source and '"database_query"' in source,
     "offline_guard_remains": "if settings.offline_mode{return Err(\"OFFLINE_MODE_ENABLED\".into());}" in source,
     "github_reads_remain_api_backed": "https://api.github.com{}" in source,
