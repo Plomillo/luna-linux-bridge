@@ -460,6 +460,26 @@ mod louksna_runtime_tests {
     }
 
     #[test]
+    fn offline_mode_blocks_github_network_access() {
+        let root = std::env::temp_dir().join(format!(
+            "louksna-zd-v03-offline-test-{}-{}",
+            std::process::id(),
+            Utc::now().timestamp_nanos_opt().unwrap_or_default()
+        ));
+        std::fs::create_dir_all(&root).expect("create isolated offline test directory");
+        std::env::set_var("XDG_DATA_HOME", &root);
+        save_settings(Settings {
+            offline_mode: true,
+            preferred_repo: "Plomillo/luna-linux-bridge".to_string(),
+            github_owner_filter: String::new(),
+            remote_chat_bridge: String::new(),
+        }).expect("persist offline setting");
+        let result = tauri::async_runtime::block_on(github_repositories());
+        assert_eq!(result.expect_err("offline mode must reject GitHub request"), "OFFLINE_MODE_ENABLED");
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
     fn empty_chat_message_is_rejected_without_network_access() {
         let result = tauri::async_runtime::block_on(chat_send("   ".to_string()));
         assert_eq!(result.expect_err("empty chat must fail"), "EMPTY_MESSAGE");
