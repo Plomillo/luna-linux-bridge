@@ -182,7 +182,12 @@ if ! dpkg-query -W -f='${Package}\t${Version}\t${Status}\n' "$PKG" >/tmp/package
   echo "INSTALL_FAIL dpkg_query_failed"
   exit 2
 fi
-if ! grep -q 
+if ! grep -Fq "install ok installed" /tmp/package-installed.tsv; then
+  echo "INSTALL_FAIL package_state_not_installed"
+  cat /tmp/package-installed.tsv
+  exit 2
+fi
+echo INSTALL_PASS
 pgrep -x Xorg >/dev/null && pgrep -x kwin_x11 >/dev/null || { echo "KDE/Xorg session process missing"; exit 3; }
 uid="$(id -u louksna-test)"
 XAUTH="$(pgrep -a Xorg | sed -n 's/.*-auth \([^ ]*\).*/\1/p' | head -n 1)"
