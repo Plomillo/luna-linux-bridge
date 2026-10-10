@@ -161,27 +161,75 @@ cat > "$WORK/guest-test.sh" <<'GUEST'
 set -uo pipefail
 PKG="$(dpkg-deb -f /tmp/candidate.deb Package)"
 rollback() {
+  original_rc=$?
   set +e
   sudo apt-get remove -y "$PKG" >/tmp/rollback.log 2>&1
-  rc=$?
-  if [[ "$rc" -eq 0 ]] && ! dpkg-query -W -f='${Status}' "$PKG" 2>/dev/null | grep -q 'install ok installed'; then
+  remove_rc=$?
+  if [[ "$remove_rc" -eq 0 ]] && ! dpkg-query -W -f='${Status}' "$PKG" 2>/dev/null | grep -q 'install ok installed'; then
     echo ROLLBACK_PASS
+    rollback_rc=0
   else
     echo ROLLBACK_FAIL
     touch /tmp/rollback-failed
+    rollback_rc=1
   fi
+  if [[ "$original_rc" -ne 0 ]]; then return "$original_rc"; fi
+  return "$rollback_rc"
 }
 trap rollback EXIT
 sudo apt-get install -y /tmp/candidate.deb >/tmp/package-install.log 2>&1 || { cat /tmp/package-install.log; echo INSTALL_FAIL; exit 1; }
 dpkg-query -W -f='${Package}\t${Version}\t${Status}\n' "$PKG" >/tmp/package-installed.tsv
+grep -q 
+GUEST
+scp -i "$VM_KEY" -P 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$WORK/guest-test.sh" louksna-test@127.0.0.1:/tmp/guest-test.sh
+set +e
+"${SSH[@]}" 'chmod +x /tmp/guest-test.sh && bash /tmp/guest-test.sh' 2>&1 | tee "$WORK/guest-test-output.log" | tee -a "$LOG"
+RC=${PIPESTATUS[0]}
+set -e
+"${SSH[@]}" 'cat /tmp/package-install.log /tmp/package-installed.tsv /tmp/louksna-launch.log /tmp/rollback.log 2>/dev/null || true; cat /tmp/rollback-result.txt 2>/dev/null || true' | tee "$WORK/guest-package-evidence.log" | tee -a "$LOG"
+if [[ "$RC" -eq 0 ]] && grep -q 'LAUNCH_SMOKE_PASS' "$WORK/guest-test-output.log" && grep -q 'ROLLBACK_PASS' "$WORK/guest-test-output.log"; then
+  INSTALL_STATUS=PASS; LAUNCH_STATUS=PASS; ROLLBACK_STATUS=PASS; GUEST_STATUS=PASS
+else
+  if grep -q 'INSTALL_PASS' "$WORK/guest-test-output.log"; then INSTALL_STATUS=PASS
+  elif grep -q 'INSTALL_FAIL' "$WORK/guest-test-output.log"; then INSTALL_STATUS=FAIL
+  fi
+  grep -q 'LAUNCH_SMOKE_PASS' "$WORK/guest-test-output.log" && LAUNCH_STATUS=PASS || { grep -q 'LAUNCH_SMOKE_FAIL' "$WORK/guest-test-output.log" && LAUNCH_STATUS=FAIL || LAUNCH_STATUS=NOT_RUN; }
+  grep -q 'ROLLBACK_PASS' "$WORK/guest-test-output.log" && ROLLBACK_STATUS=PASS || ROLLBACK_STATUS=FAIL
+  GUEST_STATUS=FAIL
+  exit 34
+fi
+log "CP-09 disposable Debian 13 KDE/Xorg VM test passed; no physical-host claim."
+\tinstall ok installed
+GUEST
+scp -i "$VM_KEY" -P 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$WORK/guest-test.sh" louksna-test@127.0.0.1:/tmp/guest-test.sh
+set +e
+"${SSH[@]}" 'chmod +x /tmp/guest-test.sh && bash /tmp/guest-test.sh' 2>&1 | tee "$WORK/guest-test-output.log" | tee -a "$LOG"
+RC=${PIPESTATUS[0]}
+set -e
+"${SSH[@]}" 'cat /tmp/package-install.log /tmp/package-installed.tsv /tmp/louksna-launch.log /tmp/rollback.log 2>/dev/null || true; cat /tmp/rollback-result.txt 2>/dev/null || true' | tee "$WORK/guest-package-evidence.log" | tee -a "$LOG"
+if [[ "$RC" -eq 0 ]] && grep -q 'LAUNCH_SMOKE_PASS' "$WORK/guest-test-output.log" && grep -q 'ROLLBACK_PASS' "$WORK/guest-test-output.log"; then
+  INSTALL_STATUS=PASS; LAUNCH_STATUS=PASS; ROLLBACK_STATUS=PASS; GUEST_STATUS=PASS
+else
+  grep -q 'INSTALL_FAIL' "$WORK/guest-test-output.log" && INSTALL_STATUS=FAIL
+  grep -q 'LAUNCH_SMOKE_PASS' "$WORK/guest-test-output.log" && LAUNCH_STATUS=PASS || LAUNCH_STATUS=FAIL
+  grep -q 'ROLLBACK_PASS' "$WORK/guest-test-output.log" && ROLLBACK_STATUS=PASS || ROLLBACK_STATUS=FAIL
+  GUEST_STATUS=FAIL
+  exit 34
+fi
+log "CP-09 disposable Debian 13 KDE/Xorg VM test passed; no physical-host claim."
+ /tmp/package-installed.tsv || { echo INSTALL_FAIL package_state_not_installed; exit 2; }
+echo INSTALL_PASS
 pgrep -x Xorg >/dev/null && pgrep -x kwin_x11 >/dev/null || { echo "KDE/Xorg session process missing"; exit 3; }
 uid="$(id -u louksna-test)"
 XAUTH="$(pgrep -a Xorg | sed -n 's/.*-auth \([^ ]*\).*/\1/p' | head -n 1)"
 if [[ -n "$XAUTH" ]] && sudo test -r "$XAUTH"; then sudo cp "$XAUTH" /home/louksna-test/.Xauthority; sudo chown louksna-test:louksna-test /home/louksna-test/.Xauthority; sudo chmod 600 /home/louksna-test/.Xauthority; fi
+export DISPLAY=:0
+export XAUTHORITY=/home/louksna-test/.Xauthority
+xwininfo -display "$DISPLAY" -root -tree >/dev/null 2>/tmp/xwininfo-baseline.err || { echo "LAUNCH_SMOKE_FAIL x11_unavailable display=$DISPLAY"; cat /tmp/xwininfo-baseline.err; exit 4; }
 BIN="$(find /usr/bin /usr/local/bin -maxdepth 1 -type f -iname '*louksna*' -print -quit)"
 test -n "$BIN" && test -x "$BIN" || { echo "LAUNCH_SMOKE_FAIL executable_missing"; exit 4; }
-BASELINE_WINDOWS="$(xwininfo -root -tree | awk '/^[[:space:]]+0x[[:xdigit:]]+[[:space:]]/ { n++ } END { print n+0 }')"
-sudo -u louksna-test env HOME=/home/louksna-test USER=louksna-test LOGNAME=louksna-test DISPLAY=:0 XAUTHORITY=/home/louksna-test/.Xauthority XDG_RUNTIME_DIR="/run/user/$uid" XDG_CURRENT_DESKTOP=KDE KDE_FULL_SESSION=true XDG_SESSION_TYPE=x11 "$BIN" >/tmp/louksna-launch.log 2>&1 &
+BASELINE_WINDOWS="$(xwininfo -display "$DISPLAY" -root -tree | awk '/^[[:space:]]+0x[[:xdigit:]]+[[:space:]]/ { n++ } END { print n+0 }')"
+sudo -u louksna-test env HOME=/home/louksna-test USER=louksna-test LOGNAME=louksna-test DISPLAY="$DISPLAY" XAUTHORITY="$XAUTHORITY" XDG_RUNTIME_DIR="/run/user/$uid" XDG_CURRENT_DESKTOP=KDE KDE_FULL_SESSION=true XDG_SESSION_TYPE=x11 "$BIN" >/tmp/louksna-launch.log 2>&1 &
 APP_PID=$!
 WINDOW_FOUND=0
 for _ in $(seq 1 20); do
@@ -190,7 +238,12 @@ for _ in $(seq 1 20); do
     cat /tmp/louksna-launch.log
     exit 4
   fi
-  CURRENT_WINDOWS="$(xwininfo -root -tree | awk '/^[[:space:]]+0x[[:xdigit:]]+[[:space:]]/ { n++ } END { print n+0 }')"
+  if ! CURRENT_TREE="$(xwininfo -display "$DISPLAY" -root -tree 2>/tmp/xwininfo-current.err)"; then
+    echo "LAUNCH_SMOKE_FAIL x11_window_query_failed"
+    cat /tmp/xwininfo-current.err
+    exit 4
+  fi
+  CURRENT_WINDOWS="$(printf '%s\n' "$CURRENT_TREE" | awk '/^[[:space:]]+0x[[:xdigit:]]+[[:space:]]/ { n++ } END { print n+0 }')"
   if (( CURRENT_WINDOWS > BASELINE_WINDOWS )); then WINDOW_FOUND=1; break; fi
   sleep 1
 done
