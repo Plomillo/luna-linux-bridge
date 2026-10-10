@@ -129,6 +129,11 @@ jobs:
             - python3
             - ca-certificates
           write_files:
+            - path: /etc/X11/Xwrapper.config
+              permissions: '0644'
+              content: |
+                allowed_users=anybody
+                needs_root_rights=yes
             - path: /etc/X11/xorg.conf.d/20-dummy.conf
               permissions: '0644'
               content: |
