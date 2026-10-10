@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import hashlib, json, os, struct, sys
+import hashlib, json, os, shutil, struct, sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -81,6 +81,32 @@ def main(argv):
         if not row["manifest_match"]: gaps.append({"id":"ASSET_MANIFEST_HASH_DRIFT","file":name,"severity":"CRITICAL"})
         if w<7680 or h<4320: gaps.append({"id":"REFERENCE_FILENAME_8K_DIMENSION_MISMATCH","file":name,"severity":"DISCLOSED_NONBLOCKING","observed":str(w)+"x"+str(h),"rule":"Preserve accepted canonical reference; no silent regeneration."})
         asset_rows.append(row)
+
+    # The governance branch intentionally does not duplicate the frozen V0.2
+    # project tree. Materialize only the canonical reference payload into this
+    # isolated job workspace from the pinned baseline checkout. Never overwrite
+    # an existing target: partial or conflicting target state must fail closed.
+    reference_rel=[
+      "LOUKSNA_ZONA_DIRECTIVA_PACKAGING_MONOLITH.md",
+      "images/ASSET_MANIFEST.json",
+      "images/SHA256SUMS.txt",
+    ]+["images/"+x for x in IMAGE_NAMES]
+    if not target_project.exists():
+        target_project.mkdir(parents=True,exist_ok=False)
+        for rel in reference_rel:
+            sp=source_project/rel
+            if not sp.is_file():
+                raise SystemExit("SOURCE_REFERENCE_MISSING:"+rel)
+            tp=target_project/rel
+            tp.parent.mkdir(parents=True,exist_ok=True)
+            shutil.copy2(sp,tp)
+            if sha256(sp)!=sha256(tp):
+                raise SystemExit("REFERENCE_COPY_HASH_MISMATCH:"+rel)
+        print("BASELINE_REFERENCE_MATERIALIZATION=PASS",flush=True)
+    else:
+        incomplete=[rel for rel in reference_rel if not (target_project/rel).is_file()]
+        if incomplete:
+            raise SystemExit("TARGET_REFERENCE_INCOMPLETE_FAIL_CLOSED:"+",".join(incomplete))
 
     preservation={}
     for rel in ["LOUKSNA_ZONA_DIRECTIVA_PACKAGING_MONOLITH.md","images/ASSET_MANIFEST.json","images/SHA256SUMS.txt"]+["images/"+x for x in IMAGE_NAMES]:
