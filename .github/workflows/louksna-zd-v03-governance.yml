@@ -40,6 +40,10 @@ on:
       - scripts/missions/v03_templates/**
   workflow_dispatch:
 
+env:
+  # On pull_request, validate the exact PR head commit, not GitHub's synthetic merge commit.
+  CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
 permissions:
   contents: read
 
@@ -60,7 +64,7 @@ jobs:
       - name: Checkout exact workflow candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ env.CANDIDATE_SHA }}
           persist-credentials: false
           fetch-depth: 0
 
@@ -69,7 +73,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           actual="$(git rev-parse HEAD)"
-          expected="$GITHUB_SHA"
+          expected="$CANDIDATE_SHA"
           printf 'TELEMETRY expected_checkout_sha=%s\n' "$expected"
           printf 'TELEMETRY actual_checkout_sha=%s\n' "$actual"
           test "$actual" = "$expected" || {
@@ -84,7 +88,7 @@ jobs:
           echo "TELEMETRY event=EVENT_STARTED stage=01 checkpoint=CP-01"
           echo "TELEMETRY repository=$GITHUB_REPOSITORY"
           echo "TELEMETRY ref=$GITHUB_REF"
-          echo "TELEMETRY commit=$GITHUB_SHA"
+          echo "TELEMETRY commit=$CANDIDATE_SHA"
           echo "TELEMETRY run_id=$GITHUB_RUN_ID"
           echo "TELEMETRY run_attempt=$GITHUB_RUN_ATTEMPT"
           echo "TELEMETRY timestamp_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -130,7 +134,7 @@ jobs:
             "repository":os.environ.get("GITHUB_REPOSITORY"),
             "ref":os.environ.get("GITHUB_REF"),
             "branch":branch,
-            "commit_sha":os.environ.get("GITHUB_SHA"),
+            "commit_sha":os.environ.get("CANDIDATE_SHA"),
             "run_id":os.environ.get("GITHUB_RUN_ID"),
             "run_attempt":os.environ.get("GITHUB_RUN_ATTEMPT"),
             "main_mutation":"NOT_PERFORMED",
@@ -183,7 +187,7 @@ jobs:
       - name: Checkout exact governance candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ env.CANDIDATE_SHA }}
           persist-credentials: false
           fetch-depth: 0
       - name: Verify contract, mission linkage, and protected branch boundaries
@@ -212,7 +216,7 @@ jobs:
               if "MISSION_ID = MIS-LOUKSNA-ZD-V03-FUNCTIONAL-20261006" not in mt: findings.append({"severity":"BLOCKER","id":"MISSION_ID_MISMATCH"})
               if "NO_MAIN_MUTATION = TRUE" not in mt: findings.append({"severity":"BLOCKER","id":"MAIN_PROTECTION_CONTRACT_MISSING"})
           def digest(p): return hashlib.sha256(p.read_bytes()).hexdigest() if p.is_file() else None
-          result={"schema":"louksna.zd.v03.checkpoint.v1","contract_id":"LOUKSNA-ZD-V03-12-STAGE-GOVERNANCE-20261009","mission_id":"MIS-LOUKSNA-ZD-V03-FUNCTIONAL-20261006","stage_id":"02","checkpoint_id":"CP-02","timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"repository":os.getenv("GITHUB_REPOSITORY"),"run_id":os.getenv("GITHUB_RUN_ID"),"run_url":f"https://github.com/{os.getenv('GITHUB_REPOSITORY')}/actions/runs/{os.getenv('GITHUB_RUN_ID')}","commit_sha":os.getenv("GITHUB_SHA"),"candidate_branch":os.getenv("GITHUB_REF_NAME"),"status":"PASS" if not findings else "HOLD","requirements":required,"evidence":{"contract_sha256":digest(contract),"mission_sha256":digest(mission),"authority_sha256":digest(authority),"assurance_sha256":digest(assurance)},"findings":findings,"previous_checkpoint":"CP-01","next_authorized_stage":"03" if not findings else "NONE","rollback_pointer":os.getenv("GITHUB_SHA")}
+          result={"schema":"louksna.zd.v03.checkpoint.v1","contract_id":"LOUKSNA-ZD-V03-12-STAGE-GOVERNANCE-20261009","mission_id":"MIS-LOUKSNA-ZD-V03-FUNCTIONAL-20261006","stage_id":"02","checkpoint_id":"CP-02","timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"repository":os.getenv("GITHUB_REPOSITORY"),"run_id":os.getenv("GITHUB_RUN_ID"),"run_url":f"https://github.com/{os.getenv('GITHUB_REPOSITORY')}/actions/runs/{os.getenv('GITHUB_RUN_ID')}","commit_sha":os.getenv("CANDIDATE_SHA"),"candidate_branch":os.getenv("GITHUB_REF_NAME"),"status":"PASS" if not findings else "HOLD","requirements":required,"evidence":{"contract_sha256":digest(contract),"mission_sha256":digest(mission),"authority_sha256":digest(authority),"assurance_sha256":digest(assurance)},"findings":findings,"previous_checkpoint":"CP-01","next_authorized_stage":"03" if not findings else "NONE","rollback_pointer":os.getenv("CANDIDATE_SHA")}
           path=pathlib.Path("evidence/zona-directiva-v03/CP-02-contract-linkage.json")
           path.write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
           print(json.dumps(result,indent=2))
@@ -238,7 +242,7 @@ jobs:
       - name: Checkout exact candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ env.CANDIDATE_SHA }}
           persist-credentials: false
       - name: Run material backend and ledger tests
         shell: bash
@@ -252,7 +256,7 @@ jobs:
           python3 - <<'PY'
           import datetime,hashlib,json,os,pathlib
           p=pathlib.Path("scripts/missions/test_louksna_zd_v03_backend.py")
-          d={"schema":"louksna.zd.v03.checkpoint-evidence.v1","stage_id":"03","checkpoint_id":"CP-03","status":"STATIC_REGRESSION_PASS_RUNTIME_TESTS_NOT_YET_PROVEN","scope":"Eight static source assertions passed; this is not runtime SQLite integration evidence.","timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"repository":os.getenv("GITHUB_REPOSITORY"),"commit_sha":os.getenv("GITHUB_SHA"),"run_id":os.getenv("GITHUB_RUN_ID"),"test_harness_sha256":hashlib.sha256(p.read_bytes()).hexdigest()}
+          d={"schema":"louksna.zd.v03.checkpoint-evidence.v1","stage_id":"03","checkpoint_id":"CP-03","status":"STATIC_REGRESSION_PASS_RUNTIME_TESTS_NOT_YET_PROVEN","scope":"Eight static source assertions passed; this is not runtime SQLite integration evidence.","timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"repository":os.getenv("GITHUB_REPOSITORY"),"commit_sha":os.getenv("CANDIDATE_SHA"),"run_id":os.getenv("GITHUB_RUN_ID"),"test_harness_sha256":hashlib.sha256(p.read_bytes()).hexdigest()}
           pathlib.Path("evidence/zona-directiva-v03/CP-03-backend-ledger.json").write_text(json.dumps(d,indent=2,sort_keys=True)+"\n")
           PY
       - name: Upload CP-03 evidence
@@ -274,7 +278,7 @@ jobs:
       - name: Checkout exact candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ env.CANDIDATE_SHA }}
           persist-credentials: false
       - name: Verify bridge security and real read-only API access
         shell: bash
@@ -298,7 +302,7 @@ jobs:
           mkdir -p evidence/zona-directiva-v03
           python3 - <<'PY'
           import datetime,json,os,pathlib
-          d={"schema":"louksna.zd.v03.checkpoint-evidence.v1","stage_id":"04","checkpoint_id":"CP-04","status":"PASS_WITH_SCOPE_LIMITS","scope":"Authenticated live GitHub API read and credential-pattern scan passed; broader credential-store round-trip is not proven.","timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"repository":os.getenv("GITHUB_REPOSITORY"),"commit_sha":os.getenv("GITHUB_SHA"),"run_id":os.getenv("GITHUB_RUN_ID")}
+          d={"schema":"louksna.zd.v03.checkpoint-evidence.v1","stage_id":"04","checkpoint_id":"CP-04","status":"PASS_WITH_SCOPE_LIMITS","scope":"Authenticated live GitHub API read and credential-pattern scan passed; broader credential-store round-trip is not proven.","timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"repository":os.getenv("GITHUB_REPOSITORY"),"commit_sha":os.getenv("CANDIDATE_SHA"),"run_id":os.getenv("GITHUB_RUN_ID")}
           pathlib.Path("evidence/zona-directiva-v03/CP-04-github-bridge.json").write_text(json.dumps(d,indent=2,sort_keys=True)+"\n")
           PY
       - name: Upload CP-04 evidence
@@ -318,7 +322,7 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ env.CANDIDATE_SHA }}
           persist-credentials: false
       - name: Checkout frozen V0.2 source inputs
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -354,7 +358,7 @@ jobs:
           import datetime,hashlib,json,os,pathlib
           root=pathlib.Path("LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate")
           files=["src/App.tsx","src-tauri/Cargo.toml","src-tauri/src/main.rs"]
-          d={"schema":"louksna.zd.v03.checkpoint-evidence.v1","stage_id":"05","checkpoint_id":"CP-05","status":"PASS_WITH_SCOPE_LIMITS","scope":"Source assertions passed; interactive UI state/telemetry behavior is not proven.","timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"repository":os.getenv("GITHUB_REPOSITORY"),"commit_sha":os.getenv("GITHUB_SHA"),"run_id":os.getenv("GITHUB_RUN_ID"),"source_sha256":{p:hashlib.sha256((root/p).read_bytes()).hexdigest() for p in files}}
+          d={"schema":"louksna.zd.v03.checkpoint-evidence.v1","stage_id":"05","checkpoint_id":"CP-05","status":"PASS_WITH_SCOPE_LIMITS","scope":"Source assertions passed; interactive UI state/telemetry behavior is not proven.","timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"repository":os.getenv("GITHUB_REPOSITORY"),"commit_sha":os.getenv("CANDIDATE_SHA"),"run_id":os.getenv("GITHUB_RUN_ID"),"source_sha256":{p:hashlib.sha256((root/p).read_bytes()).hexdigest() for p in files}}
           pathlib.Path("evidence/zona-directiva-v03/CP-05-ui-telemetry.json").write_text(json.dumps(d,indent=2,sort_keys=True)+"\n")
           PY
       - name: Upload CP-05 evidence
@@ -374,7 +378,7 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ env.CANDIDATE_SHA }}
           persist-credentials: false
       - name: Checkout frozen V0.2 source inputs
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -411,7 +415,7 @@ jobs:
           import datetime,hashlib,json,os,pathlib
           root=pathlib.Path("LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate")
           files=["src/App.tsx","src-tauri/src/main.rs","src-tauri/tauri.conf.json"]
-          d={"schema":"louksna.zd.v03.checkpoint-evidence.v1","stage_id":"06","checkpoint_id":"CP-06","status":"PASS_WITH_SCOPE_LIMITS","scope":"Offline/chat source assertions passed; GUI, restart persistence and attachment E2E are unproven.","timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"repository":os.getenv("GITHUB_REPOSITORY"),"commit_sha":os.getenv("GITHUB_SHA"),"run_id":os.getenv("GITHUB_RUN_ID"),"source_sha256":{p:hashlib.sha256((root/p).read_bytes()).hexdigest() for p in files}}
+          d={"schema":"louksna.zd.v03.checkpoint-evidence.v1","stage_id":"06","checkpoint_id":"CP-06","status":"PASS_WITH_SCOPE_LIMITS","scope":"Offline/chat source assertions passed; GUI, restart persistence and attachment E2E are unproven.","timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"repository":os.getenv("GITHUB_REPOSITORY"),"commit_sha":os.getenv("CANDIDATE_SHA"),"run_id":os.getenv("GITHUB_RUN_ID"),"source_sha256":{p:hashlib.sha256((root/p).read_bytes()).hexdigest() for p in files}}
           pathlib.Path("evidence/zona-directiva-v03/CP-06-functions-attachments.json").write_text(json.dumps(d,indent=2,sort_keys=True)+"\n")
           PY
       - name: Upload CP-06 evidence
@@ -432,7 +436,7 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ env.CANDIDATE_SHA }}
           persist-credentials: false
       - name: Checkout frozen V0.2 source inputs
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -505,7 +509,7 @@ jobs:
               "checkpoint_id": "CP-07",
               "finished_at_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
               "repository": "Plomillo/luna-linux-bridge",
-              "commit_sha": "${{ github.sha }}",
+              "commit_sha": "${{ env.CANDIDATE_SHA }}",
               "run_id": "${{ github.run_id }}",
               "frontend_browser_e2e_executed": False,
               "native_tauri_runtime_tested": False,
@@ -541,7 +545,7 @@ jobs:
             "stage_id":"07","checkpoint_id":"CP-07",
             "timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "repository":os.getenv("GITHUB_REPOSITORY"),
-            "commit_sha":os.getenv("GITHUB_SHA"),
+            "commit_sha":os.getenv("CANDIDATE_SHA"),
             "run_id":os.getenv("GITHUB_RUN_ID"),
             "voice_gate":"OPEN",
             "voice_active":False,
@@ -589,7 +593,7 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ env.CANDIDATE_SHA }}
           persist-credentials: false
       - name: Checkout frozen V0.2 source inputs
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -626,7 +630,7 @@ jobs:
           python3 -B -I scripts/missions/louksna_zd_v03_functionalizer.py "$CANDIDATE"
           python3 -B -I scripts/missions/test_louksna_zd_v03_backend.py scripts/missions/v03_templates/main.rs
           cd "$CANDIDATE"
-          export SOURCE_DATE_EPOCH="$(git -C "$GITHUB_WORKSPACE" show -s --format=%ct "$GITHUB_SHA")"
+          export SOURCE_DATE_EPOCH="$(git -C "$GITHUB_WORKSPACE" show -s --format=%ct "$CANDIDATE_SHA")"
           export TZ=UTC LC_ALL=C CARGO_INCREMENTAL=0
           export CARGO_TARGET_DIR="$RUNNER_TEMP/louksna-v03/cargo-target-build-1"
           export RUSTFLAGS="--remap-path-prefix=$GITHUB_WORKSPACE=/louksna-src"
@@ -651,7 +655,7 @@ jobs:
           python3 - "$DEB" "$EVIDENCE_DIR/CP-08-build-package.json" <<'PY'
           import datetime,hashlib,json,os,pathlib,sys
           p=pathlib.Path(sys.argv[1])
-          d={"schema":"louksna.zd.v03.checkpoint-evidence.v1","stage_id":"08","checkpoint_id":"CP-08","status":"BUILD_PASS_REPRODUCIBILITY_PENDING","scope":"First clean package build passed; an independent second build is required before reproducibility can pass.","timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"repository":os.getenv("GITHUB_REPOSITORY"),"commit_sha":os.getenv("GITHUB_SHA"),"run_id":os.getenv("GITHUB_RUN_ID"),"builds":{"first":{"package_name":p.name,"size_bytes":p.stat().st_size,"sha256":hashlib.sha256(p.read_bytes()).hexdigest()}}}
+          d={"schema":"louksna.zd.v03.checkpoint-evidence.v1","stage_id":"08","checkpoint_id":"CP-08","status":"BUILD_PASS_REPRODUCIBILITY_PENDING","scope":"First clean package build passed; an independent second build is required before reproducibility can pass.","timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"repository":os.getenv("GITHUB_REPOSITORY"),"commit_sha":os.getenv("CANDIDATE_SHA"),"run_id":os.getenv("GITHUB_RUN_ID"),"builds":{"first":{"package_name":p.name,"size_bytes":p.stat().st_size,"sha256":hashlib.sha256(p.read_bytes()).hexdigest()}}}
           pathlib.Path(sys.argv[2]).write_text(json.dumps(d,indent=2,sort_keys=True)+"\n")
           PY
       - name: Rebuild from clean source snapshot and compare package digests
@@ -662,7 +666,7 @@ jobs:
           SECOND_ROOT="$RUNNER_TEMP/louksna-v03/repro2-source"
           RESULT="$RUNNER_TEMP/louksna-v03/repro2-result.json"
           mkdir -p "$SECOND_ROOT" "$SECOND_ROOT/source-v02" "$RUNNER_TEMP/louksna-v03"
-          git -C "$GITHUB_WORKSPACE" archive "$GITHUB_SHA" | tar -x -C "$SECOND_ROOT"
+          git -C "$GITHUB_WORKSPACE" archive "$CANDIDATE_SHA" | tar -x -C "$SECOND_ROOT"
           # Re-materialize the same pinned frozen V0.2 source input into the isolated
           # second-build workspace; do not point the materializer at the candidate repo.
           git -C "$GITHUB_WORKSPACE/source-v02" archive HEAD | tar -x -C "$SECOND_ROOT/source-v02"
@@ -684,7 +688,7 @@ jobs:
             cp "$CARGO_LOCK1" "$CANDIDATE2/src-tauri/Cargo.lock"
             cmp -s "$CARGO_LOCK1" "$CANDIDATE2/src-tauri/Cargo.lock"
             cd "$CANDIDATE2"
-            export SOURCE_DATE_EPOCH="$(git -C "$GITHUB_WORKSPACE" show -s --format=%ct "$GITHUB_SHA")"
+            export SOURCE_DATE_EPOCH="$(git -C "$GITHUB_WORKSPACE" show -s --format=%ct "$CANDIDATE_SHA")"
             export TZ=UTC LC_ALL=C CARGO_INCREMENTAL=0
             export CARGO_TARGET_DIR="$RUNNER_TEMP/louksna-v03/cargo-target-build-2"
             export RUSTFLAGS="--remap-path-prefix=$SECOND_ROOT=/louksna-src"
@@ -728,7 +732,7 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ env.CANDIDATE_SHA }}
           persist-credentials: false
       - name: Download exact CP-08 package artifact
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
@@ -762,7 +766,7 @@ jobs:
           bash scripts/missions/debian13_kde_qemu_runtime.sh \
             "$GITHUB_WORKSPACE/evidence/zona-directiva-v03/imported/louksna-zd-v03-cp08-build-package" \
             "$GITHUB_WORKSPACE/evidence/zona-directiva-v03" \
-            "$GITHUB_SHA"
+            "$CANDIDATE_SHA"
       - name: Preserve CP-09 runtime gate evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -784,7 +788,7 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ env.CANDIDATE_SHA }}
           persist-credentials: false
       - name: Download same-run checkpoint artifacts
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
@@ -814,7 +818,7 @@ jobs:
           for p in files:
               try: d=json.loads(p.read_text())
               except Exception as e: raise SystemExit(f"CP-10 HOLD: invalid JSON {p}: {e}")
-              if d.get("commit_sha") and d["commit_sha"] != __import__("os").environ["GITHUB_SHA"]:
+              if d.get("commit_sha") and d["commit_sha"] != __import__("os").environ["CANDIDATE_SHA"]:
                   raise SystemExit(f"CP-10 HOLD: stale commit evidence {p}")
               records.append({"path":str(p.relative_to(root)),"sha256":__import__("hashlib").sha256(p.read_bytes()).hexdigest()})
           blocking=[]
@@ -832,7 +836,7 @@ jobs:
               if name == "CP-09-debian13-kde-runtime.json":
                   if status != "PASS" or d.get("virtual_runtime_verified") is not True or d.get("runtime_environment") != "DISPOSABLE_QEMU_VM":
                       blocking.append("CP-09 Debian 13 KDE disposable VM runtime evidence is not PASS")
-                  if d.get("commit_sha") != os.environ["GITHUB_SHA"]:
+                  if d.get("commit_sha") != os.environ["CANDIDATE_SHA"]:
                       blocking.append("CP-09 report is not bound to the current candidate commit")
                   if d.get("install_test") != "PASS" or d.get("launch_test") != "PASS" or d.get("rollback_test") != "PASS":
                       blocking.append("CP-09 install/launch/rollback evidence incomplete")
@@ -850,10 +854,12 @@ jobs:
           blocking=sorted(set(blocking))
           final_status="PASS" if not blocking else "HOLD"
           out=pathlib.Path("evidence/zona-directiva-v03/CP-10-evidence-manifest.json")
-          out.write_text(json.dumps({"schema":"louksna.zd.v03.evidence-manifest.v1","stage_id":"10","checkpoint_id":"CP-10","status":final_status,"candidate_commit_sha":__import__("os").environ["GITHUB_SHA"],"run_id":__import__("os").environ["GITHUB_RUN_ID"],"evidence_count":len(records),"evidence":records,"blocking_reasons":blocking,"next_authorized_stage":"11" if not blocking else "NONE"},indent=2,sort_keys=True)+"\n")
+          out.write_text(json.dumps({"schema":"louksna.zd.v03.evidence-manifest.v1","stage_id":"10","checkpoint_id":"CP-10","status":final_status,"candidate_commit_sha":__import__("os").environ["CANDIDATE_SHA"],"run_id":__import__("os").environ["GITHUB_RUN_ID"],"evidence_count":len(records),"evidence":records,"blocking_reasons":blocking,"next_authorized_stage":"11" if not blocking else "NONE"},indent=2,sort_keys=True)+"\n")
           print(json.dumps({"CP-10_status":final_status,"blocking_reasons":blocking},indent=2))
           with open(__import__("os").environ["GITHUB_OUTPUT"],"a") as f:
               f.write("status="+final_status+"\n")
+          if blocking:
+              raise SystemExit(1)
           PY
       - name: Preserve CP-10 evidence manifest
         if: always()
