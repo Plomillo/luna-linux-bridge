@@ -514,6 +514,24 @@ jobs:
             "$GITHUB_WORKSPACE/missions/inbox/louksna-zona-directiva-v03-functional-20261006/MISSION.md"
           CANDIDATE="$GITHUB_WORKSPACE/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate"
           python3 -B -I scripts/missions/louksna_zd_v03_functionalizer.py "$CANDIDATE"
+          export DEBIAN_FRONTEND=noninteractive
+          timeout 360s sudo -E apt-get -o Acquire::Retries=3 update
+          timeout 360s sudo -E apt-get -o Acquire::Retries=3 install --yes --no-install-recommends build-essential pkg-config libssl-dev libgtk-3-dev libglib2.0-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev
+          mkdir -p evidence/zona-directiva-v03
+          set +e
+          cargo test --manifest-path "$CANDIDATE/src-tauri/Cargo.toml" --bin louksna-zona-directiva louksna_runtime_tests::sqlite_persistence_survives_process_restart -- --exact --nocapture --test-threads=1 2>&1 | tee evidence/zona-directiva-v03/CP-06-restart-persistence-tests.log
+          TEST_RC=${PIPESTATUS[0]}
+          set -e
+          python3 - "$TEST_RC" <<'PY'
+          import hashlib,json,pathlib,sys
+          log=pathlib.Path("evidence/zona-directiva-v03/CP-06-restart-persistence-tests.log")
+          text=log.read_text(errors="replace")
+          ok=sys.argv[1]=="0" and "test result: ok. 1 passed" in text and "sqlite_persistence_survives_process_restart" in text
+          report={"schema":"louksna.zd.v03.cp06-runtime-test.v1","checkpoint_id":"CP-06","runtime_restart_persistence":"PASS" if ok else "FAIL","test_exit_code":int(sys.argv[1]),"test_log_sha256":hashlib.sha256(log.read_bytes()).hexdigest(),"scope":"Real Rust production functions verified settings, chat and evidence ledger survive writer-process exit and independent process reopen; attachment import/storage/retrieval and native GUI E2E remain unimplemented/unproven."}
+          pathlib.Path("evidence/zona-directiva-v03/CP-06-restart-persistence.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\\n")
+          print(json.dumps(report,indent=2))
+          if not ok: raise SystemExit("CP-06 restart persistence test failed")
+          PY
           python3 -B -I scripts/missions/test_louksna_zd_v03_backend.py scripts/missions/v03_templates/main.rs
           test -s "$CANDIDATE/src/App.tsx"
           test -s "$CANDIDATE/src-tauri/src/main.rs"
@@ -528,7 +546,8 @@ jobs:
           import datetime,hashlib,json,os,pathlib
           root=pathlib.Path("LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate")
           files=["src/App.tsx","src-tauri/src/main.rs","src-tauri/tauri.conf.json"]
-          d={"schema":"louksna.zd.v03.checkpoint-evidence.v1","stage_id":"06","checkpoint_id":"CP-06","status":"PASS_WITH_SCOPE_LIMITS","scope":"Offline/chat source assertions passed; GUI, restart persistence and attachment E2E are unproven.","timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"repository":os.getenv("GITHUB_REPOSITORY"),"commit_sha":os.getenv("CANDIDATE_SHA"),"run_id":os.getenv("GITHUB_RUN_ID"),"source_sha256":{p:hashlib.sha256((root/p).read_bytes()).hexdigest() for p in files}}
+          runtime_report=pathlib.Path("evidence/zona-directiva-v03/CP-06-restart-persistence.json")
+          d={"schema":"louksna.zd.v03.checkpoint-evidence.v1","stage_id":"06","checkpoint_id":"CP-06","status":"PASS_WITH_SCOPE_LIMITS","scope":"Offline/chat source assertions and real SQLite settings/chat/evidence persistence across writer-process termination passed; attachment import/storage/retrieval and native GUI E2E remain unimplemented/unproven.","timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"repository":os.getenv("GITHUB_REPOSITORY"),"commit_sha":os.getenv("CANDIDATE_SHA"),"run_id":os.getenv("GITHUB_RUN_ID"),"restart_test_report_sha256":hashlib.sha256(runtime_report.read_bytes()).hexdigest(),"source_sha256":{p:hashlib.sha256((root/p).read_bytes()).hexdigest() for p in files}}
           pathlib.Path("evidence/zona-directiva-v03/CP-06-functions-attachments.json").write_text(json.dumps(d,indent=2,sort_keys=True)+"\n")
           with open(os.environ["GITHUB_OUTPUT"],"a") as f: f.write("status="+d["status"]+"\n")
           PY
@@ -537,7 +556,10 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: louksna-zd-v03-cp06-functions-attachments
-          path: evidence/zona-directiva-v03/CP-06-functions-attachments.json
+          path: |
+            evidence/zona-directiva-v03/CP-06-functions-attachments.json
+            evidence/zona-directiva-v03/CP-06-restart-persistence.json
+            evidence/zona-directiva-v03/CP-06-restart-persistence-tests.log
           if-no-files-found: error
           retention-days: 90
 
