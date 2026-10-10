@@ -379,8 +379,10 @@ jobs:
           export RUSTFLAGS="--remap-path-prefix=$GITHUB_WORKSPACE=/louksna-src"
           set +e
           dbus-run-session -- bash -euo pipefail -c '
-            eval "$(gnome-keyring-daemon --start --components=secrets)"
-            printf "%s" "louksna-ci-keyring-password" | gnome-keyring-daemon --unlock
+            # A fresh headless runner has no login keyring. --unlock tries to
+            # invoke the graphical prompter and fails without DISPLAY. --login
+            # creates and unlocks the disposable keyring directly from stdin.
+            eval "$(printf "%s\\n" "louksna-ci-keyring-password" | gnome-keyring-daemon --daemonize --login --components=secrets)"
             export LOUKSNA_TEST_SECRET_SERVICE=1
             cargo test --manifest-path src-tauri/Cargo.toml --bin louksna-zona-directiva louksna_runtime_tests::secret_service_store_lookup_remove_round_trip -- --exact --nocapture --test-threads=1
           ' 2>&1 | tee "$GITHUB_WORKSPACE/evidence/zona-directiva-v03/CP-04-secret-service-runtime-tests.log"
