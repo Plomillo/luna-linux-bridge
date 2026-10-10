@@ -9,7 +9,7 @@ use std::{io::Write, path::PathBuf, process::{Command, Stdio}};
 
 const APP_ID: &str = "louksna-zona-directiva";
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 struct Settings {
     offline_mode: bool,
     preferred_repo: String,
