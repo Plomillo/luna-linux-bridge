@@ -178,7 +178,131 @@ rollback() {
 }
 trap rollback EXIT
 sudo apt-get install -y /tmp/candidate.deb >/tmp/package-install.log 2>&1 || { cat /tmp/package-install.log; echo INSTALL_FAIL; exit 1; }
-dpkg-query -W -f='${Package}\t${Version}\t${Status}\n' "$PKG" >/tmp/package-installed.tsv
+if ! dpkg-query -W -f='${Package}\t${Version}\t${Status}\n' "$PKG" >/tmp/package-installed.tsv; then
+  echo "INSTALL_FAIL dpkg_query_failed"
+  exit 2
+fi
+if ! grep -q 
+pgrep -x Xorg >/dev/null && pgrep -x kwin_x11 >/dev/null || { echo "KDE/Xorg session process missing"; exit 3; }
+uid="$(id -u louksna-test)"
+XAUTH="$(pgrep -a Xorg | sed -n 's/.*-auth \([^ ]*\).*/\1/p' | head -n 1)"
+if [[ -n "$XAUTH" ]] && sudo test -r "$XAUTH"; then sudo cp "$XAUTH" /home/louksna-test/.Xauthority; sudo chown louksna-test:louksna-test /home/louksna-test/.Xauthority; sudo chmod 600 /home/louksna-test/.Xauthority; fi
+BIN="$(find /usr/bin /usr/local/bin -maxdepth 1 -type f -iname '*louksna*' -print -quit)"
+test -n "$BIN" && test -x "$BIN" || { echo "LAUNCH_SMOKE_FAIL executable_missing"; exit 4; }
+export DISPLAY=:0
+export XAUTHORITY=/home/louksna-test/.Xauthority
+xwininfo -display "$DISPLAY" -root -tree >/dev/null 2>/tmp/xwininfo-baseline.err || { echo "LAUNCH_SMOKE_FAIL x11_unavailable display=$DISPLAY"; cat /tmp/xwininfo-baseline.err; exit 4; }
+if ! BASELINE_TREE="$(xwininfo -display "$DISPLAY" -root -tree 2>/tmp/xwininfo-baseline.err)"; then
+  echo "LAUNCH_SMOKE_FAIL x11_baseline_query_failed display=$DISPLAY"
+  cat /tmp/xwininfo-baseline.err
+  exit 4
+fi
+BASELINE_WINDOWS="$(printf '%s\n' "$BASELINE_TREE" | awk '/^[[:space:]]+0x[[:xdigit:]]+[[:space:]]/ { n++ } END { print n+0 }')"
+sudo -u louksna-test env HOME=/home/louksna-test USER=louksna-test LOGNAME=louksna-test DISPLAY=:0 XAUTHORITY=/home/louksna-test/.Xauthority XDG_RUNTIME_DIR="/run/user/$uid" XDG_CURRENT_DESKTOP=KDE KDE_FULL_SESSION=true XDG_SESSION_TYPE=x11 "$BIN" >/tmp/louksna-launch.log 2>&1 &
+APP_PID=$!
+WINDOW_FOUND=0
+for _ in $(seq 1 20); do
+  if ! kill -0 "$APP_PID" 2>/dev/null; then
+    echo "LAUNCH_SMOKE_FAIL application_exited_before_window"
+    cat /tmp/louksna-launch.log
+    exit 4
+  fi
+  if ! CURRENT_TREE="$(xwininfo -display "$DISPLAY" -root -tree 2>/tmp/xwininfo-current.err)"; then
+    echo "LAUNCH_SMOKE_FAIL x11_window_query_failed"
+    cat /tmp/xwininfo-current.err
+    exit 4
+  fi
+  CURRENT_WINDOWS="$(printf '%s\n' "$CURRENT_TREE" | awk '/^[[:space:]]+0x[[:xdigit:]]+[[:space:]]/ { n++ } END { print n+0 }')"
+  if (( CURRENT_WINDOWS > BASELINE_WINDOWS )); then WINDOW_FOUND=1; break; fi
+  sleep 1
+done
+if [[ "$WINDOW_FOUND" -ne 1 ]]; then
+  kill "$APP_PID" >/dev/null 2>&1 || true
+  wait "$APP_PID" 2>/dev/null || true
+  echo "LAUNCH_SMOKE_FAIL no_new_X11_window baseline=$BASELINE_WINDOWS current=$CURRENT_WINDOWS"
+  cat /tmp/louksna-launch.log
+  exit 4
+fi
+echo "LAUNCH_SMOKE_PASS visible_window=1 baseline=$BASELINE_WINDOWS current=$CURRENT_WINDOWS"
+kill -TERM "$APP_PID" >/dev/null 2>&1 || true
+wait "$APP_PID" 2>/dev/null || true
+GUEST
+scp -i "$VM_KEY" -P 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$WORK/guest-test.sh" louksna-test@127.0.0.1:/tmp/guest-test.sh
+set +e
+"${SSH[@]}" 'chmod +x /tmp/guest-test.sh && bash /tmp/guest-test.sh' 2>&1 | tee "$WORK/guest-test-output.log" | tee -a "$LOG"
+RC=${PIPESTATUS[0]}
+set -e
+"${SSH[@]}" 'cat /tmp/package-install.log /tmp/package-installed.tsv /tmp/louksna-launch.log /tmp/rollback.log 2>/dev/null || true; cat /tmp/rollback-result.txt 2>/dev/null || true' | tee "$WORK/guest-package-evidence.log" | tee -a "$LOG"
+if [[ "$RC" -eq 0 ]] && grep -q 'LAUNCH_SMOKE_PASS' "$WORK/guest-test-output.log" && grep -q 'ROLLBACK_PASS' "$WORK/guest-test-output.log"; then
+  INSTALL_STATUS=PASS; LAUNCH_STATUS=PASS; ROLLBACK_STATUS=PASS; GUEST_STATUS=PASS
+else
+  if grep -q 'INSTALL_PASS' "$WORK/guest-test-output.log"; then INSTALL_STATUS=PASS
+  elif grep -q 'INSTALL_FAIL' "$WORK/guest-test-output.log"; then INSTALL_STATUS=FAIL
+  fi
+  grep -q 'LAUNCH_SMOKE_PASS' "$WORK/guest-test-output.log" && LAUNCH_STATUS=PASS || LAUNCH_STATUS=FAIL
+  grep -q 'ROLLBACK_PASS' "$WORK/guest-test-output.log" && ROLLBACK_STATUS=PASS || ROLLBACK_STATUS=FAIL
+  GUEST_STATUS=FAIL
+  exit 34
+fi
+log "CP-09 disposable Debian 13 KDE/Xorg VM test passed; no physical-host claim."
+\tinstall ok installed
+pgrep -x Xorg >/dev/null && pgrep -x kwin_x11 >/dev/null || { echo "KDE/Xorg session process missing"; exit 3; }
+uid="$(id -u louksna-test)"
+XAUTH="$(pgrep -a Xorg | sed -n 's/.*-auth \([^ ]*\).*/\1/p' | head -n 1)"
+if [[ -n "$XAUTH" ]] && sudo test -r "$XAUTH"; then sudo cp "$XAUTH" /home/louksna-test/.Xauthority; sudo chown louksna-test:louksna-test /home/louksna-test/.Xauthority; sudo chmod 600 /home/louksna-test/.Xauthority; fi
+BIN="$(find /usr/bin /usr/local/bin -maxdepth 1 -type f -iname '*louksna*' -print -quit)"
+test -n "$BIN" && test -x "$BIN" || { echo "LAUNCH_SMOKE_FAIL executable_missing"; exit 4; }
+export DISPLAY=:0
+export XAUTHORITY=/home/louksna-test/.Xauthority
+xwininfo -display "$DISPLAY" -root -tree >/dev/null 2>/tmp/xwininfo-baseline.err || { echo "LAUNCH_SMOKE_FAIL x11_unavailable display=$DISPLAY"; cat /tmp/xwininfo-baseline.err; exit 4; }
+BASELINE_WINDOWS="$(xwininfo -display "$DISPLAY" -root -tree | awk '/^[[:space:]]+0x[[:xdigit:]]+[[:space:]]/ { n++ } END { print n+0 }')"
+sudo -u louksna-test env HOME=/home/louksna-test USER=louksna-test LOGNAME=louksna-test DISPLAY=:0 XAUTHORITY=/home/louksna-test/.Xauthority XDG_RUNTIME_DIR="/run/user/$uid" XDG_CURRENT_DESKTOP=KDE KDE_FULL_SESSION=true XDG_SESSION_TYPE=x11 "$BIN" >/tmp/louksna-launch.log 2>&1 &
+APP_PID=$!
+WINDOW_FOUND=0
+for _ in $(seq 1 20); do
+  if ! kill -0 "$APP_PID" 2>/dev/null; then
+    echo "LAUNCH_SMOKE_FAIL application_exited_before_window"
+    cat /tmp/louksna-launch.log
+    exit 4
+  fi
+  CURRENT_WINDOWS="$(xwininfo -display "$DISPLAY" -root -tree | awk '/^[[:space:]]+0x[[:xdigit:]]+[[:space:]]/ { n++ } END { print n+0 }')"
+  if (( CURRENT_WINDOWS > BASELINE_WINDOWS )); then WINDOW_FOUND=1; break; fi
+  sleep 1
+done
+if [[ "$WINDOW_FOUND" -ne 1 ]]; then
+  kill "$APP_PID" >/dev/null 2>&1 || true
+  wait "$APP_PID" 2>/dev/null || true
+  echo "LAUNCH_SMOKE_FAIL no_new_X11_window baseline=$BASELINE_WINDOWS current=$CURRENT_WINDOWS"
+  cat /tmp/louksna-launch.log
+  exit 4
+fi
+echo "LAUNCH_SMOKE_PASS visible_window=1 baseline=$BASELINE_WINDOWS current=$CURRENT_WINDOWS"
+kill -TERM "$APP_PID" >/dev/null 2>&1 || true
+wait "$APP_PID" 2>/dev/null || true
+GUEST
+scp -i "$VM_KEY" -P 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$WORK/guest-test.sh" louksna-test@127.0.0.1:/tmp/guest-test.sh
+set +e
+"${SSH[@]}" 'chmod +x /tmp/guest-test.sh && bash /tmp/guest-test.sh' 2>&1 | tee "$WORK/guest-test-output.log" | tee -a "$LOG"
+RC=${PIPESTATUS[0]}
+set -e
+"${SSH[@]}" 'cat /tmp/package-install.log /tmp/package-installed.tsv /tmp/louksna-launch.log /tmp/rollback.log 2>/dev/null || true; cat /tmp/rollback-result.txt 2>/dev/null || true' | tee "$WORK/guest-package-evidence.log" | tee -a "$LOG"
+if [[ "$RC" -eq 0 ]] && grep -q 'LAUNCH_SMOKE_PASS' "$WORK/guest-test-output.log" && grep -q 'ROLLBACK_PASS' "$WORK/guest-test-output.log"; then
+  INSTALL_STATUS=PASS; LAUNCH_STATUS=PASS; ROLLBACK_STATUS=PASS; GUEST_STATUS=PASS
+else
+  if grep -q 'INSTALL_PASS' "$WORK/guest-test-output.log"; then INSTALL_STATUS=PASS
+  elif grep -q 'INSTALL_FAIL' "$WORK/guest-test-output.log"; then INSTALL_STATUS=FAIL
+  fi
+  grep -q 'LAUNCH_SMOKE_PASS' "$WORK/guest-test-output.log" && LAUNCH_STATUS=PASS || LAUNCH_STATUS=FAIL
+  grep -q 'ROLLBACK_PASS' "$WORK/guest-test-output.log" && ROLLBACK_STATUS=PASS || ROLLBACK_STATUS=FAIL
+  GUEST_STATUS=FAIL
+  exit 34
+fi
+log "CP-09 disposable Debian 13 KDE/Xorg VM test passed; no physical-host claim."
+ /tmp/package-installed.tsv; then
+  echo "INSTALL_FAIL package_state_not_installed"
+  cat /tmp/package-installed.tsv
+  exit 2
+fi
 echo INSTALL_PASS
 pgrep -x Xorg >/dev/null && pgrep -x kwin_x11 >/dev/null || { echo "KDE/Xorg session process missing"; exit 3; }
 uid="$(id -u louksna-test)"
