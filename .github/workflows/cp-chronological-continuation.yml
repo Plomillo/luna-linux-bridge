@@ -31,6 +31,12 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Validate workflow syntax with pinned actionlint
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 .github/workflows/cp-chronological-continuation.yml .github/workflows/louksna-cp09-debian13-kde-vm.yml
+
       - name: Inventory canonical CP references and unresolved gates
         shell: bash
         run: |
