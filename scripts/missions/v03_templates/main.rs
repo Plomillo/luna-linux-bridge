@@ -392,6 +392,55 @@ mod louksna_runtime_tests {
         let _ = std::fs::remove_dir_all(&root);
     }
 
+    // Child process used to prove that persisted state survives process termination.
+    // It runs only when explicitly invoked by the parent test.
+    #[test]
+    fn sqlite_restart_child_process() {
+        if std::env::var("LOUKSNA_RESTART_CHILD").as_deref() != Ok("1") {
+            return;
+        }
+        save_settings(Settings {
+            offline_mode: true,
+            preferred_repo: "Plomillo/luna-linux-bridge".to_string(),
+            github_owner_filter: "Plomillo".to_string(),
+            remote_chat_bridge: String::new(),
+        }).expect("child process must persist settings");
+        insert_chat("user", "restart-persistence-marker", "local")
+            .expect("child process must persist chat");
+        log_event("RESTART_CHILD", "PASS", "State written before process exit.")
+            .expect("child process must persist evidence");
+    }
+
+    #[test]
+    fn sqlite_persistence_survives_process_restart() {
+        let root = std::env::temp_dir().join(format!(
+            "louksna-zd-v03-restart-test-{}-{}",
+            std::process::id(),
+            Utc::now().timestamp_nanos_opt().unwrap_or_default()
+        ));
+        std::fs::create_dir_all(&root).expect("create isolated restart test directory");
+        let child = Command::new(std::env::current_exe().expect("resolve test executable"))
+            .args(["--exact", "louksna_runtime_tests::sqlite_restart_child_process", "--nocapture", "--test-threads=1"])
+            .env("XDG_DATA_HOME", &root)
+            .env("LOUKSNA_RESTART_CHILD", "1")
+            .output()
+            .expect("spawn isolated persistence writer process");
+        assert!(child.status.success(), "child process failed: {}", String::from_utf8_lossy(&child.stderr));
+
+        std::env::set_var("XDG_DATA_HOME", &root);
+        let settings = load_settings_inner().expect("reopen settings after child process exit");
+        assert!(settings.offline_mode);
+        assert_eq!(settings.preferred_repo, "Plomillo/luna-linux-bridge");
+        assert_eq!(settings.github_owner_filter, "Plomillo");
+        let chats = chat_history(Some(20)).expect("reopen chat history after child process exit");
+        assert!(chats.iter().any(|row| row.content == "restart-persistence-marker"));
+        let events = evidence_recent(Some(20)).expect("reopen evidence ledger after child process exit");
+        assert!(events.iter().any(|row| row.operation == "RESTART_CHILD" && row.status == "PASS"));
+        drop(events);
+        drop(chats);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
     #[test]
     fn empty_chat_message_is_rejected_without_network_access() {
         let result = tauri::async_runtime::block_on(chat_send("   ".to_string()));
