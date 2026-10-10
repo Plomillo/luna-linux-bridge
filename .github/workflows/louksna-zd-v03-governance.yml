@@ -52,12 +52,25 @@ jobs:
     outputs:
       audit_status: ${{ steps.audit.outputs.status }}
     steps:
-      - name: Checkout governance candidate
+      - name: Checkout exact workflow candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: governance/louksna-zd-v03-12-stage-gates-20261009
+          ref: ${{ github.sha }}
           persist-credentials: false
           fetch-depth: 0
+
+      - name: Enforce exact checkout identity
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          actual="$(git rev-parse HEAD)"
+          expected="$GITHUB_SHA"
+          printf 'TELEMETRY expected_checkout_sha=%s\n' "$expected"
+          printf 'TELEMETRY actual_checkout_sha=%s\n' "$actual"
+          test "$actual" = "$expected" || {
+            echo "::error::CP-01 checkout SHA does not match the workflow event SHA"
+            exit 1
+          }
 
       - name: Emit live run identity
         shell: bash
