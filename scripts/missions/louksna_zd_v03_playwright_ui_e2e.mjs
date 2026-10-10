@@ -127,6 +127,7 @@ async function main() {
   record("pull_request_refresh", true, "Pull-request action completes through the IPC test double.");
 
   await navButtons.filter({ hasText: "Chat \/ Llamada" }).click();
+  record("attachments_explicitly_inactive", await page.locator('[data-capability="attachments"][data-status="NOT_IMPLEMENTED"]').count() === 1, "Attachment handling is explicitly disclosed as not implemented, not simulated.");
   await page.getByPlaceholder("Escribe a LOUKSNA...").fill("Prueba E2E gobernada");
   await page.getByRole("button", { name: "Enviar" }).click();
   await page.getByText("Prueba E2E gobernada", { exact: true }).waitFor({ timeout: 5000 });
