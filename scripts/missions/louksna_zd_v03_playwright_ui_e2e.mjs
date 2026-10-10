@@ -141,6 +141,10 @@ async function main() {
   await page.getByText("Configuracion persistida localmente.").waitFor({ timeout: 5000 });
   record("settings_save", true, "Settings-save command is invoked and UI acknowledges the test-double response.");
 
+  const calls = await page.evaluate(() => window.__louksnaTestState.calls.map(x => x.command));
+  record("ipc_commands_observed", ["get_settings", "evidence_recent", "chat_history", "github_repositories", "github_pull_requests", "chat_send", "save_settings"].every(x => calls.includes(x)), "Required UI commands were observed: " + calls.join(","));
+  record("no_page_errors", pageErrors.length === 0, pageErrors.join(" | ") || "No uncaught browser page errors.");
+
   for (const status of ["DEGRADED", "FAIL", "UNVERIFIED"]) {
     await page.evaluate((nextStatus) => {
       const state = window.__louksnaTestState;
@@ -163,9 +167,7 @@ async function main() {
   await page.reload({ waitUntil: "networkidle" });
   await page.locator('[data-health-status="PASS"]').waitFor({ timeout: 5000 });
 
-  const calls = await page.evaluate(() => window.__louksnaTestState.calls.map(x => x.command));
-  record("ipc_commands_observed", ["get_settings", "evidence_recent", "chat_history", "github_repositories", "github_pull_requests", "chat_send", "save_settings"].every(x => calls.includes(x)), "Required UI commands were observed: " + calls.join(","));
-  record("no_page_errors", pageErrors.length === 0, pageErrors.join(" | ") || "No uncaught browser page errors.");
+  record("no_page_errors_after_health_state_reloads", pageErrors.length === 0, pageErrors.join(" | ") || "No uncaught browser page errors after health-state reload tests.");
 
   await page.screenshot({ path: screenshotPath, fullPage: true });
   await page.reload({ waitUntil: "networkidle" });
