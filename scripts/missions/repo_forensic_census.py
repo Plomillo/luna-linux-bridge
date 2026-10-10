@@ -155,7 +155,10 @@ def main() -> int:
         "timestamp_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "repository": os.environ.get("GITHUB_REPOSITORY"),
         "ref": os.environ.get("GITHUB_REF"),
-        "commit_sha": os.environ.get("GITHUB_SHA"),
+        # Bind evidence to the exact candidate checkout, not the workflow-dispatch
+        # event SHA (which can identify the default branch rather than the candidate).
+        "commit_sha": os.environ.get("CANDIDATE_SHA") or git(root, "rev-parse", "HEAD").decode("ascii").strip(),
+        "workflow_event_sha": os.environ.get("GITHUB_SHA"),
         "scope": "all Git-tracked files at the exact checkout commit",
         "method": "per-file SHA-256, byte count, text line census, executable/symlink classification, redacted high-confidence credential-pattern scan",
         "totals": totals,
