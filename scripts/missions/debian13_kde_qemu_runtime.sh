@@ -175,7 +175,7 @@ sudo apt-get install -y /tmp/candidate.deb >/tmp/package-install.log 2>&1 || { c
 dpkg-query -W -f='${Package}\t${Version}\t${Status}\n' "$PKG" >/tmp/package-installed.tsv
 pgrep -x Xorg >/dev/null && pgrep -x kwin_x11 >/dev/null || { echo "KDE/Xorg session process missing"; exit 3; }
 uid="$(id -u louksna-test)"
-XAUTH="$(pgrep -a Xorg | sed -n 's/.*-auth \\([^ ]*\\).*/\\1/p' | head -n 1)"
+XAUTH="$(pgrep -a Xorg | sed -n 's/.*-auth \([^ ]*\).*/\1/p' | head -n 1)"
 if [[ -n "$XAUTH" ]] && sudo test -r "$XAUTH"; then sudo cp "$XAUTH" /home/louksna-test/.Xauthority; sudo chown louksna-test:louksna-test /home/louksna-test/.Xauthority; sudo chmod 600 /home/louksna-test/.Xauthority; fi
 set +e
 sudo -u louksna-test env DISPLAY=:0 XAUTHORITY=/home/louksna-test/.Xauthority XDG_RUNTIME_DIR="/run/user/$uid" XDG_CURRENT_DESKTOP=KDE KDE_FULL_SESSION=true XDG_SESSION_TYPE=x11 timeout --signal=TERM --kill-after=5s 20s bash -lc 'BIN=$(find /usr/bin /usr/local/bin -maxdepth 1 -type f -iname "*louksna*" -print -quit); test -n "$BIN" && test -x "$BIN" && "$BIN"' >/tmp/louksna-launch.log 2>&1
