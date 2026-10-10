@@ -72,6 +72,7 @@ jobs:
           cp "$EVIDENCE" evidence/cp09-lab/CP-08-build-package.json
           echo "artifact_id=$ARTIFACT_ID" >> "$GITHUB_OUTPUT"
           echo "ARTIFACT_ID=$ARTIFACT_ID" >> "$GITHUB_ENV"
+          echo "ARTIFACT_ID=$ARTIFACT_ID" >> "$GITHUB_ENV"
           echo "package_path=evidence/cp09-lab/candidate.deb" >> "$GITHUB_OUTPUT"
           sha256sum evidence/cp09-lab/candidate.deb | tee evidence/cp09-lab/package-sha256.txt
           dpkg-deb --info evidence/cp09-lab/candidate.deb | tee evidence/cp09-lab/package-info.txt
