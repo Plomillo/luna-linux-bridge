@@ -93,7 +93,7 @@ d={
  "stage_id":"09","checkpoint_id":"CP-09",
  "timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),
  "repository":__import__("os").getenv("GITHUB_REPOSITORY"),
- "commit_sha":__import__("os").getenv("GITHUB_SHA"),
+ "commit_sha":__import__("os").getenv("CANDIDATE_SHA") or __import__("os").getenv("GITHUB_SHA"),
  "run_id":__import__("os").getenv("GITHUB_RUN_ID"),
  "status":status,"container_image":"debian:13-slim","desktop":"headless-xvfb-not-KDE",
  "install_test":install,"launch_test":launch,"rollback_test":rollback,
