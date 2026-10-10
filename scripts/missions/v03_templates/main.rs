@@ -329,6 +329,7 @@ fn runtime_probe()->Result<Value,String>{
     let secret_tool=Command::new("secret-tool").arg("--help").stdout(Stdio::null()).stderr(Stdio::null())
         .status().map(|s|s.success()).unwrap_or(false);
     let status=derive_health_status(Some(database),Some(secret_tool));
+    log_event("RUNTIME_PROBE",status,"Runtime health probe completed; no credentials or remote response data recorded.")?;
     Ok(serde_json::json!({"status":status,"data_dir":data,"db_exists":db_path.exists(),"database_query":database,"secret_service_tool":secret_tool,"identity":"LOUKSNA","version":"0.3.0"}))
 }
 
