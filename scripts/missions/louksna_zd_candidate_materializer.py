@@ -91,8 +91,11 @@ def main(argv):
       "images/ASSET_MANIFEST.json",
       "images/SHA256SUMS.txt",
     ]+["images/"+x for x in IMAGE_NAMES]
-    if not target_project.exists():
-        target_project.mkdir(parents=True,exist_ok=False)
+    target_project.mkdir(parents=True,exist_ok=True)
+    present=[(target_project/rel).is_file() for rel in reference_rel]
+    if not any(present):
+        # Empty reference state: seed the pinned, frozen payload without
+        # overwriting anything. The following preservation checks verify it.
         for rel in reference_rel:
             sp=source_project/rel
             if not sp.is_file():
@@ -103,10 +106,9 @@ def main(argv):
             if sha256(sp)!=sha256(tp):
                 raise SystemExit("REFERENCE_COPY_HASH_MISMATCH:"+rel)
         print("BASELINE_REFERENCE_MATERIALIZATION=PASS",flush=True)
-    else:
-        incomplete=[rel for rel in reference_rel if not (target_project/rel).is_file()]
-        if incomplete:
-            raise SystemExit("TARGET_REFERENCE_INCOMPLETE_FAIL_CLOSED:"+",".join(incomplete))
+    elif not all(present):
+        incomplete=[rel for rel,is_present in zip(reference_rel,present) if not is_present]
+        raise SystemExit("TARGET_REFERENCE_INCOMPLETE_FAIL_CLOSED:"+",".join(incomplete))
 
     preservation={}
     for rel in ["LOUKSNA_ZONA_DIRECTIVA_PACKAGING_MONOLITH.md","images/ASSET_MANIFEST.json","images/SHA256SUMS.txt"]+["images/"+x for x in IMAGE_NAMES]:
