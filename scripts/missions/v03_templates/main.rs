@@ -310,7 +310,6 @@ async fn chat_send(message:String)->Result<String,String>{
     Ok(reply)
 }
 
-#[tauri::command]
 fn derive_health_status(database: Option<bool>, secret_tool: Option<bool>) -> &'static str {
     match (database, secret_tool) {
         (None, _) | (_, None) => "UNVERIFIED",
@@ -320,6 +319,7 @@ fn derive_health_status(database: Option<bool>, secret_tool: Option<bool>) -> &'
     }
 }
 
+#[tauri::command]
 fn runtime_probe()->Result<Value,String>{
     let data=data_dir()?; let db_path=data.join("louksna.db");
     let database=match db() {
