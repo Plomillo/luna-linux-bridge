@@ -78,6 +78,7 @@ async function main() {
       invoke: async (command, args = {}) => {
         state.calls.push({ command, args });
         switch (command) {
+          case "runtime_probe": return { status: "PASS", data_dir: "/test-only", db_exists: true, database_query: true, secret_service_tool: true, identity: "LOUKSNA", version: "0.3.0" };
           case "get_settings": return state.settings;
           case "save_settings": state.settings = args.settings; persist(); return null;
           case "evidence_recent": return state.evidence;
@@ -106,6 +107,8 @@ async function main() {
   page.on("pageerror", error => pageErrors.push(String(error)));
   await page.goto("http://127.0.0.1:1420", { waitUntil: "networkidle", timeout: 30000 });
   await page.getByRole("heading", { name: "Centro de mando" }).waitFor({ timeout: 10000 });
+  await page.locator('[data-health-status="PASS"]').waitFor({ timeout: 5000 });
+  record("health_probe_visible", await page.locator('[data-health-status="PASS"]').count() === 1, "UI health indicator reflects runtime_probe response, using the explicit test double.");
 
   const navButtons = page.getByRole("navigation").getByRole("button");
   record("six_canonical_sections", await navButtons.count() === 6, "The six navigation sections render.");
