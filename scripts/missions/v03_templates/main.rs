@@ -311,6 +311,15 @@ async fn chat_send(message:String)->Result<String,String>{
 }
 
 #[tauri::command]
+fn derive_health_status(database: Option<bool>, secret_tool: Option<bool>) -> &'static str {
+    match (database, secret_tool) {
+        (None, _) | (_, None) => "UNVERIFIED",
+        (Some(false), _) => "FAIL",
+        (Some(true), Some(false)) => "DEGRADED",
+        (Some(true), Some(true)) => "PASS",
+    }
+}
+
 fn runtime_probe()->Result<Value,String>{
     let data=data_dir()?; let db_path=data.join("louksna.db");
     let database=match db() {
@@ -319,8 +328,8 @@ fn runtime_probe()->Result<Value,String>{
     };
     let secret_tool=Command::new("secret-tool").arg("--help").stdout(Stdio::null()).stderr(Stdio::null())
         .status().map(|s|s.success()).unwrap_or(false);
-    let ready=database && secret_tool;
-    Ok(serde_json::json!({"status":if ready {"PASS"} else {"DEGRADED"},"data_dir":data,"db_exists":db_path.exists(),"database_query":database,"secret_service_tool":secret_tool,"identity":"LOUKSNA","version":"0.3.0"}))
+    let status=derive_health_status(Some(database),Some(secret_tool));
+    Ok(serde_json::json!({"status":status,"data_dir":data,"db_exists":db_path.exists(),"database_query":database,"secret_service_tool":secret_tool,"identity":"LOUKSNA","version":"0.3.0"}))
 }
 
 fn main(){
@@ -390,6 +399,15 @@ mod louksna_runtime_tests {
         drop(evidence);
         drop(history);
         let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn health_status_covers_pass_degraded_fail_and_unverified() {
+        assert_eq!(derive_health_status(Some(true), Some(true)), "PASS");
+        assert_eq!(derive_health_status(Some(true), Some(false)), "DEGRADED");
+        assert_eq!(derive_health_status(Some(false), Some(true)), "FAIL");
+        assert_eq!(derive_health_status(None, Some(true)), "UNVERIFIED");
+        assert_eq!(derive_health_status(Some(true), None), "UNVERIFIED");
     }
 
     // Child process used to prove that persisted state survives process termination.
