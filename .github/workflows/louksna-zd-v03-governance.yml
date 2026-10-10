@@ -443,19 +443,28 @@ jobs:
           CANDIDATE="$GITHUB_WORKSPACE/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate"
           python3 -B -I scripts/missions/louksna_zd_v03_functionalizer.py "$CANDIDATE"
           python3 -B -I scripts/missions/test_louksna_zd_v03_backend.py scripts/missions/v03_templates/main.rs
+          cd "$CANDIDATE"
+          npm install --no-audit --no-fund
+          npm install --no-save --no-audit --no-fund playwright@1.55.0
+          npx playwright install chromium
+          cd "$GITHUB_WORKSPACE"
+          REPORT="$GITHUB_WORKSPACE/evidence/zona-directiva-v03/CP-05-playwright-ui-e2e.json"
+          LOUKSNA_UI_CHECKPOINT=CP-05 timeout 180s node scripts/missions/louksna_zd_v03_playwright_ui_e2e.mjs "$CANDIDATE" "$REPORT"
+          grep -q '"status": "PASS"' "$REPORT"
           grep -q '@tauri-apps/api/core' "$CANDIDATE/src/App.tsx"
           grep -q 'github_repositories' "$CANDIDATE/src/App.tsx"
           grep -q 'evidence_recent' "$CANDIDATE/src/App.tsx"
           grep -q 'rusqlite' "$CANDIDATE/src-tauri/Cargo.toml"
           grep -q 'DEGRADED' "$CANDIDATE/src-tauri/src/main.rs"
           ! grep -Eq 'CUSTOSZ|CUSTOSZ_RUNTIME|Josefina|Katya|Ancapi|MetaOS' "$CANDIDATE/src/App.tsx"
-          echo "CP-05 PASS: candidate generated from tracked source; assertions exercised and identity boundary checked."
+          echo "CP-05 PASS: Chromium exercised interactive UI state, navigation, IPC command invocation, reload behavior, and browser error checks using explicit test-double scope."
           mkdir -p evidence/zona-directiva-v03
           python3 - <<'PY'
           import datetime,hashlib,json,os,pathlib
           root=pathlib.Path("LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate")
           files=["src/App.tsx","src-tauri/Cargo.toml","src-tauri/src/main.rs"]
-          d={"schema":"louksna.zd.v03.checkpoint-evidence.v1","stage_id":"05","checkpoint_id":"CP-05","status":"PASS_WITH_SCOPE_LIMITS","scope":"Source assertions passed; interactive UI state/telemetry behavior is not proven.","timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"repository":os.getenv("GITHUB_REPOSITORY"),"commit_sha":os.getenv("CANDIDATE_SHA"),"run_id":os.getenv("GITHUB_RUN_ID"),"source_sha256":{p:hashlib.sha256((root/p).read_bytes()).hexdigest() for p in files}}
+          ui_report=pathlib.Path("evidence/zona-directiva-v03/CP-05-playwright-ui-e2e.json")
+          d={"schema":"louksna.zd.v03.checkpoint-evidence.v1","stage_id":"05","checkpoint_id":"CP-05","status":"PASS","scope":"Interactive frontend navigation, state changes, command invocation, rendering, reload behavior and browser errors verified in Chromium with an explicit Tauri IPC test double; native backend/runtime, SQLite restart persistence, live GitHub responses, attachments and voice are outside CP-05 scope.","timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"repository":os.getenv("GITHUB_REPOSITORY"),"commit_sha":os.getenv("CANDIDATE_SHA"),"run_id":os.getenv("GITHUB_RUN_ID"),"ui_report_sha256":hashlib.sha256(ui_report.read_bytes()).hexdigest(),"source_sha256":{p:hashlib.sha256((root/p).read_bytes()).hexdigest() for p in files}}
           pathlib.Path("evidence/zona-directiva-v03/CP-05-ui-telemetry.json").write_text(json.dumps(d,indent=2,sort_keys=True)+"\n")
           with open(os.environ["GITHUB_OUTPUT"],"a") as f: f.write("status="+d["status"]+"\n")
           PY
@@ -464,7 +473,10 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: louksna-zd-v03-cp05-ui-telemetry
-          path: evidence/zona-directiva-v03/CP-05-ui-telemetry.json
+          path: |
+            evidence/zona-directiva-v03/CP-05-ui-telemetry.json
+            evidence/zona-directiva-v03/CP-05-playwright-ui-e2e.json
+            evidence/zona-directiva-v03/CP-05-playwright-ui-e2e.png
           if-no-files-found: error
           retention-days: 90
 
