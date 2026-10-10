@@ -51,13 +51,16 @@ fn db() -> Result<Connection,String> {
     Ok(c)
 }
 
-fn log_event(operation:&str,status:&str,detail:&str) {
+fn log_event(operation:&str,status:&str,detail:&str) -> Result<(),String> {
     match db().and_then(|c| c.execute(
         "INSERT INTO evidence(utc,operation,status,detail) VALUES(?1,?2,?3,?4)",
         params![Utc::now().to_rfc3339(),operation,status,detail]
     ).map(|_|()).map_err(|e|e.to_string())) {
-        Ok(()) => {},
-        Err(e) => eprintln!("LOUKSNA_EVIDENCE_WRITE_FAILED operation={operation} error={e}"),
+        Ok(()) => Ok(()),
+        Err(e) => {
+            eprintln!("LOUKSNA_EVIDENCE_WRITE_FAILED operation={operation} error={e}");
+            Err(format!("EVIDENCE_LEDGER_WRITE_FAILED:{operation}:{e}"))
+        }
     }
 }
 
@@ -93,7 +96,7 @@ fn save_settings(settings:Settings)->Result<(),String>{
     for (k,v) in pairs {
         c.execute("INSERT INTO settings(key,value) VALUES(?1,?2) ON CONFLICT(key) DO UPDATE SET value=excluded.value",params![k,v]).map_err(|e|e.to_string())?;
     }
-    log_event("SETTINGS_SAVE","PASS","Configuracion no secreta persistida en SQLite.");
+    log_event("SETTINGS_SAVE","PASS","Configuracion no secreta persistida en SQLite.")?;
     Ok(())
 }
 
@@ -113,7 +116,7 @@ fn store_github_token(token:String)->Result<(),String>{
     if let Some(mut stdin)=child.stdin.take(){stdin.write_all(token.trim().as_bytes()).map_err(|e|e.to_string())?;}
     let out=child.wait_with_output().map_err(|e|e.to_string())?;
     if !out.status.success(){return Err(format!("SECRET_STORE_FAILED:{}",String::from_utf8_lossy(&out.stderr)));}
-    log_event("GITHUB_SECRET_STORE","PASS","Token guardado en Secret Service; valor no registrado.");
+    log_event("GITHUB_SECRET_STORE","PASS","Token guardado en Secret Service; valor no registrado.")?;
     Ok(())
 }
 
@@ -126,7 +129,7 @@ fn remove_github_token()->Result<(),String>{
         Ok(_) => return Err("SECRET_CLEAR_NOT_VERIFIED".into()),
         Err(e) => return Err(format!("SECRET_CLEAR_VERIFICATION_FAILED:{e}")),
     }
-    log_event("GITHUB_SECRET_REMOVE","PASS","Ausencia de credencial verificada en Secret Service.");
+    log_event("GITHUB_SECRET_REMOVE","PASS","Ausencia de credencial verificada en Secret Service.")?;
     Ok(())
 }
 
@@ -142,7 +145,7 @@ async fn gh_get(path:&str)->Result<Value,String>{
         .header("Accept","application/vnd.github+json").send().await.map_err(|e|format!("GITHUB_NETWORK_ERROR:{e}"))?;
     let status=resp.status();
     if !status.is_success(){
-        log_event("GITHUB_API","FAIL",&format!("HTTP {}",status.as_u16()));
+        log_event("GITHUB_API","FAIL",&format!("HTTP {}",status.as_u16()))?;
         return Err(format!("GITHUB_HTTP_{}",status.as_u16()));
     }
     resp.json::<Value>().await.map_err(|e|format!("GITHUB_JSON_ERROR:{e}"))
@@ -154,10 +157,10 @@ async fn github_connection()->Result<GithubConnection,String>{
       Ok(v)=>{
         let login=v.get("login").and_then(|x|x.as_str()).unwrap_or("").to_string();
         let name=v.get("name").and_then(|x|x.as_str()).unwrap_or("").to_string();
-        log_event("GITHUB_CONNECTION","PASS",&format!("API real autenticada como {}",login));
+        log_event("GITHUB_CONNECTION","PASS",&format!("API real autenticada como {}",login))?;
         Ok(GithubConnection{connected:true,login,name})
       },
-      Err(e)=>{log_event("GITHUB_CONNECTION","FAIL",&e);Err(e)}
+      Err(e)=>{log_event("GITHUB_CONNECTION","FAIL",&e)?;Err(e)}
     }
 }
 
@@ -178,7 +181,7 @@ async fn github_repositories()->Result<Vec<Repo>,String>{
             open_issues_count:x.get("open_issues_count").and_then(|v|v.as_i64()).unwrap_or(0)
         });
     }
-    log_event("GITHUB_REPOSITORIES","PASS",&format!("{} repositorios leidos desde API real.",out.len()));
+    log_event("GITHUB_REPOSITORIES","PASS",&format!("{} repositorios leidos desde API real.",out.len()))?;
     Ok(out)
 }
 
@@ -203,7 +206,7 @@ async fn github_pull_requests(repo:String)->Result<Vec<PullRequest>,String>{
         updated_at:x.get("updated_at").and_then(|v|v.as_str()).unwrap_or("").to_string(),
         html_url:x.get("html_url").and_then(|v|v.as_str()).unwrap_or("").to_string()
     }).collect::<Vec<_>>();
-    log_event("GITHUB_PULL_REQUESTS","PASS",&format!("{} PR abiertos leidos de {}.",out.len(),repo));
+    log_event("GITHUB_PULL_REQUESTS","PASS",&format!("{} PR abiertos leidos de {}.",out.len(),repo))?;
     Ok(out)
 }
 
@@ -240,7 +243,7 @@ async fn chat_send(message:String)->Result<String,String>{
     if settings.remote_chat_bridge.trim().is_empty(){
         let reply="Mensaje registrado. El bridge remoto de arquitectura todavia no esta enlazado; no simulare una respuesta remota.".to_string();
         insert_chat("louksna",&reply,"local-status")?;
-        log_event("CHAT","PARTIAL","Mensaje persistido; bridge remoto no configurado.");
+        log_event("CHAT","PARTIAL","Mensaje persistido; bridge remoto no configurado.")?;
         return Ok(reply);
     }
     if settings.offline_mode{return Err("OFFLINE_MODE_ENABLED".into());}
@@ -257,17 +260,17 @@ async fn chat_send(message:String)->Result<String,String>{
         .json(&serde_json::json!({"message":msg,"source":"LOUKSNA_ZONA_DIRECTIVA","mode":"GOVERNED"}))
         .send().await.map_err(|e|format!("CHAT_BRIDGE_NETWORK_ERROR:{e}"))?;
     if resp.status()!=StatusCode::OK{
-        log_event("CHAT_BRIDGE","FAIL",&format!("HTTP {}",resp.status().as_u16()));
+        log_event("CHAT_BRIDGE","FAIL",&format!("HTTP {}",resp.status().as_u16()))?;
         return Err(format!("CHAT_BRIDGE_HTTP_{}",resp.status().as_u16()));
     }
     let text=resp.text().await.map_err(|e|e.to_string())?;
     let reply=serde_json::from_str::<Value>(&text).ok().and_then(|v|v.get("response").and_then(|x|x.as_str()).map(str::to_string)).unwrap_or(text.clone());
     if reply.trim().is_empty() || reply.len()>200_000 {
-        log_event("CHAT_BRIDGE","FAIL","Respuesta remota vacia o superior al limite de 200000 bytes.");
+        log_event("CHAT_BRIDGE","FAIL","Respuesta remota vacia o superior al limite de 200000 bytes.")?;
         return Err("CHAT_BRIDGE_RESPONSE_INVALID".into());
     }
     insert_chat("louksna",&reply,"remote-bridge")?;
-    log_event("CHAT_BRIDGE","PASS","Round-trip remoto completado.");
+    log_event("CHAT_BRIDGE","PASS","Round-trip remoto completado.")?;
     Ok(reply)
 }
 
@@ -286,7 +289,7 @@ fn runtime_probe()->Result<Value,String>{
 
 fn main(){
     if let Err(e)=db(){eprintln!("LOUKSNA_DB_INIT_FAIL:{e}");}
-    log_event("APP_START","PASS","LOUKSNA V0.3 inicio backend local.");
+    if let Err(e)=log_event("APP_START","PASS","LOUKSNA V0.3 inicio backend local.") { eprintln!("LOUKSNA_START_EVIDENCE_FAILURE:{e}"); }
     tauri::Builder::default()
       .invoke_handler(tauri::generate_handler![
         get_settings,save_settings,store_github_token,remove_github_token,
@@ -336,7 +339,7 @@ mod louksna_runtime_tests {
                 && row.transport == "test"
         ));
 
-        log_event("RUNTIME_SQLITE_TEST", "PASS", "Isolated production-function round-trip.");
+        log_event("RUNTIME_SQLITE_TEST", "PASS", "Isolated production-function round-trip.").expect("evidence ledger write must succeed");
         let evidence = evidence_recent(Some(50)).expect("read evidence ledger");
         assert!(evidence.iter().any(|row|
             row.operation == "RUNTIME_SQLITE_TEST" && row.status == "PASS"
@@ -344,6 +347,41 @@ mod louksna_runtime_tests {
 
         drop(evidence);
         drop(history);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn empty_chat_message_is_rejected_without_network_access() {
+        let result = tauri::async_runtime::block_on(chat_send("   ".to_string()));
+        assert_eq!(result.expect_err("empty chat must fail"), "EMPTY_MESSAGE");
+    }
+
+    #[test]
+    fn evidence_ledger_failure_prevents_success_status() {
+        let root = std::env::temp_dir().join(format!(
+            "louksna-zd-v03-evidence-fail-{}-{}",
+            std::process::id(),
+            Utc::now().timestamp_nanos_opt().unwrap_or_default()
+        ));
+        std::fs::create_dir_all(&root).expect("create isolated failure-test directory");
+        std::env::set_var("XDG_DATA_HOME", &root);
+        let connection = db().expect("initialize isolated database");
+        connection.execute_batch(
+            "CREATE TRIGGER reject_evidence BEFORE INSERT ON evidence BEGIN SELECT RAISE(FAIL, 'injected evidence write failure'); END;"
+        ).expect("install deterministic evidence failure injection");
+        drop(connection);
+
+        let result = save_settings(Settings {
+            offline_mode: true,
+            preferred_repo: "test/repository".to_string(),
+            github_owner_filter: "test".to_string(),
+            remote_chat_bridge: String::new(),
+        });
+        assert!(result.is_err(), "operation must not report success when evidence cannot be recorded");
+        assert!(
+            result.unwrap_err().contains("EVIDENCE_LEDGER_WRITE_FAILED"),
+            "failure must identify the evidence ledger as the blocking cause"
+        );
         let _ = std::fs::remove_dir_all(&root);
     }
 }
