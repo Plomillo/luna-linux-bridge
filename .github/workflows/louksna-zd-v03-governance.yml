@@ -483,7 +483,7 @@ jobs:
           npx playwright --version
       - name: Execute real Chromium browser UI E2E with explicit Tauri IPC test double
         timeout-minutes: 4
-        continue-on-error: true
+        # Fail-closed: the captured E2E exit code must fail CP-07 and block dependent checkpoints.
         shell: bash
         run: |
           set -Eeuo pipefail
