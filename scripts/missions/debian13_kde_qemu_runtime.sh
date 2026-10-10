@@ -86,6 +86,7 @@ packages:
   - xserver-xorg
   - xserver-xorg-video-dummy
   - x11-xserver-utils
+  - x11-utils
   - xauth
   - xinit
   - plasma-workspace
@@ -153,7 +154,7 @@ for _ in $(seq 1 120); do
 done
 if [[ "$READY" -ne 1 ]]; then tail -n 120 "$WORK/vm-serial.log" >>"$LOG" 2>&1 || true; log "Debian guest/cloud-init did not become ready"; exit 33; fi
 "${SSH[@]}" 'sudo cloud-init status --wait; . /etc/os-release; test "$ID:$VERSION_ID" = "debian:13"; dpkg-query -W plasma-workspace kwin-x11 xserver-xorg-video-dummy' | tee -a "$LOG"
-"${SSH[@]}" 'sudo -u louksna-test mkdir -p /home/louksna-test/.local/share; sudo -u louksna-test nohup env HOME=/home/louksna-test USER=louksna-test LOGNAME=louksna-test startx /usr/bin/startplasma-x11 -- :0 vt1 -keeptty -nolisten tcp > /home/louksna-test/.local/share/cp09-kde-session.log 2>&1 < /dev/null & for i in $(seq 1 60); do pgrep -x Xorg >/dev/null && pgrep -x kwin_x11 >/dev/null && break; sleep 2; done; pgrep -x Xorg; pgrep -x kwin_x11; tail -n 60 /home/louksna-test/.local/share/cp09-kde-session.log || true' | tee -a "$LOG"
+"${SSH[@]}" 'sudo install -d -o louksna-test -g louksna-test -m 0700 /run/user/1000; sudo -u louksna-test mkdir -p /home/louksna-test/.local/share; sudo -u louksna-test nohup env HOME=/home/louksna-test USER=louksna-test LOGNAME=louksna-test XDG_RUNTIME_DIR=/run/user/1000 dbus-run-session -- startx /usr/bin/startplasma-x11 -- :0 vt1 -keeptty -nolisten tcp > /home/louksna-test/.local/share/cp09-kde-session.log 2>&1 < /dev/null & for i in $(seq 1 60); do pgrep -x Xorg >/dev/null && pgrep -x kwin_x11 >/dev/null && break; sleep 2; done; pgrep -x Xorg; pgrep -x kwin_x11; tail -n 60 /home/louksna-test/.local/share/cp09-kde-session.log || true' | tee -a "$LOG"
 scp -i "$VM_KEY" -P 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$PKG" louksna-test@127.0.0.1:/tmp/candidate.deb
 cat > "$WORK/guest-test.sh" <<'GUEST'
 #!/usr/bin/env bash
@@ -177,11 +178,32 @@ pgrep -x Xorg >/dev/null && pgrep -x kwin_x11 >/dev/null || { echo "KDE/Xorg ses
 uid="$(id -u louksna-test)"
 XAUTH="$(pgrep -a Xorg | sed -n 's/.*-auth \([^ ]*\).*/\1/p' | head -n 1)"
 if [[ -n "$XAUTH" ]] && sudo test -r "$XAUTH"; then sudo cp "$XAUTH" /home/louksna-test/.Xauthority; sudo chown louksna-test:louksna-test /home/louksna-test/.Xauthority; sudo chmod 600 /home/louksna-test/.Xauthority; fi
-set +e
-sudo -u louksna-test env DISPLAY=:0 XAUTHORITY=/home/louksna-test/.Xauthority XDG_RUNTIME_DIR="/run/user/$uid" XDG_CURRENT_DESKTOP=KDE KDE_FULL_SESSION=true XDG_SESSION_TYPE=x11 timeout --signal=TERM --kill-after=5s 20s bash -lc 'BIN=$(find /usr/bin /usr/local/bin -maxdepth 1 -type f -iname "*louksna*" -print -quit); test -n "$BIN" && test -x "$BIN" && "$BIN"' >/tmp/louksna-launch.log 2>&1
-rc=$?
-set -e
-if [[ "$rc" -eq 0 || "$rc" -eq 124 ]]; then echo "LAUNCH_SMOKE_PASS exit_code=$rc"; else echo "LAUNCH_SMOKE_FAIL exit_code=$rc"; cat /tmp/louksna-launch.log; exit 4; fi
+BIN="$(find /usr/bin /usr/local/bin -maxdepth 1 -type f -iname '*louksna*' -print -quit)"
+test -n "$BIN" && test -x "$BIN" || { echo "LAUNCH_SMOKE_FAIL executable_missing"; exit 4; }
+BASELINE_WINDOWS="$(xwininfo -root -tree | awk '/^[[:space:]]+0x[[:xdigit:]]+[[:space:]]/ { n++ } END { print n+0 }')"
+sudo -u louksna-test env HOME=/home/louksna-test USER=louksna-test LOGNAME=louksna-test DISPLAY=:0 XAUTHORITY=/home/louksna-test/.Xauthority XDG_RUNTIME_DIR="/run/user/$uid" XDG_CURRENT_DESKTOP=KDE KDE_FULL_SESSION=true XDG_SESSION_TYPE=x11 "$BIN" >/tmp/louksna-launch.log 2>&1 &
+APP_PID=$!
+WINDOW_FOUND=0
+for _ in $(seq 1 20); do
+  if ! kill -0 "$APP_PID" 2>/dev/null; then
+    echo "LAUNCH_SMOKE_FAIL application_exited_before_window"
+    cat /tmp/louksna-launch.log
+    exit 4
+  fi
+  CURRENT_WINDOWS="$(xwininfo -root -tree | awk '/^[[:space:]]+0x[[:xdigit:]]+[[:space:]]/ { n++ } END { print n+0 }')"
+  if (( CURRENT_WINDOWS > BASELINE_WINDOWS )); then WINDOW_FOUND=1; break; fi
+  sleep 1
+done
+if [[ "$WINDOW_FOUND" -ne 1 ]]; then
+  kill "$APP_PID" >/dev/null 2>&1 || true
+  wait "$APP_PID" 2>/dev/null || true
+  echo "LAUNCH_SMOKE_FAIL no_new_X11_window baseline=$BASELINE_WINDOWS current=$CURRENT_WINDOWS"
+  cat /tmp/louksna-launch.log
+  exit 4
+fi
+echo "LAUNCH_SMOKE_PASS visible_window=1 baseline=$BASELINE_WINDOWS current=$CURRENT_WINDOWS"
+kill -TERM "$APP_PID" >/dev/null 2>&1 || true
+wait "$APP_PID" 2>/dev/null || true
 GUEST
 scp -i "$VM_KEY" -P 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$WORK/guest-test.sh" louksna-test@127.0.0.1:/tmp/guest-test.sh
 set +e
