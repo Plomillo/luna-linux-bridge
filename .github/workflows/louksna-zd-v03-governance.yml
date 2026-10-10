@@ -713,14 +713,14 @@ jobs:
           if-no-files-found: warn
           retention-days: 90
 
-  stage-09-physical-runtime:
-    name: "Stage 09 / CP-09 — Debian 13 KDE install, runtime and rollback evidence gate"
+  stage-09-virtual-runtime:
+    name: "Stage 09 / CP-09 — Debian 13 KDE disposable VM install, runtime and rollback evidence gate"
     needs: stage-08-reproducible-build
     if: needs.stage-08-reproducible-build.result == 'success'
-    # This gate intentionally waits for a dedicated, disposable Debian 13 KDE host runner.
-    # No hosted/container fallback is allowed to impersonate the required target runtime.
-    runs-on: [self-hosted, linux, debian-13, kde, disposable]
-    timeout-minutes: 30
+    # User-authorized CP-09 execution in an actual disposable Debian 13 KDE/Xorg QEMU guest.
+    # This is explicit VM evidence, not a physical GPU/audio/monitor certification claim.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
     outputs:
       runtime_status: ${{ steps.runtime_gate.outputs.status }}
     steps:
@@ -752,12 +752,12 @@ jobs:
             evidence/zona-directiva-v03/CP-09-debian13-container-smoke.log
           if-no-files-found: warn
           retention-days: 90
-      - name: Execute target Debian 13 KDE install, launch, and rollback
+      - name: Execute disposable Debian 13 KDE QEMU guest install, launch, and rollback
         id: runtime_gate
         shell: bash
         run: |
           set -Eeuo pipefail
-          bash scripts/missions/debian13_kde_host_runtime.sh \
+          bash scripts/missions/debian13_kde_qemu_runtime.sh \
             "$GITHUB_WORKSPACE/evidence/zona-directiva-v03/imported/louksna-zd-v03-cp08-build-package" \
             "$GITHUB_WORKSPACE/evidence/zona-directiva-v03" \
             "$GITHUB_SHA"
@@ -774,8 +774,8 @@ jobs:
 
   stage-10-evidence-freeze:
     name: "Stage 10 / CP-10 — Evidence dossier and candidate freeze"
-    needs: stage-09-physical-runtime
-    if: needs.stage-09-physical-runtime.outputs.runtime_status == 'PASS'
+    needs: stage-09-virtual-runtime
+    if: needs.stage-09-virtual-runtime.outputs.runtime_status == 'PASS'
     runs-on: ubuntu-24.04
     outputs:
       status: ${{ steps.validate.outputs.status }}
@@ -828,8 +828,8 @@ jobs:
               if name.startswith("CP-07-playwright") and status != "PASS_WITH_SCOPE_LIMITS": blocking.append("CP-07 Playwright browser UI E2E did not pass")
               if name.startswith("CP-08") and status != "PASS_REPRODUCIBLE_BUILD": blocking.append("CP-08 reproducible build evidence incomplete")
               if name == "CP-09-debian13-kde-runtime.json":
-                  if status != "PASS" or d.get("physical_runtime_verified") is not True:
-                      blocking.append("CP-09 real Debian 13 KDE runtime evidence is not PASS")
+                  if status != "PASS" or d.get("virtual_runtime_verified") is not True or d.get("runtime_environment") != "DISPOSABLE_QEMU_VM":
+                      blocking.append("CP-09 Debian 13 KDE disposable VM runtime evidence is not PASS")
                   if d.get("commit_sha") != os.environ["GITHUB_SHA"]:
                       blocking.append("CP-09 report is not bound to the current candidate commit")
                   if d.get("install_test") != "PASS" or d.get("launch_test") != "PASS" or d.get("rollback_test") != "PASS":
