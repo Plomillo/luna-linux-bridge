@@ -22,8 +22,12 @@ log(){ printf '[%s] %s\n' "$(date -u +%FT%TZ)" "$*" | tee -a "$LOG"; }
 finish(){
   rc=$?
   set +e
-  if [[ -n "$QEMU_PID" ]]; then sudo kill "$QEMU_PID" >/dev/null 2>&1; fi
-  if [[ -f "$WORK/qemu.pid" ]]; then sudo kill "$(sudo cat "$WORK/qemu.pid")" >/dev/null 2>&1; fi
+  if [[ -n "$QEMU_PID" ]]; then
+    sudo kill "$QEMU_PID" >/dev/null 2>&1 || true
+  elif [[ -f "$WORK/qemu.pid" ]]; then
+    qemu_pid="$(sudo cat "$WORK/qemu.pid" 2>/dev/null || true)"
+    if [[ "$qemu_pid" =~ ^[0-9]+$ ]]; then sudo kill "$qemu_pid" >/dev/null 2>&1 || true; fi
+  fi
   python3 - "$REPORT" "$LOG" "$PKG" "$EXPECTED_COMMIT" "$INSTALL_STATUS" "$LAUNCH_STATUS" "$ROLLBACK_STATUS" "$GUEST_STATUS" "$rc" <<'PY'
 import datetime,hashlib,json,os,pathlib,sys
 report,log_path,pkg,commit,install,launch,rollback,guest,rc=sys.argv[1:]
