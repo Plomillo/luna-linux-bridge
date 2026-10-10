@@ -8,6 +8,7 @@ type PR={number:number;title:string;state:string;draft:boolean;updated_at:string
 type Evidence={id:number;utc:string;operation:string;status:string;detail:string};
 type Chat={id:number;utc:string;role:string;content:string;transport:string};
 type Conn={connected:boolean;login:string;name:string};
+type Health={status:"PASS"|"DEGRADED"|"FAIL"|"UNVERIFIED";detail:string};
 
 const sections:{key:K,label:string,image:string}[]=[
   {key:"centro",label:"Centro de mando",image:"01_louksna_zona_directiva_centro_de_mando_8k.png"},
@@ -32,6 +33,7 @@ export default function App(){
   const[msg,setMsg]=useState("");
   const[busy,setBusy]=useState("");
   const[notice,setNotice]=useState("");
+  const[health,setHealth]=useState<Health>({status:"UNVERIFIED",detail:"Probe pendiente"});
   const s=useMemo(()=>sections.find(x=>x.key===active)!,[active]);
 
   const call=async<T,>(name:string,args?:Record<string,unknown>):Promise<T>=>{
@@ -152,6 +154,12 @@ export default function App(){
     (async()=>{
       try{
         setSettings(await call<Settings>("get_settings"));
+        try {
+          const probe=await call<{status:Health["status"]}>("runtime_probe");
+          setHealth({status:probe.status,detail:"runtime_probe"});
+        } catch {
+          setHealth({status:"FAIL",detail:"runtime_probe falló"});
+        }
         await refreshEvidence();
         await loadChat();
       }catch(e){
@@ -177,7 +185,7 @@ export default function App(){
     <section className="workspace">
       <header>
         <div><p className="eyebrow">GitHub Interface V0.3 FUNCTIONAL CANDIDATE</p><h1>{s.label}</h1></div>
-        <div className="status"><i/> Backend local operativo</div>
+        <div className={"status status-"+health.status.toLowerCase()} data-health-status={health.status}><i/>{health.status} · {health.detail}</div>
       </header>
 
       {notice&&<div className="notice">{notice}</div>}
