@@ -51,15 +51,19 @@ fn db() -> Result<Connection,String> {
     Ok(c)
 }
 
-fn log_event(operation:&str,status:&str,detail:&str) -> Result<(),String> {
-    match db().and_then(|c| c.execute(
+fn write_event(c:&Connection,operation:&str,status:&str,detail:&str)->Result<(),String>{
+    c.execute(
         "INSERT INTO evidence(utc,operation,status,detail) VALUES(?1,?2,?3,?4)",
         params![Utc::now().to_rfc3339(),operation,status,detail]
-    ).map(|_|()).map_err(|e|e.to_string())) {
+    ).map(|_|()).map_err(|e|format!("EVIDENCE_LEDGER_WRITE_FAILED:{operation}:{e}"))
+}
+
+fn log_event(operation:&str,status:&str,detail:&str) -> Result<(),String> {
+    match db().and_then(|c| write_event(&c,operation,status,detail)) {
         Ok(()) => Ok(()),
         Err(e) => {
             eprintln!("LOUKSNA_EVIDENCE_WRITE_FAILED operation={operation} error={e}");
-            Err(format!("EVIDENCE_LEDGER_WRITE_FAILED:{operation}:{e}"))
+            Err(e)
         }
     }
 }
@@ -86,7 +90,8 @@ fn get_settings()->Result<Settings,String>{ load_settings_inner() }
 
 #[tauri::command]
 fn save_settings(settings:Settings)->Result<(),String>{
-    let c=db()?;
+    let mut c=db()?;
+    let tx=c.transaction().map_err(|e|e.to_string())?;
     let pairs=[
       ("offline_mode",if settings.offline_mode{"true"}else{"false"}.to_string()),
       ("preferred_repo",settings.preferred_repo.clone()),
@@ -94,9 +99,10 @@ fn save_settings(settings:Settings)->Result<(),String>{
       ("remote_chat_bridge",settings.remote_chat_bridge.clone())
     ];
     for (k,v) in pairs {
-        c.execute("INSERT INTO settings(key,value) VALUES(?1,?2) ON CONFLICT(key) DO UPDATE SET value=excluded.value",params![k,v]).map_err(|e|e.to_string())?;
+        tx.execute("INSERT INTO settings(key,value) VALUES(?1,?2) ON CONFLICT(key) DO UPDATE SET value=excluded.value",params![k,v]).map_err(|e|e.to_string())?;
     }
-    log_event("SETTINGS_SAVE","PASS","Configuracion no secreta persistida en SQLite.")?;
+    write_event(&tx,"SETTINGS_SAVE","PASS","Configuracion no secreta persistida en SQLite.")?;
+    tx.commit().map_err(|e|e.to_string())?;
     Ok(())
 }
 
@@ -134,7 +140,11 @@ fn remove_github_token()->Result<(),String>{
 }
 
 fn gh_client()->Result<Client,String>{
-    Client::builder().user_agent("LOUKSNA-ZONA-DIRECTIVA/0.3").build().map_err(|e|e.to_string())
+    Client::builder()
+        .user_agent("LOUKSNA-ZONA-DIRECTIVA/0.3")
+        .connect_timeout(std::time::Duration::from_secs(5))
+        .timeout(std::time::Duration::from_secs(20))
+        .build().map_err(|e|e.to_string())
 }
 
 async fn gh_get(path:&str)->Result<Value,String>{
@@ -148,7 +158,20 @@ async fn gh_get(path:&str)->Result<Value,String>{
         log_event("GITHUB_API","FAIL",&format!("HTTP {}",status.as_u16()))?;
         return Err(format!("GITHUB_HTTP_{}",status.as_u16()));
     }
-    resp.json::<Value>().await.map_err(|e|format!("GITHUB_JSON_ERROR:{e}"))
+    if resp.content_length().is_some_and(|n| n > 2_000_000) {
+        log_event("GITHUB_API","FAIL","Respuesta API supera el limite de 2000000 bytes.")?;
+        return Err("GITHUB_RESPONSE_TOO_LARGE".into());
+    }
+    let mut response=resp;
+    let mut body=Vec::new();
+    while let Some(chunk)=response.chunk().await.map_err(|e|format!("GITHUB_BODY_READ_ERROR:{e}"))? {
+        if body.len().saturating_add(chunk.len()) > 2_000_000 {
+            log_event("GITHUB_API","FAIL","Respuesta API supera el limite de 2000000 bytes.")?;
+            return Err("GITHUB_RESPONSE_TOO_LARGE".into());
+        }
+        body.extend_from_slice(&chunk);
+    }
+    serde_json::from_slice::<Value>(&body).map_err(|e|format!("GITHUB_JSON_ERROR:{e}"))
 }
 
 #[tauri::command]
@@ -263,10 +286,23 @@ async fn chat_send(message:String)->Result<String,String>{
         log_event("CHAT_BRIDGE","FAIL",&format!("HTTP {}",resp.status().as_u16()))?;
         return Err(format!("CHAT_BRIDGE_HTTP_{}",resp.status().as_u16()));
     }
-    let text=resp.text().await.map_err(|e|e.to_string())?;
+    if resp.content_length().is_some_and(|n| n > 200_000) {
+        log_event("CHAT_BRIDGE","FAIL","Respuesta remota supera el limite de 200000 bytes.")?;
+        return Err("CHAT_BRIDGE_RESPONSE_INVALID".into());
+    }
+    let mut response=resp;
+    let mut body=Vec::new();
+    while let Some(chunk)=response.chunk().await.map_err(|e|format!("CHAT_BRIDGE_BODY_READ_ERROR:{e}"))? {
+        if body.len().saturating_add(chunk.len()) > 200_000 {
+            log_event("CHAT_BRIDGE","FAIL","Respuesta remota supera el limite de 200000 bytes.")?;
+            return Err("CHAT_BRIDGE_RESPONSE_INVALID".into());
+        }
+        body.extend_from_slice(&chunk);
+    }
+    let text=String::from_utf8(body).map_err(|_|"CHAT_BRIDGE_RESPONSE_NOT_UTF8".to_string())?;
     let reply=serde_json::from_str::<Value>(&text).ok().and_then(|v|v.get("response").and_then(|x|x.as_str()).map(str::to_string)).unwrap_or(text.clone());
-    if reply.trim().is_empty() || reply.len()>200_000 {
-        log_event("CHAT_BRIDGE","FAIL","Respuesta remota vacia o superior al limite de 200000 bytes.")?;
+    if reply.trim().is_empty() {
+        log_event("CHAT_BRIDGE","FAIL","Respuesta remota vacia.")?;
         return Err("CHAT_BRIDGE_RESPONSE_INVALID".into());
     }
     insert_chat("louksna",&reply,"remote-bridge")?;
@@ -288,8 +324,14 @@ fn runtime_probe()->Result<Value,String>{
 }
 
 fn main(){
-    if let Err(e)=db(){eprintln!("LOUKSNA_DB_INIT_FAIL:{e}");}
-    if let Err(e)=log_event("APP_START","PASS","LOUKSNA V0.3 inicio backend local.") { eprintln!("LOUKSNA_START_EVIDENCE_FAILURE:{e}"); }
+    if let Err(e)=db(){
+        eprintln!("LOUKSNA_DB_INIT_FAIL:{e}");
+        return;
+    }
+    if let Err(e)=log_event("APP_START","PASS","LOUKSNA V0.3 inicio backend local.") {
+        eprintln!("LOUKSNA_START_EVIDENCE_FAILURE:{e}");
+        return;
+    }
     tauri::Builder::default()
       .invoke_handler(tauri::generate_handler![
         get_settings,save_settings,store_github_token,remove_github_token,
@@ -382,6 +424,8 @@ mod louksna_runtime_tests {
             result.unwrap_err().contains("EVIDENCE_LEDGER_WRITE_FAILED"),
             "failure must identify the evidence ledger as the blocking cause"
         );
+        let persisted = load_settings_inner().expect("settings table remains readable");
+        assert_eq!(persisted, Settings::default(), "settings writes must roll back when the evidence ledger write fails");
         let _ = std::fs::remove_dir_all(&root);
     }
 }
