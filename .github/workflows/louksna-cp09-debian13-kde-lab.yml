@@ -1,0 +1,287 @@
+name: "Louksna CP-09 Lab — Debian 13 KDE, exact canonical run"
+
+on:
+  workflow_run:
+    workflows:
+      - "LOUKSNA ZD V0.3 — Sequential Governance Gate"
+    types:
+      - completed
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: louksna-cp09-lab-${{ github.event.workflow_run.id }}
+  cancel-in-progress: false
+
+jobs:
+  exact-candidate-lab:
+    name: "Supplemental Debian 13 KDE VM test bound to canonical CP-08 artifact"
+    if: github.event.workflow_run.conclusion != 'cancelled'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+      CANDIDATE_COMMIT: ${{ github.event.workflow_run.head_sha }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Validate triggering workflow identity and checkout exact candidate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$GITHUB_REPOSITORY" = "Plomillo/luna-linux-bridge"
+          [[ "$SOURCE_RUN_ID" =~ ^[0-9]+$ ]]
+          [[ "$CANDIDATE_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          test "$GITHUB_WORKFLOW" = "Louksna CP-09 Lab — Debian 13 KDE, exact canonical run"
+          echo "SOURCE_RUN_ID=$SOURCE_RUN_ID"
+          echo "CANDIDATE_COMMIT=$CANDIDATE_COMMIT"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID" > "$RUNNER_TEMP/source-run.json"
+          jq -e --arg sha "$CANDIDATE_COMMIT" --argjson id "$SOURCE_RUN_ID"             '.id == $id and .head_sha == $sha and .name == "LOUKSNA ZD V0.3 — Sequential Governance Gate"'             "$RUNNER_TEMP/source-run.json" >/dev/null
+          git init candidate-source
+          git -C candidate-source remote add origin "https://github.com/$GITHUB_REPOSITORY.git"
+          git -C candidate-source fetch --no-tags --depth=1 origin "$CANDIDATE_COMMIT"
+          test "$(git -C candidate-source rev-parse FETCH_HEAD)" = "$CANDIDATE_COMMIT"
+          git -C candidate-source checkout --detach "$CANDIDATE_COMMIT"
+
+      - name: Locate CP-08 artifact from this exact workflow run
+        id: artifact
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p evidence/cp09-lab/artifact candidate-artifact
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID/artifacts?per_page=100" > evidence/cp09-lab/source-artifacts.json
+          ARTIFACT_ID="$(jq -er '[.artifacts[] | select(.name == "louksna-zd-v03-cp08-build-package" and .expired == false)] | if length == 1 then .[0].id else error("expected exactly one unexpired CP-08 artifact in triggering run") end' evidence/cp09-lab/source-artifacts.json)"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > "$RUNNER_TEMP/cp08-artifact.zip"
+          unzip -q "$RUNNER_TEMP/cp08-artifact.zip" -d candidate-artifact
+          EVIDENCE="$(find candidate-artifact -type f -name 'CP-08-build-package.json' -print -quit)"
+          DEB="$(find candidate-artifact -type f -name '*.deb' -print -quit)"
+          test -s "$EVIDENCE" && test -s "$DEB"
+          jq -e --arg sha "$CANDIDATE_COMMIT" --argjson run "$SOURCE_RUN_ID"             '.commit_sha == $sha and .run_id == $run and .checkpoint_id == "CP-08" and .status == "PASS_REPRODUCIBLE_BUILD"'             "$EVIDENCE" >/dev/null || {
+              echo "CP-09 LAB HOLD: CP-08 evidence is absent, incomplete, or not bound to this exact run/SHA."
+              jq '{checkpoint_id,status,commit_sha,run_id}' "$EVIDENCE" || true
+              exit 1
+            }
+          EXPECTED="$(jq -er '.builds.first.sha256' "$EVIDENCE")"
+          [[ "$EXPECTED" =~ ^[0-9a-f]{64}$ ]]
+          printf '%s  %s\n' "$EXPECTED" "$DEB" | sha256sum --check -
+          cp "$DEB" evidence/cp09-lab/candidate.deb
+          cp "$EVIDENCE" evidence/cp09-lab/CP-08-build-package.json
+          echo "artifact_id=$ARTIFACT_ID" >> "$GITHUB_OUTPUT"
+          echo "package_path=evidence/cp09-lab/candidate.deb" >> "$GITHUB_OUTPUT"
+          sha256sum evidence/cp09-lab/candidate.deb | tee evidence/cp09-lab/package-sha256.txt
+          dpkg-deb --info evidence/cp09-lab/candidate.deb | tee evidence/cp09-lab/package-info.txt
+
+      - name: Install QEMU and VM tooling
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get -o Acquire::Retries=3 update
+          sudo apt-get -o Acquire::Retries=3 install --yes --no-install-recommends             qemu-system-x86 qemu-utils cloud-image-utils openssh-client sshpass jq curl ca-certificates unzip
+          qemu-system-x86_64 --version | tee evidence/cp09-lab/qemu-version.txt
+          if test -e /dev/kvm; then echo "KVM_DEVICE_AVAILABLE=true" | tee evidence/cp09-lab/virtualization.txt; else echo "KVM_DEVICE_AVAILABLE=false; QEMU_TCG_REQUIRED=true" | tee evidence/cp09-lab/virtualization.txt; fi
+
+      - name: Boot disposable Debian 13 guest and configure KDE/Xorg
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd evidence/cp09-lab
+          curl --fail --show-error --location --retry 3             https://cloud.debian.org/images/cloud/trixie/latest/debian-13-genericcloud-amd64.qcow2             -o debian-13-genericcloud-amd64.qcow2
+          ssh-keygen -q -t ed25519 -N '' -f vm_ssh_key
+          PUBKEY="$(cat vm_ssh_key.pub)"
+          cat > user-data <<EOF
+          #cloud-config
+          hostname: louksna-cp09-lab
+          users:
+            - name: louksna-test
+              uid: 1000
+              groups: [sudo, adm, audio, video]
+              shell: /bin/bash
+              sudo: ALL=(ALL) NOPASSWD:ALL
+              lock_passwd: false
+              ssh_authorized_keys:
+                - ${PUBKEY}
+          ssh_pwauth: false
+          chpasswd:
+            expire: false
+            users:
+              - name: louksna-test
+                type: RANDOM
+          package_update: true
+          packages:
+            - openssh-server
+            - sudo
+            - dbus
+            - dbus-x11
+            - xserver-xorg
+            - xserver-xorg-video-dummy
+            - x11-xserver-utils
+            - xauth
+            - xinit
+            - plasma-workspace
+            - kwin-x11
+            - konsole
+            - python3
+            - ca-certificates
+          write_files:
+            - path: /etc/X11/xorg.conf.d/20-dummy.conf
+              permissions: '0644'
+              content: |
+                Section "Device"
+                  Identifier "DummyDevice"
+                  Driver "dummy"
+                  VideoRam 256000
+                EndSection
+                Section "Monitor"
+                  Identifier "DummyMonitor"
+                  HorizSync 5.0-1000.0
+                  VertRefresh 5.0-200.0
+                  Modeline "1920x1080" 172.80 1920 2040 2248 2576 1080 1083 1088 1120
+                EndSection
+                Section "Screen"
+                  Identifier "DummyScreen"
+                  Device "DummyDevice"
+                  Monitor "DummyMonitor"
+                  DefaultDepth 24
+                  SubSection "Display"
+                    Depth 24
+                    Modes "1920x1080"
+                  EndSubSection
+                EndSection
+          runcmd:
+            - systemctl enable ssh
+            - systemctl restart ssh
+            - touch /var/lib/cloud/instance/louksna-cp09-ready
+          EOF
+          cat > meta-data <<EOF
+          instance-id: louksna-cp09-${SOURCE_RUN_ID}-${GITHUB_RUN_ATTEMPT}
+          local-hostname: louksna-cp09-lab
+          EOF
+          cloud-localds seed.iso user-data meta-data
+          qemu-img create -f qcow2 -F qcow2 -b debian-13-genericcloud-amd64.qcow2 debian-vm.qcow2 24G
+          ACCEL=tcg
+          if test -e /dev/kvm && sudo qemu-system-x86_64 -machine q35,accel=kvm -cpu max -m 128 -nodefaults -display none -S -daemonize -pidfile /tmp/louksna-kvm-probe.pid 2>kvm-probe.log; then
+            ACCEL=kvm
+            sudo kill "$(cat /tmp/louksna-kvm-probe.pid)" 2>/dev/null || true
+          fi
+          echo "QEMU_ACCEL=$ACCEL" | tee virtualization-actual.txt
+          sudo qemu-system-x86_64 -machine "q35,accel=$ACCEL" -cpu max -smp 2 -m 4096             -drive file=debian-vm.qcow2,if=virtio,format=qcow2             -drive file=seed.iso,media=cdrom,readonly=on             -netdev user,id=net0,hostfwd=tcp:127.0.0.1:2222-:22 -device virtio-net-pci,netdev=net0             -vga std -display none -serial file:vm-serial.log -daemonize -pidfile qemu.pid
+          for _ in $(seq 1 90); do
+            if ssh -i vm_ssh_key -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=3 louksna-test@127.0.0.1 'test -f /var/lib/cloud/instance/louksna-cp09-ready' 2>/dev/null; then
+              echo "CLOUD_INIT_READY=true" | tee cloud-init-ready.txt
+              break
+            fi
+            sleep 10
+          done
+          test -f cloud-init-ready.txt || { tail -n 200 vm-serial.log || true; echo "Debian guest initialization timed out"; exit 20; }
+          SSH=(ssh -i vm_ssh_key -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null louksna-test@127.0.0.1)
+          "${SSH[@]}" 'sudo cloud-init status --wait; . /etc/os-release; test "$ID:$VERSION_ID" = "debian:13"; dpkg-query -W plasma-workspace kwin-x11 xserver-xorg-video-dummy' | tee guest-desktop-inventory.txt
+          "${SSH[@]}" 'sudo -u louksna-test mkdir -p /home/louksna-test/.local/share; sudo -u louksna-test nohup env HOME=/home/louksna-test USER=louksna-test LOGNAME=louksna-test startx /usr/bin/startplasma-x11 -- :0 vt1 -keeptty -nolisten tcp > /home/louksna-test/.local/share/cp09-kde-session.log 2>&1 < /dev/null & for i in $(seq 1 45); do pgrep -x Xorg >/dev/null && pgrep -x kwin_x11 >/dev/null && break; sleep 2; done; pgrep -x Xorg; pgrep -x kwin_x11; tail -n 80 /home/louksna-test/.local/share/cp09-kde-session.log || true' | tee kde-session-smoke.log
+
+      - name: Install candidate, run bounded launch smoke test, and rollback
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd evidence/cp09-lab
+          SSH=(ssh -i vm_ssh_key -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null louksna-test@127.0.0.1)
+          SCP=(scp -i vm_ssh_key -P 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null)
+          "${SCP[@]}" candidate.deb louksna-test@127.0.0.1:/tmp/candidate.deb
+          cat > guest-test.sh <<'GUEST'
+          #!/usr/bin/env bash
+          set -uo pipefail
+          PKG="$(dpkg-deb -f /tmp/candidate.deb Package)"
+          rollback() {
+            set +e
+            sudo apt-get remove -y "$PKG" > /tmp/rollback.log 2>&1
+            RC=$?
+            if [ "$RC" -eq 0 ] && ! dpkg-query -W -f='${Status}' "$PKG" 2>/dev/null | grep -q 'install ok installed'; then
+              echo ROLLBACK_PASS | tee /tmp/rollback-result.txt
+            else
+              echo ROLLBACK_FAIL | tee /tmp/rollback-result.txt
+              touch /tmp/rollback-failed
+            fi
+          }
+          trap rollback EXIT
+          sudo apt-get install -y /tmp/candidate.deb > /tmp/package-install.log 2>&1
+          RC=$?
+          if [ "$RC" -ne 0 ] || ! dpkg-query -W -f='${Status}' "$PKG" 2>/dev/null | grep -q 'install ok installed'; then
+            echo INSTALL_FAIL; cat /tmp/package-install.log; exit 1
+          fi
+          dpkg-query -W -f='${Package}\t${Version}\t${Status}\n' "$PKG" > /tmp/package-installed.tsv
+          test -n "$(pgrep -x Xorg)" && test -n "$(pgrep -x kwin_x11)" || { echo "KDE/Xorg session process missing"; exit 3; }
+          XAUTH="$(pgrep -a Xorg | sed -n 's/.*-auth \\([^ ]*\\).*/\\1/p' | head -n 1)"
+          if [ -n "$XAUTH" ] && sudo test -r "$XAUTH"; then
+            sudo cp "$XAUTH" /home/louksna-test/.Xauthority
+            sudo chown louksna-test:louksna-test /home/louksna-test/.Xauthority
+            sudo chmod 600 /home/louksna-test/.Xauthority
+          fi
+          uid="$(id -u louksna-test)"
+          set +e
+          sudo -u louksna-test env DISPLAY=:0 XAUTHORITY=/home/louksna-test/.Xauthority XDG_RUNTIME_DIR="/run/user/$uid" XDG_CURRENT_DESKTOP=KDE KDE_FULL_SESSION=true XDG_SESSION_TYPE=x11 timeout --signal=TERM --kill-after=5s 20s bash -lc 'BIN=$(find /usr/bin /usr/local/bin -maxdepth 1 -type f -iname "*louksna*" -print -quit); test -n "$BIN" && test -x "$BIN" && "$BIN"' > /tmp/louksna-launch.log 2>&1
+          RC=$?
+          set -e
+          if [ "$RC" -eq 0 ] || [ "$RC" -eq 124 ]; then echo "LAUNCH_SMOKE_PASS exit_code=$RC"; else echo "LAUNCH_SMOKE_FAIL exit_code=$RC"; cat /tmp/louksna-launch.log; exit 4; fi
+          cat /tmp/louksna-launch.log
+          GUEST
+          "${SCP[@]}" guest-test.sh louksna-test@127.0.0.1:/tmp/guest-test.sh
+          set +e
+          "${SSH[@]}" 'chmod +x /tmp/guest-test.sh && bash /tmp/guest-test.sh' 2>&1 | tee guest-install-launch-rollback.log
+          RC=${PIPESTATUS[0]}
+          set -e
+          "${SSH[@]}" 'cat /tmp/package-install.log /tmp/package-installed.tsv /tmp/louksna-launch.log /tmp/rollback.log /tmp/rollback-result.txt 2>/dev/null || true' | tee guest-package-evidence.log
+          test "$RC" -eq 0
+          grep -q ROLLBACK_PASS guest-package-evidence.log
+
+      - name: Write digest-bound evidence manifest; never certify
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          if test -f evidence/cp09-lab/qemu.pid; then sudo kill "$(sudo cat evidence/cp09-lab/qemu.pid)" 2>/dev/null || true; fi
+          sudo chown -R "$(id -u):$(id -g)" evidence/cp09-lab
+          python3 - <<'PY'
+          import datetime,hashlib,json,os,pathlib
+          root=pathlib.Path("evidence/cp09-lab")
+          excluded={"evidence-manifest.json","vm_ssh_key","debian-13-genericcloud-amd64.qcow2","debian-vm.qcow2","seed.iso","qemu.pid"}
+          hashes={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(root.rglob("*")) if p.is_file() and p.name not in excluded}
+          report={
+            "schema":"louksna.zd.v03.cp09.debian13-kde-lab.v2",
+            "timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "repository":os.getenv("GITHUB_REPOSITORY"),
+            "source_workflow_run_id":int(os.getenv("SOURCE_RUN_ID")),
+            "candidate_commit_sha":os.getenv("CANDIDATE_COMMIT"),
+            "lab_workflow_run_id":int(os.getenv("GITHUB_RUN_ID")),
+            "lab_workflow_commit_sha":os.getenv("GITHUB_SHA"),
+            "cp08_artifact_id":os.getenv("ARTIFACT_ID","see source-artifacts.json"),
+            "package_sha256":hashlib.sha256((root/"candidate.deb").read_bytes()).hexdigest() if (root/"candidate.deb").is_file() else None,
+            "status":"EVIDENCE_COLLECTED_REQUIRES_REVIEW",
+            "certification":"NOT_GRANTED",
+            "activation":False,
+            "main_mutation":"NOT_PERFORMED",
+            "sha256":hashes,
+            "limitations":[
+              "Supplemental disposable QEMU Debian 13 KDE/Xorg guest; not the required dedicated physical Debian 13 KDE host runner.",
+              "Dummy virtual display does not prove physical GPU/monitor, audio, microphone, or complete interactive correctness.",
+              "This lab result does not replace CP-09 canonical host evidence and cannot advance CP-10/G23/G24 by itself.",
+              "The candidate package is accepted only from the exact triggering canonical workflow run and exact candidate commit."
+            ]
+          }
+          (root/"evidence-manifest.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(report,indent=2))
+          PY
+          echo "ARTIFACT_ID is recorded in source-artifacts.json; source run is the authoritative lookup."
+
+      - name: Upload traceable lab evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksna-cp09-debian13-kde-lab-source-${{ github.event.workflow_run.id }}-${{ github.run_attempt }}
+          path: |
+            evidence/cp09-lab/
+            !evidence/cp09-lab/debian-13-genericcloud-amd64.qcow2
+            !evidence/cp09-lab/debian-vm.qcow2
+            !evidence/cp09-lab/seed.iso
+            !evidence/cp09-lab/vm_ssh_key
+            !evidence/cp09-lab/qemu.pid
+          if-no-files-found: warn
+          retention-days: 90
