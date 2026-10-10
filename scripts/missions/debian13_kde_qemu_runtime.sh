@@ -182,10 +182,10 @@ if [[ "$rc" -eq 0 || "$rc" -eq 124 ]]; then echo "LAUNCH_SMOKE_PASS exit_code=$r
 GUEST
 scp -i "$VM_KEY" -P 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$WORK/guest-test.sh" louksna-test@127.0.0.1:/tmp/guest-test.sh
 set +e
-"${SSH[@]}" 'chmod +x /tmp/guest-test.sh && bash /tmp/guest-test.sh' 2>&1 | tee "$WORK/guest-test-output.log"
+"${SSH[@]}" 'chmod +x /tmp/guest-test.sh && bash /tmp/guest-test.sh' 2>&1 | tee "$WORK/guest-test-output.log" | tee -a "$LOG"
 RC=${PIPESTATUS[0]}
 set -e
-"${SSH[@]}" 'cat /tmp/package-install.log /tmp/package-installed.tsv /tmp/louksna-launch.log /tmp/rollback.log 2>/dev/null || true; cat /tmp/rollback-result.txt 2>/dev/null || true' | tee "$WORK/guest-package-evidence.log"
+"${SSH[@]}" 'cat /tmp/package-install.log /tmp/package-installed.tsv /tmp/louksna-launch.log /tmp/rollback.log 2>/dev/null || true; cat /tmp/rollback-result.txt 2>/dev/null || true' | tee "$WORK/guest-package-evidence.log" | tee -a "$LOG"
 if [[ "$RC" -eq 0 ]] && grep -q 'LAUNCH_SMOKE_PASS' "$WORK/guest-test-output.log" && grep -q 'ROLLBACK_PASS' "$WORK/guest-test-output.log"; then
   INSTALL_STATUS=PASS; LAUNCH_STATUS=PASS; ROLLBACK_STATUS=PASS; GUEST_STATUS=PASS
 else
