@@ -9,6 +9,12 @@ on:
       - ".github/workflows/louksna-zd-v03-physical-voice.yml"
       - "scripts/missions/v03_templates/voice.rs"
       - "scripts/missions/validate_voice_hardware_evidence.py"
+  workflow_call:
+    inputs:
+      candidate_sha:
+        description: "Exact candidate commit SHA supplied by the governance workflow"
+        required: true
+        type: string
   workflow_dispatch:
     inputs:
       candidate_sha:
@@ -29,7 +35,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
-      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || inputs.candidate_sha || github.sha }}
+      CANDIDATE_SHA: ${{ inputs.candidate_sha || github.event.pull_request.head.sha || github.sha }}
       WHISPER_REF: v1.7.6
       WHISPER_MODEL: base.en
       OLLAMA_MODEL: llama3.2:1b
