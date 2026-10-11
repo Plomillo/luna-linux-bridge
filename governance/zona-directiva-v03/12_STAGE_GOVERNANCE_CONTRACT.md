@@ -133,3 +133,21 @@ Autorización explícita del usuario para ejecutar la prueba integrada CP-09 den
 - La prueba de contenedor continúa siendo suplementaria y no sustituye a la VM.
 
 Esta enmienda modifica el modo de ejecución de CP-09 de forma explícita y trazable; no afirma ni hereda una certificación de hardware físico.
+
+
+## 8. ADENDA CONTROLADA — VOZ OBLIGATORIA Y PIPELINE REAL (2026-10-10)
+
+VOICE_REQUIRED_FOR_TERMINAL_CERTIFICATION = TRUE
+VOICE_GATE_STATUS = OPEN_UNTIL_REAL_E2E_EVIDENCE
+VOICE_SIMULATION_ALLOWED = FALSE
+NO_MAIN_MUTATION = TRUE
+NO_AUTO_MERGE = TRUE
+NO_AUTO_CERTIFICATION = TRUE
+
+La decisión de alcance autorizada establece que la voz end-to-end es requisito obligatorio de la certificación terminal general. La implementación de código no cierra CP-07. CP-07 sólo puede pasar con evidencia del mismo candidato que demuestre captura real desde micrófono, transcripción, transporte de solicitud/respuesta, síntesis y reproducción audible; debe registrar dispositivo/entorno, versiones, hashes de modelos, timestamps, resultados y fallos. Los dobles de prueba, audio sintético y las comprobaciones estáticas no satisfacen el gate.
+
+La ruta implementada para Linux es: ALSA `arecord` (captura limitada a 8 s) → `whisper-cli` de whisper.cpp → endpoint local Ollama (por defecto `http://127.0.0.1:11434/api/chat`) → Piper TTS → ALSA `aplay`. El backend tiene preflight explícito, límites temporales, validación de endpoint HTTP local/HTTPS, límites de texto, archivos temporales con limpieza best-effort y eventos de ledger que no almacenan transcripción ni respuesta. El resultado de una ejecución se denomina `E2E_EXECUTED_NOT_CERTIFIED`; no activa ni certifica el sistema.
+
+Dependencias declaradas: `alsa-utils`, `whisper-cli` (whisper.cpp), modelo Whisper local, `piper`, modelo de voz Piper local, servicio Ollama local y modelo Ollama. El manifiesto de release deberá registrar origen confiable, versión y SHA-256 de cada binario/modelo. No se descargan modelos ni ejecutables silenciosamente y el repositorio no los incorpora. `wait-timeout` limita los procesos externos.
+
+CP-07 permanece OPEN hasta que el pipeline se ejecute en un equipo con micrófono/salida de audio real y la evidencia sea revisada. QEMU, tests unitarios, preflight, compilación y mocks de UI no prueban hardware de audio. CP-10, CP-11/G23 y CP-12/G24 deben seguir bloqueados mientras falte evidencia CP-07. Cualquier cambio posterior del candidato invalida checkpoints ligados al SHA anterior.
