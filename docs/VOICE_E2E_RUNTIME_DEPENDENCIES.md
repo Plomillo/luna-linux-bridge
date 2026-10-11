@@ -10,7 +10,7 @@ Scope: Linux desktop candidate; no bundled model weights or hidden downloads.
 3. The Rust backend sends the transcript to an Ollama-compatible `/api/chat` endpoint. Default endpoint is `http://127.0.0.1:11434/api/chat`; plain HTTP is restricted to loopback and HTTPS is permitted.
 4. `piper` synthesizes the response into a WAV file with the configured Piper model.
 5. `aplay` plays the generated WAV through the selected ALSA output.
-6. The application writes a status-only event to its SQLite evidence ledger. It does not write audio, transcript, response text, or credentials to that ledger. Temporary audio/response working files are removed on scope exit (best-effort filesystem cleanup); the transcript remains in memory only.
+6. The application writes a status-only event `EXECUTED_NOT_CERTIFIED` to its SQLite evidence ledger (never a certification PASS). It does not write audio, transcript, response text, or credentials to that ledger. Temporary audio/response working files are removed on scope exit (best-effort filesystem cleanup); the transcript remains in memory only.
 
 ## Required runtime components
 
@@ -34,7 +34,7 @@ Set these environment variables for the process launching the desktop applicatio
 - `LOUKSNA_WHISPER_MODEL=/absolute/path/to/whisper-model.bin`
 - `LOUKSNA_PIPER_MODEL=/absolute/path/to/piper-voice.onnx`
 - `LOUKSNA_OLLAMA_MODEL=<exact-model-tag-from-ollama-list>`
-- Optional: `LOUKSNA_VOICE_OLLAMA_URL=http://127.0.0.1:11434/api/chat`
+- Optional: `LOUKSNA_VOICE_OLLAMA_URL=http://127.0.0.1:11434/api/chat` (loopback HTTP only by default).
 
 Piper model distributions may require a companion configuration file. Provision that file alongside the model according to the exact upstream release; if the selected Piper build requires a different invocation, adapt and test the integration explicitly rather than marking the preflight as passed.
 
@@ -59,6 +59,6 @@ Use only the **Grabar 8 s y responder por voz** action for the end-to-end test. 
 
 - CP-07 remains `OPEN / HOLD` until the complete pipeline above has been exercised and evidenced on physical audio hardware.
 - Hosted CI, static checks, unit tests, and QEMU do not demonstrate microphone/speaker operation.
-- No PASS is inferred from source presence or a `READY` preflight.
+- No PASS is inferred from source presence or a `READY` preflight. A successful voice command records `EXECUTED_NOT_CERTIFIED`, not `PASS`; G23/G24 remain separate decisions.
 - CP-10 and G23/G24 remain blocked while voice is mandatory and CP-07 is open.
 - Any change to the candidate SHA invalidates evidence/checkpoints tied to the prior SHA.
