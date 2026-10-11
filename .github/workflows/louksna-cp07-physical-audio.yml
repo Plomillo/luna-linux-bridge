@@ -1,0 +1,199 @@
+name: "LOUKSNA — CP-07 physical audio E2E"
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_sha:
+        description: "Exact candidate commit SHA to test on the registered physical-audio runner"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: louksna-cp07-physical-${{ inputs.candidate_sha }}
+  cancel-in-progress: false
+
+jobs:
+  cp07-physical-audio:
+    name: "CP-07 — Physical microphone → STT → LLM → TTS → speaker"
+    # Register a trusted runner attached to the actual microphone and speaker.
+    # Never run untrusted pull-request code on this runner.
+    runs-on: [self-hosted, linux, x64, audio-hardware]
+    timeout-minutes: 20
+    env:
+      CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+      LOUKSNA_WHISPER_MODEL: ${{ vars.LOUKSNA_WHISPER_MODEL }}
+      LOUKSNA_PIPER_MODEL: ${{ vars.LOUKSNA_PIPER_MODEL }}
+      LOUKSNA_OLLAMA_MODEL: ${{ vars.LOUKSNA_OLLAMA_MODEL }}
+      LOUKSNA_ALSA_CAPTURE_DEVICE: ${{ vars.LOUKSNA_ALSA_CAPTURE_DEVICE }}
+      LOUKSNA_ALSA_PLAYBACK_DEVICE: ${{ vars.LOUKSNA_ALSA_PLAYBACK_DEVICE }}
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ inputs.candidate_sha }}
+          persist-credentials: false
+
+      - name: Fail-closed physical hardware and dependency preflight
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test -n "$LOUKSNA_WHISPER_MODEL" && test -s "$LOUKSNA_WHISPER_MODEL"
+          test -n "$LOUKSNA_PIPER_MODEL" && test -s "$LOUKSNA_PIPER_MODEL"
+          test -n "$LOUKSNA_OLLAMA_MODEL"
+          command -v arecord
+          command -v aplay
+          command -v whisper-cli
+          command -v piper
+          command -v curl
+          command -v jq
+          curl --fail --silent --show-error http://127.0.0.1:11434/api/tags |
+            jq -e --arg model "$LOUKSNA_OLLAMA_MODEL" '.models | any(.name == $model or (.name | startswith($model + ":")))' >/dev/null
+          arecord -l | tee "$RUNNER_TEMP/cp07-arecord-devices.txt"
+          aplay -l | tee "$RUNNER_TEMP/cp07-aplay-devices.txt"
+          grep -q '^card ' "$RUNNER_TEMP/cp07-arecord-devices.txt"
+          grep -q '^card ' "$RUNNER_TEMP/cp07-aplay-devices.txt"
+          mkdir -p evidence/cp07-physical
+          {
+            echo "candidate_commit_sha=$CANDIDATE_SHA"
+            echo "kernel=$(uname -srmo)"
+            echo "host=$(hostname)"
+            echo "capture_device=$LOUKSNA_ALSA_CAPTURE_DEVICE"
+            echo "playback_device=$LOUKSNA_ALSA_PLAYBACK_DEVICE"
+            echo "arecord_version=$(arecord --version | head -n 1)"
+            echo "aplay_version=$(aplay --version | head -n 1)"
+            echo "whisper_cli=$(command -v whisper-cli)"
+            echo "piper=$(command -v piper)"
+            echo "whisper_model_sha256=$(sha256sum "$LOUKSNA_WHISPER_MODEL" | cut -d' ' -f1)"
+            echo "piper_model_sha256=$(sha256sum "$LOUKSNA_PIPER_MODEL" | cut -d' ' -f1)"
+            echo "ollama_model=$LOUKSNA_OLLAMA_MODEL"
+            echo "physical_audio_claimed=true"
+          } > evidence/cp07-physical/preflight.txt
+
+      - name: Run real microphone → STT → LLM → TTS → speaker path
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          TMP="$(mktemp -d "$RUNNER_TEMP/cp07-physical.XXXXXX")"
+          cleanup() {
+            rm -f "$TMP/mic.wav" "$TMP/response.wav" "$TMP/speaker-check.wav" "$TMP/transcript.txt" "$TMP/response.txt"
+            rm -rf "$TMP"
+          }
+          trap cleanup EXIT
+          CAPTURE_DEVICE="${LOUKSNA_ALSA_CAPTURE_DEVICE:-default}"
+          PLAYBACK_DEVICE="${LOUKSNA_ALSA_PLAYBACK_DEVICE:-default}"
+
+          # Capture the real microphone; no prerecorded/synthetic input is accepted.
+          arecord -D "$CAPTURE_DEVICE" -q -t wav -f S16_LE -r 16000 -c 1 -d 8 "$TMP/mic.wav"
+          test -s "$TMP/mic.wav"
+          python3 - "$TMP/mic.wav" > evidence/cp07-physical/microphone-capture.json <<'PY'
+          import hashlib,json,math,struct,sys,wave
+          p=sys.argv[1]
+          with wave.open(p,'rb') as w:
+              ch,width,rate,frames=w.getnchannels(),w.getsampwidth(),w.getframerate(),w.getnframes()
+              raw=w.readframes(frames)
+          if (ch,width,rate)!=(1,2,16000) or frames < 16000: raise SystemExit("PHYSICAL_CAPTURE_FORMAT_OR_DURATION_INVALID")
+          samples=struct.unpack('<'+'h'*(len(raw)//2),raw)
+          rms=math.sqrt(sum(x*x for x in samples)/max(1,len(samples)))
+          if rms < 100: raise SystemExit("PHYSICAL_MICROPHONE_SIGNAL_TOO_LOW")
+          print(json.dumps({"status":"PASS","channels":ch,"sample_width_bytes":width,"sample_rate_hz":rate,"frames":frames,"duration_seconds":frames/rate,"rms":round(rms,2),"sha256":hashlib.sha256(open(p,'rb').read()).hexdigest(),"audio_retained":False},sort_keys=True))
+          PY
+
+          whisper-cli -m "$LOUKSNA_WHISPER_MODEL" -f "$TMP/mic.wav" -l es -nt -np > "$TMP/transcript.txt"
+          test -s "$TMP/transcript.txt"
+          python3 - "$TMP/transcript.txt" > evidence/cp07-physical/stt-check.json <<'PY'
+          import hashlib,json,pathlib,re,sys,unicodedata
+          p=pathlib.Path(sys.argv[1]); raw=p.read_bytes(); text=p.read_text(errors='replace').lower()
+          norm=''.join(c for c in unicodedata.normalize('NFKD',text) if not unicodedata.combining(c))
+          tokens=set(re.findall(r'[a-z0-9]+',norm))
+          print(json.dumps({"status":"PASS","nonempty":bool(tokens),"transcript_sha256":hashlib.sha256(raw).hexdigest(),"transcript_content_stored":False},sort_keys=True))
+          if not tokens: raise SystemExit("EMPTY_STT_RESULT")
+          PY
+
+          python3 - "$TMP/transcript.txt" "$LOUKSNA_OLLAMA_MODEL" > "$TMP/response.txt" <<'PY'
+          import json,sys,urllib.request
+          transcript=open(sys.argv[1],encoding='utf-8',errors='replace').read()
+          body={"model":sys.argv[2],"stream":False,"messages":[{"role":"system","content":"Responde brevemente en español."},{"role":"user","content":"Responde a esta intervención de voz: "+transcript}]}
+          req=urllib.request.Request("http://127.0.0.1:11434/api/chat",data=json.dumps(body).encode(),headers={"Content-Type":"application/json"})
+          with urllib.request.urlopen(req,timeout=180) as r: obj=json.load(r)
+          answer=obj.get("message",{}).get("content","").strip()
+          if not answer: raise SystemExit("EMPTY_LLM_RESPONSE")
+          print(answer)
+          PY
+          test -s "$TMP/response.txt"
+          python3 - "$TMP/response.txt" > evidence/cp07-physical/llm-check.json <<'PY'
+          import hashlib,json,pathlib,sys
+          p=pathlib.Path(sys.argv[1]); data=p.read_bytes()
+          print(json.dumps({"status":"PASS","response_nonempty":bool(data.strip()),"response_sha256":hashlib.sha256(data).hexdigest(),"response_content_stored":False},sort_keys=True))
+          PY
+
+          piper --model "$LOUKSNA_PIPER_MODEL" --output_file "$TMP/response.wav" < "$TMP/response.txt"
+          test -s "$TMP/response.wav"
+          python3 - "$TMP/response.wav" > evidence/cp07-physical/tts-check.json <<'PY'
+          import hashlib,json,sys,wave
+          p=sys.argv[1]
+          with wave.open(p,'rb') as w:
+              frames,rate=w.getnframes(),w.getframerate()
+          if frames<=0 or rate<=0: raise SystemExit("INVALID_TTS_WAV")
+          print(json.dumps({"status":"PASS","duration_seconds":round(frames/rate,3),"sha256":hashlib.sha256(open(p,'rb').read()).hexdigest()},sort_keys=True))
+          PY
+
+          # Playback is sent to the explicitly selected physical ALSA output.
+          aplay -D "$PLAYBACK_DEVICE" -q "$TMP/response.wav"
+          echo '{"status":"PLAYBACK_COMMAND_SUCCEEDED","physical_output_selected":true,"operator_audibility_attestation":"PENDING"}' > evidence/cp07-physical/playback.json
+
+          python3 - <<'PY' > evidence/cp07-physical/receipt.json
+          import datetime,hashlib,json,os,platform,subprocess
+          def digest(p):
+              h=hashlib.sha256()
+              with open(p,'rb') as f:
+                  for b in iter(lambda:f.read(1024*1024),b''): h.update(b)
+              return h.hexdigest()
+          print(json.dumps({
+            "schema":"louksna.zd.v03.cp07-physical-e2e-receipt.v1",
+            "candidate_commit_sha":os.environ["CANDIDATE_SHA"],
+            "status":"PHYSICAL_PIPELINE_EXECUTED_AWAITING_OPERATOR_AUDIBILITY_ATTESTATION",
+            "physical_hardware_claimed":True,
+            "operator_audibility_attested":False,
+            "capture_device":os.environ.get("LOUKSNA_ALSA_CAPTURE_DEVICE") or "default",
+            "playback_device":os.environ.get("LOUKSNA_ALSA_PLAYBACK_DEVICE") or "default",
+            "timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "kernel":platform.platform(),
+            "physical_capture_evidence_sha256":digest("evidence/cp07-physical/microphone-capture.json"),
+            "stt_evidence_sha256":digest("evidence/cp07-physical/stt-check.json"),
+            "llm_evidence_sha256":digest("evidence/cp07-physical/llm-check.json"),
+            "tts_evidence_sha256":digest("evidence/cp07-physical/tts-check.json"),
+            "playback_evidence_sha256":digest("evidence/cp07-physical/playback.json"),
+            "raw_audio_transcript_and_response_retained":False
+          },sort_keys=True))
+          PY
+
+      - name: Seal evidence manifest
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p evidence/cp07-physical
+          python3 - <<'PY'
+          import datetime,hashlib,json,os,pathlib
+          root=pathlib.Path("evidence/cp07-physical")
+          files=[]
+          for p in sorted(root.rglob("*")):
+              if p.is_file() and p.name!="evidence-manifest.json":
+                  files.append({"path":p.relative_to(root).as_posix(),"bytes":p.stat().st_size,"sha256":hashlib.sha256(p.read_bytes()).hexdigest()})
+          obj={"schema":"louksna.zd.v03.cp07-physical-manifest.v1","candidate_commit_sha":os.environ.get("CANDIDATE_SHA","UNAVAILABLE"),"sealed_at_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"files":files}
+          (root/"evidence-manifest.json").write_text(json.dumps(obj,indent=2,sort_keys=True)+"\n")
+          print(json.dumps({"evidence_manifest":"SEALED","file_count":len(files),"physical_audio_claimed":True},sort_keys=True))
+          PY
+
+      - name: Upload physical CP-07 evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksna-cp07-physical-audio-evidence
+          path: evidence/cp07-physical/
+          if-no-files-found: warn
+          retention-days: 90
