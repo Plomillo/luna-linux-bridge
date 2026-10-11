@@ -220,6 +220,7 @@ async fn voice_e2e_inner() -> Result<VoiceTurn,String> {
     if transcript.chars().count() > MAX_TEXT_CHARS { return Err("VOICE_TRANSCRIPTION_TOO_LONG".into()); }
     // Whisper may omit or substitute short connector words and punctuation.
     // Require every semantic anchor independently; do not log the raw transcript.
+    // Keep this physical E2E candidate tied to the branch-scoped hardware workflow trigger.
     let phrase_tokens = normalized_voice_tokens(&transcript);
     let has_prueba = phrase_tokens.iter().any(|token| token == "prueba");
     let has_voz = phrase_tokens.iter().any(|token| token == "voz");
