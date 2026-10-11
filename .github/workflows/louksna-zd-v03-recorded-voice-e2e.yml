@@ -172,7 +172,9 @@ jobs:
             "tts_waveform_generated":valid(tts_wav),
           }
           report={"schema":"louksna.zd.v03.recorded-voice-e2e.v1","checkpoint_id":"CP-07-SUPPLEMENTAL-RECORDED-AUDIO","status":"PASS" if all(checks.values()) else "FAIL","candidate_commit_sha":candidate,"run_id":os.getenv("GITHUB_RUN_ID"),"run_attempt":os.getenv("GITHUB_RUN_ATTEMPT"),"timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"scope":"Real public recorded speech fixture processed by downloaded Whisper model, live Ollama inference, and Piper TTS; this does not claim physical microphone capture or audible speaker playback.","checks":checks,"sha256":{k:sha(v) for k,v in paths.items()},"input_audio_metadata":json.loads(pathlib.Path(os.environ["RUNNER_TEMP"]+"/input-audio-metadata.json").read_text()) if pathlib.Path(os.environ["RUNNER_TEMP"]+"/input-audio-metadata.json").is_file() else None,"output_audio_metadata":json.loads(pathlib.Path(os.environ["RUNNER_TEMP"]+"/output-audio-metadata.json").read_text()) if pathlib.Path(os.environ["RUNNER_TEMP"]+"/output-audio-metadata.json").is_file() else None,"source_versions":{"whisper_cpp_ref":os.getenv("WHISPER_REF"),"whisper_model":os.getenv("WHISPER_MODEL"),"ollama_image":"ollama/ollama:0.12.6","ollama_model":os.getenv("OLLAMA_MODEL"),"piper_tts":"1.8.0","piper_voice":os.getenv("PIPER_VOICE")},"physical_audio_hardware_tested":False,"microphone_capture":False,"audible_playback_confirmed_by_operator":False,"certification_effect":"SUPPLEMENTAL_REAL_AUDIO_EVIDENCE_ONLY; CP-07 PHYSICAL REQUIREMENT AND G23/G24 REMAIN INDEPENDENT"}
-          pathlib.Path("evidence/zona-directiva-v03/CP-07-recorded-voice-e2e.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+          out=pathlib.Path("evidence/zona-directiva-v03/CP-07-recorded-voice-e2e.json")
+          out.parent.mkdir(parents=True,exist_ok=True)
+          out.write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
           print(json.dumps(report,indent=2))
           if not all(checks.values()): raise SystemExit("Recorded voice E2E evidence incomplete")
           PY
