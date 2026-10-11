@@ -63,3 +63,14 @@ Use only the **Grabar 8 s y responder por voz** action for the end-to-end test. 
 - No PASS is inferred from source presence or a `READY` preflight. A successful voice command records `EXECUTED_NOT_CERTIFIED`, not `PASS`; G23/G24 remain separate decisions.
 - CP-10 and G23/G24 remain blocked while voice is mandatory and CP-07 is open.
 - Any change to the candidate SHA invalidates evidence/checkpoints tied to the prior SHA.
+
+
+## Addendum — automatic acoustic signal evidence (2026-10-11)
+
+The current candidate adds a microphone baseline capture and a second physical-microphone capture concurrent with Piper WAV playback. It calculates maximum 250 ms RMS windows from PCM16 mono 16 kHz WAV data. The output capture must exceed both an absolute floor of 250 RMS counts and 1.5× the measured baseline. Capture errors, malformed/short WAV data, playback errors, or a below-threshold signal fail closed.
+
+The workflow validates the acoustic marker and both numeric measurements, checks required E2E log markers, verifies SHA-256 provenance, and binds the result to the exact candidate commit. This is an automated acoustic-energy detector; it does not establish that the generated words were intelligible or independently certify audibility. If the measurement is absent or inconclusive, CP-07 stays OPEN/HOLD.
+
+After a successful voice turn, the UI offers an optional human observation (Sí / No / No estoy seguro). It is recorded as a separate supplemental ledger event and does not change the technical gate. Operator response is not required for the automated gate, and the UI explicitly explains that the observation is not certification evidence.
+
+The physical workflow now targets the recorded runner label `louksna-voice-hw`. No physical run or certification is claimed by this documentation update.
