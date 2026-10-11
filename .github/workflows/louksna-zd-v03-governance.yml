@@ -709,6 +709,8 @@ jobs:
       - name: Record and validate CP-07 physical voice gate
         id: voice_gate
         shell: bash
+        env:
+          VOICE_HARDWARE_EVIDENCE_RUN_ID: ${{ inputs.voice_hardware_evidence_run_id }}
         run: |
           set -Eeuo pipefail
           mkdir -p evidence/zona-directiva-v03
