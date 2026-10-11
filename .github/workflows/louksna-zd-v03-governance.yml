@@ -834,8 +834,13 @@ jobs:
       LOUKSNA_WHISPER_MODEL: /home/diegoignacionorambuenamiranda/.local/share/louksna-cp07/whisper.cpp/models/ggml-base.en.bin
       LOUKSNA_PIPER_MODEL: /home/diegoignacionorambuenamiranda/.local/share/louksna-cp07/models/en_US-lessac-medium.onnx
       LOUKSNA_OLLAMA_MODEL: smollm2:360m
-      LOUKSNA_ALSA_CAPTURE_DEVICE: plughw:CARD=Microphones,DEV=0
-      LOUKSNA_ALSA_PLAYBACK_DEVICE: plughw:CARD=Generic_1,DEV=0
+      XDG_RUNTIME_DIR: /run/user/1000
+      PULSE_SERVER: unix:/run/user/1000/pulse/native
+      PULSE_SOURCE: alsa_input.usb-Generic_Blue_Microphones_2101BAB04QX8-00.pro-input-0
+      PULSE_SINK: alsa_output.pci-0000_04_00.6.analog-stereo
+      PIPEWIRE_REMOTE: pipewire-0
+      LOUKSNA_ALSA_CAPTURE_DEVICE: pulse
+      LOUKSNA_ALSA_PLAYBACK_DEVICE: pulse
     permissions:
       actions: read
       contents: read
@@ -849,7 +854,7 @@ jobs:
           printf 'runner_host=%s\n' "$(hostname)"
           printf 'runner_user=%s\n' "$(id -un)"
           printf 'runner_kernel=%s\n' "$(uname -srvm)"
-          for cmd in python3 arecord aplay whisper-cli piper curl sha256sum; do
+          for cmd in python3 arecord aplay pactl whisper-cli piper curl sha256sum; do
             command -v "$cmd" >/dev/null || { echo "::error::Physical runner executable missing: $cmd"; exit 1; }
           done
           test -s "$LOUKSNA_WHISPER_MODEL"
@@ -860,6 +865,10 @@ jobs:
           mkdir -p "$RUNNER_TEMP/louksna-cp07-preflight"
           arecord -l | tee "$RUNNER_TEMP/louksna-cp07-preflight/arecord-devices.log"
           aplay -l | tee "$RUNNER_TEMP/louksna-cp07-preflight/aplay-devices.log"
+          pactl list short sources | tee "$RUNNER_TEMP/louksna-cp07-preflight/pulse-sources.log"
+          pactl list short sinks | tee "$RUNNER_TEMP/louksna-cp07-preflight/pulse-sinks.log"
+          grep -F "$PULSE_SOURCE" "$RUNNER_TEMP/louksna-cp07-preflight/pulse-sources.log" >/dev/null || { echo "::error::Configured physical capture source is not exposed by PipeWire/PulseAudio"; exit 1; }
+          grep -F "$PULSE_SINK" "$RUNNER_TEMP/louksna-cp07-preflight/pulse-sinks.log" >/dev/null || { echo "::error::Configured physical playback sink is not exposed by PipeWire/PulseAudio"; exit 1; }
           grep -Eq 'card [0-9]+:' "$RUNNER_TEMP/louksna-cp07-preflight/arecord-devices.log" || { echo "::error::No physical ALSA capture card"; exit 1; }
           grep -Eq 'card [0-9]+:' "$RUNNER_TEMP/louksna-cp07-preflight/aplay-devices.log" || { echo "::error::No physical ALSA playback card"; exit 1; }
           if grep -Eiq 'loopback|null|dummy|snd-aloop' "$RUNNER_TEMP/louksna-cp07-preflight/arecord-devices.log" "$RUNNER_TEMP/louksna-cp07-preflight/aplay-devices.log"; then
