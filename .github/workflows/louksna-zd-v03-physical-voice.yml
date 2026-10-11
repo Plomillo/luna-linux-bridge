@@ -147,7 +147,6 @@ jobs:
           export PULSE_SINK="${PULSE_SINK:-$(pactl list short sinks | awk '$2 !~ /\\.monitor$/ {print $2; exit}')}"
           test -n "$PULSE_SOURCE" && test -n "$PULSE_SINK"
           {
-            echo "PATH=$HOME/.local/bin:$PATH"
             echo "XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR"
             echo "PULSE_SERVER=$PULSE_SERVER"
             echo "PIPEWIRE_REMOTE=$PIPEWIRE_REMOTE"
