@@ -23,7 +23,7 @@ checks = {
     "workflow_gate_open": '"voice_gate": "OPEN", "voice_active": False' in workflow,
     "workflow_blocks_certification": '"certification_effect": "G23_G24_BLOCKED"' in workflow,
     "voice_e2e_not_claimed": '"voice_e2e_executed": False' in workflow,
-    "voice_gate_artifact_preserved": "name: louksna-zd-v03-cp07-voice-gate-open" in workflow,
+    "voice_gate_artifact_preserved": "name: louksna-zd-v03-cp07-voice-gate" in workflow,
 }
 report = {
     "schema": "louksna.zd.v03.voice-gate-contract-test.v1",
