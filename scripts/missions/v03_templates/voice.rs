@@ -63,8 +63,14 @@ fn ollama_endpoint() -> String {
 }
 fn validate_local_endpoint(endpoint: &str) -> Result<(),String> {
     let parsed = reqwest::Url::parse(endpoint).map_err(|_| "VOICE_OLLAMA_URL_INVALID")?;
-    let local_http = parsed.scheme() == "http" && matches!(parsed.host_str(), Some("127.0.0.1" | "localhost" | "[::1]" | "::1"));
-    if !local_http && parsed.scheme() != "https" { return Err("VOICE_OLLAMA_URL_MUST_BE_LOOPBACK_HTTP_OR_HTTPS".into()); }
+    let host = parsed.host_str().unwrap_or("");
+    let loopback = matches!(host, "127.0.0.1" | "localhost" | "[::1]" | "::1");
+    let local_http = parsed.scheme() == "http" && loopback;
+    let remote_https_explicitly_enabled = parsed.scheme() == "https"
+        && std::env::var("LOUKSNA_VOICE_ALLOW_REMOTE_HTTPS").map(|v| v == "1").unwrap_or(false);
+    if !local_http && !remote_https_explicitly_enabled {
+        return Err("VOICE_OLLAMA_URL_MUST_BE_LOOPBACK_HTTP_OR_EXPLICIT_REMOTE_HTTPS".into());
+    }
     Ok(())
 }
 fn preflight_sync() -> VoicePreflight {
@@ -94,7 +100,7 @@ pub fn voice_preflight() -> Result<VoicePreflight,String> {
 pub async fn voice_e2e() -> Result<VoiceTurn,String> {
     match voice_e2e_inner().await {
         Ok(turn) => {
-            super::log_event("VOICE_E2E", "PASS", "real_capture=true;stt=whisper.cpp;response=ollama;tts=piper;playback=alsa")?;
+            super::log_event("VOICE_E2E", "EXECUTED_NOT_CERTIFIED", "real_capture=true;stt=whisper.cpp;response=ollama;tts=piper;playback=alsa;independent_validation=pending")?;
             Ok(turn)
         }
         Err(error) => {
@@ -158,8 +164,15 @@ mod tests {
     #[test]
     fn endpoint_rejects_untrusted_plain_http_hosts() {
         assert!(validate_local_endpoint("http://127.0.0.1:11434/api/chat").is_ok());
-        assert!(validate_local_endpoint("https://voice.example/api/chat").is_ok());
         assert!(validate_local_endpoint("http://voice.example/api/chat").is_err());
+    }
+    #[test]
+    fn remote_https_requires_explicit_opt_in() {
+        std::env::remove_var("LOUKSNA_VOICE_ALLOW_REMOTE_HTTPS");
+        assert!(validate_local_endpoint("https://voice.example/api/chat").is_err());
+        std::env::set_var("LOUKSNA_VOICE_ALLOW_REMOTE_HTTPS", "1");
+        assert!(validate_local_endpoint("https://voice.example/api/chat").is_ok());
+        std::env::remove_var("LOUKSNA_VOICE_ALLOW_REMOTE_HTTPS");
     }
     #[test]
     fn response_transcript_bound_is_explicit() { assert_eq!(MAX_TEXT_CHARS, 4000); }
