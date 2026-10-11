@@ -835,12 +835,19 @@ jobs:
     steps:
       - name: Wait briefly for a registered, online, idle physical-audio runner
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.LOUKSNA_REPO_ADMIN_READ_TOKEN }}
         shell: bash
         run: |
           set -Eeuo pipefail
-          for attempt in $(seq 1 30); do
-            gh api "repos/$GITHUB_REPOSITORY/actions/runners?per_page=100" > "$RUNNER_TEMP/runners.json"
+          if [[ -z "${GH_TOKEN:-}" ]]; then
+            echo "::error::Missing repository secret LOUKSNA_REPO_ADMIN_READ_TOKEN. Runner inventory requires a credential with repository Administration: read; GITHUB_TOKEN with actions:read is insufficient."
+            exit 1
+          fi
+          if ! gh api "repos/$GITHUB_REPOSITORY/actions/runners?per_page=100" > "$RUNNER_TEMP/runners.json"; then
+            echo "::error::Runner inventory API failed. Verify LOUKSNA_REPO_ADMIN_READ_TOKEN has repository Administration: read and can access this repository."
+            exit 1
+          fi
+          for attempt in $(seq 1 29); do
             if python3 - "$RUNNER_TEMP/runners.json" <<'PY'
           import json,sys
           data=json.load(open(sys.argv[1],encoding="utf-8"))
@@ -1221,11 +1228,15 @@ jobs:
     steps:
       - name: Verify protected independent-validation environment
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.LOUKSNA_REPO_ADMIN_READ_TOKEN }}
           ENVIRONMENT_NAME: louksna-g23-independent-validation
         shell: bash
         run: |
           set -Eeuo pipefail
+          if [[ -z "${GH_TOKEN:-}" ]]; then
+            echo "::error::Missing repository secret LOUKSNA_REPO_ADMIN_READ_TOKEN; cannot independently verify required-reviewer protection."
+            exit 1
+          fi
           curl --fail --silent --show-error -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/environments/$ENVIRONMENT_NAME" > "$RUNNER_TEMP/environment.json"
           jq -e '[.protection_rules[]? | select(.type == "required_reviewers")] | length > 0' "$RUNNER_TEMP/environment.json" >/dev/null || {
             echo "::error::G23 environment lacks required reviewers; independent validation denied."
@@ -1322,7 +1333,7 @@ jobs:
     steps:
       - name: Verify protected certification environment
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.LOUKSNA_REPO_ADMIN_READ_TOKEN }}
           ENVIRONMENT_NAME: louksna-g24-certification
         shell: bash
         run: |
