@@ -696,11 +696,8 @@ jobs:
         run: |
           set -Eeuo pipefail
           mkdir -p evidence/zona-directiva-v03
-          HARNESS_PATH="$(find . -type f \( -iname '*voice*e2e*' -o -iname '*audio*integration*' \) -not -path './.git/*' -print -quit || true)"
-          python3 - "$HARNESS_PATH" <<'PY'
-          import datetime,hashlib,json,os,pathlib,sys
-          harness=sys.argv[1]
-          p=pathlib.Path(harness) if harness else None
+          python3 - <<'PY'
+          import datetime,hashlib,json,os,pathlib
           report={
             "schema":"louksna.zd.v03.voice-gate.v1",
             "stage_id":"07","checkpoint_id":"CP-07",
@@ -710,13 +707,13 @@ jobs:
             "run_id":os.getenv("GITHUB_RUN_ID"),
             "voice_gate":"OPEN",
             "voice_active":False,
-            "harness_discovered":bool(p and p.is_file()),
-            "harness_path":harness or None,
-            "harness_sha256":hashlib.sha256(p.read_bytes()).hexdigest() if p and p.is_file() else None,
+            "voice_pipeline_implemented_in_source":pathlib.Path("scripts/missions/v03_templates/voice.rs").is_file(),
             "contract_regression_executed":True,
             "e2e_executed":False,
+            "physical_audio_hardware_tested":False,
+            "contract_test_sha256":hashlib.sha256(pathlib.Path("scripts/missions/voice_e2e_gate_contract_test.py").read_bytes()).hexdigest(),
             "result":"HOLD_OPEN",
-            "reason":"The executable contract harness checks that voice stays disabled and unclaimed. It does not test microphone capture, transport, remote response, or end-to-end voice.",
+            "reason":"Source implements the real pipeline, but this hosted CI job has not executed capture, STT, Ollama response, TTS and audible playback on physical audio hardware. CP-07 remains OPEN; static checks are not E2E evidence.",
             "certification_effect":"G23_G24_MUST_REMAIN_BLOCKED_WHILE_VOICE_IS_MANDATORY"
           }
           out=pathlib.Path("evidence/zona-directiva-v03/CP-07-voice-gate.json")
