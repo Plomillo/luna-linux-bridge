@@ -143,8 +143,8 @@ jobs:
           export PIPEWIRE_REMOTE="${PIPEWIRE_REMOTE:-pipewire-0}"
           export LOUKSNA_WHISPER_MODEL="${LOUKSNA_WHISPER_MODEL:-$HOME/.local/share/louksna-cp07/whisper.cpp/models/ggml-base.bin}"
           export LOUKSNA_PIPER_MODEL="${LOUKSNA_PIPER_MODEL:-$HOME/.local/share/louksna-cp07/models/es_ES-sharvard-medium.onnx}"
-          export PULSE_SOURCE="${PULSE_SOURCE:-$(pactl list short sources | awk '$2 !~ /\\.monitor$/ {print $2; exit}')}"
-          export PULSE_SINK="${PULSE_SINK:-$(pactl list short sinks | awk '$2 !~ /\\.monitor$/ {print $2; exit}')}"
+          export PULSE_SOURCE="${PULSE_SOURCE:-$(pactl list short sources | awk '$2 !~ /\.monitor$/ {print $2; exit}')}"
+          export PULSE_SINK="${PULSE_SINK:-$(pactl list short sinks | awk '$2 !~ /\.monitor$/ {print $2; exit}')}"
           test -n "$PULSE_SOURCE" && test -n "$PULSE_SINK"
           {
             echo "XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR"
