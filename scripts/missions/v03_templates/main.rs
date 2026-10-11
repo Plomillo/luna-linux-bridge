@@ -594,6 +594,9 @@ mod louksna_runtime_tests {
         println!("PHYSICAL_VOICE_ACOUSTIC_OUTPUT=PASS");
         println!("PHYSICAL_VOICE_ACOUSTIC_BASELINE_PEAK_RMS={:.2}", turn.acoustic_baseline_peak_rms);
         println!("PHYSICAL_VOICE_ACOUSTIC_PLAYBACK_PEAK_RMS={:.2}", turn.acoustic_playback_peak_rms);
+        println!("PHYSICAL_VOICE_ACOUSTIC_SPEECH_MATCH_RATIO={:.3}", turn.acoustic_speech_match_ratio);
+        println!("PHYSICAL_VOICE_ACOUSTIC_TRANSCRIPTION_MATCH_COUNT={}", turn.acoustic_transcription_match_count);
+        println!("PHYSICAL_VOICE_ACOUSTIC_TRANSCRIPTION_MATCH=PASS");
         println!("PHYSICAL_VOICE_E2E_RESULT=PASS");
         println!("PHYSICAL_VOICE_CAPTURE_DEVICE={}", capture_device);
         println!("PHYSICAL_VOICE_PLAYBACK_DEVICE={}", playback_device);
