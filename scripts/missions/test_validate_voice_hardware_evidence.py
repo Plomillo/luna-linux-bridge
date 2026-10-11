@@ -51,7 +51,7 @@ def main():
         if good.returncode != 0 or '"status": "PASS"' not in good.stdout:
             raise SystemExit("valid physical voice evidence should pass: " + good.stdout + good.stderr)
         mismatch = subprocess.run([sys.executable, str(script), str(path), "--candidate-sha", "9" * 40], capture_output=True, text=True)
-        if mismatch.returncode == 0 or "candidate SHA" not in mismatch.stdout:
+        if mismatch.returncode == 0 or "does not match current candidate" not in mismatch.stdout:
             raise SystemExit("candidate SHA mismatch must fail closed")
         path.write_text(json.dumps({**valid, "audible_playback_confirmed_by_operator": False}), encoding="utf-8")
         no_audio = subprocess.run([sys.executable, str(script), str(path), "--candidate-sha", "a" * 40], capture_output=True, text=True)
