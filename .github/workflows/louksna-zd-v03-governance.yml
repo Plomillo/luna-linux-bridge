@@ -814,6 +814,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 90
 
+  # Supplemental real-audio E2E is intentionally independent of hardware-only CP-07.
   stage-07-recorded-audio-e2e:
     name: "Stage 07 supplemental / Real recorded speech, live STT, LLM and TTS"
     needs: stage-06-functions-attachments
