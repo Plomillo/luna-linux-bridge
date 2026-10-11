@@ -38,6 +38,8 @@ export default function App(){
   const[voiceMissing,setVoiceMissing]=useState<string[]>([]);
   const[voiceTranscript,setVoiceTranscript]=useState("");
   const[voiceResponse,setVoiceResponse]=useState("");
+  const[voiceObservation,setVoiceObservation]=useState("");
+  const[voiceObservationSaved,setVoiceObservationSaved]=useState(false);
   const[voiceBusy,setVoiceBusy]=useState(false);
   const s=useMemo(()=>sections.find(x=>x.key===active)!,[active]);
 
@@ -106,13 +108,22 @@ export default function App(){
   };
 
   const runVoice=async()=>{
-    setVoiceBusy(true);setNotice("");setVoiceTranscript("");setVoiceResponse("");
+    setVoiceBusy(true);setNotice("");setVoiceTranscript("");setVoiceResponse("");setVoiceObservation("");setVoiceObservationSaved(false);
     try{
       const v=await call<{status:string;transcript:string;response:string;elapsed_ms:number;audio_played:boolean}>("voice_e2e");
       setVoiceStatus(v.status);setVoiceTranscript(v.transcript);setVoiceResponse(v.response);
       setNotice("Turno de voz ejecutado con captura y reproducción reales ("+v.elapsed_ms+" ms). Esto no equivale a certificación.");
     }catch(e){setVoiceStatus("FAIL");setNotice("Turno de voz fallido: "+(e as Error).message)}
     finally{setVoiceBusy(false);await refreshEvidence()}
+  };
+
+  const saveVoiceObservation=async(observation:"YES"|"NO"|"NOT_SURE")=>{
+    try{
+      await call<void>("record_voice_observation",{observation});
+      setVoiceObservation(observation);setVoiceObservationSaved(true);
+      setNotice("Observación humana guardada como dato suplementario; no altera el resultado técnico ni la certificación.");
+      await refreshEvidence();
+    }catch(e){setNotice("No se pudo guardar la observación suplementaria: "+(e as Error).message)}
   };
 
   const sendChat=async()=>{
@@ -296,7 +307,17 @@ export default function App(){
           </div>
           {voiceMissing.length>0&&<p className="muted">Faltantes: {voiceMissing.join(", ")}</p>}
           {voiceTranscript&&<div className="e-row"><b>Transcripción real</b><p>{voiceTranscript}</p></div>}
-          {voiceResponse&&<div className="e-row"><b>Respuesta sintetizada y reproducida</b><p>{voiceResponse}</p></div>}
+          {voiceResponse&&<div className="e-row"><b>Respuesta sintetizada</b><p>{voiceResponse}</p></div>}
+          {voiceResponse&&!voiceObservationSaved&&<div className="e-row">
+            <b>¿Escuchaste el audio por los altavoces? (opcional)</b>
+            <p className="muted">Tu respuesta es una observación suplementaria y no sustituye la medición acústica ni la validación independiente.</p>
+            <div className="actions">
+              <button onClick={()=>saveVoiceObservation("YES")}>Sí</button>
+              <button onClick={()=>saveVoiceObservation("NO")}>No</button>
+              <button onClick={()=>saveVoiceObservation("NOT_SURE")}>No estoy seguro</button>
+            </div>
+          </div>}
+          {voiceObservationSaved&&<p className="muted">Observación suplementaria registrada: {voiceObservation}.</p>}
           <p className="muted">No se guarda audio ni transcripción en el ledger. Los archivos temporales se eliminan al finalizar el turno.</p>
           <h3>Bridge remoto</h3>
           <p>{settings.remote_chat_bridge?"Configurado: el round-trip se valida por mensaje.":"No configurado. El chat seguira local y lo declarara explicitamente."}</p>
