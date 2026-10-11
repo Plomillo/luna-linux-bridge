@@ -24,9 +24,9 @@ pub struct VoiceTurn {
     audio_played: bool,
     capture_device: String,
     playback_device: String,
-    acoustic_output_energy_detected: bool,
-    acoustic_baseline_peak_rms: f64,
-    acoustic_playback_peak_rms: f64,
+    pub acoustic_output_energy_detected: bool,
+    pub acoustic_baseline_peak_rms: f64,
+    pub acoustic_playback_peak_rms: f64,
 }
 struct TempAudio(PathBuf);
 impl Drop for TempAudio {
