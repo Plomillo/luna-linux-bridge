@@ -101,6 +101,7 @@ jobs:
   physical-voice-e2e:
     name: "CP-07 — Real microphone → STT → model → TTS → ALSA playback"
     needs: prepare-physical-voice-binaries
+    if: github.actor == 'Plomillo' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: [self-hosted, linux, x64, louksna-voice-hw]
     timeout-minutes: 35
     env:
