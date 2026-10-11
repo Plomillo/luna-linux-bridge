@@ -824,52 +824,64 @@ jobs:
       candidate_sha: ${{ github.event.pull_request.head.sha || github.sha }}
 
   stage-07-runner-preflight:
-    name: "Stage 07 / CP-07 — Verify dedicated physical-audio runner availability"
+    name: "Stage 07 / CP-07 — Verify the actual physical-audio runner"
     needs: stage-06-functions-attachments
     if: needs.stage-06-functions-attachments.result == 'success' && needs.stage-06-functions-attachments.outputs.status == 'PASS'
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, linux, x64, louksna-voice-hw]
     timeout-minutes: 8
+    env:
+      PATH: /home/diegoignacionorambuenamiranda/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      LOUKSNA_WHISPER_MODEL: /home/diegoignacionorambuenamiranda/.local/share/louksna-cp07/whisper.cpp/models/ggml-base.en.bin
+      LOUKSNA_PIPER_MODEL: /home/diegoignacionorambuenamiranda/.local/share/louksna-cp07/models/en_US-lessac-medium.onnx
+      LOUKSNA_OLLAMA_MODEL: smollm2:360m
+      LOUKSNA_ALSA_CAPTURE_DEVICE: plughw:CARD=Microphones,DEV=0
+      LOUKSNA_ALSA_PLAYBACK_DEVICE: plughw:CARD=Generic_1,DEV=0
     permissions:
       actions: read
       contents: read
     steps:
-      - name: Wait briefly for a registered, online, idle physical-audio runner
-        env:
-          GH_TOKEN: ${{ secrets.LOUKSNA_REPO_ADMIN_READ_TOKEN }}
+      - name: Validate physical runner identity, hardware, models and local inference
         shell: bash
         run: |
           set -Eeuo pipefail
-          if [[ -z "${GH_TOKEN:-}" ]]; then
-            echo "::error::Missing repository secret LOUKSNA_REPO_ADMIN_READ_TOKEN. Runner inventory requires a credential with repository Administration: read; GITHUB_TOKEN with actions:read is insufficient."
+          test "$(uname -s)" = "Linux"
+          test "$(uname -m)" = "x86_64"
+          printf 'runner_host=%s\n' "$(hostname)"
+          printf 'runner_user=%s\n' "$(id -un)"
+          printf 'runner_kernel=%s\n' "$(uname -srvm)"
+          for cmd in python3 arecord aplay whisper-cli piper ollama curl sha256sum; do
+            command -v "$cmd" >/dev/null || { echo "::error::Physical runner executable missing: $cmd"; exit 1; }
+          done
+          test -s "$LOUKSNA_WHISPER_MODEL"
+          test -s "$LOUKSNA_PIPER_MODEL"
+          test -n "$LOUKSNA_OLLAMA_MODEL"
+          test -n "$LOUKSNA_ALSA_CAPTURE_DEVICE"
+          test -n "$LOUKSNA_ALSA_PLAYBACK_DEVICE"
+          mkdir -p "$RUNNER_TEMP/louksna-cp07-preflight"
+          arecord -l | tee "$RUNNER_TEMP/louksna-cp07-preflight/arecord-devices.log"
+          aplay -l | tee "$RUNNER_TEMP/louksna-cp07-preflight/aplay-devices.log"
+          grep -Eq 'card [0-9]+:' "$RUNNER_TEMP/louksna-cp07-preflight/arecord-devices.log" || { echo "::error::No physical ALSA capture card"; exit 1; }
+          grep -Eq 'card [0-9]+:' "$RUNNER_TEMP/louksna-cp07-preflight/aplay-devices.log" || { echo "::error::No physical ALSA playback card"; exit 1; }
+          if grep -Eiq 'loopback|null|dummy|snd-aloop' "$RUNNER_TEMP/louksna-cp07-preflight/arecord-devices.log" "$RUNNER_TEMP/louksna-cp07-preflight/aplay-devices.log"; then
+            echo "::error::Virtual/null/loopback audio is not admissible for CP-07"
             exit 1
           fi
-          for attempt in $(seq 1 30); do
-            if ! gh api "repos/$GITHUB_REPOSITORY/actions/runners?per_page=100" > "$RUNNER_TEMP/runners.json"; then
-              echo "::error::Runner inventory API failed. Verify LOUKSNA_REPO_ADMIN_READ_TOKEN has repository Administration: read and can access this repository."
-              exit 1
-            fi
-            if python3 - "$RUNNER_TEMP/runners.json" <<'PY'
+          curl --fail --silent --show-error --max-time 5 http://127.0.0.1:11434/api/tags > "$RUNNER_TEMP/louksna-cp07-preflight/ollama-tags.json"
+          python3 - "$RUNNER_TEMP/louksna-cp07-preflight/ollama-tags.json" "$LOUKSNA_OLLAMA_MODEL" <<'PY'
           import json,sys
           data=json.load(open(sys.argv[1],encoding="utf-8"))
-          matches=[]
-          for r in data.get("runners",[]):
-              labels={x.get("name","") for x in r.get("labels",[])}
-              if "louksna-voice-hw" in labels and r.get("os","").lower()=="linux" and r.get("status")=="online":
-                  matches.append({"id":r.get("id"),"name":r.get("name"),"busy":r.get("busy"),"labels":sorted(labels)})
-          idle=[r for r in matches if not r["busy"]]
-          if idle:
-              print(json.dumps({"status":"PASS","runner":idle[0]},sort_keys=True))
-              raise SystemExit(0)
-          print(json.dumps({"status":"WAIT","matching_online_runners":matches},sort_keys=True))
-          raise SystemExit(1)
+          names={m.get("name","") for m in data.get("models",[])}
+          wanted=sys.argv[2]
+          if wanted not in names and wanted.removesuffix(":latest") not in names:
+              raise SystemExit("Configured local Ollama model is missing")
+          print(json.dumps({"status":"PASS","model":wanted,"available_models":sorted(names)},sort_keys=True))
           PY
-            then
-              exit 0
-            fi
-            sleep 10
-          done
-          echo "::error::No idle online Linux Actions runner with label louksna-voice-hw became available within five minutes. CP-07 cannot queue indefinitely or substitute hosted/mock audio."
-          exit 1
+          sha256sum "$LOUKSNA_WHISPER_MODEL" "$LOUKSNA_PIPER_MODEL"
+          arecord --version
+          aplay --version
+          whisper-cli --help 2>&1 | head -n 2 || true
+          piper --help 2>&1 | head -n 2 || true
+          ollama --version
 
   stage-07-physical-voice:
     name: "Stage 07 / CP-07 — Real physical voice E2E"
