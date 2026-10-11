@@ -1206,7 +1206,7 @@ jobs:
           run_id=int(os.environ["GITHUB_RUN_ID"])
           if manifest.get("status")!="PASS": raise SystemExit("G23 HOLD: CP-10 is not PASS")
           if manifest.get("candidate_commit_sha")!=candidate: raise SystemExit("G23 HOLD: manifest candidate SHA mismatch")
-          if manifest.get("run_id")!=run_id: raise SystemExit("G23 HOLD: manifest run ID mismatch")
+          if str(manifest.get("run_id"))!=str(run_id): raise SystemExit("G23 HOLD: manifest run ID mismatch")
           records=manifest.get("evidence")
           if not isinstance(records,list) or not records: raise SystemExit("G23 HOLD: evidence list empty")
           checked=[]
