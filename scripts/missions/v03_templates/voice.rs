@@ -218,11 +218,18 @@ async fn voice_e2e_inner() -> Result<VoiceTurn,String> {
     let transcript = transcript_out.trim().to_string();
     if transcript.is_empty() { return Err("VOICE_TRANSCRIPTION_EMPTY".into()); }
     if transcript.chars().count() > MAX_TEXT_CHARS { return Err("VOICE_TRANSCRIPTION_TOO_LONG".into()); }
-    let normalized = transcript.to_lowercase()
-        .replace('á',"a").replace('é',"e").replace('í',"i")
-        .replace('ó',"o").replace('ú',"u").replace('ñ',"n");
-    if !normalized.contains("prueba de voz") || !normalized.contains("microfono real") {
-        return Err("VOICE_TRANSCRIPTION_TEST_PHRASE_MISMATCH".into());
+    // Whisper may omit or substitute short connector words and punctuation.
+    // Require every semantic anchor independently; do not log the raw transcript.
+    let phrase_tokens = normalized_voice_tokens(&transcript);
+    let has_prueba = phrase_tokens.iter().any(|token| token == "prueba");
+    let has_voz = phrase_tokens.iter().any(|token| token == "voz");
+    let has_microfono = phrase_tokens.iter().any(|token| token == "microfono");
+    let has_real = phrase_tokens.iter().any(|token| token == "real");
+    if !(has_prueba && has_voz && has_microfono && has_real) {
+        return Err(format!(
+            "VOICE_TRANSCRIPTION_TEST_PHRASE_MISMATCH:token_count={};prueba={has_prueba};voz={has_voz};microfono={has_microfono};real={has_real}",
+            phrase_tokens.len()
+        ));
     }
 
     let endpoint = ollama_endpoint();
