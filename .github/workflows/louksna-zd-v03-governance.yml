@@ -613,7 +613,7 @@ jobs:
   stage-07-voice-security:
     name: "Stage 07 / CP-07 — Voice E2E and security regression"
     needs: [stage-06-functions-attachments, stage-07-physical-voice]
-    if: needs.stage-06-functions-attachments.result == 'success' && needs.stage-06-functions-attachments.outputs.status == 'PASS' && needs.stage-07-physical-voice.result == 'success'
+    if: needs.stage-06-functions-attachments.result == 'success' && needs.stage-06-functions-attachments.outputs.status == 'PASS' && github.actor == 'Plomillo' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && needs.stage-07-physical-voice.result == 'success'
     runs-on: ubuntu-24.04
     outputs:
       status: ${{ steps.voice_gate.outputs.status }}
