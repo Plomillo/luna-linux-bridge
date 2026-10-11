@@ -114,7 +114,7 @@ Configure `LOUKSNA_WHISPER_MODEL`, `LOUKSNA_PIPER_MODEL`, `LOUKSNA_OLLAMA_MODEL`
 
 Not claimed:
 - remote architecture chat unless a bridge endpoint is configured and round-trip passes;
-- voice/call end-to-end;
+- voice/call certification until CP-07 passes with real hardware evidence;
 - ACTIVE authorization.
 """,encoding="utf-8")
 
