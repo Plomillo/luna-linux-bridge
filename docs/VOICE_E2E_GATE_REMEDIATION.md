@@ -63,3 +63,51 @@ The repository Actions token with `actions: read` cannot list repository self-ho
 Before running the physical CP-07 path or G23/G24 environment-protection checks, configure a repository secret named `LOUKSNA_REPO_ADMIN_READ_TOKEN` containing a fine-grained credential scoped only to this repository with **Administration: read** permission. Do not put the token in source, workflow inputs, PR comments, logs, or chat. The workflows now fail fast with an explicit diagnostic if the secret is absent or the API denies access. This credential only enables inventory/protection inspection; it does not create a runner, prove physical audio hardware, approve an environment, or grant certification.
 
 CP-07 additionally requires an actual registered, online Linux self-hosted runner labeled `louksna-voice-hw`, pre-provisioned pinned dependencies/models, non-virtual ALSA capture/playback devices, and protected operator confirmation after audible playback. A green recorded-audio test, a runner inventory response, or an API permission fix alone is insufficient. CP-10, G23, and G24 remain blocked until exact-SHA evidence and independent/protected approvals exist.
+
+
+## Corrective addendum — 2026-10-11 (supersedes the earlier token prerequisite for current workflows)
+
+This addendum is append-only and preserves the earlier diagnosis as historical evidence. For the current branch implementation, the operational method below supersedes the preceding section that required `LOUKSNA_REPO_ADMIN_READ_TOKEN` to run CP-07 and verify G23/G24 environments.
+
+### Runner found and corrected
+
+- The repository already had runner ID `2`, name `luna-linux`, online and idle on Linux x86_64.
+- The missing capability was the required label, not the existence of a runner. The label `louksna-voice-hw` was added additively; the existing `luna-aux` and default labels were preserved.
+- CP-07 preflight now executes on the actual labeled runner and verifies hardware/runtime directly instead of querying the admin-only runner inventory API with a workflow token.
+- Physical runner jobs are restricted to owner-triggered runs from the same repository; fork pull requests cannot execute on the hardware runner.
+- The candidate application and Rust voice test binary are compiled on GitHub-hosted Linux, then transferred as an artifact bound to the exact candidate SHA. Only the physical voice test executes on the self-hosted host. This avoids a native build burden on the 5.7-GiB physical host.
+
+### Physical audio routing
+
+Direct ALSA `plughw` access failed because PipeWire already owns the real devices. This was not evidence of absent hardware. The correct route is the ALSA Pulse plugin with explicit physical endpoints:
+
+- Capture source: `alsa_input.usb-Generic_Blue_Microphones_2101BAB04QX8-00.pro-input-0`
+- Playback sink: `alsa_output.pci-0000_04_00.6.analog-stereo`
+- ALSA device argument: `pulse`
+- Runtime socket: `/run/user/1000/pulse/native`
+
+The endpoints were confirmed through PipeWire/PulseAudio. A two-second physical microphone capture produced a 64,044-byte WAV and the temporary file was deleted. Piper synthesized a 3.34-second WAV; physical playback through the selected sink exited successfully and the temporary WAV was deleted. These are supplemental device/runtime smoke checks, not a substitute for the exact-SHA CP-07 application workflow or the operator's audible confirmation.
+
+### Provisioned runtime and content hashes
+
+- Whisper.cpp: tag `v1.7.6`, commit `a8d002cfd879315632a579e73f0148d06959de36`; binary SHA-256 `955f6c121b718841d66eaef3424dcf4da3f92b90bd5199e3a361d5ccc9142768`.
+- Whisper English model `ggml-base.en.bin`: SHA-256 `a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002`. Offline transcription of the official `samples/jfk.wav` completed and matched the expected phrase.
+- Piper TTS: version `1.8.0`; PyPI wheel SHA-256 `25b4d3f31ff70c8fa7151908e00aaa5650cbdf16bca8fcf21299f3941b89a7d3`.
+- Voice model `en_US-lessac-medium.onnx`: SHA-256 `5efe09e69902187827af646e1a6e9d269dee769f9877d17b16b1b46eeaaf019f`; config SHA-256 `efe19c417bed055f2d69908248c6ba650fa135bc868b0e6abb3da181dab690a0`.
+- Ollama: version `0.40.3`; official archive SHA-256 `ce6f8b671a699bf1ebafb28d60dbbabf4f37b30b499145fa308a8ba72de021d6`; binary SHA-256 `1c66ac15d93ba17f2abe47d93262a62290b2233fb3c9b745564b31fd94815bd7`.
+- Local model `smollm2:360m`: digest `297281b699fc51376006233ca400cd664c4f7b80ed88a47ef084f1e4b089803b`; HTTP inference smoke returned the requested response.
+- Ollama runs as a user systemd service with `TasksMax=256`, one parallel request, one loaded model, 1,024-token context, and a 30-second keep-alive. The service is separated from the Desktop Commander process cgroup, whose task limit had prevented Ollama's inference worker from creating threads.
+
+### Protected approvals
+
+The following GitHub Environments now have a required-reviewer protection rule for repository owner `Plomillo`, with `prevent_self_review=false`:
+
+- `voice-hardware-operator-attestation`
+- `louksna-g23-independent-validation`
+- `louksna-g24-certification`
+
+The workflow no longer depends on the unavailable `LOUKSNA_REPO_ADMIN_READ_TOKEN` secret for these gates. GitHub's environment approval mechanism blocks each job until the configured reviewer approves it. Approval is not pre-recorded by this addendum: the operator must hear the CP-07 response before approving the operator-attestation environment; G23 and G24 remain separate subsequent approvals.
+
+### Current status rule
+
+The physical runner and local components passed supplemental smoke checks. CP-07 is still OPEN until the exact-candidate workflow proves the full native microphone → STT → local model → TTS → physical playback path, the temporary files are cleaned, and the operator confirms audible playback through the protected environment. CP-10 cannot be declared passed until its own current-SHA gates pass. G23/G24 are not certified by runner provisioning or environment creation alone.
