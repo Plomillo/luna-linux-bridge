@@ -110,8 +110,13 @@ jobs:
       LOUKSNA_WHISPER_MODEL: /home/diegoignacionorambuenamiranda/.local/share/louksna-cp07/whisper.cpp/models/ggml-base.en.bin
       LOUKSNA_PIPER_MODEL: /home/diegoignacionorambuenamiranda/.local/share/louksna-cp07/models/en_US-lessac-medium.onnx
       LOUKSNA_OLLAMA_MODEL: smollm2:360m
-      LOUKSNA_ALSA_CAPTURE_DEVICE: plughw:CARD=Microphones,DEV=0
-      LOUKSNA_ALSA_PLAYBACK_DEVICE: plughw:CARD=Generic_1,DEV=0
+      XDG_RUNTIME_DIR: /run/user/1000
+      PULSE_SERVER: unix:/run/user/1000/pulse/native
+      PULSE_SOURCE: alsa_input.usb-Generic_Blue_Microphones_2101BAB04QX8-00.pro-input-0
+      PULSE_SINK: alsa_output.pci-0000_04_00.6.analog-stereo
+      PIPEWIRE_REMOTE: pipewire-0
+      LOUKSNA_ALSA_CAPTURE_DEVICE: pulse
+      LOUKSNA_ALSA_PLAYBACK_DEVICE: pulse
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -136,7 +141,7 @@ jobs:
           for name,key in (("app-binary","app_binary_sha256"),("voice-test-binary","voice_test_binary_sha256")):
               if hashlib.sha256((root/name).read_bytes()).hexdigest()!=m.get(key): raise SystemExit("CP-07 HOLD: binary digest mismatch: "+name)
           PY
-          for cmd in python3 arecord aplay whisper-cli piper curl sha256sum; do
+          for cmd in python3 arecord aplay pactl whisper-cli piper curl sha256sum; do
             command -v "$cmd" >/dev/null || { echo "::error::Required pre-provisioned executable missing: $cmd"; exit 1; }
           done
           test -s "$LOUKSNA_WHISPER_MODEL"
@@ -147,6 +152,10 @@ jobs:
           mkdir -p evidence/zona-directiva-v03
           arecord -l | tee evidence/zona-directiva-v03/CP-07-arecord-devices.log
           aplay -l | tee evidence/zona-directiva-v03/CP-07-aplay-devices.log
+          pactl list short sources | tee evidence/zona-directiva-v03/CP-07-pulse-sources.log
+          pactl list short sinks | tee evidence/zona-directiva-v03/CP-07-pulse-sinks.log
+          grep -F "$PULSE_SOURCE" evidence/zona-directiva-v03/CP-07-pulse-sources.log >/dev/null || { echo "::error::Configured physical capture source is not exposed by PipeWire/PulseAudio"; exit 1; }
+          grep -F "$PULSE_SINK" evidence/zona-directiva-v03/CP-07-pulse-sinks.log >/dev/null || { echo "::error::Configured physical playback sink is not exposed by PipeWire/PulseAudio"; exit 1; }
           grep -Eq 'card [0-9]+:' evidence/zona-directiva-v03/CP-07-arecord-devices.log || { echo "::error::No ALSA capture card found"; exit 1; }
           grep -Eq 'card [0-9]+:' evidence/zona-directiva-v03/CP-07-aplay-devices.log || { echo "::error::No ALSA playback card found"; exit 1; }
           if grep -Eiq 'loopback|null|dummy|snd-aloop' evidence/zona-directiva-v03/CP-07-arecord-devices.log evidence/zona-directiva-v03/CP-07-aplay-devices.log; then
@@ -200,6 +209,8 @@ jobs:
             "os_kernel":subprocess.run(["uname","-srvm"],capture_output=True,text=True).stdout.strip(),
             "capture_device":os.environ["LOUKSNA_ALSA_CAPTURE_DEVICE"],
             "playback_device":os.environ["LOUKSNA_ALSA_PLAYBACK_DEVICE"],
+            "capture_source":os.environ["PULSE_SOURCE"],
+            "playback_sink":os.environ["PULSE_SINK"],
             "arecord_version":version(["arecord","--version"]),
             "aplay_version":version(["aplay","--version"]),
             "whisper_version":version(["whisper-cli","--help"]),
@@ -239,6 +250,8 @@ jobs:
             evidence/zona-directiva-v03/CP-07-physical-voice-preliminary.json
             evidence/zona-directiva-v03/CP-07-arecord-devices.log
             evidence/zona-directiva-v03/CP-07-aplay-devices.log
+            evidence/zona-directiva-v03/CP-07-pulse-sources.log
+            evidence/zona-directiva-v03/CP-07-pulse-sinks.log
           if-no-files-found: warn
           retention-days: 90
 
