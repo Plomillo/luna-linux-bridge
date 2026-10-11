@@ -535,4 +535,28 @@ mod louksna_runtime_tests {
         assert_eq!(persisted, Settings::default(), "settings writes must roll back when the evidence ledger write fails");
         let _ = std::fs::remove_dir_all(&root);
     }
+    
+    // Opt-in hardware test. When enabled, this invokes the production Tauri command
+    // and therefore uses arecord + whisper.cpp + Ollama + Piper + aplay; it is not
+    // a browser IPC mock. A dedicated runner must have real mic/speaker hardware.
+    #[test]
+    fn physical_voice_e2e_real_audio_path() {
+        if std::env::var("LOUKSNA_RUN_PHYSICAL_VOICE_E2E").as_deref() != Ok("1") {
+            eprintln!("SKIP_PHYSICAL_VOICE_E2E: set LOUKSNA_RUN_PHYSICAL_VOICE_E2E=1 on the dedicated hardware runner");
+            return;
+        }
+        let turn = tauri::async_runtime::block_on(voice::voice_e2e())
+            .expect("production voice_e2e command must complete the real audio pipeline");
+        assert!(!turn.transcript.trim().is_empty(), "real microphone transcription must be non-empty");
+        assert!(!turn.response.trim().is_empty(), "model response must be non-empty");
+        assert!(turn.audio_played, "Piper output must play successfully through ALSA");
+        assert!(!turn.capture_device.trim().is_empty(), "capture device selector must be recorded");
+        assert!(!turn.playback_device.trim().is_empty(), "playback device selector must be recorded");
+        // Do not print captured speech or generated response into public CI logs.
+        println!("PHYSICAL_VOICE_E2E_RESULT=PASS");
+        println!("PHYSICAL_VOICE_CAPTURE_DEVICE={}", turn.capture_device);
+        println!("PHYSICAL_VOICE_PLAYBACK_DEVICE={}", turn.playback_device);
+        println!("PHYSICAL_VOICE_ELAPSED_MS={}", turn.elapsed_ms);
+    }
+
 }
