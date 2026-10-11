@@ -83,3 +83,16 @@ Runtime/model root: `~/.local/share/louksna-cp07/`
 ```
 
 No raw microphone recording or generated WAV is retained from the supplemental probes. The full workflow's SHA-bound artifact and the operator's explicit protected approval are still required for CP-07 PASS.
+
+
+## 7. Additive acoustic-signal implementation — 2026-10-11
+
+This addendum supersedes the prior statement that protected operator attestation is a prerequisite for the **technical CP-07 signal gate**. Historical operator-attestation requirements remain preserved above as historical rationale; the current candidate workflow uses automated acoustic measurements and keeps human observation optional.
+
+- The production voice path now records a short microphone baseline, records the physical microphone during actual Piper WAV playback, and calculates the maximum 250 ms PCM16 RMS window for each recording.
+- The technical gate requires the playback capture peak to be at least `max(250 RMS counts, baseline peak × 1.5)`. Missing/short/invalid capture, capture failure, playback failure, or a signal below threshold fails closed.
+- The physical workflow requires `PHYSICAL_VOICE_ACOUSTIC_OUTPUT=PASS`, both numeric RMS measurements, exact candidate SHA, binary/model hashes, complete required log markers, and a matching evidence-log SHA-256 before it promotes CP-07 evidence to PASS.
+- The application optionally asks **“¿Escuchaste el audio por los altavoces?”** with Sí/No/No estoy seguro. The response is stored as a separate `SUPPLEMENTAL` ledger event and never changes the technical gate.
+- Acoustic energy detection is not a semantic speech-recognition test and does not certify audibility by itself. A missing or inconclusive measurement leaves CP-07 at HOLD. G23 independent validation and G24 certification remain separate.
+- The physical workflow now targets the documented existing runner label `louksna-voice-hw`; the earlier `louksna-voice-hw-dedicated` label did not match the runner label recorded in this implementation document.
+- No merge, main-branch mutation, CP-10 promotion, G23 validation, G24 certification, or application activation is implied by this source change. Fresh CI, real hardware execution, complete SHA-bound evidence, and independent gates are still required.
