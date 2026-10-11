@@ -15,6 +15,12 @@ on:
         description: "Exact candidate commit SHA to test (must be reachable in this repository)."
         required: true
         type: string
+  workflow_call:
+    inputs:
+      candidate_sha:
+        description: "Exact candidate commit SHA supplied by the governance workflow."
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -31,7 +37,7 @@ jobs:
     runs-on: [self-hosted, linux, x64, louksna-voice-hw]
     timeout-minutes: 35
     env:
-      CANDIDATE_SHA: ${{ github.event.inputs.candidate_sha || github.sha }}
+      CANDIDATE_SHA: ${{ inputs.candidate_sha || github.event.inputs.candidate_sha || github.sha }}
       LOUKSNA_RUN_PHYSICAL_VOICE_E2E: "1"
     steps:
       - name: Checkout exact candidate
@@ -181,7 +187,7 @@ jobs:
       - name: Checkout exact candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ${{ needs.physical-voice-e2e.outputs.candidate_sha || github.event.inputs.candidate_sha || github.sha }}
+          ref: ${{ inputs.candidate_sha || github.event.inputs.candidate_sha || github.sha }}
           persist-credentials: false
       - name: Verify environment is protected by required reviewers
         env:
@@ -201,7 +207,7 @@ jobs:
           path: evidence/zona-directiva-v03
       - name: Bind operator approval and validate exact-SHA evidence
         env:
-          CANDIDATE_SHA: ${{ github.event.inputs.candidate_sha || github.sha }}
+          CANDIDATE_SHA: ${{ inputs.candidate_sha || github.event.inputs.candidate_sha || github.sha }}
         shell: bash
         run: |
           set -Eeuo pipefail
