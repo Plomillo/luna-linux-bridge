@@ -24,10 +24,50 @@ pub struct VoiceTurn {
     audio_played: bool,
     capture_device: String,
     playback_device: String,
+    acoustic_output_energy_detected: bool,
+    acoustic_baseline_peak_rms: f64,
+    acoustic_playback_peak_rms: f64,
 }
 struct TempAudio(PathBuf);
 impl Drop for TempAudio {
     fn drop(&mut self) { let _ = std::fs::remove_dir_all(&self.0); }
+}
+
+
+/// Return the loudest 250 ms RMS window from mono PCM16 WAV captured at 16 kHz.
+fn wav_peak_window_rms(path: &std::path::Path) -> Result<f64,String> {
+    let bytes = std::fs::read(path).map_err(|_| "VOICE_ACOUSTIC_CAPTURE_READ_FAILED")?;
+    if bytes.len() < 44 || &bytes[0..4] != b"RIFF" || &bytes[8..12] != b"WAVE" {
+        return Err("VOICE_ACOUSTIC_CAPTURE_INVALID_WAV".into());
+    }
+    let mut offset = 12usize;
+    let mut data_range: Option<(usize,usize)> = None;
+    while offset + 8 <= bytes.len() {
+        let size = u32::from_le_bytes(bytes[offset+4..offset+8].try_into().unwrap()) as usize;
+        let start = offset + 8;
+        let end = start.checked_add(size).ok_or("VOICE_ACOUSTIC_CAPTURE_INVALID_CHUNK")?;
+        if end > bytes.len() { return Err("VOICE_ACOUSTIC_CAPTURE_TRUNCATED_WAV".into()); }
+        if &bytes[offset..offset+4] == b"data" { data_range = Some((start,end)); break; }
+        offset = end + (size % 2);
+    }
+    let (start,end) = data_range.ok_or("VOICE_ACOUSTIC_CAPTURE_NO_PCM_DATA")?;
+    let samples: Vec<i16> = bytes[start..end].chunks_exact(2)
+        .map(|b| i16::from_le_bytes([b[0],b[1]])).collect();
+    let window = 4_000usize;
+    if samples.len() < window { return Err("VOICE_ACOUSTIC_CAPTURE_TOO_SHORT".into()); }
+    Ok(samples.chunks(window).map(|chunk| {
+        let mean = chunk.iter().map(|v| (*v as f64)*(*v as f64)).sum::<f64>() / chunk.len() as f64;
+        mean.sqrt()
+    }).fold(0.0f64, f64::max))
+}
+
+fn record_acoustic_wav(device: &str, seconds: &str, path: &std::path::Path) -> Result<(),String> {
+    let path_s = path.to_string_lossy().to_string();
+    run_bounded("arecord", &["-q","-D",device,"-f","S16_LE","-r","16000","-c","1","-d",seconds,"-t","wav",&path_s], None, Duration::from_secs(seconds.parse::<u64>().unwrap_or(8)+5))?;
+    if !path.is_file() || std::fs::metadata(path).map(|m|m.len()).unwrap_or(0) < 8_000 {
+        return Err("VOICE_ACOUSTIC_CAPTURE_EMPTY".into());
+    }
+    Ok(())
 }
 
 fn env_path(key: &str) -> Result<PathBuf, String> {
@@ -187,8 +227,34 @@ async fn voice_e2e_inner() -> Result<VoiceTurn,String> {
     let piper_model_s = piper_model.to_string_lossy().to_string();
     run_bounded("piper",&["--model",&piper_model_s,"--output_file",&response_audio_s],Some(&response),Duration::from_secs(45))?;
     if !response_audio.is_file() || std::fs::metadata(&response_audio).map(|m|m.len()).unwrap_or(0) < 8_000 { return Err("VOICE_SYNTHESIS_EMPTY_OR_TOO_SMALL".into()); }
-    run_bounded("aplay",&["-q","-D",&playback_device,&response_audio_s],None,Duration::from_secs(30))?;
-    Ok(VoiceTurn { status:"E2E_EXECUTED_NOT_CERTIFIED".into(), transcript, response, elapsed_ms:started.elapsed().as_millis(), audio_played:true, capture_device, playback_device })
+    // Detect acoustic energy at the physical microphone during actual speaker playback.
+    // This signal detector is supplemental evidence, not an independent certification gate.
+    let acoustic_baseline = root.join("acoustic-baseline.wav");
+    let acoustic_during = root.join("acoustic-during-playback.wav");
+    record_acoustic_wav(&capture_device, "2", &acoustic_baseline)?;
+    let baseline_peak = wav_peak_window_rms(&acoustic_baseline)?;
+    let acoustic_path_s = acoustic_during.to_string_lossy().to_string();
+    let mut acoustic_child = Command::new("arecord")
+        .args(["-q","-D",&capture_device,"-f","S16_LE","-r","16000","-c","1","-d","8","-t","wav",&acoustic_path_s])
+        .stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null())
+        .spawn().map_err(|_| "VOICE_ACOUSTIC_CAPTURE_START_FAILED")?;
+    std::thread::sleep(Duration::from_millis(350));
+    let playback = run_bounded("aplay",&["-q","-D",&playback_device,&response_audio_s],None,Duration::from_secs(30));
+    let capture_status = acoustic_child.wait_timeout(Duration::from_secs(14))
+        .map_err(|_| "VOICE_ACOUSTIC_CAPTURE_WAIT_FAILED")?;
+    if capture_status.is_none() {
+        let _ = acoustic_child.kill();
+        let _ = acoustic_child.wait();
+        return Err("VOICE_ACOUSTIC_CAPTURE_TIMEOUT".into());
+    }
+    if !capture_status.unwrap().success() { return Err("VOICE_ACOUSTIC_CAPTURE_FAILED".into()); }
+    playback?;
+    let playback_peak = wav_peak_window_rms(&acoustic_during)?;
+    let required_peak = 250.0f64.max(baseline_peak * 1.5);
+    if playback_peak < required_peak {
+        return Err(format!("VOICE_ACOUSTIC_OUTPUT_NOT_DETECTED:baseline_peak_rms={baseline_peak:.2};playback_peak_rms={playback_peak:.2};required_peak_rms={required_peak:.2}"));
+    }
+    Ok(VoiceTurn { status:"E2E_EXECUTED_NOT_CERTIFIED".into(), transcript, response, elapsed_ms:started.elapsed().as_millis(), audio_played:true, capture_device, playback_device, acoustic_output_energy_detected:true, acoustic_baseline_peak_rms:baseline_peak, acoustic_playback_peak_rms:playback_peak })
 }
 
 #[cfg(test)]
