@@ -55,3 +55,8 @@ No declarar telemetría activa salvo ledger/evento real.
 No declarar chat con arquitectura enlazado salvo round-trip real.
 No declarar voz enlazada salvo captura/transporte/respuesta demostrados.
 No declarar ACTIVE por build ni por G23/G24.
+
+
+## ADENDA P6 — VOZ END-TO-END OBLIGATORIA (2026-10-10)
+
+La decisión de alcance confirma que voz E2E es obligatoria para la certificación terminal general. La capacidad debe implementarse como pipeline real y probarse sin simulación: captura de micrófono, STT, transporte/respuesta, TTS y reproducción audible. El gate CP-07 sigue OPEN hasta que se produzca evidencia de hardware real ligada al SHA exacto; código, compilación, QEMU o pruebas de contrato no son suficientes. Dependencias y configuración quedan documentadas en la adenda del contrato de gobernanza. No modificar `main`, no auto-merge y no auto-certificar.
