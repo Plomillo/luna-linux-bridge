@@ -27,6 +27,8 @@ pub struct VoiceTurn {
     pub acoustic_output_energy_detected: bool,
     pub acoustic_baseline_peak_rms: f64,
     pub acoustic_playback_peak_rms: f64,
+    pub acoustic_speech_match_ratio: f64,
+    pub acoustic_transcription_match_count: usize,
 }
 struct TempAudio(PathBuf);
 impl Drop for TempAudio {
@@ -59,6 +61,17 @@ fn wav_peak_window_rms(path: &std::path::Path) -> Result<f64,String> {
         let mean = chunk.iter().map(|v| (*v as f64)*(*v as f64)).sum::<f64>() / chunk.len() as f64;
         mean.sqrt()
     }).fold(0.0f64, f64::max))
+}
+
+
+/// Normalize Spanish text to alphanumeric word tokens for a conservative content-overlap check.
+fn normalized_voice_tokens(text: &str) -> Vec<String> {
+    text.to_lowercase().chars().map(|c| match c {
+        'á'|'à'|'ä' => 'a', 'é'|'è'|'ë' => 'e', 'í'|'ì'|'ï' => 'i',
+        'ó'|'ò'|'ö' => 'o', 'ú'|'ù'|'ü' => 'u', 'ñ' => 'n',
+        other => other,
+    }).collect::<String>().split(|c: char| !c.is_ascii_alphanumeric())
+        .filter(|word| word.chars().count() >= 3).map(str::to_string).collect()
 }
 
 fn record_acoustic_wav(device: &str, seconds: &str, path: &std::path::Path) -> Result<(),String> {
@@ -254,7 +267,19 @@ async fn voice_e2e_inner() -> Result<VoiceTurn,String> {
     if playback_peak < required_peak {
         return Err(format!("VOICE_ACOUSTIC_OUTPUT_NOT_DETECTED:baseline_peak_rms={baseline_peak:.2};playback_peak_rms={playback_peak:.2};required_peak_rms={required_peak:.2}"));
     }
-    Ok(VoiceTurn { status:"E2E_EXECUTED_NOT_CERTIFIED".into(), transcript, response, elapsed_ms:started.elapsed().as_millis(), audio_played:true, capture_device, playback_device, acoustic_output_energy_detected:true, acoustic_baseline_peak_rms:baseline_peak, acoustic_playback_peak_rms:playback_peak })
+    // Re-transcribe what the physical microphone heard during speaker playback and compare
+    // it with the generated response. Ambient noise alone cannot satisfy this content check.
+    let model_s = whisper_model.to_string_lossy().to_string();
+    let acoustic_s = acoustic_during.to_string_lossy().to_string();
+    let (acoustic_transcript, _) = run_bounded("whisper-cli", &["-m",&model_s,"-f",&acoustic_s,"-l","es","-nt","-np","-t","2"], None, Duration::from_secs(60))?;
+    let heard_tokens = normalized_voice_tokens(&acoustic_transcript);
+    let response_tokens = normalized_voice_tokens(&response);
+    let matched = response_tokens.iter().filter(|token| heard_tokens.iter().any(|heard| heard == *token)).count();
+    let ratio = if response_tokens.is_empty() { 0.0 } else { matched as f64 / response_tokens.len() as f64 };
+    if matched < 2 || ratio < 0.30 {
+        return Err(format!("VOICE_ACOUSTIC_SPEECH_MISMATCH:matched_tokens={matched};response_token_count={};ratio={ratio:.3}", response_tokens.len()));
+    }
+    Ok(VoiceTurn { status:"E2E_EXECUTED_NOT_CERTIFIED".into(), transcript, response, elapsed_ms:started.elapsed().as_millis(), audio_played:true, capture_device, playback_device, acoustic_output_energy_detected:true, acoustic_baseline_peak_rms:baseline_peak, acoustic_playback_peak_rms:playback_peak, acoustic_speech_match_ratio:ratio, acoustic_transcription_match_count:matched })
 }
 
 #[cfg(test)]
