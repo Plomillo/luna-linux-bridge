@@ -784,6 +784,14 @@ jobs:
               f.write("status="+gate_status+"\n")
           PY
           echo "CP-07 gate result recorded with exact candidate binding; G23/G24 remain independent."
+      - name: Fail CP-07 unless physical voice evidence passed
+        if: steps.voice_gate.outputs.status != 'PASS'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "::error::CP-07 physical voice E2E has no validated evidence for the exact candidate SHA. A HOLD record is not a passing checkpoint."
+          cat evidence/zona-directiva-v03/CP-07-voice-gate.json
+          exit 1
       - name: Preserve CP-07 voice gate evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
