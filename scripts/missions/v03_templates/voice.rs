@@ -89,9 +89,35 @@ fn preflight_sync() -> VoicePreflight {
     VoicePreflight { status: status.into(), detail: "Preflight checks real executables/configuration only; it is not an E2E pass.".into(), missing }
 }
 
+fn ollama_model_present(payload: &Value, model: &str) -> bool {
+    payload.get("models").and_then(Value::as_array).map(|models| models.iter().any(|item| {
+        item.get("name").and_then(Value::as_str).map(|name| {
+            name == model || name.strip_suffix(":latest") == Some(model)
+        }).unwrap_or(false)
+    })).unwrap_or(false)
+}
+
 #[tauri::command]
-pub fn voice_preflight() -> Result<VoicePreflight,String> {
-    let p = preflight_sync();
+pub async fn voice_preflight() -> Result<VoicePreflight,String> {
+    let mut p = preflight_sync();
+    if p.status == "READY" {
+        let model = std::env::var("LOUKSNA_OLLAMA_MODEL").unwrap_or_default();
+        let mut tags_url = reqwest::Url::parse(&ollama_endpoint()).map_err(|_| "VOICE_OLLAMA_URL_INVALID")?;
+        tags_url.set_path("/api/tags");
+        tags_url.set_query(None);
+        let check = async {
+            let client = reqwest::Client::builder().connect_timeout(Duration::from_secs(2)).timeout(Duration::from_secs(4)).build().map_err(|_| "VOICE_PREFLIGHT_HTTP_CLIENT_FAILED")?;
+            let response = client.get(tags_url).send().await.map_err(|_| "VOICE_OLLAMA_UNREACHABLE")?;
+            if !response.status().is_success() { return Err("VOICE_OLLAMA_HEALTH_HTTP_FAILED"); }
+            let payload: Value = response.json().await.map_err(|_| "VOICE_OLLAMA_HEALTH_INVALID_JSON")?;
+            if !ollama_model_present(&payload, &model) { return Err("VOICE_OLLAMA_MODEL_NOT_AVAILABLE"); }
+            Ok::<(),&'static str>(())
+        }.await;
+        if let Err(error) = check {
+            p.missing.push(format!("service:{error}"));
+            p.status = "DEGRADED".into();
+        }
+    }
     super::log_event("VOICE_PREFLIGHT", if p.status == "READY" {"PASS"} else {"DEGRADED"}, &format!("missing_dependency_count={}", p.missing.len()))?;
     Ok(p)
 }
@@ -173,6 +199,13 @@ mod tests {
         std::env::set_var("LOUKSNA_VOICE_ALLOW_REMOTE_HTTPS", "1");
         assert!(validate_local_endpoint("https://voice.example/api/chat").is_ok());
         std::env::remove_var("LOUKSNA_VOICE_ALLOW_REMOTE_HTTPS");
+    }
+    #[test]
+    fn ollama_model_check_accepts_exact_or_latest_tag_only() {
+        let payload = json!({"models":[{"name":"llama3.2:latest"},{"name":"qwen2.5:7b"}]});
+        assert!(ollama_model_present(&payload, "llama3.2"));
+        assert!(ollama_model_present(&payload, "qwen2.5:7b"));
+        assert!(!ollama_model_present(&payload, "missing-model"));
     }
     #[test]
     fn response_transcript_bound_is_explicit() { assert_eq!(MAX_TEXT_CHARS, 4000); }
