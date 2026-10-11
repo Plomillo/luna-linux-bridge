@@ -1,14 +1,6 @@
 name: "LOUKSNA ZD V0.3 — Physical Voice E2E"
 
 on:
-  push:
-    branches:
-      - work/voice-e2e-stack-20261010
-    paths:
-      - .github/workflows/louksna-zd-v03-physical-voice.yml
-      - scripts/missions/v03_templates/main.rs
-      - scripts/missions/v03_templates/voice.rs
-      - scripts/missions/validate_voice_hardware_evidence.py
   workflow_dispatch:
     inputs:
       candidate_sha:
