@@ -84,6 +84,12 @@ def main() -> int:
     if isinstance(baseline, (int, float)) and isinstance(playback, (int, float)):
         if playback < max(250.0, baseline * 1.5):
             errors.append("measured acoustic output does not exceed baseline threshold")
+    match_ratio = data.get("acoustic_speech_match_ratio")
+    match_count = data.get("acoustic_transcription_match_count")
+    if not isinstance(match_ratio, (int, float)) or not 0.30 <= match_ratio <= 1.0:
+        errors.append("acoustic speech overlap ratio is missing or below 0.30")
+    if not isinstance(match_count, int) or match_count < 2:
+        errors.append("acoustic speech overlap requires at least two matching tokens")
     if data.get("audible_playback_confirmed_by_operator") is not True and data.get("operator_observation") != "NOT_COLLECTED_OPTIONAL":
         errors.append("operator observation must be explicit: affirmative or optional-not-collected")
 
@@ -104,6 +110,7 @@ def main() -> int:
             "PHYSICAL_VOICE_TTS=PASS",
             "PHYSICAL_VOICE_PLAYBACK=PASS",
             "PHYSICAL_VOICE_ACOUSTIC_OUTPUT=PASS",
+            "PHYSICAL_VOICE_ACOUSTIC_TRANSCRIPTION_MATCH=PASS",
             "PHYSICAL_VOICE_E2E_RESULT=PASS",
             "PHYSICAL_VOICE_TEMP_CLEANUP=PASS",
         )
