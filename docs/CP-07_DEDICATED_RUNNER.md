@@ -7,7 +7,7 @@ This runner is intentionally separate from the developer workstation. Never regi
 1. Prepare a separate Linux x86_64 host with a physically connected microphone and speaker/headphone output. Keep a local interactive audio session available for PipeWire/PulseAudio.
 2. Create a short-lived repository runner registration token in GitHub Settings → Actions → Runners → New self-hosted runner. Do not commit it, paste it into chat, or save it in shell history.
 3. Copy the script `scripts/missions/provision_cp07_dedicated_runner.sh` to that separate host and run it as a dedicated non-root account. Supply the token only as an environment variable in that host's private shell:
-   `export RUNNER_REGISTRATION_TOKEN='…'`
+   `read -rsp "GitHub runner registration token: " RUNNER_REGISTRATION_TOKEN; echo; export RUNNER_REGISTRATION_TOKEN`
    `bash provision_cp07_dedicated_runner.sh`
 4. The script installs the official GitHub Actions runner, Whisper.cpp v1.7.6 with multilingual `ggml-base.bin`, Piper with the Spanish `es_ES-sharvard-medium` voice, and local Ollama `smollm2:360m`; it refuses registration unless physical ALSA capture and playback cards are present and no loopback/null/dummy device is detected.
 5. The runner registers only with label `louksna-voice-hw-dedicated`. CP-07 workflows no longer match the prior workstation label. The workflow discovers audio source/sink names and resolves model paths relative to the runner account instead of hardcoding a personal home directory.
