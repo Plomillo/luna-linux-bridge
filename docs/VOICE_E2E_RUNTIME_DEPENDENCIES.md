@@ -40,7 +40,7 @@ Piper model distributions may require a companion configuration file. Provision 
 
 ## Preflight and physical test checklist
 
-Run the app's **Comprobar dependencias** action. A `READY` preflight only means the expected executables, model paths, and endpoint configuration are present; it is not E2E evidence.
+Run the app's **Comprobar dependencias** action. A `READY` preflight means the expected executables and local model files exist, the configured Ollama endpoint responds to `/api/tags`, and the configured model tag is present. It is still not E2E evidence and does not prove microphone capture or audible playback.
 
 Before a physical test, record:
 
