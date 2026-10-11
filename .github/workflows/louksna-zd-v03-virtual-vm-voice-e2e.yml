@@ -1,6 +1,13 @@
 name: "LOUKSNA ZD V0.3 — Virtual VM Voice E2E"
 
 on:
+  push:
+    branches: [work/voice-e2e-stack-20261010]
+    paths:
+      - ".github/workflows/louksna-zd-v03-virtual-vm-voice-e2e.yml"
+      - "scripts/missions/v03_templates/voice.rs"
+      - "scripts/missions/louksna_zd_candidate_materializer.py"
+      - "scripts/missions/louksna_zd_v03_functionalizer.py"
   pull_request:
     branches: [main]
     paths:
