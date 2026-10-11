@@ -114,7 +114,7 @@ write_files:
       EndSection
 runcmd:
   - |
-    set -Eeuo pipefail
+    set -eu
     export DEBIAN_FRONTEND=noninteractive
     if ! (apt-get update && apt-get install -y --no-install-recommends openssh-server sudo dbus dbus-x11 xserver-xorg xserver-xorg-video-dummy x11-xserver-utils x11-utils xauth xinit plasma-workspace kwin-x11 konsole python3 ca-certificates) > /var/log/cp09-package-install.log 2>&1; then
       touch /var/lib/cloud/instance/cp09-failed
