@@ -84,10 +84,27 @@ fn preflight_sync() -> VoicePreflight {
 }
 
 #[tauri::command]
-pub fn voice_preflight() -> VoicePreflight { preflight_sync() }
+pub fn voice_preflight() -> Result<VoicePreflight,String> {
+    let p = preflight_sync();
+    super::log_event("VOICE_PREFLIGHT", if p.status == "READY" {"PASS"} else {"DEGRADED"}, &format!("missing_dependency_count={}", p.missing.len()))?;
+    Ok(p)
+}
 
 #[tauri::command]
 pub async fn voice_e2e() -> Result<VoiceTurn,String> {
+    match voice_e2e_inner().await {
+        Ok(turn) => {
+            super::log_event("VOICE_E2E", "PASS", "real_capture=true;stt=whisper.cpp;response=ollama;tts=piper;playback=alsa")?;
+            Ok(turn)
+        }
+        Err(error) => {
+            let _ = super::log_event("VOICE_E2E", "FAIL", &format!("failure_code={}", error.split(':').next().unwrap_or("VOICE_ERROR")));
+            Err(error)
+        }
+    }
+}
+
+async fn voice_e2e_inner() -> Result<VoiceTurn,String> {
     let started = Instant::now();
     let pf = preflight_sync();
     if pf.status != "READY" { return Err(format!("VOICE_PREFLIGHT_BLOCKED:{}", pf.missing.join(","))); }
