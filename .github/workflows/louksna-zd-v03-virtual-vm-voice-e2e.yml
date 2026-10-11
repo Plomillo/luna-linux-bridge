@@ -203,7 +203,7 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          cleanup() { if test -f "$VM_PID_FILE"; then sudo kill "$(cat "$VM_PID_FILE")" 2>/dev/null || true; fi; }
+          cleanup() { if test -f "$VM_PID_FILE"; then sudo kill "$(sudo cat "$VM_PID_FILE")" 2>/dev/null || true; fi; }
           trap cleanup EXIT
           READY=0
           for attempt in $(seq 1 80); do
@@ -237,7 +237,7 @@ jobs:
           mkdir -p "$OUT"
           # Collect only diagnostic/evidence files. Never copy VM private keys or cloud-init user-data.
           for f in vm-serial.log kvm-probe.log; do
-            if test -f "$SRC/$f"; then cp "$SRC/$f" "$OUT/$f"; fi
+            if test -f "$SRC/$f"; then sudo cat "$SRC/$f" > "$OUT/$f"; fi
           done
           if test -f "$SRC/virtualization.txt" && ! test -f "$OUT/virtualization.txt"; then
             cp "$SRC/virtualization.txt" "$OUT/virtualization.txt"
