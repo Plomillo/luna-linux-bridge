@@ -24,7 +24,7 @@ concurrency:
 
 jobs:
   virtual-vm-voice-e2e:
-    name: "CP-07-VM — Debian guest + virtual ALSA loopback + real STT/LLM/TTS"
+    name: "CP-07-VM — Debian guest + PulseAudio userspace loopback + real STT/LLM/TTS"
     runs-on: ubuntu-24.04
     timeout-minutes: 55
     env:
@@ -77,8 +77,17 @@ jobs:
             - python3-venv
             - alsa-utils
             - libasound2-plugins
+            - pulseaudio
+            - pulseaudio-utils
             - jq
           write_files:
+            - path: /etc/pulse/system.pa
+              permissions: '0644'
+              content: |
+                load-module module-native-protocol-unix auth-anonymous=1 socket=/run/pulse/native
+                load-module module-null-sink sink_name=Loopback rate=16000 channels=1
+                set-default-sink Loopback
+                set-default-source Loopback.monitor
             - path: /usr/local/sbin/louksna-cp07-vm-test.sh
               permissions: '0755'
               content: |
@@ -89,7 +98,7 @@ jobs:
                 export DEBIAN_FRONTEND=noninteractive
                 STATUS=/var/lib/louksna-cp07-vm-status.json
                 mkdir -p /var/lib/louksna-cp07 /opt/louksna-cp07
-                echo '{"status":"RUNNING","mode":"QEMU_DEBIAN13_VIRTUAL_ALSA","physical_hardware_claimed":false}' > "$STATUS"
+                echo '{"status":"RUNNING","mode":"QEMU_DEBIAN13_PULSEAUDIO_USERSPACE_LOOPBACK","physical_hardware_claimed":false}' > "$STATUS"
                 finish() { rc=$?; python3 - "$STATUS" "$rc" <<'PY'
                 import json,pathlib,sys,datetime
                 p=pathlib.Path(sys.argv[1]); d=json.loads(p.read_text())
@@ -98,10 +107,17 @@ jobs:
                 PY
                 }
                 trap finish EXIT
-                modprobe snd-aloop || true
-                arecord -l | tee /var/lib/louksna-cp07/arecord-devices.log
-                aplay -l | tee /var/lib/louksna-cp07/aplay-devices.log
-                grep -qi loopback /var/lib/louksna-cp07/arecord-devices.log
+                install -d -o pulse -g pulse -m 0775 /run/pulse
+                pulseaudio --system --daemonize=yes --disallow-exit --exit-idle-time=-1 --log-target=file:/var/log/pulseaudio.log
+                export PULSE_SERVER=unix:/run/pulse/native
+                for attempt in $(seq 1 30); do
+                  if pactl info >/dev/null 2>&1; then break; fi
+                  sleep 1
+                done
+                pactl info | tee /var/lib/louksna-cp07/pulseaudio-info.log
+                pactl list short sinks | tee /var/lib/louksna-cp07/audio-sinks.log
+                pactl list short sources | tee /var/lib/louksna-cp07/audio-sources.log
+                grep -q 'Loopback.monitor' /var/lib/louksna-cp07/audio-sources.log
                 git clone --depth 1 --branch v1.7.6 https://github.com/ggml-org/whisper.cpp.git /opt/louksna-cp07/whisper.cpp
                 cmake -S /opt/louksna-cp07/whisper.cpp -B /opt/louksna-cp07/whisper.cpp/build -DCMAKE_BUILD_TYPE=Release
                 cmake --build /opt/louksna-cp07/whisper.cpp/build --config Release -j2
@@ -113,13 +129,12 @@ jobs:
                 sh /tmp/ollama-install.sh
                 systemctl enable --now ollama
                 ollama pull smollm2:360m
-                modprobe snd-aloop
-                printf 'Prueba de voz, microfono real, comprobacion virtualizada de Louksna.' | /opt/louksna-cp07/venv/bin/python -m piper -m es_ES-sharvard-medium --data-dir /opt/louksna-cp07/voices -f /opt/louksna-cp07/input.wav
+                printf 'Prueba de voz, comprobacion virtualizada de Louksna.' | /opt/louksna-cp07/venv/bin/python -m piper -m es_ES-sharvard-medium --data-dir /opt/louksna-cp07/voices -f /opt/louksna-cp07/input.wav
                 test -s /opt/louksna-cp07/input.wav
-                (timeout 12s arecord -q -D hw:Loopback,1,0 -f S16_LE -r 16000 -c 1 -d 8 -t wav /opt/louksna-cp07/capture.wav || true) &
+                (timeout 12s parecord --server=unix:/run/pulse/native --device=Loopback.monitor --file-format=wav --rate=16000 --channels=1 --format=s16le /opt/louksna-cp07/capture.wav || true) &
                 REC_PID=$!
                 sleep 1
-                aplay -q -D hw:Loopback,0,0 /opt/louksna-cp07/input.wav
+                paplay --server=unix:/run/pulse/native --device=Loopback /opt/louksna-cp07/input.wav
                 wait "$REC_PID" || true
                 test -s /opt/louksna-cp07/capture.wav
                 python3 - /opt/louksna-cp07/capture.wav <<'PY'
@@ -158,7 +173,7 @@ jobs:
                 PY
                 /opt/louksna-cp07/venv/bin/python -m piper -m es_ES-sharvard-medium --data-dir /opt/louksna-cp07/voices -f /opt/louksna-cp07/response.wav < /opt/louksna-cp07/llm-response.txt
                 test -s /opt/louksna-cp07/response.wav
-                aplay -q -D hw:Loopback,0,0 /opt/louksna-cp07/response.wav
+                paplay --server=unix:/run/pulse/native --device=Loopback /opt/louksna-cp07/response.wav
                 python3 - /opt/louksna-cp07/response.wav <<'PY'
                 import sys,wave
                 with wave.open(sys.argv[1],'rb') as w:
@@ -170,14 +185,13 @@ jobs:
                 import datetime,hashlib,json,pathlib,platform
                 root=pathlib.Path('/opt/louksna-cp07')
                 files=['input.wav','capture.wav','response.wav','transcript.txt','llm-response.txt']
-                obj={'schema':'louksna.zd.v03.cp07-vm-voice-e2e.v1','status':'PASS_VIRTUAL_E2E','candidate_commit_sha':__import__('os').environ.get('CANDIDATE_SHA','UNBOUND'),'mode':'QEMU_DEBIAN13_VIRTUAL_ALSA_LOOPBACK','physical_audio_hardware_tested':False,'audible_playback_confirmed_by_operator':False,'stt':'whisper.cpp v1.7.6','llm':'ollama smollm2:360m','tts':'Piper es_ES-sharvard-medium','files':{n:{'bytes':(root/n).stat().st_size,'sha256':hashlib.sha256((root/n).read_bytes()).hexdigest()} for n in files},'timestamp_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'kernel':platform.platform()}
+                obj={'schema':'louksna.zd.v03.cp07-vm-voice-e2e.v1','status':'PASS_VIRTUAL_E2E','candidate_commit_sha':__import__('os').environ.get('CANDIDATE_SHA','UNBOUND'),'mode':'QEMU_DEBIAN13_PULSEAUDIO_USERSPACE_LOOPBACK','physical_audio_hardware_tested':False,'audible_playback_confirmed_by_operator':False,'stt':'whisper.cpp v1.7.6','llm':'ollama smollm2:360m','tts':'Piper es_ES-sharvard-medium','files':{n:{'bytes':(root/n).stat().st_size,'sha256':hashlib.sha256((root/n).read_bytes()).hexdigest()} for n in files},'timestamp_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'kernel':platform.platform()}
                 pathlib.Path('/var/lib/louksna-cp07/CP-07-VM-EVIDENCE.json').write_text(json.dumps(obj,indent=2,sort_keys=True)+'\n')
                 PY
                 rm -f /opt/louksna-cp07/input.wav /opt/louksna-cp07/capture.wav /opt/louksna-cp07/response.wav
                 test ! -e /opt/louksna-cp07/input.wav && test ! -e /opt/louksna-cp07/capture.wav && test ! -e /opt/louksna-cp07/response.wav
                 echo 'CP07_VM_VOICE_E2E=PASS'
           runcmd:
-            - [bash, -lc, "modprobe snd-aloop || true"]
             - [bash, -lc, "systemctl enable --now ssh"]
             - [bash, -lc, "nohup /usr/local/sbin/louksna-cp07-vm-test.sh >/var/log/louksna-cp07-cloud-init.log 2>&1 &"]
           USERDATA
