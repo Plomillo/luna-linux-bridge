@@ -73,6 +73,15 @@ def main() -> int:
         value = data.get(field)
         if not isinstance(value, str) or len(value) != 64 or any(c not in "0123456789abcdefABCDEF" for c in value):
             errors.append(f"invalid or missing SHA-256: {field}")
+    log_path = args.evidence.with_name("CP-07-physical-voice-e2e.log")
+    expected_log_hash = data.get("evidence_log_sha256")
+    if not log_path.is_file():
+        errors.append("physical voice evidence log file missing")
+    elif isinstance(expected_log_hash, str):
+        import hashlib
+        actual_log_hash = hashlib.sha256(log_path.read_bytes()).hexdigest()
+        if actual_log_hash.lower() != expected_log_hash.lower():
+            errors.append("physical voice evidence log SHA-256 mismatch")
 
     report = {
         "schema": "louksna.zd.v03.physical-voice-validation.v1",
