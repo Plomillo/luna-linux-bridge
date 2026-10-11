@@ -100,6 +100,8 @@ jobs:
               content: |
                 #!/usr/bin/env bash
                 set -Eeuo pipefail
+                # cloud-init can launch commands without HOME; Ollama panics if HOME is unset.
+                export HOME=/root
                 export CANDIDATE_SHA="__CANDIDATE_SHA__"
                 exec > >(tee /var/log/louksna-cp07-vm-test.log) 2>&1
                 export DEBIAN_FRONTEND=noninteractive
