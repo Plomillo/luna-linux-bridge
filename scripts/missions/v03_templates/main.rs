@@ -7,6 +7,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{io::Write, path::PathBuf, process::{Command, Stdio}};
 
+#[path = "voice.rs"]
+mod voice;
+
 const APP_ID: &str = "louksna-zona-directiva";
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
@@ -346,7 +349,8 @@ fn main(){
       .invoke_handler(tauri::generate_handler![
         get_settings,save_settings,store_github_token,remove_github_token,
         github_connection,github_repositories,github_pull_requests,
-        evidence_recent,chat_history,chat_send,runtime_probe
+        evidence_recent,chat_history,chat_send,runtime_probe,
+        voice::voice_preflight,voice::voice_e2e
       ])
       .run(tauri::generate_context!())
       .expect("error while running LOUKSNA ZONA DIRECTIVA");
