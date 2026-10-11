@@ -37,3 +37,22 @@ See `scripts/missions/validate_voice_hardware_evidence.py` for the authoritative
 - `temporary_audio_cleanup_verified`
 
 All must be literal JSON booleans `true`. A declaration is still subject to independent validation; it is not a self-issued G23/G24 certificate.
+
+## VirtualBox execution: permitted with physical audio passthrough
+
+A VirtualBox guest is an acceptable execution environment for CP-07 only when the guest can access the real microphone and real playback device, and the operator can hear the generated response. A VM with a virtual/null audio sink, prerecorded input, generated test audio, or CI-only audio simulation is not physical voice evidence.
+
+### Required VM checks
+
+1. Configure VirtualBox audio input and output to the host's actual devices; enable USB controller and pass the actual USB microphone through to the guest when host-audio forwarding does not expose it as a capture device.
+2. In the Linux guest, verify `arecord -l`, `aplay -l`, `ls -l /dev/snd`, and `lsusb` where applicable. Record the exact capture/playback device IDs. A listed device alone is not sufficient.
+3. Run the exact candidate build in the guest and invoke the application's native **Grabar 8 s y responder por voz** action. Do not substitute a shell-only transcription or an IPC test double.
+4. Speak a fresh prompt into the real microphone. Verify non-empty STT, successful local response endpoint, non-empty Piper WAV, successful ALSA playback, and temporary-file cleanup.
+5. The operator must hear the generated response from the host's actual speakers/headphones and explicitly record that observation. Do not claim audible playback from an exit code alone.
+6. Record VM/VirtualBox version, guest OS/kernel, audio configuration, actual devices, app/binary/model hashes, versions/source provenance, candidate SHA, and a hash-bound evidence log. Do not include raw audio, transcripts, responses, credentials, or tokens.
+7. Run the evidence validator against the exact candidate SHA. Any subsequent source commit invalidates the evidence for that candidate. G23 independent validation and G24 certification remain separate gates.
+
+### Fail-closed rule
+
+If VirtualBox does not expose a working physical capture and playback path, report the VM run as a software/integration test only and leave CP-07 OPEN. Do not change the gate to PASS merely because the VM starts, the app builds, or audio commands return success. A dedicated self-hosted runner inside the VM is an execution option, not proof by itself; it must be isolated, trusted, and bound to the exact candidate.
+
