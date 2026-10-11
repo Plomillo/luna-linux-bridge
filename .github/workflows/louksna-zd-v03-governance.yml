@@ -1160,23 +1160,175 @@ jobs:
     needs: stage-10-evidence-freeze
     if: needs.stage-10-evidence-freeze.result == 'success' && needs.stage-10-evidence-freeze.outputs.status == 'PASS'
     runs-on: ubuntu-24.04
+    environment:
+      name: louksna-g23-independent-validation
+    permissions:
+      actions: read
+      contents: read
+      deployments: read
     steps:
-      - name: Refuse self-certification
+      - name: Verify protected independent-validation environment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ENVIRONMENT_NAME: louksna-g23-independent-validation
         shell: bash
         run: |
           set -Eeuo pipefail
-          echo "CP-11 HOLD: independent validator identity and independent digest-bound report are not configured."
-          exit 1
+          curl --fail --silent --show-error -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/environments/$ENVIRONMENT_NAME" > "$RUNNER_TEMP/environment.json"
+          jq -e '[.protection_rules[]? | select(.type == "required_reviewers")] | length > 0' "$RUNNER_TEMP/environment.json" >/dev/null || {
+            echo "::error::G23 environment lacks required reviewers; independent validation denied."
+            exit 1
+          }
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+          persist-credentials: false
+      - name: Independently re-download and verify frozen evidence
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
+        with:
+          pattern: louksna-zd-v03-cp*
+          path: evidence/g23/imported
+          merge-multiple: false
+      - name: Recompute evidence hashes and validate exact-SHA voice proof
+        id: g23
+        env:
+          CANDIDATE_SHA: ${{ env.CANDIDATE_SHA }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import datetime,hashlib,json,os,pathlib,sys
+          root=pathlib.Path("evidence/g23/imported")
+          manifest_path=root/"louksna-zd-v03-cp10-evidence-manifest"/"CP-10-evidence-manifest.json"
+          if not manifest_path.is_file(): raise SystemExit("G23 HOLD: CP-10 manifest missing from this exact workflow run")
+          manifest=json.loads(manifest_path.read_text(encoding="utf-8"))
+          candidate=os.environ["CANDIDATE_SHA"]
+          run_id=int(os.environ["GITHUB_RUN_ID"])
+          if manifest.get("status")!="PASS": raise SystemExit("G23 HOLD: CP-10 is not PASS")
+          if manifest.get("candidate_commit_sha")!=candidate: raise SystemExit("G23 HOLD: manifest candidate SHA mismatch")
+          if manifest.get("run_id")!=run_id: raise SystemExit("G23 HOLD: manifest run ID mismatch")
+          records=manifest.get("evidence")
+          if not isinstance(records,list) or not records: raise SystemExit("G23 HOLD: evidence list empty")
+          checked=[]
+          for rec in records:
+              rel=rec.get("path","")
+              expected=rec.get("sha256","")
+              if not rel or pathlib.PurePosixPath(rel).is_absolute() or ".." in pathlib.PurePosixPath(rel).parts:
+                  raise SystemExit("G23 HOLD: invalid manifest path")
+              p=root/rel
+              if not p.is_file(): raise SystemExit("G23 HOLD: evidence file missing: "+rel)
+              actual=hashlib.sha256(p.read_bytes()).hexdigest()
+              if actual!=expected: raise SystemExit("G23 HOLD: evidence digest mismatch: "+rel)
+              checked.append({"path":rel,"sha256":actual})
+          voice=root/"louksna-zd-v03-cp07-physical-voice-e2e"
+          voice_json=voice/"CP-07-physical-voice-e2e.json"
+          voice_log=voice/"CP-07-physical-voice-e2e.log"
+          if not voice_json.is_file() or not voice_log.is_file():
+              raise SystemExit("G23 HOLD: physical voice evidence/log missing")
+          voice_data=json.loads(voice_json.read_text(encoding="utf-8"))
+          if voice_data.get("source_run_id") is None:
+              raise SystemExit("G23 HOLD: physical voice source run provenance missing")
+          import subprocess
+          subprocess.run([sys.executable,"scripts/missions/validate_voice_hardware_evidence.py",str(voice_json),"--candidate-sha",candidate],check=True)
+          report={
+            "schema":"louksna.zd.v03.g23-independent-validation.v1",
+            "checkpoint_id":"G23","status":"PASS",
+            "candidate_commit_sha":candidate,"source_workflow_run_id":run_id,
+            "evidence_manifest_sha256":hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
+            "evidence_count":len(checked),"evidence_hashes_recomputed":True,
+            "physical_voice_evidence_sha256":hashlib.sha256(voice_json.read_bytes()).hexdigest(),
+            "physical_voice_log_sha256":hashlib.sha256(voice_log.read_bytes()).hexdigest(),
+            "protected_environment":"louksna-g23-independent-validation",
+            "protected_review_required":True,
+            "validated_utc":datetime.datetime.now(datetime.timezone.utc).isoformat()
+          }
+          out=pathlib.Path("evidence/g23/CP-11-G23-independent-validation.json")
+          out.parent.mkdir(parents=True,exist_ok=True)
+          out.write_text(json.dumps(report,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps(report,indent=2,sort_keys=True))
+          PY
+      - name: Preserve G23 independent validation report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksna-zd-v03-cp11-g23-independent-validation
+          path: evidence/g23/CP-11-G23-independent-validation.json
+          if-no-files-found: error
+          retention-days: 90
 
   stage-12-certification:
     name: "Stage 12 / CP-12 — G24 certification and release decision"
     needs: stage-11-independent-validation
     if: needs.stage-11-independent-validation.result == 'success'
     runs-on: ubuntu-24.04
+    environment:
+      name: louksna-g24-certification
+    permissions:
+      actions: read
+      contents: read
+      deployments: read
     steps:
-      - name: Require independent G23 evidence
+      - name: Verify protected certification environment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ENVIRONMENT_NAME: louksna-g24-certification
         shell: bash
         run: |
           set -Eeuo pipefail
-          echo "CP-12 HOLD: G23 evidence absent; no automatic certification or activation."
-          exit 1
+          curl --fail --silent --show-error -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/environments/$ENVIRONMENT_NAME" > "$RUNNER_TEMP/environment.json"
+          jq -e '[.protection_rules[]? | select(.type == "required_reviewers")] | length > 0' "$RUNNER_TEMP/environment.json" >/dev/null || {
+            echo "::error::G24 environment lacks required reviewers; certification denied."
+            exit 1
+          }
+      - name: Checkout exact candidate and import G23 report
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+          persist-credentials: false
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
+        with:
+          name: louksna-zd-v03-cp11-g23-independent-validation
+          path: evidence/g24/g23
+      - name: Validate G23 and issue digest-bound G24 decision record
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import datetime,hashlib,json,os,pathlib
+          p=pathlib.Path("evidence/g24/g23/CP-11-G23-independent-validation.json")
+          if not p.is_file(): raise SystemExit("G24 HOLD: G23 report missing")
+          g23=json.loads(p.read_text(encoding="utf-8"))
+          if g23.get("schema")!="louksna.zd.v03.g23-independent-validation.v1" or g23.get("status")!="PASS":
+              raise SystemExit("G24 HOLD: G23 status/schema invalid")
+          if g23.get("candidate_commit_sha")!=os.environ["CANDIDATE_SHA"]:
+              raise SystemExit("G24 HOLD: G23 candidate SHA mismatch")
+          if g23.get("source_workflow_run_id")!=int(os.environ["GITHUB_RUN_ID"]):
+              raise SystemExit("G24 HOLD: G23 source run mismatch")
+          if g23.get("evidence_hashes_recomputed") is not True or not g23.get("evidence_manifest_sha256"):
+              raise SystemExit("G24 HOLD: G23 independent digest validation incomplete")
+          certificate={
+            "schema":"louksna.zd.v03.g24-certification-decision.v1",
+            "checkpoint_id":"G24","status":"CERTIFIED",
+            "candidate_commit_sha":os.environ["CANDIDATE_SHA"],
+            "source_workflow_run_id":int(os.environ["GITHUB_RUN_ID"]),
+            "g23_report_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),
+            "g23_evidence_manifest_sha256":g23["evidence_manifest_sha256"],
+            "certification_environment":"louksna-g24-certification",
+            "protected_reviewer_approval_required":True,
+            "certified_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "activation":"NOT_PERFORMED",
+            "merge":"NOT_PERFORMED"
+          }
+          out=pathlib.Path("evidence/g24/CP-12-G24-certification-decision.json")
+          out.parent.mkdir(parents=True,exist_ok=True)
+          out.write_text(json.dumps(certificate,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          print(json.dumps(certificate,indent=2,sort_keys=True))
+          PY
+      - name: Preserve G24 certification decision
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksna-zd-v03-cp12-g24-certification-decision
+          path: evidence/g24/CP-12-G24-certification-decision.json
+          if-no-files-found: error
+          retention-days: 90
