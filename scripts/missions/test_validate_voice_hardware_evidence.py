@@ -51,7 +51,7 @@ def main():
     with tempfile.TemporaryDirectory() as td:
         path = pathlib.Path(td) / "CP-07-physical-voice-e2e.json"
         log_path = path.with_name("CP-07-physical-voice-e2e.log")
-        log_path.write_text("\\n".join([
+        log_path.write_text("\n".join([
             "PHYSICAL_VOICE_MIC_CAPTURE=PASS",
             "PHYSICAL_VOICE_TRANSCRIPTION=PASS",
             "PHYSICAL_VOICE_MODEL_RESPONSE=PASS",
@@ -60,7 +60,7 @@ def main():
             "PHYSICAL_VOICE_ACOUSTIC_OUTPUT=PASS",
             "PHYSICAL_VOICE_E2E_RESULT=PASS",
             "PHYSICAL_VOICE_TEMP_CLEANUP=PASS",
-        ]) + "\\n", encoding="utf-8")
+        ]) + "\n", encoding="utf-8")
         valid = {**VALID, "evidence_log_sha256": hashlib.sha256(log_path.read_bytes()).hexdigest()}
         path.write_text(json.dumps(valid), encoding="utf-8")
         good = subprocess.run([sys.executable, str(script), str(path), "--candidate-sha", "a" * 40], capture_output=True, text=True)
