@@ -195,7 +195,7 @@ jobs:
       - name: Download physical voice evidence from this run
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
-          name: louksna-zd-v03-cp07-physical-voice-e2e
+          name: louksna-zd-v03-physical-voice-preliminary
           path: evidence/zona-directiva-v03
       - name: Bind operator approval and validate exact-SHA evidence
         env:
