@@ -559,7 +559,7 @@ mod louksna_runtime_tests {
         }
         // The production command returns Ok only after non-empty capture/transcript/response,
         // non-empty Piper audio, and successful ALSA playback. Keep VoiceTurn fields private.
-        let _turn = tauri::async_runtime::block_on(voice::voice_e2e())
+        let turn = tauri::async_runtime::block_on(voice::voice_e2e())
             .expect("production voice_e2e command must complete the real audio pipeline");
         let capture_device = std::env::var("LOUKSNA_ALSA_CAPTURE_DEVICE")
             .expect("physical runner must configure an explicit ALSA capture device");
@@ -578,6 +578,12 @@ mod louksna_runtime_tests {
         println!("PHYSICAL_VOICE_MODEL_RESPONSE=PASS");
         println!("PHYSICAL_VOICE_TTS=PASS");
         println!("PHYSICAL_VOICE_PLAYBACK=PASS");
+        if !turn.acoustic_output_energy_detected {
+            panic!("PHYSICAL_VOICE_ACOUSTIC_OUTPUT_NOT_DETECTED");
+        }
+        println!("PHYSICAL_VOICE_ACOUSTIC_OUTPUT=PASS");
+        println!("PHYSICAL_VOICE_ACOUSTIC_BASELINE_PEAK_RMS={:.2}", turn.acoustic_baseline_peak_rms);
+        println!("PHYSICAL_VOICE_ACOUSTIC_PLAYBACK_PEAK_RMS={:.2}", turn.acoustic_playback_peak_rms);
         println!("PHYSICAL_VOICE_E2E_RESULT=PASS");
         println!("PHYSICAL_VOICE_CAPTURE_DEVICE={}", capture_device);
         println!("PHYSICAL_VOICE_PLAYBACK_DEVICE={}", playback_device);
