@@ -60,3 +60,12 @@ No declarar ACTIVE por build ni por G23/G24.
 ## ADENDA P6 — VOZ END-TO-END OBLIGATORIA (2026-10-10)
 
 La decisión de alcance confirma que voz E2E es obligatoria para la certificación terminal general. La capacidad debe implementarse como pipeline real y probarse sin simulación: captura de micrófono, STT, transporte/respuesta, TTS y reproducción audible. El gate CP-07 sigue OPEN hasta que se produzca evidencia de hardware real ligada al SHA exacto; código, compilación, QEMU o pruebas de contrato no son suficientes. Dependencias y configuración quedan documentadas en la adenda del contrato de gobernanza. No modificar `main`, no auto-merge y no auto-certificar.
+
+
+## ADENDA P6.1 — EJECUCIÓN FÍSICA DE VOZ EN RUNNER DEDICADO (2026-10-11)
+
+Esta adenda extiende, sin sustituir el alcance previo, `EXECUTION_LOCATION = GITHUB_HOSTED_ONLY`: los checkpoints ordinarios continúan en GitHub-hosted. Exclusivamente la prueba física CP-07 puede ejecutarse en un runner Linux self-hosted dedicado, con hardware real de captura y reproducción. Esta excepción es necesaria porque un runner hosted no demuestra funcionamiento físico de micrófono ni reproducción audible.
+
+El runner físico debe ejecutar el comando nativo de voz de la aplicación sobre el SHA exacto candidato. No basta una prueba de shell aislada, un IPC test double, QEMU, compilación o preflight. La evidencia se entrega como artefacto `louksna-zd-v03-cp07-physical-voice-e2e`, con esquema `louksna.zd.v03.physical-voice-e2e.v1`, SHA candidato, procedencia y hashes de binarios/modelos, resultados separados de captura/STT/respuesta/TTS/reproducción/limpieza y confirmación humana de audio audible. La evidencia de un SHA anterior no se propaga a otro SHA.
+
+El validador de evidencia verifica estructura, procedencia declarada y vinculación del SHA; no reemplaza la validación independiente G23 ni la certificación G24. Si el artefacto falta, es incompleto, no coincide con el candidato o no demuestra cada paso físico, CP-07 queda OPEN y CP-10/G23/G24 permanecen bloqueados. No se autoriza auto-merge ni auto-certificación.
