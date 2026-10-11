@@ -545,6 +545,14 @@ mod louksna_runtime_tests {
             eprintln!("SKIP_PHYSICAL_VOICE_E2E: set LOUKSNA_RUN_PHYSICAL_VOICE_E2E=1 on the dedicated hardware runner");
             return;
         }
+        let temp_root = std::env::temp_dir();
+        let prefix = format!("louksna-voice-{}-", std::process::id());
+        let before: std::collections::HashSet<_> = std::fs::read_dir(&temp_root)
+            .expect("enumerate temp directory before voice E2E")
+            .filter_map(Result::ok)
+            .map(|entry| entry.file_name())
+            .filter(|name| name.to_string_lossy().starts_with(&prefix))
+            .collect();
         let turn = tauri::async_runtime::block_on(voice::voice_e2e())
             .expect("production voice_e2e command must complete the real audio pipeline");
         assert!(!turn.transcript.trim().is_empty(), "real microphone transcription must be non-empty");
@@ -552,11 +560,18 @@ mod louksna_runtime_tests {
         assert!(turn.audio_played, "Piper output must play successfully through ALSA");
         assert!(!turn.capture_device.trim().is_empty(), "capture device selector must be recorded");
         assert!(!turn.playback_device.trim().is_empty(), "playback device selector must be recorded");
+        let after: std::collections::HashSet<_> = std::fs::read_dir(&temp_root)
+            .expect("enumerate temp directory after voice E2E")
+            .filter_map(Result::ok)
+            .map(|entry| entry.file_name())
+            .filter(|name| name.to_string_lossy().starts_with(&prefix))
+            .collect();
+        assert_eq!(before, after, "voice command must clean up its temporary audio directory");
         // Do not print captured speech or generated response into public CI logs.
         println!("PHYSICAL_VOICE_E2E_RESULT=PASS");
         println!("PHYSICAL_VOICE_CAPTURE_DEVICE={}", turn.capture_device);
         println!("PHYSICAL_VOICE_PLAYBACK_DEVICE={}", turn.playback_device);
+        println!("PHYSICAL_VOICE_TEMP_CLEANUP=PASS");
         println!("PHYSICAL_VOICE_ELAPSED_MS={}", turn.elapsed_ms);
     }
-
 }
