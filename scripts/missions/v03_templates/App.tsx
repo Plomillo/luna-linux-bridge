@@ -34,6 +34,11 @@ export default function App(){
   const[busy,setBusy]=useState("");
   const[notice,setNotice]=useState("");
   const[health,setHealth]=useState<Health>({status:"UNVERIFIED",detail:"Probe pendiente"});
+  const[voiceStatus,setVoiceStatus]=useState("UNVERIFIED");
+  const[voiceMissing,setVoiceMissing]=useState<string[]>([]);
+  const[voiceTranscript,setVoiceTranscript]=useState("");
+  const[voiceResponse,setVoiceResponse]=useState("");
+  const[voiceBusy,setVoiceBusy]=useState(false);
   const s=useMemo(()=>sections.find(x=>x.key===active)!,[active]);
 
   const call=async<T,>(name:string,args?:Record<string,unknown>):Promise<T>=>{
@@ -89,6 +94,26 @@ export default function App(){
   };
 
   const loadChat=async()=>setChats(await call<Chat[]>("chat_history",{limit:100}));
+
+  const checkVoice=async()=>{
+    setVoiceBusy(true);setNotice("");
+    try{
+      const p=await call<{status:string;missing:string[];detail:string}>("voice_preflight");
+      setVoiceStatus(p.status);setVoiceMissing(p.missing);
+      setNotice(p.status==="READY"?"Dependencias de voz presentes; todavía no es evidencia E2E.":"Voz no lista: "+p.missing.join(", "));
+    }catch(e){setVoiceStatus("FAIL");setNotice("Preflight de voz: "+(e as Error).message)}
+    finally{setVoiceBusy(false);await refreshEvidence()}
+  };
+
+  const runVoice=async()=>{
+    setVoiceBusy(true);setNotice("");setVoiceTranscript("");setVoiceResponse("");
+    try{
+      const v=await call<{status:string;transcript:string;response:string;elapsed_ms:number;audio_played:boolean}>("voice_e2e");
+      setVoiceStatus(v.status);setVoiceTranscript(v.transcript);setVoiceResponse(v.response);
+      setNotice("Turno de voz ejecutado con captura y reproducción reales ("+v.elapsed_ms+" ms). Esto no equivale a certificación.");
+    }catch(e){setVoiceStatus("FAIL");setNotice("Turno de voz fallido: "+(e as Error).message)}
+    finally{setVoiceBusy(false);await refreshEvidence()}
+  };
 
   const sendChat=async()=>{
     if(!msg.trim())return;
@@ -263,8 +288,16 @@ export default function App(){
         </article>
         <article className="panel">
           <h3>Llamada / voz</h3>
-          <p>La pila de voz end-to-end todavia no esta certificada. No se presenta como activa.</p>
-          <button disabled>Microfono — gate abierto</button>
+          <p>Pipeline real: micrófono ALSA → whisper.cpp → Ollama local → Piper TTS → salida ALSA. El gate de certificación permanece abierto hasta la prueba real documentada.</p>
+          <p data-voice-status={voiceStatus}>Estado de voz: {voiceStatus}</p>
+          <div className="actions">
+            <button onClick={checkVoice} disabled={voiceBusy}>{voiceBusy?"Comprobando...":"Comprobar dependencias"}</button>
+            <button onClick={runVoice} disabled={voiceBusy}>{voiceBusy?"Procesando...":"Grabar 8 s y responder por voz"}</button>
+          </div>
+          {voiceMissing.length>0&&<p className="muted">Faltantes: {voiceMissing.join(", ")}</p>}
+          {voiceTranscript&&<div className="e-row"><b>Transcripción real</b><p>{voiceTranscript}</p></div>}
+          {voiceResponse&&<div className="e-row"><b>Respuesta sintetizada y reproducida</b><p>{voiceResponse}</p></div>}
+          <p className="muted">No se guarda audio ni transcripción en el ledger. Los archivos temporales se eliminan al finalizar el turno.</p>
           <h3>Bridge remoto</h3>
           <p>{settings.remote_chat_bridge?"Configurado: el round-trip se valida por mensaje.":"No configurado. El chat seguira local y lo declarara explicitamente."}</p>
         </article>
