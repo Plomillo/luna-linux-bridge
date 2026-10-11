@@ -66,10 +66,11 @@ permissions:
   actions: read
 
 concurrency:
-  # Isolate each candidate run so evidence-producing CP-09 VM tests cannot block newer candidate validation.
-  # CP-09 uses an explicitly declared disposable QEMU guest; it does not certify physical GPU, display, audio, or microphone hardware.
-  group: louksna-zd-v03-governance-${{ github.ref }}-${{ github.run_id }}
-  cancel-in-progress: false
+  # Serialize by source branch/ref, not run ID: a newer candidate supersedes stale evidence for the same branch.
+  # Cancel only an older run in this same concurrency group; never cancel unrelated branches.
+  # CP-09 is disposable QEMU evidence, not physical GPU/display/audio/microphone certification.
+  group: louksna-zd-v03-governance-${{ github.event.pull_request.head.ref || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   stage-01-audit:
