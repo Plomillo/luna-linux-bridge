@@ -554,7 +554,7 @@ mod louksna_runtime_tests {
             .filter(|name| name.to_string_lossy().starts_with(&prefix))
             .collect();
         for remaining in (1..=30).rev() {
-            eprintln!("PHYSICAL_VOICE_CAPTURE_STARTS_IN={remaining}; operator speak clearly in English into the configured physical microphone and continue speaking during the 8-second capture");
+            eprintln!("PHYSICAL_VOICE_CAPTURE_STARTS_IN={remaining}; operador: habla claramente en español por el micrófono físico configurado y continúa hablando durante la captura de 8 segundos");
             std::thread::sleep(std::time::Duration::from_secs(1));
         }
         // The production command returns Ok only after non-empty capture/transcript/response,
