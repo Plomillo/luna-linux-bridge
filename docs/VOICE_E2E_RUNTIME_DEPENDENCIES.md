@@ -35,6 +35,7 @@ Set these environment variables for the process launching the desktop applicatio
 - `LOUKSNA_PIPER_MODEL=/absolute/path/to/piper-voice.onnx`
 - `LOUKSNA_OLLAMA_MODEL=<exact-model-tag-from-ollama-list>`
 - Optional: `LOUKSNA_VOICE_OLLAMA_URL=http://127.0.0.1:11434/api/chat` (loopback HTTP only by default).
+- Optional: `LOUKSNA_ALSA_CAPTURE_DEVICE=default` and `LOUKSNA_ALSA_PLAYBACK_DEVICE=default`. Use `arecord -l`/`aplay -l` to select a real device; record the exact values in evidence. The runtime ledger records these device selectors without storing audio or recognized text.
 
 Piper model distributions may require a companion configuration file. Provision that file alongside the model according to the exact upstream release; if the selected Piper build requires a different invocation, adapt and test the integration explicitly rather than marking the preflight as passed.
 
