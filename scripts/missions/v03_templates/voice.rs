@@ -39,7 +39,7 @@ fn command_exists(name: &str) -> bool {
 }
 fn run_bounded(program: &str, args: &[&str], stdin_text: Option<&str>, timeout: Duration) -> Result<(String,String),String> {
     let mut cmd = Command::new(program);
-    cmd.args(args).stdout(Stdio::piped()).stderr(Stdio::piped());
+    cmd.args(args).stdout(Stdio::piped()).stderr(Stdio::null());
     if stdin_text.is_some() { cmd.stdin(Stdio::piped()); } else { cmd.stdin(Stdio::null()); }
     let mut child = cmd.spawn().map_err(|_| format!("VOICE_DEPENDENCY_EXEC_FAILED:{program}"))?;
     if let Some(text) = stdin_text {
@@ -49,9 +49,9 @@ fn run_bounded(program: &str, args: &[&str], stdin_text: Option<&str>, timeout: 
     }
     match child.wait_timeout(timeout).map_err(|e| format!("VOICE_PROCESS_WAIT_FAILED:{e}"))? {
         Some(status) => {
-            let mut out = String::new(); let mut err = String::new();
+            let mut out = String::new(); let err = String::new();
             if let Some(mut pipe) = child.stdout.take() { use std::io::Read; pipe.read_to_string(&mut out).map_err(|_| "VOICE_STDOUT_READ_FAILED")?; }
-            if let Some(mut pipe) = child.stderr.take() { use std::io::Read; pipe.read_to_string(&mut err).map_err(|_| "VOICE_STDERR_READ_FAILED")?; }
+
             if !status.success() { return Err(format!("VOICE_COMMAND_FAILED:{program}:{}", status.code().unwrap_or(-1))); }
             Ok((out,err))
         },
