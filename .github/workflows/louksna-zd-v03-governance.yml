@@ -8,6 +8,7 @@ on:
       - governance/zona-directiva-v03/12_STAGE_GOVERNANCE_CONTRACT.md
       - .github/workflows/louksna-zd-v03-governance.yml
       - .github/workflows/louksna-zd-v03-physical-voice.yml
+      - .github/workflows/louksna-zd-v03-recorded-voice-e2e.yml
       - .github/workflows/louksna-zd-v03-functional.yml
       - .github/workflows/louksna-zd-v03-supervisor.yml
       - scripts/missions/louksna_zd_v03_functionalizer.py
@@ -33,6 +34,7 @@ on:
       - governance/zona-directiva-v03/12_STAGE_GOVERNANCE_CONTRACT.md
       - .github/workflows/louksna-zd-v03-governance.yml
       - .github/workflows/louksna-zd-v03-physical-voice.yml
+      - .github/workflows/louksna-zd-v03-recorded-voice-e2e.yml
       - .github/workflows/louksna-zd-v03-functional.yml
       - .github/workflows/louksna-zd-v03-supervisor.yml
       - scripts/missions/louksna_zd_v03_functionalizer.py
@@ -811,6 +813,14 @@ jobs:
             evidence/zona-directiva-v03/CP-07-playwright-ui-e2e.log
           if-no-files-found: warn
           retention-days: 90
+
+  stage-07-recorded-audio-e2e:
+    name: "Stage 07 supplemental / Real recorded speech, live STT, LLM and TTS"
+    needs: stage-06-functions-attachments
+    if: needs.stage-06-functions-attachments.result == 'success' && needs.stage-06-functions-attachments.outputs.status == 'PASS'
+    uses: ./.github/workflows/louksna-zd-v03-recorded-voice-e2e.yml
+    with:
+      candidate_sha: ${{ github.event.pull_request.head.sha || github.sha }}
 
   stage-07-runner-preflight:
     name: "Stage 07 / CP-07 — Verify dedicated physical-audio runner availability"
