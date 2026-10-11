@@ -168,7 +168,7 @@ jobs:
             sudo kill "$(cat /tmp/louksna-kvm-probe.pid)" 2>/dev/null || true
           fi
           echo "QEMU_ACCEL=$ACCEL" | tee "$GITHUB_WORKSPACE/evidence/cp07-vm/virtualization.txt"
-          qemu-system-x86_64 -machine "q35,accel=$ACCEL" -cpu max -smp 2 -m 4096             -drive file=vm-overlay.qcow2,if=virtio,format=qcow2             -drive file=seed.iso,media=cdrom,readonly=on             -netdev user,id=net0,hostfwd=tcp:127.0.0.1:2222-:22 -device virtio-net-pci,netdev=net0             -display none -serial file=vm-serial.log -daemonize -pidfile qemu.pid
+          sudo qemu-system-x86_64 -machine "q35,accel=$ACCEL" -cpu max -smp 2 -m 4096             -drive file=vm-overlay.qcow2,if=virtio,format=qcow2             -drive file=seed.iso,media=cdrom,readonly=on             -netdev user,id=net0,hostfwd=tcp:127.0.0.1:2222-:22 -device virtio-net-pci,netdev=net0 -audiodev none,id=audio0 -device intel-hda -device hda-duplex,audiodev=audio0 -display none -serial file=vm-serial.log -daemonize -pidfile qemu.pid
           echo "VM_PID_FILE=$RUNNER_TEMP/cp07-vm/qemu.pid" >> "$GITHUB_ENV"
           echo "VM_DIR=$RUNNER_TEMP/cp07-vm" >> "$GITHUB_ENV"
           echo "VM_KEY=$RUNNER_TEMP/cp07-vm/vm_key" >> "$GITHUB_ENV"
