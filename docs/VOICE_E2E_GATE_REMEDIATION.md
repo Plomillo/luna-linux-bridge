@@ -56,3 +56,10 @@ A VirtualBox guest is an acceptable execution environment for CP-07 only when th
 
 If VirtualBox does not expose a working physical capture and playback path, report the VM run as a software/integration test only and leave CP-07 OPEN. Do not change the gate to PASS merely because the VM starts, the app builds, or audio commands return success. A dedicated self-hosted runner inside the VM is an execution option, not proof by itself; it must be isolated, trusted, and bound to the exact candidate.
 
+## GitHub runner inventory and protected-environment API permissions
+
+The repository Actions token with `actions: read` cannot list repository self-hosted runners: GitHub requires repository `Administration: read` for `GET /repos/{owner}/{repo}/actions/runners`. The previous implementation called this endpoint with `secrets.GITHUB_TOKEN` and received HTTP 403 `Resource not accessible by integration`; that failure did **not** establish whether a physical runner exists or is online.
+
+Before running the physical CP-07 path or G23/G24 environment-protection checks, configure a repository secret named `LOUKSNA_REPO_ADMIN_READ_TOKEN` containing a fine-grained credential scoped only to this repository with **Administration: read** permission. Do not put the token in source, workflow inputs, PR comments, logs, or chat. The workflows now fail fast with an explicit diagnostic if the secret is absent or the API denies access. This credential only enables inventory/protection inspection; it does not create a runner, prove physical audio hardware, approve an environment, or grant certification.
+
+CP-07 additionally requires an actual registered, online Linux self-hosted runner labeled `louksna-voice-hw`, pre-provisioned pinned dependencies/models, non-virtual ALSA capture/playback devices, and protected operator confirmation after audible playback. A green recorded-audio test, a runner inventory response, or an API permission fix alone is insufficient. CP-10, G23, and G24 remain blocked until exact-SHA evidence and independent/protected approvals exist.
