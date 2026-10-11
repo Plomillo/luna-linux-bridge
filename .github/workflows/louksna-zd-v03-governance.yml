@@ -19,6 +19,11 @@ on:
       - scripts/missions/louksna_zd_v03_playwright_ui_e2e.mjs
       - scripts/missions/debian13_package_smoke.sh
       - scripts/missions/v03_templates/**
+      - scripts/missions/validate_voice_hardware_evidence.py
+      - scripts/missions/test_validate_voice_hardware_evidence.py
+      - docs/VOICE_E2E_GATE_REMEDIATION.md
+      - docs/VOICE_E2E_RUNTIME_DEPENDENCIES.md
+      - missions/inbox/louksna-zona-directiva-v03-functional-20261006/MISSION.md
   pull_request:
     branches:
       - main
