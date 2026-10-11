@@ -46,7 +46,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends build-essential cmake git curl ffmpeg python3 python3-pip python3-venv jq
+          sudo apt-get install --yes --no-install-recommends build-essential cmake git curl ffmpeg file python3 python3-pip python3-venv jq
           python3 -m venv "$RUNNER_TEMP/voice-venv"
           "$RUNNER_TEMP/voice-venv/bin/pip" install --disable-pip-version-check "piper-tts==1.2.0"
           docker --version
