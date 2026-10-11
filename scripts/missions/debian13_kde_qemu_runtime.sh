@@ -81,23 +81,7 @@ users:
     ssh_authorized_keys:
       - ${PUBKEY}
 ssh_pwauth: false
-package_update: true
-packages:
-  - openssh-server
-  - sudo
-  - dbus
-  - dbus-x11
-  - xserver-xorg
-  - xserver-xorg-video-dummy
-  - x11-xserver-utils
-  - x11-utils
-  - xauth
-  - xinit
-  - plasma-workspace
-  - kwin-x11
-  - konsole
-  - python3
-  - ca-certificates
+package_update: false
 write_files:
   - path: /etc/X11/Xwrapper.config
     permissions: '0644'
@@ -129,9 +113,17 @@ write_files:
         EndSubSection
       EndSection
 runcmd:
-  - systemctl enable ssh
-  - systemctl restart ssh
-  - touch /var/lib/cloud/instance/cp09-ready
+  - |
+    set -Eeuo pipefail
+    export DEBIAN_FRONTEND=noninteractive
+    if ! (apt-get update && apt-get install -y --no-install-recommends openssh-server sudo dbus dbus-x11 xserver-xorg xserver-xorg-video-dummy x11-xserver-utils x11-utils xauth xinit plasma-workspace kwin-x11 konsole python3 ca-certificates) > /var/log/cp09-package-install.log 2>&1; then
+      touch /var/lib/cloud/instance/cp09-failed
+      exit 1
+    fi
+    dpkg-query -W plasma-workspace kwin-x11 xserver-xorg-video-dummy
+    systemctl enable ssh
+    systemctl restart ssh
+    touch /var/lib/cloud/instance/cp09-ready
 EOF
 cat > "$WORK/meta-data" <<EOF
 instance-id: louksna-cp09-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}
@@ -154,9 +146,19 @@ SSH=(ssh -i "$VM_KEY" -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=
 READY=0
 for _ in $(seq 1 120); do
   if "${SSH[@]}" 'test -f /var/lib/cloud/instance/cp09-ready' >/dev/null 2>&1; then READY=1; break; fi
+  if "${SSH[@]}" 'test -f /var/lib/cloud/instance/cp09-failed' >/dev/null 2>&1; then
+    "${SSH[@]}" 'cat /var/log/cp09-package-install.log /var/log/cloud-init-output.log 2>/dev/null || true' 2>&1 | tee -a "$LOG" || true
+    log "Debian guest package installation failed; diagnostics captured"
+    exit 34
+  fi
   sleep 5
 done
-if [[ "$READY" -ne 1 ]]; then tail -n 120 "$WORK/vm-serial.log" >>"$LOG" 2>&1 || true; log "Debian guest/cloud-init did not become ready"; exit 33; fi
+if [[ "$READY" -ne 1 ]]; then
+  tail -n 160 "$WORK/vm-serial.log" >>"$LOG" 2>&1 || true
+  "${SSH[@]}" 'cat /var/log/cp09-package-install.log /var/log/cloud-init-output.log 2>/dev/null || true' 2>&1 | tee -a "$LOG" || true
+  log "Debian guest/cloud-init did not become ready"
+  exit 33
+fi
 "${SSH[@]}" 'sudo cloud-init status --wait; . /etc/os-release; test "$ID:$VERSION_ID" = "debian:13"; dpkg-query -W plasma-workspace kwin-x11 xserver-xorg-video-dummy' | tee -a "$LOG"
 "${SSH[@]}" 'sudo install -d -o louksna-test -g louksna-test -m 0700 /run/user/1000; sudo -u louksna-test mkdir -p /home/louksna-test/.local/share; sudo -u louksna-test nohup env HOME=/home/louksna-test USER=louksna-test LOGNAME=louksna-test XDG_RUNTIME_DIR=/run/user/1000 dbus-run-session -- startx /usr/bin/startplasma-x11 -- :0 vt1 -keeptty -nolisten tcp > /home/louksna-test/.local/share/cp09-kde-session.log 2>&1 < /dev/null & for i in $(seq 1 60); do pgrep -x Xorg >/dev/null && pgrep -x kwin_x11 >/dev/null && break; sleep 2; done; pgrep -x Xorg; pgrep -x kwin_x11; tail -n 60 /home/louksna-test/.local/share/cp09-kde-session.log || true' | tee -a "$LOG"
 scp -i "$VM_KEY" -P 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$PKG" louksna-test@127.0.0.1:/tmp/candidate.deb
