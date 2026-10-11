@@ -553,6 +553,10 @@ mod louksna_runtime_tests {
             .map(|entry| entry.file_name())
             .filter(|name| name.to_string_lossy().starts_with(&prefix))
             .collect();
+        for remaining in (1..=10).rev() {
+            eprintln!("PHYSICAL_VOICE_CAPTURE_STARTS_IN={remaining}; operator speak clearly into the configured microphone");
+            std::thread::sleep(std::time::Duration::from_secs(1));
+        }
         let turn = tauri::async_runtime::block_on(voice::voice_e2e())
             .expect("production voice_e2e command must complete the real audio pipeline");
         assert!(!turn.transcript.trim().is_empty(), "real microphone transcription must be non-empty");
