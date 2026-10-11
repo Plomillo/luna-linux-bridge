@@ -336,6 +336,16 @@ fn runtime_probe()->Result<Value,String>{
     Ok(serde_json::json!({"status":status,"data_dir":data,"db_exists":db_path.exists(),"database_query":database,"secret_service_tool":secret_tool,"identity":"LOUKSNA","version":"0.3.0"}))
 }
 
+#[tauri::command]
+fn record_voice_observation(observation:String)->Result<(),String>{
+    let normalized=observation.trim().to_ascii_uppercase();
+    if !["YES","NO","NOT_SURE"].contains(&normalized.as_str()) {
+        return Err("VOICE_OBSERVATION_INVALID".into());
+    }
+    let detail=format!("observation={};supplemental_only=true;technical_gate_unchanged=true",normalized);
+    log_event("VOICE_ACOUSTIC_OPERATOR_OBSERVATION","SUPPLEMENTAL",&detail)
+}
+
 fn main(){
     if let Err(e)=db(){
         eprintln!("LOUKSNA_DB_INIT_FAIL:{e}");
@@ -349,7 +359,7 @@ fn main(){
       .invoke_handler(tauri::generate_handler![
         get_settings,save_settings,store_github_token,remove_github_token,
         github_connection,github_repositories,github_pull_requests,
-        evidence_recent,chat_history,chat_send,runtime_probe,
+        evidence_recent,chat_history,chat_send,runtime_probe,record_voice_observation,
         voice::voice_preflight,voice::voice_e2e
       ])
       .run(tauri::generate_context!())
