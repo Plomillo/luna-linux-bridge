@@ -174,7 +174,7 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          cleanup() { if test -f "$VM_PID_FILE"; then kill "$(cat "$VM_PID_FILE")" 2>/dev/null || true; fi; }
+          cleanup() { if test -f "$VM_PID_FILE"; then sudo kill "$(cat "$VM_PID_FILE")" 2>/dev/null || true; fi; }
           trap cleanup EXIT
           READY=0
           for attempt in $(seq 1 80); do
