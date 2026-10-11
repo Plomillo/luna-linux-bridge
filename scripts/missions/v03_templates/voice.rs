@@ -2,7 +2,7 @@
 //! Required: ALSA utilities, whisper.cpp CLI/model, Piper CLI/model, and a local Ollama model.
 use serde::Serialize;
 use serde_json::{json, Value};
-use std::{path::{Path, PathBuf}, process::{Command, Stdio}, io::Write, time::{Duration, Instant}};
+use std::{path::PathBuf, process::{Command, Stdio}, io::Write, time::{Duration, Instant}};
 use wait_timeout::ChildExt;
 
 const CAPTURE_SECONDS: &str = "8";
@@ -115,7 +115,6 @@ async fn voice_e2e_inner() -> Result<VoiceTurn,String> {
     std::fs::create_dir_all(&root).map_err(|_| "VOICE_TEMP_CREATE_FAILED")?;
     let _cleanup = TempAudio(root.clone());
     let capture = root.join("capture.wav");
-    let transcript_path = root.join("transcript.txt");
     let response_audio = root.join("response.wav");
     let capture_s = capture.to_string_lossy().to_string();
     run_bounded("arecord", &["-q","-D","default","-f","S16_LE","-r","16000","-c","1","-d",CAPTURE_SECONDS,"-t","wav",&capture_s],None,Duration::from_secs(12))?;
@@ -127,7 +126,6 @@ async fn voice_e2e_inner() -> Result<VoiceTurn,String> {
     let transcript = transcript_out.trim().to_string();
     if transcript.is_empty() { return Err("VOICE_TRANSCRIPTION_EMPTY".into()); }
     if transcript.chars().count() > MAX_TEXT_CHARS { return Err("VOICE_TRANSCRIPTION_TOO_LONG".into()); }
-    std::fs::write(&transcript_path,&transcript).map_err(|_| "VOICE_TRANSCRIPT_WRITE_FAILED")?;
 
     let endpoint = ollama_endpoint();
     validate_local_endpoint(&endpoint)?;
