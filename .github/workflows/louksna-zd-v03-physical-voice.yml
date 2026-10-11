@@ -119,10 +119,11 @@ jobs:
               try: return subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,timeout=10).stdout.strip().splitlines()[0][:300]
               except Exception as e: return "UNAVAILABLE:"+type(e).__name__
           log=pathlib.Path("evidence/zona-directiva-v03/CP-07-physical-voice-e2e.log")
+          log_text=log.read_text(encoding="utf-8",errors="replace")
+          for marker in ("PHYSICAL_VOICE_E2E_RESULT=PASS","PHYSICAL_VOICE_TEMP_CLEANUP=PASS"):
+              if marker not in log_text: raise SystemExit("Missing required runtime evidence marker: "+marker)
           data={
             "schema":"louksna.zd.v03.physical-voice-e2e.v1",
-            "status":"PASS_PENDING_OPERATOR_ATTESTATION",
-            "voice_gate":"HOLD",
             "candidate_commit_sha":os.environ["CANDIDATE_SHA"],
             "source_run_id":os.environ["GITHUB_RUN_ID"],
             "os_kernel":subprocess.run(["uname","-srvm"],capture_output=True,text=True).stdout.strip(),
@@ -136,7 +137,7 @@ jobs:
             "ollama_model":os.environ["LOUKSNA_OLLAMA_MODEL"],
             "whisper_model_sha256":sha(os.environ["LOUKSNA_WHISPER_MODEL"]),
             "piper_model_sha256":sha(os.environ["LOUKSNA_PIPER_MODEL"]),
-            "whisper_binary_sha256":sha(shutil.which("whisper-cli")) if False else sha(subprocess.run(["bash","-lc","command -v whisper-cli"],capture_output=True,text=True).stdout.strip()),
+            "whisper_binary_sha256":sha(subprocess.run(["bash","-lc","command -v whisper-cli"],capture_output=True,text=True).stdout.strip()),
             "piper_binary_sha256":sha(subprocess.run(["bash","-lc","command -v piper"],capture_output=True,text=True).stdout.strip()),
             "app_binary_sha256":sha(binary),
             "evidence_log_sha256":sha(log),
