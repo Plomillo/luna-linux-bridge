@@ -160,7 +160,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: louksna-zd-v03-cp07-physical-voice-e2e
+          name: louksna-zd-v03-cp07-physical-voice-preliminary
           path: |
             evidence/zona-directiva-v03/CP-07-physical-voice-e2e.log
             evidence/zona-directiva-v03/CP-07-physical-voice-preliminary.json
@@ -226,7 +226,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: louksna-zd-v03-cp07-physical-voice-e2e-validated
+          name: louksna-zd-v03-cp07-physical-voice-e2e
           path: |
             evidence/zona-directiva-v03/CP-07-physical-voice-e2e.json
             evidence/zona-directiva-v03/CP-07-physical-voice-e2e.log
