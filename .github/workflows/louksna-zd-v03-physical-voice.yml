@@ -214,7 +214,7 @@ jobs:
           APP_BIN="$GITHUB_WORKSPACE/evidence/cp07-build/app-binary"
           chmod 0755 "$TEST_BIN" "$APP_BIN"
           "$TEST_BIN" --exact louksna_runtime_tests::physical_voice_e2e_real_audio_path --nocapture --test-threads=1 2>&1 | tee evidence/zona-directiva-v03/CP-07-physical-voice-e2e.log
-          for marker in PHYSICAL_VOICE_MIC_CAPTURE=PASS PHYSICAL_VOICE_TRANSCRIPTION=PASS PHYSICAL_VOICE_MODEL_RESPONSE=PASS PHYSICAL_VOICE_TTS=PASS PHYSICAL_VOICE_PLAYBACK=PASS PHYSICAL_VOICE_E2E_RESULT=PASS PHYSICAL_VOICE_TEMP_CLEANUP=PASS; do
+          for marker in PHYSICAL_VOICE_MIC_CAPTURE=PASS PHYSICAL_VOICE_TRANSCRIPTION=PASS PHYSICAL_VOICE_MODEL_RESPONSE=PASS PHYSICAL_VOICE_TTS=PASS PHYSICAL_VOICE_PLAYBACK=PASS PHYSICAL_VOICE_ACOUSTIC_OUTPUT=PASS PHYSICAL_VOICE_E2E_RESULT=PASS PHYSICAL_VOICE_TEMP_CLEANUP=PASS; do
             grep -q "$marker" evidence/zona-directiva-v03/CP-07-physical-voice-e2e.log || { echo "::error::Missing required physical voice evidence marker: $marker"; exit 1; }
           done
           if grep -q 'SKIP_PHYSICAL_VOICE_E2E' evidence/zona-directiva-v03/CP-07-physical-voice-e2e.log; then
@@ -259,7 +259,11 @@ jobs:
             "response_http_success":True,
             "tts_audio_nonempty":True,
             "playback_exit_success":True,
+            "acoustic_output_energy_detected":("PHYSICAL_VOICE_ACOUSTIC_OUTPUT=PASS" in log.read_text(encoding="utf-8")),
+            "acoustic_baseline_peak_rms":float(next((line.split("=",1)[1] for line in log.read_text(encoding="utf-8").splitlines() if line.startswith("PHYSICAL_VOICE_ACOUSTIC_BASELINE_PEAK_RMS=")), "0")),
+            "acoustic_playback_peak_rms":float(next((line.split("=",1)[1] for line in log.read_text(encoding="utf-8").splitlines() if line.startswith("PHYSICAL_VOICE_ACOUSTIC_PLAYBACK_PEAK_RMS=")), "0")),
             "audible_playback_confirmed_by_operator":False,
+            "operator_observation":"NOT_COLLECTED_OPTIONAL",
             "temporary_audio_cleanup_verified":True,
             "voice_gate":"HOLD",
             "status":"HOLD",
@@ -283,13 +287,11 @@ jobs:
           if-no-files-found: warn
           retention-days: 90
 
-  operator-attestation:
-    name: "CP-07 — Operator confirms audible playback after the real run"
+  acoustic-evidence-validation:
+    name: "CP-07 — Validate SHA-bound acoustic evidence (operator response optional)"
     needs: physical-voice-e2e
     if: needs.physical-voice-e2e.result == 'success'
-    runs-on: [self-hosted, linux, x64, louksna-voice-hw-dedicated]
-    environment:
-      name: voice-hardware-operator-attestation
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - name: Checkout exact candidate
@@ -297,47 +299,51 @@ jobs:
         with:
           ref: ${{ inputs.candidate_sha || github.event.inputs.candidate_sha || github.sha }}
           persist-credentials: false
-      - name: Record protected operator-attestation gate
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          echo "GitHub Environment voice-hardware-operator-attestation requires reviewer approval before this job can start."
-          echo "This approval is the operator attestation gate; no attestation is synthesized before the protected job is released."
       - name: Download physical voice evidence from this run
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: louksna-zd-v03-physical-voice-preliminary
           path: evidence/zona-directiva-v03
-      - name: Bind operator approval and validate exact-SHA evidence
+      - name: Promote only measured acoustic evidence and validate exact SHA
         env:
           CANDIDATE_SHA: ${{ inputs.candidate_sha || github.event.inputs.candidate_sha || github.sha }}
         shell: bash
         run: |
           set -Eeuo pipefail
           python3 - "$CANDIDATE_SHA" evidence/zona-directiva-v03/CP-07-physical-voice-preliminary.json evidence/zona-directiva-v03/CP-07-physical-voice-e2e.json <<'PY'
-          import json,pathlib,sys,datetime
+          import datetime,hashlib,json,pathlib,sys
           candidate,src,dst=sys.argv[1:]
           data=json.loads(pathlib.Path(src).read_text(encoding="utf-8"))
-          if data.get("candidate_commit_sha") != candidate: raise SystemExit("Candidate SHA mismatch; no evidence promotion")
           log=pathlib.Path("evidence/zona-directiva-v03/CP-07-physical-voice-e2e.log")
-          if not log.is_file(): raise SystemExit("Physical voice log missing")
-          data["candidate_commit_sha"]=candidate
+          if data.get("candidate_commit_sha") != candidate:
+              raise SystemExit("Candidate SHA mismatch; evidence remains HOLD")
+          if not log.is_file():
+              raise SystemExit("Physical voice log missing; evidence remains HOLD")
+          if data.get("acoustic_output_energy_detected") is not True:
+              raise SystemExit("Measured acoustic output is absent; evidence remains HOLD")
+          if not isinstance(data.get("acoustic_baseline_peak_rms"), (int,float)) or not isinstance(data.get("acoustic_playback_peak_rms"), (int,float)):
+              raise SystemExit("Acoustic RMS measurements missing; evidence remains HOLD")
+          if data["acoustic_playback_peak_rms"] < max(250.0, data["acoustic_baseline_peak_rms"] * 1.5):
+              raise SystemExit("Acoustic output signal did not clear threshold; evidence remains HOLD")
+          required=("PHYSICAL_VOICE_MIC_CAPTURE=PASS","PHYSICAL_VOICE_TRANSCRIPTION=PASS","PHYSICAL_VOICE_MODEL_RESPONSE=PASS","PHYSICAL_VOICE_TTS=PASS","PHYSICAL_VOICE_PLAYBACK=PASS","PHYSICAL_VOICE_ACOUSTIC_OUTPUT=PASS","PHYSICAL_VOICE_E2E_RESULT=PASS","PHYSICAL_VOICE_TEMP_CLEANUP=PASS")
+          log_text=log.read_text(encoding="utf-8")
+          missing=[marker for marker in required if marker not in log_text]
+          if missing: raise SystemExit("Required physical evidence markers missing: "+",".join(missing))
           data["status"]="PASS"
           data["voice_gate"]="PASS"
-          data["audible_playback_confirmed_by_operator"]=True
-          data["evidence_log_sha256"]=__import__("hashlib").sha256(log.read_bytes()).hexdigest()
-          data["operator_attestation"]="Approved through the protected GitHub Environment after playback"
-          data["attested_utc"]=datetime.datetime.now(datetime.timezone.utc).isoformat()
-          pathlib.Path(dst).write_text(json.dumps(data,indent=2,sort_keys=True)+"\n")
+          data["audible_playback_confirmed_by_operator"]=False
+          data["operator_observation"]="NOT_COLLECTED_OPTIONAL"
+          data["evidence_log_sha256"]=hashlib.sha256(log.read_bytes()).hexdigest()
+          data["validated_utc"]=datetime.datetime.now(datetime.timezone.utc).isoformat()
+          pathlib.Path(dst).write_text(json.dumps(data,indent=2,sort_keys=True)+"\n",encoding="utf-8")
           PY
           python3 scripts/missions/validate_voice_hardware_evidence.py evidence/zona-directiva-v03/CP-07-physical-voice-e2e.json --candidate-sha "$CANDIDATE_SHA"
       - name: Upload validated physical voice evidence
-        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: louksna-zd-v03-cp07-physical-voice-e2e
           path: |
             evidence/zona-directiva-v03/CP-07-physical-voice-e2e.json
             evidence/zona-directiva-v03/CP-07-physical-voice-e2e.log
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 90
