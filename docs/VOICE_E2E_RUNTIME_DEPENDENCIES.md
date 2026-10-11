@@ -10,7 +10,7 @@ Scope: Linux desktop candidate; no bundled model weights or hidden downloads.
 3. The Rust backend sends the transcript to an Ollama-compatible `/api/chat` endpoint. Default endpoint is `http://127.0.0.1:11434/api/chat`; plain HTTP is restricted to loopback and HTTPS is permitted.
 4. `piper` synthesizes the response into a WAV file with the configured Piper model.
 5. `aplay` plays the generated WAV through the selected ALSA output.
-6. The application writes a status-only event to its SQLite evidence ledger. It does not write audio, transcript, response text, or credentials to that ledger. Temporary working files are removed on scope exit (best-effort filesystem cleanup).
+6. The application writes a status-only event to its SQLite evidence ledger. It does not write audio, transcript, response text, or credentials to that ledger. Temporary audio/response working files are removed on scope exit (best-effort filesystem cleanup); the transcript remains in memory only.
 
 ## Required runtime components
 
