@@ -572,6 +572,11 @@ mod louksna_runtime_tests {
             .collect();
         assert_eq!(before, after, "voice command must clean up its temporary audio directory");
         // Do not print captured speech or generated response into public CI logs.
+        println!("PHYSICAL_VOICE_MIC_CAPTURE=PASS");
+        println!("PHYSICAL_VOICE_TRANSCRIPTION=PASS");
+        println!("PHYSICAL_VOICE_MODEL_RESPONSE=PASS");
+        println!("PHYSICAL_VOICE_TTS=PASS");
+        println!("PHYSICAL_VOICE_PLAYBACK=PASS");
         println!("PHYSICAL_VOICE_E2E_RESULT=PASS");
         println!("PHYSICAL_VOICE_CAPTURE_DEVICE={}", turn.capture_device);
         println!("PHYSICAL_VOICE_PLAYBACK_DEVICE={}", turn.playback_device);
