@@ -24,13 +24,12 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  physical-voice-e2e:
-    name: "CP-07 — Real microphone → STT → model → TTS → ALSA playback"
-    runs-on: [self-hosted, linux, x64, louksna-voice-hw]
+  prepare-physical-voice-binaries:
+    name: "CP-07 — Build candidate and voice test binary on hosted Linux"
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
       CANDIDATE_SHA: ${{ inputs.candidate_sha || github.event.inputs.candidate_sha || github.sha }}
-      LOUKSNA_RUN_PHYSICAL_VOICE_E2E: "1"
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -43,49 +42,12 @@ jobs:
           ref: 6e34fddaae985bd9041be107b80e056f806092d2
           path: source-v02
           persist-credentials: false
-      - name: Fail-closed runner and physical audio preflight
+      - name: Build exact candidate and compile (do not execute) the physical voice test
         shell: bash
         run: |
           set -Eeuo pipefail
-          for cmd in python3 npm cargo arecord aplay whisper-cli piper ollama curl sha256sum pkg-config dpkg-deb; do
-            command -v "$cmd" >/dev/null || { echo "::error::Required pre-provisioned executable missing: $cmd"; exit 1; }
-          done
-          test -n "${LOUKSNA_WHISPER_MODEL:-}" && test -f "$LOUKSNA_WHISPER_MODEL"
-          test -n "${LOUKSNA_PIPER_MODEL:-}" && test -f "$LOUKSNA_PIPER_MODEL"
-          test -n "${LOUKSNA_OLLAMA_MODEL:-}"
-          test -n "${LOUKSNA_ALSA_CAPTURE_DEVICE:-}" || { echo "::error::Set explicit LOUKSNA_ALSA_CAPTURE_DEVICE on the hardware runner"; exit 1; }
-          test -n "${LOUKSNA_ALSA_PLAYBACK_DEVICE:-}" || { echo "::error::Set explicit LOUKSNA_ALSA_PLAYBACK_DEVICE on the hardware runner"; exit 1; }
-          pkg-config --exists glib-2.0 gtk+-3.0 webkit2gtk-4.1 || { echo "::error::Native Tauri build dependencies are not pre-provisioned on the hardware runner"; exit 1; }
-          mkdir -p evidence/zona-directiva-v03
-          arecord -l | tee evidence/zona-directiva-v03/CP-07-arecord-devices.log
-          aplay -l | tee evidence/zona-directiva-v03/CP-07-aplay-devices.log
-          grep -Eq 'card [0-9]+:' evidence/zona-directiva-v03/CP-07-arecord-devices.log || { echo "::error::No ALSA capture card found"; exit 1; }
-          grep -Eq 'card [0-9]+:' evidence/zona-directiva-v03/CP-07-aplay-devices.log || { echo "::error::No ALSA playback card found"; exit 1; }
-          if grep -Eiq 'loopback|null|dummy|snd-aloop' evidence/zona-directiva-v03/CP-07-arecord-devices.log evidence/zona-directiva-v03/CP-07-aplay-devices.log; then
-            echo "::error::Virtual/null/loopback audio device detected; this gate requires physical audio hardware"
-            exit 1
-          fi
-          curl --fail --silent --show-error http://127.0.0.1:11434/api/tags > "$RUNNER_TEMP/ollama-tags.json"
-          python3 - "$RUNNER_TEMP/ollama-tags.json" "$LOUKSNA_OLLAMA_MODEL" <<'PY'
-          import json,sys
-          data=json.load(open(sys.argv[1],encoding="utf-8"))
-          names={m.get("name","") for m in data.get("models",[])}
-          model=sys.argv[2]
-          if model not in names and model.removesuffix(":latest") not in names:
-              raise SystemExit("Configured Ollama model is not present in the local service")
-          PY
-          printf 'candidate_sha=%s\n' "$CANDIDATE_SHA"
-          uname -a
-          arecord --version
-          aplay --version
-          whisper-cli --help 2>&1 | head -n 2 || true
-          piper --help 2>&1 | head -n 2 || true
-          ollama --version
-      - name: Materialize exact candidate
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          mkdir -p "$RUNNER_TEMP/louksna-v03"
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          mkdir -p "$RUNNER_TEMP/louksna-v03" evidence/cp07-build
           printf '%s\n' '{"mission_id":"MIS-LOUKSNA-ZD-V03-FUNCTIONAL-20261006","dispatch_id":"GH-CP07-PHYSICAL-VOICE","binding_id":"CP07_PHYSICAL_VOICE","executor_id":"DEDICATED_PHYSICAL_AUDIO_RUNNER","expected_effect":{"effect_type":"REAL_VOICE_E2E"}}' > "$RUNNER_TEMP/louksna-v03/DISPATCH.json"
           python3 -B -I scripts/missions/louksna_zd_candidate_materializer.py \
             "$RUNNER_TEMP/louksna-v03/DISPATCH.json" \
@@ -103,32 +65,138 @@ jobs:
           npx tauri build --bundles deb
           APP_BIN="$(find "$CARGO_TARGET_DIR/release" -maxdepth 1 -type f -name 'louksna-zona-directiva' -perm -u+x -print -quit)"
           test -n "$APP_BIN" || { echo "::error::Candidate application binary not produced"; exit 1; }
-          cargo test --manifest-path src-tauri/Cargo.toml --bin louksna-zona-directiva -- \
+          cargo test --manifest-path src-tauri/Cargo.toml --bin louksna-zona-directiva --no-run -- \
             --exact louksna_runtime_tests::physical_voice_e2e_real_audio_path \
-            --nocapture --test-threads=1 2>&1 | tee "$GITHUB_WORKSPACE/evidence/zona-directiva-v03/CP-07-physical-voice-e2e.log"
-          grep -q 'PHYSICAL_VOICE_E2E_RESULT=PASS' "$GITHUB_WORKSPACE/evidence/zona-directiva-v03/CP-07-physical-voice-e2e.log"
-          if grep -q 'SKIP_PHYSICAL_VOICE_E2E' "$GITHUB_WORKSPACE/evidence/zona-directiva-v03/CP-07-physical-voice-e2e.log"; then
+            --nocapture --test-threads=1
+          TEST_BIN="$(find "$CARGO_TARGET_DIR/debug/deps" -maxdepth 1 -type f -name 'louksna_zona_directiva-*' -perm -u+x -print -quit)"
+          test -n "$TEST_BIN" || { echo "::error::Physical voice test binary was not compiled"; exit 1; }
+          install -m 0755 "$APP_BIN" evidence/cp07-build/app-binary
+          install -m 0755 "$TEST_BIN" evidence/cp07-build/voice-test-binary
+          python3 - <<'PY'
+          import datetime,hashlib,json,os,pathlib
+          root=pathlib.Path("evidence/cp07-build")
+          def sha(p): return hashlib.sha256((root/p).read_bytes()).hexdigest()
+          report={
+            "schema":"louksna.zd.v03.cp07-build-manifest.v1",
+            "checkpoint_id":"CP-07-BUILD",
+            "status":"PASS_COMPILED_NOT_EXECUTED",
+            "candidate_commit_sha":os.environ["CANDIDATE_SHA"],
+            "source_run_id":int(os.environ["GITHUB_RUN_ID"]),
+            "app_binary_sha256":sha("app-binary"),
+            "voice_test_binary_sha256":sha("voice-test-binary"),
+            "built_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "physical_audio_execution":"NOT_PERFORMED_ON_HOSTED_RUNNER"
+          }
+          (root/"build-manifest.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(report,indent=2,sort_keys=True))
+          PY
+      - name: Upload exact-SHA binaries for physical execution
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksna-zd-v03-cp07-physical-test-binaries
+          path: evidence/cp07-build/
+          if-no-files-found: error
+          retention-days: 14
+
+  physical-voice-e2e:
+    name: "CP-07 — Real microphone → STT → model → TTS → ALSA playback"
+    needs: prepare-physical-voice-binaries
+    runs-on: [self-hosted, linux, x64, louksna-voice-hw]
+    timeout-minutes: 35
+    env:
+      CANDIDATE_SHA: ${{ inputs.candidate_sha || github.event.inputs.candidate_sha || github.sha }}
+      LOUKSNA_RUN_PHYSICAL_VOICE_E2E: "1"
+      PATH: /home/diegoignacionorambuenamiranda/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      LOUKSNA_WHISPER_MODEL: /home/diegoignacionorambuenamiranda/.local/share/louksna-cp07/whisper.cpp/models/ggml-base.en.bin
+      LOUKSNA_PIPER_MODEL: /home/diegoignacionorambuenamiranda/.local/share/louksna-cp07/models/en_US-lessac-medium.onnx
+      LOUKSNA_OLLAMA_MODEL: smollm2:360m
+      LOUKSNA_ALSA_CAPTURE_DEVICE: plughw:CARD=Microphones,DEV=0
+      LOUKSNA_ALSA_PLAYBACK_DEVICE: plughw:CARD=Generic_1,DEV=0
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+          persist-credentials: false
+      - name: Download candidate binaries compiled from the exact SHA
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
+        with:
+          name: louksna-zd-v03-cp07-physical-test-binaries
+          path: evidence/cp07-build
+      - name: Verify binary manifest and physical audio/runtime preflight
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib
+          root=pathlib.Path("evidence/cp07-build")
+          m=json.loads((root/"build-manifest.json").read_text(encoding="utf-8"))
+          if m.get("status")!="PASS_COMPILED_NOT_EXECUTED": raise SystemExit("CP-07 HOLD: build manifest is not a compile-only pass")
+          if m.get("candidate_commit_sha")!=os.environ["CANDIDATE_SHA"]: raise SystemExit("CP-07 HOLD: candidate SHA mismatch")
+          for name,key in (("app-binary","app_binary_sha256"),("voice-test-binary","voice_test_binary_sha256")):
+              if hashlib.sha256((root/name).read_bytes()).hexdigest()!=m.get(key): raise SystemExit("CP-07 HOLD: binary digest mismatch: "+name)
+          PY
+          for cmd in python3 arecord aplay whisper-cli piper ollama curl sha256sum; do
+            command -v "$cmd" >/dev/null || { echo "::error::Required pre-provisioned executable missing: $cmd"; exit 1; }
+          done
+          test -s "$LOUKSNA_WHISPER_MODEL"
+          test -s "$LOUKSNA_PIPER_MODEL"
+          test -n "$LOUKSNA_OLLAMA_MODEL"
+          test -n "$LOUKSNA_ALSA_CAPTURE_DEVICE"
+          test -n "$LOUKSNA_ALSA_PLAYBACK_DEVICE"
+          mkdir -p evidence/zona-directiva-v03
+          arecord -l | tee evidence/zona-directiva-v03/CP-07-arecord-devices.log
+          aplay -l | tee evidence/zona-directiva-v03/CP-07-aplay-devices.log
+          grep -Eq 'card [0-9]+:' evidence/zona-directiva-v03/CP-07-arecord-devices.log || { echo "::error::No ALSA capture card found"; exit 1; }
+          grep -Eq 'card [0-9]+:' evidence/zona-directiva-v03/CP-07-aplay-devices.log || { echo "::error::No ALSA playback card found"; exit 1; }
+          if grep -Eiq 'loopback|null|dummy|snd-aloop' evidence/zona-directiva-v03/CP-07-arecord-devices.log evidence/zona-directiva-v03/CP-07-aplay-devices.log; then
+            echo "::error::Virtual/null/loopback audio device detected; this gate requires physical audio hardware"
+            exit 1
+          fi
+          curl --fail --silent --show-error --max-time 5 http://127.0.0.1:11434/api/tags > "$RUNNER_TEMP/ollama-tags.json"
+          python3 - "$RUNNER_TEMP/ollama-tags.json" "$LOUKSNA_OLLAMA_MODEL" <<'PY'
+          import json,sys
+          data=json.load(open(sys.argv[1],encoding="utf-8"))
+          names={m.get("name","") for m in data.get("models",[])}
+          model=sys.argv[2]
+          if model not in names and model.removesuffix(":latest") not in names:
+              raise SystemExit("Configured Ollama model is not present in the local service")
+          PY
+          printf 'candidate_sha=%s\n' "$CANDIDATE_SHA"
+          uname -a
+          arecord --version
+          aplay --version
+          whisper-cli --help 2>&1 | head -n 2 || true
+          piper --help 2>&1 | head -n 2 || true
+          ollama --version
+      - name: Execute compiled physical voice test on real audio hardware
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          TEST_BIN="$GITHUB_WORKSPACE/evidence/cp07-build/voice-test-binary"
+          APP_BIN="$GITHUB_WORKSPACE/evidence/cp07-build/app-binary"
+          chmod 0755 "$TEST_BIN" "$APP_BIN"
+          "$TEST_BIN" --exact louksna_runtime_tests::physical_voice_e2e_real_audio_path --nocapture --test-threads=1 2>&1 | tee evidence/zona-directiva-v03/CP-07-physical-voice-e2e.log
+          for marker in PHYSICAL_VOICE_MIC_CAPTURE=PASS PHYSICAL_VOICE_TRANSCRIPTION=PASS PHYSICAL_VOICE_MODEL_RESPONSE=PASS PHYSICAL_VOICE_TTS=PASS PHYSICAL_VOICE_PLAYBACK=PASS PHYSICAL_VOICE_E2E_RESULT=PASS PHYSICAL_VOICE_TEMP_CLEANUP=PASS; do
+            grep -q "$marker" evidence/zona-directiva-v03/CP-07-physical-voice-e2e.log || { echo "::error::Missing required physical voice evidence marker: $marker"; exit 1; }
+          done
+          if grep -q 'SKIP_PHYSICAL_VOICE_E2E' evidence/zona-directiva-v03/CP-07-physical-voice-e2e.log; then
             echo "::error::Physical voice test was skipped"
             exit 1
           fi
-          TEST_BIN="$(find "$CARGO_TARGET_DIR/debug/deps" -maxdepth 1 -type f -name 'louksna_zona_directiva-*' -perm -u+x -print -quit)"
-          test -n "$TEST_BIN"
-          python3 - "$TEST_BIN" "$APP_BIN" "$GITHUB_WORKSPACE/evidence/zona-directiva-v03/CP-07-physical-voice-preliminary.json" <<'PY'
-          import hashlib,json,os,pathlib,subprocess,sys,datetime
-          binary=pathlib.Path(sys.argv[1])
-          app_binary=pathlib.Path(sys.argv[2])
+          python3 - "$APP_BIN" "$TEST_BIN" evidence/zona-directiva-v03/CP-07-physical-voice-preliminary.json <<'PY'
+          import datetime,hashlib,json,os,pathlib,subprocess,sys
+          app_binary=pathlib.Path(sys.argv[1]); binary=pathlib.Path(sys.argv[2])
           def sha(p): return hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
           def version(cmd):
               try: return subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,timeout=10).stdout.strip().splitlines()[0][:300]
               except Exception as e: return "UNAVAILABLE:"+type(e).__name__
           log=pathlib.Path("evidence/zona-directiva-v03/CP-07-physical-voice-e2e.log")
-          log_text=log.read_text(encoding="utf-8",errors="replace")
-          for marker in ("PHYSICAL_VOICE_MIC_CAPTURE=PASS","PHYSICAL_VOICE_TRANSCRIPTION=PASS","PHYSICAL_VOICE_MODEL_RESPONSE=PASS","PHYSICAL_VOICE_TTS=PASS","PHYSICAL_VOICE_PLAYBACK=PASS","PHYSICAL_VOICE_E2E_RESULT=PASS","PHYSICAL_VOICE_TEMP_CLEANUP=PASS"):
-              if marker not in log_text: raise SystemExit("Missing required runtime evidence marker: "+marker)
           data={
             "schema":"louksna.zd.v03.physical-voice-e2e.v1",
             "candidate_commit_sha":os.environ["CANDIDATE_SHA"],
             "source_run_id":os.environ["GITHUB_RUN_ID"],
+            "build_manifest_sha256":sha("evidence/cp07-build/build-manifest.json"),
             "os_kernel":subprocess.run(["uname","-srvm"],capture_output=True,text=True).stdout.strip(),
             "capture_device":os.environ["LOUKSNA_ALSA_CAPTURE_DEVICE"],
             "playback_device":os.environ["LOUKSNA_ALSA_PLAYBACK_DEVICE"],
@@ -158,7 +226,8 @@ jobs:
             "status":"HOLD",
             "timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat()
           }
-          pathlib.Path(sys.argv[2]).write_text(json.dumps(data,indent=2,sort_keys=True)+"\n")
+          pathlib.Path(sys.argv[3]).write_text(json.dumps(data,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(data,indent=2,sort_keys=True))
           PY
       - name: Upload un-attested physical voice evidence
         if: always()
