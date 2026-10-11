@@ -16,8 +16,10 @@ app = app_path.read_text(encoding="utf-8")
 workflow = workflow_path.read_text(encoding="utf-8")
 
 checks = {
-    "ui_discloses_voice_not_certified": "La pila de voz end-to-end todavia no esta certificada." in app,
-    "microphone_control_disabled": "<button disabled>Microfono — gate abierto</button>" in app,
+    "ui_keeps_voice_gate_open": "El gate de certificación permanece abierto" in app,
+    "real_voice_handler_wired": 'call<{status:string;transcript:string;response:string;elapsed_ms:number;audio_played:boolean}>("voice_e2e")' in app,
+    "voice_preflight_wired": '("voice_preflight")' in app,
+    "no_synthetic_audio_claim": "captura y reproducción reales" in app,
     "workflow_gate_open": '"voice_gate": "OPEN", "voice_active": False' in workflow,
     "workflow_blocks_certification": '"certification_effect": "G23_G24_BLOCKED"' in workflow,
     "voice_e2e_not_claimed": '"voice_e2e_executed": False' in workflow,
