@@ -114,20 +114,12 @@ jobs:
     name: "CP-07 — Real microphone → STT → model → TTS → ALSA playback"
     needs: prepare-physical-voice-binaries
     if: github.actor == 'Plomillo' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
-    runs-on: [self-hosted, linux, x64, louksna-voice-hw]
+    runs-on: [self-hosted, linux, x64, louksna-voice-hw-dedicated]
     timeout-minutes: 35
     env:
       CANDIDATE_SHA: ${{ inputs.candidate_sha || github.event.inputs.candidate_sha || github.sha }}
       LOUKSNA_RUN_PHYSICAL_VOICE_E2E: "1"
-      PATH: /home/diegoignacionorambuenamiranda/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-      LOUKSNA_WHISPER_MODEL: /home/diegoignacionorambuenamiranda/.local/share/louksna-cp07/whisper.cpp/models/ggml-base.en.bin
-      LOUKSNA_PIPER_MODEL: /home/diegoignacionorambuenamiranda/.local/share/louksna-cp07/models/en_US-lessac-medium.onnx
       LOUKSNA_OLLAMA_MODEL: smollm2:360m
-      XDG_RUNTIME_DIR: /run/user/1000
-      PULSE_SERVER: unix:/run/user/1000/pulse/native
-      PULSE_SOURCE: alsa_input.usb-Generic_Blue_Microphones_2101BAB04QX8-00.pro-input-0
-      PULSE_SINK: alsa_output.pci-0000_04_00.6.analog-stereo
-      PIPEWIRE_REMOTE: pipewire-0
       LOUKSNA_ALSA_CAPTURE_DEVICE: pulse
       LOUKSNA_ALSA_PLAYBACK_DEVICE: pulse
     steps:
@@ -141,6 +133,30 @@ jobs:
         with:
           name: louksna-zd-v03-cp07-physical-test-binaries
           path: evidence/cp07-build
+      - name: Resolve dedicated runner-local Spanish voice runtime
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export PATH="$HOME/.local/bin:$PATH"
+          export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+          export PULSE_SERVER="${PULSE_SERVER:-unix:$XDG_RUNTIME_DIR/pulse/native}"
+          export PIPEWIRE_REMOTE="${PIPEWIRE_REMOTE:-pipewire-0}"
+          export LOUKSNA_WHISPER_MODEL="${LOUKSNA_WHISPER_MODEL:-$HOME/.local/share/louksna-cp07/whisper.cpp/models/ggml-base.bin}"
+          export LOUKSNA_PIPER_MODEL="${LOUKSNA_PIPER_MODEL:-$HOME/.local/share/louksna-cp07/models/es_ES-sharvard-medium.onnx}"
+          export PULSE_SOURCE="${PULSE_SOURCE:-$(pactl list short sources | awk '$2 !~ /\\.monitor$/ {print $2; exit}')}"
+          export PULSE_SINK="${PULSE_SINK:-$(pactl list short sinks | awk '$2 !~ /\\.monitor$/ {print $2; exit}')}"
+          test -n "$PULSE_SOURCE" && test -n "$PULSE_SINK"
+          {
+            echo "PATH=$HOME/.local/bin:$PATH"
+            echo "XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR"
+            echo "PULSE_SERVER=$PULSE_SERVER"
+            echo "PIPEWIRE_REMOTE=$PIPEWIRE_REMOTE"
+            echo "LOUKSNA_WHISPER_MODEL=$LOUKSNA_WHISPER_MODEL"
+            echo "LOUKSNA_PIPER_MODEL=$LOUKSNA_PIPER_MODEL"
+            echo "PULSE_SOURCE=$PULSE_SOURCE"
+            echo "PULSE_SINK=$PULSE_SINK"
+          } >> "$GITHUB_ENV"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - name: Verify binary manifest and physical audio/runtime preflight
         shell: bash
         run: |
@@ -272,7 +288,7 @@ jobs:
     name: "CP-07 — Operator confirms audible playback after the real run"
     needs: physical-voice-e2e
     if: needs.physical-voice-e2e.result == 'success'
-    runs-on: [self-hosted, linux, x64, louksna-voice-hw]
+    runs-on: [self-hosted, linux, x64, louksna-voice-hw-dedicated]
     environment:
       name: voice-hardware-operator-attestation
     timeout-minutes: 10
