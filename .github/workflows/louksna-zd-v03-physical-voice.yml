@@ -81,6 +81,7 @@ jobs:
             --nocapture --test-threads=1
           TEST_BIN="$(find "$CARGO_TARGET_DIR/debug/deps" -maxdepth 1 -type f -name 'louksna_zona_directiva-*' -perm -u+x -print -quit)"
           test -n "$TEST_BIN" || { echo "::error::Physical voice test binary was not compiled"; exit 1; }
+          cd "$GITHUB_WORKSPACE"
           install -m 0755 "$APP_BIN" evidence/cp07-build/app-binary
           install -m 0755 "$TEST_BIN" evidence/cp07-build/voice-test-binary
           python3 - <<'PY'
