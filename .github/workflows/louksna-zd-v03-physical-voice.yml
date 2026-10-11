@@ -189,10 +189,14 @@ jobs:
           persist-credentials: false
       - name: Verify environment is protected by required reviewers
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.LOUKSNA_REPO_ADMIN_READ_TOKEN }}
         shell: bash
         run: |
           set -Eeuo pipefail
+          if [[ -z "${GH_TOKEN:-}" ]]; then
+            echo "::error::Missing repository secret LOUKSNA_REPO_ADMIN_READ_TOKEN; cannot verify required-reviewer protection for audible-playback attestation."
+            exit 1
+          fi
           response="$(curl --fail --silent --show-error \
             -H "Authorization: Bearer $GH_TOKEN" \
             -H "Accept: application/vnd.github+json" \
