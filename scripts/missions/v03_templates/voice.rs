@@ -3,6 +3,7 @@
 use serde::Serialize;
 use serde_json::{json, Value};
 use std::{path::PathBuf, process::{Command, Stdio}, io::Write, time::{Duration, Instant}};
+use std::os::unix::fs::DirBuilderExt;
 use wait_timeout::ChildExt;
 
 const CAPTURE_SECONDS: &str = "8";
@@ -146,7 +147,9 @@ async fn voice_e2e_inner() -> Result<VoiceTurn,String> {
     let piper_model = env_path("LOUKSNA_PIPER_MODEL")?;
     let ollama_model = std::env::var("LOUKSNA_OLLAMA_MODEL").map_err(|_| "VOICE_CONFIG_MISSING:LOUKSNA_OLLAMA_MODEL")?;
     let root = std::env::temp_dir().join(format!("louksna-voice-{}-{}", std::process::id(), chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()));
-    std::fs::create_dir_all(&root).map_err(|_| "VOICE_TEMP_CREATE_FAILED")?;
+    let mut temp_builder = std::fs::DirBuilder::new();
+    temp_builder.mode(0o700);
+    temp_builder.create(&root).map_err(|_| "VOICE_TEMP_CREATE_FAILED")?;
     let _cleanup = TempAudio(root.clone());
     let capture_device = std::env::var("LOUKSNA_ALSA_CAPTURE_DEVICE").unwrap_or_else(|_| "default".into());
     let playback_device = std::env::var("LOUKSNA_ALSA_PLAYBACK_DEVICE").unwrap_or_else(|_| "default".into());
