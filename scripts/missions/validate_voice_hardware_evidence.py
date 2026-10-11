@@ -90,7 +90,7 @@ def main() -> int:
         "source_run_id": data.get("source_run_id"),
         "checks": {"required_physical_proof": not any("required physical proof" in e for e in errors),
                    "candidate_binding": data.get("candidate_commit_sha") == args.candidate_sha,
-                   "provenance_complete": not any("missing" in e or "invalid" in e for e in errors)},
+                   "provenance_complete": not errors},
         "errors": errors,
         "note": "Schema validation is not independent listening; G23 remains a separate gate."
     }
