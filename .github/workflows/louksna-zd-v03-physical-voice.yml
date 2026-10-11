@@ -20,7 +20,7 @@ permissions:
   deployments: read
 
 concurrency:
-  group: louksna-physical-voice-${{ github.event.inputs.candidate_sha || github.sha }}
+  group: louksna-physical-voice-${{ inputs.candidate_sha || github.event.inputs.candidate_sha || github.sha }}
   cancel-in-progress: false
 
 jobs:
