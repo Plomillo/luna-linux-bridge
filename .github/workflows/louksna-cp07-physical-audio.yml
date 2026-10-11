@@ -1,6 +1,11 @@
 name: "LOUKSNA — CP-07 physical audio E2E"
 
 on:
+  push:
+    branches:
+      - work/voice-e2e-stack-20261010
+    paths:
+      - scripts/missions/v03_templates/voice.rs
   workflow_dispatch:
     inputs:
       candidate_sha:
@@ -12,7 +17,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: louksna-cp07-physical-${{ inputs.candidate_sha }}
+  group: louksna-cp07-physical-${{ inputs.candidate_sha || github.sha }}
   cancel-in-progress: false
 
 jobs:
@@ -23,7 +28,7 @@ jobs:
     runs-on: [self-hosted, linux, x64, audio-hardware]
     timeout-minutes: 20
     env:
-      CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+      CANDIDATE_SHA: ${{ inputs.candidate_sha || github.sha }}
       LOUKSNA_WHISPER_MODEL: ${{ vars.LOUKSNA_WHISPER_MODEL }}
       LOUKSNA_PIPER_MODEL: ${{ vars.LOUKSNA_PIPER_MODEL }}
       LOUKSNA_OLLAMA_MODEL: ${{ vars.LOUKSNA_OLLAMA_MODEL }}
@@ -33,7 +38,7 @@ jobs:
       - name: Checkout exact candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ${{ inputs.candidate_sha }}
+          ref: ${{ inputs.candidate_sha || github.sha }}
           persist-credentials: false
 
       - name: Fail-closed physical hardware and dependency preflight
