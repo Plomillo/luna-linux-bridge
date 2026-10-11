@@ -64,6 +64,7 @@ env:
 permissions:
   contents: read
   actions: read
+  deployments: read
 
 concurrency:
   # Serialize by source branch/ref, not run ID: a newer candidate supersedes stale evidence for the same branch.
@@ -607,8 +608,8 @@ jobs:
 
   stage-07-voice-security:
     name: "Stage 07 / CP-07 — Voice E2E and security regression"
-    needs: stage-06-functions-attachments
-    if: needs.stage-06-functions-attachments.result == 'success' && needs.stage-06-functions-attachments.outputs.status == 'PASS'
+    needs: [stage-06-functions-attachments, stage-07-physical-voice]
+    if: needs.stage-06-functions-attachments.result == 'success' && needs.stage-06-functions-attachments.outputs.status == 'PASS' && needs.stage-07-physical-voice.result == 'success'
     runs-on: ubuntu-24.04
     outputs:
       status: ${{ steps.voice_gate.outputs.status }}
@@ -710,8 +711,15 @@ jobs:
             scripts/missions/v03_templates/App.tsx \
             .github/workflows/louksna-zd-v03-governance.yml
           python3 -B scripts/missions/test_validate_voice_hardware_evidence.py
+      - name: Import validated physical voice evidence from the same governance run
+        if: needs.stage-07-physical-voice.result == 'success'
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
+        with:
+          name: louksna-zd-v03-cp07-physical-voice-e2e
+          path: evidence/zona-directiva-v03/physical-voice-evidence
+
       - name: Import physical voice evidence from a dedicated hardware run
-        if: github.event_name == 'workflow_dispatch' && inputs.voice_hardware_evidence_run_id != ''
+        if: github.event_name == 'workflow_dispatch' && inputs.voice_hardware_evidence_run_id != '' && needs.stage-07-physical-voice.result != 'success'
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
         with:
           name: louksna-zd-v03-cp07-physical-voice-e2e
@@ -723,7 +731,7 @@ jobs:
         id: voice_gate
         shell: bash
         env:
-          VOICE_HARDWARE_EVIDENCE_RUN_ID: ${{ inputs.voice_hardware_evidence_run_id }}
+          VOICE_HARDWARE_EVIDENCE_RUN_ID: ${{ inputs.voice_hardware_evidence_run_id || github.run_id }}
         run: |
           set -Eeuo pipefail
           mkdir -p evidence/zona-directiva-v03
@@ -794,11 +802,20 @@ jobs:
           if-no-files-found: warn
           retention-days: 90
 
+  stage-07-physical-voice:
+    name: "Stage 07 / CP-07 — Real physical voice E2E"
+    needs: stage-06-functions-attachments
+    if: needs.stage-06-functions-attachments.result == 'success' && needs.stage-06-functions-attachments.outputs.status == 'PASS'
+    uses: ./.github/workflows/louksna-zd-v03-physical-voice.yml
+    with:
+      candidate_sha: ${{ github.event.pull_request.head.sha || github.sha }}
+    secrets: inherit
+
   stage-08-reproducible-build:
     name: "Stage 08 / CP-08 — Build and Debian package"
-    needs: stage-07-voice-security
+    needs: stage-06-functions-attachments
     # Voice remains explicitly HOLD; continue non-voice package/runtime evidence without promoting the voice gate.
-    if: needs.stage-07-voice-security.result == 'success'
+    if: needs.stage-06-functions-attachments.result == 'success' && needs.stage-06-functions-attachments.outputs.status == 'PASS'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     outputs:
@@ -1028,8 +1045,8 @@ jobs:
 
   stage-10-evidence-freeze:
     name: "Stage 10 / CP-10 — Evidence dossier and candidate freeze"
-    needs: stage-09-virtual-runtime
-    if: needs.stage-09-virtual-runtime.result == 'success' && needs.stage-09-virtual-runtime.outputs.status == 'PASS'
+    needs: [stage-09-virtual-runtime, stage-07-voice-security, stage-07-physical-voice]
+    if: needs.stage-09-virtual-runtime.result == 'success' && needs.stage-09-virtual-runtime.outputs.status == 'PASS' && needs.stage-07-voice-security.result == 'success' && needs.stage-07-physical-voice.result == 'success'
     runs-on: ubuntu-24.04
     outputs:
       status: ${{ steps.validate.outputs.status }}
@@ -1052,7 +1069,7 @@ jobs:
           python3 - <<'PY'
           import hashlib,json,os,pathlib,sys
           root=pathlib.Path("evidence/zona-directiva-v03/imported")
-          required=["louksna-zd-v03-cp01-repository-audit","louksna-zd-v03-cp02-contract-linkage","louksna-zd-v03-cp03-backend-ledger","louksna-zd-v03-cp04-github-bridge","louksna-zd-v03-cp05-ui-telemetry","louksna-zd-v03-cp06-functions-attachments","louksna-zd-v03-cp07-voice-gate","louksna-zd-v03-cp07-playwright-ui-e2e","louksna-zd-v03-cp08-build-package","louksna-zd-v03-cp09-debian13-container-smoke"]
+          required=["louksna-zd-v03-cp01-repository-audit","louksna-zd-v03-cp02-contract-linkage","louksna-zd-v03-cp03-backend-ledger","louksna-zd-v03-cp04-github-bridge","louksna-zd-v03-cp05-ui-telemetry","louksna-zd-v03-cp06-functions-attachments","louksna-zd-v03-cp07-voice-gate","louksna-zd-v03-cp07-playwright-ui-e2e","louksna-zd-v03-cp08-build-package","louksna-zd-v03-cp09-debian13-container-smoke","louksna-zd-v03-cp07-physical-voice-e2e"]
           required.append(f"louksna-zd-v03-cp09-runtime-gate-{os.environ['GITHUB_RUN_ID']}-{os.environ['GITHUB_RUN_ATTEMPT']}")
           missing=[n for n in required if not (root/n).is_dir()]
           if missing:
