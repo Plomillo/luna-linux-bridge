@@ -50,9 +50,10 @@ curl --fail --location --retry 3 --output "$VOICE_ROOT/models/es_ES-sharvard-med
 
 # Install local inference runtime without using a remote API during the voice test.
 if ! command -v ollama >/dev/null 2>&1; then
-  curl --fail --location --retry 3 https://ollama.com/install.sh --output "$RUNNER_TEMP_OLLAMA_INSTALL"
-  bash "$RUNNER_TEMP_OLLAMA_INSTALL"
-  rm -f "$RUNNER_TEMP_OLLAMA_INSTALL"
+  OLLAMA_INSTALLER="$(mktemp)"
+  curl --fail --location --retry 3 https://ollama.com/install.sh --output "$OLLAMA_INSTALLER"
+  bash "$OLLAMA_INSTALLER"
+  rm -f "$OLLAMA_INSTALLER"
 fi
 sudo systemctl enable --now ollama
 ollama pull smollm2:360m
@@ -100,7 +101,7 @@ chmod 600 "$EVIDENCE_DIR/audio.env"
 # Download and verify the official GitHub Actions runner release selected by GitHub's latest-release API.
 release_json="$(curl --fail --silent --show-error https://api.github.com/repos/actions/runner/releases/latest)"
 runner_version="$(jq -r '.tag_name | ltrimstr("v")' <<<"$release_json")"
-runner_url="$(jq -r '.assets[] | select(.name == "actions-runner-linux-x64-'"$runner_version"'.tar.gz") | .browser_download_url' <<<"$release_json" | head -n 1)"
+runner_url="$(jq -r --arg version "$runner_version" '.assets[] | select(.name == ("actions-runner-linux-x64-" + $version + ".tar.gz")) | .browser_download_url' <<<"$release_json" | head -n 1)"
 test -n "$runner_version" && test -n "$runner_url"
 mkdir -p "$RUNNER_DIR"
 curl --fail --location --retry 3 "$runner_url" --output "$RUNNER_DIR/runner.tar.gz"
