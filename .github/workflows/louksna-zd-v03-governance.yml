@@ -697,6 +697,7 @@ jobs:
           python3 -B scripts/missions/voice_e2e_gate_contract_test.py \
             scripts/missions/v03_templates/App.tsx \
             .github/workflows/louksna-zd-v03-governance.yml
+          python3 -B scripts/missions/test_validate_voice_hardware_evidence.py
       - name: Import physical voice evidence from a dedicated hardware run
         if: github.event_name == 'workflow_dispatch' && inputs.voice_hardware_evidence_run_id != ''
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
