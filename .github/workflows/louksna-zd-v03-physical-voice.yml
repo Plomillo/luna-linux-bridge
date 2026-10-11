@@ -214,7 +214,7 @@ jobs:
           APP_BIN="$GITHUB_WORKSPACE/evidence/cp07-build/app-binary"
           chmod 0755 "$TEST_BIN" "$APP_BIN"
           "$TEST_BIN" --exact louksna_runtime_tests::physical_voice_e2e_real_audio_path --nocapture --test-threads=1 2>&1 | tee evidence/zona-directiva-v03/CP-07-physical-voice-e2e.log
-          for marker in PHYSICAL_VOICE_MIC_CAPTURE=PASS PHYSICAL_VOICE_TRANSCRIPTION=PASS PHYSICAL_VOICE_MODEL_RESPONSE=PASS PHYSICAL_VOICE_TTS=PASS PHYSICAL_VOICE_PLAYBACK=PASS PHYSICAL_VOICE_ACOUSTIC_OUTPUT=PASS PHYSICAL_VOICE_E2E_RESULT=PASS PHYSICAL_VOICE_TEMP_CLEANUP=PASS; do
+          for marker in PHYSICAL_VOICE_MIC_CAPTURE=PASS PHYSICAL_VOICE_TRANSCRIPTION=PASS PHYSICAL_VOICE_MODEL_RESPONSE=PASS PHYSICAL_VOICE_TTS=PASS PHYSICAL_VOICE_PLAYBACK=PASS PHYSICAL_VOICE_ACOUSTIC_OUTPUT=PASS PHYSICAL_VOICE_ACOUSTIC_TRANSCRIPTION_MATCH=PASS PHYSICAL_VOICE_E2E_RESULT=PASS PHYSICAL_VOICE_TEMP_CLEANUP=PASS; do
             grep -q "$marker" evidence/zona-directiva-v03/CP-07-physical-voice-e2e.log || { echo "::error::Missing required physical voice evidence marker: $marker"; exit 1; }
           done
           if grep -q 'SKIP_PHYSICAL_VOICE_E2E' evidence/zona-directiva-v03/CP-07-physical-voice-e2e.log; then
@@ -262,6 +262,8 @@ jobs:
             "acoustic_output_energy_detected":("PHYSICAL_VOICE_ACOUSTIC_OUTPUT=PASS" in log.read_text(encoding="utf-8")),
             "acoustic_baseline_peak_rms":float(next((line.split("=",1)[1] for line in log.read_text(encoding="utf-8").splitlines() if line.startswith("PHYSICAL_VOICE_ACOUSTIC_BASELINE_PEAK_RMS=")), "0")),
             "acoustic_playback_peak_rms":float(next((line.split("=",1)[1] for line in log.read_text(encoding="utf-8").splitlines() if line.startswith("PHYSICAL_VOICE_ACOUSTIC_PLAYBACK_PEAK_RMS=")), "0")),
+            "acoustic_speech_match_ratio":float(next((line.split("=",1)[1] for line in log.read_text(encoding="utf-8").splitlines() if line.startswith("PHYSICAL_VOICE_ACOUSTIC_SPEECH_MATCH_RATIO=")), "0")),
+            "acoustic_transcription_match_count":int(next((line.split("=",1)[1] for line in log.read_text(encoding="utf-8").splitlines() if line.startswith("PHYSICAL_VOICE_ACOUSTIC_TRANSCRIPTION_MATCH_COUNT=")), "0")),
             "audible_playback_confirmed_by_operator":False,
             "operator_observation":"NOT_COLLECTED_OPTIONAL",
             "temporary_audio_cleanup_verified":True,
@@ -325,7 +327,11 @@ jobs:
               raise SystemExit("Acoustic RMS measurements missing; evidence remains HOLD")
           if data["acoustic_playback_peak_rms"] < max(250.0, data["acoustic_baseline_peak_rms"] * 1.5):
               raise SystemExit("Acoustic output signal did not clear threshold; evidence remains HOLD")
-          required=("PHYSICAL_VOICE_MIC_CAPTURE=PASS","PHYSICAL_VOICE_TRANSCRIPTION=PASS","PHYSICAL_VOICE_MODEL_RESPONSE=PASS","PHYSICAL_VOICE_TTS=PASS","PHYSICAL_VOICE_PLAYBACK=PASS","PHYSICAL_VOICE_ACOUSTIC_OUTPUT=PASS","PHYSICAL_VOICE_E2E_RESULT=PASS","PHYSICAL_VOICE_TEMP_CLEANUP=PASS")
+          if not isinstance(data.get("acoustic_speech_match_ratio"), (int,float)) or data["acoustic_speech_match_ratio"] < 0.30:
+              raise SystemExit("Microphone re-transcription does not match generated response; evidence remains HOLD")
+          if not isinstance(data.get("acoustic_transcription_match_count"), int) or data["acoustic_transcription_match_count"] < 2:
+              raise SystemExit("Too few matching speech tokens in acoustic capture; evidence remains HOLD")
+          required=("PHYSICAL_VOICE_MIC_CAPTURE=PASS","PHYSICAL_VOICE_TRANSCRIPTION=PASS","PHYSICAL_VOICE_MODEL_RESPONSE=PASS","PHYSICAL_VOICE_TTS=PASS","PHYSICAL_VOICE_PLAYBACK=PASS","PHYSICAL_VOICE_ACOUSTIC_OUTPUT=PASS","PHYSICAL_VOICE_ACOUSTIC_TRANSCRIPTION_MATCH=PASS","PHYSICAL_VOICE_E2E_RESULT=PASS","PHYSICAL_VOICE_TEMP_CLEANUP=PASS")
           log_text=log.read_text(encoding="utf-8")
           missing=[marker for marker in required if marker not in log_text]
           if missing: raise SystemExit("Required physical evidence markers missing: "+",".join(missing))
