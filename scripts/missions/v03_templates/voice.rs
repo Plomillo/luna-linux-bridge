@@ -165,11 +165,17 @@ async fn voice_e2e_inner() -> Result<VoiceTurn,String> {
     let transcript = transcript_out.trim().to_string();
     if transcript.is_empty() { return Err("VOICE_TRANSCRIPTION_EMPTY".into()); }
     if transcript.chars().count() > MAX_TEXT_CHARS { return Err("VOICE_TRANSCRIPTION_TOO_LONG".into()); }
+    let normalized = transcript.to_lowercase()
+        .replace('á',"a").replace('é',"e").replace('í',"i")
+        .replace('ó',"o").replace('ú',"u").replace('ñ',"n");
+    if !normalized.contains("prueba de voz") || !normalized.contains("microfono real") {
+        return Err("VOICE_TRANSCRIPTION_TEST_PHRASE_MISMATCH".into());
+    }
 
     let endpoint = ollama_endpoint();
     validate_local_endpoint(&endpoint)?;
     let client = reqwest::Client::builder().connect_timeout(Duration::from_secs(3)).timeout(Duration::from_secs(45)).build().map_err(|_| "VOICE_HTTP_CLIENT_FAILED")?;
-    let result = client.post(endpoint).json(&json!({"model":ollama_model,"stream":false,"messages":[{"role":"user","content":transcript}]}))
+    let result = client.post(endpoint).json(&json!({"model":ollama_model,"stream":false,"messages":[{"role":"system","content":"Responde en español, brevemente, confirmando que recibiste y procesaste la prueba de voz."},{"role":"user","content":transcript}]}))
         .send().await.map_err(|_| "VOICE_RESPONSE_TRANSPORT_FAILED")?;
     if !result.status().is_success() { return Err(format!("VOICE_RESPONSE_HTTP_STATUS:{}",result.status().as_u16())); }
     let payload: Value = result.json().await.map_err(|_| "VOICE_RESPONSE_INVALID_JSON")?;
