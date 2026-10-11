@@ -225,6 +225,65 @@ jobs:
           cat evidence/cp07-vm/host-receipt.json
           test "$RESULT" = PASS_VIRTUAL_E2E || { tail -n 200 evidence/cp07-vm/guest-test.log; exit 1; }
 
+      - name: Absorb and seal CP-07-VM evidence (always)
+        if: always()
+        shell: bash
+        env:
+          ABSORBER_JOB_STATUS: ${{ job.status }}
+        run: |
+          set -Eeuo pipefail
+          OUT="$GITHUB_WORKSPACE/evidence/cp07-vm"
+          SRC="$RUNNER_TEMP/cp07-vm"
+          mkdir -p "$OUT"
+          # Collect only diagnostic/evidence files. Never copy VM private keys or cloud-init user-data.
+          for f in vm-serial.log kvm-probe.log; do
+            if test -f "$SRC/$f"; then cp "$SRC/$f" "$OUT/$f"; fi
+          done
+          if test -f "$SRC/virtualization.txt" && ! test -f "$OUT/virtualization.txt"; then
+            cp "$SRC/virtualization.txt" "$OUT/virtualization.txt"
+          fi
+          if test -f "$SRC/CP-07-VM-EVIDENCE.json" && ! test -f "$OUT/CP-07-VM-EVIDENCE.json"; then
+            cp "$SRC/CP-07-VM-EVIDENCE.json" "$OUT/CP-07-VM-EVIDENCE.json"
+          fi
+          if test -f "$SRC/guest-test.log" && ! test -f "$OUT/guest-test.log"; then
+            cp "$SRC/guest-test.log" "$OUT/guest-test.log"
+          fi
+          python3 - "$OUT" <<'PY'
+          import datetime,hashlib,json,os,pathlib,platform,subprocess,sys
+          out=pathlib.Path(sys.argv[1])
+          def cmd(args):
+              try: return subprocess.run(args,check=False,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=10).stdout.strip()
+              except Exception as e: return f"UNAVAILABLE: {type(e).__name__}: {e}"
+          def sha(p):
+              h=hashlib.sha256()
+              with p.open('rb') as f:
+                  for chunk in iter(lambda:f.read(1024*1024),b''): h.update(chunk)
+              return h.hexdigest()
+          receipt={
+            "schema":"louksna.zd.v03.cp07-vm-evidence-absorber.v1",
+            "candidate_commit_sha":os.environ.get("CANDIDATE_SHA","UNAVAILABLE"),
+            "checked_out_commit_sha":cmd(["git","-C",os.environ.get("GITHUB_WORKSPACE","."),"rev-parse","HEAD"]),
+            "run_id":os.environ.get("GITHUB_RUN_ID"),
+            "run_attempt":os.environ.get("GITHUB_RUN_ATTEMPT"),
+            "workflow":os.environ.get("GITHUB_WORKFLOW"),
+            "job_status_at_absorption":os.environ.get("ABSORBER_JOB_STATUS"),
+            "event_name":os.environ.get("GITHUB_EVENT_NAME"),
+            "runner_os":platform.platform(),
+            "qemu_version":cmd(["qemu-system-x86_64","--version"]),
+            "absorbed_at_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "physical_audio_claimed":False,
+            "private_keys_or_cloud_init_user_data_copied":False
+          }
+          (out/"absorber-receipt.json").write_text(json.dumps(receipt,indent=2,sort_keys=True)+"\n")
+          files=[]
+          for p in sorted(out.rglob("*")):
+              if p.is_file() and p.name!="evidence-manifest.json":
+                  files.append({"path":p.relative_to(out).as_posix(),"bytes":p.stat().st_size,"sha256":sha(p)})
+          manifest={"schema":"louksna.zd.v03.cp07-vm-evidence-manifest.v1","run_id":os.environ.get("GITHUB_RUN_ID"),"candidate_commit_sha":os.environ.get("CANDIDATE_SHA","UNAVAILABLE"),"files":files}
+          (out/"evidence-manifest.json").write_text(json.dumps(manifest,indent=2,sort_keys=True)+"\n")
+          print(json.dumps({"absorber":"COMPLETE","file_count":len(files),"evidence_directory":str(out),"physical_audio_claimed":False},sort_keys=True))
+          PY
+
       - name: Upload SHA-bound virtual VM evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
