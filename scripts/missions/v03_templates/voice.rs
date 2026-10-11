@@ -21,6 +21,8 @@ pub struct VoiceTurn {
     response: String,
     elapsed_ms: u128,
     audio_played: bool,
+    capture_device: String,
+    playback_device: String,
 }
 struct TempAudio(PathBuf);
 impl Drop for TempAudio {
@@ -126,7 +128,7 @@ pub async fn voice_preflight() -> Result<VoicePreflight,String> {
 pub async fn voice_e2e() -> Result<VoiceTurn,String> {
     match voice_e2e_inner().await {
         Ok(turn) => {
-            super::log_event("VOICE_E2E", "EXECUTED_NOT_CERTIFIED", "real_capture=true;stt=whisper.cpp;response=ollama;tts=piper;playback=alsa;independent_validation=pending")?;
+            super::log_event("VOICE_E2E", "EXECUTED_NOT_CERTIFIED", &format!("real_capture=true;stt=whisper.cpp;response=ollama;tts=piper;playback=alsa;capture_device={};playback_device={};elapsed_ms={};independent_validation=pending", turn.capture_device, turn.playback_device, turn.elapsed_ms))?;
             Ok(turn)
         }
         Err(error) => {
@@ -146,10 +148,12 @@ async fn voice_e2e_inner() -> Result<VoiceTurn,String> {
     let root = std::env::temp_dir().join(format!("louksna-voice-{}-{}", std::process::id(), chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()));
     std::fs::create_dir_all(&root).map_err(|_| "VOICE_TEMP_CREATE_FAILED")?;
     let _cleanup = TempAudio(root.clone());
+    let capture_device = std::env::var("LOUKSNA_ALSA_CAPTURE_DEVICE").unwrap_or_else(|_| "default".into());
+    let playback_device = std::env::var("LOUKSNA_ALSA_PLAYBACK_DEVICE").unwrap_or_else(|_| "default".into());
     let capture = root.join("capture.wav");
     let response_audio = root.join("response.wav");
     let capture_s = capture.to_string_lossy().to_string();
-    run_bounded("arecord", &["-q","-D","default","-f","S16_LE","-r","16000","-c","1","-d",CAPTURE_SECONDS,"-t","wav",&capture_s],None,Duration::from_secs(12))?;
+    run_bounded("arecord", &["-q","-D",&capture_device,"-f","S16_LE","-r","16000","-c","1","-d",CAPTURE_SECONDS,"-t","wav",&capture_s],None,Duration::from_secs(12))?;
     if !capture.is_file() || std::fs::metadata(&capture).map(|m|m.len()).unwrap_or(0) < 8_000 { return Err("VOICE_CAPTURE_EMPTY_OR_TOO_SMALL".into()); }
 
     let model_s = whisper_model.to_string_lossy().to_string();
@@ -174,8 +178,8 @@ async fn voice_e2e_inner() -> Result<VoiceTurn,String> {
     let piper_model_s = piper_model.to_string_lossy().to_string();
     run_bounded("piper",&["--model",&piper_model_s,"--output_file",&response_audio_s],Some(&response),Duration::from_secs(45))?;
     if !response_audio.is_file() || std::fs::metadata(&response_audio).map(|m|m.len()).unwrap_or(0) < 8_000 { return Err("VOICE_SYNTHESIS_EMPTY_OR_TOO_SMALL".into()); }
-    run_bounded("aplay",&["-q",&response_audio_s],None,Duration::from_secs(30))?;
-    Ok(VoiceTurn { status:"E2E_EXECUTED_NOT_CERTIFIED".into(), transcript, response, elapsed_ms:started.elapsed().as_millis(), audio_played:true })
+    run_bounded("aplay",&["-q","-D",&playback_device,&response_audio_s],None,Duration::from_secs(30))?;
+    Ok(VoiceTurn { status:"E2E_EXECUTED_NOT_CERTIFIED".into(), transcript, response, elapsed_ms:started.elapsed().as_millis(), audio_played:true, capture_device, playback_device })
 }
 
 #[cfg(test)]
