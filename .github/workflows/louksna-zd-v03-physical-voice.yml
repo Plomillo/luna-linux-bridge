@@ -118,7 +118,7 @@ jobs:
               except Exception as e: return "UNAVAILABLE:"+type(e).__name__
           log=pathlib.Path("evidence/zona-directiva-v03/CP-07-physical-voice-e2e.log")
           log_text=log.read_text(encoding="utf-8",errors="replace")
-          for marker in ("PHYSICAL_VOICE_E2E_RESULT=PASS","PHYSICAL_VOICE_TEMP_CLEANUP=PASS"):
+          for marker in ("PHYSICAL_VOICE_MIC_CAPTURE=PASS","PHYSICAL_VOICE_TRANSCRIPTION=PASS","PHYSICAL_VOICE_MODEL_RESPONSE=PASS","PHYSICAL_VOICE_TTS=PASS","PHYSICAL_VOICE_PLAYBACK=PASS","PHYSICAL_VOICE_E2E_RESULT=PASS","PHYSICAL_VOICE_TEMP_CLEANUP=PASS"):
               if marker not in log_text: raise SystemExit("Missing required runtime evidence marker: "+marker)
           data={
             "schema":"louksna.zd.v03.physical-voice-e2e.v1",
