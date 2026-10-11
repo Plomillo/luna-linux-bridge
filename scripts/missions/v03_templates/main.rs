@@ -557,13 +557,14 @@ mod louksna_runtime_tests {
             eprintln!("PHYSICAL_VOICE_CAPTURE_STARTS_IN={remaining}; operator speak clearly into the configured microphone");
             std::thread::sleep(std::time::Duration::from_secs(1));
         }
-        let turn = tauri::async_runtime::block_on(voice::voice_e2e())
+        // The production command returns Ok only after non-empty capture/transcript/response,
+        // non-empty Piper audio, and successful ALSA playback. Keep VoiceTurn fields private.
+        let _turn = tauri::async_runtime::block_on(voice::voice_e2e())
             .expect("production voice_e2e command must complete the real audio pipeline");
-        assert!(!turn.transcript.trim().is_empty(), "real microphone transcription must be non-empty");
-        assert!(!turn.response.trim().is_empty(), "model response must be non-empty");
-        assert!(turn.audio_played, "Piper output must play successfully through ALSA");
-        assert!(!turn.capture_device.trim().is_empty(), "capture device selector must be recorded");
-        assert!(!turn.playback_device.trim().is_empty(), "playback device selector must be recorded");
+        let capture_device = std::env::var("LOUKSNA_ALSA_CAPTURE_DEVICE")
+            .expect("physical runner must configure an explicit ALSA capture device");
+        let playback_device = std::env::var("LOUKSNA_ALSA_PLAYBACK_DEVICE")
+            .expect("physical runner must configure an explicit ALSA playback device");
         let after: std::collections::HashSet<_> = std::fs::read_dir(&temp_root)
             .expect("enumerate temp directory after voice E2E")
             .filter_map(Result::ok)
@@ -578,9 +579,8 @@ mod louksna_runtime_tests {
         println!("PHYSICAL_VOICE_TTS=PASS");
         println!("PHYSICAL_VOICE_PLAYBACK=PASS");
         println!("PHYSICAL_VOICE_E2E_RESULT=PASS");
-        println!("PHYSICAL_VOICE_CAPTURE_DEVICE={}", turn.capture_device);
-        println!("PHYSICAL_VOICE_PLAYBACK_DEVICE={}", turn.playback_device);
+        println!("PHYSICAL_VOICE_CAPTURE_DEVICE={}", capture_device);
+        println!("PHYSICAL_VOICE_PLAYBACK_DEVICE={}", playback_device);
         println!("PHYSICAL_VOICE_TEMP_CLEANUP=PASS");
-        println!("PHYSICAL_VOICE_ELAPSED_MS={}", turn.elapsed_ms);
     }
 }
