@@ -35,6 +35,8 @@ VALID = {
     "acoustic_output_energy_detected": True,
     "acoustic_baseline_peak_rms": 100.0,
     "acoustic_playback_peak_rms": 400.0,
+    "acoustic_speech_match_ratio": 0.75,
+    "acoustic_transcription_match_count": 3,
     "operator_observation": "NOT_COLLECTED_OPTIONAL",
     "physical_audio_hardware_tested": True,
     "native_app_voice_command_executed": True,
@@ -58,6 +60,7 @@ def main():
             "PHYSICAL_VOICE_TTS=PASS",
             "PHYSICAL_VOICE_PLAYBACK=PASS",
             "PHYSICAL_VOICE_ACOUSTIC_OUTPUT=PASS",
+            "PHYSICAL_VOICE_ACOUSTIC_TRANSCRIPTION_MATCH=PASS",
             "PHYSICAL_VOICE_E2E_RESULT=PASS",
             "PHYSICAL_VOICE_TEMP_CLEANUP=PASS",
         ]) + "\n", encoding="utf-8")
