@@ -161,7 +161,7 @@ async fn voice_e2e_inner() -> Result<VoiceTurn,String> {
 
     let model_s = whisper_model.to_string_lossy().to_string();
     let capture_s = capture.to_string_lossy().to_string();
-    let (transcript_out, _) = run_bounded("whisper-cli", &["-m",&model_s,"-f",&capture_s,"-nt","-np","-t","2"],None,Duration::from_secs(60))?;
+    let (transcript_out, _) = run_bounded("whisper-cli", &["-m",&model_s,"-f",&capture_s,"-l","es","-nt","-np","-t","2"],None,Duration::from_secs(60))?;
     let transcript = transcript_out.trim().to_string();
     if transcript.is_empty() { return Err("VOICE_TRANSCRIPTION_EMPTY".into()); }
     if transcript.chars().count() > MAX_TEXT_CHARS { return Err("VOICE_TRANSCRIPTION_TOO_LONG".into()); }
