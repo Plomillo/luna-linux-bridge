@@ -44,6 +44,7 @@ checks = {
     "fixture_source_is_cc0_and_sha_pinned": "CC0-1.0" in physical_workflow and "1aa9fcf9a210c256a15a6f8682eeda65b17fd86ba3e37873303d5b9a60b972cf" in physical_workflow,
     "fixture_is_normalized_and_manifested": "ffmpeg -nostdin" in physical_workflow and "stimulus-manifest.json" in physical_workflow and "normalized_fixture_sha256" in physical_workflow,
     "fixture_manifest_is_verified_before_audio": "CP-07 HOLD: human stimulus provenance/hash manifest failed" in physical_workflow,
+    "validated_evidence_retains_stimulus_manifest": "evidence/zona-directiva-v03/CP-07-stimulus-manifest.json" in physical_workflow,
     "fixture_is_played_and_recaptured_physically": 'run_bounded("aplay", &["-q","-D",&playback_device,stimulus]' in voice_impl and "VOICE_STIMULUS_PHYSICAL_CAPTURE_FAILED" in voice_impl,
     "fixture_stt_uses_reference_content_gate": "VOICE_STIMULUS_TRANSCRIPTION_MISMATCH" in voice_impl and "expected_tokens.is_empty()" in voice_impl,
     "legacy_live_operator_gate_is_preserved": "VOICE_TRANSCRIPTION_TEST_PHRASE_MISMATCH" in voice_impl and "voice_test_anchors_present(&phrase_tokens)" in voice_impl,
