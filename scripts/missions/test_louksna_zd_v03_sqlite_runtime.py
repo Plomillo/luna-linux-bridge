@@ -34,7 +34,7 @@ def utc_now() -> str:
 def main() -> int:
     source_bytes = SOURCE.read_bytes()
     source = source_bytes.decode("utf-8")
-    match = re.search(r'c\\.execute_batch\\(r#"(.*?)"#\\)', source, re.S)
+    match = re.search(r'c\.execute_batch\(r#"(.*?)"#\)', source, re.S)
     if not match:
         raise SystemExit("FAIL: production SQLite execute_batch DDL not found")
     ddl = match.group(1)
