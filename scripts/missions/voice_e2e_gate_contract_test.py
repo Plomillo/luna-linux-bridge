@@ -48,6 +48,7 @@ checks = {
     "fixture_stt_uses_reference_content_gate": "VOICE_STIMULUS_TRANSCRIPTION_MISMATCH" in voice_impl and "expected_tokens.is_empty()" in voice_impl,
     "legacy_live_operator_gate_is_preserved": "VOICE_TRANSCRIPTION_TEST_PHRASE_MISMATCH" in voice_impl and "voice_test_anchors_present(&phrase_tokens)" in voice_impl,
     "automated_mode_suppresses_live_operator_countdown": 'if std::env::var("LOUKSNA_VOICE_STIMULUS_REQUIRED")' in voice_template and "PHYSICAL_VOICE_STIMULUS_MODE=HUMAN_RECORDED_PHYSICAL_ACOUSTIC" in voice_template,
+    "memory_watchdog_uses_persistent_service_cgroup": "systemd-run --user --pipe --wait" in physical_workflow and 'SCOPE_NAME="${UNIT}.service"' in physical_workflow and "memory.current" in physical_workflow,
     "physical_audio_workflow_is_manual_only": "workflow_dispatch:" in legacy_audio_workflow and "\\n  push:" not in legacy_audio_workflow,
 }
 report = {
