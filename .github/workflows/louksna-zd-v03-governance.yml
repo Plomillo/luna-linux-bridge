@@ -1511,6 +1511,19 @@ jobs:
               raise SystemExit("G24 HOLD: G23 candidate SHA mismatch")
           if g23.get("source_workflow_run_id")!=int(os.environ["GITHUB_RUN_ID"]):
               raise SystemExit("G24 HOLD: G23 source run mismatch")
+          if g23.get("validation_independent") is not True or not g23.get("validator_identity"):
+              raise SystemExit("G24 HOLD: G23 independent-validator identity/status missing")
+          if g23.get("unresolved_blockers") != []:
+              raise SystemExit("G24 HOLD: G23 has unresolved blockers")
+          if g23.get("severity") not in {"NONE","NONBLOCKING_CLOSED"}:
+              raise SystemExit("G24 HOLD: G23 severity is not certifiable")
+          findings=g23.get("findings")
+          if not isinstance(findings,list) or any(not isinstance(f,dict) or f.get("status")!="CLOSED" for f in findings):
+              raise SystemExit("G24 HOLD: G23 findings are malformed or not closed")
+          if g23.get("next_authorized_stage")!="12":
+              raise SystemExit("G24 HOLD: G23 did not authorize CP-12")
+          if not g23.get("previous_checkpoint_sha256"):
+              raise SystemExit("G24 HOLD: G23 lacks CP-10 checkpoint digest")
           if g23.get("evidence_hashes_recomputed") is not True or not g23.get("evidence_manifest_sha256"):
               raise SystemExit("G24 HOLD: G23 independent digest validation incomplete")
           # G24 requires a second exact-SHA approval from a different reviewer
