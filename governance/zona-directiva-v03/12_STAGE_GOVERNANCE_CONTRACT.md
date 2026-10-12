@@ -205,3 +205,8 @@ La primera ejecución tras esta modificación es exploratoria y no certificadora
 - Referencia textual mínima verificada desde el título/descripción de origen: hola. Esta referencia es un ancla de contenido de una sola palabra, no una transcripción completa del clip.
 - La etapa hosted normaliza el preview a WAV PCM16, mono, 16 kHz, sin metadatos; el SHA-256 de esa forma normalizada se calcula por ejecución y se transmite junto al artefacto al runner físico. La manifestación liga ambos hashes al candidato y al run.
 - La fuente se usa solo como estímulo de entrada. La respuesta de Louksna debe seguir recorriendo modelo local, Piper con es_ES-sharvard-medium.onnx/speaker_id=1, altavoz físico, recaptura por micrófono físico y comprobación de contenido.
+
+
+### 9.5 Deterministic fixture preparation
+
+El preview CC0 de origen dura aproximadamente 0,473 s. Para mejorar la oportunidad de reconocimiento sin fabricar voz, la etapa hosted repite la grabación humana tres veces, limita la secuencia a 1,5 s y la normaliza a PCM16 mono 16 kHz. La repetición no es TTS ni una señal sintética. Se verifican y registran por separado el SHA-256 del MP3 de origen y el SHA-256 del WAV normalizado; el manifiesto contiene la transformación, versión de ffmpeg, duración, tamaño y SHA del candidato/run. La evidencia final validada conserva el manifiesto.
