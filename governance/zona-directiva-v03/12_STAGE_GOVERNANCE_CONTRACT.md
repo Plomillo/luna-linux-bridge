@@ -210,3 +210,20 @@ La primera ejecución tras esta modificación es exploratoria y no certificadora
 ### 9.5 Deterministic fixture preparation
 
 El preview CC0 de origen dura aproximadamente 0,473 s. Para mejorar la oportunidad de reconocimiento sin fabricar voz, la etapa hosted repite la grabación humana tres veces, limita la secuencia a 1,5 s y la normaliza a PCM16 mono 16 kHz. La repetición no es TTS ni una señal sintética. Se verifican y registran por separado el SHA-256 del MP3 de origen y el SHA-256 del WAV normalizado; el manifiesto contiene la transformación, versión de ffmpeg, duración, tamaño y SHA del candidato/run. La evidencia final validada conserva el manifiesto.
+
+## ADENDA EXPLÍCITA — EXCEPCIÓN DE BASE DE REVISIÓN PR #62 (2026-10-12)
+
+Esta adenda es una excepción operacional limitada para revisión; no sustituye ni reescribe `TARGET_WORK_BRANCH`, `WORK_BRANCH`, la autoridad canónica ni el baseline.
+
+PR_BASE_EXCEPTION_ID = LOUKSNA-ZD-V03-PR62-BASE-MAIN-REVIEW-ONLY-20261012
+PR_BASE_EXCEPTION_PR = 62
+PR_BASE_EXCEPTION_HEAD = work/voice-e2e-stack-20261010
+PR_BASE_EXCEPTION_BASE = main
+PR_BASE_EXCEPTION_STATUS = REVIEW_ONLY
+PR_BASE_EXCEPTION_NO_MERGE = TRUE
+PR_BASE_EXCEPTION_NO_MAIN_MUTATION = TRUE
+PR_BASE_EXCEPTION_NO_AUTO_CERTIFICATION = TRUE
+
+Justificación verificable: la comparación con la rama declarada `work/louksna-zona-directiva-v0.3-functional-20261006` encontró historias divergentes (merge-base `01d28c319af6a644168c621ab01b8e69dc1c0a0e`, 31 commits exclusivos de la rama destino y 372 exclusivos del candidato), una expansión del diff a 61 archivos/11.597 adiciones y `mergeable=false`. La rama destino no contiene el workflow de gobernanza necesario para el trigger de PR. La excepción mantiene el PR #62 como revisión contra `main` para conservar el alcance y el flujo de CI mientras se resuelve la divergencia.
+
+Límites no derogables: esta excepción no autoriza fusionar, modificar `main`, cambiar la rama de trabajo declarada, omitir CP-01–CP-12, heredar evidencia de otro SHA, eludir G23/G24, activar ni certificar. Si cambia el número de PR, la rama HEAD o la base autorizada, la excepción no aplica y CP-02 debe fallar cerrado. La excepción es candidata y sigue sujeta a la validación independiente G23 y a la certificación G24; no se propaga automáticamente.
