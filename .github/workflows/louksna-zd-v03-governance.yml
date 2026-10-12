@@ -255,16 +255,31 @@ jobs:
           event_name=os.getenv("GITHUB_EVENT_NAME","")
           pr_head_branch=os.getenv("GITHUB_HEAD_REF","")
           pr_base_branch=os.getenv("GITHUB_BASE_REF","")
+          event_path=os.getenv("GITHUB_EVENT_PATH","")
+          try:
+              event_payload=json.loads(pathlib.Path(event_path).read_text()) if event_path else {}
+              pr_number=str(event_payload.get("number",""))
+          except (OSError,ValueError,TypeError):
+              pr_number=""
+          exception_id=declared_value(contract_text,"PR_BASE_EXCEPTION_ID")
+          exception_pr=declared_value(contract_text,"PR_BASE_EXCEPTION_PR")
+          exception_head=declared_value(contract_text,"PR_BASE_EXCEPTION_HEAD")
+          exception_base=declared_value(contract_text,"PR_BASE_EXCEPTION_BASE")
+          exception_status=declared_value(contract_text,"PR_BASE_EXCEPTION_STATUS")
+          exception_no_merge=declared_value(contract_text,"PR_BASE_EXCEPTION_NO_MERGE")
+          exception_no_main_mutation=declared_value(contract_text,"PR_BASE_EXCEPTION_NO_MAIN_MUTATION")
+          exception_no_auto_certification=declared_value(contract_text,"PR_BASE_EXCEPTION_NO_AUTO_CERTIFICATION")
+          exception_applies=(event_name=="pull_request" and bool(exception_id) and pr_number==exception_pr and pr_head_branch==exception_head and pr_base_branch==exception_base and exception_status=="REVIEW_ONLY" and exception_no_merge=="TRUE" and exception_no_main_mutation=="TRUE" and exception_no_auto_certification=="TRUE")
           if not target_work_branch:
               findings.append({"severity":"BLOCKER","id":"TARGET_WORK_BRANCH_MISSING","detail":"Contract must declare TARGET_WORK_BRANCH."})
           if not mission_work_branch:
               findings.append({"severity":"BLOCKER","id":"MISSION_WORK_BRANCH_MISSING","detail":"Mission must declare WORK_BRANCH."})
           elif target_work_branch and mission_work_branch != target_work_branch:
               findings.append({"severity":"BLOCKER","id":"MISSION_CONTRACT_WORK_BRANCH_MISMATCH","contract_target_work_branch":target_work_branch,"mission_work_branch":mission_work_branch})
-          if event_name=="pull_request" and target_work_branch and pr_base_branch != target_work_branch:
-              findings.append({"severity":"BLOCKER","id":"PR_BASE_BRANCH_MISMATCH","detail":"Fail closed: pull-request base must equal TARGET_WORK_BRANCH declared by the mission/contract unless an explicit, versioned exception is present in the contract. Do not silently retarget the PR or rewrite the contract.","declared_work_branch":target_work_branch,"pull_request_head_branch":pr_head_branch,"pull_request_base_branch":pr_base_branch})
+          if event_name=="pull_request" and target_work_branch and pr_base_branch != target_work_branch and not exception_applies:
+              findings.append({"severity":"BLOCKER","id":"PR_BASE_BRANCH_MISMATCH","detail":"Fail closed: PR base must equal TARGET_WORK_BRANCH unless the exact PR/head/base has a versioned REVIEW_ONLY exception with no-merge, no-main-mutation, and no-auto-certification controls.","declared_work_branch":target_work_branch,"pull_request_number":pr_number,"pull_request_head_branch":pr_head_branch,"pull_request_base_branch":pr_base_branch})
           def digest(p): return hashlib.sha256(p.read_bytes()).hexdigest() if p.is_file() else None
-          result={"schema":"louksna.zd.v03.checkpoint.v1","contract_id":"LOUKSNA-ZD-V03-12-STAGE-GOVERNANCE-20261009","mission_id":"MIS-LOUKSNA-ZD-V03-FUNCTIONAL-20261006","stage_id":"02","checkpoint_id":"CP-02","timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"repository":os.getenv("GITHUB_REPOSITORY"),"run_id":os.getenv("GITHUB_RUN_ID"),"run_url":f"https://github.com/{os.getenv('GITHUB_REPOSITORY')}/actions/runs/{os.getenv('GITHUB_RUN_ID')}","commit_sha":os.getenv("CANDIDATE_SHA"),"candidate_branch":os.getenv("GITHUB_REF_NAME"),"event_name":event_name,"declared_target_work_branch":target_work_branch,"mission_work_branch":mission_work_branch,"pull_request_head_branch":pr_head_branch or None,"pull_request_base_branch":pr_base_branch or None,"status":"PASS" if not findings else "HOLD","requirements":required,"evidence":{"contract_sha256":digest(contract),"mission_sha256":digest(mission),"authority_sha256":digest(authority),"assurance_sha256":digest(assurance)},"findings":findings,"previous_checkpoint":"CP-01","next_authorized_stage":"03" if not findings else "NONE","rollback_pointer":os.getenv("CANDIDATE_SHA")}
+          result={"schema":"louksna.zd.v03.checkpoint.v1","contract_id":"LOUKSNA-ZD-V03-12-STAGE-GOVERNANCE-20261009","mission_id":"MIS-LOUKSNA-ZD-V03-FUNCTIONAL-20261006","stage_id":"02","checkpoint_id":"CP-02","timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"repository":os.getenv("GITHUB_REPOSITORY"),"run_id":os.getenv("GITHUB_RUN_ID"),"run_url":f"https://github.com/{os.getenv('GITHUB_REPOSITORY')}/actions/runs/{os.getenv('GITHUB_RUN_ID')}","commit_sha":os.getenv("CANDIDATE_SHA"),"candidate_branch":os.getenv("GITHUB_REF_NAME"),"event_name":event_name,"pull_request_number":pr_number or None,"declared_target_work_branch":target_work_branch,"mission_work_branch":mission_work_branch,"pull_request_head_branch":pr_head_branch or None,"pull_request_base_branch":pr_base_branch or None,"pr_base_exception_id":exception_id,"pr_base_exception_applied":exception_applies,"status":"PASS" if not findings else "HOLD","requirements":required,"evidence":{"contract_sha256":digest(contract),"mission_sha256":digest(mission),"authority_sha256":digest(authority),"assurance_sha256":digest(assurance)},"findings":findings,"previous_checkpoint":"CP-01","next_authorized_stage":"03" if not findings else "NONE","rollback_pointer":os.getenv("CANDIDATE_SHA")}
           path=pathlib.Path("evidence/zona-directiva-v03/CP-02-contract-linkage.json")
           path.write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
           print(json.dumps(result,indent=2))
