@@ -93,6 +93,26 @@ def main() -> int:
     if data.get("audible_playback_confirmed_by_operator") is not True and data.get("operator_observation") != "NOT_COLLECTED_OPTIONAL":
         errors.append("operator observation must be explicit: affirmative or optional-not-collected")
 
+    stimulus_mode = data.get("stimulus_mode", "LIVE_OPERATOR")
+    if stimulus_mode == "HUMAN_RECORDED_PHYSICAL_ACOUSTIC":
+        if data.get("live_user_utterance") is not False:
+            errors.append("automated stimulus must explicitly state live_user_utterance=false")
+        for field in ("stimulus_source_url", "stimulus_license", "stimulus_sha256", "stimulus_reference_sha256"):
+            value = data.get(field)
+            if not isinstance(value, str) or not value.strip():
+                errors.append(f"automated stimulus provenance field missing: {field}")
+        source_url = data.get("stimulus_source_url", "")
+        if not isinstance(source_url, str) or not source_url.startswith("https://"):
+            errors.append("automated stimulus source must use HTTPS")
+        for field in ("stimulus_sha256", "stimulus_reference_sha256"):
+            value = data.get(field)
+            if not isinstance(value, str) or len(value) != 64 or any(c not in "0123456789abcdefABCDEF" for c in value):
+                errors.append(f"invalid or missing SHA-256: {field}")
+        if data.get("physical_audio_hardware_tested") is not True or data.get("microphone_capture") is not True:
+            errors.append("automated stimulus mode requires physical acoustic input proof")
+    elif stimulus_mode != "LIVE_OPERATOR":
+        errors.append("unknown CP-07 stimulus_mode")
+
     log_path = args.evidence.with_name("CP-07-physical-voice-e2e.log")
     expected_log_hash = data.get("evidence_log_sha256")
     if not log_path.is_file():
