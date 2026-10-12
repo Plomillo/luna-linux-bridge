@@ -172,13 +172,27 @@ jobs:
                 PY
                 TRANSCRIPT="$(cat /opt/louksna-cp07/transcript.txt)"
                 python3 - "$TRANSCRIPT" > /opt/louksna-cp07/llm-response.txt <<'PY'
-                import json,sys,urllib.request
+                import json,sys,time,urllib.request
                 prompt=sys.argv[1]
-                body={"model":"smollm2:360m","stream":False,"messages":[{"role":"system","content":"Responde brevemente en español."},{"role":"user","content":"Confirma que procesaste esta prueba de voz: "+prompt}]}
+                body={
+                    "model":"smollm2:360m",
+                    "stream":False,
+                    "keep_alive":0,
+                    "options":{"num_ctx":512,"num_batch":64,"num_predict":32,"num_thread":2,"temperature":0},
+                    "messages":[
+                        {"role":"system","content":"Responde brevemente en español."},
+                        {"role":"user","content":"Confirma que procesaste esta prueba de voz: "+prompt}
+                    ]
+                }
                 req=urllib.request.Request("http://127.0.0.1:11434/api/chat",data=json.dumps(body).encode(),headers={"Content-Type":"application/json"})
-                with urllib.request.urlopen(req,timeout=180) as r: d=json.load(r)
+                started=time.monotonic()
+                try:
+                    with urllib.request.urlopen(req,timeout=300) as r: d=json.load(r)
+                except TimeoutError:
+                    raise SystemExit("OLLAMA_INFERENCE_TIMEOUT:model=smollm2:360m;timeout_s=300;num_ctx=512;num_predict=32")
                 answer=d.get("message",{}).get("content","").strip()
                 if not answer: raise SystemExit("EMPTY_LLM_RESPONSE")
+                print(f"OLLAMA_INFERENCE_VALID elapsed_s={time.monotonic()-started:.1f} response_chars={len(answer)}",file=sys.stderr)
                 print(answer)
                 PY
                 /opt/louksna-cp07/venv/bin/python -m piper -m es_ES-sharvard-medium --data-dir /opt/louksna-cp07/voices -f /opt/louksna-cp07/response.wav < /opt/louksna-cp07/llm-response.txt
