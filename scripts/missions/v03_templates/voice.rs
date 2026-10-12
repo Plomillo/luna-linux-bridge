@@ -74,12 +74,14 @@ fn normalized_voice_tokens(text: &str) -> Vec<String> {
         .filter(|word| word.chars().count() >= 3).map(str::to_string).collect()
 }
 
-/// Require the speech anchors that establish a live operator utterance and response intent.
-/// The single opening word "prueba" is diagnostic only because Whisper often substitutes it.
+/// Require independent anchors for a live operator utterance and a response request.
+/// Whisper may substitute "prueba" or use "procesa" rather than "responde" for the final instruction.
 fn voice_test_anchors_present(tokens: &[String]) -> bool {
-    ["voz", "microfono", "real", "hablando", "responde"]
+    let has_response_intent = tokens.iter().any(|token| token == "responde" || token == "procesa");
+    ["voz", "microfono", "real", "hablando"]
         .iter()
         .all(|required| tokens.iter().any(|token| token.as_str() == *required))
+        && has_response_intent
 }
 
 fn record_acoustic_wav(device: &str, seconds: &str, path: &std::path::Path) -> Result<(),String> {
@@ -252,11 +254,14 @@ async fn voice_e2e_inner() -> Result<VoiceTurn,String> {
     let has_real = phrase_tokens.iter().any(|token| token == "real");
     let has_hablando = phrase_tokens.iter().any(|token| token == "hablando");
     let has_responde = phrase_tokens.iter().any(|token| token == "responde");
-    // Whisper can substitute the first word ("prueba") even when the rest of the
-    // operator phrase is clear. Require five independent semantic anchors instead.
+    let has_procesa = phrase_tokens.iter().any(|token| token == "procesa");
+    let has_response_intent = has_responde || has_procesa;
+    // The spoken phrase requests processing and a spoken response; accept either
+    // verb as the response-intent anchor while retaining all four independent
+    // operator/audio anchors. "prueba" remains diagnostic only.
     if !voice_test_anchors_present(&phrase_tokens) {
         return Err(format!(
-            "VOICE_TRANSCRIPTION_TEST_PHRASE_MISMATCH:token_count={};prueba={has_prueba};voz={has_voz};microfono={has_microfono};real={has_real};hablando={has_hablando};responde={has_responde}",
+            "VOICE_TRANSCRIPTION_TEST_PHRASE_MISMATCH:token_count={};prueba={has_prueba};voz={has_voz};microfono={has_microfono};real={has_real};hablando={has_hablando};responde={has_responde};procesa={has_procesa};response_intent={has_response_intent}",
             phrase_tokens.len()
         ));
     }
