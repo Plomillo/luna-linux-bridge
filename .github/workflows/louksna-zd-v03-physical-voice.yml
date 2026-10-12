@@ -208,6 +208,24 @@ jobs:
           test -n "$LOUKSNA_VOICE_STIMULUS_SOURCE_URL" || { echo "::error::CP-07 HOLD: stimulus source URL is missing"; exit 1; }
           test -n "$LOUKSNA_VOICE_STIMULUS_LICENSE" || { echo "::error::CP-07 HOLD: stimulus license is missing"; exit 1; }
           test -n "$LOUKSNA_VOICE_STIMULUS_EXPECTED_TEXT" || { echo "::error::CP-07 HOLD: stimulus reference transcript is missing"; exit 1; }
+          python3 - "$CANDIDATE_SHA" "$LOUKSNA_VOICE_STIMULUS_WAV" "$LOUKSNA_VOICE_STIMULUS_SHA256" evidence/cp07-build/stimulus-manifest.json "$LOUKSNA_VOICE_STIMULUS_SOURCE_SHA256" "$LOUKSNA_VOICE_STIMULUS_EXPECTED_TEXT" <<'PY'
+          import hashlib,json,pathlib,sys
+          candidate,fixture,fixture_sha,manifest_path,source_sha,reference=sys.argv[1:]
+          m=json.loads(pathlib.Path(manifest_path).read_text(encoding="utf-8"))
+          actual=hashlib.sha256(pathlib.Path(fixture).read_bytes()).hexdigest()
+          ref_sha=hashlib.sha256(reference.encode("utf-8")).hexdigest()
+          checks={
+            "candidate":m.get("candidate_commit_sha")==candidate,
+            "normalized_fixture_sha":actual==fixture_sha==m.get("normalized_fixture_sha256"),
+            "source_sha":m.get("source_sha256")==source_sha,
+            "reference_sha":m.get("reference_text_sha256")==ref_sha,
+            "source_url":m.get("source_url")=="https://freesound.org/people/leoncillo/sounds/423843/",
+            "license":m.get("license","").startswith("CC0-1.0"),
+            "reference":m.get("reference_text")==reference,
+          }
+          print(json.dumps({"schema":"louksna.zd.v03.cp07-stimulus-preflight.v1","status":"PASS" if all(checks.values()) else "HOLD","checks":checks},sort_keys=True))
+          if not all(checks.values()): raise SystemExit("CP-07 HOLD: human stimulus provenance/hash manifest failed")
+          PY
           echo "stimulus_mode=HUMAN_RECORDED_PHYSICAL_ACOUSTIC"
           echo "live_user_utterance=false"
           {
