@@ -32,10 +32,10 @@ jobs:
       stimulus_sha256: ${{ steps.prepare-stimulus.outputs.sha256 }}
     env:
       CANDIDATE_SHA: ${{ inputs.candidate_sha || github.event.inputs.candidate_sha || github.sha }}
-      STIMULUS_DOWNLOAD_URL: https://cdn.freesound.org/previews/21/21933_8043-lq.mp3
-      STIMULUS_SOURCE_URL: https://freesound.org/people/dobroide/sounds/21933/
-      STIMULUS_SOURCE_SHA256: 44ee33c2729f9fdd274ddfaa88c82afe41ea16a79a32619ece4c86b6c94b8ad2
-      STIMULUS_LICENSE: "CC BY 4.0; 20060818.hola.wav by dobroide; attribution required"
+      STIMULUS_DOWNLOAD_URL: https://cdn.freesound.org/previews/423/423843_3215099-lq.mp3
+      STIMULUS_SOURCE_URL: https://freesound.org/people/leoncillo/sounds/423843/
+      STIMULUS_SOURCE_SHA256: 1aa9fcf9a210c256a15a6f8682eeda65b17fd86ba3e37873303d5b9a60b972cf
+      STIMULUS_LICENSE: "CC0-1.0; Hola_fer.wav by leoncillo"
       STIMULUS_REFERENCE_TEXT: hola
     steps:
       - name: Checkout exact candidate
@@ -75,7 +75,7 @@ jobs:
           sha=lambda p:hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
           with wave.open(fixture_path,'rb') as w:
               channels,width,rate,frames=w.getnchannels(),w.getsampwidth(),w.getframerate(),w.getnframes()
-          if (channels,width,rate)!=(1,2,16000) or not 1.0 <= frames/rate <= 10.0:
+          if (channels,width,rate)!=(1,2,16000) or not 0.25 <= frames/rate <= 10.0:
               raise SystemExit("CP07_STIMULUS_FORMAT_OR_DURATION_INVALID")
           fixture_sha=sha(fixture_path)
           report={
@@ -84,7 +84,7 @@ jobs:
             "source_url":source_url,
             "download_url":os.environ["STIMULUS_DOWNLOAD_URL"],
             "license":license_text,
-            "attribution":"20060818.hola.wav by dobroide, CC BY 4.0",
+            "attribution":"Hola_fer.wav by leoncillo, CC0-1.0",
             "source_sha256":source_sha,
             "normalized_fixture_sha256":fixture_sha,
             "reference_text_sha256":hashlib.sha256(reference.encode()).hexdigest(),
@@ -173,9 +173,9 @@ jobs:
       LOUKSNA_VOICE_STIMULUS_REQUIRED: "1"
       LOUKSNA_VOICE_STIMULUS_WAV: ${{ github.workspace }}/evidence/cp07-build/human-spanish-stimulus.wav
       LOUKSNA_VOICE_STIMULUS_SHA256: ${{ needs.prepare-physical-voice-binaries.outputs.stimulus_sha256 }}
-      LOUKSNA_VOICE_STIMULUS_SOURCE_URL: https://freesound.org/people/dobroide/sounds/21933/
-      LOUKSNA_VOICE_STIMULUS_SOURCE_SHA256: 44ee33c2729f9fdd274ddfaa88c82afe41ea16a79a32619ece4c86b6c94b8ad2
-      LOUKSNA_VOICE_STIMULUS_LICENSE: "CC BY 4.0; 20060818.hola.wav by dobroide; attribution required"
+      LOUKSNA_VOICE_STIMULUS_SOURCE_URL: https://freesound.org/people/leoncillo/sounds/423843/
+      LOUKSNA_VOICE_STIMULUS_SOURCE_SHA256: 1aa9fcf9a210c256a15a6f8682eeda65b17fd86ba3e37873303d5b9a60b972cf
+      LOUKSNA_VOICE_STIMULUS_LICENSE: "CC0-1.0; Hola_fer.wav by leoncillo"
       LOUKSNA_VOICE_STIMULUS_EXPECTED_TEXT: hola
     steps:
       - name: Checkout exact candidate
