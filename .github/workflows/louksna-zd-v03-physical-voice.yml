@@ -175,10 +175,12 @@ jobs:
               "source_run_id": int(os.environ["GITHUB_RUN_ID"]),
               "available_memory_bytes": available,
               "required_available_memory_bytes": budget,
+              "maximum_project_workload_memory_bytes": budget,
+              "workload_memory_enforcement": "768 MiB systemd cgroup for app/child tools plus watchdog enforcing combined cgroup memory.current and Ollama RSS <= 1 GiB",
               "status": "PASS" if available >= budget else "HOLD",
               "model_execution_allowed": available >= budget,
               "timestamp_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-              "policy": "Do not begin local LLM inference unless at least 1 GiB MemAvailable is observed."
+              "policy": "Require at least 1 GiB MemAvailable before start and enforce a hard 1 GiB project-workload ceiling during local inference; fail closed if cgroup or Ollama RSS cannot be measured."
           }
           out = pathlib.Path("evidence/zona-directiva-v03/CP-07-memory-preflight.json")
           out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -261,7 +263,7 @@ jobs:
             sleep 0.1
           done
           if test -z "$CGROUP" || ! test -r "/sys/fs/cgroup${CGROUP}/memory.current"; then
-            systemctl --user kill --signal=KILL "$SCOPE_NAME" >/dev/null 2>&1 || true
+            systemctl --user kill --signal=SIGKILL "$SCOPE_NAME" >/dev/null 2>&1 || true
             wait "$SCOPE_RUN_PID" || true
             echo "::error::CP-07 HOLD: memory cgroup could not be verified; voice inference was not authorized"
             exit 1
@@ -270,7 +272,7 @@ jobs:
             SCOPE_BYTES="$(cat "/sys/fs/cgroup${CGROUP}/memory.current" 2>/dev/null || echo 0)"
             OLLAMA_PID="$(ps -eo pid=,args= | awk '/[o]llama serve$/ {print $1; exit}')"
             if test -z "$OLLAMA_PID" || ! test -r "/proc/${OLLAMA_PID}/status"; then
-              systemctl --user kill --signal=KILL "$SCOPE_NAME" >/dev/null 2>&1 || true
+              systemctl --user kill --signal=SIGKILL "$SCOPE_NAME" >/dev/null 2>&1 || true
               wait "$SCOPE_RUN_PID" || true
               echo "::error::CP-07 HOLD: Ollama process RSS could not be measured"
               exit 1
@@ -280,7 +282,7 @@ jobs:
             COMBINED_BYTES=$((SCOPE_BYTES + OLLAMA_BYTES))
             if test "$COMBINED_BYTES" -gt 1073741824; then
               echo "PHYSICAL_VOICE_RAM_BUDGET=EXCEEDED;scope_bytes=$SCOPE_BYTES;ollama_rss_bytes=$OLLAMA_BYTES;combined_bytes=$COMBINED_BYTES;limit_bytes=1073741824"
-              systemctl --user kill --signal=KILL "$SCOPE_NAME" >/dev/null 2>&1 || true
+              systemctl --user kill --signal=SIGKILL "$SCOPE_NAME" >/dev/null 2>&1 || true
               wait "$SCOPE_RUN_PID" || true
               echo "::error::CP-07 HOLD: 1 GiB project RAM budget exceeded; inference terminated"
               exit 1
