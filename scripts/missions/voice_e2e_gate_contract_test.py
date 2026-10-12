@@ -49,6 +49,7 @@ checks = {
     "legacy_live_operator_gate_is_preserved": "VOICE_TRANSCRIPTION_TEST_PHRASE_MISMATCH" in voice_impl and "voice_test_anchors_present(&phrase_tokens)" in voice_impl,
     "automated_mode_suppresses_live_operator_countdown": 'if std::env::var("LOUKSNA_VOICE_STIMULUS_REQUIRED")' in voice_template and "PHYSICAL_VOICE_STIMULUS_MODE=HUMAN_RECORDED_PHYSICAL_ACOUSTIC" in voice_template,
     "memory_watchdog_uses_persistent_service_cgroup": "systemd-run --user --pipe --wait" in physical_workflow and 'SCOPE_NAME="${UNIT}.service"' in physical_workflow and "memory.current" in physical_workflow,
+    "runtime_and_validator_acoustic_thresholds_match": "baseline_peak * 1.10" in voice_impl and "baseline * 1.10" in (root / "scripts" / "missions" / "validate_voice_hardware_evidence.py").read_text(encoding="utf-8") and 'data["acoustic_baseline_peak_rms"] * 1.10' in physical_workflow,
     "physical_audio_workflow_is_manual_only": "workflow_dispatch:" in legacy_audio_workflow and "\\n  push:" not in legacy_audio_workflow,
 }
 report = {
