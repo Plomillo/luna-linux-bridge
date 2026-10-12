@@ -138,10 +138,17 @@ jobs:
                 sh /tmp/ollama-install.sh
                 systemctl enable --now ollama
                 ollama pull smollm2:360m
-                printf 'Prueba de voz, comprobacion virtualizada de Louksna.' | /opt/louksna-cp07/venv/bin/python -m piper -m es_ES-sharvard-medium --data-dir /opt/louksna-cp07/voices -f /opt/louksna-cp07/input.wav
+                printf 'Hola. Prueba de voz de Louksna. Hola. Prueba de voz de Louksna.' | /opt/louksna-cp07/venv/bin/python -m piper -m es_ES-sharvard-medium --data-dir /opt/louksna-cp07/voices -f /opt/louksna-cp07/input.wav
                 test -s /opt/louksna-cp07/input.wav
                 (timeout 12s parecord --server=unix:/run/pulse/native --device=Loopback.monitor --file-format=wav --rate=16000 --channels=1 --format=s16le /opt/louksna-cp07/capture.wav || true) &
                 REC_PID=$!
+                # Wait until the recorder's source-output is visible before playback;
+                # this avoids clipping the beginning while parecord initializes.
+                for attempt in $(seq 1 30); do
+                  if pactl list short source-outputs | grep -q 'Loopback.monitor'; then break; fi
+                  sleep 0.2
+                done
+                pactl list short source-outputs | grep -q 'Loopback.monitor'
                 sleep 1
                 paplay --server=unix:/run/pulse/native --device=Loopback /opt/louksna-cp07/input.wav
                 wait "$REC_PID" || true
@@ -166,9 +173,11 @@ jobs:
                 text=''.join(c for c in unicodedata.normalize('NFKD',text) if not unicodedata.combining(c))
                 print('STT_TRANSCRIPT_SANITIZED='+' '.join(text.split())[:300])
                 tokens=set(re.findall(r'[a-z0-9]+',text))
-                if not tokens.intersection({'prueba','voz','microfono','louksna','virtualizada'}):
-                    raise SystemExit('STT_EXPECTED_SPANISH_MARKER_MISSING')
-                print('STT_CONTENT_VALID markers='+','.join(sorted(tokens.intersection({'prueba','voz','microfono','louksna','virtualizada'}))))
+                expected={'hola','prueba','voz','louksna'}
+                matched=tokens.intersection(expected)
+                if len(matched)<2:
+                    raise SystemExit('STT_EXPECTED_SPANISH_MARKERS_MISSING:matched='+','.join(sorted(matched)))
+                print('STT_CONTENT_VALID markers='+','.join(sorted(matched)))
                 PY
                 TRANSCRIPT="$(cat /opt/louksna-cp07/transcript.txt)"
                 python3 - "$TRANSCRIPT" > /opt/louksna-cp07/llm-response.txt <<'PY'
