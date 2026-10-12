@@ -330,7 +330,9 @@ async fn voice_e2e_inner() -> Result<VoiceTurn,String> {
         let expected_tokens = normalized_voice_tokens(&reference);
         let matched = expected_tokens.iter().filter(|token| phrase_tokens.iter().any(|heard| heard == *token)).count();
         let ratio = if expected_tokens.is_empty() { 0.0 } else { matched as f64 / expected_tokens.len() as f64 };
-        if expected_tokens.len() < 3 || matched < 3 || ratio < 0.50 {
+        // This pinned CC-BY fixture is a short Spanish greeting; require the exact
+        // reference token rather than accepting ambient noise or an unrelated transcript.
+        if expected_tokens.is_empty() || matched < 1 || ratio < 0.80 {
             return Err(format!("VOICE_STIMULUS_TRANSCRIPTION_MISMATCH:expected_tokens={};matched={matched};ratio={ratio:.3}", expected_tokens.len()));
         }
     } else {
