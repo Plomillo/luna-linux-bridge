@@ -30,11 +30,11 @@ jobs:
     timeout-minutes: 20
     env:
       CANDIDATE_SHA: ${{ inputs.candidate_sha || github.sha }}
-      LOUKSNA_WHISPER_MODEL: ${{ vars.LOUKSNA_WHISPER_MODEL || '/home/diegoignacionorambuenamiranda/.local/share/louksna-cp07/whisper.cpp/models/ggml-base.bin' }}
-      LOUKSNA_PIPER_MODEL: ${{ vars.LOUKSNA_PIPER_MODEL || '/home/diegoignacionorambuenamiranda/.local/share/louksna-cp07/models/es_ES-sharvard-medium.onnx' }}
-      LOUKSNA_OLLAMA_MODEL: ${{ vars.LOUKSNA_OLLAMA_MODEL || 'smollm2:360m' }}
-      LOUKSNA_ALSA_CAPTURE_DEVICE: ${{ vars.LOUKSNA_ALSA_CAPTURE_DEVICE || 'default' }}
-      LOUKSNA_ALSA_PLAYBACK_DEVICE: ${{ vars.LOUKSNA_ALSA_PLAYBACK_DEVICE || 'default' }}
+      LOUKSNA_WHISPER_MODEL: /home/diegoignacionorambuenamiranda/.local/share/louksna-cp07/whisper.cpp/models/ggml-base.bin
+      LOUKSNA_PIPER_MODEL: /home/diegoignacionorambuenamiranda/.local/share/louksna-cp07/models/es_ES-sharvard-medium.onnx
+      LOUKSNA_OLLAMA_MODEL: smollm2:360m
+      LOUKSNA_ALSA_CAPTURE_DEVICE: default
+      LOUKSNA_ALSA_PLAYBACK_DEVICE: default
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
