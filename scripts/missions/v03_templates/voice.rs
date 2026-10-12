@@ -114,6 +114,22 @@ fn run_bounded(program: &str, args: &[&str], stdin_text: Option<&str>, timeout: 
         None => { let _ = child.kill(); let _ = child.wait(); Err(format!("VOICE_COMMAND_TIMEOUT:{program}")) }
     }
 }
+fn ollama_chat_payload(model: &str, transcript: &str) -> Value {
+    // Keep the short voice turn within the 1 GiB workstation budget.
+    // Release the model after the response so the later acoustic Whisper pass
+    // does not overlap with a resident LLM model.
+    json!({
+        "model": model,
+        "stream": false,
+        "keep_alive": 0,
+        "options": {"num_ctx": 1024, "num_batch": 128},
+        "messages": [
+            {"role": "system", "content": "Responde en español, brevemente, confirmando que recibiste y procesaste la prueba de voz."},
+            {"role": "user", "content": transcript}
+        ]
+    })
+}
+
 fn ollama_endpoint() -> String {
     std::env::var("LOUKSNA_VOICE_OLLAMA_URL").unwrap_or_else(|_| "http://127.0.0.1:11434/api/chat".into())
 }
@@ -236,7 +252,8 @@ async fn voice_e2e_inner() -> Result<VoiceTurn,String> {
     let endpoint = ollama_endpoint();
     validate_local_endpoint(&endpoint)?;
     let client = reqwest::Client::builder().connect_timeout(Duration::from_secs(3)).timeout(Duration::from_secs(45)).build().map_err(|_| "VOICE_HTTP_CLIENT_FAILED")?;
-    let result = client.post(endpoint).json(&json!({"model":ollama_model,"stream":false,"messages":[{"role":"system","content":"Responde en español, brevemente, confirmando que recibiste y procesaste la prueba de voz."},{"role":"user","content":transcript}]}))
+    let payload = ollama_chat_payload(&ollama_model, &transcript);
+    let result = client.post(endpoint).json(&payload)
         .send().await.map_err(|_| "VOICE_RESPONSE_TRANSPORT_FAILED")?;
     if !result.status().is_success() { return Err(format!("VOICE_RESPONSE_HTTP_STATUS:{}",result.status().as_u16())); }
     let payload: Value = result.json().await.map_err(|_| "VOICE_RESPONSE_INVALID_JSON")?;
@@ -293,6 +310,22 @@ async fn voice_e2e_inner() -> Result<VoiceTurn,String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn ollama_chat_payload_bounds_context_and_releases_model_after_response() {
+        let payload = ollama_chat_payload(
+            "smollm2:360m",
+            "Prueba de voz de Louksna. Estoy hablando por el micrófono real."
+        );
+        assert_eq!(payload.get("keep_alive").and_then(Value::as_i64), Some(0));
+        assert_eq!(payload.pointer("/options/num_ctx").and_then(Value::as_u64), Some(1024));
+        assert_eq!(payload.pointer("/options/num_batch").and_then(Value::as_u64), Some(128));
+        assert_eq!(payload.get("stream").and_then(Value::as_bool), Some(false));
+        assert_eq!(
+            payload.pointer("/messages/1/content").and_then(Value::as_str),
+            Some("Prueba de voz de Louksna. Estoy hablando por el micrófono real.")
+        );
+    }
+
     #[test]
     fn preflight_does_not_claim_e2e_without_real_dependencies() {
         let p = preflight_sync();
