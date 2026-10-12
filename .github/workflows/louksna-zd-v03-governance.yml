@@ -1363,14 +1363,13 @@ jobs:
           commit_author=(commit.get("author") or {}).get("login")
           if not pr_author or not commit_author:
               raise SystemExit("G23 HOLD: PR author or candidate commit author identity unavailable")
-          eligible=[r for r in reviews if (
-                    r.get("state")=="APPROVED" or
-                    (r.get("state")=="COMMENTED" and
-                     "G23-INDEPENDENT-VALIDATION: PASS" in (r.get("body") or "") and
-                     "REVIEW_SCOPE: CONTRACT, TESTS, ARTIFACTS, EVIDENCE, NON_REGRESSION" in (r.get("body") or "") and
-                     ("FINDINGS: NONE" in (r.get("body") or "") or "FINDINGS: CLOSED" in (r.get("body") or "")) and
-                     "UNRESOLVED_BLOCKERS: NONE" in (r.get("body") or ""))
-                    ) and r.get("commit_id")==candidate
+          eligible=[r for r in reviews if
+                    r.get("state") in {"APPROVED","COMMENTED"}
+                    and "G23-INDEPENDENT-VALIDATION: PASS" in (r.get("body") or "")
+                    and "REVIEW_SCOPE: CONTRACT, TESTS, ARTIFACTS, EVIDENCE, NON_REGRESSION" in (r.get("body") or "")
+                    and ("FINDINGS: NONE" in (r.get("body") or "") or "FINDINGS: CLOSED" in (r.get("body") or ""))
+                    and "UNRESOLVED_BLOCKERS: NONE" in (r.get("body") or "")
+                    and r.get("commit_id")==candidate
                     and (r.get("user") or {}).get("login")
                     and (r.get("user") or {}).get("login") not in {pr_author,commit_author}]
           if not eligible:
@@ -1541,13 +1540,12 @@ jobs:
               raise SystemExit("G24 HOLD: candidate tree SHA unavailable")
           if not pr_author or not commit_author or not g23_reviewer:
               raise SystemExit("G24 HOLD: author/G23 reviewer identity missing")
-          eligible=[r for r in reviews if (
-                    r.get("state")=="APPROVED" or
-                    (r.get("state")=="COMMENTED" and
-                     "G24-CERTIFICATION: CERTIFIED" in (r.get("body") or "") and
-                     "REVIEW_SCOPE: CHAIN, G23, EVIDENCE, ROLLBACK, SCOPE" in (r.get("body") or "") and
-                     "UNRESOLVED_BLOCKERS: NONE" in (r.get("body") or ""))
-                    ) and r.get("commit_id")==os.environ["CANDIDATE_SHA"]
+          eligible=[r for r in reviews if
+                    r.get("state") in {"APPROVED","COMMENTED"}
+                    and "G24-CERTIFICATION: CERTIFIED" in (r.get("body") or "")
+                    and "REVIEW_SCOPE: CHAIN, G23, EVIDENCE, ROLLBACK, SCOPE" in (r.get("body") or "")
+                    and "UNRESOLVED_BLOCKERS: NONE" in (r.get("body") or "")
+                    and r.get("commit_id")==os.environ["CANDIDATE_SHA"]
                     and (r.get("user") or {}).get("login")
                     and (r.get("user") or {}).get("login") not in {pr_author,commit_author,g23_reviewer}]
           if not eligible:
