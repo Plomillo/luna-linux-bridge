@@ -75,9 +75,11 @@ fn normalized_voice_tokens(text: &str) -> Vec<String> {
 }
 
 /// Require independent anchors for a live operator utterance and a response request.
-/// Whisper may substitute "prueba" or use "procesa" rather than "responde" for the final instruction.
+/// Whisper may inflect the Spanish verbs; accept only the process/respond semantic stems.
 fn voice_test_anchors_present(tokens: &[String]) -> bool {
-    let has_response_intent = tokens.iter().any(|token| token == "responde" || token == "procesa");
+    let has_response_intent = tokens.iter().any(|token|
+        token.starts_with("proces") || token.starts_with("respond") || token.starts_with("respuest")
+    );
     ["voz", "microfono", "real", "hablando"]
         .iter()
         .all(|required| tokens.iter().any(|token| token.as_str() == *required))
@@ -253,15 +255,14 @@ async fn voice_e2e_inner() -> Result<VoiceTurn,String> {
     let has_microfono = phrase_tokens.iter().any(|token| token == "microfono");
     let has_real = phrase_tokens.iter().any(|token| token == "real");
     let has_hablando = phrase_tokens.iter().any(|token| token == "hablando");
-    let has_responde = phrase_tokens.iter().any(|token| token == "responde");
-    let has_procesa = phrase_tokens.iter().any(|token| token == "procesa");
+    let has_responde = phrase_tokens.iter().any(|token| token.starts_with("respond") || token.starts_with("respuest"));
+    let has_procesa = phrase_tokens.iter().any(|token| token.starts_with("proces"));
     let has_response_intent = has_responde || has_procesa;
-    // The spoken phrase requests processing and a spoken response; accept either
-    // verb as the response-intent anchor while retaining all four independent
-    // operator/audio anchors. "prueba" remains diagnostic only.
+    // Accept Spanish inflectional variants for the response request while retaining
+    // all four independent operator/audio anchors. "prueba" remains diagnostic only.
     if !voice_test_anchors_present(&phrase_tokens) {
         return Err(format!(
-            "VOICE_TRANSCRIPTION_TEST_PHRASE_MISMATCH:token_count={};prueba={has_prueba};voz={has_voz};microfono={has_microfono};real={has_real};hablando={has_hablando};responde={has_responde};procesa={has_procesa};response_intent={has_response_intent}",
+            "VOICE_TRANSCRIPTION_TEST_PHRASE_MISMATCH:token_count={};prueba={has_prueba};voz={has_voz};microfono={has_microfono};real={has_real};hablando={has_hablando};respond_stem={has_responde};process_stem={has_procesa};response_intent={has_response_intent}",
             phrase_tokens.len()
         ));
     }
@@ -334,6 +335,19 @@ mod tests {
         assert!(!tokens.iter().any(|token| token == "prueba"));
         assert!(tokens.iter().any(|token| token == "microfono"));
         assert!(voice_test_anchors_present(&tokens));
+    }
+
+    #[test]
+    fn voice_test_anchors_accept_spanish_inflectional_variants() {
+        for transcript in [
+            "Voz de Louksna. Estoy hablando por el micrófono real. Estoy procesando la frase.",
+            "Voz de Louksna. Estoy hablando por el micrófono real. Respondiendo en voz alta."
+        ] {
+            assert!(
+                voice_test_anchors_present(&normalized_voice_tokens(transcript)),
+                "must accept inflectional variants without dropping independent anchors: {transcript}"
+            );
+        }
     }
 
     #[test]
