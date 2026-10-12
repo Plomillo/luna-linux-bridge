@@ -276,6 +276,9 @@ async fn voice_e2e_inner() -> Result<VoiceTurn,String> {
     let capture_s = capture.to_string_lossy().to_string();
     let stimulus_path = std::env::var("LOUKSNA_VOICE_STIMULUS_WAV").ok().filter(|v| !v.trim().is_empty());
     let stimulus_mode = stimulus_path.is_some();
+    if std::env::var("LOUKSNA_VOICE_STIMULUS_REQUIRED").map(|v| v == "1").unwrap_or(false) && !stimulus_mode {
+        return Err("VOICE_STIMULUS_REQUIRED_BUT_NOT_CONFIGURED".into());
+    }
     if let Some(stimulus) = stimulus_path.as_deref() {
         let stimulus_file = PathBuf::from(stimulus);
         if !stimulus_file.is_file() { return Err("VOICE_STIMULUS_FILE_MISSING".into()); }
