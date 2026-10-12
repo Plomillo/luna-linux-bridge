@@ -164,6 +164,7 @@ jobs:
                 import pathlib,re,sys,unicodedata
                 text=pathlib.Path(sys.argv[1]).read_text(errors='replace').lower()
                 text=''.join(c for c in unicodedata.normalize('NFKD',text) if not unicodedata.combining(c))
+                print('STT_TRANSCRIPT_SANITIZED='+' '.join(text.split())[:300])
                 tokens=set(re.findall(r'[a-z0-9]+',text))
                 if not tokens.intersection({'prueba','voz','microfono','louksna','virtualizada'}):
                     raise SystemExit('STT_EXPECTED_SPANISH_MARKER_MISSING')
