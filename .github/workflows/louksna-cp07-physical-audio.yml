@@ -1,12 +1,8 @@
 name: "LOUKSNA — CP-07 physical audio E2E"
 
+# Physical audio execution is explicit-dispatch only. A source push must never
+# unexpectedly play audio or request live operator speech on the workstation.
 on:
-  push:
-    branches:
-      - work/voice-e2e-stack-20261010
-    paths:
-      - scripts/missions/v03_templates/voice.rs
-      - .github/workflows/louksna-cp07-physical-audio.yml
   workflow_dispatch:
     inputs:
       candidate_sha:
