@@ -97,14 +97,14 @@ def main() -> int:
     if stimulus_mode == "HUMAN_RECORDED_PHYSICAL_ACOUSTIC":
         if data.get("live_user_utterance") is not False:
             errors.append("automated stimulus must explicitly state live_user_utterance=false")
-        for field in ("stimulus_source_url", "stimulus_license", "stimulus_sha256", "stimulus_reference_sha256"):
+        for field in ("stimulus_source_url", "stimulus_license", "stimulus_sha256", "stimulus_source_sha256", "stimulus_manifest_sha256", "stimulus_reference_sha256"):
             value = data.get(field)
             if not isinstance(value, str) or not value.strip():
                 errors.append(f"automated stimulus provenance field missing: {field}")
         source_url = data.get("stimulus_source_url", "")
         if not isinstance(source_url, str) or not source_url.startswith("https://"):
             errors.append("automated stimulus source must use HTTPS")
-        for field in ("stimulus_sha256", "stimulus_reference_sha256"):
+        for field in ("stimulus_sha256", "stimulus_source_sha256", "stimulus_manifest_sha256", "stimulus_reference_sha256"):
             value = data.get(field)
             if not isinstance(value, str) or len(value) != 64 or any(c not in "0123456789abcdefABCDEF" for c in value):
                 errors.append(f"invalid or missing SHA-256: {field}")
