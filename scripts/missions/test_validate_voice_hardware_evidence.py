@@ -54,6 +54,9 @@ def main():
         path = pathlib.Path(td) / "CP-07-physical-voice-e2e.json"
         log_path = path.with_name("CP-07-physical-voice-e2e.log")
         log_path.write_text("\n".join([
+            "PHYSICAL_VOICE_STIMULUS_MODE=HUMAN_RECORDED_PHYSICAL_ACOUSTIC",
+            "PHYSICAL_VOICE_STIMULUS_SHA256=" + "a" * 64,
+            "PHYSICAL_VOICE_STIMULUS_SOURCE_SHA256=" + "b" * 64,
             "PHYSICAL_VOICE_MIC_CAPTURE=PASS",
             "PHYSICAL_VOICE_TRANSCRIPTION=PASS",
             "PHYSICAL_VOICE_MODEL_RESPONSE=PASS",
