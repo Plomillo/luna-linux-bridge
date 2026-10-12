@@ -340,7 +340,32 @@ jobs:
           SCOPE_NAME="${UNIT}.service"
           # Use a transient user service rather than a transient scope so the
           # systemd-owned cgroup remains queryable throughout inference.
-          systemd-run --user --pipe --wait --quiet --collect --unit="$UNIT" --property=MemoryMax=768M --property=MemorySwapMax=0 \
+          # A transient user service does not inherit arbitrary variables from this shell.
+          # Pass the physical-test gate, stimulus provenance, model paths, PATH and audio session
+          # explicitly; otherwise the Rust test silently skips and the cgroup vanishes too early.
+          systemd-run --user --pipe --wait --quiet --collect --unit="$UNIT" \
+            --property=MemoryMax=768M --property=MemorySwapMax=0 \
+            --setenv="PATH=$PATH" \
+            --setenv="HOME=$HOME" \
+            --setenv="XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR" \
+            --setenv="DBUS_SESSION_BUS_ADDRESS=$DBUS_SESSION_BUS_ADDRESS" \
+            --setenv="PULSE_SERVER=$PULSE_SERVER" \
+            --setenv="PIPEWIRE_REMOTE=$PIPEWIRE_REMOTE" \
+            --setenv="PULSE_SOURCE=$PULSE_SOURCE" \
+            --setenv="PULSE_SINK=$PULSE_SINK" \
+            --setenv="LOUKSNA_RUN_PHYSICAL_VOICE_E2E=$LOUKSNA_RUN_PHYSICAL_VOICE_E2E" \
+            --setenv="LOUKSNA_OLLAMA_MODEL=$LOUKSNA_OLLAMA_MODEL" \
+            --setenv="LOUKSNA_ALSA_CAPTURE_DEVICE=$LOUKSNA_ALSA_CAPTURE_DEVICE" \
+            --setenv="LOUKSNA_ALSA_PLAYBACK_DEVICE=$LOUKSNA_ALSA_PLAYBACK_DEVICE" \
+            --setenv="LOUKSNA_VOICE_STIMULUS_REQUIRED=$LOUKSNA_VOICE_STIMULUS_REQUIRED" \
+            --setenv="LOUKSNA_VOICE_STIMULUS_WAV=$LOUKSNA_VOICE_STIMULUS_WAV" \
+            --setenv="LOUKSNA_VOICE_STIMULUS_SHA256=$LOUKSNA_VOICE_STIMULUS_SHA256" \
+            --setenv="LOUKSNA_VOICE_STIMULUS_SOURCE_URL=$LOUKSNA_VOICE_STIMULUS_SOURCE_URL" \
+            --setenv="LOUKSNA_VOICE_STIMULUS_SOURCE_SHA256=$LOUKSNA_VOICE_STIMULUS_SOURCE_SHA256" \
+            --setenv="LOUKSNA_VOICE_STIMULUS_LICENSE=$LOUKSNA_VOICE_STIMULUS_LICENSE" \
+            --setenv="LOUKSNA_VOICE_STIMULUS_EXPECTED_TEXT=$LOUKSNA_VOICE_STIMULUS_EXPECTED_TEXT" \
+            --setenv="LOUKSNA_WHISPER_MODEL=$LOUKSNA_WHISPER_MODEL" \
+            --setenv="LOUKSNA_PIPER_MODEL=$LOUKSNA_PIPER_MODEL" \
             "$TEST_BIN" --exact louksna_runtime_tests::physical_voice_e2e_real_audio_path --nocapture --test-threads=1 2>&1 \
             | tee evidence/zona-directiva-v03/CP-07-physical-voice-e2e.log &
           SCOPE_RUN_PID=$!
