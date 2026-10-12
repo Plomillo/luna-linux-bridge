@@ -243,11 +243,14 @@ jobs:
           chmod 0755 "$TEST_BIN" "$APP_BIN"
           # Hard project-workload budget: 1 GiB combined cgroup memory.current + Ollama RSS.
           # The voice app and all child tools run in a 768 MiB cgroup; Ollama is monitored separately.
+          export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+          export DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=$XDG_RUNTIME_DIR/bus}"
+          test -S "$XDG_RUNTIME_DIR/bus" || { echo "::error::CP-07 HOLD: user systemd bus unavailable; refusing unbounded inference"; exit 1; }
           command -v systemd-run >/dev/null || { echo "::error::CP-07 HOLD: systemd-run is required for a hard memory scope"; exit 1; }
           command -v systemctl >/dev/null || { echo "::error::CP-07 HOLD: systemctl is required for memory-scope verification"; exit 1; }
           UNIT="louksna-cp07-voice-${GITHUB_RUN_ID}"
           SCOPE_NAME="${UNIT}.scope"
-          systemd-run --user --scope --quiet --wait --collect --unit="$UNIT" --property=MemoryMax=768M --property=MemorySwapMax=0 \
+          systemd-run --user --scope --quiet --collect --unit="$UNIT" --property=MemoryMax=768M --property=MemorySwapMax=0 \
             "$TEST_BIN" --exact louksna_runtime_tests::physical_voice_e2e_real_audio_path --nocapture --test-threads=1 2>&1 \
             | tee evidence/zona-directiva-v03/CP-07-physical-voice-e2e.log &
           SCOPE_RUN_PID=$!
