@@ -7,6 +7,8 @@ type Repo={full_name:string;private:boolean;default_branch:string;updated_at:str
 type PR={number:number;title:string;state:string;draft:boolean;updated_at:string;html_url:string};
 type Evidence={id:number;utc:string;operation:string;status:string;detail:string};
 type Chat={id:number;utc:string;role:string;content:string;transport:string};
+type AttachmentMeta={id:number;utc:string;name:string;mime:string;size_bytes:number;sha256:string};
+type AttachmentPayload={metadata:AttachmentMeta;bytes:number[]};
 type Conn={connected:boolean;login:string;name:string};
 type Health={status:"PASS"|"DEGRADED"|"FAIL"|"UNVERIFIED";detail:string};
 
@@ -30,6 +32,7 @@ export default function App(){
   const[prs,setPrs]=useState<PR[]>([]);
   const[evidence,setEvidence]=useState<Evidence[]>([]);
   const[chats,setChats]=useState<Chat[]>([]);
+  const[attachments,setAttachments]=useState<AttachmentMeta[]>([]);
   const[msg,setMsg]=useState("");
   const[busy,setBusy]=useState("");
   const[notice,setNotice]=useState("");
@@ -44,11 +47,50 @@ export default function App(){
   const s=useMemo(()=>sections.find(x=>x.key===active)!,[active]);
 
   const call=async<T,>(name:string,args?:Record<string,unknown>):Promise<T>=>{
-    try{return await invoke<T>(name,args||{})}
-    catch(e){throw new Error(String(e))}
+    const operationId=crypto.randomUUID();
+    const started=Date.now();
+    try{
+      const result=await invoke<T>(name,args||{});
+      await invoke<void>("record_ui_telemetry",{
+        operationId,event:"COMMAND_INVOKE",component:name,status:"SUCCESS",
+        metadata:{elapsed_ms:Date.now()-started}
+      });
+      return result;
+    }catch(e){
+      try{
+        await invoke<void>("record_ui_telemetry",{
+          operationId,event:"COMMAND_INVOKE",component:name,status:"FAIL",
+          metadata:{failure_class:"IPC_OR_BACKEND_ERROR",elapsed_ms:Date.now()-started}
+        });
+      }catch(telemetryError){
+        throw new Error("UI_TELEMETRY_WRITE_FAILED; original operation outcome is not certified.");
+      }
+      throw new Error(String(e));
+    }
   };
 
   const refreshEvidence=async()=>setEvidence(await call<Evidence[]>("evidence_recent",{limit:100}));
+  const refreshAttachments=async()=>setAttachments(await call<AttachmentMeta[]>("attachments_recent",{limit:100}));
+
+  const importAttachment=async(file?:File)=>{
+    if(!file)return;
+    if(file.size<=0){setNotice("Adjunto vacío rechazado.");return}
+    if(file.size>10*1024*1024){setNotice("Adjunto rechazado: límite 10 MiB.");return}
+    setBusy("Importando y verificando adjunto...");setNotice("");
+    try{
+      const raw=new Uint8Array(await file.arrayBuffer());
+      const meta=await call<AttachmentMeta>("import_attachment",{
+        name:file.name,mime:file.type||"application/octet-stream",bytes:Array.from(raw)
+      });
+      const loaded=await call<AttachmentPayload>("read_attachment",{id:meta.id});
+      const digestBuffer=await crypto.subtle.digest("SHA-256",new Uint8Array(loaded.bytes));
+      const digest=Array.from(new Uint8Array(digestBuffer)).map(x=>x.toString(16).padStart(2,"0")).join("");
+      if(digest!==meta.sha256||loaded.metadata.sha256!==meta.sha256)throw new Error("ATTACHMENT_READBACK_HASH_MISMATCH");
+      setNotice("Adjunto persistido y recuperado con SHA-256 verificado: "+meta.name);
+      await refreshAttachments();
+    }catch(e){setNotice("Adjunto: "+(e as Error).message)}
+    finally{setBusy("");await refreshEvidence()}
+  };
 
   const refreshConnection=async()=>{
     setBusy("Conectando GitHub...");setNotice("");
@@ -198,6 +240,7 @@ export default function App(){
         }
         await refreshEvidence();
         await loadChat();
+        await refreshAttachments();
       }catch(e){
         setNotice("Backend local: "+String(e));
       }
@@ -288,7 +331,15 @@ export default function App(){
       {active==="chat-llamada"&&<section className="chat-grid">
         <article className="panel chat">
           <h3>Chat gobernado</h3>
-          <p data-capability="attachments" data-status="NOT_IMPLEMENTED">Adjuntos: no implementado/no verificado. No se aceptan ni almacenan archivos.</p>
+          <div className="attachment-box" data-capability="attachments" data-status="IMPLEMENTED_UNCERTIFIED">
+            <label>Importar adjunto (máximo 10 MiB)
+              <input type="file" disabled={!!busy} onChange={e=>{const file=e.currentTarget.files?.[0];void importAttachment(file);e.currentTarget.value="";}}/>
+            </label>
+            <p className="muted">El backend almacena bytes en SQLite y verifica SHA-256 al recuperar. El contenido no se copia al ledger de evidencias.</p>
+            <div className="evidence">
+              {attachments.map(a=><div className="e-row" key={a.id}><b>{a.name}</b><small>{a.mime} · {a.size_bytes} bytes · {a.utc}</small><p>SHA-256: {a.sha256}</p></div>)}
+            </div>
+          </div>
           <div className="messages">
             {chats.map(c=><div key={c.id} className={"bubble "+c.role}><b>{c.role==="user"?"Tu":"LOUKSNA"}</b><p>{c.content}</p><small>{c.transport}</small></div>)}
           </div>
