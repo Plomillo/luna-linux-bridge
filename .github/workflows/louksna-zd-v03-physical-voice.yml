@@ -83,7 +83,7 @@ jobs:
           source_duration=frame_count/rate
           if not 0.20 <= source_duration <= 2.0:
               raise SystemExit("CP07_STIMULUS_SOURCE_DURATION_INVALID")
-          silence=b"\\x00"*(rate//4)*channels*width
+          silence=bytes((rate//4)*channels*width)
           parts=[]
           for index in range(5):
               parts.append(frames)
