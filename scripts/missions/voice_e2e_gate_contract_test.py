@@ -19,6 +19,10 @@ physical_workflow = physical_workflow_path.read_text(encoding="utf-8") if physic
 root = workflow_path.parent.parent.parent
 voice_template_path = root / "scripts" / "missions" / "v03_templates" / "main.rs"
 voice_template = voice_template_path.read_text(encoding="utf-8") if voice_template_path.is_file() else ""
+voice_impl_path = root / "scripts" / "missions" / "v03_templates" / "voice.rs"
+voice_impl = voice_impl_path.read_text(encoding="utf-8") if voice_impl_path.is_file() else ""
+legacy_audio_workflow_path = workflow_path.parent / "louksna-cp07-physical-audio.yml"
+legacy_audio_workflow = legacy_audio_workflow_path.read_text(encoding="utf-8") if legacy_audio_workflow_path.is_file() else ""
 
 checks = {
     "ui_keeps_voice_gate_open": "El gate de certificación permanece abierto" in app,
@@ -34,6 +38,13 @@ checks = {
     "production_voice_command_is_exercised": "physical_voice_e2e_real_audio_path" in voice_template and "voice::voice_e2e()" in voice_template,
     "cp08_build_progress_is_independent": "stage-08-reproducible-build:\n    name:" in workflow and "needs: stage-06-functions-attachments" in workflow[workflow.index("stage-08-reproducible-build:"):workflow.index("stage-09-", workflow.index("stage-08-reproducible-build:"))],
     "terminal_evidence_requires_physical_voice": "stage-07-physical-voice.result == 'success'" in workflow and "louksna-zd-v03-cp07-physical-voice-e2e" in workflow,
+    "automated_stimulus_is_explicitly_required": 'LOUKSNA_VOICE_STIMULUS_REQUIRED: "1"' in physical_workflow,
+    "automated_stimulus_is_hash_pinned": "LOUKSNA_VOICE_STIMULUS_SHA256" in physical_workflow and "VOICE_STIMULUS_SHA256_MISMATCH" in voice_impl,
+    "stimulus_provenance_is_required": "LOUKSNA_VOICE_STIMULUS_SOURCE_URL" in physical_workflow and "VOICE_STIMULUS_PROVENANCE_OR_REFERENCE_MISSING" in voice_impl,
+    "fixture_is_played_and_recaptured_physically": 'run_bounded("aplay", &["-q","-D",&playback_device,stimulus]' in voice_impl and "VOICE_STIMULUS_PHYSICAL_CAPTURE_FAILED" in voice_impl,
+    "fixture_stt_uses_reference_content_gate": "VOICE_STIMULUS_TRANSCRIPTION_MISMATCH" in voice_impl and "expected_tokens.len() < 3" in voice_impl,
+    "legacy_live_operator_gate_is_preserved": "VOICE_TRANSCRIPTION_TEST_PHRASE_MISMATCH" in voice_impl and "voice_test_anchors_present(&phrase_tokens)" in voice_impl,
+    "physical_audio_workflow_is_manual_only": "workflow_dispatch:" in legacy_audio_workflow and "\\n  push:" not in legacy_audio_workflow,
 }
 report = {
     "schema": "louksna.zd.v03.voice-gate-contract-test.v1",
