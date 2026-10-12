@@ -246,7 +246,7 @@ async fn voice_e2e_inner() -> Result<VoiceTurn,String> {
 
     let response_audio_s = response_audio.to_string_lossy().to_string();
     let piper_model_s = piper_model.to_string_lossy().to_string();
-    run_bounded("piper",&["--model",&piper_model_s,"--output_file",&response_audio_s],Some(&response),Duration::from_secs(45))?;
+    run_bounded("piper",&["--model",&piper_model_s,"--speaker","1","--output_file",&response_audio_s],Some(&response),Duration::from_secs(45))?;
     if !response_audio.is_file() || std::fs::metadata(&response_audio).map(|m|m.len()).unwrap_or(0) < 8_000 { return Err("VOICE_SYNTHESIS_EMPTY_OR_TOO_SMALL".into()); }
     // Detect acoustic energy at the physical microphone during actual speaker playback.
     // This signal detector is supplemental evidence, not an independent certification gate.
