@@ -46,7 +46,7 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-export PATH="/home/diegoignacionorambuenamiranda/.local/bin:$PATH"
+          export PATH="/home/diegoignacionorambuenamiranda/.local/bin:$PATH"
           test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
           test -n "$LOUKSNA_WHISPER_MODEL" && test -s "$LOUKSNA_WHISPER_MODEL"
           test -n "$LOUKSNA_PIPER_MODEL" && test -s "$LOUKSNA_PIPER_MODEL"
@@ -84,7 +84,7 @@ export PATH="/home/diegoignacionorambuenamiranda/.local/bin:$PATH"
         shell: bash
         run: |
           set -Eeuo pipefail
-export PATH="/home/diegoignacionorambuenamiranda/.local/bin:$PATH"
+          export PATH="/home/diegoignacionorambuenamiranda/.local/bin:$PATH"
           TMP="$(mktemp -d "$RUNNER_TEMP/cp07-physical.XXXXXX")"
           cleanup() {
             rm -f "$TMP/mic.wav" "$TMP/response.wav" "$TMP/speaker-check.wav" "$TMP/transcript.txt" "$TMP/response.txt"
@@ -184,7 +184,7 @@ export PATH="/home/diegoignacionorambuenamiranda/.local/bin:$PATH"
         shell: bash
         run: |
           set -Eeuo pipefail
-export PATH="/home/diegoignacionorambuenamiranda/.local/bin:$PATH"
+          export PATH="/home/diegoignacionorambuenamiranda/.local/bin:$PATH"
           mkdir -p evidence/cp07-physical
           python3 - <<'PY'
           import datetime,hashlib,json,os,pathlib
