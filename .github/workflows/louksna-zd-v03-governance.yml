@@ -230,19 +230,36 @@ jobs:
           assurance=pathlib.Path("PUAC2.md")
           required=["EXTEND_DO_NOT_REPLACE","FAIL_CLOSED","NO_MAIN_MUTATION = TRUE","NO_AUTO_MERGE = TRUE","NO_AUTO_CERTIFICATION = TRUE","G23_INDEPENDENT_VALIDATION_REQUIRED = TRUE","G24_CERTIFICATION_REQUIRED = TRUE"]
           findings=[]
+          contract_text=contract.read_text() if contract.is_file() else ""
+          mission_text=mission.read_text() if mission.is_file() else ""
           for p in [contract,mission,authority,assurance]:
               if not p.is_file(): findings.append({"severity":"BLOCKER","id":"REQUIRED_FILE_MISSING","path":str(p)})
           if contract.is_file():
-              text=contract.read_text()
               for item in required:
-                  if item not in text: findings.append({"severity":"BLOCKER","id":"CONTRACT_INVARIANT_MISSING","detail":item})
-              if "### ETAPA 01" not in text or "### ETAPA 12" not in text: findings.append({"severity":"BLOCKER","id":"STAGE_SEQUENCE_INCOMPLETE"})
+                  if item not in contract_text: findings.append({"severity":"BLOCKER","id":"CONTRACT_INVARIANT_MISSING","detail":item})
+              if "### ETAPA 01" not in contract_text or "### ETAPA 12" not in contract_text: findings.append({"severity":"BLOCKER","id":"STAGE_SEQUENCE_INCOMPLETE"})
           if mission.is_file():
-              mt=mission.read_text()
-              if "MISSION_ID = MIS-LOUKSNA-ZD-V03-FUNCTIONAL-20261006" not in mt: findings.append({"severity":"BLOCKER","id":"MISSION_ID_MISMATCH"})
-              if "NO_MAIN_MUTATION = TRUE" not in mt: findings.append({"severity":"BLOCKER","id":"MAIN_PROTECTION_CONTRACT_MISSING"})
+              if "MISSION_ID = MIS-LOUKSNA-ZD-V03-FUNCTIONAL-20261006" not in mission_text: findings.append({"severity":"BLOCKER","id":"MISSION_ID_MISMATCH"})
+              if "NO_MAIN_MUTATION = TRUE" not in mission_text: findings.append({"severity":"BLOCKER","id":"MAIN_PROTECTION_CONTRACT_MISSING"})
+          import re
+          def declared_value(text, key):
+              match=re.search(r"^\\s*"+re.escape(key)+r"\\s*=\\s*([^\\r\\n#]+)", text, re.MULTILINE)
+              return match.group(1).strip().strip('"\\'') if match else None
+          target_work_branch=declared_value(contract_text,"TARGET_WORK_BRANCH")
+          mission_work_branch=declared_value(mission_text,"WORK_BRANCH")
+          event_name=os.getenv("GITHUB_EVENT_NAME","")
+          pr_head_branch=os.getenv("GITHUB_HEAD_REF","")
+          pr_base_branch=os.getenv("GITHUB_BASE_REF","")
+          if not target_work_branch:
+              findings.append({"severity":"BLOCKER","id":"TARGET_WORK_BRANCH_MISSING","detail":"Contract must declare TARGET_WORK_BRANCH."})
+          if not mission_work_branch:
+              findings.append({"severity":"BLOCKER","id":"MISSION_WORK_BRANCH_MISSING","detail":"Mission must declare WORK_BRANCH."})
+          elif target_work_branch and mission_work_branch != target_work_branch:
+              findings.append({"severity":"BLOCKER","id":"MISSION_CONTRACT_WORK_BRANCH_MISMATCH","contract_target_work_branch":target_work_branch,"mission_work_branch":mission_work_branch})
+          if event_name=="pull_request" and target_work_branch and pr_head_branch != target_work_branch:
+              findings.append({"severity":"BLOCKER","id":"PR_HEAD_BRANCH_MISMATCH","detail":"Fail closed: pull-request head must equal the work branch declared by both mission and contract; do not silently retarget the PR or rewrite the contract.","declared_work_branch":target_work_branch,"pull_request_head_branch":pr_head_branch,"pull_request_base_branch":pr_base_branch})
           def digest(p): return hashlib.sha256(p.read_bytes()).hexdigest() if p.is_file() else None
-          result={"schema":"louksna.zd.v03.checkpoint.v1","contract_id":"LOUKSNA-ZD-V03-12-STAGE-GOVERNANCE-20261009","mission_id":"MIS-LOUKSNA-ZD-V03-FUNCTIONAL-20261006","stage_id":"02","checkpoint_id":"CP-02","timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"repository":os.getenv("GITHUB_REPOSITORY"),"run_id":os.getenv("GITHUB_RUN_ID"),"run_url":f"https://github.com/{os.getenv('GITHUB_REPOSITORY')}/actions/runs/{os.getenv('GITHUB_RUN_ID')}","commit_sha":os.getenv("CANDIDATE_SHA"),"candidate_branch":os.getenv("GITHUB_REF_NAME"),"status":"PASS" if not findings else "HOLD","requirements":required,"evidence":{"contract_sha256":digest(contract),"mission_sha256":digest(mission),"authority_sha256":digest(authority),"assurance_sha256":digest(assurance)},"findings":findings,"previous_checkpoint":"CP-01","next_authorized_stage":"03" if not findings else "NONE","rollback_pointer":os.getenv("CANDIDATE_SHA")}
+          result={"schema":"louksna.zd.v03.checkpoint.v1","contract_id":"LOUKSNA-ZD-V03-12-STAGE-GOVERNANCE-20261009","mission_id":"MIS-LOUKSNA-ZD-V03-FUNCTIONAL-20261006","stage_id":"02","checkpoint_id":"CP-02","timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"repository":os.getenv("GITHUB_REPOSITORY"),"run_id":os.getenv("GITHUB_RUN_ID"),"run_url":f"https://github.com/{os.getenv('GITHUB_REPOSITORY')}/actions/runs/{os.getenv('GITHUB_RUN_ID')}","commit_sha":os.getenv("CANDIDATE_SHA"),"candidate_branch":os.getenv("GITHUB_REF_NAME"),"event_name":event_name,"declared_target_work_branch":target_work_branch,"mission_work_branch":mission_work_branch,"pull_request_head_branch":pr_head_branch or None,"pull_request_base_branch":pr_base_branch or None,"status":"PASS" if not findings else "HOLD","requirements":required,"evidence":{"contract_sha256":digest(contract),"mission_sha256":digest(mission),"authority_sha256":digest(authority),"assurance_sha256":digest(assurance)},"findings":findings,"previous_checkpoint":"CP-01","next_authorized_stage":"03" if not findings else "NONE","rollback_pointer":os.getenv("CANDIDATE_SHA")}
           path=pathlib.Path("evidence/zona-directiva-v03/CP-02-contract-linkage.json")
           path.write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
           print(json.dumps(result,indent=2))
