@@ -68,7 +68,35 @@ jobs:
           mkdir -p evidence/cp07-build
           curl --fail --location --retry 3 --max-time 45 --silent --show-error "$STIMULUS_DOWNLOAD_URL" -o "$RUNNER_TEMP/cp07-stimulus-source.mp3"
           echo "$STIMULUS_SOURCE_SHA256  $RUNNER_TEMP/cp07-stimulus-source.mp3" | sha256sum --check -
-          ffmpeg -nostdin -hide_banner -loglevel error -y -stream_loop 2 -i "$RUNNER_TEMP/cp07-stimulus-source.mp3" -t 1.5 -map_metadata -1 -ac 1 -ar 16000 -c:a pcm_s16le evidence/cp07-build/human-spanish-stimulus.wav
+          ffmpeg -nostdin -hide_banner -loglevel error -y -i "$RUNNER_TEMP/cp07-stimulus-source.mp3" -map_metadata -1 -ac 1 -ar 16000 -c:a pcm_s16le "$RUNNER_TEMP/cp07-stimulus-single.wav"
+          # Repeat the same pinned human recording with real silence between copies.
+          # This improves acoustic/STT robustness without changing the required "hola" token.
+          python3 - "$RUNNER_TEMP/cp07-stimulus-single.wav" evidence/cp07-build/human-spanish-stimulus.wav <<'PY'
+          import pathlib,sys,wave
+          source,destination=map(pathlib.Path,sys.argv[1:])
+          with wave.open(str(source),'rb') as src:
+              channels,width,rate=src.getnchannels(),src.getsampwidth(),src.getframerate()
+              if (channels,width,rate)!=(1,2,16000) or src.getcomptype()!='NONE':
+                  raise SystemExit("CP07_STIMULUS_SOURCE_FORMAT_INVALID")
+              frames=src.readframes(src.getnframes())
+          frame_count=len(frames)//(channels*width)
+          source_duration=frame_count/rate
+          if not 0.20 <= source_duration <= 2.0:
+              raise SystemExit("CP07_STIMULUS_SOURCE_DURATION_INVALID")
+          silence=b"\\x00"*(rate//4)*channels*width
+          parts=[]
+          for index in range(5):
+              parts.append(frames)
+              if index<4: parts.append(silence)
+          with wave.open(str(destination),'wb') as dst:
+              dst.setnchannels(channels); dst.setsampwidth(width); dst.setframerate(rate)
+              dst.writeframes(b"".join(parts))
+          with wave.open(str(destination),'rb') as dst:
+              duration=dst.getnframes()/dst.getframerate()
+          if not 2.0 <= duration <= 10.0:
+              raise SystemExit("CP07_STIMULUS_NORMALIZED_DURATION_INVALID")
+          print(f"CP07_STIMULUS_NORMALIZATION=PASS source_duration={source_duration:.3f}s repeats=5 pause=0.250s output_duration={duration:.3f}s")
+          PY
           python3 - "$CANDIDATE_SHA" "$RUNNER_TEMP/cp07-stimulus-source.mp3" evidence/cp07-build/human-spanish-stimulus.wav "$STIMULUS_SOURCE_URL" "$STIMULUS_SOURCE_SHA256" "$STIMULUS_LICENSE" "$STIMULUS_REFERENCE_TEXT" <<'PY'
           import datetime,hashlib,json,os,pathlib,sys,wave
           candidate,source_path,fixture_path,source_url,source_sha,license_text,reference=sys.argv[1:]
@@ -89,7 +117,7 @@ jobs:
             "normalized_fixture_sha256":fixture_sha,
             "reference_text_sha256":hashlib.sha256(reference.encode()).hexdigest(),
             "reference_text":reference,
-            "normalization":"repeat the human-recorded 0.473 s greeting three times, cap at 1.5 s, then ffmpeg PCM_S16LE mono 16000 Hz; metadata stripped",
+            "normalization":"ffmpeg decode to PCM_S16LE mono 16000 Hz with metadata stripped; repeat the hash-pinned human recording five times with 250 ms silence between repetitions",
             "ffmpeg_version":os.popen("ffmpeg -version").read().splitlines()[0],
             "timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "size_bytes":pathlib.Path(fixture_path).stat().st_size,

@@ -330,9 +330,22 @@ async fn voice_e2e_inner() -> Result<VoiceTurn,String> {
         let expected_tokens = normalized_voice_tokens(&reference);
         let matched = expected_tokens.iter().filter(|token| phrase_tokens.iter().any(|heard| heard == *token)).count();
         let ratio = if expected_tokens.is_empty() { 0.0 } else { matched as f64 / expected_tokens.len() as f64 };
-        // This pinned CC-BY fixture is a short Spanish greeting; require the exact
+        // This pinned CC0 fixture is a short Spanish greeting; require the exact
         // reference token rather than accepting ambient noise or an unrelated transcript.
         if expected_tokens.is_empty() || matched < 1 || ratio < 0.80 {
+            // Emit only non-content diagnostics: never log/store the transcript or response.
+            // This distinguishes weak acoustic capture from a recognizer/content mismatch.
+            let capture_peak_rms = wav_peak_window_rms(&capture).unwrap_or(0.0);
+            let capture_bytes = std::fs::metadata(&capture).map(|m| m.len()).unwrap_or(0);
+            let stimulus_duration_seconds = stimulus_path.as_deref()
+                .and_then(|path| wav_duration_seconds(std::path::Path::new(path)).ok())
+                .unwrap_or(0.0);
+            let expected_token_present = expected_tokens.iter()
+                .any(|expected| phrase_tokens.iter().any(|heard| heard == expected));
+            eprintln!(
+                "VOICE_STIMULUS_STT_DIAGNOSTIC expected_tokens={} matched={} ratio={ratio:.3} transcript_token_count={} expected_token_present={} capture_peak_rms={capture_peak_rms:.2} capture_bytes={capture_bytes} stimulus_duration_seconds={stimulus_duration_seconds:.3} capture_device={} playback_device={}",
+                expected_tokens.len(), matched, phrase_tokens.len(), expected_token_present, capture_device, playback_device
+            );
             return Err(format!("VOICE_STIMULUS_TRANSCRIPTION_MISMATCH:expected_tokens={};matched={matched};ratio={ratio:.3}", expected_tokens.len()));
         }
     } else {
