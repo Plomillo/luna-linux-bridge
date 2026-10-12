@@ -277,6 +277,8 @@ jobs:
             exit 1
           fi
           while kill -0 "$SCOPE_RUN_PID" 2>/dev/null; do
+            SCOPE_STATE="$(systemctl --user show "$SCOPE_NAME" -p ActiveState --value 2>/dev/null || echo missing)"
+            if test "$SCOPE_STATE" = "inactive" || test "$SCOPE_STATE" = "failed" || test "$SCOPE_STATE" = "missing"; then break; fi
             MEMORY_FILE="/sys/fs/cgroup${CGROUP}/memory.current"
             if ! test -r "$MEMORY_FILE"; then
               systemctl --user kill --signal=SIGKILL "$SCOPE_NAME" >/dev/null 2>&1 || true
