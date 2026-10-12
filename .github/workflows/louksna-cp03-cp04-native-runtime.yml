@@ -99,6 +99,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           ROOT="$RUNNER_TEMP/louksna-native-runtime"
+          export ROOT
           LOG="$RUNNER_TEMP/cargo-test.log"
           set +e
           dbus-run-session -- bash -Eeuo pipefail -c '
@@ -118,6 +119,7 @@ jobs:
             export XDG_DATA_HOME="$TEST_HOME/app-data"
             export LOUKSNA_TEST_SECRET_SERVICE=1
             cd "$ROOT/src-tauri"
+            cargo generate-lockfile
             cargo test --locked -- --test-threads=1
           ' > "$LOG" 2>&1
           RC=$?
