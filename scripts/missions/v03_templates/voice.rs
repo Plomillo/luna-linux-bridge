@@ -235,7 +235,7 @@ async fn voice_e2e_inner() -> Result<VoiceTurn,String> {
     let capture = root.join("capture.wav");
     let response_audio = root.join("response.wav");
     let capture_s = capture.to_string_lossy().to_string();
-    run_bounded("arecord", &["-q","-D",&capture_device,"-f","S16_LE","-r","16000","-c","1","-d",CAPTURE_SECONDS,"-t","wav",&capture_s],None,Duration::from_secs(12))?;
+    run_bounded("arecord", &["-q","-D",&capture_device,"-f","S16_LE","-r","16000","-c","1","-d",CAPTURE_SECONDS,"-t","wav",&capture_s],None,Duration::from_secs(CAPTURE_SECONDS.parse::<u64>().unwrap_or(12)+5))?;
     if !capture.is_file() || std::fs::metadata(&capture).map(|m|m.len()).unwrap_or(0) < 8_000 { return Err("VOICE_CAPTURE_EMPTY_OR_TOO_SMALL".into()); }
 
     let model_s = whisper_model.to_string_lossy().to_string();
