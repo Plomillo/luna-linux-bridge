@@ -87,8 +87,8 @@ jobs:
           # Deterministic 1x1 truecolor RGBA PNG; test-only Tauri context asset.
           def chunk(kind,data):
               return struct.pack(">I",len(data))+kind+data+struct.pack(">I",binascii.crc32(kind+data)&0xffffffff)
-          raw=b"\\x00\\x08\\x0a\\x1c\\xff"
-          png=(b"\\x89PNG\\r\\n\\x1a\\n"
+          raw=bytes([0,8,10,28,255])
+          png=(bytes([137,80,78,71,13,10,26,10])
                +chunk(b"IHDR",struct.pack(">IIBBBBB",1,1,8,6,0,0,0))
                +chunk(b"IDAT",zlib.compress(raw,9))
                +chunk(b"IEND",b""))
