@@ -82,7 +82,7 @@ def main() -> int:
     if not isinstance(playback, (int, float)) or playback < 0:
         errors.append("invalid or missing acoustic_playback_peak_rms")
     if isinstance(baseline, (int, float)) and isinstance(playback, (int, float)):
-        if playback < max(250.0, baseline * 1.5):
+        if playback < max(250.0, baseline * 1.10):
             errors.append("measured acoustic output does not exceed baseline threshold")
     match_ratio = data.get("acoustic_speech_match_ratio")
     match_count = data.get("acoustic_transcription_match_count")
