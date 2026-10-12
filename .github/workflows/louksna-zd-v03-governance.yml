@@ -596,10 +596,10 @@ jobs:
             evidence/zona-directiva-v03/CP-05-playwright-ui-e2e.png
             evidence/zona-directiva-v03/CP-05-health-status.json
             evidence/zona-directiva-v03/CP-05-health-status-tests.log
-             evidence/zona-directiva-v03/CP-05-native-telemetry-test.json
-             evidence/zona-directiva-v03/CP-05-native-telemetry-tests.log
-             evidence/zona-directiva-v03/CP-05-native-tauri-telemetry.json
-             evidence/zona-directiva-v03/CP-05-native-tauri-runtime.log
+            evidence/zona-directiva-v03/CP-05-native-telemetry-test.json
+            evidence/zona-directiva-v03/CP-05-native-telemetry-tests.log
+            evidence/zona-directiva-v03/CP-05-native-tauri-telemetry.json
+            evidence/zona-directiva-v03/CP-05-native-tauri-runtime.log
           if-no-files-found: error
           retention-days: 90
 
