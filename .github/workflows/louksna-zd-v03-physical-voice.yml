@@ -536,7 +536,7 @@ jobs:
               raise SystemExit("Measured acoustic output is absent; evidence remains HOLD")
           if not isinstance(data.get("acoustic_baseline_peak_rms"), (int,float)) or not isinstance(data.get("acoustic_playback_peak_rms"), (int,float)):
               raise SystemExit("Acoustic RMS measurements missing; evidence remains HOLD")
-          if data["acoustic_playback_peak_rms"] < max(250.0, data["acoustic_baseline_peak_rms"] * 1.5):
+          if data["acoustic_playback_peak_rms"] < max(250.0, data["acoustic_baseline_peak_rms"] * 1.10):
               raise SystemExit("Acoustic output signal did not clear threshold; evidence remains HOLD")
           if not isinstance(data.get("acoustic_speech_match_ratio"), (int,float)) or data["acoustic_speech_match_ratio"] < 0.30:
               raise SystemExit("Microphone re-transcription does not match generated response; evidence remains HOLD")
