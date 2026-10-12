@@ -1364,7 +1364,7 @@ jobs:
           if not pr_author or not commit_author:
               raise SystemExit("G23 HOLD: PR author or candidate commit author identity unavailable")
           eligible=[r for r in reviews if
-                    r.get("state") in {"APPROVED","COMMENTED"}
+                    r.get("state")=="APPROVED"
                     and "G23-INDEPENDENT-VALIDATION: PASS" in (r.get("body") or "")
                     and "REVIEW_SCOPE: CONTRACT, TESTS, ARTIFACTS, EVIDENCE, NON_REGRESSION" in (r.get("body") or "")
                     and ("FINDINGS: NONE" in (r.get("body") or "") or "FINDINGS: CLOSED" in (r.get("body") or ""))
@@ -1541,7 +1541,7 @@ jobs:
           if not pr_author or not commit_author or not g23_reviewer:
               raise SystemExit("G24 HOLD: author/G23 reviewer identity missing")
           eligible=[r for r in reviews if
-                    r.get("state") in {"APPROVED","COMMENTED"}
+                    r.get("state")=="APPROVED"
                     and "G24-CERTIFICATION: CERTIFIED" in (r.get("body") or "")
                     and "REVIEW_SCOPE: CHAIN, G23, EVIDENCE, ROLLBACK, SCOPE" in (r.get("body") or "")
                     and "UNRESOLVED_BLOCKERS: NONE" in (r.get("body") or "")
