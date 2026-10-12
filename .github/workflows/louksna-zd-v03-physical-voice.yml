@@ -68,7 +68,7 @@ jobs:
           mkdir -p evidence/cp07-build
           curl --fail --location --retry 3 --max-time 45 --silent --show-error "$STIMULUS_DOWNLOAD_URL" -o "$RUNNER_TEMP/cp07-stimulus-source.mp3"
           echo "$STIMULUS_SOURCE_SHA256  $RUNNER_TEMP/cp07-stimulus-source.mp3" | sha256sum --check -
-          ffmpeg -nostdin -hide_banner -loglevel error -y -i "$RUNNER_TEMP/cp07-stimulus-source.mp3" -map_metadata -1 -ac 1 -ar 16000 -c:a pcm_s16le evidence/cp07-build/human-spanish-stimulus.wav
+          ffmpeg -nostdin -hide_banner -loglevel error -y -stream_loop 2 -i "$RUNNER_TEMP/cp07-stimulus-source.mp3" -t 1.5 -map_metadata -1 -ac 1 -ar 16000 -c:a pcm_s16le evidence/cp07-build/human-spanish-stimulus.wav
           python3 - "$CANDIDATE_SHA" "$RUNNER_TEMP/cp07-stimulus-source.mp3" evidence/cp07-build/human-spanish-stimulus.wav "$STIMULUS_SOURCE_URL" "$STIMULUS_SOURCE_SHA256" "$STIMULUS_LICENSE" "$STIMULUS_REFERENCE_TEXT" <<'PY'
           import datetime,hashlib,json,os,pathlib,sys,wave
           candidate,source_path,fixture_path,source_url,source_sha,license_text,reference=sys.argv[1:]
@@ -89,7 +89,7 @@ jobs:
             "normalized_fixture_sha256":fixture_sha,
             "reference_text_sha256":hashlib.sha256(reference.encode()).hexdigest(),
             "reference_text":reference,
-            "normalization":"ffmpeg PCM_S16LE, mono, 16000 Hz; metadata stripped",
+            "normalization":"repeat the human-recorded 0.473 s greeting three times, cap at 1.5 s, then ffmpeg PCM_S16LE mono 16000 Hz; metadata stripped",
             "ffmpeg_version":os.popen("ffmpeg -version").read().splitlines()[0],
             "timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "size_bytes":pathlib.Path(fixture_path).stat().st_size,
