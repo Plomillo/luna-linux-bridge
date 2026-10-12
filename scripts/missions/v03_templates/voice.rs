@@ -74,6 +74,14 @@ fn normalized_voice_tokens(text: &str) -> Vec<String> {
         .filter(|word| word.chars().count() >= 3).map(str::to_string).collect()
 }
 
+/// Require the speech anchors that establish a live operator utterance and response intent.
+/// The single opening word "prueba" is diagnostic only because Whisper often substitutes it.
+fn voice_test_anchors_present(tokens: &[String]) -> bool {
+    ["voz", "microfono", "real", "hablando", "responde"]
+        .iter()
+        .all(|required| tokens.iter().any(|token| token.as_str() == *required))
+}
+
 fn record_acoustic_wav(device: &str, seconds: &str, path: &std::path::Path) -> Result<(),String> {
     let path_s = path.to_string_lossy().to_string();
     run_bounded("arecord", &["-q","-D",device,"-f","S16_LE","-r","16000","-c","1","-d",seconds,"-t","wav",&path_s], None, Duration::from_secs(seconds.parse::<u64>().unwrap_or(8)+5))?;
@@ -242,9 +250,13 @@ async fn voice_e2e_inner() -> Result<VoiceTurn,String> {
     let has_voz = phrase_tokens.iter().any(|token| token == "voz");
     let has_microfono = phrase_tokens.iter().any(|token| token == "microfono");
     let has_real = phrase_tokens.iter().any(|token| token == "real");
-    if !(has_prueba && has_voz && has_microfono && has_real) {
+    let has_hablando = phrase_tokens.iter().any(|token| token == "hablando");
+    let has_responde = phrase_tokens.iter().any(|token| token == "responde");
+    // Whisper can substitute the first word ("prueba") even when the rest of the
+    // operator phrase is clear. Require five independent semantic anchors instead.
+    if !voice_test_anchors_present(&phrase_tokens) {
         return Err(format!(
-            "VOICE_TRANSCRIPTION_TEST_PHRASE_MISMATCH:token_count={};prueba={has_prueba};voz={has_voz};microfono={has_microfono};real={has_real}",
+            "VOICE_TRANSCRIPTION_TEST_PHRASE_MISMATCH:token_count={};prueba={has_prueba};voz={has_voz};microfono={has_microfono};real={has_real};hablando={has_hablando};responde={has_responde}",
             phrase_tokens.len()
         ));
     }
@@ -310,6 +322,25 @@ async fn voice_e2e_inner() -> Result<VoiceTurn,String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn voice_test_anchors_tolerate_one_whisper_substitution_and_spanish_accents() {
+        let transcript = "Probable boss de luxna, estoy hablando por el micrófono real, procesa esta frase y responde en voz alta.";
+        let tokens = normalized_voice_tokens(transcript);
+        assert!(!tokens.iter().any(|token| token == "prueba"));
+        assert!(tokens.iter().any(|token| token == "microfono"));
+        assert!(voice_test_anchors_present(&tokens));
+    }
+
+    #[test]
+    fn voice_test_anchors_reject_silence_or_unrelated_speech() {
+        for transcript in ["", "hola buenos días", "prueba de voz de Louksna"] {
+            assert!(
+                !voice_test_anchors_present(&normalized_voice_tokens(transcript)),
+                "must reject transcript without the core physical-voice anchors: {transcript}"
+            );
+        }
+    }
+
     #[test]
     fn ollama_chat_payload_bounds_context_and_releases_model_after_response() {
         let payload = ollama_chat_payload(
