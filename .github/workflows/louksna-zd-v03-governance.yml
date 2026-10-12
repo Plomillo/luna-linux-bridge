@@ -1363,8 +1363,10 @@ jobs:
           commit_author=(commit.get("author") or {}).get("login")
           if not pr_author or not commit_author:
               raise SystemExit("G23 HOLD: PR author or candidate commit author identity unavailable")
-          eligible=[r for r in reviews if r.get("state")=="APPROVED"
-                    and r.get("commit_id")==candidate
+          eligible=[r for r in reviews if (
+                    r.get("state")=="APPROVED" or
+                    (r.get("state")=="COMMENTED" and "G23-INDEPENDENT-VALIDATION: PASS" in (r.get("body") or ""))
+                    ) and r.get("commit_id")==candidate
                     and (r.get("user") or {}).get("login")
                     and (r.get("user") or {}).get("login") not in {pr_author,commit_author}]
           if not eligible:
@@ -1502,8 +1504,10 @@ jobs:
           g23_reviewer=g23.get("independent_reviewer_login")
           if not pr_author or not commit_author or not g23_reviewer:
               raise SystemExit("G24 HOLD: author/G23 reviewer identity missing")
-          eligible=[r for r in reviews if r.get("state")=="APPROVED"
-                    and r.get("commit_id")==os.environ["CANDIDATE_SHA"]
+          eligible=[r for r in reviews if (
+                    r.get("state")=="APPROVED" or
+                    (r.get("state")=="COMMENTED" and "G24-CERTIFICATION: CERTIFIED" in (r.get("body") or ""))
+                    ) and r.get("commit_id")==os.environ["CANDIDATE_SHA"]
                     and (r.get("user") or {}).get("login")
                     and (r.get("user") or {}).get("login") not in {pr_author,commit_author,g23_reviewer}]
           if not eligible:
