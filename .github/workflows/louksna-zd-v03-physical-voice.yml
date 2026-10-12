@@ -337,8 +337,10 @@ jobs:
           command -v systemd-run >/dev/null || { echo "::error::CP-07 HOLD: systemd-run is required for a hard memory scope"; exit 1; }
           command -v systemctl >/dev/null || { echo "::error::CP-07 HOLD: systemctl is required for memory-scope verification"; exit 1; }
           UNIT="louksna-cp07-voice-${GITHUB_RUN_ID}"
-          SCOPE_NAME="${UNIT}.scope"
-          systemd-run --user --scope --quiet --collect --unit="$UNIT" --property=MemoryMax=768M --property=MemorySwapMax=0 \
+          SCOPE_NAME="${UNIT}.service"
+          # Use a transient user service rather than a transient scope so the
+          # systemd-owned cgroup remains queryable throughout inference.
+          systemd-run --user --pipe --wait --quiet --collect --unit="$UNIT" --property=MemoryMax=768M --property=MemorySwapMax=0 \
             "$TEST_BIN" --exact louksna_runtime_tests::physical_voice_e2e_real_audio_path --nocapture --test-threads=1 2>&1 \
             | tee evidence/zona-directiva-v03/CP-07-physical-voice-e2e.log &
           SCOPE_RUN_PID=$!
