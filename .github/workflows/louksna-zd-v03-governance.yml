@@ -1458,6 +1458,8 @@ jobs:
               raise SystemExit("G24 HOLD: G23 source run mismatch")
           if g23.get("validation_independent") is not True or not g23.get("validator_identity"):
               raise SystemExit("G24 HOLD: G23 independent-validator identity/status missing")
+          if g23.get("validation_mode")!="AUTOMATED_INDEPENDENT_VALIDATION" or g23.get("human_attestation")!="NOT_CLAIMED":
+              raise SystemExit("G24 HOLD: G23 automated mode or human-attestation semantics invalid")
           if g23.get("unresolved_blockers") != []:
               raise SystemExit("G24 HOLD: G23 has unresolved blockers")
           if g23.get("severity") not in {"NONE","NONBLOCKING_CLOSED"}:
