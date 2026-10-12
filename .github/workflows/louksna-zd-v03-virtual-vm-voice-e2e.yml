@@ -106,8 +106,17 @@ jobs:
                 exec > >(tee /var/log/louksna-cp07-vm-test.log) 2>&1
                 export DEBIAN_FRONTEND=noninteractive
                 STATUS=/var/lib/louksna-cp07-vm-status.json
+                FAILURE=/var/lib/louksna-cp07-vm-failure.json
                 mkdir -p /var/lib/louksna-cp07 /opt/louksna-cp07
                 echo '{"status":"RUNNING","mode":"QEMU_DEBIAN13_PULSEAUDIO_USERSPACE_LOOPBACK","physical_hardware_claimed":false}' > "$STATUS"
+                on_error() {
+                  rc=$?
+                  python3 - "$FAILURE" "$rc" "$LINENO" "$BASH_COMMAND" <<'PY'
+                import datetime,json,pathlib,sys,os
+                p=pathlib.Path(sys.argv[1])
+                p.write_text(json.dumps({"schema":"louksna.zd.v03.cp07-vm-failure.v1","exit_code":int(sys.argv[2]),"line":int(sys.argv[3]),"command":sys.argv[4][:500],"timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"candidate_commit_sha":os.environ.get("CANDIDATE_SHA","UNBOUND")},indent=2,sort_keys=True)+"\n")
+                PY
+                }
                 finish() { rc=$?; python3 - "$STATUS" "$rc" <<'PY'
                 import json,pathlib,sys,datetime
                 p=pathlib.Path(sys.argv[1]); d=json.loads(p.read_text())
@@ -115,6 +124,7 @@ jobs:
                 p.write_text(json.dumps(d,indent=2,sort_keys=True)+"\n")
                 PY
                 }
+                trap on_error ERR
                 trap finish EXIT
                 install -d -o pulse -g pulse -m 0775 /run/pulse
                 pulseaudio --system --daemonize=yes --disallow-exit --exit-idle-time=-1 --log-target=file:/var/log/pulseaudio.log
@@ -270,9 +280,16 @@ jobs:
           ssh -i "$VM_KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 2222 louksna-test@127.0.0.1 'sudo cat /var/lib/louksna-cp07-vm/CP-07-VM-EVIDENCE.json 2>/dev/null || true' > evidence/cp07-vm/CP-07-VM-EVIDENCE.json
           ssh -i "$VM_KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 2222 louksna-test@127.0.0.1 'sudo cat /var/log/louksna-cp07-vm-test.log 2>/dev/null || sudo cat /var/log/louksna-cp07-cloud-init.log 2>/dev/null || true' > evidence/cp07-vm/guest-test.log
           ssh -i "$VM_KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 2222 louksna-test@127.0.0.1 'sudo cat /var/lib/louksna-cp07/SHA256SUMS 2>/dev/null || true' > evidence/cp07-vm/SHA256SUMS
+          ssh -i "$VM_KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 2222 louksna-test@127.0.0.1 'sudo cat /var/lib/louksna-cp07-vm-failure.json 2>/dev/null || true' > evidence/cp07-vm/guest-failure.json
           printf '{"schema":"louksna.zd.v03.cp07-vm-host-receipt.v1","candidate_commit_sha":"%s","run_id":"%s","vm_status":"%s","physical_audio_claimed":false}\n' "$CANDIDATE_SHA" "$GITHUB_RUN_ID" "$RESULT" > evidence/cp07-vm/host-receipt.json
           cat evidence/cp07-vm/host-receipt.json
-          test "$RESULT" = PASS_VIRTUAL_E2E || { tail -n 200 evidence/cp07-vm/guest-test.log; exit 1; }
+          if test "$RESULT" != PASS_VIRTUAL_E2E; then
+            echo "CP-07 VM guest failure receipt:"
+            cat evidence/cp07-vm/guest-failure.json || true
+            echo "CP-07 VM guest log tail:"
+            tail -n 200 evidence/cp07-vm/guest-test.log || true
+            exit 1
+          fi
 
       - name: Absorb and seal CP-07-VM evidence (always)
         if: always()
