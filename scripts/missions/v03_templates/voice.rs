@@ -95,7 +95,7 @@ fn wav_duration_seconds(path: &std::path::Path) -> Result<f64,String> {
     }
     let rate = byte_rate.ok_or("VOICE_STIMULUS_BYTE_RATE_MISSING")?;
     let size = data_size.ok_or("VOICE_STIMULUS_DATA_CHUNK_MISSING")?;
-    if rate == 0 || size < rate { return Err("VOICE_STIMULUS_TOO_SHORT".into()); }
+    if rate == 0 || size < rate / 4 { return Err("VOICE_STIMULUS_TOO_SHORT".into()); }
     let duration = size as f64 / rate as f64;
     if duration > 10.0 { return Err("VOICE_STIMULUS_TOO_LONG".into()); }
     Ok(duration)
