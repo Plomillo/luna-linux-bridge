@@ -287,7 +287,7 @@ async fn voice_e2e_inner() -> Result<VoiceTurn,String> {
         let source = std::env::var("LOUKSNA_VOICE_STIMULUS_SOURCE_URL").unwrap_or_default();
         let license = std::env::var("LOUKSNA_VOICE_STIMULUS_LICENSE").unwrap_or_default();
         let reference = std::env::var("LOUKSNA_VOICE_STIMULUS_EXPECTED_TEXT").unwrap_or_default();
-        if source.trim().is_empty() || license.trim().is_empty() || reference.trim().is_empty() {
+        if !source.starts_with("https://") || license.trim().is_empty() || reference.trim().is_empty() {
             return Err("VOICE_STIMULUS_PROVENANCE_OR_REFERENCE_MISSING".into());
         }
         let (digest_out, _) = run_bounded("sha256sum", &[stimulus], None, Duration::from_secs(10))?;
