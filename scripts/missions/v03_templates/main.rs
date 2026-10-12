@@ -597,6 +597,20 @@ mod louksna_runtime_tests {
             .expect("child process must persist chat");
         log_event("RESTART_CHILD", "PASS", "State written before process exit.")
             .expect("child process must persist evidence");
+        record_ui_telemetry(
+            "restart-op-001".into(),
+            "PROCESS_RESTART".into(),
+            "runtime-test".into(),
+            "SUCCESS".into(),
+            serde_json::json!({"scope":"isolated-test"})
+        ).expect("child process must persist structured UI telemetry");
+        let attachment=import_attachment(
+            "restart-fixture.txt".into(),
+            "text/plain".into(),
+            b"attachment-survives-process-restart-v1".to_vec()
+        ).expect("child process must persist attachment bytes and digest");
+        let marker=std::env::var("LOUKSNA_ATTACHMENT_ID_FILE").expect("parent provides attachment id marker path");
+        std::fs::write(marker,attachment.id.to_string()).expect("write attachment id for parent process");
     }
 
     #[test]
@@ -611,6 +625,7 @@ mod louksna_runtime_tests {
             .args(["--exact", "louksna_runtime_tests::sqlite_restart_child_process", "--nocapture", "--test-threads=1"])
             .env("XDG_DATA_HOME", &root)
             .env("LOUKSNA_RESTART_CHILD", "1")
+            .env("LOUKSNA_ATTACHMENT_ID_FILE", root.join("attachment-id.txt"))
             .output()
             .expect("spawn isolated persistence writer process");
         assert!(child.status.success(), "child process failed: {}", String::from_utf8_lossy(&child.stderr));
@@ -624,6 +639,14 @@ mod louksna_runtime_tests {
         assert!(chats.iter().any(|row| row.content == "restart-persistence-marker"));
         let events = evidence_recent(Some(20)).expect("reopen evidence ledger after child process exit");
         assert!(events.iter().any(|row| row.operation == "RESTART_CHILD" && row.status == "PASS"));
+        let telemetry=ui_telemetry_recent(Some(50)).expect("reopen structured telemetry after child process exit");
+        assert!(telemetry.iter().any(|row| row.operation_id=="restart-op-001" && row.event=="PROCESS_RESTART" && row.status=="SUCCESS"));
+        let attachment_id:i64=std::fs::read_to_string(root.join("attachment-id.txt")).expect("child attachment marker exists").trim().parse().expect("attachment id is numeric");
+        let attachment=read_attachment(attachment_id).expect("read persisted attachment after process restart");
+        assert_eq!(attachment.bytes,b"attachment-survives-process-restart-v1".to_vec());
+        assert_eq!(attachment_sha256(&attachment.bytes),attachment.metadata.sha256);
+        drop(attachment);
+        drop(telemetry);
         drop(events);
         drop(chats);
         let _ = std::fs::remove_dir_all(&root);
