@@ -195,3 +195,13 @@ La modalidad automatizada demuestra una ruta acústica física de entrada/salida
 La modalidad automatizada puede producir evidencia física candidata y un resultado de ejecución, pero no una attestation humana de audibilidad ni una certificación independiente. El artefacto debe identificar explícitamente stimulus_mode=HUMAN_RECORDED_PHYSICAL_ACOUSTIC, live_user_utterance=false, physical_microphone_capture=true y physical_speaker_playback=true, junto con la procedencia del clip. La ausencia de cualquier prueba material mantiene CP-07 OPEN/HOLD. G23 sigue siendo independiente y G24 no puede ejecutarse sin G23 favorable y expediente CP-10 válido.
 
 La primera ejecución tras esta modificación es exploratoria y no certificadora. El cambio de código y el cambio de contrato crean un nuevo SHA candidato; ninguna evidencia anterior se hereda automáticamente.
+
+
+### 9.4 Fixture inicial fijado por procedencia
+
+- Fuente/atribución: Hola_fer.wav, por leoncillo; licencia CC0-1.0; página de origen: https://freesound.org/people/leoncillo/sounds/423843/.
+- URL del preview de origen: https://cdn.freesound.org/previews/423/423843_3215099-lq.mp3.
+- SHA-256 del preview MP3 verificado antes de normalización: 1aa9fcf9a210c256a15a6f8682eeda65b17fd86ba3e37873303d5b9a60b972cf.
+- Referencia textual mínima verificada desde el título/descripción de origen: hola. Esta referencia es un ancla de contenido de una sola palabra, no una transcripción completa del clip.
+- La etapa hosted normaliza el preview a WAV PCM16, mono, 16 kHz, sin metadatos; el SHA-256 de esa forma normalizada se calcula por ejecución y se transmite junto al artefacto al runner físico. La manifestación liga ambos hashes al candidato y al run.
+- La fuente se usa solo como estímulo de entrada. La respuesta de Louksna debe seguir recorriendo modelo local, Piper con es_ES-sharvard-medium.onnx/speaker_id=1, altavoz físico, recaptura por micrófono físico y comprobación de contenido.
