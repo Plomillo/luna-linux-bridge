@@ -268,8 +268,23 @@ jobs:
             echo "::error::CP-07 HOLD: memory cgroup could not be verified; voice inference was not authorized"
             exit 1
           fi
+          MEMORY_MAX_BYTES="$(systemctl --user show "$SCOPE_NAME" -p MemoryMax --value 2>/dev/null || true)"
+          MEMORY_SWAP_MAX="$(systemctl --user show "$SCOPE_NAME" -p MemorySwapMax --value 2>/dev/null || true)"
+          if test "$MEMORY_MAX_BYTES" != "805306368" || test "$MEMORY_SWAP_MAX" != "0"; then
+            systemctl --user kill --signal=SIGKILL "$SCOPE_NAME" >/dev/null 2>&1 || true
+            wait "$SCOPE_RUN_PID" || true
+            echo "::error::CP-07 HOLD: 768 MiB memory cap / zero swap not verified"
+            exit 1
+          fi
           while kill -0 "$SCOPE_RUN_PID" 2>/dev/null; do
-            SCOPE_BYTES="$(cat "/sys/fs/cgroup${CGROUP}/memory.current" 2>/dev/null || echo 0)"
+            MEMORY_FILE="/sys/fs/cgroup${CGROUP}/memory.current"
+            if ! test -r "$MEMORY_FILE"; then
+              systemctl --user kill --signal=SIGKILL "$SCOPE_NAME" >/dev/null 2>&1 || true
+              wait "$SCOPE_RUN_PID" || true
+              echo "::error::CP-07 HOLD: cgroup memory measurement disappeared during inference"
+              exit 1
+            fi
+            SCOPE_BYTES="$(cat "$MEMORY_FILE")"
             OLLAMA_PID="$(ps -eo pid=,args= | awk '/[o]llama serve$/ {print $1; exit}')"
             if test -z "$OLLAMA_PID" || ! test -r "/proc/${OLLAMA_PID}/status"; then
               systemctl --user kill --signal=SIGKILL "$SCOPE_NAME" >/dev/null 2>&1 || true
