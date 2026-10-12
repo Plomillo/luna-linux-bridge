@@ -181,7 +181,7 @@ jobs:
               "policy": "Do not begin local LLM inference unless at least 1 GiB MemAvailable is observed."
           }
           out = pathlib.Path("evidence/zona-directiva-v03/CP-07-memory-preflight.json")
-          out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\\n", encoding="utf-8")
+          out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
           print(json.dumps(report, indent=2, sort_keys=True))
           if available < budget:
               raise SystemExit("CP-07 HOLD: workstation has less than 1 GiB available RAM; refusing local inference.")
