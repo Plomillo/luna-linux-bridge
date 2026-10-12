@@ -1365,7 +1365,11 @@ jobs:
               raise SystemExit("G23 HOLD: PR author or candidate commit author identity unavailable")
           eligible=[r for r in reviews if (
                     r.get("state")=="APPROVED" or
-                    (r.get("state")=="COMMENTED" and "G23-INDEPENDENT-VALIDATION: PASS" in (r.get("body") or ""))
+                    (r.get("state")=="COMMENTED" and
+                     "G23-INDEPENDENT-VALIDATION: PASS" in (r.get("body") or "") and
+                     "REVIEW_SCOPE: CONTRACT, TESTS, ARTIFACTS, EVIDENCE, NON_REGRESSION" in (r.get("body") or "") and
+                     ("FINDINGS: NONE" in (r.get("body") or "") or "FINDINGS: CLOSED" in (r.get("body") or "")) and
+                     "UNRESOLVED_BLOCKERS: NONE" in (r.get("body") or ""))
                     ) and r.get("commit_id")==candidate
                     and (r.get("user") or {}).get("login")
                     and (r.get("user") or {}).get("login") not in {pr_author,commit_author}]
@@ -1374,6 +1378,8 @@ jobs:
           eligible.sort(key=lambda r:r.get("submitted_at") or "")
           independent_review=eligible[-1]
           independent_reviewer=(independent_review.get("user") or {}).get("login")
+          independent_review_body=independent_review.get("body") or ""
+          findings_state="NONE" if "FINDINGS: NONE" in independent_review_body else "CLOSED"
           candidate_tree_sha=(commit.get("commit") or {}).get("tree",{}).get("sha")
           if not candidate_tree_sha:
               raise SystemExit("G23 HOLD: candidate tree SHA unavailable")
@@ -1432,12 +1438,14 @@ jobs:
             "independent_review_state":independent_review.get("state"),
             "independent_review_commit_sha":independent_review.get("commit_id"),
             "independent_review_submitted_at":independent_review.get("submitted_at"),
+            "independent_review_body_sha256":hashlib.sha256(independent_review_body.encode("utf-8")).hexdigest(),
+            "independent_review_findings_state":findings_state,
             "pr_author_login":pr_author,
             "candidate_commit_author_login":commit_author,
             "validator_identity":independent_reviewer,
             "validation_independent":True,
-            "findings":[],
-            "severity":"NONE",
+            "findings":[] if findings_state=="NONE" else [{"status":"CLOSED","source_review_id":independent_review.get("id")}],
+            "severity":"NONE" if findings_state=="NONE" else "NONBLOCKING_CLOSED",
             "unresolved_blockers":[],
             "previous_checkpoint_sha256":manifest_sha,
             "rollback_pointer":run_url,
@@ -1535,7 +1543,10 @@ jobs:
               raise SystemExit("G24 HOLD: author/G23 reviewer identity missing")
           eligible=[r for r in reviews if (
                     r.get("state")=="APPROVED" or
-                    (r.get("state")=="COMMENTED" and "G24-CERTIFICATION: CERTIFIED" in (r.get("body") or ""))
+                    (r.get("state")=="COMMENTED" and
+                     "G24-CERTIFICATION: CERTIFIED" in (r.get("body") or "") and
+                     "REVIEW_SCOPE: CHAIN, G23, EVIDENCE, ROLLBACK, SCOPE" in (r.get("body") or "") and
+                     "UNRESOLVED_BLOCKERS: NONE" in (r.get("body") or ""))
                     ) and r.get("commit_id")==os.environ["CANDIDATE_SHA"]
                     and (r.get("user") or {}).get("login")
                     and (r.get("user") or {}).get("login") not in {pr_author,commit_author,g23_reviewer}]
@@ -1544,6 +1555,7 @@ jobs:
           eligible.sort(key=lambda r:r.get("submitted_at") or "")
           certifier_review=eligible[-1]
           certifier_reviewer=(certifier_review.get("user") or {}).get("login")
+          certifier_review_body=certifier_review.get("body") or ""
           run_id=int(os.environ["GITHUB_RUN_ID"])
           run_url=os.environ.get("GITHUB_SERVER_URL","https://github.com")+"/"+os.environ["GITHUB_REPOSITORY"]+"/actions/runs/"+str(run_id)
           g23_sha=hashlib.sha256(p.read_bytes()).hexdigest()
@@ -1574,11 +1586,12 @@ jobs:
             "certifier_review_state":certifier_review.get("state"),
             "certifier_review_commit_sha":certifier_review.get("commit_id"),
             "certifier_review_submitted_at":certifier_review.get("submitted_at"),
+            "certifier_review_body_sha256":hashlib.sha256(certifier_review_body.encode("utf-8")).hexdigest(),
             "g23_independent_reviewer_login":g23_reviewer,
             "validator_identity":certifier_reviewer,
             "validation_independent":True,
-            "findings":[],
-            "severity":"NONE",
+            "findings":g23.get("findings",[]),
+            "severity":g23.get("severity","NONE"),
             "unresolved_blockers":[],
             "previous_checkpoint_sha256":g23_sha,
             "rollback_pointer":run_url,
