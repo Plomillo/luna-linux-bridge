@@ -289,11 +289,13 @@ fn record_ui_telemetry(operation_id:String,event:String,component:String,status:
         return Err("TELEMETRY_STATUS_INVALID".into());
     }
     let metadata_json=safe_telemetry_metadata(&metadata)?;
-    let c=db()?;
-    c.execute("INSERT INTO ui_telemetry(utc,operation_id,event,component,status,metadata_json) VALUES(?1,?2,?3,?4,?5,?6)",
+    let mut c=db()?;
+    let tx=c.transaction().map_err(|e|e.to_string())?;
+    tx.execute("INSERT INTO ui_telemetry(utc,operation_id,event,component,status,metadata_json) VALUES(?1,?2,?3,?4,?5,?6)",
         params![Utc::now().to_rfc3339(),operation_id,event,component,status,metadata_json])
         .map_err(|e|format!("UI_TELEMETRY_WRITE_FAILED:{e}"))?;
-    log_event("UI_TELEMETRY",status,&format!("operation_id={};event={};component={}",operation_id,event,component))?;
+    write_event(&tx,"UI_TELEMETRY",status,&format!("operation_id={};event={};component={}",operation_id,event,component))?;
+    tx.commit().map_err(|e|e.to_string())?;
     Ok(())
 }
 
@@ -326,12 +328,14 @@ fn import_attachment(name:String,mime:String,bytes:Vec<u8>)->Result<AttachmentMe
     if bytes.len()>10*1024*1024 { return Err("ATTACHMENT_EXCEEDS_10_MIB_LIMIT".into()); }
     let digest=attachment_sha256(&bytes);
     let utc=Utc::now().to_rfc3339();
-    let c=db()?;
-    c.execute("INSERT INTO attachments(utc,name,mime,size_bytes,sha256,content) VALUES(?1,?2,?3,?4,?5,?6)",
+    let mut c=db()?;
+    let tx=c.transaction().map_err(|e|e.to_string())?;
+    tx.execute("INSERT INTO attachments(utc,name,mime,size_bytes,sha256,content) VALUES(?1,?2,?3,?4,?5,?6)",
         params![utc,name,mime.trim(),bytes.len() as i64,digest,bytes])
         .map_err(|e|format!("ATTACHMENT_STORE_FAILED:{e}"))?;
-    let id=c.last_insert_rowid();
-    log_event("ATTACHMENT_IMPORT","PASS",&format!("attachment_id={};size_bytes={};sha256={}",id,bytes.len(),digest))?;
+    let id=tx.last_insert_rowid();
+    write_event(&tx,"ATTACHMENT_IMPORT","PASS",&format!("attachment_id={};size_bytes={};sha256={}",id,bytes.len(),digest))?;
+    tx.commit().map_err(|e|e.to_string())?;
     Ok(AttachmentMeta{id,utc,name:name.to_string(),mime:mime.trim().to_string(),size_bytes:bytes.len() as i64,sha256:digest})
 }
 
@@ -721,6 +725,10 @@ mod louksna_runtime_tests {
         );
         let persisted = load_settings_inner().expect("settings table remains readable");
         assert_eq!(persisted, Settings::default(), "settings writes must roll back when the evidence ledger write fails");
+        assert!(import_attachment("must-rollback.txt".into(),"text/plain".into(),b"rollback-fixture".to_vec()).is_err(),
+            "attachment import must not report success when evidence cannot be written");
+        assert!(attachments_recent(Some(20)).expect("read attachments after failed transaction").is_empty(),
+            "attachment bytes and metadata must roll back when evidence write fails");
         let _ = std::fs::remove_dir_all(&root);
     }
     
