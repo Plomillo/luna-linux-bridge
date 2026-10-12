@@ -579,7 +579,9 @@ jobs:
           files=["src/App.tsx","src-tauri/Cargo.toml","src-tauri/src/main.rs"]
           ui_report=pathlib.Path("evidence/zona-directiva-v03/CP-05-playwright-ui-e2e.json")
           health_report=pathlib.Path("evidence/zona-directiva-v03/CP-05-health-status.json")
-          d={"schema":"louksna.zd.v03.checkpoint-evidence.v1","stage_id":"05","checkpoint_id":"CP-05","status":"PASS","scope":"Chromium interaction checks and production health-status failure tests cover PASS/DEGRADED/FAIL/UNVERIFIED; browser UI uses explicit IPC test double, so native Tauri startup and live runtime integration are not claimed.","timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"repository":os.getenv("GITHUB_REPOSITORY"),"commit_sha":os.getenv("CANDIDATE_SHA"),"run_id":os.getenv("GITHUB_RUN_ID"),"ui_report_sha256":hashlib.sha256(ui_report.read_bytes()).hexdigest(),"health_report_sha256":hashlib.sha256(health_report.read_bytes()).hexdigest(),"source_sha256":{p:hashlib.sha256((root/p).read_bytes()).hexdigest() for p in files}}
+          telemetry_report=pathlib.Path("evidence/zona-directiva-v03/CP-05-native-telemetry-test.json")
+          native_report=pathlib.Path("evidence/zona-directiva-v03/CP-05-native-tauri-telemetry.json")
+          d={"schema":"louksna.zd.v03.checkpoint-evidence.v1","stage_id":"05","checkpoint_id":"CP-05","status":"PASS" if json.loads(native_report.read_text()).get("status")=="PASS" and json.loads(telemetry_report.read_text()).get("status")=="PASS" else "HOLD","scope":"Live native Tauri IPC telemetry is verified from the application's SQLite database; production Rust telemetry command tests cover operation IDs and sensitive-metadata rejection; Chromium interaction/reload tests use an explicitly declared IPC test double.","timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"repository":os.getenv("GITHUB_REPOSITORY"),"commit_sha":os.getenv("CANDIDATE_SHA"),"run_id":os.getenv("GITHUB_RUN_ID"),"ui_report_sha256":hashlib.sha256(ui_report.read_bytes()).hexdigest(),"health_report_sha256":hashlib.sha256(health_report.read_bytes()).hexdigest(),"native_telemetry_test_sha256":hashlib.sha256(telemetry_report.read_bytes()).hexdigest(),"native_tauri_runtime_report_sha256":hashlib.sha256(native_report.read_bytes()).hexdigest(),"source_sha256":{p:hashlib.sha256((root/p).read_bytes()).hexdigest() for p in files}}
           pathlib.Path("evidence/zona-directiva-v03/CP-05-ui-telemetry.json").write_text(json.dumps(d,indent=2,sort_keys=True)+"\n")
           with open(os.environ["GITHUB_OUTPUT"],"a") as f: f.write("status="+d["status"]+"\n")
           PY
@@ -594,6 +596,10 @@ jobs:
             evidence/zona-directiva-v03/CP-05-playwright-ui-e2e.png
             evidence/zona-directiva-v03/CP-05-health-status.json
             evidence/zona-directiva-v03/CP-05-health-status-tests.log
+             evidence/zona-directiva-v03/CP-05-native-telemetry-test.json
+             evidence/zona-directiva-v03/CP-05-native-telemetry-tests.log
+             evidence/zona-directiva-v03/CP-05-native-tauri-telemetry.json
+             evidence/zona-directiva-v03/CP-05-native-tauri-runtime.log
           if-no-files-found: error
           retention-days: 90
 
