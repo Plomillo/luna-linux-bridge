@@ -229,6 +229,10 @@ jobs:
           pactl list short sinks | tee evidence/zona-directiva-v03/CP-07-pulse-sinks.log
           grep -F "$PULSE_SOURCE" evidence/zona-directiva-v03/CP-07-pulse-sources.log >/dev/null || { echo "::error::Configured physical capture source is not exposed by PipeWire/PulseAudio"; exit 1; }
           grep -F "$PULSE_SINK" evidence/zona-directiva-v03/CP-07-pulse-sinks.log >/dev/null || { echo "::error::Configured physical playback sink is not exposed by PipeWire/PulseAudio"; exit 1; }
+          if printf '%s\n%s\n' "$PULSE_SOURCE" "$PULSE_SINK" | grep -Eiq '(^|[._-])(monitor|loopback|null|dummy|virtual)([._-]|$)|snd-aloop'; then
+            echo "::error::CP-07 HOLD: virtual/monitor/null audio endpoint is forbidden"
+            exit 1
+          fi
           grep -Eq 'card [0-9]+:' evidence/zona-directiva-v03/CP-07-arecord-devices.log || { echo "::error::No ALSA capture card found"; exit 1; }
           grep -Eq 'card [0-9]+:' evidence/zona-directiva-v03/CP-07-aplay-devices.log || { echo "::error::No ALSA playback card found"; exit 1; }
           if grep -Eiq 'loopback|null|dummy|snd-aloop' evidence/zona-directiva-v03/CP-07-arecord-devices.log evidence/zona-directiva-v03/CP-07-aplay-devices.log; then
