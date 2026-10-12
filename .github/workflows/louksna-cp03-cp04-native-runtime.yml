@@ -62,6 +62,7 @@ jobs:
           serde_json = "1"
           reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "stream"] }
           rusqlite = { version = "0.32", features = ["bundled"] }
+          sha2 = "0.10"
           dirs = "6"
           chrono = { version = "0.4", features = ["serde"] }
           wait-timeout = "0.2"
