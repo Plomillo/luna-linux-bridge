@@ -33,8 +33,10 @@ jobs:
       LOUKSNA_WHISPER_MODEL: /home/diegoignacionorambuenamiranda/.local/share/louksna-cp07/whisper.cpp/models/ggml-base.bin
       LOUKSNA_PIPER_MODEL: /home/diegoignacionorambuenamiranda/.local/share/louksna-cp07/models/es_ES-sharvard-medium.onnx
       LOUKSNA_OLLAMA_MODEL: smollm2:360m
-      LOUKSNA_ALSA_CAPTURE_DEVICE: default
-      LOUKSNA_ALSA_PLAYBACK_DEVICE: default
+      LOUKSNA_ALSA_CAPTURE_DEVICE: pulse
+      LOUKSNA_ALSA_PLAYBACK_DEVICE: pulse
+      XDG_RUNTIME_DIR: /run/user/1000
+      PULSE_SERVER: unix:/run/user/1000/pulse/native
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
