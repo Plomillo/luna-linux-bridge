@@ -101,6 +101,10 @@ jobs:
           set -Eeuo pipefail
           ROOT="$RUNNER_TEMP/louksna-native-runtime"
           export ROOT
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          rustc --version
+          cargo --version
           LOG="$RUNNER_TEMP/cargo-test.log"
           set +e
           dbus-run-session -- bash -Eeuo pipefail -c '
