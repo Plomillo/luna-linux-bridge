@@ -1418,7 +1418,7 @@ jobs:
             "candidate_branch":os.environ.get("GITHUB_HEAD_REF") or os.environ.get("GITHUB_REF_NAME"),
             "candidate_commit_sha":candidate,"candidate_tree_sha":candidate_tree_sha,
             "workflow_name":os.environ.get("GITHUB_WORKFLOW"),
-            "run_id":run_id,"run_url":run_url,
+            "run_id":run_id,"source_workflow_run_id":run_id,"run_url":run_url,
             "status":"PASS",
             "requirements":["CP-10 frozen manifest integrity","exact candidate SHA and run binding","all manifest evidence SHA-256 values recomputed","physical voice proof validated","independent reviewer attestation"],
             "tests":["manifest status/schema/run/SHA checks","manifest path and digest verification","physical voice evidence/log provenance and validator"],
