@@ -17,7 +17,21 @@ def declared_value(text: str, key: str):
     return None
 
 
-def findings(target: str, mission_branch: str, event: str, base: str):
+def exception_applies(contract: str, event: str, pr_number: str, head: str, base: str):
+    return (
+        event == "pull_request"
+        and bool(declared_value(contract, "PR_BASE_EXCEPTION_ID"))
+        and pr_number == declared_value(contract, "PR_BASE_EXCEPTION_PR")
+        and head == declared_value(contract, "PR_BASE_EXCEPTION_HEAD")
+        and base == declared_value(contract, "PR_BASE_EXCEPTION_BASE")
+        and declared_value(contract, "PR_BASE_EXCEPTION_STATUS") == "REVIEW_ONLY"
+        and declared_value(contract, "PR_BASE_EXCEPTION_NO_MERGE") == "TRUE"
+        and declared_value(contract, "PR_BASE_EXCEPTION_NO_MAIN_MUTATION") == "TRUE"
+        and declared_value(contract, "PR_BASE_EXCEPTION_NO_AUTO_CERTIFICATION") == "TRUE"
+    )
+
+
+def findings(contract: str, target: str, mission_branch: str, event: str, base: str, head: str, pr_number: str):
     result = []
     if not target:
         result.append("TARGET_WORK_BRANCH_MISSING")
@@ -25,7 +39,7 @@ def findings(target: str, mission_branch: str, event: str, base: str):
         result.append("MISSION_WORK_BRANCH_MISSING")
     elif target and mission_branch != target:
         result.append("MISSION_CONTRACT_WORK_BRANCH_MISMATCH")
-    if event == "pull_request" and target and base != target:
+    if event == "pull_request" and target and base != target and not exception_applies(contract, event, pr_number, head, base):
         result.append("PR_BASE_BRANCH_MISMATCH")
     return result
 
@@ -35,16 +49,22 @@ mission_text = MISSION.read_text(encoding="utf-8")
 workflow_text = WORKFLOW.read_text(encoding="utf-8")
 target = declared_value(contract_text, "TARGET_WORK_BRANCH")
 mission_branch = declared_value(mission_text, "WORK_BRANCH")
+exception_id = declared_value(contract_text, "PR_BASE_EXCEPTION_ID")
+exception_head = declared_value(contract_text, "PR_BASE_EXCEPTION_HEAD")
+exception_base = declared_value(contract_text, "PR_BASE_EXCEPTION_BASE")
 
 checks = {
     "contract_declares_target_branch": bool(target),
     "mission_declares_work_branch": bool(mission_branch),
     "mission_and_contract_agree": bool(target) and mission_branch == target,
     "workflow_reads_pull_request_base": 'os.getenv("GITHUB_BASE_REF","")' in workflow_text,
-    "workflow_fails_closed_on_base_drift": '"PR_BASE_BRANCH_MISMATCH"' in workflow_text and 'pr_base_branch != target_work_branch' in workflow_text,
-    "declared_base_passes": findings(target, mission_branch, "pull_request", target) == [],
-    "main_base_fails_without_explicit_exception": "PR_BASE_EXCEPTION_ID" not in contract_text and "PR_BASE_BRANCH_MISMATCH" in findings(target, mission_branch, "pull_request", "main"),
-    "branch_declaration_mismatch_fails": "MISSION_CONTRACT_WORK_BRANCH_MISMATCH" in findings(target, "work/unexpected-branch", "pull_request", target),
+    "workflow_reads_PR_event_number": 'event_payload.get("number","")' in workflow_text,
+    "workflow_enforces_base_or_exact_exception": '"PR_BASE_BRANCH_MISMATCH"' in workflow_text and 'not exception_applies' in workflow_text,
+    "declared_base_passes": findings(contract_text, target, mission_branch, "pull_request", target, exception_head or "", "62") == [],
+    "exact_review_only_exception_passes": bool(exception_id) and exception_applies(contract_text, "pull_request", "62", exception_head or "", exception_base or ""),
+    "exception_rejects_wrong_head": "PR_BASE_BRANCH_MISMATCH" in findings(contract_text, target, mission_branch, "pull_request", exception_base or "", "work/unexpected-head", "62"),
+    "exception_rejects_wrong_PR": "PR_BASE_BRANCH_MISMATCH" in findings(contract_text, target, mission_branch, "pull_request", exception_base or "", exception_head or "", "999"),
+    "branch_declaration_mismatch_fails": "MISSION_CONTRACT_WORK_BRANCH_MISMATCH" in findings(contract_text, target, "work/unexpected-branch", "pull_request", target or "", exception_head or "", "62"),
 }
 report = {"schema": "louksna.zd.v03.branch-linkage-regression.v1", "checks": checks, "status": "PASS" if all(checks.values()) else "FAIL"}
 print(json.dumps(report, indent=2, sort_keys=True))
