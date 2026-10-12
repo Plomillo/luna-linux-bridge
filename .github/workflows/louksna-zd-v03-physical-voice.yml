@@ -342,7 +342,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           python3 - "$CANDIDATE_SHA" evidence/zona-directiva-v03/CP-07-physical-voice-preliminary.json evidence/zona-directiva-v03/CP-07-physical-voice-e2e.json <<'PY'
-          import datetime,hashlib,json,pathlib,sys
+          import datetime,hashlib,json,os,pathlib,sys
           candidate,src,dst=sys.argv[1:]
           data=json.loads(pathlib.Path(src).read_text(encoding="utf-8"))
           log=pathlib.Path("evidence/zona-directiva-v03/CP-07-physical-voice-e2e.log")
