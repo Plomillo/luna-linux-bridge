@@ -316,7 +316,7 @@ fn attachment_meta_from_row(row:&rusqlite::Row<'_>)->rusqlite::Result<Attachment
 #[tauri::command]
 fn import_attachment(name:String,mime:String,bytes:Vec<u8>)->Result<AttachmentMeta,String>{
     let name=name.trim();
-    if name.is_empty() || name.len()>255 || name=="." || name==".." || name.contains('/') || name.contains('\\\\') || name.chars().any(char::is_control) {
+    if name.is_empty() || name.len()>255 || name=="." || name==".." || name.contains('/') || name.contains('\\') || name.chars().any(char::is_control) {
         return Err("ATTACHMENT_NAME_INVALID".into());
     }
     if mime.trim().is_empty() || mime.len()>127 || mime.chars().any(char::is_control) {
