@@ -751,6 +751,9 @@ mod louksna_runtime_tests {
             .collect();
         if std::env::var("LOUKSNA_VOICE_STIMULUS_REQUIRED").map(|v| v == "1").unwrap_or(false) {
             eprintln!("PHYSICAL_VOICE_STIMULUS_MODE=HUMAN_RECORDED_PHYSICAL_ACOUSTIC; live_user_utterance=false");
+            eprintln!("PHYSICAL_VOICE_STIMULUS_SOURCE_URL={}", std::env::var("LOUKSNA_VOICE_STIMULUS_SOURCE_URL").unwrap_or_default());
+            eprintln!("PHYSICAL_VOICE_STIMULUS_LICENSE={}", std::env::var("LOUKSNA_VOICE_STIMULUS_LICENSE").unwrap_or_default());
+            eprintln!("PHYSICAL_VOICE_STIMULUS_SHA256={}", std::env::var("LOUKSNA_VOICE_STIMULUS_SHA256").unwrap_or_default());
         } else {
             // Preserve the historical live-operator mode only when it is explicitly selected.
             for remaining in (1..=30).rev() {
