@@ -461,6 +461,14 @@ jobs:
           pathlib.Path(sys.argv[3]).write_text(json.dumps(data,indent=2,sort_keys=True)+"\n")
           print(json.dumps(data,indent=2,sort_keys=True))
           PY
+      - name: Preserve validated stimulus manifest with physical evidence
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          if test -s evidence/cp07-build/stimulus-manifest.json; then
+            cp evidence/cp07-build/stimulus-manifest.json evidence/zona-directiva-v03/CP-07-stimulus-manifest.json
+          fi
       - name: Upload un-attested physical voice evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -474,6 +482,7 @@ jobs:
             evidence/zona-directiva-v03/CP-07-aplay-devices.log
             evidence/zona-directiva-v03/CP-07-pulse-sources.log
             evidence/zona-directiva-v03/CP-07-pulse-sinks.log
+            evidence/zona-directiva-v03/CP-07-stimulus-manifest.json
           if-no-files-found: warn
           retention-days: 90
 
