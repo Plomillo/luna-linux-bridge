@@ -142,3 +142,8 @@ The initial fixture is **Hola_fer.wav** by **leoncillo**, licensed CC0-1.0. Sour
 ### Acoustic threshold consistency note (2026-10-12)
 
 The runtime's acoustic-energy floor is `max(250 RMS, baseline_peak_rms × 1.10)`, followed by the unchanged output-speech recognition gate requiring at least two matching tokens and overlap ratio ≥ 0.30. The independent evidence validator and workflow post-validation now use the same 1.10× energy floor; their prior 1.5× check was stale relative to the already-implemented runtime. Acoustic energy alone is never sufficient to pass the gate.
+
+
+### Deterministic fixture transformation
+
+The source preview is approximately 0.473 s. Hosted preparation repeats the human recording three times, caps it at 1.5 s, and normalizes it to PCM16 mono 16 kHz. Repetition does not synthesize speech. The original MP3 SHA-256 and normalized WAV SHA-256 are verified and recorded separately; the candidate/run-bound manifest records the transformation and ffmpeg version and is retained in the final validated evidence artifact.
