@@ -64,6 +64,43 @@ fn wav_peak_window_rms(path: &std::path::Path) -> Result<f64,String> {
 }
 
 
+
+/// Validate the normalized 16 kHz mono PCM16 WAV fixture and return its duration.
+fn wav_duration_seconds(path: &std::path::Path) -> Result<f64,String> {
+    let bytes = std::fs::read(path).map_err(|_| "VOICE_STIMULUS_READ_FAILED")?;
+    if bytes.len() < 44 || &bytes[0..4] != b"RIFF" || &bytes[8..12] != b"WAVE" {
+        return Err("VOICE_STIMULUS_INVALID_WAV".into());
+    }
+    let mut offset = 12usize;
+    let mut byte_rate: Option<u32> = None;
+    let mut data_size: Option<u32> = None;
+    while offset + 8 <= bytes.len() {
+        let size = u32::from_le_bytes(bytes[offset+4..offset+8].try_into().unwrap());
+        let start = offset + 8;
+        let end = start.checked_add(size as usize).ok_or("VOICE_STIMULUS_INVALID_CHUNK")?;
+        if end > bytes.len() { return Err("VOICE_STIMULUS_TRUNCATED_WAV".into()); }
+        if &bytes[offset..offset+4] == b"fmt " {
+            if size < 16 { return Err("VOICE_STIMULUS_INVALID_FORMAT_CHUNK".into()); }
+            let format = u16::from_le_bytes(bytes[start..start+2].try_into().unwrap());
+            let channels = u16::from_le_bytes(bytes[start+2..start+4].try_into().unwrap());
+            let rate = u32::from_le_bytes(bytes[start+4..start+8].try_into().unwrap());
+            byte_rate = Some(u32::from_le_bytes(bytes[start+8..start+12].try_into().unwrap()));
+            let bits = u16::from_le_bytes(bytes[start+14..start+16].try_into().unwrap());
+            if format != 1 || channels != 1 || rate != 16000 || bits != 16 {
+                return Err("VOICE_STIMULUS_FORMAT_MUST_BE_PCM16_MONO_16KHZ".into());
+            }
+        }
+        if &bytes[offset..offset+4] == b"data" { data_size = Some(size); break; }
+        offset = end + (size as usize % 2);
+    }
+    let rate = byte_rate.ok_or("VOICE_STIMULUS_BYTE_RATE_MISSING")?;
+    let size = data_size.ok_or("VOICE_STIMULUS_DATA_CHUNK_MISSING")?;
+    if rate == 0 || size < rate { return Err("VOICE_STIMULUS_TOO_SHORT".into()); }
+    let duration = size as f64 / rate as f64;
+    if duration > 10.0 { return Err("VOICE_STIMULUS_TOO_LONG".into()); }
+    Ok(duration)
+}
+
 /// Normalize Spanish text to alphanumeric word tokens for a conservative content-overlap check.
 fn normalized_voice_tokens(text: &str) -> Vec<String> {
     text.to_lowercase().chars().map(|c| match c {
@@ -237,7 +274,42 @@ async fn voice_e2e_inner() -> Result<VoiceTurn,String> {
     let capture = root.join("capture.wav");
     let response_audio = root.join("response.wav");
     let capture_s = capture.to_string_lossy().to_string();
-    run_bounded("arecord", &["-q","-D",&capture_device,"-f","S16_LE","-r","16000","-c","1","-d",CAPTURE_SECONDS,"-t","wav",&capture_s],None,Duration::from_secs(CAPTURE_SECONDS.parse::<u64>().unwrap_or(12)+5))?;
+    let stimulus_path = std::env::var("LOUKSNA_VOICE_STIMULUS_WAV").ok().filter(|v| !v.trim().is_empty());
+    let stimulus_mode = stimulus_path.is_some();
+    if let Some(stimulus) = stimulus_path.as_deref() {
+        let stimulus_file = PathBuf::from(stimulus);
+        if !stimulus_file.is_file() { return Err("VOICE_STIMULUS_FILE_MISSING".into()); }
+        let expected_sha = std::env::var("LOUKSNA_VOICE_STIMULUS_SHA256").map_err(|_| "VOICE_STIMULUS_SHA256_MISSING")?.to_ascii_lowercase();
+        if expected_sha.len() != 64 || !expected_sha.chars().all(|c| c.is_ascii_hexdigit()) { return Err("VOICE_STIMULUS_SHA256_INVALID".into()); }
+        let source = std::env::var("LOUKSNA_VOICE_STIMULUS_SOURCE_URL").unwrap_or_default();
+        let license = std::env::var("LOUKSNA_VOICE_STIMULUS_LICENSE").unwrap_or_default();
+        let reference = std::env::var("LOUKSNA_VOICE_STIMULUS_EXPECTED_TEXT").unwrap_or_default();
+        if source.trim().is_empty() || license.trim().is_empty() || reference.trim().is_empty() {
+            return Err("VOICE_STIMULUS_PROVENANCE_OR_REFERENCE_MISSING".into());
+        }
+        let (digest_out, _) = run_bounded("sha256sum", &[stimulus], None, Duration::from_secs(10))?;
+        let actual_sha = digest_out.split_whitespace().next().unwrap_or("").to_ascii_lowercase();
+        if actual_sha != expected_sha { return Err("VOICE_STIMULUS_SHA256_MISMATCH".into()); }
+        let stimulus_duration = wav_duration_seconds(&stimulus_file)?;
+        let capture_seconds = ((stimulus_duration.ceil() as u64) + 2).clamp(3, 12).to_string();
+        let mut capture_child = Command::new("arecord")
+            .args(["-q","-D",&capture_device,"-f","S16_LE","-r","16000","-c","1","-d",&capture_seconds,"-t","wav",&capture_s])
+            .stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null())
+            .spawn().map_err(|_| "VOICE_STIMULUS_CAPTURE_START_FAILED")?;
+        std::thread::sleep(Duration::from_millis(350));
+        if let Err(error) = run_bounded("aplay", &["-q","-D",&playback_device,stimulus], None, Duration::from_secs(20)) {
+            let _ = capture_child.kill(); let _ = capture_child.wait();
+            return Err(format!("VOICE_STIMULUS_PHYSICAL_PLAYBACK_FAILED:{error}"));
+        }
+        match capture_child.wait_timeout(Duration::from_secs(capture_seconds.parse::<u64>().unwrap_or(12)+5)) {
+            Ok(Some(status)) if status.success() => {},
+            _ => { let _ = capture_child.kill(); let _ = capture_child.wait(); return Err("VOICE_STIMULUS_PHYSICAL_CAPTURE_FAILED".into()); }
+        }
+        let captured_rms = wav_peak_window_rms(&capture)?;
+        if captured_rms < 100.0 { return Err("VOICE_STIMULUS_CAPTURE_SIGNAL_TOO_LOW".into()); }
+    } else {
+        run_bounded("arecord", &["-q","-D",&capture_device,"-f","S16_LE","-r","16000","-c","1","-d",CAPTURE_SECONDS,"-t","wav",&capture_s],None,Duration::from_secs(CAPTURE_SECONDS.parse::<u64>().unwrap_or(12)+5))?;
+    }
     if !capture.is_file() || std::fs::metadata(&capture).map(|m|m.len()).unwrap_or(0) < 8_000 { return Err("VOICE_CAPTURE_EMPTY_OR_TOO_SMALL".into()); }
 
     let model_s = whisper_model.to_string_lossy().to_string();
@@ -246,25 +318,33 @@ async fn voice_e2e_inner() -> Result<VoiceTurn,String> {
     let transcript = transcript_out.trim().to_string();
     if transcript.is_empty() { return Err("VOICE_TRANSCRIPTION_EMPTY".into()); }
     if transcript.chars().count() > MAX_TEXT_CHARS { return Err("VOICE_TRANSCRIPTION_TOO_LONG".into()); }
-    // Whisper may omit or substitute short connector words and punctuation.
-    // Require every semantic anchor independently; do not log the raw transcript.
-    // Keep this physical E2E candidate tied to the branch-scoped hardware workflow trigger.
+    // Keep the legacy live-operator semantic anchors unchanged. The additive
+    // automated mode instead compares microphone-captured speech with the pinned
+    // human-recorded fixture transcript; it never transcribes the source file directly.
     let phrase_tokens = normalized_voice_tokens(&transcript);
-    let has_prueba = phrase_tokens.iter().any(|token| token == "prueba");
-    let has_voz = phrase_tokens.iter().any(|token| token == "voz");
-    let has_microfono = phrase_tokens.iter().any(|token| token == "microfono");
-    let has_real = phrase_tokens.iter().any(|token| token == "real");
-    let has_hablando = phrase_tokens.iter().any(|token| token == "hablando");
-    let has_responde = phrase_tokens.iter().any(|token| token.starts_with("respond") || token.starts_with("respuest"));
-    let has_procesa = phrase_tokens.iter().any(|token| token.starts_with("proces"));
-    let has_response_intent = has_responde || has_procesa;
-    // Accept Spanish inflectional variants for the response request while retaining
-    // all four independent operator/audio anchors. "prueba" remains diagnostic only.
-    if !voice_test_anchors_present(&phrase_tokens) {
-        return Err(format!(
-            "VOICE_TRANSCRIPTION_TEST_PHRASE_MISMATCH:token_count={};prueba={has_prueba};voz={has_voz};microfono={has_microfono};real={has_real};hablando={has_hablando};respond_stem={has_responde};process_stem={has_procesa};response_intent={has_response_intent}",
-            phrase_tokens.len()
-        ));
+    if stimulus_mode {
+        let reference = std::env::var("LOUKSNA_VOICE_STIMULUS_EXPECTED_TEXT").map_err(|_| "VOICE_STIMULUS_REFERENCE_MISSING")?;
+        let expected_tokens = normalized_voice_tokens(&reference);
+        let matched = expected_tokens.iter().filter(|token| phrase_tokens.iter().any(|heard| heard == *token)).count();
+        let ratio = if expected_tokens.is_empty() { 0.0 } else { matched as f64 / expected_tokens.len() as f64 };
+        if expected_tokens.len() < 3 || matched < 3 || ratio < 0.50 {
+            return Err(format!("VOICE_STIMULUS_TRANSCRIPTION_MISMATCH:expected_tokens={};matched={matched};ratio={ratio:.3}", expected_tokens.len()));
+        }
+    } else {
+        let has_prueba = phrase_tokens.iter().any(|token| token == "prueba");
+        let has_voz = phrase_tokens.iter().any(|token| token == "voz");
+        let has_microfono = phrase_tokens.iter().any(|token| token == "microfono");
+        let has_real = phrase_tokens.iter().any(|token| token == "real");
+        let has_hablando = phrase_tokens.iter().any(|token| token == "hablando");
+        let has_responde = phrase_tokens.iter().any(|token| token.starts_with("respond") || token.starts_with("respuest"));
+        let has_procesa = phrase_tokens.iter().any(|token| token.starts_with("proces"));
+        let has_response_intent = has_responde || has_procesa;
+        if !voice_test_anchors_present(&phrase_tokens) {
+            return Err(format!(
+                "VOICE_TRANSCRIPTION_TEST_PHRASE_MISMATCH:token_count={};prueba={has_prueba};voz={has_voz};microfono={has_microfono};real={has_real};hablando={has_hablando};respond_stem={has_responde};process_stem={has_procesa};response_intent={has_response_intent}",
+                phrase_tokens.len()
+            ));
+        }
     }
 
     let endpoint = ollama_endpoint();
