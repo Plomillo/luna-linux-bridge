@@ -750,7 +750,7 @@ mod louksna_runtime_tests {
             .filter(|name| name.to_string_lossy().starts_with(&prefix))
             .collect();
         for remaining in (1..=30).rev() {
-            eprintln!("PHYSICAL_VOICE_CAPTURE_STARTS_IN={remaining}; operador: lee claramente en español esta frase durante la captura de 8 segundos: Prueba de voz de Louksna. Estoy hablando por el micrófono real. Procesa esta frase y responde en voz alta.");
+            eprintln!("PHYSICAL_VOICE_CAPTURE_STARTS_IN={remaining}; operador: lee claramente en español esta frase durante la captura de 12 segundos: Voz de Louksna. Estoy hablando por el micrófono real. Procesa y responde en voz alta.");
             std::thread::sleep(std::time::Duration::from_secs(1));
         }
         // The production command returns Ok only after non-empty capture/transcript/response,
