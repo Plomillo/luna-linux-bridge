@@ -1374,6 +1374,9 @@ jobs:
           eligible.sort(key=lambda r:r.get("submitted_at") or "")
           independent_review=eligible[-1]
           independent_reviewer=(independent_review.get("user") or {}).get("login")
+          candidate_tree_sha=(commit.get("commit") or {}).get("tree",{}).get("sha")
+          if not candidate_tree_sha:
+              raise SystemExit("G23 HOLD: candidate tree SHA unavailable")
           if manifest.get("status")!="PASS": raise SystemExit("G23 HOLD: CP-10 is not PASS")
           if manifest.get("candidate_commit_sha")!=candidate: raise SystemExit("G23 HOLD: manifest candidate SHA mismatch")
           if str(manifest.get("run_id"))!=str(run_id): raise SystemExit("G23 HOLD: manifest run ID mismatch")
@@ -1400,15 +1403,29 @@ jobs:
               raise SystemExit("G23 HOLD: physical voice source run provenance missing")
           import subprocess
           subprocess.run([sys.executable,"scripts/missions/validate_voice_hardware_evidence.py",str(voice_json),"--candidate-sha",candidate],check=True)
+          run_url=os.environ.get("GITHUB_SERVER_URL","https://github.com")+"/"+os.environ["GITHUB_REPOSITORY"]+"/actions/runs/"+str(run_id)
+          manifest_sha=hashlib.sha256(manifest_path.read_bytes()).hexdigest()
           report={
             "schema":"louksna.zd.v03.g23-independent-validation.v1",
-            "checkpoint_id":"G23","status":"PASS",
-            "candidate_commit_sha":candidate,"source_workflow_run_id":run_id,
-            "evidence_manifest_sha256":hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
+            "contract_id":"LOUKSNA-ZD-V03-12-STAGE-GOVERNANCE-20261009",
+            "mission_id":"MIS-LOUKSNA-ZD-V03-FUNCTIONAL-20261006",
+            "stage_id":"11","checkpoint_id":"CP-11","control_id":"G23",
+            "candidate_branch":os.environ.get("GITHUB_HEAD_REF") or os.environ.get("GITHUB_REF_NAME"),
+            "candidate_commit_sha":candidate,"candidate_tree_sha":candidate_tree_sha,
+            "workflow_name":os.environ.get("GITHUB_WORKFLOW"),
+            "run_id":run_id,"run_url":run_url,
+            "status":"PASS",
+            "requirements":["CP-10 frozen manifest integrity","exact candidate SHA and run binding","all manifest evidence SHA-256 values recomputed","physical voice proof validated","independent reviewer attestation"],
+            "tests":["manifest status/schema/run/SHA checks","manifest path and digest verification","physical voice evidence/log provenance and validator"],
+            "test_results":{"manifest_integrity":"PASS","exact_candidate_binding":"PASS","evidence_hash_recomputation":"PASS","physical_voice_validation":"PASS","independent_reviewer_attestation":"PASS"},
+            "evidence_paths":[r["path"] for r in checked]+["louksna-zd-v03-cp10-evidence-manifest/CP-10-evidence-manifest.json"],
+            "evidence_sha256":checked,
+            "evidence_manifest_sha256":manifest_sha,
             "evidence_count":len(checked),"evidence_hashes_recomputed":True,
             "physical_voice_evidence_sha256":hashlib.sha256(voice_json.read_bytes()).hexdigest(),
             "physical_voice_log_sha256":hashlib.sha256(voice_log.read_bytes()).hexdigest(),
             "protected_environment":"louksna-g23-independent-validation",
+            "protected_environment_gate_passed":True,
             "protected_review_required":True,
             "independent_reviewer_login":independent_reviewer,
             "independent_review_id":independent_review.get("id"),
@@ -1417,6 +1434,15 @@ jobs:
             "independent_review_submitted_at":independent_review.get("submitted_at"),
             "pr_author_login":pr_author,
             "candidate_commit_author_login":commit_author,
+            "validator_identity":independent_reviewer,
+            "validation_independent":True,
+            "findings":[],
+            "severity":"NONE",
+            "unresolved_blockers":[],
+            "previous_checkpoint_sha256":manifest_sha,
+            "rollback_pointer":run_url,
+            "next_authorized_stage":"12",
+            "timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "validated_utc":datetime.datetime.now(datetime.timezone.utc).isoformat()
           }
           out=pathlib.Path("evidence/g23/CP-11-G23-independent-validation.json")
@@ -1502,6 +1528,9 @@ jobs:
           pr_author=(pr_data.get("user") or {}).get("login")
           commit_author=(commit_data.get("author") or {}).get("login")
           g23_reviewer=g23.get("independent_reviewer_login")
+          candidate_tree_sha=(commit_data.get("commit") or {}).get("tree",{}).get("sha")
+          if not candidate_tree_sha:
+              raise SystemExit("G24 HOLD: candidate tree SHA unavailable")
           if not pr_author or not commit_author or not g23_reviewer:
               raise SystemExit("G24 HOLD: author/G23 reviewer identity missing")
           eligible=[r for r in reviews if (
@@ -1515,14 +1544,30 @@ jobs:
           eligible.sort(key=lambda r:r.get("submitted_at") or "")
           certifier_review=eligible[-1]
           certifier_reviewer=(certifier_review.get("user") or {}).get("login")
+          run_id=int(os.environ["GITHUB_RUN_ID"])
+          run_url=os.environ.get("GITHUB_SERVER_URL","https://github.com")+"/"+os.environ["GITHUB_REPOSITORY"]+"/actions/runs/"+str(run_id)
+          g23_sha=hashlib.sha256(p.read_bytes()).hexdigest()
           certificate={
             "schema":"louksna.zd.v03.g24-certification-decision.v1",
-            "checkpoint_id":"G24","status":"CERTIFIED",
+            "contract_id":"LOUKSNA-ZD-V03-12-STAGE-GOVERNANCE-20261009",
+            "mission_id":"MIS-LOUKSNA-ZD-V03-FUNCTIONAL-20261006",
+            "stage_id":"12","checkpoint_id":"CP-12","control_id":"G24",
+            "candidate_branch":os.environ.get("GITHUB_HEAD_REF") or os.environ.get("GITHUB_REF_NAME"),
             "candidate_commit_sha":os.environ["CANDIDATE_SHA"],
-            "source_workflow_run_id":int(os.environ["GITHUB_RUN_ID"]),
-            "g23_report_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),
+            "candidate_tree_sha":candidate_tree_sha,
+            "workflow_name":os.environ.get("GITHUB_WORKFLOW"),
+            "run_id":run_id,"run_url":run_url,
+            "status":"PASS","certification_status":"CERTIFIED",
+            "certification_scope":"Exact candidate digest and evidence set identified by the G23 report; no merge or activation.",
+            "requirements":["favorable G23 report","G23 candidate/run and digest binding","second distinct reviewer attestation","protected G24 environment gate"],
+            "tests":["G23 schema/status/SHA/run validation","G23 evidence manifest digest presence","distinct exact-SHA G24 reviewer attestation"],
+            "test_results":{"g23_report":"PASS","candidate_binding":"PASS","g23_evidence_manifest_digest":"PASS","distinct_certifier_review":"PASS","protected_environment_gate":"PASS"},
+            "evidence_paths":["evidence/g23/CP-11-G23-independent-validation.json"],
+            "evidence_sha256":{"g23_report":g23_sha,"g23_evidence_manifest":g23["evidence_manifest_sha256"]},
+            "g23_report_sha256":g23_sha,
             "g23_evidence_manifest_sha256":g23["evidence_manifest_sha256"],
             "certification_environment":"louksna-g24-certification",
+            "protected_environment_gate_passed":True,
             "protected_reviewer_approval_required":True,
             "certifier_reviewer_login":certifier_reviewer,
             "certifier_review_id":certifier_review.get("id"),
@@ -1530,6 +1575,15 @@ jobs:
             "certifier_review_commit_sha":certifier_review.get("commit_id"),
             "certifier_review_submitted_at":certifier_review.get("submitted_at"),
             "g23_independent_reviewer_login":g23_reviewer,
+            "validator_identity":certifier_reviewer,
+            "validation_independent":True,
+            "findings":[],
+            "severity":"NONE",
+            "unresolved_blockers":[],
+            "previous_checkpoint_sha256":g23_sha,
+            "rollback_pointer":run_url,
+            "next_authorized_stage":"NONE",
+            "timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "certified_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "activation":"NOT_PERFORMED",
             "merge":"NOT_PERFORMED"
