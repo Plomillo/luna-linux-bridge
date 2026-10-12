@@ -749,9 +749,14 @@ mod louksna_runtime_tests {
             .map(|entry| entry.file_name())
             .filter(|name| name.to_string_lossy().starts_with(&prefix))
             .collect();
-        for remaining in (1..=30).rev() {
-            eprintln!("PHYSICAL_VOICE_CAPTURE_STARTS_IN={remaining}; operador: lee claramente en español esta frase durante la captura de 12 segundos: Voz de Louksna. Estoy hablando por el micrófono real. Procesa y responde en voz alta.");
-            std::thread::sleep(std::time::Duration::from_secs(1));
+        if std::env::var("LOUKSNA_VOICE_STIMULUS_REQUIRED").map(|v| v == "1").unwrap_or(false) {
+            eprintln!("PHYSICAL_VOICE_STIMULUS_MODE=HUMAN_RECORDED_PHYSICAL_ACOUSTIC; live_user_utterance=false");
+        } else {
+            // Preserve the historical live-operator mode only when it is explicitly selected.
+            for remaining in (1..=30).rev() {
+                eprintln!("PHYSICAL_VOICE_CAPTURE_STARTS_IN={remaining}; operator utterance required for legacy live mode.");
+                std::thread::sleep(std::time::Duration::from_secs(1));
+            }
         }
         // The production command returns Ok only after non-empty capture/transcript/response,
         // non-empty Piper audio, and successful ALSA playback. Keep VoiceTurn fields private.
