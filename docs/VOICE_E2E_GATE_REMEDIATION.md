@@ -132,3 +132,8 @@ The repository owner explicitly authorized an append-only CP-07 amendment. This 
 ### Acceptance rule
 
 The automated fixture is a physical acoustic stimulus, not a synthetic or virtual audio substitute. CP-07 remains OPEN/HOLD until the full candidate-bound route passes all content, hardware, memory, provenance, cleanup, and security checks. Any code or contract change invalidates evidence tied to a prior candidate SHA. The first run is non-certifying; G23 and G24 remain separate.
+
+
+### Pinned initial fixture and attribution
+
+The initial fixture is **Hola_fer.wav** by **leoncillo**, licensed CC0-1.0. Source page: https://freesound.org/people/leoncillo/sounds/423843/. Downloaded preview: https://cdn.freesound.org/previews/423/423843_3215099-lq.mp3. The verified MP3 preview SHA-256 is `1aa9fcf9a210c256a15a6f8682eeda65b17fd86ba3e37873303d5b9a60b972cf`. The reference token is `hola`; it is a minimal content anchor from the clip title/description, not a claim of full transcription. Hosted CI verifies the source hash, normalizes to PCM16 mono 16 kHz WAV, calculates the normalized-fixture hash, and binds the manifest to the candidate SHA/run before transfer to the physical runner. citeturn153747view0
