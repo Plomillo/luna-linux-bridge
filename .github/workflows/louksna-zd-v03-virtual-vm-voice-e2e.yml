@@ -154,13 +154,15 @@ jobs:
                 REC_PID=$!
                 # Wait until the recorder's source-output is visible before playback;
                 # this avoids clipping the beginning while parecord initializes.
-                MONITOR_INDEX="$(pactl list short sources | awk '$2=="Loopback.monitor" {print $1; exit}')"
-                test -n "$MONITOR_INDEX"
+                pactl list short sources | awk '$2=="Loopback.monitor" {found=1} END {exit !found}'
+                # parecord is explicitly bound to Loopback.monitor above. Wait for
+                # its source-output to appear, without assuming pactl's source ID
+                # column has the same representation across PulseAudio versions.
                 for attempt in $(seq 1 30); do
-                  if pactl list short source-outputs | awk -v source="$MONITOR_INDEX" '$5==source {found=1} END {exit !found}'; then break; fi
+                  if pactl list short source-outputs | awk 'NF {found=1} END {exit !found}'; then break; fi
                   sleep 0.2
                 done
-                pactl list short source-outputs | awk -v source="$MONITOR_INDEX" '$5==source {found=1} END {exit !found}'
+                pactl list short source-outputs | awk 'NF {found=1} END {exit !found}'
                 sleep 1
                 paplay --server=unix:/run/pulse/native --device=Loopback /opt/louksna-cp07/input.wav
                 wait "$REC_PID" || true
