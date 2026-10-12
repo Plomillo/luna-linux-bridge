@@ -71,7 +71,9 @@ async function main() {
       chats: saved?.chats || [],
       healthStatus: saved?.healthStatus || "PASS",
       calls: [],
-      evidence: [{ id: 1, utc: "2026-10-10T00:00:00Z", operation: "UI_E2E_FIXTURE", status: "PASS", detail: "Explicit browser-only IPC test double; not native runtime evidence." }]
+      evidence: [{ id: 1, utc: "2026-10-10T00:00:00Z", operation: "UI_E2E_FIXTURE", status: "PASS", detail: "Explicit browser-only IPC test double; not native runtime evidence." }],
+      telemetry: [],
+      attachments: []
     };
     const persist = () => localStorage.setItem(key, JSON.stringify({ settings: state.settings, chats: state.chats, healthStatus: state.healthStatus }));
     window.__louksnaTestState = state;
@@ -83,6 +85,24 @@ async function main() {
           case "get_settings": return state.settings;
           case "save_settings": state.settings = args.settings; persist(); return null;
           case "evidence_recent": return state.evidence;
+          case "record_ui_telemetry": state.telemetry.push({ ...args }); return null;
+          case "ui_telemetry_recent": return state.telemetry;
+          case "attachments_recent": return state.attachments;
+          case "import_attachment": {
+            const bytes = Array.from(args.bytes || []);
+            const digestBuffer = await crypto.subtle.digest("SHA-256", new Uint8Array(bytes));
+            const sha256 = Array.from(new Uint8Array(digestBuffer)).map(x => x.toString(16).padStart(2, "0")).join("");
+            const meta = { id: state.attachments.length + 1, utc: new Date().toISOString(), name: String(args.name), mime: String(args.mime), size_bytes: bytes.length, sha256 };
+            state.attachments.push(meta);
+            state.attachmentBytes ||= {};
+            state.attachmentBytes[meta.id] = bytes;
+            return meta;
+          }
+          case "read_attachment": {
+            const meta = state.attachments.find(x => x.id === Number(args.id));
+            if (!meta) throw new Error("ATTACHMENT_NOT_FOUND");
+            return { metadata: meta, bytes: state.attachmentBytes[meta.id] };
+          }
           case "chat_history": return state.chats;
           case "chat_send": {
             const message = String(args.message || "");
