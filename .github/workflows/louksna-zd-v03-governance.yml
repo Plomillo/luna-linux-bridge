@@ -73,6 +73,7 @@ permissions:
   contents: read
   actions: read
   deployments: read
+  pull-requests: read
 
 concurrency:
   # Serialize by source branch/ref, not run ID: a newer candidate supersedes stale evidence for the same branch.
@@ -1305,6 +1306,7 @@ jobs:
       actions: read
       contents: read
       deployments: read
+      pull-requests: read
     steps:
       - name: Record protected G23 independent-validation gate
         shell: bash
@@ -1325,17 +1327,51 @@ jobs:
         id: g23
         env:
           CANDIDATE_SHA: ${{ env.CANDIDATE_SHA }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
           set -Eeuo pipefail
           python3 - <<'PY'
-          import datetime,hashlib,json,os,pathlib,sys
+          import datetime,hashlib,json,os,pathlib,sys,urllib.request
           root=pathlib.Path("evidence/g23/imported")
           manifest_path=root/"louksna-zd-v03-cp10-evidence-manifest"/"CP-10-evidence-manifest.json"
           if not manifest_path.is_file(): raise SystemExit("G23 HOLD: CP-10 manifest missing from this exact workflow run")
           manifest=json.loads(manifest_path.read_text(encoding="utf-8"))
           candidate=os.environ["CANDIDATE_SHA"]
           run_id=int(os.environ["GITHUB_RUN_ID"])
+          # G23 requires a submitted approval on this exact candidate from a
+          # reviewer distinct from both the PR author and commit author.
+          pr_number=os.environ.get("PR_NUMBER","").strip()
+          token=os.environ.get("GH_TOKEN","").strip()
+          if not pr_number or not token:
+              raise SystemExit("G23 HOLD: PR review identity context unavailable")
+          api_root="https://api.github.com/repos/"+os.environ["GITHUB_REPOSITORY"]
+          def api_json(path):
+              req=urllib.request.Request(api_root+path,headers={
+                  "Authorization":"Bearer "+token,
+                  "Accept":"application/vnd.github+json",
+                  "X-GitHub-Api-Version":"2022-11-28"})
+              with urllib.request.urlopen(req,timeout=20) as response:
+                  return json.load(response)
+          pr=api_json("/pulls/"+pr_number)
+          commit=api_json("/commits/"+candidate)
+          reviews=api_json("/pulls/"+pr_number+"/reviews?per_page=100")
+          if not isinstance(reviews,list) or len(reviews)>=100:
+              raise SystemExit("G23 HOLD: review list invalid or pagination is incomplete")
+          pr_author=(pr.get("user") or {}).get("login")
+          commit_author=(commit.get("author") or {}).get("login")
+          if not pr_author or not commit_author:
+              raise SystemExit("G23 HOLD: PR author or candidate commit author identity unavailable")
+          eligible=[r for r in reviews if r.get("state")=="APPROVED"
+                    and r.get("commit_id")==candidate
+                    and (r.get("user") or {}).get("login")
+                    and (r.get("user") or {}).get("login") not in {pr_author,commit_author}]
+          if not eligible:
+              raise SystemExit("G23 HOLD: no APPROVED PR review by an independent reviewer bound to the exact candidate SHA")
+          eligible.sort(key=lambda r:r.get("submitted_at") or "")
+          independent_review=eligible[-1]
+          independent_reviewer=(independent_review.get("user") or {}).get("login")
           if manifest.get("status")!="PASS": raise SystemExit("G23 HOLD: CP-10 is not PASS")
           if manifest.get("candidate_commit_sha")!=candidate: raise SystemExit("G23 HOLD: manifest candidate SHA mismatch")
           if str(manifest.get("run_id"))!=str(run_id): raise SystemExit("G23 HOLD: manifest run ID mismatch")
@@ -1372,6 +1408,13 @@ jobs:
             "physical_voice_log_sha256":hashlib.sha256(voice_log.read_bytes()).hexdigest(),
             "protected_environment":"louksna-g23-independent-validation",
             "protected_review_required":True,
+            "independent_reviewer_login":independent_reviewer,
+            "independent_review_id":independent_review.get("id"),
+            "independent_review_state":independent_review.get("state"),
+            "independent_review_commit_sha":independent_review.get("commit_id"),
+            "independent_review_submitted_at":independent_review.get("submitted_at"),
+            "pr_author_login":pr_author,
+            "candidate_commit_author_login":commit_author,
             "validated_utc":datetime.datetime.now(datetime.timezone.utc).isoformat()
           }
           out=pathlib.Path("evidence/g23/CP-11-G23-independent-validation.json")
@@ -1399,6 +1442,7 @@ jobs:
       actions: read
       contents: read
       deployments: read
+      pull-requests: read
     steps:
       - name: Record protected G24 certification gate
         shell: bash
@@ -1415,11 +1459,14 @@ jobs:
           name: louksna-zd-v03-cp11-g23-independent-validation
           path: evidence/g24/g23
       - name: Validate G23 and issue digest-bound G24 decision record
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
           set -Eeuo pipefail
           python3 - <<'PY'
-          import datetime,hashlib,json,os,pathlib
+          import datetime,hashlib,json,os,pathlib,urllib.request
           p=pathlib.Path("evidence/g24/g23/CP-11-G23-independent-validation.json")
           if not p.is_file(): raise SystemExit("G24 HOLD: G23 report missing")
           g23=json.loads(p.read_text(encoding="utf-8"))
@@ -1431,6 +1478,39 @@ jobs:
               raise SystemExit("G24 HOLD: G23 source run mismatch")
           if g23.get("evidence_hashes_recomputed") is not True or not g23.get("evidence_manifest_sha256"):
               raise SystemExit("G24 HOLD: G23 independent digest validation incomplete")
+          # G24 requires a second exact-SHA approval from a different reviewer
+          # than G23, and neither reviewer may be the PR/commit author.
+          pr_number=os.environ.get("PR_NUMBER","").strip()
+          token=os.environ.get("GH_TOKEN","").strip()
+          if not pr_number or not token:
+              raise SystemExit("G24 HOLD: PR review identity context unavailable")
+          api_root="https://api.github.com/repos/"+os.environ["GITHUB_REPOSITORY"]
+          def api_json(path):
+              req=urllib.request.Request(api_root+path,headers={
+                  "Authorization":"Bearer "+token,
+                  "Accept":"application/vnd.github+json",
+                  "X-GitHub-Api-Version":"2022-11-28"})
+              with urllib.request.urlopen(req,timeout=20) as response:
+                  return json.load(response)
+          pr_data=api_json("/pulls/"+pr_number)
+          commit_data=api_json("/commits/"+os.environ["CANDIDATE_SHA"])
+          reviews=api_json("/pulls/"+pr_number+"/reviews?per_page=100")
+          if not isinstance(reviews,list) or len(reviews)>=100:
+              raise SystemExit("G24 HOLD: review list invalid or pagination is incomplete")
+          pr_author=(pr_data.get("user") or {}).get("login")
+          commit_author=(commit_data.get("author") or {}).get("login")
+          g23_reviewer=g23.get("independent_reviewer_login")
+          if not pr_author or not commit_author or not g23_reviewer:
+              raise SystemExit("G24 HOLD: author/G23 reviewer identity missing")
+          eligible=[r for r in reviews if r.get("state")=="APPROVED"
+                    and r.get("commit_id")==os.environ["CANDIDATE_SHA"]
+                    and (r.get("user") or {}).get("login")
+                    and (r.get("user") or {}).get("login") not in {pr_author,commit_author,g23_reviewer}]
+          if not eligible:
+              raise SystemExit("G24 HOLD: no distinct second APPROVED reviewer bound to the exact candidate SHA")
+          eligible.sort(key=lambda r:r.get("submitted_at") or "")
+          certifier_review=eligible[-1]
+          certifier_reviewer=(certifier_review.get("user") or {}).get("login")
           certificate={
             "schema":"louksna.zd.v03.g24-certification-decision.v1",
             "checkpoint_id":"G24","status":"CERTIFIED",
@@ -1440,6 +1520,12 @@ jobs:
             "g23_evidence_manifest_sha256":g23["evidence_manifest_sha256"],
             "certification_environment":"louksna-g24-certification",
             "protected_reviewer_approval_required":True,
+            "certifier_reviewer_login":certifier_reviewer,
+            "certifier_review_id":certifier_review.get("id"),
+            "certifier_review_state":certifier_review.get("state"),
+            "certifier_review_commit_sha":certifier_review.get("commit_id"),
+            "certifier_review_submitted_at":certifier_review.get("submitted_at"),
+            "g23_independent_reviewer_login":g23_reviewer,
             "certified_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "activation":"NOT_PERFORMED",
             "merge":"NOT_PERFORMED"
