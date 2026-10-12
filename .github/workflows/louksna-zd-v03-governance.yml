@@ -23,6 +23,7 @@ on:
       - scripts/missions/v03_templates/**
       - scripts/missions/validate_voice_hardware_evidence.py
       - scripts/missions/test_validate_voice_hardware_evidence.py
+      - scripts/missions/test_zd_branch_linkage_contract.py
       - scripts/missions/voice_e2e_gate_contract_test.py
       - docs/VOICE_E2E_GATE_REMEDIATION.md
       - docs/VOICE_E2E_RUNTIME_DEPENDENCIES.md
@@ -50,6 +51,7 @@ on:
       - scripts/missions/v03_templates/**
       - scripts/missions/validate_voice_hardware_evidence.py
       - scripts/missions/test_validate_voice_hardware_evidence.py
+      - scripts/missions/test_zd_branch_linkage_contract.py
       - scripts/missions/voice_e2e_gate_contract_test.py
       - docs/VOICE_E2E_GATE_REMEDIATION.md
       - docs/VOICE_E2E_RUNTIME_DEPENDENCIES.md
@@ -222,6 +224,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           mkdir -p evidence/zona-directiva-v03
+          python3 -B -I scripts/missions/test_zd_branch_linkage_contract.py
           python3 - <<'PY'
           import hashlib,json,os,pathlib,datetime,subprocess
           contract=pathlib.Path("governance/zona-directiva-v03/12_STAGE_GOVERNANCE_CONTRACT.md")
