@@ -587,10 +587,10 @@ jobs:
           import hashlib,json,pathlib,sys
           log=pathlib.Path("evidence/zona-directiva-v03/CP-06-restart-persistence-tests.log")
           text=log.read_text(errors="replace")
-          required=["offline_mode_blocks_github_network_access","sqlite_persistence_survives_process_restart","sqlite_settings_chat_and_evidence_round_trip","empty_chat_message_is_rejected_without_network_access"]
+          required=["offline_mode_blocks_github_network_access","sqlite_persistence_survives_process_restart","sqlite_settings_chat_and_evidence_round_trip","empty_chat_message_is_rejected_without_network_access","ui_telemetry_is_persisted_with_operation_identity_and_rejects_sensitive_metadata","attachment_import_read_hash_and_size_are_verified"]
           missing=[name for name in required if name not in text]
           ok=sys.argv[1]=="0" and "test result: ok." in text and not missing
-          report={"schema":"louksna.zd.v03.cp06-runtime-test.v1","checkpoint_id":"CP-06","status":"PASS" if ok else "FAIL","tests":required,"missing_tests":missing,"test_exit_code":int(sys.argv[1]),"test_log_sha256":hashlib.sha256(log.read_bytes()).hexdigest(),"scope":"Production Rust functions tested for offline network blocking, local chat, settings persistence and evidence ledger across a writer-process exit/reopen. Attachments are explicitly NOT_IMPLEMENTED and are not claimed as an active capability; no native voice claim."}
+          report={"schema":"louksna.zd.v03.cp06-runtime-test.v1","checkpoint_id":"CP-06","status":"PASS" if ok else "HOLD","tests":required,"missing_tests":missing,"test_exit_code":int(sys.argv[1]),"test_log_sha256":hashlib.sha256(log.read_bytes()).hexdigest(),"scope":"Production Rust functions test offline blocking, local chat, settings/evidence persistence, telemetry persistence, attachment import/list/read SHA-256 verification, and attachment survival across a writer-process exit/reopen; no native voice claim."}
           pathlib.Path("evidence/zona-directiva-v03/CP-06-restart-persistence.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
           print(json.dumps(report,indent=2))
           if not ok: raise SystemExit("CP-06 offline/chat/persistence runtime tests failed")
@@ -603,14 +603,17 @@ jobs:
           grep -q 'chat_send' "$CANDIDATE/src-tauri/src/main.rs"
           grep -q 'evidence_recent' "$CANDIDATE/src-tauri/src/main.rs"
           grep -q 'github_pull_requests' "$CANDIDATE/src-tauri/src/main.rs"
-          echo "CP-06 source checks and process-restart persistence test passed; attachment import/storage/retrieval and native GUI E2E remain unproven."
+          grep -q 'record_ui_telemetry' "$CANDIDATE/src-tauri/src/main.rs"
+          grep -q 'import_attachment' "$CANDIDATE/src-tauri/src/main.rs"
+          grep -q 'read_attachment' "$CANDIDATE/src-tauri/src/main.rs"
+          echo "CP-06 production backend tests include attachment import/read/hash and process-restart persistence; UI import/readback is implemented; native voice remains a separate gate."
           mkdir -p evidence/zona-directiva-v03
           python3 - <<'PY'
           import datetime,hashlib,json,os,pathlib
           root=pathlib.Path("LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate")
           files=["src/App.tsx","src-tauri/src/main.rs","src-tauri/tauri.conf.json"]
           runtime_report=pathlib.Path("evidence/zona-directiva-v03/CP-06-restart-persistence.json")
-          d={"schema":"louksna.zd.v03.checkpoint-evidence.v1","stage_id":"06","checkpoint_id":"CP-06","status":"PASS","scope":"Offline network blocking, local chat, settings persistence and evidence-ledger persistence are runtime-tested; attachments are explicitly NOT_IMPLEMENTED and excluded from active capability claims; voice remains a separate CP-07 gate.","timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"repository":os.getenv("GITHUB_REPOSITORY"),"commit_sha":os.getenv("CANDIDATE_SHA"),"run_id":os.getenv("GITHUB_RUN_ID"),"restart_test_report_sha256":hashlib.sha256(runtime_report.read_bytes()).hexdigest(),"source_sha256":{p:hashlib.sha256((root/p).read_bytes()).hexdigest() for p in files}}
+          d={"schema":"louksna.zd.v03.checkpoint-evidence.v1","stage_id":"06","checkpoint_id":"CP-06","status":"PASS" if json.loads(runtime_report.read_text()).get("status")=="PASS" else "HOLD","scope":"Offline network blocking, local chat, settings/evidence/telemetry persistence and attachment import/read/hash verification survive a process restart; voice remains a separate CP-07 gate.","timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"repository":os.getenv("GITHUB_REPOSITORY"),"commit_sha":os.getenv("CANDIDATE_SHA"),"run_id":os.getenv("GITHUB_RUN_ID"),"restart_test_report_sha256":hashlib.sha256(runtime_report.read_bytes()).hexdigest(),"source_sha256":{p:hashlib.sha256((root/p).read_bytes()).hexdigest() for p in files}}
           pathlib.Path("evidence/zona-directiva-v03/CP-06-functions-attachments.json").write_text(json.dumps(d,indent=2,sort_keys=True)+"\n")
           with open(os.environ["GITHUB_OUTPUT"],"a") as f: f.write("status="+d["status"]+"\n")
           PY
