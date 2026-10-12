@@ -322,3 +322,5 @@ mod tests {
     #[test]
     fn response_transcript_bound_is_explicit() { assert_eq!(MAX_TEXT_CHARS, 4000); }
 }
+
+// CP-07 physical E2E rerun trigger; no runtime behavior change (2026-10-12).
