@@ -147,7 +147,13 @@ async function main() {
   record("pull_request_refresh", true, "Pull-request action completes through the IPC test double.");
 
   await navButtons.filter({ hasText: "Chat \/ Llamada" }).click();
-  record("attachments_explicitly_inactive", await page.locator('[data-capability="attachments"][data-status="NOT_IMPLEMENTED"]').count() === 1, "Attachment handling is explicitly disclosed as not implemented, not simulated.");
+  record("attachment_import_control_visible", await page.locator('input[type="file"]').count() === 1, "Attachment import control is visible; backend capability is separately validated by native Rust tests.");
+  await page.locator('input[type="file"]').setInputFiles({ name: "fixture.txt", mimeType: "text/plain", buffer: Buffer.from("louksna-attachment-ui-e2e-v1") });
+  await page.getByText(/Adjunto persistido y recuperado con SHA-256 verificado: fixture.txt/).waitFor({ timeout: 5000 });
+  record("attachment_import_readback_sha256", await page.evaluate(() => {
+    const a = window.__louksnaTestState.attachments[0];
+    return !!a && a.size_bytes > 0 && /^[a-f0-9]{64}$/.test(a.sha256);
+  }), "UI import/readback verifies a SHA-256 digest against the explicit browser IPC test double; native persistence is separately proven by Rust tests.");
   await page.getByPlaceholder("Escribe a LOUKSNA...").fill("Prueba E2E gobernada");
   await page.getByRole("button", { name: "Enviar" }).click();
   await page.getByText("Prueba E2E gobernada", { exact: true }).waitFor({ timeout: 5000 });
@@ -162,7 +168,7 @@ async function main() {
   record("settings_save", true, "Settings-save command is invoked and UI acknowledges the test-double response.");
 
   const calls = await page.evaluate(() => window.__louksnaTestState.calls.map(x => x.command));
-  record("ipc_commands_observed", ["get_settings", "evidence_recent", "chat_history", "github_repositories", "github_pull_requests", "chat_send", "save_settings"].every(x => calls.includes(x)), "Required UI commands were observed: " + calls.join(","));
+  record("ipc_commands_observed", ["get_settings", "evidence_recent", "chat_history", "github_repositories", "github_pull_requests", "chat_send", "save_settings", "record_ui_telemetry", "attachments_recent", "import_attachment", "read_attachment"].every(x => calls.includes(x)), "Required UI commands were observed: " + calls.join(","));
   record("no_page_errors", pageErrors.length === 0, pageErrors.join(" | ") || "No uncaught browser page errors.");
 
   for (const status of ["DEGRADED", "FAIL", "UNVERIFIED"]) {
