@@ -28,8 +28,15 @@ jobs:
     name: "CP-07 — Build candidate and voice test binary on hosted Linux"
     runs-on: ubuntu-24.04
     timeout-minutes: 35
+    outputs:
+      stimulus_sha256: ${{ steps.prepare-stimulus.outputs.sha256 }}
     env:
       CANDIDATE_SHA: ${{ inputs.candidate_sha || github.event.inputs.candidate_sha || github.sha }}
+      STIMULUS_DOWNLOAD_URL: https://cdn.freesound.org/previews/21/21933_8043-lq.mp3
+      STIMULUS_SOURCE_URL: https://freesound.org/people/dobroide/sounds/21933/
+      STIMULUS_SOURCE_SHA256: 44ee33c2729f9fdd274ddfaa88c82afe41ea16a79a32619ece4c86b6c94b8ad2
+      STIMULUS_LICENSE: "CC BY 4.0; 20060818.hola.wav by dobroide; attribution required"
+      STIMULUS_REFERENCE_TEXT: hola
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -53,6 +60,47 @@ jobs:
             libssl-dev libgtk-3-dev libglib2.0-dev \
             libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev
           pkg-config --modversion glib-2.0 gobject-2.0
+      - name: Prepare hash-pinned human-recorded Spanish stimulus
+        id: prepare-stimulus
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p evidence/cp07-build
+          curl --fail --location --retry 3 --max-time 45 --silent --show-error "$STIMULUS_DOWNLOAD_URL" -o "$RUNNER_TEMP/cp07-stimulus-source.mp3"
+          echo "$STIMULUS_SOURCE_SHA256  $RUNNER_TEMP/cp07-stimulus-source.mp3" | sha256sum --check -
+          ffmpeg -nostdin -hide_banner -loglevel error -y -i "$RUNNER_TEMP/cp07-stimulus-source.mp3" -map_metadata -1 -ac 1 -ar 16000 -c:a pcm_s16le evidence/cp07-build/human-spanish-stimulus.wav
+          python3 - "$CANDIDATE_SHA" "$RUNNER_TEMP/cp07-stimulus-source.mp3" evidence/cp07-build/human-spanish-stimulus.wav "$STIMULUS_SOURCE_URL" "$STIMULUS_SOURCE_SHA256" "$STIMULUS_LICENSE" "$STIMULUS_REFERENCE_TEXT" <<'PY'
+          import datetime,hashlib,json,os,pathlib,sys,wave
+          candidate,source_path,fixture_path,source_url,source_sha,license_text,reference=sys.argv[1:]
+          sha=lambda p:hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
+          with wave.open(fixture_path,'rb') as w:
+              channels,width,rate,frames=w.getnchannels(),w.getsampwidth(),w.getframerate(),w.getnframes()
+          if (channels,width,rate)!=(1,2,16000) or not 1.0 <= frames/rate <= 10.0:
+              raise SystemExit("CP07_STIMULUS_FORMAT_OR_DURATION_INVALID")
+          fixture_sha=sha(fixture_path)
+          report={
+            "schema":"louksna.zd.v03.cp07-human-recorded-stimulus.v1",
+            "candidate_commit_sha":candidate,
+            "source_url":source_url,
+            "download_url":os.environ["STIMULUS_DOWNLOAD_URL"],
+            "license":license_text,
+            "attribution":"20060818.hola.wav by dobroide, CC BY 4.0",
+            "source_sha256":source_sha,
+            "normalized_fixture_sha256":fixture_sha,
+            "reference_text_sha256":hashlib.sha256(reference.encode()).hexdigest(),
+            "reference_text":reference,
+            "normalization":"ffmpeg PCM_S16LE, mono, 16000 Hz; metadata stripped",
+            "ffmpeg_version":os.popen("ffmpeg -version").read().splitlines()[0],
+            "timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "size_bytes":pathlib.Path(fixture_path).stat().st_size,
+            "duration_seconds":frames/rate,
+          }
+          pathlib.Path("evidence/cp07-build/stimulus-manifest.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+          print(json.dumps({k:v for k,v in report.items() if k not in ("reference_text",)},indent=2,sort_keys=True))
+          print("CP07_HUMAN_STIMULUS_PREPARED=PASS")
+          PY
+          STIMULUS_SHA256="$(sha256sum evidence/cp07-build/human-spanish-stimulus.wav | cut -d' ' -f1)"
+          echo "sha256=$STIMULUS_SHA256" >> "$GITHUB_OUTPUT"
       - name: Build exact candidate and compile (do not execute) the physical voice test
         shell: bash
         run: |
@@ -123,11 +171,12 @@ jobs:
       LOUKSNA_ALSA_CAPTURE_DEVICE: pulse
       LOUKSNA_ALSA_PLAYBACK_DEVICE: pulse
       LOUKSNA_VOICE_STIMULUS_REQUIRED: "1"
-      LOUKSNA_VOICE_STIMULUS_WAV: ${{ vars.LOUKSNA_CP07_STIMULUS_WAV }}
-      LOUKSNA_VOICE_STIMULUS_SHA256: ${{ vars.LOUKSNA_CP07_STIMULUS_SHA256 }}
-      LOUKSNA_VOICE_STIMULUS_SOURCE_URL: ${{ vars.LOUKSNA_CP07_STIMULUS_SOURCE_URL }}
-      LOUKSNA_VOICE_STIMULUS_LICENSE: ${{ vars.LOUKSNA_CP07_STIMULUS_LICENSE }}
-      LOUKSNA_VOICE_STIMULUS_EXPECTED_TEXT: ${{ vars.LOUKSNA_CP07_STIMULUS_EXPECTED_TEXT }}
+      LOUKSNA_VOICE_STIMULUS_WAV: ${{ github.workspace }}/evidence/cp07-build/human-spanish-stimulus.wav
+      LOUKSNA_VOICE_STIMULUS_SHA256: ${{ needs.prepare-physical-voice-binaries.outputs.stimulus_sha256 }}
+      LOUKSNA_VOICE_STIMULUS_SOURCE_URL: https://freesound.org/people/dobroide/sounds/21933/
+      LOUKSNA_VOICE_STIMULUS_SOURCE_SHA256: 44ee33c2729f9fdd274ddfaa88c82afe41ea16a79a32619ece4c86b6c94b8ad2
+      LOUKSNA_VOICE_STIMULUS_LICENSE: "CC BY 4.0; 20060818.hola.wav by dobroide; attribution required"
+      LOUKSNA_VOICE_STIMULUS_EXPECTED_TEXT: hola
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
