@@ -151,3 +151,47 @@ La ruta implementada para Linux es: ALSA `arecord` (captura limitada a 8 s) → 
 Dependencias declaradas: `alsa-utils`, `whisper-cli` (whisper.cpp), modelo Whisper local, `piper`, modelo de voz Piper local, servicio Ollama local y modelo Ollama. El manifiesto de release deberá registrar origen confiable, versión y SHA-256 de cada binario/modelo. No se descargan modelos ni ejecutables silenciosamente y el repositorio no los incorpora. `wait-timeout` limita los procesos externos.
 
 CP-07 permanece OPEN hasta que el pipeline se ejecute en un equipo con micrófono/salida de audio real y la evidencia sea revisada. QEMU, tests unitarios, preflight, compilación y mocks de UI no prueban hardware de audio. CP-10, CP-11/G23 y CP-12/G24 deben seguir bloqueados mientras falte evidencia CP-07. Cualquier cambio posterior del candidato invalida checkpoints ligados al SHA anterior.
+
+
+## 9. ENMIENDA ADITIVA AUTORIZADA — CP-07 ESTÍMULO ACÚSTICO AUTOMATIZADO (2026-10-12)
+
+AUTHORIZATION = EXPLICIT_USER_APPROVAL
+CHANGE_TYPE = APPEND_ONLY
+LEGACY_LIVE_OPERATOR_MODE = PRESERVED
+AUTOMATED_HUMAN_RECORDED_STIMULUS_MODE = AUTHORIZED
+PHYSICAL_SPEAKER_TO_PHYSICAL_MICROPHONE = REQUIRED
+SYNTHETIC_INPUT = FORBIDDEN
+VIRTUAL_LOOPBACK_OR_NULL_AUDIO = FORBIDDEN
+USER_REPEAT_UTTERANCE = NOT_REQUIRED
+VOICE_MODEL = es_ES-sharvard-medium.onnx
+PIPER_SPEAKER_ID = 1
+PROJECT_WORKLOAD_MEMORY_MAX_BYTES = 1073741824
+NO_MAIN_MUTATION = TRUE
+NO_AUTO_MERGE = TRUE
+NO_AUTO_CERTIFICATION = TRUE
+FAIL_CLOSED = TRUE
+
+### 9.1 Scope and non-replacement
+
+Esta enmienda se añade al contrato sin borrar ni reescribir el criterio histórico de CP-07. Mantiene la modalidad de operador en vivo como ruta válida y añade una modalidad de estímulo acústico automatizado, basada en una grabación de voz humana con licencia y procedencia verificables. La autorización expresa recibida el 2026-10-12 permite desarrollar esta ruta aditiva. No autoriza cambiar otros checkpoints, rebajar umbrales, declarar PASS por anticipado, fusionar la PR ni modificar main.
+
+La modalidad automatizada demuestra una ruta acústica física de entrada/salida; no se etiqueta como una locución en vivo del usuario. El estímulo debe ser una grabación humana publicada con licencia permisiva verificable (preferentemente CC0), obtenida de una fuente fijada por URL/release, con texto de referencia, licencia, idioma, tamaño y SHA-256 comprobados. No se acepta voz generada por TTS como estímulo de entrada ni una fuente sin procedencia verificable.
+
+### 9.2 Required chain
+
+1. Verificar el SHA del candidato, la procedencia/licencia/hash del clip y el manifiesto del runtime antes de activar el audio.
+2. Verificar que la captura y la reproducción seleccionadas son endpoints físicos reales; rechazar dispositivos virtuales, monitor/loopback, null o dummy.
+3. Reproducir el clip humano por el altavoz físico mientras arecord captura simultáneamente por el micrófono físico. La transcripción debe proceder de esa captura física, no directamente del archivo fuente.
+4. Comparar la transcripción capturada con el texto de referencia mediante un umbral de contenido conservador; un fallo de idioma, señal, contenido o hash deja CP-07 en HOLD/FAIL.
+5. Pasar el texto reconocido por el endpoint de respuesta local permitido; exigir respuesta no vacía y éxito HTTP.
+6. Sintetizar la respuesta usando el modelo de voz preservado es_ES-sharvard-medium.onnx con speaker_id=1; reproducirla por el altavoz físico.
+7. Capturar de nuevo con el micrófono físico durante la reproducción y validar energía acústica, transcripción de salida y solapamiento de contenido. La reproducción por comando/exit code sola no prueba la ruta acústica.
+8. Imponer y medir un límite combinado de memoria del workload de 1 GiB. Si la métrica desaparece, no puede leerse o rebasa el límite, abortar el turno y mantener CP-07 en HOLD; nunca inferir un PASS por ausencia de telemetría.
+9. Verificar limpieza de archivos temporales; conservar solo manifiestos/logs no sensibles, hashes y evidencia mínima, sin audio crudo, transcripción ni respuesta en el expediente.
+10. Enlazar todos los resultados al SHA exacto del candidato, run, timestamp UTC, versiones, fuentes, hashes de modelos/binarios, IDs de dispositivos y hash del log. Cualquier nuevo commit invalida la evidencia anterior.
+
+### 9.3 Evidence semantics and gate
+
+La modalidad automatizada puede producir evidencia física candidata y un resultado de ejecución, pero no una attestation humana de audibilidad ni una certificación independiente. El artefacto debe identificar explícitamente stimulus_mode=HUMAN_RECORDED_PHYSICAL_ACOUSTIC, live_user_utterance=false, physical_microphone_capture=true y physical_speaker_playback=true, junto con la procedencia del clip. La ausencia de cualquier prueba material mantiene CP-07 OPEN/HOLD. G23 sigue siendo independiente y G24 no puede ejecutarse sin G23 favorable y expediente CP-10 válido.
+
+La primera ejecución tras esta modificación es exploratoria y no certificadora. El cambio de código y el cambio de contrato crean un nuevo SHA candidato; ninguna evidencia anterior se hereda automáticamente.
