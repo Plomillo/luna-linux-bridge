@@ -83,10 +83,16 @@ jobs:
           EOF
           printf '<!doctype html><html><body>native test harness</body></html>\n' > "$ROOT/dist/index.html"
           python3 - "$ROOT/src-tauri/icons/icon.png" <<'PY'
-          import base64,sys
-          # Valid 1x1 PNG used only to satisfy Tauri context generation; no product asset is changed.
-          data=base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/F2cAAAAASUVORK5CYII=")
-          open(sys.argv[1],"wb").write(data)
+          import binascii,struct,sys,zlib
+          # Deterministic 1x1 truecolor RGBA PNG; test-only Tauri context asset.
+          def chunk(kind,data):
+              return struct.pack(">I",len(data))+kind+data+struct.pack(">I",binascii.crc32(kind+data)&0xffffffff)
+          raw=b"\\x00\\x08\\x0a\\x1c\\xff"
+          png=(b"\\x89PNG\\r\\n\\x1a\\n"
+               +chunk(b"IHDR",struct.pack(">IIBBBBB",1,1,8,6,0,0,0))
+               +chunk(b"IDAT",zlib.compress(raw,9))
+               +chunk(b"IEND",b""))
+          open(sys.argv[1],"wb").write(png)
           PY
           rustc --version | tee evidence/cp03-cp04-native/rustc-version.txt
           cargo --version | tee evidence/cp03-cp04-native/cargo-version.txt
