@@ -111,3 +111,24 @@ The workflow no longer depends on the unavailable `LOUKSNA_REPO_ADMIN_READ_TOKEN
 ### Current status rule
 
 The physical runner and local components passed supplemental smoke checks. CP-07 is still OPEN until the exact-candidate workflow proves the full native microphone → STT → local model → TTS → physical playback path, the temporary files are cleaned, and the operator confirms audible playback through the protected environment. CP-10 cannot be declared passed until its own current-SHA gates pass. G23/G24 are not certified by runner provisioning or environment creation alone.
+
+
+## Addendum — authorized unattended human-recorded acoustic stimulus (2026-10-12)
+
+The repository owner explicitly authorized an append-only CP-07 amendment. This adds a second execution mode; it does not delete the live-operator mode or change CP-01–CP-06/CP-08–CP-12.
+
+### Required behavior
+
+- Use a human-recorded speech fixture with verified public source, language, license, reference transcript, release/version, and pinned SHA-256. Prefer CC0. Never use TTS-generated input.
+- Play the fixture through a verified physical speaker while capturing through the verified physical microphone. Run STT on the captured microphone WAV, not the fixture file. Compare the recognized text with the fixture reference transcript using a conservative content threshold.
+- Pass recognized text through the configured local response model, then synthesize with the preserved es_ES-sharvard-medium.onnx and speaker_id=1.
+- Play the generated answer through the physical speaker, recapture it through the physical microphone, and require both acoustic energy and STT content overlap. A successful aplay exit alone is not proof.
+- Reject virtual, null, dummy, monitor, or loopback endpoints. If physical routing cannot be established, stop with HOLD.
+- Enforce a hard combined project-workload ceiling of 1 GiB. Missing/disappearing memory telemetry is a HOLD and must abort inference rather than be treated as success.
+- Keep temporary audio/transcript/response files out of the evidence artifact and verify cleanup. Record candidate SHA, run, timestamps, source/license/hash, device IDs, versions, binary/model hashes, numeric acoustic measures, log hash, and cleanup outcome.
+- Label this mode HUMAN_RECORDED_PHYSICAL_ACOUSTIC; explicitly state that no live user utterance occurred. It must not impersonate operator confirmation or independent G23 validation.
+- Preserve the existing live-operator route. No main mutation, merge, auto-certification, or downstream gate promotion is authorized.
+
+### Acceptance rule
+
+The automated fixture is a physical acoustic stimulus, not a synthetic or virtual audio substitute. CP-07 remains OPEN/HOLD until the full candidate-bound route passes all content, hardware, memory, provenance, cleanup, and security checks. Any code or contract change invalidates evidence tied to a prior candidate SHA. The first run is non-certifying; G23 and G24 remain separate.
