@@ -923,9 +923,9 @@ jobs:
 
   stage-08-reproducible-build:
     name: "Stage 08 / CP-08 — Build and Debian package"
-    needs: [stage-06-functions-attachments, stage-07-physical-voice]
-    # Canonical fail-closed order: CP-08 is blocked unless CP-06 and physical CP-07 both succeed.
-    if: needs.stage-06-functions-attachments.result == 'success' && needs.stage-06-functions-attachments.outputs.status == 'PASS' && needs.stage-07-physical-voice.result == 'success'
+    needs: [stage-06-functions-attachments, stage-07-physical-voice, stage-07-voice-security]
+    # Canonical fail-closed order: CP-08 is blocked unless CP-06, physical CP-07, and CP-07 security/browser regression all pass.
+    if: needs.stage-06-functions-attachments.result == 'success' && needs.stage-06-functions-attachments.outputs.status == 'PASS' && needs.stage-07-physical-voice.result == 'success' && needs.stage-07-voice-security.result == 'success' && needs.stage-07-voice-security.outputs.status == 'PASS'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     outputs:
