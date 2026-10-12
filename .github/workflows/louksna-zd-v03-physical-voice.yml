@@ -122,6 +122,12 @@ jobs:
       LOUKSNA_OLLAMA_MODEL: smollm2:360m
       LOUKSNA_ALSA_CAPTURE_DEVICE: pulse
       LOUKSNA_ALSA_PLAYBACK_DEVICE: pulse
+      LOUKSNA_VOICE_STIMULUS_REQUIRED: "1"
+      LOUKSNA_VOICE_STIMULUS_WAV: ${{ vars.LOUKSNA_CP07_STIMULUS_WAV }}
+      LOUKSNA_VOICE_STIMULUS_SHA256: ${{ vars.LOUKSNA_CP07_STIMULUS_SHA256 }}
+      LOUKSNA_VOICE_STIMULUS_SOURCE_URL: ${{ vars.LOUKSNA_CP07_STIMULUS_SOURCE_URL }}
+      LOUKSNA_VOICE_STIMULUS_LICENSE: ${{ vars.LOUKSNA_CP07_STIMULUS_LICENSE }}
+      LOUKSNA_VOICE_STIMULUS_EXPECTED_TEXT: ${{ vars.LOUKSNA_CP07_STIMULUS_EXPECTED_TEXT }}
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -146,6 +152,15 @@ jobs:
           export PULSE_SOURCE="${PULSE_SOURCE:-alsa_input.usb-Generic_Blue_Microphones_2101BAB04QX8-00.pro-input-0}"
           export PULSE_SINK="${PULSE_SINK:-alsa_output.pci-0000_04_00.6.analog-stereo}"
           test -n "$PULSE_SOURCE" && test -n "$PULSE_SINK"
+          # Fail before touching audio hardware unless the authorized, hash-pinned
+          # human-recorded fixture and its source/license/reference are configured.
+          test -s "$LOUKSNA_VOICE_STIMULUS_WAV" || { echo "::error::CP-07 HOLD: human-recorded stimulus file is not provisioned"; exit 1; }
+          test "${#LOUKSNA_VOICE_STIMULUS_SHA256}" -eq 64 || { echo "::error::CP-07 HOLD: stimulus SHA-256 is missing"; exit 1; }
+          test -n "$LOUKSNA_VOICE_STIMULUS_SOURCE_URL" || { echo "::error::CP-07 HOLD: stimulus source URL is missing"; exit 1; }
+          test -n "$LOUKSNA_VOICE_STIMULUS_LICENSE" || { echo "::error::CP-07 HOLD: stimulus license is missing"; exit 1; }
+          test -n "$LOUKSNA_VOICE_STIMULUS_EXPECTED_TEXT" || { echo "::error::CP-07 HOLD: stimulus reference transcript is missing"; exit 1; }
+          echo "stimulus_mode=HUMAN_RECORDED_PHYSICAL_ACOUSTIC"
+          echo "live_user_utterance=false"
           {
             echo "XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR"
             echo "PULSE_SERVER=$PULSE_SERVER"
