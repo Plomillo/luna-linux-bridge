@@ -399,6 +399,8 @@ jobs:
             "stimulus_source_url":os.environ["LOUKSNA_VOICE_STIMULUS_SOURCE_URL"],
             "stimulus_license":os.environ["LOUKSNA_VOICE_STIMULUS_LICENSE"],
             "stimulus_sha256":os.environ["LOUKSNA_VOICE_STIMULUS_SHA256"].lower(),
+            "stimulus_source_sha256":os.environ["LOUKSNA_VOICE_STIMULUS_SOURCE_SHA256"].lower(),
+            "stimulus_manifest_sha256":sha("evidence/cp07-build/stimulus-manifest.json"),
             "stimulus_reference_sha256":hashlib.sha256(os.environ["LOUKSNA_VOICE_STIMULUS_EXPECTED_TEXT"].encode("utf-8")).hexdigest(),
             "build_manifest_sha256":sha("evidence/cp07-build/build-manifest.json"),
             "os_kernel":subprocess.run(["uname","-srvm"],capture_output=True,text=True).stdout.strip(),
