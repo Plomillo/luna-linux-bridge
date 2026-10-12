@@ -110,6 +110,29 @@ def main() -> int:
                 errors.append(f"invalid or missing SHA-256: {field}")
         if data.get("physical_audio_hardware_tested") is not True or data.get("microphone_capture") is not True:
             errors.append("automated stimulus mode requires physical acoustic input proof")
+        manifest_path = args.evidence.with_name("CP-07-stimulus-manifest.json")
+        if not manifest_path.is_file():
+            errors.append("automated stimulus manifest file missing")
+        else:
+            import hashlib
+            try:
+                manifest_bytes = manifest_path.read_bytes()
+                manifest = json.loads(manifest_bytes.decode("utf-8"))
+                if hashlib.sha256(manifest_bytes).hexdigest() != data.get("stimulus_manifest_sha256"):
+                    errors.append("automated stimulus manifest SHA-256 mismatch")
+                comparisons = {
+                    "candidate_commit_sha": args.candidate_sha,
+                    "source_url": data.get("stimulus_source_url"),
+                    "license": data.get("stimulus_license"),
+                    "source_sha256": data.get("stimulus_source_sha256"),
+                    "normalized_fixture_sha256": data.get("stimulus_sha256"),
+                    "reference_text_sha256": data.get("stimulus_reference_sha256"),
+                }
+                for field, expected in comparisons.items():
+                    if manifest.get(field) != expected:
+                        errors.append(f"automated stimulus manifest mismatch: {field}")
+            except Exception as exc:
+                errors.append(f"automated stimulus manifest invalid: {type(exc).__name__}")
     elif stimulus_mode != "LIVE_OPERATOR":
         errors.append("unknown CP-07 stimulus_mode")
 
@@ -124,6 +147,9 @@ def main() -> int:
             errors.append("physical voice evidence log SHA-256 mismatch")
         log_text = log_path.read_text(encoding="utf-8", errors="replace")
         required_markers = (
+            "PHYSICAL_VOICE_STIMULUS_MODE=HUMAN_RECORDED_PHYSICAL_ACOUSTIC",
+            "PHYSICAL_VOICE_STIMULUS_SHA256=",
+            "PHYSICAL_VOICE_STIMULUS_SOURCE_SHA256=",
             "PHYSICAL_VOICE_MIC_CAPTURE=PASS",
             "PHYSICAL_VOICE_TRANSCRIPTION=PASS",
             "PHYSICAL_VOICE_MODEL_RESPONSE=PASS",
