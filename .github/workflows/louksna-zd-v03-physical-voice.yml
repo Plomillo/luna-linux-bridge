@@ -566,5 +566,6 @@ jobs:
             evidence/zona-directiva-v03/CP-07-physical-voice-e2e.json
             evidence/zona-directiva-v03/CP-07-physical-voice-e2e.log
             evidence/zona-directiva-v03/CP-07-memory-preflight.json
+            evidence/zona-directiva-v03/CP-07-stimulus-manifest.json
           if-no-files-found: error
           retention-days: 90
