@@ -124,11 +124,8 @@ jobs:
             export XDG_RUNTIME_DIR="$TEST_HOME/runtime"
             mkdir -p "$XDG_CONFIG_HOME" "$XDG_DATA_HOME" "$XDG_RUNTIME_DIR"
             chmod 700 "$XDG_RUNTIME_DIR"
-            set +e
-            KEYRING_ENV="$(printf "%s\n" "louksna-disposable-native-test-password" | gnome-keyring-daemon --unlock --components=secrets 2>/dev/null)"
-            KEYRING_RC=$?
-            set -e
-            if [ "$KEYRING_RC" -eq 0 ] && [ -n "$KEYRING_ENV" ]; then eval "$KEYRING_ENV"; fi
+            KEYRING_ENV="$(printf "%s\n" "louksna-disposable-native-test-password" | gnome-keyring-daemon --daemonize --login --components=secrets 2>/dev/null)"
+            if [ -n "$KEYRING_ENV" ]; then eval "$KEYRING_ENV"; fi
             export XDG_DATA_HOME="$TEST_HOME/app-data"
             export LOUKSNA_TEST_SECRET_SERVICE=1
             cd "$ROOT/src-tauri"
