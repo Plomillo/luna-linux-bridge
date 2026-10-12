@@ -36,7 +36,7 @@ checks = {
     "physical_workflow_is_reusable": "workflow_call:" in physical_workflow,
     "physical_job_uses_dedicated_audio_runner": "runs-on: [self-hosted, linux, x64, louksna-voice-hw]" in physical_workflow,
     "production_voice_command_is_exercised": "physical_voice_e2e_real_audio_path" in voice_template and "voice::voice_e2e()" in voice_template,
-    "cp08_build_progress_is_independent": "stage-08-reproducible-build:\n    name:" in workflow and "needs: stage-06-functions-attachments" in workflow[workflow.index("stage-08-reproducible-build:"):workflow.index("stage-09-", workflow.index("stage-08-reproducible-build:"))],
+    "cp08_waits_for_cp07_physical_and_security": "stage-08-reproducible-build:\n    name:" in workflow and "needs: [stage-06-functions-attachments, stage-07-physical-voice, stage-07-voice-security]" in workflow[workflow.index("stage-08-reproducible-build:"):workflow.index("stage-09-", workflow.index("stage-08-reproducible-build:"))],
     "terminal_evidence_requires_physical_voice": "stage-07-physical-voice.result == 'success'" in workflow and "louksna-zd-v03-cp07-physical-voice-e2e" in workflow,
     "automated_stimulus_is_explicitly_required": 'LOUKSNA_VOICE_STIMULUS_REQUIRED: "1"' in physical_workflow,
     "automated_stimulus_is_hash_pinned": "LOUKSNA_VOICE_STIMULUS_SHA256" in physical_workflow and "VOICE_STIMULUS_SHA256_MISMATCH" in voice_impl and "ratio < 0.80" in voice_impl,
