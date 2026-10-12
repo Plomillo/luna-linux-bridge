@@ -5,6 +5,7 @@ use reqwest::{Client, StatusCode};
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use sha2::{Digest, Sha256};
 use std::{io::Write, path::PathBuf, process::{Command, Stdio}};
 
 #[path = "voice.rs"]
@@ -35,6 +36,15 @@ struct PullRequest { number:i64, title:String, state:String, draft:bool, updated
 #[derive(Debug, Serialize)]
 struct ChatMessage { id:i64, utc:String, role:String, content:String, transport:String }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+struct AttachmentMeta { id:i64, utc:String, name:String, mime:String, size_bytes:i64, sha256:String }
+
+#[derive(Debug, Serialize)]
+struct AttachmentPayload { metadata:AttachmentMeta, bytes:Vec<u8> }
+
+#[derive(Debug, Serialize)]
+struct UiTelemetryRow { id:i64, utc:String, operation_id:String, event:String, component:String, status:String, metadata_json:String }
+
 fn data_dir() -> Result<PathBuf,String> {
     let mut base=dirs::data_local_dir().ok_or("DATA_LOCAL_DIR_UNAVAILABLE")?;
     base.push(APP_ID);
@@ -50,6 +60,9 @@ fn db() -> Result<Connection,String> {
       CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY,value TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS evidence(id INTEGER PRIMARY KEY AUTOINCREMENT,utc TEXT NOT NULL,operation TEXT NOT NULL,status TEXT NOT NULL,detail TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS chat_messages(id INTEGER PRIMARY KEY AUTOINCREMENT,utc TEXT NOT NULL,role TEXT NOT NULL,content TEXT NOT NULL,transport TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS ui_telemetry(id INTEGER PRIMARY KEY AUTOINCREMENT,utc TEXT NOT NULL,operation_id TEXT NOT NULL,event TEXT NOT NULL,component TEXT NOT NULL,status TEXT NOT NULL,metadata_json TEXT NOT NULL);
+      CREATE INDEX IF NOT EXISTS idx_ui_telemetry_operation ON ui_telemetry(operation_id);
+      CREATE TABLE IF NOT EXISTS attachments(id INTEGER PRIMARY KEY AUTOINCREMENT,utc TEXT NOT NULL,name TEXT NOT NULL,mime TEXT NOT NULL,size_bytes INTEGER NOT NULL,sha256 TEXT NOT NULL,content BLOB NOT NULL);
     "#).map_err(|e|e.to_string())?;
     Ok(c)
 }
@@ -236,6 +249,114 @@ async fn github_pull_requests(repo:String)->Result<Vec<PullRequest>,String>{
     Ok(out)
 }
 
+fn safe_telemetry_metadata(metadata:&Value)->Result<String,String>{
+    fn inspect(v:&Value)->Result<(),String>{
+        match v {
+            Value::Object(map) => for (k,value) in map {
+                let key=k.to_ascii_lowercase();
+                if ["token","password","secret","transcript","response","content","bytes","credential"].iter().any(|bad|key.contains(bad)) {
+                    return Err("TELEMETRY_SENSITIVE_METADATA_KEY_REJECTED".into());
+                }
+                inspect(value)?;
+            },
+            Value::Array(items) => for item in items { inspect(item)?; },
+            _=>{}
+        }
+        Ok(())
+    }
+    inspect(metadata)?;
+    let encoded=serde_json::to_string(metadata).map_err(|_|"TELEMETRY_METADATA_SERIALIZATION_FAILED".to_string())?;
+    if encoded.len()>4096 { return Err("TELEMETRY_METADATA_TOO_LARGE".into()); }
+    Ok(encoded)
+}
+
+#[tauri::command]
+fn record_ui_telemetry(operation_id:String,event:String,component:String,status:String,metadata:Value)->Result<(),String>{
+    let operation_id=operation_id.trim();
+    let event=event.trim();
+    let component=component.trim();
+    let status=status.trim();
+    if operation_id.is_empty() || operation_id.len()>128 || !operation_id.chars().all(|c|c.is_ascii_alphanumeric()||"-_.".contains(c)) {
+        return Err("TELEMETRY_OPERATION_ID_INVALID".into());
+    }
+    if event.is_empty() || event.len()>64 || !event.chars().all(|c|c.is_ascii_uppercase()||c.is_ascii_digit()||c=='_') {
+        return Err("TELEMETRY_EVENT_INVALID".into());
+    }
+    if component.is_empty() || component.len()>128 || component.chars().any(char::is_control) {
+        return Err("TELEMETRY_COMPONENT_INVALID".into());
+    }
+    if !["STARTED","SUCCESS","FAIL","BLOCKED","SUPPLEMENTAL"].contains(&status) {
+        return Err("TELEMETRY_STATUS_INVALID".into());
+    }
+    let metadata_json=safe_telemetry_metadata(&metadata)?;
+    let c=db()?;
+    c.execute("INSERT INTO ui_telemetry(utc,operation_id,event,component,status,metadata_json) VALUES(?1,?2,?3,?4,?5,?6)",
+        params![Utc::now().to_rfc3339(),operation_id,event,component,status,metadata_json])
+        .map_err(|e|format!("UI_TELEMETRY_WRITE_FAILED:{e}"))?;
+    log_event("UI_TELEMETRY",status,&format!("operation_id={};event={};component={}",operation_id,event,component))?;
+    Ok(())
+}
+
+#[tauri::command]
+fn ui_telemetry_recent(limit:Option<i64>)->Result<Vec<UiTelemetryRow>,String>{
+    let c=db()?; let n=limit.unwrap_or(100).clamp(1,500);
+    let mut stmt=c.prepare("SELECT id,utc,operation_id,event,component,status,metadata_json FROM ui_telemetry ORDER BY id DESC LIMIT ?1").map_err(|e|e.to_string())?;
+    let rows=stmt.query_map([n],|r|Ok(UiTelemetryRow{id:r.get(0)?,utc:r.get(1)?,operation_id:r.get(2)?,event:r.get(3)?,component:r.get(4)?,status:r.get(5)?,metadata_json:r.get(6)?})).map_err(|e|e.to_string())?;
+    rows.collect::<Result<Vec<_>,_>>().map_err(|e|e.to_string())
+}
+
+fn attachment_sha256(bytes:&[u8])->String{
+    let mut h=Sha256::new(); h.update(bytes); format!("{:x}",h.finalize())
+}
+
+fn attachment_meta_from_row(row:&rusqlite::Row<'_>)->rusqlite::Result<AttachmentMeta>{
+    Ok(AttachmentMeta{id:row.get(0)?,utc:row.get(1)?,name:row.get(2)?,mime:row.get(3)?,size_bytes:row.get(4)?,sha256:row.get(5)?})
+}
+
+#[tauri::command]
+fn import_attachment(name:String,mime:String,bytes:Vec<u8>)->Result<AttachmentMeta,String>{
+    let name=name.trim();
+    if name.is_empty() || name.len()>255 || name=="." || name==".." || name.contains('/') || name.contains('\\\\') || name.chars().any(char::is_control) {
+        return Err("ATTACHMENT_NAME_INVALID".into());
+    }
+    if mime.trim().is_empty() || mime.len()>127 || mime.chars().any(char::is_control) {
+        return Err("ATTACHMENT_MIME_INVALID".into());
+    }
+    if bytes.is_empty() { return Err("ATTACHMENT_EMPTY".into()); }
+    if bytes.len()>10*1024*1024 { return Err("ATTACHMENT_EXCEEDS_10_MIB_LIMIT".into()); }
+    let digest=attachment_sha256(&bytes);
+    let utc=Utc::now().to_rfc3339();
+    let c=db()?;
+    c.execute("INSERT INTO attachments(utc,name,mime,size_bytes,sha256,content) VALUES(?1,?2,?3,?4,?5,?6)",
+        params![utc,name,mime.trim(),bytes.len() as i64,digest,bytes])
+        .map_err(|e|format!("ATTACHMENT_STORE_FAILED:{e}"))?;
+    let id=c.last_insert_rowid();
+    log_event("ATTACHMENT_IMPORT","PASS",&format!("attachment_id={};size_bytes={};sha256={}",id,bytes.len(),digest))?;
+    Ok(AttachmentMeta{id,utc,name:name.to_string(),mime:mime.trim().to_string(),size_bytes:bytes.len() as i64,sha256:digest})
+}
+
+#[tauri::command]
+fn attachments_recent(limit:Option<i64>)->Result<Vec<AttachmentMeta>,String>{
+    let c=db()?; let n=limit.unwrap_or(100).clamp(1,500);
+    let mut stmt=c.prepare("SELECT id,utc,name,mime,size_bytes,sha256 FROM attachments ORDER BY id DESC LIMIT ?1").map_err(|e|e.to_string())?;
+    let rows=stmt.query_map([n],attachment_meta_from_row).map_err(|e|e.to_string())?;
+    rows.collect::<Result<Vec<_>,_>>().map_err(|e|e.to_string())
+}
+
+#[tauri::command]
+fn read_attachment(id:i64)->Result<AttachmentPayload,String>{
+    if id<=0 { return Err("ATTACHMENT_ID_INVALID".into()); }
+    let c=db()?;
+    let (metadata,bytes):(AttachmentMeta,Vec<u8>)=c.query_row(
+        "SELECT id,utc,name,mime,size_bytes,sha256,content FROM attachments WHERE id=?1",[id],
+        |r| Ok((attachment_meta_from_row(r)?,r.get(6)?))
+    ).map_err(|e|format!("ATTACHMENT_READ_FAILED:{e}"))?;
+    if bytes.len() as i64!=metadata.size_bytes || attachment_sha256(&bytes)!=metadata.sha256 {
+        return Err("ATTACHMENT_INTEGRITY_MISMATCH".into());
+    }
+    Ok(AttachmentPayload{metadata,bytes})
+}
+
 #[tauri::command]
 fn evidence_recent(limit:Option<i64>)->Result<Vec<EvidenceRow>,String>{
     let c=db()?; let n=limit.unwrap_or(100).clamp(1,500);
@@ -360,6 +481,7 @@ fn main(){
         get_settings,save_settings,store_github_token,remove_github_token,
         github_connection,github_repositories,github_pull_requests,
         evidence_recent,chat_history,chat_send,runtime_probe,record_voice_observation,
+        record_ui_telemetry,ui_telemetry_recent,import_attachment,attachments_recent,read_attachment,
         voice::voice_preflight,voice::voice_e2e
       ])
       .run(tauri::generate_context!())
@@ -414,6 +536,39 @@ mod louksna_runtime_tests {
         drop(evidence);
         drop(history);
         let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn ui_telemetry_is_persisted_with_operation_identity_and_rejects_sensitive_metadata() {
+        let root=std::env::temp_dir().join(format!("louksna-telemetry-test-{}-{}",std::process::id(),Utc::now().timestamp_nanos_opt().unwrap_or_default()));
+        std::fs::create_dir_all(&root).expect("create isolated telemetry directory");
+        std::env::set_var("XDG_DATA_HOME",&root);
+        record_ui_telemetry("op-test-001".into(),"NAVIGATE".into(),"sidebar".into(),"SUCCESS".into(),serde_json::json!({"section":"evidencia"}))
+            .expect("record native UI telemetry");
+        let rows=ui_telemetry_recent(Some(20)).expect("read native UI telemetry");
+        assert!(rows.iter().any(|r|r.operation_id=="op-test-001" && r.event=="NAVIGATE" && r.component=="sidebar" && r.status=="SUCCESS" && r.metadata_json.contains("evidencia")));
+        assert_eq!(record_ui_telemetry("op-test-002".into(),"CHAT_SEND".into(),"chat".into(),"SUCCESS".into(),serde_json::json!({"content":"must-not-be-recorded"})).unwrap_err(),"TELEMETRY_SENSITIVE_METADATA_KEY_REJECTED");
+        let _=std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn attachment_import_read_hash_and_size_are_verified() {
+        let root=std::env::temp_dir().join(format!("louksna-attachment-test-{}-{}",std::process::id(),Utc::now().timestamp_nanos_opt().unwrap_or_default()));
+        std::fs::create_dir_all(&root).expect("create isolated attachment directory");
+        std::env::set_var("XDG_DATA_HOME",&root);
+        let bytes=b"louksna-attachment-fixture-v1".to_vec();
+        let expected=attachment_sha256(&bytes);
+        let meta=import_attachment("fixture.txt".into(),"text/plain".into(),bytes.clone()).expect("import attachment through production backend");
+        assert_eq!(meta.sha256,expected);
+        assert_eq!(meta.size_bytes,bytes.len() as i64);
+        let listed=attachments_recent(Some(10)).expect("list imported attachments");
+        assert!(listed.iter().any(|x|x.id==meta.id && x.sha256==expected));
+        let read=read_attachment(meta.id).expect("read attachment and verify digest");
+        assert_eq!(read.bytes,bytes);
+        assert_eq!(attachment_sha256(&read.bytes),read.metadata.sha256);
+        assert_eq!(import_attachment("../unsafe.txt".into(),"text/plain".into(),b"x".to_vec()).unwrap_err(),"ATTACHMENT_NAME_INVALID");
+        assert_eq!(import_attachment("empty.txt".into(),"text/plain".into(),Vec::new()).unwrap_err(),"ATTACHMENT_EMPTY");
+        let _=std::fs::remove_dir_all(&root);
     }
 
     #[test]
