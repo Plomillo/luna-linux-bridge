@@ -515,6 +515,53 @@ jobs:
           npm install --no-save --no-audit --no-fund playwright@1.55.0
           npx playwright install chromium
           cd "$GITHUB_WORKSPACE"
+          mkdir -p evidence/zona-directiva-v03
+          APP_DATA="$RUNNER_TEMP/louksna-cp05-native-data"
+          export XDG_DATA_HOME="$APP_DATA"
+          export XDG_CONFIG_HOME="$RUNNER_TEMP/louksna-cp05-native-config"
+          export XDG_RUNTIME_DIR="$RUNNER_TEMP/louksna-cp05-runtime"
+          mkdir -p "$XDG_CONFIG_HOME" "$XDG_RUNTIME_DIR"
+          chmod 700 "$XDG_RUNTIME_DIR"
+          APP_LOG="$GITHUB_WORKSPACE/evidence/zona-directiva-v03/CP-05-native-tauri-runtime.log"
+          set +e
+          (cd "$CANDIDATE" && setsid timeout --signal=TERM --kill-after=5s 180s xvfb-run -a npx tauri dev) > "$APP_LOG" 2>&1 &
+          APP_PID=$!
+          set -e
+          NATIVE_TELEMETRY_FOUND=0
+          for attempt in $(seq 1 150); do
+            if python3 - "$APP_DATA/louksna-zona-directiva/louksna.db" 2>/dev/null <<'PY'
+          import pathlib,sqlite3,sys
+          p=pathlib.Path(sys.argv[1])
+          if not p.is_file(): raise SystemExit(1)
+          c=sqlite3.connect(f"file:{p}?mode=ro",uri=True)
+          try:
+              tables={r[0] for r in c.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+              if "ui_telemetry" not in tables: raise SystemExit(1)
+              rows=c.execute("SELECT count(*) FROM ui_telemetry WHERE event='COMMAND_INVOKE' AND component='get_settings' AND status='SUCCESS'").fetchone()[0]
+              if rows<1: raise SystemExit(1)
+          finally: c.close()
+          PY
+            then NATIVE_TELEMETRY_FOUND=1; break; fi
+            if ! kill -0 "$APP_PID" 2>/dev/null; then break; fi
+            sleep 1
+          done
+          kill -TERM -- "-$APP_PID" 2>/dev/null || true
+          wait "$APP_PID" 2>/dev/null || true
+          python3 - "$APP_DATA/louksna-zona-directiva/louksna.db" "$APP_LOG" "$CANDIDATE_SHA" "$GITHUB_RUN_ID" "$NATIVE_TELEMETRY_FOUND" <<'PY'
+          import datetime,hashlib,json,pathlib,sqlite3,sys
+          db,log=pathlib.Path(sys.argv[1]),pathlib.Path(sys.argv[2])
+          sha,run_id,found=sys.argv[3],sys.argv[4],sys.argv[5]=="1"
+          rows=0; db_hash=None
+          if db.is_file():
+              db_hash=hashlib.sha256(db.read_bytes()).hexdigest()
+              con=sqlite3.connect(f"file:{db}?mode=ro",uri=True)
+              try: rows=con.execute("SELECT count(*) FROM ui_telemetry WHERE event='COMMAND_INVOKE' AND component='get_settings' AND status='SUCCESS'").fetchone()[0]
+              finally: con.close()
+          report={"schema":"louksna.zd.v03.cp05-native-tauri-telemetry.v1","checkpoint_id":"CP-05","status":"PASS" if found and rows>0 else "HOLD","candidate_commit_sha":sha,"workflow_run_id":run_id,"timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"native_tauri_window_launched_under_xvfb":found,"native_ipc_telemetry_observed_in_application_sqlite":found and rows>0,"observed_matching_telemetry_rows":rows,"database_sha256":db_hash,"application_log_sha256":hashlib.sha256(log.read_bytes()).hexdigest() if log.is_file() else None,"scope":"Production Tauri application launched under Xvfb; frontend invoked get_settings through native IPC and operation telemetry was read from the application's SQLite database. No credential or message payload was recorded."}
+          pathlib.Path("evidence/zona-directiva-v03/CP-05-native-tauri-telemetry.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(report,indent=2))
+          if report["status"]!="PASS": raise SystemExit("CP-05 HOLD: live native Tauri telemetry was not observed")
+          PY
           REPORT="$GITHUB_WORKSPACE/evidence/zona-directiva-v03/CP-05-playwright-ui-e2e.json"
           LOUKSNA_UI_CHECKPOINT=CP-05 timeout 180s node scripts/missions/louksna_zd_v03_playwright_ui_e2e.mjs "$CANDIDATE" "$REPORT"
           grep -q '"status": "PASS"' "$REPORT"
