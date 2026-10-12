@@ -6,7 +6,7 @@ use std::{path::PathBuf, process::{Command, Stdio}, io::Write, time::{Duration, 
 use std::os::unix::fs::DirBuilderExt;
 use wait_timeout::ChildExt;
 
-const CAPTURE_SECONDS: &str = "8";
+const CAPTURE_SECONDS: &str = "12";
 const MAX_TEXT_CHARS: usize = 4_000;
 
 #[derive(Debug, Serialize)]
