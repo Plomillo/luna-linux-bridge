@@ -348,6 +348,18 @@ jobs:
           log=pathlib.Path("evidence/zona-directiva-v03/CP-07-physical-voice-e2e.log")
           if data.get("candidate_commit_sha") != candidate:
               raise SystemExit("Candidate SHA mismatch; evidence remains HOLD")
+          memory_path=pathlib.Path("evidence/zona-directiva-v03/CP-07-memory-preflight.json")
+          if not memory_path.is_file():
+              raise SystemExit("CP-07 memory preflight report missing; evidence remains HOLD")
+          memory=json.loads(memory_path.read_text(encoding="utf-8"))
+          if memory.get("candidate_commit_sha") != candidate:
+              raise SystemExit("CP-07 memory preflight candidate SHA mismatch")
+          if memory.get("source_run_id") != int(os.environ["GITHUB_RUN_ID"]):
+              raise SystemExit("CP-07 memory preflight source run ID mismatch")
+          if memory.get("status") != "PASS" or memory.get("model_execution_allowed") is not True:
+              raise SystemExit("CP-07 memory preflight did not authorize local inference")
+          if not isinstance(memory.get("available_memory_bytes"), int) or memory["available_memory_bytes"] < 1024*1024*1024:
+              raise SystemExit("CP-07 memory preflight did not prove the 1 GiB available-RAM budget")
           if not log.is_file():
               raise SystemExit("Physical voice log missing; evidence remains HOLD")
           if data.get("acoustic_output_energy_detected") is not True:
@@ -369,6 +381,9 @@ jobs:
           data["audible_playback_confirmed_by_operator"]=False
           data["operator_observation"]="NOT_COLLECTED_OPTIONAL"
           data["evidence_log_sha256"]=hashlib.sha256(log.read_bytes()).hexdigest()
+          data["memory_preflight_sha256"]=hashlib.sha256(memory_path.read_bytes()).hexdigest()
+          data["memory_preflight_status"]=memory["status"]
+          data["memory_preflight_available_bytes"]=memory["available_memory_bytes"]
           data["validated_utc"]=datetime.datetime.now(datetime.timezone.utc).isoformat()
           pathlib.Path(dst).write_text(json.dumps(data,indent=2,sort_keys=True)+"\n",encoding="utf-8")
           PY
@@ -380,5 +395,6 @@ jobs:
           path: |
             evidence/zona-directiva-v03/CP-07-physical-voice-e2e.json
             evidence/zona-directiva-v03/CP-07-physical-voice-e2e.log
+            evidence/zona-directiva-v03/CP-07-memory-preflight.json
           if-no-files-found: error
           retention-days: 90
