@@ -38,10 +38,33 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          docker run -d --rm --name kestra-super1200 -p 8080:8080 -e GITHUB_TOKEN kestra/kestra:v2.0.3-slim server local
+          KESTRA_ADMIN_USER="super1200-ephemeral@example.com"
+          KESTRA_ADMIN_PASSWORD="$(openssl rand -hex 32)"
+          echo "::add-mask::$KESTRA_ADMIN_PASSWORD"
+          CONFIG_PATH="$RUNNER_TEMP/super1200-kestra-config.yml"
+          cat > "$CONFIG_PATH" <<EOF
+          kestra:
+            server:
+              basic-auth:
+                username: "$KESTRA_ADMIN_USER"
+                password: "$KESTRA_ADMIN_PASSWORD"
+            plugins:
+              auto-install:
+                enabled: false
+          EOF
+          {
+            echo "KESTRA_ADMIN_USER=$KESTRA_ADMIN_USER"
+            echo "KESTRA_ADMIN_PASSWORD=$KESTRA_ADMIN_PASSWORD"
+            echo "KESTRA_CONFIG_PATH=$CONFIG_PATH"
+          } >> "$GITHUB_ENV"
+          docker run -d --rm --name kestra-super1200 -p 8080:8080 \
+            -e GITHUB_TOKEN \
+            -v "$CONFIG_PATH:/tmp/super1200-kestra-config.yml:ro" \
+            kestra/kestra:v2.0.3-slim server local --config /tmp/super1200-kestra-config.yml
           for n in $(seq 1 90); do
-            if curl -fsS http://localhost:8080/api/v1/main/flows >/dev/null 2>&1; then
-              echo "SUPER1200_KESTRA_RUNTIME=READY image=kestra/kestra:v2.0.3-slim placement=GITHUB_HOSTED_EPHEMERAL"
+            if curl -fsS -u "$KESTRA_ADMIN_USER:$KESTRA_ADMIN_PASSWORD" \
+                 http://localhost:8080/api/v1/main/flows >/dev/null 2>&1; then
+              echo "SUPER1200_KESTRA_RUNTIME=READY image=kestra/kestra:v2.0.3-slim auth=EPHEMERAL_BASIC placement=GITHUB_HOSTED_EPHEMERAL"
               exit 0
             fi
             if ! docker ps --format '{{.Names}}' | grep -qx kestra-super1200; then
@@ -59,6 +82,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           curl --fail-with-body --silent --show-error \
+            -u "$KESTRA_ADMIN_USER:$KESTRA_ADMIN_PASSWORD" \
             -X POST http://localhost:8080/api/v1/main/flows \
             -H 'Content-Type: application/x-yaml' \
             --data-binary @integrations/kestra/flows/10-super1200-continuity.yml
@@ -69,6 +93,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           response="$(curl --fail-with-body --silent --show-error \
+            -u "$KESTRA_ADMIN_USER:$KESTRA_ADMIN_PASSWORD" \
             -X POST http://localhost:8080/api/v1/main/executions/louksna.kestra/super1200_continuity)"
           echo "$response" | jq .
           execution_id="$(echo "$response" | jq -r '.id // empty')"
@@ -79,6 +104,7 @@ jobs:
           echo "SUPER1200_KESTRA_EXECUTION_ID=$execution_id"
           for n in $(seq 1 90); do
             current="$(curl --fail-with-body --silent --show-error \
+              -u "$KESTRA_ADMIN_USER:$KESTRA_ADMIN_PASSWORD" \
               "http://localhost:8080/api/v1/main/executions/louksna.kestra/super1200_continuity/$execution_id")"
             state="$(echo "$current" | jq -r '.state.current // .state // empty')"
             if [ "$state" = "SUCCESS" ] || [ "$state" = "WARNING" ]; then
