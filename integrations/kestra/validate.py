@@ -30,13 +30,12 @@ storage_init = COMPOSE[init_start:kestra_start] if init_start >= 0 and kestra_st
 kestra_service = COMPOSE[kestra_start:] if kestra_start >= 0 else ""
 require("network_mode: none" in storage_init,
         "The one-shot storage permission bootstrap must have no network.")
-require('kestra_uid="$(id -u kestra)"' in storage_init
-        and 'kestra_gid="$(id -g kestra)"' in storage_init
-        and 'test "$kestra_uid" -gt 0' in storage_init
-        and 'chown -R "$kestra_uid:$kestra_gid" /app/storage' in storage_init,
-        "Compose must preserve storage-init shell variables by escaping dollar signs.")
-# Positive assertions above require the escaped $ form. Avoid substring-based
-# negative assertions here: an unescaped $ is a substring of a correct $.
+require('kestra_uid="$$(id -u kestra)"' in storage_init
+        and 'kestra_gid="$$(id -g kestra)"' in storage_init
+        and 'test "$$kestra_uid" -gt 0' in storage_init
+        and 'chown -R "$$kestra_uid:$$kestra_gid" /app/storage' in storage_init,
+        "Compose must use escaped $$ syntax so the shell, not Compose, expands storage-init variables.")
+# Positive assertions above require the exact escaped $$ forms in the Compose source.
 
 require('user: "0:0"' in storage_init and "cap_drop:" in storage_init
         and "      - ALL" in storage_init and "      - CHOWN" in storage_init,

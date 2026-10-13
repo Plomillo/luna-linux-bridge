@@ -25,13 +25,13 @@ services:
     entrypoint: ["/bin/sh", "-ec"]
     command:
       - |
-        kestra_uid="$(id -u kestra)"
-        kestra_gid="$(id -g kestra)"
-        test "$kestra_uid" -gt 0
+        kestra_uid="$$(id -u kestra)"
+        kestra_gid="$$(id -g kestra)"
+        test "$$kestra_uid" -gt 0
         mkdir -p /app/storage/plugins
         if [ ! -e /app/storage/.kestra-volume-permissions-v1 ]; then
           touch /app/storage/.kestra-volume-permissions-v1
-          chown -R "$kestra_uid:$kestra_gid" /app/storage
+          chown -R "$$kestra_uid:$$kestra_gid" /app/storage
         fi
     network_mode: none
     read_only: true

@@ -51,9 +51,9 @@
   },
   "gates": {
     "specification": "RECORDED",
-    "evidence": "CI_ARTIFACTS_AVAILABLE_FOR_FAILED_RUNS; PASSING_RUNTIME_EVIDENCE_PENDING",
-    "static_validation": "PENDING_CI_AFTER_VALIDATOR_FIX",
-    "runtime_startup_and_database_health": "PENDING_CI_AFTER_VALIDATOR_FIX",
+    "evidence": "FAILED_RUN_ARTIFACTS_RETAINED; PASSING_RUNTIME_EVIDENCE_PENDING",
+    "static_validation": "PENDING_CI_AFTER_LITERAL_ESCAPE_FIX",
+    "runtime_startup_and_database_health": "PENDING_CI_AFTER_LITERAL_ESCAPE_FIX",
     "resolved_image_digests": "PENDING_SUCCESSFUL_RUNTIME_ARTIFACT",
     "manual_flow_execution": "NOT_PERFORMED",
     "G23": "NOT_PERFORMED",
@@ -129,6 +129,13 @@
       "status": "FAILURE_STATIC_VALIDATOR_FALSE_POSITIVE",
       "observed": "The new guard correctly required escaped $$ expressions, but a redundant negative check incorrectly matched the second dollar in a valid $$(...) form. Runtime test did not run.",
       "response": "Removed the invalid substring-based negative assertion; the positive checks for each required escaped shell variable remain."
+    },
+    {
+      "run_id": 38357270684,
+      "commit": "4ba9a70069320cdaeeb0d6c18775bda2a9add5d7",
+      "status": "FAILURE_STORAGE_INIT",
+      "observed": "Static validation passed but Compose still saw single-dollar shell variables, emitted kestra_uid/kestra_gid unset warnings, and storage-init exited with code 2. The attempted patch had been transformed by JavaScript replacement-string semantics before commit.",
+      "response": "Updated the commit-generation procedure to use callback replacements that preserve literal $$ characters, and changed the static validator to require the exact double-dollar forms."
     }
   ]
 }
