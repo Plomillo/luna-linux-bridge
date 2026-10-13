@@ -154,6 +154,37 @@ jobs:
           docker logs kestra-super1200 || true
           exit 1
 
+      - name: Validate checkpoint again before any material execution
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path(".")
+          state=json.loads((root/"continuity/STATE.json").read_text(encoding="utf-8"))
+          executors=json.loads((root/"continuity/EXECUTORS.json").read_text(encoding="utf-8")).get("executors",{})
+          expected="implementation/super1200/runtime/d04_material_worker_93_96.py"
+          conditions={
+              "checkpoint_predecessor":state.get("current_checkpoint")=="D04_87_92_MATERIALIZED",
+              "not_blocked":state.get("blocked") is False,
+              "active_status":state.get("status") in {"ACTIVE","READY_FOR_CONTINUATION"},
+              "material_worker_ready":state.get("material_worker_ready") is True,
+              "executor_mapping":executors.get("D04")==expected,
+              "executor_file_exists":(root/expected).is_file(),
+          }
+          print("SUPER1200_MATERIAL_PREEXECUTION_GATE "+json.dumps({
+              "conditions":conditions,
+              "checkpoint":state.get("current_checkpoint"),
+              "status":state.get("status"),
+              "blocked":state.get("blocked"),
+              "block_reason":state.get("block_reason"),
+              "executor":executors.get("D04")
+          },sort_keys=True))
+          if not all(conditions.values()):
+              raise SystemExit("SUPER1200_DENY_MATERIAL_EXECUTION_CHECKPOINT_OR_EXECUTOR_GATE")
+          PY
+
       - name: Validate CUSTOSZ V7 and execute authorized D04 tranche
         shell: bash
         run: |
