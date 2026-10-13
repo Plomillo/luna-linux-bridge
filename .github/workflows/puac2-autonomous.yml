@@ -275,9 +275,28 @@ jobs:
             "g24":{**payload,"signature_b64":signature}}
           Path("mtls-certification.json").write_text(json.dumps(manifest,sort_keys=True,indent=2)+"\\n")
           PY
+      - name: Run repository certification gate against the assembled chain
+        env:
+          PUAC2_G23_PUBLIC_KEY_PEM: ${{ vars.PUAC2_G23_PUBLIC_KEY_PEM }}
+          PUAC2_G24_PUBLIC_KEY_PEM: ${{ vars.PUAC2_G24_PUBLIC_KEY_PEM }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s mtls-certification.json
+          python scripts/puac2_mtls_gate.py --manifest mtls-certification.json | tee gate-decision.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          decision=json.loads(Path("gate-decision.json").read_text())
+          if decision.get("decision") != "CERTIFICATION_CHAIN_VERIFIED" or decision.get("exit_code") != 0:
+              raise SystemExit("PUAC2_FINAL_GATE_DENIED")
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: puac2-g24-certification
-          path: g24-certification.json
+          path: |
+            g24-certification.json
+            mtls-certification.json
+            gate-decision.json
           if-no-files-found: error
           retention-days: 90
