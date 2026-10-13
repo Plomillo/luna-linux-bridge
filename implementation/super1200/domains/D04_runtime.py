@@ -532,3 +532,206 @@ def certification_applies(*, certificate: dict[str, Any], subject_sha256: str,
     if not isinstance(scope, dict):
         return False
     return canonical_json(scope) == canonical_json(requested_scope)
+
+
+
+def minimal_recomputation_plan(graph: EvidenceInvalidationGraph, *,
+                               invalidated_evidence_ids: list[str] | tuple[str, ...],
+                               preservation_basis: dict[str, str]) -> dict[str, Any]:
+    """Recompute invalidated nodes and descendants; require explicit reasons for preserved nodes."""
+    if not isinstance(graph, EvidenceInvalidationGraph):
+        raise ValueError("evidence_invalidation_graph_required")
+    if not isinstance(invalidated_evidence_ids, (list, tuple)) or not invalidated_evidence_ids:
+        raise ValueError("invalidated_evidence_ids_required")
+    roots = list(invalidated_evidence_ids)
+    if len(set(roots)) != len(roots):
+        raise ValueError("duplicate_invalidated_evidence_id")
+    known = set(graph.evidence_ids)
+    if any(not isinstance(x, str) or x not in known for x in roots):
+        raise ValueError("unknown_invalidated_evidence_id")
+    recompute = set().union(*(set(graph.invalidation_closure(x)) for x in roots))
+    preserved = known - recompute
+    if not isinstance(preservation_basis, dict) or set(preservation_basis) != preserved:
+        raise ValueError("preservation_basis_scope_mismatch")
+    basis = {}
+    for item in sorted(preserved):
+        reason = preservation_basis[item]
+        if not isinstance(reason, str) or not reason.strip():
+            raise ValueError("preservation_basis_required:" + item)
+        basis[item] = reason.strip()
+    plan = {"schema":"SUPER1200_MINIMAL_RECOMPUTATION_PLAN/1",
+            "invalidated_roots":sorted(roots),"recompute_ids":sorted(recompute),
+            "preserved_ids":sorted(preserved),"preservation_basis":basis}
+    plan["plan_sha256"] = hashlib.sha256(canonical_json(plan)).hexdigest()
+    return plan
+
+
+def evaluate_attestation_policy(policy: Any, attestation: Any, *,
+                                expected_subject_sha256: str,
+                                now_utc: str) -> dict[str, Any]:
+    """Evaluate issuer, exact subject, predicate type, freshness and trusted verifier; deny on any gap."""
+    _sha256(expected_subject_sha256, "expected_subject_sha256")
+    if not isinstance(policy, dict) or policy.get("schema") != "SUPER1200_ATTESTATION_POLICY/1":
+        raise ValueError("attestation_policy_schema_invalid")
+    for key in ("policy_id","version","gate_id","predicate_type"):
+        if not isinstance(policy.get(key), str) or not policy[key].strip():
+            raise ValueError("attestation_policy_identity_invalid")
+    issuers, verifiers, max_age = policy.get("acceptable_issuers"), policy.get("acceptable_verifiers"), policy.get("max_age_seconds")
+    if not isinstance(issuers,list) or not issuers or not isinstance(verifiers,list) or not verifiers:
+        raise ValueError("attestation_policy_trust_lists_invalid")
+    if not isinstance(max_age,int) or isinstance(max_age,bool) or max_age <= 0:
+        raise ValueError("attestation_policy_max_age_invalid")
+    required_fields = policy.get("required_predicate_fields", [])
+    if not isinstance(required_fields,list) or any(not isinstance(x,str) or not x for x in required_fields):
+        raise ValueError("attestation_policy_predicate_fields_invalid")
+    from datetime import datetime, timezone
+    def stamp(value, field):
+        if not isinstance(value,str) or not value.strip():
+            raise ValueError(field+"_required")
+        try: result=datetime.fromisoformat(value.replace("Z","+00:00"))
+        except ValueError as exc: raise ValueError(field+"_invalid_iso8601") from exc
+        if result.tzinfo is None or result.utcoffset() is None:
+            raise ValueError(field+"_timezone_required")
+        return result.astimezone(timezone.utc)
+    now=stamp(now_utc,"now_utc")
+    reasons=[]
+    if not isinstance(attestation,dict):
+        return {"schema":"SUPER1200_ATTESTATION_POLICY_DECISION/1","decision":"DENY",
+                "reasons":["attestation_must_be_object"],"policy_id":policy["policy_id"]}
+    if attestation.get("issuer") not in issuers: reasons.append("issuer_not_accepted")
+    statement=attestation.get("statement")
+    if not isinstance(statement,dict): statement={}
+    if statement.get("predicateType") != policy["predicate_type"]: reasons.append("predicate_type_not_accepted")
+    predicate=statement.get("predicate")
+    if not isinstance(predicate,dict): predicate={}
+    for field in required_fields:
+        if field not in predicate: reasons.append("required_predicate_field_missing:"+field)
+    subjects=statement.get("subject")
+    observed=None
+    if not isinstance(subjects,list) or len(subjects)!=1 or not isinstance(subjects[0],dict):
+        reasons.append("subject_identity_invalid")
+    else:
+        digest=subjects[0].get("digest")
+        observed=digest.get("sha256") if isinstance(digest,dict) else None
+        if observed != expected_subject_sha256: reasons.append("subject_digest_mismatch")
+    try:
+        age=(now-stamp(attestation.get("issued_at_utc"),"issued_at_utc")).total_seconds()
+        if age < 0: reasons.append("attestation_issued_in_future")
+        elif age > max_age: reasons.append("attestation_stale")
+    except ValueError as exc: reasons.append(str(exc))
+    verification=attestation.get("verification")
+    if not isinstance(verification,dict) or verification.get("status")!="VERIFIED":
+        reasons.append("cryptographic_verification_missing")
+    elif verification.get("verifier_id") not in verifiers:
+        reasons.append("verifier_not_trusted")
+    return {"schema":"SUPER1200_ATTESTATION_POLICY_DECISION/1",
+            "decision":"ALLOW" if not reasons else "DENY","reasons":reasons,
+            "policy_id":policy["policy_id"],"policy_version":policy["version"],
+            "gate_id":policy["gate_id"],"expected_subject_sha256":expected_subject_sha256,
+            "observed_subject_sha256":observed,"predicate_type":statement.get("predicateType"),
+            "issuer":attestation.get("issuer"),
+            "cryptographic_verification_performed_by":verification.get("verifier_id")
+                if isinstance(verification,dict) and verification.get("status")=="VERIFIED" else None}
+
+
+class TransparencyLog:
+    """Append-only hash chain with ordered sequence, causal parents, corrections and anchor metadata."""
+    GENESIS_HASH = "0" * 64
+    def __init__(self):
+        self._entries = []
+    @property
+    def entries(self):
+        return tuple(json.loads(canonical_json(x)) for x in self._entries)
+    def append(self, *, event_id, event_type, actor, payload, timestamp_utc,
+               causal_parents=(), correction_of=None):
+        from datetime import datetime
+        if any(not isinstance(x,str) or not x.strip() for x in (event_id,event_type,actor)):
+            raise ValueError("transparency_event_identity_required")
+        if any(x["event_id"]==event_id for x in self._entries):
+            raise ValueError("transparency_event_id_immutable")
+        if not isinstance(causal_parents,(list,tuple)) or len(set(causal_parents))!=len(causal_parents):
+            raise ValueError("causal_parents_invalid")
+        known={x["event_id"] for x in self._entries}
+        if any(x not in known for x in causal_parents):
+            raise ValueError("causal_parent_must_precede_event")
+        try: stamp=datetime.fromisoformat(timestamp_utc.replace("Z","+00:00"))
+        except (AttributeError,ValueError) as exc: raise ValueError("transparency_timestamp_invalid") from exc
+        if stamp.tzinfo is None or stamp.utcoffset() is None:
+            raise ValueError("transparency_timestamp_timezone_required")
+        if correction_of is not None and (correction_of not in known or correction_of not in causal_parents):
+            raise ValueError("correction_target_must_be_causal_parent")
+        unsigned={"schema":"SUPER1200_TRANSPARENCY_ENTRY/1","sequence":len(self._entries)+1,
+                  "event_id":event_id,"event_type":event_type,"actor":actor.strip(),
+                  "timestamp_utc":stamp.astimezone(__import__("datetime").timezone.utc).isoformat().replace("+00:00","Z"),
+                  "causal_parents":list(causal_parents),"correction_of":correction_of,
+                  "payload_sha256":hashlib.sha256(canonical_json(payload)).hexdigest(),
+                  "previous_hash":self._entries[-1]["entry_hash"] if self._entries else self.GENESIS_HASH}
+        entry=dict(unsigned); entry["entry_hash"]=hashlib.sha256(canonical_json(unsigned)).hexdigest()
+        self._entries.append(entry)
+        return json.loads(canonical_json(entry))
+    @classmethod
+    def verify_entries(cls, entries):
+        if not isinstance(entries,(list,tuple)): return False
+        seen=set(); previous=cls.GENESIS_HASH
+        for i,entry in enumerate(entries,1):
+            if not isinstance(entry,dict) or entry.get("schema")!="SUPER1200_TRANSPARENCY_ENTRY/1": return False
+            if entry.get("sequence")!=i or entry.get("previous_hash")!=previous: return False
+            event_id=entry.get("event_id")
+            if not isinstance(event_id,str) or not event_id.strip() or event_id in seen: return False
+            parents=entry.get("causal_parents")
+            if not isinstance(parents,list) or any(x not in seen for x in parents): return False
+            correction=entry.get("correction_of")
+            if correction is not None and (correction not in seen or correction not in parents): return False
+            try:
+                _sha256(entry.get("payload_sha256"),"payload_sha256")
+                _sha256(entry.get("entry_hash"),"entry_hash")
+            except ValueError: return False
+            unsigned=dict(entry); recorded=unsigned.pop("entry_hash")
+            if hashlib.sha256(canonical_json(unsigned)).hexdigest()!=recorded: return False
+            seen.add(event_id); previous=recorded
+        return True
+    def verify(self): return self.verify_entries(self._entries)
+    def anchor(self):
+        if not self.verify(): raise ValueError("transparency_log_integrity_failed")
+        entries=self._entries
+        anchor={"schema":"SUPER1200_TRANSPARENCY_ANCHOR/1","entry_count":len(entries),
+                "first_sequence":entries[0]["sequence"] if entries else None,
+                "last_sequence":entries[-1]["sequence"] if entries else None,
+                "head_hash":entries[-1]["entry_hash"] if entries else self.GENESIS_HASH}
+        anchor["anchor_sha256"]=hashlib.sha256(canonical_json(anchor)).hexdigest()
+        return anchor
+
+
+def reconcile_dual_ledgers(operational_records: Any, transparency_entries: Any) -> dict[str, Any]:
+    """Cross-reference distinct operational and cryptographic ledgers without conflating them."""
+    if not isinstance(operational_records,list) or not isinstance(transparency_entries,list):
+        raise ValueError("dual_ledger_inputs_must_be_lists")
+    if not TransparencyLog.verify_entries(transparency_entries):
+        raise ValueError("transparency_ledger_integrity_failed")
+    operational={}
+    for item in operational_records:
+        if not isinstance(item,dict) or item.get("schema")!="SUPER1200_OPERATIONAL_EVIDENCE/1":
+            raise ValueError("operational_record_schema_invalid")
+        eid,event_id,digest=item.get("evidence_id"),item.get("transparency_event_id"),item.get("payload_sha256")
+        if not isinstance(eid,str) or not eid.strip(): raise ValueError("operational_evidence_id_required")
+        if eid in operational: raise ValueError("operational_evidence_id_duplicate")
+        if not isinstance(event_id,str) or not event_id.strip(): raise ValueError("transparency_event_reference_required")
+        _sha256(digest,"operational_payload_sha256")
+        operational[eid]=item
+    transparency={x["event_id"]:x for x in transparency_entries}
+    if len(transparency)!=len(transparency_entries): raise ValueError("transparency_event_id_duplicate")
+    used=set(); refs=[]
+    for eid in sorted(operational):
+        item=operational[eid]; event_id=item["transparency_event_id"]
+        if event_id not in transparency: raise ValueError("transparency_event_reference_missing")
+        if event_id in used: raise ValueError("transparency_event_reference_reused")
+        used.add(event_id)
+        if item["payload_sha256"]!=transparency[event_id]["payload_sha256"]:
+            raise ValueError("dual_ledger_payload_mismatch")
+        refs.append({"evidence_id":eid,"transparency_event_id":event_id,"payload_sha256":item["payload_sha256"]})
+    ops=[operational[k] for k in sorted(operational)]
+    return {"schema":"SUPER1200_DUAL_LEDGER_RECONCILIATION/1","status":"RECONCILED",
+            "operational_ledger_sha256":hashlib.sha256(canonical_json(ops)).hexdigest(),
+            "transparency_ledger_sha256":hashlib.sha256(canonical_json(transparency_entries)).hexdigest(),
+            "operational_record_count":len(ops),"transparency_entry_count":len(transparency_entries),
+            "cross_references":refs,"ledgers_conflated":False}
