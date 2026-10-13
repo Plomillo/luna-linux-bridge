@@ -4,11 +4,8 @@ import sys
 import unittest
 
 ROOT = Path(__file__).resolve().parents[3]
-RUNTIME_PATH = ROOT / "implementation/super1200/domains/D04_runtime.py"
-spec = importlib.util.spec_from_file_location("d04_runtime_policy_tests", RUNTIME_PATH)
-d04 = importlib.util.module_from_spec(spec)
-sys.modules[spec.name] = d04
-spec.loader.exec_module(d04)
+sys.path.insert(0, str(ROOT / "implementation/super1200"))
+import domains.D04_runtime as d04
 
 POLICY_PATH = ROOT / "implementation/super1200/domains/D04_policy_governance.py"
 policy_spec = importlib.util.spec_from_file_location("d04_policy_governance", POLICY_PATH)
@@ -75,8 +72,10 @@ class D04PolicyGovernanceTests(unittest.TestCase):
             registry.register(policy("1", rules=[{"id":"rewritten","effect":"ALLOW"}]),
                               effective_from_utc="2026-01-01T00:00:00Z",
                               effective_until_utc="2026-06-01T00:00:00Z")
+        open_registry = gov.PolicyVersionRegistry()
+        open_registry.register(policy("1"), effective_from_utc="2026-01-01T00:00:00Z")
         with self.assertRaisesRegex(ValueError, "policy_superseded_interval_must_be_closed"):
-            gov.PolicyVersionRegistry().register(policy("3"), effective_from_utc="2026-07-01T00:00:00Z",
+            open_registry.register(policy("2"), effective_from_utc="2026-07-01T00:00:00Z",
                 supersedes={"policy_id":"access-control","version":"1"})
 
     def test_policy_semantic_diff_ignores_rule_order_and_reports_changed_decision_rules(self):
