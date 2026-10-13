@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import base64
 import json
+import hashlib
 import os
 import sys
 from pathlib import Path
@@ -81,6 +82,9 @@ def validate(m: dict, g23_pem: str, g24_pem: str) -> tuple[int, list[str]]:
     g23_payload = {k: g23.get(k) for k in ("schema", "status", "validator_id", "candidate_commit", "evidence_bundle_sha256", "decision_utc")}
     if not sha256_hex(g23_payload.get("evidence_bundle_sha256")):
         errors.append("G23_EVIDENCE_BUNDLE_HASH_INVALID")
+    expected_g23_attestation_hash = hashlib.sha256(canonical_bytes(g23_payload)).hexdigest()
+    if g23.get("attestation_sha256") != expected_g23_attestation_hash:
+        errors.append("G23_ATTESTATION_HASH_MISMATCH")
     if not g23_pem or not isinstance(g23.get("signature_b64"), str) or not verify_ed25519(g23_pem, g23_payload, g23["signature_b64"]):
         errors.append("G23_SIGNATURE_INVALID")
 
