@@ -66,7 +66,7 @@ jobs:
           if state.get("certified") is not False or state.get("global_certification_status")!="NOT_CERTIFIED":
               raise SystemExit("G23_DENY_CERTIFICATION_STATE_DRIFT")
           run=state.get("last_execution",{})
-          material_run=str(run.get("workflow_run_id",""))
+          material_run=str(state.get("evidence_refresh",{}).get("workflow_run_id") or run.get("workflow_run_id",""))
           if run.get("status")!="COMPLETED_SUCCESS_MATERIAL_TRANCHE":
               raise SystemExit("G23_DENY_MATERIAL_RUN_NOT_SUCCESSFUL")
           module_hash,test_hash=sha(module_path),sha(test_path)
