@@ -30,6 +30,14 @@ storage_init = COMPOSE[init_start:kestra_start] if init_start >= 0 and kestra_st
 kestra_service = COMPOSE[kestra_start:] if kestra_start >= 0 else ""
 require("network_mode: none" in storage_init,
         "The one-shot storage permission bootstrap must have no network.")
+require('kestra_uid="$(id -u kestra)"' in storage_init
+        and 'kestra_gid="$(id -g kestra)"' in storage_init
+        and 'test "$kestra_uid" -gt 0' in storage_init
+        and 'chown -R "$kestra_uid:$kestra_gid" /app/storage' in storage_init,
+        "Compose must preserve storage-init shell variables by escaping dollar signs.")
+require('kestra_uid="$(id -u kestra)"' not in storage_init
+        and 'kestra_gid="$(id -g kestra)"' not in storage_init,
+        "Unescaped shell variable expressions are prohibited in the Compose command.")
 require('user: "0:0"' in storage_init and "cap_drop:" in storage_init
         and "      - ALL" in storage_init and "      - CHOWN" in storage_init,
         "The one-shot permission bootstrap must use only the scoped CHOWN capability.")
