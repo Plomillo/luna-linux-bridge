@@ -55,12 +55,12 @@ jobs:
           {
             echo "KESTRA_ADMIN_USER=$KESTRA_ADMIN_USER"
             echo "KESTRA_ADMIN_PASSWORD=$KESTRA_ADMIN_PASSWORD"
-            echo "KESTRA_CONFIG_PATH=$CONFIG_PATH"
           } >> "$GITHUB_ENV"
+          export KESTRA_CONFIGURATION="$(cat "$CONFIG_PATH")"
           docker run -d --rm --name kestra-super1200 -p 8080:8080 \
-            -e GITHUB_TOKEN \
-            -v "$CONFIG_PATH:/tmp/super1200-kestra-config.yml:ro" \
-            kestra/kestra:v2.0.3-slim server local --config /tmp/super1200-kestra-config.yml
+            -e GITHUB_TOKEN -e KESTRA_CONFIGURATION \
+            kestra/kestra:v2.0.3-slim server local
+          unset KESTRA_CONFIGURATION
           for n in $(seq 1 60); do
             http_code="$(curl --connect-timeout 2 --max-time 3 -sS -o /dev/null -w '%{http_code}' \
               -u "$KESTRA_ADMIN_USER:$KESTRA_ADMIN_PASSWORD" \
