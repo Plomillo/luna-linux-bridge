@@ -100,6 +100,12 @@ for flow_path in sorted(flows.rglob("*.yml")) + sorted(flows.rglob("*.yaml")):
                 "SUPER1200 continuity must be scheduled by Kestra.")
         require('cron: "*/5 * * * *"' in body,
                 "SUPER1200 continuity poll cadence must remain five minutes.")
+        require("recoverMissedSchedules: NONE" in body,
+                "SUPER1200 must not burst-replay stale schedule ticks after a Kestra outage.")
+        require("allowConcurrent: false" in body,
+                "SUPER1200 supervisor executions must not overlap.")
+        require("lateMaximumDelay: PT2M" in body,
+                "SUPER1200 must skip schedule ticks that are too stale to be useful.")
         require("fromJson(outputs.checkpoint.body).blocked == false" in body,
                 "SUPER1200 dispatch must fail closed on the reconciled checkpoint.")
         require("fromJson(outputs.checkpoint.body).status == 'ACTIVE'" in body
