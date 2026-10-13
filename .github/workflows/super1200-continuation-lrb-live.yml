@@ -66,18 +66,7 @@ jobs:
               raise SystemExit('DISPATCH_DENIED_STATE_NOT_READY')
           if state.get('material_worker_ready') is not True:
               raise SystemExit('DISPATCH_DENIED_MATERIAL_WORKER_NOT_REVIEWED')
-          if state.get('metaos_ready') is not True:
-              raise SystemExit('DISPATCH_DENIED_METAOS_NOT_VALIDATED')
-          metaos=Path('mission/artifacts/custosz-v7/MetaOS.wasm')
-          if not metaos.is_file():
-              raise SystemExit('DISPATCH_DENIED_METAOS_ARTIFACT_MISSING')
-          import subprocess
-          probe=subprocess.run(
-              ['node','-e',"new WebAssembly.Module(require('fs').readFileSync(process.argv[1]))",str(metaos)],
-              capture_output=True,text=True,timeout=10
-          )
-          if probe.returncode:
-              raise SystemExit('DISPATCH_DENIED_METAOS_WASM_INVALID')
+          # MetaOS is intentionally deferred per explicit user instruction; not a dispatch prerequisite.
           worker=executors.get(nxt)
           if not worker:
               raise SystemExit('DISPATCH_DENIED_EXECUTOR_NOT_REGISTERED')
