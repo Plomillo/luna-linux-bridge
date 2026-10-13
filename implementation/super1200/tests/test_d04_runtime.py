@@ -185,5 +185,51 @@ class D04RuntimeTests(unittest.TestCase):
         self.assertTrue(d04.certification_scope_id("a" * 64, scope).startswith("urn:louksna:certification-scope:"))
 
 
+
+    def test_certification_non_transitivity_rejects_derived_subject_and_scope(self):
+        certificate = {"subject_sha256": "a" * 64, "scope": {"capabilities": [87, 88]}}
+        self.assertTrue(d04.certification_non_transitive(certificate=certificate,
+            subject_sha256="a" * 64, requested_scope={"capabilities": [87, 88]}))
+        self.assertFalse(d04.certification_non_transitive(certificate=certificate,
+            subject_sha256="b" * 64, requested_scope={"capabilities": [87, 88]}))
+        self.assertFalse(d04.certification_non_transitive(certificate=certificate,
+            subject_sha256="a" * 64, requested_scope={"capabilities": [87, 88, 89]}))
+
+    def test_evidence_expiration_uses_half_open_utc_interval_and_fails_closed(self):
+        args = {"validated_at_utc": "2026-10-13T10:00:00Z", "expires_at_utc": "2026-10-13T11:00:00Z"}
+        self.assertTrue(d04.evidence_is_current(**args, now_utc="2026-10-13T10:30:00Z"))
+        self.assertFalse(d04.evidence_is_current(**args, now_utc="2026-10-13T09:59:59Z"))
+        self.assertFalse(d04.evidence_is_current(**args, now_utc="2026-10-13T11:00:00Z"))
+        with self.assertRaisesRegex(ValueError, "timezone_required"):
+            d04.evidence_is_current(validated_at_utc="2026-10-13T10:00:00",
+                expires_at_utc="2026-10-13T11:00:00Z", now_utc="2026-10-13T10:30:00Z")
+        with self.assertRaisesRegex(ValueError, "expiry_must_follow_validation"):
+            d04.evidence_is_current(validated_at_utc="2026-10-13T10:00:00Z",
+                expires_at_utc="2026-10-13T10:00:00Z", now_utc="2026-10-13T10:30:00Z")
+
+    def test_evidence_invalidation_graph_propagates_and_rejects_cycles(self):
+        graph = d04.EvidenceInvalidationGraph()
+        for evidence_id in ("source", "derived", "report"):
+            graph.add_evidence(evidence_id)
+        graph.add_dependency("source", "derived")
+        graph.add_dependency("derived", "report")
+        self.assertEqual(graph.invalidation_closure("source"), ("derived", "report", "source"))
+        self.assertEqual(graph.invalidation_closure("derived"), ("derived", "report"))
+        with self.assertRaisesRegex(ValueError, "evidence_dependency_cycle"):
+            graph.add_dependency("report", "source")
+        with self.assertRaisesRegex(ValueError, "unknown_evidence_dependency"):
+            graph.add_dependency("source", "missing")
+
+    def test_evidence_reuse_requires_exact_validated_non_invalidated_key(self):
+        key = d04.EvidenceKey(96, "input", "source", "tool-v1", "policy-v1")
+        record = d04.EvidenceRecord(key, "output", "evidence", validated=True)
+        index = d04.EvidenceReuseIndex()
+        index.put(record)
+        self.assertEqual(index.get_reusable(key), record)
+        self.assertIsNone(index.get_reusable(d04.EvidenceKey(96, "different-input", "source", "tool-v1", "policy-v1")))
+        index.invalidate(key)
+        self.assertIsNone(index.get_reusable(key))
+
+
 if __name__ == "__main__":
     unittest.main()
