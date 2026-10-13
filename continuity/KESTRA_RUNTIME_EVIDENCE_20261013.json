@@ -62,7 +62,7 @@
     "conclusion": "success",
     "scope": "Kestra Compose/governance validation and ephemeral no-side-effect smoke flow only"
   },
-  "outcome": "KESRA_SUPERVISOR_OPERATIONAL_FAIL_CLOSED_WORKER_CONTINUATION_BLOCKED",
+  "outcome": "KESTRA_SUPERVISOR_OPERATIONAL_FAIL_CLOSED_WORKER_CONTINUATION_BLOCKED",
   "limitations": [
     "The local Kestra schedule is running and successfully polls the checkpoint every five minutes.",
     "It does not dispatch CUSTOSZ while the checkpoint is blocked or while a reviewed material executor is absent.",
