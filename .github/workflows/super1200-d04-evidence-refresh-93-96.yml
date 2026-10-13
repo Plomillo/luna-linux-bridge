@@ -128,8 +128,24 @@ jobs:
               "completed_at_utc":now,"module_sha256":module_hash,"test_sha256":test_hash,
               "test_results":"FULL_SUITE_PASS;4_OF_4_SPECIFIC_TESTS_PASS","certification_granted":False}
           state["independent_validation"]={**state.get("independent_validation",{}),
+              "scope":scope_name,"scope_key":scope_key,
               "status":"PENDING_REVALIDATION_AFTER_EVIDENCE_REFRESH",
               "g23":"PENDING_INDEPENDENT_REVALIDATION","g24":"PENDING_G23","certification_granted":False}
+          current_cert=state.get("scoped_certification",{})
+          if isinstance(current_cert,dict) and current_cert.get("scope")==scope_key:
+              current_cert["status"]="INVALIDATED_BY_APPEND_ONLY_SOURCE_HASH_CHANGE"
+              current_cert["historical_certificate_record"]="continuity/certification/"+("D04_93_96.json" if checkpoint=="D04_93_96_MATERIALIZED" else "D04_97_100.json")
+              current_cert["global_certification_granted"]=False
+              state["scoped_certification"]=current_cert
+          scoped_certs=state.get("scoped_certifications",{})
+          if isinstance(scoped_certs,dict) and scope_key in scoped_certs:
+              scoped_certs[scope_key]["status"]="INVALIDATED_BY_APPEND_ONLY_SOURCE_HASH_CHANGE"
+              scoped_certs[scope_key]["global_certification_granted"]=False
+              state["scoped_certifications"]=scoped_certs
+          if isinstance(state.get("last_execution"),dict):
+              state["last_execution"]["g23"]="PENDING_INDEPENDENT_REVALIDATION"
+              state["last_execution"]["g24"]="PENDING_G23"
+              state["last_execution"]["global_certification_status"]="NOT_CERTIFIED"
           if isinstance(state.get("last_material_execution"),dict):
               state["last_material_execution"]["g23"]="PENDING_INDEPENDENT_REVALIDATION"
               state["last_material_execution"]["g24"]="PENDING_G23"
