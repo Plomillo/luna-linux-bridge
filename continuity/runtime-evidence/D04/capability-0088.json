@@ -2,7 +2,7 @@
   "canonical_name": "SIGSTORE_PROVIDER",
   "capability_id": 88,
   "certification_granted": false,
-  "evidence_sha256": "b6f569a2bcc79f6cb474fdb4a0ca8274e5ba57ea092e521e09339a9b89605393",
+  "evidence_sha256": "c0ed2cbb12a199b63c0ca3877fe0a448b513187daa41e3fa5159bcb06cdb8ecc",
   "executor": "implementation/super1200/runtime/d04_material_worker.py",
   "g23": "PENDING_INDEPENDENT_VALIDATION",
   "g24": "PENDING_G23",
@@ -16,5 +16,5 @@
   "test_artifact": "implementation/super1200/tests/test_d04_runtime.py",
   "test_case": "test_sigstore_bundle_requires_trusted_crypto_verifier_and_exact_subject",
   "test_sha256": "eaaf5f4f7f8eb1e62a5720bee0c46a0a69e1a3b889dae079bffd3c6ec82cc807",
-  "validated_at_utc": "2026-10-13T21:17:18.745385+00:00"
+  "validated_at_utc": "2026-10-13T21:21:17.077410+00:00"
 }
