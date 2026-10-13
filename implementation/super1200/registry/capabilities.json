@@ -1495,12 +1495,14 @@
       "canonical_name": "POLICY_AS_CODE",
       "capability_id": 101,
       "hardening": "versioned policies, deterministic decisions, tests and audit receipts",
-      "implementation_state": "DECLARED",
-      "materialization": "SCHEMA+CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "SCHEMA+CODE+PER_CAPABILITY_TEST+FULL_SUITE+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "POLICY_FABRIC",
-      "wire": "102..108,868"
+      "wire": "102..108,868",
+      "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_runtime.py"
     },
     {
       "acquire": "OPA official",
@@ -1508,12 +1510,14 @@
       "canonical_name": "OPA_REGO_PROVIDER",
       "capability_id": 102,
       "hardening": "version pin, policy bundle hash, sandboxed evaluation; provider AUTHORITY=NONE",
-      "implementation_state": "DECLARED",
-      "materialization": "EXT_BIN+ADAPTER",
+      "implementation_state": "EVIDENCED",
+      "materialization": "SCHEMA+CODE+PER_CAPABILITY_TEST+FULL_SUITE+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "EXT_POLICY_ENGINE",
-      "wire": "101,105,106"
+      "wire": "101,105,106",
+      "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_runtime.py"
     },
     {
       "acquire": "CUE official",
@@ -1521,12 +1525,14 @@
       "canonical_name": "CUE_SCHEMA_PROVIDER",
       "capability_id": 103,
       "hardening": "schema/config constraints, versioned validation and deterministic export",
-      "implementation_state": "DECLARED",
-      "materialization": "EXT_BIN/EXT_LIB+ADAPTER",
+      "implementation_state": "EVIDENCED",
+      "materialization": "SCHEMA+CODE+PER_CAPABILITY_TEST+FULL_SUITE+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "EXT_SCHEMA_TOOL",
-      "wire": "101,104,105"
+      "wire": "101,104,105",
+      "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_runtime.py"
     },
     {
       "acquire": "validated JSON Schema implementation",
@@ -1534,12 +1540,14 @@
       "canonical_name": "JSON_SCHEMA_PROVIDER",
       "capability_id": 104,
       "hardening": "dialect pinned, strict unknown-field policy and regression corpus",
-      "implementation_state": "DECLARED",
-      "materialization": "EXT_LIB/SCHEMA",
+      "implementation_state": "EVIDENCED",
+      "materialization": "SCHEMA+CODE+PER_CAPABILITY_TEST+FULL_SUITE+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "STANDARD_SCHEMA_PROVIDER",
-      "wire": "101,103,105"
+      "wire": "101,103,105",
+      "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_runtime.py"
     },
     {
       "acquire": "NONE",
