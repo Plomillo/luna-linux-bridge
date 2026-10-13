@@ -6,6 +6,7 @@ certified 93-104 source hashes remain stable. It performs no certification.
 from __future__ import annotations
 
 import hashlib
+import json
 from datetime import datetime, timezone
 from typing import Any
 
@@ -122,7 +123,7 @@ class PolicyVersionRegistry:
 
     def entries(self) -> tuple[dict[str, Any], ...]:
         return tuple(
-            {**self._entries[key]}
+            json.loads(canonical_json(self._entries[key]))
             for key in sorted(self._entries)
         )
 
@@ -143,13 +144,13 @@ class PolicyVersionRegistry:
             raise ValueError("policy_effective_interval_invalid")
         policy_id, version = policy["policy_id"], policy["version"]
         key = (policy_id, version)
-        frozen_policy = {
+        frozen_policy = json.loads(canonical_json({
             "schema": policy["schema"],
             "policy_id": policy_id,
             "version": version,
             "rules": policy["rules"],
             **{k: v for k, v in policy.items() if k not in {"schema", "policy_id", "version", "rules"}},
-        }
+        }))
         if key in self._entries:
             candidate = {
                 "policy": frozen_policy,
@@ -157,9 +158,13 @@ class PolicyVersionRegistry:
                 "effective_until_utc": end.isoformat().replace("+00:00", "Z") if end else None,
                 "supersedes": supersedes,
             }
-            if self._entries[key] != candidate:
+            stored = self._entries[key]
+            if (stored["policy"] != candidate["policy"]
+                or stored["effective_from_utc"] != candidate["effective_from_utc"]
+                or stored["effective_until_utc"] != candidate["effective_until_utc"]
+                or stored["supersedes"] != candidate["supersedes"]):
                 raise ValueError("policy_version_identity_immutable")
-            return {**self._entries[key]}
+            return json.loads(canonical_json(stored))
 
         supersedes_key = None
         if supersedes is not None:
@@ -198,11 +203,12 @@ class PolicyVersionRegistry:
         record["policy_sha256"] = _digest(frozen_policy)
         record["record_sha256"] = _digest(record)
         self._entries[key] = record
-        return {**record}
+        self._entries[key] = json.loads(canonical_json(record))
+        return json.loads(canonical_json(self._entries[key]))
 
     def get(self, policy_id: str, version: str) -> dict[str, Any] | None:
         record = self._entries.get((policy_id, version))
-        return {**record} if record is not None else None
+        return json.loads(canonical_json(record)) if record is not None else None
 
     def select(self, policy_id: str, *, now_utc: str) -> dict[str, Any] | None:
         now = _utc(now_utc, "now_utc")
