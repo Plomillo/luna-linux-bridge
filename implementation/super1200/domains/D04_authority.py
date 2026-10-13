@@ -170,7 +170,7 @@ def verify_authorization_proof(
             r"[0-9a-f]{64}", str(provenance.get("evidence_sha256", ""))):
         reasons.append("authority_provenance_invalid")
     chain = proof.get("delegation_chain")
-    if not isinstance(chain, list) or (chain and chain[-1].get("to") != proof.get("subject")):
+    if not isinstance(chain, list) or any(not isinstance(item, dict) for item in chain) or (chain and chain[-1].get("to") != proof.get("subject")):
         reasons.append("authority_delegation_chain_invalid")
     return {"schema": "SUPER1200_AUTHORIZATION_PROOF_VERIFICATION/1",
         "decision": "ALLOW" if not reasons else "DENY", "reasons": sorted(set(reasons)),
@@ -287,6 +287,10 @@ def evaluate_time_bound_authority(
         return {"decision": "DENY", "reasons": ["time_authority_schema_invalid"]}
     if not isinstance(trusted_time, dict) or trusted_time.get("schema") != "SUPER1200_TRUSTED_TIME/1":
         return {"decision": "DENY", "reasons": ["trusted_time_schema_invalid"]}
+    unsigned_authority = dict(authority)
+    recorded_authority_hash = unsigned_authority.pop("authority_sha256", None)
+    if recorded_authority_hash != _sha(unsigned_authority):
+        reasons.append("time_authority_hash_invalid")
     try:
         now = _utc(trusted_time.get("timestamp_utc"), "trusted_timestamp_utc")
         observed = _utc(trusted_time.get("observed_at_utc"), "trusted_observed_at_utc")
@@ -309,7 +313,7 @@ def evaluate_time_bound_authority(
         "decision": "ALLOW" if not reasons else "DENY", "reasons": sorted(set(reasons)),
         "authority_id": authority.get("authority_id"), "trusted_time_source": trusted_time.get("source"),
         "trusted_timestamp_utc": _stamp(now) if now else None,
-        "authority_sha256": _sha(authority)}
+        "authority_sha256": recorded_authority_hash}
 
 
 def make_time_bound_authority(*, authority_id: str, subject: str, actions: list[str],
