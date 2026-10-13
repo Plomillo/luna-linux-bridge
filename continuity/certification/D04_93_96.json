@@ -1,0 +1,35 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_REVALIDATION",
+  "certification_granted": true,
+  "certified_at_utc": "2026-10-13T23:29:10.972553+00:00",
+  "evidence": [
+    {
+      "capability_id": 93,
+      "evidence_sha256": "cca81b33fa8483a00a6623071ee1528405e39b62fa211f464339482abb6be5bc"
+    },
+    {
+      "capability_id": 94,
+      "evidence_sha256": "af1c29f98e51497e75a0eaf367100f540011282563986e8fe3f88f6d8035e535"
+    },
+    {
+      "capability_id": 95,
+      "evidence_sha256": "ff89b94831f9ed06d1caf316b186c3a1813b455007bc1dfd5d87f7a20e14b4d8"
+    },
+    {
+      "capability_id": 96,
+      "evidence_sha256": "9c7c154d2d7c31f590d06527a53dfa9581739125c8e9d981a7002f61fc662659"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "38484371232",
+  "g24": "PASS",
+  "g24_workflow_run_id": "38484496827",
+  "global_super1200_certified": false,
+  "module_sha256": "abc9c8d922e3ff56f4cdf636da99e146d95e7a15ac5608004f81398d8b4a58f0",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D04:93-96",
+  "scope_only": true,
+  "test_sha256": "6d638e4627cf5542ea1b611a0870aee5d22154923c0e47cef1eb44f4c55b685b",
+  "validator": "github-actions-g24-job"
+}

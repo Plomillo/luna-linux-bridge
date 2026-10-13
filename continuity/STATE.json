@@ -11,7 +11,7 @@
   "dispatch_error": "DISPATCH_DENIED_BY_CHECKPOINT_RECONCILIATION_20261013",
   "dispatch_requested_at": "2026-10-13T21:14:39.496Z",
   "g23": "PASS_FOR_SCOPE_D04_93_96",
-  "g24": "PENDING_INDEPENDENT_CERTIFICATION_REVIEW",
+  "g24": "PASS_FOR_SCOPE_D04_93_96",
   "mission_id": "SUPER1200-CONTINUATION-20261007",
   "next_point": "D04",
   "next_worker": "CUSTOSZ_V7",
@@ -61,8 +61,8 @@
     ],
     "behavior_tests": "FULL_SUITE_PASS;4_OF_4_CAPABILITY_TESTS_PASS",
     "executor": "implementation/super1200/runtime/d04_material_worker_93_96.py",
-    "g23": "PENDING",
-    "g24": "PENDING_G23",
+    "g23": "PASS_FOR_SCOPE_D04_93_96",
+    "g24": "PASS_FOR_SCOPE_D04_93_96",
     "global_certification_status": "NOT_CERTIFIED"
   },
   "execution_history": [
@@ -152,7 +152,7 @@
     "test_sha256": "43bc0d6524c75e316886d161c7fe6fced23c4a5c1491ca4aff9dd2a69eed8b43",
     "github_actions_run_id": "38483711004",
     "g23": "PASS_FOR_SCOPE_D04_93_96",
-    "g24": "PENDING_INDEPENDENT_CERTIFICATION_REVIEW",
+    "g24": "PASS_FOR_SCOPE_D04_93_96",
     "certification_granted": false,
     "completed_at_utc": "2026-10-13T23:21:34.744830+00:00"
   },
@@ -186,5 +186,13 @@
     "test_sha256": "6d638e4627cf5542ea1b611a0870aee5d22154923c0e47cef1eb44f4c55b685b",
     "test_results": "FULL_SUITE_PASS;4_OF_4_SPECIFIC_TESTS_PASS",
     "certification_granted": false
+  },
+  "scoped_certification": {
+    "scope": "D04:93-96",
+    "status": "PASS",
+    "record_path": "continuity/certification/D04_93_96.json",
+    "workflow_run_id": "38484496827",
+    "certification_granted": true,
+    "global_certification_granted": false
   }
 }
