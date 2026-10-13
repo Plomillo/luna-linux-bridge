@@ -10,8 +10,8 @@
   "diagnostic": "D04 capabilities 97-100 passed scoped G23 and G24. Continuation held fail-closed because no reviewed executor for the next D04 tranche is registered. Global SUPER1200 certification remains NOT_CERTIFIED.",
   "dispatch_error": "DISPATCH_DENIED_BY_CHECKPOINT_RECONCILIATION_20261013",
   "dispatch_requested_at": "2026-10-13T21:14:39.496Z",
-  "g23": "PASS_FOR_SCOPE_D04_97_100",
-  "g24": "PASS_FOR_SCOPE_D04_97_100",
+  "g23": "PENDING_INDEPENDENT_REVALIDATION",
+  "g24": "PENDING_G23",
   "mission_id": "SUPER1200-CONTINUATION-20261007",
   "next_point": "D04",
   "next_worker": "CUSTOSZ_V7",
@@ -61,8 +61,8 @@
     ],
     "behavior_tests": "FULL_SUITE_PASS;4_OF_4_CAPABILITY_TESTS_PASS",
     "executor": "implementation/super1200/runtime/d04_material_worker_97_100.py",
-    "g23": "PASS_FOR_SCOPE_D04_97_100",
-    "g24": "PASS_FOR_SCOPE_D04_97_100",
+    "g23": "PENDING_INDEPENDENT_REVALIDATION",
+    "g24": "PENDING_G23",
     "global_certification_status": "NOT_CERTIFIED"
   },
   "execution_history": [
@@ -151,14 +151,14 @@
     "module_sha256": "abc9c8d922e3ff56f4cdf636da99e146d95e7a15ac5608004f81398d8b4a58f0",
     "test_sha256": "6d638e4627cf5542ea1b611a0870aee5d22154923c0e47cef1eb44f4c55b685b",
     "github_actions_run_id": "38484906791",
-    "g23": "PASS_FOR_SCOPE_D04_97_100",
-    "g24": "PASS_FOR_SCOPE_D04_97_100",
+    "g23": "PENDING_INDEPENDENT_REVALIDATION",
+    "g24": "PENDING_G23",
     "certification_granted": false,
     "completed_at_utc": "2026-10-13T23:33:15.025380+00:00"
   },
   "independent_validation": {
-    "scope": "D04_CAPABILITIES_93_96_ONLY",
-    "status": "PASS",
+    "scope": "D04_CAPABILITIES_97_100_ONLY",
+    "status": "PENDING_REVALIDATION_AFTER_EVIDENCE_REFRESH",
     "workflow_run_id": "38484371232",
     "workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38484371232",
     "record_path": "continuity/independent-validation/D04_93_96.json",
@@ -171,29 +171,32 @@
       95,
       96
     ],
-    "g23": "PASS_FOR_SCOPE_D04_93_96",
-    "g24": "PENDING_INDEPENDENT_CERTIFICATION_REVIEW",
-    "certification_granted": false
+    "g23": "PENDING_INDEPENDENT_REVALIDATION",
+    "g24": "PENDING_G23",
+    "certification_granted": false,
+    "scope_key": "D04:97-100"
   },
   "evidence_refresh": {
     "status": "PASS_AWAITING_G23",
-    "scope": "D04_CAPABILITIES_93_96_ONLY",
-    "workflow_run_id": "38484326133",
-    "workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38484326133",
-    "source_commit": "bfb66d6c04d5dfe149e142e7eca0b7d21542e756",
-    "completed_at_utc": "2026-10-13T23:27:16.378883+00:00",
-    "module_sha256": "abc9c8d922e3ff56f4cdf636da99e146d95e7a15ac5608004f81398d8b4a58f0",
-    "test_sha256": "6d638e4627cf5542ea1b611a0870aee5d22154923c0e47cef1eb44f4c55b685b",
+    "scope": "D04_CAPABILITIES_97_100_ONLY",
+    "scope_key": "D04:97-100",
+    "workflow_run_id": "38485391629",
+    "workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38485391629",
+    "source_commit": "f5dd79e95f84ed30649c8e77c51c4f7db5b026a3",
+    "completed_at_utc": "2026-10-13T23:37:47.864677+00:00",
+    "module_sha256": "7ed8ac665ff0666299d5baad58ba0bb90803922933a5ca9685355f9ec1126ecd",
+    "test_sha256": "4cd43936d4df91e0e751d78abc48593252e66510c0d27fd9403caaa42a14890d",
     "test_results": "FULL_SUITE_PASS;4_OF_4_SPECIFIC_TESTS_PASS",
     "certification_granted": false
   },
   "scoped_certification": {
     "scope": "D04:97-100",
-    "status": "PASS",
+    "status": "INVALIDATED_BY_APPEND_ONLY_SOURCE_HASH_CHANGE",
     "record_path": "continuity/certification/D04_97_100.json",
     "workflow_run_id": "38485052324",
     "certification_granted": true,
-    "global_certification_granted": false
+    "global_certification_granted": false,
+    "historical_certificate_record": "continuity/certification/D04_97_100.json"
   },
   "next_tranche_authorization": {
     "checkpoint_predecessor": "D04_93_96_MATERIALIZED",
@@ -221,7 +224,7 @@
     },
     "D04:97-100": {
       "scope": "D04:97-100",
-      "status": "PASS",
+      "status": "INVALIDATED_BY_APPEND_ONLY_SOURCE_HASH_CHANGE",
       "record_path": "continuity/certification/D04_97_100.json",
       "workflow_run_id": "38485052324",
       "certification_granted": true,
