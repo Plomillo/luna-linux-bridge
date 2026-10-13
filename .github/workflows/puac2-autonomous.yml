@@ -70,11 +70,24 @@ jobs:
           import json, os, hashlib, xml.etree.ElementTree as ET
           from pathlib import Path
           root=ET.parse("out/junit.xml").getroot()
-          total=int(root.attrib.get("tests","0")); failed=int(root.attrib.get("failures","0"))+int(root.attrib.get("errors","0")); skipped=int(root.attrib.get("skipped","0"))
+          # JUnit producers may emit <testsuite> or a wrapper <testsuites>.
+          # Aggregate suite counters; fall back to testcase nodes if counters are absent.
+          suites = ([root] if root.tag.rsplit("}", 1)[-1] == "testsuite" else
+                    [node for node in root.iter() if node.tag.rsplit("}", 1)[-1] == "testsuite"])
+          if suites:
+              total = sum(int(node.attrib.get("tests", "0")) for node in suites)
+              failed = sum(int(node.attrib.get("failures", "0")) + int(node.attrib.get("errors", "0")) for node in suites)
+              skipped = sum(int(node.attrib.get("skipped", "0")) for node in suites)
+          else:
+              cases = [node for node in root.iter() if node.tag.rsplit("}", 1)[-1] == "testcase"]
+              total = len(cases)
+              failed = sum(any(child.tag.rsplit("}", 1)[-1] in ("failure", "error") for child in case) for case in cases)
+              skipped = sum(any(child.tag.rsplit("}", 1)[-1] == "skipped" for child in case) for case in cases)
           report=Path("out/tests.txt").read_bytes()
-          data={"schema":"PUAC2_TEST_REPORT/1.0","candidate_commit":os.environ["GITHUB_SHA"],"status":"PASS" if total>0 and failed==0 else "HOLD","passed":total-failed-skipped,"failed":failed,"skipped":skipped,"report_sha256":hashlib.sha256(report).hexdigest()}
-          Path("out/tests.json").write_text(json.dumps(data,sort_keys=True,indent=2)+"\n")
-          if total==0 or failed: raise SystemExit("TEST_REPORT_NOT_PASS")
+          passed=total-failed-skipped
+          data={"schema":"PUAC2_TEST_REPORT/1.0","candidate_commit":os.environ["GITHUB_SHA"],"status":"PASS" if total>0 and failed==0 and passed>0 else "HOLD","total":total,"passed":passed,"failed":failed,"skipped":skipped,"report_sha256":hashlib.sha256(report).hexdigest()}
+          Path("out/tests.json").write_text(json.dumps(data,sort_keys=True,indent=2)+"\\n")
+          if total==0 or failed or passed<1: raise SystemExit("TEST_REPORT_NOT_PASS")
           PY
       - name: Bind evidence to exact commit
         id: identity
