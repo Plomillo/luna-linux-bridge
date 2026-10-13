@@ -9,6 +9,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 COMPOSE = (ROOT / "compose.yml").read_text(encoding="utf-8")
 ENV_EXAMPLE = (ROOT / ".env.example").read_text(encoding="utf-8")
+TOKEN_SETUP = ROOT / "configure-github-token.sh"
+TOKEN_SETUP_TEXT = TOKEN_SETUP.read_text(encoding="utf-8") if TOKEN_SETUP.is_file() else ""
 GOVERNANCE = json.loads((ROOT / "GOVERNANCE.json").read_text(encoding="utf-8"))
 errors: list[str] = []
 
@@ -28,6 +30,11 @@ require("env_file:" in COMPOSE and "- .env_encoded" in COMPOSE,
         "Kestra OSS must load the configured secret environment file.")
 require(".env_encoded" in (ROOT / ".gitignore").read_text(encoding="utf-8"),
         "Local encoded GitHub credentials must be excluded from Git.")
+require("read -r -s token" in TOKEN_SETUP_TEXT and "SECRET_GITHUB_TOKEN=" in TOKEN_SETUP_TEXT
+        and "base64" in TOKEN_SETUP_TEXT and "chmod 600" in TOKEN_SETUP_TEXT,
+        "Local token setup must use hidden input, Kestra OSS secret encoding and restrictive permissions.")
+require('--replace' in TOKEN_SETUP_TEXT and 'if [[ -e "$TARGET" && "$replace" -ne 1 ]]' in TOKEN_SETUP_TEXT,
+        "Token setup must not overwrite an existing credential silently.")
 init_start = COMPOSE.find("  storage-init:")
 kestra_start = COMPOSE.find("  kestra:")
 storage_init = COMPOSE[init_start:kestra_start] if init_start >= 0 and kestra_start > init_start else ""

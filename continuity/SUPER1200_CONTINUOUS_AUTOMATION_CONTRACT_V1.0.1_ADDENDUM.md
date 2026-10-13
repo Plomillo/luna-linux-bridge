@@ -28,3 +28,10 @@ Se conserva la ejecución en curso `38469912731` y no se inicia una segunda misi
 ## Rollback
 
 El rollback se limita a revertir o reimportar la revisión anterior del flujo en esta rama de trabajo, preservando los logs y artefactos. No exige ni autoriza cambios a `main`, alteraciones del estado canónico Louksna o eliminación de evidencia.
+
+
+## Enmienda técnica 1.0.2 — secreto OSS
+
+Kestra Open Source resuelve `secret('GITHUB_TOKEN')` mediante `SECRET_GITHUB_TOKEN` codificado en Base64 en el entorno del servidor. Compose carga `.env_encoded` solo en el servicio Kestra. El script `integrations/kestra/configure-github-token.sh` solicita el token por entrada oculta, codifica Base64 y escribe el fichero con permisos 0600; exige `--replace` explícito para rotación. Base64 no es cifrado.
+
+El smoke CI usa un valor ficticio para comprobar el cableado Compose y la copia `disabled: true` del flujo valida el parser sin habilitar cron ni despachar. No prueba que el host persistente tenga un token real ni haya importado el flujo activo.

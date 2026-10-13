@@ -48,21 +48,27 @@ Requisitos: Docker Engine y Docker Compose v2. Ejecuta los comandos desde la ra�
        print(".env creado con credenciales aleatorias locales; no se muestran.")
        PY
 
-2. Valida y descarga las imágenes exactas:
+2. Configura el token de GitHub para el dispatcher. Crea un Fine-grained personal access token limitado solo al repositorio `Plomillo/luna-linux-bridge`, con permiso **Actions: Read and write**. No uses un token amplio ni lo compartas por chat. Desde `integrations/kestra` ejecuta:
+
+       bash configure-github-token.sh
+
+   El script oculta la entrada, escribe `.env_encoded` con permisos 0600 y nunca imprime el token. Para rotarlo exige `--replace`. Kestra OSS lee `{{ secret('GITHUB_TOKEN') }}` desde `SECRET_GITHUB_TOKEN`; Base64 no cifra el secreto. Compose carga ese archivo solo en el servicio Kestra. Confirma manualmente que el token tenga **Actions: Read and write** y esté limitado al repositorio.
+
+3. Valida y descarga las imágenes exactas:
 
        python3 validate.py
        docker compose -f compose.yml config --quiet
        docker compose -f compose.yml pull
 
-3. Inicia y verifica:
+4. Inicia y verifica:
 
        docker compose -f compose.yml up -d --wait --wait-timeout 300
        set -a; . ./.env; set +a
        curl --config <(printf 'user = "%s:%s"' "$KESTRA_ADMIN_EMAIL" "$KESTRA_ADMIN_PASSWORD") --fail --show-error http://127.0.0.1:18081/health
 
-4. Abre http://127.0.0.1:8080 e inicia sesión con las credenciales generadas en .env. El archivo .env está ignorado por Git. No pegues ni subas sus contenidos a issues, PRs, logs o chats.
+5. Abre http://127.0.0.1:8080 e inicia sesión con las credenciales generadas en .env. El archivo .env está ignorado por Git. No pegues ni subas sus contenidos a issues, PRs, logs o chats.
 
-5. Para detener Kestra conservando los datos:
+6. Para detener Kestra conservando los datos:
 
        docker compose -f compose.yml down
 
@@ -115,3 +121,10 @@ MetaOS queda aplazado y ya no es condición previa del dispatcher. El ciclo acep
 La instancia persistente debe importar esta revisión y disponer del secreto local `GITHUB_TOKEN`, restringido a los permisos mínimos de despacho/lectura. No incluyas el token en archivos, logs ni artefactos. **El commit no demuestra que la instancia local haya importado el flujo ni que ya se haya producido un despacho real.** La activación se acepta solo al conservar evidencia del ciclo programado y del ID del run resultante.
 
 Enmienda contractual aditiva: [SUPER1200_CONTINUOUS_AUTOMATION_CONTRACT_V1.0.1_ADDENDUM.md](../../blob/custosz/super-1200-implementation-20261007/continuity/SUPER1200_CONTINUOUS_AUTOMATION_CONTRACT_V1.0.1_ADDENDUM.md). G23/G24 globales y la promoción a `main` permanecen cerradas.
+
+
+### Secretos de Kestra Open Source — nota operativa
+
+Kestra OSS no tiene un almacén de secretos propio: `secret('GITHUB_TOKEN')` lee `SECRET_GITHUB_TOKEN` codificado en Base64 en el entorno del servidor. Debe existir dentro del contenedor; no basta con definirlo en el archivo de interpolación `.env`. El script `configure-github-token.sh` la guarda en `.env_encoded`, ignorado por Git y con permisos 0600, y Compose la carga solo en Kestra. Base64 no es cifrado; protege el acceso al host y rota el token cuando corresponda.
+
+El token requiere **Actions: Read and write** y alcance exclusivo al repositorio. El script no envía un dispatch de prueba para evitar duplicar una misión; el envío real queda probado mediante el ID de una ejecución originada por Kestra.

@@ -42,7 +42,7 @@
     "management_port_authentication": "Configured with endpoints.all.basic-auth using local credentials; management port remains loopback-only.",
     "basic_auth": "Enabled; credentials generated locally from ignored .env",
     "host_docker_socket": "NOT_MOUNTED",
-    "github_credentials": "KESTRA_SECRET_GITHUB_TOKEN_REQUIRED; NOT_STORED_IN_REPOSITORY; repository-scoped actions:write and contents:read only",
+    "github_credentials": "KESTRA_OSS_SECRET_ENV_REQUIRED; local .env_encoded mode 0600 with SECRET_GITHUB_TOKEN Base64; fine-grained token scoped to this repository with Actions read/write; no token in Git/artifacts",
     "automatic_flow_import": "PERSISTENT_RUNTIME_IMPORT_PENDING; repository commit alone does not prove that the host runtime loaded the flow",
     "automatic_repair_or_repository_mutation": "NOT_CONFIGURED",
     "arbitrary_script_flows": "Blocked from committed flow templates until an isolated runner is specified and independently reviewed",
@@ -63,7 +63,7 @@
     "rollback": "DOCUMENTED_NOT_RUNTIME_TESTED",
     "credentials_policy": "STRONG_RANDOM_LOCAL_AND_EPHEMERAL_CI_CREDENTIALS",
     "automated_smoke_flow_execution": "PASS_CI_RUN_38369065971: flow louksna.kestra/kestra_oss_smoke imported; execution reached SUCCESS; LOG_ONLY; no external side effects; temporary runtime and volumes destroyed",
-    "kestra_continuous_supervisor": "FLOW_PATCHED_IN_CANDIDATE_BRANCH; STATIC_AND_CI_VALIDATION_PENDING; PERSISTENT_RUNTIME_IMPORT_AND_REAL_DISPATCH_NOT_YET_VERIFIED"
+    "kestra_continuous_supervisor": "FLOW_AND_SECRET_WIRING_PATCHED_IN_CANDIDATE_BRANCH; CI_VALIDATION_PENDING; PERSISTENT_RUNTIME_IMPORT_AND_REAL_DISPATCH_NOT_YET_VERIFIED"
   },
   "required_next_gates": [
     "Verify official v2.0.5 Docker image availability and compare its release provenance before any upgrade.",
@@ -73,7 +73,8 @@
     "Review GitHub integration permissions and side-effect restrictions before connecting any repository token.",
     "Complete independent validation and certification as separate gates; no automated certification propagation.",
     "Configure the persistent Kestra secret GITHUB_TOKEN with repository-scoped actions:write and contents:read; never commit the token.",
-    "Import the corrected flow into the persistent Kestra runtime, observe a scheduled SAFE_HOLD while a run is active, then observe one successful dispatch only after no run is active or queued."
+    "Import the corrected flow into the persistent Kestra runtime, observe a scheduled SAFE_HOLD while a run is active, then observe one successful dispatch only after no run is active or queued.",
+    "Create a fine-grained GitHub token scoped only to Plomillo/luna-linux-bridge with Actions read/write, install it locally using integrations/kestra/configure-github-token.sh, and restart Kestra."
   ],
   "provenance": [
     "https://kestra.io/docs/oss-vs-paid",
