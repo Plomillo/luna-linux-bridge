@@ -1,0 +1,110 @@
+name: "SUPER1200 Kestra supervisor — GitHub-hosted"
+
+on:
+  push:
+    branches:
+      - custosz/super-1200-implementation-20261007
+    paths:
+      - "continuity/EXECUTORS.json"
+      - "integrations/kestra/flows/10-super1200-continuity.yml"
+      - ".github/workflows/super1200-continuation-lrb-live.yml"
+      - ".github/workflows/super1200-kestra-supervisor.yml"
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: super1200-kestra-supervisor
+  cancel-in-progress: false
+
+jobs:
+  kestra-supervise:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout governed branch and Kestra flow
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: custosz/super-1200-implementation-20261007
+          fetch-depth: 1
+
+      - name: Start bounded Kestra runtime on GitHub-hosted runner
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker run -d --rm --name kestra-super1200 -p 8080:8080 -e GITHUB_TOKEN kestra/kestra:2.0.3 server local
+          for n in $(seq 1 90); do
+            if curl -fsS http://localhost:8080/api/v1/main/flows >/dev/null 2>&1; then
+              echo "SUPER1200_KESTRA_RUNTIME=READY version=2.0.3 placement=GITHUB_HOSTED_EPHEMERAL"
+              exit 0
+            fi
+            if ! docker ps --format '{{.Names}}' | grep -qx kestra-super1200; then
+              docker logs kestra-super1200 || true
+              exit 1
+            fi
+            sleep 2
+          done
+          docker logs kestra-super1200 || true
+          echo "SUPER1200_KESTRA_RUNTIME=TIMEOUT"
+          exit 1
+
+      - name: Load the governed Kestra supervisor flow
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          curl --fail-with-body --silent --show-error \
+            -X POST http://localhost:8080/api/v1/main/flows \
+            -H 'Content-Type: application/x-yaml' \
+            --data-binary @integrations/kestra/flows/10-super1200-continuity.yml
+          echo "SUPER1200_KESTRA_FLOW=LOADED namespace=louksna.kestra id=super1200_continuity"
+
+      - name: Execute Kestra gate and dispatch CUSTOSZ V7 if authorized
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          response="$(curl --fail-with-body --silent --show-error \
+            -X POST http://localhost:8080/api/v1/main/executions/louksna.kestra/super1200_continuity)"
+          echo "$response" | jq .
+          execution_id="$(echo "$response" | jq -r '.id // empty')"
+          if [ -z "$execution_id" ]; then
+            echo "SUPER1200_KESTRA_EXECUTION=DENY missing_execution_id"
+            exit 1
+          fi
+          echo "SUPER1200_KESTRA_EXECUTION_ID=$execution_id"
+          for n in $(seq 1 90); do
+            current="$(curl --fail-with-body --silent --show-error \
+              "http://localhost:8080/api/v1/main/executions/louksna.kestra/super1200_continuity/$execution_id")"
+            state="$(echo "$current" | jq -r '.state.current // .state // empty')"
+            if [ "$state" = "SUCCESS" ] || [ "$state" = "WARNING" ]; then
+              echo "SUPER1200_KESTRA_EXECUTION=SUCCESS state=$state id=$execution_id"
+              echo "$current" | jq '{id,state,labels,metadata}'
+              exit 0
+            fi
+            if [ "$state" = "FAILED" ] || [ "$state" = "KILLED" ] || [ "$state" = "CANCELLED" ]; then
+              echo "SUPER1200_KESTRA_EXECUTION=FAIL state=$state id=$execution_id"
+              echo "$current" | jq .
+              exit 1
+            fi
+            sleep 2
+          done
+          echo "SUPER1200_KESTRA_EXECUTION=TIMEOUT id=$execution_id"
+          docker logs kestra-super1200 || true
+          exit 1
+
+      - name: Preserve Kestra runtime diagnostics on failure
+        if: failure()
+        shell: bash
+        run: |
+          docker logs kestra-super1200 2>&1 | tail -n 400 || true
+
+      - name: Stop ephemeral Kestra runtime
+        if: always()
+        shell: bash
+        run: |
+          docker stop kestra-super1200 >/dev/null 2>&1 || true
