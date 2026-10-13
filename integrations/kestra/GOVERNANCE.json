@@ -52,8 +52,8 @@
   "gates": {
     "specification": "RECORDED",
     "evidence": "CI_ARTIFACTS_AVAILABLE_FOR_FAILED_RUNS; PASSING_RUNTIME_EVIDENCE_PENDING",
-    "static_validation": "PENDING_CI_AFTER_COMPOSE_ESCAPING_FIX",
-    "runtime_startup_and_database_health": "PENDING_CI_AFTER_COMPOSE_ESCAPING_FIX",
+    "static_validation": "PENDING_CI_AFTER_VALIDATOR_FIX",
+    "runtime_startup_and_database_health": "PENDING_CI_AFTER_VALIDATOR_FIX",
     "resolved_image_digests": "PENDING_SUCCESSFUL_RUNTIME_ARTIFACT",
     "manual_flow_execution": "NOT_PERFORMED",
     "G23": "NOT_PERFORMED",
@@ -122,6 +122,13 @@
       "status": "FAILURE",
       "observed": "Static validation and Compose schema passed, image downloads completed, then container startup failed. The CI log showed Compose interpolation warnings that kestra_uid/kestra_gid were unset because Compose consumed shell dollar variables inside the command.",
       "response": "Escaped shell variables as $$ in the Compose file and extended the static guard to enforce this invariant before startup."
+    },
+    {
+      "run_id": 38357202650,
+      "commit": "edd63073bbc93fbabec2f15c976e9439282bb929",
+      "status": "FAILURE_STATIC_VALIDATOR_FALSE_POSITIVE",
+      "observed": "The new guard correctly required escaped $$ expressions, but a redundant negative check incorrectly matched the second dollar in a valid $$(...) form. Runtime test did not run.",
+      "response": "Removed the invalid substring-based negative assertion; the positive checks for each required escaped shell variable remain."
     }
   ]
 }
