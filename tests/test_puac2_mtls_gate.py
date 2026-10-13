@@ -72,7 +72,8 @@ def test_pr_preflight_cannot_be_used_as_release_certification():
 def test_privileged_chain_stays_excluded_from_pull_requests():
     workflow = (Path(__file__).parents[1] / ".github" / "workflows" / "puac2-autonomous.yml").read_text()
     assert "if: github.event_name != 'pull_request'" in workflow
-    assert "louksna-mtls-host" in workflow
+    assert "runs-on: [self-hosted, linux, x64, luna-aux]" in workflow
+    assert "  workflow_dispatch:" in workflow
 
 def test_autonomous_workflow_writes_valid_json_newline():
     workflow = (Path(__file__).parents[1] / ".github" / "workflows" / "puac2-autonomous.yml").read_text()
