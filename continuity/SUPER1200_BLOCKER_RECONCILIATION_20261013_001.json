@@ -1,0 +1,41 @@
+{
+  "schema": "SUPER1200_BLOCKER_RECONCILIATION/1.0",
+  "reconciliation_id": "SUPER1200-BLOCKER-RECONCILIATION-20261013-001",
+  "observed_at_utc": "2026-10-13T18:45:00Z",
+  "branch": "custosz/super-1200-implementation-20261007",
+  "source_state_blob_sha": "b9e431eff82a5003d0e1dbecdb0796d541cdd7fb",
+  "prior_block_reason": "UNTRUSTED_SYNTHETIC_WORKER_AND_D04_SELF_RECURSION",
+  "prior_diagnostic": "Reconciliation blocked dispatch: the shared SUPER1200 worker synthesizes generic wrapper code and tests while marking capabilities EVIDENCED; D04 maps to the dispatcher itself and would recursively invoke it. The D03 checkpoint is a historical reported state, not independently validated.",
+  "current_block_reason": "NO_REVIEWED_MATERIAL_EXECUTOR_AND_METAOS_INVALID_OR_MISSING",
+  "current_diagnostic": "Reconciliation 2026-10-13: the synthetic whole-domain materializer has been disabled and the active executor map remains empty. D04 now has additional behavior-level provenance primitives/tests, but no reviewed task-level executor is registered. MetaOS is still rejected by the recorded standard WASM validation and is missing from the candidate branch at the expected path. No material dispatch is authorized.",
+  "actions_verified": [
+    {
+      "action": "Disabled synthetic materialization worker",
+      "commit": "bee4d87a1edda7c591a8b147756e9e84c12206a4"
+    },
+    {
+      "action": "Added D04 deterministic provenance adapters and behavior-level tests",
+      "commits": [
+        "905ea23dcffe6660ad9dd9ab1221906cdd83c28b",
+        "5f279052db0d864fc4dd6b99064252818b6e2a40"
+      ]
+    },
+    {
+      "action": "Removed circular G23 readiness requirement from pre-work authorization",
+      "commits": [
+        "52ffe4648db86824bf638673421ed336ea77a12b",
+        "58e754dd9a63ed8c544baf3d6bbeb45358b7458b"
+      ]
+    }
+  ],
+  "unresolved": [
+    "No reviewed task-level material executor is registered in continuity/EXECUTORS.json.",
+    "MetaOS artifact is missing at the candidate path and the staged WASM failed recorded standard validation.",
+    "CUSTOSZ V7 mission API is supervisory time/state only; no material executor is bound.",
+    "The 12-hour material mission has not started.",
+    "G23 and G24 remain blocked."
+  ],
+  "decision": "FAIL_CLOSED",
+  "main_modified": false,
+  "certification_granted": false
+}
