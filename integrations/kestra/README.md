@@ -42,7 +42,7 @@ Requisitos: Docker Engine y Docker Compose v2. Ejecuta los comandos desde la ra√
        path.write_text(
            "KESTRA_DB_PASSWORD=" + token_hex(32) + "\n"
            "KESTRA_ADMIN_EMAIL=admin@example.com\n"
-           "KESTRA_ADMIN_PASSWORD=" + token_hex(32) + "\n",
+           "KESTRA_ADMIN_PASSWORD=" + "Kestra-" + token_hex(30) + "A9!" + "\n",
            encoding="utf-8",
        )
        print(".env creado con credenciales aleatorias locales; no se muestran.")

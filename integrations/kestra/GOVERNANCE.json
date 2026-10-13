@@ -58,7 +58,8 @@
     "G23": "NOT_PERFORMED",
     "G24": "NOT_GRANTED",
     "non_regression": "PENDING",
-    "rollback": "DOCUMENTED_NOT_RUNTIME_TESTED"
+    "rollback": "DOCUMENTED_NOT_RUNTIME_TESTED",
+    "credentials_policy": "PENDING_RUNTIME_CONFIRMATION"
   },
   "required_next_gates": [
     "Verify official v2.0.5 Docker image availability and compare its release provenance before any upgrade.",
@@ -75,5 +76,21 @@
     "https://kestra.io/docs/administrator-guide/monitoring",
     "https://hub.docker.com/r/kestra/kestra/tags",
     "https://github.com/kestra-io/kestra/releases/tag/v2.0.5"
+  ],
+  "ci_history": [
+    {
+      "run_id": 38355694742,
+      "commit": "6addf51ef55303551028f931c15f596e730aa323",
+      "status": "FAILURE",
+      "observed": "Workflow run recorded zero jobs and used the filename as its display name.",
+      "response": "A later commit changed the job-level EVIDENCE_DIR expression from runner.temp to github.workspace; the subsequent run loaded a named job."
+    },
+    {
+      "run_id": 38355970968,
+      "commit": "59eca6686b321b59c21184e47480c6874f583c56",
+      "status": "FAILURE",
+      "observed": "Static guard passed; docker compose config --quiet failed because KESTRA_ADMIN_EMAIL was absent after malformed .env generation.",
+      "response": "Subsequent commit switched the generator to chr(10) line separators. This run did not pull images or test runtime health."
+    }
   ]
 }

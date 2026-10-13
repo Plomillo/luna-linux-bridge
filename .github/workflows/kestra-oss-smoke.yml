@@ -41,7 +41,7 @@ jobs:
               chr(10).join([
                   "KESTRA_DB_PASSWORD=" + token_hex(32),
                   "KESTRA_ADMIN_EMAIL=kestra-ci@example.com",
-                  "KESTRA_ADMIN_PASSWORD=" + token_hex(32),
+                  "KESTRA_ADMIN_PASSWORD=" + "Kestra-" + token_hex(30) + "A9!",
               ]) + chr(10),
               encoding="utf-8",
           )
