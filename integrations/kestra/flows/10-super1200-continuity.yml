@@ -78,3 +78,6 @@ triggers:
     type: io.kestra.plugin.core.trigger.Schedule
     cron: "*/5 * * * *"
     timezone: "America/Santiago"
+    recoverMissedSchedules: NONE
+    allowConcurrent: false
+    lateMaximumDelay: PT2M
