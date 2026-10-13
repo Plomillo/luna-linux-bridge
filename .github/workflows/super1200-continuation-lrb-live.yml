@@ -7,7 +7,6 @@ on:
     paths:
       - "implementation/super1200/CONTINUE_NEXT_DOMAIN"
       - "implementation/super1200/runtime/super1200_continuation_worker.py"
-      - ".github/workflows/super1200-continuation-lrb-live.yml"
   workflow_dispatch:
 
 permissions:
@@ -49,6 +48,38 @@ jobs:
           ref: certification/lrb-terminal-60s-r3-20260930
           fetch-depth: 1
           path: bridge
+
+      - name: Fail-closed continuation authorization gate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path('target')
+          state=json.loads((root/'continuity/STATE.json').read_text())
+          executors=json.loads((root/'continuity/EXECUTORS.json').read_text()).get('executors', {})
+          nxt=state.get('next_point')
+          if state.get('blocked') is not False:
+              raise SystemExit('DISPATCH_DENIED_CHECKPOINT_BLOCKED')
+          if state.get('status') != 'READY_FOR_CONTINUATION':
+              raise SystemExit('DISPATCH_DENIED_STATE_NOT_READY')
+          if state.get('material_worker_ready') is not True:
+              raise SystemExit('DISPATCH_DENIED_MATERIAL_WORKER_NOT_REVIEWED')
+          if state.get('independent_validation_ready') is not True:
+              raise SystemExit('DISPATCH_DENIED_INDEPENDENT_VALIDATION_NOT_READY')
+          worker=executors.get(nxt)
+          if not worker:
+              raise SystemExit('DISPATCH_DENIED_EXECUTOR_NOT_REGISTERED')
+          if worker == 'continuity/super1200_continuation_worker.py':
+              raise SystemExit('DISPATCH_DENIED_RECURSIVE_EXECUTOR')
+          if not (root/worker).is_file():
+              raise SystemExit('DISPATCH_DENIED_EXECUTOR_FILE_MISSING')
+          test=root/'implementation/super1200/tests'/f"test_{str(nxt).lower()}_runtime.py"
+          if not test.is_file():
+              raise SystemExit('DISPATCH_DENIED_BEHAVIOR_TEST_MISSING')
+          print(f'SUPER1200_TELEMETRY DISPATCH_GATE=PASS CHECKPOINT={state.get("current_checkpoint")} NEXT={nxt}')
+          PY
 
       - name: Last-checkpoint preflight
         shell: bash
