@@ -130,5 +130,60 @@ class D04RuntimeTests(unittest.TestCase):
                       d04.validate_policy_document({"schema": "wrong"}))
 
 
+    def test_github_attestation_binds_subject_and_declares_unsigned_state(self):
+        result = d04.github_artifact_attestation("artifact.zip", "a" * 64,
+                                                 {"build": "ci-1"}, issuer="github-actions")
+        self.assertEqual(result["statement"]["subject"][0]["digest"]["sha256"], "a" * 64)
+        self.assertEqual(result["signature_status"], "UNSIGNED_REQUIRES_GITHUB_ATTESTATION")
+        self.assertEqual(len(result["statement_sha256"]), 64)
+
+    def test_sigstore_bundle_requires_trusted_crypto_verifier_and_exact_subject(self):
+        bundle = {"mediaType": "application/vnd.dev.sigstore.bundle+json;version=0.3",
+                  "subject": {"sha256": "a" * 64}, "signature": "opaque"}
+        self.assertEqual(d04.validate_sigstore_bundle(
+            bundle, expected_subject_sha256="a" * 64, verifier=lambda _: True)["status"], "VERIFIED")
+        with self.assertRaisesRegex(ValueError, "cryptographic_verification_failed"):
+            d04.validate_sigstore_bundle(bundle, expected_subject_sha256="a" * 64, verifier=lambda _: False)
+        with self.assertRaisesRegex(ValueError, "digest_mismatch"):
+            d04.validate_sigstore_bundle(bundle, expected_subject_sha256="b" * 64, verifier=lambda _: True)
+
+    def test_rekor_entry_requires_valid_inclusion_proof(self):
+        entry = {"body": {"subject_sha256": "a" * 64}, "logIndex": 4,
+                 "integratedTime": 1700000000, "verification": {"inclusionProof": ["x"]}}
+        self.assertEqual(d04.validate_rekor_entry(
+            entry, expected_subject_sha256="a" * 64, inclusion_verifier=lambda _: True)["status"], "VERIFIED")
+        with self.assertRaisesRegex(ValueError, "inclusion_verification_failed"):
+            d04.validate_rekor_entry(entry, expected_subject_sha256="a" * 64, inclusion_verifier=lambda _: False)
+
+    def test_spdx_sbom_is_sorted_hash_bound_and_rejects_duplicate_ids(self):
+        package = {"SPDXID": "SPDXRef-pkg", "name": "pkg", "versionInfo": "1.0",
+                   "licenseConcluded": "MIT", "sha256": "a" * 64}
+        sbom = d04.make_spdx_sbom(document_id="build-1", name="demo", packages=[package])
+        self.assertEqual(sbom["spdxVersion"], "SPDX-2.3")
+        self.assertEqual(sbom["packages"][0]["checksums"][0]["checksumValue"], "a" * 64)
+        with self.assertRaisesRegex(ValueError, "duplicate"):
+            d04.make_spdx_sbom(document_id="build-1", name="demo", packages=[package, package])
+
+    def test_cyclonedx_sbom_hashes_components_and_rejects_bad_digest(self):
+        sbom = d04.make_cyclonedx_sbom(serial_number="urn:uuid:demo", components=[
+            {"name": "pkg", "version": "1.0", "sha256": "a" * 64}])
+        self.assertEqual(sbom["specVersion"], "1.5")
+        self.assertEqual(sbom["components"][0]["hashes"][0]["content"], "a" * 64)
+        with self.assertRaisesRegex(ValueError, "lowercase_sha256"):
+            d04.make_cyclonedx_sbom(serial_number="urn:uuid:demo", components=[
+                {"name": "pkg", "version": "1.0", "sha256": "bad"}])
+
+    def test_certification_scope_is_subject_bound_and_non_transitive(self):
+        scope = {"branch": "candidate", "capabilities": [87, 88]}
+        cert = {"subject_sha256": "a" * 64, "scope": scope}
+        self.assertTrue(d04.certification_applies(certificate=cert, subject_sha256="a" * 64,
+                                                   requested_scope=scope))
+        self.assertFalse(d04.certification_applies(certificate=cert, subject_sha256="b" * 64,
+                                                    requested_scope=scope))
+        self.assertFalse(d04.certification_applies(certificate=cert, subject_sha256="a" * 64,
+                                                    requested_scope={"branch": "candidate", "capabilities": [87]}))
+        self.assertTrue(d04.certification_scope_id("a" * 64, scope).startswith("urn:louksna:certification-scope:"))
+
+
 if __name__ == "__main__":
     unittest.main()
