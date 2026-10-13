@@ -164,16 +164,16 @@ jobs:
           root=Path(".")
           state=json.loads((root/"continuity/STATE.json").read_text(encoding="utf-8"))
           executors=json.loads((root/"continuity/EXECUTORS.json").read_text(encoding="utf-8")).get("executors",{})
-          expected="implementation/super1200/runtime/d04_material_worker_101_104.py"
+          expected="implementation/super1200/runtime/d04_material_worker_105_108.py"
           scoped=state.get("scoped_certification",{})
           conditions={
-              "checkpoint_predecessor":state.get("current_checkpoint")=="D04_97_100_MATERIALIZED",
+              "checkpoint_predecessor":state.get("current_checkpoint")=="D04_101_104_MATERIALIZED",
               "not_blocked":state.get("blocked") is False,
               "active_status":state.get("status") in {"ACTIVE","READY_FOR_CONTINUATION"},
               "material_worker_ready":state.get("material_worker_ready") is True,
-              "prior_g23":state.get("g23")=="PASS_FOR_SCOPE_D04_97_100",
-              "prior_g24":state.get("g24")=="PASS_FOR_SCOPE_D04_97_100",
-              "prior_scoped_certificate":scoped.get("scope")=="D04:97-100" and scoped.get("status")=="PASS" and scoped.get("global_certification_granted") is False,
+              "prior_g23":state.get("g23")=="PASS_FOR_SCOPE_D04_101_104",
+              "prior_g24":state.get("g24")=="PASS_FOR_SCOPE_D04_101_104",
+              "prior_scoped_certificate":scoped.get("scope")=="D04:101-104" and scoped.get("status")=="PASS" and scoped.get("global_certification_granted") is False,
               "executor_mapping":executors.get("D04")==expected,
               "executor_file_exists":(root/expected).is_file(),
           }
@@ -189,7 +189,7 @@ jobs:
               raise SystemExit("SUPER1200_DENY_MATERIAL_EXECUTION_CHECKPOINT_OR_EXECUTOR_GATE")
           PY
 
-      - name: Validate CUSTOSZ V7 and execute authorized D04 tranche 101-104
+      - name: Validate CUSTOSZ V7 and execute authorized D04 tranche 105-108
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -223,15 +223,15 @@ jobs:
           signature=inspect.signature(worker.mission_start)
           kwargs={"report_minutes":1}
           if "executor" in signature.parameters: kwargs["executor"]="CUSTOSZ_V7"
-          if "executor_path" in signature.parameters: kwargs["executor_path"]="implementation/super1200/runtime/d04_material_worker_101_104.py"
-          if "assigned_executor" in signature.parameters: kwargs["assigned_executor"]="implementation/super1200/runtime/d04_material_worker_101_104.py"
+          if "executor_path" in signature.parameters: kwargs["executor_path"]="implementation/super1200/runtime/d04_material_worker_105_108.py"
+          if "assigned_executor" in signature.parameters: kwargs["assigned_executor"]="implementation/super1200/runtime/d04_material_worker_105_108.py"
           if "worker_id" in signature.parameters: kwargs["worker_id"]="CUSTOSZ_V7"
           mission=worker.mission_start(0.05,"LUNA_PROJECT",
-              "Materially implement D04 capabilities 101-104 only after current-source scoped G23/G24 PASS for 97-100; preserve evidence, provenance, rollback and non-regression; no certification propagation; MetaOS deferred.",**kwargs)
+              "Materially implement D04 capabilities 105-108 only after current-source scoped G23/G24 PASS for 101-104; preserve evidence, provenance, rollback and non-regression; no certification propagation; MetaOS deferred.",**kwargs)
           tick=worker.mission_tick(mission["mission_id"])
-          print("SUPER1200_CUSTOSZ_V7_MISSION "+json.dumps({"mission_id":mission.get("mission_id"),"executor":mission.get("executor"),"executor_path":"implementation/super1200/runtime/d04_material_worker_101_104.py","tick":tick,"configured_hours":0.05},sort_keys=True,default=str))
+          print("SUPER1200_CUSTOSZ_V7_MISSION "+json.dumps({"mission_id":mission.get("mission_id"),"executor":mission.get("executor"),"executor_path":"implementation/super1200/runtime/d04_material_worker_105_108.py","tick":tick,"configured_hours":0.05},sort_keys=True,default=str))
           PY
-          python3 -B -I implementation/super1200/runtime/d04_material_worker_101_104.py
+          python3 -B -I implementation/super1200/runtime/d04_material_worker_105_108.py
           python3 -B -I implementation/super1200/tests/test_d04_runtime.py
 
       - name: Persist hash-bound evidence and checkpoint to authorized branch
@@ -246,9 +246,9 @@ jobs:
           fi
           git config user.name "custosz-v7-runtime-bot"
           git config user.email "custosz-v7-runtime-bot@users.noreply.github.com"
-          git commit -m "feat(super1200): materialize D04 policy provider capabilities 101-104"
+          git commit -m "feat(super1200): materialize D04 policy governance capabilities 105-108"
           git push origin HEAD:refs/heads/custosz/super-1200-implementation-20261007
-          echo "SUPER1200_PERSISTENCE=PASS CHECKPOINT=D04_101_104_MATERIALIZED GLOBAL_CERTIFICATION=FALSE"
+          echo "SUPER1200_PERSISTENCE=PASS CHECKPOINT=D04_105_108_MATERIALIZED GLOBAL_CERTIFICATION=FALSE"
 
       - name: Preserve Kestra runtime diagnostics on failure
         if: failure()
