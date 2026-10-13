@@ -1,4 +1,4 @@
-name: PUAC-2 end-to-end mTLS release pipeline
+name: PUAC-2 candidate preflight (non-certifying)
 
 on:
   pull_request:
@@ -12,18 +12,17 @@ on:
       - "packaging/**"
       - "docs/**"
       - ".github/workflows/puac2-e2e.yml"
-  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: puac2-e2e-${{ github.ref }}
+  group: puac2-preflight-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
 jobs:
   preflight:
-    name: Stage 0 — source, tests and evidence preflight
+    name: Source and regression checks only (never certifies)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -38,150 +37,45 @@ jobs:
       - name: Install isolated verification dependencies
         run: python -m pip install --disable-pip-version-check pytest cryptography
       - name: Compile and run PUAC-2 regression suite
+        shell: bash
         run: |
-          set -eu
+          set -euo pipefail
           python -m py_compile scripts/puac2_mtls_gate.py tests/test_puac2_mtls_gate.py
-          python -m pytest -q tests/test_puac2_mtls_gate.py
-      - name: Record immutable candidate identity
-        run: |
-          set -eu
-          echo "repository=$GITHUB_REPOSITORY"
-          echo "candidate_commit=$GITHUB_SHA"
-          echo "event=$GITHUB_EVENT_NAME"
-          git status --short
-      - name: Require evidence manifest on release runs
-        if: github.event_name == 'workflow_dispatch'
-        run: |
-          set -eu
-          test -f evidence/mtls-certification.json || {
-            echo "::error::Missing evidence/mtls-certification.json. Host evidence, G23 and G24 remain HOLD."
-            exit 3
-          }
-
-  host_validation:
-    name: Stage 1 — host mTLS, operational tests and rollback evidence
-    if: github.event_name == 'workflow_dispatch'
-    needs: preflight
-    # A secured, dedicated runner must be registered on the actual target Linux host.
-    runs-on: [self-hosted, linux, louksna-mtls-host]
-    environment: puac2-host-validation
-    timeout-minutes: 15
-    steps:
-      - name: Checkout exact candidate
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - name: Require real host configuration
-        shell: bash
-        run: |
-          set -eu
-          cfg=/etc/louksna/remote-bridge/mtls.json
-          test -f "$cfg" || { echo "::error::Missing $cfg"; exit 3; }
-          test -r "$cfg" || { echo "::error::Host mTLS config is not readable by the authorized runner"; exit 3; }
+          mkdir -p out
+          python -m pytest -q --junitxml=out/junit.xml tests/test_puac2_mtls_gate.py | tee out/tests.txt
           python - <<'PY'
-          import json
+          import hashlib, json, os
           from pathlib import Path
-          obj = json.loads(Path("/etc/louksna/remote-bridge/mtls.json").read_text())
-          if not isinstance(obj, dict) or not obj:
-              raise SystemExit("mTLS config is empty or not an object")
-          print("Host mTLS config exists and parses; secret values are not printed.")
+          report = Path("out/tests.txt").read_bytes()
+          data = {
+              "schema": "PUAC2_PR_PREFLIGHT/1.0",
+              "status": "PASS",
+              "certification_status": "NOT_PERFORMED",
+              "candidate_commit": os.environ["GITHUB_SHA"],
+              "event": os.environ["GITHUB_EVENT_NAME"],
+              "test_report_sha256": hashlib.sha256(report).hexdigest(),
+          }
+          Path("out/preflight.json").write_text(json.dumps(data, sort_keys=True, indent=2) + "\n")
           PY
-      - name: Verify service and mTLS handshake using protected host paths
-        shell: bash
-        env:
-          PUAC2_MTLS_CLIENT_CERT: ${{ vars.PUAC2_MTLS_CLIENT_CERT }}
-          PUAC2_MTLS_CLIENT_KEY: ${{ vars.PUAC2_MTLS_CLIENT_KEY }}
-          PUAC2_MTLS_CA_CERT: ${{ vars.PUAC2_MTLS_CA_CERT }}
-        run: |
-          set -eu
-          systemctl is-active --quiet louksna-remote-bridge.service
-          test -r "$PUAC2_MTLS_CLIENT_CERT"
-          test -r "$PUAC2_MTLS_CLIENT_KEY"
-          test -r "$PUAC2_MTLS_CA_CERT"
-          timeout 10 openssl s_client -connect 127.0.0.1:8443 \
-            -cert "$PUAC2_MTLS_CLIENT_CERT" -key "$PUAC2_MTLS_CLIENT_KEY" \
-            -CAfile "$PUAC2_MTLS_CA_CERT" -verify_return_error -brief </dev/null
-      - name: Require independently stored operational and rollback test reports
-        shell: bash
-        env:
-          PUAC2_HOST_TEST_REPORT: ${{ vars.PUAC2_HOST_TEST_REPORT }}
-          PUAC2_ROLLBACK_TEST_REPORT: ${{ vars.PUAC2_ROLLBACK_TEST_REPORT }}
-        run: |
-          set -eu
-          test -n "$PUAC2_HOST_TEST_REPORT" && test -r "$PUAC2_HOST_TEST_REPORT" || {
-            echo "::error::Configure PUAC2_HOST_TEST_REPORT to a readable approved host-test report on the protected runner."
-            exit 3
-          }
-          test -n "$PUAC2_ROLLBACK_TEST_REPORT" && test -r "$PUAC2_ROLLBACK_TEST_REPORT" || {
-            echo "::error::Configure PUAC2_ROLLBACK_TEST_REPORT to a readable rollback-test report on the protected runner."
-            exit 3
-          }
-      - name: Do not publish host secrets
+      - name: Explicitly mark operational certification as not performed
         if: always()
-        run: echo "No private keys, client credentials or mtls.json contents are uploaded."
-
-  g23_independent_validation:
-    name: Stage 2 — G23 independent validation approval
-    if: github.event_name == 'workflow_dispatch'
-    needs: host_validation
-    runs-on: ubuntu-latest
-    environment: puac2-g23-validation
-    timeout-minutes: 5
-    steps:
-      - name: Checkout exact candidate
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - name: Require G23 attestation artifact
+        shell: bash
         run: |
-          set -eu
-          test -f evidence/mtls-certification.json || {
-            echo "::error::G23 attestation manifest missing; remain HOLD."
-            exit 3
-          }
-          echo "GitHub environment approval is audited; the signed G23 attestation is checked in the final gate."
-
-  g24_certification:
-    name: Stage 3 — G24 certification approval
-    if: github.event_name == 'workflow_dispatch'
-    needs: g23_independent_validation
-    runs-on: ubuntu-latest
-    environment: puac2-g24-certification
-    timeout-minutes: 5
-    steps:
-      - name: Checkout exact candidate
-        uses: actions/checkout@v4
+          {
+            echo "## PUAC-2 PR preflight — non-certifying"
+            echo
+            echo "- Candidate: `$GITHUB_SHA`"
+            echo "- This workflow performs source/regression checks only."
+            echo "- Host mTLS, operational tests, rollback, G23 independent validation and G24 certification were NOT run here."
+            echo "- A green result from this workflow MUST NOT be interpreted as operational certification."
+            echo "- The privileged chain remains in `.github/workflows/puac2-autonomous.yml` and is intentionally excluded from pull_request events."
+            echo "- Missing host configuration, reports, protected secrets or signatures must remain HOLD; do not bypass the gate."
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload preflight-only evidence
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          persist-credentials: false
-      - name: Require G24 certification artifact
-        run: |
-          set -eu
-          test -f evidence/mtls-certification.json || {
-            echo "::error::G24 certification manifest missing; remain HOLD."
-            exit 3
-          }
-          echo "G24 approval is sequenced after G23; final cryptographic verification remains mandatory."
-
-  final_chain_verification:
-    name: Stage 4 — verify evidence, signatures, identity separation and candidate binding
-    if: github.event_name == 'workflow_dispatch'
-    needs: [preflight, host_validation, g23_independent_validation, g24_certification]
-    runs-on: ubuntu-latest
-    environment: puac2-certification
-    timeout-minutes: 5
-    steps:
-      - name: Checkout exact candidate without persisted credentials
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Install signature verification dependency
-        run: python -m pip install --disable-pip-version-check cryptography
-      - name: Verify complete signed chain fail-closed
-        env:
-          PUAC2_G23_PUBLIC_KEY_PEM: ${{ vars.PUAC2_G23_PUBLIC_KEY_PEM }}
-          PUAC2_G24_PUBLIC_KEY_PEM: ${{ vars.PUAC2_G24_PUBLIC_KEY_PEM }}
-        run: python scripts/puac2_mtls_gate.py --manifest evidence/mtls-certification.json
+          name: puac2-pr-preflight-${{ github.run_id }}
+          path: out/
+          if-no-files-found: warn
+          retention-days: 14
