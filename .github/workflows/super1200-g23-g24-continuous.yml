@@ -1,17 +1,16 @@
-name: "SUPER1200 — scoped G23/G24 gates for D04 97-100"
+name: "SUPER1200 — scoped G23/G24 gates for D04 101-104"
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "*/15 * * * *"
   push:
     branches:
       - custosz/super-1200-implementation-20261007
     paths:
-      - "continuity/runtime-evidence/D04/capability-0097.json"
-      - "continuity/runtime-evidence/D04/capability-0098.json"
-      - "continuity/runtime-evidence/D04/capability-0099.json"
-      - "continuity/runtime-evidence/D04/capability-0100.json"
+      - "continuity/runtime-evidence/D04/capability-0101.json"
+      - "continuity/runtime-evidence/D04/capability-0102.json"
+      - "continuity/runtime-evidence/D04/capability-0103.json"
+      - "continuity/runtime-evidence/D04/capability-0104.json"
+      - ".github/workflows/super1200-g23-g24-continuous.yml"
 
 permissions:
   contents: read
@@ -22,7 +21,7 @@ concurrency:
 
 jobs:
   g23-independent-validation:
-    name: "G23 — independent validation (D04 97-100)"
+    name: "G23 — independent validation (D04 101-104)"
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     outputs:
@@ -34,7 +33,7 @@ jobs:
         with:
           ref: custosz/super-1200-implementation-20261007
           persist-credentials: false
-      - name: Run independent D04 behavior suite and verify 97-100 evidence
+      - name: Run independent D04 behavior suite and verify 101-104 evidence
         id: validate
         shell: bash
         run: |
@@ -47,50 +46,51 @@ jobs:
           state=json.loads((root/"continuity/STATE.json").read_text())
           reg=json.loads((root/"implementation/super1200/registry/capabilities.json").read_text())
           dom=json.loads((root/"implementation/super1200/domains/D04.json").read_text())
+          cert=json.loads((root/"continuity/certification/D04_97_100.json").read_text())
           module_hash=hashlib.sha256((root/"implementation/super1200/domains/D04_runtime.py").read_bytes()).hexdigest()
           test_hash=hashlib.sha256((root/"implementation/super1200/tests/test_d04_runtime.py").read_bytes()).hexdigest()
-          if reg.get("count") != 1200 or len(reg.get("items",[])) != 1200: raise SystemExit("G23_REGISTRY_COUNT_FAIL")
-          if state.get("current_checkpoint") != "D04_97_100_MATERIALIZED": raise SystemExit("G23_CHECKPOINT_FAIL")
-          if state.get("certified") is not False or state.get("global_certification_status") != "NOT_CERTIFIED": raise SystemExit("G23_GLOBAL_CERTIFICATION_DRIFT")
-          refresh=state.get("evidence_refresh",{})
-          if refresh.get("status")!="PASS_AWAITING_G23" or refresh.get("scope")!="D04_CAPABILITIES_97_100_ONLY" or refresh.get("module_sha256")!=module_hash or refresh.get("test_sha256")!=test_hash: raise SystemExit("G23_EVIDENCE_REFRESH_BINDING_FAIL")
-          material_run=str(refresh.get("workflow_run_id") or state.get("last_execution",{}).get("workflow_run_id",""))
+          if reg.get("count")!=1200 or len(reg.get("items",[]))!=1200: raise SystemExit("G23_REGISTRY_COUNT_FAIL")
+          if state.get("current_checkpoint")!="D04_101_104_MATERIALIZED": raise SystemExit("G23_CHECKPOINT_FAIL")
+          if state.get("certified") is not False or state.get("global_certification_status")!="NOT_CERTIFIED": raise SystemExit("G23_GLOBAL_CERTIFICATION_DRIFT")
+          if cert.get("result")!="PASS" or cert.get("scope")!="D04:97-100" or cert.get("global_super1200_certified") is not False: raise SystemExit("G23_PRIOR_SCOPED_CERTIFICATE_FAIL")
+          if cert.get("module_sha256")!=module_hash or cert.get("test_sha256")!=test_hash: raise SystemExit("G23_PRIOR_CERTIFICATE_SOURCE_DRIFT")
+          prior=state.get("scoped_certification",{})
+          if prior.get("scope")!="D04:97-100" or prior.get("status")!="PASS" or prior.get("global_certification_granted") is not False: raise SystemExit("G23_PRIOR_STATE_CERTIFICATE_FAIL")
+          material_run=str(state.get("last_execution",{}).get("workflow_run_id",""))
           if state.get("last_execution",{}).get("status")!="COMPLETED_SUCCESS_MATERIAL_TRANCHE": raise SystemExit("G23_MATERIAL_RUN_NOT_SUCCESSFUL")
-          ri={x["capability_id"]:x for x in reg["items"]}
-          di={x["capability_id"]:x for x in dom["capabilities"]}
+          ri={x["capability_id"]:x for x in reg["items"]}; di={x["capability_id"]:x for x in dom["capabilities"]}
           tasks={
-            97:("EVIDENCE_MINIMAL_RECOMPUTATION","test_minimal_recomputation_only_recomputes_transitive_subset"),
-            98:("ATTESTATION_POLICY_ENGINE","test_attestation_policy_fails_closed_on_subject_freshness_and_verifier"),
-            99:("TRANSPARENCY_LOG_INTERNAL","test_transparency_log_is_append_only_hash_chained_and_anchorable"),
-            100:("DUAL_LEDGER","test_dual_ledger_cross_references_without_conflation"),
+            101:("POLICY_AS_CODE","test_policy_as_code_binds_versioned_policy_input_and_audit_receipt"),
+            102:("OPA_REGO_PROVIDER","test_opa_rego_provider_pins_version_bundle_and_sandbox"),
+            103:("CUE_SCHEMA_PROVIDER","test_cue_provider_binds_schema_input_and_deterministic_export"),
+            104:("JSON_SCHEMA_PROVIDER","test_json_schema_provider_pins_dialect_and_rejects_unknown_fields"),
           }
           evidence=[]
           for cid,(name,test_name) in tasks.items():
-            if ri[cid].get("canonical_name") != name or di[cid].get("canonical_name") != name: raise SystemExit(f"G23_IDENTITY_FAIL_{cid}")
-            if ri[cid].get("implementation_state") != "EVIDENCED" or di[cid].get("implementation_state") != "EVIDENCED": raise SystemExit(f"G23_MATERIAL_STATE_FAIL_{cid}")
+            if ri[cid].get("canonical_name")!=name or di[cid].get("canonical_name")!=name: raise SystemExit(f"G23_IDENTITY_FAIL_{cid}")
+            if ri[cid].get("implementation_state")!="EVIDENCED" or di[cid].get("implementation_state")!="EVIDENCED": raise SystemExit(f"G23_MATERIAL_STATE_FAIL_{cid}")
             p=root/"continuity/runtime-evidence/D04"/f"capability-{cid:04d}.json"
             if not p.is_file(): raise SystemExit(f"G23_EVIDENCE_MISSING_{cid}")
             ev=json.loads(p.read_text()); recorded=ev.get("evidence_sha256"); unsigned=dict(ev); unsigned.pop("evidence_sha256",None)
             calculated=hashlib.sha256(json.dumps(unsigned,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()).hexdigest()
-            if recorded != calculated: raise SystemExit(f"G23_EVIDENCE_HASH_FAIL_{cid}")
-            if ev.get("status") != "PASS" or ev.get("capability_id") != cid or ev.get("canonical_name") != name: raise SystemExit(f"G23_EVIDENCE_SCOPE_FAIL_{cid}")
-            if ev.get("test_case") != test_name or ev.get("module_sha256") != module_hash or ev.get("test_sha256") != test_hash: raise SystemExit(f"G23_SOURCE_BINDING_FAIL_{cid}")
-            if str(ev.get("github_actions_run_id")) != material_run: raise SystemExit(f"G23_RUN_PROVENANCE_FAIL_{cid}")
+            if recorded!=calculated: raise SystemExit(f"G23_EVIDENCE_HASH_FAIL_{cid}")
+            if ev.get("status")!="PASS" or ev.get("capability_id")!=cid or ev.get("canonical_name")!=name: raise SystemExit(f"G23_EVIDENCE_SCOPE_FAIL_{cid}")
+            if ev.get("test_case")!=test_name or ev.get("module_sha256")!=module_hash or ev.get("test_sha256")!=test_hash: raise SystemExit(f"G23_SOURCE_BINDING_FAIL_{cid}")
+            if str(ev.get("github_actions_run_id"))!=material_run: raise SystemExit(f"G23_RUN_PROVENANCE_FAIL_{cid}")
             if ev.get("certification_granted") is not False: raise SystemExit(f"G23_CERTIFICATION_PROPAGATION_FAIL_{cid}")
             evidence.append({"capability_id":cid,"evidence_sha256":recorded})
-          out={"schema":"SUPER1200_G23_VALIDATION/1","result":"PASS","scope":"D04:97-100",
+          out={"schema":"SUPER1200_G23_VALIDATION/1","result":"PASS","scope":"D04:101-104",
                "validator":"github-actions-independent-job","evidence":evidence,"registry_count":1200,
                "module_sha256":module_hash,"test_sha256":test_hash,"certification_granted":False}
           Path("g23-validation.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
-          with open(os.environ["GITHUB_OUTPUT"],"a") as f:
-            f.write("result=PASS\nscope=D04:97-100\n")
-          print("SUPER1200_G23=PASS SCOPE=D04:97-100 GLOBAL_CERTIFICATION=NO")
+          with open(os.environ["GITHUB_OUTPUT"],"a") as f: f.write("result=PASS\nscope=D04:101-104\n")
+          print("SUPER1200_G23=PASS SCOPE=D04:101-104 GLOBAL_CERTIFICATION=NO")
           PY
       - name: Preserve G23 evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: super1200-g23-d04-97-100-${{ github.run_id }}
+          name: super1200-g23-d04-101-104-${{ github.run_id }}
           path: g23-validation.json
           if-no-files-found: warn
           retention-days: 90
@@ -98,7 +98,7 @@ jobs:
   g24-automated-certification:
     name: "G24 — scoped certification gate (requires G23)"
     needs: g23-independent-validation
-    if: needs.g23-independent-validation.outputs.result == 'PASS' && needs.g23-independent-validation.outputs.scope == 'D04:97-100'
+    if: needs.g23-independent-validation.outputs.result == 'PASS' && needs.g23-independent-validation.outputs.scope == 'D04:101-104'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -112,7 +112,7 @@ jobs:
       - name: Download G23 evidence from the independent job
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
         with:
-          name: super1200-g23-d04-97-100-${{ github.run_id }}
+          name: super1200-g23-d04-101-104-${{ github.run_id }}
           path: g23-artifact
       - name: Revalidate G23 scope and execute G24 scoped certification checks
         shell: bash
@@ -122,7 +122,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           test "$G23_RESULT" = PASS
-          test "$G23_SCOPE" = D04:97-100
+          test "$G23_SCOPE" = D04:101-104
           python3 -B implementation/super1200/tests/test_d04_runtime.py
           python3 -B - <<'PY'
           import hashlib,json,os
@@ -133,19 +133,18 @@ jobs:
           g23=json.loads((root/"g23-artifact/g23-validation.json").read_text())
           module_hash=hashlib.sha256((root/"implementation/super1200/domains/D04_runtime.py").read_bytes()).hexdigest()
           test_hash=hashlib.sha256((root/"implementation/super1200/tests/test_d04_runtime.py").read_bytes()).hexdigest()
-          if g23.get("result")!="PASS" or g23.get("scope")!="D04:97-100" or g23.get("certification_granted") is not False: raise SystemExit("G24_G23_ARTIFACT_FAIL")
+          if g23.get("result")!="PASS" or g23.get("scope")!="D04:101-104" or g23.get("certification_granted") is not False: raise SystemExit("G24_G23_ARTIFACT_FAIL")
           if g23.get("module_sha256")!=module_hash or g23.get("test_sha256")!=test_hash: raise SystemExit("G24_G23_SOURCE_BINDING_FAIL")
-          if state.get("current_checkpoint")!="D04_97_100_MATERIALIZED": raise SystemExit("G24_CHECKPOINT_FAIL")
+          if state.get("current_checkpoint")!="D04_101_104_MATERIALIZED": raise SystemExit("G24_CHECKPOINT_FAIL")
           if state.get("certified") is not False or state.get("global_certification_status")!="NOT_CERTIFIED": raise SystemExit("G24_GLOBAL_CERTIFICATION_DRIFT")
-          reg=json.loads((root/"implementation/super1200/registry/capabilities.json").read_text())
-          ri={x["capability_id"]:x for x in reg["items"]}
+          reg=json.loads((root/"implementation/super1200/registry/capabilities.json").read_text()); ri={x["capability_id"]:x for x in reg["items"]}
           evidence=[]
-          for cid in [97,98,99,100]:
+          for cid in [101,102,103,104]:
             ev=json.loads((root/"continuity/runtime-evidence/D04"/f"capability-{cid:04d}.json").read_text())
             if ev.get("status")!="PASS" or ev.get("module_sha256")!=module_hash or ev.get("test_sha256")!=test_hash: raise SystemExit(f"G24_EVIDENCE_REVALIDATION_FAIL_{cid}")
             if ri[cid].get("implementation_state")!="EVIDENCED": raise SystemExit(f"G24_IMPLEMENTATION_STATE_FAIL_{cid}")
             evidence.append({"capability_id":cid,"evidence_sha256":ev.get("evidence_sha256")})
-          cert={"schema":"SUPER1200_G24_CERTIFICATION_DECISION/1","result":"PASS","scope":"D04:97-100",
+          cert={"schema":"SUPER1200_G24_CERTIFICATION_DECISION/1","result":"PASS","scope":"D04:101-104",
             "basis":"G23_PASS_PLUS_INDEPENDENT_G24_REVALIDATION","validator":"github-actions-g24-job",
             "g23":"PASS","g24":"PASS","certification_granted":True,"scope_only":True,
             "global_super1200_certified":False,"module_sha256":module_hash,"test_sha256":test_hash,
@@ -153,7 +152,7 @@ jobs:
             "g24_workflow_run_id":os.environ["GITHUB_RUN_ID"],"certified_at_utc":datetime.now(timezone.utc).isoformat()}
           Path("g24-certification-decision.json").write_text(json.dumps(cert,indent=2,sort_keys=True)+"\n")
           Path("g23-validation.json").write_text(json.dumps(g23,indent=2,sort_keys=True)+"\n")
-          print("SUPER1200_G24=PASS SCOPE=D04:97-100 GLOBAL_CERTIFICATION=NO")
+          print("SUPER1200_G24=PASS SCOPE=D04:101-104 GLOBAL_CERTIFICATION=NO")
           PY
       - name: Persist scoped G23/G24 records without promoting global certification
         shell: bash
@@ -164,46 +163,48 @@ jobs:
           from pathlib import Path
           decision=json.loads(Path("g24-certification-decision.json").read_text(encoding="utf-8"))
           g23=json.loads(Path("g23-validation.json").read_text(encoding="utf-8"))
-          if decision.get("result")!="PASS" or decision.get("scope")!="D04:97-100" or decision.get("global_super1200_certified") is not False:
-              raise SystemExit("G24_PERSISTENCE_DENY_SCOPE")
-          if g23.get("result")!="PASS" or g23.get("scope")!="D04:97-100": raise SystemExit("G23_PERSISTENCE_DENY_SCOPE")
-          cert_path=Path("continuity/certification/D04_97_100.json"); cert_path.parent.mkdir(parents=True,exist_ok=True)
+          if decision.get("result")!="PASS" or decision.get("scope")!="D04:101-104" or decision.get("global_super1200_certified") is not False: raise SystemExit("G24_PERSISTENCE_DENY_SCOPE")
+          if g23.get("result")!="PASS" or g23.get("scope")!="D04:101-104": raise SystemExit("G23_PERSISTENCE_DENY_SCOPE")
+          cert_path=Path("continuity/certification/D04_101_104.json"); cert_path.parent.mkdir(parents=True,exist_ok=True)
           cert_path.write_text(json.dumps(decision,indent=2,sort_keys=True)+"\n",encoding="utf-8")
-          val_path=Path("continuity/independent-validation/D04_97_100.json"); val_path.parent.mkdir(parents=True,exist_ok=True)
+          val_path=Path("continuity/independent-validation/D04_101_104.json"); val_path.parent.mkdir(parents=True,exist_ok=True)
           val_path.write_text(json.dumps(g23,indent=2,sort_keys=True)+"\n",encoding="utf-8")
           state_path=Path("continuity/STATE.json"); state=json.loads(state_path.read_text(encoding="utf-8"))
-          if state.get("current_checkpoint")!="D04_97_100_MATERIALIZED": raise SystemExit("G24_PERSISTENCE_DENY_CHECKPOINT")
+          if state.get("current_checkpoint")!="D04_101_104_MATERIALIZED": raise SystemExit("G24_PERSISTENCE_DENY_CHECKPOINT")
           if state.get("certified") is not False or state.get("global_certification_status")!="NOT_CERTIFIED": raise SystemExit("G24_PERSISTENCE_DENY_GLOBAL_CERTIFICATION")
-          state["g23"]="PASS_FOR_SCOPE_D04_97_100"; state["g24"]="PASS_FOR_SCOPE_D04_97_100"
+          state["g23"]="PASS_FOR_SCOPE_D04_101_104"; state["g24"]="PASS_FOR_SCOPE_D04_101_104"
           state["certified"]=False; state["global_certification_status"]="NOT_CERTIFIED"
           certs=state.get("scoped_certifications",{})
           if not isinstance(certs,dict): certs={}
           previous=state.get("scoped_certification")
           if isinstance(previous,dict) and previous.get("scope"): certs[previous["scope"]]=previous
-          certs["D04:97-100"]={"scope":"D04:97-100","status":"PASS","record_path":"continuity/certification/D04_97_100.json",
+          certs["D04:101-104"]={"scope":"D04:101-104","status":"PASS","record_path":"continuity/certification/D04_101_104.json",
             "workflow_run_id":decision["g24_workflow_run_id"],"certification_granted":True,"global_certification_granted":False}
-          state["scoped_certifications"]=certs; state["scoped_certification"]=certs["D04:97-100"]
+          state["scoped_certifications"]=certs; state["scoped_certification"]=certs["D04:101-104"]
           state["status"]="BLOCKED"; state["blocked"]=True; state["block_reason"]="NEXT_D04_TRANCHE_EXECUTOR_NOT_REGISTERED"
           state["blocked_at"]=decision["certified_at_utc"]; state["active_worker"]=False; state["material_worker_ready"]=False
-          state["diagnostic"]="D04 capabilities 97-100 passed scoped G23 and G24. Continuation held fail-closed because no reviewed executor for the next D04 tranche is registered. Global SUPER1200 certification remains NOT_CERTIFIED."
+          state["diagnostic"]="D04 capabilities 101-104 passed scoped G23 and G24. Continuation held fail-closed because no reviewed executor for the next D04 tranche is registered. Global SUPER1200 certification remains NOT_CERTIFIED."
+          state["independent_validation"]={"scope":"D04_CAPABILITIES_101_104_ONLY","scope_key":"D04:101-104","status":"PASS",
+            "workflow_run_id":decision["g23_workflow_run_id"],"record_path":"continuity/independent-validation/D04_101_104.json",
+            "g23":"PASS_FOR_SCOPE_D04_101_104","g24":"PASS_FOR_SCOPE_D04_101_104","certification_granted":False}
           if isinstance(state.get("last_execution"),dict):
-            state["last_execution"]["g23"]="PASS_FOR_SCOPE_D04_97_100"; state["last_execution"]["g24"]="PASS_FOR_SCOPE_D04_97_100"; state["last_execution"]["global_certification_status"]="NOT_CERTIFIED"
+            state["last_execution"]["g23"]="PASS_FOR_SCOPE_D04_101_104"; state["last_execution"]["g24"]="PASS_FOR_SCOPE_D04_101_104"; state["last_execution"]["global_certification_status"]="NOT_CERTIFIED"
           if isinstance(state.get("last_material_execution"),dict):
-            state["last_material_execution"]["g23"]="PASS_FOR_SCOPE_D04_97_100"; state["last_material_execution"]["g24"]="PASS_FOR_SCOPE_D04_97_100"; state["last_material_execution"]["certification_granted"]=False
+            state["last_material_execution"]["g23"]="PASS_FOR_SCOPE_D04_101_104"; state["last_material_execution"]["g24"]="PASS_FOR_SCOPE_D04_101_104"; state["last_material_execution"]["certification_granted"]=False
           state_path.write_text(json.dumps(state,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
           PY
           git diff --check
-          git add continuity/STATE.json continuity/certification/D04_97_100.json continuity/independent-validation/D04_97_100.json
+          git add continuity/STATE.json continuity/certification/D04_101_104.json continuity/independent-validation/D04_101_104.json
           git config user.name "super1200-g24-certifier"
           git config user.email "super1200-g24-certifier@users.noreply.github.com"
-          git commit -m "cert(super1200): certify D04 97-100 scope only"
+          git commit -m "cert(super1200): certify D04 101-104 scope only"
           git push origin HEAD:refs/heads/custosz/super-1200-implementation-20261007
-          echo "SUPER1200_G23_G24_PERSISTENCE=PASS SCOPE=D04:97-100 GLOBAL_CERTIFICATION=FALSE"
+          echo "SUPER1200_G23_G24_PERSISTENCE=PASS SCOPE=D04:101-104 GLOBAL_CERTIFICATION=FALSE"
       - name: Preserve G24 certification decision
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: super1200-g24-d04-97-100-${{ github.run_id }}
+          name: super1200-g24-d04-101-104-${{ github.run_id }}
           path: g24-certification-decision.json
           if-no-files-found: warn
           retention-days: 90
