@@ -101,6 +101,100 @@ jobs:
             echo "Kestra ready marker: found"
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Import and execute the no-side-effect Kestra smoke flow
+        working-directory: integrations/kestra
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          set -a
+          . ./.env
+          set +a
+          umask 077
+          auth_cfg="$RUNNER_TEMP/kestra-curl-auth"
+          printf 'user = "%s:%s"\n' "$KESTRA_ADMIN_EMAIL" "$KESTRA_ADMIN_PASSWORD" > "$auth_cfg"
+          trap 'rm -f "$auth_cfg"' EXIT
+
+          flow_http="$(curl --connect-timeout 3 --max-time 15 --config "$auth_cfg" --silent --show-error \
+            --output "$EVIDENCE_DIR/flow-create-response.json" --write-out '%{http_code}' \
+            --request POST --header 'Content-Type: application/x-yaml' \
+            --data-binary @flows/00-smoke-test.yml \
+            http://127.0.0.1:8080/api/v1/main/flows || true)"
+          if [[ ! "$flow_http" =~ ^2[0-9][0-9]$ ]]; then
+            echo "Flow import failed: HTTP $flow_http"
+            cat "$EVIDENCE_DIR/flow-create-response.json" 2>/dev/null || true
+            exit 1
+          fi
+
+          execution_http="$(curl --connect-timeout 3 --max-time 15 --config "$auth_cfg" --silent --show-error \
+            --output "$EVIDENCE_DIR/execution-start-response.json" --write-out '%{http_code}' \
+            --request POST \
+            http://127.0.0.1:8080/api/v1/main/executions/louksna.kestra/kestra_oss_smoke || true)"
+          if [[ ! "$execution_http" =~ ^2[0-9][0-9]$ ]]; then
+            echo "Flow execution request failed: HTTP $execution_http"
+            cat "$EVIDENCE_DIR/execution-start-response.json" 2>/dev/null || true
+            exit 1
+          fi
+
+          execution_id="$(python3 - "$EVIDENCE_DIR/execution-start-response.json" <<'PY'
+          import json, sys
+          from pathlib import Path
+          data = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          value = data.get("id") or data.get("executionId")
+          if not isinstance(value, str) or not value:
+              raise SystemExit("Execution response did not contain an execution id")
+          print(value)
+          PY
+          )"
+
+          state=""
+          for attempt in $(seq 1 75); do
+            status_http="$(curl --connect-timeout 3 --max-time 10 --config "$auth_cfg" --silent --show-error \
+              --output "$EVIDENCE_DIR/execution-status.json" --write-out '%{http_code}' \
+              "http://127.0.0.1:8080/api/v1/main/executions/$execution_id" || true)"
+            if [[ "$status_http" =~ ^2[0-9][0-9]$ ]]; then
+              state="$(python3 - "$EVIDENCE_DIR/execution-status.json" <<'PY'
+          import json, sys
+          from pathlib import Path
+          data = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          value = data.get("state", {})
+          current = value.get("current") if isinstance(value, dict) else value
+          print(current if isinstance(current, str) else "UNKNOWN")
+          PY
+              )"
+              if [ "$state" = "SUCCESS" ]; then break; fi
+              if [[ "$state" == "FAILED" || "$state" == "KILLED" || "$state" == "WARNING" ]]; then
+                echo "Smoke flow reached terminal state: $state"
+                cat "$EVIDENCE_DIR/execution-status.json"
+                exit 1
+              fi
+            fi
+            sleep 2
+          done
+
+          if [ "$state" != "SUCCESS" ]; then
+            echo "Timed out or could not verify execution success; last state: $state"
+            cat "$EVIDENCE_DIR/execution-status.json" 2>/dev/null || true
+            exit 1
+          fi
+
+          python3 - "$EVIDENCE_DIR/execution-evidence.json" "$execution_id" "$state" <<'PY'
+          import json, sys
+          from pathlib import Path
+          Path(sys.argv[1]).write_text(json.dumps({
+              "flow_id": "kestra_oss_smoke",
+              "namespace": "louksna.kestra",
+              "execution_id": sys.argv[2],
+              "state": sys.argv[3],
+              "side_effects": "log_only",
+          }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          PY
+          {
+            echo "Authenticated flow import: HTTP $flow_http"
+            echo "Flow execution request: HTTP $execution_http"
+            echo "Flow execution id: $execution_id"
+            echo "Flow execution terminal state: $state"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Capture non-secret runtime evidence
         if: always()
         working-directory: integrations/kestra
@@ -133,7 +227,7 @@ jobs:
             echo "- Commit: $GITHUB_SHA"
             echo "- Images: kestra/kestra:v2.0.3, postgres:18.6-alpine"
             echo "- Credentials: ephemeral and not uploaded"
-            echo "- Scope: Compose validation and server/JDBC health only"
+            echo "- Scope: static/Compose validation, server/JDBC/UI health, authenticated import and execution of a log-only smoke flow"
             echo "- G23/G24: not evaluated by this workflow"
           } >> "$GITHUB_STEP_SUMMARY"
 
