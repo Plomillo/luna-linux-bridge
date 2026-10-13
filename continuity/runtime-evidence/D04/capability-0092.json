@@ -2,7 +2,7 @@
   "canonical_name": "CERTIFICATION_SCOPE_IDENTITY",
   "capability_id": 92,
   "certification_granted": false,
-  "evidence_sha256": "cc6ca3013f0fd69c60e6ff8bf03dd078d0195ff794c7402687b376b84a596bf3",
+  "evidence_sha256": "04992fcf111a3283048f81a16687e3f32ea59836cf9398dbeebebbf6a1f68594",
   "executor": "implementation/super1200/runtime/d04_material_worker.py",
   "g23": "PENDING_INDEPENDENT_VALIDATION",
   "g24": "PENDING_G23",
@@ -16,5 +16,5 @@
   "test_artifact": "implementation/super1200/tests/test_d04_runtime.py",
   "test_case": "test_certification_scope_is_subject_bound_and_non_transitive",
   "test_sha256": "eaaf5f4f7f8eb1e62a5720bee0c46a0a69e1a3b889dae079bffd3c6ec82cc807",
-  "validated_at_utc": "2026-10-13T21:15:28.369981+00:00"
+  "validated_at_utc": "2026-10-13T21:17:18.746504+00:00"
 }
