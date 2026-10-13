@@ -1,0 +1,152 @@
+name: SUPER1200 D04 93-96 evidence refresh after append-only extension
+
+on:
+  push:
+    branches:
+      - custosz/super-1200-implementation-20261007
+    paths:
+      - "implementation/super1200/domains/D04_runtime.py"
+      - "implementation/super1200/tests/test_d04_runtime.py"
+      - ".github/workflows/super1200-d04-evidence-refresh-93-96.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: super1200-d04-evidence-refresh-93-96
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout governed candidate branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: custosz/super-1200-implementation-20261007
+          fetch-depth: 0
+
+      - name: Rerun D04 93-96 tests and refresh source-bound evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B - <<'PY'
+          import hashlib, json, os, subprocess, sys
+          from datetime import datetime, timezone
+          from pathlib import Path
+          root=Path(".")
+          state_path=root/"continuity/STATE.json"
+          registry_path=root/"implementation/super1200/registry/capabilities.json"
+          domain_path=root/"implementation/super1200/domains/D04.json"
+          module=root/"implementation/super1200/domains/D04_runtime.py"
+          test=root/"implementation/super1200/tests/test_d04_runtime.py"
+          out=root/"continuity/runtime-evidence/D04"
+          tasks=[
+              (93,"CERTIFICATION_NON_TRANSITIVITY","test_certification_non_transitivity_rejects_derived_subject_and_scope"),
+              (94,"EVIDENCE_EXPIRATION","test_evidence_expiration_uses_half_open_utc_interval_and_fails_closed"),
+              (95,"EVIDENCE_INVALIDATION_GRAPH","test_evidence_invalidation_graph_propagates_and_rejects_cycles"),
+              (96,"EVIDENCE_REUSE_ENGINE","test_evidence_reuse_requires_exact_validated_non_invalidated_key"),
+          ]
+          def load(p): return json.loads(p.read_text(encoding="utf-8"))
+          def sha(p): return hashlib.sha256(p.read_bytes()).hexdigest()
+          state=load(state_path); registry=load(registry_path); domain=load(domain_path)
+          if state.get("current_checkpoint")!="D04_93_96_MATERIALIZED":
+              raise SystemExit("EVIDENCE_REFRESH_DENY_UNEXPECTED_CHECKPOINT")
+          if state.get("certified") is not False or state.get("global_certification_status")!="NOT_CERTIFIED":
+              raise SystemExit("EVIDENCE_REFRESH_DENY_CERTIFICATION_STATE_DRIFT")
+          reg={x.get("capability_id"):x for x in registry.get("items",[])}
+          dom={x.get("capability_id"):x for x in domain.get("capabilities",[])}
+          old_records={}
+          for cid,name,test_name in tasks:
+              if reg.get(cid,{}).get("implementation_state")!="EVIDENCED" or dom.get(cid,{}).get("implementation_state")!="EVIDENCED":
+                  raise SystemExit(f"EVIDENCE_REFRESH_DENY_CAPABILITY_STATE_{cid}")
+              p=out/f"capability-{cid:04d}.json"
+              prior=load(p); prior_hash=prior.get("evidence_sha256"); unsigned=dict(prior); unsigned.pop("evidence_sha256",None)
+              computed=hashlib.sha256(json.dumps(unsigned,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()).hexdigest()
+              if prior_hash!=computed or prior.get("capability_id")!=cid or prior.get("canonical_name")!=name:
+                  raise SystemExit(f"EVIDENCE_REFRESH_DENY_PRIOR_EVIDENCE_INTEGRITY_{cid}")
+              old_records[cid]={"prior_evidence_sha256":prior_hash,"prior_module_sha256":prior.get("module_sha256"),"prior_test_sha256":prior.get("test_sha256")}
+          suite=subprocess.run([sys.executable,"-B",str(test),"-v"],cwd=root,text=True,capture_output=True,timeout=240)
+          suite_output=suite.stdout+"\n"+suite.stderr
+          if suite.returncode!=0:
+              print(suite_output[-16000:]); raise SystemExit("EVIDENCE_REFRESH_DENY_FULL_SUITE_FAILED")
+          case_results={}
+          for cid,name,test_name in tasks:
+              selected=subprocess.run([sys.executable,"-B",str(test),"-v",f"D04RuntimeTests.{test_name}"],
+                  cwd=root,text=True,capture_output=True,timeout=120)
+              output=selected.stdout+"\n"+selected.stderr
+              passed=selected.returncode==0 and test_name in output and "Ran 1 test" in output and "OK" in output and "FAILED" not in output
+              if not passed:
+                  print(output[-12000:]); raise SystemExit(f"EVIDENCE_REFRESH_DENY_TEST_FAILURE_{cid}")
+              case_results[cid]={"test_case":test_name,"exit_code":selected.returncode,"result":"PASS",
+                  "single_test_run_confirmed":True,
+                  "stdout_sha256":hashlib.sha256(selected.stdout.encode()).hexdigest(),
+                  "stderr_sha256":hashlib.sha256(selected.stderr.encode()).hexdigest()}
+          module_hash,test_hash=sha(module),sha(test)
+          run_id=os.environ["GITHUB_RUN_ID"]; repo=os.environ["GITHUB_REPOSITORY"]
+          server=os.environ.get("GITHUB_SERVER_URL","https://github.com")
+          run_url=f"{server}/{repo}/actions/runs/{run_id}"; now=datetime.now(timezone.utc).isoformat()
+          for cid,name,test_name in tasks:
+              e={
+                "schema":"SUPER1200_D04_MATERIAL_EVIDENCE/1","capability_id":cid,"canonical_name":name,
+                "executor":"implementation/super1200/runtime/d04_material_worker_93_96.py",
+                "implementation_artifact":"implementation/super1200/domains/D04_runtime.py",
+                "test_artifact":"implementation/super1200/tests/test_d04_runtime.py",
+                "test_case":test_name,"status":"PASS",
+                "test_invocation":["python","-B","test_d04_runtime.py","-v",f"D04RuntimeTests.{test_name}"],
+                "selected_test_result":case_results[cid],
+                "validated_at_utc":now,"evidence_refresh_workflow_run_id":run_id,
+                "evidence_refresh_workflow_url":run_url,
+                "github_actions_run_id":run_id,
+                "originating_material_workflow_run_id":state.get("last_execution",{}).get("workflow_run_id"),
+                "prior_evidence":old_records[cid],
+                "module_sha256":module_hash,"test_sha256":test_hash,
+                "suite_stdout_sha256":hashlib.sha256(suite.stdout.encode()).hexdigest(),
+                "suite_stderr_sha256":hashlib.sha256(suite.stderr.encode()).hexdigest(),
+                "suite_exit_code":suite.returncode,
+                "g23":"PENDING_INDEPENDENT_REVALIDATION","g24":"PENDING_G23","certification_granted":False
+              }
+              e["evidence_sha256"]=hashlib.sha256(json.dumps(e,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()).hexdigest()
+              (out/f"capability-{cid:04d}.json").write_text(json.dumps(e,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
+          state["g23"]="PENDING_INDEPENDENT_REVALIDATION"
+          state["g24"]="PENDING_G23"
+          state["certified"]=False; state["global_certification_status"]="NOT_CERTIFIED"
+          state["evidence_refresh"]={"status":"PASS_AWAITING_G23","scope":"D04_CAPABILITIES_93_96_ONLY",
+              "workflow_run_id":run_id,"workflow_url":run_url,"source_commit":os.environ["GITHUB_SHA"],
+              "completed_at_utc":now,"module_sha256":module_hash,"test_sha256":test_hash,
+              "test_results":"FULL_SUITE_PASS;4_OF_4_SPECIFIC_TESTS_PASS","certification_granted":False}
+          state["independent_validation"]={**state.get("independent_validation",{}),
+              "status":"PENDING_REVALIDATION_AFTER_EVIDENCE_REFRESH",
+              "g23":"PENDING_INDEPENDENT_REVALIDATION","g24":"PENDING_G23","certification_granted":False}
+          if isinstance(state.get("last_material_execution"),dict):
+              state["last_material_execution"]["g23"]="PENDING_INDEPENDENT_REVALIDATION"
+              state["last_material_execution"]["g24"]="PENDING_G23"
+              state["last_material_execution"]["certification_granted"]=False
+          state_path.write_text(json.dumps(state,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
+          record={"schema":"SUPER1200_D04_EVIDENCE_REFRESH/1","status":"PASS_AWAITING_G23",
+              "scope":"D04_CAPABILITIES_93_96_ONLY","workflow_run_id":run_id,"workflow_url":run_url,
+              "source_commit":os.environ["GITHUB_SHA"],"completed_at_utc":now,
+              "module_sha256":module_hash,"test_sha256":test_hash,
+              "full_suite_exit_code":suite.returncode,
+              "specific_test_results":[{"capability_id":cid,**case_results[cid]} for cid,_,_ in tasks],
+              "prior_evidence":old_records,"certification_granted":False}
+          rec=root/"continuity/evidence-refresh/D04_93_96.json"; rec.parent.mkdir(parents=True,exist_ok=True)
+          rec.write_text(json.dumps(record,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
+          print("SUPER1200_EVIDENCE_REFRESH_PASS "+json.dumps({"run_id":run_id,"capabilities":[93,94,95,96],
+              "full_suite":"PASS","specific_tests":"4/4 PASS","g23":"PENDING_INDEPENDENT_REVALIDATION",
+              "global_certification_status":"NOT_CERTIFIED"},sort_keys=True))
+          PY
+
+      - name: Persist refreshed evidence and source checkpoint
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git diff --check
+          git add continuity/STATE.json continuity/runtime-evidence/D04/capability-0093.json continuity/runtime-evidence/D04/capability-0094.json continuity/runtime-evidence/D04/capability-0095.json continuity/runtime-evidence/D04/capability-0096.json continuity/evidence-refresh/D04_93_96.json
+          git config user.name "super1200-evidence-refresh"
+          git config user.email "super1200-evidence-refresh@users.noreply.github.com"
+          git commit -m "test(super1200): refresh D04 93-96 evidence for append-only source"
+          git push origin HEAD:refs/heads/custosz/super-1200-implementation-20261007
+          echo "SUPER1200_EVIDENCE_REFRESH_PERSISTENCE=PASS G23=PENDING G24=PENDING GLOBAL_CERTIFICATION=FALSE"
