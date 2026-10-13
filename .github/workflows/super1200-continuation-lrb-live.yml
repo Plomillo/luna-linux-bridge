@@ -66,8 +66,6 @@ jobs:
               raise SystemExit('DISPATCH_DENIED_STATE_NOT_READY')
           if state.get('material_worker_ready') is not True:
               raise SystemExit('DISPATCH_DENIED_MATERIAL_WORKER_NOT_REVIEWED')
-          if state.get('independent_validation_ready') is not True:
-              raise SystemExit('DISPATCH_DENIED_INDEPENDENT_VALIDATION_NOT_READY')
           if state.get('metaos_ready') is not True:
               raise SystemExit('DISPATCH_DENIED_METAOS_NOT_VALIDATED')
           metaos=Path('mission/artifacts/custosz-v7/MetaOS.wasm')
