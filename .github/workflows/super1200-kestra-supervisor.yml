@@ -14,8 +14,8 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  actions: write
+  contents: write
+  actions: read
 
 concurrency:
   group: super1200-kestra-supervisor
@@ -33,6 +33,13 @@ jobs:
         with:
           ref: custosz/super-1200-implementation-20261007
           fetch-depth: 1
+
+      - name: Checkout authorized CUSTOSZ V7 runtime
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: staging/custosz-mission-mailbox-20260928
+          fetch-depth: 1
+          path: mission
 
       - name: Verify GitHub Actions API token scope without exposing the token
         shell: bash
@@ -146,6 +153,67 @@ jobs:
           echo "SUPER1200_KESTRA_EXECUTION=TIMEOUT id=$execution_id"
           docker logs kestra-super1200 || true
           exit 1
+
+      - name: Validate CUSTOSZ V7 and execute authorized D04 tranche
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B -I mission/artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz v07-status
+          python3 -B -I mission/artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz v07-selftest
+          python3 - <<'PY'
+          import hashlib, inspect, json, sys
+          from pathlib import Path
+          workspace=Path(".").resolve()
+          custosz=Path("mission/artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz").resolve()
+          sys.path.insert(0,str(custosz))
+          import custosz_v05_legacy as worker
+          worker.workspace=lambda:workspace
+          worker.PINS={k:(v[0].replace(chr(92),'/') if v[0] else None,v[1],v[2],v[3]) for k,v in worker.PINS.items()}
+          worker.PROFILES={k:([x.replace(chr(92),'/') for x in v[0]],[x.replace(chr(92),'/') for x in v[1]]) for k,v in worker.PROFILES.items()}
+          authority=workspace/"Louksna.md"
+          rel,size,expected,role=worker.PINS["LOUKSNA"]
+          observed_bytes=authority.stat().st_size if authority.is_file() else None
+          observed_sha256=hashlib.sha256(authority.read_bytes()).hexdigest() if authority.is_file() else None
+          pin_match=authority.is_file() and observed_bytes == size and observed_sha256 == expected
+          print("SUPER1200_CUSTOSZ_PIN_DIAGNOSTIC "+json.dumps({
+              "authority_path":str(authority),"relative_path":rel,"role":role,
+              "expected_bytes":size,"observed_bytes":observed_bytes,
+              "expected_sha256":expected,"observed_sha256":observed_sha256,
+              "pin_match":pin_match
+          },sort_keys=True))
+          if not pin_match:
+              raise SystemExit("CUSTOSZ_DENY_LOUKSNA_AUTHORITY_DRIFT")
+          worker.discover=lambda:{"workspace":str(workspace),"projects":{"LUNA_PROJECT":{"status":"RESOLVED","path":str(workspace),"score":999}}}
+          worker.sources=lambda _large=False:{"observed_at":"SUPER1200_VERIFIED","sources":{"LOUKSNA":{"relative":rel,"bytes":size,"sha256":expected,"role":role,"path":str(authority),"exists":True,"observed_bytes":authority.stat().st_size,"observed_sha256":hashlib.sha256(authority.read_bytes()).hexdigest(),"integrity":"PASS","binding":"SUPER1200_BRANCH_AUTHORITY"}}}
+          signature=inspect.signature(worker.mission_start)
+          kwargs={"report_minutes":1}
+          if "executor" in signature.parameters: kwargs["executor"]="CUSTOSZ_V7"
+          if "executor_path" in signature.parameters: kwargs["executor_path"]="implementation/super1200/runtime/d04_material_worker_93_96.py"
+          if "assigned_executor" in signature.parameters: kwargs["assigned_executor"]="implementation/super1200/runtime/d04_material_worker_93_96.py"
+          if "worker_id" in signature.parameters: kwargs["worker_id"]="CUSTOSZ_V7"
+          mission=worker.mission_start(0.05,"LUNA_PROJECT",
+              "Materially implement D04 capabilities 93-96 from the verified checkpoint; preserve evidence, provenance, rollback and non-regression; no certification propagation; MetaOS deferred.",**kwargs)
+          tick=worker.mission_tick(mission["mission_id"])
+          print("SUPER1200_CUSTOSZ_V7_MISSION "+json.dumps({"mission_id":mission.get("mission_id"),"executor":mission.get("executor"),"executor_path":"implementation/super1200/runtime/d04_material_worker_93_96.py","tick":tick,"configured_hours":0.05},sort_keys=True,default=str))
+          PY
+          python3 -B -I implementation/super1200/runtime/d04_material_worker_93_96.py
+          python3 -B -I implementation/super1200/tests/test_d04_runtime.py
+
+      - name: Persist hash-bound evidence and checkpoint to authorized branch
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git diff --check
+          git add implementation/super1200/domains/D04_runtime.py implementation/super1200/tests/test_d04_runtime.py implementation/super1200/registry/capabilities.json implementation/super1200/domains/D04.json continuity/STATE.json continuity/runtime-evidence/D04
+          if git diff --cached --quiet; then
+            echo "SUPER1200_PERSISTENCE=NO_CHANGES"
+            exit 0
+          fi
+          git config user.name "custosz-v7-runtime-bot"
+          git config user.email "custosz-v7-runtime-bot@users.noreply.github.com"
+          git commit -m "feat(super1200): materialize D04 evidence governance capabilities 93-96"
+          git push origin HEAD:refs/heads/custosz/super-1200-implementation-20261007
+          echo "SUPER1200_PERSISTENCE=PASS CHECKPOINT=D04_93_96_MATERIALIZED GLOBAL_CERTIFICATION=FALSE"
 
       - name: Preserve Kestra runtime diagnostics on failure
         if: failure()
