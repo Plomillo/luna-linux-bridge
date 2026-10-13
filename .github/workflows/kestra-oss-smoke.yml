@@ -1,0 +1,144 @@
+name: Kestra Open Source - branch smoke test
+
+on:
+  push:
+    branches:
+      - custosz/super-1200-implementation-20261007
+    paths:
+      - "integrations/kestra/**"
+      - ".github/workflows/kestra-oss-smoke.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kestra-oss-smoke-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate-and-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      EVIDENCE_DIR: ${{ runner.temp }}/kestra-oss-evidence
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Create ephemeral CI credentials
+        working-directory: integrations/kestra
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$EVIDENCE_DIR"
+          python3 - <<'PY'
+          from pathlib import Path
+          from secrets import token_hex
+          Path(".env").write_text(
+              "KESTRA_DB_PASSWORD=" + token_hex(32) + "\n"
+              "KESTRA_ADMIN_EMAIL=kestra-ci@example.com\n"
+              "KESTRA_ADMIN_PASSWORD=" + token_hex(32) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Validate governance invariants and Compose schema
+        working-directory: integrations/kestra
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 validate.py
+          docker compose -f compose.yml config --quiet
+
+      - name: Pull pinned Open Source images
+        working-directory: integrations/kestra
+        run: docker compose -f compose.yml pull
+
+      - name: Start isolated temporary instance
+        working-directory: integrations/kestra
+        run: docker compose -f compose.yml up -d --wait --wait-timeout 300
+
+      - name: Assert Kestra and PostgreSQL health
+        working-directory: integrations/kestra
+        shell: bash
+        run: |
+          set -euo pipefail
+          healthy=0
+          for attempt in $(seq 1 90); do
+            if curl --silent --show-error --fail \
+              http://127.0.0.1:18081/health \
+              -o "$EVIDENCE_DIR/health.json" 2>/dev/null; then
+              if python3 - "$EVIDENCE_DIR/health.json" <<'PY'
+          import json
+          import sys
+          doc = json.load(open(sys.argv[1], encoding="utf-8"))
+          details = doc.get("details", {})
+          ok = doc.get("status") == "UP" and details.get("jdbc", {}).get("status") == "UP"
+          sys.exit(0 if ok else 1)
+          PY
+              then
+                healthy=1
+                break
+              fi
+            fi
+            sleep 5
+          done
+          if [ "$healthy" -ne 1 ]; then
+            docker compose -f compose.yml ps --all || true
+            docker compose -f compose.yml logs --no-color --tail=250 || true
+            echo "Kestra and JDBC did not both reach UP."
+            exit 1
+          fi
+          echo "Kestra and JDBC health: UP" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Capture non-secret runtime evidence
+        if: always()
+        working-directory: integrations/kestra
+        shell: bash
+        run: |
+          set +e
+          mkdir -p "$EVIDENCE_DIR"
+          {
+            echo "captured_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "repository=$GITHUB_REPOSITORY"
+            echo "ref=$GITHUB_REF"
+            echo "commit=$GITHUB_SHA"
+            echo "kestra_image=kestra/kestra:v2.0.3"
+            echo "postgres_image=postgres:18.6-alpine"
+            echo
+            docker compose -f compose.yml ps --all
+          } > "$EVIDENCE_DIR/runtime.txt" 2>&1
+          for ref in kestra/kestra:v2.0.3 postgres:18.6-alpine; do
+            {
+              echo "IMAGE_REF=$ref"
+              docker image inspect "$ref" --format 'IMAGE_ID={{.Id}} REPO_DIGESTS={{json .RepoDigests}}'
+            } >> "$EVIDENCE_DIR/resolved-images.txt" 2>&1
+          done
+          docker compose -f compose.yml logs --no-color --tail=250 \
+            > "$EVIDENCE_DIR/startup.log" 2>&1
+          sha256sum compose.yml .env.example validate.py GOVERNANCE.json flows/00-smoke-test.yml \
+            > "$EVIDENCE_DIR/source-files-sha256.txt" 2>&1
+          {
+            echo "## Kestra Open Source branch smoke"
+            echo "- Commit: $GITHUB_SHA"
+            echo "- Images: kestra/kestra:v2.0.3, postgres:18.6-alpine"
+            echo "- Credentials: ephemeral and not uploaded"
+            echo "- Scope: Compose validation and server/JDBC health only"
+            echo "- G23/G24: not evaluated by this workflow"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Destroy temporary runtime
+        if: always()
+        working-directory: integrations/kestra
+        run: docker compose -f compose.yml down --volumes --remove-orphans || true
+
+      - name: Upload evidence bundle
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: kestra-oss-smoke-${{ github.run_id }}
+          path: ${{ runner.temp }}/kestra-oss-evidence/
+          if-no-files-found: warn
+          retention-days: 30

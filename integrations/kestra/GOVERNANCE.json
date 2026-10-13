@@ -1,0 +1,79 @@
+{
+  "record_id": "KESTRA-OSS-INTEGRATION-001",
+  "record_version": "1.0.0",
+  "created_for_branch": "custosz/super-1200-implementation-20261007",
+  "source_branch_head_before_change": "fea81fccdb1e78a781b604fdb4e97e4ef97993b8",
+  "canonical_authority": "Louksna.md",
+  "protected_baseline": "LUNACORE_final_formalized_v25.md",
+  "doctrine": "EXTEND_DO_NOT_REPLACE",
+  "change_policy": "APPEND_ONLY",
+  "failure_policy": "FAIL_CLOSED",
+  "overall_status": "CANDIDATE_NOT_CERTIFIED",
+  "activation": "NOT_AUTHORIZED",
+  "promotion_to_main": "PROHIBITED_UNTIL_APPROVED_GATES",
+  "engine": {
+    "name": "Kestra",
+    "edition": "Open Source",
+    "license": "Apache-2.0",
+    "upstream_repository": "https://github.com/kestra-io/kestra",
+    "official_release_page": "https://github.com/kestra-io/kestra/releases",
+    "newest_source_release_observed": {
+      "tag": "v2.0.5",
+      "published_at": "2026-10-05T13:29:32Z",
+      "evidence_url": "https://github.com/kestra-io/kestra/releases/tag/v2.0.5"
+    },
+    "selected_container_image": "kestra/kestra:v2.0.3",
+    "image_selection_reason": "The official Docker Hub tag listing surfaced the full v2.0.3 image as a visible exact 2.x patch tag; availability of the v2.0.5 container image was not established by this audit. v2.0.5 is an upgrade verification item, not silently assumed.",
+    "container_image_source": "https://hub.docker.com/r/kestra/kestra/tags",
+    "exact_patch_tag_immutability_claim_source": "https://hub.docker.com/r/kestra/kestra",
+    "resolved_image_digest": "PENDING_CI_CAPTURE",
+    "plugin_variant": "Full image with bundled plugins; not slim/no-plugins"
+  },
+  "dependencies": [
+    {
+      "name": "PostgreSQL",
+      "image": "postgres:18.6-alpine",
+      "source": "https://hub.docker.com/_/postgres/tags"
+    }
+  ],
+  "security_boundary": {
+    "ui_binding": "127.0.0.1:8080",
+    "management_binding": "127.0.0.1:18081",
+    "management_port_authentication": "Not provided by default; loopback binding required",
+    "basic_auth": "Enabled; credentials generated locally from ignored .env",
+    "host_docker_socket": "NOT_MOUNTED",
+    "github_credentials": "NOT_CONFIGURED",
+    "automatic_flow_import": "DISABLED",
+    "automatic_repair_or_repository_mutation": "NOT_CONFIGURED",
+    "arbitrary_script_flows": "Blocked from committed flow templates until an isolated runner is specified and independently reviewed",
+    "external_tasks": "No production side effects authorized"
+  },
+  "gates": {
+    "specification": "RECORDED",
+    "evidence": "PENDING_CI",
+    "static_validation": "PENDING_CI",
+    "runtime_startup_and_database_health": "PENDING_CI",
+    "resolved_image_digests": "PENDING_CI_CAPTURE",
+    "manual_flow_execution": "NOT_PERFORMED",
+    "G23": "NOT_PERFORMED",
+    "G24": "NOT_GRANTED",
+    "non_regression": "PENDING",
+    "rollback": "DOCUMENTED_NOT_RUNTIME_TESTED"
+  },
+  "required_next_gates": [
+    "Verify official v2.0.5 Docker image availability and compare its release provenance before any upgrade.",
+    "Retain the CI evidence artifact showing the exact pulled image digests and health response.",
+    "Independently test manual smoke-flow execution.",
+    "Design and test a dedicated isolated task execution boundary before enabling script-based workflows.",
+    "Review GitHub integration permissions and side-effect restrictions before connecting any repository token.",
+    "Complete independent validation and certification as separate gates; no automated certification propagation."
+  ],
+  "provenance": [
+    "https://kestra.io/docs/oss-vs-paid",
+    "https://kestra.io/docs/installation/docker-compose",
+    "https://kestra.io/docs/scripts/task-runners",
+    "https://kestra.io/docs/administrator-guide/monitoring",
+    "https://hub.docker.com/r/kestra/kestra/tags",
+    "https://github.com/kestra-io/kestra/releases/tag/v2.0.5"
+  ]
+}

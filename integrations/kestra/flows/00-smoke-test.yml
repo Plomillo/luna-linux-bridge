@@ -1,0 +1,7 @@
+id: kestra_oss_smoke
+namespace: louksna.kestra
+description: "Prueba manual sin acciones externas; no se importa ni ejecuta automáticamente."
+tasks:
+  - id: confirm_bootstrap
+    type: io.kestra.plugin.core.log.Log
+    message: "Kestra Open Source smoke flow: no external mutation performed."
