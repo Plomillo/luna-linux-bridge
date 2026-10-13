@@ -7,7 +7,7 @@
   "prior_block_reason": "UNTRUSTED_SYNTHETIC_WORKER_AND_D04_SELF_RECURSION",
   "prior_diagnostic": "Reconciliation blocked dispatch: the shared SUPER1200 worker synthesizes generic wrapper code and tests while marking capabilities EVIDENCED; D04 maps to the dispatcher itself and would recursively invoke it. The D03 checkpoint is a historical reported state, not independently validated.",
   "current_block_reason": "NO_REVIEWED_MATERIAL_EXECUTOR_AND_METAOS_INVALID_OR_MISSING",
-  "current_diagnostic": "Reconciliation 2026-10-13: the synthetic whole-domain materializer has been disabled and the active executor map remains empty. D04 now has additional behavior-level provenance primitives/tests, but no reviewed task-level executor is registered. MetaOS is still rejected by the recorded standard WASM validation and is missing from the candidate branch at the expected path. No material dispatch is authorized.",
+  "current_diagnostic": "The corrected recovery workflow validated the exact staged MetaOS bytes and failed standard WASM validation (2442 bytes; SHA-256 5d8f1239e3a0b452be722078760b000afc22af0a64f93ffb0a1f74024f15aed0; invalid version bytes at +4). No source/build recipe was found in the staged branches inspected. D04 evidence runner passed scoped behavior tests 81-86 and the full 10-test suite, but is not a material executor. Active executor map remains empty; 12-hour material mission and G23/G24 remain blocked.",
   "actions_verified": [
     {
       "action": "Disabled synthetic materialization worker",
@@ -29,13 +29,37 @@
     }
   ],
   "unresolved": [
-    "No reviewed task-level material executor is registered in continuity/EXECUTORS.json.",
-    "MetaOS artifact is missing at the candidate path and the staged WASM failed recorded standard validation.",
-    "CUSTOSZ V7 mission API is supervisory time/state only; no material executor is bound.",
-    "The 12-hour material mission has not started.",
+    "No reviewed task-level material executor is registered in continuity/EXECUTORS.json; the new D04 runner only generates evidence for existing behavior tests.",
+    "MetaOS exact bytes fail standard WebAssembly validation; staged branches inspected contain no source/build recipe for a verified rebuild.",
+    "CUSTOSZ V7 mission API remains supervisory time/state and no actual material worker is bound.",
+    "The 12-hour material mission has not started; current run is a recovery/evidence workflow only.",
     "G23 and G24 remain blocked."
   ],
   "decision": "FAIL_CLOSED",
   "main_modified": false,
-  "certification_granted": false
+  "certification_granted": false,
+  "recovery_attempts": [
+    {
+      "workflow_run_id": 38451389274,
+      "commit": "7ca3d55b302a9bbcf5da9441b7c692f6e337658a",
+      "outcome": "INVALID_VALIDATION_HARNESS_NO_METAOS_VALIDATION_CLAIM",
+      "note": "Initial workflow wired the here-document to tee rather than Node; its apparent success is not validation evidence. The harness was corrected in commit 0614a8bc5a8d453af47468392a2bf98596fd35f5."
+    },
+    {
+      "workflow_run_id": 38451527483,
+      "workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38451527483",
+      "commit": "0614a8bc5a8d453af47468392a2bf98596fd35f5",
+      "outcome": "METAOS_STANDARD_WASM_VALIDATION_FAIL",
+      "metaos_bytes": 2442,
+      "metaos_git_blob": "86124d95a38264019a3f5260cbe4cca3d9cd9e69",
+      "metaos_sha256": "5d8f1239e3a0b452be722078760b000afc22af0a64f93ffb0a1f74024f15aed0",
+      "validation_error": "expected version 01 00 00 00, found 0d 00 01 00 @+4",
+      "source_candidates_in_staging": "NONE",
+      "d04_scoped_tasks": "6/6 PASS",
+      "d04_full_suite": "10/10 PASS",
+      "artifact_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38451527483/artifacts/11841080707",
+      "domain_closed": false,
+      "material_mission_started": false
+    }
+  ]
 }
