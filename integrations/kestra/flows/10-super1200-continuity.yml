@@ -9,18 +9,10 @@ tasks:
     type: io.kestra.plugin.core.http.Request
     uri: https://raw.githubusercontent.com/Plomillo/luna-linux-bridge/custosz/super-1200-implementation-20261007/continuity/STATE.json
     method: GET
-    options:
-      timeout:
-        connectTimeout: PT10S
-        readTimeout: PT20S
   - id: executors
     type: io.kestra.plugin.core.http.Request
     uri: https://raw.githubusercontent.com/Plomillo/luna-linux-bridge/custosz/super-1200-implementation-20261007/continuity/EXECUTORS.json
     method: GET
-    options:
-      timeout:
-        connectTimeout: PT10S
-        readTimeout: PT20S
   - id: gate_and_dispatch
     type: io.kestra.plugin.core.flow.If
     condition: >-
@@ -45,10 +37,6 @@ tasks:
           {
             "ref": "custosz/super-1200-implementation-20261007"
           }
-        options:
-          timeout:
-            connectTimeout: PT10S
-            readTimeout: PT20S
       - id: dispatch_receipt
         type: io.kestra.plugin.core.log.Log
         message: >-
