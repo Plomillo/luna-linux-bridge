@@ -55,5 +55,5 @@ def test_missing_g23_and_g24_never_certifies():
     manifest["tests"] = {"status": "PASS", "passed": 1, "failed": 0}
     code, reasons = gate.validate(manifest, "", "")
     assert code == 3
-    assert "G23_ATTESTATION_MISSING" in reasons
-    assert "G24_ATTESTATION_MISSING" in reasons
+    assert "G23_NOT_PASS" in reasons
+    assert "G24_NOT_CERTIFIED" in reasons
