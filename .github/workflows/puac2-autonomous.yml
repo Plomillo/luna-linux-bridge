@@ -57,8 +57,8 @@ jobs:
           python -m py_compile scripts/puac2_mtls_gate.py tests/test_puac2_mtls_gate.py
           mkdir -p out
           set +e
-          python -m pytest -q tests/test_puac2_mtls_gate.py | tee out/tests.txt
-          result=\${PIPESTATUS[0]}
+          python -m pytest -q --junitxml=out/junit.xml tests/test_puac2_mtls_gate.py | tee out/tests.txt
+          result=${PIPESTATUS[0]}
           set -e
           if [ "$result" -ne 0 ]; then
             echo "::error::Regression suite failed; no G23/G24 certification can occur."
@@ -66,7 +66,16 @@ jobs:
           fi
           sha=$(sha256sum out/tests.txt | cut -d' ' -f1)
           echo "sha256=$sha" >> "$GITHUB_OUTPUT"
-          printf '{"schema":"PUAC2_TEST_REPORT/1.0","candidate_commit":"%s","status":"PASS","report_sha256":"%s"}\n' "$GITHUB_SHA" "$sha" > out/tests.json
+          python - <<'PY'
+          import json, os, hashlib, xml.etree.ElementTree as ET
+          from pathlib import Path
+          root=ET.parse("out/junit.xml").getroot()
+          total=int(root.attrib.get("tests","0")); failed=int(root.attrib.get("failures","0"))+int(root.attrib.get("errors","0")); skipped=int(root.attrib.get("skipped","0"))
+          report=Path("out/tests.txt").read_bytes()
+          data={"schema":"PUAC2_TEST_REPORT/1.0","candidate_commit":os.environ["GITHUB_SHA"],"status":"PASS" if total>0 and failed==0 else "HOLD","passed":total-failed-skipped,"failed":failed,"skipped":skipped,"report_sha256":hashlib.sha256(report).hexdigest()}
+          Path("out/tests.json").write_text(json.dumps(data,sort_keys=True,indent=2)+"\\n")
+          if total==0 or failed: raise SystemExit("TEST_REPORT_NOT_PASS")
+          PY
       - name: Bind evidence to exact commit
         id: identity
         run: |
@@ -158,6 +167,7 @@ jobs:
           test -n "$G23_SIGNING_PRIVATE_KEY_PEM" || { echo "::error::G23 signing identity is not provisioned."; exit 3; }
           test -n "$G23_VALIDATOR_ID" || { echo "::error::G23 validator identity is not provisioned."; exit 3; }
           test -f evidence-input/puac2-source-evidence/tests.txt
+          test -f evidence-input/puac2-source-evidence/tests.json
           test -f evidence-input/puac2-host-evidence/host.json
           test -f evidence-input/puac2-host-evidence/host-hashes.txt
           python -m pip install --disable-pip-version-check pytest cryptography
@@ -169,16 +179,18 @@ jobs:
           from cryptography.hazmat.primitives import serialization
           root = Path("evidence-input")
           tests = (root / "puac2-source-evidence/tests.txt").read_bytes()
+          test_report = json.loads((root / "puac2-source-evidence/tests.json").read_text())
+          if test_report.get("candidate_commit") != os.environ["GITHUB_SHA"] or test_report.get("status") != "PASS" or test_report.get("failed") != 0 or test_report.get("passed", 0) < 1: raise SystemExit("G23_TEST_REPORT_INVALID")
           host = json.loads((root / "puac2-host-evidence/host.json").read_text())
           hashes = (root / "puac2-host-evidence/host-hashes.txt").read_bytes()
           candidate = os.environ["GITHUB_SHA"]
           if host.get("candidate_commit") != candidate or host.get("mtls") != "PASS" or host.get("rollback_report_present") is not True:
               raise SystemExit("G23_HOST_EVIDENCE_INVALID")
-          bundle = {"candidate_commit": candidate, "tests_sha256": hashlib.sha256(tests).hexdigest(),
-                    "host_json_sha256": hashlib.sha256((root / "puac2-host-evidence/host.json").read_bytes()).hexdigest(),
-                    "host_reports_hashes_sha256": hashlib.sha256(hashes).hexdigest()}
+          evidence = {"source_ref":os.environ["GITHUB_SERVER_URL"]+"/"+os.environ["GITHUB_REPOSITORY"]+"/tree/"+candidate,"candidate_commit":candidate,"input_sha256":hashlib.sha256((root / "puac2-source-evidence/tests.json").read_bytes()).hexdigest(),"output_sha256":hashlib.sha256((root / "puac2-host-evidence/host.json").read_bytes()).hexdigest(),"test_report_ref":"artifact:puac2-source-evidence/tests.txt","test_report_sha256":hashlib.sha256(tests).hexdigest(),"host_mtls_test_ref":"artifact:puac2-host-evidence/host.json","host_mtls_test_sha256":hashlib.sha256((root / "puac2-host-evidence/host.json").read_bytes()).hexdigest(),"rollback_ref":"artifact:puac2-host-evidence/rollback.report","rollback_test_sha256":hashlib.sha256((root / "puac2-host-evidence/rollback.report").read_bytes()).hexdigest()}
+          tests_result = {"status":"PASS","passed":test_report["passed"],"failed":test_report["failed"]}
+          bundle = {"candidate_commit":candidate,"evidence":evidence,"tests":tests_result}
           payload = {"schema":"PUAC2_G23_ATTESTATION/1.0","status":"PASS","validator_id":os.environ["G23_VALIDATOR_ID"],
-                     "candidate_commit":candidate,"evidence_bundle_sha256":hashlib.sha256(json.dumps(bundle,sort_keys=True,separators=(",",":")).encode()).hexdigest(),
+                     "candidate_commit":candidate,"evidence_bundle_sha256":hashlib.sha256(json.dumps(bundle,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()).hexdigest(),
                      "decision_utc":datetime.now(timezone.utc).isoformat()}
           key = serialization.load_pem_private_key(os.environ["G23_SIGNING_PRIVATE_KEY_PEM"].encode(), password=None)
           sig = base64.b64encode(key.sign(json.dumps(payload,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode())).decode()
