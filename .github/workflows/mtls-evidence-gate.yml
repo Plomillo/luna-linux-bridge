@@ -37,7 +37,6 @@ jobs:
           persist-credentials: false
 
       - name: Record candidate identity and relevant files
-        id: inventory
         shell: bash
         run: |
           set -u
@@ -50,24 +49,23 @@ jobs:
             echo "Event: ${GITHUB_EVENT_NAME}"
             echo
             echo "== Relevant files =="
-            find . -type f \( \
-              -iname '*mtls*' -o -iname '*tls*' -o \
-              -iname '*gateway*' -o -iname '*bridge*' -o \
-              -path './tests/*' -o -path './test/*' -o \
-              -path './.github/workflows/*' \
-            \) -not -path './.git/*' -print | sort
+            find . -type f \(
+              -iname '*mtls*' -o -iname '*tls*' -o
+              -iname '*gateway*' -o -iname '*bridge*' -o
+              -path './tests/*' -o -path './test/*' -o
+              -path './.github/workflows/*'
+            \) -not -path './.git/*' -not -path './evidence/*' -print | sort
             echo
             echo "== Potential test/build manifests =="
-            find . -maxdepth 3 -type f \( \
-              -name 'pyproject.toml' -o -name 'pytest.ini' -o \
-              -name 'tox.ini' -o -name 'setup.cfg' -o \
-              -name 'Makefile' -o -name 'package.json' -o \
-              -name 'Cargo.toml' -o -name 'go.mod' \
+            find . -maxdepth 3 -type f \(
+              -name 'pyproject.toml' -o -name 'pytest.ini' -o
+              -name 'tox.ini' -o -name 'setup.cfg' -o
+              -name 'Makefile' -o -name 'package.json' -o
+              -name 'Cargo.toml' -o -name 'go.mod'
             \) -not -path './.git/*' -print | sort
           } | tee evidence/repository-inventory.txt
 
       - name: Run Python tests when pytest is configured
-        id: pytest
         shell: bash
         run: |
           set -u
@@ -89,10 +87,9 @@ jobs:
         shell: bash
         run: |
           set -u
-          # This is a review signal only: matches require human inspection and are
-          # never treated as proof of a vulnerability or as certification.
+          # Review signal only; matches require human inspection.
           set +e
-          grep -RniE --exclude-dir=.git --exclude='*.lock' \
+          grep -RniE --exclude-dir=.git --exclude-dir=evidence --exclude='*.lock' \
             '(certified[[:space:]]*=[[:space:]]*true|verify[[:space:]]*=[[:space:]]*false|check_hostname[[:space:]]*=[[:space:]]*false|CERT_NONE|0\.0\.0\.0:8443|0\.0\.0\.0.*8443)' \
             . > evidence/security-review-signals.txt
           rc=$?
