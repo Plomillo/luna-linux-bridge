@@ -1,6 +1,6 @@
 {
   "record_id": "KESTRA-OSS-INTEGRATION-001",
-  "record_version": "1.0.1",
+  "record_version": "1.0.2",
   "created_for_branch": "custosz/super-1200-implementation-20261007",
   "source_branch_head_before_change": "fea81fccdb1e78a781b604fdb4e97e4ef97993b8",
   "canonical_authority": "Louksna.md",
@@ -26,7 +26,7 @@
     "image_selection_reason": "The official Docker Hub tag listing surfaced the full v2.0.3 image as a visible exact 2.x patch tag; availability of the v2.0.5 container image was not established by this audit. v2.0.5 is an upgrade verification item, not silently assumed.",
     "container_image_source": "https://hub.docker.com/r/kestra/kestra/tags",
     "exact_patch_tag_immutability_claim_source": "https://hub.docker.com/r/kestra/kestra",
-    "resolved_image_digest": "CAPTURED_IN_ARTIFACT_11793257116; INDEPENDENT_EXTRACTION_PENDING",
+    "resolved_image_digest": "CAPTURED_IN_ARTIFACT_11793269952; INDEPENDENT_EXTRACTION_PENDING",
     "plugin_variant": "Full image with bundled plugins; not slim/no-plugins"
   },
   "dependencies": [
@@ -51,10 +51,10 @@
   },
   "gates": {
     "specification": "RECORDED",
-    "evidence": "CI_RUNTIME_SMOKE_PASS_RUN_38358263075; ARTIFACT_11793257116_RETAINED; MANUAL_FLOW_EVIDENCE_PENDING",
-    "static_validation": "PASS_CI_RUN_38358263075",
-    "runtime_startup_and_database_health": "PASS_CI_RUN_38358263075: authenticated management status UP; PostgreSQL health healthy; authenticated UI HTTP 2xx after redirect; Kestra ready marker found",
-    "resolved_image_digests": "CAPTURED_IN_ARTIFACT_11793257116; IMAGE_VALUES_NOT_YET_INDEPENDENTLY_INSPECTED",
+    "evidence": "CI_RUNTIME_SMOKE_PASS_RUN_38359065395; ARTIFACT_11793269952_RETAINED; MANUAL_FLOW_EVIDENCE_PENDING",
+    "static_validation": "PASS_CI_RUN_38359065395",
+    "runtime_startup_and_database_health": "PASS_CI_RUN_38359065395: authenticated management status UP; PostgreSQL health healthy; authenticated UI HTTP 2xx after redirect; Kestra ready marker found",
+    "resolved_image_digests": "CAPTURED_IN_ARTIFACT_11793269952; IMAGE_VALUES_NOT_YET_INDEPENDENTLY_INSPECTED",
     "manual_flow_execution": "NOT_PERFORMED",
     "G23": "NOT_PERFORMED",
     "G24": "NOT_GRANTED",
@@ -64,7 +64,7 @@
   },
   "required_next_gates": [
     "Verify official v2.0.5 Docker image availability and compare its release provenance before any upgrade.",
-    "Independently inspect retained CI artifact 11793257116, verify its resolved image digests and per-file SHA-256 evidence, and retain the artifact-level SHA-256 recorded in latest_runtime_verification.",
+    "Independently inspect retained CI artifact 11793269952, verify its resolved image digests and per-file SHA-256 evidence, and retain the artifact-level SHA-256 recorded in latest_runtime_verification.",
     "Independently test manual smoke-flow execution.",
     "Design and test a dedicated isolated task execution boundary before enabling script-based workflows.",
     "Review GitHub integration permissions and side-effect restrictions before connecting any repository token.",
@@ -164,18 +164,25 @@
       "status": "PASS_RUNTIME_SMOKE",
       "observed": "All workflow steps passed on the tested commit, including governance/static checks, Compose validation, exact image pulls, isolated runtime start, authenticated management health, PostgreSQL health, authenticated UI response after redirect, Kestra-ready marker, evidence upload, and runtime destruction. Artifact 11793257116; SHA-256 sha256:18f68fb55d86cc7e7a07dc99bd132564da03a3e33124566333f01c600b91d3f1.",
       "response": "Record as successful ephemeral CI runtime evidence only. Manual flow execution, independent validation G23, certification G24, non-regression review, and promotion gates remain open."
+    },
+    {
+      "run_id": 38359065395,
+      "commit": "d16fd1884b3caad6650581d644b60c8005ca8af9",
+      "status": "PASS_RUNTIME_SMOKE_AND_GOVERNANCE_REVALIDATION",
+      "observed": "On the governance-updated branch head, staged governance/static checks, Compose validation, image pulls, isolated runtime startup, authenticated management health, PostgreSQL health, authenticated UI after redirect, Kestra-ready marker, evidence upload, and runtime cleanup all passed. Artifact 11793269952; SHA-256 sha256:9eee2cc6ef075b46a3fc946bcd96405fc33ceb69829aa3066b959e3f3d8a4de3.",
+      "response": "Record as the latest successful ephemeral CI runtime check. Keep manual flow execution, independent validation, certification, non-regression review, and activation/promotion gates open."
     }
   ],
   "latest_runtime_verification": {
-    "run_id": 38358263075,
-    "run_number": 14,
-    "commit": "ecc3471afde651120fb630a25560604fb975db9a",
+    "run_id": 38359065395,
+    "run_number": 15,
+    "commit": "d16fd1884b3caad6650581d644b60c8005ca8af9",
     "result": "PASS",
-    "verified_at_utc": "2026-10-13T06:44:22Z",
-    "artifact_id": 11793257116,
-    "artifact_name": "kestra-oss-smoke-38358263075",
-    "artifact_size_bytes": 5571,
-    "artifact_sha256": "18f68fb55d86cc7e7a07dc99bd132564da03a3e33124566333f01c600b91d3f1",
+    "verified_at_utc": "2026-10-13T06:52:18Z",
+    "artifact_id": 11793269952,
+    "artifact_name": "kestra-oss-smoke-38359065395",
+    "artifact_size_bytes": 5603,
+    "artifact_sha256": "9eee2cc6ef075b46a3fc946bcd96405fc33ceb69829aa3066b959e3f3d8a4de3",
     "checks_passed": [
       "staged governance invariants",
       "Docker Compose schema",
