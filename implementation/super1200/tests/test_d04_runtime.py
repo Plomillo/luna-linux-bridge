@@ -231,5 +231,65 @@ class D04RuntimeTests(unittest.TestCase):
         self.assertIsNone(index.get_reusable(key))
 
 
+
+
+    def test_minimal_recomputation_only_recomputes_transitive_subset(self):
+        graph=d04.EvidenceInvalidationGraph()
+        for x in ("source","derived","report","unrelated"): graph.add_evidence(x)
+        graph.add_dependency("source","derived"); graph.add_dependency("derived","report")
+        plan=d04.minimal_recomputation_plan(graph,invalidated_evidence_ids=["source"],
+            preservation_basis={"unrelated":"No dependency path from invalidated source; source hash unchanged."})
+        self.assertEqual(plan["recompute_ids"],["derived","report","source"])
+        self.assertEqual(plan["preserved_ids"],["unrelated"])
+        self.assertEqual(len(plan["plan_sha256"]),64)
+        with self.assertRaisesRegex(ValueError,"preservation_basis_scope_mismatch"):
+            d04.minimal_recomputation_plan(graph,invalidated_evidence_ids=["source"],preservation_basis={})
+
+    def test_attestation_policy_fails_closed_on_subject_freshness_and_verifier(self):
+        policy={"schema":"SUPER1200_ATTESTATION_POLICY/1","policy_id":"g23-d04","version":"1",
+            "gate_id":"G23","acceptable_issuers":["github-actions"],"acceptable_verifiers":["sigstore-v1"],
+            "predicate_type":"https://louksna.md/attestations/super1200/v1","max_age_seconds":300,
+            "required_predicate_fields":["build_id"]}
+        att={"issuer":"github-actions","issued_at_utc":"2026-10-13T10:04:00Z",
+            "statement":{"predicateType":policy["predicate_type"],
+              "subject":[{"digest":{"sha256":"a"*64}}],"predicate":{"build_id":"run-1"}},
+            "verification":{"status":"VERIFIED","verifier_id":"sigstore-v1"}}
+        self.assertEqual(d04.evaluate_attestation_policy(policy,att,expected_subject_sha256="a"*64,
+            now_utc="2026-10-13T10:05:00Z")["decision"],"ALLOW")
+        stale=dict(att,issued_at_utc="2026-10-13T09:00:00Z")
+        self.assertIn("attestation_stale",d04.evaluate_attestation_policy(policy,stale,
+            expected_subject_sha256="a"*64,now_utc="2026-10-13T10:05:00Z")["reasons"])
+        bad=dict(att,verification={"status":"VERIFIED","verifier_id":"untrusted"})
+        self.assertIn("verifier_not_trusted",d04.evaluate_attestation_policy(policy,bad,
+            expected_subject_sha256="a"*64,now_utc="2026-10-13T10:05:00Z")["reasons"])
+
+    def test_transparency_log_is_append_only_hash_chained_and_anchorable(self):
+        log=d04.TransparencyLog()
+        first=log.append(event_id="evt-1",event_type="EVIDENCE_CREATED",actor="worker",
+            payload={"sha256":"a"*64},timestamp_utc="2026-10-13T10:00:00Z")
+        second=log.append(event_id="evt-2",event_type="EVIDENCE_CORRECTED",actor="reviewer",
+            payload={"sha256":"b"*64},timestamp_utc="2026-10-13T10:01:00Z",
+            causal_parents=["evt-1"],correction_of="evt-1")
+        self.assertEqual(second["previous_hash"],first["entry_hash"])
+        self.assertTrue(log.verify()); self.assertEqual(log.anchor()["entry_count"],2)
+        tampered=list(log.entries); tampered[0]["actor"]="rewritten"
+        self.assertFalse(d04.TransparencyLog.verify_entries(tampered))
+        with self.assertRaisesRegex(ValueError,"transparency_event_id_immutable"):
+            log.append(event_id="evt-1",event_type="rewrite",actor="worker",payload={},
+                timestamp_utc="2026-10-13T10:02:00Z")
+
+    def test_dual_ledger_cross_references_without_conflation(self):
+        log=d04.TransparencyLog()
+        entry=log.append(event_id="evt-1",event_type="EVIDENCE_ATTESTED",actor="validator",
+            payload={"artifact_sha256":"a"*64,"decision":"PASS"},timestamp_utc="2026-10-13T10:00:00Z")
+        operational=[{"schema":"SUPER1200_OPERATIONAL_EVIDENCE/1","evidence_id":"evidence-1",
+            "transparency_event_id":"evt-1","payload_sha256":entry["payload_sha256"],"status":"VALIDATED"}]
+        result=d04.reconcile_dual_ledgers(operational,list(log.entries))
+        self.assertEqual(result["status"],"RECONCILED")
+        self.assertFalse(result["ledgers_conflated"])
+        self.assertNotEqual(result["operational_ledger_sha256"],result["transparency_ledger_sha256"])
+        with self.assertRaisesRegex(ValueError,"dual_ledger_payload_mismatch"):
+            d04.reconcile_dual_ledgers([dict(operational[0],payload_sha256="b"*64)],list(log.entries))
+
 if __name__ == "__main__":
     unittest.main()
