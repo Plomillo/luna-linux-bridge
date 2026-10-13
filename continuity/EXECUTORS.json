@@ -2,9 +2,9 @@
   "schema": "SUPER1200_CONTINUITY_EXECUTORS/1.0",
   "branch": "custosz/super-1200-implementation-20261007",
   "executors": {
-    "D04": "implementation/super1200/runtime/d04_material_worker_93_96.py"
+    "D04": "implementation/super1200/runtime/d04_material_worker_97_100.py"
   },
-  "missing_executor_state": "REGISTERED_D04_MATERIAL_EXECUTOR_93_96",
+  "missing_executor_state": "REGISTERED_D04_MATERIAL_EXECUTOR_97_100",
   "unregistered_domain_must_not_be_invented": true,
   "blocked_executor_records": [
     {
@@ -33,9 +33,9 @@
     }
   ],
   "reconciliation": {
-    "observed_at_utc": "2026-10-13T22:35:14.986Z",
+    "observed_at_utc": "2026-10-13T23:30:23.539Z",
     "status": "REGISTERED_PENDING_GITHUB_HOSTED_LIVE_RUN",
     "policy": "FAIL_CLOSED",
-    "note": "D04 task-specific material executor for IDs 93-96 is registered. The bounded GitHub-hosted workflow is the execution plane; it validates CUSTOSZ V7, executes the reviewed tranche, tests behavior, and persists hash-bound evidence and checkpoint. After 93-96, continuation must hold because no reviewed executor for 97-120 is registered. MetaOS remains deferred."
+    "note": "D04 task-specific material executor for IDs 97-100 is registered. It requires scoped G23/G24 PASS for D04 93-96, verifies the exact prior scoped certificate, runs the full D04 suite and each mapped test independently, persists hash-bound evidence, and stops after 97-100 because the next tranche has no reviewed executor. Global SUPER1200 certification remains false; MetaOS remains deferred."
   }
 }
