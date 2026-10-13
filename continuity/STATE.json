@@ -3,15 +3,15 @@
   "active_worker": false,
   "block_reason": "NEXT_D04_TRANCHE_EXECUTOR_NOT_REGISTERED",
   "blocked": true,
-  "blocked_at": "2026-10-13T23:33:15.025380+00:00",
+  "blocked_at": "2026-10-13T23:34:36.328648+00:00",
   "branch": "custosz/super-1200-implementation-20261007",
   "certified": false,
   "current_checkpoint": "D04_97_100_MATERIALIZED",
-  "diagnostic": "D04 capabilities 97-100 materially implemented with per-capability tests and hash-bound evidence. Continuation held fail-closed because no reviewed executor for the next D04 tranche is registered. G23/G24 for 97-100 remain pending; prior 93-96 scoped certification does not propagate.",
+  "diagnostic": "D04 capabilities 97-100 passed scoped G23 and G24. Continuation held fail-closed because no reviewed executor for the next D04 tranche is registered. Global SUPER1200 certification remains NOT_CERTIFIED.",
   "dispatch_error": "DISPATCH_DENIED_BY_CHECKPOINT_RECONCILIATION_20261013",
   "dispatch_requested_at": "2026-10-13T21:14:39.496Z",
-  "g23": "PENDING_FOR_SCOPE_D04_97_100",
-  "g24": "PENDING_G23",
+  "g23": "PASS_FOR_SCOPE_D04_97_100",
+  "g24": "PASS_FOR_SCOPE_D04_97_100",
   "mission_id": "SUPER1200-CONTINUATION-20261007",
   "next_point": "D04",
   "next_worker": "CUSTOSZ_V7",
@@ -61,8 +61,8 @@
     ],
     "behavior_tests": "FULL_SUITE_PASS;4_OF_4_CAPABILITY_TESTS_PASS",
     "executor": "implementation/super1200/runtime/d04_material_worker_97_100.py",
-    "g23": "PENDING",
-    "g24": "PENDING_G23",
+    "g23": "PASS_FOR_SCOPE_D04_97_100",
+    "g24": "PASS_FOR_SCOPE_D04_97_100",
     "global_certification_status": "NOT_CERTIFIED"
   },
   "execution_history": [
@@ -151,8 +151,8 @@
     "module_sha256": "abc9c8d922e3ff56f4cdf636da99e146d95e7a15ac5608004f81398d8b4a58f0",
     "test_sha256": "6d638e4627cf5542ea1b611a0870aee5d22154923c0e47cef1eb44f4c55b685b",
     "github_actions_run_id": "38484906791",
-    "g23": "PENDING",
-    "g24": "PENDING",
+    "g23": "PASS_FOR_SCOPE_D04_97_100",
+    "g24": "PASS_FOR_SCOPE_D04_97_100",
     "certification_granted": false,
     "completed_at_utc": "2026-10-13T23:33:15.025380+00:00"
   },
@@ -188,10 +188,10 @@
     "certification_granted": false
   },
   "scoped_certification": {
-    "scope": "D04:93-96",
+    "scope": "D04:97-100",
     "status": "PASS",
-    "record_path": "continuity/certification/D04_93_96.json",
-    "workflow_run_id": "38484598640",
+    "record_path": "continuity/certification/D04_97_100.json",
+    "workflow_run_id": "38485052324",
     "certification_granted": true,
     "global_certification_granted": false
   },
@@ -209,5 +209,23 @@
     "scoped_certificate": "continuity/certification/D04_93_96.json",
     "global_certification_granted": false,
     "authorized_at_commit": "0bdafe2e77a9258d31b9834eaed4da0408e4d091"
+  },
+  "scoped_certifications": {
+    "D04:93-96": {
+      "scope": "D04:93-96",
+      "status": "PASS",
+      "record_path": "continuity/certification/D04_93_96.json",
+      "workflow_run_id": "38484598640",
+      "certification_granted": true,
+      "global_certification_granted": false
+    },
+    "D04:97-100": {
+      "scope": "D04:97-100",
+      "status": "PASS",
+      "record_path": "continuity/certification/D04_97_100.json",
+      "workflow_run_id": "38485052324",
+      "certification_granted": true,
+      "global_certification_granted": false
+    }
   }
 }
