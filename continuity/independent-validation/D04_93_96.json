@@ -3,8 +3,8 @@
   "full_suite_exit_code": 0,
   "full_suite_stderr_sha256": "c2e419dcc48fd811bf9509d957dcebcfcf1e94192f919d9d69e1c2cfbd220a57",
   "full_suite_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "g23": "PASS_FOR_SCOPE_D04_93_96",
-  "g24": "PENDING_INDEPENDENT_CERTIFICATION_REVIEW",
+  "g23": "PENDING_REVALIDATION_AFTER_SOURCE_HASH_CHANGE",
+  "g24": "PENDING_G23",
   "global_certification_status": "NOT_CERTIFIED",
   "independent_test_results": [
     {
@@ -56,10 +56,14 @@
   "module_sha256": "1371f945ad2f80cf6009986cf20f327e648e00dc0327cdfbea0141a617801774",
   "schema": "SUPER1200_D04_INDEPENDENT_VALIDATION/1",
   "scope": "D04_CAPABILITIES_93_96_ONLY",
-  "status": "PASS",
+  "status": "INVALIDATED_BY_APPEND_ONLY_SOURCE_HASH_CHANGE",
   "test_sha256": "43bc0d6524c75e316886d161c7fe6fced23c4a5c1491ca4aff9dd2a69eed8b43",
   "validated_at_utc": "2026-10-13T23:23:25.462715+00:00",
   "validator_source_commit": "0819432a3cef1afbb9863469de80c6ee5eeba4ea",
   "validator_workflow_run_id": "38483924757",
-  "validator_workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38483924757"
+  "validator_workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38483924757",
+  "invalidation": {
+    "at_commit": "8588015a5716a3cbbdf9bf977948fc6bfbb91979",
+    "reason": "Append-only source/test extension changed the exact source hashes; prior validation remains historical and is not current-source validation."
+  }
 }
