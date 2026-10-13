@@ -8,10 +8,6 @@ on:
     branches:
       - custosz/super-1200-implementation-20261007
     paths:
-      - "implementation/super1200/domains/D04_runtime.py"
-      - "implementation/super1200/tests/test_d04_runtime.py"
-      - "implementation/super1200/registry/capabilities.json"
-      - "implementation/super1200/domains/D04.json"
       - "continuity/runtime-evidence/D04/capability-0097.json"
       - "continuity/runtime-evidence/D04/capability-0098.json"
       - "continuity/runtime-evidence/D04/capability-0099.json"
