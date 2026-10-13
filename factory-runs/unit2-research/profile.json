@@ -83,19 +83,19 @@
         "id": "R02",
         "points": 1.75,
         "text": "Archivo Word, nombre de archivo y formato de presentación conforme a instrucciones.",
-        "validation": "AUTOMATED_PARTIAL_PLUS_HUMAN_REVIEW"
+        "validation": "AUTOMATED_PARTIAL_PLUS_G23_HUMAN_REVIEW"
       },
       {
         "id": "R03",
         "points": 3.5,
         "text": "Pregunta psicológica usa la variable de Unidad 1 y otra variable; diseño cuantitativo experimental claro.",
-        "validation": "AUTOMATED_PARTIAL_PLUS_HUMAN_REVIEW"
+        "validation": "AUTOMATED_PARTIAL_PLUS_G23_HUMAN_REVIEW"
       },
       {
         "id": "R04",
         "points": 3.5,
         "text": "Pregunta psicológica usa la variable de Unidad 1 y una variable nueva distinta; diseño cuantitativo no experimental claro.",
-        "validation": "AUTOMATED_PARTIAL_PLUS_HUMAN_REVIEW"
+        "validation": "AUTOMATED_PARTIAL_PLUS_G23_HUMAN_REVIEW"
       }
     ]
   },
