@@ -46,8 +46,9 @@ tasks:
             "ref": "custosz/super-1200-implementation-20261007"
           }
         options:
-          connectTimeout: PT10S
-          readTimeout: PT20S
+          timeout:
+            connectTimeout: PT10S
+            readTimeout: PT20S
       - id: dispatch_receipt
         type: io.kestra.plugin.core.log.Log
         message: >-
