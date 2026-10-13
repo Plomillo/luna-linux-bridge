@@ -100,6 +100,13 @@
       "status": "IN_PROGRESS_AT_LAST_OBSERVATION",
       "observed": "Static validation and Compose validation passed; image pull and Compose startup passed; authenticated management-health validation was still running when the workflow was updated.",
       "response": "Configured endpoints.all.basic-auth and changed the CI check to authenticate to management health, retaining loopback binding."
+    },
+    {
+      "run_id": 38356436011,
+      "commit": "561811a3d9fd77360e0a7d5405284987f0754b17",
+      "status": "STALLED_AT_HEALTH_CHECK_AT_LAST_OBSERVATION",
+      "observed": "Static guard and Docker Compose schema validation passed; exact image pulls and Compose startup passed; health polling had not returned and the GitHub Actions run metadata had not advanced.",
+      "response": "Added connect and total-request timeouts plus a finite 30-attempt health loop so failure is bounded and diagnostic."
     }
   ]
 }

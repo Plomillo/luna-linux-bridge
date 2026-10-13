@@ -72,8 +72,8 @@ jobs:
           . ./.env
           set +a
           healthy=0
-          for attempt in $(seq 1 60); do
-            if curl --config <(printf 'user = "%s:%s"' "$KESTRA_ADMIN_EMAIL" "$KESTRA_ADMIN_PASSWORD") --silent --show-error --fail http://127.0.0.1:18081/health -o "$EVIDENCE_DIR/health.json" 2>/dev/null; then
+          for attempt in $(seq 1 30); do
+            if curl --connect-timeout 3 --max-time 5 --config <(printf 'user = "%s:%s"' "$KESTRA_ADMIN_EMAIL" "$KESTRA_ADMIN_PASSWORD") --silent --show-error --fail http://127.0.0.1:18081/health -o "$EVIDENCE_DIR/health.json" 2>/dev/null; then
               if python3 -c 'import json,sys; d=json.load(open(sys.argv[1], encoding="utf-8")); x=d.get("details", {}); sys.exit(0 if d.get("status") == "UP" and x.get("jdbc", {}).get("status") == "UP" else 1)' "$EVIDENCE_DIR/health.json"; then
                 healthy=1
                 break
