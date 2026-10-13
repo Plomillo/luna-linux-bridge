@@ -57,3 +57,19 @@ def test_missing_g23_and_g24_never_certifies():
     assert code == 3
     assert "G23_NOT_PASS" in reasons
     assert "G24_NOT_CERTIFIED" in reasons
+
+
+def test_pr_preflight_cannot_be_used_as_release_certification():
+    workflow = (Path(__file__).parents[1] / ".github" / "workflows" / "puac2-e2e.yml").read_text()
+    assert "workflow_dispatch:" not in workflow
+    assert "runs-on: [self-hosted" not in workflow
+    assert "Require evidence manifest on release runs" not in workflow
+    assert "certification_status" in workflow
+    assert "non-certifying" in workflow
+    assert "puac2-autonomous.yml" in workflow
+
+
+def test_privileged_chain_stays_excluded_from_pull_requests():
+    workflow = (Path(__file__).parents[1] / ".github" / "workflows" / "puac2-autonomous.yml").read_text()
+    assert "if: github.event_name != 'pull_request'" in workflow
+    assert "louksna-mtls-host" in workflow
