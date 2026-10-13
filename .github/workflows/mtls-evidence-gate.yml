@@ -39,7 +39,7 @@ jobs:
       - name: Record candidate identity and relevant files
         shell: bash
         run: |
-          set -u
+          set -eu
           mkdir -p evidence
           {
             echo "MTLS REMEDIATION EVIDENCE REPORT"
@@ -49,16 +49,16 @@ jobs:
             echo "Event: ${GITHUB_EVENT_NAME}"
             echo
             echo "== Relevant files =="
-            find . -type f \( -iname '*mtls*' -o -iname '*tls*' -o -iname '*gateway*' -o -iname '*bridge*' -o -path './tests/*' -o -path './test/*' -o -path './.github/workflows/*' \) -not -path './.git/*' -not -path './evidence/*' -print | sort
+            find . -type f -not -path './.git/*' -not -path './evidence/*' | grep -Ei '(^|/)([^/]*(mtls|tls|gateway|bridge)[^/]*|tests?/.*|\.github/workflows/.*)$' | sort || true
             echo
             echo "== Potential test/build manifests =="
-            find . -maxdepth 3 -type f \( -name 'pyproject.toml' -o -name 'pytest.ini' -o -name 'tox.ini' -o -name 'setup.cfg' -o -name 'Makefile' -o -name 'package.json' -o -name 'Cargo.toml' -o -name 'go.mod' \) -not -path './.git/*' -print | sort
+            find . -maxdepth 3 -type f -not -path './.git/*' | grep -E '(^|/)(pyproject\.toml|pytest\.ini|tox\.ini|setup\.cfg|Makefile|package\.json|Cargo\.toml|go\.mod)$' | sort || true
           } | tee evidence/repository-inventory.txt
 
       - name: Run Python tests when pytest is configured
         shell: bash
         run: |
-          set -u
+          set -eu
           if [[ -f pyproject.toml ]] && grep -Eq '^\[tool\.pytest([.]ini_options)?\]' pyproject.toml; then
             python -m pip install --disable-pip-version-check pytest
             python -m pytest -q
@@ -76,19 +76,19 @@ jobs:
       - name: Check for unsafe certification shortcuts
         shell: bash
         run: |
-          set -u
+          set -eu
           # Review signal only; matches require human inspection.
-          set +e
-          grep -RniE --exclude-dir=.git --exclude-dir=evidence --exclude='*.lock' '(certified[[:space:]]*=[[:space:]]*true|verify[[:space:]]*=[[:space:]]*false|check_hostname[[:space:]]*=[[:space:]]*false|CERT_NONE|0\.0\.0\.0:8443|0\.0\.0\.0.*8443)' . > evidence/security-review-signals.txt
-          rc=$?
-          set -e
-          if [[ $rc -eq 1 ]]; then
-            echo "No configured review patterns matched. This does NOT prove security." > evidence/security-review-signals.txt
-          elif [[ $rc -gt 1 ]]; then
-            echo "::error::The review-signal scan itself failed."
-            exit "$rc"
+          if grep -RniE --exclude-dir=.git --exclude-dir=evidence --exclude='*.lock' '(certified[[:space:]]*=[[:space:]]*true|verify[[:space:]]*=[[:space:]]*false|check_hostname[[:space:]]*=[[:space:]]*false|CERT_NONE|0\.0\.0\.0:8443|0\.0\.0\.0.*8443)' . > evidence/security-review-signals.txt; then
+            cat evidence/security-review-signals.txt
+          else
+            rc=$?
+            if [[ "$rc" -eq 1 ]]; then
+              echo "No configured review patterns matched. This does NOT prove security." > evidence/security-review-signals.txt
+            else
+              echo "::error::The review-signal scan itself failed."
+              exit "$rc"
+            fi
           fi
-          cat evidence/security-review-signals.txt
 
       - name: Record gate limitations
         if: always()
