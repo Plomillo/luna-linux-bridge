@@ -184,26 +184,38 @@
     {
       "canonical_name": "POLICY_TEST_SUITE",
       "capability_id": 105,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_runtime.py",
+      "materialization": "POLICY_GOVERNANCE_CODE+PER_CAPABILITY_TEST+FULL_SUITE+HASH_BOUND_EVIDENCE"
     },
     {
       "canonical_name": "POLICY_VERSIONING",
       "capability_id": 106,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_runtime.py",
+      "materialization": "POLICY_GOVERNANCE_CODE+PER_CAPABILITY_TEST+FULL_SUITE+HASH_BOUND_EVIDENCE"
     },
     {
       "canonical_name": "POLICY_DIFF",
       "capability_id": 107,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_runtime.py",
+      "materialization": "POLICY_GOVERNANCE_CODE+PER_CAPABILITY_TEST+FULL_SUITE+HASH_BOUND_EVIDENCE"
     },
     {
       "canonical_name": "POLICY_IMPACT_ANALYSIS",
       "capability_id": 108,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_runtime.py",
+      "materialization": "POLICY_GOVERNANCE_CODE+PER_CAPABILITY_TEST+FULL_SUITE+HASH_BOUND_EVIDENCE"
     },
     {
       "canonical_name": "AUTHORIZATION_PROOF",

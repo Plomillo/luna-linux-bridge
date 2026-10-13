@@ -1555,12 +1555,14 @@
       "canonical_name": "POLICY_TEST_SUITE",
       "capability_id": 105,
       "hardening": "positive/negative/bypass/conflict/UNKNOWN tests for policies",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "POLICY_GOVERNANCE_CODE+PER_CAPABILITY_TEST+FULL_SUITE+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "GH+ASR",
       "type": "TEST_SUITE",
-      "wire": "71,101..104,106"
+      "wire": "71,101..104,106",
+      "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_runtime.py"
     },
     {
       "acquire": "NONE",
@@ -1568,12 +1570,14 @@
       "canonical_name": "POLICY_VERSIONING",
       "capability_id": 106,
       "hardening": "policy ID/version/hash/effective interval/supersession",
-      "implementation_state": "DECLARED",
-      "materialization": "SCHEMA+CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "POLICY_GOVERNANCE_CODE+PER_CAPABILITY_TEST+FULL_SUITE+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "VERSIONING_PRIMITIVE",
-      "wire": "101,105,107,108"
+      "wire": "101,105,107,108",
+      "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_runtime.py"
     },
     {
       "acquire": "NONE",
@@ -1581,12 +1585,14 @@
       "canonical_name": "POLICY_DIFF",
       "capability_id": 107,
       "hardening": "semantic rather than textual diff and affected decision rules",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "POLICY_GOVERNANCE_CODE+PER_CAPABILITY_TEST+FULL_SUITE+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "DIFF_ENGINE",
-      "wire": "106,108,791"
+      "wire": "106,108,791",
+      "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_runtime.py"
     },
     {
       "acquire": "NONE",
@@ -1594,12 +1600,14 @@
       "canonical_name": "POLICY_IMPACT_ANALYSIS",
       "capability_id": 108,
       "hardening": "reverse dependency of policy→claims/tests/auths; invalidate causally",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "POLICY_GOVERNANCE_CODE+PER_CAPABILITY_TEST+FULL_SUITE+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "IMPACT_ENGINE",
-      "wire": "95,107,169,785"
+      "wire": "95,107,169,785",
+      "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_runtime.py"
     },
     {
       "acquire": "NONE",
