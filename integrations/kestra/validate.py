@@ -24,6 +24,19 @@ require(":latest" not in COMPOSE,
         "Floating :latest image tags are prohibited.")
 require("/var/run/docker.sock" not in COMPOSE,
         "Mounting the host Docker socket is prohibited.")
+init_start = COMPOSE.find("  storage-init:")
+kestra_start = COMPOSE.find("  kestra:")
+storage_init = COMPOSE[init_start:kestra_start] if init_start >= 0 and kestra_start > init_start else ""
+kestra_service = COMPOSE[kestra_start:] if kestra_start >= 0 else ""
+require("network_mode: none" in storage_init,
+        "The one-shot storage permission bootstrap must have no network.")
+require('user: "0:0"' in storage_init and "cap_drop:" in storage_init
+        and "      - ALL" in storage_init and "      - CHOWN" in storage_init,
+        "The one-shot permission bootstrap must use only the scoped CHOWN capability.")
+require("storage-init:" in COMPOSE and "service_completed_successfully" in kestra_service,
+        "Kestra must wait for the permission bootstrap to succeed.")
+require('user: "0:0"' not in kestra_service,
+        "The long-running Kestra server must not run as root.")
 require('"127.0.0.1:8080:8080"' in COMPOSE,
         "UI must remain bound to loopback.")
 require('"127.0.0.1:18081:8081"' in COMPOSE,

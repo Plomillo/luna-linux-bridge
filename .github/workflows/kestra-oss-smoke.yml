@@ -23,7 +23,7 @@ jobs:
       contents: read
     env:
       # github.workspace is available at job scope; runner.temp is not.
-      EVIDENCE_DIR: ${{ github.workspace }}/.ci-kestra-evidence
+      EVIDENCE_DIR: ${{ github.workspace }}/kestra-ci-evidence
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -136,6 +136,6 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: kestra-oss-smoke-${{ github.run_id }}
-          path: ${{ github.workspace }}/.ci-kestra-evidence/
+          path: ${{ github.workspace }}/kestra-ci-evidence/
           if-no-files-found: warn
           retention-days: 30

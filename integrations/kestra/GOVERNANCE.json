@@ -46,14 +46,15 @@
     "automatic_flow_import": "DISABLED",
     "automatic_repair_or_repository_mutation": "NOT_CONFIGURED",
     "arbitrary_script_flows": "Blocked from committed flow templates until an isolated runner is specified and independently reviewed",
-    "external_tasks": "No production side effects authorized"
+    "external_tasks": "No production side effects authorized",
+    "storage_bootstrap": "One-shot container with user 0:0, network_mode none, read_only root filesystem, cap_drop ALL, cap_add CHOWN, only kestra-data volume, no Docker socket; long-running Kestra service remains non-root."
   },
   "gates": {
     "specification": "RECORDED",
-    "evidence": "PENDING_CI",
-    "static_validation": "PENDING_CI",
-    "runtime_startup_and_database_health": "PENDING_CI",
-    "resolved_image_digests": "PENDING_CI_CAPTURE",
+    "evidence": "PENDING_CI_ARTIFACT_AFTER_STORAGE_FIX",
+    "static_validation": "PENDING_CI_AFTER_STORAGE_FIX",
+    "runtime_startup_and_database_health": "PENDING_CI_AFTER_STORAGE_FIX",
+    "resolved_image_digests": "PENDING_CI_ARTIFACT_AFTER_STORAGE_FIX",
     "manual_flow_execution": "NOT_PERFORMED",
     "G23": "NOT_PERFORMED",
     "G24": "NOT_GRANTED",
@@ -107,6 +108,13 @@
       "status": "STALLED_AT_HEALTH_CHECK_AT_LAST_OBSERVATION",
       "observed": "Static guard and Docker Compose schema validation passed; exact image pulls and Compose startup passed; health polling had not returned and the GitHub Actions run metadata had not advanced.",
       "response": "Added connect and total-request timeouts plus a finite 30-attempt health loop so failure is bounded and diagnostic."
+    },
+    {
+      "run_id": 38356016781,
+      "commit": "87c128fc5f38ce2d2955b3f474f9cb256538fa68",
+      "status": "FAILURE",
+      "observed": "The authenticated health check failed because Kestra terminated with AccessDeniedException at /app/storage/plugins. GitHub Actions also did not upload the evidence bundle because its directory name started with a dot and hidden files were excluded.",
+      "response": "Added an isolated one-shot volume permission bootstrap restricted to CHOWN, no network and no Docker socket; kept the long-running service non-root. Renamed the CI evidence directory to a non-hidden path."
     }
   ]
 }

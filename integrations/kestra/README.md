@@ -6,7 +6,7 @@
 
 ## Qué se añade
 
-Una instalación autoalojada de Kestra Open Source declarada mediante Docker Compose y con credenciales locales. Se usa la imagen completa de Kestra, no la variante slim/no-plugins.
+Una instalación autoalojada de Kestra Open Source declarada mediante Docker Compose y con credenciales locales. Se usa la imagen completa de Kestra, no la variante slim/no-plugins. Un contenedor de inicialización de un solo uso ajusta los permisos de su volumen; es la única fase que usa UID 0, con solo la capacidad CHOWN, sin red y sin socket Docker. El servidor Kestra de larga duración conserva su usuario no privilegiado.
 
 - Kestra: kestra/kestra:v2.0.3
 - PostgreSQL: postgres:18.6-alpine

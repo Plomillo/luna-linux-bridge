@@ -16,6 +16,35 @@ services:
       retries: 12
       start_period: 15s
 
+  # One-shot permission bootstrap: root is used only here, with CHOWN capability,
+  # no network, no Docker socket, and no access to any other host path.
+  storage-init:
+    image: kestra/kestra:v2.0.3
+    pull_policy: always
+    user: "0:0"
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        kestra_uid="$(id -u kestra)"
+        kestra_gid="$(id -g kestra)"
+        test "$kestra_uid" -gt 0
+        mkdir -p /app/storage/plugins
+        if [ ! -e /app/storage/.kestra-volume-permissions-v1 ]; then
+          touch /app/storage/.kestra-volume-permissions-v1
+          chown -R "$kestra_uid:$kestra_gid" /app/storage
+        fi
+    network_mode: none
+    read_only: true
+    restart: "no"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+    volumes:
+      - kestra-data:/app/storage
+
   kestra:
     image: kestra/kestra:v2.0.3
     pull_policy: always
@@ -25,6 +54,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      storage-init:
+        condition: service_completed_successfully
     environment:
       KESTRA_CONFIGURATION: |
         endpoints:
