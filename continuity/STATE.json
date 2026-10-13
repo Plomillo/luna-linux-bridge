@@ -7,7 +7,7 @@
   "branch": "custosz/super-1200-implementation-20261007",
   "certified": false,
   "current_checkpoint": "D03_FUNCTIONALLY_CLOSED",
-  "diagnostic": "Reconciliation 2026-10-13: the synthetic whole-domain materializer has been disabled and the active executor map remains empty. D04 now has additional behavior-level provenance primitives/tests, but no reviewed task-level executor is registered. MetaOS is still rejected by the recorded standard WASM validation and is missing from the candidate branch at the expected path. No material dispatch is authorized.",
+  "diagnostic": "Recovery attempt 2026-10-13 (GitHub Actions run 38451527483): exact staged MetaOS bytes were hashed (2442 bytes; SHA-256 5d8f1239e3a0b452be722078760b000afc22af0a64f93ffb0a1f74024f15aed0) and standard WebAssembly validation failed: expected version 01 00 00 00, found 0d 00 01 00 at offset +4. No rebuild source/recipe was found in the two staged MetaOS branches inspected. D04 task evidence executor passed six scoped tests and the full D04 suite passed 10/10, but this is test/evidence execution only: no registry mutation, domain closure, G23/G24, or material mission dispatch. Keep blocked.",
   "dispatch_error": "DISPATCH_DENIED_BY_CHECKPOINT_RECONCILIATION_20261013",
   "dispatch_requested_at": null,
   "g23": "BLOCKED_UNTIL_INDEPENDENT_VALIDATION",
@@ -15,7 +15,7 @@
   "mission_id": "SUPER1200-CONTINUATION-20261007",
   "next_point": "D04",
   "next_worker": null,
-  "recovery_note": "Implement and review a real D04 material executor; replace tests that only validate generated wrappers with behavior-level tests; independently review the D02/D03 evidence and reconcile the D01 progress-ledger conflict before reopening dispatch. Then run G23 separately, followed by G24 on the same candidate digest.",
+  "recovery_note": "Continue automated source-lineage discovery for MetaOS and recover a verifiable source/build recipe; rebuild into a fresh candidate, validate exact bytes with the standard WASM validator, record SHA-256 and provenance, and do not patch the rejected header or substitute another binary. In parallel, extend D04 with capability-specific implementations and behavior tests, one capability at a time. Register only a reviewed task-level material executor; then start the 12-hour checkpointed mission. G23 must independently validate the same candidate digest before G24.",
   "schema": "SUPER1200_CONTINUITY_STATE/1.0",
   "status": "BLOCKED",
   "terminal": false,
@@ -24,5 +24,23 @@
   "reconciled_at_utc": "2026-10-13T18:45:00Z",
   "previous_block_reason": "UNTRUSTED_SYNTHETIC_WORKER_AND_D04_SELF_RECURSION",
   "previous_diagnostic": "Reconciliation blocked dispatch: the shared SUPER1200 worker synthesizes generic wrapper code and tests while marking capabilities EVIDENCED; D04 maps to the dispatcher itself and would recursively invoke it. The D03 checkpoint is a historical reported state, not independently validated.",
-  "reconciliation_record": "continuity/SUPER1200_BLOCKER_RECONCILIATION_20261013_001.json"
+  "reconciliation_record": "continuity/SUPER1200_BLOCKER_RECONCILIATION_20261013_001.json",
+  "last_recovery_attempt": {
+    "workflow_run_id": 38451527483,
+    "workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38451527483",
+    "commit": "0614a8bc5a8d453af47468392a2bf98596fd35f5",
+    "observed_at_utc": "2026-10-13T19:01:43Z",
+    "metaos_bytes": 2442,
+    "metaos_git_blob": "86124d95a38264019a3f5260cbe4cca3d9cd9e69",
+    "metaos_sha256": "5d8f1239e3a0b452be722078760b000afc22af0a64f93ffb0a1f74024f15aed0",
+    "wasm_standard_validation": "FAIL",
+    "wasm_validation_error": "expected version 01 00 00 00, found 0d 00 01 00 @+4",
+    "source_candidates_in_staging": "NONE",
+    "d04_scoped_tasks": "6/6 PASS (IDs 81-86)",
+    "d04_full_suite": "10/10 PASS",
+    "domain_closed": false,
+    "material_mission_started": false,
+    "g23": "BLOCKED",
+    "g24": "BLOCKED"
+  }
 }
