@@ -81,6 +81,8 @@ jobs:
 
   host_validation:
     name: Real host mTLS and rollback evidence
+    # Never execute untrusted pull-request code on the privileged self-hosted host.
+    if: github.event_name != 'pull_request'
     needs: source_validation
     # This job intentionally fails closed until the dedicated target-host runner is provisioned.
     runs-on: [self-hosted, linux, louksna-mtls-host]
@@ -127,6 +129,7 @@ jobs:
 
   g23_independent_validation:
     name: G23 — independent evidence recomputation and signed attestation
+    if: github.event_name != 'pull_request'
     needs: [source_validation, host_validation]
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -191,6 +194,7 @@ jobs:
 
   g24_certification:
     name: G24 — separate policy verification and signed decision
+    if: github.event_name != 'pull_request'
     needs: [source_validation, host_validation, g23_independent_validation]
     runs-on: ubuntu-latest
     timeout-minutes: 10
