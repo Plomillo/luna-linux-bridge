@@ -66,7 +66,8 @@ jobs:
         run: |
           set -Eeuo pipefail
           cd staging
-          : > "$RUNNER_TEMP/metaos-source-candidates.txt"
+          : > "$RUNNER_TEMP/metaos-related-sources.txt"
+          : > "$RUNNER_TEMP/metaos-wasm-build-sources.txt"
           : > "$RUNNER_TEMP/metaos-artifact-lineage.txt"
           while IFS= read -r ref; do
             git ls-tree -r --name-only "$ref" | while IFS= read -r path; do
@@ -77,17 +78,22 @@ jobs:
               fi
               if [[ "$lower" != .github/* && "$lower" != *workflow* && "$lower" != *manifest* && "$lower" != *.md ]] &&
                  [[ "$lower" == *metaos* && "$lower" =~ \.(c|cc|cpp|h|hpp|rs|wat|wast|go|js|ts|py|sh|cmake|toml|makefile)$ ]]; then
-                printf '%s:%s\n' "$ref" "$path" >> "$RUNNER_TEMP/metaos-source-candidates.txt"
+                printf '%s:%s\n' "$ref" "$path" >> "$RUNNER_TEMP/metaos-related-sources.txt"
+              fi
+              if [[ "$lower" == *metaos* && "$lower" =~ \.(c|cc|cpp|h|hpp|rs|wat|wast)$ ]] ||
+                 [[ "$lower" == *metaos* && "$lower" =~ /(cargo\.toml|makefile|cmakelists\.txt|build\.gradle|meson\.build)$ ]]; then
+                printf '%s:%s\n' "$ref" "$path" >> "$RUNNER_TEMP/metaos-wasm-build-sources.txt"
               fi
             done
           done < <(git for-each-ref --format='%(refname)' refs/remotes/origin/)
-          sort -u "$RUNNER_TEMP/metaos-source-candidates.txt" -o "$RUNNER_TEMP/metaos-source-candidates.txt"
-          sort -u "$RUNNER_TEMP/metaos-artifact-lineage.txt" -o "$RUNNER_TEMP/metaos-artifact-lineage.txt"
-          if test -s "$RUNNER_TEMP/metaos-source-candidates.txt"; then
-            echo "METAOS_REBUILD_SOURCE_CANDIDATES_FOUND"
-            cat "$RUNNER_TEMP/metaos-source-candidates.txt"
+          for file in "$RUNNER_TEMP/metaos-related-sources.txt" "$RUNNER_TEMP/metaos-wasm-build-sources.txt" "$RUNNER_TEMP/metaos-artifact-lineage.txt"; do sort -u "$file" -o "$file"; done
+          echo "METAOS_RELATED_SOURCE_CANDIDATES:"
+          cat "$RUNNER_TEMP/metaos-related-sources.txt"
+          if test -s "$RUNNER_TEMP/metaos-wasm-build-sources.txt"; then
+            echo "METAOS_WASM_BUILD_SOURCE_CANDIDATES_FOUND"
+            cat "$RUNNER_TEMP/metaos-wasm-build-sources.txt"
           else
-            echo "METAOS_REBUILD_SOURCE_CANDIDATES=NONE_IN_FETCHED_BRANCHES"
+            echo "METAOS_WASM_BUILD_SOURCE_CANDIDATES=NONE_IN_FETCHED_BRANCHES"
           fi
           echo "METAOS_ARTIFACT_LINEAGE:"
           cat "$RUNNER_TEMP/metaos-artifact-lineage.txt"
@@ -97,8 +103,10 @@ jobs:
             echo "Candidate commit: $(git -C candidate rev-parse HEAD)"
             echo "Staging commit: $(git -C staging rev-parse HEAD)"
             cat "$RUNNER_TEMP/metaos-validation.txt" 2>/dev/null || true
-            echo "SOURCE_CANDIDATES:"
-            cat "$RUNNER_TEMP/metaos-source-candidates.txt" 2>/dev/null || true
+            echo "RELATED_SOURCE_CANDIDATES:"
+            cat "$RUNNER_TEMP/metaos-related-sources.txt" 2>/dev/null || true
+            echo "WASM_BUILD_SOURCE_CANDIDATES:"
+            cat "$RUNNER_TEMP/metaos-wasm-build-sources.txt" 2>/dev/null || true
             echo "ARTIFACT_LINEAGE:"
             cat "$RUNNER_TEMP/metaos-artifact-lineage.txt" 2>/dev/null || true
           } > candidate/continuity/runtime-evidence/METAOS_RECOVERY_ATTEMPT.txt
