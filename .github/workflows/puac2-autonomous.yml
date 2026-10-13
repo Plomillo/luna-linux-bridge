@@ -194,8 +194,11 @@ jobs:
                      "decision_utc":datetime.now(timezone.utc).isoformat()}
           key = serialization.load_pem_private_key(os.environ["G23_SIGNING_PRIVATE_KEY_PEM"].encode(), password=None)
           sig = base64.b64encode(key.sign(json.dumps(payload,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode())).decode()
-          out = {"payload":payload,"signature_b64":sig,"bundle":bundle}
-          Path("g23-attestation.json").write_text(json.dumps(out,sort_keys=True,indent=2)+"\n")
+          from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+          if not isinstance(key, Ed25519PrivateKey): raise SystemExit("G23_PRIVATE_KEY_NOT_ED25519")
+          out = {"payload":payload,"signature_b64":sig,"bundle":bundle,
+                 "attestation_sha256":hashlib.sha256(json.dumps(payload,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()).hexdigest()}
+          Path("g23-attestation.json").write_text(json.dumps(out,sort_keys=True,indent=2)+"\\n")
           PY
       - uses: actions/upload-artifact@v4
         with:
@@ -253,13 +256,24 @@ jobs:
           if p.get("candidate_commit") != os.environ["GITHUB_SHA"]: raise SystemExit("G23_CANDIDATE_MISMATCH")
           if p.get("validator_id") != os.environ["G23_VALIDATOR_ID"]: raise SystemExit("G23_IDENTITY_MISMATCH")
           if os.environ["G24_CERTIFIER_ID"] in ("",p.get("validator_id")): raise SystemExit("G24_IDENTITY_NOT_DISTINCT")
-          g23_hash = hashlib.sha256(canonical(p)).hexdigest()
+          g23_hash = doc.get("attestation_sha256")
+          if g23_hash != hashlib.sha256(canonical(p)).hexdigest(): raise SystemExit("G23_ATTESTATION_HASH_MISMATCH")
           payload = {"schema":"PUAC2_G24_CERTIFICATION/1.0","status":"CERTIFIED","certifier_id":os.environ["G24_CERTIFIER_ID"],
                      "candidate_commit":os.environ["GITHUB_SHA"],"g23_attestation_sha256":g23_hash,
                      "decision_utc":datetime.now(timezone.utc).isoformat()}
           key = serialization.load_pem_private_key(os.environ["G24_SIGNING_PRIVATE_KEY_PEM"].encode(), password=None)
+          from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+          if not isinstance(key, Ed25519PrivateKey): raise SystemExit("G24_PRIVATE_KEY_NOT_ED25519")
           signature = base64.b64encode(key.sign(canonical(payload))).decode()
-          Path("g24-certification.json").write_text(json.dumps({"payload":payload,"signature_b64":signature},sort_keys=True,indent=2)+"\n")
+          Path("g24-certification.json").write_text(json.dumps({"payload":payload,"signature_b64":signature},sort_keys=True,indent=2)+"\\n")
+          bundle = doc.get("bundle")
+          if not isinstance(bundle,dict) or bundle.get("candidate_commit") != os.environ["GITHUB_SHA"]: raise SystemExit("G23_BUNDLE_INVALID")
+          manifest = {"schema":"PUAC2_MTLS_CERTIFICATION/1.0","candidate_commit":os.environ["GITHUB_SHA"],
+            "submitter_id":os.environ.get("SUBMITTER_ID","github-actions"),
+            "evidence":bundle["evidence"],"tests":bundle["tests"],
+            "g23":{**p,"signature_b64":doc["signature_b64"],"attestation_sha256":g23_hash},
+            "g24":{**payload,"signature_b64":signature}}
+          Path("mtls-certification.json").write_text(json.dumps(manifest,sort_keys=True,indent=2)+"\\n")
           PY
       - uses: actions/upload-artifact@v4
         with:
