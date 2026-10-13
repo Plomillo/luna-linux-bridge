@@ -105,7 +105,10 @@ jobs:
         run: |
           set -euo pipefail
           cfg=/etc/louksna/remote-bridge/mtls.json
-          test -r "$cfg" || { echo "::error::Missing trusted host config: $cfg"; exit 3; }
+          test -f "$cfg" && test ! -L "$cfg" || { echo "::error::Missing, non-regular, or symlinked trusted host config: $cfg"; exit 3; }
+          test "$(stat -c %u "$cfg")" = "0" || { echo "::error::mTLS config must be root-owned."; exit 3; }
+          mode=$(stat -c %a "$cfg")
+          (( (8#$mode & 0022) == 0 )) || { echo "::error::mTLS config must not be group/world writable."; exit 3; }
           systemctl is-active --quiet louksna-remote-bridge.service
       - name: Perform authenticated mTLS handshake
         env:
@@ -177,6 +180,7 @@ jobs:
           from datetime import datetime, timezone
           from pathlib import Path
           from cryptography.hazmat.primitives import serialization
+          from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
           root = Path("evidence-input")
           tests = (root / "puac2-source-evidence/tests.txt").read_bytes()
           test_report = json.loads((root / "puac2-source-evidence/tests.json").read_text())
@@ -193,9 +197,8 @@ jobs:
                      "candidate_commit":candidate,"evidence_bundle_sha256":hashlib.sha256(json.dumps(bundle,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()).hexdigest(),
                      "decision_utc":datetime.now(timezone.utc).isoformat()}
           key = serialization.load_pem_private_key(os.environ["G23_SIGNING_PRIVATE_KEY_PEM"].encode(), password=None)
-          sig = base64.b64encode(key.sign(json.dumps(payload,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode())).decode()
-          from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
           if not isinstance(key, Ed25519PrivateKey): raise SystemExit("G23_PRIVATE_KEY_NOT_ED25519")
+          sig = base64.b64encode(key.sign(json.dumps(payload,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode())).decode()
           out = {"payload":payload,"signature_b64":sig,"bundle":bundle,
                  "attestation_sha256":hashlib.sha256(json.dumps(payload,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()).hexdigest()}
           Path("g23-attestation.json").write_text(json.dumps(out,sort_keys=True,indent=2)+"\n")
@@ -264,6 +267,8 @@ jobs:
           key = serialization.load_pem_private_key(os.environ["G24_SIGNING_PRIVATE_KEY_PEM"].encode(), password=None)
           from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
           if not isinstance(key, Ed25519PrivateKey): raise SystemExit("G24_PRIVATE_KEY_NOT_ED25519")
+          if not isinstance(key, Ed25519PrivateKey): raise SystemExit("G24_PRIVATE_KEY_NOT_ED25519")
+          if key.public_key().public_bytes(serialization.Encoding.Raw,serialization.PublicFormat.Raw) == pub.public_bytes(serialization.Encoding.Raw,serialization.PublicFormat.Raw): raise SystemExit("G23_G24_SIGNING_KEYS_NOT_DISTINCT")
           signature = base64.b64encode(key.sign(canonical(payload))).decode()
           Path("g24-certification.json").write_text(json.dumps({"payload":payload,"signature_b64":signature},sort_keys=True,indent=2)+"\n")
           bundle = doc.get("bundle")
