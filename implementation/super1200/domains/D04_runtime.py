@@ -874,3 +874,200 @@ def validate_json_schema_provider_result(result: Any, *, expected_instance_sha25
         "instance_sha256":result.get("instance_sha256"),"schema_sha256":result.get("schema_sha256"),
         "provider_version":result.get("provider_version"),"regression_corpus":corpus,
         "provider_authority":"NONE","result_sha256":hashlib.sha256(canonical_json(result)).hexdigest()}
+
+
+
+def run_policy_test_suite(policy: Any, cases: Any, *, evaluator: Any) -> dict[str, Any]:
+    """Require positive, negative, bypass, conflict and UNKNOWN cases; repeated decisions must be deterministic."""
+    if not isinstance(policy,dict) or not isinstance(policy.get("policy_id"),str) or not isinstance(policy.get("version"),str):
+        raise ValueError("policy_test_suite_identity_required")
+    if not isinstance(cases,list) or not callable(evaluator):
+        raise ValueError("policy_test_suite_cases_and_evaluator_required")
+    expected={"positive":"ALLOW","negative":"DENY","bypass":"DENY","conflict":"DENY","unknown":"DENY"}
+    seen=set(); categories=set(); results=[]; errors=[]
+    for case in cases:
+        if not isinstance(case,dict): raise ValueError("policy_test_case_must_be_object")
+        cid,category=case.get("case_id"),case.get("category")
+        if not isinstance(cid,str) or not cid.strip() or cid in seen: raise ValueError("policy_test_case_id_invalid")
+        if category not in expected: raise ValueError("policy_test_case_category_invalid")
+        seen.add(cid); categories.add(category)
+        try:
+            first=evaluator(policy,case.get("input"))
+            second=evaluator(policy,case.get("input"))
+            if not isinstance(first,dict) or first.get("decision") not in {"ALLOW","DENY","UNKNOWN"}:
+                raise ValueError("policy_test_decision_invalid")
+            if canonical_json(first)!=canonical_json(second):
+                raise ValueError("policy_test_decision_nondeterministic")
+            raw=first["decision"]
+            normalized="DENY" if raw=="UNKNOWN" else raw
+            passed=normalized==expected[category] and (category!="unknown" or raw=="UNKNOWN")
+            result={"case_id":cid,"category":category,"raw_decision":raw,
+                    "effective_decision":normalized,"expected_decision":expected[category],
+                    "deterministic":True,"result":"PASS" if passed else "FAIL"}
+            if not passed: errors.append("policy_case_expectation_failed:"+cid)
+        except Exception as exc:
+            result={"case_id":cid,"category":category,"result":"FAIL","error":type(exc).__name__+":"+str(exc)}
+            errors.append("policy_case_evaluation_failed:"+cid)
+        results.append(result)
+    missing=sorted(set(expected)-categories)
+    if missing: errors.append("policy_test_categories_missing:"+",".join(missing))
+    receipt={"schema":"SUPER1200_POLICY_TEST_RECEIPT/1","policy_id":policy["policy_id"],
+        "policy_version":policy["version"],"policy_sha256":hashlib.sha256(canonical_json(policy)).hexdigest(),
+        "case_count":len(cases),"categories_seen":sorted(categories),"missing_categories":missing,
+        "results":results,"errors":errors,"status":"PASS" if not errors and len(results)>0 else "FAIL"}
+    receipt["receipt_sha256"]=hashlib.sha256(canonical_json(receipt)).hexdigest()
+    return receipt
+
+
+def make_policy_version_record(*, policy_id: str, version: str, policy_document: dict[str, Any],
+                               effective_from_utc: str, effective_until_utc: str,
+                               supersedes: str | None = None) -> dict[str, Any]:
+    """Create a deterministic, hash-bound policy version record with explicit effective interval and supersession."""
+    from datetime import datetime, timezone
+    if not isinstance(policy_id,str) or not policy_id.strip() or not isinstance(version,str) or not version.strip():
+        raise ValueError("policy_version_identity_required")
+    if not isinstance(policy_document,dict) or policy_document.get("policy_id")!=policy_id or str(policy_document.get("version"))!=version:
+        raise ValueError("policy_document_identity_mismatch")
+    def parse(value,field):
+        try: dt=datetime.fromisoformat(value.replace("Z","+00:00"))
+        except (AttributeError,ValueError) as exc: raise ValueError(field+"_invalid_iso8601") from exc
+        if dt.tzinfo is None or dt.utcoffset() is None: raise ValueError(field+"_timezone_required")
+        return dt.astimezone(timezone.utc)
+    start=parse(effective_from_utc,"effective_from_utc"); end=parse(effective_until_utc,"effective_until_utc")
+    if end<=start: raise ValueError("policy_effective_interval_invalid")
+    record={"schema":"SUPER1200_POLICY_VERSION/1","policy_id":policy_id,"version":version,
+        "policy_sha256":hashlib.sha256(canonical_json(policy_document)).hexdigest(),
+        "policy_document":policy_document,"effective_from_utc":start.isoformat().replace("+00:00","Z"),
+        "effective_until_utc":end.isoformat().replace("+00:00","Z"),"supersedes":supersedes}
+    record["record_sha256"]=hashlib.sha256(canonical_json(record)).hexdigest()
+    return record
+
+
+def validate_policy_version_history(records: Any) -> dict[str, Any]:
+    """Validate version identity, content hashes, non-overlapping intervals and acyclic supersession chains."""
+    from datetime import datetime
+    if not isinstance(records,list) or not records: raise ValueError("policy_version_history_required")
+    by_key={}; parsed={}
+    def stamp(value,field):
+        try: dt=datetime.fromisoformat(value.replace("Z","+00:00"))
+        except (AttributeError,ValueError) as exc: raise ValueError(field+"_invalid_iso8601") from exc
+        if dt.tzinfo is None or dt.utcoffset() is None: raise ValueError(field+"_timezone_required")
+        return dt
+    for record in records:
+        if not isinstance(record,dict) or record.get("schema")!="SUPER1200_POLICY_VERSION/1":
+            raise ValueError("policy_version_record_schema_invalid")
+        pid,version=record.get("policy_id"),record.get("version")
+        if not isinstance(pid,str) or not pid.strip() or not isinstance(version,str) or not version.strip():
+            raise ValueError("policy_version_identity_invalid")
+        key=pid+"@"+version
+        if key in by_key: raise ValueError("policy_version_duplicate")
+        doc=record.get("policy_document")
+        if not isinstance(doc,dict) or doc.get("policy_id")!=pid or str(doc.get("version"))!=version:
+            raise ValueError("policy_version_document_identity_mismatch")
+        if record.get("policy_sha256")!=hashlib.sha256(canonical_json(doc)).hexdigest():
+            raise ValueError("policy_version_content_hash_mismatch")
+        unsigned=dict(record); recorded=unsigned.pop("record_sha256",None)
+        if recorded!=hashlib.sha256(canonical_json(unsigned)).hexdigest():
+            raise ValueError("policy_version_record_hash_mismatch")
+        start,end=stamp(record.get("effective_from_utc"),"effective_from_utc"),stamp(record.get("effective_until_utc"),"effective_until_utc")
+        if end<=start: raise ValueError("policy_effective_interval_invalid")
+        by_key[key]=record; parsed[key]=(start,end)
+    for key,record in by_key.items():
+        predecessor=record.get("supersedes")
+        same=[k for k in by_key if k.startswith(record["policy_id"]+"@") and k!=key]
+        if predecessor is not None:
+            if predecessor not in by_key or by_key[predecessor]["policy_id"]!=record["policy_id"] or predecessor==key:
+                raise ValueError("policy_supersession_target_invalid")
+            if parsed[predecessor][1]>parsed[key][0]:
+                raise ValueError("policy_supersession_interval_overlap")
+        elif same and any(parsed[k][0]<parsed[key][0] for k in same):
+            raise ValueError("policy_supersession_link_required")
+    for pid in sorted({r["policy_id"] for r in records}):
+        keys=sorted((k for k in by_key if by_key[k]["policy_id"]==pid),key=lambda k:parsed[k][0])
+        for left,right in zip(keys,keys[1:]):
+            if parsed[left][1]>parsed[right][0]: raise ValueError("policy_version_intervals_overlap")
+    return {"schema":"SUPER1200_POLICY_VERSION_HISTORY_VALIDATION/1","status":"PASS",
+        "record_count":len(records),"policy_versions":sorted(by_key),
+        "history_sha256":hashlib.sha256(canonical_json([by_key[k] for k in sorted(by_key)])).hexdigest()}
+
+
+def semantic_policy_diff(old_policy: Any, new_policy: Any) -> dict[str, Any]:
+    """Compare policy rules by canonical meaning and enumerate affected claims, tests and authorizations."""
+    if not isinstance(old_policy,dict) or not isinstance(new_policy,dict):
+        raise ValueError("policy_diff_documents_required")
+    if old_policy.get("schema")!="SUPER1200_POLICY_AS_CODE/1" or new_policy.get("schema")!="SUPER1200_POLICY_AS_CODE/1":
+        raise ValueError("policy_diff_schema_invalid")
+    if old_policy.get("policy_id")!=new_policy.get("policy_id"):
+        raise ValueError("policy_diff_identity_mismatch")
+    def index(policy):
+        rules=policy.get("rules")
+        if not isinstance(rules,list): raise ValueError("policy_rules_must_be_list")
+        result={}
+        for rule in rules:
+            if not isinstance(rule,dict) or not isinstance(rule.get("id"),str) or not rule["id"].strip():
+                raise ValueError("policy_rule_identity_invalid")
+            if rule["id"] in result: raise ValueError("policy_rule_id_duplicate")
+            result[rule["id"]]=rule
+        return result
+    old,new=index(old_policy),index(new_policy)
+    old_ids,new_ids=set(old),set(new)
+    added=sorted(new_ids-old_ids); removed=sorted(old_ids-new_ids)
+    changed=sorted(k for k in old_ids&new_ids if canonical_json(old[k])!=canonical_json(new[k]))
+    unchanged=sorted((old_ids&new_ids)-set(changed))
+    affected=sorted(set(added+removed+changed))
+    def values(key):
+        collected=set()
+        for rid in affected:
+            for rule in (old.get(rid),new.get(rid)):
+                if not isinstance(rule,dict): continue
+                vals=rule.get(key,[])
+                if not isinstance(vals,list) or any(not isinstance(x,str) or not x.strip() for x in vals):
+                    raise ValueError("policy_rule_dependency_list_invalid:"+key)
+                collected.update(vals)
+        return sorted(collected)
+    metadata={"schema","policy_id","version","rules","effective_from_utc","effective_until_utc"}
+    old_settings={k:v for k,v in old_policy.items() if k not in metadata}
+    new_settings={k:v for k,v in new_policy.items() if k not in metadata}
+    report={"schema":"SUPER1200_SEMANTIC_POLICY_DIFF/1","policy_id":old_policy["policy_id"],
+        "old_version":old_policy.get("version"),"new_version":new_policy.get("version"),
+        "added_rule_ids":added,"removed_rule_ids":removed,"changed_rule_ids":changed,
+        "unchanged_rule_ids":unchanged,"affected_decision_rules":affected,
+        "affected_claims":values("claims"),"affected_tests":values("tests"),
+        "affected_authorizations":values("authorizations"),
+        "policy_settings_changed":canonical_json(old_settings)!=canonical_json(new_settings)}
+    report["diff_sha256"]=hashlib.sha256(canonical_json(report)).hexdigest()
+    return report
+
+
+def analyze_policy_impact(policy_diff: Any, rule_dependencies: Any,
+                          evidence_graph: EvidenceInvalidationGraph) -> dict[str, Any]:
+    """Resolve reverse dependencies from changed rules to claims/tests/authorizations and causal evidence invalidation."""
+    if not isinstance(policy_diff,dict) or policy_diff.get("schema")!="SUPER1200_SEMANTIC_POLICY_DIFF/1":
+        raise ValueError("semantic_policy_diff_required")
+    if not isinstance(rule_dependencies,dict) or not isinstance(evidence_graph,EvidenceInvalidationGraph):
+        raise ValueError("policy_dependency_map_and_evidence_graph_required")
+    rules=policy_diff.get("affected_decision_rules")
+    if not isinstance(rules,list) or any(not isinstance(x,str) or not x for x in rules):
+        raise ValueError("affected_decision_rules_invalid")
+    claims=set(); tests=set(); auths=set(); roots=set()
+    for rule_id in rules:
+        dep=rule_dependencies.get(rule_id)
+        if not isinstance(dep,dict): raise ValueError("policy_dependency_mapping_required:"+rule_id)
+        for key,target in (("claims",claims),("tests",tests),("authorizations",auths),("evidence_ids",roots)):
+            values=dep.get(key,[])
+            if not isinstance(values,list) or any(not isinstance(x,str) or not x.strip() for x in values):
+                raise ValueError("policy_dependency_list_invalid:"+rule_id+":"+key)
+            target.update(values)
+    known=set(evidence_graph.evidence_ids)
+    if roots-known: raise ValueError("policy_impact_unknown_evidence_dependency")
+    invalidated=set()
+    for root in roots: invalidated.update(evidence_graph.invalidation_closure(root))
+    impact={"schema":"SUPER1200_POLICY_IMPACT_ANALYSIS/1","status":"PASS",
+        "policy_id":policy_diff.get("policy_id"),"policy_diff_sha256":policy_diff.get("diff_sha256"),
+        "affected_decision_rules":sorted(rules),"affected_claims":sorted(claims),
+        "affected_tests":sorted(tests),"affected_authorizations":sorted(auths),
+        "invalidated_evidence_ids":sorted(invalidated),
+        "preserved_evidence_ids":sorted(known-invalidated),
+        "invalidation_basis":{x:"Causal descendant of evidence dependency of an affected policy rule." for x in sorted(invalidated)}}
+    impact["impact_sha256"]=hashlib.sha256(canonical_json(impact)).hexdigest()
+    return impact
