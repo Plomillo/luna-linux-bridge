@@ -22,12 +22,18 @@
       "registered_path": "continuity/super1200_continuation_worker.py",
       "status": "BLOCKED_SELF_RECURSIVE_MAPPING",
       "reason": "The dispatcher launches the path registered for D04; that path is the dispatcher itself, causing recursive self-invocation rather than domain implementation."
+    },
+    {
+      "domain": "D04",
+      "registered_path": "implementation/super1200/runtime/d04_material_executor.py",
+      "status": "EVIDENCE_EXECUTOR_ONLY_NOT_MATERIAL_WORKER",
+      "reason": "Runs six capability-specific behavior tests (IDs 81-86) and emits hash-bound evidence. It does not implement missing capabilities, mutate registry states, close D04, or authorize a 12-hour material mission; it must not be placed in the active material executor map."
     }
   ],
   "reconciliation": {
-    "observed_at_utc": "2026-10-13T08:30:08Z",
+    "observed_at_utc": "2026-10-13T19:02:00Z",
     "status": "SAFE_BLOCK",
     "policy": "FAIL_CLOSED",
-    "note": "These mappings are preserved as historical records but removed from the active executor map. No continuation may be dispatched until concrete executors and behavior-level tests are reviewed."
+    "note": "Active material executor map remains empty. The newly added D04 script is an evidence-only task runner, not a material implementation worker. MetaOS exact-byte validation failed in run 38451527483; do not promote it."
   }
 }
