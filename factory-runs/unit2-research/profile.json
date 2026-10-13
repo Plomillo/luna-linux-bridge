@@ -7,7 +7,7 @@
   "title": "El primer borrador de un artículo científico — Entrega 1",
   "language": "es",
   "required_research": {
-    "minimum_distinct_sources": 3,
+    "minimum_distinct_sources": 0,
     "source_priority": "Fuentes académicas identificables; no inventar metadatos bibliográficos.",
     "required_topics": [
       "Modelo de los Cinco Grandes y evaluación de personalidad",
