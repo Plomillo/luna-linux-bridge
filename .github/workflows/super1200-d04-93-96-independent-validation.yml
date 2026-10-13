@@ -32,7 +32,7 @@ jobs:
           ref: custosz/super-1200-implementation-20261007
           fetch-depth: 0
 
-      - name: Independently validate evidence hashes and rerun mapped behavior tests
+      - name: Independently validate refreshed evidence hashes and rerun mapped behavior tests
         shell: bash
         run: |
           set -Eeuo pipefail
