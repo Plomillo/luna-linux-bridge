@@ -33,6 +33,12 @@ jobs:
           ref: custosz/super-1200-implementation-20261007
           fetch-depth: 1
 
+      - name: Run concrete D04 behavior tests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -m unittest discover -s implementation/super1200/tests -p 'test_d04_runtime.py' -v
+
       - name: Audit checkpoint, executor, evidence and gates
         shell: bash
         run: |
