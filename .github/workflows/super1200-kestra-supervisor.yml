@@ -6,6 +6,9 @@ on:
       - custosz/super-1200-implementation-20261007
     paths:
       - "continuity/EXECUTORS.json"
+      - "implementation/super1200/runtime/d04_material_worker_105_108.py"
+      - "implementation/super1200/domains/D04_runtime.py"
+      - "implementation/super1200/tests/test_d04_runtime.py"
       - "integrations/kestra/flows/10-super1200-continuity.yml"
       - ".github/workflows/super1200-continuation-lrb-live.yml"
       - ".github/workflows/super1200-kestra-supervisor.yml"
