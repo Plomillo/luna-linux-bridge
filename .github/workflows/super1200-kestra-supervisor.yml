@@ -38,10 +38,10 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          docker run -d --rm --name kestra-super1200 -p 8080:8080 -e GITHUB_TOKEN kestra/kestra:2.0.3 server local
+          docker run -d --rm --name kestra-super1200 -p 8080:8080 -e GITHUB_TOKEN kestra/kestra:v2.0.3-slim server local
           for n in $(seq 1 90); do
             if curl -fsS http://localhost:8080/api/v1/main/flows >/dev/null 2>&1; then
-              echo "SUPER1200_KESTRA_RUNTIME=READY version=2.0.3 placement=GITHUB_HOSTED_EPHEMERAL"
+              echo "SUPER1200_KESTRA_RUNTIME=READY image=kestra/kestra:v2.0.3-slim placement=GITHUB_HOSTED_EPHEMERAL"
               exit 0
             fi
             if ! docker ps --format '{{.Names}}' | grep -qx kestra-super1200; then
