@@ -199,9 +199,12 @@
     "prior_scope_g23": "PASS_FOR_SCOPE_D04_105_108",
     "prior_scope_g24": "PASS_FOR_SCOPE_D04_105_108",
     "scoped_certificate": "continuity/certification/D04_105_108.json",
-    "prior_certificate_sha256": "591082428db8a61946e78341df2e086785d8d0d49f20cf632a4b3a4501139940|8c32455a51ccf1c4d81309e15d18261e537f85a50f63ac74ac063e5466064e13",
     "global_certification_granted": false,
-    "authorized_at_commit": "e70af29dd6996c2f3c8353a410e5480d564d946e"
+    "authorized_at_commit": "e70af29dd6996c2f3c8353a410e5480d564d946e",
+    "prior_certificate_source_hashes": {
+      "module_sha256": "591082428db8a61946e78341df2e086785d8d0d49f20cf632a4b3a4501139940",
+      "test_sha256": "8c32455a51ccf1c4d81309e15d18261e537f85a50f63ac74ac063e5466064e13"
+    }
   },
   "scoped_certifications": {
     "D04:93-96": {
@@ -236,5 +239,11 @@
       "certification_granted": true,
       "global_certification_granted": false
     }
+  },
+  "authorization_state_reconciliation": {
+    "corrected_at_utc": "2026-10-13T23:59:30Z",
+    "change": "Renamed composite prior-source hash field to prior_certificate_source_hashes because it holds two already-verified SHA-256 values, not a SHA-256 digest of the certificate file.",
+    "no_scope_change": true,
+    "global_certification_status": "NOT_CERTIFIED"
   }
 }
