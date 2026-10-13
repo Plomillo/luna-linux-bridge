@@ -59,7 +59,10 @@ jobs:
         shell: bash
         run: |
           set -eu
-          if [[ -f pyproject.toml ]] && grep -Eq '^\[tool\.pytest([.]ini_options)?\]' pyproject.toml; then
+          if [[ -f tests/test_puac2_mtls_gate.py ]]; then
+            python -m pip install --disable-pip-version-check pytest cryptography
+            python -m pytest -q tests/test_puac2_mtls_gate.py
+          elif [[ -f pyproject.toml ]] && grep -Eq '^\[tool\.pytest([.]ini_options)?\]' pyproject.toml; then
             python -m pip install --disable-pip-version-check pytest
             python -m pytest -q
           elif [[ -f pytest.ini || -f tox.ini || -f setup.cfg ]] && find . -maxdepth 3 -type f \( -name 'test_*.py' -o -name '*_test.py' \) -print -quit | grep -q .; then
