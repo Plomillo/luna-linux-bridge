@@ -46,7 +46,7 @@ jobs:
           echo "METAOS_BYTES=$(wc -c < "$WASM" | tr -d ' ')" | tee "$RUNNER_TEMP/metaos-validation.txt"
           echo "METAOS_GIT_BLOB=$(git -C staging rev-parse HEAD:artifacts/custosz-v7/MetaOS.wasm)" | tee -a "$RUNNER_TEMP/metaos-validation.txt"
           echo "METAOS_SHA256=$(sha256sum "$WASM" | cut -d ' ' -f 1)" | tee -a "$RUNNER_TEMP/metaos-validation.txt"
-          node - "$WASM" 2>&1 | tee -a "$RUNNER_TEMP/metaos-validation.txt" <<'NODE'
+          node - "$WASM" <<'NODE' 2>&1 | tee -a "$RUNNER_TEMP/metaos-validation.txt"
           const fs = require('fs');
           const p = process.argv[2];
           const b = fs.readFileSync(p);
