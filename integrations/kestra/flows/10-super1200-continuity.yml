@@ -7,15 +7,15 @@ description: >-
 tasks:
   - id: checkpoint
     type: io.kestra.plugin.core.http.Request
-    uri: "https://raw.githubusercontent.com/Plomillo/luna-linux-bridge/custosz/super-1200-implementation-20261007/continuity/STATE.json?cache_bust={{ execution.id }}"
+    uri: "https://api.github.com/repos/Plomillo/luna-linux-bridge/contents/continuity/STATE.json?ref=custosz%2Fsuper-1200-implementation-20261007&cache_bust={{ execution.id }}"
     method: GET
   - id: executors
     type: io.kestra.plugin.core.http.Request
-    uri: "https://raw.githubusercontent.com/Plomillo/luna-linux-bridge/custosz/super-1200-implementation-20261007/continuity/EXECUTORS.json?cache_bust={{ execution.id }}"
+    uri: "https://api.github.com/repos/Plomillo/luna-linux-bridge/contents/continuity/EXECUTORS.json?ref=custosz%2Fsuper-1200-implementation-20261007&cache_bust={{ execution.id }}"
     method: GET
   - id: prior_certificate
     type: io.kestra.plugin.core.http.Request
-    uri: "https://raw.githubusercontent.com/Plomillo/luna-linux-bridge/custosz/super-1200-implementation-20261007/continuity/certification/D04_105_108.json?cache_bust={{ execution.id }}"
+    uri: "https://api.github.com/repos/Plomillo/luna-linux-bridge/contents/continuity/certification/D04_105_108.json?ref=custosz%2Fsuper-1200-implementation-20261007&cache_bust={{ execution.id }}"
     method: GET
   - id: secret_provider_diagnostic
     type: io.kestra.plugin.core.log.Log
@@ -81,8 +81,8 @@ tasks:
           material_worker_ready={{ fromJson(outputs.checkpoint.body).material_worker_ready ?? false }}
           prior_certificate_http_code={{ outputs.prior_certificate.code }} active_run_http_code={{ outputs.active_runs.code }}
           queued_run_http_code={{ outputs.queued_runs.code }}
-          active_run_count={{ outputs.active_runs.body.total_count ?? 'UNAVAILABLE' }}
-          queued_run_count={{ outputs.queued_runs.body.total_count ?? 'UNAVAILABLE' }}
+          active_run_count={{ fromJson(outputs.active_runs.body).total_count ?? 'UNAVAILABLE' }}
+          queued_run_count={{ fromJson(outputs.queued_runs.body).total_count ?? 'UNAVAILABLE' }}
           active_run_api_message={{ outputs.active_runs.body.message ?? 'none' }}
           queued_run_api_message={{ outputs.queued_runs.body.message ?? 'none' }}
           MetaOS deferred; hold unless checkpoint, prior scoped certificate, and both public GitHub API reads validate; no global certification or promotion.
