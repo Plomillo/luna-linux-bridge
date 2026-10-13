@@ -1,9 +1,9 @@
 id: super1200_continuity
 namespace: louksna.kestra
 description: >-
-  Continuous checkpoint supervisor for SUPER1200. Polls the candidate branch,
-  dispatches only when an explicitly reviewed material worker is registered,
-  and otherwise records a fail-closed hold. It never certifies or promotes.
+  Checkpoint supervisor for SUPER1200, executed by a bounded GitHub-hosted Kestra instance.
+  CUSTOSZ V7 remains the authorized material worker; Kestra only gates and dispatches.
+  It reads durable GitHub checkpoints, guards active/queued runs, and never certifies or promotes.
 tasks:
   - id: checkpoint
     type: io.kestra.plugin.core.http.Request
@@ -18,7 +18,7 @@ tasks:
     uri: "https://api.github.com/repos/Plomillo/luna-linux-bridge/actions/workflows/super1200-continuation-lrb-live.yml/runs?branch=custosz%2Fsuper-1200-implementation-20261007&status=in_progress&per_page=1"
     method: GET
     headers:
-      Authorization: "Bearer {{ secret('GITHUB_TOKEN') }}"
+      Authorization: "Bearer {{ envs.GITHUB_TOKEN }}"
       Accept: application/vnd.github+json
       X-GitHub-Api-Version: "2022-11-28"
   - id: queued_runs
@@ -26,7 +26,7 @@ tasks:
     uri: "https://api.github.com/repos/Plomillo/luna-linux-bridge/actions/workflows/super1200-continuation-lrb-live.yml/runs?branch=custosz%2Fsuper-1200-implementation-20261007&status=queued&per_page=1"
     method: GET
     headers:
-      Authorization: "Bearer {{ secret('GITHUB_TOKEN') }}"
+      Authorization: "Bearer {{ envs.GITHUB_TOKEN }}"
       Accept: application/vnd.github+json
       X-GitHub-Api-Version: "2022-11-28"
   - id: gate_and_dispatch
@@ -37,8 +37,8 @@ tasks:
               or fromJson(outputs.checkpoint.body).status == 'ACTIVE')
          and fromJson(outputs.checkpoint.body).material_worker_ready == true
          and fromJson(outputs.checkpoint.body).next_point != null
-         and fromJson(outputs.executors.body).executors.D04 != null
-         and fromJson(outputs.executors.body).executors.D04 != 'continuity/super1200_continuation_worker.py'
+         and fromJson(outputs.checkpoint.body).current_checkpoint == 'D04_87_92_MATERIALIZED'
+         and fromJson(outputs.executors.body).executors.D04 == 'implementation/super1200/runtime/d04_material_worker_93_96.py'
          and fromJson(outputs.active_runs.body).total_count == 0
          and fromJson(outputs.queued_runs.body).total_count == 0 }}
     then:
@@ -48,7 +48,7 @@ tasks:
         method: POST
         contentType: application/json
         headers:
-          Authorization: "Bearer {{ secret('GITHUB_TOKEN') }}"
+          Authorization: "Bearer {{ envs.GITHUB_TOKEN }}"
           Accept: application/vnd.github+json
           X-GitHub-Api-Version: "2022-11-28"
         body: |
@@ -58,9 +58,10 @@ tasks:
       - id: dispatch_receipt
         type: io.kestra.plugin.core.log.Log
         message: >-
-          SUPER1200_DISPATCH_REQUESTED checkpoint={{ fromJson(outputs.checkpoint.body).current_checkpoint }}
-          next={{ fromJson(outputs.checkpoint.body).next_point }}
-          execution={{ execution.id }}
+          SUPER1200_CUSTOSZ_V7_DISPATCH_REQUESTED checkpoint={{ fromJson(outputs.checkpoint.body).current_checkpoint }}
+          executor={{ fromJson(outputs.executors.body).executors.D04 }}
+          kestra_execution={{ execution.id }}
+          certification=NOT_GRANTED
     else:
       - id: blocked_safe_hold
         type: io.kestra.plugin.core.log.Log
