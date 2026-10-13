@@ -30,6 +30,8 @@ require('"127.0.0.1:18081:8081"' in COMPOSE,
         "Unauthenticated management endpoint must remain loopback-only.")
 require("basic-auth:" in COMPOSE and "enabled: true" in COMPOSE,
         "Basic authentication must remain enabled.")
+require("endpoints:\\n          all:\\n            basic-auth:" in COMPOSE,
+        "Management endpoint details must require authentication.")
 require("REPLACE_WITH_" in ENV_EXAMPLE,
         ".env.example must contain placeholders, not deployable credentials.")
 require(GOVERNANCE.get("overall_status") == "CANDIDATE_NOT_CERTIFIED",

@@ -27,6 +27,11 @@ services:
         condition: service_healthy
     environment:
       KESTRA_CONFIGURATION: |
+        endpoints:
+          all:
+            basic-auth:
+              username: ${KESTRA_ADMIN_EMAIL:?Set KESTRA_ADMIN_EMAIL in integrations/kestra/.env}
+              password: ${KESTRA_ADMIN_PASSWORD:?Set KESTRA_ADMIN_PASSWORD in integrations/kestra/.env}
         datasources:
           postgres:
             url: jdbc:postgresql://postgres:5432/kestra

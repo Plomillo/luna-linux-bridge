@@ -39,7 +39,7 @@
   "security_boundary": {
     "ui_binding": "127.0.0.1:8080",
     "management_binding": "127.0.0.1:18081",
-    "management_port_authentication": "Not provided by default; loopback binding required",
+    "management_port_authentication": "Configured with endpoints.all.basic-auth using local credentials; management port remains loopback-only.",
     "basic_auth": "Enabled; credentials generated locally from ignored .env",
     "host_docker_socket": "NOT_MOUNTED",
     "github_credentials": "NOT_CONFIGURED",
@@ -59,7 +59,7 @@
     "G24": "NOT_GRANTED",
     "non_regression": "PENDING",
     "rollback": "DOCUMENTED_NOT_RUNTIME_TESTED",
-    "credentials_policy": "PENDING_RUNTIME_CONFIRMATION"
+    "credentials_policy": "STRONG_RANDOM_LOCAL_AND_EPHEMERAL_CI_CREDENTIALS"
   },
   "required_next_gates": [
     "Verify official v2.0.5 Docker image availability and compare its release provenance before any upgrade.",
@@ -75,7 +75,9 @@
     "https://kestra.io/docs/scripts/task-runners",
     "https://kestra.io/docs/administrator-guide/monitoring",
     "https://hub.docker.com/r/kestra/kestra/tags",
-    "https://github.com/kestra-io/kestra/releases/tag/v2.0.5"
+    "https://github.com/kestra-io/kestra/releases/tag/v2.0.5",
+    "https://kestra.io/docs/migration-guide/v2.0.0/management-endpoint-hardening",
+    "https://kestra.io/blogs/security-improvements-2-0"
   ],
   "ci_history": [
     {
@@ -91,6 +93,13 @@
       "status": "FAILURE",
       "observed": "Static guard passed; docker compose config --quiet failed because KESTRA_ADMIN_EMAIL was absent after malformed .env generation.",
       "response": "Subsequent commit switched the generator to chr(10) line separators. This run did not pull images or test runtime health."
+    },
+    {
+      "run_id": 38356016781,
+      "commit": "87c128fc5f38ce2d2955b3f474f9cb256538fa68",
+      "status": "IN_PROGRESS_AT_LAST_OBSERVATION",
+      "observed": "Static validation and Compose validation passed; image pull and Compose startup passed; authenticated management-health validation was still running when the workflow was updated.",
+      "response": "Configured endpoints.all.basic-auth and changed the CI check to authenticate to management health, retaining loopback binding."
     }
   ]
 }

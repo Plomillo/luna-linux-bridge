@@ -11,7 +11,7 @@ Una instalación autoalojada de Kestra Open Source declarada mediante Docker Com
 - Kestra: kestra/kestra:v2.0.3
 - PostgreSQL: postgres:18.6-alpine
 - UI local: http://127.0.0.1:8080
-- Health/management local: http://127.0.0.1:18081/health
+- Health/management local: http://127.0.0.1:18081/health (authentication required)
 
 ### Nota de versión y procedencia
 
@@ -57,7 +57,8 @@ Requisitos: Docker Engine y Docker Compose v2. Ejecuta los comandos desde la ra�
 3. Inicia y verifica:
 
        docker compose -f compose.yml up -d --wait --wait-timeout 300
-       curl --fail --show-error http://127.0.0.1:18081/health
+       set -a; . ./.env; set +a
+       curl --config <(printf 'user = "%s:%s"' "$KESTRA_ADMIN_EMAIL" "$KESTRA_ADMIN_PASSWORD") --fail --show-error http://127.0.0.1:18081/health
 
 4. Abre http://127.0.0.1:8080 e inicia sesión con las credenciales generadas en .env. El archivo .env está ignorado por Git. No pegues ni subas sus contenidos a issues, PRs, logs o chats.
 
@@ -73,7 +74,7 @@ flows/00-smoke-test.yml contiene una tarea de log sin side effects externos. No 
 
 ## Límites de seguridad deliberados
 
-- Los puertos UI y management están ligados a loopback. El puerto 8081 de Kestra no proporciona autenticación de forma predeterminada; el mapeo a 127.0.0.1:18081 no debe cambiarse a 0.0.0.0.
+- Los puertos UI y management están ligados a loopback. El endpoint de management usa `endpoints.all.basic-auth` y requiere credenciales; el mapeo a 127.0.0.1:18081 no debe cambiarse a 0.0.0.0.
 - No se monta /var/run/docker.sock del anfitrión. No se conceden tokens de GitHub, secretos de producción ni conexión automática al repositorio.
 - No hay sincronización GitOps, importación automática de flujos, autorreparación, commit, push, merge ni promoción a main.
 - Los scripts con el runner Process se ejecutan como procesos locales con los permisos y el entorno del worker; no tienen aislamiento de contenedor. Por eso el validador bloquea flujos de scripting en esta fase. La ejecución de código confiable en un runner dedicado y aislado es una siguiente fase, no una garantía de esta instalación.
