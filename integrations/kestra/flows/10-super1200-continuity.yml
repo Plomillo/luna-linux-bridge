@@ -2,7 +2,7 @@ id: super1200_continuity
 namespace: louksna.kestra
 description: >-
   Checkpoint supervisor for SUPER1200, executed by a bounded GitHub-hosted Kestra instance.
-  CUSTOSZ V7 remains the authorized material worker; Kestra only gates and dispatches.
+  CUSTOSZ V7 is the authorized worker; Kestra gates, and the hosted runner executes only after gate success.
   It reads durable GitHub checkpoints, guards active/queued runs, and never certifies or promotes.
 tasks:
   - id: checkpoint
@@ -51,25 +51,13 @@ tasks:
          and fromJson(outputs.active_runs.body).total_count == 0
          and fromJson(outputs.queued_runs.body).total_count == 0 }}
     then:
-      - id: dispatch_candidate_workflow
-        type: io.kestra.plugin.core.http.Request
-        uri: https://api.github.com/repos/Plomillo/luna-linux-bridge/actions/workflows/super1200-continuation-lrb-live.yml/dispatches
-        method: POST
-        contentType: application/json
-        headers:
-          Authorization: "Bearer {{ envs.GITHUB_TOKEN }}"
-          Accept: application/vnd.github+json
-          X-GitHub-Api-Version: "2022-11-28"
-        body: |
-          {
-            "ref": "custosz/super-1200-implementation-20261007"
-          }
-      - id: dispatch_receipt
+      - id: authorization_receipt
         type: io.kestra.plugin.core.log.Log
         message: >-
-          SUPER1200_CUSTOSZ_V7_DISPATCH_REQUESTED checkpoint={{ fromJson(outputs.checkpoint.body).current_checkpoint }}
+          SUPER1200_CUSTOSZ_V7_AUTHORIZED checkpoint={{ fromJson(outputs.checkpoint.body).current_checkpoint }}
           executor={{ fromJson(outputs.executors.body).executors.D04 }}
           kestra_execution={{ execution.id }}
+          material_execution=DELEGATED_TO_GITHUB_HOSTED_JOB
           certification=NOT_GRANTED
     else:
       - id: blocked_safe_hold
