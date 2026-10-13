@@ -73,11 +73,12 @@ jobs:
             echo "KESTRA_ADMIN_PASSWORD=$KESTRA_ADMIN_PASSWORD"
           } >> "$GITHUB_ENV"
           export KESTRA_CONFIGURATION="$(cat "$CONFIG_PATH")"
-          export ENV_GITHUB_TOKEN="$GITHUB_TOKEN"
+          SECRET_GITHUB_TOKEN="$(printf '%s' "$GITHUB_TOKEN" | base64 -w0)"
+          echo "::add-mask::$SECRET_GITHUB_TOKEN"
           docker run -d --rm --name kestra-super1200 -p 8080:8080 \
-            -e ENV_GITHUB_TOKEN -e KESTRA_CONFIGURATION \
+            -e SECRET_GITHUB_TOKEN -e KESTRA_CONFIGURATION \
             kestra/kestra:v2.0.3-slim server local
-          unset ENV_GITHUB_TOKEN KESTRA_CONFIGURATION
+          unset SECRET_GITHUB_TOKEN KESTRA_CONFIGURATION
           for n in $(seq 1 60); do
             http_code="$(curl --connect-timeout 2 --max-time 3 -sS -o /dev/null -w '%{http_code}' \
               -u "$KESTRA_ADMIN_USER:$KESTRA_ADMIN_PASSWORD" \
