@@ -25,8 +25,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     outputs:
-      result: \${{ steps.validate.outputs.result }}
-      scope: \${{ steps.validate.outputs.scope }}
+      result: ${{ steps.validate.outputs.result }}
+      scope: ${{ steps.validate.outputs.scope }}
     steps:
       - name: Checkout governed candidate branch
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -137,7 +137,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: super1200-g23-d04-105-108-\${{ github.run_id }}
+          name: super1200-g23-d04-105-108-${{ github.run_id }}
           path: g23-validation.json
           if-no-files-found: warn
           retention-days: 90
@@ -160,14 +160,14 @@ jobs:
       - name: Download G23 proof from independent job
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
         with:
-          name: super1200-g23-d04-105-108-\${{ github.run_id }}
+          name: super1200-g23-d04-105-108-${{ github.run_id }}
           path: g23-artifact
 
       - name: Revalidate G23 scope and perform G24 source-bound checks
         shell: bash
         env:
-          G23_RESULT: \${{ needs.g23-independent-validation.outputs.result }}
-          G23_SCOPE: \${{ needs.g23-independent-validation.outputs.scope }}
+          G23_RESULT: ${{ needs.g23-independent-validation.outputs.result }}
+          G23_SCOPE: ${{ needs.g23-independent-validation.outputs.scope }}
         run: |
           set -Eeuo pipefail
           test "$G23_RESULT" = PASS
@@ -296,7 +296,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: super1200-g24-d04-105-108-\${{ github.run_id }}
+          name: super1200-g24-d04-105-108-${{ github.run_id }}
           path: g24-certification-decision.json
           if-no-files-found: warn
           retention-days: 90
