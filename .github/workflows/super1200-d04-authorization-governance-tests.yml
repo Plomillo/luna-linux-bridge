@@ -1,0 +1,42 @@
+name: SUPER1200 D04 authorization governance tests 109-112
+
+on:
+  push:
+    branches:
+      - custosz/super-1200-implementation-20261007
+    paths:
+      - "implementation/super1200/domains/D04_authorization_governance.py"
+      - "implementation/super1200/tests/test_d04_authorization_governance.py"
+      - ".github/workflows/super1200-d04-authorization-governance-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: super1200-d04-authorization-governance-tests
+  cancel-in-progress: false
+
+jobs:
+  test-authorization-governance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout governed candidate branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: custosz/super-1200-implementation-20261007
+          persist-credentials: false
+      - name: Run authorization-governance tests for 109-112
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B implementation/super1200/tests/test_d04_authorization_governance.py -v
+          for test_name in \
+            test_authorization_proof_binds_request_signature_time_scope_and_revocation \
+            test_capability_lease_enforces_actor_action_resource_time_revocation_and_consumption \
+            test_least_privilege_plan_selects_only_goal_ancestors_and_rejects_bad_dags \
+            test_time_bound_authority_requires_verified_clock_exact_scope_and_current_interval; do
+            python3 -B implementation/super1200/tests/test_d04_authorization_governance.py -v "D04AuthorizationGovernanceTests.$test_name"
+          done
+          echo "SUPER1200_AUTHORIZATION_GOVERNANCE_TESTS=PASS INDEPENDENT_CASES=4/4 GLOBAL_CERTIFICATION=FALSE"
