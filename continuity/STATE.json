@@ -1,13 +1,13 @@
 {
   "active": true,
   "active_worker": false,
-  "block_reason": "NEXT_D04_TRANCHE_EXECUTOR_NOT_REGISTERED",
-  "blocked": true,
-  "blocked_at": "2026-10-13T23:53:19.894185+00:00",
+  "block_reason": null,
+  "blocked": false,
+  "blocked_at": null,
   "branch": "custosz/super-1200-implementation-20261007",
   "certified": false,
   "current_checkpoint": "D04_105_108_MATERIALIZED",
-  "diagnostic": "D04 capabilities 105-108 passed current-source G23 and G24 for that exact scope. Continuation is held fail-closed until an executor for D04 109-112 is registered. Global SUPER1200 certification remains NOT_CERTIFIED.",
+  "diagnostic": "D04 105-108 passed source-bound scoped G23/G24. The registered authorization executor for D04 109-112 is ready for a bounded GitHub-hosted run. Prior scoped certification does not propagate; global SUPER1200 remains NOT_CERTIFIED. MetaOS remains deferred.",
   "dispatch_error": "DISPATCH_DENIED_BY_CHECKPOINT_RECONCILIATION_20261013",
   "dispatch_requested_at": "2026-10-13T21:14:39.496Z",
   "g23": "PASS_FOR_SCOPE_D04_105_108",
@@ -15,9 +15,9 @@
   "mission_id": "SUPER1200-CONTINUATION-20261007",
   "next_point": "D04",
   "next_worker": "CUSTOSZ_V7",
-  "recovery_note": "Register and review a task-specific D04 109-112 executor; require prior-scope G23/G24 verification, hash-bound per-capability evidence, independent validation and a new scoped certification. Do not propagate certification.",
+  "recovery_note": "Run only implementation/super1200/runtime/d04_material_worker_109_112.py from D04_105_108_MATERIALIZED after exact prior-scope G23/G24 and source-hash gates. Stop at D04_109_112_MATERIALIZED until G23/G24 for that scope and the next executor for 113-116 is registered.",
   "schema": "SUPER1200_CONTINUITY_STATE/1.0",
-  "status": "BLOCKED",
+  "status": "ACTIVE",
   "terminal": false,
   "transition_id": "D03-CHECKPOINT-TO-D04-001",
   "checkpoint_assessment": "REPORTED_FUNCTIONAL_CLOSURE_NOT_INDEPENDENTLY_VALIDATED",
@@ -44,7 +44,7 @@
     "g24": "BLOCKED",
     "certification_granted": false
   },
-  "material_worker_ready": false,
+  "material_worker_ready": true,
   "global_certification_status": "NOT_CERTIFIED",
   "last_execution": {
     "workflow_run_id": 38486725899,
@@ -188,19 +188,20 @@
     "global_certification_granted": false
   },
   "next_tranche_authorization": {
-    "checkpoint_predecessor": "D04_101_104_MATERIALIZED",
-    "executor": "implementation/super1200/runtime/d04_material_worker_105_108.py",
+    "checkpoint_predecessor": "D04_105_108_MATERIALIZED",
+    "executor": "implementation/super1200/runtime/d04_material_worker_109_112.py",
     "capabilities": [
-      105,
-      106,
-      107,
-      108
+      109,
+      110,
+      111,
+      112
     ],
-    "prior_scope_g23": "PASS_FOR_SCOPE_D04_101_104",
-    "prior_scope_g24": "PASS_FOR_SCOPE_D04_101_104",
-    "scoped_certificate": "continuity/certification/D04_101_104.json",
+    "prior_scope_g23": "PASS_FOR_SCOPE_D04_105_108",
+    "prior_scope_g24": "PASS_FOR_SCOPE_D04_105_108",
+    "scoped_certificate": "continuity/certification/D04_105_108.json",
+    "prior_certificate_sha256": "591082428db8a61946e78341df2e086785d8d0d49f20cf632a4b3a4501139940|8c32455a51ccf1c4d81309e15d18261e537f85a50f63ac74ac063e5466064e13",
     "global_certification_granted": false,
-    "authorized_at_commit": "b7f5d7a1b1b0f4b2b5b8d1"
+    "authorized_at_commit": "e70af29dd6996c2f3c8353a410e5480d564d946e"
   },
   "scoped_certifications": {
     "D04:93-96": {
