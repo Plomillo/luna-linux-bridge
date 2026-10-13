@@ -1,4 +1,4 @@
-name: SUPER1200 D04 93-96 evidence refresh after append-only extension
+name: SUPER1200 D04 current-scope evidence refresh after append-only extension
 
 on:
   push:
@@ -54,6 +54,12 @@ jobs:
               (99,"TRANSPARENCY_LOG_INTERNAL","test_transparency_log_is_append_only_hash_chained_and_anchorable"),
               (100,"DUAL_LEDGER","test_dual_ledger_cross_references_without_conflation"),
           ]
+          tasks_101_104=[
+              (101,"POLICY_AS_CODE","test_policy_as_code_binds_versioned_policy_input_and_audit_receipt"),
+              (102,"OPA_REGO_PROVIDER","test_opa_rego_provider_pins_version_bundle_and_sandbox"),
+              (103,"CUE_SCHEMA_PROVIDER","test_cue_provider_binds_schema_input_and_deterministic_export"),
+              (104,"JSON_SCHEMA_PROVIDER","test_json_schema_provider_pins_dialect_and_rejects_unknown_fields"),
+          ]
           def load(p): return json.loads(p.read_text(encoding="utf-8"))
           def sha(p): return hashlib.sha256(p.read_bytes()).hexdigest()
           state=load(state_path); registry=load(registry_path); domain=load(domain_path)
@@ -62,6 +68,8 @@ jobs:
               tasks=tasks_93_96; scope_name="D04_CAPABILITIES_93_96_ONLY"; scope_key="D04:93-96"
           elif checkpoint=="D04_97_100_MATERIALIZED":
               tasks=tasks_97_100; scope_name="D04_CAPABILITIES_97_100_ONLY"; scope_key="D04:97-100"
+          elif checkpoint=="D04_101_104_MATERIALIZED":
+              tasks=tasks_101_104; scope_name="D04_CAPABILITIES_101_104_ONLY"; scope_key="D04:101-104"
           else:
               raise SystemExit("EVIDENCE_REFRESH_DENY_UNSUPPORTED_CHECKPOINT")
           if state.get("certified") is not False or state.get("global_certification_status")!="NOT_CERTIFIED":
@@ -101,7 +109,7 @@ jobs:
           for cid,name,test_name in tasks:
               e={
                 "schema":"SUPER1200_D04_MATERIAL_EVIDENCE/1","capability_id":cid,"canonical_name":name,
-                "executor":("implementation/super1200/runtime/d04_material_worker_93_96.py" if cid<97 else "implementation/super1200/runtime/d04_material_worker_97_100.py"),
+                "executor":("implementation/super1200/runtime/d04_material_worker_93_96.py" if cid<97 else ("implementation/super1200/runtime/d04_material_worker_97_100.py" if cid<101 else "implementation/super1200/runtime/d04_material_worker_101_104.py")),
                 "implementation_artifact":"implementation/super1200/domains/D04_runtime.py",
                 "test_artifact":"implementation/super1200/tests/test_d04_runtime.py",
                 "test_case":test_name,"status":"PASS",
@@ -134,7 +142,7 @@ jobs:
           current_cert=state.get("scoped_certification",{})
           if isinstance(current_cert,dict) and current_cert.get("scope")==scope_key:
               current_cert["status"]="INVALIDATED_BY_APPEND_ONLY_SOURCE_HASH_CHANGE"
-              current_cert["historical_certificate_record"]="continuity/certification/"+("D04_93_96.json" if checkpoint=="D04_93_96_MATERIALIZED" else "D04_97_100.json")
+              current_cert["historical_certificate_record"]="continuity/certification/"+("D04_93_96.json" if checkpoint=="D04_93_96_MATERIALIZED" else ("D04_97_100.json" if checkpoint=="D04_97_100_MATERIALIZED" else "D04_101_104.json"))
               current_cert["global_certification_granted"]=False
               state["scoped_certification"]=current_cert
           scoped_certs=state.get("scoped_certifications",{})
