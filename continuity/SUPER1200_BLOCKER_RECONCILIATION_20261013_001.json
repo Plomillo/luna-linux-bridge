@@ -7,7 +7,7 @@
   "prior_block_reason": "UNTRUSTED_SYNTHETIC_WORKER_AND_D04_SELF_RECURSION",
   "prior_diagnostic": "Reconciliation blocked dispatch: the shared SUPER1200 worker synthesizes generic wrapper code and tests while marking capabilities EVIDENCED; D04 maps to the dispatcher itself and would recursively invoke it. The D03 checkpoint is a historical reported state, not independently validated.",
   "current_block_reason": "NO_REVIEWED_MATERIAL_EXECUTOR_AND_METAOS_INVALID_OR_MISSING",
-  "current_diagnostic": "The corrected recovery workflow validated the exact staged MetaOS bytes and failed standard WASM validation (2442 bytes; SHA-256 5d8f1239e3a0b452be722078760b000afc22af0a64f93ffb0a1f74024f15aed0; invalid version bytes at +4). No source/build recipe was found in the staged branches inspected. D04 evidence runner passed scoped behavior tests 81-86 and the full 10-test suite, but is not a material executor. Active executor map remains empty; 12-hour material mission and G23/G24 remain blocked.",
+  "current_diagnostic": "Corrected all-branch recovery run 38452281179 confirms MetaOS.wasm is invalid under standard WebAssembly validation (2442 bytes, SHA-256 5d8f1239e3a0b452be722078760b000afc22af0a64f93ffb0a1f74024f15aed0; invalid version bytes at +4). No WASM build source or recipe was found in fetched branches. The only related source is a small Python policy helper and it is insufficient to rebuild or replace the WASM module. D04 scoped evidence tasks 81-86 passed 6/6 and full suite passed 10/10, but this runner is not a material implementation worker. The active executor map remains empty; 12-hour mission and G23/G24 remain blocked.",
   "actions_verified": [
     {
       "action": "Disabled synthetic materialization worker",
@@ -29,10 +29,11 @@
     }
   ],
   "unresolved": [
-    "No reviewed task-level material executor is registered in continuity/EXECUTORS.json; the new D04 runner only generates evidence for existing behavior tests.",
-    "MetaOS exact bytes fail standard WebAssembly validation; staged branches inspected contain no source/build recipe for a verified rebuild.",
-    "CUSTOSZ V7 mission API remains supervisory time/state and no actual material worker is bound.",
-    "The 12-hour material mission has not started; current run is a recovery/evidence workflow only.",
+    "No reviewed task-level material executor is registered in continuity/EXECUTORS.json; the new D04 runner only emits evidence for six existing behaviors.",
+    "MetaOS exact bytes fail standard WebAssembly validation; no WASM source/build recipe was found in fetched repository branches. The related Python policy helper is not a verified build source.",
+    "Google Drive is referenced by the staging manifest as an original source, but that connector is disabled by administrator policy in this environment; authoritative external source recovery remains unavailable here.",
+    "CUSTOSZ V7 mission API remains supervisory time/state and no actual material implementation worker is bound.",
+    "The 12-hour material mission has not started; recovery/evidence workflows have run, but are not the requested material mission.",
     "G23 and G24 remain blocked."
   ],
   "decision": "FAIL_CLOSED",
@@ -59,6 +60,29 @@
       "d04_full_suite": "10/10 PASS",
       "artifact_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38451527483/artifacts/11841080707",
       "domain_closed": false,
+      "material_mission_started": false
+    },
+    {
+      "workflow_run_id": 38452040670,
+      "commit": "22a377c1a9083d175523d3b9c98b5c477de7cbca",
+      "outcome": "METAOS_INVALID_SOURCE_SCAN_FALSE_POSITIVE_CLASSIFIED",
+      "note": "The first all-branch scan identified metaos_policy.py as a related source candidate; the scan was then refined to distinguish related policy code from WASM build sources."
+    },
+    {
+      "workflow_run_id": 38452281179,
+      "workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38452281179",
+      "commit": "815730c536f32b166bac5e20e8a621a051776a16",
+      "outcome": "METAOS_STANDARD_WASM_VALIDATION_FAIL_NO_WASM_BUILD_SOURCE",
+      "metaos_bytes": 2442,
+      "metaos_git_blob_sha": "86124d95a38264019a3f5260cbe4cca3d9cd9e69",
+      "metaos_sha256": "5d8f1239e3a0b452be722078760b000afc22af0a64f93ffb0a1f74024f15aed0",
+      "validation_error": "expected version 01 00 00 00, found 0d 00 01 00 @+4",
+      "related_policy_source": "implementation/super1200/runtime/metaos_policy.py",
+      "related_policy_source_sha": "35054c649614bcc077092c89c6c808f92c0c25f2",
+      "wasm_build_source_candidates": "NONE_IN_FETCHED_BRANCHES",
+      "d04_scoped_tasks": "6/6 PASS",
+      "d04_full_suite": "10/10 PASS",
+      "evidence_record": "continuity/SUPER1200_CI_VALIDATION_20261013_002.json",
       "material_mission_started": false
     }
   ]
