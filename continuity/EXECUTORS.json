@@ -1,8 +1,10 @@
 {
   "schema": "SUPER1200_CONTINUITY_EXECUTORS/1.0",
   "branch": "custosz/super-1200-implementation-20261007",
-  "executors": {},
-  "missing_executor_state": "BLOCKED",
+  "executors": {
+    "D04": "implementation/super1200/runtime/d04_material_worker.py"
+  },
+  "missing_executor_state": "REGISTERED_D04_MATERIAL_EXECUTOR",
   "unregistered_domain_must_not_be_invented": true,
   "blocked_executor_records": [
     {
@@ -31,9 +33,9 @@
     }
   ],
   "reconciliation": {
-    "observed_at_utc": "2026-10-13T19:02:00Z",
-    "status": "SAFE_BLOCK",
+    "observed_at_utc": "2026-10-13T21:14:39.499Z",
+    "status": "REGISTERED_PENDING_LIVE_RUN",
     "policy": "FAIL_CLOSED",
-    "note": "Active material executor map remains empty. The newly added D04 script is an evidence-only task runner, not a material implementation worker. MetaOS exact-byte validation failed in run 38451527483; do not promote it."
+    "note": "D04 material worker registered for capability IDs 87-92. It implements real code paths in D04_runtime.py and executes behavior tests before evidence/state mutation. Existing D04 evidence-only executor remains historical and is not the active material worker. MetaOS is deferred."
   }
 }
