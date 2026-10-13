@@ -10,8 +10,8 @@
   "diagnostic": "D04 capabilities 93-96 materially implemented. The full D04 test suite and each mapped capability test were executed independently; hash-bound evidence was recorded. Continuation is held fail-closed because no reviewed task-specific executor is registered for the next pending D04 tranche. MetaOS remains deferred.",
   "dispatch_error": "DISPATCH_DENIED_BY_CHECKPOINT_RECONCILIATION_20261013",
   "dispatch_requested_at": "2026-10-13T21:14:39.496Z",
-  "g23": "PASS_FOR_SCOPE_D04_93_96",
-  "g24": "PENDING_INDEPENDENT_CERTIFICATION_REVIEW",
+  "g23": "PENDING_REVALIDATION_AFTER_SOURCE_HASH_CHANGE",
+  "g24": "PENDING_G23",
   "mission_id": "SUPER1200-CONTINUATION-20261007",
   "next_point": "D04",
   "next_worker": "CUSTOSZ_V7",
@@ -151,14 +151,14 @@
     "module_sha256": "1371f945ad2f80cf6009986cf20f327e648e00dc0327cdfbea0141a617801774",
     "test_sha256": "43bc0d6524c75e316886d161c7fe6fced23c4a5c1491ca4aff9dd2a69eed8b43",
     "github_actions_run_id": "38483711004",
-    "g23": "PASS_FOR_SCOPE_D04_93_96",
-    "g24": "PENDING_INDEPENDENT_CERTIFICATION_REVIEW",
+    "g23": "PENDING_REVALIDATION_AFTER_SOURCE_HASH_CHANGE",
+    "g24": "PENDING_G23",
     "certification_granted": false,
     "completed_at_utc": "2026-10-13T23:21:34.744830+00:00"
   },
   "independent_validation": {
     "scope": "D04_CAPABILITIES_93_96_ONLY",
-    "status": "PASS",
+    "status": "INVALIDATED_BY_APPEND_ONLY_SOURCE_HASH_CHANGE",
     "workflow_run_id": "38483924757",
     "workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38483924757",
     "record_path": "continuity/independent-validation/D04_93_96.json",
@@ -171,8 +171,10 @@
       95,
       96
     ],
-    "g23": "PASS_FOR_SCOPE_D04_93_96",
-    "g24": "PENDING_INDEPENDENT_CERTIFICATION_REVIEW",
-    "certification_granted": false
+    "g23": "PENDING_REVALIDATION_AFTER_SOURCE_HASH_CHANGE",
+    "g24": "PENDING_G23",
+    "certification_granted": false,
+    "invalidated_at_commit": "8588015a5716a3cbbdf9bf977948fc6bfbb91979",
+    "invalidation_reason": "D04_runtime.py and test_d04_runtime.py were append-extended for capabilities 97-100; the prior G23 record remains historical but does not validate the new source hashes."
   }
 }
