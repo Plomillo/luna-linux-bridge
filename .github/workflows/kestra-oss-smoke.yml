@@ -35,6 +35,7 @@ jobs:
           set -euo pipefail
           mkdir -p "$EVIDENCE_DIR"
           python3 - <<'PY'
+          import base64
           from pathlib import Path
           from secrets import token_hex
           Path(".env").write_text(
@@ -45,6 +46,11 @@ jobs:
               ]) + chr(10),
               encoding="utf-8",
           )
+          Path(".env_encoded").write_text(
+              "SECRET_GITHUB_TOKEN=" + base64.b64encode(b"CI_ONLY_NOT_A_REAL_GITHUB_TOKEN").decode("ascii") + chr(10),
+              encoding="utf-8",
+          )
+          Path(".env_encoded").chmod(0o600)
           PY
 
       - name: Validate governance invariants and Compose schema
@@ -276,7 +282,9 @@ jobs:
       - name: Destroy temporary runtime
         if: always()
         working-directory: integrations/kestra
-        run: docker compose -f compose.yml down --volumes --remove-orphans || true
+        run: |
+          docker compose -f compose.yml down --volumes --remove-orphans || true
+          rm -f .env .env_encoded
 
       - name: Upload evidence bundle
         if: always()

@@ -24,6 +24,10 @@ require(":latest" not in COMPOSE,
         "Floating :latest image tags are prohibited.")
 require("/var/run/docker.sock" not in COMPOSE,
         "Mounting the host Docker socket is prohibited.")
+require("env_file:" in COMPOSE and "- .env_encoded" in COMPOSE,
+        "Kestra OSS must load the configured secret environment file.")
+require(".env_encoded" in (ROOT / ".gitignore").read_text(encoding="utf-8"),
+        "Local encoded GitHub credentials must be excluded from Git.")
 init_start = COMPOSE.find("  storage-init:")
 kestra_start = COMPOSE.find("  kestra:")
 storage_init = COMPOSE[init_start:kestra_start] if init_start >= 0 and kestra_start > init_start else ""

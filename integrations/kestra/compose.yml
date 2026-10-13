@@ -51,6 +51,8 @@ services:
     command: server standalone
     restart: unless-stopped
     stop_grace_period: 6m
+    env_file:
+      - .env_encoded
     depends_on:
       postgres:
         condition: service_healthy
