@@ -1,0 +1,57 @@
+name: Document Factory Unit 2 run
+on:
+  push:
+    branches:
+      - "candidate/document-factory-v1-unit2-*"
+    paths:
+      - "factory-runs/unit2-research/**"
+      - ".github/workflows/document-factory-unit2-run.yml"
+permissions:
+  contents: read
+concurrency:
+  group: unit2-factory-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Install document providers
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo apt-get install -y pandoc libreoffice-writer python3-docx
+      - name: Build, format, validate and freeze real task artifacts
+        run: |
+          set -Eeuo pipefail
+          W="$RUNNER_TEMP/unit2-workspace"
+          mkdir -p "$W"
+          cp -a factory-runs/unit2-research/workspace/. "$W/"
+          PROFILE="factory-runs/unit2-research/profile.json"
+          python3 -B document-factory/src/factory.py validate-profile "$PROFILE" --repo-root .
+          python3 -B document-factory/src/factory.py build "$W" "$PROFILE" --repo-root .
+          python3 factory-runs/unit2-research/format_docx.py "$W/build/report.docx" "$W/evidence/formatting.json"
+          rm -f "$W/build/report.pdf"
+          soffice --headless --convert-to pdf --outdir "$W/build" "$W/build/report.docx"
+          python3 -B document-factory/src/factory.py validate "$W" "$PROFILE" --repo-root .
+          python3 -B document-factory/src/factory.py self-audit "$W" "$PROFILE"
+          python3 -B document-factory/src/factory.py freeze "$W"
+          test -s "$W/build/report.docx"
+          test -s "$W/build/report.pdf"
+          test -s "$W/evidence/audit.jsonl"
+          test -s "$W/runtime/heartbeat.json"
+          mkdir -p "$W/evidence"
+          printf '{"run_id":"%s","commit":"%s","ref":"%s","g23":"NOT_EXECUTED","g24":"NOT_EXECUTED","author_names":"EMPTY"}\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" "$GITHUB_REF" > "$W/evidence/github-run.json"
+          echo "FACTORY_RUN_ID=$GITHUB_RUN_ID" >> "$GITHUB_STEP_SUMMARY"
+          echo "OUTPUT_DOCX=$W/build/report.docx" >> "$GITHUB_STEP_SUMMARY"
+          echo "OUTPUT_PDF=$W/build/report.pdf" >> "$GITHUB_STEP_SUMMARY"
+          echo "G23=NOT_EXECUTED; G24=NOT_EXECUTED" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: unit2-document-factory-${{ github.run_id }}
+          path: ${{ runner.temp }}/unit2-workspace
+          if-no-files-found: error
+          retention-days: 30
