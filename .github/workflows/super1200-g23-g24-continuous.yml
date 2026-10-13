@@ -1,0 +1,138 @@
+name: "SUPER1200 — continuous G23/G24 independent gates"
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/15 * * * *"
+  push:
+    branches:
+      - custosz/super-1200-implementation-20261007
+    paths:
+      - "implementation/super1200/domains/D04_runtime.py"
+      - "implementation/super1200/tests/test_d04_runtime.py"
+      - "implementation/super1200/registry/capabilities.json"
+      - "implementation/super1200/domains/D04.json"
+      - "continuity/runtime-evidence/D04/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: super1200-g23-g24-independent
+  cancel-in-progress: false
+
+jobs:
+  g23-independent-validation:
+    name: "G23 — independent validation (read-only)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      result: ${{ steps.validate.outputs.result }}
+      scope: ${{ steps.validate.outputs.scope }}
+    steps:
+      - name: Checkout candidate branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: custosz/super-1200-implementation-20261007
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+      - name: Run independent D04 behavior suite
+        id: validate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python implementation/super1200/tests/test_d04_runtime.py
+          python - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          root=Path(".")
+          reg=json.loads((root/"implementation/super1200/registry/capabilities.json").read_text())
+          dom=json.loads((root/"implementation/super1200/domains/D04.json").read_text())
+          ids={87:"GITHUB_ARTIFACT_ATTESTATION_PROVIDER",88:"SIGSTORE_PROVIDER",89:"REKOR_TRANSPARENCY_PROVIDER",90:"SPDX_PROVIDER",91:"CYCLONEDX_PROVIDER",92:"CERTIFICATION_SCOPE_IDENTITY"}
+          if reg.get("count") != 1200 or len(reg.get("items",[])) != 1200: raise SystemExit("G23_REGISTRY_COUNT_FAIL")
+          ri={x["capability_id"]:x for x in reg["items"]}
+          di={x["capability_id"]:x for x in dom["capabilities"]}
+          evidence=[]
+          for cid,name in ids.items():
+              if ri[cid].get("canonical_name") != name or di[cid].get("canonical_name") != name: raise SystemExit(f"G23_IDENTITY_FAIL_{cid}")
+              if ri[cid].get("implementation_state") != "EVIDENCED" or di[cid].get("implementation_state") != "EVIDENCED": raise SystemExit(f"G23_MATERIAL_STATE_FAIL_{cid}")
+              p=root/"continuity/runtime-evidence/D04"/f"capability-{cid:04d}.json"
+              if not p.is_file(): raise SystemExit(f"G23_EVIDENCE_MISSING_{cid}")
+              ev=json.loads(p.read_text())
+              if ev.get("status") != "PASS" or ev.get("capability_id") != cid or ev.get("canonical_name") != name: raise SystemExit(f"G23_EVIDENCE_SCOPE_FAIL_{cid}")
+              if ev.get("module_sha256") != hashlib.sha256((root/"implementation/super1200/domains/D04_runtime.py").read_bytes()).hexdigest(): raise SystemExit(f"G23_SOURCE_HASH_DRIFT_{cid}")
+              if ev.get("test_sha256") != hashlib.sha256((root/"implementation/super1200/tests/test_d04_runtime.py").read_bytes()).hexdigest(): raise SystemExit(f"G23_TEST_HASH_DRIFT_{cid}")
+              evidence.append({"capability_id":cid,"evidence_sha256":ev.get("evidence_sha256")})
+          out={"schema":"SUPER1200_G23_VALIDATION/1","result":"PASS","scope":"D04:87-92","validator":"github-actions-independent-job","material_worker":"implementation/super1200/runtime/d04_material_worker.py","evidence":evidence,"registry_count":1200,"certification_granted":False}
+          Path("g23-validation.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          with open(os.environ["GITHUB_OUTPUT"],"a") as f:
+              f.write("result=PASS\nscope=D04:87-92\n")
+          PY
+      - name: Preserve G23 evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: super1200-g23-${{ github.run_id }}
+          path: g23-validation.json
+          if-no-files-found: warn
+          retention-days: 90
+
+  g24-automated-certification:
+    name: "G24 — certification gate (requires G23)"
+    needs: g23-independent-validation
+    if: needs.g23-independent-validation.outputs.result == 'PASS'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout candidate branch independently
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: custosz/super-1200-implementation-20261007
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+      - name: Revalidate G23 scope and execute G24 certification checks
+        shell: bash
+        env:
+          G23_RESULT: ${{ needs.g23-independent-validation.outputs.result }}
+          G23_SCOPE: ${{ needs.g23-independent-validation.outputs.scope }}
+        run: |
+          set -Eeuo pipefail
+          test "$G23_RESULT" = PASS
+          test "$G23_SCOPE" = D04:87-92
+          python implementation/super1200/tests/test_d04_runtime.py
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          root=Path(".")
+          ids=[87,88,89,90,91,92]
+          module=hashlib.sha256((root/"implementation/super1200/domains/D04_runtime.py").read_bytes()).hexdigest()
+          test=hashlib.sha256((root/"implementation/super1200/tests/test_d04_runtime.py").read_bytes()).hexdigest()
+          reg=json.loads((root/"implementation/super1200/registry/capabilities.json").read_text())
+          ri={x["capability_id"]:x for x in reg["items"]}
+          evidence=[]
+          for cid in ids:
+              p=root/"continuity/runtime-evidence/D04"/f"capability-{cid:04d}.json"
+              ev=json.loads(p.read_text())
+              if ev.get("status")!="PASS" or ev.get("module_sha256")!=module or ev.get("test_sha256")!=test: raise SystemExit(f"G24_EVIDENCE_REVALIDATION_FAIL_{cid}")
+              if ri[cid].get("implementation_state")!="EVIDENCED": raise SystemExit(f"G24_IMPLEMENTATION_STATE_FAIL_{cid}")
+              evidence.append({"capability_id":cid,"evidence_sha256":ev.get("evidence_sha256")})
+          cert={"schema":"SUPER1200_G24_CERTIFICATION_DECISION/1","result":"PASS","scope":"D04:87-92","basis":"G23_PASS_PLUS_INDEPENDENT_REVALIDATION","validator":"github-actions-g24-job","g23":"PASS","g24":"PASS","certification_granted":True,"scope_only":True,"global_super1200_certified":False,"module_sha256":module,"test_sha256":test,"evidence":evidence}
+          Path("g24-certification-decision.json").write_text(json.dumps(cert,indent=2,sort_keys=True)+"\n")
+          print("SUPER1200_TELEMETRY G23=PASS G24=PASS SCOPE=D04:87-92 GLOBAL_CERTIFICATION=NO")
+          PY
+      - name: Preserve G24 certification decision
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: super1200-g24-${{ github.run_id }}
+          path: g24-certification-decision.json
+          if-no-files-found: warn
+          retention-days: 90
