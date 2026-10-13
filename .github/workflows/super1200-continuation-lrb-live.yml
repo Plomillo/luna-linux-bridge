@@ -74,7 +74,16 @@ jobs:
           worker.PROFILES={k:([x.replace(chr(92),'/') for x in v[0]],[x.replace(chr(92),'/') for x in v[1]]) for k,v in worker.PROFILES.items()}
           authority=workspace/"Louksna.md"
           rel,size,expected,role=worker.PINS["LOUKSNA"]
-          if not authority.is_file() or authority.stat().st_size != size or hashlib.sha256(authority.read_bytes()).hexdigest() != expected:
+          observed_bytes=authority.stat().st_size if authority.is_file() else None
+          observed_sha256=hashlib.sha256(authority.read_bytes()).hexdigest() if authority.is_file() else None
+          pin_match=authority.is_file() and observed_bytes == size and observed_sha256 == expected
+          print("SUPER1200_CUSTOSZ_PIN_DIAGNOSTIC "+json.dumps({
+              "authority_path":str(authority),"relative_path":rel,"role":role,
+              "expected_bytes":size,"observed_bytes":observed_bytes,
+              "expected_sha256":expected,"observed_sha256":observed_sha256,
+              "pin_match":pin_match
+          },sort_keys=True))
+          if not pin_match:
               raise SystemExit("CUSTOSZ_DENY_LOUKSNA_AUTHORITY_DRIFT")
           worker.discover=lambda:{"workspace":str(workspace),"projects":{"LUNA_PROJECT":{"status":"RESOLVED","path":str(workspace),"score":999}}}
           worker.sources=lambda _large=False:{"observed_at":"SUPER1200_VERIFIED","sources":{"LOUKSNA":{"relative":rel,"bytes":size,"sha256":expected,"role":role,"path":str(authority),"exists":True,"observed_bytes":authority.stat().st_size,"observed_sha256":hashlib.sha256(authority.read_bytes()).hexdigest(),"integrity":"PASS","binding":"SUPER1200_BRANCH_AUTHORITY"}}}
