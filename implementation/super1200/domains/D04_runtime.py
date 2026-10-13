@@ -286,3 +286,172 @@ def validate_policy_document(document: Any) -> tuple[str, ...]:
              or not rule["id"].strip() for rule in rules):
         errors.append("policy_rule_identity_invalid")
     return tuple(errors)
+
+
+def github_artifact_attestation(subject_name: str, subject_sha256: str,
+                                predicate: dict[str, Any], *, issuer: str) -> dict[str, Any]:
+    """Build a deterministic, unsigned attestation envelope; signing is external."""
+    if not isinstance(issuer, str) or not issuer.strip():
+        raise ValueError("issuer_required")
+    statement = to_intoto_statement(
+        subject_name, subject_sha256,
+        "https://louksna.md/attestations/super1200/v1", predicate,
+    )
+    payload = canonical_json(statement)
+    return {
+        "schema": "SUPER1200_GITHUB_ATTESTATION_ENVELOPE/1",
+        "issuer": issuer.strip(),
+        "statement": statement,
+        "statement_sha256": hashlib.sha256(payload).hexdigest(),
+        "signature_status": "UNSIGNED_REQUIRES_GITHUB_ATTESTATION",
+    }
+
+
+def validate_sigstore_bundle(bundle: Any, *, expected_subject_sha256: str,
+                             verifier: Any) -> dict[str, Any]:
+    """Validate bundle shape and delegate cryptographic verification to a trusted verifier."""
+    _sha256(expected_subject_sha256, "expected_subject_sha256")
+    if not isinstance(bundle, dict):
+        raise ValueError("sigstore_bundle_must_be_object")
+    if bundle.get("mediaType") not in {
+        "application/vnd.dev.sigstore.bundle+json;version=0.1",
+        "application/vnd.dev.sigstore.bundle+json;version=0.2",
+        "application/vnd.dev.sigstore.bundle+json;version=0.3",
+    }:
+        raise ValueError("sigstore_bundle_media_type_unsupported")
+    if not callable(verifier):
+        raise ValueError("trusted_signature_verifier_required")
+    digest = bundle.get("subject", {}).get("sha256") if isinstance(bundle.get("subject"), dict) else None
+    _sha256(digest, "bundle_subject_sha256")
+    if digest != expected_subject_sha256:
+        raise ValueError("sigstore_subject_digest_mismatch")
+    if verifier(bundle) is not True:
+        raise ValueError("sigstore_cryptographic_verification_failed")
+    return {"status": "VERIFIED", "subject_sha256": digest,
+            "bundle_sha256": hashlib.sha256(canonical_json(bundle)).hexdigest()}
+
+
+def validate_rekor_entry(entry: Any, *, expected_subject_sha256: str,
+                         inclusion_verifier: Any) -> dict[str, Any]:
+    """Check Rekor entry identity and require an external inclusion-proof verifier."""
+    _sha256(expected_subject_sha256, "expected_subject_sha256")
+    if not isinstance(entry, dict):
+        raise ValueError("rekor_entry_must_be_object")
+    body = entry.get("body")
+    log_index = entry.get("logIndex")
+    integrated_time = entry.get("integratedTime")
+    proof = entry.get("verification")
+    if not isinstance(body, dict) or not isinstance(log_index, int) or log_index < 0:
+        raise ValueError("rekor_entry_identity_invalid")
+    if not isinstance(integrated_time, int) or integrated_time <= 0:
+        raise ValueError("rekor_integrated_time_invalid")
+    if not isinstance(proof, dict) or not proof:
+        raise ValueError("rekor_inclusion_proof_required")
+    if not callable(inclusion_verifier):
+        raise ValueError("trusted_rekor_verifier_required")
+    digest = body.get("subject_sha256")
+    _sha256(digest, "rekor_subject_sha256")
+    if digest != expected_subject_sha256:
+        raise ValueError("rekor_subject_digest_mismatch")
+    if inclusion_verifier(entry) is not True:
+        raise ValueError("rekor_inclusion_verification_failed")
+    return {"status": "VERIFIED", "log_index": log_index,
+            "integrated_time": integrated_time,
+            "entry_sha256": hashlib.sha256(canonical_json(entry)).hexdigest()}
+
+
+def make_spdx_sbom(*, document_id: str, name: str,
+                   packages: list[dict[str, Any]]) -> dict[str, Any]:
+    """Create an SPDX 2.3 JSON SBOM from explicit, hash-bound package records."""
+    if not isinstance(document_id, str) or not document_id.strip():
+        raise ValueError("spdx_document_id_required")
+    if not isinstance(name, str) or not name.strip():
+        raise ValueError("spdx_name_required")
+    if not isinstance(packages, list):
+        raise ValueError("spdx_packages_must_be_list")
+    normalized = []
+    seen = set()
+    for item in packages:
+        if not isinstance(item, dict):
+            raise ValueError("spdx_package_must_be_object")
+        pid, pname = item.get("SPDXID"), item.get("name")
+        version, license_id, digest = item.get("versionInfo"), item.get("licenseConcluded"), item.get("sha256")
+        if not all(isinstance(v, str) and v.strip() for v in (pid, pname, version, license_id)):
+            raise ValueError("spdx_package_identity_or_license_required")
+        if pid in seen:
+            raise ValueError("spdx_package_id_duplicate")
+        seen.add(pid)
+        _sha256(digest, "spdx_package_sha256")
+        normalized.append({
+            "SPDXID": pid, "name": pname, "versionInfo": version,
+            "downloadLocation": item.get("downloadLocation", "NOASSERTION"),
+            "filesAnalyzed": False, "licenseConcluded": license_id,
+            "licenseDeclared": item.get("licenseDeclared", license_id),
+            "checksums": [{"algorithm": "SHA256", "checksumValue": digest}],
+        })
+    normalized.sort(key=lambda p: p["SPDXID"])
+    return {
+        "spdxVersion": "SPDX-2.3",
+        "dataLicense": "CC0-1.0",
+        "SPDXID": "SPDXRef-DOCUMENT",
+        "name": name,
+        "documentNamespace": "https://louksna.md/spdx/" + quote(document_id.strip(), safe=".-_"),
+        "creationInfo": {"creators": ["Tool: super1200-d04-runtime"], "created": "1970-01-01T00:00:00Z"},
+        "packages": normalized,
+    }
+
+
+def make_cyclonedx_sbom(*, serial_number: str, components: list[dict[str, Any]]) -> dict[str, Any]:
+    """Create deterministic CycloneDX 1.5 JSON inventory with SHA-256 component hashes."""
+    if not isinstance(serial_number, str) or not serial_number.strip():
+        raise ValueError("cyclonedx_serial_number_required")
+    if not isinstance(components, list):
+        raise ValueError("cyclonedx_components_must_be_list")
+    normalized = []
+    seen = set()
+    for item in components:
+        if not isinstance(item, dict):
+            raise ValueError("cyclonedx_component_must_be_object")
+        name, version, digest = item.get("name"), item.get("version"), item.get("sha256")
+        if not all(isinstance(v, str) and v.strip() for v in (name, version)):
+            raise ValueError("cyclonedx_component_identity_required")
+        _sha256(digest, "cyclonedx_component_sha256")
+        bom_ref = item.get("bom-ref") or f"{name}@{version}"
+        if bom_ref in seen:
+            raise ValueError("cyclonedx_bom_ref_duplicate")
+        seen.add(bom_ref)
+        component = {"type": item.get("type", "library"), "name": name, "version": version,
+                     "bom-ref": bom_ref,
+                     "hashes": [{"alg": "SHA-256", "content": digest}]}
+        if item.get("licenses") is not None:
+            if not isinstance(item["licenses"], list):
+                raise ValueError("cyclonedx_licenses_must_be_list")
+            component["licenses"] = item["licenses"]
+        normalized.append(component)
+    normalized.sort(key=lambda c: c["bom-ref"])
+    return {"bomFormat": "CycloneDX", "specVersion": "1.5", "version": 1,
+            "serialNumber": serial_number, "components": normalized}
+
+
+def certification_scope_id(subject_sha256: str, scope: dict[str, Any]) -> str:
+    """Bind certification identity to one exact subject digest and declared scope."""
+    _sha256(subject_sha256, "subject_sha256")
+    if not isinstance(scope, dict) or not scope:
+        raise ValueError("certification_scope_required")
+    return "urn:louksna:certification-scope:" + hashlib.sha256(
+        canonical_json({"subject_sha256": subject_sha256, "scope": scope})
+    ).hexdigest()
+
+
+def certification_applies(*, certificate: dict[str, Any], subject_sha256: str,
+                           requested_scope: dict[str, Any]) -> bool:
+    """No transitive certification: only exact subject and exact scope can match."""
+    _sha256(subject_sha256, "subject_sha256")
+    if not isinstance(certificate, dict):
+        return False
+    if certificate.get("subject_sha256") != subject_sha256:
+        return False
+    scope = certificate.get("scope")
+    if not isinstance(scope, dict):
+        return False
+    return canonical_json(scope) == canonical_json(requested_scope)
