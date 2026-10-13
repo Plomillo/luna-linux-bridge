@@ -433,6 +433,83 @@ def make_cyclonedx_sbom(*, serial_number: str, components: list[dict[str, Any]])
             "serialNumber": serial_number, "components": normalized}
 
 
+
+def certification_non_transitive(*, certificate: dict[str, Any],
+                                 subject_sha256: str,
+                                 requested_scope: dict[str, Any]) -> bool:
+    """Allow certification only for the exact attested subject and exact scope."""
+    return certification_applies(certificate=certificate, subject_sha256=subject_sha256,
+                                 requested_scope=requested_scope)
+
+
+def evidence_is_current(*, validated_at_utc: str, expires_at_utc: str,
+                        now_utc: str) -> bool:
+    """Fail closed unless timestamps are timezone-aware and now is in [validation, expiry)."""
+    from datetime import datetime, timezone
+    def parse(value: str, field: str) -> datetime:
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(field + "_required")
+        try:
+            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError as exc:
+            raise ValueError(field + "_invalid_iso8601") from exc
+        if parsed.tzinfo is None or parsed.utcoffset() is None:
+            raise ValueError(field + "_timezone_required")
+        return parsed.astimezone(timezone.utc)
+    validated = parse(validated_at_utc, "validated_at_utc")
+    expires = parse(expires_at_utc, "expires_at_utc")
+    now = parse(now_utc, "now_utc")
+    if expires <= validated:
+        raise ValueError("expiry_must_follow_validation")
+    return validated <= now < expires
+
+
+class EvidenceInvalidationGraph:
+    """Append-only evidence dependency graph; invalidation propagates to descendants."""
+    def __init__(self) -> None:
+        self._dependencies: dict[str, set[str]] = {}
+
+    @property
+    def evidence_ids(self) -> tuple[str, ...]:
+        return tuple(sorted(self._dependencies))
+
+    def add_evidence(self, evidence_id: str) -> None:
+        if not isinstance(evidence_id, str) or not evidence_id.strip():
+            raise ValueError("evidence_id_required")
+        self._dependencies.setdefault(evidence_id, set())
+
+    def add_dependency(self, source_id: str, dependent_id: str) -> None:
+        if source_id not in self._dependencies or dependent_id not in self._dependencies:
+            raise ValueError("unknown_evidence_dependency")
+        if source_id == dependent_id or self._reachable(dependent_id, source_id):
+            raise ValueError("evidence_dependency_cycle")
+        self._dependencies[source_id].add(dependent_id)
+
+    def _reachable(self, start: str, target: str) -> bool:
+        pending, seen = [start], set()
+        while pending:
+            current = pending.pop()
+            if current == target:
+                return True
+            if current in seen:
+                continue
+            seen.add(current)
+            pending.extend(sorted(self._dependencies.get(current, ()), reverse=True))
+        return False
+
+    def invalidation_closure(self, evidence_id: str) -> tuple[str, ...]:
+        if evidence_id not in self._dependencies:
+            raise ValueError("unknown_evidence_id")
+        pending, seen = [evidence_id], set()
+        while pending:
+            current = pending.pop()
+            if current in seen:
+                continue
+            seen.add(current)
+            pending.extend(sorted(self._dependencies[current], reverse=True))
+        return tuple(sorted(seen))
+
+
 def certification_scope_id(subject_sha256: str, scope: dict[str, Any]) -> str:
     """Bind certification identity to one exact subject digest and declared scope."""
     _sha256(subject_sha256, "subject_sha256")
