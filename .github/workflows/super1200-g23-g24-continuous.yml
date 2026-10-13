@@ -16,7 +16,6 @@ on:
       - "continuity/runtime-evidence/D04/capability-0098.json"
       - "continuity/runtime-evidence/D04/capability-0099.json"
       - "continuity/runtime-evidence/D04/capability-0100.json"
-      - ".github/workflows/super1200-g23-g24-continuous.yml"
 
 permissions:
   contents: read
@@ -57,7 +56,9 @@ jobs:
           if reg.get("count") != 1200 or len(reg.get("items",[])) != 1200: raise SystemExit("G23_REGISTRY_COUNT_FAIL")
           if state.get("current_checkpoint") != "D04_97_100_MATERIALIZED": raise SystemExit("G23_CHECKPOINT_FAIL")
           if state.get("certified") is not False or state.get("global_certification_status") != "NOT_CERTIFIED": raise SystemExit("G23_GLOBAL_CERTIFICATION_DRIFT")
-          material_run=str(state.get("last_execution",{}).get("workflow_run_id",""))
+          refresh=state.get("evidence_refresh",{})
+          if refresh.get("status")!="PASS_AWAITING_G23" or refresh.get("scope")!="D04_CAPABILITIES_97_100_ONLY" or refresh.get("module_sha256")!=module_hash or refresh.get("test_sha256")!=test_hash: raise SystemExit("G23_EVIDENCE_REFRESH_BINDING_FAIL")
+          material_run=str(refresh.get("workflow_run_id") or state.get("last_execution",{}).get("workflow_run_id",""))
           if state.get("last_execution",{}).get("status")!="COMPLETED_SUCCESS_MATERIAL_TRANCHE": raise SystemExit("G23_MATERIAL_RUN_NOT_SUCCESSFUL")
           ri={x["capability_id"]:x for x in reg["items"]}
           di={x["capability_id"]:x for x in dom["capabilities"]}
