@@ -291,5 +291,62 @@ class D04RuntimeTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"dual_ledger_payload_mismatch"):
             d04.reconcile_dual_ledgers([dict(operational[0],payload_sha256="b"*64)],list(log.entries))
 
+
+
+    def test_policy_as_code_binds_versioned_policy_input_and_audit_receipt(self):
+        policy={"schema":"SUPER1200_POLICY_AS_CODE/1","policy_id":"deploy","version":"v1",
+            "engine":"OPA_REGO","provider_version_pin":"1.2.3",
+            "effective_from_utc":"2026-10-13T10:00:00Z","effective_until_utc":"2026-10-14T10:00:00Z"}
+        inp={"artifact_sha256":"a"*64}
+        ph=__import__("hashlib").sha256(d04.canonical_json(policy)).hexdigest()
+        ih=__import__("hashlib").sha256(d04.canonical_json(inp)).hexdigest()
+        provider={"provider_version":"1.2.3","input_sha256":ih,"policy_sha256":ph,
+            "provider_authority":"NONE","sandboxed":True,"deterministic":True,"decision":"ALLOW"}
+        receipt=d04.evaluate_policy_as_code(policy,inp,provider,evaluated_at_utc="2026-10-13T10:30:00Z")
+        self.assertEqual(receipt["decision"],"ALLOW")
+        self.assertEqual(receipt["provider_authority"],"NONE")
+        self.assertEqual(len(receipt["receipt_sha256"]),64)
+        self.assertEqual(d04.evaluate_policy_as_code(policy,inp,dict(provider,decision="UNKNOWN"),
+            evaluated_at_utc="2026-10-13T10:30:00Z")["decision"],"DENY")
+        self.assertEqual(d04.evaluate_policy_as_code(policy,inp,dict(provider,input_sha256="b"*64),
+            evaluated_at_utc="2026-10-13T10:30:00Z")["decision"],"DENY")
+
+    def test_opa_rego_provider_pins_version_bundle_and_sandbox(self):
+        result={"provider_id":"opa-rego","provider_version":"1.2.3","input_sha256":"a"*64,
+            "policy_bundle_sha256":"b"*64,"sandboxed":True,"provider_authority":"NONE",
+            "deterministic":True,"decision":"ALLOW"}
+        self.assertEqual(d04.validate_opa_rego_result(result,expected_input_sha256="a"*64,
+            expected_policy_bundle_sha256="b"*64,pinned_version="1.2.3")["status"],"VALID")
+        bad=dict(result,provider_version="latest")
+        self.assertEqual(d04.validate_opa_rego_result(bad,expected_input_sha256="a"*64,
+            expected_policy_bundle_sha256="b"*64,pinned_version="1.2.3")["status"],"INVALID")
+        unknown=dict(result,decision="UNKNOWN")
+        self.assertEqual(d04.validate_opa_rego_result(unknown,expected_input_sha256="a"*64,
+            expected_policy_bundle_sha256="b"*64,pinned_version="1.2.3")["decision"],"UNKNOWN")
+
+    def test_cue_provider_binds_schema_input_and_deterministic_export(self):
+        exported={"service":{"replicas":2}}
+        export_hash=__import__("hashlib").sha256(d04.canonical_json(exported)).hexdigest()
+        result={"provider_id":"cue","provider_version":"0.12.0","input_sha256":"a"*64,
+            "schema_sha256":"b"*64,"provider_authority":"NONE","deterministic_export":True,
+            "exported_config":exported,"export_sha256":export_hash,"valid":True,"errors":[]}
+        self.assertEqual(d04.validate_cue_provider_result(result,expected_input_sha256="a"*64,
+            expected_schema_sha256="b"*64,pinned_version="0.12.0")["status"],"VALID")
+        self.assertEqual(d04.validate_cue_provider_result(dict(result,export_sha256="c"*64),
+            expected_input_sha256="a"*64,expected_schema_sha256="b"*64,pinned_version="0.12.0")["status"],"INVALID")
+
+    def test_json_schema_provider_pins_dialect_and_rejects_unknown_fields(self):
+        result={"provider_id":"json-schema","provider_version":"4.25.0","dialect":"https://json-schema.org/draft/2020-12/schema",
+            "instance_sha256":"a"*64,"schema_sha256":"b"*64,"provider_authority":"NONE",
+            "strict_unknown_fields":True,"unknown_fields":[],"errors":[],"valid":True,
+            "regression_corpus":{"passed":True,"tests_passed":12,"tests_total":12}}
+        args={"expected_instance_sha256":"a"*64,"expected_schema_sha256":"b"*64,
+            "dialect":"https://json-schema.org/draft/2020-12/schema","pinned_version":"4.25.0"}
+        self.assertEqual(d04.validate_json_schema_provider_result(result,**args)["status"],"VALID")
+        bad=dict(result,unknown_fields=["unexpected"])
+        self.assertEqual(d04.validate_json_schema_provider_result(bad,**args)["status"],"INVALID")
+        stale=dict(result,dialect="draft-07")
+        self.assertIn("schema_dialect_mismatch",d04.validate_json_schema_provider_result(stale,**args)["reasons"])
+
 if __name__ == "__main__":
     unittest.main()
