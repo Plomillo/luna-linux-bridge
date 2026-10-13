@@ -72,11 +72,18 @@ jobs:
           . ./.env
           set +a
           healthy=0
+          auth_config=<(printf 'user = "%s:%s"' "$KESTRA_ADMIN_EMAIL" "$KESTRA_ADMIN_PASSWORD")
           for attempt in $(seq 1 30); do
-            if curl --connect-timeout 3 --max-time 5 --config <(printf 'user = "%s:%s"' "$KESTRA_ADMIN_EMAIL" "$KESTRA_ADMIN_PASSWORD") --silent --show-error --fail http://127.0.0.1:18081/health -o "$EVIDENCE_DIR/health.json" 2>/dev/null; then
-              if python3 -c 'import json,sys; d=json.load(open(sys.argv[1], encoding="utf-8")); x=d.get("details", {}); sys.exit(0 if d.get("status") == "UP" and x.get("jdbc", {}).get("status") == "UP" else 1)' "$EVIDENCE_DIR/health.json"; then
-                healthy=1
-                break
+            if curl --connect-timeout 3 --max-time 5 --config "$auth_config" --silent --show-error --fail http://127.0.0.1:18081/health -o "$EVIDENCE_DIR/health.json" 2>/dev/null; then
+              if python3 -c 'import json,sys; d=json.load(open(sys.argv[1], encoding="utf-8")); sys.exit(0 if d.get("status") == "UP" else 1)' "$EVIDENCE_DIR/health.json"; then
+                postgres_id="$(docker compose ps -q postgres)"
+                postgres_state="$(docker inspect --format='{{.State.Health.Status}}' "$postgres_id" 2>/dev/null || true)"
+                ui_code="$(curl --connect-timeout 3 --max-time 5 --config "$auth_config" --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:8080/ 2>/dev/null || true)"
+                ready="$(docker compose logs --no-color kestra 2>/dev/null | grep -F 'Kestra is ready!' || true)"
+                if [ "$postgres_state" = "healthy" ] && [[ "$ui_code" == 2?? ]] && [ -n "$ready" ]; then
+                  healthy=1
+                  break
+                fi
               fi
             fi
             sleep 5
@@ -85,10 +92,15 @@ jobs:
             docker compose -f compose.yml ps --all || true
             docker compose -f compose.yml logs --no-color --tail=250 || true
             if [ -f "$EVIDENCE_DIR/health.json" ]; then cat "$EVIDENCE_DIR/health.json"; fi
-            echo "Authenticated health check did not show Kestra and JDBC UP."
+            echo "Health check failed: management status, PostgreSQL health, or authenticated UI readiness is not UP."
             exit 1
           fi
-          echo "Authenticated Kestra and JDBC health: UP" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "Authenticated management health: UP"
+            echo "PostgreSQL container health: healthy"
+            echo "Authenticated UI: HTTP $ui_code"
+            echo "Kestra ready marker: found"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Capture non-secret runtime evidence
         if: always()
