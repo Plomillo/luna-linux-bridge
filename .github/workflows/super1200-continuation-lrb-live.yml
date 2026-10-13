@@ -43,16 +43,16 @@ jobs:
           expected="implementation/super1200/runtime/d04_material_worker_93_96.py"
           if state.get("blocked") is not False or state.get("status") not in {"ACTIVE","READY_FOR_CONTINUATION"}:
               print("SUPER1200_SAFE_HOLD "+json.dumps({"reason":"CHECKPOINT_BLOCKED_OR_NOT_ACTIVE","status":state.get("status"),"checkpoint":state.get("current_checkpoint")},sort_keys=True))
-              raise SystemExit(0)
+              raise SystemExit(1)
           if state.get("material_worker_ready") is not True:
               print("SUPER1200_SAFE_HOLD "+json.dumps({"reason":"MATERIAL_WORKER_NOT_READY","checkpoint":state.get("current_checkpoint")},sort_keys=True))
-              raise SystemExit(0)
+              raise SystemExit(1)
           if state.get("current_checkpoint") != "D04_87_92_MATERIALIZED":
               print("SUPER1200_SAFE_HOLD "+json.dumps({"reason":"CHECKPOINT_NOT_IN_EXPECTED_PREDECESSOR_STATE","checkpoint":state.get("current_checkpoint")},sort_keys=True))
-              raise SystemExit(0)
+              raise SystemExit(1)
           if table.get("D04") != expected or not (root/expected).is_file():
               print("SUPER1200_SAFE_HOLD "+json.dumps({"reason":"REVIEWED_D04_93_96_EXECUTOR_NOT_REGISTERED","registered":table.get("D04"),"expected":expected},sort_keys=True))
-              raise SystemExit(0)
+              raise SystemExit(1)
           print("SUPER1200_DISPATCH_GATE=PASS checkpoint=D04_87_92_MATERIALIZED next=D04_93_96")
           PY
 
