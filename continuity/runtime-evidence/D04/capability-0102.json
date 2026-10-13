@@ -2,14 +2,21 @@
   "canonical_name": "OPA_REGO_PROVIDER",
   "capability_id": 102,
   "certification_granted": false,
-  "evidence_sha256": "dea4132bd54767489345b52f25d8a121bfff2a1e741ab86042b3d63d6b62b5e8",
+  "evidence_refresh_workflow_run_id": "38486071196",
+  "evidence_refresh_workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38486071196",
+  "evidence_sha256": "1c9fcab3a4be9998486bfffaba5035b24e61bba817bf8f63ebcffc32ff189654",
   "executor": "implementation/super1200/runtime/d04_material_worker_101_104.py",
-  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g23": "PENDING_INDEPENDENT_REVALIDATION",
   "g24": "PENDING_G23",
-  "github_actions_run_id": "38485688714",
+  "github_actions_run_id": "38486071196",
   "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
-  "module_sha256": "7ed8ac665ff0666299d5baad58ba0bb90803922933a5ca9685355f9ec1126ecd",
-  "prior_scope_certificate": "continuity/certification/D04_97_100.json",
+  "module_sha256": "591082428db8a61946e78341df2e086785d8d0d49f20cf632a4b3a4501139940",
+  "originating_material_workflow_run_id": 38485688714,
+  "prior_evidence": {
+    "prior_evidence_sha256": "dea4132bd54767489345b52f25d8a121bfff2a1e741ab86042b3d63d6b62b5e8",
+    "prior_module_sha256": "7ed8ac665ff0666299d5baad58ba0bb90803922933a5ca9685355f9ec1126ecd",
+    "prior_test_sha256": "4cd43936d4df91e0e751d78abc48593252e66510c0d27fd9403caaa42a14890d"
+  },
   "schema": "SUPER1200_D04_MATERIAL_EVIDENCE/1",
   "selected_test_result": {
     "exit_code": 0,
@@ -17,12 +24,11 @@
     "single_test_run_confirmed": true,
     "stderr_sha256": "448c8010b00954ebd0f7895153ee8a077b13e9fe83fa26781f049f975f714544",
     "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "test_case": "test_opa_rego_provider_pins_version_bundle_and_sandbox",
-    "unittest_ok_marker": true
+    "test_case": "test_opa_rego_provider_pins_version_bundle_and_sandbox"
   },
   "status": "PASS",
   "suite_exit_code": 0,
-  "suite_stderr_sha256": "c4cd7c5ed72f685a8d63cc131c46de3da0c79bd8c4d2c7606907d073a27b7a4d",
+  "suite_stderr_sha256": "a19207f09165dabfa6cd260392f2a9f184ef949fa637018a38696f4ae097f50d",
   "suite_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "test_artifact": "implementation/super1200/tests/test_d04_runtime.py",
   "test_case": "test_opa_rego_provider_pins_version_bundle_and_sandbox",
@@ -33,7 +39,6 @@
     "-v",
     "D04RuntimeTests.test_opa_rego_provider_pins_version_bundle_and_sandbox"
   ],
-  "test_sha256": "4cd43936d4df91e0e751d78abc48593252e66510c0d27fd9403caaa42a14890d",
-  "validated_at_utc": "2026-10-13T23:41:27.723667+00:00",
-  "worker_started_at_utc": "2026-10-13T23:41:27.317236+00:00"
+  "test_sha256": "8c32455a51ccf1c4d81309e15d18261e537f85a50f63ac74ac063e5466064e13",
+  "validated_at_utc": "2026-10-13T23:44:42.321759+00:00"
 }

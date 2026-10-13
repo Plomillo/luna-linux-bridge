@@ -1,74 +1,74 @@
 {
   "certification_granted": false,
-  "completed_at_utc": "2026-10-13T23:37:56.995873+00:00",
+  "completed_at_utc": "2026-10-13T23:44:42.321759+00:00",
   "full_suite_exit_code": 0,
-  "module_sha256": "7ed8ac665ff0666299d5baad58ba0bb90803922933a5ca9685355f9ec1126ecd",
+  "module_sha256": "591082428db8a61946e78341df2e086785d8d0d49f20cf632a4b3a4501139940",
   "prior_evidence": {
-    "97": {
-      "prior_evidence_sha256": "cf7b2e7cdc93359d0fd2c390e67aedcc2e8a6efc4b3ab570e532e451d6ab96fb",
+    "101": {
+      "prior_evidence_sha256": "c8ab2727ea4a5c21d049cbe62b775fda13bddda9d7817dd8db91397e13bd2833",
       "prior_module_sha256": "7ed8ac665ff0666299d5baad58ba0bb90803922933a5ca9685355f9ec1126ecd",
       "prior_test_sha256": "4cd43936d4df91e0e751d78abc48593252e66510c0d27fd9403caaa42a14890d"
     },
-    "98": {
-      "prior_evidence_sha256": "05dcdd2d098192b85d3075ee1d6ad349df83165208a4107cb6732ddcfd7517bc",
+    "102": {
+      "prior_evidence_sha256": "dea4132bd54767489345b52f25d8a121bfff2a1e741ab86042b3d63d6b62b5e8",
       "prior_module_sha256": "7ed8ac665ff0666299d5baad58ba0bb90803922933a5ca9685355f9ec1126ecd",
       "prior_test_sha256": "4cd43936d4df91e0e751d78abc48593252e66510c0d27fd9403caaa42a14890d"
     },
-    "99": {
-      "prior_evidence_sha256": "b16228770db52b9df8b78cf86625124936db2ce426ecc440408ed9bc49e38dca",
+    "103": {
+      "prior_evidence_sha256": "336c499a84c1d5bc475d647cc397ceabdc479717c0e56e0d1526603922635bab",
       "prior_module_sha256": "7ed8ac665ff0666299d5baad58ba0bb90803922933a5ca9685355f9ec1126ecd",
       "prior_test_sha256": "4cd43936d4df91e0e751d78abc48593252e66510c0d27fd9403caaa42a14890d"
     },
-    "100": {
-      "prior_evidence_sha256": "c3ba3674f18292186669ce11bd00354c65eebdc1514af42daf89888ce041e367",
+    "104": {
+      "prior_evidence_sha256": "3853e470f40bace1faffd7184badbf734122e65fdc87c9be8329e242990779c4",
       "prior_module_sha256": "7ed8ac665ff0666299d5baad58ba0bb90803922933a5ca9685355f9ec1126ecd",
       "prior_test_sha256": "4cd43936d4df91e0e751d78abc48593252e66510c0d27fd9403caaa42a14890d"
     }
   },
   "schema": "SUPER1200_D04_EVIDENCE_REFRESH/1",
-  "scope": "D04_CAPABILITIES_97_100_ONLY",
-  "scope_key": "D04:97-100",
-  "source_commit": "d1d9d829d1bd8342d66ac47a6b68dcf13865a9e2",
+  "scope": "D04_CAPABILITIES_101_104_ONLY",
+  "scope_key": "D04:101-104",
+  "source_commit": "0400cc43a557c9e64d74d98d401adf3441f941fb",
   "specific_test_results": [
     {
-      "capability_id": 97,
+      "capability_id": 101,
       "exit_code": 0,
       "result": "PASS",
       "single_test_run_confirmed": true,
-      "stderr_sha256": "df731edf9d8d9ac5f7b956019c401dbfc3d7de0205e1cd3409e7e96bc026cd0d",
+      "stderr_sha256": "445e1945836c7ae165dd6643ab79ccc86631c22bcf74e3f918e86bb225fa5642",
       "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "test_case": "test_minimal_recomputation_only_recomputes_transitive_subset"
+      "test_case": "test_policy_as_code_binds_versioned_policy_input_and_audit_receipt"
     },
     {
-      "capability_id": 98,
+      "capability_id": 102,
       "exit_code": 0,
       "result": "PASS",
       "single_test_run_confirmed": true,
-      "stderr_sha256": "6b965c318d71cdd2bb487a6be25c40aa9f2ed033798a071b87cb56fa7d2f1376",
+      "stderr_sha256": "448c8010b00954ebd0f7895153ee8a077b13e9fe83fa26781f049f975f714544",
       "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "test_case": "test_attestation_policy_fails_closed_on_subject_freshness_and_verifier"
+      "test_case": "test_opa_rego_provider_pins_version_bundle_and_sandbox"
     },
     {
-      "capability_id": 99,
+      "capability_id": 103,
       "exit_code": 0,
       "result": "PASS",
       "single_test_run_confirmed": true,
-      "stderr_sha256": "341e07aaa324691c0aaad78ba0281f2b9218c111b7474601e8029e092553599d",
+      "stderr_sha256": "2bcc80afab38e0ff26405583feefc455a4fe264621f77ae1f9af62699ecda936",
       "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "test_case": "test_transparency_log_is_append_only_hash_chained_and_anchorable"
+      "test_case": "test_cue_provider_binds_schema_input_and_deterministic_export"
     },
     {
-      "capability_id": 100,
+      "capability_id": 104,
       "exit_code": 0,
       "result": "PASS",
       "single_test_run_confirmed": true,
-      "stderr_sha256": "e7820bc6d15734fd5e136b3bff396bde8d430ee807c89f576fa7e8e73697cafe",
+      "stderr_sha256": "2964a7c3eac37261fe33ecba9c72f708679289a3747f5e5e6e6e962de44664e0",
       "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "test_case": "test_dual_ledger_cross_references_without_conflation"
+      "test_case": "test_json_schema_provider_pins_dialect_and_rejects_unknown_fields"
     }
   ],
   "status": "PASS_AWAITING_G23",
-  "test_sha256": "4cd43936d4df91e0e751d78abc48593252e66510c0d27fd9403caaa42a14890d",
-  "workflow_run_id": "38485400175",
-  "workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38485400175"
+  "test_sha256": "8c32455a51ccf1c4d81309e15d18261e537f85a50f63ac74ac063e5466064e13",
+  "workflow_run_id": "38486071196",
+  "workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38486071196"
 }
