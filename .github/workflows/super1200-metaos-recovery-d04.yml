@@ -1,0 +1,107 @@
+name: SUPER1200 — MetaOS recovery and D04 material evidence
+
+on:
+  push:
+    branches:
+      - custosz/super-1200-implementation-20261007
+    paths:
+      - "implementation/super1200/runtime/d04_material_executor.py"
+      - ".github/workflows/super1200-metaos-recovery-d04.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: super1200-metaos-recovery-d04
+  cancel-in-progress: false
+
+jobs:
+  recover-and-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout candidate work branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: custosz/super-1200-implementation-20261007
+          fetch-depth: 0
+          path: candidate
+
+      - name: Checkout staged MetaOS source candidate without promotion
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: staging/custosz-mission-mailbox-20260928
+          fetch-depth: 0
+          path: staging
+
+      - name: Validate exact staged MetaOS bytes and search for rebuildable source
+        id: metaos
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -Eeuo pipefail
+          WASM="staging/artifacts/custosz-v7/MetaOS.wasm"
+          test -f "$WASM"
+          echo "METAOS_BYTES=$(wc -c < "$WASM" | tr -d ' ')" | tee "$RUNNER_TEMP/metaos-validation.txt"
+          echo "METAOS_GIT_BLOB=$(git -C staging rev-parse HEAD:artifacts/custosz-v7/MetaOS.wasm)" | tee -a "$RUNNER_TEMP/metaos-validation.txt"
+          echo "METAOS_SHA256=$(sha256sum "$WASM" | cut -d ' ' -f 1)" | tee -a "$RUNNER_TEMP/metaos-validation.txt"
+          node - "$WASM" 2>&1 | tee -a "$RUNNER_TEMP/metaos-validation.txt" <<'NODE'
+          const fs = require('fs');
+          const p = process.argv[2];
+          const b = fs.readFileSync(p);
+          try {
+            new WebAssembly.Module(b);
+            console.log('METAOS_STANDARD_WASM_VALIDATION=PASS');
+          } catch (e) {
+            console.error('METAOS_STANDARD_WASM_VALIDATION=FAIL');
+            console.error(String(e));
+            process.exitCode = 1;
+          }
+          NODE
+
+      - name: Search staged repository for source or build recipe
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd staging
+          git ls-tree -r --name-only HEAD | grep -Ei '(^|/)(metaos|.*meta.?os.*)\.(c|cc|cpp|rs|wat|wast|go|js|ts|py|sh|cmake|toml|yml|yaml)$' > "$RUNNER_TEMP/metaos-source-candidates.txt" || true
+          if test -s "$RUNNER_TEMP/metaos-source-candidates.txt"; then
+            echo "METAOS_REBUILD_SOURCE_CANDIDATES_FOUND"
+            cat "$RUNNER_TEMP/metaos-source-candidates.txt"
+          else
+            echo "METAOS_REBUILD_SOURCE_CANDIDATES=NONE_IN_STAGING_COMMIT"
+          fi
+          cd ..
+          mkdir -p candidate/continuity/runtime-evidence
+          {
+            echo "Candidate commit: $(git -C candidate rev-parse HEAD)"
+            echo "Staging commit: $(git -C staging rev-parse HEAD)"
+            cat "$RUNNER_TEMP/metaos-validation.txt" 2>/dev/null || true
+            echo "SOURCE_CANDIDATES:"
+            cat "$RUNNER_TEMP/metaos-source-candidates.txt" 2>/dev/null || true
+          } > candidate/continuity/runtime-evidence/METAOS_RECOVERY_ATTEMPT.txt
+
+      - name: Run bounded D04 task executor and create hash-bound evidence
+        shell: bash
+        env:
+          SUPER1200_EVIDENCE_DIR: ${{ github.workspace }}/candidate/continuity/runtime-evidence/D04
+        run: |
+          set -Eeuo pipefail
+          cd candidate
+          python3 -B implementation/super1200/runtime/d04_material_executor.py
+          python3 -m unittest discover -s implementation/super1200/tests -p 'test_d04_runtime.py' -v
+
+      - name: Publish evidence even when MetaOS remains blocked
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: super1200-metaos-recovery-d04-evidence-${{ github.run_id }}
+          path: |
+            ${{ github.workspace }}/candidate/continuity/runtime-evidence/METAOS_RECOVERY_ATTEMPT.txt
+            ${{ github.workspace }}/candidate/continuity/runtime-evidence/D04/
+            ${{ runner.temp }}/metaos-validation.txt
+            ${{ runner.temp }}/metaos-source-candidates.txt
+          if-no-files-found: warn
+          retention-days: 90
