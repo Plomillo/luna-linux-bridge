@@ -110,7 +110,7 @@ jobs:
           for n in $(seq 1 90); do
             current="$(curl --fail-with-body --silent --show-error \
               -u "$KESTRA_ADMIN_USER:$KESTRA_ADMIN_PASSWORD" \
-              "http://localhost:8080/api/v1/main/executions/louksna.kestra/super1200_continuity/$execution_id")"
+              "http://localhost:8080/api/v1/main/executions/$execution_id")"
             state="$(echo "$current" | jq -r '.state.current // .state // empty')"
             if [ "$state" = "SUCCESS" ] || [ "$state" = "WARNING" ]; then
               echo "SUPER1200_KESTRA_EXECUTION=SUCCESS state=$state id=$execution_id"
