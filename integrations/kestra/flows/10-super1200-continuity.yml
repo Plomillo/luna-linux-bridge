@@ -1,0 +1,69 @@
+id: super1200_continuity
+namespace: louksna.kestra
+description: >-
+  Continuous checkpoint supervisor for SUPER1200. Polls the candidate branch,
+  dispatches only when an explicitly reviewed material worker is registered,
+  and otherwise records a fail-closed hold. It never certifies or promotes.
+tasks:
+  - id: checkpoint
+    type: io.kestra.plugin.core.http.Request
+    uri: https://raw.githubusercontent.com/Plomillo/luna-linux-bridge/custosz/super-1200-implementation-20261007/continuity/STATE.json
+    method: GET
+    options:
+      connectTimeout: PT10S
+      readTimeout: PT20S
+  - id: executors
+    type: io.kestra.plugin.core.http.Request
+    uri: https://raw.githubusercontent.com/Plomillo/luna-linux-bridge/custosz/super-1200-implementation-20261007/continuity/EXECUTORS.json
+    method: GET
+    options:
+      connectTimeout: PT10S
+      readTimeout: PT20S
+  - id: gate_and_dispatch
+    type: io.kestra.plugin.core.flow.If
+    condition: >-
+      {{ fromJson(outputs.checkpoint.body).blocked == false
+         and fromJson(outputs.checkpoint.body).status == 'READY_FOR_CONTINUATION'
+         and fromJson(outputs.checkpoint.body).material_worker_ready == true
+         and fromJson(outputs.checkpoint.body).independent_validation_ready == true
+         and fromJson(outputs.checkpoint.body).next_point != null
+         and fromJson(outputs.executors.body).executors.D04 != null
+         and fromJson(outputs.executors.body).executors.D04 != 'continuity/super1200_continuation_worker.py' }}
+    then:
+      - id: dispatch_candidate_workflow
+        type: io.kestra.plugin.core.http.Request
+        uri: https://api.github.com/repos/Plomillo/luna-linux-bridge/actions/workflows/super1200-continuation-lrb-live.yml/dispatches
+        method: POST
+        contentType: application/json
+        headers:
+          Authorization: "Bearer {{ secret('GITHUB_TOKEN') }}"
+          Accept: application/vnd.github+json
+          X-GitHub-Api-Version: "2022-11-28"
+        body: |
+          {
+            "ref": "custosz/super-1200-implementation-20261007"
+          }
+        options:
+          connectTimeout: PT10S
+          readTimeout: PT20S
+      - id: dispatch_receipt
+        type: io.kestra.plugin.core.log.Log
+        message: >-
+          SUPER1200_DISPATCH_REQUESTED checkpoint={{ fromJson(outputs.checkpoint.body).current_checkpoint }}
+          next={{ fromJson(outputs.checkpoint.body).next_point }}
+          execution={{ execution.id }}
+    else:
+      - id: blocked_safe_hold
+        type: io.kestra.plugin.core.log.Log
+        message: >-
+          SUPER1200_SAFE_HOLD status={{ fromJson(outputs.checkpoint.body).status }}
+          blocked={{ fromJson(outputs.checkpoint.body).blocked }}
+          reason={{ fromJson(outputs.checkpoint.body).block_reason }}
+          next={{ fromJson(outputs.checkpoint.body).next_point }}
+          material_worker_ready={{ fromJson(outputs.checkpoint.body).material_worker_ready ?? false }}
+          no dispatch, no state mutation, no certification.
+triggers:
+  - id: every_five_minutes
+    type: io.kestra.plugin.core.trigger.Schedule
+    cron: "*/5 * * * *"
+    timezone: "America/Santiago"

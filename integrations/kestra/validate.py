@@ -82,8 +82,24 @@ for flow_path in sorted(flows.rglob("*.yml")) + sorted(flows.rglob("*.yaml")):
             f"{flow_path.relative_to(ROOT)} declares script execution before runner isolation is approved.")
     require("docker.sock" not in lower,
             f"{flow_path.relative_to(ROOT)} references a Docker socket.")
-    require("schedule:" not in lower and "triggers:" not in lower,
-            f"{flow_path.relative_to(ROOT)} must not schedule or trigger itself during the staged phase.")
+    if flow_path.name == "10-super1200-continuity.yml":
+        require("type: io.kestra.plugin.core.trigger.Schedule" in body,
+                "SUPER1200 continuity must be scheduled by Kestra.")
+        require('cron: "*/5 * * * *"' in body,
+                "SUPER1200 continuity poll cadence must remain five minutes.")
+        require("fromJson(outputs.checkpoint.body).blocked == false" in body,
+                "SUPER1200 dispatch must fail closed on the reconciled checkpoint.")
+        require("fromJson(outputs.checkpoint.body).material_worker_ready == true" in body,
+                "SUPER1200 dispatch requires an explicitly reviewed material worker.")
+        require("fromJson(outputs.executors.body).executors.D04 != null" in body,
+                "SUPER1200 dispatch requires a registered D04 executor.")
+        require("{{ secret('GITHUB_TOKEN') }}" in body,
+                "SUPER1200 GitHub dispatch must use a Kestra secret.")
+        require("actions/workflows/super1200-continuation-lrb-live.yml/dispatches" in body,
+                "SUPER1200 flow must dispatch only the pinned candidate workflow.")
+    else:
+        require("schedule:" not in lower and "triggers:" not in lower,
+                f"{flow_path.relative_to(ROOT)} must not schedule or trigger itself during the staged phase.")
 
 if errors:
     print("FAIL_CLOSED")
