@@ -95,3 +95,14 @@ La prueba de humo no habilita ejecución arbitraria de scripts, no implica valid
 ## Rollback
 
 La configuración se añade como un conjunto aislado de archivos; no sustituye los componentes existentes ni modifica Louksna.md, PUAC2.md o los ejecutores actuales. Si la incorporación debe retirarse, revierte el commit específico de integración en esta misma rama después de revisar el diff. Los datos persistentes se administran por separado y deben preservarse o destruirse mediante una decisión explícita.
+
+
+## Addendum operativo — SUPER1200 automatización continua
+
+Contrato operativo aditivo: [`continuity/SUPER1200_CONTINUOUS_AUTOMATION_CONTRACT.md`](../../blob/custosz/super-1200-implementation-20261007/continuity/SUPER1200_CONTINUOUS_AUTOMATION_CONTRACT.md).
+
+Se añadió `.github/workflows/super1200-continuous-audit.yml`: auditoría de solo lectura en cambios relevantes, invocación manual y schedule declarado cada 12 horas. El job registra SHA, checkpoint, siguiente punto, recuento de registros marcados EVIDENCED (sin tratarlos como prueba independiente), hash de MetaOS, G23/G24 y bloqueos. No ejecuta el worker ni cambia estado, no certifica y no promueve.
+
+**Limitación importante:** GitHub Actions procesa los eventos `schedule` desde la rama predeterminada. Como `main` debe permanecer intacta, el schedule incluido en esta rama candidata no demuestra ni garantiza ejecuciones cada 12 horas. Hasta que exista una ejecución programada real verificable por un mecanismo autorizado que no toque `main`, el requisito de cadencia de 12 horas permanece PENDIENTE. Los eventos `push` de la rama y `workflow_dispatch` sí están declarados en el workflow, pero su ejecución debe comprobarse en GitHub Actions.
+
+El flujo Kestra existente continúa con polling cada cinco minutos y SAFE_HOLD mientras no estén registrados y validados un ejecutor material no recursivo, CUSTOSZ V7 vinculado y MetaOS válido. Esta modificación documental y la auditoría estática no solucionan esos bloqueos ni prueban ejecución material. G23 debe aprobarse antes de G24, ambos sobre el mismo SHA; `main` sigue fuera del alcance.
