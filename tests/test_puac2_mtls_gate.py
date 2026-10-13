@@ -73,3 +73,14 @@ def test_privileged_chain_stays_excluded_from_pull_requests():
     workflow = (Path(__file__).parents[1] / ".github" / "workflows" / "puac2-autonomous.yml").read_text()
     assert "if: github.event_name != 'pull_request'" in workflow
     assert "louksna-mtls-host" in workflow
+
+def test_autonomous_workflow_writes_valid_json_newline():
+    workflow = (Path(__file__).parents[1] / ".github" / "workflows" / "puac2-autonomous.yml").read_text()
+    assert 'json.dumps(data,sort_keys=True,indent=2)+"\\n"' in workflow
+    assert 'json.dumps(data,sort_keys=True,indent=2)+"\\\\n"' not in workflow
+
+
+def test_autonomous_workflow_matches_host_hashes_by_basename():
+    workflow = (Path(__file__).parents[1] / ".github" / "workflows" / "puac2-autonomous.yml").read_text()
+    assert 'actual_hashes[Path(parts[1].lstrip("*")).name] = parts[0]' in workflow
+
