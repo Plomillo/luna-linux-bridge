@@ -73,7 +73,7 @@ jobs:
           total=int(root.attrib.get("tests","0")); failed=int(root.attrib.get("failures","0"))+int(root.attrib.get("errors","0")); skipped=int(root.attrib.get("skipped","0"))
           report=Path("out/tests.txt").read_bytes()
           data={"schema":"PUAC2_TEST_REPORT/1.0","candidate_commit":os.environ["GITHUB_SHA"],"status":"PASS" if total>0 and failed==0 else "HOLD","passed":total-failed-skipped,"failed":failed,"skipped":skipped,"report_sha256":hashlib.sha256(report).hexdigest()}
-          Path("out/tests.json").write_text(json.dumps(data,sort_keys=True,indent=2)+"\\n")
+          Path("out/tests.json").write_text(json.dumps(data,sort_keys=True,indent=2)+"\n")
           if total==0 or failed: raise SystemExit("TEST_REPORT_NOT_PASS")
           PY
       - name: Bind evidence to exact commit
@@ -198,7 +198,7 @@ jobs:
           if not isinstance(key, Ed25519PrivateKey): raise SystemExit("G23_PRIVATE_KEY_NOT_ED25519")
           out = {"payload":payload,"signature_b64":sig,"bundle":bundle,
                  "attestation_sha256":hashlib.sha256(json.dumps(payload,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()).hexdigest()}
-          Path("g23-attestation.json").write_text(json.dumps(out,sort_keys=True,indent=2)+"\\n")
+          Path("g23-attestation.json").write_text(json.dumps(out,sort_keys=True,indent=2)+"\n")
           PY
       - uses: actions/upload-artifact@v4
         with:
@@ -265,7 +265,7 @@ jobs:
           from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
           if not isinstance(key, Ed25519PrivateKey): raise SystemExit("G24_PRIVATE_KEY_NOT_ED25519")
           signature = base64.b64encode(key.sign(canonical(payload))).decode()
-          Path("g24-certification.json").write_text(json.dumps({"payload":payload,"signature_b64":signature},sort_keys=True,indent=2)+"\\n")
+          Path("g24-certification.json").write_text(json.dumps({"payload":payload,"signature_b64":signature},sort_keys=True,indent=2)+"\n")
           bundle = doc.get("bundle")
           if not isinstance(bundle,dict) or bundle.get("candidate_commit") != os.environ["GITHUB_SHA"]: raise SystemExit("G23_BUNDLE_INVALID")
           manifest = {"schema":"PUAC2_MTLS_CERTIFICATION/1.0","candidate_commit":os.environ["GITHUB_SHA"],
@@ -273,7 +273,7 @@ jobs:
             "evidence":bundle["evidence"],"tests":bundle["tests"],
             "g23":{**p,"signature_b64":doc["signature_b64"],"attestation_sha256":g23_hash},
             "g24":{**payload,"signature_b64":signature}}
-          Path("mtls-certification.json").write_text(json.dumps(manifest,sort_keys=True,indent=2)+"\\n")
+          Path("mtls-certification.json").write_text(json.dumps(manifest,sort_keys=True,indent=2)+"\n")
           PY
       - name: Run repository certification gate against the assembled chain
         env:
