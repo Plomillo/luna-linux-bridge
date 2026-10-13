@@ -58,6 +58,8 @@ def validate(m: dict, g23_pem: str, g24_pem: str) -> tuple[int, list[str]]:
     for field in REQUIRED_EVIDENCE:
         if not isinstance(evidence.get(field), str) or not evidence[field].strip():
             errors.append("EVIDENCE_MISSING:" + field)
+    if evidence.get("candidate_commit") != m.get("candidate_commit"):
+        errors.append("EVIDENCE_CANDIDATE_MISMATCH")
     for field in ("input_sha256", "output_sha256", "test_report_sha256",
                   "host_mtls_test_sha256", "rollback_test_sha256"):
         if field in evidence and not sha256_hex(evidence[field]):
@@ -82,6 +84,13 @@ def validate(m: dict, g23_pem: str, g24_pem: str) -> tuple[int, list[str]]:
     g23_payload = {k: g23.get(k) for k in ("schema", "status", "validator_id", "candidate_commit", "evidence_bundle_sha256", "decision_utc")}
     if not sha256_hex(g23_payload.get("evidence_bundle_sha256")):
         errors.append("G23_EVIDENCE_BUNDLE_HASH_INVALID")
+    expected_bundle_hash = hashlib.sha256(canonical_bytes({
+        "candidate_commit": m.get("candidate_commit"),
+        "evidence": evidence,
+        "tests": tests,
+    })).hexdigest()
+    if g23_payload.get("evidence_bundle_sha256") != expected_bundle_hash:
+        errors.append("G23_EVIDENCE_BUNDLE_BINDING_MISMATCH")
     expected_g23_attestation_hash = hashlib.sha256(canonical_bytes(g23_payload)).hexdigest()
     if g23.get("attestation_sha256") != expected_g23_attestation_hash:
         errors.append("G23_ATTESTATION_HASH_MISMATCH")
