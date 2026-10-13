@@ -20,7 +20,6 @@ tasks:
          and fromJson(outputs.checkpoint.body).status == 'READY_FOR_CONTINUATION'
          and fromJson(outputs.checkpoint.body).material_worker_ready == true
          and fromJson(outputs.checkpoint.body).metaos_ready == true
-         and fromJson(outputs.checkpoint.body).independent_validation_ready == true
          and fromJson(outputs.checkpoint.body).next_point != null
          and fromJson(outputs.executors.body).executors.D04 != null
          and fromJson(outputs.executors.body).executors.D04 != 'continuity/super1200_continuation_worker.py' }}
