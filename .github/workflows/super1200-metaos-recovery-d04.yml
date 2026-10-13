@@ -60,19 +60,35 @@ jobs:
           }
           NODE
 
-      - name: Search staged repository for source or build recipe
+      - name: Search all fetched branches for MetaOS source and artifact lineage
         if: always()
         shell: bash
         run: |
           set -Eeuo pipefail
           cd staging
-          git ls-tree -r --name-only HEAD | grep -Ei '(^|/)(metaos|.*meta.?os.*)\.(c|cc|cpp|rs|wat|wast|go|js|ts|py|sh|cmake|toml|yml|yaml)$' > "$RUNNER_TEMP/metaos-source-candidates.txt" || true
+          : > "$RUNNER_TEMP/metaos-source-candidates.txt"
+          : > "$RUNNER_TEMP/metaos-artifact-lineage.txt"
+          while IFS= read -r ref; do
+            git ls-tree -r --name-only "$ref" | while IFS= read -r path; do
+              lower="${path,,}"
+              if [[ "$lower" == *metaos* || "$lower" == *.wasm || "$lower" == *.wat || "$lower" == *.wast ]]; then
+                printf '%s:%s\n' "$ref" "$path" >> "$RUNNER_TEMP/metaos-artifact-lineage.txt"
+              fi
+              if [[ "$lower" == *metaos* && "$lower" =~ \.(c|cc|cpp|h|hpp|rs|wat|wast|go|js|ts|py|sh|cmake|toml|yml|yaml|makefile)$ ]]; then
+                printf '%s:%s\n' "$ref" "$path" >> "$RUNNER_TEMP/metaos-source-candidates.txt"
+              fi
+            done
+          done < <(git for-each-ref --format='%(refname)' refs/remotes/origin/)
+          sort -u "$RUNNER_TEMP/metaos-source-candidates.txt" -o "$RUNNER_TEMP/metaos-source-candidates.txt"
+          sort -u "$RUNNER_TEMP/metaos-artifact-lineage.txt" -o "$RUNNER_TEMP/metaos-artifact-lineage.txt"
           if test -s "$RUNNER_TEMP/metaos-source-candidates.txt"; then
             echo "METAOS_REBUILD_SOURCE_CANDIDATES_FOUND"
             cat "$RUNNER_TEMP/metaos-source-candidates.txt"
           else
-            echo "METAOS_REBUILD_SOURCE_CANDIDATES=NONE_IN_STAGING_COMMIT"
+            echo "METAOS_REBUILD_SOURCE_CANDIDATES=NONE_IN_FETCHED_BRANCHES"
           fi
+          echo "METAOS_ARTIFACT_LINEAGE:"
+          cat "$RUNNER_TEMP/metaos-artifact-lineage.txt"
           cd ..
           mkdir -p candidate/continuity/runtime-evidence
           {
@@ -81,6 +97,8 @@ jobs:
             cat "$RUNNER_TEMP/metaos-validation.txt" 2>/dev/null || true
             echo "SOURCE_CANDIDATES:"
             cat "$RUNNER_TEMP/metaos-source-candidates.txt" 2>/dev/null || true
+            echo "ARTIFACT_LINEAGE:"
+            cat "$RUNNER_TEMP/metaos-artifact-lineage.txt" 2>/dev/null || true
           } > candidate/continuity/runtime-evidence/METAOS_RECOVERY_ATTEMPT.txt
 
       - name: Run bounded D04 task executor and create hash-bound evidence
