@@ -7,15 +7,15 @@ description: >-
 tasks:
   - id: checkpoint
     type: io.kestra.plugin.core.http.Request
-    uri: https://raw.githubusercontent.com/Plomillo/luna-linux-bridge/custosz/super-1200-implementation-20261007/continuity/STATE.json
+    uri: "https://raw.githubusercontent.com/Plomillo/luna-linux-bridge/custosz/super-1200-implementation-20261007/continuity/STATE.json?cache_bust={{ execution.id }}"
     method: GET
   - id: executors
     type: io.kestra.plugin.core.http.Request
-    uri: https://raw.githubusercontent.com/Plomillo/luna-linux-bridge/custosz/super-1200-implementation-20261007/continuity/EXECUTORS.json
+    uri: "https://raw.githubusercontent.com/Plomillo/luna-linux-bridge/custosz/super-1200-implementation-20261007/continuity/EXECUTORS.json?cache_bust={{ execution.id }}"
     method: GET
   - id: prior_certificate
     type: io.kestra.plugin.core.http.Request
-    uri: https://raw.githubusercontent.com/Plomillo/luna-linux-bridge/custosz/super-1200-implementation-20261007/continuity/certification/D04_93_96.json
+    uri: "https://raw.githubusercontent.com/Plomillo/luna-linux-bridge/custosz/super-1200-implementation-20261007/continuity/certification/D04_93_96.json?cache_bust={{ execution.id }}"
     method: GET
   - id: secret_provider_diagnostic
     type: io.kestra.plugin.core.log.Log
