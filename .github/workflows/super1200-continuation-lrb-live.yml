@@ -141,7 +141,7 @@ jobs:
           printf '%s\n' "$S/socket" > "$RUNNER_TEMP/lrb_socket_path"
           echo "SUPER1200_TELEMETRY LRB_OBSERVER=CONNECTED SCOPE=READONLY"
 
-      - name: CUSTOSZ V7 controlled continuation
+      - name: CUSTOSZ V7 material continuation with 12-hour checkpoints
         shell: bash
         env:
           TARGET_ROOT: ${{ github.workspace }}/target
@@ -149,42 +149,120 @@ jobs:
           OUT_DIR: ${{ runner.temp }}/super1200
         run: |
           set -Eeuo pipefail
-          mkdir -p "$OUT_DIR"
+          mkdir -p "$OUT_DIR/checkpoints"
           python3 - <<'PY'
-          import os,sys
+          import hashlib, json, os, subprocess, sys, time
+          from datetime import datetime, timezone
           from pathlib import Path
-          custosz=Path('mission/artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz').resolve()
+          workspace=Path("target").resolve()
+          out=Path(os.environ["OUT_DIR"]).resolve()
+          custosz=Path("mission/artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz").resolve()
           sys.path.insert(0,str(custosz))
           import custosz_v05_legacy as worker
-          workspace=Path('target').resolve()
           worker.workspace=lambda:workspace
           worker.PINS={k:(v[0].replace(chr(92),'/') if v[0] else None,v[1],v[2],v[3]) for k,v in worker.PINS.items()}
           worker.PROFILES={k:([x.replace(chr(92),'/') for x in v[0]],[x.replace(chr(92),'/') for x in v[1]]) for k,v in worker.PROFILES.items()}
-          authority=workspace/'Louksna.md'
-          rel,size,expected,role=worker.PINS['LOUKSNA']
-          observed_sha=__import__('hashlib').sha256(authority.read_bytes()).hexdigest()
+          authority=workspace/"Louksna.md"
+          rel,size,expected,role=worker.PINS["LOUKSNA"]
+          observed_sha=hashlib.sha256(authority.read_bytes()).hexdigest()
           observed_size=authority.stat().st_size
-          if observed_sha!=expected or observed_size!=size: raise RuntimeError('LOUKSNA_AUTHORITY_DRIFT')
-          worker.discover=lambda:{'workspace':str(workspace),'projects':{'LUNA_PROJECT':{'status':'RESOLVED','path':str(workspace),'score':999}}}
-          worker.sources=lambda _large=False:{'observed_at':'SUPER1200_VERIFIED','sources':{'LOUKSNA':{'relative':rel,'bytes':size,'sha256':expected,'role':role,'path':str(authority),'exists':True,'observed_bytes':observed_size,'observed_sha256':observed_sha,'integrity':'PASS','binding':'SUPER1200_BRANCH_AUTHORITY'}}}
-          goal=('SUPER1200 governed continuation from the validated D01-closed repository state; '\
-                'continue the first still-pending repository domain; preserve D01; no canonical mutation; '\
-                'LOUKSNA Remote Bridge observation only; G23/G24 remain independent.')
-          m=worker.mission_start(12.0,'LUNA_PROJECT',goal,report_minutes=1)
-          t=worker.mission_tick(m['mission_id'])
-          print('SUPER1200_TELEMETRY '+str({'event':'CUSTOSZ_MISSION_STARTED','mission_id':m['mission_id'],'executor':m.get('executor'),'heartbeat':t.get('state'),'owner':'REPOSITORY'}),flush=True)
+          if observed_sha!=expected or observed_size!=size: raise RuntimeError("LOUKSNA_AUTHORITY_DRIFT")
+          worker.discover=lambda:{"workspace":str(workspace),"projects":{"LUNA_PROJECT":{"status":"RESOLVED","path":str(workspace),"score":999}}}
+          worker.sources=lambda _large=False:{"observed_at":"SUPER1200_VERIFIED","sources":{"LOUKSNA":{"relative":rel,"bytes":size,"sha256":expected,"role":role,"path":str(authority),"exists":True,"observed_bytes":observed_size,"observed_sha256":observed_sha,"integrity":"PASS","binding":"SUPER1200_BRANCH_AUTHORITY"}}}
+          goal=("SUPER1200 governed 12-hour continuation; CUSTOSZ V7 orchestration with the registered "
+                "task-specific executor; preserve checkpoint, traceability, provenance, rollback and "
+                "non-regression; MetaOS deferred; G23/G24 remain independent.")
+          mission=worker.mission_start(12.0,"LUNA_PROJECT",goal,report_minutes=1)
+          mission_id=mission["mission_id"]
+          print("SUPER1200_TELEMETRY "+json.dumps({"event":"CUSTOSZ_MISSION_STARTED","mission_id":mission_id,
+                "executor_reported":mission.get("executor"),"mission_hours":12,"owner":"REPOSITORY"},sort_keys=True),flush=True)
+          tick=worker.mission_tick(mission_id)
+          state_path=workspace/"continuity/STATE.json"
+          executors_path=workspace/"continuity/EXECUTORS.json"
+          def load_state():
+              return json.loads(state_path.read_text())
+          def executor_path():
+              state=load_state()
+              table=json.loads(executors_path.read_text()).get("executors",{})
+              path=table.get(state.get("next_point"))
+              if not path or not (workspace/path).is_file():
+                  raise RuntimeError("NO_REVIEWED_EXECUTOR_FOR_CURRENT_CHECKPOINT")
+              return path
+          def run_cmd(args, *, cwd=workspace, timeout=180):
+              result=subprocess.run(args,cwd=cwd,text=True,capture_output=True,timeout=timeout)
+              if result.returncode:
+                  raise RuntimeError("COMMAND_FAILED "+repr(args)+"\\n"+result.stdout[-6000:]+"\\n"+result.stderr[-6000:])
+              return result
+          def persist():
+              run_cmd(["git","diff","--check"])
+              run_cmd(["git","add","implementation/super1200","continuity/runtime-evidence/D04"])
+              staged=subprocess.run(["git","diff","--cached","--quiet"],cwd=workspace)
+              if staged.returncode==1:
+                  run_cmd(["git","config","user.name","custosz-v7-runtime-bot"])
+                  run_cmd(["git","config","user.email","custosz-v7-runtime-bot@users.noreply.github.com"])
+                  run_cmd(["git","commit","-m","feat(super1200): persist checkpointed material continuation"])
+                  run_cmd(["git","push","origin","HEAD:refs/heads/custosz/super-1200-implementation-20261007"],timeout=180)
+              elif staged.returncode!=0:
+                  raise RuntimeError("GIT_STAGED_DIFF_CHECK_FAILED")
+          def run_material():
+              path=executor_path()
+              print("SUPER1200_TELEMETRY "+json.dumps({"event":"MATERIAL_EXECUTOR_START","executor":path,
+                    "checkpoint":load_state().get("current_checkpoint")},sort_keys=True),flush=True)
+              run_cmd([sys.executable,"-B","-I",str(workspace/path)],timeout=300)
+              test=workspace/"implementation/super1200/tests/test_d04_runtime.py"
+              if test.is_file(): run_cmd([sys.executable,"-B","-I",str(test)],timeout=300)
+              persist()
+              print("SUPER1200_TELEMETRY "+json.dumps({"event":"MATERIAL_EXECUTOR_PASS","executor":path,
+                    "head":run_cmd(["git","rev-parse","HEAD"]).stdout.strip()},sort_keys=True),flush=True)
+          run_material()
+          last_worker_hash=hashlib.sha256((workspace/executor_path()).read_bytes()).hexdigest()
+          started=time.monotonic()
+          deadline=started+716*60
+          sequence=0
+          while time.monotonic()<deadline:
+              tick=worker.mission_tick(mission_id)
+              sequence+=1
+              now=datetime.now(timezone.utc).isoformat()
+              state=load_state()
+              if sequence%5==0:
+                  sfile=Path(os.environ["RUNNER_TEMP"])/"lrb_state_path"
+                  pfile=Path(os.environ["RUNNER_TEMP"])/"lrb_socket_path"
+                  if sfile.is_file() and pfile.is_file():
+                      bridge=run_cmd([sys.executable,"-B","bridge/bridge/live_link.py","--state-dir",sfile.read_text().strip(),
+                          "--socket-dir",pfile.read_text().strip(),"request","--op","status"],cwd=Path(".").resolve(),timeout=30)
+                      (out/"LRB_STATUS_LIVE.json").write_text(bridge.stdout,encoding="utf-8")
+              if sequence%15==0:
+                  test=workspace/"implementation/super1200/tests/test_d04_runtime.py"
+                  run_cmd([sys.executable,"-B","-I",str(test)],timeout=300)
+                  registry=json.loads((workspace/"implementation/super1200/registry/capabilities.json").read_text())
+                  evidence_files=sorted((workspace/"continuity/runtime-evidence/D04").glob("capability-*.json"))
+                  checkpoint={"schema":"SUPER1200_LIVE_CHECKPOINT/1","sequence":sequence,"timestamp_utc":now,
+                    "mission_id":mission_id,"mission_tick":tick,"current_checkpoint":state.get("current_checkpoint"),
+                    "next_point":state.get("next_point"),"executor":executor_path(),"registry_count":registry.get("count"),
+                    "registry_sha256":hashlib.sha256((workspace/"implementation/super1200/registry/capabilities.json").read_bytes()).hexdigest(),
+                    "runtime_sha256":hashlib.sha256((workspace/"implementation/super1200/domains/D04_runtime.py").read_bytes()).hexdigest(),
+                    "evidence_files":len(evidence_files),"g23":"AUTOMATED_SEPARATE_WORKFLOW","g24":"AUTOMATED_SEPARATE_WORKFLOW",
+                    "certification_granted":False}
+                  checkpoint["checkpoint_sha256"]=hashlib.sha256(json.dumps(checkpoint,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+                  (out/"checkpoints"/f"checkpoint-{sequence:05d}.json").write_text(json.dumps(checkpoint,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+                  print("SUPER1200_TELEMETRY "+json.dumps({"event":"CHECKPOINT","sequence":sequence,"next_point":state.get("next_point"),
+                    "evidence_files":len(evidence_files),"mission_tick":tick.get("state") if isinstance(tick,dict) else str(tick)},sort_keys=True),flush=True)
+              if sequence%60==0:
+                  run_cmd(["git","fetch","origin","custosz/super-1200-implementation-20261007"],timeout=120)
+                  remote=run_cmd(["git","rev-parse","origin/custosz/super-1200-implementation-20261007"]).stdout.strip()
+                  local=run_cmd(["git","rev-parse","HEAD"]).stdout.strip()
+                  if remote!=local:
+                      run_cmd(["git","merge","--ff-only","origin/custosz/super-1200-implementation-20261007"],timeout=120)
+                      new_worker=executor_path()
+                      new_hash=hashlib.sha256((workspace/new_worker).read_bytes()).hexdigest()
+                      if new_hash!=last_worker_hash:
+                          run_material()
+                          last_worker_hash=new_hash
+                      print("SUPER1200_TELEMETRY "+json.dumps({"event":"REMOTE_CHECKPOINT_SYNC","head":run_cmd(["git","rev-parse","HEAD"]).stdout.strip(),"executor":new_worker},sort_keys=True),flush=True)
+              time.sleep(60)
+          print("SUPER1200_TELEMETRY "+json.dumps({"event":"TWELVE_HOUR_WINDOW_REACHED","mission_id":mission_id,
+                "elapsed_seconds":int(time.monotonic()-started),"checkpoints":sequence,"final_tick":tick},sort_keys=True),flush=True)
           PY
-          WORKER_PATH="$(python3 - <<'PY'
-          import json
-          from pathlib import Path
-          state=json.loads(Path('target/continuity/STATE.json').read_text())
-          executors=json.loads(Path('target/continuity/EXECUTORS.json').read_text())['executors']
-          print(executors[state['next_point']])
-          PY
-          )"
-          test -f "target/$WORKER_PATH"
-          python3 -B -I "target/$WORKER_PATH"
-          echo "SUPER1200_TELEMETRY MATERIAL_WORKER=PASS EXECUTOR=$WORKER_PATH EXECUTION_PLANE=CUSTOSZ_RUNTIME_V1"
 
       - name: Observe live result through LOUKSNA Remote Bridge
         shell: bash
