@@ -73,6 +73,9 @@ tasks:
           active_run_api_message={{ outputs.active_runs.body.message ?? 'none' }}
           queued_run_api_message={{ outputs.queued_runs.body.message ?? 'none' }}
           MetaOS deferred; hold unless both public GitHub API reads return HTTP 200; no certification or promotion.
+      - id: fail_closed_safe_hold
+        type: io.kestra.plugin.core.execution.Fail
+        errorMessage: "SUPER1200_FAIL_CLOSED: checkpoint gate denied continuation; material worker must not execute."
 triggers:
   - id: every_five_minutes
     type: io.kestra.plugin.core.trigger.Schedule
