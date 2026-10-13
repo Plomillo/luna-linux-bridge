@@ -1,0 +1,192 @@
+name: SUPER1200 D04 93-96 independent validation
+
+on:
+  push:
+    branches:
+      - custosz/super-1200-implementation-20261007
+    paths:
+      - "continuity/runtime-evidence/D04/capability-0093.json"
+      - "continuity/runtime-evidence/D04/capability-0094.json"
+      - "continuity/runtime-evidence/D04/capability-0095.json"
+      - "continuity/runtime-evidence/D04/capability-0096.json"
+      - "implementation/super1200/domains/D04_runtime.py"
+      - "implementation/super1200/tests/test_d04_runtime.py"
+      - ".github/workflows/super1200-d04-93-96-independent-validation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: super1200-d04-93-96-independent-validation
+  cancel-in-progress: false
+
+jobs:
+  independent-validation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout governed candidate branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: custosz/super-1200-implementation-20261007
+          fetch-depth: 0
+
+      - name: Independently validate evidence hashes and rerun mapped behavior tests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B - <<'PY'
+          import hashlib, json, os, subprocess, sys
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          root=Path(".")
+          state_path=root/"continuity/STATE.json"
+          registry_path=root/"implementation/super1200/registry/capabilities.json"
+          domain_path=root/"implementation/super1200/domains/D04.json"
+          module_path=root/"implementation/super1200/domains/D04_runtime.py"
+          test_path=root/"implementation/super1200/tests/test_d04_runtime.py"
+          evidence_dir=root/"continuity/runtime-evidence/D04"
+          tasks=[
+              (93,"CERTIFICATION_NON_TRANSITIVITY","test_certification_non_transitivity_rejects_derived_subject_and_scope"),
+              (94,"EVIDENCE_EXPIRATION","test_evidence_expiration_uses_half_open_utc_interval_and_fails_closed"),
+              (95,"EVIDENCE_INVALIDATION_GRAPH","test_evidence_invalidation_graph_propagates_and_rejects_cycles"),
+              (96,"EVIDENCE_REUSE_ENGINE","test_evidence_reuse_requires_exact_validated_non_invalidated_key"),
+          ]
+          def load(path):
+              return json.loads(path.read_text(encoding="utf-8"))
+          def sha(path):
+              return hashlib.sha256(path.read_bytes()).hexdigest()
+          state=load(state_path)
+          registry=load(registry_path)
+          domain=load(domain_path)
+          if state.get("current_checkpoint")!="D04_93_96_MATERIALIZED":
+              raise SystemExit("G23_DENY_UNEXPECTED_CHECKPOINT")
+          if state.get("certified") is not False or state.get("global_certification_status")!="NOT_CERTIFIED":
+              raise SystemExit("G23_DENY_CERTIFICATION_STATE_DRIFT")
+          run=state.get("last_execution",{})
+          material_run=str(run.get("workflow_run_id",""))
+          if run.get("status")!="COMPLETED_SUCCESS_MATERIAL_TRANCHE":
+              raise SystemExit("G23_DENY_MATERIAL_RUN_NOT_SUCCESSFUL")
+          module_hash,test_hash=sha(module_path),sha(test_path)
+          registry_by_id={x.get("capability_id"):x for x in registry.get("items",[])}
+          domain_by_id={x.get("capability_id"):x for x in domain.get("capabilities",[])}
+          results=[]
+          for cid,name,test_name in tasks:
+              evidence_path=evidence_dir/f"capability-{cid:04d}.json"
+              evidence=load(evidence_path)
+              recorded=evidence.get("evidence_sha256")
+              unsigned=dict(evidence)
+              unsigned.pop("evidence_sha256",None)
+              calculated=hashlib.sha256(json.dumps(
+                  unsigned,sort_keys=True,separators=(",",":"),ensure_ascii=False
+              ).encode("utf-8")).hexdigest()
+              if recorded!=calculated:
+                  raise SystemExit(f"G23_DENY_EVIDENCE_HASH_MISMATCH_ID_{cid}")
+              if evidence.get("capability_id")!=cid or evidence.get("canonical_name")!=name:
+                  raise SystemExit(f"G23_DENY_EVIDENCE_IDENTITY_MISMATCH_ID_{cid}")
+              if evidence.get("test_case")!=test_name or evidence.get("status")!="PASS":
+                  raise SystemExit(f"G23_DENY_EVIDENCE_TEST_BINDING_MISMATCH_ID_{cid}")
+              if str(evidence.get("github_actions_run_id"))!=material_run:
+                  raise SystemExit(f"G23_DENY_RUN_PROVENANCE_MISMATCH_ID_{cid}")
+              if evidence.get("module_sha256")!=module_hash or evidence.get("test_sha256")!=test_hash:
+                  raise SystemExit(f"G23_DENY_SOURCE_HASH_MISMATCH_ID_{cid}")
+              if evidence.get("certification_granted") is not False:
+                  raise SystemExit(f"G23_DENY_CERTIFICATION_PROPAGATION_ID_{cid}")
+              if registry_by_id.get(cid,{}).get("implementation_state")!="EVIDENCED":
+                  raise SystemExit(f"G23_DENY_REGISTRY_STATE_MISMATCH_ID_{cid}")
+              if domain_by_id.get(cid,{}).get("implementation_state")!="EVIDENCED":
+                  raise SystemExit(f"G23_DENY_DOMAIN_STATE_MISMATCH_ID_{cid}")
+              selected=subprocess.run(
+                  [sys.executable,"-B",str(test_path),"-v",f"D04RuntimeTests.{test_name}"],
+                  cwd=root,text=True,capture_output=True,timeout=120
+              )
+              output=selected.stdout+"\n"+selected.stderr
+              passed=(selected.returncode==0 and test_name in output and
+                      "Ran 1 test" in output and "OK" in output and "FAILED" not in output)
+              if not passed:
+                  print(output[-12000:])
+                  raise SystemExit(f"G23_DENY_INDEPENDENT_TEST_FAILURE_ID_{cid}")
+              results.append({
+                  "capability_id":cid,"canonical_name":name,"test_case":test_name,
+                  "result":"PASS","exit_code":selected.returncode,
+                  "single_test_run_confirmed":True,
+                  "stdout_sha256":hashlib.sha256(selected.stdout.encode()).hexdigest(),
+                  "stderr_sha256":hashlib.sha256(selected.stderr.encode()).hexdigest(),
+                  "evidence_sha256":recorded
+              })
+          suite=subprocess.run([sys.executable,"-B",str(test_path),"-v"],cwd=root,text=True,
+                              capture_output=True,timeout=240)
+          suite_output=suite.stdout+"\n"+suite.stderr
+          if suite.returncode!=0 or any(t[2] not in suite_output for t in tasks):
+              print(suite_output[-16000:])
+              raise SystemExit("G23_DENY_FULL_SUITE_FAILED_OR_INCOMPLETE")
+          now=datetime.now(timezone.utc).isoformat()
+          repo=os.environ["GITHUB_REPOSITORY"]
+          run_id=os.environ["GITHUB_RUN_ID"]
+          run_url=f'{os.environ.get("GITHUB_SERVER_URL","https://github.com")}/{repo}/actions/runs/{run_id}'
+          record={
+              "schema":"SUPER1200_D04_INDEPENDENT_VALIDATION/1",
+              "scope":"D04_CAPABILITIES_93_96_ONLY",
+              "status":"PASS",
+              "validator_workflow_run_id":run_id,
+              "validator_workflow_url":run_url,
+              "validator_source_commit":os.environ["GITHUB_SHA"],
+              "material_workflow_run_id":material_run,
+              "validated_at_utc":now,
+              "module_sha256":module_hash,
+              "test_sha256":test_hash,
+              "independent_test_results":results,
+              "full_suite_exit_code":suite.returncode,
+              "full_suite_stdout_sha256":hashlib.sha256(suite.stdout.encode()).hexdigest(),
+              "full_suite_stderr_sha256":hashlib.sha256(suite.stderr.encode()).hexdigest(),
+              "g23":"PASS_FOR_SCOPE_D04_93_96",
+              "g24":"PENDING_INDEPENDENT_CERTIFICATION_REVIEW",
+              "global_certification_status":"NOT_CERTIFIED",
+              "certification_granted":False
+          }
+          out=root/"continuity/independent-validation/D04_93_96.json"
+          out.parent.mkdir(parents=True,exist_ok=True)
+          out.write_text(json.dumps(record,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
+          state["g23"]="PASS_FOR_SCOPE_D04_93_96"
+          state["g24"]="PENDING_INDEPENDENT_CERTIFICATION_REVIEW"
+          state["certified"]=False
+          state["global_certification_status"]="NOT_CERTIFIED"
+          state["independent_validation"]={
+              "scope":"D04_CAPABILITIES_93_96_ONLY",
+              "status":"PASS",
+              "workflow_run_id":run_id,
+              "workflow_url":run_url,
+              "record_path":"continuity/independent-validation/D04_93_96.json",
+              "validated_at_utc":now,
+              "module_sha256":module_hash,
+              "test_sha256":test_hash,
+              "passed_capabilities":[93,94,95,96],
+              "g23":"PASS_FOR_SCOPE_D04_93_96",
+              "g24":"PENDING_INDEPENDENT_CERTIFICATION_REVIEW",
+              "certification_granted":False
+          }
+          if isinstance(state.get("last_material_execution"),dict):
+              state["last_material_execution"]["g23"]="PASS_FOR_SCOPE_D04_93_96"
+              state["last_material_execution"]["g24"]="PENDING_INDEPENDENT_CERTIFICATION_REVIEW"
+              state["last_material_execution"]["certification_granted"]=False
+          state_path.write_text(json.dumps(state,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
+          print("SUPER1200_G23_PASS "+json.dumps({
+              "scope":"D04_93_96","validator_run_id":run_id,"material_run_id":material_run,
+              "independent_tests":"4/4 PASS","full_suite_exit_code":suite.returncode,
+              "global_certification_status":"NOT_CERTIFIED","g24":"PENDING"
+          },sort_keys=True))
+          PY
+
+      - name: Persist independent validation record without promoting certification
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git diff --check
+          git add continuity/STATE.json continuity/independent-validation/D04_93_96.json
+          git config user.name "super1200-independent-validator"
+          git config user.email "super1200-independent-validator@users.noreply.github.com"
+          git commit -m "test(super1200): independently validate D04 capabilities 93-96"
+          git push origin HEAD:refs/heads/custosz/super-1200-implementation-20261007
+          echo "SUPER1200_G23_PERSISTENCE=PASS G24=PENDING GLOBAL_CERTIFICATION=FALSE"
