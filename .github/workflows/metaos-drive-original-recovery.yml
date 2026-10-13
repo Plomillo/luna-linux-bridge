@@ -1,0 +1,72 @@
+name: MetaOS original Drive recovery
+
+on:
+  push:
+    branches:
+      - custosz/super-1200-implementation-20261007
+    paths:
+      - ".github/workflows/metaos-drive-original-recovery.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: metaos-original-drive-recovery
+  cancel-in-progress: false
+
+jobs:
+  download-and-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Download original artifact from user-provided Google Drive ID
+        shell: bash
+        run: |
+          set -euo pipefail
+          id="19aXAhJxV2uEFR4yZQFmUkBgdClT93oQT"
+          mkdir -p recovery
+          curl --fail --location --retry 3 --retry-delay 2 \
+            "https://drive.google.com/uc?export=download&id=${id}" \
+            --output recovery/MetaOS.wasm
+          test -s recovery/MetaOS.wasm
+          printf 'download_size_bytes='
+          wc -c < recovery/MetaOS.wasm
+          printf 'download_sha256='
+          sha256sum recovery/MetaOS.wasm | awk '{print $1}'
+          file recovery/MetaOS.wasm
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("recovery/MetaOS.wasm")
+          b = p.read_bytes()
+          if len(b) < 8 or b[:4] != b"\\x00asm":
+              raise SystemExit("FAIL: downloaded content is not a WebAssembly binary; possible Drive HTML/login/confirmation page")
+          if b[4:8] != b"\\x01\\x00\\x00\\x00":
+              raise SystemExit(f"FAIL: invalid WebAssembly version bytes: {b[4:8].hex()}")
+          print("WASM_HEADER=PASS")
+          PY
+      - name: Install standard WebAssembly validator
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes wabt
+      - name: Validate exact downloaded bytes
+        run: |
+          set -euo pipefail
+          wasm-validate recovery/MetaOS.wasm
+          sha256sum recovery/MetaOS.wasm | tee recovery/SHA256SUMS
+          stat --printf='size_bytes=%s\n' recovery/MetaOS.wasm | tee recovery/size.txt
+          printf 'validation=PASS\n' | tee recovery/validation.txt
+      - name: Preserve candidate bytes and validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: metaos-original-drive-recovery
+          path: recovery/
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Enforce fail-closed mission gate
+        if: success()
+        run: |
+          echo "MetaOS bytes passed standard validation."
+          echo "The 12-hour material mission remains gated until a real material executor is reviewed and bound in continuity/EXECUTORS.json."
+          echo "This recovery workflow does not claim or start the material mission."
