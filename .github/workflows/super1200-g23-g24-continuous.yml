@@ -10,9 +10,10 @@ on:
     paths:
       - "implementation/super1200/domains/D04_runtime.py"
       - "implementation/super1200/tests/test_d04_runtime.py"
-      - "implementation/super1200/registry/capabilities.json"
-      - "implementation/super1200/domains/D04.json"
-      - "continuity/runtime-evidence/D04/**"
+      - "continuity/runtime-evidence/D04/capability-0093.json"
+      - "continuity/runtime-evidence/D04/capability-0094.json"
+      - "continuity/runtime-evidence/D04/capability-0095.json"
+      - "continuity/runtime-evidence/D04/capability-0096.json"
       - "continuity/independent-validation/D04_93_96.json"
       - ".github/workflows/super1200-g23-g24-continuous.yml"
 
