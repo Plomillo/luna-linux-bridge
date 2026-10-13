@@ -2,9 +2,9 @@
   "schema": "SUPER1200_CONTINUITY_EXECUTORS/1.0",
   "branch": "custosz/super-1200-implementation-20261007",
   "executors": {
-    "D04": "implementation/super1200/runtime/d04_material_worker_101_104.py"
+    "D04": "implementation/super1200/runtime/d04_material_worker_105_108.py"
   },
-  "missing_executor_state": "REGISTERED_D04_MATERIAL_EXECUTOR_101_104",
+  "missing_executor_state": "REGISTERED_D04_MATERIAL_EXECUTOR_105_108",
   "unregistered_domain_must_not_be_invented": true,
   "blocked_executor_records": [
     {
@@ -33,9 +33,9 @@
     }
   ],
   "reconciliation": {
-    "observed_at_utc": "2026-10-13T23:39:42.778Z",
+    "observed_at_utc": "2026-10-13T23:47:19.078Z",
     "status": "REGISTERED_PENDING_GITHUB_HOSTED_LIVE_RUN",
     "policy": "FAIL_CLOSED",
-    "note": "D04 task-specific material executor for IDs 101-104 is registered. It requires current-source scoped G23/G24 PASS for 97-100 and exact prior certificate hashes, runs the full D04 suite and each mapped test independently, persists hash-bound evidence, and stops after 101-104 because the next tranche has no reviewed executor. Global SUPER1200 certification remains false; MetaOS remains deferred."
+    "note": "D04 task-specific policy-governance worker for IDs 105-108 is registered. It uses a separate policy-governance module and test file, verifies the exact current-source scoped G23/G24 certificate for 101-104, runs both the base D04 suite and policy-governance suite plus each mapped test independently, writes hash-bound evidence, and stops after 105-108 because no reviewed executor for the next tranche is registered. Global SUPER1200 certification remains false; MetaOS remains deferred."
   }
 }
