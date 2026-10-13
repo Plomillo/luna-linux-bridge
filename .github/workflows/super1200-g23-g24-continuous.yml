@@ -10,7 +10,6 @@ on:
       - "continuity/runtime-evidence/D04/capability-0102.json"
       - "continuity/runtime-evidence/D04/capability-0103.json"
       - "continuity/runtime-evidence/D04/capability-0104.json"
-      - ".github/workflows/super1200-g23-g24-continuous.yml"
 
 permissions:
   contents: read
