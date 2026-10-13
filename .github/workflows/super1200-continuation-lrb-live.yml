@@ -172,10 +172,33 @@ jobs:
           goal=("SUPER1200 governed 12-hour continuation; CUSTOSZ V7 orchestration with the registered "
                 "task-specific executor; preserve checkpoint, traceability, provenance, rollback and "
                 "non-regression; MetaOS deferred; G23/G24 remain independent.")
-          mission=worker.mission_start(12.0,"LUNA_PROJECT",goal,report_minutes=1)
+          import inspect
+          registered_state=json.loads((workspace/"continuity/STATE.json").read_text())
+          registered_table=json.loads((workspace/"continuity/EXECUTORS.json").read_text()).get("executors",{})
+          registered_executor=registered_table.get(registered_state.get("next_point"))
+          if not registered_executor or not (workspace/registered_executor).is_file():
+              raise RuntimeError("REGISTERED_TASK_EXECUTOR_MISSING")
+          signature=inspect.signature(worker.mission_start)
+          mission_kwargs={"report_minutes":1}
+          binding_parameters=[]
+          if "executor" in signature.parameters:
+              mission_kwargs["executor"]="CUSTOSZ_V7"
+              binding_parameters.append("executor")
+          if "executor_path" in signature.parameters:
+              mission_kwargs["executor_path"]=registered_executor
+              binding_parameters.append("executor_path")
+          if "assigned_executor" in signature.parameters:
+              mission_kwargs["assigned_executor"]=registered_executor
+              binding_parameters.append("assigned_executor")
+          if "worker_id" in signature.parameters:
+              mission_kwargs["worker_id"]="CUSTOSZ_V7"
+              binding_parameters.append("worker_id")
+          mission=worker.mission_start(12.0,"LUNA_PROJECT",goal,**mission_kwargs)
           mission_id=mission["mission_id"]
           print("SUPER1200_TELEMETRY "+json.dumps({"event":"CUSTOSZ_MISSION_STARTED","mission_id":mission_id,
-                "executor_reported":mission.get("executor"),"mission_hours":12,"owner":"REPOSITORY"},sort_keys=True),flush=True)
+                "executor_reported":mission.get("executor"),"registered_task_executor":registered_executor,
+                "binding_parameters_used":binding_parameters,"mission_start_signature":str(signature),
+                "mission_hours":12,"owner":"REPOSITORY"},sort_keys=True),flush=True)
           tick=worker.mission_tick(mission_id)
           state_path=workspace/"continuity/STATE.json"
           executors_path=workspace/"continuity/EXECUTORS.json"
@@ -215,7 +238,8 @@ jobs:
               print("SUPER1200_TELEMETRY "+json.dumps({"event":"MATERIAL_EXECUTOR_PASS","executor":path,
                     "head":run_cmd(["git","rev-parse","HEAD"]).stdout.strip()},sort_keys=True),flush=True)
           run_material()
-          last_worker_hash=hashlib.sha256((workspace/executor_path()).read_bytes()).hexdigest()
+          last_worker_path=executor_path()
+          last_worker_hash=hashlib.sha256((workspace/last_worker_path).read_bytes()).hexdigest()
           started=time.monotonic()
           deadline=started+716*60
           sequence=0
@@ -255,9 +279,10 @@ jobs:
                       run_cmd(["git","merge","--ff-only","origin/custosz/super-1200-implementation-20261007"],timeout=120)
                       new_worker=executor_path()
                       new_hash=hashlib.sha256((workspace/new_worker).read_bytes()).hexdigest()
-                      if new_hash!=last_worker_hash:
+                      if new_hash!=last_worker_hash or new_worker!=last_worker_path:
                           run_material()
-                          last_worker_hash=new_hash
+                          last_worker_hash=hashlib.sha256((workspace/new_worker).read_bytes()).hexdigest()
+                          last_worker_path=new_worker
                       print("SUPER1200_TELEMETRY "+json.dumps({"event":"REMOTE_CHECKPOINT_SYNC","head":run_cmd(["git","rev-parse","HEAD"]).stdout.strip(),"executor":new_worker},sort_keys=True),flush=True)
               time.sleep(60)
           print("SUPER1200_TELEMETRY "+json.dumps({"event":"TWELVE_HOUR_WINDOW_REACHED","mission_id":mission_id,
