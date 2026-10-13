@@ -69,8 +69,10 @@ require(GOVERNANCE.get("gates", {}).get("G23") == "NOT_PERFORMED",
         "G23 must remain unperformed until independent validation.")
 require(GOVERNANCE.get("gates", {}).get("G24") == "NOT_GRANTED",
         "G24 must remain not granted.")
-require(GOVERNANCE.get("activation") == "NOT_AUTHORIZED",
-        "Activation/promotion must remain unauthorized.")
+require(str(GOVERNANCE.get("activation", "")).startswith("OPERATIONAL_SUPERVISOR_AUTHORIZED"),
+        "Only the explicitly scoped Kestra supervisor role may be authorized.")
+require("CERTIFICATION_AND_PROMOTION_NOT_AUTHORIZED" in str(GOVERNANCE.get("activation", "")),
+        "Operational supervisor authorization must not authorize certification or promotion.")
 
 flows = ROOT / "flows"
 for flow_path in sorted(flows.rglob("*.yml")) + sorted(flows.rglob("*.yaml")):
@@ -89,10 +91,19 @@ for flow_path in sorted(flows.rglob("*.yml")) + sorted(flows.rglob("*.yaml")):
                 "SUPER1200 continuity poll cadence must remain five minutes.")
         require("fromJson(outputs.checkpoint.body).blocked == false" in body,
                 "SUPER1200 dispatch must fail closed on the reconciled checkpoint.")
+        require("fromJson(outputs.checkpoint.body).status == 'ACTIVE'" in body
+                and "fromJson(outputs.checkpoint.body).status == 'READY_FOR_CONTINUATION'" in body,
+                "SUPER1200 must allow ACTIVE and READY_FOR_CONTINUATION checkpoints.")
         require("fromJson(outputs.checkpoint.body).material_worker_ready == true" in body,
                 "SUPER1200 dispatch requires an explicitly reviewed material worker.")
-        require("fromJson(outputs.checkpoint.body).metaos_ready == true" in body,
-                "SUPER1200 dispatch requires an independently validated MetaOS runtime.")
+        require("metaos_ready == true" not in body,
+                "MetaOS is explicitly deferred and must not block continuation.")
+        require("fromJson(outputs.active_runs.body).total_count == 0" in body,
+                "SUPER1200 dispatch must stop while a run is in progress.")
+        require("fromJson(outputs.queued_runs.body).total_count == 0" in body,
+                "SUPER1200 dispatch must stop while a run is queued.")
+        require("status=in_progress" in body and "status=queued" in body,
+                "SUPER1200 must query in-progress and queued runs before dispatch.")
         require("fromJson(outputs.executors.body).executors.D04 != null" in body,
                 "SUPER1200 dispatch requires a registered D04 executor.")
         require("{{ secret('GITHUB_TOKEN') }}" in body,

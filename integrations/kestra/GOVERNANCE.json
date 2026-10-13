@@ -9,7 +9,7 @@
   "change_policy": "APPEND_ONLY",
   "failure_policy": "FAIL_CLOSED",
   "overall_status": "CANDIDATE_NOT_CERTIFIED",
-  "activation": "NOT_AUTHORIZED",
+  "activation": "OPERATIONAL_SUPERVISOR_AUTHORIZED; RUNTIME_IMPORT_PENDING; CERTIFICATION_AND_PROMOTION_NOT_AUTHORIZED",
   "promotion_to_main": "PROHIBITED_UNTIL_APPROVED_GATES",
   "engine": {
     "name": "Kestra",
@@ -42,12 +42,13 @@
     "management_port_authentication": "Configured with endpoints.all.basic-auth using local credentials; management port remains loopback-only.",
     "basic_auth": "Enabled; credentials generated locally from ignored .env",
     "host_docker_socket": "NOT_MOUNTED",
-    "github_credentials": "NOT_CONFIGURED",
-    "automatic_flow_import": "CI_ONLY_EPHEMERAL_LOG_ONLY_SMOKE; DISABLED_FOR_PERSISTENT_RUNTIME",
+    "github_credentials": "KESTRA_SECRET_GITHUB_TOKEN_REQUIRED; NOT_STORED_IN_REPOSITORY; repository-scoped actions:write and contents:read only",
+    "automatic_flow_import": "PERSISTENT_RUNTIME_IMPORT_PENDING; repository commit alone does not prove that the host runtime loaded the flow",
     "automatic_repair_or_repository_mutation": "NOT_CONFIGURED",
     "arbitrary_script_flows": "Blocked from committed flow templates until an isolated runner is specified and independently reviewed",
     "external_tasks": "No production side effects authorized",
-    "storage_bootstrap": "One-shot container with user 0:0, network_mode none, read_only root filesystem, cap_drop ALL, cap_add CHOWN, only kestra-data volume, no Docker socket; long-running Kestra service remains non-root."
+    "storage_bootstrap": "One-shot container with user 0:0, network_mode none, read_only root filesystem, cap_drop ALL, cap_add CHOWN, only kestra-data volume, no Docker socket; long-running Kestra service remains non-root.",
+    "super1200_dispatch": "BOUNDED_TO_PINNED_CANDIDATE_WORKFLOW; checks in_progress and queued runs; MetaOS deferred; no certification or promotion"
   },
   "gates": {
     "specification": "RECORDED",
@@ -61,7 +62,8 @@
     "non_regression": "PENDING",
     "rollback": "DOCUMENTED_NOT_RUNTIME_TESTED",
     "credentials_policy": "STRONG_RANDOM_LOCAL_AND_EPHEMERAL_CI_CREDENTIALS",
-    "automated_smoke_flow_execution": "PASS_CI_RUN_38369065971: flow louksna.kestra/kestra_oss_smoke imported; execution reached SUCCESS; LOG_ONLY; no external side effects; temporary runtime and volumes destroyed"
+    "automated_smoke_flow_execution": "PASS_CI_RUN_38369065971: flow louksna.kestra/kestra_oss_smoke imported; execution reached SUCCESS; LOG_ONLY; no external side effects; temporary runtime and volumes destroyed",
+    "kestra_continuous_supervisor": "FLOW_PATCHED_IN_CANDIDATE_BRANCH; STATIC_AND_CI_VALIDATION_PENDING; PERSISTENT_RUNTIME_IMPORT_AND_REAL_DISPATCH_NOT_YET_VERIFIED"
   },
   "required_next_gates": [
     "Verify official v2.0.5 Docker image availability and compare its release provenance before any upgrade.",
@@ -69,7 +71,9 @@
     "Independently test manual smoke-flow execution.",
     "Design and test a dedicated isolated task execution boundary before enabling script-based workflows.",
     "Review GitHub integration permissions and side-effect restrictions before connecting any repository token.",
-    "Complete independent validation and certification as separate gates; no automated certification propagation."
+    "Complete independent validation and certification as separate gates; no automated certification propagation.",
+    "Configure the persistent Kestra secret GITHUB_TOKEN with repository-scoped actions:write and contents:read; never commit the token.",
+    "Import the corrected flow into the persistent Kestra runtime, observe a scheduled SAFE_HOLD while a run is active, then observe one successful dispatch only after no run is active or queued."
   ],
   "provenance": [
     "https://kestra.io/docs/oss-vs-paid",

@@ -13,16 +13,34 @@ tasks:
     type: io.kestra.plugin.core.http.Request
     uri: https://raw.githubusercontent.com/Plomillo/luna-linux-bridge/custosz/super-1200-implementation-20261007/continuity/EXECUTORS.json
     method: GET
+  - id: active_runs
+    type: io.kestra.plugin.core.http.Request
+    uri: "https://api.github.com/repos/Plomillo/luna-linux-bridge/actions/workflows/super1200-continuation-lrb-live.yml/runs?branch=custosz%2Fsuper-1200-implementation-20261007&status=in_progress&per_page=1"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ secret('GITHUB_TOKEN') }}"
+      Accept: application/vnd.github+json
+      X-GitHub-Api-Version: "2022-11-28"
+  - id: queued_runs
+    type: io.kestra.plugin.core.http.Request
+    uri: "https://api.github.com/repos/Plomillo/luna-linux-bridge/actions/workflows/super1200-continuation-lrb-live.yml/runs?branch=custosz%2Fsuper-1200-implementation-20261007&status=queued&per_page=1"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ secret('GITHUB_TOKEN') }}"
+      Accept: application/vnd.github+json
+      X-GitHub-Api-Version: "2022-11-28"
   - id: gate_and_dispatch
     type: io.kestra.plugin.core.flow.If
     condition: >-
       {{ fromJson(outputs.checkpoint.body).blocked == false
-         and fromJson(outputs.checkpoint.body).status == 'READY_FOR_CONTINUATION'
+         and (fromJson(outputs.checkpoint.body).status == 'READY_FOR_CONTINUATION'
+              or fromJson(outputs.checkpoint.body).status == 'ACTIVE')
          and fromJson(outputs.checkpoint.body).material_worker_ready == true
-         and fromJson(outputs.checkpoint.body).metaos_ready == true
          and fromJson(outputs.checkpoint.body).next_point != null
          and fromJson(outputs.executors.body).executors.D04 != null
-         and fromJson(outputs.executors.body).executors.D04 != 'continuity/super1200_continuation_worker.py' }}
+         and fromJson(outputs.executors.body).executors.D04 != 'continuity/super1200_continuation_worker.py'
+         and fromJson(outputs.active_runs.body).total_count == 0
+         and fromJson(outputs.queued_runs.body).total_count == 0 }}
     then:
       - id: dispatch_candidate_workflow
         type: io.kestra.plugin.core.http.Request
@@ -52,7 +70,9 @@ tasks:
           reason={{ fromJson(outputs.checkpoint.body).block_reason }}
           next={{ fromJson(outputs.checkpoint.body).next_point }}
           material_worker_ready={{ fromJson(outputs.checkpoint.body).material_worker_ready ?? false }}
-          no dispatch, no state mutation, no certification.
+          active_run_count={{ fromJson(outputs.active_runs.body).total_count }}
+          queued_run_count={{ fromJson(outputs.queued_runs.body).total_count }}
+          MetaOS deferred; no dispatch while a run is active or queued; no certification or promotion.
 triggers:
   - id: every_five_minutes
     type: io.kestra.plugin.core.trigger.Schedule

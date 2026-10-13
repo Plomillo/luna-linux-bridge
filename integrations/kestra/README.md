@@ -106,3 +106,12 @@ Se añadió `.github/workflows/super1200-continuous-audit.yml`: auditoría de so
 **Limitación importante:** GitHub Actions procesa los eventos `schedule` desde la rama predeterminada. Como `main` debe permanecer intacta, el schedule incluido en esta rama candidata no demuestra ni garantiza ejecuciones cada 12 horas. Hasta que exista una ejecución programada real verificable por un mecanismo autorizado que no toque `main`, el requisito de cadencia de 12 horas permanece PENDIENTE. Los eventos `push` de la rama y `workflow_dispatch` sí están declarados en el workflow, pero su ejecución debe comprobarse en GitHub Actions.
 
 El flujo Kestra existente continúa con polling cada cinco minutos y SAFE_HOLD mientras no estén registrados y validados un ejecutor material no recursivo, CUSTOSZ V7 vinculado y MetaOS válido. Esta modificación documental y la auditoría estática no solucionan esos bloqueos ni prueban ejecución material. G23 debe aprobarse antes de G24, ambos sobre el mismo SHA; `main` sigue fuera del alcance.
+
+
+## Enmienda operativa 2026-10-13 — Kestra como supervisor real
+
+MetaOS queda aplazado y ya no es condición previa del dispatcher. El ciclo acepta checkpoints `ACTIVE` y `READY_FOR_CONTINUATION`, exige el trabajador material revisado y el ejecutor no recursivo, y consulta ejecuciones `in_progress` y `queued` de la rama candidata antes de despachar. Si existe una ejecución activa o en cola, registra SAFE_HOLD y no duplica la misión. Si la consulta o autorización falla, no despacha.
+
+La instancia persistente debe importar esta revisión y disponer del secreto local `GITHUB_TOKEN`, restringido a los permisos mínimos de despacho/lectura. No incluyas el token en archivos, logs ni artefactos. **El commit no demuestra que la instancia local haya importado el flujo ni que ya se haya producido un despacho real.** La activación se acepta solo al conservar evidencia del ciclo programado y del ID del run resultante.
+
+Enmienda contractual aditiva: [SUPER1200_CONTINUOUS_AUTOMATION_CONTRACT_V1.0.1_ADDENDUM.md](../../blob/custosz/super-1200-implementation-20261007/continuity/SUPER1200_CONTINUOUS_AUTOMATION_CONTRACT_V1.0.1_ADDENDUM.md). G23/G24 globales y la promoción a `main` permanecen cerradas.
