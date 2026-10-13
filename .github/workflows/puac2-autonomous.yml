@@ -86,7 +86,7 @@ jobs:
           report=Path("out/tests.txt").read_bytes()
           passed=total-failed-skipped
           data={"schema":"PUAC2_TEST_REPORT/1.0","candidate_commit":os.environ["GITHUB_SHA"],"status":"PASS" if total>0 and failed==0 and passed>0 else "HOLD","total":total,"passed":passed,"failed":failed,"skipped":skipped,"report_sha256":hashlib.sha256(report).hexdigest()}
-          Path("out/tests.json").write_text(json.dumps(data,sort_keys=True,indent=2)+"\\n")
+          Path("out/tests.json").write_text(json.dumps(data,sort_keys=True,indent=2)+"\n")
           if total==0 or failed or passed<1: raise SystemExit("TEST_REPORT_NOT_PASS")
           PY
       - name: Bind evidence to exact commit
@@ -236,7 +236,7 @@ jobs:
           for line in hashes_path.read_text().splitlines():
               parts = line.split(None, 1)
               if len(parts) == 2:
-                  actual_hashes[parts[1].lstrip("*")] = parts[0]
+                  actual_hashes[Path(parts[1].lstrip("*")).name] = parts[0]
           if any(actual_hashes.get(name) != digest for name, digest in expected_hashes.items()):
               raise SystemExit("G23_HOST_REPORT_HASH_MISMATCH")
           evidence = {"source_ref":os.environ["GITHUB_SERVER_URL"]+"/"+os.environ["GITHUB_REPOSITORY"]+"/tree/"+candidate,"candidate_commit":candidate,"input_sha256":hashlib.sha256((root / "puac2-source-evidence/tests.json").read_bytes()).hexdigest(),"output_sha256":hashlib.sha256((root / "puac2-host-evidence/host.json").read_bytes()).hexdigest(),"test_report_ref":"artifact:puac2-source-evidence/tests.txt","test_report_sha256":hashlib.sha256(tests).hexdigest(),"host_mtls_test_ref":"artifact:puac2-host-evidence/host.json","host_mtls_test_sha256":hashlib.sha256((root / "puac2-host-evidence/host.json").read_bytes()).hexdigest(),"rollback_ref":"artifact:puac2-host-evidence/rollback.report","rollback_test_sha256":hashlib.sha256(rollback_report_path.read_bytes()).hexdigest()}
