@@ -91,6 +91,8 @@ for flow_path in sorted(flows.rglob("*.yml")) + sorted(flows.rglob("*.yaml")):
                 "SUPER1200 dispatch must fail closed on the reconciled checkpoint.")
         require("fromJson(outputs.checkpoint.body).material_worker_ready == true" in body,
                 "SUPER1200 dispatch requires an explicitly reviewed material worker.")
+        require("fromJson(outputs.checkpoint.body).metaos_ready == true" in body,
+                "SUPER1200 dispatch requires an independently validated MetaOS runtime.")
         require("fromJson(outputs.executors.body).executors.D04 != null" in body,
                 "SUPER1200 dispatch requires a registered D04 executor.")
         require("{{ secret('GITHUB_TOKEN') }}" in body,
