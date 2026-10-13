@@ -6,7 +6,10 @@ on:
       - custosz/super-1200-implementation-20261007
     paths:
       - "implementation/super1200/CONTINUE_NEXT_DOMAIN"
-      - "implementation/super1200/runtime/super1200_continuation_worker.py"
+      - "implementation/super1200/runtime/d04_material_worker.py"
+      - "continuity/STATE.json"
+      - "continuity/EXECUTORS.json"
+      - ".github/workflows/super1200-continuation-lrb-live.yml"
   workflow_dispatch:
 
 permissions:
@@ -171,8 +174,17 @@ jobs:
           t=worker.mission_tick(m['mission_id'])
           print('SUPER1200_TELEMETRY '+str({'event':'CUSTOSZ_MISSION_STARTED','mission_id':m['mission_id'],'executor':m.get('executor'),'heartbeat':t.get('state'),'owner':'REPOSITORY'}),flush=True)
           PY
-          python3 -B -I target/implementation/super1200/runtime/super1200_continuation_worker.py
-          echo "SUPER1200_TELEMETRY MATERIAL_WORKER=PASS EXECUTION_PLANE=CUSTOSZ_RUNTIME_V1"
+          WORKER_PATH="$(python3 - <<'PY'
+          import json
+          from pathlib import Path
+          state=json.loads(Path('target/continuity/STATE.json').read_text())
+          executors=json.loads(Path('target/continuity/EXECUTORS.json').read_text())['executors']
+          print(executors[state['next_point']])
+          PY
+          )"
+          test -f "target/$WORKER_PATH"
+          python3 -B -I "target/$WORKER_PATH"
+          echo "SUPER1200_TELEMETRY MATERIAL_WORKER=PASS EXECUTOR=$WORKER_PATH EXECUTION_PLANE=CUSTOSZ_RUNTIME_V1"
 
       - name: Observe live result through LOUKSNA Remote Bridge
         shell: bash
@@ -187,15 +199,17 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          python3 -B -I target/implementation/super1200/tests/test_d02_runtime.py
+          python3 -B -I target/implementation/super1200/tests/test_d04_runtime.py
           cd target
           git diff --check
-          git add implementation/super1200
+          git add implementation/super1200 continuity/runtime-evidence/D04
           git config user.name "custosz-v7-runtime-bot"
           git config user.email "custosz-v7-runtime-bot@users.noreply.github.com"
-          git commit -m "feat(super1200): continue D02 governed material implementation"
-          git push origin HEAD:refs/heads/custosz/super-1200-implementation-20261007
-          echo "SUPER1200_TELEMETRY REPOSITORY_PERSISTENCE=PASS DOMAIN=D02 G23=BLOCKED G24=BLOCKED HEAD=$(git rev-parse HEAD)"
+          if ! git diff --cached --quiet; then
+            git commit -m "feat(super1200): materialize D04 attestation and SBOM capabilities"
+            git push origin HEAD:refs/heads/custosz/super-1200-implementation-20261007
+          fi
+          echo "SUPER1200_TELEMETRY REPOSITORY_PERSISTENCE=PASS DOMAIN=D04 CAPABILITIES=87-92 G23=PENDING G24=PENDING HEAD=$(git rev-parse HEAD)"
 
       - name: Preserve live telemetry
         if: always()
