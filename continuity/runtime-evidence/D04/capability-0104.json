@@ -2,20 +2,20 @@
   "canonical_name": "JSON_SCHEMA_PROVIDER",
   "capability_id": 104,
   "certification_granted": false,
-  "evidence_refresh_workflow_run_id": "38486071196",
-  "evidence_refresh_workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38486071196",
-  "evidence_sha256": "a38a42793a7c2a737f7749dd45f5ccf3e2f7b9a634aa35754834a9fcd84c4374",
+  "evidence_refresh_workflow_run_id": "38486078293",
+  "evidence_refresh_workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38486078293",
+  "evidence_sha256": "c9879675fae09a89533733b4c1669a2e769639a312e4f4e735d07248d18bb9d9",
   "executor": "implementation/super1200/runtime/d04_material_worker_101_104.py",
   "g23": "PENDING_INDEPENDENT_REVALIDATION",
   "g24": "PENDING_G23",
-  "github_actions_run_id": "38486071196",
+  "github_actions_run_id": "38486078293",
   "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
   "module_sha256": "591082428db8a61946e78341df2e086785d8d0d49f20cf632a4b3a4501139940",
   "originating_material_workflow_run_id": 38485688714,
   "prior_evidence": {
-    "prior_evidence_sha256": "3853e470f40bace1faffd7184badbf734122e65fdc87c9be8329e242990779c4",
-    "prior_module_sha256": "7ed8ac665ff0666299d5baad58ba0bb90803922933a5ca9685355f9ec1126ecd",
-    "prior_test_sha256": "4cd43936d4df91e0e751d78abc48593252e66510c0d27fd9403caaa42a14890d"
+    "prior_evidence_sha256": "a38a42793a7c2a737f7749dd45f5ccf3e2f7b9a634aa35754834a9fcd84c4374",
+    "prior_module_sha256": "591082428db8a61946e78341df2e086785d8d0d49f20cf632a4b3a4501139940",
+    "prior_test_sha256": "8c32455a51ccf1c4d81309e15d18261e537f85a50f63ac74ac063e5466064e13"
   },
   "schema": "SUPER1200_D04_MATERIAL_EVIDENCE/1",
   "selected_test_result": {
@@ -40,5 +40,5 @@
     "D04RuntimeTests.test_json_schema_provider_pins_dialect_and_rejects_unknown_fields"
   ],
   "test_sha256": "8c32455a51ccf1c4d81309e15d18261e537f85a50f63ac74ac063e5466064e13",
-  "validated_at_utc": "2026-10-13T23:44:42.321759+00:00"
+  "validated_at_utc": "2026-10-13T23:44:52.795121+00:00"
 }

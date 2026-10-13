@@ -2,20 +2,20 @@
   "canonical_name": "POLICY_AS_CODE",
   "capability_id": 101,
   "certification_granted": false,
-  "evidence_refresh_workflow_run_id": "38486071196",
-  "evidence_refresh_workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38486071196",
-  "evidence_sha256": "0ea5ca7780788dbdb877ca2dfc8c8aa84b5483fce15d9bb25efd581a4a1c8277",
+  "evidence_refresh_workflow_run_id": "38486078293",
+  "evidence_refresh_workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38486078293",
+  "evidence_sha256": "b7c916e0b1fc7408ae6e57bfb0a44a8bb00b10a42ecb9392482e0e355e878f9e",
   "executor": "implementation/super1200/runtime/d04_material_worker_101_104.py",
   "g23": "PENDING_INDEPENDENT_REVALIDATION",
   "g24": "PENDING_G23",
-  "github_actions_run_id": "38486071196",
+  "github_actions_run_id": "38486078293",
   "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
   "module_sha256": "591082428db8a61946e78341df2e086785d8d0d49f20cf632a4b3a4501139940",
   "originating_material_workflow_run_id": 38485688714,
   "prior_evidence": {
-    "prior_evidence_sha256": "c8ab2727ea4a5c21d049cbe62b775fda13bddda9d7817dd8db91397e13bd2833",
-    "prior_module_sha256": "7ed8ac665ff0666299d5baad58ba0bb90803922933a5ca9685355f9ec1126ecd",
-    "prior_test_sha256": "4cd43936d4df91e0e751d78abc48593252e66510c0d27fd9403caaa42a14890d"
+    "prior_evidence_sha256": "0ea5ca7780788dbdb877ca2dfc8c8aa84b5483fce15d9bb25efd581a4a1c8277",
+    "prior_module_sha256": "591082428db8a61946e78341df2e086785d8d0d49f20cf632a4b3a4501139940",
+    "prior_test_sha256": "8c32455a51ccf1c4d81309e15d18261e537f85a50f63ac74ac063e5466064e13"
   },
   "schema": "SUPER1200_D04_MATERIAL_EVIDENCE/1",
   "selected_test_result": {
@@ -40,5 +40,5 @@
     "D04RuntimeTests.test_policy_as_code_binds_versioned_policy_input_and_audit_receipt"
   ],
   "test_sha256": "8c32455a51ccf1c4d81309e15d18261e537f85a50f63ac74ac063e5466064e13",
-  "validated_at_utc": "2026-10-13T23:44:42.321759+00:00"
+  "validated_at_utc": "2026-10-13T23:44:52.795121+00:00"
 }
