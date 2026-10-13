@@ -348,5 +348,74 @@ class D04RuntimeTests(unittest.TestCase):
         stale=dict(result,dialect="draft-07")
         self.assertIn("schema_dialect_mismatch",d04.validate_json_schema_provider_result(stale,**args)["reasons"])
 
+
+
+    def test_policy_test_suite_covers_positive_negative_bypass_conflict_and_unknown(self):
+        policy={"policy_id":"deploy","version":"1"}
+        cases=[{"case_id":"p","category":"positive","input":"allow"},
+            {"case_id":"n","category":"negative","input":"deny"},
+            {"case_id":"b","category":"bypass","input":"bypass"},
+            {"case_id":"c","category":"conflict","input":"conflict"},
+            {"case_id":"u","category":"unknown","input":"unknown"}]
+        decisions={"allow":"ALLOW","deny":"DENY","bypass":"DENY","conflict":"DENY","unknown":"UNKNOWN"}
+        report=d04.run_policy_test_suite(policy,cases,evaluator=lambda _p,x:{"decision":decisions[x]})
+        self.assertEqual(report["status"],"PASS")
+        self.assertEqual(report["case_count"],5)
+        self.assertEqual(set(report["categories_seen"]),{"positive","negative","bypass","conflict","unknown"})
+        missing=d04.run_policy_test_suite(policy,cases[:2],evaluator=lambda _p,x:{"decision":decisions[x]})
+        self.assertEqual(missing["status"],"FAIL")
+        nondeterministic={"count":0}
+        def flip(_p,_x):
+            nondeterministic["count"]+=1
+            return {"decision":"ALLOW" if nondeterministic["count"]%2 else "DENY"}
+        self.assertEqual(d04.run_policy_test_suite(policy,[cases[0]],evaluator=flip)["status"],"FAIL")
+
+    def test_policy_version_history_binds_hash_interval_and_supersession(self):
+        doc1={"policy_id":"deploy","version":"1","rules":[{"id":"allow","effect":"ALLOW"}]}
+        doc2={"policy_id":"deploy","version":"2","rules":[{"id":"allow","effect":"ALLOW"},{"id":"deny","effect":"DENY"}]}
+        v1=d04.make_policy_version_record(policy_id="deploy",version="1",policy_document=doc1,
+            effective_from_utc="2026-10-01T00:00:00Z",effective_until_utc="2026-10-10T00:00:00Z")
+        v2=d04.make_policy_version_record(policy_id="deploy",version="2",policy_document=doc2,
+            effective_from_utc="2026-10-10T00:00:00Z",effective_until_utc="2026-11-10T00:00:00Z",supersedes="deploy@1")
+        self.assertEqual(d04.validate_policy_version_history([v1,v2])["status"],"PASS")
+        overlap=d04.make_policy_version_record(policy_id="deploy",version="2",policy_document=doc2,
+            effective_from_utc="2026-10-09T00:00:00Z",effective_until_utc="2026-11-10T00:00:00Z",supersedes="deploy@1")
+        with self.assertRaisesRegex(ValueError,"policy_supersession_interval_overlap"):
+            d04.validate_policy_version_history([v1,overlap])
+        corrupt=dict(v2,policy_sha256="0"*64)
+        with self.assertRaisesRegex(ValueError,"policy_version_content_hash_mismatch"):
+            d04.validate_policy_version_history([v1,corrupt])
+
+    def test_semantic_policy_diff_finds_affected_rules_claims_tests_and_authorizations(self):
+        old={"schema":"SUPER1200_POLICY_AS_CODE/1","policy_id":"deploy","version":"1","engine":"OPA_REGO",
+            "rules":[{"id":"allow-prod","condition":{"env":"prod"},"claims":["deploy-prod"],"tests":["allow-prod-test"],"authorizations":["release"]},
+                     {"id":"deny-dev","condition":{"env":"dev"},"claims":["deploy-dev"],"tests":["deny-dev-test"],"authorizations":["block"]}]}
+        new={"schema":"SUPER1200_POLICY_AS_CODE/1","policy_id":"deploy","version":"2","engine":"OPA_REGO",
+            "rules":[{"authorizations":["release"],"tests":["allow-prod-test"],"claims":["deploy-prod"],"condition":{"env":"staging"},"id":"allow-prod"},
+                     {"id":"allow-test","condition":{"env":"test"},"claims":["deploy-test"],"tests":["allow-test-test"],"authorizations":["test"]}]}
+        diff=d04.semantic_policy_diff(old,new)
+        self.assertEqual(diff["changed_rule_ids"],["allow-prod"])
+        self.assertEqual(diff["removed_rule_ids"],["deny-dev"])
+        self.assertEqual(diff["added_rule_ids"],["allow-test"])
+        self.assertEqual(set(diff["affected_claims"]),{"deploy-prod","deploy-dev","deploy-test"})
+        self.assertEqual(set(diff["affected_tests"]),{"allow-prod-test","deny-dev-test","allow-test-test"})
+        self.assertEqual(set(diff["affected_authorizations"]),{"release","block","test"})
+
+    def test_policy_impact_analysis_invalidates_causal_evidence_dependencies(self):
+        old={"schema":"SUPER1200_POLICY_AS_CODE/1","policy_id":"deploy","version":"1",
+            "rules":[{"id":"allow-prod","condition":"prod","claims":["prod"],"tests":["test-prod"],"authorizations":["release"]}]}
+        new={"schema":"SUPER1200_POLICY_AS_CODE/1","policy_id":"deploy","version":"2",
+            "rules":[{"id":"allow-prod","condition":"staging","claims":["prod"],"tests":["test-prod"],"authorizations":["release"]}]}
+        diff=d04.semantic_policy_diff(old,new)
+        graph=d04.EvidenceInvalidationGraph()
+        for x in ("policy-evidence","decision","report","unrelated"): graph.add_evidence(x)
+        graph.add_dependency("policy-evidence","decision"); graph.add_dependency("decision","report")
+        impact=d04.analyze_policy_impact(diff,{"allow-prod":{"claims":["prod"],"tests":["test-prod"],
+            "authorizations":["release"],"evidence_ids":["policy-evidence"]}},graph)
+        self.assertEqual(impact["invalidated_evidence_ids"],["decision","policy-evidence","report"])
+        self.assertEqual(impact["preserved_evidence_ids"],["unrelated"])
+        with self.assertRaisesRegex(ValueError,"policy_dependency_mapping_required"):
+            d04.analyze_policy_impact(diff,{},graph)
+
 if __name__ == "__main__":
     unittest.main()
