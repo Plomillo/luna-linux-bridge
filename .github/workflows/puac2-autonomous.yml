@@ -30,7 +30,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: puac2-autonomous-\${{ github.ref }}
+  group: puac2-autonomous-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -39,8 +39,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
-      candidate: \${{ steps.identity.outputs.candidate }}
-      tests_sha256: \${{ steps.tests.outputs.sha256 }}
+      candidate: ${{ steps.identity.outputs.candidate }}
+      tests_sha256: ${{ steps.tests.outputs.sha256 }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -100,17 +100,17 @@ jobs:
           systemctl is-active --quiet louksna-remote-bridge.service
       - name: Perform authenticated mTLS handshake
         env:
-          CLIENT_CERT: \${{ vars.PUAC2_MTLS_CLIENT_CERT }}
-          CLIENT_KEY: \${{ vars.PUAC2_MTLS_CLIENT_KEY }}
-          CA_CERT: \${{ vars.PUAC2_MTLS_CA_CERT }}
+          CLIENT_CERT: ${{ vars.PUAC2_MTLS_CLIENT_CERT }}
+          CLIENT_KEY: ${{ vars.PUAC2_MTLS_CLIENT_KEY }}
+          CA_CERT: ${{ vars.PUAC2_MTLS_CA_CERT }}
         run: |
           set -euo pipefail
           test -r "$CLIENT_CERT" && test -r "$CLIENT_KEY" && test -r "$CA_CERT"
           timeout 10 openssl s_client -connect 127.0.0.1:8443 -cert "$CLIENT_CERT" -key "$CLIENT_KEY" -CAfile "$CA_CERT" -verify_return_error -brief </dev/null
       - name: Require actual host-test and rollback reports
         env:
-          HOST_TEST_REPORT: \${{ vars.PUAC2_HOST_TEST_REPORT }}
-          ROLLBACK_REPORT: \${{ vars.PUAC2_ROLLBACK_TEST_REPORT }}
+          HOST_TEST_REPORT: ${{ vars.PUAC2_HOST_TEST_REPORT }}
+          ROLLBACK_REPORT: ${{ vars.PUAC2_ROLLBACK_TEST_REPORT }}
         run: |
           set -euo pipefail
           test -n "$HOST_TEST_REPORT" && test -r "$HOST_TEST_REPORT"
@@ -150,8 +150,8 @@ jobs:
           merge-multiple: false
       - name: Independently rerun tests and validate host evidence
         env:
-          G23_SIGNING_PRIVATE_KEY_PEM: \${{ secrets.PUAC2_G23_SIGNING_PRIVATE_KEY_PEM }}
-          G23_VALIDATOR_ID: \${{ vars.PUAC2_G23_VALIDATOR_ID }}
+          G23_SIGNING_PRIVATE_KEY_PEM: ${{ secrets.PUAC2_G23_SIGNING_PRIVATE_KEY_PEM }}
+          G23_VALIDATOR_ID: ${{ vars.PUAC2_G23_VALIDATOR_ID }}
         shell: bash
         run: |
           set -euo pipefail
@@ -213,10 +213,10 @@ jobs:
           path: incoming
       - name: Verify G23 cryptographically and issue G24 decision only under a distinct identity
         env:
-          G23_PUBLIC_KEY_PEM: \${{ vars.PUAC2_G23_PUBLIC_KEY_PEM }}
-          G24_SIGNING_PRIVATE_KEY_PEM: \${{ secrets.PUAC2_G24_SIGNING_PRIVATE_KEY_PEM }}
-          G23_VALIDATOR_ID: \${{ vars.PUAC2_G23_VALIDATOR_ID }}
-          G24_CERTIFIER_ID: \${{ vars.PUAC2_G24_CERTIFIER_ID }}
+          G23_PUBLIC_KEY_PEM: ${{ vars.PUAC2_G23_PUBLIC_KEY_PEM }}
+          G24_SIGNING_PRIVATE_KEY_PEM: ${{ secrets.PUAC2_G24_SIGNING_PRIVATE_KEY_PEM }}
+          G23_VALIDATOR_ID: ${{ vars.PUAC2_G23_VALIDATOR_ID }}
+          G24_CERTIFIER_ID: ${{ vars.PUAC2_G24_CERTIFIER_ID }}
         shell: bash
         run: |
           set -euo pipefail
