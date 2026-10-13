@@ -1285,12 +1285,14 @@
       "canonical_name": "GITHUB_ARTIFACT_ATTESTATION_PROVIDER",
       "capability_id": 87,
       "hardening": "bind repository/workflow/commit/artifact digest; GitHub AUTHORITY=NONE",
-      "implementation_state": "DECLARED",
-      "materialization": "EXT_BIN+ADAPTER",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+SCHEMA+BEHAVIOR_TEST",
       "owner": "REPOSITORY",
       "repository_binding": "GH+ASR",
       "type": "EXTERNAL_PLATFORM_PROVIDER",
-      "wire": "76,83,85,86,98"
+      "wire": "76,83,85,86,98",
+      "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_runtime.py"
     },
     {
       "acquire": "Sigstore official tooling",
@@ -1298,12 +1300,14 @@
       "canonical_name": "SIGSTORE_PROVIDER",
       "capability_id": 88,
       "hardening": "identity/signature/bundle verification, offline evidence capture and keyless-context recording",
-      "implementation_state": "DECLARED",
-      "materialization": "EXT_BIN/EXT_LIB+ADAPTER",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+SCHEMA+BEHAVIOR_TEST",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "EXTERNAL_SECURITY_PROVIDER",
-      "wire": "83,89,98,118"
+      "wire": "83,89,98,118",
+      "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_runtime.py"
     },
     {
       "acquire": "Rekor official",
@@ -1311,12 +1315,14 @@
       "canonical_name": "REKOR_TRANSPARENCY_PROVIDER",
       "capability_id": 89,
       "hardening": "log inclusion/checkpoint verification and offline receipt; transparency ≠ truth",
-      "implementation_state": "DECLARED",
-      "materialization": "EXT_BIN/REMOTE_API+ADAPTER",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+SCHEMA+BEHAVIOR_TEST",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "EXTERNAL_TRANSPARENCY_PROVIDER",
-      "wire": "88,99,100"
+      "wire": "88,99,100",
+      "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_runtime.py"
     },
     {
       "acquire": "SPDX official tooling/spec",
@@ -1324,12 +1330,14 @@
       "canonical_name": "SPDX_PROVIDER",
       "capability_id": 90,
       "hardening": "SBOM package/file/license mapping with schema version and validation",
-      "implementation_state": "DECLARED",
-      "materialization": "EXT_LIB+ADAPTER",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+SCHEMA+BEHAVIOR_TEST",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "EXTERNAL_STANDARD_LIBRARY",
-      "wire": "17,91,199,913"
+      "wire": "17,91,199,913",
+      "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_runtime.py"
     },
     {
       "acquire": "CycloneDX official tooling/spec",
@@ -1337,12 +1345,14 @@
       "canonical_name": "CYCLONEDX_PROVIDER",
       "capability_id": 91,
       "hardening": "component/service/dependency BOM with schema validation",
-      "implementation_state": "DECLARED",
-      "materialization": "EXT_LIB+ADAPTER",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+SCHEMA+BEHAVIOR_TEST",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "EXTERNAL_STANDARD_LIBRARY",
-      "wire": "17,90,913"
+      "wire": "17,90,913",
+      "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_runtime.py"
     },
     {
       "acquire": "NONE",
@@ -1350,12 +1360,14 @@
       "canonical_name": "CERTIFICATION_SCOPE_IDENTITY",
       "capability_id": 92,
       "hardening": "subject/version/hash/environment/claims/exclusions/validity as immutable scope key",
-      "implementation_state": "DECLARED",
-      "materialization": "SCHEMA+CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+SCHEMA+BEHAVIOR_TEST",
       "owner": "REPOSITORY",
       "repository_binding": "ASR+OA",
       "type": "ASSURANCE_PRIMITIVE",
-      "wire": "26,93,98,109"
+      "wire": "26,93,98,109",
+      "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_runtime.py"
     },
     {
       "acquire": "NONE",

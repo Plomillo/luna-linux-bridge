@@ -40,37 +40,37 @@
     {
       "canonical_name": "GITHUB_ARTIFACT_ATTESTATION_PROVIDER",
       "capability_id": 87,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "implementation_state": "EVIDENCED",
       "owner": "REPOSITORY"
     },
     {
       "canonical_name": "SIGSTORE_PROVIDER",
       "capability_id": 88,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "implementation_state": "EVIDENCED",
       "owner": "REPOSITORY"
     },
     {
       "canonical_name": "REKOR_TRANSPARENCY_PROVIDER",
       "capability_id": 89,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "implementation_state": "EVIDENCED",
       "owner": "REPOSITORY"
     },
     {
       "canonical_name": "SPDX_PROVIDER",
       "capability_id": 90,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "implementation_state": "EVIDENCED",
       "owner": "REPOSITORY"
     },
     {
       "canonical_name": "CYCLONEDX_PROVIDER",
       "capability_id": 91,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "implementation_state": "EVIDENCED",
       "owner": "REPOSITORY"
     },
     {
       "canonical_name": "CERTIFICATION_SCOPE_IDENTITY",
       "capability_id": 92,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "implementation_state": "EVIDENCED",
       "owner": "REPOSITORY"
     },
     {

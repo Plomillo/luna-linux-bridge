@@ -1,0 +1,20 @@
+{
+  "canonical_name": "GITHUB_ARTIFACT_ATTESTATION_PROVIDER",
+  "capability_id": 87,
+  "certification_granted": false,
+  "evidence_sha256": "5591ff0e695b3e2f4b246d7534bd0d138e85f676995855a9a7677dacbbdfda26",
+  "executor": "implementation/super1200/runtime/d04_material_worker.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+  "module_sha256": "a89747abd868625fdf52be1cbf78e21dd9d52bb9a09f4a23a93be2d6f423ea1d",
+  "schema": "SUPER1200_D04_MATERIAL_EVIDENCE/1",
+  "status": "PASS",
+  "suite_exit_code": 0,
+  "suite_stderr_sha256": "f70474bb9d3d4b78369d133e47904bb1ef43bd0a69dec6649003a49c7b092484",
+  "suite_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "test_artifact": "implementation/super1200/tests/test_d04_runtime.py",
+  "test_case": "test_github_attestation_binds_subject_and_declares_unsigned_state",
+  "test_sha256": "eaaf5f4f7f8eb1e62a5720bee0c46a0a69e1a3b889dae079bffd3c6ec82cc807",
+  "validated_at_utc": "2026-10-13T21:15:28.369106+00:00"
+}
