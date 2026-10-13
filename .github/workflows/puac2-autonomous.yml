@@ -23,6 +23,7 @@ on:
       - "packaging/**"
       - "docs/**"
       - ".github/workflows/puac2-autonomous.yml"
+  workflow_dispatch:
   schedule:
     - cron: "17 * * * *"
 
@@ -107,7 +108,7 @@ jobs:
     if: github.event_name != 'pull_request'
     needs: source_validation
     # This job intentionally fails closed until the dedicated target-host runner is provisioned.
-    runs-on: [self-hosted, linux, louksna-mtls-host]
+    runs-on: [self-hosted, linux, x64, luna-aux]
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
