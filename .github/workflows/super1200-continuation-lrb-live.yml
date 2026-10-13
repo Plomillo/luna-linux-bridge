@@ -1,15 +1,6 @@
 name: "SUPER1200 bounded continuation — CUSTOSZ V7 / GitHub-hosted"
 
 on:
-  push:
-    branches:
-      - custosz/super-1200-implementation-20261007
-    paths:
-      - "implementation/super1200/runtime/d04_material_worker_93_96.py"
-      - "continuity/EXECUTORS.json"
-      - ".github/workflows/super1200-continuation-lrb-live.yml"
-  schedule:
-    - cron: "*/5 * * * *"
   workflow_dispatch:
 
 permissions:
