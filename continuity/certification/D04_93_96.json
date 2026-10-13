@@ -1,7 +1,7 @@
 {
   "basis": "G23_PASS_PLUS_INDEPENDENT_G24_REVALIDATION",
   "certification_granted": true,
-  "certified_at_utc": "2026-10-13T23:29:10.972553+00:00",
+  "certified_at_utc": "2026-10-13T23:30:11.514796+00:00",
   "evidence": [
     {
       "capability_id": 93,
@@ -23,7 +23,7 @@
   "g23": "PASS",
   "g23_workflow_run_id": "38484371232",
   "g24": "PASS",
-  "g24_workflow_run_id": "38484496827",
+  "g24_workflow_run_id": "38484598640",
   "global_super1200_certified": false,
   "module_sha256": "abc9c8d922e3ff56f4cdf636da99e146d95e7a15ac5608004f81398d8b4a58f0",
   "result": "PASS",
