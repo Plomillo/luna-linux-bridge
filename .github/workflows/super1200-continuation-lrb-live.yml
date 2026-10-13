@@ -70,7 +70,7 @@ jobs:
               raise SystemExit('DISPATCH_DENIED_INDEPENDENT_VALIDATION_NOT_READY')
           if state.get('metaos_ready') is not True:
               raise SystemExit('DISPATCH_DENIED_METAOS_NOT_VALIDATED')
-          metaos=root/'mission/artifacts/custosz-v7/MetaOS.wasm'
+          metaos=Path('mission/artifacts/custosz-v7/MetaOS.wasm')
           if not metaos.is_file():
               raise SystemExit('DISPATCH_DENIED_METAOS_ARTIFACT_MISSING')
           import subprocess
