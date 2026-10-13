@@ -33,9 +33,9 @@
     }
   ],
   "reconciliation": {
-    "observed_at_utc": "2026-10-13T23:58:00Z",
+    "observed_at_utc": "2026-10-13T23:59:00Z",
     "status": "REGISTERED_PENDING_GITHUB_HOSTED_LIVE_RUN",
     "policy": "FAIL_CLOSED",
-    "note": "D04 task-specific authorization executor for IDs 109-112 is registered. It requires scoped G23/G24 PASS for 105-108, validates the exact prior scope certificate and source hashes, runs current base D04 regression tests plus authorization-specific tests and four independently invoked cases, writes hash-bound evidence, and stops after 109-112 because no reviewed executor for 113-116 is registered. Global SUPER1200 certification remains false; MetaOS remains deferred."
+    "note": "D04 task-specific authorization executor for IDs 109-112 is registered. It requires scoped G23/G24 PASS for D04:105-108 and verifies continuity/certification/D04_105_108.json including the exact unchanged D04_runtime.py and test_d04_runtime.py hashes. It independently tests the isolated D04_authorization_governance.py module and stops after 109-112 until an executor for 113-116 is registered. Global SUPER1200 certification remains NOT_CERTIFIED; MetaOS remains deferred."
   }
 }
