@@ -1,0 +1,73 @@
+{
+  "certification_granted": false,
+  "completed_at_utc": "2026-10-13T23:27:16.378883+00:00",
+  "full_suite_exit_code": 0,
+  "module_sha256": "abc9c8d922e3ff56f4cdf636da99e146d95e7a15ac5608004f81398d8b4a58f0",
+  "prior_evidence": {
+    "93": {
+      "prior_evidence_sha256": "ea2ab53f633809a28ae972ae0cc8939f1788995da7c4520663212839552de2c6",
+      "prior_module_sha256": "1371f945ad2f80cf6009986cf20f327e648e00dc0327cdfbea0141a617801774",
+      "prior_test_sha256": "43bc0d6524c75e316886d161c7fe6fced23c4a5c1491ca4aff9dd2a69eed8b43"
+    },
+    "94": {
+      "prior_evidence_sha256": "cbde2c1d1da114d156cf18e2bb97a77065870d59eaa4882178fb545f993108b1",
+      "prior_module_sha256": "1371f945ad2f80cf6009986cf20f327e648e00dc0327cdfbea0141a617801774",
+      "prior_test_sha256": "43bc0d6524c75e316886d161c7fe6fced23c4a5c1491ca4aff9dd2a69eed8b43"
+    },
+    "95": {
+      "prior_evidence_sha256": "cb87beec294361006d26894a93a079fe50939f529832e358660913ecd4425d3e",
+      "prior_module_sha256": "1371f945ad2f80cf6009986cf20f327e648e00dc0327cdfbea0141a617801774",
+      "prior_test_sha256": "43bc0d6524c75e316886d161c7fe6fced23c4a5c1491ca4aff9dd2a69eed8b43"
+    },
+    "96": {
+      "prior_evidence_sha256": "5d7c0048f22c13f493878fbc157417c8b34b7995c0d07646f5331e99d286cfdf",
+      "prior_module_sha256": "1371f945ad2f80cf6009986cf20f327e648e00dc0327cdfbea0141a617801774",
+      "prior_test_sha256": "43bc0d6524c75e316886d161c7fe6fced23c4a5c1491ca4aff9dd2a69eed8b43"
+    }
+  },
+  "schema": "SUPER1200_D04_EVIDENCE_REFRESH/1",
+  "scope": "D04_CAPABILITIES_93_96_ONLY",
+  "source_commit": "bfb66d6c04d5dfe149e142e7eca0b7d21542e756",
+  "specific_test_results": [
+    {
+      "capability_id": 93,
+      "exit_code": 0,
+      "result": "PASS",
+      "single_test_run_confirmed": true,
+      "stderr_sha256": "0f363d9fdeaebca0b245ff2259ab7b742cd8e397416dfae2d7fe9298c599e3ea",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "test_case": "test_certification_non_transitivity_rejects_derived_subject_and_scope"
+    },
+    {
+      "capability_id": 94,
+      "exit_code": 0,
+      "result": "PASS",
+      "single_test_run_confirmed": true,
+      "stderr_sha256": "903b1283c8dfeb054bd50982e359aad9b245ee4b876ad5e669e9dc962f83a455",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "test_case": "test_evidence_expiration_uses_half_open_utc_interval_and_fails_closed"
+    },
+    {
+      "capability_id": 95,
+      "exit_code": 0,
+      "result": "PASS",
+      "single_test_run_confirmed": true,
+      "stderr_sha256": "51775e9f548cc288c6d0572d97bbfbc69de97f2e9a330d477aadeb6b4a8e2b9d",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "test_case": "test_evidence_invalidation_graph_propagates_and_rejects_cycles"
+    },
+    {
+      "capability_id": 96,
+      "exit_code": 0,
+      "result": "PASS",
+      "single_test_run_confirmed": true,
+      "stderr_sha256": "f68d494c1fcc1d829e15ef92c87e35e67cf4bd8b1db836e566f22a6339bd5e14",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "test_case": "test_evidence_reuse_requires_exact_validated_non_invalidated_key"
+    }
+  ],
+  "status": "PASS_AWAITING_G23",
+  "test_sha256": "6d638e4627cf5542ea1b611a0870aee5d22154923c0e47cef1eb44f4c55b685b",
+  "workflow_run_id": "38484326133",
+  "workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38484326133"
+}
