@@ -53,6 +53,8 @@ def _key(value: Any) -> bytes:
 def _signature(payload: dict[str, Any], key: bytes) -> str:
     unsigned = dict(payload)
     unsigned.pop("signature_hmac_sha256", None)
+    unsigned.pop("proof_sha256", None)
+    unsigned.pop("lease_sha256", None)
     return hmac.new(key, canonical_json(unsigned), hashlib.sha256).hexdigest()
 
 
