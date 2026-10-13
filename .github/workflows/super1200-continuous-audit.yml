@@ -62,6 +62,12 @@ jobs:
           next_point=state.get('next_point')
           next_executor=executor_map.get(next_point) if next_point else None
           blockers=[]
+          retired_worker=root/'implementation/super1200/runtime/super1200_continuation_worker.py'
+          retired_text=retired_worker.read_text(encoding='utf-8') if retired_worker.is_file() else ''
+          if ('SYNTHETIC_MATERIALIZATION_DISABLED' not in retired_text
+              or 'implementation_state' in retired_text
+              or 'CONTINUATION_RESULT.json' in retired_text):
+              blockers.append('SYNTHETIC_MATERIALIZER_NOT_SAFELY_RETIRED')
           if state.get('blocked') is not False: blockers.append('CHECKPOINT_BLOCKED')
           if not next_executor: blockers.append('NEXT_EXECUTOR_NOT_REGISTERED')
           if next_executor == 'continuity/super1200_continuation_worker.py': blockers.append('RECURSIVE_DISPATCHER_MAPPING')
