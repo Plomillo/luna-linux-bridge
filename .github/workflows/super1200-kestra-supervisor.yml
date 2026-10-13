@@ -51,6 +51,8 @@ jobs:
             plugins:
               auto-install:
                 enabled: false
+            variables:
+              env-vars-prefix: ""
           EOF
           {
             echo "KESTRA_ADMIN_USER=$KESTRA_ADMIN_USER"
