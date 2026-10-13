@@ -72,9 +72,11 @@ jobs:
             git ls-tree -r --name-only "$ref" | while IFS= read -r path; do
               lower="${path,,}"
               if [[ "$lower" == *metaos* || "$lower" == *.wasm || "$lower" == *.wat || "$lower" == *.wast ]]; then
-                printf '%s:%s\n' "$ref" "$path" >> "$RUNNER_TEMP/metaos-artifact-lineage.txt"
+                blob="$(git rev-parse "$ref:$path" 2>/dev/null || true)"
+                printf '%s:%s:%s\n' "$ref" "$path" "$blob" >> "$RUNNER_TEMP/metaos-artifact-lineage.txt"
               fi
-              if [[ "$lower" == *metaos* && "$lower" =~ \.(c|cc|cpp|h|hpp|rs|wat|wast|go|js|ts|py|sh|cmake|toml|yml|yaml|makefile)$ ]]; then
+              if [[ "$lower" != .github/* && "$lower" != *workflow* && "$lower" != *manifest* && "$lower" != *.md ]] &&
+                 [[ "$lower" == *metaos* && "$lower" =~ \.(c|cc|cpp|h|hpp|rs|wat|wast|go|js|ts|py|sh|cmake|toml|makefile)$ ]]; then
                 printf '%s:%s\n' "$ref" "$path" >> "$RUNNER_TEMP/metaos-source-candidates.txt"
               fi
             done
