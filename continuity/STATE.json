@@ -1,13 +1,13 @@
 {
   "active": false,
   "active_worker": false,
-  "block_reason": "UNTRUSTED_SYNTHETIC_WORKER_AND_D04_SELF_RECURSION",
+  "block_reason": "NO_REVIEWED_MATERIAL_EXECUTOR_AND_METAOS_INVALID_OR_MISSING",
   "blocked": true,
   "blocked_at": "2026-10-13T08:30:08Z",
   "branch": "custosz/super-1200-implementation-20261007",
   "certified": false,
   "current_checkpoint": "D03_FUNCTIONALLY_CLOSED",
-  "diagnostic": "Reconciliation blocked dispatch: the shared SUPER1200 worker synthesizes generic wrapper code and tests while marking capabilities EVIDENCED; D04 maps to the dispatcher itself and would recursively invoke it. The D03 checkpoint is a historical reported state, not independently validated.",
+  "diagnostic": "Reconciliation 2026-10-13: the synthetic whole-domain materializer has been disabled and the active executor map remains empty. D04 now has additional behavior-level provenance primitives/tests, but no reviewed task-level executor is registered. MetaOS is still rejected by the recorded standard WASM validation and is missing from the candidate branch at the expected path. No material dispatch is authorized.",
   "dispatch_error": "DISPATCH_DENIED_BY_CHECKPOINT_RECONCILIATION_20261013",
   "dispatch_requested_at": null,
   "g23": "BLOCKED_UNTIL_INDEPENDENT_VALIDATION",
@@ -21,5 +21,8 @@
   "terminal": false,
   "transition_id": "D03-CHECKPOINT-TO-D04-001",
   "checkpoint_assessment": "REPORTED_FUNCTIONAL_CLOSURE_NOT_INDEPENDENTLY_VALIDATED",
-  "reconciled_at_utc": "2026-10-13T08:30:08Z"
+  "reconciled_at_utc": "2026-10-13T18:45:00Z",
+  "previous_block_reason": "UNTRUSTED_SYNTHETIC_WORKER_AND_D04_SELF_RECURSION",
+  "previous_diagnostic": "Reconciliation blocked dispatch: the shared SUPER1200 worker synthesizes generic wrapper code and tests while marking capabilities EVIDENCED; D04 maps to the dispatcher itself and would recursively invoke it. The D03 checkpoint is a historical reported state, not independently validated.",
+  "reconciliation_record": "continuity/SUPER1200_BLOCKER_RECONCILIATION_20261013_001.json"
 }
