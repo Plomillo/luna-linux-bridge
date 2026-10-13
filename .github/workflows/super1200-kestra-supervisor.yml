@@ -39,7 +39,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           KESTRA_ADMIN_USER="super1200-ephemeral@example.com"
-          KESTRA_ADMIN_PASSWORD="$(openssl rand -hex 32)"
+          KESTRA_ADMIN_PASSWORD="K$(openssl rand -hex 24)a9!"
           echo "::add-mask::$KESTRA_ADMIN_PASSWORD"
           CONFIG_PATH="$RUNNER_TEMP/super1200-kestra-config.yml"
           cat > "$CONFIG_PATH" <<EOF
@@ -61,15 +61,20 @@ jobs:
             -e GITHUB_TOKEN \
             -v "$CONFIG_PATH:/tmp/super1200-kestra-config.yml:ro" \
             kestra/kestra:v2.0.3-slim server local --config /tmp/super1200-kestra-config.yml
-          for n in $(seq 1 90); do
-            if curl -fsS -u "$KESTRA_ADMIN_USER:$KESTRA_ADMIN_PASSWORD" \
-                 http://localhost:8080/api/v1/main/flows >/dev/null 2>&1; then
+          for n in $(seq 1 60); do
+            http_code="$(curl --connect-timeout 2 --max-time 3 -sS -o /dev/null -w '%{http_code}' \
+              -u "$KESTRA_ADMIN_USER:$KESTRA_ADMIN_PASSWORD" \
+              http://localhost:8080/api/v1/main/flows || true)"
+            if [ "$http_code" = "200" ]; then
               echo "SUPER1200_KESTRA_RUNTIME=READY image=kestra/kestra:v2.0.3-slim auth=EPHEMERAL_BASIC placement=GITHUB_HOSTED_EPHEMERAL"
               exit 0
             fi
             if ! docker ps --format '{{.Names}}' | grep -qx kestra-super1200; then
               docker logs kestra-super1200 || true
               exit 1
+            fi
+            if [ $((n % 10)) -eq 0 ]; then
+              echo "SUPER1200_KESTRA_RUNTIME=WAITING poll=$n http_status=\${http_code:-NO_RESPONSE}"
             fi
             sleep 2
           done
