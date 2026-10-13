@@ -1,0 +1,89 @@
+name: SUPER1200 - continuous state audit
+
+on:
+  push:
+    branches:
+      - custosz/super-1200-implementation-20261007
+    paths:
+      - "continuity/**"
+      - "implementation/super1200/**"
+      - "artifacts/custosz-v7/**"
+      - "integrations/kestra/flows/10-super1200-continuity.yml"
+      - "continuity/SUPER1200_CONTINUOUS_AUTOMATION_CONTRACT.md"
+      - ".github/workflows/super1200-continuous-audit.yml"
+  workflow_dispatch:
+  schedule:
+    - cron: "17 */12 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: super1200-continuous-audit
+  cancel-in-progress: false
+
+jobs:
+  audit-state:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout candidate branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: custosz/super-1200-implementation-20261007
+          fetch-depth: 1
+
+      - name: Audit checkpoint, executor, evidence and gates
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import json, os, hashlib
+          from pathlib import Path
+          root=Path('.')
+          def load(p):
+              return json.loads((root/p).read_text(encoding='utf-8'))
+          state=load('continuity/STATE.json')
+          executors=load('continuity/EXECUTORS.json')
+          registry_path=root/'implementation/super1200/registry/capabilities.json'
+          registry=load('implementation/super1200/registry/capabilities.json') if registry_path.exists() else {}
+          metaos=root/'artifacts/custosz-v7/MetaOS.wasm'
+          metaos_hash=hashlib.sha256(metaos.read_bytes()).hexdigest() if metaos.is_file() else None
+          evidenced=sum(1 for x in registry.get('items', []) if x.get('implementation_state')=='EVIDENCED')
+          g23=state.get('g23','NOT_RECORDED')
+          g24=state.get('g24','NOT_RECORDED')
+          executor_map=executors.get('executors', {})
+          next_point=state.get('next_point')
+          next_executor=executor_map.get(next_point) if next_point else None
+          blockers=[]
+          if state.get('blocked') is not False: blockers.append('CHECKPOINT_BLOCKED')
+          if not next_executor: blockers.append('NEXT_EXECUTOR_NOT_REGISTERED')
+          if next_executor == 'continuity/super1200_continuation_worker.py': blockers.append('RECURSIVE_DISPATCHER_MAPPING')
+          if not metaos.is_file(): blockers.append('METAOS_ARTIFACT_MISSING')
+          if state.get('material_worker_ready') is not True: blockers.append('MATERIAL_WORKER_NOT_READY')
+          if state.get('metaos_ready') is not True: blockers.append('METAOS_NOT_VALIDATED')
+          sha=os.environ['GITHUB_SHA']
+          outcome='BLOCKED' if blockers else 'READY_FOR_REVIEW'
+          print(f'SUPER1200_TELEMETRY outcome={outcome} commit={sha}')
+          print(f'SUPER1200_TELEMETRY checkpoint={state.get("current_checkpoint")} next={next_point}')
+          print(f'SUPER1200_TELEMETRY capabilities_marked_evidenced_count_only={evidenced} g23={g23} g24={g24}')
+          print(f'SUPER1200_TELEMETRY metaos_sha256={metaos_hash or "MISSING"}')
+          print(f'SUPER1200_TELEMETRY blockers={",".join(blockers) if blockers else "NONE"}')
+          summary=[
+            '# SUPER1200 continuous state audit',
+            '',
+            f'- Candidate SHA: `{sha}`',
+            f'- Outcome: **{outcome}**',
+            f'- Checkpoint: `{state.get("current_checkpoint")}`',
+            f'- Next point: `{next_point}`',
+            f'- Registry records marked EVIDENCED (count only; not independent proof): {evidenced}',
+            f'- MetaOS SHA-256: `{metaos_hash or "MISSING"}`',
+            f'- G23: `{g23}`',
+            f'- G24: `{g24}`',
+            f'- Blockers: {", ".join(blockers) if blockers else "none detected by this static audit"}',
+            '',
+            'Read-only audit only: no worker execution, state mutation, certification, or promotion.'
+          ]
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a',encoding='utf-8') as f:
+              f.write('\\n'.join(summary)+'\\n')
+          PY
