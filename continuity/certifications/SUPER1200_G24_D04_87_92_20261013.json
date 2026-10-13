@@ -1,0 +1,48 @@
+{
+  "schema": "SUPER1200_SCOPED_CERTIFICATION_RECORD/1",
+  "scope": "D04:87-92",
+  "status": "CERTIFIED_FOR_EXACT_SCOPE_ONLY",
+  "g23": {
+    "status": "PASS",
+    "workflow_run_id": 38469627450,
+    "job_id": 115545024192,
+    "artifact_id": 11851301885,
+    "url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38469627450/artifacts/11851301885"
+  },
+  "g24": {
+    "status": "PASS",
+    "workflow_run_id": 38469627450,
+    "job_id": 115545150513,
+    "artifact_id": 11851341854,
+    "url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38469627450/artifacts/11851341854"
+  },
+  "material_run": {
+    "status": "SUCCESS",
+    "workflow_run_id": 38469403143,
+    "url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38469403143",
+    "commit": "c249afb35f1486a27c14d8ccc3f2000da4cb8f6c",
+    "capabilities": [
+      87,
+      88,
+      89,
+      90,
+      91,
+      92
+    ],
+    "behavior_tests": "16/16 PASS"
+  },
+  "continuous_run": {
+    "status": "IN_PROGRESS",
+    "workflow_run_id": 38469912731,
+    "url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38469912731",
+    "requested_runtime_hours": 12
+  },
+  "metaos": "DEFERRED_BY_USER",
+  "global_super1200_certified": false,
+  "certification_propagation": false,
+  "g23_g24_automation": "scheduled_every_15_minutes_and_on_scoped_material_changes",
+  "limitations": [
+    "CUSTOSZ mission_start reported executor=UNBOUND_MEDIATED_OR_LOCAL; the registered task-specific D04 executor nevertheless ran and persisted material changes.",
+    "The successful 38469403143 run was a short material tranche; the separate 12-hour run is 38469912731 and remains in progress."
+  ]
+}
