@@ -3,19 +3,19 @@
   "active_worker": false,
   "block_reason": "NEXT_D04_TRANCHE_EXECUTOR_NOT_REGISTERED",
   "blocked": true,
-  "blocked_at": "2026-10-13T23:51:40.371406+00:00",
+  "blocked_at": "2026-10-13T23:53:19.894185+00:00",
   "branch": "custosz/super-1200-implementation-20261007",
   "certified": false,
   "current_checkpoint": "D04_105_108_MATERIALIZED",
-  "diagnostic": "D04 capabilities 105-108 were materially implemented in the registered D04 policy-governance functions with individual tests and hash-bound evidence. Continuation is fail-closed until current-source G23/G24 and a reviewed executor for the next tranche are available. The existing D04 93-104 scoped certificates remain source-bound to the unchanged D04_runtime.py and test_d04_runtime.py. MetaOS remains deferred.",
+  "diagnostic": "D04 capabilities 105-108 passed current-source G23 and G24 for that exact scope. Continuation is held fail-closed until an executor for D04 109-112 is registered. Global SUPER1200 certification remains NOT_CERTIFIED.",
   "dispatch_error": "DISPATCH_DENIED_BY_CHECKPOINT_RECONCILIATION_20261013",
   "dispatch_requested_at": "2026-10-13T21:14:39.496Z",
-  "g23": "PENDING_FOR_SCOPE_D04_105_108",
-  "g24": "PENDING_G23",
+  "g23": "PASS_FOR_SCOPE_D04_105_108",
+  "g24": "PASS_FOR_SCOPE_D04_105_108",
   "mission_id": "SUPER1200-CONTINUATION-20261007",
   "next_point": "D04",
   "next_worker": "CUSTOSZ_V7",
-  "recovery_note": "Run scoped G23/G24 for D04 105-108 using the current D04 runtime and test hashes. Do not propagate scoped certification. Register and review an executor for D04 109-112 only after gates pass.",
+  "recovery_note": "Register and review a task-specific D04 109-112 executor; require prior-scope G23/G24 verification, hash-bound per-capability evidence, independent validation and a new scoped certification. Do not propagate certification.",
   "schema": "SUPER1200_CONTINUITY_STATE/1.0",
   "status": "BLOCKED",
   "terminal": false,
@@ -61,8 +61,8 @@
     ],
     "behavior_tests": "BASE_D04_SUITE_PASS;POLICY_GOVERNANCE_SUITE_PASS;4_OF_4_CAPABILITY_TESTS_PASS",
     "executor": "implementation/super1200/runtime/d04_material_worker_105_108.py",
-    "g23": "PENDING",
-    "g24": "PENDING_G23",
+    "g23": "PASS_FOR_SCOPE_D04_105_108",
+    "g24": "PASS_FOR_SCOPE_D04_105_108",
     "global_certification_status": "NOT_CERTIFIED"
   },
   "execution_history": [
@@ -151,19 +151,19 @@
     "module_sha256": "591082428db8a61946e78341df2e086785d8d0d49f20cf632a4b3a4501139940",
     "test_sha256": "8c32455a51ccf1c4d81309e15d18261e537f85a50f63ac74ac063e5466064e13",
     "github_actions_run_id": "38486725899",
-    "g23": "PENDING",
-    "g24": "PENDING",
+    "g23": "PASS_FOR_SCOPE_D04_105_108",
+    "g24": "PASS_FOR_SCOPE_D04_105_108",
     "certification_granted": false,
     "completed_at_utc": "2026-10-13T23:51:40.371406+00:00"
   },
   "independent_validation": {
-    "scope": "D04_CAPABILITIES_101_104_ONLY",
-    "scope_key": "D04:101-104",
+    "scope": "D04_CAPABILITIES_105_108_ONLY",
+    "scope_key": "D04:105-108",
     "status": "PASS",
-    "workflow_run_id": "38486180141",
-    "record_path": "continuity/independent-validation/D04_101_104.json",
-    "g23": "PASS_FOR_SCOPE_D04_101_104",
-    "g24": "PASS_FOR_SCOPE_D04_101_104",
+    "workflow_run_id": "38486914042",
+    "record_path": "continuity/independent-validation/D04_105_108.json",
+    "g23": "PASS_FOR_SCOPE_D04_105_108",
+    "g24": "PASS_FOR_SCOPE_D04_105_108",
     "certification_granted": false
   },
   "evidence_refresh": {
@@ -180,10 +180,10 @@
     "certification_granted": false
   },
   "scoped_certification": {
-    "scope": "D04:101-104",
+    "scope": "D04:105-108",
     "status": "PASS",
-    "record_path": "continuity/certification/D04_101_104.json",
-    "workflow_run_id": "38486180141",
+    "record_path": "continuity/certification/D04_105_108.json",
+    "workflow_run_id": "38486914042",
     "certification_granted": true,
     "global_certification_granted": false
   },
@@ -224,6 +224,14 @@
       "status": "PASS",
       "record_path": "continuity/certification/D04_101_104.json",
       "workflow_run_id": "38486180141",
+      "certification_granted": true,
+      "global_certification_granted": false
+    },
+    "D04:105-108": {
+      "scope": "D04:105-108",
+      "status": "PASS",
+      "record_path": "continuity/certification/D04_105_108.json",
+      "workflow_run_id": "38486914042",
       "certification_granted": true,
       "global_certification_granted": false
     }
