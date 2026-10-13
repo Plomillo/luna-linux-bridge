@@ -1,0 +1,253 @@
+name: PUAC-2 autonomous G23/G24 evidence chain
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/**"
+      - "tests/**"
+      - "bridge/**"
+      - "louksna/**"
+      - "debian/**"
+      - "packaging/**"
+      - "docs/**"
+      - ".github/workflows/puac2-autonomous.yml"
+  push:
+    branches: [main]
+    paths:
+      - "scripts/**"
+      - "tests/**"
+      - "bridge/**"
+      - "louksna/**"
+      - "debian/**"
+      - "packaging/**"
+      - "docs/**"
+      - ".github/workflows/puac2-autonomous.yml"
+  schedule:
+    - cron: "17 * * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: puac2-autonomous-\${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  source_validation:
+    name: Source and regression validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      candidate: \${{ steps.identity.outputs.candidate }}
+      tests_sha256: \${{ steps.tests.outputs.sha256 }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run regression suite and record machine-readable evidence
+        id: tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check pytest cryptography
+          python -m py_compile scripts/puac2_mtls_gate.py tests/test_puac2_mtls_gate.py
+          mkdir -p out
+          set +e
+          python -m pytest -q tests/test_puac2_mtls_gate.py | tee out/tests.txt
+          result=\${PIPESTATUS[0]}
+          set -e
+          if [ "$result" -ne 0 ]; then
+            echo "::error::Regression suite failed; no G23/G24 certification can occur."
+            exit "$result"
+          fi
+          sha=$(sha256sum out/tests.txt | cut -d' ' -f1)
+          echo "sha256=$sha" >> "$GITHUB_OUTPUT"
+          printf '{"schema":"PUAC2_TEST_REPORT/1.0","candidate_commit":"%s","status":"PASS","report_sha256":"%s"}\n' "$GITHUB_SHA" "$sha" > out/tests.json
+      - name: Bind evidence to exact commit
+        id: identity
+        run: |
+          echo "candidate=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+          git status --short
+      - uses: actions/upload-artifact@v4
+        with:
+          name: puac2-source-evidence
+          path: out/
+          if-no-files-found: error
+          retention-days: 30
+
+  host_validation:
+    name: Real host mTLS and rollback evidence
+    needs: source_validation
+    # This job intentionally fails closed until the dedicated target-host runner is provisioned.
+    runs-on: [self-hosted, linux, louksna-mtls-host]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Require real target configuration and service
+        shell: bash
+        run: |
+          set -euo pipefail
+          cfg=/etc/louksna/remote-bridge/mtls.json
+          test -r "$cfg" || { echo "::error::Missing trusted host config: $cfg"; exit 3; }
+          systemctl is-active --quiet louksna-remote-bridge.service
+      - name: Perform authenticated mTLS handshake
+        env:
+          CLIENT_CERT: \${{ vars.PUAC2_MTLS_CLIENT_CERT }}
+          CLIENT_KEY: \${{ vars.PUAC2_MTLS_CLIENT_KEY }}
+          CA_CERT: \${{ vars.PUAC2_MTLS_CA_CERT }}
+        run: |
+          set -euo pipefail
+          test -r "$CLIENT_CERT" && test -r "$CLIENT_KEY" && test -r "$CA_CERT"
+          timeout 10 openssl s_client -connect 127.0.0.1:8443 -cert "$CLIENT_CERT" -key "$CLIENT_KEY" -CAfile "$CA_CERT" -verify_return_error -brief </dev/null
+      - name: Require actual host-test and rollback reports
+        env:
+          HOST_TEST_REPORT: \${{ vars.PUAC2_HOST_TEST_REPORT }}
+          ROLLBACK_REPORT: \${{ vars.PUAC2_ROLLBACK_TEST_REPORT }}
+        run: |
+          set -euo pipefail
+          test -n "$HOST_TEST_REPORT" && test -r "$HOST_TEST_REPORT"
+          test -n "$ROLLBACK_REPORT" && test -r "$ROLLBACK_REPORT"
+          mkdir -p out
+          cp "$HOST_TEST_REPORT" out/host-tests.report
+          cp "$ROLLBACK_REPORT" out/rollback.report
+          sha256sum out/host-tests.report out/rollback.report > out/host-hashes.txt
+          printf '{"schema":"PUAC2_HOST_EVIDENCE/1.0","candidate_commit":"%s","mtls":"PASS","rollback_report_present":true}\n' "$GITHUB_SHA" > out/host.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: puac2-host-evidence
+          path: out/
+          if-no-files-found: error
+          retention-days: 30
+
+  g23_independent_validation:
+    name: G23 — independent evidence recomputation and signed attestation
+    needs: [source_validation, host_validation]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Download evidence from source and target-host jobs
+        uses: actions/download-artifact@v4
+        with:
+          pattern: puac2-*-evidence
+          path: evidence-input
+          merge-multiple: false
+      - name: Independently rerun tests and validate host evidence
+        env:
+          G23_SIGNING_PRIVATE_KEY_PEM: \${{ secrets.PUAC2_G23_SIGNING_PRIVATE_KEY_PEM }}
+          G23_VALIDATOR_ID: \${{ vars.PUAC2_G23_VALIDATOR_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$G23_SIGNING_PRIVATE_KEY_PEM" || { echo "::error::G23 signing identity is not provisioned."; exit 3; }
+          test -n "$G23_VALIDATOR_ID" || { echo "::error::G23 validator identity is not provisioned."; exit 3; }
+          test -f evidence-input/puac2-source-evidence/tests.txt
+          test -f evidence-input/puac2-host-evidence/host.json
+          test -f evidence-input/puac2-host-evidence/host-hashes.txt
+          python -m pip install --disable-pip-version-check pytest cryptography
+          python -m pytest -q tests/test_puac2_mtls_gate.py
+          python - <<'PY'
+          import base64, hashlib, json, os
+          from datetime import datetime, timezone
+          from pathlib import Path
+          from cryptography.hazmat.primitives import serialization
+          root = Path("evidence-input")
+          tests = (root / "puac2-source-evidence/tests.txt").read_bytes()
+          host = json.loads((root / "puac2-host-evidence/host.json").read_text())
+          hashes = (root / "puac2-host-evidence/host-hashes.txt").read_bytes()
+          candidate = os.environ["GITHUB_SHA"]
+          if host.get("candidate_commit") != candidate or host.get("mtls") != "PASS" or host.get("rollback_report_present") is not True:
+              raise SystemExit("G23_HOST_EVIDENCE_INVALID")
+          bundle = {"candidate_commit": candidate, "tests_sha256": hashlib.sha256(tests).hexdigest(),
+                    "host_json_sha256": hashlib.sha256((root / "puac2-host-evidence/host.json").read_bytes()).hexdigest(),
+                    "host_reports_hashes_sha256": hashlib.sha256(hashes).hexdigest()}
+          payload = {"schema":"PUAC2_G23_ATTESTATION/1.0","status":"PASS","validator_id":os.environ["G23_VALIDATOR_ID"],
+                     "candidate_commit":candidate,"evidence_bundle_sha256":hashlib.sha256(json.dumps(bundle,sort_keys=True,separators=(",",":")).encode()).hexdigest(),
+                     "decision_utc":datetime.now(timezone.utc).isoformat()}
+          key = serialization.load_pem_private_key(os.environ["G23_SIGNING_PRIVATE_KEY_PEM"].encode(), password=None)
+          sig = base64.b64encode(key.sign(json.dumps(payload,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode())).decode()
+          out = {"payload":payload,"signature_b64":sig,"bundle":bundle}
+          Path("g23-attestation.json").write_text(json.dumps(out,sort_keys=True,indent=2)+"\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: puac2-g23-attestation
+          path: g23-attestation.json
+          if-no-files-found: error
+          retention-days: 90
+
+  g24_certification:
+    name: G24 — separate policy verification and signed decision
+    needs: [source_validation, host_validation, g23_independent_validation]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@v4
+        with:
+          name: puac2-g23-attestation
+          path: incoming
+      - name: Verify G23 cryptographically and issue G24 decision only under a distinct identity
+        env:
+          G23_PUBLIC_KEY_PEM: \${{ vars.PUAC2_G23_PUBLIC_KEY_PEM }}
+          G24_SIGNING_PRIVATE_KEY_PEM: \${{ secrets.PUAC2_G24_SIGNING_PRIVATE_KEY_PEM }}
+          G23_VALIDATOR_ID: \${{ vars.PUAC2_G23_VALIDATOR_ID }}
+          G24_CERTIFIER_ID: \${{ vars.PUAC2_G24_CERTIFIER_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$G23_PUBLIC_KEY_PEM" || { echo "::error::Trusted G23 public key is not provisioned."; exit 3; }
+          test -n "$G24_SIGNING_PRIVATE_KEY_PEM" || { echo "::error::G24 signing identity is not provisioned."; exit 3; }
+          test -n "$G23_VALIDATOR_ID" && test -n "$G24_CERTIFIER_ID"
+          test "$G23_VALIDATOR_ID" != "$G24_CERTIFIER_ID" || { echo "::error::G23 and G24 identities must be distinct."; exit 3; }
+          python -m pip install --disable-pip-version-check cryptography
+          python - <<'PY'
+          import base64, hashlib, json, os
+          from datetime import datetime, timezone
+          from pathlib import Path
+          from cryptography.hazmat.primitives import serialization
+          from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+          def canonical(o): return json.dumps(o,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()
+          doc = json.loads(Path("incoming/g23-attestation.json").read_text())
+          p, sig = doc["payload"], doc["signature_b64"]
+          pub = serialization.load_pem_public_key(os.environ["G23_PUBLIC_KEY_PEM"].encode())
+          if not isinstance(pub, Ed25519PublicKey): raise SystemExit("G23_PUBLIC_KEY_NOT_ED25519")
+          pub.verify(base64.b64decode(sig,validate=True), canonical(p))
+          if p.get("schema") != "PUAC2_G23_ATTESTATION/1.0" or p.get("status") != "PASS": raise SystemExit("G23_NOT_PASS")
+          if p.get("candidate_commit") != os.environ["GITHUB_SHA"]: raise SystemExit("G23_CANDIDATE_MISMATCH")
+          if p.get("validator_id") != os.environ["G23_VALIDATOR_ID"]: raise SystemExit("G23_IDENTITY_MISMATCH")
+          if os.environ["G24_CERTIFIER_ID"] in ("",p.get("validator_id")): raise SystemExit("G24_IDENTITY_NOT_DISTINCT")
+          g23_hash = hashlib.sha256(canonical(p)).hexdigest()
+          payload = {"schema":"PUAC2_G24_CERTIFICATION/1.0","status":"CERTIFIED","certifier_id":os.environ["G24_CERTIFIER_ID"],
+                     "candidate_commit":os.environ["GITHUB_SHA"],"g23_attestation_sha256":g23_hash,
+                     "decision_utc":datetime.now(timezone.utc).isoformat()}
+          key = serialization.load_pem_private_key(os.environ["G24_SIGNING_PRIVATE_KEY_PEM"].encode(), password=None)
+          signature = base64.b64encode(key.sign(canonical(payload))).decode()
+          Path("g24-certification.json").write_text(json.dumps({"payload":payload,"signature_b64":signature},sort_keys=True,indent=2)+"\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: puac2-g24-certification
+          path: g24-certification.json
+          if-no-files-found: error
+          retention-days: 90
