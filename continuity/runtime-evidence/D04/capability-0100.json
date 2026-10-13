@@ -1,0 +1,40 @@
+{
+  "canonical_name": "DUAL_LEDGER",
+  "capability_id": 100,
+  "certification_granted": false,
+  "evidence_sha256": "3f2107c4fc3a5671fc045f33c48d5d1e24176bac14639405bab1a517de1c6d4c",
+  "executor": "implementation/super1200/runtime/d04_material_worker_97_100.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "github_actions_run_id": "38484906791",
+  "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+  "module_sha256": "abc9c8d922e3ff56f4cdf636da99e146d95e7a15ac5608004f81398d8b4a58f0",
+  "prior_scope_certificate": "continuity/certification/D04_93_96.json",
+  "schema": "SUPER1200_D04_MATERIAL_EVIDENCE/1",
+  "selected_test_result": {
+    "exit_code": 0,
+    "result": "PASS",
+    "single_test_run_confirmed": true,
+    "stderr_sha256": "e7820bc6d15734fd5e136b3bff396bde8d430ee807c89f576fa7e8e73697cafe",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "test_case": "test_dual_ledger_cross_references_without_conflation",
+    "test_name_seen": true,
+    "unittest_ok_marker": true
+  },
+  "status": "PASS",
+  "suite_exit_code": 0,
+  "suite_stderr_sha256": "a76c493838d6510a4be6e269137a4b30e3203e6e12245200dabd603428f830a2",
+  "suite_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "test_artifact": "implementation/super1200/tests/test_d04_runtime.py",
+  "test_case": "test_dual_ledger_cross_references_without_conflation",
+  "test_invocation": [
+    "python",
+    "-B",
+    "test_d04_runtime.py",
+    "-v",
+    "D04RuntimeTests.test_dual_ledger_cross_references_without_conflation"
+  ],
+  "test_sha256": "6d638e4627cf5542ea1b611a0870aee5d22154923c0e47cef1eb44f4c55b685b",
+  "validated_at_utc": "2026-10-13T23:33:15.012434+00:00",
+  "worker_started_at_utc": "2026-10-13T23:33:14.549423+00:00"
+}

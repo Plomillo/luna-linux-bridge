@@ -1435,12 +1435,14 @@
       "canonical_name": "EVIDENCE_MINIMAL_RECOMPUTATION",
       "capability_id": 97,
       "hardening": "recompute transitive invalidated subset and document why unaffected evidence remains valid",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+PER_CAPABILITY_TEST+FULL_SUITE+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "OPTIMIZATION_ENGINE",
-      "wire": "95,96,181,182,841"
+      "wire": "95,96,181,182,841",
+      "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_runtime.py"
     },
     {
       "acquire": "NONE",
@@ -1448,12 +1450,14 @@
       "canonical_name": "ATTESTATION_POLICY_ENGINE",
       "capability_id": 98,
       "hardening": "per-gate acceptable issuer, subject, predicate, freshness and verification rules",
-      "implementation_state": "DECLARED",
-      "materialization": "SCHEMA+CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+PER_CAPABILITY_TEST+FULL_SUITE+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "POLICY_ENGINE",
-      "wire": "85..93,101,109"
+      "wire": "85..93,101,109",
+      "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_runtime.py"
     },
     {
       "acquire": "NONE",
@@ -1461,12 +1465,14 @@
       "canonical_name": "TRANSPARENCY_LOG_INTERNAL",
       "capability_id": 99,
       "hardening": "hash-chain, sequence, actor, causal parents, immutable corrections and anchoring hooks",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE+SCHEMA",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+PER_CAPABILITY_TEST+FULL_SUITE+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "APPEND_ONLY_LEDGER",
-      "wire": "19,82,89,100,477"
+      "wire": "19,82,89,100,477",
+      "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_runtime.py"
     },
     {
       "acquire": "NONE",
@@ -1474,12 +1480,14 @@
       "canonical_name": "DUAL_LEDGER",
       "capability_id": 100,
       "hardening": "separate operational evidence from cryptographic transparency, cross-reference without conflation",
-      "implementation_state": "DECLARED",
-      "materialization": "COMPOSE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+PER_CAPABILITY_TEST+FULL_SUITE+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "LEDGER_ARCHITECTURE",
-      "wire": "19,99,869"
+      "wire": "19,99,869",
+      "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_runtime.py"
     },
     {
       "acquire": "policy engine optional",

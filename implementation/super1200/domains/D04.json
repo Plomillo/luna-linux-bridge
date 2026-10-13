@@ -112,26 +112,38 @@
     {
       "canonical_name": "EVIDENCE_MINIMAL_RECOMPUTATION",
       "capability_id": 97,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_runtime.py",
+      "materialization": "CODE+PER_CAPABILITY_TEST+FULL_SUITE+HASH_BOUND_EVIDENCE"
     },
     {
       "canonical_name": "ATTESTATION_POLICY_ENGINE",
       "capability_id": 98,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_runtime.py",
+      "materialization": "CODE+PER_CAPABILITY_TEST+FULL_SUITE+HASH_BOUND_EVIDENCE"
     },
     {
       "canonical_name": "TRANSPARENCY_LOG_INTERNAL",
       "capability_id": 99,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_runtime.py",
+      "materialization": "CODE+PER_CAPABILITY_TEST+FULL_SUITE+HASH_BOUND_EVIDENCE"
     },
     {
       "canonical_name": "DUAL_LEDGER",
       "capability_id": 100,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_runtime.py",
+      "materialization": "CODE+PER_CAPABILITY_TEST+FULL_SUITE+HASH_BOUND_EVIDENCE"
     },
     {
       "canonical_name": "POLICY_AS_CODE",
