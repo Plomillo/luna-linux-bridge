@@ -68,15 +68,17 @@ Requisitos: Docker Engine y Docker Compose v2. Ejecuta los comandos desde la ra�
 
 La eliminación de volúmenes borra estado y datos persistentes. No uses docker compose down --volumes como acción rutinaria.
 
-## Prueba funcional manual
+## Prueba funcional automatizada
 
-flows/00-smoke-test.yml contiene una tarea de log sin side effects externos. No se carga ni se ejecuta automáticamente. Tras iniciar sesión, importa el YAML en la interfaz de Kestra y ejecútalo manualmente; verifica que la ejecución termina correctamente. Esta prueba manual no equivale a certificar el motor ni a demostrar aislamiento para scripts.
+El workflow `.github/workflows/kestra-oss-smoke.yml` importa `flows/00-smoke-test.yml` mediante la API autenticada de Kestra, ejecuta el flujo y exige que la ejecución llegue al estado terminal `SUCCESS`. El flujo solo emite un mensaje de log y no realiza efectos externos. La ejecución funcional fue verificada en el run `38369065971`; sus evidencias están en el artefacto `kestra-oss-smoke-38369065971`. Cada prueba utiliza una instancia efímera y destruye los contenedores y volúmenes al finalizar. Esto no mantiene Kestra encendido ni equivale a certificar el motor, validar de forma independiente G23 o conceder G24.
+
+La prueba automatizada valida el flujo de humo en CI. Una prueba manual de interacción por la interfaz de Kestra sigue siendo distinta y no está registrada como realizada.
 
 ## Límites de seguridad deliberados
 
 - Los puertos UI y management están ligados a loopback. El endpoint de management usa `endpoints.all.basic-auth` y requiere credenciales; el mapeo a 127.0.0.1:18081 no debe cambiarse a 0.0.0.0.
 - No se monta /var/run/docker.sock del anfitrión. No se conceden tokens de GitHub, secretos de producción ni conexión automática al repositorio.
-- No hay sincronización GitOps, importación automática de flujos, autorreparación, commit, push, merge ni promoción a main.
+- No hay sincronización GitOps ni importación automática de flujos en un despliegue persistente. La única importación automatizada autorizada en esta fase es el flujo de humo log-only dentro del CI efímero. No hay autorreparación, commit, push, merge ni promoción a main desde Kestra.
 - Los scripts con el runner Process se ejecutan como procesos locales con los permisos y el entorno del worker; no tienen aislamiento de contenedor. Por eso el validador bloquea flujos de scripting en esta fase. La ejecución de código confiable en un runner dedicado y aislado es una siguiente fase, no una garantía de esta instalación.
 - Docker Compose configura persistencia para Kestra y PostgreSQL. Esto no constituye backup probado ni recuperación ante desastre.
 - Las credenciales de .env se protegen frente a commit accidental, pero no frente a otros usuarios o procesos con acceso al anfitrión.
@@ -84,9 +86,11 @@ flows/00-smoke-test.yml contiene una tarea de log sin side effects externos. No 
 
 ## Evidencia y puertas
 
-El workflow .github/workflows/kestra-oss-smoke.yml ejecuta validación estática, docker compose config, descarga de imágenes y un smoke test de salud que exige Kestra y JDBC en estado UP. Adjunta un artefacto de evidencia con SHA-256 de archivos, referencias/digests resueltos, estado de salud y logs de arranque. Las credenciales de prueba son efímeras y no se incluyen en el artefacto.
+El workflow `.github/workflows/kestra-oss-smoke.yml` valida la configuración, arranca Kestra/PostgreSQL, comprueba salud autenticada, importa y ejecuta el flujo log-only, conserva evidencias no secretas y destruye el entorno temporal. La última comprobación funcional registrada es el run `38369065971`; el artefacto `11798671287` contiene las evidencias y está retenido hasta el 12 de noviembre de 2026. Las credenciales de CI son aleatorias, efímeras y no se incluyen en el artefacto.
 
-No se afirma que el flow manual se haya ejecutado, que la ejecución de scripts sea segura ni que G23/G24 hayan sido superadas. La instalación permanece CANDIDATE_NOT_CERTIFIED hasta obtener evidencia, hacer una revisión independiente y autorizar expresamente cada puerta.
+El workflow de Kestra se ejecuta automáticamente ante cambios relevantes en esta rama; no está configurado como servicio permanente ni como ejecución nocturna. GitHub Actions solo admite eventos programados desde la rama predeterminada, por lo que no se ha añadido un `schedule` que aparentaría funcionar desde esta rama candidata. `main` no se ha modificado.
+
+La prueba de humo no habilita ejecución arbitraria de scripts, no implica validación independiente G23 ni certificación G24. La integración sigue `CANDIDATE_NOT_CERTIFIED`; activación y promoción continúan prohibidas hasta que se cumplan y autoricen las puertas correspondientes.
 
 ## Rollback
 
