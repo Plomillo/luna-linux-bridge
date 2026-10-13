@@ -51,10 +51,20 @@
     "g23": "BLOCKED_UNTIL_INDEPENDENT_VALIDATION",
     "g24": "BLOCKED_UNTIL_G23",
     "custosz_v7": "Runtime package present; mission API supervises time/state and reports executor UNBOUND_MEDIATED_OR_LOCAL; arbitrary_execution=false",
-    "metaos": "MetaOS.wasm exists in the CUSTOSZ staging branch but is not bound into the active continuation workflow",
+    "metaos": "MetaOS.wasm exists in the CUSTOSZ staging branch but is not bound into the active continuation workflow. The staging manifest marks all artifacts STAGED_PENDING_VALIDATION and EJECUCION_AUTOMATICA=DESHABILITADA; standard WebAssembly.Module validation rejected the file header/version, so MetaOS was not executed.",
     "worker_execution": "NOT_STARTED",
     "certification": "NOT_GRANTED",
-    "promotion_to_main": "NOT_PERFORMED"
+    "promotion_to_main": "NOT_PERFORMED",
+    "metaos_validation": {
+      "standard_webassembly_runtime": "REJECTED",
+      "observed_file_sha256": "5d8f1239e3a0b452be722078760b000afc22af0a64f93ffb0a1f74024f15aed0",
+      "observed_version_bytes": "0d 00 01 00",
+      "reason": "Node.js WebAssembly.Module raised CompileError: expected version 01 00 00 00, found 0d 00 01 00",
+      "staging_manifest": "artifacts/custosz-v7/MANIFEST_STAGING.md",
+      "manifest_status": "STAGED_PENDING_VALIDATION",
+      "automatic_execution": "DISABLED",
+      "execution_performed": false
+    }
   },
   "independent_ci": {
     "workflow_run_id": 38433452453,
