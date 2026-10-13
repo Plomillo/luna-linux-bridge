@@ -1,0 +1,65 @@
+{
+  "schema": "SUPER1200_CI_VALIDATION/1.0",
+  "record_id": "SUPER1200-CI-VALIDATION-20261013-002",
+  "branch": "custosz/super-1200-implementation-20261007",
+  "workflow_run_id": 38452281179,
+  "workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38452281179",
+  "commit": "815730c536f32b166bac5e20e8a621a051776a16",
+  "outcome": "RECOVERY_EVIDENCE_PASS_METAOS_VALIDATION_FAIL",
+  "metaos": {
+    "source_branch": "staging/custosz-mission-mailbox-20260928",
+    "path": "artifacts/custosz-v7/MetaOS.wasm",
+    "bytes": 2442,
+    "git_blob_sha": "86124d95a38264019a3f5260cbe4cca3d9cd9e69",
+    "sha256": "5d8f1239e3a0b452be722078760b000afc22af0a64f93ffb0a1f74024f15aed0",
+    "standard_wasm_validation": "FAIL",
+    "error": "WebAssembly.Module(): expected version 01 00 00 00, found 0d 00 01 00 @+4",
+    "wasm_build_source_candidates": "NONE_IN_FETCHED_BRANCHES",
+    "related_source_candidates": [
+      {
+        "path": "implementation/super1200/runtime/metaos_policy.py",
+        "git_blob_sha": "35054c649614bcc077092c89c6c808f92c0c25f2",
+        "classification": "RELATED_POLICY_HELPER_NOT_WASM_BUILD_SOURCE",
+        "note": "Four-line policy helper; does not provide the source/build recipe or establish semantic equivalence for the rejected WASM artifact."
+      }
+    ],
+    "lineage": "The same MetaOS.wasm Git blob SHA was found across the fetched repository branches; no alternate valid WASM bytes were identified."
+  },
+  "d04": {
+    "task_scoped_evidence": "PASS",
+    "capabilities_tested": [
+      81,
+      82,
+      83,
+      84,
+      85,
+      86
+    ],
+    "passed": 6,
+    "failed": 0,
+    "full_behavior_test_suite": "PASS",
+    "test_count": 10,
+    "source_sha256": "11891149239b57cd4de624672c42fb798beb073fb7e9bb914f81705c1486c208",
+    "test_sha256": "9466ed8c70c57e6be52db8394adfa81b099778b199134dd772824bc9184eb394",
+    "domain_closed": false,
+    "registry_mutated": false
+  },
+  "mission": {
+    "twelve_hour_material_mission_started": false,
+    "active_material_executor_registered": false,
+    "g23": "BLOCKED",
+    "g24": "BLOCKED",
+    "certification_granted": false
+  },
+  "prior_harness_correction": {
+    "commit": "0614a8bc5a8d453af47468392a2bf98596fd35f5",
+    "note": "An earlier run's validator was wired incorrectly and is explicitly excluded as validation evidence; this record is based on the corrected harness."
+  },
+  "artifact_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38452281179/artifacts",
+  "non_claims": [
+    "No MetaOS repair or binary substitution was performed.",
+    "No material mission was started.",
+    "D04 was not closed; only six existing behaviors were individually tested.",
+    "No G23/G24 validation or certification was performed."
+  ]
+}
