@@ -1,4 +1,4 @@
-name: "SUPER1200 continuation — LOUKSNA Remote Bridge / CUSTOSZ V7"
+name: "SUPER1200 continuation — CUSTOSZ V7 + assigned engine (MetaOS deferred)"
 
 on:
   push:
@@ -19,7 +19,7 @@ concurrency:
 jobs:
   continue:
     runs-on: [self-hosted, Linux, x64, luna-aux]
-    timeout-minutes: 30
+    timeout-minutes: 720
     steps:
       - name: Checkout target work branch
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -178,7 +178,7 @@ jobs:
           goal=('SUPER1200 governed continuation from the validated D01-closed repository state; '\
                 'continue the first still-pending repository domain; preserve D01; no canonical mutation; '\
                 'LOUKSNA Remote Bridge observation only; G23/G24 remain independent.')
-          m=worker.mission_start(1200.0/3600.0,'LUNA_PROJECT',goal,report_minutes=1)
+          m=worker.mission_start(12.0,'LUNA_PROJECT',goal,report_minutes=1)
           t=worker.mission_tick(m['mission_id'])
           print('SUPER1200_TELEMETRY '+str({'event':'CUSTOSZ_MISSION_STARTED','mission_id':m['mission_id'],'executor':m.get('executor'),'heartbeat':t.get('state'),'owner':'REPOSITORY'}),flush=True)
           PY
