@@ -1,4 +1,4 @@
-name: "SUPER1200 — continuous G23/G24 independent gates"
+name: "SUPER1200 — scoped G23/G24 gates for D04 93-96"
 
 on:
   workflow_dispatch:
@@ -13,6 +13,8 @@ on:
       - "implementation/super1200/registry/capabilities.json"
       - "implementation/super1200/domains/D04.json"
       - "continuity/runtime-evidence/D04/**"
+      - "continuity/independent-validation/D04_93_96.json"
+      - ".github/workflows/super1200-g23-g24-continuous.yml"
 
 permissions:
   contents: read
@@ -23,8 +25,8 @@ concurrency:
 
 jobs:
   g23-independent-validation:
-    name: "G23 — independent validation (read-only)"
-    runs-on: ubuntu-latest
+    name: "G23 — independent validation (D04 93-96)"
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     outputs:
       result: ${{ steps.validate.outputs.result }}
@@ -35,70 +37,82 @@ jobs:
         with:
           ref: custosz/super-1200-implementation-20261007
           persist-credentials: false
-      - name: Set up Python
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
-        with:
-          python-version: "3.12"
-      - name: Run independent D04 behavior suite
+      - name: Run independent D04 behavior suite and verify evidence
         id: validate
         shell: bash
         run: |
           set -Eeuo pipefail
-          python implementation/super1200/tests/test_d04_runtime.py
-          python - <<'PY'
+          python3 -B implementation/super1200/tests/test_d04_runtime.py
+          python3 -B - <<'PY'
           import hashlib,json,os
           from pathlib import Path
           root=Path(".")
+          state=json.loads((root/"continuity/STATE.json").read_text())
           reg=json.loads((root/"implementation/super1200/registry/capabilities.json").read_text())
           dom=json.loads((root/"implementation/super1200/domains/D04.json").read_text())
-          ids={87:"GITHUB_ARTIFACT_ATTESTATION_PROVIDER",88:"SIGSTORE_PROVIDER",89:"REKOR_TRANSPARENCY_PROVIDER",90:"SPDX_PROVIDER",91:"CYCLONEDX_PROVIDER",92:"CERTIFICATION_SCOPE_IDENTITY"}
+          module_hash=hashlib.sha256((root/"implementation/super1200/domains/D04_runtime.py").read_bytes()).hexdigest()
+          test_hash=hashlib.sha256((root/"implementation/super1200/tests/test_d04_runtime.py").read_bytes()).hexdigest()
           if reg.get("count") != 1200 or len(reg.get("items",[])) != 1200: raise SystemExit("G23_REGISTRY_COUNT_FAIL")
+          if state.get("current_checkpoint") != "D04_93_96_MATERIALIZED": raise SystemExit("G23_CHECKPOINT_FAIL")
+          if state.get("certified") is not False or state.get("global_certification_status") != "NOT_CERTIFIED": raise SystemExit("G23_GLOBAL_CERTIFICATION_DRIFT")
+          refreshed=state.get("evidence_refresh",{})
+          if refreshed.get("status") != "PASS_AWAITING_G23" or refreshed.get("module_sha256") != module_hash or refreshed.get("test_sha256") != test_hash: raise SystemExit("G23_EVIDENCE_REFRESH_BINDING_FAIL")
+          if state.get("g23") not in {"PENDING_INDEPENDENT_REVALIDATION","PASS_FOR_SCOPE_D04_93_96"}: raise SystemExit("G23_STATE_UNEXPECTED")
           ri={x["capability_id"]:x for x in reg["items"]}
           di={x["capability_id"]:x for x in dom["capabilities"]}
+          tasks={
+            93:("CERTIFICATION_NON_TRANSITIVITY","test_certification_non_transitivity_rejects_derived_subject_and_scope"),
+            94:("EVIDENCE_EXPIRATION","test_evidence_expiration_uses_half_open_utc_interval_and_fails_closed"),
+            95:("EVIDENCE_INVALIDATION_GRAPH","test_evidence_invalidation_graph_propagates_and_rejects_cycles"),
+            96:("EVIDENCE_REUSE_ENGINE","test_evidence_reuse_requires_exact_validated_non_invalidated_key"),
+          }
           evidence=[]
-          for cid,name in ids.items():
-              if ri[cid].get("canonical_name") != name or di[cid].get("canonical_name") != name: raise SystemExit(f"G23_IDENTITY_FAIL_{cid}")
-              if ri[cid].get("implementation_state") != "EVIDENCED" or di[cid].get("implementation_state") != "EVIDENCED": raise SystemExit(f"G23_MATERIAL_STATE_FAIL_{cid}")
-              p=root/"continuity/runtime-evidence/D04"/f"capability-{cid:04d}.json"
-              if not p.is_file(): raise SystemExit(f"G23_EVIDENCE_MISSING_{cid}")
-              ev=json.loads(p.read_text())
-              if ev.get("status") != "PASS" or ev.get("capability_id") != cid or ev.get("canonical_name") != name: raise SystemExit(f"G23_EVIDENCE_SCOPE_FAIL_{cid}")
-              if ev.get("module_sha256") != hashlib.sha256((root/"implementation/super1200/domains/D04_runtime.py").read_bytes()).hexdigest(): raise SystemExit(f"G23_SOURCE_HASH_DRIFT_{cid}")
-              if ev.get("test_sha256") != hashlib.sha256((root/"implementation/super1200/tests/test_d04_runtime.py").read_bytes()).hexdigest(): raise SystemExit(f"G23_TEST_HASH_DRIFT_{cid}")
-              evidence.append({"capability_id":cid,"evidence_sha256":ev.get("evidence_sha256")})
-          out={"schema":"SUPER1200_G23_VALIDATION/1","result":"PASS","scope":"D04:87-92","validator":"github-actions-independent-job","material_worker":"implementation/super1200/runtime/d04_material_worker.py","evidence":evidence,"registry_count":1200,"certification_granted":False}
+          for cid,(name,test_name) in tasks.items():
+            if ri[cid].get("canonical_name") != name or di[cid].get("canonical_name") != name: raise SystemExit(f"G23_IDENTITY_FAIL_{cid}")
+            if ri[cid].get("implementation_state") != "EVIDENCED" or di[cid].get("implementation_state") != "EVIDENCED": raise SystemExit(f"G23_MATERIAL_STATE_FAIL_{cid}")
+            p=root/"continuity/runtime-evidence/D04"/f"capability-{cid:04d}.json"
+            if not p.is_file(): raise SystemExit(f"G23_EVIDENCE_MISSING_{cid}")
+            ev=json.loads(p.read_text())
+            recorded=ev.get("evidence_sha256"); unsigned=dict(ev); unsigned.pop("evidence_sha256",None)
+            calculated=hashlib.sha256(json.dumps(unsigned,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()).hexdigest()
+            if recorded != calculated: raise SystemExit(f"G23_EVIDENCE_HASH_FAIL_{cid}")
+            if ev.get("status") != "PASS" or ev.get("capability_id") != cid or ev.get("canonical_name") != name: raise SystemExit(f"G23_EVIDENCE_SCOPE_FAIL_{cid}")
+            if ev.get("test_case") != test_name or ev.get("module_sha256") != module_hash or ev.get("test_sha256") != test_hash: raise SystemExit(f"G23_SOURCE_BINDING_FAIL_{cid}")
+            if str(ev.get("github_actions_run_id")) != str(refreshed.get("workflow_run_id")): raise SystemExit(f"G23_RUN_PROVENANCE_FAIL_{cid}")
+            if ev.get("certification_granted") is not False: raise SystemExit(f"G23_CERTIFICATION_PROPAGATION_FAIL_{cid}")
+            evidence.append({"capability_id":cid,"evidence_sha256":recorded})
+          out={"schema":"SUPER1200_G23_VALIDATION/1","result":"PASS","scope":"D04:93-96",
+               "validator":"github-actions-independent-job","evidence":evidence,"registry_count":1200,
+               "module_sha256":module_hash,"test_sha256":test_hash,"certification_granted":False}
           Path("g23-validation.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
           with open(os.environ["GITHUB_OUTPUT"],"a") as f:
-              f.write("result=PASS\nscope=D04:87-92\n")
+            f.write("result=PASS\nscope=D04:93-96\n")
+          print("SUPER1200_G23=PASS SCOPE=D04:93-96 GLOBAL_CERTIFICATION=NO")
           PY
       - name: Preserve G23 evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: super1200-g23-${{ github.run_id }}
+          name: super1200-g23-d04-93-96-${{ github.run_id }}
           path: g23-validation.json
           if-no-files-found: warn
           retention-days: 90
 
   g24-automated-certification:
-    name: "G24 — certification gate (requires G23)"
+    name: "G24 — scoped certification gate (requires G23)"
     needs: g23-independent-validation
-    if: needs.g23-independent-validation.outputs.result == 'PASS'
-    runs-on: ubuntu-latest
+    if: needs.g23-independent-validation.outputs.result == 'PASS' && needs.g23-independent-validation.outputs.scope == 'D04:93-96'
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
-      contents: read
+      contents: write
     steps:
       - name: Checkout candidate branch independently
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: custosz/super-1200-implementation-20261007
-          persist-credentials: false
-      - name: Set up Python
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
-        with:
-          python-version: "3.12"
-      - name: Revalidate G23 scope and execute G24 certification checks
+          fetch-depth: 0
+      - name: Revalidate G23 scope and execute G24 scoped certification checks
         shell: bash
         env:
           G23_RESULT: ${{ needs.g23-independent-validation.outputs.result }}
@@ -106,33 +120,87 @@ jobs:
         run: |
           set -Eeuo pipefail
           test "$G23_RESULT" = PASS
-          test "$G23_SCOPE" = D04:87-92
-          python implementation/super1200/tests/test_d04_runtime.py
-          python - <<'PY'
-          import hashlib,json
+          test "$G23_SCOPE" = D04:93-96
+          python3 -B implementation/super1200/tests/test_d04_runtime.py
+          python3 -B - <<'PY'
+          import hashlib,json,os
+          from datetime import datetime,timezone
           from pathlib import Path
           root=Path(".")
-          ids=[87,88,89,90,91,92]
-          module=hashlib.sha256((root/"implementation/super1200/domains/D04_runtime.py").read_bytes()).hexdigest()
-          test=hashlib.sha256((root/"implementation/super1200/tests/test_d04_runtime.py").read_bytes()).hexdigest()
+          state=json.loads((root/"continuity/STATE.json").read_text())
+          validation=json.loads((root/"continuity/independent-validation/D04_93_96.json").read_text())
+          module_hash=hashlib.sha256((root/"implementation/super1200/domains/D04_runtime.py").read_bytes()).hexdigest()
+          test_hash=hashlib.sha256((root/"implementation/super1200/tests/test_d04_runtime.py").read_bytes()).hexdigest()
+          if validation.get("status") != "PASS" or validation.get("scope") != "D04_CAPABILITIES_93_96_ONLY": raise SystemExit("G24_G23_RECORD_FAIL")
+          if validation.get("module_sha256") != module_hash or validation.get("test_sha256") != test_hash: raise SystemExit("G24_SOURCE_HASH_DRIFT")
+          if state.get("g23") != "PASS_FOR_SCOPE_D04_93_96": raise SystemExit("G24_G23_STATE_FAIL")
+          if state.get("current_checkpoint") != "D04_93_96_MATERIALIZED": raise SystemExit("G24_CHECKPOINT_FAIL")
+          if state.get("certified") is not False or state.get("global_certification_status") != "NOT_CERTIFIED": raise SystemExit("G24_GLOBAL_CERTIFICATION_DRIFT")
+          ids=[93,94,95,96]
           reg=json.loads((root/"implementation/super1200/registry/capabilities.json").read_text())
           ri={x["capability_id"]:x for x in reg["items"]}
           evidence=[]
           for cid in ids:
-              p=root/"continuity/runtime-evidence/D04"/f"capability-{cid:04d}.json"
-              ev=json.loads(p.read_text())
-              if ev.get("status")!="PASS" or ev.get("module_sha256")!=module or ev.get("test_sha256")!=test: raise SystemExit(f"G24_EVIDENCE_REVALIDATION_FAIL_{cid}")
-              if ri[cid].get("implementation_state")!="EVIDENCED": raise SystemExit(f"G24_IMPLEMENTATION_STATE_FAIL_{cid}")
-              evidence.append({"capability_id":cid,"evidence_sha256":ev.get("evidence_sha256")})
-          cert={"schema":"SUPER1200_G24_CERTIFICATION_DECISION/1","result":"PASS","scope":"D04:87-92","basis":"G23_PASS_PLUS_INDEPENDENT_REVALIDATION","validator":"github-actions-g24-job","g23":"PASS","g24":"PASS","certification_granted":True,"scope_only":True,"global_super1200_certified":False,"module_sha256":module,"test_sha256":test,"evidence":evidence}
+            ev=json.loads((root/"continuity/runtime-evidence/D04"/f"capability-{cid:04d}.json").read_text())
+            if ev.get("status")!="PASS" or ev.get("module_sha256")!=module_hash or ev.get("test_sha256")!=test_hash: raise SystemExit(f"G24_EVIDENCE_REVALIDATION_FAIL_{cid}")
+            if ri[cid].get("implementation_state")!="EVIDENCED": raise SystemExit(f"G24_IMPLEMENTATION_STATE_FAIL_{cid}")
+            evidence.append({"capability_id":cid,"evidence_sha256":ev.get("evidence_sha256")})
+          cert={"schema":"SUPER1200_G24_CERTIFICATION_DECISION/1","result":"PASS",
+            "scope":"D04:93-96","basis":"G23_PASS_PLUS_INDEPENDENT_G24_REVALIDATION",
+            "validator":"github-actions-g24-job","g23":"PASS","g24":"PASS",
+            "certification_granted":True,"scope_only":True,"global_super1200_certified":False,
+            "module_sha256":module_hash,"test_sha256":test_hash,"evidence":evidence,
+            "g23_workflow_run_id":validation.get("validator_workflow_run_id"),
+            "g24_workflow_run_id":os.environ["GITHUB_RUN_ID"],
+            "certified_at_utc":datetime.now(timezone.utc).isoformat()}
           Path("g24-certification-decision.json").write_text(json.dumps(cert,indent=2,sort_keys=True)+"\n")
-          print("SUPER1200_TELEMETRY G23=PASS G24=PASS SCOPE=D04:87-92 GLOBAL_CERTIFICATION=NO")
+          print("SUPER1200_G24=PASS SCOPE=D04:93-96 GLOBAL_CERTIFICATION=NO")
           PY
+      - name: Persist scoped G24 decision and update only the scoped gate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B - <<'PY'
+          import json
+          from pathlib import Path
+          cert=Path("g24-certification-decision.json")
+          decision=json.loads(cert.read_text(encoding="utf-8"))
+          if decision.get("result")!="PASS" or decision.get("scope")!="D04:93-96" or decision.get("global_super1200_certified") is not False:
+              raise SystemExit("G24_PERSISTENCE_DENY_DECISION_SCOPE")
+          out=Path("continuity/certification/D04_93_96.json")
+          out.parent.mkdir(parents=True,exist_ok=True)
+          out.write_text(json.dumps(decision,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          state_path=Path("continuity/STATE.json")
+          state=json.loads(state_path.read_text(encoding="utf-8"))
+          if state.get("current_checkpoint")!="D04_93_96_MATERIALIZED" or state.get("g23")!="PASS_FOR_SCOPE_D04_93_96":
+              raise SystemExit("G24_PERSISTENCE_DENY_CHECKPOINT_OR_G23")
+          state["g24"]="PASS_FOR_SCOPE_D04_93_96"
+          state["certified"]=False
+          state["global_certification_status"]="NOT_CERTIFIED"
+          state["scoped_certification"]={"scope":"D04:93-96","status":"PASS","record_path":"continuity/certification/D04_93_96.json",
+              "workflow_run_id":decision["g24_workflow_run_id"],"certification_granted":True,"global_certification_granted":False}
+          if isinstance(state.get("last_material_execution"),dict):
+              state["last_material_execution"]["g23"]="PASS_FOR_SCOPE_D04_93_96"
+              state["last_material_execution"]["g24"]="PASS_FOR_SCOPE_D04_93_96"
+              state["last_material_execution"]["certification_granted"]=False
+          if isinstance(state.get("last_execution"),dict):
+              state["last_execution"]["g23"]="PASS_FOR_SCOPE_D04_93_96"
+              state["last_execution"]["g24"]="PASS_FOR_SCOPE_D04_93_96"
+              state["last_execution"]["global_certification_status"]="NOT_CERTIFIED"
+          state_path.write_text(json.dumps(state,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
+          PY
+          git diff --check
+          git add continuity/STATE.json continuity/certification/D04_93_96.json
+          git config user.name "super1200-g24-certifier"
+          git config user.email "super1200-g24-certifier@users.noreply.github.com"
+          git commit -m "cert(super1200): certify D04 93-96 scope only"
+          git push origin HEAD:refs/heads/custosz/super-1200-implementation-20261007
+          echo "SUPER1200_G24_PERSISTENCE=PASS SCOPE=D04:93-96 GLOBAL_CERTIFICATION=FALSE"
       - name: Preserve G24 certification decision
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: super1200-g24-${{ github.run_id }}
+          name: super1200-g24-d04-93-96-${{ github.run_id }}
           path: g24-certification-decision.json
           if-no-files-found: warn
           retention-days: 90
