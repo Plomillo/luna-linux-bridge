@@ -1,23 +1,23 @@
 {
   "active": true,
-  "active_worker": true,
-  "block_reason": null,
-  "blocked": false,
-  "blocked_at": "2026-10-13T08:30:08Z",
+  "active_worker": false,
+  "block_reason": "NEXT_D04_TRANCHE_EXECUTOR_NOT_REGISTERED",
+  "blocked": true,
+  "blocked_at": "2026-10-13T23:21:34.744830+00:00",
   "branch": "custosz/super-1200-implementation-20261007",
   "certified": false,
-  "current_checkpoint": "D04_87_92_MATERIALIZED",
-  "diagnostic": "12-hour GitHub Actions continuation is IN_PROGRESS on the candidate branch. D04 capabilities 87-92 are materially implemented, behavior-tested, independently validated by G23 and certified by G24 for that exact scope only. Global SUPER1200 certification remains false; D04 still has pending capabilities and the workflow must continue from the active checkpoint. MetaOS remains deferred.",
+  "current_checkpoint": "D04_93_96_MATERIALIZED",
+  "diagnostic": "D04 capabilities 93-96 materially implemented. The full D04 test suite and each mapped capability test were executed independently; hash-bound evidence was recorded. Continuation is held fail-closed because no reviewed task-specific executor is registered for the next pending D04 tranche. MetaOS remains deferred.",
   "dispatch_error": "DISPATCH_DENIED_BY_CHECKPOINT_RECONCILIATION_20261013",
   "dispatch_requested_at": "2026-10-13T21:14:39.496Z",
-  "g23": "PASS_FOR_SCOPE_D04_87_92",
-  "g24": "PASS_FOR_SCOPE_D04_87_92",
+  "g23": "PENDING_FOR_SCOPE_D04_93_96",
+  "g24": "PENDING_G23",
   "mission_id": "SUPER1200-CONTINUATION-20261007",
   "next_point": "D04",
   "next_worker": "CUSTOSZ_V7",
-  "recovery_note": "Maintain the active 12-hour continuation loop and its checkpoints. On each remote checkpoint sync, consume only reviewed task-specific executor changes, run behavior tests, persist hash-bound evidence, and keep G23/G24 as separate automated gates. Do not propagate the scoped D04 87-92 result to the full 1200-capability mission. MetaOS stays deferred.",
+  "recovery_note": "Register and review a material executor for the next pending D04 tranche; do not rerun completed IDs or propagate scoped validation/certification. GitHub-hosted bounded workflow is authoritative; no local runner required.",
   "schema": "SUPER1200_CONTINUITY_STATE/1.0",
-  "status": "ACTIVE",
+  "status": "BLOCKED",
   "terminal": false,
   "transition_id": "D03-CHECKPOINT-TO-D04-001",
   "checkpoint_assessment": "REPORTED_FUNCTIONAL_CLOSURE_NOT_INDEPENDENTLY_VALIDATED",
@@ -44,24 +44,116 @@
     "g24": "BLOCKED",
     "certification_granted": false
   },
-  "material_worker_ready": true,
+  "material_worker_ready": false,
   "global_certification_status": "NOT_CERTIFIED",
   "last_execution": {
-    "workflow_run_id": 38469912731,
-    "workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38469912731",
-    "status": "IN_PROGRESS",
-    "started_at_utc": "2026-10-13T21:20:57Z",
-    "configured_runtime_hours": 12,
-    "material_tranche_commit": "c249afb35f1486a27c14d8ccc3f2000da4cb8f6c",
+    "workflow_run_id": 38483711004,
+    "workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38483711004",
+    "status": "COMPLETED_SUCCESS_MATERIAL_TRANCHE",
+    "started_at_utc": "2026-10-13T23:21:34.348389+00:00",
+    "completed_at_utc": "2026-10-13T23:21:34.744830+00:00",
+    "configured_runtime_hours": 0.05,
     "material_capabilities": [
-      87,
-      88,
-      89,
-      90,
-      91,
-      92
+      93,
+      94,
+      95,
+      96
     ],
-    "behavior_tests": "16/16 PASS",
-    "executor_binding_warning": "CUSTOSZ mission_start reported UNBOUND_MEDIATED_OR_LOCAL; registered D04 material executor was invoked and passed."
+    "behavior_tests": "FULL_SUITE_PASS;4_OF_4_CAPABILITY_TESTS_PASS",
+    "executor": "implementation/super1200/runtime/d04_material_worker_93_96.py",
+    "g23": "PENDING",
+    "g24": "PENDING_G23",
+    "global_certification_status": "NOT_CERTIFIED"
+  },
+  "execution_history": [
+    {
+      "workflow_run_id": 38469912731,
+      "workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38469912731",
+      "status": "COMPLETED_FAILURE_RECONCILED",
+      "started_at_utc": "2026-10-13T21:20:57Z",
+      "configured_runtime_hours": 12,
+      "material_tranche_commit": "c249afb35f1486a27c14d8ccc3f2000da4cb8f6c",
+      "material_capabilities": [
+        87,
+        88,
+        89,
+        90,
+        91,
+        92
+      ],
+      "behavior_tests": "16/16 PASS",
+      "executor_binding_warning": "CUSTOSZ mission_start reported UNBOUND_MEDIATED_OR_LOCAL; registered D04 material executor was invoked and passed.",
+      "remote_status": "completed",
+      "remote_conclusion": "failure",
+      "reconciled_at_utc": "2026-10-13T23:21:34.744830+00:00",
+      "reconciliation_source_url": "https://api.github.com/repos/Plomillo/luna-linux-bridge/actions/runs/38469912731"
+    }
+  ],
+  "execution_reconciliation": {
+    "workflow_run_id": 38469912731,
+    "previously_reported_status": "IN_PROGRESS",
+    "verified_remote_status": "completed",
+    "verified_remote_conclusion": "failure",
+    "source_url": "https://api.github.com/repos/Plomillo/luna-linux-bridge/actions/runs/38469912731",
+    "reconciled_at_utc": "2026-10-13T23:21:34.744830+00:00"
+  },
+  "last_material_execution": {
+    "executor": "implementation/super1200/runtime/d04_material_worker_93_96.py",
+    "capabilities": [
+      93,
+      94,
+      95,
+      96
+    ],
+    "tests": "FULL_SUITE_PASS;4_OF_4_INDEPENDENT_TEST_INVOCATIONS_PASS",
+    "test_case_results": [
+      {
+        "test_case": "test_certification_non_transitivity_rejects_derived_subject_and_scope",
+        "exit_code": 0,
+        "result": "PASS",
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "0f363d9fdeaebca0b245ff2259ab7b742cd8e397416dfae2d7fe9298c599e3ea",
+        "test_name_seen": true,
+        "single_test_run_confirmed": true,
+        "unittest_ok_marker": true
+      },
+      {
+        "test_case": "test_evidence_expiration_uses_half_open_utc_interval_and_fails_closed",
+        "exit_code": 0,
+        "result": "PASS",
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "c4a381fda4808569d9cb9bc902300fee88416f201319289178a6503590aaf183",
+        "test_name_seen": true,
+        "single_test_run_confirmed": true,
+        "unittest_ok_marker": true
+      },
+      {
+        "test_case": "test_evidence_invalidation_graph_propagates_and_rejects_cycles",
+        "exit_code": 0,
+        "result": "PASS",
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "51775e9f548cc288c6d0572d97bbfbc69de97f2e9a330d477aadeb6b4a8e2b9d",
+        "test_name_seen": true,
+        "single_test_run_confirmed": true,
+        "unittest_ok_marker": true
+      },
+      {
+        "test_case": "test_evidence_reuse_requires_exact_validated_non_invalidated_key",
+        "exit_code": 0,
+        "result": "PASS",
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "f68d494c1fcc1d829e15ef92c87e35e67cf4bd8b1db836e566f22a6339bd5e14",
+        "test_name_seen": true,
+        "single_test_run_confirmed": true,
+        "unittest_ok_marker": true
+      }
+    ],
+    "module_sha256": "1371f945ad2f80cf6009986cf20f327e648e00dc0327cdfbea0141a617801774",
+    "test_sha256": "43bc0d6524c75e316886d161c7fe6fced23c4a5c1491ca4aff9dd2a69eed8b43",
+    "github_actions_run_id": "38483711004",
+    "g23": "PENDING",
+    "g24": "PENDING",
+    "certification_granted": false,
+    "completed_at_utc": "2026-10-13T23:21:34.744830+00:00"
   }
 }

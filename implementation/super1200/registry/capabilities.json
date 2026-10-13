@@ -1375,12 +1375,14 @@
       "canonical_name": "CERTIFICATION_NON_TRANSITIVITY",
       "capability_id": 93,
       "hardening": "component PASS never propagates to integration, version or provider replacement",
-      "implementation_state": "DECLARED",
-      "materialization": "SCHEMA+CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+PER_CAPABILITY_TEST+FULL_SUITE+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "POLICY/GATE",
-      "wire": "92,95,108,840"
+      "wire": "92,95,108,840",
+      "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_runtime.py"
     },
     {
       "acquire": "NONE",
@@ -1388,12 +1390,14 @@
       "canonical_name": "EVIDENCE_EXPIRATION",
       "capability_id": 94,
       "hardening": "max-age by evidence type; stale evidence becomes invalid/UNKNOWN",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE+SCHEMA",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+PER_CAPABILITY_TEST+FULL_SUITE+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "EVIDENCE_POLICY",
-      "wire": "95,96,98,834"
+      "wire": "95,96,98,834",
+      "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_runtime.py"
     },
     {
       "acquire": "NONE",
@@ -1401,12 +1405,14 @@
       "canonical_name": "EVIDENCE_INVALIDATION_GRAPH",
       "capability_id": 95,
       "hardening": "causal invalidation from changed input/dependency/policy to claims/certs/auth",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+PER_CAPABILITY_TEST+FULL_SUITE+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "GRAPH_ENGINE",
-      "wire": "24,26,94,96,181,845"
+      "wire": "24,26,94,96,181,845",
+      "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_runtime.py"
     },
     {
       "acquire": "NONE",
@@ -1414,12 +1420,14 @@
       "canonical_name": "EVIDENCE_REUSE_ENGINE",
       "capability_id": 96,
       "hardening": "reuse only exact compatible inputs/env/policy/scope and unexpired evidence",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+PER_CAPABILITY_TEST+FULL_SUITE+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "EVIDENCE_ENGINE",
-      "wire": "94,95,97,843,844,846"
+      "wire": "94,95,97,843,844,846",
+      "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_runtime.py"
     },
     {
       "acquire": "NONE",

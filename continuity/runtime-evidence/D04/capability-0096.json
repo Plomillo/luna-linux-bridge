@@ -1,0 +1,39 @@
+{
+  "canonical_name": "EVIDENCE_REUSE_ENGINE",
+  "capability_id": 96,
+  "certification_granted": false,
+  "evidence_sha256": "5d7c0048f22c13f493878fbc157417c8b34b7995c0d07646f5331e99d286cfdf",
+  "executor": "implementation/super1200/runtime/d04_material_worker_93_96.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "github_actions_run_id": "38483711004",
+  "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+  "module_sha256": "1371f945ad2f80cf6009986cf20f327e648e00dc0327cdfbea0141a617801774",
+  "schema": "SUPER1200_D04_MATERIAL_EVIDENCE/1",
+  "selected_test_result": {
+    "exit_code": 0,
+    "result": "PASS",
+    "single_test_run_confirmed": true,
+    "stderr_sha256": "f68d494c1fcc1d829e15ef92c87e35e67cf4bd8b1db836e566f22a6339bd5e14",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "test_case": "test_evidence_reuse_requires_exact_validated_non_invalidated_key",
+    "test_name_seen": true,
+    "unittest_ok_marker": true
+  },
+  "status": "PASS",
+  "suite_exit_code": 0,
+  "suite_stderr_sha256": "1a70769bfbd09c74bc8f7f5d68b64be3fe8afa660bf1395760a08a54a77594d3",
+  "suite_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "test_artifact": "implementation/super1200/tests/test_d04_runtime.py",
+  "test_case": "test_evidence_reuse_requires_exact_validated_non_invalidated_key",
+  "test_invocation": [
+    "python",
+    "-B",
+    "test_d04_runtime.py",
+    "-v",
+    "D04RuntimeTests.test_evidence_reuse_requires_exact_validated_non_invalidated_key"
+  ],
+  "test_sha256": "43bc0d6524c75e316886d161c7fe6fced23c4a5c1491ca4aff9dd2a69eed8b43",
+  "validated_at_utc": "2026-10-13T23:21:34.730206+00:00",
+  "worker_started_at_utc": "2026-10-13T23:21:34.348389+00:00"
+}
