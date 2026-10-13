@@ -735,3 +735,142 @@ def reconcile_dual_ledgers(operational_records: Any, transparency_entries: Any) 
             "transparency_ledger_sha256":hashlib.sha256(canonical_json(transparency_entries)).hexdigest(),
             "operational_record_count":len(ops),"transparency_entry_count":len(transparency_entries),
             "cross_references":refs,"ledgers_conflated":False}
+
+
+
+def evaluate_policy_as_code(policy: Any, input_document: Any, provider_result: Any, *,
+                            evaluated_at_utc: str) -> dict[str, Any]:
+    """Produce a version-bound deterministic policy decision and audit receipt; provider has no authority."""
+    from datetime import datetime, timezone
+    if not isinstance(policy, dict) or policy.get("schema") != "SUPER1200_POLICY_AS_CODE/1":
+        raise ValueError("policy_as_code_schema_invalid")
+    for key in ("policy_id","version","engine","provider_version_pin","effective_from_utc","effective_until_utc"):
+        if not isinstance(policy.get(key), str) or not policy[key].strip():
+            raise ValueError("policy_as_code_identity_invalid:"+key)
+    if policy["engine"] not in {"OPA_REGO","CUE","JSON_SCHEMA"}:
+        raise ValueError("policy_as_code_engine_unsupported")
+    def parse(value, field):
+        try: dt=datetime.fromisoformat(value.replace("Z","+00:00"))
+        except (AttributeError,ValueError) as exc: raise ValueError(field+"_invalid_iso8601") from exc
+        if dt.tzinfo is None or dt.utcoffset() is None: raise ValueError(field+"_timezone_required")
+        return dt.astimezone(timezone.utc)
+    now=parse(evaluated_at_utc,"evaluated_at_utc")
+    start=parse(policy["effective_from_utc"],"effective_from_utc")
+    end=parse(policy["effective_until_utc"],"effective_until_utc")
+    if end<=start: raise ValueError("policy_effective_interval_invalid")
+    policy_hash=hashlib.sha256(canonical_json(policy)).hexdigest()
+    input_hash=hashlib.sha256(canonical_json(input_document)).hexdigest()
+    reasons=[]
+    if not start<=now<end: reasons.append("policy_not_effective")
+    if not isinstance(provider_result,dict): reasons.append("provider_result_missing")
+    else:
+        if provider_result.get("input_sha256")!=input_hash: reasons.append("provider_input_binding_mismatch")
+        if provider_result.get("policy_sha256")!=policy_hash: reasons.append("provider_policy_binding_mismatch")
+        if provider_result.get("provider_version")!=policy["provider_version_pin"]: reasons.append("provider_version_pin_mismatch")
+        if provider_result.get("provider_authority")!="NONE": reasons.append("provider_authority_must_be_none")
+        if provider_result.get("sandboxed") is not True: reasons.append("provider_evaluation_not_sandboxed")
+        if provider_result.get("deterministic") is not True: reasons.append("provider_determinism_not_attested")
+        if provider_result.get("decision") not in {"ALLOW","DENY","UNKNOWN"}: reasons.append("provider_decision_invalid")
+        if provider_result.get("decision")=="UNKNOWN": reasons.append("provider_decision_unknown_fail_closed")
+    provider_hash=hashlib.sha256(canonical_json(provider_result)).hexdigest() if isinstance(provider_result,dict) else None
+    decision="DENY" if reasons else provider_result["decision"]
+    receipt={"schema":"SUPER1200_POLICY_AUDIT_RECEIPT/1","policy_id":policy["policy_id"],
+        "policy_version":policy["version"],"engine":policy["engine"],"policy_sha256":policy_hash,
+        "input_sha256":input_hash,"provider_result_sha256":provider_hash,"decision":decision,
+        "reasons":reasons,"evaluated_at_utc":now.isoformat().replace("+00:00","Z"),
+        "provider_authority":"NONE"}
+    receipt["receipt_sha256"]=hashlib.sha256(canonical_json(receipt)).hexdigest()
+    return receipt
+
+
+def validate_opa_rego_result(result: Any, *, expected_input_sha256: str,
+                             expected_policy_bundle_sha256: str,
+                             pinned_version: str) -> dict[str, Any]:
+    """Validate a sandboxed, version-pinned OPA/Rego result; the provider is never an authority."""
+    _sha256(expected_input_sha256,"expected_input_sha256")
+    _sha256(expected_policy_bundle_sha256,"expected_policy_bundle_sha256")
+    if not isinstance(pinned_version,str) or not pinned_version.strip():
+        raise ValueError("opa_pinned_version_required")
+    if not isinstance(result,dict): raise ValueError("opa_result_must_be_object")
+    checks={
+        "provider_id":result.get("provider_id")=="opa-rego",
+        "provider_version":result.get("provider_version")==pinned_version,
+        "input_sha256":result.get("input_sha256")==expected_input_sha256,
+        "policy_bundle_sha256":result.get("policy_bundle_sha256")==expected_policy_bundle_sha256,
+        "sandboxed":result.get("sandboxed") is True,
+        "provider_authority":result.get("provider_authority")=="NONE",
+        "deterministic":result.get("deterministic") is True,
+        "decision":result.get("decision") in {"ALLOW","DENY","UNKNOWN"},
+    }
+    failed=[key for key,value in checks.items() if not value]
+    return {"schema":"SUPER1200_OPA_REGO_RESULT/1","status":"VALID" if not failed else "INVALID",
+        "decision":result.get("decision") if not failed else "UNKNOWN","reasons":["invalid_"+x for x in failed],
+        "provider_id":result.get("provider_id"),"provider_version":result.get("provider_version"),
+        "input_sha256":result.get("input_sha256"),"policy_bundle_sha256":result.get("policy_bundle_sha256"),
+        "provider_authority":"NONE","result_sha256":hashlib.sha256(canonical_json(result)).hexdigest()}
+
+
+def validate_cue_provider_result(result: Any, *, expected_input_sha256: str,
+                                 expected_schema_sha256: str,
+                                 pinned_version: str) -> dict[str, Any]:
+    """Validate CUE constraint results and require deterministic export with exact schema/input bindings."""
+    _sha256(expected_input_sha256,"expected_input_sha256")
+    _sha256(expected_schema_sha256,"expected_schema_sha256")
+    if not isinstance(pinned_version,str) or not pinned_version.strip():
+        raise ValueError("cue_pinned_version_required")
+    if not isinstance(result,dict): raise ValueError("cue_result_must_be_object")
+    errors=[]
+    if result.get("provider_id")!="cue": errors.append("provider_id_mismatch")
+    if result.get("provider_version")!=pinned_version: errors.append("provider_version_mismatch")
+    if result.get("input_sha256")!=expected_input_sha256: errors.append("input_sha256_mismatch")
+    if result.get("schema_sha256")!=expected_schema_sha256: errors.append("schema_sha256_mismatch")
+    if result.get("provider_authority")!="NONE": errors.append("provider_authority_must_be_none")
+    exported=result.get("exported_config")
+    if not isinstance(exported,dict): errors.append("exported_config_must_be_object")
+    export_hash=hashlib.sha256(canonical_json(exported)).hexdigest() if isinstance(exported,dict) else None
+    if result.get("deterministic_export") is not True: errors.append("deterministic_export_not_attested")
+    if result.get("export_sha256")!=export_hash: errors.append("export_hash_mismatch")
+    if not isinstance(result.get("valid"),bool): errors.append("validity_result_required")
+    provider_errors=result.get("errors",[])
+    if not isinstance(provider_errors,list): errors.append("provider_errors_must_be_list")
+    valid=(not errors and result.get("valid") is True and provider_errors==[])
+    return {"schema":"SUPER1200_CUE_VALIDATION/1","status":"VALID" if valid else "INVALID",
+        "valid":valid,"reasons":errors+([f"cue_constraint_error_count:{len(provider_errors)}"] if isinstance(provider_errors,list) and provider_errors else []),
+        "input_sha256":result.get("input_sha256"),"schema_sha256":result.get("schema_sha256"),
+        "export_sha256":export_hash,"provider_version":result.get("provider_version"),
+        "provider_authority":"NONE","result_sha256":hashlib.sha256(canonical_json(result)).hexdigest()}
+
+
+def validate_json_schema_provider_result(result: Any, *, expected_instance_sha256: str,
+                                         expected_schema_sha256: str, dialect: str,
+                                         pinned_version: str) -> dict[str, Any]:
+    """Require pinned JSON Schema dialect/provider, strict unknown-field handling and a passing regression corpus."""
+    _sha256(expected_instance_sha256,"expected_instance_sha256")
+    _sha256(expected_schema_sha256,"expected_schema_sha256")
+    if not isinstance(dialect,str) or not dialect.strip(): raise ValueError("json_schema_dialect_required")
+    if not isinstance(pinned_version,str) or not pinned_version.strip(): raise ValueError("json_schema_pinned_version_required")
+    if not isinstance(result,dict): raise ValueError("json_schema_result_must_be_object")
+    reasons=[]
+    if result.get("provider_id")!="json-schema": reasons.append("provider_id_mismatch")
+    if result.get("provider_version")!=pinned_version: reasons.append("provider_version_mismatch")
+    if result.get("dialect")!=dialect: reasons.append("schema_dialect_mismatch")
+    if result.get("instance_sha256")!=expected_instance_sha256: reasons.append("instance_sha256_mismatch")
+    if result.get("schema_sha256")!=expected_schema_sha256: reasons.append("schema_sha256_mismatch")
+    if result.get("provider_authority")!="NONE": reasons.append("provider_authority_must_be_none")
+    if result.get("strict_unknown_fields") is not True: reasons.append("strict_unknown_field_policy_required")
+    unknown=result.get("unknown_fields",[])
+    errors=result.get("errors",[])
+    if not isinstance(unknown,list): reasons.append("unknown_fields_must_be_list"); unknown=[]
+    if not isinstance(errors,list): reasons.append("validation_errors_must_be_list"); errors=[]
+    corpus=result.get("regression_corpus")
+    if not isinstance(corpus,dict) or corpus.get("passed") is not True or not isinstance(corpus.get("tests_total"),int) or corpus.get("tests_total")<=0 or corpus.get("tests_passed")!=corpus.get("tests_total"):
+        reasons.append("regression_corpus_not_passed")
+    if unknown: reasons.append("unknown_fields_rejected")
+    if errors: reasons.append("schema_validation_errors_present")
+    if result.get("valid") is not True: reasons.append("instance_not_valid")
+    valid=not reasons
+    return {"schema":"SUPER1200_JSON_SCHEMA_VALIDATION/1","status":"VALID" if valid else "INVALID",
+        "valid":valid,"reasons":reasons,"dialect":result.get("dialect"),
+        "instance_sha256":result.get("instance_sha256"),"schema_sha256":result.get("schema_sha256"),
+        "provider_version":result.get("provider_version"),"regression_corpus":corpus,
+        "provider_authority":"NONE","result_sha256":hashlib.sha256(canonical_json(result)).hexdigest()}
