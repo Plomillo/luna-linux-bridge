@@ -9,9 +9,6 @@ on:
       - "continuity/runtime-evidence/D04/capability-0094.json"
       - "continuity/runtime-evidence/D04/capability-0095.json"
       - "continuity/runtime-evidence/D04/capability-0096.json"
-      - "implementation/super1200/domains/D04_runtime.py"
-      - "implementation/super1200/tests/test_d04_runtime.py"
-      - ".github/workflows/super1200-d04-93-96-independent-validation.yml"
   workflow_dispatch:
 
 permissions:
