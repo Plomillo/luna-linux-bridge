@@ -22,7 +22,8 @@ jobs:
     permissions:
       contents: read
     env:
-      EVIDENCE_DIR: ${{ runner.temp }}/kestra-oss-evidence
+      # github.workspace is available at job scope; runner.temp is not.
+      EVIDENCE_DIR: ${{ github.workspace }}/.ci-kestra-evidence
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -37,9 +38,9 @@ jobs:
           from pathlib import Path
           from secrets import token_hex
           Path(".env").write_text(
-              "KESTRA_DB_PASSWORD=" + token_hex(32) + "\n"
-              "KESTRA_ADMIN_EMAIL=kestra-ci@example.com\n"
-              "KESTRA_ADMIN_PASSWORD=" + token_hex(32) + "\n",
+              "KESTRA_DB_PASSWORD=" + token_hex(32) + "\\n"
+              "KESTRA_ADMIN_EMAIL=kestra-ci@example.com\\n"
+              "KESTRA_ADMIN_PASSWORD=" + token_hex(32) + "\\n",
               encoding="utf-8",
           )
           PY
@@ -70,15 +71,7 @@ jobs:
             if curl --silent --show-error --fail \
               http://127.0.0.1:18081/health \
               -o "$EVIDENCE_DIR/health.json" 2>/dev/null; then
-              if python3 - "$EVIDENCE_DIR/health.json" <<'PY'
-          import json
-          import sys
-          doc = json.load(open(sys.argv[1], encoding="utf-8"))
-          details = doc.get("details", {})
-          ok = doc.get("status") == "UP" and details.get("jdbc", {}).get("status") == "UP"
-          sys.exit(0 if ok else 1)
-          PY
-              then
+              if python3 -c 'import json,sys; d=json.load(open(sys.argv[1], encoding="utf-8")); x=d.get("details", {}); sys.exit(0 if d.get("status") == "UP" and x.get("jdbc", {}).get("status") == "UP" else 1)' "$EVIDENCE_DIR/health.json"; then
                 healthy=1
                 break
               fi
@@ -139,6 +132,6 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: kestra-oss-smoke-${{ github.run_id }}
-          path: ${{ runner.temp }}/kestra-oss-evidence/
+          path: ${{ github.workspace }}/.ci-kestra-evidence/
           if-no-files-found: warn
           retention-days: 30
