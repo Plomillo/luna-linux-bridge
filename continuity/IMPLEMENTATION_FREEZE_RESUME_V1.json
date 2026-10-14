@@ -1,24 +1,10 @@
 {
   "schema": "LOUKSNA_FREEZE_RESUME/1.0",
   "id": "IMPLEMENTATION_FREEZE_RESUME_V1",
-  "status": "FROZEN_FOR_WIRING",
-  "created_at_utc": "2026-10-14T02:30:00Z",
+  "status": "RESUMED",
   "frozen_at_utc": "2026-10-14T06:35:00Z",
-  "purpose": "Pause material advance while Tranche Factory (G23/G24 chained) and Directiva host bootstrap are wired under PUAC-2.",
-  "rails": {
-    "SUPER1200": {
-      "branch": "custosz/super-1200-implementation-20261007",
-      "prior_checkpoint": "D05_129_132_MATERIALIZED",
-      "freeze_reason": "TRANCHE_FACTORY_WIRING",
-      "resume_from": "next reviewed D05 executor under Tranche Factory"
-    },
-    "DIRECTIVA": {
-      "branch": "automation/mtls-evidence-gate-20261013",
-      "prior_checkpoint": "READINESS_PROBE_ACTIVE_HOST_HOLD",
-      "freeze_reason": "HOST_BOOTSTRAP_WIRING",
-      "resume_from": "readiness + bootstrap script under DIRECTIVA_GITHUB_ONLY_UNLOCK_V1"
-    }
-  },
-  "resume_authorized": false,
+  "resumed_at_utc": "2026-10-14T06:45:00Z",
+  "resume_authorized": true,
+  "wiring_certification": "continuity/WIRING_CERTIFICATION_20261014.json",
   "global_certification_status": "NOT_CERTIFIED"
 }

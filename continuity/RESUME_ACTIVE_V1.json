@@ -1,7 +1,28 @@
 {
   "schema": "LOUKSNA_RESUME_ACTIVE/1.0",
-  "status": "PAUSED_FOR_WIRING",
-  "paused_at_utc": "2026-10-14T06:35:00Z",
+  "status": "ACTIVE",
+  "activated_at_utc": "2026-10-14T06:45:00Z",
   "contract": "DEFINITIVE_OPERATING_CONTRACT_V1",
-  "notes": "Paused only for Tranche Factory + host bootstrap wiring. Will resume after provenance certification."
+  "loop": "ANTIPARALYSIS_LOOP_V1",
+  "wiring": "WIRING-TRANCHE-FACTORY-AND-HOST-BOOTSTRAP-20261014",
+  "rails": {
+    "SUPER1200": {
+      "branch": "custosz/super-1200-implementation-20261007",
+      "checkpoint": "D05_129_132_MATERIALIZED",
+      "mode": "LIVE_UNDER_CONTRACT",
+      "next_action": "Dispatch Tranche Factory or material workflow for D05 133-136; G23/G24 are sequential steps"
+    },
+    "DIRECTIVA": {
+      "branch": "automation/mtls-evidence-gate-20261013",
+      "checkpoint": "READINESS_PROBE_ACTIVE_HOST_HOLD",
+      "mode": "LIVE_UNDER_CONTRACT",
+      "next_action": "Execute scripts/directiva/host_bootstrap.sh on luna-aux, then re-dispatch puac2-autonomous.yml"
+    }
+  },
+  "fail_closed": true,
+  "antiparalysis": true,
+  "evidence_search_mandatory": true,
+  "g23_g24_are_flow_steps": true,
+  "global_certification_status": "NOT_CERTIFIED",
+  "notes": "Resume is active. Wiring certified with provenance. Controls remain sequential allies."
 }
