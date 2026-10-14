@@ -1,4 +1,4 @@
-name: SUPER1200 — scoped G23/G24 gates for D04 117-120
+name: SUPER1200 — source-bound G23/G24 gates for D04 117-120
 
 on:
   workflow_dispatch:
