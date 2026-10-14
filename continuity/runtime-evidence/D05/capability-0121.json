@@ -1,0 +1,137 @@
+{
+  "canonical_name": "FORMAL_REASONING_FABRIC",
+  "capability_id": 121,
+  "certification_granted": false,
+  "evidence_sha256": "1bf7379c464777aac0abee7de9b339456e33a26d0e22a437dc2f626b3f923342",
+  "executor": "implementation/super1200/runtime/d05_material_worker_121_124.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "github_actions_run_id": 38491601700,
+  "implementation_artifact": "implementation/super1200/domains/D05_formal_reasoning.py",
+  "module_sha256": "46e85e6212ffc29b6084eae50c9c293e0888a12306594b5cf85e8a998565a17a",
+  "prior_certificate_blob_sha": "d77081dc2f01754fbb7bb4ed29654e1d060a50db",
+  "prior_scoped_certificate": "continuity/certification/D04_117_120.json",
+  "proof_semantics": "TYPE_CHECKING_AND_OBLIGATION_FABRIC_ONLY",
+  "regression_suites": {
+    "implementation/super1200/tests/test_d03_runtime.py": {
+      "exit_code": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "72da42031d1fc11b30cc21bc9434d37187e28cafbef7b8ee21376a045a7e5e6c",
+      "test_names": []
+    },
+    "implementation/super1200/tests/test_d04_authorization_governance.py": {
+      "exit_code": 0,
+      "stderr_sha256": "3aad5f8f9beba3d34f957b39d44181e8f54d11e1388184bff2d536746df3c0d6",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "test_names": [
+        "test_authorization_proof_binds_request_signature_time_scope_and_revocation",
+        "test_capability_lease_enforces_actor_action_resource_time_revocation_and_consumption",
+        "test_least_privilege_plan_selects_only_goal_ancestors_and_rejects_bad_dags",
+        "test_time_bound_authority_requires_verified_clock_exact_scope_and_current_interval"
+      ]
+    },
+    "implementation/super1200/tests/test_d04_governance_controls.py": {
+      "exit_code": 0,
+      "stderr_sha256": "19f0cfd0e9084abc1cd0ef7290d69f3ba7ea6c6f1901462484d31f0779b9d305",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "test_names": [
+        "test_revocation_registry_propagates_and_unknown_tracking_fails_closed",
+        "test_separation_of_duties_rejects_shared_identity_control_domain_and_permissions",
+        "test_single_use_authorization_is_atomic_and_replay_is_denied",
+        "test_two_man_rule_requires_configured_threshold_independent_signed_fresh_approvals"
+      ]
+    },
+    "implementation/super1200/tests/test_d04_runtime.py": {
+      "exit_code": 0,
+      "stderr_sha256": "9ccbae0ba655ba0b2d9c693a7893fb7abfa3809a210bbf64d4816179abc47d0a",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "test_names": [
+        "test_attestation_policy_fails_closed_on_subject_freshness_and_verifier",
+        "test_certification_non_transitivity_rejects_derived_subject_and_scope",
+        "test_certification_scope_is_subject_bound_and_non_transitive",
+        "test_content_address_is_deterministic_and_key_order_independent",
+        "test_cue_provider_binds_schema_input_and_deterministic_export",
+        "test_cyclonedx_sbom_hashes_components_and_rejects_bad_digest",
+        "test_dual_ledger_cross_references_without_conflation",
+        "test_evidence_conflict_fails_closed",
+        "test_evidence_expiration_uses_half_open_utc_interval_and_fails_closed",
+        "test_evidence_invalidation_graph_propagates_and_rejects_cycles",
+        "test_evidence_reuse_requires_exact_key_and_validated_record",
+        "test_evidence_reuse_requires_exact_validated_non_invalidated_key",
+        "test_github_attestation_binds_subject_and_declares_unsigned_state",
+        "test_graph_accepts_known_parent_and_exports_stable_hash",
+        "test_graph_rejects_unknown_parent_and_conflicting_rewrite",
+        "test_intoto_statement_has_required_identity_and_rejects_bad_digest",
+        "test_json_schema_provider_pins_dialect_and_rejects_unknown_fields",
+        "test_minimal_recomputation_only_recomputes_transitive_subset",
+        "test_opa_rego_provider_pins_version_bundle_and_sandbox",
+        "test_policy_as_code_binds_versioned_policy_input_and_audit_receipt",
+        "test_policy_envelope_validation",
+        "test_policy_impact_analysis_invalidates_causal_evidence_dependencies",
+        "test_policy_test_suite_covers_positive_negative_bypass_conflict_and_unknown",
+        "test_policy_version_history_binds_hash_interval_and_supersession",
+        "test_rekor_entry_requires_valid_inclusion_proof",
+        "test_semantic_policy_diff_finds_affected_rules_claims_tests_and_authorizations",
+        "test_sigstore_bundle_requires_trusted_crypto_verifier_and_exact_subject",
+        "test_slsa_provenance_binds_source_builder_and_invocation",
+        "test_spdx_sbom_is_sorted_hash_bound_and_rejects_duplicate_ids",
+        "test_transparency_log_is_append_only_hash_chained_and_anchorable",
+        "test_universal_object_id_is_stable_scoped_and_does_not_embed_value",
+        "test_w3c_prov_adapter_preserves_generation_and_usage_edges"
+      ]
+    },
+    "implementation/super1200/tests/test_d04_trust_controls.py": {
+      "exit_code": 0,
+      "stderr_sha256": "a8589b06750385a3e5541848a92b9093135c488a93555f5389f2db25702d31a4",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "test_names": [
+        "test_actor_independence_verifier_rejects_shared_identity_domain_credentials_path_and_permissions",
+        "test_offline_trust_bundle_binds_version_chain_expiry_hash_and_signature",
+        "test_trust_root_registry_binds_key_purpose_custody_validity_and_revocation",
+        "test_trust_root_rotation_requires_cross_signatures_overlap_and_monotonic_history"
+      ]
+    },
+    "implementation/super1200/tests/test_d05_formal_reasoning.py": {
+      "exit_code": 0,
+      "stderr_sha256": "7f5b423f539ba1b68affa84b384b07f24465c5bfed1738b3d23cb902c868f500",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "test_names": [
+        "test_dependent_type_theory_checks_pi_lambda_application_and_dependent_codomain",
+        "test_formal_reasoning_fabric_requires_explicit_assumptions_and_trusted_replay",
+        "test_higher_order_type_theory_validates_quantification_over_function_space",
+        "test_hott_identity_typechecks_refl_but_keeps_axioms_and_proof_claims_explicit"
+      ]
+    },
+    "implementation/super1200/tests/test_shared.py": {
+      "exit_code": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "5a94724adbd008a27dd5eb13570e82a2dbf462aa206a7c09898ee7f8ab196671",
+      "test_names": []
+    }
+  },
+  "schema": "SUPER1200_D05_MATERIAL_EVIDENCE/1",
+  "selected_test_result": {
+    "exit_code": 0,
+    "result": "PASS",
+    "single_test_run_confirmed": true,
+    "stderr_sha256": "49bd7accbaa76056b59658807d4cadaad7d2182d3ac8a80a7208065b907b1177",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "test_case": "test_formal_reasoning_fabric_requires_explicit_assumptions_and_trusted_replay",
+    "test_name_seen": true,
+    "unittest_ok_marker": true
+  },
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d05_formal_reasoning.py",
+  "test_case": "test_formal_reasoning_fabric_requires_explicit_assumptions_and_trusted_replay",
+  "test_invocation": [
+    "python3",
+    "-B",
+    "test_d05_formal_reasoning.py",
+    "-v",
+    "D05FormalReasoningTests.test_formal_reasoning_fabric_requires_explicit_assumptions_and_trusted_replay"
+  ],
+  "test_sha256": "0922dec5bd80d63bb27b58d25746c207d9a0cf812f532b8da19be385066abb5e",
+  "theorem_claims_from_type_checking": false,
+  "validated_at_utc": "2026-10-14T00:42:06.924240+00:00",
+  "worker_started_at_utc": "2026-10-14T00:42:06.342635+00:00"
+}

@@ -1795,12 +1795,15 @@
       "canonical_name": "FORMAL_REASONING_FABRIC",
       "capability_id": 121,
       "hardening": "proof obligations, assumptions, tool/version, replay and counterexamples",
-      "implementation_state": "DECLARED",
-      "materialization": "COMPOSE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+EXPLICIT_ASSUMPTIONS+DEPENDENT_TYPE_CHECKER+HOTT_IDENTITY_CHECK+PER_CAPABILITY_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "FORMAL_FABRIC",
-      "wire": "122..156,70"
+      "wire": "122..156,70",
+      "implementation_artifact": "implementation/super1200/domains/D05_formal_reasoning.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_formal_reasoning.py",
+      "theorem_claim_from_type_checking": false
     },
     {
       "acquire": "proof assistant when selected",
@@ -1808,12 +1811,15 @@
       "canonical_name": "DEPENDENT_TYPE_THEORY_ENGINE",
       "capability_id": 122,
       "hardening": "typed propositions and explicit axioms; no theorem claim without checker evidence",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE+EXT_TOOL_OPTIONAL",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+EXPLICIT_ASSUMPTIONS+DEPENDENT_TYPE_CHECKER+HOTT_IDENTITY_CHECK+PER_CAPABILITY_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "FORMAL_ENGINE",
-      "wire": "121,123..137"
+      "wire": "121,123..137",
+      "implementation_artifact": "implementation/super1200/domains/D05_formal_reasoning.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_formal_reasoning.py",
+      "theorem_claim_from_type_checking": false
     },
     {
       "acquire": "proof provider if needed",
@@ -1821,12 +1827,15 @@
       "canonical_name": "HIGHER_ORDER_TYPE_THEORY",
       "capability_id": 123,
       "hardening": "explicit higher-order semantics and proof obligations",
-      "implementation_state": "DECLARED",
-      "materialization": "SCHEMA+CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+EXPLICIT_ASSUMPTIONS+DEPENDENT_TYPE_CHECKER+HOTT_IDENTITY_CHECK+PER_CAPABILITY_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "FORMAL_MODEL",
-      "wire": "121,122,124"
+      "wire": "121,122,124",
+      "implementation_artifact": "implementation/super1200/domains/D05_formal_reasoning.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_formal_reasoning.py",
+      "theorem_claim_from_type_checking": false
     },
     {
       "acquire": "HoTT-capable proof assistant if selected",
@@ -1834,12 +1843,15 @@
       "canonical_name": "HOTT_ENGINE",
       "capability_id": 124,
       "hardening": "formal definitions, universe assumptions, replayable proofs",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE+EXT_TOOL_OPTIONAL",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+EXPLICIT_ASSUMPTIONS+DEPENDENT_TYPE_CHECKER+HOTT_IDENTITY_CHECK+PER_CAPABILITY_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "FORMAL_ENGINE",
-      "wire": "122,125,126,127"
+      "wire": "122,125,126,127",
+      "implementation_artifact": "implementation/super1200/domains/D05_formal_reasoning.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_formal_reasoning.py",
+      "theorem_claim_from_type_checking": false
     },
     {
       "acquire": "compatible prover",

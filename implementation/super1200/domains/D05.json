@@ -4,26 +4,42 @@
     {
       "canonical_name": "FORMAL_REASONING_FABRIC",
       "capability_id": 121,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/D05_formal_reasoning.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_formal_reasoning.py",
+      "materialization": "CODE+EXPLICIT_ASSUMPTIONS+DEPENDENT_TYPE_CHECKER+HOTT_IDENTITY_CHECK+PER_CAPABILITY_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false
     },
     {
       "canonical_name": "DEPENDENT_TYPE_THEORY_ENGINE",
       "capability_id": 122,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/D05_formal_reasoning.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_formal_reasoning.py",
+      "materialization": "CODE+EXPLICIT_ASSUMPTIONS+DEPENDENT_TYPE_CHECKER+HOTT_IDENTITY_CHECK+PER_CAPABILITY_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false
     },
     {
       "canonical_name": "HIGHER_ORDER_TYPE_THEORY",
       "capability_id": 123,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/D05_formal_reasoning.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_formal_reasoning.py",
+      "materialization": "CODE+EXPLICIT_ASSUMPTIONS+DEPENDENT_TYPE_CHECKER+HOTT_IDENTITY_CHECK+PER_CAPABILITY_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false
     },
     {
       "canonical_name": "HOTT_ENGINE",
       "capability_id": 124,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/D05_formal_reasoning.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_formal_reasoning.py",
+      "materialization": "CODE+EXPLICIT_ASSUMPTIONS+DEPENDENT_TYPE_CHECKER+HOTT_IDENTITY_CHECK+PER_CAPABILITY_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false
     },
     {
       "canonical_name": "UNIVALENT_FOUNDATIONS_ENGINE",
