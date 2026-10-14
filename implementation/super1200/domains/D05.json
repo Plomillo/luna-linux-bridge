@@ -44,26 +44,42 @@
     {
       "canonical_name": "UNIVALENT_FOUNDATIONS_ENGINE",
       "capability_id": 125,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/D05_formal_foundations.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_formal_foundations.py",
+      "materialization": "CODE+PER_CAPABILITY_TEST+REGRESSION_SUITES+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false
     },
     {
       "canonical_name": "CUBICAL_TYPE_THEORY_PROVIDER",
       "capability_id": 126,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/D05_formal_foundations.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_formal_foundations.py",
+      "materialization": "CODE+PER_CAPABILITY_TEST+REGRESSION_SUITES+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false
     },
     {
       "canonical_name": "HIGHER_INDUCTIVE_TYPES",
       "capability_id": 127,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/D05_formal_foundations.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_formal_foundations.py",
+      "materialization": "CODE+PER_CAPABILITY_TEST+REGRESSION_SUITES+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false
     },
     {
       "canonical_name": "PROOF_TERM_REGISTRY",
       "capability_id": 128,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/D05_formal_foundations.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_formal_foundations.py",
+      "materialization": "CODE+PER_CAPABILITY_TEST+REGRESSION_SUITES+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false
     },
     {
       "canonical_name": "PROOF_CHECKER",

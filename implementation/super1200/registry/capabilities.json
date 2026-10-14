@@ -1859,12 +1859,15 @@
       "canonical_name": "UNIVALENT_FOUNDATIONS_ENGINE",
       "capability_id": 125,
       "hardening": "univalence assumptions explicitly versioned and machine checked",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE+EXT_TOOL_OPTIONAL",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+PER_CAPABILITY_TEST+REGRESSION_SUITES+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "FORMAL_ENGINE",
-      "wire": "124,126,127"
+      "wire": "124,126,127",
+      "implementation_artifact": "implementation/super1200/domains/D05_formal_foundations.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_formal_foundations.py",
+      "theorem_claim_from_type_checking": false
     },
     {
       "acquire": "official chosen cubical prover/toolchain",
@@ -1872,12 +1875,15 @@
       "canonical_name": "CUBICAL_TYPE_THEORY_PROVIDER",
       "capability_id": 126,
       "hardening": "provider/version/library-set pinned; AUTHORITY=NONE",
-      "implementation_state": "DECLARED",
-      "materialization": "EXT_TOOL+ADAPTER",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+PER_CAPABILITY_TEST+REGRESSION_SUITES+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "FORMAL_PROVIDER",
-      "wire": "124,125,127,129"
+      "wire": "124,125,127,129",
+      "implementation_artifact": "implementation/super1200/domains/D05_formal_foundations.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_formal_foundations.py",
+      "theorem_claim_from_type_checking": false
     },
     {
       "acquire": "NONE beyond prover",
@@ -1885,12 +1891,15 @@
       "canonical_name": "HIGHER_INDUCTIVE_TYPES",
       "capability_id": 127,
       "hardening": "definitions and computation rules machine checked",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE/SPEC",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+PER_CAPABILITY_TEST+REGRESSION_SUITES+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "FORMAL_CAPABILITY",
-      "wire": "124..126,128"
+      "wire": "124..126,128",
+      "implementation_artifact": "implementation/super1200/domains/D05_formal_foundations.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_formal_foundations.py",
+      "theorem_claim_from_type_checking": false
     },
     {
       "acquire": "NONE",
@@ -1898,12 +1907,15 @@
       "canonical_name": "PROOF_TERM_REGISTRY",
       "capability_id": 128,
       "hardening": "proof term ID, theorem, assumptions, prover, version, hash and dependencies",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE+SCHEMA",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+PER_CAPABILITY_TEST+REGRESSION_SUITES+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "REGISTRY",
-      "wire": "129,130,131"
+      "wire": "129,130,131",
+      "implementation_artifact": "implementation/super1200/domains/D05_formal_foundations.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_formal_foundations.py",
+      "theorem_claim_from_type_checking": false
     },
     {
       "acquire": "checker matching proof language",

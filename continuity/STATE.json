@@ -1,23 +1,23 @@
 {
   "active": true,
   "active_worker": false,
-  "block_reason": null,
-  "blocked": false,
-  "blocked_at": null,
+  "block_reason": "NEXT_D05_TRANCHE_EXECUTOR_NOT_REGISTERED",
+  "blocked": true,
+  "blocked_at": "2026-10-14T00:53:01.528700+00:00",
   "branch": "custosz/super-1200-implementation-20261007",
   "certified": false,
-  "current_checkpoint": "D05_121_124_MATERIALIZED",
-  "diagnostic": "D05 121-124 passed scoped G23/G24. A separate formal-foundations executor for D05 125-128 is registered; the next bounded run requires the exact D05 121-124 certificate and pinned source artifacts. Global SUPER1200 certification remains NOT_CERTIFIED.",
+  "current_checkpoint": "D05_125_128_MATERIALIZED",
+  "diagnostic": "D05 capabilities 125-128 materialized with explicit univalence-assumption profile, pinned cubical provider binding (no execution), higher-inductive declaration structure validation, and hash-bound proof-term registry. Structural checks do not prove univalence, cubical derivations or theorems. G23/G24 pending; global SUPER1200 remains NOT_CERTIFIED.",
   "dispatch_error": null,
   "dispatch_requested_at": "2026-10-13T21:14:39.496Z",
-  "g23": "PASS_FOR_SCOPE_D05_121_124",
-  "g24": "PASS_FOR_SCOPE_D05_121_124",
+  "g23": "PENDING_FOR_SCOPE_D05_125_128",
+  "g24": "PENDING_G23",
   "mission_id": "SUPER1200-CONTINUATION-20261007",
   "next_point": "D05",
   "next_worker": "CUSTOSZ_V7",
-  "recovery_note": "Execute only the registered D05 formal-foundations worker for capabilities 125-128 from checkpoint D05_121_124_MATERIALIZED. After materialization, hold until independent G23/G24. Do not modify the D05 121-124 certified module/test source or propagate scoped certification.",
+  "recovery_note": "Register a reviewed task-specific executor for D05 capabilities 129-132 only after scoped G23/G24 for D05 125-128. Preserve D05 121-124 source hashes and its historical scoped certificate; no certification propagation.",
   "schema": "SUPER1200_CONTINUITY_STATE/1.0",
-  "status": "ACTIVE",
+  "status": "BLOCKED",
   "terminal": false,
   "transition_id": "D03-CHECKPOINT-TO-D04-001",
   "checkpoint_assessment": "REPORTED_FUNCTIONAL_CLOSURE_NOT_INDEPENDENTLY_VALIDATED",
@@ -44,25 +44,25 @@
     "g24": "BLOCKED",
     "certification_granted": false
   },
-  "material_worker_ready": true,
+  "material_worker_ready": false,
   "global_certification_status": "NOT_CERTIFIED",
   "last_execution": {
-    "workflow_run_id": 38491601700,
-    "workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38491601700",
+    "workflow_run_id": 38492608988,
+    "workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38492608988",
     "status": "COMPLETED_SUCCESS_MATERIAL_TRANCHE",
-    "started_at_utc": "2026-10-14T00:42:06.342635+00:00",
-    "completed_at_utc": "2026-10-14T00:42:06.924240+00:00",
+    "started_at_utc": "2026-10-14T00:53:00.908032+00:00",
+    "completed_at_utc": "2026-10-14T00:53:01.528700+00:00",
     "configured_runtime_hours": 0.05,
     "material_capabilities": [
-      121,
-      122,
-      123,
-      124
+      125,
+      126,
+      127,
+      128
     ],
-    "behavior_tests": "7_REGRESSION_SUITES_PASS;4_OF_4_CAPABILITY_TESTS_PASS",
-    "executor": "implementation/super1200/runtime/d05_material_worker_121_124.py",
-    "g23": "PASS_FOR_SCOPE_D05_121_124",
-    "g24": "PASS_FOR_SCOPE_D05_121_124",
+    "behavior_tests": "8_REGRESSION_SUITES_PASS;4_OF_4_CAPABILITY_TESTS_PASS",
+    "executor": "implementation/super1200/runtime/d05_material_worker_125_128.py",
+    "g23": "PENDING",
+    "g24": "PENDING_G23",
     "global_certification_status": "NOT_CERTIFIED"
   },
   "execution_history": [
@@ -98,160 +98,63 @@
     "reconciled_at_utc": "2026-10-13T23:21:34.744830+00:00"
   },
   "last_material_execution": {
-    "executor": "implementation/super1200/runtime/d05_material_worker_121_124.py",
+    "executor": "implementation/super1200/runtime/d05_material_worker_125_128.py",
     "capabilities": [
-      121,
-      122,
-      123,
-      124
+      125,
+      126,
+      127,
+      128
     ],
-    "tests": "7_REGRESSION_SUITES_PASS;4_OF_4_INDEPENDENT_TEST_INVOCATIONS_PASS",
+    "tests": "8_REGRESSION_SUITES_PASS;4_OF_4_INDEPENDENT_TEST_INVOCATIONS_PASS",
     "test_case_results": [
       {
-        "test_case": "test_formal_reasoning_fabric_requires_explicit_assumptions_and_trusted_replay",
+        "test_case": "test_univalence_profile_pins_explicit_assumptions_without_claiming_univalence",
         "exit_code": 0,
         "result": "PASS",
         "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stderr_sha256": "49bd7accbaa76056b59658807d4cadaad7d2182d3ac8a80a7208065b907b1177",
+        "stderr_sha256": "15ee933f113e0945fffd4717354b955b0df13e2e48e28dd000923b8fa0169dcf",
         "test_name_seen": true,
         "single_test_run_confirmed": true,
         "unittest_ok_marker": true
       },
       {
-        "test_case": "test_dependent_type_theory_checks_pi_lambda_application_and_dependent_codomain",
+        "test_case": "test_cubical_provider_binding_pins_provider_version_library_and_no_authority",
         "exit_code": 0,
         "result": "PASS",
         "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stderr_sha256": "d5bc0d5a2e0b6a2870e5d78582a1d52de6a65f0e7e6e9319c26103bf3ad235ad",
+        "stderr_sha256": "883691b20aa8d7d1fead6172a211f98e88ef26900d5d60c98db949e7c646a899",
         "test_name_seen": true,
         "single_test_run_confirmed": true,
         "unittest_ok_marker": true
       },
       {
-        "test_case": "test_higher_order_type_theory_validates_quantification_over_function_space",
+        "test_case": "test_higher_inductive_spec_validates_constructor_and_computation_rule_references",
         "exit_code": 0,
         "result": "PASS",
         "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stderr_sha256": "c649c82b111ab3d1df6c0f821bb1fb0f3123db6c98989335c59c07fccae5a3d1",
+        "stderr_sha256": "8c5e0c16906394840cc440984dc6e675649d4b8517de7938ebc6cf94bccfca35",
         "test_name_seen": true,
         "single_test_run_confirmed": true,
         "unittest_ok_marker": true
       },
       {
-        "test_case": "test_hott_identity_typechecks_refl_but_keeps_axioms_and_proof_claims_explicit",
+        "test_case": "test_proof_term_registry_binds_hashes_assumptions_prover_and_dependencies",
         "exit_code": 0,
         "result": "PASS",
         "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stderr_sha256": "32f80136335425e71ccc192f58bd6f237e749007c5d253915b18560653b9fa9f",
+        "stderr_sha256": "73fdff749b41926c570ac13ba4fb7021ac4ef9bf73efe203b2b668f7e527d2c5",
         "test_name_seen": true,
         "single_test_run_confirmed": true,
         "unittest_ok_marker": true
       }
     ],
-    "module_sha256": "46e85e6212ffc29b6084eae50c9c293e0888a12306594b5cf85e8a998565a17a",
-    "test_sha256": "0922dec5bd80d63bb27b58d25746c207d9a0cf812f532b8da19be385066abb5e",
-    "regression_suites": {
-      "implementation/super1200/tests/test_shared.py": {
-        "exit_code": 0,
-        "stdout_sha256": "5a94724adbd008a27dd5eb13570e82a2dbf462aa206a7c09898ee7f8ab196671",
-        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "test_names": []
-      },
-      "implementation/super1200/tests/test_d03_runtime.py": {
-        "exit_code": 0,
-        "stdout_sha256": "72da42031d1fc11b30cc21bc9434d37187e28cafbef7b8ee21376a045a7e5e6c",
-        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "test_names": []
-      },
-      "implementation/super1200/tests/test_d04_runtime.py": {
-        "exit_code": 0,
-        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stderr_sha256": "9ccbae0ba655ba0b2d9c693a7893fb7abfa3809a210bbf64d4816179abc47d0a",
-        "test_names": [
-          "test_attestation_policy_fails_closed_on_subject_freshness_and_verifier",
-          "test_certification_non_transitivity_rejects_derived_subject_and_scope",
-          "test_certification_scope_is_subject_bound_and_non_transitive",
-          "test_content_address_is_deterministic_and_key_order_independent",
-          "test_cue_provider_binds_schema_input_and_deterministic_export",
-          "test_cyclonedx_sbom_hashes_components_and_rejects_bad_digest",
-          "test_dual_ledger_cross_references_without_conflation",
-          "test_evidence_conflict_fails_closed",
-          "test_evidence_expiration_uses_half_open_utc_interval_and_fails_closed",
-          "test_evidence_invalidation_graph_propagates_and_rejects_cycles",
-          "test_evidence_reuse_requires_exact_key_and_validated_record",
-          "test_evidence_reuse_requires_exact_validated_non_invalidated_key",
-          "test_github_attestation_binds_subject_and_declares_unsigned_state",
-          "test_graph_accepts_known_parent_and_exports_stable_hash",
-          "test_graph_rejects_unknown_parent_and_conflicting_rewrite",
-          "test_intoto_statement_has_required_identity_and_rejects_bad_digest",
-          "test_json_schema_provider_pins_dialect_and_rejects_unknown_fields",
-          "test_minimal_recomputation_only_recomputes_transitive_subset",
-          "test_opa_rego_provider_pins_version_bundle_and_sandbox",
-          "test_policy_as_code_binds_versioned_policy_input_and_audit_receipt",
-          "test_policy_envelope_validation",
-          "test_policy_impact_analysis_invalidates_causal_evidence_dependencies",
-          "test_policy_test_suite_covers_positive_negative_bypass_conflict_and_unknown",
-          "test_policy_version_history_binds_hash_interval_and_supersession",
-          "test_rekor_entry_requires_valid_inclusion_proof",
-          "test_semantic_policy_diff_finds_affected_rules_claims_tests_and_authorizations",
-          "test_sigstore_bundle_requires_trusted_crypto_verifier_and_exact_subject",
-          "test_slsa_provenance_binds_source_builder_and_invocation",
-          "test_spdx_sbom_is_sorted_hash_bound_and_rejects_duplicate_ids",
-          "test_transparency_log_is_append_only_hash_chained_and_anchorable",
-          "test_universal_object_id_is_stable_scoped_and_does_not_embed_value",
-          "test_w3c_prov_adapter_preserves_generation_and_usage_edges"
-        ]
-      },
-      "implementation/super1200/tests/test_d04_authorization_governance.py": {
-        "exit_code": 0,
-        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stderr_sha256": "3aad5f8f9beba3d34f957b39d44181e8f54d11e1388184bff2d536746df3c0d6",
-        "test_names": [
-          "test_authorization_proof_binds_request_signature_time_scope_and_revocation",
-          "test_capability_lease_enforces_actor_action_resource_time_revocation_and_consumption",
-          "test_least_privilege_plan_selects_only_goal_ancestors_and_rejects_bad_dags",
-          "test_time_bound_authority_requires_verified_clock_exact_scope_and_current_interval"
-        ]
-      },
-      "implementation/super1200/tests/test_d04_governance_controls.py": {
-        "exit_code": 0,
-        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stderr_sha256": "19f0cfd0e9084abc1cd0ef7290d69f3ba7ea6c6f1901462484d31f0779b9d305",
-        "test_names": [
-          "test_revocation_registry_propagates_and_unknown_tracking_fails_closed",
-          "test_separation_of_duties_rejects_shared_identity_control_domain_and_permissions",
-          "test_single_use_authorization_is_atomic_and_replay_is_denied",
-          "test_two_man_rule_requires_configured_threshold_independent_signed_fresh_approvals"
-        ]
-      },
-      "implementation/super1200/tests/test_d04_trust_controls.py": {
-        "exit_code": 0,
-        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stderr_sha256": "a8589b06750385a3e5541848a92b9093135c488a93555f5389f2db25702d31a4",
-        "test_names": [
-          "test_actor_independence_verifier_rejects_shared_identity_domain_credentials_path_and_permissions",
-          "test_offline_trust_bundle_binds_version_chain_expiry_hash_and_signature",
-          "test_trust_root_registry_binds_key_purpose_custody_validity_and_revocation",
-          "test_trust_root_rotation_requires_cross_signatures_overlap_and_monotonic_history"
-        ]
-      },
-      "implementation/super1200/tests/test_d05_formal_reasoning.py": {
-        "exit_code": 0,
-        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stderr_sha256": "7f5b423f539ba1b68affa84b384b07f24465c5bfed1738b3d23cb902c868f500",
-        "test_names": [
-          "test_dependent_type_theory_checks_pi_lambda_application_and_dependent_codomain",
-          "test_formal_reasoning_fabric_requires_explicit_assumptions_and_trusted_replay",
-          "test_higher_order_type_theory_validates_quantification_over_function_space",
-          "test_hott_identity_typechecks_refl_but_keeps_axioms_and_proof_claims_explicit"
-        ]
-      }
-    },
-    "github_actions_run_id": 38491601700,
-    "g23": "PASS_FOR_SCOPE_D05_121_124",
-    "g24": "PASS_FOR_SCOPE_D05_121_124",
+    "module_sha256": "1cd86f5bd17094972a0b86231cddcb73164074d7774aec6c003d118296d184b9",
+    "test_sha256": "81395b9039d40392e425a63e444fd7ce6758bc5b1cffd43310696596f28818f9",
+    "github_actions_run_id": 38492608988,
+    "g23": "PENDING",
+    "g24": "PENDING",
     "certification_granted": false,
-    "completed_at_utc": "2026-10-14T00:42:06.924240+00:00"
+    "completed_at_utc": "2026-10-14T00:53:01.528700+00:00"
   },
   "independent_validation": {
     "scope": "D04_CAPABILITIES_117_120_ONLY",
@@ -284,32 +187,7 @@
     "certification_granted": true,
     "global_certification_granted": false
   },
-  "next_tranche_authorization": {
-    "authorization_id": "SUPER1200-D05-125-128-AUTH-20261014",
-    "checkpoint_predecessor": "D05_121_124_MATERIALIZED",
-    "executor": "implementation/super1200/runtime/d05_material_worker_125_128.py",
-    "capabilities": [
-      125,
-      126,
-      127,
-      128
-    ],
-    "prior_scope_g23": "PASS_FOR_SCOPE_D05_121_124",
-    "prior_scope_g24": "PASS_FOR_SCOPE_D05_121_124",
-    "scoped_certificate": "continuity/certification/D05_121_124.json",
-    "prior_certificate_blob_sha": "84eaf1c90d6299e840bb282fe959d913232d88c5",
-    "prior_certificate_source_hashes": {
-      "module_sha256": "46e85e6212ffc29b6084eae50c9c293e0888a12306594b5cf85e8a998565a17a",
-      "test_sha256": "0922dec5bd80d63bb27b58d25746c207d9a0cf812f532b8da19be385066abb5e"
-    },
-    "material_module_path": "implementation/super1200/domains/D05_formal_foundations.py",
-    "material_module_blob_sha": "0d00af7059e080f05d3ca346296261a397a93d88",
-    "material_test_path": "implementation/super1200/tests/test_d05_formal_foundations.py",
-    "material_test_blob_sha": "12bacd9bc5b5db4e31eee1aa4c4c7b8bc58e54e0",
-    "global_certification_granted": false,
-    "prior_g23_g24_workflow_run_id": 38491844778,
-    "authorized_at_utc": "2026-10-14T00:50:06.304Z"
-  },
+  "next_tranche_authorization": null,
   "scoped_certifications": {
     "D04:93-96": {
       "scope": "D04:93-96",
