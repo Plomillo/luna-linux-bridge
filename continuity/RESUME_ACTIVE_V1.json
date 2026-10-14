@@ -1,0 +1,26 @@
+{
+  "schema": "LOUKSNA_RESUME_ACTIVE/1.0",
+  "status": "ACTIVE",
+  "activated_at_utc": "2026-10-14T02:45:00Z",
+  "contract": "DEFINITIVE_OPERATING_CONTRACT_V1",
+  "loop": "ANTIPARALYSIS_LOOP_V1",
+  "rails": {
+    "SUPER1200": {
+      "branch": "custosz/super-1200-implementation-20261007",
+      "checkpoint": "D05_129_132_MATERIALIZED",
+      "mode": "LIVE_UNDER_CONTRACT",
+      "next_action": "Register reviewed D05 material executor after 132; continuous audit remains scheduled"
+    },
+    "DIRECTIVA": {
+      "branch": "automation/mtls-evidence-gate-20261013",
+      "checkpoint": "READINESS_PROBE_ACTIVE_HOST_HOLD",
+      "mode": "LIVE_UNDER_CONTRACT",
+      "next_action": "Keep readiness live; research GitHub-only host evidence path; no HP primary host"
+    }
+  },
+  "fail_closed": true,
+  "antiparalysis": true,
+  "evidence_search_mandatory": true,
+  "global_certification_status": "NOT_CERTIFIED",
+  "notes": "Resume is active. Stillness without KEDB next_action is forbidden."
+}
