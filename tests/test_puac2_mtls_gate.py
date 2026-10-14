@@ -74,6 +74,11 @@ def test_privileged_chain_stays_excluded_from_pull_requests():
     assert "if: github.event_name != 'pull_request'" in workflow
     assert "runs-on: [self-hosted, linux, x64, luna-aux]" in workflow
     assert "  workflow_dispatch:" in workflow
+    # Continuous readiness probe must exist and emit the auditable schema
+    assert "readiness_probe:" in workflow
+    assert "PUAC2_READINESS/1.0" in workflow
+    assert "puac2-readiness-" in workflow
+
 
 def test_autonomous_workflow_writes_valid_json_newline():
     workflow = (Path(__file__).parents[1] / ".github" / "workflows" / "puac2-autonomous.yml").read_text()
@@ -85,3 +90,9 @@ def test_autonomous_workflow_matches_host_hashes_by_basename():
     workflow = (Path(__file__).parents[1] / ".github" / "workflows" / "puac2-autonomous.yml").read_text()
     assert 'actual_hashes[Path(parts[1].lstrip("*")).name] = parts[0]' in workflow
 
+
+def test_readiness_probe_is_non_certifying_and_always_runs():
+    workflow = (Path(__file__).parents[1] / ".github" / "workflows" / "puac2-autonomous.yml").read_text()
+    assert '"certification_possible": False' in workflow
+    assert "This probe never issues G23/G24" in workflow
+    assert "needs: readiness_probe" in workflow
