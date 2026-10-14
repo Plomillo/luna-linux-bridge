@@ -52,10 +52,10 @@ jobs:
           root=Path(".")
           scope="D05:125-128"
           expected={
-            121:("UNIVALENT_FOUNDATIONS_ENGINE","test_univalence_profile_pins_explicit_assumptions_without_claiming_univalence"),
-            122:("CUBICAL_TYPE_THEORY_PROVIDER","test_cubical_provider_binding_pins_provider_version_library_and_no_authority"),
-            123:("HIGHER_INDUCTIVE_TYPES","test_higher_inductive_spec_validates_constructor_and_computation_rule_references"),
-            124:("PROOF_TERM_REGISTRY","test_proof_term_registry_binds_hashes_assumptions_prover_and_dependencies"),
+            125:("UNIVALENT_FOUNDATIONS_ENGINE","test_univalence_profile_pins_explicit_assumptions_without_claiming_univalence"),
+            126:("CUBICAL_TYPE_THEORY_PROVIDER","test_cubical_provider_binding_pins_provider_version_library_and_no_authority"),
+            127:("HIGHER_INDUCTIVE_TYPES","test_higher_inductive_spec_validates_constructor_and_computation_rule_references"),
+            128:("PROOF_TERM_REGISTRY","test_proof_term_registry_binds_hashes_assumptions_prover_and_dependencies"),
           }
           def load(p): return json.loads(p.read_text(encoding="utf-8"))
           def sha(p): return hashlib.sha256(p.read_bytes()).hexdigest()
@@ -77,9 +77,9 @@ jobs:
           if state.get("certified") is not False or state.get("global_certification_status")!="NOT_CERTIFIED": fail("GLOBAL_CERTIFICATION_DRIFT")
           if state.get("last_execution",{}).get("status")!="COMPLETED_SUCCESS_MATERIAL_TRANCHE" or state.get("last_execution",{}).get("material_capabilities")!=[125,126,127,128]: fail("MATERIAL_RUN_SCOPE")
           if state.get("g23")!="PENDING_FOR_SCOPE_D05_125_128" or state.get("g24")!="PENDING_G23": fail("GATE_STATE")
-          prior_state=state.get("scoped_certifications",{}).get("D05:125-128",{})
-          if prior_state.get("scope")!="D05:125-128" or prior_state.get("status")!="PASS" or prior_state.get("global_certification_granted") is not False: fail("PRIOR_SCOPE_STATE")
-          if prior.get("result")!="PASS" or prior.get("scope")!="D05:125-128" or prior.get("g23")!="PASS" or prior.get("g24")!="PASS" or prior.get("certification_granted") is not True or prior.get("global_super1200_certified") is not False: fail("PRIOR_CERTIFICATE_SCOPE")
+          prior_state=state.get("scoped_certifications",{}).get("D05:121-124",{})
+          if prior_state.get("scope")!="D05:121-124" or prior_state.get("status")!="PASS" or prior_state.get("global_certification_granted") is not False: fail("PRIOR_SCOPE_STATE")
+          if prior.get("result")!="PASS" or prior.get("scope")!="D05:121-124" or prior.get("g23")!="PASS" or prior.get("g24")!="PASS" or prior.get("certification_granted") is not True or prior.get("global_super1200_certified") is not False: fail("PRIOR_CERTIFICATE_SCOPE")
           if prior.get("module_sha256")!=sha(root/"implementation/super1200/domains/D05_formal_reasoning.py") or prior.get("test_sha256")!=sha(root/"implementation/super1200/tests/test_d05_formal_reasoning.py"):
             fail("PRIOR_CERT_SOURCE_DRIFT:D05_121_124")
           d04_prior_path=root/"continuity/certification/D04_117_120.json"
@@ -102,7 +102,7 @@ jobs:
             if str(ev.get("github_actions_run_id"))!=str(state.get("last_execution",{}).get("workflow_run_id")): fail(f"EVIDENCE_RUN_PROVENANCE_{cid}")
             if ev.get("module_sha256")!=module_hash or ev.get("test_sha256")!=test_hash: fail(f"EVIDENCE_SOURCE_HASH_{cid}")
             if ev.get("prior_scoped_certificate")!="continuity/certification/D05_121_124.json" or ev.get("prior_certificate_blob_sha")!=blob: fail(f"EVIDENCE_PRIOR_CERT_{cid}")
-            if (ev.get("theorem_claim_from_type_checking") is not False and ev.get("proof_semantics") != "TYPE_CHECKING_AND_OBLIGATION_FABRIC_ONLY") or ev.get("certification_granted") is not False: fail(f"EVIDENCE_OVERCLAIM_{cid}")
+            if (ev.get("theorem_claim_from_type_checking") is not False and ev.get("proof_semantics") != "DECLARATION_AND_STRUCTURAL_VALIDATION_ONLY") or ev.get("certification_granted") is not False: fail(f"EVIDENCE_OVERCLAIM_{cid}")
             evidence.append({"capability_id":cid,"evidence_sha256":recorded,"test_case":test_name})
           suite_paths=[
             "implementation/super1200/tests/test_shared.py",
@@ -111,6 +111,7 @@ jobs:
             "implementation/super1200/tests/test_d04_authorization_governance.py",
             "implementation/super1200/tests/test_d04_governance_controls.py",
             "implementation/super1200/tests/test_d04_trust_controls.py",
+            "implementation/super1200/tests/test_d05_formal_reasoning.py",
             "implementation/super1200/tests/test_d05_formal_foundations.py",
           ]
           suite_receipts=[]
@@ -202,9 +203,9 @@ jobs:
           if g23.get("module_sha256")!=module_hash or g23.get("test_sha256")!=test_hash:deny("G23_SOURCE_HASH_DRIFT")
           if state.get("current_checkpoint")!="D05_125_128_MATERIALIZED" or state.get("certified") is not False or state.get("global_certification_status")!="NOT_CERTIFIED":deny("CHECKPOINT_OR_GLOBAL_STATE")
           if state.get("g23")!="PENDING_FOR_SCOPE_D05_125_128" or state.get("g24")!="PENDING_G23":deny("GATE_STATE_DRIFT")
-          prior_state=state.get("scoped_certifications",{}).get("D05:125-128",{})
+          prior_state=state.get("scoped_certifications",{}).get("D05:121-124",{})
           if prior_state.get("status")!="PASS" or prior_state.get("global_certification_granted") is not False:deny("PRIOR_SCOPE_STATE")
-          if prior.get("result")!="PASS" or prior.get("scope")!="D05:125-128" or prior.get("g23")!="PASS" or prior.get("g24")!="PASS" or prior.get("certification_granted") is not True or prior.get("global_super1200_certified") is not False:deny("PRIOR_CERTIFICATE")
+          if prior.get("result")!="PASS" or prior.get("scope")!="D05:121-124" or prior.get("g23")!="PASS" or prior.get("g24")!="PASS" or prior.get("certification_granted") is not True or prior.get("global_super1200_certified") is not False:deny("PRIOR_CERTIFICATE")
           if prior.get("module_sha256")!=sha(root/"implementation/super1200/domains/D05_formal_reasoning.py") or prior.get("test_sha256")!=sha(root/"implementation/super1200/tests/test_d05_formal_reasoning.py"):
             deny("PRIOR_SOURCE_HASH:D05_121_124")
           d04_prior_path=root/"continuity/certification/D04_117_120.json"
@@ -213,10 +214,10 @@ jobs:
           prior_blob=git_blob_sha(prior_path)
           if prior_blob!=g23.get("prior_certificate_blob_sha"):deny("PRIOR_CERTIFICATE_BLOB_DRIFT")
           expected={
-            121:("UNIVALENT_FOUNDATIONS_ENGINE","test_univalence_profile_pins_explicit_assumptions_without_claiming_univalence"),
-            122:("CUBICAL_TYPE_THEORY_PROVIDER","test_cubical_provider_binding_pins_provider_version_library_and_no_authority"),
-            123:("HIGHER_INDUCTIVE_TYPES","test_higher_inductive_spec_validates_constructor_and_computation_rule_references"),
-            124:("PROOF_TERM_REGISTRY","test_proof_term_registry_binds_hashes_assumptions_prover_and_dependencies"),
+            125:("UNIVALENT_FOUNDATIONS_ENGINE","test_univalence_profile_pins_explicit_assumptions_without_claiming_univalence"),
+            126:("CUBICAL_TYPE_THEORY_PROVIDER","test_cubical_provider_binding_pins_provider_version_library_and_no_authority"),
+            127:("HIGHER_INDUCTIVE_TYPES","test_higher_inductive_spec_validates_constructor_and_computation_rule_references"),
+            128:("PROOF_TERM_REGISTRY","test_proof_term_registry_binds_hashes_assumptions_prover_and_dependencies"),
           }
           ri={x["capability_id"]:x for x in reg["items"]};di={x["capability_id"]:x for x in domain["capabilities"]}
           items=[]
@@ -227,7 +228,7 @@ jobs:
             if rec!=calculated or ev.get("status")!="PASS" or ev.get("canonical_name")!=name or ev.get("test_case")!=test_name:deny("EVIDENCE_INTEGRITY:"+str(cid))
             if ev.get("module_sha256")!=module_hash or ev.get("test_sha256")!=test_hash or ev.get("prior_certificate_blob_sha")!=prior_blob:deny("EVIDENCE_SOURCE_BINDING:"+str(cid))
             if ri[cid].get("implementation_state")!="EVIDENCED" or di[cid].get("implementation_state")!="EVIDENCED":deny("IMPLEMENTATION_STATE:"+str(cid))
-            if (ev.get("theorem_claim_from_type_checking") is not False and ev.get("proof_semantics") != "TYPE_CHECKING_AND_OBLIGATION_FABRIC_ONLY") or ev.get("certification_granted") is not False:deny("EPISTEMIC_OVERCLAIM:"+str(cid))
+            if (ev.get("theorem_claim_from_type_checking") is not False and ev.get("proof_semantics") != "DECLARATION_AND_STRUCTURAL_VALIDATION_ONLY") or ev.get("certification_granted") is not False:deny("EPISTEMIC_OVERCLAIM:"+str(cid))
             items.append({"capability_id":cid,"evidence_sha256":rec})
           for rel in [
             "implementation/super1200/tests/test_shared.py",
@@ -236,7 +237,7 @@ jobs:
             "implementation/super1200/tests/test_d04_authorization_governance.py",
             "implementation/super1200/tests/test_d04_governance_controls.py",
             "implementation/super1200/tests/test_d04_trust_controls.py",
-            "implementation/super1200/tests/test_d05_formal_foundations.py"]:
+            "implementation/super1200/tests/test_d05_formal_reasoning.py","implementation/super1200/tests/test_d05_formal_foundations.py"]:
             proc=subprocess.run([sys.executable,"-B",str(root/rel),"-v"],cwd=root,text=True,capture_output=True,timeout=300)
             if proc.returncode:print(proc.stdout[-8000:]);print(proc.stderr[-8000:]);deny("G24_REGRESSION:"+rel)
           cert={
