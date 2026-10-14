@@ -173,7 +173,8 @@ jobs:
           def sha(rel):return hashlib.sha256((root/rel).read_bytes()).hexdigest()
           def blob_sha(p):
             b=p.read_bytes()
-            return hashlib.sha1(f"blob {len(b)}\\0".encode("ascii")+b).hexdigest()
+            header=b"blob "+str(len(b)).encode("ascii")+bytes([0])
+            return hashlib.sha1(header+b).hexdigest()
           state=load("continuity/STATE.json")
           executors=load("continuity/EXECUTORS.json").get("executors",{})
           cert_path=root/"continuity/certification/D04_117_120.json"
