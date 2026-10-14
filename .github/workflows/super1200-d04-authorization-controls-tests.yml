@@ -1,42 +1,19 @@
-name: SUPER1200 D04 authorization controls tests 113-116
+name: SUPER1200 — non-certifying duplicate guard for D04 113-116
 
 on:
-  push:
-    branches:
-      - custosz/super-1200-implementation-20261007
-    paths:
-      - "implementation/super1200/domains/D04_authorization_controls.py"
-      - "implementation/super1200/tests/test_d04_authorization_controls.py"
-      - ".github/workflows/super1200-d04-authorization-controls-tests.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
 
-concurrency:
-  group: super1200-d04-authorization-controls-tests
-  cancel-in-progress: false
-
 jobs:
-  test-authorization-controls:
+  duplicate_guard:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
     steps:
-      - name: Checkout governed candidate branch
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          ref: custosz/super-1200-implementation-20261007
-          persist-credentials: false
-      - name: Run full authorization-control suite and each capability test independently
+      - name: State that the canonical governance-control suite is authoritative
         shell: bash
         run: |
           set -Eeuo pipefail
-          python3 -B implementation/super1200/tests/test_d04_authorization_controls.py -v
-          for test_name in \
-            test_single_use_authorization_consumes_nonce_atomically_and_denies_replay \
-            test_revocation_registry_is_append_only_effective_time_aware_and_hash_chained \
-            test_separation_of_duties_requires_distinct_actors_and_forbids_privilege_conflicts \
-            test_two_man_rule_applies_threshold_only_to_configured_risks_and_checks_signatures_expiry; do
-            python3 -B implementation/super1200/tests/test_d04_authorization_controls.py -v "D04AuthorizationControlsTests.$test_name"
-          done
-          echo "SUPER1200_AUTHORIZATION_CONTROLS_TESTS=PASS INDEPENDENT_CASES=4/4 GLOBAL_CERTIFICATION=FALSE"
+          echo "SUPER1200_NOTICE=This duplicate test workflow is intentionally non-certifying."
+          echo "SUPER1200_CANONICAL_TESTS=implementation/super1200/tests/test_d04_governance_controls.py"
+          echo "SUPER1200_GLOBAL_CERTIFICATION=NOT_CERTIFIED"
