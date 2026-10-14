@@ -3,9 +3,9 @@
   "branch": "custosz/super-1200-implementation-20261007",
   "executors": {
     "D04": "implementation/super1200/runtime/d04_material_worker_117_120.py",
-    "D05": "implementation/super1200/runtime/d05_material_worker_125_128.py"
+    "D05": "implementation/super1200/runtime/d05_material_worker_129_132.py"
   },
-  "missing_executor_state": "REGISTERED_D05_FOUNDATIONS_EXECUTOR_125_128_PENDING_AUTHORIZED_RUN",
+  "missing_executor_state": "REGISTERED_D05_PROOF_ASSURANCE_EXECUTOR_129_132_PENDING_AUTHORIZED_RUN",
   "unregistered_domain_must_not_be_invented": true,
   "blocked_executor_records": [
     {
@@ -34,10 +34,10 @@
     }
   ],
   "reconciliation": {
-    "observed_at_utc": "2026-10-14T00:48:28.893Z",
-    "status": "D05_125_128_EXECUTOR_REGISTERED_PENDING_AUTHORIZED_MATERIAL_RUN",
+    "observed_at_utc": "2026-10-14T00:55:59.860Z",
+    "status": "D05_129_132_EXECUTOR_REGISTERED_PENDING_AUTHORIZED_MATERIAL_RUN",
     "policy": "FAIL_CLOSED",
-    "note": "Task-specific D05 formal-foundations executor for capabilities 125-128 is registered. It requires scoped G23/G24 PASS for D05 121-124 and the exact prior certificate blob/source hashes, runs eight regression suites and each capability test independently, records hash-bound evidence, and stops after 125-128 because no reviewed executor for 129-132 is registered. Global SUPER1200 certification remains NOT_CERTIFIED."
+    "note": "Task-specific proof-assurance executor for D05 capabilities 129-132 is registered. It requires scoped G23/G24 PASS for D05 125-128 and the exact prior certificate blob/source hashes, runs nine regression suites and four capability-specific tests, records hash-bound evidence, and stops after 129-132 because no reviewed executor for 133-136 is registered. Global SUPER1200 certification remains NOT_CERTIFIED."
   },
   "executor_history": [
     {
@@ -95,6 +95,33 @@
       "prior_domain_certificate": "continuity/certification/D05_121_124.json",
       "global_certification": false,
       "registered_at_utc": "2026-10-14T00:48:28.897Z"
+    },
+    {
+      "domain": "D05",
+      "executor": "implementation/super1200/runtime/d05_material_worker_125_128.py",
+      "capabilities": [
+        125,
+        126,
+        127,
+        128
+      ],
+      "status": "PRIOR_TRANCHE_SCOPED_G23_G24_PASS",
+      "certificate": "continuity/certification/D05_125_128.json",
+      "global_certification": false
+    },
+    {
+      "domain": "D05",
+      "executor": "implementation/super1200/runtime/d05_material_worker_129_132.py",
+      "capabilities": [
+        129,
+        130,
+        131,
+        132
+      ],
+      "status": "REGISTERED_PENDING_AUTHORIZED_MATERIAL_RUN",
+      "prior_domain_certificate": "continuity/certification/D05_125_128.json",
+      "global_certification": false,
+      "registered_at_utc": "2026-10-14T00:55:59.860Z"
     }
   ]
 }
