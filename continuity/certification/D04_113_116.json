@@ -1,0 +1,40 @@
+{
+  "authorization_dependency_sha256": "182c25bba925eed8044eb340bb5461cba9e45189c7b5ce276372cb81859e8017",
+  "authorization_test_dependency_sha256": "d72b1e13d77d8c6c0e7e3082be175950772b2a4c35440c0d69d97af64779afd7",
+  "base_test_dependency_sha256": "8c32455a51ccf1c4d81309e15d18261e537f85a50f63ac74ac063e5466064e13",
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "certified_at_utc": "2026-10-14T00:14:38.889934+00:00",
+  "evidence": [
+    {
+      "capability_id": 113,
+      "evidence_sha256": "b2f9fce8584869406c797cb6b85ee062b152a24a5491082bbd582cf54f230bf7"
+    },
+    {
+      "capability_id": 114,
+      "evidence_sha256": "56a0cad9bad1703f82ec1d0dab3a6c1757bfd2ed1eb3d24fb903e48d866e7979"
+    },
+    {
+      "capability_id": 115,
+      "evidence_sha256": "944ceac67cb594c96bd179f7a8eb623592a6df4a14daabc6b4c8e475f987966b"
+    },
+    {
+      "capability_id": 116,
+      "evidence_sha256": "4e9e1bc73da30c55b57d61c6dc94d5ecfdd7b7e580d526c27f41bba54c9376ef"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": 38488999382,
+  "g24": "PASS",
+  "g24_workflow_run_id": 38488999382,
+  "global_super1200_certified": false,
+  "material_workflow_run_id": 38488563681,
+  "module_sha256": "6027e39c1e6e72377b5cad6a9179809d706705b07880ea8b3db479dfe7e0dac7",
+  "result": "PASS",
+  "runtime_dependency_sha256": "591082428db8a61946e78341df2e086785d8d0d49f20cf632a4b3a4501139940",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D04:113-116",
+  "scope_only": true,
+  "test_sha256": "4480c9f00ac0473d2f1e0ac0a0b82b2df48990d9f0aef3860614615f82f9cf0f",
+  "validator": "github-actions-g24-job"
+}
