@@ -6,9 +6,11 @@ on:
       - custosz/super-1200-implementation-20261007
     paths:
       - "continuity/EXECUTORS.json"
-      - "implementation/super1200/runtime/d04_material_worker_109_112.py"
+      - "implementation/super1200/runtime/d04_material_worker_113_116.py"
       - "implementation/super1200/domains/D04_authorization_governance.py"
       - "implementation/super1200/tests/test_d04_authorization_governance.py"
+      - "implementation/super1200/domains/D04_governance_controls.py"
+      - "implementation/super1200/tests/test_d04_governance_controls.py"
       - "implementation/super1200/domains/D04_runtime.py"
       - "implementation/super1200/tests/test_d04_runtime.py"
       - "integrations/kestra/flows/10-super1200-continuity.yml"
@@ -169,21 +171,22 @@ jobs:
           root=Path(".")
           state=json.loads((root/"continuity/STATE.json").read_text(encoding="utf-8"))
           executors=json.loads((root/"continuity/EXECUTORS.json").read_text(encoding="utf-8")).get("executors",{})
-          cert_path=root/"continuity/certification/D04_105_108.json"
-          expected="implementation/super1200/runtime/d04_material_worker_109_112.py"
+          cert_path=root/"continuity/certification/D04_109_112.json"
+          expected="implementation/super1200/runtime/d04_material_worker_113_116.py"
           prior=json.loads(cert_path.read_text(encoding="utf-8")) if cert_path.is_file() else {}
           scoped=state.get("scoped_certification",{})
           def sha(path): return hashlib.sha256((root/path).read_bytes()).hexdigest()
           conditions={
-              "checkpoint_predecessor":state.get("current_checkpoint")=="D04_105_108_MATERIALIZED",
+              "checkpoint_predecessor":state.get("current_checkpoint")=="D04_109_112_MATERIALIZED",
               "not_blocked":state.get("blocked") is False,
               "active_status":state.get("status") in {"ACTIVE","READY_FOR_CONTINUATION"},
               "material_worker_ready":state.get("material_worker_ready") is True,
-              "prior_g23":state.get("g23")=="PASS_FOR_SCOPE_D04_105_108",
-              "prior_g24":state.get("g24")=="PASS_FOR_SCOPE_D04_105_108",
-              "prior_scoped_certificate":scoped.get("scope")=="D04:105-108" and scoped.get("status")=="PASS" and scoped.get("global_certification_granted") is False,
-              "prior_certificate_scope":prior.get("result")=="PASS" and prior.get("scope")=="D04:105-108" and prior.get("g23")=="PASS" and prior.get("g24")=="PASS" and prior.get("certification_granted") is True and prior.get("global_super1200_certified") is False,
-              "prior_certificate_source_binding":prior.get("module_sha256")==sha("implementation/super1200/domains/D04_runtime.py") and prior.get("test_sha256")==sha("implementation/super1200/tests/test_d04_runtime.py"),
+              "prior_g23":state.get("g23")=="PASS_FOR_SCOPE_D04_109_112",
+              "prior_g24":state.get("g24")=="PASS_FOR_SCOPE_D04_109_112",
+              "prior_scoped_certificate":scoped.get("scope")=="D04:109-112" and scoped.get("status")=="PASS" and scoped.get("global_certification_granted") is False,
+              "prior_certificate_scope":prior.get("result")=="PASS" and prior.get("scope")=="D04:109-112" and prior.get("g23")=="PASS" and prior.get("g24")=="PASS" and prior.get("certification_granted") is True and prior.get("global_super1200_certified") is False,
+              "prior_scope_recorded":state.get("scoped_certifications",{}).get("D04:109-112",{}).get("scope")=="D04:109-112" and state.get("scoped_certifications",{}).get("D04:109-112",{}).get("status")=="PASS" and state.get("scoped_certifications",{}).get("D04:109-112",{}).get("global_certification_granted") is False,
+              "prior_certificate_source_binding":prior.get("module_sha256")==sha("implementation/super1200/domains/D04_authorization_governance.py") and prior.get("test_sha256")==sha("implementation/super1200/tests/test_d04_authorization_governance.py") and prior.get("runtime_dependency_sha256")==sha("implementation/super1200/domains/D04_runtime.py") and prior.get("base_test_dependency_sha256")==sha("implementation/super1200/tests/test_d04_runtime.py"),
               "executor_mapping":executors.get("D04")==expected,
               "executor_file_exists":(root/expected).is_file(),
           }
@@ -230,33 +233,34 @@ jobs:
           signature=inspect.signature(worker.mission_start)
           kwargs={"report_minutes":1}
           if "executor" in signature.parameters: kwargs["executor"]="CUSTOSZ_V7"
-          if "executor_path" in signature.parameters: kwargs["executor_path"]="implementation/super1200/runtime/d04_material_worker_109_112.py"
-          if "assigned_executor" in signature.parameters: kwargs["assigned_executor"]="implementation/super1200/runtime/d04_material_worker_109_112.py"
+          if "executor_path" in signature.parameters: kwargs["executor_path"]="implementation/super1200/runtime/d04_material_worker_113_116.py"
+          if "assigned_executor" in signature.parameters: kwargs["assigned_executor"]="implementation/super1200/runtime/d04_material_worker_113_116.py"
           if "worker_id" in signature.parameters: kwargs["worker_id"]="CUSTOSZ_V7"
           mission=worker.mission_start(0.05,"LUNA_PROJECT",
-              "Materially implement D04 capabilities 109-112 only after current-source scoped G23/G24 PASS for 105-108; preserve evidence, provenance, rollback and non-regression; no certification propagation; MetaOS deferred.",**kwargs)
+              "Materially implement D04 capabilities 113-116 only after current-source scoped G23/G24 PASS for 109-112; preserve evidence, provenance, rollback and non-regression; no certification propagation; MetaOS deferred.",**kwargs)
           tick=worker.mission_tick(mission["mission_id"])
-          print("SUPER1200_CUSTOSZ_V7_MISSION "+json.dumps({"mission_id":mission.get("mission_id"),"executor":mission.get("executor"),"executor_path":"implementation/super1200/runtime/d04_material_worker_109_112.py","tick":tick,"configured_hours":0.05},sort_keys=True,default=str))
+          print("SUPER1200_CUSTOSZ_V7_MISSION "+json.dumps({"mission_id":mission.get("mission_id"),"executor":mission.get("executor"),"executor_path":"implementation/super1200/runtime/d04_material_worker_113_116.py","tick":tick,"configured_hours":0.05},sort_keys=True,default=str))
           PY
-          python3 -B -I implementation/super1200/runtime/d04_material_worker_109_112.py
+          python3 -B -I implementation/super1200/runtime/d04_material_worker_113_116.py
           python3 -B -I implementation/super1200/tests/test_d04_runtime.py
           python3 -B -I implementation/super1200/tests/test_d04_authorization_governance.py
+          python3 -B -I implementation/super1200/tests/test_d04_governance_controls.py
 
       - name: Persist hash-bound evidence and checkpoint to authorized branch
         shell: bash
         run: |
           set -Eeuo pipefail
           git diff --check
-          git add implementation/super1200/domains/D04_runtime.py implementation/super1200/tests/test_d04_runtime.py implementation/super1200/domains/D04_authorization_governance.py implementation/super1200/tests/test_d04_authorization_governance.py implementation/super1200/registry/capabilities.json implementation/super1200/domains/D04.json continuity/STATE.json continuity/runtime-evidence/D04
+          git add implementation/super1200/domains/D04_runtime.py implementation/super1200/tests/test_d04_runtime.py implementation/super1200/domains/D04_authorization_governance.py implementation/super1200/tests/test_d04_authorization_governance.py implementation/super1200/domains/D04_governance_controls.py implementation/super1200/tests/test_d04_governance_controls.py implementation/super1200/registry/capabilities.json implementation/super1200/domains/D04.json continuity/STATE.json continuity/runtime-evidence/D04
           if git diff --cached --quiet; then
             echo "SUPER1200_PERSISTENCE=NO_CHANGES"
             exit 0
           fi
           git config user.name "custosz-v7-runtime-bot"
           git config user.email "custosz-v7-runtime-bot@users.noreply.github.com"
-          git commit -m "feat(super1200): materialize D04 authorization capabilities 109-112"
+          git commit -m "feat(super1200): materialize D04 governance controls 113-116"
           git push origin HEAD:refs/heads/custosz/super-1200-implementation-20261007
-          echo "SUPER1200_PERSISTENCE=PASS CHECKPOINT=D04_109_112_MATERIALIZED GLOBAL_CERTIFICATION=FALSE"
+          echo "SUPER1200_PERSISTENCE=PASS CHECKPOINT=D04_113_116_MATERIALIZED GLOBAL_CERTIFICATION=FALSE"
 
       - name: Preserve Kestra runtime diagnostics on failure
         if: failure()
