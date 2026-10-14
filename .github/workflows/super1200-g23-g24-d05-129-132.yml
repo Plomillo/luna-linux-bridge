@@ -76,11 +76,11 @@ jobs:
           if reg.get("count")!=1200 or len(reg.get("items",[]))!=1200: fail("GLOBAL_REGISTRY_COUNT")
           if state.get("current_checkpoint")!="D05_129_132_MATERIALIZED": fail("CHECKPOINT")
           if state.get("certified") is not False or state.get("global_certification_status")!="NOT_CERTIFIED": fail("GLOBAL_CERTIFICATION_DRIFT")
-          if state.get("last_execution",{}).get("status")!="COMPLETED_SUCCESS_MATERIAL_TRANCHE" or state.get("last_execution",{}).get("material_capabilities")!=[125,126,127,128]: fail("MATERIAL_RUN_SCOPE")
+          if state.get("last_execution",{}).get("status")!="COMPLETED_SUCCESS_MATERIAL_TRANCHE" or state.get("last_execution",{}).get("material_capabilities")!=[129,130,131,132]: fail("MATERIAL_RUN_SCOPE")
           if state.get("g23")!="PENDING_FOR_SCOPE_D05_129_132" or state.get("g24")!="PENDING_G23": fail("GATE_STATE")
-          prior_state=state.get("scoped_certifications",{}).get("D05:129-132",{})
-          if prior_state.get("scope")!="D05:129-132" or prior_state.get("status")!="PASS" or prior_state.get("global_certification_granted") is not False: fail("PRIOR_SCOPE_STATE")
-          if prior.get("result")!="PASS" or prior.get("scope")!="D05:129-132" or prior.get("g23")!="PASS" or prior.get("g24")!="PASS" or prior.get("certification_granted") is not True or prior.get("global_super1200_certified") is not False: fail("PRIOR_CERTIFICATE_SCOPE")
+          prior_state=state.get("scoped_certifications",{}).get("D05:125-128",{})
+          if prior_state.get("scope")!="D05:125-128" or prior_state.get("status")!="PASS" or prior_state.get("global_certification_granted") is not False: fail("PRIOR_SCOPE_STATE")
+          if prior.get("result")!="PASS" or prior.get("scope")!="D05:125-128" or prior.get("g23")!="PASS" or prior.get("g24")!="PASS" or prior.get("certification_granted") is not True or prior.get("global_super1200_certified") is not False: fail("PRIOR_CERTIFICATE_SCOPE")
           if prior.get("module_sha256")!=sha(root/"implementation/super1200/domains/D05_formal_foundations.py") or prior.get("test_sha256")!=sha(root/"implementation/super1200/tests/test_d05_formal_foundations.py"):
             fail("PRIOR_CERT_SOURCE_DRIFT:D05_125_128")
           d05_prior_path=root/"continuity/certification/D05_121_124.json"
@@ -205,9 +205,9 @@ jobs:
           if g23.get("module_sha256")!=module_hash or g23.get("test_sha256")!=test_hash:deny("G23_SOURCE_HASH_DRIFT")
           if state.get("current_checkpoint")!="D05_129_132_MATERIALIZED" or state.get("certified") is not False or state.get("global_certification_status")!="NOT_CERTIFIED":deny("CHECKPOINT_OR_GLOBAL_STATE")
           if state.get("g23")!="PENDING_FOR_SCOPE_D05_129_132" or state.get("g24")!="PENDING_G23":deny("GATE_STATE_DRIFT")
-          prior_state=state.get("scoped_certifications",{}).get("D05:129-132",{})
+          prior_state=state.get("scoped_certifications",{}).get("D05:125-128",{})
           if prior_state.get("status")!="PASS" or prior_state.get("global_certification_granted") is not False:deny("PRIOR_SCOPE_STATE")
-          if prior.get("result")!="PASS" or prior.get("scope")!="D05:129-132" or prior.get("g23")!="PASS" or prior.get("g24")!="PASS" or prior.get("certification_granted") is not True or prior.get("global_super1200_certified") is not False:deny("PRIOR_CERTIFICATE")
+          if prior.get("result")!="PASS" or prior.get("scope")!="D05:125-128" or prior.get("g23")!="PASS" or prior.get("g24")!="PASS" or prior.get("certification_granted") is not True or prior.get("global_super1200_certified") is not False:deny("PRIOR_CERTIFICATE")
           if prior.get("module_sha256")!=sha(root/"implementation/super1200/domains/D05_formal_foundations.py") or prior.get("test_sha256")!=sha(root/"implementation/super1200/tests/test_d05_formal_foundations.py"):
             deny("PRIOR_SOURCE_HASH:D05_125_128")
           d05_prior_path=root/"continuity/certification/D05_121_124.json"
