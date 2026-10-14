@@ -210,8 +210,8 @@ jobs:
             "authorization_prior_g24":auth.get("prior_scope_g24")=="PASS_FOR_SCOPE_D05_121_124",
             "authorization_prior_certificate":auth.get("scoped_certificate")=="continuity/certification/D05_121_124.json",
             "authorization_global_certification_false":auth.get("global_certification_granted") is False,
-            "tested_module_hash":auth.get("material_module_sha256")==sha("implementation/super1200/domains/D05_formal_reasoning.py"),
-            "tested_test_hash":auth.get("material_test_sha256")==sha("implementation/super1200/tests/test_d05_formal_reasoning.py"),
+            "tested_module_hash":auth.get("material_module_blob_sha")==blob_sha(root/"implementation/super1200/domains/D05_formal_foundations.py"),
+            "tested_test_hash":auth.get("material_test_blob_sha")==blob_sha(root/"implementation/super1200/tests/test_d05_formal_foundations.py"),
             "executor_mapping":executors.get("D05")==expected,
             "executor_file_exists":(root/expected).is_file(),
             "domain_contract":load("implementation/super1200/domains/D05.json").get("domain_id")=="D05",
@@ -220,13 +220,13 @@ jobs:
             "conditions":conditions,"checkpoint":state.get("current_checkpoint"),
             "status":state.get("status"),"blocked":state.get("blocked"),
             "executor":executors.get("D05"),"prior_scope":"D05:121-124",
-            "next_scope":"D05:121-124","global_certification":"NOT_CERTIFIED"
+            "next_scope":"D05:125-128","global_certification":"NOT_CERTIFIED"
           },sort_keys=True))
           if not all(conditions.values()):
             raise SystemExit("SUPER1200_DENY_MATERIAL_EXECUTION_CHECKPOINT_CERTIFICATE_OR_HASH_GATE")
           PY
 
-      - name: Validate CUSTOSZ V7 and execute authorized D05 tranche 121-124
+      - name: Validate CUSTOSZ V7 and execute authorized D05 tranche 125-128
         shell: bash
         run: |
           set -Eeuo pipefail
