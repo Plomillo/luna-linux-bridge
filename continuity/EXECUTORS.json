@@ -34,10 +34,10 @@
     }
   ],
   "reconciliation": {
-    "observed_at_utc": "2026-10-14T00:55:59.860Z",
+    "observed_at_utc": "2026-10-14T00:59:13.751Z",
     "status": "D05_129_132_EXECUTOR_REGISTERED_PENDING_AUTHORIZED_MATERIAL_RUN",
     "policy": "FAIL_CLOSED",
-    "note": "Task-specific proof-assurance executor for D05 capabilities 129-132 is registered. It requires scoped G23/G24 PASS for D05 125-128 and the exact prior certificate blob/source hashes, runs nine regression suites and four capability-specific tests, records hash-bound evidence, and stops after 129-132 because no reviewed executor for 133-136 is registered. Global SUPER1200 certification remains NOT_CERTIFIED."
+    "note": "Task-specific proof-assurance executor for D05 129-132 is registered. It requires scoped G23/G24 PASS for D05 125-128, exact prior certificate blob/source binding, nine regression suites and four capability-specific tests; it records hash-bound evidence and stops until a reviewed executor for 133-136 is registered. Global SUPER1200 certification remains NOT_CERTIFIED."
   },
   "executor_history": [
     {
@@ -122,6 +122,33 @@
       "prior_domain_certificate": "continuity/certification/D05_125_128.json",
       "global_certification": false,
       "registered_at_utc": "2026-10-14T00:55:59.860Z"
+    },
+    {
+      "domain": "D05",
+      "executor": "implementation/super1200/runtime/d05_material_worker_125_128.py",
+      "capabilities": [
+        125,
+        126,
+        127,
+        128
+      ],
+      "status": "PRIOR_TRANCHE_SCOPED_G23_G24_PASS",
+      "certificate": "continuity/certification/D05_125_128.json",
+      "global_certification": false
+    },
+    {
+      "domain": "D05",
+      "executor": "implementation/super1200/runtime/d05_material_worker_129_132.py",
+      "capabilities": [
+        129,
+        130,
+        131,
+        132
+      ],
+      "status": "REGISTERED_PENDING_AUTHORIZED_MATERIAL_RUN",
+      "prior_domain_certificate": "continuity/certification/D05_125_128.json",
+      "global_certification": false,
+      "registered_at_utc": "2026-10-14T00:59:13.751Z"
     }
   ]
 }
