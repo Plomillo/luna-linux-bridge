@@ -1,0 +1,62 @@
+{
+  "schema": "LOUKSNA_KEDB/1.0",
+  "entries": [
+    {
+      "entry_id": "KEDB-SUPER1200-20261014-001",
+      "scope": "SUPER1200",
+      "symptom": "NEXT_D05_TRANCHE_EXECUTOR_NOT_REGISTERED after D05 129-132 scoped certification",
+      "root_cause": "Executor cleared after scoped cert; next tranche executor not yet registered",
+      "evidence_present": true,
+      "evidence_missing": ["reviewed material executor for next D05 tranche after 132"],
+      "known_solution_id": null,
+      "workaround": "Register task-specific executor with behavioural tests; do not use dispatcher as executor",
+      "remediation_applied": false,
+      "verification_result": "NOT_RUN",
+      "status": "HOLD_CONSCIOUS",
+      "next_action": "Register and review next D05 material executor under ANTIPARALYSIS_LOOP_V1; then materialize next tranche",
+      "research_launched": false,
+      "research_summary": null,
+      "branch": "custosz/super-1200-implementation-20261007",
+      "commit_sha": "98ab9857fca94fb3b3d3776bba1789311301503d",
+      "checkpoint": "D05_129_132_MATERIALIZED",
+      "actor": "definitive-contract-bootstrap",
+      "created_at_utc": "2026-10-14T02:30:00Z",
+      "updated_at_utc": "2026-10-14T02:30:00Z",
+      "provenance": {
+        "sources": ["continuity/STATE.json", "DEFINITIVE_OPERATING_CONTRACT_V1"],
+        "notes": "Bootstrap entry at contract implementation; no secrets"
+      }
+    },
+    {
+      "entry_id": "KEDB-DIRECTIVA-20261014-001",
+      "scope": "DIRECTIVA",
+      "symptom": "Host validation HOLD — missing runner/host mTLS evidence and/or G23-G24 identities",
+      "root_cause": null,
+      "evidence_present": false,
+      "evidence_missing": [
+        "self-hosted runner luna-aux or GitHub-native equivalent",
+        "host mtls.json + service evidence",
+        "PUAC2 host/rollback reports",
+        "separated G23/G24 signing materials"
+      ],
+      "known_solution_id": null,
+      "workaround": null,
+      "remediation_applied": false,
+      "verification_result": "NOT_RUN",
+      "status": "RESEARCHING",
+      "next_action": "Search GitHub-only mechanisms for host evidence path; keep readiness probe live; do not use owner HP as primary host",
+      "research_launched": true,
+      "research_summary": "Per DIRECTIVA_GITHUB_ONLY_UNLOCK_V1: unlock is evidence, not more feature code; GitHub Actions consumable path required",
+      "branch": "automation/mtls-evidence-gate-20261013",
+      "commit_sha": "65dc1b57fa71189923f50edb31162eba9ce094e6",
+      "checkpoint": "READINESS_PROBE_ACTIVE_HOST_HOLD",
+      "actor": "definitive-contract-bootstrap",
+      "created_at_utc": "2026-10-14T02:30:00Z",
+      "updated_at_utc": "2026-10-14T02:30:00Z",
+      "provenance": {
+        "sources": ["PUAC2 readiness behavior", "DIRECTIVA_GITHUB_ONLY_UNLOCK_V1"],
+        "notes": "Bootstrap entry; evidence search is mandatory while missing"
+      }
+    }
+  ]
+}
