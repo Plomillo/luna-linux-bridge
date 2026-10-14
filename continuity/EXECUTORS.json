@@ -2,9 +2,9 @@
   "schema": "SUPER1200_CONTINUITY_EXECUTORS/1.0",
   "branch": "custosz/super-1200-implementation-20261007",
   "executors": {
-    "D04": "implementation/super1200/runtime/d04_material_worker_109_112.py"
+    "D04": "implementation/super1200/runtime/d04_material_worker_113_116.py"
   },
-  "missing_executor_state": "REGISTERED_D04_MATERIAL_EXECUTOR_109_112",
+  "missing_executor_state": "REGISTERED_D04_MATERIAL_EXECUTOR_113_116",
   "unregistered_domain_must_not_be_invented": true,
   "blocked_executor_records": [
     {
@@ -33,9 +33,9 @@
     }
   ],
   "reconciliation": {
-    "observed_at_utc": "2026-10-13T23:59:45Z",
-    "status": "AUTHORIZED_FOR_GITHUB_HOSTED_MATERIAL_RUN",
+    "observed_at_utc": "2026-10-14T00:05:00Z",
+    "status": "REGISTERED_PENDING_GITHUB_HOSTED_MATERIAL_RUN",
     "policy": "FAIL_CLOSED",
-    "note": "D04 authorization executor for IDs 109-112 is registered; checkpoint D04_105_108_MATERIALIZED is ACTIVE after scoped G23/G24 PASS for D04:105-108. The hosted supervisor must validate state and prior certificate source hashes before the bounded material run. The worker stops at D04_109_112_MATERIALIZED, requiring new scoped G23/G24 and a separate executor registration for 113-116. Global SUPER1200 certification remains false; MetaOS deferred."
+    "note": "D04 task-specific governance-controls executor for IDs 113-116 is registered. It requires scoped G23/G24 PASS for D04:109-112 and verifies the exact prior-scope certificate with module/test/dependency hashes. It runs base D04, prior authorization, new governance-control suites plus four independent mapped tests, persists hash-bound evidence, and stops after 113-116 until G23/G24 and an executor for 117-120 are registered. Global certification remains NOT_CERTIFIED; MetaOS remains deferred."
   }
 }
