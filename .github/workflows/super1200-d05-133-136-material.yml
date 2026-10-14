@@ -2,6 +2,12 @@ name: SUPER1200 — D05 133-136 material tranche
 # One scoped material run for proof-lifecycle capabilities 133-136. No global certification.
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - custosz/super-1200-implementation-20261007
+    paths:
+      - ".github/workflows/super1200-d05-133-136-material.yml"
+      - "continuity/FORCE_MATERIAL_133_136.marker"
   schedule:
     - cron: "*/10 * * * *"
 permissions:
