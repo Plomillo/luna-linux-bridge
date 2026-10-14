@@ -20,7 +20,7 @@ def sig():
         "zero":nat,
         "Bool":sort0,
         "true":boolean,
-        "Vec":{"kind":"Pi","binder":"n","domain":nat,"codomain":{"kind":"Sort","level":1}},
+        "Vec":{"kind":"Pi","binder":"n","domain":nat,"codomain":{"kind":"Sort","level":0}},
         "succ":{"kind":"Pi","binder":"n","domain":nat,"codomain":nat},
     }
 
@@ -68,7 +68,7 @@ class D05FormalReasoningTests(unittest.TestCase):
         dependent={"kind":"Pi","binder":"n","domain":nat,
                    "codomain":{"kind":"Pi","binder":"v","domain":{"kind":"App","function":{"kind":"Const","name":"Vec"},"argument":{"kind":"Var","name":"n"}},
                                "codomain":{"kind":"App","function":{"kind":"Const","name":"Vec"},"argument":{"kind":"Var","name":"n"}}}}
-        self.assertEqual(formal.infer_type(dependent,signature=signature),{"kind":"Sort","level":1})
+        self.assertEqual(formal.infer_type(dependent,signature=signature),{"kind":"Sort","level":0})
         with self.assertRaisesRegex(ValueError,"application_argument_type_mismatch"):
             formal.infer_type({"kind":"App","function":identity_function,"argument":{"kind":"Const","name":"true"}},signature=signature)
         with self.assertRaisesRegex(ValueError,"variable_unbound"):
@@ -78,7 +78,7 @@ class D05FormalReasoningTests(unittest.TestCase):
         signature=sig()
         nat={"kind":"Const","name":"Nat"}
         boolean={"kind":"Const","name":"Bool"}
-        predicate_type={"kind":"Pi","binder":"n","domain":nat,"codomain":boolean}
+        predicate_type={"kind":"Pi","binder":"n","domain":nat,"codomain":{"kind":"Sort","level":0}}
         higher_order={"kind":"Pi","binder":"P","domain":predicate_type,
                       "codomain":{"kind":"Pi","binder":"n","domain":nat,
                                   "codomain":{"kind":"App","function":{"kind":"Var","name":"P"},"argument":{"kind":"Var","name":"n"}}}}
