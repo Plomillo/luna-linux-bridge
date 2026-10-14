@@ -2,9 +2,9 @@
   "schema": "SUPER1200_CONTINUITY_EXECUTORS/1.0",
   "branch": "custosz/super-1200-implementation-20261007",
   "executors": {
-    "D04": "implementation/super1200/runtime/d04_material_worker_113_116.py"
+    "D04": "implementation/super1200/runtime/d04_material_worker_117_120.py"
   },
-  "missing_executor_state": "REGISTERED_D04_MATERIAL_EXECUTOR_113_116",
+  "missing_executor_state": "REGISTERED_D04_TRUST_MATERIAL_EXECUTOR_117_120_PENDING_AUTHORIZED_RUN",
   "unregistered_domain_must_not_be_invented": true,
   "blocked_executor_records": [
     {
@@ -33,9 +33,24 @@
     }
   ],
   "reconciliation": {
-    "observed_at_utc": "2026-10-14T00:05:00Z",
-    "status": "REGISTERED_PENDING_GITHUB_HOSTED_MATERIAL_RUN",
+    "observed_at_utc": "2026-10-14T00:21:50.983Z",
+    "status": "REGISTERED_PENDING_AUTHORIZED_GITHUB_HOSTED_RUN",
     "policy": "FAIL_CLOSED",
-    "note": "D04 task-specific governance-controls executor for IDs 113-116 is registered. It requires scoped G23/G24 PASS for D04:109-112 and verifies the exact prior-scope certificate with module/test/dependency hashes. It runs base D04, prior authorization, new governance-control suites plus four independent mapped tests, persists hash-bound evidence, and stops after 113-116 until G23/G24 and an executor for 117-120 are registered. Global certification remains NOT_CERTIFIED; MetaOS remains deferred."
-  }
+    "note": "D04 trust-controls executor for capabilities 117-120 is registered. It requires the exact D04:113-116 scoped G23/G24 certificate and validates source/dependency hashes before executing. It runs base D04, authorization-governance, governance-controls, and trust-controls suites plus four individual tests, then persists hash-bound evidence and stops at the end of D04. Global SUPER1200 certification remains NOT_CERTIFIED; MetaOS remains deferred."
+  },
+  "executor_history": [
+    {
+      "domain": "D04",
+      "executor": "implementation/super1200/runtime/d04_material_worker_113_116.py",
+      "capabilities": [
+        113,
+        114,
+        115,
+        116
+      ],
+      "status": "PRIOR_TRANCHE_SCOPED_G23_G24_PASS",
+      "certificate": "continuity/certification/D04_113_116.json",
+      "global_certification": false
+    }
+  ]
 }
