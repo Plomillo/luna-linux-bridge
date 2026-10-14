@@ -1,0 +1,56 @@
+name: Directiva — governed host bootstrap (luna-aux)
+# Executes the versioned bootstrap on the registered runner.
+# Fail-closed. Records evidence. Does not issue G23/G24.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  bootstrap:
+    name: Execute host bootstrap on luna-aux
+    runs-on: [self-hosted, linux, x64, luna-aux]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: automation/mtls-evidence-gate-20261013
+          persist-credentials: true
+      - name: Run versioned bootstrap (root required)
+        run: |
+          set -Eeuo pipefail
+          if [ "$(id -u)" -ne 0 ]; then
+            echo "::error::Runner job is not root. Bootstrap requires root on luna-aux."
+            echo "DIRECTIVA_BOOTSTRAP=DENIED_NOT_ROOT"
+            exit 3
+          fi
+          bash scripts/directiva/host_bootstrap.sh
+          echo "DIRECTIVA_BOOTSTRAP=EXECUTED"
+      - name: Record evidence
+        if: always()
+        run: |
+          set -Eeuo pipefail
+          mkdir -p continuity/host-evidence
+          TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          cat > continuity/host-evidence/BOOTSTRAP_EXECUTION_${{ github.run_id }}.json <<EOF
+          {
+            "schema": "DIRECTIVA_HOST_BOOTSTRAP_EVIDENCE/1.0",
+            "run_id": "${{ github.run_id }}",
+            "sha": "${{ github.sha }}",
+            "runner": "luna-aux",
+            "executed_at_utc": "$TS",
+            "script": "scripts/directiva/host_bootstrap.sh",
+            "notes": "Governed execution. Does not claim G23/G24. Operator must still place real certs and reports if not already present."
+          }
+          EOF
+          git config user.name "custosz-v7-runtime-bot"
+          git config user.email "custosz-v7-runtime-bot@users.noreply.github.com"
+          git add continuity/host-evidence || true
+          if ! git diff --cached --quiet; then
+            git commit -m "evidence(directiva): host bootstrap execution ${{ github.run_id }}"
+            git pull --rebase origin automation/mtls-evidence-gate-20261013 || true
+            git push origin HEAD:automation/mtls-evidence-gate-20261013 || true
+          fi
