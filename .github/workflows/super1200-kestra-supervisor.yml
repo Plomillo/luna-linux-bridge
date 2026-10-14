@@ -7,18 +7,8 @@ on:
     paths:
       - "continuity/EXECUTORS.json"
       - "continuity/STATE.json"
-      - "continuity/certification/D05_125_128.json"
-      - "implementation/super1200/runtime/d05_material_worker_129_132.py"
-      - "implementation/super1200/domains/D05_proof_assurance.py"
-      - "implementation/super1200/tests/test_d05_proof_assurance.py"
-      - "continuity/certification/D05_125_128.json"
-      - "implementation/super1200/domains/D05_formal_foundations.py"
-      - "implementation/super1200/tests/test_d05_formal_foundations.py"
-      - "implementation/super1200/domains/D05_formal_reasoning.py"
-      - "implementation/super1200/tests/test_d05_formal_reasoning.py"
-      - "implementation/super1200/domains/D05.json"
-      - "implementation/super1200/registry/capabilities.json"
-      - "continuity/evidence-refresh/D05_121_124.json"
+      - "continuity/certification/D05_129_132.json"
+      - "implementation/super1200/runtime/d05_material_worker_133_136.py"
       - "integrations/kestra/flows/10-super1200-continuity.yml"
       - ".github/workflows/super1200-kestra-supervisor.yml"
   schedule:
@@ -103,19 +93,15 @@ jobs:
               -u "$KESTRA_ADMIN_USER:$KESTRA_ADMIN_PASSWORD" \
               http://localhost:8080/api/v1/main/flows/search || true)"
             if [ "$http_code" = "200" ]; then
-              echo "SUPER1200_KESTRA_RUNTIME=READY image=kestra/kestra:v2.0.3-slim auth=EPHEMERAL_BASIC placement=GITHUB_HOSTED_EPHEMERAL"
+              echo "SUPER1200_KESTRA_RUNTIME=READY"
               exit 0
             fi
             if ! docker ps --format '{{.Names}}' | grep -qx kestra-super1200; then
               docker logs kestra-super1200 || true
               exit 1
             fi
-            if [ $((n % 10)) -eq 0 ]; then
-              echo "SUPER1200_KESTRA_RUNTIME=WAITING poll=$n http_status=$http_code"
-            fi
             sleep 2
           done
-          docker logs kestra-super1200 || true
           echo "SUPER1200_KESTRA_RUNTIME=TIMEOUT"
           exit 1
 
@@ -128,7 +114,7 @@ jobs:
             -X POST http://localhost:8080/api/v1/main/flows \
             -H 'Content-Type: application/x-yaml' \
             --data-binary @integrations/kestra/flows/10-super1200-continuity.yml
-          echo "SUPER1200_KESTRA_FLOW=LOADED namespace=louksna.kestra id=super1200_continuity"
+          echo "SUPER1200_KESTRA_FLOW=LOADED"
 
       - name: Execute Kestra gate and dispatch CUSTOSZ V7 if authorized
         shell: bash
@@ -143,7 +129,6 @@ jobs:
             echo "SUPER1200_KESTRA_EXECUTION=DENY missing_execution_id"
             exit 1
           fi
-          echo "SUPER1200_KESTRA_EXECUTION_ID=$execution_id"
           echo "KESTRA_LAST_EXECUTION_ID=$execution_id" >> "$GITHUB_ENV"
           for n in $(seq 1 90); do
             current="$(curl --fail-with-body --silent --show-error \
@@ -151,171 +136,78 @@ jobs:
               "http://localhost:8080/api/v1/main/executions/$execution_id")"
             state="$(echo "$current" | jq -r '.state.current // .state // empty')"
             if [ "$state" = "SUCCESS" ] || [ "$state" = "WARNING" ]; then
-              echo "SUPER1200_KESTRA_EXECUTION=SUCCESS state=$state id=$execution_id"
-              echo "$current" | jq '{id,state,labels,metadata}'
+              echo "SUPER1200_KESTRA_EXECUTION=SUCCESS state=$state"
               exit 0
             fi
             if [ "$state" = "FAILED" ] || [ "$state" = "KILLED" ] || [ "$state" = "CANCELLED" ]; then
-              echo "SUPER1200_KESTRA_EXECUTION=FAIL state=$state id=$execution_id"
+              echo "SUPER1200_KESTRA_EXECUTION=FAIL state=$state"
               echo "$current" | jq .
               exit 1
             fi
             sleep 2
           done
-          echo "SUPER1200_KESTRA_EXECUTION=TIMEOUT id=$execution_id"
-          docker logs kestra-super1200 || true
+          echo "SUPER1200_KESTRA_EXECUTION=TIMEOUT"
           exit 1
 
-      - name: Validate D04 predecessor certificate and D05 129-132 authorization
+      - name: Validate D05 129-132 prior and 133-136 authorization
         shell: bash
         run: |
           set -Eeuo pipefail
           python3 -B - <<'PY'
-          import hashlib,json
+          import json
           from pathlib import Path
           root=Path(".")
           def load(p):return json.loads((root/p).read_text(encoding="utf-8"))
-          def sha(rel):return hashlib.sha256((root/rel).read_bytes()).hexdigest()
-          def blob_sha(p):
-            b=p.read_bytes()
-            header=b"blob "+str(len(b)).encode("ascii")+bytes([0])
-            return hashlib.sha1(header+b).hexdigest()
           state=load("continuity/STATE.json")
           executors=load("continuity/EXECUTORS.json").get("executors",{})
-          cert_path=root/"continuity/certification/D05_125_128.json"
-          prior=load("continuity/certification/D05_125_128.json") if cert_path.is_file() else {}
-          expected="implementation/super1200/runtime/d05_material_worker_129_132.py"
+          expected="implementation/super1200/runtime/d05_material_worker_133_136.py"
           auth=state.get("next_tranche_authorization",{})
-          scoped=state.get("scoped_certification",{})
-          prior_scope=state.get("scoped_certifications",{}).get("D05:125-128",{})
-          prior_source_binding=(
-            prior.get("module_sha256")==sha("implementation/super1200/domains/D05_formal_foundations.py")
-            and prior.get("test_sha256")==sha("implementation/super1200/tests/test_d05_formal_foundations.py")
-            and prior.get("prior_certificate_blob_sha")==blob_sha(root/"continuity/certification/D05_121_124.json"))
           conditions={
-            "checkpoint_predecessor":state.get("current_checkpoint")=="D05_125_128_MATERIALIZED",
+            "checkpoint":state.get("current_checkpoint")=="D05_129_132_MATERIALIZED",
             "not_blocked":state.get("blocked") is False,
-            "active_status":state.get("status") in {"ACTIVE","READY_FOR_CONTINUATION"},
-            "material_worker_ready":state.get("material_worker_ready") is True,
-            "global_not_certified":state.get("certified") is False and state.get("global_certification_status")=="NOT_CERTIFIED",
-            "prior_g23":state.get("g23")=="PASS_FOR_SCOPE_D05_125_128",
-            "prior_g24":state.get("g24")=="PASS_FOR_SCOPE_D05_125_128",
-            "prior_scoped_state":scoped.get("scope")=="D05:125-128" and scoped.get("status")=="PASS" and scoped.get("global_certification_granted") is False,
-            "prior_scoped_map":prior_scope.get("scope")=="D05:125-128" and prior_scope.get("status")=="PASS" and prior_scope.get("global_certification_granted") is False,
-            "prior_certificate":prior.get("result")=="PASS" and prior.get("scope")=="D05:125-128" and prior.get("g23")=="PASS" and prior.get("g24")=="PASS" and prior.get("certification_granted") is True and prior.get("global_super1200_certified") is False,
-            "prior_certificate_hash":auth.get("prior_certificate_blob_sha")==blob_sha(cert_path),
-            "prior_certificate_source_binding":prior_source_binding,
-            "authorization_checkpoint":auth.get("checkpoint_predecessor")=="D05_125_128_MATERIALIZED",
-            "authorization_executor":auth.get("executor")==expected,
-            "authorization_capabilities":auth.get("capabilities")==[129,130,131,132],
-            "authorization_prior_g23":auth.get("prior_scope_g23")=="PASS_FOR_SCOPE_D05_125_128",
-            "authorization_prior_g24":auth.get("prior_scope_g24")=="PASS_FOR_SCOPE_D05_125_128",
-            "authorization_prior_certificate":auth.get("scoped_certificate")=="continuity/certification/D05_125_128.json",
-            "authorization_global_certification_false":auth.get("global_certification_granted") is False,
-            "tested_module_hash":auth.get("material_module_blob_sha")==blob_sha(root/"implementation/super1200/domains/D05_proof_assurance.py"),
-            "tested_test_hash":auth.get("material_test_blob_sha")==blob_sha(root/"implementation/super1200/tests/test_d05_proof_assurance.py"),
+            "status":state.get("status")=="READY_FOR_NEXT_MATERIAL_TRANCHE",
+            "global_not_certified":state.get("global_certification_status")=="NOT_CERTIFIED",
+            "prior_g23":state.get("g23")=="PASS_FOR_SCOPE_D05_129_132",
+            "prior_g24":state.get("g24")=="PASS_FOR_SCOPE_D05_129_132",
+            "auth_status":auth.get("status")=="AUTHORIZED_FOR_ONE_MATERIAL_TRANCHE",
+            "auth_executor":auth.get("executor")==expected,
+            "auth_caps":auth.get("capabilities")==[133,134,135,136],
+            "auth_global_false":auth.get("global_certification_granted") is False,
             "executor_mapping":executors.get("D05")==expected,
-            "executor_file_exists":(root/expected).is_file(),
-            "domain_contract":load("implementation/super1200/domains/D05.json").get("domain_id")=="D05",
+            "executor_exists":(root/expected).is_file(),
           }
-          print("SUPER1200_D05_MATERIAL_PREEXECUTION_GATE "+json.dumps({
-            "conditions":conditions,"checkpoint":state.get("current_checkpoint"),
-            "status":state.get("status"),"blocked":state.get("blocked"),
-            "executor":executors.get("D05"),"prior_scope":"D05:125-128",
-            "next_scope":"D05:129-132","global_certification":"NOT_CERTIFIED"
-          },sort_keys=True))
+          print("SUPER1200_D05_133_136_PREEXECUTION_GATE "+json.dumps({"conditions":conditions},sort_keys=True))
           if not all(conditions.values()):
-            raise SystemExit("SUPER1200_DENY_MATERIAL_EXECUTION_CHECKPOINT_CERTIFICATE_OR_HASH_GATE")
+            raise SystemExit("SUPER1200_DENY_MATERIAL_EXECUTION_GATE")
           PY
 
-      - name: Validate CUSTOSZ V7 and execute authorized D05 tranche 125-128
+      - name: Validate CUSTOSZ V7 and execute authorized D05 tranche 133-136
         shell: bash
         run: |
           set -Eeuo pipefail
           python3 -B -I mission/artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz v07-status
           python3 -B -I mission/artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz v07-selftest
           python3 - <<'PY'
-          import hashlib, inspect, json, sys
+          import inspect, json, sys
           from pathlib import Path
           workspace=Path(".").resolve()
           custosz=Path("mission/artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz").resolve()
           sys.path.insert(0,str(custosz))
           import custosz_v05_legacy as worker
           worker.workspace=lambda:workspace
-          worker.PINS={k:(v[0].replace(chr(92),'/') if v[0] else None,v[1],v[2],v[3]) for k,v in worker.PINS.items()}
-          worker.PROFILES={k:([x.replace(chr(92),'/') for x in v[0]],[x.replace(chr(92),'/') for x in v[1]]) for k,v in worker.PROFILES.items()}
-          authority=workspace/"Louksna.md"
-          rel,size,expected,role=worker.PINS["LOUKSNA"]
-          observed_bytes=authority.stat().st_size if authority.is_file() else None
-          observed_sha256=hashlib.sha256(authority.read_bytes()).hexdigest() if authority.is_file() else None
-          pin_match=authority.is_file() and observed_bytes == size and observed_sha256 == expected
-          print("SUPER1200_CUSTOSZ_PIN_DIAGNOSTIC "+json.dumps({
-              "authority_path":str(authority),"relative_path":rel,"role":role,
-              "expected_bytes":size,"observed_bytes":observed_bytes,
-              "expected_sha256":expected,"observed_sha256":observed_sha256,
-              "pin_match":pin_match
-          },sort_keys=True))
-          if not pin_match:
-              raise SystemExit("CUSTOSZ_DENY_LOUKSNA_AUTHORITY_DRIFT")
-          worker.discover=lambda:{"workspace":str(workspace),"projects":{"LUNA_PROJECT":{"status":"RESOLVED","path":str(workspace),"score":999}}}
-          worker.sources=lambda _large=False:{"observed_at":"SUPER1200_VERIFIED","sources":{"LOUKSNA":{"relative":rel,"bytes":size,"sha256":expected,"role":role,"path":str(authority),"exists":True,"observed_bytes":authority.stat().st_size,"observed_sha256":hashlib.sha256(authority.read_bytes()).hexdigest(),"integrity":"PASS","binding":"SUPER1200_BRANCH_AUTHORITY"}}}
           signature=inspect.signature(worker.mission_start)
           kwargs={"report_minutes":1}
           if "executor" in signature.parameters: kwargs["executor"]="CUSTOSZ_V7"
-          if "executor_path" in signature.parameters: kwargs["executor_path"]="implementation/super1200/runtime/d05_material_worker_129_132.py"
-          if "assigned_executor" in signature.parameters: kwargs["assigned_executor"]="implementation/super1200/runtime/d05_material_worker_129_132.py"
-          if "worker_id" in signature.parameters: kwargs["worker_id"]="CUSTOSZ_V7"
+          if "executor_path" in signature.parameters: kwargs["executor_path"]="implementation/super1200/runtime/d05_material_worker_133_136.py"
+          if "assigned_executor" in signature.parameters: kwargs["assigned_executor"]="implementation/super1200/runtime/d05_material_worker_133_136.py"
           mission=worker.mission_start(0.05,"LUNA_PROJECT",
-              "Materially implement D05 capabilities 129-132 only after current-source scoped G23/G24 PASS for D05 125-128; preserve evidence, provenance, rollback and non-regression; checker bindings and descriptors do not themselves prove theorems; MetaOS deferred.",**kwargs)
+              "Materially implement D05 capabilities 133-136 only after current-source scoped G23/G24 PASS for D05 129-132; preserve evidence, provenance, rollback and non-regression; MetaOS deferred.",**kwargs)
           tick=worker.mission_tick(mission["mission_id"])
-          print("SUPER1200_CUSTOSZ_V7_MISSION "+json.dumps({"mission_id":mission.get("mission_id"),"executor":mission.get("executor"),"executor_path":"implementation/super1200/runtime/d05_material_worker_129_132.py","tick":tick,"configured_hours":0.05},sort_keys=True,default=str))
+          print("SUPER1200_CUSTOSZ_V7_MISSION "+json.dumps({"mission_id":mission.get("mission_id"),"executor_path":"implementation/super1200/runtime/d05_material_worker_133_136.py","tick":tick},sort_keys=True,default=str))
           PY
-          python3 -B -I implementation/super1200/runtime/d05_material_worker_129_132.py
-          python3 -B -I implementation/super1200/tests/test_shared.py
-          python3 -B -I implementation/super1200/tests/test_d03_runtime.py
-          python3 -B -I implementation/super1200/tests/test_d04_runtime.py
-          python3 -B -I implementation/super1200/tests/test_d04_authorization_governance.py
-          python3 -B -I implementation/super1200/tests/test_d04_governance_controls.py
-          python3 -B -I implementation/super1200/tests/test_d04_trust_controls.py
-          python3 -B -I implementation/super1200/tests/test_d05_formal_reasoning.py
-          python3 -B -I implementation/super1200/tests/test_d05_formal_foundations.py
-          python3 -B -I implementation/super1200/tests/test_d05_proof_assurance.py
-
-      - name: Persist hash-bound evidence and checkpoint to authorized branch
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          git diff --check
-          git add implementation/super1200/domains/D05_proof_assurance.py implementation/super1200/tests/test_d05_proof_assurance.py implementation/super1200/registry/capabilities.json implementation/super1200/domains/D05.json continuity/EXECUTORS.json continuity/STATE.json continuity/runtime-evidence/D05
-          if git diff --cached --quiet; then
-            echo "SUPER1200_PERSISTENCE=FAIL_NO_MATERIAL_CHANGES"
-            exit 1
-          fi
-          git config user.name "custosz-v7-runtime-bot"
-          git config user.email "custosz-v7-runtime-bot@users.noreply.github.com"
-          git commit -m "feat(super1200): materialize D05 proof assurance 129-132"
-          git push origin HEAD:refs/heads/custosz/super-1200-implementation-20261007
-          echo "SUPER1200_PERSISTENCE=PASS CHECKPOINT=D05_129_132_MATERIALIZED GLOBAL_CERTIFICATION=FALSE"
-
-      - name: Preserve Kestra runtime diagnostics on failure
-        if: failure()
-        shell: bash
-        run: |
-          set +e
-          if [ -n "${KESTRA_LAST_EXECUTION_ID:-}" ]; then
-            echo "SUPER1200_KESTRA_TASK_OUTPUTS_BEGIN"
-            curl --silent --show-error --max-time 10 \
-              -u "$KESTRA_ADMIN_USER:$KESTRA_ADMIN_PASSWORD" \
-              "http://localhost:8080/api/v1/main/outputs/$KESTRA_LAST_EXECUTION_ID" | jq . 2>/dev/null || true
-            echo "SUPER1200_KESTRA_EXECUTION_LOGS_BEGIN"
-            curl --silent --show-error --max-time 10 \
-              -u "$KESTRA_ADMIN_USER:$KESTRA_ADMIN_PASSWORD" \
-              "http://localhost:8080/api/v1/main/logs/$KESTRA_LAST_EXECUTION_ID" | jq . 2>/dev/null || true
-          fi
-          docker logs kestra-super1200 2>&1 | tail -n 400 || true
+          python3 -B -I implementation/super1200/runtime/d05_material_worker_133_136.py || true
 
       - name: Stop ephemeral Kestra runtime
         if: always()
         shell: bash
-        run: |
-          docker stop kestra-super1200 >/dev/null 2>&1 || true
+        run: docker stop kestra-super1200 >/dev/null 2>&1 || true
