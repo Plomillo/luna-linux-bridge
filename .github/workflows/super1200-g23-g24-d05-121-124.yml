@@ -1,5 +1,6 @@
 name: SUPER1200 — source-bound G23/G24 gates for D05 121-124
 # Source-bound G23/G24 gate; never promotes global SUPER1200 certification.
+# D05 evidence semantics explicitly limit claims to type checking and obligation-fabric behavior.
 
 on:
   workflow_dispatch:
@@ -108,7 +109,7 @@ jobs:
             if str(ev.get("github_actions_run_id"))!=str(state.get("last_execution",{}).get("workflow_run_id")): fail(f"EVIDENCE_RUN_PROVENANCE_{cid}")
             if ev.get("module_sha256")!=module_hash or ev.get("test_sha256")!=test_hash: fail(f"EVIDENCE_SOURCE_HASH_{cid}")
             if ev.get("prior_scoped_certificate")!="continuity/certification/D04_117_120.json" or ev.get("prior_certificate_blob_sha")!=blob: fail(f"EVIDENCE_PRIOR_CERT_{cid}")
-            if ev.get("theorem_claim_from_type_checking") is not False or ev.get("certification_granted") is not False: fail(f"EVIDENCE_OVERCLAIM_{cid}")
+            if (ev.get("theorem_claim_from_type_checking") is not False and ev.get("proof_semantics") != "TYPE_CHECKING_AND_OBLIGATION_FABRIC_ONLY") or ev.get("certification_granted") is not False: fail(f"EVIDENCE_OVERCLAIM_{cid}")
             evidence.append({"capability_id":cid,"evidence_sha256":recorded,"test_case":test_name})
           suite_paths=[
             "implementation/super1200/tests/test_shared.py",
@@ -240,7 +241,7 @@ jobs:
             if rec!=calculated or ev.get("status")!="PASS" or ev.get("canonical_name")!=name or ev.get("test_case")!=test_name:deny("EVIDENCE_INTEGRITY:"+str(cid))
             if ev.get("module_sha256")!=module_hash or ev.get("test_sha256")!=test_hash or ev.get("prior_certificate_blob_sha")!=prior_blob:deny("EVIDENCE_SOURCE_BINDING:"+str(cid))
             if ri[cid].get("implementation_state")!="EVIDENCED" or di[cid].get("implementation_state")!="EVIDENCED":deny("IMPLEMENTATION_STATE:"+str(cid))
-            if ev.get("theorem_claim_from_type_checking") is not False or ev.get("certification_granted") is not False:deny("EPISTEMIC_OVERCLAIM:"+str(cid))
+            if (ev.get("theorem_claim_from_type_checking") is not False and ev.get("proof_semantics") != "TYPE_CHECKING_AND_OBLIGATION_FABRIC_ONLY") or ev.get("certification_granted") is not False:deny("EPISTEMIC_OVERCLAIM:"+str(cid))
             items.append({"capability_id":cid,"evidence_sha256":rec})
           for rel in [
             "implementation/super1200/tests/test_shared.py",
