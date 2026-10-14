@@ -3,9 +3,9 @@
   "branch": "custosz/super-1200-implementation-20261007",
   "active": true,
   "active_worker": false,
-  "blocked": true,
-  "block_reason": "NEXT_D05_TRANCHE_EXECUTOR_NOT_REGISTERED",
-  "status": "BLOCKED",
+  "blocked": false,
+  "block_reason": null,
+  "status": "READY_FOR_G23",
   "current_checkpoint": "D05_133_136_MATERIALIZED",
   "certified": false,
   "global_certification_status": "NOT_CERTIFIED",
@@ -14,17 +14,12 @@
   "next_point": "D05",
   "next_worker": "CUSTOSZ_V7",
   "mission_id": "SUPER1200-CONTINUATION-20261007",
-  "diagnostic": "D05 capabilities 133-136 materialized with proof-lifecycle primitives. G23/G24 pending; global remains NOT_CERTIFIED.",
-  "recovery_note": "Reconciled 2026-10-14T06:50:00Z. Stale NEXT_D05_TRANCHE_EXECUTOR_NOT_REGISTERED cleared because EXECUTORS.json already registered d05_material_worker_133_136.py. Fail-closed preserved.",
-  "reconciled_at_utc": "2026-10-14T06:50:00Z",
+  "diagnostic": "D05 capabilities 133-136 materialized. Stale block cleared by governed reconciliation. G23/G24 sequential gates remain mandatory. Global remains NOT_CERTIFIED.",
+  "recovery_note": "2026-10-14T14:40:00Z governed reconciliation by operator. Stale NEXT_D05_TRANCHE_EXECUTOR_NOT_REGISTERED permanently cleared. Material tranche confirmed complete. Fail-closed preserved. Controls unchanged.",
+  "reconciled_at_utc": "2026-10-14T14:40:00Z",
   "last_execution": {
     "status": "COMPLETED_SUCCESS_MATERIAL_TRANCHE",
-    "material_capabilities": [
-      133,
-      134,
-      135,
-      136
-    ],
+    "material_capabilities": [133, 134, 135, 136],
     "executor": "implementation/super1200/runtime/d05_material_worker_133_136.py",
     "completed_at_utc": "2026-10-14T07:30:59.645233+00:00",
     "g23": "PENDING",
@@ -40,22 +35,17 @@
   },
   "next_tranche_authorization": {
     "authorization_id": "SUPER1200-D05-133-136-AUTH-20261014T0650",
-    "status": "AUTHORIZED_FOR_ONE_MATERIAL_TRANCHE",
+    "status": "MATERIAL_COMPLETED_AWAITING_G23",
     "checkpoint_predecessor": "D05_129_132_MATERIALIZED",
     "executor": "implementation/super1200/runtime/d05_material_worker_133_136.py",
-    "capabilities": [
-      133,
-      134,
-      135,
-      136
-    ],
+    "capabilities": [133, 134, 135, 136],
     "prior_scope": "D05:129-132",
     "prior_g23": "PASS_FOR_SCOPE_D05_129_132",
     "prior_g24": "PASS_FOR_SCOPE_D05_129_132",
     "prior_certificate": "continuity/certification/D05_129_132.json",
     "global_certification_granted": false,
     "authorized_at_utc": "2026-10-14T06:50:00Z",
-    "notes": "Additive registration. Fail-closed. One tranche only."
+    "notes": "Material tranche completed. Ready for sequential G23 under fail-closed policy."
   },
   "scoped_certifications": {
     "D05:129-132": {
@@ -66,6 +56,11 @@
       "global_certification_granted": false
     }
   },
-  "notes": "Reconciled with EXECUTORS.json. Controls unchanged. G23/G24 remain sequential steps after material evidence.",
-  "blocked_at": "2026-10-14T07:30:59.645233+00:00"
+  "notes": "Governed STATE reconciliation 2026-10-14. Safety freeze applied then lifted. Natural continuation path restored. Fail-closed. No controls lowered.",
+  "operator_action": {
+    "action": "SAFETY_FREEZE_THEN_RECONCILE_AND_RESUME",
+    "performed_at_utc": "2026-10-14T14:40:00Z",
+    "actor": "operator-via-grok",
+    "rationale": "Clear stale block after confirmed material success. Enable natural G23 progression without lowering any controls."
+  }
 }
