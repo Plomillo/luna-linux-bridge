@@ -8,7 +8,7 @@
   "current_checkpoint": "D05_133_136_MATERIALIZED",
   "diagnostic": "D05 capabilities 133-136 materialized. Natural continuation activated. Supervisor must dispatch G23 sequential gate. Global remains NOT_CERTIFIED.",
   "dispatch_error": null,
-  "dispatch_requested_at": "2026-10-14T18:44:50Z",
+  "dispatch_requested_at": "2026-10-14T18:58:45Z",
   "g23": "PENDING_FOR_SCOPE_D05_133_136",
   "g24": "PENDING_G23",
   "global_certification_status": "NOT_CERTIFIED",
