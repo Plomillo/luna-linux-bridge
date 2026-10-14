@@ -1,0 +1,96 @@
+{
+  "canonical_name": "PROOF_REPLAY",
+  "capability_id": 132,
+  "certification_granted": false,
+  "evidence_sha256": "9e32e25c133d35c905417cfe2e5528076b50a26d4b715294d8ba71b2efe658eb",
+  "executor": "implementation/super1200/runtime/d05_material_worker_129_132.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "github_actions_run_id": 38493227127,
+  "implementation_artifact": "implementation/super1200/domains/D05_proof_assurance.py",
+  "module_sha256": "1156b3d7f6116ade3dac3b66f60bce5837f5183cb9402d364902e58b37f6ea3b",
+  "prior_certificate_blob_sha": "7fe77014f1b08e6f8c0700d9a22e6fe6df3df7ae",
+  "prior_scoped_certificate": "continuity/certification/D05_125_128.json",
+  "proof_semantics": "TRUSTED_REPLAY_CALLBACK_AND_STRUCTURAL_VALIDATION_ONLY",
+  "regression_suites": {
+    "implementation/super1200/tests/test_d03_runtime.py": {
+      "exit_code": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "72da42031d1fc11b30cc21bc9434d37187e28cafbef7b8ee21376a045a7e5e6c",
+      "test_sha256": "32741a3ecce72b2aae5125e07bdbddce640c32a247376d4a3294f65858fe0746"
+    },
+    "implementation/super1200/tests/test_d04_authorization_governance.py": {
+      "exit_code": 0,
+      "stderr_sha256": "3aad5f8f9beba3d34f957b39d44181e8f54d11e1388184bff2d536746df3c0d6",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "test_sha256": "d72b1e13d77d8c6c0e7e3082be175950772b2a4c35440c0d69d97af64779afd7"
+    },
+    "implementation/super1200/tests/test_d04_governance_controls.py": {
+      "exit_code": 0,
+      "stderr_sha256": "19f0cfd0e9084abc1cd0ef7290d69f3ba7ea6c6f1901462484d31f0779b9d305",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "test_sha256": "4480c9f00ac0473d2f1e0ac0a0b82b2df48990d9f0aef3860614615f82f9cf0f"
+    },
+    "implementation/super1200/tests/test_d04_runtime.py": {
+      "exit_code": 0,
+      "stderr_sha256": "24b21caf5b9ab98c1843946dda26e8a9b26afaeb1cfc32e1ab9abd3965ef5670",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "test_sha256": "8c32455a51ccf1c4d81309e15d18261e537f85a50f63ac74ac063e5466064e13"
+    },
+    "implementation/super1200/tests/test_d04_trust_controls.py": {
+      "exit_code": 0,
+      "stderr_sha256": "efd9bf0236b2a75f32c0956b5bfa6bf8305a9b3448cc0f788ca5c466929a595e",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "test_sha256": "1a20d72446cb443c173c0acc0627899c25819cbd647c4bc63b036ba2e230e199"
+    },
+    "implementation/super1200/tests/test_d05_formal_foundations.py": {
+      "exit_code": 0,
+      "stderr_sha256": "964c5da87229c7a818c7983273921152ca54a12e0dd6c744a379f7969584951d",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "test_sha256": "81395b9039d40392e425a63e444fd7ce6758bc5b1cffd43310696596f28818f9"
+    },
+    "implementation/super1200/tests/test_d05_formal_reasoning.py": {
+      "exit_code": 0,
+      "stderr_sha256": "7f5b423f539ba1b68affa84b384b07f24465c5bfed1738b3d23cb902c868f500",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "test_sha256": "0922dec5bd80d63bb27b58d25746c207d9a0cf812f532b8da19be385066abb5e"
+    },
+    "implementation/super1200/tests/test_d05_proof_assurance.py": {
+      "exit_code": 0,
+      "stderr_sha256": "218219ade98a25ee14374eb72184e8f12471a26d2b0784a7b0d864ada168b776",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "test_sha256": "62b772f8c2da55f8be350fa8076614e13afe97d2a7bec2dd1bc3b944598debc8"
+    },
+    "implementation/super1200/tests/test_shared.py": {
+      "exit_code": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "5a94724adbd008a27dd5eb13570e82a2dbf462aa206a7c09898ee7f8ab196671",
+      "test_sha256": "390d38b9127749013fe3eb7f19796c93ea7df1e384f1f28bb03920d598370653"
+    }
+  },
+  "schema": "SUPER1200_D05_PROOF_ASSURANCE_EVIDENCE/1",
+  "selected_test_result": {
+    "exit_code": 0,
+    "result": "PASS",
+    "single_test_run_confirmed": true,
+    "stderr_sha256": "efd05af998a89626a10a823e515ee8a6916d39e1601c89c942bce490362ef99b",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "test_case": "test_proof_replay_requires_trusted_exact_callback_and_never_grants_global_certification",
+    "test_name_seen": true,
+    "unittest_ok_marker": true
+  },
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d05_proof_assurance.py",
+  "test_case": "test_proof_replay_requires_trusted_exact_callback_and_never_grants_global_certification",
+  "test_invocation": [
+    "python3",
+    "-B",
+    "test_d05_proof_assurance.py",
+    "-v",
+    "D05ProofAssuranceTests.test_proof_replay_requires_trusted_exact_callback_and_never_grants_global_certification"
+  ],
+  "test_sha256": "62b772f8c2da55f8be350fa8076614e13afe97d2a7bec2dd1bc3b944598debc8",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-14T01:00:17.301650+00:00",
+  "worker_started_at_utc": "2026-10-14T01:00:16.695568+00:00"
+}

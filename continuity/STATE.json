@@ -1,23 +1,23 @@
 {
   "active": true,
   "active_worker": false,
-  "block_reason": null,
-  "blocked": false,
-  "blocked_at": null,
+  "block_reason": "NEXT_D05_TRANCHE_EXECUTOR_NOT_REGISTERED",
+  "blocked": true,
+  "blocked_at": "2026-10-14T01:00:17.301650+00:00",
   "branch": "custosz/super-1200-implementation-20261007",
   "certified": false,
-  "current_checkpoint": "D05_125_128_MATERIALIZED",
-  "diagnostic": "D05 125-128 passed scoped G23/G24. A separate proof-assurance executor for D05 129-132 is registered; the next bounded run is source-bound to the exact D05 125-128 certificate and isolated proof-assurance module/test. Global SUPER1200 certification remains NOT_CERTIFIED.",
+  "current_checkpoint": "D05_129_132_MATERIALIZED",
+  "diagnostic": "D05 capabilities 129-132 now have proof-checker binding, content-addressed artifact descriptors, typed acyclic proof-dependency graph with reverse invalidation, and a trusted-callback replay receipt. External checker execution is not performed by the binding function; replay is accepted only through the supplied trusted callback. G23/G24 pending; global SUPER1200 remains NOT_CERTIFIED.",
   "dispatch_error": null,
   "dispatch_requested_at": "2026-10-13T21:14:39.496Z",
-  "g23": "PASS_FOR_SCOPE_D05_125_128",
-  "g24": "PASS_FOR_SCOPE_D05_125_128",
+  "g23": "PENDING_FOR_SCOPE_D05_129_132",
+  "g24": "PENDING_G23",
   "mission_id": "SUPER1200-CONTINUATION-20261007",
   "next_point": "D05",
   "next_worker": "CUSTOSZ_V7",
-  "recovery_note": "Execute only the registered D05 proof-assurance worker for capabilities 129-132 from checkpoint D05_125_128_MATERIALIZED. After materialization, hold until independent G23/G24. Preserve the D05 125-128 module/test source hashes and do not propagate scoped certification.",
+  "recovery_note": "Register a reviewed task-specific executor for capabilities 133-136 only after scoped G23/G24 for D05 129-132. Preserve D05 125-128 source hashes and its historical scoped certificate; no certification propagation.",
   "schema": "SUPER1200_CONTINUITY_STATE/1.0",
-  "status": "ACTIVE",
+  "status": "BLOCKED",
   "terminal": false,
   "transition_id": "D03-CHECKPOINT-TO-D04-001",
   "checkpoint_assessment": "REPORTED_FUNCTIONAL_CLOSURE_NOT_INDEPENDENTLY_VALIDATED",
@@ -44,25 +44,25 @@
     "g24": "BLOCKED",
     "certification_granted": false
   },
-  "material_worker_ready": true,
+  "material_worker_ready": false,
   "global_certification_status": "NOT_CERTIFIED",
   "last_execution": {
-    "workflow_run_id": 38492608988,
-    "workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38492608988",
+    "workflow_run_id": 38493227127,
+    "workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38493227127",
     "status": "COMPLETED_SUCCESS_MATERIAL_TRANCHE",
-    "started_at_utc": "2026-10-14T00:53:00.908032+00:00",
-    "completed_at_utc": "2026-10-14T00:53:01.528700+00:00",
+    "started_at_utc": "2026-10-14T01:00:16.695568+00:00",
+    "completed_at_utc": "2026-10-14T01:00:17.301650+00:00",
     "configured_runtime_hours": 0.05,
     "material_capabilities": [
-      125,
-      126,
-      127,
-      128
+      129,
+      130,
+      131,
+      132
     ],
-    "behavior_tests": "8_REGRESSION_SUITES_PASS;4_OF_4_CAPABILITY_TESTS_PASS",
-    "executor": "implementation/super1200/runtime/d05_material_worker_125_128.py",
-    "g23": "PASS_FOR_SCOPE_D05_125_128",
-    "g24": "PASS_FOR_SCOPE_D05_125_128",
+    "behavior_tests": "9_REGRESSION_SUITES_PASS;4_OF_4_CAPABILITY_TESTS_PASS",
+    "executor": "implementation/super1200/runtime/d05_material_worker_129_132.py",
+    "g23": "PENDING",
+    "g24": "PENDING_G23",
     "global_certification_status": "NOT_CERTIFIED"
   },
   "execution_history": [
@@ -98,63 +98,63 @@
     "reconciled_at_utc": "2026-10-13T23:21:34.744830+00:00"
   },
   "last_material_execution": {
-    "executor": "implementation/super1200/runtime/d05_material_worker_125_128.py",
+    "executor": "implementation/super1200/runtime/d05_material_worker_129_132.py",
     "capabilities": [
-      125,
-      126,
-      127,
-      128
+      129,
+      130,
+      131,
+      132
     ],
-    "tests": "8_REGRESSION_SUITES_PASS;4_OF_4_INDEPENDENT_TEST_INVOCATIONS_PASS",
+    "tests": "9_REGRESSION_SUITES_PASS;4_OF_4_INDEPENDENT_TEST_INVOCATIONS_PASS",
     "test_case_results": [
       {
-        "test_case": "test_univalence_profile_pins_explicit_assumptions_without_claiming_univalence",
+        "test_case": "test_checker_binding_requires_independent_checker_and_untrusted_producer",
         "exit_code": 0,
         "result": "PASS",
         "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stderr_sha256": "15ee933f113e0945fffd4717354b955b0df13e2e48e28dd000923b8fa0169dcf",
+        "stderr_sha256": "902b7c0a826f9826e79fd08737ce127f6982e6b1f73381de0b4a9b7efc073eb6",
         "test_name_seen": true,
         "single_test_run_confirmed": true,
         "unittest_ok_marker": true
       },
       {
-        "test_case": "test_cubical_provider_binding_pins_provider_version_library_and_no_authority",
+        "test_case": "test_proof_artifact_descriptor_is_hash_bound_and_does_not_claim_persistence",
         "exit_code": 0,
         "result": "PASS",
         "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stderr_sha256": "883691b20aa8d7d1fead6172a211f98e88ef26900d5d60c98db949e7c646a899",
+        "stderr_sha256": "6b73234b0bb8a9ef87f0be364881958e8a6c15931a364230f2e4f0d1bd3266e2",
         "test_name_seen": true,
         "single_test_run_confirmed": true,
         "unittest_ok_marker": true
       },
       {
-        "test_case": "test_higher_inductive_spec_validates_constructor_and_computation_rule_references",
+        "test_case": "test_proof_dependency_graph_rejects_cycles_and_computes_reverse_invalidation",
         "exit_code": 0,
         "result": "PASS",
         "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stderr_sha256": "8c5e0c16906394840cc440984dc6e675649d4b8517de7938ebc6cf94bccfca35",
+        "stderr_sha256": "13ca14733ec4caf4c627750b4786d24bcda34584e7a9698606fac2c3f0a1be9d",
         "test_name_seen": true,
         "single_test_run_confirmed": true,
         "unittest_ok_marker": true
       },
       {
-        "test_case": "test_proof_term_registry_binds_hashes_assumptions_prover_and_dependencies",
+        "test_case": "test_proof_replay_requires_trusted_exact_callback_and_never_grants_global_certification",
         "exit_code": 0,
         "result": "PASS",
         "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stderr_sha256": "73fdff749b41926c570ac13ba4fb7021ac4ef9bf73efe203b2b668f7e527d2c5",
+        "stderr_sha256": "efd05af998a89626a10a823e515ee8a6916d39e1601c89c942bce490362ef99b",
         "test_name_seen": true,
         "single_test_run_confirmed": true,
         "unittest_ok_marker": true
       }
     ],
-    "module_sha256": "1cd86f5bd17094972a0b86231cddcb73164074d7774aec6c003d118296d184b9",
-    "test_sha256": "81395b9039d40392e425a63e444fd7ce6758bc5b1cffd43310696596f28818f9",
-    "github_actions_run_id": 38492608988,
-    "g23": "PASS_FOR_SCOPE_D05_125_128",
-    "g24": "PASS_FOR_SCOPE_D05_125_128",
+    "module_sha256": "1156b3d7f6116ade3dac3b66f60bce5837f5183cb9402d364902e58b37f6ea3b",
+    "test_sha256": "62b772f8c2da55f8be350fa8076614e13afe97d2a7bec2dd1bc3b944598debc8",
+    "github_actions_run_id": 38493227127,
+    "g23": "PENDING",
+    "g24": "PENDING",
     "certification_granted": false,
-    "completed_at_utc": "2026-10-14T00:53:01.528700+00:00"
+    "completed_at_utc": "2026-10-14T01:00:17.301650+00:00"
   },
   "independent_validation": {
     "scope": "D04_CAPABILITIES_117_120_ONLY",
@@ -187,32 +187,7 @@
     "certification_granted": true,
     "global_certification_granted": false
   },
-  "next_tranche_authorization": {
-    "authorization_id": "SUPER1200-D05-129-132-AUTH-20261014",
-    "checkpoint_predecessor": "D05_125_128_MATERIALIZED",
-    "executor": "implementation/super1200/runtime/d05_material_worker_129_132.py",
-    "capabilities": [
-      129,
-      130,
-      131,
-      132
-    ],
-    "prior_scope_g23": "PASS_FOR_SCOPE_D05_125_128",
-    "prior_scope_g24": "PASS_FOR_SCOPE_D05_125_128",
-    "scoped_certificate": "continuity/certification/D05_125_128.json",
-    "prior_certificate_blob_sha": "7fe77014f1b08e6f8c0700d9a22e6fe6df3df7ae",
-    "prior_certificate_source_hashes": {
-      "module_sha256": "1cd86f5bd17094972a0b86231cddcb73164074d7774aec6c003d118296d184b9",
-      "test_sha256": "81395b9039d40392e425a63e444fd7ce6758bc5b1cffd43310696596f28818f9"
-    },
-    "material_module_path": "implementation/super1200/domains/D05_proof_assurance.py",
-    "material_module_blob_sha": "5ad15c3a56f293fec7c473761337869ece560ab0",
-    "material_test_path": "implementation/super1200/tests/test_d05_proof_assurance.py",
-    "material_test_blob_sha": "7b26f0b8778347b500119e544627665f891910e0",
-    "global_certification_granted": false,
-    "prior_g23_g24_workflow_run_id": 38492696668,
-    "authorized_at_utc": "2026-10-14T00:59:03.492Z"
-  },
+  "next_tranche_authorization": null,
   "scoped_certifications": {
     "D04:93-96": {
       "scope": "D04:93-96",

@@ -84,26 +84,42 @@
     {
       "canonical_name": "PROOF_CHECKER",
       "capability_id": 129,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/D05_proof_assurance.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_proof_assurance.py",
+      "materialization": "CODE+PER_CAPABILITY_TEST+REGRESSION_SUITES+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false
     },
     {
       "canonical_name": "PROOF_ARTIFACT_STORE",
       "capability_id": 130,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/D05_proof_assurance.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_proof_assurance.py",
+      "materialization": "CODE+PER_CAPABILITY_TEST+REGRESSION_SUITES+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false
     },
     {
       "canonical_name": "PROOF_DEPENDENCY_GRAPH",
       "capability_id": 131,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/D05_proof_assurance.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_proof_assurance.py",
+      "materialization": "CODE+PER_CAPABILITY_TEST+REGRESSION_SUITES+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false
     },
     {
       "canonical_name": "PROOF_REPLAY",
       "capability_id": 132,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/D05_proof_assurance.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_proof_assurance.py",
+      "materialization": "CODE+PER_CAPABILITY_TEST+REGRESSION_SUITES+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false
     },
     {
       "canonical_name": "PROOF_INVALIDATION",

@@ -1923,12 +1923,15 @@
       "canonical_name": "PROOF_CHECKER",
       "capability_id": 129,
       "hardening": "independent replay; producer output never trusted directly",
-      "implementation_state": "DECLARED",
-      "materialization": "EXT_TOOL/EXT_LIB+ADAPTER",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+PER_CAPABILITY_TEST+REGRESSION_SUITES+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "VALIDATION_ENGINE",
-      "wire": "128,130,132"
+      "wire": "128,130,132",
+      "implementation_artifact": "implementation/super1200/domains/D05_proof_assurance.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_proof_assurance.py",
+      "theorem_claim_from_type_checking": false
     },
     {
       "acquire": "NONE",
@@ -1936,12 +1939,15 @@
       "canonical_name": "PROOF_ARTIFACT_STORE",
       "capability_id": 130,
       "hardening": "immutable proofs, source, compiled forms, hashes and toolchain lock",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE+SCHEMA",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+PER_CAPABILITY_TEST+REGRESSION_SUITES+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "STORE",
-      "wire": "5,128,129,132"
+      "wire": "5,128,129,132",
+      "implementation_artifact": "implementation/super1200/domains/D05_proof_assurance.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_proof_assurance.py",
+      "theorem_claim_from_type_checking": false
     },
     {
       "acquire": "NONE",
@@ -1949,12 +1955,15 @@
       "canonical_name": "PROOF_DEPENDENCY_GRAPH",
       "capability_id": 131,
       "hardening": "theorem→lemma→axiom edges and reverse invalidation",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+PER_CAPABILITY_TEST+REGRESSION_SUITES+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "GRAPH",
-      "wire": "24,128,133"
+      "wire": "24,128,133",
+      "implementation_artifact": "implementation/super1200/domains/D05_proof_assurance.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_proof_assurance.py",
+      "theorem_claim_from_type_checking": false
     },
     {
       "acquire": "locked proof toolchain",
@@ -1962,12 +1971,15 @@
       "canonical_name": "PROOF_REPLAY",
       "capability_id": 132,
       "hardening": "reconstruct environment and independently replay exact proof",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+PER_CAPABILITY_TEST+REGRESSION_SUITES+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "EXECUTION_ENGINE",
-      "wire": "4,128..131"
+      "wire": "4,128..131",
+      "implementation_artifact": "implementation/super1200/domains/D05_proof_assurance.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_proof_assurance.py",
+      "theorem_claim_from_type_checking": false
     },
     {
       "acquire": "NONE",
