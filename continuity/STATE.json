@@ -5,7 +5,7 @@
   "active_worker": false,
   "blocked": false,
   "block_reason": null,
-  "status": "READY_FOR_G23",
+  "status": "DISPATCH_REQUIRED",
   "current_checkpoint": "D05_133_136_MATERIALIZED",
   "certified": false,
   "global_certification_status": "NOT_CERTIFIED",
@@ -13,10 +13,11 @@
   "g24": "PENDING_G23",
   "next_point": "D05",
   "next_worker": "CUSTOSZ_V7",
+  "transition_id": "D05-133-136-TO-G23-20261014",
   "mission_id": "SUPER1200-CONTINUATION-20261007",
-  "diagnostic": "D05 capabilities 133-136 materialized. Stale block cleared by governed reconciliation. G23/G24 sequential gates remain mandatory. Global remains NOT_CERTIFIED.",
-  "recovery_note": "2026-10-14T14:40:00Z governed reconciliation by operator. Stale NEXT_D05_TRANCHE_EXECUTOR_NOT_REGISTERED permanently cleared. Material tranche confirmed complete. Fail-closed preserved. Controls unchanged.",
-  "reconciled_at_utc": "2026-10-14T14:40:00Z",
+  "diagnostic": "D05 capabilities 133-136 materialized. Natural continuation activated. Supervisor must dispatch G23 sequential gate. Global remains NOT_CERTIFIED.",
+  "recovery_note": "2026-10-14T18:43:00Z governed activation. Signal placed + status set to DISPATCH_REQUIRED for existing continuity supervisor. Fail-closed preserved. Controls unchanged.",
+  "reconciled_at_utc": "2026-10-14T18:43:00Z",
   "last_execution": {
     "status": "COMPLETED_SUCCESS_MATERIAL_TRANCHE",
     "material_capabilities": [133, 134, 135, 136],
@@ -45,7 +46,7 @@
     "prior_certificate": "continuity/certification/D05_129_132.json",
     "global_certification_granted": false,
     "authorized_at_utc": "2026-10-14T06:50:00Z",
-    "notes": "Material tranche completed. Ready for sequential G23 under fail-closed policy."
+    "notes": "Material tranche completed. Natural G23 path activated via supervisor."
   },
   "scoped_certifications": {
     "D05:129-132": {
@@ -56,11 +57,11 @@
       "global_certification_granted": false
     }
   },
-  "notes": "Governed STATE reconciliation 2026-10-14. Safety freeze applied then lifted. Natural continuation path restored. Fail-closed. No controls lowered.",
+  "notes": "Natural continuation activated 2026-10-14. Supervisor signal + DISPATCH_REQUIRED set. Fail-closed. No controls lowered.",
   "operator_action": {
-    "action": "SAFETY_FREEZE_THEN_RECONCILE_AND_RESUME",
-    "performed_at_utc": "2026-10-14T14:40:00Z",
+    "action": "ACTIVATE_NATURAL_CONTINUATION_VIA_EXISTING_SUPERVISOR",
+    "performed_at_utc": "2026-10-14T18:43:00Z",
     "actor": "operator-via-grok",
-    "rationale": "Clear stale block after confirmed material success. Enable natural G23 progression without lowering any controls."
+    "rationale": "Use existing continuity supervisor and signal mechanism to resume G23 without inventing new paths or lowering controls."
   }
 }
