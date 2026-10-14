@@ -1,0 +1,14 @@
+{
+  "schema": "SUPER1200_RECONCILIATION/1.0",
+  "id": "RECONCILE-D05-133-136-20261014",
+  "reconciled_at_utc": "2026-10-14T06:50:00Z",
+  "action": "STATE synchronized with EXECUTORS.json",
+  "stale_block_cleared": "NEXT_D05_TRANCHE_EXECUTOR_NOT_REGISTERED",
+  "new_status": "READY_FOR_NEXT_MATERIAL_TRANCHE",
+  "authorized_executor": "implementation/super1200/runtime/d05_material_worker_133_136.py",
+  "capabilities": [133, 134, 135, 136],
+  "prior_scope_g23_g24": "PASS",
+  "global_certification_status": "NOT_CERTIFIED",
+  "fail_closed": true,
+  "additive": true
+}

@@ -1,385 +1,60 @@
 {
+  "schema": "SUPER1200_CONTINUITY_STATE/1.0",
+  "branch": "custosz/super-1200-implementation-20261007",
   "active": true,
   "active_worker": false,
-  "block_reason": "NEXT_D05_TRANCHE_EXECUTOR_NOT_REGISTERED",
-  "blocked": true,
-  "blocked_at": "2026-10-14T01:00:58.187384+00:00",
-  "branch": "custosz/super-1200-implementation-20261007",
-  "certified": false,
+  "blocked": false,
+  "block_reason": null,
+  "status": "READY_FOR_NEXT_MATERIAL_TRANCHE",
   "current_checkpoint": "D05_129_132_MATERIALIZED",
-  "diagnostic": "D05 capabilities 129-132 passed scoped G23/G24 with source-bound evidence and seven regression suites. Continuation is held fail-closed until a reviewed executor for D05 129-132 is registered. Type checking does not certify theorems; scoped D05 certification does not propagate. Global SUPER1200 certification remains NOT_CERTIFIED.",
-  "dispatch_error": null,
-  "dispatch_requested_at": "2026-10-13T21:14:39.496Z",
+  "certified": false,
+  "global_certification_status": "NOT_CERTIFIED",
   "g23": "PASS_FOR_SCOPE_D05_129_132",
   "g24": "PASS_FOR_SCOPE_D05_129_132",
-  "mission_id": "SUPER1200-CONTINUATION-20261007",
   "next_point": "D05",
   "next_worker": "CUSTOSZ_V7",
-  "recovery_note": "Register and review a task-specific D05 executor for capabilities 129-132 only after D05:129-132 is scoped-certified. Require current source hashes, independent tests and exact prior-scope certificate binding. Do not propagate scoped certification or global certification.",
-  "schema": "SUPER1200_CONTINUITY_STATE/1.0",
-  "status": "BLOCKED",
-  "terminal": false,
-  "transition_id": "D03-CHECKPOINT-TO-D04-001",
-  "checkpoint_assessment": "REPORTED_FUNCTIONAL_CLOSURE_NOT_INDEPENDENTLY_VALIDATED",
-  "reconciled_at_utc": "2026-10-13T21:23:10.179Z",
-  "previous_block_reason": "UNTRUSTED_SYNTHETIC_WORKER_AND_D04_SELF_RECURSION",
-  "previous_diagnostic": "Reconciliation blocked dispatch: the shared SUPER1200 worker synthesizes generic wrapper code and tests while marking capabilities EVIDENCED; D04 maps to the dispatcher itself and would recursively invoke it. The D03 checkpoint is a historical reported state, not independently validated.",
-  "reconciliation_record": "continuity/SUPER1200_BLOCKER_RECONCILIATION_20261013_001.json",
-  "last_recovery_attempt": {
-    "workflow_run_id": 38452281179,
-    "workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38452281179",
-    "commit": "815730c536f32b166bac5e20e8a621a051776a16",
-    "evidence_record": "continuity/SUPER1200_CI_VALIDATION_20261013_002.json",
-    "metaos_bytes": 2442,
-    "metaos_git_blob": "86124d95a38264019a3f5260cbe4cca3d9cd9e69",
-    "metaos_sha256": "5d8f1239e3a0b452be722078760b000afc22af0a64f93ffb0a1f74024f15aed0",
-    "wasm_standard_validation": "FAIL",
-    "wasm_validation_error": "expected version 01 00 00 00, found 0d 00 01 00 @+4",
-    "wasm_build_source_candidates": "NONE_IN_FETCHED_BRANCHES",
-    "related_policy_source": "implementation/super1200/runtime/metaos_policy.py",
-    "d04_scoped_tasks": "6/6 PASS (IDs 81-86)",
-    "d04_full_suite": "10/10 PASS",
-    "material_mission_started": false,
-    "g23": "BLOCKED",
-    "g24": "BLOCKED",
-    "certification_granted": false
-  },
-  "material_worker_ready": false,
-  "global_certification_status": "NOT_CERTIFIED",
+  "mission_id": "SUPER1200-CONTINUATION-20261007",
+  "diagnostic": "D05 129-132 scoped G23/G24 PASS. Executor for 133-136 is registered (additive). STATE reconciled. One material tranche authorized. Scoped certification does not propagate. Global remains NOT_CERTIFIED.",
+  "recovery_note": "Reconciled 2026-10-14T06:50:00Z. Stale NEXT_D05_TRANCHE_EXECUTOR_NOT_REGISTERED cleared because EXECUTORS.json already registered d05_material_worker_133_136.py. Fail-closed preserved.",
+  "reconciled_at_utc": "2026-10-14T06:50:00Z",
   "last_execution": {
     "workflow_run_id": 38493227127,
-    "workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38493227127",
     "status": "COMPLETED_SUCCESS_MATERIAL_TRANCHE",
-    "started_at_utc": "2026-10-14T01:00:16.695568+00:00",
-    "completed_at_utc": "2026-10-14T01:00:17.301650+00:00",
-    "configured_runtime_hours": 0.05,
-    "material_capabilities": [
-      129,
-      130,
-      131,
-      132
-    ],
-    "behavior_tests": "9_REGRESSION_SUITES_PASS;4_OF_4_CAPABILITY_TESTS_PASS",
+    "material_capabilities": [129, 130, 131, 132],
     "executor": "implementation/super1200/runtime/d05_material_worker_129_132.py",
     "g23": "PASS_FOR_SCOPE_D05_129_132",
     "g24": "PASS_FOR_SCOPE_D05_129_132",
     "global_certification_status": "NOT_CERTIFIED"
-  },
-  "execution_history": [
-    {
-      "workflow_run_id": 38469912731,
-      "workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38469912731",
-      "status": "COMPLETED_FAILURE_RECONCILED",
-      "started_at_utc": "2026-10-13T21:20:57Z",
-      "configured_runtime_hours": 12,
-      "material_tranche_commit": "c249afb35f1486a27c14d8ccc3f2000da4cb8f6c",
-      "material_capabilities": [
-        87,
-        88,
-        89,
-        90,
-        91,
-        92
-      ],
-      "behavior_tests": "16/16 PASS",
-      "executor_binding_warning": "CUSTOSZ mission_start reported UNBOUND_MEDIATED_OR_LOCAL; registered D04 material executor was invoked and passed.",
-      "remote_status": "completed",
-      "remote_conclusion": "failure",
-      "reconciled_at_utc": "2026-10-13T23:21:34.744830+00:00",
-      "reconciliation_source_url": "https://api.github.com/repos/Plomillo/luna-linux-bridge/actions/runs/38469912731"
-    }
-  ],
-  "execution_reconciliation": {
-    "workflow_run_id": 38469912731,
-    "previously_reported_status": "IN_PROGRESS",
-    "verified_remote_status": "completed",
-    "verified_remote_conclusion": "failure",
-    "source_url": "https://api.github.com/repos/Plomillo/luna-linux-bridge/actions/runs/38469912731",
-    "reconciled_at_utc": "2026-10-13T23:21:34.744830+00:00"
-  },
-  "last_material_execution": {
-    "executor": "implementation/super1200/runtime/d05_material_worker_129_132.py",
-    "capabilities": [
-      129,
-      130,
-      131,
-      132
-    ],
-    "tests": "9_REGRESSION_SUITES_PASS;4_OF_4_INDEPENDENT_TEST_INVOCATIONS_PASS",
-    "test_case_results": [
-      {
-        "test_case": "test_checker_binding_requires_independent_checker_and_untrusted_producer",
-        "exit_code": 0,
-        "result": "PASS",
-        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stderr_sha256": "902b7c0a826f9826e79fd08737ce127f6982e6b1f73381de0b4a9b7efc073eb6",
-        "test_name_seen": true,
-        "single_test_run_confirmed": true,
-        "unittest_ok_marker": true
-      },
-      {
-        "test_case": "test_proof_artifact_descriptor_is_hash_bound_and_does_not_claim_persistence",
-        "exit_code": 0,
-        "result": "PASS",
-        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stderr_sha256": "6b73234b0bb8a9ef87f0be364881958e8a6c15931a364230f2e4f0d1bd3266e2",
-        "test_name_seen": true,
-        "single_test_run_confirmed": true,
-        "unittest_ok_marker": true
-      },
-      {
-        "test_case": "test_proof_dependency_graph_rejects_cycles_and_computes_reverse_invalidation",
-        "exit_code": 0,
-        "result": "PASS",
-        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stderr_sha256": "13ca14733ec4caf4c627750b4786d24bcda34584e7a9698606fac2c3f0a1be9d",
-        "test_name_seen": true,
-        "single_test_run_confirmed": true,
-        "unittest_ok_marker": true
-      },
-      {
-        "test_case": "test_proof_replay_requires_trusted_exact_callback_and_never_grants_global_certification",
-        "exit_code": 0,
-        "result": "PASS",
-        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "stderr_sha256": "efd05af998a89626a10a823e515ee8a6916d39e1601c89c942bce490362ef99b",
-        "test_name_seen": true,
-        "single_test_run_confirmed": true,
-        "unittest_ok_marker": true
-      }
-    ],
-    "module_sha256": "1156b3d7f6116ade3dac3b66f60bce5837f5183cb9402d364902e58b37f6ea3b",
-    "test_sha256": "62b772f8c2da55f8be350fa8076614e13afe97d2a7bec2dd1bc3b944598debc8",
-    "github_actions_run_id": 38493227127,
-    "g23": "PASS_FOR_SCOPE_D05_129_132",
-    "g24": "PASS_FOR_SCOPE_D05_129_132",
-    "certification_granted": false,
-    "completed_at_utc": "2026-10-14T01:00:17.301650+00:00"
-  },
-  "independent_validation": {
-    "scope": "D04_CAPABILITIES_117_120_ONLY",
-    "scope_key": "D04:117-120",
-    "status": "PASS",
-    "workflow_run_id": 38490364943,
-    "record_path": "continuity/independent-validation/D04_117_120.json",
-    "g23": "PASS_FOR_SCOPE_D04_117_120",
-    "g24": "PASS_FOR_SCOPE_D04_117_120",
-    "certification_granted": false
-  },
-  "evidence_refresh": {
-    "status": "PASS_AWAITING_G23",
-    "scope": "D04_CAPABILITIES_101_104_ONLY",
-    "scope_key": "D04:101-104",
-    "workflow_run_id": "38486078293",
-    "workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38486078293",
-    "source_commit": "325bb201082eecf8fad7dace23de4fcbb6fea376",
-    "completed_at_utc": "2026-10-13T23:44:52.795121+00:00",
-    "module_sha256": "591082428db8a61946e78341df2e086785d8d0d49f20cf632a4b3a4501139940",
-    "test_sha256": "8c32455a51ccf1c4d81309e15d18261e537f85a50f63ac74ac063e5466064e13",
-    "test_results": "FULL_SUITE_PASS;4_OF_4_SPECIFIC_TESTS_PASS",
-    "certification_granted": false
   },
   "scoped_certification": {
     "scope": "D05:129-132",
     "status": "PASS",
     "record_path": "continuity/certification/D05_129_132.json",
-    "workflow_run_id": 38493354222,
     "certification_granted": true,
     "global_certification_granted": false
   },
-  "next_tranche_authorization": null,
+  "next_tranche_authorization": {
+    "authorization_id": "SUPER1200-D05-133-136-AUTH-20261014T0650",
+    "status": "AUTHORIZED_FOR_ONE_MATERIAL_TRANCHE",
+    "checkpoint_predecessor": "D05_129_132_MATERIALIZED",
+    "executor": "implementation/super1200/runtime/d05_material_worker_133_136.py",
+    "capabilities": [133, 134, 135, 136],
+    "prior_scope": "D05:129-132",
+    "prior_g23": "PASS_FOR_SCOPE_D05_129_132",
+    "prior_g24": "PASS_FOR_SCOPE_D05_129_132",
+    "prior_certificate": "continuity/certification/D05_129_132.json",
+    "global_certification_granted": false,
+    "authorized_at_utc": "2026-10-14T06:50:00Z",
+    "notes": "Additive registration. Fail-closed. One tranche only."
+  },
   "scoped_certifications": {
-    "D04:93-96": {
-      "scope": "D04:93-96",
-      "status": "PASS",
-      "record_path": "continuity/certification/D04_93_96.json",
-      "workflow_run_id": "38484598640",
-      "certification_granted": true,
-      "global_certification_granted": false
-    },
-    "D04:97-100": {
-      "scope": "D04:97-100",
-      "status": "PASS",
-      "record_path": "continuity/certification/D04_97_100.json",
-      "workflow_run_id": "38485400192",
-      "certification_granted": true,
-      "global_certification_granted": false
-    },
-    "D04:101-104": {
-      "scope": "D04:101-104",
-      "status": "PASS",
-      "record_path": "continuity/certification/D04_101_104.json",
-      "workflow_run_id": "38486180141",
-      "certification_granted": true,
-      "global_certification_granted": false
-    },
-    "D04:105-108": {
-      "scope": "D04:105-108",
-      "status": "PASS",
-      "record_path": "continuity/certification/D04_105_108.json",
-      "workflow_run_id": "38486914042",
-      "certification_granted": true,
-      "global_certification_granted": false
-    },
-    "D04:109-112": {
-      "scope": "D04:109-112",
-      "status": "PASS",
-      "record_path": "continuity/certification/D04_109_112.json",
-      "workflow_run_id": 38487799805,
-      "certification_granted": true,
-      "global_certification_granted": false
-    },
-    "D04:113-116": {
-      "scope": "D04:113-116",
-      "status": "PASS",
-      "record_path": "continuity/certification/D04_113_116.json",
-      "workflow_run_id": 38488999382,
-      "certification_granted": true,
-      "global_certification_granted": false
-    },
-    "D04:117-120": {
-      "scope": "D04:117-120",
-      "status": "PASS",
-      "record_path": "continuity/certification/D04_117_120.json",
-      "workflow_run_id": 38490364943,
-      "certification_granted": true,
-      "global_certification_granted": false
-    },
-    "D05:121-124": {
-      "scope": "D05:121-124",
-      "status": "PASS",
-      "record_path": "continuity/certification/D05_121_124.json",
-      "workflow_run_id": 38491844778,
-      "certification_granted": true,
-      "global_certification_granted": false
-    },
-    "D05:125-128": {
-      "scope": "D05:125-128",
-      "status": "PASS",
-      "record_path": "continuity/certification/D05_125_128.json",
-      "workflow_run_id": 38492696668,
-      "certification_granted": true,
-      "global_certification_granted": false
-    },
     "D05:129-132": {
       "scope": "D05:129-132",
       "status": "PASS",
       "record_path": "continuity/certification/D05_129_132.json",
-      "workflow_run_id": 38493354222,
       "certification_granted": true,
       "global_certification_granted": false
     }
   },
-  "authorization_state_reconciliation": {
-    "corrected_at_utc": "2026-10-13T23:59:30Z",
-    "change": "Renamed composite prior-source hash field to prior_certificate_source_hashes because it holds two already-verified SHA-256 values, not a SHA-256 digest of the certificate file.",
-    "no_scope_change": true,
-    "global_certification_status": "NOT_CERTIFIED"
-  },
-  "checkpoint_reconciliation": {
-    "status": "PASS_SCOPED_D05_CONTINUATION_AUTHORIZED",
-    "observed_at_utc": "2026-10-14T00:37:02.042Z",
-    "predecessor_checkpoint": "D04_117_120_MATERIALIZED",
-    "authorized_executor": "implementation/super1200/runtime/d05_material_worker_121_124.py",
-    "authorized_capabilities": [
-      121,
-      122,
-      123,
-      124
-    ],
-    "prior_scope": "D04:117-120",
-    "prior_scope_g23": "PASS",
-    "prior_scope_g24": "PASS",
-    "prior_certificate_blob_sha": "d77081dc2f01754fbb7bb4ed29654e1d060a50db",
-    "material_test_workflow_run_id": 38490748132,
-    "material_module_sha256": "46e85e6212ffc29b6084eae50c9c293e0888a12306594b5cf85e8a998565a17a",
-    "material_test_sha256": "0922dec5bd80d63bb27b58d25746c207d9a0cf812f532b8da19be385066abb5e",
-    "global_certification_status": "NOT_CERTIFIED",
-    "reason": "D04:117-120 has independently validated scoped G23/G24 and source-bound certificate; the D05 121-124 contract and mapped tests pass independently, the task-specific executor is registered, and hosted Kestra/supervisor gates are aligned. This authorizes only one material tranche."
-  },
-  "previous_tranche_authorization": {
-    "checkpoint_predecessor": "D04_109_112_MATERIALIZED",
-    "executor": "implementation/super1200/runtime/d04_material_worker_113_116.py",
-    "capabilities": [
-      113,
-      114,
-      115,
-      116
-    ],
-    "prior_scope_g23": "PASS_FOR_SCOPE_D04_109_112",
-    "prior_scope_g24": "PASS_FOR_SCOPE_D04_109_112",
-    "scoped_certificate": "continuity/certification/D04_109_112.json",
-    "global_certification_granted": false,
-    "authorized_at_commit": "4532657191233e1042b6237e675eb236fc4ecec9",
-    "prior_certificate_source_hashes": {
-      "module_sha256": "182c25bba925eed8044eb340bb5461cba9e45189c7b5ce276372cb81859e8017",
-      "test_sha256": "d72b1e13d77d8c6c0e7e3082be175950772b2a4c35440c0d69d97af64779afd7",
-      "runtime_dependency_sha256": "591082428db8a61946e78341df2e086785d8d0d49f20cf632a4b3a4501139940",
-      "base_test_dependency_sha256": "8c32455a51ccf1c4d81309e15d18261e537f85a50f63ac74ac063e5466064e13"
-    }
-  },
-  "checkpoint_reconciliation_history": [
-    {
-      "status": "PASS_SCOPED_CONTINUATION_AUTHORIZED",
-      "observed_at_utc": "2026-10-14T00:09:46.767Z",
-      "prior_checkpoint": "D04_109_112_MATERIALIZED",
-      "current_checkpoint": "D04_109_112_MATERIALIZED",
-      "registered_next_executor": "implementation/super1200/runtime/d04_material_worker_113_116.py",
-      "prior_scope": "D04:109-112",
-      "prior_g23": "PASS",
-      "prior_g24": "PASS",
-      "global_certification_status": "NOT_CERTIFIED",
-      "historical_dispatch_error": "DISPATCH_DENIED_BY_CHECKPOINT_RECONCILIATION_20261013",
-      "reason": "Scoped G23/G24 and the prior-scope certificate for 109-112 are valid; executor 113-116 is registered. This authorization permits only the next material tranche and does not certify SUPER1200 globally.",
-      "historical_status": "SUPERSEDED_BY_EXACT_113_116_RECONCILIATION"
-    }
-  ],
-  "metadata_reconciliation_history": [
-    {
-      "field": "independent_validation",
-      "previous_value": {
-        "scope": "D04_CAPABILITIES_109_112_ONLY",
-        "scope_key": "D04:113-116",
-        "status": "PASS",
-        "workflow_run_id": 38488999382,
-        "record_path": "continuity/independent-validation/D04_113_116.json",
-        "g23": "PASS_FOR_SCOPE_D04_113_116",
-        "g24": "PASS_FOR_SCOPE_D04_113_116",
-        "certification_granted": false
-      },
-      "correction": "Prior G23/G24 workflow persisted a mismatched scope label. The independently validated record at continuity/independent-validation/D04_113_116.json is the scope authority.",
-      "corrected_at_utc": "2026-10-14T00:23:39.314Z",
-      "global_certification_status": "NOT_CERTIFIED"
-    }
-  ],
-  "continuation_authorization_history": [
-    {
-      "authorization_id": "SUPER1200-D04-117-120-AUTH-20261014T0023",
-      "status": "AUTHORIZED_FOR_ONE_MATERIAL_TRANCHE",
-      "checkpoint_predecessor": "D04_113_116_MATERIALIZED",
-      "executor": "implementation/super1200/runtime/d04_material_worker_117_120.py",
-      "capabilities": [
-        117,
-        118,
-        119,
-        120
-      ],
-      "prior_scope": "D04:113-116",
-      "prior_g23": "PASS",
-      "prior_g24": "PASS",
-      "prior_certificate": "continuity/certification/D04_113_116.json",
-      "global_certification_granted": false,
-      "authorized_at_utc": "2026-10-14T00:23:39.314Z"
-    }
-  ],
-  "scoped_validation_record": {
-    "scope": "D05:129-132",
-    "status": "PASS",
-    "record_path": "continuity/certification/D05_129_132.json",
-    "workflow_run_id": 38493354222,
-    "g23": "PASS",
-    "g24": "PASS",
-    "certification_granted": true,
-    "global_super1200_certified": false
-  }
+  "notes": "Reconciled with EXECUTORS.json. Controls unchanged. G23/G24 remain sequential steps after material evidence."
 }
