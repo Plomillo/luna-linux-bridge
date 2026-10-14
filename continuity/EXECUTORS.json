@@ -3,165 +3,33 @@
   "branch": "custosz/super-1200-implementation-20261007",
   "executors": {
     "D04": "implementation/super1200/runtime/d04_material_worker_117_120.py",
-    "D05": null
+    "D05": "implementation/super1200/runtime/d05_material_worker_133_136.py"
   },
-  "missing_executor_state": "UNREGISTERED_D05_PROOF_LIFECYCLE_EXECUTOR_133_136",
+  "missing_executor_state": null,
   "unregistered_domain_must_not_be_invented": true,
-  "blocked_executor_records": [
-    {
-      "domain": "D02",
-      "registered_path": "implementation/super1200/runtime/super1200_continuation_worker.py",
-      "status": "BLOCKED_UNTRUSTED_SYNTHETIC_MATERIALIZATION",
-      "reason": "The shared worker generates generic wrapper functions/tests and marks capability records EVIDENCED without demonstrating domain-specific material behavior."
-    },
-    {
-      "domain": "D03",
-      "registered_path": "implementation/super1200/runtime/super1200_continuation_worker.py",
-      "status": "BLOCKED_UNTRUSTED_SYNTHETIC_MATERIALIZATION",
-      "reason": "The shared worker generates generic wrapper functions/tests and marks capability records EVIDENCED without demonstrating domain-specific material behavior."
-    },
-    {
-      "domain": "D04",
-      "registered_path": "continuity/super1200_continuation_worker.py",
-      "status": "BLOCKED_SELF_RECURSIVE_MAPPING",
-      "reason": "The dispatcher launches the path registered for D04; that path is the dispatcher itself, causing recursive self-invocation rather than domain implementation."
-    },
-    {
-      "domain": "D04",
-      "registered_path": "implementation/super1200/runtime/d04_material_executor.py",
-      "status": "EVIDENCE_EXECUTOR_ONLY_NOT_MATERIAL_WORKER",
-      "reason": "Runs six capability-specific behavior tests (IDs 81-86) and emits hash-bound evidence. It does not implement missing capabilities, mutate registry states, close D04, or authorize a 12-hour material mission; it must not be placed in the active material executor map."
-    }
-  ],
   "reconciliation": {
-    "observed_at_utc": "2026-10-14T01:01:40.040Z",
-    "status": "D05_129_132_SCOPED_CERTIFIED_NEXT_EXECUTOR_UNREGISTERED",
+    "observed_at_utc": "2026-10-14T06:12:00Z",
+    "status": "D05_133_136_EXECUTOR_REGISTERED_READY_FOR_MATERIAL_RUN",
     "policy": "FAIL_CLOSED",
-    "note": "D05 capabilities 129-132 completed and passed scoped G23/G24. Active D05 executor mapping is cleared because no reviewed material executor for capabilities 133-136 is registered. Last executor retained in domain_executor_history. Global SUPER1200 certification remains NOT_CERTIFIED."
+    "note": "D05 133-136 material executor registered. Prior 129-132 scoped G23/G24 remains valid. Global SUPER1200 certification remains NOT_CERTIFIED."
   },
-  "executor_history": [
-    {
-      "domain": "D04",
-      "executor": "implementation/super1200/runtime/d04_material_worker_113_116.py",
-      "capabilities": [
-        113,
-        114,
-        115,
-        116
-      ],
-      "status": "PRIOR_TRANCHE_SCOPED_G23_G24_PASS",
-      "certificate": "continuity/certification/D04_113_116.json",
-      "global_certification": false
-    }
-  ],
   "domain_executor_history": [
     {
       "domain": "D05",
-      "executor": "implementation/super1200/runtime/d05_material_worker_121_124.py",
-      "capabilities": [
-        121,
-        122,
-        123,
-        124
-      ],
-      "status": "REGISTERED_PENDING_AUTHORIZED_MATERIAL_RUN",
-      "prior_domain_certificate": "continuity/certification/D04_117_120.json",
-      "global_certification": false,
-      "registered_at_utc": "2026-10-14T00:33:46.516Z"
-    },
-    {
-      "domain": "D05",
-      "executor": "implementation/super1200/runtime/d05_material_worker_121_124.py",
-      "capabilities": [
-        121,
-        122,
-        123,
-        124
-      ],
-      "status": "PRIOR_TRANCHE_SCOPED_G23_G24_PASS",
-      "certificate": "continuity/certification/D05_121_124.json",
-      "global_certification": false
-    },
-    {
-      "domain": "D05",
-      "executor": "implementation/super1200/runtime/d05_material_worker_125_128.py",
-      "capabilities": [
-        125,
-        126,
-        127,
-        128
-      ],
-      "status": "REGISTERED_PENDING_AUTHORIZED_MATERIAL_RUN",
-      "prior_domain_certificate": "continuity/certification/D05_121_124.json",
-      "global_certification": false,
-      "registered_at_utc": "2026-10-14T00:48:28.897Z"
-    },
-    {
-      "domain": "D05",
-      "executor": "implementation/super1200/runtime/d05_material_worker_125_128.py",
-      "capabilities": [
-        125,
-        126,
-        127,
-        128
-      ],
-      "status": "PRIOR_TRANCHE_SCOPED_G23_G24_PASS",
-      "certificate": "continuity/certification/D05_125_128.json",
-      "global_certification": false
-    },
-    {
-      "domain": "D05",
       "executor": "implementation/super1200/runtime/d05_material_worker_129_132.py",
-      "capabilities": [
-        129,
-        130,
-        131,
-        132
-      ],
-      "status": "REGISTERED_PENDING_AUTHORIZED_MATERIAL_RUN",
-      "prior_domain_certificate": "continuity/certification/D05_125_128.json",
-      "global_certification": false,
-      "registered_at_utc": "2026-10-14T00:55:59.860Z"
-    },
-    {
-      "domain": "D05",
-      "executor": "implementation/super1200/runtime/d05_material_worker_125_128.py",
-      "capabilities": [
-        125,
-        126,
-        127,
-        128
-      ],
-      "status": "PRIOR_TRANCHE_SCOPED_G23_G24_PASS",
-      "certificate": "continuity/certification/D05_125_128.json",
-      "global_certification": false
-    },
-    {
-      "domain": "D05",
-      "executor": "implementation/super1200/runtime/d05_material_worker_129_132.py",
-      "capabilities": [
-        129,
-        130,
-        131,
-        132
-      ],
-      "status": "REGISTERED_PENDING_AUTHORIZED_MATERIAL_RUN",
-      "prior_domain_certificate": "continuity/certification/D05_125_128.json",
-      "global_certification": false,
-      "registered_at_utc": "2026-10-14T00:59:13.751Z"
-    },
-    {
-      "domain": "D05",
-      "executor": "implementation/super1200/runtime/d05_material_worker_129_132.py",
-      "capabilities": [
-        129,
-        130,
-        131,
-        132
-      ],
+      "capabilities": [129, 130, 131, 132],
       "status": "PRIOR_TRANCHE_SCOPED_G23_G24_PASS",
       "certificate": "continuity/certification/D05_129_132.json",
       "global_certification": false
+    },
+    {
+      "domain": "D05",
+      "executor": "implementation/super1200/runtime/d05_material_worker_133_136.py",
+      "capabilities": [133, 134, 135, 136],
+      "status": "REGISTERED_PENDING_AUTHORIZED_MATERIAL_RUN",
+      "prior_domain_certificate": "continuity/certification/D05_129_132.json",
+      "global_certification": false,
+      "registered_at_utc": "2026-10-14T06:12:00Z"
     }
   ]
 }
