@@ -6,6 +6,8 @@ on:
       - custosz/super-1200-implementation-20261007
     paths:
       - "continuity/EXECUTORS.json"
+      - "continuity/STATE.json"
+      - "continuity/certification/D04_109_112.json"
       - "implementation/super1200/runtime/d04_material_worker_113_116.py"
       - "implementation/super1200/domains/D04_authorization_governance.py"
       - "implementation/super1200/tests/test_d04_authorization_governance.py"
