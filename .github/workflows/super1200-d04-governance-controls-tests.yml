@@ -1,0 +1,42 @@
+name: SUPER1200 D04 governance controls tests 113-116
+
+on:
+  push:
+    branches:
+      - custosz/super-1200-implementation-20261007
+    paths:
+      - "implementation/super1200/domains/D04_governance_controls.py"
+      - "implementation/super1200/tests/test_d04_governance_controls.py"
+      - ".github/workflows/super1200-d04-governance-controls-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: super1200-d04-governance-controls-tests
+  cancel-in-progress: false
+
+jobs:
+  test-governance-controls:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout governed candidate branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: custosz/super-1200-implementation-20261007
+          persist-credentials: false
+      - name: Run governance-control test suite for 113-116
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B implementation/super1200/tests/test_d04_governance_controls.py -v
+          for test_name in \
+            test_single_use_authorization_is_atomic_and_replay_is_denied \
+            test_revocation_registry_propagates_and_unknown_tracking_fails_closed \
+            test_separation_of_duties_rejects_shared_identity_control_domain_and_permissions \
+            test_two_man_rule_requires_configured_threshold_independent_signed_fresh_approvals; do
+            python3 -B implementation/super1200/tests/test_d04_governance_controls.py -v "D04GovernanceControlsTests.$test_name"
+          done
+          echo "SUPER1200_GOVERNANCE_CONTROLS_TESTS=PASS INDEPENDENT_CASES=4/4 GLOBAL_CERTIFICATION=FALSE"
