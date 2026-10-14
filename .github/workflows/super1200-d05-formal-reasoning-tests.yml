@@ -1,0 +1,139 @@
+name: SUPER1200 D05 formal reasoning tests 121-124
+
+on:
+  push:
+    branches:
+      - custosz/super-1200-implementation-20261007
+    paths:
+      - "implementation/super1200/domains/D05.json"
+      - "implementation/super1200/registry/capabilities.json"
+      - "implementation/super1200/domains/D05_formal_reasoning.py"
+      - "implementation/super1200/tests/test_d05_formal_reasoning.py"
+      - "implementation/super1200/tests/test_shared.py"
+      - "implementation/super1200/domains/D04_runtime.py"
+      - "implementation/super1200/tests/test_d04_runtime.py"
+      - "implementation/super1200/domains/D04_authorization_governance.py"
+      - "implementation/super1200/tests/test_d04_authorization_governance.py"
+      - "implementation/super1200/domains/D04_governance_controls.py"
+      - "implementation/super1200/tests/test_d04_governance_controls.py"
+      - "implementation/super1200/domains/D04_trust_controls.py"
+      - "implementation/super1200/tests/test_d04_trust_controls.py"
+      - ".github/workflows/super1200-d05-formal-reasoning-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: super1200-d05-formal-reasoning-tests
+  cancel-in-progress: false
+
+jobs:
+  behavior-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Checkout governed candidate branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: custosz/super-1200-implementation-20261007
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+      - name: Validate D05 contract identity and registry scope without mutating state
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path(".")
+          d=json.loads((root/"implementation/super1200/domains/D05.json").read_text())
+          r=json.loads((root/"implementation/super1200/registry/capabilities.json").read_text())
+          expected={
+            121:"FORMAL_REASONING_FABRIC",122:"DEPENDENT_TYPE_THEORY_ENGINE",
+            123:"HIGHER_ORDER_TYPE_THEORY",124:"HOTT_ENGINE"}
+          by_id={x["capability_id"]:x for x in r["items"]}
+          dd={x["capability_id"]:x for x in d["capabilities"]}
+          if d.get("domain_id")!="D05" or d.get("range")!=[121,176] or d.get("count")!=56:
+            raise SystemExit("D05_CONTRACT_IDENTITY_FAIL")
+          if r.get("count")!=1200 or len(r.get("items",[]))!=1200:
+            raise SystemExit("D05_GLOBAL_REGISTRY_COUNT_FAIL")
+          for cid,name in expected.items():
+            if by_id.get(cid,{}).get("canonical_name")!=name or dd.get(cid,{}).get("canonical_name")!=name:
+              raise SystemExit(f"D05_CAPABILITY_IDENTITY_FAIL_{cid}")
+            if by_id[cid].get("implementation_state")!="DECLARED" or dd[cid].get("implementation_state")!="QUEUED_FOR_MATERIAL_IMPLEMENTATION":
+              raise SystemExit(f"D05_PREMATERIAL_STATE_UNEXPECTED_{cid}")
+          print("SUPER1200_D05_CONTRACT_PASS "+json.dumps({"domain":"D05","range":"121-176","tranche":"121-124","materialization_not_yet_claimed":True},sort_keys=True))
+          PY
+      - name: Run D05 formal reasoning behavior suite
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B implementation/super1200/tests/test_d05_formal_reasoning.py -v
+      - name: Run each capability-specific test independently
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B - <<'PY'
+          import hashlib,json,os,subprocess,sys
+          from pathlib import Path
+          root=Path(".")
+          test=root/"implementation/super1200/tests/test_d05_formal_reasoning.py"
+          module=root/"implementation/super1200/domains/D05_formal_reasoning.py"
+          mapped={
+            121:"test_formal_reasoning_fabric_requires_explicit_assumptions_and_trusted_replay",
+            122:"test_dependent_type_theory_checks_pi_lambda_application_and_dependent_codomain",
+            123:"test_higher_order_type_theory_validates_quantification_over_function_space",
+            124:"test_hott_identity_typechecks_refl_but_keeps_axioms_and_proof_claims_explicit",
+          }
+          results=[]
+          for cid,name in mapped.items():
+            proc=subprocess.run([sys.executable,"-B",str(test),"-v",f"D05FormalReasoningTests.{name}"],
+                                cwd=root,text=True,capture_output=True,timeout=120)
+            output=proc.stdout+"\n"+proc.stderr
+            passed=proc.returncode==0 and name in output and "Ran 1 test" in output and "OK" in output and "FAILED" not in output
+            row={"capability_id":cid,"test_case":name,"result":"PASS" if passed else "FAIL",
+                 "exit_code":proc.returncode,"test_name_seen":name in output,
+                 "single_test_run_confirmed":"Ran 1 test" in output,
+                 "stdout_sha256":hashlib.sha256(proc.stdout.encode()).hexdigest(),
+                 "stderr_sha256":hashlib.sha256(proc.stderr.encode()).hexdigest()}
+            results.append(row)
+            if not passed:
+              print(output[-12000:])
+              raise SystemExit(f"D05_FORMAL_TEST_FAIL_{cid}")
+          record={
+            "schema":"SUPER1200_D05_FORMAL_REASONING_TEST_RUN/1",
+            "scope":"D05:121-124",
+            "workflow_run_id":int(os.environ["GITHUB_RUN_ID"]),
+            "workflow_url":f'{os.environ.get("GITHUB_SERVER_URL","https://github.com")}/{os.environ["GITHUB_REPOSITORY"]}/actions/runs/{os.environ["GITHUB_RUN_ID"]}',
+            "source_commit":os.environ["GITHUB_SHA"],
+            "module_sha256":hashlib.sha256(module.read_bytes()).hexdigest(),
+            "test_sha256":hashlib.sha256(test.read_bytes()).hexdigest(),
+            "specific_tests":results,
+            "g23":"NOT_EVALUATED",
+            "g24":"NOT_EVALUATED",
+            "certification_granted":False,
+            "global_super1200_certified":False
+          }
+          Path("d05-formal-reasoning-test-results.json").write_text(json.dumps(record,indent=2,sort_keys=True)+"\n")
+          with open(os.environ["GITHUB_STEP_SUMMARY"],"a",encoding="utf-8") as f:
+            f.write("# SUPER1200 D05 formal reasoning 121-124\n\n")
+            f.write("- Scope: D05:121-124\n- Capability-specific tests: 4/4 PASS\n")
+            f.write(f'- Module SHA-256: {record["module_sha256"]}\n')
+            f.write(f'- Test SHA-256: {record["test_sha256"]}\n')
+            f.write("- G23/G24: not evaluated by this behavior-only workflow\n")
+            f.write("- Theorem claims: no theorem is certified by type checking alone\n")
+            f.write("- Global certification: NOT CERTIFIED\n")
+          print("SUPER1200_D05_FORMAL_TESTS_PASS "+json.dumps({"scope":"D05:121-124","specific_tests":"4/4 PASS","module_sha256":record["module_sha256"],"test_sha256":record["test_sha256"],"certification_granted":False},sort_keys=True))
+          PY
+      - name: Preserve non-certifying test evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: super1200-d05-formal-reasoning-tests-${{ github.run_id }}
+          path: d05-formal-reasoning-test-results.json
+          if-no-files-found: warn
+          retention-days: 90
