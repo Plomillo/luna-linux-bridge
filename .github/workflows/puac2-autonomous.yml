@@ -35,10 +35,147 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  readiness_probe:
+    name: Continuous readiness probe (auditable HOLD map)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      candidate: ${{ steps.probe.outputs.candidate }}
+      readiness_status: ${{ steps.probe.outputs.status }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Emit machine-readable readiness evidence
+        id: probe
+        env:
+          HAS_G23_PRIV: ${{ secrets.PUAC2_G23_SIGNING_PRIVATE_KEY_PEM != '' }}
+          HAS_G24_PRIV: ${{ secrets.PUAC2_G24_SIGNING_PRIVATE_KEY_PEM != '' }}
+          HAS_G23_PUB: ${{ vars.PUAC2_G23_PUBLIC_KEY_PEM != '' }}
+          HAS_G24_PUB: ${{ vars.PUAC2_G24_PUBLIC_KEY_PEM != '' }}
+          HAS_G23_ID: ${{ vars.PUAC2_G23_VALIDATOR_ID != '' }}
+          HAS_G24_ID: ${{ vars.PUAC2_G24_CERTIFIER_ID != '' }}
+          HAS_CLIENT_CERT: ${{ vars.PUAC2_MTLS_CLIENT_CERT != '' }}
+          HAS_CLIENT_KEY: ${{ vars.PUAC2_MTLS_CLIENT_KEY != '' }}
+          HAS_CA_CERT: ${{ vars.PUAC2_MTLS_CA_CERT != '' }}
+          HAS_HOST_REPORT: ${{ vars.PUAC2_HOST_TEST_REPORT != '' }}
+          HAS_ROLLBACK_REPORT: ${{ vars.PUAC2_ROLLBACK_TEST_REPORT != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          python - <<'PY'
+          import json, os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          candidate = os.environ["GITHUB_SHA"]
+          event = os.environ.get("GITHUB_EVENT_NAME", "")
+          blockers = []
+          stages = {
+              "source_validation": "READY",
+              "host_validation": "HOLD",
+              "g23_independent_validation": "HOLD",
+              "g24_certification": "HOLD",
+          }
+
+          host_reqs = {
+              "self_hosted_runner_label": "luna-aux",
+              "mtls_config_path": "/etc/louksna/remote-bridge/mtls.json",
+              "service": "louksna-remote-bridge.service",
+              "vars.PUAC2_MTLS_CLIENT_CERT": os.environ.get("HAS_CLIENT_CERT") == "true",
+              "vars.PUAC2_MTLS_CLIENT_KEY": os.environ.get("HAS_CLIENT_KEY") == "true",
+              "vars.PUAC2_MTLS_CA_CERT": os.environ.get("HAS_CA_CERT") == "true",
+              "vars.PUAC2_HOST_TEST_REPORT": os.environ.get("HAS_HOST_REPORT") == "true",
+              "vars.PUAC2_ROLLBACK_TEST_REPORT": os.environ.get("HAS_ROLLBACK_REPORT") == "true",
+          }
+          for k, v in host_reqs.items():
+              if v is False or (isinstance(v, str) and not v):
+                  blockers.append(f"HOST_MISSING:{k}")
+          if any(b.startswith("HOST_MISSING:") for b in blockers):
+              stages["host_validation"] = "HOLD"
+          else:
+              stages["host_validation"] = "PROVISIONED_BUT_RUNTIME_UNVERIFIED"
+
+          g23_ok = (
+              os.environ.get("HAS_G23_PRIV") == "true"
+              and os.environ.get("HAS_G23_ID") == "true"
+          )
+          if not g23_ok:
+              if os.environ.get("HAS_G23_PRIV") != "true":
+                  blockers.append("G23_MISSING:secrets.PUAC2_G23_SIGNING_PRIVATE_KEY_PEM")
+              if os.environ.get("HAS_G23_ID") != "true":
+                  blockers.append("G23_MISSING:vars.PUAC2_G23_VALIDATOR_ID")
+              stages["g23_independent_validation"] = "HOLD"
+          else:
+              stages["g23_independent_validation"] = "IDENTITY_PROVISIONED"
+
+          g24_ok = (
+              os.environ.get("HAS_G24_PRIV") == "true"
+              and os.environ.get("HAS_G24_PUB") == "true"
+              and os.environ.get("HAS_G23_PUB") == "true"
+              and os.environ.get("HAS_G24_ID") == "true"
+          )
+          if not g24_ok:
+              if os.environ.get("HAS_G24_PRIV") != "true":
+                  blockers.append("G24_MISSING:secrets.PUAC2_G24_SIGNING_PRIVATE_KEY_PEM")
+              if os.environ.get("HAS_G24_PUB") != "true":
+                  blockers.append("G24_MISSING:vars.PUAC2_G24_PUBLIC_KEY_PEM")
+              if os.environ.get("HAS_G23_PUB") != "true":
+                  blockers.append("G24_MISSING:vars.PUAC2_G23_PUBLIC_KEY_PEM")
+              if os.environ.get("HAS_G24_ID") != "true":
+                  blockers.append("G24_MISSING:vars.PUAC2_G24_CERTIFIER_ID")
+              stages["g24_certification"] = "HOLD"
+          else:
+              stages["g24_certification"] = "IDENTITY_PROVISIONED"
+
+          if event == "pull_request":
+              stages["host_validation"] = "SKIPPED_ON_PR_BY_DESIGN"
+              stages["g23_independent_validation"] = "SKIPPED_ON_PR_BY_DESIGN"
+              stages["g24_certification"] = "SKIPPED_ON_PR_BY_DESIGN"
+              blockers.append("PR_ISOLATION:privileged_chain_excluded_from_pull_request")
+
+          if stages["host_validation"] in ("HOLD", "SKIPPED_ON_PR_BY_DESIGN") or stages["g23_independent_validation"] in ("HOLD", "SKIPPED_ON_PR_BY_DESIGN"):
+              overall = "HOLD"
+          else:
+              overall = "PROVISIONED_AWAITING_RUNTIME_EVIDENCE"
+
+          report = {
+              "schema": "PUAC2_READINESS/1.0",
+              "candidate_commit": candidate,
+              "event": event,
+              "generated_utc": datetime.now(timezone.utc).isoformat(),
+              "overall_status": overall,
+              "stages": stages,
+              "blockers": sorted(set(blockers)),
+              "next_required_actions": [
+                  "Provision and register self-hosted runner labeled [self-hosted, linux, x64, luna-aux]",
+                  "Place root-owned non-world-writable /etc/louksna/remote-bridge/mtls.json and ensure louksna-remote-bridge.service is active",
+                  "Configure repository/environment vars for mTLS cert paths and host/rollback report paths",
+                  "Configure distinct G23/G24 Ed25519 signing identities under separate trust authorities",
+                  "Never place private keys in the repository or untrusted artifacts",
+              ],
+              "certification_possible": False,
+              "notes": "This probe never issues G23/G24. It only maps evidence gaps so continuous automation can advance when real evidence appears.",
+          }
+          Path("out/readiness.json").write_text(json.dumps(report, sort_keys=True, indent=2) + "\n")
+          print(json.dumps({"status": overall, "blockers": report["blockers"]}, sort_keys=True))
+          with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
+              fh.write(f"candidate={candidate}\n")
+              fh.write(f"status={overall}\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: puac2-readiness-${{ github.run_id }}
+          path: out/readiness.json
+          if-no-files-found: error
+          retention-days: 30
+
   source_validation:
     name: Source and regression validation
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    needs: readiness_probe
     outputs:
       candidate: ${{ steps.identity.outputs.candidate }}
       tests_sha256: ${{ steps.tests.outputs.sha256 }}
@@ -71,8 +208,6 @@ jobs:
           import json, os, hashlib, xml.etree.ElementTree as ET
           from pathlib import Path
           root=ET.parse("out/junit.xml").getroot()
-          # JUnit producers may emit <testsuite> or a wrapper <testsuites>.
-          # Aggregate suite counters; fall back to testcase nodes if counters are absent.
           suites = ([root] if root.tag.rsplit("}", 1)[-1] == "testsuite" else
                     [node for node in root.iter() if node.tag.rsplit("}", 1)[-1] == "testsuite"])
           if suites:
@@ -104,10 +239,8 @@ jobs:
 
   host_validation:
     name: Real host mTLS and rollback evidence
-    # Never execute untrusted pull-request code on the privileged self-hosted host.
     if: github.event_name != 'pull_request'
-    needs: source_validation
-    # This job intentionally fails closed until the dedicated target-host runner is provisioned.
+    needs: [readiness_probe, source_validation]
     runs-on: [self-hosted, linux, x64, luna-aux]
     timeout-minutes: 15
     steps:
@@ -173,7 +306,7 @@ jobs:
   g23_independent_validation:
     name: G23 — independent evidence recomputation and signed attestation
     if: github.event_name != 'pull_request'
-    needs: [source_validation, host_validation]
+    needs: [readiness_probe, source_validation, host_validation]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -263,7 +396,7 @@ jobs:
   g24_certification:
     name: G24 — separate policy verification and signed decision
     if: github.event_name != 'pull_request'
-    needs: [source_validation, host_validation, g23_independent_validation]
+    needs: [readiness_probe, source_validation, host_validation, g23_independent_validation]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -298,7 +431,7 @@ jobs:
           from datetime import datetime, timezone
           from pathlib import Path
           from cryptography.hazmat.primitives import serialization
-          from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+          from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey, Ed25519PrivateKey
           def canonical(o): return json.dumps(o,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()
           doc = json.loads(Path("incoming/g23-attestation.json").read_text())
           p, sig = doc["payload"], doc["signature_b64"]
@@ -325,8 +458,6 @@ jobs:
                      "candidate_commit":os.environ["GITHUB_SHA"],"g23_attestation_sha256":g23_hash,
                      "decision_utc":datetime.now(timezone.utc).isoformat()}
           key = serialization.load_pem_private_key(os.environ["G24_SIGNING_PRIVATE_KEY_PEM"].encode(), password=None)
-          from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-          if not isinstance(key, Ed25519PrivateKey): raise SystemExit("G24_PRIVATE_KEY_NOT_ED25519")
           if not isinstance(key, Ed25519PrivateKey): raise SystemExit("G24_PRIVATE_KEY_NOT_ED25519")
           if key.public_key().public_bytes(serialization.Encoding.Raw,serialization.PublicFormat.Raw) == pub.public_bytes(serialization.Encoding.Raw,serialization.PublicFormat.Raw): raise SystemExit("G23_G24_SIGNING_KEYS_NOT_DISTINCT")
           signature = base64.b64encode(key.sign(canonical(payload))).decode()
