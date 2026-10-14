@@ -1,4 +1,5 @@
 name: SUPER1200 — source-bound G23/G24 gates for D05 121-124
+# Source-bound G23/G24 gate; never promotes global SUPER1200 certification.
 
 on:
   workflow_dispatch:
