@@ -3,9 +3,9 @@
   "branch": "custosz/super-1200-implementation-20261007",
   "executors": {
     "D04": "implementation/super1200/runtime/d04_material_worker_117_120.py",
-    "D05": "implementation/super1200/runtime/d05_material_worker_129_132.py"
+    "D05": null
   },
-  "missing_executor_state": "REGISTERED_D05_PROOF_ASSURANCE_EXECUTOR_129_132_PENDING_AUTHORIZED_RUN",
+  "missing_executor_state": "UNREGISTERED_D05_PROOF_LIFECYCLE_EXECUTOR_133_136",
   "unregistered_domain_must_not_be_invented": true,
   "blocked_executor_records": [
     {
@@ -34,10 +34,10 @@
     }
   ],
   "reconciliation": {
-    "observed_at_utc": "2026-10-14T00:59:13.751Z",
-    "status": "D05_129_132_EXECUTOR_REGISTERED_PENDING_AUTHORIZED_MATERIAL_RUN",
+    "observed_at_utc": "2026-10-14T01:01:40.040Z",
+    "status": "D05_129_132_SCOPED_CERTIFIED_NEXT_EXECUTOR_UNREGISTERED",
     "policy": "FAIL_CLOSED",
-    "note": "Task-specific proof-assurance executor for D05 129-132 is registered. It requires scoped G23/G24 PASS for D05 125-128, exact prior certificate blob/source binding, nine regression suites and four capability-specific tests; it records hash-bound evidence and stops until a reviewed executor for 133-136 is registered. Global SUPER1200 certification remains NOT_CERTIFIED."
+    "note": "D05 capabilities 129-132 completed and passed scoped G23/G24. Active D05 executor mapping is cleared because no reviewed material executor for capabilities 133-136 is registered. Last executor retained in domain_executor_history. Global SUPER1200 certification remains NOT_CERTIFIED."
   },
   "executor_history": [
     {
@@ -149,6 +149,19 @@
       "prior_domain_certificate": "continuity/certification/D05_125_128.json",
       "global_certification": false,
       "registered_at_utc": "2026-10-14T00:59:13.751Z"
+    },
+    {
+      "domain": "D05",
+      "executor": "implementation/super1200/runtime/d05_material_worker_129_132.py",
+      "capabilities": [
+        129,
+        130,
+        131,
+        132
+      ],
+      "status": "PRIOR_TRANCHE_SCOPED_G23_G24_PASS",
+      "certificate": "continuity/certification/D05_129_132.json",
+      "global_certification": false
     }
   ]
 }
