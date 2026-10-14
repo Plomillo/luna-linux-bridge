@@ -220,26 +220,38 @@
     {
       "canonical_name": "AUTHORIZATION_PROOF",
       "capability_id": 109,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/D04_authorization_governance.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_authorization_governance.py",
+      "materialization": "AUTHORIZATION_CODE+PER_CAPABILITY_TEST+BASE_REGRESSION+HASH_BOUND_EVIDENCE"
     },
     {
       "canonical_name": "CAPABILITY_LEASES",
       "capability_id": 110,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/D04_authorization_governance.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_authorization_governance.py",
+      "materialization": "AUTHORIZATION_CODE+PER_CAPABILITY_TEST+BASE_REGRESSION+HASH_BOUND_EVIDENCE"
     },
     {
       "canonical_name": "LEAST_PRIVILEGE_ENGINE",
       "capability_id": 111,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/D04_authorization_governance.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_authorization_governance.py",
+      "materialization": "AUTHORIZATION_CODE+PER_CAPABILITY_TEST+BASE_REGRESSION+HASH_BOUND_EVIDENCE"
     },
     {
       "canonical_name": "TIME_BOUND_AUTHORITY",
       "capability_id": 112,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/D04_authorization_governance.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_authorization_governance.py",
+      "materialization": "AUTHORIZATION_CODE+PER_CAPABILITY_TEST+BASE_REGRESSION+HASH_BOUND_EVIDENCE"
     },
     {
       "canonical_name": "SINGLE_USE_AUTHORIZATION",

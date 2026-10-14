@@ -1615,12 +1615,14 @@
       "canonical_name": "AUTHORIZATION_PROOF",
       "capability_id": 109,
       "hardening": "subject/action/object/scope/time/issuer/delegation/revocation/provenance signed or equivalently protected",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE+SCHEMA",
+      "implementation_state": "EVIDENCED",
+      "materialization": "AUTHORIZATION_CODE+PER_CAPABILITY_TEST+BASE_REGRESSION+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "OA+ASR",
       "type": "AUTHORITY_PRIMITIVE",
-      "wire": "110..120,868"
+      "wire": "110..120,868",
+      "implementation_artifact": "implementation/super1200/domains/D04_authorization_governance.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_authorization_governance.py"
     },
     {
       "acquire": "NONE",
@@ -1628,12 +1630,14 @@
       "canonical_name": "CAPABILITY_LEASES",
       "capability_id": 110,
       "hardening": "temporary scoped lease with expiry, nonce, revocation and consumption status",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "AUTHORIZATION_CODE+PER_CAPABILITY_TEST+BASE_REGRESSION+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "OA+LRB",
       "type": "AUTHORIZATION_MECHANISM",
-      "wire": "109,112,113,114"
+      "wire": "109,112,113,114",
+      "implementation_artifact": "implementation/super1200/domains/D04_authorization_governance.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_authorization_governance.py"
     },
     {
       "acquire": "NONE",
@@ -1641,12 +1645,14 @@
       "canonical_name": "LEAST_PRIVILEGE_ENGINE",
       "capability_id": 111,
       "hardening": "derive minimum actions/resources needed from mission DAG",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "AUTHORIZATION_CODE+PER_CAPABILITY_TEST+BASE_REGRESSION+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "LRB",
       "type": "AUTHORIZATION_ENGINE",
-      "wire": "78,109,110,867,868"
+      "wire": "78,109,110,867,868",
+      "implementation_artifact": "implementation/super1200/domains/D04_authorization_governance.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_authorization_governance.py"
     },
     {
       "acquire": "NONE",
@@ -1654,12 +1660,14 @@
       "canonical_name": "TIME_BOUND_AUTHORITY",
       "capability_id": 112,
       "hardening": "not-before/not-after, trusted time handling and expiry denial",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE+SCHEMA",
+      "implementation_state": "EVIDENCED",
+      "materialization": "AUTHORIZATION_CODE+PER_CAPABILITY_TEST+BASE_REGRESSION+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "OA",
       "type": "AUTHORIZATION_POLICY",
-      "wire": "109,110,114"
+      "wire": "109,110,114",
+      "implementation_artifact": "implementation/super1200/domains/D04_authorization_governance.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_authorization_governance.py"
     },
     {
       "acquire": "NONE",
