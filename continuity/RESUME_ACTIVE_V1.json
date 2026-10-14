@@ -1,0 +1,15 @@
+{
+  "schema": "LOUKSNA_RESUME_ACTIVE/1.0",
+  "status": "ACTIVE",
+  "activated_at_utc": "2026-10-14T02:45:00Z",
+  "contract": "DEFINITIVE_OPERATING_CONTRACT_V1",
+  "rail": "DIRECTIVA",
+  "branch": "automation/mtls-evidence-gate-20261013",
+  "checkpoint": "READINESS_PROBE_ACTIVE_HOST_HOLD",
+  "mode": "LIVE_UNDER_CONTRACT",
+  "next_action": "Keep readiness live; research GitHub-only host evidence path; no HP primary host",
+  "fail_closed": true,
+  "antiparalysis": true,
+  "evidence_search_mandatory": true,
+  "global_certification_status": "NOT_CERTIFIED"
+}
