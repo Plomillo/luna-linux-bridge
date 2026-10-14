@@ -9,14 +9,26 @@ tasks:
     type: io.kestra.plugin.core.http.Request
     uri: "https://api.github.com/repos/Plomillo/luna-linux-bridge/contents/continuity/STATE.json?ref=custosz%2Fsuper-1200-implementation-20261007&cache_bust={{ execution.id }}"
     method: GET
+    headers:
+      Accept: application/vnd.github.raw+json
+      Cache-Control: no-cache, no-store
+      Pragma: no-cache
   - id: executors
     type: io.kestra.plugin.core.http.Request
     uri: "https://api.github.com/repos/Plomillo/luna-linux-bridge/contents/continuity/EXECUTORS.json?ref=custosz%2Fsuper-1200-implementation-20261007&cache_bust={{ execution.id }}"
     method: GET
+    headers:
+      Accept: application/vnd.github.raw+json
+      Cache-Control: no-cache, no-store
+      Pragma: no-cache
   - id: prior_certificate
     type: io.kestra.plugin.core.http.Request
     uri: "https://api.github.com/repos/Plomillo/luna-linux-bridge/contents/continuity/certification/D04_105_108.json?ref=custosz%2Fsuper-1200-implementation-20261007&cache_bust={{ execution.id }}"
     method: GET
+    headers:
+      Accept: application/vnd.github.raw+json
+      Cache-Control: no-cache, no-store
+      Pragma: no-cache
   - id: secret_provider_diagnostic
     type: io.kestra.plugin.core.log.Log
     message: "SUPER1200_KESTRA_AUTH_PROVIDER=PUBLIC_READ_ONLY_GITHUB_API"
