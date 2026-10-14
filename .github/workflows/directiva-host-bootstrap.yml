@@ -4,6 +4,12 @@ name: Directiva — governed host bootstrap (luna-aux)
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - automation/mtls-evidence-gate-20261013
+    paths:
+      - ".github/workflows/directiva-host-bootstrap.yml"
+      - "continuity/FORCE_HOST_BOOTSTRAP.marker"
   schedule:
     - cron: "*/15 * * * *"
 
