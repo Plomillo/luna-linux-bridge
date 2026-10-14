@@ -1,22 +1,22 @@
 {
   "active": true,
   "active_worker": false,
-  "block_reason": "NONE",
-  "blocked": false,
+  "block_reason": "NEXT_D05_TRANCHE_EXECUTOR_NOT_REGISTERED",
+  "blocked": true,
   "branch": "custosz/super-1200-implementation-20261007",
   "certified": false,
   "current_checkpoint": "D05_133_136_MATERIALIZED",
-  "diagnostic": "D05 capabilities 133-136 materialized. Natural continuation activated. Supervisor must dispatch G23 sequential gate. Global remains NOT_CERTIFIED.",
+  "diagnostic": "D05 capabilities 133-136 passed scoped G23/G24. Continuation is held fail-closed until a reviewed executor for the next D05 tranche is registered. Scoped certification does not propagate. Global SUPER1200 certification remains NOT_CERTIFIED.",
   "dispatch_error": null,
   "dispatch_requested_at": "2026-10-14T18:58:45Z",
-  "g23": "PENDING_FOR_SCOPE_D05_133_136",
-  "g24": "PENDING_G23",
+  "g23": "PASS_FOR_SCOPE_D05_133_136",
+  "g24": "PASS_FOR_SCOPE_D05_133_136",
   "global_certification_status": "NOT_CERTIFIED",
   "last_execution": {
     "completed_at_utc": "2026-10-14T07:30:59.645233+00:00",
     "executor": "implementation/super1200/runtime/d05_material_worker_133_136.py",
-    "g23": "PENDING",
-    "g24": "PENDING_G23",
+    "g23": "PASS_FOR_SCOPE_D05_133_136",
+    "g24": "PASS_FOR_SCOPE_D05_133_136",
     "global_certification_status": "NOT_CERTIFIED",
     "material_capabilities": [
       133,
@@ -28,25 +28,7 @@
   },
   "mission_id": "SUPER1200-CONTINUATION-20261007",
   "next_point": "D05",
-  "next_tranche_authorization": {
-    "authorization_id": "SUPER1200-D05-133-136-AUTH-20261014T0650",
-    "authorized_at_utc": "2026-10-14T06:50:00Z",
-    "capabilities": [
-      133,
-      134,
-      135,
-      136
-    ],
-    "checkpoint_predecessor": "D05_129_132_MATERIALIZED",
-    "executor": "implementation/super1200/runtime/d05_material_worker_133_136.py",
-    "global_certification_granted": false,
-    "notes": "Material tranche completed. Natural G23 path activated via supervisor.",
-    "prior_certificate": "continuity/certification/D05_129_132.json",
-    "prior_g23": "PASS_FOR_SCOPE_D05_129_132",
-    "prior_g24": "PASS_FOR_SCOPE_D05_129_132",
-    "prior_scope": "D05:129-132",
-    "status": "MATERIAL_COMPLETED_AWAITING_G23"
-  },
+  "next_tranche_authorization": null,
   "next_worker": "implementation/super1200/runtime/d05_material_worker_133_136.py",
   "notes": "Natural continuation activated 2026-10-14. Supervisor signal + DISPATCH_REQUIRED set. Fail-closed. No controls lowered.",
   "operator_action": {
@@ -59,11 +41,12 @@
   "recovery_note": "2026-10-14T18:43:00Z governed activation. Signal placed + status set to DISPATCH_REQUIRED for existing continuity supervisor. Fail-closed preserved. Controls unchanged.",
   "schema": "SUPER1200_CONTINUITY_STATE/1.0",
   "scoped_certification": {
+    "scope": "D05:133-136",
+    "status": "PASS",
+    "record_path": "continuity/certification/D05_133_136.json",
+    "workflow_run_id": 38621886047,
     "certification_granted": true,
-    "global_certification_granted": false,
-    "record_path": "continuity/certification/D05_129_132.json",
-    "scope": "D05:129-132",
-    "status": "PASS"
+    "global_certification_granted": false
   },
   "scoped_certifications": {
     "D05:129-132": {
@@ -72,8 +55,17 @@
       "record_path": "continuity/certification/D05_129_132.json",
       "scope": "D05:129-132",
       "status": "PASS"
+    },
+    "D05:133-136": {
+      "scope": "D05:133-136",
+      "status": "PASS",
+      "record_path": "continuity/certification/D05_133_136.json",
+      "workflow_run_id": 38621886047,
+      "certification_granted": true,
+      "global_certification_granted": false
     }
   },
-  "status": "DISPATCH_REQUIRED",
-  "transition_id": "D05-133-136-TO-G23-20261014"
+  "status": "BLOCKED",
+  "transition_id": "D05-133-136-TO-G23-20261014",
+  "blocked_at": "2026-10-14T19:14:06.718652+00:00"
 }
