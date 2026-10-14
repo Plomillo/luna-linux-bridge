@@ -1,0 +1,11 @@
+{
+  "schema": "LOUKSNA_FREEZE_RESUME/1.0",
+  "id": "IMPLEMENTATION_FREEZE_RESUME_V1",
+  "rail": "DIRECTIVA",
+  "branch": "automation/mtls-evidence-gate-20261013",
+  "prior_checkpoint": "READINESS_PROBE_ACTIVE_HOST_HOLD",
+  "resume_authorized": true,
+  "resume_authorized_at_utc": "2026-10-14T02:30:00Z",
+  "global_certification_status": "NOT_CERTIFIED",
+  "notes": "Resume under definitive contract: fail-closed + antiparalysis + evidence search."
+}
