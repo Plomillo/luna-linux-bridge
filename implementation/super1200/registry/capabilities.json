@@ -1675,12 +1675,14 @@
       "canonical_name": "SINGLE_USE_AUTHORIZATION",
       "capability_id": 113,
       "hardening": "nonce/receipt atomic consumption; replay denied",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "GOVERNANCE_CONTROLS_CODE+PER_CAPABILITY_TEST+FULL_REGRESSION+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "OA+LRB",
       "type": "AUTHORIZATION_MECHANISM",
-      "wire": "109,110,112,114,16"
+      "wire": "109,110,112,114,16",
+      "implementation_artifact": "implementation/super1200/domains/D04_governance_controls.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_governance_controls.py"
     },
     {
       "acquire": "NONE",
@@ -1688,12 +1690,14 @@
       "canonical_name": "REVOCATION_REGISTRY",
       "capability_id": 114,
       "hardening": "revocation identity, reason, issuer, effective time and propagation",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE+SCHEMA",
+      "implementation_state": "EVIDENCED",
+      "materialization": "GOVERNANCE_CONTROLS_CODE+PER_CAPABILITY_TEST+FULL_REGRESSION+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "OA",
       "type": "AUTHORITY_REGISTRY",
-      "wire": "109..113,118,119"
+      "wire": "109..113,118,119",
+      "implementation_artifact": "implementation/super1200/domains/D04_governance_controls.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_governance_controls.py"
     },
     {
       "acquire": "NONE",
@@ -1701,12 +1705,14 @@
       "canonical_name": "SEPARATION_OF_DUTIES",
       "capability_id": 115,
       "hardening": "executor/verifier/G23/G24 identity and permission separation",
-      "implementation_state": "DECLARED",
-      "materialization": "SCHEMA+CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "GOVERNANCE_CONTROLS_CODE+PER_CAPABILITY_TEST+FULL_REGRESSION+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "GOVERNANCE_POLICY",
-      "wire": "117,118,958,959"
+      "wire": "117,118,958,959",
+      "implementation_artifact": "implementation/super1200/domains/D04_governance_controls.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_governance_controls.py"
     },
     {
       "acquire": "NONE",
@@ -1714,12 +1720,14 @@
       "canonical_name": "TWO_MAN_RULE_PROVIDER",
       "capability_id": 116,
       "hardening": "multi-actor threshold only for configured risks; independent signatures and expiry",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "GOVERNANCE_CONTROLS_CODE+PER_CAPABILITY_TEST+FULL_REGRESSION+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "OA",
       "type": "AUTHORIZATION_POLICY_PROVIDER",
-      "wire": "109,115,117"
+      "wire": "109,115,117",
+      "implementation_artifact": "implementation/super1200/domains/D04_governance_controls.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_governance_controls.py"
     },
     {
       "acquire": "NONE",
