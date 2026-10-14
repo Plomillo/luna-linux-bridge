@@ -41,10 +41,16 @@ jobs:
         run: |
           set -Eeuo pipefail
           echo "id=$(id)"
+          # Self-hosted worktrees can keep a stale sparse-checkout that hides
+          # scripts/directiva. Read the blob from the commit, not the worktree.
+          script="$RUNNER_TEMP/host_bootstrap.sh"
+          git show "HEAD:scripts/directiva/host_bootstrap.sh" > "$script"
+          chmod 700 "$script"
+          test -s "$script"
           if [ "$(id -u)" -eq 0 ]; then
-            bash scripts/directiva/host_bootstrap.sh
+            bash "$script"
           elif sudo -n true; then
-            sudo -n --preserve-env=CANDIDATE_SHA bash scripts/directiva/host_bootstrap.sh
+            sudo -n --preserve-env=CANDIDATE_SHA bash "$script"
           else
             echo "::error::Bootstrap requires root. Runner uid=$(id -u) user=$(id -un) and sudo -n is not permitted. Refusing to write /etc or /var/lib without elevation."
             echo "DIRECTIVA_BOOTSTRAP=DENIED_NO_ELEVATION"
