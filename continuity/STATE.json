@@ -1,13 +1,13 @@
 {
   "active": true,
   "active_worker": false,
-  "block_reason": "NEXT_D05_TRANCHE_EXECUTOR_NOT_REGISTERED",
-  "blocked": true,
-  "blocked_at": "2026-10-14T00:53:51.946591+00:00",
+  "block_reason": null,
+  "blocked": false,
+  "blocked_at": null,
   "branch": "custosz/super-1200-implementation-20261007",
   "certified": false,
   "current_checkpoint": "D05_125_128_MATERIALIZED",
-  "diagnostic": "D05 capabilities 125-128 passed scoped G23/G24 with source-bound evidence and seven regression suites. Continuation is held fail-closed until a reviewed executor for D05 125-128 is registered. Type checking does not certify theorems; scoped D05 certification does not propagate. Global SUPER1200 certification remains NOT_CERTIFIED.",
+  "diagnostic": "D05 125-128 passed scoped G23/G24. A separate proof-assurance executor for D05 129-132 is registered; the next bounded run is source-bound to the exact D05 125-128 certificate and isolated proof-assurance module/test. Global SUPER1200 certification remains NOT_CERTIFIED.",
   "dispatch_error": null,
   "dispatch_requested_at": "2026-10-13T21:14:39.496Z",
   "g23": "PASS_FOR_SCOPE_D05_125_128",
@@ -15,9 +15,9 @@
   "mission_id": "SUPER1200-CONTINUATION-20261007",
   "next_point": "D05",
   "next_worker": "CUSTOSZ_V7",
-  "recovery_note": "Register and review a task-specific D05 executor for capabilities 125-128 only after D05:125-128 is scoped-certified. Require current source hashes, independent tests and exact prior-scope certificate binding. Do not propagate scoped certification or global certification.",
+  "recovery_note": "Execute only the registered D05 proof-assurance worker for capabilities 129-132 from checkpoint D05_125_128_MATERIALIZED. After materialization, hold until independent G23/G24. Preserve the D05 125-128 module/test source hashes and do not propagate scoped certification.",
   "schema": "SUPER1200_CONTINUITY_STATE/1.0",
-  "status": "BLOCKED",
+  "status": "ACTIVE",
   "terminal": false,
   "transition_id": "D03-CHECKPOINT-TO-D04-001",
   "checkpoint_assessment": "REPORTED_FUNCTIONAL_CLOSURE_NOT_INDEPENDENTLY_VALIDATED",
@@ -44,7 +44,7 @@
     "g24": "BLOCKED",
     "certification_granted": false
   },
-  "material_worker_ready": false,
+  "material_worker_ready": true,
   "global_certification_status": "NOT_CERTIFIED",
   "last_execution": {
     "workflow_run_id": 38492608988,
@@ -187,7 +187,32 @@
     "certification_granted": true,
     "global_certification_granted": false
   },
-  "next_tranche_authorization": null,
+  "next_tranche_authorization": {
+    "authorization_id": "SUPER1200-D05-129-132-AUTH-20261014",
+    "checkpoint_predecessor": "D05_125_128_MATERIALIZED",
+    "executor": "implementation/super1200/runtime/d05_material_worker_129_132.py",
+    "capabilities": [
+      129,
+      130,
+      131,
+      132
+    ],
+    "prior_scope_g23": "PASS_FOR_SCOPE_D05_125_128",
+    "prior_scope_g24": "PASS_FOR_SCOPE_D05_125_128",
+    "scoped_certificate": "continuity/certification/D05_125_128.json",
+    "prior_certificate_blob_sha": "7fe77014f1b08e6f8c0700d9a22e6fe6df3df7ae",
+    "prior_certificate_source_hashes": {
+      "module_sha256": "1cd86f5bd17094972a0b86231cddcb73164074d7774aec6c003d118296d184b9",
+      "test_sha256": "81395b9039d40392e425a63e444fd7ce6758bc5b1cffd43310696596f28818f9"
+    },
+    "material_module_path": "implementation/super1200/domains/D05_proof_assurance.py",
+    "material_module_blob_sha": "5ad15c3a56f293fec7c473761337869ece560ab0",
+    "material_test_path": "implementation/super1200/tests/test_d05_proof_assurance.py",
+    "material_test_blob_sha": "7b26f0b8778347b500119e544627665f891910e0",
+    "global_certification_granted": false,
+    "prior_g23_g24_workflow_run_id": 38492696668,
+    "authorized_at_utc": "2026-10-14T00:59:03.492Z"
+  },
   "scoped_certifications": {
     "D04:93-96": {
       "scope": "D04:93-96",
