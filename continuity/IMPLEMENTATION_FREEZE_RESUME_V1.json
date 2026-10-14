@@ -1,40 +1,24 @@
 {
   "schema": "LOUKSNA_FREEZE_RESUME/1.0",
   "id": "IMPLEMENTATION_FREEZE_RESUME_V1",
+  "status": "FROZEN_FOR_WIRING",
   "created_at_utc": "2026-10-14T02:30:00Z",
-  "purpose": "Pause material advance on both rails only while definitive contract artifacts are wired; then resume from prior checkpoints under the new loop.",
+  "frozen_at_utc": "2026-10-14T06:35:00Z",
+  "purpose": "Pause material advance while Tranche Factory (G23/G24 chained) and Directiva host bootstrap are wired under PUAC-2.",
   "rails": {
     "SUPER1200": {
       "branch": "custosz/super-1200-implementation-20261007",
       "prior_checkpoint": "D05_129_132_MATERIALIZED",
-      "freeze_reason": "CONTRACT_WIRING",
-      "resume_from": "next reviewed D05 executor after 132 under ANTIPARALYSIS_LOOP_V1"
+      "freeze_reason": "TRANCHE_FACTORY_WIRING",
+      "resume_from": "next reviewed D05 executor under Tranche Factory"
     },
     "DIRECTIVA": {
       "branch": "automation/mtls-evidence-gate-20261013",
       "prior_checkpoint": "READINESS_PROBE_ACTIVE_HOST_HOLD",
-      "freeze_reason": "CONTRACT_WIRING",
-      "resume_from": "readiness + host evidence search under DIRECTIVA_GITHUB_ONLY_UNLOCK_V1"
+      "freeze_reason": "HOST_BOOTSTRAP_WIRING",
+      "resume_from": "readiness + bootstrap script under DIRECTIVA_GITHUB_ONLY_UNLOCK_V1"
     }
   },
-  "required_artifacts": [
-    "continuity/DEFINITIVE_OPERATING_CONTRACT_V1.md",
-    "continuity/ANTIPARALYSIS_LOOP_V1.md",
-    "continuity/KEDB_SCHEMA_V1.json",
-    "continuity/TELEMETRY_SCHEMA_V1.json",
-    "implementation/super1200/DOMAIN_RAIL_D06_D22.md",
-    "continuity/DIRECTIVA_GITHUB_ONLY_UNLOCK_V1.md"
-  ],
-  "resume_authorized": true,
-  "resume_authorized_at_utc": "2026-10-14T02:30:00Z",
-  "resume_conditions_met": [
-    "definitive contract present",
-    "antiparalysis loop present",
-    "KEDB schema present",
-    "telemetry schema present",
-    "domain rail D06-D22 present",
-    "directiva github-only unlock present"
-  ],
-  "global_certification_status": "NOT_CERTIFIED",
-  "notes": "Resume does not mean global certification. Both rails continue under fail-closed + antiparalysis + evidence search + apply-verify-resume."
+  "resume_authorized": false,
+  "global_certification_status": "NOT_CERTIFIED"
 }
