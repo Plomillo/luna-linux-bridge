@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Material D05 worker for formal-foundations capabilities 129-132; no certification authority."""
+"""Material D05 worker for proof-assurance capabilities 129-132; no certification authority."""
 from __future__ import annotations
 import hashlib,json,os,subprocess,sys
 from datetime import datetime,timezone
@@ -148,9 +148,9 @@ def main()->int:
   "recovery_note":"Register a reviewed task-specific executor for capabilities 133-136 only after scoped G23/G24 for D05 129-132. Preserve D05 125-128 source hashes and its historical scoped certificate; no certification propagation.",
   "next_tranche_authorization":None,
   "last_execution":{"workflow_run_id":int(run_id),"workflow_url":url,"status":"COMPLETED_SUCCESS_MATERIAL_TRANCHE","started_at_utc":started,"completed_at_utc":completed,
-   "configured_runtime_hours":0.05,"material_capabilities":[129,130,131,132],"behavior_tests":"8_REGRESSION_SUITES_PASS;4_OF_4_CAPABILITY_TESTS_PASS",
+   "configured_runtime_hours":0.05,"material_capabilities":[129,130,131,132],"behavior_tests":"9_REGRESSION_SUITES_PASS;4_OF_4_CAPABILITY_TESTS_PASS",
    "executor":executor,"g23":"PENDING","g24":"PENDING_G23","global_certification_status":"NOT_CERTIFIED"},
-  "last_material_execution":{"executor":executor,"capabilities":[129,130,131,132],"tests":"8_REGRESSION_SUITES_PASS;4_OF_4_INDEPENDENT_TEST_INVOCATIONS_PASS",
+  "last_material_execution":{"executor":executor,"capabilities":[129,130,131,132],"tests":"9_REGRESSION_SUITES_PASS;4_OF_4_INDEPENDENT_TEST_INVOCATIONS_PASS",
    "test_case_results":[case_results[cid] for cid,_,_ in TASKS],"module_sha256":module_hash,"test_sha256":test_hash,
    "github_actions_run_id":int(run_id),"g23":"PENDING","g24":"PENDING","certification_granted":False,"completed_at_utc":completed}})
  STATE.write_text(json.dumps(state,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
