@@ -21,6 +21,7 @@ jobs:
       dispatch: ${{ steps.route.outputs.dispatch }}
       next_point: ${{ steps.route.outputs.next_point }}
       transition_id: ${{ steps.route.outputs.transition_id }}
+      g23: ${{ steps.route.outputs.g23 }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -45,9 +46,17 @@ jobs:
               o.write("dispatch=" + ("true" if s.get("status")=="DISPATCH_REQUIRED" else "false") + "\n")
               o.write("next_point=" + s.get("next_point","") + "\n")
               o.write("transition_id=" + s.get("transition_id","") + "\n")
+              o.write("g23=" + str(s.get("g23","")) + "\n")
           PY
+      - name: Record scoped G23 continuation
+        if: steps.route.outputs.dispatch == 'true' && steps.route.outputs.g23 == 'PENDING_FOR_SCOPE_D05_133_136'
+        run: |
+          set -Eeuo pipefail
+          echo "SUPER1200_CONTINUATION=SCOPED_G23_WORKFLOW scope=D05:133-136"
+          echo "Material continuation worker is not redispatched. super1200-g23-g24-d05-133-136.yml is the registered gate."
+          echo "REST workflow_dispatch is not used: that workflow is not on the default branch and returns 404."
       - name: Dispatch registered continuation worker
-        if: steps.route.outputs.dispatch == 'true'
+        if: steps.route.outputs.dispatch == 'true' && steps.route.outputs.g23 != 'PENDING_FOR_SCOPE_D05_133_136'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -57,6 +66,9 @@ jobs:
         if: always()
         run: |
           set -Eeuo pipefail
+          if [ "${{ steps.route.outputs.g23 }}" = "PENDING_FOR_SCOPE_D05_133_136" ]; then
+            git checkout -- continuity/STATE.json || true
+          fi
           git add continuity
           if git diff --cached --quiet; then exit 0; fi
           git config user.name "custosz-v7-runtime-bot"
@@ -64,11 +76,3 @@ jobs:
           git commit -m "evidence(super1200): persist continuity supervisor state"
           git pull --rebase origin custosz/super-1200-implementation-20261007
           git push origin HEAD:custosz/super-1200-implementation-20261007
-
-
-  meta:
-    needs: supervise
-    if: always()
-    permissions:
-      contents: write
-    uses: ./.github/workflows/super1200-meta-supervisor.yml
