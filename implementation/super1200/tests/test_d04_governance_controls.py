@@ -181,8 +181,10 @@ class D04GovernanceControlsTests(unittest.TestCase):
             approvals=stale, now_utc="2026-10-14T00:15:00Z",
             signature_verifier=lambda *_: True, independence_verifier=lambda *_: True)
         self.assertEqual(stale_result["decision"], "DENY")
+        routine_approval = approval(request, approval_id="routine-approval", actor="actor-R",
+            credential="cred-R", domain="routine-controls", risk="routine")
         low_risk = controls.evaluate_two_man_rule(policy, risk="routine", request=request,
-            approvals=valid_approvals[:1], now_utc="2026-10-14T00:15:00Z",
+            approvals=[routine_approval], now_utc="2026-10-14T00:15:00Z",
             signature_verifier=lambda *_: True, independence_verifier=lambda *_: True)
         self.assertEqual(low_risk["decision"], "ALLOW")
         self.assertFalse(low_risk["two_man_rule_applied"])
