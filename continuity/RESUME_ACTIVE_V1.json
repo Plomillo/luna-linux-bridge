@@ -1,6 +1,17 @@
 {
   "schema": "LOUKSNA_RESUME_ACTIVE/1.0",
-  "status": "PAUSED_FOR_HOST_BOOTSTRAP",
-  "paused_at_utc": "2026-10-14T06:57:00Z",
-  "notes": "Frozen only for governed bootstrap execution on luna-aux. Will resume after provenance."
+  "status": "ACTIVE",
+  "activated_at_utc": "2026-10-14T07:00:00Z",
+  "rails": {
+    "DIRECTIVA": {
+      "branch": "automation/mtls-evidence-gate-20261013",
+      "checkpoint": "READINESS_PROBE_ACTIVE_HOST_HOLD",
+      "mode": "LIVE_UNDER_CONTRACT",
+      "next_action": "Dispatch .github/workflows/directiva-host-bootstrap.yml on luna-aux, then place real certs/reports and re-dispatch puac2-autonomous.yml",
+      "governed_bootstrap_workflow": ".github/workflows/directiva-host-bootstrap.yml"
+    }
+  },
+  "fail_closed": true,
+  "antiparalysis": true,
+  "global_certification_status": "NOT_CERTIFIED"
 }

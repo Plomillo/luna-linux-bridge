@@ -1,0 +1,8 @@
+{
+  "schema": "DIRECTIVA_BOOTSTRAP_DISPATCH_READY/1.0",
+  "status": "READY_FOR_DISPATCH",
+  "workflow": ".github/workflows/directiva-host-bootstrap.yml",
+  "runner": "luna-aux",
+  "created_at_utc": "2026-10-14T07:00:00Z",
+  "notes": "Workflow created and branch resumed. Dispatch required to execute bootstrap on the self-hosted runner. Fail-closed. No G23/G24 issued by this step."
+}
