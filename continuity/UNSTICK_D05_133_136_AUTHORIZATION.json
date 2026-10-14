@@ -1,0 +1,16 @@
+{
+  "schema": "SUPER1200_TRANCHE_AUTHORIZATION/1.0",
+  "status": "AUTHORIZED_FOR_ONE_MATERIAL_TRANCHE",
+  "checkpoint_predecessor": "D05_129_132_MATERIALIZED",
+  "executor": "implementation/super1200/runtime/d05_material_worker_133_136.py",
+  "capabilities": [133, 134, 135, 136],
+  "canonical_names": ["PROOF_INVALIDATION", "PROOF_CARRYING_ARTIFACT", "PROOF_CARRYING_CONFIGURATION", "PROOF_CARRYING_MIGRATION"],
+  "prior_scope": "D05:129-132",
+  "prior_scope_g23": "PASS_FOR_SCOPE_D05_129_132",
+  "prior_scope_g24": "PASS_FOR_SCOPE_D05_129_132",
+  "scoped_certificate": "continuity/certification/D05_129_132.json",
+  "prior_certificate_blob_sha": "80c148c812d38423076a2f3cde17acb68e21c34b",
+  "global_certification_granted": false,
+  "authorized_at_utc": "2026-10-14T06:10:00Z",
+  "notes": "One material tranche only. Does not grant global SUPER1200 certification."
+}
