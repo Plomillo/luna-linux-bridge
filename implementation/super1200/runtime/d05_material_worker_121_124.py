@@ -65,16 +65,30 @@ def main() -> int:
     if domain.get("domain_id")!="D05" or domain.get("range")!=[121,176] or domain.get("count")!=56:
         raise SystemExit("SUPER1200_TELEMETRY MATERIAL_WORKER=DENY_DOMAIN_CONTRACT_MISMATCH")
     prior_state=state.get("scoped_certifications",{}).get("D04:117-120",{})
-    if (state.get("current_checkpoint")!="D04_117_120_MATERIALIZED"
-        or state.get("g23")!="PASS_FOR_SCOPE_D04_117_120"
-        or state.get("g24")!="PASS_FOR_SCOPE_D04_117_120"
-        or state.get("certified") is not False
-        or state.get("global_certification_status")!="NOT_CERTIFIED"
-        or state.get("scoped_certification",{}).get("scope")!="D04:117-120"
-        or state.get("scoped_certification",{}).get("status")!="PASS"
-        or state.get("scoped_certification",{}).get("global_certification_granted") is not False
-        or prior_state.get("scope")!="D04:117-120" or prior_state.get("status")!="PASS"
-        or prior_state.get("global_certification_granted") is not False):
+    prior_scope_checks={
+        "checkpoint":state.get("current_checkpoint")=="D04_117_120_MATERIALIZED",
+        "g23":state.get("g23")=="PASS_FOR_SCOPE_D04_117_120",
+        "g24":state.get("g24")=="PASS_FOR_SCOPE_D04_117_120",
+        "certified_false":state.get("certified") is False,
+        "global_not_certified":state.get("global_certification_status")=="NOT_CERTIFIED",
+        "scoped_scope":state.get("scoped_certification",{}).get("scope")=="D04:117-120",
+        "scoped_status":state.get("scoped_certification",{}).get("status")=="PASS",
+        "scoped_global_false":state.get("scoped_certification",{}).get("global_certification_granted") is False,
+        "scope_map_scope":prior_state.get("scope")=="D04:117-120",
+        "scope_map_status":prior_state.get("status")=="PASS",
+        "scope_map_global_false":prior_state.get("global_certification_granted") is False,
+    }
+    if not all(prior_scope_checks.values()):
+        print("SUPER1200_TELEMETRY PRIOR_SCOPE_DIAGNOSTIC "+json.dumps({
+            "checks":prior_scope_checks,
+            "checkpoint":state.get("current_checkpoint"),
+            "g23":state.get("g23"),"g24":state.get("g24"),
+            "certified":state.get("certified"),
+            "global_certification_status":state.get("global_certification_status"),
+            "scoped_certification":state.get("scoped_certification"),
+            "scope_map":prior_state,
+            "state_sha256":sha(STATE)
+        },sort_keys=True),flush=True)
         raise SystemExit("SUPER1200_TELEMETRY MATERIAL_WORKER=DENY_PRIOR_SCOPE_GATES_NOT_PASSED")
     if (cert.get("result")!="PASS" or cert.get("scope")!="D04:117-120"
         or cert.get("g23")!="PASS" or cert.get("g24")!="PASS"
