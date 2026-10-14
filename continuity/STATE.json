@@ -1,13 +1,13 @@
 {
   "active": true,
   "active_worker": false,
-  "block_reason": "NEXT_D04_TRANCHE_EXECUTOR_NOT_REGISTERED",
-  "blocked": true,
-  "blocked_at": "2026-10-14T00:14:38.889934+00:00",
+  "block_reason": null,
+  "blocked": false,
+  "blocked_at": null,
   "branch": "custosz/super-1200-implementation-20261007",
   "certified": false,
   "current_checkpoint": "D04_113_116_MATERIALIZED",
-  "diagnostic": "D04 capabilities 113-116 passed current-source G23/G24 for that exact scope. Continuation is held fail-closed until an executor for D04 117-120 is registered. Global SUPER1200 certification remains NOT_CERTIFIED.",
+  "diagnostic": "D04 113-116 passed scoped G23/G24 with source/dependency hashes revalidated. The registered executor for D04 117-120, scoped gate workflow, hosted supervisor, and Kestra predecessor gate are aligned. One bounded material tranche is authorized; after D04 reaches capability 120, continuation must stop until D05 has a reviewed executor. Global SUPER1200 certification remains NOT_CERTIFIED; MetaOS remains deferred.",
   "dispatch_error": null,
   "dispatch_requested_at": "2026-10-13T21:14:39.496Z",
   "g23": "PASS_FOR_SCOPE_D04_113_116",
@@ -15,9 +15,9 @@
   "mission_id": "SUPER1200-CONTINUATION-20261007",
   "next_point": "D04",
   "next_worker": "CUSTOSZ_V7",
-  "recovery_note": "Register and review a task-specific D04 117-120 executor only after this scope passes G23/G24; require exact source-bound evidence and preserve non-regression. Do not propagate scoped certification.",
+  "recovery_note": "Run only implementation/super1200/runtime/d04_material_worker_117_120.py using the exact D04:113-116 scoped certificate and dependency hashes. After D04:117-120, require new G23/G24 and register a reviewed D05 executor before any D05 material operation.",
   "schema": "SUPER1200_CONTINUITY_STATE/1.0",
-  "status": "BLOCKED",
+  "status": "ACTIVE",
   "terminal": false,
   "transition_id": "D03-CHECKPOINT-TO-D04-001",
   "checkpoint_assessment": "REPORTED_FUNCTIONAL_CLOSURE_NOT_INDEPENDENTLY_VALIDATED",
@@ -44,7 +44,7 @@
     "g24": "BLOCKED",
     "certification_granted": false
   },
-  "material_worker_ready": false,
+  "material_worker_ready": true,
   "global_certification_status": "NOT_CERTIFIED",
   "last_execution": {
     "workflow_run_id": 38488563681,
@@ -161,14 +161,15 @@
     "completed_at_utc": "2026-10-14T00:10:39.161037+00:00"
   },
   "independent_validation": {
-    "scope": "D04_CAPABILITIES_109_112_ONLY",
+    "scope": "D04_CAPABILITIES_113_116_ONLY",
     "scope_key": "D04:113-116",
     "status": "PASS",
     "workflow_run_id": 38488999382,
     "record_path": "continuity/independent-validation/D04_113_116.json",
     "g23": "PASS_FOR_SCOPE_D04_113_116",
     "g24": "PASS_FOR_SCOPE_D04_113_116",
-    "certification_granted": false
+    "certification_granted": false,
+    "corrected_from_prior_scope_label": true
   },
   "evidence_refresh": {
     "status": "PASS_AWAITING_G23",
@@ -191,7 +192,38 @@
     "certification_granted": true,
     "global_certification_granted": false
   },
-  "next_tranche_authorization": null,
+  "next_tranche_authorization": {
+    "checkpoint_predecessor": "D04_113_116_MATERIALIZED",
+    "executor": "implementation/super1200/runtime/d04_material_worker_117_120.py",
+    "capabilities": [
+      117,
+      118,
+      119,
+      120
+    ],
+    "prior_scope_g23": "PASS_FOR_SCOPE_D04_113_116",
+    "prior_scope_g24": "PASS_FOR_SCOPE_D04_113_116",
+    "scoped_certificate": "continuity/certification/D04_113_116.json",
+    "global_certification_granted": false,
+    "prior_certificate_source_hashes": {
+      "module_sha256": "6027e39c1e6e72377b5cad6a9179809d706705b07880ea8b3db479dfe7e0dac7",
+      "test_sha256": "4480c9f00ac0473d2f1e0ac0a0b82b2df48990d9f0aef3860614615f82f9cf0f",
+      "authorization_dependency_sha256": "182c25bba925eed8044eb340bb5461cba9e45189c7b5ce276372cb81859e8017",
+      "authorization_test_dependency_sha256": "d72b1e13d77d8c6c0e7e3082be175950772b2a4c35440c0d69d97af64779afd7",
+      "runtime_dependency_sha256": "591082428db8a61946e78341df2e086785d8d0d49f20cf632a4b3a4501139940",
+      "base_test_dependency_sha256": "8c32455a51ccf1c4d81309e15d18261e537f85a50f63ac74ac063e5466064e13"
+    },
+    "prerequisite_evidence": {
+      "prior_certificate_file_blob_sha": "b4d6f8c9dcaac87bfea15771f01dc0fa3ad730af",
+      "executor_registry_file_blob_sha": "13e41e1b76193b334a2d61c17f34e07018edb2ef",
+      "hosted_supervisor_file_blob_sha": "c1551b69086e6b097f8cbe10d09aec3612f7b36e",
+      "kestra_flow_file_blob_sha": "74716f2bc095d94e8c263b0ffcff421b1c617a02",
+      "scoped_gate_file_blob_sha": "302dccd97cdf641b38a4b114199a64b3a0accf8b",
+      "trust_controls_tests_workflow_run_id": 38489337387,
+      "predecessor_g23_g24_workflow_run_id": 38488999382
+    },
+    "authorized_at_utc": "2026-10-14T00:23:39.314Z"
+  },
   "scoped_certifications": {
     "D04:93-96": {
       "scope": "D04:93-96",
@@ -250,16 +282,30 @@
   },
   "checkpoint_reconciliation": {
     "status": "PASS_SCOPED_CONTINUATION_AUTHORIZED",
-    "observed_at_utc": "2026-10-14T00:09:46.767Z",
-    "prior_checkpoint": "D04_109_112_MATERIALIZED",
-    "current_checkpoint": "D04_109_112_MATERIALIZED",
-    "registered_next_executor": "implementation/super1200/runtime/d04_material_worker_113_116.py",
-    "prior_scope": "D04:109-112",
+    "observed_at_utc": "2026-10-14T00:23:39.314Z",
+    "predecessor_checkpoint": "D04_113_116_MATERIALIZED",
+    "active_checkpoint": "D04_113_116_MATERIALIZED",
+    "registered_next_executor": "implementation/super1200/runtime/d04_material_worker_117_120.py",
+    "next_capabilities": [
+      117,
+      118,
+      119,
+      120
+    ],
+    "prior_scope": "D04:113-116",
     "prior_g23": "PASS",
     "prior_g24": "PASS",
+    "prior_certificate": "continuity/certification/D04_113_116.json",
+    "prior_certificate_hashes": {
+      "module_sha256": "6027e39c1e6e72377b5cad6a9179809d706705b07880ea8b3db479dfe7e0dac7",
+      "test_sha256": "4480c9f00ac0473d2f1e0ac0a0b82b2df48990d9f0aef3860614615f82f9cf0f",
+      "authorization_dependency_sha256": "182c25bba925eed8044eb340bb5461cba9e45189c7b5ce276372cb81859e8017",
+      "authorization_test_dependency_sha256": "d72b1e13d77d8c6c0e7e3082be175950772b2a4c35440c0d69d97af64779afd7",
+      "runtime_dependency_sha256": "591082428db8a61946e78341df2e086785d8d0d49f20cf632a4b3a4501139940",
+      "base_test_dependency_sha256": "8c32455a51ccf1c4d81309e15d18261e537f85a50f63ac74ac063e5466064e13"
+    },
     "global_certification_status": "NOT_CERTIFIED",
-    "historical_dispatch_error": "DISPATCH_DENIED_BY_CHECKPOINT_RECONCILIATION_20261013",
-    "reason": "Scoped G23/G24 and the prior-scope certificate for 109-112 are valid; executor 113-116 is registered. This authorization permits only the next material tranche and does not certify SUPER1200 globally."
+    "reason": "Exact predecessor certificate, source/dependency digests, executor registration, hosted pre-execution gate and Kestra gate are aligned. This authorizes only one bounded material tranche; G23/G24 for 117-120 remain pending and no global certification is granted."
   },
   "previous_tranche_authorization": {
     "checkpoint_predecessor": "D04_109_112_MATERIALIZED",
@@ -281,5 +327,59 @@
       "runtime_dependency_sha256": "591082428db8a61946e78341df2e086785d8d0d49f20cf632a4b3a4501139940",
       "base_test_dependency_sha256": "8c32455a51ccf1c4d81309e15d18261e537f85a50f63ac74ac063e5466064e13"
     }
-  }
+  },
+  "checkpoint_reconciliation_history": [
+    {
+      "status": "PASS_SCOPED_CONTINUATION_AUTHORIZED",
+      "observed_at_utc": "2026-10-14T00:09:46.767Z",
+      "prior_checkpoint": "D04_109_112_MATERIALIZED",
+      "current_checkpoint": "D04_109_112_MATERIALIZED",
+      "registered_next_executor": "implementation/super1200/runtime/d04_material_worker_113_116.py",
+      "prior_scope": "D04:109-112",
+      "prior_g23": "PASS",
+      "prior_g24": "PASS",
+      "global_certification_status": "NOT_CERTIFIED",
+      "historical_dispatch_error": "DISPATCH_DENIED_BY_CHECKPOINT_RECONCILIATION_20261013",
+      "reason": "Scoped G23/G24 and the prior-scope certificate for 109-112 are valid; executor 113-116 is registered. This authorization permits only the next material tranche and does not certify SUPER1200 globally.",
+      "historical_status": "SUPERSEDED_BY_EXACT_113_116_RECONCILIATION"
+    }
+  ],
+  "metadata_reconciliation_history": [
+    {
+      "field": "independent_validation",
+      "previous_value": {
+        "scope": "D04_CAPABILITIES_109_112_ONLY",
+        "scope_key": "D04:113-116",
+        "status": "PASS",
+        "workflow_run_id": 38488999382,
+        "record_path": "continuity/independent-validation/D04_113_116.json",
+        "g23": "PASS_FOR_SCOPE_D04_113_116",
+        "g24": "PASS_FOR_SCOPE_D04_113_116",
+        "certification_granted": false
+      },
+      "correction": "Prior G23/G24 workflow persisted a mismatched scope label. The independently validated record at continuity/independent-validation/D04_113_116.json is the scope authority.",
+      "corrected_at_utc": "2026-10-14T00:23:39.314Z",
+      "global_certification_status": "NOT_CERTIFIED"
+    }
+  ],
+  "continuation_authorization_history": [
+    {
+      "authorization_id": "SUPER1200-D04-117-120-AUTH-20261014T0023",
+      "status": "AUTHORIZED_FOR_ONE_MATERIAL_TRANCHE",
+      "checkpoint_predecessor": "D04_113_116_MATERIALIZED",
+      "executor": "implementation/super1200/runtime/d04_material_worker_117_120.py",
+      "capabilities": [
+        117,
+        118,
+        119,
+        120
+      ],
+      "prior_scope": "D04:113-116",
+      "prior_g23": "PASS",
+      "prior_g24": "PASS",
+      "prior_certificate": "continuity/certification/D04_113_116.json",
+      "global_certification_granted": false,
+      "authorized_at_utc": "2026-10-14T00:23:39.314Z"
+    }
+  ]
 }
