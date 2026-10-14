@@ -1,0 +1,29 @@
+{
+  "schema": "LOUKSNA_KEDB/1.0",
+  "entry_id": "KEDB-DIRECTIVA-20261014-002",
+  "scope": "DIRECTIVA",
+  "symptom": "Host validation HOLD — missing mtls.json and service evidence on luna-aux",
+  "root_cause": "Runner present; host config and reports not provisioned",
+  "evidence_present": false,
+  "evidence_missing": [
+    "/etc/louksna/remote-bridge/mtls.json (root-owned, 0640, not symlink)",
+    "louksna-remote-bridge.service active",
+    "PUAC2_HOST_TEST_REPORT/1.0 and PUAC2_ROLLBACK_REPORT/1.0 bound to SHA",
+    "Separated G23/G24 signing identities"
+  ],
+  "known_solution_id": "scripts/directiva/host_bootstrap.sh",
+  "workaround": null,
+  "remediation_applied": false,
+  "verification_result": "NOT_RUN",
+  "status": "SOLUTION_DEFINED_AWAITING_EXECUTION",
+  "next_action": "Run host_bootstrap.sh as root on luna-aux, then place real certs and reports, then re-dispatch puac2-autonomous.yml",
+  "research_launched": true,
+  "research_summary": "Definitive path is versioned bootstrap on the existing runner. No HP, no third-party machines.",
+  "branch": "automation/mtls-evidence-gate-20261013",
+  "checkpoint": "READINESS_PROBE_ACTIVE_HOST_HOLD",
+  "updated_at_utc": "2026-10-14T06:40:00Z",
+  "provenance": {
+    "sources": ["puac2-autonomous.yml logs", "DIRECTIVA_GITHUB_ONLY_UNLOCK_V1", "PUAC2.md R2/R3/R5"],
+    "notes": "Solution defined. Execution requires operator on the runner."
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "schema": "LOUKSNA_WIRING_CERTIFICATION/1.0",
+  "id": "WIRING-TRANCHE-FACTORY-AND-HOST-BOOTSTRAP-20261014",
+  "status": "WIRED_NOT_GLOBALLY_CERTIFIED",
+  "certified_at_utc": "2026-10-14T06:42:00Z",
+  "scope": "Infrastructure wiring under PUAC-2",
+  "artifacts": [
+    ".github/workflows/super1200-tranche-factory.yml",
+    "scripts/directiva/host_bootstrap.sh",
+    "continuity/KEDB_ENTRIES/DIRECTIVA_HOST_BOOTSTRAP_20261014.json"
+  ],
+  "g23": "NOT_APPLICABLE_TO_WIRING",
+  "g24": "NOT_APPLICABLE_TO_WIRING",
+  "global_certification_status": "NOT_CERTIFIED",
+  "notes": "Wiring is complete and provenance-recorded. Material G23/G24 remain required for any capability or host evidence claim. Controls are sequential steps, not walls."
+}
