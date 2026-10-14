@@ -1987,12 +1987,15 @@
       "canonical_name": "PROOF_INVALIDATION",
       "capability_id": 133,
       "hardening": "changed axiom/definition invalidates dependent proof evidence",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+PER_CAPABILITY_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "INVALIDATION_ENGINE",
-      "wire": "95,131,132"
+      "wire": "95,131,132",
+      "implementation_artifact": "implementation/super1200/domains/D05_proof_lifecycle.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_proof_lifecycle.py",
+      "theorem_claim_from_type_checking": false
     },
     {
       "acquire": "NONE",
@@ -2000,12 +2003,15 @@
       "canonical_name": "PROOF_CARRYING_ARTIFACT",
       "capability_id": 134,
       "hardening": "artifact hash inseparably references proof scope and checker receipt",
-      "implementation_state": "DECLARED",
-      "materialization": "SCHEMA+CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+PER_CAPABILITY_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "FORMAL_ARTIFACT_PATTERN",
-      "wire": "82,128..133"
+      "wire": "82,128..133",
+      "implementation_artifact": "implementation/super1200/domains/D05_proof_lifecycle.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_proof_lifecycle.py",
+      "theorem_claim_from_type_checking": false
     },
     {
       "acquire": "NONE",
@@ -2013,12 +2019,15 @@
       "canonical_name": "PROOF_CARRYING_CONFIGURATION",
       "capability_id": 135,
       "hardening": "config plus invariants/proof receipt and environment identity",
-      "implementation_state": "DECLARED",
-      "materialization": "SCHEMA+CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+PER_CAPABILITY_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "FORMAL_CONFIGURATION_PATTERN",
-      "wire": "134,793"
+      "wire": "134,793",
+      "implementation_artifact": "implementation/super1200/domains/D05_proof_lifecycle.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_proof_lifecycle.py",
+      "theorem_claim_from_type_checking": false
     },
     {
       "acquire": "NONE",
@@ -2026,12 +2035,15 @@
       "canonical_name": "PROOF_CARRYING_MIGRATION",
       "capability_id": 136,
       "hardening": "migration invariants, source/target states and preservation proofs",
-      "implementation_state": "DECLARED",
-      "materialization": "SCHEMA+CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+PER_CAPABILITY_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "FORMAL_MIGRATION_PATTERN",
-      "wire": "134,814..820"
+      "wire": "134,814..820",
+      "implementation_artifact": "implementation/super1200/domains/D05_proof_lifecycle.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_proof_lifecycle.py",
+      "theorem_claim_from_type_checking": false
     },
     {
       "acquire": "NONE",

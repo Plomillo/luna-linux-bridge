@@ -3,27 +3,32 @@
   "branch": "custosz/super-1200-implementation-20261007",
   "active": true,
   "active_worker": false,
-  "blocked": false,
-  "block_reason": null,
-  "status": "READY_FOR_NEXT_MATERIAL_TRANCHE",
-  "current_checkpoint": "D05_129_132_MATERIALIZED",
+  "blocked": true,
+  "block_reason": "NEXT_D05_TRANCHE_EXECUTOR_NOT_REGISTERED",
+  "status": "BLOCKED",
+  "current_checkpoint": "D05_133_136_MATERIALIZED",
   "certified": false,
   "global_certification_status": "NOT_CERTIFIED",
-  "g23": "PASS_FOR_SCOPE_D05_129_132",
-  "g24": "PASS_FOR_SCOPE_D05_129_132",
+  "g23": "PENDING_FOR_SCOPE_D05_133_136",
+  "g24": "PENDING_G23",
   "next_point": "D05",
   "next_worker": "CUSTOSZ_V7",
   "mission_id": "SUPER1200-CONTINUATION-20261007",
-  "diagnostic": "D05 129-132 scoped G23/G24 PASS. Executor for 133-136 is registered (additive). STATE reconciled. One material tranche authorized. Scoped certification does not propagate. Global remains NOT_CERTIFIED.",
+  "diagnostic": "D05 capabilities 133-136 materialized with proof-lifecycle primitives. G23/G24 pending; global remains NOT_CERTIFIED.",
   "recovery_note": "Reconciled 2026-10-14T06:50:00Z. Stale NEXT_D05_TRANCHE_EXECUTOR_NOT_REGISTERED cleared because EXECUTORS.json already registered d05_material_worker_133_136.py. Fail-closed preserved.",
   "reconciled_at_utc": "2026-10-14T06:50:00Z",
   "last_execution": {
-    "workflow_run_id": 38493227127,
     "status": "COMPLETED_SUCCESS_MATERIAL_TRANCHE",
-    "material_capabilities": [129, 130, 131, 132],
-    "executor": "implementation/super1200/runtime/d05_material_worker_129_132.py",
-    "g23": "PASS_FOR_SCOPE_D05_129_132",
-    "g24": "PASS_FOR_SCOPE_D05_129_132",
+    "material_capabilities": [
+      133,
+      134,
+      135,
+      136
+    ],
+    "executor": "implementation/super1200/runtime/d05_material_worker_133_136.py",
+    "completed_at_utc": "2026-10-14T07:30:59.645233+00:00",
+    "g23": "PENDING",
+    "g24": "PENDING_G23",
     "global_certification_status": "NOT_CERTIFIED"
   },
   "scoped_certification": {
@@ -38,7 +43,12 @@
     "status": "AUTHORIZED_FOR_ONE_MATERIAL_TRANCHE",
     "checkpoint_predecessor": "D05_129_132_MATERIALIZED",
     "executor": "implementation/super1200/runtime/d05_material_worker_133_136.py",
-    "capabilities": [133, 134, 135, 136],
+    "capabilities": [
+      133,
+      134,
+      135,
+      136
+    ],
     "prior_scope": "D05:129-132",
     "prior_g23": "PASS_FOR_SCOPE_D05_129_132",
     "prior_g24": "PASS_FOR_SCOPE_D05_129_132",
@@ -56,5 +66,6 @@
       "global_certification_granted": false
     }
   },
-  "notes": "Reconciled with EXECUTORS.json. Controls unchanged. G23/G24 remain sequential steps after material evidence."
+  "notes": "Reconciled with EXECUTORS.json. Controls unchanged. G23/G24 remain sequential steps after material evidence.",
+  "blocked_at": "2026-10-14T07:30:59.645233+00:00"
 }

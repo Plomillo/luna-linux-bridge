@@ -124,26 +124,42 @@
     {
       "canonical_name": "PROOF_INVALIDATION",
       "capability_id": 133,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/D05_proof_lifecycle.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_proof_lifecycle.py",
+      "materialization": "CODE+PER_CAPABILITY_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false
     },
     {
       "canonical_name": "PROOF_CARRYING_ARTIFACT",
       "capability_id": 134,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/D05_proof_lifecycle.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_proof_lifecycle.py",
+      "materialization": "CODE+PER_CAPABILITY_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false
     },
     {
       "canonical_name": "PROOF_CARRYING_CONFIGURATION",
       "capability_id": 135,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/D05_proof_lifecycle.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_proof_lifecycle.py",
+      "materialization": "CODE+PER_CAPABILITY_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false
     },
     {
       "canonical_name": "PROOF_CARRYING_MIGRATION",
       "capability_id": 136,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/D05_proof_lifecycle.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_proof_lifecycle.py",
+      "materialization": "CODE+PER_CAPABILITY_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false
     },
     {
       "canonical_name": "PROOF_CARRYING_API_CONTRACT",
