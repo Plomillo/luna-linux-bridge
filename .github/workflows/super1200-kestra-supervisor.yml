@@ -7,20 +7,14 @@ on:
     paths:
       - "continuity/EXECUTORS.json"
       - "continuity/STATE.json"
-      - "continuity/certification/D04_109_112.json"
-      - "implementation/super1200/runtime/d04_material_worker_117_120.py"
-      - "implementation/super1200/domains/D04_authorization_governance.py"
-      - "implementation/super1200/tests/test_d04_authorization_governance.py"
-      - "implementation/super1200/domains/D04_governance_controls.py"
-      - "implementation/super1200/tests/test_d04_governance_controls.py"
-      - "implementation/super1200/domains/D04_trust_controls.py"
-      - "implementation/super1200/tests/test_d04_trust_controls.py"
-      - "continuity/STATE.json"
-      - "continuity/certification/D04_113_116.json"
-      - "implementation/super1200/domains/D04_runtime.py"
-      - "implementation/super1200/tests/test_d04_runtime.py"
+      - "continuity/certification/D04_117_120.json"
+      - "implementation/super1200/runtime/d05_material_worker_121_124.py"
+      - "implementation/super1200/domains/D05_formal_reasoning.py"
+      - "implementation/super1200/tests/test_d05_formal_reasoning.py"
+      - "implementation/super1200/domains/D05.json"
+      - "implementation/super1200/registry/capabilities.json"
+      - "continuity/evidence-refresh/D05_121_124.json"
       - "integrations/kestra/flows/10-super1200-continuity.yml"
-      - ".github/workflows/super1200-continuation-lrb-live.yml"
       - ".github/workflows/super1200-kestra-supervisor.yml"
   schedule:
     - cron: "*/5 * * * *"
@@ -167,47 +161,74 @@ jobs:
           docker logs kestra-super1200 || true
           exit 1
 
-      - name: Validate checkpoint and prior scoped certificate before material execution
+      - name: Validate D04 predecessor certificate and D05 121-124 authorization
         shell: bash
         run: |
           set -Eeuo pipefail
-          python3 - <<'PY'
-          import hashlib, json
+          python3 -B - <<'PY'
+          import hashlib,json
           from pathlib import Path
           root=Path(".")
-          state=json.loads((root/"continuity/STATE.json").read_text(encoding="utf-8"))
-          executors=json.loads((root/"continuity/EXECUTORS.json").read_text(encoding="utf-8")).get("executors",{})
-          cert_path=root/"continuity/certification/D04_113_116.json"
-          expected="implementation/super1200/runtime/d04_material_worker_117_120.py"
-          prior=json.loads(cert_path.read_text(encoding="utf-8")) if cert_path.is_file() else {}
+          def load(p):return json.loads((root/p).read_text(encoding="utf-8"))
+          def sha(rel):return hashlib.sha256((root/rel).read_bytes()).hexdigest()
+          def blob_sha(p):
+            b=p.read_bytes()
+            return hashlib.sha1(f"blob {len(b)}\\0".encode("ascii")+b).hexdigest()
+          state=load("continuity/STATE.json")
+          executors=load("continuity/EXECUTORS.json").get("executors",{})
+          cert_path=root/"continuity/certification/D04_117_120.json"
+          prior=load("continuity/certification/D04_117_120.json") if cert_path.is_file() else {}
+          expected="implementation/super1200/runtime/d05_material_worker_121_124.py"
+          auth=state.get("next_tranche_authorization",{})
           scoped=state.get("scoped_certification",{})
-          def sha(path): return hashlib.sha256((root/path).read_bytes()).hexdigest()
+          prior_scope=state.get("scoped_certifications",{}).get("D04:117-120",{})
+          prior_source_binding=(
+            prior.get("module_sha256")==sha("implementation/super1200/domains/D04_trust_controls.py")
+            and prior.get("test_sha256")==sha("implementation/super1200/tests/test_d04_trust_controls.py")
+            and prior.get("governance_dependency_sha256")==sha("implementation/super1200/domains/D04_governance_controls.py")
+            and prior.get("governance_test_dependency_sha256")==sha("implementation/super1200/tests/test_d04_governance_controls.py")
+            and prior.get("authorization_dependency_sha256")==sha("implementation/super1200/domains/D04_authorization_governance.py")
+            and prior.get("authorization_test_dependency_sha256")==sha("implementation/super1200/tests/test_d04_authorization_governance.py")
+            and prior.get("runtime_dependency_sha256")==sha("implementation/super1200/domains/D04_runtime.py")
+            and prior.get("base_test_dependency_sha256")==sha("implementation/super1200/tests/test_d04_runtime.py"))
           conditions={
-              "checkpoint_predecessor":state.get("current_checkpoint")=="D04_113_116_MATERIALIZED",
-              "not_blocked":state.get("blocked") is False,
-              "active_status":state.get("status") in {"ACTIVE","READY_FOR_CONTINUATION"},
-              "material_worker_ready":state.get("material_worker_ready") is True,
-              "prior_g23":state.get("g23")=="PASS_FOR_SCOPE_D04_113_116",
-              "prior_g24":state.get("g24")=="PASS_FOR_SCOPE_D04_113_116",
-              "prior_scoped_certificate":scoped.get("scope")=="D04:113-116" and scoped.get("status")=="PASS" and scoped.get("global_certification_granted") is False,
-              "prior_certificate_scope":prior.get("result")=="PASS" and prior.get("scope")=="D04:113-116" and prior.get("g23")=="PASS" and prior.get("g24")=="PASS" and prior.get("certification_granted") is True and prior.get("global_super1200_certified") is False,
-              "prior_scope_recorded":state.get("scoped_certifications",{}).get("D04:109-112",{}).get("scope")=="D04:109-112" and state.get("scoped_certifications",{}).get("D04:109-112",{}).get("status")=="PASS" and state.get("scoped_certifications",{}).get("D04:109-112",{}).get("global_certification_granted") is False,
-              "prior_certificate_source_binding":prior.get("module_sha256")==sha("implementation/super1200/domains/D04_governance_controls.py") and prior.get("test_sha256")==sha("implementation/super1200/tests/test_d04_governance_controls.py") and prior.get("authorization_dependency_sha256")==sha("implementation/super1200/domains/D04_authorization_governance.py") and prior.get("authorization_test_dependency_sha256")==sha("implementation/super1200/tests/test_d04_authorization_governance.py") and prior.get("runtime_dependency_sha256")==sha("implementation/super1200/domains/D04_runtime.py") and prior.get("base_test_dependency_sha256")==sha("implementation/super1200/tests/test_d04_runtime.py"),
-              "prior_scope_recorded":state.get("scoped_certifications",{}).get("D04:113-116",{}).get("scope")=="D04:113-116" and state.get("scoped_certifications",{}).get("D04:113-116",{}).get("status")=="PASS" and state.get("scoped_certifications",{}).get("D04:113-116",{}).get("global_certification_granted") is False,
-              "tranche_authorization":state.get("next_tranche_authorization",{}).get("checkpoint_predecessor")=="D04_113_116_MATERIALIZED" and state.get("next_tranche_authorization",{}).get("executor")==expected and state.get("next_tranche_authorization",{}).get("capabilities")==[117,118,119,120] and state.get("next_tranche_authorization",{}).get("global_certification_granted") is False,
-              "executor_mapping":executors.get("D04")==expected,
-              "executor_file_exists":(root/expected).is_file(),
+            "checkpoint_predecessor":state.get("current_checkpoint")=="D04_117_120_MATERIALIZED",
+            "not_blocked":state.get("blocked") is False,
+            "active_status":state.get("status") in {"ACTIVE","READY_FOR_CONTINUATION"},
+            "material_worker_ready":state.get("material_worker_ready") is True,
+            "global_not_certified":state.get("certified") is False and state.get("global_certification_status")=="NOT_CERTIFIED",
+            "prior_g23":state.get("g23")=="PASS_FOR_SCOPE_D04_117_120",
+            "prior_g24":state.get("g24")=="PASS_FOR_SCOPE_D04_117_120",
+            "prior_scoped_state":scoped.get("scope")=="D04:117-120" and scoped.get("status")=="PASS" and scoped.get("global_certification_granted") is False,
+            "prior_scoped_map":prior_scope.get("scope")=="D04:117-120" and prior_scope.get("status")=="PASS" and prior_scope.get("global_certification_granted") is False,
+            "prior_certificate":prior.get("result")=="PASS" and prior.get("scope")=="D04:117-120" and prior.get("g23")=="PASS" and prior.get("g24")=="PASS" and prior.get("certification_granted") is True and prior.get("global_super1200_certified") is False,
+            "prior_certificate_hash":auth.get("prior_certificate_blob_sha")==blob_sha(cert_path),
+            "prior_certificate_source_binding":prior_source_binding,
+            "authorization_checkpoint":auth.get("checkpoint_predecessor")=="D04_117_120_MATERIALIZED",
+            "authorization_executor":auth.get("executor")==expected,
+            "authorization_capabilities":auth.get("capabilities")==[121,122,123,124],
+            "authorization_prior_g23":auth.get("prior_scope_g23")=="PASS_FOR_SCOPE_D04_117_120",
+            "authorization_prior_g24":auth.get("prior_scope_g24")=="PASS_FOR_SCOPE_D04_117_120",
+            "authorization_prior_certificate":auth.get("scoped_certificate")=="continuity/certification/D04_117_120.json",
+            "authorization_global_certification_false":auth.get("global_certification_granted") is False,
+            "tested_module_hash":auth.get("material_module_sha256")==sha("implementation/super1200/domains/D05_formal_reasoning.py"),
+            "tested_test_hash":auth.get("material_test_sha256")==sha("implementation/super1200/tests/test_d05_formal_reasoning.py"),
+            "behavior_test_run_id":auth.get("material_test_workflow_run_id")==38490748132,
+            "executor_mapping":executors.get("D05")==expected,
+            "executor_file_exists":(root/expected).is_file(),
+            "domain_contract":load("implementation/super1200/domains/D05.json").get("domain_id")=="D05",
           }
-          print("SUPER1200_MATERIAL_PREEXECUTION_GATE "+json.dumps({
-              "conditions":conditions,"checkpoint":state.get("current_checkpoint"),
-              "status":state.get("status"),"blocked":state.get("blocked"),
-              "block_reason":state.get("block_reason"),"executor":executors.get("D04")
+          print("SUPER1200_D05_MATERIAL_PREEXECUTION_GATE "+json.dumps({
+            "conditions":conditions,"checkpoint":state.get("current_checkpoint"),
+            "status":state.get("status"),"blocked":state.get("blocked"),
+            "executor":executors.get("D05"),"prior_scope":"D04:117-120",
+            "next_scope":"D05:121-124","global_certification":"NOT_CERTIFIED"
           },sort_keys=True))
           if not all(conditions.values()):
-              raise SystemExit("SUPER1200_DENY_MATERIAL_EXECUTION_CHECKPOINT_OR_CERTIFICATE_GATE")
+            raise SystemExit("SUPER1200_DENY_MATERIAL_EXECUTION_CHECKPOINT_CERTIFICATE_OR_HASH_GATE")
           PY
 
-      - name: Validate CUSTOSZ V7 and execute authorized D04 tranche 109-112
+      - name: Validate CUSTOSZ V7 and execute authorized D05 tranche 121-124
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -241,35 +262,38 @@ jobs:
           signature=inspect.signature(worker.mission_start)
           kwargs={"report_minutes":1}
           if "executor" in signature.parameters: kwargs["executor"]="CUSTOSZ_V7"
-          if "executor_path" in signature.parameters: kwargs["executor_path"]="implementation/super1200/runtime/d04_material_worker_117_120.py"
+          if "executor_path" in signature.parameters: kwargs["executor_path"]="implementation/super1200/runtime/d05_material_worker_121_124.py"
           if "assigned_executor" in signature.parameters: kwargs["assigned_executor"]="implementation/super1200/runtime/d04_material_worker_117_120.py"
           if "worker_id" in signature.parameters: kwargs["worker_id"]="CUSTOSZ_V7"
           mission=worker.mission_start(0.05,"LUNA_PROJECT",
-              "Materially implement D04 capabilities 117-120 only after current-source scoped G23/G24 PASS for 113-116; preserve evidence, provenance, rollback and non-regression; no certification propagation; MetaOS deferred.",**kwargs)
+              "Materially implement D05 capabilities 121-124 only after current-source scoped G23/G24 PASS for D04 117-120; preserve evidence, provenance, rollback and non-regression; type checking is not theorem certification; MetaOS deferred.",**kwargs)
           tick=worker.mission_tick(mission["mission_id"])
           print("SUPER1200_CUSTOSZ_V7_MISSION "+json.dumps({"mission_id":mission.get("mission_id"),"executor":mission.get("executor"),"executor_path":"implementation/super1200/runtime/d04_material_worker_117_120.py","tick":tick,"configured_hours":0.05},sort_keys=True,default=str))
           PY
           python3 -B -I implementation/super1200/runtime/d04_material_worker_117_120.py
+          python3 -B -I implementation/super1200/tests/test_shared.py
+          python3 -B -I implementation/super1200/tests/test_d03_runtime.py
           python3 -B -I implementation/super1200/tests/test_d04_runtime.py
           python3 -B -I implementation/super1200/tests/test_d04_authorization_governance.py
           python3 -B -I implementation/super1200/tests/test_d04_governance_controls.py
           python3 -B -I implementation/super1200/tests/test_d04_trust_controls.py
+          python3 -B -I implementation/super1200/tests/test_d05_formal_reasoning.py
 
       - name: Persist hash-bound evidence and checkpoint to authorized branch
         shell: bash
         run: |
           set -Eeuo pipefail
           git diff --check
-          git add implementation/super1200/domains/D04_runtime.py implementation/super1200/tests/test_d04_runtime.py implementation/super1200/domains/D04_authorization_governance.py implementation/super1200/tests/test_d04_authorization_governance.py implementation/super1200/domains/D04_governance_controls.py implementation/super1200/tests/test_d04_governance_controls.py implementation/super1200/domains/D04_trust_controls.py implementation/super1200/tests/test_d04_trust_controls.py implementation/super1200/registry/capabilities.json implementation/super1200/domains/D04.json continuity/STATE.json continuity/runtime-evidence/D04
+          git add implementation/super1200/domains/D05_formal_reasoning.py implementation/super1200/tests/test_d05_formal_reasoning.py implementation/super1200/registry/capabilities.json implementation/super1200/domains/D05.json continuity/STATE.json continuity/runtime-evidence/D05
           if git diff --cached --quiet; then
-            echo "SUPER1200_PERSISTENCE=NO_CHANGES"
-            exit 0
+            echo "SUPER1200_PERSISTENCE=FAIL_NO_MATERIAL_CHANGES"
+            exit 1
           fi
           git config user.name "custosz-v7-runtime-bot"
           git config user.email "custosz-v7-runtime-bot@users.noreply.github.com"
-          git commit -m "feat(super1200): materialize D04 trust controls 117-120"
+          git commit -m "feat(super1200): materialize D05 formal reasoning 121-124"
           git push origin HEAD:refs/heads/custosz/super-1200-implementation-20261007
-          echo "SUPER1200_PERSISTENCE=PASS CHECKPOINT=D04_117_120_MATERIALIZED GLOBAL_CERTIFICATION=FALSE"
+          echo "SUPER1200_PERSISTENCE=PASS CHECKPOINT=D05_121_124_MATERIALIZED GLOBAL_CERTIFICATION=FALSE"
 
       - name: Preserve Kestra runtime diagnostics on failure
         if: failure()
