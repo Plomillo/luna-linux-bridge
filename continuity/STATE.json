@@ -3,19 +3,19 @@
   "active_worker": false,
   "block_reason": "NEXT_D05_TRANCHE_EXECUTOR_NOT_REGISTERED",
   "blocked": true,
-  "blocked_at": "2026-10-14T00:42:06.924240+00:00",
+  "blocked_at": "2026-10-14T00:44:34.538922+00:00",
   "branch": "custosz/super-1200-implementation-20261007",
   "certified": false,
   "current_checkpoint": "D05_121_124_MATERIALIZED",
-  "diagnostic": "D05 capabilities 121-124 were materialized with typed Pi/Lambda/application checking, higher-order function-space type validation, explicit assumptions, HoTT identity-type checking, four mapped tests and seven regression suites. Type checking is not theorem certification. Continuation is held fail-closed until a reviewed executor for D05 125-128 is registered. Global SUPER1200 certification remains NOT_CERTIFIED; MetaOS remains deferred.",
+  "diagnostic": "D05 capabilities 121-124 passed scoped G23/G24 with source-bound evidence and seven regression suites. Continuation is held fail-closed until a reviewed executor for D05 125-128 is registered. Type checking does not certify theorems; scoped D05 certification does not propagate. Global SUPER1200 certification remains NOT_CERTIFIED.",
   "dispatch_error": null,
   "dispatch_requested_at": "2026-10-13T21:14:39.496Z",
-  "g23": "PENDING_FOR_SCOPE_D05_121_124",
-  "g24": "PENDING_G23",
+  "g23": "PASS_FOR_SCOPE_D05_121_124",
+  "g24": "PASS_FOR_SCOPE_D05_121_124",
   "mission_id": "SUPER1200-CONTINUATION-20261007",
   "next_point": "D05",
   "next_worker": "CUSTOSZ_V7",
-  "recovery_note": "Register a reviewed D05 executor for capabilities 125-128 only after D05:121-124 obtains its own G23/G24 certificate. Bind all evidence to the exact source hashes and preserve the prior D04:117-120 scoped certificate; do not propagate scoped certification.",
+  "recovery_note": "Register and review a task-specific D05 executor for capabilities 125-128 only after D05:121-124 is scoped-certified. Require current source hashes, independent tests and exact prior-scope certificate binding. Do not propagate scoped certification or global certification.",
   "schema": "SUPER1200_CONTINUITY_STATE/1.0",
   "status": "BLOCKED",
   "terminal": false,
@@ -61,8 +61,8 @@
     ],
     "behavior_tests": "7_REGRESSION_SUITES_PASS;4_OF_4_CAPABILITY_TESTS_PASS",
     "executor": "implementation/super1200/runtime/d05_material_worker_121_124.py",
-    "g23": "PENDING",
-    "g24": "PENDING_G23",
+    "g23": "PASS_FOR_SCOPE_D05_121_124",
+    "g24": "PASS_FOR_SCOPE_D05_121_124",
     "global_certification_status": "NOT_CERTIFIED"
   },
   "execution_history": [
@@ -248,8 +248,8 @@
       }
     },
     "github_actions_run_id": 38491601700,
-    "g23": "PENDING",
-    "g24": "PENDING",
+    "g23": "PASS_FOR_SCOPE_D05_121_124",
+    "g24": "PASS_FOR_SCOPE_D05_121_124",
     "certification_granted": false,
     "completed_at_utc": "2026-10-14T00:42:06.924240+00:00"
   },
@@ -277,10 +277,10 @@
     "certification_granted": false
   },
   "scoped_certification": {
-    "scope": "D04:117-120",
+    "scope": "D05:121-124",
     "status": "PASS",
-    "record_path": "continuity/certification/D04_117_120.json",
-    "workflow_run_id": 38490364943,
+    "record_path": "continuity/certification/D05_121_124.json",
+    "workflow_run_id": 38491844778,
     "certification_granted": true,
     "global_certification_granted": false
   },
@@ -339,6 +339,14 @@
       "status": "PASS",
       "record_path": "continuity/certification/D04_117_120.json",
       "workflow_run_id": 38490364943,
+      "certification_granted": true,
+      "global_certification_granted": false
+    },
+    "D05:121-124": {
+      "scope": "D05:121-124",
+      "status": "PASS",
+      "record_path": "continuity/certification/D05_121_124.json",
+      "workflow_run_id": 38491844778,
       "certification_granted": true,
       "global_certification_granted": false
     }
@@ -444,5 +452,15 @@
       "global_certification_granted": false,
       "authorized_at_utc": "2026-10-14T00:23:39.314Z"
     }
-  ]
+  ],
+  "scoped_validation_record": {
+    "scope": "D05:121-124",
+    "status": "PASS",
+    "record_path": "continuity/certification/D05_121_124.json",
+    "workflow_run_id": 38491844778,
+    "g23": "PASS",
+    "g24": "PASS",
+    "certification_granted": true,
+    "global_super1200_certified": false
+  }
 }
