@@ -2,7 +2,7 @@ id: super1200_continuity
 namespace: louksna.kestra
 description: >-
   Checkpoint supervisor for SUPER1200, executed by a bounded GitHub-hosted Kestra instance.
-  CUSTOSZ V7 is the authorized worker; Kestra gates D05 125-128 against the prior scoped G23/G24 certificate for D04 117-120, and the hosted runner executes only after gate success.
+  CUSTOSZ V7 is the authorized worker; Kestra gates D05 129-132 against the prior scoped G23/G24 certificate for D04 117-120, and the hosted runner executes only after gate success.
   It reads durable GitHub checkpoints, guards active/queued runs, and never certifies or promotes.
 tasks:
   - id: checkpoint
@@ -25,7 +25,7 @@ tasks:
       Pragma: no-cache
   - id: prior_certificate
     type: io.kestra.plugin.core.http.Request
-    uri: "https://api.github.com/repos/Plomillo/luna-linux-bridge/contents/continuity/certification/D05_121_124.json?ref=custosz%2Fsuper-1200-implementation-20261007&cache_bust={{ execution.id }}"
+    uri: "https://api.github.com/repos/Plomillo/luna-linux-bridge/contents/continuity/certification/D05_125_128.json?ref=custosz%2Fsuper-1200-implementation-20261007&cache_bust={{ execution.id }}"
     method: GET
     headers:
       Authorization: "Bearer {{ envs.github_token }}"
@@ -63,19 +63,19 @@ tasks:
               or fromJson(outputs.checkpoint.body).status == 'ACTIVE')
          and fromJson(outputs.checkpoint.body).material_worker_ready == true
          and fromJson(outputs.checkpoint.body).next_point != null
-         and fromJson(outputs.checkpoint.body).current_checkpoint == 'D05_121_124_MATERIALIZED'
-         and fromJson(outputs.executors.body).executors.D05 == 'implementation/super1200/runtime/d05_material_worker_125_128.py'
-         and fromJson(outputs.checkpoint.body).g23 == 'PASS_FOR_SCOPE_D05_121_124'
-         and fromJson(outputs.checkpoint.body).g24 == 'PASS_FOR_SCOPE_D05_121_124'
-         and fromJson(outputs.checkpoint.body).scoped_certification.scope == 'D05:121-124'
+         and fromJson(outputs.checkpoint.body).current_checkpoint == 'D05_125_128_MATERIALIZED'
+         and fromJson(outputs.executors.body).executors.D05 == 'implementation/super1200/runtime/d05_material_worker_129_132.py'
+         and fromJson(outputs.checkpoint.body).g23 == 'PASS_FOR_SCOPE_D05_125_128'
+         and fromJson(outputs.checkpoint.body).g24 == 'PASS_FOR_SCOPE_D05_125_128'
+         and fromJson(outputs.checkpoint.body).scoped_certification.scope == 'D05:125-128'
          and fromJson(outputs.checkpoint.body).scoped_certification.status == 'PASS'
          and fromJson(outputs.checkpoint.body).scoped_certification.global_certification_granted == false
-         and fromJson(outputs.checkpoint.body).scoped_certifications['D05:121-124'].scope == 'D05:121-124'
-         and fromJson(outputs.checkpoint.body).scoped_certifications['D05:121-124'].status == 'PASS'
-         and fromJson(outputs.checkpoint.body).scoped_certifications['D05:121-124'].global_certification_granted == false
+         and fromJson(outputs.checkpoint.body).scoped_certifications['D05:125-128'].scope == 'D05:125-128'
+         and fromJson(outputs.checkpoint.body).scoped_certifications['D05:125-128'].status == 'PASS'
+         and fromJson(outputs.checkpoint.body).scoped_certifications['D05:125-128'].global_certification_granted == false
          and outputs.prior_certificate.code == 200
          and fromJson(outputs.prior_certificate.body).result == 'PASS'
-         and fromJson(outputs.prior_certificate.body).scope == 'D05:121-124'
+         and fromJson(outputs.prior_certificate.body).scope == 'D05:125-128'
          and fromJson(outputs.prior_certificate.body).g23 == 'PASS'
          and fromJson(outputs.prior_certificate.body).g24 == 'PASS'
          and fromJson(outputs.prior_certificate.body).certification_granted == true
@@ -88,7 +88,7 @@ tasks:
       - id: authorization_receipt
         type: io.kestra.plugin.core.log.Log
         message: >-
-          SUPER1200_CUSTOSZ_V7_AUTHORIZED checkpoint={{ fromJson(outputs.checkpoint.body).current_checkpoint }} prior_scope=D05:121-124 G23=PASS G24=PASS next=D05:125-128
+          SUPER1200_CUSTOSZ_V7_AUTHORIZED checkpoint={{ fromJson(outputs.checkpoint.body).current_checkpoint }} prior_scope=D05:125-128 G23=PASS G24=PASS next=D05:129-132
           executor={{ fromJson(outputs.executors.body).executors.D05 }}
           kestra_execution={{ execution.id }}
           material_execution=DELEGATED_TO_GITHUB_HOSTED_JOB
