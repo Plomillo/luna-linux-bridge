@@ -1735,12 +1735,14 @@
       "canonical_name": "ACTOR_INDEPENDENCE_VERIFIER",
       "capability_id": 117,
       "hardening": "identities, control domains, credentials, permissions and execution paths prove actual independence",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+TRUST_POLICY+PER_CAPABILITY_TEST+REGRESSION_SUITES+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "ASSURANCE_ENGINE",
-      "wire": "115,118,958,959"
+      "wire": "115,118,958,959",
+      "implementation_artifact": "implementation/super1200/domains/D04_trust_controls.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_trust_controls.py"
     },
     {
       "acquire": "NONE",
@@ -1748,12 +1750,14 @@
       "canonical_name": "TRUST_ROOT_REGISTRY",
       "capability_id": 118,
       "hardening": "root identity, purpose, public key/material, custody, validity and revocation",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE+SCHEMA",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+TRUST_POLICY+PER_CAPABILITY_TEST+REGRESSION_SUITES+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "TRUST_REGISTRY",
-      "wire": "88,109,117,119,120"
+      "wire": "88,109,117,119,120",
+      "implementation_artifact": "implementation/super1200/domains/D04_trust_controls.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_trust_controls.py"
     },
     {
       "acquire": "NONE",
@@ -1761,12 +1765,14 @@
       "canonical_name": "TRUST_ROOT_ROTATION",
       "capability_id": 119,
       "hardening": "cross-signed/supersession path, overlap, rollback protection and historical verification",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+TRUST_POLICY+PER_CAPABILITY_TEST+REGRESSION_SUITES+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "TRUST_ENGINE",
-      "wire": "118,120,433"
+      "wire": "118,120,433",
+      "implementation_artifact": "implementation/super1200/domains/D04_trust_controls.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_trust_controls.py"
     },
     {
       "acquire": "NONE",
@@ -1774,12 +1780,14 @@
       "canonical_name": "OFFLINE_TRUST_BUNDLE",
       "capability_id": 120,
       "hardening": "versioned roots/intermediates/revocations/checkpoints with bundle hash and expiry",
-      "implementation_state": "DECLARED",
-      "materialization": "SCHEMA+BUILD_ONLY",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+TRUST_POLICY+PER_CAPABILITY_TEST+REGRESSION_SUITES+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "TRUST_ARTIFACT",
-      "wire": "75,118,119"
+      "wire": "75,118,119",
+      "implementation_artifact": "implementation/super1200/domains/D04_trust_controls.py",
+      "test_artifact": "implementation/super1200/tests/test_d04_trust_controls.py"
     },
     {
       "acquire": "formal providers only per proof obligation",
