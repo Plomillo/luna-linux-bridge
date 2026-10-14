@@ -222,7 +222,7 @@ jobs:
             "conditions":conditions,"checkpoint":state.get("current_checkpoint"),
             "status":state.get("status"),"blocked":state.get("blocked"),
             "executor":executors.get("D05"),"prior_scope":"D05:125-128",
-            "next_scope":"D05:125-128","global_certification":"NOT_CERTIFIED"
+            "next_scope":"D05:129-132","global_certification":"NOT_CERTIFIED"
           },sort_keys=True))
           if not all(conditions.values()):
             raise SystemExit("SUPER1200_DENY_MATERIAL_EXECUTION_CHECKPOINT_CERTIFICATE_OR_HASH_GATE")
