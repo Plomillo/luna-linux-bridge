@@ -264,14 +264,14 @@ jobs:
           kwargs={"report_minutes":1}
           if "executor" in signature.parameters: kwargs["executor"]="CUSTOSZ_V7"
           if "executor_path" in signature.parameters: kwargs["executor_path"]="implementation/super1200/runtime/d05_material_worker_121_124.py"
-          if "assigned_executor" in signature.parameters: kwargs["assigned_executor"]="implementation/super1200/runtime/d04_material_worker_117_120.py"
+          if "assigned_executor" in signature.parameters: kwargs["assigned_executor"]="implementation/super1200/runtime/d05_material_worker_121_124.py"
           if "worker_id" in signature.parameters: kwargs["worker_id"]="CUSTOSZ_V7"
           mission=worker.mission_start(0.05,"LUNA_PROJECT",
               "Materially implement D05 capabilities 121-124 only after current-source scoped G23/G24 PASS for D04 117-120; preserve evidence, provenance, rollback and non-regression; type checking is not theorem certification; MetaOS deferred.",**kwargs)
           tick=worker.mission_tick(mission["mission_id"])
-          print("SUPER1200_CUSTOSZ_V7_MISSION "+json.dumps({"mission_id":mission.get("mission_id"),"executor":mission.get("executor"),"executor_path":"implementation/super1200/runtime/d04_material_worker_117_120.py","tick":tick,"configured_hours":0.05},sort_keys=True,default=str))
+          print("SUPER1200_CUSTOSZ_V7_MISSION "+json.dumps({"mission_id":mission.get("mission_id"),"executor":mission.get("executor"),"executor_path":"implementation/super1200/runtime/d05_material_worker_121_124.py","tick":tick,"configured_hours":0.05},sort_keys=True,default=str))
           PY
-          python3 -B -I implementation/super1200/runtime/d04_material_worker_117_120.py
+          python3 -B -I implementation/super1200/runtime/d05_material_worker_121_124.py
           python3 -B -I implementation/super1200/tests/test_shared.py
           python3 -B -I implementation/super1200/tests/test_d03_runtime.py
           python3 -B -I implementation/super1200/tests/test_d04_runtime.py
