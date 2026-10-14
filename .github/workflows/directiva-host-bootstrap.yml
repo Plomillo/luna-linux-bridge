@@ -1,6 +1,8 @@
 name: Directiva — governed host bootstrap (luna-aux)
 # Executes the versioned bootstrap on the registered runner.
 # Fail-closed. Records evidence. Does not issue G23/G24.
+# The runner service is a user process. Root is required only inside the
+# versioned script, reached by sudo -n. The script still refuses a non-root euid.
 
 on:
   workflow_dispatch:
@@ -10,6 +12,7 @@ on:
     paths:
       - ".github/workflows/directiva-host-bootstrap.yml"
       - "continuity/FORCE_HOST_BOOTSTRAP.marker"
+      - "scripts/directiva/host_bootstrap.sh"
   schedule:
     - cron: "*/15 * * * *"
 
@@ -32,35 +35,47 @@ jobs:
           ref: automation/mtls-evidence-gate-20261013
           persist-credentials: true
       - name: Run versioned bootstrap (root required)
+        id: bootstrap
+        env:
+          CANDIDATE_SHA: ${{ github.sha }}
         run: |
           set -Eeuo pipefail
-          if [ "$(id -u)" -ne 0 ]; then
-            echo "::error::Runner job is not root. Bootstrap requires root on luna-aux."
-            echo "DIRECTIVA_BOOTSTRAP=DENIED_NOT_ROOT"
+          echo "id=$(id)"
+          if [ "$(id -u)" -eq 0 ]; then
+            bash scripts/directiva/host_bootstrap.sh
+          elif sudo -n true; then
+            sudo -n --preserve-env=CANDIDATE_SHA bash scripts/directiva/host_bootstrap.sh
+          else
+            echo "::error::Bootstrap requires root. Runner uid=$(id -u) user=$(id -un) and sudo -n is not permitted. Refusing to write /etc or /var/lib without elevation."
+            echo "DIRECTIVA_BOOTSTRAP=DENIED_NO_ELEVATION"
             exit 3
           fi
-          bash scripts/directiva/host_bootstrap.sh
           echo "DIRECTIVA_BOOTSTRAP=EXECUTED"
       - name: Record evidence
         if: always()
         run: |
           set -Eeuo pipefail
+          git sparse-checkout disable || true
+          git config core.sparseCheckout false || true
+          rm -f .git/info/sparse-checkout || true
           mkdir -p continuity/host-evidence
           TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          RESULT="${{ steps.bootstrap.outcome }}"
           cat > continuity/host-evidence/BOOTSTRAP_EXECUTION_${{ github.run_id }}.json <<EOF
           {
             "schema": "DIRECTIVA_HOST_BOOTSTRAP_EVIDENCE/1.0",
             "run_id": "${{ github.run_id }}",
             "sha": "${{ github.sha }}",
             "runner": "luna-aux",
+            "result": "$RESULT",
             "executed_at_utc": "$TS",
             "script": "scripts/directiva/host_bootstrap.sh",
-            "notes": "Governed execution. Does not claim G23/G24."
+            "notes": "Governed execution. Does not claim G23/G24. Root remains required for host paths."
           }
           EOF
           git config user.name "custosz-v7-runtime-bot"
           git config user.email "custosz-v7-runtime-bot@users.noreply.github.com"
-          git add continuity/host-evidence || true
+          git add --sparse -- continuity/host-evidence || git add -A -- continuity/host-evidence || true
           if ! git diff --cached --quiet; then
             git commit -m "evidence(directiva): host bootstrap execution ${{ github.run_id }}"
             git pull --rebase origin automation/mtls-evidence-gate-20261013 || true
