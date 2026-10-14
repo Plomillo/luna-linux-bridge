@@ -1,0 +1,64 @@
+name: Directiva — luna-aux connectivity probe
+# Lightweight governed probe to verify if the self-hosted runner luna-aux is online and accepting jobs.
+# Fail-closed. Records evidence. Does not perform bootstrap or certification.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - automation/mtls-evidence-gate-20261013
+    paths:
+      - ".github/workflows/directiva-luna-aux-connectivity-probe.yml"
+      - "continuity/FORCE_LUNA_AUX_PROBE.marker"
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: directiva-luna-aux-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    name: Probe luna-aux runner connectivity
+    runs-on: [self-hosted, linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Connectivity proof
+        run: |
+          set -Eeuo pipefail
+          TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          echo "LUNA_AUX_PROBE_OK $TS"
+          echo "hostname=$(hostname)"
+          echo "whoami=$(whoami)"
+          echo "id=$(id)"
+          echo "runner_name=${RUNNER_NAME:-unknown}"
+          echo "DIRECTIVA_LUNA_AUX_ONLINE=true"
+      - name: Record probe evidence
+        if: always()
+        run: |
+          set -Eeuo pipefail
+          mkdir -p continuity/host-evidence
+          TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          STATUS="ONLINE"
+          if [ "${{ job.status }}" != "success" ]; then STATUS="OFFLINE_OR_FAILED"; fi
+          cat > continuity/host-evidence/LUNA_AUX_PROBE_${{ github.run_id }}.json <<EOF
+          {
+            "schema": "DIRECTIVA_LUNA_AUX_CONNECTIVITY_PROBE/1.0",
+            "run_id": "${{ github.run_id }}",
+            "sha": "${{ github.sha }}",
+            "runner_label": "luna-aux",
+            "status": "$STATUS",
+            "probed_at_utc": "$TS",
+            "notes": "Governed connectivity probe. Does not bootstrap or certify."
+          }
+          EOF
+          git config user.name "custosz-v7-runtime-bot"
+          git config user.email "custosz-v7-runtime-bot@users.noreply.github.com"
+          git add continuity/host-evidence || true
+          if ! git diff --cached --quiet; then
+            git commit -m "evidence(directiva): luna-aux connectivity probe ${{ github.run_id }}"
+            git pull --rebase origin automation/mtls-evidence-gate-20261013 || true
+            git push origin HEAD:automation/mtls-evidence-gate-20261013 || true
+          fi
