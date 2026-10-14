@@ -37,7 +37,7 @@ def sha(path:Path)->str:
  return hashlib.sha256(path.read_bytes()).hexdigest()
 def blob_sha(path:Path)->str:
  b=path.read_bytes()
- return hashlib.sha1(f"blob {len(b)}\\0".encode("ascii")+b).hexdigest()
+ return hashlib.sha1(f"blob {len(b)}\0".encode("ascii")+b).hexdigest()
 def canonical_hash(value)->str:
  return hashlib.sha256(json.dumps(value,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode("utf-8")).hexdigest()
 def load(path): return json.loads(path.read_text(encoding="utf-8"))
@@ -109,7 +109,7 @@ def main()->int:
  case_results={}
  for cid,name,test_name in TASKS:
   proc=subprocess.run([sys.executable,"-B",str(TEST),"-v",f"D05FormalFoundationsTests.{test_name}"],cwd=ROOT,text=True,capture_output=True,timeout=120)
-  output=proc.stdout+"\\n"+proc.stderr
+  output=proc.stdout+"\n"+proc.stderr
   passed=proc.returncode==0 and test_name in output and "Ran 1 test" in output and "OK" in output and "FAILED" not in output
   case_results[cid]={"test_case":test_name,"exit_code":proc.returncode,"result":"PASS" if passed else "FAIL",
    "stdout_sha256":hashlib.sha256(proc.stdout.encode()).hexdigest(),"stderr_sha256":hashlib.sha256(proc.stderr.encode()).hexdigest(),
@@ -130,15 +130,15 @@ def main()->int:
    "certification_granted":False,"g23":"PENDING_INDEPENDENT_VALIDATION","g24":"PENDING_G23",
    "regression_suites":suite_results}
   ev["evidence_sha256"]=canonical_hash(ev)
-  (OUT/f"capability-{cid:04d}.json").write_text(json.dumps(ev,indent=2,sort_keys=True,ensure_ascii=False)+"\\n",encoding="utf-8")
+  (OUT/f"capability-{cid:04d}.json").write_text(json.dumps(ev,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
   for item in (by[cid],dom_by[cid]):
    item["implementation_state"]="EVIDENCED"
    item["implementation_artifact"]="implementation/super1200/domains/D05_formal_foundations.py"
    item["test_artifact"]="implementation/super1200/tests/test_d05_formal_foundations.py"
    item["materialization"]="CODE+PER_CAPABILITY_TEST+REGRESSION_SUITES+HASH_BOUND_EVIDENCE"
    item["theorem_claim_from_type_checking"]=False
- DOMAIN.write_text(json.dumps(domain,indent=2,ensure_ascii=False)+"\\n",encoding="utf-8")
- REGISTRY.write_text(json.dumps(registry,indent=2,ensure_ascii=False)+"\\n",encoding="utf-8")
+ DOMAIN.write_text(json.dumps(domain,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
+ REGISTRY.write_text(json.dumps(registry,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
  url=f'{os.environ.get("GITHUB_SERVER_URL","https://github.com")}/{os.environ.get("GITHUB_REPOSITORY","Plomillo/luna-linux-bridge")}/actions/runs/{run_id}'
  state.update({"current_checkpoint":"D05_125_128_MATERIALIZED","next_point":"D05","status":"BLOCKED","blocked":True,
   "block_reason":"NEXT_D05_TRANCHE_EXECUTOR_NOT_REGISTERED","blocked_at":completed,"active_worker":False,"material_worker_ready":False,
@@ -152,7 +152,7 @@ def main()->int:
   "last_material_execution":{"executor":executor,"capabilities":[125,126,127,128],"tests":"8_REGRESSION_SUITES_PASS;4_OF_4_INDEPENDENT_TEST_INVOCATIONS_PASS",
    "test_case_results":[case_results[cid] for cid,_,_ in TASKS],"module_sha256":module_hash,"test_sha256":test_hash,
    "github_actions_run_id":int(run_id),"g23":"PENDING","g24":"PENDING","certification_granted":False,"completed_at_utc":completed}})
- STATE.write_text(json.dumps(state,indent=2,ensure_ascii=False)+"\\n",encoding="utf-8")
+ STATE.write_text(json.dumps(state,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
  print("SUPER1200_TELEMETRY "+json.dumps({"event":"D05_FOUNDATIONS_MATERIAL_PASS","capabilities":[125,126,127,128],
   "module_sha256":module_hash,"test_sha256":test_hash,"g23":"PENDING","g24":"PENDING_G23",
   "certification_granted":False,"global_certification_status":"NOT_CERTIFIED","workflow_run_id":int(run_id)},sort_keys=True),flush=True)
