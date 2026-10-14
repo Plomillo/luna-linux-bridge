@@ -75,7 +75,7 @@ jobs:
               raise SystemExit("G23_GLOBAL_CERTIFICATION_DRIFT")
           if state.get("last_execution",{}).get("status")!="COMPLETED_SUCCESS_MATERIAL_TRANCHE":
               raise SystemExit("G23_MATERIAL_RUN_NOT_SUCCESSFUL")
-          if state.get("last_execution",{}).get("material_capabilities") != [109,110,111,112]:
+          if state.get("last_execution",{}).get("material_capabilities") != [113,114,115,116]:
               raise SystemExit("G23_MATERIAL_SCOPE_FAIL")
           material_run=str(state.get("last_execution",{}).get("workflow_run_id",""))
           if not material_run:
@@ -240,8 +240,8 @@ jobs:
           di={x["capability_id"]:x for x in domain["capabilities"]}
           evidence=[]
           tasks=[
-            (109,"AUTHORIZATION_PROOF"),(110,"CAPABILITY_LEASES"),
-            (111,"LEAST_PRIVILEGE_ENGINE"),(112,"TIME_BOUND_AUTHORITY")]
+            (113,"SINGLE_USE_AUTHORIZATION"),(114,"REVOCATION_REGISTRY"),
+            (115,"SEPARATION_OF_DUTIES"),(116,"TWO_MAN_RULE_PROVIDER")]
           for cid,name in tasks:
             ev=load(f"continuity/runtime-evidence/D04/capability-{cid:04d}.json")
             if (ev.get("status")!="PASS" or ev.get("module_sha256")!=module_hash
