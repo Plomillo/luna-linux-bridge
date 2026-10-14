@@ -1,4 +1,5 @@
 name: SUPER1200 — source-bound G23/G24 gates for D05 125-128
+# Trigger after D05 125-128 material evidence is persisted; keep G23/G24 scoped only.
 # Source-bound G23/G24 gate; never promotes global SUPER1200 certification.
 # D05 evidence semantics explicitly limit claims to type checking and obligation-fabric behavior.
 
