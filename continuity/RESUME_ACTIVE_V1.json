@@ -2,16 +2,24 @@
   "schema": "LOUKSNA_RESUME_ACTIVE/1.0",
   "status": "ACTIVE",
   "activated_at_utc": "2026-10-14T07:00:00Z",
+  "last_operator_action_utc": "2026-10-14T14:42:00Z",
   "rails": {
     "DIRECTIVA": {
       "branch": "automation/mtls-evidence-gate-20261013",
-      "checkpoint": "READINESS_PROBE_ACTIVE_HOST_HOLD",
+      "checkpoint": "CONNECTIVITY_PROBE_DISPATCHED",
       "mode": "LIVE_UNDER_CONTRACT",
-      "next_action": "Dispatch .github/workflows/directiva-host-bootstrap.yml on luna-aux, then place real certs/reports and re-dispatch puac2-autonomous.yml",
-      "governed_bootstrap_workflow": ".github/workflows/directiva-host-bootstrap.yml"
+      "next_action": "Await luna-aux connectivity probe result. If ONLINE → execute host_bootstrap.sh as root → place real certs/reports → re-dispatch puac2-autonomous.yml",
+      "governed_bootstrap_workflow": ".github/workflows/directiva-host-bootstrap.yml",
+      "connectivity_probe_workflow": ".github/workflows/directiva-luna-aux-connectivity-probe.yml"
     }
   },
   "fail_closed": true,
   "antiparalysis": true,
-  "global_certification_status": "NOT_CERTIFIED"
+  "global_certification_status": "NOT_CERTIFIED",
+  "operator_action": {
+    "action": "DISPATCH_CONNECTIVITY_PROBE_AND_FORCE_BOOTSTRAP",
+    "performed_at_utc": "2026-10-14T14:42:00Z",
+    "actor": "operator-via-grok",
+    "rationale": "Verify luna-aux online status and force bootstrap path. Traceable and auditable."
+  }
 }
