@@ -126,6 +126,10 @@ def validate_replay_receipt(obligation: Any, receipt: Any, *,
         raise ValueError("proof_obligation_schema_invalid")
     if obligation.get("proof_claim") is not False or obligation.get("status") != "OPEN_NOT_PROVED":
         raise ValueError("proof_obligation_epistemic_state_invalid")
+    unsigned_obligation = dict(obligation)
+    recorded_obligation_hash = unsigned_obligation.pop("obligation_sha256", None)
+    if not valid_sha256(recorded_obligation_hash) or digest(unsigned_obligation) != recorded_obligation_hash:
+        raise ValueError("proof_obligation_hash_mismatch")
     if not isinstance(receipt, dict):
         return {"decision": "DENY", "reason": "checker_receipt_missing",
                 "theorem_claim": False}
@@ -147,6 +151,10 @@ def validate_replay_receipt(obligation: Any, receipt: Any, *,
                 "theorem_claim": False}
     if receipt.get("environment_sha256") != obligation.get("environment_sha256"):
         return {"decision": "DENY", "reason": "environment_digest_mismatch",
+                "theorem_claim": False}
+    expected_proof_hash = obligation.get("proof_term_sha256")
+    if expected_proof_hash is not None and receipt.get("proof_sha256") != expected_proof_hash:
+        return {"decision": "DENY", "reason": "proof_term_digest_mismatch",
                 "theorem_claim": False}
     if receipt.get("replayed") is not True or receipt.get("result") != "PASS":
         return {"decision": "DENY", "reason": "exact_proof_replay_not_passed",
