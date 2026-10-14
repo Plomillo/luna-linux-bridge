@@ -8,8 +8,8 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[3]
 DOMAIN=ROOT/"implementation/super1200/domains/D05.json"
 REGISTRY=ROOT/"implementation/super1200/registry/capabilities.json"
-BASE_MODULE=ROOT/"implementation/super1200/domains/D05_formal_reasoning.py"
-BASE_TEST=ROOT/"implementation/super1200/tests/test_d05_formal_reasoning.py"
+BASE_MODULE=ROOT/"implementation/super1200/domains/D05_formal_foundations.py"
+BASE_TEST=ROOT/"implementation/super1200/tests/test_d05_formal_foundations.py"
 MODULE=ROOT/"implementation/super1200/domains/D05_proof_assurance.py"
 TEST=ROOT/"implementation/super1200/tests/test_d05_proof_assurance.py"
 STATE=ROOT/"continuity/STATE.json"
@@ -25,13 +25,13 @@ REGRESSION_SUITES=[
  "implementation/super1200/tests/test_d04_trust_controls.py",
  "implementation/super1200/tests/test_d05_formal_reasoning.py",
  "implementation/super1200/tests/test_d05_formal_foundations.py",
- ""implementation/super1200/tests/test_d05_proof_assurance.py",
+ "implementation/super1200/tests/test_d05_proof_assurance.py",
 ]
 TASKS=[
- (125,"PROOF_CHECKER","test_checker_binding_requires_independent_checker_and_untrusted_producer"),
- (126,"PROOF_ARTIFACT_STORE","test_proof_artifact_descriptor_is_hash_bound_and_does_not_claim_persistence"),
- (127,"PROOF_DEPENDENCY_GRAPH","test_proof_dependency_graph_rejects_cycles_and_computes_reverse_invalidation"),
- (128,"PROOF_REPLAY","test_proof_replay_requires_trusted_exact_callback_and_never_grants_global_certification"),
+ (129,"PROOF_CHECKER","test_checker_binding_requires_independent_checker_and_untrusted_producer"),
+ (130,"PROOF_ARTIFACT_STORE","test_proof_artifact_descriptor_is_hash_bound_and_does_not_claim_persistence"),
+ (131,"PROOF_DEPENDENCY_GRAPH","test_proof_dependency_graph_rejects_cycles_and_computes_reverse_invalidation"),
+ (132,"PROOF_REPLAY","test_proof_replay_requires_trusted_exact_callback_and_never_grants_global_certification"),
 ]
 
 def sha(path:Path)->str:
@@ -52,14 +52,14 @@ def main()->int:
   raise SystemExit("SUPER1200_TELEMETRY MATERIAL_WORKER=DENY_REGISTRY_COUNT")
  if domain.get("domain_id")!="D05" or domain.get("range")!=[121,176] or domain.get("count")!=56:
   raise SystemExit("SUPER1200_TELEMETRY MATERIAL_WORKER=DENY_DOMAIN_CONTRACT")
- scope=state.get("scoped_certifications",{}).get("D05:129-132",{})
+ scope=state.get("scoped_certifications",{}).get("D05:125-128",{})
  checks={
   "checkpoint":state.get("current_checkpoint")=="D05_125_128_MATERIALIZED",
   "g23":state.get("g23")=="PASS_FOR_SCOPE_D05_125_128",
   "g24":state.get("g24")=="PASS_FOR_SCOPE_D05_125_128",
   "global_not_certified":state.get("certified") is False and state.get("global_certification_status")=="NOT_CERTIFIED",
-  "prior_scope":scope.get("scope")=="D05:129-132" and scope.get("status")=="PASS" and scope.get("global_certification_granted") is False,
-  "certificate":cert.get("result")=="PASS" and cert.get("scope")=="D05:129-132" and cert.get("g23")=="PASS" and cert.get("g24")=="PASS" and cert.get("certification_granted") is True and cert.get("global_super1200_certified") is False,
+  "prior_scope":scope.get("scope")=="D05:125-128" and scope.get("status")=="PASS" and scope.get("global_certification_granted") is False,
+  "certificate":cert.get("result")=="PASS" and cert.get("scope")=="D05:125-128" and cert.get("g23")=="PASS" and cert.get("g24")=="PASS" and cert.get("certification_granted") is True and cert.get("global_super1200_certified") is False,
   "prior_sources":cert.get("module_sha256")==sha(BASE_MODULE) and cert.get("test_sha256")==sha(BASE_TEST),
  }
  if not all(checks.values()):
@@ -104,7 +104,7 @@ def main()->int:
   if not p.is_file(): raise SystemExit("SUPER1200_TELEMETRY MATERIAL_WORKER=DENY_MISSING_SUITE:"+rel)
   proc=subprocess.run([sys.executable,"-B",str(p),"-v"],cwd=ROOT,text=True,capture_output=True,timeout=300)
   if proc.returncode:
-   print("SUPER1200_TELEMETRY "+json.dumps({"event":"D05_FOUNDATIONS_REGRESSION_FAILED","suite":rel,"exit_code":proc.returncode,"stdout":proc.stdout[-8000:],"stderr":proc.stderr[-8000:]},sort_keys=True),flush=True)
+   print("SUPER1200_TELEMETRY "+json.dumps({"event":"D05_PROOF_ASSURANCE_REGRESSION_FAILED","suite":rel,"exit_code":proc.returncode,"stdout":proc.stdout[-8000:],"stderr":proc.stderr[-8000:]},sort_keys=True),flush=True)
    return proc.returncode or 1
   suite_results[rel]={"exit_code":0,"test_sha256":sha(p),"stdout_sha256":hashlib.sha256(proc.stdout.encode()).hexdigest(),"stderr_sha256":hashlib.sha256(proc.stderr.encode()).hexdigest()}
  case_results={}
@@ -116,11 +116,11 @@ def main()->int:
    "stdout_sha256":hashlib.sha256(proc.stdout.encode()).hexdigest(),"stderr_sha256":hashlib.sha256(proc.stderr.encode()).hexdigest(),
    "test_name_seen":test_name in output,"single_test_run_confirmed":"Ran 1 test" in output,"unittest_ok_marker":"OK" in output and "FAILED" not in output}
   if not passed:
-   print("SUPER1200_TELEMETRY "+json.dumps({"event":"D05_FOUNDATIONS_TEST_FAILED","capability_id":cid,"test_case":test_name,"stdout":proc.stdout[-8000:],"stderr":proc.stderr[-8000:]},sort_keys=True),flush=True)
+   print("SUPER1200_TELEMETRY "+json.dumps({"event":"D05_PROOF_ASSURANCE_TEST_FAILED","capability_id":cid,"test_case":test_name,"stdout":proc.stdout[-8000:],"stderr":proc.stderr[-8000:]},sort_keys=True),flush=True)
    return proc.returncode or 1
  completed=datetime.now(timezone.utc).isoformat(); module_hash=sha(MODULE); test_hash=sha(TEST)
  for cid,name,test_name in TASKS:
-  ev={"schema":"SUPER1200_D05_FOUNDATIONS_EVIDENCE/1","capability_id":cid,"canonical_name":name,
+  ev={"schema":"SUPER1200_D05_PROOF_ASSURANCE_EVIDENCE/1","capability_id":cid,"canonical_name":name,
    "executor":executor,"implementation_artifact":"implementation/super1200/domains/D05_proof_assurance.py",
    "test_artifact":"implementation/super1200/tests/test_d05_proof_assurance.py","test_case":test_name,"status":"PASS",
    "test_invocation":["python3","-B","test_d05_proof_assurance.py","-v",f"D05ProofAssuranceTests.{test_name}"],
@@ -144,8 +144,8 @@ def main()->int:
  state.update({"current_checkpoint":"D05_129_132_MATERIALIZED","next_point":"D05","status":"BLOCKED","blocked":True,
   "block_reason":"NEXT_D05_TRANCHE_EXECUTOR_NOT_REGISTERED","blocked_at":completed,"active_worker":False,"material_worker_ready":False,
   "certified":False,"global_certification_status":"NOT_CERTIFIED","g23":"PENDING_FOR_SCOPE_D05_129_132","g24":"PENDING_G23",
-  "diagnostic":"D05 capabilities 129-132 materialized with explicit univalence-assumption profile, pinned cubical provider binding (no execution), higher-inductive declaration structure validation, and hash-bound proof-term registry. Structural checks do not prove univalence, cubical derivations or theorems. G23/G24 pending; global SUPER1200 remains NOT_CERTIFIED.",
-  "recovery_note":"Register a reviewed task-specific executor for D05 capabilities 129-132 only after scoped G23/G24 for D05 129-132. Preserve D05 121-124 source hashes and its historical scoped certificate; no certification propagation.",
+  "diagnostic":"D05 capabilities 129-132 now have proof-checker binding, content-addressed artifact descriptors, typed acyclic proof-dependency graph with reverse invalidation, and a trusted-callback replay receipt. External checker execution is not performed by the binding function; replay is accepted only through the supplied trusted callback. G23/G24 pending; global SUPER1200 remains NOT_CERTIFIED.",
+  "recovery_note":"Register a reviewed task-specific executor for capabilities 133-136 only after scoped G23/G24 for D05 129-132. Preserve D05 125-128 source hashes and its historical scoped certificate; no certification propagation.",
   "next_tranche_authorization":None,
   "last_execution":{"workflow_run_id":int(run_id),"workflow_url":url,"status":"COMPLETED_SUCCESS_MATERIAL_TRANCHE","started_at_utc":started,"completed_at_utc":completed,
    "configured_runtime_hours":0.05,"material_capabilities":[129,130,131,132],"behavior_tests":"8_REGRESSION_SUITES_PASS;4_OF_4_CAPABILITY_TESTS_PASS",
