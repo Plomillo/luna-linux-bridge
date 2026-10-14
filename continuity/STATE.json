@@ -3,19 +3,19 @@
   "active_worker": false,
   "block_reason": "NEXT_DOMAIN_D05_EXECUTOR_NOT_REGISTERED",
   "blocked": true,
-  "blocked_at": "2026-10-14T00:27:24.239940+00:00",
+  "blocked_at": "2026-10-14T00:28:40.832962+00:00",
   "branch": "custosz/super-1200-implementation-20261007",
   "certified": false,
   "current_checkpoint": "D04_117_120_MATERIALIZED",
-  "diagnostic": "D04 capabilities 117-120 were materialized with independent mapped tests and four regression suites. D04 covers IDs 81-120 and is now materialized through its final four capabilities; continuation is held fail-closed because D05 has no registered material executor. The D04:113-116 scoped certificate does not propagate. Global SUPER1200 certification remains NOT_CERTIFIED; MetaOS remains deferred.",
+  "diagnostic": "D04 capabilities 117-120 passed current-source G23/G24 for that exact scope. D04 covers IDs 81-120; continuation is held fail-closed until a reviewed executor is registered for the next declared domain D05. Global SUPER1200 certification remains NOT_CERTIFIED.",
   "dispatch_error": null,
   "dispatch_requested_at": "2026-10-13T21:14:39.496Z",
-  "g23": "PENDING_FOR_SCOPE_D04_117_120",
-  "g24": "PENDING_G23",
+  "g23": "PASS_FOR_SCOPE_D04_117_120",
+  "g24": "PASS_FOR_SCOPE_D04_117_120",
   "mission_id": "SUPER1200-CONTINUATION-20261007",
   "next_point": "D05",
   "next_worker": "CUSTOSZ_V7",
-  "recovery_note": "Register and review a task-specific executor for the next declared domain D05 only after D04:117-120 obtains G23/G24. Bind D05 to its own domain contract and test evidence; do not propagate any scoped certification.",
+  "recovery_note": "Register and review a task-specific executor for the next declared domain D05; require its own source-bound evidence and domain-specific tests. D04 scoped certification does not propagate.",
   "schema": "SUPER1200_CONTINUITY_STATE/1.0",
   "status": "BLOCKED",
   "terminal": false,
@@ -61,8 +61,8 @@
     ],
     "behavior_tests": "BASE_D04_SUITE_PASS;AUTHORIZATION_GOVERNANCE_SUITE_PASS;GOVERNANCE_CONTROLS_SUITE_PASS;TRUST_CONTROLS_SUITE_PASS;4_OF_4_CAPABILITY_TESTS_PASS",
     "executor": "implementation/super1200/runtime/d04_material_worker_117_120.py",
-    "g23": "PENDING",
-    "g24": "PENDING_G23",
+    "g23": "PASS_FOR_SCOPE_D04_117_120",
+    "g24": "PASS_FOR_SCOPE_D04_117_120",
     "global_certification_status": "NOT_CERTIFIED"
   },
   "execution_history": [
@@ -157,21 +157,20 @@
     "runtime_dependency_sha256": "591082428db8a61946e78341df2e086785d8d0d49f20cf632a4b3a4501139940",
     "base_test_dependency_sha256": "8c32455a51ccf1c4d81309e15d18261e537f85a50f63ac74ac063e5466064e13",
     "github_actions_run_id": 38490227219,
-    "g23": "PENDING",
-    "g24": "PENDING",
+    "g23": "PASS_FOR_SCOPE_D04_117_120",
+    "g24": "PASS_FOR_SCOPE_D04_117_120",
     "certification_granted": false,
     "completed_at_utc": "2026-10-14T00:27:24.239940+00:00"
   },
   "independent_validation": {
-    "scope": "D04_CAPABILITIES_113_116_ONLY",
-    "scope_key": "D04:113-116",
+    "scope": "D04_CAPABILITIES_117_120_ONLY",
+    "scope_key": "D04:117-120",
     "status": "PASS",
-    "workflow_run_id": 38488999382,
-    "record_path": "continuity/independent-validation/D04_113_116.json",
-    "g23": "PASS_FOR_SCOPE_D04_113_116",
-    "g24": "PASS_FOR_SCOPE_D04_113_116",
-    "certification_granted": false,
-    "corrected_from_prior_scope_label": true
+    "workflow_run_id": 38490364943,
+    "record_path": "continuity/independent-validation/D04_117_120.json",
+    "g23": "PASS_FOR_SCOPE_D04_117_120",
+    "g24": "PASS_FOR_SCOPE_D04_117_120",
+    "certification_granted": false
   },
   "evidence_refresh": {
     "status": "PASS_AWAITING_G23",
@@ -187,10 +186,10 @@
     "certification_granted": false
   },
   "scoped_certification": {
-    "scope": "D04:113-116",
+    "scope": "D04:117-120",
     "status": "PASS",
-    "record_path": "continuity/certification/D04_113_116.json",
-    "workflow_run_id": 38488999382,
+    "record_path": "continuity/certification/D04_117_120.json",
+    "workflow_run_id": 38490364943,
     "certification_granted": true,
     "global_certification_granted": false
   },
@@ -241,6 +240,14 @@
       "status": "PASS",
       "record_path": "continuity/certification/D04_113_116.json",
       "workflow_run_id": 38488999382,
+      "certification_granted": true,
+      "global_certification_granted": false
+    },
+    "D04:117-120": {
+      "scope": "D04:117-120",
+      "status": "PASS",
+      "record_path": "continuity/certification/D04_117_120.json",
+      "workflow_run_id": 38490364943,
       "certification_granted": true,
       "global_certification_granted": false
     }
