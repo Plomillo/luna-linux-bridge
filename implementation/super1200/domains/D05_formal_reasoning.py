@@ -402,4 +402,3 @@ def validate_hott_identity(identity_type: Any, proof_term: Any, *,
         "theorem_claim": False,
         "note": "Type checking alone is not independent proof replay or global certification.",
     }
-
