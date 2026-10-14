@@ -2,9 +2,10 @@
   "schema": "SUPER1200_CONTINUITY_EXECUTORS/1.0",
   "branch": "custosz/super-1200-implementation-20261007",
   "executors": {
-    "D04": "implementation/super1200/runtime/d04_material_worker_117_120.py"
+    "D04": "implementation/super1200/runtime/d04_material_worker_117_120.py",
+    "D05": "implementation/super1200/runtime/d05_material_worker_121_124.py"
   },
-  "missing_executor_state": "REGISTERED_D04_TRUST_MATERIAL_EXECUTOR_117_120_PENDING_AUTHORIZED_RUN",
+  "missing_executor_state": "REGISTERED_D05_MATERIAL_EXECUTOR_121_124_PENDING_AUTHORIZED_RUN",
   "unregistered_domain_must_not_be_invented": true,
   "blocked_executor_records": [
     {
@@ -33,10 +34,10 @@
     }
   ],
   "reconciliation": {
-    "observed_at_utc": "2026-10-14T00:21:50.983Z",
-    "status": "REGISTERED_PENDING_AUTHORIZED_GITHUB_HOSTED_RUN",
+    "observed_at_utc": "2026-10-14T00:33:46.516Z",
+    "status": "D05_EXECUTOR_REGISTERED_PENDING_GATED_MATERIAL_RUN",
     "policy": "FAIL_CLOSED",
-    "note": "D04 trust-controls executor for capabilities 117-120 is registered. It requires the exact D04:113-116 scoped G23/G24 certificate and validates source/dependency hashes before executing. It runs base D04, authorization-governance, governance-controls, and trust-controls suites plus four individual tests, then persists hash-bound evidence and stops at the end of D04. Global SUPER1200 certification remains NOT_CERTIFIED; MetaOS remains deferred."
+    "note": "D05 formal reasoning executor for capabilities 121-124 is registered. It requires source-bound G23/G24 PASS for D04 117-120 and the exact prior scoped certificate; it independently reruns seven regression suites and four capability tests, then persists per-capability hash-bound evidence and blocks until a reviewed executor for D05 125-128 is registered. Global SUPER1200 certification remains NOT_CERTIFIED."
   },
   "executor_history": [
     {
@@ -51,6 +52,22 @@
       "status": "PRIOR_TRANCHE_SCOPED_G23_G24_PASS",
       "certificate": "continuity/certification/D04_113_116.json",
       "global_certification": false
+    }
+  ],
+  "domain_executor_history": [
+    {
+      "domain": "D05",
+      "executor": "implementation/super1200/runtime/d05_material_worker_121_124.py",
+      "capabilities": [
+        121,
+        122,
+        123,
+        124
+      ],
+      "status": "REGISTERED_PENDING_AUTHORIZED_MATERIAL_RUN",
+      "prior_domain_certificate": "continuity/certification/D04_117_120.json",
+      "global_certification": false,
+      "registered_at_utc": "2026-10-14T00:33:46.516Z"
     }
   ]
 }
