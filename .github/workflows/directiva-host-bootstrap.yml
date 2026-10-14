@@ -4,10 +4,16 @@ name: Directiva — governed host bootstrap (luna-aux)
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "*/15 * * * *"
 
 permissions:
   contents: write
   actions: read
+
+concurrency:
+  group: directiva-host-bootstrap
+  cancel-in-progress: false
 
 jobs:
   bootstrap:
@@ -43,7 +49,7 @@ jobs:
             "runner": "luna-aux",
             "executed_at_utc": "$TS",
             "script": "scripts/directiva/host_bootstrap.sh",
-            "notes": "Governed execution. Does not claim G23/G24. Operator must still place real certs and reports if not already present."
+            "notes": "Governed execution. Does not claim G23/G24."
           }
           EOF
           git config user.name "custosz-v7-runtime-bot"
