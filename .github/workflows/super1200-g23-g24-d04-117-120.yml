@@ -6,10 +6,10 @@ on:
     branches:
       - custosz/super-1200-implementation-20261007
     paths:
-      - "continuity/runtime-evidence/D04/capability-0109.json"
-      - "continuity/runtime-evidence/D04/capability-0110.json"
-      - "continuity/runtime-evidence/D04/capability-0111.json"
-      - "continuity/runtime-evidence/D04/capability-0112.json"
+      - "continuity/runtime-evidence/D04/capability-0117.json"
+      - "continuity/runtime-evidence/D04/capability-0118.json"
+      - "continuity/runtime-evidence/D04/capability-0119.json"
+      - "continuity/runtime-evidence/D04/capability-0120.json"
       - "implementation/super1200/domains/D04_trust_controls.py"
       - "implementation/super1200/tests/test_d04_trust_controls.py"
       - "implementation/super1200/domains/D04_governance_controls.py"
@@ -100,10 +100,10 @@ jobs:
           ri={x["capability_id"]:x for x in registry["items"]}
           di={x["capability_id"]:x for x in domain["capabilities"]}
           tasks={
-            113:("SINGLE_USE_AUTHORIZATION","test_single_use_authorization_is_atomic_and_replay_is_denied"),
-            114:("REVOCATION_REGISTRY","test_revocation_registry_propagates_and_unknown_tracking_fails_closed"),
-            115:("SEPARATION_OF_DUTIES","test_separation_of_duties_rejects_shared_identity_control_domain_and_permissions"),
-            116:("TWO_MAN_RULE_PROVIDER","test_two_man_rule_requires_configured_threshold_independent_signed_fresh_approvals"),
+            117:("ACTOR_INDEPENDENCE_VERIFIER","test_actor_independence_verifier_rejects_shared_identity_domain_credentials_path_and_permissions"),
+            118:("TRUST_ROOT_REGISTRY","test_trust_root_registry_binds_key_purpose_custody_validity_and_revocation"),
+            119:("TRUST_ROOT_ROTATION","test_trust_root_rotation_requires_cross_signatures_overlap_and_monotonic_history"),
+            120:("OFFLINE_TRUST_BUNDLE","test_offline_trust_bundle_binds_version_chain_expiry_hash_and_signature"),
           }
           results=[]
           for cid,(name,test_name) in tasks.items():
@@ -258,8 +258,8 @@ jobs:
           di={x["capability_id"]:x for x in domain["capabilities"]}
           evidence=[]
           tasks=[
-            (113,"SINGLE_USE_AUTHORIZATION"),(114,"REVOCATION_REGISTRY"),
-            (115,"SEPARATION_OF_DUTIES"),(116,"TWO_MAN_RULE_PROVIDER")]
+            (117,"ACTOR_INDEPENDENCE_VERIFIER"),(118,"TRUST_ROOT_REGISTRY"),
+            (119,"TRUST_ROOT_ROTATION"),(120,"OFFLINE_TRUST_BUNDLE")]
           for cid,name in tasks:
             ev=load(f"continuity/runtime-evidence/D04/capability-{cid:04d}.json")
             if (ev.get("status")!="PASS" or ev.get("module_sha256")!=module_hash
