@@ -58,6 +58,16 @@ jobs:
           GITHUB_REF_NAME: ${{ github.ref_name }}
         run: python build.py
 
+      - name: Verify deterministic rebuild for the same source commit
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          first="$(sha256sum dist/CUSTOSZV8.pyz | awk '{print $1}')"
+          python build.py > /tmp/custoszv8-rebuild-report.json
+          second="$(sha256sum dist/CUSTOSZV8.pyz | awk '{print $1}')"
+          printf 'first=%s\\nsecond=%s\\n' "$first" "$second"
+          test "$first" = "$second"
+
       - name: Exercise built package CLI and selftest
         run: |
           set -Eeuo pipefail
