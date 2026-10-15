@@ -13,7 +13,8 @@ sys.path.insert(0, str(ROOT / "src"))
 from custoszv8.core import (
     CapabilityRegistry, EvidenceJournal, GitHubBridge, MissionStateMachine, TranslationEngine,
     V8Error, inspect_archive, inspect_wasm, is_sha256, selftest, sha256_bytes, validate_manifest,
-    verify_component, run_native_readonly
+    verify_component, run_native_readonly, MissionWatchdog, RetryController,
+    RecoveryCoordinator, ChangeImpactAnalyzer, RuntimeV1Adapter, MetaOSAdapter
 )
 from custoszv8.cli import validate_mission
 
@@ -236,6 +237,98 @@ class TestAuthorizationAndBridge(unittest.TestCase):
         self.assertEqual(result["status"],"PASS",result)
         self.assertEqual(result["g23"],"NOT_GRANTED")
         self.assertEqual(result["g24"],"NOT_GRANTED")
+
+class TestWatchdogRetryRecoveryAndAdapters(unittest.TestCase):
+    def test_watchdog_detects_stall_with_finite_deadline(self):
+        watcher = MissionWatchdog()
+        watcher.start("MIS-STALL", "1970-01-01T00:03:20Z", 10, now_epoch=100)
+        self.assertEqual(watcher.observe("MIS-STALL", now_epoch=105)["state"], "ACTIVE")
+        self.assertEqual(watcher.observe("MIS-STALL", now_epoch=110)["state"], "NO_MEANINGFUL_PROGRESS")
+
+    def test_watchdog_respects_declared_dependency_wait(self):
+        watcher = MissionWatchdog()
+        watcher.start("MIS-WAIT", "1970-01-01T00:03:20Z", 10, now_epoch=100)
+        watcher.wait_for("MIS-WAIT", "DEP-1", "DEP-1 becomes READY", "1970-01-01T00:02:30Z")
+        self.assertEqual(watcher.observe("MIS-WAIT", now_epoch=120)["state"], "WAITING_FOR_DEPENDENCY")
+        self.assertEqual(watcher.observe("MIS-WAIT", now_epoch=150)["state"], "DEPENDENCY_TIMEOUT")
+
+    def test_watchdog_deadline_exceeded(self):
+        watcher = MissionWatchdog()
+        watcher.start("MIS-DEAD", "1970-01-01T00:01:40Z", 10, now_epoch=100)
+        self.assertEqual(watcher.observe("MIS-DEAD", now_epoch=101)["state"], "DEADLINE_EXCEEDED")
+
+    def test_watchdog_emits_append_only_events(self):
+        with tempfile.TemporaryDirectory() as td:
+            journal = EvidenceJournal(Path(td) / "watchdog.jsonl")
+            watcher = MissionWatchdog(journal)
+            watcher.start("MIS-J", "1970-01-01T00:03:20Z", 10, now_epoch=100)
+            watcher.progress("MIS-J", "RUNNING", "EV-1", now_epoch=101)
+            self.assertEqual(journal.verify()["records"], 2)
+
+    def test_retry_allowed_for_read_only_with_budget(self):
+        r = RetryController.decide("READ_ONLY", 1, 3, True)
+        self.assertEqual(r["decision"], "RETRY_BOUNDED")
+        self.assertEqual(r["next_attempt"], 2)
+
+    def test_retry_denied_for_unknown_idempotency(self):
+        r = RetryController.decide("UNKNOWN", 1, 3, True)
+        self.assertEqual(r["decision"], "DENY_RETRY")
+
+    def test_retry_holds_when_budget_exhausted(self):
+        r = RetryController.decide("IDEMPOTENT", 3, 3, True)
+        self.assertEqual(r["decision"], "HOLD")
+
+    def test_non_idempotent_requires_reconciliation(self):
+        r = RetryController.decide("NON_IDEMPOTENT", 1, 3, True, "AUTH-1", "IDEMP-1")
+        self.assertEqual(r["decision"], "REQUIRES_RECONCILIATION")
+
+    def test_checkpoint_identity_pass_does_not_claim_restore(self):
+        import hashlib
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "checkpoint.bin"
+            path.write_bytes(b"snapshot")
+            digest = hashlib.sha256(b"snapshot").hexdigest()
+            r = RecoveryCoordinator.verify_checkpoint(path, digest)
+            self.assertEqual(r["status"], "PASS_CHECKPOINT_IDENTITY")
+            self.assertFalse(r["restoration_proven"])
+
+    def test_checkpoint_hash_mismatch(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "checkpoint.bin"
+            path.write_bytes(b"snapshot")
+            r = RecoveryCoordinator.verify_checkpoint(path, "0" * 64)
+            self.assertEqual(r["status"], "CONFLICT")
+
+    def test_recovery_plan_incomplete_is_reported(self):
+        issues = RecoveryCoordinator.validate_plan({"incident_id":"INC-1"})
+        self.assertTrue(issues)
+
+    def test_change_impact_invalidates_only_dependent_claims(self):
+        r = ChangeImpactAnalyzer.analyze("CHG-1", ["RUNTIME_V1"], {
+            "CL-1":["CUSTOSZV7"], "CL-2":["RUNTIME_V1"], "CL-3":["METAOS"]
+        })
+        self.assertEqual(r["invalidated_claims"], ["CL-2"])
+        self.assertEqual(r["unaffected_claims"], ["CL-1","CL-3"])
+        self.assertFalse(r["automatic_certification_propagation"])
+
+    def test_runtime_adapter_holds_without_interface_mapping(self):
+        import hashlib
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "runtime.pyz"
+            with zipfile.ZipFile(path,"w") as z: z.writestr("__main__.py","pass\n")
+            digest = hashlib.sha256(path.read_bytes()).hexdigest()
+            r = RuntimeV1Adapter(digest, native_interface_verified=False).preflight(path)
+            self.assertEqual(r["status"], "HOLD")
+            self.assertFalse(r["execution_authorized"])
+
+    def test_metaos_component_model_is_recognized_without_activation(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "component.wasm"
+            path.write_bytes(b"\x00asm\x0d\x00\x01\x00")
+            r = MetaOSAdapter().inspect(path)
+            self.assertEqual(r["format"], "WASM_COMPONENT_MODEL")
+            self.assertEqual(MetaOSAdapter().can_invoke(r, "terminal-success")["status"], "HOLD")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
