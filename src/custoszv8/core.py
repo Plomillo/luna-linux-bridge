@@ -297,9 +297,8 @@ class TranslationEngine:
         return [m.group(0) for m in pattern.finditer(text)]
 
     def _covered(self, text: str, source: str) -> bool:
-        plain = re.sub(
-            re.escape(_BACKTICK) + r"[^" + re.escape(_BACKTICK) + r"\n]+" + re.escape(_BACKTICK), "", text
-        ).lower()
+        plain, _held = self._protect(text)
+        plain = plain.lower()
         phrases = [a if source == "es" else b for a, b in self.PHRASES]
         for phrase in sorted(phrases, key=len, reverse=True):
             plain = re.sub(re.escape(phrase), "", plain, flags=re.IGNORECASE)
