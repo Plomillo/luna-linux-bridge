@@ -1,0 +1,31 @@
+{
+  "schema": "SUPER1200_REVIEWED_TRANCHES/1",
+  "global_certification_granted": false,
+  "note": "Only these tranches may be scoped-certified by the succession gate. Each entry is name-specific code plus a negative test. D07+ are absent on purpose.",
+  "tranches": [
+    {"domain_id": "D05", "from": 137, "to": 140, "test": "implementation/super1200/tests/test_d05_137_176.py", "class_name": "D05RemainderTests", "module": "implementation/super1200/domains/d05_137_176.py"},
+    {"domain_id": "D05", "from": 141, "to": 144, "test": "implementation/super1200/tests/test_d05_137_176.py", "class_name": "D05RemainderTests", "module": "implementation/super1200/domains/d05_137_176.py"},
+    {"domain_id": "D05", "from": 145, "to": 148, "test": "implementation/super1200/tests/test_d05_137_176.py", "class_name": "D05RemainderTests", "module": "implementation/super1200/domains/d05_137_176.py"},
+    {"domain_id": "D05", "from": 149, "to": 152, "test": "implementation/super1200/tests/test_d05_137_176.py", "class_name": "D05RemainderTests", "module": "implementation/super1200/domains/d05_137_176.py"},
+    {"domain_id": "D05", "from": 153, "to": 156, "test": "implementation/super1200/tests/test_d05_137_176.py", "class_name": "D05RemainderTests", "module": "implementation/super1200/domains/d05_137_176.py"},
+    {"domain_id": "D05", "from": 157, "to": 160, "test": "implementation/super1200/tests/test_d05_137_176.py", "class_name": "D05RemainderTests", "module": "implementation/super1200/domains/d05_137_176.py"},
+    {"domain_id": "D05", "from": 161, "to": 164, "test": "implementation/super1200/tests/test_d05_137_176.py", "class_name": "D05RemainderTests", "module": "implementation/super1200/domains/d05_137_176.py"},
+    {"domain_id": "D05", "from": 165, "to": 168, "test": "implementation/super1200/tests/test_d05_137_176.py", "class_name": "D05RemainderTests", "module": "implementation/super1200/domains/d05_137_176.py"},
+    {"domain_id": "D05", "from": 169, "to": 172, "test": "implementation/super1200/tests/test_d05_137_176.py", "class_name": "D05RemainderTests", "module": "implementation/super1200/domains/d05_137_176.py"},
+    {"domain_id": "D05", "from": 173, "to": 176, "test": "implementation/super1200/tests/test_d05_137_176.py", "class_name": "D05RemainderTests", "module": "implementation/super1200/domains/d05_137_176.py"},
+    {"domain_id": "D06", "from": 177, "to": 180, "test": "implementation/super1200/tests/test_d06_177_230.py", "class_name": "D06Tests", "module": "implementation/super1200/domains/d06_177_230.py"},
+    {"domain_id": "D06", "from": 181, "to": 184, "test": "implementation/super1200/tests/test_d06_177_230.py", "class_name": "D06Tests", "module": "implementation/super1200/domains/d06_177_230.py"},
+    {"domain_id": "D06", "from": 185, "to": 188, "test": "implementation/super1200/tests/test_d06_177_230.py", "class_name": "D06Tests", "module": "implementation/super1200/domains/d06_177_230.py"},
+    {"domain_id": "D06", "from": 189, "to": 192, "test": "implementation/super1200/tests/test_d06_177_230.py", "class_name": "D06Tests", "module": "implementation/super1200/domains/d06_177_230.py"},
+    {"domain_id": "D06", "from": 193, "to": 196, "test": "implementation/super1200/tests/test_d06_177_230.py", "class_name": "D06Tests", "module": "implementation/super1200/domains/d06_177_230.py"},
+    {"domain_id": "D06", "from": 197, "to": 200, "test": "implementation/super1200/tests/test_d06_177_230.py", "class_name": "D06Tests", "module": "implementation/super1200/domains/d06_177_230.py"},
+    {"domain_id": "D06", "from": 201, "to": 204, "test": "implementation/super1200/tests/test_d06_177_230.py", "class_name": "D06Tests", "module": "implementation/super1200/domains/d06_177_230.py"},
+    {"domain_id": "D06", "from": 205, "to": 208, "test": "implementation/super1200/tests/test_d06_177_230.py", "class_name": "D06Tests", "module": "implementation/super1200/domains/d06_177_230.py"},
+    {"domain_id": "D06", "from": 209, "to": 212, "test": "implementation/super1200/tests/test_d06_177_230.py", "class_name": "D06Tests", "module": "implementation/super1200/domains/d06_177_230.py"},
+    {"domain_id": "D06", "from": 213, "to": 216, "test": "implementation/super1200/tests/test_d06_177_230.py", "class_name": "D06Tests", "module": "implementation/super1200/domains/d06_177_230.py"},
+    {"domain_id": "D06", "from": 217, "to": 220, "test": "implementation/super1200/tests/test_d06_177_230.py", "class_name": "D06Tests", "module": "implementation/super1200/domains/d06_177_230.py"},
+    {"domain_id": "D06", "from": 221, "to": 224, "test": "implementation/super1200/tests/test_d06_177_230.py", "class_name": "D06Tests", "module": "implementation/super1200/domains/d06_177_230.py"},
+    {"domain_id": "D06", "from": 225, "to": 228, "test": "implementation/super1200/tests/test_d06_177_230.py", "class_name": "D06Tests", "module": "implementation/super1200/domains/d06_177_230.py"},
+    {"domain_id": "D06", "from": 229, "to": 230, "test": "implementation/super1200/tests/test_d06_177_230.py", "class_name": "D06Tests", "module": "implementation/super1200/domains/d06_177_230.py"}
+  ]
+}

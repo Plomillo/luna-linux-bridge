@@ -2051,12 +2051,16 @@
       "canonical_name": "PROOF_CARRYING_API_CONTRACT",
       "capability_id": 137,
       "hardening": "API schemas plus safety/compatibility properties and proof references",
-      "implementation_state": "DECLARED",
-      "materialization": "SCHEMA+CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "FORMAL_API_PATTERN",
-      "wire": "134,559..569"
+      "wire": "134,559..569",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "139..144 selectively",
@@ -2064,12 +2068,16 @@
       "canonical_name": "MODEL_CHECKING_FABRIC",
       "capability_id": 138,
       "hardening": "state model, bounded/unbounded assumptions, counterexample preservation",
-      "implementation_state": "DECLARED",
-      "materialization": "COMPOSE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "FORMAL_FABRIC",
-      "wire": "139..144,152..156"
+      "wire": "139..144,152..156",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "TLA+ official",
@@ -2077,12 +2085,16 @@
       "canonical_name": "TLA_PLUS_PROVIDER",
       "capability_id": 139,
       "hardening": "spec/tool version, TLC config, state bounds and artifacts pinned",
-      "implementation_state": "DECLARED",
-      "materialization": "EXT_BIN+ADAPTER",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "EXT_FORMAL_TOOLCHAIN",
-      "wire": "138,152..156"
+      "wire": "138,152..156",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "Apalache official",
@@ -2090,12 +2102,16 @@
       "canonical_name": "APALACHE_PROVIDER",
       "capability_id": 140,
       "hardening": "solver/tool versions, bounds and counterexample receipts",
-      "implementation_state": "DECLARED",
-      "materialization": "EXT_BIN+ADAPTER",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "EXT_FORMAL_TOOLCHAIN",
-      "wire": "138,139,143"
+      "wire": "138,139,143",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "Alloy official",
@@ -2103,12 +2119,16 @@
       "canonical_name": "ALLOY_PROVIDER",
       "capability_id": 141,
       "hardening": "model/scope/version and generated counterexamples",
-      "implementation_state": "DECLARED",
-      "materialization": "EXT_BIN+ADAPTER",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "EXT_FORMAL_TOOLCHAIN",
-      "wire": "138,169"
+      "wire": "138,169",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "Dafny official",
@@ -2116,12 +2136,16 @@
       "canonical_name": "DAFNY_PROVIDER",
       "capability_id": 142,
       "hardening": "compiler/verifier/version/options pinned; verified source artifacts",
-      "implementation_state": "DECLARED",
-      "materialization": "LANG_TOOLCHAIN+ADAPTER",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "LANG_TOOLCHAIN_FORMAL",
-      "wire": "121,137,143"
+      "wire": "121,137,143",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "selected SMT solver",
@@ -2129,12 +2153,16 @@
       "canonical_name": "SMT_PROVIDER",
       "capability_id": 143,
       "hardening": "solver-neutral constraints, logic fragment and result certificates where available",
-      "implementation_state": "DECLARED",
-      "materialization": "SCHEMA+ADAPTER",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "PROVIDER_INTERFACE",
-      "wire": "138,144"
+      "wire": "138,144",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "Z3 official",
@@ -2142,12 +2170,16 @@
       "canonical_name": "Z3_PROVIDER",
       "capability_id": 144,
       "hardening": "version/logic/options/seeds pinned and model/counterexample captured",
-      "implementation_state": "DECLARED",
-      "materialization": "EXT_LIB/EXT_BIN+ADAPTER",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "EXT_LIBRARY_SOLVER",
-      "wire": "143,70"
+      "wire": "143,70",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "provider per language",
@@ -2155,12 +2187,16 @@
       "canonical_name": "PROPERTY_BASED_TESTING",
       "capability_id": 145,
       "hardening": "properties, generators, seeds, shrinking and replay receipts",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE+EXT_LIB",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "GH",
       "type": "TEST_ENGINE",
-      "wire": "146,147,152,71"
+      "wire": "146,147,152,71",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "Python Hypothesis official package",
@@ -2168,12 +2204,16 @@
       "canonical_name": "HYPOTHESIS_PROVIDER",
       "capability_id": 146,
       "hardening": "package lock, seed/profile, example DB isolation and replay",
-      "implementation_state": "DECLARED",
-      "materialization": "EXT_LIB+ADAPTER",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "GH",
       "type": "EXT_LIBRARY",
-      "wire": "145,266"
+      "wire": "145,266",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "language-specific QuickCheck-family provider",
@@ -2181,12 +2221,16 @@
       "canonical_name": "QUICKCHECK_STYLE_PROVIDER",
       "capability_id": 147,
       "hardening": "provider/version/generator contract; no universal dependency",
-      "implementation_state": "DECLARED",
-      "materialization": "EXT_LIB+ADAPTER",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "GH",
       "type": "PROVIDER_INTERFACE",
-      "wire": "145,53"
+      "wire": "145,53",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "fuzzer providers",
@@ -2194,12 +2238,16 @@
       "canonical_name": "FUZZING_FABRIC",
       "capability_id": 148,
       "hardening": "corpus, seed, sanitizer config, resource caps, crash minimization and repro",
-      "implementation_state": "DECLARED",
-      "materialization": "COMPOSE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "GH",
       "type": "TEST_FABRIC",
-      "wire": "149..151,71"
+      "wire": "149..151,71",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "compiler-provided libFuzzer",
@@ -2207,12 +2255,16 @@
       "canonical_name": "LIBFUZZER_PROVIDER",
       "capability_id": 149,
       "hardening": "compiler/build flags/corpus pinned",
-      "implementation_state": "DECLARED",
-      "materialization": "EXT_BIN+ADAPTER",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "GH",
       "type": "EXT_TOOLCHAIN",
-      "wire": "148,447"
+      "wire": "148,447",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "cargo-fuzz official",
@@ -2220,12 +2272,16 @@
       "canonical_name": "CARGO_FUZZ_PROVIDER",
       "capability_id": 150,
       "hardening": "Rust toolchain lock, target and corpus identity",
-      "implementation_state": "DECLARED",
-      "materialization": "EXT_BIN+ADAPTER",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "GH",
       "type": "EXT_TOOL",
-      "wire": "148,382"
+      "wire": "148,382",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "OSS-Fuzz interfaces when used",
@@ -2233,12 +2289,16 @@
       "canonical_name": "OSS_FUZZ_COMPATIBILITY",
       "capability_id": 151,
       "hardening": "build integration, corpus and sanitizer compatibility; no external-service dependency for local tests",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE+SCHEMA",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "GH",
       "type": "INTEGRATION_ADAPTER",
-      "wire": "148..150"
+      "wire": "148..150",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2246,12 +2306,16 @@
       "canonical_name": "STATE_MACHINE_TESTING",
       "capability_id": 152,
       "hardening": "transition generator, forbidden transitions, state invariants and replay",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "GH",
       "type": "TEST_ENGINE",
-      "wire": "138,153..156,568,764"
+      "wire": "138,153..156,568,764",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "model checker per target",
@@ -2259,12 +2323,16 @@
       "canonical_name": "CONCURRENCY_MODEL_CHECKING",
       "capability_id": 153,
       "hardening": "interleaving bounds, race/deadlock properties and counterexamples",
-      "implementation_state": "DECLARED",
-      "materialization": "COMPOSE+EXT_TOOL",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "FORMAL_TEST_ENGINE",
-      "wire": "138,154,155,156"
+      "wire": "138,154,155,156",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2272,12 +2340,16 @@
       "canonical_name": "DEADLOCK_DETECTION",
       "capability_id": 154,
       "hardening": "wait-for graph and state-machine checks",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE+COMPOSE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "VALIDATION_ENGINE",
-      "wire": "153,155,568"
+      "wire": "153,155,568",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2285,12 +2357,16 @@
       "canonical_name": "LIVENESS_PROPERTIES",
       "capability_id": 155,
       "hardening": "explicit fairness/time assumptions and machine-checkable progress claims",
-      "implementation_state": "DECLARED",
-      "materialization": "SCHEMA+CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "FORMAL_PROPERTY_SET",
-      "wire": "138,153,154"
+      "wire": "138,153,154",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2298,12 +2374,16 @@
       "canonical_name": "SAFETY_PROPERTIES",
       "capability_id": 156,
       "hardening": "forbidden-state invariants tied to implementation tests",
-      "implementation_state": "DECLARED",
-      "materialization": "SCHEMA+CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "FORMAL_PROPERTY_SET",
-      "wire": "70,138,152,153"
+      "wire": "70,138,152,153",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2311,12 +2391,16 @@
       "canonical_name": "ARCHITECTURE_AS_DATA",
       "capability_id": 157,
       "hardening": "machine-readable canonical projection distinct from canonical source",
-      "implementation_state": "DECLARED",
-      "materialization": "SCHEMA+CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "ARCHITECTURE_PRIMITIVE",
-      "wire": "158..176,25"
+      "wire": "158..176,25",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2324,12 +2408,16 @@
       "canonical_name": "ARCHITECTURE_SCHEMA",
       "capability_id": 158,
       "hardening": "versioned types, IDs, edges, constraints and unknown-field policy",
-      "implementation_state": "DECLARED",
-      "materialization": "SCHEMA",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "SCHEMA",
-      "wire": "157,159,161,163"
+      "wire": "157,159,161,163",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2337,12 +2425,16 @@
       "canonical_name": "ARCHITECTURE_GRAPH",
       "capability_id": 159,
       "hardening": "all components/relations with provenance and reverse edges",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE+SCHEMA",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "GRAPH",
-      "wire": "23..25,157,160,165"
+      "wire": "23..25,157,160,165",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2350,12 +2442,16 @@
       "canonical_name": "ARCHITECTURE_DIFF",
       "capability_id": 160,
       "hardening": "identity/semantic/relation/authority/provider diffs separated",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "DIFF_ENGINE",
-      "wire": "159,161,170,791"
+      "wire": "159,161,170,791",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2363,12 +2459,16 @@
       "canonical_name": "ARCHITECTURE_LINTER",
       "capability_id": 161,
       "hardening": "static rules for IDs, forbidden transitions, missing edges, cycles and authority violations",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "GH",
       "type": "VALIDATOR",
-      "wire": "158..160,166,168"
+      "wire": "158..160,166,168",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2376,12 +2476,16 @@
       "canonical_name": "ARCHITECTURE_TESTER",
       "capability_id": 162,
       "hardening": "positive/negative architecture fixtures and non-regression suite",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "GH",
       "type": "TEST_ENGINE",
-      "wire": "71,158..161,176"
+      "wire": "71,158..161,176",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2389,12 +2493,16 @@
       "canonical_name": "ARCHITECTURE_COMPILER",
       "capability_id": 163,
       "hardening": "architecture data→plans/configs without mutating authority; deterministic output hashes",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "COMPILER_ENGINE",
-      "wire": "157,158,164,78"
+      "wire": "157,158,164,78",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2402,12 +2510,16 @@
       "canonical_name": "ARCHITECTURE_SIMULATOR",
       "capability_id": 164,
       "hardening": "pre-change graph/state simulation and impact receipts",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "SIMULATOR",
-      "wire": "159,160,165,170,831"
+      "wire": "159,160,165,170,831",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2415,12 +2527,16 @@
       "canonical_name": "ARCHITECTURE_DEPENDENCY_ANALYZER",
       "capability_id": 165,
       "hardening": "direct/transitive/reverse dependencies, critical paths and hidden dependency detection",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "ANALYZER",
-      "wire": "24,159,166,169,170"
+      "wire": "24,159,166,169,170",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2428,12 +2544,16 @@
       "canonical_name": "ARCHITECTURE_CYCLE_DETECTOR",
       "capability_id": 166,
       "hardening": "SCC detection; cycles require explicit permitted semantics or HOLD",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "VALIDATOR",
-      "wire": "24,165"
+      "wire": "24,165",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2441,12 +2561,16 @@
       "canonical_name": "ARCHITECTURE_DEAD_COMPONENT_DETECTOR",
       "capability_id": 167,
       "hardening": "unreachable/unreferenced components; deletion never automatic",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "ANALYZER",
-      "wire": "159,169,851"
+      "wire": "159,169,851",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2454,12 +2578,16 @@
       "canonical_name": "ARCHITECTURE_DUPLICATION_DETECTOR",
       "capability_id": 168,
       "hardening": "semantic contract/provider overlap detection before materialization",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "G16_ANALYZER",
-      "wire": "2,25,74,757"
+      "wire": "2,25,74,757",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2467,12 +2595,16 @@
       "canonical_name": "ARCHITECTURE_REACHABILITY_ANALYZER",
       "capability_id": 169,
       "hardening": "directed reachability with authority/security boundaries",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "GRAPH_ANALYZER",
-      "wire": "159,165,170"
+      "wire": "159,165,170",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2480,12 +2612,16 @@
       "canonical_name": "ARCHITECTURAL_BLAST_RADIUS",
       "capability_id": 170,
       "hardening": "affected capabilities/data/auth/evidence/tests from proposed changes",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "IMPACT_ENGINE",
-      "wire": "95,108,165,169,781"
+      "wire": "95,108,165,169,781",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2493,12 +2629,16 @@
       "canonical_name": "ARCHITECTURAL_COMPLEXITY_METRICS",
       "capability_id": 171,
       "hardening": "nodes/edges/cycles/coupling/change-radius interpreted with baselines",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "METRIC_ENGINE",
-      "wire": "159,170,172,573"
+      "wire": "159,170,172,573",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2506,12 +2646,16 @@
       "canonical_name": "ARCHITECTURAL_COST_MODEL",
       "capability_id": 172,
       "hardening": "combine complexity, maintenance, validation, resource and operator cost",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "ANALYTICS_MODEL",
-      "wire": "27,171,173,583"
+      "wire": "27,171,173,583",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2519,12 +2663,16 @@
       "canonical_name": "ARCHITECTURAL_DEBT_LEDGER",
       "capability_id": 173,
       "hardening": "debt identity, cause, impact, owner, interest and resolution state",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE+SCHEMA",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "LEDGER",
-      "wire": "172,174,175,773"
+      "wire": "172,174,175,773",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2532,12 +2680,16 @@
       "canonical_name": "ARCHITECTURAL_DEBT_INTEREST",
       "capability_id": 174,
       "hardening": "measure recurring cost attributable to unresolved architecture debt",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "METRIC_ENGINE",
-      "wire": "173,175,774"
+      "wire": "173,175,774",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2545,12 +2697,16 @@
       "canonical_name": "ARCHITECTURAL_REFACTORING_PLANNER",
       "capability_id": 175,
       "hardening": "minimal change, impact, migration, checkpoint, tests and rollback plan",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "PLANNER",
-      "wire": "160,170,173,782"
+      "wire": "160,170,173,782",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2558,12 +2714,16 @@
       "canonical_name": "ARCHITECTURAL_REGRESSION_DETECTOR",
       "capability_id": 176,
       "hardening": "compare architecture metrics/contracts against known-good baseline",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "REGRESSION_ENGINE",
-      "wire": "160,171,172,175,789"
+      "wire": "160,171,172,175,789",
+      "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+      "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "sandbox/container/environment provider",
@@ -2571,12 +2731,16 @@
       "canonical_name": "HERMETIC_EXECUTION_ENGINE",
       "capability_id": 177,
       "hardening": "declared inputs only, blocked undeclared network/filesystem access, reproducible environment",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE+EXT_BIN",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "GH",
       "type": "BUILD_ENGINE",
-      "wire": "4,54,55,186"
+      "wire": "4,54,55,186",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2584,12 +2748,16 @@
       "canonical_name": "CONTENT_BASED_CACHE",
       "capability_id": 178,
       "hardening": "cache key includes all semantic inputs, environment and policy",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "GH",
       "type": "CACHE",
-      "wire": "82,177,181,845"
+      "wire": "82,177,181,845",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "backend only when needed",
@@ -2597,12 +2765,16 @@
       "canonical_name": "REMOTE_CACHE",
       "capability_id": 179,
       "hardening": "authenticated CAS, integrity verification and local fallback",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE+PROVIDER",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "GH",
       "type": "CACHE_PROVIDER_INTERFACE",
-      "wire": "178,180,371"
+      "wire": "178,180,371",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "remote executor only when admitted",
@@ -2610,12 +2782,16 @@
       "canonical_name": "REMOTE_EXECUTION_INTERFACE",
       "capability_id": 180,
       "hardening": "content-addressed inputs, resource caps, attested outputs and no hidden host state",
-      "implementation_state": "DECLARED",
-      "materialization": "SCHEMA+CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "GH",
       "type": "PROVIDER_INTERFACE",
-      "wire": "177,179,183,187"
+      "wire": "177,179,183,187",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2623,12 +2799,16 @@
       "canonical_name": "FINE_GRAINED_INVALIDATION",
       "capability_id": 181,
       "hardening": "dependency-derived invalidation, not timestamps alone",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "GH",
       "type": "BUILD_ENGINE",
-      "wire": "95,178,182,189,845"
+      "wire": "95,178,182,189,845",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2636,12 +2816,16 @@
       "canonical_name": "AFFECTED_TARGET_ANALYSIS",
       "capability_id": 182,
       "hardening": "source/change→build/test target closure with reason trace",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "GH",
       "type": "IMPACT_ENGINE",
-      "wire": "24,181,183,786"
+      "wire": "24,181,183,786",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2649,12 +2833,16 @@
       "canonical_name": "BUILD_GRAPH",
       "capability_id": 183,
       "hardening": "explicit DAG, target inputs/outputs/toolchain and cache keys",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE+SCHEMA",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "GH",
       "type": "GRAPH",
-      "wire": "54,182,184,188"
+      "wire": "54,182,184,188",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2662,12 +2850,16 @@
       "canonical_name": "BUILD_TARGET_IDENTITY",
       "capability_id": 184,
       "hardening": "stable target ID plus source/toolchain/config/platform identity",
-      "implementation_state": "DECLARED",
-      "materialization": "SCHEMA+CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "GH",
       "type": "IDENTITY_PRIMITIVE",
-      "wire": "183,185"
+      "wire": "183,185",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2675,12 +2867,16 @@
       "canonical_name": "BUILD_REPRODUCIBILITY_PROOF",
       "capability_id": 185,
       "hardening": "independent rebuild comparison under declared reproducibility scope",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "ASSURANCE_ENGINE",
-      "wire": "82,177,184,919"
+      "wire": "82,177,184,919",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "OS sandbox provider",
@@ -2688,12 +2884,16 @@
       "canonical_name": "BUILD_SANDBOX",
       "capability_id": 186,
       "hardening": "filesystem/network/process boundaries and teardown verification",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE+EXT_BIN",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "GH",
       "type": "SANDBOX",
-      "wire": "177,187,1099"
+      "wire": "177,187,1099",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2701,12 +2901,16 @@
       "canonical_name": "BUILD_PARALLELIZER",
       "capability_id": 187,
       "hardening": "parallelize only independent DAG nodes within resource envelope",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "GH",
       "type": "SCHEDULER",
-      "wire": "15,183,186,188"
+      "wire": "15,183,186,188",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2714,12 +2918,16 @@
       "canonical_name": "CRITICAL_PATH_ANALYZER",
       "capability_id": 188,
       "hardening": "DAG duration/resource bottleneck analysis from observed data",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "GH",
       "type": "ANALYZER",
-      "wire": "183,187,855"
+      "wire": "183,187,855",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2727,12 +2935,16 @@
       "canonical_name": "INCREMENTAL_BUILD_ENGINE",
       "capability_id": 189,
       "hardening": "181/182-driven partial rebuild with full-build equivalence checks",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "GH",
       "type": "BUILD_ENGINE",
-      "wire": "181,182,183,847"
+      "wire": "181,182,183,847",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "provider only if justified",
@@ -2740,12 +2952,16 @@
       "canonical_name": "MONOREPO_ENGINE",
       "capability_id": 190,
       "hardening": "workspace graph, ownership, affected targets, shared dependency rules",
-      "implementation_state": "DECLARED",
-      "materialization": "COMPOSE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "GH",
       "type": "BUILD_ORCHESTRATION",
-      "wire": "24,54,183,189"
+      "wire": "24,54,183,189",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "ML stack by recipe",
@@ -2753,12 +2969,16 @@
       "canonical_name": "AI_FACTORY",
       "capability_id": 191,
       "hardening": "dataset→tokenizer→training→evaluation→artifact provenance; no implicit model promotion",
-      "implementation_state": "DECLARED",
-      "materialization": "BUILD_ONLY+COMPOSE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "FACTORY",
-      "wire": "192..230,6,17"
+      "wire": "192..230,6,17",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2766,12 +2986,16 @@
       "canonical_name": "MODEL_ARCHITECTURE_REGISTRY",
       "capability_id": 192,
       "hardening": "architecture ID, config schema, lineage and compatible runtimes",
-      "implementation_state": "DECLARED",
-      "materialization": "SCHEMA+KNOWLEDGE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "REGISTRY",
-      "wire": "193,204,223,224"
+      "wire": "193,204,223,224",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2779,12 +3003,16 @@
       "canonical_name": "MODEL_COMPONENT_REGISTRY",
       "capability_id": 193,
       "hardening": "component identity, tensor contracts, dependency and compatibility",
-      "implementation_state": "DECLARED",
-      "materialization": "SCHEMA+KNOWLEDGE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "REGISTRY",
-      "wire": "192,221,222"
+      "wire": "192,221,222",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "tokenizer libraries by recipe",
@@ -2792,12 +3020,16 @@
       "canonical_name": "TOKENIZER_FACTORY",
       "capability_id": 194,
       "hardening": "corpus provenance, vocab/config hashes, encoding regression and model compatibility",
-      "implementation_state": "DECLARED",
-      "materialization": "BUILD_ONLY+EXT_LIB",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "FACTORY",
-      "wire": "6,195,196,204"
+      "wire": "6,195,196,204",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "data sources under manifest",
@@ -2805,12 +3037,16 @@
       "canonical_name": "DATASET_FACTORY",
       "capability_id": 195,
       "hardening": "source→filter→dedupe→split→license→hash pipeline",
-      "implementation_state": "DECLARED",
-      "materialization": "BUILD_ONLY+CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "FACTORY",
-      "wire": "196..203,204"
+      "wire": "196..203,204",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "corpora under provenance",
@@ -2818,12 +3054,16 @@
       "canonical_name": "CORPUS_FACTORY",
       "capability_id": 196,
       "hardening": "ingest/normalize/segment while preserving originals and source mapping",
-      "implementation_state": "DECLARED",
-      "materialization": "BUILD_ONLY+CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "FACTORY",
-      "wire": "195,197,198,199"
+      "wire": "195,197,198,199",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2831,12 +3071,16 @@
       "canonical_name": "DATASET_DEDUPLICATION",
       "capability_id": 197,
       "hardening": "exact/near dedupe parameters, collision review and receipts",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "DATA_ENGINE",
-      "wire": "195,198,200"
+      "wire": "195,198,200",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2844,12 +3088,16 @@
       "canonical_name": "DATASET_PROVENANCE",
       "capability_id": 198,
       "hardening": "record-level/source-level provenance and transformations",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE+SCHEMA",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "PROVENANCE_ENGINE",
-      "wire": "83,195..197,199"
+      "wire": "83,195..197,199",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "license metadata",
@@ -2857,12 +3105,16 @@
       "canonical_name": "DATASET_LICENSE_ENGINE",
       "capability_id": 199,
       "hardening": "source license, compatibility, restrictions and unresolved status",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE+KNOWLEDGE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "ASR",
       "type": "POLICY_ENGINE",
-      "wire": "90,195,198"
+      "wire": "90,195,198",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2870,12 +3122,16 @@
       "canonical_name": "DATASET_CONTAMINATION_ANALYZER",
       "capability_id": 200,
       "hardening": "train/eval overlap and benchmark leakage detection with uncertainty",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "ANALYZER",
-      "wire": "195,197,201,203"
+      "wire": "195,197,201,203",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2883,12 +3139,16 @@
       "canonical_name": "DATASET_QUALITY_SCORER",
       "capability_id": 201,
       "hardening": "quality vector not single opaque score; provenance/completeness/noise/bias fields",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "METRIC_ENGINE",
-      "wire": "195,198,200"
+      "wire": "195,198,200",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "model provider if needed",
@@ -2896,12 +3156,16 @@
       "canonical_name": "SYNTHETIC_DATA_GENERATOR",
       "capability_id": 202,
       "hardening": "prompt/model/source identity, synthetic marking and bounded generation",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE+MODEL_ASSET",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "GENERATION_ENGINE",
-      "wire": "195,203,251..260"
+      "wire": "195,203,251..260",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2909,12 +3173,16 @@
       "canonical_name": "SYNTHETIC_DATA_VALIDATOR",
       "capability_id": 203,
       "hardening": "quality, leakage, self-contamination and distribution checks independent from generator",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "VALIDATION_ENGINE",
-      "wire": "200,201,202,247"
+      "wire": "200,201,202,247",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -2922,12 +3190,16 @@
       "canonical_name": "TRAINING_RECIPE_REGISTRY",
       "capability_id": 204,
       "hardening": "dataset/model/toolchain/hyperparameter/seed/environment identities",
-      "implementation_state": "DECLARED",
-      "materialization": "SCHEMA+KNOWLEDGE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "REGISTRY",
-      "wire": "191,195,205..217"
+      "wire": "191,195,205..217",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "training framework when selected",
@@ -2935,12 +3207,16 @@
       "canonical_name": "PRETRAINING_ENGINE_INTERFACE",
       "capability_id": 205,
       "hardening": "framework-neutral train/checkpoint/metrics/recovery contract",
-      "implementation_state": "DECLARED",
-      "materialization": "SCHEMA+CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "INTERFACE",
-      "wire": "204,214,223"
+      "wire": "204,214,223",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "training library per recipe",
@@ -2948,12 +3224,16 @@
       "canonical_name": "FINETUNING_ENGINE",
       "capability_id": 206,
       "hardening": "input model/dataset/recipe exact identity and evaluation-before-promotion",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE+EXT_LIB",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "MODEL_ENGINE",
-      "wire": "204,207..213,229,230"
+      "wire": "204,207..213,229,230",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "PEFT implementation as provider",
@@ -2961,12 +3241,16 @@
       "canonical_name": "PEFT_ENGINE",
       "capability_id": 207,
       "hardening": "adapter/base-model coupling, merge status and reproducibility",
-      "implementation_state": "DECLARED",
-      "materialization": "COMPOSE+EXT_LIB",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "MODEL_ENGINE",
-      "wire": "206,208..210"
+      "wire": "206,208..210",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "admitted ML library",
@@ -2974,12 +3258,16 @@
       "canonical_name": "LORA_PROVIDER",
       "capability_id": 208,
       "hardening": "rank/targets/scaling/base hash/config recorded",
-      "implementation_state": "DECLARED",
-      "materialization": "EXT_LIB/COMPOSE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "ALGORITHM_PROVIDER",
-      "wire": "207,210"
+      "wire": "207,210",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "admitted ML library",
@@ -2987,12 +3275,16 @@
       "canonical_name": "QLORA_PROVIDER",
       "capability_id": 209,
       "hardening": "quantization config + LoRA config + base hash",
-      "implementation_state": "DECLARED",
-      "materialization": "EXT_LIB/COMPOSE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "ALGORITHM_PROVIDER",
-      "wire": "207,208,225"
+      "wire": "207,208,225",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "DoRA/AdaLoRA-equivalent only after benchmark",
@@ -3000,12 +3292,16 @@
       "canonical_name": "ADVANCED_LORA_PROVIDER",
       "capability_id": 210,
       "hardening": "algorithm identity and no silent substitution among variants",
-      "implementation_state": "DECLARED",
-      "materialization": "EXT_LIB/COMPOSE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "ALGORITHM_PROVIDER_INTERFACE",
-      "wire": "207..209,230"
+      "wire": "207..209,230",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "training provider",
@@ -3013,12 +3309,16 @@
       "canonical_name": "SFT_ENGINE",
       "capability_id": 211,
       "hardening": "loss/data formatting/epochs/seeds/checkpoints/metrics explicit",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE+EXT_LIB",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "TRAINING_ENGINE",
-      "wire": "204,206,229"
+      "wire": "204,206,229",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "training provider",
@@ -3026,12 +3326,16 @@
       "canonical_name": "DPO_ENGINE",
       "capability_id": 212,
       "hardening": "preference dataset, reference model, beta/config and evaluation trace",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE+EXT_LIB",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "TRAINING_ENGINE",
-      "wire": "204,206,214"
+      "wire": "204,206,214",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "compatible training provider",
@@ -3039,12 +3343,16 @@
       "canonical_name": "GRPO_ENGINE",
       "capability_id": 213,
       "hardening": "group/reward definitions and algorithm version explicit",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE+EXT_LIB",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "TRAINING_ENGINE",
-      "wire": "204,206,214,215"
+      "wire": "204,206,214,215",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "training/runtime providers",
@@ -3052,12 +3360,16 @@
       "canonical_name": "REWARD_MODEL_ENGINE",
       "capability_id": 214,
       "hardening": "reward labels, model lineage, calibration and bias/robustness evaluation",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE+MODEL_ASSET",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "MODEL_ENGINE",
-      "wire": "212,213,215"
+      "wire": "212,213,215",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "provider as needed",
@@ -3065,12 +3377,16 @@
       "canonical_name": "PROCESS_REWARD_MODEL_ENGINE",
       "capability_id": 215,
       "hardening": "step-level labels, aggregation rules and evaluator uncertainty",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE+MODEL_ASSET",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "MODEL_ENGINE",
-      "wire": "214,235..238"
+      "wire": "214,235..238",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "training libraries",
@@ -3078,12 +3394,16 @@
       "canonical_name": "DISTILLATION_FACTORY",
       "capability_id": 216,
       "hardening": "teacher/student IDs, targets, loss, retained benchmarks and failure floors",
-      "implementation_state": "DECLARED",
-      "materialization": "BUILD_ONLY+CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "FACTORY",
-      "wire": "217,229,230"
+      "wire": "217,229,230",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE beyond teachers/runtime",
@@ -3091,12 +3411,16 @@
       "canonical_name": "MULTI_TEACHER_DISTILLATION",
       "capability_id": 217,
       "hardening": "teacher independence, weighting and conflict preservation",
-      "implementation_state": "DECLARED",
-      "materialization": "COMPOSE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "TRAINING_ENGINE",
-      "wire": "216,234,248"
+      "wire": "216,234,248",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "ML framework",
@@ -3104,12 +3428,16 @@
       "canonical_name": "MIXTURE_OF_EXPERTS_FACTORY",
       "capability_id": 218,
       "hardening": "expert identity, routing, capacity, load balance and fallback",
-      "implementation_state": "DECLARED",
-      "materialization": "BUILD_ONLY+CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "FACTORY",
-      "wire": "219,243"
+      "wire": "219,243",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -3117,12 +3445,16 @@
       "canonical_name": "ROUTING_ENGINE_FACTORY",
       "capability_id": 219,
       "hardening": "router features, training data, confidence, fallbacks and audit",
-      "implementation_state": "DECLARED",
-      "materialization": "BUILD_ONLY+CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "FACTORY",
-      "wire": "218,233,239..244"
+      "wire": "218,233,239..244",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "merge library when admitted",
@@ -3130,12 +3462,16 @@
       "canonical_name": "MODEL_MERGING_ENGINE",
       "capability_id": 220,
       "hardening": "source hashes, coefficients, algorithm/version, benchmark and reversibility",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE+EXT_LIB",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "MODEL_ENGINE",
-      "wire": "221,223,229,230"
+      "wire": "221,223,229,230",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -3143,12 +3479,16 @@
       "canonical_name": "MODEL_COMPOSITION_ENGINE",
       "capability_id": 221,
       "hardening": "component contracts and routing/composition semantics without identity collapse",
-      "implementation_state": "DECLARED",
-      "materialization": "COMPOSE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "MODEL_ENGINE",
-      "wire": "193,218..220"
+      "wire": "193,218..220",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "model tooling",
@@ -3156,12 +3496,16 @@
       "canonical_name": "MODEL_SURGERY_ENGINE",
       "capability_id": 222,
       "hardening": "structural transform plan, tensor mapping, before/after hashes and rollback source",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE+EXT_LIB",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "MODEL_ENGINE",
-      "wire": "193,223,225..230"
+      "wire": "193,223,225..230",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "format libraries",
@@ -3169,12 +3513,16 @@
       "canonical_name": "CHECKPOINT_TRANSFORMER",
       "capability_id": 223,
       "hardening": "deterministic tensor mapping, metadata preservation and validation",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE+EXT_LIB",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "MODEL_TOOL",
-      "wire": "5,192,222,224"
+      "wire": "5,192,222,224",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "runtime conversion tool",
@@ -3182,12 +3530,16 @@
       "canonical_name": "MODEL_CONVERTER",
       "capability_id": 224,
       "hardening": "format/runtime compatibility, precision changes and differential inference tests",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE+EXT_LIB",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "MODEL_TOOL",
-      "wire": "6,46,223,228"
+      "wire": "6,46,223,228",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "quantization provider",
@@ -3195,12 +3547,16 @@
       "canonical_name": "MODEL_QUANTIZER",
       "capability_id": 225,
       "hardening": "scheme/bit-width/group/calibration exact; quality/resource benchmark required",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE+EXT_LIB",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "MODEL_OPTIMIZER",
-      "wire": "47,209,222,229,230"
+      "wire": "47,209,222,229,230",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "pruning provider",
@@ -3208,12 +3564,16 @@
       "canonical_name": "MODEL_PRUNER",
       "capability_id": 226,
       "hardening": "pruning criterion/mask/structure and capability floor tests",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE+EXT_LIB",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "MODEL_OPTIMIZER",
-      "wire": "47,222,229,230"
+      "wire": "47,222,229,230",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "sparsity provider",
@@ -3221,12 +3581,16 @@
       "canonical_name": "MODEL_SPARSIFIER",
       "capability_id": 227,
       "hardening": "sparsity pattern/runtime compatibility and benchmark",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE+EXT_LIB",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "MODEL_OPTIMIZER",
-      "wire": "47,222,228..230"
+      "wire": "47,222,228..230",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "compiler selected for runtime/hardware",
@@ -3234,12 +3598,16 @@
       "canonical_name": "MODEL_COMPILER",
       "capability_id": 228,
       "hardening": "compiler/version/target/flags and numerical equivalence tests",
-      "implementation_state": "DECLARED",
-      "materialization": "EXT_BIN/EXT_LIB+ADAPTER",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "MODEL_TOOLCHAIN",
-      "wire": "46,224,227,229"
+      "wire": "46,224,227,229",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "benchmark suites/datasets under provenance",
@@ -3247,12 +3615,16 @@
       "canonical_name": "MODEL_BENCHMARK_ENGINE",
       "capability_id": 229,
       "hardening": "frozen workloads, environment identity, repetitions and statistical uncertainty",
-      "implementation_state": "DECLARED",
-      "materialization": "CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "BENCHMARK_ENGINE",
-      "wire": "48,230,284,285"
+      "wire": "48,230,284,285",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "NONE",
@@ -3260,12 +3632,16 @@
       "canonical_name": "MODEL_EVALUATION_MATRIX",
       "capability_id": 230,
       "hardening": "quality/latency/RAM/size/safety/robustness/domain metrics, no single-score collapse",
-      "implementation_state": "DECLARED",
-      "materialization": "SCHEMA+CODE",
+      "implementation_state": "EVIDENCED",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
       "owner": "REPOSITORY",
       "repository_binding": "CAP",
       "type": "EVALUATION_SCHEMA",
-      "wire": "48,49,229"
+      "wire": "48,49,229",
+      "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+      "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "acquire": "models/providers per architecture",

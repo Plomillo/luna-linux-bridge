@@ -1,0 +1,59 @@
+name: SUPER1200 — succession gate
+# One push revalidates every pending reviewed scope, one scope at a time.
+# Never promotes global certification. Does not chain on itself.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 * * * *"
+  push:
+    branches:
+      - custosz/super-1200-implementation-20261007
+    paths:
+      - "continuity/REVIEWED_TRANCHES.json"
+      - "continuity/runtime-evidence/D05/capability-0137.json"
+      - "continuity/runtime-evidence/D06/capability-0177.json"
+      - "continuity/g23_g24_next_pending.py"
+      - "continuity/succession_monitor.py"
+      - ".github/workflows/super1200-succession-gate.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: super1200-succession-gate
+  cancel-in-progress: false
+
+jobs:
+  certify-reviewed-scopes:
+    name: Monitor and certify pending scopes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: custosz/super-1200-implementation-20261007
+          fetch-depth: 0
+      - name: Prove the D05 stall is gone and D07 was not invented
+        run: python3 -B continuity/succession_monitor.py
+      - name: Revalidate and persist each pending scope
+        run: |
+          set -Eeuo pipefail
+          for i in $(seq 1 24); do
+            GATE_STAGE=G23 python3 -B continuity/g23_g24_next_pending.py
+            if python3 -c 'import json; raise SystemExit(0 if json.load(open("g23-validation.json")).get("result")=="IDLE" else 1)'; then
+              echo "SUCCESSION_GATE_IDLE"
+              break
+            fi
+            GATE_STAGE=PERSIST python3 -B continuity/g23_g24_next_pending.py
+          done
+          git add continuity/STATE.json continuity/certification
+          if git diff --cached --quiet; then
+            echo "SUCCESSION_PERSIST_NO_CHANGE"
+            exit 0
+          fi
+          git config user.name "super1200-g24-certifier"
+          git config user.email "super1200-g24-certifier@users.noreply.github.com"
+          git commit -m "cert(super1200): certify reviewed D05/D06 scopes only"
+          git pull --rebase origin custosz/super-1200-implementation-20261007
+          git push origin HEAD:refs/heads/custosz/super-1200-implementation-20261007

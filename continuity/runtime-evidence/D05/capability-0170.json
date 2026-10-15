@@ -1,0 +1,21 @@
+{
+  "canonical_name": "ARCHITECTURAL_BLAST_RADIUS",
+  "capability_id": 170,
+  "certification_granted": false,
+  "domain_id": "D05",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "b0472b98d10ace11ec39a020355a5b4e232c770d3e6efa5567935c858319c1ae",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d05_137_176.py",
+  "module_sha256": "5d0796c24a2902769fd779cd09becf72782cb3a68a1ff797e469f1e4d6860d41",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d05_137_176.py",
+  "test_case": "test_cap_0170",
+  "test_sha256": "4d0c5335219676800f256a76ea46421f5bc1b77048b4e7b2f95ac2b295fd4d89",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-15T13:23:36.061326+00:00"
+}

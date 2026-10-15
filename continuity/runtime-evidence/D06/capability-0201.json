@@ -1,0 +1,21 @@
+{
+  "canonical_name": "DATASET_QUALITY_SCORER",
+  "capability_id": 201,
+  "certification_granted": false,
+  "domain_id": "D06",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "1c5a4b5bacbd6b3e50308b7dbdf2b2369a0a458bdd1b826b478a93e8dbff17c8",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d06_177_230.py",
+  "module_sha256": "a6ea1791c74446210ef2ae7e765f8c3e062e4e67994e161a6e147935b8d0182b",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d06_177_230.py",
+  "test_case": "test_cap_0201",
+  "test_sha256": "3c4ebbedb4d9c9391c86f1d17a612a3416da4fb40b430ce4494834d89d998bc7",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-15T13:23:40.309121+00:00"
+}
