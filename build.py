@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build CUSTOSZV8.pyz from the exact repository candidate."""
 from __future__ import annotations
-import hashlib, json, os, shutil, subprocess, sys, zipapp, zipfile
+import hashlib, json, os, shutil, subprocess, sys, zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -30,6 +30,59 @@ COMPONENT_SPECS = {
     }
 }
 
+
+MIN_ZIP_EPOCH = 315532800  # 1980-01-01T00:00:00Z: lower ZIP/DOS timestamp bound.
+
+def source_date_epoch() -> int:
+    """Return an immutable build epoch from the commit, with a stable local fallback."""
+    raw = os.environ.get("SOURCE_DATE_EPOCH")
+    if raw:
+        try:
+            value = int(raw)
+        except ValueError as exc:
+            raise SystemExit("SOURCE_DATE_EPOCH must be an integer") from exc
+        if value < 0:
+            raise SystemExit("SOURCE_DATE_EPOCH must be non-negative")
+        return max(value, MIN_ZIP_EPOCH)
+    commit = os.environ.get("GITHUB_SHA")
+    if commit and commit != "LOCAL_UNBOUND":
+        try:
+            result = subprocess.run(
+                ["git", "show", "-s", "--format=%ct", commit],
+                cwd=ROOT, capture_output=True, text=True, timeout=10, check=True
+            )
+            return max(int(result.stdout.strip()), MIN_ZIP_EPOCH)
+        except (OSError, ValueError, subprocess.SubprocessError):
+            raise SystemExit("Cannot resolve immutable commit time; set SOURCE_DATE_EPOCH explicitly")
+    return MIN_ZIP_EPOCH
+
+def timestamp_utc(epoch: int) -> str:
+    return datetime.fromtimestamp(epoch, timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+
+def create_deterministic_zipapp(source_dir: Path, target: Path, epoch: int) -> None:
+    """Create a reproducible, executable ZIPAPP with sorted entries and normalized metadata."""
+    dt = datetime.fromtimestamp(max(epoch, MIN_ZIP_EPOCH), timezone.utc)
+    if dt.year > 2107:
+        dt = dt.replace(year=2107, month=12, day=31, hour=23, minute=59, second=58)
+    zip_date = (dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second - (dt.second % 2))
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with target.open("wb") as output:
+        output.write(b"#!/usr/bin/env python3\n")
+        with zipfile.ZipFile(output, mode="w", compression=zipfile.ZIP_DEFLATED,
+                             compresslevel=9, strict_timestamps=True) as archive:
+            paths = sorted(p for p in source_dir.rglob("*") if p.is_file())
+            for path in paths:
+                if path.is_symlink():
+                    raise SystemExit(f"symlink forbidden in package source: {path}")
+                rel = path.relative_to(source_dir).as_posix()
+                info = zipfile.ZipInfo(rel, date_time=zip_date)
+                info.compress_type = zipfile.ZIP_DEFLATED
+                info.create_system = 3
+                info.external_attr = (0o100644 << 16)
+                info.flag_bits |= 0x800
+                archive.writestr(info, path.read_bytes(), compress_type=zipfile.ZIP_DEFLATED,
+                                 compresslevel=9)
+
 def main() -> int:
     build_root = ROOT / "build/custoszv8-pyz-root"
     dist = ROOT / "dist"
@@ -38,7 +91,7 @@ def main() -> int:
     build_root.mkdir(parents=True)
     dist.mkdir(parents=True, exist_ok=True)
     package_dir = build_root / "custoszv8"
-    shutil.copytree(SRC / "custoszv8", package_dir)
+    shutil.copytree(SRC / "custoszv8", package_dir, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
     components = {}
     blockers = []
     for name, spec in COMPONENT_SPECS.items():
@@ -80,13 +133,16 @@ def main() -> int:
     contracts_doc = json.loads((package_dir / "data/contract_registry.json").read_text(encoding="utf-8"))
     runtime_policy_doc = json.loads((package_dir / "data/runtime_policy.json").read_text(encoding="utf-8"))
     translation_policy_doc = json.loads((package_dir / "data/translation_policy.json").read_text(encoding="utf-8"))
+    build_epoch = source_date_epoch()
     manifest = {
         "schema_version": "1.0.0",
         "artifact_id": "CUSTOSZV8",
         "artifact_version": "8.0.0-candidate",
         "artifact_status": "CANDIDATE_BUILD",
         "package_status": "CANDIDATE_BLOCKED_PENDING_FULL_INTEGRATION_AND_G23_G24",
-        "generated_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00","Z"),
+        "generated_at_utc": timestamp_utc(build_epoch),
+        "source_date_epoch": build_epoch,
+        "deterministic_archive_metadata": True,
         "source_commit": os.environ.get("GITHUB_SHA", "LOCAL_UNBOUND"),
         "source_branch": os.environ.get("GITHUB_REF_NAME", "LOCAL"),
         "canonical_authority_ref": {
@@ -144,7 +200,7 @@ def main() -> int:
     (build_root / "__main__.py").write_text(launcher, encoding="utf-8")
     target = dist / "CUSTOSZV8.pyz"
     if target.exists(): target.unlink()
-    zipapp.create_archive(build_root, target=target, interpreter="/usr/bin/env python3", compressed=True)
+    create_deterministic_zipapp(build_root, target, build_epoch)
     target.chmod(0o755)
     with zipfile.ZipFile(target) as archive:
         bad = archive.testzip()
@@ -165,6 +221,9 @@ def main() -> int:
         "sha256": sha256_file(target),
         "size_bytes": target.stat().st_size,
         "source_commit": os.environ.get("GITHUB_SHA", "LOCAL_UNBOUND"),
+        "source_date_epoch": build_epoch,
+        "built_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
+        "python_version": sys.version,
         "internal_selftest": json.loads(check.stdout),
         "native_integration": "NOT_CERTIFIED",
         "g23": "NOT_GRANTED",
