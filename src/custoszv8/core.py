@@ -235,6 +235,7 @@ class TranslationEngine:
         ("fallo cerrado", "fail-closed"),
         ("reintento acotado", "bounded retry"),
         ("evidencia trazable", "traceable evidence"),
+        (" y,", " and,"),
         ("sin regresión", "without regression"),
         ("conserva los identificadores", "preserve the identifiers"),
         ("no sobrescribas", "do not overwrite"),
