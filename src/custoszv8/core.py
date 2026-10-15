@@ -370,8 +370,43 @@ def _read_name(data: bytes, offset: int) -> tuple[str, int]:
 
 def inspect_wasm(path: str | Path) -> dict[str, Any]:
     raw = Path(path).read_bytes()
-    if len(raw) < 8 or raw[:4] != b"\x00asm" or raw[4:8] != b"\x01\x00\x00\x00":
-        raise V8Error("V8E014", "invalid/unsupported WebAssembly header")
+    if len(raw) < 8 or raw[:4] != b"\x00asm":
+        raise V8Error("V8E014", "invalid WebAssembly magic or truncated header")
+    # MetaOS uses the WebAssembly Component Model marker, not the core-module marker.
+    if raw[4:8] == b"\x0d\x00\x01\x00":
+        offset, sections, embedded = 8, [], []
+        while offset < len(raw):
+            section_id = raw[offset]
+            offset += 1
+            size, offset = _read_leb(raw, offset)
+            end = offset + size
+            if end > len(raw):
+                raise V8Error("V8E014", "WASM component section exceeds module size")
+            payload = raw[offset:end]
+            sections.append({"section_id": section_id, "size_bytes": size,
+                             "sha256": sha256_bytes(payload)})
+            if section_id == 1 and payload.startswith(b"\x00asm"):
+                with tempfile.TemporaryDirectory() as td:
+                    nested_path = Path(td) / "embedded-core-module.wasm"
+                    nested_path.write_bytes(payload)
+                    nested = inspect_wasm(nested_path)
+                    embedded.append({
+                        "sha256": nested["sha256"], "size_bytes": nested["size_bytes"],
+                        "imports": nested.get("imports", []), "exports": nested.get("exports", []),
+                        "function_signatures_verified": False
+                    })
+            offset = end
+        return {
+            "path": str(path), "sha256": sha256_bytes(raw), "size_bytes": len(raw),
+            "format": "WASM_COMPONENT_MODEL", "version_encoding": "0d000100",
+            "sections": sections, "embedded_core_modules": embedded,
+            "component_import_export_contract": "NOT_FULLY_PARSED",
+            "function_signatures_verified": False,
+            "status": "STATIC_COMPONENT_FORMAT_RECOGNIZED_ABI_INCOMPLETE",
+            "execution_authorized": False
+        }
+    if raw[4:8] != b"\x01\x00\x00\x00":
+        raise V8Error("V8E014", "unsupported WebAssembly core/component version")
     imports, exports, offset = [], [], 8
     while offset < len(raw):
         section_id = raw[offset]
