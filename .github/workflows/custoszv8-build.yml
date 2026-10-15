@@ -1,0 +1,87 @@
+name: "CUSTOSZ V8 candidate build and validation"
+
+on:
+  push:
+    branches:
+      - "feature/custoszv8-candidate-*"
+    paths:
+      - "src/custoszv8/**"
+      - "tests/**"
+      - "scripts/validate_components.py"
+      - "build.py"
+      - ".github/workflows/custoszv8-build.yml"
+      - "artifacts/custosz-v7/**"
+  pull_request:
+    branches:
+      - "staging/custosz-v7-metaos-20260927"
+    paths:
+      - "src/custoszv8/**"
+      - "tests/**"
+      - "scripts/validate_components.py"
+      - "build.py"
+      - ".github/workflows/custoszv8-build.yml"
+      - "artifacts/custosz-v7/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: custoszv8-${ github.ref }
+  cancel-in-progress: false
+
+jobs:
+  build-test:
+    name: Unit tests, package build and bounded component checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact triggering commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: false
+
+      - name: Compile source and tests
+        run: python -m compileall -q src tests build.py scripts/validate_components.py
+
+      - name: Run V8 unit tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Build standalone ZIPAPP
+        env:
+          GITHUB_SHA: ${ github.sha }
+          GITHUB_REF_NAME: ${ github.ref_name }
+        run: python build.py
+
+      - name: Exercise built package CLI and selftest
+        run: |
+          set -Eeuo pipefail
+          python dist/CUSTOSZV8.pyz selftest
+          python dist/CUSTOSZV8.pyz status
+          python dist/CUSTOSZV8.pyz inspect-component artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz
+          python dist/CUSTOSZV8.pyz inspect-component artifacts/custosz-v7/CUSTOSZ_RUNTIME_V1_SR_EXEC_BOUND_FME_01.b.pyz
+          python dist/CUSTOSZV8.pyz inspect-wasm artifacts/custosz-v7/MetaOS.wasm
+
+      - name: Test actual CUSTOSZ V7 read-only commands and inspect Runtime and MetaOS
+        env:
+          GITHUB_SHA: ${ github.sha }
+        run: python scripts/validate_components.py
+
+      - name: Upload CUSTOSZV8.pyz and evidence reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: CUSTOSZV8-candidate-${ github.sha }
+          path: |
+            dist/CUSTOSZV8.pyz
+            evidence/custoszv8-selftest.json
+            evidence/custoszv8-build-report.json
+            evidence/custoszv8-component-checks.json
+          if-no-files-found: warn
+          retention-days: 30
