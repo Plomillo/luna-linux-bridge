@@ -42,7 +42,7 @@ def build_parser():
     cap = sub.add_parser("capability-validate", help="check unique ownership records")
     cap.add_argument("path", type=Path)
     native = sub.add_parser("native-readonly", help="explicitly invoke one allowlisted native V7 read-only command")
-    native.add_argument("path", type=Path); native.add_argument("command", choices=["v07-status", "v07-selftest"])
+    native.add_argument("path", type=Path); native.add_argument("native_command", choices=["v07-status", "v07-selftest"])
     native.add_argument("--expected-sha256", required=True); native.add_argument("--authorization-ref", required=True)
     native.add_argument("--timeout", type=float, default=10.0)
     gh = sub.add_parser("github-repo", help="read repository metadata through HTTPS")
@@ -137,7 +137,7 @@ def main(argv=None):
             emit({"status":"PASS" if not issues else "CONFLICT","issues":issues})
             return 0 if not issues else 2
         if args.command == "native-readonly":
-            emit(run_native_readonly(args.path,args.command if False else args.command,expected_sha256=args.expected_sha256,
+            emit(run_native_readonly(args.path,args.native_command,expected_sha256=args.expected_sha256,
                                      authorization_ref=args.authorization_ref,timeout_seconds=args.timeout))
             return 0
         if args.command == "github-repo":
