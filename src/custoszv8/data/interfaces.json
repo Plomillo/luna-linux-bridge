@@ -1,0 +1,67 @@
+{
+  "schema_version": "1.0.0",
+  "registry_id": "CUSTOSZV8-INTERFACE-REGISTRY-1",
+  "interfaces": [
+    {
+      "interface_id": "V8.CORE.CLI.1",
+      "provider": "CUSTOSZV8",
+      "transport": "PYTHON_ZIP_APPLICATION_CLI",
+      "status": "IMPLEMENTED",
+      "operations": [
+        "selftest",
+        "status",
+        "manifest",
+        "validate-manifest",
+        "inspect-component",
+        "inspect-wasm",
+        "translate",
+        "code-to-english",
+        "journal-verify",
+        "journal-append",
+        "capability-validate",
+        "mission-validate"
+      ]
+    },
+    {
+      "interface_id": "V8.V7.READONLY.CLI.1",
+      "provider": "CUSTOSZ_V7",
+      "transport": "SUBPROCESS",
+      "operations": [
+        "v07-status",
+        "v07-selftest"
+      ],
+      "status": "ALLOWLISTED_READ_ONLY_REQUIRES_EXPLICIT_OPT_IN_AND_AUTHORIZATION"
+    },
+    {
+      "interface_id": "V8.RUNTIME.NATIVE.1",
+      "provider": "RUNTIME_V1_SELECTED_STAGING",
+      "transport": "NATIVE_PYZ_API",
+      "operations": [],
+      "status": "BLOCKED_NATIVE_INTERFACE_NOT_MAPPED"
+    },
+    {
+      "interface_id": "V8.METAOS.COMPONENT.1",
+      "provider": "METAOS_WASM",
+      "transport": "WASM_COMPONENT_MODEL",
+      "operations": [],
+      "status": "STATIC_CONTAINER_RECOGNIZED_COMPONENT_ABI_INCOMPLETE"
+    },
+    {
+      "interface_id": "V8.GITHUB.API.1",
+      "provider": "GITHUB_API",
+      "transport": "HTTPS_JSON",
+      "operations": [
+        "inspect_repository",
+        "inspect_branch",
+        "workflow_runs",
+        "dispatch_workflow"
+      ],
+      "status": "READ_REQUIRES_NETWORK; WRITE_REQUIRES_TOKEN_AND_AUTHORIZATION_REF"
+    }
+  ],
+  "rules": [
+    "Every native operation must be discovered and tested against the exact bytes.",
+    "Unsupported operations are blocked; no mocks count as operational integration.",
+    "All writes require authorization; source tokens are never stored in manifests."
+  ]
+}
