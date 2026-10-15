@@ -636,3 +636,216 @@ def selftest() -> dict[str, Any]:
             "checks_passed":sum(x["status"]=="PASS" for x in results),"checks_total":len(results),
             "checks":results,"g23":"NOT_GRANTED","g24":"NOT_GRANTED","certification":"NOT_GRANTED",
             "native_integration":"NOT_CLAIMED_BY_SELFTEST"}
+
+
+class MissionWatchdog:
+    """Mission-level liveness observer with finite deadlines and explicit wait states."""
+    def __init__(self, journal: EvidenceJournal | None = None):
+        self.journal = journal
+        self._missions: dict[str, dict[str, Any]] = {}
+
+    @staticmethod
+    def _epoch(value: str) -> float:
+        try:
+            dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except (ValueError, AttributeError) as exc:
+            raise V8Error("V8E010", "deadline must be ISO-8601 with timezone") from exc
+        if dt.tzinfo is None:
+            raise V8Error("V8E010", "deadline must include timezone")
+        return dt.timestamp()
+
+    def start(self, mission_id: str, deadline_utc: str, no_progress_seconds: float = 60,
+              now_epoch: float | None = None) -> dict[str, Any]:
+        if not mission_id or mission_id in self._missions:
+            raise V8Error("V8E030", "mission_id must be unique and non-empty")
+        if no_progress_seconds <= 0:
+            raise V8Error("V8E010", "no-progress threshold must be positive")
+        now = datetime.now(timezone.utc).timestamp() if now_epoch is None else float(now_epoch)
+        deadline = self._epoch(deadline_utc)
+        self._missions[mission_id] = {
+            "mission_id": mission_id, "deadline_epoch": deadline,
+            "last_progress_epoch": now, "no_progress_seconds": float(no_progress_seconds),
+            "state": "RUNNING", "waiting_on": None, "wait_deadline_epoch": None,
+            "resume_condition": None, "progress_sequence": 0
+        }
+        self._event("WATCHDOG_STARTED", {"deadline_utc": deadline_utc,
+                                         "no_progress_seconds": no_progress_seconds}, mission_id)
+        return self.snapshot(mission_id)
+
+    def progress(self, mission_id: str, state: str, evidence_ref: str,
+                 now_epoch: float | None = None) -> dict[str, Any]:
+        item = self._get(mission_id)
+        if not state or not evidence_ref:
+            raise V8Error("V8E019", "meaningful progress requires state and evidence_ref")
+        now = datetime.now(timezone.utc).timestamp() if now_epoch is None else float(now_epoch)
+        item.update({"last_progress_epoch": now, "state": state, "waiting_on": None,
+                     "wait_deadline_epoch": None, "resume_condition": None,
+                     "progress_sequence": item["progress_sequence"] + 1})
+        self._event("MISSION_PROGRESS", {"state": state, "evidence_ref": evidence_ref,
+                                         "progress_sequence": item["progress_sequence"]}, mission_id)
+        return self.snapshot(mission_id)
+
+    def wait_for(self, mission_id: str, dependency_id: str, resume_condition: str,
+                 wait_deadline_utc: str) -> dict[str, Any]:
+        item = self._get(mission_id)
+        if not dependency_id or not resume_condition:
+            raise V8Error("V8E012", "wait requires dependency and resume condition")
+        wait_deadline = self._epoch(wait_deadline_utc)
+        if wait_deadline > item["deadline_epoch"]:
+            raise V8Error("V8E010", "dependency wait cannot outlive the mission deadline")
+        item.update({"state": "WAITING_FOR_DEPENDENCY", "waiting_on": dependency_id,
+                     "wait_deadline_epoch": wait_deadline, "resume_condition": resume_condition})
+        self._event("MISSION_WAITING", {"dependency_id": dependency_id,
+                                        "resume_condition": resume_condition,
+                                        "wait_deadline_utc": wait_deadline_utc}, mission_id)
+        return self.snapshot(mission_id)
+
+    def observe(self, mission_id: str, now_epoch: float | None = None) -> dict[str, Any]:
+        item = self._get(mission_id)
+        now = datetime.now(timezone.utc).timestamp() if now_epoch is None else float(now_epoch)
+        if now >= item["deadline_epoch"]:
+            state, reason = "DEADLINE_EXCEEDED", "mission deadline elapsed"
+        elif item["state"] == "WAITING_FOR_DEPENDENCY":
+            if now >= item["wait_deadline_epoch"]:
+                state, reason = "DEPENDENCY_TIMEOUT", "declared dependency wait expired"
+            else:
+                state, reason = "WAITING_FOR_DEPENDENCY", "declared dependency wait remains within budget"
+        elif now - item["last_progress_epoch"] >= item["no_progress_seconds"]:
+            state, reason = "NO_MEANINGFUL_PROGRESS", "no validated state/evidence progress within threshold"
+        else:
+            state, reason = "ACTIVE", "within deadline and progress threshold"
+        result = {"mission_id": mission_id, "observed_at_utc": utc_now(), "state": state,
+                  "reason": reason, "last_progress_sequence": item["progress_sequence"],
+                  "waiting_on": item["waiting_on"], "resume_condition": item["resume_condition"]}
+        if state in {"DEADLINE_EXCEEDED", "DEPENDENCY_TIMEOUT", "NO_MEANINGFUL_PROGRESS"}:
+            self._event("WATCHDOG_ALERT", result, mission_id)
+        return result
+
+    def snapshot(self, mission_id: str) -> dict[str, Any]:
+        item = self._get(mission_id)
+        return {"mission_id": mission_id, "state": item["state"],
+                "progress_sequence": item["progress_sequence"],
+                "waiting_on": item["waiting_on"], "resume_condition": item["resume_condition"],
+                "deadline_epoch": item["deadline_epoch"],
+                "last_progress_epoch": item["last_progress_epoch"]}
+
+    def _get(self, mission_id: str) -> dict[str, Any]:
+        if mission_id not in self._missions:
+            raise V8Error("V8E030", f"unknown watchdog mission: {mission_id}")
+        return self._missions[mission_id]
+
+    def _event(self, event_type: str, payload: dict[str, Any], mission_id: str) -> None:
+        if self.journal is not None:
+            self.journal.append(event_type, payload, mission_id=mission_id)
+
+
+class RetryController:
+    """Enforces finite retry budgets and idempotency-aware denial."""
+    @staticmethod
+    def decide(idempotency_class: str, attempts_used: int, max_attempts: int,
+               transient_failure: bool, authorization_ref: str | None = None,
+               idempotency_key: str | None = None) -> dict[str, Any]:
+        if max_attempts < 1 or attempts_used < 1:
+            raise V8Error("V8E013", "attempt counters must be positive and budget finite")
+        if attempts_used >= max_attempts:
+            return {"decision": "HOLD", "reason": "retry budget exhausted", "next_attempt": None}
+        if not transient_failure:
+            return {"decision": "DENY_RETRY", "reason": "failure is not classified transient", "next_attempt": None}
+        if idempotency_class in {"READ_ONLY", "IDEMPOTENT"}:
+            return {"decision": "RETRY_BOUNDED", "reason": "safe idempotency class and budget remain",
+                    "next_attempt": attempts_used + 1}
+        if idempotency_class == "NON_IDEMPOTENT" and authorization_ref and idempotency_key:
+            return {"decision": "REQUIRES_RECONCILIATION", "reason": "authorization and stable key still require side-effect reconciliation",
+                    "next_attempt": None}
+        return {"decision": "DENY_RETRY", "reason": "idempotency unknown or non-idempotent without complete controls",
+                "next_attempt": None}
+
+
+class RecoveryCoordinator:
+    """Verifies checkpoint identity; does not claim system restoration merely from a matching hash."""
+    @staticmethod
+    def verify_checkpoint(path: str | Path, expected_sha256: str) -> dict[str, Any]:
+        path = Path(path).resolve(strict=True)
+        if not is_sha256(expected_sha256):
+            raise V8Error("V8E023", "checkpoint expected SHA-256 is malformed")
+        observed = sha256_file(path)
+        return {"path": str(path), "expected_sha256": expected_sha256, "observed_sha256": observed,
+                "status": "PASS_CHECKPOINT_IDENTITY" if observed == expected_sha256 else "CONFLICT",
+                "restoration_proven": False,
+                "limitation": "checkpoint hash proves byte identity, not restored system behaviour"}
+
+    @staticmethod
+    def validate_plan(plan: dict[str, Any]) -> list[str]:
+        required = {"incident_id", "authorized_actor", "checkpoint_id", "checkpoint_sha256",
+                    "target_environment", "dependency_hashes", "restoration_oracles",
+                    "nonregression_plan_ref", "rollback_scope", "authority_ref", "deadline_utc"}
+        issues = [f"missing field: {x}" for x in sorted(required - plan.keys())]
+        for key in ("incident_id", "authorized_actor", "target_environment", "nonregression_plan_ref",
+                    "rollback_scope", "authority_ref", "deadline_utc"):
+            if key in plan and not plan[key]:
+                issues.append(f"{key} must be non-empty")
+        if plan.get("checkpoint_sha256") is not None and not is_sha256(plan["checkpoint_sha256"]):
+            issues.append("checkpoint_sha256 malformed")
+        if not isinstance(plan.get("dependency_hashes", []), list):
+            issues.append("dependency_hashes must be a list")
+        if not isinstance(plan.get("restoration_oracles", []), list) or not plan.get("restoration_oracles"):
+            issues.append("restoration_oracles must be non-empty")
+        return issues
+
+
+class ChangeImpactAnalyzer:
+    """Returns the claims whose evidence depends on changed component identities."""
+    @staticmethod
+    def analyze(change_id: str, changed_component_ids: Iterable[str],
+                claim_dependencies: dict[str, list[str]]) -> dict[str, Any]:
+        if not change_id:
+            raise V8Error("V8E030", "change_id required")
+        changed = set(changed_component_ids)
+        affected, unaffected = [], []
+        for claim_id, dependencies in claim_dependencies.items():
+            if changed.intersection(dependencies):
+                affected.append(claim_id)
+            else:
+                unaffected.append(claim_id)
+        return {"change_id": change_id, "changed_components": sorted(changed),
+                "invalidated_claims": sorted(affected), "unaffected_claims": sorted(unaffected),
+                "state": "IMPACT_ANALYZED", "automatic_certification_propagation": False}
+
+
+class RuntimeV1Adapter:
+    """Fail-closed Runtime adapter; no native invocation until API mapping is verified."""
+    def __init__(self, expected_sha256: str | None, native_interface_verified: bool = False):
+        self.expected_sha256 = expected_sha256
+        self.native_interface_verified = native_interface_verified
+
+    def preflight(self, path: str | Path) -> dict[str, Any]:
+        info = verify_component(path, self.expected_sha256)
+        if info.get("status") != "PASS_IDENTITY_AND_STATIC_INSPECTION":
+            return {"status": "HOLD", "reason": "Runtime identity is not verified", "inspection": info}
+        if not self.native_interface_verified:
+            return {"status": "HOLD", "reason": "Runtime native interface is not verified",
+                    "sha256": info["sha256"], "execution_authorized": False}
+        return {"status": "READY_FOR_AUTHORIZED_NATIVE_BINDING", "sha256": info["sha256"],
+                "execution_authorized": False}
+
+    def invoke(self, operation_id: str, *args, **kwargs) -> dict[str, Any]:
+        raise V8Error("V8E005", f"Runtime operation is not callable without verified native binding: {operation_id}")
+
+
+class MetaOSAdapter:
+    """Inspects core modules or component-model files; blocks invocation until the required ABI is verified."""
+    def inspect(self, path: str | Path) -> dict[str, Any]:
+        return inspect_wasm(path)
+
+    def can_invoke(self, inspection: dict[str, Any], export_name: str,
+                   signature_verified: bool = False, authorization_ref: str | None = None) -> dict[str, Any]:
+        exports = inspection.get("exports", [])
+        if inspection.get("format") == "WASM_COMPONENT_MODEL":
+            return {"status": "HOLD", "reason": "component-model import/export contract not fully parsed",
+                    "export_name": export_name, "execution_authorized": False}
+        match = [item for item in exports if item.get("name") == export_name]
+        if len(match) != 1 or not signature_verified or not authorization_ref:
+            return {"status": "DENY", "reason": "export, signature verification or authorization missing",
+                    "export_name": export_name, "execution_authorized": False}
+        return {"status": "READY_FOR_SEPARATE_SANDBOXED_INVOCATION",
+                "export_name": export_name, "execution_authorized": False}
