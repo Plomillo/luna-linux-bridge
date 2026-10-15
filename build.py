@@ -75,6 +75,11 @@ def main() -> int:
             blockers.append(f"{name} static inspection failed: {exc}")
         components[name] = record
 
+    ownership_doc = json.loads((package_dir / "data/capability_ownership.json").read_text(encoding="utf-8"))
+    interfaces_doc = json.loads((package_dir / "data/interfaces.json").read_text(encoding="utf-8"))
+    contracts_doc = json.loads((package_dir / "data/contract_registry.json").read_text(encoding="utf-8"))
+    runtime_policy_doc = json.loads((package_dir / "data/runtime_policy.json").read_text(encoding="utf-8"))
+    translation_policy_doc = json.loads((package_dir / "data/translation_policy.json").read_text(encoding="utf-8"))
     manifest = {
         "schema_version": "1.0.0",
         "artifact_id": "CUSTOSZV8",
@@ -102,7 +107,13 @@ def main() -> int:
             "local_control_promotion": "NOT_AUTHORIZED"
         },
         "components": components,
-        "capability_ownership": [],
+        "capability_ownership": ownership_doc.get("capabilities", []),
+        "interface_registry": interfaces_doc,
+        "contract_registry": contracts_doc,
+        "policies": {
+            "runtime": runtime_policy_doc,
+            "translation": translation_policy_doc
+        },
         "interfaces": {
             "V7": "ADAPTER_MUST_BIND_ONLY_TO_VERIFIED_NATIVE_INTERFACE",
             "RUNTIME_V1": "NATIVE_INTERFACE_TEST_REQUIRED",
