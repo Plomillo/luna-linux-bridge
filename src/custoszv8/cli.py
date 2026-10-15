@@ -7,7 +7,8 @@ from pathlib import Path
 from .core import (
     CapabilityRegistry, EvidenceJournal, GitHubBridge, MissionStateMachine, TranslationEngine,
     V8Error, inspect_wasm, load_resource_json, run_native_readonly, selftest,
-    validate_manifest, verify_component, utc_now
+    validate_manifest, verify_component, utc_now, MissionWatchdog, RetryController,
+    RecoveryCoordinator, ChangeImpactAnalyzer, RuntimeV1Adapter, MetaOSAdapter
 )
 
 def emit(value, pretty=True):
@@ -57,6 +58,24 @@ def build_parser():
     dispatch.add_argument("--authorization-ref", required=True)
     mission = sub.add_parser("mission-validate", help="validate mission envelope preconditions")
     mission.add_argument("path", type=Path)
+    wd = sub.add_parser("watchdog-evaluate", help="evaluate finite mission deadline and progress state")
+    wd.add_argument("--mission-id", required=True); wd.add_argument("--deadline-utc", required=True)
+    wd.add_argument("--last-progress-epoch", type=float, required=True)
+    wd.add_argument("--threshold-seconds", type=float, default=60); wd.add_argument("--now-epoch", type=float)
+    wd.add_argument("--waiting-on"); wd.add_argument("--resume-condition"); wd.add_argument("--wait-deadline-utc")
+    retry = sub.add_parser("retry-decision", help="evaluate bounded idempotency-aware retry policy")
+    retry.add_argument("--class", dest="idempotency_class", choices=["READ_ONLY","IDEMPOTENT","NON_IDEMPOTENT","UNKNOWN"], required=True)
+    retry.add_argument("--attempts-used", type=int, required=True); retry.add_argument("--max-attempts", type=int, required=True)
+    retry.add_argument("--transient", action="store_true"); retry.add_argument("--authorization-ref"); retry.add_argument("--idempotency-key")
+    checkpoint = sub.add_parser("checkpoint-verify", help="verify checkpoint bytes without claiming system restoration")
+    checkpoint.add_argument("path", type=Path); checkpoint.add_argument("--expected-sha256", required=True)
+    impact = sub.add_parser("impact-analyze", help="analyze claim dependencies for a change")
+    impact.add_argument("path", type=Path)
+    runtime = sub.add_parser("runtime-preflight", help="inspect exact Runtime identity; native call remains blocked until interface is verified")
+    runtime.add_argument("path", type=Path); runtime.add_argument("--expected-sha256"); runtime.add_argument("--native-interface-verified", action="store_true")
+    metaos = sub.add_parser("metaos-preflight", help="inspect WASM/component metadata without invoking it")
+    metaos.add_argument("path", type=Path); metaos.add_argument("--export", default=""); metaos.add_argument("--signature-verified", action="store_true")
+    metaos.add_argument("--authorization-ref")
     return p
 
 def _load_json(path):
@@ -155,6 +174,37 @@ def main(argv=None):
         if args.command == "mission-validate":
             result = validate_mission(_load_json(args.path)); emit(result)
             return 0 if result["status"] == "PASS" else 2
+        if args.command == "watchdog-evaluate":
+            watcher = MissionWatchdog()
+            watcher.start(args.mission_id, args.deadline_utc, args.threshold_seconds, args.last_progress_epoch)
+            if args.waiting_on or args.resume_condition or args.wait_deadline_utc:
+                if not (args.waiting_on and args.resume_condition and args.wait_deadline_utc):
+                    raise V8Error("V8E012", "waiting_on, resume_condition and wait_deadline_utc are jointly required")
+                watcher.wait_for(args.mission_id, args.waiting_on, args.resume_condition, args.wait_deadline_utc)
+            result = watcher.observe(args.mission_id, args.now_epoch); emit(result)
+            return 0 if result["state"] in {"ACTIVE","WAITING_FOR_DEPENDENCY"} else 2
+        if args.command == "retry-decision":
+            result = RetryController.decide(args.idempotency_class, args.attempts_used, args.max_attempts,
+                args.transient, args.authorization_ref, args.idempotency_key); emit(result)
+            return 0 if result["decision"] in {"RETRY_BOUNDED","HOLD"} else 2
+        if args.command == "checkpoint-verify":
+            result = RecoveryCoordinator.verify_checkpoint(args.path, args.expected_sha256); emit(result)
+            return 0 if result["status"] == "PASS_CHECKPOINT_IDENTITY" else 2
+        if args.command == "impact-analyze":
+            payload = _load_json(args.path)
+            result = ChangeImpactAnalyzer.analyze(payload.get("change_id",""),
+                payload.get("changed_component_ids",[]), payload.get("claim_dependencies",{})); emit(result)
+            return 0
+        if args.command == "runtime-preflight":
+            result = RuntimeV1Adapter(args.expected_sha256,args.native_interface_verified).preflight(args.path); emit(result)
+            return 0 if result["status"] == "READY_FOR_AUTHORIZED_NATIVE_BINDING" else 2
+        if args.command == "metaos-preflight":
+            adapter = MetaOSAdapter(); inspection = adapter.inspect(args.path)
+            result = {"inspection":inspection}
+            if args.export:
+                result["invocation_preflight"] = adapter.can_invoke(inspection,args.export,args.signature_verified,args.authorization_ref)
+            emit(result)
+            return 0 if inspection["status"].startswith("STATIC_") else 2
         raise V8Error("V8E030", "unknown command")
     except V8Error as exc:
         emit({"status":"BLOCKED","error_code":exc.code,"message":exc.message,"timestamp_utc":utc_now()})
