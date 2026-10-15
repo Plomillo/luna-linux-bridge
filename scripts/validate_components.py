@@ -52,9 +52,14 @@ def main():
     else:
         try:
             item = inspect_wasm(wasm)
-            results.append({"component":"METAOS_WASM","status":"PASS_STATIC_METADATA","sha256":item["sha256"],
-                "size_bytes":item["size_bytes"],"imports":item["imports"],"exports":item["exports"],
-                "function_signatures_verified":False,"native_execution":"NOT_RUN_ABI_NOT_FULLY_VERIFIED"})
+            results.append({"component":"METAOS_WASM","status":"PASS_STATIC_METADATA_ONLY","sha256":item["sha256"],
+                "size_bytes":item["size_bytes"],"format":item.get("format"),
+                "imports":item.get("imports",[]),"exports":item.get("exports",[]),
+                "sections":item.get("sections",[]),"embedded_core_modules":item.get("embedded_core_modules",[]),
+                "component_import_export_contract":item.get("component_import_export_contract","CORE_MODULE_METADATA"),
+                "function_signatures_verified":item.get("function_signatures_verified",False),
+                "native_execution":"NOT_RUN_ABI_NOT_FULLY_VERIFIED",
+                "limitations":["Static component container recognized; complete Component Model ABI and behavioural integration not demonstrated."]})
         except (V8Error, OSError) as exc:
             results.append({"component":"METAOS_WASM","status":"FAIL","sha256":sha256_file(wasm),
                             "error":f"{type(exc).__name__}: {exc}"})
