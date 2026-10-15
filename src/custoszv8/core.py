@@ -298,7 +298,7 @@ class TranslationEngine:
 
     def _covered(self, text: str, source: str) -> bool:
         plain, _held = self._protect(text)
-        plain = re.sub(r"V8PROTECTEDTOKEN\\d{4}X", "", plain).lower()
+        plain = re.sub(r"V8PROTECTEDTOKEN[0-9]{4}X", "", plain).lower()
         phrases = [a if source == "es" else b for a, b in self.PHRASES]
         for phrase in sorted(phrases, key=len, reverse=True):
             plain = re.sub(re.escape(phrase), "", plain, flags=re.IGNORECASE)
