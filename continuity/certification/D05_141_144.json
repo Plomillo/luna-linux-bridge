@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "ALLOY_PROVIDER",
+      "capability_id": 141,
+      "evidence_sha256": "77c4d8ded38b2d0c4e67fcc01db83b174fd39cc662c22b0fc6321a1ee0fbaa72"
+    },
+    {
+      "canonical_name": "DAFNY_PROVIDER",
+      "capability_id": 142,
+      "evidence_sha256": "c3a96d6ba5be3b2287359a5cecb29a35d437f59c90a9277fd5c14f7f138fa3bb"
+    },
+    {
+      "canonical_name": "SMT_PROVIDER",
+      "capability_id": 143,
+      "evidence_sha256": "2f6363eed5ce6939121f7b659f6aeb8ba4a22064477fbda07b7def892d19034f"
+    },
+    {
+      "canonical_name": "Z3_PROVIDER",
+      "capability_id": 144,
+      "evidence_sha256": "50aaf0febae74ecb5915bebb626e62315bc870608355a5dacefaab625ea9c93a"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "38742678205",
+  "g24": "PASS",
+  "g24_workflow_run_id": "38742678205",
+  "global_super1200_certified": false,
+  "module_sha256": "5d0796c24a2902769fd779cd09becf72782cb3a68a1ff797e469f1e4d6860d41",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D05:141-144",
+  "scope_only": true,
+  "test_sha256": "4d0c5335219676800f256a76ea46421f5bc1b77048b4e7b2f95ac2b295fd4d89",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-15T13:26:23.973098+00:00"
+}

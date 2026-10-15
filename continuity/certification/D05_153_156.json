@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "CONCURRENCY_MODEL_CHECKING",
+      "capability_id": 153,
+      "evidence_sha256": "7245fcf63a81a62129d44fab4189109baf3d9c0c53a444aa6432ae53f437716a"
+    },
+    {
+      "canonical_name": "DEADLOCK_DETECTION",
+      "capability_id": 154,
+      "evidence_sha256": "b67c0b1a1326281250de2a7774b001fbb27493af4aef09eb4ed1847628b18bd9"
+    },
+    {
+      "canonical_name": "LIVENESS_PROPERTIES",
+      "capability_id": 155,
+      "evidence_sha256": "729e2288330a0a7ee7920410eb2f229d16cdd506832786b9d5260bdfc5d30636"
+    },
+    {
+      "canonical_name": "SAFETY_PROPERTIES",
+      "capability_id": 156,
+      "evidence_sha256": "698456e59c46dfb471d978d36f992c75dd814597964040e25217a8dc5256f706"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "38742678205",
+  "g24": "PASS",
+  "g24_workflow_run_id": "38742678205",
+  "global_super1200_certified": false,
+  "module_sha256": "5d0796c24a2902769fd779cd09becf72782cb3a68a1ff797e469f1e4d6860d41",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D05:153-156",
+  "scope_only": true,
+  "test_sha256": "4d0c5335219676800f256a76ea46421f5bc1b77048b4e7b2f95ac2b295fd4d89",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-15T13:26:25.956450+00:00"
+}

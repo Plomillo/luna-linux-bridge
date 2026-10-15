@@ -1,7 +1,7 @@
 {
   "active": true,
   "active_worker": false,
-  "block_reason": "SCOPED_G23_PENDING_D05_137_140",
+  "block_reason": "NEXT_D07_TRANCHE_EXECUTOR_NOT_REGISTERED",
   "blocked": true,
   "branch": "custosz/super-1200-implementation-20261007",
   "certified": false,
@@ -9,8 +9,8 @@
   "diagnostic": "Left D05 as the active domain. Capabilities 137-176 are name-specific and materialized; D06 177-230 are name-specific and materialized. Independent scoped G23/G24 has not been granted for those tranches. D07 stays unregistered because no reviewed executor exists and the synthetic materializer remains disabled. Global SUPER1200 certification remains NOT_CERTIFIED.",
   "dispatch_error": null,
   "dispatch_requested_at": "2026-10-14T18:58:45Z",
-  "g23": "PENDING_FOR_SCOPE_D05_137_140",
-  "g24": "PENDING_G23",
+  "g23": "REVIEWED_SCOPES_CERTIFIED",
+  "g24": "REVIEWED_SCOPES_CERTIFIED",
   "global_certification_status": "NOT_CERTIFIED",
   "last_execution": {
     "status": "COMPLETED_SUCCESS_MATERIAL_TRANCHE",
@@ -117,7 +117,7 @@
     "global_certification_status": "NOT_CERTIFIED"
   },
   "mission_id": "SUPER1200-CONTINUATION-20261007",
-  "next_point": "D06",
+  "next_point": "D07",
   "next_tranche_authorization": null,
   "next_worker": null,
   "notes": "Natural continuation activated 2026-10-14. Supervisor signal + DISPATCH_REQUIRED set. Fail-closed. No controls lowered.",
@@ -153,9 +153,201 @@
       "workflow_run_id": 38621886047,
       "certification_granted": true,
       "global_certification_granted": false
+    },
+    "D05:137-140": {
+      "scope": "D05:137-140",
+      "status": "PASS",
+      "record_path": "continuity/certification/D05_137_140.json",
+      "certification_granted": true,
+      "global_certification_granted": false,
+      "workflow_run_id": "38742678205"
+    },
+    "D05:141-144": {
+      "scope": "D05:141-144",
+      "status": "PASS",
+      "record_path": "continuity/certification/D05_141_144.json",
+      "certification_granted": true,
+      "global_certification_granted": false,
+      "workflow_run_id": "38742678205"
+    },
+    "D05:145-148": {
+      "scope": "D05:145-148",
+      "status": "PASS",
+      "record_path": "continuity/certification/D05_145_148.json",
+      "certification_granted": true,
+      "global_certification_granted": false,
+      "workflow_run_id": "38742678205"
+    },
+    "D05:149-152": {
+      "scope": "D05:149-152",
+      "status": "PASS",
+      "record_path": "continuity/certification/D05_149_152.json",
+      "certification_granted": true,
+      "global_certification_granted": false,
+      "workflow_run_id": "38742678205"
+    },
+    "D05:153-156": {
+      "scope": "D05:153-156",
+      "status": "PASS",
+      "record_path": "continuity/certification/D05_153_156.json",
+      "certification_granted": true,
+      "global_certification_granted": false,
+      "workflow_run_id": "38742678205"
+    },
+    "D05:157-160": {
+      "scope": "D05:157-160",
+      "status": "PASS",
+      "record_path": "continuity/certification/D05_157_160.json",
+      "certification_granted": true,
+      "global_certification_granted": false,
+      "workflow_run_id": "38742678205"
+    },
+    "D05:161-164": {
+      "scope": "D05:161-164",
+      "status": "PASS",
+      "record_path": "continuity/certification/D05_161_164.json",
+      "certification_granted": true,
+      "global_certification_granted": false,
+      "workflow_run_id": "38742678205"
+    },
+    "D05:165-168": {
+      "scope": "D05:165-168",
+      "status": "PASS",
+      "record_path": "continuity/certification/D05_165_168.json",
+      "certification_granted": true,
+      "global_certification_granted": false,
+      "workflow_run_id": "38742678205"
+    },
+    "D05:169-172": {
+      "scope": "D05:169-172",
+      "status": "PASS",
+      "record_path": "continuity/certification/D05_169_172.json",
+      "certification_granted": true,
+      "global_certification_granted": false,
+      "workflow_run_id": "38742678205"
+    },
+    "D05:173-176": {
+      "scope": "D05:173-176",
+      "status": "PASS",
+      "record_path": "continuity/certification/D05_173_176.json",
+      "certification_granted": true,
+      "global_certification_granted": false,
+      "workflow_run_id": "38742678205"
+    },
+    "D06:177-180": {
+      "scope": "D06:177-180",
+      "status": "PASS",
+      "record_path": "continuity/certification/D06_177_180.json",
+      "certification_granted": true,
+      "global_certification_granted": false,
+      "workflow_run_id": "38742678205"
+    },
+    "D06:181-184": {
+      "scope": "D06:181-184",
+      "status": "PASS",
+      "record_path": "continuity/certification/D06_181_184.json",
+      "certification_granted": true,
+      "global_certification_granted": false,
+      "workflow_run_id": "38742678205"
+    },
+    "D06:185-188": {
+      "scope": "D06:185-188",
+      "status": "PASS",
+      "record_path": "continuity/certification/D06_185_188.json",
+      "certification_granted": true,
+      "global_certification_granted": false,
+      "workflow_run_id": "38742678205"
+    },
+    "D06:189-192": {
+      "scope": "D06:189-192",
+      "status": "PASS",
+      "record_path": "continuity/certification/D06_189_192.json",
+      "certification_granted": true,
+      "global_certification_granted": false,
+      "workflow_run_id": "38742678205"
+    },
+    "D06:193-196": {
+      "scope": "D06:193-196",
+      "status": "PASS",
+      "record_path": "continuity/certification/D06_193_196.json",
+      "certification_granted": true,
+      "global_certification_granted": false,
+      "workflow_run_id": "38742678205"
+    },
+    "D06:197-200": {
+      "scope": "D06:197-200",
+      "status": "PASS",
+      "record_path": "continuity/certification/D06_197_200.json",
+      "certification_granted": true,
+      "global_certification_granted": false,
+      "workflow_run_id": "38742678205"
+    },
+    "D06:201-204": {
+      "scope": "D06:201-204",
+      "status": "PASS",
+      "record_path": "continuity/certification/D06_201_204.json",
+      "certification_granted": true,
+      "global_certification_granted": false,
+      "workflow_run_id": "38742678205"
+    },
+    "D06:205-208": {
+      "scope": "D06:205-208",
+      "status": "PASS",
+      "record_path": "continuity/certification/D06_205_208.json",
+      "certification_granted": true,
+      "global_certification_granted": false,
+      "workflow_run_id": "38742678205"
+    },
+    "D06:209-212": {
+      "scope": "D06:209-212",
+      "status": "PASS",
+      "record_path": "continuity/certification/D06_209_212.json",
+      "certification_granted": true,
+      "global_certification_granted": false,
+      "workflow_run_id": "38742678205"
+    },
+    "D06:213-216": {
+      "scope": "D06:213-216",
+      "status": "PASS",
+      "record_path": "continuity/certification/D06_213_216.json",
+      "certification_granted": true,
+      "global_certification_granted": false,
+      "workflow_run_id": "38742678205"
+    },
+    "D06:217-220": {
+      "scope": "D06:217-220",
+      "status": "PASS",
+      "record_path": "continuity/certification/D06_217_220.json",
+      "certification_granted": true,
+      "global_certification_granted": false,
+      "workflow_run_id": "38742678205"
+    },
+    "D06:221-224": {
+      "scope": "D06:221-224",
+      "status": "PASS",
+      "record_path": "continuity/certification/D06_221_224.json",
+      "certification_granted": true,
+      "global_certification_granted": false,
+      "workflow_run_id": "38742678205"
+    },
+    "D06:225-228": {
+      "scope": "D06:225-228",
+      "status": "PASS",
+      "record_path": "continuity/certification/D06_225_228.json",
+      "certification_granted": true,
+      "global_certification_granted": false,
+      "workflow_run_id": "38742678205"
+    },
+    "D06:229-230": {
+      "scope": "D06:229-230",
+      "status": "PASS",
+      "record_path": "continuity/certification/D06_229_230.json",
+      "certification_granted": true,
+      "global_certification_granted": false,
+      "workflow_run_id": "38742678205"
     }
   },
-  "status": "G23_PENDING",
+  "status": "BLOCKED",
   "transition_id": "D05-133-136-TO-G23-20261014",
   "blocked_at": "2026-10-15T13:23:45.930843+00:00",
   "material_checkpoints": [

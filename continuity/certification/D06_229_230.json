@@ -1,0 +1,29 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "MODEL_BENCHMARK_ENGINE",
+      "capability_id": 229,
+      "evidence_sha256": "6ed01e38b31a66d6bf76007f6c13310471d9b3de3a5f0aedd74eca55bc3a2f8d"
+    },
+    {
+      "canonical_name": "MODEL_EVALUATION_MATRIX",
+      "capability_id": 230,
+      "evidence_sha256": "e37d3533baef0c7b68899111725cf98df0ae900df7f307930c9c65f87ef3d29b"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "38742678205",
+  "g24": "PASS",
+  "g24_workflow_run_id": "38742678205",
+  "global_super1200_certified": false,
+  "module_sha256": "a6ea1791c74446210ef2ae7e765f8c3e062e4e67994e161a6e147935b8d0182b",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D06:229-230",
+  "scope_only": true,
+  "test_sha256": "3c4ebbedb4d9c9391c86f1d17a612a3416da4fb40b430ce4494834d89d998bc7",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-15T13:26:37.848629+00:00"
+}
