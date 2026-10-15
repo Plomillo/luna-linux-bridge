@@ -5,8 +5,12 @@ on:
     branches:
       - "feature/custoszv8-candidate-*"
     paths:
+      - "src/custoszv8/**"
+      - "tests/**"
+      - "scripts/validate_components.py"
+      - "build.py"
       - ".github/workflows/custoszv8-build.yml"
-      - "BUILD_CUSTOSZV8_NOW"
+      - "artifacts/custosz-v7/**"
   pull_request:
     branches:
       - "staging/custosz-v7-metaos-20260927"
