@@ -517,7 +517,11 @@ class CRFUTests(unittest.TestCase):
                 "producer_identity": producer,
                 "validator_identity": g23_identity,
                 "scope": gate_trust_root.SCOPE,
-                "independent_execution_results": [{"name": "synthetic-fixture", "status": "PASS"}],
+                "independent_execution_results": [
+                    {"name": name, "returncode": 0, "status": "PASS",
+                     "stdout_sha256": "d" * 64, "stderr_sha256": "e" * 64}
+                    for name in sorted(gate_trust_root.EXPECTED_G23_COMMANDS)
+                ],
                 "failures": [],
                 "scoped_decision_admissible": True,
                 "canonical_G23_status": "HOLD_FULL_CANONICAL_SCOPE_NOT_PROVEN"
@@ -527,7 +531,6 @@ class CRFUTests(unittest.TestCase):
             env = {
                 "PUAC2_G23_VALIDATOR_ID": g23_identity,
                 "PUAC2_G23_SIGNING_PRIVATE_KEY_PEM": g23_private,
-                "PUAC2_G23_PUBLIC_KEY_PEM": g23_public,
                 "PUAC2_G23_PUBLIC_KEY_PEM": g23_public,
                 "PUAC2_G24_CERTIFIER_ID": g24_identity,
                 "PUAC2_G24_SIGNING_PRIVATE_KEY_PEM": g24_private,
