@@ -227,3 +227,32 @@ PR_BASE_EXCEPTION_NO_AUTO_CERTIFICATION = TRUE
 Justificación verificable: la comparación con la rama declarada `work/louksna-zona-directiva-v0.3-functional-20261006` encontró historias divergentes (merge-base `01d28c319af6a644168c621ab01b8e69dc1c0a0e`, 31 commits exclusivos de la rama destino y 372 exclusivos del candidato), una expansión del diff a 61 archivos/11.597 adiciones y `mergeable=false`. La rama destino no contiene el workflow de gobernanza necesario para el trigger de PR. La excepción mantiene el PR #62 como revisión contra `main` para conservar el alcance y el flujo de CI mientras se resuelve la divergencia.
 
 Límites no derogables: esta excepción no autoriza fusionar, modificar `main`, cambiar la rama de trabajo declarada, omitir CP-01–CP-12, heredar evidencia de otro SHA, eludir G23/G24, activar ni certificar. Si cambia el número de PR, la rama HEAD o la base autorizada, la excepción no aplica y CP-02 debe fallar cerrado. La excepción es candidata y sigue sujeta a la validación independiente G23 y a la certificación G24; no se propaga automáticamente.
+
+
+## ADENDA EXPLÍCITA — G23/G24 AUTOMATIZADOS SIN APROBACIÓN HUMANA (2026-10-12)
+
+AUTHORIZATION = EXPLICIT_USER_APPROVAL
+CHANGE_TYPE = APPEND_ONLY_CONTRACT_AMENDMENT
+SCOPE = CP-11/G23_AND_CP-12/G24_ONLY
+G23_MODE = AUTOMATED_INDEPENDENT_VALIDATION
+G24_MODE = AUTOMATED_CERTIFICATION
+HUMAN_REVIEW_REQUIRED_FOR_G23_G24 = FALSE
+HUMAN_ATTESTATION_CLAIMED = FALSE
+G23_REQUIRES_SEPARATE_VALIDATOR_JOB = TRUE
+G24_REQUIRES_SEPARATE_DOWNSTREAM_CERTIFIER_JOB = TRUE
+EXACT_CANDIDATE_SHA_BINDING = REQUIRED
+CP10_MANIFEST_AND_EVIDENCE_HASH_RECOMPUTATION = REQUIRED
+G23_REPORT_SCHEMA_AND_DIGEST_VALIDATION = REQUIRED
+NO_MAIN_MUTATION = TRUE
+NO_AUTO_MERGE = TRUE
+ACTIVATION = FORBIDDEN
+FAIL_CLOSED = TRUE
+ROLLBACK_AND_AUDIT_TRAIL = REQUIRED
+
+Esta adenda modifica explícitamente, y solo para CP-11/G23 y CP-12/G24, la modalidad anterior que exigía aprobaciones humanas mediante GitHub Environments y reseñas PR. G23 pasa a ser una validación independiente automatizada ejecutada en un job separado, con permisos de solo lectura, que revalida el SHA exacto del candidato, CP-10, cada hash de evidencia y el validador material de voz. G24 pasa a ser una etapa downstream separada que valida el informe G23, su vínculo con el candidato/ejecución, el digest del manifiesto y la ausencia de bloqueos antes de emitir la decisión de certificación automatizada.
+
+“Independiente” en esta modalidad significa separación técnica de etapas, controles y funciones de validación/certificación; no significa revisión humana ni independencia organizacional externa. Los informes deben registrar explícitamente AUTOMATED_INDEPENDENT_VALIDATION / AUTOMATED_G24 y HUMAN_ATTESTATION=NOT_CLAIMED. Está prohibido simular usuarios, fabricar reseñas, omitir validaciones, promover HOLD/FAIL, heredar evidencia de otro SHA o afirmar que una persona revisó el candidato.
+
+La certificación automatizada resultante solo se refiere al candidato exacto y al expediente verificado por estas etapas. No autoriza merge, activación, cambios en main ni propagación de certificación a otro SHA. Toda modificación de código o contrato produce un nuevo candidato y obliga a ejecutar de nuevo la cadena completa. Si la evidencia falta, no puede recomputarse, no coincide en SHA/run, el esquema es inválido o cualquier comprobación falla, G23/G24 deben fallar cerrado.
+
+Esta adenda prevalece únicamente sobre las cláusulas anteriores que imponían aprobación humana para G23/G24; el resto de los controles del contrato permanece vigente. La ejecución de validación de esta modificación es obligatoria antes de considerar operativo el cambio.
