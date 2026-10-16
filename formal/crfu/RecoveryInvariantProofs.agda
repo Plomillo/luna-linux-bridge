@@ -3,6 +3,7 @@ module RecoveryInvariantProofs where
 
 open import Agda.Builtin.Bool using (true; false)
 open import Agda.Builtin.Equality using (_≡_; refl)
+open import FalseElimination using (false-not-true; void-elim)
 open import RecoveryInvariant
 open RestoreEvidence
 
@@ -11,8 +12,7 @@ restore-bytes-necessary :
   restorationProven r ≡ true ->
   bytesMatch r ≡ true
 restore-bytes-necessary r pass with bytesMatch r
-... | false with pass
-...   | ()
+... | false = void-elim (false-not-true pass)
 ... | true = refl
 
 restore-identity-necessary :
@@ -20,10 +20,8 @@ restore-identity-necessary :
   restorationProven r ≡ true ->
   identityMatches r ≡ true
 restore-identity-necessary r pass with bytesMatch r | identityMatches r
-... | false | _ with pass
-...   | ()
-... | true | false with pass
-...   | ()
+... | false | _ = void-elim (false-not-true pass)
+... | true | false = void-elim (false-not-true pass)
 ... | true | true = refl
 
 restore-dependencies-necessary :
@@ -32,12 +30,9 @@ restore-dependencies-necessary :
   dependenciesMatch r ≡ true
 restore-dependencies-necessary r pass
   with bytesMatch r | identityMatches r | dependenciesMatch r
-... | false | _ | _ with pass
-...   | ()
-... | true | false | _ with pass
-...   | ()
-... | true | true | false with pass
-...   | ()
+... | false | _ | _ = void-elim (false-not-true pass)
+... | true | false | _ = void-elim (false-not-true pass)
+... | true | true | false = void-elim (false-not-true pass)
 ... | true | true | true = refl
 
 restore-invariants-necessary :
@@ -46,14 +41,10 @@ restore-invariants-necessary :
   invariantsPass r ≡ true
 restore-invariants-necessary r pass
   with bytesMatch r | identityMatches r | dependenciesMatch r | invariantsPass r
-... | false | _ | _ | _ with pass
-...   | ()
-... | true | false | _ | _ with pass
-...   | ()
-... | true | true | false | _ with pass
-...   | ()
-... | true | true | true | false with pass
-...   | ()
+... | false | _ | _ | _ = void-elim (false-not-true pass)
+... | true | false | _ | _ = void-elim (false-not-true pass)
+... | true | true | false | _ = void-elim (false-not-true pass)
+... | true | true | true | false = void-elim (false-not-true pass)
 ... | true | true | true | true = refl
 
 restore-journal-necessary :
@@ -63,14 +54,9 @@ restore-journal-necessary :
 restore-journal-necessary r pass
   with bytesMatch r | identityMatches r | dependenciesMatch r
      | invariantsPass r | journalPass r
-... | false | _ | _ | _ | _ with pass
-...   | ()
-... | true | false | _ | _ | _ with pass
-...   | ()
-... | true | true | false | _ | _ with pass
-...   | ()
-... | true | true | true | false | _ with pass
-...   | ()
-... | true | true | true | true | false with pass
-...   | ()
+... | false | _ | _ | _ | _ = void-elim (false-not-true pass)
+... | true | false | _ | _ | _ = void-elim (false-not-true pass)
+... | true | true | false | _ | _ = void-elim (false-not-true pass)
+... | true | true | true | false | _ = void-elim (false-not-true pass)
+... | true | true | true | true | false = void-elim (false-not-true pass)
 ... | true | true | true | true | true = refl

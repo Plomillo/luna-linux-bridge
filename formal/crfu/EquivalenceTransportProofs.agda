@@ -3,6 +3,7 @@ module EquivalenceTransportProofs where
 
 open import Agda.Builtin.Bool using (true; false)
 open import Agda.Builtin.Equality using (_≡_; refl)
+open import FalseElimination using (false-not-true; void-elim)
 open import EquivalenceTransport
 open EquivalenceClaim
 
@@ -11,8 +12,7 @@ equivalence-source-necessary :
   equivalenceAdmissible e ≡ true ->
   sourceIdentityBound e ≡ true
 equivalence-source-necessary e pass with sourceIdentityBound e
-... | false with pass
-...   | ()
+... | false = void-elim (false-not-true pass)
 ... | true = refl
 
 equivalence-target-necessary :
@@ -20,10 +20,8 @@ equivalence-target-necessary :
   equivalenceAdmissible e ≡ true ->
   targetIdentityBound e ≡ true
 equivalence-target-necessary e pass with sourceIdentityBound e | targetIdentityBound e
-... | false | _ with pass
-...   | ()
-... | true | false with pass
-...   | ()
+... | false | _ = void-elim (false-not-true pass)
+... | true | false = void-elim (false-not-true pass)
 ... | true | true = refl
 
 equivalence-proof-necessary :
@@ -32,12 +30,9 @@ equivalence-proof-necessary :
   proofIndependentlyVerified e ≡ true
 equivalence-proof-necessary e pass
   with sourceIdentityBound e | targetIdentityBound e | proofIndependentlyVerified e
-... | false | _ | _ with pass
-...   | ()
-... | true | false | _ with pass
-...   | ()
-... | true | true | false with pass
-...   | ()
+... | false | _ | _ = void-elim (false-not-true pass)
+... | true | false | _ = void-elim (false-not-true pass)
+... | true | true | false = void-elim (false-not-true pass)
 ... | true | true | true = refl
 
 equivalence-scope-necessary :
@@ -47,12 +42,8 @@ equivalence-scope-necessary :
 equivalence-scope-necessary e pass
   with sourceIdentityBound e | targetIdentityBound e
      | proofIndependentlyVerified e | scopeEnumerated e
-... | false | _ | _ | _ with pass
-...   | ()
-... | true | false | _ | _ with pass
-...   | ()
-... | true | true | false | _ with pass
-...   | ()
-... | true | true | true | false with pass
-...   | ()
+... | false | _ | _ | _ = void-elim (false-not-true pass)
+... | true | false | _ | _ = void-elim (false-not-true pass)
+... | true | true | false | _ = void-elim (false-not-true pass)
+... | true | true | true | false = void-elim (false-not-true pass)
 ... | true | true | true | true = refl
