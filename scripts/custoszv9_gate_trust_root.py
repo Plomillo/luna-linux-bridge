@@ -11,7 +11,7 @@ import argparse,base64,hashlib,json,os,re,subprocess,sys,zipfile
 from datetime import datetime,timezone
 from pathlib import Path
 
-SCOPE="CUSTOSZV9_CRFU_AND_EXACT_V8_BYTE_PRESERVATION_SUBSCOPE"
+SCOPE="CUSTOSZV9_CRFU_STANDALONE_SOFTWARE_AND_EXACT_V8_BYTE_PRESERVATION"
 MAX_CANDIDATE_PACKAGE_BYTES=20*1024*1024
 MAX_ARCHIVE_MEMBERS=4096
 MAX_ARCHIVE_MEMBER_BYTES=16*1024*1024
@@ -167,11 +167,15 @@ def g22(a:argparse.Namespace)->int:
   if any(item.file_size>MAX_ARCHIVE_MEMBER_BYTES for item in infos):fail.append("ZIP_MEMBER_SIZE_LIMIT_EXCEEDED")
   if any(item.flag_bits&1 for item in infos):fail.append("ENCRYPTED_ZIP_MEMBER_FORBIDDEN")
   if z.testzip() is not None:fail.append("V9_ZIP_CRC_FAILURE")
-  required={"custoszv9/data/CUSTOSZV8.pyz","custoszv9/data/build_manifest.json","custoszv8/core.py",
-    "custoszv8/cli.py","custoszv9/crfu/coordinator.py","custoszv9/crfu/selftest.py","custoszv9/crfu/puac2.py"}
+  required={"custoszv9/data/CUSTOSZV8.pyz","custoszv9/data/build_manifest.json",
+    "custoszv9/data/certification_scope.json","custoszv8/core.py","custoszv8/cli.py",
+    "custoszv9/crfu/coordinator.py","custoszv9/crfu/selftest.py","custoszv9/crfu/puac2.py"}
   if not required.issubset(set(names)):fail.append("REQUIRED_PACKAGE_MEMBERS_MISSING")
   manifest=json.loads(z.read("custoszv9/data/build_manifest.json"))
   embedded=z.read("custoszv9/data/CUSTOSZV8.pyz");embedded_sha=sha_bytes(embedded)
+  scope_bytes=z.read("custoszv9/data/certification_scope.json")
+  scope_record=json.loads(scope_bytes)
+  embedded_scope_sha=sha_bytes(scope_bytes)
  if report.get("source_commit")!=commit or manifest.get("source_commit")!=commit:fail.append("SOURCE_COMMIT_BINDING_MISMATCH")
  if report.get("status")!="PASS_BUILD_ONLY_NOT_CERTIFIED":fail.append("BUILD_REPORT_STATUS_INVALID")
  if report.get("package_sha256")!=sha(package):fail.append("PACKAGE_DIGEST_REPORT_MISMATCH")
@@ -190,6 +194,18 @@ def g22(a:argparse.Namespace)->int:
   authority_digests[name]={"trusted_sha256":trusted_digest,"candidate_sha256":candidate_digest,
                            "byte_identical":trusted_digest==candidate_digest}
   if trusted_digest!=candidate_digest:fail.append("CANONICAL_SOURCE_BYTE_DRIFT:"+name)
+ trusted_scope=Path(a.trusted_source)/"scripts"/"custoszv9_scope_policy.json"
+ candidate_scope=Path(a.candidate_source)/"custoszv9"/"data"/"certification_scope.json"
+ if not trusted_scope.is_file() or not candidate_scope.is_file():
+  fail.append("TRUSTED_OR_CANDIDATE_SCOPE_POLICY_MISSING")
+ else:
+  trusted_scope_sha=sha(trusted_scope);candidate_scope_sha=sha(candidate_scope)
+  if trusted_scope_sha!=candidate_scope_sha or embedded_scope_sha!=trusted_scope_sha:
+   fail.append("SCOPE_POLICY_BYTE_BINDING_MISMATCH")
+  if manifest.get("assurance_scope",{}).get("sha256")!=embedded_scope_sha:
+   fail.append("SCOPE_POLICY_MANIFEST_DIGEST_MISMATCH")
+ if scope_record.get("schema")!="CUSTOSZV9_STANDALONE_SOFTWARE_SCOPE/1.0" or scope_record.get("scope_id")!=SCOPE:
+  fail.append("PACKAGE_SCOPE_IDENTITY_INVALID")
  protected_v25_present=(Path(a.trusted_source)/"LUNACORE_final_formalized_v25.md").is_file()
  if repro.get("status")!="PASS" or repro.get("same_source_commit_two_builds") is not True:fail.append("REPRODUCIBILITY_NOT_PASS")
  if repro.get("source_commit")!=commit or repro.get("first_sha256")!=sha(package) or repro.get("second_sha256")!=sha(package):fail.append("REPRODUCIBILITY_DIGEST_OR_COMMIT_MISMATCH")
@@ -200,7 +216,7 @@ def g22(a:argparse.Namespace)->int:
    "candidate_package_size_bytes":package.stat().st_size,"v8_baseline_sha256":embedded_sha,
    "v8_baseline_size_bytes":len(embedded),"trusted_workflow_sha":a.trusted_workflow_sha,
    "producer_identity":"CUSTOSZV9_BUILD_WORKFLOW","evaluator_identity":"CUSTOSZV9_G22_TRUST_ROOT",
-   "scope":SCOPE,"checked_at_utc":utc_now(),
+   "scope":SCOPE,"scope_sha256":embedded_scope_sha,"checked_at_utc":utc_now(),
    "status":"PASS_FOR_DECLARED_SCOPE" if not fail else "FAIL",
    "tested_scope_result":"PASS" if not fail else "FAIL","failures":fail,
    "canonical_source_digests":authority_digests,"protected_v25_baseline_present":protected_v25_present,
