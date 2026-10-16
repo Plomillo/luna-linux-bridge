@@ -1,0 +1,81 @@
+name: PUAC-2 candidate preflight (non-certifying)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/puac2_mtls_gate.py"
+      - "tests/**"
+      - "bridge/**"
+      - "louksna/**"
+      - "debian/**"
+      - "packaging/**"
+      - "docs/**"
+      - ".github/workflows/puac2-e2e.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: puac2-preflight-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    name: Source and regression checks only (never certifies)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout candidate without persisted credentials
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install isolated verification dependencies
+        run: python -m pip install --disable-pip-version-check pytest cryptography
+      - name: Compile and run PUAC-2 regression suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile scripts/puac2_mtls_gate.py tests/test_puac2_mtls_gate.py
+          mkdir -p out
+          python -m pytest -q --junitxml=out/junit.xml tests/test_puac2_mtls_gate.py | tee out/tests.txt
+          python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          report = Path("out/tests.txt").read_bytes()
+          data = {
+              "schema": "PUAC2_PR_PREFLIGHT/1.0",
+              "status": "PASS",
+              "certification_status": "NOT_PERFORMED",
+              "candidate_commit": os.environ["GITHUB_SHA"],
+              "event": os.environ["GITHUB_EVENT_NAME"],
+              "test_report_sha256": hashlib.sha256(report).hexdigest(),
+          }
+          Path("out/preflight.json").write_text(json.dumps(data, sort_keys=True, indent=2) + "\n")
+          PY
+      - name: Explicitly mark operational certification as not performed
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## PUAC-2 PR preflight — non-certifying"
+            echo
+            echo "- Candidate: `$GITHUB_SHA`"
+            echo "- This workflow performs source/regression checks only."
+            echo "- Host mTLS, operational tests, rollback, G23 independent validation and G24 certification were NOT run here."
+            echo "- A green result from this workflow MUST NOT be interpreted as operational certification."
+            echo "- The privileged chain remains in `.github/workflows/puac2-autonomous.yml` and is intentionally excluded from pull_request events."
+            echo "- Missing host configuration, reports, protected secrets or signatures must remain HOLD; do not bypass the gate."
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload preflight-only evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: puac2-pr-preflight-${{ github.run_id }}
+          path: out/
+          if-no-files-found: warn
+          retention-days: 14

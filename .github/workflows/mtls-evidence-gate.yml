@@ -1,0 +1,117 @@
+name: mTLS remediation evidence gate
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "bridge/**"
+      - "louksna/**"
+      - "debian/**"
+      - "packaging/**"
+      - "tests/**"
+      - "test/**"
+      - "pyproject.toml"
+      - "pytest.ini"
+      - "tox.ini"
+      - "setup.cfg"
+      - ".github/workflows/mtls-evidence-gate.yml"
+      - "docs/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mtls-evidence-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  inspect-and-test:
+    name: Inspect repository and run discoverable tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout candidate
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Record candidate identity and relevant files
+        shell: bash
+        run: |
+          set -eu
+          mkdir -p evidence
+          {
+            echo "MTLS REMEDIATION EVIDENCE REPORT"
+            echo "UTC: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "Repository: ${GITHUB_REPOSITORY}"
+            echo "Commit: ${GITHUB_SHA}"
+            echo "Event: ${GITHUB_EVENT_NAME}"
+            echo
+            echo "== Relevant files =="
+            find . -type f -not -path './.git/*' -not -path './evidence/*' | grep -Ei '(^|/)([^/]*(mtls|tls|gateway|bridge)[^/]*|tests?/.*|\.github/workflows/.*)$' | sort || true
+            echo
+            echo "== Potential test/build manifests =="
+            find . -maxdepth 3 -type f -not -path './.git/*' | grep -E '(^|/)(pyproject\.toml|pytest\.ini|tox\.ini|setup\.cfg|Makefile|package\.json|Cargo\.toml|go\.mod)$' | sort || true
+          } | tee evidence/repository-inventory.txt
+
+      - name: Run Python tests when pytest is configured
+        shell: bash
+        run: |
+          set -eu
+          if [[ -f tests/test_puac2_mtls_gate.py ]]; then
+            python -m pip install --disable-pip-version-check pytest cryptography
+            python -m pytest -q tests/test_puac2_mtls_gate.py
+          elif [[ -f pyproject.toml ]] && grep -Eq '^\[tool\.pytest([.]ini_options)?\]' pyproject.toml; then
+            python -m pip install --disable-pip-version-check pytest
+            python -m pytest -q
+          elif [[ -f pytest.ini || -f tox.ini || -f setup.cfg ]] && find . -maxdepth 3 -type f \( -name 'test_*.py' -o -name '*_test.py' \) -print -quit | grep -q .; then
+            python -m pip install --disable-pip-version-check pytest
+            python -m pytest -q
+          elif find . -maxdepth 3 -type f \( -name 'test_*.py' -o -name '*_test.py' \) -print -quit | grep -q .; then
+            echo "::error::Python tests were found but no explicit pytest configuration was detected; add a documented test command."
+            exit 2
+          else
+            echo "No discoverable Python test suite; this is NOT a test pass."
+            echo "NO_TEST_SUITE_DISCOVERED" > evidence/test-status.txt
+          fi
+
+      - name: Check for unsafe certification shortcuts
+        shell: bash
+        run: |
+          set -eu
+          # Review signal only; matches require human inspection.
+          if grep -RniE --exclude-dir=.git --exclude-dir=evidence --exclude='*.lock' '(certified[[:space:]]*=[[:space:]]*true|verify[[:space:]]*=[[:space:]]*false|check_hostname[[:space:]]*=[[:space:]]*false|CERT_NONE|0\.0\.0\.0:8443|0\.0\.0\.0.*8443)' . > evidence/security-review-signals.txt; then
+            cat evidence/security-review-signals.txt
+          else
+            rc=$?
+            if [[ "$rc" -eq 1 ]]; then
+              echo "No configured review patterns matched. This does NOT prove security." > evidence/security-review-signals.txt
+            else
+              echo "::error::The review-signal scan itself failed."
+              exit "$rc"
+            fi
+          fi
+
+      - name: Record gate limitations
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo
+            echo "== Gate limitations =="
+            echo "- This workflow inventories files and runs only tests it can identify safely."
+            echo "- Static pattern matches are review leads, not vulnerability verdicts."
+            echo "- A green workflow does not prove host provisioning, valid owner-controlled credentials, mTLS interoperability, G23 independent validation, G24 certification, or production readiness."
+            echo "- Never upload private keys, live credentials, or host trust material as CI artifacts."
+            echo "- Missing host-specific credentials/evidence must remain BLOCKED; do not synthesize credentials or weaken fail-closed checks."
+          } >> evidence/repository-inventory.txt
+
+      - name: Upload review evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mtls-remediation-evidence-${{ github.run_id }}
+          path: evidence/
+          if-no-files-found: warn
+          retention-days: 14

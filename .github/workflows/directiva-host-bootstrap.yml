@@ -1,0 +1,89 @@
+name: Directiva — governed host bootstrap (luna-aux)
+# Executes the versioned bootstrap on the registered runner.
+# Fail-closed. Records evidence. Does not issue G23/G24.
+# The runner service is a user process. Root is required only inside the
+# versioned script, reached by sudo -n. The script still refuses a non-root euid.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - automation/mtls-evidence-gate-20261013
+    paths:
+      - ".github/workflows/directiva-host-bootstrap.yml"
+      - "continuity/FORCE_HOST_BOOTSTRAP.marker"
+      - "scripts/directiva/host_bootstrap.sh"
+  schedule:
+    - cron: "*/15 * * * *"
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: directiva-host-bootstrap
+  cancel-in-progress: false
+
+jobs:
+  bootstrap:
+    name: Execute host bootstrap on luna-aux
+    runs-on: [self-hosted, linux, x64, luna-aux]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: automation/mtls-evidence-gate-20261013
+          persist-credentials: true
+      - name: Run versioned bootstrap (root required)
+        id: bootstrap
+        env:
+          CANDIDATE_SHA: ${{ github.sha }}
+        run: |
+          set -Eeuo pipefail
+          echo "id=$(id)"
+          # Self-hosted worktrees can keep a stale sparse-checkout that hides
+          # scripts/directiva. Read the blob from the commit, not the worktree.
+          script="$RUNNER_TEMP/host_bootstrap.sh"
+          git show "HEAD:scripts/directiva/host_bootstrap.sh" > "$script"
+          chmod 700 "$script"
+          test -s "$script"
+          if [ "$(id -u)" -eq 0 ]; then
+            bash "$script"
+          elif sudo -n true; then
+            sudo -n --preserve-env=CANDIDATE_SHA bash "$script"
+          else
+            echo "::error::Bootstrap requires root. Runner uid=$(id -u) user=$(id -un) and sudo -n is not permitted. Refusing to write /etc or /var/lib without elevation."
+            echo "DIRECTIVA_BOOTSTRAP=DENIED_NO_ELEVATION"
+            exit 3
+          fi
+          echo "DIRECTIVA_BOOTSTRAP=EXECUTED"
+      - name: Record evidence
+        if: always()
+        run: |
+          set -Eeuo pipefail
+          git sparse-checkout disable || true
+          git config core.sparseCheckout false || true
+          rm -f .git/info/sparse-checkout || true
+          mkdir -p continuity/host-evidence
+          TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          RESULT="${{ steps.bootstrap.outcome }}"
+          cat > continuity/host-evidence/BOOTSTRAP_EXECUTION_${{ github.run_id }}.json <<EOF
+          {
+            "schema": "DIRECTIVA_HOST_BOOTSTRAP_EVIDENCE/1.0",
+            "run_id": "${{ github.run_id }}",
+            "sha": "${{ github.sha }}",
+            "runner": "luna-aux",
+            "result": "$RESULT",
+            "executed_at_utc": "$TS",
+            "script": "scripts/directiva/host_bootstrap.sh",
+            "notes": "Governed execution. Does not claim G23/G24. Root remains required for host paths."
+          }
+          EOF
+          git config user.name "custosz-v7-runtime-bot"
+          git config user.email "custosz-v7-runtime-bot@users.noreply.github.com"
+          git add --sparse -- continuity/host-evidence || git add -A -- continuity/host-evidence || true
+          if ! git diff --cached --quiet; then
+            git commit -m "evidence(directiva): host bootstrap execution ${{ github.run_id }}"
+            git pull --rebase origin automation/mtls-evidence-gate-20261013 || true
+            git push origin HEAD:automation/mtls-evidence-gate-20261013 || true
+          fi

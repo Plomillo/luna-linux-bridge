@@ -1,0 +1,5 @@
+{
+  "schema": "LOUKSNA_TELEMETRY/1.0",
+  "description": "Actionable telemetry for Directiva readiness and unlock path.",
+  "required_fields": ["event_id", "event_type", "timestamp_utc", "rail", "branch", "commit_sha", "blocked", "block_reason", "next_action", "evidence_present", "research_launched", "verification_result"]
+}

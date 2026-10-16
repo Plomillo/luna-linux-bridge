@@ -1,0 +1,9 @@
+{
+  "schema": "LOUKSNA_FREEZE_RESUME/1.0",
+  "status": "RESUMED",
+  "frozen_at_utc": "2026-10-14T06:57:00Z",
+  "resumed_at_utc": "2026-10-14T07:00:00Z",
+  "resume_authorized": true,
+  "notes": "Governed bootstrap workflow is in place. Dispatch it to execute on luna-aux.",
+  "global_certification_status": "NOT_CERTIFIED"
+}

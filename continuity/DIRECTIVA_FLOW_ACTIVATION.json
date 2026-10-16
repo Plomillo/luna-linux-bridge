@@ -1,0 +1,10 @@
+{
+  "schema": "DIRECTIVA_FLOW_ACTIVATION/1.0",
+  "activated_at_utc": "2026-10-14T18:43:00Z",
+  "action": "FORCE_NATURAL_CONTINUATION",
+  "markers_refreshed": ["FORCE_HOST_BOOTSTRAP.marker", "FORCE_LUNA_AUX_PROBE.marker"],
+  "expected": "luna-aux runner picks up probe and/or bootstrap via existing triggers",
+  "fail_closed": true,
+  "controls_unchanged": true,
+  "actor": "operator-via-grok"
+}
