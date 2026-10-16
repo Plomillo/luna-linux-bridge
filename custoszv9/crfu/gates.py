@@ -1,18 +1,20 @@
 """Evidence binder only. CRFU itself cannot perform G23/G24 certification or canonical promotion."""
 from __future__ import annotations
 from typing import Any,Callable
+import re
 from .model import is_sha256
 from .puac2 import validate_puac_control
 
 CANONICAL_GATES=tuple(f"G{i:02d}" for i in range(1,25))
 LOCAL_PUAC_CONTROLS=tuple(f"PUAC.C{i}" for i in range(25,33))
+def is_git_commit(value:Any)->bool:return isinstance(value,str) and re.fullmatch(r"[0-9a-f]{40}",value) is not None
 
 def evaluate_gate_evidence(records:Any,*,candidate_commit_sha:str,package_sha256:str,
                            trusted_workflow_sha:str,producer_identity:str,
                            trusted_signature_verifier:Callable[[dict[str,Any]],dict[str,Any]]|None=None,
                            applicability_verifier:Callable[[list[dict[str,Any]],str],dict[str,Any]]|None=None)->dict[str,Any]:
  """Check evidence bindings without promoting status. External trusted checks are required."""
- if not is_sha256(candidate_commit_sha) or not is_sha256(package_sha256) or not is_sha256(trusted_workflow_sha):
+ if not is_git_commit(candidate_commit_sha) or not is_sha256(package_sha256) or not is_git_commit(trusted_workflow_sha):
   return {"status":"HOLD","reason":"CANDIDATE_OR_TRUST_ROOT_IDENTITY_INVALID","release_eligible":False}
  if not isinstance(producer_identity,str) or not producer_identity.strip():
   return {"status":"HOLD","reason":"PRODUCER_IDENTITY_MISSING","release_eligible":False}
@@ -51,7 +53,7 @@ def evaluate_gate_evidence(records:Any,*,candidate_commit_sha:str,package_sha256
     issues.append("TRUSTED_SIGNATURE_VERIFICATION_EXCEPTION")
   if gate in LOCAL_PUAC_CONTROLS:
    control=validate_puac_control(gate,row.get("evidence_payload"),
-        producer_identity=row.get("producer_identity"),evaluator_identity=row.get("evaluator_identity"))
+        producer_identity=row.get("producer_identity"),evaluator_identity=row.get("evaluator_identity"),candidate_sha256=package_sha256)
    if control.get("status")!="PASS_FOR_LOCAL_CONTROL_SCOPE":
     issues.extend("PUAC_CONTROL:"+x for x in control.get("reasons",["CONTROL_VALIDATION_FAILED"]))
   if issues:
