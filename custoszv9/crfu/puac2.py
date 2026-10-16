@@ -187,35 +187,74 @@ def evaluate_incident_closure(evidence:Any)->dict[str,Any]:
 
 def coverage_report(requirements:Any,documented_requirement_ids:Any,operational_evidence:Any,
                     *,required_test_classes:int=28,required_invariants:int=16,target_sha256:str|None=None)->dict[str,Any]:
+ base={"documentation_coverage":None,"operational_coverage":None,"g23_g24_not_replaced_by_coverage":True}
+ if not is_sha256(target_sha256):
+  return {"status":"HOLD","reason":"EXACT_TARGET_ARTIFACT_SHA256_REQUIRED",**base}
+ if required_test_classes!=28 or required_invariants!=16:
+  return {"status":"HOLD","reason":"CANONICAL_COVERAGE_CARDINALITY_OVERRIDE_FORBIDDEN",
+          "required_test_classes":28,"required_invariants":16,**base}
  if not isinstance(requirements,list) or not requirements:
-  return {"status":"HOLD","reason":"CRITICAL_REQUIREMENT_SET_EMPTY_OR_UNKNOWN","documentation_coverage":None,"operational_coverage":None}
- required_ids={r.get("requirement_id") for r in requirements if isinstance(r,dict) and r.get("requirement_id")}
- if not required_ids:return {"status":"HOLD","reason":"REQUIREMENTS_NOT_IDENTIFIED","documentation_coverage":None,"operational_coverage":None}
- documented=set(documented_requirement_ids) if isinstance(documented_requirement_ids,(list,set,tuple)) else set()
- operational=set()
- if isinstance(operational_evidence,list):
-  for e in operational_evidence:
-   if not isinstance(e,dict) or e.get("status")!="PASS" or e.get("reference_only") is True:continue
-   if target_sha256 is not None and e.get("target_sha256")!=target_sha256:continue
-   rid=e.get("requirement_id")
-   if rid in required_ids:operational.add(rid)
+  return {"status":"HOLD","reason":"CRITICAL_REQUIREMENT_SET_EMPTY_OR_UNKNOWN",**base}
+ ids=[]
+ for row in requirements:
+  if not isinstance(row,dict) or not isinstance(row.get("requirement_id"),str) or not row["requirement_id"].strip():
+   return {"status":"HOLD","reason":"REQUIREMENT_ID_INVALID",**base}
+  ids.append(row["requirement_id"])
+ if len(set(ids))!=len(ids):
+  return {"status":"FAIL","reason":"DUPLICATE_REQUIREMENT_ID","duplicate_ids":sorted({x for x in ids if ids.count(x)>1}),**base}
+ required_ids=set(ids)
+ if not isinstance(documented_requirement_ids,(list,set,tuple)):
+  return {"status":"HOLD","reason":"DOCUMENTED_REQUIREMENT_IDS_INVALID",**base}
+ documented_raw=list(documented_requirement_ids)
+ if any(not isinstance(x,str) or not x.strip() for x in documented_raw):
+  return {"status":"HOLD","reason":"DOCUMENTED_REQUIREMENT_ID_INVALID",**base}
+ documented=set(documented_raw)
+ if not isinstance(operational_evidence,list):
+  return {"status":"HOLD","reason":"OPERATIONAL_EVIDENCE_NOT_LIST",**base}
+ operational=set();test_ids=set();invariant_ids=set()
+ stale=[];unknown_tests=[];unknown_invariants=[];reference_only_count=0
+ for index,evidence in enumerate(operational_evidence):
+  if not isinstance(evidence,dict):
+   return {"status":"FAIL","reason":"MALFORMED_OPERATIONAL_EVIDENCE_RECORD","record_index":index,**base}
+  if evidence.get("status")!="PASS":continue
+  if evidence.get("reference_only") is True:
+   reference_only_count+=1;continue
+  if evidence.get("target_sha256")!=target_sha256:
+   stale.append({"record_index":index,"record_type":evidence.get("record_type"),
+                 "observed_target_sha256":evidence.get("target_sha256")})
+   continue
+  rid=evidence.get("requirement_id")
+  if isinstance(rid,str) and rid in required_ids:operational.add(rid)
+  record_type=evidence.get("record_type")
+  ident=evidence.get("test_class_id")
+  if record_type=="TEST_CLASS":
+   if not isinstance(ident,str) or ident not in {f"T{i:02d}" for i in range(1,29)}:
+    unknown_tests.append(str(ident))
+   else:test_ids.add(ident)
+  ident=evidence.get("invariant_id")
+  if record_type=="INVARIANT":
+   if not isinstance(ident,str) or ident not in {f"INV-{i:02d}" for i in range(1,17)}:
+    unknown_invariants.append(str(ident))
+   else:invariant_ids.add(ident)
+ if unknown_tests or unknown_invariants:
+  return {"status":"FAIL","reason":"UNREGISTERED_TEST_OR_INVARIANT_ID",
+          "unregistered_test_class_ids":sorted(set(unknown_tests)),
+          "unregistered_invariant_ids":sorted(set(unknown_invariants)),**base}
  doc_count=len(required_ids&documented);op_count=len(required_ids&operational)
- test_ids=set();invariant_ids=set()
- if isinstance(operational_evidence,list):
-  for e in operational_evidence:
-   if not isinstance(e,dict) or e.get("status")!="PASS" or e.get("reference_only") is True:continue
-   if target_sha256 is not None and e.get("target_sha256")!=target_sha256:continue
-   ident=e.get("test_class_id")
-   if e.get("record_type")=="TEST_CLASS" and isinstance(ident,str) and ident.strip():test_ids.add(ident)
-   ident=e.get("invariant_id")
-   if e.get("record_type")=="INVARIANT" and isinstance(ident,str) and ident.strip():invariant_ids.add(ident)
- return {"status":"MEASURED","requirements_total":len(required_ids),
+ metrics={
+  "requirements_total":len(required_ids),
   "documentation":{"covered":doc_count,"total":len(required_ids),"ratio":doc_count/len(required_ids)},
   "operational":{"covered":op_count,"total":len(required_ids),"ratio":op_count/len(required_ids)},
-  "T_operational":{"passed":len(test_ids),"total":required_test_classes,"ratio":len(test_ids)/required_test_classes if required_test_classes else None},
-  "I_operational":{"proven":len(invariant_ids),"total":required_invariants,"ratio":len(invariant_ids)/required_invariants if required_invariants else None},
-  "target_artifact_binding_required":target_sha256 is not None,
-  "reference_only_evidence_excluded":True,"g23_g24_not_replaced_by_coverage":True}
+  "T_operational":{"passed":len(test_ids),"total":28,"ratio":len(test_ids)/28},
+  "I_operational":{"proven":len(invariant_ids),"total":16,"ratio":len(invariant_ids)/16},
+  "target_sha256":target_sha256,"target_artifact_binding_required":True,
+  "reference_only_evidence_excluded":True,"reference_only_records_excluded":reference_only_count,
+  "stale_or_unbound_operational_evidence":stale,
+  "unmapped_documented_requirement_ids":sorted(documented-required_ids),
+  "g23_g24_not_replaced_by_coverage":True}
+ if stale:
+  return {"status":"HOLD","reason":"STALE_OR_UNBOUND_OPERATIONAL_EVIDENCE",**metrics}
+ return {"status":"MEASURED",**metrics}
 
 PUAC_CONTROL_OUTPUTS={
  "PUAC.C25":("approved_scope","claim_registry","acceptance_criteria","exclusions","scope_evidence"),
