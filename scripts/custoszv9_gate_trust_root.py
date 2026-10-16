@@ -248,7 +248,7 @@ def g23_sign(a:argparse.Namespace)->int:
  print(json.dumps({"status":"SIGNED_G23_REPORT","candidate_commit_sha":a.candidate_sha,
   "candidate_package_sha256":pkgsha,"signer_identity":identity,
   "payload_sha256":record["payload_sha256"],"public_key_sha256":record["signer_public_key_sha256"],
-  "underlying_g23_status":unsigned.get("status"),"signature":"VERIFIED"},indent=2))
+  "underlying_g23_status":unsigned.get("status"),"underlying_g23_tested_scope_result":unsigned.get("tested_scope_result"),"signature":"VERIFIED"},indent=2))
  return 0
 
 def g24(a:argparse.Namespace)->int:
@@ -265,7 +265,7 @@ def g24(a:argparse.Namespace)->int:
       ("CUSTOSZV9_BUILD_WORKFLOW","CUSTOSZV9_G22_TRUST_ROOT",g24_identity))
   fail.extend(signature_failures)
  except Exception as exc:fail.append("G23_SIGNATURE_VERIFICATION_EXCEPTION:"+type(exc).__name__)
- if g22r.get("status")!="PASS":fail.append("G22_TESTED_SCOPE_NOT_PASS")
+ if g22r.get("tested_scope_result")!="PASS":fail.append("G22_TESTED_SCOPE_NOT_PASS")
  if g22r.get("candidate_commit_sha")!=a.candidate_sha:fail.append("G22_COMMIT_MISMATCH")
  if g22r.get("candidate_package_sha256")!=pkgsha:fail.append("G22_PACKAGE_DIGEST_MISMATCH")
  if g22r.get("trusted_workflow_sha")!=a.trusted_workflow_sha:fail.append("G22_TRUST_ROOT_MISMATCH")
