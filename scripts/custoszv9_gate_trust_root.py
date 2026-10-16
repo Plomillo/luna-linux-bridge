@@ -372,8 +372,8 @@ def main()->int:
  q.add_argument("--trusted-workflow-sha",required=True);q.add_argument("--g22",required=True)
  q.add_argument("--g23-unsigned",required=True);q.add_argument("--out",required=True)
  q=sub.add_parser("g24");q.add_argument("--candidate-dir",required=True);q.add_argument("--candidate-sha",required=True)
-  q.add_argument("--trusted-workflow-sha",required=True);q.add_argument("--g22",required=True)
-  q.add_argument("--g23",required=True);q.add_argument("--g23-attestation-verification",required=True);q.add_argument("--out",required=True)
+ q.add_argument("--trusted-workflow-sha",required=True);q.add_argument("--g22",required=True)
+ q.add_argument("--g23",required=True);q.add_argument("--g23-attestation-verification",required=True);q.add_argument("--out",required=True)
  a=parser.parse_args()
  try:return {"g22":g22,"g23":g23,"g23-sign":g23_sign,"g24":g24}[a.gate](a)
  except Exception as exc:
