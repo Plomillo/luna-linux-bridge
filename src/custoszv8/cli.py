@@ -76,6 +76,20 @@ def build_parser():
     metaos = sub.add_parser("metaos-preflight", help="inspect WASM/component metadata without invoking it")
     metaos.add_argument("path", type=Path); metaos.add_argument("--export", default=""); metaos.add_argument("--signature-verified", action="store_true")
     metaos.add_argument("--authorization-ref")
+    invoke = sub.add_parser("metaos-invoke", help="invoke one exact-digest MetaOS pure-policy export in a hostless bounded sandbox")
+    invoke.add_argument("export", choices=[
+        "architecture-version", "terminal-success", "knowledge-gate", "formalization-gate",
+        "implementation-gate", "implementation-authorized", "active-allowed", "checkpoint-trusted",
+        "provider-failure-is-mission-failure", "resource-red-is-mission-failure",
+        "unknown-effect-retry-allowed", "network-default-deny"
+    ])
+    invoke.add_argument("--args-json", required=True, help="JSON array of typed component arguments")
+    invoke.add_argument("--expected-sha256", required=True)
+    invoke.add_argument("--authorization-ref", required=True)
+    invoke.add_argument("--allow-execution", action="store_true", help="explicit opt-in for the hostless pure-policy probe only")
+    invoke.add_argument("--journal", type=Path, required=True, help="append-only evidence journal path")
+    invoke.add_argument("--path", type=Path, help="explicit component path; defaults to the bundled versioned candidate")
+    invoke.add_argument("--fuel", type=int, default=100000)
     return p
 
 def _load_json(path):
@@ -205,6 +219,41 @@ def main(argv=None):
                 result["invocation_preflight"] = adapter.can_invoke(inspection,args.export,args.signature_verified,args.authorization_ref)
             emit(result)
             return 0 if inspection["status"].startswith("STATIC_") else 2
+        if args.command == "metaos-invoke":
+            try:
+                arguments = json.loads(args.args_json)
+            except json.JSONDecodeError as exc:
+                raise V8Error("V8E022", f"--args-json must be valid JSON: {exc}") from exc
+            if not isinstance(arguments, list):
+                raise V8Error("V8E022", "--args-json must decode to an array")
+            adapter = MetaOSAdapter()
+            result = adapter.invoke(
+                args.export, arguments, args.expected_sha256, args.authorization_ref,
+                explicit_opt_in=args.allow_execution, path=args.path, fuel_limit=args.fuel
+            )
+            record = EvidenceJournal(args.journal).append(
+                "METAOS_COMPONENT_INVOCATION",
+                {
+                    "artifact_id": result.get("artifact_id", "MetaOS_V8_CANDIDATE_1_0_1"),
+                    "component_sha256": result.get("component_sha256", args.expected_sha256),
+                    "export_name": args.export,
+                    "arguments": arguments,
+                    "result_status": result.get("status"),
+                    "result_value": result.get("result"),
+                    "expected_sha256": args.expected_sha256,
+                    "authorization_ref": args.authorization_ref,
+                    "authorization_ref_validation": result.get("authorization_ref_validation", "NOT_VALIDATED"),
+                    "hostless": result.get("hostless", True),
+                    "host_imports": result.get("host_imports", []),
+                    "mission_dispatch": False,
+                    "execution_authorized": False
+                },
+                actor="custoszv8-metaos-adapter", mission_id=None
+            )
+            result["evidence_event"] = record
+            result["evidence_journal"] = EvidenceJournal(args.journal).verify()
+            emit(result)
+            return 0 if result.get("status") == "PASS_METAOS_EXPORT_INVOKED" else 2
         raise V8Error("V8E030", "unknown command")
     except V8Error as exc:
         emit({"status":"BLOCKED","error_code":exc.code,"message":exc.message,"timestamp_utc":utc_now()})
