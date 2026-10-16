@@ -56,6 +56,14 @@ def validate_claim_v2(claim:Any)->dict[str,Any]:
   needed=("rule_id","source_unit","target_unit","evidence_reference","original_value","converted_value")
   absent=[k for k in needed if k not in conversion or conversion[k] is None]
   if absent:return {"status":"HOLD","reasons":["CONVERSION_EVIDENCE_MISSING:"+",".join(absent)],"semantic_key":key}
+  source_unit=conversion.get("source_unit");target_unit=conversion.get("target_unit")
+  if not isinstance(source_unit,dict) or not isinstance(target_unit,dict):
+   return {"status":"HOLD","reasons":["CONVERSION_UNITS_NOT_TYPED"],"semantic_key":key}
+  for label,unit_record in (("SOURCE",source_unit),("TARGET",target_unit)):
+   if not all(isinstance(unit_record.get(field),str) and unit_record[field].strip() for field in ("unit_id","dimension","version")):
+    return {"status":"HOLD","reasons":[f"CONVERSION_{label}_UNIT_ID_DIMENSION_VERSION_REQUIRED"],"semantic_key":key}
+  if source_unit.get("dimension")!=target_unit.get("dimension"):
+   return {"status":"DENY","reasons":["CONVERSION_DIMENSION_MISMATCH"],"semantic_key":key}
   if "original_value" in claim and conversion.get("original_value")!=claim.get("original_value"):
    return {"status":"DENY","reasons":["CONVERSION_DID_NOT_PRESERVE_ORIGINAL_VALUE"],"semantic_key":key}
  return {"status":"PASS_SCHEMA_ONLY","reasons":[],"claim_id":claim["claim_id"],"semantic_key":key,
@@ -151,7 +159,11 @@ def validate_authority_binding(binding:Any,*,action:str,object_id:str,scope_id:s
  verified=trust_verifier(dict(binding))
  if not isinstance(verified,dict) or verified.get("status")!="PASS" or verified.get("binding_id")!=binding["binding_id"]:
   return {"status":"DENY","reason":"IDENTITY_DELEGATION_OR_ISSUER_PROOF_NOT_VERIFIED"}
- if verified.get("least_privilege_verified") is not True:return {"status":"DENY","reason":"LEAST_PRIVILEGE_NOT_VERIFIED"}
+ required_attestations=("actor_identity_verified","issuer_authority_verified","delegation_chain_verified",
+  "revocation_checked","validity_checked","action_scope_verified","least_privilege_verified")
+ missing_attestations=[key for key in required_attestations if verified.get(key) is not True]
+ if missing_attestations:return {"status":"DENY","reason":"AUTHORITY_VERIFICATION_ATTESTATIONS_INCOMPLETE",
+                                 "missing_attestations":missing_attestations}
  return {"status":"PASS","binding_id":binding["binding_id"],"action":action,"object_id":object_id,"scope_id":scope_id,
          "actor_id":binding["actor_id"],"authorization_grant":True,"provenance_id":binding["provenance_id"]}
 
