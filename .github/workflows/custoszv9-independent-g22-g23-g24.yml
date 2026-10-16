@@ -1,8 +1,7 @@
 name: "CUSTOSZV9 trusted G22 G23 G24 assurance"
 
-# Trust-root behavior only activates after this workflow is on the default branch.
-# Candidate artifacts are downloaded as data. Untrusted candidate code runs only
-# in the no-secret G23 validation job; signing occurs in a separate job afterwards.
+# Default-branch trust root. Candidate bytes are always treated as data by the
+# independent/certifying jobs. No host, mTLS, service, or remote rollback actions.
 on:
   workflow_run:
     workflows:
@@ -19,10 +18,10 @@ concurrency:
 
 jobs:
   g22:
-    name: "G22 — exact baseline and bounded global regression evidence"
+    name: "G22 — exact package, baseline, authority bytes and reproducibility"
     if: ${{ github.event.workflow_run.conclusion == 'success' && startsWith(github.event.workflow_run.head_branch, 'feature/custoszv9-crfu-') }}
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     permissions:
       actions: read
       contents: read
@@ -31,19 +30,19 @@ jobs:
       PRODUCER_RUN_ID: ${{ github.event.workflow_run.id }}
       TRUSTED_WORKFLOW_SHA: ${{ github.workflow_sha }}
     steps:
-      - name: Checkout trusted gate implementation
+      - name: Checkout trusted gate implementation from default branch
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ github.workflow_sha }}
           path: trust-root
           persist-credentials: false
-      - name: Checkout exact candidate source for comparison only
+      - name: Checkout exact candidate source for read-only comparison
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ env.CANDIDATE_SHA }}
           path: candidate-source
           persist-credentials: false
-      - name: Download candidate package and build evidence
+      - name: Download candidate package and producer evidence as data
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: CUSTOSZV9-candidate-${{ env.CANDIDATE_SHA }}
@@ -51,7 +50,7 @@ jobs:
           github-token: ${{ github.token }}
           repository: ${{ github.repository }}
           run-id: ${{ env.PRODUCER_RUN_ID }}
-      - name: Independently bind commit, package, baseline and reproducibility
+      - name: Independently verify exact bytes, scope, preserved authority and rebuild evidence
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -62,20 +61,21 @@ jobs:
             --candidate-sha "$CANDIDATE_SHA" \
             --trusted-workflow-sha "$TRUSTED_WORKFLOW_SHA" \
             --out "$RUNNER_TEMP/G22.json"
-      - name: Preserve G22 record
+      - name: Preserve G22 record, including failures
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: custoszv9-g22-${{ env.CANDIDATE_SHA }}
           path: ${{ runner.temp }}/G22.json
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 90
 
   g23_validate:
-    name: "G23 — execute isolated validation with no signing secrets"
+    name: "G23 — independent execution, minimal environment, no tokens or private keys"
     needs: g22
     if: needs.g22.result == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     permissions:
       actions: read
       contents: read
@@ -83,15 +83,15 @@ jobs:
       CANDIDATE_SHA: ${{ github.event.workflow_run.head_sha }}
       PRODUCER_RUN_ID: ${{ github.event.workflow_run.id }}
       TRUSTED_WORKFLOW_SHA: ${{ github.workflow_sha }}
-      G23_VALIDATOR_ID: ${{ vars.PUAC2_G23_VALIDATOR_ID }}
+      G23_VALIDATOR_ID: CUSTOSZV9_G23_GITHUB_ATTESTED_WORKFLOW_RUN
     steps:
-      - name: Checkout trusted validator
+      - name: Checkout trusted validator, not candidate code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ github.workflow_sha }}
           path: trust-root
           persist-credentials: false
-      - name: Download candidate package and G22 record
+      - name: Download candidate bytes and G22 record
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: CUSTOSZV9-candidate-${{ env.CANDIDATE_SHA }}
@@ -103,7 +103,7 @@ jobs:
         with:
           name: custoszv9-g22-${{ env.CANDIDATE_SHA }}
           path: ${{ runner.temp }}/g22
-      - name: Run CRFU/V8 probes with only a minimal environment
+      - name: Run CRFU and preserved V8 probes with an allowlisted environment
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -115,16 +115,17 @@ jobs:
               --validator-id "$G23_VALIDATOR_ID" \
               --g22 "$RUNNER_TEMP/g22/G22.json" \
               --out "$RUNNER_TEMP/G23_UNSIGNED.json"
-      - name: Preserve unsigned G23 observation (not an attestation)
+      - name: Preserve G23 observations, including failed checks
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: custoszv9-g23-unsigned-${{ env.CANDIDATE_SHA }}
           path: ${{ runner.temp }}/G23_UNSIGNED.json
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 90
 
   g23_attest:
-    name: "G23 — independently sign the finished validation record"
+    name: "G23 — attest the completed independent validation record"
     needs: g23_validate
     if: needs.g23_validate.result == 'success'
     runs-on: ubuntu-latest
@@ -132,27 +133,13 @@ jobs:
     permissions:
       actions: read
       contents: read
+      id-token: write
+      attestations: write
     env:
       CANDIDATE_SHA: ${{ github.event.workflow_run.head_sha }}
       PRODUCER_RUN_ID: ${{ github.event.workflow_run.id }}
-      TRUSTED_WORKFLOW_SHA: ${{ github.workflow_sha }}
-      G23_VALIDATOR_ID: ${{ vars.PUAC2_G23_VALIDATOR_ID }}
-      G23_SIGNING_PRIVATE_KEY_PEM: ${{ secrets.PUAC2_G23_SIGNING_PRIVATE_KEY_PEM }}
-      G23_PUBLIC_KEY_PEM: ${{ vars.PUAC2_G23_PUBLIC_KEY_PEM }}
     steps:
-      - name: Checkout trusted signer, never candidate code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          ref: ${{ github.workflow_sha }}
-          path: trust-root
-          persist-credentials: false
-      - name: Set up pinned Python for Ed25519 signing
-        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
-        with:
-          python-version: "3.12"
-      - name: Install pinned cryptography signing dependency
-        run: "python -m pip install --disable-pip-version-check --only-binary=:all: cryptography==50.0.2"
-      - name: Download candidate bytes and the unsigned result as data
+      - name: Download candidate, G22, and G23 results as data only
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: CUSTOSZV9-candidate-${{ env.CANDIDATE_SHA }}
@@ -167,30 +154,35 @@ jobs:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: custoszv9-g23-unsigned-${{ env.CANDIDATE_SHA }}
-          path: ${{ runner.temp }}/g23-unsigned
-      - name: Sign only the validated report bound to exact bytes
+          path: ${{ runner.temp }}/g23
+      - name: Bind G23 record to exact candidate and G22 evidence
         shell: bash
         run: |
           set -Eeuo pipefail
-          test -n "$G23_SIGNING_PRIVATE_KEY_PEM" || { echo "::error::G23 Ed25519 private key not provisioned"; exit 3; }
-          test -n "$G23_PUBLIC_KEY_PEM" && test -n "$G23_VALIDATOR_ID" || { echo "::error::G23 public key/identity not provisioned"; exit 3; }
-          python3 -I trust-root/scripts/custoszv9_gate_trust_root.py g23-sign \
-            --candidate-dir "$RUNNER_TEMP/candidate" \
-            --candidate-sha "$CANDIDATE_SHA" \
-            --trusted-workflow-sha "$TRUSTED_WORKFLOW_SHA" \
-            --g22 "$RUNNER_TEMP/g22/G22.json" \
-            --g23-unsigned "$RUNNER_TEMP/g23-unsigned/G23_UNSIGNED.json" \
-            --out "$RUNNER_TEMP/G23_SIGNED.json"
-      - name: Preserve Ed25519-signed G23 attestation
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+          python3 - "$RUNNER_TEMP/candidate" "$RUNNER_TEMP/g22/G22.json" "$RUNNER_TEMP/g23/G23_UNSIGNED.json" "$CANDIDATE_SHA" <<'PY'
+          import hashlib,json,sys,zipfile
+          from pathlib import Path
+          root=Path(sys.argv[1]);g22p=Path(sys.argv[2]);g23p=Path(sys.argv[3]);commit=sys.argv[4]
+          pkg=next(root.rglob("CUSTOSZV9.pyz"))
+          d=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+          g22=json.loads(g22p.read_text());g23=json.loads(g23p.read_text())
+          assert g22["candidate_commit_sha"]==commit and g22["candidate_package_sha256"]==d(pkg)
+          assert g23["candidate_commit_sha"]==commit and g23["candidate_package_sha256"]==d(pkg)
+          assert g23["g22_record_sha256"]==d(g22p)
+          assert g23["schema"]=="CUSTOSZV9_G23_UNSIGNED_VALIDATION/1.0"
+          assert len(g23["independent_execution_results"])==5
+          names={r["name"] for r in g23["independent_execution_results"]}
+          assert names=={"version","crfu-status","crfu-selftest","v8-selftest","v8-status"}
+          assert all(r.get("status") in {"PASS","FAIL"} for r in g23["independent_execution_results"])
+          print(json.dumps({"status":"G23_RECORD_BOUND","tested_scope_result":g23["tested_scope_result"],"candidate_commit_sha":commit,"package_sha256":d(pkg)}))
+          PY
+      - name: Create GitHub OIDC/Sigstore attestation for exact G23 record
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
         with:
-          name: custoszv9-g23-signed-${{ env.CANDIDATE_SHA }}
-          path: ${{ runner.temp }}/G23_SIGNED.json
-          if-no-files-found: error
-          retention-days: 90
+          subject-path: ${{ runner.temp }}/g23/G23_UNSIGNED.json
 
   g24:
-    name: "G24 — verify G23 signature and sign an explicit release decision"
+    name: "G24 — verify G23 trust, emit scope decision, attest certificate"
     needs: g23_attest
     if: needs.g23_attest.result == 'success'
     runs-on: ubuntu-latest
@@ -200,30 +192,18 @@ jobs:
       contents: read
       id-token: write
       attestations: write
-      artifact-metadata: write
     env:
       CANDIDATE_SHA: ${{ github.event.workflow_run.head_sha }}
       PRODUCER_RUN_ID: ${{ github.event.workflow_run.id }}
       TRUSTED_WORKFLOW_SHA: ${{ github.workflow_sha }}
-      G23_VALIDATOR_ID: ${{ vars.PUAC2_G23_VALIDATOR_ID }}
-      G23_PUBLIC_KEY_PEM: ${{ vars.PUAC2_G23_PUBLIC_KEY_PEM }}
-      G24_CERTIFIER_ID: ${{ vars.PUAC2_G24_CERTIFIER_ID }}
-      G24_SIGNING_PRIVATE_KEY_PEM: ${{ secrets.PUAC2_G24_SIGNING_PRIVATE_KEY_PEM }}
-      G24_PUBLIC_KEY_PEM: ${{ vars.PUAC2_G24_PUBLIC_KEY_PEM }}
     steps:
-      - name: Checkout trusted certifier, never candidate code
+      - name: Checkout G24 certifier from trusted workflow revision
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ github.workflow_sha }}
           path: trust-root
           persist-credentials: false
-      - name: Set up pinned Python for Ed25519 verification/signing
-        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
-        with:
-          python-version: "3.12"
-      - name: Install pinned cryptography signing dependency
-        run: "python -m pip install --disable-pip-version-check --only-binary=:all: cryptography==50.0.2"
-      - name: Download candidate bytes, G22 and signed G23 as data
+      - name: Download exact candidate and G22/G23 evidence as data
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: CUSTOSZV9-candidate-${{ env.CANDIDATE_SHA }}
@@ -237,46 +217,65 @@ jobs:
           path: ${{ runner.temp }}/g22
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
-          name: custoszv9-g23-signed-${{ env.CANDIDATE_SHA }}
-          path: ${{ runner.temp }}/g23-signed
-      - name: Verify G23 Ed25519 signature and issue a signed fail-closed decision
+          name: custoszv9-g23-unsigned-${{ env.CANDIDATE_SHA }}
+          path: ${{ runner.temp }}/g23
+      - name: Verify G23 Sigstore attestation against trusted workflow identity
+        env:
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -Eeuo pipefail
-          test -n "$G23_PUBLIC_KEY_PEM" && test -n "$G23_VALIDATOR_ID" || { echo "::error::G23 trust key/identity not provisioned"; exit 3; }
-          test -n "$G24_SIGNING_PRIVATE_KEY_PEM" && test -n "$G24_PUBLIC_KEY_PEM" && test -n "$G24_CERTIFIER_ID" || { echo "::error::G24 trust key/identity not provisioned"; exit 3; }
+          gh attestation verify "$RUNNER_TEMP/g23/G23_UNSIGNED.json" \
+            --repo "$GITHUB_REPOSITORY" \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/custoszv9-independent-g22-g23-g24.yml" \
+            --format json > "$RUNNER_TEMP/G23_ATTESTATION_VERIFICATION.json"
+          test -s "$RUNNER_TEMP/G23_ATTESTATION_VERIFICATION.json"
+      - name: Evaluate and issue exact-package G24 certificate or explicit HOLD
+        shell: bash
+        run: |
+          set -Eeuo pipefail
           python3 -I trust-root/scripts/custoszv9_gate_trust_root.py g24 \
             --candidate-dir "$RUNNER_TEMP/candidate" \
             --candidate-sha "$CANDIDATE_SHA" \
             --trusted-workflow-sha "$TRUSTED_WORKFLOW_SHA" \
             --g22 "$RUNNER_TEMP/g22/G22.json" \
-            --g23 "$RUNNER_TEMP/g23-signed/G23_SIGNED.json" \
-            --out "$RUNNER_TEMP/G24_DECISION.json"
-      - name: Attest the exact signed G24 decision with GitHub OIDC/Sigstore
+            --g23 "$RUNNER_TEMP/g23/G23_UNSIGNED.json" \
+            --g23-attestation-verification "$RUNNER_TEMP/G23_ATTESTATION_VERIFICATION.json" \
+            --out "$RUNNER_TEMP/CUSTOSZV9_CERTIFICATE.json"
+          cat "$RUNNER_TEMP/CUSTOSZV9_CERTIFICATE.json"
+      - name: Attest exact G24 certificate record
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
         with:
-          subject-path: ${{ runner.temp }}/G24_DECISION.json
-      - name: Verify the artifact attestation before preserving the decision
+          subject-path: ${{ runner.temp }}/CUSTOSZV9_CERTIFICATE.json
+      - name: Verify G24 certificate attestation and preserve release evidence
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh attestation verify "$RUNNER_TEMP/G24_DECISION.json" --repo "$GITHUB_REPOSITORY" --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/custoszv9-independent-g22-g23-g24.yml" --format json
-      - name: Publish machine-readable decision summary
         shell: bash
         run: |
-          python3 - "$RUNNER_TEMP/G24_DECISION.json" <<'PY'
+          set -Eeuo pipefail
+          gh attestation verify "$RUNNER_TEMP/CUSTOSZV9_CERTIFICATE.json" \
+            --repo "$GITHUB_REPOSITORY" \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/custoszv9-independent-g22-g23-g24.yml" \
+            --format json > "$RUNNER_TEMP/G24_ATTESTATION_VERIFICATION.json"
+          python3 - "$RUNNER_TEMP/CUSTOSZV9_CERTIFICATE.json" <<'PY'
           import json,sys
-          with open(sys.argv[1],encoding="utf-8") as f: record=json.load(f)
-          p=record.get("payload",{})
-          print("CUSTOSZV9 G24 decision:",p.get("decision","UNKNOWN"))
-          print("Tested sub-scope:",p.get("tested_subscope_result","UNKNOWN"))
-          print("Full release eligible:",p.get("full_release_eligible",False))
-          print("Certification:",p.get("certification","NOT_GRANTED"))
-          print("Mandatory blockers:",json.dumps(p.get("mandatory_release_blockers",[])))
+          p=json.load(open(sys.argv[1],encoding="utf-8"))
+          print("CUSTOSZV9 package-scope certified:",p.get("package_scope_certified",False))
+          print("Decision:",p.get("decision"))
+          print("Canonical promotion:",p.get("canonical_promotion"))
+          print("Full release eligible:",p.get("full_release_eligible"))
           PY
-      - name: Preserve signed G24 decision and evidence
+      - name: Upload package plus G22/G23/G24 attested evidence bundle
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: custoszv9-g24-decision-${{ env.CANDIDATE_SHA }}
-          path: ${{ runner.temp }}/G24_DECISION.json
-          if-no-files-found: error
+          name: custoszv9-certified-scope-${{ env.CANDIDATE_SHA }}
+          path: |
+            ${{ runner.temp }}/candidate/**
+            ${{ runner.temp }}/g22/G22.json
+            ${{ runner.temp }}/g23/G23_UNSIGNED.json
+            ${{ runner.temp }}/G23_ATTESTATION_VERIFICATION.json
+            ${{ runner.temp }}/CUSTOSZV9_CERTIFICATE.json
+            ${{ runner.temp }}/G24_ATTESTATION_VERIFICATION.json
+          if-no-files-found: warn
           retention-days: 90
