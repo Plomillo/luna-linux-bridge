@@ -959,7 +959,12 @@ class MetaOSAdapter:
                 expected_result = all(args)
             elif export_name in METAOS_POLICY_RESULTS:
                 expected_result = METAOS_POLICY_RESULTS[export_name]
-            if expected_result is not None and result is not expected_result:
+            result_mismatch = (
+                type(expected_result) is bool and result is not expected_result
+            ) or (
+                type(expected_result) is int and (type(result) is not int or result != expected_result)
+            )
+            if expected_result is not None and result_mismatch:
                 return {"status": "FAIL_POLICY_INVARIANT", "reason": "component result violates a declared MetaOS invariant",
                         "export_name": export_name, "observed_result": result, "expected_result": expected_result,
                         "component_sha256": digest, "execution_authorized": False}
