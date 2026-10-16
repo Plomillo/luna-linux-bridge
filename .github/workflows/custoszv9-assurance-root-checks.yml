@@ -40,7 +40,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install pinned verifier/test-only dependencies
-        run: python -m pip install --disable-pip-version-check --only-binary=:all: cryptography==50.0.2 PyYAML==6.0.2
+        run: "python -m pip install --disable-pip-version-check --only-binary=:all: cryptography==50.0.2 PyYAML==6.0.2"
       - name: Compile trusted verifier and tests
         run: python -m py_compile scripts/custoszv9_gate_trust_root.py tests/test_custoszv9_assurance_root.py
       - name: Test Ed25519 signing, identity separation and evidence consistency
