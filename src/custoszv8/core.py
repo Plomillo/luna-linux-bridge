@@ -1,4 +1,4 @@
-"""CUSTOSZ V8: governed integration primitives (stdlib only)."""
+"""CUSTOSZ V8: governed integration primitives; optional MetaOS invocation uses pinned Wasmtime."""
 from __future__ import annotations
 import ast
 import hashlib
