@@ -12,6 +12,11 @@ from custoszv9.crfu.model import sha256_bytes
 from custoszv9.crfu.planner import ActionSpec, build_plan
 from custoszv9.crfu.recovery import checkpoint_record, verify_restoration
 from custoszv9.crfu.resources import ResourceBudget, ResourceSnapshot, evaluate_budget
+from custoszv9.crfu.puac2 import (
+    classify_claim_conflicts, coverage_report, evaluate_incident_closure,
+    transitive_dependency_impact, validate_authority_binding, validate_claim_v2,
+    validate_event_records, validate_puac_control, validate_recovery_plan
+)
 
 class CRFUTests(unittest.TestCase):
     def test_deterministic_dependency_order_and_no_authorization(self):
@@ -105,6 +110,77 @@ class CRFUTests(unittest.TestCase):
             self.assertEqual(q.emit_signal("host-online")["resumed"],["task-event"])
             self.assertEqual(q.get("task-event")["state"],"READY")
             self.assertEqual(q.verify_event_chain()["status"],"PASS")
+    def test_typed_claim_units_and_semantic_key_conflicts(self):
+        base={"claim_id":"claim-1","subject_id":"system","property_id":"ram","scope_id":"build",
+          "context_id":"linux-runner","version":"1","validity_interval":{"not_before_utc":"2000-01-01T00:00:00Z","expires_at_utc":"2099-01-01T00:00:00Z"},
+          "unit_of_measure":{"unit_id":"byte","dimension":"information","version":"1"},"value":100,"evidence_state":"SUPPORTED"}
+        self.assertEqual(validate_claim_v2(base)["status"],"PASS")
+        other=dict(base);other["claim_id"]="claim-2";other["value"]=200
+        result=classify_claim_conflicts([base,other])
+        self.assertEqual(result["status"],"CONFLICT")
+        bad=dict(base);bad["unit_of_measure"]={"unit_id":"kilogram"}
+        self.assertEqual(validate_claim_v2(bad)["status"],"HOLD")
+    def test_event_records_require_recorded_time_and_acyclic_causality(self):
+        event=lambda event_id,seq,parents:{"event_id":event_id,"event_time_utc":"2026-10-16T10:00:00Z",
+            "observed_at_utc":"2026-10-16T10:01:00Z","recorded_at_utc":"2026-10-16T10:02:00Z",
+            "sequence_number":seq,"causal_parents":parents}
+        valid=validate_event_records([event("a",1,[]),event("b",2,[])])
+        self.assertEqual(valid["status"],"PASS")
+        cycle=validate_event_records([event("a",1,["b"]),event("b",2,["a"])])
+        self.assertEqual(cycle["status"],"FAIL")
+    def test_authority_binding_needs_trusted_scope_verifier(self):
+        binding={"binding_id":"b1","actor_id":"agent","actor_identity_proof":"proof-a","role_id":"executor",
+          "issuer_id":"issuer","issuer_authority_proof":"proof-i","action":"write","object_id":"repo",
+          "scope_id":"feature-branch","validity_interval":{"not_before_utc":"2000-01-01T00:00:00Z","expires_at_utc":"2099-01-01T00:00:00Z"},
+          "delegation_chain":[],"revocation_state":"NOT_REVOKED","provenance_id":"prov"}
+        denied=validate_authority_binding(binding,action="write",object_id="repo",scope_id="feature-branch",trust_verifier=None)
+        self.assertEqual(denied["status"],"DENY")
+        passed=validate_authority_binding(binding,action="write",object_id="repo",scope_id="feature-branch",
+          trust_verifier=lambda b:{"status":"PASS","binding_id":b["binding_id"],"least_privilege_verified":True})
+        self.assertEqual(passed["status"],"PASS")
+        self.assertEqual(validate_authority_binding(binding,action="delete",object_id="repo",scope_id="feature-branch",
+          trust_verifier=lambda b:{"status":"PASS","binding_id":b["binding_id"],"least_privilege_verified":True})["status"],"DENY")
+    def test_recovery_plan_does_not_claim_restoration_or_activation(self):
+        plan={"incident_id":"i1","authorized_actor":"actor","checkpoint_id":"cp",
+          "checkpoint_hash":sha256_bytes(b"snapshot"),"target_environment":"test-host","dependency_hashes":[sha256_bytes(b"dep")],
+          "restoration_oracles":["state-hash"],"nonregression_plan":"run checks","rollback_scope":"local",
+          "irreversible_side_effects":[],"authority_ref":"binding"}
+        self.assertEqual(validate_recovery_plan(plan)["status"],"PASS")
+        evidence={"diagnosis_verified":True,"correction_authorized":True,"correction_executed":True,
+          "restoration_verified":True,"nonregression_verified":True,"traceability_complete":True,
+          "g23_g24_required":True,"g23_g24_pass":True,"new_operational_authorization":True}
+        closed=evaluate_incident_closure(evidence)
+        self.assertTrue(closed["incident_closed"])
+        self.assertFalse(closed["activation_authorized"])
+    def test_coverage_keeps_documentary_and_operational_counts_separate(self):
+        digest="a"*64
+        report=coverage_report([{"requirement_id":"R1"},{"requirement_id":"R2"}],["R1"],
+          [{"requirement_id":"R1","status":"PASS","reference_only":True,"target_sha256":digest},
+           {"requirement_id":"R2","status":"PASS","target_sha256":digest},
+           {"record_type":"TEST_CLASS","test_class_id":"T01","status":"PASS","target_sha256":digest},
+           {"record_type":"INVARIANT","invariant_id":"INV-01","status":"PASS","target_sha256":digest}],
+          target_sha256=digest)
+        self.assertEqual(report["documentation"]["covered"],1)
+        self.assertEqual(report["operational"]["covered"],1)
+        self.assertEqual(report["T_operational"]["passed"],1)
+        self.assertEqual(report["I_operational"]["proven"],1)
+        self.assertIsNone(coverage_report([],[],[])["operational_coverage"])
+    def test_transitive_impact_closure_and_cycles(self):
+        graph={"A":[],"B":["A"],"C":["B"],"D":[]}
+        out=transitive_dependency_impact(graph,["A"])
+        self.assertEqual(out["impacted_nodes"],["B","C"])
+        self.assertEqual(transitive_dependency_impact({"A":["B"],"B":["A"]},["A"])["status"],"FAIL")
+        self.assertEqual(transitive_dependency_impact({"A":["missing"]},["A"])["status"],"HOLD")
+    def test_puac_control_and_gate_claims_cannot_self_certify(self):
+        missing=validate_puac_control("PUAC.C27",{})
+        self.assertEqual(missing["status"],"HOLD")
+        spoof={"gate_id":"G01","candidate_commit_sha":"a"*64,"package_sha256":"b"*64,
+          "trusted_workflow_sha":"c"*64,"producer_identity":"builder","evaluator_identity":"validator",
+          "signature_verification":"VERIFIED","evidence_sha256":"d"*64,"status":"PASS"}
+        out=evaluate_gate_evidence([spoof],candidate_commit_sha="a"*64,package_sha256="b"*64,
+          trusted_workflow_sha="c"*64,producer_identity="builder")
+        self.assertFalse(out["release_eligible"])
+        self.assertEqual(out["status"],"HOLD")
     def test_checkpoint_does_not_prove_restoration(self):
         payload=b"checkpoint";dep=sha256_bytes(b"deps")
         record=checkpoint_record(payload,checkpoint_id="cp",state_identity="s",dependency_fingerprint=dep)
