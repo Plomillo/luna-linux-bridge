@@ -181,7 +181,7 @@ def g22(a:argparse.Namespace)->int:
  if source_baseline.is_file() and candidate_baseline.is_file():
   if sha(source_baseline)!=sha(candidate_baseline):fail.append("CANDIDATE_BASELINE_DIFFERS_FROM_TRUSTED_BASELINE")
   if sha(source_baseline)!=embedded_sha:fail.append("EMBEDDED_BASELINE_DIFFERS_FROM_TRUSTED_MAIN")
-  authority_digests={}
+ authority_digests={}
  for name in ("Louksna.md","PUAC2.md"):
   trusted_path=Path(a.trusted_source)/name;candidate_path=Path(a.candidate_source)/name
   if not trusted_path.is_file() or not candidate_path.is_file():
@@ -191,7 +191,7 @@ def g22(a:argparse.Namespace)->int:
                            "byte_identical":trusted_digest==candidate_digest}
   if trusted_digest!=candidate_digest:fail.append("CANONICAL_SOURCE_BYTE_DRIFT:"+name)
  protected_v25_present=(Path(a.trusted_source)/"LUNACORE_final_formalized_v25.md").is_file()
-if repro.get("status")!="PASS" or repro.get("same_source_commit_two_builds") is not True:fail.append("REPRODUCIBILITY_NOT_PASS")
+ if repro.get("status")!="PASS" or repro.get("same_source_commit_two_builds") is not True:fail.append("REPRODUCIBILITY_NOT_PASS")
  if repro.get("source_commit")!=commit or repro.get("first_sha256")!=sha(package) or repro.get("second_sha256")!=sha(package):fail.append("REPRODUCIBILITY_DIGEST_OR_COMMIT_MISMATCH")
  if not re.search(r"^\s*Ran\s+\d+\s+tests?\s+in\s+",log,re.M) or not re.search(r"^\s*OK\s*$",log,re.M):fail.append("UNIT_TEST_LOG_NOT_PASS")
  if manifest.get("governance",{}).get("G23")!="NOT_GRANTED" or manifest.get("governance",{}).get("G24")!="NOT_GRANTED":fail.append("FALSE_CERTIFICATION_IN_MANIFEST")
