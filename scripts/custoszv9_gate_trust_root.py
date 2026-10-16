@@ -12,6 +12,10 @@ from datetime import datetime,timezone
 from pathlib import Path
 
 SCOPE="CUSTOSZV9_CRFU_AND_EXACT_V8_BYTE_PRESERVATION_SUBSCOPE"
+MAX_CANDIDATE_PACKAGE_BYTES=20*1024*1024
+MAX_ARCHIVE_MEMBERS=4096
+MAX_ARCHIVE_MEMBER_BYTES=16*1024*1024
+MAX_ARCHIVE_TOTAL_UNCOMPRESSED_BYTES=64*1024*1024
 G22_SCHEMA="CUSTOSZV9_G22_TESTED_SCOPE/1.0"
 G23_UNSIGNED_SCHEMA="CUSTOSZV9_G23_UNSIGNED_VALIDATION/1.0"
 SIGNED_SCHEMA="CUSTOSZV9_ED25519_ATTESTATION/1.0"
@@ -124,9 +128,22 @@ def g22(a:argparse.Namespace)->int:
  source_baseline=Path(a.trusted_source)/"CUSTOSZV8.pyz"
  candidate_baseline=Path(a.candidate_source)/"CUSTOSZV8.pyz"
  if not source_baseline.is_file() or not candidate_baseline.is_file():fail.append("TRACKED_V8_BASELINE_MISSING")
+ if source_baseline.is_symlink() or candidate_baseline.is_symlink():fail.append("V8_BASELINE_SYMLINK_FORBIDDEN")
+ try:
+  if not candidate_baseline.resolve().is_relative_to(Path(a.candidate_source).resolve()):
+   fail.append("CANDIDATE_BASELINE_ESCAPES_SOURCE_CHECKOUT")
+ except OSError:
+  fail.append("CANDIDATE_BASELINE_PATH_UNRESOLVED")
+ if not is_commit(a.trusted_workflow_sha):fail.append("TRUSTED_WORKFLOW_SHA_INVALID")
+ if package.stat().st_size>MAX_CANDIDATE_PACKAGE_BYTES:fail.append("CANDIDATE_PACKAGE_SIZE_LIMIT_EXCEEDED")
  with zipfile.ZipFile(package,"r") as z:
+  infos=z.infolist();names=[item.filename for item in infos]
+  if len(infos)>MAX_ARCHIVE_MEMBERS:fail.append("ZIP_MEMBER_COUNT_LIMIT_EXCEEDED")
+  if len(set(names))!=len(names):fail.append("DUPLICATE_ZIP_MEMBER_NAMES")
+  if sum(item.file_size for item in infos)>MAX_ARCHIVE_TOTAL_UNCOMPRESSED_BYTES:fail.append("ZIP_TOTAL_UNCOMPRESSED_LIMIT_EXCEEDED")
+  if any(item.file_size>MAX_ARCHIVE_MEMBER_BYTES for item in infos):fail.append("ZIP_MEMBER_SIZE_LIMIT_EXCEEDED")
+  if any(item.flag_bits&1 for item in infos):fail.append("ENCRYPTED_ZIP_MEMBER_FORBIDDEN")
   if z.testzip() is not None:fail.append("V9_ZIP_CRC_FAILURE")
-  names=z.namelist()
   required={"custoszv9/data/CUSTOSZV8.pyz","custoszv9/data/build_manifest.json","custoszv8/core.py",
     "custoszv8/cli.py","custoszv9/crfu/coordinator.py","custoszv9/crfu/selftest.py","custoszv9/crfu/puac2.py"}
   if not required.issubset(set(names)):fail.append("REQUIRED_PACKAGE_MEMBERS_MISSING")
@@ -150,7 +167,9 @@ def g22(a:argparse.Namespace)->int:
   "candidate_package_size_bytes":package.stat().st_size,"v8_baseline_sha256":embedded_sha,
   "v8_baseline_size_bytes":len(embedded),"trusted_workflow_sha":a.trusted_workflow_sha,
   "producer_identity":"CUSTOSZV9_BUILD_WORKFLOW","evaluator_identity":"CUSTOSZV9_G22_TRUST_ROOT",
-  "scope":SCOPE,"checked_at_utc":utc_now(),"status":"PASS" if not fail else "FAIL","failures":fail,
+  "scope":SCOPE,"checked_at_utc":utc_now(),
+  "status":"HOLD_FULL_CANONICAL_SCOPE_NOT_PROVEN",
+  "tested_scope_result":"PASS" if not fail else "FAIL","failures":fail,
   "canonical_global_non_regression":"HOLD_NOT_FULLY_EVALUATED","formal_correspondence":"NOT_PROVEN",
   "PUAC2_operational_scope":"HOLD","release_eligible":False,"certification":"NOT_GRANTED",
   "canonical_promotion":"NOT_AUTHORIZED"}
@@ -159,7 +178,7 @@ def g22(a:argparse.Namespace)->int:
 def g23(a:argparse.Namespace)->int:
  fail=[];root=Path(a.candidate_dir);commit=a.candidate_sha;package=single(root,"CUSTOSZV9.pyz");pkgsha=sha(package)
  g22r=read_json(Path(a.g22))
- if g22r.get("schema")!=G22_SCHEMA or g22r.get("status")!="PASS":fail.append("G22_TESTED_SCOPE_NOT_PASS")
+ if g22r.get("schema")!=G22_SCHEMA or g22r.get("tested_scope_result")!="PASS":fail.append("G22_TESTED_SCOPE_NOT_PASS")
  if g22r.get("candidate_commit_sha")!=commit:fail.append("G22_CANDIDATE_COMMIT_MISMATCH")
  if g22r.get("candidate_package_sha256")!=pkgsha:fail.append("G22_PACKAGE_DIGEST_MISMATCH")
  if g22r.get("trusted_workflow_sha")!=a.trusted_workflow_sha:fail.append("TRUST_ROOT_SHA_MISMATCH")
@@ -195,11 +214,13 @@ def g23(a:argparse.Namespace)->int:
   "candidate_package_size_bytes":package.stat().st_size,"g22_record_sha256":sha(Path(a.g22)),
   "trusted_workflow_sha":a.trusted_workflow_sha,"producer_identity":"CUSTOSZV9_BUILD_WORKFLOW",
   "validator_identity":validator_id,"scope":SCOPE,"checked_at_utc":utc_now(),
-  "independent_execution_results":results,"status":"PASS" if not fail else "FAIL","failures":sorted(set(fail)),
-  "certification_authorization_for_g24":not fail,"canonical_G23_status":"HOLD_FULL_CANONICAL_SCOPE_NOT_PROVEN",
+  "independent_execution_results":results,"status":"HOLD_FULL_CANONICAL_SCOPE_NOT_PROVEN",
+  "tested_scope_result":"PASS" if not fail else "FAIL","validation_completed":True,
+  "failures":sorted(set(fail)),"scoped_decision_admissible":not fail,
+  "canonical_G23_status":"HOLD_FULL_CANONICAL_SCOPE_NOT_PROVEN",
   "PUAC2_status":"HOLD","release_eligible":False,"activation_authorized":False}
  write(Path(a.out),value);print(json.dumps(value,indent=2))
- # Exit 0 means the validator produced a complete report; its status field holds PASS/FAIL.
+ # Exit 0 means a complete machine-readable report exists. Its tested_scope_result is the outcome.
  return 0
 
 def g23_sign(a:argparse.Namespace)->int:
@@ -210,11 +231,11 @@ def g23_sign(a:argparse.Namespace)->int:
  public_pem=os.environ.get("PUAC2_G23_PUBLIC_KEY_PEM","")
  fail=[]
  if unsigned.get("schema")!=G23_UNSIGNED_SCHEMA:fail.append("G23_UNSIGNED_REPORT_SCHEMA_INVALID")
- if unsigned.get("status") not in {"PASS","FAIL"}:fail.append("G23_UNSIGNED_RESULT_INVALID")
+ if unsigned.get("status")!="HOLD_FULL_CANONICAL_SCOPE_NOT_PROVEN" or unsigned.get("tested_scope_result") not in {"PASS","FAIL"} or unsigned.get("validation_completed") is not True:fail.append("G23_UNSIGNED_RESULT_INVALID")
  if unsigned.get("candidate_commit_sha")!=a.candidate_sha:fail.append("G23_CANDIDATE_COMMIT_MISMATCH")
  if unsigned.get("candidate_package_sha256")!=pkgsha:fail.append("G23_PACKAGE_DIGEST_MISMATCH")
  if unsigned.get("g22_record_sha256")!=sha(Path(a.g22)):fail.append("G23_G22_RECORD_HASH_MISMATCH")
- if g22r.get("status")!="PASS" or g22r.get("candidate_commit_sha")!=a.candidate_sha or g22r.get("candidate_package_sha256")!=pkgsha:fail.append("G22_REPORT_NOT_VALID_FOR_SIGNING")
+ if g22r.get("tested_scope_result")!="PASS" or g22r.get("candidate_commit_sha")!=a.candidate_sha or g22r.get("candidate_package_sha256")!=pkgsha:fail.append("G22_REPORT_NOT_VALID_FOR_SIGNING")
  if unsigned.get("validator_identity")!=identity or not identity:fail.append("G23_VALIDATOR_ID_MISMATCH_OR_MISSING")
  if identity in (unsigned.get("producer_identity"),"CUSTOSZV9_G22_TRUST_ROOT"):fail.append("G23_IDENTITY_NOT_DISTINCT")
  if unsigned.get("trusted_workflow_sha")!=a.trusted_workflow_sha:fail.append("G23_TRUST_ROOT_SHA_MISMATCH")
@@ -250,7 +271,7 @@ def g24(a:argparse.Namespace)->int:
  if g22r.get("trusted_workflow_sha")!=a.trusted_workflow_sha:fail.append("G22_TRUST_ROOT_MISMATCH")
  if g23_payload is not None:
   if g23_payload.get("schema")!=G23_UNSIGNED_SCHEMA:fail.append("G23_SCHEMA_INVALID")
-  if g23_payload.get("status")!="PASS" or g23_payload.get("certification_authorization_for_g24") is not True:fail.append("G23_NOT_PASS_OR_NOT_AUTHORIZING")
+  if g23_payload.get("status")!="HOLD_FULL_CANONICAL_SCOPE_NOT_PROVEN" or g23_payload.get("tested_scope_result")!="PASS" or g23_payload.get("scoped_decision_admissible") is not True:fail.append("G23_TESTED_SCOPE_NOT_PASS_OR_NOT_ADMISSIBLE")
   if g23_payload.get("candidate_commit_sha")!=a.candidate_sha:fail.append("G23_COMMIT_MISMATCH")
   if g23_payload.get("candidate_package_sha256")!=pkgsha:fail.append("G23_PACKAGE_DIGEST_MISMATCH")
   if g23_payload.get("trusted_workflow_sha")!=a.trusted_workflow_sha:fail.append("G23_TRUST_ROOT_MISMATCH")
