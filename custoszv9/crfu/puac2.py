@@ -43,6 +43,8 @@ def validate_claim_v2(claim:Any)->dict[str,Any]:
  interval_errors=_interval(claim["validity_interval"])
  if interval_errors:return {"status":"HOLD","reasons":interval_errors,"semantic_key":key}
  if unit_errors:return {"status":"HOLD","reasons":unit_errors,"semantic_key":key}
+ if claim.get("evidence_state") not in EVIDENCE_STATES:
+  return {"status":"HOLD","reasons":["CLAIM_EVIDENCE_STATE_INVALID_OR_MISSING"],"semantic_key":key}
  if claim.get("not_applicable") is True and not str(claim.get("not_applicable_basis","")).strip():
   return {"status":"HOLD","reasons":["NOT_APPLICABLE_REQUIRES_BASIS"],"semantic_key":key}
  conversion=claim.get("conversion")
@@ -52,21 +54,22 @@ def validate_claim_v2(claim:Any)->dict[str,Any]:
   if absent:return {"status":"HOLD","reasons":["CONVERSION_EVIDENCE_MISSING:"+",".join(absent)],"semantic_key":key}
   if "original_value" in claim and conversion.get("original_value")!=claim.get("original_value"):
    return {"status":"DENY","reasons":["CONVERSION_DID_NOT_PRESERVE_ORIGINAL_VALUE"],"semantic_key":key}
- return {"status":"PASS","reasons":[],"claim_id":claim["claim_id"],"semantic_key":key,
+ return {"status":"PASS_SCHEMA_ONLY","reasons":[],"claim_id":claim["claim_id"],"semantic_key":key,
+         "evidence_state":claim["evidence_state"],"claim_truth_asserted":False,
          "claim_id_is_record_identity_not_semantic_key":True,"unit_of_measure":unit}
 def classify_claim_conflicts(claims:list[dict[str,Any]])->dict[str,Any]:
  by_key={};by_id=set();errors=[];conflicts=[]
  for claim in claims:
   result=validate_claim_v2(claim)
-  if result["status"]!="PASS":errors.extend(result["reasons"]);continue
+  if result["status"]!="PASS_SCHEMA_ONLY":errors.extend(result["reasons"]);continue
   if claim["claim_id"] in by_id:errors.append("DUPLICATE_CLAIM_RECORD_ID:"+str(claim["claim_id"]))
   by_id.add(claim["claim_id"]);key=repr(result["semantic_key"])
   previous=by_key.get(key)
   if previous is not None and (previous.get("value")!=claim.get("value") or previous.get("evidence_state")!=claim.get("evidence_state")):
    conflicts.append({"semantic_key":key,"claim_ids":[previous.get("claim_id"),claim.get("claim_id")],"status":"CONFLICT"})
   else:by_key[key]=claim
- return {"status":"HOLD" if errors else ("CONFLICT" if conflicts else "PASS"),"errors":errors,"conflicts":conflicts,
-         "claims_checked":len(claims),"direct_contradiction_requires_same_semantic_key":True}
+ return {"status":"HOLD" if errors else ("CONFLICT" if conflicts else "VALID_SCHEMA_NO_KEY_CONFLICTS"),"errors":errors,"conflicts":conflicts,
+         "claims_checked":len(claims),"claim_truth_asserted":False,"direct_contradiction_requires_same_semantic_key":True}
 
 def validate_event_records(events:Any)->dict[str,Any]:
  if not isinstance(events,list) or not events:return {"status":"HOLD","reasons":["EVENT_RECORD_SET_EMPTY_OR_INVALID"]}
@@ -225,7 +228,7 @@ PUAC_CONTROL_FALSE_FLAGS={
  "PUAC.C31":("checkpoint_invalid","restoration_unproven","recovered_state_unverified","hidden_dependency_prevents_recovery"),
  "PUAC.C32":("monitoring_stale","authorization_expired","incident_unmanaged")
 }
-def validate_puac_control(control_id:str,payload:Any,*,producer_identity:str|None=None,evaluator_identity:str|None=None)->dict[str,Any]:
+def validate_puac_control(control_id:str,payload:Any,*,producer_identity:str|None=None,evaluator_identity:str|None=None,candidate_sha256:str|None=None)->dict[str,Any]:
  if control_id not in PUAC_CONTROL_OUTPUTS:return {"status":"HOLD","reasons":["CONTROL_ID_NOT_REGISTERED_LOCALLY"]}
  if not isinstance(payload,dict):return {"status":"HOLD","reasons":["CONTROL_EVIDENCE_PAYLOAD_MISSING"]}
  missing=[k for k in PUAC_CONTROL_OUTPUTS[control_id] if k not in payload]
@@ -241,11 +244,52 @@ def validate_puac_control(control_id:str,payload:Any,*,producer_identity:str|Non
  if control_id=="PUAC.C27":
   evaluator=payload.get("evaluator_identity",evaluator_identity);producer=payload.get("producer_identity",producer_identity)
   if not evaluator or not producer or evaluator==producer:errors.append("EXECUTOR_EVALUATOR_NOT_DISTINCT")
+ if control_id=="PUAC.C25":
+  if not isinstance(payload.get("claim_registry"),(list,dict)):errors.append("CLAIM_REGISTRY_INVALID")
+  if not isinstance(payload.get("acceptance_criteria"),(list,dict)):errors.append("ACCEPTANCE_CRITERIA_INVALID")
+  scope_evidence=payload.get("scope_evidence")
+  if not isinstance(scope_evidence,dict):errors.append("SCOPE_EVIDENCE_NOT_OBJECT")
+  elif candidate_sha256 and scope_evidence.get("package_sha256")!=candidate_sha256:errors.append("SCOPE_NOT_BOUND_TO_CANDIDATE_DIGEST")
+ if control_id=="PUAC.C26":
+  if not isinstance(payload.get("unresolved_claims"),list):errors.append("UNRESOLVED_CLAIMS_NOT_LIST")
+  elif payload["unresolved_claims"]:errors.append("IN_SCOPE_CLAIMS_UNRESOLVED")
+  if not payload.get("assurance_case"):errors.append("ASSURANCE_CASE_EMPTY")
+  if not payload.get("argumentation_record"):errors.append("ARGUMENTATION_RECORD_EMPTY")
+ if control_id=="PUAC.C27":
+  if not isinstance(payload.get("allowed_evaluators"),list) or not payload["allowed_evaluators"]:errors.append("ALLOWED_EVALUATORS_EMPTY")
+  if not payload.get("separation_evidence"):errors.append("SEPARATION_EVIDENCE_EMPTY")
+  evaluator=payload.get("evaluator_identity",evaluator_identity);producer=payload.get("producer_identity",producer_identity)
+  if not evaluator or not producer or evaluator==producer:errors.append("EXECUTOR_EVALUATOR_NOT_DISTINCT")
+ if control_id=="PUAC.C28":
+  if not payload.get("threat_model") or not payload.get("risk_criteria"):errors.append("THREAT_MODEL_OR_RISK_CRITERIA_MISSING")
+  if not payload.get("residual_risk_record"):errors.append("RESIDUAL_RISK_RECORD_EMPTY")
  if control_id=="PUAC.C29":
   reproduction=payload.get("reproduction_report")
   if not isinstance(reproduction,dict) or reproduction.get("status")!="PASS":errors.append("REPRODUCTION_REPORT_NOT_PASS")
- if control_id=="PUAC.C31" and payload.get("restoration_evidence",{}).get("restoration_proven") is not True:
-  errors.append("RESTORATION_EVIDENCE_NOT_PROVEN")
+  identity=payload.get("artifact_bytes_identity")
+  if not isinstance(identity,dict) or not is_sha256(identity.get("sha256")):errors.append("ARTIFACT_BYTE_IDENTITY_INVALID")
+  elif candidate_sha256 and identity.get("sha256")!=candidate_sha256:errors.append("ARTIFACT_BYTE_IDENTITY_MISMATCH")
+  if not payload.get("dependency_lock") or not payload.get("build_recipe") or not payload.get("execution_environment"):errors.append("BUILD_PROVENANCE_CONTEXT_INCOMPLETE")
+  if not payload.get("provenance_attestation") or not payload.get("supply_chain_evidence"):errors.append("PROVENANCE_OR_SUPPLY_CHAIN_EVIDENCE_MISSING")
+ if control_id=="PUAC.C30":
+  if not isinstance(payload.get("dependency_graph"),dict) or not isinstance(payload.get("impact_graph"),dict):errors.append("DEPENDENCY_OR_IMPACT_GRAPH_INVALID")
+  build=payload.get("candidate_build")
+  if not isinstance(build,dict):errors.append("CANDIDATE_BUILD_NOT_OBJECT")
+  elif candidate_sha256 and build.get("package_sha256")!=candidate_sha256:errors.append("CANDIDATE_BUILD_DIGEST_MISMATCH")
+  if not isinstance(payload.get("revalidation_plan"),(dict,list)):errors.append("REVALIDATION_PLAN_INVALID")
+ if control_id=="PUAC.C31":
+  restoration=payload.get("restoration_evidence")
+  if not isinstance(restoration,dict) or restoration.get("restoration_proven") is not True:errors.append("RESTORATION_EVIDENCE_NOT_PROVEN")
+  checkpoint=payload.get("checkpoint")
+  if not isinstance(checkpoint,dict) or not is_sha256(checkpoint.get("sha256")):errors.append("CHECKPOINT_HASH_NOT_VERIFIED")
+  elif isinstance(restoration,dict) and restoration.get("checkpoint_sha256")!=checkpoint.get("sha256"):errors.append("RESTORATION_CHECKPOINT_IDENTITY_MISMATCH")
+  rollback=payload.get("rollback_test")
+  if not isinstance(rollback,dict) or rollback.get("status")!="PASS":errors.append("ROLLBACK_TEST_NOT_PASS")
+ if control_id=="PUAC.C32":
+  profile=payload.get("monitoring_profile")
+  if not isinstance(profile,dict) or not profile:errors.append("MONITORING_PROFILE_NOT_DEFINED")
+  elif not profile.get("responsible_roles"):errors.append("MONITORING_RESPONSIBLE_ROLES_MISSING")
+  if not isinstance(payload.get("observations"),list) or not isinstance(payload.get("change_events"),list):errors.append("MONITORING_OBSERVATIONS_OR_CHANGE_EVENTS_INVALID")
  if missing:return {"status":"HOLD","reasons":sorted(set(errors+["CONTROL_EVIDENCE_FIELDS_MISSING:"+",".join(sorted(set(missing)))])),"control_id":control_id,"canonical_admission":"NOT_GRANTED"}
  if errors:return {"status":"FAIL","reasons":sorted(set(errors)),"control_id":control_id,"canonical_admission":"NOT_GRANTED"}
  return {"status":"PASS_FOR_LOCAL_CONTROL_SCOPE","reasons":[],"control_id":control_id,"canonical_admission":"NOT_GRANTED",
