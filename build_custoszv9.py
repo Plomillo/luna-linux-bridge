@@ -79,10 +79,20 @@ def main()->int:
   if not source.is_file():raise SystemExit("FORMAL_SOURCE_MISSING:"+name)
   shutil.copyfile(source,formal_dest/name)
   formal_checks[name]={"sha256":digest_file(source),"size_bytes":source.stat().st_size}
+  scope_path=data/"certification_scope.json"
+  if not scope_path.is_file():raise SystemExit("CERTIFICATION_SCOPE_MISSING")
+  scope_record=json.loads(scope_path.read_text(encoding="utf-8"))
+  expected_scope="CUSTOSZV9_CRFU_STANDALONE_SOFTWARE_AND_EXACT_V8_BYTE_PRESERVATION"
+  if scope_record.get("schema")!="CUSTOSZV9_STANDALONE_SOFTWARE_SCOPE/1.0" or scope_record.get("scope_id")!=expected_scope:
+   raise SystemExit("CERTIFICATION_SCOPE_IDENTITY_INVALID")
+  scope_evidence={"scope_id":scope_record["scope_id"],"source_path":"custoszv9/data/certification_scope.json",
+                  "sha256":digest_file(scope_path),"byte_size":scope_path.stat().st_size,
+                  "embedded_byte_exact":True}
  manifest={
   "schema":"CUSTOSZV9_BUILD_MANIFEST/1.0",
   "artifact_id":"CUSTOSZV9","artifact_filename":"CUSTOSZV9.pyz",
   "artifact_status":"PROPOSED_UNCERTIFIED_SUCCESSOR","source_commit":commit,
+  "assurance_scope":scope_evidence,
   "baseline":{"filename":"CUSTOSZV8.pyz","sha256":sha0,"size_bytes":size0,
               "embedded_path":"custoszv9/data/CUSTOSZV8.pyz","embedded_bytes_match":True,
               "repository_blob_sha1":"d9689914a7dd908ebb5a17eeda071aecbd652ab5"},
