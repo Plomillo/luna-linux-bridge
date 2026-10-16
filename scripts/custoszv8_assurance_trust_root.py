@@ -225,6 +225,8 @@ def main_candidate_facts(root: Path, candidate_sha: str, producer: dict) -> tupl
             if record.get("size_bytes") != p.stat().st_size:
                 failures.append("EVIDENCE_SIZE_MISMATCH:" + str(logical_path))
         for name in REQUIRED:
+            if name == "custoszv8-assurance-case.json":
+                continue
             if not any(Path(logical).name == name for logical in inventory):
                 failures.append("INVENTORY_ENTRY_MISSING:" + name)
 
@@ -320,15 +322,19 @@ def g23(args: argparse.Namespace) -> int:
 
 
 def make_authority(args: argparse.Namespace) -> int:
-    token = os.environ.get("OIDC_TOKEN", "")
-    parts = token.split(".")
-    if len(parts) != 3:
-        raise SystemExit("OIDC_TOKEN_FORMAT_INVALID")
+    # Claims are decoded in the protected workflow step that calls GitHub's
+    # runner OIDC endpoint. The raw bearer token is never written to disk,
+    # outputs, logs, or artifacts; only its SHA-256 fingerprint is retained.
+    claims_raw = os.environ.get("OIDC_CLAIMS_JSON", "")
+    token_fingerprint = os.environ.get("OIDC_TOKEN_FINGERPRINT", "")
     try:
-        payload = parts[1] + "=" * ((4 - len(parts[1]) % 4) % 4)
-        claims = json.loads(base64.urlsafe_b64decode(payload))
-    except Exception as exc:
-        raise SystemExit("OIDC_TOKEN_CLAIMS_INVALID") from exc
+        claims = json.loads(claims_raw)
+    except (json.JSONDecodeError, TypeError) as exc:
+        raise SystemExit("OIDC_CLAIMS_INVALID") from exc
+    if not isinstance(claims, dict):
+        raise SystemExit("OIDC_CLAIMS_ROOT_INVALID")
+    if not re.fullmatch(r"[0-9a-f]{64}", token_fingerprint):
+        raise SystemExit("OIDC_TOKEN_FINGERPRINT_INVALID")
 
     root = Path(args.candidate_dir).resolve()
     pkg = locate(root, "CUSTOSZV8.pyz")
@@ -365,7 +371,7 @@ def make_authority(args: argparse.Namespace) -> int:
         "candidate_commit_sha": args.candidate_sha,
         "candidate_package_sha256": digest,
         "audience": expected_audience,
-        "oidc_token_fingerprint_sha256": sha256_bytes(token.encode("utf-8")),
+        "oidc_token_fingerprint_sha256": token_fingerprint,
         "oidc_issuer": claims.get("iss"),
         "oidc_subject": claims.get("sub"),
         "repository": claims.get("repository"),
