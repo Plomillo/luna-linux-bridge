@@ -263,7 +263,7 @@ jobs:
         id: g24_attest_3
         if: ${{ steps.g24_attest_1.outcome != 'success' && steps.g24_attest_2.outcome != 'success' }}
         continue-on-error: true
-        uses: actions/attest@1e69f48acb82d1966a394da916b4c1699d6
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
         with:
           subject-path: ${{ runner.temp }}/evidence/G24_CERTIFICATE.json
 
