@@ -19,7 +19,7 @@ concurrency:
 jobs:
   g22:
     name: "G22 — exact package, baseline, authority bytes and reproducibility"
-    if: ${{ github.event.workflow_run.conclusion == 'success' && startsWith(github.event.workflow_run.head_branch, 'feature/custoszv9-crfu-') }}
+    if: ${{ github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success' && startsWith(github.event.workflow_run.head_branch, 'feature/custoszv9-crfu-') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
