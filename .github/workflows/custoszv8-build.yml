@@ -43,6 +43,7 @@ jobs:
       - name: Checkout exact triggering commit
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
 
       - name: Set up Python
@@ -58,8 +59,8 @@ jobs:
 
       - name: Build standalone ZIPAPP
         env:
-          GITHUB_SHA: ${{ github.sha }}
-          GITHUB_REF_NAME: ${{ github.ref_name }}
+          GITHUB_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          GITHUB_REF_NAME: ${{ github.event.pull_request.head.ref || github.ref_name }}
         run: python build.py
 
       - name: Verify deterministic rebuild for the same source commit
@@ -83,7 +84,7 @@ jobs:
 
       - name: Test actual CUSTOSZ V7 read-only commands and inspect Runtime and MetaOS
         env:
-          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: python scripts/validate_components.py
 
       - name: Install pinned Runtime V1 test dependency
@@ -91,19 +92,19 @@ jobs:
 
       - name: Run source-audited Runtime V1 selftest in isolation
         env:
-          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: python scripts/validate_runtime_v1_selftest.py
 
       - name: Run pinned wasm-tools validation and extract MetaOS WIT contract
         env:
-          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: python scripts/validate_metaos_component.py
 
       - name: Upload CUSTOSZV8.pyz and evidence reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: CUSTOSZV8-candidate-${{ github.sha }}
+          name: CUSTOSZV8-candidate-${{ github.event.pull_request.head.sha || github.sha }}
           path: |
             dist/CUSTOSZV8.pyz
             evidence/custoszv8-selftest.json
