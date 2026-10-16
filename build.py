@@ -23,10 +23,21 @@ COMPONENT_SPECS = {
         "variant_scope": "EXACT_SELECTED_STAGING_BYTES_ONLY",
         "skeleton_reference_equivalence": "NOT_ASSERTED"
     },
-    "METAOS_WASM": {
+    "METAOS_WASM_ORIGINAL": {
         "source": ROOT / "artifacts/custosz-v7/MetaOS.wasm",
-        "target": "custoszv8/data/components/MetaOS.wasm",
-        "integration_status": "BLOCKED_UNTIL_ABI_AND_EXPORT_CONTRACT_VERIFIED"
+        "target": "custoszv8/data/components/MetaOS_v1_0_0_original.wasm",
+        "integration_status": "HISTORICAL_ORIGINAL_PRESERVED_NOT_SELECTED_FOR_V8",
+        "version_scope": "EXACT_ORIGINAL_BYTES"
+    },
+    "METAOS_WASM_V8_CANDIDATE_1_0_1": {
+        "source": ROOT / "build/MetaOS_V8_candidate.wasm",
+        "target": "custoszv8/data/components/MetaOS_V8_CANDIDATE_1_0_1.wasm",
+        "integration_status": "VERSIONED_POLICY_CORRECTION_AWAITING_BEHAVIORAL_AND_CROSS_COMPONENT_VALIDATION",
+        "source_component": "artifacts/custosz-v7/MetaOS.wasm",
+        "correction_scope": [
+            "provider-failure-is-mission-failure: false -> true",
+            "resource-red-is-mission-failure: false -> true"
+        ]
     }
 }
 
