@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 from custoszv9.crfu.anti_paralysis import decide_next_action, state_fingerprint
 from custoszv9.crfu.evidence import append_event, verify_journal
+from custoszv9.crfu.event_queue import PersistentMissionQueue
 from custoszv9.crfu.formal import validate_proof_bundle
 from custoszv9.crfu.gates import CANONICAL_GATES, LOCAL_PUAC_CONTROLS, evaluate_gate_evidence
 from custoszv9.crfu.model import sha256_bytes
@@ -65,6 +66,32 @@ class CRFUTests(unittest.TestCase):
         self.assertFalse(out["release_eligible"])
         self.assertEqual(len(CANONICAL_GATES),24)
         self.assertEqual(len(LOCAL_PUAC_CONTROLS),8)
+    def test_event_queue_resumes_only_on_matching_signal_and_verifies_chain(self):
+        task={
+          "task_id":"task-event","mission_id":"task-event","project_id":"p","source_identity":"s",
+          "target_identity":"t","source_state_hash":"a"*64,"dependency_set":[],
+          "authorized_scope":"read-only","required_capabilities":[],"inputs":[],"preconditions":[],
+          "permitted_effects":[],"resource_budget":{"ram_required_bytes":0,"ram_reserved_bytes":0,
+          "disk_required_bytes":0,"max_concurrency":1},"execution_deadline":"2099-01-01T00:00:00Z",
+          "maximum_planning_budget":3,"maximum_retry_budget":0,"acceptance_criteria":["valid"],
+          "expected_outputs":[],"validation_strategy":"hash","evidence_requirements":["journal"],
+          "checkpoint_reference":None,"rollback_strategy":"none","completion_condition":"done",
+          "escalation_condition":"blocked","authorization_evidence_reference":"test-reference"}
+        with tempfile.TemporaryDirectory() as td:
+            q=PersistentMissionQueue(Path(td)/"queue.sqlite")
+            self.assertEqual(q.submit(task)["state"],"RECEIVED")
+            self.assertEqual(q.transition("task-event","RECEIVED","PREFLIGHT",event_type="PREFLIGHT")["state"],"PREFLIGHT")
+            self.assertEqual(q.transition("task-event","PREFLIGHT","READY",event_type="PLAN_VALID")["state"],"READY")
+            self.assertEqual(q.claim_next_ready()["state"],"RUNNING")
+            with self.assertRaises(ValueError):
+                q.transition("task-event","RUNNING","WAITING_FOR_EVENT",event_type="WAIT",fields={"wait_condition":"host"})
+            q.transition("task-event","RUNNING","WAITING_FOR_EVENT",event_type="WAIT",
+                fields={"wait_condition":"host-online","wait_deadline_utc":"2099-01-01T00:00:00Z"})
+            self.assertEqual(q.emit_signal("unrelated")["resumed"],[])
+            self.assertEqual(q.get("task-event")["state"],"WAITING_FOR_EVENT")
+            self.assertEqual(q.emit_signal("host-online")["resumed"],["task-event"])
+            self.assertEqual(q.get("task-event")["state"],"READY")
+            self.assertEqual(q.verify_event_chain()["status"],"PASS")
     def test_checkpoint_does_not_prove_restoration(self):
         payload=b"checkpoint";dep=sha256_bytes(b"deps")
         record=checkpoint_record(payload,checkpoint_id="cp",state_identity="s",dependency_fingerprint=dep)
