@@ -75,7 +75,7 @@ def type_name(value) -> str:
 def main() -> int:
     report = {
         "schema": "custoszv8.metaos.behavioral-evidence.v1",
-        "candidate_commit": os.environ.get("GITHUB_EVENT_PULL_REQUEST_HEAD_SHA") or os.environ.get("GITHUB_SHA", "LOCAL_UNBOUND"),
+        "candidate_commit": os.environ.get("CUSTOSZV8_CANDIDATE_SHA") or os.environ.get("GITHUB_SHA", "LOCAL_UNBOUND"),
         "observed_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
         "component": "METAOS_WASM_V8_CANDIDATE_1_0_1",
         "expected_source_sha256": EXPECTED_SOURCE_SHA256,
