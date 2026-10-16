@@ -54,7 +54,7 @@ def evaluate_gate_evidence(records:Any,*,candidate_commit_sha:str,package_sha256
    try:
     checked=validate_puac_control(gate,row.get("evidence_payload"),
       producer_identity=row.get("producer_identity"),evaluator_identity=row.get("evaluator_identity"),
-      candidate_sha256=package_sha256)
+      candidate_sha256=package_sha256,candidate_commit_sha=candidate_commit_sha)
     if checked.get("status")=="HOLD":
      pending.extend("PUAC_CONTROL:"+x for x in checked.get("reasons",["CONTROL_EVIDENCE_INCOMPLETE"]))
     elif checked.get("status")!="PASS_FOR_LOCAL_CONTROL_SCOPE":
