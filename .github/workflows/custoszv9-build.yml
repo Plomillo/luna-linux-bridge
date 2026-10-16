@@ -9,6 +9,8 @@ on:
       - "tests/test_custoszv9.py"
       - "build_custoszv9.py"
       - ".github/workflows/custoszv9-build.yml"
+      - ".github/workflows/custoszv9-independent-g22-g23-g24.yml"
+      - "scripts/custoszv9_gate_trust_root.py"
   pull_request:
     branches: [main]
     paths:
@@ -17,6 +19,8 @@ on:
       - "tests/test_custoszv9.py"
       - "build_custoszv9.py"
       - ".github/workflows/custoszv9-build.yml"
+      - ".github/workflows/custoszv9-independent-g22-g23-g24.yml"
+      - "scripts/custoszv9_gate_trust_root.py"
   workflow_dispatch:
 
 permissions:
