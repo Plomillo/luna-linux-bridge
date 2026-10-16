@@ -24,6 +24,35 @@ FAILURE_POLICY = "FAIL_CLOSED"
 CANONICAL_GATES = tuple(f"G{i:02d}" for i in range(1, 25))
 LOCAL_PUAC_CONTROLS = tuple(f"PUAC.C{i}" for i in range(25, 33))
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+METAOS_V8_CANDIDATE_ID = "MetaOS_V8_CANDIDATE_1_0_1"
+METAOS_V8_CANDIDATE_SHA256 = "069240d6cfc81f9b659479cc938519bc4eb4e4a0c794e300c89b477dbe3caa02"
+METAOS_EXPORT_SIGNATURES: dict[str, tuple[list[str], str]] = {
+    "architecture-version": ([], "U32"),
+    "terminal-success": (["U32"], "Bool"),
+    "knowledge-gate": (["U32"], "Bool"),
+    "formalization-gate": (["U32"], "Bool"),
+    "implementation-gate": (["U32"], "Bool"),
+    "implementation-authorized": (["Bool", "Bool", "Bool", "Bool"], "Bool"),
+    "active-allowed": (["Bool", "Bool", "Bool", "Bool"], "Bool"),
+    "checkpoint-trusted": (["U32"], "Bool"),
+    "provider-failure-is-mission-failure": ([], "Bool"),
+    "resource-red-is-mission-failure": ([], "Bool"),
+    "unknown-effect-retry-allowed": ([], "Bool"),
+    "network-default-deny": ([], "Bool"),
+}
+METAOS_MASK_REQUIREMENTS = {
+    "terminal-success": 262143,
+    "knowledge-gate": 268435455,
+    "formalization-gate": 8191,
+    "implementation-gate": 4095,
+    "checkpoint-trusted": 31,
+}
+METAOS_POLICY_RESULTS = {
+    "provider-failure-is-mission-failure": True,
+    "resource-red-is-mission-failure": True,
+    "unknown-effect-retry-allowed": False,
+    "network-default-deny": True,
+}
 _TOKEN_PATTERNS = [
     re.compile(r"(?<!\w)/[A-Za-z0-9_.\-/]+"),
     re.compile(r"\b[A-Fa-f0-9]{40,64}\b"),
@@ -833,7 +862,7 @@ class RuntimeV1Adapter:
 
 
 class MetaOSAdapter:
-    """Inspects core modules or component-model files; blocks invocation until the required ABI is verified."""
+    """Exact-digest, hostless invocation of the versioned MetaOS policy component."""
     def inspect(self, path: str | Path) -> dict[str, Any]:
         return inspect_wasm(path)
 
@@ -841,7 +870,7 @@ class MetaOSAdapter:
                    signature_verified: bool = False, authorization_ref: str | None = None) -> dict[str, Any]:
         exports = inspection.get("exports", [])
         if inspection.get("format") == "WASM_COMPONENT_MODEL":
-            return {"status": "HOLD", "reason": "component-model import/export contract not fully parsed",
+            return {"status": "HOLD", "reason": "component-model signatures require the pinned Wasmtime adapter",
                     "export_name": export_name, "execution_authorized": False}
         match = [item for item in exports if item.get("name") == export_name]
         if len(match) != 1 or not signature_verified or not authorization_ref:
@@ -849,3 +878,126 @@ class MetaOSAdapter:
                     "export_name": export_name, "execution_authorized": False}
         return {"status": "READY_FOR_SEPARATE_SANDBOXED_INVOCATION",
                 "export_name": export_name, "execution_authorized": False}
+
+    @staticmethod
+    def _type_name(value: Any) -> str:
+        return type(value).__name__
+
+    @classmethod
+    def _invoke_path(cls, path: Path, export_name: str, args: list[Any],
+                     fuel_limit: int, authorization_ref: str) -> dict[str, Any]:
+        if not path.is_file():
+            return {"status": "HOLD", "reason": "MetaOS candidate file is missing",
+                    "execution_authorized": False}
+        digest = sha256_file(path)
+        if digest != METAOS_V8_CANDIDATE_SHA256:
+            return {"status": "CONFLICT", "reason": "MetaOS candidate SHA-256 does not match the pinned version",
+                    "actual_sha256": digest, "expected_sha256": METAOS_V8_CANDIDATE_SHA256,
+                    "execution_authorized": False}
+        if export_name not in METAOS_EXPORT_SIGNATURES:
+            return {"status": "DENY", "reason": "export is not allowlisted",
+                    "export_name": export_name, "execution_authorized": False}
+        params_expected, result_expected = METAOS_EXPORT_SIGNATURES[export_name]
+        if not isinstance(args, list) or len(args) != len(params_expected):
+            return {"status": "DENY", "reason": "argument count does not match the pinned interface",
+                    "export_name": export_name, "expected_argument_count": len(params_expected),
+                    "observed_argument_count": len(args) if isinstance(args, list) else None,
+                    "execution_authorized": False}
+        for index, (kind, value) in enumerate(zip(params_expected, args)):
+            valid = type(value) is bool if kind == "Bool" else (type(value) is int and 0 <= value <= 0xFFFFFFFF)
+            if not valid:
+                return {"status": "DENY", "reason": f"argument {index} is not a valid {kind}",
+                        "export_name": export_name, "execution_authorized": False}
+        if type(fuel_limit) is not int or not 1 <= fuel_limit <= 1_000_000:
+            return {"status": "DENY", "reason": "fuel_limit must be between 1 and 1000000",
+                    "execution_authorized": False}
+        try:
+            from wasmtime import Config, Engine, Store
+            from wasmtime.component import Component, Linker
+        except ImportError:
+            return {"status": "HOLD", "reason": "optional pinned runtime dependency wasmtime==49.0.0 is unavailable",
+                    "execution_authorized": False}
+
+        try:
+            config = Config()
+            config.consume_fuel = True
+            engine = Engine(config)
+            component = Component.from_file(engine, str(path))
+            component_type = component.type
+            imports = component_type.imports(engine)
+            exports = component_type.exports(engine)
+            if imports:
+                return {"status": "DENY", "reason": "host imports are forbidden for this policy component",
+                        "host_imports": sorted(imports), "execution_authorized": False}
+            if set(exports) != set(METAOS_EXPORT_SIGNATURES):
+                return {"status": "CONFLICT", "reason": "component export set differs from the pinned interface",
+                        "observed_exports": sorted(exports), "expected_exports": sorted(METAOS_EXPORT_SIGNATURES),
+                        "execution_authorized": False}
+            store = Store(engine)
+            store.set_fuel(fuel_limit)
+            instance = Linker(engine).instantiate(store, component)
+            function = instance.get_func(store, export_name)
+            if function is None:
+                return {"status": "CONFLICT", "reason": "allowlisted component export is unavailable",
+                        "execution_authorized": False}
+            function_type = function.type(store)
+            observed_params = [cls._type_name(param_type) for _, param_type in function_type.params]
+            observed_result = cls._type_name(function_type.result) if function_type.result is not None else None
+            if observed_params != params_expected or observed_result != result_expected:
+                return {"status": "CONFLICT", "reason": "component function signature differs from the pinned interface",
+                        "observed_parameters": observed_params, "observed_result": observed_result,
+                        "expected_parameters": params_expected, "expected_result": result_expected,
+                        "execution_authorized": False}
+            result = function(store, *args)
+            function.post_return(store)
+            expected_result = None
+            if export_name == "architecture-version":
+                expected_result = 200
+            elif export_name in METAOS_MASK_REQUIREMENTS:
+                expected_result = args[0] == METAOS_MASK_REQUIREMENTS[export_name]
+            elif export_name in {"implementation-authorized", "active-allowed"}:
+                expected_result = all(args)
+            elif export_name in METAOS_POLICY_RESULTS:
+                expected_result = METAOS_POLICY_RESULTS[export_name]
+            if expected_result is not None and result is not expected_result:
+                return {"status": "FAIL_POLICY_INVARIANT", "reason": "component result violates a declared MetaOS invariant",
+                        "export_name": export_name, "observed_result": result, "expected_result": expected_result,
+                        "component_sha256": digest, "execution_authorized": False}
+            return {
+                "status": "PASS_METAOS_EXPORT_INVOKED", "artifact_id": METAOS_V8_CANDIDATE_ID,
+                "component_sha256": digest, "export_name": export_name, "arguments": args,
+                "result": result, "fuel_limit": fuel_limit, "host_imports": [],
+                "host_capabilities": "NONE", "hostless": True, "mission_dispatch": False,
+                "execution_authorized": False,
+                "authorization_ref": authorization_ref,
+                "authorization_ref_validation": "PRESENCE_ONLY_NOT_EXTERNAL_AUTHORITY_VERIFICATION",
+                "invoked_at_utc": utc_now(),
+            }
+        except Exception as exc:
+            return {"status": "FAIL", "reason": f"{type(exc).__name__}: {exc}",
+                    "component_sha256": digest, "export_name": export_name,
+                    "execution_authorized": False}
+
+    def invoke(self, export_name: str, args: list[Any], expected_sha256: str,
+               authorization_ref: str | None, explicit_opt_in: bool = False,
+               path: str | Path | None = None, fuel_limit: int = 100_000) -> dict[str, Any]:
+        if not explicit_opt_in:
+            return {"status": "DENY", "reason": "explicit --allow-execution opt-in is required",
+                    "execution_authorized": False}
+        if not isinstance(authorization_ref, str) or not authorization_ref.strip() or len(authorization_ref) > 256:
+            return {"status": "DENY", "reason": "a bounded, non-empty authorization reference is required",
+                    "execution_authorized": False}
+        if expected_sha256 != METAOS_V8_CANDIDATE_SHA256:
+            return {"status": "DENY", "reason": "expected_sha256 must equal the pinned versioned candidate digest",
+                    "expected_sha256": expected_sha256, "required_sha256": METAOS_V8_CANDIDATE_SHA256,
+                    "execution_authorized": False}
+        if path is not None:
+            return self._invoke_path(Path(path), export_name, args, fuel_limit, authorization_ref)
+        try:
+            resource = importlib.resources.files("custoszv8").joinpath(
+                "data", "components", "MetaOS_V8_CANDIDATE_1_0_1.wasm")
+            with importlib.resources.as_file(resource) as unpacked:
+                return self._invoke_path(Path(unpacked), export_name, args, fuel_limit, authorization_ref)
+        except (OSError, ModuleNotFoundError, TypeError) as exc:
+            return {"status": "HOLD", "reason": f"bundled MetaOS candidate unavailable: {type(exc).__name__}: {exc}",
+                    "execution_authorized": False}
