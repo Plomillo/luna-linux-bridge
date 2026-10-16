@@ -12,3 +12,21 @@ def decide_next_action(*,action_id:str|None,strategy_id:str|None,state_hash:str,
   return {"decision":"WAIT_CONDITIONALLY","wait_condition":wait_condition,"wait_deadline_utc":wait_deadline_utc,"next_action":"RESUME_ON_CONDITION_OR_DEADLINE"}
  if retry_budget_remaining<0:return {"decision":"BLOCKED","reason":"RETRY_BUDGET_INVALID","next_action":None}
  return {"decision":"EXECUTE_NEXT_ACTION","reason":"BOUNDED_PLAN_ADMISSIBLE","next_action":action_id,"strategy_id":strategy_id}
+def retry_decision(*,idempotency_class:str,retries_used:int,max_retries:int,transient_failure:bool,
+                   authorization_valid:bool,idempotency_key:str|None=None,effects_reconciled:bool=False,
+                   wait_seconds:int=0)->dict:
+ """Authorize a retry only when bounded, transient, authorized and safe for the effect class."""
+ if idempotency_class not in {"READ_ONLY","IDEMPOTENT","NON_IDEMPOTENT","UNKNOWN"}:
+  return {"decision":"DENY_RETRY","reason":"IDEMPOTENCY_CLASS_INVALID"}
+ if any(isinstance(v,bool) or not isinstance(v,int) for v in (retries_used,max_retries,wait_seconds)) or retries_used<0 or max_retries<0 or wait_seconds<0:
+  return {"decision":"DENY_RETRY","reason":"RETRY_BUDGET_INVALID"}
+ if not transient_failure:return {"decision":"DENY_RETRY","reason":"FAILURE_NOT_CLASSIFIED_TRANSIENT"}
+ if retries_used>=max_retries:return {"decision":"DENY_RETRY","reason":"RETRY_BUDGET_EXHAUSTED"}
+ if authorization_valid is not True:return {"decision":"DENY_RETRY","reason":"AUTHORIZATION_NOT_VALID"}
+ if idempotency_class=="UNKNOWN":return {"decision":"DENY_RETRY","reason":"UNKNOWN_IDEMPOTENCY_CLASS"}
+ if idempotency_class=="NON_IDEMPOTENT" and (not effects_reconciled or not idempotency_key):
+  return {"decision":"DENY_RETRY","reason":"NON_IDEMPOTENT_EFFECTS_NOT_RECONCILED"}
+ return {"decision":"WAIT_CONDITIONALLY" if wait_seconds else "RETRY_ADMISSIBLE",
+         "reason":"BOUNDED_TRANSIENT_RETRY","wait_seconds":wait_seconds,"retries_remaining":max_retries-retries_used-1,
+         "authorization_reused_only_within_same_valid_scope":True}
+
