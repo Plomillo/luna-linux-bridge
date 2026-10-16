@@ -30,8 +30,11 @@ def _interval(value:Any,now:datetime|None=None)->list[str]:
 
 def validate_claim_v2(claim:Any)->dict[str,Any]:
  if not isinstance(claim,dict):return {"status":"DENY","reasons":["CLAIM_NOT_OBJECT"]}
- required=("claim_id","subject_id","property_id","scope_id","context_id","version","validity_interval","unit_of_measure")
+ required=("claim_id","subject_id","property_id","scope_id","context_id","version","validity_interval","unit_of_measure","value")
  missing=[k for k in required if k not in claim or claim[k] is None or claim[k]==""]
+ for field in ("claim_id","subject_id","property_id","scope_id","context_id","version"):
+  if field in claim and (not isinstance(claim[field],str) or not claim[field].strip()):
+   missing.append(field+":INVALID_STRING")
  if missing:return {"status":"HOLD","reasons":["CLAIM_FIELDS_MISSING:"+",".join(missing)]}
  key=tuple(claim[k] for k in ("subject_id","property_id","scope_id","context_id","version","validity_interval","unit_of_measure"))
  unit=claim["unit_of_measure"];unit_errors=[]
@@ -58,19 +61,34 @@ def validate_claim_v2(claim:Any)->dict[str,Any]:
  return {"status":"PASS_SCHEMA_ONLY","reasons":[],"claim_id":claim["claim_id"],"semantic_key":key,
          "evidence_state":claim["evidence_state"],"claim_truth_asserted":False,
          "claim_id_is_record_identity_not_semantic_key":True,"unit_of_measure":unit}
-def classify_claim_conflicts(claims:list[dict[str,Any]])->dict[str,Any]:
- by_key={};by_id=set();errors=[];conflicts=[]
+def classify_claim_conflicts(claims:Any)->dict[str,Any]:
+ if not isinstance(claims,list) or not claims:
+  return {"status":"HOLD","errors":["CLAIM_SET_EMPTY_OR_INVALID"],"conflicts":[],"claims_checked":0,
+          "claim_truth_asserted":False,"direct_contradiction_requires_same_semantic_key":True}
+ by_key={};by_id=set();errors=[];conflicts=[];unknown=[];refuted=[];declared_conflicts=[]
  for claim in claims:
   result=validate_claim_v2(claim)
   if result["status"]!="PASS_SCHEMA_ONLY":errors.extend(result["reasons"]);continue
-  if claim["claim_id"] in by_id:errors.append("DUPLICATE_CLAIM_RECORD_ID:"+str(claim["claim_id"]))
-  by_id.add(claim["claim_id"]);key=repr(result["semantic_key"])
+  claim_id=claim["claim_id"];state=claim.get("evidence_state")
+  if claim_id in by_id:errors.append("DUPLICATE_CLAIM_RECORD_ID:"+str(claim_id))
+  by_id.add(claim_id)
+  key=canonical_json(result["semantic_key"])
+  if state=="UNKNOWN":unknown.append(claim_id)
+  elif state=="REFUTED":refuted.append(claim_id)
+  elif state=="CONFLICT":declared_conflicts.append(claim_id)
   previous=by_key.get(key)
-  if previous is not None and (previous.get("value")!=claim.get("value") or previous.get("evidence_state")!=claim.get("evidence_state")):
-   conflicts.append({"semantic_key":key,"claim_ids":[previous.get("claim_id"),claim.get("claim_id")],"status":"CONFLICT"})
+  if previous is not None and (previous.get("value")!=claim.get("value") or previous.get("evidence_state")!=state):
+   conflicts.append({"semantic_key":key,"claim_ids":[previous.get("claim_id"),claim_id],"status":"CONFLICT"})
   else:by_key[key]=claim
- return {"status":"HOLD" if errors else ("CONFLICT" if conflicts else "VALID_SCHEMA_NO_KEY_CONFLICTS"),"errors":errors,"conflicts":conflicts,
-         "claims_checked":len(claims),"claim_truth_asserted":False,"direct_contradiction_requires_same_semantic_key":True}
+ if errors:status="HOLD"
+ elif conflicts or declared_conflicts:status="CONFLICT"
+ elif unknown:status="HOLD"
+ elif refuted:status="REFUTED_EVIDENCE_PRESENT"
+ else:status="VALID_SCHEMA_NO_KEY_CONFLICTS"
+ return {"status":status,"errors":errors,"conflicts":conflicts,"unknown_claim_ids":unknown,
+         "refuted_claim_ids":refuted,"declared_conflict_claim_ids":declared_conflicts,
+         "claims_checked":len(claims),"claim_truth_asserted":False,
+         "direct_contradiction_requires_same_semantic_key":True}
 
 def validate_event_records(events:Any)->dict[str,Any]:
  if not isinstance(events,list) or not events:return {"status":"HOLD","reasons":["EVENT_RECORD_SET_EMPTY_OR_INVALID"]}
