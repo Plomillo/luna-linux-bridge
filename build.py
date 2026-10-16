@@ -47,13 +47,22 @@ def source_date_epoch() -> int:
     commit = os.environ.get("GITHUB_SHA")
     if commit and commit != "LOCAL_UNBOUND":
         try:
+            head = subprocess.run(
+                ["git", "rev-parse", "HEAD"], cwd=ROOT,
+                capture_output=True, text=True, timeout=10, check=True
+            ).stdout.strip()
+            if head != commit:
+                raise SystemExit(
+                    f"Checked-out HEAD {head} does not match GITHUB_SHA {commit}; refusing an unbound build"
+                )
             result = subprocess.run(
-                ["git", "show", "-s", "--format=%ct", commit],
+                ["git", "log", "-1", "--format=%ct"],
                 cwd=ROOT, capture_output=True, text=True, timeout=10, check=True
             )
-            return max(int(result.stdout.strip()), MIN_ZIP_EPOCH)
+            epoch = int(result.stdout.strip())
+            return max(epoch, MIN_ZIP_EPOCH)
         except (OSError, ValueError, subprocess.SubprocessError):
-            raise SystemExit("Cannot resolve immutable commit time; set SOURCE_DATE_EPOCH explicitly")
+            raise SystemExit("Cannot resolve checked-out candidate commit time; refusing an unbound build")
     return MIN_ZIP_EPOCH
 
 def timestamp_utc(epoch: int) -> str:
