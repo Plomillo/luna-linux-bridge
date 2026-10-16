@@ -17,11 +17,20 @@ from wasmtime import Config, Engine, Store
 from wasmtime.component import Component, Linker
 
 ROOT = Path(__file__).resolve().parents[1]
-WASM = ROOT / "artifacts/custosz-v7/MetaOS.wasm"
+SOURCE_WASM = ROOT / "artifacts/custosz-v7/MetaOS.wasm"
+WASM = ROOT / "build/MetaOS_V8_candidate.wasm"
+COMPONENT_EVIDENCE = ROOT / "evidence/custoszv8-metaos-component.json"
 WASMTIME_VERSION = importlib.metadata.version("wasmtime")
-EXPECTED_SHA256 = "5d8f1239e3a0b452be722078760b000afc22af0a64f93ffb0a1f74024f15aed0"
-EXPECTED_SIZE = 2442
+EXPECTED_SOURCE_SHA256 = "5d8f1239e3a0b452be722078760b000afc22af0a64f93ffb0a1f74024f15aed0"
+EXPECTED_SOURCE_SIZE = 2442
 EXPECTED_WIT_SHA256 = "4e8df58d1e94f9c9874cdf2a2468299c37e453bf85ccd9c7805a28ede407de3f"
+EXPECTED_MASKS = {
+    "terminal-success": 262143,
+    "knowledge-gate": 268435455,
+    "formalization-gate": 8191,
+    "implementation-gate": 4095,
+    "checkpoint-trusted": 31,
+}
 FUEL_PER_CALL = 100_000
 MAX_CALLS = 1600
 TIME_BUDGET_SECONDS = 20
@@ -62,8 +71,8 @@ def main() -> int:
         "schema": "custoszv8.metaos.behavioral-evidence.v1",
         "candidate_commit": os.environ.get("GITHUB_EVENT_PULL_REQUEST_HEAD_SHA") or os.environ.get("GITHUB_SHA", "LOCAL_UNBOUND"),
         "observed_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
-        "component": "METAOS_WASM",
-        "expected_sha256": EXPECTED_SHA256,
+        "component": "METAOS_WASM_V8_CANDIDATE_1_0_1",
+        "expected_source_sha256": EXPECTED_SOURCE_SHA256,
         "expected_wit_sha256": EXPECTED_WIT_SHA256,
         "wasmtime_version": WASMTIME_VERSION,
         "fuel_per_call": FUEL_PER_CALL,
@@ -86,16 +95,32 @@ def main() -> int:
     started = time.monotonic()
     calls = 0
     try:
-        if not WASM.is_file():
-            raise RuntimeError("MetaOS.wasm is missing")
-        actual_size = WASM.stat().st_size
-        actual_sha = digest_file(WASM)
-        report["wasm_size_bytes"] = actual_size
-        report["wasm_sha256"] = actual_sha
-        if actual_size != EXPECTED_SIZE:
-            raise RuntimeError(f"MetaOS size mismatch: expected {EXPECTED_SIZE}, observed {actual_size}")
-        if actual_sha != EXPECTED_SHA256:
-            raise RuntimeError("MetaOS bytes do not match the selected immutable SHA-256")
+        if not SOURCE_WASM.is_file() or not WASM.is_file():
+            raise RuntimeError("original MetaOS source or versioned candidate is missing")
+        if not COMPONENT_EVIDENCE.is_file():
+            raise RuntimeError("versioned MetaOS component evidence report is missing")
+        component_evidence = json.loads(COMPONENT_EVIDENCE.read_text(encoding="utf-8"))
+        source_size = SOURCE_WASM.stat().st_size
+        source_sha = digest_file(SOURCE_WASM)
+        candidate_size = WASM.stat().st_size
+        candidate_sha = digest_file(WASM)
+        report["source_component"] = {"path": str(SOURCE_WASM.relative_to(ROOT)),
+                                      "size_bytes": source_size, "sha256": source_sha}
+        report["wasm_size_bytes"] = candidate_size
+        report["wasm_sha256"] = candidate_sha
+        report["source_expected_sha256"] = EXPECTED_SOURCE_SHA256
+        report["candidate_evidence_sha256"] = component_evidence.get("versioned_candidate", {}).get("output_sha256")
+        candidate_record = component_evidence.get("versioned_candidate", {})
+        if source_size != EXPECTED_SOURCE_SIZE or source_sha != EXPECTED_SOURCE_SHA256:
+            raise RuntimeError("original MetaOS source bytes do not match the pinned historical component")
+        if candidate_record.get("output_sha256") != candidate_sha:
+            raise RuntimeError("versioned MetaOS candidate digest differs from its source-bound build evidence")
+        if candidate_record.get("source_sha256") != source_sha or candidate_record.get("original_preserved") is not True:
+            raise RuntimeError("versioned MetaOS candidate provenance does not bind to the preserved original")
+        if component_evidence.get("result") != "PASS_VERSIONED_CANDIDATE_BUILT":
+            raise RuntimeError("versioned MetaOS candidate builder report is not PASS")
+        if candidate_record.get("artifact_id") != "MetaOS_V8_CANDIDATE_1_0_1":
+            raise RuntimeError("unexpected versioned MetaOS candidate identity")
         if WASMTIME_VERSION != "49.0.0":
             raise RuntimeError(f"unexpected Wasmtime version: {WASMTIME_VERSION}")
 
@@ -156,16 +181,29 @@ def main() -> int:
 
         report["architecture_version"] = call("architecture-version")
         report["single_bit_masks"] = {}
-        masks = list(range(256)) + [0xFFFFFFFF]
+        masks = sorted(set(list(range(256)) + [0xFFFFFFFF] +
+                           [value for mask in EXPECTED_MASKS.values() for value in (mask, mask - 1, mask + 1)]))
         for name in ("terminal-success", "knowledge-gate", "formalization-gate",
                      "implementation-gate", "checkpoint-trusted"):
             values = {str(mask): bool(call(name, mask)) for mask in masks}
             true_masks = [int(mask) for mask, val in values.items() if val]
+            expected_mask = EXPECTED_MASKS[name]
+            nearby = {str(expected_mask): values.get(str(expected_mask)),
+                      str(expected_mask - 1): values.get(str(expected_mask - 1)),
+                      str(expected_mask + 1): values.get(str(expected_mask + 1)),
+                      str(0xFFFFFFFF): values.get(str(0xFFFFFFFF))}
+            assertion_pass = (nearby[str(expected_mask)] is True and
+                              nearby[str(expected_mask - 1)] is False and
+                              nearby[str(expected_mask + 1)] is False and
+                              nearby[str(0xFFFFFFFF)] is False)
             report["single_bit_masks"][name] = {
                 "probe_count": len(values),
                 "true_count": len(true_masks),
                 "false_count": len(values) - len(true_masks),
                 "true_masks": true_masks,
+                "expected_accept_mask": expected_mask,
+                "boundary_probes": nearby,
+                "assertion_pass": assertion_pass,
                 "outputs_by_mask": values,
             }
 
@@ -199,6 +237,9 @@ def main() -> int:
             for row in rows:
                 if not row["assertion_pass"]:
                     failed.append(f"{name} violates all-required-inputs policy for {row['args']}")
+        for name, row in report["single_bit_masks"].items():
+            if not row["assertion_pass"]:
+                failed.append(f"{name} failed its exact required-mask and boundary tests")
         for name, row in report["policy_exports"].items():
             if not row["assertion_pass"]:
                 failed.append(f"{name} returned {row['observed']!r}; expected {row['expected']!r}")
