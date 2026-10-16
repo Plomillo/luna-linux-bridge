@@ -7,11 +7,11 @@ record ResourceNeed : Set where
   field
     requiredRam reservedRam availableRam : Nat
     requiredDisk availableDisk : Nat
+open ResourceNeed
 
--- These are logical propositions (Set), not runtime Bool values.
--- The previous candidate annotated them as Bool even though builtin Nat
--- strict inequality has propositional type. This corrected file is isolated
--- to the formal-assurance branch; the previous commit remains unchanged.
+-- Logical propositions, not runtime Bool values: builtin Nat strict inequality
+-- has propositional type Set. The original draft incorrectly annotated these
+-- results as Bool. This correction exists only on the formal-assurance branch.
 ramSufficient : ResourceNeed -> Set
 ramSufficient r = requiredRam r + reservedRam r < availableRam r
 

@@ -4,6 +4,7 @@ module RecoveryInvariantProofs where
 open import Agda.Builtin.Bool using (true; false)
 open import Agda.Builtin.Equality using (_≡_; refl)
 open import RecoveryInvariant
+open RestoreEvidence
 
 restore-bytes-necessary :
   (r : RestoreEvidence) ->

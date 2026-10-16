@@ -4,6 +4,8 @@ open import Agda.Builtin.Bool using (Bool; true; false)
 record PlanEvidence : Set where
   constructor planEvidence
   field dependenciesResolved capabilitiesAdmissible effectsAdmissible resourceBudgetPassed authorizationPassed : Bool
+open PlanEvidence
+
 planAdmissible : PlanEvidence -> Bool
 planAdmissible p with dependenciesResolved p
 ... | false = false

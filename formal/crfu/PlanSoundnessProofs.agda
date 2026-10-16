@@ -4,6 +4,7 @@ module PlanSoundnessProofs where
 open import Agda.Builtin.Bool using (true; false)
 open import Agda.Builtin.Equality using (_≡_; refl)
 open import PlanSoundness
+open PlanEvidence
 
 plan-dependencies-necessary :
   (p : PlanEvidence) ->

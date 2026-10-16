@@ -4,6 +4,7 @@ module EquivalenceTransportProofs where
 open import Agda.Builtin.Bool using (true; false)
 open import Agda.Builtin.Equality using (_≡_; refl)
 open import EquivalenceTransport
+open EquivalenceClaim
 
 equivalence-source-necessary :
   (e : EquivalenceClaim) ->
