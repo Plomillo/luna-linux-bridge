@@ -11,6 +11,7 @@ on:
       - ".github/workflows/custoszv9-build.yml"
       - ".github/workflows/custoszv9-independent-g22-g23-g24.yml"
       - "scripts/custoszv9_gate_trust_root.py"
+      - "docs/custoszv9-crfu-architecture.md"
   pull_request:
     branches: [main]
     paths:
@@ -21,6 +22,7 @@ on:
       - ".github/workflows/custoszv9-build.yml"
       - ".github/workflows/custoszv9-independent-g22-g23-g24.yml"
       - "scripts/custoszv9_gate_trust_root.py"
+      - "docs/custoszv9-crfu-architecture.md"
   workflow_dispatch:
 
 permissions:
