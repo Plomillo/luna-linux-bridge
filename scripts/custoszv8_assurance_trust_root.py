@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Base-controlled G23/G24 trust root for CUSTOSZ V8 CI evidence.
+"""Protected G23/G24 trust root for the registered CUSTOSZ V8 assurance scope.
 
-The candidate artifact is read as data only. This validator never imports or
-executes candidate code, and its certificate is limited to the CI-tested
-sub-scope; it does not authorize production dispatch, activation, or release.
+The candidate artifact is consumed as data only. G23 validates the exact
+G22 record and the registered CI/V7/Runtime V1/MetaOS compatibility evidence.
+The certificate never authorizes untested hardware/network behavior, production
+dispatch, canonical admission, activation, or release.
 """
 from __future__ import annotations
 
@@ -32,14 +33,14 @@ REQUIRED = (
     "custoszv8-assurance-case.json",
 )
 JSON_FILES = set(REQUIRED) - {"CUSTOSZV8.pyz", "custoszv8-unit-tests.log"}
-SCOPE = "CUSTOSZV8_CI_TESTED_SUBSCOPE_ONLY"
+SCOPE = "CUSTOSZV8_REGISTERED_V7_RUNTIME_V1_METAOS_COMPATIBILITY_CONTRACT"
 EXCLUDED_CLAIMS = [
     "Non-regression outside the pinned V7, Runtime V1 and MetaOS contracts validated by G22.",
     "CP-01 through CP-10 as a complete canonical stage sequence.",
     "Canonical Louksna.md authority binding in the production Runtime.",
     "Production mission dispatch or production restore.",
     "Operational release, activation, or authorization.",
-    "Any claim beyond the bounded CI tests and exact evidence listed in this certificate.",
+    "Physical hardware, network-facing production behavior, or any claim not covered by the registered G22/G23 evidence.",
 ]
 
 
@@ -322,7 +323,7 @@ def g23(args: argparse.Namespace) -> int:
             "unit-test log and reproducible-build results",
             "bounded Runtime V1 selftest, integration and fixture rollback evidence",
             "bounded MetaOS build and behavioral evidence",
-            "CI-tested sub-scope consistency",
+            "Registered G22 contract and CI-tested sub-scope consistency",
         ] if not failures else [],
         "claims_excluded": EXCLUDED_CLAIMS,
         "global_release_status": "HOLD",
