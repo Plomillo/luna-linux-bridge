@@ -249,16 +249,16 @@ class CRFUTests(unittest.TestCase):
         denied=validate_authority_binding(binding,action="write",object_id="repo",scope_id="feature-branch",trust_verifier=None)
         self.assertEqual(denied["status"],"DENY")
         passed=validate_authority_binding(binding,action="write",object_id="repo",scope_id="feature-branch",
-          trust_verifier=lambda b:{"status":"PASS","binding_id":b["binding_id"],"least_privilege_verified":True})
+          trust_verifier=lambda b:{"status":"PASS","binding_id":b["binding_id"],"actor_identity_verified":True,"issuer_authority_verified":True,"delegation_chain_verified":True,"revocation_checked":True,"validity_checked":True,"action_scope_verified":True,"least_privilege_verified":True})
         self.assertEqual(passed["status"],"PASS")
         self.assertEqual(validate_authority_binding(binding,action="delete",object_id="repo",scope_id="feature-branch",
-          trust_verifier=lambda b:{"status":"PASS","binding_id":b["binding_id"],"least_privilege_verified":True})["status"],"DENY")
+          trust_verifier=lambda b:{"status":"PASS","binding_id":b["binding_id"],"actor_identity_verified":True,"issuer_authority_verified":True,"delegation_chain_verified":True,"revocation_checked":True,"validity_checked":True,"action_scope_verified":True,"least_privilege_verified":True})["status"],"DENY")
     def test_recovery_plan_does_not_claim_restoration_or_activation(self):
         plan={"incident_id":"i1","authorized_actor":"actor","checkpoint_id":"cp",
           "checkpoint_hash":sha256_bytes(b"snapshot"),"target_environment":"test-host","dependency_hashes":[sha256_bytes(b"dep")],
           "restoration_oracles":["state-hash"],"nonregression_plan":"run checks","rollback_scope":"local",
           "irreversible_side_effects":[],"authority_ref":"binding"}
-        self.assertEqual(validate_recovery_plan(plan)["status"],"PASS")
+        self.assertEqual(validate_recovery_plan(plan)["status"],"PASS_SCHEMA_ONLY")
         evidence={"diagnosis_verified":True,"correction_authorized":True,"correction_executed":True,
           "restoration_verified":True,"nonregression_verified":True,"traceability_complete":True,
           "g23_g24_required":True,"g23_g24_pass":True,"new_operational_authorization":True}
@@ -355,6 +355,52 @@ class CRFUTests(unittest.TestCase):
         self.assertEqual(report["status"], "EVIDENCE_BINDINGS_PASS_ONLY", report)
         self.assertFalse(report["release_eligible"])
         self.assertEqual(report["certification"], "NOT_GRANTED_BY_CRFU")
+    def test_unknown_and_declared_conflict_claim_states_do_not_look_clean(self):
+        base={"claim_id":"claim-1","subject_id":"system","property_id":"ram","scope_id":"build",
+          "context_id":"linux-runner","version":"1",
+          "validity_interval":{"not_before_utc":"2000-01-01T00:00:00Z","expires_at_utc":"2099-01-01T00:00:00Z"},
+          "unit_of_measure":{"unit_id":"byte","dimension":"information","version":"1"},
+          "value":100,"evidence_state":"SUPPORTED"}
+        unknown=dict(base);unknown["evidence_state"]="UNKNOWN"
+        self.assertEqual(classify_claim_conflicts([unknown])["status"],"HOLD")
+        declared=dict(base);declared["evidence_state"]="CONFLICT"
+        self.assertEqual(classify_claim_conflicts([declared])["status"],"CONFLICT")
+        self.assertEqual(classify_claim_conflicts([])["status"],"HOLD")
+    def test_claim_conversion_cannot_cross_dimensions_or_drop_original(self):
+        base={"claim_id":"claim-conv","subject_id":"x","property_id":"mass","scope_id":"calc",
+          "context_id":"unit-test","version":"1",
+          "validity_interval":{"not_before_utc":"2000-01-01T00:00:00Z","expires_at_utc":"2099-01-01T00:00:00Z"},
+          "unit_of_measure":{"unit_id":"kg","dimension":"mass","version":"1"},
+          "value":1,"original_value":1,"evidence_state":"SUPPORTED"}
+        conv={"rule_id":"bad-conv","source_unit":{"unit_id":"kg","dimension":"mass","version":"1"},
+          "target_unit":{"unit_id":"J","dimension":"energy","version":"1"},"evidence_reference":"evidence://test",
+          "original_value":1,"converted_value":42}
+        invalid=dict(base);invalid["conversion"]=conv
+        self.assertEqual(validate_claim_v2(invalid)["status"],"DENY")
+        conv["target_unit"]={"unit_id":"g","dimension":"mass","version":"1"}
+        no_preserve=dict(base);no_preserve["conversion"]=dict(conv,original_value=2)
+        self.assertEqual(validate_claim_v2(no_preserve)["status"],"DENY")
+    def test_coverage_requires_exact_target_and_canonical_cardinality(self):
+        requirements=[{"requirement_id":"R1"}]
+        self.assertEqual(coverage_report(requirements,["R1"],[])["status"],"HOLD")
+        self.assertEqual(coverage_report(requirements,["R1"],[],target_sha256="a"*64,
+            required_test_classes=27)["status"],"HOLD")
+        report=coverage_report(requirements,["R1"],[
+          {"record_type":"TEST_CLASS","test_class_id":"T99","status":"PASS","target_sha256":"a"*64}
+        ],target_sha256="a"*64)
+        self.assertEqual(report["status"],"FAIL")
+        stale=coverage_report(requirements,["R1"],[
+          {"requirement_id":"R1","status":"PASS","target_sha256":"b"*64}
+        ],target_sha256="a"*64)
+        self.assertEqual(stale["status"],"HOLD")
+    def test_incident_closure_does_not_imply_reactivation(self):
+        evidence={"diagnosis_verified":True,"correction_authorized":True,"correction_executed":True,
+          "restoration_verified":True,"nonregression_verified":True,"traceability_complete":True,
+          "g23_g24_required":True,"g23_g24_pass":True}
+        result=evaluate_incident_closure(evidence)
+        self.assertTrue(result["incident_closed"])
+        self.assertFalse(result["activation_authorized"])
+        self.assertFalse(result["reactivation_authorization_evidence_present"])
     def test_unregistered_gate_identifier_is_denied(self):
         rogue={"gate_id":"G25","candidate_commit_sha":"a"*40,"package_sha256":"b"*64,
           "trusted_workflow_sha":"c"*40,"producer_identity":"producer","evaluator_identity":"validator",
