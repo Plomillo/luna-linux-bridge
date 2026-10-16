@@ -1,5 +1,6 @@
 from __future__ import annotations
 import hashlib
+import importlib.util
 import json
 import tempfile
 import unittest
@@ -19,6 +20,21 @@ from custoszv9.crfu.puac2 import (
     validate_event_records, validate_puac_control, validate_recovery_plan,
     PUAC_CONTROL_OUTPUTS, PUAC_CONTROL_TRUE_FLAGS, PUAC_CONTROL_FALSE_FLAGS
 )
+GATE_SCRIPT_PATH = Path(__file__).resolve().parents[1] / "scripts" / "custoszv9_gate_trust_root.py"
+_GATE_SPEC = importlib.util.spec_from_file_location("custoszv9_gate_trust_root_tests", GATE_SCRIPT_PATH)
+assert _GATE_SPEC is not None and _GATE_SPEC.loader is not None
+gate_trust_root = importlib.util.module_from_spec(_GATE_SPEC)
+_GATE_SPEC.loader.exec_module(gate_trust_root)
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from cryptography.hazmat.primitives.serialization import Encoding, PrivateFormat, PublicFormat, NoEncryption
+
+def generate_ed25519_pems():
+    key = Ed25519PrivateKey.generate()
+    private_pem = key.private_bytes(Encoding.PEM, PrivateFormat.PKCS8, NoEncryption()).decode("ascii")
+    public_pem = key.public_key().public_bytes(Encoding.PEM, PublicFormat.SubjectPublicKeyInfo).decode("ascii")
+    return key, private_pem, public_pem
+
 
 def valid_puac_payload(control_id, package_sha, commit_sha, producer, evaluator):
     """Construct a syntactically complete local-control record for negative/positive tests."""
@@ -415,6 +431,46 @@ class CRFUTests(unittest.TestCase):
         result=validate_puac_control("PUAC.C25",payload,producer_identity="producer",evaluator_identity="validator")
         self.assertEqual(result["status"],"HOLD")
         self.assertIn("EXACT_CANDIDATE_DIGEST_REQUIRED",result["reasons"])
+    def test_ed25519_attestation_binds_exact_payload_and_public_key(self):
+        _, private_pem, public_pem = generate_ed25519_pems()
+        payload = {"schema": "TEST/1", "candidate_commit_sha": "a" * 40,
+                   "candidate_package_sha256": "b" * 64, "status": "PASS"}
+        record = gate_trust_root.sign_record(payload, private_pem, "g23-validator")
+        verified, errors = gate_trust_root.verify_signed_record(record, public_pem, "g23-validator", ("producer",))
+        self.assertEqual(errors, [])
+        self.assertEqual(verified, payload)
+        self.assertEqual(record["algorithm"], "Ed25519")
+        self.assertEqual(record["payload_sha256"], hashlib.sha256(gate_trust_root.canonical_bytes(payload)).hexdigest())
+    def test_ed25519_attestation_rejects_tampering_wrong_identity_and_wrong_key(self):
+        _, private_pem, public_pem = generate_ed25519_pems()
+        _, _, other_public_pem = generate_ed25519_pems()
+        payload = {"schema": "TEST/1", "candidate_commit_sha": "a" * 40}
+        record = gate_trust_root.sign_record(payload, private_pem, "g23-validator")
+        altered = dict(record)
+        altered["payload"] = dict(payload, candidate_commit_sha="c" * 40)
+        verified, errors = gate_trust_root.verify_signed_record(altered, public_pem, "g23-validator")
+        self.assertIsNone(verified)
+        self.assertIn("SIGNED_ATTESTATION_PAYLOAD_HASH_MISMATCH", errors)
+        self.assertIn("ED25519_SIGNATURE_INVALID", errors)
+        verified, errors = gate_trust_root.verify_signed_record(record, public_pem, "g24-certifier")
+        self.assertIsNone(verified)
+        self.assertIn("SIGNED_ATTESTATION_SIGNER_IDENTITY_MISMATCH", errors)
+        verified, errors = gate_trust_root.verify_signed_record(record, other_public_pem, "g23-validator")
+        self.assertIsNone(verified)
+        self.assertIn("SIGNED_ATTESTATION_PUBLIC_KEY_FINGERPRINT_MISMATCH", errors)
+        self.assertIn("ED25519_SIGNATURE_INVALID", errors)
+    def test_g23_g24_private_keys_must_match_configured_public_keys_and_be_distinct(self):
+        _, g23_private, g23_public = generate_ed25519_pems()
+        _, g24_private, g24_public = generate_ed25519_pems()
+        self.assertTrue(gate_trust_root.public_keys_match(g23_private, g23_public))
+        self.assertTrue(gate_trust_root.public_keys_match(g24_private, g24_public))
+        self.assertFalse(gate_trust_root.public_keys_match(g23_private, g24_public))
+        self.assertNotEqual(gate_trust_root.public_key_sha256(g23_public), gate_trust_root.public_key_sha256(g24_public))
+        record = gate_trust_root.sign_record({"candidate_package_sha256": "b" * 64}, g23_private, "g23")
+        verified, errors = gate_trust_root.verify_signed_record(record, g24_public, "g23")
+        self.assertIsNone(verified)
+        self.assertTrue(errors)
+
     def test_checkpoint_does_not_prove_restoration(self):
         payload=b"checkpoint";dep=sha256_bytes(b"deps")
         record=checkpoint_record(payload,checkpoint_id="cp",state_identity="s",dependency_fingerprint=dep)
