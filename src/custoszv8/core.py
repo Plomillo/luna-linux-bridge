@@ -996,6 +996,25 @@ class MetaOSAdapter:
             return {"status": "DENY", "reason": "expected_sha256 must equal the pinned versioned candidate digest",
                     "expected_sha256": expected_sha256, "required_sha256": METAOS_V8_CANDIDATE_SHA256,
                     "execution_authorized": False}
+        # Reject malformed requests before touching the component or importing the optional runtime.
+        if export_name not in METAOS_EXPORT_SIGNATURES:
+            return {"status": "DENY", "reason": "export is not allowlisted",
+                    "export_name": export_name, "execution_authorized": False}
+        expected_params, _ = METAOS_EXPORT_SIGNATURES[export_name]
+        if not isinstance(args, list) or len(args) != len(expected_params):
+            return {"status": "DENY", "reason": "argument count does not match the pinned interface",
+                    "export_name": export_name,
+                    "expected_argument_count": len(expected_params),
+                    "observed_argument_count": len(args) if isinstance(args, list) else None,
+                    "execution_authorized": False}
+        for index, (kind, value) in enumerate(zip(expected_params, args)):
+            valid = type(value) is bool if kind == "Bool" else (type(value) is int and 0 <= value <= 0xFFFFFFFF)
+            if not valid:
+                return {"status": "DENY", "reason": f"argument {index} is not a valid {kind}",
+                        "export_name": export_name, "execution_authorized": False}
+        if type(fuel_limit) is not int or not 1 <= fuel_limit <= 1_000_000:
+            return {"status": "DENY", "reason": "fuel_limit must be between 1 and 1000000",
+                    "execution_authorized": False}
         if path is not None:
             return self._invoke_path(Path(path), export_name, args, fuel_limit, authorization_ref)
         try:
