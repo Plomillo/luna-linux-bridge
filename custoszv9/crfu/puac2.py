@@ -6,7 +6,8 @@ and do not replace G23/G24. Unknown or conflicting authority evidence is denied.
 from __future__ import annotations
 from datetime import datetime,timezone
 from typing import Any,Callable
-from .model import is_sha256
+from .model import is_sha256, canonical_json, sha256_bytes
+import re
 
 EVIDENCE_STATES={"SUPPORTED","REFUTED","UNKNOWN","CONFLICT"}
 def _time(value:Any)->datetime|None:
@@ -228,9 +229,54 @@ PUAC_CONTROL_FALSE_FLAGS={
  "PUAC.C31":("checkpoint_invalid","restoration_unproven","recovered_state_unverified","hidden_dependency_prevents_recovery"),
  "PUAC.C32":("monitoring_stale","authorization_expired","incident_unmanaged")
 }
-def validate_puac_control(control_id:str,payload:Any,*,producer_identity:str|None=None,evaluator_identity:str|None=None,candidate_sha256:str|None=None)->dict[str,Any]:
+def _validate_control_evidence_binding(control_id:str,payload:dict[str,Any],*,producer_identity:str|None,
+                                             evaluator_identity:str|None,candidate_sha256:str|None)->dict[str,Any]:
+ binding=payload.get("evidence_binding")
+ if not isinstance(binding,dict):return {"status":"HOLD","reasons":["CONTROL_EVIDENCE_BINDING_MISSING"]}
+ required=("schema","control_id","candidate_sha256","candidate_commit_sha","payload_sha256",
+           "producer_identity","evaluator_identity","generated_at_utc","scope","source_evidence_refs")
+ missing=[key for key in required if key not in binding or binding[key] is None or binding[key]==""]
+ if missing:return {"status":"HOLD","reasons":["CONTROL_EVIDENCE_BINDING_FIELDS_MISSING:"+",".join(missing)]}
+ errors=[]
+ if binding.get("schema")!="PUAC2_CONTROL_EVIDENCE_BINDING/1.0":errors.append("CONTROL_EVIDENCE_BINDING_SCHEMA_INVALID")
+ if binding.get("control_id")!=control_id:errors.append("CONTROL_EVIDENCE_CONTROL_ID_MISMATCH")
+ if not is_sha256(binding.get("candidate_sha256")):errors.append("CONTROL_EVIDENCE_CANDIDATE_DIGEST_INVALID")
+ elif candidate_sha256 and binding.get("candidate_sha256")!=candidate_sha256:errors.append("CONTROL_EVIDENCE_CANDIDATE_DIGEST_MISMATCH")
+ if not isinstance(binding.get("candidate_commit_sha"),str) or re.fullmatch(r"[0-9a-f]{40}",binding["candidate_commit_sha"]) is None:
+  errors.append("CONTROL_EVIDENCE_COMMIT_ID_INVALID")
+ if not is_sha256(binding.get("payload_sha256")):errors.append("CONTROL_EVIDENCE_PAYLOAD_DIGEST_INVALID")
+ else:
+  unsigned={key:value for key,value in payload.items() if key!="evidence_binding"}
+  observed=sha256_bytes(canonical_json(unsigned).encode("utf-8"))
+  if observed!=binding.get("payload_sha256"):errors.append("CONTROL_EVIDENCE_PAYLOAD_DIGEST_MISMATCH")
+ if not isinstance(binding.get("producer_identity"),str) or not binding["producer_identity"].strip():
+  errors.append("CONTROL_EVIDENCE_PRODUCER_IDENTITY_MISSING")
+ elif producer_identity is not None and binding["producer_identity"]!=producer_identity:
+  errors.append("CONTROL_EVIDENCE_PRODUCER_IDENTITY_MISMATCH")
+ if not isinstance(binding.get("evaluator_identity"),str) or not binding["evaluator_identity"].strip():
+  errors.append("CONTROL_EVIDENCE_EVALUATOR_IDENTITY_MISSING")
+ elif binding["evaluator_identity"]==binding.get("producer_identity"):
+  errors.append("CONTROL_EVIDENCE_EXECUTOR_EVALUATOR_COLLISION")
+ elif evaluator_identity is not None and binding["evaluator_identity"]!=evaluator_identity:
+  errors.append("CONTROL_EVIDENCE_EVALUATOR_IDENTITY_MISMATCH")
+ if _time(binding.get("generated_at_utc")) is None:errors.append("CONTROL_EVIDENCE_TIMESTAMP_INVALID")
+ if not isinstance(binding.get("scope"),str) or not binding["scope"].strip():errors.append("CONTROL_EVIDENCE_SCOPE_MISSING")
+ refs=binding.get("source_evidence_refs")
+ if not isinstance(refs,list) or not refs:errors.append("CONTROL_EVIDENCE_SOURCE_REFERENCES_MISSING")
+ elif any(not isinstance(item,dict) or not isinstance(item.get("sha256"),str) or not is_sha256(item.get("sha256")) or not item.get("uri") for item in refs):
+  errors.append("CONTROL_EVIDENCE_SOURCE_REFERENCE_INVALID")
+ return {"status":"FAIL" if errors else "PASS","reasons":sorted(set(errors)),
+         "candidate_sha256":binding.get("candidate_sha256"),"candidate_commit_sha":binding.get("candidate_commit_sha"),
+         "payload_sha256":binding.get("payload_sha256")}
+
+def validate_puac_control(control_id:str,payload:Any,*,producer_identity:str|None=None,evaluator_identity:str|None=None,candidate_sha256:str|None=None,candidate_commit_sha:str|None=None)->dict[str,Any]:
  if control_id not in PUAC_CONTROL_OUTPUTS:return {"status":"HOLD","reasons":["CONTROL_ID_NOT_REGISTERED_LOCALLY"]}
  if not isinstance(payload,dict):return {"status":"HOLD","reasons":["CONTROL_EVIDENCE_PAYLOAD_MISSING"]}
+ if candidate_sha256 is not None:
+  bound=_validate_control_evidence_binding(control_id,payload,producer_identity=producer_identity,
+      evaluator_identity=evaluator_identity,candidate_sha256=candidate_sha256)
+  if bound["status"]=="HOLD":return {"status":"HOLD","reasons":bound["reasons"],"control_id":control_id,"canonical_admission":"NOT_GRANTED"}
+  if bound["status"]!="PASS":return {"status":"FAIL","reasons":bound["reasons"],"control_id":control_id,"canonical_admission":"NOT_GRANTED"}
  missing=[k for k in PUAC_CONTROL_OUTPUTS[control_id] if k not in payload]
  errors=["CONTROL_OUTPUTS_MISSING:"+",".join(missing)] if missing else []
  for flag in PUAC_CONTROL_TRUE_FLAGS[control_id]:
