@@ -15,6 +15,8 @@ from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parents[1]
 WASM = ROOT / "artifacts/custosz-v7/MetaOS.wasm"
+CANDIDATE_WASM = ROOT / "build/MetaOS_V8_candidate.wasm"
+CANDIDATE_WAT = ROOT / "build/MetaOS_V8_candidate.wat"
 TOOLS_VERSION = "1.254.0"
 TOOLS_URL = "https://github.com/bytecodealliance/wasm-tools/releases/download/v1.254.0/wasm-tools-1.254.0-x86_64-linux.tar.gz"
 TOOLS_ARCHIVE_SHA256 = "d0efb16c9c859137b7ab3e99151c299cd47caee106ed4594561002f7a04945bd"
@@ -135,6 +137,68 @@ def main() -> int:
             if printed.returncode != 0:
                 raise RuntimeError("wasm-tools could not disassemble the component for semantic review")
 
+            # Create a new, explicitly versioned candidate. Preserve the original WASM bytes untouched.
+            patch_specs = [
+                {
+                    "export": "provider-failure-is-mission-failure",
+                    "old": '(func (;8;) (type 0) (result i32)\n      i32.const 0\n    )',
+                    "new": '(func (;8;) (type 0) (result i32)\n      i32.const 1\n    )',
+                    "reason": "The named invariant must be true: provider failure is a mission failure."
+                },
+                {
+                    "export": "resource-red-is-mission-failure",
+                    "old": '(func (;9;) (type 0) (result i32)\n      i32.const 0\n    )',
+                    "new": '(func (;9;) (type 0) (result i32)\n      i32.const 1\n    )',
+                    "reason": "The named invariant must be true: a resource RED condition is a mission failure."
+                },
+            ]
+            candidate_wat = printed.stdout
+            for patch in patch_specs:
+                hits = candidate_wat.count(patch["old"])
+                if hits != 1:
+                    raise RuntimeError(f"refusing ambiguous MetaOS patch for {patch['export']}: expected 1 exact match, found {hits}")
+                candidate_wat = candidate_wat.replace(patch["old"], patch["new"], 1)
+            if candidate_wat == printed.stdout:
+                raise RuntimeError("versioned MetaOS candidate contains no effective approved patch")
+            CANDIDATE_WASM.parent.mkdir(parents=True, exist_ok=True)
+            CANDIDATE_WAT.write_text(candidate_wat, encoding="utf-8")
+            parsed = run([str(tool), "parse", str(CANDIDATE_WAT), "-o", str(CANDIDATE_WASM)])
+            report["candidate_parse_status"] = "PASS" if parsed.returncode == 0 else "FAIL"
+            report["candidate_parse_stdout"] = parsed.stdout[-4000:]
+            report["candidate_parse_stderr"] = parsed.stderr[-8000:]
+            if parsed.returncode != 0 or not CANDIDATE_WASM.is_file():
+                raise RuntimeError("versioned MetaOS candidate WAT could not be parsed to a component binary")
+            candidate_validation = run([str(tool), "validate", str(CANDIDATE_WASM)])
+            candidate_wit = run([str(tool), "component", "wit", str(CANDIDATE_WASM)])
+            report["candidate_component_validation"] = "PASS" if candidate_validation.returncode == 0 else "FAIL"
+            report["candidate_component_validation_stderr"] = candidate_validation.stderr[-8000:]
+            report["candidate_wit_status"] = "PASS" if candidate_wit.returncode == 0 else "FAIL"
+            report["candidate_wit_sha256"] = sha256_bytes(candidate_wit.stdout.encode("utf-8"))
+            report["candidate_wit_unchanged"] = candidate_wit.stdout == wit.stdout
+            report["versioned_candidate"] = {
+                "artifact_id": "MetaOS_V8_CANDIDATE_1_0_1",
+                "source_artifact_id": "MetaOS.wasm",
+                "source_sha256": report["wasm_sha256"],
+                "output_path": str(CANDIDATE_WASM.relative_to(ROOT)),
+                "output_sha256": sha256_file(CANDIDATE_WASM),
+                "output_size_bytes": CANDIDATE_WASM.stat().st_size,
+                "wat_source_path": str(CANDIDATE_WAT.relative_to(ROOT)),
+                "wat_source_sha256": sha256_bytes(candidate_wat.encode("utf-8")),
+                "patches": patch_specs,
+                "original_preserved": sha256_file(WASM) == report["wasm_sha256"],
+                "abi_wit_unchanged": candidate_wit.returncode == 0 and candidate_wit.stdout == wit.stdout,
+                "host_imports_count": len(imports),
+                "host_imports": imports
+            }
+            report["versioned_candidate_component_validation"] = report["candidate_component_validation"]
+            report["versioned_candidate_wit_sha256"] = report["candidate_wit_sha256"]
+            if candidate_validation.returncode != 0 or candidate_wit.returncode != 0 or candidate_wit.stdout != wit.stdout:
+                raise RuntimeError("versioned MetaOS candidate failed validation or changed the WIT ABI")
+            report["approved_semantic_corrections"] = [
+                "provider-failure-is-mission-failure returns true",
+                "resource-red-is-mission-failure returns true"
+            ]
+
             lines = wit.stdout.splitlines()
             imports = [line.strip() for line in lines if re.match(r"^\s*import\s+", line)]
             exports = [line.strip() for line in lines if re.match(r"^\s*export\s+", line)]
@@ -150,12 +214,12 @@ def main() -> int:
         report["result"] = "FAIL"
         report["error"] = f"{type(exc).__name__}: {exc}"
     else:
-        report["result"] = "PASS_STATIC_WASM_VALIDATION" if report["component_validation"] == "PASS" and report["wit_status"] == "PASS" else "FAIL"
+        report["result"] = "PASS_VERSIONED_CANDIDATE_BUILT" if report["component_validation"] == "PASS" and report["wit_status"] == "PASS" and report.get("versioned_candidate_component_validation") == "PASS" and report.get("candidate_wit_unchanged") is True else "FAIL"
     output = ROOT / "evidence/custoszv8-metaos-component.json"
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True))
-    return 0 if report["result"] == "PASS_STATIC_WASM_VALIDATION" else 1
+    return 0 if report["result"] == "PASS_VERSIONED_CANDIDATE_BUILT" else 1
 
 if __name__ == "__main__":
     raise SystemExit(main())
