@@ -1,0 +1,23 @@
+{
+  "schema": "LOUKSNA_R4_POSTINSTALL_LOCAL_REQUEST/1.0",
+  "request_id": "R4-APC48-V2-RETRY2-36519271825",
+  "actor": "diegoignacionorambuenamiranda",
+  "host": "LOUKSNA",
+  "requested_action": "POSTINSTALL_CERTIFY_AND_HANDOFF_TO_CUSTOSZ",
+  "retry_of_run": 36519271825,
+  "retry_stage": 2,
+  "retry_reason": "WORKFLOW_YAML_INDENTATION_AND_DIGEST_ESCAPE_REPAIRED",
+  "checkpoint": "/home/diegoignacionorambuenamiranda/LOUKSNA_MAESTRO_20260925/MISSION3_OPERATIVE/R4_PART1_DESKTOP_V1/runs/20260926T034746Z-38579",
+  "candidate_digest_sha256": "ed3c4267f94b3c53f1fec64b331f72dc657ebcc5e2c62a9314321c67c89684b7",
+  "part": "PART_1",
+  "mode": "DIFFERENTIAL",
+  "part2_gate": "PART1_POST_VALIDATION_PASS",
+  "do_not_repeat": [
+    "PART_0",
+    "PART_1_FULL_REINSTALL",
+    "SERVER_READY_G08_G09_G23_G24"
+  ],
+  "privileged_interface": "sudo -n /usr/local/sbin/louksna-apc",
+  "human_authorization_source": "local request R4-APC48-V2-20260929T035510Z-16163",
+  "fail_closed": true
+}

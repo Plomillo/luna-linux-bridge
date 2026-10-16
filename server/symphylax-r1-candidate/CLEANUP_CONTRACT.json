@@ -1,0 +1,28 @@
+{
+  "schema": "SYMPHYLAX_R1_CLEANUP_CONTRACT/1.0",
+  "temporary_roots": [
+    "$RUNNER_TEMP/server-ready-final-*"
+  ],
+  "retained_roots": [
+    "~/.local/state/louksna/server-ready-final",
+    "~/.local/state/louksna/symphylax-r1"
+  ],
+  "retained_types": [
+    "EVIDENCE",
+    "CHECKPOINT",
+    "RUN_MANIFEST",
+    "HEALTH"
+  ],
+  "remove_on_success": [
+    "TEMP_CONFIGS",
+    "TEMP_NEGATIVE_TEST_INPUTS",
+    "TEMP_PROBE_FILES"
+  ],
+  "remove_on_failure": [
+    "TEMP_CONFIGS",
+    "TEMP_NEGATIVE_TEST_INPUTS",
+    "TEMP_PROBE_FILES"
+  ],
+  "automatic_evidence_deletion": false,
+  "residue_terminal_rule": "TEMP_RESIDUES=0_OR_EXPLICITLY_ACCOUNTED"
+}

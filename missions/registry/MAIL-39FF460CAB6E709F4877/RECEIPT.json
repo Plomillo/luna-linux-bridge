@@ -1,0 +1,12 @@
+{
+  "github_run_attempt": "1",
+  "github_run_id": "36584631845",
+  "mail_id": "MAIL-39FF460CAB6E709F4877",
+  "received_utc": "2026-09-29T14:42:16.772710+00:00",
+  "schema": "CUSTOSZ_MAILBOX_RECEIPT/1.0",
+  "source_bytes": 15528,
+  "source_commit": "af38a955885516b9938de29dc2e22308209491db",
+  "source_path": "missions/inbox/symphylax-r1-final-guaranteed-certification-60m-20260928/MISSION_ORIGINAL.md",
+  "source_sha256": "39ff460cab6e709f48775361ccb76996acc7a3cfc26e4c7399faf126c61ab0f6",
+  "status": "RECEIVED"
+}

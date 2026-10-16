@@ -1,0 +1,12 @@
+{
+  "github_run_attempt": "1",
+  "github_run_id": "37424021837",
+  "mail_id": "MAIL-5FA6287AC594C82234A7",
+  "received_utc": "2026-10-06T06:29:37.768265+00:00",
+  "schema": "CUSTOSZ_MAILBOX_RECEIPT/1.0",
+  "source_bytes": 3821,
+  "source_commit": "9952e1f3465e5ad1dd247bb1c2f1117acc04b599",
+  "source_path": "missions/inbox/document-factory-custosz-v7-continuation-20261005/MISSION_ORIGINAL.md",
+  "source_sha256": "5fa6287ac594c82234a78b7c6e8934bb41ce2f88e236df3e1ec0b4da9c93aee7",
+  "status": "RECEIVED"
+}

@@ -1,0 +1,46 @@
+{
+  "custosz_mission_id": "MIS-74cb10f6aa1741c298c0",
+  "deadline_utc": "2026-09-29T15:02:38.792101+00:00",
+  "executor_bound": false,
+  "executor_reported": "UNBOUND_MEDIATED_OR_LOCAL",
+  "heartbeat_state": "SUPERVISORY_ACTIVE",
+  "mail_id": "MAIL-1F8BA16E26789CC4BA3C",
+  "mission_class_resolution": {
+    "bound_mission_class": "METACOGNITIVE_ECOSYSTEM_V1",
+    "direct_mission_class": null,
+    "matches": [
+      {
+        "authority": "Louksna.md",
+        "canonical_mutation": false,
+        "mission_class": "METACOGNITIVE_ECOSYSTEM_V1",
+        "mission_id": "MIS-META-ECO-20260928-V1",
+        "origin": "EXPLICIT_ADDITIVE_SOURCE_BOUND_CLASSIFICATION",
+        "reason": "MISSION_ORIGINAL is immutable and predates the mailbox MISSION_CLASS requirement; bind exact source hash without altering source bytes.",
+        "scope": "METACOGNITIVE_ECOSYSTEM_CONTROL_PLANE_AND_CLOUD_MATERIALIZATION",
+        "source_sha256": "1f8ba16e26789cc4ba3c9329357ac7c866af50177ccbf5915ca1dd5355c511d0"
+      }
+    ],
+    "mission_class": "METACOGNITIVE_ECOSYSTEM_V1",
+    "origin": "SOURCE_BOUND_REGISTRY",
+    "result": "PASS",
+    "root_blocker": null,
+    "source_sha256": "1f8ba16e26789cc4ba3c9329357ac7c866af50177ccbf5915ca1dd5355c511d0"
+  },
+  "registered_utc": "2026-09-29T14:42:38.824077+00:00",
+  "required_capabilities_explicit": [],
+  "routing_hints_non_authoritative": {
+    "authoritative": false,
+    "values": [
+      "CUSTOSZ_RUNTIME",
+      "GITHUB",
+      "LOCAL_HOST",
+      "ROLLBACK",
+      "TERMINAL_REPORT"
+    ]
+  },
+  "schema": "CUSTOSZ_ROUTING_DECISION/1.0",
+  "worker_identity_sha256": "dacf1f8c13b2fcbfc617cf0d4d780b30502c13395224691e6b0f05f53d9816a2",
+  "workspace": "/home/diegoignacionorambuenamiranda/SYMPHYLAX_LAB/CUSTOSZ_V7_R1_G23_G24_20260927T021532Z/POSIX_COMPATIBILITY_VIEW",
+  "workspace_binding": "TRUSTED_WORKFLOW_OVERRIDE",
+  "workspace_resolved": true
+}

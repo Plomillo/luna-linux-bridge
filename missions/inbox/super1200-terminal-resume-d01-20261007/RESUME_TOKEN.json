@@ -1,0 +1,10 @@
+{
+  "resume_authorization": "D01_ONLY",
+  "parent_run": 37652954550,
+  "checkpoint_head": "4e957f2d4a388a87f8dca17053e5f2ec8693c5a2",
+  "requested_at_utc": "2026-10-07T18:20:00Z",
+  "purpose": "trigger governed CUSTOSZ resume after isolated-import failure",
+  "g23": "DO_NOT_EXECUTE",
+  "g24": "DO_NOT_EXECUTE",
+  "fail_closed": true
+}

@@ -1,0 +1,468 @@
+{
+  "schema": "CUSTOSZ_V7_CAPABILITY_CENSUS/1.0",
+  "evidence": {
+    "workflow_run_id": 36453674393,
+    "workflow_job_id": 109034439256,
+    "head_sha": "5615bc13c632310cc4590f8b89a503a027950398",
+    "extractor": "scripts/metacognitive/extract_custosz_v7_census.py",
+    "method": "STATIC_AST_FINAL_REGISTRY_RECONSTRUCTION_WITH_UPDATE_BLOCKS"
+  },
+  "pyz_sha256": "dacf1f8c13b2fcbfc617cf0d4d780b30502c13395224691e6b0f05f53d9816a2",
+  "family_count": 9,
+  "capability_count": 72,
+  "unique_capability_count": 72,
+  "events": [
+    {
+      "count": 9,
+      "line": 13,
+      "op": "SET_FAMILIES"
+    },
+    {
+      "count": 48,
+      "line": 79,
+      "op": "SET_CAPABILITY_IMPLEMENTATIONS"
+    },
+    {
+      "added_or_replaced": [
+        "io.resumable_reader",
+        "normalization.structured",
+        "streaming.range"
+      ],
+      "family": "F01_IO_KNOWLEDGE",
+      "line": 182,
+      "op": "UPDATE_FAMILY"
+    },
+    {
+      "added_or_replaced": [
+        "process.sessions",
+        "resources.budget_policy"
+      ],
+      "family": "F02_EXECUTION_RESOURCES",
+      "line": 186,
+      "op": "UPDATE_FAMILY"
+    },
+    {
+      "added_or_replaced": [
+        "security.fabric",
+        "security.risk_classification"
+      ],
+      "family": "F03_SECURITY_TRUST",
+      "line": 189,
+      "op": "UPDATE_FAMILY"
+    },
+    {
+      "added_or_replaced": [
+        "benchmark.contamination",
+        "validation.adversarial"
+      ],
+      "family": "F05_ASSURANCE_EPISTEMIC",
+      "line": 192,
+      "op": "UPDATE_FAMILY"
+    },
+    {
+      "added_or_replaced": [
+        "continuity.fabric",
+        "continuity.heartbeat_watchdog",
+        "continuity.session_resume"
+      ],
+      "family": "F06_CONTINUITY_INTEROP",
+      "line": 195,
+      "op": "UPDATE_FAMILY"
+    },
+    {
+      "added_or_replaced": [
+        "memory.capability",
+        "memory.decision",
+        "memory.evidence",
+        "memory.failure",
+        "memory.invalidation",
+        "memory.state",
+        "memory.versioned"
+      ],
+      "family": "F07_MEMORY_DOCUMENTATION",
+      "line": 199,
+      "op": "UPDATE_FAMILY"
+    },
+    {
+      "added_or_replaced": [
+        "conformance.harness",
+        "interfaces.cross_family"
+      ],
+      "family": "F08_FORMAL_CORE",
+      "line": 207,
+      "op": "UPDATE_FAMILY"
+    },
+    {
+      "added_or_replaced": [
+        "duplication.anti",
+        "evolution.admission",
+        "gap.proof"
+      ],
+      "family": "F09_CAPABILITY_GAPS_EVOLUTION",
+      "line": 210,
+      "op": "UPDATE_FAMILY"
+    }
+  ],
+  "capabilities": [
+    {
+      "capability_id": "cache.semantic",
+      "family": "F01_IO_KNOWLEDGE",
+      "implementation": "SemanticCache"
+    },
+    {
+      "capability_id": "content.identity",
+      "family": "F01_IO_KNOWLEDGE",
+      "implementation": "ContentIdentityEngine"
+    },
+    {
+      "capability_id": "handoff.remote_source",
+      "family": "F01_IO_KNOWLEDGE",
+      "implementation": "RemoteSourceHandoff"
+    },
+    {
+      "capability_id": "ingestion.universal",
+      "family": "F01_IO_KNOWLEDGE",
+      "implementation": "UniversalIngestionEngine"
+    },
+    {
+      "capability_id": "io.query_plan",
+      "family": "F01_IO_KNOWLEDGE",
+      "implementation": "IOQueryPlanner"
+    },
+    {
+      "capability_id": "io.resumable_reader",
+      "family": "F01_IO_KNOWLEDGE",
+      "implementation": "ResumableReader"
+    },
+    {
+      "capability_id": "knowledge.high_throughput",
+      "family": "F01_IO_KNOWLEDGE",
+      "implementation": "HighThroughputKnowledgeEngine"
+    },
+    {
+      "capability_id": "knowledge.remote",
+      "family": "F01_IO_KNOWLEDGE",
+      "implementation": "RemoteKnowledgeFabric"
+    },
+    {
+      "capability_id": "normalization.structured",
+      "family": "F01_IO_KNOWLEDGE",
+      "implementation": "UniversalIngestionEngine"
+    },
+    {
+      "capability_id": "source.resolve",
+      "family": "F01_IO_KNOWLEDGE",
+      "implementation": "UniversalSourceResolver"
+    },
+    {
+      "capability_id": "streaming.range",
+      "family": "F01_IO_KNOWLEDGE",
+      "implementation": "HighThroughputKnowledgeEngine"
+    },
+    {
+      "capability_id": "volume.intelligence",
+      "family": "F01_IO_KNOWLEDGE",
+      "implementation": "VolumeIntelligenceEngine"
+    },
+    {
+      "capability_id": "backpressure.control",
+      "family": "F02_EXECUTION_RESOURCES",
+      "implementation": "BackpressureController"
+    },
+    {
+      "capability_id": "desktop.internal",
+      "family": "F02_EXECUTION_RESOURCES",
+      "implementation": "InternalDesktopCapability"
+    },
+    {
+      "capability_id": "execution.resumable",
+      "family": "F02_EXECUTION_RESOURCES",
+      "implementation": "ResumableExecutionState"
+    },
+    {
+      "capability_id": "process.sessions",
+      "family": "F02_EXECUTION_RESOURCES",
+      "implementation": "ProcessSessionManager"
+    },
+    {
+      "capability_id": "resources.adaptive",
+      "family": "F02_EXECUTION_RESOURCES",
+      "implementation": "AdaptiveResourceGovernor"
+    },
+    {
+      "capability_id": "resources.budget_policy",
+      "family": "F02_EXECUTION_RESOURCES",
+      "implementation": "ResourceBudgetPolicy"
+    },
+    {
+      "capability_id": "terminal.native",
+      "family": "F02_EXECUTION_RESOURCES",
+      "implementation": "NativeTerminalEngine"
+    },
+    {
+      "capability_id": "security.credentials",
+      "family": "F03_SECURITY_TRUST",
+      "implementation": "CredentialBroker"
+    },
+    {
+      "capability_id": "security.crypto",
+      "family": "F03_SECURITY_TRUST",
+      "implementation": "CryptoCore"
+    },
+    {
+      "capability_id": "security.fabric",
+      "family": "F03_SECURITY_TRUST",
+      "implementation": "NativeSecurityFabric"
+    },
+    {
+      "capability_id": "security.risk_classification",
+      "family": "F03_SECURITY_TRUST",
+      "implementation": "ContentRiskClassifier"
+    },
+    {
+      "capability_id": "security.sandbox_contract",
+      "family": "F03_SECURITY_TRUST",
+      "implementation": "SandboxContract"
+    },
+    {
+      "capability_id": "security.supply_chain",
+      "family": "F03_SECURITY_TRUST",
+      "implementation": "SupplyChainValidator"
+    },
+    {
+      "capability_id": "security.threat_currentness",
+      "family": "F03_SECURITY_TRUST",
+      "implementation": "ThreatCurrentnessEngine"
+    },
+    {
+      "capability_id": "security.trust_policy",
+      "family": "F03_SECURITY_TRUST",
+      "implementation": "TrustPolicyEngine"
+    },
+    {
+      "capability_id": "languages.intelligence",
+      "family": "F04_INTELLIGENCE_SYNTHESIS",
+      "implementation": "ProgrammingLanguageIntelligenceEngine"
+    },
+    {
+      "capability_id": "optimization.intelligence",
+      "family": "F04_INTELLIGENCE_SYNTHESIS",
+      "implementation": "OptimizationIntelligenceEngine"
+    },
+    {
+      "capability_id": "systems.intelligence",
+      "family": "F04_INTELLIGENCE_SYNTHESIS",
+      "implementation": "ComputingSystemsIntelligenceEngine"
+    },
+    {
+      "capability_id": "technology.synthesis",
+      "family": "F04_INTELLIGENCE_SYNTHESIS",
+      "implementation": "TechnologySynthesisEngine"
+    },
+    {
+      "capability_id": "assurance.fabric",
+      "family": "F05_ASSURANCE_EPISTEMIC",
+      "implementation": "AssuranceFabric"
+    },
+    {
+      "capability_id": "benchmark.contamination",
+      "family": "F05_ASSURANCE_EPISTEMIC",
+      "implementation": "ContaminationControl"
+    },
+    {
+      "capability_id": "benchmark.ephemeral",
+      "family": "F05_ASSURANCE_EPISTEMIC",
+      "implementation": "EphemeralBenchmarkEngine"
+    },
+    {
+      "capability_id": "benchmark.gap",
+      "family": "F05_ASSURANCE_EPISTEMIC",
+      "implementation": "BenchmarkGapEngine"
+    },
+    {
+      "capability_id": "epistemic.failure_detection",
+      "family": "F05_ASSURANCE_EPISTEMIC",
+      "implementation": "EpistemicFailureDetectionEngine"
+    },
+    {
+      "capability_id": "evidence.completeness",
+      "family": "F05_ASSURANCE_EPISTEMIC",
+      "implementation": "EvidenceCompletenessEngine"
+    },
+    {
+      "capability_id": "evidence.graph",
+      "family": "F05_ASSURANCE_EPISTEMIC",
+      "implementation": "EvidenceGraph"
+    },
+    {
+      "capability_id": "validation.adversarial",
+      "family": "F05_ASSURANCE_EPISTEMIC",
+      "implementation": "AdversarialValidationEngine"
+    },
+    {
+      "capability_id": "api.gateway",
+      "family": "F06_CONTINUITY_INTEROP",
+      "implementation": "APIGateway"
+    },
+    {
+      "capability_id": "continuity.fabric",
+      "family": "F06_CONTINUITY_INTEROP",
+      "implementation": "ContinuityFabric"
+    },
+    {
+      "capability_id": "continuity.heartbeat_watchdog",
+      "family": "F06_CONTINUITY_INTEROP",
+      "implementation": "HeartbeatWatchdog"
+    },
+    {
+      "capability_id": "continuity.oob",
+      "family": "F06_CONTINUITY_INTEROP",
+      "implementation": "OutOfBandAbstraction"
+    },
+    {
+      "capability_id": "continuity.preinstall_contract",
+      "family": "F06_CONTINUITY_INTEROP",
+      "implementation": "PreinstallAgentContract"
+    },
+    {
+      "capability_id": "continuity.reboot_state",
+      "family": "F06_CONTINUITY_INTEROP",
+      "implementation": "RebootResilientStateEngine"
+    },
+    {
+      "capability_id": "continuity.session_resume",
+      "family": "F06_CONTINUITY_INTEROP",
+      "implementation": "SessionResume"
+    },
+    {
+      "capability_id": "handoff.transaction",
+      "family": "F06_CONTINUITY_INTEROP",
+      "implementation": "RemoteSourceHandoff"
+    },
+    {
+      "capability_id": "documentation.generated",
+      "family": "F07_MEMORY_DOCUMENTATION",
+      "implementation": "DocumentationEngine"
+    },
+    {
+      "capability_id": "memory.capability",
+      "family": "F07_MEMORY_DOCUMENTATION",
+      "implementation": "MemoryView"
+    },
+    {
+      "capability_id": "memory.currentness",
+      "family": "F07_MEMORY_DOCUMENTATION",
+      "implementation": "CurrentnessEngine"
+    },
+    {
+      "capability_id": "memory.decision",
+      "family": "F07_MEMORY_DOCUMENTATION",
+      "implementation": "MemoryView"
+    },
+    {
+      "capability_id": "memory.evidence",
+      "family": "F07_MEMORY_DOCUMENTATION",
+      "implementation": "MemoryView"
+    },
+    {
+      "capability_id": "memory.failure",
+      "family": "F07_MEMORY_DOCUMENTATION",
+      "implementation": "MemoryView"
+    },
+    {
+      "capability_id": "memory.governed",
+      "family": "F07_MEMORY_DOCUMENTATION",
+      "implementation": "GovernedMemoryFabric"
+    },
+    {
+      "capability_id": "memory.invalidation",
+      "family": "F07_MEMORY_DOCUMENTATION",
+      "implementation": "InvalidationEngine"
+    },
+    {
+      "capability_id": "memory.state",
+      "family": "F07_MEMORY_DOCUMENTATION",
+      "implementation": "MemoryView"
+    },
+    {
+      "capability_id": "memory.versioned",
+      "family": "F07_MEMORY_DOCUMENTATION",
+      "implementation": "GovernedMemoryFabric"
+    },
+    {
+      "capability_id": "conformance.harness",
+      "family": "F08_FORMAL_CORE",
+      "implementation": "SelfTestConformanceHarness"
+    },
+    {
+      "capability_id": "errors.taxonomy",
+      "family": "F08_FORMAL_CORE",
+      "implementation": "UniversalErrorTaxonomy"
+    },
+    {
+      "capability_id": "interfaces.cross_family",
+      "family": "F08_FORMAL_CORE",
+      "implementation": "CrossFamilyInterfaceRegistry"
+    },
+    {
+      "capability_id": "invariants.engine",
+      "family": "F08_FORMAL_CORE",
+      "implementation": "InvariantEngine"
+    },
+    {
+      "capability_id": "lifecycle.manager",
+      "family": "F08_FORMAL_CORE",
+      "implementation": "CapabilityLifecycleManager"
+    },
+    {
+      "capability_id": "logic.arithmetic",
+      "family": "F08_FORMAL_CORE",
+      "implementation": "FormalArithmeticEngine"
+    },
+    {
+      "capability_id": "logic.formal",
+      "family": "F08_FORMAL_CORE",
+      "implementation": "FormalLogicEngine"
+    },
+    {
+      "capability_id": "maintainability.engine",
+      "family": "F08_FORMAL_CORE",
+      "implementation": "MaintainabilityEngine"
+    },
+    {
+      "capability_id": "composition.engine",
+      "family": "F09_CAPABILITY_GAPS_EVOLUTION",
+      "implementation": "CompositionEngine"
+    },
+    {
+      "capability_id": "duplication.anti",
+      "family": "F09_CAPABILITY_GAPS_EVOLUTION",
+      "implementation": "AntiDuplicationEngine"
+    },
+    {
+      "capability_id": "evolution.admission",
+      "family": "F09_CAPABILITY_GAPS_EVOLUTION",
+      "implementation": "EvolutionAdmissionEngine"
+    },
+    {
+      "capability_id": "gap.evolution",
+      "family": "F09_CAPABILITY_GAPS_EVOLUTION",
+      "implementation": "CapabilityGapEvolutionEngine"
+    },
+    {
+      "capability_id": "gap.proof",
+      "family": "F09_CAPABILITY_GAPS_EVOLUTION",
+      "implementation": "GapProofEngine"
+    },
+    {
+      "capability_id": "overlap.semantic",
+      "family": "F09_CAPABILITY_GAPS_EVOLUTION",
+      "implementation": "SemanticOverlapAnalyzer"
+    },
+    {
+      "capability_id": "placement.engine",
+      "family": "F09_CAPABILITY_GAPS_EVOLUTION",
+      "implementation": "PlacementEngine"
+    }
+  ]
+}

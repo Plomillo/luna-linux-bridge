@@ -1,0 +1,13 @@
+{
+  "items": [
+    {
+      "dedup_evidence_available": true,
+      "evidence": "RUNTIME_COMPATIBILITY.json",
+      "gap_id": "MAIL-F5AF1B54E5551E65DB02-RUNTIME_ADAPTER",
+      "observed_gap": "NO_UNIQUE_PINNED_RUNTIME_ADAPTER",
+      "promotion_to_suggestion": false,
+      "reason": "Promotion requires evidence of non-duplication against CUSTOSZ capability inventory."
+    }
+  ],
+  "schema": "CUSTOSZ_CAPABILITY_GAPS/1.0"
+}

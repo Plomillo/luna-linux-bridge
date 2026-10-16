@@ -1,0 +1,34 @@
+name: "R4 CUSTOSZ — canonical workspace mount audit"
+
+on:
+  push:
+    branches:
+      - staging/custosz-mission-mailbox-20260928
+    paths:
+      - .github/workflows/r4-custosz-canonical-workspace-audit.yml
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 3
+    steps:
+      - name: Audit known historical workspace path read-only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="/media/diegoignacionorambuenamiranda/Windows/PROYECTOS"
+          echo "ROOT=$ROOT"
+          if [ ! -d "$ROOT" ]; then
+            echo "ROOT_PRESENT=FALSE"
+            exit 0
+          fi
+          echo "ROOT_PRESENT=TRUE"
+          stat -Lc 'MODE=%a OWNER=%U:%G MTIME=%y' "$ROOT"
+          echo "PRIORITARIOS=$(test -d "$ROOT/1. PROYECTOS PRIORITARIOS" && echo PASS || echo FAIL)"
+          echo "PENDIENTES=$(test -e "$ROOT/4. PENDIENTES" && echo PASS || echo FAIL)"
+          echo "CORPUS=$(test -e "$ROOT/2. CORPUS" && echo PASS || echo FAIL)"
+          echo "LOUKSNA=$(test -f "$ROOT/1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/1. ARQUITECTURA DE LUNA/Louksna.md" && echo PASS || echo FAIL)"
+          find "$ROOT" -mindepth 1 -maxdepth 1 -printf '%f\t%y\n' | sort | head -n 80

@@ -1,0 +1,27 @@
+{
+  "adapter": {
+    "adapter_id": "SYMPHYLAX_FINAL_REMEDIATION_6M_V1",
+    "backend": "CUSTOSZ_RUNTIME",
+    "dedicated_workflow": ".github/workflows/symphylax-final-remediation-certification-6m.yml",
+    "execution_location": "SELF_HOSTED_LUNA_AUX",
+    "hard_ceiling_seconds": 360,
+    "mission_classes": [
+      "SYMPHYLAX_FINAL_REMEDIATION_CERTIFICATION_6M"
+    ],
+    "path": "scripts/mission_mailbox/adapters/symphylax_final_remediation_6m.py",
+    "provides_executor_binding": true,
+    "required_capabilities": [],
+    "requires_prebound_executor": false,
+    "scope": "SYMPHYLAX_FINAL_REMEDIATION_G08_G09_PUAC2_G23_G24",
+    "sha256": "1cfcb167c2627519173c361a97097a275d7f205fd3000f92a46959ff4122fe86",
+    "source_sha256": "e6e3a3bdbef7967d89cbc9e538469add01334e6e593ee2d1b93b72cbd32684dd",
+    "status": "ACTIVE_PINNED"
+  },
+  "binding_mode": "ADAPTER_PROVIDED_PENDING",
+  "custosz_mission_id": "MIS-5507f464c439438aa55f",
+  "mail_id": "MAIL-E6E3A3BDBEF7967D89CB",
+  "observed_executor_bound": false,
+  "rule": "Material execution must occur only through the pinned Runtime adapter and produce terminal evidence. Selecting a binding-providing adapter does not itself prove EXECUTOR_BINDING=PASS.",
+  "schema": "CUSTOSZ_EXECUTION_PLAN/1.1",
+  "status": "ROUTED_READY_NOT_YET_EXECUTED"
+}

@@ -1,0 +1,649 @@
+{
+  "authority_context": {
+    "authority": "Louksna.md",
+    "authority_transfer": false,
+    "canonical_mutation_authorized": false
+  },
+  "declared_mission_id": null,
+  "execution_contract": {
+    "default_profile": "LUNA_PROJECT",
+    "fail_closed": true,
+    "governor": "MetaOS",
+    "no_silent_executor_substitution": true,
+    "protected_scopes": [
+      "WINDOWS",
+      "EFI",
+      "GPT",
+      "PARTITIONS",
+      "PROYECTOS",
+      "F3-DISK",
+      "CANONICAL_ARCHITECTURE",
+      "FROZEN_ARTIFACTS"
+    ],
+    "runtime": "CUSTOSZ_RUNTIME_V1",
+    "supervisor": "SYMPHYLAX_R1",
+    "validation_reserve_seconds": 240,
+    "wallclock_seconds": 1200,
+    "worker": "CUSTOSZ_V7",
+    "workflow_success_is_not_mission_success": true
+  },
+  "mail_id": "MAIL-8191840DEBD98F8775E5",
+  "mailbox_version": "0.1.0",
+  "mission_payload": {
+    "byte_exact_preservation": true,
+    "directives_observed": {
+      "AUDITABILITY": [
+        {
+          "line": 12,
+          "value": "REQUIRED"
+        }
+      ],
+      "AUDITABILITY_LOSS": [
+        {
+          "line": 260,
+          "value": "FALSE"
+        }
+      ],
+      "AUTHORITY": [
+        {
+          "line": 4,
+          "value": "Louksna.md"
+        },
+        {
+          "line": 253,
+          "value": "Louksna.md"
+        }
+      ],
+      "AUTHORITY_TRANSFER": [
+        {
+          "line": 255,
+          "value": "FALSE"
+        }
+      ],
+      "BOOT_PERSISTENCE": [
+        {
+          "line": 83,
+          "value": "PASS"
+        }
+      ],
+      "CANONICAL_IDENTITY_MUTATION": [
+        {
+          "line": 254,
+          "value": "FALSE"
+        }
+      ],
+      "CERTIFICATION_PROPAGATION": [
+        {
+          "line": 16,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "CURRENT_BASELINE": [
+        {
+          "line": 18,
+          "value": ""
+        }
+      ],
+      "CURRENT_GATE": [
+        {
+          "line": 329,
+          "value": "<exacto>"
+        }
+      ],
+      "CUSTOSZ_TO_RUNTIME_MATERIAL_PATH": [
+        {
+          "line": 21,
+          "value": "PASS"
+        }
+      ],
+      "DEPENDENCY_FAILURE": [
+        {
+          "line": 95,
+          "value": "SAFE_RECOVERY_OR_HOLD"
+        }
+      ],
+      "DEPENDENCY_ORDER": [
+        {
+          "line": 84,
+          "value": "PASS"
+        }
+      ],
+      "EVIDENCE_CHAIN_COMPLETE": [
+        {
+          "line": 226,
+          "value": "TRUE"
+        }
+      ],
+      "EVIDENCE_SURVIVES_RESTART": [
+        {
+          "line": 88,
+          "value": "PASS"
+        }
+      ],
+      "EXACT_REMEDIATION": [
+        {
+          "line": 331,
+          "value": "<exacta>"
+        }
+      ],
+      "EXECUTOR_BINDING": [
+        {
+          "line": 20,
+          "value": "PASS"
+        },
+        {
+          "line": 47,
+          "value": "PASS"
+        }
+      ],
+      "EXECUTOR_KILL_RECOVERY": [
+        {
+          "line": 92,
+          "value": "PASS"
+        }
+      ],
+      "EXECUTOR_REASSIGNMENT": [
+        {
+          "line": 256,
+          "value": "FALSE"
+        }
+      ],
+      "FAIL": [
+        {
+          "line": 335,
+          "value": ""
+        }
+      ],
+      "FAILED_GATE": [
+        {
+          "line": 338,
+          "value": "<exacto>"
+        }
+      ],
+      "FAILURE_POSTURE": [
+        {
+          "line": 10,
+          "value": "FAIL_CLOSED"
+        }
+      ],
+      "G23": [
+        {
+          "line": 219,
+          "value": "PASS"
+        },
+        {
+          "line": 220,
+          "value": "FAIL"
+        },
+        {
+          "line": 221,
+          "value": "HOLD"
+        },
+        {
+          "line": 241,
+          "value": "PASS"
+        },
+        {
+          "line": 321,
+          "value": "PASS"
+        }
+      ],
+      "G24": [
+        {
+          "line": 232,
+          "value": "DENIED"
+        },
+        {
+          "line": 266,
+          "value": "PASS"
+        },
+        {
+          "line": 267,
+          "value": "FAIL"
+        },
+        {
+          "line": 268,
+          "value": "HOLD"
+        },
+        {
+          "line": 322,
+          "value": "PASS"
+        }
+      ],
+      "G24_PASS_REQUIRED_FOR_CERTIFICATION": [
+        {
+          "line": 347,
+          "value": "TRUE"
+        }
+      ],
+      "GLOBAL_STEP_GATE": [
+        {
+          "line": 23,
+          "value": "1"
+        }
+      ],
+      "GOVERNOR": [
+        {
+          "line": 5,
+          "value": "MetaOS"
+        }
+      ],
+      "HOLD": [
+        {
+          "line": 326,
+          "value": ""
+        }
+      ],
+      "INDEPENDENT_VALIDATION": [
+        {
+          "line": 225,
+          "value": "PASS"
+        }
+      ],
+      "INGRESS": [
+        {
+          "line": 9,
+          "value": "CUSTOSZ MISSION MAILBOX"
+        }
+      ],
+      "INVALID_AUTHORIZATION": [
+        {
+          "line": 97,
+          "value": "REJECTED"
+        }
+      ],
+      "MATERIAL_EXECUTION_PROVEN": [
+        {
+          "line": 22,
+          "value": "TRUE"
+        }
+      ],
+      "METAOS_GOVERNANCE": [
+        {
+          "line": 49,
+          "value": "PASS"
+        }
+      ],
+      "MISSING_ARTIFACT": [
+        {
+          "line": 99,
+          "value": "REJECTED"
+        }
+      ],
+      "MISSION_CLASS": [
+        {
+          "line": 3,
+          "value": "FINAL_SERVER_READY_CLOSURE"
+        }
+      ],
+      "MISSION_STATE": [
+        {
+          "line": 126,
+          "value": "HOLD"
+        }
+      ],
+      "NON_REGRESSION": [
+        {
+          "line": 262,
+          "value": "PASS"
+        }
+      ],
+      "NO_CANONICAL_MUTATION": [
+        {
+          "line": 25,
+          "value": "TRUE"
+        }
+      ],
+      "NO_ORPHAN_PROCESS": [
+        {
+          "line": 86,
+          "value": "PASS"
+        }
+      ],
+      "NO_SILENT_OPERATIONS": [
+        {
+          "line": 15,
+          "value": "ABSOLUTE"
+        }
+      ],
+      "NO_UNRESOLVED_CRITICAL_FINDINGS": [
+        {
+          "line": 228,
+          "value": "TRUE"
+        }
+      ],
+      "PASS": [
+        {
+          "line": 317,
+          "value": ""
+        }
+      ],
+      "PROCESS_TERMINATION_RECOVERY": [
+        {
+          "line": 94,
+          "value": "PASS"
+        }
+      ],
+      "PROVENANCE": [
+        {
+          "line": 13,
+          "value": "REQUIRED"
+        }
+      ],
+      "PROVENANCE_LOSS": [
+        {
+          "line": 258,
+          "value": "FALSE"
+        }
+      ],
+      "REPRODUCIBILITY": [
+        {
+          "line": 227,
+          "value": "PASS"
+        }
+      ],
+      "RESOLVED": [
+        {
+          "line": 117,
+          "value": "TRUE | FALSE"
+        },
+        {
+          "line": 333,
+          "value": "FALSE"
+        }
+      ],
+      "RESOURCE_ENVELOPE": [
+        {
+          "line": 46,
+          "value": "PASS"
+        }
+      ],
+      "ROLLBACK": [
+        {
+          "line": 14,
+          "value": "REQUIRED"
+        }
+      ],
+      "ROLLBACK_STATUS": [
+        {
+          "line": 340,
+          "value": "<PASS|FAIL|NOT_APPLICABLE>"
+        }
+      ],
+      "ROLLBACK_TEST": [
+        {
+          "line": 24,
+          "value": "PASS"
+        }
+      ],
+      "ROLLBACK_VERIFIED": [
+        {
+          "line": 261,
+          "value": "TRUE"
+        }
+      ],
+      "ROOT_CAUSE": [
+        {
+          "line": 125,
+          "value": "UNKNOWN"
+        },
+        {
+          "line": 339,
+          "value": "<demostrada o UNKNOWN>"
+        }
+      ],
+      "RUNTIME": [
+        {
+          "line": 7,
+          "value": "CUSTOSZ_RUNTIME_V1"
+        }
+      ],
+      "RUNTIME_BINDING": [
+        {
+          "line": 48,
+          "value": "PASS"
+        }
+      ],
+      "RUNTIME_FAILURE_RECOVERY": [
+        {
+          "line": 93,
+          "value": "PASS"
+        }
+      ],
+      "RUNTIME_SILENT_REPLACEMENT": [
+        {
+          "line": 257,
+          "value": "FALSE"
+        }
+      ],
+      "RUNTIME_STAGING_SHA256": [
+        {
+          "line": 134,
+          "value": ""
+        }
+      ],
+      "SERVER_CANDIDATE_CORRECTED": [
+        {
+          "line": 26,
+          "value": "TRUE"
+        }
+      ],
+      "SERVER_CANDIDATE_TECHNICAL_READY": [
+        {
+          "line": 27,
+          "value": "TRUE"
+        }
+      ],
+      "SERVER_CERTIFIED": [
+        {
+          "line": 278,
+          "value": "TRUE"
+        },
+        {
+          "line": 323,
+          "value": "TRUE"
+        }
+      ],
+      "SERVER_DEPLOYED": [
+        {
+          "line": 41,
+          "value": "TRUE"
+        },
+        {
+          "line": 183,
+          "value": "TRUE"
+        },
+        {
+          "line": 319,
+          "value": "TRUE"
+        }
+      ],
+      "SERVER_READY": [
+        {
+          "line": 177,
+          "value": "AND(GATE_01 ... GATE_15)"
+        }
+      ],
+      "SERVER_READY_FINAL": [
+        {
+          "line": 279,
+          "value": "PASS"
+        },
+        {
+          "line": 324,
+          "value": "PASS"
+        },
+        {
+          "line": 328,
+          "value": "HOLD"
+        },
+        {
+          "line": 337,
+          "value": "FAIL"
+        }
+      ],
+      "SERVER_TECHNICAL_READY": [
+        {
+          "line": 184,
+          "value": "TRUE"
+        },
+        {
+          "line": 240,
+          "value": "TRUE"
+        },
+        {
+          "line": 272,
+          "value": "TRUE"
+        },
+        {
+          "line": 320,
+          "value": "TRUE"
+        }
+      ],
+      "SERVICE_DEPENDENCIES": [
+        {
+          "line": 45,
+          "value": "PASS"
+        }
+      ],
+      "SERVICE_IDENTITY": [
+        {
+          "line": 42,
+          "value": "VERIFIED"
+        }
+      ],
+      "SERVICE_PERMISSIONS": [
+        {
+          "line": 44,
+          "value": "PASS"
+        }
+      ],
+      "SERVICE_RESTART": [
+        {
+          "line": 82,
+          "value": "PASS"
+        }
+      ],
+      "SERVICE_START": [
+        {
+          "line": 43,
+          "value": "PASS"
+        },
+        {
+          "line": 80,
+          "value": "PASS"
+        }
+      ],
+      "SERVICE_STOP": [
+        {
+          "line": 81,
+          "value": "PASS"
+        }
+      ],
+      "SINGLE_ROOT_BLOCKER": [
+        {
+          "line": 330,
+          "value": "<exacto>"
+        }
+      ],
+      "SKELETON_RUNTIME_PIN": [
+        {
+          "line": 137,
+          "value": ""
+        }
+      ],
+      "STALE_MISSION": [
+        {
+          "line": 100,
+          "value": "REJECTED"
+        }
+      ],
+      "STATE_RECOVERY": [
+        {
+          "line": 87,
+          "value": "PASS"
+        }
+      ],
+      "SUPERVISOR": [
+        {
+          "line": 8,
+          "value": "SYMPHYLAX R1"
+        }
+      ],
+      "SUPERVISOR_CONTINUITY": [
+        {
+          "line": 85,
+          "value": "PASS"
+        }
+      ],
+      "SYMPHYLAX_SUPERVISION": [
+        {
+          "line": 50,
+          "value": "PASS"
+        }
+      ],
+      "TIMEOUT": [
+        {
+          "line": 96,
+          "value": "SAFE_RECOVERY_OR_HOLD"
+        }
+      ],
+      "TRACEABILITY": [
+        {
+          "line": 11,
+          "value": "REQUIRED"
+        }
+      ],
+      "TRACEABILITY_LOSS": [
+        {
+          "line": 259,
+          "value": "FALSE"
+        }
+      ],
+      "UNAUTHORIZED_SCOPE": [
+        {
+          "line": 101,
+          "value": "REJECTED"
+        }
+      ],
+      "VERIFICATION_TEST": [
+        {
+          "line": 332,
+          "value": "<exacto>"
+        }
+      ],
+      "WORKER": [
+        {
+          "line": 6,
+          "value": "CUSTOSZ V7"
+        }
+      ],
+      "WRONG_HASH": [
+        {
+          "line": 98,
+          "value": "REJECTED"
+        }
+      ]
+    },
+    "required_capabilities_explicit": [],
+    "routing_hints": {
+      "authoritative": false,
+      "values": [
+        "CUSTOSZ_RUNTIME",
+        "PROTECTED_F3_DISK_SCOPE",
+        "PROTECTED_WINDOWS_SCOPE",
+        "ROLLBACK",
+        "TERMINAL_REPORT"
+      ]
+    },
+    "source_utf8_b64": "IyBNSVNJw5NOIEZJTkFMIOKAlCBTRVJWRVJfUkVBRFkg4oaSIEcyMyDihpIgRzI0CgpNSVNTSU9OX0NMQVNTID0gRklOQUxfU0VSVkVSX1JFQURZX0NMT1NVUkUKQVVUSE9SSVRZID0gTG91a3NuYS5tZApHT1ZFUk5PUiA9IE1ldGFPUwpXT1JLRVIgPSBDVVNUT1NaIFY3ClJVTlRJTUUgPSBDVVNUT1NaX1JVTlRJTUVfVjEKU1VQRVJWSVNPUiA9IFNZTVBIWUxBWCBSMQpJTkdSRVNTID0gQ1VTVE9TWiBNSVNTSU9OIE1BSUxCT1gKRkFJTFVSRV9QT1NUVVJFID0gRkFJTF9DTE9TRUQKVFJBQ0VBQklMSVRZID0gUkVRVUlSRUQKQVVESVRBQklMSVRZID0gUkVRVUlSRUQKUFJPVkVOQU5DRSA9IFJFUVVJUkVEClJPTExCQUNLID0gUkVRVUlSRUQKTk9fU0lMRU5UX09QRVJBVElPTlMgPSBBQlNPTFVURQpDRVJUSUZJQ0FUSU9OX1BST1BBR0FUSU9OID0gRk9SQklEREVOCgpDVVJSRU5UX0JBU0VMSU5FOgoKRVhFQ1VUT1JfQklORElORyA9IFBBU1MKQ1VTVE9TWl9UT19SVU5USU1FX01BVEVSSUFMX1BBVEggPSBQQVNTCk1BVEVSSUFMX0VYRUNVVElPTl9QUk9WRU4gPSBUUlVFCkdMT0JBTF9TVEVQX0dBVEUgPSAxClJPTExCQUNLX1RFU1QgPSBQQVNTCk5PX0NBTk9OSUNBTF9NVVRBVElPTiA9IFRSVUUKU0VSVkVSX0NBTkRJREFURV9DT1JSRUNURUQgPSBUUlVFClNFUlZFUl9DQU5ESURBVEVfVEVDSE5JQ0FMX1JFQURZID0gVFJVRQoKTGEgbWlzacOzbiBjb21pZW56YSBkZXNkZSBlc3RlIGVzdGFkbyBkZW1vc3RyYWRvLiBObyByZXBldGlyIHRyYWJham8geWEgdmFsaWRhZG8gc2Fsdm8gY3VhbmRvIHNlYSBuZWNlc2FyaW8gY29tbyBjb250cm9sIGRlIG5vIHJlZ3Jlc2nDs24uCgotLS0KCiMjIDEuIERFU1BMRUdBUiBFTCBDQU5ESURBVE8gREUgU0VSVklET1IKCk9iamV0aXZvOgoKQ29udmVydGlyIGVsIGNhbmRpZGF0byBTRVJWRVJfUkVBRFkgeWEgY29ycmVnaWRvIGVuIHVuIHNlcnZpY2lvIHJlYWxtZW50ZSBkZXNwbGVnYWRvIHkgZ29iZXJuYWRvLgoKRGViZSBkZW1vc3RyYXJzZToKClNFUlZFUl9ERVBMT1lFRCA9IFRSVUUKU0VSVklDRV9JREVOVElUWSA9IFZFUklGSUVEClNFUlZJQ0VfU1RBUlQgPSBQQVNTClNFUlZJQ0VfUEVSTUlTU0lPTlMgPSBQQVNTClNFUlZJQ0VfREVQRU5ERU5DSUVTID0gUEFTUwpSRVNPVVJDRV9FTlZFTE9QRSA9IFBBU1MKRVhFQ1VUT1JfQklORElORyA9IFBBU1MKUlVOVElNRV9CSU5ESU5HID0gUEFTUwpNRVRBT1NfR09WRVJOQU5DRSA9IFBBU1MKU1lNUEhZTEFYX1NVUEVSVklTSU9OID0gUEFTUwoKRWwgZGVzcGxpZWd1ZSBkZWJlIGNvbnNlcnZhcjoKCi0gYXV0b3JpZGFkIGRlIExvdWtzbmEubWQ7Ci0gaWRlbnRpZGFkIGRlIENVU1RPU1o7Ci0gaWRlbnRpZGFkIGV4cGzDrWNpdGEgZGVsIFJ1bnRpbWU7Ci0gbMOtbWl0ZXMgZGUgQ1BVL1JBTS9wcm9jZXNvczsKLSBzY29wZSBkZSBzZWd1cmlkYWQ7Ci0gY2hlY2twb2ludHM7Ci0gcm9sbGJhY2s7Ci0gZXZpZGVuY2lhIGV4dGVybmEgYWwgYWxjYW5jZSBkZSByb2xsYmFjay4KClByb2hpYmlkbzoKCi0gbW9kaWZpY2FyIFdpbmRvd3M7Ci0gbW9kaWZpY2FyIEVGSS9HUFQvcGFydGljaW9uZXM7Ci0gbW9kaWZpY2FyIFBST1lFQ1RPUzsKLSBlamVjdXRhciBGMy1ESVNLOwotIHN1c3RpdHVpciBzaWxlbmNpb3NhbWVudGUgZXhlY3V0b3IsIFJ1bnRpbWUsIGF1dG9yaWRhZCBvIGdvYmVybmFkb3I7Ci0gY29udmVydGlyIGluc3RhbGFjacOzbiBlbiBjZXJ0aWZpY2FjacOzbi4KCi0tLQoKIyMgMi4gVkFMSURBUiBQRVJTSVNURU5DSUEsIENPTlRJTlVJREFEIFkgUkVDVVBFUkFDScOTTiBSRUFMCgpEZWJlIGRlbW9zdHJhcnNlIGNvbXBvcnRhbWllbnRvIGRlIHNlcnZpZG9yIHkgbm8gw7puaWNhbWVudGUgdW5hIGVqZWN1Y2nDs24gZXhpdG9zYS4KClBydWViYXMgb2JsaWdhdG9yaWFzOgoKU0VSVklDRV9TVEFSVCA9IFBBU1MKU0VSVklDRV9TVE9QID0gUEFTUwpTRVJWSUNFX1JFU1RBUlQgPSBQQVNTCkJPT1RfUEVSU0lTVEVOQ0UgPSBQQVNTCkRFUEVOREVOQ1lfT1JERVIgPSBQQVNTClNVUEVSVklTT1JfQ09OVElOVUlUWSA9IFBBU1MKTk9fT1JQSEFOX1BST0NFU1MgPSBQQVNTClNUQVRFX1JFQ09WRVJZID0gUEFTUwpFVklERU5DRV9TVVJWSVZFU19SRVNUQVJUID0gUEFTUwoKUHJ1ZWJhcyBkZSBmYWxsbyBjb250cm9sYWRvOgoKRVhFQ1VUT1JfS0lMTF9SRUNPVkVSWSA9IFBBU1MKUlVOVElNRV9GQUlMVVJFX1JFQ09WRVJZID0gUEFTUwpQUk9DRVNTX1RFUk1JTkFUSU9OX1JFQ09WRVJZID0gUEFTUwpERVBFTkRFTkNZX0ZBSUxVUkUgPSBTQUZFX1JFQ09WRVJZX09SX0hPTEQKVElNRU9VVCA9IFNBRkVfUkVDT1ZFUllfT1JfSE9MRApJTlZBTElEX0FVVEhPUklaQVRJT04gPSBSRUpFQ1RFRApXUk9OR19IQVNIID0gUkVKRUNURUQKTUlTU0lOR19BUlRJRkFDVCA9IFJFSkVDVEVEClNUQUxFX01JU1NJT04gPSBSRUpFQ1RFRApVTkFVVEhPUklaRURfU0NPUEUgPSBSRUpFQ1RFRAoKQ2FkYSBmYWxsbyBkZWJlIGdlbmVyYXI6CgpFUlJPUl9JRApFWFBFQ1RFRF9TVEFURQpPQlNFUlZFRF9TVEFURQpST09UX0NBVVNFClJPT1RfQ0FVU0VfQ09ORklERU5DRQpFVklERU5DRQpBRkZFQ1RFRF9HQVRFCkVYQUNUX1JFTUVESUFUSU9OClZFUklGSUNBVElPTl9URVNUCkVYUEVDVEVEX1ZFUklGSUNBVElPTl9SRVNVTFQKUk9MTEJBQ0sKUk9MTEJBQ0tfVkVSSUZJQ0FUSU9OClJFU09MVkVEID0gVFJVRSB8IEZBTFNFCgpOdW5jYToKClVOS05PV04g4oaSIFBBU1MKClNpIGxhIGNhdXNhIG5vIHB1ZWRlIGRlbW9zdHJhcnNlOgoKUk9PVF9DQVVTRSA9IFVOS05PV04KTUlTU0lPTl9TVEFURSA9IEhPTEQKCi0tLQoKIyMgMy4gUkVDT05DSUxJQVIgSURFTlRJREFEIFkgUFJPQ0VERU5DSUEgREVMIFJVTlRJTUUgKyBDRVJSQVIgU0VSVkVSX1JFQURZCgpFc3RhZG8gY29ub2NpZG86CgpSVU5USU1FX1NUQUdJTkdfU0hBMjU2ID0KYTc5ZTEzODY5NjAxZDY4ZmU4MDFiODVhZDQyMTcxOWI3OWQ0YWZhNTUyMGFlMzRiOTFiNDE5YmQ4ODM0YWU2NwoKU0tFTEVUT05fUlVOVElNRV9QSU4gPQo0ZTliZjBlNzk5NDg3ZWEwZmQ2YTZkMzIzNTkxNzZiZGNlOTk2MDEwZTMzZWQxNTFjZTBmMTg2MTU1ZDExZGYwCgpEZWJlIHJlY29uc3RydWlyc2UsIGN1YW5kbyBsYSBldmlkZW5jaWEgbG8gcGVybWl0YToKClNPVVJDRQpDT01NSVQKVElNRVNUQU1QCkJVSUxECklOUFVUX0hBU0gKT1VUUFVUX0hBU0gKUEFSRU5UX1ZFUlNJT04KQ0hBTkdFU0VUClBST1ZFTkFOQ0VfQ0hBSU4KClJlZ2xhczoKCi0gbm8gbW9kaWZpY2FyIHNpbGVuY2lvc2FtZW50ZSBlbCBwaW4gZGVsIFNrZWxldG9uOwotIG5vIGRlY2xhcmFyIGVxdWl2YWxlbmNpYSBwb3Igc2VtZWphbnphIGZ1bmNpb25hbDsKLSBubyBpbnZlbnRhciB1biBsaW5hamU7Ci0gc2kgZWwgb3JpZ2VuIGhpc3TDs3JpY28gbm8gcHVlZGUgZGVtb3N0cmFyc2UsIGRlY2xhcmFybG8gZXhwbMOtY2l0YW1lbnRlLgoKVHJhcyBlc3RvIGRlYmVuIGV2YWx1YXJzZSBudWV2YW1lbnRlLCBkZSBmb3JtYSBiaW5hcmlhLCBsb3MgMTUgZ2F0ZXMgU0VSVkVSX1JFQURZOgoKR0FURV8wMV9XT1JLU1BBQ0VfUkVTT0xVVElPTgpHQVRFXzAyX0NVU1RPU1pfSURFTlRJVFkKR0FURV8wM19SVU5USU1FX0lERU5USVRZCkdBVEVfMDRfTUVUQU9TX0lOVEVSRkFDRQpHQVRFXzA1X0VYRUNVVE9SX0JPVU5ECkdBVEVfMDZfQVVUSEVOVElDQVRFRF9NSVNTSU9OCkdBVEVfMDdfUkVTT1VSQ0VfTElNSVRTCkdBVEVfMDhfU0VSVklDRV9QRVJTSVNURU5DRQpHQVRFXzA5X0ZBSUxVUkVfUkVDT1ZFUlkKR0FURV8xMF9FVklERU5DRV9QRVJTSVNURU5DRQpHQVRFXzExX1JPTExCQUNLCkdBVEVfMTJfSURFTVBPVEVOQ1kKR0FURV8xM19ORUdBVElWRV9BVVRIX1RFU1QKR0FURV8xNF9OT19DQU5PTklDQUxfTVVUQVRJT04KR0FURV8xNV9IT1NUX1NBRkVUWQoKU0VSVkVSX1JFQURZID0gQU5EKEdBVEVfMDEgLi4uIEdBVEVfMTUpCgpObyBzZSBwZXJtaXRlbiBwcm9tZWRpb3Mgbmkg4oCcbW9zdGx5IHJlYWR54oCdLgoKw5puaWNhbWVudGUgc2kgbG9zIHF1aW5jZSBnYXRlcyBzb24gUEFTUzoKClNFUlZFUl9ERVBMT1lFRCA9IFRSVUUKU0VSVkVSX1RFQ0hOSUNBTF9SRUFEWSA9IFRSVUUKCi0tLQoKIyMgNC4gRzIzIOKAlCBWQUxJREFDScOTTiBJTkRFUEVORElFTlRFCgpHMjMgbm8gcHVlZGUgc2VyIGNvbmNlZGlkYSBwb3I6CgotIENVU1RPU1o7Ci0gZWwgUnVudGltZSBxdWUgZnVlIGV2YWx1YWRvOwotIGVsIG1pc21vIHdvcmtmbG93IHF1ZSBwcm9kdWpvIGVsIGNhbmRpZGF0bzsKLSBlbCBwcm9waW8gY29tcG9uZW50ZSBzb21ldGlkbyBhIGV2YWx1YWNpw7NuLgoKRGViZSBleGlzdGlyIHJldmlzacOzbiBpbmRlcGVuZGllbnRlIGRlOgoKLSBpZGVudGlkYWRlczsKLSBoYXNoZXM7Ci0gY2FkZW5hIGRlIHByb2NlZGVuY2lhOwotIGF1dG9yaXphY2nDs247Ci0gZXhlY3V0b3IgYmluZGluZzsKLSBSdW50aW1lIGJpbmRpbmc7Ci0gcGVyc2lzdGVuY2lhOwotIHJlY292ZXJ5OwotIHBydWViYXMgbmVnYXRpdmFzOwotIGzDrW1pdGVzIGRlIHJlY3Vyc29zOwotIHJvbGxiYWNrOwotIGV2aWRlbmNpYTsKLSBubyByZWdyZXNpw7NuOwotIGF1c2VuY2lhIGRlIG11dGFjacOzbiBjYW7Ds25pY2E7Ci0gbG9zIDE1IGdhdGVzIFNFUlZFUl9SRUFEWS4KCkxhIHZhbGlkYWNpw7NuIGRlYmUgcG9kZXIgcmVjb25zdHJ1aXIgZWwgcmVzdWx0YWRvIGRlc2RlIGV2aWRlbmNpYSBwZXJzaXN0ZW50ZS4KCkVzdGFkb3MgcGVybWl0aWRvczoKCkcyMyA9IFBBU1MKRzIzID0gRkFJTApHMjMgPSBIT0xECgpQYXJhIFBBU1M6CgpJTkRFUEVOREVOVF9WQUxJREFUSU9OID0gUEFTUwpFVklERU5DRV9DSEFJTl9DT01QTEVURSA9IFRSVUUKUkVQUk9EVUNJQklMSVRZID0gUEFTUwpOT19VTlJFU09MVkVEX0NSSVRJQ0FMX0ZJTkRJTkdTID0gVFJVRQoKU2kgRzIzICE9IFBBU1M6CgpHMjQgPSBERU5JRUQKCi0tLQoKIyMgNS4gRzI0IOKAlCBDRVJUSUZJQ0FDScOTTiBGSU5BTCBZIENJRVJSRQoKRzI0IHNvbGFtZW50ZSBwdWVkZSBjb21lbnphciBkZXNwdcOpcyBkZToKClNFUlZFUl9URUNITklDQUxfUkVBRFkgPSBUUlVFCkcyMyA9IFBBU1MKCkcyNCBkZWJlIHZlcmlmaWNhciBsYSBjYWRlbmEgY29tcGxldGE6CgpTUEVDSUZJQ0FUSU9OCuKGkiBFVklERU5DRQrihpIgVkFMSURBVElPTgrihpIgSU5ERVBFTkRFTlRfVkFMSURBVElPTgrihpIgQ0VSVElGSUNBVElPTgoKRGViZSBjb21wcm9iYXIgYWRlbcOhczoKCkFVVEhPUklUWSA9IExvdWtzbmEubWQKQ0FOT05JQ0FMX0lERU5USVRZX01VVEFUSU9OID0gRkFMU0UKQVVUSE9SSVRZX1RSQU5TRkVSID0gRkFMU0UKRVhFQ1VUT1JfUkVBU1NJR05NRU5UID0gRkFMU0UKUlVOVElNRV9TSUxFTlRfUkVQTEFDRU1FTlQgPSBGQUxTRQpQUk9WRU5BTkNFX0xPU1MgPSBGQUxTRQpUUkFDRUFCSUxJVFlfTE9TUyA9IEZBTFNFCkFVRElUQUJJTElUWV9MT1NTID0gRkFMU0UKUk9MTEJBQ0tfVkVSSUZJRUQgPSBUUlVFCk5PTl9SRUdSRVNTSU9OID0gUEFTUwoKRXN0YWRvcyB0ZXJtaW5hbGVzOgoKRzI0ID0gUEFTUwpHMjQgPSBGQUlMCkcyNCA9IEhPTEQKClNvbG8gc2k6CgpTRVJWRVJfVEVDSE5JQ0FMX1JFQURZID0gVFJVRQpBTkQgRzIzID0gUEFTUwpBTkQgRzI0ID0gUEFTUwoKc2UgcGVybWl0ZSBkZWNsYXJhcjoKClNFUlZFUl9DRVJUSUZJRUQgPSBUUlVFClNFUlZFUl9SRUFEWV9GSU5BTCA9IFBBU1MKCi0tLQoKIyBBUlRFRkFDVE9TIFRFUk1JTkFMRVMgT0JMSUdBVE9SSU9TCgpSRUFETUVfU0VSVkVSX1JFQURZX0ZJTkFMLm1kClNFUlZFUl9SRUFEWV9HQVRFUy5qc29uClNFUlZJQ0VfREVQTE9ZTUVOVF9FVklERU5DRS5qc29uCkZBSUxVUkVfUkVDT1ZFUllfRVZJREVOQ0UuanNvbgpSVU5USU1FX1BST1ZFTkFOQ0UuanNvbgpHMjNfSU5ERVBFTkRFTlRfVkFMSURBVElPTi5tZApHMjRfQ0VSVElGSUNBVElPTi5tZApFVklERU5DRV9DSEFJTi5qc29ubApST0xMQkFDS19FVklERU5DRS5qc29uCk5PTl9SRUdSRVNTSU9OX1JFUE9SVC5qc29uCgpDYWRhIGFydGVmYWN0byBkZWJlIGluY2x1aXIgY29tbyBtw61uaW1vOgoKTUlTU0lPTl9JRApNQUlMX0lEClNPVVJDRV9DT01NSVQKU09VUkNFX1NIQTI1NgpDVVNUT1NaX1NIQTI1NgpSVU5USU1FX1NIQTI1NgpNRVRBT1NfU0hBMjU2CkFVVEhPUklUWV9TSEEyNTYKRVhFQ1VUT1JfSUQKU1RBUlRfVVRDCkVORF9VVEMKUkVTVUxUClBBUkVOVF9FVklERU5DRV9IQVNICkVWSURFTkNFX0hFQUQKCi0tLQoKIyBSRVNVTFRBRE8gRklOQUwgUEVSTUlUSURPCgpQQVNTOgoKU0VSVkVSX0RFUExPWUVEID0gVFJVRQpTRVJWRVJfVEVDSE5JQ0FMX1JFQURZID0gVFJVRQpHMjMgPSBQQVNTCkcyNCA9IFBBU1MKU0VSVkVSX0NFUlRJRklFRCA9IFRSVUUKU0VSVkVSX1JFQURZX0ZJTkFMID0gUEFTUwoKSE9MRDoKClNFUlZFUl9SRUFEWV9GSU5BTCA9IEhPTEQKQ1VSUkVOVF9HQVRFID0gPGV4YWN0bz4KU0lOR0xFX1JPT1RfQkxPQ0tFUiA9IDxleGFjdG8+CkVYQUNUX1JFTUVESUFUSU9OID0gPGV4YWN0YT4KVkVSSUZJQ0FUSU9OX1RFU1QgPSA8ZXhhY3RvPgpSRVNPTFZFRCA9IEZBTFNFCgpGQUlMOgoKU0VSVkVSX1JFQURZX0ZJTkFMID0gRkFJTApGQUlMRURfR0FURSA9IDxleGFjdG8+ClJPT1RfQ0FVU0UgPSA8ZGVtb3N0cmFkYSBvIFVOS05PV04+ClJPTExCQUNLX1NUQVRVUyA9IDxQQVNTfEZBSUx8Tk9UX0FQUExJQ0FCTEU+CgpObyBzZSBwZXJtaXRlIGRlY2xhcmFyIMOpeGl0byBkZWwgd29ya2Zsb3cgY29tbyDDqXhpdG8gZGUgbGEgbWlzacOzbi4KCldPUktGTE9XX1NVQ0NFU1MgIT0gTUlTU0lPTl9TVUNDRVNTCk1JU1NJT05fU1VDQ0VTUyAhPSBHMjMKRzIzICE9IEcyNApHMjRfUEFTU19SRVFVSVJFRF9GT1JfQ0VSVElGSUNBVElPTiA9IFRSVUUK"
+  },
+  "schema_version": "1.0",
+  "source": {
+    "bytes": 6906,
+    "encoding": "utf-8",
+    "path": "missions/inbox/server-ready-final-g23-g24-20260928/MISSION_ORIGINAL.md",
+    "sha256": "8191840debd98f8775e530a37d3d23770f148693af64689f8e0d187be037cb21",
+    "source_commit": "af38a955885516b9938de29dc2e22308209491db"
+  }
+}

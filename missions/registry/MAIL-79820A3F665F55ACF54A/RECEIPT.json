@@ -1,0 +1,12 @@
+{
+  "github_run_attempt": "1",
+  "github_run_id": "37496487426",
+  "mail_id": "MAIL-79820A3F665F55ACF54A",
+  "received_utc": "2026-10-06T16:32:26.559840+00:00",
+  "schema": "CUSTOSZ_MAILBOX_RECEIPT/1.0",
+  "source_bytes": 2530,
+  "source_commit": "576e770d6e96bc824d71ddb5d619e7b5f8b65f86",
+  "source_path": "missions/inbox/document-factory-ffprobe-exact-cert-v2-20261006/MISSION_ORIGINAL.md",
+  "source_sha256": "79820a3f665f55acf54a444257305257c2b6a039d2111b31d5ee7743701b5e6b",
+  "status": "RECEIVED"
+}

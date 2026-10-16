@@ -1,0 +1,33 @@
+name: "SERVER_READY Final — post-boot persistence verifier"
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 3
+    steps:
+      - name: Checkout verifier
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            scripts/missions/final_server_ready_postboot_verify.py
+          sparse-checkout-cone-mode: false
+      - name: Verify post-boot persistence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/server-ready-postboot"
+          python3 -B -I scripts/missions/final_server_ready_postboot_verify.py --out "$RUNNER_TEMP/server-ready-postboot/BOOT_PERSISTENCE_EVIDENCE.json"
+      - name: Preserve evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: server-ready-postboot-evidence
+          path: ${{ runner.temp }}/server-ready-postboot
+          if-no-files-found: error

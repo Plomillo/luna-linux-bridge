@@ -1,0 +1,66 @@
+name: "SERVER_READY Final — 12-control preflight"
+
+on:
+  push:
+    branches:
+      - staging/custosz-mission-mailbox-20260928
+    paths:
+      - .github/workflows/server-ready-final-preflight-12.yml
+      - scripts/mission_mailbox/adapters/final_server_ready_closure.py
+      - server/symphylax-r1-candidate/**
+      - mission-mailbox/runtime-adapters/registry.json
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: server-ready-final-preflight-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 5
+    steps:
+      - name: Checkout governed surface
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            artifacts/custosz-v7
+            Louksna.md
+            missions/inbox/server-ready-final-g23-g24-20260928/MISSION_ORIGINAL.md
+            server/symphylax-r1-candidate
+            scripts/mission_mailbox/adapters/final_server_ready_closure.py
+            mission-mailbox/runtime-adapters/registry.json
+          sparse-checkout-cone-mode: false
+      - name: Static validation
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -m py_compile scripts/mission_mailbox/adapters/final_server_ready_closure.py server/symphylax-r1-candidate/symphylax_r1_service.py
+          python3 - <<'PY'
+          import json
+          for p in ("server/symphylax-r1-candidate/DEPLOYMENT_CONTRACT.json","server/symphylax-r1-candidate/STATE_MACHINE.json","server/symphylax-r1-candidate/CLEANUP_CONTRACT.json","mission-mailbox/runtime-adapters/registry.json"): json.load(open(p))
+          print("SERVER_READY_PREFLIGHT_STATIC=PASS")
+          PY
+      - name: Execute twelve-control preflight
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/server-ready-final-preflight"
+          nice -n 10 python3 -B -I scripts/mission_mailbox/adapters/final_server_ready_closure.py --repo-root . --out "$RUNNER_TEMP/server-ready-final-preflight"
+      - name: Preserve preflight evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: server-ready-final-preflight-12
+          path: ${{ runner.temp }}/server-ready-final-preflight
+          if-no-files-found: error
+      - name: Show result
+        if: always()
+        shell: bash
+        run: |
+          test -f "$RUNNER_TEMP/server-ready-final-preflight/PREFLIGHT_12_RESULT.json" && cat "$RUNNER_TEMP/server-ready-final-preflight/PREFLIGHT_12_RESULT.json" || true

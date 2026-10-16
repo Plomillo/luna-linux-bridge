@@ -1,0 +1,68 @@
+{
+  "schema_version": "1.0",
+  "mailbox_version": "0.1.0",
+  "status": "STAGED_PENDING_VALIDATION",
+  "authority": "Louksna.md",
+  "roles": {
+    "worker": "CUSTOSZ_V7",
+    "governor": "MetaOS",
+    "supervisor": "SYMPHYLAX_R1",
+    "runtime": "CUSTOSZ_RUNTIME_V1",
+    "evolution_review": "CUSTOSZ_FAMILY_9"
+  },
+  "paths": {
+    "custosz": "artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz",
+    "runtime": "artifacts/custosz-v7/CUSTOSZ_RUNTIME_V1_SR_EXEC_BOUND_FME_01.b.pyz",
+    "metaos": "artifacts/custosz-v7/MetaOS.wasm",
+    "authority": "Louksna.md",
+    "adapter_registry": "mission-mailbox/runtime-adapters/registry.json",
+    "source_class_bindings": "mission-mailbox/source-class-bindings/registry.json",
+    "capability_census": "ecosystem/metacognitive-operational-v1/CUSTOSZ72_CENSUS.json"
+  },
+  "mission": {
+    "max_input_bytes": 1048576,
+    "default_wallclock_seconds": 1200,
+    "maximum_wallclock_seconds": 1200,
+    "validation_reserve_seconds": 240,
+    "heartbeat_interval_seconds": 45,
+    "default_profile": "LUNA_PROJECT"
+  },
+  "resources": {
+    "local_nice": 10,
+    "local_virtual_memory_kib": 262144,
+    "heavy_compute_on_self_hosted": false
+  },
+  "protected_scopes": [
+    "WINDOWS",
+    "EFI",
+    "GPT",
+    "PARTITIONS",
+    "PROYECTOS",
+    "F3-DISK",
+    "CANONICAL_ARCHITECTURE",
+    "FROZEN_ARTIFACTS"
+  ],
+  "invariants": {
+    "mission_original_mutation": false,
+    "silent_semantic_reduction": false,
+    "silent_routing": false,
+    "silent_executor_substitution": false,
+    "workflow_success_implies_mission_success": false,
+    "unbound_executor_can_execute": false,
+    "unknown_can_become_pass": false,
+    "suggestion_can_self_implement": false,
+    "suggestion_can_self_certify": false,
+    "family_9_review_required_for_capability_evolution": true,
+    "traceability_required": true,
+    "provenance_required": true,
+    "auditability_required": true,
+    "fail_closed": true
+  },
+  "terminal_states": [
+    "COMPLETED",
+    "HOLD",
+    "FAILED",
+    "REJECTED",
+    "CANCELLED"
+  ]
+}

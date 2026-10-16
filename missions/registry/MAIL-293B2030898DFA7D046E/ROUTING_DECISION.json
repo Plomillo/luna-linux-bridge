@@ -1,0 +1,33 @@
+{
+  "custosz_mission_id": "MIS-bfb8295767664143bd42",
+  "deadline_utc": "2026-10-02T22:22:17.811331+00:00",
+  "executor_bound": false,
+  "executor_reported": "UNBOUND_MEDIATED_OR_LOCAL",
+  "heartbeat_state": "SUPERVISORY_ACTIVE",
+  "mail_id": "MAIL-293B2030898DFA7D046E",
+  "mission_class_resolution": {
+    "bound_mission_class": null,
+    "direct_mission_class": "MAIN_RECOVERY_SKELETON_IMPLEMENTATION_CONSULTATION",
+    "matches": [],
+    "mission_class": "MAIN_RECOVERY_SKELETON_IMPLEMENTATION_CONSULTATION",
+    "origin": "MISSION_DIRECTIVE",
+    "result": "PASS",
+    "root_blocker": null,
+    "source_sha256": "293b2030898dfa7d046e153f7ddf002297c22b04fce5ba1a98ee8f9f3fe7f87a"
+  },
+  "registered_utc": "2026-10-02T22:02:17.847268+00:00",
+  "required_capabilities_explicit": [],
+  "routing_hints_non_authoritative": {
+    "authoritative": false,
+    "values": [
+      "CUSTOSZ_RUNTIME",
+      "GITHUB",
+      "ROLLBACK"
+    ]
+  },
+  "schema": "CUSTOSZ_ROUTING_DECISION/1.0",
+  "worker_identity_sha256": "dacf1f8c13b2fcbfc617cf0d4d780b30502c13395224691e6b0f05f53d9816a2",
+  "workspace": "/home/diegoignacionorambuenamiranda/SYMPHYLAX_LAB/CUSTOSZ_V7_R1_G23_G24_20260927T021532Z/POSIX_COMPATIBILITY_VIEW",
+  "workspace_binding": "TRUSTED_WORKFLOW_OVERRIDE",
+  "workspace_resolved": true
+}

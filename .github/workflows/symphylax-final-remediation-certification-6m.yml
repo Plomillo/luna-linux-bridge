@@ -1,0 +1,172 @@
+name: "SYMPHYLAX R1 — final remediation and certification 6m"
+
+on:
+  push:
+    branches:
+      - staging/custosz-mission-mailbox-20260928
+    paths:
+      - missions/inbox/symphylax-r1-final-remediation-certification-6m-20260928/MISSION_ORIGINAL.md
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: symphylax-r1-final-remediation-6m
+  cancel-in-progress: false
+
+jobs:
+  preboot:
+    name: "Preboot guard — checkpoint, repair, arm reboot"
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 1
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            missions/inbox/symphylax-r1-final-remediation-certification-6m-20260928/MISSION_ORIGINAL.md
+            scripts/missions/symphylax_final_6m_preboot.py
+            scripts/missions/symphylax_final_6m_postboot.py
+            scripts/missions/symphylax_final_6m_g23.py
+            scripts/missions/symphylax_final_6m_g24.py
+          sparse-checkout-cone-mode: false
+      - name: Static syntax preflight
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -m py_compile scripts/missions/symphylax_final_6m_preboot.py
+          python3 -m py_compile scripts/missions/symphylax_final_6m_postboot.py
+          python3 -m py_compile scripts/missions/symphylax_final_6m_g23.py
+          python3 -m py_compile scripts/missions/symphylax_final_6m_g24.py
+          echo "SYNTAX_PREFLIGHT=PASS"
+      - name: Build durable preboot checkpoint
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/symphylax-6m-preboot"
+          mkdir -p "$OUT"
+          python3 -B -I scripts/missions/symphylax_final_6m_preboot.py --mission missions/inbox/symphylax-r1-final-remediation-certification-6m-20260928/MISSION_ORIGINAL.md --out "$OUT"
+      - name: Preserve preboot evidence before reboot
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: symphylax-r1-final-6m-preboot
+          path: ${{ runner.temp }}/symphylax-6m-preboot
+          if-no-files-found: error
+          retention-days: 30
+      - name: Arm one governed real reboot
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          UNIT="symphylax-final-reboot-${GITHUB_RUN_ID}"
+          if sudo -n systemd-run --unit="$UNIT" --on-active=8s /usr/bin/systemctl reboot; then
+            echo "REBOOT_ARMED=systemd-run"
+          else
+            sudo -n bash -c 'nohup sh -c "sleep 8; systemctl reboot" >/tmp/symphylax-final-reboot.log 2>&1 &'
+            echo "REBOOT_ARMED=nohup-fallback"
+          fi
+
+  reboot_bridge:
+    name: "Hosted bridge — allow physical reboot and runner return"
+    needs: preboot
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    steps:
+      - name: Wait for physical reboot window
+        shell: bash
+        run: sleep 45
+
+  postboot:
+    name: "Postboot — G08, G09, no-regression, freeze"
+    needs: reboot_bridge
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            missions/inbox/symphylax-r1-final-remediation-certification-6m-20260928/MISSION_ORIGINAL.md
+            Louksna.md
+            artifacts/custosz-v7
+            server/symphylax-r1-candidate
+            scripts/missions/symphylax_final_6m_postboot.py
+          sparse-checkout-cone-mode: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: symphylax-r1-final-6m-preboot
+          path: ${{ runner.temp }}/preboot
+      - name: Resume same mission and close technical gates
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          OUT="$RUNNER_TEMP/symphylax-6m-candidate"
+          mkdir -p "$OUT"
+          python3 -B -I scripts/missions/symphylax_final_6m_postboot.py --repo-root . --mission missions/inbox/symphylax-r1-final-remediation-certification-6m-20260928/MISSION_ORIGINAL.md --preboot "$RUNNER_TEMP/preboot" --out "$OUT"
+          cat "$OUT/README_SERVER_READY_FINAL.md"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: symphylax-r1-final-6m-candidate
+          path: ${{ runner.temp }}/symphylax-6m-candidate
+          if-no-files-found: error
+          retention-days: 30
+
+  g23:
+    name: "G23 — independent exact-digest validation"
+    needs: postboot
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            missions/inbox/symphylax-r1-final-remediation-certification-6m-20260928/MISSION_ORIGINAL.md
+            scripts/missions/symphylax_final_6m_g23.py
+          sparse-checkout-cone-mode: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: symphylax-r1-final-6m-candidate
+          path: ${{ runner.temp }}/candidate
+      - name: Validate read-only without repair
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 -B -I scripts/missions/symphylax_final_6m_g23.py --candidate "$RUNNER_TEMP/candidate" --mission missions/inbox/symphylax-r1-final-remediation-certification-6m-20260928/MISSION_ORIGINAL.md --out "$RUNNER_TEMP/g23"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: symphylax-r1-final-6m-g23
+          path: ${{ runner.temp }}/g23
+          if-no-files-found: error
+          retention-days: 30
+
+  g24:
+    name: "G24 — final certification over G23 digest"
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: scripts/missions/symphylax_final_6m_g24.py
+          sparse-checkout-cone-mode: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: symphylax-r1-final-6m-g23
+          path: ${{ runner.temp }}/g23
+      - name: Certify only exact accepted candidate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 -B -I scripts/missions/symphylax_final_6m_g24.py --g23 "$RUNNER_TEMP/g23" --out "$RUNNER_TEMP/g24"
+          cat "$RUNNER_TEMP/g24/README_SERVER_READY_FINAL.md"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: symphylax-r1-final-6m-g24
+          path: ${{ runner.temp }}/g24
+          if-no-files-found: error
+          retention-days: 30

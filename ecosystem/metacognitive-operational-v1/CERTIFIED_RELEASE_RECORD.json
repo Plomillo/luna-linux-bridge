@@ -1,0 +1,100 @@
+{
+  "schema": "LOUKSNA_METACOGNITIVE_RELEASE/1.0",
+  "release_id": "META-ECO-V1-B91D-20260928",
+  "mission_id": "MIS-META-ECO-20260928-V1",
+  "authority": "Louksna.md",
+  "doctrine": "EXTEND_DO_NOT_REPLACE",
+  "canonical_status": "NON_CANONICAL_OPERATIONAL_EXTENSION",
+  "operational_status": "CERTIFIED_ACTIVE_IN_SCOPE",
+  "active_authorized": true,
+  "candidate_digest_sha256": "b91d04bf79cd98eda846a8d0435f20323013f7ef647d9b288ab4cf29dcc35240",
+  "producer": {
+    "source_commit": "d930e9220ee5ab2013afca4da4ad4c876c20d4f2",
+    "run_id": 36459022140,
+    "artifact_id": 10987077105,
+    "artifact_name": "metacognitive-ecosystem-r4-frozen-candidate",
+    "artifact_zip_sha256": "1a82178b91b5c71bfe6340e7becc7e040adeeff4a863ab8a5d01b00ff1f9608c"
+  },
+  "puac2": {
+    "controls": {
+      "PUAC.C25": "PASS",
+      "PUAC.C26": "PASS",
+      "PUAC.C27": "PASS",
+      "PUAC.C28": "PASS",
+      "PUAC.C29": "PASS",
+      "PUAC.C30": "PASS",
+      "PUAC.C31": "PASS",
+      "PUAC.C32": "PASS"
+    },
+    "status": "PASS"
+  },
+  "g23": {
+    "status": "PASS",
+    "run_id": 36461879737,
+    "validator_commit": "a4e3ca776f151b1fc3d61ef1bc884447cfadb203",
+    "artifact_id": 10987242991,
+    "artifact_name": "g23-metacognitive-b91d-record",
+    "artifact_zip_sha256": "343004e6b17e578a030d8bbe738ddb382e6dc65fe1984befdf920e4ac92b988c",
+    "repair_allowed": false,
+    "candidate_write_access": false,
+    "assurance_profile": "INTERNAL_STRUCTURAL_INDEPENDENCE_SAME_REPOSITORY_V1"
+  },
+  "g24": {
+    "status": "PASS",
+    "run_id": 36462113064,
+    "certifier_commit": "888a8274dcf09647dbf166742bb8f40a40fbdcf3",
+    "artifact_id": 10987123425,
+    "artifact_name": "g24-metacognitive-b91d-certification",
+    "artifact_zip_sha256": "788a08dfe98b776a44f91bef457528b503b65d290112a1572bd04a1db8194638",
+    "authority_authenticated": true,
+    "repair_allowed": false,
+    "certification_propagation": false,
+    "canonical_mutation": false
+  },
+  "capability_surface": {
+    "mcap_count": 59,
+    "custosz_v7_exact_capability_count": 72,
+    "g16_precheck": "PASS",
+    "training_position": 59,
+    "training_executed": false
+  },
+  "materialized_cloud_lanes": {
+    "admission_and_metacognitive_core": "PASS",
+    "debian_13_userspace": "PASS",
+    "android_16_api36": "PASS",
+    "android_17_api37_0": "PASS",
+    "windows_cloud": "PASS",
+    "rclone_adaptive_8_16_32_48_64": "PASS",
+    "http_range_streaming_mechanism": "PASS",
+    "translation_100000_segment_orchestration": "PASS",
+    "metacognitive_telemetry_linkage": "PASS"
+  },
+  "scope": "METACOGNITIVE_OPERATIONAL_ECOSYSTEM_V1_CONTROL_PLANE_AND_CLOUD_EXECUTION_FRAMEWORK",
+  "scope_exclusions": [
+    "human-level AGI claim",
+    "live external provider integrations not separately evidenced",
+    "semantic machine-translation quality certification",
+    "live Dropbox throughput certification",
+    "training execution",
+    "external regulatory certification"
+  ],
+  "invariants": {
+    "authority_transfer": false,
+    "canonical_mutation": false,
+    "certification_propagation": false,
+    "silent_operations": false,
+    "fail_closed": true,
+    "traceability": true,
+    "auditability": true,
+    "provenance": true,
+    "rollback": true,
+    "non_regression": true
+  },
+  "invalidation_policy": {
+    "automatic_recertification": false,
+    "relevant_change_requires_impact_analysis": true,
+    "candidate_digest_change_requires_new_g23": true,
+    "g23_invalidated_by_candidate_change": true,
+    "g24_invalidated_by_candidate_change": true
+  }
+}

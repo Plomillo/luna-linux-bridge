@@ -1,0 +1,242 @@
+{
+  "authority_context": {
+    "authority": "Louksna.md",
+    "authority_transfer": false,
+    "canonical_mutation_authorized": false
+  },
+  "declared_mission_id": "MIS-CUSTOSZ-DROPBOX-LIVE-RECOVERY-20261007",
+  "execution_contract": {
+    "default_profile": "LUNA_PROJECT",
+    "fail_closed": true,
+    "governor": "MetaOS",
+    "no_silent_executor_substitution": true,
+    "protected_scopes": [
+      "WINDOWS",
+      "EFI",
+      "GPT",
+      "PARTITIONS",
+      "PROYECTOS",
+      "F3-DISK",
+      "CANONICAL_ARCHITECTURE",
+      "FROZEN_ARTIFACTS"
+    ],
+    "runtime": "CUSTOSZ_RUNTIME_V1",
+    "supervisor": "SYMPHYLAX_R1",
+    "validation_reserve_seconds": 240,
+    "wallclock_seconds": 1200,
+    "worker": "CUSTOSZ_V7",
+    "workflow_success_is_not_mission_success": true
+  },
+  "mail_id": "MAIL-B01D39E2D8960B2568BD",
+  "mailbox_version": "0.1.0",
+  "mission_payload": {
+    "byte_exact_preservation": true,
+    "directives_observed": {
+      "ASSURANCE": [
+        {
+          "line": 7,
+          "value": "PUAC2.md"
+        }
+      ],
+      "AUDITABILITY": [
+        {
+          "line": 20,
+          "value": "REQUIRED"
+        }
+      ],
+      "AUTHORITY": [
+        {
+          "line": 6,
+          "value": "Louksna.md"
+        }
+      ],
+      "AUTO_CERTIFICATION": [
+        {
+          "line": 27,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "CERTIFICATION_PROPAGATION": [
+        {
+          "line": 28,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "CODEX": [
+        {
+          "line": 25,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "CONTROL_BRANCH": [
+        {
+          "line": 15,
+          "value": "staging/custosz-mission-mailbox-20260928"
+        }
+      ],
+      "CURRENT_RECONCILED_STATE": [
+        {
+          "line": 30,
+          "value": ""
+        }
+      ],
+      "DESKTOP_COMMANDER": [
+        {
+          "line": 24,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "EXECUTION": [
+        {
+          "line": 55,
+          "value": ""
+        }
+      ],
+      "FAILURE_POSTURE": [
+        {
+          "line": 17,
+          "value": "FAIL_CLOSED"
+        }
+      ],
+      "GOVERNOR": [
+        {
+          "line": 10,
+          "value": "MetaOS"
+        }
+      ],
+      "KNOWN_FAILURE_REPAIR_SCOPE": [
+        {
+          "line": 77,
+          "value": ""
+        }
+      ],
+      "MISSION_CLASS": [
+        {
+          "line": 4,
+          "value": "CUSTOSZ_DROPBOX_TRANSFER_LIVE_RECOVERY_V1"
+        }
+      ],
+      "MISSION_ID": [
+        {
+          "line": 3,
+          "value": "MIS-CUSTOSZ-DROPBOX-LIVE-RECOVERY-20261007"
+        }
+      ],
+      "NON_REGRESSION": [
+        {
+          "line": 23,
+          "value": "REQUIRED"
+        }
+      ],
+      "NO_SILENT_OPERATIONS": [
+        {
+          "line": 18,
+          "value": "ABSOLUTE"
+        }
+      ],
+      "OBJECTIVE": [
+        {
+          "line": 42,
+          "value": ""
+        }
+      ],
+      "PROVENANCE": [
+        {
+          "line": 21,
+          "value": "REQUIRED"
+        }
+      ],
+      "RAR_TEXT_GATE": [
+        {
+          "line": 68,
+          "value": ""
+        }
+      ],
+      "RAR_WITHOUT_TEXT_RECONCILIATION": [
+        {
+          "line": 75,
+          "value": "HOLD."
+        }
+      ],
+      "REPOSITORY": [
+        {
+          "line": 13,
+          "value": "Plomillo/luna-linux-bridge"
+        }
+      ],
+      "RESTART_FROM_ZERO": [
+        {
+          "line": 26,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "ROLLBACK": [
+        {
+          "line": 22,
+          "value": "REQUIRED"
+        }
+      ],
+      "RUNTIME": [
+        {
+          "line": 9,
+          "value": "CUSTOSZ_RUNTIME_V1"
+        }
+      ],
+      "SUCCESS_GATE": [
+        {
+          "line": 47,
+          "value": ""
+        }
+      ],
+      "SUPERVISOR": [
+        {
+          "line": 11,
+          "value": "SYMPHYLAX_R1"
+        }
+      ],
+      "TERMINAL_REPORT": [
+        {
+          "line": 89,
+          "value": ""
+        }
+      ],
+      "TRACEABILITY": [
+        {
+          "line": 19,
+          "value": "REQUIRED"
+        }
+      ],
+      "TRANSFER_BRANCH": [
+        {
+          "line": 14,
+          "value": "staging/dropbox-github-cloud-partitioned-20261005"
+        }
+      ],
+      "WORKER": [
+        {
+          "line": 8,
+          "value": "CUSTOSZ_V7"
+        }
+      ]
+    },
+    "required_capabilities_explicit": [],
+    "routing_hints": {
+      "authoritative": false,
+      "values": [
+        "CUSTOSZ_RUNTIME",
+        "GITHUB",
+        "RESEARCH",
+        "ROLLBACK"
+      ]
+    },
+    "source_utf8_b64": "IyBNSVNJw5NOIOKAlCBSRUNVUEVSQUNJw5NOIFZJVkEgRFJPUEJPWCDihpIgR0lUSFVCCgpNSVNTSU9OX0lEID0gTUlTLUNVU1RPU1otRFJPUEJPWC1MSVZFLVJFQ09WRVJZLTIwMjYxMDA3Ck1JU1NJT05fQ0xBU1MgPSBDVVNUT1NaX0RST1BCT1hfVFJBTlNGRVJfTElWRV9SRUNPVkVSWV9WMQoKQVVUSE9SSVRZID0gTG91a3NuYS5tZApBU1NVUkFOQ0UgPSBQVUFDMi5tZApXT1JLRVIgPSBDVVNUT1NaX1Y3ClJVTlRJTUUgPSBDVVNUT1NaX1JVTlRJTUVfVjEKR09WRVJOT1IgPSBNZXRhT1MKU1VQRVJWSVNPUiA9IFNZTVBIWUxBWF9SMQoKUkVQT1NJVE9SWSA9IFBsb21pbGxvL2x1bmEtbGludXgtYnJpZGdlClRSQU5TRkVSX0JSQU5DSCA9IHN0YWdpbmcvZHJvcGJveC1naXRodWItY2xvdWQtcGFydGl0aW9uZWQtMjAyNjEwMDUKQ09OVFJPTF9CUkFOQ0ggPSBzdGFnaW5nL2N1c3Rvc3otbWlzc2lvbi1tYWlsYm94LTIwMjYwOTI4CgpGQUlMVVJFX1BPU1RVUkUgPSBGQUlMX0NMT1NFRApOT19TSUxFTlRfT1BFUkFUSU9OUyA9IEFCU09MVVRFClRSQUNFQUJJTElUWSA9IFJFUVVJUkVECkFVRElUQUJJTElUWSA9IFJFUVVJUkVEClBST1ZFTkFOQ0UgPSBSRVFVSVJFRApST0xMQkFDSyA9IFJFUVVJUkVECk5PTl9SRUdSRVNTSU9OID0gUkVRVUlSRUQKREVTS1RPUF9DT01NQU5ERVIgPSBGT1JCSURERU4KQ09ERVggPSBGT1JCSURERU4KUkVTVEFSVF9GUk9NX1pFUk8gPSBGT1JCSURERU4KQVVUT19DRVJUSUZJQ0FUSU9OID0gRk9SQklEREVOCkNFUlRJRklDQVRJT05fUFJPUEFHQVRJT04gPSBGT1JCSURERU4KCkNVUlJFTlRfUkVDT05DSUxFRF9TVEFURToKLSBWRVJJRklFRF9QUk9HUkVTUyA9IDUvOAotIENPTVBMRVRFRCA9IDIsMyw0LDYsNwotIFBFTkRJTkcgPSAxLDUsOAotIExBU1RfRkFJTEVEX1JVTiA9IDM3NjUzNTk2NDUyCi0gTEFTVF9EVVJBQkxFX0NIRUNLUE9JTlQgPSBDUC0zNzY1MzU5NjQ1Mi0wMDAwMDgKLSBMQVNUX0RVUkFCTEVfQ0hFQ0tQT0lOVF9TSEEyNTYgPSBjMTBlMmExNTEyNzU3NmQ5ZjA4ODRhNmU2NGI3MmJhNGU4OTdmZDQwMzdjZmRiN2I2MmQ5ODI4YTExYTkxYzA0Ci0gQ1VSUkVOVF9CTE9DS0VSX0lERU5USVRZID0gNmFmMzEwODFhM2FlNTkyYzY3OGEwNjM5Njc0NWY4ZjNkNmE2MTcyMjNmMmI5Nzk2ZjUzYzc4MjgxMDJjMDcyMgotIENVUlJFTlRfQkxPQ0tFUiA9IEdPVkVSTkVEX0lOVkVOVE9SWV9FTVBUWV9BRlRFUl9BUElfUFVCTElDX0FORF9GUk9aRU4KLSBBUlRJRkFDVF9TVE9SQUdFX1FVT1RBID0gRVhIQVVTVEVEX0FUX0xBU1RfUlVOCi0gTUFURVJJQUxfQllURV9GTE9XX05FV19CWVRFUyA9IE5PVF9ZRVRfUFJPVkVOCgpPQkpFQ1RJVkU6CkdhcmFudGl6YXIgYXJxdWl0ZWN0w7NuaWNhbWVudGUgcXVlIGxhIHRyYW5zZmVyZW5jaWEgRHJvcGJveOKGkkdpdEh1YiBkZSBsb3MgcGVuZGllbnRlcyAxLDUsOCB2dWVsdmEgYSBlc3RhciB2aXZhIHkgY29udGluw7plIGV4YWN0YW1lbnRlIGRlc2RlIGVsIGVzdGFkbyBkdXJhYmxlIHByZXNlcnZhZG8uCk5PIHNlIGV4aWdlIGNvbXBsZXRhciA4LzggZW4gZXN0YSBtaXNpw7NuLgpFbCBvYmpldGl2byBpbm1lZGlhdG8geSBzdWZpY2llbnRlIGVzIGRlbW9zdHJhciByZWFudWRhY2nDs24gbWF0ZXJpYWwgcmVhbCB5IGVzdGFibGUuCgpTVUNDRVNTX0dBVEU6CjEuIFJFU1VNRV9GUk9NX1ZFUklGSUVEX0NIRUNLUE9JTlQgPSBUUlVFCjIuIFNPVVJDRV9QRU5ESU5HIOKIiCB7MSw1LDh9CjMuIE1BVEVSSUFMX0JZVEVfRkxPVyA9IFRSVUUKNC4gT0JTRVJWRURfQllURVMgPiAwCjUuIGxvcyBieXRlcyBzb24gbnVldm9zIHkgYXRyaWJ1aWJsZXMgYWwgZmx1am8gRHJvcGJveOKGkkdpdEh1Yiwgbm8gYSBpbnN0YWxhY2nDs24sIGNhY2hlLCBhcnRpZmFjdCBkb3dubG9hZCBuaSBldmlkZW5jaWEgaGlzdMOzcmljYS4KNi4gYWwgY3VtcGxpcnNlIGVsIGdhdGUsIFNUT1BfTVVUQVRJT04gPSBUUlVFIHkgZGVqYXIgcXVlIGxhIHRyYW5zZmVyZW5jaWEgc2lnYSBzdSBjdXJzby4KCkVYRUNVVElPTjoKLSBDVVNUT1NaIFY3IGRlYmUgbW9uaXRvcml6YXIgZW4gdGllbXBvIHJlYWwgR2l0SHViIEFjdGlvbnMsIGxvZ3MsIGNoZWNrcG9pbnRzLCBjb21taXRzIHkgZXN0YWRvIGRlIHRyYW5zZmVyZW5jaWEuCi0gQ1VTVE9TWl9SVU5USU1FX1YxIGVqZWN1dGEgbGFzIG9wZXJhY2lvbmVzIG1hdGVyaWFsZXMgYXV0b3JpemFkYXMuCi0gTWV0YU9TIGdvYmllcm5hIGVzdGFkb3MsIHNlZ3VyaWRhZCwgY2hlY2twb2ludCwgcm9sbGJhY2sgeSBsw61taXRlcy4KLSBVdGlsaXphciBHaXRIdWIgY29tbyB0cmFuc3BvcnRlLCB0ZWxlbWV0csOtYSwgY29udHJvbCwgZXZpZGVuY2lhIHkgcGxhbm8gZGUgcmVwYXJhY2nDs24uCi0gUmVjb25jaWxpYXIgc2llbXByZSBlc3RhZG8gZGVjbGFyYWRvIGNvbnRyYSBldmlkZW5jaWEgcmVhbCBhbnRlcyBkZSBtdXRhci4KLSBSZXBhcmFyIHPDs2xvIGxhIGNhdXNhIGFjdGl2YTsgbm8gcmVlc2NyaWJpciBzdWJzaXN0ZW1hcyBzYW5vcy4KLSBObyBwZXJkZXIgbmkgaW52YWxpZGFyIDIsMyw0LDYsNy4KLSBObyByZWluaWNpYXIgZGVzZGUgY2Vyby4KLSBObyBkZWNsYXJhciBmbHVqbyBwb3IgaGVhcnRiZWF0LCBydW5uZXIgYWN0aXZvIG8gcGFzbyAiaW5fcHJvZ3Jlc3MiLgotIFNpIGFwYXJlY2UgdW4gbnVldm8gYmxvcXVlbywgZGlhZ25vc3RpY2FyIGNhdXNhbG1lbnRlLCBhcGxpY2FyIGVsIG3DrW5pbW8gZGVsdGEsIHZlcmlmaWNhciByb2xsYmFjayB5IHJlYW51ZGFyIGRlc2RlIGVsIMO6bHRpbW8gY2hlY2twb2ludCB2w6FsaWRvLgotIE5vIGRlcGVuZGVyIGRlIEdpdEh1YiBBY3Rpb25zIGFydGlmYWN0cyBjb21vIMO6bmljbyBjYW5hbCBtaWVudHJhcyBsYSBjdW90YSBlc3TDqSBhZ290YWRhOyB1c2FyIGxvZ3MsIGNvbW1pdHMgZGUgdGV4dG8gZSBJc3N1ZSAjNyBjb21vIGV2aWRlbmNpYSBwZXJzaXN0ZW50ZS4KClJBUl9URVhUX0dBVEU6ClNpIGFwYXJlY2UgY3VhbHF1aWVyIGFyY2hpdm8gLnJhcjoKMS4gY2FsY3VsYXIgeSBwcmVzZXJ2YXIgU0hBLTI1NiBkZWwgUkFSOwoyLiBOTyBpbnRlcnByZXRhciBlbCBSQVIgZGlyZWN0YW1lbnRlIGNvbW8gZXZpZGVuY2lhOwozLiBleGlnaXIvcHJvZHVjaXIgdW4gZG9jdW1lbnRvIGRlIHRleHRvIFVURi04IGNvbiBpbnZlbnRhcmlvLCBydXRhcywgdGFtYcOxb3MsIGhhc2hlcyB5IGNvbnRlbmlkbyBsZWdpYmxlIHBlcnRpbmVudGU7CjQuIGNvbnRyYXN0YXIgeSByZWNvbmNpbGlhciBlc2UgdGV4dG8gY29uIGVsIFJBUjsKNS4gc8OzbG8gZGVzcHXDqXMgdXNhciBsYSBpbmZvcm1hY2nDs24gZW4gZGlhZ27Ds3N0aWNvIG8gcmVwYXJhY2nDs24uClJBUl9XSVRIT1VUX1RFWFRfUkVDT05DSUxJQVRJT04gPSBIT0xELgoKS05PV05fRkFJTFVSRV9SRVBBSVJfU0NPUEU6ClByaW9yaXphciBlbCBkZXNjZW5kaWVudGU6CjZhZjMxMDgxYTNhZTU5MmM2NzhhMDYzOTY3NDVmOGYzZDZhNjE3MjIzZjJiOTc5NmY1M2M3ODI4MTAyYzA3MjIKTm8gYWNlcHRhciBjb21vIHNvbHVjacOzbjoKLSBjaGlsZHJlbj1bXSBmYWxzbzsKLSBlbXB0eS1mb2xkZXIgZmFsc287Ci0gUEFTUyBzaW4gYnl0ZXM7Ci0gcmVwZXRpciBjaWVnYW1lbnRlIGVsIG1pc21vIGludGVudG87Ci0gZGVncmFkYXIgaWRlbnRpZGFkIHNpbiBldmlkZW5jaWE7Ci0gcGVyZGVyIGNoZWNrcG9pbnQuClNlIHBlcm1pdGUgaW52ZXN0aWdhciB5IGNvcnJlZ2lyIGVsIG1lY2FuaXNtbyBkZSBpbnZlbnRhcmlvL21hdGVyaWFsaXphY2nDs24gZXNwZWPDrWZpY28sIHVzYXIgcHJvdmVlZG9yZXMgR2l0SHViL0Ryb3Bib3ggeWEgYXV0b3JpemFkb3MgeSBhZ3JlZ2FyIGPDs2RpZ28gYWRpdGl2byBlc3RyaWN0YW1lbnRlIG5lY2VzYXJpby4KClRFUk1JTkFMX1JFUE9SVDoKQ3VhbmRvIGV4aXN0YSBmbHVqbyByZWFsLCByZWdpc3RyYXI6Ci0gUlVOX0lECi0gY2hlY2twb2ludCBvcmlnZW4KLSBwZW5kaW5nIHNvdXJjZSBhY3Rpdm8KLSBwcmltZXIgZXZlbnRvIG1hdGVyaWFsCi0gb2JzZXJ2ZWRfYnl0ZXMKLSB0aW1lc3RhbXAgVVRDCi0gbcOpdG9kby9wcm92ZWVkb3IKLSBwcnVlYmEgZGUgcXVlIGxvcyBieXRlcyBzb24gbnVldm9zCi0gU1RPUF9NVVRBVElPTj1UUlVFCi0gVFJBTlNGRVJfQUxJVkU9VFJVRQpObyBjb250aW51YXIgbW9kaWZpY2FuZG8gZGVzcHXDqXMgZGUgZGVtb3N0cmFyIGZsdWpvIHZpdm8gc2Fsdm8gcXVlIGxhIHRyYW5zZmVyZW5jaWEgdnVlbHZhIGEgZmFsbGFyIGFudGVzIGRlIGVzdGFiaWxpemFyc2UuCg=="
+  },
+  "schema_version": "1.0",
+  "source": {
+    "bytes": 4270,
+    "encoding": "utf-8",
+    "path": "missions/inbox/dropbox-transfer-live-recovery-20261007/MISSION_ORIGINAL.md",
+    "sha256": "b01d39e2d8960b2568bde7727f079c9bc0eaf053f5e19a712a28fe6b0080e507",
+    "source_commit": "cbff4493c41f03ab6b427ebebacecd9475db8df8"
+  }
+}

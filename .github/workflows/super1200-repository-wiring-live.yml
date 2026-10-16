@@ -1,0 +1,102 @@
+name: "SUPER1200 repository wiring — live continuation"
+
+on:
+  push:
+    branches:
+      - staging/custosz-mission-mailbox-20260928
+    paths:
+      - .github/workflows/super1200-repository-wiring-live.yml
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: super1200-repository-wiring-live
+  cancel-in-progress: false
+
+jobs:
+  wiring:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout control plane
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          path: mission
+
+      - name: Checkout repository implementation
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: custosz/super-1200-implementation-20261007
+          fetch-depth: 0
+          persist-credentials: true
+          path: target
+
+      - name: Revalidate CUSTOSZ Runtime MetaOS boundary
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B -I mission/artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz v07-selftest
+          test -f target/implementation/super1200/registry/capabilities.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("target/implementation/super1200/registry/capabilities.json").read_text())
+          o=json.loads(Path("target/implementation/super1200/governance/OWNERSHIP.json").read_text())
+          assert r["count"]==1200 and r["owner"]=="REPOSITORY"
+          assert o["capability_owner"]=="REPOSITORY" and o["ownership_transfer"] is False
+          raw=Path("mission/artifacts/custosz-v7/MetaOS.wasm").read_bytes()
+          assert b"implementation-gate" in raw and b"active-allowed" in raw
+          print("SUPER1200_TELEMETRY WIRING_PREFLIGHT=PASS OWNER=REPOSITORY G23=READINESS G24=READINESS")
+          PY
+
+      - name: Build live repository synergy graph
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import json,time
+          from datetime import datetime,timezone
+          from pathlib import Path
+          root=Path("target/implementation/super1200")
+          reg=json.loads((root/"registry/capabilities.json").read_text())
+          items={int(x["capability_id"]):x for x in reg["items"]}
+          edges=[];seen=set()
+          def expand(s):
+              out=[]
+              for t in str(s or "").replace(" ","").split(","):
+                  if ".." in t:
+                      a,b=t.split("..",1)
+                      if a.isdigit() and b.isdigit(): out.extend(range(int(a),int(b)+1))
+                  elif t.isdigit(): out.append(int(t))
+              return out
+          for src in range(1,1201):
+              for dst in expand(items[src].get("wire")):
+                  assert 1<=dst<=1200
+                  if (src,dst) not in seen:
+                      seen.add((src,dst));edges.append({"source":src,"target":dst,"relation":"SYNERGY_WIRE","owner":"REPOSITORY"})
+          out=root/"graphs";out.mkdir(parents=True,exist_ok=True)
+          (out/"capability_wiring.json").write_text(json.dumps({"schema":"SUPER1200_WIRING/1.0","owner":"REPOSITORY","node_count":1200,"edge_count":len(edges),"edges":edges},indent=2,sort_keys=True)+"\n")
+          domains=[("D01",1,30),("D02",31,45),("D03",46,80),("D04",81,120),("D05",121,176),("D06",177,230),("D07",231,300),("D08",301,360),("D09",361,437),("D10",438,476),("D11",477,530),("D12",531,585),("D13",586,640),("D14",641,660),("D15",661,700),("D16",701,720),("D17",721,760),("D18",761,860),("D19",861,960),("D20",961,1000),("D21",1001,1080),("D22",1081,1200)]
+          for d,a,b in domains:
+              n=sum(1 for e in edges if a<=e["source"]<=b)
+              print("SUPER1200_TELEMETRY "+json.dumps({"event":"DOMAIN_WIRING_PROGRESS","domain":d,"owner":"REPOSITORY","outgoing_edges":n,"utc":datetime.now(timezone.utc).isoformat()}),flush=True)
+              time.sleep(8)
+          (out/"WIRING_VALIDATION.json").write_text(json.dumps({"owner":"REPOSITORY","node_count":1200,"edge_count":len(edges),"g23":"READINESS","g24":"READINESS","terminal_certification":False},indent=2,sort_keys=True)+"\n")
+          PY
+
+      - name: Persist wiring graph
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd target
+          git add implementation/super1200/graphs
+          BAD="$(git diff --cached --name-only | grep -v '^implementation/super1200/graphs/' || true)"
+          test -z "$BAD"
+          git config user.name "custosz-v7-runtime-bot"
+          git config user.email "custosz-v7-runtime-bot@users.noreply.github.com"
+          git commit -m "feat(super1200): materialize repository synergy wiring graph"
+          git push origin HEAD:refs/heads/custosz/super-1200-implementation-20261007

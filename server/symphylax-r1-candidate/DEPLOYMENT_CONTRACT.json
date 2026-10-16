@@ -1,0 +1,46 @@
+{
+  "schema": "SYMPHYLAX_R1_DEPLOYMENT_CONTRACT/1.0",
+  "authority": "Louksna.md",
+  "service_id": "SYMPHYLAX_R1",
+  "deployment_true_requires": [
+    "UNIT_INSTALLED",
+    "SERVICE_ENABLED",
+    "SERVICE_ACTIVE",
+    "SERVICE_IDENTITY_VERIFIED",
+    "CUSTOSZ_SELFTEST_PASS",
+    "RUNTIME_SELFTEST_PASS",
+    "RESOURCE_ENVELOPE_PASS",
+    "EVIDENCE_DIRECTORY_EXTERNAL_TO_INSTALL",
+    "CHECKPOINT_RECORDED"
+  ],
+  "install_roots": [
+    "~/.local/lib/louksna/symphylax-r1",
+    "~/.config/louksna/symphylax-r1",
+    "~/.config/systemd/user/symphylax-r1.service"
+  ],
+  "evidence_root": "~/.local/state/louksna/server-ready-final",
+  "protected_scopes": [
+    "WINDOWS",
+    "EFI",
+    "GPT",
+    "PARTITIONS",
+    "PROYECTOS",
+    "F3-DISK",
+    "CANONICAL_ARCHITECTURE",
+    "FROZEN_ARTIFACTS"
+  ],
+  "resources": {
+    "memory_max_bytes": 268435456,
+    "cpu_quota_percent": 50,
+    "tasks_max": 64
+  },
+  "boot_persistence": {
+    "configured_requires": [
+      "SYSTEMD_USER_ENABLED",
+      "LINGER_ENABLED"
+    ],
+    "observed_boot_required_for_full_gate": true
+  },
+  "arbitrary_shell": false,
+  "network_listener": false
+}

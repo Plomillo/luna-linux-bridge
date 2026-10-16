@@ -1,0 +1,30 @@
+name: "R4 CUSTOSZ — bounded workspace discovery audit"
+
+on:
+  push:
+    branches:
+      - staging/custosz-mission-mailbox-20260928
+    paths:
+      - .github/workflows/r4-custosz-workspace-audit.yml
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 3
+    steps:
+      - name: Read-only bounded discovery
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          HOME_REAL="/home/diegoignacionorambuenamiranda"
+          echo "HOST=$(hostname)"
+          echo "USER=$(id -un)"
+          echo "=== MARKER DIRS ==="
+          find "$HOME_REAL" -xdev -maxdepth 6             \( -path "$HOME_REAL/actions-runner" -o -path "$HOME_REAL/.cache" -o -path "$HOME_REAL/.local/share/Trash" \) -prune -o             -type d -name '1. PROYECTOS PRIORITARIOS' -print 2>/dev/null | sort
+          echo "=== TOP LEVEL HOME ==="
+          find "$HOME_REAL" -mindepth 1 -maxdepth 2 -type d -printf '%p\n' 2>/dev/null | sort | head -n 300
+          echo "=== KNOWN R4 CHECKPOINT ==="
+          test -d "$HOME_REAL/LOUKSNA_MAESTRO_20260925/MISSION3_OPERATIVE/R4_PART1_DESKTOP_V1/runs/20260926T034746Z-38579" && echo CHECKPOINT=PASS || echo CHECKPOINT=FAIL

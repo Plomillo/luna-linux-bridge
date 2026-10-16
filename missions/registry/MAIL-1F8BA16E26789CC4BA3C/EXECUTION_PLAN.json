@@ -1,0 +1,27 @@
+{
+  "adapter": {
+    "adapter_id": "META_ECOSYSTEM_V1_ADMISSION",
+    "backend": "CUSTOSZ_RUNTIME",
+    "downstream_heavy_compute": "GITHUB_HOSTED_ONLY_OR_EXPLICIT_EXTERNAL_CLOUD",
+    "execution_location": "SELF_HOSTED_LUNA_AUX",
+    "heavy_compute": false,
+    "mission_classes": [
+      "METACOGNITIVE_ECOSYSTEM_V1"
+    ],
+    "path": "scripts/mission_mailbox/adapters/metacognitive_ecosystem_v1.py",
+    "provides_executor_binding": true,
+    "required_capabilities": [],
+    "requires_prebound_executor": false,
+    "scope": "META_ECOSYSTEM_ADMISSION_AND_CLOUD_DISPATCH_BOUNDARY",
+    "sha256": "966dea5d28e6aee598b537c0c66d4c62c3c2e0aaac0e21666f7b8545bfa01b59",
+    "source_sha256": "1f8ba16e26789cc4ba3c9329357ac7c866af50177ccbf5915ca1dd5355c511d0",
+    "status": "STAGED_CANDIDATE"
+  },
+  "binding_mode": "ADAPTER_PROVIDED_PENDING",
+  "custosz_mission_id": "MIS-74cb10f6aa1741c298c0",
+  "mail_id": "MAIL-1F8BA16E26789CC4BA3C",
+  "observed_executor_bound": false,
+  "rule": "Material execution must occur only through the pinned Runtime adapter and produce terminal evidence. Selecting a binding-providing adapter does not itself prove EXECUTOR_BINDING=PASS.",
+  "schema": "CUSTOSZ_EXECUTION_PLAN/1.1",
+  "status": "ROUTED_READY_NOT_YET_EXECUTED"
+}

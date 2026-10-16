@@ -1,0 +1,28 @@
+{
+  "adapter": {
+    "adapter_id": "FINAL_SERVER_READY_CLOSURE_V1",
+    "backend": "CUSTOSZ_RUNTIME",
+    "execution_location": "SELF_HOSTED_LUNA_AUX",
+    "materializer_path": "scripts/missions/final_server_ready_materialize.py",
+    "materializer_scope": "POINTS_1_3_PRODUCER_ONLY",
+    "materializer_sha256": "640d513dfc8644679049947488c8bc8877c01900ab4990e74899871c6dd0ff23",
+    "mission_classes": [
+      "FINAL_SERVER_READY_CLOSURE"
+    ],
+    "path": "scripts/mission_mailbox/adapters/final_server_ready_closure.py",
+    "provides_executor_binding": true,
+    "required_capabilities": [],
+    "requires_prebound_executor": false,
+    "scope": "FINAL_SERVER_READY_CLOSURE",
+    "sha256": "b6d58a8299ee5530e668666753d2637b4d426b366d0e6022895502df6e2d3898",
+    "source_sha256": "8191840debd98f8775e530a37d3d23770f148693af64689f8e0d187be037cb21",
+    "status": "ACTIVE_PINNED"
+  },
+  "binding_mode": "ADAPTER_PROVIDED_PENDING",
+  "custosz_mission_id": "MIS-c727e71f4d2b4a8382a4",
+  "mail_id": "MAIL-8191840DEBD98F8775E5",
+  "observed_executor_bound": false,
+  "rule": "Material execution must occur only through the pinned Runtime adapter and produce terminal evidence. Selecting a binding-providing adapter does not itself prove EXECUTOR_BINDING=PASS.",
+  "schema": "CUSTOSZ_EXECUTION_PLAN/1.1",
+  "status": "ROUTED_READY_NOT_YET_EXECUTED"
+}

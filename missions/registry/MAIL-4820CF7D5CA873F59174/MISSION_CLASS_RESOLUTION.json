@@ -1,0 +1,10 @@
+{
+  "bound_mission_class": null,
+  "direct_mission_class": "LUNA_R4_PART1_DIFFERENTIAL_RESUME",
+  "matches": [],
+  "mission_class": "LUNA_R4_PART1_DIFFERENTIAL_RESUME",
+  "origin": "MISSION_DIRECTIVE",
+  "result": "PASS",
+  "root_blocker": null,
+  "source_sha256": "4820cf7d5ca873f5917466a76e9b57fd46f84344a4a9f1fa3e47d144e9a01456"
+}

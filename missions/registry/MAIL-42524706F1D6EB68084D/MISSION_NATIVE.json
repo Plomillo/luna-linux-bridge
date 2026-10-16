@@ -1,0 +1,108 @@
+{
+  "authority_context": {
+    "authority": "Louksna.md",
+    "authority_transfer": false,
+    "canonical_mutation_authorized": false
+  },
+  "declared_mission_id": null,
+  "execution_contract": {
+    "default_profile": "LUNA_PROJECT",
+    "fail_closed": true,
+    "governor": "MetaOS",
+    "no_silent_executor_substitution": true,
+    "protected_scopes": [
+      "WINDOWS",
+      "EFI",
+      "GPT",
+      "PARTITIONS",
+      "PROYECTOS",
+      "F3-DISK",
+      "CANONICAL_ARCHITECTURE",
+      "FROZEN_ARTIFACTS"
+    ],
+    "runtime": "CUSTOSZ_RUNTIME_V1",
+    "supervisor": "SYMPHYLAX_R1",
+    "validation_reserve_seconds": 240,
+    "wallclock_seconds": 1200,
+    "worker": "CUSTOSZ_V7",
+    "workflow_success_is_not_mission_success": true
+  },
+  "mail_id": "MAIL-42524706F1D6EB68084D",
+  "mailbox_version": "0.1.0",
+  "mission_payload": {
+    "byte_exact_preservation": true,
+    "directives_observed": {
+      "AUTHORITY": [
+        {
+          "line": 7,
+          "value": "Louksna.md"
+        }
+      ],
+      "CLASS": [
+        {
+          "line": 3,
+          "value": "ADVISORY_READ_ONLY"
+        }
+      ],
+      "EXECUTION_AUTHORIZATION": [
+        {
+          "line": 4,
+          "value": "NONE"
+        }
+      ],
+      "GOVERNOR": [
+        {
+          "line": 8,
+          "value": "MetaOS"
+        }
+      ],
+      "MUTATION_AUTHORIZATION": [
+        {
+          "line": 5,
+          "value": "NONE"
+        }
+      ],
+      "PART_TRANSITION_AUTHORIZATION": [
+        {
+          "line": 6,
+          "value": "NONE"
+        }
+      ],
+      "RUNTIME": [
+        {
+          "line": 10,
+          "value": "CUSTOSZ_RUNTIME_V1"
+        }
+      ],
+      "SUPERVISOR": [
+        {
+          "line": 11,
+          "value": "SYMPHYLAX R1"
+        }
+      ],
+      "WORKER": [
+        {
+          "line": 9,
+          "value": "CUSTOSZ V7"
+        }
+      ]
+    },
+    "required_capabilities_explicit": [],
+    "routing_hints": {
+      "authoritative": false,
+      "values": [
+        "CUSTOSZ_RUNTIME",
+        "ROLLBACK"
+      ]
+    },
+    "source_utf8_b64": "IyBDT05TVUxUQSBBUlFVSVRFQ1TDk05JQ0Eg4oCUIExVTkEgUjQgUEFSVCAzIC8gQ09OVElOR0VOQ0lBIERFIE1BVEVSSUFMSVpBQ0nDk04KCkNMQVNTID0gQURWSVNPUllfUkVBRF9PTkxZCkVYRUNVVElPTl9BVVRIT1JJWkFUSU9OID0gTk9ORQpNVVRBVElPTl9BVVRIT1JJWkFUSU9OID0gTk9ORQpQQVJUX1RSQU5TSVRJT05fQVVUSE9SSVpBVElPTiA9IE5PTkUKQVVUSE9SSVRZID0gTG91a3NuYS5tZApHT1ZFUk5PUiA9IE1ldGFPUwpXT1JLRVIgPSBDVVNUT1NaIFY3ClJVTlRJTUUgPSBDVVNUT1NaX1JVTlRJTUVfVjEKU1VQRVJWSVNPUiA9IFNZTVBIWUxBWCBSMQoKIyMgQ29udGV4dG8gbWF0ZXJpYWwgb2JzZXJ2YWRvCgpFc3RhZG8gdml2byBtw6FzIHJlY2llbnRlIGRpc3BvbmlibGUgZGVzZGUgTE9VS1NOQToKCi0gY3VycmVudF9wYXJ0ID0gUEFSVF8zCi0gcGFydF9uYW1lID0gQ09SRV9PUkNIRVNUUkFUSU9OX0FORF9QUk9KRUNUUwotIHN0YXR1cyA9IEhPTEQKLSBuZXh0ID0gUkVUUllfQUZURVJfUkVNRURJQVRJT04KLSBibG9ja2VycyA9IHByb2plY3RzX2NlbnRlciwgc2VtYW50aWNfY29udGFpbmVyCi0gcHJvamVjdHNfY2VudGVyX2NhbmRpZGF0ZSA9IG51bGwKLSBzZW1hbnRpY19jb250YWluZXJfY2FuZGlkYXRlID0gbnVsbAotIHJ1bm5lciA9IHRydWUKLSBzeW1waHlsYXggPSB0cnVlCi0gY3VzdG9zeiA9IHRydWUKLSBydW50aW1lID0gdHJ1ZQotIG1ldGFvcyA9IHRydWUKLSBhdXRob3JpdHkgPSB0cnVlCi0gcHJvamVjdF93b3Jrc3BhY2UgPSB0cnVlCi0gcGVybWlzc2lvbiByZXF1ZXN0ID0gTk9ORQoKRWwgY29udHJvbGFkb3IgUEFSVF8zIGFjdHVhbCB2ZXJpZmljYSBwcmVzZW5jaWEgb3BlcmFjaW9uYWwgZGUgUHJvamVjdHMgQ2VudGVyIHkgU2VtYW50aWMgQ29udGFpbmVyIGVuIHN1cyBzdXBlcmZpY2llcyBkZSBiw7pzcXVlZGEuIFNlIGhhbiBvYnNlcnZhZG8gY2FuZGlkYXRvcyBoaXN0w7NyaWNvcyBkZSBTZW1hbnRpYyBDb250YWluZXIgZnVlcmEgZGUgZXNhcyBzdXBlcmZpY2llcywgcGVybyBjb24gZXN0YWRvcyBwcmV2aW9zIG5vIGNlcnRpZmljYWRvcyAvIEcyMy1HMjQgbm8gY29uY2VkaWRvcy4KCiMjIFByZWd1bnRhCgpIaXDDs3Rlc2lzIHNvbGFtZW50ZTogc2kgZGVzcHXDqXMgZGUgdW5hIGLDunNxdWVkYSBzdWZpY2llbnRlIHkgdHJhemFibGUgTk8gYXBhcmVjZSB1biBQcm9qZWN0cyBDZW50ZXIgbyBTZW1hbnRpYyBDb250YWluZXIgcXVlIHB1ZWRhIGFjZXB0YXJzZSBsZWfDrXRpbWFtZW50ZSBjb21vIGFydGVmYWN0byBvcGVyYWNpb25hbCwgwr9jdcOhbCBkZWJlIHNlciBsYSByZW1lZGlhY2nDs24gYXJxdWl0ZWN0w7NuaWNhIGNvcnJlY3RhIHBhcmEgY2VycmFyIFBBUlRfMyBzaW4gZmFicmljYXIgUEFTUywgc2luIHNhbHRhciBQQVJUXzMgeSBzaW4gZGVncmFkYXIgbGEgZ29iZXJuYW56YT8KCkV2YWx1YXIsIGNvbW8gbcOtbmltbywgZXN0YXMgcG9zaWJpbGlkYWRlczoKCjEuIG1hdGVyaWFsaXphciB1bmEgcHJveWVjY2nDs24gb3BlcmFjaW9uYWwgZ29iZXJuYWRhIGEgcGFydGlyIGRlIHVuIGNhbmRpZGF0byBleGlzdGVudGUgY3V5YSBwcm9jZWRlbmNpYSBlIGlkZW50aWRhZCBwdWVkYW4gZGVtb3N0cmFyc2U7CjIuIHJlY29uc3RydWlyL21hdGVyaWFsaXphciB1biBjb21wb25lbnRlIG3DrW5pbW8gY2Fuw7NuaWNvIGRlc2RlIGZ1ZW50ZXMgYXV0b3JpemFkYXMgeSBjb250cmF0b3MgZXhpc3RlbnRlczsKMy4gZGVtb3N0cmFyIGVxdWl2YWxlbmNpYSBmdW5jaW9uYWwgY29uIG90cmEgY2FwYWNpZGFkIHlhIHByZXNlbnRlIHkgdHJhbWl0YXIgZm9ybWFsbWVudGUgdW5hIG1vZGlmaWNhY2nDs24gZGVsIHJlcXVpc2l0bzsKNC4gbWFudGVuZXIgSE9MRCBzaSBuaW5ndW5hIGRlIGxhcyBhbnRlcmlvcmVzIHB1ZWRlIGRlbW9zdHJhcnNlLgoKIyMgUmVzcHVlc3RhIHNvbGljaXRhZGEKCkNVU1RPU1ogLyBNZXRhT1MgLyBTWU1QSFlMQVggZGViZW4gcmVzcG9uZGVyIMO6bmljYW1lbnRlIGNvbiBhbsOhbGlzaXMgeSBwcm9wdWVzdGEsIHNpbiBlamVjdXRhciBjYW1iaW9zLgoKUGFyYSBjYWRhIGFsdGVybmF0aXZhIHZpYWJsZSwgaW5kaWNhcjoKLSBmdWVudGUgZXhhY3RhIG8gY2xhc2UgZGUgZnVlbnRlIGFkbWlzaWJsZTsKLSBldmlkZW5jaWEgbcOtbmltYSBuZWNlc2FyaWE7Ci0gaGFzaGVzIC8gaWRlbnRpZGFkIHF1ZSBkZWJlcsOtYW4gZmlqYXJzZTsKLSBjaGVja3BvaW50IHkgcm9sbGJhY2sgcmVxdWVyaWRvczsKLSB2YWxpZGFjaW9uZXMgZnVuY2lvbmFsZXM7Ci0gbm8tcmVncmVzacOzbjsKLSByZWxhY2nDs24gY29uIExvdWtzbmEubWQ7Ci0gc2kgcmVxdWllcmUgRzIzIHByZXZpbywgRzI0IHByZXZpbyBvIEcyMy9HMjQgZGUgUEFSVF8zOwotIHNpIHJlcXVpZXJlIGF1dG9yaXphY2nDs24gaHVtYW5hOwotIHViaWNhY2nDs24gb3BlcmFjaW9uYWwgcmVjb21lbmRhZGEsIHNpIHByb2NlZGU7Ci0gcmllc2dvIGRlIGZhbHNvIHBvc2l0aXZvIGRlbCBhY3R1YWwgY2hlY2sgZGUgcHJlc2VuY2lhOwotIGNyaXRlcmlvIGV4YWN0byBwYXJhIGRlY2xhcmFyIHByb2plY3RzX2NlbnRlcj10cnVlIG8gc2VtYW50aWNfY29udGFpbmVyPXRydWUgZGUgZm9ybWEgbGVnw610aW1hLgoKQ29uY2x1aXIgY29uIHVuYSByZWNvbWVuZGFjacOzbiBhcnF1aXRlY3TDs25pY2EgcHJlZmVyaWRhIHkgdW5hIGFsdGVybmF0aXZhIGRlIHJlc3BhbGRvLCBhbWJhcyBOTyBlamVjdXRpdmFzLgoKIyMgUmVzdHJpY2Npb25lcwoKLSBOTyBlamVjdXRhciByZW1lZGlhY2nDs24uCi0gTk8gY29waWFyLCBtb3ZlciwgcHJvbW92ZXIsIGluc3RhbGFyLCBnZW5lcmFyIG5pIGJvcnJhciBhcnRlZmFjdG9zLgotIE5PIG1vZGlmaWNhciBlbCBjb250cm9sYWRvci4KLSBOTyBtb2RpZmljYXIgTG91a3NuYS5tZC4KLSBOTyBhbHRlcmFyIGNyaXRlcmlvcyBkZSBQQVJUXzMuCi0gTk8gYXZhbnphciBhIFBBUlRfNC4KLSBOTyBhdXRvY2VydGlmaWNhci4KLSBOTyBjb252ZXJ0aXIgcHJlc2VuY2lhIG5vbWluYWwgZW4gdmFsaWRleiBzZW3DoW50aWNhLgotIFByZXNlcnZhciBFWFRFTkRfRE9fTk9UX1JFUExBQ0UsIEZBSUxfQ0xPU0VELCB0cmF6YWJpbGlkYWQsIHByb2NlZGVuY2lhLCByb2xsYmFjayB5IGNhZGVuYSBFVklERU5DRSAtPiBWQUxJREFUSU9OIC0+IEcyMyAtPiBHMjQuCgpFc3RhIGNvbnN1bHRhIGVzIGRlbGliZXJhdGl2YS4gTm8gY29uc3RpdHV5ZSBvcmRlbiBkZSBpbXBsZW1lbnRhY2nDs24gbmkgYXV0b3JpemFjacOzbiBtYXRlcmlhbC4K"
+  },
+  "schema_version": "1.0",
+  "source": {
+    "bytes": 3276,
+    "encoding": "utf-8",
+    "path": "missions/inbox/luna-r4-part3-contingency-consult-20260929/MISSION_ORIGINAL.md",
+    "sha256": "42524706f1d6eb68084d8adad822f11cc9dd871d3ca0116c3e8c2cbf010ba472",
+    "source_commit": "af38a955885516b9938de29dc2e22308209491db"
+  }
+}

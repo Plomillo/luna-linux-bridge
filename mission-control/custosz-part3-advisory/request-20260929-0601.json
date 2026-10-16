@@ -1,0 +1,7 @@
+{
+  "mode": "READ_ONLY_ADVISORY",
+  "source": "missions/inbox/luna-r4-part3-contingency-consult-20260929/MISSION_ORIGINAL.md",
+  "execution_authorized": false,
+  "mutation_authorized": false,
+  "purpose": "Ask deployed CUSTOSZ architecture and reasoning policy for PART3 contingency if Projects Center or Semantic Container cannot be legitimately resolved."
+}

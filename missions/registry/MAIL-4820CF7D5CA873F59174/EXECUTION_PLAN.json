@@ -1,0 +1,25 @@
+{
+  "adapter": {
+    "adapter_id": "LUNA_R4_PART1_RESUME_APC48_V2_36519487206",
+    "backend": "CUSTOSZ_RUNTIME",
+    "execution_location": "SELF_HOSTED_LUNA_AUX",
+    "mission_classes": [
+      "LUNA_R4_PART1_DIFFERENTIAL_RESUME"
+    ],
+    "path": "scripts/mission_mailbox/adapters/luna_r4_part1_resume_apc48_v2.py",
+    "provides_executor_binding": true,
+    "required_capabilities": [],
+    "requires_prebound_executor": false,
+    "scope": "LUNA_R4_PART1_DIFFERENTIAL_RESUME_HANDOFF",
+    "sha256": "eea4a1e392ac69b80c18f56402dffc74d815b4cc5b319ff6cac0f1ad52db2526",
+    "source_sha256": "4820cf7d5ca873f5917466a76e9b57fd46f84344a4a9f1fa3e47d144e9a01456",
+    "status": "ACTIVE_PINNED"
+  },
+  "binding_mode": "ADAPTER_PROVIDED_PENDING",
+  "custosz_mission_id": "MIS-e076c7ff160a4064b102",
+  "mail_id": "MAIL-4820CF7D5CA873F59174",
+  "observed_executor_bound": false,
+  "rule": "Material execution must occur only through the pinned Runtime adapter and produce terminal evidence. Selecting a binding-providing adapter does not itself prove EXECUTOR_BINDING=PASS.",
+  "schema": "CUSTOSZ_EXECUTION_PLAN/1.1",
+  "status": "ROUTED_READY_NOT_YET_EXECUTED"
+}

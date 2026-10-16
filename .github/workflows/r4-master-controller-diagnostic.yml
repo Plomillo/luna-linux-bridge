@@ -1,0 +1,81 @@
+name: "R4 — master controller and resource adapter diagnostic"
+
+on:
+  push:
+    branches:
+      - staging/custosz-mission-mailbox-20260928
+    paths:
+      - .github/workflows/r4-master-controller-diagnostic.yml
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 4
+    steps:
+      - name: Read-only master/controller probe
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "PROBE_VERSION=1"
+          echo "HOST=$(hostname)"
+          echo "USER=$(id -un)"
+          echo "KERNEL=$(uname -srmo)"
+          echo "PYTHON=$(python3 --version 2>&1 || true)"
+          echo "=== CHECKPOINT ==="
+          CP="$HOME/LOUKSNA_MAESTRO_20260925/MISSION3_OPERATIVE/R4_PART1_DESKTOP_V1/runs/20260926T034746Z-38579"
+          test -d "$CP" && echo "R4_CHECKPOINT=PASS:$CP" || echo "R4_CHECKPOINT=FAIL:$CP"
+
+          echo "=== CANDIDATE ROOTS ==="
+          ROOTS=(
+            "$HOME/LOUKSNA_MAESTRO_20260925"
+            "$HOME/LOUKSNA_R4_STAGING"
+            "$HOME/MISION_PUAC_20260926"
+            "$HOME/SYMPHYLAX_LAB"
+            "$HOME/actions-runner/_work/luna-linux-bridge/luna-linux-bridge"
+          )
+          for root in "${ROOTS[@]}"; do
+            if [ -d "$root" ]; then
+              printf 'ROOT_PRESENT=%s\n' "$root"
+            else
+              printf 'ROOT_MISSING=%s\n' "$root"
+            fi
+          done
+
+          echo "=== LOAD_WORKER / MASTER / RESOURCE REFERENCES ==="
+          for root in "${ROOTS[@]}"; do
+            [ -d "$root" ] || continue
+            find "$root" -xdev -maxdepth 9 -type f \( -name '*.py' -o -name '*.sh' -o -name '*.service' -o -name '*.json' \) -size -2097152c -print0 2>/dev/null |
+              xargs -0 -r grep -nH -E -C 5 'def[[:space:]]+load_worker|load_worker\(|resource[_ -]adapter|adapter[_ -]resource|master[_ -](controller|service)|resources\.adaptive' 2>/dev/null |
+              head -n 320 || true
+          done
+
+          echo "=== PYTHON CONTROLLER CANDIDATES ==="
+          for root in "${ROOTS[@]}"; do
+            [ -d "$root" ] || continue
+            find "$root" -xdev -maxdepth 8 -type f -name '*.py' -size -2097152c -printf '%p\n' 2>/dev/null |
+              grep -Ei '(master|controller|orchestr|resource|worker|custosz|symphylax)' |
+              head -n 220 || true
+          done
+
+          echo "=== SERVICES ==="
+          systemctl --user list-units --type=service --all --no-pager 2>/dev/null |
+            grep -Ei 'louksna|luna|custosz|symphylax|resource|master' |
+            head -n 120 || true
+          systemctl list-units --type=service --all --no-pager 2>/dev/null |
+            grep -Ei 'louksna|luna|custosz|symphylax|resource|master' |
+            head -n 120 || true
+
+          echo "=== PROCESSES ==="
+          ps -eo pid,ppid,user,etimes,cmd --sort=etimes |
+            grep -Ei 'louksna|custosz|symphylax|resource|master|runtime_core' |
+            grep -v grep |
+            tail -n 160 || true
+
+          echo "=== MOUNTS / WORKSPACE MARKERS (READ ONLY) ==="
+          find "$HOME" -xdev -maxdepth 6 -type d -name '1. PROYECTOS PRIORITARIOS' -print 2>/dev/null | sort | head -n 40
+          mount | grep -Ei '/media|/mnt|Windows|PROYECTOS' | head -n 80 || true
+
+          echo "DIAGNOSTIC_COMPLETE=TRUE"

@@ -1,0 +1,11 @@
+{
+  "schema": "LOUKSNA_R4_APC48_HANDOFF_RECOVERY/1.0",
+  "source_cert_run": 36519487206,
+  "reason": "HANDOFF_ADAPTER_INDENTATION_FAILURE_AFTER_SUCCESSFUL_G23_G24",
+  "preserve_g23_g24": true,
+  "rerun_certification": false,
+  "checkpoint": "20260926T034746Z-38579",
+  "part": "PART_1",
+  "mode": "DIFFERENTIAL",
+  "fail_closed": true
+}

@@ -1,0 +1,10 @@
+{
+  "bound_mission_class": null,
+  "direct_mission_class": "TARGETED_G09_STATE_RECOVERY_REMEDIATION",
+  "matches": [],
+  "mission_class": "TARGETED_G09_STATE_RECOVERY_REMEDIATION",
+  "origin": "MISSION_DIRECTIVE",
+  "result": "PASS",
+  "root_blocker": null,
+  "source_sha256": "f3804bac3c0ce86223f3057d4d52c3adbf6a41b9d7d2c097e64e4ee86a627384"
+}

@@ -1,0 +1,12 @@
+{
+  "checks": {
+    "non_empty": true,
+    "nul_free": true,
+    "utf8": true,
+    "within_size_limit": true
+  },
+  "errors": [],
+  "mail_id": "MAIL-39FF460CAB6E709F4877",
+  "result": "PASS",
+  "schema": "CUSTOSZ_MAILBOX_INGRESS_VALIDATION/1.0"
+}

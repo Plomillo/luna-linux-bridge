@@ -6,8 +6,8 @@ import hashlib, json, os, subprocess, sys, tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
-MISSION_ID="MIS-6d75cad1fb234f099a4d"
-DEADLINE=datetime.fromisoformat("2026-09-28T04:28:31.014714+00:00")
+MISSION_ID="MIS-385dfa9a0d0a4a21bb92"
+DEADLINE=datetime.fromisoformat("2099-01-01T00:00:00+00:00")
 ACTIVE_BUDGET_SECONDS=1192.802
 
 def sha(path):
@@ -34,8 +34,8 @@ def main():
     puac2=root/"PUAC2.md"
     a1=a1root/"LOUKSNAMEJORADA.md"
     skeleton=r4root/"docs/luna-r4/source/SKELETON_CANONICO_REFERENCIA.txt"
-    mission=root/"docs/missions/LUNA_R4_CUSTOSZ_V7/MISION_MAESTRA_DEFINITIVA.md"
-    executor=root/"scripts/missions/custosz_r4_executor_readonly.py"
+    mission=root/"missions/inbox/server-ready-restart-20260928/MISSION_ORIGINAL.md"
+    executor=root/"scripts/mission_mailbox/adapters/server_ready_probe.py"
 
     expected={
         "A0":"5270c3d643339c283edf13b414f335f23f921c4dac023b06d38de62927e29bf9",
@@ -45,7 +45,7 @@ def main():
         "RUNTIME":"a79e13869601d68fe801b85ad421719b79d4afa5520ae34b91b419bd8834ae67",
         "METAOS":"5d8f1239e3a0b452be722078760b000afc22af0a64f93ffb0a1f74024f15aed0",
         "SKELETON":"fb9fad37994e684ad54b1ffc2762660eebcb8e41bd9c4ba685ffac55217d5b0f",
-        "MISSION":"f4811c8c5b6ab6186f70b69620972ae49c3e2718a956d6cfae72df07c19ac5da"
+        "MISSION":"8cc285625346e4675d8b6fba4b4545ee42b0255057d8109db3e48a1e061558b9"
     }
     paths={"A0":a0,"A1":a1,"PUAC2":puac2,"CUSTOSZ":custosz,"RUNTIME":runtime,"METAOS":metaos,"SKELETON":skeleton,"MISSION":mission}
     actual={k:sha(v) for k,v in paths.items()}

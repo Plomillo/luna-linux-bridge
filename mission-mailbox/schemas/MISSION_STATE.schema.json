@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://louksna.local/schemas/MISSION_STATE.schema.json",
+  "title": "CUSTOSZ Mission Mailbox State",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "mail_id",
+    "workflow_technical_status",
+    "mission_terminal_status",
+    "current_state",
+    "history"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "mail_id": {
+      "type": "string"
+    },
+    "workflow_technical_status": {
+      "type": "string"
+    },
+    "mission_terminal_status": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "current_state": {
+      "type": "string"
+    },
+    "current_gate": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "root_blocker": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "history": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,9 @@
+{
+  "schema": "LOUKSNA_MAIN_RECOVERY_COPILOT_HANDOFF/1.0",
+  "issue": 37,
+  "base_branch": "main",
+  "gross_ceiling_seconds": 600,
+  "authority": "Louksna.md",
+  "status": "AUTHORIZED_TO_START",
+  "fail_closed": true
+}

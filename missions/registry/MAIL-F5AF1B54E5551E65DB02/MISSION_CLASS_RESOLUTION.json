@@ -1,0 +1,10 @@
+{
+  "bound_mission_class": null,
+  "direct_mission_class": null,
+  "matches": [],
+  "mission_class": null,
+  "origin": null,
+  "result": "UNRESOLVED",
+  "root_blocker": "MISSION_CLASS_UNRESOLVED",
+  "source_sha256": "f5af1b54e5551e65db02d008d6065a3ff39f573b997a9870dce877bb1015e071"
+}

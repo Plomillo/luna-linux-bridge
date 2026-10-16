@@ -1,0 +1,10 @@
+{
+  "bound_mission_class": null,
+  "direct_mission_class": "SUPER1200_TERMINAL_CLOSURE_G23_G24_V1",
+  "matches": [],
+  "mission_class": "SUPER1200_TERMINAL_CLOSURE_G23_G24_V1",
+  "origin": "MISSION_DIRECTIVE",
+  "result": "PASS",
+  "root_blocker": null,
+  "source_sha256": "78c79a4f015de184e68bbd888e4674fbe876b69b4fe83e32e8d552c863ded5a8"
+}

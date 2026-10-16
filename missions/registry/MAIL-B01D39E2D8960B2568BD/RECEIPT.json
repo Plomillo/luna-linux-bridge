@@ -1,0 +1,12 @@
+{
+  "github_run_attempt": "1",
+  "github_run_id": "37667320862",
+  "mail_id": "MAIL-B01D39E2D8960B2568BD",
+  "received_utc": "2026-10-07T18:30:55.089372+00:00",
+  "schema": "CUSTOSZ_MAILBOX_RECEIPT/1.0",
+  "source_bytes": 4270,
+  "source_commit": "cbff4493c41f03ab6b427ebebacecd9475db8df8",
+  "source_path": "missions/inbox/dropbox-transfer-live-recovery-20261007/MISSION_ORIGINAL.md",
+  "source_sha256": "b01d39e2d8960b2568bde7727f079c9bc0eaf053f5e19a712a28fe6b0080e507",
+  "status": "RECEIVED"
+}

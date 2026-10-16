@@ -1,0 +1,177 @@
+{
+  "authority_context": {
+    "authority": "Louksna.md",
+    "authority_transfer": false,
+    "canonical_mutation_authorized": false
+  },
+  "declared_mission_id": "MIS-META-ECO-20260928-V1",
+  "execution_contract": {
+    "default_profile": "LUNA_PROJECT",
+    "fail_closed": true,
+    "governor": "MetaOS",
+    "no_silent_executor_substitution": true,
+    "protected_scopes": [
+      "WINDOWS",
+      "EFI",
+      "GPT",
+      "PARTITIONS",
+      "PROYECTOS",
+      "F3-DISK",
+      "CANONICAL_ARCHITECTURE",
+      "FROZEN_ARTIFACTS"
+    ],
+    "runtime": "CUSTOSZ_RUNTIME_V1",
+    "supervisor": "SYMPHYLAX_R1",
+    "validation_reserve_seconds": 240,
+    "wallclock_seconds": 1200,
+    "worker": "CUSTOSZ_V7",
+    "workflow_success_is_not_mission_success": true
+  },
+  "mail_id": "MAIL-1F8BA16E26789CC4BA3C",
+  "mailbox_version": "0.1.0",
+  "mission_payload": {
+    "byte_exact_preservation": true,
+    "directives_observed": {
+      "AUDITABILITY": [
+        {
+          "line": 13,
+          "value": "REQUIRED"
+        }
+      ],
+      "AUTHORITY": [
+        {
+          "line": 4,
+          "value": "Louksna.md"
+        }
+      ],
+      "BUILD": [
+        {
+          "line": 10,
+          "value": "APPEND_ONLY"
+        }
+      ],
+      "CERTIFICATION_PROPAGATION": [
+        {
+          "line": 18,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "CUSTOSZ": [
+        {
+          "line": 41,
+          "value": "WORKER"
+        }
+      ],
+      "DOCTRINE": [
+        {
+          "line": 9,
+          "value": "EXTEND_DO_NOT_REPLACE"
+        }
+      ],
+      "FAILURE_POSTURE": [
+        {
+          "line": 11,
+          "value": "FAIL_CLOSED"
+        }
+      ],
+      "GOVERNOR": [
+        {
+          "line": 5,
+          "value": "MetaOS"
+        }
+      ],
+      "HEAVY_COMPUTE": [
+        {
+          "line": 38,
+          "value": "GITHUB_HOSTED_ONLY_OR_EXPLICIT_EXTERNAL_CLOUD"
+        }
+      ],
+      "INGRESS": [
+        {
+          "line": 8,
+          "value": "CUSTOSZ MISSION MAILBOX"
+        }
+      ],
+      "MISSION_ID": [
+        {
+          "line": 3,
+          "value": "MIS-META-ECO-20260928-V1"
+        }
+      ],
+      "NON_REGRESSION": [
+        {
+          "line": 16,
+          "value": "REQUIRED"
+        }
+      ],
+      "NO_SILENT_OPERATIONS": [
+        {
+          "line": 17,
+          "value": "ABSOLUTE"
+        }
+      ],
+      "PROVENANCE": [
+        {
+          "line": 14,
+          "value": "REQUIRED"
+        }
+      ],
+      "REMOTE_DESKTOP_COMMANDER": [
+        {
+          "line": 40,
+          "value": "AUXILIARY_ONLY"
+        }
+      ],
+      "ROLLBACK": [
+        {
+          "line": 15,
+          "value": "REQUIRED"
+        }
+      ],
+      "RUNTIME": [
+        {
+          "line": 7,
+          "value": "CUSTOSZ_RUNTIME_V1"
+        }
+      ],
+      "TRACEABILITY": [
+        {
+          "line": 12,
+          "value": "REQUIRED"
+        }
+      ],
+      "USER_HOST_HEAVY_COMPUTE": [
+        {
+          "line": 39,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "WORKER": [
+        {
+          "line": 6,
+          "value": "CUSTOSZ V7"
+        }
+      ]
+    },
+    "required_capabilities_explicit": [],
+    "routing_hints": {
+      "authoritative": false,
+      "values": [
+        "CUSTOSZ_RUNTIME",
+        "GITHUB",
+        "LOCAL_HOST",
+        "ROLLBACK",
+        "TERMINAL_REPORT"
+      ]
+    },
+    "source_utf8_b64": "IyBNSVNJw5NOIOKAlCBNQVRFUklBTElaQUNJw5NOIERFTCBFQ09TSVNURU1BIE1FVEFDT0dOSVRJVk8gT1BFUkFDSU9OQUwgVjEKCk1JU1NJT05fSUQgPSBNSVMtTUVUQS1FQ08tMjAyNjA5MjgtVjEKQVVUSE9SSVRZID0gTG91a3NuYS5tZApHT1ZFUk5PUiA9IE1ldGFPUwpXT1JLRVIgPSBDVVNUT1NaIFY3ClJVTlRJTUUgPSBDVVNUT1NaX1JVTlRJTUVfVjEKSU5HUkVTUyA9IENVU1RPU1ogTUlTU0lPTiBNQUlMQk9YCkRPQ1RSSU5FID0gRVhURU5EX0RPX05PVF9SRVBMQUNFCkJVSUxEID0gQVBQRU5EX09OTFkKRkFJTFVSRV9QT1NUVVJFID0gRkFJTF9DTE9TRUQKVFJBQ0VBQklMSVRZID0gUkVRVUlSRUQKQVVESVRBQklMSVRZID0gUkVRVUlSRUQKUFJPVkVOQU5DRSA9IFJFUVVJUkVEClJPTExCQUNLID0gUkVRVUlSRUQKTk9OX1JFR1JFU1NJT04gPSBSRVFVSVJFRApOT19TSUxFTlRfT1BFUkFUSU9OUyA9IEFCU09MVVRFCkNFUlRJRklDQVRJT05fUFJPUEFHQVRJT04gPSBGT1JCSURERU4KCiMjIEludGVudAoKTWF0ZXJpYWxpemFyLCBwcm9iYXIgeSBlbmR1cmVjZXIgcHJvZ3Jlc2l2YW1lbnRlIGxhIHN1cGVyZmljaWUgb3BlcmFjaW9uYWwgZGVjbGFyYWRhIGVuCmBlY29zeXN0ZW0vbWV0YWNvZ25pdGl2ZS1vcGVyYXRpb25hbC12MS9DQVBBQklMSVRJRVMuanNvbmAsIHJldXRpbGl6YW5kbyBwcmltZXJvIGNhcGFjaWRhZGVzIHJlYWxlcyB5YSBwcmVzZW50ZXMgZW4gTG91a3NuYSwgTWV0YU9TLCBDVVNUT1NaIFY3IHkgc3UgUnVudGltZS4KCiMjIFJlZ2xhIGFic29sdXRhIGRlIG5vIGR1cGxpY2FjacOzbgoKQW50ZXMgZGUgaW1wbGVtZW50YXIgY3VhbHF1aWVyIE1DQVA6CjEuIHJlY29uc3RydWlyIGVsIGNlbnNvIGV4YWN0byBkZSBsYXMgNzIgY2FwYWNpZGFkZXMgQ1VTVE9TWiBWNyBkZXNkZSB1bmEgZnVlbnRlIGxlZ2libGUvdmVyaWZpY2FibGU7CjIuIGNvbXBhcmFyIGlkZW50aWRhZCwgZnVuY2nDs24sIGlucHV0cywgb3V0cHV0cywgZGVwZW5kZW5jaWFzLCBkb21pbmlvIHkgZmFpbHVyZSBtb2RlczsKMy4gc2kgZXhpc3RlIGVxdWl2YWxlbmNpYSwgY3JlYXIgYmluZGluZy9hZGFwdGFkb3IgYWwgY29tcG9uZW50ZSBleGlzdGVudGU7CjQuIHPDs2xvIHVuYSBmcm9udGVyYSBmdW5jaW9uYWwgbm8gcmVwcmVzZW50YWRhIHB1ZWRlIGNvbnZlcnRpcnNlIGVuIGV4dGVuc2nDs24gY2FuZGlkYXRhLgoKYENVU1RPU1o3Ml9FWEFDVF9ESUZGX1BFTkRJTkcgPT4gTkVXX0NBUEFCSUxJVFlfQ0FOT05JQ0FMX0FETUlTU0lPTl9ERU5JRURgLgoKIyMgQ29tcHV0ZSBwb2xpY3kKCmBgYHRleHQKSEVBVllfQ09NUFVURSA9IEdJVEhVQl9IT1NURURfT05MWV9PUl9FWFBMSUNJVF9FWFRFUk5BTF9DTE9VRApVU0VSX0hPU1RfSEVBVllfQ09NUFVURSA9IEZPUkJJRERFTgpSRU1PVEVfREVTS1RPUF9DT01NQU5ERVIgPSBBVVhJTElBUllfT05MWQpDVVNUT1NaID0gV09SS0VSCmBgYAoKRWwgcnVubmVyIGF1eGlsaWFyIGxvY2FsIHB1ZWRlIHJlYWxpemFyIMO6bmljYW1lbnRlIGluZ3Jlc3Mvcm91dGluZy9yZWNlaXB0cyBsaXZpYW5vcyBiYWpvIGVsIGzDrW1pdGUgZXhpc3RlbnRlLiBObyBkZWJlIHByb2Nlc2FyIGNvcnB1cyBtYXNpdm9zLCBtb2RlbG9zLCB0cmFkdWNjaW9uZXMgZ2lnYW50ZXMsIMOtbmRpY2VzIG1hc2l2b3MgbmkgZmVlZHMgZGUgbWVyY2Fkby4KCiMjIE1hdGVyaWFsaXphdGlvbiBvcmRlcgoKMS4gQ29udHJvbCBwbGFuZSArIHNjaGVtYXMgKyB2YWxpZGF0b3JzLgoyLiBFeGFjdCBDVVNUT1NaNzIgZGVkdXAgY2Vuc3VzLgozLiBFY29zeXN0ZW0gY29udHJhY3QgYWRhcHRlcnMuCjQuIEFyY2hpdGVjdHVyYWwgbWlycm9yL3NoYWRvdy4KNS4gQ2xvdWQgd29ya2VyIHNjaGVkdWxlci9yZXNvdXJjZSBnb3Zlcm5vci4KNi4gUmVtb3RlIGNvcnB1cyBzdHJlYW1pbmcuCjcuIE1hc3NpdmUgZG9jdW1lbnQgbWFwL2luZGV4Lgo4LiBUcmFuc2xhdGlvbiBwaXBlbGluZS4KOS4gSGlnaC1yZXNvbHV0aW9uIHRlbGVtZXRyeS9ldmFsdWF0aW9uLgoxMC4gRHVyYWJsZSB3b3JrZmxvd3MgKyBleHRlcm5hbCBkYXRhIHBsYW5lIG9ubHkgd2hlbiBldmlkZW5jZWQuCjExLiBNYXJrZXQvc3RhYmxlY29pbi9sYWJvciBhZGFwdGVycy4KMTIuIEdlbmVyYWwvc3BlY2lmaWMgbWV0YWNvZ25pdGl2ZSBvcGVyYXRpb25hbCBjb21wb3NpdGlvbi4KMTMuIFRyYWluaW5nIExBU1QuCgpEbyBub3QgcmVvcmRlciB0cmFpbmluZyBhaGVhZCBvZiBhc3N1cmFuY2UuCgojIyBDb3JwdXMgcnVsZQoKTmV2ZXIgZnVsbC1kb3dubG9hZCBhIG1hc3NpdmUgY29ycHVzIG1lcmVseSB0byBpbnNwZWN0IGl0LiBVc2Ugc291cmNlIGlkZW50aXR5LCByaWdodHMgY2hlY2ssIHJlbW90ZSBtZXRhZGF0YSwgc2hhcmRzL3Jhbmdlcywgc3RyZWFtaW5nL3F1ZXJ5LCBlcGhlbWVyYWwgcHJvY2Vzc2luZyBhbmQgZGVyaXZlZCBldmlkZW5jZS4KCiMjIE91dHB1dCBwb2xpY3kKClBlcnNpc3RlbnQgR2l0IG91dHB1dCBpcyBjb250cm9sLXBsYW5lIG9ubHkuIEZvciBlYWNoIG1hdGVyaWFsIG1pc3Npb24sIHByb2R1Y2Ugc21hbGw6Ci0gYFJFQURNRV9GSU5BTC5tZGAKLSBtYWNoaW5lLXJlYWRhYmxlIHJlc3VsdC9ldmlkZW5jZSBtYW5pZmVzdAotIGhhc2hlcwotIHByb3ZlbmFuY2UgcG9pbnRlcnMKLSB1bnJlc29sdmVkIGJsb2NrZXJzCi0gcm9sbGJhY2sgcG9pbnRlcgoKRG8gbm90IGNvbW1pdCBmdWxsIGNvcnB1cyBieXRlcywgaHVnZSBnZW5lcmF0ZWQgdHJhbnNsYXRpb25zLCBtb2RlbCB3ZWlnaHRzIG9yIHRyYW5zaWVudCB3b3JrZXIgc3RhdGUuCgojIyBHMjMvRzI0CgpUaGlzIG1pc3Npb24gY2Fubm90IHNlbGYtYXdhcmQgRzIzIG9yIEcyNC4gU3RydWN0dXJhbCB2YWxpZGF0aW9uIGlzIG5vdCBjZXJ0aWZpY2F0aW9uLgpHMjMgbXVzdCBpbmRlcGVuZGVudGx5IHZhbGlkYXRlIG9uZSBmcm96ZW4gZGlnZXN0IHdpdGhvdXQgcmVwYWlyLgpHMjQgbWF5IGV2YWx1YXRlIG9ubHkgdGhlIGV4YWN0IGRpZ2VzdCBhY2NlcHRlZCBieSBHMjMuCgojIyBUZXJtaW5hbCBzdGF0ZQoKUEFTUyBpcyBwZXJtaXR0ZWQgb25seSBmb3IgdGhlIGV4cGxpY2l0bHkgaW1wbGVtZW50ZWQvbWF0ZXJpYWxpemVkIHN1YnNldCB3aXRoIGNvbXBsZXRlIGV2aWRlbmNlLgpUaGUgZ2xvYmFsIDU5LWNhcGFiaWxpdHkgZWNvc3lzdGVtIHJlbWFpbnMgYFBBUlRJQUwvSE9MRGAgdW50aWwgYWxsIGFkbWl0dGVkIGNhcGFiaWxpdGllcyBhcmUgbWF0ZXJpYWxseSBpbXBsZW1lbnRlZCwgZXhhY3Qgbm9uLWR1cGxpY2F0aW9uIGlzIHByb3ZlbiwgYW5kIGV4dGVybmFsIEcyMy9HMjQgY29tcGxldGUuCgpObyBmYWxzZSBnbG9iYWwgUEFTUy4K"
+  },
+  "schema_version": "1.0",
+  "source": {
+    "bytes": 3339,
+    "encoding": "utf-8",
+    "path": "missions/inbox/metacognitive-ecosystem-v1-20260928/MISSION_ORIGINAL.md",
+    "sha256": "1f8ba16e26789cc4ba3c9329357ac7c866af50177ccbf5915ca1dd5355c511d0",
+    "source_commit": "af38a955885516b9938de29dc2e22308209491db"
+  }
+}

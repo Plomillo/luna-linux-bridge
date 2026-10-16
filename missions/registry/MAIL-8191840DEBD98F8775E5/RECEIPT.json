@@ -1,0 +1,12 @@
+{
+  "github_run_attempt": "1",
+  "github_run_id": "36584631845",
+  "mail_id": "MAIL-8191840DEBD98F8775E5",
+  "received_utc": "2026-09-29T14:42:16.633774+00:00",
+  "schema": "CUSTOSZ_MAILBOX_RECEIPT/1.0",
+  "source_bytes": 6906,
+  "source_commit": "af38a955885516b9938de29dc2e22308209491db",
+  "source_path": "missions/inbox/server-ready-final-g23-g24-20260928/MISSION_ORIGINAL.md",
+  "source_sha256": "8191840debd98f8775e530a37d3d23770f148693af64689f8e0d187be037cb21",
+  "status": "RECEIVED"
+}

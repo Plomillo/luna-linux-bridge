@@ -1,0 +1,228 @@
+name: "SERVER_READY Terminal Chain — G08 -> G09 -> G23 -> G24"
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - staging/custosz-mission-mailbox-20260928
+    paths:
+      - .github/workflows/server-ready-terminal-chain.yml
+      - server/terminal-chain/**
+      - scripts/missions/final_server_ready_postboot_verify.py
+      - scripts/missions/final_server_ready_g09_execute.py
+      - scripts/missions/final_server_ready_g09_close.py
+      - scripts/missions/final_server_ready_g23_validate.py
+      - scripts/missions/final_server_ready_g24_certify.py
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
+concurrency:
+  group: server-ready-terminal-chain
+  cancel-in-progress: false
+
+env:
+  GLOBAL_WALLCLOCK_MAX_SECONDS: "900"
+
+jobs:
+  g08_g09:
+    name: "G08 then G09 — governed host closure"
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            missions/inbox/server-ready-final-g23-g24-20260928/MISSION_ORIGINAL.md
+            server/terminal-chain
+            scripts/missions/final_server_ready_postboot_verify.py
+            scripts/missions/final_server_ready_g09_execute.py
+            scripts/missions/final_server_ready_g09_close.py
+          sparse-checkout-cone-mode: false
+
+      - name: Start gross 15-minute budget
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          START_EPOCH="$(date +%s)"
+          DEADLINE_EPOCH="$((START_EPOCH + GLOBAL_WALLCLOCK_MAX_SECONDS))"
+          mkdir -p "$RUNNER_TEMP/terminal-budget"
+          printf "%s\n" "$START_EPOCH" > "$RUNNER_TEMP/terminal-budget/BUDGET_START_EPOCH"
+          printf "%s\n" "$DEADLINE_EPOCH" > "$RUNNER_TEMP/terminal-budget/BUDGET_DEADLINE_EPOCH"
+          echo "MISSION_BUDGET_START_EPOCH=$START_EPOCH"
+          echo "MISSION_BUDGET_DEADLINE_EPOCH=$DEADLINE_EPOCH"
+          echo "GLOBAL_WALLCLOCK_MAX_SECONDS=$GLOBAL_WALLCLOCK_MAX_SECONDS"
+
+      - name: Static syntax preflight
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -m py_compile             scripts/missions/final_server_ready_postboot_verify.py             scripts/missions/final_server_ready_g09_execute.py             scripts/missions/final_server_ready_g09_close.py
+
+      - name: Recover frozen producer bundle
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: server-ready-final-producer
+          path: ${{ runner.temp }}/producer
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 36404117068
+
+      - name: G08 post-reboot observation with explicit user-systemd context
+        shell: bash
+        run: |
+          set -u
+          mkdir -p "$RUNNER_TEMP/postboot"
+          python3 -B -I scripts/missions/final_server_ready_postboot_verify.py             --out "$RUNNER_TEMP/postboot/BOOT_PERSISTENCE_EVIDENCE.json" || true
+          cat "$RUNNER_TEMP/postboot/BOOT_PERSISTENCE_EVIDENCE.json"
+
+      - name: G09 material controlled failure and recovery
+        shell: bash
+        run: |
+          set -u
+          mkdir -p "$RUNNER_TEMP/g09"
+          DEADLINE_EPOCH="$(cat "$RUNNER_TEMP/terminal-budget/BUDGET_DEADLINE_EPOCH")"
+          python3 -B -I scripts/missions/final_server_ready_g09_execute.py             --mission missions/inbox/server-ready-final-g23-g24-20260928/MISSION_ORIGINAL.md             --g08 "$RUNNER_TEMP/postboot/BOOT_PERSISTENCE_EVIDENCE.json"             --out "$RUNNER_TEMP/g09"             --deadline-epoch "$DEADLINE_EPOCH" || true
+          cat "$RUNNER_TEMP/g09/G09_FAILURE_RECOVERY_EVIDENCE.json"
+
+      - name: G09 evidence closure and terminal freeze
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/terminal-bundle"
+          python3 -B -I scripts/missions/final_server_ready_g09_close.py             --producer "$RUNNER_TEMP/producer"             --postboot "$RUNNER_TEMP/postboot"             --g09 "$RUNNER_TEMP/g09/G09_FAILURE_RECOVERY_EVIDENCE.json"             --contract server/terminal-chain/SERVER_READY_TERMINAL_CHAIN_CONTRACT.json             --out "$RUNNER_TEMP/terminal-bundle"
+          cp "$RUNNER_TEMP/terminal-budget/BUDGET_START_EPOCH" "$RUNNER_TEMP/terminal-bundle/"
+          cp "$RUNNER_TEMP/terminal-budget/BUDGET_DEADLINE_EPOCH" "$RUNNER_TEMP/terminal-bundle/"
+          cp "$RUNNER_TEMP/g09/G09_FAILURE_RECOVERY_DETAILS.json" "$RUNNER_TEMP/terminal-bundle/"
+          cat "$RUNNER_TEMP/terminal-bundle/CHAIN_STATE.json"
+
+      - name: Preserve terminal bundle
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: server-ready-terminal-bundle
+          path: ${{ runner.temp }}/terminal-bundle
+          if-no-files-found: error
+
+  g23:
+    name: "G23 — independent fresh reader"
+    needs: g08_g09
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            missions/inbox/server-ready-final-g23-g24-20260928/MISSION_ORIGINAL.md
+            scripts/missions/final_server_ready_g23_validate.py
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: server-ready-terminal-bundle
+          path: ${{ runner.temp }}/terminal-bundle
+
+      - name: Enforce gross mission deadline before G23
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          DEADLINE="$(cat "$RUNNER_TEMP/terminal-bundle/BUDGET_DEADLINE_EPOCH")"
+          NOW="$(date +%s)"
+          test "$NOW" -lt "$DEADLINE"
+          echo "BUDGET_REMAINING_SECONDS=$((DEADLINE-NOW))"
+
+      - name: Validate independently without repair
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          python3 -B -I scripts/missions/final_server_ready_g23_validate.py             --bundle "$RUNNER_TEMP/terminal-bundle"             --mission missions/inbox/server-ready-final-g23-g24-20260928/MISSION_ORIGINAL.md             --out "$RUNNER_TEMP/g23"
+          cp -a "$RUNNER_TEMP/terminal-bundle" "$RUNNER_TEMP/g23/terminal-bundle"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: server-ready-g23
+          path: ${{ runner.temp }}/g23
+          if-no-files-found: error
+
+      - name: Show G23
+        shell: bash
+        run: cat "$RUNNER_TEMP/g23/G23_INDEPENDENT_VALIDATION.md"
+
+  g24:
+    name: "G24 — final certifier"
+    needs: g23
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            missions/inbox/server-ready-final-g23-g24-20260928/MISSION_ORIGINAL.md
+            scripts/missions/final_server_ready_g24_certify.py
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: server-ready-g23
+          path: ${{ runner.temp }}/g23
+
+      - name: Enforce gross mission deadline before G24
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          DEADLINE="$(cat "$RUNNER_TEMP/g23/terminal-bundle/BUDGET_DEADLINE_EPOCH")"
+          NOW="$(date +%s)"
+          test "$NOW" -lt "$DEADLINE"
+          echo "BUDGET_REMAINING_SECONDS=$((DEADLINE-NOW))"
+
+      - name: Certify only if evidence permits
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g24"
+          python3 -B -I scripts/missions/final_server_ready_g24_certify.py             --bundle "$RUNNER_TEMP/g23"             --mission missions/inbox/server-ready-final-g23-g24-20260928/MISSION_ORIGINAL.md             --out "$RUNNER_TEMP/g24"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: server-ready-g24-final
+          path: ${{ runner.temp }}/g24
+          if-no-files-found: error
+
+      - name: Show terminal result
+        shell: bash
+        run: cat "$RUNNER_TEMP/g24/README_SERVER_READY_TERMINAL.md"
+
+      - name: Publish exact terminal result to SERVER_READY issue
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          README="$RUNNER_TEMP/g24/README_SERVER_READY_TERMINAL.md"
+          if test -f "$README"; then
+            {
+              echo "## SERVER_READY post-reboot remediation — 15m gross ceiling"
+              echo ""
+              echo "RUN_ID = $GITHUB_RUN_ID"
+              echo "SOURCE_COMMIT = $GITHUB_SHA"
+              echo ""
+              cat "$README"
+            } > "$RUNNER_TEMP/issue-result.md"
+          else
+            {
+              echo "## SERVER_READY post-reboot remediation — terminal artifact unavailable"
+              echo ""
+              echo "RUN_ID = $GITHUB_RUN_ID"
+              echo "SOURCE_COMMIT = $GITHUB_SHA"
+              echo "RESULT = HOLD"
+              echo "ROOT_BLOCKER = TERMINAL_RESULT_NOT_PRODUCED_WITHIN_GOVERNED_CHAIN"
+            } > "$RUNNER_TEMP/issue-result.md"
+          fi
+          gh issue comment 7 --repo "$GITHUB_REPOSITORY" --body-file "$RUNNER_TEMP/issue-result.md"

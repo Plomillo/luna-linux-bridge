@@ -1,0 +1,95 @@
+name: "CUSTOSZ V7 + Runtime + MetaOS — Dropbox transfer live recovery"
+
+on:
+  push:
+    branches:
+      - staging/custosz-mission-mailbox-20260928
+    paths:
+      - missions/inbox/dropbox-transfer-live-recovery-20261007/MISSION_ORIGINAL.md
+      - .github/workflows/custosz-dropbox-transfer-live-recovery.yml
+      - scripts/missions/custosz_dropbox_transfer_handoff.py
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  actions: read
+
+concurrency:
+  group: custosz-dropbox-transfer-live-recovery
+  cancel-in-progress: false
+
+jobs:
+  handoff:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 20
+    steps:
+      - name: Checkout governed CUSTOSZ mission plane
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: staging/custosz-mission-mailbox-20260928
+          persist-credentials: false
+          path: mission
+
+      - name: Verify CUSTOSZ V7 Runtime MetaOS identities
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          CUSTOSZ="mission/artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz"
+          RUNTIME="mission/artifacts/custosz-v7/CUSTOSZ_RUNTIME_V1_SR_EXEC_BOUND_FME_01.b.pyz"
+          METAOS="mission/artifacts/custosz-v7/MetaOS.wasm"
+          test "$(sha256sum "$CUSTOSZ" | awk '{print $1}')" = "dacf1f8c13b2fcbfc617cf0d4d780b30502c13395224691e6b0f05f53d9816a2"
+          test "$(sha256sum "$RUNTIME" | awk '{print $1}')" = "a79e13869601d68fe801b85ad421719b79d4afa5520ae34b91b419bd8834ae67"
+          test "$(sha256sum "$METAOS" | awk '{print $1}')" = "5d8f1239e3a0b452be722078760b000afc22af0a64f93ffb0a1f74024f15aed0"
+          python3 -B -I "$CUSTOSZ" v07-status
+          python3 -B -I "$CUSTOSZ" v07-selftest
+          python3 - <<'PY'
+          import hashlib,sys,tempfile
+          from pathlib import Path
+          runtime=Path("mission/artifacts/custosz-v7/CUSTOSZ_RUNTIME_V1_SR_EXEC_BOUND_FME_01.b.pyz").resolve()
+          authority=Path("mission/Louksna.md").resolve()
+          sys.path.insert(0,str(runtime))
+          from runtime_core import Runtime
+          rt=Runtime(Path(tempfile.mkdtemp(prefix="custosz-dropbox-runtime-"))/"state",authority,hashlib.sha256(authority.read_bytes()).hexdigest())
+          result=rt.selftest()
+          assert result.get("status")=="PASS", result
+          print("CUSTOSZ_DROPBOX_RUNTIME=PASS")
+          PY
+          python3 - <<'PY'
+          import hashlib
+          from pathlib import Path
+          p=Path("mission/artifacts/custosz-v7/MetaOS.wasm")
+          raw=p.read_bytes()
+          assert hashlib.sha256(raw).hexdigest()=="5d8f1239e3a0b452be722078760b000afc22af0a64f93ffb0a1f74024f15aed0"
+          for token in (b"knowledge-gate",b"formalization-gate",b"implementation-gate",b"checkpoint-trusted",b"network-default-deny"):
+              assert token in raw, token
+          print("CUSTOSZ_DROPBOX_METAOS=PASS")
+          PY
+
+      - name: Register live recovery mission in real CUSTOSZ state
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ulimit -v 262144 || true
+          nice -n 10 python3 -B -I mission/scripts/missions/custosz_dropbox_transfer_handoff.py
+
+      - name: Report exact handoff to issue 7
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          F="$RUNNER_TEMP/CUSTOSZ_DROPBOX_TRANSFER_HANDOFF.json"
+          if test -s "$F"; then
+            {
+              echo "## CUSTOSZ V7 Dropbox transfer recovery handoff"
+              echo
+              echo '~~~json'
+              cat "$F"
+              echo '~~~'
+            } > "$RUNNER_TEMP/comment.md"
+          else
+            printf 'CUSTOSZ Dropbox transfer handoff failed before registration. RUN_ID=%s\n' "$GITHUB_RUN_ID" > "$RUNNER_TEMP/comment.md"
+          fi
+          gh issue comment 7 --repo "$GITHUB_REPOSITORY" --body-file "$RUNNER_TEMP/comment.md"

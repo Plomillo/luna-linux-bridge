@@ -1,0 +1,306 @@
+{
+  "authority_context": {
+    "authority": "Louksna.md",
+    "authority_transfer": false,
+    "canonical_mutation_authorized": false
+  },
+  "declared_mission_id": "MIS-SUPER1200-TERMINAL-CLOSURE-G23-G24-20261007",
+  "execution_contract": {
+    "default_profile": "LUNA_PROJECT",
+    "fail_closed": true,
+    "governor": "MetaOS",
+    "no_silent_executor_substitution": true,
+    "protected_scopes": [
+      "WINDOWS",
+      "EFI",
+      "GPT",
+      "PARTITIONS",
+      "PROYECTOS",
+      "F3-DISK",
+      "CANONICAL_ARCHITECTURE",
+      "FROZEN_ARTIFACTS"
+    ],
+    "runtime": "CUSTOSZ_RUNTIME_V1",
+    "supervisor": "SYMPHYLAX_R1",
+    "validation_reserve_seconds": 240,
+    "wallclock_seconds": 1200,
+    "worker": "CUSTOSZ_V7",
+    "workflow_success_is_not_mission_success": true
+  },
+  "mail_id": "MAIL-78C79A4F015DE184E68B",
+  "mailbox_version": "0.1.0",
+  "mission_payload": {
+    "byte_exact_preservation": true,
+    "directives_observed": {
+      "ANTI_PARALYSIS": [
+        {
+          "line": 53,
+          "value": ""
+        }
+      ],
+      "ASSURANCE": [
+        {
+          "line": 7,
+          "value": "PUAC2.md"
+        }
+      ],
+      "AUTHORITY": [
+        {
+          "line": 6,
+          "value": "Louksna.md"
+        }
+      ],
+      "BLIND_RETRY": [
+        {
+          "line": 56,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "CAPABILITY_COUNT": [
+        {
+          "line": 20,
+          "value": "1200"
+        }
+      ],
+      "CAPABILITY_OWNER": [
+        {
+          "line": 8,
+          "value": "REPOSITORY"
+        }
+      ],
+      "CAPABILITY_STATE_DECLARED": [
+        {
+          "line": 21,
+          "value": "1200"
+        }
+      ],
+      "CERTIFICATION_AUTHORITY": [
+        {
+          "line": 17,
+          "value": "G24"
+        }
+      ],
+      "CHECKPOINT_HEAD_SHA": [
+        {
+          "line": 11,
+          "value": "4e957f2d4a388a87f8dca17053e5f2ec8693c5a2"
+        }
+      ],
+      "DOMAIN_COUNT": [
+        {
+          "line": 22,
+          "value": "22"
+        }
+      ],
+      "DOMAIN_STATE": [
+        {
+          "line": 23,
+          "value": "IN_PROGRESS"
+        }
+      ],
+      "EXECUTION_PLANE": [
+        {
+          "line": 14,
+          "value": "CUSTOSZ_RUNTIME_V1"
+        }
+      ],
+      "FORBIDDEN_TERMINAL_STATES": [
+        {
+          "line": 79,
+          "value": ""
+        }
+      ],
+      "FORENSIC_START_STATE": [
+        {
+          "line": 19,
+          "value": ""
+        }
+      ],
+      "G23": [
+        {
+          "line": 26,
+          "value": "READINESS"
+        }
+      ],
+      "G23_CANDIDATE_EXECUTED": [
+        {
+          "line": 89,
+          "value": "FALSE"
+        }
+      ],
+      "G23_G24_INVARIANTS": [
+        {
+          "line": 86,
+          "value": ""
+        }
+      ],
+      "G23_INDEPENDENT": [
+        {
+          "line": 87,
+          "value": "TRUE"
+        }
+      ],
+      "G23_REPAIR_ALLOWED": [
+        {
+          "line": 88,
+          "value": "FALSE"
+        }
+      ],
+      "G24": [
+        {
+          "line": 27,
+          "value": "READINESS"
+        }
+      ],
+      "G24_AUTHORITY_AUTHENTICATED": [
+        {
+          "line": 91,
+          "value": "TRUE"
+        }
+      ],
+      "G24_REQUIRES_G23_SAME_DIGEST": [
+        {
+          "line": 90,
+          "value": "TRUE"
+        }
+      ],
+      "GOVERNANCE_PLANE": [
+        {
+          "line": 15,
+          "value": "METAOS"
+        }
+      ],
+      "INDEPENDENT_VALIDATOR": [
+        {
+          "line": 16,
+          "value": "G23"
+        }
+      ],
+      "MANDATORY_PATH": [
+        {
+          "line": 39,
+          "value": ""
+        }
+      ],
+      "MISSION_CLASS": [
+        {
+          "line": 4,
+          "value": "SUPER1200_TERMINAL_CLOSURE_G23_G24_V1"
+        }
+      ],
+      "MISSION_ID": [
+        {
+          "line": 3,
+          "value": "MIS-SUPER1200-TERMINAL-CLOSURE-G23-G24-20261007"
+        }
+      ],
+      "NO_SILENT_OPERATIONS": [
+        {
+          "line": 60,
+          "value": "ABSOLUTE"
+        }
+      ],
+      "OPERATIONAL_AUTHORIZATION_SEPARATE": [
+        {
+          "line": 92,
+          "value": "TRUE"
+        }
+      ],
+      "ORDER": [
+        {
+          "line": 30,
+          "value": ""
+        }
+      ],
+      "RESOURCE_RED": [
+        {
+          "line": 58,
+          "value": "> STOP_NEW_ADMISSIONS"
+        }
+      ],
+      "ROLLBACK": [
+        {
+          "line": 59,
+          "value": "> VERIFY_RESTORATION"
+        }
+      ],
+      "STALL": [
+        {
+          "line": 57,
+          "value": "> ROOT_CAUSE + RESUME"
+        }
+      ],
+      "TELEMETRY_REQUIRED_PER_DOMAIN": [
+        {
+          "line": 62,
+          "value": ""
+        }
+      ],
+      "TERMINAL_ALLOWED_STATES": [
+        {
+          "line": 74,
+          "value": ""
+        }
+      ],
+      "TERMINAL_CERTIFICATION": [
+        {
+          "line": 28,
+          "value": "FALSE"
+        }
+      ],
+      "UNKNOWN_EFFECT": [
+        {
+          "line": 55,
+          "value": "> HOLD_AND_DIAGNOSE"
+        }
+      ],
+      "WIRING_EDGE_COUNT": [
+        {
+          "line": 25,
+          "value": "8193"
+        }
+      ],
+      "WIRING_NODE_COUNT": [
+        {
+          "line": 24,
+          "value": "1200"
+        }
+      ],
+      "WORKER": [
+        {
+          "line": 13,
+          "value": "CUSTOSZ_V7"
+        }
+      ],
+      "WORK_BRANCH": [
+        {
+          "line": 10,
+          "value": "custosz/super-1200-implementation-20261007"
+        }
+      ],
+      "WORK_REPOSITORY": [
+        {
+          "line": 9,
+          "value": "Plomillo/luna-linux-bridge"
+        }
+      ]
+    },
+    "required_capabilities_explicit": [],
+    "routing_hints": {
+      "authoritative": false,
+      "values": [
+        "CUSTOSZ_RUNTIME",
+        "ROLLBACK"
+      ]
+    },
+    "source_utf8_b64": "IyBNSVNJw5NOIFRFUk1JTkFMIOKAlCBDSUVSUkUgRlVOQ0lPTkFMIFNVUEVSMTIwMCDihpIgRzIzIOKGkiBHMjQKCk1JU1NJT05fSUQgPSBNSVMtU1VQRVIxMjAwLVRFUk1JTkFMLUNMT1NVUkUtRzIzLUcyNC0yMDI2MTAwNwpNSVNTSU9OX0NMQVNTID0gU1VQRVIxMjAwX1RFUk1JTkFMX0NMT1NVUkVfRzIzX0cyNF9WMQoKQVVUSE9SSVRZID0gTG91a3NuYS5tZApBU1NVUkFOQ0UgPSBQVUFDMi5tZApDQVBBQklMSVRZX09XTkVSID0gUkVQT1NJVE9SWQpXT1JLX1JFUE9TSVRPUlkgPSBQbG9taWxsby9sdW5hLWxpbnV4LWJyaWRnZQpXT1JLX0JSQU5DSCA9IGN1c3Rvc3ovc3VwZXItMTIwMC1pbXBsZW1lbnRhdGlvbi0yMDI2MTAwNwpDSEVDS1BPSU5UX0hFQURfU0hBID0gNGU5NTdmMmQ0YTM4OGE4N2Y4ZGNhMTcwNTNlNWYyZWM4NjkzYzVhMgoKV09SS0VSID0gQ1VTVE9TWl9WNwpFWEVDVVRJT05fUExBTkUgPSBDVVNUT1NaX1JVTlRJTUVfVjEKR09WRVJOQU5DRV9QTEFORSA9IE1FVEFPUwpJTkRFUEVOREVOVF9WQUxJREFUT1IgPSBHMjMKQ0VSVElGSUNBVElPTl9BVVRIT1JJVFkgPSBHMjQKCkZPUkVOU0lDX1NUQVJUX1NUQVRFOgpDQVBBQklMSVRZX0NPVU5UID0gMTIwMApDQVBBQklMSVRZX1NUQVRFX0RFQ0xBUkVEID0gMTIwMApET01BSU5fQ09VTlQgPSAyMgpET01BSU5fU1RBVEUgPSBJTl9QUk9HUkVTUwpXSVJJTkdfTk9ERV9DT1VOVCA9IDEyMDAKV0lSSU5HX0VER0VfQ09VTlQgPSA4MTkzCkcyMyA9IFJFQURJTkVTUwpHMjQgPSBSRUFESU5FU1MKVEVSTUlOQUxfQ0VSVElGSUNBVElPTiA9IEZBTFNFCgpPUkRFUjoKRXN0ZSBlcyBlbCB0cmFtbyBmaW5hbC4KTm8gZGV0ZW5lcnNlIGVuIFJFQURJTkVTUy4KTm8gZW1pdGlyIFBBU1MgZGVjb3JhdGl2by4KTm8gZWplY3V0YXIgRzIzIHRlcm1pbmFsIHNvYnJlIHVuIGNhbmRpZGF0byBpbmNvbXBsZXRvLgpObyBlamVjdXRhciBHMjQgc2luIEcyMyBQQVNTIHNvYnJlIGVsIG1pc21vIGRpZ2VzdC4KTm8gdHJhbnNmZXJpciBvd25lcnNoaXAgYSBDVVNUT1NaLCBSdW50aW1lIG8gTWV0YU9TLgpMYXMgMTIwMCBjYXBhY2lkYWRlcyBwZXJ0ZW5lY2VuIHkgc2UgaW1wbGVtZW50YW4gRU4gRUwgUkVQT1NJVE9SSU8uCgpNQU5EQVRPUllfUEFUSDoKMS4gQXVkaXRhciBleGFjdGFtZW50ZSBlbCBjaGVja3BvaW50IDRlOTU3ZjJkNGEzODhhODdmOGRjYTE3MDUzZTVmMmVjODY5M2M1YTIuCjIuIENvbnN0cnVpciBsZWRnZXIgZGUgZ2FwcyBkZSBpbXBsZW1lbnRhY2nDs24gZnVuY2lvbmFsIHBhcmEgMS4uMTIwMC4KMy4gQ2VycmFyIGdhcHMgcG9yIGRvbWluaW8gc2lndWllbmRvIGRlcGVuZGVuY2lhcyB5IFRZUEUvTUFUL0FDUVVJUkUvQVNTVVJFL0hBUkRFTi9XSVJFL1JFUE8uCjQuIEV4aWdpciBldmlkZW5jaWEgbWF0ZXJpYWwsIHRlc3RzIHBvc2l0aXZvcy9uZWdhdGl2b3MsIHByb3ZlbmFuY2UsIHJvbGxiYWNrIHkgbm8tcmVncmVzc2lvbiBwb3IgY2FwYWNpZGFkLgo1LiBBY3R1YWxpemFyIGVzdGFkb3Mgc8OzbG8gZGVzZGUgZXZpZGVuY2lhIHJlYWwuCjYuIENvbnRpbnVhciBEMDHihpJEMjIgc2luIGNvbnNpZGVyYXIgdW4gbWFuaWZlc3QgbyBzdHViIGNvbW8gSU1QTEVNRU5URUQuCjcuIEN1YW5kbyBsYXMgMTIwMCBjdW1wbGFuIGVsIGdhdGUgZnVuY2lvbmFsLCBjb25nZWxhciBjYW5kaWRhdG8gZXhhY3RvLgo4LiBDYWxjdWxhciBkaWdlc3QgdGVybWluYWwgZGVsIGNhbmRpZGF0byBjb25nZWxhZG8uCjkuIEVqZWN1dGFyIEcyMyBkZXNkZSBib3VuZGFyeSBpbmRlcGVuZGllbnRlLCBjYW5kaWRhdGUtYXMtZGF0YS1vbmx5LCBzaW4gcmVwYXJhY2nDs24uCjEwLiBTaSBHMjMgUEFTUyBzb2JyZSBlc2UgZGlnZXN0LCBlamVjdXRhciBHMjQgZGlnZXN0LWJvdW5kIGNvbiBhdXRvcmlkYWQgYXV0ZW50aWNhZGEuCjExLiBTZXBhcmFyIEcyNCBkZSBhdXRvcml6YWNpw7NuIG9wZXJhY2lvbmFsLgoxMi4gRW1pdGlyIGNlcnRpZmljYWNpw7NuIHRlcm1pbmFsIGdlbmVyYWwgc8OzbG8gc2kgbGEgY2FkZW5hIGNvbXBsZXRhIGVzIFBBU1MuCgpBTlRJX1BBUkFMWVNJUzoKSEVBUlRCRUFUICE9IEZPUldBUkRfUFJPR1JFU1MKVU5LTk9XTl9FRkZFQ1QgPT4gSE9MRF9BTkRfRElBR05PU0UKQkxJTkRfUkVUUlkgPSBGT1JCSURERU4KU1RBTEwgPT4gUk9PVF9DQVVTRSArIFJFU1VNRQpSRVNPVVJDRV9SRUQgPT4gU1RPUF9ORVdfQURNSVNTSU9OUwpST0xMQkFDSyA9PiBWRVJJRllfUkVTVE9SQVRJT04KTk9fU0lMRU5UX09QRVJBVElPTlMgPSBBQlNPTFVURQoKVEVMRU1FVFJZX1JFUVVJUkVEX1BFUl9ET01BSU46CkRPTUFJTl9TVEFSVEVECkdBUF9MRURHRVJfVVBEQVRFRApNQVRFUklBTF9JTVBMRU1FTlRBVElPTl9QUk9HUkVTUwpURVNUX1BST0dSRVNTClBST1ZFTkFOQ0VfUFJPR1JFU1MKUk9MTEJBQ0tfUkVBRElORVNTCkcyM19SRUFESU5FU1MKRzI0X1JFQURJTkVTUwpET01BSU5fRk9SV0FSRF9QUk9HUkVTUwpET01BSU5fQ09NUExFVEVEX09SX0VYUExJQ0lUX0hPTEQKClRFUk1JTkFMX0FMTE9XRURfU1RBVEVTOgpDRVJUSUZJRURfVEVSTUlOQUxfUEFTUwpPUgpIT0xEX1dJVEhfRVhBQ1RfVU5SRVNPTFZFRF9XT1JLX0FORF9SRVNVTUFCTEVfQ0hFQ0tQT0lOVAoKRk9SQklEREVOX1RFUk1JTkFMX1NUQVRFUzoKUkVBRElORVNTX09OTFkKREVDT1JBVElWRV9QQVNTClNFTEZfQ0VSVElGSUVECkNFUlRJRklDQVRJT05fUFJPUEFHQVRFRApQQVJUSUFMX1NDT1BFX1JFUE9SVEVEX0FTX0dMT0JBTAoKRzIzX0cyNF9JTlZBUklBTlRTOgpHMjNfSU5ERVBFTkRFTlQgPSBUUlVFCkcyM19SRVBBSVJfQUxMT1dFRCA9IEZBTFNFCkcyM19DQU5ESURBVEVfRVhFQ1VURUQgPSBGQUxTRQpHMjRfUkVRVUlSRVNfRzIzX1NBTUVfRElHRVNUID0gVFJVRQpHMjRfQVVUSE9SSVRZX0FVVEhFTlRJQ0FURUQgPSBUUlVFCk9QRVJBVElPTkFMX0FVVEhPUklaQVRJT05fU0VQQVJBVEUgPSBUUlVFCg=="
+  },
+  "schema_version": "1.0",
+  "source": {
+    "bytes": 2968,
+    "encoding": "utf-8",
+    "path": "missions/inbox/super1200-terminal-closure-g23-g24-20261007/MISSION_ORIGINAL.md",
+    "sha256": "78c79a4f015de184e68bbd888e4674fbe876b69b4fe83e32e8d552c863ded5a8",
+    "source_commit": "f7ddf739b02e706bd1c0be5db43b66dfadfecbf5"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "adapter": {
+    "adapter_id": "SERVER_READY_TERMINAL_10M_V1",
+    "backend": "CUSTOSZ_RUNTIME",
+    "execution_location": "SELF_HOSTED_LUNA_AUX",
+    "hard_ceiling_seconds": 600,
+    "mission_classes": [
+      "FINAL_SERVER_READY_CLOSURE_10M"
+    ],
+    "path": "scripts/mission_mailbox/adapters/server_ready_terminal_10m.py",
+    "provides_executor_binding": true,
+    "required_capabilities": [],
+    "requires_prebound_executor": false,
+    "scope": "SERVER_READY_TERMINAL_10M_G08_G09_G23_G24",
+    "sha256": "962853a045c447c1e369f1408c5bec0328f4c6b731d15a144ced153712629130",
+    "source_sha256": "db0b882d55ca6d4b62639cd451f0795c6f2e245732b631001816a8a937401983",
+    "status": "ACTIVE_PINNED",
+    "terminal_contract_path": "server/terminal-chain/SERVER_READY_TERMINAL_10M_CONTRACT.json",
+    "terminal_contract_sha256": "018f71a2de595076b02c290d563b4a27df8725b8dab35cbbf389762d9fde9904"
+  },
+  "binding_mode": "ADAPTER_PROVIDED_PENDING",
+  "custosz_mission_id": "MIS-3bd7afde24074415ab52",
+  "mail_id": "MAIL-DB0B882D55CA6D4B6263",
+  "observed_executor_bound": false,
+  "rule": "Material execution must occur only through the pinned Runtime adapter and produce terminal evidence. Selecting a binding-providing adapter does not itself prove EXECUTOR_BINDING=PASS.",
+  "schema": "CUSTOSZ_EXECUTION_PLAN/1.1",
+  "status": "ROUTED_READY_NOT_YET_EXECUTED"
+}

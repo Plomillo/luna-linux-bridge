@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "status": "ACTIVE_EXPLICIT_SOURCE_BINDINGS_FAIL_CLOSED",
+  "policy": {
+    "key": "source_sha256",
+    "require_unique": true,
+    "direct_mission_class_collision": "HOLD",
+    "source_mutation": false,
+    "semantic_rewrite": false
+  },
+  "bindings": [
+    {
+      "source_sha256": "1f8ba16e26789cc4ba3c9329357ac7c866af50177ccbf5915ca1dd5355c511d0",
+      "mission_id": "MIS-META-ECO-20260928-V1",
+      "mission_class": "METACOGNITIVE_ECOSYSTEM_V1",
+      "scope": "METACOGNITIVE_ECOSYSTEM_CONTROL_PLANE_AND_CLOUD_MATERIALIZATION",
+      "origin": "EXPLICIT_ADDITIVE_SOURCE_BOUND_CLASSIFICATION",
+      "reason": "MISSION_ORIGINAL is immutable and predates the mailbox MISSION_CLASS requirement; bind exact source hash without altering source bytes.",
+      "authority": "Louksna.md",
+      "canonical_mutation": false
+    }
+  ]
+}

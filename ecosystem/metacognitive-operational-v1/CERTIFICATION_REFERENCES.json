@@ -1,0 +1,39 @@
+{
+  "schema": "META_ECOSYSTEM_CERTIFICATION_REFERENCES/1.0",
+  "release_id": "META-ECO-V1-B91D-20260928",
+  "candidate": {
+    "digest_sha256": "b91d04bf79cd98eda846a8d0435f20323013f7ef647d9b288ab4cf29dcc35240",
+    "producer_run_id": 36459022140,
+    "source_commit": "d930e9220ee5ab2013afca4da4ad4c876c20d4f2",
+    "artifact_id": 10987077105,
+    "artifact_zip_sha256": "1a82178b91b5c71bfe6340e7becc7e040adeeff4a863ab8a5d01b00ff1f9608c"
+  },
+  "g23": {
+    "run_id": 36461879737,
+    "validator_commit": "a4e3ca776f151b1fc3d61ef1bc884447cfadb203",
+    "artifact_id": 10987242991,
+    "artifact_zip_sha256": "343004e6b17e578a030d8bbe738ddb382e6dc65fe1984befdf920e4ac92b988c"
+  },
+  "g24": {
+    "run_id": 36462113064,
+    "certifier_commit": "888a8274dcf09647dbf166742bb8f40a40fbdcf3",
+    "artifact_id": 10987123425,
+    "artifact_zip_sha256": "788a08dfe98b776a44f91bef457528b503b65d290112a1572bd04a1db8194638"
+  },
+  "base_trust_root": {
+    "staging_merge_commit": "310c3e169ce431dfa3af18eef4341bc71a8dbed7",
+    "resolver_mode_required": "CONTENT_ADDRESSED_RELEASE",
+    "resolver_path": "scripts/assurance/resolve_metacognitive_producer.py",
+    "validator_path": "scripts/assurance/metacognitive_trust_root.py",
+    "selftest_run_id": 36466123253,
+    "selftest_status": "PASS",
+    "candidate_mutation": false,
+    "certification_propagation": false,
+    "default_branch": "main",
+    "default_branch_commit": "467dfdc4db7f830ee7684ee22acf7de6582878cc",
+    "workflow_sha_required": true,
+    "oidc_required_for_g24": true,
+    "data_only_candidate_validation": true,
+    "hotfix_reason": "release-aware trust root preserved; missing os import repaired without weakening workflow_sha/OIDC/data-only boundary"
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "current_gate": "MATERIAL_EXECUTION",
+  "current_state": "BINDING_PROVIDER_SELECTED",
+  "history": [
+    {
+      "state": "RECEIVED",
+      "utc": "2026-10-06T06:29:37.768265+00:00"
+    },
+    {
+      "state": "VALIDATED",
+      "utc": "2026-10-06T06:29:37.768908+00:00"
+    },
+    {
+      "state": "COMPILED",
+      "utc": "2026-10-06T06:29:37.768914+00:00"
+    },
+    {
+      "state": "SEMANTICALLY_EQUIVALENT_BY_BYTE_PRESERVATION",
+      "utc": "2026-10-06T06:29:37.768916+00:00"
+    },
+    {
+      "custosz_mission_id": "MIS-45338b8ef6124005ac39",
+      "state": "ROUTED",
+      "utc": "2026-10-06T06:56:35.265437+00:00"
+    },
+    {
+      "state": "RUNTIME_COMPATIBLE",
+      "utc": "2026-10-06T06:56:35.265611+00:00"
+    },
+    {
+      "adapter_id": "DOCUMENT_FACTORY_CUSTOSZ_V7_CONTINUATION_V1",
+      "state": "ADAPTER_SELECTED",
+      "utc": "2026-10-06T06:56:35.265617+00:00"
+    },
+    {
+      "adapter_id": "DOCUMENT_FACTORY_CUSTOSZ_V7_CONTINUATION_V1",
+      "state": "BINDING_PROVIDER_SELECTED",
+      "utc": "2026-10-06T06:56:35.265621+00:00"
+    }
+  ],
+  "mail_id": "MAIL-5FA6287AC594C82234A7",
+  "mission_terminal_status": null,
+  "root_blocker": null,
+  "schema_version": "1.0",
+  "workflow_technical_status": "PASS"
+}

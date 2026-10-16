@@ -1,0 +1,87 @@
+name: "CUSTOSZ V7 + Runtime — Document Factory finish"
+
+on:
+  push:
+    branches:
+      - staging/custosz-mission-mailbox-20260928
+    paths:
+      - .github/workflows/document-factory-custosz-v7-finish.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: custosz-document-factory-finish
+  cancel-in-progress: false
+
+jobs:
+  finish:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 10
+    steps:
+      - name: Checkout CUSTOSZ mission surface
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: staging/custosz-mission-mailbox-20260928
+          persist-credentials: false
+          path: mission
+
+      - name: Checkout current CUSTOSZ Document Factory work checkpoint
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: custosz/document-factory-runtime-20261005
+          fetch-depth: 0
+          persist-credentials: true
+          path: target
+
+      - name: Checkout main dependency and download dispatch source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: main
+          persist-credentials: false
+          path: main-source
+
+      - name: Verify continuation checkpoint
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd target
+          test "$(git rev-parse HEAD)" = "e4073004eee5776a2f953794b90276818f1adc91"
+          git merge-base --is-ancestor 067e1be0b13d9400c2c78d6174138c10ce980dd7 HEAD
+
+      - name: CUSTOSZ V7 plus CUSTOSZ_RUNTIME_V1 finish execution
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export MISSION_ROOT="$GITHUB_WORKSPACE/mission"
+          export TARGET_ROOT="$GITHUB_WORKSPACE/target"
+          export MAIN_ROOT="$GITHUB_WORKSPACE/main-source"
+          export OUT_DIR="$RUNNER_TEMP/document-factory-custosz-finish"
+          export CUSTOSZ_WORKSPACE_OVERRIDE="$HOME/SYMPHYLAX_LAB/CUSTOSZ_V7_R1_G23_G24_20260927T021532Z/POSIX_COMPATIBILITY_VIEW"
+          ulimit -v 262144 || true
+          nice -n 10 python3 -B -I mission/scripts/missions/document_factory_finish_dispatch.py
+
+      - name: Persist completed work on isolated branch
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd target
+          git add document-factory
+          if git diff --cached --quiet; then
+            echo "CUSTOSZ_COMPLETION_CHANGES=0"
+            exit 0
+          fi
+          git config user.name "custosz-v7-runtime-bot"
+          git config user.email "custosz-v7-runtime-bot@users.noreply.github.com"
+          git commit -m "feat(document-factory): complete CUSTOSZ V7 governed technical backlog"
+          git push origin HEAD:refs/heads/custosz/document-factory-runtime-20261005
+
+      - name: Preserve finish runtime evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: document-factory-custosz-v7-finish
+          path: \${{ runner.temp }}/document-factory-custosz-finish
+          if-no-files-found: warn
+          retention-days: 30

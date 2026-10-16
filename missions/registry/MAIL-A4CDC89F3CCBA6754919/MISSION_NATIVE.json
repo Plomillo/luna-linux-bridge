@@ -1,0 +1,623 @@
+{
+  "authority_context": {
+    "authority": "Louksna.md",
+    "authority_transfer": false,
+    "canonical_mutation_authorized": false
+  },
+  "declared_mission_id": "MIS-LUNA-R4-PART4-PART9-PLAN-DEFINITIVO-24H-20261001",
+  "execution_contract": {
+    "default_profile": "LUNA_PROJECT",
+    "fail_closed": true,
+    "governor": "MetaOS",
+    "no_silent_executor_substitution": true,
+    "protected_scopes": [
+      "WINDOWS",
+      "EFI",
+      "GPT",
+      "PARTITIONS",
+      "PROYECTOS",
+      "F3-DISK",
+      "CANONICAL_ARCHITECTURE",
+      "FROZEN_ARTIFACTS"
+    ],
+    "runtime": "CUSTOSZ_RUNTIME_V1",
+    "supervisor": "SYMPHYLAX_R1",
+    "validation_reserve_seconds": 240,
+    "wallclock_seconds": 1200,
+    "worker": "CUSTOSZ_V7",
+    "workflow_success_is_not_mission_success": true
+  },
+  "mail_id": "MAIL-A4CDC89F3CCBA6754919",
+  "mailbox_version": "0.1.0",
+  "mission_payload": {
+    "byte_exact_preservation": true,
+    "directives_observed": {
+      "ABSENT_AND_REQUIRED": [
+        {
+          "line": 111,
+          "value": ">ACQUIRE_ONCE_AFTER_SOURCE+VERSION+PROVENANCE+COMPATIBILITY+DEDUP_PASS"
+        }
+      ],
+      "ABSOLUTE": [
+        {
+          "line": 113,
+          "value": ""
+        }
+      ],
+      "ANTI_PARALYSIS": [
+        {
+          "line": 265,
+          "value": ""
+        }
+      ],
+      "APC": [
+        {
+          "line": 79,
+          "value": "EXACT_SCOPED_PRIVILEGED_EXECUTION"
+        }
+      ],
+      "ASSURANCE": [
+        {
+          "line": 6,
+          "value": "PUAC2.md"
+        },
+        {
+          "line": 50,
+          "value": "PUAC2.md"
+        }
+      ],
+      "AUDITABILITY": [
+        {
+          "line": 34,
+          "value": "REQUIRED"
+        }
+      ],
+      "AUTHORITY": [
+        {
+          "line": 5,
+          "value": "Louksna.md"
+        },
+        {
+          "line": 49,
+          "value": "Louksna.md"
+        }
+      ],
+      "AUTHORITY_TRANSFER": [
+        {
+          "line": 42,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "AUTONOMOUS_HANDOFF": [
+        {
+          "line": 208,
+          "value": ""
+        }
+      ],
+      "AUTO_CERTIFICATION": [
+        {
+          "line": 40,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "CERTIFICATION_PROPAGATION": [
+        {
+          "line": 41,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "CERTIFIER": [
+        {
+          "line": 23,
+          "value": "G24"
+        }
+      ],
+      "CURRENT_DEBIAN_KDE": [
+        {
+          "line": 118,
+          "value": "PROTECTED_EXISTING_BASE"
+        }
+      ],
+      "CUSTOSZ_RUNTIME_V1": [
+        {
+          "line": 75,
+          "value": "CONTINUITY_CHECKPOINT_RUNTIME"
+        }
+      ],
+      "CUSTOSZ_V7": [
+        {
+          "line": 74,
+          "value": "MATERIAL_WORKER"
+        }
+      ],
+      "DEBIAN_REDOWNLOAD": [
+        {
+          "line": 114,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "DEBIAN_REINSTALL": [
+        {
+          "line": 115,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "DETERMINISM": [
+        {
+          "line": 39,
+          "value": "REQUIRED_WHERE_TECHNICALLY_POSSIBLE"
+        }
+      ],
+      "DOCTRINE": [
+        {
+          "line": 52,
+          "value": "EXTEND_DO_NOT_REPLACE"
+        }
+      ],
+      "EXECUTION_MODE": [
+        {
+          "line": 30,
+          "value": "CONTINUOUS_GOVERNED_AUTONOMY"
+        },
+        {
+          "line": 59,
+          "value": "CONTINUOUS_GOVERNED_AUTONOMY"
+        }
+      ],
+      "FAILURE": [
+        {
+          "line": 193,
+          "value": ""
+        }
+      ],
+      "FAILURE_POSTURE": [
+        {
+          "line": 31,
+          "value": "FAIL_CLOSED"
+        },
+        {
+          "line": 53,
+          "value": "FAIL_CLOSED"
+        }
+      ],
+      "FOR_EACH_TRANSITION": [
+        {
+          "line": 83,
+          "value": ""
+        }
+      ],
+      "G23": [
+        {
+          "line": 80,
+          "value": "INDEPENDENT_VALIDATOR"
+        }
+      ],
+      "G24": [
+        {
+          "line": 81,
+          "value": "CERTIFIER"
+        }
+      ],
+      "GLOBAL_MISSION_STATUS": [
+        {
+          "line": 255,
+          "value": "COMPLETE"
+        }
+      ],
+      "GOVERNANCE": [
+        {
+          "line": 36,
+          "value": "REQUIRED"
+        }
+      ],
+      "GOVERNOR": [
+        {
+          "line": 15,
+          "value": "MetaOS"
+        }
+      ],
+      "IDENTICAL_IRREVERSIBLE_RETRY": [
+        {
+          "line": 206,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "KDE_REDOWNLOAD": [
+        {
+          "line": 116,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "KDE_REINSTALL": [
+        {
+          "line": 117,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "LIVE_OBSERVABILITY": [
+        {
+          "line": 21,
+          "value": "LOUKSNA_REMOTE_BRIDGE"
+        }
+      ],
+      "MAILBOX_EXECUTION_BOUNDARY": [
+        {
+          "line": 259,
+          "value": ""
+        }
+      ],
+      "MAILBOX_ROUTING_CEILING_SECONDS": [
+        {
+          "line": 29,
+          "value": "1200"
+        }
+      ],
+      "MANDATE": [
+        {
+          "line": 65,
+          "value": ""
+        }
+      ],
+      "MASTER_BRANCH": [
+        {
+          "line": 13,
+          "value": "staging/luna-r4-master-part1-part9-20260929"
+        }
+      ],
+      "MASTER_CHECKPOINT": [
+        {
+          "line": 14,
+          "value": "52d83b97b59fcef4b6e35251d7cc9676d77014ed"
+        },
+        {
+          "line": 62,
+          "value": "52d83b97b59fcef4b6e35251d7cc9676d77014ed"
+        }
+      ],
+      "MISSION_CLASS": [
+        {
+          "line": 4,
+          "value": "LUNA_R4_PART4_PART9_24H_GOVERNED_CONTINUATION"
+        }
+      ],
+      "MISSION_ID": [
+        {
+          "line": 3,
+          "value": "MIS-LUNA-R4-PART4-PART9-PLAN-DEFINITIVO-24H-20261001"
+        }
+      ],
+      "NEW_HUMAN_GATE_ONLY_IF": [
+        {
+          "line": 219,
+          "value": ""
+        }
+      ],
+      "NON_REGRESSION": [
+        {
+          "line": 38,
+          "value": "REQUIRED"
+        }
+      ],
+      "NO_REPROMPT_FOR_IDENTICAL_ALREADY_AUTHORIZED_SCOPE": [
+        {
+          "line": 217,
+          "value": "TRUE"
+        }
+      ],
+      "NO_SILENT_OPERATIONS": [
+        {
+          "line": 32,
+          "value": "ABSOLUTE"
+        },
+        {
+          "line": 54,
+          "value": "TRUE"
+        }
+      ],
+      "OPERATIONAL_WINDOW_SECONDS": [
+        {
+          "line": 28,
+          "value": "86400"
+        }
+      ],
+      "ORDER_IMMUTABLE": [
+        {
+          "line": 63,
+          "value": "PART4->PART5->PART6->PART7->PART8->PART9->TERMINAL_FREEZE->FINAL_G23->FINAL_G24->ACTIVE"
+        }
+      ],
+      "PART4": [
+        {
+          "line": 120,
+          "value": ""
+        }
+      ],
+      "PART4..PART9": [
+        {
+          "line": 245,
+          "value": "G24_PASS"
+        }
+      ],
+      "PART5": [
+        {
+          "line": 132,
+          "value": ""
+        }
+      ],
+      "PART6": [
+        {
+          "line": 143,
+          "value": ""
+        }
+      ],
+      "PART7": [
+        {
+          "line": 152,
+          "value": ""
+        }
+      ],
+      "PART8": [
+        {
+          "line": 167,
+          "value": ""
+        }
+      ],
+      "PART9": [
+        {
+          "line": 180,
+          "value": ""
+        }
+      ],
+      "PARTIAL": [
+        {
+          "line": 108,
+          "value": ">RESUME_IF_VALID"
+        }
+      ],
+      "PLAN": [
+        {
+          "line": 8,
+          "value": "PLAN DEFINITIVO"
+        },
+        {
+          "line": 48,
+          "value": "PLAN DEFINITIVO"
+        }
+      ],
+      "PLAN_GIT_BLOB_SHA1": [
+        {
+          "line": 12,
+          "value": "247dbaab0bed3ff8aa9a141e9951ff9cb14a9898"
+        }
+      ],
+      "PLAN_SOURCE_BRANCH": [
+        {
+          "line": 9,
+          "value": "audit/r4-part4-part9-second-order-20261001"
+        }
+      ],
+      "PLAN_SOURCE_COMMIT": [
+        {
+          "line": 11,
+          "value": "85fb0cc96c693e37fdc66e5bf7d05a438e432d71"
+        }
+      ],
+      "PLAN_SOURCE_PATH": [
+        {
+          "line": 10,
+          "value": "PLAN DEFINITIVO"
+        }
+      ],
+      "PRIVILEGED_INTERFACE": [
+        {
+          "line": 19,
+          "value": "sudo -n /usr/local/sbin/louksna-apc"
+        }
+      ],
+      "PROVENANCE": [
+        {
+          "line": 35,
+          "value": "REQUIRED"
+        }
+      ],
+      "QUARANTINED": [
+        {
+          "line": 109,
+          "value": ">NEVER_PROMOTE"
+        }
+      ],
+      "QWEN": [
+        {
+          "line": 76,
+          "value": "GITHUB_HOSTED_SECOND_ORDER_REASONER"
+        }
+      ],
+      "QWEN_LOCAL_INFERENCE": [
+        {
+          "line": 77,
+          "value": "FORBIDDEN"
+        }
+      ],
+      "REFERENCE": [
+        {
+          "line": 7,
+          "value": "SKELETON_CANONICO_REFERENCIA.txt"
+        },
+        {
+          "line": 51,
+          "value": "SKELETON_CANONICO_REFERENCIA.txt"
+        }
+      ],
+      "RELEASE_STATE": [
+        {
+          "line": 256,
+          "value": "CERTIFIED_FROZEN_ACTIVE"
+        }
+      ],
+      "REMOTE_BRIDGE": [
+        {
+          "line": 78,
+          "value": "LIVE_TELEMETRY_AND_STATE_OBSERVATION"
+        }
+      ],
+      "RESOLVED": [
+        {
+          "line": 105,
+          "value": ">PRESERVE+REUSE"
+        }
+      ],
+      "RESUME_FROM": [
+        {
+          "line": 61,
+          "value": "LAST_VALID_PART4_CHECKPOINT"
+        }
+      ],
+      "REUSE_POLICY": [
+        {
+          "line": 104,
+          "value": ""
+        }
+      ],
+      "ROLLBACK": [
+        {
+          "line": 37,
+          "value": "REQUIRED"
+        }
+      ],
+      "RUNTIME": [
+        {
+          "line": 17,
+          "value": "CUSTOSZ_RUNTIME_V1"
+        }
+      ],
+      "SECOND_ORDER_REASONER": [
+        {
+          "line": 20,
+          "value": "QWEN_GITHUB_HOSTED"
+        }
+      ],
+      "SUCCESS_ONLY_IF": [
+        {
+          "line": 244,
+          "value": ""
+        }
+      ],
+      "SUDO_POLICY": [
+        {
+          "line": 262,
+          "value": ""
+        }
+      ],
+      "SUPERVISOR": [
+        {
+          "line": 18,
+          "value": "SYMPHYLAX_R1"
+        }
+      ],
+      "TEAM_COORDINATION": [
+        {
+          "line": 72,
+          "value": ""
+        }
+      ],
+      "TERMINAL_CLOSURE": [
+        {
+          "line": 226,
+          "value": ""
+        }
+      ],
+      "TERMINAL_RULE": [
+        {
+          "line": 268,
+          "value": ""
+        }
+      ],
+      "THEN": [
+        {
+          "line": 254,
+          "value": ""
+        }
+      ],
+      "TRACEABILITY": [
+        {
+          "line": 33,
+          "value": "REQUIRED"
+        },
+        {
+          "line": 55,
+          "value": "AUDITABILITY=PROVENANCE=GOVERNANCE=ROLLBACK=NON_REGRESSION=REQUIRED"
+        }
+      ],
+      "UNKNOWN": [
+        {
+          "line": 110,
+          "value": ">HOLD"
+        }
+      ],
+      "VALIDATOR": [
+        {
+          "line": 22,
+          "value": "G23"
+        }
+      ],
+      "WINDOW_END": [
+        {
+          "line": 25,
+          "value": "2026-10-02T04:03:46-03:00"
+        },
+        {
+          "line": 58,
+          "value": "2026-10-02T04:03:46-03:00"
+        }
+      ],
+      "WINDOW_END_UTC": [
+        {
+          "line": 27,
+          "value": "2026-10-02T07:03:46Z"
+        }
+      ],
+      "WINDOW_START": [
+        {
+          "line": 24,
+          "value": "2026-10-01T04:03:46-03:00"
+        },
+        {
+          "line": 57,
+          "value": "2026-10-01T04:03:46-03:00"
+        }
+      ],
+      "WINDOW_START_UTC": [
+        {
+          "line": 26,
+          "value": "2026-10-01T07:03:46Z"
+        }
+      ],
+      "WORKER": [
+        {
+          "line": 16,
+          "value": "CUSTOSZ_V7"
+        }
+      ]
+    },
+    "required_capabilities_explicit": [],
+    "routing_hints": {
+      "authoritative": false,
+      "values": [
+        "CUSTOSZ_RUNTIME",
+        "GITHUB",
+        "LOCAL_HOST",
+        "PROTECTED_WINDOWS_SCOPE",
+        "ROLLBACK"
+      ]
+    },
+    "source_utf8_b64": "IyBNSVNJw5NOIFRPVEFMIOKAlCBNQUVTVFJPIFBMQU4gREVGSU5JVElWTyBQQVJUNCAtPiBQQVJUOSAvIFRVUk5PIDI0SAoKTUlTU0lPTl9JRCA9IE1JUy1MVU5BLVI0LVBBUlQ0LVBBUlQ5LVBMQU4tREVGSU5JVElWTy0yNEgtMjAyNjEwMDEKTUlTU0lPTl9DTEFTUyA9IExVTkFfUjRfUEFSVDRfUEFSVDlfMjRIX0dPVkVSTkVEX0NPTlRJTlVBVElPTgpBVVRIT1JJVFkgPSBMb3Vrc25hLm1kCkFTU1VSQU5DRSA9IFBVQUMyLm1kClJFRkVSRU5DRSA9IFNLRUxFVE9OX0NBTk9OSUNPX1JFRkVSRU5DSUEudHh0ClBMQU4gPSBQTEFOIERFRklOSVRJVk8KUExBTl9TT1VSQ0VfQlJBTkNIID0gYXVkaXQvcjQtcGFydDQtcGFydDktc2Vjb25kLW9yZGVyLTIwMjYxMDAxClBMQU5fU09VUkNFX1BBVEggPSBQTEFOIERFRklOSVRJVk8KUExBTl9TT1VSQ0VfQ09NTUlUID0gODVmYjBjYzk2YzY5M2UzN2ZkYzY2ZTViZjdkMDVhNDM4ZTQzMmQ3MQpQTEFOX0dJVF9CTE9CX1NIQTEgPSAyNDdkYmFhYjBiZWQzZmY4YWE5YTE0MWU5OTUxZmY5Y2IxNGE5ODk4Ck1BU1RFUl9CUkFOQ0ggPSBzdGFnaW5nL2x1bmEtcjQtbWFzdGVyLXBhcnQxLXBhcnQ5LTIwMjYwOTI5Ck1BU1RFUl9DSEVDS1BPSU5UID0gNTJkODNiOTdiNTlmY2VmNGI2ZTM1MjUxZDdjYzk2NzZkNzcwMTRlZApHT1ZFUk5PUiA9IE1ldGFPUwpXT1JLRVIgPSBDVVNUT1NaX1Y3ClJVTlRJTUUgPSBDVVNUT1NaX1JVTlRJTUVfVjEKU1VQRVJWSVNPUiA9IFNZTVBIWUxBWF9SMQpQUklWSUxFR0VEX0lOVEVSRkFDRSA9IHN1ZG8gLW4gL3Vzci9sb2NhbC9zYmluL2xvdWtzbmEtYXBjClNFQ09ORF9PUkRFUl9SRUFTT05FUiA9IFFXRU5fR0lUSFVCX0hPU1RFRApMSVZFX09CU0VSVkFCSUxJVFkgPSBMT1VLU05BX1JFTU9URV9CUklER0UKVkFMSURBVE9SID0gRzIzCkNFUlRJRklFUiA9IEcyNApXSU5ET1dfU1RBUlQgPSAyMDI2LTEwLTAxVDA0OjAzOjQ2LTAzOjAwCldJTkRPV19FTkQgPSAyMDI2LTEwLTAyVDA0OjAzOjQ2LTAzOjAwCldJTkRPV19TVEFSVF9VVEMgPSAyMDI2LTEwLTAxVDA3OjAzOjQ2WgpXSU5ET1dfRU5EX1VUQyA9IDIwMjYtMTAtMDJUMDc6MDM6NDZaCk9QRVJBVElPTkFMX1dJTkRPV19TRUNPTkRTID0gODY0MDAKTUFJTEJPWF9ST1VUSU5HX0NFSUxJTkdfU0VDT05EUyA9IDEyMDAKRVhFQ1VUSU9OX01PREUgPSBDT05USU5VT1VTX0dPVkVSTkVEX0FVVE9OT01ZCkZBSUxVUkVfUE9TVFVSRSA9IEZBSUxfQ0xPU0VECk5PX1NJTEVOVF9PUEVSQVRJT05TID0gQUJTT0xVVEUKVFJBQ0VBQklMSVRZID0gUkVRVUlSRUQKQVVESVRBQklMSVRZID0gUkVRVUlSRUQKUFJPVkVOQU5DRSA9IFJFUVVJUkVECkdPVkVSTkFOQ0UgPSBSRVFVSVJFRApST0xMQkFDSyA9IFJFUVVJUkVECk5PTl9SRUdSRVNTSU9OID0gUkVRVUlSRUQKREVURVJNSU5JU00gPSBSRVFVSVJFRF9XSEVSRV9URUNITklDQUxMWV9QT1NTSUJMRQpBVVRPX0NFUlRJRklDQVRJT04gPSBGT1JCSURERU4KQ0VSVElGSUNBVElPTl9QUk9QQUdBVElPTiA9IEZPUkJJRERFTgpBVVRIT1JJVFlfVFJBTlNGRVIgPSBGT1JCSURERU4KCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KTUFFU1RSTyDigJQgUExBTiBERUZJTklUSVZPIC8gT1JERU4gT1BFUkFDSU9OQUwgQ09OVElOVU8gUEFSVDQgLT4gUEFSVDkgLyBUVVJOTyAyNEgKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQoKUExBTj1QTEFOIERFRklOSVRJVk8KQVVUSE9SSVRZPUxvdWtzbmEubWQKQVNTVVJBTkNFPVBVQUMyLm1kClJFRkVSRU5DRT1TS0VMRVRPTl9DQU5PTklDT19SRUZFUkVOQ0lBLnR4dApET0NUUklORT1FWFRFTkRfRE9fTk9UX1JFUExBQ0UKRkFJTFVSRV9QT1NUVVJFPUZBSUxfQ0xPU0VECk5PX1NJTEVOVF9PUEVSQVRJT05TPVRSVUUKVFJBQ0VBQklMSVRZPUFVRElUQUJJTElUWT1QUk9WRU5BTkNFPUdPVkVSTkFOQ0U9Uk9MTEJBQ0s9Tk9OX1JFR1JFU1NJT049UkVRVUlSRUQKCldJTkRPV19TVEFSVD0yMDI2LTEwLTAxVDA0OjAzOjQ2LTAzOjAwCldJTkRPV19FTkQ9MjAyNi0xMC0wMlQwNDowMzo0Ni0wMzowMApFWEVDVVRJT05fTU9ERT1DT05USU5VT1VTX0dPVkVSTkVEX0FVVE9OT01ZCgpSRVNVTUVfRlJPTT1MQVNUX1ZBTElEX1BBUlQ0X0NIRUNLUE9JTlQKTUFTVEVSX0NIRUNLUE9JTlQ9NTJkODNiOTdiNTlmY2VmNGI2ZTM1MjUxZDdjYzk2NzZkNzcwMTRlZApPUkRFUl9JTU1VVEFCTEU9UEFSVDQtPlBBUlQ1LT5QQVJUNi0+UEFSVDctPlBBUlQ4LT5QQVJUOS0+VEVSTUlOQUxfRlJFRVpFLT5GSU5BTF9HMjMtPkZJTkFMX0cyNC0+QUNUSVZFCgpNQU5EQVRFOgpNYWVzdHJvIFNIQUxMIGNvbnN1bWUgUExBTiBERUZJTklUSVZPIGFzIGdvdmVybmluZyBvcGVyYXRpb25hbCBwbGFuIGZvciBQQVJUNC0+UEFSVDk7ClNIQUxMIHJlY29uY2lsZSBhbmQgZmluaXNoIFBBUlQ0IGZyb20gdGhlIHJlYWwgbGl2ZSBzdGF0ZSBhbHJlYWR5IGFjaGlldmVkOwpTSEFMTCBOT1QgcmVzdGFydCBjb21wbGV0ZWQgd29yazsKU0hBTEwgTk9UIHJlcGVhdCB2YWxpZGF0ZWQgMjAwR0IgbWlncmF0aW9uOwpTSEFMTCB0aGVuIGhhbmQgb2ZmIGF1dG9tYXRpY2FsbHkgYW5kIGNocm9ub2xvZ2ljYWxseSB0aHJvdWdoIFBBUlQ1LCBQQVJUNiwgUEFSVDcsIFBBUlQ4IGFuZCBQQVJUOSB1bnRpbCB0ZXJtaW5hbCBjbG9zdXJlLgoKVEVBTV9DT09SRElOQVRJT046Ck1ldGFPUz1HT1ZFUk5PUgpDVVNUT1NaX1Y3PU1BVEVSSUFMX1dPUktFUgpDVVNUT1NaX1JVTlRJTUVfVjE9Q09OVElOVUlUWV9DSEVDS1BPSU5UX1JVTlRJTUUKUVdFTj1HSVRIVUJfSE9TVEVEX1NFQ09ORF9PUkRFUl9SRUFTT05FUgpRV0VOX0xPQ0FMX0lORkVSRU5DRT1GT1JCSURERU4KUkVNT1RFX0JSSURHRT1MSVZFX1RFTEVNRVRSWV9BTkRfU1RBVEVfT0JTRVJWQVRJT04KQVBDPUVYQUNUX1NDT1BFRF9QUklWSUxFR0VEX0VYRUNVVElPTgpHMjM9SU5ERVBFTkRFTlRfVkFMSURBVE9SCkcyND1DRVJUSUZJRVIKCkZPUl9FQUNIX1RSQU5TSVRJT046Ck9CU0VSVkVfTElWRQotPlJFQ09OQ0lMRV9TVEFURQotPkNIRUNLX1BMQU5fREVGSU5JVElWT19DT05GT1JNQU5DRQotPkNIRUNLX0VYSVNUSU5HCi0+QU5USV9EVVBMSUNBVElPTgotPlBST1ZFTkFOQ0UKLT5RV0VOX01DMDdfTUMwOAotPkRFVEVSTUlOSVNUSUNfR1VBUkRTCi0+Q0hFQ0tQT0lOVAotPkVYRUNVVEVfRVhBQ1RfU0NPUEUKLT5PQlNFUlZFX1JFU1VMVAotPlZBTElEQVRFCi0+Tk9OX1JFR1JFU1NJT04KLT5BVURJVAotPlRSQUNFCi0+RzIzCi0+RzI0Ci0+RElHRVNUX0JPVU5EX1NUQVRFX1VQREFURQotPk5FWFQKClJFVVNFX1BPTElDWToKUkVTT0xWRUQ9PlBSRVNFUlZFK1JFVVNFCk1BVEVSSUFMSVpFRCtIQVNIX1ZBTElEPT5VU0U7IFJFRE9XTkxPQUQ9REVOSUVECklOU1RBTExFRCtDT1JSRUNUPT5WQUxJREFURTsgUkVJTlNUQUxMPURFTklFRApQQVJUSUFMPT5SRVNVTUVfSUZfVkFMSUQKUVVBUkFOVElORUQ9Pk5FVkVSX1BST01PVEUKVU5LTk9XTj0+SE9MRApBQlNFTlRfQU5EX1JFUVVJUkVEPT5BQ1FVSVJFX09OQ0VfQUZURVJfU09VUkNFK1ZFUlNJT04rUFJPVkVOQU5DRStDT01QQVRJQklMSVRZK0RFRFVQX1BBU1MKCkFCU09MVVRFOgpERUJJQU5fUkVET1dOTE9BRD1GT1JCSURERU4KREVCSUFOX1JFSU5TVEFMTD1GT1JCSURERU4KS0RFX1JFRE9XTkxPQUQ9Rk9SQklEREVOCktERV9SRUlOU1RBTEw9Rk9SQklEREVOCkNVUlJFTlRfREVCSUFOX0tERT1QUk9URUNURURfRVhJU1RJTkdfQkFTRQoKUEFSVDQ6ClJFQ09OQ0lMRV9QSFlTSUNBTF9TVEFURQotPkNFUlRJRllfUDMvUFJPWUVDVE9TCi0+UkVUSVJFX09OTFlfQVVUSE9SSVpFRF9XSU5ET1dTX1JFU0lEVUFMUwotPkZJTkFMX01FUkdFX1A1X1RPX1AzCi0+Qk9PVF9QMwotPlBPU1RCT09UX0cyM19HMjQKLT5SRVRJUkVfUDUKLT5FWFBBTkRfUDMKLT5GSU5BTF9JTlRFR1JJVFkKLT5QQVJUNF9DRVJUSUZJRUQKClBBUlQ1OgpSRVVTRV9FWElTVElOR19WTV9BUlRJRkFDVFMKLT5NQVRFUklBTElaRV9PTkxZX0dBUFMKLT5RRU1VL0tWTS9MSUJWSVJUL1ZJUlQtTUFOQUdFUgotPlJFQUxfVk1fVEVTVFMKLT5ST0xMQkFDSwotPkFVRElUCi0+VFJBQ0UKLT5HMjMKLT5HMjQKClBBUlQ2OgpSRVVTRV9IQVNIX1ZFUklGSUVEX1dJTkUvU1RFQU0vUFJPVE9OL0JPVFRMRVMvTFVUUklTL1BSSVNNL1dBWURST0lECi0+SU5TVEFMTC9DT05GSUdVUkUvRlVOQ1RJT05BTF9URVNUCi0+Q1JPU1NfTk9OX1JFR1JFU1NJT04KLT5BVURJVAotPlRSQUNFCi0+RzIzCi0+RzI0CgpQQVJUNzoKRElTQ09WRVJfRVhJU1RJTkdfQ09SUFVTX0ZJUlNUCi0+Tk9fRFVQTElDQVRFX1NIQTI1NgotPklNTVVUQUJMRV9TT1VSQ0VTCi0+Q0xBU1NJRlkKLT5JTkRFWAotPlBST1ZFTkFOQ0UKLT5SRVRSSUVWQUwKLT5IRVJNRU5FVVRJQ19DT05UUk9MUwotPlVOS05PV05fRkFJTF9DTE9TRUQKLT5BVURJVAotPlRSQUNFCi0+RzIzCi0+RzI0CgpQQVJUODoKRklOQUxfTEFZT1VUX1NZU1RFTV9DT05UUk9MCi0+QkFDS1VQCi0+UkVTVE9SRV9QUk9PRgotPlJFQ09WRVJZCi0+SFlHSUVORV9EUllfUlVOX0ZJUlNUCi0+UkVTT1VSQ0VfR09WRVJOQU5DRQotPkFSQ0hJVEVDVFVSRS9WRVJTSU9OX0NPTlRST0wKLT5BVURJVAotPlRSQUNFCi0+RzIzCi0+RzI0CgpQQVJUOToKQ09OU1VNRV9QQVJUMS4uUEFSVDhfRElHRVNUX0JPVU5EX0NFUlRJRklDQVRFUwotPkdMT0JBTF9NQVRSSVgKLT5DUk9TU19ET01BSU5fSVNPTEFUSU9OCi0+U0VDT05EX09SREVSX1RFU1RTCi0+R0xPQkFMX05PTl9SRUdSRVNTSU9OCi0+UkVDT1ZFUllfUFJPT0YKLT5GSU5BTF9PUEVSQVRJT05BTF9WQUxJREFUSU9OCi0+QVVESVQKLT5UUkFDRQotPkcyMwotPkcyNAoKRkFJTFVSRToKRkFJTHxDT05GTElDVHxTVEFURV9EUklGVHxIQVNIX01JU01BVENIfFNDT1BFX0RSSUZUfFVOS05PV04KLT5IT0xECi0+UFJFU0VSVkVfRVZJREVOQ0UKLT5ST09UX0NBVVNFCi0+UVdFTl9BTFRFUk5BVElWRVMKLT5NQzA3X0lNUEFDVAotPk1DMDhfU0VMRl9BVURJVAotPk1JTklNVU1fQ09SUkVDVElWRV9ERUxUQQotPlJPTExCQUNLX09SX1NBRkVfU1RBVEUKLT5SRVZBTElEQVRFCi0+UkVUUllfQ0hBTkdFRF9TVFJBVEVHWQoKSURFTlRJQ0FMX0lSUkVWRVJTSUJMRV9SRVRSWT1GT1JCSURERU4KCkFVVE9OT01PVVNfSEFORE9GRjoKSUYgUEFSVF9OX0cyND1QQVNTCj0+Q0hFQ0tQT0lOVAorQVVESVQKK1RSQUNFCitDRVJUX0RJR0VTVF9CSU5ECitQTEFOX0RFRklOSVRJVk9fQ09ORk9STUFOQ0VfQ0hFQ0sKK0FEVkFOQ0VfUEFSVF9OKzEKCk5PX1JFUFJPTVBUX0ZPUl9JREVOVElDQUxfQUxSRUFEWV9BVVRIT1JJWkVEX1NDT1BFPVRSVUUKCk5FV19IVU1BTl9HQVRFX09OTFlfSUY6ClNDT1BFX0VYUEFOU0lPTgp8TkVXX0lSUkVWRVJTSUJMRV9TQ09QRQp8TEVHQUxfTElDRU5TRV9HQVRFCnxBVVRIT1JJVFlfQ0hBTkdFCnxVTlJFU09MVkVEX1NBRkVUWV9CT1VOREFSWQoKVEVSTUlOQUxfQ0xPU1VSRToKUEFSVDlfUEFTUwotPlRFUk1JTkFMX0ZSRUVaRQotPkZJTkFMX01BTklGRVNUCi0+RklOQUxfU0hBMjU2Ci0+VFJBQ0VfUk9PVAotPkFVRElUX1JPT1QKLT5FVklERU5DRV9JTkRFWAotPlJPTExCQUNLX0lOREVYCi0+RklOQUxfRzIzX09OX0VYQUNUX0ZST1pFTl9TVEFURQotPkZJTkFMX0cyNF9PTl9TQU1FX0ZSRUVaRV9IQVNICi0+UE9TVF9DRVJUX0hBU0hfUkVDSEVDSwotPkFUT01JQ19BQ1RJVkFUSU9OCgpBTllfUE9TVF9GUkVFWkVfTVVUQVRJT04KPT5DRVJUSUZJQ0FUSU9OX0lOVkFMSURfRk9SX1NVQ0NFU1NPUgo9Pk5FV19DQU5ESURBVEVfUkVRVUlSRUQKClNVQ0NFU1NfT05MWV9JRjoKUEFSVDQuLlBBUlQ5PUcyNF9QQVNTCkFORCBQTEFOX0RFRklOSVRJVk9fQ09ORk9STUFOQ0U9UEFTUwpBTkQgVFJBQ0VBQklMSVRZPUFVRElUQUJJTElUWT1QUk9WRU5BTkNFPUdPVkVSTkFOQ0U9Uk9MTEJBQ0s9Tk9OX1JFR1JFU1NJT049UEFTUwpBTkQgRFVQTElDQVRFX0RPV05MT0FEUz1aRVJPX1dIRVJFX1ZBTElEX0VYSVNUSU5HX0JZVEVTX0VYSVNUCkFORCBERUJJQU4vS0RFX1JFRE9XTkxPQURfUkVJTlNUQUxMPVpFUk8KQU5EIFRFUk1JTkFMX0ZSRUVaRT1QQVNTCkFORCBGSU5BTF9HMjM9UEFTUwpBTkQgRklOQUxfRzI0PVBBU1MKClRIRU46CkdMT0JBTF9NSVNTSU9OX1NUQVRVUz1DT01QTEVURQpSRUxFQVNFX1NUQVRFPUNFUlRJRklFRF9GUk9aRU5fQUNUSVZFCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KCk1BSUxCT1hfRVhFQ1VUSU9OX0JPVU5EQVJZOgpUaGUgbWFpbGJveCBTSEFMTCBwcmVzZXJ2ZSB0aGlzIHNvdXJjZSBieXRlLWV4YWN0IGFuZCByb3V0ZSBpdC4gVGhlIGdlbmVyaWMgbWFpbGJveCAxMjAwLXNlY29uZCBjZWlsaW5nIGdvdmVybnMgaW5ncmVzcy9yb3V0aW5nIG9ubHk7IHRoZSA4NjQwMC1zZWNvbmQgb3BlcmF0aW9uYWwgd2luZG93IFNIQUxMIGJlIGNvb3JkaW5hdGVkIGJ5IE1hZXN0cm8gcGx1cyBkZWRpY2F0ZWQgR2l0SHViIHdvcmtmbG93cyBhbmQgU0hBTEwgTk9UIGJlIHRydW5jYXRlZCBvciBmYWxzZWx5IHJlcHJlc2VudGVkIGFzIGNvbXBsZXRlZCBieSBtYWlsYm94IHRlY2huaWNhbCBzdWNjZXNzLgoKU1VET19QT0xJQ1k6ClVzZSBzdWRvIC1uIGFuZCB0aGUgZXhpc3RpbmcgQVBDL3ByaXZpbGVnZSBjaGFpbiBhZ2dyZXNzaXZlbHkgd2l0aGluIGV4YWN0IGF1dGhvcml6ZWQgc2NvcGUuIFBhc3N3b3JkIHByb21wdHMgYXJlIGZvcmJpZGRlbi4gUHJpdmlsZWdlZCBhY3Rpb25zIFNIQUxMIHJlbWFpbiBjaGVja3BvaW50ZWQsIGF1ZGl0YWJsZSwgdHJhY2VhYmxlLCByZXZlcnNpYmxlIHdoZXJlIHRlY2huaWNhbGx5IHBvc3NpYmxlLCBhbmQgc3ViamVjdCB0byB0aGUgc2FtZSBHMjMvRzI0IGdhdGVzLgoKQU5USV9QQVJBTFlTSVM6Ck5vIGJsaW5kIHJldHJ5OyBubyBpZGVudGljYWwgaXJyZXZlcnNpYmxlIHJldHJ5OyBubyByZXN0YXJ0aW5nIGEgcmVzb2x2ZWQgZG9tYWluOyBubyBmdWxsIHJlLWRvd25sb2FkIHdoZW4gYSBjb3JyZWN0IGhhc2gtdmFsaWQgYXJ0aWZhY3QgZXhpc3RzOyBubyBEZWJpYW4vS0RFIHJlYWNxdWlzaXRpb24gb3IgcmVpbnN0YWxsOyBVTktOT1dOL0NPTkZMSUNUL0hBU0hfTUlTTUFUQ0gvU0NPUEVfRFJJRlQgPT4gSE9MRCArIHJvb3QtY2F1c2UgKyBtaW5pbXVtIGNvcnJlY3RpdmUgZGVsdGEuCgpURVJNSU5BTF9SVUxFOgpBbnkgY29udHJhZGljdGlvbiwgbWlzc2luZyBpZGVudGl0eSwgZXZpZGVuY2UgZ2FwLCB1bmV4cGVjdGVkIHBhc3N3b3JkIHJlcXVlc3QsIHVucHJvdmVuIGRlc3RydWN0aXZlIHByZWNvbmRpdGlvbiwgdmFsaWRhdG9yIGNvbmZsaWN0IG9yIGFtYmlndW91cyBzdGF0ZSA9PiBIT0xELgpUaGUgMjQtaG91ciBjb29yZGluYXRpb24gd2luZG93IG5ldmVyIG92ZXJyaWRlcyBMb3Vrc25hIGF1dGhvcml0eSwgUFVBQzIsIEcyMy9HMjQsIHByb3RlY3RlZCBzY29wZXMsIGxlZ2FsIGdhdGVzLCByb2xsYmFjayBvciBGQUlMX0NMT1NFRC4K"
+  },
+  "schema_version": "1.0",
+  "source": {
+    "bytes": 7656,
+    "encoding": "utf-8",
+    "path": "missions/inbox/luna-r4-part4-part9-plan-definitivo-24h-20261001/MISSION_ORIGINAL.md",
+    "sha256": "a4cdc89f3ccba6754919ae55b4e4f8bc16ae584587a595f5403ac180d74a3b50",
+    "source_commit": "cca847f8ea80bcd81665ebd7dbc03920e1302755"
+  }
+}

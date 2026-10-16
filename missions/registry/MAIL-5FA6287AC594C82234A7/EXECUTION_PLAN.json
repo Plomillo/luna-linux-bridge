@@ -1,0 +1,28 @@
+{
+  "adapter": {
+    "adapter_id": "DOCUMENT_FACTORY_CUSTOSZ_V7_CONTINUATION_V1",
+    "backend": "CUSTOSZ_RUNTIME",
+    "dedicated_workflow": ".github/workflows/document-factory-custosz-v7-runtime.yml",
+    "execution_location": "SELF_HOSTED_LUNA_AUX",
+    "hard_ceiling_seconds": 1200,
+    "mission_classes": [
+      "DOCUMENT_FACTORY_GOVERNED_CONTINUATION_V1"
+    ],
+    "path": "scripts/mission_mailbox/adapters/document_factory_continuation.py",
+    "provides_executor_binding": true,
+    "required_capabilities": [],
+    "requires_prebound_executor": false,
+    "scope": "DOCUMENT_FACTORY_CUSTOSZ_V7_RUNTIME_CONTINUATION",
+    "sha256": "ff7f2021513544e315219852922fc29f9bc429bf7f85837f228547412ac3aad8",
+    "source_sha256": "5fa6287ac594c82234a78b7c6e8934bb41ce2f88e236df3e1ec0b4da9c93aee7",
+    "status": "ACTIVE_PINNED",
+    "terminal_rule": "WORK_BRANCH_ONLY_FAIL_CLOSED_FRESH_G23_G24_REQUIRED"
+  },
+  "binding_mode": "ADAPTER_PROVIDED_PENDING",
+  "custosz_mission_id": "MIS-45338b8ef6124005ac39",
+  "mail_id": "MAIL-5FA6287AC594C82234A7",
+  "observed_executor_bound": false,
+  "rule": "Material execution must occur only through the pinned Runtime adapter and produce terminal evidence. Selecting a binding-providing adapter does not itself prove EXECUTOR_BINDING=PASS.",
+  "schema": "CUSTOSZ_EXECUTION_PLAN/1.1",
+  "status": "ROUTED_READY_NOT_YET_EXECUTED"
+}
