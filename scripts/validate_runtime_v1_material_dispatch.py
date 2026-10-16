@@ -155,8 +155,7 @@ from runtime_core import Runtime
 from sr_exec_bound_fme_01 import SRExecBoundFME01
 rt = Runtime(runtime_root, authority_path, authority_sha)
 target_path = Path(target)
-original = b"PRE-DISPATCH-STATE
-"
+original = b"PRE-DISPATCH-STATE\n"
 checkpoint = rt.checkpoints.capture_file("V8-SR-EXEC-BOUNDED-CHECKPOINT", target_path)
 name = "ci-bounded-python-executor"
 rt.executors.register(SimpleNamespace(
