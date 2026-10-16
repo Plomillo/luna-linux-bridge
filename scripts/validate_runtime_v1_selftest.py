@@ -121,9 +121,9 @@ def main() -> int:
         for name, raw in sources.items():
             report.setdefault("module_sha256", {})[name] = sha256_bytes(raw)
         main_text = sources["__main__.py"].decode("utf-8")
-        m = re.search(r"(?m)^AUTH_SHA\\s*=\\s*['\\\"]([0-9a-f]{64})['\\\"]", main_text)
+        m = re.search(r"(?m)^AUTH_SHA\s*=\s*['\"]([0-9a-f]{64})['\"]", main_text)
         report["launcher_pinned_authority_sha256"] = m.group(1) if m else None
-        report["launcher_has_absolute_windows_authority_path"] = bool(re.search(r"(?m)^AUTH\\s*=\\s*Path\\(r?['\\\"][A-Za-z]:\\\\", main_text))
+        report["launcher_has_absolute_windows_authority_path"] = bool(re.search(r"(?m)^AUTH\s*=\s*Path\(r?['\"][A-Za-z]:\\", main_text))
         runtime_core = sources["runtime_core.py"].decode("utf-8")
         report["source_contract"] = record_source_contract(runtime_core, "runtime_core.py")
 
