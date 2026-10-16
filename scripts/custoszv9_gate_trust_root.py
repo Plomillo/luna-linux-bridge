@@ -11,7 +11,7 @@ import argparse,base64,hashlib,json,os,re,subprocess,sys,zipfile
 from datetime import datetime,timezone
 from pathlib import Path
 
-SCOPE="CUSTOSZV9_CRFU_AND_EXACT_V8_BYTE_PRESERVATION_SUBSCOPE"
+SCOPE="CUSTOSZV9_CRFU_STANDALONE_SOFTWARE_AND_EXACT_V8_BYTE_PRESERVATION"
 MAX_CANDIDATE_PACKAGE_BYTES=20*1024*1024
 MAX_ARCHIVE_MEMBERS=4096
 MAX_ARCHIVE_MEMBER_BYTES=16*1024*1024
@@ -20,13 +20,12 @@ G22_SCHEMA="CUSTOSZV9_G22_TESTED_SCOPE/1.0"
 G23_UNSIGNED_SCHEMA="CUSTOSZV9_G23_UNSIGNED_VALIDATION/1.0"
 SIGNED_SCHEMA="CUSTOSZV9_ED25519_ATTESTATION/1.0"
 G24_PAYLOAD_SCHEMA="CUSTOSZV9_G24_DECISION/2.0"
-FULL_RELEASE_BLOCKERS=[
- "CANONICAL_APPLICABILITY_MATRIX_NOT_VERIFIED",
- "COMPLETE_CANONICAL_G01_G24_EVIDENCE_NOT_PROVEN",
- "PUAC2_C25_C32_NOT_CANONICALLY_ADMITTED_WITH_COMPLETE_EVIDENCE",
+CANONICAL_PROMOTION_BLOCKERS=[
+ "PROTECTED_V25_BASELINE_NOT_AVAILABLE_FOR_EXACT_BYTE_COMPARISON_IN_REPOSITORY",
+ "COMPLETE_CANONICAL_G01_G24_APPLICABILITY_MATRIX_NOT_INDEPENDENTLY_ESTABLISHED",
+ "PUAC2_C25_C32_REMAIN_LOCAL_CONTROLS_PENDING_CANONICAL_ADMISSION",
  "FORMAL_TOOLCHAIN_AND_MODEL_IMPLEMENTATION_CORRESPONDENCE_NOT_PROVEN",
- "TARGET_HOST_MTLS_AND_ACTUAL_ROLLBACK_EVIDENCE_NOT_VERIFIED",
- "PUAC2_G23_G24_CANONICAL_ADMISSION_AND_OPERATIONAL_AUTHORIZATION_NOT_GRANTED",
+ "CANONICAL_OPERATIONAL_AUTHORIZATION_NOT_GRANTED",
 ]
 
 def sha(path:Path)->str:
@@ -168,11 +167,15 @@ def g22(a:argparse.Namespace)->int:
   if any(item.file_size>MAX_ARCHIVE_MEMBER_BYTES for item in infos):fail.append("ZIP_MEMBER_SIZE_LIMIT_EXCEEDED")
   if any(item.flag_bits&1 for item in infos):fail.append("ENCRYPTED_ZIP_MEMBER_FORBIDDEN")
   if z.testzip() is not None:fail.append("V9_ZIP_CRC_FAILURE")
-  required={"custoszv9/data/CUSTOSZV8.pyz","custoszv9/data/build_manifest.json","custoszv8/core.py",
-    "custoszv8/cli.py","custoszv9/crfu/coordinator.py","custoszv9/crfu/selftest.py","custoszv9/crfu/puac2.py"}
+  required={"custoszv9/data/CUSTOSZV8.pyz","custoszv9/data/build_manifest.json",
+    "custoszv9/data/certification_scope.json","custoszv8/core.py","custoszv8/cli.py",
+    "custoszv9/crfu/coordinator.py","custoszv9/crfu/selftest.py","custoszv9/crfu/puac2.py"}
   if not required.issubset(set(names)):fail.append("REQUIRED_PACKAGE_MEMBERS_MISSING")
   manifest=json.loads(z.read("custoszv9/data/build_manifest.json"))
   embedded=z.read("custoszv9/data/CUSTOSZV8.pyz");embedded_sha=sha_bytes(embedded)
+  scope_bytes=z.read("custoszv9/data/certification_scope.json")
+  scope_record=json.loads(scope_bytes)
+  embedded_scope_sha=sha_bytes(scope_bytes)
  if report.get("source_commit")!=commit or manifest.get("source_commit")!=commit:fail.append("SOURCE_COMMIT_BINDING_MISMATCH")
  if report.get("status")!="PASS_BUILD_ONLY_NOT_CERTIFIED":fail.append("BUILD_REPORT_STATUS_INVALID")
  if report.get("package_sha256")!=sha(package):fail.append("PACKAGE_DIGEST_REPORT_MISMATCH")
@@ -182,21 +185,44 @@ def g22(a:argparse.Namespace)->int:
  if source_baseline.is_file() and candidate_baseline.is_file():
   if sha(source_baseline)!=sha(candidate_baseline):fail.append("CANDIDATE_BASELINE_DIFFERS_FROM_TRUSTED_BASELINE")
   if sha(source_baseline)!=embedded_sha:fail.append("EMBEDDED_BASELINE_DIFFERS_FROM_TRUSTED_MAIN")
+ authority_digests={}
+ for name in ("Louksna.md","PUAC2.md"):
+  trusted_path=Path(a.trusted_source)/name;candidate_path=Path(a.candidate_source)/name
+  if not trusted_path.is_file() or not candidate_path.is_file():
+   fail.append("CANONICAL_SOURCE_FILE_MISSING:"+name);continue
+  trusted_digest=sha(trusted_path);candidate_digest=sha(candidate_path)
+  authority_digests[name]={"trusted_sha256":trusted_digest,"candidate_sha256":candidate_digest,
+                           "byte_identical":trusted_digest==candidate_digest}
+  if trusted_digest!=candidate_digest:fail.append("CANONICAL_SOURCE_BYTE_DRIFT:"+name)
+ trusted_scope=Path(a.trusted_source)/"scripts"/"custoszv9_scope_policy.json"
+ candidate_scope=Path(a.candidate_source)/"custoszv9"/"data"/"certification_scope.json"
+ if not trusted_scope.is_file() or not candidate_scope.is_file():
+  fail.append("TRUSTED_OR_CANDIDATE_SCOPE_POLICY_MISSING")
+ else:
+  trusted_scope_sha=sha(trusted_scope);candidate_scope_sha=sha(candidate_scope)
+  if trusted_scope_sha!=candidate_scope_sha or embedded_scope_sha!=trusted_scope_sha:
+   fail.append("SCOPE_POLICY_BYTE_BINDING_MISMATCH")
+  if manifest.get("assurance_scope",{}).get("sha256")!=embedded_scope_sha:
+   fail.append("SCOPE_POLICY_MANIFEST_DIGEST_MISMATCH")
+ if scope_record.get("schema")!="CUSTOSZV9_STANDALONE_SOFTWARE_SCOPE/1.0" or scope_record.get("scope_id")!=SCOPE:
+  fail.append("PACKAGE_SCOPE_IDENTITY_INVALID")
+ protected_v25_present=(Path(a.trusted_source)/"LUNACORE_final_formalized_v25.md").is_file()
  if repro.get("status")!="PASS" or repro.get("same_source_commit_two_builds") is not True:fail.append("REPRODUCIBILITY_NOT_PASS")
  if repro.get("source_commit")!=commit or repro.get("first_sha256")!=sha(package) or repro.get("second_sha256")!=sha(package):fail.append("REPRODUCIBILITY_DIGEST_OR_COMMIT_MISMATCH")
  if not re.search(r"^\s*Ran\s+\d+\s+tests?\s+in\s+",log,re.M) or not re.search(r"^\s*OK\s*$",log,re.M):fail.append("UNIT_TEST_LOG_NOT_PASS")
  if manifest.get("governance",{}).get("G23")!="NOT_GRANTED" or manifest.get("governance",{}).get("G24")!="NOT_GRANTED":fail.append("FALSE_CERTIFICATION_IN_MANIFEST")
  if manifest.get("formal_assurance",{}).get("toolchain_executed") is not False:fail.append("FORMAL_TOOLCHAIN_STATUS_OVERCLAIMED")
  value={"schema":G22_SCHEMA,"candidate_commit_sha":commit,"candidate_package_sha256":sha(package),
-  "candidate_package_size_bytes":package.stat().st_size,"v8_baseline_sha256":embedded_sha,
-  "v8_baseline_size_bytes":len(embedded),"trusted_workflow_sha":a.trusted_workflow_sha,
-  "producer_identity":"CUSTOSZV9_BUILD_WORKFLOW","evaluator_identity":"CUSTOSZV9_G22_TRUST_ROOT",
-  "scope":SCOPE,"checked_at_utc":utc_now(),
-  "status":"HOLD_FULL_CANONICAL_SCOPE_NOT_PROVEN",
-  "tested_scope_result":"PASS" if not fail else "FAIL","failures":fail,
-  "canonical_global_non_regression":"HOLD_NOT_FULLY_EVALUATED","formal_correspondence":"NOT_PROVEN",
-  "PUAC2_operational_scope":"HOLD","release_eligible":False,"certification":"NOT_GRANTED",
-  "canonical_promotion":"NOT_AUTHORIZED"}
+   "candidate_package_size_bytes":package.stat().st_size,"v8_baseline_sha256":embedded_sha,
+   "v8_baseline_size_bytes":len(embedded),"trusted_workflow_sha":a.trusted_workflow_sha,
+   "producer_identity":"CUSTOSZV9_BUILD_WORKFLOW","evaluator_identity":"CUSTOSZV9_G22_TRUST_ROOT",
+   "scope":SCOPE,"scope_sha256":embedded_scope_sha,"checked_at_utc":utc_now(),
+   "status":"PASS_FOR_DECLARED_SCOPE" if not fail else "FAIL",
+   "tested_scope_result":"PASS" if not fail else "FAIL","failures":fail,
+   "canonical_source_digests":authority_digests,"protected_v25_baseline_present":protected_v25_present,
+   "canonical_global_non_regression":"HOLD_FULL_CANONICAL_SCOPE_NOT_PROVEN","formal_correspondence":"NOT_PROVEN",
+   "local_puac_controls_status":"EVALUATED_FOR_DECLARED_SCOPE_ONLY",
+   "release_eligible":False,"canonical_promotion":"NOT_AUTHORIZED"}
  write(Path(a.out),value);print(json.dumps(value,indent=2));return 0 if not fail else 2
 
 def g23(a:argparse.Namespace)->int:
@@ -235,14 +261,16 @@ def g23(a:argparse.Namespace)->int:
   except (OSError,subprocess.TimeoutExpired) as exc:
    results.append({"name":name,"status":"FAIL","error":type(exc).__name__});fail.append("INDEPENDENT_COMMAND_EXCEPTION:"+name)
  value={"schema":G23_UNSIGNED_SCHEMA,"candidate_commit_sha":commit,"candidate_package_sha256":pkgsha,
-  "candidate_package_size_bytes":package.stat().st_size,"g22_record_sha256":sha(Path(a.g22)),
-  "trusted_workflow_sha":a.trusted_workflow_sha,"producer_identity":"CUSTOSZV9_BUILD_WORKFLOW",
-  "validator_identity":validator_id,"scope":SCOPE,"checked_at_utc":utc_now(),
-  "independent_execution_results":results,"status":"HOLD_FULL_CANONICAL_SCOPE_NOT_PROVEN",
-  "tested_scope_result":"PASS" if not fail else "FAIL","validation_completed":True,
-  "failures":sorted(set(fail)),"scoped_decision_admissible":not fail,
-  "canonical_G23_status":"HOLD_FULL_CANONICAL_SCOPE_NOT_PROVEN",
-  "PUAC2_status":"HOLD","release_eligible":False,"activation_authorized":False}
+   "candidate_package_size_bytes":package.stat().st_size,"g22_record_sha256":sha(Path(a.g22)),
+   "trusted_workflow_sha":a.trusted_workflow_sha,"producer_identity":"CUSTOSZV9_BUILD_WORKFLOW",
+   "validator_identity":validator_id,"scope":SCOPE,"checked_at_utc":utc_now(),
+   "independent_execution_results":results,"status":"PASS_FOR_DECLARED_SCOPE" if not fail else "FAIL",
+   "tested_scope_result":"PASS" if not fail else "FAIL","validation_completed":True,
+   "failures":sorted(set(fail)),"scoped_decision_admissible":not fail,
+   "canonical_G23_status":"HOLD_FULL_CANONICAL_SCOPE_NOT_PROVEN",
+   "local_puac_controls_status":g22r.get("local_puac_controls_status","UNKNOWN"),
+   "PUAC2_status":"LOCAL_SCOPE_EVALUATED_NOT_CANONICALLY_ADMITTED",
+   "release_eligible":False,"activation_authorized":False}
  write(Path(a.out),value);print(json.dumps(value,indent=2))
  # Exit 0 means a complete machine-readable report exists. Its tested_scope_result is the outcome.
  return 0
@@ -278,68 +306,58 @@ def g23_sign(a:argparse.Namespace)->int:
  return 0
 
 def g24(a:argparse.Namespace)->int:
- root=Path(a.candidate_dir);package=single(root,"CUSTOSZV9.pyz");pkgsha=sha(package)
- g22r=read_json(Path(a.g22));g23_record=read_json(Path(a.g23))
- g23_public=os.environ.get("PUAC2_G23_PUBLIC_KEY_PEM","")
- g24_private=os.environ.get("PUAC2_G24_SIGNING_PRIVATE_KEY_PEM","")
- g24_public=os.environ.get("PUAC2_G24_PUBLIC_KEY_PEM","")
- g23_identity=os.environ.get("PUAC2_G23_VALIDATOR_ID","")
- g24_identity=os.environ.get("PUAC2_G24_CERTIFIER_ID","")
- fail=[];g23_payload=None
- try:
-  g23_payload,signature_failures=verify_signed_record(g23_record,g23_public,g23_identity,
-      ("CUSTOSZV9_BUILD_WORKFLOW","CUSTOSZV9_G22_TRUST_ROOT",g24_identity))
-  fail.extend(signature_failures)
- except Exception as exc:fail.append("G23_SIGNATURE_VERIFICATION_EXCEPTION:"+type(exc).__name__)
- if g22r.get("tested_scope_result")!="PASS":fail.append("G22_TESTED_SCOPE_NOT_PASS")
- if g22r.get("candidate_commit_sha")!=a.candidate_sha:fail.append("G22_COMMIT_MISMATCH")
+ root=Path(a.candidate_dir);package=single(root,"CUSTOSZV9.pyz");pkgsha=sha(package);commit=a.candidate_sha
+ g22r=read_json(Path(a.g22));g23r=read_json(Path(a.g23));fail=[]
+ verification_path=Path(a.g23_attestation_verification)
+ if not verification_path.is_file() or verification_path.stat().st_size==0:
+  fail.append("G23_GITHUB_ATTESTATION_VERIFICATION_EVIDENCE_MISSING")
+ if g22r.get("schema")!=G22_SCHEMA or g22r.get("tested_scope_result")!="PASS":
+  fail.append("G22_TESTED_SCOPE_NOT_PASS")
+ if g22r.get("candidate_commit_sha")!=commit:fail.append("G22_COMMIT_MISMATCH")
  if g22r.get("candidate_package_sha256")!=pkgsha:fail.append("G22_PACKAGE_DIGEST_MISMATCH")
  if g22r.get("trusted_workflow_sha")!=a.trusted_workflow_sha:fail.append("G22_TRUST_ROOT_MISMATCH")
- if g23_payload is not None:
-  if g23_payload.get("schema")!=G23_UNSIGNED_SCHEMA:fail.append("G23_SCHEMA_INVALID")
-  if g23_payload.get("status")!="HOLD_FULL_CANONICAL_SCOPE_NOT_PROVEN" or g23_payload.get("tested_scope_result")!="PASS" or g23_payload.get("scoped_decision_admissible") is not True:fail.append("G23_TESTED_SCOPE_NOT_PASS_OR_NOT_ADMISSIBLE")
-  _,consistency_errors=g23_report_consistency(g23_payload)
-  if consistency_errors:fail.extend("G23_EVIDENCE_INCONSISTENT:"+issue for issue in consistency_errors)
-  if g23_payload.get("candidate_commit_sha")!=a.candidate_sha:fail.append("G23_COMMIT_MISMATCH")
-  if g23_payload.get("candidate_package_sha256")!=pkgsha:fail.append("G23_PACKAGE_DIGEST_MISMATCH")
-  if g23_payload.get("trusted_workflow_sha")!=a.trusted_workflow_sha:fail.append("G23_TRUST_ROOT_MISMATCH")
-  if g23_payload.get("g22_record_sha256")!=sha(Path(a.g22)):fail.append("G23_G22_RECORD_HASH_MISMATCH")
-  if g23_payload.get("producer_identity")==g23_identity:fail.append("G23_PRODUCER_VALIDATOR_COLLISION")
- if not g24_identity or g24_identity in (g23_identity,"CUSTOSZV9_BUILD_WORKFLOW"):fail.append("G24_IDENTITY_NOT_DISTINCT_OR_MISSING")
- if not public_keys_match(g24_private,g24_public):fail.append("G24_PRIVATE_PUBLIC_KEY_MISMATCH")
- try:
-  if g23_public and g24_public and _raw_public(_load_public(g23_public))==_raw_public(_load_public(g24_public)):
-   fail.append("G23_G24_PUBLIC_KEYS_NOT_DISTINCT")
- except Exception:fail.append("G23_G24_PUBLIC_KEY_COMPARISON_FAILED")
- test_scope_pass=not fail
- # Tested-scope success cannot make the full artifact certified. The complete canonical
- # gate matrix, PUAC2 admission, formal proof evidence and target-host operational evidence
- # are not present in this report, so full release eligibility is always false here.
- payload={"schema":G24_PAYLOAD_SCHEMA,"candidate_commit_sha":a.candidate_sha,
-  "candidate_package_sha256":pkgsha,"candidate_package_size_bytes":package.stat().st_size,
-  "g22_record_sha256":sha(Path(a.g22)),"g23_signed_record_sha256":sha(Path(a.g23)),
-  "trusted_workflow_sha":a.trusted_workflow_sha,"producer_identity":"CUSTOSZV9_BUILD_WORKFLOW",
-  "g23_validator_identity":g23_identity,"g24_certifier_identity":g24_identity,
-  "tested_scope":SCOPE,"tested_subscope_result":"PASS" if test_scope_pass else "FAIL",
-  "decision":"HOLD","decision_reason":"FULL_RELEASE_PREREQUISITES_NOT_PROVEN",
-  "decision_failures":sorted(set(fail)),"mandatory_release_blockers":FULL_RELEASE_BLOCKERS,
-  "full_canonical_G01_G24_status":"HOLD","PUAC2_C25_C32_status":"HOLD_NOT_CANONICALLY_ADMITTED",
-  "PUAC2_operational_host_mTLS_rollback_status":"HOLD_UNTIL_REAL_HOST_AND_ROLLBACK_EVIDENCE_VERIFIED",
-  "formal_toolchain_and_HoTT_status":"NOT_PROVEN",
-  "full_release_eligible":False,"certification":"NOT_GRANTED","operational_authorization":"NOT_GRANTED",
-  "active_authorized":False,"canonical_admission":"NOT_GRANTED","canonical_promotion":"NOT_AUTHORIZED",
-  "certification_propagation":False,"issued_at_utc":utc_now(),
-  "warning":"This signed decision records a bounded tested sub-scope and an explicit full-release HOLD; it is not a CUSTOSZV9 certification."}
- # G24 signs a HOLD decision too. Successful job completion means that the decision has
- # been issued and cryptographically bound; it does not mean the release has passed.
- record=sign_record(payload,g24_private,g24_identity)
- verified,verification_errors=verify_signed_record(record,g24_public,g24_identity,(g23_identity,"CUSTOSZV9_BUILD_WORKFLOW"))
- if verification_errors or verified!=payload:raise ValueError("G24_SELF_VERIFICATION_FAILED:"+",".join(verification_errors))
- write(Path(a.out),record)
- print(json.dumps({"status":"G24_DECISION_SIGNED","decision":"HOLD",
-  "tested_subscope_result":payload["tested_subscope_result"],"full_release_eligible":False,
-  "certification":"NOT_GRANTED","signer_identity":g24_identity,"payload_sha256":record["payload_sha256"],
-  "public_key_sha256":record["signer_public_key_sha256"],"signature":"VERIFIED"},indent=2))
+ if g23r.get("schema")!=G23_UNSIGNED_SCHEMA:fail.append("G23_SCHEMA_INVALID")
+ if g23r.get("tested_scope_result")!="PASS" or g23r.get("scoped_decision_admissible") is not True:
+  fail.append("G23_TESTED_SCOPE_NOT_PASS_OR_NOT_ADMISSIBLE")
+ if g23r.get("candidate_commit_sha")!=commit:fail.append("G23_COMMIT_MISMATCH")
+ if g23r.get("candidate_package_sha256")!=pkgsha:fail.append("G23_PACKAGE_DIGEST_MISMATCH")
+ if g23r.get("trusted_workflow_sha")!=a.trusted_workflow_sha:fail.append("G23_TRUST_ROOT_MISMATCH")
+ if g23r.get("g22_record_sha256")!=sha(Path(a.g22)):fail.append("G23_G22_RECORD_HASH_MISMATCH")
+ _,consistency_errors=g23_report_consistency(g23r)
+ fail.extend("G23_EVIDENCE_INCONSISTENT:"+issue for issue in consistency_errors)
+ g22_scope_pass=(g22r.get("tested_scope_result")=="PASS" and not g22r.get("failures"))
+ g23_scope_pass=(g23r.get("tested_scope_result")=="PASS" and not g23r.get("failures"))
+ certified=not fail and g22_scope_pass and g23_scope_pass
+ decision="CERTIFIED_FOR_DECLARED_STANDALONE_SOFTWARE_SCOPE" if certified else "HOLD"
+ # This scope certificate never grants canonical admission, activation, or promotion.
+ payload={"schema":"CUSTOSZV9_SOFTWARE_SCOPE_CERTIFICATE/1.0",
+  "decision":decision,"package_scope_certified":certified,
+  "candidate_commit_sha":commit,"candidate_package_sha256":pkgsha,
+  "candidate_package_size_bytes":package.stat().st_size,"scope":SCOPE,
+  "g22_record_sha256":sha(Path(a.g22)),"g23_record_sha256":sha(Path(a.g23)),
+  "g23_attestation_verification_sha256":sha(verification_path) if verification_path.is_file() else None,
+  "trusted_workflow_sha":a.trusted_workflow_sha,
+  "producer_identity":"CUSTOSZV9_BUILD_WORKFLOW",
+  "independent_validator_identity":g23r.get("validator_identity"),
+  "certifier_identity":"CUSTOSZV9_G24_GITHUB_ATTESTED_WORKFLOW_JOB",
+  "g22_tested_scope_result":g22r.get("tested_scope_result"),
+  "g23_tested_scope_result":g23r.get("tested_scope_result"),
+  "failures":sorted(set(fail)),
+  "local_puac_control_status":"EVALUATED_FOR_DECLARED_SCOPE_NOT_CANONICALLY_ADMITTED",
+  "canonical_G01_G24_status":"HOLD_FULL_CANONICAL_SCOPE_NOT_PROVEN",
+  "canonical_promotion":"NOT_AUTHORIZED","operational_authorization":"NOT_GRANTED",
+  "full_release_eligible":False,
+  "protected_v25_exact_byte_comparison":"UNAVAILABLE_V25_BASELINE_NOT_PRESENT_IN_REPOSITORY",
+  "formal_toolchain_and_HoTT_univalence":"NOT_PROVEN",
+  "host_mTLS_or_remote_service_operations":"NOT_RUN_OUTSIDE_DECLARED_SCOPE",
+  "offline_checkpoint_restore_test":"PASS_IN_G23_SELFTEST" if g23_scope_pass else "NOT_PROVEN",
+  "exclusions":["canonical Louksna authority transfer or activation",
+   "formal HoTT/univalence or complete model-to-implementation theorem",
+   "production host/mTLS integration and remote-service rollback",
+   "external regulatory or organizational certification"],
+  "certification":"CERTIFIED_FOR_DECLARED_SCOPE" if certified else "NOT_GRANTED",
+  "issued_at_utc":utc_now()}
+ write(Path(a.out),payload);print(json.dumps(payload,indent=2,ensure_ascii=False))
  return 0
 
 def main()->int:
@@ -355,7 +373,7 @@ def main()->int:
  q.add_argument("--g23-unsigned",required=True);q.add_argument("--out",required=True)
  q=sub.add_parser("g24");q.add_argument("--candidate-dir",required=True);q.add_argument("--candidate-sha",required=True)
  q.add_argument("--trusted-workflow-sha",required=True);q.add_argument("--g22",required=True)
- q.add_argument("--g23",required=True);q.add_argument("--out",required=True)
+ q.add_argument("--g23",required=True);q.add_argument("--g23-attestation-verification",required=True);q.add_argument("--out",required=True)
  a=parser.parse_args()
  try:return {"g22":g22,"g23":g23,"g23-sign":g23_sign,"g24":g24}[a.gate](a)
  except Exception as exc:
