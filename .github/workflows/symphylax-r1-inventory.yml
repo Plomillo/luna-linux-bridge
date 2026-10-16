@@ -1,0 +1,53 @@
+
+name: Inventario SYMPHYLAX R1
+
+on:
+  push:
+    branches:
+      - forensics/symphylax-r1-inventory-20260927
+    paths:
+      - '.github/workflows/symphylax-r1-inventory.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: symphylax-r1-inventory
+  cancel-in-progress: false
+
+jobs:
+  inventario:
+    if: github.repository == 'Plomillo/luna-linux-bridge'
+    runs-on: [self-hosted, Linux, luna-aux]
+    timeout-minutes: 10
+
+    steps:
+      - name: Obtener programa de inventario
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Ejecutar inventario de solo lectura
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: |
+          set -euo pipefail
+          umask 077
+
+          echo "SYMPHYLAX R1: iniciando inventario"
+          echo "G23: pendiente"
+          echo "G24: pendiente"
+
+          python3 -B -I scripts/forensics/symphylax_r1_inventory.py
+
+      - name: Conservar evidencias
+        if: success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: symphylax-r1-inventario
+          path: ${{ runner.temp }}/symphylax-r1-evidence/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 6
