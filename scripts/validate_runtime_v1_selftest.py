@@ -79,7 +79,7 @@ def record_source_contract(source: str, module: str) -> dict:
 def main() -> int:
     report = {
         "schema": "custoszv8.runtime-v1-selftest-evidence.v1",
-        "candidate_commit": os.environ.get("GITHUB_SHA", "LOCAL_UNBOUND"),
+        "candidate_commit": os.environ.get("CUSTOSZV8_CANDIDATE_SHA") or os.environ.get("GITHUB_SHA", "LOCAL_UNBOUND"),
         "observed_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
         "component": "RUNTIME_V1_SELECTED_STAGING",
         "expected_runtime_sha256": EXPECTED_RUNTIME_SHA256,
