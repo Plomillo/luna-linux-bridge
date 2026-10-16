@@ -248,7 +248,7 @@ def main(argv=None):
                     "mission_dispatch": False,
                     "execution_authorized": False
                 },
-                actor="custoszv8-metaos-adapter", mission_id=None
+                actor_id="custoszv8-metaos-adapter", mission_id=None
             )
             result["evidence_event"] = record
             result["evidence_journal"] = EvidenceJournal(args.journal).verify()
