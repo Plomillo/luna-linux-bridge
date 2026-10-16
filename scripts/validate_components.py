@@ -71,7 +71,12 @@ def inspect_python_zipapp_contract(path: Path) -> dict:
             for top in tree.body:
                 if isinstance(top, ast.ClassDef):
                     for member in top.body:
-                        if isinstance(member, (ast.FunctionDef, ast.AsyncFunctionDef)) and (top.name, member.name) in wanted_excerpts:
+                        if not isinstance(member, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                            continue
+                        # Include every method from the executor registry. Its public mutation
+                        # surface is needed to build a bounded, non-production dispatch fixture;
+                        # do not infer or guess method signatures from the class name alone.
+                        if top.name == "ExecutorRegistry" or (top.name, member.name) in wanted_excerpts:
                             source = ast.get_source_segment(text, member) or ""
                             critical_source_excerpts.append({
                                 "class": top.name, "function": member.name,
