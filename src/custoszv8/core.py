@@ -25,6 +25,8 @@ CANONICAL_GATES = tuple(f"G{i:02d}" for i in range(1, 25))
 LOCAL_PUAC_CONTROLS = tuple(f"PUAC.C{i}" for i in range(25, 33))
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 METAOS_V8_CANDIDATE_ID = "MetaOS_V8_CANDIDATE_1_0_1"
+RUNTIME_V1_SELECTED_SHA256 = "a79e13869601d68fe801b85ad421719b79d4afa5520ae34b91b419bd8834ae67"
+RUNTIME_V1_MEMBERS = {"__main__.py", "runtime_core.py", "sr_exec_bound_fme_01.py"}
 METAOS_V8_CANDIDATE_SHA256 = "069240d6cfc81f9b659479cc938519bc4eb4e4a0c794e300c89b477dbe3caa02"
 METAOS_EXPORT_SIGNATURES: dict[str, tuple[list[str], str]] = {
     "architecture-version": ([], "U32"),
@@ -842,7 +844,17 @@ class ChangeImpactAnalyzer:
 
 
 class RuntimeV1Adapter:
-    """Fail-closed Runtime adapter; no native invocation until API mapping is verified."""
+    """Fail-closed adapter for a fixed, isolated Runtime V1 integration probe only.
+
+    This probe tests Runtime.selftest, append-only evidence, one file checkpoint/restore
+    round-trip, and one benign bounded ProcessSupervisor child. It does not invoke
+    SRExecBoundFME01, dispatch missions, access the network, or bind canonical authority.
+    """
+    BOUNDED_PROBE_ID = "bounded-integration-probe"
+    MAX_ARCHIVE_BYTES = 2 * 1024 * 1024
+    MAX_MEMBER_BYTES = 512 * 1024
+    TIMEOUT_SECONDS = 15
+
     def __init__(self, expected_sha256: str | None, native_interface_verified: bool = False):
         self.expected_sha256 = expected_sha256
         self.native_interface_verified = native_interface_verified
@@ -854,11 +866,253 @@ class RuntimeV1Adapter:
         if not self.native_interface_verified:
             return {"status": "HOLD", "reason": "Runtime native interface is not verified",
                     "sha256": info["sha256"], "execution_authorized": False}
-        return {"status": "READY_FOR_AUTHORIZED_NATIVE_BINDING", "sha256": info["sha256"],
-                "execution_authorized": False}
+        return {"status": "READY_FOR_BOUNDED_SANDBOX_PROBES_ONLY", "sha256": info["sha256"],
+                "execution_authorized": False, "mission_dispatch_enabled": False}
 
-    def invoke(self, operation_id: str, *args, **kwargs) -> dict[str, Any]:
-        raise V8Error("V8E005", f"Runtime operation is not callable without verified native binding: {operation_id}")
+    def invoke(self, operation_id: str, path: str | Path | None = None,
+               authorization_ref: str | None = None, explicit_opt_in: bool = False) -> dict[str, Any]:
+        """Run exactly one safe, bounded probe against the pinned Runtime artifact.
+
+        The probe creates only temporary fixture files, runs one Python command that
+        prints a fixed marker, tests file-level checkpoint restoration, and checks that
+        a wrong authority hash is denied. No production mission is dispatched.
+        """
+        if operation_id != self.BOUNDED_PROBE_ID:
+            return {"status": "DENY", "reason": "Runtime operation is not allowlisted",
+                    "operation_id": operation_id, "execution_authorized": False}
+        if not explicit_opt_in:
+            return {"status": "DENY", "reason": "explicit opt-in is required for the bounded Runtime probe",
+                    "execution_authorized": False}
+        if not isinstance(authorization_ref, str) or not authorization_ref.strip() or len(authorization_ref) > 256:
+            return {"status": "DENY", "reason": "a bounded authorization reference is required",
+                    "execution_authorized": False}
+        if self.expected_sha256 != RUNTIME_V1_SELECTED_SHA256:
+            return {"status": "CONFLICT", "reason": "adapter must be pinned to the exact selected Runtime V1 artifact",
+                    "expected_sha256": self.expected_sha256, "required_sha256": RUNTIME_V1_SELECTED_SHA256,
+                    "execution_authorized": False}
+        if path is None:
+            try:
+                resource = importlib.resources.files("custoszv8").joinpath(
+                    "data", "components", "CUSTOSZ_RUNTIME_V1_SR_EXEC_BOUND_FME_01.b.pyz")
+                with importlib.resources.as_file(resource) as unpacked:
+                    return self._invoke_bounded_probe(Path(unpacked), authorization_ref)
+            except (OSError, ModuleNotFoundError, TypeError) as exc:
+                return {"status": "HOLD", "reason": f"bundled Runtime V1 component unavailable: {type(exc).__name__}: {exc}",
+                        "execution_authorized": False}
+        return self._invoke_bounded_probe(Path(path), authorization_ref)
+
+    def _invoke_bounded_probe(self, path: Path, authorization_ref: str) -> dict[str, Any]:
+        try:
+            if not path.is_file():
+                return {"status": "HOLD", "reason": "selected Runtime V1 artifact is missing",
+                        "execution_authorized": False}
+            if path.stat().st_size > self.MAX_ARCHIVE_BYTES:
+                return {"status": "DENY", "reason": "Runtime V1 archive exceeds the inspection size limit",
+                        "execution_authorized": False}
+            info = verify_component(path, RUNTIME_V1_SELECTED_SHA256)
+            if info.get("status") != "PASS_IDENTITY_AND_STATIC_INSPECTION":
+                return {"status": "CONFLICT", "reason": "Runtime V1 identity or static archive inspection failed",
+                        "inspection": info, "execution_authorized": False}
+            if info.get("sha256") != RUNTIME_V1_SELECTED_SHA256:
+                return {"status": "CONFLICT", "reason": "Runtime V1 SHA-256 does not match the pinned candidate",
+                        "inspection": info, "execution_authorized": False}
+
+            with zipfile.ZipFile(path) as archive:
+                infos = archive.infolist()
+                names = [entry.filename for entry in infos]
+                if len(names) != len(RUNTIME_V1_MEMBERS) or set(names) != RUNTIME_V1_MEMBERS:
+                    return {"status": "CONFLICT", "reason": "Runtime V1 archive member-set differs from the pinned interface",
+                            "observed_members": names, "execution_authorized": False}
+                if sum(entry.file_size for entry in infos) > self.MAX_ARCHIVE_BYTES:
+                    return {"status": "DENY", "reason": "Runtime V1 uncompressed size exceeds the inspection limit",
+                            "execution_authorized": False}
+                sources = {}
+                for entry in infos:
+                    p = Path(entry.filename)
+                    if p.is_absolute() or ".." in p.parts or entry.is_dir() or entry.file_size > self.MAX_MEMBER_BYTES:
+                        return {"status": "DENY", "reason": f"unsafe or oversized Runtime V1 member: {entry.filename}",
+                                "execution_authorized": False}
+                    if entry.filename.endswith(".py"):
+                        raw = archive.read(entry)
+                        try:
+                            sources[entry.filename] = raw.decode("utf-8")
+                            ast.parse(sources[entry.filename], filename=entry.filename)
+                        except (UnicodeError, SyntaxError) as exc:
+                            return {"status": "CONFLICT", "reason": f"Runtime V1 Python source failed static parsing: {entry.filename}",
+                                    "detail": f"{type(exc).__name__}: {exc}", "execution_authorized": False}
+
+            required_classes = {
+                "runtime_core.py": {
+                    "Runtime": {"__init__", "selftest"},
+                    "GovernanceKernel": {"preflight"},
+                    "EvidenceJournal": {"verify", "append"},
+                    "ProcessSupervisor": {"run"},
+                    "CheckpointStore": {"capture_file", "restore_file"},
+                }
+            }
+            tree = ast.parse(sources["runtime_core.py"], filename="runtime_core.py")
+            classes = {node.name: node for node in tree.body if isinstance(node, ast.ClassDef)}
+            for filename, requirements in required_classes.items():
+                for class_name, methods in requirements.items():
+                    node = classes.get(class_name)
+                    if node is None:
+                        return {"status": "CONFLICT", "reason": f"required Runtime V1 class missing: {class_name}",
+                                "execution_authorized": False}
+                    present = {item.name: item for item in node.body if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef))}
+                    missing = sorted(methods - present.keys())
+                    if missing:
+                        return {"status": "CONFLICT", "reason": f"required Runtime V1 methods missing from {class_name}",
+                                "missing_methods": missing, "execution_authorized": False}
+            # Keep the authority-preflight call surface narrow even if the archive's top-level
+            # identity is pinned. ProcessSupervisor.run is separately exercised with one fixed benign command.
+            runtime_class = classes["Runtime"]
+            selftest_node = next(n for n in runtime_class.body if isinstance(n, ast.FunctionDef) and n.name == "selftest")
+            selftest_calls = sorted({
+                node.func.attr if isinstance(node.func, ast.Attribute)
+                else node.func.id if isinstance(node.func, ast.Name) else type(node.func).__name__
+                for node in ast.walk(selftest_node) if isinstance(node, ast.Call)
+            })
+            if selftest_calls != ["preflight", "verify"]:
+                return {"status": "CONFLICT", "reason": "Runtime.selftest call surface changed; manual re-audit required",
+                        "observed_calls": selftest_calls, "execution_authorized": False}
+            for class_name, method_name in (("GovernanceKernel", "preflight"), ("EvidenceJournal", "verify")):
+                node = next(n for n in classes[class_name].body
+                            if isinstance(n, ast.FunctionDef) and n.name == method_name)
+                calls = {
+                    item.func.attr if isinstance(item.func, ast.Attribute)
+                    else item.func.id if isinstance(item.func, ast.Name) else type(item.func).__name__
+                    for item in ast.walk(node) if isinstance(item, ast.Call)
+                }
+                forbidden = sorted(calls.intersection({"Popen", "run", "call", "urlopen", "connect", "system", "exec", "eval"}))
+                if forbidden:
+                    return {"status": "CONFLICT", "reason": f"effectful API references found in {class_name}.{method_name}",
+                            "forbidden_calls": forbidden, "execution_authorized": False}
+
+            with tempfile.TemporaryDirectory(prefix="custoszv8-runtime-v1-probe-") as td:
+                base = Path(td).resolve()
+                src_dir = base / "source"
+                src_dir.mkdir()
+                # Never extract the executable launcher; only the two reviewed API modules are written.
+                for name in ("runtime_core.py", "sr_exec_bound_fme_01.py"):
+                    (src_dir / name).write_text(sources[name], encoding="utf-8")
+                fixture = base / "SELFTEST_FIXTURE_NOT_CANONICAL.md"
+                fixture_bytes = b"CUSTOSZ V8 isolated Runtime V1 integration fixture; NOT Louksna.md.\n"
+                fixture.write_bytes(fixture_bytes)
+                fixture_sha = sha256_bytes(fixture_bytes)
+                runtime_root = base / "runtime-state"
+                home = base / "home"
+                home.mkdir()
+                env = {
+                    "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
+                    "PYTHONIOENCODING": "utf-8",
+                    "PYTHONDONTWRITEBYTECODE": "1",
+                    "HOME": str(home),
+                    "TMPDIR": str(base),
+                }
+                harness = r'''
+import hashlib, json, pathlib, sys
+source_dir, runtime_root, authority_path, authority_sha = sys.argv[1:5]
+sys.path.insert(0, source_dir)
+from runtime_core import Runtime
+root = pathlib.Path(runtime_root)
+authority = pathlib.Path(authority_path)
+runtime = Runtime(str(root), str(authority), authority_sha)
+selftest = runtime.selftest()
+if selftest.get("status") != "PASS" or selftest.get("journal") is not True:
+    raise RuntimeError("Runtime.selftest did not return PASS with a valid journal")
+target = root / "integration-probe-state.bin"
+original = b"CUSTOSZV8_RUNTIME_CHECKPOINT_ORIGINAL\x00"
+target.write_bytes(original)
+checkpoint = runtime.checkpoints.capture_file("V8-BOUNDED-CHECKPOINT", target)
+target.write_bytes(b"CUSTOSZV8_RUNTIME_CHECKPOINT_MUTATED\x00")
+restored = runtime.checkpoints.restore_file("V8-BOUNDED-CHECKPOINT", target)
+checkpoint_sha = hashlib.sha256(original).hexdigest()
+if not restored or target.read_bytes() != original or checkpoint.get("sha256") != checkpoint_sha:
+    raise RuntimeError("bounded checkpoint/restore round-trip failed")
+child = runtime.supervisor.run(
+    "V8_RUNTIME_PROBE",
+    [sys.executable, "-I", "-c", "print('CUSTOSZV8_RUNTIME_PROBE_OK')"],
+    timeout_s=5, cwd=str(root)
+)
+child_stdout = pathlib.Path(child["stdout"]).read_text(encoding="utf-8", errors="replace")
+if child.get("state") != "PASS" or child.get("returncode") != 0 or "CUSTOSZV8_RUNTIME_PROBE_OK" not in child_stdout:
+    raise RuntimeError("bounded ProcessSupervisor probe failed")
+if runtime.journal.verify() is not True:
+    raise RuntimeError("Runtime V1 evidence journal verification failed")
+bad_root = base / "runtime-state-wrong-authority"
+bad = Runtime(str(bad_root), str(authority), "0" * 64)
+denied = False
+try:
+    bad.governance.preflight()
+except Exception:
+    denied = True
+bad_journal_ok = bad.journal.verify() is True
+bad_events = [json.loads(line) for line in (bad_root / "09_EVIDENCE.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]
+bad_payload = bad_events[-1].get("payload", {}) if bad_events else {}
+if not denied or not bad_journal_ok or bad_payload.get("pass") is not False:
+    raise RuntimeError("wrong authority digest was not denied with valid evidence")
+if bad_payload.get("authority_transfer") is not False or bad_payload.get("self_certification") is not False:
+    raise RuntimeError("fail-closed authority flags were not recorded")
+result = {
+    "status": "PASS_BOUNDED_RUNTIME_V1_INTEGRATION",
+    "runtime_selftest": selftest,
+    "checkpoint_roundtrip": {
+        "status": "PASS", "checkpoint_sha256": checkpoint_sha,
+        "restored_sha256": hashlib.sha256(target.read_bytes()).hexdigest(),
+        "restoration_scope": "ONE_SANDBOX_FIXTURE_FILE_ONLY"
+    },
+    "process_supervisor": {
+        "status": "PASS", "returncode": child["returncode"],
+        "marker_observed": "CUSTOSZV8_RUNTIME_PROBE_OK" in child_stdout,
+        "timed_out": child.get("timed_out", False)
+    },
+    "fail_closed_wrong_authority": {
+        "status": "PASS", "denied": denied, "journal_verified": bad_journal_ok,
+        "authority_transfer": bad_payload.get("authority_transfer"),
+        "self_certification": bad_payload.get("self_certification")
+    },
+    "journal_verified": True,
+    "canonical_authority_binding": "NOT_TESTED_SYNTHETIC_FIXTURE_ONLY",
+    "mission_dispatch": "NOT_PERFORMED",
+    "SRExecBoundFME01": "NOT_INVOKED",
+    "production_restore": "NOT_PERFORMED"
+}
+print(json.dumps(result, sort_keys=True))
+'''
+                proc = subprocess.run(
+                    [sys.executable, "-I", "-c", harness, str(src_dir), str(runtime_root),
+                     str(fixture), fixture_sha],
+                    stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                    text=True, timeout=self.TIMEOUT_SECONDS, cwd=str(base), env=env, check=False)
+                if proc.returncode != 0:
+                    return {"status": "FAIL", "reason": "bounded Runtime V1 integration subprocess failed",
+                            "exit_code": proc.returncode, "stdout": proc.stdout[-8000:],
+                            "stderr": proc.stderr[-8000:], "execution_authorized": False}
+                try:
+                    result = json.loads(proc.stdout.strip().splitlines()[-1])
+                except (json.JSONDecodeError, IndexError) as exc:
+                    return {"status": "FAIL", "reason": f"invalid integration probe output: {type(exc).__name__}: {exc}",
+                            "stdout": proc.stdout[-8000:], "stderr": proc.stderr[-8000:],
+                            "execution_authorized": False}
+                result.update({
+                    "operation_id": operation_id,
+                    "runtime_sha256": info["sha256"],
+                    "runtime_size_bytes": path.stat().st_size,
+                    "authorization_ref": authorization_ref,
+                    "authorization_ref_validation": "PRESENCE_ONLY_NOT_EXTERNAL_AUTHORITY_VERIFICATION",
+                    "native_interface_verified_scope": "BOUNDED_SELFTEST_CHECKPOINT_AND_PROCESS_SUPERVISOR_PROBES_ONLY",
+                    "production_native_interface_verified": False,
+                    "mission_dispatch_enabled": False,
+                    "execution_authorized": False,
+                    "g23": "NOT_GRANTED",
+                    "g24": "NOT_GRANTED",
+                    "certification": "NOT_GRANTED",
+                    "observed_at_utc": utc_now(),
+                })
+                return result
+        except (OSError, ValueError, zipfile.BadZipFile, V8Error) as exc:
+            return {"status": "FAIL", "reason": f"{type(exc).__name__}: {exc}",
+                    "execution_authorized": False}
 
 
 class MetaOSAdapter:
