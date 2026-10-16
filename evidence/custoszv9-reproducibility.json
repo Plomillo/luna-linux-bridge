@@ -1,0 +1,8 @@
+{
+  "first_sha256": "869e135c972173d331959d931fc852694b1c8da927e0e6648ea1631b7cf405b7",
+  "same_source_commit_two_builds": true,
+  "schema": "CUSTOSZV9_REPRODUCIBILITY/1.0",
+  "second_sha256": "869e135c972173d331959d931fc852694b1c8da927e0e6648ea1631b7cf405b7",
+  "source_commit": "673228a3490543e7e0a0711a269e90164abe59a2",
+  "status": "PASS"
+}
