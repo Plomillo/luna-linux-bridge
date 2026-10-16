@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0.0",
+  "artifact_id": "CUSTOSZV8",
+  "artifact_version": "8.0.0-candidate",
+  "artifact_status": "TEMPLATE_NOT_BUILT",
+  "package_status": "NOT_BUILT",
+  "canonical_authority_ref": "Louksna.md",
+  "protected_baseline_ref": "LUNACORE_final_formalized_v25.md",
+  "generated_at_utc": null,
+  "source_commit": null,
+  "components": {},
+  "capability_ownership": [],
+  "gates": [],
+  "certification": {
+    "g23": "NOT_GRANTED",
+    "g24": "NOT_GRANTED",
+    "canonical_admission": "NOT_GRANTED",
+    "operational_authorization": "NOT_GRANTED"
+  },
+  "limitations": [
+    "Template only; build.py must generate digest-bound component records."
+  ]
+}
