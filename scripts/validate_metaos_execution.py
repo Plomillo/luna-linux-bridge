@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.metadata
 import itertools
 import json
 import os
@@ -12,11 +13,12 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-from wasmtime import Config, Engine, Store, __version__ as WASMTIME_VERSION
+from wasmtime import Config, Engine, Store
 from wasmtime.component import Component, Linker
 
 ROOT = Path(__file__).resolve().parents[1]
 WASM = ROOT / "artifacts/custosz-v7/MetaOS.wasm"
+WASMTIME_VERSION = importlib.metadata.version("wasmtime")
 EXPECTED_SHA256 = "5d8f1239e3a0b452be722078760b000afc22af0a64f93ffb0a1f74024f15aed0"
 EXPECTED_SIZE = 2442
 EXPECTED_WIT_SHA256 = "4e8df58d1e94f9c9874cdf2a2468299c37e453bf85ccd9c7805a28ede407de3f"
