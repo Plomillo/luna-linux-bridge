@@ -125,3 +125,68 @@ jobs:
             evidence/custoszv9-reproducibility.json
           if-no-files-found: error
           retention-days: 90
+
+  publish-un-certified-binary:
+    name: "Archive candidate on isolated artifact branch (not a release)"
+    needs: build-test
+    if: ${{ needs.build-test.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/feature/custoszv9-crfu-20261016' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Download package and evidence from this successful run
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: CUSTOSZV9-candidate-${{ github.sha }}
+          path: ${{ runner.temp }}/candidate
+      - name: Verify candidate artifact is explicitly un-certified
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - "$RUNNER_TEMP/candidate" "$GITHUB_SHA" <<'PY'
+          import hashlib,json,sys,zipfile
+          from pathlib import Path
+          root=Path(sys.argv[1]);commit=sys.argv[2]
+          package=root/"dist"/"CUSTOSZV9.pyz"
+          report=json.loads((root/"evidence"/"custoszv9-build-report.json").read_text(encoding="utf-8"))
+          assert report["source_commit"]==commit
+          assert report["status"]=="PASS_BUILD_ONLY_NOT_CERTIFIED"
+          assert report["release_eligible"] is False
+          assert report["G22"]=="NOT_GRANTED" and report["G23"]=="NOT_GRANTED" and report["G24"]=="NOT_GRANTED"
+          digest=hashlib.sha256(package.read_bytes()).hexdigest()
+          assert report["package_sha256"]==digest
+          with zipfile.ZipFile(package) as z:
+              assert z.testzip() is None
+              manifest=json.loads(z.read("custoszv9/data/build_manifest.json"))
+              baseline=z.read("custoszv9/data/CUSTOSZV8.pyz")
+              assert manifest["source_commit"]==commit
+              assert hashlib.sha256(baseline).hexdigest()==manifest["baseline"]["sha256"]
+              assert len(baseline)==99400
+              assert manifest["governance"]["canonical_promotion"]=="NOT_AUTHORIZED"
+          print(json.dumps({"status":"PASS_BUILD_ONLY_NOT_CERTIFIED","source_commit":commit,"package_sha256":digest,"package_size_bytes":package.stat().st_size},indent=2))
+          PY
+      - name: Checkout source only for Git object publication
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: true
+      - name: Publish binary and evidence to an isolated, content-addressed candidate branch
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          artifact_branch="artifacts/custoszv9-${GITHUB_SHA}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan "$artifact_branch"
+          git rm -rf . >/dev/null
+          mkdir -p dist evidence
+          cp "$RUNNER_TEMP/candidate/dist/CUSTOSZV9.pyz" dist/CUSTOSZV9.pyz
+          cp "$RUNNER_TEMP/candidate/evidence/custoszv9-build-report.json" evidence/
+          cp "$RUNNER_TEMP/candidate/evidence/custoszv9-unit-tests.log" evidence/
+          cp "$RUNNER_TEMP/candidate/evidence/custoszv9-reproducibility.json" evidence/
+          git add dist/CUSTOSZV9.pyz evidence/
+          git commit -m "Archive uncertified CUSTOSZV9 candidate for source ${GITHUB_SHA}"
+          git push origin "HEAD:refs/heads/$artifact_branch"
+          echo "::notice title=CUSTOSZV9 candidate artifact::Raw package stored at https://github.com/Plomillo/luna-linux-bridge/raw/$artifact_branch/dist/CUSTOSZV9.pyz"
