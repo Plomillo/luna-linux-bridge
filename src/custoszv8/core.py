@@ -1039,7 +1039,7 @@ if child.get("state") != "PASS" or child.get("returncode") != 0 or "CUSTOSZV8_RU
     raise RuntimeError("bounded ProcessSupervisor probe failed")
 if runtime.journal.verify() is not True:
     raise RuntimeError("Runtime V1 evidence journal verification failed")
-bad_root = base / "runtime-state-wrong-authority"
+bad_root = root.parent / "runtime-state-wrong-authority"
 bad = Runtime(str(bad_root), str(authority), "0" * 64)
 denied = False
 try:
