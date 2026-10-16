@@ -114,7 +114,7 @@ def validate_event_records(events:Any)->dict[str,Any]:
 
 AUTHORITY_FIELDS=("binding_id","actor_id","actor_identity_proof","role_id","issuer_id","issuer_authority_proof",
  "action","object_id","scope_id","validity_interval","delegation_chain","revocation_state","provenance_id")
-def verify_authority_binding(binding:Any,*,action:str,object_id:str,scope_id:str,
+def validate_authority_binding(binding:Any,*,action:str,object_id:str,scope_id:str,
                              trust_verifier:Callable[[dict[str,Any]],dict[str,Any]]|None,
                              now:datetime|None=None)->dict[str,Any]:
  if not isinstance(binding,dict):return {"status":"DENY","reason":"AUTHORITY_BINDING_NOT_OBJECT"}
