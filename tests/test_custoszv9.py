@@ -1,5 +1,6 @@
 from __future__ import annotations
 import hashlib
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -8,15 +9,127 @@ from custoszv9.crfu.evidence import append_event, verify_journal
 from custoszv9.crfu.event_queue import PersistentMissionQueue
 from custoszv9.crfu.formal import validate_proof_bundle
 from custoszv9.crfu.gates import CANONICAL_GATES, LOCAL_PUAC_CONTROLS, evaluate_gate_evidence
-from custoszv9.crfu.model import sha256_bytes
+from custoszv9.crfu.model import sha256_bytes, canonical_json
 from custoszv9.crfu.planner import ActionSpec, build_plan
 from custoszv9.crfu.recovery import checkpoint_record, verify_restoration
 from custoszv9.crfu.resources import ResourceBudget, ResourceSnapshot, evaluate_budget
 from custoszv9.crfu.puac2 import (
     classify_claim_conflicts, coverage_report, evaluate_incident_closure,
     transitive_dependency_impact, validate_authority_binding, validate_claim_v2,
-    validate_event_records, validate_puac_control, validate_recovery_plan
+    validate_event_records, validate_puac_control, validate_recovery_plan,
+    PUAC_CONTROL_OUTPUTS, PUAC_CONTROL_TRUE_FLAGS, PUAC_CONTROL_FALSE_FLAGS
 )
+
+def valid_puac_payload(control_id, package_sha, commit_sha, producer, evaluator):
+    """Construct a syntactically complete local-control record for negative/positive tests."""
+    payload = {}
+    def value_for(key):
+        if key == "scope_evidence": return {"package_sha256": package_sha, "scope": "candidate-software"}
+        if key == "evidence_coverage": return {"candidate_sha256": package_sha, "documentary_and_operational_separated": True}
+        if key == "allowed_evaluators": return [evaluator]
+        if key == "separation_evidence": return {"candidate_sha256": package_sha, "roles_separated": True}
+        if key == "evaluator_identity": return evaluator
+        if key == "producer_identity": return producer
+        if key == "threat_model": return {"candidate_sha256": package_sha, "threats": []}
+        if key == "risk_criteria": return {"critical_risk_policy": "DENY"}
+        if key == "residual_risk_record": return {"candidate_sha256": package_sha, "residual_risks": []}
+        if key == "reproduction_report": return {"status": "PASS", "candidate_sha256": package_sha}
+        if key == "artifact_bytes_identity": return {"sha256": package_sha, "size_bytes": 1}
+        if key == "dependency_lock": return {"locked": True}
+        if key == "build_recipe": return {"identified": True}
+        if key == "execution_environment": return {"identified": True}
+        if key in ("provenance_attestation", "supply_chain_evidence"): return {"source_commit": commit_sha}
+        if key == "candidate_build": return {"package_sha256": package_sha, "commit_sha": commit_sha}
+        if key == "dependency_graph": return {"module-a": []}
+        if key == "impact_graph": return {"changed": [], "impacted": []}
+        if key == "checkpoint":
+            return {"sha256": hashlib.sha256(b"checkpoint").hexdigest()}
+        if key == "restoration_evidence":
+            return {"restoration_proven": True, "checkpoint_sha256": hashlib.sha256(b"checkpoint").hexdigest()}
+        if key == "rollback_test": return {"status": "PASS", "candidate_sha256": package_sha}
+        if key == "monitoring_profile": return {"responsible_roles": [evaluator], "candidate_sha256": package_sha}
+        if key in ("observations", "change_events", "unresolved_claims", "exclusions",
+                   "conflict_of_interest_records", "preserved_claims", "invalidated_claims",
+                   "previous_evidence", "irreversible_side_effects", "restoration_oracles"):
+            return []
+        if key in ("claim_registry",): return []
+        if key in ("acceptance_criteria",): return ["exact digest is verified"]
+        if key in ("risk_register",): return {"candidate_sha256": package_sha, "risks": []}
+        if key in ("integrity_report",): return {"candidate_sha256": package_sha}
+        if key in ("manifest",): return {"candidate_sha256": package_sha}
+        if key in ("actor_registry",): return [producer, evaluator]
+        if key in ("role_assignments",): return [{"actor": producer, "role": "producer"}, {"actor": evaluator, "role": "evaluator"}]
+        if key in ("evaluation_plan",): return {"steps": ["independent-recheck"]}
+        if key in ("previous_baseline",): return {"sha256": "d" * 64}
+        if key in ("candidate_build",): return {"package_sha256": package_sha, "commit_sha": commit_sha}
+        if key in ("change_set",): return {"files_changed": []}
+        if key in ("revalidation_plan",): return ["rerun impacted checks"]
+        if key in ("operation_plan",): return {"restore_then_verify": True}
+        if key in ("restoration_procedure",): return {"steps": ["restore", "verify"]}
+        if key in ("expected_state",): return {"sha256": "e" * 64}
+        if key in ("rollback_test",): return {"status": "PASS"}
+        if key in ("assurance_status",): return {"status": "monitored"}
+        if key in ("impact_assessment",): return {"affected_claims": []}
+        if key in ("suspension_recommendation", "revalidation_request", "recertification_request"): return {"status": "none"}
+        if key in ("approved_scope",): return {"scope": "candidate-software"}
+        if key in ("exclusions",): return []
+        if key in ("separation_evidence",): return {"candidate_sha256": package_sha, "roles_separated": True}
+        if key in ("threat_assessment",): return {"status": "assessed"}
+        if key in ("treatment_plan",): return {"status": "tracked"}
+        if key in ("supply_chain_evidence",): return {"candidate_sha256": package_sha}
+        if key in ("recovery_limitations",): return []
+        if key in ("restoration_tested",): return True
+        if key in ("assurance_case",): return {"claims": [], "argument": "fixture"}
+        if key in ("argumentation_record",): return {"premises": [], "inferences": []}
+        if key in ("evidence_coverage",): return {"candidate_sha256": package_sha}
+        if key in ("monitoring_profile",): return {"responsible_roles": [evaluator], "candidate_sha256": package_sha}
+        return {}
+    for key in PUAC_CONTROL_OUTPUTS[control_id]:
+        payload[key] = value_for(key)
+    for key in PUAC_CONTROL_TRUE_FLAGS[control_id]:
+        payload[key] = True
+    for key in PUAC_CONTROL_FALSE_FLAGS[control_id]:
+        payload[key] = False
+    if control_id == "PUAC.C26":
+        payload["unresolved_claims"] = []
+        payload["assurance_case"] = {"claims": [], "argument": "fixture"}
+        payload["argumentation_record"] = {"premises": [], "inferences": []}
+    if control_id == "PUAC.C27":
+        payload["evaluator_identity"] = evaluator
+        payload["producer_identity"] = producer
+        payload["allowed_evaluators"] = [evaluator]
+        payload["separation_evidence"] = {"candidate_sha256": package_sha}
+    if control_id == "PUAC.C29":
+        payload["artifact_bytes_identity"] = {"sha256": package_sha, "size_bytes": 1}
+        payload["reproduction_report"] = {"status": "PASS"}
+    if control_id == "PUAC.C30":
+        payload["candidate_build"] = {"package_sha256": package_sha, "commit_sha": commit_sha}
+        payload["dependency_graph"] = {"module-a": []}
+        payload["impact_graph"] = {"changed": [], "impacted": []}
+    if control_id == "PUAC.C31":
+        cp = hashlib.sha256(b"checkpoint").hexdigest()
+        payload["checkpoint"] = {"sha256": cp}
+        payload["restoration_evidence"] = {"restoration_proven": True, "checkpoint_sha256": cp}
+        payload["rollback_test"] = {"status": "PASS"}
+    if control_id == "PUAC.C32":
+        payload["monitoring_profile"] = {"responsible_roles": [evaluator]}
+        payload["observations"] = []
+        payload["change_events"] = []
+    unsigned_digest = hashlib.sha256(canonical_json(payload).encode("utf-8")).hexdigest()
+    payload["evidence_binding"] = {
+        "schema": "PUAC2_CONTROL_EVIDENCE_BINDING/1.0",
+        "control_id": control_id,
+        "candidate_sha256": package_sha,
+        "candidate_commit_sha": commit_sha,
+        "payload_sha256": unsigned_digest,
+        "producer_identity": producer,
+        "evaluator_identity": evaluator,
+        "generated_at_utc": "2026-10-16T22:00:00Z",
+        "scope": "candidate-software",
+        "source_evidence_refs": [{"uri": "evidence://test-fixture", "sha256": "f" * 64}]
+    }
+    return payload
+
 
 class CRFUTests(unittest.TestCase):
     def test_deterministic_dependency_order_and_no_authorization(self):
@@ -181,6 +294,67 @@ class CRFUTests(unittest.TestCase):
           trusted_workflow_sha="c"*40,producer_identity="builder")
         self.assertFalse(out["release_eligible"])
         self.assertEqual(out["status"],"HOLD")
+    def test_every_puac_control_is_bound_to_payload_commit_digest_and_distinct_evaluator(self):
+        commit = "a" * 40
+        package = "b" * 64
+        producer = "candidate-builder"
+        for control_id in LOCAL_PUAC_CONTROLS:
+            with self.subTest(control_id=control_id):
+                evaluator = "independent-validator:" + control_id
+                payload = valid_puac_payload(control_id, package, commit, producer, evaluator)
+                good = validate_puac_control(control_id, payload, producer_identity=producer,
+                    evaluator_identity=evaluator, candidate_sha256=package, candidate_commit_sha=commit)
+                self.assertEqual(good["status"], "PASS_FOR_LOCAL_CONTROL_SCOPE", good)
+                tampered = dict(payload)
+                tampered["evidence_coverage"] = {"candidate_sha256": "c" * 64}
+                if control_id != "PUAC.C26":
+                    tampered = dict(payload)
+                    tampered["evidence_binding"] = dict(payload["evidence_binding"])
+                    tampered["evidence_binding"]["candidate_sha256"] = "c" * 64
+                    bad = validate_puac_control(control_id, tampered, producer_identity=producer,
+                        evaluator_identity=evaluator, candidate_sha256=package, candidate_commit_sha=commit)
+                else:
+                    tampered = dict(payload)
+                    tampered["evidence_coverage"] = {"candidate_sha256": "c" * 64}
+                    bad = validate_puac_control(control_id, tampered, producer_identity=producer,
+                        evaluator_identity=evaluator, candidate_sha256=package, candidate_commit_sha=commit)
+                self.assertEqual(bad["status"], "FAIL")
+    def test_puac_binding_absent_or_wrong_commit_is_not_pass(self):
+        payload = valid_puac_payload("PUAC.C25", "b" * 64, "a" * 40, "producer", "validator")
+        missing = dict(payload)
+        missing.pop("evidence_binding")
+        self.assertEqual(validate_puac_control("PUAC.C25", missing, candidate_sha256="b" * 64)["status"], "HOLD")
+        mismatch = dict(payload)
+        mismatch["evidence_binding"] = dict(payload["evidence_binding"])
+        mismatch["evidence_binding"]["candidate_commit_sha"] = "d" * 40
+        result = validate_puac_control("PUAC.C25", mismatch, producer_identity="producer",
+            evaluator_identity="validator", candidate_sha256="b" * 64, candidate_commit_sha="a" * 40)
+        self.assertEqual(result["status"], "FAIL")
+    def test_complete_gate_bundle_only_passes_binding_layer_not_release(self):
+        commit = "a" * 40
+        package = "b" * 64
+        trust_root = "c" * 40
+        producer = "candidate-builder"
+        records = []
+        for gate in CANONICAL_GATES:
+            records.append({"gate_id": gate, "candidate_commit_sha": commit,
+                "package_sha256": package, "trusted_workflow_sha": trust_root,
+                "producer_identity": producer, "evaluator_identity": "validator:" + gate,
+                "evidence_sha256": "d" * 64, "status": "PASS"})
+        for gate in LOCAL_PUAC_CONTROLS:
+            evaluator = "validator:" + gate
+            records.append({"gate_id": gate, "candidate_commit_sha": commit,
+                "package_sha256": package, "trusted_workflow_sha": trust_root,
+                "producer_identity": producer, "evaluator_identity": evaluator,
+                "evidence_sha256": "e" * 64, "status": "PASS",
+                "evidence_payload": valid_puac_payload(gate, package, commit, producer, evaluator)})
+        report = evaluate_gate_evidence(records, candidate_commit_sha=commit, package_sha256=package,
+            trusted_workflow_sha=trust_root, producer_identity=producer,
+            trusted_signature_verifier=lambda record: {"status": "PASS", "test_fixture": True},
+            applicability_verifier=lambda rows, sha: {"status": "PASS", "applicable_gate_ids": list(CANONICAL_GATES)})
+        self.assertEqual(report["status"], "EVIDENCE_BINDINGS_PASS_ONLY", report)
+        self.assertFalse(report["release_eligible"])
+        self.assertEqual(report["certification"], "NOT_GRANTED_BY_CRFU")
     def test_checkpoint_does_not_prove_restoration(self):
         payload=b"checkpoint";dep=sha256_bytes(b"deps")
         record=checkpoint_record(payload,checkpoint_id="cp",state_identity="s",dependency_fingerprint=dep)
