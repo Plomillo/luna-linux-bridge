@@ -59,6 +59,11 @@ jobs:
       - name: Run V8 unit tests
         run: python -m unittest discover -s tests -v
 
+      - name: Run pinned wasm-tools validation and extract MetaOS WIT contract
+        env:
+          GITHUB_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: python scripts/validate_metaos_component.py
+
       - name: Build standalone ZIPAPP
         env:
           GITHUB_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -96,11 +101,6 @@ jobs:
         env:
           GITHUB_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: python scripts/validate_runtime_v1_selftest.py
-
-      - name: Run pinned wasm-tools validation and extract MetaOS WIT contract
-        env:
-          GITHUB_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-        run: python scripts/validate_metaos_component.py
 
       - name: Execute all MetaOS policy exports under bounded Wasmtime
         env:
