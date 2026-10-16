@@ -117,6 +117,30 @@ def verify_signed_record(record:dict,public_pem:str,expected_signer:str,forbidde
  return (payload if not failures else None),sorted(set(failures))
 def public_keys_match(private_pem:str,public_pem:str)->bool:
  return _raw_public(_load_private(private_pem))==_raw_public(_load_public(public_pem))
+EXPECTED_G23_COMMANDS={"version","crfu-status","crfu-selftest","v8-selftest","v8-status"}
+def g23_report_consistency(payload:dict)->tuple[bool,list[str]]:
+ errors=[]
+ rows=payload.get("independent_execution_results")
+ failures=payload.get("failures")
+ if not isinstance(rows,list):return False,["G23_EXECUTION_RESULTS_NOT_LIST"]
+ observed_names=[row.get("name") for row in rows if isinstance(row,dict)]
+ if len(rows)!=len(EXPECTED_G23_COMMANDS) or set(observed_names)!=EXPECTED_G23_COMMANDS or len(set(observed_names))!=len(observed_names):
+  errors.append("G23_REQUIRED_COMMAND_SET_MISMATCH")
+ for row in rows:
+  if not isinstance(row,dict):errors.append("G23_COMMAND_RESULT_NOT_OBJECT");continue
+  if row.get("status") not in {"PASS","FAIL"}:errors.append("G23_COMMAND_STATUS_INVALID")
+  if isinstance(row.get("returncode"),bool) or not isinstance(row.get("returncode"),int):errors.append("G23_COMMAND_RETURN_CODE_INVALID")
+  for field in ("stdout_sha256","stderr_sha256"):
+   if not isinstance(row.get(field),str) or re.fullmatch(r"[0-9a-f]{64}",row[field]) is None:
+    errors.append("G23_COMMAND_OUTPUT_HASH_INVALID:"+field)
+  if row.get("status")=="PASS" and row.get("returncode")!=0:errors.append("G23_COMMAND_PASS_RETURN_CODE_NONZERO")
+ if not isinstance(failures,list):errors.append("G23_FAILURE_LIST_INVALID");failures=[]
+ observed_pass=not errors and not failures and len(rows)==len(EXPECTED_G23_COMMANDS) and all(
+  isinstance(row,dict) and row.get("status")=="PASS" and row.get("returncode")==0 for row in rows)
+ expected_result="PASS" if observed_pass else "FAIL"
+ if payload.get("tested_scope_result")!=expected_result:errors.append("G23_TESTED_SCOPE_RESULT_NOT_DERIVED_FROM_EVIDENCE")
+ if payload.get("scoped_decision_admissible") is not observed_pass:errors.append("G23_SCOPE_ADMISSIBILITY_NOT_DERIVED_FROM_EVIDENCE")
+ return observed_pass,sorted(set(errors))
 
 def g22(a:argparse.Namespace)->int:
  fail=[];commit=a.candidate_sha
@@ -232,6 +256,8 @@ def g23_sign(a:argparse.Namespace)->int:
  fail=[]
  if unsigned.get("schema")!=G23_UNSIGNED_SCHEMA:fail.append("G23_UNSIGNED_REPORT_SCHEMA_INVALID")
  if unsigned.get("status")!="HOLD_FULL_CANONICAL_SCOPE_NOT_PROVEN" or unsigned.get("tested_scope_result") not in {"PASS","FAIL"} or unsigned.get("validation_completed") is not True:fail.append("G23_UNSIGNED_RESULT_INVALID")
+ _,consistency_errors=g23_report_consistency(unsigned)
+ fail.extend(consistency_errors)
  if unsigned.get("candidate_commit_sha")!=a.candidate_sha:fail.append("G23_CANDIDATE_COMMIT_MISMATCH")
  if unsigned.get("candidate_package_sha256")!=pkgsha:fail.append("G23_PACKAGE_DIGEST_MISMATCH")
  if unsigned.get("g22_record_sha256")!=sha(Path(a.g22)):fail.append("G23_G22_RECORD_HASH_MISMATCH")
@@ -272,6 +298,8 @@ def g24(a:argparse.Namespace)->int:
  if g23_payload is not None:
   if g23_payload.get("schema")!=G23_UNSIGNED_SCHEMA:fail.append("G23_SCHEMA_INVALID")
   if g23_payload.get("status")!="HOLD_FULL_CANONICAL_SCOPE_NOT_PROVEN" or g23_payload.get("tested_scope_result")!="PASS" or g23_payload.get("scoped_decision_admissible") is not True:fail.append("G23_TESTED_SCOPE_NOT_PASS_OR_NOT_ADMISSIBLE")
+  _,consistency_errors=g23_report_consistency(g23_payload)
+  if consistency_errors:fail.extend("G23_EVIDENCE_INCONSISTENT:"+issue for issue in consistency_errors)
   if g23_payload.get("candidate_commit_sha")!=a.candidate_sha:fail.append("G23_COMMIT_MISMATCH")
   if g23_payload.get("candidate_package_sha256")!=pkgsha:fail.append("G23_PACKAGE_DIGEST_MISMATCH")
   if g23_payload.get("trusted_workflow_sha")!=a.trusted_workflow_sha:fail.append("G23_TRUST_ROOT_MISMATCH")
