@@ -46,7 +46,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Compile CRFU sources, tests and builder
-        run: python3 -m compileall -q custoszv9 tests/test_custoszv9.py build_custoszv9.py
+        run: python3 -m compileall -q custoszv9 tests/test_custoszv9.py build_custoszv9.py scripts/custoszv9_gate_trust_root.py
       - name: Run CRFU regression tests
         shell: bash
         run: |
@@ -183,10 +183,11 @@ jobs:
           git rm -rf . >/dev/null
           mkdir -p dist evidence
           cp "$RUNNER_TEMP/candidate/dist/CUSTOSZV9.pyz" dist/CUSTOSZV9.pyz
+          sha256sum dist/CUSTOSZV9.pyz > dist/CUSTOSZV9.pyz.sha256
           cp "$RUNNER_TEMP/candidate/evidence/custoszv9-build-report.json" evidence/
           cp "$RUNNER_TEMP/candidate/evidence/custoszv9-unit-tests.log" evidence/
           cp "$RUNNER_TEMP/candidate/evidence/custoszv9-reproducibility.json" evidence/
-          git add dist/CUSTOSZV9.pyz evidence/
+          git add dist/CUSTOSZV9.pyz dist/CUSTOSZV9.pyz.sha256 evidence/
           git commit -m "Archive uncertified CUSTOSZV9 candidate for source ${GITHUB_SHA}"
           git push origin "HEAD:refs/heads/$artifact_branch"
           echo "::notice title=CUSTOSZV9 candidate artifact::Raw package stored at https://github.com/Plomillo/luna-linux-bridge/raw/$artifact_branch/dist/CUSTOSZV9.pyz"
