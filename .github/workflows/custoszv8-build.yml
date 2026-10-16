@@ -90,7 +90,7 @@ jobs:
         run: python scripts/validate_components.py
 
       - name: Install pinned Runtime V1 test dependency
-        run: python -m pip install --disable-pip-version-check --no-input psutil==7.0.0 wasmtime==49.0.3
+        run: python -m pip install --disable-pip-version-check --no-input psutil==7.0.0 wasmtime==49.0.0
 
       - name: Run source-audited Runtime V1 selftest in isolation
         env:
