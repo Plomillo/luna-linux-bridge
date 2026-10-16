@@ -16,6 +16,7 @@ on:
       - "scripts/validate_runtime_v1_material_dispatch.py"
       - "build.py"
       - ".github/workflows/custoszv8-build.yml"
+      - ".github/workflows/custoszv8-independent-g22-g23-g24.yml"
       - "artifacts/custosz-v7/**"
   pull_request:
     branches:
@@ -32,6 +33,7 @@ on:
       - "scripts/validate_runtime_v1_material_dispatch.py"
       - "build.py"
       - ".github/workflows/custoszv8-build.yml"
+      - ".github/workflows/custoszv8-independent-g22-g23-g24.yml"
       - "artifacts/custosz-v7/**"
   workflow_dispatch:
 
