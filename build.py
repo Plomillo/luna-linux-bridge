@@ -164,7 +164,7 @@ def main() -> int:
         "source_date_epoch": build_epoch,
         "deterministic_archive_metadata": True,
         "source_commit": os.environ.get("CUSTOSZV8_CANDIDATE_SHA") or os.environ.get("GITHUB_SHA", "LOCAL_UNBOUND"),
-        "source_branch": os.environ.get("GITHUB_REF_NAME", "LOCAL"),
+        "source_branch": os.environ.get("GITHUB_HEAD_REF") or os.environ.get("GITHUB_REF_NAME", "LOCAL"),
         "canonical_authority_ref": {
             "artifact_id": "Louksna.md",
             "authority": True,
