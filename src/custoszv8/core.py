@@ -1095,7 +1095,7 @@ print(json.dumps(result, sort_keys=True))
                             "stdout": proc.stdout[-8000:], "stderr": proc.stderr[-8000:],
                             "execution_authorized": False}
                 result.update({
-                    "operation_id": operation_id,
+                    "operation_id": self.BOUNDED_PROBE_ID,
                     "runtime_sha256": info["sha256"],
                     "runtime_size_bytes": path.stat().st_size,
                     "authorization_ref": authorization_ref,
