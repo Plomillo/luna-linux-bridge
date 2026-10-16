@@ -21,7 +21,8 @@ TOOLS_ARCHIVE_SHA256 = "d0efb16c9c859137b7ab3e99151c299cd47caee106ed4594561002f7
 TOOLS_ARCHIVE_SIZE = 5862464
 TIMEOUT_SECONDS = 20
 MAX_WASM_BYTES = 16 * 1024 * 1024
-MAX_TOOLS_BYTES = 10 * 1024 * 1024
+MAX_TOOLS_ARCHIVE_BYTES = 10 * 1024 * 1024
+MAX_TOOL_BINARY_BYTES = 64 * 1024 * 1024
 
 def sha256_bytes(raw: bytes) -> str:
     return hashlib.sha256(raw).hexdigest()
@@ -74,8 +75,8 @@ def main() -> int:
             archive_path = tmp / "wasm-tools.tar.gz"
             request = urllib.request.Request(TOOLS_URL, headers={"User-Agent": "CUSTOSZV8-Assurance/1.0"})
             with urllib.request.urlopen(request, timeout=TIMEOUT_SECONDS) as response:
-                raw_asset = response.read(MAX_TOOLS_BYTES + 1)
-            if len(raw_asset) > MAX_TOOLS_BYTES:
+                raw_asset = response.read(MAX_TOOLS_ARCHIVE_BYTES + 1)
+            if len(raw_asset) > MAX_TOOLS_ARCHIVE_BYTES:
                 raise RuntimeError("wasm-tools release asset exceeded download bound")
             if len(raw_asset) != TOOLS_ARCHIVE_SIZE:
                 raise RuntimeError(f"wasm-tools asset size mismatch: observed {len(raw_asset)}")
@@ -99,8 +100,8 @@ def main() -> int:
                 extracted = archive.extractfile(executable_member)
                 if extracted is None:
                     raise RuntimeError("cannot read wasm-tools binary from the verified release asset")
-                binary = extracted.read(MAX_TOOLS_BYTES + 1)
-                if len(binary) > MAX_TOOLS_BYTES:
+                binary = extracted.read(MAX_TOOL_BINARY_BYTES + 1)
+                if len(binary) > MAX_TOOL_BINARY_BYTES:
                     raise RuntimeError("wasm-tools binary exceeds expected size bound")
             tool = tmp / "wasm-tools"
             tool.write_bytes(binary)
