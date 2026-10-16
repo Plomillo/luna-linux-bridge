@@ -56,7 +56,7 @@ jobs:
           python-version: "3.12"
 
       - name: Compile source and tests
-        run: python -m compileall -q src tests build.py scripts/validate_components.py scripts/validate_runtime_v1_selftest.py scripts/validate_metaos_component.py scripts/validate_metaos_execution.py scripts/build_custoszv8_assurance_case.py scripts/build_custoszv8_assurance_case.py
+        run: python -m compileall -q src tests build.py scripts/validate_components.py scripts/validate_runtime_v1_selftest.py scripts/validate_metaos_component.py scripts/validate_metaos_execution.py scripts/build_custoszv8_assurance_case.py
 
       - name: Run V8 unit tests
         shell: bash
