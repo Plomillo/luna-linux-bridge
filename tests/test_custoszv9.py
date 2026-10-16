@@ -355,6 +355,20 @@ class CRFUTests(unittest.TestCase):
         self.assertEqual(report["status"], "EVIDENCE_BINDINGS_PASS_ONLY", report)
         self.assertFalse(report["release_eligible"])
         self.assertEqual(report["certification"], "NOT_GRANTED_BY_CRFU")
+    def test_unregistered_gate_identifier_is_denied(self):
+        rogue={"gate_id":"G25","candidate_commit_sha":"a"*40,"package_sha256":"b"*64,
+          "trusted_workflow_sha":"c"*40,"producer_identity":"producer","evaluator_identity":"validator",
+          "evidence_sha256":"d"*64,"status":"PASS"}
+        out=evaluate_gate_evidence([rogue],candidate_commit_sha="a"*40,package_sha256="b"*64,
+          trusted_workflow_sha="c"*40,producer_identity="producer")
+        self.assertEqual(out["status"],"FAIL")
+        self.assertIn("UNREGISTERED_GATE_IDENTIFIER",out["reason"])
+        self.assertFalse(out["release_eligible"])
+    def test_puac_control_requires_exact_candidate_binding_even_when_called_directly(self):
+        payload=valid_puac_payload("PUAC.C25","b"*64,"a"*40,"producer","validator")
+        result=validate_puac_control("PUAC.C25",payload,producer_identity="producer",evaluator_identity="validator")
+        self.assertEqual(result["status"],"HOLD")
+        self.assertIn("EXACT_CANDIDATE_DIGEST_REQUIRED",result["reasons"])
     def test_checkpoint_does_not_prove_restoration(self):
         payload=b"checkpoint";dep=sha256_bytes(b"deps")
         record=checkpoint_record(payload,checkpoint_id="cp",state_identity="s",dependency_fingerprint=dep)
