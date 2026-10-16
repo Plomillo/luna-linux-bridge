@@ -1,0 +1,187 @@
+name: "CUSTOSZV9 trusted G22 G23 G24 assurance"
+
+# This file becomes a trusted workflow only after it is reviewed and merged
+# onto the default branch. Candidate artifacts are bound to an exact SHA/digest.
+on:
+  workflow_run:
+    workflows:
+      - "CUSTOSZV9 candidate build and validation"
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: custoszv9-assurance-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
+
+jobs:
+  g22:
+    name: "G22 — V8 exact preservation and registered CRFU regression scope"
+    if: ${{ github.event.workflow_run.conclusion == 'success' && startsWith(github.event.workflow_run.head_branch, 'feature/custoszv9-crfu-') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      actions: read
+      contents: read
+    env:
+      CANDIDATE_SHA: ${{ github.event.workflow_run.head_sha }}
+      PRODUCER_RUN_ID: ${{ github.event.workflow_run.id }}
+      TRUSTED_WORKFLOW_SHA: ${{ github.workflow_sha }}
+    steps:
+      - name: Checkout trusted gate implementation
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: trust-root
+          persist-credentials: false
+      - name: Checkout exact candidate source for comparison only
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+          path: candidate-source
+          persist-credentials: false
+      - name: Download candidate package and producer evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: CUSTOSZV9-candidate-${{ env.CANDIDATE_SHA }}
+          path: ${{ runner.temp }}/candidate
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ env.PRODUCER_RUN_ID }}
+      - name: Independently bind baseline, source commit and build evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -I trust-root/scripts/custoszv9_gate_trust_root.py g22 \
+            --candidate-dir "$RUNNER_TEMP/candidate" \
+            --candidate-source "$GITHUB_WORKSPACE/candidate-source" \
+            --trusted-source "$GITHUB_WORKSPACE/trust-root" \
+            --candidate-sha "$CANDIDATE_SHA" \
+            --trusted-workflow-sha "$TRUSTED_WORKFLOW_SHA" \
+            --out "$RUNNER_TEMP/G22.json"
+      - name: Preserve G22 report
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: custoszv9-g22-${{ env.CANDIDATE_SHA }}
+          path: ${{ runner.temp }}/G22.json
+          if-no-files-found: error
+          retention-days: 90
+
+  g23:
+    name: "G23 — isolated independent validation of tested software scope"
+    needs: g22
+    if: needs.g22.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      actions: read
+      contents: read
+    env:
+      CANDIDATE_SHA: ${{ github.event.workflow_run.head_sha }}
+      PRODUCER_RUN_ID: ${{ github.event.workflow_run.id }}
+      TRUSTED_WORKFLOW_SHA: ${{ github.workflow_sha }}
+    steps:
+      - name: Checkout trusted validator from executing workflow revision
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: trust-root
+          persist-credentials: false
+      - name: Download exact candidate and G22 record
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: CUSTOSZV9-candidate-${{ env.CANDIDATE_SHA }}
+          path: ${{ runner.temp }}/candidate
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ env.PRODUCER_RUN_ID }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: custoszv9-g22-${{ env.CANDIDATE_SHA }}
+          path: ${{ runner.temp }}/g22
+      - name: Run trusted independent validator with read-only/no-secret scope
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          env -i PATH="$PATH" HOME="$RUNNER_TEMP" LANG=C.UTF-8 \
+            python3 -I trust-root/scripts/custoszv9_gate_trust_root.py g23 \
+            --candidate-dir "$RUNNER_TEMP/candidate" \
+            --candidate-sha "$CANDIDATE_SHA" \
+            --trusted-workflow-sha "$TRUSTED_WORKFLOW_SHA" \
+            --g22 "$RUNNER_TEMP/g22/G22.json" \
+            --out "$RUNNER_TEMP/G23.json"
+      - name: Preserve G23 report
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: custoszv9-g23-${{ env.CANDIDATE_SHA }}
+          path: ${{ runner.temp }}/G23.json
+          if-no-files-found: error
+          retention-days: 90
+
+  g24:
+    name: "G24 — automatic digest-bound scoped decision"
+    needs: g23
+    if: needs.g23.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    env:
+      CANDIDATE_SHA: ${{ github.event.workflow_run.head_sha }}
+      PRODUCER_RUN_ID: ${{ github.event.workflow_run.id }}
+      TRUSTED_WORKFLOW_SHA: ${{ github.workflow_sha }}
+    steps:
+      - name: Checkout trusted certifier from executing workflow revision
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: trust-root
+          persist-credentials: false
+      - name: Download exact candidate, G22 and G23
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: CUSTOSZV9-candidate-${{ env.CANDIDATE_SHA }}
+          path: ${{ runner.temp }}/candidate
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ env.PRODUCER_RUN_ID }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: custoszv9-g22-${{ env.CANDIDATE_SHA }}
+          path: ${{ runner.temp }}/g22
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: custoszv9-g23-${{ env.CANDIDATE_SHA }}
+          path: ${{ runner.temp }}/g23
+      - name: Certify only the verified bounded software scope
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -I trust-root/scripts/custoszv9_gate_trust_root.py g24 \
+            --candidate-dir "$RUNNER_TEMP/candidate" \
+            --candidate-sha "$CANDIDATE_SHA" \
+            --trusted-workflow-sha "$TRUSTED_WORKFLOW_SHA" \
+            --g22 "$RUNNER_TEMP/g22/G22.json" \
+            --g23 "$RUNNER_TEMP/g23/G23.json" \
+            --out "$RUNNER_TEMP/G24_CERTIFICATE.json"
+      - name: Attest the exact scoped decision with GitHub OIDC/Sigstore
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-path: ${{ runner.temp }}/G24_CERTIFICATE.json
+      - name: Verify attestation before preserving result
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh attestation verify "$RUNNER_TEMP/G24_CERTIFICATE.json" --repo "$GITHUB_REPOSITORY" --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/custoszv9-independent-g22-g23-g24.yml" --format json
+      - name: Preserve scoped G24 decision
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: custoszv9-g24-${{ env.CANDIDATE_SHA }}
+          path: ${{ runner.temp }}/G24_CERTIFICATE.json
+          if-no-files-found: error
+          retention-days: 90
