@@ -64,7 +64,7 @@ def source_date_epoch() -> int:
             ).stdout.strip()
             if head != commit:
                 raise SystemExit(
-                    f"Checked-out HEAD {head} does not match GITHUB_SHA {commit}; refusing an unbound build"
+                    f"Checked-out HEAD {head} does not match candidate SHA {commit}; refusing an unbound build"
                 )
             result = subprocess.run(
                 ["git", "log", "-1", "--format=%ct"],
@@ -163,7 +163,7 @@ def main() -> int:
         "generated_at_utc": timestamp_utc(build_epoch),
         "source_date_epoch": build_epoch,
         "deterministic_archive_metadata": True,
-        "source_commit": os.environ.get("GITHUB_SHA", "LOCAL_UNBOUND"),
+        "source_commit": os.environ.get("CUSTOSZV8_CANDIDATE_SHA") or os.environ.get("GITHUB_SHA", "LOCAL_UNBOUND"),
         "source_branch": os.environ.get("GITHUB_REF_NAME", "LOCAL"),
         "canonical_authority_ref": {
             "artifact_id": "Louksna.md",
@@ -240,7 +240,7 @@ def main() -> int:
         "artifact": "dist/CUSTOSZV8.pyz",
         "sha256": sha256_file(target),
         "size_bytes": target.stat().st_size,
-        "source_commit": os.environ.get("GITHUB_SHA", "LOCAL_UNBOUND"),
+        "source_commit": os.environ.get("CUSTOSZV8_CANDIDATE_SHA") or os.environ.get("GITHUB_SHA", "LOCAL_UNBOUND"),
         "source_date_epoch": build_epoch,
         "built_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
         "python_version": sys.version,
