@@ -1,0 +1,14 @@
+{
+  "schema": "LOUKSNA_KEDB/1.0",
+  "entry_id": "KEDB-DIRECTIVA-SEARCH-LATEST",
+  "scope": "DIRECTIVA",
+  "symptom": "Host evidence still absent on luna-aux",
+  "root_cause": "Bootstrap script defined; execution on runner not yet confirmed",
+  "evidence_present": false,
+  "known_solution_id": "scripts/directiva/host_bootstrap.sh",
+  "status": "SEARCHING",
+  "next_action": "Execute host_bootstrap.sh as root on luna-aux, place real certs and reports, re-dispatch puac2-autonomous.yml",
+  "research_launched": true,
+  "updated_at_utc": "2026-10-16T09:17:18Z",
+  "notes": "Continuous search active. No silent HOLD. G23/G24 remain sequential once evidence exists."
+}
