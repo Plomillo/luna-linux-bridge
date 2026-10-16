@@ -1,4 +1,5 @@
 name: "CUSTOSZ V8 candidate build and validation"
+# Gate revalidation: use current main-controlled G23/G24 scope aligned with G22 evidence.
 
 on:
   push:
