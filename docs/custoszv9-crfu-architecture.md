@@ -52,3 +52,19 @@ Las pruebas de unidad, compilación, ZIPAPP y reproducibilidad no acreditan por 
 `.github/workflows/custoszv9-independent-g22-g23-g24.yml` usa `workflow_run` y debe existir en la rama predeterminada para que su raíz de confianza sea la versión confiable de GitHub Actions. Mientras solo esté en esta rama/PR, no se afirma que la cadena protegida se haya ejecutado. Además, el repositorio no tiene actualmente rulesets/required checks efectivos visibles desde la integración utilizada; por tanto, un job verde no se debe confundir con enforcement obligatorio para merge o release.
 
 **Conclusión de estado:** el candidato V9 se construye y prueba automáticamente; la cadena de firmas Ed25519 está implementada y es sometida a tests criptográficos; la decisión integral permanece firmada como `HOLD` hasta demostrar los requisitos canónicos, formales y operacionales restantes.
+
+## Certificación independiente del paquete ZIPAPP
+
+La raíz confiable ahora está desplegada en la rama por defecto y escucha solo builds de tipo `push` en la rama de candidatura. Para cada nuevo build, ejecuta G22 y G23 en jobs separados y verifica las atestaciones OIDC/Sigstore con una etapa G24 separada. La evidencia se liga al commit, al SHA-256 y tamaño exactos del paquete, al hash del registro G22/G23, al baseline V8 y al contrato de alcance embebido.
+
+El certificado de software de alcance declarado puede emitirse únicamente si:
+- G22 confirma estructura e integridad ZIP, baseline V8 byte-exacto, igualdad byte-exacta de los documentos de autoridad comparables y del contrato de alcance, informe de pruebas y reconstrucción reproducible.
+- Los cinco comandos independientes G23 pasan sobre el paquete exacto, con salidas hasheadas y sin variables de secreto ni claves privadas.
+- GitHub verifica la atestación OIDC/Sigstore de G23 y, después, la atestación del certificado G24.
+
+La emisión tiene dos resultados distintos: `CERTIFIED_FOR_DECLARED_STANDALONE_SOFTWARE_SCOPE` para el paquete exacto, si la cadena pasa, y `HOLD_FULL_CANONICAL_SCOPE_NOT_PROVEN` para certificación canónica integral. No hay transferencia automática entre esos estados.
+
+Fuera del alcance quedan la comparación byte-exacta con `LUNACORE_final_formalized_v25.md` (ese baseline no está disponible en el repositorio), la admisión canónica de PUAC.C25–C32, la demostración formal Agda/Cubical/HoTT y la autorización operacional. No se realizan pruebas contra servicios remotos, mTLS ni rollback de producción en este flujo.
+
+Estado de esta edición documental: prepara la ejecución de un nuevo build por `push`; no constituye por sí misma evidencia G22/G23/G24 ni un certificado emitido.
+
