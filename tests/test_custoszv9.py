@@ -3,7 +3,7 @@ import hashlib
 import tempfile
 import unittest
 from pathlib import Path
-from custoszv9.crfu.anti_paralysis import decide_next_action, state_fingerprint
+from custoszv9.crfu.anti_paralysis import decide_next_action, state_fingerprint, retry_decision
 from custoszv9.crfu.evidence import append_event, verify_journal
 from custoszv9.crfu.event_queue import PersistentMissionQueue
 from custoszv9.crfu.formal import validate_proof_bundle
@@ -35,6 +35,19 @@ class CRFUTests(unittest.TestCase):
           previous_attempts=[{"action_id":"a","strategy_id":"s","state_hash":h}],new_evidence=False,
           planning_budget_remaining=1,retry_budget_remaining=0)
         self.assertEqual(out["reason"],"REPEATED_STRATEGY_WITHOUT_NEW_EVIDENCE")
+    def test_retry_is_finite_and_idempotency_aware(self):
+        unknown=retry_decision(idempotency_class="UNKNOWN",retries_used=0,max_retries=2,
+            transient_failure=True,authorization_valid=True)
+        self.assertEqual(unknown["decision"],"DENY_RETRY")
+        unsafe=retry_decision(idempotency_class="NON_IDEMPOTENT",retries_used=0,max_retries=2,
+            transient_failure=True,authorization_valid=True,idempotency_key=None,effects_reconciled=False)
+        self.assertEqual(unsafe["decision"],"DENY_RETRY")
+        safe=retry_decision(idempotency_class="IDEMPOTENT",retries_used=0,max_retries=1,
+            transient_failure=True,authorization_valid=True,wait_seconds=5)
+        self.assertEqual(safe["decision"],"WAIT_CONDITIONALLY")
+        exhausted=retry_decision(idempotency_class="IDEMPOTENT",retries_used=1,max_retries=1,
+            transient_failure=True,authorization_valid=True)
+        self.assertEqual(exhausted["reason"],"RETRY_BUDGET_EXHAUSTED")
     def test_wait_requires_deadline(self):
         h="a"*64
         out=decide_next_action(action_id="a",strategy_id="s",state_hash=h,previous_attempts=[],new_evidence=False,
