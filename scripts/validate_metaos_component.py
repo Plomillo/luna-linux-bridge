@@ -127,6 +127,14 @@ def main() -> int:
             if wit.returncode != 0:
                 raise RuntimeError("wasm-tools could not extract a Component Model WIT contract")
 
+            printed = run([str(tool), "print", str(WASM)])
+            report["component_wat_status"] = "PASS" if printed.returncode == 0 else "FAIL"
+            report["component_wat_sha256"] = sha256_bytes(printed.stdout.encode("utf-8"))
+            report["component_wat"] = printed.stdout[-24000:]
+            report["component_wat_stderr"] = printed.stderr[-4000:]
+            if printed.returncode != 0:
+                raise RuntimeError("wasm-tools could not disassemble the component for semantic review")
+
             lines = wit.stdout.splitlines()
             imports = [line.strip() for line in lines if re.match(r"^\s*import\s+", line)]
             exports = [line.strip() for line in lines if re.match(r"^\s*export\s+", line)]
