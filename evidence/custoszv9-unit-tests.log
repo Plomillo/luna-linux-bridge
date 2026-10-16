@@ -1,0 +1,17 @@
+test_checkpoint_does_not_prove_restoration (test_custoszv9.CRFUTests.test_checkpoint_does_not_prove_restoration) ... ok
+test_dependency_cycle_denied (test_custoszv9.CRFUTests.test_dependency_cycle_denied) ... ok
+test_deterministic_dependency_order_and_no_authorization (test_custoszv9.CRFUTests.test_deterministic_dependency_order_and_no_authorization) ... ok
+test_event_queue_resumes_only_on_matching_signal_and_verifies_chain (test_custoszv9.CRFUTests.test_event_queue_resumes_only_on_matching_signal_and_verifies_chain) ... ok
+test_formal_bundle_wrong_digest_holds (test_custoszv9.CRFUTests.test_formal_bundle_wrong_digest_holds) ... ok
+test_gates_missing_evidence_hold (test_custoszv9.CRFUTests.test_gates_missing_evidence_hold) ... ok
+test_journal_chain_and_tampering (test_custoszv9.CRFUTests.test_journal_chain_and_tampering) ... ok
+test_repeated_strategy_without_evidence_blocked (test_custoszv9.CRFUTests.test_repeated_strategy_without_evidence_blocked) ... ok
+test_retry_is_finite_and_idempotency_aware (test_custoszv9.CRFUTests.test_retry_is_finite_and_idempotency_aware) ... ok
+test_unknown_resources_hold (test_custoszv9.CRFUTests.test_unknown_resources_hold) ... ok
+test_unresolved_dependency_holds (test_custoszv9.CRFUTests.test_unresolved_dependency_holds) ... ok
+test_wait_requires_deadline (test_custoszv9.CRFUTests.test_wait_requires_deadline) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 0.017s
+
+OK
