@@ -38,7 +38,7 @@ def deterministic_zip(source:Path,target:Path,epoch:int)->None:
  ztime=(dt.year,dt.month,dt.day,dt.hour,dt.minute,dt.second-(dt.second%2))
  target.parent.mkdir(parents=True,exist_ok=True)
  with target.open("wb") as raw:
-  raw.write(b"#!/usr/bin/env python3\\n")
+  raw.write(b"#!/usr/bin/env python3\n")
   with zipfile.ZipFile(raw,"w",compression=zipfile.ZIP_DEFLATED,compresslevel=9,strict_timestamps=True) as z:
    for p in sorted(x for x in source.rglob("*") if x.is_file()):
     if p.is_symlink():raise SystemExit("SYMLINK_IN_PACKAGE_SOURCE")
@@ -98,8 +98,8 @@ def main()->int:
   "build":{"epoch_source":"source_commit_timestamp_or_fixed_local_epoch","source_date_epoch":epoch,
            "deterministic_zip":True,"runtime_dependencies_added":[]}
  }
- (data/"build_manifest.json").write_text(json.dumps(manifest,ensure_ascii=False,sort_keys=True,indent=2)+"\\n",encoding="utf-8")
- entry=STAGE/"__main__.py";entry.write_text("from custoszv9.cli import main\\nraise SystemExit(main())\\n",encoding="utf-8")
+ (data/"build_manifest.json").write_text(json.dumps(manifest,ensure_ascii=False,sort_keys=True,indent=2)+"\n",encoding="utf-8")
+ entry=STAGE/"__main__.py";entry.write_text("from custoszv9.cli import main\nraise SystemExit(main())\n",encoding="utf-8")
  target=DIST/"CUSTOSZV9.pyz"
  deterministic_zip(STAGE,target,epoch)
  with zipfile.ZipFile(target,"r") as z:
@@ -118,7 +118,7 @@ def main()->int:
   "formal_toolchain_status":"NOT_EXECUTED","G22":"NOT_GRANTED","G23":"NOT_GRANTED","G24":"NOT_GRANTED",
   "release_eligible":False,"certification":"NOT_GRANTED","canonical_promotion":"NOT_AUTHORIZED"}
  evidence=ROOT/"evidence";evidence.mkdir(parents=True,exist_ok=True)
- (evidence/"custoszv9-build-report.json").write_text(json.dumps(report,ensure_ascii=False,sort_keys=True,indent=2)+"\\n",encoding="utf-8")
+ (evidence/"custoszv9-build-report.json").write_text(json.dumps(report,ensure_ascii=False,sort_keys=True,indent=2)+"\n",encoding="utf-8")
  print(json.dumps(report,ensure_ascii=False,sort_keys=True,indent=2))
  return 0
 if __name__=="__main__":raise SystemExit(main())
