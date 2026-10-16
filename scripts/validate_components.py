@@ -192,7 +192,7 @@ def main():
                             "error":f"{type(exc).__name__}: {exc}"})
 
     report = {"report_id":"CUSTOSZV8-COMPONENT-CHECKS","observed_at_utc":now(),
-        "candidate_commit":os.environ.get("GITHUB_SHA","LOCAL_UNBOUND"),"checks":results,
+        "candidate_commit":os.environ.get("CUSTOSZV8_CANDIDATE_SHA") or os.environ.get("GITHUB_SHA","LOCAL_UNBOUND"),"checks":results,
         "summary":{"v7_native_readonly_checks_passed":sum(x.get("component")=="CUSTOSZ_V7" and x.get("status")=="PASS" for x in results),
                    "v7_native_readonly_checks_total":2,
                    "runtime_native_execution":"NOT_RUN",
