@@ -1,0 +1,12 @@
+{
+  "schema": "louksna.zd.v03.cp07-physical-operator-audibility-attestation.v1",
+  "workflow_run_id": 38186921597,
+  "workflow_run_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38186921597",
+  "candidate_commit_sha": "7eb0ba2b1706e294a9dd3196ed9575ca9e4b8f2c",
+  "attestation": "CONFIRMED",
+  "operator_statement": "The operator reports hearing the generated response through the LOUKSNA speaker.",
+  "attestation_source": "Explicit operator confirmation in the ChatGPT conversation.",
+  "playback_evidence_status": "PLAYBACK_COMMAND_SUCCEEDED",
+  "physical_pipeline_status": "PASS_WITH_OPERATOR_AUDIBILITY_CONFIRMED",
+  "scope_note": "Append-only attestation supplements the original run artifact; it does not alter the original workflow artifact or claim raw audio, transcript, or response content were retained."
+}

@@ -1,0 +1,624 @@
+name: "LOUKSNA ZD V0.3 — Physical Voice E2E"
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_sha:
+        description: "Exact candidate commit SHA to test (must be reachable in this repository)."
+        required: true
+        type: string
+  workflow_call:
+    inputs:
+      candidate_sha:
+        description: "Exact candidate commit SHA supplied by the governance workflow."
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+  deployments: read
+
+concurrency:
+  group: louksna-physical-voice-${{ inputs.candidate_sha || github.event.inputs.candidate_sha || github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  prepare-physical-voice-binaries:
+    name: "CP-07 — Build candidate and voice test binary on hosted Linux"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    outputs:
+      stimulus_sha256: ${{ steps.prepare-stimulus.outputs.sha256 }}
+    env:
+      CANDIDATE_SHA: ${{ inputs.candidate_sha || github.event.inputs.candidate_sha || github.sha }}
+      STIMULUS_DOWNLOAD_URL: https://cdn.freesound.org/previews/423/423843_3215099-lq.mp3
+      STIMULUS_SOURCE_URL: https://freesound.org/people/leoncillo/sounds/423843/
+      STIMULUS_SOURCE_SHA256: 1aa9fcf9a210c256a15a6f8682eeda65b17fd86ba3e37873303d5b9a60b972cf
+      STIMULUS_LICENSE: "CC0-1.0; Hola_fer.wav by leoncillo"
+      STIMULUS_REFERENCE_TEXT: hola
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+          persist-credentials: false
+      - name: Checkout frozen V0.2 source inputs
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: 6e34fddaae985bd9041be107b80e056f806092d2
+          path: source-v02
+          persist-credentials: false
+      - name: Install native Linux build dependencies
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export DEBIAN_FRONTEND=noninteractive
+          timeout 360s sudo -E apt-get -o Acquire::Retries=3 update
+          timeout 360s sudo -E apt-get -o Acquire::Retries=3 install --yes --no-install-recommends \
+            build-essential curl wget file pkg-config patchelf \
+            libssl-dev libgtk-3-dev libglib2.0-dev ffmpeg \
+            libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev
+          pkg-config --modversion glib-2.0 gobject-2.0
+      - name: Prepare hash-pinned human-recorded Spanish stimulus
+        id: prepare-stimulus
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p evidence/cp07-build
+          curl --fail --location --retry 3 --max-time 45 --silent --show-error "$STIMULUS_DOWNLOAD_URL" -o "$RUNNER_TEMP/cp07-stimulus-source.mp3"
+          echo "$STIMULUS_SOURCE_SHA256  $RUNNER_TEMP/cp07-stimulus-source.mp3" | sha256sum --check -
+          ffmpeg -nostdin -hide_banner -loglevel error -y -i "$RUNNER_TEMP/cp07-stimulus-source.mp3" -map_metadata -1 -ac 1 -ar 16000 -c:a pcm_s16le "$RUNNER_TEMP/cp07-stimulus-single.wav"
+          # Repeat the same pinned human recording with real silence between copies.
+          # This improves acoustic/STT robustness without changing the required "hola" token.
+          python3 - "$RUNNER_TEMP/cp07-stimulus-single.wav" evidence/cp07-build/human-spanish-stimulus.wav <<'PY'
+          import pathlib,sys,wave
+          source,destination=map(pathlib.Path,sys.argv[1:])
+          with wave.open(str(source),'rb') as src:
+              channels,width,rate=src.getnchannels(),src.getsampwidth(),src.getframerate()
+              if (channels,width,rate)!=(1,2,16000) or src.getcomptype()!='NONE':
+                  raise SystemExit("CP07_STIMULUS_SOURCE_FORMAT_INVALID")
+              frames=src.readframes(src.getnframes())
+          frame_count=len(frames)//(channels*width)
+          source_duration=frame_count/rate
+          if not 0.20 <= source_duration <= 2.0:
+              raise SystemExit("CP07_STIMULUS_SOURCE_DURATION_INVALID")
+          silence=bytes((rate//4)*channels*width)
+          parts=[]
+          for index in range(5):
+              parts.append(frames)
+              if index<4: parts.append(silence)
+          with wave.open(str(destination),'wb') as dst:
+              dst.setnchannels(channels); dst.setsampwidth(width); dst.setframerate(rate)
+              dst.writeframes(b"".join(parts))
+          with wave.open(str(destination),'rb') as dst:
+              duration=dst.getnframes()/dst.getframerate()
+          if not 2.0 <= duration <= 10.0:
+              raise SystemExit("CP07_STIMULUS_NORMALIZED_DURATION_INVALID")
+          print(f"CP07_STIMULUS_NORMALIZATION=PASS source_duration={source_duration:.3f}s repeats=5 pause=0.250s output_duration={duration:.3f}s")
+          PY
+          python3 - "$CANDIDATE_SHA" "$RUNNER_TEMP/cp07-stimulus-source.mp3" evidence/cp07-build/human-spanish-stimulus.wav "$STIMULUS_SOURCE_URL" "$STIMULUS_SOURCE_SHA256" "$STIMULUS_LICENSE" "$STIMULUS_REFERENCE_TEXT" <<'PY'
+          import datetime,hashlib,json,os,pathlib,sys,wave
+          candidate,source_path,fixture_path,source_url,source_sha,license_text,reference=sys.argv[1:]
+          sha=lambda p:hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
+          with wave.open(fixture_path,'rb') as w:
+              channels,width,rate,frames=w.getnchannels(),w.getsampwidth(),w.getframerate(),w.getnframes()
+          if (channels,width,rate)!=(1,2,16000) or not 0.25 <= frames/rate <= 10.0:
+              raise SystemExit("CP07_STIMULUS_FORMAT_OR_DURATION_INVALID")
+          fixture_sha=sha(fixture_path)
+          report={
+            "schema":"louksna.zd.v03.cp07-human-recorded-stimulus.v1",
+            "candidate_commit_sha":candidate,
+            "source_url":source_url,
+            "download_url":os.environ["STIMULUS_DOWNLOAD_URL"],
+            "license":license_text,
+            "attribution":"Hola_fer.wav by leoncillo, CC0-1.0",
+            "source_sha256":source_sha,
+            "normalized_fixture_sha256":fixture_sha,
+            "reference_text_sha256":hashlib.sha256(reference.encode()).hexdigest(),
+            "reference_text":reference,
+            "normalization":"ffmpeg decode to PCM_S16LE mono 16000 Hz with metadata stripped; repeat the hash-pinned human recording five times with 250 ms silence between repetitions",
+            "ffmpeg_version":os.popen("ffmpeg -version").read().splitlines()[0],
+            "timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "size_bytes":pathlib.Path(fixture_path).stat().st_size,
+            "duration_seconds":frames/rate,
+          }
+          pathlib.Path("evidence/cp07-build/stimulus-manifest.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+          print(json.dumps({k:v for k,v in report.items() if k not in ("reference_text",)},indent=2,sort_keys=True))
+          print("CP07_HUMAN_STIMULUS_PREPARED=PASS")
+          PY
+          STIMULUS_SHA256="$(sha256sum evidence/cp07-build/human-spanish-stimulus.wav | cut -d' ' -f1)"
+          echo "sha256=$STIMULUS_SHA256" >> "$GITHUB_OUTPUT"
+      - name: Build exact candidate and compile (do not execute) the physical voice test
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          mkdir -p "$RUNNER_TEMP/louksna-v03" evidence/cp07-build
+          printf '%s\n' '{"mission_id":"MIS-LOUKSNA-ZD-V03-FUNCTIONAL-20261006","dispatch_id":"GH-CP07-PHYSICAL-VOICE","binding_id":"CP07_PHYSICAL_VOICE","executor_id":"DEDICATED_PHYSICAL_AUDIO_RUNNER","expected_effect":{"effect_type":"REAL_VOICE_E2E"}}' > "$RUNNER_TEMP/louksna-v03/DISPATCH.json"
+          python3 -B -I scripts/missions/louksna_zd_candidate_materializer.py \
+            "$RUNNER_TEMP/louksna-v03/DISPATCH.json" \
+            "$RUNNER_TEMP/louksna-v03/ACK.json" \
+            "$RUNNER_TEMP/louksna-v03/FME.json" \
+            "$RUNNER_TEMP/louksna-v03/MATERIAL_RESULT.json" \
+            "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE/source-v02" \
+            "$GITHUB_WORKSPACE/missions/inbox/louksna-zona-directiva-v03-functional-20261006/MISSION.md"
+          CANDIDATE="$GITHUB_WORKSPACE/LOUKSNA_ZONA_DIRECTIVA_GITHUB_INTERFACE_V0.2_HARDENED/candidate"
+          python3 -B -I scripts/missions/louksna_zd_v03_functionalizer.py "$CANDIDATE"
+          cd "$CANDIDATE"
+          if test -f package-lock.json; then npm ci; else npm install --package-lock-only --ignore-scripts && npm ci; fi
+          npm run build
+          export CARGO_TARGET_DIR="$RUNNER_TEMP/louksna-v03/cargo-target"
+          npx tauri build --bundles deb
+          APP_BIN="$(find "$CARGO_TARGET_DIR/release" -maxdepth 1 -type f -name 'louksna-zona-directiva' -perm -u+x -print -quit)"
+          test -n "$APP_BIN" || { echo "::error::Candidate application binary not produced"; exit 1; }
+          cargo test --manifest-path src-tauri/Cargo.toml --bin louksna-zona-directiva --no-run -- \
+            --exact louksna_runtime_tests::physical_voice_e2e_real_audio_path \
+            --nocapture --test-threads=1
+          TEST_BIN="$(find "$CARGO_TARGET_DIR/debug/deps" -maxdepth 1 -type f -name 'louksna_zona_directiva-*' -perm -u+x -print -quit)"
+          test -n "$TEST_BIN" || { echo "::error::Physical voice test binary was not compiled"; exit 1; }
+          cd "$GITHUB_WORKSPACE"
+          install -m 0755 "$APP_BIN" evidence/cp07-build/app-binary
+          install -m 0755 "$TEST_BIN" evidence/cp07-build/voice-test-binary
+          python3 - <<'PY'
+          import datetime,hashlib,json,os,pathlib
+          root=pathlib.Path("evidence/cp07-build")
+          def sha(p): return hashlib.sha256((root/p).read_bytes()).hexdigest()
+          report={
+            "schema":"louksna.zd.v03.cp07-build-manifest.v1",
+            "checkpoint_id":"CP-07-BUILD",
+            "status":"PASS_COMPILED_NOT_EXECUTED",
+            "candidate_commit_sha":os.environ["CANDIDATE_SHA"],
+            "source_run_id":int(os.environ["GITHUB_RUN_ID"]),
+            "app_binary_sha256":sha("app-binary"),
+            "voice_test_binary_sha256":sha("voice-test-binary"),
+            "built_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "physical_audio_execution":"NOT_PERFORMED_ON_HOSTED_RUNNER"
+          }
+          (root/"build-manifest.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(report,indent=2,sort_keys=True))
+          PY
+      - name: Upload exact-SHA binaries for physical execution
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksna-zd-v03-cp07-physical-test-binaries
+          path: evidence/cp07-build/
+          if-no-files-found: error
+          retention-days: 14
+
+  physical-voice-e2e:
+    name: "CP-07 — Real microphone → STT → model → TTS → ALSA playback"
+    needs: prepare-physical-voice-binaries
+    if: github.actor == 'Plomillo' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: [self-hosted, linux, x64, louksna-voice-hw]
+    timeout-minutes: 35
+    env:
+      CANDIDATE_SHA: ${{ inputs.candidate_sha || github.event.inputs.candidate_sha || github.sha }}
+      LOUKSNA_RUN_PHYSICAL_VOICE_E2E: "1"
+      LOUKSNA_OLLAMA_MODEL: smollm2:360m
+      LOUKSNA_ALSA_CAPTURE_DEVICE: pulse
+      LOUKSNA_ALSA_PLAYBACK_DEVICE: pulse
+      LOUKSNA_VOICE_STIMULUS_REQUIRED: "1"
+      LOUKSNA_VOICE_STIMULUS_WAV: ${{ github.workspace }}/evidence/cp07-build/human-spanish-stimulus.wav
+      LOUKSNA_VOICE_STIMULUS_SHA256: ${{ needs.prepare-physical-voice-binaries.outputs.stimulus_sha256 }}
+      LOUKSNA_VOICE_STIMULUS_SOURCE_URL: https://freesound.org/people/leoncillo/sounds/423843/
+      LOUKSNA_VOICE_STIMULUS_SOURCE_SHA256: 1aa9fcf9a210c256a15a6f8682eeda65b17fd86ba3e37873303d5b9a60b972cf
+      LOUKSNA_VOICE_STIMULUS_LICENSE: "CC0-1.0; Hola_fer.wav by leoncillo"
+      LOUKSNA_VOICE_STIMULUS_EXPECTED_TEXT: hola
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+          persist-credentials: false
+      - name: Download candidate binaries compiled from the exact SHA
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
+        with:
+          name: louksna-zd-v03-cp07-physical-test-binaries
+          path: evidence/cp07-build
+      - name: Resolve dedicated runner-local Spanish voice runtime
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export PATH="$HOME/.local/bin:$PATH"
+          export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+          export PULSE_SERVER="${PULSE_SERVER:-unix:$XDG_RUNTIME_DIR/pulse/native}"
+          export PIPEWIRE_REMOTE="${PIPEWIRE_REMOTE:-pipewire-0}"
+          export LOUKSNA_WHISPER_MODEL="${LOUKSNA_WHISPER_MODEL:-$HOME/.local/share/louksna-cp07/whisper.cpp/models/ggml-base.bin}"
+          export LOUKSNA_PIPER_MODEL="${LOUKSNA_PIPER_MODEL:-$HOME/.local/share/louksna-cp07/models/es_ES-sharvard-medium.onnx}"
+          export PULSE_SOURCE="${PULSE_SOURCE:-alsa_input.usb-Generic_Blue_Microphones_2101BAB04QX8-00.pro-input-0}"
+          export PULSE_SINK="${PULSE_SINK:-alsa_output.pci-0000_04_00.6.analog-stereo}"
+          test -n "$PULSE_SOURCE" && test -n "$PULSE_SINK"
+          # Fail before touching audio hardware unless the authorized, hash-pinned
+          # human-recorded fixture and its source/license/reference are configured.
+          test -s "$LOUKSNA_VOICE_STIMULUS_WAV" || { echo "::error::CP-07 HOLD: human-recorded stimulus file is not provisioned"; exit 1; }
+          test "${#LOUKSNA_VOICE_STIMULUS_SHA256}" -eq 64 || { echo "::error::CP-07 HOLD: stimulus SHA-256 is missing"; exit 1; }
+          test -n "$LOUKSNA_VOICE_STIMULUS_SOURCE_URL" || { echo "::error::CP-07 HOLD: stimulus source URL is missing"; exit 1; }
+          test -n "$LOUKSNA_VOICE_STIMULUS_LICENSE" || { echo "::error::CP-07 HOLD: stimulus license is missing"; exit 1; }
+          test -n "$LOUKSNA_VOICE_STIMULUS_EXPECTED_TEXT" || { echo "::error::CP-07 HOLD: stimulus reference transcript is missing"; exit 1; }
+          python3 - "$CANDIDATE_SHA" "$LOUKSNA_VOICE_STIMULUS_WAV" "$LOUKSNA_VOICE_STIMULUS_SHA256" evidence/cp07-build/stimulus-manifest.json "$LOUKSNA_VOICE_STIMULUS_SOURCE_SHA256" "$LOUKSNA_VOICE_STIMULUS_EXPECTED_TEXT" <<'PY'
+          import hashlib,json,pathlib,sys
+          candidate,fixture,fixture_sha,manifest_path,source_sha,reference=sys.argv[1:]
+          m=json.loads(pathlib.Path(manifest_path).read_text(encoding="utf-8"))
+          actual=hashlib.sha256(pathlib.Path(fixture).read_bytes()).hexdigest()
+          ref_sha=hashlib.sha256(reference.encode("utf-8")).hexdigest()
+          checks={
+            "candidate":m.get("candidate_commit_sha")==candidate,
+            "normalized_fixture_sha":actual==fixture_sha==m.get("normalized_fixture_sha256"),
+            "source_sha":m.get("source_sha256")==source_sha,
+            "reference_sha":m.get("reference_text_sha256")==ref_sha,
+            "source_url":m.get("source_url")=="https://freesound.org/people/leoncillo/sounds/423843/",
+            "license":m.get("license","").startswith("CC0-1.0"),
+            "reference":m.get("reference_text")==reference,
+          }
+          print(json.dumps({"schema":"louksna.zd.v03.cp07-stimulus-preflight.v1","status":"PASS" if all(checks.values()) else "HOLD","checks":checks},sort_keys=True))
+          if not all(checks.values()): raise SystemExit("CP-07 HOLD: human stimulus provenance/hash manifest failed")
+          PY
+          echo "stimulus_mode=HUMAN_RECORDED_PHYSICAL_ACOUSTIC"
+          echo "live_user_utterance=false"
+          {
+            echo "XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR"
+            echo "PULSE_SERVER=$PULSE_SERVER"
+            echo "PIPEWIRE_REMOTE=$PIPEWIRE_REMOTE"
+            echo "LOUKSNA_WHISPER_MODEL=$LOUKSNA_WHISPER_MODEL"
+            echo "LOUKSNA_PIPER_MODEL=$LOUKSNA_PIPER_MODEL"
+            echo "PULSE_SOURCE=$PULSE_SOURCE"
+            echo "PULSE_SINK=$PULSE_SINK"
+          } >> "$GITHUB_ENV"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Verify binary manifest and physical audio/runtime preflight
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p evidence/zona-directiva-v03
+          MEM_AVAILABLE_KIB="$(awk '/^MemAvailable:/ {print $2}' /proc/meminfo)"
+          MEM_AVAILABLE_BYTES=$((MEM_AVAILABLE_KIB * 1024))
+          export MEM_AVAILABLE_BYTES
+          python3 - <<'PY'
+          import datetime, json, os, pathlib
+          available = int(os.environ.get("MEM_AVAILABLE_BYTES", "0"))
+          budget = 1024 * 1024 * 1024
+          report = {
+              "schema": "louksna.zd.v03.cp07-memory-preflight.v1",
+              "checkpoint_id": "CP-07-MEMORY-PREFLIGHT",
+              "candidate_commit_sha": os.environ["CANDIDATE_SHA"],
+              "source_run_id": int(os.environ["GITHUB_RUN_ID"]),
+              "available_memory_bytes": available,
+              "required_available_memory_bytes": budget,
+              "maximum_project_workload_memory_bytes": budget,
+              "workload_memory_enforcement": "768 MiB systemd cgroup for app/child tools plus watchdog enforcing combined cgroup memory.current and Ollama RSS <= 1 GiB",
+              "status": "PASS" if available >= budget else "HOLD",
+              "model_execution_allowed": available >= budget,
+              "timestamp_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+              "policy": "Require at least 1 GiB MemAvailable before start and enforce a hard 1 GiB project-workload ceiling during local inference; fail closed if cgroup or Ollama RSS cannot be measured."
+          }
+          out = pathlib.Path("evidence/zona-directiva-v03/CP-07-memory-preflight.json")
+          out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          print(json.dumps(report, indent=2, sort_keys=True))
+          if available < budget:
+              raise SystemExit("CP-07 HOLD: workstation has less than 1 GiB available RAM; refusing local inference.")
+          PY
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib
+          root=pathlib.Path("evidence/cp07-build")
+          m=json.loads((root/"build-manifest.json").read_text(encoding="utf-8"))
+          if m.get("status")!="PASS_COMPILED_NOT_EXECUTED": raise SystemExit("CP-07 HOLD: build manifest is not a compile-only pass")
+          if m.get("candidate_commit_sha")!=os.environ["CANDIDATE_SHA"]: raise SystemExit("CP-07 HOLD: candidate SHA mismatch")
+          for name,key in (("app-binary","app_binary_sha256"),("voice-test-binary","voice_test_binary_sha256")):
+              if hashlib.sha256((root/name).read_bytes()).hexdigest()!=m.get(key): raise SystemExit("CP-07 HOLD: binary digest mismatch: "+name)
+          PY
+          for cmd in python3 arecord aplay pactl whisper-cli piper curl sha256sum; do
+            command -v "$cmd" >/dev/null || { echo "::error::Required pre-provisioned executable missing: $cmd"; exit 1; }
+          done
+          test -s "$LOUKSNA_WHISPER_MODEL" || { echo "::error::Spanish Whisper model missing: $LOUKSNA_WHISPER_MODEL"; exit 1; }
+          test -s "$LOUKSNA_PIPER_MODEL" || { echo "::error::Spanish Piper voice model missing: $LOUKSNA_PIPER_MODEL"; exit 1; }
+          echo "60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe  $LOUKSNA_WHISPER_MODEL" | sha256sum --check --status || { echo "::error::Spanish Whisper model SHA-256 mismatch"; exit 1; }
+          echo "40febfb1679c69a4505ff311dc136e121e3419a13a290ef264fdf43ddedd0fb1  $LOUKSNA_PIPER_MODEL" | sha256sum --check --status || { echo "::error::Spanish Piper model SHA-256 mismatch"; exit 1; }
+          test -n "$LOUKSNA_OLLAMA_MODEL"
+          test -n "$LOUKSNA_ALSA_CAPTURE_DEVICE"
+          test -n "$LOUKSNA_ALSA_PLAYBACK_DEVICE"
+          mkdir -p evidence/zona-directiva-v03
+          arecord -l | tee evidence/zona-directiva-v03/CP-07-arecord-devices.log
+          aplay -l | tee evidence/zona-directiva-v03/CP-07-aplay-devices.log
+          pactl list short sources | tee evidence/zona-directiva-v03/CP-07-pulse-sources.log
+          pactl list short sinks | tee evidence/zona-directiva-v03/CP-07-pulse-sinks.log
+          grep -F "$PULSE_SOURCE" evidence/zona-directiva-v03/CP-07-pulse-sources.log >/dev/null || { echo "::error::Configured physical capture source is not exposed by PipeWire/PulseAudio"; exit 1; }
+          grep -F "$PULSE_SINK" evidence/zona-directiva-v03/CP-07-pulse-sinks.log >/dev/null || { echo "::error::Configured physical playback sink is not exposed by PipeWire/PulseAudio"; exit 1; }
+          if printf '%s\n%s\n' "$PULSE_SOURCE" "$PULSE_SINK" | grep -Eiq '(^|[._-])(monitor|loopback|null|dummy|virtual)([._-]|$)|snd-aloop'; then
+            echo "::error::CP-07 HOLD: virtual/monitor/null audio endpoint is forbidden"
+            exit 1
+          fi
+          grep -Eq 'card [0-9]+:' evidence/zona-directiva-v03/CP-07-arecord-devices.log || { echo "::error::No ALSA capture card found"; exit 1; }
+          grep -Eq 'card [0-9]+:' evidence/zona-directiva-v03/CP-07-aplay-devices.log || { echo "::error::No ALSA playback card found"; exit 1; }
+          if grep -Eiq 'loopback|null|dummy|snd-aloop' evidence/zona-directiva-v03/CP-07-arecord-devices.log evidence/zona-directiva-v03/CP-07-aplay-devices.log; then
+            echo "::error::Virtual/null/loopback audio device detected; this gate requires physical audio hardware"
+            exit 1
+          fi
+          curl --fail --silent --show-error --max-time 5 http://127.0.0.1:11434/api/tags > "$RUNNER_TEMP/ollama-tags.json"
+          python3 - "$RUNNER_TEMP/ollama-tags.json" "$LOUKSNA_OLLAMA_MODEL" <<'PY'
+          import json,sys
+          data=json.load(open(sys.argv[1],encoding="utf-8"))
+          names={m.get("name","") for m in data.get("models",[])}
+          model=sys.argv[2]
+          if model not in names and model.removesuffix(":latest") not in names:
+              raise SystemExit("Configured Ollama model is not present in the local service")
+          PY
+          printf 'candidate_sha=%s\n' "$CANDIDATE_SHA"
+          uname -a
+          arecord --version
+          aplay --version
+          whisper-cli --help 2>&1 | head -n 2 || true
+          piper --help 2>&1 | head -n 2 || true
+          curl --fail --silent --show-error http://127.0.0.1:11434/api/version
+      - name: Execute compiled physical voice test on real audio hardware
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          TEST_BIN="$GITHUB_WORKSPACE/evidence/cp07-build/voice-test-binary"
+          APP_BIN="$GITHUB_WORKSPACE/evidence/cp07-build/app-binary"
+          chmod 0755 "$TEST_BIN" "$APP_BIN"
+          # Hard project-workload budget: 1 GiB combined cgroup memory.current + Ollama RSS.
+          # The voice app and all child tools run in a 768 MiB cgroup; Ollama is monitored separately.
+          export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+          export DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=$XDG_RUNTIME_DIR/bus}"
+          test -S "$XDG_RUNTIME_DIR/bus" || { echo "::error::CP-07 HOLD: user systemd bus unavailable; refusing unbounded inference"; exit 1; }
+          command -v systemd-run >/dev/null || { echo "::error::CP-07 HOLD: systemd-run is required for a hard memory scope"; exit 1; }
+          command -v systemctl >/dev/null || { echo "::error::CP-07 HOLD: systemctl is required for memory-scope verification"; exit 1; }
+          UNIT="louksna-cp07-voice-${GITHUB_RUN_ID}"
+          SCOPE_NAME="${UNIT}.service"
+          # Use a transient user service rather than a transient scope so the
+          # systemd-owned cgroup remains queryable throughout inference.
+          # A transient user service does not inherit arbitrary variables from this shell.
+          # Pass the physical-test gate, stimulus provenance, model paths, PATH and audio session
+          # explicitly; otherwise the Rust test silently skips and the cgroup vanishes too early.
+          systemd-run --user --pipe --wait --quiet --collect --unit="$UNIT" \
+            --property=MemoryMax=768M --property=MemorySwapMax=0 \
+            --setenv="PATH=$PATH" \
+            --setenv="HOME=$HOME" \
+            --setenv="XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR" \
+            --setenv="DBUS_SESSION_BUS_ADDRESS=$DBUS_SESSION_BUS_ADDRESS" \
+            --setenv="PULSE_SERVER=$PULSE_SERVER" \
+            --setenv="PIPEWIRE_REMOTE=$PIPEWIRE_REMOTE" \
+            --setenv="PULSE_SOURCE=$PULSE_SOURCE" \
+            --setenv="PULSE_SINK=$PULSE_SINK" \
+            --setenv="LOUKSNA_RUN_PHYSICAL_VOICE_E2E=$LOUKSNA_RUN_PHYSICAL_VOICE_E2E" \
+            --setenv="LOUKSNA_OLLAMA_MODEL=$LOUKSNA_OLLAMA_MODEL" \
+            --setenv="LOUKSNA_ALSA_CAPTURE_DEVICE=$LOUKSNA_ALSA_CAPTURE_DEVICE" \
+            --setenv="LOUKSNA_ALSA_PLAYBACK_DEVICE=$LOUKSNA_ALSA_PLAYBACK_DEVICE" \
+            --setenv="LOUKSNA_VOICE_STIMULUS_REQUIRED=$LOUKSNA_VOICE_STIMULUS_REQUIRED" \
+            --setenv="LOUKSNA_VOICE_STIMULUS_WAV=$LOUKSNA_VOICE_STIMULUS_WAV" \
+            --setenv="LOUKSNA_VOICE_STIMULUS_SHA256=$LOUKSNA_VOICE_STIMULUS_SHA256" \
+            --setenv="LOUKSNA_VOICE_STIMULUS_SOURCE_URL=$LOUKSNA_VOICE_STIMULUS_SOURCE_URL" \
+            --setenv="LOUKSNA_VOICE_STIMULUS_SOURCE_SHA256=$LOUKSNA_VOICE_STIMULUS_SOURCE_SHA256" \
+            --setenv="LOUKSNA_VOICE_STIMULUS_LICENSE=$LOUKSNA_VOICE_STIMULUS_LICENSE" \
+            --setenv="LOUKSNA_VOICE_STIMULUS_EXPECTED_TEXT=$LOUKSNA_VOICE_STIMULUS_EXPECTED_TEXT" \
+            --setenv="LOUKSNA_WHISPER_MODEL=$LOUKSNA_WHISPER_MODEL" \
+            --setenv="LOUKSNA_PIPER_MODEL=$LOUKSNA_PIPER_MODEL" \
+            "$TEST_BIN" --exact louksna_runtime_tests::physical_voice_e2e_real_audio_path --nocapture --test-threads=1 2>&1 \
+            | tee evidence/zona-directiva-v03/CP-07-physical-voice-e2e.log &
+          SCOPE_RUN_PID=$!
+          CGROUP=""
+          for _ in $(seq 1 100); do
+            CGROUP="$(systemctl --user show "$SCOPE_NAME" -p ControlGroup --value 2>/dev/null || true)"
+            if test -n "$CGROUP" && test -r "/sys/fs/cgroup${CGROUP}/memory.current"; then break; fi
+            sleep 0.1
+          done
+          if test -z "$CGROUP" || ! test -r "/sys/fs/cgroup${CGROUP}/memory.current"; then
+            systemctl --user kill --signal=SIGKILL "$SCOPE_NAME" >/dev/null 2>&1 || true
+            wait "$SCOPE_RUN_PID" || true
+            echo "::error::CP-07 HOLD: memory cgroup could not be verified; voice inference was not authorized"
+            exit 1
+          fi
+          MEMORY_MAX_BYTES="$(systemctl --user show "$SCOPE_NAME" -p MemoryMax --value 2>/dev/null || true)"
+          MEMORY_SWAP_MAX="$(systemctl --user show "$SCOPE_NAME" -p MemorySwapMax --value 2>/dev/null || true)"
+          if test "$MEMORY_MAX_BYTES" != "805306368" || test "$MEMORY_SWAP_MAX" != "0"; then
+            systemctl --user kill --signal=SIGKILL "$SCOPE_NAME" >/dev/null 2>&1 || true
+            wait "$SCOPE_RUN_PID" || true
+            echo "::error::CP-07 HOLD: 768 MiB memory cap / zero swap not verified"
+            exit 1
+          fi
+          while kill -0 "$SCOPE_RUN_PID" 2>/dev/null; do
+            SCOPE_STATE="$(systemctl --user show "$SCOPE_NAME" -p ActiveState --value 2>/dev/null || echo missing)"
+            if test "$SCOPE_STATE" = "inactive" || test "$SCOPE_STATE" = "failed" || test "$SCOPE_STATE" = "missing"; then break; fi
+            MEMORY_FILE="/sys/fs/cgroup${CGROUP}/memory.current"
+            if ! test -r "$MEMORY_FILE"; then
+              systemctl --user kill --signal=SIGKILL "$SCOPE_NAME" >/dev/null 2>&1 || true
+              wait "$SCOPE_RUN_PID" || true
+              echo "::error::CP-07 HOLD: cgroup memory measurement disappeared during inference"
+              exit 1
+            fi
+            SCOPE_BYTES="$(cat "$MEMORY_FILE")"
+            OLLAMA_PID="$(ps -eo pid=,args= | awk '/[o]llama serve$/ {print $1; exit}')"
+            if test -z "$OLLAMA_PID" || ! test -r "/proc/${OLLAMA_PID}/status"; then
+              systemctl --user kill --signal=SIGKILL "$SCOPE_NAME" >/dev/null 2>&1 || true
+              wait "$SCOPE_RUN_PID" || true
+              echo "::error::CP-07 HOLD: Ollama process RSS could not be measured"
+              exit 1
+            fi
+            OLLAMA_RSS_KIB="$(awk '/^VmRSS:/ {print $2}' "/proc/${OLLAMA_PID}/status")"
+            OLLAMA_BYTES=$((OLLAMA_RSS_KIB * 1024))
+            COMBINED_BYTES=$((SCOPE_BYTES + OLLAMA_BYTES))
+            if test "$COMBINED_BYTES" -gt 1073741824; then
+              echo "PHYSICAL_VOICE_RAM_BUDGET=EXCEEDED;scope_bytes=$SCOPE_BYTES;ollama_rss_bytes=$OLLAMA_BYTES;combined_bytes=$COMBINED_BYTES;limit_bytes=1073741824"
+              systemctl --user kill --signal=SIGKILL "$SCOPE_NAME" >/dev/null 2>&1 || true
+              wait "$SCOPE_RUN_PID" || true
+              echo "::error::CP-07 HOLD: 1 GiB project RAM budget exceeded; inference terminated"
+              exit 1
+            fi
+            sleep 0.1
+          done
+          wait "$SCOPE_RUN_PID"
+          for marker in PHYSICAL_VOICE_MIC_CAPTURE=PASS PHYSICAL_VOICE_TRANSCRIPTION=PASS PHYSICAL_VOICE_MODEL_RESPONSE=PASS PHYSICAL_VOICE_TTS=PASS PHYSICAL_VOICE_PLAYBACK=PASS PHYSICAL_VOICE_ACOUSTIC_OUTPUT=PASS PHYSICAL_VOICE_ACOUSTIC_TRANSCRIPTION_MATCH=PASS PHYSICAL_VOICE_E2E_RESULT=PASS PHYSICAL_VOICE_TEMP_CLEANUP=PASS; do
+            grep -q "$marker" evidence/zona-directiva-v03/CP-07-physical-voice-e2e.log || { echo "::error::Missing required physical voice evidence marker: $marker"; exit 1; }
+          done
+          if grep -q 'SKIP_PHYSICAL_VOICE_E2E' evidence/zona-directiva-v03/CP-07-physical-voice-e2e.log; then
+            echo "::error::Physical voice test was skipped"
+            exit 1
+          fi
+          python3 - "$APP_BIN" "$TEST_BIN" evidence/zona-directiva-v03/CP-07-physical-voice-preliminary.json <<'PY'
+          import datetime,hashlib,json,os,pathlib,subprocess,sys
+          app_binary=pathlib.Path(sys.argv[1]); binary=pathlib.Path(sys.argv[2])
+          def sha(p): return hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
+          def version(cmd):
+              try: return subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,timeout=10).stdout.strip().splitlines()[0][:300]
+              except Exception as e: return "UNAVAILABLE:"+type(e).__name__
+          log=pathlib.Path("evidence/zona-directiva-v03/CP-07-physical-voice-e2e.log")
+          data={
+            "schema":"louksna.zd.v03.physical-voice-e2e.v1",
+            "candidate_commit_sha":os.environ["CANDIDATE_SHA"],
+            "source_run_id":os.environ["GITHUB_RUN_ID"],
+            "stimulus_mode":"HUMAN_RECORDED_PHYSICAL_ACOUSTIC",
+            "live_user_utterance":False,
+            "stimulus_source_url":os.environ["LOUKSNA_VOICE_STIMULUS_SOURCE_URL"],
+            "stimulus_license":os.environ["LOUKSNA_VOICE_STIMULUS_LICENSE"],
+            "stimulus_sha256":os.environ["LOUKSNA_VOICE_STIMULUS_SHA256"].lower(),
+            "stimulus_source_sha256":os.environ["LOUKSNA_VOICE_STIMULUS_SOURCE_SHA256"].lower(),
+            "stimulus_manifest_sha256":sha("evidence/cp07-build/stimulus-manifest.json"),
+            "stimulus_reference_sha256":hashlib.sha256(os.environ["LOUKSNA_VOICE_STIMULUS_EXPECTED_TEXT"].encode("utf-8")).hexdigest(),
+            "build_manifest_sha256":sha("evidence/cp07-build/build-manifest.json"),
+            "os_kernel":subprocess.run(["uname","-srvm"],capture_output=True,text=True).stdout.strip(),
+            "capture_device":os.environ["LOUKSNA_ALSA_CAPTURE_DEVICE"],
+            "playback_device":os.environ["LOUKSNA_ALSA_PLAYBACK_DEVICE"],
+            "capture_source":os.environ["PULSE_SOURCE"],
+            "playback_sink":os.environ["PULSE_SINK"],
+            "arecord_version":version(["arecord","--version"]),
+            "aplay_version":version(["aplay","--version"]),
+            "whisper_version":version(["whisper-cli","--help"]),
+            "piper_version":version(["piper","--help"]),
+            "ollama_version":version(["curl","--fail","--silent","http://127.0.0.1:11434/api/version"]),
+            "ollama_model":os.environ["LOUKSNA_OLLAMA_MODEL"],
+            "whisper_model_sha256":sha(os.environ["LOUKSNA_WHISPER_MODEL"]),
+            "piper_model_sha256":sha(os.environ["LOUKSNA_PIPER_MODEL"]),
+            "whisper_binary_sha256":sha(subprocess.run(["bash","-lc","command -v whisper-cli"],capture_output=True,text=True).stdout.strip()),
+            "piper_binary_sha256":sha(subprocess.run(["bash","-lc","command -v piper"],capture_output=True,text=True).stdout.strip()),
+            "app_binary_sha256":sha(app_binary),
+            "voice_test_binary_sha256":sha(binary),
+            "evidence_log_sha256":sha(log),
+            "physical_audio_hardware_tested":True,
+            "native_app_voice_command_executed":True,
+            "microphone_capture":True,
+            "transcription_nonempty":True,
+            "response_http_success":True,
+            "tts_audio_nonempty":True,
+            "playback_exit_success":True,
+            "acoustic_output_energy_detected":("PHYSICAL_VOICE_ACOUSTIC_OUTPUT=PASS" in log.read_text(encoding="utf-8")),
+            "acoustic_baseline_peak_rms":float(next((line.split("=",1)[1] for line in log.read_text(encoding="utf-8").splitlines() if line.startswith("PHYSICAL_VOICE_ACOUSTIC_BASELINE_PEAK_RMS=")), "0")),
+            "acoustic_playback_peak_rms":float(next((line.split("=",1)[1] for line in log.read_text(encoding="utf-8").splitlines() if line.startswith("PHYSICAL_VOICE_ACOUSTIC_PLAYBACK_PEAK_RMS=")), "0")),
+            "acoustic_speech_match_ratio":float(next((line.split("=",1)[1] for line in log.read_text(encoding="utf-8").splitlines() if line.startswith("PHYSICAL_VOICE_ACOUSTIC_SPEECH_MATCH_RATIO=")), "0")),
+            "acoustic_transcription_match_count":int(next((line.split("=",1)[1] for line in log.read_text(encoding="utf-8").splitlines() if line.startswith("PHYSICAL_VOICE_ACOUSTIC_TRANSCRIPTION_MATCH_COUNT=")), "0")),
+            "audible_playback_confirmed_by_operator":False,
+            "operator_observation":"NOT_COLLECTED_OPTIONAL",
+            "temporary_audio_cleanup_verified":True,
+            "voice_gate":"HOLD",
+            "status":"HOLD",
+            "timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat()
+          }
+          pathlib.Path(sys.argv[3]).write_text(json.dumps(data,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(data,indent=2,sort_keys=True))
+          PY
+      - name: Preserve validated stimulus manifest with physical evidence
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          if test -s evidence/cp07-build/stimulus-manifest.json; then
+            cp evidence/cp07-build/stimulus-manifest.json evidence/zona-directiva-v03/CP-07-stimulus-manifest.json
+          fi
+      - name: Upload un-attested physical voice evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksna-zd-v03-physical-voice-preliminary
+          path: |
+            evidence/zona-directiva-v03/CP-07-physical-voice-e2e.log
+            evidence/zona-directiva-v03/CP-07-physical-voice-preliminary.json
+            evidence/zona-directiva-v03/CP-07-memory-preflight.json
+            evidence/zona-directiva-v03/CP-07-arecord-devices.log
+            evidence/zona-directiva-v03/CP-07-aplay-devices.log
+            evidence/zona-directiva-v03/CP-07-pulse-sources.log
+            evidence/zona-directiva-v03/CP-07-pulse-sinks.log
+            evidence/zona-directiva-v03/CP-07-stimulus-manifest.json
+          if-no-files-found: warn
+          retention-days: 90
+
+  acoustic-evidence-validation:
+    name: "CP-07 — Validate SHA-bound acoustic evidence (operator response optional)"
+    needs: physical-voice-e2e
+    if: needs.physical-voice-e2e.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ inputs.candidate_sha || github.event.inputs.candidate_sha || github.sha }}
+          persist-credentials: false
+      - name: Download physical voice evidence from this run
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: louksna-zd-v03-physical-voice-preliminary
+          path: evidence/zona-directiva-v03
+      - name: Promote only measured acoustic evidence and validate exact SHA
+        env:
+          CANDIDATE_SHA: ${{ inputs.candidate_sha || github.event.inputs.candidate_sha || github.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - "$CANDIDATE_SHA" evidence/zona-directiva-v03/CP-07-physical-voice-preliminary.json evidence/zona-directiva-v03/CP-07-physical-voice-e2e.json <<'PY'
+          import datetime,hashlib,json,os,pathlib,sys
+          candidate,src,dst=sys.argv[1:]
+          data=json.loads(pathlib.Path(src).read_text(encoding="utf-8"))
+          log=pathlib.Path("evidence/zona-directiva-v03/CP-07-physical-voice-e2e.log")
+          if data.get("candidate_commit_sha") != candidate:
+              raise SystemExit("Candidate SHA mismatch; evidence remains HOLD")
+          memory_path=pathlib.Path("evidence/zona-directiva-v03/CP-07-memory-preflight.json")
+          if not memory_path.is_file():
+              raise SystemExit("CP-07 memory preflight report missing; evidence remains HOLD")
+          memory=json.loads(memory_path.read_text(encoding="utf-8"))
+          if memory.get("candidate_commit_sha") != candidate:
+              raise SystemExit("CP-07 memory preflight candidate SHA mismatch")
+          if memory.get("source_run_id") != int(os.environ["GITHUB_RUN_ID"]):
+              raise SystemExit("CP-07 memory preflight source run ID mismatch")
+          if memory.get("status") != "PASS" or memory.get("model_execution_allowed") is not True:
+              raise SystemExit("CP-07 memory preflight did not authorize local inference")
+          if not isinstance(memory.get("available_memory_bytes"), int) or memory["available_memory_bytes"] < 1024*1024*1024:
+              raise SystemExit("CP-07 memory preflight did not prove the 1 GiB available-RAM budget")
+          if not log.is_file():
+              raise SystemExit("Physical voice log missing; evidence remains HOLD")
+          if data.get("acoustic_output_energy_detected") is not True:
+              raise SystemExit("Measured acoustic output is absent; evidence remains HOLD")
+          if not isinstance(data.get("acoustic_baseline_peak_rms"), (int,float)) or not isinstance(data.get("acoustic_playback_peak_rms"), (int,float)):
+              raise SystemExit("Acoustic RMS measurements missing; evidence remains HOLD")
+          if data["acoustic_playback_peak_rms"] < max(250.0, data["acoustic_baseline_peak_rms"] * 1.10):
+              raise SystemExit("Acoustic output signal did not clear threshold; evidence remains HOLD")
+          if not isinstance(data.get("acoustic_speech_match_ratio"), (int,float)) or data["acoustic_speech_match_ratio"] < 0.30:
+              raise SystemExit("Microphone re-transcription does not match generated response; evidence remains HOLD")
+          if not isinstance(data.get("acoustic_transcription_match_count"), int) or data["acoustic_transcription_match_count"] < 2:
+              raise SystemExit("Too few matching speech tokens in acoustic capture; evidence remains HOLD")
+          required=("PHYSICAL_VOICE_MIC_CAPTURE=PASS","PHYSICAL_VOICE_TRANSCRIPTION=PASS","PHYSICAL_VOICE_MODEL_RESPONSE=PASS","PHYSICAL_VOICE_TTS=PASS","PHYSICAL_VOICE_PLAYBACK=PASS","PHYSICAL_VOICE_ACOUSTIC_OUTPUT=PASS","PHYSICAL_VOICE_ACOUSTIC_TRANSCRIPTION_MATCH=PASS","PHYSICAL_VOICE_E2E_RESULT=PASS","PHYSICAL_VOICE_TEMP_CLEANUP=PASS")
+          log_text=log.read_text(encoding="utf-8")
+          missing=[marker for marker in required if marker not in log_text]
+          if missing: raise SystemExit("Required physical evidence markers missing: "+",".join(missing))
+          data["status"]="PASS"
+          data["voice_gate"]="PASS"
+          data["audible_playback_confirmed_by_operator"]=False
+          data["operator_observation"]="NOT_COLLECTED_OPTIONAL"
+          data["evidence_log_sha256"]=hashlib.sha256(log.read_bytes()).hexdigest()
+          data["memory_preflight_sha256"]=hashlib.sha256(memory_path.read_bytes()).hexdigest()
+          data["memory_preflight_status"]=memory["status"]
+          data["memory_preflight_available_bytes"]=memory["available_memory_bytes"]
+          data["validated_utc"]=datetime.datetime.now(datetime.timezone.utc).isoformat()
+          pathlib.Path(dst).write_text(json.dumps(data,indent=2,sort_keys=True)+"\n",encoding="utf-8")
+          PY
+          python3 scripts/missions/validate_voice_hardware_evidence.py evidence/zona-directiva-v03/CP-07-physical-voice-e2e.json --candidate-sha "$CANDIDATE_SHA"
+      - name: Upload validated physical voice evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksna-zd-v03-cp07-physical-voice-e2e
+          path: |
+            evidence/zona-directiva-v03/CP-07-physical-voice-e2e.json
+            evidence/zona-directiva-v03/CP-07-physical-voice-e2e.log
+            evidence/zona-directiva-v03/CP-07-memory-preflight.json
+            evidence/zona-directiva-v03/CP-07-stimulus-manifest.json
+          if-no-files-found: error
+          retention-days: 90

@@ -7,6 +7,8 @@ type Repo={full_name:string;private:boolean;default_branch:string;updated_at:str
 type PR={number:number;title:string;state:string;draft:boolean;updated_at:string;html_url:string};
 type Evidence={id:number;utc:string;operation:string;status:string;detail:string};
 type Chat={id:number;utc:string;role:string;content:string;transport:string};
+type AttachmentMeta={id:number;utc:string;name:string;mime:string;size_bytes:number;sha256:string};
+type AttachmentPayload={metadata:AttachmentMeta;bytes:number[]};
 type Conn={connected:boolean;login:string;name:string};
 type Health={status:"PASS"|"DEGRADED"|"FAIL"|"UNVERIFIED";detail:string};
 
@@ -30,18 +32,65 @@ export default function App(){
   const[prs,setPrs]=useState<PR[]>([]);
   const[evidence,setEvidence]=useState<Evidence[]>([]);
   const[chats,setChats]=useState<Chat[]>([]);
+  const[attachments,setAttachments]=useState<AttachmentMeta[]>([]);
   const[msg,setMsg]=useState("");
   const[busy,setBusy]=useState("");
   const[notice,setNotice]=useState("");
   const[health,setHealth]=useState<Health>({status:"UNVERIFIED",detail:"Probe pendiente"});
+  const[voiceStatus,setVoiceStatus]=useState("UNVERIFIED");
+  const[voiceMissing,setVoiceMissing]=useState<string[]>([]);
+  const[voiceTranscript,setVoiceTranscript]=useState("");
+  const[voiceResponse,setVoiceResponse]=useState("");
+  const[voiceObservation,setVoiceObservation]=useState("");
+  const[voiceObservationSaved,setVoiceObservationSaved]=useState(false);
+  const[voiceBusy,setVoiceBusy]=useState(false);
   const s=useMemo(()=>sections.find(x=>x.key===active)!,[active]);
 
   const call=async<T,>(name:string,args?:Record<string,unknown>):Promise<T>=>{
-    try{return await invoke<T>(name,args||{})}
-    catch(e){throw new Error(String(e))}
+    const operationId=crypto.randomUUID();
+    const started=Date.now();
+    try{
+      const result=await invoke<T>(name,args||{});
+      await invoke<void>("record_ui_telemetry",{
+        operationId,event:"COMMAND_INVOKE",component:name,status:"SUCCESS",
+        metadata:{elapsed_ms:Date.now()-started}
+      });
+      return result;
+    }catch(e){
+      try{
+        await invoke<void>("record_ui_telemetry",{
+          operationId,event:"COMMAND_INVOKE",component:name,status:"FAIL",
+          metadata:{failure_class:"IPC_OR_BACKEND_ERROR",elapsed_ms:Date.now()-started}
+        });
+      }catch(telemetryError){
+        throw new Error("UI_TELEMETRY_WRITE_FAILED; original operation outcome is not certified.");
+      }
+      throw new Error(String(e));
+    }
   };
 
   const refreshEvidence=async()=>setEvidence(await call<Evidence[]>("evidence_recent",{limit:100}));
+  const refreshAttachments=async()=>setAttachments(await call<AttachmentMeta[]>("attachments_recent",{limit:100}));
+
+  const importAttachment=async(file?:File)=>{
+    if(!file)return;
+    if(file.size<=0){setNotice("Adjunto vacío rechazado.");return}
+    if(file.size>10*1024*1024){setNotice("Adjunto rechazado: límite 10 MiB.");return}
+    setBusy("Importando y verificando adjunto...");setNotice("");
+    try{
+      const raw=new Uint8Array(await file.arrayBuffer());
+      const meta=await call<AttachmentMeta>("import_attachment",{
+        name:file.name,mime:file.type||"application/octet-stream",bytes:Array.from(raw)
+      });
+      const loaded=await call<AttachmentPayload>("read_attachment",{id:meta.id});
+      const digestBuffer=await crypto.subtle.digest("SHA-256",new Uint8Array(loaded.bytes));
+      const digest=Array.from(new Uint8Array(digestBuffer)).map(x=>x.toString(16).padStart(2,"0")).join("");
+      if(digest!==meta.sha256||loaded.metadata.sha256!==meta.sha256)throw new Error("ATTACHMENT_READBACK_HASH_MISMATCH");
+      setNotice("Adjunto persistido y recuperado con SHA-256 verificado: "+meta.name);
+      await refreshAttachments();
+    }catch(e){setNotice("Adjunto: "+(e as Error).message)}
+    finally{setBusy("");await refreshEvidence()}
+  };
 
   const refreshConnection=async()=>{
     setBusy("Conectando GitHub...");setNotice("");
@@ -89,6 +138,35 @@ export default function App(){
   };
 
   const loadChat=async()=>setChats(await call<Chat[]>("chat_history",{limit:100}));
+
+  const checkVoice=async()=>{
+    setVoiceBusy(true);setNotice("");
+    try{
+      const p=await call<{status:string;missing:string[];detail:string}>("voice_preflight");
+      setVoiceStatus(p.status);setVoiceMissing(p.missing);
+      setNotice(p.status==="READY"?"Dependencias de voz presentes; todavía no es evidencia E2E.":"Voz no lista: "+p.missing.join(", "));
+    }catch(e){setVoiceStatus("FAIL");setNotice("Preflight de voz: "+(e as Error).message)}
+    finally{setVoiceBusy(false);await refreshEvidence()}
+  };
+
+  const runVoice=async()=>{
+    setVoiceBusy(true);setNotice("");setVoiceTranscript("");setVoiceResponse("");setVoiceObservation("");setVoiceObservationSaved(false);
+    try{
+      const v=await call<{status:string;transcript:string;response:string;elapsed_ms:number;audio_played:boolean}>("voice_e2e");
+      setVoiceStatus(v.status);setVoiceTranscript(v.transcript);setVoiceResponse(v.response);
+      setNotice("Turno de voz ejecutado con captura y reproducción reales ("+v.elapsed_ms+" ms). Esto no equivale a certificación.");
+    }catch(e){setVoiceStatus("FAIL");setNotice("Turno de voz fallido: "+(e as Error).message)}
+    finally{setVoiceBusy(false);await refreshEvidence()}
+  };
+
+  const saveVoiceObservation=async(observation:"YES"|"NO"|"NOT_SURE")=>{
+    try{
+      await call<void>("record_voice_observation",{observation});
+      setVoiceObservation(observation);setVoiceObservationSaved(true);
+      setNotice("Observación humana guardada como dato suplementario; no altera el resultado técnico ni la certificación.");
+      await refreshEvidence();
+    }catch(e){setNotice("No se pudo guardar la observación suplementaria: "+(e as Error).message)}
+  };
 
   const sendChat=async()=>{
     if(!msg.trim())return;
@@ -162,6 +240,7 @@ export default function App(){
         }
         await refreshEvidence();
         await loadChat();
+        await refreshAttachments();
       }catch(e){
         setNotice("Backend local: "+String(e));
       }
@@ -252,7 +331,15 @@ export default function App(){
       {active==="chat-llamada"&&<section className="chat-grid">
         <article className="panel chat">
           <h3>Chat gobernado</h3>
-          <p data-capability="attachments" data-status="NOT_IMPLEMENTED">Adjuntos: no implementado/no verificado. No se aceptan ni almacenan archivos.</p>
+          <div className="attachment-box" data-capability="attachments" data-status="IMPLEMENTED_UNCERTIFIED">
+            <label>Importar adjunto (máximo 10 MiB)
+              <input type="file" disabled={!!busy} onChange={e=>{const file=e.currentTarget.files?.[0];void importAttachment(file);e.currentTarget.value="";}}/>
+            </label>
+            <p className="muted">El backend almacena bytes en SQLite y verifica SHA-256 al recuperar. El contenido no se copia al ledger de evidencias.</p>
+            <div className="evidence">
+              {attachments.map(a=><div className="e-row" key={a.id}><b>{a.name}</b><small>{a.mime} · {a.size_bytes} bytes · {a.utc}</small><p>SHA-256: {a.sha256}</p></div>)}
+            </div>
+          </div>
           <div className="messages">
             {chats.map(c=><div key={c.id} className={"bubble "+c.role}><b>{c.role==="user"?"Tu":"LOUKSNA"}</b><p>{c.content}</p><small>{c.transport}</small></div>)}
           </div>
@@ -263,8 +350,26 @@ export default function App(){
         </article>
         <article className="panel">
           <h3>Llamada / voz</h3>
-          <p>La pila de voz end-to-end todavia no esta certificada. No se presenta como activa.</p>
-          <button disabled>Microfono — gate abierto</button>
+          <p>Pipeline real: micrófono ALSA → whisper.cpp → Ollama local → Piper TTS → salida ALSA. El gate de certificación permanece abierto hasta la prueba real documentada.</p>
+          <p data-voice-status={voiceStatus}>Estado de voz: {voiceStatus}</p>
+          <div className="actions">
+            <button onClick={checkVoice} disabled={voiceBusy}>{voiceBusy?"Comprobando...":"Comprobar dependencias"}</button>
+            <button onClick={runVoice} disabled={voiceBusy}>{voiceBusy?"Procesando...":"Grabar 8 s y responder por voz"}</button>
+          </div>
+          {voiceMissing.length>0&&<p className="muted">Faltantes: {voiceMissing.join(", ")}</p>}
+          {voiceTranscript&&<div className="e-row"><b>Transcripción real</b><p>{voiceTranscript}</p></div>}
+          {voiceResponse&&<div className="e-row"><b>Respuesta sintetizada</b><p>{voiceResponse}</p></div>}
+          {voiceResponse&&!voiceObservationSaved&&<div className="e-row">
+            <b>¿Escuchaste el audio por los altavoces? (opcional)</b>
+            <p className="muted">Tu respuesta es una observación suplementaria y no sustituye la medición acústica ni la validación independiente.</p>
+            <div className="actions">
+              <button onClick={()=>saveVoiceObservation("YES")}>Sí</button>
+              <button onClick={()=>saveVoiceObservation("NO")}>No</button>
+              <button onClick={()=>saveVoiceObservation("NOT_SURE")}>No estoy seguro</button>
+            </div>
+          </div>}
+          {voiceObservationSaved&&<p className="muted">Observación suplementaria registrada: {voiceObservation}.</p>}
+          <p className="muted">No se guarda audio ni transcripción en el ledger. Los archivos temporales se eliminan al finalizar el turno.</p>
           <h3>Bridge remoto</h3>
           <p>{settings.remote_chat_bridge?"Configurado: el round-trip se valida por mensaje.":"No configurado. El chat seguira local y lo declarara explicitamente."}</p>
         </article>

@@ -1,0 +1,364 @@
+name: "LOUKSNA ZD V0.3 — Virtual VM Voice E2E"
+
+on:
+  push:
+    branches: [work/voice-e2e-stack-20261010]
+    paths:
+      - ".github/workflows/louksna-zd-v03-virtual-vm-voice-e2e.yml"
+      - "scripts/missions/v03_templates/voice.rs"
+      - "scripts/missions/louksna_zd_candidate_materializer.py"
+      - "scripts/missions/louksna_zd_v03_functionalizer.py"
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/louksna-zd-v03-virtual-vm-voice-e2e.yml"
+      - "scripts/missions/v03_templates/voice.rs"
+      - "scripts/missions/louksna_zd_candidate_materializer.py"
+      - "scripts/missions/louksna_zd_v03_functionalizer.py"
+  workflow_dispatch:
+    inputs:
+      candidate_sha:
+        description: "Exact candidate commit SHA to test"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: louksna-vm-voice-e2e-${{ github.event.pull_request.head.sha || inputs.candidate_sha || github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  virtual-vm-voice-e2e:
+    name: "CP-07-VM — Debian guest + PulseAudio userspace loopback + real STT/LLM/TTS"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      CANDIDATE_SHA: ${{ inputs.candidate_sha || github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+          persist-credentials: false
+
+      - name: Install QEMU and VM tooling
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get -o Acquire::Retries=3 update
+          sudo apt-get -o Acquire::Retries=3 install --yes --no-install-recommends qemu-system-x86 qemu-utils cloud-image-utils openssh-client jq curl ca-certificates
+          qemu-system-x86_64 --version | head -n 1
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+
+      - name: Prepare disposable Debian 13 VM with virtual audio voice pipeline
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p evidence/cp07-vm "$RUNNER_TEMP/cp07-vm"
+          cd "$RUNNER_TEMP/cp07-vm"
+          curl --fail --show-error --location --retry 3 https://cloud.debian.org/images/cloud/trixie/latest/debian-13-genericcloud-amd64.qcow2 -o debian.qcow2
+          ssh-keygen -q -t ed25519 -N '' -f vm_key
+          PUBKEY="$(cat vm_key.pub)"
+          cat > user-data <<'USERDATA'
+          #cloud-config
+          hostname: louksna-cp07-vm
+          users:
+            - name: louksna-test
+              uid: 1000
+              groups: [sudo, audio]
+              shell: /bin/bash
+              sudo: ALL=(ALL) NOPASSWD:ALL
+              lock_passwd: true
+              ssh_authorized_keys:
+                - __PUBKEY__
+          package_update: true
+          packages:
+            - build-essential
+            - cmake
+            - git
+            - curl
+            - ca-certificates
+            - python3
+            - python3-venv
+            - alsa-utils
+            - libasound2-plugins
+            - pulseaudio
+            - pulseaudio-utils
+            - jq
+          write_files:
+            - path: /etc/pulse/system.pa
+              permissions: '0644'
+              content: |
+                load-module module-native-protocol-unix auth-anonymous=1 socket=/run/pulse/native
+                load-module module-null-sink sink_name=Loopback rate=16000 channels=1
+                set-default-sink Loopback
+                set-default-source Loopback.monitor
+            - path: /usr/local/sbin/louksna-cp07-vm-test.sh
+              permissions: '0755'
+              content: |
+                #!/usr/bin/env bash
+                set -Eeuo pipefail
+                # cloud-init can launch commands without HOME; Ollama panics if HOME is unset.
+                export HOME=/root
+                export CANDIDATE_SHA="__CANDIDATE_SHA__"
+                exec > >(tee /var/log/louksna-cp07-vm-test.log) 2>&1
+                export DEBIAN_FRONTEND=noninteractive
+                STATUS=/var/lib/louksna-cp07-vm-status.json
+                FAILURE=/var/lib/louksna-cp07-vm-failure.json
+                mkdir -p /var/lib/louksna-cp07 /opt/louksna-cp07
+                echo '{"status":"RUNNING","mode":"QEMU_DEBIAN13_PULSEAUDIO_USERSPACE_LOOPBACK","physical_hardware_claimed":false}' > "$STATUS"
+                on_error() {
+                  rc=$?
+                  python3 - "$FAILURE" "$rc" "$LINENO" "$BASH_COMMAND" <<'PY'
+                import datetime,json,pathlib,sys,os
+                p=pathlib.Path(sys.argv[1])
+                p.write_text(json.dumps({"schema":"louksna.zd.v03.cp07-vm-failure.v1","exit_code":int(sys.argv[2]),"line":int(sys.argv[3]),"command":sys.argv[4][:500],"timestamp_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"candidate_commit_sha":os.environ.get("CANDIDATE_SHA","UNBOUND")},indent=2,sort_keys=True)+"\n")
+                PY
+                }
+                finish() { rc=$?; python3 - "$STATUS" "$rc" <<'PY'
+                import json,pathlib,sys,datetime
+                p=pathlib.Path(sys.argv[1]); d=json.loads(p.read_text())
+                d.update(status=("PASS_VIRTUAL_E2E" if int(sys.argv[2])==0 else "HOLD"), exit_code=int(sys.argv[2]), finished_utc=datetime.datetime.now(datetime.timezone.utc).isoformat())
+                p.write_text(json.dumps(d,indent=2,sort_keys=True)+"\n")
+                PY
+                }
+                trap on_error ERR
+                trap finish EXIT
+                install -d -o pulse -g pulse -m 0775 /run/pulse
+                pulseaudio --system --daemonize=yes --disallow-exit --exit-idle-time=-1 --log-target=file:/var/log/pulseaudio.log
+                export PULSE_SERVER=unix:/run/pulse/native
+                for attempt in $(seq 1 30); do
+                  if pactl info >/dev/null 2>&1; then break; fi
+                  sleep 1
+                done
+                pactl info | tee /var/lib/louksna-cp07/pulseaudio-info.log
+                pactl list short sinks | tee /var/lib/louksna-cp07/audio-sinks.log
+                pactl list short sources | tee /var/lib/louksna-cp07/audio-sources.log
+                grep -q 'Loopback.monitor' /var/lib/louksna-cp07/audio-sources.log
+                git clone --depth 1 --branch v1.7.6 https://github.com/ggml-org/whisper.cpp.git /opt/louksna-cp07/whisper.cpp
+                cmake -S /opt/louksna-cp07/whisper.cpp -B /opt/louksna-cp07/whisper.cpp/build -DCMAKE_BUILD_TYPE=Release
+                cmake --build /opt/louksna-cp07/whisper.cpp/build --config Release -j2
+                curl --fail --location --retry 3 https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin -o /opt/louksna-cp07/ggml-base.bin
+                python3 -m venv /opt/louksna-cp07/venv
+                /opt/louksna-cp07/venv/bin/pip install --disable-pip-version-check piper-tts
+                /opt/louksna-cp07/venv/bin/python -m piper.download_voices --data-dir /opt/louksna-cp07/voices es_ES-sharvard-medium
+                curl --fail --location --retry 3 https://ollama.com/install.sh -o /tmp/ollama-install.sh
+                sh /tmp/ollama-install.sh
+                systemctl enable --now ollama
+                ollama pull smollm2:360m
+                printf 'Hola. Prueba de voz de Louksna. Hola. Prueba de voz de Louksna.' | /opt/louksna-cp07/venv/bin/python -m piper -m es_ES-sharvard-medium --data-dir /opt/louksna-cp07/voices -f /opt/louksna-cp07/input.wav
+                test -s /opt/louksna-cp07/input.wav
+                (timeout 12s parecord --server=unix:/run/pulse/native --device=Loopback.monitor --file-format=wav --rate=16000 --channels=1 --format=s16le /opt/louksna-cp07/capture.wav || true) &
+                REC_PID=$!
+                # Wait until the recorder's source-output is visible before playback;
+                # this avoids clipping the beginning while parecord initializes.
+                pactl list short sources | awk '$2=="Loopback.monitor" {found=1} END {exit !found}'
+                # parecord is explicitly bound to Loopback.monitor above. Wait for
+                # its source-output to appear, without assuming pactl's source ID
+                # column has the same representation across PulseAudio versions.
+                for attempt in $(seq 1 30); do
+                  if pactl list short source-outputs | awk 'NF {found=1} END {exit !found}'; then break; fi
+                  sleep 0.2
+                done
+                pactl list short source-outputs | awk 'NF {found=1} END {exit !found}'
+                sleep 1
+                paplay --server=unix:/run/pulse/native --device=Loopback /opt/louksna-cp07/input.wav
+                wait "$REC_PID" || true
+                test -s /opt/louksna-cp07/capture.wav
+                python3 - /opt/louksna-cp07/capture.wav <<'PY'
+                import math,struct,sys,wave
+                p=sys.argv[1]
+                with wave.open(p,'rb') as w:
+                    channels=w.getnchannels(); width=w.getsampwidth(); rate=w.getframerate(); frames=w.getnframes(); raw=w.readframes(frames)
+                if channels != 1 or width != 2 or rate != 16000: raise SystemExit('CAPTURE_FORMAT_INVALID')
+                if frames < rate: raise SystemExit('CAPTURE_TOO_SHORT')
+                samples=struct.unpack('<'+'h'*(len(raw)//2),raw)
+                rms=math.sqrt(sum(x*x for x in samples)/max(1,len(samples)))
+                if rms < 100: raise SystemExit('CAPTURE_SIGNAL_TOO_LOW')
+                print(f'CAPTURE_VALID frames={frames} duration_s={frames/rate:.2f} rms={rms:.1f}')
+                PY
+                /opt/louksna-cp07/whisper.cpp/build/bin/whisper-cli -m /opt/louksna-cp07/ggml-base.bin -f /opt/louksna-cp07/capture.wav -l es -nt -np > /opt/louksna-cp07/transcript.txt
+                test -s /opt/louksna-cp07/transcript.txt
+                python3 - /opt/louksna-cp07/transcript.txt <<'PY'
+                import pathlib,re,sys,unicodedata
+                text=pathlib.Path(sys.argv[1]).read_text(errors='replace').lower()
+                text=''.join(c for c in unicodedata.normalize('NFKD',text) if not unicodedata.combining(c))
+                print('STT_TRANSCRIPT_SANITIZED='+' '.join(text.split())[:300])
+                tokens=set(re.findall(r'[a-z0-9]+',text))
+                expected={'hola','prueba','voz','louksna'}
+                matched=tokens.intersection(expected)
+                if len(matched)<2:
+                    raise SystemExit('STT_EXPECTED_SPANISH_MARKERS_MISSING:matched='+','.join(sorted(matched)))
+                print('STT_CONTENT_VALID markers='+','.join(sorted(matched)))
+                PY
+                TRANSCRIPT="$(cat /opt/louksna-cp07/transcript.txt)"
+                python3 - "$TRANSCRIPT" > /opt/louksna-cp07/llm-response.txt <<'PY'
+                import json,sys,time,urllib.request
+                prompt=sys.argv[1]
+                body={
+                    "model":"smollm2:360m",
+                    "stream":False,
+                    "keep_alive":0,
+                    "options":{"num_ctx":512,"num_batch":64,"num_predict":32,"num_thread":2,"temperature":0},
+                    "messages":[
+                        {"role":"system","content":"Responde brevemente en español."},
+                        {"role":"user","content":"Confirma que procesaste esta prueba de voz: "+prompt}
+                    ]
+                }
+                req=urllib.request.Request("http://127.0.0.1:11434/api/chat",data=json.dumps(body).encode(),headers={"Content-Type":"application/json"})
+                started=time.monotonic()
+                try:
+                    with urllib.request.urlopen(req,timeout=300) as r: d=json.load(r)
+                except TimeoutError:
+                    raise SystemExit("OLLAMA_INFERENCE_TIMEOUT:model=smollm2:360m;timeout_s=300;num_ctx=512;num_predict=32")
+                answer=d.get("message",{}).get("content","").strip()
+                if not answer: raise SystemExit("EMPTY_LLM_RESPONSE")
+                print(f"OLLAMA_INFERENCE_VALID elapsed_s={time.monotonic()-started:.1f} response_chars={len(answer)}",file=sys.stderr)
+                print(answer)
+                PY
+                /opt/louksna-cp07/venv/bin/python -m piper -m es_ES-sharvard-medium --data-dir /opt/louksna-cp07/voices -f /opt/louksna-cp07/response.wav < /opt/louksna-cp07/llm-response.txt
+                test -s /opt/louksna-cp07/response.wav
+                paplay --server=unix:/run/pulse/native --device=Loopback /opt/louksna-cp07/response.wav
+                python3 - /opt/louksna-cp07/response.wav <<'PY'
+                import sys,wave
+                with wave.open(sys.argv[1],'rb') as w:
+                    if w.getnframes() <= 0 or w.getframerate() <= 0: raise SystemExit('TTS_WAV_INVALID')
+                    print(f'TTS_WAV_VALID duration_s={w.getnframes()/w.getframerate():.2f}')
+                PY
+                sha256sum /opt/louksna-cp07/input.wav /opt/louksna-cp07/capture.wav /opt/louksna-cp07/response.wav /opt/louksna-cp07/transcript.txt /opt/louksna-cp07/llm-response.txt > /var/lib/louksna-cp07/SHA256SUMS
+                python3 - <<'PY'
+                import datetime,hashlib,json,pathlib,platform
+                root=pathlib.Path('/opt/louksna-cp07')
+                files=['input.wav','capture.wav','response.wav','transcript.txt','llm-response.txt']
+                obj={'schema':'louksna.zd.v03.cp07-vm-voice-e2e.v1','status':'PASS_VIRTUAL_E2E','candidate_commit_sha':__import__('os').environ.get('CANDIDATE_SHA','UNBOUND'),'mode':'QEMU_DEBIAN13_PULSEAUDIO_USERSPACE_LOOPBACK','physical_audio_hardware_tested':False,'audible_playback_confirmed_by_operator':False,'stt':'whisper.cpp v1.7.6','llm':'ollama smollm2:360m','tts':'Piper es_ES-sharvard-medium','files':{n:{'bytes':(root/n).stat().st_size,'sha256':hashlib.sha256((root/n).read_bytes()).hexdigest()} for n in files},'timestamp_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'kernel':platform.platform()}
+                pathlib.Path('/var/lib/louksna-cp07/CP-07-VM-EVIDENCE.json').write_text(json.dumps(obj,indent=2,sort_keys=True)+'\n')
+                PY
+                rm -f /opt/louksna-cp07/input.wav /opt/louksna-cp07/capture.wav /opt/louksna-cp07/response.wav
+                test ! -e /opt/louksna-cp07/input.wav && test ! -e /opt/louksna-cp07/capture.wav && test ! -e /opt/louksna-cp07/response.wav
+                echo 'CP07_VM_VOICE_E2E=PASS'
+          runcmd:
+            - [bash, -lc, "systemctl enable --now ssh"]
+            - [bash, -lc, "nohup /usr/local/sbin/louksna-cp07-vm-test.sh >/var/log/louksna-cp07-cloud-init.log 2>&1 &"]
+          USERDATA
+          sed -i "s|__PUBKEY__|$PUBKEY|g; s|__CANDIDATE_SHA__|$CANDIDATE_SHA|g" user-data
+          cat > meta-data <<EOF
+          instance-id: louksna-cp07-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}
+          local-hostname: louksna-cp07-vm
+          EOF
+          cloud-localds seed.iso user-data meta-data
+          qemu-img create -f qcow2 -F qcow2 -b debian.qcow2 vm-overlay.qcow2 18G
+          ACCEL=tcg
+          if test -e /dev/kvm && sudo qemu-system-x86_64 -machine q35,accel=kvm -cpu max -m 128 -nodefaults -display none -S -daemonize -pidfile /tmp/louksna-kvm-probe.pid 2>kvm-probe.log; then
+            ACCEL=kvm
+            sudo kill "$(sudo cat /tmp/louksna-kvm-probe.pid)" 2>/dev/null || true
+          fi
+          echo "QEMU_ACCEL=$ACCEL" | tee "$GITHUB_WORKSPACE/evidence/cp07-vm/virtualization.txt"
+          sudo qemu-system-x86_64 -machine "q35,accel=$ACCEL" -cpu max -smp 2 -m 4096             -drive file=vm-overlay.qcow2,if=virtio,format=qcow2             -drive file=seed.iso,media=cdrom,readonly=on             -netdev user,id=net0,hostfwd=tcp:127.0.0.1:2222-:22 -device virtio-net-pci,netdev=net0 -audiodev none,id=audio0 -device intel-hda -device hda-duplex,audiodev=audio0 -display none -serial file:vm-serial.log -daemonize -pidfile qemu.pid
+          echo "VM_PID_FILE=$RUNNER_TEMP/cp07-vm/qemu.pid" >> "$GITHUB_ENV"
+          echo "VM_DIR=$RUNNER_TEMP/cp07-vm" >> "$GITHUB_ENV"
+          echo "VM_KEY=$RUNNER_TEMP/cp07-vm/vm_key" >> "$GITHUB_ENV"
+
+      - name: Wait for VM and retrieve virtual CP-07 evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cleanup() { if test -f "$VM_PID_FILE"; then sudo kill "$(sudo cat "$VM_PID_FILE")" 2>/dev/null || true; fi; }
+          trap cleanup EXIT
+          READY=0
+          for attempt in $(seq 1 80); do
+            if ssh -i "$VM_KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=3 -p 2222 louksna-test@127.0.0.1 'test -f /var/lib/cloud/instance/boot-finished' 2>/dev/null; then READY=1; break; fi
+            sleep 10
+          done
+          test "$READY" = 1 || { cat "$VM_DIR/vm-serial.log"; exit 1; }
+          RESULT=HOLD
+          for attempt in $(seq 1 100); do
+            RESULT="$(ssh -i "$VM_KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 2222 louksna-test@127.0.0.1 'cat /var/lib/louksna-cp07-vm-status.json 2>/dev/null || printf '\''{"status":"WAITING"}'\''' 2>/dev/null | jq -r '.status' || printf WAITING)"
+            if test "$RESULT" = PASS_VIRTUAL_E2E || test "$RESULT" = HOLD; then break; fi
+            sleep 15
+          done
+          mkdir -p evidence/cp07-vm
+          ssh -i "$VM_KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 2222 louksna-test@127.0.0.1 'sudo cat /var/lib/louksna-cp07-vm/CP-07-VM-EVIDENCE.json 2>/dev/null || true' > evidence/cp07-vm/CP-07-VM-EVIDENCE.json
+          ssh -i "$VM_KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 2222 louksna-test@127.0.0.1 'sudo cat /var/log/louksna-cp07-vm-test.log 2>/dev/null || sudo cat /var/log/louksna-cp07-cloud-init.log 2>/dev/null || true' > evidence/cp07-vm/guest-test.log
+          ssh -i "$VM_KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 2222 louksna-test@127.0.0.1 'sudo cat /var/lib/louksna-cp07/SHA256SUMS 2>/dev/null || true' > evidence/cp07-vm/SHA256SUMS
+          ssh -i "$VM_KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 2222 louksna-test@127.0.0.1 'sudo cat /var/lib/louksna-cp07-vm-failure.json 2>/dev/null || true' > evidence/cp07-vm/guest-failure.json
+          printf '{"schema":"louksna.zd.v03.cp07-vm-host-receipt.v1","candidate_commit_sha":"%s","run_id":"%s","vm_status":"%s","physical_audio_claimed":false}\n' "$CANDIDATE_SHA" "$GITHUB_RUN_ID" "$RESULT" > evidence/cp07-vm/host-receipt.json
+          cat evidence/cp07-vm/host-receipt.json
+          if test "$RESULT" != PASS_VIRTUAL_E2E; then
+            echo "CP-07 VM guest failure receipt:"
+            cat evidence/cp07-vm/guest-failure.json || true
+            echo "CP-07 VM guest log tail:"
+            tail -n 200 evidence/cp07-vm/guest-test.log || true
+            exit 1
+          fi
+
+      - name: Absorb and seal CP-07-VM evidence (always)
+        if: always()
+        shell: bash
+        env:
+          ABSORBER_JOB_STATUS: ${{ job.status }}
+        run: |
+          set -Eeuo pipefail
+          OUT="$GITHUB_WORKSPACE/evidence/cp07-vm"
+          SRC="$RUNNER_TEMP/cp07-vm"
+          mkdir -p "$OUT"
+          # Collect only diagnostic/evidence files. Never copy VM private keys or cloud-init user-data.
+          for f in vm-serial.log kvm-probe.log; do
+            if test -f "$SRC/$f"; then sudo cat "$SRC/$f" > "$OUT/$f"; fi
+          done
+          if test -f "$SRC/virtualization.txt" && ! test -f "$OUT/virtualization.txt"; then
+            cp "$SRC/virtualization.txt" "$OUT/virtualization.txt"
+          fi
+          if test -f "$SRC/CP-07-VM-EVIDENCE.json" && ! test -f "$OUT/CP-07-VM-EVIDENCE.json"; then
+            cp "$SRC/CP-07-VM-EVIDENCE.json" "$OUT/CP-07-VM-EVIDENCE.json"
+          fi
+          if test -f "$SRC/guest-test.log" && ! test -f "$OUT/guest-test.log"; then
+            cp "$SRC/guest-test.log" "$OUT/guest-test.log"
+          fi
+          python3 - "$OUT" <<'PY'
+          import datetime,hashlib,json,os,pathlib,platform,subprocess,sys
+          out=pathlib.Path(sys.argv[1])
+          def cmd(args):
+              try: return subprocess.run(args,check=False,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=10).stdout.strip()
+              except Exception as e: return f"UNAVAILABLE: {type(e).__name__}: {e}"
+          def sha(p):
+              h=hashlib.sha256()
+              with p.open('rb') as f:
+                  for chunk in iter(lambda:f.read(1024*1024),b''): h.update(chunk)
+              return h.hexdigest()
+          receipt={
+            "schema":"louksna.zd.v03.cp07-vm-evidence-absorber.v1",
+            "candidate_commit_sha":os.environ.get("CANDIDATE_SHA","UNAVAILABLE"),
+            "checked_out_commit_sha":cmd(["git","-C",os.environ.get("GITHUB_WORKSPACE","."),"rev-parse","HEAD"]),
+            "run_id":os.environ.get("GITHUB_RUN_ID"),
+            "run_attempt":os.environ.get("GITHUB_RUN_ATTEMPT"),
+            "workflow":os.environ.get("GITHUB_WORKFLOW"),
+            "job_status_at_absorption":os.environ.get("ABSORBER_JOB_STATUS"),
+            "event_name":os.environ.get("GITHUB_EVENT_NAME"),
+            "runner_os":platform.platform(),
+            "qemu_version":cmd(["qemu-system-x86_64","--version"]),
+            "absorbed_at_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "physical_audio_claimed":False,
+            "private_keys_or_cloud_init_user_data_copied":False
+          }
+          (out/"absorber-receipt.json").write_text(json.dumps(receipt,indent=2,sort_keys=True)+"\n")
+          files=[]
+          for p in sorted(out.rglob("*")):
+              if p.is_file() and p.name!="evidence-manifest.json":
+                  files.append({"path":p.relative_to(out).as_posix(),"bytes":p.stat().st_size,"sha256":sha(p)})
+          manifest={"schema":"louksna.zd.v03.cp07-vm-evidence-manifest.v1","run_id":os.environ.get("GITHUB_RUN_ID"),"candidate_commit_sha":os.environ.get("CANDIDATE_SHA","UNAVAILABLE"),"files":files}
+          (out/"evidence-manifest.json").write_text(json.dumps(manifest,indent=2,sort_keys=True)+"\n")
+          print(json.dumps({"absorber":"COMPLETE","file_count":len(files),"evidence_directory":str(out),"physical_audio_claimed":False},sort_keys=True))
+          PY
+
+      - name: Upload SHA-bound virtual VM evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksna-zd-v03-cp07-virtual-vm-evidence
+          path: evidence/cp07-vm/
+          if-no-files-found: warn
+          retention-days: 90
+
+# CP-07-VM hardening: require captured PCM signal and content-bearing Spanish STT; never infer physical audio evidence.

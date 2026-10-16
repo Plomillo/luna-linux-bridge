@@ -1,0 +1,59 @@
+name: "LOUKSNA ZD V0.3 — CP-03 SQLite runtime probe"
+
+on:
+  push:
+    branches:
+      - work/voice-e2e-stack-20261010
+    paths:
+      - scripts/missions/v03_templates/main.rs
+      - scripts/missions/test_louksna_zd_v03_sqlite_runtime.py
+      - .github/workflows/louksna-cp03-sqlite-runtime.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: louksna-cp03-sqlite-runtime-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  sqlite-runtime:
+    name: "CP-03 — Production DDL / isolated SQLite CRUD / restart persistence"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Verify candidate identity and execute isolated runtime probe
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          python3 --version
+          python3 scripts/missions/test_louksna_zd_v03_sqlite_runtime.py
+          python3 - "$GITHUB_SHA" "$GITHUB_RUN_ID" <<'PY'
+          import json,sys
+          p=json.load(open("evidence/cp03-sqlite-runtime/report.json",encoding="utf-8"))
+          assert p["candidate_commit_sha"] == sys.argv[1], "candidate SHA mismatch"
+          assert str(p["workflow_run_id"]) == sys.argv[2], "run ID mismatch"
+          assert p["native_tauri_command_handlers_exercised"] is False
+          assert p["gate_disposition"] == "HOLD_NATIVE_TAURI_HANDLER_TEST_STILL_REQUIRED"
+          print("CP03_EVIDENCE_BINDING=PASS")
+          PY
+
+      - name: Upload digest-bound CP-03 runtime evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksna-cp03-sqlite-runtime-evidence
+          path: evidence/cp03-sqlite-runtime/
+          if-no-files-found: error
+          retention-days: 90

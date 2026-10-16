@@ -1,0 +1,175 @@
+name: "LOUKSNA ZD V0.3 — Native Rust runtime tests CP-03/04"
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - work/voice-e2e-stack-20261010
+    paths:
+      - scripts/missions/v03_templates/main.rs
+      - scripts/missions/v03_templates/voice.rs
+      - .github/workflows/louksna-cp03-cp04-native-runtime.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: louksna-cp03-cp04-native-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  native-runtime:
+    name: "Native Rust tests — production settings/chat/evidence/Secret Service/restart"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Install Tauri Linux build prerequisites
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo apt-get install -y build-essential curl wget file libssl-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libwebkit2gtk-4.1-dev dbus-x11 gnome-keyring libsecret-tools
+
+      - name: Materialize minimal test-only Tauri package from exact production templates
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          ROOT="$RUNNER_TEMP/louksna-native-runtime"
+          mkdir -p "$ROOT/src-tauri/src" "$ROOT/src-tauri/icons" "$ROOT/dist" evidence/cp03-cp04-native
+          cp scripts/missions/v03_templates/main.rs "$ROOT/src-tauri/src/main.rs"
+          cp scripts/missions/v03_templates/voice.rs "$ROOT/src-tauri/src/voice.rs"
+          cat > "$ROOT/src-tauri/Cargo.toml" <<'EOF'
+          [package]
+          name = "louksna-zona-directiva"
+          version = "0.3.0"
+          description = "LOUKSNA ZONA DIRECTIVA native runtime test harness"
+          authors = ["Louksna"]
+          edition = "2021"
+
+          [build-dependencies]
+          tauri-build = { version = "2", features = [] }
+
+          [dependencies]
+          tauri = { version = "2", features = [] }
+          serde = { version = "1", features = ["derive"] }
+          serde_json = "1"
+          reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "stream"] }
+          rusqlite = { version = "0.32", features = ["bundled"] }
+          sha2 = "0.10"
+          dirs = "6"
+          chrono = { version = "0.4", features = ["serde"] }
+          wait-timeout = "0.2"
+          EOF
+          cat > "$ROOT/src-tauri/build.rs" <<'EOF'
+          fn main() { tauri_build::build(); }
+          EOF
+          cat > "$ROOT/src-tauri/tauri.conf.json" <<'EOF'
+          {
+            "$schema": "https://schema.tauri.app/config/2",
+            "productName": "LOUKSNA ZONA DIRECTIVA",
+            "version": "0.3.0",
+            "identifier": "io.louksna.zonadirectiva",
+            "build": { "frontendDist": "../dist" },
+            "app": { "windows": [{ "title": "LOUKSNA test harness", "width": 800, "height": 600 }] },
+            "bundle": { "active": false, "targets": [] }
+          }
+          EOF
+          printf '<!doctype html><html><body>native test harness</body></html>\n' > "$ROOT/dist/index.html"
+          python3 - "$ROOT/src-tauri/icons/icon.png" <<'PY'
+          import binascii,struct,sys,zlib
+          # Deterministic 1x1 truecolor RGBA PNG; test-only Tauri context asset.
+          def chunk(kind,data):
+              return struct.pack(">I",len(data))+kind+data+struct.pack(">I",binascii.crc32(kind+data)&0xffffffff)
+          raw=bytes([0,8,10,28,255])
+          png=(bytes([137,80,78,71,13,10,26,10])
+               +chunk(b"IHDR",struct.pack(">IIBBBBB",1,1,8,6,0,0,0))
+               +chunk(b"IDAT",zlib.compress(raw,9))
+               +chunk(b"IEND",b""))
+          open(sys.argv[1],"wb").write(png)
+          PY
+          rustc --version | tee evidence/cp03-cp04-native/rustc-version.txt
+          cargo --version | tee evidence/cp03-cp04-native/cargo-version.txt
+          printf '%s\n' "$GITHUB_SHA" > evidence/cp03-cp04-native/candidate-sha.txt
+
+      - name: Run production Rust runtime tests with disposable Secret Service
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="$RUNNER_TEMP/louksna-native-runtime"
+          export ROOT
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          rustc --version
+          cargo --version
+          LOG="$RUNNER_TEMP/cargo-test.log"
+          export RUSTUP_HOME="${RUSTUP_HOME:-$HOME/.rustup}"
+          export CARGO_HOME="${CARGO_HOME:-$HOME/.cargo}"
+          set +e
+          dbus-run-session -- bash -Eeuo pipefail -c '
+            TEST_HOME="$(mktemp -d /tmp/louksna-native-keyring.XXXXXX)"
+            trap "rm -rf \"$TEST_HOME\"" EXIT
+            export HOME="$TEST_HOME"
+            export XDG_CONFIG_HOME="$TEST_HOME/.config"
+            export XDG_DATA_HOME="$TEST_HOME/.local/share"
+            export XDG_RUNTIME_DIR="$TEST_HOME/runtime"
+            mkdir -p "$XDG_CONFIG_HOME" "$XDG_DATA_HOME" "$XDG_RUNTIME_DIR"
+            chmod 700 "$XDG_RUNTIME_DIR"
+            set +e
+            KEYRING_ENV="$(printf "%s\n" "louksna-disposable-native-test-password" | gnome-keyring-daemon --unlock --components=secrets 2>/dev/null)"
+            KEYRING_RC=$?
+            set -e
+            if [ "$KEYRING_RC" -eq 0 ] && [ -n "$KEYRING_ENV" ]; then eval "$KEYRING_ENV"; fi
+            export XDG_DATA_HOME="$TEST_HOME/app-data"
+            export LOUKSNA_TEST_SECRET_SERVICE=1
+            cd "$ROOT/src-tauri"
+            cargo generate-lockfile
+            cargo test --locked -- --test-threads=1
+          ' > "$LOG" 2>&1
+          RC=$?
+          set -e
+          cp "$LOG" evidence/cp03-cp04-native/cargo-test.log
+          python3 - "$GITHUB_SHA" "$GITHUB_RUN_ID" "$RC" evidence/cp03-cp04-native/cargo-test.log <<'PY'
+          import hashlib,json,pathlib,sys
+          sha,run_id,rc,log_path=sys.argv[1],sys.argv[2],int(sys.argv[3]),pathlib.Path(sys.argv[4])
+          log=log_path.read_bytes()
+          text=log.decode("utf-8",errors="replace")
+          tests=[line.strip() for line in text.splitlines() if line.strip().startswith("test louksna_runtime_tests::")]
+          report={
+            "schema":"louksna.zd.v03.cp03-cp04-native-runtime-report.v1",
+            "status":"PASS" if rc==0 and "test result: ok." in text else "FAIL",
+            "candidate_commit_sha":sha,
+            "workflow_run_id":run_id,
+            "native_tauri_backend_functions_exercised":True,
+            "test_binary":"test harness compiled directly from scripts/missions/v03_templates/main.rs and voice.rs",
+            "test_names":tests,
+            "test_log_sha256":hashlib.sha256(log).hexdigest(),
+            "test_log_bytes":len(log),
+            "secret_fixture":"synthetic only; never emitted",
+            "exit_code":rc
+          }
+          p=pathlib.Path("evidence/cp03-cp04-native/report.json")
+          p.write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+          manifest={"schema":"louksna.zd.v03.cp03-cp04-native-manifest.v1","candidate_commit_sha":sha,"workflow_run_id":run_id,"report_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),"test_log_sha256":report["test_log_sha256"],"sealed":True}
+          pathlib.Path("evidence/cp03-cp04-native/manifest.json").write_text(json.dumps(manifest,indent=2,sort_keys=True)+"\n")
+          print(json.dumps({"status":report["status"],"candidate_commit_sha":sha,"workflow_run_id":run_id,"test_count":len(tests),"test_log_sha256":report["test_log_sha256"]},sort_keys=True))
+          PY
+          if [ "$RC" -ne 0 ]; then tail -n 120 "$LOG"; exit "$RC"; fi
+
+      - name: Upload digest-bound native runtime evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksna-cp03-cp04-native-runtime-evidence
+          path: evidence/cp03-cp04-native/
+          if-no-files-found: warn
+          retention-days: 90

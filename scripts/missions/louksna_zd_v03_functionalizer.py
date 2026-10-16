@@ -31,8 +31,10 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "stream"] }
 rusqlite = { version = "0.32", features = ["bundled"] }
+sha2 = "0.10"
 dirs = "6"
 chrono = { version = "0.4", features = ["serde"] }
+wait-timeout = "0.2"
 
 [features]
 custom-protocol = ["tauri/custom-protocol"]
@@ -40,6 +42,7 @@ custom-protocol = ["tauri/custom-protocol"]
 (candidate/"src-tauri"/"Cargo.toml").write_text(cargo,encoding="utf-8")
 
 shutil.copy2(templates/"main.rs",candidate/"src-tauri"/"src"/"main.rs")
+shutil.copy2(templates/"voice.rs",candidate/"src-tauri"/"src"/"voice.rs")
 shutil.copy2(templates/"App.tsx",candidate/"src"/"App.tsx")
 
 css=candidate/"src"/"styles.css"
@@ -97,11 +100,22 @@ Implemented:
 - explicit offline/disconnected state;
 - local governed chat persistence;
 - optional remote chat bridge with explicit round-trip semantics;
+- Linux voice path: ALSA capture, whisper.cpp transcription, local Ollama response, Piper speech synthesis, ALSA playback;
+- voice gate remains OPEN until a real microphone-to-playback E2E run is independently evidenced;
 - no visible internal worker/runtime identities.
+
+## Voice runtime dependencies
+
+- `alsa-utils` (`arecord`, `aplay`) and a working ALSA input/output device;
+- `whisper-cli` from whisper.cpp plus a locally provisioned Whisper model file;
+- `piper` plus a locally provisioned Piper voice model;
+- a running local Ollama service and pulled model.
+
+Configure `LOUKSNA_WHISPER_MODEL`, `LOUKSNA_PIPER_MODEL`, `LOUKSNA_OLLAMA_MODEL`, and optionally `LOUKSNA_VOICE_OLLAMA_URL` (defaults to `http://127.0.0.1:11434/api/chat`). Model files must be obtained from trusted upstream sources and pinned by SHA-256 in deployment evidence. This repository does not bundle models or silently download executables/models.
 
 Not claimed:
 - remote architecture chat unless a bridge endpoint is configured and round-trip passes;
-- voice/call end-to-end;
+- voice/call certification until CP-07 passes with real hardware evidence;
 - ACTIVE authorization.
 """,encoding="utf-8")
 
@@ -143,6 +157,6 @@ print("TELEMETRY V03_GITHUB_READ_ONLY=IMPLEMENTED")
 print("TELEMETRY V03_EVIDENCE_LEDGER=IMPLEMENTED")
 print("TELEMETRY V03_CHAT_LOCAL=IMPLEMENTED")
 print("TELEMETRY V03_CHAT_REMOTE_BRIDGE=PREPARED_NOT_CLAIMED")
-print("TELEMETRY V03_VOICE=GATE_OPEN_NOT_CLAIMED")
+print("TELEMETRY V03_VOICE=IMPLEMENTED_GATE_OPEN_UNTIL_REAL_E2E")
 print("TELEMETRY V03_VISIBLE_IDENTITY=LOUKSNA_ONLY")
 print("LOUKSNA_V03_FUNCTIONALIZATION=PASS")

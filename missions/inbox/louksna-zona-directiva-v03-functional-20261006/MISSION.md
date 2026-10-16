@@ -55,3 +55,22 @@ No declarar telemetría activa salvo ledger/evento real.
 No declarar chat con arquitectura enlazado salvo round-trip real.
 No declarar voz enlazada salvo captura/transporte/respuesta demostrados.
 No declarar ACTIVE por build ni por G23/G24.
+
+
+## ADENDA P6 — VOZ END-TO-END OBLIGATORIA (2026-10-10)
+
+La decisión de alcance confirma que voz E2E es obligatoria para la certificación terminal general. La capacidad debe implementarse como pipeline real y probarse sin simulación: captura de micrófono, STT, transporte/respuesta, TTS y reproducción audible. El gate CP-07 sigue OPEN hasta que se produzca evidencia de hardware real ligada al SHA exacto; código, compilación, QEMU o pruebas de contrato no son suficientes. Dependencias y configuración quedan documentadas en la adenda del contrato de gobernanza. No modificar `main`, no auto-merge y no auto-certificar.
+
+
+## ADENDA P6.1 — EJECUCIÓN FÍSICA DE VOZ EN RUNNER DEDICADO (2026-10-11)
+
+Esta adenda extiende, sin sustituir el alcance previo, `EXECUTION_LOCATION = GITHUB_HOSTED_ONLY`: los checkpoints ordinarios continúan en GitHub-hosted. Exclusivamente la prueba física CP-07 puede ejecutarse en un runner Linux self-hosted dedicado, con hardware real de captura y reproducción. Esta excepción es necesaria porque un runner hosted no demuestra funcionamiento físico de micrófono ni reproducción audible.
+
+El runner físico debe ejecutar el comando nativo de voz de la aplicación sobre el SHA exacto candidato. No basta una prueba de shell aislada, un IPC test double, QEMU, compilación o preflight. La evidencia se entrega como artefacto `louksna-zd-v03-cp07-physical-voice-e2e`, con esquema `louksna.zd.v03.physical-voice-e2e.v1`, SHA candidato, procedencia y hashes de binarios/modelos, resultados separados de captura/STT/respuesta/TTS/reproducción/limpieza y confirmación humana de audio audible. La evidencia de un SHA anterior no se propaga a otro SHA.
+
+El validador de evidencia verifica estructura, procedencia declarada y vinculación del SHA; no reemplaza la validación independiente G23 ni la certificación G24. Si el artefacto falta, es incompleto, no coincide con el candidato o no demuestra cada paso físico, CP-07 queda OPEN y CP-10/G23/G24 permanecen bloqueados. No se autoriza auto-merge ni auto-certificación.
+
+### Adenda operativa: VirtualBox como entorno de CP-07
+
+Se permite ejecutar CP-07 dentro de una VM VirtualBox, siempre que se demuestre acceso funcional a micrófono y salida de audio reales del anfitrión (incluido passthrough USB cuando corresponda), captura nueva desde el micrófono físico y confirmación del operador de que oyó la respuesta sintetizada. Una VM sin ese trayecto físico, una salida nula, audio pregrabado, simulación, QEMU hospedado o pruebas de shell no satisfacen CP-07. La evidencia debe registrar el SHA candidato exacto, dispositivos, versiones, hashes de binarios/modelos y log digest-bound. El runner self-hosted dentro de la VM es solo un mecanismo de ejecución; no concede PASS por sí mismo. La evidencia queda sujeta a G23 independiente y no activa certificación automática.
+
