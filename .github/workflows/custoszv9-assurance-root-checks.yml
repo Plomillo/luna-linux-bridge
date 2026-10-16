@@ -1,0 +1,67 @@
+name: "CUSTOSZV9 trusted assurance-root tests"
+
+on:
+  push:
+    branches: ["feature/custoszv9-assurance-root-*"]
+    paths:
+      - "scripts/custoszv9_gate_trust_root.py"
+      - ".github/workflows/custoszv9-independent-g22-g23-g24.yml"
+      - ".github/workflows/custoszv9-assurance-root-checks.yml"
+      - "tests/test_custoszv9_assurance_root.py"
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/custoszv9_gate_trust_root.py"
+      - ".github/workflows/custoszv9-independent-g22-g23-g24.yml"
+      - ".github/workflows/custoszv9-assurance-root-checks.yml"
+      - "tests/test_custoszv9_assurance_root.py"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: custoszv9-assurance-root-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  trusted-root-tests:
+    name: "Trusted gate helper crypto and workflow syntax tests"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout candidate trust-root changes without persisted credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.12"
+      - name: Install pinned verifier/test-only dependencies
+        run: python -m pip install --disable-pip-version-check --only-binary=:all: cryptography==50.0.2 PyYAML==6.0.2
+      - name: Compile trusted verifier and tests
+        run: python -m py_compile scripts/custoszv9_gate_trust_root.py tests/test_custoszv9_assurance_root.py
+      - name: Test Ed25519 signing, identity separation and evidence consistency
+        run: python -m unittest discover -s tests -p 'test_custoszv9_assurance_root.py' -v
+      - name: Parse assurance workflow and enforce named jobs
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import yaml
+          path=Path(".github/workflows/custoszv9-independent-g22-g23-g24.yml")
+          workflow=yaml.safe_load(path.read_text(encoding="utf-8"))
+          jobs=workflow.get("jobs",{})
+          required={"g22","g23_validate","g23_attest","g24"}
+          missing=sorted(required-set(jobs))
+          assert not missing, f"TRUSTED_WORKFLOW_JOBS_MISSING:{missing}"
+          assert jobs["g23_validate"]["needs"] == "g22"
+          assert jobs["g23_attest"]["needs"] == "g23_validate"
+          assert jobs["g24"]["needs"] == "g23_attest"
+          assert "PUAC2_G23_SIGNING_PRIVATE_KEY_PEM" in path.read_text(encoding="utf-8")
+          assert "PUAC2_G24_SIGNING_PRIVATE_KEY_PEM" in path.read_text(encoding="utf-8")
+          print("TRUSTED_WORKFLOW_SYNTAX_AND_DEPENDENCIES_PASS")
+          PY
