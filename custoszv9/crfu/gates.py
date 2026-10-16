@@ -19,12 +19,19 @@ def evaluate_gate_evidence(records:Any,*,candidate_commit_sha:str,package_sha256
   return {"status":"HOLD","reason":"CANDIDATE_OR_TRUST_ROOT_IDENTITY_INVALID","release_eligible":False}
  if not isinstance(producer_identity,str) or not producer_identity.strip():
   return {"status":"HOLD","reason":"PRODUCER_IDENTITY_MISSING","release_eligible":False}
+ if not isinstance(records,list):
+  return {"status":"HOLD","reason":"GATE_EVIDENCE_ROOT_NOT_LIST","release_eligible":False}
  index={}
- for row in records if isinstance(records,list) else []:
-  if isinstance(row,dict) and isinstance(row.get("gate_id"),str):
-   if row["gate_id"] in index:
-    return {"status":"FAIL","reason":"DUPLICATE_GATE_RECORD:"+row["gate_id"],"release_eligible":False}
-   index[row["gate_id"]]=row
+ registered=set(CANONICAL_GATES)|set(LOCAL_PUAC_CONTROLS)
+ for position,row in enumerate(records):
+  if not isinstance(row,dict) or not isinstance(row.get("gate_id"),str) or not row["gate_id"].strip():
+   return {"status":"FAIL","reason":"MALFORMED_GATE_RECORD:"+str(position),"release_eligible":False}
+  gate_id=row["gate_id"]
+  if gate_id not in registered:
+   return {"status":"FAIL","reason":"UNREGISTERED_GATE_IDENTIFIER:"+gate_id,"release_eligible":False}
+  if gate_id in index:
+   return {"status":"FAIL","reason":"DUPLICATE_GATE_RECORD:"+gate_id,"release_eligible":False}
+  index[gate_id]=row
  cp=[];ch=[];cf=[];lp=[];lh=[];lf=[];signature_results={}
  for gate in list(CANONICAL_GATES)+list(LOCAL_PUAC_CONTROLS):
   local=gate in LOCAL_PUAC_CONTROLS
