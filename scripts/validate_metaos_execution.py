@@ -2,14 +2,17 @@
 """Bounded, hostless behavioral validation of the pinned MetaOS component."""
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import importlib.metadata
+import io
 import itertools
 import json
 import os
 import re
 import sys
 import time
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -19,6 +22,7 @@ from wasmtime.component import Component, Linker
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 from custoszv8.core import MetaOSAdapter, METAOS_V8_CANDIDATE_SHA256
+from custoszv8.cli import main as custoszv8_cli_main
 SOURCE_WASM = ROOT / "artifacts/custosz-v7/MetaOS.wasm"
 WASM = ROOT / "build/MetaOS_V8_candidate.wasm"
 COMPONENT_EVIDENCE = ROOT / "evidence/custoszv8-metaos-component.json"
@@ -268,6 +272,46 @@ def main() -> int:
             }
             report["v8_adapter_invocations"].append(row)
 
+        # Exercise the production CLI and confirm append-only evidence for real invocation.
+        with tempfile.TemporaryDirectory(prefix="custoszv8-metaos-cli-") as cli_tmp:
+            journal_path = Path(cli_tmp) / "metaos-invocations.jsonl"
+            cli_stdout = io.StringIO()
+            cli_code = [
+                "metaos-invoke", "network-default-deny", "--args-json", "[]",
+                "--expected-sha256", METAOS_V8_CANDIDATE_SHA256,
+                "--authorization-ref", "CI-BOUNDED-PURE-COMPONENT-PROBE",
+                "--allow-execution", "--path", str(WASM),
+                "--fuel", str(FUEL_PER_CALL), "--journal", str(journal_path)
+            ]
+            with contextlib.redirect_stdout(cli_stdout):
+                cli_exit = custoszv8_cli_main(cli_code)
+            try:
+                cli_output = json.loads(cli_stdout.getvalue())
+            except json.JSONDecodeError as exc:
+                raise RuntimeError("production CLI did not emit valid JSON") from exc
+            from custoszv8.core import EvidenceJournal
+            journal_result = EvidenceJournal(journal_path).verify()
+            cli_pass = (
+                cli_exit == 0 and
+                cli_output.get("status") == "PASS_METAOS_EXPORT_INVOKED" and
+                cli_output.get("export_name") == "network-default-deny" and
+                cli_output.get("result") is True and
+                journal_result.get("records") == 1 and
+                journal_result.get("status") == "PASS"
+            )
+            report["production_cli_roundtrip"] = {
+                "command": "metaos-invoke network-default-deny",
+                "exit_code": cli_exit,
+                "output_status": cli_output.get("status"),
+                "output_result": cli_output.get("result"),
+                "journal_status": journal_result.get("status"),
+                "journal_record_count": journal_result.get("records"),
+                "journal_sha256": digest_file(journal_path),
+                "evidence_event_type": cli_output.get("evidence_event", {}).get("event_type"),
+                "append_only_chain_verified": cli_pass,
+                "assertion_pass": cli_pass,
+            }
+
         failed = []
         for name, rows in report["boolean_truth_tables"].items():
             for row in rows:
@@ -282,6 +326,8 @@ def main() -> int:
         for row in report["v8_adapter_invocations"]:
             if not row["assertion_pass"]:
                 failed.append(f"V8 adapter invocation failed for {row['export']}: {row['adapter_result']}")
+        if not report.get("production_cli_roundtrip", {}).get("assertion_pass"):
+            failed.append("production CLI invocation/evidence-journal roundtrip failed")
         report["v8_adapter_invocation_count"] = len(report["v8_adapter_invocations"])
         report["v8_adapter_invocations_passed"] = sum(1 for row in report["v8_adapter_invocations"] if row["assertion_pass"])
         report["calls_executed"] = calls
