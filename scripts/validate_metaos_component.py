@@ -138,6 +138,8 @@ def main() -> int:
                 raise RuntimeError("wasm-tools could not disassemble the component for semantic review")
 
             # Create a new, explicitly versioned candidate. Preserve the original WASM bytes untouched.
+            initial_lines = wit.stdout.splitlines()
+            original_imports = [line.strip() for line in initial_lines if re.match(r"^\s*import\s+", line)]
             patch_specs = [
                 {
                     "export": "provider-failure-is-mission-failure",
@@ -187,8 +189,8 @@ def main() -> int:
                 "patches": patch_specs,
                 "original_preserved": sha256_file(WASM) == report["wasm_sha256"],
                 "abi_wit_unchanged": candidate_wit.returncode == 0 and candidate_wit.stdout == wit.stdout,
-                "host_imports_count": len(imports),
-                "host_imports": imports
+                "host_imports_count": len(original_imports),
+                "host_imports": original_imports
             }
             report["versioned_candidate_component_validation"] = report["candidate_component_validation"]
             report["versioned_candidate_wit_sha256"] = report["candidate_wit_sha256"]
