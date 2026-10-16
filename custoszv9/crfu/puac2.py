@@ -87,6 +87,7 @@ def validate_event_records(events:Any)->dict[str,Any]:
   elif n in seqs:errors.append("DUPLICATE_SEQUENCE_NUMBER:"+str(n))
   else:seqs.add(n)
   if not isinstance(e.get("causal_parents"),list):errors.append("CAUSAL_PARENTS_NOT_LIST:"+eid)
+  elif any(not isinstance(p,str) or not p.strip() for p in e["causal_parents"]):errors.append("CAUSAL_PARENT_ID_INVALID:"+eid)
  if holds or errors:return {"status":"HOLD" if holds and not errors else "FAIL","reasons":holds+errors,"event_count":len(index)}
  for eid,e in index.items():
   for parent in e["causal_parents"]:
@@ -160,7 +161,7 @@ def evaluate_incident_closure(evidence:Any)->dict[str,Any]:
  if evidence.get("g23_g24_required") is True and evidence.get("g23_g24_pass") is not True:failed.append("G23_G24_REQUIRED_BUT_NOT_PASS")
  if evidence.get("new_operational_authorization") is not True:failed.append("NEW_OPERATIONAL_AUTHORIZATION_MISSING")
  return {"status":"PASS" if not failed else "BLOCKED","reasons":failed,"incident_closed":not failed,
-         "activation_authorized":False if failed else True,"certification_propagation":False}
+         "activation_authorized":False,"reactivation_requires_separate_authorization_controller":True,"certification_propagation":False}
 
 def coverage_report(requirements:Any,documented_requirement_ids:Any,operational_evidence:Any,
                     *,required_test_classes:int=28,required_invariants:int=16,target_sha256:str|None=None)->dict[str,Any]:
@@ -177,10 +178,21 @@ def coverage_report(requirements:Any,documented_requirement_ids:Any,operational_
    rid=e.get("requirement_id")
    if rid in required_ids:operational.add(rid)
  doc_count=len(required_ids&documented);op_count=len(required_ids&operational)
+ test_ids=set();invariant_ids=set()
+ if isinstance(operational_evidence,list):
+  for e in operational_evidence:
+   if not isinstance(e,dict) or e.get("status")!="PASS" or e.get("reference_only") is True:continue
+   if target_sha256 is not None and e.get("target_sha256")!=target_sha256:continue
+   ident=e.get("test_class_id")
+   if e.get("record_type")=="TEST_CLASS" and isinstance(ident,str) and ident.strip():test_ids.add(ident)
+   ident=e.get("invariant_id")
+   if e.get("record_type")=="INVARIANT" and isinstance(ident,str) and ident.strip():invariant_ids.add(ident)
  return {"status":"MEASURED","requirements_total":len(required_ids),
   "documentation":{"covered":doc_count,"total":len(required_ids),"ratio":doc_count/len(required_ids)},
   "operational":{"covered":op_count,"total":len(required_ids),"ratio":op_count/len(required_ids)},
-  "test_class_total_required":required_test_classes,"invariant_total_required":required_invariants,
+  "T_operational":{"passed":len(test_ids),"total":required_test_classes,"ratio":len(test_ids)/required_test_classes if required_test_classes else None},
+  "I_operational":{"proven":len(invariant_ids),"total":required_invariants,"ratio":len(invariant_ids)/required_invariants if required_invariants else None},
+  "target_artifact_binding_required":target_sha256 is not None,
   "reference_only_evidence_excluded":True,"g23_g24_not_replaced_by_coverage":True}
 
 PUAC_CONTROL_OUTPUTS={
@@ -238,3 +250,39 @@ def validate_puac_control(control_id:str,payload:Any,*,producer_identity:str|Non
  if errors:return {"status":"FAIL","reasons":sorted(set(errors)),"control_id":control_id,"canonical_admission":"NOT_GRANTED"}
  return {"status":"PASS_FOR_LOCAL_CONTROL_SCOPE","reasons":[],"control_id":control_id,"canonical_admission":"NOT_GRANTED",
          "does_not_replace_G23_G24":True}
+
+def transitive_dependency_impact(dependency_graph:Any,changed_nodes:Any)->dict[str,Any]:
+ """Compute reverse transitive dependents; unknown nodes and cycles are never silently ignored."""
+ if not isinstance(dependency_graph,dict) or not isinstance(changed_nodes,(list,set,tuple)) or not changed_nodes:
+  return {"status":"HOLD","reason":"DEPENDENCY_GRAPH_OR_CHANGED_SET_INVALID","impacted_nodes":[]}
+ graph={}
+ for node,deps in dependency_graph.items():
+  if not isinstance(node,str) or not node.strip() or not isinstance(deps,list) or any(not isinstance(d,str) or not d.strip() for d in deps):
+   return {"status":"HOLD","reason":"DEPENDENCY_EDGE_INVALID","node":str(node),"impacted_nodes":[]}
+  graph[node]=set(deps)
+ unknown=sorted({d for deps in graph.values() for d in deps if d not in graph})
+ changed=set(changed_nodes)
+ if not changed.issubset(set(graph)):
+  return {"status":"HOLD","reason":"CHANGED_NODE_UNREGISTERED","unknown_changed_nodes":sorted(changed-set(graph)),"impacted_nodes":[]}
+ if unknown:return {"status":"HOLD","reason":"DEPENDENCY_NODE_UNRESOLVED","unknown_dependencies":unknown,"impacted_nodes":[]}
+ visiting=set();visited=set();cycle=[]
+ def visit(node:str)->bool:
+  if node in visiting:cycle.append(node);return False
+  if node in visited:return True
+  visiting.add(node)
+  for dep in graph[node]:
+   if not visit(dep):return False
+  visiting.remove(node);visited.add(node);return True
+ for node in graph:
+  if not visit(node):return {"status":"FAIL","reason":"DEPENDENCY_CYCLE","cycle_nodes":sorted(set(cycle)),"impacted_nodes":[]}
+ reverse={node:set() for node in graph}
+ for node,deps in graph.items():
+  for dep in deps:reverse[dep].add(node)
+ impacted=set();frontier=list(changed)
+ while frontier:
+  current=frontier.pop()
+  for dependent in reverse[current]:
+   if dependent not in changed and dependent not in impacted:
+    impacted.add(dependent);frontier.append(dependent)
+ return {"status":"PASS","changed_nodes":sorted(changed),"impacted_nodes":sorted(impacted),
+         "dependency_graph_complete":True,"transitive_closure":True}
