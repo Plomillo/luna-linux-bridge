@@ -48,7 +48,7 @@ jobs:
       - name: Compile CRFU sources, tests and builder
         run: python3 -m compileall -q custoszv9 tests/test_custoszv9.py build_custoszv9.py scripts/custoszv9_gate_trust_root.py
       - name: Install pinned Ed25519 test dependency (CI only, not bundled in ZIPAPP)
-        run: python3 -m pip install --disable-pip-version-check --only-binary=:all: cryptography==50.0.2
+        run: "python3 -m pip install --disable-pip-version-check --only-binary=:all: cryptography==50.0.2"
       - name: Run CRFU regression tests
         shell: bash
         run: |
