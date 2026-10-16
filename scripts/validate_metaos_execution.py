@@ -96,7 +96,7 @@ def main() -> int:
             raise RuntimeError(f"MetaOS size mismatch: expected {EXPECTED_SIZE}, observed {actual_size}")
         if actual_sha != EXPECTED_SHA256:
             raise RuntimeError("MetaOS bytes do not match the selected immutable SHA-256")
-        if WASMTIME_VERSION != "49.0.3":
+        if WASMTIME_VERSION != "49.0.0":
             raise RuntimeError(f"unexpected Wasmtime version: {WASMTIME_VERSION}")
 
         config = Config()
