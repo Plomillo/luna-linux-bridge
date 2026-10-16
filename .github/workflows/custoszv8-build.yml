@@ -14,6 +14,8 @@ on:
       - "scripts/build_custoszv8_assurance_case.py"
       - "scripts/validate_runtime_v1_integration.py"
       - "scripts/validate_runtime_v1_material_dispatch.py"
+      - "scripts/custoszv8_assurance_trust_root.py"
+      - ".github/workflows/custoszv8-independent-g23-g24.yml"
       - "build.py"
       - ".github/workflows/custoszv8-build.yml"
       - "artifacts/custosz-v7/**"
@@ -30,6 +32,8 @@ on:
       - "scripts/build_custoszv8_assurance_case.py"
       - "scripts/validate_runtime_v1_integration.py"
       - "scripts/validate_runtime_v1_material_dispatch.py"
+      - "scripts/custoszv8_assurance_trust_root.py"
+      - ".github/workflows/custoszv8-independent-g23-g24.yml"
       - "build.py"
       - ".github/workflows/custoszv8-build.yml"
       - "artifacts/custosz-v7/**"
@@ -60,7 +64,7 @@ jobs:
           python-version: "3.12"
 
       - name: Compile source and tests
-        run: python -m compileall -q src tests build.py scripts/validate_components.py scripts/validate_runtime_v1_selftest.py scripts/validate_metaos_component.py scripts/validate_metaos_execution.py scripts/build_custoszv8_assurance_case.py
+        run: python -m compileall -q src tests build.py scripts/validate_components.py scripts/validate_runtime_v1_selftest.py scripts/validate_metaos_component.py scripts/validate_metaos_execution.py scripts/build_custoszv8_assurance_case.py scripts/custoszv8_assurance_trust_root.py
 
       - name: Run V8 unit tests
         shell: bash
