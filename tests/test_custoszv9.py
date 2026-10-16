@@ -114,7 +114,7 @@ class CRFUTests(unittest.TestCase):
         base={"claim_id":"claim-1","subject_id":"system","property_id":"ram","scope_id":"build",
           "context_id":"linux-runner","version":"1","validity_interval":{"not_before_utc":"2000-01-01T00:00:00Z","expires_at_utc":"2099-01-01T00:00:00Z"},
           "unit_of_measure":{"unit_id":"byte","dimension":"information","version":"1"},"value":100,"evidence_state":"SUPPORTED"}
-        self.assertEqual(validate_claim_v2(base)["status"],"PASS")
+        self.assertEqual(validate_claim_v2(base)["status"],"PASS_SCHEMA_ONLY")
         other=dict(base);other["claim_id"]="claim-2";other["value"]=200
         result=classify_claim_conflicts([base,other])
         self.assertEqual(result["status"],"CONFLICT")
@@ -174,11 +174,11 @@ class CRFUTests(unittest.TestCase):
     def test_puac_control_and_gate_claims_cannot_self_certify(self):
         missing=validate_puac_control("PUAC.C27",{})
         self.assertEqual(missing["status"],"HOLD")
-        spoof={"gate_id":"G01","candidate_commit_sha":"a"*64,"package_sha256":"b"*64,
-          "trusted_workflow_sha":"c"*64,"producer_identity":"builder","evaluator_identity":"validator",
+        spoof={"gate_id":"G01","candidate_commit_sha":"a"*40,"package_sha256":"b"*64,
+          "trusted_workflow_sha":"c"*40,"producer_identity":"builder","evaluator_identity":"validator",
           "signature_verification":"VERIFIED","evidence_sha256":"d"*64,"status":"PASS"}
-        out=evaluate_gate_evidence([spoof],candidate_commit_sha="a"*64,package_sha256="b"*64,
-          trusted_workflow_sha="c"*64,producer_identity="builder")
+        out=evaluate_gate_evidence([spoof],candidate_commit_sha="a"*40,package_sha256="b"*64,
+          trusted_workflow_sha="c"*40,producer_identity="builder")
         self.assertFalse(out["release_eligible"])
         self.assertEqual(out["status"],"HOLD")
     def test_checkpoint_does_not_prove_restoration(self):
