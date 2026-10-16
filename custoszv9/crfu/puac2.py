@@ -167,23 +167,31 @@ def validate_recovery_plan(plan:Any)->dict[str,Any]:
   elif k=="dependency_hashes" and any(not is_sha256(h) for h in plan[k]):errors.append("DEPENDENCY_HASH_INVALID")
  for k in ("incident_id","authorized_actor","checkpoint_id","target_environment","nonregression_plan","rollback_scope","authority_ref"):
   if not isinstance(plan.get(k),str) or not plan[k].strip():errors.append("RECOVERY_FIELD_INVALID:"+k)
- return {"status":"HOLD" if missing else ("FAIL" if errors else "PASS"),
+ return {"status":"HOLD" if missing else ("FAIL" if errors else "PASS_SCHEMA_ONLY"),
          "reasons":(["RECOVERY_FIELDS_MISSING:"+",".join(missing)] if missing else [])+errors,
          "reversibility_proven":False,"execution_or_restoration_not_inferred_from_plan":True}
 def evaluate_incident_closure(evidence:Any)->dict[str,Any]:
  required=("diagnosis_verified","correction_authorized","correction_executed","restoration_verified",
-           "nonregression_verified","traceability_complete","g23_g24_required","g23_g24_pass",
-           "new_operational_authorization")
- if not isinstance(evidence,dict):return {"status":"HOLD","reasons":["INCIDENT_EVIDENCE_NOT_OBJECT"]}
+           "nonregression_verified","traceability_complete","g23_g24_required","g23_g24_pass")
+ if not isinstance(evidence,dict):return {"status":"HOLD","reasons":["INCIDENT_EVIDENCE_NOT_OBJECT"],
+                                         "incident_closed":False,"activation_authorized":False}
  missing=[k for k in required if k not in evidence]
- if missing:return {"status":"HOLD","reasons":["INCIDENT_CLOSURE_EVIDENCE_MISSING:"+",".join(missing)]}
- failed=[]
- for key in ("diagnosis_verified","correction_authorized","correction_executed","restoration_verified","nonregression_verified","traceability_complete"):
-  if evidence.get(key) is not True:failed.append(key.upper()+"_NOT_PROVEN")
- if evidence.get("g23_g24_required") is True and evidence.get("g23_g24_pass") is not True:failed.append("G23_G24_REQUIRED_BUT_NOT_PASS")
- if evidence.get("new_operational_authorization") is not True:failed.append("NEW_OPERATIONAL_AUTHORIZATION_MISSING")
- return {"status":"PASS" if not failed else "BLOCKED","reasons":failed,"incident_closed":not failed,
-         "activation_authorized":False,"reactivation_requires_separate_authorization_controller":True,"certification_propagation":False}
+ if missing:return {"status":"HOLD","reasons":["INCIDENT_CLOSURE_EVIDENCE_MISSING:"+",".join(missing)],
+                    "incident_closed":False,"activation_authorized":False,
+                    "reactivation_requires_separate_authorization_controller":True}
+ failures=[]
+ for key in ("diagnosis_verified","correction_authorized","correction_executed","restoration_verified",
+             "nonregression_verified","traceability_complete"):
+  if evidence.get(key) is not True:failures.append(key.upper()+"_NOT_PROVEN")
+ if not isinstance(evidence.get("g23_g24_required"),bool) or not isinstance(evidence.get("g23_g24_pass"),bool):
+  failures.append("G23_G24_APPLICABILITY_OR_RESULT_NOT_BOOLEAN")
+ elif evidence.get("g23_g24_required") is True and evidence.get("g23_g24_pass") is not True:
+  failures.append("G23_G24_REQUIRED_BUT_NOT_PASS")
+ closed=not failures
+ return {"status":"PASS" if closed else "BLOCKED","reasons":failures,"incident_closed":closed,
+         "activation_authorized":False,
+         "reactivation_authorization_evidence_present":evidence.get("new_operational_authorization") is True,
+         "reactivation_requires_separate_authorization_controller":True,"certification_propagation":False}
 
 def coverage_report(requirements:Any,documented_requirement_ids:Any,operational_evidence:Any,
                     *,required_test_classes:int=28,required_invariants:int=16,target_sha256:str|None=None)->dict[str,Any]:
