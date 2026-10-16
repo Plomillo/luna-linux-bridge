@@ -272,11 +272,14 @@ def _validate_control_evidence_binding(control_id:str,payload:dict[str,Any],*,pr
 def validate_puac_control(control_id:str,payload:Any,*,producer_identity:str|None=None,evaluator_identity:str|None=None,candidate_sha256:str|None=None,candidate_commit_sha:str|None=None)->dict[str,Any]:
  if control_id not in PUAC_CONTROL_OUTPUTS:return {"status":"HOLD","reasons":["CONTROL_ID_NOT_REGISTERED_LOCALLY"]}
  if not isinstance(payload,dict):return {"status":"HOLD","reasons":["CONTROL_EVIDENCE_PAYLOAD_MISSING"]}
- if candidate_sha256 is not None:
-  bound=_validate_control_evidence_binding(control_id,payload,producer_identity=producer_identity,
-      evaluator_identity=evaluator_identity,candidate_sha256=candidate_sha256)
-  if bound["status"]=="HOLD":return {"status":"HOLD","reasons":bound["reasons"],"control_id":control_id,"canonical_admission":"NOT_GRANTED"}
-  if bound["status"]!="PASS":return {"status":"FAIL","reasons":bound["reasons"],"control_id":control_id,"canonical_admission":"NOT_GRANTED"}
+ if not is_sha256(candidate_sha256):
+  return {"status":"HOLD","reasons":["EXACT_CANDIDATE_DIGEST_REQUIRED"],"control_id":control_id,"canonical_admission":"NOT_GRANTED"}
+ if not isinstance(candidate_commit_sha,str) or re.fullmatch(r"[0-9a-f]{40}",candidate_commit_sha) is None:
+  return {"status":"HOLD","reasons":["EXACT_CANDIDATE_COMMIT_REQUIRED"],"control_id":control_id,"canonical_admission":"NOT_GRANTED"}
+ bound=_validate_control_evidence_binding(control_id,payload,producer_identity=producer_identity,
+     evaluator_identity=evaluator_identity,candidate_sha256=candidate_sha256)
+ if bound["status"]=="HOLD":return {"status":"HOLD","reasons":bound["reasons"],"control_id":control_id,"canonical_admission":"NOT_GRANTED"}
+ if bound["status"]!="PASS":return {"status":"FAIL","reasons":bound["reasons"],"control_id":control_id,"canonical_admission":"NOT_GRANTED"}
  missing=[k for k in PUAC_CONTROL_OUTPUTS[control_id] if k not in payload]
  errors=["CONTROL_OUTPUTS_MISSING:"+",".join(missing)] if missing else []
  for flag in PUAC_CONTROL_TRUE_FLAGS[control_id]:
