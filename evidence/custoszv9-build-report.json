@@ -1,0 +1,21 @@
+{
+  "G22": "NOT_GRANTED",
+  "G23": "NOT_GRANTED",
+  "G24": "NOT_GRANTED",
+  "artifact_path": "dist/CUSTOSZV9.pyz",
+  "baseline_sha256": "e0b5866a75d606fe04a246806192a77f35c3509e9b6c31b7ee13b84713b1f60c",
+  "baseline_size_bytes": 99400,
+  "baseline_unchanged": true,
+  "canonical_promotion": "NOT_AUTHORIZED",
+  "certification": "NOT_GRANTED",
+  "embedded_baseline_byte_exact": true,
+  "formal_toolchain_status": "NOT_EXECUTED",
+  "package_sha256": "aeccbd3eb013ff6dfce1b33a67166e6b6d0522fc1e87bf5cd9d491bf202daeba",
+  "package_size_bytes": 232755,
+  "release_eligible": false,
+  "schema": "CUSTOSZV9_BUILD_REPORT/1.0",
+  "source_commit": "518d48f79bfcc49c5f34b12e71df01375a75f062",
+  "status": "PASS_BUILD_ONLY_NOT_CERTIFIED",
+  "v8_package_members_copied": 13,
+  "zip_crc": "PASS"
+}
