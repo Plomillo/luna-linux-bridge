@@ -244,12 +244,38 @@ jobs:
             --authority "$RUNNER_TEMP/evidence/AUTHORITY_EVIDENCE.json" \
             --out "$RUNNER_TEMP/evidence/G24_CERTIFICATE.json"
 
-      - name: Cryptographically attest the G24 certificate
+      - name: Cryptographically attest the G24 certificate (attempt 1)
+        id: g24_attest_1
+        continue-on-error: true
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
         with:
           subject-path: ${{ runner.temp }}/evidence/G24_CERTIFICATE.json
 
+      - name: Retry G24 attestation after transient transparency-log failure (attempt 2)
+        id: g24_attest_2
+        if: ${{ steps.g24_attest_1.outcome != 'success' }}
+        continue-on-error: true
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-path: ${{ runner.temp }}/evidence/G24_CERTIFICATE.json
+
+      - name: Retry G24 attestation after transient transparency-log failure (attempt 3)
+        id: g24_attest_3
+        if: ${{ steps.g24_attest_1.outcome != 'success' && steps.g24_attest_2.outcome != 'success' }}
+        continue-on-error: true
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1699d6
+        with:
+          subject-path: ${{ runner.temp }}/evidence/G24_CERTIFICATE.json
+
+      - name: Require signed attestation creation to succeed
+        if: ${{ steps.g24_attest_1.outcome != 'success' && steps.g24_attest_2.outcome != 'success' && steps.g24_attest_3.outcome != 'success' }}
+        shell: bash
+        run: |
+          echo "::error::G24 attestation failed after three attempts; certification remains HOLD."
+          exit 1
+
       - name: Verify the signed G24 attestation
+        if: ${{ steps.g24_attest_1.outcome == 'success' || steps.g24_attest_2.outcome == 'success' || steps.g24_attest_3.outcome == 'success' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
