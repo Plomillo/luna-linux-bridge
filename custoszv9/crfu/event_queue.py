@@ -5,6 +5,7 @@ Callers dispatch work on new events; there is no busy-wait loop or polling threa
 """
 from __future__ import annotations
 import hashlib,json,sqlite3
+from contextlib import closing
 from datetime import datetime,timezone
 from pathlib import Path
 from typing import Any
@@ -31,7 +32,7 @@ class InvalidTransition(RuntimeError):pass
 class PersistentMissionQueue:
  def __init__(self,path:str|Path):
   self.path=Path(path);self.path.parent.mkdir(parents=True,exist_ok=True)
-  with self._connect() as db:
+  with closing(self._connect()) as db:
    db.execute("CREATE TABLE IF NOT EXISTS missions(mission_id TEXT PRIMARY KEY,task_json TEXT NOT NULL,state TEXT NOT NULL,updated_at TEXT NOT NULL,next_action TEXT,wait_condition TEXT,wait_deadline_utc TEXT,checkpoint_reference TEXT)")
    db.execute("CREATE TABLE IF NOT EXISTS mission_events(event_seq INTEGER PRIMARY KEY AUTOINCREMENT,mission_id TEXT NOT NULL,event_type TEXT NOT NULL,from_state TEXT,to_state TEXT NOT NULL,timestamp_utc TEXT NOT NULL,payload_json TEXT NOT NULL,previous_event_hash TEXT NOT NULL,event_hash TEXT NOT NULL)")
  def _connect(self)->sqlite3.Connection:
@@ -73,6 +74,13 @@ class PersistentMissionQueue:
   if new_state not in ALLOWED.get(expected_state,set()):raise InvalidTransition(f"TRANSITION_FORBIDDEN:{expected_state}->{new_state}")
   fields=fields or {};allowed_fields={"next_action","wait_condition","wait_deadline_utc","checkpoint_reference"}
   if set(fields)-allowed_fields:raise ValueError("UNRECOGNIZED_STATE_FIELDS")
+  if new_state=="WAITING_FOR_EVENT":
+   condition=fields.get("wait_condition");deadline=fields.get("wait_deadline_utc")
+   if not isinstance(condition,str) or not condition.strip() or not isinstance(deadline,str) or not deadline.strip():
+    raise ValueError("WAIT_CONDITION_AND_DEADLINE_REQUIRED")
+   try:parsed=datetime.fromisoformat(deadline.replace("Z","+00:00"))
+   except ValueError:raise ValueError("WAIT_DEADLINE_INVALID")
+   if parsed.tzinfo is None:raise ValueError("WAIT_DEADLINE_MUST_BE_TIMEZONE_AWARE")
   db=self._connect()
   try:
    db.execute("BEGIN IMMEDIATE")
@@ -133,13 +141,13 @@ class PersistentMissionQueue:
    raise
   finally:db.close()
  def get(self,mission_id:str)->dict[str,Any]:
-  with self._connect() as db:
+  with closing(self._connect()) as db:
    row=db.execute("SELECT * FROM missions WHERE mission_id=?",(mission_id,)).fetchone()
   if not row:raise KeyError("MISSION_NOT_FOUND")
   result=dict(row);result["task"]=json.loads(result.pop("task_json"));return result
  def verify_event_chain(self)->dict[str,Any]:
   previous="0"*64;count=0
-  with self._connect() as db:
+  with closing(self._connect()) as db:
    rows=db.execute("SELECT mission_id,event_type,from_state,to_state,timestamp_utc,payload_json,previous_event_hash,event_hash FROM mission_events ORDER BY event_seq").fetchall()
   for no,row in enumerate(rows,1):
    if row["previous_event_hash"]!=previous:return {"status":"FAIL","reason":"PREVIOUS_EVENT_HASH_MISMATCH","event_number":no}
