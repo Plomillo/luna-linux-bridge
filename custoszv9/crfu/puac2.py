@@ -230,7 +230,8 @@ PUAC_CONTROL_FALSE_FLAGS={
  "PUAC.C32":("monitoring_stale","authorization_expired","incident_unmanaged")
 }
 def _validate_control_evidence_binding(control_id:str,payload:dict[str,Any],*,producer_identity:str|None,
-                                             evaluator_identity:str|None,candidate_sha256:str|None)->dict[str,Any]:
+                                             evaluator_identity:str|None,candidate_sha256:str|None,
+                                             candidate_commit_sha:str|None)->dict[str,Any]:
  binding=payload.get("evidence_binding")
  if not isinstance(binding,dict):return {"status":"HOLD","reasons":["CONTROL_EVIDENCE_BINDING_MISSING"]}
  required=("schema","control_id","candidate_sha256","candidate_commit_sha","payload_sha256",
@@ -244,6 +245,8 @@ def _validate_control_evidence_binding(control_id:str,payload:dict[str,Any],*,pr
  elif candidate_sha256 and binding.get("candidate_sha256")!=candidate_sha256:errors.append("CONTROL_EVIDENCE_CANDIDATE_DIGEST_MISMATCH")
  if not isinstance(binding.get("candidate_commit_sha"),str) or re.fullmatch(r"[0-9a-f]{40}",binding["candidate_commit_sha"]) is None:
   errors.append("CONTROL_EVIDENCE_COMMIT_ID_INVALID")
+ elif candidate_commit_sha is None or binding.get("candidate_commit_sha")!=candidate_commit_sha:
+  errors.append("CONTROL_EVIDENCE_COMMIT_ID_MISMATCH")
  if not is_sha256(binding.get("payload_sha256")):errors.append("CONTROL_EVIDENCE_PAYLOAD_DIGEST_INVALID")
  else:
   unsigned={key:value for key,value in payload.items() if key!="evidence_binding"}
@@ -277,7 +280,7 @@ def validate_puac_control(control_id:str,payload:Any,*,producer_identity:str|Non
  if not isinstance(candidate_commit_sha,str) or re.fullmatch(r"[0-9a-f]{40}",candidate_commit_sha) is None:
   return {"status":"HOLD","reasons":["EXACT_CANDIDATE_COMMIT_REQUIRED"],"control_id":control_id,"canonical_admission":"NOT_GRANTED"}
  bound=_validate_control_evidence_binding(control_id,payload,producer_identity=producer_identity,
-     evaluator_identity=evaluator_identity,candidate_sha256=candidate_sha256)
+     evaluator_identity=evaluator_identity,candidate_sha256=candidate_sha256,candidate_commit_sha=candidate_commit_sha)
  if bound["status"]=="HOLD":return {"status":"HOLD","reasons":bound["reasons"],"control_id":control_id,"canonical_admission":"NOT_GRANTED"}
  if bound["status"]!="PASS":return {"status":"FAIL","reasons":bound["reasons"],"control_id":control_id,"canonical_admission":"NOT_GRANTED"}
  missing=[k for k in PUAC_CONTROL_OUTPUTS[control_id] if k not in payload]
