@@ -17,6 +17,8 @@ from wasmtime import Config, Engine, Store
 from wasmtime.component import Component, Linker
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+from custoszv8.core import MetaOSAdapter, METAOS_V8_CANDIDATE_SHA256
 SOURCE_WASM = ROOT / "artifacts/custosz-v7/MetaOS.wasm"
 WASM = ROOT / "build/MetaOS_V8_candidate.wasm"
 COMPONENT_EVIDENCE = ROOT / "evidence/custoszv8-metaos-component.json"
@@ -232,6 +234,40 @@ def main() -> int:
                 "observed": observed, "expected": expected, "assertion_pass": observed is expected,
             }
 
+        # Verify CUSTOSZ V8's actual adapter, not only direct Wasmtime calls.
+        adapter = MetaOSAdapter()
+        adapter_cases = [
+            ("architecture-version", [], 200),
+            ("terminal-success", [EXPECTED_MASKS["terminal-success"]], True),
+            ("knowledge-gate", [EXPECTED_MASKS["knowledge-gate"]], True),
+            ("formalization-gate", [EXPECTED_MASKS["formalization-gate"]], True),
+            ("implementation-gate", [EXPECTED_MASKS["implementation-gate"]], True),
+            ("implementation-authorized", [True, True, True, True], True),
+            ("active-allowed", [True, True, True, True], True),
+            ("checkpoint-trusted", [EXPECTED_MASKS["checkpoint-trusted"]], True),
+            ("provider-failure-is-mission-failure", [], True),
+            ("resource-red-is-mission-failure", [], True),
+            ("unknown-effect-retry-allowed", [], False),
+            ("network-default-deny", [], True),
+        ]
+        report["v8_adapter_invocations"] = []
+        for export_name, adapter_args, expected_value in adapter_cases:
+            adapter_result = adapter.invoke(
+                export_name, adapter_args, METAOS_V8_CANDIDATE_SHA256,
+                authorization_ref="CI-BOUNDED-PURE-COMPONENT-PROBE",
+                explicit_opt_in=True, path=WASM, fuel_limit=FUEL_PER_CALL
+            )
+            row = {
+                "export": export_name, "arguments": adapter_args,
+                "expected_result": expected_value, "adapter_result": adapter_result,
+                "assertion_pass": (
+                    adapter_result.get("status") == "PASS_METAOS_EXPORT_INVOKED" and
+                    type(adapter_result.get("result")) is type(expected_value) and
+                    adapter_result.get("result") == expected_value
+                )
+            }
+            report["v8_adapter_invocations"].append(row)
+
         failed = []
         for name, rows in report["boolean_truth_tables"].items():
             for row in rows:
@@ -243,6 +279,11 @@ def main() -> int:
         for name, row in report["policy_exports"].items():
             if not row["assertion_pass"]:
                 failed.append(f"{name} returned {row['observed']!r}; expected {row['expected']!r}")
+        for row in report["v8_adapter_invocations"]:
+            if not row["assertion_pass"]:
+                failed.append(f"V8 adapter invocation failed for {row['export']}: {row['adapter_result']}")
+        report["v8_adapter_invocation_count"] = len(report["v8_adapter_invocations"])
+        report["v8_adapter_invocations_passed"] = sum(1 for row in report["v8_adapter_invocations"] if row["assertion_pass"])
         report["calls_executed"] = calls
         report["elapsed_seconds"] = round(time.monotonic() - started, 6)
         report["result"] = "PASS_METAOS_BOUNDED_BEHAVIORAL_TEST" if not failed else "FAIL_METAOS_POLICY_INVARIANTS"
