@@ -55,7 +55,7 @@ def source_date_epoch() -> int:
         if value < 0:
             raise SystemExit("SOURCE_DATE_EPOCH must be non-negative")
         return max(value, MIN_ZIP_EPOCH)
-    commit = os.environ.get("GITHUB_SHA")
+    commit = os.environ.get("CUSTOSZV8_CANDIDATE_SHA") or os.environ.get("GITHUB_SHA")
     if commit and commit != "LOCAL_UNBOUND":
         try:
             head = subprocess.run(
