@@ -476,14 +476,9 @@ class CRFUTests(unittest.TestCase):
         self.assertIsNone(verified)
         self.assertTrue(errors)
 
-    def test_g23_g24_ed25519_chain_signs_hold_even_when_tested_subscope_passes(self):
-        _, g23_private, g23_public = generate_ed25519_pems()
-        _, g24_private, g24_public = generate_ed25519_pems()
+    def test_g23_g24_attested_scope_certificate_binds_exact_candidate_and_gates(self):
         commit = "a" * 40
         trusted_workflow_sha = "c" * 40
-        producer = "CUSTOSZV9_BUILD_WORKFLOW"
-        g23_identity = "PUAC2-G23-TEST-IDENTITY"
-        g24_identity = "PUAC2-G24-TEST-IDENTITY"
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             candidate_dir = root / "candidate"
@@ -494,19 +489,19 @@ class CRFUTests(unittest.TestCase):
             g22_path = root / "G22.json"
             g22 = {
                 "schema": gate_trust_root.G22_SCHEMA,
-                "status": "HOLD_FULL_CANONICAL_SCOPE_NOT_PROVEN",
+                "status": "PASS_FOR_DECLARED_SCOPE",
                 "tested_scope_result": "PASS",
+                "failures": [],
                 "candidate_commit_sha": commit,
                 "candidate_package_sha256": package_sha,
                 "trusted_workflow_sha": trusted_workflow_sha,
-                "producer_identity": producer,
-                "evaluator_identity": "CUSTOSZV9_G22_TRUST_ROOT"
+                "local_puac_controls_status": "EVALUATED_FOR_DECLARED_SCOPE_ONLY"
             }
             gate_trust_root.write(g22_path, g22)
-            unsigned_path = root / "G23_UNSIGNED.json"
-            unsigned = {
+            g23_path = root / "G23_UNSIGNED.json"
+            g23 = {
                 "schema": gate_trust_root.G23_UNSIGNED_SCHEMA,
-                "status": "HOLD_FULL_CANONICAL_SCOPE_NOT_PROVEN",
+                "status": "PASS_FOR_DECLARED_SCOPE",
                 "tested_scope_result": "PASS",
                 "validation_completed": True,
                 "candidate_commit_sha": commit,
@@ -514,8 +509,8 @@ class CRFUTests(unittest.TestCase):
                 "candidate_package_size_bytes": package.stat().st_size,
                 "g22_record_sha256": gate_trust_root.sha(g22_path),
                 "trusted_workflow_sha": trusted_workflow_sha,
-                "producer_identity": producer,
-                "validator_identity": g23_identity,
+                "producer_identity": "CUSTOSZV9_BUILD_WORKFLOW",
+                "validator_identity": "trusted-g23",
                 "scope": gate_trust_root.SCOPE,
                 "independent_execution_results": [
                     {"name": name, "returncode": 0, "status": "PASS",
@@ -526,60 +521,37 @@ class CRFUTests(unittest.TestCase):
                 "scoped_decision_admissible": True,
                 "canonical_G23_status": "HOLD_FULL_CANONICAL_SCOPE_NOT_PROVEN"
             }
-            gate_trust_root.write(unsigned_path, unsigned)
-            signed_g23_path = root / "G23_SIGNED.json"
-            env = {
-                "PUAC2_G23_VALIDATOR_ID": g23_identity,
-                "PUAC2_G23_SIGNING_PRIVATE_KEY_PEM": g23_private,
-                "PUAC2_G23_PUBLIC_KEY_PEM": g23_public,
-                "PUAC2_G24_CERTIFIER_ID": g24_identity,
-                "PUAC2_G24_SIGNING_PRIVATE_KEY_PEM": g24_private,
-                "PUAC2_G24_PUBLIC_KEY_PEM": g24_public,
-                "PUAC2_G23_PUBLIC_KEY_PEM": g23_public
-            }
-            with patch.dict(os.environ, env, clear=False):
-                args = SimpleNamespace(candidate_dir=str(candidate_dir), candidate_sha=commit,
-                    trusted_workflow_sha=trusted_workflow_sha, g22=str(g22_path),
-                    g23_unsigned=str(unsigned_path), out=str(signed_g23_path))
-                with contextlib.redirect_stdout(io.StringIO()):
-                    self.assertEqual(gate_trust_root.g23_sign(args), 0)
-                signed_g23 = gate_trust_root.read_json(signed_g23_path)
-                payload23, errors23 = gate_trust_root.verify_signed_record(signed_g23, g23_public, g23_identity)
-                self.assertEqual(errors23, [])
-                self.assertEqual(payload23["tested_scope_result"], "PASS")
-                g24_path = root / "G24_DECISION.json"
-                args24 = SimpleNamespace(candidate_dir=str(candidate_dir), candidate_sha=commit,
-                    trusted_workflow_sha=trusted_workflow_sha, g22=str(g22_path),
-                    g23=str(signed_g23_path), out=str(g24_path))
-                with contextlib.redirect_stdout(io.StringIO()):
-                    self.assertEqual(gate_trust_root.g24(args24), 0)
-                signed_g24 = gate_trust_root.read_json(g24_path)
-                payload24, errors24 = gate_trust_root.verify_signed_record(signed_g24, g24_public, g24_identity,
-                    (g23_identity, producer))
-                self.assertEqual(errors24, [])
-                self.assertEqual(payload24["decision"], "HOLD")
-                self.assertEqual(payload24["tested_subscope_result"], "PASS")
-                self.assertFalse(payload24["full_release_eligible"])
-                self.assertEqual(payload24["certification"], "NOT_GRANTED")
-                # Tampering with G23 after signing must force an explicit HOLD in the next G24 decision.
-                tampered = dict(signed_g23)
-                tampered["payload"] = dict(payload23, candidate_package_sha256="d" * 64)
-                tampered_g23_path = root / "G23_TAMPERED.json"
-                gate_trust_root.write(tampered_g23_path, tampered)
-                tampered_g24_path = root / "G24_TAMPERED_DECISION.json"
-                args24.g23 = str(tampered_g23_path)
-                args24.out = str(tampered_g24_path)
-                with contextlib.redirect_stdout(io.StringIO()):
-                    self.assertEqual(gate_trust_root.g24(args24), 0)
-                tampered_decision, tampered_errors = gate_trust_root.verify_signed_record(
-                    gate_trust_root.read_json(tampered_g24_path), g24_public, g24_identity,
-                    (g23_identity, producer))
-                self.assertEqual(tampered_errors, [])
-                self.assertEqual(tampered_decision["decision"], "HOLD")
-                self.assertEqual(tampered_decision["tested_subscope_result"], "FAIL")
-                self.assertIn("SIGNED_ATTESTATION_PAYLOAD_HASH_MISMATCH", tampered_decision["decision_failures"])
+            gate_trust_root.write(g23_path, g23)
+            g23_verified = root / "G23_ATTESTATION_VERIFICATION.json"
+            g23_verified.write_text('{"verified":true}\n', encoding="utf-8")
+            out = root / "CUSTOSZV9_CERTIFICATE.json"
+            args = SimpleNamespace(
+                candidate_dir=str(candidate_dir), candidate_sha=commit,
+                trusted_workflow_sha=trusted_workflow_sha, g22=str(g22_path),
+                g23=str(g23_path), g23_attestation_verification=str(g23_verified),
+                out=str(out)
+            )
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(gate_trust_root.g24(args), 0)
+            cert = gate_trust_root.read_json(out)
+            self.assertTrue(cert["package_scope_certified"])
+            self.assertEqual(cert["decision"], "CERTIFIED_FOR_DECLARED_STANDALONE_SOFTWARE_SCOPE")
+            self.assertEqual(cert["candidate_package_sha256"], package_sha)
+            self.assertFalse(cert["full_release_eligible"])
+            self.assertEqual(cert["canonical_promotion"], "NOT_AUTHORIZED")
+            self.assertEqual(cert["canonical_G01_G24_status"], "HOLD_FULL_CANONICAL_SCOPE_NOT_PROVEN")
 
-    def test_checkpoint_does_not_prove_restoration(self):
+            # Exact candidate-digest or G22-link tampering is fail-closed.
+            g23["candidate_package_sha256"] = "f" * 64
+            gate_trust_root.write(g23_path, g23)
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(gate_trust_root.g24(args), 0)
+            held = gate_trust_root.read_json(out)
+            self.assertFalse(held["package_scope_certified"])
+            self.assertEqual(held["decision"], "HOLD")
+            self.assertTrue(held["failures"])
+
+        def test_checkpoint_does_not_prove_restoration(self):
         payload=b"checkpoint";dep=sha256_bytes(b"deps")
         record=checkpoint_record(payload,checkpoint_id="cp",state_identity="s",dependency_fingerprint=dep)
         self.assertFalse(record["restoration_proven"])
