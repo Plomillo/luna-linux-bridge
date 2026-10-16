@@ -14,7 +14,7 @@ from custoszv8.core import (
     CapabilityRegistry, EvidenceJournal, GitHubBridge, MissionStateMachine, TranslationEngine,
     V8Error, inspect_archive, inspect_wasm, is_sha256, selftest, sha256_bytes, validate_manifest,
     verify_component, run_native_readonly, MissionWatchdog, RetryController,
-    RecoveryCoordinator, ChangeImpactAnalyzer, RuntimeV1Adapter, MetaOSAdapter
+    RecoveryCoordinator, ChangeImpactAnalyzer, RuntimeV1Adapter, MetaOSAdapter, RUNTIME_V1_SELECTED_SHA256
 )
 from custoszv8.cli import validate_mission
 
@@ -369,6 +369,58 @@ class TestWatchdogRetryRecoveryAndAdapters(unittest.TestCase):
         )
         self.assertEqual(r["status"], "DENY")
         self.assertFalse(r["execution_authorized"])
+
+
+class TestRuntimeV1BoundedIntegration(unittest.TestCase):
+    RUNTIME = ROOT / "artifacts/custosz-v7/CUSTOSZ_RUNTIME_V1_SR_EXEC_BOUND_FME_01.b.pyz"
+
+    def test_bounded_runtime_v1_integration_and_file_rollback(self):
+        adapter = RuntimeV1Adapter(RUNTIME_V1_SELECTED_SHA256, native_interface_verified=False)
+        preflight = adapter.preflight(self.RUNTIME)
+        self.assertEqual(preflight["status"], "HOLD")
+        self.assertFalse(preflight["execution_authorized"])
+
+        result = adapter.invoke(
+            "bounded-integration-probe", self.RUNTIME,
+            "CI-BOUNDED-RUNTIME-V1-INTEGRATION-TEST", explicit_opt_in=True
+        )
+        self.assertEqual(result.get("status"), "PASS_BOUNDED_RUNTIME_V1_INTEGRATION", result)
+        self.assertEqual(result.get("runtime_sha256"), RUNTIME_V1_SELECTED_SHA256)
+        self.assertEqual(result.get("checkpoint_roundtrip", {}).get("status"), "PASS")
+        self.assertEqual(result.get("process_supervisor", {}).get("status"), "PASS")
+        self.assertEqual(result.get("fail_closed_wrong_authority", {}).get("status"), "PASS")
+        self.assertFalse(result.get("execution_authorized"))
+        self.assertFalse(result.get("mission_dispatch_enabled"))
+        self.assertEqual(result.get("canonical_authority_binding"), "NOT_TESTED_SYNTHETIC_FIXTURE_ONLY")
+        self.assertEqual(result.get("g23"), "NOT_GRANTED")
+        self.assertEqual(result.get("g24"), "NOT_GRANTED")
+
+    def test_runtime_probe_requires_explicit_opt_in(self):
+        adapter = RuntimeV1Adapter(RUNTIME_V1_SELECTED_SHA256)
+        result = adapter.invoke(
+            "bounded-integration-probe", self.RUNTIME,
+            "TEST-AUTH-REF", explicit_opt_in=False
+        )
+        self.assertEqual(result["status"], "DENY")
+        self.assertFalse(result["execution_authorized"])
+
+    def test_runtime_probe_rejects_unsupported_mission_dispatch(self):
+        adapter = RuntimeV1Adapter(RUNTIME_V1_SELECTED_SHA256)
+        result = adapter.invoke(
+            "SRExecBoundFME01.establish_material_execution", self.RUNTIME,
+            "TEST-AUTH-REF", explicit_opt_in=True
+        )
+        self.assertEqual(result["status"], "DENY")
+        self.assertFalse(result["execution_authorized"])
+
+    def test_runtime_probe_requires_exact_runtime_pin(self):
+        adapter = RuntimeV1Adapter("0" * 64, native_interface_verified=True)
+        result = adapter.invoke(
+            "bounded-integration-probe", self.RUNTIME,
+            "TEST-AUTH-REF", explicit_opt_in=True
+        )
+        self.assertEqual(result["status"], "CONFLICT")
+        self.assertFalse(result["execution_authorized"])
 
 
 if __name__ == "__main__":

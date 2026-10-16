@@ -36,8 +36,27 @@
       "interface_id": "V8.RUNTIME.NATIVE.1",
       "provider": "RUNTIME_V1_SELECTED_STAGING",
       "transport": "NATIVE_PYZ_API",
-      "operations": [],
-      "status": "BLOCKED_NATIVE_INTERFACE_NOT_MAPPED"
+      "operations": [
+        "bounded-integration-probe"
+      ],
+      "status": "BOUNDED_PROBE_INTERFACE_IMPLEMENTED; PRODUCTION_MISSION_INTERFACE_NOT_VERIFIED",
+      "verified_scope": [
+        "exact selected Runtime V1 package digest",
+        "Runtime.selftest with synthetic authority fixture",
+        "sandbox file checkpoint/restore round trip",
+        "one benign bounded ProcessSupervisor child",
+        "wrong authority digest denied with evidence"
+      ],
+      "excluded_scope": [
+        "canonical Louksna.md binding",
+        "SRExecBoundFME01 material mission dispatch",
+        "production system restoration",
+        "G22 global non-regression",
+        "G23 independent validation",
+        "G24 certification"
+      ],
+      "mission_dispatch": "NOT_PERFORMED",
+      "execution_authorized": false
     },
     {
       "interface_id": "V8.METAOS.COMPONENT.1",

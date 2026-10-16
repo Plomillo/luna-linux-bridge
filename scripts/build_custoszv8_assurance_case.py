@@ -10,6 +10,8 @@ EV = ROOT / "evidence"
 REQUIRED = [
     "custoszv8-selftest.json", "custoszv8-build-report.json",
     "custoszv8-component-checks.json", "custoszv8-runtime-v1-selftest.json",
+    "custoszv8-runtime-v1-integration.json",
+    "custoszv8-runtime-v1-material-dispatch.json",
     "custoszv8-metaos-component.json", "custoszv8-metaos-execution.json",
     "custoszv8-unit-tests.log", "custoszv8-reproducibility.json",
 ]
@@ -47,6 +49,8 @@ def main():
     selftest = load("custoszv8-selftest.json")
     components = load("custoszv8-component-checks.json")
     runtime = load("custoszv8-runtime-v1-selftest.json")
+    runtime_integration = load("custoszv8-runtime-v1-integration.json")
+    runtime_material_dispatch = load("custoszv8-runtime-v1-material-dispatch.json")
     mb = load("custoszv8-metaos-component.json")
     mx = load("custoszv8-metaos-execution.json")
     repro = load("custoszv8-reproducibility.json")
@@ -61,6 +65,24 @@ def main():
     package_hash_bound = build.get("sha256") == pkg_hash
     repro_pass = repro.get("status") == "PASS" and repro.get("first_sha256") == repro.get("second_sha256") == pkg_hash
     runtime_pass = runtime.get("result") == "PASS_RUNTIME_SELFTEST_ONLY"
+    runtime_integration_pass = (
+        runtime_integration.get("status") == "PASS_BOUNDED_RUNTIME_V1_INTEGRATION"
+        and runtime_integration.get("runtime_observed_sha256") == runtime_integration.get("expected_runtime_sha256")
+        and runtime_integration.get("execution_authorized") is False
+        and runtime_integration.get("mission_dispatch_enabled") is False
+        and runtime_integration.get("g23") == "NOT_GRANTED"
+        and runtime_integration.get("g24") == "NOT_GRANTED"
+    )
+    runtime_material_dispatch_pass = (
+        runtime_material_dispatch.get("status") == "PASS_BOUNDED_SR_EXEC_MATERIAL_DISPATCH"
+        and runtime_material_dispatch.get("runtime_observed_sha256") == runtime_material_dispatch.get("expected_runtime_sha256")
+        and runtime_material_dispatch.get("execution_authorized") is False
+        and runtime_material_dispatch.get("production_mission_dispatch") == "NOT_AUTHORIZED"
+        and runtime_material_dispatch.get("g23") == "NOT_GRANTED"
+        and runtime_material_dispatch.get("g24") == "NOT_GRANTED"
+        and runtime_material_dispatch.get("probe", {}).get("material_execution_proven") is True
+        and runtime_material_dispatch.get("probe", {}).get("fixture_rollback") == "PASS"
+    )
     metaos_build_pass = (
         mb.get("result") == "PASS_VERSIONED_CANDIDATE_BUILT"
         and cand.get("output_sha256") == mx.get("wasm_sha256")
@@ -80,11 +102,13 @@ def main():
         "component_report_has_commit_binding": bool(component_commit),
         "component_report_commit_matches": component_commit == commit,
         "runtime_report_commit_matches": runtime.get("candidate_commit") == commit,
+        "runtime_integration_report_commit_matches": runtime_integration.get("candidate_commit") == commit,
+        "runtime_material_dispatch_report_commit_matches": runtime_material_dispatch.get("candidate_commit") == commit,
         "metaos_build_report_commit_matches": mb.get("candidate_commit") == commit,
         "metaos_behavior_report_commit_matches": mx.get("candidate_commit") == commit,
     }
     tests_subscope = all([build_pass,selftest_pass,tests_pass,test_count is not None,repro_pass,
-                          runtime_pass,metaos_build_pass,metaos_runtime_pass,all(identity.values())])
+                          runtime_pass,runtime_integration_pass,runtime_material_dispatch_pass,metaos_build_pass,metaos_runtime_pass,all(identity.values())])
     evidence = {}
     for name in REQUIRED:
         p=EV/name
@@ -95,7 +119,7 @@ def main():
     run_url=f"https://github.com/{repo}/actions/runs/{run_id}" if run_id else None
     blockers=[
         "G22 global non-regression for the fully integrated system is not demonstrated.",
-        "Runtime V1 evidence covers only isolated Runtime.selftest with a synthetic non-canonical authority fixture; native mission/executor integration and binding to canonical Louksna.md remain unverified.",
+        "Runtime V1 now has bounded sandbox evidence for selftest, ProcessSupervisor, and an SRExecBoundFME01 material-dispatch fixture with ACK/FME and rollback; canonical Louksna.md binding, production dispatch, and production restore remain unverified.",
         "MetaOS has bounded hostless behavioral evidence for 12 policy exports; full V8/Runtime/MetaOS mission integration is not demonstrated.",
         "Canonical CP-01 through CP-10 sequence is not evidenced for this exact CUSTOSZV8 package digest.",
         "No independent G23 validator identity or favorable independent report bound to this exact digest is registered.",
@@ -116,6 +140,20 @@ def main():
             "runtime_v1":{"status":"PASS_NARROW_SELFTEST" if runtime_pass else "FAIL",
                 "canonical_binding":runtime.get("canonical_binding","NOT_REPORTED"),
                 "scope":runtime.get("execution_scope","NOT_REPORTED")},
+            "runtime_v1_bounded_integration":{"status":"PASS_BOUNDED_SCOPE" if runtime_integration_pass else "FAIL",
+                "runtime_sha256":runtime_integration.get("runtime_observed_sha256"),
+                "checkpoint_roundtrip":runtime_integration.get("probe",{}).get("checkpoint_roundtrip",{}).get("status"),
+                "process_supervisor":runtime_integration.get("probe",{}).get("process_supervisor",{}).get("status"),
+                "canonical_binding":runtime_integration.get("probe",{}).get("canonical_authority_binding"),
+                "mission_dispatch":"NOT_PERFORMED"},
+            "runtime_v1_material_dispatch":{"status":"PASS_BOUNDED_FIXTURE" if runtime_material_dispatch_pass else "FAIL",
+                "runtime_sha256":runtime_material_dispatch.get("runtime_observed_sha256"),
+                "result":runtime_material_dispatch.get("probe",{}).get("mission_result"),
+                "dispatch_id":runtime_material_dispatch.get("probe",{}).get("dispatch_id"),
+                "material_execution_proven":runtime_material_dispatch.get("probe",{}).get("material_execution_proven"),
+                "fixture_rollback":runtime_material_dispatch.get("probe",{}).get("fixture_rollback"),
+                "canonical_authority_binding":"NOT_TESTED_SYNTHETIC_AUTHORITY_ONLY",
+                "production_mission_dispatch":"NOT_AUTHORIZED"},
             "metaos":{"artifact_id":cand.get("artifact_id"),"original_sha256":cand.get("source_sha256"),
                 "candidate_sha256":cand.get("output_sha256"),"versioned_build":"PASS" if metaos_build_pass else "FAIL",
                 "validated_exports":mx.get("validated_export_count"),"adapter_calls_passed":mx.get("v8_adapter_invocations_passed"),
@@ -132,7 +170,8 @@ def main():
         "scope_limitations":[
             "CI success is not independent validation.",
             "Reproducibility does not establish functional completeness.",
-            "The Runtime selftest's synthetic authority is explicitly not Louksna.md.",
+            "The Runtime selftest and bounded integration probe use a synthetic authority, explicitly not Louksna.md.",
+            "Runtime V1 evidence proves only bounded synthetic-fixture dispatch and file rollback; canonical authority binding, production mission dispatch, and production system restoration remain untested.",
             "MetaOS probes grant no host capabilities and do not dispatch missions.",
             "G23/G24 are not inferred, auto-promoted, or self-issued."
         ],
@@ -154,7 +193,9 @@ def main():
         f"- Unit tests: {test_count}; {'PASS' if tests_pass else 'FAIL'}.",
         f"- Package build and internal selftest: {'PASS' if build_pass and selftest_pass else 'FAIL'}.",
         f"- Reproducible build: {'PASS' if repro_pass else 'FAIL'}.",
-        f"- Runtime V1: {'PASS for isolated selftest only' if runtime_pass else 'FAIL'}.",
+        f"- Runtime V1 selftest: {'PASS' if runtime_pass else 'FAIL'} (isolated synthetic-authority fixture).",
+        f"- Runtime V1 bounded integration: {'PASS' if runtime_integration_pass else 'FAIL'} (sandbox checkpoint/restore and benign ProcessSupervisor probe only).",
+        f"- SRExecBoundFME01 material-dispatch fixture: {'PASS' if runtime_material_dispatch_pass else 'FAIL'} (synthetic authority, temporary effect, ACK/FME, and rollback).",
         f"- MetaOS derived component: {'PASS' if metaos_build_pass else 'FAIL'}; original bytes separately preserved.",
         f"- MetaOS bounded behavioral probes: {'PASS' if metaos_runtime_pass else 'FAIL'}; 12 exports and {mx.get('v8_adapter_invocations_passed')} adapter calls passed.","",
         "## Blocking evidence gaps"
