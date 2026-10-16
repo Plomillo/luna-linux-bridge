@@ -1,0 +1,5 @@
+"""CUSTOSZ V9 candidate; additive CRFU layer over exact tracked V8 baseline."""
+__version__ = "9.0.0-candidate"
+ARTIFACT_ID = "CUSTOSZV9"
+CERTIFICATION_STATUS = "NOT_GRANTED"
+CANONICAL_PROMOTION = "NOT_AUTHORIZED"

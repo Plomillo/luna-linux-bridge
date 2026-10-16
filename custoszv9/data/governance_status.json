@@ -1,0 +1,15 @@
+{
+  "schema": "CUSTOSZV9_GOVERNANCE_STATUS/1.0",
+  "canonical_authority": "Louksna.md",
+  "protected_baseline": "LUNACORE_final_formalized_v25.md",
+  "doctrine": "EXTEND_DO_NOT_REPLACE",
+  "canonical_gates": ["G01","G02","G03","G04","G05","G06","G07","G08","G09","G10","G11","G12","G13","G14","G15","G16","G17","G18","G19","G20","G21","G22","G23","G24"],
+  "puac_controls": ["PUAC.C25","PUAC.C26","PUAC.C27","PUAC.C28","PUAC.C29","PUAC.C30","PUAC.C31","PUAC.C32"],
+  "puac2_source_status": "EXTENSION_INDEPENDIENTE_PENDIENTE_ADMISION_FORMAL",
+  "G23": "NOT_GRANTED",
+  "G24": "NOT_GRANTED",
+  "certification": "NOT_GRANTED",
+  "canonical_promotion": "NOT_AUTHORIZED",
+  "activation_authorized": false,
+  "applicability": "trusted canonical matrix required; missing or ambiguous applicability means HOLD"
+}

@@ -1,0 +1,8 @@
+{
+  "schema": "CUSTOSZV9_RESOURCE_POLICY/1.0",
+  "numeric_limits": "measure per host and mission; do not invent defaults",
+  "unknown_ram_or_disk": "HOLD",
+  "concurrency": "bounded by measured CPU and task budget",
+  "temporary_storage": "preflight required",
+  "runtime_duplication": "FORBIDDEN_BY_DEFAULT"
+}

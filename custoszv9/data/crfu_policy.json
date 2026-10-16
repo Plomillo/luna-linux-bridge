@@ -1,0 +1,14 @@
+{
+  "schema": "CUSTOSZV9_CRFU_POLICY/1.0",
+  "failure_policy": "FAIL_CLOSED",
+  "finite_deliberation": true,
+  "same_state_same_strategy_without_new_evidence": "DENY",
+  "unknown_resource_measurement": "HOLD",
+  "authorization_reference_is_not_authorization": true,
+  "unverified_proof": "HOLD",
+  "equivalence_authority_transport": false,
+  "equivalence_certification_transport": false,
+  "self_certification": false,
+  "automatic_canonical_promotion": false,
+  "default_certification": "NOT_GRANTED"
+}

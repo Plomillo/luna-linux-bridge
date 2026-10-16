@@ -1,0 +1,197 @@
+name: "CUSTOSZV9 candidate build and validation"
+
+on:
+  push:
+    branches: ["feature/custoszv9-crfu-*"]
+    paths:
+      - "custoszv9/**"
+      - "formal/crfu/**"
+      - "tests/test_custoszv9.py"
+      - "build_custoszv9.py"
+      - ".github/workflows/custoszv9-build.yml"
+      - ".github/workflows/custoszv9-independent-g22-g23-g24.yml"
+      - "scripts/custoszv9_gate_trust_root.py"
+      - "docs/custoszv9-crfu-architecture.md"
+  pull_request:
+    branches: [main]
+    paths:
+      - "custoszv9/**"
+      - "formal/crfu/**"
+      - "tests/test_custoszv9.py"
+      - "build_custoszv9.py"
+      - ".github/workflows/custoszv9-build.yml"
+      - ".github/workflows/custoszv9-independent-g22-g23-g24.yml"
+      - "scripts/custoszv9_gate_trust_root.py"
+      - "docs/custoszv9-crfu-architecture.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: custoszv9-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-test:
+    name: "CRFU tests, exact V8 embedding and reproducible ZIPAPP"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.12"
+      - name: Compile CRFU sources, tests and builder
+        run: python3 -m compileall -q custoszv9 tests/test_custoszv9.py build_custoszv9.py scripts/custoszv9_gate_trust_root.py
+      - name: Install pinned Ed25519 test dependency (CI only, not bundled in ZIPAPP)
+        run: "python3 -m pip install --disable-pip-version-check --only-binary=:all: cryptography==50.0.2"
+      - name: Run CRFU regression tests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p evidence
+          python3 -m unittest discover -s tests -p 'test_custoszv9.py' -v 2>&1 | tee evidence/custoszv9-unit-tests.log
+      - name: Build CUSTOSZV9.pyz from exact tracked V8 baseline
+        env:
+          CUSTOSZV9_SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: python3 build_custoszv9.py
+      - name: Verify deterministic rebuild from identical source commit
+        env:
+          CUSTOSZV9_SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          first="$(sha256sum dist/CUSTOSZV9.pyz | awk '{print $1}')"
+          python3 build_custoszv9.py > "$RUNNER_TEMP/rebuild-report.json"
+          second="$(sha256sum dist/CUSTOSZV9.pyz | awk '{print $1}')"
+          test "$first" = "$second"
+          python3 - "$first" "$second" "${{ github.event.pull_request.head.sha || github.sha }}" <<'PY'
+          import json,sys
+          from pathlib import Path
+          first,second,commit=sys.argv[1:]
+          result={"schema":"CUSTOSZV9_REPRODUCIBILITY/1.0","status":"PASS" if first==second else "FAIL",
+                  "first_sha256":first,"second_sha256":second,"source_commit":commit,
+                  "same_source_commit_two_builds":first==second}
+          Path("evidence/custoszv9-reproducibility.json").write_text(json.dumps(result,sort_keys=True,indent=2)+"\n",encoding="utf-8")
+          print(json.dumps(result,sort_keys=True,indent=2))
+          PY
+      - name: Exercise CRFU CLI and self-tests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 dist/CUSTOSZV9.pyz --version
+          python3 dist/CUSTOSZV9.pyz crfu status
+          python3 dist/CUSTOSZV9.pyz crfu selftest
+          python3 dist/CUSTOSZV9.pyz crfu journal-verify "$RUNNER_TEMP/nonexistent-journal.jsonl"
+      - name: Exercise preserved V8 CLI inside the same interpreter
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 dist/CUSTOSZV9.pyz selftest
+          python3 dist/CUSTOSZV9.pyz status
+      - name: Enforce package integrity and no false certification
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import hashlib,json,zipfile
+          from pathlib import Path
+          package=Path("dist/CUSTOSZV9.pyz")
+          with zipfile.ZipFile(package) as z:
+              assert z.testzip() is None
+              manifest=json.loads(z.read("custoszv9/data/build_manifest.json"))
+              baseline=z.read("custoszv9/data/CUSTOSZV8.pyz")
+              assert hashlib.sha256(baseline).hexdigest()==manifest["baseline"]["sha256"]
+              assert len(baseline)==manifest["baseline"]["size_bytes"]==99400
+              assert manifest["governance"]["G23"]=="NOT_GRANTED"
+              assert manifest["governance"]["G24"]=="NOT_GRANTED"
+              assert manifest["governance"]["canonical_promotion"]=="NOT_AUTHORIZED"
+              assert manifest["formal_assurance"]["toolchain_executed"] is False
+          report=json.loads(Path("evidence/custoszv9-build-report.json").read_text(encoding="utf-8"))
+          assert report["embedded_baseline_byte_exact"] is True and report["release_eligible"] is False
+          print(json.dumps({"status":"PASS_BUILD_ONLY_NOT_CERTIFIED","package_sha256":report["package_sha256"],"size_bytes":report["package_size_bytes"],"v8_baseline_sha256":report["baseline_sha256"]},indent=2))
+          PY
+      - name: Upload V9 candidate and evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: CUSTOSZV9-candidate-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            dist/CUSTOSZV9.pyz
+            evidence/custoszv9-build-report.json
+            evidence/custoszv9-unit-tests.log
+            evidence/custoszv9-reproducibility.json
+          if-no-files-found: error
+          retention-days: 90
+
+  publish-un-certified-binary:
+    name: "Archive candidate on isolated artifact branch (not a release)"
+    needs: build-test
+    if: ${{ needs.build-test.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/feature/custoszv9-crfu-20261016' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Download package and evidence from this successful run
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: CUSTOSZV9-candidate-${{ github.sha }}
+          path: ${{ runner.temp }}/candidate
+      - name: Verify candidate artifact is explicitly un-certified
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - "$RUNNER_TEMP/candidate" "$GITHUB_SHA" <<'PY'
+          import hashlib,json,sys,zipfile
+          from pathlib import Path
+          root=Path(sys.argv[1]);commit=sys.argv[2]
+          package=root/"dist"/"CUSTOSZV9.pyz"
+          report=json.loads((root/"evidence"/"custoszv9-build-report.json").read_text(encoding="utf-8"))
+          assert report["source_commit"]==commit
+          assert report["status"]=="PASS_BUILD_ONLY_NOT_CERTIFIED"
+          assert report["release_eligible"] is False
+          assert report["G22"]=="NOT_GRANTED" and report["G23"]=="NOT_GRANTED" and report["G24"]=="NOT_GRANTED"
+          digest=hashlib.sha256(package.read_bytes()).hexdigest()
+          assert report["package_sha256"]==digest
+          with zipfile.ZipFile(package) as z:
+              assert z.testzip() is None
+              manifest=json.loads(z.read("custoszv9/data/build_manifest.json"))
+              baseline=z.read("custoszv9/data/CUSTOSZV8.pyz")
+              assert manifest["source_commit"]==commit
+              assert hashlib.sha256(baseline).hexdigest()==manifest["baseline"]["sha256"]
+              assert len(baseline)==99400
+              assert manifest["governance"]["canonical_promotion"]=="NOT_AUTHORIZED"
+          print(json.dumps({"status":"PASS_BUILD_ONLY_NOT_CERTIFIED","source_commit":commit,"package_sha256":digest,"package_size_bytes":package.stat().st_size},indent=2))
+          PY
+      - name: Checkout source only for Git object publication
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: true
+      - name: Publish binary and evidence to an isolated, content-addressed candidate branch
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          artifact_branch="artifacts/custoszv9-${GITHUB_SHA}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan "$artifact_branch"
+          git rm -rf . >/dev/null
+          mkdir -p dist evidence
+          cp "$RUNNER_TEMP/candidate/dist/CUSTOSZV9.pyz" dist/CUSTOSZV9.pyz
+          sha256sum dist/CUSTOSZV9.pyz > dist/CUSTOSZV9.pyz.sha256
+          cp "$RUNNER_TEMP/candidate/evidence/custoszv9-build-report.json" evidence/
+          cp "$RUNNER_TEMP/candidate/evidence/custoszv9-unit-tests.log" evidence/
+          cp "$RUNNER_TEMP/candidate/evidence/custoszv9-reproducibility.json" evidence/
+          git add dist/CUSTOSZV9.pyz dist/CUSTOSZV9.pyz.sha256 evidence/
+          git commit -m "Archive uncertified CUSTOSZV9 candidate for source ${GITHUB_SHA}"
+          git push origin "HEAD:refs/heads/$artifact_branch"
+          echo "::notice title=CUSTOSZV9 candidate artifact::Raw package stored at https://github.com/Plomillo/luna-linux-bridge/raw/$artifact_branch/dist/CUSTOSZV9.pyz"
