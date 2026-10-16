@@ -1,0 +1,33 @@
+test_authority_binding_needs_trusted_scope_verifier (test_custoszv9.CRFUTests.test_authority_binding_needs_trusted_scope_verifier) ... ok
+test_checkpoint_does_not_prove_restoration (test_custoszv9.CRFUTests.test_checkpoint_does_not_prove_restoration) ... ok
+test_claim_conversion_cannot_cross_dimensions_or_drop_original (test_custoszv9.CRFUTests.test_claim_conversion_cannot_cross_dimensions_or_drop_original) ... ok
+test_complete_gate_bundle_only_passes_binding_layer_not_release (test_custoszv9.CRFUTests.test_complete_gate_bundle_only_passes_binding_layer_not_release) ... ok
+test_coverage_keeps_documentary_and_operational_counts_separate (test_custoszv9.CRFUTests.test_coverage_keeps_documentary_and_operational_counts_separate) ... ok
+test_coverage_requires_exact_target_and_canonical_cardinality (test_custoszv9.CRFUTests.test_coverage_requires_exact_target_and_canonical_cardinality) ... ok
+test_dependency_cycle_denied (test_custoszv9.CRFUTests.test_dependency_cycle_denied) ... ok
+test_deterministic_dependency_order_and_no_authorization (test_custoszv9.CRFUTests.test_deterministic_dependency_order_and_no_authorization) ... ok
+test_event_queue_resumes_only_on_matching_signal_and_verifies_chain (test_custoszv9.CRFUTests.test_event_queue_resumes_only_on_matching_signal_and_verifies_chain) ... ok
+test_event_records_require_recorded_time_and_acyclic_causality (test_custoszv9.CRFUTests.test_event_records_require_recorded_time_and_acyclic_causality) ... ok
+test_every_puac_control_is_bound_to_payload_commit_digest_and_distinct_evaluator (test_custoszv9.CRFUTests.test_every_puac_control_is_bound_to_payload_commit_digest_and_distinct_evaluator) ... ok
+test_formal_bundle_wrong_digest_holds (test_custoszv9.CRFUTests.test_formal_bundle_wrong_digest_holds) ... ok
+test_gates_missing_evidence_hold (test_custoszv9.CRFUTests.test_gates_missing_evidence_hold) ... ok
+test_incident_closure_does_not_imply_reactivation (test_custoszv9.CRFUTests.test_incident_closure_does_not_imply_reactivation) ... ok
+test_journal_chain_and_tampering (test_custoszv9.CRFUTests.test_journal_chain_and_tampering) ... ok
+test_puac_binding_absent_or_wrong_commit_is_not_pass (test_custoszv9.CRFUTests.test_puac_binding_absent_or_wrong_commit_is_not_pass) ... ok
+test_puac_control_and_gate_claims_cannot_self_certify (test_custoszv9.CRFUTests.test_puac_control_and_gate_claims_cannot_self_certify) ... ok
+test_puac_control_requires_exact_candidate_binding_even_when_called_directly (test_custoszv9.CRFUTests.test_puac_control_requires_exact_candidate_binding_even_when_called_directly) ... ok
+test_recovery_plan_does_not_claim_restoration_or_activation (test_custoszv9.CRFUTests.test_recovery_plan_does_not_claim_restoration_or_activation) ... ok
+test_repeated_strategy_without_evidence_blocked (test_custoszv9.CRFUTests.test_repeated_strategy_without_evidence_blocked) ... ok
+test_retry_is_finite_and_idempotency_aware (test_custoszv9.CRFUTests.test_retry_is_finite_and_idempotency_aware) ... ok
+test_transitive_impact_closure_and_cycles (test_custoszv9.CRFUTests.test_transitive_impact_closure_and_cycles) ... ok
+test_typed_claim_units_and_semantic_key_conflicts (test_custoszv9.CRFUTests.test_typed_claim_units_and_semantic_key_conflicts) ... ok
+test_unknown_and_declared_conflict_claim_states_do_not_look_clean (test_custoszv9.CRFUTests.test_unknown_and_declared_conflict_claim_states_do_not_look_clean) ... ok
+test_unknown_resources_hold (test_custoszv9.CRFUTests.test_unknown_resources_hold) ... ok
+test_unregistered_gate_identifier_is_denied (test_custoszv9.CRFUTests.test_unregistered_gate_identifier_is_denied) ... ok
+test_unresolved_dependency_holds (test_custoszv9.CRFUTests.test_unresolved_dependency_holds) ... ok
+test_wait_requires_deadline (test_custoszv9.CRFUTests.test_wait_requires_deadline) ... ok
+
+----------------------------------------------------------------------
+Ran 28 tests in 1.383s
+
+OK
