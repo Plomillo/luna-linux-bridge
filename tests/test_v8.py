@@ -329,6 +329,47 @@ class TestWatchdogRetryRecoveryAndAdapters(unittest.TestCase):
             self.assertEqual(r["format"], "WASM_COMPONENT_MODEL")
             self.assertEqual(MetaOSAdapter().can_invoke(r, "terminal-success")["status"], "HOLD")
 
+    def test_metaos_invoke_denied_without_explicit_opt_in(self):
+        r = MetaOSAdapter().invoke(
+            "network-default-deny", [], "069240d6cfc81f9b659479cc938519bc4eb4e4a0c794e300c89b477dbe3caa02",
+            "TEST-AUTH-REF", explicit_opt_in=False
+        )
+        self.assertEqual(r["status"], "DENY")
+        self.assertFalse(r["execution_authorized"])
+
+    def test_metaos_invoke_denied_for_mismatched_candidate_hash(self):
+        r = MetaOSAdapter().invoke(
+            "network-default-deny", [], "0" * 64,
+            "TEST-AUTH-REF", explicit_opt_in=True
+        )
+        self.assertEqual(r["status"], "DENY")
+        self.assertFalse(r["execution_authorized"])
+
+    def test_metaos_invoke_denies_unregistered_export_before_runtime(self):
+        r = MetaOSAdapter().invoke(
+            "unregistered-export", [], "069240d6cfc81f9b659479cc938519bc4eb4e4a0c794e300c89b477dbe3caa02",
+            "TEST-AUTH-REF", explicit_opt_in=True
+        )
+        self.assertEqual(r["status"], "DENY")
+        self.assertFalse(r["execution_authorized"])
+
+    def test_metaos_invoke_denies_invalid_typed_arguments_before_runtime(self):
+        r = MetaOSAdapter().invoke(
+            "implementation-authorized", [1, True, True, True],
+            "069240d6cfc81f9b659479cc938519bc4eb4e4a0c794e300c89b477dbe3caa02",
+            "TEST-AUTH-REF", explicit_opt_in=True
+        )
+        self.assertEqual(r["status"], "DENY")
+        self.assertFalse(r["execution_authorized"])
+
+    def test_metaos_invoke_requires_bounded_fuel_before_runtime(self):
+        r = MetaOSAdapter().invoke(
+            "network-default-deny", [], "069240d6cfc81f9b659479cc938519bc4eb4e4a0c794e300c89b477dbe3caa02",
+            "TEST-AUTH-REF", explicit_opt_in=True, fuel_limit=1_000_001
+        )
+        self.assertEqual(r["status"], "DENY")
+        self.assertFalse(r["execution_authorized"])
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
