@@ -19,7 +19,7 @@ COMPONENT_SPECS = {
     "RUNTIME_V1_SELECTED_STAGING": {
         "source": ROOT / "artifacts/custosz-v7/CUSTOSZ_RUNTIME_V1_SR_EXEC_BOUND_FME_01.b.pyz",
         "target": "custoszv8/data/components/CUSTOSZ_RUNTIME_V1_SR_EXEC_BOUND_FME_01.b.pyz",
-        "integration_status": "BLOCKED_UNTIL_NATIVE_INTERFACE_TESTED",
+        "integration_status": "BOUNDED_PROBES_ADDED; PRODUCTION_MISSION_INTEGRATION_BLOCKED",
         "variant_scope": "EXACT_SELECTED_STAGING_BYTES_ONLY",
         "skeleton_reference_equivalence": "NOT_ASSERTED"
     },
