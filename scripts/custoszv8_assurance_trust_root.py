@@ -322,64 +322,54 @@ def g23(args: argparse.Namespace) -> int:
 
 
 def make_authority(args: argparse.Namespace) -> int:
-    # Claims are decoded in the protected workflow step that calls GitHub's
-    # runner OIDC endpoint. The raw bearer token is never written to disk,
-    # outputs, logs, or artifacts; only its SHA-256 fingerprint is retained.
-    claims_raw = os.environ.get("OIDC_CLAIMS_JSON", "")
-    token_fingerprint = os.environ.get("OIDC_TOKEN_FINGERPRINT", "")
-    try:
-        claims = json.loads(claims_raw)
-    except (json.JSONDecodeError, TypeError) as exc:
-        raise SystemExit("OIDC_CLAIMS_INVALID") from exc
-    if not isinstance(claims, dict):
-        raise SystemExit("OIDC_CLAIMS_ROOT_INVALID")
-    if not re.fullmatch(r"[0-9a-f]{64}", token_fingerprint):
-        raise SystemExit("OIDC_TOKEN_FINGERPRINT_INVALID")
+    """Bind the G24 role to the protected Actions workflow identity.
 
+    The resulting certificate is separately signed using GitHub artifact
+    attestations in the workflow. No bearer token is read, printed, or stored.
+    """
     root = Path(args.candidate_dir).resolve()
     pkg = locate(root, "CUSTOSZV8.pyz")
     digest = sha256_file(pkg)
     expected_audience = "louksna-custoszv8-g24:" + digest
-    aud = claims.get("aud")
-    if claims.get("repository") != os.environ.get("GITHUB_REPOSITORY"):
-        raise SystemExit("OIDC_REPOSITORY_MISMATCH")
-    if str(claims.get("repository_id", "")) != str(os.environ.get("GITHUB_REPOSITORY_ID", "")):
-        raise SystemExit("OIDC_REPOSITORY_ID_MISMATCH")
-    if aud != expected_audience and not (isinstance(aud, list) and expected_audience in aud):
-        raise SystemExit("OIDC_AUDIENCE_MISMATCH")
-    if claims.get("workflow_ref") != os.environ.get("TRUSTED_WORKFLOW_REF"):
-        raise SystemExit("OIDC_WORKFLOW_REF_MISMATCH")
-    if claims.get("workflow_sha") != os.environ.get("TRUST_ROOT_SHA"):
-        raise SystemExit("OIDC_WORKFLOW_SHA_MISMATCH")
+    repo = os.environ.get("GITHUB_REPOSITORY", "")
+    repo_id = os.environ.get("GITHUB_REPOSITORY_ID", "")
+    workflow_ref = os.environ.get("TRUSTED_WORKFLOW_REF", "")
+    trust_sha = os.environ.get("TRUST_ROOT_SHA", "")
+    event = os.environ.get("GITHUB_EVENT_NAME", "")
+    run_id = os.environ.get("GITHUB_RUN_ID", "")
+    run_attempt = os.environ.get("GITHUB_RUN_ATTEMPT", "")
+    if repo != "Plomillo/luna-linux-bridge" or not repo_id.isdigit():
+        raise SystemExit("TRUSTED_REPOSITORY_IDENTITY_MISMATCH")
+    if not workflow_ref.endswith("/.github/workflows/custoszv8-independent-g23-g24.yml@refs/heads/staging/custosz-v7-metaos-20260927"):
+        raise SystemExit("TRUSTED_WORKFLOW_REF_MISMATCH")
+    if not re.fullmatch(r"[0-9a-f]{40}", trust_sha):
+        raise SystemExit("TRUST_ROOT_SHA_INVALID")
+    if event not in {"pull_request_target", "workflow_dispatch"}:
+        raise SystemExit("G24_EVENT_NOT_AUTHORIZED")
+    if not run_id.isdigit() or not run_attempt.isdigit():
+        raise SystemExit("GITHUB_RUN_IDENTITY_MISSING")
 
-    safe_claims = {
-        key: claims.get(key)
-        for key in ("iss", "sub", "aud", "repository", "repository_id", "ref", "event_name",
-                    "workflow", "workflow_ref", "workflow_sha", "job_workflow_ref", "run_id", "run_attempt")
-        if claims.get(key) is not None
-    }
     authority = {
         "schema": "CUSTOSZV8_G24_AUTHORITY_EVIDENCE/1.0",
         "status": "PASS",
         "authority_authenticated": True,
         "authority_id": (
-            "LOUKSNA_CUSTOSZV8_G24::repo:" + str(os.environ["GITHUB_REPOSITORY_ID"])
-            + "/" + os.environ["GITHUB_REPOSITORY"]
-            + "::workflow:" + os.environ["TRUSTED_WORKFLOW_REF"]
-            + "::workflow_sha:" + os.environ["TRUST_ROOT_SHA"]
+            "LOUKSNA_CUSTOSZV8_G24::repo:" + repo_id + "/" + repo
+            + "::workflow:" + workflow_ref
+            + "::workflow_sha:" + trust_sha
+            + "::run:" + run_id + "." + run_attempt
         ),
         "candidate_commit_sha": args.candidate_sha,
         "candidate_package_sha256": digest,
         "audience": expected_audience,
-        "oidc_token_fingerprint_sha256": token_fingerprint,
-        "oidc_issuer": claims.get("iss"),
-        "oidc_subject": claims.get("sub"),
-        "repository": claims.get("repository"),
-        "repository_id": str(claims.get("repository_id")),
-        "workflow_ref": claims.get("workflow_ref"),
-        "workflow_sha": claims.get("workflow_sha"),
-        "workflow_identity_claims": safe_claims,
-        "authentication_context": "GITHUB_RUNNER_OIDC_ENDPOINT; AUDIENCE_AND_TRUSTED_WORKFLOW_BOUND",
+        "repository": repo,
+        "repository_id": repo_id,
+        "workflow_ref": workflow_ref,
+        "workflow_sha": trust_sha,
+        "workflow_run_id": run_id,
+        "workflow_run_attempt": run_attempt,
+        "event": event,
+        "authentication_context": "BASE_CONTROLLED_GITHUB_ACTIONS_WORKFLOW_IDENTITY; SIGNED_ARTIFACT_ATTESTATION_REQUIRED",
         "raw_token_persisted": False,
         "active_authorized": False,
         "operational_authorization": "NOT_GRANTED",
