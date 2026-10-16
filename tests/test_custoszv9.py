@@ -590,5 +590,21 @@ class CRFUTests(unittest.TestCase):
             expected_dependency_fingerprint=dep,invariants_pass=True,journal_valid=True)
         self.assertFalse(bad["restoration_proven"])
 
+
+    def test_full_bounded_offline_crfu_selftest(self):
+        from custoszv9.crfu.selftest import run_selftest
+        result = run_selftest()
+        self.assertEqual(result["status"], "PASS", result.get("failed_checks"))
+        self.assertEqual(result["schema"], "CUSTOSZV9_CRFU_SELFTEST/2.0")
+        self.assertGreaterEqual(result["check_count"], 10)
+        self.assertTrue(result["checks"]["bounded_256_action_stress"])
+        self.assertTrue(result["checks"]["offline_checkpoint_restore_postvalidated"])
+        self.assertTrue(result["checks"]["bounded_queue_32_missions_and_hash_chain"])
+        self.assertTrue(result["checks"]["journal_tamper_detected"])
+        self.assertTrue(result["checks"]["missing_formal_proof_fails_closed"])
+        self.assertFalse(result["authorization_granted"])
+        self.assertFalse(result["external_host_operations"])
+        self.assertEqual(result["certification"], "NOT_GRANTED_BY_SELFTEST")
+
 if __name__=="__main__":
     unittest.main()
