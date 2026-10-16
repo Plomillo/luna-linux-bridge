@@ -1,0 +1,45 @@
+{
+  "schema": "CUSTOSZV9_STANDALONE_SOFTWARE_SCOPE/1.0",
+  "artifact_id": "CUSTOSZV9",
+  "scope_id": "CUSTOSZV9_CRFU_STANDALONE_SOFTWARE_AND_EXACT_V8_BYTE_PRESERVATION",
+  "authority": "Louksna.md",
+  "governance_doctrine": "EXTEND_DO_NOT_REPLACE",
+  "scope_purpose": "Evidence-bound certification of the standalone CUSTOSZV9.pyz software package and its CRFU behavior, with byte-exact preservation of the embedded CUSTOSZV8.pyz baseline. This is not certification or activation of the entire canonical Louksna system.",
+  "claims": [
+    "The package ZIP structure, member limits, CRC integrity, source commit, size and SHA-256 are bound to an exact candidate.",
+    "The tracked 99,400-byte CUSTOSZV8.pyz baseline is embedded byte-for-byte and its SHA-256 is independently checked.",
+    "Two builds from the same source commit are byte-identical as recorded by producer evidence, then independently cross-checked by the trusted G22 evaluator.",
+    "The included CRFU offline self-test exercises bounded planning, resource fail-closed behavior, anti-paralysis, hash-linked journal tampering detection, offline checkpoint restoration, and a bounded event-driven SQLite queue.",
+    "An independent no-secret job executes the exact candidate's version, CRFU status, CRFU self-test, V8 self-test and V8 status commands; stdout/stderr hashes and return codes are recorded.",
+    "G23 evidence and the G24 decision are attested by separate GitHub Actions jobs using OIDC/Sigstore; both refer to the exact candidate commit and package digest.",
+    "Candidate Louksna.md and PUAC2.md files must remain byte-identical to the trusted default-branch copies."
+  ],
+  "exclusions": [
+    "Certification of the complete canonical G01-G24 system scope.",
+    "Exact-byte comparison with LUNACORE_final_formalized_v25.md because that file is not present in the repository checkout.",
+    "Canonical admission or reclassification of PUAC.C25-C32, or transfer of Louksna.md authority.",
+    "Formal Agda/Cubical proof of model-implementation correspondence, HoTT or univalence.",
+    "Validation of theological dictionary correctness, hermeneutical correctness, training integrity of a model, or total coverage of canonical E01-E15/CFE001-CFE074 beyond exact baseline preservation and tested interfaces.",
+    "Production-host deployment, mTLS handshakes, remote-service operations, or host/production rollback tests.",
+    "Production activation, automatic promotion, external regulatory certification, or claims that the package is universally defect-free."
+  ],
+  "controls": {
+    "fail_closed": true,
+    "authority_transfer": false,
+    "certification_propagation": false,
+    "canonical_promotion_authorized": false,
+    "operational_activation_authorized": false,
+    "remote_host_operations_in_scope": false
+  },
+  "acceptance": {
+    "package_integrity": "PASS_REQUIRED",
+    "exact_v8_baseline_preservation": "PASS_REQUIRED",
+    "canonical_source_byte_identity": "PASS_REQUIRED",
+    "reproducible_build_evidence": "PASS_REQUIRED",
+    "independent_g23_command_set": "ALL_FIVE_PASS_REQUIRED",
+    "g23_oidc_attestation": "VERIFIED_REQUIRED",
+    "g24_decision_attestation": "VERIFIED_REQUIRED",
+    "scope_or_digest_mismatch": "HOLD",
+    "canonical_promotion": "ALWAYS_NOT_AUTHORIZED_BY_THIS_SCOPE_CERTIFICATE"
+  }
+}
