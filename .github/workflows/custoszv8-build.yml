@@ -10,6 +10,7 @@ on:
       - "scripts/validate_components.py"
       - "scripts/validate_runtime_v1_selftest.py"
       - "scripts/validate_metaos_component.py"
+      - "scripts/validate_metaos_execution.py"
       - "build.py"
       - ".github/workflows/custoszv8-build.yml"
       - "artifacts/custosz-v7/**"
@@ -22,6 +23,7 @@ on:
       - "scripts/validate_components.py"
       - "scripts/validate_runtime_v1_selftest.py"
       - "scripts/validate_metaos_component.py"
+      - "scripts/validate_metaos_execution.py"
       - "build.py"
       - ".github/workflows/custoszv8-build.yml"
       - "artifacts/custosz-v7/**"
@@ -52,7 +54,8 @@ jobs:
           python-version: "3.12"
 
       - name: Compile source and tests
-        run: python -m compileall -q src tests build.py scripts/validate_components.py scripts/validate_runtime_v1_selftest.py scripts/validate_metaos_component.py
+        run: python -m compileall -q src tests build.py scripts/validate_components.py scripts/validate_runtime_v1_selftest.py scripts/validate_metaos_component.py scripts/validate_metaos_execution.py
+      - "scripts/validate_metaos_execution.py"
 
       - name: Run V8 unit tests
         run: python -m unittest discover -s tests -v
@@ -88,7 +91,7 @@ jobs:
         run: python scripts/validate_components.py
 
       - name: Install pinned Runtime V1 test dependency
-        run: python -m pip install --disable-pip-version-check --no-input psutil==7.0.0
+        run: python -m pip install --disable-pip-version-check --no-input psutil==7.0.0 wasmtime==49.0.3
 
       - name: Run source-audited Runtime V1 selftest in isolation
         env:
@@ -100,6 +103,10 @@ jobs:
           GITHUB_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: python scripts/validate_metaos_component.py
 
+      - name: Execute all MetaOS policy exports under bounded Wasmtime
+        env:
+          GITHUB_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: python scripts/validate_metaos_execution.py
       - name: Upload CUSTOSZV8.pyz and evidence reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -112,5 +119,6 @@ jobs:
             evidence/custoszv8-component-checks.json
             evidence/custoszv8-runtime-v1-selftest.json
             evidence/custoszv8-metaos-component.json
+            evidence/custoszv8-metaos-execution.json
           if-no-files-found: warn
           retention-days: 30
