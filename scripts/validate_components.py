@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run bounded read-only component checks and preserve a report."""
 from __future__ import annotations
-import json, os, subprocess, sys, zipfile
+import ast, hashlib, json, os, re, subprocess, sys, zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -11,6 +11,92 @@ from custoszv8.core import inspect_archive, inspect_wasm, sha256_file, V8Error
 
 def now():
     return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00","Z")
+
+
+def inspect_python_zipapp_contract(path: Path) -> dict:
+    """Statically inspect Python entry points and CLI wiring without executing them."""
+    path = Path(path)
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    modules = []
+    subcommands = set()
+    imports = set()
+    effectful_references = set()
+    main_source_sha256 = None
+    main_head = None
+    with zipfile.ZipFile(path) as archive:
+        infos = archive.infolist()
+        unsafe = [i.filename for i in infos if i.filename.startswith("/") or ".." in Path(i.filename).parts]
+        if unsafe:
+            raise ValueError("unsafe ZIP paths: " + ", ".join(unsafe))
+        names = [i.filename for i in infos]
+        python_names = [n for n in names if n.endswith(".py") and not n.endswith("/")]
+        if len(python_names) > 256:
+            raise ValueError("too many Python source modules for bounded static inspection")
+        total_source_bytes = 0
+        for name in sorted(python_names):
+            raw = archive.read(name)
+            total_source_bytes += len(raw)
+            if total_source_bytes > 2 * 1024 * 1024:
+                raise ValueError("Python source exceeds 2 MiB static inspection budget")
+            source_hash = hashlib.sha256(raw).hexdigest()
+            try:
+                text = raw.decode("utf-8")
+                tree = ast.parse(text, filename=name)
+            except (UnicodeDecodeError, SyntaxError) as exc:
+                modules.append({"path": name, "sha256": source_hash, "parse_status": "FAIL",
+                                "error": f"{type(exc).__name__}: {exc}"})
+                continue
+            module_imports = set()
+            definitions = []
+            calls = []
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Import):
+                    module_imports.update(alias.name for alias in node.names)
+                elif isinstance(node, ast.ImportFrom):
+                    module_imports.add("." * node.level + (node.module or ""))
+                elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                    definitions.append({"kind": type(node).__name__, "name": node.name,
+                                        "line": getattr(node, "lineno", None)})
+                elif isinstance(node, ast.Call):
+                    fn = node.func
+                    if isinstance(fn, ast.Attribute) and fn.attr == "add_parser" and node.args:
+                        first = node.args[0]
+                        if isinstance(first, ast.Constant) and isinstance(first.value, str):
+                            subcommands.add(first.value)
+                    if isinstance(fn, ast.Attribute):
+                        calls.append(fn.attr)
+                    elif isinstance(fn, ast.Name):
+                        calls.append(fn.id)
+            imports.update(module_imports)
+            for ref in calls:
+                if ref in {"Popen", "run", "call", "check_call", "check_output", "system",
+                           "socket", "create_connection", "urlopen", "connect", "exec", "eval"}:
+                    effectful_references.add(f"{name}:{ref}")
+            modules.append({"path": name, "sha256": source_hash, "parse_status": "PASS",
+                            "imports": sorted(module_imports), "definitions": definitions[:200],
+                            "call_names": sorted(set(calls))[:200],
+                            "main_guard": ('if __name__ == "__main__"' in text or "__main__" in text)})
+            if name == "__main__.py":
+                main_source_sha256 = source_hash
+                main_head = "\n".join(text.splitlines()[:120])[:8000]
+    return {
+        "path": str(path), "sha256": digest, "size_bytes": path.stat().st_size,
+        "archive_entry_count": len(names), "python_module_count": len(modules),
+        "python_source_bytes_inspected": total_source_bytes,
+        "entrypoint_present": "__main__.py" in names,
+        "entrypoint_source_sha256": main_source_sha256,
+        "entrypoint_source_excerpt": main_head,
+        "cli_subcommands_detected": sorted(subcommands),
+        "python_imports": sorted(imports),
+        "potential_effectful_api_references": sorted(effectful_references),
+        "modules": modules, "status": "PASS_STATIC_CONTRACT_INSPECTION",
+        "execution_performed": False,
+        "limitations": [
+            "AST inspection does not establish runtime semantics or absence of dynamic dispatch.",
+            "No component code was executed during this inspection.",
+            "A static entrypoint/command name is not proof of an authorized or safe operation."
+        ]
+    }
 
 def main():
     root = ROOT / "artifacts/custosz-v7"
@@ -41,10 +127,16 @@ def main():
             results.append({"component":"RUNTIME_V1","status":"FAIL","sha256":sha256_file(runtime),
                             "error":"ZIPAPP_ENTRYPOINT_MISSING","inspection":item})
         else:
-            results.append({"component":"RUNTIME_V1","status":"PASS_STATIC_ONLY","sha256":sha256_file(runtime),
-                "size_bytes":runtime.stat().st_size,"entry_count":item["entry_count"],
-                "entries":item["entries"],"native_execution":"NOT_RUN_UNVERIFIED_NATIVE_INTERFACE",
-                "historical_variant_note":"Selected staging bytes recorded; no equivalence claim for the R4 Skeleton pin."})
+            try:
+                contract = inspect_python_zipapp_contract(runtime)
+                results.append({"component":"RUNTIME_V1","status":"PASS_STATIC_ONLY","sha256":sha256_file(runtime),
+                    "size_bytes":runtime.stat().st_size,"entry_count":item["entry_count"],
+                    "entries":item["entries"],"static_contract":contract,
+                    "native_execution":"NOT_RUN_UNVERIFIED_NATIVE_INTERFACE",
+                    "historical_variant_note":"Selected staging bytes recorded; no equivalence claim for the R4 Skeleton pin."})
+            except (OSError, ValueError, zipfile.BadZipFile) as exc:
+                results.append({"component":"RUNTIME_V1","status":"FAIL","sha256":sha256_file(runtime),
+                    "error":f"STATIC_CONTRACT_INSPECTION_FAILED: {type(exc).__name__}: {exc}"})
 
     wasm = root / "MetaOS.wasm"
     if not wasm.is_file():
