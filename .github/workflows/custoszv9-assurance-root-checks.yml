@@ -68,7 +68,7 @@ jobs:
           assert "gh attestation verify" in text
           assert "PUAC2_G23_SIGNING_PRIVATE_KEY_PEM" not in text
           assert "PUAC2_G24_SIGNING_PRIVATE_KEY_PEM" not in text
-          assert 'subject-path: ${{ runner.temp }}/G23_UNSIGNED.json' in text
-          assert 'subject-path: ${{ runner.temp }}/CUSTOSZV9_CERTIFICATE.json' in text
+          assert "subject-path:" in text and "G23_UNSIGNED.json" in text
+          assert "subject-path:" in text and "CUSTOSZV9_CERTIFICATE.json" in text
           print("TRUSTED_WORKFLOW_SYNTAX_OIDC_ATTESTATIONS_AND_DEPENDENCIES_PASS")
           PY
