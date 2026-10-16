@@ -95,7 +95,7 @@ jobs:
                "candidate_commit":commit,
                "observed_at_utc":datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00","Z"),
                "same_source_commit_two_builds": first == second}
-          with open(path,"w",encoding="utf-8") as f: json.dump(obj,f,indent=2,sort_keys=True); f.write("\\n")
+          with open(path,"w",encoding="utf-8") as f: json.dump(obj,f,indent=2,sort_keys=True); f.write("\n")
           print(json.dumps(obj,indent=2,sort_keys=True))
           PY
           printf 'first=%s\\nsecond=%s\\n' "$first" "$second"
