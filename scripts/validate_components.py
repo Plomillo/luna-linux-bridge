@@ -49,6 +49,38 @@ def inspect_python_zipapp_contract(path: Path) -> dict:
             module_imports = set()
             definitions = []
             calls = []
+            critical_source_excerpts = []
+            wanted_excerpts = {
+                ("Runtime", "__init__"), ("Runtime", "selftest"),
+                ("ProcessSupervisor", "run"), ("CheckpointStore", "capture_file"),
+                ("CheckpointStore", "restore_file"),
+                ("SRExecBoundFME01", "establish_material_execution"),
+                ("SRExecBoundFME01", "_run_protocol"),
+                ("SRExecBoundFME01", "_create_dispatch"),
+                ("SRExecBoundFME01", "_resolve_command")
+            }
+            current_class = None
+            for top in tree.body:
+                if isinstance(top, ast.ClassDef):
+                    for member in top.body:
+                        if isinstance(member, (ast.FunctionDef, ast.AsyncFunctionDef)) and (top.name, member.name) in wanted_excerpts:
+                            source = ast.get_source_segment(text, member) or ""
+                            critical_source_excerpts.append({
+                                "class": top.name, "function": member.name,
+                                "lineno": member.lineno,
+                                "sha256": hashlib.sha256(source.encode("utf-8")).hexdigest(),
+                                "source": source[:10000],
+                                "truncated": len(source) > 10000
+                            })
+                elif isinstance(top, (ast.FunctionDef, ast.AsyncFunctionDef)) and (None, top.name) in wanted_excerpts:
+                    source = ast.get_source_segment(text, top) or ""
+                    critical_source_excerpts.append({
+                        "class": None, "function": top.name,
+                        "lineno": top.lineno,
+                        "sha256": hashlib.sha256(source.encode("utf-8")).hexdigest(),
+                        "source": source[:10000],
+                        "truncated": len(source) > 10000
+                    })
             for node in ast.walk(tree):
                 if isinstance(node, ast.Import):
                     module_imports.update(alias.name for alias in node.names)
@@ -75,6 +107,7 @@ def inspect_python_zipapp_contract(path: Path) -> dict:
             modules.append({"path": name, "sha256": source_hash, "parse_status": "PASS",
                             "imports": sorted(module_imports), "definitions": definitions[:200],
                             "call_names": sorted(set(calls))[:200],
+                            "critical_source_excerpts": critical_source_excerpts,
                             "main_guard": ('if __name__ == "__main__"' in text or "__main__" in text)})
             if name == "__main__.py":
                 main_source_sha256 = source_hash
