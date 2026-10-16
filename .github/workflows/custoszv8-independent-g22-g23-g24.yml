@@ -1,0 +1,268 @@
+name: "CUSTOSZ V8 — autonomous G22 G23 G24 assurance"
+
+on:
+  workflow_run:
+    workflows:
+      - "CUSTOSZ V8 candidate build and validation"
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: custoszv8-g22-g23-g24-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
+
+jobs:
+  g22:
+    name: "G22 — global non-regression"
+    if: ${{ github.event.workflow_run.conclusion == 'success' && startsWith(github.event.workflow_run.head_branch, 'feature/custoszv8-candidate-') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      actions: read
+      contents: read
+    env:
+      CANDIDATE_SHA: ${{ github.event.workflow_run.head_sha }}
+      PRODUCER_RUN_ID: ${{ github.event.workflow_run.id }}
+      PRODUCER_RUN_URL: ${{ github.event.workflow_run.html_url }}
+      PRODUCER_WORKFLOW_PATH: ${{ github.event.workflow_run.path }}
+      PRODUCER_ARTIFACT_NAME: CUSTOSZV8-candidate-${{ github.event.workflow_run.head_sha }}
+    steps:
+      - name: Checkout trusted gate implementation at the executing workflow revision
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: trust-root
+          persist-credentials: false
+
+      - name: Checkout exact candidate source for baseline comparison
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          path: candidate-source
+          persist-credentials: false
+
+      - name: Download exact producer artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: ${{ env.PRODUCER_ARTIFACT_NAME }}
+          path: ${{ runner.temp }}/producer
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ env.PRODUCER_RUN_ID }}
+
+      - name: Independently evaluate registered global non-regression contract
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/evidence"
+          python3 "$GITHUB_WORKSPACE/trust-root/scripts/custoszv8_global_non_regression.py" \
+            --candidate-dir "$RUNNER_TEMP/producer" \
+            --source-dir "$GITHUB_WORKSPACE/candidate-source" \
+            --candidate-sha "$CANDIDATE_SHA" \
+            --out "$RUNNER_TEMP/evidence/G22.json"
+
+      - name: Preserve G22 record
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: custoszv8-g22-record
+          path: ${{ runner.temp }}/evidence/G22.json
+          if-no-files-found: error
+          retention-days: 90
+
+  g23:
+    name: "G23 — independent validation"
+    needs: g22
+    if: needs.g22.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
+    env:
+      CANDIDATE_SHA: ${{ github.event.workflow_run.head_sha }}
+      PRODUCER_RUN_ID: ${{ github.event.workflow_run.id }}
+      PRODUCER_RUN_URL: ${{ github.event.workflow_run.html_url }}
+      PRODUCER_WORKFLOW_PATH: ${{ github.event.workflow_run.path }}
+      PRODUCER_ARTIFACT_NAME: CUSTOSZV8-candidate-${{ github.event.workflow_run.head_sha }}
+      TRUST_ROOT_SHA: ${{ github.workflow_sha }}
+      TRANSPORT_RUN_ID: ${{ github.run_id }}
+      TRUSTED_WORKFLOW_REF: ${{ github.workflow_ref }}
+    steps:
+      - name: Checkout trusted validator from the workflow revision
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+
+      - name: Download exact producer evidence bundle
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: ${{ env.PRODUCER_ARTIFACT_NAME }}
+          path: ${{ runner.temp }}/producer
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ env.PRODUCER_RUN_ID }}
+
+      - name: Download G22 record from this workflow run
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: custoszv8-g22-record
+          path: ${{ runner.temp }}/g22
+
+      - name: Resolve exact producer artifact identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          response="$(curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/runs/$PRODUCER_RUN_ID/artifacts?per_page=100")"
+          row="$(printf '%s' "$response" | jq -cer --arg name "$PRODUCER_ARTIFACT_NAME" \
+            '[.artifacts[] | select(.name == $name and .expired == false)] | if length == 1 then .[0] else error("ARTIFACT_MISSING_OR_AMBIGUOUS") end')"
+          artifact_id="$(printf '%s' "$row" | jq -er '.id')"
+          artifact_digest="$(printf '%s' "$row" | jq -er '.digest | select(type == "string" and length > 0)')"
+          printf 'PRODUCER_ARTIFACT_ID=%s\n' "$artifact_id" >> "$GITHUB_ENV"
+          printf 'PRODUCER_ARTIFACT_ZIP_DIGEST=%s\n' "$artifact_digest" >> "$GITHUB_ENV"
+
+      - name: Prove validator structural independence and run G23
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/g23"
+          script_sha="$(sha256sum scripts/custoszv8_assurance_trust_root.py | awk '{print $1}')"
+          python3 - "$RUNNER_TEMP/g23/INDEPENDENCE.json" "$CANDIDATE_SHA" "$PRODUCER_RUN_ID" "$TRANSPORT_RUN_ID" "$TRUST_ROOT_SHA" "$script_sha" "$GITHUB_WORKFLOW_REF" <<'PY'
+          import json,re,sys
+          out,candidate,producer,transport,trust,script,workflow_ref=sys.argv[1:]
+          valid=(
+            bool(re.fullmatch(r"[0-9a-f]{40}",candidate))
+            and producer.isdigit() and transport.isdigit() and producer != transport
+            and bool(re.fullmatch(r"[0-9a-f]{40}",trust))
+            and bool(re.fullmatch(r"[0-9a-f]{64}",script))
+            and workflow_ref.endswith("/.github/workflows/custoszv8-independent-g22-g23-g24.yml@refs/heads/main")
+          )
+          obj={
+            "schema":"CUSTOSZV8_G23_STRUCTURAL_INDEPENDENCE/1.0",
+            "status":"PASS" if valid else "FAIL",
+            "structural_independence":"PASS" if valid else "FAIL",
+            "distinct_evaluator_identity":"MAIN_CONTROLLED_GITHUB_ACTIONS_G23",
+            "candidate_commit_sha":candidate,
+            "producer_run_id":int(producer) if producer.isdigit() else None,
+            "transport_workflow_run_id":int(transport) if transport.isdigit() else None,
+            "validator_trust_root_sha":trust,
+            "validator_script_sha256":script,
+            "workflow_ref":workflow_ref,
+            "write_access_to_candidate":False,
+            "repair_allowed":False,
+            "candidate_code_executed":False,
+            "candidate_artifact_consumed_as_data_only":True,
+            "producer_can_modify_running_validator":False,
+            "organizational_independence":"NOT_CLAIMED"
+          }
+          with open(out,"w",encoding="utf-8") as f: json.dump(obj,f,indent=2,sort_keys=True); f.write("\n")
+          print(json.dumps(obj,indent=2,sort_keys=True))
+          if not valid: raise SystemExit("STRUCTURAL_INDEPENDENCE_EVIDENCE_INVALID")
+          PY
+          python3 -B -I scripts/custoszv8_assurance_trust_root.py g23 \
+            --candidate-dir "$RUNNER_TEMP/producer" \
+            --candidate-sha "$CANDIDATE_SHA" \
+            --g22 "$RUNNER_TEMP/g22/G22.json" \
+            --independence "$RUNNER_TEMP/g23/INDEPENDENCE.json" \
+            --out "$RUNNER_TEMP/g23/G23.json"
+
+      - name: Preserve G23 record
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: custoszv8-g23-record
+          path: ${{ runner.temp }}/g23
+          if-no-files-found: error
+          retention-days: 90
+
+  g24:
+    name: "G24 — digest-bound certification"
+    needs: g23
+    if: needs.g23.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    env:
+      CANDIDATE_SHA: ${{ github.event.workflow_run.head_sha }}
+      PRODUCER_RUN_ID: ${{ github.event.workflow_run.id }}
+      PRODUCER_ARTIFACT_NAME: CUSTOSZV8-candidate-${{ github.event.workflow_run.head_sha }}
+      TRUST_ROOT_SHA: ${{ github.workflow_sha }}
+      TRUSTED_WORKFLOW_REF: ${{ github.workflow_ref }}
+    steps:
+      - name: Checkout trusted certification root
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+
+      - name: Download exact producer artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: ${{ env.PRODUCER_ARTIFACT_NAME }}
+          path: ${{ runner.temp }}/producer
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ env.PRODUCER_RUN_ID }}
+
+      - name: Download G22 record
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: custoszv8-g22-record
+          path: ${{ runner.temp }}/g22
+
+      - name: Download G23 record
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: custoszv8-g23-record
+          path: ${{ runner.temp }}/g23
+
+      - name: Issue G24 certificate bound to G22, G23, source commit and package digest
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/evidence"
+          python3 -B -I scripts/custoszv8_assurance_trust_root.py make-authority \
+            --candidate-dir "$RUNNER_TEMP/producer" \
+            --candidate-sha "$CANDIDATE_SHA" \
+            --out "$RUNNER_TEMP/evidence/AUTHORITY_EVIDENCE.json"
+          python3 -B -I scripts/custoszv8_assurance_trust_root.py g24 \
+            --candidate-dir "$RUNNER_TEMP/producer" \
+            --candidate-sha "$CANDIDATE_SHA" \
+            --g22 "$RUNNER_TEMP/g22/G22.json" \
+            --g23 "$RUNNER_TEMP/g23/G23.json" \
+            --authority "$RUNNER_TEMP/evidence/AUTHORITY_EVIDENCE.json" \
+            --out "$RUNNER_TEMP/evidence/G24_CERTIFICATE.json"
+
+      - name: Cryptographically attest the G24 certificate
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-path: ${{ runner.temp }}/evidence/G24_CERTIFICATE.json
+
+      - name: Verify the signed G24 attestation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          gh attestation verify "$RUNNER_TEMP/evidence/G24_CERTIFICATE.json" \
+            --repo "$GITHUB_REPOSITORY" \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/custoszv8-independent-g22-g23-g24.yml" \
+            --format json
+
+      - name: Preserve G24 certificate and authority evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: custoszv8-g24-certificate
+          path: ${{ runner.temp }}/evidence
+          if-no-files-found: error
+          retention-days: 90
