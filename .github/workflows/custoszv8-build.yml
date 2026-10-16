@@ -67,12 +67,12 @@ jobs:
 
       - name: Run pinned wasm-tools validation and extract MetaOS WIT contract
         env:
-          GITHUB_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          CUSTOSZV8_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: python scripts/validate_metaos_component.py
 
       - name: Build standalone ZIPAPP
         env:
-          GITHUB_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          CUSTOSZV8_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           GITHUB_REF_NAME: ${{ github.event.pull_request.head.ref || github.ref_name }}
         run: python build.py
 
@@ -85,7 +85,7 @@ jobs:
           second="$(sha256sum dist/CUSTOSZV8.pyz | awk '{print $1}')"
           status=FAIL
           if [[ "$first" == "$second" ]]; then status=PASS; fi
-          python - "$first" "$second" "$status" "$GITHUB_SHA" <<'PY'
+          python - "$first" "$second" "$status" "$CUSTOSZV8_CANDIDATE_SHA" <<'PY'
           import json,sys
           from datetime import datetime,timezone
           first,second,status,commit=sys.argv[1:]
@@ -112,7 +112,7 @@ jobs:
 
       - name: Test actual CUSTOSZ V7 read-only commands and inspect Runtime and MetaOS
         env:
-          GITHUB_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          CUSTOSZV8_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: python scripts/validate_components.py
 
       - name: Install pinned Runtime V1 test dependency
@@ -120,16 +120,16 @@ jobs:
 
       - name: Run source-audited Runtime V1 selftest in isolation
         env:
-          GITHUB_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          CUSTOSZV8_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: python scripts/validate_runtime_v1_selftest.py
 
       - name: Execute all MetaOS policy exports under bounded Wasmtime
         env:
-          GITHUB_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          CUSTOSZV8_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: python scripts/validate_metaos_execution.py
       - name: Build digest-bound assurance case (never auto-grant G23/G24)
         env:
-          GITHUB_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          CUSTOSZV8_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           CUSTOSZV8_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           GITHUB_HEAD_REF: ${{ github.event.pull_request.head.ref || '' }}
         run: python scripts/build_custoszv8_assurance_case.py
