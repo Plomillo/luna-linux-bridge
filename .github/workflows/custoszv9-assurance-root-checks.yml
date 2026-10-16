@@ -5,6 +5,7 @@ on:
     branches: ["feature/custoszv9-assurance-root-*"]
     paths:
       - "scripts/custoszv9_gate_trust_root.py"
+      - "scripts/custoszv9_scope_policy.json"
       - ".github/workflows/custoszv9-independent-g22-g23-g24.yml"
       - ".github/workflows/custoszv9-assurance-root-checks.yml"
       - "tests/test_custoszv9_assurance_root.py"
