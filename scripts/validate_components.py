@@ -52,6 +52,8 @@ def inspect_python_zipapp_contract(path: Path) -> dict:
             critical_source_excerpts = []
             wanted_excerpts = {
                 ("Runtime", "__init__"), ("Runtime", "selftest"),
+                ("GovernanceKernel", "preflight"), ("GovernanceKernel", "transition"),
+                ("EvidenceJournal", "verify"), ("ValidationPipeline", "validate"),
                 ("ProcessSupervisor", "run"), ("CheckpointStore", "capture_file"),
                 ("CheckpointStore", "restore_file"),
                 ("SRExecBoundFME01", "establish_material_execution"),
