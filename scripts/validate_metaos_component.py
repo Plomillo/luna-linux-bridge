@@ -46,7 +46,7 @@ def run(cmd: list[str], timeout: int = TIMEOUT_SECONDS) -> subprocess.CompletedP
 def main() -> int:
     report = {
         "schema": "custoszv8.metaos-component-evidence.v1",
-        "candidate_commit": os.environ.get("GITHUB_SHA", "LOCAL_UNBOUND"),
+        "candidate_commit": os.environ.get("CUSTOSZV8_CANDIDATE_SHA") or os.environ.get("GITHUB_SHA", "LOCAL_UNBOUND"),
         "observed_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
         "component": "METAOS_WASM",
         "component_validation": "NOT_RUN",
