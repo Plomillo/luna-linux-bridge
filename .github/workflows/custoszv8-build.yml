@@ -13,6 +13,7 @@ on:
       - "scripts/validate_metaos_execution.py"
       - "scripts/build_custoszv8_assurance_case.py"
       - "scripts/validate_runtime_v1_integration.py"
+      - "scripts/validate_runtime_v1_material_dispatch.py"
       - "build.py"
       - ".github/workflows/custoszv8-build.yml"
       - "artifacts/custosz-v7/**"
@@ -28,6 +29,7 @@ on:
       - "scripts/validate_metaos_execution.py"
       - "scripts/build_custoszv8_assurance_case.py"
       - "scripts/validate_runtime_v1_integration.py"
+      - "scripts/validate_runtime_v1_material_dispatch.py"
       - "build.py"
       - ".github/workflows/custoszv8-build.yml"
       - "artifacts/custosz-v7/**"
@@ -132,6 +134,11 @@ jobs:
           CUSTOSZV8_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: python scripts/validate_runtime_v1_integration.py
 
+      - name: Run bounded SRExecBoundFME01 dispatch and file rollback in isolation
+        env:
+          CUSTOSZV8_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: python scripts/validate_runtime_v1_material_dispatch.py
+
       - name: Execute all MetaOS policy exports under bounded Wasmtime
         env:
           CUSTOSZV8_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -156,6 +163,7 @@ jobs:
             evidence/custoszv8-component-checks.json
             evidence/custoszv8-runtime-v1-selftest.json
             evidence/custoszv8-runtime-v1-integration.json
+            evidence/custoszv8-runtime-v1-material-dispatch.json
             evidence/custoszv8-metaos-component.json
             evidence/custoszv8-metaos-execution.json
             evidence/custoszv8-unit-tests.log
