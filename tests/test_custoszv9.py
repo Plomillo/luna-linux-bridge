@@ -551,7 +551,7 @@ class CRFUTests(unittest.TestCase):
             self.assertEqual(held["decision"], "HOLD")
             self.assertTrue(held["failures"])
 
-        def test_checkpoint_does_not_prove_restoration(self):
+    def test_checkpoint_does_not_prove_restoration(self):
         payload=b"checkpoint";dep=sha256_bytes(b"deps")
         record=checkpoint_record(payload,checkpoint_id="cp",state_identity="s",dependency_fingerprint=dep)
         self.assertFalse(record["restoration_proven"])
