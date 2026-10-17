@@ -360,7 +360,9 @@ jobs:
           assert conformance["g22_record_sha256"] == sha(pathlib.Path(g22_path))
           assert conformance["implementation_manifest_sha256"] == g22["implementation_manifest_sha256"]
           assert conformance["implementation_files"] == g22["implementation_files"]
-          assert conformance["checks_failed"] == 0 and conformance["checks_passed"] >= 20
+          assert conformance["checks_failed"] == 0 and conformance["checks_passed"] == 35
+          assert len(conformance["observations"]) == 35
+          assert all(item.get("status") == "PASS" for item in conformance["observations"])
           rec = {
               "schema": "CRFU_FORMAL_G23/1.0",
               "status": "PASS",
@@ -438,7 +440,10 @@ jobs:
           assert p["certified_runtime_package_certificate_attested"] is True
           assert p["python_conformance"]["status"]=="PASS_BOUNDED_CONFORMANCE"
           assert p["python_conformance"]["checks_failed"]==0
-          print("G23 exact-source and bounded-runtime-conformance record binding: PASS")
+          assert p["python_conformance"]["checks_passed"]==35
+          assert len(p["python_conformance"]["observations"])==35
+          assert all(item.get("status")=="PASS" for item in p["python_conformance"]["observations"])
+          print("G23 exact-source, certified-package binding and 35 runtime-conformance probes: PASS")
           PY
       - name: Create GitHub OIDC/Sigstore attestation for G23
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
@@ -507,6 +512,8 @@ jobs:
           pc = g23["python_conformance"]
           assert pc["schema"] == "CRFU_PYTHON_CONFORMANCE_G23/1.0"
           assert pc["status"] == "PASS_BOUNDED_CONFORMANCE"
+          assert pc["checks_passed"] == 35 and pc["checks_failed"] == 0
+          assert len(pc["observations"]) == 35 and all(item.get("status") == "PASS" for item in pc["observations"])
           assert pc["implementation_manifest_sha256"] == g22["implementation_manifest_sha256"]
           assert pc["implementation_files"] == g22["implementation_files"]
           assert g23["g22_record_sha256"] == sha(p22)
