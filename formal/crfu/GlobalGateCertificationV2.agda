@@ -4,7 +4,7 @@ module GlobalGateCertificationV2 where
 open import Agda.Builtin.Bool using (Bool; true; false)
 open import Agda.Builtin.Equality using (_≡_; refl)
 open import Agda.Builtin.List using (List; []; _∷_)
-open import FalseElimination using (Void; void-elim)
+open import FalseElimination using (Void; false-not-true; void-elim)
 
 -- Canonical gate identity space. G24 is the terminal decision, not one of
 -- its own prerequisites; therefore the input ledger contains exactly G01-G23.
@@ -130,13 +130,17 @@ data G24Decision : Set where
   denyG24Certificate : G24Decision
   holdG24ForEvidence : G24Decision
 
--- G24 decision order: a complete all-PASS prerequisite ledger plus complete
--- G24 evidence issues the certificate; known failures deny; all other cases HOLD.
-decideG24 : {ids : List GateId} -> GateLedger ids -> G24Evidence -> G24Decision
-decideG24 ledger evidence with allPrerequisitesPassed ledger | evidenceComplete evidence
-... | true | true = issueG24Certificate
-... | true | false = holdG24ForEvidence
-... | false | _ with containsFailure ledger
+g24Acceptance : PrerequisiteLedger -> G24Evidence -> Bool
+g24Acceptance ledger evidence =
+  allPrerequisitesPassed ledger andB evidenceComplete evidence
+
+-- G24 decision uses a single formal acceptance predicate. PASS is exactly
+-- all canonical G01-G23 predecessors PASS plus complete G24 evidence;
+-- otherwise a known failed prerequisite is DENY and missing/held evidence is HOLD.
+decideG24 : PrerequisiteLedger -> G24Evidence -> G24Decision
+decideG24 ledger evidence with g24Acceptance ledger evidence
+... | true = issueG24Certificate
+... | false with containsFailure ledger
 ...   | true = denyG24Certificate
 ...   | false = holdG24ForEvidence
 
@@ -146,29 +150,40 @@ deny-not-issue ()
 hold-not-issue : holdG24ForEvidence ≡ issueG24Certificate -> Void
 hold-not-issue ()
 
+andB-left : (a b : Bool) -> (a andB b) ≡ true -> a ≡ true
+andB-left false b proof = void-elim (false-not-true proof)
+andB-left true b proof = refl
+
+andB-right : (a b : Bool) -> (a andB b) ≡ true -> b ≡ true
+andB-right false b proof = void-elim (false-not-true proof)
+andB-right true b proof = proof
+
+issue-decision-implies-acceptance :
+  (ledger : PrerequisiteLedger) -> (evidence : G24Evidence) ->
+  decideG24 ledger evidence ≡ issueG24Certificate ->
+  g24Acceptance ledger evidence ≡ true
+issue-decision-implies-acceptance ledger evidence proof with g24Acceptance ledger evidence
+... | true = refl
+... | false with containsFailure ledger
+...   | true = void-elim (deny-not-issue proof)
+...   | false = void-elim (hold-not-issue proof)
+
 g24-pass-requires-every-prerequisite-pass :
   (ledger : PrerequisiteLedger) -> (evidence : G24Evidence) ->
   decideG24 ledger evidence ≡ issueG24Certificate ->
   EveryPrerequisitePassed ledger
-g24-pass-requires-every-prerequisite-pass ledger evidence proof
-  with allPrerequisitesPassed ledger in allPassEq | evidenceComplete evidence in evidenceEq
-... | true | true = all-pass-sound ledger refl
-... | true | false = void-elim (hold-not-issue proof)
-... | false | _ with containsFailure ledger
-...   | true = void-elim (deny-not-issue proof)
-...   | false = void-elim (hold-not-issue proof)
+g24-pass-requires-every-prerequisite-pass ledger evidence proof =
+  all-pass-sound ledger
+    (andB-left (allPrerequisitesPassed ledger) (evidenceComplete evidence)
+      (issue-decision-implies-acceptance ledger evidence proof))
 
 g24-pass-requires-complete-evidence :
   (ledger : PrerequisiteLedger) -> (evidence : G24Evidence) ->
   decideG24 ledger evidence ≡ issueG24Certificate ->
   evidenceComplete evidence ≡ true
-g24-pass-requires-complete-evidence ledger evidence proof
-  with allPrerequisitesPassed ledger in allPassEq | evidenceComplete evidence in evidenceEq
-... | true | true = refl
-... | true | false = void-elim (hold-not-issue proof)
-... | false | _ with containsFailure ledger
-...   | true = void-elim (deny-not-issue proof)
-...   | false = void-elim (hold-not-issue proof)
+g24-pass-requires-complete-evidence ledger evidence proof =
+  andB-right (allPrerequisitesPassed ledger) (evidenceComplete evidence)
+    (issue-decision-implies-acceptance ledger evidence proof)
 
 all-prerequisites-and-evidence-issue-g24 :
   (ledger : PrerequisiteLedger) -> EveryPrerequisitePassed ledger ->
