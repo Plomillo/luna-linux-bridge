@@ -11,6 +11,7 @@ on:
       - ".github/workflows/custoszv9-build.yml"
       - ".github/workflows/custoszv9-independent-g22-g23-g24.yml"
       - "scripts/custoszv9_gate_trust_root.py"
+      - "scripts/verify_custosz9_model_runtime_binding.py"
       - "docs/custoszv9-crfu-architecture.md"
   pull_request:
     branches: [main]
@@ -145,6 +146,156 @@ jobs:
             evidence/custoszv9-unit-tests.log
             evidence/custoszv9-reproducibility.json
           if-no-files-found: error
+          retention-days: 90
+
+  bounded-cross-language-correspondence:
+    name: "Exact Agda-Python resource binding and bounded differential validation"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact PR source with runtime bytes unchanged
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Checkout exact formal source revision as data
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: e8fb3f83f97e3577cbac77aa369eaccc425317b1
+          path: formal-src
+          persist-credentials: false
+
+      - name: Checkout exact runtime candidate bytes as data
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: 62d2d649b47f7653f3c9e9d1eeb42e563371053a
+          path: runtime-src
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.12"
+
+      - name: Install pinned CI-only test dependency
+        run: python3 -m pip install --disable-pip-version-check --only-binary=:all: cryptography==50.0.2
+
+      - name: Bind exact commits and resource guard expressions
+        run: python3 -I scripts/verify_custosz9_model_runtime_binding.py
+
+      - name: Run exact runtime test suite, including bounded differential test
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p evidence
+          PYTHONPATH="$GITHUB_WORKSPACE/runtime-src" \
+            python3 -m unittest discover -s runtime-src/tests -p 'test_custoszv9.py' -v \
+            2>&1 | tee evidence/runtime-tests.log
+          grep -E '^Ran [0-9]+ tests? in ' evidence/runtime-tests.log
+          grep -Fx 'OK' evidence/runtime-tests.log
+
+      - name: Install hash-verified Agda 2.8.0.2
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          archive="$RUNNER_TEMP/Agda-v2.8.0.2-linux.tar.xz"
+          curl --fail --location --retry 3 --proto '=https' --tlsv1.2 \
+            "https://github.com/agda/agda/releases/download/v2.8.0.2/Agda-v2.8.0.2-linux.tar.xz" \
+            --output "$archive"
+          echo "2bcf24bb561b1be859bba841e5d67962d1616b3251bc147f878e4f60a2fbd9f7  $archive" | sha256sum --check -
+          mkdir -p "$RUNNER_TEMP/agda-bin" "$RUNNER_TEMP/agda-extract"
+          tar -xf "$archive" -C "$RUNNER_TEMP/agda-extract"
+          test -x "$RUNNER_TEMP/agda-extract/agda"
+          install -m 0755 "$RUNNER_TEMP/agda-extract/agda" "$RUNNER_TEMP/agda-bin/agda"
+          echo "$RUNNER_TEMP/agda-bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/agda-bin/agda" --version | tee evidence/agda-version.txt
+          grep -F "Agda version 2.8.0.2" evidence/agda-version.txt
+
+      - name: Type-check every pinned first-order Agda module
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          : > evidence/agda-first-order.log
+          for source in formal-src/formal/crfu/*.agda; do
+            echo "===== $source =====" | tee -a evidence/agda-first-order.log
+            agda --safe --without-K -i formal-src/formal/crfu "$source" 2>&1 | tee -a evidence/agda-first-order.log
+          done
+
+      - name: Download and verify Cubical Agda v0.9
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          archive="$RUNNER_TEMP/cubical-0.9.tar.gz"
+          curl --fail --location --retry 3 --proto '=https' --tlsv1.2 \
+            "https://github.com/agda/cubical/releases/download/v0.9/cubical-0.9.tar.gz" \
+            --output "$archive"
+          echo "003f9c57c134e4a9401a4b339b3773be667aa169ff929ca3dfb9c8abefc225c5  $archive" | sha256sum --check -
+          mkdir -p "$RUNNER_TEMP/cubical"
+          tar -xzf "$archive" --strip-components=1 -C "$RUNNER_TEMP/cubical"
+          test -f "$RUNNER_TEMP/cubical/Cubical/Foundations/Univalence.agda"
+
+      - name: Type-check the pinned Cubical Agda interface
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          agda --cubical --safe --guardedness \
+            -i "$RUNNER_TEMP/cubical" \
+            -i formal-src/formal/cubical \
+            formal-src/formal/cubical/CRFUUnivalenceBridge.agda \
+            2>&1 | tee evidence/agda-cubical.log
+
+      - name: Finalize bounded evidence report without certification
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import hashlib, json, re
+          from pathlib import Path
+          path = Path("evidence/custoszv9-bounded-model-runtime-binding.json")
+          report = json.loads(path.read_text(encoding="utf-8"))
+          log = Path("evidence/runtime-tests.log").read_text(encoding="utf-8")
+          match = re.search(r"^Ran (\d+) tests? in ", log, re.M)
+          if not match or not re.search(r"^OK$", log, re.M):
+              raise SystemExit("RUNTIME_TEST_LOG_NOT_PASS")
+          report["status"] = "PASS_BOUNDED_RESOURCE_PREDICATE_CORRESPONDENCE_ONLY"
+          report["validation"] = {
+              "python_unit_tests": "PASS",
+              "python_unit_test_count": int(match.group(1)),
+              "bounded_resource_input_combinations": 4 ** 7,
+              "bounded_regression_result": "PASS",
+              "first_order_agda_typecheck": "PASS",
+              "cubical_agda_interface_typecheck": "PASS",
+              "agda_release": "2.8.0.2",
+              "cubical_agda_release": "v0.9",
+              "global_g01_g24_certification": "NOT_ISSUED"
+          }
+          report["evidence_hashes"] = {
+              name: hashlib.sha256(Path("evidence", name).read_bytes()).hexdigest()
+              for name in ("runtime-tests.log", "agda-version.txt",
+                           "agda-first-order.log", "agda-cubical.log")
+          }
+          report["report_payload_sha256"] = hashlib.sha256(
+              json.dumps(report, sort_keys=True, separators=(",", ":")).encode()
+          ).hexdigest()
+          path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          print(json.dumps(report, indent=2, sort_keys=True))
+          PY
+
+      - name: Upload exact-source bounded evidence (not a certificate)
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: CUSTOSZV9-bounded-cross-language-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            evidence/custoszv9-bounded-model-runtime-binding.json
+            evidence/runtime-tests.log
+            evidence/agda-version.txt
+            evidence/agda-first-order.log
+            evidence/agda-cubical.log
+          if-no-files-found: warn
           retention-days: 90
 
   publish-un-certified-binary:
