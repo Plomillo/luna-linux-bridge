@@ -1,6 +1,7 @@
 {-# OPTIONS --safe #-}
 module ResourceBudgetModel where
 open import Agda.Builtin.Nat using (Nat; _+_; _<_)
+open import Agda.Builtin.Bool using (Bool)
 
 record ResourceNeed : Set where
   constructor resourceNeed
@@ -9,11 +10,10 @@ record ResourceNeed : Set where
     requiredDisk availableDisk : Nat
 open ResourceNeed
 
--- Logical propositions, not runtime Bool values: builtin Nat strict inequality
--- has propositional type Set. The original draft incorrectly annotated these
--- results as Bool. This correction exists only on the formal-assurance branch.
-ramSufficient : ResourceNeed -> Set
+-- Agda.Builtin.Nat defines strict natural-number comparison as Bool.
+-- This declaration preserves that exact built-in interface.
+ramSufficient : ResourceNeed -> Bool
 ramSufficient r = requiredRam r + reservedRam r < availableRam r
 
-diskSufficient : ResourceNeed -> Set
+diskSufficient : ResourceNeed -> Bool
 diskSufficient r = requiredDisk r < availableDisk r
