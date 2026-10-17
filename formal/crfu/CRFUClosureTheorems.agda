@@ -199,3 +199,5 @@ forbidden-action-denied-with-missing-preconditions :
   (taskId : String) -> (revision : Nat) ->
   decide (taskState taskId revision false true) ≡ denyForbiddenAction
 forbidden-action-denied-with-missing-preconditions _ _ = refl
+
+-- Revalidated as a new formal-source candidate after trust-root merge d1fe5d49c8a058f074ab3d38667ce920bde03bea.
