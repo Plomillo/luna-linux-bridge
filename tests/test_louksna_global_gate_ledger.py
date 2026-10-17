@@ -63,6 +63,7 @@ class LouksnaGlobalCertificationFailClosedTests(unittest.TestCase):
             }
             g23["report_sha256"] = ledger.sha256_bytes(ledger.canonical_bytes(g23))
             recheck = dict(g23)
+            recheck.pop("report_sha256", None)
             recheck["report_sha256"] = ledger.sha256_bytes(ledger.canonical_bytes(recheck))
             g23_path = root / "g23.json"
             recheck_path = root / "recheck.json"
