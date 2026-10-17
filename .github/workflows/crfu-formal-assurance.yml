@@ -131,7 +131,7 @@ jobs:
                   "IMMEDIATE_TRANSACTION_MISSING:" + method_name
               )
           sql_edge_pattern = re.compile(
-              r"UPDATE\\s+missions\\s+SET\\s+state='([A-Z_]+)'.*?WHERE\\s+mission_id=\\?.*?AND\\s+state='([A-Z_]+)'",
+              r"UPDATE\s+missions\s+SET\s+state='([A-Z_]+)'.*?WHERE\s+mission_id=\\?.*?AND\s+state='([A-Z_]+)'",
               re.IGNORECASE,
           )
           static_sql_edges = []
@@ -142,11 +142,11 @@ jobs:
                           and node.func.attr == "execute" and node.args
                           and isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, str)):
                       continue
-                  query = re.sub(r"\\s+", " ", node.args[0].value).strip()
-                  if not re.match(r"UPDATE\\s+missions\\s+SET\\s+state", query, re.IGNORECASE):
+                  query = re.sub(r"\s+", " ", node.args[0].value).strip()
+                  if not re.match(r"UPDATE\s+missions\s+SET\s+state", query, re.IGNORECASE):
                       continue
                   state_updates_seen += 1
-                  if re.search(r"SET\\s+state=\\?", query, re.IGNORECASE):
+                  if re.search(r"SET\s+state=\\?", query, re.IGNORECASE):
                       assert method_name == "transition", "UNMODELED_DYNAMIC_STATE_UPDATE:" + method_name
                       continue
                   match = sql_edge_pattern.search(query)
@@ -171,7 +171,7 @@ jobs:
           for index, (src, dst) in enumerate(edge_rows):
               suffix = " ∷" if index + 1 < len(edge_rows) else " ∷ []"
               lines.append("  queueEdge " + constructors[src] + " " + constructors[dst] + suffix)
-          agda_out.write_text("\\n".join(lines) + "\\n", encoding="utf-8")
+          agda_out.write_text("\n".join(lines) + "\n", encoding="utf-8")
           report = {
               "schema": "CRFU_RUNTIME_REFINEMENT_EVIDENCE/1.0",
               "status": "SOURCE_EXTRACTION_PASS",
@@ -189,7 +189,7 @@ jobs:
               "agda_proof_status": "PENDING_MODEL_EQUALITY_THEOREM",
               "claim_boundary": "Finite queue transition relation only; no universal claim about all Python callbacks or all SQLite failure modes.",
           }
-          report_out.write_text(json.dumps(report, sort_keys=True, indent=2) + "\\n", encoding="utf-8")
+          report_out.write_text(json.dumps(report, sort_keys=True, indent=2) + "\n", encoding="utf-8")
           print(json.dumps(report, sort_keys=True, indent=2))
           PY
 
@@ -220,7 +220,7 @@ jobs:
               report["status"] = "PASS"
           else:
               report["agda_proof_status"] = "PENDING_MODEL_EQUALITY_THEOREM"
-          report_path.write_text(json.dumps(report, sort_keys=True, indent=2) + "\\n", encoding="utf-8")
+          report_path.write_text(json.dumps(report, sort_keys=True, indent=2) + "\n", encoding="utf-8")
           print(json.dumps(report, sort_keys=True, indent=2))
           PY
 
