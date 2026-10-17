@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 import tempfile
@@ -70,11 +71,65 @@ class LouksnaGlobalCertificationFailClosedTests(unittest.TestCase):
             attestation_path = root / "attestation.json"
             g23_path.write_text(json.dumps(g23), encoding="utf-8")
             recheck_path.write_text(json.dumps(recheck), encoding="utf-8")
-            attestation_path.write_text("{}", encoding="utf-8")
-            result = certifier.decide(g23, recheck, attestation_path)
+            attestation_path.write_text('{"not":"a verified attestation"}', encoding="utf-8")
+            result = certifier.decide(g23, recheck, attestation_path, hashlib.sha256(g23_path.read_bytes()).hexdigest())
             self.assertEqual(result["decision"], "HOLD")
             self.assertFalse(result["certification_issued"])
             self.assertEqual(result["certification"], "NOT_ISSUED")
+            self.assertIn("G23_ATTESTATION_VERIFICATION_INVALID_OR_SUBJECT_MISMATCH", result["reason_codes"])
+
+
+    def test_g24_rejects_nonempty_but_unbound_attestation_even_when_reports_claim_pass(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            ids = [f"G{i:02d}" for i in range(1, 25)]
+            checked = [
+                {"gate_id": gate_id, "path": f"evidence/{gate_id}.json", "sha256": "e" * 64, "result": "PASS"}
+                for gate_id in ids
+            ]
+
+            def report():
+                value = {
+                    "schema": "LOUKSNA_GLOBAL_G23_RESULT/1.0",
+                    "scope_id": "LOUKSNA_CANONICAL_G01_G24_TERMINAL_CERTIFICATION",
+                    "candidate_sha": "a" * 40,
+                    "trusted_policy_sha256": "b" * 64,
+                    "trusted_matrix_sha256": "c" * 64,
+                    "protected_baseline_file": "LUNACORE_final_formalized_v25.md",
+                    "protected_baseline_sha256": "d" * 64,
+                    "authority_file": "Louksna.md",
+                    "authority_sha256": "e" * 64,
+                    "decision": "PASS",
+                    "certification_issued": False,
+                    "reason_codes": [],
+                    "checked_evidence": checked,
+                    "gate_count": 24,
+                    "required_gate_ids": ids,
+                    "issued_at_utc": "2026-10-17T00:00:00Z",
+                }
+                value["report_sha256"] = ledger.sha256_bytes(ledger.canonical_bytes(value))
+                return value
+
+            g23 = report()
+            recheck = report()
+            g23_path = root / "G23_GLOBAL.json"
+            recheck_path = root / "G23_RECHECK.json"
+            attestation_path = root / "attestation-verification.json"
+            g23_path.write_text(json.dumps(g23, sort_keys=True, indent=2) + "\\n", encoding="utf-8")
+            recheck_path.write_text(json.dumps(recheck, sort_keys=True, indent=2) + "\\n", encoding="utf-8")
+            # A non-empty JSON object is not evidence that gh attestation verify passed.
+            attestation_path.write_text('{"verificationResult":{"statement":{"predicateType":"https://slsa.dev/provenance/v1"}}}', encoding="utf-8")
+
+            result = certifier.decide(
+                g23,
+                recheck,
+                attestation_path,
+                hashlib.sha256(g23_path.read_bytes()).hexdigest(),
+            )
+            self.assertEqual(result["decision"], "HOLD")
+            self.assertFalse(result["certification_issued"])
+            self.assertEqual(result["certification"], "NOT_ISSUED")
+            self.assertIn("G23_ATTESTATION_VERIFICATION_INVALID_OR_SUBJECT_MISMATCH", result["reason_codes"])
 
 
 if __name__ == "__main__":
