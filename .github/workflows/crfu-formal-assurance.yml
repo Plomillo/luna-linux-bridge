@@ -86,7 +86,7 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          agda --cubical --safe -i "$RUNNER_TEMP/cubical" -i formal/cubical \
+          agda --cubical --safe --guardedness -i "$RUNNER_TEMP/cubical" -i formal/cubical \
             formal/cubical/CRFUUnivalenceBridge.agda 2>&1 | tee evidence/agda-cubical.log
 
       - name: Produce source-bound formal assurance report
