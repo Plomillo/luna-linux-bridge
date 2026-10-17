@@ -47,7 +47,8 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install pinned YAML parser for workflow checks
-        run: python3 -m pip install --disable-pip-version-check --only-binary=:all: PyYAML==6.0.2
+        run: >-
+          python3 -m pip install --disable-pip-version-check --only-binary=:all: PyYAML==6.0.2
       - name: Test 24-slot canonical matrix and fail-closed G24 behavior
         run: python3 -m unittest discover -s tests -p 'test_louksna_global_gate_ledger.py' -v
       - name: Test G23/G24 trust separation and workflow invariants
