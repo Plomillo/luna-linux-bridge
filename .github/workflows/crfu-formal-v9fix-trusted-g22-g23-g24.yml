@@ -482,7 +482,7 @@ jobs:
           set -Eeuo pipefail
           gh attestation verify "$RUNNER_TEMP/g23/CRFU_G23.json" \
             --repo "$GITHUB_REPOSITORY" \
-            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/crfu-formal-trusted-g22-g23-g24.yml" \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/crfu-formal-v9fix-trusted-g22-g23-g24.yml" \
             --format json > "$RUNNER_TEMP/G23_ATTESTATION_VERIFICATION.json"
           test -s "$RUNNER_TEMP/G23_ATTESTATION_VERIFICATION.json"
 
@@ -587,7 +587,7 @@ jobs:
           set -Eeuo pipefail
           gh attestation verify "$RUNNER_TEMP/CRFU_FORMAL_CERTIFICATE.json" \
             --repo "$GITHUB_REPOSITORY" \
-            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/crfu-formal-trusted-g22-g23-g24.yml" \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/crfu-formal-v9fix-trusted-g22-g23-g24.yml" \
             --format json > "$RUNNER_TEMP/G24_ATTESTATION_VERIFICATION.json"
           test -s "$RUNNER_TEMP/G24_ATTESTATION_VERIFICATION.json"
       - name: Upload G22 G23 G24 records and attestations verification
