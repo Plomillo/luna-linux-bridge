@@ -381,7 +381,7 @@ jobs:
               "checked_in_agda_module_sha256": hashlib.sha256(tracked_bytes).hexdigest(),
               "checked_in_generated_module_matches_runtime_extraction": True,
               "agda_proof_status": "PENDING_MODEL_EQUALITY_THEOREM",
-              "claim_boundary": "Finite queue transition relation only; no universal claim about all Python callbacks or all SQLite failure modes.",
+              "claim_boundary": "Universal definitional equality for the finite queue relation and ordered task schema, plus byte-for-byte source AST control-flow trace equality for 17 selected runtime functions. This is a structural refinement proof, not a denotational proof of arbitrary Python callbacks, unbounded algorithm outputs, the SQLite engine, or all external library behavior.",
           }
           report_out.write_text(json.dumps(report, sort_keys=True, indent=2) + "\n", encoding="utf-8")
           print(json.dumps(report, sort_keys=True, indent=2))
@@ -412,14 +412,26 @@ jobs:
               "python-task-required-fields-refine-exact-python-runtime",
           ]
           checked = [name for name in theorems if name in proof_source]
+          guard_trace = report.get("runtime_guard_trace_report", {})
+          guard_trace_pass = (
+              guard_trace.get("status") == "SOURCE_TRACE_MATCH_PASS"
+              and guard_trace.get("matched_byte_for_byte") is True
+              and guard_trace.get("trace_entry_count", 0) > 0
+              and pathlib.Path("formal/crfu/RuntimeGuardTraceCorrespondence.agda").is_file()
+              and "runtime-critical-guard-trace-refines-exact-python-runtime" in
+                  pathlib.Path("formal/crfu/RuntimeGuardTraceCorrespondence.agda").read_text(encoding="utf-8")
+          )
           report["agda_theorems_present"] = checked
-          if len(checked) == len(theorems):
+          report["source_trace_correspondence_pass"] = guard_trace_pass
+          if len(checked) == len(theorems) and guard_trace_pass:
               report["agda_proof_status"] = "TYPECHECKED_DEFINITIONAL_EQUALITY"
               report["agda_theorems"] = checked
-              report["status"] = "PASS"
+              report["status"] = "PASS_FOR_STRUCTURAL_REFINEMENT_SCOPE"
           else:
               report["agda_proof_status"] = "PENDING_MODEL_EQUALITY_THEOREM"
               report["missing_agda_theorems"] = [name for name in theorems if name not in checked]
+              if not guard_trace_pass:
+                  report["missing_structural_evidence"] = "RUNTIME_GUARD_TRACE_CORRESPONDENCE_NOT_PROVEN"
           report_path.write_text(json.dumps(report, sort_keys=True, indent=2) + "\n", encoding="utf-8")
           print(json.dumps(report, sort_keys=True, indent=2))
           PY
@@ -478,6 +490,8 @@ jobs:
               "runtime_transition_refinement": runtime_refinement,
               "checks": [
                 "runtime PersistentMissionQueue state-transition table extracted from exact Python source and compared by an Agda definitional-equality theorem when present",
+                "ordered TaskContract.REQUIRED schema extracted from exact Python source and compared by an Agda definitional-equality theorem",
+                "control-flow and return trace for 17 critical Python runtime functions extracted from exact AST and matched byte-for-byte to a tracked formal sequence, then typechecked with an Agda definitional-equality theorem",
                 "all formal/crfu/*.agda files typechecked using --safe --without-K",
                 "formal/cubical/CRFUUnivalenceBridge.agda typechecked using --cubical --safe --guardedness",
                 "Agda official Linux binary archive SHA-256 verified before use",
@@ -486,7 +500,8 @@ jobs:
               "limitations": [
                 "This report is evidence for the listed formal source files only.",
                 "Typechecking the model is not by itself a proof that the Python runtime implements every model.",
-                "The generated Agda equality theorem proves only that the finite SQLite queue transition table matches the exact source-extracted Python ALLOWED relation; it does not prove all runtime functions, arbitrary callbacks, or all database-failure behavior.",
+                "The AST trace establishes source-structural equality of guard/loop/try/return traces for 17 declared functions; it is not by itself a denotational proof of every assignment, external library call, arbitrary callback, whole graph algorithm, SQLite engine semantics, or all possible failure schedules.",
+                "The generated Agda equality theorem proves the finite SQLite queue transition table and ordered task schema match exact source-extracted Python structures; full Python/SQLite semantic refinement outside the explicitly modeled structures and traced control paths is not claimed.",
                 "The Cubical module checks the equivalence-to-path interface; it does not prove global Louksna correctness or implementation correspondence.",
                 "No prior CUSTOSZV9 package, G22/G23/G24 certificate, or attestation is modified by this workflow."
               ]
