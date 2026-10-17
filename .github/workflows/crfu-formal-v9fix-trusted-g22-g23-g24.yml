@@ -31,7 +31,7 @@ jobs:
     env:
       CANDIDATE_SHA: ${{ github.event.workflow_run.head_sha }}
       PRODUCER_RUN_ID: ${{ github.event.workflow_run.id }}
-      BASELINE_SHA: bd400d8cdd57a662940733f15e6ad3189e579ed2
+      BASELINE_SHA: 58364568a66ae79de00bdea3756a4c1b03378b1d
     steps:
       - name: Checkout exact formal source as data
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -53,11 +53,11 @@ jobs:
       - name: Download the separately certified fixed-baseline V9 package and certificate
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
-          name: custoszv9-certified-scope-bd400d8cdd57a662940733f15e6ad3189e579ed2
+          name: custoszv9-certified-scope-58364568a66ae79de00bdea3756a4c1b03378b1d
           path: ${{ runner.temp }}/package-cert
           github-token: ${{ github.token }}
           repository: ${{ github.repository }}
-          run-id: 38986471185
+          run-id: 38988297744
 
       - name: Verify fixed-baseline V9 package certificate and its Sigstore attestation
         env:
@@ -74,14 +74,14 @@ jobs:
           assert cert["schema"] == "CUSTOSZV9_SOFTWARE_SCOPE_CERTIFICATE/1.0"
           assert cert["decision"] == "CERTIFIED_FOR_DECLARED_STANDALONE_SOFTWARE_SCOPE"
           assert cert["package_scope_certified"] is True
-          assert cert["candidate_commit_sha"] == "bd400d8cdd57a662940733f15e6ad3189e579ed2"
-          assert cert["candidate_package_sha256"] == "db313bfb8dc409579f39dcb75ef873577386de8c29df0a1e09f8365d39946f36"
-          assert cert["candidate_package_size_bytes"] == 236656
+          assert cert["candidate_commit_sha"] == "58364568a66ae79de00bdea3756a4c1b03378b1d"
+          assert cert["candidate_package_sha256"] == "8bb088c8680331b11e8e8acc1071149c0ff37778bd84c0f27b10f91d616a5c51"
+          assert cert["candidate_package_size_bytes"] == 233264
           assert cert["failures"] == []
           assert cert["canonical_promotion"] == "NOT_AUTHORIZED"
           assert cert["operational_authorization"] == "NOT_GRANTED"
           digest = hashlib.sha256(p.read_bytes()).hexdigest()
-          assert digest == "f0694fc78e7f50e6a96fd55e989695067bb1b11d180a1eba5f8d9e49663741b0"
+          assert digest == "6dafd85769d9a37e92e399a6cca3df307c99bd616472db5bdd76da35e79ba0a3"
           print(json.dumps({"status": "PASS", "package_sha256": cert["candidate_package_sha256"], "certificate_sha256": digest}))
           PY
           gh attestation verify "$cert" \
@@ -94,12 +94,13 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          python3 - "${CANDIDATE_SHA}" "${BASELINE_SHA}" "$GITHUB_WORKSPACE/candidate-source" "$RUNNER_TEMP/producer/evidence/formal-assurance-report.json" "$RUNNER_TEMP/producer" "$RUNNER_TEMP/package-cert/CUSTOSZV9_CERTIFICATE.json" "$RUNNER_TEMP/package-cert/PACKAGE_G24_ATTESTATION_VERIFICATION.json" "$RUNNER_TEMP/G22.json" <<'PY'
-          import hashlib, json, pathlib, subprocess, sys
-          candidate, baseline, source_root, report_path, artifact_root, package_cert_path, package_attestation_path, out = sys.argv[1:]
+          python3 - "${CANDIDATE_SHA}" "${BASELINE_SHA}" "$GITHUB_WORKSPACE/candidate-source" "$RUNNER_TEMP/producer/evidence/formal-assurance-report.json" "$RUNNER_TEMP/producer" "$RUNNER_TEMP/package-cert" "$RUNNER_TEMP/package-cert/CUSTOSZV9_CERTIFICATE.json" "$RUNNER_TEMP/package-cert/PACKAGE_G24_ATTESTATION_VERIFICATION.json" "$RUNNER_TEMP/G22.json" <<'PY'
+          import hashlib, json, pathlib, subprocess, sys, zipfile
+          candidate, baseline, source_root, report_path, artifact_root, package_artifact_root, package_cert_path, package_attestation_path, out = sys.argv[1:]
           root = pathlib.Path(source_root)
           report_file = pathlib.Path(report_path)
           artifact = pathlib.Path(artifact_root)
+          package_artifact_root = pathlib.Path(package_artifact_root)
           def sha(path):
               h = hashlib.sha256()
               with open(path, "rb") as f:
@@ -118,11 +119,58 @@ jobs:
           assert package_cert["decision"] == "CERTIFIED_FOR_DECLARED_STANDALONE_SOFTWARE_SCOPE"
           assert package_cert["package_scope_certified"] is True
           assert package_cert["candidate_commit_sha"] == baseline
-          assert package_cert["candidate_package_sha256"] == "db313bfb8dc409579f39dcb75ef873577386de8c29df0a1e09f8365d39946f36"
-          assert package_cert["candidate_package_size_bytes"] == 236656
+          assert package_cert["candidate_package_sha256"] == "8bb088c8680331b11e8e8acc1071149c0ff37778bd84c0f27b10f91d616a5c51"
+          assert package_cert["candidate_package_size_bytes"] == 233264
           assert package_cert["failures"] == []
-          assert sha(package_cert_file) == "f0694fc78e7f50e6a96fd55e989695067bb1b11d180a1eba5f8d9e49663741b0"
+          assert sha(package_cert_file) == "6dafd85769d9a37e92e399a6cca3df307c99bd616472db5bdd76da35e79ba0a3"
           assert package_attestation_file.is_file() and package_attestation_file.stat().st_size > 0
+
+          # Bind the formal source certification to the exact clean runtime package.
+          package_candidates = sorted(package_artifact_root.rglob("CUSTOSZV9.pyz"))
+          assert len(package_candidates) == 1, "CERTIFIED_RUNTIME_PACKAGE_NOT_UNIQUE"
+          runtime_package = package_candidates[0]
+          assert sha(runtime_package) == package_cert["candidate_package_sha256"], "RUNTIME_PACKAGE_DIGEST_CERTIFICATE_MISMATCH"
+          with zipfile.ZipFile(runtime_package, "r") as runtime_zip:
+              runtime_names = runtime_zip.namelist()
+              assert runtime_zip.testzip() is None, "RUNTIME_PACKAGE_ZIP_CRC_FAILURE"
+              assert not any(
+                  name.endswith(".agda") or "/formal_sources/" in "/" + name or name.startswith("formal/")
+                  for name in runtime_names
+              ), "FORMAL_SOURCE_PAYLOAD_FOUND_IN_RUNTIME_PACKAGE"
+              runtime_manifest_bytes = runtime_zip.read("custoszv9/data/build_manifest.json")
+              runtime_manifest = json.loads(runtime_manifest_bytes)
+          assert runtime_manifest["source_commit"] == baseline, "RUNTIME_MANIFEST_COMMIT_MISMATCH"
+          runtime_formal = runtime_manifest["formal_assurance"]
+          assert runtime_formal["sources_embedded"] is False, "RUNTIME_MANIFEST_FORMAL_SOURCES_EMBEDDED"
+          assert runtime_formal["source_storage"] == "REPOSITORY_ONLY_SEPARATE_EVIDENCE_BUNDLE"
+          core_formal_names = [
+              "TaskAndStateModel.agda", "ResourceBudgetModel.agda", "PlanSoundness.agda",
+              "ContractComposition.agda", "EquivalenceTransport.agda", "MigrationCoherence.agda",
+              "RecoveryInvariant.agda", "ModelImplementationCorrespondence.agda"
+          ]
+          source_records = runtime_formal.get("sources")
+          assert isinstance(source_records, dict) and set(source_records) == set(core_formal_names), "RUNTIME_FORMAL_SOURCE_SET_MISMATCH"
+          runtime_formal_source_records = []
+          for name in sorted(core_formal_names):
+              source_path = root / "formal" / "crfu" / name
+              assert source_path.is_file(), "FORMAL_SOURCE_MISSING:" + name
+              source_digest = sha(source_path)
+              source_size = source_path.stat().st_size
+              claimed = source_records[name]
+              assert claimed.get("sha256") == source_digest, "PACKAGE_FORMAL_SOURCE_HASH_MISMATCH:" + name
+              assert claimed.get("size_bytes") == source_size, "PACKAGE_FORMAL_SOURCE_SIZE_MISMATCH:" + name
+              assert claimed.get("embedded_in_runtime") is False, "FORMAL_SOURCE_EMBEDDED_METADATA_MISMATCH:" + name
+              assert claimed.get("repository_path") == "formal/crfu/" + name, "FORMAL_SOURCE_PATH_MISMATCH:" + name
+              runtime_formal_source_records.append({
+                  "path": "formal/crfu/" + name,
+                  "bytes": source_size,
+                  "sha256": source_digest
+              })
+          runtime_formal_source_manifest_sha = hashlib.sha256(json.dumps(
+              runtime_formal_source_records, sort_keys=True, separators=(",", ":")
+          ).encode()).hexdigest()
+          runtime_manifest_sha = hashlib.sha256(runtime_manifest_bytes).hexdigest()
+
           assert report["schema"] == "CRFU_FORMAL_ASSURANCE_EVIDENCE/1.0"
           assert report["result"] == "PASS_TYPECHECKED_DECLARED_FORMAL_SCOPE"
           assert report["formal_source_commit"] == candidate
@@ -205,6 +253,10 @@ jobs:
               "certified_runtime_package_certificate_sha256": sha(package_cert_file),
               "certified_runtime_package_certificate_attestation_verification_sha256": sha(package_attestation_file),
               "certified_runtime_package_certificate_attested": True,
+              "certified_runtime_build_manifest_sha256": runtime_manifest_sha,
+              "certified_runtime_formal_source_manifest_sha256": runtime_formal_source_manifest_sha,
+              "certified_runtime_formal_source_records": runtime_formal_source_records,
+              "certified_runtime_formal_sources_embedded": False,
               "producer_report_sha256": sha(report_file),
               "assertions": {
                   "ancestor_of_certified_candidate_source": True,
@@ -239,7 +291,7 @@ jobs:
       contents: read
     env:
       CANDIDATE_SHA: ${{ github.event.workflow_run.head_sha }}
-      BASELINE_SHA: bd400d8cdd57a662940733f15e6ad3189e579ed2
+      BASELINE_SHA: 58364568a66ae79de00bdea3756a4c1b03378b1d
     steps:
       - name: Checkout trusted conformance probe from trusted workflow revision
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -348,8 +400,20 @@ jobs:
           assert g22["baseline_candidate_commit"] == baseline
           assert g22["source_manifest_sha256"] == manifest_sha
           assert g22["certified_runtime_package_commit"] == baseline
-          assert g22["certified_runtime_package_sha256"] == "db313bfb8dc409579f39dcb75ef873577386de8c29df0a1e09f8365d39946f36"
+          assert g22["certified_runtime_package_sha256"] == "8bb088c8680331b11e8e8acc1071149c0ff37778bd84c0f27b10f91d616a5c51"
           assert g22["certified_runtime_package_certificate_attested"] is True
+          assert g22["certified_runtime_formal_sources_embedded"] is False
+          runtime_source_records = g22["certified_runtime_formal_source_records"]
+          assert len(runtime_source_records) == 8
+          typed_sources = {item["path"]: item for item in entries}
+          for item in runtime_source_records:
+              typed = typed_sources.get(item["path"])
+              assert typed is not None, "RUNTIME_FORMAL_SOURCE_NOT_TYPECHECKED:" + item["path"]
+              assert typed["sha256"] == item["sha256"] and typed["bytes"] == item["bytes"], "RUNTIME_FORMAL_SOURCE_DIFFERS_FROM_TYPECHECKED_SOURCE:" + item["path"]
+          runtime_source_manifest_sha = hashlib.sha256(json.dumps(
+              runtime_source_records, sort_keys=True, separators=(",", ":")
+          ).encode()).hexdigest()
+          assert runtime_source_manifest_sha == g22["certified_runtime_formal_source_manifest_sha256"]
           version = pathlib.Path(version_path).read_text(encoding="utf-8").strip()
           conformance_file = pathlib.Path(conformance_path)
           conformance = json.loads(conformance_file.read_text(encoding="utf-8"))
@@ -378,6 +442,10 @@ jobs:
               "certified_runtime_package_certificate_sha256": g22["certified_runtime_package_certificate_sha256"],
               "certified_runtime_package_certificate_attestation_verification_sha256": g22["certified_runtime_package_certificate_attestation_verification_sha256"],
               "certified_runtime_package_certificate_attested": True,
+              "certified_runtime_build_manifest_sha256": g22["certified_runtime_build_manifest_sha256"],
+              "certified_runtime_formal_source_manifest_sha256": g22["certified_runtime_formal_source_manifest_sha256"],
+              "certified_runtime_formal_source_records": runtime_source_records,
+              "certified_runtime_formal_sources_embedded": False,
               "python_conformance": conformance,
               "python_conformance_record_sha256": sha(conformance_file),
               "g22_record_sha256": sha(pathlib.Path(g22_path)),
@@ -435,8 +503,8 @@ jobs:
           assert p["status"]=="PASS"
           assert p["candidate_formal_source_commit"]==sys.argv[2]
           assert p["runtime_implementation_correspondence"]=="NOT_PROVEN"
-          assert p["certified_runtime_package_commit"]=="bd400d8cdd57a662940733f15e6ad3189e579ed2"
-          assert p["certified_runtime_package_sha256"]=="db313bfb8dc409579f39dcb75ef873577386de8c29df0a1e09f8365d39946f36"
+          assert p["certified_runtime_package_commit"]=="58364568a66ae79de00bdea3756a4c1b03378b1d"
+          assert p["certified_runtime_package_sha256"]=="8bb088c8680331b11e8e8acc1071149c0ff37778bd84c0f27b10f91d616a5c51"
           assert p["certified_runtime_package_certificate_attested"] is True
           assert p["python_conformance"]["status"]=="PASS_BOUNDED_CONFORMANCE"
           assert p["python_conformance"]["checks_failed"]==0
@@ -505,10 +573,14 @@ jobs:
           assert g22["implementation_manifest_sha256"] == g23["implementation_manifest_sha256"]
           assert g22["implementation_files"] == g23["implementation_files"]
           assert g22["certified_runtime_package_commit"] == g23["certified_runtime_package_commit"] == g22["baseline_candidate_commit"]
-          assert g22["certified_runtime_package_sha256"] == g23["certified_runtime_package_sha256"] == "db313bfb8dc409579f39dcb75ef873577386de8c29df0a1e09f8365d39946f36"
+          assert g22["certified_runtime_package_sha256"] == g23["certified_runtime_package_sha256"] == "8bb088c8680331b11e8e8acc1071149c0ff37778bd84c0f27b10f91d616a5c51"
           assert g22["certified_runtime_package_certificate_sha256"] == g23["certified_runtime_package_certificate_sha256"]
           assert g22["certified_runtime_package_certificate_attestation_verification_sha256"] == g23["certified_runtime_package_certificate_attestation_verification_sha256"]
           assert g22["certified_runtime_package_certificate_attested"] is True and g23["certified_runtime_package_certificate_attested"] is True
+          assert g22["certified_runtime_formal_sources_embedded"] is False and g23["certified_runtime_formal_sources_embedded"] is False
+          assert g22["certified_runtime_build_manifest_sha256"] == g23["certified_runtime_build_manifest_sha256"]
+          assert g22["certified_runtime_formal_source_manifest_sha256"] == g23["certified_runtime_formal_source_manifest_sha256"]
+          assert g22["certified_runtime_formal_source_records"] == g23["certified_runtime_formal_source_records"]
           pc = g23["python_conformance"]
           assert pc["schema"] == "CRFU_PYTHON_CONFORMANCE_G23/1.0"
           assert pc["status"] == "PASS_BOUNDED_CONFORMANCE"
@@ -530,6 +602,10 @@ jobs:
               "certified_runtime_package_certificate_sha256": g22["certified_runtime_package_certificate_sha256"],
               "certified_runtime_package_certificate_attestation_verification_sha256": g22["certified_runtime_package_certificate_attestation_verification_sha256"],
               "certified_runtime_package_certificate_attested": True,
+              "certified_runtime_build_manifest_sha256": g22["certified_runtime_build_manifest_sha256"],
+              "certified_runtime_formal_source_manifest_sha256": g22["certified_runtime_formal_source_manifest_sha256"],
+              "certified_runtime_formal_source_records": g22["certified_runtime_formal_source_records"],
+              "certified_runtime_formal_sources_embedded": False,
               "source_manifest_sha256": g22["source_manifest_sha256"],
               "source_file_count": len(g22["source_files"]),
               "implementation_manifest_sha256": g22["implementation_manifest_sha256"],
@@ -553,6 +629,7 @@ jobs:
                   "formal/cubical/CRFUUnivalenceBridge.agda type-checks under Cubical Agda --cubical --safe --guardedness",
                   "the exact Agda source manifest independently validated by G22 is the same manifest revalidated by G23",
                   "the unchanged Python implementation source set hash-matches the exact runtime commit of the separately scoped certified CUSTOSZV9 package",
+                  "the certified runtime build manifest records the SHA-256 and size of the eight core Agda sources that G23 independently type-checks, while the Agda source files themselves are excluded from the operational ZIPAPP",
                   "the separately issued CUSTOSZV9 package-scope certificate and its Sigstore attestation were independently verified and hash-bound to this certificate",
                   "the trusted G23 bounded conformance probes passed against that exact Python source set",
                   "the G23 result is bound to and attested for this exact source commit, formal manifest, implementation manifest, and probe results"
