@@ -1,0 +1,158 @@
+name: CUSTOSZV9 formal assurance (isolated)
+
+on:
+  push:
+    branches:
+      - "feature/formal-assurance-custoszv9-*"
+      - "feature/formal-assurance-custosz9fix-*"
+    paths:
+      - "formal/crfu/**"
+      - "formal/cubical/**"
+      - ".github/workflows/crfu-formal-assurance.yml"
+      - "docs/crfu-formal-assurance.md"
+  pull_request:
+    branches:
+      - "feature/custoszv9-crfu-20261016"
+    paths:
+      - "formal/crfu/**"
+      - "formal/cubical/**"
+      - ".github/workflows/crfu-formal-assurance.yml"
+      - "docs/crfu-formal-assurance.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: crfu-formal-assurance-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  formal-verification:
+    name: Agda and Cubical Agda proof checking
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact source revision
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Install verified Agda 2.8.0.2 release binary
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          archive="$RUNNER_TEMP/Agda-v2.8.0.2-linux.tar.xz"
+          curl --fail --location --retry 3 --proto '=https' --tlsv1.2 \
+            "https://github.com/agda/agda/releases/download/v2.8.0.2/Agda-v2.8.0.2-linux.tar.xz" \
+            --output "$archive"
+          echo "2bcf24bb561b1be859bba841e5d67962d1616b3251bc147f878e4f60a2fbd9f7  $archive" | sha256sum --check -
+          install_dir="$RUNNER_TEMP/agda-bin"
+          mkdir -p "$install_dir" "$RUNNER_TEMP/agda-extract"
+          tar -xf "$archive" -C "$RUNNER_TEMP/agda-extract"
+          test -x "$RUNNER_TEMP/agda-extract/agda"
+          install -m 0755 "$RUNNER_TEMP/agda-extract/agda" "$install_dir/agda"
+          echo "$install_dir" >> "$GITHUB_PATH"
+          "$install_dir/agda" --version | tee "$RUNNER_TEMP/agda-version.txt"
+          grep -F "Agda version 2.8.0.2" "$RUNNER_TEMP/agda-version.txt"
+
+      - name: Type-check every first-order CRFU module and soundness lemma
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p evidence
+          : > evidence/agda-first-order.log
+          for source in formal/crfu/*.agda; do
+            echo "===== $source =====" | tee -a evidence/agda-first-order.log
+            agda --safe --without-K -i formal/crfu "$source" 2>&1 | tee -a evidence/agda-first-order.log
+          done
+
+      - name: Download pinned Cubical Agda v0.9 release and verify SHA-256
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          archive="$RUNNER_TEMP/cubical-0.9.tar.gz"
+          curl --fail --location --retry 3 --proto '=https' --tlsv1.2 \
+            "https://github.com/agda/cubical/releases/download/v0.9/cubical-0.9.tar.gz" \
+            --output "$archive"
+          echo "003f9c57c134e4a9401a4b339b3773be667aa169ff929ca3dfb9c8abefc225c5  $archive" | sha256sum --check -
+          mkdir -p "$RUNNER_TEMP/cubical"
+          tar -xzf "$archive" --strip-components=1 -C "$RUNNER_TEMP/cubical"
+          test -f "$RUNNER_TEMP/cubical/Cubical/Foundations/Univalence.agda"
+
+      - name: Type-check the Cubical Agda univalence interface
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          agda --cubical --safe --guardedness -i "$RUNNER_TEMP/cubical" -i formal/cubical \
+            formal/cubical/CRFUUnivalenceBridge.agda 2>&1 | tee evidence/agda-cubical.log
+
+      - name: Produce source-bound formal assurance report
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, subprocess
+          root = pathlib.Path(".")
+          files = sorted(
+              p for folder in ("formal/crfu", "formal/cubical")
+              for p in (root / folder).glob("*.agda")
+          )
+          def sha(path):
+              h = hashlib.sha256()
+              with open(path, "rb") as stream:
+                  for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                      h.update(chunk)
+              return h.hexdigest()
+          source_items = [{"path": str(p), "bytes": p.stat().st_size, "sha256": sha(p)} for p in files]
+          package_sha = "a6bb5c8fde296f3e2b3739adbe581e1f0b26a31faaf959a6756da1fb84120831"
+          report = {
+              "schema": "CRFU_FORMAL_ASSURANCE_EVIDENCE/1.0",
+              "result": "PASS_TYPECHECKED_DECLARED_FORMAL_SCOPE",
+              "formal_source_commit": os.environ["GITHUB_SHA"],
+              "baseline_candidate_commit": "2e6f2ce8446b3a2df831f0470701def0ae6f5819",
+              "baseline_CUSTOSZV9_pyz_sha256": package_sha,
+              "agda_release": "2.8.0.2",
+              "agda_linux_archive_sha256": "2bcf24bb561b1be859bba841e5d67962d1616b3251bc147f878e4f60a2fbd9f7",
+              "cubical_agda_release": "v0.9",
+              "cubical_archive_sha256": "003f9c57c134e4a9401a4b339b3773be667aa169ff929ca3dfb9c8abefc225c5",
+              "source_files": source_items,
+              "checks": [
+                "all formal/crfu/*.agda files typechecked using --safe --without-K",
+                "formal/cubical/CRFUUnivalenceBridge.agda typechecked using --cubical --safe --guardedness",
+                "Agda official Linux binary archive SHA-256 verified before use",
+                "Cubical Agda official release archive SHA-256 verified before use"
+              ],
+              "limitations": [
+                "This report is evidence for the listed formal source files only.",
+                "Typechecking the model is not by itself a proof that the Python runtime implements that model.",
+                "The Cubical module checks the equivalence-to-path interface; it does not prove global Louksna correctness or implementation correspondence.",
+                "No prior CUSTOSZV9 package, G22/G23/G24 certificate, or attestation is modified by this workflow."
+              ]
+          }
+          out = pathlib.Path("evidence/formal-assurance-report.json")
+          out.parent.mkdir(parents=True, exist_ok=True)
+          out.write_text(json.dumps(report, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+          pathlib.Path("evidence/formal-source-manifest.json").write_text(
+              json.dumps({"schema":"CRFU_FORMAL_SOURCE_MANIFEST/1.0","files":source_items},sort_keys=True,indent=2)+"\n",
+              encoding="utf-8")
+          print(out.read_text(encoding="utf-8"))
+          PY
+
+      - name: Upload type-check logs and source-bound report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: CRFU-formal-assurance-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            evidence/agda-first-order.log
+            evidence/agda-cubical.log
+            evidence/formal-assurance-report.json
+            evidence/formal-source-manifest.json
+            formal/crfu/
+            formal/cubical/
+          if-no-files-found: error
+          retention-days: 90
