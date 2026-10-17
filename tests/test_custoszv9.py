@@ -194,6 +194,14 @@ class CRFUTests(unittest.TestCase):
         self.assertEqual(result["status"], "FAIL")
         self.assertIn("RAM_BUDGET_EXCEEDED", result["reasons"])
 
+    def test_ram_reservation_equal_to_available_fails_even_for_zero_demand(self):
+        result = evaluate_budget(
+            ResourceBudget(0, 100, 10, 1),
+            self._measured_snapshot(100, 2000),
+        )
+        self.assertEqual(result["status"], "FAIL")
+        self.assertIn("RAM_BUDGET_EXCEEDED", result["reasons"])
+
     def test_disk_strict_boundary_equality_fails(self):
         result = evaluate_budget(
             ResourceBudget(10, 10, 2000, 1),
