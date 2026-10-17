@@ -8,11 +8,35 @@ open import Agda.Builtin.List using (List; []; _∷_)
 -- Canonical gate identity space. G24 is the terminal decision, not one of
 -- its own prerequisites; therefore the input ledger contains exactly G01-G23.
 data GateId : Set where
-  G01 G02 G03 G04 G05 G06 G07 G08 G09 G10 G11 G12
-  G13 G14 G15 G16 G17 G18 G19 G20 G21 G22 G23 G24 : GateId
+  G01 : GateId
+  G02 : GateId
+  G03 : GateId
+  G04 : GateId
+  G05 : GateId
+  G06 : GateId
+  G07 : GateId
+  G08 : GateId
+  G09 : GateId
+  G10 : GateId
+  G11 : GateId
+  G12 : GateId
+  G13 : GateId
+  G14 : GateId
+  G15 : GateId
+  G16 : GateId
+  G17 : GateId
+  G18 : GateId
+  G19 : GateId
+  G20 : GateId
+  G21 : GateId
+  G22 : GateId
+  G23 : GateId
+  G24 : GateId
 
 data GateStatus : Set where
-  passStatus failStatus holdStatus : GateStatus
+  passStatus : GateStatus
+  failStatus : GateStatus
+  holdStatus : GateStatus
 
 record GateEntry (id : GateId) : Set where
   constructor gateEntry
@@ -101,7 +125,9 @@ evidenceComplete e =
   (canonicalAuthorityPreserved e andB scopeAndLimitationsDeclared e))))))
 
 data G24Decision : Set where
-  issueG24Certificate denyG24Certificate holdG24ForEvidence : G24Decision
+  issueG24Certificate : G24Decision
+  denyG24Certificate : G24Decision
+  holdG24ForEvidence : G24Decision
 
 -- G24 decision order is fail-closed: any known failed prerequisite denies;
 -- otherwise any HOLD or incomplete G24 evidence holds; only a complete
