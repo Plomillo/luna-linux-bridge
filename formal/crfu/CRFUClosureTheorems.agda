@@ -187,5 +187,5 @@ completed-has-no-outgoing-transition :
 completed-has-no-outgoing-transition ()
 
 rolled-back-has-no-outgoing-transition :
-  {next : TaskPhase} -> rolledBack ↦ next -> ⊥
+  {next : TaskPhase} -> rolledBack ↦ next -> Void
 rolled-back-has-no-outgoing-transition ()
