@@ -12,6 +12,7 @@ import hashlib
 import json
 import pathlib
 import sys
+import tempfile
 from typing import Callable
 
 
@@ -19,6 +20,9 @@ IMPLEMENTATION_PATHS = [
     "custoszv9/__init__.py",
     "custoszv9/crfu/__init__.py",
     "custoszv9/crfu/model.py",
+    "custoszv9/crfu/anti_paralysis.py",
+    "custoszv9/crfu/coordinator.py",
+    "custoszv9/crfu/event_queue.py",
     "custoszv9/crfu/planner.py",
     "custoszv9/crfu/resources.py",
     "custoszv9/crfu/recovery.py",
@@ -70,14 +74,61 @@ def main() -> int:
 
     # Imports occur only after the runtime file set is bound to G22 and its baseline.
     sys.path.insert(0, str(root))
+    from custoszv9.crfu.coordinator import run_bounded_mission
+    from custoszv9.crfu.event_queue import PersistentMissionQueue, QueueConflict, InvalidTransition
     from custoszv9.crfu.equivalence import validate_equivalence
     from custoszv9.crfu.formal import validate_proof_bundle
     from custoszv9.crfu.gates import evaluate_gate_evidence
+    from custoszv9.crfu.model import TaskContract
     from custoszv9.crfu.planner import ActionSpec, build_plan
     from custoszv9.crfu.recovery import checkpoint_record, verify_restoration
     from custoszv9.crfu.resources import ResourceBudget, ResourceSnapshot, evaluate_budget
 
     observations: list[dict[str, str]] = []
+
+    def task_value(task_id: str = "task-1") -> dict:
+        return {
+            "task_id": task_id,
+            "mission_id": "mission-1",
+            "project_id": "project-1",
+            "source_identity": "source-v1",
+            "target_identity": "target-v1",
+            "source_state_hash": "d" * 64,
+            "dependency_set": [],
+            "authorized_scope": "bounded-conformance",
+            "required_capabilities": [],
+            "inputs": [],
+            "preconditions": [],
+            "permitted_effects": [],
+            "resource_budget": {
+                "ram_required_bytes": 100,
+                "ram_reserved_bytes": 50,
+                "disk_required_bytes": 100,
+                "max_concurrency": 1,
+            },
+            "execution_deadline": "2099-01-01T00:00:00Z",
+            "maximum_planning_budget": 4,
+            "maximum_retry_budget": 0,
+            "acceptance_criteria": [],
+            "expected_outputs": [],
+            "validation_strategy": "independent-check",
+            "evidence_requirements": [],
+            "checkpoint_reference": "checkpoint-1",
+            "rollback_strategy": "restore-and-verify",
+            "completion_condition": "all-actions-pass",
+            "escalation_condition": "hold-on-unknown",
+            "authorization_evidence_reference": "auth-evidence-1",
+        }
+
+    def good_snapshot():
+        return ResourceSnapshot(
+            ram_available_bytes=10000,
+            disk_available_bytes=20000,
+            cpu_count=2,
+            measured_at_utc="2026-01-01T00:00:00Z",
+            source="trusted-conformance-fixture",
+            confidence="MEASURED",
+        )
 
     def check(name: str, fn: Callable[[], None]) -> None:
         fn()
