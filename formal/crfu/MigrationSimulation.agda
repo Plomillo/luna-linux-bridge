@@ -31,10 +31,27 @@ migration-preserves-declared-invariant :
 migration-preserves-declared-invariant m source proof =
   invariantSimulation m source proof
 
--- A valid migration object binds both endpoints and the proof to one
--- deterministic transformation; an empty digest is not a real digest policy
--- and must be rejected by the external source-binding validator.
+-- Endpoint metadata is returned as one record so downstream evidence
+-- cannot accidentally consume only the source version while ignoring the target.
+-- This record exposes lineage data; it does not itself validate digest syntax or
+-- prove that external bytes match the declared digests. The trusted source-binding
+-- validator remains responsible for those checks.
+record MigrationEndpoints : Set where
+  constructor migrationEndpoints
+  field
+    endpointSourceVersion : String
+    endpointSourceDigest : String
+    endpointTargetVersion : String
+    endpointTargetDigest : String
+open MigrationEndpoints
+
+-- A valid migration object binds both versions and both artifact digests.
 migration-source-destination-versions-are-explicit :
   {Source Target : Set} -> (m : MigrationSimulation Source Target) ->
-  String
-migration-source-destination-versions-are-explicit m = sourceVersion m
+  MigrationEndpoints
+migration-source-destination-versions-are-explicit m =
+  migrationEndpoints
+    (sourceVersion m)
+    (sourceArtifactDigest m)
+    (targetVersion m)
+    (targetArtifactDigest m)
