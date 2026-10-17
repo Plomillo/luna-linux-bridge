@@ -38,3 +38,7 @@ class TaskContract:
   return cls(dict(value)),issues
  @property
  def task_id(self)->str:return str(self.value["task_id"])
+ @property
+ def source_state_hash(self)->str:
+  """Expose the validated state digest consumed by the bounded coordinator."""
+  return str(self.value["source_state_hash"])
