@@ -1,0 +1,106 @@
+name: "Louksna global G23 independent validation"
+
+on:
+  workflow_run:
+    workflows:
+      - "CUSTOSZV9 formal assurance (isolated)"
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      candidate_sha:
+        description: "Exact 40-character commit SHA to validate"
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: louksna-global-g23-${{ github.event.inputs.candidate_sha || github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
+
+jobs:
+  independent-validation:
+    if: >-
+      ${{ github.event_name == 'workflow_dispatch' ||
+          (github.event.workflow_run.conclusion == 'success' &&
+           startsWith(github.event.workflow_run.head_branch, 'feature/formal-assurance-custosz9fix-')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    env:
+      CANDIDATE_SHA: ${{ github.event.inputs.candidate_sha || github.event.workflow_run.head_sha }}
+      TRUSTED_WORKFLOW_SHA: ${{ github.workflow_sha }}
+    steps:
+      - name: Checkout trusted G23 implementation and policy
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: trust-root
+          persist-credentials: false
+      - name: Checkout the exact candidate as untrusted data
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+          path: candidate
+          persist-credentials: false
+      - name: Bind exact subject and run the trusted global ledger
+        id: validate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          actual="$(git -C candidate rev-parse HEAD)"
+          test "$actual" = "$CANDIDATE_SHA" || { echo "::error::CANDIDATE_SHA_MISMATCH"; exit 2; }
+          python3 -I trust-root/scripts/louksna_global_gate_ledger.py \
+            --candidate-root "$GITHUB_WORKSPACE/candidate" \
+            --trusted-root "$GITHUB_WORKSPACE/trust-root" \
+            --policy "$GITHUB_WORKSPACE/trust-root/scripts/louksna_global_scope_policy.json" \
+            --matrix "$GITHUB_WORKSPACE/trust-root/scripts/louksna_global_gate_matrix.json" \
+            --candidate-sha "$CANDIDATE_SHA" \
+            --output "$RUNNER_TEMP/G23_GLOBAL.json"
+          python3 - "$RUNNER_TEMP/G23_GLOBAL.json" "$GITHUB_OUTPUT" <<'PY'
+          import json,sys
+          record=json.load(open(sys.argv[1],encoding="utf-8"))
+          with open(sys.argv[2],"a",encoding="utf-8") as out:
+              out.write("decision="+str(record.get("decision","FAIL"))+"\n")
+          print("G23 decision:",record.get("decision"))
+          print("G23 reasons:",json.dumps(record.get("reason_codes",[])))
+          PY
+      - name: Attest the G23 result record (attestation is not a PASS)
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-path: ${{ runner.temp }}/G23_GLOBAL.json
+      - name: Verify the G23 attestation from the expected workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          gh attestation verify "$RUNNER_TEMP/G23_GLOBAL.json" \
+            --repo "$GITHUB_REPOSITORY" \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/louksna-global-g23-independent-validation.yml" \
+            --format json > "$RUNNER_TEMP/G23_ATTESTATION_VERIFICATION.json"
+      - name: Upload immutable G23 record and verification evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: louksna-global-g23-result
+          path: |
+            ${{ runner.temp }}/G23_GLOBAL.json
+            ${{ runner.temp }}/G23_ATTESTATION_VERIFICATION.json
+          if-no-files-found: error
+          retention-days: 90
+      - name: Publish explicit decision, never promote automatically
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## Louksna global G23"
+            echo "- Candidate SHA: `$CANDIDATE_SHA`"
+            echo "- Ledger decision: `${{ steps.validate.outputs.decision || 'NOT_COMPLETED' }}`"
+            echo "- This workflow validates only; it does not activate or certify the candidate."
+          } >> "$GITHUB_STEP_SUMMARY"
