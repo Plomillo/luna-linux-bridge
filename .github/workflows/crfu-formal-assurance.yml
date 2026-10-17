@@ -121,7 +121,7 @@ jobs:
               "source_files": source_items,
               "checks": [
                 "all formal/crfu/*.agda files typechecked using --safe --without-K",
-                "formal/cubical/CRFUUnivalenceBridge.agda typechecked using --cubical --safe",
+                "formal/cubical/CRFUUnivalenceBridge.agda typechecked using --cubical --safe --guardedness",
                 "Agda official Linux binary archive SHA-256 verified before use",
                 "Cubical Agda official release archive SHA-256 verified before use"
               ],
