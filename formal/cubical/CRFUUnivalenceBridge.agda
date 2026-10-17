@@ -1,7 +1,7 @@
 {-# OPTIONS --cubical --safe --guardedness #-}
 module CRFUUnivalenceBridge where
 
-open import Cubical.Foundations.Prelude using (Level; Type; _≡_; transport)
+open import Cubical.Foundations.Prelude using (Level; Type; _≡_; refl; transport)
 open import Cubical.Foundations.Equiv using (_≃_; idEquiv; equivFun)
 open import Cubical.Foundations.Univalence using
   ( ua
