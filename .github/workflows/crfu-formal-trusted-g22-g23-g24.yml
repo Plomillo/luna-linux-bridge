@@ -1,0 +1,426 @@
+name: "CRFU formal trusted G22 G23 G24 certification"
+
+# Trusted root for the separately scoped formal-source certification.
+# It does not modify or supersede the existing CUSTOSZV9 package certificate.
+on:
+  workflow_run:
+    workflows:
+      - "CUSTOSZV9 formal assurance (isolated)"
+    types: [completed]
+    branches:
+      - "feature/formal-assurance-custoszv9-*"
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: crfu-formal-trusted-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
+
+jobs:
+  g22:
+    name: "G22 — bind source identity, candidate lineage and preserved authority"
+    if: ${{ github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success' && startsWith(github.event.workflow_run.head_branch, 'feature/formal-assurance-custoszv9-') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      actions: read
+      contents: read
+    env:
+      CANDIDATE_SHA: ${{ github.event.workflow_run.head_sha }}
+      PRODUCER_RUN_ID: ${{ github.event.workflow_run.id }}
+      BASELINE_SHA: b09353cbfff4efddfdec0cf853ae9658055fad2d
+    steps:
+      - name: Checkout exact formal source as data
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+          path: candidate-source
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Download producer evidence as untrusted data
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: CRFU-formal-assurance-${{ env.CANDIDATE_SHA }}
+          path: ${{ runner.temp }}/producer
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ env.PRODUCER_RUN_ID }}
+
+      - name: Independently bind report to exact source and ensure no protected source changed
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - "${CANDIDATE_SHA}" "${BASELINE_SHA}" "$GITHUB_WORKSPACE/candidate-source" "$RUNNER_TEMP/producer/evidence/formal-assurance-report.json" "$RUNNER_TEMP/producer" "$RUNNER_TEMP/G22.json" <<'PY'
+          import hashlib, json, pathlib, subprocess, sys
+          candidate, baseline, source_root, report_path, artifact_root, out = sys.argv[1:]
+          root = pathlib.Path(source_root)
+          report_file = pathlib.Path(report_path)
+          artifact = pathlib.Path(artifact_root)
+          def sha(path):
+              h = hashlib.sha256()
+              with open(path, "rb") as f:
+                  for chunk in iter(lambda: f.read(1024 * 1024), b""):
+                      h.update(chunk)
+              return h.hexdigest()
+          def git(*args):
+              return subprocess.check_output(["git", "-C", str(root), *args], text=True).strip()
+          assert git("rev-parse", "HEAD") == candidate, "CHECKED_OUT_COMMIT_MISMATCH"
+          subprocess.check_call(["git", "-C", str(root), "merge-base", "--is-ancestor", baseline, candidate])
+          report = json.loads(report_file.read_text(encoding="utf-8"))
+          assert report["schema"] == "CRFU_FORMAL_ASSURANCE_EVIDENCE/1.0"
+          assert report["result"] == "PASS_TYPECHECKED_DECLARED_FORMAL_SCOPE"
+          assert report["formal_source_commit"] == candidate
+          assert report["baseline_candidate_commit"] == baseline
+          assert report["agda_release"] == "2.8.0.2"
+          assert report["cubical_agda_release"] == "v0.9"
+          entries = report["source_files"]
+          expected_paths = sorted(
+              p.relative_to(root).as_posix()
+              for folder in ("formal/crfu", "formal/cubical")
+              for p in (root / folder).glob("*.agda")
+          )
+          reported_paths = sorted(item["path"] for item in entries)
+          assert reported_paths == expected_paths, "SOURCE_FILE_SET_MISMATCH"
+          for item in entries:
+              path = root / item["path"]
+              assert path.is_file() and path.stat().st_size == item["bytes"], "SOURCE_SIZE_MISMATCH:" + item["path"]
+              assert sha(path) == item["sha256"], "SOURCE_HASH_MISMATCH:" + item["path"]
+              archived = artifact / item["path"]
+              assert archived.is_file() and sha(archived) == item["sha256"], "ARTIFACT_SOURCE_MISMATCH:" + item["path"]
+          changed = git("diff", "--name-only", baseline, candidate).splitlines()
+          allowed = (
+              lambda p: p.startswith("formal/crfu/")
+              or p.startswith("formal/cubical/")
+              or p == ".github/workflows/crfu-formal-assurance.yml"
+              or p == "docs/crfu-formal-assurance.md"
+          )
+          unexpected = [p for p in changed if not allowed(p)]
+          assert not unexpected, "CHANGE_OUTSIDE_FORMAL_SCOPE:" + ",".join(unexpected)
+          manifest = json.dumps(entries, sort_keys=True, separators=(",", ":")).encode()
+          tree_digest = hashlib.sha256(manifest).hexdigest()
+          rec = {
+              "schema": "CRFU_FORMAL_G22/1.0",
+              "status": "PASS",
+              "candidate_formal_source_commit": candidate,
+              "baseline_candidate_commit": baseline,
+              "changed_paths": changed,
+              "source_files": entries,
+              "source_manifest_sha256": tree_digest,
+              "producer_report_sha256": sha(report_file),
+              "assertions": {
+                  "ancestor_of_certified_candidate_source": True,
+                  "source_manifest_matches_checkout": True,
+                  "artifact_files_match_checkout": True,
+                  "changes_confined_to_formal_scope": True,
+                  "Louksna_and_PUAC2_canonical_files_changed": False,
+                  "previous_package_artifact_or_certificate_modified": False
+              }
+          }
+          pathlib.Path(out).write_text(json.dumps(rec, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+          print(json.dumps({"status": rec["status"], "source_manifest_sha256": tree_digest, "source_file_count": len(entries), "changed_path_count": len(changed)}, indent=2))
+          PY
+
+      - name: Preserve G22 source-binding record
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: crfu-formal-g22-${{ env.CANDIDATE_SHA }}
+          path: ${{ runner.temp }}/G22.json
+          if-no-files-found: warn
+          retention-days: 90
+
+  g23_validate:
+    name: "G23 — independent clean-runner Agda and Cubical Agda validation"
+    needs: g22
+    if: needs.g22.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: read
+    env:
+      CANDIDATE_SHA: ${{ github.event.workflow_run.head_sha }}
+      BASELINE_SHA: b09353cbfff4efddfdec0cf853ae9658055fad2d
+    steps:
+      - name: Checkout exact formal source; do not execute candidate Python or workflows
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+          path: candidate-source
+          persist-credentials: false
+
+      - name: Download G22 record
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: crfu-formal-g22-${{ env.CANDIDATE_SHA }}
+          path: ${{ runner.temp }}/g22
+
+      - name: Install verified Agda 2.8.0.2 compiler
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          archive="$RUNNER_TEMP/Agda-v2.8.0.2-linux.tar.xz"
+          curl --fail --location --retry 3 --proto '=https' --tlsv1.2 \
+            "https://github.com/agda/agda/releases/download/v2.8.0.2/Agda-v2.8.0.2-linux.tar.xz" --output "$archive"
+          echo "2bcf24bb561b1be859bba841e5d67962d1616b3251bc147f878e4f60a2fbd9f7  $archive" | sha256sum --check -
+          mkdir -p "$RUNNER_TEMP/agda-bin" "$RUNNER_TEMP/agda-extract"
+          tar -xf "$archive" -C "$RUNNER_TEMP/agda-extract"
+          test -x "$RUNNER_TEMP/agda-extract/agda"
+          install -m 0755 "$RUNNER_TEMP/agda-extract/agda" "$RUNNER_TEMP/agda-bin/agda"
+          echo "$RUNNER_TEMP/agda-bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/agda-bin/agda" --version | tee "$RUNNER_TEMP/agda-version.txt"
+          grep -F "Agda version 2.8.0.2" "$RUNNER_TEMP/agda-version.txt"
+
+      - name: Type-check the full declared first-order formal source set
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/evidence"
+          cd "$GITHUB_WORKSPACE/candidate-source"
+          : > "$RUNNER_TEMP/evidence/agda-first-order.log"
+          for source in formal/crfu/*.agda; do
+            echo "===== $source =====" | tee -a "$RUNNER_TEMP/evidence/agda-first-order.log"
+            agda --safe --without-K -i formal/crfu "$source" 2>&1 | tee -a "$RUNNER_TEMP/evidence/agda-first-order.log"
+          done
+
+      - name: Download and verify official Cubical Agda v0.9 release
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          archive="$RUNNER_TEMP/cubical-0.9.tar.gz"
+          curl --fail --location --retry 3 --proto '=https' --tlsv1.2 \
+            "https://github.com/agda/cubical/releases/download/v0.9/cubical-0.9.tar.gz" --output "$archive"
+          echo "003f9c57c134e4a9401a4b339b3773be667aa169ff929ca3dfb9c8abefc225c5  $archive" | sha256sum --check -
+          mkdir -p "$RUNNER_TEMP/cubical"
+          tar -xzf "$archive" --strip-components=1 -C "$RUNNER_TEMP/cubical"
+          test -f "$RUNNER_TEMP/cubical/Cubical/Foundations/Univalence.agda"
+
+      - name: Type-check the actual Cubical Agda univalence interface
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd "$GITHUB_WORKSPACE/candidate-source"
+          agda --cubical --safe --guardedness -i "$RUNNER_TEMP/cubical" -i formal/cubical \
+            formal/cubical/CRFUUnivalenceBridge.agda 2>&1 | tee "$RUNNER_TEMP/evidence/agda-cubical.log"
+
+      - name: Emit independent G23 result bound to G22
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - "$GITHUB_WORKSPACE/candidate-source" "$CANDIDATE_SHA" "$BASELINE_SHA" "$RUNNER_TEMP/g22/G22.json" "$RUNNER_TEMP/agda-version.txt" "$RUNNER_TEMP/evidence" "$RUNNER_TEMP/CRFU_G23.json" <<'PY'
+          import hashlib, json, pathlib, sys
+          root = pathlib.Path(sys.argv[1])
+          candidate, baseline, g22_path, version_path, evidence_dir, out = sys.argv[2:]
+          def sha(path):
+              h = hashlib.sha256()
+              with open(path, "rb") as f:
+                  for chunk in iter(lambda: f.read(1024 * 1024), b""):
+                      h.update(chunk)
+              return h.hexdigest()
+          entries = [
+              {"path": p.relative_to(root).as_posix(), "bytes": p.stat().st_size, "sha256": sha(p)}
+              for folder in ("formal/crfu", "formal/cubical")
+              for p in sorted((root / folder).glob("*.agda"))
+          ]
+          entries.sort(key=lambda x: x["path"])
+          manifest_sha = hashlib.sha256(json.dumps(entries, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+          g22 = json.loads(pathlib.Path(g22_path).read_text(encoding="utf-8"))
+          assert g22["status"] == "PASS"
+          assert g22["candidate_formal_source_commit"] == candidate
+          assert g22["source_manifest_sha256"] == manifest_sha
+          version = pathlib.Path(version_path).read_text(encoding="utf-8").strip()
+          rec = {
+              "schema": "CRFU_FORMAL_G23/1.0",
+              "status": "PASS",
+              "validator": "independent-clean-runner-agda",
+              "candidate_formal_source_commit": candidate,
+              "baseline_candidate_commit": baseline,
+              "source_files": entries,
+              "source_manifest_sha256": manifest_sha,
+              "g22_record_sha256": sha(pathlib.Path(g22_path)),
+              "agda_version": version,
+              "agda_linux_archive_sha256": "2bcf24bb561b1be859bba841e5d67962d1616b3251bc147f878e4f60a2fbd9f7",
+              "cubical_release": "v0.9",
+              "cubical_archive_sha256": "003f9c57c134e4a9401a4b339b3773be667aa169ff929ca3dfb9c8abefc225c5",
+              "proof_scope": "typechecking of all formal/crfu modules and Cubical univalence bridge",
+              "runtime_implementation_correspondence": "NOT_PROVEN",
+              "canonical_louksna_scope": "NOT_CERTIFIED"
+          }
+          pathlib.Path(out).write_text(json.dumps(rec, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+          print(json.dumps({"status": rec["status"], "manifest_sha256": manifest_sha, "g22_binding": rec["g22_record_sha256"], "agda_version": version}, indent=2))
+          PY
+
+      - name: Preserve G23 independent result and compiler logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: crfu-formal-g23-${{ env.CANDIDATE_SHA }}
+          path: |
+            ${{ runner.temp }}/CRFU_G23.json
+            ${{ runner.temp }}/evidence/**
+            ${{ runner.temp }}/agda-version.txt
+          if-no-files-found: warn
+          retention-days: 90
+
+  g23_attest:
+    name: "G23 — attest only the completed independent result"
+    needs: g23_validate
+    if: needs.g23_validate.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+      attestations: write
+    env:
+      CANDIDATE_SHA: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      - name: Download G23 result as data only
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: crfu-formal-g23-${{ env.CANDIDATE_SHA }}
+          path: ${{ runner.temp }}/g23
+      - name: Ensure G23 record is a PASS bound to exact source commit
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - "$RUNNER_TEMP/g23/CRFU_G23.json" "$CANDIDATE_SHA" <<'PY'
+          import json,sys
+          p=json.load(open(sys.argv[1],encoding="utf-8"))
+          assert p["schema"]=="CRFU_FORMAL_G23/1.0"
+          assert p["status"]=="PASS"
+          assert p["candidate_formal_source_commit"]==sys.argv[2]
+          assert p["runtime_implementation_correspondence"]=="NOT_PROVEN"
+          print("G23 exact-source record binding: PASS")
+          PY
+      - name: Create GitHub OIDC/Sigstore attestation for G23
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-path: ${{ runner.temp }}/g23/CRFU_G23.json
+
+  g24:
+    name: "G24 — verify G23 attestation and issue a bounded formal certificate"
+    needs: [g22, g23_attest]
+    if: ${{ needs.g22.result == 'success' && needs.g23_attest.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+      attestations: write
+    env:
+      CANDIDATE_SHA: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      - name: Download exact G22/G23 records as data
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: crfu-formal-g22-${{ env.CANDIDATE_SHA }}
+          path: ${{ runner.temp }}/g22
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: crfu-formal-g23-${{ env.CANDIDATE_SHA }}
+          path: ${{ runner.temp }}/g23
+
+      - name: Verify the Sigstore attestation for the independent G23 record
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          gh attestation verify "$RUNNER_TEMP/g23/CRFU_G23.json" \
+            --repo "$GITHUB_REPOSITORY" \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/crfu-formal-trusted-g22-g23-g24.yml" \
+            --format json > "$RUNNER_TEMP/G23_ATTESTATION_VERIFICATION.json"
+          test -s "$RUNNER_TEMP/G23_ATTESTATION_VERIFICATION.json"
+
+      - name: Bind scope, source identity, manifests and independent result
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - "$RUNNER_TEMP/g22/G22.json" "$RUNNER_TEMP/g23/CRFU_G23.json" "$CANDIDATE_SHA" "$RUNNER_TEMP/G23_ATTESTATION_VERIFICATION.json" "$RUNNER_TEMP/CRFU_FORMAL_CERTIFICATE.json" <<'PY'
+          import hashlib, json, pathlib, sys
+          g22p, g23p, candidate, attestation_path, out = sys.argv[1:]
+          p22 = pathlib.Path(g22p); p23 = pathlib.Path(g23p)
+          g22 = json.loads(p22.read_text(encoding="utf-8"))
+          g23 = json.loads(p23.read_text(encoding="utf-8"))
+          def sha(p): return hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
+          assert g22["schema"] == "CRFU_FORMAL_G22/1.0" and g22["status"] == "PASS"
+          assert g23["schema"] == "CRFU_FORMAL_G23/1.0" and g23["status"] == "PASS"
+          assert g22["candidate_formal_source_commit"] == candidate == g23["candidate_formal_source_commit"]
+          assert g22["source_manifest_sha256"] == g23["source_manifest_sha256"]
+          assert g22["source_files"] == g23["source_files"]
+          assert g23["g22_record_sha256"] == sha(p22)
+          assert pathlib.Path(attestation_path).stat().st_size > 0
+          cert = {
+              "schema": "CRFU_FORMAL_G24_CERTIFICATE/1.0",
+              "decision": "CERTIFIED_FOR_DECLARED_FORMAL_SOURCE_SCOPE",
+              "formal_source_scope_certified": True,
+              "scope": "EXACT_AGDA_TYPECHECKED_CRfu_MODEL_AND_CUBICAL_UNIVALENCE_INTERFACE",
+              "candidate_formal_source_commit": candidate,
+              "baseline_candidate_source_commit": g22["baseline_candidate_commit"],
+              "source_manifest_sha256": g22["source_manifest_sha256"],
+              "source_file_count": len(g22["source_files"]),
+              "g22_record_sha256": sha(p22),
+              "g23_record_sha256": sha(p23),
+              "g23_sigstore_attestation_verification_sha256": sha(attestation_path),
+              "toolchain": {
+                  "agda": g23["agda_version"],
+                  "agda_archive_sha256": g23["agda_linux_archive_sha256"],
+                  "cubical_agda": g23["cubical_release"],
+                  "cubical_archive_sha256": g23["cubical_archive_sha256"]
+              },
+              "certified_claims": [
+                  "every formal/crfu/*.agda file in the bound source manifest type-checks under Agda --safe --without-K",
+                  "formal/cubical/CRFUUnivalenceBridge.agda type-checks under Cubical Agda --cubical --safe",
+                  "the exact source manifest independently validated by G22 is the same manifest revalidated by G23",
+                  "the G23 result is bound to and attested for this exact source commit and manifest"
+              ],
+              "explicit_non_claims": [
+                  "no proof that the Python runtime is a complete refinement of the Agda model",
+                  "no global correctness proof for all Louksna axioms or G01-G24",
+                  "no authorization for operational activation or canonical promotion",
+                  "no transfer or replacement of the prior CUSTOSZV9 package certificate",
+                  "the Cubical bridge does not prove runtime implementation equivalence by itself"
+              ],
+              "previous_package_certification_mutated": False,
+              "canonical_promotion": "NOT_AUTHORIZED",
+              "operational_authorization": "NOT_GRANTED"
+          }
+          pathlib.Path(out).write_text(json.dumps(cert, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+          print(json.dumps({"decision": cert["decision"], "scope": cert["scope"], "source_manifest_sha256": cert["source_manifest_sha256"], "source_file_count": cert["source_file_count"]}, indent=2))
+          PY
+
+      - name: Attest the exact G24 formal-source certificate
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-path: ${{ runner.temp }}/CRFU_FORMAL_CERTIFICATE.json
+
+      - name: Verify certificate attestation and upload the complete evidence bundle
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          gh attestation verify "$RUNNER_TEMP/CRFU_FORMAL_CERTIFICATE.json" \
+            --repo "$GITHUB_REPOSITORY" \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/crfu-formal-trusted-g22-g23-g24.yml" \
+            --format json > "$RUNNER_TEMP/G24_ATTESTATION_VERIFICATION.json"
+          test -s "$RUNNER_TEMP/G24_ATTESTATION_VERIFICATION.json"
+      - name: Upload G22 G23 G24 records and attestations verification
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: crfu-formal-certified-scope-${{ env.CANDIDATE_SHA }}
+          path: |
+            ${{ runner.temp }}/g22/G22.json
+            ${{ runner.temp }}/g23/CRFU_G23.json
+            ${{ runner.temp }}/G23_ATTESTATION_VERIFICATION.json
+            ${{ runner.temp }}/CRFU_FORMAL_CERTIFICATE.json
+            ${{ runner.temp }}/G24_ATTESTATION_VERIFICATION.json
+          if-no-files-found: warn
+          retention-days: 90
