@@ -44,3 +44,10 @@ This is **bounded conformance evidence**, not a universal proof of Python-to-Agd
 Only a successful, source-bound G22/G23/G24 chain can certify the exact manifests, formal type-checks and bounded probe results for its candidate commit. It does **not** prove universal correctness, full Python-to-Agda refinement, every Louksna axiom, every G01–G24 condition, production mTLS, production rollback, canonical promotion or operational activation.
 
 All evidence is append-only. `Louksna.md`, `PUAC2.md`, the protected V25 baseline, the previous package artifact, its existing certificate and its earlier attestations remain unchanged. Every new source commit requires its own producer run, independent revalidation and new scope-specific certification.
+
+
+## 6. Execution trace for the expanded conformance probe
+
+The first run of the extended suite was deliberately not certified: [producer run 38986058825](https://github.com/Plomillo/luna-linux-bridge/actions/runs/38986058825) passed the Agda first-order modules, Cubical interface and G22 source-binding stage, then failed in the trusted conformance probe before producing a G23 pass. The observed error was `TypeError: 'ResourceSnapshot' object is not callable`: the coordinator fixture name shadowed the earlier `good_snapshot` instance. Consequently G23 attestation and G24 certification were skipped for that commit. This failed run is retained as an audit record and is not treated as certification evidence.
+
+The correction was limited to renaming the helper to `coordinator_snapshot`. It was merged as PR #75, commit `6805166482d66ea7f76de29899fa63bd74c928bd`, with no change to the runtime source or prior package certification. A fresh formal-source commit and new producer/G22/G23/G24 run are required to certify the expanded 35-check probe. The prior 25-check certificate remains intact but does not certify the additional task/coordinator/queue checks.
