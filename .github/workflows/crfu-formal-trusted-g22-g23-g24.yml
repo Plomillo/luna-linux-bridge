@@ -91,6 +91,39 @@ jobs:
               archived = artifact / item["path"]
               assert archived.is_file() and sha(archived) == item["sha256"], "ARTIFACT_SOURCE_MISMATCH:" + item["path"]
           changed = git("diff", "--name-only", baseline, candidate).splitlines()
+          implementation_paths = [
+              "custosz/__init__.py",
+              "custoszv9/__init__.py",
+              "custoszv9/crfu/__init__.py",
+              "custoszv9/crfu/model.py",
+              "custoszv9/crfu/planner.py",
+              "custoszv9/crfu/resources.py",
+              "custoszv9/crfu/recovery.py",
+              "custoszv9/crfu/equivalence.py",
+              "custoszv9/crfu/formal.py",
+              "custoszv9/crfu/gates.py",
+              "custoszv9/crfu/puac2.py"
+          ]
+          # Only the V9 package files needed by the bounded probe are bound here.
+          implementation_paths = [p for p in implementation_paths if (root / p).is_file()]
+          implementation_entries = []
+          for rel in implementation_paths:
+              path = root / rel
+              current = path.read_bytes()
+              baseline_bytes = subprocess.check_output(
+                  ["git", "-C", str(root), "show", f"{baseline}:{rel}"]
+              )
+              current_hash = hashlib.sha256(current).hexdigest()
+              baseline_hash = hashlib.sha256(baseline_bytes).hexdigest()
+              assert current_hash == baseline_hash, "IMPLEMENTATION_DIFFERS_FROM_BASELINE:" + rel
+              implementation_entries.append({
+                  "path": rel, "bytes": len(current),
+                  "sha256": current_hash, "baseline_sha256": baseline_hash
+              })
+          implementation_entries.sort(key=lambda item: item["path"])
+          implementation_manifest_sha = hashlib.sha256(json.dumps(
+              implementation_entries, sort_keys=True, separators=(",", ":")
+          ).encode()).hexdigest()
           allowed = (
               lambda p: p.startswith("formal/crfu/")
               or p.startswith("formal/cubical/")
@@ -109,6 +142,8 @@ jobs:
               "changed_paths": changed,
               "source_files": entries,
               "source_manifest_sha256": tree_digest,
+              "implementation_files": implementation_entries,
+              "implementation_manifest_sha256": implementation_manifest_sha,
               "producer_report_sha256": sha(report_file),
               "assertions": {
                   "ancestor_of_certified_candidate_source": True,
@@ -145,7 +180,14 @@ jobs:
       CANDIDATE_SHA: ${{ github.event.workflow_run.head_sha }}
       BASELINE_SHA: b09353cbfff4efddfdec0cf853ae9658055fad2d
     steps:
-      - name: Checkout exact formal source; do not execute candidate Python or workflows
+      - name: Checkout trusted conformance probe from trusted workflow revision
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: trust-root
+          persist-credentials: false
+
+      - name: Checkout exact formal source; run only baseline-identical runtime files in a secret-free probe
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ env.CANDIDATE_SHA }}
@@ -206,14 +248,26 @@ jobs:
           agda --cubical --safe --guardedness -i "$RUNNER_TEMP/cubical" -i formal/cubical \
             formal/cubical/CRFUUnivalenceBridge.agda 2>&1 | tee "$RUNNER_TEMP/evidence/agda-cubical.log"
 
-      - name: Emit independent G23 result bound to G22
+      - name: Run trusted bounded Python conformance probes in a secret-free environment
         shell: bash
         run: |
           set -Eeuo pipefail
-          python3 - "$GITHUB_WORKSPACE/candidate-source" "$CANDIDATE_SHA" "$BASELINE_SHA" "$RUNNER_TEMP/g22/G22.json" "$RUNNER_TEMP/agda-version.txt" "$RUNNER_TEMP/evidence" "$RUNNER_TEMP/CRFU_G23.json" <<'PY'
+          env -i PATH="$PATH" HOME="$RUNNER_TEMP" LANG=C.UTF-8 PYTHONNOUSERSITE=1 \
+            python3 -I "$GITHUB_WORKSPACE/trust-root/scripts/crfu_formal_conformance_probe.py" \
+              --source-root "$GITHUB_WORKSPACE/candidate-source" \
+              --candidate-sha "$CANDIDATE_SHA" \
+              --baseline-sha "$BASELINE_SHA" \
+              --g22 "$RUNNER_TEMP/g22/G22.json" \
+              --out "$RUNNER_TEMP/evidence/CRFU_PYTHON_CONFORMANCE.json"
+
+      - name: Emit independent G23 result bound to G22 and runtime conformance evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - "$GITHUB_WORKSPACE/candidate-source" "$CANDIDATE_SHA" "$BASELINE_SHA" "$RUNNER_TEMP/g22/G22.json" "$RUNNER_TEMP/agda-version.txt" "$RUNNER_TEMP/evidence" "$RUNNER_TEMP/evidence/CRFU_PYTHON_CONFORMANCE.json" "$RUNNER_TEMP/CRFU_G23.json" <<'PY'
           import hashlib, json, pathlib, sys
           root = pathlib.Path(sys.argv[1])
-          candidate, baseline, g22_path, version_path, evidence_dir, out = sys.argv[2:]
+          candidate, baseline, g22_path, version_path, evidence_dir, conformance_path, out = sys.argv[2:]
           def sha(path):
               h = hashlib.sha256()
               with open(path, "rb") as f:
@@ -232,6 +286,16 @@ jobs:
           assert g22["candidate_formal_source_commit"] == candidate
           assert g22["source_manifest_sha256"] == manifest_sha
           version = pathlib.Path(version_path).read_text(encoding="utf-8").strip()
+          conformance_file = pathlib.Path(conformance_path)
+          conformance = json.loads(conformance_file.read_text(encoding="utf-8"))
+          assert conformance["schema"] == "CRFU_PYTHON_CONFORMANCE_G23/1.0"
+          assert conformance["status"] == "PASS_BOUNDED_CONFORMANCE"
+          assert conformance["candidate_formal_source_commit"] == candidate
+          assert conformance["baseline_candidate_commit"] == baseline
+          assert conformance["g22_record_sha256"] == sha(pathlib.Path(g22_path))
+          assert conformance["implementation_manifest_sha256"] == g22["implementation_manifest_sha256"]
+          assert conformance["implementation_files"] == g22["implementation_files"]
+          assert conformance["checks_failed"] == 0 and conformance["checks_passed"] >= 20
           rec = {
               "schema": "CRFU_FORMAL_G23/1.0",
               "status": "PASS",
@@ -240,6 +304,10 @@ jobs:
               "baseline_candidate_commit": baseline,
               "source_files": entries,
               "source_manifest_sha256": manifest_sha,
+              "implementation_files": g22["implementation_files"],
+              "implementation_manifest_sha256": g22["implementation_manifest_sha256"],
+              "python_conformance": conformance,
+              "python_conformance_record_sha256": sha(conformance_file),
               "g22_record_sha256": sha(pathlib.Path(g22_path)),
               "agda_version": version,
               "agda_linux_archive_sha256": "2bcf24bb561b1be859bba841e5d67962d1616b3251bc147f878e4f60a2fbd9f7",
@@ -295,7 +363,9 @@ jobs:
           assert p["status"]=="PASS"
           assert p["candidate_formal_source_commit"]==sys.argv[2]
           assert p["runtime_implementation_correspondence"]=="NOT_PROVEN"
-          print("G23 exact-source record binding: PASS")
+          assert p["python_conformance"]["status"]=="PASS_BOUNDED_CONFORMANCE"
+          assert p["python_conformance"]["checks_failed"]==0
+          print("G23 exact-source and bounded-runtime-conformance record binding: PASS")
           PY
       - name: Create GitHub OIDC/Sigstore attestation for G23
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
@@ -354,17 +424,31 @@ jobs:
           assert g22["candidate_formal_source_commit"] == candidate == g23["candidate_formal_source_commit"]
           assert g22["source_manifest_sha256"] == g23["source_manifest_sha256"]
           assert g22["source_files"] == g23["source_files"]
+          assert g22["implementation_manifest_sha256"] == g23["implementation_manifest_sha256"]
+          assert g22["implementation_files"] == g23["implementation_files"]
+          pc = g23["python_conformance"]
+          assert pc["schema"] == "CRFU_PYTHON_CONFORMANCE_G23/1.0"
+          assert pc["status"] == "PASS_BOUNDED_CONFORMANCE"
+          assert pc["implementation_manifest_sha256"] == g22["implementation_manifest_sha256"]
+          assert pc["implementation_files"] == g22["implementation_files"]
           assert g23["g22_record_sha256"] == sha(p22)
           assert pathlib.Path(attestation_path).stat().st_size > 0
           cert = {
               "schema": "CRFU_FORMAL_G24_CERTIFICATE/1.0",
               "decision": "CERTIFIED_FOR_DECLARED_FORMAL_SOURCE_SCOPE",
               "formal_source_scope_certified": True,
-              "scope": "EXACT_AGDA_TYPECHECKED_CRfu_MODEL_AND_CUBICAL_UNIVALENCE_INTERFACE",
+              "scope": "EXACT_AGDA_AND_CUBICAL_FORMAL_SOURCE_PLUS_BOUNDED_PYTHON_CONFORMANCE_PROBES",
               "candidate_formal_source_commit": candidate,
               "baseline_candidate_source_commit": g22["baseline_candidate_commit"],
               "source_manifest_sha256": g22["source_manifest_sha256"],
               "source_file_count": len(g22["source_files"]),
+              "implementation_manifest_sha256": g22["implementation_manifest_sha256"],
+              "implementation_file_count": len(g22["implementation_files"]),
+              "implementation_files": g22["implementation_files"],
+              "python_conformance_status": pc["status"],
+              "python_conformance_checks_passed": pc["checks_passed"],
+              "python_conformance_record_sha256": hashlib.sha256(json.dumps(pc, sort_keys=True, indent=2).encode("utf-8") + b"\n").hexdigest(),
+              "python_conformance_mapping": pc["mapping"],
               "g22_record_sha256": sha(p22),
               "g23_record_sha256": sha(p23),
               "g23_sigstore_attestation_verification_sha256": sha(attestation_path),
@@ -376,12 +460,16 @@ jobs:
               },
               "certified_claims": [
                   "every formal/crfu/*.agda file in the bound source manifest type-checks under Agda --safe --without-K",
-                  "formal/cubical/CRFUUnivalenceBridge.agda type-checks under Cubical Agda --cubical --safe",
-                  "the exact source manifest independently validated by G22 is the same manifest revalidated by G23",
-                  "the G23 result is bound to and attested for this exact source commit and manifest"
+                  "formal/cubical/CRFUUnivalenceBridge.agda type-checks under Cubical Agda --cubical --safe --guardedness",
+                  "the exact Agda source manifest independently validated by G22 is the same manifest revalidated by G23",
+                  "the unchanged Python implementation source set hash-matches the protected candidate baseline",
+                  "the trusted G23 bounded conformance probes passed against that exact Python source set",
+                  "the G23 result is bound to and attested for this exact source commit, formal manifest, implementation manifest, and probe results"
               ],
               "explicit_non_claims": [
-                  "no proof that the Python runtime is a complete refinement of the Agda model",
+                  "bounded Python behavior probes are not a proof of universal Python-to-Agda refinement",
+                  "no implementation refinement theorem is established for ContractComposition, MigrationCoherence, or TaskAndStateModel",
+                  "ModelImplementationCorrespondence has evidence-gate probes only; a universal source-semantics correspondence theorem remains unproven",
                   "no global correctness proof for all Louksna axioms or G01-G24",
                   "no authorization for operational activation or canonical promotion",
                   "no transfer or replacement of the prior CUSTOSZV9 package certificate",
