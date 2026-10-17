@@ -99,10 +99,10 @@ def validate(
         holds.append("PROTECTED_V25_BASELINE_ABSENT")
     else:
         baseline_digest = sha256_file(baseline)
-        if not isinstance(expected_baseline_sha, str) or not SHA256_RE.fullmatch(expected_baseline_sha):
-            holds.append("PROTECTED_V25_BASELINE_SHA256_NOT_PINNED")
-        elif baseline_digest != expected_baseline_sha:
-            failures.append("PROTECTED_V25_BASELINE_SHA256_MISMATCH")
+    if not isinstance(expected_baseline_sha, str) or not SHA256_RE.fullmatch(expected_baseline_sha):
+        holds.append("PROTECTED_V25_BASELINE_SHA256_NOT_PINNED")
+    elif baseline_digest is not None and baseline_digest != expected_baseline_sha:
+        failures.append("PROTECTED_V25_BASELINE_SHA256_MISMATCH")
     if baseline_digest is not None and matrix.get("source_sha256") != baseline_digest:
         if matrix.get("source_sha256") is None:
             holds.append("MATRIX_NOT_BOUND_TO_PROTECTED_BASELINE")
