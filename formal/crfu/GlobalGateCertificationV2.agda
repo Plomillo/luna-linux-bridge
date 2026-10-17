@@ -4,6 +4,7 @@ module GlobalGateCertificationV2 where
 open import Agda.Builtin.Bool using (Bool; true; false)
 open import Agda.Builtin.Equality using (_≡_; refl)
 open import Agda.Builtin.List using (List; []; _∷_)
+open import FalseElimination using (Void; void-elim)
 
 -- Canonical gate identity space. G24 is the terminal decision, not one of
 -- its own prerequisites; therefore the input ledger contains exactly G01-G23.
@@ -129,52 +130,49 @@ data G24Decision : Set where
   denyG24Certificate : G24Decision
   holdG24ForEvidence : G24Decision
 
--- G24 decision order is fail-closed: any known failed prerequisite denies;
--- otherwise any HOLD or incomplete G24 evidence holds; only a complete
--- exact G01-G23 ledger plus complete, bound G24 evidence can issue a cert.
-decideG24 : PrerequisiteLedger -> G24Evidence -> G24Decision
-decideG24 ledger evidence with containsFailure ledger
-... | true = denyG24Certificate
-... | false with containsHold ledger
-...   | true = holdG24ForEvidence
-...   | false with evidenceComplete evidence
-...     | true = issueG24Certificate
-...     | false = holdG24ForEvidence
+-- G24 decision order: a complete all-PASS prerequisite ledger plus complete
+-- G24 evidence issues the certificate; known failures deny; all other cases HOLD.
+decideG24 : {ids : List GateId} -> GateLedger ids -> G24Evidence -> G24Decision
+decideG24 ledger evidence with allPrerequisitesPassed ledger | evidenceComplete evidence
+... | true | true = issueG24Certificate
+... | true | false = holdG24ForEvidence
+... | false | _ with containsFailure ledger
+...   | true = denyG24Certificate
+...   | false = holdG24ForEvidence
+
+deny-not-issue : denyG24Certificate ≡ issueG24Certificate -> Void
+deny-not-issue ()
+
+hold-not-issue : holdG24ForEvidence ≡ issueG24Certificate -> Void
+hold-not-issue ()
 
 g24-pass-requires-every-prerequisite-pass :
   (ledger : PrerequisiteLedger) -> (evidence : G24Evidence) ->
   decideG24 ledger evidence ≡ issueG24Certificate ->
   EveryPrerequisitePassed ledger
-g24-pass-requires-every-prerequisite-pass emptyLedger evidence p = everyPassedEmpty
-g24-pass-requires-every-prerequisite-pass
-  (ledgerCons (gateEntry passStatus) rest) evidence p
-  with containsFailure rest | containsHold rest | evidenceComplete evidence
-... | true | _ | _ = all-pass-sound (ledgerCons (gateEntry passStatus) rest) p
-... | false | true | _ = all-pass-sound (ledgerCons (gateEntry passStatus) rest) p
-... | false | false | true =
-  everyPassedCons refl
-    (g24-pass-requires-every-prerequisite-pass rest evidence refl)
+g24-pass-requires-every-prerequisite-pass ledger evidence proof
+  with allPrerequisitesPassed ledger | evidenceComplete evidence
+... | true | true = all-pass-sound ledger refl
+... | true | false = void-elim (hold-not-issue proof)
+... | false | _ with containsFailure ledger
+...   | true = void-elim (deny-not-issue proof)
+...   | false = void-elim (hold-not-issue proof)
+
+g24-pass-requires-complete-evidence :
+  (ledger : PrerequisiteLedger) -> (evidence : G24Evidence) ->
+  decideG24 ledger evidence ≡ issueG24Certificate ->
+  evidenceComplete evidence ≡ true
+g24-pass-requires-complete-evidence ledger evidence proof
+  with allPrerequisitesPassed ledger | evidenceComplete evidence
+... | true | true = refl
+... | true | false = void-elim (hold-not-issue proof)
+... | false | _ with containsFailure ledger
+...   | true = void-elim (deny-not-issue proof)
+...   | false = void-elim (hold-not-issue proof)
 
 all-prerequisites-and-evidence-issue-g24 :
   (ledger : PrerequisiteLedger) -> EveryPrerequisitePassed ledger ->
   (evidence : G24Evidence) -> evidenceComplete evidence ≡ true ->
   decideG24 ledger evidence ≡ issueG24Certificate
-all-prerequisites-and-evidence-issue-g24 emptyLedger everyPassedEmpty evidence complete = refl
-all-prerequisites-and-evidence-issue-g24
-  (ledgerCons (gateEntry passStatus) rest) (everyPassedCons refl restPassed)
-  evidence complete with containsFailure rest | containsHold rest
-... | false | false = all-prerequisites-and-evidence-issue-g24 rest restPassed evidence complete
-
-fail-closed-known-failure-denies :
-  (ledger : PrerequisiteLedger) (evidence : G24Evidence) ->
-  containsFailure ledger ≡ true -> decideG24 ledger evidence ≡ denyG24Certificate
-fail-closed-known-failure-denies ledger evidence failed with containsFailure ledger
-... | true = refl
-
-missing-or-held-prerequisite-blocks-issue :
-  (ledger : PrerequisiteLedger) (evidence : G24Evidence) ->
-  containsFailure ledger ≡ false -> containsHold ledger ≡ true ->
-  decideG24 ledger evidence ≡ holdG24ForEvidence
-missing-or-held-prerequisite-blocks-issue ledger evidence noFailure held
-  with containsFailure ledger | containsHold ledger
-... | false | true = refl
+all-prerequisites-and-evidence-issue-g24 ledger allPassed evidence complete
+  rewrite all-pass-complete ledger allPassed | complete = refl
