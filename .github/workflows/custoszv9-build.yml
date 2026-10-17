@@ -112,9 +112,16 @@ jobs:
               assert manifest["governance"]["G23"]=="NOT_GRANTED"
               assert manifest["governance"]["G24"]=="NOT_GRANTED"
               assert manifest["governance"]["canonical_promotion"]=="NOT_AUTHORIZED"
-              assert manifest["formal_assurance"]["toolchain_executed"] is False
+              formal=manifest["formal_assurance"]
+              assert formal["toolchain_executed"] is False
+              assert formal["sources_embedded"] is False
+              assert formal["source_storage"]=="REPOSITORY_ONLY_SEPARATE_EVIDENCE_BUNDLE"
+              names=z.namelist()
+              assert not any(n.endswith(".agda") or "/formal_sources/" in "/"+n or n.startswith("formal/") for n in names)
           report=json.loads(Path("evidence/custoszv9-build-report.json").read_text(encoding="utf-8"))
           assert report["embedded_baseline_byte_exact"] is True and report["release_eligible"] is False
+          assert report["formal_sources_embedded"] is False
+          assert report["formal_source_hashes_recorded"] is True
           print(json.dumps({"status":"PASS_BUILD_ONLY_NOT_CERTIFIED","package_sha256":report["package_sha256"],"size_bytes":report["package_size_bytes"],"v8_baseline_sha256":report["baseline_sha256"]},indent=2))
           PY
       - name: Upload V9 candidate and evidence

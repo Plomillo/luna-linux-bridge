@@ -42,7 +42,7 @@ El código verifica que las claves públicas correspondan a sus respectivas priv
 El archivo `PUAC2.md` en `main` declara `EXTENSION_INDEPENDIENTE_PENDIENTE_ADMISION_FORMAL`, `G23=NO_CONCEDIDA` y `G24=NO_CONCEDIDA`. PUAC.C25–C32 conservan identidad local y nunca sustituyen G23/G24. Por ello el dictamen integral mantiene explícitamente:
 - `G01–G24` completos: `HOLD` hasta la matriz normativa canónica y toda evidencia de cada gate aplicable.
 - `PUAC.C25–C32`: `HOLD_NOT_CANONICALLY_ADMITTED` hasta evidencia completa y admisión autorizada.
-- Pruebas formales: fuentes Agda incluidas, pero el build no ejecuta Agda/Cubical ni demuestra correspondencia modelo–implementación; HoTT/univalencia no se declaran probadas.
+- Fuentes formales: los hashes/tamaños de los ocho módulos Agda base se registran en el manifiesto, pero **sus archivos no se incluyen en el ZIPAPP operativo**. Permanecen como fuentes del repositorio para la cadena formal independiente. El constructor de la aplicación no ejecuta Agda/Cubical y no afirma correspondencia modelo–implementación; cualquier resultado formal debe provenir de la ejecución independiente ligada al commit y al manifiesto exactos.
 - Uso operacional: pruebas reales del host mTLS, restauración/rollback y la autorización operacional siguen pendientes hasta que el flujo host real aporte sus reportes verificables.
 
 Las pruebas de unidad, compilación, ZIPAPP y reproducibilidad no acreditan por sí solas comportamiento de producción ni certificación externa.

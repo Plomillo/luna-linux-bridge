@@ -71,14 +71,15 @@ def main()->int:
     target.write_bytes(z.read(name));members.append(name)
  except (OSError,zipfile.BadZipFile,RuntimeError) as exc:raise SystemExit(f"V8_ARCHIVE_INSPECTION_FAILED:{type(exc).__name__}:{exc}")
  if not {"custoszv8/core.py","custoszv8/cli.py"}.issubset(set(members)):raise SystemExit("V8_COMPATIBILITY_LAYER_INCOMPLETE")
+ # Formal proof sources remain repository/evidence inputs only. Do not copy them
+ # into the operational ZIPAPP; the independent Agda/Cubical workflow checks them.
  formal_src=ROOT/"formal"/"crfu"
- formal_dest=data/"formal_sources";formal_dest.mkdir(parents=True,exist_ok=True)
  formal_checks={}
  for name in FORMAL_NAMES:
   source=formal_src/name
   if not source.is_file():raise SystemExit("FORMAL_SOURCE_MISSING:"+name)
-  shutil.copyfile(source,formal_dest/name)
-  formal_checks[name]={"sha256":digest_file(source),"size_bytes":source.stat().st_size}
+  formal_checks[name]={"sha256":digest_file(source),"size_bytes":source.stat().st_size,
+                       "embedded_in_runtime":False,"repository_path":"formal/crfu/"+name}
  scope_path=data/"certification_scope.json"
  if not scope_path.is_file():raise SystemExit("CERTIFICATION_SCOPE_MISSING")
  scope_record=json.loads(scope_path.read_text(encoding="utf-8"))
@@ -98,9 +99,12 @@ def main()->int:
               "repository_blob_sha1":"d9689914a7dd908ebb5a17eeda071aecbd652ab5"},
   "v8_functional_layer":{"package_members_copied":len(members),"package_member_names":members,
                          "source":"exact tracked CUSTOSZV8.pyz archive members","second_runtime_started":False},
-  "formal_assurance":{"sources":formal_checks,"toolchain_executed":False,
-                      "proof_of_implementation":False,"status":"SOURCE_INCLUDED_NOT_TYPECHECKED",
-                      "hott_univalence_status":"NOT_FORMALLY_DEMONSTRATED"},
+  "formal_assurance":{"sources":formal_checks,"sources_embedded":False,
+                      "source_storage":"REPOSITORY_ONLY_SEPARATE_EVIDENCE_BUNDLE",
+                      "producer_toolchain_executed":False,"toolchain_executed":False,
+                      "proof_of_implementation":False,
+                      "status":"SOURCE_HASHES_RECORDED_NOT_EMBEDDED_EXTERNAL_VALIDATION_REQUIRED",
+                      "hott_univalence_status":"EXTERNAL_CUBICAL_SCOPE_NOT_PART_OF_RUNTIME_PACKAGE"},
   "governance":{"canonical_authority":"Louksna.md","protected_baseline":"LUNACORE_final_formalized_v25.md",
     "doctrine":"EXTEND_DO_NOT_REPLACE","canonical_gates":"G01-G24_NOT_GRANTED",
     "PUAC_C25_C32":"LOCAL_CONTROLS_NOT_CANONICALLY_ADMITTED","G23":"NOT_GRANTED","G24":"NOT_GRANTED",
@@ -117,7 +121,12 @@ def main()->int:
   if "custoszv9/data/CUSTOSZV8.pyz" not in z.namelist():raise SystemExit("EMBEDDED_BASELINE_MISSING")
   embedded_bytes=z.read("custoszv9/data/CUSTOSZV8.pyz")
   if hashlib.sha256(embedded_bytes).hexdigest()!=sha0 or len(embedded_bytes)!=size0:raise SystemExit("EMBEDDED_BASELINE_BYTE_IDENTITY_FAILED")
-  if "custoszv8/core.py" not in z.namelist() or "custoszv9/crfu/coordinator.py" not in z.namelist():raise SystemExit("REQUIRED_FUNCTIONAL_MEMBER_MISSING")
+  names=z.namelist()
+  if "custoszv8/core.py" not in names or "custoszv9/crfu/coordinator.py" not in names:raise SystemExit("REQUIRED_FUNCTIONAL_MEMBER_MISSING")
+  if any(name.endswith(".agda") or "/formal_sources/" in "/"+name or name.startswith("formal/") for name in names):
+   raise SystemExit("FORMAL_PROOF_SOURCE_MUST_NOT_BE_EMBEDDED")
+  if json.loads(z.read("custoszv9/data/build_manifest.json"))["formal_assurance"]["sources_embedded"] is not False:
+   raise SystemExit("FORMAL_SOURCE_EMBEDDING_STATUS_INVALID")
  sha1=digest_file(BASELINE)
  if sha0!=sha1 or BASELINE.stat().st_size!=size0:raise SystemExit("PROTECTED_V8_BASELINE_CHANGED_DURING_BUILD")
  report={"schema":"CUSTOSZV9_BUILD_REPORT/1.0","status":"PASS_BUILD_ONLY_NOT_CERTIFIED",
@@ -125,7 +134,9 @@ def main()->int:
   "baseline_sha256":sha0,"baseline_size_bytes":size0,"baseline_unchanged":True,
   "embedded_baseline_byte_exact":True,"v8_package_members_copied":len(members),
   "package_sha256":digest_file(target),"package_size_bytes":target.stat().st_size,"zip_crc":"PASS",
-  "formal_toolchain_status":"NOT_EXECUTED","G22":"NOT_GRANTED","G23":"NOT_GRANTED","G24":"NOT_GRANTED",
+  "formal_toolchain_status":"NOT_EXECUTED_IN_PACKAGE_BUILD;EXTERNAL_ASSURANCE_REQUIRED",
+  "formal_sources_embedded":False,"formal_source_hashes_recorded":True,
+  "G22":"NOT_GRANTED","G23":"NOT_GRANTED","G24":"NOT_GRANTED",
   "release_eligible":False,"certification":"NOT_GRANTED","canonical_promotion":"NOT_AUTHORIZED"}
  evidence=ROOT/"evidence";evidence.mkdir(parents=True,exist_ok=True)
  (evidence/"custoszv9-build-report.json").write_text(json.dumps(report,ensure_ascii=False,sort_keys=True,indent=2)+"\n",encoding="utf-8")
