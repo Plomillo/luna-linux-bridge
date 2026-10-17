@@ -3,8 +3,10 @@ module ResourceBudgetDecisionSemantics where
 
 open import Agda.Builtin.Bool using (Bool; true; false)
 open import Agda.Builtin.Equality using (_≡_; refl)
-open import Agda.Builtin.Nat using (Nat; _-_; _<_)
+open import Agda.Builtin.Nat using (Nat; _-_; _+_; _<_)
 open import FalseElimination using (Void; false-not-true; void-elim)
+open import ResourceBudgetModel using (ResourceNeed; resourceNeed)
+open import ResourceBudgetRuntimeSemantics using (ramSufficientRuntimeSemantics; diskSufficientRuntimeSemantics)
 
 notBool : Bool -> Bool
 notBool false = true
@@ -32,8 +34,9 @@ record BudgetInput : Set where
     cpuCount requestedConcurrency : Nat
 open BudgetInput
 
--- Exact arithmetic predicates in custoszv9/crfu/resources.py:evaluate_budget.
--- Nat subtraction is truncated at zero, matching max(0, available - reserved).
+-- Available RAM after the reported reserve, retained for diagnostics.
+-- Admission itself uses the strict source-level predicate below, so over-reservation
+-- cannot pass merely because truncated subtraction yields zero.
 usableRam : BudgetInput -> Nat
 usableRam b = ramAvailable b - ramReserved b
 
@@ -47,10 +50,10 @@ measurementComplete b =
   ramKnown b andB (diskKnown b andB (cpuKnown b andB confidenceMeasured b))
 
 ramWithinBudget : BudgetInput -> Bool
-ramWithinBudget b = notBool (usableRam b < ramRequired b)
+ramWithinBudget b = ramRequired b + ramReserved b < ramAvailable b
 
 diskWithinBudget : BudgetInput -> Bool
-diskWithinBudget b = notBool (diskAvailable b < diskRequired b)
+diskWithinBudget b = diskRequired b < diskAvailable b
 
 concurrencyWithinBudget : BudgetInput -> Bool
 concurrencyWithinBudget b =
@@ -164,3 +167,23 @@ guards-imply-budget-pass :
   budgetDecision b ≡ budgetPass
 guards-imply-budget-pass b valid measured ram disk concurrency
   rewrite valid | measured | ram | disk | concurrency = refl
+
+-- Exact bridge between the runtime-decision input and the shared strict
+-- ResourceNeed model. These are definitional equalities, not sampled tests.
+toResourceNeed : BudgetInput -> ResourceNeed
+toResourceNeed b = resourceNeed
+  (ramRequired b)
+  (ramReserved b)
+  (ramAvailable b)
+  (diskRequired b)
+  (diskAvailable b)
+
+ram-guard-exactly-matches-resource-model :
+  (b : BudgetInput) ->
+  ramWithinBudget b ≡ ramSufficientRuntimeSemantics (toResourceNeed b)
+ram-guard-exactly-matches-resource-model b = refl
+
+disk-guard-exactly-matches-resource-model :
+  (b : BudgetInput) ->
+  diskWithinBudget b ≡ diskSufficientRuntimeSemantics (toResourceNeed b)
+disk-guard-exactly-matches-resource-model b = refl
