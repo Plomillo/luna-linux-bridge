@@ -3,8 +3,8 @@ module ModelImplementationCorrespondence where
 
 open import Agda.Builtin.Bool using (Bool; true; false)
 open import Agda.Builtin.Equality using (_≡_; refl)
-open import TaskAndStateModel using (sqliteQueueTransitions)
-open import PythonQueueTransitionsGenerated using (pythonQueueTransitions)
+open import TaskAndStateModel using (sqliteQueueTransitions; requiredTaskFields)
+open import PythonQueueTransitionsGenerated using (pythonQueueTransitions; pythonRequiredTaskFields)
 
 record CorrespondenceEvidence : Set where
   constructor correspondenceEvidence
@@ -29,3 +29,10 @@ correspondenceAdmissible e with modelIdentityBound e
 sqlite-queue-transition-table-refines-exact-python-runtime :
   sqliteQueueTransitions ≡ pythonQueueTransitions
 sqlite-queue-transition-table-refines-exact-python-runtime = refl
+
+-- The Python source extractor reads the literal REQUIRED tuple in
+-- TaskContract's model.py and generates this ordered list. Equality is
+-- checked for every field and its position, not just set membership.
+python-task-required-fields-refine-exact-python-runtime :
+  requiredTaskFields ≡ pythonRequiredTaskFields
+python-task-required-fields-refine-exact-python-runtime = refl
