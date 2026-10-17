@@ -12,6 +12,7 @@ import hashlib
 import json
 import pathlib
 import sys
+import tempfile
 from typing import Callable
 
 
@@ -19,6 +20,9 @@ IMPLEMENTATION_PATHS = [
     "custoszv9/__init__.py",
     "custoszv9/crfu/__init__.py",
     "custoszv9/crfu/model.py",
+    "custoszv9/crfu/anti_paralysis.py",
+    "custoszv9/crfu/coordinator.py",
+    "custoszv9/crfu/event_queue.py",
     "custoszv9/crfu/planner.py",
     "custoszv9/crfu/resources.py",
     "custoszv9/crfu/recovery.py",
@@ -70,14 +74,61 @@ def main() -> int:
 
     # Imports occur only after the runtime file set is bound to G22 and its baseline.
     sys.path.insert(0, str(root))
+    from custoszv9.crfu.coordinator import run_bounded_mission
+    from custoszv9.crfu.event_queue import PersistentMissionQueue, QueueConflict, InvalidTransition
     from custoszv9.crfu.equivalence import validate_equivalence
     from custoszv9.crfu.formal import validate_proof_bundle
     from custoszv9.crfu.gates import evaluate_gate_evidence
+    from custoszv9.crfu.model import TaskContract
     from custoszv9.crfu.planner import ActionSpec, build_plan
     from custoszv9.crfu.recovery import checkpoint_record, verify_restoration
     from custoszv9.crfu.resources import ResourceBudget, ResourceSnapshot, evaluate_budget
 
     observations: list[dict[str, str]] = []
+
+    def task_value(task_id: str = "task-1") -> dict:
+        return {
+            "task_id": task_id,
+            "mission_id": "mission-1",
+            "project_id": "project-1",
+            "source_identity": "source-v1",
+            "target_identity": "target-v1",
+            "source_state_hash": "d" * 64,
+            "dependency_set": [],
+            "authorized_scope": "bounded-conformance",
+            "required_capabilities": [],
+            "inputs": [],
+            "preconditions": [],
+            "permitted_effects": [],
+            "resource_budget": {
+                "ram_required_bytes": 100,
+                "ram_reserved_bytes": 50,
+                "disk_required_bytes": 100,
+                "max_concurrency": 1,
+            },
+            "execution_deadline": "2099-01-01T00:00:00Z",
+            "maximum_planning_budget": 4,
+            "maximum_retry_budget": 0,
+            "acceptance_criteria": [],
+            "expected_outputs": [],
+            "validation_strategy": "independent-check",
+            "evidence_requirements": [],
+            "checkpoint_reference": "checkpoint-1",
+            "rollback_strategy": "restore-and-verify",
+            "completion_condition": "all-actions-pass",
+            "escalation_condition": "hold-on-unknown",
+            "authorization_evidence_reference": "auth-evidence-1",
+        }
+
+    def good_snapshot():
+        return ResourceSnapshot(
+            ram_available_bytes=10000,
+            disk_available_bytes=20000,
+            cpu_count=2,
+            measured_at_utc="2026-01-01T00:00:00Z",
+            source="trusted-conformance-fixture",
+            confidence="MEASURED",
+        )
 
     def check(name: str, fn: Callable[[], None]) -> None:
         fn()
@@ -327,6 +378,151 @@ def main() -> int:
         )),
     )
 
+    def valid_task_contract():
+        task, issues = TaskContract.validate(task_value())
+        assert task is not None and issues == [], {"task": task is not None, "issues": issues}
+
+    def invalid_task_contract_hash():
+        raw = task_value()
+        raw["source_state_hash"] = "not-a-digest"
+        task, issues = TaskContract.validate(raw)
+        assert task is None and "SOURCE_STATE_HASH_INVALID" in issues, issues
+
+    check("task_contract.valid_typed_contract_passes", valid_task_contract)
+    check("task_contract.invalid_source_state_hash_is_rejected", invalid_task_contract_hash)
+
+    def run_coordinator(authorization_verifier, action_runner):
+        return run_bounded_mission(
+            task_value(),
+            [action("action-1")],
+            good_snapshot(),
+            available_capabilities=set(),
+            admissible_effects=set(),
+            authorization_verifier=authorization_verifier,
+            action_runner=action_runner,
+            maximum_steps=1,
+            planning_budget=2,
+        )
+
+    check(
+        "coordinator.missing_authorization_verifier_holds",
+        lambda: _assert_stage(
+            run_coordinator(None, lambda ctx: {"status": "PASS"}),
+            "HOLD", "AUTHORIZATION",
+        ),
+    )
+    check(
+        "coordinator.authorization_bound_to_wrong_task_is_denied",
+        lambda: _assert_stage(
+            run_coordinator(
+                lambda task: {"status": "PASS", "task_id": "different-task"},
+                lambda ctx: {"status": "PASS"},
+            ),
+            "DENIED", "AUTHORIZATION",
+        ),
+    )
+    check(
+        "coordinator.missing_action_adapter_holds",
+        lambda: _assert_stage(
+            run_coordinator(
+                lambda task: {"status": "PASS", "task_id": task["task_id"]}, None
+            ),
+            "HOLD", "EXECUTION",
+        ),
+    )
+
+    def successful_bounded_mission():
+        result = run_coordinator(
+            lambda task: {"status": "PASS", "task_id": task["task_id"]},
+            lambda ctx: {"status": "PASS", "result_state_hash": "f" * 64},
+        )
+        assert result.get("status") == "COMPLETED", result
+        assert result.get("completion_claim") is True, result
+        assert result.get("certification") == "NOT_GRANTED", result
+        assert result.get("canonical_promotion") == "NOT_AUTHORIZED", result
+
+    check(
+        "coordinator.valid_scope_bound_mission_completes_without_certification",
+        successful_bounded_mission,
+    )
+
+    def queue_duplicate_and_conflict():
+        with tempfile.TemporaryDirectory() as directory:
+            queue = PersistentMissionQueue(pathlib.Path(directory) / "missions.sqlite")
+            first = queue.submit(task_value())
+            again = queue.submit(task_value())
+            assert first["idempotent_duplicate"] is False, first
+            assert again["idempotent_duplicate"] is True and again["state"] == "RECEIVED", again
+            changed = task_value()
+            changed["target_identity"] = "different-target"
+            try:
+                queue.submit(changed)
+            except QueueConflict:
+                return
+            raise AssertionError("REUSED_MISSION_ID_WITH_CHANGED_TASK_WAS_ACCEPTED")
+
+    check(
+        "queue.identical_resubmission_is_idempotent_and_changed_task_conflicts",
+        queue_duplicate_and_conflict,
+    )
+
+    def queue_valid_transitions_and_event_chain():
+        with tempfile.TemporaryDirectory() as directory:
+            queue = PersistentMissionQueue(pathlib.Path(directory) / "missions.sqlite")
+            queue.submit(task_value())
+            queue.transition("task-1", "RECEIVED", "PREFLIGHT", event_type="PREFLIGHT_STARTED")
+            queue.transition("task-1", "PREFLIGHT", "READY", event_type="PREFLIGHT_PASSED")
+            running = queue.claim_next_ready()
+            assert running is not None and running["state"] == "RUNNING", running
+            chain = queue.verify_event_chain()
+            assert chain.get("status") == "PASS" and chain.get("event_count") == 4, chain
+
+    check(
+        "queue.allowed_transitions_claim_one_ready_task_and_verify_hash_chain",
+        queue_valid_transitions_and_event_chain,
+    )
+
+    def queue_forbidden_transition():
+        with tempfile.TemporaryDirectory() as directory:
+            queue = PersistentMissionQueue(pathlib.Path(directory) / "missions.sqlite")
+            queue.submit(task_value())
+            try:
+                queue.transition("task-1", "RECEIVED", "RUNNING", event_type="FORBIDDEN_SKIP")
+            except InvalidTransition:
+                return
+            raise AssertionError("FORBIDDEN_STATE_TRANSITION_WAS_ACCEPTED")
+
+    check("queue.forbidden_transition_is_denied", queue_forbidden_transition)
+
+    def queue_wait_condition_and_deadline():
+        with tempfile.TemporaryDirectory() as directory:
+            queue = PersistentMissionQueue(pathlib.Path(directory) / "missions.sqlite")
+            queue.submit(task_value())
+            queue.transition("task-1", "RECEIVED", "PREFLIGHT", event_type="PREFLIGHT_STARTED")
+            queue.transition(
+                "task-1",
+                "PREFLIGHT",
+                "WAITING_FOR_EVENT",
+                event_type="WAIT_DECLARED",
+                fields={
+                    "wait_condition": "schema-ready",
+                    "wait_deadline_utc": "2099-01-01T00:00:00Z",
+                },
+            )
+            wrong = queue.emit_signal("different-signal")
+            assert wrong["resumed"] == [], wrong
+            assert queue.get("task-1")["state"] == "WAITING_FOR_EVENT"
+            correct = queue.emit_signal("schema-ready")
+            assert correct["resumed"] == ["task-1"], correct
+            assert queue.get("task-1")["state"] == "READY"
+            chain = queue.verify_event_chain()
+            assert chain.get("status") == "PASS" and chain.get("event_count") == 4, chain
+
+    check(
+        "queue.only_matching_event_resumes_bounded_wait_and_chain_verifies",
+        queue_wait_condition_and_deadline,
+    )
+
     mapping = [
         {
             "formal_module": "PlanSoundness.agda",
@@ -354,9 +550,9 @@ def main() -> int:
         },
         {
             "formal_module": "ContractComposition.agda",
-            "runtime_symbols": [],
-            "coverage": "NOT_MAPPED_TO_A_UNIQUE_RUNTIME_COMPOSITION_THEOREM",
-            "boundary": "No exact one-to-one runtime composition theorem is established in this probe.",
+            "runtime_symbols": ["custoszv9.crfu.model.TaskContract.validate", "custoszv9.crfu.coordinator.run_bounded_mission"],
+            "coverage": "PARTIAL_BOUNDED_MISSION_PIPELINE_PROBES",
+            "boundary": "Task validation, authorization, resource, plan and action-adapter gates are exercised; no theorem establishes complete Python-to-Agda contract-composition refinement.",
         },
         {
             "formal_module": "MigrationCoherence.agda",
@@ -375,9 +571,9 @@ def main() -> int:
         },
         {
             "formal_module": "TaskAndStateModel.agda",
-            "runtime_symbols": [],
-            "coverage": "NOT_PROVEN_DIRECT_REFINEMENT",
-            "boundary": "No direct refinement theorem to the SQLite mission queue is established by this probe.",
+            "runtime_symbols": ["custoszv9.crfu.model.TaskContract.validate", "custoszv9.crfu.event_queue.PersistentMissionQueue"],
+            "coverage": "BOUNDED_TASK_AND_STATE_PROBES",
+            "boundary": "Typed task validation, allowed queue transitions, idempotent submission, bounded event waits and event hash-chain verification are tested; this is not a universal state-machine refinement theorem.",
         },
     ]
 
@@ -468,6 +664,11 @@ def _assert_proof_bundle(result, expected_status):
     assert result.get("status") == expected_status, result
     if expected_status == "HOLD":
         assert result.get("proof_transport") == "DENIED"
+
+
+def _assert_stage(result, expected_status, expected_stage):
+    assert result.get("status") == expected_status, result
+    assert result.get("stage") == expected_stage, result
 
 
 def _assert_gate_hold(result):
