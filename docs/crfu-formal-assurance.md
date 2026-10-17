@@ -105,3 +105,6 @@ This candidate includes strict RAM/disk predicate proofs and boundary facts; pla
 The updated Python conformance suite binds `custoszv9/crfu/contracts.py` and `custoszv9/crfu/migration.py` by exact source digest and adds seven checks, bringing the finite probe total from 35 to 42. These tests establish finite behavioral correspondence for the enumerated fixtures only. They do not prove a universal theorem over arbitrary Python/SQLite executions, callbacks, migration functions, or external rollback payloads. The runtime migration validator binds endpoints to exact bytes and a declared invariant witness; its `PASS_FOR_DECLARED_INVARIANT` status is not certification propagation.
 
 Historical certificates, runtime package attestations, V8 bytes, and canonical authority artifacts are preserved unchanged. This candidate grants no runtime activation or canonical promotion.
+
+
+Independent trust-root revalidation was queued after the default-branch trust workflow was updated by PR #88 (merge commit `d1fe5d49c8a058f074ab3d38667ce920bde03bea`). The earlier trust-root run used stale baseline bindings and is historical failed evidence, not a certificate for this candidate.
