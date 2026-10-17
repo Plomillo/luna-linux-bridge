@@ -1,0 +1,109 @@
+name: "Importar contenedor semantico CAS (252 objetos)"
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Escribir exactamente IMPORT_252; esta operacion sube 327745213 bytes'
+        required: true
+        type: string
+      source_dir:
+        description: 'Ruta local del contenedor u OBJECTS, si ya esta en LOUKSNA'
+        required: false
+        type: string
+      rclone_source:
+        description: 'Alternativa: remote autorizado, ej. gdrive:CONTENEDOR SEMANTICO'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: "governed-semantic-container-cas-import"
+  cancel-in-progress: false
+
+jobs:
+  import-cas:
+    if: >-
+      github.ref == 'refs/heads/staging/contenedor-semantico-e826-20260927' &&
+      inputs.confirm == 'IMPORT_252'
+    runs-on: [self-hosted, linux, x64, luna-aux]
+    timeout-minutes: 120
+    steps:
+      - name: Checkout de rama de preparacion
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+          lfs: false
+
+      - name: Habilitar binarios de usuario instalados
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/.local/bin:$PATH"
+          command -v git-lfs
+          command -v rclone
+
+      - name: Prechecks y aislamiento de permisos
+        shell: bash
+        env:
+          SOURCE_DIR: ${{ inputs.source_dir }}
+          RCLONE_SOURCE: ${{ inputs.rclone_source }}
+        run: |
+          set -Eeuo pipefail
+          [[ -n "$SOURCE_DIR" && -z "$RCLONE_SOURCE" ]] ||
+            [[ -z "$SOURCE_DIR" && -n "$RCLONE_SOURCE" ]] ||
+            { echo "FAIL_CLOSED: se necesita una sola fuente autorizada"; exit 2; }
+          command -v python3 >/dev/null
+          command -v git >/dev/null
+          command -v git-lfs >/dev/null ||
+            { echo "FAIL_CLOSED: git-lfs no instalado"; exit 2; }
+          if [[ -n "$RCLONE_SOURCE" ]]; then
+            command -v rclone >/dev/null ||
+              { echo "FAIL_CLOSED: rclone no instalado/configurado"; exit 2; }
+          fi
+          test "$GITHUB_REF" = "refs/heads/staging/contenedor-semantico-e826-20260927"
+
+      - name: Verificar 252 hashes contra manifiesto original
+        shell: bash
+        env:
+          SOURCE_DIR: ${{ inputs.source_dir }}
+          RCLONE_SOURCE: ${{ inputs.rclone_source }}
+        run: |
+          set -Eeuo pipefail
+          if [[ -n "$SOURCE_DIR" ]]; then
+            python3 -B scripts/semantic_container/import_cas.py \
+              --source-dir "$SOURCE_DIR" --mode verify
+          else
+            echo "RCLONE_SINGLE_TRANSFER: verification will happen during import step."
+          fi
+
+      - name: Importacion local verificada a Git LFS
+        shell: bash
+        env:
+          SOURCE_DIR: ${{ inputs.source_dir }}
+          RCLONE_SOURCE: ${{ inputs.rclone_source }}
+        run: |
+          set -Eeuo pipefail
+          if [[ -n "$SOURCE_DIR" ]]; then
+            python3 -B scripts/semantic_container/import_cas.py \
+              --source-dir "$SOURCE_DIR" --mode import --authorize-import
+          else
+            python3 -B scripts/semantic_container/import_cas.py \
+              --rclone-source "$RCLONE_SOURCE" --allow-network \
+              --mode import --authorize-import
+          fi
+
+      - name: Commit y subida controlada de objetos LFS a la rama aislada
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name "louksna-cas-transfer[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -c commit.gpgsign=false commit \
+            -m "feat(CAS): importar 252 objetos verificados por SHA-256 en Git LFS"
+          git lfs push origin HEAD
+          git push origin HEAD:refs/heads/staging/contenedor-semantico-e826-20260927
+          echo "TRANSFER_COMPLETED_STAGED_NO_G23_NO_G24"

@@ -1,0 +1,9 @@
+{
+  "entries": [],
+  "entry_count": 0,
+  "index_digest": "349e57a8a352968bcefc15b86958272fd4a1f94cba2b724d347ac4125fe35ad4",
+  "no_semantic_promotion": true,
+  "payload_store_relative": "../../18_HASH_INDEX/OBJECTS",
+  "schema": "metaos.semantic-container.domain-index/v1",
+  "section": "14_PROJECT_VIEWS"
+}

@@ -1,0 +1,504 @@
+{
+  "ASSURANCE_COMPLETE": 1,
+  "CERTIFICATION_READY": 1,
+  "R": {
+    "R1": 1,
+    "R10": 1,
+    "R11": 1,
+    "R12": 1,
+    "R13": 1,
+    "R14": 1,
+    "R15": 1,
+    "R16": 1,
+    "R17": 1,
+    "R18": 1,
+    "R19": 1,
+    "R2": 1,
+    "R20": 1,
+    "R21": 1,
+    "R22": 1,
+    "R23": 1,
+    "R24": 1,
+    "R3": 1,
+    "R4": 1,
+    "R5": 1,
+    "R6": 1,
+    "R7": 1,
+    "R8": 1,
+    "R9": 1
+  },
+  "assurance_digest": "800e8a43894a97a2311afa2df1d9dedffbda98a5ac17c26dc40b4c2038c11cdf",
+  "claims": [
+    {
+      "argument": "SOURCE_SET_EXACT verified under bounded source evidence",
+      "assumptions": [],
+      "claim_id": "R1",
+      "context": "CORPUS_SEMANTIC_OPERATION_V1_1",
+      "counterevidence": [],
+      "evidence": [
+        {
+          "ref": "E804",
+          "sha256": "532fd106a85358595e0a614886c255bde1ecc5fd758ad089dc175b4ef5cc1a0f"
+        },
+        {
+          "ref": "MANIFEST",
+          "sha256": "74e6d3f616ff0460b995b183ffde73ae6728d7339afe8c23ce19dd61df2a304f"
+        }
+      ],
+      "limitations": [
+        "READINESS_ONLY_NO_G23_G24_CERTIFICATION"
+      ],
+      "validation_result": "PASS"
+    },
+    {
+      "argument": "FULL_READING_EXACT verified under bounded source evidence",
+      "assumptions": [],
+      "claim_id": "R2",
+      "context": "CORPUS_SEMANTIC_OPERATION_V1_1",
+      "counterevidence": [],
+      "evidence": [
+        {
+          "ref": "E805_VAL",
+          "sha256": "0db75d8b7853fde53954409fd31aa0095c08277443e90770cf393cc8dd13a89b"
+        },
+        {
+          "ref": "E806_VAL",
+          "sha256": "4b033e33b63a8326a259d44b39a05f1b8e5a08fdbc8ea304b564ef024c5e190a"
+        }
+      ],
+      "limitations": [
+        "READINESS_ONLY_NO_G23_G24_CERTIFICATION"
+      ],
+      "validation_result": "PASS"
+    },
+    {
+      "argument": "EPISTEMIC_INTEGRITY verified under bounded source evidence",
+      "assumptions": [],
+      "claim_id": "R3",
+      "context": "CORPUS_SEMANTIC_OPERATION_V1_1",
+      "counterevidence": [],
+      "evidence": [
+        {
+          "ref": "E807",
+          "sha256": "e9875e313235c1abf6e5d8afb338503f7abc8a9ff37fb6c8a4fd9638117e595b"
+        },
+        {
+          "ref": "E808",
+          "sha256": "58d3338efd5161e3e800a95132abac7d3fa3bb7ea0bf50d9ea6dbb90ef3fe0eb"
+        },
+        {
+          "ref": "E809",
+          "sha256": "813eddbcb5fa44fd1c1cebfaf4c23495f54eb852a73bd57bf0dbd832e01bc3a1"
+        },
+        {
+          "ref": "E810",
+          "sha256": "8896e1fb17c43314675a00d91d24d774cf0a26905ad7c6eab37d1aad264a70ce"
+        },
+        {
+          "ref": "E811",
+          "sha256": "0a7a7ede300627aa50880021d575cf875c9f35f8c06143226c442441d0ef6089"
+        }
+      ],
+      "limitations": [
+        "READINESS_ONLY_NO_G23_G24_CERTIFICATION"
+      ],
+      "validation_result": "PASS"
+    },
+    {
+      "argument": "MICRO_COMPLETE verified under bounded source evidence",
+      "assumptions": [],
+      "claim_id": "R4",
+      "context": "CORPUS_SEMANTIC_OPERATION_V1_1",
+      "counterevidence": [],
+      "evidence": [
+        {
+          "ref": "E812",
+          "sha256": "e7c2b60ab281e5e21eea98d804246cab465577c7e7545554669e725786410de6"
+        }
+      ],
+      "limitations": [
+        "READINESS_ONLY_NO_G23_G24_CERTIFICATION"
+      ],
+      "validation_result": "PASS"
+    },
+    {
+      "argument": "MACRO_COMPLETE verified under bounded source evidence",
+      "assumptions": [],
+      "claim_id": "R5",
+      "context": "CORPUS_SEMANTIC_OPERATION_V1_1",
+      "counterevidence": [],
+      "evidence": [
+        {
+          "ref": "E813",
+          "sha256": "9cc6054e3c8bb19fd9a6cc361c911778b56fdd180f9f0e93d77873dce936ee7e"
+        }
+      ],
+      "limitations": [
+        "READINESS_ONLY_NO_G23_G24_CERTIFICATION"
+      ],
+      "validation_result": "PASS"
+    },
+    {
+      "argument": "CROSS_DOMAIN_COMPLETE verified under bounded source evidence",
+      "assumptions": [],
+      "claim_id": "R6",
+      "context": "CORPUS_SEMANTIC_OPERATION_V1_1",
+      "counterevidence": [],
+      "evidence": [
+        {
+          "ref": "E814",
+          "sha256": "88ba78bbfd36b963c2187e25ee09766d012ab715677957b8c5a5cb2f475b7ef4"
+        }
+      ],
+      "limitations": [
+        "READINESS_ONLY_NO_G23_G24_CERTIFICATION"
+      ],
+      "validation_result": "PASS"
+    },
+    {
+      "argument": "METACOGNITION_COMPLETE verified under bounded source evidence",
+      "assumptions": [],
+      "claim_id": "R7",
+      "context": "CORPUS_SEMANTIC_OPERATION_V1_1",
+      "counterevidence": [],
+      "evidence": [
+        {
+          "ref": "E815",
+          "sha256": "5376b6b18b91d29c71e18a276cc3a1c081088aaa21a8fbd6a80a02c02380f6d4"
+        },
+        {
+          "ref": "E816",
+          "sha256": "34aed28ac85164a3ec70182daf6f29712dc2ec643d438e8bb7e07fdb98dfafc2"
+        }
+      ],
+      "limitations": [
+        "READINESS_ONLY_NO_G23_G24_CERTIFICATION"
+      ],
+      "validation_result": "PASS"
+    },
+    {
+      "argument": "CONTRADICTIONS_COMPLETE verified under bounded source evidence",
+      "assumptions": [],
+      "claim_id": "R8",
+      "context": "CORPUS_SEMANTIC_OPERATION_V1_1",
+      "counterevidence": [],
+      "evidence": [
+        {
+          "ref": "E817",
+          "sha256": "274b0d6f055bde14b5f871ab58230c60ec158936559b0436bda50bdcbb6a1537"
+        }
+      ],
+      "limitations": [
+        "READINESS_ONLY_NO_G23_G24_CERTIFICATION",
+        "CTR_SIGNALS_REGISTERED_NOT_FORMAL_CONTRADICTION_RELATIONS"
+      ],
+      "validation_result": "PASS"
+    },
+    {
+      "argument": "ASSUMPTIONS_COMPLETE verified under bounded source evidence",
+      "assumptions": [],
+      "claim_id": "R9",
+      "context": "CORPUS_SEMANTIC_OPERATION_V1_1",
+      "counterevidence": [],
+      "evidence": [
+        {
+          "ref": "E818",
+          "sha256": "73e083b0438a9f8bce77112db43b51fa90e383b8ab3409410a7cf54942da4557"
+        }
+      ],
+      "limitations": [
+        "READINESS_ONLY_NO_G23_G24_CERTIFICATION"
+      ],
+      "validation_result": "PASS"
+    },
+    {
+      "argument": "LIMITATIONS_COMPLETE verified under bounded source evidence",
+      "assumptions": [],
+      "claim_id": "R10",
+      "context": "CORPUS_SEMANTIC_OPERATION_V1_1",
+      "counterevidence": [],
+      "evidence": [
+        {
+          "ref": "E819",
+          "sha256": "24a8bf34c03fdeab872c7b46dc56e104b49d7710f12d2c4c6095f8e30879bb95"
+        }
+      ],
+      "limitations": [
+        "READINESS_ONLY_NO_G23_G24_CERTIFICATION"
+      ],
+      "validation_result": "PASS"
+    },
+    {
+      "argument": "FAILURE_KNOWLEDGE_COMPLETE verified under bounded source evidence",
+      "assumptions": [],
+      "claim_id": "R11",
+      "context": "CORPUS_SEMANTIC_OPERATION_V1_1",
+      "counterevidence": [],
+      "evidence": [
+        {
+          "ref": "E820",
+          "sha256": "8015726c2d74a73d79ef1d89f1c42c26c49708be563d70db1fdd5d645ca025e4"
+        }
+      ],
+      "limitations": [
+        "READINESS_ONLY_NO_G23_G24_CERTIFICATION",
+        "FAILURE_SIGNALS_PRESERVED_FORMAL_RECORDS_ZERO"
+      ],
+      "validation_result": "PASS"
+    },
+    {
+      "argument": "HISTORY_COMPLETE verified under bounded source evidence",
+      "assumptions": [],
+      "claim_id": "R12",
+      "context": "CORPUS_SEMANTIC_OPERATION_V1_1",
+      "counterevidence": [],
+      "evidence": [
+        {
+          "ref": "E821",
+          "sha256": "819985518830f4b57569c35186d9b3ba8e5b5da02a33a23c64868dcb1bad5717"
+        }
+      ],
+      "limitations": [
+        "READINESS_ONLY_NO_G23_G24_CERTIFICATION"
+      ],
+      "validation_result": "PASS"
+    },
+    {
+      "argument": "PROVENANCE_COMPLETE verified under bounded source evidence",
+      "assumptions": [],
+      "claim_id": "R13",
+      "context": "CORPUS_SEMANTIC_OPERATION_V1_1",
+      "counterevidence": [],
+      "evidence": [
+        {
+          "ref": "E822",
+          "sha256": "5519a5ba594eec9beb62dfb92483f7827b9ad4cd41be26f8db741e795f161157"
+        }
+      ],
+      "limitations": [
+        "READINESS_ONLY_NO_G23_G24_CERTIFICATION"
+      ],
+      "validation_result": "PASS"
+    },
+    {
+      "argument": "TRACEABILITY_COMPLETE verified under bounded source evidence",
+      "assumptions": [],
+      "claim_id": "R14",
+      "context": "CORPUS_SEMANTIC_OPERATION_V1_1",
+      "counterevidence": [],
+      "evidence": [
+        {
+          "ref": "E823",
+          "sha256": "34bfbb6eaf26c031031c6379cf170b4d063431e2422e897990f8dcd147c0a967"
+        },
+        {
+          "ref": "GRAPH_INDEX",
+          "sha256": "17c6d089a501cd2cfcd81881dbe540afac1a58ce10483d47939a2688bf99984e"
+        }
+      ],
+      "limitations": [
+        "READINESS_ONLY_NO_G23_G24_CERTIFICATION"
+      ],
+      "validation_result": "PASS"
+    },
+    {
+      "argument": "RELATION_GRAPH_VALID verified under bounded source evidence",
+      "assumptions": [],
+      "claim_id": "R15",
+      "context": "CORPUS_SEMANTIC_OPERATION_V1_1",
+      "counterevidence": [],
+      "evidence": [
+        {
+          "ref": "E823",
+          "sha256": "34bfbb6eaf26c031031c6379cf170b4d063431e2422e897990f8dcd147c0a967"
+        }
+      ],
+      "limitations": [
+        "READINESS_ONLY_NO_G23_G24_CERTIFICATION",
+        "UNRESOLVED_EXTERNAL_PARENT_DIGESTS_DISCLOSED_SEPARATELY_NOT_SILENTLY_RESOLVED"
+      ],
+      "validation_result": "PASS"
+    },
+    {
+      "argument": "NONREDUNDANCY_VALID verified under bounded source evidence",
+      "assumptions": [],
+      "claim_id": "R16",
+      "context": "CORPUS_SEMANTIC_OPERATION_V1_1",
+      "counterevidence": [],
+      "evidence": [
+        {
+          "ref": "E824",
+          "sha256": "e969fe7bcea1927f0a23d78eb8a5c92a8d8b7d6d5fde5cc6e0444d3b031e931f"
+        },
+        {
+          "ref": "CAS",
+          "sha256": "c2daca06496353de517fc458b84ce6b41dedb0c486629419f149f7b676daad39"
+        }
+      ],
+      "limitations": [
+        "READINESS_ONLY_NO_G23_G24_CERTIFICATION",
+        "EXACT_CONTENT_DEDUPLICATION_ONLY_NO_UNKNOWN_SEMANTIC_EQUIVALENCE"
+      ],
+      "validation_result": "PASS"
+    },
+    {
+      "argument": "ROUNDTRIP_VALID verified under bounded source evidence",
+      "assumptions": [],
+      "claim_id": "R17",
+      "context": "CORPUS_SEMANTIC_OPERATION_V1_1",
+      "counterevidence": [],
+      "evidence": [
+        {
+          "ref": "E825",
+          "sha256": "6be9133297c6348bed62cf33e12d03a7abd991b3ff429052292156eee5843da1"
+        },
+        {
+          "ref": "ROUNDTRIP",
+          "sha256": "3fb0750b83597c96eddb3bc1d36f04841ebbeec633b0a9d9e4f78d3b8c78de89"
+        }
+      ],
+      "limitations": [
+        "READINESS_ONLY_NO_G23_G24_CERTIFICATION"
+      ],
+      "validation_result": "PASS"
+    },
+    {
+      "argument": "ORPHANS_ZERO verified under bounded source evidence",
+      "assumptions": [],
+      "claim_id": "R18",
+      "context": "CORPUS_SEMANTIC_OPERATION_V1_1",
+      "counterevidence": [],
+      "evidence": [
+        {
+          "ref": "E823",
+          "sha256": "34bfbb6eaf26c031031c6379cf170b4d063431e2422e897990f8dcd147c0a967"
+        },
+        {
+          "ref": "GRAPH_INDEX",
+          "sha256": "17c6d089a501cd2cfcd81881dbe540afac1a58ce10483d47939a2688bf99984e"
+        }
+      ],
+      "limitations": [
+        "READINESS_ONLY_NO_G23_G24_CERTIFICATION"
+      ],
+      "validation_result": "PASS"
+    },
+    {
+      "argument": "CONTAINER_MANIFEST_VALID verified under bounded source evidence",
+      "assumptions": [],
+      "claim_id": "R19",
+      "context": "CORPUS_SEMANTIC_OPERATION_V1_1",
+      "counterevidence": [],
+      "evidence": [
+        {
+          "ref": "E824",
+          "sha256": "e969fe7bcea1927f0a23d78eb8a5c92a8d8b7d6d5fde5cc6e0444d3b031e931f"
+        },
+        {
+          "ref": "MANIFEST",
+          "sha256": "74e6d3f616ff0460b995b183ffde73ae6728d7339afe8c23ce19dd61df2a304f"
+        },
+        {
+          "ref": "CAS",
+          "sha256": "c2daca06496353de517fc458b84ce6b41dedb0c486629419f149f7b676daad39"
+        }
+      ],
+      "limitations": [
+        "READINESS_ONLY_NO_G23_G24_CERTIFICATION"
+      ],
+      "validation_result": "PASS"
+    },
+    {
+      "argument": "SOURCE_SET_DIGEST_BOUND verified under bounded source evidence",
+      "assumptions": [],
+      "claim_id": "R20",
+      "context": "CORPUS_SEMANTIC_OPERATION_V1_1",
+      "counterevidence": [],
+      "evidence": [
+        {
+          "ref": "E804",
+          "sha256": "532fd106a85358595e0a614886c255bde1ecc5fd758ad089dc175b4ef5cc1a0f"
+        },
+        {
+          "ref": "E822",
+          "sha256": "5519a5ba594eec9beb62dfb92483f7827b9ad4cd41be26f8db741e795f161157"
+        },
+        {
+          "ref": "MANIFEST",
+          "sha256": "74e6d3f616ff0460b995b183ffde73ae6728d7339afe8c23ce19dd61df2a304f"
+        }
+      ],
+      "limitations": [
+        "READINESS_ONLY_NO_G23_G24_CERTIFICATION"
+      ],
+      "validation_result": "PASS"
+    },
+    {
+      "argument": "KNOWLEDGE_ARTIFACT_DIGEST_BOUND verified under bounded source evidence",
+      "assumptions": [],
+      "claim_id": "R21",
+      "context": "CORPUS_SEMANTIC_OPERATION_V1_1",
+      "counterevidence": [],
+      "evidence": [
+        {
+          "ref": "E824",
+          "sha256": "e969fe7bcea1927f0a23d78eb8a5c92a8d8b7d6d5fde5cc6e0444d3b031e931f"
+        },
+        {
+          "ref": "E825",
+          "sha256": "6be9133297c6348bed62cf33e12d03a7abd991b3ff429052292156eee5843da1"
+        },
+        {
+          "ref": "CAS",
+          "sha256": "c2daca06496353de517fc458b84ce6b41dedb0c486629419f149f7b676daad39"
+        }
+      ],
+      "limitations": [
+        "READINESS_ONLY_NO_G23_G24_CERTIFICATION"
+      ],
+      "validation_result": "PASS"
+    },
+    {
+      "argument": "REPRODUCIBILITY_PASS verified under bounded source evidence",
+      "assumptions": [],
+      "claim_id": "R22",
+      "context": "CORPUS_SEMANTIC_OPERATION_V1_1",
+      "counterevidence": [],
+      "evidence": [
+        {
+          "ref": "E825",
+          "sha256": "6be9133297c6348bed62cf33e12d03a7abd991b3ff429052292156eee5843da1"
+        },
+        {
+          "ref": "ROUNDTRIP",
+          "sha256": "3fb0750b83597c96eddb3bc1d36f04841ebbeec633b0a9d9e4f78d3b8c78de89"
+        }
+      ],
+      "limitations": [
+        "READINESS_ONLY_NO_G23_G24_CERTIFICATION"
+      ],
+      "validation_result": "PASS"
+    },
+    {
+      "argument": "RESTORE_PROOF_PASS verified under bounded source evidence",
+      "assumptions": [],
+      "claim_id": "R23",
+      "context": "CORPUS_SEMANTIC_OPERATION_V1_1",
+      "counterevidence": [],
+      "evidence": [
+        {
+          "ref": "E826_RESTORE_PROOF",
+          "sha256": "370c3b7dcf8cedd486b70908c87410e25f2c1fa34211c9f94c57fbd9a733cccd"
+        }
+      ],
+      "limitations": [
+        "READINESS_ONLY_NO_G23_G24_CERTIFICATION"
+      ],
+      "validation_result": "PASS"
+    }
+  ],
+  "g23_executed": false,
+  "g24_executed": false,
+  "mission_id": "MIS-a8818ca7f6444b469d95",
+  "schema": "metaos.s8.e826-knowledge-assurance/v1"
+}

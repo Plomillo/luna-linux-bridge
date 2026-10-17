@@ -1,0 +1,9 @@
+{
+  "entries": [],
+  "entry_count": 0,
+  "index_digest": "428a504e9ec0e648b77bae936d8491b0d91e775bcb9d4003b8e2a81d3781290b",
+  "no_semantic_promotion": true,
+  "payload_store_relative": "../../18_HASH_INDEX/OBJECTS",
+  "schema": "metaos.semantic-container.domain-index/v1",
+  "section": "19_TRACEABILITY"
+}
