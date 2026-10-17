@@ -23,6 +23,34 @@ decide : TaskState -> Decision
 decide (taskState _ _ true) = executeNextAction
 decide (taskState _ _ false) = holdForEvidence
 
+-- Exact REQUIRED field order from TaskContract in custoszv9/crfu/model.py.
+requiredTaskFields : List String
+requiredTaskFields =
+  "task_id" ∷
+  "mission_id" ∷
+  "project_id" ∷
+  "source_identity" ∷
+  "target_identity" ∷
+  "source_state_hash" ∷
+  "dependency_set" ∷
+  "authorized_scope" ∷
+  "required_capabilities" ∷
+  "inputs" ∷
+  "preconditions" ∷
+  "permitted_effects" ∷
+  "resource_budget" ∷
+  "execution_deadline" ∷
+  "maximum_planning_budget" ∷
+  "maximum_retry_budget" ∷
+  "acceptance_criteria" ∷
+  "expected_outputs" ∷
+  "validation_strategy" ∷
+  "evidence_requirements" ∷
+  "checkpoint_reference" ∷
+  "rollback_strategy" ∷
+  "completion_condition" ∷
+  "escalation_condition" ∷ []
+
 -- The complete finite state alphabet used by PersistentMissionQueue in
 -- custoszv9/crfu/event_queue.py. Constructor names map one-to-one to the
 -- exact state strings in the runtime source.
