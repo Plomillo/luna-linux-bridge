@@ -131,7 +131,7 @@ jobs:
                   "IMMEDIATE_TRANSACTION_MISSING:" + method_name
               )
           sql_edge_pattern = re.compile(
-              r"UPDATE\s+missions\s+SET\s+state='([A-Z_]+)'.*?WHERE\s+mission_id=\\?.*?AND\s+state='([A-Z_]+)'",
+              r"UPDATE\s+missions\s+SET\s+state='([A-Z_]+)'.*?WHERE\s+mission_id=\?.*?AND\s+state='([A-Z_]+)'",
               re.IGNORECASE,
           )
           static_sql_edges = []
@@ -146,7 +146,7 @@ jobs:
                   if not re.match(r"UPDATE\s+missions\s+SET\s+state", query, re.IGNORECASE):
                       continue
                   state_updates_seen += 1
-                  if re.search(r"SET\s+state=\\?", query, re.IGNORECASE):
+                  if re.search(r"SET\s+state=\?", query, re.IGNORECASE):
                       assert method_name == "transition", "UNMODELED_DYNAMIC_STATE_UPDATE:" + method_name
                       continue
                   match = sql_edge_pattern.search(query)
@@ -157,7 +157,7 @@ jobs:
                   static_sql_edges.append({"from": source, "to": target})
           assert state_updates_seen >= 4, "STATE_UPDATE_COVERAGE_INCOMPLETE"
           submit_method = methods.get("submit")
-          assert submit_method and any(isinstance(n, ast.Constant) and n.value == "INSERT INTO missions(mission_id,task_json,state,updated_at)" for n in ast.walk(submit_method)), "MISSION_INSERT_NOT_BOUND"
+          assert submit_method and any(isinstance(n, ast.Constant) and isinstance(n.value, str) and n.value.startswith("INSERT INTO missions(mission_id,task_json,state,updated_at)") for n in ast.walk(submit_method)), "MISSION_INSERT_NOT_BOUND"
           assert any(isinstance(n, ast.Constant) and n.value == "RECEIVED" for n in ast.walk(submit_method)), "INITIAL_STATE_NOT_BOUND"
           lines = [
               "{-# OPTIONS --safe --without-K #-}",
