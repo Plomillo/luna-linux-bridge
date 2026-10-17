@@ -207,30 +207,13 @@ jobs:
           extracted_bytes = agda_out.read_bytes()
           tracked_bytes = tracked_agda_path.read_bytes()
           assert extracted_bytes == tracked_bytes, "CHECKED_IN_RUNTIME_DERIVED_MODULE_DIFFERS_FROM_EXACT_PYTHON_SOURCE"
-          # Source-level control-flow transcript for the runtime decision paths already modeled in Agda.
-          # Every entry preserves function identity, branch kind, exact source position and normalized AST expression.
-          targets = [
-              ("custoszv9/crfu/model.py", "TaskContract.validate"),
-              ("custoszv9/crfu/resources.py", "evaluate_budget"),
-              ("custoszv9/crfu/planner.py", "build_plan"),
-              ("custoszv9/crfu/anti_paralysis.py", "decide_next_action"),
-              ("custoszv9/crfu/anti_paralysis.py", "retry_decision"),
-              ("custoszv9/crfu/recovery.py", "verify_restoration"),
-              ("custoszv9/crfu/equivalence.py", "validate_equivalence"),
-              ("custoszv9/crfu/coordinator.py", "run_bounded_mission"),
-              ("custoszv9/crfu/event_queue.py", "PersistentMissionQueue.submit"),
-              ("custoszv9/crfu/event_queue.py", "PersistentMissionQueue.transition"),
-              ("custoszv9/crfu/event_queue.py", "PersistentMissionQueue.claim_next_ready"),
-              ("custoszv9/crfu/event_queue.py", "PersistentMissionQueue.emit_signal"),
-              ("custoszv9/crfu/event_queue.py", "PersistentMissionQueue.verify_event_chain"),
-              ("custoszv9/crfu/contracts.py", "run_composed_contracts"),
-              ("custoszv9/crfu/migration.py", "validate_migration_witness"),
-              ("custoszv9/crfu/formal.py", "validate_proof_bundle"),
-              ("custoszv9/crfu/gates.py", "evaluate_gate_evidence"),
-          ]
-          target_set = set(targets)
+          # Extract the control-flow trace for every function/async function in the certified Python runtime tree.
+          runtime_python_root = pathlib.Path("custoszv9")
+          python_source_files = sorted(runtime_python_root.rglob("*.py"))
+          assert len(python_source_files) == 19, "RUNTIME_PYTHON_SOURCE_UNIVERSE_CHANGED:" + str(len(python_source_files))
+          targets = []
           discovered = {}
-          for py_path in sorted(pathlib.Path("custoszv9/crfu").glob("*.py")):
+          for py_path in python_source_files:
               module_tree = ast.parse(py_path.read_text(encoding="utf-8"), filename=py_path.as_posix())
               module_name = py_path.as_posix()
               def visit_defs(node, prefix=""):
@@ -240,12 +223,13 @@ jobs:
                       elif isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
                           full_name = prefix + child.name
                           key = (module_name, full_name)
-                          if key in target_set:
-                              discovered[key] = child
+                          assert key not in discovered, "DUPLICATE_RUNTIME_FUNCTION:" + module_name + ":" + full_name
+                          targets.append(key)
+                          discovered[key] = child
                           visit_defs(child, full_name + ".")
               visit_defs(module_tree)
-          missing_targets = sorted(f"{p}:{n}" for p, n in target_set if (p, n) not in discovered)
-          assert not missing_targets, "MODELED_RUNTIME_FUNCTIONS_MISSING:" + ",".join(missing_targets)
+          assert len(targets) >= 50, "RUNTIME_FUNCTION_COVERAGE_TOO_SMALL:" + str(len(targets))
+          assert len(targets) == len(set(targets)), "RUNTIME_FUNCTION_IDENTITY_DUPLICATED"
 
           guard_trace = []
           def trace_block(source_path, qualname, statements):
@@ -381,7 +365,7 @@ jobs:
               "checked_in_agda_module_sha256": hashlib.sha256(tracked_bytes).hexdigest(),
               "checked_in_generated_module_matches_runtime_extraction": True,
               "agda_proof_status": "PENDING_MODEL_EQUALITY_THEOREM",
-              "claim_boundary": "Universal definitional equality for the finite queue relation and ordered task schema, plus byte-for-byte source AST control-flow trace equality for 17 selected runtime functions. This is a structural refinement proof, not a denotational proof of arbitrary Python callbacks, unbounded algorithm outputs, the SQLite engine, or all external library behavior.",
+              "claim_boundary": "Universal definitional equality for the finite queue relation and ordered task schema, plus byte-for-byte source AST control-flow trace equality for every function/async function body discovered in all 19 Python files under custoszv9. This is structural refinement, not a denotational proof of arbitrary callback outcomes, every module-level effect, the Python standard library, SQLite engine internals, or all crash/locking schedules.",
           }
           report_out.write_text(json.dumps(report, sort_keys=True, indent=2) + "\n", encoding="utf-8")
           print(json.dumps(report, sort_keys=True, indent=2))
@@ -491,7 +475,7 @@ jobs:
               "checks": [
                 "runtime PersistentMissionQueue state-transition table extracted from exact Python source and compared by an Agda definitional-equality theorem when present",
                 "ordered TaskContract.REQUIRED schema extracted from exact Python source and compared by an Agda definitional-equality theorem",
-                "control-flow and return trace for 17 critical Python runtime functions extracted from exact AST and matched byte-for-byte to a tracked formal sequence, then typechecked with an Agda definitional-equality theorem",
+                "control-flow and return trace for every function/async function body in the exact 19-file custoszv9 Python source tree extracted from AST and matched byte-for-byte to a tracked formal sequence, then typechecked with an Agda definitional-equality theorem",
                 "all formal/crfu/*.agda files typechecked using --safe --without-K",
                 "formal/cubical/CRFUUnivalenceBridge.agda typechecked using --cubical --safe --guardedness",
                 "Agda official Linux binary archive SHA-256 verified before use",
@@ -500,7 +484,7 @@ jobs:
               "limitations": [
                 "This report is evidence for the listed formal source files only.",
                 "Typechecking the model is not by itself a proof that the Python runtime implements every model.",
-                "The AST trace establishes source-structural equality of guard/loop/try/return traces for 17 declared functions; it is not by itself a denotational proof of every assignment, external library call, arbitrary callback, whole graph algorithm, SQLite engine semantics, or all possible failure schedules.",
+                "The AST trace establishes source-structural equality of guard/loop/try/return traces for every discovered function/async function body in all 19 Python source files; it is not by itself a denotational proof of every assignment, module-level effect, external library call, arbitrary callback, whole graph algorithm, SQLite engine semantics, or all possible failure schedules.",
                 "The generated Agda equality theorem proves the finite SQLite queue transition table and ordered task schema match exact source-extracted Python structures; full Python/SQLite semantic refinement outside the explicitly modeled structures and traced control paths is not claimed.",
                 "The Cubical module checks the equivalence-to-path interface; it does not prove global Louksna correctness or implementation correspondence.",
                 "No prior CUSTOSZV9 package, G22/G23/G24 certificate, or attestation is modified by this workflow."
