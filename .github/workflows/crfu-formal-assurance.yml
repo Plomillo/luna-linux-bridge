@@ -309,7 +309,7 @@ jobs:
               guard_trace.append(f"{source_path}|{qualname}|FUNCTION|{node.lineno}:{node.col_offset}|")
               trace_block(source_path, qualname, node.body)
               guard_trace.append(f"{source_path}|{qualname}|END_FUNCTION|{node.end_lineno}:{node.end_col_offset}|")
-          assert len(guard_trace) == len(set(guard_trace)) or True, "CONTROL_TRACE_DUPLICATION_CHECK"
+          assert len(guard_trace) > 0, "RUNTIME_GUARD_TRACE_EMPTY"
           trace_lines = [
               "{-# OPTIONS --safe --without-K #-}",
               "module PythonRuntimeGuardTraceGenerated where",
@@ -327,7 +327,15 @@ jobs:
           tracked_trace_path = pathlib.Path("formal/crfu/PythonRuntimeGuardTraceGenerated.agda")
           assert tracked_trace_path.is_file(), "CHECKED_IN_RUNTIME_GUARD_TRACE_MISSING"
           tracked_trace_bytes = tracked_trace_path.read_bytes()
-          assert tracked_trace_bytes == trace_path.read_bytes(), "CHECKED_IN_RUNTIME_GUARD_TRACE_DIFFERS_FROM_PYTHON_AST"
+          if tracked_trace_bytes != trace_path.read_bytes():
+              print("RUNTIME_GUARD_TRACE_REPORT_BEGIN")
+              print(json.dumps({"target_function_count": len(targets), "trace_entry_count": len(guard_trace),
+                                "source_guard_trace_sha256": hashlib.sha256(trace_path.read_bytes()).hexdigest()}, indent=2))
+              print("RUNTIME_GUARD_TRACE_REPORT_END")
+              print("RUNTIME_GUARD_TRACE_AGDA_BEGIN")
+              print(trace_agda)
+              print("RUNTIME_GUARD_TRACE_AGDA_END")
+              raise AssertionError("CHECKED_IN_RUNTIME_GUARD_TRACE_DIFFERS_FROM_PYTHON_AST")
           trace_report = {
               "schema": "CRFU_RUNTIME_GUARD_TRACE/1.0",
               "status": "SOURCE_TRACE_MATCH_PASS",
