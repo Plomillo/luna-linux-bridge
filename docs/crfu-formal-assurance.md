@@ -1,22 +1,44 @@
 # CRFU formal assurance — bounded audit record
 
-## Purpose
+## Purpose and preservation
 
-This workstream addresses the previously disclosed gap that the Agda candidates had not been type-checked. It is isolated from the prior CUSTOSZV9 ZIPAPP and its previous G22/G23/G24 evidence. The previous package SHA-256 remains `d585b351f617f4d5d134248e0c427d36ee0172b7ec32b0bdef6b7d381d394817`.
+This workstream closes the previously disclosed omission of actual Agda type-checking and separately adds finite, independently re-run probes against the unchanged V9 Python runtime. It is additive and does not replace or mutate the prior CUSTOSZV9 ZIPAPP or its G22/G23/G24 certificate. The previously certified package SHA-256 remains `d585b351f617f4d5d134248e0c427d36ee0172b7ec32b0bdef6b7d381d394817`.
 
-## Findings from actual compiler runs
+## Source-level formal verification already completed
 
-1. The original `formal/crfu/ContractComposition.agda` failed on the first Agda 2.8.0.2 run because field projections such as `inputsValid` were not brought into scope; Agda suggested `ContractEvidence.inputsValid`. The related draft modules had analogous missing record-module openings. They have been fixed explicitly in this branch.
-2. The first inspection suspected that the original resource budget type was wrong. The actual Agda compiler then disproved that suspicion: `Agda.Builtin.Nat._<_` evaluates to `Bool`. The temporary change to `Set` failed type-checking and has been reverted. The original `Bool` return type was correct. This is recorded as a corrected audit inference, not a defect in the protected parent candidate.
-3. After the field-scope fixes, the actual compiler checked the plan and restoration proof files and reached the new equivalence lemmas. That run identified ambiguity in nested `with`-patterns, which have since been replaced with direct pattern matching on the evidence constructors and explicit false-equality elimination. The first successful complete compiler run is recorded at [GitHub Actions run 38984431447](https://github.com/Plomillo/luna-linux-bridge/actions/runs/38984431447), commit `a572f63ccbb2bad660174183f9f47342b46d7a36`. The trusted G22/G23/G24 chain was merged into `main` after that run finished, so a fresh run on the next source commit is required for source-bound independent certification.
-4. A Cubical Agda module is included to check the equivalence-to-path interface and identity-equivalence path against the official `agda/cubical v0.9` release. It is a narrow univalence interface, not a proof of the runtime.
+At formal source commit `59a523b1269468cf6341ed08304e647183f06396`, the producer CI passed [run 38984553837](https://github.com/Plomillo/luna-linux-bridge/actions/runs/38984553837). The trusted independent G22/G23/G24 chain passed [run 38984580172](https://github.com/Plomillo/luna-linux-bridge/actions/runs/38984580172), issued the bounded source certificate, attested G23 at [56848419](https://github.com/Plomillo/luna-linux-bridge/attestations/56848419), and attested the G24 certificate at [56848448](https://github.com/Plomillo/luna-linux-bridge/attestations/56848448). Its formal source manifest SHA-256 was `9aa27f9b09f7777bb34db22e6166189504e663d9b1b1ae59245849e719ffe76f`, containing 13 Agda files.
 
-## Reproducible CI
+The compiler actually found and helped correct draft errors: missing record projection openings in the first-order modules, then ambiguity in proof patterns. The resource model's original Bool annotation was correct: a later compiler run showed that Agda's builtin natural-number comparison returns Bool. The temporary change to Set was reverted and this corrected inference is recorded rather than treated as a defect in the protected baseline.
 
-`.github/workflows/crfu-formal-assurance.yml` downloads Agda `2.8.0.2` and Cubical Agda `v0.9`, checks the release archive SHA-256 values before use, attempts to type-check every file in `formal/crfu/` using `--safe --without-K`, then type-checks the Cubical bridge using `--cubical --safe --guardedness`. It uploads logs, source files and a source-hash manifest even when the checker fails. A passing run must be followed by the separate trusted G22/G23/G24 chain before the formal source scope can be called certified.
+Agda `2.8.0.2` and the official `agda/cubical v0.9` release are downloaded by CI only after their archive SHA-256 checks pass. Every `formal/crfu/*.agda` file is checked with `--safe --without-K`; `formal/cubical/CRFUUnivalenceBridge.agda` is checked with `--cubical --safe --guardedness`. This verifies the listed files and their encoded propositions/lemmas. The Cubical bridge checks the equivalence-to-path interface and identity-equivalence path; it is not a proof that Python is equivalent to the specification.
+
+## Additional implementation-conformance layer
+
+The trusted G22/G23/G24 root now binds the selected Python implementation modules to the protected candidate baseline and runs a trusted probe script from the workflow's trusted revision. The probe is not loaded from the candidate branch. Before import, G22 checks source byte sizes and SHA-256 and requires each selected Python file to match the baseline commit `b09353cbfff4efddfdec0cf853ae9658055fad2d`. G23 rechecks that exact manifest on a clean runner, with a secret-free environment, and executes the finite behavior probes. G23 attests the result; G24 verifies that attestation before certifying the declared scope.
+
+The 25 probes cover positive and negative cases for:
+
+- planner topological order, missing dependencies, cycles, duplicate IDs, missing capabilities, forbidden effects, bounded alternatives, and the invariant that a validated plan does not itself grant execution authority;
+- resource budgets for measured, unknown, RAM, disk and concurrency cases;
+- recovery byte identity, state identity, dependency fingerprint, invariant checks and journal validity;
+- equivalence evidence, independent verifier identity and denial of certification transport;
+- proof-bundle fail-closed behavior and the global gate binder's HOLD behavior when evidence is missing.
+
+This is **bounded conformance evidence**, not a universal proof of Python-to-Agda refinement. The mapping report deliberately preserves uncovered areas:
+
+| Formal module | Python correspondence status |
+|---|---|
+| `PlanSoundness.agda` | Partial bounded probes of planner guards; resource checks are separate and no theorem establishes the complete graph algorithm's refinement. |
+| `ResourceBudgetModel.agda` | Bounded tests of `evaluate_budget` decision boundaries; not every host or integer input. |
+| `RecoveryInvariant.agda` | Bounded positive and negative tests of `verify_restoration`; not production rollback. |
+| `EquivalenceTransport.agda` | Bounded probes of `validate_equivalence`; not a universal equivalence theorem. |
+| `ModelImplementationCorrespondence.agda` | Evidence-bundle and gate-admission probes only; no theorem proves correspondence between Python source semantics and Agda semantics. |
+| `ContractComposition.agda` | No exact one-to-one runtime composition theorem is established by this probe. |
+| `MigrationCoherence.agda` | Recovery tests do not establish a migration-coherence proof. |
+| `TaskAndStateModel.agda` | No direct refinement theorem to the persistent SQLite mission queue is established by this probe. |
 
 ## Certification boundary
 
-A successful type-check means Agda verified the exact files and proofs within their declared scope. It does not by itself demonstrate that the Python runtime is a complete refinement of the Agda model, that every Louksna axiom or G01–G24 condition has a theorem, or that production rollback, host mTLS or operational behavior is validated. The Cubical bridge does not prove global implementation equivalence.
+A successful G22/G23/G24 run certifies only its exact source and implementation manifests, the listed formal type-checks, and the finite probe observations declared in the certificate. It does **not** prove universal correctness, full implementation refinement, all Louksna axioms, all G01–G24 conditions, production mTLS, production rollback, canonical promotion or operational activation.
 
-The workflow is not activation authority. No canonical `Louksna.md`, protected V25 baseline, previous CUSTOSZV9 package bytes, certificate record, earlier G22/G23/G24 attestation or release artifact is changed by this workstream. Future claims must be bound to the exact source SHA and independently validated/certified.
+All new evidence is append-only. `Louksna.md`, `PUAC2.md`, the protected V25 baseline, the previous package artifact, its existing certificate, and earlier attestations remain unchanged. A new source commit must receive its own successful CI and trusted certification; certification is never inherited automatically.
