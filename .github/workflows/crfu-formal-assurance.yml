@@ -159,15 +159,45 @@ jobs:
           submit_method = methods.get("submit")
           assert submit_method and any(isinstance(n, ast.Constant) and isinstance(n.value, str) and n.value.startswith("INSERT INTO missions(mission_id,task_json,state,updated_at)") for n in ast.walk(submit_method)), "MISSION_INSERT_NOT_BOUND"
           assert any(isinstance(n, ast.Constant) and n.value == "RECEIVED" for n in ast.walk(submit_method)), "INITIAL_STATE_NOT_BOUND"
+
+          # Extract the runtime task schema as syntax, not by importing executable code.
+          model_source_path = pathlib.Path("custoszv9/crfu/model.py")
+          model_source_bytes = model_source_path.read_bytes()
+          model_tree = ast.parse(model_source_bytes.decode("utf-8"), filename=str(model_source_path))
+          required_assignments = [
+              node for node in model_tree.body
+              if isinstance(node, ast.Assign)
+              and any(name_is(target, "REQUIRED") for target in node.targets)
+          ]
+          assert len(required_assignments) == 1 and isinstance(required_assignments[0].value, ast.Tuple), "TASK_REQUIRED_NOT_LITERAL_TUPLE"
+          task_fields = []
+          for node in required_assignments[0].value.elts:
+              assert isinstance(node, ast.Constant) and isinstance(node.value, str) and node.value, "TASK_REQUIRED_FIELD_NOT_LITERAL"
+              task_fields.append(node.value)
+          assert len(task_fields) == len(set(task_fields)) == 24, "TASK_REQUIRED_FIELD_SET_INVALID"
+          task_class = next((n for n in model_tree.body if isinstance(n, ast.ClassDef) and n.name == "TaskContract"), None)
+          assert task_class is not None, "TASK_CONTRACT_CLASS_MISSING"
+          task_validate = next((n for n in task_class.body if isinstance(n, ast.FunctionDef) and n.name == "validate"), None)
+          assert task_validate is not None and any(name_is(n, "REQUIRED") for n in ast.walk(task_validate)), "TASK_VALIDATOR_NOT_BOUND_TO_REQUIRED"
+
           lines = [
               "{-# OPTIONS --safe --without-K #-}",
               "module PythonQueueTransitionsGenerated where",
               "open import Agda.Builtin.List using (List; []; _∷_)",
+              "open import Agda.Builtin.String using (String)",
               "open import TaskAndStateModel using (QueueEdge; queueEdge; " + "; ".join(constructors[x] for x in expected_states) + ")",
+              "",
+              "pythonRequiredTaskFields : List String",
+              "pythonRequiredTaskFields =",
+          ]
+          for index, field in enumerate(task_fields):
+              suffix = " ∷" if index + 1 < len(task_fields) else " ∷ []"
+              lines.append("  " + json.dumps(field, ensure_ascii=False) + suffix)
+          lines.extend([
               "",
               "pythonQueueTransitions : List QueueEdge",
               "pythonQueueTransitions =",
-          ]
+          ])
           for index, (src, dst) in enumerate(edge_rows):
               suffix = " ∷" if index + 1 < len(edge_rows) else " ∷ []"
               lines.append("  queueEdge " + constructors[src] + " " + constructors[dst] + suffix)
@@ -178,6 +208,11 @@ jobs:
               "runtime_source_path": source_path.as_posix(),
               "runtime_source_sha256": hashlib.sha256(source_bytes).hexdigest(),
               "runtime_source_size_bytes": len(source_bytes),
+              "task_model_source_path": model_source_path.as_posix(),
+              "task_model_source_sha256": hashlib.sha256(model_source_bytes).hexdigest(),
+              "task_model_source_size_bytes": len(model_source_bytes),
+              "task_required_field_count": len(task_fields),
+              "task_required_field_order": task_fields,
               "state_count": len(expected_states),
               "state_pair_domain_size": len(expected_states) ** 2,
               "allowed_transition_count": len(edge_rows),
@@ -213,13 +248,19 @@ jobs:
           report_path = pathlib.Path("evidence/runtime-transition-refinement.json")
           report = json.loads(report_path.read_text(encoding="utf-8"))
           proof_source = pathlib.Path("formal/crfu/ModelImplementationCorrespondence.agda").read_text(encoding="utf-8")
-          theorem = "sqlite-queue-transition-table-refines-exact-python-runtime"
-          if theorem in proof_source:
+          theorems = [
+              "sqlite-queue-transition-table-refines-exact-python-runtime",
+              "python-task-required-fields-refine-exact-python-runtime",
+          ]
+          checked = [name for name in theorems if name in proof_source]
+          report["agda_theorems_present"] = checked
+          if len(checked) == len(theorems):
               report["agda_proof_status"] = "TYPECHECKED_DEFINITIONAL_EQUALITY"
-              report["agda_theorem"] = theorem
+              report["agda_theorems"] = checked
               report["status"] = "PASS"
           else:
               report["agda_proof_status"] = "PENDING_MODEL_EQUALITY_THEOREM"
+              report["missing_agda_theorems"] = [name for name in theorems if name not in checked]
           report_path.write_text(json.dumps(report, sort_keys=True, indent=2) + "\n", encoding="utf-8")
           print(json.dumps(report, sort_keys=True, indent=2))
           PY
