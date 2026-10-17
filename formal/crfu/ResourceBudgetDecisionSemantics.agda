@@ -163,6 +163,4 @@ guards-imply-budget-pass :
   concurrencyWithinBudget b ≡ true ->
   budgetDecision b ≡ budgetPass
 guards-imply-budget-pass b valid measured ram disk concurrency
-  with budgetFieldsValid b | measurementComplete b | ramWithinBudget b
-     | diskWithinBudget b | concurrencyWithinBudget b
-... | true | true | true | true | true = refl
+  rewrite valid | measured | ram | disk | concurrency = refl
