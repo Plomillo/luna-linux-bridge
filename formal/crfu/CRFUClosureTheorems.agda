@@ -2,11 +2,10 @@
 module CRFUClosureTheorems where
 
 open import Agda.Builtin.Bool using (true; false)
-open import Agda.Builtin.Empty using (⊥)
 open import Agda.Builtin.Equality using (_≡_; refl)
 open import Agda.Builtin.Nat using (Nat)
 open import Agda.Builtin.String using (String)
-open import FalseElimination using (false-not-true; void-elim)
+open import FalseElimination using (Void; false-not-true; void-elim)
 open import PlanSoundness using (PlanEvidence; planEvidence; planAdmissible)
 open import ContractComposition using
   ( ContractEvidence; contractEvidence; contractComposable )
@@ -184,7 +183,7 @@ data _↦_ : TaskPhase -> TaskPhase -> Set where
   failed-to-rolled-back : failed ↦ rolledBack
 
 completed-has-no-outgoing-transition :
-  {next : TaskPhase} -> completed ↦ next -> ⊥
+  {next : TaskPhase} -> completed ↦ next -> Void
 completed-has-no-outgoing-transition ()
 
 rolled-back-has-no-outgoing-transition :
