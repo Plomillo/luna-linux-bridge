@@ -3,7 +3,7 @@ module ResourceBudgetDecisionSemantics where
 
 open import Agda.Builtin.Bool using (Bool; true; false)
 open import Agda.Builtin.Equality using (_≡_; refl)
-open import Agda.Builtin.Nat using (Nat; _-_; _<_)
+open import Agda.Builtin.Nat using (Nat; _-_; _+_; _<_)
 open import FalseElimination using (Void; false-not-true; void-elim)
 
 notBool : Bool -> Bool
@@ -32,8 +32,9 @@ record BudgetInput : Set where
     cpuCount requestedConcurrency : Nat
 open BudgetInput
 
--- Exact arithmetic predicates in custoszv9/crfu/resources.py:evaluate_budget.
--- Nat subtraction is truncated at zero, matching max(0, available - reserved).
+-- Available RAM after the reported reserve, retained for diagnostics.
+-- Admission itself uses the strict source-level predicate below, so over-reservation
+-- cannot pass merely because truncated subtraction yields zero.
 usableRam : BudgetInput -> Nat
 usableRam b = ramAvailable b - ramReserved b
 
@@ -47,10 +48,10 @@ measurementComplete b =
   ramKnown b andB (diskKnown b andB (cpuKnown b andB confidenceMeasured b))
 
 ramWithinBudget : BudgetInput -> Bool
-ramWithinBudget b = notBool (usableRam b < ramRequired b)
+ramWithinBudget b = ramRequired b + ramReserved b < ramAvailable b
 
 diskWithinBudget : BudgetInput -> Bool
-diskWithinBudget b = notBool (diskAvailable b < diskRequired b)
+diskWithinBudget b = diskRequired b < diskAvailable b
 
 concurrencyWithinBudget : BudgetInput -> Bool
 concurrencyWithinBudget b =
