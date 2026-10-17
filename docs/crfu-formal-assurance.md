@@ -48,3 +48,12 @@ HoTT/univalence is not used to prove global equivalence of the Python runtime. T
 The only valid success transition for this scope is a new, fully source-bound G22/G23/G24 result with the exact formal and runtime manifests, 35 successful observations, verified G23 Sigstore attestation, G24 certificate, and verified G24 certificate attestation. Otherwise the outcome remains HOLD or FAIL and must be preserved as such.
 
 The package's separate certification remains true for its declared standalone scope. Canonical promotion remains `NOT_AUTHORIZED`; operational authorization remains `NOT_GRANTED`. This workflow cannot alter or widen those decisions. All records are append-only, and all previous artifacts/certificates/attestations remain unchanged.
+
+
+## 6. Audit trail — first fixed-V9 formal root attempt and signer-path correction
+
+For formal source commit `e1e6b7d7eb6cab612f57b0296826ddb6fccf0f2b`, the producer CI passed [run 38987066276](https://github.com/Plomillo/luna-linux-bridge/actions/runs/38987066276). G22 and G23 also passed in trusted root run [38987092981](https://github.com/Plomillo/luna-linux-bridge/actions/runs/38987092981), and the independent runtime probe produced exactly 35 observations with 35 PASS and zero failures. The implementation manifest SHA-256 was `6bb3f969724c0324bf0ae4af946c1a76ef04cdd3a2a42a5919c8860c4ad2e9d5`; the trusted probe SHA-256 was `38accf4eb13ac76b5886f84bfc458e9ca6192dfe07abbf9f6fa4aaa6f1c00fb8`. The formal-source manifest SHA-256 remained `9aa27f9b09f7777bb34db22e6166189504e663d9b1b1ae59245849e719ffe76f`.
+
+G24 failed closed because the new workflow used the old workflow path when verifying the G23 Sigstore attestation and when verifying the G24 certificate attestation. The recorded error was `Error: verifying with issuer "sigstore.dev"`; no new formal certificate was accepted from that run. The source model and all 35 probes had passed; this was a trusted-root signer-identity configuration defect, not a type-checking or runtime-probe failure.
+
+The correction is merged in [PR #77](https://github.com/Plomillo/luna-linux-bridge/pull/77), merge commit `eebd268c3fd7648b832814daa1b0fb6afbd3ad46`. Both verification commands now name the exact fixed-V9 root, `.github/workflows/crfu-formal-v9fix-trusted-g22-g23-g24.yml`. Signature verification was retained; there is no bypass and no inherited certification. A new formal-source commit and a fresh G22/G23/G24 run are required to verify that correction and issue a new certificate.
