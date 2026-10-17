@@ -5,6 +5,8 @@ open import Agda.Builtin.Bool using (Bool; true; false)
 open import Agda.Builtin.Equality using (_≡_; refl)
 open import Agda.Builtin.Nat using (Nat; _-_; _+_; _<_)
 open import FalseElimination using (Void; false-not-true; void-elim)
+open import ResourceBudgetModel using (ResourceNeed; resourceNeed)
+open import ResourceBudgetRuntimeSemantics using (ramSufficientRuntimeSemantics; diskSufficientRuntimeSemantics)
 
 notBool : Bool -> Bool
 notBool false = true
@@ -165,3 +167,23 @@ guards-imply-budget-pass :
   budgetDecision b ≡ budgetPass
 guards-imply-budget-pass b valid measured ram disk concurrency
   rewrite valid | measured | ram | disk | concurrency = refl
+
+-- Exact bridge between the runtime-decision input and the shared strict
+-- ResourceNeed model. These are definitional equalities, not sampled tests.
+toResourceNeed : BudgetInput -> ResourceNeed
+toResourceNeed b = resourceNeed
+  (ramRequired b)
+  (ramReserved b)
+  (ramAvailable b)
+  (diskRequired b)
+  (diskAvailable b)
+
+ram-guard-exactly-matches-resource-model :
+  (b : BudgetInput) ->
+  ramWithinBudget b ≡ ramSufficientRuntimeSemantics (toResourceNeed b)
+ram-guard-exactly-matches-resource-model b = refl
+
+disk-guard-exactly-matches-resource-model :
+  (b : BudgetInput) ->
+  diskWithinBudget b ≡ diskSufficientRuntimeSemantics (toResourceNeed b)
+disk-guard-exactly-matches-resource-model b = refl
