@@ -625,5 +625,69 @@ class CRFUTests(unittest.TestCase):
         self.assertFalse(result["external_host_operations"])
         self.assertEqual(result["certification"], "NOT_GRANTED_BY_SELFTEST")
 
+
+    def test_runtime_resource_decision_matches_formal_predicates_on_bounded_domain(self):
+        """Exhaustively check the Agda-aligned guards on a finite input domain.
+
+        This is bounded differential regression evidence, not a universal proof that
+        arbitrary Python execution refines the Agda model. The universal bridge remains
+        an explicit assurance obligation and must not be certified from finite tests.
+        """
+        from itertools import product
+
+        checked = 0
+        for (
+            ram_required,
+            ram_reserved,
+            ram_available,
+            disk_required,
+            disk_available,
+            cpu_count,
+            concurrency,
+        ) in product(range(4), repeat=7):
+            snapshot = self._measured_snapshot(
+                ram=ram_available,
+                disk=disk_available,
+                cpu=cpu_count,
+            )
+            result = evaluate_budget(
+                ResourceBudget(
+                    ram_required,
+                    ram_reserved,
+                    disk_required,
+                    concurrency,
+                ),
+                snapshot,
+            )
+
+            # Direct correspondence to the normalized Agda guard predicates:
+            # requiredRam + reservedRam < availableRam;
+            # requiredDisk < availableDisk;
+            # 1 <= concurrency <= max(1, cpuCount).
+            formal_guards = (
+                ram_required + ram_reserved < ram_available
+                and disk_required < disk_available
+                and concurrency >= 1
+                and concurrency <= max(1, cpu_count)
+            )
+            expected = "PASS" if formal_guards else "FAIL"
+            self.assertEqual(
+                result["status"],
+                expected,
+                msg=(
+                    "runtime/formal-guard status mismatch",
+                    ram_required,
+                    ram_reserved,
+                    ram_available,
+                    disk_required,
+                    disk_available,
+                    cpu_count,
+                    concurrency,
+                ),
+            )
+            checked += 1
+
+        self.assertEqual(checked, 4**7)
+
 if __name__=="__main__":
     unittest.main()
