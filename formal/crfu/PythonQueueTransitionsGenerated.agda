@@ -1,6 +1,5 @@
 {-# OPTIONS --safe --without-K #-}
 module PythonQueueTransitionsGenerated where
-
 open import Agda.Builtin.List using (List; []; _∷_)
 open import Agda.Builtin.String using (String)
 open import RuntimeDerivedQueueModel using (QueueEdge; queueEdge; received; preflight; ready; running; waitingForEvent; checkpointed; validating; recovering; completed; failed; blocked; denied)
@@ -30,8 +29,7 @@ pythonRequiredTaskFields =
   "checkpoint_reference" ∷
   "rollback_strategy" ∷
   "completion_condition" ∷
-  "escalation_condition" ∷
-  []
+  "escalation_condition" ∷ []
 
 pythonQueueTransitions : List QueueEdge
 pythonQueueTransitions =
@@ -64,5 +62,4 @@ pythonQueueTransitions =
   queueEdge validating blocked ∷
   queueEdge recovering running ∷
   queueEdge recovering blocked ∷
-  queueEdge recovering failed ∷
-  []
+  queueEdge recovering failed ∷ []
