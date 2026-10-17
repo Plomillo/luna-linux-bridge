@@ -5,58 +5,63 @@ open import Agda.Builtin.Bool using (true; false)
 open import Agda.Builtin.Equality using (_≡_; refl)
 open import FalseElimination using (false-not-true; void-elim)
 open import RecoveryInvariant
-open RestoreEvidence
 
 restore-bytes-necessary :
   (r : RestoreEvidence) ->
   restorationProven r ≡ true ->
-  bytesMatch r ≡ true
-restore-bytes-necessary r pass with bytesMatch r
-... | false = void-elim (false-not-true pass)
-... | true = refl
+  RestoreEvidence.bytesMatch r ≡ true
+restore-bytes-necessary (restoreEvidence false i d v j) pass =
+  void-elim (false-not-true pass)
+restore-bytes-necessary (restoreEvidence true i d v j) pass = refl
 
 restore-identity-necessary :
   (r : RestoreEvidence) ->
   restorationProven r ≡ true ->
-  identityMatches r ≡ true
-restore-identity-necessary r pass with bytesMatch r | identityMatches r
-... | false | _ = void-elim (false-not-true pass)
-... | true | false = void-elim (false-not-true pass)
-... | true | true = refl
+  RestoreEvidence.identityMatches r ≡ true
+restore-identity-necessary (restoreEvidence false i d v j) pass =
+  void-elim (false-not-true pass)
+restore-identity-necessary (restoreEvidence true false d v j) pass =
+  void-elim (false-not-true pass)
+restore-identity-necessary (restoreEvidence true true d v j) pass = refl
 
 restore-dependencies-necessary :
   (r : RestoreEvidence) ->
   restorationProven r ≡ true ->
-  dependenciesMatch r ≡ true
-restore-dependencies-necessary r pass
-  with bytesMatch r | identityMatches r | dependenciesMatch r
-... | false | _ | _ = void-elim (false-not-true pass)
-... | true | false | _ = void-elim (false-not-true pass)
-... | true | true | false = void-elim (false-not-true pass)
-... | true | true | true = refl
+  RestoreEvidence.dependenciesMatch r ≡ true
+restore-dependencies-necessary (restoreEvidence false i d v j) pass =
+  void-elim (false-not-true pass)
+restore-dependencies-necessary (restoreEvidence true false d v j) pass =
+  void-elim (false-not-true pass)
+restore-dependencies-necessary (restoreEvidence true true false v j) pass =
+  void-elim (false-not-true pass)
+restore-dependencies-necessary (restoreEvidence true true true v j) pass = refl
 
 restore-invariants-necessary :
   (r : RestoreEvidence) ->
   restorationProven r ≡ true ->
-  invariantsPass r ≡ true
-restore-invariants-necessary r pass
-  with bytesMatch r | identityMatches r | dependenciesMatch r | invariantsPass r
-... | false | _ | _ | _ = void-elim (false-not-true pass)
-... | true | false | _ | _ = void-elim (false-not-true pass)
-... | true | true | false | _ = void-elim (false-not-true pass)
-... | true | true | true | false = void-elim (false-not-true pass)
-... | true | true | true | true = refl
+  RestoreEvidence.invariantsPass r ≡ true
+restore-invariants-necessary (restoreEvidence false i d v j) pass =
+  void-elim (false-not-true pass)
+restore-invariants-necessary (restoreEvidence true false d v j) pass =
+  void-elim (false-not-true pass)
+restore-invariants-necessary (restoreEvidence true true false v j) pass =
+  void-elim (false-not-true pass)
+restore-invariants-necessary (restoreEvidence true true true false j) pass =
+  void-elim (false-not-true pass)
+restore-invariants-necessary (restoreEvidence true true true true j) pass = refl
 
 restore-journal-necessary :
   (r : RestoreEvidence) ->
   restorationProven r ≡ true ->
-  journalPass r ≡ true
-restore-journal-necessary r pass
-  with bytesMatch r | identityMatches r | dependenciesMatch r
-     | invariantsPass r | journalPass r
-... | false | _ | _ | _ | _ = void-elim (false-not-true pass)
-... | true | false | _ | _ | _ = void-elim (false-not-true pass)
-... | true | true | false | _ | _ = void-elim (false-not-true pass)
-... | true | true | true | false | _ = void-elim (false-not-true pass)
-... | true | true | true | true | false = void-elim (false-not-true pass)
-... | true | true | true | true | true = refl
+  RestoreEvidence.journalPass r ≡ true
+restore-journal-necessary (restoreEvidence false i d v j) pass =
+  void-elim (false-not-true pass)
+restore-journal-necessary (restoreEvidence true false d v j) pass =
+  void-elim (false-not-true pass)
+restore-journal-necessary (restoreEvidence true true false v j) pass =
+  void-elim (false-not-true pass)
+restore-journal-necessary (restoreEvidence true true true false j) pass =
+  void-elim (false-not-true pass)
+restore-journal-necessary (restoreEvidence true true true true false) pass =
+  void-elim (false-not-true pass)
+restore-journal-necessary (restoreEvidence true true true true true) pass = refl
