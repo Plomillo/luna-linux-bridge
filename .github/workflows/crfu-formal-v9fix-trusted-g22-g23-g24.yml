@@ -594,7 +594,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: crfu-formal-certified-scope-${{ env.CANDIDATE_SHA }}
+          name: crfu-formal-certified-scope-${{ env.CANDIDATE_SHA }}-attempt-${{ github.run_attempt }}
           path: |
             ${{ runner.temp }}/g22/G22.json
             ${{ runner.temp }}/g23/CRFU_G23.json
