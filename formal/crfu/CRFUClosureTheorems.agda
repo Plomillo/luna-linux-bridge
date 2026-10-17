@@ -15,8 +15,8 @@ open import RecoveryInvariant using
   ( RestoreEvidence; restoreEvidence; restorationProven )
 open import EquivalenceTransport using
   ( EquivalenceClaim; equivalenceClaim; equivalenceAdmissible )
-open import TaskAndStateModel using
-  ( taskState; executeNextAction; holdForEvidence; decide )
+open import TaskAndStateModelV2 using
+  ( taskState; executeNextAction; holdForEvidence; denyForbiddenAction; decide )
 
 -- Sufficiency theorems complement the existing necessity lemmas. Together
 -- they characterize acceptance of each Boolean guard, rather than merely
@@ -155,15 +155,15 @@ equivalence-all-guards-true-imply-admissible :
 equivalence-all-guards-true-imply-admissible
   (equivalenceClaim true true true true) refl refl refl refl = refl
 
--- The current two-branch decision function has exact, checked equations.
+-- The versioned decision model has checked safe, hold, and deny equations.
 execute-when-preconditions-are-satisfied :
   (taskId : String) -> (revision : Nat) ->
-  decide (taskState taskId revision true) ≡ executeNextAction
+  decide (taskState taskId revision true false) ≡ executeNextAction
 execute-when-preconditions-are-satisfied _ _ = refl
 
 hold-when-preconditions-are-missing :
   (taskId : String) -> (revision : Nat) ->
-  decide (taskState taskId revision false) ≡ holdForEvidence
+  decide (taskState taskId revision false false) ≡ holdForEvidence
 hold-when-preconditions-are-missing _ _ = refl
 
 -- Explicit lifecycle relation for the intended transition contract. Terminal
@@ -189,3 +189,13 @@ completed-has-no-outgoing-transition ()
 rolled-back-has-no-outgoing-transition :
   {next : TaskPhase} -> rolledBack ↦ next -> Void
 rolled-back-has-no-outgoing-transition ()
+
+forbidden-action-denied-with-ready-preconditions :
+  (taskId : String) -> (revision : Nat) ->
+  decide (taskState taskId revision true true) ≡ denyForbiddenAction
+forbidden-action-denied-with-ready-preconditions _ _ = refl
+
+forbidden-action-denied-with-missing-preconditions :
+  (taskId : String) -> (revision : Nat) ->
+  decide (taskState taskId revision false true) ≡ denyForbiddenAction
+forbidden-action-denied-with-missing-preconditions _ _ = refl
