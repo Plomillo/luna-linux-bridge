@@ -120,7 +120,7 @@ def main() -> int:
             "authorization_evidence_reference": "auth-evidence-1",
         }
 
-    def good_snapshot():
+    def coordinator_snapshot():
         return ResourceSnapshot(
             ram_available_bytes=10000,
             disk_available_bytes=20000,
@@ -395,7 +395,7 @@ def main() -> int:
         return run_bounded_mission(
             task_value(),
             [action("action-1")],
-            good_snapshot(),
+            coordinator_snapshot(),
             available_capabilities=set(),
             admissible_effects=set(),
             authorization_verifier=authorization_verifier,
