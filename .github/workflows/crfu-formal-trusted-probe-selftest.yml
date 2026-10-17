@@ -1,0 +1,94 @@
+name: Trusted formal conformance probe self-test
+
+on:
+  push:
+    branches:
+      - "feature/custoszv9-trusted-runtime-conformance-*"
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/crfu-formal-v9fix-trusted-g22-g23-g24.yml"
+      - ".github/workflows/crfu-formal-trusted-probe-selftest.yml"
+      - "scripts/crfu_formal_conformance_probe.py"
+
+permissions:
+  contents: read
+
+jobs:
+  probe-selftest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout proposed trusted validator
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Checkout exact certified runtime source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: badd87ddee1a2a00cfcb9b1b54df139cdeda8a59
+          path: runtime-source
+          persist-credentials: false
+      - name: Set up pinned Python
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.12"
+      - name: Construct an exact-hash no-secret G22 fixture
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import hashlib, importlib.util, json, pathlib
+          module_path=pathlib.Path("scripts/crfu_formal_conformance_probe.py")
+          spec=importlib.util.spec_from_file_location("probe_under_test",module_path)
+          probe=importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(probe)
+          root=pathlib.Path("runtime-source")
+          entries=[]
+          for rel in sorted(probe.IMPLEMENTATION_PATHS):
+              path=root/rel
+              raw=path.read_bytes()
+              digest=hashlib.sha256(raw).hexdigest()
+              entries.append({"path":rel,"bytes":len(raw),"sha256":digest,"baseline_sha256":digest})
+          g22={
+              "schema":"CRFU_FORMAL_G22/1.0",
+              "status":"PASS",
+              "candidate_formal_source_commit":"badd87ddee1a2a00cfcb9b1b54df139cdeda8a59",
+              "baseline_candidate_commit":"badd87ddee1a2a00cfcb9b1b54df139cdeda8a59",
+              "implementation_files":entries
+          }
+          pathlib.Path("G22-selftest.json").write_text(json.dumps(g22,sort_keys=True,indent=2)+"\n",encoding="utf-8")
+          print(json.dumps({"status":"FIXTURE_CREATED","bound_files":len(entries)},indent=2))
+          PY
+      - name: Execute all finite conformance probes against the pinned runtime
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 scripts/crfu_formal_conformance_probe.py \
+            --source-root "$GITHUB_WORKSPACE/runtime-source" \
+            --candidate-sha badd87ddee1a2a00cfcb9b1b54df139cdeda8a59 \
+            --baseline-sha badd87ddee1a2a00cfcb9b1b54df139cdeda8a59 \
+            --g22 G22-selftest.json \
+            --out G23-selftest.json
+          python3 - <<'PY'
+          import json,pathlib
+          report=json.loads(pathlib.Path("G23-selftest.json").read_text(encoding="utf-8"))
+          assert report["status"]=="PASS_BOUNDED_CONFORMANCE",report
+          assert report["checks_passed"]==42,report
+          assert report["checks_failed"]==0,report
+          assert len(report["observations"])==42,report
+          assert all(row["status"]=="PASS" for row in report["observations"]),report
+          assert not [row["formal_module"] for row in report["mapping"] if row["coverage"].startswith("NOT_")],report
+          print(json.dumps({"status":report["status"],"checks_passed":report["checks_passed"],"checks_failed":report["checks_failed"],"unmapped_formal_modules":[]},indent=2))
+          PY
+      - name: Preserve self-test output
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: trusted-formal-probe-selftest-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            G22-selftest.json
+            G23-selftest.json
+          if-no-files-found: warn
+          retention-days: 30

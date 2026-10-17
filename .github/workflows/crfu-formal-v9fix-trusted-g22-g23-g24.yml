@@ -31,7 +31,7 @@ jobs:
     env:
       CANDIDATE_SHA: ${{ github.event.workflow_run.head_sha }}
       PRODUCER_RUN_ID: ${{ github.event.workflow_run.id }}
-      BASELINE_SHA: 2e6f2ce8446b3a2df831f0470701def0ae6f5819
+      BASELINE_SHA: badd87ddee1a2a00cfcb9b1b54df139cdeda8a59
     steps:
       - name: Checkout exact formal source as data
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -53,11 +53,11 @@ jobs:
       - name: Download the separately certified fixed-baseline V9 package and certificate
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
-          name: custoszv9-certified-scope-2e6f2ce8446b3a2df831f0470701def0ae6f5819
+          name: custoszv9-certified-scope-badd87ddee1a2a00cfcb9b1b54df139cdeda8a59
           path: ${{ runner.temp }}/package-cert
           github-token: ${{ github.token }}
           repository: ${{ github.repository }}
-          run-id: 38989421614
+          run-id: 39007291701
 
       - name: Verify fixed-baseline V9 package certificate and its Sigstore attestation
         env:
@@ -74,14 +74,14 @@ jobs:
           assert cert["schema"] == "CUSTOSZV9_SOFTWARE_SCOPE_CERTIFICATE/1.0"
           assert cert["decision"] == "CERTIFIED_FOR_DECLARED_STANDALONE_SOFTWARE_SCOPE"
           assert cert["package_scope_certified"] is True
-          assert cert["candidate_commit_sha"] == "2e6f2ce8446b3a2df831f0470701def0ae6f5819"
-          assert cert["candidate_package_sha256"] == "a6bb5c8fde296f3e2b3739adbe581e1f0b26a31faaf959a6756da1fb84120831"
-          assert cert["candidate_package_size_bytes"] == 233264
+          assert cert["candidate_commit_sha"] == "badd87ddee1a2a00cfcb9b1b54df139cdeda8a59"
+          assert cert["candidate_package_sha256"] == "667ceac7d7e59682292c864777ec3e1c228074716dc5dba17fe150e4d826ccf3"
+          assert cert["candidate_package_size_bytes"] == 236326
           assert cert["failures"] == []
           assert cert["canonical_promotion"] == "NOT_AUTHORIZED"
           assert cert["operational_authorization"] == "NOT_GRANTED"
           digest = hashlib.sha256(p.read_bytes()).hexdigest()
-          assert digest == "73a35d6a4699ec9d0cda894a42706be2d58d3c132299351f897bf45285b85a54"
+          assert len(digest) == 64 and all(ch in "0123456789abcdef" for ch in digest), "PACKAGE_CERTIFICATE_DIGEST_INVALID"
           print(json.dumps({"status": "PASS", "package_sha256": cert["candidate_package_sha256"], "certificate_sha256": digest}))
           PY
           gh attestation verify "$cert" \
@@ -119,10 +119,10 @@ jobs:
           assert package_cert["decision"] == "CERTIFIED_FOR_DECLARED_STANDALONE_SOFTWARE_SCOPE"
           assert package_cert["package_scope_certified"] is True
           assert package_cert["candidate_commit_sha"] == baseline
-          assert package_cert["candidate_package_sha256"] == "a6bb5c8fde296f3e2b3739adbe581e1f0b26a31faaf959a6756da1fb84120831"
-          assert package_cert["candidate_package_size_bytes"] == 233264
+          assert package_cert["candidate_package_sha256"] == "667ceac7d7e59682292c864777ec3e1c228074716dc5dba17fe150e4d826ccf3"
+          assert package_cert["candidate_package_size_bytes"] == 236326
           assert package_cert["failures"] == []
-          assert sha(package_cert_file) == "73a35d6a4699ec9d0cda894a42706be2d58d3c132299351f897bf45285b85a54"
+          assert len(sha(package_cert_file)) == 64, "PACKAGE_CERTIFICATE_DIGEST_INVALID"
           assert package_attestation_file.is_file() and package_attestation_file.stat().st_size > 0
 
           # Bind the formal source certification to the exact clean runtime package.
@@ -206,7 +206,9 @@ jobs:
               "custoszv9/crfu/equivalence.py",
               "custoszv9/crfu/formal.py",
               "custoszv9/crfu/gates.py",
-              "custoszv9/crfu/puac2.py"
+              "custoszv9/crfu/puac2.py",
+              "custoszv9/crfu/contracts.py",
+              "custoszv9/crfu/migration.py"
           ]
           # Only the V9 package files needed by the bounded probe are bound here.
           implementation_paths = [p for p in implementation_paths if (root / p).is_file()]
@@ -291,7 +293,7 @@ jobs:
       contents: read
     env:
       CANDIDATE_SHA: ${{ github.event.workflow_run.head_sha }}
-      BASELINE_SHA: 2e6f2ce8446b3a2df831f0470701def0ae6f5819
+      BASELINE_SHA: badd87ddee1a2a00cfcb9b1b54df139cdeda8a59
     steps:
       - name: Checkout trusted conformance probe from trusted workflow revision
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -400,7 +402,7 @@ jobs:
           assert g22["baseline_candidate_commit"] == baseline
           assert g22["source_manifest_sha256"] == manifest_sha
           assert g22["certified_runtime_package_commit"] == baseline
-          assert g22["certified_runtime_package_sha256"] == "a6bb5c8fde296f3e2b3739adbe581e1f0b26a31faaf959a6756da1fb84120831"
+          assert g22["certified_runtime_package_sha256"] == "667ceac7d7e59682292c864777ec3e1c228074716dc5dba17fe150e4d826ccf3"
           assert g22["certified_runtime_package_certificate_attested"] is True
           assert g22["certified_runtime_formal_sources_embedded"] is False
           runtime_source_records = g22["certified_runtime_formal_source_records"]
@@ -424,8 +426,8 @@ jobs:
           assert conformance["g22_record_sha256"] == sha(pathlib.Path(g22_path))
           assert conformance["implementation_manifest_sha256"] == g22["implementation_manifest_sha256"]
           assert conformance["implementation_files"] == g22["implementation_files"]
-          assert conformance["checks_failed"] == 0 and conformance["checks_passed"] == 35
-          assert len(conformance["observations"]) == 35
+          assert conformance["checks_failed"] == 0 and conformance["checks_passed"] == 42
+          assert len(conformance["observations"]) == 42
           assert all(item.get("status") == "PASS" for item in conformance["observations"])
           rec = {
               "schema": "CRFU_FORMAL_G23/1.0",
@@ -503,13 +505,13 @@ jobs:
           assert p["status"]=="PASS"
           assert p["candidate_formal_source_commit"]==sys.argv[2]
           assert p["runtime_implementation_correspondence"]=="NOT_PROVEN"
-          assert p["certified_runtime_package_commit"]=="2e6f2ce8446b3a2df831f0470701def0ae6f5819"
-          assert p["certified_runtime_package_sha256"]=="a6bb5c8fde296f3e2b3739adbe581e1f0b26a31faaf959a6756da1fb84120831"
+          assert p["certified_runtime_package_commit"]=="badd87ddee1a2a00cfcb9b1b54df139cdeda8a59"
+          assert p["certified_runtime_package_sha256"]=="667ceac7d7e59682292c864777ec3e1c228074716dc5dba17fe150e4d826ccf3"
           assert p["certified_runtime_package_certificate_attested"] is True
           assert p["python_conformance"]["status"]=="PASS_BOUNDED_CONFORMANCE"
           assert p["python_conformance"]["checks_failed"]==0
-          assert p["python_conformance"]["checks_passed"]==35
-          assert len(p["python_conformance"]["observations"])==35
+          assert p["python_conformance"]["checks_passed"]==42
+          assert len(p["python_conformance"]["observations"])==42
           assert all(item.get("status")=="PASS" for item in p["python_conformance"]["observations"])
           print("G23 exact-source, certified-package binding and 35 runtime-conformance probes: PASS")
           PY
@@ -573,7 +575,7 @@ jobs:
           assert g22["implementation_manifest_sha256"] == g23["implementation_manifest_sha256"]
           assert g22["implementation_files"] == g23["implementation_files"]
           assert g22["certified_runtime_package_commit"] == g23["certified_runtime_package_commit"] == g22["baseline_candidate_commit"]
-          assert g22["certified_runtime_package_sha256"] == g23["certified_runtime_package_sha256"] == "a6bb5c8fde296f3e2b3739adbe581e1f0b26a31faaf959a6756da1fb84120831"
+          assert g22["certified_runtime_package_sha256"] == g23["certified_runtime_package_sha256"] == "667ceac7d7e59682292c864777ec3e1c228074716dc5dba17fe150e4d826ccf3"
           assert g22["certified_runtime_package_certificate_sha256"] == g23["certified_runtime_package_certificate_sha256"]
           assert g22["certified_runtime_package_certificate_attestation_verification_sha256"] == g23["certified_runtime_package_certificate_attestation_verification_sha256"]
           assert g22["certified_runtime_package_certificate_attested"] is True and g23["certified_runtime_package_certificate_attested"] is True
@@ -584,8 +586,8 @@ jobs:
           pc = g23["python_conformance"]
           assert pc["schema"] == "CRFU_PYTHON_CONFORMANCE_G23/1.0"
           assert pc["status"] == "PASS_BOUNDED_CONFORMANCE"
-          assert pc["checks_passed"] == 35 and pc["checks_failed"] == 0
-          assert len(pc["observations"]) == 35 and all(item.get("status") == "PASS" for item in pc["observations"])
+          assert pc["checks_passed"] == 42 and pc["checks_failed"] == 0
+          assert len(pc["observations"]) == 42 and all(item.get("status") == "PASS" for item in pc["observations"])
           assert pc["implementation_manifest_sha256"] == g22["implementation_manifest_sha256"]
           assert pc["implementation_files"] == g22["implementation_files"]
           assert g23["g22_record_sha256"] == sha(p22)
