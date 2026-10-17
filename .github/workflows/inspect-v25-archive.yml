@@ -69,7 +69,7 @@ jobs:
           set -e
           printf 'listing_exit_code=%s\narchive_test_exit_code=%s\nextraction_exit_code=%s\n' "$listing_rc" "$test_rc" "$extraction_rc" | tee evidence/v25-archive/archive-operation-status.txt
           python3 - "$extract" "$listing_rc" "$test_rc" "$extraction_rc" <<'PY'
-          import hashlib, json, pathlib, sys
+          import hashlib, json, os, pathlib, sys
           root = pathlib.Path(sys.argv[1])
           listing_rc, test_rc, extraction_rc = map(int, sys.argv[2:])
           exact_name = "LUNACORE_final_formalized_v25.md"
@@ -90,7 +90,7 @@ jobs:
               status = "ARCHIVE_READABLE; EXACT_V25_BASELINE_NOT_FOUND"
           report = {
               "schema": "V25_ARCHIVE_DISCOVERY/1.0",
-              "repository_commit": pathlib.Path(".git/HEAD").read_text().strip(),
+              "repository_commit": os.environ.get("GITHUB_SHA", "UNKNOWN"),
               "archive_listing_exit_code": listing_rc,
               "archive_test_exit_code": test_rc,
               "archive_extraction_exit_code": extraction_rc,
@@ -105,7 +105,7 @@ jobs:
 
       - name: Upload archive-discovery evidence only
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b974a628896c90dbdf5c8093
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: v25-archive-discovery-${{ github.sha }}
           path: evidence/v25-archive/
