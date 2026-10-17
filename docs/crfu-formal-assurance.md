@@ -1,0 +1,50 @@
+# CRFU formal assurance — fixed V9 baseline and bounded runtime conformance
+
+## 1. Exact scope and no-regression rule
+
+This branch applies the already type-checked formal CRFU model to the separately certified, corrected CUSTOSZV9 runtime baseline. All claims in the resulting certificate must be bound to the exact formal source commit, formal-source manifest, implementation-file manifest, and package certificate. This branch is additive and does not modify the prior CUSTOSZV9 package, any previous certificate or attestation, `Louksna.md`, `PUAC2.md`, or canonical authority.
+
+**Fixed runtime baseline:** `bd400d8cdd57a662940733f15e6ad3189e579ed2`.
+
+**Separately certified package:** commit `bd400d8cdd57a662940733f15e6ad3189e579ed2`, package SHA-256 `db313bfb8dc409579f39dcb75ef873577386de8c29df0a1e09f8365d39946f36`, size 236,656 bytes. Its independent G22/G23/G24 decision is `CERTIFIED_FOR_DECLARED_STANDALONE_SOFTWARE_SCOPE`; its certificate JSON SHA-256 is `f0694fc78e7f50e6a96fd55e989695067bb1b11d180a1eba5f8d9e49663741b0`, with Sigstore attestation at https://github.com/Plomillo/luna-linux-bridge/attestations/56853117.
+
+This package certificate does not authorize canonical promotion or operational activation. The formal assurance workflow independently downloads that certificate and evidence bundle, verifies the certificate fields, hash and Sigstore attestation, then records those identities in its own G22/G23/G24 evidence. A prior package certificate is evidence of that package only; it is not propagated to the formal scope.
+
+## 2. Formal verification
+
+The formal modules in this branch preserve the already compiler-checked 13 Agda source files. CI uses Agda 2.8.0.2 and the official Cubical Agda v0.9 release, checks both archive SHA-256 digests before use, type-checks every `formal/crfu/*.agda` with `--safe --without-K`, and type-checks `formal/cubical/CRFUUnivalenceBridge.agda` with `--cubical --safe --guardedness`.
+
+The previous independent source verification was successfully certified for commit `99415a02c363747a2adc2404780dc6571cce8ac8` against the previous V9 source baseline. Its formal manifest SHA-256 was `9aa27f9b09f7777bb34db22e6166189504e663d9b1b1ae59245849e719ffe76f`. This new branch has a different runtime baseline and must receive its own fresh compiler execution, G22 source binding, G23 independent verification and G24 certification. It does not inherit the previous result automatically.
+
+The corrected runtime addition to `TaskContract` exposes its validated source-state hash to the coordinator. That correction is included in the separately certified fixed-baseline package above. The earlier 35-probe attempt against the old baseline caught the missing property and failed closed; the failed run remains an audit record and is not treated as a pass.
+
+## 3. Independently checked finite runtime conformance
+
+The trusted G22/G23/G24 workflow checks that the selected runtime files are byte-identical to the fixed baseline commit and that their manifest hashes remain the same across G22 and G23. G23 runs a trusted probe sourced from the default-branch workflow revision in a secret-free clean runner, not from the candidate branch.
+
+The expanded suite has 35 planned observations. It covers planner positive/negative cases, resource boundaries, restoration invariants, equivalence-scope constraints, proof-bundle HOLD, missing global gate evidence, typed TaskContract validation, coordinator authorization/resource/adapter gates, bounded successful coordinator execution without certification propagation, persistent SQLite mission idempotency and conflicts, allowed/forbidden state transitions, event hash-chain verification, and condition-specific deadline-bounded wait resumption.
+
+**Certification status:** the 35-observation extended suite must not be called certified until its new producer run and trusted G22/G23/G24 chain complete successfully for this exact candidate. Any failing or missing observation keeps G23/G24 blocked. The previously certified 25-observation scope remains separate evidence and is not a substitute for this new run.
+
+## 4. Correspondence boundaries
+
+A successful finite run provides bounded conformance evidence, not universal Python-to-Agda refinement.
+
+| Formal module | Runtime evidence / boundary |
+|---|---|
+| `PlanSoundness.agda` | Partial bounded probes of planner guards and denial conditions; no theorem establishes the full graph algorithm's refinement. |
+| `ResourceBudgetModel.agda` | Bounded budget decision probes; not all hosts or integer inputs. |
+| `RecoveryInvariant.agda` | Bounded positive/negative restoration tests; not production rollback. |
+| `EquivalenceTransport.agda` | Bounded scope/evidence probes; not a universal equivalence theorem. |
+| `ContractComposition.agda` | Partial coordinator/task-pipeline probes; complete contract-composition refinement remains unproven. |
+| `TaskAndStateModel.agda` | Bounded TaskContract and SQLite queue probes; not a universal state-machine refinement theorem. |
+| `ModelImplementationCorrespondence.agda` | Evidence-admission behavior is probed; a universal proof from Python source semantics to Agda semantics is not established. |
+| `MigrationCoherence.agda` | Recovery tests do not establish a direct migration-coherence proof. |
+
+HoTT/univalence is not used to prove global equivalence of the Python runtime. The Cubical module checks a declared equivalence-to-path interface; it does not establish a full implementation-refinement theorem. No claim of universal correctness for every Louksna axiom or G01–G24 gate is made.
+
+## 5. Terminal certification boundaries
+
+The only valid success transition for this scope is a new, fully source-bound G22/G23/G24 result with the exact formal and runtime manifests, 35 successful observations, verified G23 Sigstore attestation, G24 certificate, and verified G24 certificate attestation. Otherwise the outcome remains HOLD or FAIL and must be preserved as such.
+
+The package's separate certification remains true for its declared standalone scope. Canonical promotion remains `NOT_AUTHORIZED`; operational authorization remains `NOT_GRANTED`. This workflow cannot alter or widen those decisions. All records are append-only, and all previous artifacts/certificates/attestations remain unchanged.

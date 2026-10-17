@@ -4,6 +4,8 @@ open import Agda.Builtin.Bool using (Bool; true; false)
 record ContractEvidence : Set where
   constructor contractEvidence
   field inputsValid preconditionsPass effectsWithinScope outputsValidated : Bool
+open ContractEvidence
+
 contractComposable : ContractEvidence -> Bool
 contractComposable c with inputsValid c
 ... | false = false
