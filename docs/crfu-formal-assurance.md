@@ -108,3 +108,34 @@ Historical certificates, runtime package attestations, V8 bytes, and canonical a
 
 
 Independent trust-root revalidation was queued after the default-branch trust workflow was updated by PR #88 (merge commit `d1fe5d49c8a058f074ab3d38667ce920bde03bea`). The earlier trust-root run used stale baseline bindings and is historical failed evidence, not a certificate for this candidate.
+
+
+---
+
+## Addendum — source-derived Python/Agda refinement checks (2026-10-17; append-only)
+
+This addendum records a new proof-producing path. It does not rewrite or supersede any previous certificate, package digest, report, or historical scope statement.
+
+### Exact source bindings
+
+The producer workflow parses the exact Python source files as syntax, without importing or executing candidate code to produce its model:
+
+- `custoszv9/crfu/event_queue.py`: parses the literal `PersistentMissionQueue.ALLOWED` state-transition table; checks its 12-state alphabet, unique edges, target closure, transition guard AST, literal SQL state-update edges, and presence of `BEGIN IMMEDIATE` in `submit`, `transition`, `claim_next_ready`, and `emit_signal`.
+- `custoszv9/crfu/model.py`: parses the literal `REQUIRED` tuple used by `TaskContract.validate`; checks that it contains 24 unique non-empty string fields in a declared order and that the validator refers to that tuple.
+
+The workflow emits `PythonQueueTransitionsGenerated.agda` from these source literals. Its evidence records both Python source hashes and sizes, the complete extracted task-field order, the queue relation, static SQL transition checks, and the generated module hash. Compiler typechecking is configured to include this generated module.
+
+### Machine-checked equalities
+
+`ModelImplementationCorrespondence.agda` now requires Agda to check these definitional equalities with `refl`:
+
+- `sqlite-queue-transition-table-refines-exact-python-runtime`: the formal queue edge list equals the full source-extracted Python `ALLOWED` relation, edge for edge.
+- `python-task-required-fields-refine-exact-python-runtime`: the formal 24-field task schema equals the source-extracted Python `REQUIRED` tuple, including order.
+
+The queue relation has 12 states and 144 possible ordered state pairs. The extracted source currently declares 30 allowed edges and therefore 114 forbidden pairs. A missing, reordered, extra, or changed edge/field causes the definitional equality to fail unless the corresponding formal source is deliberately updated; source hashes are retained in the evidence report.
+
+### Boundary — no overclaim
+
+These equalities establish universal equality over these two finite data structures, for every execution state/field comparison represented by those structures. The AST checks additionally bind selected guards, SQL state writes, and transaction boundaries to the inspected source shape. They do **not**, by themselves, prove complete semantic refinement of every Python function, arbitrary callbacks, SQLite crash/locking behavior, planner optimality, all recovery paths, every migration, or all coordinator/equivalence/Hoare-contract executions. G23 probes and the other independent gates remain separate and are not broadened by this addendum.
+
+The candidate must pass fresh producer typechecking and the existing independent G22/G23/G24 chain against the exact resulting commit. No certificate is inherited from this addendum or a predecessor commit; no protected prior artifact is modified, and canonical promotion or operational activation remains unauthorized.
