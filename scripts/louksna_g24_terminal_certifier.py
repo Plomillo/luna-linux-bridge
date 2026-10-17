@@ -36,7 +36,7 @@ def g23_digest_is_valid(record: dict[str, Any]) -> bool:
     return isinstance(stated, str) and SHA256_RE.fullmatch(stated) is not None and digest(canonical_bytes(payload)) == stated
 
 
-def decide(g23: dict[str, Any], recheck: dict[str, Any], attestation_verification: Path) -> dict[str, Any]:
+def decide(g23: dict[str, Any], recheck: dict[str, Any], attestation_verification: Path, expected_g23_file_sha256: str) -> dict[str, Any]:
     failures: list[str] = []
     holds: list[str] = []
     candidate_sha = g23.get("candidate_sha")
@@ -81,8 +81,48 @@ def decide(g23: dict[str, Any], recheck: dict[str, Any], attestation_verificatio
     try:
         attestation_raw = attestation_verification.read_bytes()
         parsed = json.loads(attestation_raw.decode("utf-8"))
-        if not parsed:
-            holds.append("G23_ATTESTATION_VERIFICATION_EMPTY")
+        if not SHA256_RE.fullmatch(expected_g23_file_sha256):
+            failures.append("G23_ATTESTED_SUBJECT_SHA256_INVALID")
+        verified_subject_found = False
+        if isinstance(parsed, list):
+            for envelope in parsed:
+                if not isinstance(envelope, dict):
+                    continue
+                verified = envelope.get("verificationResult")
+                if not isinstance(verified, dict):
+                    continue
+                statement = verified.get("statement")
+                signature = verified.get("signature")
+                certificate_data = signature.get("certificate") if isinstance(signature, dict) else None
+                timestamps = verified.get("verifiedTimestamps")
+                if not isinstance(statement, dict):
+                    continue
+                if statement.get("predicateType") != "https://slsa.dev/provenance/v1":
+                    continue
+                if not isinstance(certificate_data, dict) or not certificate_data:
+                    continue
+                if not isinstance(timestamps, list) or not timestamps:
+                    continue
+                subjects = statement.get("subject")
+                if not isinstance(subjects, list):
+                    continue
+                for subject in subjects:
+                    if not isinstance(subject, dict):
+                        continue
+                    subject_name = subject.get("name")
+                    subject_digest = subject.get("digest")
+                    if (
+                        isinstance(subject_name, str)
+                        and subject_name.rsplit("/", 1)[-1] == "G23_GLOBAL.json"
+                        and isinstance(subject_digest, dict)
+                        and subject_digest.get("sha256") == expected_g23_file_sha256
+                    ):
+                        verified_subject_found = True
+                        break
+                if verified_subject_found:
+                    break
+        if not verified_subject_found:
+            holds.append("G23_ATTESTATION_VERIFICATION_INVALID_OR_SUBJECT_MISMATCH")
         else:
             attestation_sha = digest(attestation_raw)
     except (OSError, UnicodeDecodeError, json.JSONDecodeError):
@@ -130,7 +170,8 @@ def main() -> int:
     try:
         g23 = load_object(args.g23_report)
         recheck = load_object(args.recheck_report)
-        result = decide(g23, recheck, args.attestation_verification)
+        expected_g23_file_sha256 = digest(args.g23_report.read_bytes())
+        result = decide(g23, recheck, args.attestation_verification, expected_g23_file_sha256)
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         result = {
             "schema": "LOUKSNA_GLOBAL_G24_TERMINAL_DECISION/1.0",
