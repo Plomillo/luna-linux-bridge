@@ -86,7 +86,17 @@ jobs:
         run: |
           set -Eeuo pipefail
           python3 dist/CUSTOSZV9.pyz --version
-          python3 dist/CUSTOSZV9.pyz crfu status
+          python3 dist/CUSTOSZV9.pyz crfu status | tee "$RUNNER_TEMP/crfu-status.json"
+          python3 - "$RUNNER_TEMP/crfu-status.json" <<'PY'
+          import json,sys
+          status=json.load(open(sys.argv[1],encoding="utf-8"))
+          assert status["formal_assurance"] == "SEPARATE_REPOSITORY_SOURCE_NOT_EMBEDDED", status
+          assert status["formal_sources_embedded"] is False, status
+          assert status["formal_toolchain"] == "NOT_RUN_BY_PACKAGE_BUILDER", status
+          assert status["certification"] == "NOT_GRANTED", status
+          assert status["canonical_promotion"] == "NOT_AUTHORIZED", status
+          print("CRFU status formal-payload separation: PASS")
+          PY
           python3 dist/CUSTOSZV9.pyz crfu selftest
           python3 dist/CUSTOSZV9.pyz crfu journal-verify "$RUNNER_TEMP/nonexistent-journal.jsonl"
       - name: Exercise preserved V8 CLI inside the same interpreter
@@ -112,9 +122,16 @@ jobs:
               assert manifest["governance"]["G23"]=="NOT_GRANTED"
               assert manifest["governance"]["G24"]=="NOT_GRANTED"
               assert manifest["governance"]["canonical_promotion"]=="NOT_AUTHORIZED"
-              assert manifest["formal_assurance"]["toolchain_executed"] is False
+              formal=manifest["formal_assurance"]
+              assert formal["toolchain_executed"] is False
+              assert formal["sources_embedded"] is False
+              assert formal["source_storage"]=="REPOSITORY_ONLY_SEPARATE_EVIDENCE_BUNDLE"
+              names=z.namelist()
+              assert not any(n.endswith(".agda") or "/formal_sources/" in "/"+n or n.startswith("formal/") for n in names)
           report=json.loads(Path("evidence/custoszv9-build-report.json").read_text(encoding="utf-8"))
           assert report["embedded_baseline_byte_exact"] is True and report["release_eligible"] is False
+          assert report["formal_sources_embedded"] is False
+          assert report["formal_source_hashes_recorded"] is True
           print(json.dumps({"status":"PASS_BUILD_ONLY_NOT_CERTIFIED","package_sha256":report["package_sha256"],"size_bytes":report["package_size_bytes"],"v8_baseline_sha256":report["baseline_sha256"]},indent=2))
           PY
       - name: Upload V9 candidate and evidence

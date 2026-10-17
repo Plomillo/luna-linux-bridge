@@ -11,7 +11,7 @@ def crfu(argv:list[str])->int:
  j=sub.add_parser("journal-verify");j.add_argument("path",type=Path)
  a=p.parse_args(argv)
  if a.command=="status":
-  emit({"artifact_id":ARTIFACT_ID,"version":__version__,"capability":"CRFU","gates_G01_G24":"NOT_GRANTED","PUAC_C25_C32":"LOCAL_CONTROLS_NOT_CANONICALLY_ADMITTED","formal_assurance":"SOURCE_INCLUDED_NOT_TYPECHECKED","certification":"NOT_GRANTED","active_authorized":False,"canonical_promotion":"NOT_AUTHORIZED"});return 0
+  emit({"artifact_id":ARTIFACT_ID,"version":__version__,"capability":"CRFU","gates_G01_G24":"NOT_GRANTED","PUAC_C25_C32":"LOCAL_CONTROLS_NOT_CANONICALLY_ADMITTED","formal_assurance":"SEPARATE_REPOSITORY_SOURCE_NOT_EMBEDDED","formal_sources_embedded":False,"formal_toolchain":"NOT_RUN_BY_PACKAGE_BUILDER","certification":"NOT_GRANTED","active_authorized":False,"canonical_promotion":"NOT_AUTHORIZED"});return 0
  if a.command=="selftest":
   out=run_selftest();emit(out);return 0 if out["status"]=="PASS" else 1
  if a.command=="journal-verify":
