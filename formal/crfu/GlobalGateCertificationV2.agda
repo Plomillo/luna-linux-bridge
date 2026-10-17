@@ -151,8 +151,8 @@ g24-pass-requires-every-prerequisite-pass :
   decideG24 ledger evidence ≡ issueG24Certificate ->
   EveryPrerequisitePassed ledger
 g24-pass-requires-every-prerequisite-pass ledger evidence proof
-  with allPrerequisitesPassed ledger | evidenceComplete evidence
-... | true | true = all-pass-sound ledger refl
+  with allPrerequisitesPassed ledger in allPassEq | evidenceComplete evidence in evidenceEq
+... | true | true = all-pass-sound ledger allPassEq
 ... | true | false = void-elim (hold-not-issue proof)
 ... | false | _ with containsFailure ledger
 ...   | true = void-elim (deny-not-issue proof)
@@ -163,8 +163,8 @@ g24-pass-requires-complete-evidence :
   decideG24 ledger evidence ≡ issueG24Certificate ->
   evidenceComplete evidence ≡ true
 g24-pass-requires-complete-evidence ledger evidence proof
-  with allPrerequisitesPassed ledger | evidenceComplete evidence
-... | true | true = refl
+  with allPrerequisitesPassed ledger in allPassEq | evidenceComplete evidence in evidenceEq
+... | true | true = evidenceEq
 ... | true | false = void-elim (hold-not-issue proof)
 ... | false | _ with containsFailure ledger
 ...   | true = void-elim (deny-not-issue proof)
