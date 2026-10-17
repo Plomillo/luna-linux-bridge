@@ -125,7 +125,7 @@ jobs:
           python3 - <<'PY'
           import hashlib, json, re
           from pathlib import Path
-          path = Path("evidence/custosz9-bounded-model-runtime-binding.json")
+          path = Path("evidence/custoszv9-bounded-model-runtime-binding.json")
           report = json.loads(path.read_text(encoding="utf-8"))
           log = Path("evidence/runtime-tests.log").read_text(encoding="utf-8")
           match = re.search(r"^Ran (\d+) tests? in ", log, re.M)
@@ -162,7 +162,7 @@ jobs:
         with:
           name: CUSTOSZV9-bounded-cross-language-evidence-${{ github.sha }}
           path: |
-            evidence/custosz9-bounded-model-runtime-binding.json
+            evidence/custoszv9-bounded-model-runtime-binding.json
             evidence/runtime-tests.log
             evidence/agda-version.txt
             evidence/agda-first-order.log
