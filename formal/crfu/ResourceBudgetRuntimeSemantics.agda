@@ -1,25 +1,21 @@
 {-# OPTIONS --safe #-}
 module ResourceBudgetRuntimeSemantics where
 
--- Additive, versioned specification of the current Python evaluate_budget
--- RAM/disk boundary semantics. The previously certified ResourceBudgetModel
--- module remains byte-identical; this module records its strict-boundary
--- discrepancy rather than silently rewriting a historically bound source.
-open import Agda.Builtin.Nat using (Nat; _-_; _<_)
-open import Agda.Builtin.Bool using (Bool; true; false)
+-- Candidate correction: Python evaluate_budget now uses the same strict
+-- natural-number bounds as ResourceBudgetModel. Equality is rejected.
+open import Agda.Builtin.Nat using (Nat; _-_; _+_; _<_)
+open import Agda.Builtin.Bool using (Bool)
 open import ResourceBudgetModel using (ResourceNeed)
 
-notBool : Bool -> Bool
-notBool false = true
-notBool true = false
-
--- Agda natural subtraction truncates at zero, matching Python max(0, a - b).
 usableRam : ResourceNeed -> Nat
 usableRam r = ResourceNeed.availableRam r - ResourceNeed.reservedRam r
 
--- The runtime accepts equality: rejection occurs only when required > usable.
+-- Exact guard is required + reserved < available; it rejects over-reservation,
+-- including zero demand, because reserved >= available cannot satisfy the guard.
 ramSufficientRuntimeSemantics : ResourceNeed -> Bool
-ramSufficientRuntimeSemantics r = notBool (usableRam r < ResourceNeed.requiredRam r)
+ramSufficientRuntimeSemantics r =
+  ResourceNeed.requiredRam r + ResourceNeed.reservedRam r < ResourceNeed.availableRam r
 
 diskSufficientRuntimeSemantics : ResourceNeed -> Bool
-diskSufficientRuntimeSemantics r = notBool (ResourceNeed.availableDisk r < ResourceNeed.requiredDisk r)
+diskSufficientRuntimeSemantics r =
+  ResourceNeed.requiredDisk r < ResourceNeed.availableDisk r
