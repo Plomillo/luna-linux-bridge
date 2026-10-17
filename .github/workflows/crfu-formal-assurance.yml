@@ -304,11 +304,11 @@ jobs:
                       guard_trace.append(f"{source_path}|{qualname}|RAISE|{stmt.lineno}:{stmt.col_offset}|{detail}")
                   elif isinstance(stmt, ast.Assert):
                       guard_trace.append(f"{source_path}|{qualname}|ASSERT|{stmt.lineno}:{stmt.col_offset}|{ast.unparse(stmt.test)}")
-          for source_path, qualname in targets:
-              node = discovered[(source_path, qualname)]
-              guard_trace.append(f"{source_path}|{qualname}|FUNCTION|{node.lineno}:{node.col_offset}|")
-              trace_block(source_path, qualname, node.body)
-              guard_trace.append(f"{source_path}|{qualname}|END_FUNCTION|{node.end_lineno}:{node.end_col_offset}|")
+          for trace_source_path, qualname in targets:
+              node = discovered[(trace_source_path, qualname)]
+              guard_trace.append(f"{trace_source_path}|{qualname}|FUNCTION|{node.lineno}:{node.col_offset}|")
+              trace_block(trace_source_path, qualname, node.body)
+              guard_trace.append(f"{trace_source_path}|{qualname}|END_FUNCTION|{node.end_lineno}:{node.end_col_offset}|")
           assert len(guard_trace) > 0, "RUNTIME_GUARD_TRACE_EMPTY"
           trace_lines = [
               "{-# OPTIONS --safe --without-K #-}",
