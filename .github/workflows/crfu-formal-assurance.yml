@@ -59,6 +59,140 @@ jobs:
           "$install_dir/agda" --version | tee "$RUNNER_TEMP/agda-version.txt"
           grep -F "Agda version 2.8.0.2" "$RUNNER_TEMP/agda-version.txt"
 
+      - name: Extract the exact SQLite queue transition table from Python source
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p evidence
+          python3 - "custoszv9/crfu/event_queue.py" "evidence/PythonQueueTransitionsGenerated.agda" "evidence/runtime-transition-refinement.json" <<'PY'
+          import ast, hashlib, json, pathlib, re, sys
+          source_path, agda_out, report_out = map(pathlib.Path, sys.argv[1:])
+          source_bytes = source_path.read_bytes()
+          source = source_bytes.decode("utf-8")
+          tree = ast.parse(source, filename=str(source_path))
+          expected_states = [
+              "RECEIVED", "PREFLIGHT", "READY", "RUNNING", "WAITING_FOR_EVENT",
+              "CHECKPOINTED", "VALIDATING", "RECOVERING", "COMPLETED", "FAILED",
+              "BLOCKED", "DENIED",
+          ]
+          constructors = {
+              "RECEIVED": "received", "PREFLIGHT": "preflight", "READY": "ready",
+              "RUNNING": "running", "WAITING_FOR_EVENT": "waitingForEvent",
+              "CHECKPOINTED": "checkpointed", "VALIDATING": "validating",
+              "RECOVERING": "recovering", "COMPLETED": "completed",
+              "FAILED": "failed", "BLOCKED": "blocked", "DENIED": "denied",
+          }
+          def name_is(node, name):
+              return isinstance(node, ast.Name) and node.id == name
+          assignments = [
+              node for node in tree.body
+              if isinstance(node, ast.Assign)
+              and any(name_is(target, "ALLOWED") for target in node.targets)
+          ]
+          assert len(assignments) == 1 and isinstance(assignments[0].value, ast.Dict), "ALLOWED_TABLE_NOT_LITERAL"
+          allowed_node = assignments[0].value
+          table = {}
+          edge_rows = []
+          for key_node, value_node in zip(allowed_node.keys, allowed_node.values):
+              assert isinstance(key_node, ast.Constant) and isinstance(key_node.value, str), "STATE_KEY_NOT_LITERAL"
+              state = key_node.value
+              assert state not in table, "DUPLICATE_STATE_KEY:" + state
+              if isinstance(value_node, ast.Set):
+                  targets = []
+                  for target_node in value_node.elts:
+                      assert isinstance(target_node, ast.Constant) and isinstance(target_node.value, str), "TARGET_NOT_LITERAL:" + state
+                      targets.append(target_node.value)
+                  assert len(targets) == len(set(targets)), "DUPLICATE_TARGET:" + state
+              elif (isinstance(value_node, ast.Call) and name_is(value_node.func, "set")
+                    and not value_node.args and not value_node.keywords):
+                  targets = []
+              else:
+                  raise AssertionError("NON_LITERAL_ALLOWED_TARGETS:" + state)
+              table[state] = targets
+              edge_rows.extend((state, target) for target in targets)
+          assert list(table) == expected_states, "RUNTIME_STATE_SET_OR_ORDER_MISMATCH:" + repr(list(table))
+          state_set = set(expected_states)
+          assert all(target in state_set for targets in table.values() for target in targets), "UNKNOWN_TARGET_STATE"
+          assert len(edge_rows) == len(set(edge_rows)), "DUPLICATE_TRANSITION_EDGE"
+          assert len(expected_states) * len(expected_states) == 144, "STATE_PAIR_DOMAIN_CHANGED"
+          class_node = next((n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == "PersistentMissionQueue"), None)
+          assert class_node is not None, "QUEUE_CLASS_MISSING"
+          methods = {n.name: n for n in class_node.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))}
+          transition_method = methods.get("transition")
+          assert transition_method is not None, "TRANSITION_METHOD_MISSING"
+          guard = ast.parse("new_state not in ALLOWED.get(expected_state, set())", mode="eval").body
+          assert any(isinstance(n, ast.If) and ast.dump(n.test, include_attributes=False) == ast.dump(guard, include_attributes=False)
+                     for n in ast.walk(transition_method)), "RUNTIME_TRANSITION_GUARD_NOT_EXACT"
+          transaction_methods = ["submit", "transition", "claim_next_ready", "emit_signal"]
+          for method_name in transaction_methods:
+              method = methods.get(method_name)
+              assert method is not None, "STATE_METHOD_MISSING:" + method_name
+              assert any(isinstance(n, ast.Constant) and n.value == "BEGIN IMMEDIATE" for n in ast.walk(method)), (
+                  "IMMEDIATE_TRANSACTION_MISSING:" + method_name
+              )
+          sql_edge_pattern = re.compile(
+              r"UPDATE\\s+missions\\s+SET\\s+state='([A-Z_]+)'.*?WHERE\\s+mission_id=\\?.*?AND\\s+state='([A-Z_]+)'",
+              re.IGNORECASE,
+          )
+          static_sql_edges = []
+          state_updates_seen = 0
+          for method_name, method in methods.items():
+              for node in ast.walk(method):
+                  if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+                          and node.func.attr == "execute" and node.args
+                          and isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, str)):
+                      continue
+                  query = re.sub(r"\\s+", " ", node.args[0].value).strip()
+                  if not re.match(r"UPDATE\\s+missions\\s+SET\\s+state", query, re.IGNORECASE):
+                      continue
+                  state_updates_seen += 1
+                  if re.search(r"SET\\s+state=\\?", query, re.IGNORECASE):
+                      assert method_name == "transition", "UNMODELED_DYNAMIC_STATE_UPDATE:" + method_name
+                      continue
+                  match = sql_edge_pattern.search(query)
+                  assert match is not None, "UNPARSED_STATIC_STATE_UPDATE:" + query
+                  target, source = match.group(1).upper(), match.group(2).upper()
+                  assert source in table and target in table, "SQL_UPDATE_UNKNOWN_STATE"
+                  assert target in table[source], "SQL_UPDATE_NOT_IN_ALLOWED_TABLE:" + source + "->" + target
+                  static_sql_edges.append({"from": source, "to": target})
+          assert state_updates_seen >= 4, "STATE_UPDATE_COVERAGE_INCOMPLETE"
+          submit_method = methods.get("submit")
+          assert submit_method and any(isinstance(n, ast.Constant) and n.value == "INSERT INTO missions(mission_id,task_json,state,updated_at)" for n in ast.walk(submit_method)), "MISSION_INSERT_NOT_BOUND"
+          assert any(isinstance(n, ast.Constant) and n.value == "RECEIVED" for n in ast.walk(submit_method)), "INITIAL_STATE_NOT_BOUND"
+          lines = [
+              "{-# OPTIONS --safe --without-K #-}",
+              "module PythonQueueTransitionsGenerated where",
+              "open import Agda.Builtin.List using (List; []; _∷_)",
+              "open import TaskAndStateModel using (QueueEdge; queueEdge; " + "; ".join(constructors[x] for x in expected_states) + ")",
+              "",
+              "pythonQueueTransitions : List QueueEdge",
+              "pythonQueueTransitions =",
+          ]
+          for index, (src, dst) in enumerate(edge_rows):
+              suffix = " ∷" if index + 1 < len(edge_rows) else " ∷ []"
+              lines.append("  queueEdge " + constructors[src] + " " + constructors[dst] + suffix)
+          agda_out.write_text("\\n".join(lines) + "\\n", encoding="utf-8")
+          report = {
+              "schema": "CRFU_RUNTIME_REFINEMENT_EVIDENCE/1.0",
+              "status": "SOURCE_EXTRACTION_PASS",
+              "runtime_source_path": source_path.as_posix(),
+              "runtime_source_sha256": hashlib.sha256(source_bytes).hexdigest(),
+              "runtime_source_size_bytes": len(source_bytes),
+              "state_count": len(expected_states),
+              "state_pair_domain_size": len(expected_states) ** 2,
+              "allowed_transition_count": len(edge_rows),
+              "forbidden_transition_count": len(expected_states) ** 2 - len(edge_rows),
+              "static_sql_state_updates": static_sql_edges,
+              "transaction_methods_checked": transaction_methods,
+              "runtime_transition_guard_ast_checked": True,
+              "generated_agda_module_sha256": hashlib.sha256(agda_out.read_bytes()).hexdigest(),
+              "agda_proof_status": "PENDING_MODEL_EQUALITY_THEOREM",
+              "claim_boundary": "Finite queue transition relation only; no universal claim about all Python callbacks or all SQLite failure modes.",
+          }
+          report_out.write_text(json.dumps(report, sort_keys=True, indent=2) + "\\n", encoding="utf-8")
+          print(json.dumps(report, sort_keys=True, indent=2))
+          PY
+
       - name: Type-check every first-order CRFU module and soundness lemma
         shell: bash
         run: |
@@ -67,8 +201,28 @@ jobs:
           : > evidence/agda-first-order.log
           for source in formal/crfu/*.agda; do
             echo "===== $source =====" | tee -a evidence/agda-first-order.log
-            agda --safe --without-K -i formal/crfu "$source" 2>&1 | tee -a evidence/agda-first-order.log
+            agda --safe --without-K -i formal/crfu -i evidence "$source" 2>&1 | tee -a evidence/agda-first-order.log
           done
+
+      - name: Finalize runtime refinement evidence only when the theorem is present
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import hashlib, json, pathlib
+          report_path = pathlib.Path("evidence/runtime-transition-refinement.json")
+          report = json.loads(report_path.read_text(encoding="utf-8"))
+          proof_source = pathlib.Path("formal/crfu/ModelImplementationCorrespondence.agda").read_text(encoding="utf-8")
+          theorem = "sqlite-queue-transition-table-refines-exact-python-runtime"
+          if theorem in proof_source:
+              report["agda_proof_status"] = "TYPECHECKED_DEFINITIONAL_EQUALITY"
+              report["agda_theorem"] = theorem
+              report["status"] = "PASS"
+          else:
+              report["agda_proof_status"] = "PENDING_MODEL_EQUALITY_THEOREM"
+          report_path.write_text(json.dumps(report, sort_keys=True, indent=2) + "\\n", encoding="utf-8")
+          print(json.dumps(report, sort_keys=True, indent=2))
+          PY
 
       - name: Download pinned Cubical Agda v0.9 release and verify SHA-256
         shell: bash
@@ -108,6 +262,7 @@ jobs:
                       h.update(chunk)
               return h.hexdigest()
           source_items = [{"path": str(p), "bytes": p.stat().st_size, "sha256": sha(p)} for p in files]
+          runtime_refinement = json.loads(pathlib.Path("evidence/runtime-transition-refinement.json").read_text(encoding="utf-8"))
           package_sha = "667ceac7d7e59682292c864777ec3e1c228074716dc5dba17fe150e4d826ccf3"
           report = {
               "schema": "CRFU_FORMAL_ASSURANCE_EVIDENCE/1.0",
@@ -120,7 +275,9 @@ jobs:
               "cubical_agda_release": "v0.9",
               "cubical_archive_sha256": "003f9c57c134e4a9401a4b339b3773be667aa169ff929ca3dfb9c8abefc225c5",
               "source_files": source_items,
+              "runtime_transition_refinement": runtime_refinement,
               "checks": [
+                "runtime PersistentMissionQueue state-transition table extracted from exact Python source and compared by an Agda definitional-equality theorem when present",
                 "all formal/crfu/*.agda files typechecked using --safe --without-K",
                 "formal/cubical/CRFUUnivalenceBridge.agda typechecked using --cubical --safe --guardedness",
                 "Agda official Linux binary archive SHA-256 verified before use",
@@ -128,7 +285,8 @@ jobs:
               ],
               "limitations": [
                 "This report is evidence for the listed formal source files only.",
-                "Typechecking the model is not by itself a proof that the Python runtime implements that model.",
+                "Typechecking the model is not by itself a proof that the Python runtime implements every model.",
+                "The generated Agda equality theorem proves only that the finite SQLite queue transition table matches the exact source-extracted Python ALLOWED relation; it does not prove all runtime functions, arbitrary callbacks, or all database-failure behavior.",
                 "The Cubical module checks the equivalence-to-path interface; it does not prove global Louksna correctness or implementation correspondence.",
                 "No prior CUSTOSZV9 package, G22/G23/G24 certificate, or attestation is modified by this workflow."
               ]
@@ -152,6 +310,8 @@ jobs:
             evidence/agda-cubical.log
             evidence/formal-assurance-report.json
             evidence/formal-source-manifest.json
+            evidence/runtime-transition-refinement.json
+            evidence/PythonQueueTransitionsGenerated.agda
             formal/crfu/
             formal/cubical/
           if-no-files-found: error
