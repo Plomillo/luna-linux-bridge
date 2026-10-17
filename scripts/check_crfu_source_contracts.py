@@ -179,7 +179,9 @@ def validate(root: Path, candidate_sha: str) -> dict[str, Any]:
         RECOVERY_MODEL: ("restorationDecision", "pass-requires-valid-journal", "payloadBytesMatch"),
         EQUIVALENCE_MODEL: ("equivalenceDecision", "all-equivalence-guards-imply-admissible", "forbiddenPropertyAbsent"),
         JOURNAL_MODEL: ("journalValid", "journal-pass-implies-all-links-match", "wrong-event-digest-blocks-journal"),
-        RESOURCE_MODEL: ("budgetDecision", "budget-pass-requires-valid-budget", "ramWithinBudget"),
+        RESOURCE_MODEL: ("budgetDecision", "budget-pass-requires-valid-budget", "ram-guard-exactly-matches-resource-model"),
+        "formal/crfu/ContractHoareComposition.agda": ("HoareContract", "composition-preserves-postcondition", "correctness"),
+        "formal/crfu/MigrationSimulation.agda": ("MigrationSimulation", "migration-preserves-declared-invariant", "invariantSimulation"),
     }
     for relative, markers in formal_expectations.items():
         try:
