@@ -185,7 +185,7 @@ jobs:
               "module PythonQueueTransitionsGenerated where",
               "open import Agda.Builtin.List using (List; []; _∷_)",
               "open import Agda.Builtin.String using (String)",
-              "open import TaskAndStateModel using (QueueEdge; queueEdge; " + "; ".join(constructors[x] for x in expected_states) + ")",
+              "open import RuntimeDerivedQueueModel using (QueueEdge; queueEdge; " + "; ".join(constructors[x] for x in expected_states) + ")",
               "",
               "pythonRequiredTaskFields : List String",
               "pythonRequiredTaskFields =",
@@ -247,7 +247,7 @@ jobs:
           import hashlib, json, pathlib
           report_path = pathlib.Path("evidence/runtime-transition-refinement.json")
           report = json.loads(report_path.read_text(encoding="utf-8"))
-          proof_source = pathlib.Path("formal/crfu/ModelImplementationCorrespondence.agda").read_text(encoding="utf-8")
+          proof_source = pathlib.Path("formal/crfu/RuntimeDerivedCorrespondence.agda").read_text(encoding="utf-8")
           theorems = [
               "sqlite-queue-transition-table-refines-exact-python-runtime",
               "python-task-required-fields-refine-exact-python-runtime",
