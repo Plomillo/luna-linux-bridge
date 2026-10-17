@@ -123,11 +123,11 @@ The producer workflow parses the exact Python source files as syntax, without im
 - `custoszv9/crfu/event_queue.py`: parses the literal `PersistentMissionQueue.ALLOWED` state-transition table; checks its 12-state alphabet, unique edges, target closure, transition guard AST, literal SQL state-update edges, and presence of `BEGIN IMMEDIATE` in `submit`, `transition`, `claim_next_ready`, and `emit_signal`.
 - `custoszv9/crfu/model.py`: parses the literal `REQUIRED` tuple used by `TaskContract.validate`; checks that it contains 24 unique non-empty string fields in a declared order and that the validator refers to that tuple.
 
-The workflow emits `PythonQueueTransitionsGenerated.agda` from these source literals. Its evidence records both Python source hashes and sizes, the complete extracted task-field order, the queue relation, static SQL transition checks, and the generated module hash. Compiler typechecking is configured to include this generated module.
+The workflow regenerates the expected contents into an evidence-only file and requires a byte-for-byte match with the checked-in `formal/crfu/PythonQueueTransitionsGenerated.agda`. That checked-in file is part of the source manifest and is type-checked by both producer and independent G23. Evidence records both Python source hashes and sizes, the complete extracted task-field order, the queue relation, static SQL transition checks, and both the expected and checked-in module hashes.
 
 ### Machine-checked equalities
 
-`ModelImplementationCorrespondence.agda` now requires Agda to check these definitional equalities with `refl`:
+`RuntimeDerivedCorrespondence.agda` adds isolated definitional-equality theorems using `refl`, without changing the hash-protected `ModelImplementationCorrespondence.agda` or `TaskAndStateModel.agda`:
 
 - `sqlite-queue-transition-table-refines-exact-python-runtime`: the formal queue edge list equals the full source-extracted Python `ALLOWED` relation, edge for edge.
 - `python-task-required-fields-refine-exact-python-runtime`: the formal 24-field task schema equals the source-extracted Python `REQUIRED` tuple, including order.
