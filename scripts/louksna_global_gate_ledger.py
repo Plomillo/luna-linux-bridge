@@ -156,10 +156,13 @@ def validate(
             if end > len(lines):
                 failures.append(expected_id + ":CRITERION_LINE_RANGE_OUT_OF_BOUNDS")
             else:
-                excerpt = ("\n".join(lines[start - 1:end]) + "\n").encode("utf-8")
+                excerpt_text = "\n".join(lines[start - 1:end])
+                excerpt = (excerpt_text + "\n").encode("utf-8")
                 actual_criterion_sha = sha256_bytes(excerpt)
                 if actual_criterion_sha != expected_criterion_sha:
                     failures.append(expected_id + ":CRITERION_EXCERPT_HASH_MISMATCH")
+                if criterion != excerpt_text.strip():
+                    failures.append(expected_id + ":ACCEPTANCE_PREDICATE_DIFFERS_FROM_CANONICAL_TEXT")
                 if source_path != baseline_name:
                     failures.append(expected_id + ":CRITERION_NOT_SOURCED_FROM_PROTECTED_BASELINE")
 
