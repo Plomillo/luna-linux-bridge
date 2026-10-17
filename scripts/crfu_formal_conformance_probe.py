@@ -240,7 +240,7 @@ def main() -> int:
         "resources.unknown_measurement_holds",
         lambda: _assert_status(
             evaluate_budget(good_budget, unknown_snapshot), "HOLD",
-            expected_reason="RAM_AVAILABLE_UNKNOWN",
+            expected_reason="RAM_AVAILABLE_BYTES_UNKNOWN",
         ),
     )
     check(
