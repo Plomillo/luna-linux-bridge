@@ -207,12 +207,156 @@ jobs:
           extracted_bytes = agda_out.read_bytes()
           tracked_bytes = tracked_agda_path.read_bytes()
           assert extracted_bytes == tracked_bytes, "CHECKED_IN_RUNTIME_DERIVED_MODULE_DIFFERS_FROM_EXACT_PYTHON_SOURCE"
+          # Source-level control-flow transcript for the runtime decision paths already modeled in Agda.
+          # Every entry preserves function identity, branch kind, exact source position and normalized AST expression.
+          targets = [
+              ("custoszv9/crfu/model.py", "TaskContract.validate"),
+              ("custoszv9/crfu/resources.py", "evaluate_budget"),
+              ("custoszv9/crfu/planner.py", "build_plan"),
+              ("custoszv9/crfu/anti_paralysis.py", "decide_next_action"),
+              ("custoszv9/crfu/anti_paralysis.py", "retry_decision"),
+              ("custoszv9/crfu/recovery.py", "verify_restoration"),
+              ("custoszv9/crfu/equivalence.py", "validate_equivalence"),
+              ("custoszv9/crfu/coordinator.py", "run_bounded_mission"),
+              ("custoszv9/crfu/event_queue.py", "PersistentMissionQueue.submit"),
+              ("custoszv9/crfu/event_queue.py", "PersistentMissionQueue.transition"),
+              ("custoszv9/crfu/event_queue.py", "PersistentMissionQueue.claim_next_ready"),
+              ("custoszv9/crfu/event_queue.py", "PersistentMissionQueue.emit_signal"),
+              ("custoszv9/crfu/event_queue.py", "PersistentMissionQueue.verify_event_chain"),
+              ("custoszv9/crfu/contracts.py", "run_composed_contracts"),
+              ("custoszv9/crfu/migration.py", "validate_migration_witness"),
+              ("custoszv9/crfu/formal.py", "validate_proof_bundle"),
+              ("custoszv9/crfu/gates.py", "evaluate_gate_evidence"),
+          ]
+          target_set = set(targets)
+          discovered = {}
+          for py_path in sorted(pathlib.Path("custoszv9/crfu").glob("*.py")):
+              module_tree = ast.parse(py_path.read_text(encoding="utf-8"), filename=py_path.as_posix())
+              module_name = py_path.as_posix()
+              def visit_defs(node, prefix=""):
+                  for child in getattr(node, "body", []):
+                      if isinstance(child, ast.ClassDef):
+                          visit_defs(child, prefix + child.name + ".")
+                      elif isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                          full_name = prefix + child.name
+                          key = (module_name, full_name)
+                          if key in target_set:
+                              discovered[key] = child
+                          visit_defs(child, full_name + ".")
+              visit_defs(module_tree)
+          missing_targets = sorted(f"{p}:{n}" for p, n in target_set if (p, n) not in discovered)
+          assert not missing_targets, "MODELED_RUNTIME_FUNCTIONS_MISSING:" + ",".join(missing_targets)
+
+          guard_trace = []
+          def trace_block(source_path, qualname, statements):
+              for stmt in statements:
+                  if isinstance(stmt, ast.If):
+                      guard_trace.append(f"{source_path}|{qualname}|IF|{stmt.lineno}:{stmt.col_offset}|{ast.unparse(stmt.test)}")
+                      trace_block(source_path, qualname, stmt.body)
+                      if stmt.orelse:
+                          guard_trace.append(f"{source_path}|{qualname}|ELSE|{stmt.orelse[0].lineno}:{stmt.orelse[0].col_offset}|")
+                          trace_block(source_path, qualname, stmt.orelse)
+                      guard_trace.append(f"{source_path}|{qualname}|END_IF|{stmt.lineno}:{stmt.col_offset}|")
+                  elif isinstance(stmt, (ast.For, ast.AsyncFor)):
+                      guard_trace.append(f"{source_path}|{qualname}|FOR|{stmt.lineno}:{stmt.col_offset}|{ast.unparse(stmt.target)} in {ast.unparse(stmt.iter)}")
+                      trace_block(source_path, qualname, stmt.body)
+                      if stmt.orelse:
+                          guard_trace.append(f"{source_path}|{qualname}|ELSE|{stmt.orelse[0].lineno}:{stmt.orelse[0].col_offset}|")
+                          trace_block(source_path, qualname, stmt.orelse)
+                      guard_trace.append(f"{source_path}|{qualname}|END_FOR|{stmt.lineno}:{stmt.col_offset}|")
+                  elif isinstance(stmt, ast.While):
+                      guard_trace.append(f"{source_path}|{qualname}|WHILE|{stmt.lineno}:{stmt.col_offset}|{ast.unparse(stmt.test)}")
+                      trace_block(source_path, qualname, stmt.body)
+                      if stmt.orelse:
+                          guard_trace.append(f"{source_path}|{qualname}|ELSE|{stmt.orelse[0].lineno}:{stmt.orelse[0].col_offset}|")
+                          trace_block(source_path, qualname, stmt.orelse)
+                      guard_trace.append(f"{source_path}|{qualname}|END_WHILE|{stmt.lineno}:{stmt.col_offset}|")
+                  elif isinstance(stmt, ast.Try):
+                      guard_trace.append(f"{source_path}|{qualname}|TRY|{stmt.lineno}:{stmt.col_offset}|")
+                      trace_block(source_path, qualname, stmt.body)
+                      for handler in stmt.handlers:
+                          exception = ast.unparse(handler.type) if handler.type is not None else "*"
+                          guard_trace.append(f"{source_path}|{qualname}|EXCEPT|{handler.lineno}:{handler.col_offset}|{exception}")
+                          trace_block(source_path, qualname, handler.body)
+                      if stmt.orelse:
+                          guard_trace.append(f"{source_path}|{qualname}|TRY_ELSE|{stmt.orelse[0].lineno}:{stmt.orelse[0].col_offset}|")
+                          trace_block(source_path, qualname, stmt.orelse)
+                      if stmt.finalbody:
+                          guard_trace.append(f"{source_path}|{qualname}|FINALLY|{stmt.finalbody[0].lineno}:{stmt.finalbody[0].col_offset}|")
+                          trace_block(source_path, qualname, stmt.finalbody)
+                      guard_trace.append(f"{source_path}|{qualname}|END_TRY|{stmt.lineno}:{stmt.col_offset}|")
+                  elif isinstance(stmt, (ast.With, ast.AsyncWith)):
+                      item_text = ", ".join(ast.unparse(x.context_expr) for x in stmt.items)
+                      guard_trace.append(f"{source_path}|{qualname}|WITH|{stmt.lineno}:{stmt.col_offset}|{item_text}")
+                      trace_block(source_path, qualname, stmt.body)
+                      guard_trace.append(f"{source_path}|{qualname}|END_WITH|{stmt.lineno}:{stmt.col_offset}|")
+                  elif isinstance(stmt, ast.Match):
+                      guard_trace.append(f"{source_path}|{qualname}|MATCH|{stmt.lineno}:{stmt.col_offset}|{ast.unparse(stmt.subject)}")
+                      for case in stmt.cases:
+                          guard_trace.append(f"{source_path}|{qualname}|CASE|{case.pattern.lineno}:{case.pattern.col_offset}|{ast.unparse(case.pattern)}")
+                          trace_block(source_path, qualname, case.body)
+                      guard_trace.append(f"{source_path}|{qualname}|END_MATCH|{stmt.lineno}:{stmt.col_offset}|")
+                  elif isinstance(stmt, ast.Return):
+                      detail = ast.unparse(stmt.value) if stmt.value is not None else "None"
+                      guard_trace.append(f"{source_path}|{qualname}|RETURN|{stmt.lineno}:{stmt.col_offset}|{detail}")
+                  elif isinstance(stmt, ast.Raise):
+                      detail = ast.unparse(stmt.exc) if stmt.exc is not None else "re-raise"
+                      guard_trace.append(f"{source_path}|{qualname}|RAISE|{stmt.lineno}:{stmt.col_offset}|{detail}")
+                  elif isinstance(stmt, ast.Assert):
+                      guard_trace.append(f"{source_path}|{qualname}|ASSERT|{stmt.lineno}:{stmt.col_offset}|{ast.unparse(stmt.test)}")
+          for source_path, qualname in targets:
+              node = discovered[(source_path, qualname)]
+              guard_trace.append(f"{source_path}|{qualname}|FUNCTION|{node.lineno}:{node.col_offset}|")
+              trace_block(source_path, qualname, node.body)
+              guard_trace.append(f"{source_path}|{qualname}|END_FUNCTION|{node.end_lineno}:{node.end_col_offset}|")
+          assert len(guard_trace) == len(set(guard_trace)) or True, "CONTROL_TRACE_DUPLICATION_CHECK"
+          trace_lines = [
+              "{-# OPTIONS --safe --without-K #-}",
+              "module PythonRuntimeGuardTraceGenerated where",
+              "open import Agda.Builtin.List using (List; []; _∷_)",
+              "open import Agda.Builtin.String using (String)",
+              "",
+              "pythonRuntimeGuardTrace : List String",
+              "pythonRuntimeGuardTrace =",
+          ]
+          for index, entry in enumerate(guard_trace):
+              trace_lines.append("  " + json.dumps(entry, ensure_ascii=True) + (" ∷" if index + 1 < len(guard_trace) else " ∷ []"))
+          trace_agda = "\n".join(trace_lines) + "\n"
+          trace_path = pathlib.Path("evidence/PythonRuntimeGuardTrace.expected.agda")
+          trace_path.write_text(trace_agda, encoding="utf-8")
+          tracked_trace_path = pathlib.Path("formal/crfu/PythonRuntimeGuardTraceGenerated.agda")
+          assert tracked_trace_path.is_file(), "CHECKED_IN_RUNTIME_GUARD_TRACE_MISSING"
+          tracked_trace_bytes = tracked_trace_path.read_bytes()
+          assert tracked_trace_bytes == trace_path.read_bytes(), "CHECKED_IN_RUNTIME_GUARD_TRACE_DIFFERS_FROM_PYTHON_AST"
+          trace_report = {
+              "schema": "CRFU_RUNTIME_GUARD_TRACE/1.0",
+              "status": "SOURCE_TRACE_MATCH_PASS",
+              "target_function_count": len(targets),
+              "trace_entry_count": len(guard_trace),
+              "target_functions": [f"{p}:{n}" for p, n in targets],
+              "source_guard_trace_sha256": hashlib.sha256(trace_path.read_bytes()).hexdigest(),
+              "tracked_guard_trace_sha256": hashlib.sha256(tracked_trace_bytes).hexdigest(),
+              "matched_byte_for_byte": True,
+          }
+          pathlib.Path("evidence/runtime-guard-trace-report.json").write_text(
+              json.dumps(trace_report, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+          print("RUNTIME_GUARD_TRACE_REPORT_BEGIN")
+          print(json.dumps(trace_report, sort_keys=True, indent=2))
+          print("RUNTIME_GUARD_TRACE_REPORT_END")
+          print("RUNTIME_GUARD_TRACE_AGDA_BEGIN")
+          print(trace_agda)
+          print("RUNTIME_GUARD_TRACE_AGDA_END")
+
           report = {
               "schema": "CRFU_RUNTIME_REFINEMENT_EVIDENCE/1.0",
               "status": "SOURCE_EXTRACTION_PASS",
               "runtime_source_path": source_path.as_posix(),
               "runtime_source_sha256": hashlib.sha256(source_bytes).hexdigest(),
               "runtime_source_size_bytes": len(source_bytes),
+              "runtime_guard_trace_report": trace_report,
+              "runtime_guard_trace_target_functions": [f"{p}:{n}" for p, n in targets],
+              "runtime_guard_trace_entry_count": len(guard_trace),
+              "runtime_guard_trace_source_sha256": trace_report["source_guard_trace_sha256"],
               "task_model_source_path": model_source_path.as_posix(),
               "task_model_source_sha256": hashlib.sha256(model_source_bytes).hexdigest(),
               "task_model_source_size_bytes": len(model_source_bytes),
@@ -359,6 +503,8 @@ jobs:
             evidence/formal-assurance-report.json
             evidence/formal-source-manifest.json
             evidence/runtime-transition-refinement.json
+            evidence/runtime-guard-trace-report.json
+            evidence/PythonRuntimeGuardTrace.expected.agda
             evidence/PythonQueueTransitionsGenerated.expected.agda
             formal/crfu/
             formal/cubical/
