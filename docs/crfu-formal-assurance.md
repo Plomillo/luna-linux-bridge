@@ -81,3 +81,16 @@ The clean ZIPAPP still excludes the .agda source payload and records only the ha
 For any formal-source candidate based on this baseline, the producer CI must type-check every declared Agda module and the Cubical bridge, then the trusted fixed-V9 root must independently bind the exact formal manifest, runtime manifest, package certificate/attestation, and finite conformance results. All 35 independent Python conformance probes must pass. No formal certificate is inherited from a predecessor commit or from the earlier package SHA; each new source revision requires its own successful evidence chain.
 
 The certificate's scope remains bounded. It does not prove universal Python-to-Agda refinement, complete ContractComposition/MigrationCoherence/TaskAndStateModel refinement, all canonical Louksna axioms or gates, production mTLS or rollback, canonical promotion, or operational activation. The prior package and formal certificates/attestations remain valid historical evidence for their exact subjects and are not rewritten, revoked, or widened by this update.
+
+
+## Addendum — subsequent mathematical proof sources (2026-10-17)
+
+This addendum supplements, and does not replace, the preceding scope and baseline record.
+
+The branch adds explicit Agda sources for (a) strict natural-number RAM and disk guard semantics and checked boundary examples, (b) definitional equality between the normalized resource-decision predicates and the shared resource model, (c) proof-carrying Hoare contract composition with a proof bridge between the first postcondition and the second precondition, and (d) typed migration simulation that transports only the declared target invariant. The Cubical source exposes the declared univalence interface used by this formal source set. The terminal G24 formal model consumes an ordered G01–G23 predecessor ledger; G24 is the resulting decision, not a circular prerequisite for itself.
+
+**Scope boundary:** these Agda proofs establish properties of their declared types, predicates, and source models. They do not establish universal semantic refinement for every Python/SQLite execution, do not make a successful formal-source workflow equivalent to global canonical Louksna G01–G24 certification, and do not authorize activation or canonical promotion. The exact `LUNACORE_final_formalized_v25.md` baseline and a complete, source-bound G01–G24 criterion/evidence matrix are not available in this candidate; global certification remains `HOLD`.
+
+The strict RAM/disk rule modelled here is `required RAM + reserved RAM < available RAM` and `required disk < available disk`. The runtime implementation change and six runtime regression cases are maintained in the separate CUSTOSZ V9 runtime PR, #84, and require their own package build and independent package-scope validation. No runtime conformance claim is made by this formal-only branch until that separate candidate is integrated and verified.
+
+No existing package certificate, prior attestation, canonical `Louksna.md` authority, or protected baseline is modified by these proof sources.
