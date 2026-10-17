@@ -203,7 +203,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           cd "$GITHUB_WORKSPACE/candidate-source"
-          agda --cubical --safe -i "$RUNNER_TEMP/cubical" -i formal/cubical \
+          agda --cubical --safe --guardedness -i "$RUNNER_TEMP/cubical" -i formal/cubical \
             formal/cubical/CRFUUnivalenceBridge.agda 2>&1 | tee "$RUNNER_TEMP/evidence/agda-cubical.log"
 
       - name: Emit independent G23 result bound to G22
