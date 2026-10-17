@@ -8,6 +8,8 @@ open import FalseElimination using (Void; false-not-true; void-elim)
 
 -- Canonical gate identity space. G24 is the terminal decision, not one of
 -- its own prerequisites; therefore the input ledger contains exactly G01-G23.
+-- This predicate is only the formal decision rule: a trusted adapter must
+-- bind each status to exact-source evidence before any external certification.
 data GateId : Set where
   G01 : GateId
   G02 : GateId
