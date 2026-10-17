@@ -64,7 +64,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           mkdir -p evidence
-          python3 - "custoszv9/crfu/event_queue.py" "evidence/PythonQueueTransitionsGenerated.agda" "evidence/runtime-transition-refinement.json" <<'PY'
+          python3 - "custoszv9/crfu/event_queue.py" "evidence/PythonQueueTransitionsGenerated.expected.agda" "evidence/runtime-transition-refinement.json" <<'PY'
           import ast, hashlib, json, pathlib, re, sys
           source_path, agda_out, report_out = map(pathlib.Path, sys.argv[1:])
           source_bytes = source_path.read_bytes()
@@ -202,6 +202,11 @@ jobs:
               suffix = " ∷" if index + 1 < len(edge_rows) else " ∷ []"
               lines.append("  queueEdge " + constructors[src] + " " + constructors[dst] + suffix)
           agda_out.write_text("\n".join(lines) + "\n", encoding="utf-8")
+          tracked_agda_path = pathlib.Path("formal/crfu/PythonQueueTransitionsGenerated.agda")
+          assert tracked_agda_path.is_file(), "CHECKED_IN_GENERATED_FORMAL_MODULE_MISSING"
+          extracted_bytes = agda_out.read_bytes()
+          tracked_bytes = tracked_agda_path.read_bytes()
+          assert extracted_bytes == tracked_bytes, "CHECKED_IN_RUNTIME_DERIVED_MODULE_DIFFERS_FROM_EXACT_PYTHON_SOURCE"
           report = {
               "schema": "CRFU_RUNTIME_REFINEMENT_EVIDENCE/1.0",
               "status": "SOURCE_EXTRACTION_PASS",
@@ -220,7 +225,9 @@ jobs:
               "static_sql_state_updates": static_sql_edges,
               "transaction_methods_checked": transaction_methods,
               "runtime_transition_guard_ast_checked": True,
-              "generated_agda_module_sha256": hashlib.sha256(agda_out.read_bytes()).hexdigest(),
+              "generated_agda_module_sha256": hashlib.sha256(extracted_bytes).hexdigest(),
+              "checked_in_agda_module_sha256": hashlib.sha256(tracked_bytes).hexdigest(),
+              "checked_in_generated_module_matches_runtime_extraction": True,
               "agda_proof_status": "PENDING_MODEL_EQUALITY_THEOREM",
               "claim_boundary": "Finite queue transition relation only; no universal claim about all Python callbacks or all SQLite failure modes.",
           }
@@ -352,7 +359,7 @@ jobs:
             evidence/formal-assurance-report.json
             evidence/formal-source-manifest.json
             evidence/runtime-transition-refinement.json
-            evidence/PythonQueueTransitionsGenerated.agda
+            evidence/PythonQueueTransitionsGenerated.expected.agda
             formal/crfu/
             formal/cubical/
           if-no-files-found: error
