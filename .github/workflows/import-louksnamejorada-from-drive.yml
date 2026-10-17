@@ -1,0 +1,105 @@
+name: "LOUKSNA: importar arquitectura mejorada exacta desde Drive"
+on:
+  push:
+    branches:
+      - staging/architecture-louksnamejorada-20260927
+    paths:
+      - .github/workflows/import-louksnamejorada-from-drive.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: import-louksnamejorada-verbatim
+  cancel-in-progress: false
+
+jobs:
+  source-to-private-staging:
+    if: >-
+      github.repository == 'Plomillo/luna-linux-bridge' &&
+      github.event.head_commit.message == 'ci(architecture): import verified LOUKSNAMEJORADA.md from Drive'
+    runs-on: [self-hosted, Linux, luna-aux]
+    timeout-minutes: 30
+    steps:
+      - name: Checkout de rama aislada en espacio propio
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          clean: false
+          persist-credentials: true
+          path: architecture_exact_import_checkout
+
+      - name: Adquirir origen por ID, verificar SHA-256 y subir copia literal
+        shell: bash
+        env:
+          SOURCE_DRIVE_ID: 1MlOuHF2rXwlPKVZbzGcnfUiRjVFaWTzK
+          EXPECTED_SHA256: 2114188988126aa7a9650c131526c9d7c54ad351db315635569a317114f4eb51
+          EXPECTED_BYTES: "11542631"
+          EXPECTED_LINES: "304498"
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          test "$GITHUB_REPOSITORY" = "Plomillo/luna-linux-bridge"
+          test "$GITHUB_REF" = "refs/heads/staging/architecture-louksnamejorada-20260927"
+          rclone_bin="$HOME/.local/bin/rclone"
+          test -x "$rclone_bin" || rclone_bin="$(command -v rclone)"
+          test -n "$rclone_bin" || { echo "FAIL_CLOSED: rclone not installed"; exit 2; }
+          test -f "$HOME/.config/rclone/rclone.conf" || { echo "FAIL_CLOSED: authorized Drive config absent"; exit 2; }
+          gitdir="$GITHUB_WORKSPACE/architecture_exact_import_checkout"
+          test -d "$gitdir/.git" || { echo "FAIL_CLOSED: isolated checkout missing"; exit 2; }
+          test -z "$(git -C "$gitdir" status --porcelain)" || {
+            echo "FAIL_CLOSED: isolated checkout dirty; unrelated changes preserved"; exit 2;
+          }
+          src="$RUNNER_TEMP/LOUKSNAMEJORADA.md"
+          test ! -e "$src" || { echo "FAIL_CLOSED: scratch source already exists"; exit 2; }
+          echo "SOURCE_RETRIEVAL=DRIVE_READONLY_COPY_BY_EXACT_FILE_ID"
+          "$rclone_bin" --config "$HOME/.config/rclone/rclone.conf" backend copyid \
+            louksna_cas_drive: "$SOURCE_DRIVE_ID" "$src"
+          test -f "$src" && test ! -L "$src"
+          actual_bytes="$(stat -c %s "$src")"
+          actual_sha="$(sha256sum "$src" | awk '{print $1}')"
+          actual_lines="$(wc -l < "$src" | tr -d '[:space:]')"
+          echo "SOURCE_BYTES=$actual_bytes"
+          echo "SOURCE_SHA256=$actual_sha"
+          echo "SOURCE_LINES=$actual_lines"
+          test "$actual_bytes" = "$EXPECTED_BYTES" || { echo "FAIL_CLOSED: source byte count differs from independently retrieved upload"; exit 2; }
+          test "$actual_sha" = "$EXPECTED_SHA256" || { echo "FAIL_CLOSED: source digest differs from independently retrieved upload"; exit 2; }
+          test "$actual_lines" = "$EXPECTED_LINES" || { echo "FAIL_CLOSED: source line count differs"; exit 2; }
+          test ! -e "$gitdir/LOUKSNAMEJORADA.md" || { echo "FAIL_CLOSED: destination exists; no overwrite authorized"; exit 2; }
+          cp -- "$src" "$gitdir/LOUKSNAMEJORADA.md"
+          echo "$EXPECTED_SHA256  $gitdir/LOUKSNAMEJORADA.md" | sha256sum --check --status
+          python3 - "$gitdir/ARCHITECTURE_SOURCE_PROVENANCE.json" "$EXPECTED_SHA256" <<'PY'
+          import json,sys,datetime
+          from pathlib import Path
+          outfile=Path(sys.argv[1])
+          source_sha=sys.argv[2]
+          rec={
+            "artifact":"LOUKSNAMEJORADA.md",
+            "source":"user-controlled Google Drive original; exact file ID recorded privately in workflow",
+            "source_size_bytes":11542631,
+            "source_sha256":source_sha,
+            "source_lines":304498,
+            "destination":"staging/architecture-louksnamejorada-20260927/LOUKSNAMEJORADA.md",
+            "transfer":"byte-exact; no transformations or normalization",
+            "source_integrity_gate":"SHA256_AND_SIZE_AND_LINES_VERIFIED",
+            "canonical_authority":"Louksna.md",
+            "derivative_status":"EVIDENCED; global semantic equivalence and operational certification remain UNVERIFIED",
+            "automatic_certification":False,
+            "g23_granted":False,
+            "g24_granted":False,
+            "not_merged_to_main":True,
+            "recorded_utc":datetime.datetime.now(datetime.timezone.utc).isoformat()
+          }
+          outfile.write_text(json.dumps(rec,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
+          PY
+          cd "$gitdir"
+          git add -- LOUKSNAMEJORADA.md ARCHITECTURE_SOURCE_PROVENANCE.json
+          git config user.name 'louksna-architecture-import[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git -c commit.gpgsign=false commit -m "docs(architecture): preserve byte-exact LOUKSNAMEJORADA with SHA-256 evidence"
+          git push origin HEAD:refs/heads/staging/architecture-louksnamejorada-20260927
+          echo "GITHUB_ARCHITECTURE_COMMIT=$(/usr/bin/git rev-parse HEAD)"
+          echo "SOURCE_VERIFIED_AND_PUSHED_STAGING_ONLY=PASS"
+          echo "CANONICAL_MUTATION=FALSE; G23=NOT_GRANTED; G24=NOT_GRANTED"
+          rm -f -- "$src"
+          echo "TEMP_SOURCE_CLEANUP=PASS"
