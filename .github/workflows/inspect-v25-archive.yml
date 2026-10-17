@@ -1,0 +1,113 @@
+name: Investigate V25 baseline archive evidence
+
+on:
+  push:
+    branches:
+      - "research/lunacore-v25-archive-evidence-20261017"
+    paths:
+      - "1. PROYECTOS PRIORITARIOS.7z.001"
+      - ".github/workflows/inspect-v25-archive.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  inspect-archive:
+    name: Inspect archive metadata and locate exact V25 baseline
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact repository revision
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Inventory archive parts and preserve source digests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p evidence/v25-archive
+          archive="1. PROYECTOS PRIORITARIOS.7z.001"
+          test -f "$archive"
+          {
+            echo "commit=${GITHUB_SHA}"
+            echo "archive_path=$archive"
+            echo "archive_bytes=$(stat -c '%s' "$archive")"
+            echo "archive_sha256=$(sha256sum "$archive" | cut -d' ' -f1)"
+            echo "archive_file_type=$(file -b "$archive")"
+            echo
+            echo "tracked_archive_parts:"
+            git ls-tree -r --name-only HEAD | grep -Ei '1\. PROYECTOS PRIORITARIOS\.7z\.[0-9]{3,}$|LUNACORE_final_formalized_v25\.md$' || true
+          } | tee evidence/v25-archive/archive-inventory.txt
+
+      - name: Install archive reader and capture its exact version
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y p7zip-full
+          7z | head -n 3 | tee evidence/v25-archive/7z-version.txt || true
+          dpkg-query -W -f='${Package}=${Version}\n' p7zip-full p7zip 2>&1 | tee -a evidence/v25-archive/7z-version.txt || true
+
+      - name: List and attempt read-only extraction to locate the V25 file
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          archive="1. PROYECTOS PRIORITARIOS.7z.001"
+          extract="$RUNNER_TEMP/v25-archive-extract"
+          mkdir -p "$extract"
+          set +e
+          7z l -slt "$archive" > evidence/v25-archive/archive-listing.txt 2>&1
+          listing_rc=$?
+          7z t "$archive" > evidence/v25-archive/archive-test.txt 2>&1
+          test_rc=$?
+          7z x -y -o"$extract" "$archive" > evidence/v25-archive/archive-extraction.txt 2>&1
+          extraction_rc=$?
+          set -e
+          printf 'listing_exit_code=%s\narchive_test_exit_code=%s\nextraction_exit_code=%s\n' "$listing_rc" "$test_rc" "$extraction_rc" | tee evidence/v25-archive/archive-operation-status.txt
+          python3 - "$extract" "$listing_rc" "$test_rc" "$extraction_rc" <<'PY'
+          import hashlib, json, pathlib, sys
+          root = pathlib.Path(sys.argv[1])
+          listing_rc, test_rc, extraction_rc = map(int, sys.argv[2:])
+          exact_name = "LUNACORE_final_formalized_v25.md"
+          matches = [p for p in root.rglob("*") if p.is_file() and p.name == exact_name]
+          related = [str(p.relative_to(root)) for p in root.rglob("*") if p.is_file() and ("lunacore" in p.name.lower() or ("v25" in p.name.lower() and p.suffix.lower() in {".md", ".txt", ".json"}))]
+          items = []
+          for p in matches:
+              h = hashlib.sha256()
+              with p.open("rb") as f:
+                  for chunk in iter(lambda: f.read(1024 * 1024), b""):
+                      h.update(chunk)
+              items.append({"path": str(p.relative_to(root)), "bytes": p.stat().st_size, "sha256": h.hexdigest()})
+          if items:
+              status = "EXACT_V25_BASELINE_FOUND"
+          elif listing_rc != 0 or extraction_rc != 0:
+              status = "ARCHIVE_INCOMPLETE_OR_UNREADABLE; BASELINE_NOT_VERIFIED"
+          else:
+              status = "ARCHIVE_READABLE; EXACT_V25_BASELINE_NOT_FOUND"
+          report = {
+              "schema": "V25_ARCHIVE_DISCOVERY/1.0",
+              "repository_commit": pathlib.Path(".git/HEAD").read_text().strip(),
+              "archive_listing_exit_code": listing_rc,
+              "archive_test_exit_code": test_rc,
+              "archive_extraction_exit_code": extraction_rc,
+              "exact_v25_baseline": items,
+              "related_extracted_paths": related[:200],
+              "status": status,
+              "certification_effect": "NO_BASELINE_INTEGRITY_PASS_WITHOUT_EXACT_FILE_AND_INDEPENDENT_BYTE_COMPARISON"
+          }
+          pathlib.Path("evidence/v25-archive/discovery-report.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          print(json.dumps(report, indent=2, sort_keys=True))
+          PY
+
+      - name: Upload archive-discovery evidence only
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b974a628896c90dbdf5c8093
+        with:
+          name: v25-archive-discovery-${{ github.sha }}
+          path: evidence/v25-archive/
+          if-no-files-found: error
+          retention-days: 90
