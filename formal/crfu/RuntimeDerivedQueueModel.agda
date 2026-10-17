@@ -3,6 +3,7 @@ module RuntimeDerivedQueueModel where
 
 open import Agda.Builtin.List using (List; []; _∷_)
 open import Agda.Builtin.String using (String)
+open import Agda.Builtin.Nat using (Nat)
 
 -- Additive model slice derived from the protected CUSTOSZV9 runtime source.
 -- Existing certified Agda modules remain byte-for-byte unchanged.
@@ -63,7 +64,7 @@ runtimeQueueTransitions =
   queueEdge recovering failed ∷
   []
 
-runtimeQueueStateCount : Agda.Builtin.Nat.Nat
+runtimeQueueStateCount : Nat
 runtimeQueueStateCount = 12
 
 -- Exact task-contract field list from the protected Python REQUIRED tuple.
