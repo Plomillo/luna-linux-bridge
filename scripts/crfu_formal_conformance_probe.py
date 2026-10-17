@@ -30,6 +30,8 @@ IMPLEMENTATION_PATHS = [
     "custoszv9/crfu/formal.py",
     "custoszv9/crfu/gates.py",
     "custoszv9/crfu/puac2.py",
+    "custoszv9/crfu/contracts.py",
+    "custoszv9/crfu/migration.py",
 ]
 
 
@@ -83,6 +85,8 @@ def main() -> int:
     from custoszv9.crfu.planner import ActionSpec, build_plan
     from custoszv9.crfu.recovery import checkpoint_record, verify_restoration
     from custoszv9.crfu.resources import ResourceBudget, ResourceSnapshot, evaluate_budget
+    from custoszv9.crfu.contracts import RuntimeContract, run_composed_contracts
+    from custoszv9.crfu.migration import MigrationWitness, validate_migration_witness
 
     observations: list[dict[str, str]] = []
 
@@ -523,6 +527,122 @@ def main() -> int:
         queue_wait_condition_and_deadline,
     )
 
+
+    # Runtime checks newly tied to the Agda Hoare/migration model sources.
+    first_contract = RuntimeContract(
+        "increment", lambda x: type(x) is int and x >= 0,
+        lambda x: x + 1, lambda before, after: after == before + 1,
+    )
+    second_contract_calls = []
+    second_contract = RuntimeContract(
+        "double", lambda x: type(x) is int and x >= 1,
+        lambda x: second_contract_calls.append(x) or x * 2,
+        lambda before, after: after == before * 2,
+    )
+    check(
+        "contracts.postcondition_bridge_precondition_and_second_postcondition_pass",
+        lambda: _assert_composed_contract(
+            run_composed_contracts(
+                first_contract, second_contract,
+                lambda before, middle: middle == before + 1, 1,
+            ),
+            "PASS_FOR_DECLARED_CONTRACTS",
+        ),
+    )
+    second_contract_calls.clear()
+    check(
+        "contracts.failed_bridge_holds_and_prevents_second_execution",
+        lambda: _assert_composed_contract(
+            run_composed_contracts(
+                first_contract, second_contract, lambda before, middle: False, 1,
+            ),
+            "HOLD", reason="POST_PRE_BRIDGE_NOT_ESTABLISHED", calls=second_contract_calls,
+        ),
+    )
+    check(
+        "contracts.first_postcondition_failure_fails_closed",
+        lambda: _assert_composed_contract(
+            run_composed_contracts(
+                RuntimeContract("broken", lambda x: True, lambda x: x + 1,
+                                lambda before, after: False),
+                second_contract, lambda before, middle: True, 1,
+            ),
+            "FAIL", reason="FIRST_POSTCONDITION_FAILED",
+        ),
+    )
+
+    migration_source = b"migration-source-v1"
+    migration_target = b"migration-target-v2"
+    valid_migration = MigrationWitness(
+        source_version="v1", target_version="v2",
+        source_artifact_sha256=sha_bytes(migration_source),
+        target_artifact_sha256=sha_bytes(migration_target),
+        invariant_id="declared-state-invariant",
+        invariant_proof_sha256=sha_bytes(b"proof-record"),
+        proof_status="VERIFIED", producer_identity="migration-producer",
+        verifier_identity="independent-verifier",
+        rollback_artifact_sha256=sha_bytes(b"rollback-artifact"),
+    )
+    check(
+        "migration.exact_artifacts_and_independent_declared_invariant_pass",
+        lambda: _assert_migration(
+            validate_migration_witness(
+                valid_migration, migration_source, migration_target,
+                source_invariant_holds=True, target_invariant_holds=True,
+            ),
+            "PASS_FOR_DECLARED_INVARIANT",
+        ),
+    )
+    check(
+        "migration.target_digest_mismatch_fails",
+        lambda: _assert_migration(
+            validate_migration_witness(
+                valid_migration, migration_source, b"tampered",
+                source_invariant_holds=True, target_invariant_holds=True,
+            ),
+            "FAIL", reason="MIGRATION_TARGET_ARTIFACT_MISMATCH",
+        ),
+    )
+    check(
+        "migration.same_producer_verifier_holds",
+        lambda: _assert_migration(
+            validate_migration_witness(
+                MigrationWitness(
+                    source_version="v1", target_version="v2",
+                    source_artifact_sha256=sha_bytes(migration_source),
+                    target_artifact_sha256=sha_bytes(migration_target),
+                    invariant_id="declared-state-invariant",
+                    invariant_proof_sha256=sha_bytes(b"proof-record"),
+                    proof_status="VERIFIED", producer_identity="same",
+                    verifier_identity="same",
+                    rollback_artifact_sha256=sha_bytes(b"rollback-artifact"),
+                ),
+                migration_source, migration_target,
+                source_invariant_holds=True, target_invariant_holds=True,
+            ),
+            "HOLD", reason="MIGRATION_REQUIRES_INDEPENDENT_VERIFIER",
+        ),
+    )
+    check(
+        "migration.malformed_rollback_digest_holds",
+        lambda: _assert_migration(
+            validate_migration_witness(
+                MigrationWitness(
+                    source_version="v1", target_version="v2",
+                    source_artifact_sha256=sha_bytes(migration_source),
+                    target_artifact_sha256=sha_bytes(migration_target),
+                    invariant_id="declared-state-invariant",
+                    invariant_proof_sha256=sha_bytes(b"proof-record"),
+                    proof_status="VERIFIED", producer_identity="producer",
+                    verifier_identity="reviewer", rollback_artifact_sha256="invalid",
+                ),
+                migration_source, migration_target,
+                source_invariant_holds=True, target_invariant_holds=True,
+            ),
+            "HOLD", reason="MIGRATION_DIGEST_INVALID",
+        ),
+    )
+
     mapping = [
         {
             "formal_module": "PlanSoundness.agda",
@@ -555,10 +675,22 @@ def main() -> int:
             "boundary": "Task validation, authorization, resource, plan and action-adapter gates are exercised; no theorem establishes complete Python-to-Agda contract-composition refinement.",
         },
         {
+            "formal_module": "ContractHoareComposition.agda",
+            "runtime_symbols": ["custosz9.crfu.contracts.run_composed_contracts"],
+            "coverage": "BOUNDED_RUNTIME_COMPOSITION_WITNESS",
+            "boundary": "Runtime requires first precondition, first postcondition, explicit post-to-pre bridge, second precondition and second postcondition. Python callbacks are runtime witnesses, not Agda proof terms.",
+        },
+        {
+            "formal_module": "MigrationSimulation.agda",
+            "runtime_symbols": ["custosz9.crfu.migration.validate_migration_witness"],
+            "coverage": "BOUNDED_EXACT_ARTIFACT_AND_INVARIANT_WITNESS",
+            "boundary": "Source/target bytes and versions, declared invariant, proof digest syntax, independent identities, and rollback digest syntax are checked. This is not a universal migration-semantics theorem.",
+        },
+        {
             "formal_module": "MigrationCoherence.agda",
-            "runtime_symbols": [],
-            "coverage": "NOT_MAPPED_TO_A_UNIQUE_RUNTIME_MIGRATION_THEOREM",
-            "boundary": "Recovery probes do not constitute a migration-coherence proof.",
+            "runtime_symbols": ["custosz9.crfu.migration.validate_migration_witness"],
+            "coverage": "BOUNDED_RUNTIME_WITNESS_NOT_UNIVERSAL_REFINEMENT",
+            "boundary": "Runtime witness is tied to exact source/target artifacts and one declared invariant; no universal migration-semantics theorem is claimed.",
         },
         {
             "formal_module": "ModelImplementationCorrespondence.agda",
@@ -622,6 +754,27 @@ def main() -> int:
         ],
     }, indent=2))
     return 0
+
+
+def _assert_composed_contract(result, expected_status, *, reason=None, calls=None):
+    assert result.get("status") == expected_status, result
+    assert result.get("execution_authorized") is False, result
+    assert result.get("certification_propagation") is False, result
+    assert result.get("authority_transfer") is False, result
+    if reason is not None:
+        assert result.get("reason") == reason, result
+    if calls is not None:
+        assert calls == [], calls
+
+
+def _assert_migration(result, expected_status, *, reason=None):
+    assert result.get("status") == expected_status, result
+    assert result.get("certification_propagation") is False, result
+    assert result.get("authority_transfer") is False, result
+    if reason is not None:
+        assert result.get("reason") == reason, result
+    if expected_status == "PASS_FOR_DECLARED_INVARIANT":
+        assert result.get("universal_migration_refinement_proven") is False, result
 
 
 def _assert_plan(result, expected_status, *, ordered=None, reason=None, execution_authorized=None):
