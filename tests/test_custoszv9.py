@@ -168,6 +168,53 @@ class CRFUTests(unittest.TestCase):
     def test_unknown_resources_hold(self):
         out=evaluate_budget(ResourceBudget(1,1,1,1),ResourceSnapshot(None,None,None,"2026-01-01T00:00:00Z","test","UNKNOWN"))
         self.assertEqual(out["status"],"HOLD")
+    def _measured_snapshot(self, ram: int, disk: int, cpu: int = 4) -> ResourceSnapshot:
+        return ResourceSnapshot(ram, disk, cpu, "2026-10-17T00:00:00Z", "test-fixture", "MEASURED")
+
+    def test_ram_strict_boundary_equality_fails(self):
+        result = evaluate_budget(
+            ResourceBudget(900, 100, 10, 1),
+            self._measured_snapshot(1000, 2000),
+        )
+        self.assertEqual(result["status"], "FAIL")
+        self.assertIn("RAM_BUDGET_EXCEEDED", result["reasons"])
+
+    def test_ram_one_byte_inside_strict_boundary_passes(self):
+        result = evaluate_budget(
+            ResourceBudget(899, 100, 10, 1),
+            self._measured_snapshot(1000, 2000),
+        )
+        self.assertEqual(result["status"], "PASS")
+
+    def test_ram_reservation_above_available_fails_even_for_zero_demand(self):
+        result = evaluate_budget(
+            ResourceBudget(0, 101, 10, 1),
+            self._measured_snapshot(100, 2000),
+        )
+        self.assertEqual(result["status"], "FAIL")
+        self.assertIn("RAM_BUDGET_EXCEEDED", result["reasons"])
+
+    def test_disk_strict_boundary_equality_fails(self):
+        result = evaluate_budget(
+            ResourceBudget(10, 10, 2000, 1),
+            self._measured_snapshot(1000, 2000),
+        )
+        self.assertEqual(result["status"], "FAIL")
+        self.assertIn("DISK_BUDGET_EXCEEDED", result["reasons"])
+
+    def test_disk_one_byte_inside_strict_boundary_passes(self):
+        result = evaluate_budget(
+            ResourceBudget(10, 10, 1999, 1),
+            self._measured_snapshot(1000, 2000),
+        )
+        self.assertEqual(result["status"], "PASS")
+
+    def test_invalid_numeric_measurement_holds_instead_of_raising_or_passing(self):
+        snapshot = ResourceSnapshot(True, 2000, 4, "2026-10-17T00:00:00Z", "test-fixture", "MEASURED")
+        result = evaluate_budget(ResourceBudget(0, 0, 0, 1), snapshot)
+        self.assertEqual(result["status"], "HOLD")
+        self.assertIn("RESOURCE_MEASUREMENT_INVALID:ram_available_bytes", result["reasons"])
+
     def test_repeated_strategy_without_evidence_blocked(self):
         h=state_fingerprint({"revision":1})
         out=decide_next_action(action_id="a",strategy_id="s",state_hash=h,
