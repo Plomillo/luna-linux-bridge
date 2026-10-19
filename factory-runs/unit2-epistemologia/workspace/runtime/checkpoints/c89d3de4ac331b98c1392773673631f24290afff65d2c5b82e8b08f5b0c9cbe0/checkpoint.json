@@ -1,0 +1,28 @@
+{
+  "checkpoint_digest_sha256": "c89d3de4ac331b98c1392773673631f24290afff65d2c5b82e8b08f5b0c9cbe0",
+  "created_at_utc": "2026-10-19T07:18:41.059861+00:00",
+  "files": [
+    {
+      "path": "source/report.md",
+      "sha256": "b9265785497650fa75d9f4b06720226c80bf8845ee03cfd9c4aabbfc5dbf45d5",
+      "size_bytes": 9292
+    },
+    {
+      "path": "source/slides.md",
+      "sha256": "fef5bbf299775c73b0552f630dfaa24e5de0ee0751e4ced72d4e37c9aab3b517",
+      "size_bytes": 482
+    },
+    {
+      "path": "data/sheets.json",
+      "sha256": "cf8c7f22ee6782c0e3fea02607dc51ad1c256f8ca79e7538b8589fbd957c29b2",
+      "size_bytes": 1619
+    },
+    {
+      "path": "data/source-ledger.json",
+      "sha256": "13f52cf396ee457c5b4893b35402adbbd1ad7c9feaeec6dd0126f3e85795de19",
+      "size_bytes": 5020
+    }
+  ],
+  "schema": "DOCUMENT_FACTORY_CHECKPOINT/2.0",
+  "snapshot_path": "runtime/checkpoints/c89d3de4ac331b98c1392773673631f24290afff65d2c5b82e8b08f5b0c9cbe0/snapshot"
+}

@@ -15,7 +15,7 @@ Universidad de Artes, Ciencias y Comunicación (UNIACC)
 
 19 de octubre de 2026
 
-Fuente del logotipo: Universidad UNIACC (2013), Wikimedia Commons; licencia CC BY-SA 4.0. https://commons.wikimedia.org/wiki/File:LOGO_UNIACC.png
+Logotipo: Universidad UNIACC (2013), Wikimedia Commons. Licencia CC BY-SA 4.0: https://creativecommons.org/licenses/by-sa/4.0/. Archivo: https://commons.wikimedia.org/wiki/File:LOGO_UNIACC.png
 
 <!-- BODY_START -->
 

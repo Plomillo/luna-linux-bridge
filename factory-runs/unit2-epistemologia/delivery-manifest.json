@@ -1,9 +1,11 @@
 {
-  "schema": "UNIACC_EPISTEMOLOGIA_DELIVERY_MANIFEST/1.0",
+  "schema": "UNIACC_EPISTEMOLOGIA_DELIVERY_MANIFEST/1.2",
   "task_profile": "UNIACC_EPISTEMOLOGIA_U2_20261019",
   "branch": "candidate/document-factory-v1-unit2-20261013",
-  "source_candidate_frozen_digest_sha256": "bfbf5efc53c10b5016f75c2e39d513a5574219272a1f3bc21ef767d80756d5f1",
-  "rubric_points_mapped": 42,
+  "created_at_utc": "2026-10-19T07:20:28.994967+00:00",
+  "status": "CANDIDATE_BUILT_PENDING_INDEPENDENT_REVIEW",
+  "source_candidate_frozen_digest_sha256": "688534855c97330818911aae1054c9256dc52557e781cdaca2f88f833578beea",
+  "rubric_points_mapped": 42.0,
   "body_word_count": 981,
   "page_count_total": 6,
   "page_map": {
@@ -14,25 +16,36 @@
     "5": "question_4",
     "6": "references"
   },
-  "font": "Arial 12 pt",
-  "heading_size_pt": 16,
-  "line_spacing": 1.5,
-  "margins_cm": 2.5,
+  "formatting": {
+    "font": "Arial 12 pt",
+    "heading_size_pt": 16,
+    "line_spacing": 1.5,
+    "margins_cm": 2.5,
+    "page_numbers": "APA 7 field in upper-right header"
+  },
+  "profile_validation": "PASS",
+  "factory_validation": "PASS",
+  "document_verification": "PASS",
   "source_ledger_validation": "PASS",
+  "citation_ledger_validation": "PASS",
+  "metacognitive_self_audit": "PASS_WITH_ESCALATION",
   "cover_logo_embedded": true,
+  "page_number_field": "PASS",
   "g23": "NOT_EXECUTED",
   "g24": "NOT_EXECUTED",
   "independent_review": "PENDING",
+  "teacher_review": "PENDING",
+  "drive_course_materials": "NOT_VERIFIED_IN_THIS_SESSION",
   "deliverables": [
     {
       "filename": "Trabajo2_DiegoIgnacioNorambuenaMiranda.docx",
-      "bytes": 64439,
-      "sha256": "01255a7c124730661a893db346454caf5aadc87936252869871c52026303c087"
+      "bytes": 65131,
+      "sha256": "6e85295894d6e4f39ee5a9a440b0d54a48f66b19387f432b96ca9d334c3cb239"
     },
     {
       "filename": "Trabajo2_DiegoIgnacioNorambuenaMiranda.pdf",
-      "bytes": 100871,
-      "sha256": "eef1b0991f4d64332e6222c15f3e05da854d7b5b264f193e4ce52773fb96765d"
+      "bytes": 101100,
+      "sha256": "b09202b024fd3bd08ced0f2098b4a980a8f5b76a672cad0c62edced7816a5cf9"
     }
   ]
 }

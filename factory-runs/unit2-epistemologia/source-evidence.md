@@ -1,22 +1,19 @@
 # Registro de evidencia bibliográfica — Epistemología, Unidad 2
 
-## Alcance verificado
-Se preparó una síntesis a partir de la obra primaria de Thomas S. Kuhn, W. V. O. Quine y Nancy J. Nersessian, junto con entradas académicas de *The Stanford Encyclopedia of Philosophy* sobre empirismo lógico y Kuhn. La tabla source-ledger vincula cada fuente con marcadores internos invisibles en el Word y citas autor-fecha legibles.
+## Evidencia consultada y correspondencia
+La argumentación del trabajo se apoya en Kuhn, Quine y Nersessian, y en dos entradas de la *Stanford Encyclopedia of Philosophy*. Cada cita académica del texto lleva un marcador de trazabilidad interno y corresponde a una fuente verificada en `workspace/data/source-ledger.json`.
+
+- **S1 — Creath:** la edición archivada de otoño de 2022 de *Logical Empiricism* identifica el artículo, el autor y su historial editorial; la referencia del trabajo dirige a esa edición. La entrada indica su primera publicación en 2011 y revisión sustantiva en 2017.
+- **S2 — Bird:** la entrada *Thomas Kuhn* de la *Stanford Encyclopedia of Philosophy* registra una revisión sustantiva el 2 de septiembre de 2025; se cita la edición archivada de otoño de 2025.
+- **S3 — Kuhn:** *The Structure of Scientific Revolutions*, 4.ª edición (2012).
+- **S4 — Quine:** “Two Dogmas of Empiricism” (1951), *The Philosophical Review, 60*(1), 20–43, DOI verificado.
+- **S5 — Quine:** “Epistemology Naturalized” (1969), pp. 69–90, DOI de Columbia University Press verificado.
+- **S6 — Nersessian:** “Model-Based Reasoning in Conceptual Change” (1999), capítulo en *Model-Based Reasoning in Scientific Discovery*, DOI verificado.
+- **S7 — Nersessian:** “How Do Scientists Think? Capturing the Dynamics of Conceptual Change in Science” (1992), pp. 3–45, registro JSTOR verificado.
+- **S8 — Logotipo UNIACC:** archivo atribuido a Universidad UNIACC (2013) en Wikimedia Commons. Se conserva el archivo sin modificaciones; se registraron la URL, licencia CC BY-SA 4.0 y SHA-256.
 
 ## Limitación documental
-La carpeta Google Drive indicada por el estudiante pudo identificarse por URL como “Plan, Apuntes y Lecturas Obligatorias - Google Drive”, pero no se obtuvo el texto de sus archivos; por ello, no se afirma haber leído apuntes, video-clases ni lecturas alojadas allí. Este borrador usa bibliografía académica pública verificable y debe cotejarse con esos materiales de curso cuando estén disponibles.
-
-## Fuentes
-- S1: Creath (2022; versión archivada en 2024), entrada académica sobre empirismo lógico.
-- S2: Bird (2025), entrada académica sobre Thomas Kuhn.
-- S3: Kuhn (2012), *The Structure of Scientific Revolutions*, 4.ª edición.
-- S4: Quine (1951), “Two Dogmas of Empiricism”.
-- S5: Quine (1969), “Epistemology Naturalized”.
-- S6: Nersessian (1999), “Model-Based Reasoning in Conceptual Change”.
-- S7: Nersessian (1992), “How Do Scientists Think? Capturing the Dynamics of Conceptual Change in Science”.
+La URL de Google Drive proporcionada para “Plan, Apuntes y Lecturas Obligatorias” se identificó, pero la lectura directa de sus archivos no se pudo completar desde esta sesión. Por tanto, no afirmo haber consultado las video-clases ni las lecturas privadas del curso. El documento se apoya en fuentes académicas públicas verificables y debe cotejarse con el material docente de esa carpeta antes de su entrega definitiva.
 
 ## Estado
-EVIDENCIA_BIBLIOGRÁFICA_MATERIALIZADA; lectura directa de la carpeta Drive pendiente; G23/G24 no ejecutados.
-
-
-Recurso gráfico de portada (S8): LOGO UNIACC.png, fuente Universidad UNIACC (2013), Wikimedia Commons. Se registraron URL, licencia CC BY-SA 4.0 y SHA-256 del archivo local; la imagen se usó sin modificaciones.
+EVIDENCIA_BIBLIOGRÁFICA_MATERIALIZADA; registro de fuentes validado; fuente privada Drive pendiente; G23/G24 no ejecutados; revisión docente pendiente.

@@ -1,24 +1,24 @@
 {
-  "observed_at_utc": "2026-10-19T07:14:28.002772+00:00",
+  "observed_at_utc": "2026-10-19T07:20:28.418551+00:00",
   "results": [
     {
       "check": "docx",
-      "sha256": "01255a7c124730661a893db346454caf5aadc87936252869871c52026303c087",
+      "sha256": "6e85295894d6e4f39ee5a9a440b0d54a48f66b19387f432b96ca9d334c3cb239",
       "status": "PASS"
     },
     {
       "check": "pptx",
-      "sha256": "d80b42521c4f107ca90a81bd610a6bb8ec55c0f9b3f6431fe1856fb4e376fb34",
+      "sha256": "c73c11df46341460ba20df55e58f6f553411f1c167e15d0f73775d64defe19aa",
       "status": "PASS"
     },
     {
       "check": "xlsx",
-      "sha256": "5b9538fab1f796a5fe37748c82aa5d8df0cfe18b4553152705c44f9b671a044e",
+      "sha256": "31d957987b8ee7a42152fffff68bfb6e59a6ece3cd243141ecb4f4ed25ee9461",
       "status": "PASS"
     },
     {
       "check": "pdf",
-      "sha256": "eef1b0991f4d64332e6222c15f3e05da854d7b5b264f193e4ce52773fb96765d",
+      "sha256": "b09202b024fd3bd08ced0f2098b4a980a8f5b76a672cad0c62edced7816a5cf9",
       "status": "PASS"
     },
     {

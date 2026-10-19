@@ -67,9 +67,14 @@ for term in ("(Creath, 2022)", "(Kuhn, 2012)", "(Quine, 1951)", "(Quine, 1969)",
         raise SystemExit("APA_IN_TEXT_CITATION_MISSING:" + term)
 
 with zipfile.ZipFile(docx) as package:
-    media = [x for x in package.namelist() if x.startswith("word/media/")]
+    names = package.namelist()
+    media = [x for x in names if x.startswith("word/media/")]
+    headers = [x for x in names if re.fullmatch(r"word/header\d+\.xml", x)]
+    page_field = any(b"PAGE" in package.read(x) for x in headers)
 if not media:
     raise SystemExit("COVER_LOGO_MISSING_FROM_DOCX")
+if not page_field:
+    raise SystemExit("APA_PAGE_NUMBER_FIELD_MISSING")
 
 doc = Document(str(docx))
 for idx, section in enumerate(doc.sections, 1):
@@ -90,6 +95,7 @@ result = {
     "verified_sources": len(source_ids),
     "citation_ledger": citation_validation["status"],
     "cover_logo_embedded": True,
+    "page_number_field": "PASS",
     "docx_bytes": docx.stat().st_size,
     "pdf_bytes": pdf.stat().st_size,
     "apa_in_text_markers_checked": 5,

@@ -1,0 +1,100 @@
+{
+  "certification_authority": false,
+  "criterion_count": 9,
+  "declared_total_points": 42.0,
+  "obligations": [
+    {
+      "automated_assist": true,
+      "claim_status": "UNKNOWN",
+      "criterion_id": "R01",
+      "evidence_ref": null,
+      "independent_or_human_required": false,
+      "points": 1.75,
+      "requirement_text": "Entrega dentro del plazo y respeta la extensión solicitada.",
+      "validation_class": "AUTOMATED_PARTIAL_PLUS_PLATFORM_EVIDENCE"
+    },
+    {
+      "automated_assist": true,
+      "claim_status": "UNKNOWN",
+      "criterion_id": "R02",
+      "evidence_ref": null,
+      "independent_or_human_required": true,
+      "points": 1.75,
+      "requirement_text": "Presentación limpia y homogénea; tipografía, márgenes, alineación y diagramación coherentes.",
+      "validation_class": "AUTOMATED_FORMAT_CHECK_PLUS_G23_HUMAN"
+    },
+    {
+      "automated_assist": true,
+      "claim_status": "UNKNOWN",
+      "criterion_id": "R03",
+      "evidence_ref": null,
+      "independent_or_human_required": true,
+      "points": 1.75,
+      "requirement_text": "Redacción coherente, precisa y con dominio del lenguaje disciplinar.",
+      "validation_class": "AUTOMATED_LANGUAGE_ASSIST_PLUS_G23_HUMAN"
+    },
+    {
+      "automated_assist": true,
+      "claim_status": "UNKNOWN",
+      "criterion_id": "R04",
+      "evidence_ref": null,
+      "independent_or_human_required": true,
+      "points": 1.75,
+      "requirement_text": "Fuentes primarias y secundarias citadas y registradas correctamente según APA 7.",
+      "validation_class": "AUTOMATED_CITATION_LEDGER_PLUS_G23_HUMAN"
+    },
+    {
+      "automated_assist": false,
+      "claim_status": "UNKNOWN",
+      "criterion_id": "R05",
+      "evidence_ref": null,
+      "independent_or_human_required": true,
+      "points": 7.0,
+      "requirement_text": "Distingue con claridad positivismo lógico e historicismo mediante casos científicos concretos.",
+      "validation_class": "G23_HUMAN_DISCIPLINARY"
+    },
+    {
+      "automated_assist": false,
+      "claim_status": "UNKNOWN",
+      "criterion_id": "R06",
+      "evidence_ref": null,
+      "independent_or_human_required": true,
+      "points": 7.0,
+      "requirement_text": "Desarrolla con un ejemplo propio el paso de un paradigma a otro según Kuhn.",
+      "validation_class": "G23_HUMAN_DISCIPLINARY"
+    },
+    {
+      "automated_assist": false,
+      "claim_status": "UNKNOWN",
+      "criterion_id": "R07",
+      "evidence_ref": null,
+      "independent_or_human_required": true,
+      "points": 7.0,
+      "requirement_text": "Aplica adecuadamente las etapas del desarrollo científico kuhniano al ejemplo.",
+      "validation_class": "G23_HUMAN_DISCIPLINARY"
+    },
+    {
+      "automated_assist": false,
+      "claim_status": "UNKNOWN",
+      "criterion_id": "R08",
+      "evidence_ref": null,
+      "independent_or_human_required": true,
+      "points": 7.0,
+      "requirement_text": "Argumenta por qué Quine no es clasificable como positivista lógico e incorpora ejemplos.",
+      "validation_class": "G23_HUMAN_DISCIPLINARY"
+    },
+    {
+      "automated_assist": false,
+      "claim_status": "UNKNOWN",
+      "criterion_id": "R09",
+      "evidence_ref": null,
+      "independent_or_human_required": true,
+      "points": 7.0,
+      "requirement_text": "Aplica los conceptos de Nersessian al cambio conceptual de un caso científico.",
+      "validation_class": "G23_HUMAN_DISCIPLINARY"
+    }
+  ],
+  "profile_id": "UNIACC_EPISTEMOLOGIA_U2_20261019",
+  "profile_version": "1.0",
+  "schema": "DOCUMENT_FACTORY_RUBRIC_OBLIGATIONS/1.0"
+}
