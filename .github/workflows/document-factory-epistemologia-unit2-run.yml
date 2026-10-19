@@ -57,7 +57,7 @@ jobs:
           rm -f "$W/build/report.pdf"
           soffice --headless --convert-to pdf --outdir "$W/build" "$W/build/report.docx"
           python3 -B document-factory/src/factory.py validate "$W" factory-runs/unit2-epistemologia/profile.json --repo-root .
-          python3 -B factory-runs/unit2-epistemologia/verify_document.py "$W" "$ROOT/profile.json" . factory-runs/unit2-epistemologia/profile.json .
+          python3 -B factory-runs/unit2-epistemologia/verify_document.py "$W" factory-runs/unit2-epistemologia/profile.json .
           python3 -B document-factory/src/factory.py self-audit "$W" factory-runs/unit2-epistemologia/profile.json
           python3 -B document-factory/src/factory.py freeze "$W"
           test -s "$W/build/report.docx"

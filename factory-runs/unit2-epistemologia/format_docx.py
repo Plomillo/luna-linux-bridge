@@ -91,8 +91,8 @@ for p in doc.paragraphs:
                 run.bold = True
     elif phase == "REFERENCES":
         if txt == "Referencias":
+            # Do not assume the localized Heading 1 style exists in every Pandoc template.
             p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            p.style = doc.styles["Heading 1"]
         else:
             p.alignment = WD_ALIGN_PARAGRAPH.LEFT
             p.paragraph_format.left_indent = Inches(0.5)
