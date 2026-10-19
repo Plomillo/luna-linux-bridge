@@ -1,0 +1,191 @@
+{
+  "schema": "LOUKSNA_ASSIGNMENT_PROFILE/1.0",
+  "profile_id": "UNIACC_EPISTEMOLOGIA_U2_20261019",
+  "profile_version": "1.0",
+  "status": "TASK_PROFILE_CANDIDATE_NOT_CERTIFIED",
+  "raw_instruction_ref": "factory-runs/unit2-epistemologia/instructions.md",
+  "title": "Identificación de los enfoques de la epistemología científica",
+  "language": "es",
+  "required_research": {
+    "minimum_distinct_sources": 6,
+    "source_priority": "Fuentes primarias de Kuhn, Quine y Nersessian, complementadas por una fuente académica de referencia sobre empirismo lógico e historia de la ciencia.",
+    "required_topics": [
+      "Distinciones epistemológicas entre positivismo lógico e historicismo con ejemplos científicos",
+      "Etapas del cambio de paradigma en Kuhn aplicadas a un ejemplo inventado",
+      "Crítica de Quine a la dicotomía analítico/sintético y al reduccionismo; epistemología naturalizada",
+      "Cambio conceptual y razonamiento basado en modelos según Nersessian",
+      "Correspondencia trazable entre citas en texto y referencias APA 7"
+    ]
+  },
+  "deliverables": [
+    {
+      "id": "REPORT_DOCX",
+      "kind": "docx",
+      "submission_required": true
+    },
+    {
+      "id": "AUX_PDF",
+      "kind": "pdf",
+      "submission_required": false
+    },
+    {
+      "id": "AUX_PPTX",
+      "kind": "pptx",
+      "submission_required": false
+    },
+    {
+      "id": "AUX_XLSX",
+      "kind": "xlsx",
+      "submission_required": false
+    }
+  ],
+  "constraints": {
+    "report_word_count": {
+      "min": 900,
+      "max": 1600,
+      "exclude": [
+        "cover",
+        "bibliography"
+      ]
+    },
+    "page_count_total": 6,
+    "pages": {
+      "cover": 1,
+      "answer_1": 1,
+      "answer_2": 1,
+      "answer_3": 1,
+      "answer_4": 1,
+      "references": 1
+    },
+    "formatting": {
+      "font": "Arial",
+      "body_size_pt": 12,
+      "heading_size_pt": 16,
+      "line_spacing": 1.5,
+      "paragraph_alignment": "justified",
+      "heading_alignment": "center",
+      "margins_cm": {
+        "top": 2.5,
+        "bottom": 2.5,
+        "left": 2.5,
+        "right": 2.5
+      }
+    },
+    "language": "es",
+    "apa_edition": 7,
+    "cover": {
+      "required": true,
+      "student": "Diego Ignacio Norambuena Miranda",
+      "professor": "Olga Carmelita Gonzalez Mesa",
+      "course": "EPISTEMOLOGÍA - 387 - 487971",
+      "institution_logo_required": true,
+      "style": "minimalista"
+    },
+    "references": {
+      "required": true,
+      "own_page": true,
+      "all_in_text_citations_mapped": true
+    },
+    "academic_integrity": {
+      "fabricated_results": false,
+      "fabricated_references": false,
+      "group_members_not_provided": true,
+      "hypothetical_examples_labeled": true
+    },
+    "submission": {
+      "file_name": "Trabajo2_DiegoIgnacioNorambuenaMiranda.docx"
+    }
+  },
+  "rubric": {
+    "declared_total_points": 42,
+    "criteria": [
+      {
+        "id": "R01",
+        "points": 1.75,
+        "text": "Entrega dentro del plazo y respeta la extensión solicitada.",
+        "validation": "AUTOMATED_PARTIAL_PLUS_PLATFORM_EVIDENCE"
+      },
+      {
+        "id": "R02",
+        "points": 1.75,
+        "text": "Presentación limpia y homogénea; tipografía, márgenes, alineación y diagramación coherentes.",
+        "validation": "AUTOMATED_FORMAT_CHECK_PLUS_G23_HUMAN"
+      },
+      {
+        "id": "R03",
+        "points": 1.75,
+        "text": "Redacción coherente, precisa y con dominio del lenguaje disciplinar.",
+        "validation": "AUTOMATED_LANGUAGE_ASSIST_PLUS_G23_HUMAN"
+      },
+      {
+        "id": "R04",
+        "points": 1.75,
+        "text": "Fuentes primarias y secundarias citadas y registradas correctamente según APA 7.",
+        "validation": "AUTOMATED_CITATION_LEDGER_PLUS_G23_HUMAN"
+      },
+      {
+        "id": "R05",
+        "points": 7,
+        "text": "Distingue con claridad positivismo lógico e historicismo mediante casos científicos concretos.",
+        "validation": "G23_HUMAN_DISCIPLINARY"
+      },
+      {
+        "id": "R06",
+        "points": 7,
+        "text": "Desarrolla con un ejemplo propio el paso de un paradigma a otro según Kuhn.",
+        "validation": "G23_HUMAN_DISCIPLINARY"
+      },
+      {
+        "id": "R07",
+        "points": 7,
+        "text": "Aplica adecuadamente las etapas del desarrollo científico kuhniano al ejemplo.",
+        "validation": "G23_HUMAN_DISCIPLINARY"
+      },
+      {
+        "id": "R08",
+        "points": 7,
+        "text": "Argumenta por qué Quine no es clasificable como positivista lógico e incorpora ejemplos.",
+        "validation": "G23_HUMAN_DISCIPLINARY"
+      },
+      {
+        "id": "R09",
+        "points": 7,
+        "text": "Aplica los conceptos de Nersessian al cambio conceptual de un caso científico.",
+        "validation": "G23_HUMAN_DISCIPLINARY"
+      }
+    ]
+  },
+  "runtime_policy": {
+    "heartbeat_interval_seconds": 1,
+    "stages": {
+      "PROFILE_VALIDATE": {
+        "timeout_seconds": 30,
+        "max_attempts": 1
+      },
+      "BUILD_DOCX": {
+        "timeout_seconds": 180,
+        "max_attempts": 1
+      },
+      "BUILD_PPTX": {
+        "timeout_seconds": 180,
+        "max_attempts": 1
+      },
+      "BUILD_PDF": {
+        "timeout_seconds": 300,
+        "max_attempts": 1
+      },
+      "VERIFY": {
+        "timeout_seconds": 180,
+        "max_attempts": 1
+      },
+      "FREEZE": {
+        "timeout_seconds": 60,
+        "max_attempts": 1
+      }
+    }
+  },
+  "no_subject_matter_inference": false,
+  "certification_authority": false,
+  "g23_authority": false,
+  "g24_authority": false
+}

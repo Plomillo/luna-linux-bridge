@@ -1,0 +1,175 @@
+{
+  "schema": "DOCUMENT_FACTORY_SOURCE_LEDGER/1.0",
+  "sources": [
+    {
+      "source_id": "S1",
+      "verified": true,
+      "title": "Logical Empiricism",
+      "author": [
+        {
+          "family": "Creath",
+          "given": "Richard"
+        }
+      ],
+      "issued": {
+        "date-parts": [
+          [
+            2022
+          ]
+        ]
+      },
+      "container_title": "The Stanford Encyclopedia of Philosophy",
+      "csl_type": "entry-encyclopedia",
+      "URL": "https://plato.stanford.edu/archives/fall2022/entries/logical-empiricism/",
+      "publisher": "Metaphysics Research Lab, Stanford University",
+      "fabricated_metadata": false,
+      "verification_note": "First published 2011; substantive revision 2022; author and copyright attribution appear on current SEP page."
+    },
+    {
+      "source_id": "S2",
+      "verified": true,
+      "title": "Thomas Kuhn",
+      "author": [
+        {
+          "family": "Bird",
+          "given": "Alexander"
+        }
+      ],
+      "issued": {
+        "date-parts": [
+          [
+            2025
+          ]
+        ]
+      },
+      "container_title": "The Stanford Encyclopedia of Philosophy",
+      "csl_type": "entry-encyclopedia",
+      "URL": "https://plato.stanford.edu/archives/fall2025/entries/thomas-kuhn/",
+      "publisher": "Metaphysics Research Lab, Stanford University",
+      "fabricated_metadata": false
+    },
+    {
+      "source_id": "S3",
+      "verified": true,
+      "title": "The structure of scientific revolutions",
+      "author": [
+        {
+          "family": "Kuhn",
+          "given": "Thomas S."
+        }
+      ],
+      "issued": {
+        "date-parts": [
+          [
+            2012
+          ]
+        ]
+      },
+      "edition": "4",
+      "csl_type": "book",
+      "publisher": "University of Chicago Press",
+      "fabricated_metadata": false
+    },
+    {
+      "source_id": "S4",
+      "verified": true,
+      "title": "Two dogmas of empiricism",
+      "author": [
+        {
+          "family": "Quine",
+          "given": "Willard Van Orman"
+        }
+      ],
+      "issued": {
+        "date-parts": [
+          [
+            1951
+          ]
+        ]
+      },
+      "container_title": "The Philosophical Review",
+      "volume": "60",
+      "issue": "1",
+      "page": "20-43",
+      "DOI": "10.2307/2181906",
+      "csl_type": "article-journal",
+      "fabricated_metadata": false
+    },
+    {
+      "source_id": "S5",
+      "verified": true,
+      "title": "Epistemology naturalized",
+      "author": [
+        {
+          "family": "Quine",
+          "given": "Willard Van Orman"
+        }
+      ],
+      "issued": {
+        "date-parts": [
+          [
+            1969
+          ]
+        ]
+      },
+      "container_title": "Ontological relativity and other essays",
+      "page": "69-90",
+      "csl_type": "chapter",
+      "publisher": "Columbia University Press",
+      "fabricated_metadata": false
+    },
+    {
+      "source_id": "S6",
+      "verified": true,
+      "title": "Model-based reasoning in conceptual change",
+      "author": [
+        {
+          "family": "Nersessian",
+          "given": "Nancy J."
+        }
+      ],
+      "issued": {
+        "date-parts": [
+          [
+            1999
+          ]
+        ]
+      },
+      "container_title": "Model-based reasoning in scientific discovery",
+      "page": "5-22",
+      "DOI": "10.1007/978-1-4615-4813-3_1",
+      "csl_type": "chapter",
+      "publisher": "Kluwer Academic/Plenum Publishers",
+      "fabricated_metadata": false
+    },
+    {
+      "source_id": "S7",
+      "verified": true,
+      "title": "How do scientists think? Capturing the dynamics of conceptual change in science",
+      "author": [
+        {
+          "family": "Nersessian",
+          "given": "Nancy J."
+        }
+      ],
+      "issued": {
+        "date-parts": [
+          [
+            1992
+          ]
+        ]
+      },
+      "container_title": "Cognitive models of science",
+      "page": "3-45",
+      "csl_type": "chapter",
+      "publisher": "University of Minnesota Press",
+      "fabricated_metadata": false,
+      "editor": [
+        {
+          "family": "Giere",
+          "given": "Ronald N."
+        }
+      ]
+    }
+  ]
+}

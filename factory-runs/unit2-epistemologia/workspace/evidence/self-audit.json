@@ -1,0 +1,22 @@
+{
+  "certification_authority": false,
+  "first_order_validation": "PASS",
+  "g23_granted": false,
+  "g24_granted": false,
+  "observed_at_utc": "2026-10-19T07:15:34.484780+00:00",
+  "rubric_criteria_requiring_independent_or_human_judgment": [
+    "R02",
+    "R03",
+    "R04",
+    "R05",
+    "R06",
+    "R07",
+    "R08",
+    "R09"
+  ],
+  "schema": "DOCUMENT_FACTORY_METACOGNITIVE_SELF_AUDIT/1.0",
+  "status": "PASS_WITH_ESCALATION",
+  "unresolved": [
+    "INDEPENDENT_OR_HUMAN_RUBRIC_JUDGMENT_PENDING"
+  ]
+}

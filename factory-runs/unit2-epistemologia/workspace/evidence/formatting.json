@@ -1,0 +1,31 @@
+{
+  "schema": "UNIT2_EPISTEMOLOGY_DOCX_FORMATTING_EVIDENCE/1.0",
+  "status": "APPLIED",
+  "artifact": "report.docx",
+  "sha256": "01255a7c124730661a893db346454caf5aadc87936252869871c52026303c087",
+  "font": "Arial",
+  "body_size_pt": 12,
+  "heading_size_pt": 16,
+  "line_spacing": 1.5,
+  "paragraph_alignment": "justified",
+  "cover_alignment": "centered",
+  "references_hanging_indent": true,
+  "cover_logo": "UNIACC official logo retrieved from Wikimedia Commons",
+  "logo_sha256": "841ee281cc9c4a2235651d77da3497259f7261f907a9e022dcf3fefb5624e778",
+  "page_break_before": [
+    "Pregunta 1. Positivismo lógico e historicismo: distinciones epistemológicas",
+    "Pregunta 2. Un cambio de paradigma según Kuhn",
+    "Pregunta 3. Por qué Quine no es un positivista lógico",
+    "Pregunta 4. Cambio conceptual en Nersessian",
+    "Referencias"
+  ],
+  "margins_cm": {
+    "top": 2.5,
+    "bottom": 2.5,
+    "left": 2.5,
+    "right": 2.5
+  },
+  "author": "Diego Ignacio Norambuena Miranda",
+  "g23": "NOT_EXECUTED",
+  "g24": "NOT_EXECUTED"
+}

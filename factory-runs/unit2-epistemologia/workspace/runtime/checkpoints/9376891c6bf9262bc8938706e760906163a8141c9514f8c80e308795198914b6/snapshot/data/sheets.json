@@ -1,0 +1,75 @@
+{
+  "sheets": [
+    {
+      "name": "Trazabilidad",
+      "rows": [
+        [
+          "Criterio",
+          "Puntos",
+          "Evidencia prevista",
+          "Estado"
+        ],
+        [
+          "R01 Plazo y extensión",
+          1.75,
+          "6 páginas Word / entrega LMS",
+          "Pendiente verificación plataforma"
+        ],
+        [
+          "R02 Presentación",
+          1.75,
+          "Formato DOCX validado y paginado",
+          "Pendiente CI"
+        ],
+        [
+          "R03 Lenguaje disciplinar",
+          1.75,
+          "Revisión autor-fecha y conceptos",
+          "Autorrevisión; G23 pendiente"
+        ],
+        [
+          "R04 APA 7",
+          1.75,
+          "Citas ligadas a source-ledger",
+          "Autorrevisión; G23 pendiente"
+        ],
+        [
+          "Pregunta 1",
+          7,
+          "Comparación y caso científico",
+          "Redactado; G23 pendiente"
+        ],
+        [
+          "Pregunta 2A",
+          7,
+          "Transición paradigmática inventada",
+          "Redactado; G23 pendiente"
+        ],
+        [
+          "Pregunta 2B",
+          7,
+          "Etapas de Kuhn aplicadas",
+          "Redactado; G23 pendiente"
+        ],
+        [
+          "Pregunta 3",
+          7,
+          "Quine con ejemplos",
+          "Redactado; G23 pendiente"
+        ],
+        [
+          "Pregunta 4",
+          7,
+          "Nersessian y modelos",
+          "Redactado; G23 pendiente"
+        ],
+        [
+          "Total rubric",
+          42,
+          "Comprobación aritmética perfil",
+          "PASS perfil"
+        ]
+      ]
+    }
+  ]
+}

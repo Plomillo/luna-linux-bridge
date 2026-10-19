@@ -1,0 +1,26 @@
+{
+  "schema": "UNIT2_EPISTEMOLOGY_DOCUMENT_VERIFICATION/1.1",
+  "status": "PASS",
+  "total_pdf_pages": 6,
+  "page_map": {
+    "1": "cover",
+    "2": "question_1",
+    "3": "question_2",
+    "4": "question_3",
+    "5": "question_4",
+    "6": "references"
+  },
+  "verified_sources": 8,
+  "citation_ledger": "PASS",
+  "cover_logo_embedded": true,
+  "docx_bytes": 64439,
+  "pdf_bytes": 100871,
+  "apa_in_text_markers_checked": 5,
+  "font": "Arial",
+  "body_size_pt": 12,
+  "line_spacing": 1.5,
+  "margins_cm": 2.5,
+  "g23": "NOT_EXECUTED",
+  "g24": "NOT_EXECUTED",
+  "teacher_review": "PENDING"
+}

@@ -1,0 +1,85 @@
+name: Document Factory — Epistemología Unidad 2
+on:
+  push:
+    branches:
+      - "candidate/document-factory-v1-unit2-*"
+    paths:
+      - "factory-runs/unit2-epistemologia/**"
+      - ".github/workflows/document-factory-epistemologia-unit2-run.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: epistemologia-unit2-factory-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact candidate branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - name: Install pinned document tool classes
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo apt-get install -y pandoc libreoffice-writer python3-docx poppler-utils
+
+      - name: Validate profile and rubric arithmetic
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B document-factory/src/factory.py validate-profile factory-runs/unit2-epistemologia/profile.json --repo-root .
+          python3 -B document-factory/src/rubric_compiler.py factory-runs/unit2-epistemologia/profile.json --out "$RUNNER_TEMP/rubric-obligations.json"
+          python3 - <<'PY'
+          import json
+          p=json.load(open("factory-runs/unit2-epistemologia/profile.json",encoding="utf-8"))
+          r=p["rubric"]
+          assert abs(sum(float(x["points"]) for x in r["criteria"])-42.0)<1e-9
+          assert len(r["criteria"])==9
+          print("RUBRIC_SUM=42.0")
+          PY
+
+      - name: Build from task-specific isolated workspace
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          W="$RUNNER_TEMP/unit2-epistemologia-workspace"
+          mkdir -p "$W"
+          cp -a factory-runs/unit2-epistemologia/workspace/. "$W/"
+          python3 -B document-factory/src/factory.py build "$W" factory-runs/unit2-epistemologia/profile.json --repo-root .
+          python3 -B factory-runs/unit2-epistemologia/format_docx.py "$W/build/report.docx" "$W/evidence/formatting.json" "factory-runs/unit2-epistemologia/assets/LOGO_UNIACC.png"
+          rm -f "$W/build/report.pdf"
+          soffice --headless --convert-to pdf --outdir "$W/build" "$W/build/report.docx"
+          python3 -B document-factory/src/factory.py validate "$W" factory-runs/unit2-epistemologia/profile.json --repo-root .
+          python3 -B factory-runs/unit2-epistemologia/verify_document.py "$W" "$ROOT/profile.json" . factory-runs/unit2-epistemologia/profile.json .
+          python3 -B document-factory/src/factory.py self-audit "$W" factory-runs/unit2-epistemologia/profile.json
+          python3 -B document-factory/src/factory.py freeze "$W"
+          test -s "$W/build/report.docx"
+          test -s "$W/build/report.pdf"
+          test -s "$W/evidence/audit.jsonl"
+          test -s "$W/runtime/heartbeat.json"
+          printf '{"run_id":"%s","commit":"%s","ref":"%s","g23":"NOT_EXECUTED","g24":"NOT_EXECUTED","author":"Diego Ignacio Norambuena Miranda"}\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" "$GITHUB_REF" > "$W/evidence/github-run.json"
+          {
+            echo "## Epistemología — Unidad 2"
+            echo "- Profile validation: PASS"
+            echo "- Rubric: 42/42 points mapped"
+            echo "- Word and PDF: built and format-checked"
+            echo "- Exact page count: 6 (required)"
+            echo "- Independent G23: NOT EXECUTED"
+            echo "- Certification G24: NOT EXECUTED"
+            echo "- Candidate digest: $(cat "$W/CANDIDATE_DIGEST.txt" 2>/dev/null || echo generated-after-freeze)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload deliverables and audit evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: epistemologia-unit2-document-factory-${{ github.run_id }}
+          path: ${{ runner.temp }}/unit2-epistemologia-workspace
+          if-no-files-found: error
+          retention-days: 30

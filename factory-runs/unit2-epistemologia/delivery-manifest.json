@@ -1,0 +1,38 @@
+{
+  "schema": "UNIACC_EPISTEMOLOGIA_DELIVERY_MANIFEST/1.0",
+  "task_profile": "UNIACC_EPISTEMOLOGIA_U2_20261019",
+  "branch": "candidate/document-factory-v1-unit2-20261013",
+  "source_candidate_frozen_digest_sha256": "bfbf5efc53c10b5016f75c2e39d513a5574219272a1f3bc21ef767d80756d5f1",
+  "rubric_points_mapped": 42,
+  "body_word_count": 981,
+  "page_count_total": 6,
+  "page_map": {
+    "1": "cover",
+    "2": "question_1",
+    "3": "question_2",
+    "4": "question_3",
+    "5": "question_4",
+    "6": "references"
+  },
+  "font": "Arial 12 pt",
+  "heading_size_pt": 16,
+  "line_spacing": 1.5,
+  "margins_cm": 2.5,
+  "source_ledger_validation": "PASS",
+  "cover_logo_embedded": true,
+  "g23": "NOT_EXECUTED",
+  "g24": "NOT_EXECUTED",
+  "independent_review": "PENDING",
+  "deliverables": [
+    {
+      "filename": "Trabajo2_DiegoIgnacioNorambuenaMiranda.docx",
+      "bytes": 64439,
+      "sha256": "01255a7c124730661a893db346454caf5aadc87936252869871c52026303c087"
+    },
+    {
+      "filename": "Trabajo2_DiegoIgnacioNorambuenaMiranda.pdf",
+      "bytes": 100871,
+      "sha256": "eef1b0991f4d64332e6222c15f3e05da854d7b5b264f193e4ce52773fb96765d"
+    }
+  ]
+}

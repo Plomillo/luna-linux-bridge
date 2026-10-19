@@ -1,0 +1,2 @@
+convert /home/diegoignacionorambuenamiranda/luna-linux-bridge/factory-runs/unit2-epistemologia/workspace/build/report.docx as a Writer document -> /home/diegoignacionorambuenamiranda/luna-linux-bridge/factory-runs/unit2-epistemologia/workspace/build/report.pdf using filter : writer_pdf_Export
+Overwriting: /home/diegoignacionorambuenamiranda/luna-linux-bridge/factory-runs/unit2-epistemologia/workspace/build/report.pdf
