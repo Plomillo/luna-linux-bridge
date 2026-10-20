@@ -1,0 +1,88 @@
+--- a/test_custoszv9_continuous_governor_v2.py
++++ b/test_custoszv9_continuous_governor_v2.py
+@@ -121,6 +121,8 @@
+             self.assertTrue(profile["compatibility_override"])
+             self.assertIn("numpy==2.2.6\n", text)
+             self.assertNotIn("numpy~=1.26.4", text)
++            self.assertIn("-numpy226-v2.txt", requirements.name)
++            self.assertEqual(profile["compatibility_profile_id"], "PYTHON313_NUMPY226_V2")
+             self.assertIn("gguf @ file://", text)
+             self.assertTrue(text.endswith("\n"))
+             self.assertEqual(profile["runtime_requirements_sha256"], governor._sha256(requirements))
+@@ -250,5 +252,76 @@
+             self.assertIsNone(route)
+ 
+ 
++class RequirementsPermissionRecoveryTests(unittest.TestCase):
++    def _fixture(self, root, *, exact_path=True, attempts=0, error_type="PermissionError"):
++        operator = root / "operator"
++        runtime = operator / "CUSTOSZ_CONTINUITY_V1"
++        state = runtime / "state"
++        reqdir = state / "tools" / "requirements"
++        reqdir.mkdir(parents=True)
++        source = state / "tools" / "llama.cpp-source-b10819-6a1a922d2699"
++        (source / "requirements").mkdir(parents=True)
++        (source / "gguf-py").mkdir()
++        (source / "pyproject.toml").write_text(
++            "requires-python = '>=3.10,<3.15'\ndependencies = ['numpy (>=1.26.4,<3.0.0)']\n",
++            encoding="utf-8",
++        )
++        (source / "gguf-py" / "pyproject.toml").write_text('version = "0.19.0"\n', encoding="utf-8")
++        (source / "requirements" / "requirements-convert_hf_to_gguf.txt").write_text("numpy~=1.26.4\n", encoding="utf-8")
++        (source / "requirements" / "requirements-convert_legacy_llama.txt").write_text("numpy~=1.26.4\n", encoding="utf-8")
++        mission = operator / "MISION1.txt"
++        mission.write_text(
++            "Cajita de Luna: máxima prioridad operativa\n"
++            "3.3. cuantización, poda y optimización\n"
++            "5. segundo frente: cierre de Lunita\n"
++            "validación independiente y certificación\n", encoding="utf-8"
++        )
++        old_path = reqdir / "llama-cpp-converter-python313-6a1a922d2699.txt"
++        error_path = old_path if exact_path else state / "other" / old_path.name
++        lane = {
++            "schema": "CUSTOSZ_CAJITA_PRIORITY_LANE_STATE/1.0",
++            "mission_sha256": governor._sha256(mission),
++            "stage": "BLOCKED_RUNTIME_REQUIREMENTS_PROFILE",
++            "venv_python": "/tmp/llama-cpp-b10819-py313/bin/python",
++            "runtime_requirements_permission_recovery_attempts": attempts,
++            "last_error": {"error_type": error_type, "error": "[Errno 13] Permission denied: '" + str(error_path) + "'"},
++            "attempts": [], "job": None, "certification": "NOT_GRANTED",
++        }
++        (state / "cajita_priority_lane.json").write_text(json.dumps(lane), encoding="utf-8")
++        return state, reqdir, source, old_path, mission
++
++    def test_tick_recovers_exact_permission_error_and_preserves_legacy_overlay(self):
++        with tempfile.TemporaryDirectory() as tmp:
++            state, reqdir, source, old_path, mission = self._fixture(pathlib.Path(tmp))
++            old_content = "legacy_overlay_do_not_replace\nnumpy>=1.26.4,<3.0.0\n"
++            old_path.write_text(old_content, encoding="utf-8")
++            result = governor.tick_cajita_priority_lane(state, pathlib.Path(tmp) / "Cajita", governor._sha256(mission))
++            lane = json.loads((state / "cajita_priority_lane.json").read_text(encoding="utf-8"))
++            self.assertEqual(result["status"], "CAJITA_RUNTIME_REQUIREMENTS_PERMISSION_RECOVERY_SELECTED")
++            self.assertEqual(lane["stage"], "PROVISION_ENV")
++            self.assertEqual(lane["runtime_requirements_permission_recovery_attempts"], 1)
++            self.assertEqual(old_path.read_text(encoding="utf-8"), old_content)
++            self.assertEqual(lane["attempts"][-1]["status"], "ROOT_CAUSE_PREMISE_CHANGED_RETRY_ALLOWED")
++            requirements, profile = governor._resolve_runtime_requirements(state, source, "3.13.5")
++            self.assertTrue(requirements.name.endswith("-numpy226-v2.txt"))
++            self.assertEqual(profile["compatibility_profile_id"], "PYTHON313_NUMPY226_V2")
++            self.assertEqual(old_path.read_text(encoding="utf-8"), old_content)
++            self.assertFalse(lane["certification"] == "CERTIFIED")
++
++    def test_unrelated_permission_error_does_not_unlock_provisioning(self):
++        with tempfile.TemporaryDirectory() as tmp:
++            state, reqdir, source, old_path, mission = self._fixture(pathlib.Path(tmp), exact_path=False)
++            lane = json.loads((state / "cajita_priority_lane.json").read_text(encoding="utf-8"))
++            self.assertIsNone(governor._recover_runtime_requirements_permission_block(lane, state))
++            self.assertEqual(lane["stage"], "BLOCKED_RUNTIME_REQUIREMENTS_PROFILE")
++
++    def test_permission_recovery_is_single_shot(self):
++        with tempfile.TemporaryDirectory() as tmp:
++            state, reqdir, source, old_path, mission = self._fixture(pathlib.Path(tmp), attempts=1)
++            lane = json.loads((state / "cajita_priority_lane.json").read_text(encoding="utf-8"))
++            self.assertIsNone(governor._recover_runtime_requirements_permission_block(lane, state))
++
++
++
+ if __name__ == "__main__":
+     unittest.main(verbosity=2)
