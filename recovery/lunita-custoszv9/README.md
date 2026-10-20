@@ -95,3 +95,24 @@ Versioned patch artifacts:
   - SHA-256: `80180e89bb294f7cab310f6ecccac88a4d7f7c19dea46d6a059f06699b55bf07`
 
 The current local governor compatibility and permission-recovery suite passes 15/15. The assigned branch's complete test suite passes 58/58 at commit `c72a41da1ed5c9f05fa27d26226b057b9d9a6b6c`. These checks prove the recovery policy and patch contract; they do not certify Lunita, Cajita, or any quantized model.
+
+
+## Continuous Lunita 1.7 certification acquisition lane (2026-10-20)
+
+custosz_lunita_stability_certification_lane_v1.py is a separate, persistent sidecar for continuous evidence acquisition and the transition from beta-v1.7 toward a derived, versioned LUNITA_STABLE_1_7 release. It does not replace or restart the existing CUSTOSZ supervisor and does not participate in Cajita's model conversion process. The local service has its own user-unit, resource limits, state, and receipts.
+
+The sidecar rechecks the mission hash every cycle; watches for the active Cajita heavy worker before scheduling any work that would compete for memory or I/O; runs the pinned JASP packaged-fixture regression cases in the existing network-unshared Flatpak sandbox; runs a strict Death Penalty save/reopen check against a temporary copy; verifies the installed JASP commit; and creates a full candidate-rootfs JSONL inventory with file SHA-256 values and an installed-package dependency check once the heavy lane is idle. It does not download packages, change Flatpak sandbox restrictions, or modify the packaged reference fixture. Original fixture identity and unchanged SHA-256 are required for the strict round-trip check to pass. JASP outputs, return codes, command provenance, and hashes are retained as receipts.
+
+The sidecar updates BETA_INDEPENDENT_VALIDATION.json through a versioned history archive. The inventory gate and all four JASP cases are conjunctive: a missing report, failed return code, unresolved declared dependency, output/cardinality difference, source hash mismatch, or unbound report keeps S32 blocked. JASP's Bayesian result differences are not normalized away and expected outputs are not rewritten. Failed case evidence is added to state/lunita_certification_evidence/jasp_remediation_queue.json, where later evidence supersedes earlier receipts without silently deleting them.
+
+LUNITA_STABLE_1_7 is emitted only after every required independent check passes and S32 produces a candidate-bound certification receipt whose independent-report SHA-256 matches the current report. The release receipt records version 1.7.0 and the scope VERSIONED_DERIVED_CANDIDATE_ONLY. It does not confer status on frozen G06 or canonical G08 and never propagates certification automatically.
+
+Current known blockers are the unresolved JASP regression outputs (including changed Death Penalty model count/results and reliability/weight-gain precision differences) and the full candidate rootfs/dependency inventory, which waits while Cajita's heavy conversion/dry-run job is active. Therefore the sidecar's initial status is CERTIFICATION_SEARCH_ACTIVE / NOT_GRANTED, not Stable or certified.
+
+Contract tests:
+~~~bash
+PYTHONPATH=recovery/lunita-custoszv9 python3 -m unittest discover -s recovery/lunita-custoszv9 -p 'test_lunita_stability_certification_lane_v1.py' -v
+python3 recovery/lunita-custoszv9/lunita_stability_certification_lane_v1.py --self-test
+~~~
+
+These tests prove the fail-closed policy and sidecar contract, not live Lunita certification.
