@@ -6,6 +6,8 @@ PATCHES = REPO_ROOT / "recovery" / "lunita-custoszv9" / "patches"
 SUPERVISOR_PATCH = PATCHES / "custosz_continuity_supervisor_v3.parallel-cajita-lane.patch"
 GOVERNOR_PATCH = PATCHES / "custoszv9_continuous_governor_v2.compatibility-overlay.patch"
 GOVERNOR_TEST_PATCH = PATCHES / "test_custoszv9_continuous_governor_v2.compatibility-overlay.patch"
+PERMISSION_GOVERNOR_PATCH = PATCHES / "custoszv9_continuous_governor_v2.requirements-permission-recovery.patch"
+PERMISSION_TEST_PATCH = PATCHES / "test_custoszv9_continuous_governor_v2.requirements-permission-recovery.patch"
 
 
 class ParallelCajitaAndCompatibilityOverlayTests(unittest.TestCase):
@@ -14,6 +16,8 @@ class ParallelCajitaAndCompatibilityOverlayTests(unittest.TestCase):
         cls.supervisor = SUPERVISOR_PATCH.read_text(encoding="utf-8")
         cls.governor = GOVERNOR_PATCH.read_text(encoding="utf-8")
         cls.governor_tests = GOVERNOR_TEST_PATCH.read_text(encoding="utf-8")
+        cls.permission_governor = PERMISSION_GOVERNOR_PATCH.read_text(encoding="utf-8")
+        cls.permission_tests = PERMISSION_TEST_PATCH.read_text(encoding="utf-8")
 
     def test_cajita_ticks_even_when_serial_continuation_is_in_backoff(self):
         self.assertIn("def tick_parallel_cajita_lane(continuation_already_ticked):", self.supervisor)
@@ -33,6 +37,16 @@ class ParallelCajitaAndCompatibilityOverlayTests(unittest.TestCase):
         self.assertIn("compatibility_recovery_attempts", self.governor)
         self.assertIn("if \"numpy~=1.26.4\" not in argv_text:", self.governor)
         self.assertIn('"next_stage": "PROVISION_ENV"', self.governor)
+
+    def test_requirements_permission_recovery_is_versioned_and_evidence_gated(self):
+        self.assertIn("-numpy226-v2.txt", self.permission_governor)
+        self.assertIn("ROOT_CAUSE_PREMISE_CHANGED_RETRY_ALLOWED", self.permission_governor)
+        self.assertIn("REQUIREMENTS_DIRECTORY_WRITE_PERMISSION_RESTORED", self.permission_governor)
+        self.assertIn("runtime_requirements_permission_recovery_attempts", self.permission_governor)
+        self.assertIn("preserve_existing_requirements_overlay", self.permission_governor)
+        self.assertIn("test_tick_recovers_exact_permission_error_and_preserves_legacy_overlay", self.permission_tests)
+        self.assertIn("test_unrelated_permission_error_does_not_unlock_provisioning", self.permission_tests)
+        self.assertIn("test_permission_recovery_is_single_shot", self.permission_tests)
 
     def test_runtime_integration_regression_is_included_in_overlay(self):
         self.assertIn("test_tick_moves_terminal_block_to_compatibility_recovery_without_launching_a_job", self.governor_tests)
