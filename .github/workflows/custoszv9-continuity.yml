@@ -1,0 +1,42 @@
+name: CUSTOSZ V9 mission continuity contract
+
+on:
+  push:
+    branches:
+      - recovery/lunita-custoszv9-operational-20261020
+    paths:
+      - "recovery/lunita-custoszv9/**"
+      - ".github/workflows/custoszv9-continuity.yml"
+  pull_request:
+    branches:
+      - recovery/lunita-custoszv9-operational-20261020
+
+permissions:
+  contents: read
+
+jobs:
+  contract-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out assigned recovery branch
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Compile all mirrored operational Python sources
+        run: |
+          python -m py_compile \
+            recovery/lunita-custoszv9/custosz_mision1_continuation_v1.py \
+            recovery/lunita-custoszv9/custosz_continuity_supervisor_v3.py \
+            recovery/lunita-custoszv9/custoszv9_continuous_governor_v2.py \
+            recovery/lunita-custoszv9/custoszv9_lunita_bridge.py \
+            recovery/lunita-custoszv9/test_custoszv9_continuous_governor_v2.py \
+            recovery/lunita-custoszv9/test_custosz_mision1_continuation_v1.py
+      - name: Test fail-closed controller and quantization lane contracts
+        run: |
+          python recovery/lunita-custoszv9/test_custoszv9_continuous_governor_v2.py
+          python recovery/lunita-custoszv9/test_custosz_mision1_continuation_v1.py
+      - name: Test versioned Lunita beta contract
+        run: python recovery/lunita-custoszv9/test_lunita_beta_v1_7.py
