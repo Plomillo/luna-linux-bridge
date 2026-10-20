@@ -16,12 +16,18 @@ class AntiParalysisPatchContractTests(unittest.TestCase):
     def test_blocked_step_requires_explicit_false(self):
         self.assertIn('if result.get("step_completion") is False:', self.patch)
 
-    def test_blocked_attempt_occurs_before_step_increment(self):
+    def test_blocked_attempt_returns_before_completion_append(self):
         blocked = self.patch.index('if result.get("step_completion") is False:')
-        advance = self.patch.index('state["step_index"] = idx + 1', blocked)
-        self.assertLess(blocked, advance)
-        self.assertIn("step_index_preserved", self.patch[blocked:advance])
-        self.assertIn("return {", self.patch[blocked:advance])
+        clear_block = self.patch.index('state.pop("blocked_step", None)', blocked)
+        append_completed = self.patch.index('state.setdefault("completed_steps", []).append({', clear_block)
+        blocked_path = self.patch[blocked:clear_block]
+        self.assertLess(blocked, clear_block)
+        self.assertLess(clear_block, append_completed)
+        self.assertIn('"step_index_preserved": idx', blocked_path)
+        self.assertIn('"step_completion": False', blocked_path)
+        self.assertIn("atomic(PROGRESS, state)", blocked_path)
+        self.assertIn("return {", blocked_path)
+        self.assertNotIn('state["step_index"] = idx + 1', blocked_path)
 
     def test_bounded_retry_and_progress_timestamp(self):
         self.assertIn("dt.timedelta(seconds=REFRESH_SECONDS)", self.patch)
