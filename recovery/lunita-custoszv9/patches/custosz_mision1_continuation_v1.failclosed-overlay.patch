@@ -1,0 +1,155 @@
+--- a/custosz_mision1_continuation_v1.py
++++ b/custosz_mision1_continuation_v1.py
+@@ -1138,6 +1138,110 @@
+             "next_action":"Record the hash-bound beta receipt; retain canonical original-source recovery as a separate pending gate."}
+ 
+ 
++STEP_SUCCESS_STATUS_ALLOWLIST = {
++    "S21_VALIDATE_G08_PATCH_AND_HANDOFF": {"PASS_FOR_SOURCE_AND_HANDOFF_ONLY"},
++    "S22_RUN_CLI_CANDIDATE_REGRESSION": {"PASS"},
++    "S23_REFRESH_CLI_REGISTRY_PROBE": {"PROBE_EXECUTED"},
++    "S24_RECONCILE_IMPLEMENTATION_BACKLOG": {"BACKLOG_RECONCILED_ACTIVE"},
++    "S25_G08_EXECUTION_ADMISSION_PROBE": {"PASS_FOR_READONLY_PROBE_ONLY"},
++    "S26_G06_ROOTFS_SOURCE_RECOVERY_SEARCH": {"PASS_EXACT_SOURCE_PRESENT"},
++    "S27_VALIDATE_G08_PROTOCOL_AND_BINDINGS": {"PASS_FOR_READONLY_VALIDATION_ONLY"},
++    "S29_CAJITA_MODEL_QUANTIZATION_PREFLIGHT": {"PREFLIGHT_READY_FOR_CONVERSION_VALIDATION"},
++    "S29B_CAJITA_HF_GGUF_CONVERTER_SOURCE": {"PASS_CONVERTER_SOURCE_PINNED"},
++    "S31_VERSIONED_BETA_RUNTIME_FUNCTIONAL_GATE": {"PASS_RUNTIME_TESTS"},
++    "S32_INDEPENDENT_BETA_VALIDATION_AND_RECEIPT": {"BETA_OPERATIONAL_CERTIFIED"},
++}
++BLOCKED_STATUS_MARKERS = (
++    "BLOCKED", "FAILED", "FAIL", "ERROR", "MISSING", "MISMATCH", "DENIED",
++    "HOLD", "PENDING", "WAITING", "PARTIAL", "ABSENT", "INVALID", "NOT_FOUND",
++    "SOURCE_MISSING",
++)
++STRICT_STEP_COMPLETION_IDS = {
++    "S31_VERSIONED_BETA_RUNTIME_FUNCTIONAL_GATE",
++    "S32_INDEPENDENT_BETA_VALIDATION_AND_RECEIPT",
++}
++
++
++def completion_admitted(step_id, result):
++    """Fail closed: only exact per-step success statuses can advance the cursor."""
++    if not isinstance(result, dict) or result.get("step_completion") is False:
++        return False
++    status = result.get("status")
++    if not isinstance(status, str) or not status:
++        return False
++    if any(marker in status.upper() for marker in BLOCKED_STATUS_MARKERS):
++        return False
++    if status not in STEP_SUCCESS_STATUS_ALLOWLIST.get(step_id, set()):
++        return False
++    if step_id in STRICT_STEP_COMPLETION_IDS:
++        if result.get("step_completion") is not True:
++            return False
++        if step_id == "S32_INDEPENDENT_BETA_VALIDATION_AND_RECEIPT":
++            return independent_validation_state(result) == "PASS"
++    return result.get("step_completion") is not False
++
++
++def independent_validation_state(result):
++    """PASS requires a separate, schema-valid report whose bytes match its digest."""
++    if not isinstance(result, dict):
++        return "PENDING"
++    if result.get("status") != "BETA_OPERATIONAL_CERTIFIED" or result.get("independent_validation") != "PASS":
++        return "PENDING"
++    report_text, expected = result.get("independent_report_path"), result.get("independent_report_sha256")
++    runtime_sha = result.get("runtime_report_sha256")
++    if not isinstance(report_text, str) or not isinstance(expected, str) or len(expected) != 64:
++        return "PENDING"
++    report_path = pathlib.Path(report_text)
++    if not report_path.is_file() or sha(report_path) != expected:
++        return "PENDING"
++    report = load(report_path, {}) or {}
++    checks = report.get("checks")
++    if (report.get("schema") != "CUSTOSZ_LUNITA_BETA_INDEPENDENT_VALIDATION/1.0"
++        or report.get("status") != "PASS_INDEPENDENT_VALIDATION"
++        or report.get("runtime_report_sha256") != runtime_sha
++        or not isinstance(checks, dict) or not checks
++        or any(not isinstance(v, dict) or v.get("status") != "PASS" or v.get("returncode", 0) != 0 for v in checks.values())
++        or report.get("frozen_g06_mutated") is not False
++        or report.get("canonical_g08_bindings_mutated") is not False):
++        return "PENDING"
++    return "PASS"
++
++
++def reconcile_historical_completions(state):
++    """Append adjudications for legacy false-PASS rows; preserve original history byte-for-byte."""
++    prior = state.setdefault("historical_completion_adjudications", [])
++    seen = {(x.get("step_id"), x.get("result_sha256")) for x in prior}
++    changed = False
++    for row in state.get("completed_steps", []):
++        step_id, digest = row.get("step_id"), row.get("result_sha256")
++        if (step_id, digest) in seen:
++            continue
++        result_path = pathlib.Path(row.get("result_path", ""))
++        receipt = load(result_path, {}) or {}
++        evidence_ok = (result_path.is_file() and bool(digest) and sha(result_path) == digest
++                       and receipt.get("mission_sha256") == MISSION_SHA
++                       and receipt.get("step_id") == step_id)
++        reasons = []
++        if not evidence_ok:
++            reasons.append("RESULT_RECEIPT_MISSING_OR_HASH_BINDING_INVALID")
++        elif not completion_admitted(step_id, receipt):
++            reasons.append("LEGACY_COMPLETION_NOT_ADMITTED_BY_FAIL_CLOSED_ALLOWLIST")
++        if row.get("independent_validation") == "PASS" and independent_validation_state(receipt) != "PASS":
++            reasons.append("HISTORICAL_INDEPENDENT_VALIDATION_CLAIM_HAS_NO_BOUND_RECEIPT")
++        if reasons:
++            prior.append({
++                "step_id": step_id, "result_path": str(result_path), "result_sha256": digest,
++                "historical_row_preserved": True, "historical_row_status": row.get("status"),
++                "historical_independent_validation": row.get("independent_validation"),
++                "adjudication": "PENDING_REVALIDATION", "reasons": reasons, "captured_at_utc": utc(),
++            })
++            seen.add((step_id, digest))
++            changed = True
++    if len(prior) > 500:
++        del prior[:-500]
++    return changed
++
++
+ STEPS = [
+     ("S21_VALIDATE_G08_PATCH_AND_HANDOFF", s21_validate_g08_patch_and_gate_context),
+     ("S22_RUN_CLI_CANDIDATE_REGRESSION", s22_run_cli_candidate_regression),
+@@ -1168,7 +1272,10 @@
+         "g06_automatic_rebuild_fallback_registered": any(x[0] == "S30_G06_AUTOMATIC_VERSIONED_REBUILD_FALLBACK" and callable(x[1]) for x in STEPS),
+         "versioned_beta_runtime_gate_registered": any(x[0] == "S31_VERSIONED_BETA_RUNTIME_FUNCTIONAL_GATE" and callable(x[1]) for x in STEPS),
+         "independent_beta_validation_gate_registered": any(x[0] == "S32_INDEPENDENT_BETA_VALIDATION_AND_RECEIPT" and callable(x[1]) for x in STEPS),
+-        "blocked_steps_do_not_advance": "if continuous_governor.result_blocks_step(result):" in pathlib.Path(__file__).read_text(encoding="utf-8"),
++        "blocked_steps_do_not_advance": "not completion_admitted(step_id, result)" in pathlib.Path(__file__).read_text(encoding="utf-8"),
++        "fail_closed_status_allowlist_registered": bool(STEP_SUCCESS_STATUS_ALLOWLIST) and callable(completion_admitted),
++        "historical_completion_reconciliation_registered": callable(reconcile_historical_completions),
++        "independent_validation_requires_receipt": callable(independent_validation_state),
+         "status_only_block_is_fail_closed": continuous_governor.result_blocks_step({"status": "BLOCKED_TEST"}) and continuous_governor.result_blocks_step({"status": "SOURCE_MISSING_BLOCKED"}),
+         "normal_subtask_status_is_not_blocked": not continuous_governor.result_blocks_step({"status": "PASS_FOR_SUBTASK_ONLY", "step_completion": True}),
+         "cajita_priority_lane_registered": callable(continuous_governor.tick_cajita_priority_lane),
+@@ -1225,6 +1332,8 @@
+         except Exception:
+             pass
+ 
++    if reconcile_historical_completions(state):
++        atomic(PROGRESS, state)
+     idx = int(state.get("step_index", 0))
+     pending = state.get("blocked_step") or {}
+     if pending.get("step_index") == idx and pending.get("next_retry_utc"):
+@@ -1255,7 +1364,7 @@
+             reconciled_queue = None
+         result = handler()
+         receipt = write_result(step_id, result)
+-        if continuous_governor.result_blocks_step(result):
++        if (continuous_governor.result_blocks_step(result) or not completion_admitted(step_id, result)):
+             attempts = state.setdefault("attempts", [])
+             attempt_number = 1 + sum(1 for row in attempts if row.get("step_id") == step_id)
+             attempt_row = {
+@@ -1292,10 +1401,7 @@
+             "status": result.get("status"),
+             "result_path": receipt["result_path"],
+             "result_sha256": receipt["result_sha256"],
+-            "independent_validation": "PENDING" if (
+-                str(result.get("status", "")).startswith(("FAIL", "BLOCKED", "SOURCE_MISSING", "PARTIAL"))
+-                or result.get("status") in {"NOT_PUBLISHED_TARGET_EXISTS", "NOT_PUBLISHED_TARGET_ALREADY_EXISTS"}
+-            ) else "PASS",
++            "independent_validation": independent_validation_state(result),
+         })
+         state["step_index"] = idx + 1
+         state["last_progress_utc"] = utc()
