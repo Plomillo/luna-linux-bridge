@@ -1,39 +1,37 @@
 # CUSTOSZ V9 — Lunita recovery bridge
 
-This branch contains the scoped CUSTOSZ V9 bridge and the derived Lunita beta-v1.6 launcher contract.
+This branch stores the scoped CUSTOSZ V9 bridge and versioned derived Lunita beta launchers. The frozen G06 original is still a distinct, unreplaced source of authority.
 
-## Persistent artifacts
+## Current derived launcher
 
-- \`custoszv9_lunita_bridge.py\` — bounded adapter. Audits the local mission and operator contract, uses one checkpointed continuation tick per invocation, records hash-linked receipts, and does not grant certification.
-- \`lunita_beta_v1_6.py\` — exact copy of the derived candidate launcher. SHA-256: \`d5ba3f2ce9e113e76f4674c69608ddb7b9877b9a1fc7701cc0d9941c87559004\`.
-- \`BETA_PROVENANCE_v1_6.json\` — provenance and explicit post-patch validation status.
-- \`test_custoszv9_lunita_bridge.py\` — bridge contract tests.
-- \`test_lunita_beta_v1_6.py\` — structural tests for v1.6 pins, fail-closed sandbox behavior, writable Brújula test HOME, bounded Qwen invocation, and source provenance.
-- \`test_continuation_antiparalysis.py\` and \`patches/custosz_mision1_continuation_v1.antiparalysis.patch\` — check that blocked work does not advance mission state.
+- `lunita_beta_v1_7.py` is the current candidate launcher. SHA-256: `46efd711729c344e7efba9ce2503127c48f0b88207cc5a17311ff1d555b075b2`.
+- `BETA_PROVENANCE_v1_7.json` binds that SHA, the pre-G05 source hash, the exact JASP/ Jamovi Flathub commits, and the current validation boundary.
+- `test_lunita_beta_v1_7.py` checks the commit-pin correction, compilation, fail-closed sandbox behavior, writable Brújula test HOME, bounded Qwen invocation, and provenance.
+- `custoszv9_lunita_bridge.py` is the existing bounded V9 adapter. It audits by default; its mutating mode runs one checkpointed continuation tick and appends evidence.
+
+## Verified candidate runtime status
+
+S31 runtime smoke checks pass for launcher start, Brújula, R 4.6.1, existing hash-bound Qwen load/inference evidence, 11/11 fault-injection tests, the exact Jamovi/JASP commit pins, and both apps in the standard Flatpak bubblewrap sandbox. The sandbox was not disabled. The host Flatpak runner was pointed at the already installed candidate via `FLATPAK_SYSTEM_DIR`; no packages or models were downloaded or duplicated.
+
+The v1.6 JASP pin omitted the `79` segment in the exact installed commit. v1.7 corrects it to the observed installed deployment and includes a reconciliation receipt. Jamovi reports 28.13.0.0 and its installed commit matches its pin.
+
+## Open gates — not certified
+
+- S32 independent validation remains blocked by reproducibility differences between several bundled JASP project reference outputs and the installed JASP build. The application and JASPEngine execute, but reference comparisons differ; these findings are not labelled as passing regressions.
+- A full independent inventory/dependency closure of the candidate rootfs remains pending.
+- The canonical frozen G06 rootfs and its certification manifest are not available at the recorded path. The versioned candidate is not the frozen original and must never inherit its certification. Original-source recovery remains a separate blocker for canonical G06/G08 closure.
+- The supplied Dropbox URL is a navigation URL. The connected Dropbox account returned `SHARED_LINK_NOT_FOUND` / `FILE_NOT_FOUND` for that target, so nothing was downloaded.
 
 ## Local invocation
 
-From the CUSTOSZ operator project, where the V9 package and local mission contract reside:
+From the CUSTOSZ operator project:
 
-\`\`\`bash
+```bash
 python3 integrations/lunita-custoszv9/custoszv9_lunita_bridge.py --audit
 python3 integrations/lunita-custoszv9/custoszv9_lunita_bridge.py --self-test
 python3 integrations/lunita-custoszv9/custoszv9_lunita_bridge.py --run-one-step
-\`\`\`
+```
 
-\`--audit\` is read-only. \`--self-test\` uses synthetic tasks. \`--run-one-step\` is the only mutating mode and is limited to one checkpointed continuation tick and append-only receipts. Inspect the operator contract and current continuation state before a mutating invocation.
+`--audit` is read-only; `--self-test` uses synthetic tasks; `--run-one-step` is the only mutating mode and is limited to one checkpointed continuation tick. Consult MISION1.txt and the current checkpoint before changing state.
 
-The authoritative local candidate remains \`G06_REBUILD_CANDIDATE_R1\` under \`state/g06_rebuild_candidates\`. The v1.6 source is a derived candidate, **not** the frozen G06 original. Its original launcher input \`lunita.py.pre-G05\` still matches SHA-256 \`dc7d673b16a578c5cc94999856ed4b70d0b039702155779660a1083e2da54066\`; the expected frozen launcher SHA is \`502f28c2398ee3129f7d4df42bf5117797c19cf59d27cbff218b36bbd271c319\` and has not been recovered at the recorded frozen-source path.
-
-## Validation boundary
-
-The GitHub Actions workflow runs Python compilation and unit tests on changes in this recovery directory. A green CI validates the repository contract, **not** the live Flatpak applications, rootfs inventory, frozen G06, G08, or canonical Louksna certification.
-
-Current beta-v1.6 evidence:
-- PASS: launcher start, R 4.6.1 arithmetic probe, Brújula smoke test with a scoped writable temporary HOME/XDG profile.
-- PASS: Qwen load/inference from existing hash-bound evidence; the core \`qwen()\` function and model are unchanged in v1.6, so Qwen was not needlessly rerun.
-- PASS: 11/11 fault-injection tests and exact local Flathub commit pins for Jamovi and JASP.
-- BLOCKED: Jamovi and JASP app sandbox launches in the nested, non-booted candidate rootfs; \`bwrap\` reports it cannot create/mount its inner namespace (\`Operation not permitted\`). The sandbox is not disabled or bypassed.
-- BLOCKED: canonical frozen G06 rootfs and its certification manifest are not available at the recorded path. The supplied Dropbox URL is a navigation URL and the connected Dropbox account returns \`SHARED_LINK_NOT_FOUND\` / \`FILE_NOT_FOUND\` for that target; nothing was downloaded or duplicated.
-
-Therefore S31 remains \`BLOCKED_RUNTIME_TESTS\`; S32 independent validation and any beta operational receipt remain blocked. Canonical G06/G08 certification stays \`NOT_GRANTED\`. No automatic certification propagation, canonical promotion, main-branch write, merge, force-push, or workflow dispatch is authorized.
+The assigned branch is `recovery/lunita-custoszv9-operational-20261020`. CI passing certifies the repository contract tests only, not the live rootfs or the canonical G06/G08 artifacts. Certification remains `NOT_GRANTED`; no automatic propagation, main-branch change, merge, force-push, or workflow dispatch is authorized.
