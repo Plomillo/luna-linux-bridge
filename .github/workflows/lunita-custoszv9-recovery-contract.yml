@@ -1,0 +1,35 @@
+name: Lunita CUSTOSZ V9 Recovery Contract
+
+on:
+  push:
+    branches:
+      - recovery/lunita-custoszv9-operational-20261020
+    paths:
+      - "recovery/lunita-custoszv9/**"
+      - ".github/workflows/lunita-custoszv9-recovery-contract.yml"
+  pull_request:
+    paths:
+      - "recovery/lunita-custoszv9/**"
+      - ".github/workflows/lunita-custoszv9-recovery-contract.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lunita-custoszv9-recovery-contract-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  contract-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Syntax-check recovery gate
+        run: python -m py_compile recovery/lunita-custoszv9/permission_gate.py recovery/lunita-custoszv9/test_permission_gate.py
+      - name: Run fail-closed contract tests
+        run: python -m unittest discover -s recovery/lunita-custoszv9 -p "test_*.py" -v
