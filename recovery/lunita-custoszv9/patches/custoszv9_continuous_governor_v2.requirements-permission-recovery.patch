@@ -1,0 +1,105 @@
+--- a/custoszv9_continuous_governor_v2.py
++++ b/custoszv9_continuous_governor_v2.py
+@@ -254,7 +254,8 @@
+         raise RuntimeError("PYTHON313_COMPATIBILITY_METADATA_MISMATCH")
+     runtime_root = state_dir / "tools" / "requirements"
+     runtime_root.mkdir(parents=True, exist_ok=True, mode=0o700)
+-    output = runtime_root / ("llama-cpp-converter-python" + str(major) + str(minor) + "-" + EXPECTED_LLAMA_CPP_COMMIT[:12] + ".txt")
++    # Preserve the earlier generic profile; create a distinct versioned file after the evidenced sdist failure.
++    output = runtime_root / ("llama-cpp-converter-python" + str(major) + str(minor) + "-" + EXPECTED_LLAMA_CPP_COMMIT[:12] + "-numpy226-v2.txt")
+     content = (
+         "# Derived, compatibility-scoped runtime requirements; original upstream files remain unchanged.\n"
+         "# Source commit: " + EXPECTED_LLAMA_CPP_COMMIT + "\n"
+@@ -279,7 +280,8 @@
+             os.fsync(stream.fileno())
+         os.chmod(output, 0o600)
+     return output, {
+-        "profile": "SOURCE_METADATA_COMPATIBLE_PYTHON313",
++        "profile": "SOURCE_METADATA_COMPATIBLE_PYTHON313_NUMPY226_V2",
++        "compatibility_profile_id": "PYTHON313_NUMPY226_V2",
+         "python_version": python_version,
+         "original_requirements_path": str(original),
+         "original_requirements_sha256": original_sha,
+@@ -399,6 +401,70 @@
+     }
+ 
+ 
++def _recover_runtime_requirements_permission_block(
++    lane: dict[str, Any], state_dir: pathlib.Path | str
++) -> dict[str, Any] | None:
++    """Retry only after the saved PermissionError premise is measurably repaired."""
++    if lane.get("stage") != "BLOCKED_RUNTIME_REQUIREMENTS_PROFILE":
++        return None
++    if int(lane.get("runtime_requirements_permission_recovery_attempts", 0)) >= 1:
++        return None
++    last_error = lane.get("last_error") or {}
++    if not isinstance(last_error, dict) or last_error.get("error_type") != "PermissionError":
++        return None
++    state_dir = pathlib.Path(state_dir)
++    requirements_dir = state_dir / "tools" / "requirements"
++    error_text = str(last_error.get("error", ""))
++    if str(requirements_dir) not in error_text:
++        return None
++    if not requirements_dir.is_dir() or not os.access(requirements_dir, os.W_OK | os.X_OK):
++        return None
++    source = state_dir / "tools" / "llama.cpp-source-b10819-6a1a922d2699"
++    required = (
++        source / "pyproject.toml",
++        source / "gguf-py" / "pyproject.toml",
++        source / "requirements" / "requirements-convert_hf_to_gguf.txt",
++        source / "requirements" / "requirements-convert_legacy_llama.txt",
++    )
++    if not all(path.is_file() for path in required):
++        return None
++    previous_error_sha = hashlib.sha256(
++        json.dumps(last_error, sort_keys=True, ensure_ascii=False).encode("utf-8")
++    ).hexdigest()
++    lane.setdefault("attempts", []).append({
++        "stage": "BLOCKED_RUNTIME_REQUIREMENTS_PROFILE",
++        "status": "ROOT_CAUSE_PREMISE_CHANGED_RETRY_ALLOWED",
++        "reason_code": "REQUIREMENTS_DIRECTORY_WRITE_PERMISSION_RESTORED",
++        "timestamp_utc": utc_now(),
++        "requirements_dir": str(requirements_dir),
++        "requirements_dir_uid": requirements_dir.stat().st_uid,
++        "effective_uid": os.geteuid(),
++        "prior_error_type": last_error.get("error_type"),
++        "prior_error_sha256": previous_error_sha,
++        "preserve_existing_requirements_overlay": True,
++        "new_profile_id": "PYTHON313_NUMPY226_V2",
++    })
++    lane["stage"] = "PROVISION_ENV"
++    lane["runtime_requirements_path"] = None
++    lane["runtime_requirements_sha256"] = None
++    lane["requirements_profile"] = None
++    lane["runtime_requirements_permission_recovery_attempts"] = 1
++    lane.pop("next_action_utc", None)
++    lane.pop("last_error", None)
++    lane["last_progress_utc"] = utc_now()
++    return {
++        "status": "CAJITA_RUNTIME_REQUIREMENTS_PERMISSION_RECOVERY_SELECTED",
++        "stage": "PROVISION_ENV",
++        "did_work": True,
++        "reason_code": "REQUIREMENTS_DIRECTORY_WRITE_PERMISSION_RESTORED",
++        "prior_error_sha256": previous_error_sha,
++        "new_profile_id": "PYTHON313_NUMPY226_V2",
++        "next_action": "Create a distinct -numpy226-v2.txt from pinned source metadata; preserve the earlier requirements file byte-for-byte.",
++        "mission_completion_claim": False,
++        "certification": "NOT_GRANTED",
++    }
++
++
+ def _read_job(state: dict[str, Any]) -> tuple[dict[str, Any] | None, bool]:
+     job = state.get("job") or {}
+     receipt_path = pathlib.Path(job["receipt_path"]) if job.get("receipt_path") else None
+@@ -446,6 +512,11 @@
+         raise RuntimeError("CAJITA_PRIORITY_LANE_MISSION_HASH_MISMATCH")
+ 
+     stage = lane.get("stage")
++    if stage == "BLOCKED_RUNTIME_REQUIREMENTS_PROFILE":
++        permission_recovery = _recover_runtime_requirements_permission_block(lane, state_dir)
++        if permission_recovery:
++            _atomic(lane_path, lane)
++            return permission_recovery
+     if stage == "BLOCKED_ENVIRONMENT_PROVISIONING":
+         recovery = _compatibility_recovery_route(lane, state_dir)
+         if recovery:
