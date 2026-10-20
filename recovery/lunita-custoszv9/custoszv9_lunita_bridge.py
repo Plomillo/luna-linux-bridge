@@ -648,3 +648,42 @@ def main() -> int:
     args = parser.parse_args()
     try:
         if args.audit:
+            result = audit_only()
+        elif args.self_test:
+            result = selftest()
+        else:
+            lock = STATE / "custoszv9_lunita_bridge.lock"
+            try:
+                fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+            except FileExistsError:
+                raise BridgeError("BRIDGE_ALREADY_RUNNING_CONCURRENCY_1")
+            try:
+                os.write(fd, (json.dumps({"pid": os.getpid(), "started_utc": utc_now()}) + "\n").encode("utf-8"))
+                os.fsync(fd)
+                os.close(fd)
+                result = run_bridge()
+            finally:
+                try:
+                    os.close(fd)
+                except OSError:
+                    pass
+                try:
+                    lock.unlink()
+                except OSError:
+                    pass
+        print(json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2))
+        return 0 if result.get("status") == "PASS" or result.get("bridge_result") == "PASS_ONE_CHECKPOINTED_TICK_AND_EVIDENCE_RECORDED" else 2
+    except (BridgeError, OSError, ValueError, KeyError, ImportError, subprocess.TimeoutExpired) as exc:
+        print(json.dumps({
+            "schema": "CUSTOSZV9_LUNITA_BRIDGE_RESULT/1.0",
+            "status": "HOLD",
+            "error": type(exc).__name__ + ":" + str(exc)[:1600],
+            "mission_completion_claim": False,
+            "certification": "NOT_GRANTED",
+            "canonical_promotion": "NOT_AUTHORIZED",
+        }, ensure_ascii=False, sort_keys=True, indent=2))
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
