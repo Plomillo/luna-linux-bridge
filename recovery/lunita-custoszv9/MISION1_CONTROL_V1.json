@@ -1,0 +1,90 @@
+{
+  "schema": "CUSTOSZ_MISION1_CONTINUOUS_CONTROL/1.0",
+  "control_version": "1.0",
+  "mission_source": {
+    "path": "CUSTOSZ operator root/MISION1.txt (kept local; not mirrored as raw text)",
+    "sha256": "0a36c59d4baf5d547f5217dc9c6db2a58ad9f8f3ea65d88f9b16a0dbe1604f8f",
+    "publication_policy": "Do not publish the raw local mission text; publish its verified hash and this operational control projection."
+  },
+  "repository": {
+    "full_name": "Plomillo/luna-linux-bridge",
+    "branch": "recovery/lunita-custoszv9-operational-20261020",
+    "main_branch_mutation_authorized": false,
+    "merge_or_force_push_authorized": false
+  },
+  "operational_priority": [
+    {
+      "rank": 1,
+      "project": "CAJITA_DE_LUNA",
+      "required_work": [
+        "reconcile actual model files, configs, shard inventory, source hashes and dependency manifests",
+        "audit CEREBRO MXFP4; do not blindly requantize",
+        "convert and quantize Qwen3 BF16 from 6. Sistema Inteligente/Análisis Avanzado as a versioned candidate",
+        "validate candidate size, integrity, functionality, quality and regression against baseline",
+        "audit Whisper identity and SeamlessM4T duplicate assets",
+        "benchmark existing Docling GGUF before any re-quantization"
+      ],
+      "current_lane": "CAJITA_QWEN3_VERSIONED_CANDIDATE",
+      "allowed_source_mutation": false,
+      "candidate_output_only": true,
+      "requires_independent_quality_validation": true
+    },
+    {
+      "rank": 2,
+      "project": "LUNITA",
+      "required_work": [
+        "resume from valid checkpoint",
+        "repair S32 JASP reference-output reproducibility discrepancy",
+        "complete independent candidate rootfs inventory and dependency closure",
+        "recover canonical frozen G06 separately from derived beta candidate",
+        "preserve frozen G08 bindings and do not propagate certification"
+      ],
+      "current_gate": "S32_INDEPENDENT_BETA_VALIDATION_AND_RECEIPT",
+      "known_failures": [
+        "jasp_packaged_fixture_nonregression",
+        "candidate_rootfs_inventory_and_dependency_manifest"
+      ]
+    }
+  ],
+  "global_controls": {
+    "mission_hash_verified_each_tick": true,
+    "fail_closed_on_blocked_status_without_step_completion_flag": true,
+    "independent_lanes_continue_when_another_lane_is_blocked": true,
+    "bounded_actions_with_persistent_receipts": true,
+    "retry_requires_evidence_and_bounded_backoff": true,
+    "no_blind_infinite_same_command_retry": true,
+    "original_model_weights_are_read_only": true,
+    "canonical_g06_g08_are_immutable": true,
+    "automatic_certification_propagation": false,
+    "mission_completion_claim": false,
+    "certification": "NOT_GRANTED"
+  },
+  "current_runtime_file_hashes": {
+    "custosz_mision1_continuation_v1.py": "b459f7e8629b75c7429e4de0e25670ffd6106388c1382c63bdfe80c0bcc3ca08",
+    "custosz_continuity_supervisor_v3.py": "411f8dbb3b1a685d7c18a1ee644d8e59fd44b67c7890b12755c97d124c11e9ba",
+    "custoszv9_continuous_governor_v2.py": "e40d5c7e03e86e3b2c30c76c0ffa168959d5518209bb43bde0c6f0507b873f9b",
+    "test_custoszv9_continuous_governor_v2.py": "e931e0a09cdf0b304ce697e502f35910fe62036ea2bcaa3f0bc6c2534d17f3f0",
+    "test_custosz_mision1_continuation_v1.py": "089136e966b3fea236d6e28ed2c7774b4067063657a557c6aa5ad67fd05d814f",
+    "custoszv9_lunita_bridge.py": "199d5bac314a22984c82a294922aab328c03821438178fd10b6d79550b2cfcfe",
+    "MISION1_CONTROL_V1.json": "SELF_HASH_OMITTED_TO_AVOID_RECURSIVE_HASH"
+  },
+  "acceptance_gates": [
+    "source syntax compilation PASS",
+    "unit and fail-closed contract tests PASS",
+    "same file content uploaded to assigned GitHub branch and remote hashes reconciled",
+    "live supervisor restart validated by fresh PID heartbeat and invocation evidence",
+    "Cajita candidate conversion and quantization started with versioned output path, subprocess receipt and append-only state",
+    "no completion or certification claim before all required evidence"
+  ],
+  "created_at_utc": "2026-10-20T22:21:55Z",
+  "control_enforcement": {
+    "mission_hash_rechecked_on_each_continuation_tick": true,
+    "parallel_cajita_lane_is_invoked_before_lunita_s32_backoff_return": true,
+    "legacy_status_only_blockers_rejected_by_fail_closed_classifier": true,
+    "s32_blockers_remain_explicitly_pending": true,
+    "current_s32_blockers": [
+      "jasp_packaged_fixture_nonregression",
+      "candidate_rootfs_inventory_and_dependency_manifest"
+    ]
+  }
+}
