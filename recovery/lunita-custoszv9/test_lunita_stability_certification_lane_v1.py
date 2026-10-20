@@ -1,4 +1,3 @@
-
 import hashlib
 import json
 import pathlib
@@ -127,9 +126,12 @@ class CertificationGateTests(unittest.TestCase):
             candidate.mkdir()
             runtime = candidate / "runtime.json"
             runtime.write_text(json.dumps({"schema": "CUSTOSZ_LUNITA_BETA_RUNTIME_FUNCTIONAL_TESTS/1.0",
+                                            "candidate_id": "G06_REBUILD_CANDIDATE_R1",
                                             "status": "PASS_RUNTIME_TESTS", "all_tests_pass": True}), encoding="utf-8")
             independent = candidate / "independent.json"
             independent.write_text(json.dumps({
+                "schema": "CUSTOSZ_LUNITA_BETA_INDEPENDENT_VALIDATION/1.0",
+                "candidate_id": "G06_REBUILD_CANDIDATE_R1", "mission_sha256": lane.MISSION_SHA,
                 "status": "PASS_INDEPENDENT_VALIDATION",
                 "runtime_report_sha256": lane.sha_file(runtime),
                 "checks": {"rootfs": {"status": "PASS", "returncode": 0},
@@ -179,3 +181,29 @@ class JaspRunnerTests(unittest.TestCase):
             self.assertFalse(result["roundtrip_gate"]["original_sample_unchanged"])
             self.assertTrue(result["roundtrip_gate"]["temporary_fixture_removed_after_test"])
             self.assertTrue(report.is_file())
+
+
+class StableReleaseReceiptTests(unittest.TestCase):
+    def test_release_receipt_is_immutable_and_current_pointer_requires_revalidation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            st = pathlib.Path(tmp) / "state"
+            gate = {
+                "status": "STABLE_RELEASE_ELIGIBLE", "version": "1.7.0", "release_name": "LUNITA_STABLE_1_7",
+                "candidate_id": "G06_REBUILD_CANDIDATE_R1", "runtime_report_sha256": "1" * 64,
+                "independent_report_sha256": "2" * 64,
+                "s32_receipt": {"path": "/tmp/s32.json", "sha256": "3" * 64},
+                "rootfs_path": "/tmp/candidate/rootfs", "frozen_g06_mutated": False,
+                "canonical_g08_bindings_mutated": False, "certification_scope": "VERSIONED_DERIVED_CANDIDATE_ONLY",
+                "mission_completion_claim": False,
+            }
+            with mock.patch.object(lane, "ST", st):
+                first = lane.persist_stable_release_status(gate)
+                receipt = pathlib.Path(first["release_receipt_path"])
+                original_bytes = receipt.read_bytes()
+                second = lane.persist_stable_release_status({"status": "BLOCKED_INDEPENDENT_VALIDATION"})
+                pointer = json.loads(pathlib.Path(second["current_status_path"]).read_text())
+            self.assertEqual("CERTIFIED_STABLE_RELEASE_ACTIVE", first["status"])
+            self.assertEqual("REVALIDATION_REQUIRED", second["status"])
+            self.assertEqual(original_bytes, receipt.read_bytes())
+            self.assertEqual("REVALIDATION_REQUIRED", pointer["status"])
+            self.assertEqual("CERTIFIED_STABLE_RELEASE", json.loads(original_bytes)["status"])
