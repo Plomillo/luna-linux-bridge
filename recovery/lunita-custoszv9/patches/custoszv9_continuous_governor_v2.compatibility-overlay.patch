@@ -1,0 +1,167 @@
+--- a/custoszv9_continuous_governor_v2.py
++++ b/custoszv9_continuous_governor_v2.py
+@@ -260,7 +260,7 @@
+         "# Source commit: " + EXPECTED_LLAMA_CPP_COMMIT + "\n"
+         "# Source pyproject SHA-256: " + _sha256(pyproject) + "\n"
+         "# Legacy requirements SHA-256: " + _sha256(source / "requirements" / "requirements-convert_legacy_llama.txt") + "\n"
+-        "numpy>=1.26.4,<3.0.0\n"
++        "numpy==2.2.6\n"
+         "sentencepiece>=0.1.98,<0.3.0\n"
+         "transformers==4.57.6\n"
+         "protobuf>=4.21.0,<5.0.0\n"
+@@ -289,10 +289,113 @@
+         "source_pyproject_sha256": _sha256(pyproject),
+         "source_gguf_pyproject_path": str(gguf_project),
+         "source_gguf_pyproject_sha256": _sha256(gguf_project),
+-        "runtime_numpy_constraint": ">=1.26.4,<3.0.0",
++        "runtime_numpy_constraint": "==2.2.6",
+         "runtime_gguf_source": str(source / "gguf-py"),
+         "compatibility_override": True,
+-        "reason": "Pinned legacy NumPy 1.26.4 metadata does not support Python 3.13; this exact source checkout declares Python >=3.10,<3.15 and NumPy >=1.26.4,<3.0.0.",
++        "reason": "Pinned legacy NumPy 1.26.4 requires an sdist on Python 3.13; this source checkout allows NumPy <3.0.0, so use the CPython 3.13 wheel pinned at 2.2.6 and keep the original upstream requirements immutable.",
++    }
++
++
++def _compatibility_recovery_route(lane: dict[str, Any], state_dir: pathlib.Path | str) -> dict[str, Any] | None:
++    """Select one evidence-triggered Python 3.13 route after a proven legacy-NumPy sdist failure."""
++    if lane.get("stage") != "BLOCKED_ENVIRONMENT_PROVISIONING":
++        return None
++    if int(lane.get("compatibility_recovery_attempts", 0)) >= 1:
++        return None
++    if lane.get("runtime_requirements_path"):
++        return None
++    python_path = str(lane.get("venv_python", ""))
++    if "py313" not in python_path or not python_path.endswith("/bin/python"):
++        return None
++    attempts = lane.get("attempts") or []
++    failed = next((row for row in reversed(attempts)
++                   if row.get("stage") == "ENV_INSTALL_FALLBACK_RUNNING"
++                   and row.get("status") == "FAIL"
++                   and row.get("returncode") == 1
++                   and row.get("receipt_path")
++                   and row.get("log_path")), None)
++    if not failed:
++        return None
++    receipt_path = pathlib.Path(failed["receipt_path"])
++    log_path = pathlib.Path(failed["log_path"])
++    receipt = _load(receipt_path, None)
++    if not isinstance(receipt, dict) or receipt.get("returncode") != 1:
++        return None
++    argv = receipt.get("argv")
++    argv_text = json.dumps(argv, ensure_ascii=False) if isinstance(argv, (list, dict)) else str(argv or "")
++    if "numpy~=1.26.4" not in argv_text:
++        return None
++    try:
++        log_text = log_path.read_text(encoding="utf-8", errors="replace").casefold()
++    except OSError:
++        return None
++    if "metadata-generation-failed" not in log_text or "numpy-1.26.4.tar.gz" not in log_text:
++        return None
++    return {
++        "next_stage": "PROVISION_ENV",
++        "reason_code": "PYTHON313_NUMPY_LEGACY_SDIST_INCOMPATIBLE",
++        "numpy_requirement": "numpy==2.2.6",
++        "source_commit": EXPECTED_LLAMA_CPP_COMMIT,
++        "evidence": {
++            "receipt_path": str(receipt_path),
++            "receipt_sha256": _sha256(receipt_path),
++            "log_path": str(log_path),
++            "log_sha256": _sha256(log_path),
++            "failure_signature": "metadata-generation-failed: numpy-1.26.4.tar.gz on CPython 3.13",
++            "previous_argv_sha256": hashlib.sha256(argv_text.encode()).hexdigest(),
++        },
++        "action": "Re-enter pinned-source PROVISION_ENV so _resolve_runtime_requirements selects the source-declared Python 3.13 profile; do not repeat the legacy requirements route.",
++    }
++
++
++def _compatibility_recovery_route(lane: dict[str, Any], state_dir: pathlib.Path | str) -> dict[str, Any] | None:
++    """Select a single, evidence-bound route away from the proven Python 3.13 NumPy sdist failure."""
++    if lane.get("stage") != "BLOCKED_ENVIRONMENT_PROVISIONING":
++        return None
++    if int(lane.get("compatibility_recovery_attempts", 0)) >= 1:
++        return None
++    if lane.get("runtime_requirements_path"):
++        return None
++    python_path = str(lane.get("venv_python", ""))
++    if "py313" not in python_path or not python_path.endswith("/bin/python"):
++        return None
++    failed = next((row for row in reversed(lane.get("attempts") or [])
++                   if row.get("stage") == "ENV_INSTALL_FALLBACK_RUNNING"
++                   and row.get("status") == "FAIL"
++                   and row.get("returncode") == 1
++                   and row.get("receipt_path")
++                   and row.get("log_path")), None)
++    if not failed:
++        return None
++    receipt_path = pathlib.Path(failed["receipt_path"])
++    log_path = pathlib.Path(failed["log_path"])
++    receipt = _load(receipt_path, None)
++    if not isinstance(receipt, dict) or receipt.get("returncode") != 1:
++        return None
++    argv = receipt.get("argv")
++    argv_text = json.dumps(argv, ensure_ascii=False) if isinstance(argv, (list, dict)) else str(argv or "")
++    if "numpy~=1.26.4" not in argv_text:
++        return None
++    try:
++        log_text = log_path.read_text(encoding="utf-8", errors="replace").casefold()
++    except OSError:
++        return None
++    if "metadata-generation-failed" not in log_text or "numpy-1.26.4.tar.gz" not in log_text:
++        return None
++    return {
++        "next_stage": "PROVISION_ENV",
++        "reason_code": "PYTHON313_NUMPY_LEGACY_SDIST_INCOMPATIBLE",
++        "numpy_requirement": "numpy==2.2.6",
++        "source_commit": EXPECTED_LLAMA_CPP_COMMIT,
++        "evidence": {
++            "receipt_path": str(receipt_path),
++            "receipt_sha256": _sha256(receipt_path),
++            "log_path": str(log_path),
++            "log_sha256": _sha256(log_path),
++            "failure_signature": "metadata-generation-failed: numpy-1.26.4.tar.gz on CPython 3.13",
++            "previous_argv_sha256": hashlib.sha256(argv_text.encode()).hexdigest(),
++        },
++        "action": "Use the pinned-source Python 3.13 compatibility resolver and its versioned requirements file; do not repeat the legacy NumPy 1.26.4 source-build route.",
+     }
+ 
+ 
+@@ -343,6 +446,39 @@
+         raise RuntimeError("CAJITA_PRIORITY_LANE_MISSION_HASH_MISMATCH")
+ 
+     stage = lane.get("stage")
++    if stage == "BLOCKED_ENVIRONMENT_PROVISIONING":
++        recovery = _compatibility_recovery_route(lane, state_dir)
++        if recovery:
++            # Preserve both failed receipts. This is a different versioned dependency profile,
++            # selected only because the preceding receipt and log prove the legacy NumPy sdist failure.
++            lane.setdefault("attempts", []).append({
++                "stage": stage,
++                "status": "ALTERNATIVE_ROUTE_SELECTED",
++                "timestamp_utc": utc_now(),
++                "reason_code": recovery["reason_code"],
++                "evidence": recovery["evidence"],
++                "next_stage": recovery["next_stage"],
++            })
++            lane["stage"] = recovery["next_stage"]
++            lane["compatibility_recovery_attempts"] = int(lane.get("compatibility_recovery_attempts", 0)) + 1
++            lane["compatibility_recovery_route"] = recovery
++            lane["last_progress_utc"] = utc_now()
++            lane["next_action_utc"] = None
++            _atomic(lane_path, lane)
++            return {
++                "status": "CAJITA_COMPATIBILITY_RECOVERY_ROUTE_SELECTED",
++                "stage": lane["stage"],
++                "did_work": True,
++                "reason_code": recovery["reason_code"],
++                "evidence": recovery["evidence"],
++                "next_action": recovery["action"],
++            }
++        return {
++            "status": "CAJITA_ENVIRONMENT_PROVISIONING_BLOCKED_AWAITING_NEW_EVIDENCE",
++            "stage": stage,
++            "did_work": False,
++            "next_action": "Do not repeat the same failed installer. Keep the failure receipt and wait for a materially different, evidence-bound dependency/interpreter route.",
++        }
+     if stage in {"ENV_INSTALL_RUNNING", "ENV_INSTALL_FALLBACK_RUNNING", "DRY_RUN_RUNNING", "CONVERSION_RUNNING", "QUANTIZATION_RUNNING", "HASH_RUNNING"}:
+         job_result, alive = _read_job(lane)
+         if job_result is None and alive:
