@@ -80,3 +80,18 @@ Versioned patches on this assigned branch:
 The Python 3.13 route is selected only if the saved failed install receipt and matching log prove that the old command tried `numpy~=1.26.4` and failed on the NumPy source distribution with `metadata-generation-failed`. The recovery attempt is single-shot, retains both original failed receipts, validates the pinned llama.cpp source metadata, and derives a versioned requirements file pinning `numpy==2.2.6`. It does not modify source model weights or certify the candidate.
 
 Regression evidence: the local governor compatibility suite passes 12/12; the local parallel-lane scheduler suite passes 3/3; the supervisor self-test passes. The assigned branch's complete Python test suite passes 57/57 at commit `40c6afe1bfb79275fe75f0f19a6b16da89afe680`. The subsequent README-only update documents those already-verified artifacts. These are test/operational checks, not Lunita or Cajita certification.
+
+## Requirements-profile permission recovery (2026-10-20)
+
+A second evidence-bound recovery handles the actual requirements-directory failure. The service account could not create its versioned profile because `state/tools/requirements` was owned by `root:root` with mode `0700`; the previous generic profile was `root:root` with mode `0600`. The directory owner is corrected to the service account while the old file remains byte-identical and root-owned. The resolver never overwrites that file; it creates a new profile, `llama-cpp-converter-python313-6a1a922d2699-numpy226-v2.txt`.
+
+The recovery handler runs only when the saved error is exactly a `PermissionError` mentioning that requirements directory, the directory is now writable by the service identity, and the pinned source metadata files exist. It records the previous error hash, transitions back to `PROVISION_ENV` once, and refuses to replay the repair. An unrelated permission error or a second recovery attempt remains blocked.
+
+Versioned patch artifacts:
+
+- `patches/custoszv9_continuous_governor_v2.requirements-permission-recovery.patch`
+  - SHA-256: `1698d276a397ebeab38ba7ee30d4ac1078fbf21885e3de29c6f55eb1fbd90bc9`
+- `patches/test_custoszv9_continuous_governor_v2.requirements-permission-recovery.patch`
+  - SHA-256: `80180e89bb294f7cab310f6ecccac88a4d7f7c19dea46d6a059f06699b55bf07`
+
+The current local governor compatibility and permission-recovery suite passes 15/15. The assigned branch's complete test suite passes 58/58 at commit `c72a41da1ed5c9f05fa27d26226b057b9d9a6b6c`. These checks prove the recovery policy and patch contract; they do not certify Lunita, Cajita, or any quantized model.
