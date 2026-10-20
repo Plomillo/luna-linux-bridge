@@ -1,0 +1,195 @@
+--- a/custosz_mision1_continuation_v1.py
++++ b/custosz_mision1_continuation_v1.py
+@@ -1038,8 +1038,102 @@
+         "mission_completion_claim":False,"certification":"NOT_GRANTED"}
+     atomic(ST/"pinned_hf_to_gguf_converter.json",result)
+     return result
+ 
++
++def _beta_gate_report(path, schema):
++    path = pathlib.Path(path)
++    if not path.is_file():
++        return None, {"status": "BLOCKED_EVIDENCE_MISSING", "reason": "MISSING_REPORT", "path": str(path)}
++    report = load(path, None)
++    if not isinstance(report, dict):
++        return None, {"status": "BLOCKED_EVIDENCE_INVALID_JSON", "path": str(path)}
++    if report.get("schema") != schema:
++        return None, {"status": "BLOCKED_EVIDENCE_SCHEMA_MISMATCH", "path": str(path), "observed_schema": report.get("schema")}
++    if report.get("candidate_id") != "G06_REBUILD_CANDIDATE_R1":
++        return None, {"status": "BLOCKED_CANDIDATE_IDENTITY_MISMATCH", "path": str(path)}
++    return report, None
++
++
++def s31_versioned_beta_runtime_gate():
++    candidate = ST / "g06_rebuild_candidates" / "G06_REBUILD_CANDIDATE_R1"
++    report_path = candidate / "BETA_RUNTIME_FUNCTIONAL_TESTS.json"
++    report, failure = _beta_gate_report(report_path, "CUSTOSZ_LUNITA_BETA_RUNTIME_FUNCTIONAL_TESTS/1.0")
++    if failure:
++        return {"status": failure["status"], "step_completion": False, "blocker": failure,
++                "next_action": "Complete runtime build and functional tests; write a hash-bound beta test report. Reuse verified local inputs and do not alter frozen G06/G08.",
++                "retry_after_seconds": REFRESH_SECONDS, "certification": "NOT_GRANTED"}
++    tests = report.get("tests")
++    bad = {k:v for k,v in tests.items()} if isinstance(tests, dict) else {"tests":"MISSING_OR_NOT_OBJECT"}
++    bad = {k:v for k,v in bad.items() if not isinstance(v, dict) or v.get("status") != "PASS" or v.get("returncode") != 0}
++    if report.get("status") != "PASS_RUNTIME_TESTS" or report.get("all_tests_pass") is not True or bad:
++        return {"status": "BETA_BLOCKED_RUNTIME_TESTS", "step_completion": False,
++                "failed_tests": bad, "reported_status": report.get("status"),
++                "next_action": "Keep S31 pending; fix only the failing component, append new evidence and rerun its test. Do not increase step_index.",
++                "retry_after_seconds": REFRESH_SECONDS, "runtime_report_sha256": sha(report_path),
++                "certification": "NOT_GRANTED"}
++    launcher = candidate / "rootfs" / "opt/lunita/agent/lunita.py"
++    actual_launcher_sha = sha(launcher) if launcher.is_file() else None
++    expected_launcher_sha = (report.get("candidate") or {}).get("beta_launcher_sha256")
++    if not actual_launcher_sha or actual_launcher_sha != expected_launcher_sha:
++        return {"status":"BETA_BLOCKED_LAUNCHER_IDENTITY_CHANGED","step_completion":False,
++                "actual_launcher_sha256":actual_launcher_sha,"report_launcher_sha256":expected_launcher_sha,
++                "next_action":"Revalidate beta launcher provenance and regenerate runtime report.","retry_after_seconds":REFRESH_SECONDS,
++                "certification":"NOT_GRANTED"}
++    return {"schema":"CUSTOSZ_LUNITA_BETA_RUNTIME_GATE/1.0","status":"PASS_RUNTIME_TESTS",
++            "step_completion":True,"candidate_id":"G06_REBUILD_CANDIDATE_R1",
++            "runtime_report_path":str(report_path),"runtime_report_sha256":sha(report_path),
++            "passed_test_count":len(tests),"beta_launcher_sha256":actual_launcher_sha,
++            "canonical_g06_certification":"NOT_GRANTED","canonical_g08_bindings_mutated":False,
++            "certification":"PENDING_INDEPENDENT_VALIDATION",
++            "next_action":"S32_INDEPENDENT_BETA_VALIDATION_AND_RECEIPT"}
++
++
++def s32_independent_beta_validation_and_receipt():
++    candidate = ST / "g06_rebuild_candidates" / "G06_REBUILD_CANDIDATE_R1"
++    runtime_path = candidate / "BETA_RUNTIME_FUNCTIONAL_TESTS.json"
++    independent_path = candidate / "BETA_INDEPENDENT_VALIDATION.json"
++    runtime, failure = _beta_gate_report(runtime_path, "CUSTOSZ_LUNITA_BETA_RUNTIME_FUNCTIONAL_TESTS/1.0")
++    if failure:
++        return {"status":failure["status"],"step_completion":False,"blocker":failure,
++                "next_action":"Complete S31 runtime functional validation first.","retry_after_seconds":REFRESH_SECONDS,
++                "certification":"NOT_GRANTED"}
++    independent, failure = _beta_gate_report(independent_path, "CUSTOSZ_LUNITA_BETA_INDEPENDENT_VALIDATION/1.0")
++    if failure:
++        return {"status":failure["status"],"step_completion":False,"blocker":failure,
++                "next_action":"Run independent checks in a separate process and bind them to the exact runtime-report SHA-256.",
++                "retry_after_seconds":REFRESH_SECONDS,"runtime_report_sha256":sha(runtime_path),
++                "certification":"NOT_GRANTED"}
++    expected_runtime_sha = sha(runtime_path)
++    independent_checks = independent.get("checks")
++    bad = {k:v for k,v in independent_checks.items()} if isinstance(independent_checks,dict) else {"checks":"MISSING_OR_NOT_OBJECT"}
++    bad = {k:v for k,v in bad.items() if not isinstance(v,dict) or v.get("status") != "PASS" or v.get("returncode",0) != 0}
++    if (independent.get("status") != "PASS_INDEPENDENT_VALIDATION"
++        or independent.get("runtime_report_sha256") != expected_runtime_sha
++        or runtime.get("status") != "PASS_RUNTIME_TESTS"
++        or runtime.get("all_tests_pass") is not True
++        or independent.get("frozen_g06_mutated") is not False
++        or independent.get("canonical_g08_bindings_mutated") is not False
++        or bad):
++        return {"status":"BETA_BLOCKED_INDEPENDENT_VALIDATION","step_completion":False,
++                "expected_runtime_report_sha256":expected_runtime_sha,
++                "observed_runtime_report_sha256":independent.get("runtime_report_sha256"),
++                "failed_independent_checks":bad,
++                "next_action":"Keep S32 pending. Repair/re-run the failing independent check; do not propagate certification to frozen G06/G08.",
++                "retry_after_seconds":REFRESH_SECONDS,"certification":"NOT_GRANTED"}
++    return {"schema":"CUSTOSZ_LUNITA_BETA_CERTIFICATION_RECEIPT/1.0",
++            "status":"BETA_OPERATIONAL_CERTIFIED","step_completion":True,
++            "candidate_id":"G06_REBUILD_CANDIDATE_R1",
++            "basis":"VERSIONED_DERIVED_BETA_FROM_VERIFIED_UBUNTU_BASE; NOT_THE_MISSING_FROZEN_ORIGINAL",
++            "runtime_report_path":str(runtime_path),"runtime_report_sha256":expected_runtime_sha,
++            "independent_report_path":str(independent_path),"independent_report_sha256":sha(independent_path),
++            "independent_validation":"PASS","frozen_g06_mutated":False,
++            "canonical_g08_bindings_mutated":False,"canonical_g06_certification":"NOT_GRANTED",
++            "certification_scope":"CANDIDATE_BETA_ONLY; NO AUTOMATIC CERTIFICATION PROPAGATION",
++            "mission_completion_claim":False,
++            "next_action":"Record the hash-bound beta receipt; retain canonical original-source recovery as a separate pending gate."}
++
++
+ STEPS = [
+     ("S21_VALIDATE_G08_PATCH_AND_HANDOFF", s21_validate_g08_patch_and_gate_context),
+     ("S22_RUN_CLI_CANDIDATE_REGRESSION", s22_run_cli_candidate_regression),
+     ("S23_REFRESH_CLI_REGISTRY_PROBE", s23_refresh_cli_registry_probe),
+@@ -1050,8 +1144,10 @@
+     ("S28_RECHECK_G06_ROOTFS_SOURCE_AND_G08_BINDING", s28_recheck_g06_rootfs_source_and_g08_binding),
+     ("S29_CAJITA_MODEL_QUANTIZATION_PREFLIGHT", s29_cajita_model_quantization_preflight),
+     ("S29B_CAJITA_HF_GGUF_CONVERTER_SOURCE", s29b_acquire_pinned_hf_to_gguf_converter),
+     ("S30_G06_AUTOMATIC_VERSIONED_REBUILD_FALLBACK", s30_g06_reconstruction_fallback),
++    ("S31_VERSIONED_BETA_RUNTIME_FUNCTIONAL_GATE", s31_versioned_beta_runtime_gate),
++    ("S32_INDEPENDENT_BETA_VALIDATION_AND_RECEIPT", s32_independent_beta_validation_and_receipt),
+ ]
+ 
+ def selftest():
+     return {
+@@ -1064,8 +1160,11 @@
+         "g06_source_recovery_search_registered": any(x[0] == "S26_G06_ROOTFS_SOURCE_RECOVERY_SEARCH" for x in STEPS),
+         "g08_binding_validation_registered": any(x[0] == "S27_VALIDATE_G08_PROTOCOL_AND_BINDINGS" for x in STEPS),
+         "g06_source_recheck_registered": any(x[0] == "S28_RECHECK_G06_ROOTFS_SOURCE_AND_G08_BINDING" for x in STEPS),
+         "g06_automatic_rebuild_fallback_registered": any(x[0] == "S30_G06_AUTOMATIC_VERSIONED_REBUILD_FALLBACK" and callable(x[1]) for x in STEPS),
++        "versioned_beta_runtime_gate_registered": any(x[0] == "S31_VERSIONED_BETA_RUNTIME_FUNCTIONAL_GATE" and callable(x[1]) for x in STEPS),
++        "independent_beta_validation_gate_registered": any(x[0] == "S32_INDEPENDENT_BETA_VALIDATION_AND_RECEIPT" and callable(x[1]) for x in STEPS),
++        "blocked_steps_do_not_advance": "if result.get(\"step_completion\") is False:" in pathlib.Path(__file__).read_text(encoding="utf-8"),
+         "g06_reconstruction_module_selftest": g06_reconstruction.selftest().get("status"),
+         "mission_sha256": MISSION_SHA,
+         "no_mutation_on_import": True,
+         "certification": "NOT_GRANTED",
+@@ -1083,8 +1182,23 @@
+     }
+     if state.get("mission_sha256") != MISSION_SHA:
+         raise RuntimeError("CONTINUATION_PROGRESS_MISSION_HASH_MISMATCH")
+     idx = int(state.get("step_index", 0))
++    pending = state.get("blocked_step") or {}
++    if pending.get("step_index") == idx and pending.get("next_retry_utc"):
++        try:
++            wait = (parseutc(pending["next_retry_utc"]) - dt.datetime.now(dt.timezone.utc)).total_seconds()
++        except (ValueError, TypeError, AttributeError):
++            wait = 0
++        if wait > 0:
++            return {
++                "status": "WAITING_FOR_EVENT", "phase": "IMPLEMENTATION_AND_FUNCTIONAL_VALIDATION",
++                "step_id": pending.get("step_id"), "step_index": idx,
++                "blocked_status": pending.get("status"), "next_action": pending.get("next_action"),
++                "retry_after_seconds": max(1, int(wait)), "last_attempt_utc": pending.get("last_attempt_utc"),
++                "last_progress_utc": state.get("last_progress_utc"),
++                "mission_completion_claim": False, "certification": "NOT_GRANTED",
++            }
+     if idx < len(STEPS):
+         step_id, handler = STEPS[idx]
+         if state.get("completed_steps"):
+             prev = state["completed_steps"][-1]
+@@ -1096,8 +1210,40 @@
+         else:
+             reconciled_queue = None
+         result = handler()
+         receipt = write_result(step_id, result)
++        if result.get("step_completion") is False:
++            attempts = state.setdefault("attempts", [])
++            attempt_number = 1 + sum(1 for row in attempts if row.get("step_id") == step_id)
++            attempt_row = {
++                "step_id": step_id, "attempt": attempt_number, "status": result.get("status"),
++                "attempt_utc": utc(), "result_path": receipt["result_path"],
++                "result_sha256": receipt["result_sha256"], "step_index_preserved": idx,
++                "step_completion": False,
++            }
++            attempts.append(attempt_row)
++            if len(attempts) > 500:
++                del attempts[:-500]
++            retry_utc = (dt.datetime.now(dt.timezone.utc) + dt.timedelta(seconds=REFRESH_SECONDS)).isoformat().replace("+00:00", "Z")
++            state["blocked_step"] = {
++                "step_id": step_id, "step_index": idx, "status": result.get("status"),
++                "last_attempt_utc": attempt_row["attempt_utc"], "next_retry_utc": retry_utc,
++                "result_path": receipt["result_path"], "result_sha256": receipt["result_sha256"],
++                "next_action": result.get("next_action") or "Resolve the blocking condition and retry the same step after bounded backoff.",
++            }
++            state["last_attempt_utc"] = attempt_row["attempt_utc"]
++            # A blocked attempt is evidence, not mission progress: do not increment step_index
++            # and do not modify last_progress_utc or append a completed step.
++            atomic(PROGRESS, state)
++            return {
++                "status": "WAITING_FOR_EVENT", "phase": "IMPLEMENTATION_AND_FUNCTIONAL_VALIDATION",
++                "step_id": step_id, "step_index": idx, "total_steps": len(STEPS),
++                "blocked_status": result.get("status"), "attempt": attempt_number,
++                "attempt_evidence": receipt, "next_action": state["blocked_step"]["next_action"],
++                "retry_after_seconds": REFRESH_SECONDS, "last_progress_utc": state.get("last_progress_utc"),
++                "mission_completion_claim": False, "certification": "NOT_GRANTED",
++            }
++        state.pop("blocked_step", None)
+         state.setdefault("completed_steps", []).append({
+             "step_id": step_id,
+             "status": result.get("status"),
+             "result_path": receipt["result_path"],
+
+[executed on device: LOUKSNA (98c2b7f6-ee30-4f31-9444-06f7ba58f353)]
