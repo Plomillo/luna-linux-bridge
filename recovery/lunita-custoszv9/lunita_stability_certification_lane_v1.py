@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 """Continuous, fail-closed acquisition of Lunita 1.7 candidate certification evidence.
 
@@ -997,6 +996,7 @@ def main() -> int:
                 "error_type": type(exc).__name__, "error": str(exc)[:2000],
                 "certification": "NOT_GRANTED", "mission_completion_claim": False})
         time.sleep(POLL_SECONDS)
+
 
 if __name__ == "__main__":
     raise SystemExit(main())
