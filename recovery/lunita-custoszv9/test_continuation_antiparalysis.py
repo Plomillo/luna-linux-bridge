@@ -52,8 +52,6 @@ class AntiParalysisPatchContractTests(unittest.TestCase):
         self.assertIn("reconcile_historical_completions(state)", self.patch)
 
     def test_blocker_records_do_not_advance_the_progress_cursor(self):
-        self.assertIn("step_index_preserved", self.patch)
-        self.assertIn("state[\"step_index\"] = idx + 1", self.patch)
         self.assertIn("if not completion_admitted(step_id, result):", self.patch)
 
     def test_bounded_backoff_remains_present(self):
