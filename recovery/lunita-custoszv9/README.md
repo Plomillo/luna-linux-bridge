@@ -35,3 +35,16 @@ python3 integrations/lunita-custoszv9/custoszv9_lunita_bridge.py --run-one-step
 `--audit` is read-only; `--self-test` uses synthetic tasks; `--run-one-step` is the only mutating mode and is limited to one checkpointed continuation tick. Consult MISION1.txt and the current checkpoint before changing state.
 
 The assigned branch is `recovery/lunita-custoszv9-operational-20261020`. CI passing certifies the repository contract tests only, not the live rootfs or the canonical G06/G08 artifacts. Certification remains `NOT_GRANTED`; no automatic propagation, main-branch change, merge, force-push, or workflow dispatch is authorized.
+
+
+## Persistent mission control and anti-stall correction
+
+The assigned branch now mirrors the actual local continuation controller and supervisor source, plus the scoped V9 governor and standard-library contract tests. The raw local `MISION1.txt` is not copied verbatim into this public repository; `MISION1_CONTROL_V1.json` records its SHA-256 and a non-verbatim operational control projection.
+
+The fail-closed controller rejects a step result whose status is blocked even when the handler omitted `step_completion: false`. This directly addresses the prior fail-open condition in which source-missing and dependency-blocked S26–S30 results could be written as completed. Historical progress records are preserved; this patch does not rewrite history or grant certification.
+
+A separately checkpointed **Cajita priority lane** is invoked before the sequential Lunita S32 backoff return. Its mission hash is checked every tick. It inventories the existing Qwen3 BF16 model and exact pinned converter/quantizer, then provisions an isolated CPU conversion environment, performs a converter dry-run, converts to a versioned GGUF candidate, quantizes that candidate, and records receipts and hashes. Source model weights remain read-only. The lane does not certify the output or integrate it into Cajita automatically.
+
+The S32 JASP regression discrepancy and full independent rootfs/dependency inventory remain explicitly pending. They no longer prevent the independent Cajita lane from running, and they cannot be marked passed by heartbeat, retries, or the existence of artifacts. The live supervisor must be restarted to load the locally patched controller; its subsequent heartbeat/invocation and the Cajita lane state/child-process receipt provide the evidence that the runtime consumed the patch.
+
+New branch contract tests cover fail-closed status handling, exact Qwen3 BF16 model inventory, source-weight immutability, and the requirement that the Cajita lane be invoked before a blocked serial return. These are contract tests, not model-quality validation or certification.
