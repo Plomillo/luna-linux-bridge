@@ -4,6 +4,8 @@ import unittest
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 CONTINUATION = ROOT / "custosz_mision1_continuation_v1.py"
+if not CONTINUATION.is_file():
+    CONTINUATION = HERE / "custosz_mision1_continuation_v1.py"
 MISSION_CONTROL = HERE / "custoszv9_continuous_governor_v2.py"
 
 
@@ -25,6 +27,7 @@ class ContinuationControlContractTests(unittest.TestCase):
         source = CONTINUATION.read_text(encoding="utf-8")
         lane = MISSION_CONTROL.read_text(encoding="utf-8")
         self.assertIn('MISSION_SHA = core.HS_MISSION', source)
+        self.assertIn("CONTINUATION_MISSION_SOURCE_HASH_DRIFT", source)
         self.assertIn("CAJITA_LANE_MISSION_SHA256_MISMATCH", lane)
         self.assertIn('"certification": "NOT_GRANTED"', lane)
         self.assertIn('"mission_completion_claim": False', lane)
