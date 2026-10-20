@@ -1,8 +1,8 @@
 import pathlib
 import unittest
 
-ROOT = pathlib.Path(__file__).resolve().parents[1]
-PATCHES = ROOT / "patches"
+REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
+PATCHES = REPO_ROOT / "recovery" / "lunita-custoszv9" / "patches"
 SUPERVISOR_PATCH = PATCHES / "custosz_continuity_supervisor_v3.parallel-cajita-lane.patch"
 GOVERNOR_PATCH = PATCHES / "custoszv9_continuous_governor_v2.compatibility-overlay.patch"
 GOVERNOR_TEST_PATCH = PATCHES / "test_custoszv9_continuous_governor_v2.compatibility-overlay.patch"
