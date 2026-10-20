@@ -1191,6 +1191,8 @@ def tick():
     }
     if state.get("mission_sha256") != MISSION_SHA:
         raise RuntimeError("CONTINUATION_PROGRESS_MISSION_HASH_MISMATCH")
+    if not pathlib.Path(core.MISSION).is_file() or sha(core.MISSION) != MISSION_SHA:
+        raise RuntimeError("CONTINUATION_MISSION_SOURCE_HASH_DRIFT")
 
     # The mission's primary Cajita lane is independent of Lunita S32. Poll/advance
     # one bounded lane action before honoring any serial continuation backoff.
