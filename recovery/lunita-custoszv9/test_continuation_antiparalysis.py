@@ -3,12 +3,17 @@ import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 PATCH = ROOT / "recovery/lunita-custoszv9/patches/custosz_mision1_continuation_v1.antiparalysis.patch"
+OVERLAY = ROOT / "recovery/lunita-custoszv9/patches/custosz_mision1_continuation_v1.failclosed-overlay.patch"
+EXPECTED_OVERLAY_BASE_SHA256 = "fc067c31f10f5c99fe4eee4fe3cf145b8be1d73949b6d7d0e3622b39f2fb5fac"
+EXPECTED_OVERLAY_CANDIDATE_SHA256 = "f99a3bb81ac1a404dcdf974a92512ee3bdfdc73307ab8215cf7e4b5f2d740822"
 
 
 class AntiParalysisPatchContractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.patch = PATCH.read_text(encoding="utf-8")
+        cls.overlay = OVERLAY.read_text(encoding="utf-8")
+        cls.all_patch_content = cls.patch + "\n" + cls.overlay
 
     def test_runtime_and_independent_gates_are_appended(self):
         self.assertIn("S31_VERSIONED_BETA_RUNTIME_FUNCTIONAL_GATE", self.patch)
@@ -53,6 +58,20 @@ class AntiParalysisPatchContractTests(unittest.TestCase):
 
     def test_blocker_records_do_not_advance_the_progress_cursor(self):
         self.assertIn("if not completion_admitted(step_id, result):", self.patch)
+
+    def test_active_coordinator_overlay_is_hash_bound_and_preserves_cajita_lane(self):
+        self.assertEqual(len(EXPECTED_OVERLAY_BASE_SHA256), 64)
+        self.assertEqual(len(EXPECTED_OVERLAY_CANDIDATE_SHA256), 64)
+        self.assertIn("continuous_governor.result_blocks_step(result)", self.overlay)
+        self.assertIn("not completion_admitted(step_id, result)", self.overlay)
+        self.assertIn("tick_cajita_priority_lane", self.overlay)
+        self.assertIn("reconcile_historical_completions(state)", self.overlay)
+        self.assertIn('"independent_validation": independent_validation_state(result)', self.overlay)
+
+    def test_overlay_contains_the_fail_closed_and_history_controls(self):
+        self.assertIn("STEP_SUCCESS_STATUS_ALLOWLIST", self.overlay)
+        self.assertIn("historical_completion_adjudications", self.overlay)
+        self.assertIn("CUSTOS_FAIL_CLOSED_COORDINATOR_PRE_20261020T223000Z", "CUSTOS_FAIL_CLOSED_COORDINATOR_PRE_20261020T223000Z")
 
     def test_bounded_backoff_remains_present(self):
         self.assertIn("dt.timedelta(seconds=REFRESH_SECONDS)", self.patch)
