@@ -65,8 +65,7 @@
     "custoszv9_continuous_governor_v2.py": "e40d5c7e03e86e3b2c30c76c0ffa168959d5518209bb43bde0c6f0507b873f9b",
     "test_custoszv9_continuous_governor_v2.py": "e931e0a09cdf0b304ce697e502f35910fe62036ea2bcaa3f0bc6c2534d17f3f0",
     "test_custosz_mision1_continuation_v1.py": "089136e966b3fea236d6e28ed2c7774b4067063657a557c6aa5ad67fd05d814f",
-    "custoszv9_lunita_bridge.py": "199d5bac314a22984c82a294922aab328c03821438178fd10b6d79550b2cfcfe",
-    "MISION1_CONTROL_V1.json": "SELF_HASH_OMITTED_TO_AVOID_RECURSIVE_HASH"
+    "custoszv9_lunita_bridge.py": "199d5bac314a22984c82a294922aab328c03821438178fd10b6d79550b2cfcfe"
   },
   "acceptance_gates": [
     "source syntax compilation PASS",
@@ -86,5 +85,6 @@
       "jasp_packaged_fixture_nonregression",
       "candidate_rootfs_inventory_and_dependency_manifest"
     ]
-  }
+  },
+  "self_hash_policy": "The control manifest does not embed its own SHA-256 recursively; record the manifest SHA in the append-only deployment receipt."
 }
