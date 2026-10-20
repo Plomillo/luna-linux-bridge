@@ -61,3 +61,22 @@ The active local coordinator is checkpoint-bound before applying the fail-closed
 The overlay is derived from the recorded local checkpoint and retains the existing `continuous_governor.result_blocks_step` guard and the independent Cajita priority lane. It adds a per-step success allowlist, requires explicit `step_completion: true` for S31/S32, validates the independent report against its SHA-256 and runtime-report binding, and appends adjudications for historical false-completion claims without deleting or rewriting the old rows. S28 advances only for its exact source-present recheck status. S30 may advance only when the versioned fallback candidate is explicitly created with the exact R1 identity, matching rootfs path and both frozen-G06/G08 mutation guards false; a pending rebuild remains pending and is not certification. The candidate passed Python compilation, seven focused coordinator tests, eight existing continuous-governor tests, and the coordinator self-test. The overlay passed `patch --dry-run` against the pinned base checkpoint.
 
 The overlay is a versioned patch artifact. It is not proof that the active supervisor has loaded the candidate. Apply only when the live file SHA-256 equals the pinned base hash, checkpoint the current runtime and state first, then run the complete tests and verify the new process PID, loaded script hash and fresh invocation receipt. Do not restart a supervisor while its current child job is running.
+
+## Independent Cajita lane and Python 3.13 converter recovery (2026-10-20)
+
+The local runtime's continuation can back off on Lunita S32; the persistent supervisor now performs one bounded Cajita-lane tick on service cycles where the serial continuation did not already tick it. This avoids duplicate lane ticks within a cycle while keeping Cajita progress independent from the S32 retry timer. A Cajita-lane fault is recorded separately and is not allowed to suppress Lunita processing.
+
+Versioned patches on this assigned branch:
+
+- `patches/custosz_continuity_supervisor_v3.parallel-cajita-lane.patch`
+  - SHA-256: `8a16049eddc11f6638dcdb9bdb8254ef2ab7484773f3de977606036b0f5b8189`
+  - Pinned live supervisor source SHA-256 after application: `af129eb0b9771786589606c4debd3db2d87412114ab3cabdab44dee29c9a71c9`
+- `patches/custoszv9_continuous_governor_v2.compatibility-overlay.patch`
+  - SHA-256: `d5bcd9c91e35f0ab93275bb093f4c82c2bec8156cef642db5f832009231448ad`
+  - Pinned live governor source SHA-256 after application: `b1181debf4e41f99334eb37ce95c98fa2302337f693b5b117c75dee647f30348`
+- `patches/test_custoszv9_continuous_governor_v2.compatibility-overlay.patch`
+  - SHA-256: `fdb7d4077791e3f87d937d2ec2cf831bbf02f0142bc3d8ae2cc797fc7cc7d424`
+
+The Python 3.13 route is selected only if the saved failed install receipt and matching log prove that the old command tried `numpy~=1.26.4` and failed on the NumPy source distribution with `metadata-generation-failed`. The recovery attempt is single-shot, retains both original failed receipts, validates the pinned llama.cpp source metadata, and derives a versioned requirements file pinning `numpy==2.2.6`. It does not modify source model weights or certify the candidate.
+
+Regression evidence: the local governor compatibility suite passes 12/12; the local parallel-lane scheduler suite passes 3/3; the supervisor self-test passes. The assigned branch's complete Python test suite passes 57/57 at commit `40c6afe1bfb79275fe75f0f19a6b16da89afe680`. The subsequent README-only update documents those already-verified artifacts. These are test/operational checks, not Lunita or Cajita certification.
