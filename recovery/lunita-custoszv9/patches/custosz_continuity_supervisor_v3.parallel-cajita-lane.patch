@@ -1,0 +1,77 @@
+--- a/custosz_continuity_supervisor_v3.py
++++ b/custosz_continuity_supervisor_v3.py
+@@ -145,6 +145,46 @@
+         "mission_execution_started_by_worker": False,
+     }
+ 
++def tick_parallel_cajita_lane(continuation_already_ticked):
++    """Advance Cajita independently when the serial Lunita continuation is in backoff."""
++    if continuation_already_ticked:
++        return {"status": "CAJITA_LANE_ALREADY_TICKED_BY_CONTINUATION", "did_work": False}
++    try:
++        lane = continuation.continuous_governor.tick_cajita_priority_lane(
++            ST, pathlib.Path(core.CAJ), MISSION_SHA
++        )
++        if lane.get("did_work"):
++            continuation.write_result("CAJITA_PRIORITY_LANE", {
++                "status": lane.get("status", "UNKNOWN"),
++                "parallel_lane": lane,
++                "step_completion": True,
++                "mission_completion_claim": False,
++                "certification": "NOT_GRANTED",
++            })
++        return lane
++    except Exception as exc:
++        fault = None
++        try:
++            fault = recovery.record_fault("cajita_priority_lane", exc, traceback.format_exc())
++        except Exception:
++            pass
++        lane_error = {
++            "status": "CAJITA_LANE_RECOVERY_REQUIRED",
++            "did_work": False,
++            "error_type": type(exc).__name__,
++            "error": str(exc)[:1200],
++            "fault": fault,
++            "next_action": "Preserve the Cajita checkpoint and repair its isolated lane; do not block Lunita continuation.",
++            "mission_completion_claim": False,
++            "certification": "NOT_GRANTED",
++        }
++        try:
++            continuation.write_result("CAJITA_PRIORITY_LANE_ERROR", lane_error)
++        except Exception:
++            pass
++        return lane_error
++
++
+ def loop():
+     core.setup()
+     contract = core.init()
+@@ -211,6 +251,7 @@
+                     pass
+                 next_observe = time.monotonic() + SERVICE_POLL_SECONDS
+ 
++        continuation_invoked = False
+         worker_due, worker_wait = recovery.retry_due("worker")
+         if not worker_due:
+             worker_result = {
+@@ -228,6 +269,7 @@
+                     continuation_due, continuation_wait = recovery.retry_due("continuation")
+                     if continuation_due:
+                         try:
++                            continuation_invoked = True
+                             worker_result = continuation.tick()
+                             if worker_result.get("status") == "PASS_FOR_SUBTASK_ONLY":
+                                 recovery.clear_stage("continuation")
+@@ -269,6 +311,11 @@
+                     "mission_completion_claim": False,
+                     "certification": "NOT_GRANTED",
+                 }
++        if not continuation_invoked:
++            parallel_lane = tick_parallel_cajita_lane(False)
++            if isinstance(worker_result, dict):
++                worker_result["parallel_lane_supervisor_tick"] = parallel_lane
++
+         try:
+             atomic(ST / "last_worker_invocation.json", {
+                 "timestamp_utc": utc(),
