@@ -5,7 +5,10 @@ import tempfile
 import unittest
 from unittest import mock
 
-import custosz_lunita_stability_certification_lane_v1 as lane
+try:
+    import custosz_lunita_stability_certification_lane_v1 as lane
+except ModuleNotFoundError:
+    import lunita_stability_certification_lane_v1 as lane
 
 
 class DpkgDependencyTests(unittest.TestCase):
