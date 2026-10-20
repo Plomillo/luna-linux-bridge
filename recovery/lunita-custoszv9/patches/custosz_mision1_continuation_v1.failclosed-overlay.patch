@@ -1,6 +1,6 @@
 --- a/custosz_mision1_continuation_v1.py
 +++ b/custosz_mision1_continuation_v1.py
-@@ -1138,6 +1138,110 @@
+@@ -1138,6 +1138,136 @@
              "next_action":"Record the hash-bound beta receipt; retain canonical original-source recovery as a separate pending gate."}
  
  
@@ -12,6 +12,7 @@
 +    "S25_G08_EXECUTION_ADMISSION_PROBE": {"PASS_FOR_READONLY_PROBE_ONLY"},
 +    "S26_G06_ROOTFS_SOURCE_RECOVERY_SEARCH": {"PASS_EXACT_SOURCE_PRESENT"},
 +    "S27_VALIDATE_G08_PROTOCOL_AND_BINDINGS": {"PASS_FOR_READONLY_VALIDATION_ONLY"},
++    "S28_RECHECK_G06_ROOTFS_SOURCE_AND_G08_BINDING": {"PASS_SOURCE_PRESENT_REVALIDATION_REQUIRED"},
 +    "S29_CAJITA_MODEL_QUANTIZATION_PREFLIGHT": {"PREFLIGHT_READY_FOR_CONVERSION_VALIDATION"},
 +    "S29B_CAJITA_HF_GGUF_CONVERTER_SOURCE": {"PASS_CONVERTER_SOURCE_PINNED"},
 +    "S31_VERSIONED_BETA_RUNTIME_FUNCTIONAL_GATE": {"PASS_RUNTIME_TESTS"},
@@ -35,6 +36,31 @@
 +    status = result.get("status")
 +    if not isinstance(status, str) or not status:
 +        return False
++    if step_id == "S30_G06_AUTOMATIC_VERSIONED_REBUILD_FALLBACK":
++        # Registering a verified, isolated rebuild candidate is useful progress even
++        # when its remaining build inputs are pending. It is not certification.
++        candidate = result.get("rebuild_candidate")
++        valid_waiting_states = {
++            "WAITING_FOR_VERIFIED_UBUNTU_BASE_INPUT",
++            "WAITING_FOR_RUNTIME_REBUILD_INPUTS",
++        }
++        if status in valid_waiting_states and isinstance(candidate, dict):
++            candidate_path = str(candidate.get("candidate_path", ""))
++            rootfs_path = str(candidate.get("candidate_rootfs", ""))
++            return (
++                candidate.get("status") == status
++                and candidate.get("candidate_created") is True
++                and candidate.get("candidate_id") == "G06_REBUILD_CANDIDATE_R1"
++                and candidate_path.endswith("/G06_REBUILD_CANDIDATE_R1")
++                and rootfs_path.endswith("/G06_REBUILD_CANDIDATE_R1/rootfs")
++                and isinstance(candidate.get("base_archive_verified"), bool)
++                and candidate.get("frozen_g06_mutated") is False
++                and candidate.get("canonical_g08_bindings_mutated") is False
++                and result.get("frozen_g06_mutated") is False
++                and result.get("canonical_g08_bindings_mutated") is False
++                and result.get("mission_completion_claim") is False
++                and result.get("certification") == "NOT_GRANTED"
++            )
 +    if any(marker in status.upper() for marker in BLOCKED_STATUS_MARKERS):
 +        return False
 +    if status not in STEP_SUCCESS_STATUS_ALLOWLIST.get(step_id, set()):
@@ -111,19 +137,21 @@
  STEPS = [
      ("S21_VALIDATE_G08_PATCH_AND_HANDOFF", s21_validate_g08_patch_and_gate_context),
      ("S22_RUN_CLI_CANDIDATE_REGRESSION", s22_run_cli_candidate_regression),
-@@ -1168,7 +1272,10 @@
+@@ -1168,7 +1298,12 @@
          "g06_automatic_rebuild_fallback_registered": any(x[0] == "S30_G06_AUTOMATIC_VERSIONED_REBUILD_FALLBACK" and callable(x[1]) for x in STEPS),
          "versioned_beta_runtime_gate_registered": any(x[0] == "S31_VERSIONED_BETA_RUNTIME_FUNCTIONAL_GATE" and callable(x[1]) for x in STEPS),
          "independent_beta_validation_gate_registered": any(x[0] == "S32_INDEPENDENT_BETA_VALIDATION_AND_RECEIPT" and callable(x[1]) for x in STEPS),
 -        "blocked_steps_do_not_advance": "if continuous_governor.result_blocks_step(result):" in pathlib.Path(__file__).read_text(encoding="utf-8"),
 +        "blocked_steps_do_not_advance": "not completion_admitted(step_id, result)" in pathlib.Path(__file__).read_text(encoding="utf-8"),
 +        "fail_closed_status_allowlist_registered": bool(STEP_SUCCESS_STATUS_ALLOWLIST) and callable(completion_admitted),
++        "source_present_s28_recheck_allowlisted": "S28_RECHECK_G06_ROOTFS_SOURCE_AND_G08_BINDING" in STEP_SUCCESS_STATUS_ALLOWLIST,
++        "g06_fallback_registration_identity_guarded": callable(completion_admitted) and "G06_REBUILD_CANDIDATE_R1" in pathlib.Path(__file__).read_text(encoding="utf-8"),
 +        "historical_completion_reconciliation_registered": callable(reconcile_historical_completions),
 +        "independent_validation_requires_receipt": callable(independent_validation_state),
          "status_only_block_is_fail_closed": continuous_governor.result_blocks_step({"status": "BLOCKED_TEST"}) and continuous_governor.result_blocks_step({"status": "SOURCE_MISSING_BLOCKED"}),
          "normal_subtask_status_is_not_blocked": not continuous_governor.result_blocks_step({"status": "PASS_FOR_SUBTASK_ONLY", "step_completion": True}),
          "cajita_priority_lane_registered": callable(continuous_governor.tick_cajita_priority_lane),
-@@ -1225,6 +1332,8 @@
+@@ -1225,6 +1360,8 @@
          except Exception:
              pass
  
@@ -132,7 +160,7 @@
      idx = int(state.get("step_index", 0))
      pending = state.get("blocked_step") or {}
      if pending.get("step_index") == idx and pending.get("next_retry_utc"):
-@@ -1255,7 +1364,7 @@
+@@ -1255,7 +1392,7 @@
              reconciled_queue = None
          result = handler()
          receipt = write_result(step_id, result)
@@ -141,7 +169,7 @@
              attempts = state.setdefault("attempts", [])
              attempt_number = 1 + sum(1 for row in attempts if row.get("step_id") == step_id)
              attempt_row = {
-@@ -1292,10 +1401,7 @@
+@@ -1292,10 +1429,7 @@
              "status": result.get("status"),
              "result_path": receipt["result_path"],
              "result_sha256": receipt["result_sha256"],
