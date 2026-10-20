@@ -236,7 +236,8 @@ def run_death_penalty_roundtrip(actual_commit: str, env: dict[str, str], stamp: 
         base["executor_error"] = {"type": type(exc).__name__, "message": str(exc)[:1200]}
     original_after = sha_file(source) if source.is_file() else None
     unchanged = bool(original_before == expected_original_sha and original_after == expected_original_sha)
-    final_status = "PASS" if save_run.get("returncode") == 0 and rerun.get("returncode") == 0 and unchanged else "FAIL"
+    roundtrip_reproducible = bool(temp_before == expected_original_sha and temp_after_save and temp_after_save == temp_after_rerun and temp_root and not temp_root.exists())
+    final_status = "PASS" if save_run.get("returncode") == 0 and rerun.get("returncode") == 0 and unchanged and roundtrip_reproducible else "FAIL"
     result = {**base, "captured_at_utc": utc(), "status": "PASS_JASP_STRICT_ROUNDTRIP" if final_status == "PASS" else "BLOCKED_JASP_STRICT_ROUNDTRIP",
               "expected_original_sample_sha256": expected_original_sha,
               "original_sample_sha256_before": original_before, "original_sample_sha256_after": original_after,
@@ -478,11 +479,31 @@ def latest_jasp_evidence() -> dict:
         if p.suffix == ".json":
             data = load_json(p, {}) or {}
             rerun = data.get("strict_rerun_after_save") or {}
+            save_run = data.get("save_run") or {}
             rc = rerun.get("returncode")
-            passed = rerun.get("status") == "PASS" and rc == 0 and data.get("original_sample_unchanged") is True
-            item.update({"returncode": rc, "status": "PASS" if passed else "BLOCKED",
+            temp_before = data.get("temporary_fixture_sha256_before")
+            temp_after_save = data.get("temporary_fixture_sha256_after_save")
+            temp_after_rerun = data.get("temporary_fixture_sha256_after_rerun")
+            passed = (
+                data.get("schema") == "CUSTOSZ_LUNITA_JASP_UNITTEST_ROUNDTRIP/1.0"
+                and data.get("app_commit") == "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7"
+                and data.get("network_unshared") is True and data.get("flatpak_sandbox") is True
+                and data.get("status") == "PASS_JASP_STRICT_ROUNDTRIP"
+                and rerun.get("status") == "PASS" and rc == 0
+                and save_run.get("returncode") == 0
+                and data.get("original_sample_identity_matches_pin") is True
+                and data.get("original_sample_unchanged") is True
+                and data.get("temporary_fixture_removed_after_test") is True
+                and bool(temp_before) and temp_before == data.get("expected_original_sample_sha256")
+                and bool(temp_after_save) and temp_after_save == temp_after_rerun
+            )
+            item.update({"returncode": rc, "save_returncode": save_run.get("returncode"),
+                         "status": "PASS" if passed else "BLOCKED",
                          "case_status": data.get("status"), "rerun_status": rerun.get("status"),
-                         "original_sample_unchanged": data.get("original_sample_unchanged")})
+                         "original_sample_unchanged": data.get("original_sample_unchanged"),
+                         "original_sample_identity_matches_pin": data.get("original_sample_identity_matches_pin"),
+                         "temporary_fixture_removed_after_test": data.get("temporary_fixture_removed_after_test"),
+                         "temporary_fixture_stable_after_save_and_rerun": bool(temp_after_save and temp_after_save == temp_after_rerun)})
         else:
             try:
                 text = p.read_text(encoding="utf-8", errors="replace")
@@ -490,7 +511,14 @@ def latest_jasp_evidence() -> dict:
                 text = ""
             match = re.findall(re.escape(marker or "") + r"\s*=\s*([01])", text) if marker else []
             rc = int(match[-1]) if match else None
-            item.update({"returncode": rc, "status": "PASS" if rc == 0 else "BLOCKED",
+            expected_commit = "83ec9d24365269942539c2d1f1af806c475e6320e5bdff2aced4e28479de3df7"
+            commits = re.findall(r"^APP_COMMIT=([0-9a-f]{40})$", text, re.M)
+            pinned_commit = bool(commits) and all(x == expected_commit for x in commits)
+            sandbox_bound = "EXECUTION_MODE=PINNED_CANDIDATE_FLATPAK_SANDBOX_NETWORK_UNSHARED" in text
+            passed = rc == 0 and pinned_commit and sandbox_bound
+            item.update({"returncode": rc, "status": "PASS" if passed else "BLOCKED",
+                         "observed_app_commits": commits, "pinned_commit_match": pinned_commit,
+                         "sandbox_execution_marker_present": sandbox_bound,
                          "semantic_shape_mismatch": bool(re.search(r"Row is missing|Total number of models visited\s*=\s*\d+\s*!=|results are different", text, re.I)),
                          "log_has_numeric_deltas": bool(re.search(r"\d+(?:\.\d+)?\s*!=\s*\d+(?:\.\d+)?", text))})
         rows[case] = item
@@ -571,22 +599,50 @@ def update_independent_report(inventory: dict | None, jasp: dict) -> dict:
         runtime.get("status") == "PASS_RUNTIME_TESTS" and runtime.get("all_tests_pass") is True and
         launcher_ok and runtime.get("frozen_g06_mutated") is False and runtime.get("canonical_g08_bindings_mutated") is False
     ) else 1, "runtime_report_sha256": runtime_sha, "launcher_sha256": launcher_sha}
+    inventory_report_path = pathlib.Path(inventory.get("report_path", "")) if inventory and inventory.get("report_path") else None
+    inventory_manifest_path = pathlib.Path(inventory.get("manifest_path", "")) if inventory and inventory.get("manifest_path") else None
+    inventory_hashes_valid = bool(
+        inventory and inventory.get("status") == "PASS_ROOTFS_INVENTORY_AND_DEPENDENCY_CLOSURE"
+        and inventory.get("rootfs_path") == str(ROOTFS)
+        and inventory.get("tree_stable_during_scan") is True
+        and inventory_report_path and inventory_report_path.is_file()
+        and inventory.get("report_sha256") == sha_file(inventory_report_path)
+        and inventory_manifest_path and inventory_manifest_path.is_file()
+        and inventory.get("manifest_sha256") == sha_file(inventory_manifest_path)
+        and inventory.get("inventory_errors_count") == 0
+        and (inventory.get("dpkg_dependency_closure") or {}).get("status") == "PASS_DECLARED_PACKAGE_DEPENDENCIES_RESOLVED"
+    )
     checks["candidate_rootfs_inventory_and_dependency_manifest"] = {
-        "status": "PASS" if inventory and inventory.get("status") == "PASS_ROOTFS_INVENTORY_AND_DEPENDENCY_CLOSURE" else "BLOCKED",
-        "returncode": 0 if inventory and inventory.get("status") == "PASS_ROOTFS_INVENTORY_AND_DEPENDENCY_CLOSURE" else 1,
-        "inventory_report_path": inventory.get("report_path") if inventory else None,
+        "status": "PASS" if inventory_hashes_valid else "BLOCKED",
+        "returncode": 0 if inventory_hashes_valid else 1,
+        "inventory_report_path": str(inventory_report_path) if inventory_report_path else None,
         "inventory_report_sha256": inventory.get("report_sha256") if inventory else None,
-        "manifest_path": inventory.get("manifest_path") if inventory else None,
+        "manifest_path": str(inventory_manifest_path) if inventory_manifest_path else None,
         "manifest_sha256": inventory.get("manifest_sha256") if inventory else None,
+        "evidence": {
+            str(inventory_report_path): inventory.get("report_sha256"),
+            str(inventory_manifest_path): inventory.get("manifest_sha256"),
+        } if inventory and inventory_report_path and inventory_manifest_path else {},
         "details": inventory.get("status") if inventory else "Inventory not complete; wait for serialized inventory worker."}
+    jasp_cases = jasp.get("cases") if isinstance(jasp.get("cases"), dict) else {}
+    jasp_case_evidence_valid = (set(jasp_cases) == set(JASP_CASES) and all(
+        row.get("status") == "PASS" and row.get("returncode") == 0
+        and pathlib.Path(row.get("evidence_path", "")).is_file()
+        and sha_file(pathlib.Path(row.get("evidence_path", ""))) == row.get("evidence_sha256")
+        for row in jasp_cases.values()
+    ))
+    jasp_pass = jasp.get("status") == "PASS_JASP_PACKAGED_FIXTURE_NONREGRESSION" and jasp_case_evidence_valid
     checks["jasp_packaged_fixture_nonregression"] = {
-        "status": "PASS" if jasp.get("status") == "PASS_JASP_PACKAGED_FIXTURE_NONREGRESSION" else "BLOCKED",
-        "returncode": 0 if jasp.get("status") == "PASS_JASP_PACKAGED_FIXTURE_NONREGRESSION" else 1,
-        "cases": jasp.get("cases"), "next_action": jasp.get("next_action")}
+        "status": "PASS" if jasp_pass else "BLOCKED",
+        "returncode": 0 if jasp_pass else 1,
+        "cases": jasp_cases, "next_action": jasp.get("next_action"),
+        "all_case_evidence_hashes_current": jasp_case_evidence_valid,
+        "evidence": {row["evidence_path"]: row["evidence_sha256"] for row in jasp_cases.values()
+                     if row.get("evidence_path") and row.get("evidence_sha256")},
+    }
     # Re-validate pre-existing source-bound checks instead of overwriting their history.
     for name, check in list(checks.items()):
-        if name in {"MISION1_identity_sha256", "runtime_report_and_launcher_identity",
-                    "candidate_rootfs_inventory_and_dependency_manifest", "jasp_packaged_fixture_nonregression"}:
+        if name in {"MISION1_identity_sha256", "runtime_report_and_launcher_identity"}:
             continue
         if isinstance(check, dict) and check.get("status") == "PASS":
             evidence = check.get("evidence")
@@ -645,6 +701,12 @@ def persist_independent_report(report: dict) -> dict:
 def stable_release_gate() -> dict:
     report = load_json(INDEPENDENT_REPORT, {}) or {}
     runtime = load_json(RUNTIME_REPORT, {}) or {}
+    if (report.get("schema") != "CUSTOSZ_LUNITA_BETA_INDEPENDENT_VALIDATION/1.0"
+        or report.get("candidate_id") != "G06_REBUILD_CANDIDATE_R1"
+        or report.get("mission_sha256") != MISSION_SHA
+        or runtime.get("schema") != "CUSTOSZ_LUNITA_BETA_RUNTIME_FUNCTIONAL_TESTS/1.0"
+        or runtime.get("candidate_id") != "G06_REBUILD_CANDIDATE_R1"):
+        return {"status": "BLOCKED_CANDIDATE_OR_MISSION_IDENTITY", "certification": "NOT_GRANTED"}
     if report.get("status") != "PASS_INDEPENDENT_VALIDATION":
         return {"status": "BLOCKED_INDEPENDENT_VALIDATION", "certification": "NOT_GRANTED"}
     checks = report.get("checks")
@@ -677,6 +739,53 @@ def stable_release_gate() -> dict:
         "certification_scope": "VERSIONED_DERIVED_CANDIDATE_ONLY",
         "mission_completion_claim": False,
     }
+
+
+def persist_stable_release_status(release_gate: dict) -> dict:
+    """Store immutable release receipts keyed by evidence; keep a mutable current-state pointer."""
+    release_dir = ST / "releases" / "LUNITA_STABLE_1_7"
+    release_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+    current_path = release_dir / "current_status.json"
+    eligible = release_gate.get("status") == "STABLE_RELEASE_ELIGIBLE"
+    receipt_path = None
+    receipt_sha = None
+    if eligible:
+        digest = str(release_gate.get("independent_report_sha256") or "")
+        if not re.fullmatch(r"[0-9a-f]{64}", digest):
+            raise RuntimeError("STABLE_RELEASE_REPORT_SHA256_INVALID")
+        receipt_path = release_dir / f"release_{digest[:16]}.json"
+        payload = {**release_gate, "schema": "CUSTOSZ_LUNITA_STABLE_RELEASE/1.0",
+                   "status": "CERTIFIED_STABLE_RELEASE", "certification": "GRANTED_FOR_VERSIONED_CANDIDATE",
+                   "created_at_utc": utc()}
+        if receipt_path.exists():
+            existing = load_json(receipt_path, {}) or {}
+            if (existing.get("status") != "CERTIFIED_STABLE_RELEASE"
+                or existing.get("independent_report_sha256") != digest
+                or existing.get("runtime_report_sha256") != payload.get("runtime_report_sha256")
+                or existing.get("s32_receipt") != payload.get("s32_receipt")):
+                raise RuntimeError("STABLE_RELEASE_RECEIPT_IDENTITY_COLLISION")
+        else:
+            atomic_json(receipt_path, payload)
+        receipt_sha = sha_file(receipt_path)
+        status = "CERTIFIED_STABLE_RELEASE_ACTIVE"
+    else:
+        previous = sorted(release_dir.glob("release_*.json"))
+        status = "REVALIDATION_REQUIRED" if previous else "NOT_YET_CERTIFIED"
+    pointer = {
+        "schema": "CUSTOSZ_LUNITA_STABLE_RELEASE_CURRENT_STATUS/1.0",
+        "updated_at_utc": utc(), "status": status, "release_gate_status": release_gate.get("status"),
+        "release_receipt_path": str(receipt_path) if receipt_path else None,
+        "release_receipt_sha256": receipt_sha,
+        "candidate_id": "G06_REBUILD_CANDIDATE_R1", "version": "1.7.0",
+        "certification_scope": "VERSIONED_DERIVED_CANDIDATE_ONLY",
+        "previous_release_receipts_retained": True,
+        "frozen_g06_mutated": False, "canonical_g08_bindings_mutated": False,
+        "mission_completion_claim": False,
+    }
+    atomic_json(current_path, pointer)
+    return {"status": status, "current_status_path": str(current_path),
+            "release_receipt_path": str(receipt_path) if receipt_path else None,
+            "release_receipt_sha256": receipt_sha, "gate_status": release_gate.get("status")}
 
 
 def tick() -> dict:
@@ -797,18 +906,8 @@ def tick() -> dict:
     report = update_independent_report(inventory, jasp)
     report_update = persist_independent_report(report)
     release = stable_release_gate()
-    if release.get("status") == "STABLE_RELEASE_ELIGIBLE":
-        release_dir = ST / "releases" / "LUNITA_STABLE_1_7"
-        release_path = release_dir / "release.json"
-        release_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
-        existing = load_json(release_path, {}) or {}
-        if existing.get("status") != "CERTIFIED_STABLE_RELEASE" or existing.get("independent_report_sha256") != release.get("independent_report_sha256"):
-            release.update({"schema": "CUSTOSZ_LUNITA_STABLE_RELEASE/1.0",
-                            "status": "CERTIFIED_STABLE_RELEASE", "certification": "GRANTED_FOR_VERSIONED_CANDIDATE",
-                            "created_at_utc": utc()})
-            atomic_json(release_path, release)
-    else:
-        release_path = None
+    release_status = persist_stable_release_status(release)
+    release_path = pathlib.Path(release_status["release_receipt_path"]) if release_status.get("release_receipt_path") else None
 
     result = {
         "schema": "CUSTOSZ_LUNITA_STABILITY_CERT_LANE_TICK/1.0",
@@ -821,7 +920,10 @@ def tick() -> dict:
         "independent_report_update": report_update, "independent_report_status": report.get("status"),
         "jasp_status": jasp.get("status"), "jasp_cases": jasp.get("cases"),
         "jasp_remediation_queue": jasp_queue,
-        "stable_release_gate": release, "stable_release_path": str(release_path) if release_path else None,
+        "stable_release_gate": release, "stable_release_current_status": release_status,
+        "stable_release_status": release_status.get("status"),
+        "stable_release_status_path": release_status.get("current_status_path"),
+        "stable_release_path": str(release_path) if release_path else None,
         "blocked_checks": report.get("open_items", []), "next_action": (
             "Continue independent evidence acquisition; diagnose and rerun JASP packaged fixtures with the pinned candidate runner. Do not accept new reference outputs merely to silence differences."
             if not jasp.get("all_required_jasp_cases_pass") else
@@ -895,7 +997,6 @@ def main() -> int:
                 "error_type": type(exc).__name__, "error": str(exc)[:2000],
                 "certification": "NOT_GRANTED", "mission_completion_claim": False})
         time.sleep(POLL_SECONDS)
-
 
 if __name__ == "__main__":
     raise SystemExit(main())
