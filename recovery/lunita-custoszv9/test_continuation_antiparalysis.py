@@ -71,7 +71,8 @@ class AntiParalysisPatchContractTests(unittest.TestCase):
     def test_overlay_contains_the_fail_closed_and_history_controls(self):
         self.assertIn("STEP_SUCCESS_STATUS_ALLOWLIST", self.overlay)
         self.assertIn("historical_completion_adjudications", self.overlay)
-        self.assertIn("CUSTOS_FAIL_CLOSED_COORDINATOR_PRE_20261020T223000Z", "CUSTOS_FAIL_CLOSED_COORDINATOR_PRE_20261020T223000Z")
+        self.assertIn("MISSION_SHA", self.overlay)
+        self.assertIn("completion_admitted(step_id, result)", self.overlay)
 
     def test_bounded_backoff_remains_present(self):
         self.assertIn("dt.timedelta(seconds=REFRESH_SECONDS)", self.patch)
