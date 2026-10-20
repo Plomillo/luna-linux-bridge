@@ -48,3 +48,16 @@ A separately checkpointed **Cajita priority lane** is invoked before the sequent
 The S32 JASP regression discrepancy and full independent rootfs/dependency inventory remain explicitly pending. They no longer prevent the independent Cajita lane from running, and they cannot be marked passed by heartbeat, retries, or the existence of artifacts. The live supervisor must be restarted to load the locally patched controller; its subsequent heartbeat/invocation and the Cajita lane state/child-process receipt provide the evidence that the runtime consumed the patch.
 
 New branch contract tests cover fail-closed status handling, exact Qwen3 BF16 model inventory, source-weight immutability, and the requirement that the Cajita lane be invoked before a blocked serial return. These are contract tests, not model-quality validation or certification.
+
+## Fail-closed coordinator overlay (2026-10-20)
+
+The active local coordinator is checkpoint-bound before applying the fail-closed overlay:
+
+- Base coordinator SHA-256: `fc067c31f10f5c99fe4eee4fe3cf145b8be1d73949b6d7d0e3622b39f2fb5fac`
+- Staged candidate SHA-256: `f99a3bb81ac1a404dcdf974a92512ee3bdfdc73307ab8215cf7e4b5f2d740822`
+- Overlay patch SHA-256: `2db28dba10bc5cabc64fa58f76a4a3d9b0920cd8807a8eb60ce6de3199a14cec`
+- Patch file: `patches/custosz_mision1_continuation_v1.failclosed-overlay.patch`
+
+The overlay is derived from the recorded local checkpoint and retains the existing `continuous_governor.result_blocks_step` guard and the independent Cajita priority lane. It adds a per-step success allowlist, requires explicit `step_completion: true` for S31/S32, validates the independent report against its SHA-256 and runtime-report binding, and appends adjudications for historical false-completion claims without deleting or rewriting the old rows. The candidate passed Python compilation, seven focused coordinator tests, eight existing continuous-governor tests, and the coordinator self-test. The overlay passed `patch --dry-run` against the pinned base checkpoint.
+
+The overlay is a versioned patch artifact. It is not proof that the active supervisor has loaded the candidate. Apply only when the live file SHA-256 equals the pinned base hash, checkpoint the current runtime and state first, then run the complete tests and verify the new process PID, loaded script hash and fresh invocation receipt. Do not restart a supervisor while its current child job is running.
