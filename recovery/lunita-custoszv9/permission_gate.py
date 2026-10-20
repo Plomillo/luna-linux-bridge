@@ -50,7 +50,7 @@ def inspect(candidate, user):
             "observed_at_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "candidate_id":CID,"service_user":user,"service_uid":account.pw_uid,
             "current":current,"expected":expected,"policy_match":policy,
-            "all_policy_match":all(policy.values()),"phase":objects["state"].get("phase"),
+            "all_policy_match":all(policy.values()),"phase":objects["state.json"].get("phase"),
             "certification":"NOT_GRANTED","network_or_download":False}
 
 def service_probe(candidate, user):
