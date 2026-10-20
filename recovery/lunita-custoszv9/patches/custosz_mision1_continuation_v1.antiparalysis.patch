@@ -1,6 +1,6 @@
 --- a/custosz_mision1_continuation_v1.py
 +++ b/custosz_mision1_continuation_v1.py
-@@ -1038,8 +1038,102 @@
+@@ -1038,8 +1038,200 @@
          "mission_completion_claim":False,"certification":"NOT_GRANTED"}
      atomic(ST/"pinned_hf_to_gguf_converter.json",result)
      return result
@@ -201,7 +201,7 @@
      ("S21_VALIDATE_G08_PATCH_AND_HANDOFF", s21_validate_g08_patch_and_gate_context),
      ("S22_RUN_CLI_CANDIDATE_REGRESSION", s22_run_cli_candidate_regression),
      ("S23_REFRESH_CLI_REGISTRY_PROBE", s23_refresh_cli_registry_probe),
-@@ -1050,8 +1144,10 @@
+@@ -1050,8 +1242,10 @@
      ("S28_RECHECK_G06_ROOTFS_SOURCE_AND_G08_BINDING", s28_recheck_g06_rootfs_source_and_g08_binding),
      ("S29_CAJITA_MODEL_QUANTIZATION_PREFLIGHT", s29_cajita_model_quantization_preflight),
      ("S29B_CAJITA_HF_GGUF_CONVERTER_SOURCE", s29b_acquire_pinned_hf_to_gguf_converter),
@@ -212,7 +212,7 @@
  
  def selftest():
      return {
-@@ -1064,8 +1160,11 @@
+@@ -1064,8 +1258,13 @@
          "g06_source_recovery_search_registered": any(x[0] == "S26_G06_ROOTFS_SOURCE_RECOVERY_SEARCH" for x in STEPS),
          "g08_binding_validation_registered": any(x[0] == "S27_VALIDATE_G08_PROTOCOL_AND_BINDINGS" for x in STEPS),
          "g06_source_recheck_registered": any(x[0] == "S28_RECHECK_G06_ROOTFS_SOURCE_AND_G08_BINDING" for x in STEPS),
@@ -226,10 +226,12 @@
          "mission_sha256": MISSION_SHA,
          "no_mutation_on_import": True,
          "certification": "NOT_GRANTED",
-@@ -1083,8 +1182,23 @@
+@@ -1083,8 +1282,25 @@
      }
      if state.get("mission_sha256") != MISSION_SHA:
          raise RuntimeError("CONTINUATION_PROGRESS_MISSION_HASH_MISMATCH")
++    if reconcile_historical_completions(state):
++        atomic(PROGRESS, state)
      idx = int(state.get("step_index", 0))
 +    pending = state.get("blocked_step") or {}
 +    if pending.get("step_index") == idx and pending.get("next_retry_utc"):
@@ -250,7 +252,7 @@
          step_id, handler = STEPS[idx]
          if state.get("completed_steps"):
              prev = state["completed_steps"][-1]
-@@ -1096,8 +1210,40 @@
+@@ -1096,8 +1312,40 @@
          else:
              reconciled_queue = None
          result = handler()
@@ -292,9 +294,8 @@
              "status": result.get("status"),
              "result_path": receipt["result_path"],
 
-[executed on device: LOUKSNA (98c2b7f6-ee30-4f31-9444-06f7ba58f353)]
 
-@@ -1252,9 +1384,7 @@
+@@ -1252,8 +1486,5 @@
              "step_id": step_id,
              "status": result.get("status"),
              "result_path": receipt["result_path"],
