@@ -17,7 +17,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: lunita-custoszv9-recovery-contract-${{ github.ref }}
+  group: lunita-custoszv9-recovery-contract-\${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -29,7 +29,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Syntax-check recovery gate
-        run: python -m py_compile recovery/lunita-custoszv9/permission_gate.py recovery/lunita-custoszv9/test_permission_gate.py
+      - name: Compile recovery gate and tests
+        run: python -m py_compile recovery/lunita-custoszv9/permission_gate.py recovery/lunita-custoszv9/test_permission_gate.py recovery/lunita-custoszv9/test_continuation_antiparalysis.py
       - name: Run fail-closed contract tests
         run: python -m unittest discover -s recovery/lunita-custoszv9 -p "test_*.py" -v
