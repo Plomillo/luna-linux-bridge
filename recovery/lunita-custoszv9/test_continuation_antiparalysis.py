@@ -5,7 +5,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 PATCH = ROOT / "recovery/lunita-custoszv9/patches/custosz_mision1_continuation_v1.antiparalysis.patch"
 OVERLAY = ROOT / "recovery/lunita-custoszv9/patches/custosz_mision1_continuation_v1.failclosed-overlay.patch"
 EXPECTED_OVERLAY_BASE_SHA256 = "fc067c31f10f5c99fe4eee4fe3cf145b8be1d73949b6d7d0e3622b39f2fb5fac"
-EXPECTED_OVERLAY_CANDIDATE_SHA256 = "f99a3bb81ac1a404dcdf974a92512ee3bdfdc73307ab8215cf7e4b5f2d740822"
+EXPECTED_OVERLAY_CANDIDATE_SHA256 = "cb1eac90562aaf1908ff81bf011cb73e9559707f4d4d68bd04bffdbc5d58dcdf"
 
 
 class AntiParalysisPatchContractTests(unittest.TestCase):
@@ -67,6 +67,13 @@ class AntiParalysisPatchContractTests(unittest.TestCase):
         self.assertIn("tick_cajita_priority_lane", self.overlay)
         self.assertIn("reconcile_historical_completions(state)", self.overlay)
         self.assertIn('"independent_validation": independent_validation_state(result)', self.overlay)
+
+    def test_s28_and_s30_fallback_continuation_is_identity_guarded(self):
+        self.assertIn('"S28_RECHECK_G06_ROOTFS_SOURCE_AND_G08_BINDING": {"PASS_SOURCE_PRESENT_REVALIDATION_REQUIRED"}', self.overlay)
+        self.assertIn("valid_waiting_states", self.overlay)
+        self.assertIn('candidate.get("candidate_created") is True', self.overlay)
+        self.assertIn('candidate.get("candidate_id") == "G06_REBUILD_CANDIDATE_R1"', self.overlay)
+        self.assertIn('candidate.get("canonical_g08_bindings_mutated") is False', self.overlay)
 
     def test_overlay_contains_the_fail_closed_and_history_controls(self):
         self.assertIn("STEP_SUCCESS_STATUS_ALLOWLIST", self.overlay)
