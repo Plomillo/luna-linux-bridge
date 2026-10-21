@@ -442,8 +442,12 @@ def expert_factor_chunk(job, layer, start, end, weight_map):
         if k not in weight_map:
             raise RuntimeError("MXFP4_EXPERT_TENSOR_MISSING:" + k)
     paths = {name: MODEL / weight_map[key] for name, key in keys.items()}
-    if len({str(p) for p in paths.values()}) != 1:
-        raise RuntimeError("MXFP4_EXPERT_TENSORS_SPLIT_ACROSS_SHARDS:" + str(paths))
+    # Hugging Face sharding can place one layer's gate/up and down expert tensors
+    # in distinct shards. Only each packed-block/scales pair needs co-location.
+    if paths["gu_blocks"] != paths["gu_scales"]:
+        raise RuntimeError("MXFP4_GATE_UP_BLOCK_SCALE_SHARDS_DIFFER:" + str(paths))
+    if paths["down_blocks"] != paths["down_scales"]:
+        raise RuntimeError("MXFP4_DOWN_BLOCK_SCALE_SHARDS_DIFFER:" + str(paths))
     if any(not p.is_file() for p in paths.values()):
         raise RuntimeError("MXFP4_EXPERT_SHARD_MISSING")
     collected = {name: [] for name in ("gate_up_proj_u", "gate_up_proj_v", "gate_up_proj_scale_u",
