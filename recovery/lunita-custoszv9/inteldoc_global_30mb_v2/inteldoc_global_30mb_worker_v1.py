@@ -8,6 +8,7 @@ PROJECT=HOME/"Proyectos/1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/2. Cajita de 
 DOC=PROJECT/"5. Inteligencia documental"
 OP=HOME/"Proyectos/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR"
 CONT=OP/"CUSTOSZ_CONTINUITY_V1"; STATE=CONT/"state"
+WORKER_ROOT=STATE/"jobs/inteldoc_global_30mb_worker_v1"
 LANE=STATE/"jobs/inteldoc_global_30mb_lane_v1"; OLD_LANE=STATE/"jobs/docling_30mb_lane_v1"
 OLD_QUANTIZER=OLD_LANE/"docling_30mb_quantize_worker_v1.py"; OLD_RUNTIME=OLD_LANE/"docling_30mb_runtime_v1.py"
 PYTHON=CONT/"state/tools/venvs/llama-cpp-b10819-py313/bin/python"
