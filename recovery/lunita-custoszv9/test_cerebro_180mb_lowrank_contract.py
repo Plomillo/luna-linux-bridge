@@ -46,6 +46,17 @@ class Cerebro180MBContractTests(unittest.TestCase):
         self.assertIn("verify_worker_journal", source)
         self.assertIn("CEREBRO_JOB_DIR", source)
         self.assertIn("DISPATCH_STATE_ALREADY_EXISTS_NO_OVERWRITE", source)
+        self.assertIn("probe_resource_snapshot", source)
+        self.assertIn("/proc/meminfo:MemAvailable", source)
+        self.assertIn("replace(snapshot, ram_available_bytes=available", source)
+
+    def test_worker_validates_mxfp4_block_scale_pairs_across_shards(self):
+        source = WORKER.read_text(encoding="utf-8")
+        self.assertIn("MXFP4_GATE_UP_BLOCK_SCALE_SHARDS_DIFFER", source)
+        self.assertIn("MXFP4_DOWN_BLOCK_SCALE_SHARDS_DIFFER", source)
+        self.assertNotIn("MXFP4_EXPERT_TENSORS_SPLIT_ACROSS_SHARDS", source)
+        self.assertIn("decode_one_expert(paths[\"gu_blocks\"], paths[\"gu_scales\"]", source)
+        self.assertIn("decode_one_expert(paths[\"down_blocks\"], paths[\"down_scales\"]", source)
 
     def test_worker_has_hard_size_gate_and_checkpoints(self):
         source = WORKER.read_text(encoding="utf-8")
