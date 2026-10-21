@@ -1,3 +1,5 @@
+[Reading 1120 lines from start (total: 1120 lines, 0 remaining)]
+
 #!/usr/bin/env python3
 """Fail-closed step classification and persistent Cajita quantization side-lane.
 
@@ -15,6 +17,7 @@ import pathlib
 import shutil
 import subprocess
 import sys
+import shlex
 import time
 import uuid
 from typing import Any
@@ -48,6 +51,17 @@ def utc_now() -> str:
 
 def _parse_utc(value: str) -> dt.datetime:
     return dt.datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
+def _bounded_compute_env(source: dict[str, str] | None = None) -> dict[str, str]:
+    """Constrain numerical libraries to one thread per process inside CUSTOSZ's heavy lane."""
+    env = dict(os.environ if source is None else source)
+    env.update({
+        "OMP_NUM_THREADS": "1", "OMP_THREAD_LIMIT": "1", "OMP_WAIT_POLICY": "PASSIVE",
+        "OPENBLAS_NUM_THREADS": "1", "MKL_NUM_THREADS": "1", "NUMEXPR_NUM_THREADS": "1",
+        "VECLIB_MAXIMUM_THREADS": "1", "KMP_BLOCKTIME": "0", "TOKENIZERS_PARALLELISM": "false",
+    })
+    return env
 
 
 def _sha256(path: pathlib.Path) -> str:
@@ -213,6 +227,257 @@ def _source_and_quantizer(state_dir: pathlib.Path) -> tuple[pathlib.Path | None,
     return (script if source_ok else None), (quantizer if q_ok else None), details
 
 
+def _resolve_runtime_requirements(
+    state_dir: pathlib.Path, source: pathlib.Path, python_version: str
+) -> tuple[pathlib.Path, dict[str, Any]]:
+    """Honor pinned source requirements, but adapt only the incompatible Python 3.13 dependency edge.
+
+    The official legacy requirements in some pinned llama.cpp revisions require NumPy 1.26.4,
+    which has no CPython 3.13 wheel and does not declare Python 3.13 support. For 3.13 only,
+    use the same checkout's top-level pyproject.toml compatibility metadata and its local gguf-py
+    source package. Keep the original requirements immutable and hash-bound.
+    """
+    original = source / "requirements" / "requirements-convert_hf_to_gguf.txt"
+    if not original.is_file():
+        raise RuntimeError("PINNED_CONVERTER_REQUIREMENTS_MISSING")
+    original_sha = _sha256(original)
+    try:
+        pieces = python_version.split(".")
+        major, minor = int(pieces[0]), int(pieces[1])
+    except (ValueError, IndexError):
+        raise RuntimeError("PYTHON_VERSION_UNPARSEABLE:" + python_version)
+    if (major, minor) < (3, 13):
+        return original, {
+            "profile": "PINNED_UPSTREAM_REQUIREMENTS",
+            "python_version": python_version,
+            "original_requirements_path": str(original),
+            "original_requirements_sha256": original_sha,
+            "runtime_requirements_path": str(original),
+            "runtime_requirements_sha256": original_sha,
+            "compatibility_override": False,
+        }
+
+    pyproject = source / "pyproject.toml"
+    gguf_project = source / "gguf-py" / "pyproject.toml"
+    if not pyproject.is_file() or not gguf_project.is_file():
+        raise RuntimeError("PYTHON313_COMPATIBILITY_METADATA_MISSING")
+    pytext = pyproject.read_text(encoding="utf-8")
+    gguf_text = gguf_project.read_text(encoding="utf-8")
+    if ">=3.10,<3.15" not in pytext or "numpy (>=1.26.4,<3.0.0)" not in pytext or "version = \"0.19.0\"" not in gguf_text:
+        raise RuntimeError("PYTHON313_COMPATIBILITY_METADATA_MISMATCH")
+    runtime_root = state_dir / "tools" / "requirements"
+    runtime_root.mkdir(parents=True, exist_ok=True, mode=0o700)
+    # Preserve the earlier generic profile; create a distinct versioned file after the evidenced sdist failure.
+    output = runtime_root / ("llama-cpp-converter-python" + str(major) + str(minor) + "-" + EXPECTED_LLAMA_CPP_COMMIT[:12] + "-numpy226-v2.txt")
+    content = (
+        "# Derived, compatibility-scoped runtime requirements; original upstream files remain unchanged.\n"
+        "# Source commit: " + EXPECTED_LLAMA_CPP_COMMIT + "\n"
+        "# Source pyproject SHA-256: " + _sha256(pyproject) + "\n"
+        "# Legacy requirements SHA-256: " + _sha256(source / "requirements" / "requirements-convert_legacy_llama.txt") + "\n"
+        "numpy==2.2.6\n"
+        "sentencepiece>=0.1.98,<0.3.0\n"
+        "transformers==4.57.6\n"
+        "protobuf>=4.21.0,<5.0.0\n"
+        "gguf @ " + (source / "gguf-py").resolve().as_uri() + "\n"
+        "tqdm>=4.27\n"
+        "pyyaml>=5.1\n"
+        "requests>=2.25\n"
+    )
+    if output.exists():
+        if output.read_text(encoding="utf-8") != content:
+            raise RuntimeError("RUNTIME_REQUIREMENTS_CANDIDATE_COLLISION")
+    else:
+        with output.open("x", encoding="utf-8") as stream:
+            stream.write(content)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.chmod(output, 0o600)
+    return output, {
+        "profile": "SOURCE_METADATA_COMPATIBLE_PYTHON313_NUMPY226_V2",
+        "compatibility_profile_id": "PYTHON313_NUMPY226_V2",
+        "python_version": python_version,
+        "original_requirements_path": str(original),
+        "original_requirements_sha256": original_sha,
+        "runtime_requirements_path": str(output),
+        "runtime_requirements_sha256": _sha256(output),
+        "source_pyproject_path": str(pyproject),
+        "source_pyproject_sha256": _sha256(pyproject),
+        "source_gguf_pyproject_path": str(gguf_project),
+        "source_gguf_pyproject_sha256": _sha256(gguf_project),
+        "runtime_numpy_constraint": "==2.2.6",
+        "runtime_gguf_source": str(source / "gguf-py"),
+        "compatibility_override": True,
+        "reason": "Pinned legacy NumPy 1.26.4 requires an sdist on Python 3.13; this source checkout allows NumPy <3.0.0, so use the CPython 3.13 wheel pinned at 2.2.6 and keep the original upstream requirements immutable.",
+    }
+
+
+def _compatibility_recovery_route(lane: dict[str, Any], state_dir: pathlib.Path | str) -> dict[str, Any] | None:
+    """Select one evidence-triggered Python 3.13 route after a proven legacy-NumPy sdist failure."""
+    if lane.get("stage") != "BLOCKED_ENVIRONMENT_PROVISIONING":
+        return None
+    if int(lane.get("compatibility_recovery_attempts", 0)) >= 1:
+        return None
+    if lane.get("runtime_requirements_path"):
+        return None
+    python_path = str(lane.get("venv_python", ""))
+    if "py313" not in python_path or not python_path.endswith("/bin/python"):
+        return None
+    attempts = lane.get("attempts") or []
+    failed = next((row for row in reversed(attempts)
+                   if row.get("stage") == "ENV_INSTALL_FALLBACK_RUNNING"
+                   and row.get("status") == "FAIL"
+                   and row.get("returncode") == 1
+                   and row.get("receipt_path")
+                   and row.get("log_path")), None)
+    if not failed:
+        return None
+    receipt_path = pathlib.Path(failed["receipt_path"])
+    log_path = pathlib.Path(failed["log_path"])
+    receipt = _load(receipt_path, None)
+    if not isinstance(receipt, dict) or receipt.get("returncode") != 1:
+        return None
+    argv = receipt.get("argv")
+    argv_text = json.dumps(argv, ensure_ascii=False) if isinstance(argv, (list, dict)) else str(argv or "")
+    if "numpy~=1.26.4" not in argv_text:
+        return None
+    try:
+        log_text = log_path.read_text(encoding="utf-8", errors="replace").casefold()
+    except OSError:
+        return None
+    if "metadata-generation-failed" not in log_text or "numpy-1.26.4.tar.gz" not in log_text:
+        return None
+    return {
+        "next_stage": "PROVISION_ENV",
+        "reason_code": "PYTHON313_NUMPY_LEGACY_SDIST_INCOMPATIBLE",
+        "numpy_requirement": "numpy==2.2.6",
+        "source_commit": EXPECTED_LLAMA_CPP_COMMIT,
+        "evidence": {
+            "receipt_path": str(receipt_path),
+            "receipt_sha256": _sha256(receipt_path),
+            "log_path": str(log_path),
+            "log_sha256": _sha256(log_path),
+            "failure_signature": "metadata-generation-failed: numpy-1.26.4.tar.gz on CPython 3.13",
+            "previous_argv_sha256": hashlib.sha256(argv_text.encode()).hexdigest(),
+        },
+        "action": "Re-enter pinned-source PROVISION_ENV so _resolve_runtime_requirements selects the source-declared Python 3.13 profile; do not repeat the legacy requirements route.",
+    }
+
+
+def _compatibility_recovery_route(lane: dict[str, Any], state_dir: pathlib.Path | str) -> dict[str, Any] | None:
+    """Select a single, evidence-bound route away from the proven Python 3.13 NumPy sdist failure."""
+    if lane.get("stage") != "BLOCKED_ENVIRONMENT_PROVISIONING":
+        return None
+    if int(lane.get("compatibility_recovery_attempts", 0)) >= 1:
+        return None
+    if lane.get("runtime_requirements_path"):
+        return None
+    python_path = str(lane.get("venv_python", ""))
+    if "py313" not in python_path or not python_path.endswith("/bin/python"):
+        return None
+    failed = next((row for row in reversed(lane.get("attempts") or [])
+                   if row.get("stage") == "ENV_INSTALL_FALLBACK_RUNNING"
+                   and row.get("status") == "FAIL"
+                   and row.get("returncode") == 1
+                   and row.get("receipt_path")
+                   and row.get("log_path")), None)
+    if not failed:
+        return None
+    receipt_path = pathlib.Path(failed["receipt_path"])
+    log_path = pathlib.Path(failed["log_path"])
+    receipt = _load(receipt_path, None)
+    if not isinstance(receipt, dict) or receipt.get("returncode") != 1:
+        return None
+    argv = receipt.get("argv")
+    argv_text = json.dumps(argv, ensure_ascii=False) if isinstance(argv, (list, dict)) else str(argv or "")
+    if "numpy~=1.26.4" not in argv_text:
+        return None
+    try:
+        log_text = log_path.read_text(encoding="utf-8", errors="replace").casefold()
+    except OSError:
+        return None
+    if "metadata-generation-failed" not in log_text or "numpy-1.26.4.tar.gz" not in log_text:
+        return None
+    return {
+        "next_stage": "PROVISION_ENV",
+        "reason_code": "PYTHON313_NUMPY_LEGACY_SDIST_INCOMPATIBLE",
+        "numpy_requirement": "numpy==2.2.6",
+        "source_commit": EXPECTED_LLAMA_CPP_COMMIT,
+        "evidence": {
+            "receipt_path": str(receipt_path),
+            "receipt_sha256": _sha256(receipt_path),
+            "log_path": str(log_path),
+            "log_sha256": _sha256(log_path),
+            "failure_signature": "metadata-generation-failed: numpy-1.26.4.tar.gz on CPython 3.13",
+            "previous_argv_sha256": hashlib.sha256(argv_text.encode()).hexdigest(),
+        },
+        "action": "Use the pinned-source Python 3.13 compatibility resolver and its versioned requirements file; do not repeat the legacy NumPy 1.26.4 source-build route.",
+    }
+
+
+def _recover_runtime_requirements_permission_block(
+    lane: dict[str, Any], state_dir: pathlib.Path | str
+) -> dict[str, Any] | None:
+    """Retry only after the saved PermissionError premise is measurably repaired."""
+    if lane.get("stage") != "BLOCKED_RUNTIME_REQUIREMENTS_PROFILE":
+        return None
+    if int(lane.get("runtime_requirements_permission_recovery_attempts", 0)) >= 1:
+        return None
+    last_error = lane.get("last_error") or {}
+    if not isinstance(last_error, dict) or last_error.get("error_type") != "PermissionError":
+        return None
+    state_dir = pathlib.Path(state_dir)
+    requirements_dir = state_dir / "tools" / "requirements"
+    error_text = str(last_error.get("error", ""))
+    if str(requirements_dir) not in error_text:
+        return None
+    if not requirements_dir.is_dir() or not os.access(requirements_dir, os.W_OK | os.X_OK):
+        return None
+    source = state_dir / "tools" / "llama.cpp-source-b10819-6a1a922d2699"
+    required = (
+        source / "pyproject.toml",
+        source / "gguf-py" / "pyproject.toml",
+        source / "requirements" / "requirements-convert_hf_to_gguf.txt",
+        source / "requirements" / "requirements-convert_legacy_llama.txt",
+    )
+    if not all(path.is_file() for path in required):
+        return None
+    previous_error_sha = hashlib.sha256(
+        json.dumps(last_error, sort_keys=True, ensure_ascii=False).encode("utf-8")
+    ).hexdigest()
+    lane.setdefault("attempts", []).append({
+        "stage": "BLOCKED_RUNTIME_REQUIREMENTS_PROFILE",
+        "status": "ROOT_CAUSE_PREMISE_CHANGED_RETRY_ALLOWED",
+        "reason_code": "REQUIREMENTS_DIRECTORY_WRITE_PERMISSION_RESTORED",
+        "timestamp_utc": utc_now(),
+        "requirements_dir": str(requirements_dir),
+        "requirements_dir_uid": requirements_dir.stat().st_uid,
+        "effective_uid": os.geteuid(),
+        "prior_error_type": last_error.get("error_type"),
+        "prior_error_sha256": previous_error_sha,
+        "preserve_existing_requirements_overlay": True,
+        "new_profile_id": "PYTHON313_NUMPY226_V2",
+    })
+    lane["stage"] = "PROVISION_ENV"
+    lane["runtime_requirements_path"] = None
+    lane["runtime_requirements_sha256"] = None
+    lane["requirements_profile"] = None
+    lane["runtime_requirements_permission_recovery_attempts"] = 1
+    lane.pop("next_action_utc", None)
+    lane.pop("last_error", None)
+    lane["last_progress_utc"] = utc_now()
+    return {
+        "status": "CAJITA_RUNTIME_REQUIREMENTS_PERMISSION_RECOVERY_SELECTED",
+        "stage": "PROVISION_ENV",
+        "did_work": True,
+        "reason_code": "REQUIREMENTS_DIRECTORY_WRITE_PERMISSION_RESTORED",
+        "prior_error_sha256": previous_error_sha,
+        "new_profile_id": "PYTHON313_NUMPY226_V2",
+        "next_action": "Create a distinct -numpy226-v2.txt from pinned source metadata; preserve the earlier requirements file byte-for-byte.",
+        "mission_completion_claim": False,
+        "certification": "NOT_GRANTED",
+    }
+
+
 def _read_job(state: dict[str, Any]) -> tuple[dict[str, Any] | None, bool]:
     job = state.get("job") or {}
     receipt_path = pathlib.Path(job["receipt_path"]) if job.get("receipt_path") else None
@@ -260,6 +525,44 @@ def tick_cajita_priority_lane(
         raise RuntimeError("CAJITA_PRIORITY_LANE_MISSION_HASH_MISMATCH")
 
     stage = lane.get("stage")
+    if stage == "BLOCKED_RUNTIME_REQUIREMENTS_PROFILE":
+        permission_recovery = _recover_runtime_requirements_permission_block(lane, state_dir)
+        if permission_recovery:
+            _atomic(lane_path, lane)
+            return permission_recovery
+    if stage == "BLOCKED_ENVIRONMENT_PROVISIONING":
+        recovery = _compatibility_recovery_route(lane, state_dir)
+        if recovery:
+            # Preserve both failed receipts. This is a different versioned dependency profile,
+            # selected only because the preceding receipt and log prove the legacy NumPy sdist failure.
+            lane.setdefault("attempts", []).append({
+                "stage": stage,
+                "status": "ALTERNATIVE_ROUTE_SELECTED",
+                "timestamp_utc": utc_now(),
+                "reason_code": recovery["reason_code"],
+                "evidence": recovery["evidence"],
+                "next_stage": recovery["next_stage"],
+            })
+            lane["stage"] = recovery["next_stage"]
+            lane["compatibility_recovery_attempts"] = int(lane.get("compatibility_recovery_attempts", 0)) + 1
+            lane["compatibility_recovery_route"] = recovery
+            lane["last_progress_utc"] = utc_now()
+            lane["next_action_utc"] = None
+            _atomic(lane_path, lane)
+            return {
+                "status": "CAJITA_COMPATIBILITY_RECOVERY_ROUTE_SELECTED",
+                "stage": lane["stage"],
+                "did_work": True,
+                "reason_code": recovery["reason_code"],
+                "evidence": recovery["evidence"],
+                "next_action": recovery["action"],
+            }
+        return {
+            "status": "CAJITA_ENVIRONMENT_PROVISIONING_BLOCKED_AWAITING_NEW_EVIDENCE",
+            "stage": stage,
+            "did_work": False,
+            "next_action": "Do not repeat the same failed installer. Keep the failure receipt and wait for a materially different, evidence-bound dependency/interpreter route.",
+        }
     if stage in {"ENV_INSTALL_RUNNING", "ENV_INSTALL_FALLBACK_RUNNING", "DRY_RUN_RUNNING", "CONVERSION_RUNNING", "QUANTIZATION_RUNNING", "HASH_RUNNING"}:
         job_result, alive = _read_job(lane)
         if job_result is None and alive:
@@ -271,19 +574,47 @@ def tick_cajita_priority_lane(
                 "stage": stage, "status": "BLOCKED_JOB_EXIT_WITHOUT_RECEIPT", "timestamp_utc": utc_now(),
                 "pid": (lane.get("job") or {}).get("pid"),
             })
-            lane["stage"] = {
-                "ENV_INSTALL_RUNNING": "PROVISION_ENV",
-                "ENV_INSTALL_FALLBACK_RUNNING": "BLOCKED_ENVIRONMENT_FALLBACK_EXIT_WITHOUT_RECEIPT",
-                "DRY_RUN_RUNNING": "DRY_RUN",
-                "CONVERSION_RUNNING": "CONVERT_RETRY",
-                "QUANTIZATION_RUNNING": "QUANTIZE_RETRY",
-                "HASH_RUNNING": "HASH_OUTPUT",
-            }[stage]
+            fallback_to_real_conversion = False
+            job_info = lane.get("job") or {}
+            if stage == "DRY_RUN_RUNNING":
+                log_path = pathlib.Path(str(job_info.get("log_path") or ""))
+                try:
+                    log_tail = log_path.read_text(encoding="utf-8", errors="replace")[-12000:] if log_path.is_file() else ""
+                except OSError:
+                    log_tail = ""
+                fallback_to_real_conversion = bool(
+                    "token_embd.weight" in log_tail
+                    and lane.get("model_inventory", {}).get("status") == "PASS_MODEL_INVENTORY"
+                    and lane.get("toolchain", {}).get("converter_source_commit") == EXPECTED_LLAMA_CPP_COMMIT
+                    and lane.get("toolchain", {}).get("converter_source_status") == "PASS"
+                )
+                if fallback_to_real_conversion:
+                    lane["dry_run_fallback_evidence"] = {
+                        "schema": "CUSTOSZ_CAJITA_DRY_RUN_FALLBACK_EVIDENCE/1.0",
+                        "timestamp_utc": utc_now(), "reason": "DRY_RUN_EXITED_WITHOUT_RECEIPT_AT_LARGEST_TENSOR; use bounded real conversion as the next diagnostic step",
+                        "receipt_path": job_info.get("receipt_path"), "log_path": str(log_path),
+                        "log_sha256": _sha256(log_path) if log_path.is_file() else None,
+                        "model_inventory_status": lane.get("model_inventory", {}).get("status"),
+                        "pinned_converter_commit": EXPECTED_LLAMA_CPP_COMMIT,
+                        "source_model_weights_modified": False, "certification": "NOT_GRANTED",
+                    }
+            lane["stage"] = (
+                "CONVERT_RETRY" if fallback_to_real_conversion else {
+                    "ENV_INSTALL_RUNNING": "PROVISION_ENV",
+                    "ENV_INSTALL_FALLBACK_RUNNING": "BLOCKED_ENVIRONMENT_FALLBACK_EXIT_WITHOUT_RECEIPT",
+                    "DRY_RUN_RUNNING": "DRY_RUN",
+                    "CONVERSION_RUNNING": "CONVERT_RETRY",
+                    "QUANTIZATION_RUNNING": "QUANTIZE_RETRY",
+                    "HASH_RUNNING": "HASH_OUTPUT",
+                }[stage]
+            )
             lane["job"] = None
             lane["last_error"] = "JOB_EXIT_WITHOUT_RECEIPT"
             _atomic(lane_path, lane)
+            action = ("Launch pinned BF16 conversion with one-thread numerical libraries; on success the lane advances to Q4_K_M quantization."
+                      if fallback_to_real_conversion else "Use the preserved log, then retry via the explicit fallback route.")
             return {"status": "CAJITA_JOB_RECOVERY_ROUTE_SELECTED", "stage": lane["stage"],
-                    "did_work": True, "next_action": "Use the preserved log, then retry via the explicit fallback route."}
+                    "did_work": True, "next_action": action}
 
         assert job_result is not None
         rc = job_result.get("returncode")
@@ -302,7 +633,42 @@ def tick_cajita_priority_lane(
                 lane["fallback_environment_failed"] = True
                 lane["fallback_failure_log_path"] = (lane.get("job") or {}).get("log_path")
             elif stage == "DRY_RUN_RUNNING":
-                lane["stage"] = "DRY_RUN"
+                # The dry-run itself loads the model's largest tensor. An interrupted or
+                # libgomp-thread-blocked dry-run is a non-production probe failure, not a
+                # reason to loop forever: preserve it and attempt the real conversion once
+                # with a bounded numerical-library thread environment. Other failures fail closed.
+                job_info = lane.get("job") or {}
+                err_text = str(job_result.get("error") or "")
+                log_path = pathlib.Path(str(job_info.get("log_path") or ""))
+                try:
+                    log_tail = log_path.read_text(encoding="utf-8", errors="replace")[-12000:] if log_path.is_file() else ""
+                except OSError:
+                    log_tail = ""
+                failure_text = (err_text + "\n" + log_tail).casefold()
+                known_resource_probe_failure = (
+                    rc in {1, 125}
+                    and any(marker in failure_text for marker in (
+                        "keyboardinterrupt", "libgomp: thread creation failed", "resource temporarily unavailable"
+                    ))
+                    and lane.get("model_inventory", {}).get("status") == "PASS_MODEL_INVENTORY"
+                    and lane.get("toolchain", {}).get("converter_source_commit") == EXPECTED_LLAMA_CPP_COMMIT
+                    and lane.get("toolchain", {}).get("converter_source_status") == "PASS"
+                )
+                if known_resource_probe_failure:
+                    lane["stage"] = "CONVERT_RETRY"
+                    lane["dry_run_fallback_evidence"] = {
+                        "schema": "CUSTOSZ_CAJITA_DRY_RUN_FALLBACK_EVIDENCE/1.0",
+                        "timestamp_utc": utc_now(), "reason": "INTERRUPTED_OR_THREAD_BLOCKED_DRY_RUN; bounded real conversion is next diagnostic step",
+                        "dry_run_returncode": rc, "receipt_path": job_info.get("receipt_path"),
+                        "receipt_error": err_text[:1200], "log_path": str(log_path),
+                        "log_sha256": _sha256(log_path) if log_path.is_file() else None,
+                        "model_inventory_status": lane.get("model_inventory", {}).get("status"),
+                        "pinned_converter_commit": EXPECTED_LLAMA_CPP_COMMIT,
+                        "source_model_weights_modified": False,
+                        "certification": "NOT_GRANTED",
+                    }
+                else:
+                    lane["stage"] = "DRY_RUN"
             elif stage == "CONVERSION_RUNNING":
                 lane["stage"] = "CONVERT_RETRY"
             elif stage == "QUANTIZATION_RUNNING":
@@ -313,9 +679,13 @@ def tick_cajita_priority_lane(
             lane["job"] = None
             lane["last_progress_utc"] = utc_now()
             _atomic(lane_path, lane)
+            next_action = (
+                "Launch pinned BF16 conversion with one-thread numerical libraries; the heavy lane starts Q4_K_M quantization only after a validated conversion receipt."
+                if lane.get("dry_run_fallback_evidence") else
+                "Run the configured lower-resource or dependency-repair fallback; original model weights remain read-only."
+            )
             return {"status": "CAJITA_JOB_FAILURE_DIAGNOSED", "stage": lane["stage"], "did_work": True,
-                    "returncode": rc, "log_path": lane["last_error"]["log_path"],
-                    "next_action": "Run the configured lower-resource or dependency-repair fallback; original model weights remain read-only."}
+                    "returncode": rc, "log_path": lane["last_error"]["log_path"], "next_action": next_action}
 
         if stage in {"ENV_INSTALL_RUNNING", "ENV_INSTALL_FALLBACK_RUNNING"}:
             vpy = pathlib.Path(lane["venv_python"])
@@ -451,7 +821,30 @@ def tick_cajita_priority_lane(
                 return {"status": "CAJITA_VENV_CREATE_RETRY" if count < 2 else "BLOCKED_VENV_CREATE",
                         "stage": lane["stage"], "did_work": True,
                         "next_action": "The isolated venv creation failed twice; preserve the cause and route to a scoped interpreter/dependency repair instead of blind repetition."}
-        probe = subprocess.run([str(vpy), "-c", "import torch,transformers,gguf"], capture_output=True, text=True, timeout=60, check=False)
+        pyver_result = subprocess.run(
+            [str(vpy), "-c", "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}')"],
+            capture_output=True, text=True, timeout=15, check=False,
+        )
+        if pyver_result.returncode != 0:
+            lane["stage"] = "BLOCKED_PYTHON_VERSION_PROBE"
+            lane["last_error"] = {"returncode": pyver_result.returncode, "stderr": pyver_result.stderr[-1200:]}
+            lane["last_progress_utc"] = utc_now()
+            _atomic(lane_path, lane)
+            return {"status": lane["stage"], "stage": stage, "did_work": True,
+                    "next_action": "Repair the isolated Python interpreter; do not repeat dependency installation without a valid version probe."}
+        try:
+            runtime_requirements, requirement_profile = _resolve_runtime_requirements(
+                state_dir, source, pyver_result.stdout.strip()
+            )
+        except Exception as exc:
+            lane["stage"] = "BLOCKED_RUNTIME_REQUIREMENTS_PROFILE"
+            lane["last_error"] = {"error_type": type(exc).__name__, "error": str(exc)[:1200]}
+            lane["last_progress_utc"] = utc_now()
+            _atomic(lane_path, lane)
+            return {"status": lane["stage"], "stage": stage, "did_work": True,
+                    "evidence": lane["last_error"],
+                    "next_action": "Reconcile the pinned source compatibility metadata before retrying installation."}
+        probe = subprocess.run([str(vpy), "-c", "import torch,transformers,gguf,numpy; print('torch='+torch.__version__); print('transformers='+transformers.__version__); print('numpy='+numpy.__version__)"], capture_output=True, text=True, timeout=60, check=False)
         if probe.returncode == 0:
             lane["venv_python"] = str(vpy)
             lane["stage"] = "DRY_RUN"
@@ -465,13 +858,27 @@ def tick_cajita_priority_lane(
         install_env.update({"PIP_NO_CACHE_DIR": "1", "PIP_DISABLE_PIP_VERSION_CHECK": "1", "PYTHONDONTWRITEBYTECODE": "1"})
         install_attempt = int(lane.get("env_install_attempts", 0)) + 1
         lane["env_install_attempts"] = install_attempt
+        if requirement_profile.get("compatibility_override"):
+            pyq = shlex.quote(str(vpy))
+            rq = shlex.quote(str(runtime_requirements))
+            shell_command = (
+                "set -e\n"
+                + pyq + " -m pip install --no-cache-dir --prefer-binary --disable-pip-version-check "
+                "--index-url https://download.pytorch.org/whl/cpu 'torch==2.11.0'\n"
+                + pyq + " -m pip install --no-cache-dir --prefer-binary --disable-pip-version-check -r " + rq + "\n"
+            )
+            install_argv = ["/bin/bash", "-lc", shell_command]
+        else:
+            install_argv = [str(vpy), "-m", "pip", "install", "--no-cache-dir", "--prefer-binary",
+                            "--disable-pip-version-check", "-r", str(runtime_requirements)]
         job = _spawn_receipted_job(
-            [str(vpy), "-m", "pip", "install", "--no-cache-dir", "--prefer-binary",
-             "--disable-pip-version-check", "-r", str(requirements)],
-            source, install_env, outputs, "CAJITA_CONVERTER_ENV_INSTALL",
+            install_argv, source, install_env, outputs, "CAJITA_CONVERTER_ENV_INSTALL",
         )
         lane.update({"stage": "ENV_INSTALL_RUNNING", "venv_python": str(vpy), "job": job,
                      "requirements_path": str(requirements), "requirements_sha256": _sha256(requirements),
+                     "runtime_requirements_path": str(runtime_requirements),
+                     "runtime_requirements_sha256": _sha256(runtime_requirements),
+                     "requirements_profile": requirement_profile,
                      "install_attempt": install_attempt,
                      "next_action_utc": None, "last_progress_utc": utc_now()})
         _atomic(lane_path, lane)
@@ -495,13 +902,32 @@ def tick_cajita_priority_lane(
             return {"status": lane["stage"], "stage": stage, "did_work": True,
                     "next_action": "Repair the isolated Python environment before attempting converter installation."}
         source = state_dir / "tools" / "llama.cpp-source-b10819-6a1a922d2699"
+        runtime_requirements = pathlib.Path(lane.get("runtime_requirements_path", ""))
+        if not runtime_requirements.is_file():
+            try:
+                pyver = subprocess.run(
+                    [str(vpy), "-c", "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}')"],
+                    capture_output=True, text=True, timeout=15, check=False,
+                )
+                if pyver.returncode != 0:
+                    raise RuntimeError("ALTERNATIVE_PYTHON_VERSION_PROBE_FAILED")
+                runtime_requirements, requirement_profile = _resolve_runtime_requirements(state_dir, source, pyver.stdout.strip())
+                lane["runtime_requirements_path"] = str(runtime_requirements)
+                lane["runtime_requirements_sha256"] = _sha256(runtime_requirements)
+                lane["requirements_profile"] = requirement_profile
+            except Exception as exc:
+                lane["stage"] = "BLOCKED_RUNTIME_REQUIREMENTS_PROFILE"
+                lane["last_error"] = {"error_type": type(exc).__name__, "error": str(exc)[:1200]}
+                _atomic(lane_path, lane)
+                return {"status": lane["stage"], "stage": stage, "did_work": True,
+                        "next_action": "Resolve runtime compatibility metadata before dependency fallback."}
+        pyq = shlex.quote(str(vpy))
+        rq = shlex.quote(str(runtime_requirements))
         alternative = (
-            "set -e; PY=" + repr(str(vpy)) + "; "
-            '"$PY" -m pip install --no-cache-dir --disable-pip-version-check --prefer-binary '
-            '--extra-index-url https://download.pytorch.org/whl/cpu "torch==2.11.0"; '
-            '"$PY" -m pip install --no-cache-dir --disable-pip-version-check --prefer-binary '
-            '"numpy~=1.26.4" "sentencepiece>=0.1.98,<0.3.0" "transformers==4.57.6" '
-            '"gguf>=0.1.0" "protobuf>=4.21.0,<5.0.0"'
+            "set -e\n"
+            + pyq + " -m pip install --no-cache-dir --disable-pip-version-check --only-binary=:all: "
+            "--index-url https://download.pytorch.org/whl/cpu 'torch==2.11.0'\n"
+            + pyq + " -m pip install --no-cache-dir --disable-pip-version-check --only-binary=:all: -r " + rq + "\n"
         )
         job = _spawn_receipted_job(["/bin/bash", "-lc", alternative], source, os.environ.copy(),
                                    outputs, "CAJITA_CONVERTER_ENV_FALLBACK")
@@ -520,7 +946,7 @@ def tick_cajita_priority_lane(
         bf16 = candidate_dir / "qwen3-analysis-advanced-bf16.gguf"
         cmd = [str(vpy), str(source_script), "--outtype", "bf16", "--use-temp-file",
                "--dry-run", "--outfile", str(bf16), str(model_dir)]
-        env = os.environ.copy()
+        env = _bounded_compute_env(os.environ.copy())
         env.update({"PYTHONUNBUFFERED": "1", "PYTHONDONTWRITEBYTECODE": "1"})
         job = _spawn_receipted_job(cmd, source_script.parent, env, outputs, "CAJITA_QWEN3_DRY_RUN")
         lane.update({"stage": "DRY_RUN_RUNNING", "job": job, "bf16_output": str(bf16),
@@ -550,7 +976,9 @@ def tick_cajita_priority_lane(
         cmd = [lane["venv_python"], str(source_script), "--outtype", "bf16", "--use-temp-file", "--outfile", str(output), str(model_dir)]
         if attempt > 1:
             cmd += ["--split-max-size", "4G"]
-        job = _spawn_receipted_job(cmd, source_script.parent, os.environ.copy(), outputs, "CAJITA_QWEN3_CONVERT")
+        env = _bounded_compute_env(os.environ.copy())
+        env.update({"PYTHONUNBUFFERED": "1", "PYTHONDONTWRITEBYTECODE": "1"})
+        job = _spawn_receipted_job(cmd, source_script.parent, env, outputs, "CAJITA_QWEN3_CONVERT")
         lane.update({"stage": "CONVERSION_RUNNING", "job": job, "bf16_output": str(output),
                      "last_progress_utc": utc_now(), "next_action_utc": None})
         _atomic(lane_path, lane)
@@ -578,7 +1006,7 @@ def tick_cajita_priority_lane(
         lane["quantization_attempts"] = attempt
         out = candidate_dir / ("qwen3-analysis-advanced-Q4_K_M.gguf" if attempt == 1 else f"qwen3-analysis-advanced-Q4_0-R{attempt}.gguf")
         qtype = "Q4_K_M" if attempt == 1 else "Q4_0"
-        env = os.environ.copy()
+        env = _bounded_compute_env(os.environ.copy())
         runtime_dir = str(quantizer.parent)
         env["LD_LIBRARY_PATH"] = runtime_dir + (os.pathsep + env["LD_LIBRARY_PATH"] if env.get("LD_LIBRARY_PATH") else "")
         job = _spawn_receipted_job([str(quantizer), str(bf16), str(out), qtype, "1"],
@@ -692,3 +1120,5 @@ def tick_cajita_priority_lane(
 
     return {"status": "CAJITA_LANE_UNRECOGNIZED_STAGE", "stage": stage, "did_work": False,
             "next_action": "Reconcile the versioned lane checkpoint before any mutation."}
+
+[executed on device: LOUKSNA (98c2b7f6-ee30-4f31-9444-06f7ba58f353)]
