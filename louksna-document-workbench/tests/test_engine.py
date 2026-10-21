@@ -4,7 +4,7 @@ import fitz
 import pytest
 
 from louksna_docworkbench.engine import (
-    _protect_glossary, inspect_pdf, normalize_extracted_text,
+    _protect_glossary, inspect_pdf, normalize_extracted_text, organize_pdf,
     parse_page_order, reflow_pdf, reorder_pdf,
 )
 
@@ -80,3 +80,38 @@ def test_reflow_is_explicit_and_writes_audit(tmp_path):
     assert output.is_file()
     assert output.with_suffix(".pdf.audit.json").is_file()
 
+
+
+def test_organize_adds_bookmarks_and_preserves_content(tmp_path):
+    import hashlib
+
+    source = tmp_path / "source.pdf"
+    output = tmp_path / "organized.pdf"
+    document = fitz.open()
+    for text in [
+        "Trastornos de personalidad severos",
+        "Prefacio",
+        "CAPÍTULO 1: Diagnóstico estructural",
+        "CAPÍTULO 2: La entrevista estructural",
+    ]:
+        page = document.new_page()
+        page.insert_text((72, 72), text)
+    document.save(source)
+    document.close()
+    source_sha_before = hashlib.sha256(source.read_bytes()).hexdigest()
+
+    result = organize_pdf(source, output)
+    assert result["verification"] == "PASS_STRUCTURAL_CONTENT_INVARIANCE"
+    assert result["source_modified"] is False
+    assert result["page_order_changed"] is False
+    assert result["source_page_count"] == result["output_page_count"] == 4
+    assert result["bookmark_count"] >= 3
+    assert hashlib.sha256(source.read_bytes()).hexdigest() == source_sha_before
+    assert output.with_suffix(".pdf.audit.json").is_file()
+
+    with fitz.open(source) as original, fitz.open(output) as organized:
+        assert len(organized.get_toc()) == result["bookmark_count"]
+        assert [p.get_text("text", sort=True) for p in original] == [
+            p.get_text("text", sort=True) for p in organized
+        ]
+        assert [p.rotation for p in original] == [p.rotation for p in organized]

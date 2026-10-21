@@ -19,10 +19,12 @@ The candidate workflow at .github/workflows/louksna-document-workbench-continuou
 4. Audits the runtime package for Python syntax errors, accidental Document Factory imports, unsafe subprocess.run(..., shell=True) usage and literal HTTP(S) endpoints.
 5. Runs unit tests.
 6. Builds a temporary three-page synthetic PDF and tests inspection, audited page reordering, text-only reflow, and invariance of the input SHA-256.
+7. Checks out the identified PDF already present at the root of main in read-only mode, inspects it, adds navigation bookmarks without changing page order, and verifies page count, geometry and extracted text.
+8. Packages the organized PDF with SHA-256 checksums and non-secret audit records as a time-limited Actions artifact.
 7. Records the commit ID, Python version and dependency inventory.
 8. Uploads non-secret evidence for 14 days.
 
-The smoke fixture is synthetic; the workflow does not read, upload or translate a private book or any other user document. OCR and translation are not exercised unless system OCR dependencies or local language models are separately provisioned. Machine-translation accuracy and visual fidelity are not certified by these checks.
+The smoke fixture remains synthetic. A separate, scoped workflow step reads the identified PDF already present on main and creates a bookmark-organized reading copy as a time-limited Actions artifact. It does not change main or commit the generated book. OCR and translation are not exercised unless system OCR dependencies or local language models are separately provisioned. Machine-translation accuracy and visual fidelity are not certified by these checks.
 
 ## Schedule activation constraint
 
@@ -32,7 +34,7 @@ No attempt is made to bypass this boundary through an unregistered token, extern
 
 ## Failure and recovery
 
-Any failed command stops the job. The workflow never commits, pushes, merges, modifies main, changes Document Factory, or modifies source documents. CI evidence is ephemeral except for the uploaded, time-limited artifact. The run ID and failing stage identify the failure; retries are explicit rather than blind.
+Any failed command stops the job. The workflow never commits, pushes, merges, modifies main, changes Document Factory, or modifies the source PDF. The organized output is uploaded as a time-limited Actions artifact only. CI evidence is ephemeral except for the uploaded, time-limited artifact. The run ID and failing stage identify the failure; retries are explicit rather than blind.
 
 ## Release gates
 

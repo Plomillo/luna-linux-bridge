@@ -8,6 +8,7 @@ This is a new, standalone candidate component for local document processing. It 
 
 Provide an independently developed path for:
 - inspecting PDF structure and text coverage;
+- adding navigation bookmarks to an existing PDF without reordering pages or reflowing its content;
 - reordering PDF pages only when the supplied order is a complete, explicit permutation;
 - invoking OCRmyPDF as an optional local subprocess;
 - producing a text-only reflow edition from PDFs whose extracted text is usable;
@@ -45,10 +46,13 @@ OCR requires OCRmyPDF and its system dependencies to be installed separately. A 
 ## Commands
 
 - Inspect: louksna-docworkbench inspect input.pdf --audit output.json
+- Organize navigation: louksna-docworkbench organize input.pdf organized.pdf --audit organized.audit.json
 - Reorder: louksna-docworkbench reorder input.pdf output.pdf --order 1,3,2
 - OCR: louksna-docworkbench ocr input.pdf output_ocr.pdf --language spa
 - Reflow: louksna-docworkbench reflow input.pdf reading_copy.pdf --confirm-text-only
 - Translate: louksna-docworkbench translate input.pdf --output-dir translated --prefix kernberg-en --source es --target en --glossary glossary.json
+
+The organize command creates conservative bookmarks from page-leading headings and verifies page count, page geometry, rotations and extracted page text. It does not silently reorder, delete, OCR, translate or reconstruct the PDF. Human review of inferred bookmarks is still recommended.
 
 The page order above is only an example. For a reorder, the list must contain each original page number exactly once. The translator glossary is a JSON object whose keys are source-language terms and whose values are preferred target-language terms, for example {"transferencia": "transference"}.
 

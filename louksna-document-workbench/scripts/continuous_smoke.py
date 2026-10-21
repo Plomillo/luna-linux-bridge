@@ -40,8 +40,21 @@ def run_cli(executable: str, *args: str) -> dict:
         )
     try:
         return json.loads(result.stdout)
-    except json.JSONDecodeError as exc:
-        raise RuntimeError(f"CLI emitted invalid JSON for {args[0]}") from exc
+    except json.JSONDecodeError as first_exc:
+        decoder = json.JSONDecoder()
+        for index, character in enumerate(result.stdout):
+            if character != "{":
+                continue
+            try:
+                value, end = decoder.raw_decode(result.stdout[index:])
+            except json.JSONDecodeError:
+                continue
+            if not result.stdout[index + end:].strip():
+                return value
+        raise RuntimeError(
+            f"CLI emitted invalid JSON for {args[0]}; "
+            f"stdout_prefix={result.stdout[:1000]!r}; stderr_prefix={result.stderr[:1000]!r}"
+        ) from first_exc
 
 
 def main() -> int:

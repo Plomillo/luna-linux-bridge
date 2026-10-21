@@ -5,7 +5,7 @@ import json
 import sys
 from pathlib import Path
 
-from .engine import inspect_pdf, reorder_pdf, reflow_pdf, run_ocr, translate_pdf, write_json_new
+from .engine import inspect_pdf, organize_pdf, reorder_pdf, reflow_pdf, run_ocr, translate_pdf, write_json_new
 
 
 def _path(value: str) -> Path:
@@ -27,6 +27,11 @@ def build_parser() -> argparse.ArgumentParser:
     reorder.add_argument("input", type=_path)
     reorder.add_argument("output", type=_path)
     reorder.add_argument("--order", required=True, help="Complete comma-separated page order, e.g. 2,1,3.")
+
+    organize = commands.add_parser("organize", help="Add navigation bookmarks while preserving original page order and content.")
+    organize.add_argument("input", type=_path)
+    organize.add_argument("output", type=_path)
+    organize.add_argument("--audit", type=_path, help="Write a new JSON organization report; existing files are not overwritten.")
 
     ocr = commands.add_parser("ocr", help="Run installed OCRmyPDF locally; no automatic OCR is performed.")
     ocr.add_argument("input", type=_path)
@@ -62,6 +67,8 @@ def main() -> int:
             print(json.dumps(result, ensure_ascii=False, indent=2))
         elif args.command == "reorder":
             print(json.dumps(reorder_pdf(args.input, args.output, args.order), ensure_ascii=False, indent=2))
+        elif args.command == "organize":
+            print(json.dumps(organize_pdf(args.input, args.output, args.audit), ensure_ascii=False, indent=2))
         elif args.command == "ocr":
             print(json.dumps(run_ocr(args.input, args.output, args.language, args.timeout), ensure_ascii=False, indent=2))
         elif args.command == "reflow":

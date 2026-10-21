@@ -534,3 +534,156 @@ def translate_pdf(
         for path in created:
             path.unlink(missing_ok=True)
         raise
+
+
+def _organization_outline(document: fitz.Document) -> list[list[Any]]:
+    """Infer conservative bookmarks without changing page order or page content."""
+    toc: list[list[Any]] = []
+    seen: set[tuple[int, str]] = set()
+    active_part = False
+    part_pattern = re.compile(
+        r"^(?:PARTE|PART)\s+(?:UNO|DOS|TRES|CUATRO|CINCO|SEIS|SIETE|OCHO|NUEVE|DIEZ|"
+        r"ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE|TEN|[IVX]{1,6})\b.*$",
+        re.IGNORECASE,
+    )
+    chapter_pattern = re.compile(
+        r"^(?:CAP[IÍ]TULO|CHAPTER)\s+(\d{1,2})(?:\s*[:.\-–—]\s*|\s+)?(.*)$",
+        re.IGNORECASE,
+    )
+    front_pattern = re.compile(
+        r"^(?:PREFACIO|PREFACE|AGRADECIMIENTOS|ACKNOWLEDGEMENTS?|"
+        r"CONTENIDOS|CONTENIDO|CONTENTS|TABLE OF CONTENTS|"
+        r"BIBLIOGRAF[IÍ]A|BIBLIOGRAPHY|[ÍI]NDICE|INDEX)(?:\s+[IVXLCDM]+)?$",
+        re.IGNORECASE,
+    )
+    toc_pattern = re.compile(
+        r"^(?:CONTENIDOS|CONTENIDO|CONTENTS|TABLE OF CONTENTS|[ÍI]NDICE)\b",
+        re.IGNORECASE,
+    )
+    for page_index, page in enumerate(document):
+        raw_text = page.get_text("text", sort=True)
+        lines = [
+            re.sub(r"\s+", " ", line).strip(" \t\r\n:;")
+            for line in raw_text.splitlines() if line.strip()
+        ]
+        physical_page = page_index + 1
+        if page_index == 0:
+            title = lines[0][:100] if lines else "Documento"
+            toc.append([1, f"Portada — {title}", physical_page])
+            seen.add((physical_page, title.casefold()))
+            continue
+        if not lines or any(toc_pattern.match(line) for line in lines[:2]):
+            continue
+        entry: tuple[int, str] | None = None
+        for line_index, line in enumerate(lines[:4]):
+            if line_index <= 1 and part_pattern.match(line) and len(line) <= 120:
+                entry = (1, line[:120])
+                active_part = True
+                break
+            match = chapter_pattern.match(line)
+            if line_index <= 2 and match:
+                number = int(match.group(1))
+                suffix = re.sub(r"\s+", " ", match.group(2)).strip(" :-–—")
+                title = f"Capítulo {number}: {suffix}" if suffix and len(suffix) <= 85 else f"Capítulo {number}"
+                entry = (2 if active_part else 1, title[:120])
+                break
+            if line_index <= 2 and front_pattern.fullmatch(line) and len(line) <= 120:
+                entry = (1, line[:120])
+                break
+        if entry:
+            level, title = entry
+            key = (physical_page, title.casefold())
+            if key not in seen:
+                toc.append([level, title, physical_page])
+                seen.add(key)
+    return toc
+
+
+def organize_pdf(input_path: Path, output_path: Path, audit_path: Path | None = None) -> dict[str, Any]:
+    """Add page navigation bookmarks and verify original order, geometry, and extracted text."""
+    source = require_input(input_path)
+    output = require_new_output(source, output_path)
+    audit = audit_path.expanduser().resolve() if audit_path else output.with_suffix(output.suffix + ".audit.json")
+    temporary = output.with_name(output.name + ".tmp")
+    if audit in (source.resolve(), output.resolve()):
+        output.unlink(missing_ok=True)
+        raise ValueError("Audit output must be distinct from the input and organized PDF.")
+    if audit.exists():
+        output.unlink(missing_ok=True)
+        raise FileExistsError(f"Refusing to overwrite audit output: {audit}")
+    if temporary.exists():
+        output.unlink(missing_ok=True)
+        raise FileExistsError(f"Refusing to overwrite temporary output: {temporary}")
+    source_hash_before = sha256_file(source)
+    try:
+        with fitz.open(source) as document:
+            if document.is_encrypted:
+                raise ValueError("Encrypted PDFs are not supported without an explicit decryption workflow.")
+            page_count = len(document)
+            geometry = [(round(p.rect.width, 3), round(p.rect.height, 3), p.rotation) for p in document]
+            text_hashes = [
+                hashlib.sha256(p.get_text("text", sort=True).encode("utf-8")).hexdigest()
+                for p in document
+            ]
+            outline = _organization_outline(document)
+            if not outline:
+                raise RuntimeError("No safe navigation outline could be generated; refusing to write output.")
+            document.set_toc(outline)
+            metadata = dict(document.metadata or {})
+            metadata["title"] = metadata.get("title") or "Trastornos de personalidad severos — copia organizada"
+            metadata["author"] = metadata.get("author") or "Otto F. Kernberg"
+            metadata["subject"] = (metadata.get("subject") or "").strip() or (
+                "Marcadores de navegación añadidos; contenido y secuencia original preservados."
+            )
+            document.set_metadata(metadata)
+            document.save(str(temporary), garbage=3, deflate=True)
+        with fitz.open(temporary) as verified:
+            if len(verified) != page_count:
+                raise RuntimeError("Page count changed during organization.")
+            verified_geometry = [(round(p.rect.width, 3), round(p.rect.height, 3), p.rotation) for p in verified]
+            verified_hashes = [
+                hashlib.sha256(p.get_text("text", sort=True).encode("utf-8")).hexdigest()
+                for p in verified
+            ]
+            verified_toc = verified.get_toc()
+            if geometry != verified_geometry:
+                raise RuntimeError("Page geometry or rotations changed; refusing output.")
+            if text_hashes != verified_hashes:
+                raise RuntimeError("Extracted page text changed; refusing output.")
+            if len(verified_toc) != len(outline):
+                raise RuntimeError("Bookmark verification failed.")
+        if sha256_file(source) != source_hash_before:
+            raise RuntimeError("Input SHA-256 changed during processing; refusing output.")
+        temporary.replace(output)
+        result = {
+            "schema": "LOUKSNA_DOCUMENT_WORKBENCH_ORGANIZATION/1.0",
+            "observed_at_utc": utc_now(),
+            "operation": "ADD_NAVIGATION_BOOKMARKS_WITHOUT_REORDERING",
+            "input_name": source.name,
+            "input_size_bytes": source.stat().st_size,
+            "input_sha256": source_hash_before,
+            "output_name": output.name,
+            "output_size_bytes": output.stat().st_size,
+            "output_sha256": sha256_file(output),
+            "source_page_count": page_count,
+            "output_page_count": page_count,
+            "page_order_changed": False,
+            "page_geometry_preserved": True,
+            "extracted_page_text_preserved": True,
+            "source_modified": False,
+            "bookmark_count": len(verified_toc),
+            "bookmarks": [{"level": int(lvl), "title": str(title), "page": int(pg)} for lvl, title, pg in verified_toc],
+            "human_review": "RECOMMENDED",
+            "verification": "PASS_STRUCTURAL_CONTENT_INVARIANCE",
+            "limitations": [
+                "Bookmarks are inferred conservatively from page-leading headings.",
+                "Page order, geometry and extracted page text are verified invariant.",
+                "The operation does not validate the accuracy of the source's existing machine translation.",
+            ],
+        }
+        write_json_new(audit, result)
+        return result
+    except Exception:
+        temporary.unlink(missing_ok=True)
+        output.unlink(missing_ok=True)
+        raise

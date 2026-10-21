@@ -24,7 +24,7 @@ concurrency:
 
 jobs:
   test-and-audit:
-    name: Static audit, unit tests and synthetic PDF pipeline
+    name: Static audit, tests, actual PDF organization and package
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -59,6 +59,48 @@ jobs:
             louksna-document-workbench/scripts/continuous_smoke.py \
             --cli "$RUNNER_TEMP/docworkbench-venv/bin/louksna-docworkbench" \
             --output-dir "$EVIDENCE_DIR"
+      - name: Checkout the source PDF from main (read-only)
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: main
+          path: source-pdf
+          persist-credentials: false
+          sparse-checkout: |
+            inglés_to_español_20261021_1924_translated.pdf
+          sparse-checkout-cone-mode: false
+      - name: Inspect, bookmark and package the actual PDF
+        run: |
+          set -euo pipefail
+          BOOK_DIR="kernberg-output"
+          EVIDENCE_DIR="louksna-document-workbench-ci-evidence"
+          SOURCE_PDF="source-pdf/inglés_to_español_20261021_1924_translated.pdf"
+          ORGANIZED_PDF="$BOOK_DIR/Trastornos_de_personalidad_severos_organizado.pdf"
+          mkdir -p "$BOOK_DIR" "$EVIDENCE_DIR"
+          test -s "$SOURCE_PDF"
+          "$RUNNER_TEMP/docworkbench-venv/bin/louksna-docworkbench" \
+            inspect "$SOURCE_PDF" --audit "$BOOK_DIR/source-inspection.json" \
+            > /dev/null
+          "$RUNNER_TEMP/docworkbench-venv/bin/louksna-docworkbench" \
+            organize "$SOURCE_PDF" "$ORGANIZED_PDF" \
+            --audit "$BOOK_DIR/organization-report.json" > /dev/null
+          "$RUNNER_TEMP/docworkbench-venv/bin/python" \
+            louksna-document-workbench/scripts/package_organized_document.py \
+            --pdf "$ORGANIZED_PDF" \
+            --organization-report "$BOOK_DIR/organization-report.json" \
+            --source-inspection "$BOOK_DIR/source-inspection.json" \
+            --output "$BOOK_DIR/kernberg-organized-package.zip" \
+            | tee "$BOOK_DIR/package-report.json"
+          cp "$BOOK_DIR/source-inspection.json" "$EVIDENCE_DIR/kernberg-source-inspection.json"
+          cp "$BOOK_DIR/organization-report.json" "$EVIDENCE_DIR/kernberg-organization-report.json"
+          cp "$BOOK_DIR/package-report.json" "$EVIDENCE_DIR/kernberg-package-report.json"
+      - name: Upload organized PDF package
+        if: success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: kernberg-organized-reading-copy
+          path: kernberg-output/kernberg-organized-package.zip
+          if-no-files-found: error
+          retention-days: 14
       - name: Record dependency inventory
         if: always()
         run: |
