@@ -1,0 +1,103 @@
+{
+  "acceptance_criteria": [
+    "all five original source hashes match their pinned inventory",
+    "a measured candidate or explicit candidate-generation failure is reported for each source",
+    "direct GGUF alternatives are separate from the compact two-input Docling replacement option",
+    "exact byte totals are calculated from filesystem stat sizes",
+    "global cap gate fails closed if the combined candidate and required runtime dependencies exceed 30000000 bytes",
+    "no runtime smoke or functional test runs in this phase",
+    "original source hashes remain unchanged"
+  ],
+  "candidate_strategy": {
+    "calibre_binary": "reuse the SHA-256-pinned minimized Calibre candidate from the previous run; source artifact stays read-only",
+    "calibre_source": "reuse the previously reduced source archive after SHA-256 and xz integrity checks",
+    "compact_comparison": "also measure the previous custom Docling candidate as a separate option replacing the two GGUFs together; do not conflate it with direct GGUF requantization",
+    "docling_mmproj_gguf": "direct per-file Q1_0 quantization of the pinned original projector GGUF",
+    "docling_text_gguf": "direct per-file Q2_0 requantization of the pinned source GGUF with explicit Q2_0 token-embedding type, validated by dry-run size estimate",
+    "docling_wheel": "reuse the SHA-256-pinned reduced wheel from the previous run after ZIP integrity validation"
+  },
+  "custoszv9_runtime_pin": {
+    "artifact": "CUSTOSZV9.pyz",
+    "sha256": "667ceac7d7e59682292c864777ec3e1c228074716dc5dba17fe150e4d826ccf3",
+    "size_bytes": 236326
+  },
+  "execution_controls": {
+    "candidate_outputs_only": true,
+    "canonical_promotion": "NOT_AUTHORIZED",
+    "certification": "NOT_GRANTED",
+    "checkpointed": true,
+    "fail_closed": true,
+    "functional_smoke": "DEFERRED_UNTIL_ALL_ARTIFACT_QUANTIZATION_FINISHED",
+    "max_concurrency": 1,
+    "non_regression": "No functional claims may be inferred from size reduction alone",
+    "quality_equivalence": "NOT_ESTABLISHED",
+    "resource_limits": {
+      "CPUQuotaPercent": 35,
+      "MemoryHigh": 805306368,
+      "MemoryMax": 1073741824,
+      "TasksMax": 24
+    },
+    "source_modification": "FORBIDDEN"
+  },
+  "github": {
+    "branch": "recovery/lunita-custoszv9-operational-20261020",
+    "path_prefix": "recovery/lunita-custoszv9/inteldoc_global_30mb_corrective_v8/",
+    "repository": "Plomillo/luna-linux-bridge"
+  },
+  "global_limit": {
+    "hard_cap_bytes": 30000000,
+    "no_goal_to_equal_cap": true,
+    "scope": "combined selected candidate artifact bundle plus any required runtime dependency bytes that are evidenced as required; source originals remain unchanged and are not silently substituted",
+    "unit": "decimal_bytes"
+  },
+  "inventory": {
+    "pinned_originals": [
+      {
+        "bytes": 192898432,
+        "id": "CALIBRE_BINARY",
+        "path": "Calibre/calibre-9.14.0-x86_64.txz",
+        "sha256": "7f53a0863ed6d32407bc72053b966e39d5b64813f2592bd9c741504c01c0e7f3"
+      },
+      {
+        "bytes": 48867616,
+        "id": "CALIBRE_SOURCE",
+        "path": "Calibre/calibre-9.14.0.tar.xz",
+        "sha256": "d1bc24024b0942429c627e9c5d0b25d51df9c1af1e1d8dca3e572f03b194c561"
+      },
+      {
+        "bytes": 780430,
+        "id": "DOCLING_WHEEL",
+        "path": "Docling/docling_slim-2.124.0-py3-none-any.whl",
+        "sha256": "2c7c667394d3eae9080bc15143ed6f1d39a4838090d9e3f29be212606e6676bd"
+      },
+      {
+        "bytes": 138559520,
+        "id": "DOCLING_GGUF_TEXT",
+        "path": "Docling/granite-docling-258M-Q4_K_M.gguf",
+        "sha256": "4ba41a480d2b6594613a23819df8fcc382d9dab9691e28bf327b3ac799fe0a82"
+      },
+      {
+        "bytes": 190031712,
+        "id": "DOCLING_GGUF_MMPROJ",
+        "path": "Docling/mmproj-granite-docling-258M-f16.gguf",
+        "sha256": "4b7b2c4ed3162bd9cb323668c188e2324838b8f8ca4f3f9767f16c4c600d43ad"
+      }
+    ],
+    "source_root": "/home/diegoignacionorambuenamiranda/PROYECTOS/1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/2. Cajita de Luna/5. Inteligencia documental"
+  },
+  "mission_id": "CUSTOSZV9_INTELDOC_FIVE_ARTIFACT_CORRECTIVE_V1",
+  "objective": "Forensically process all five original files in Cajita de Luna/5. Inteligencia documental, create isolated reduced candidates for each original input, calculate honest per-file and combined byte totals, and fail closed if the 30,000,000-byte global cap is exceeded.",
+  "prior_candidate_evidence": {
+    "calibre_minimized_bytes": 151177876,
+    "calibre_minimized_path": "/home/diegoignacionorambuenamiranda/PROYECTOS/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR/CUSTOSZ_CONTINUITY_V1/state/jobs/inteldoc_global_30mb_worker_v1/candidate_staging_20261021T164955Z/operational_bundle/calibre/calibre-9.14.0-core-minimized.txz",
+    "calibre_minimized_sha256": "98ce2c45d4473939c7a1c51719f91b56c86f37e9882b37fe6eba1a33050712d4",
+    "docling_compact_candidate_bytes": 20871887,
+    "docling_compact_candidate_path": "/home/diegoignacionorambuenamiranda/PROYECTOS/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR/CUSTOSZ_CONTINUITY_V1/state/jobs/inteldoc_global_30mb_worker_v1/candidate_staging_20261021T164955Z/operational_bundle/docling_model",
+    "docling_compact_candidate_relationship": "custom binary candidate based on the pinned upstream Hugging Face model.safetensors checkpoint, not a direct byte-transform of either local GGUF; equivalence and runtime remain unverified"
+  },
+  "project_id": "CAJITA_DE_LUNA_INTELDOC_GLOBAL",
+  "schema": "INTELDOC_GLOBAL_30MB_CORRECTIVE_MISSION/1.0",
+  "v6_execution_note": "Q1_0 main-model quantization failed on tensor shape; retained as failure evidence in V6.",
+  "v7_execution_note": "Retry using the previously executable Q2_K text quantizer and Q1_0 projector quantizer on the same five immutable source files. No quality or size-cap success is assumed.",
+  "v8_execution_note": "Same five pinned original file identities/bytes/hashes. Candidate generation is more aggressive and isolated. No source replacements, no source mutations; quality and runtime equivalence remain unestablished until post-quantization tests."
+}
