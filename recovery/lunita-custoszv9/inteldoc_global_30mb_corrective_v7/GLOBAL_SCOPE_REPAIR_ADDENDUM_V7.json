@@ -21,7 +21,7 @@
   "branch": "recovery/lunita-custoszv9-operational-20261020",
   "custoszv9_bytes": 236326,
   "custoszv9_sha256": "667ceac7d7e59682292c864777ec3e1c228074716dc5dba17fe150e4d826ccf3",
-  "dispatcher_sha256": "a7bd8ad9e1d752120bcfdbd32705db5f53503ed26a4efae4576f6f7d54516c67",
+  "dispatcher_sha256": "b54782a2ddc880a19dc484ac373c11cf22567b232e58e83f3de755984316e2ab",
   "forbidden_operations": [
     "write_to_main_or_other_branch",
     "merge",
