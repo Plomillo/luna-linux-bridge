@@ -1,8 +1,8 @@
 name: SUPER1200 — global seal
 
-# Operator-authorized global seal. G23 revalidates scoped certificates,
-# then G24 writes the seal. Does not promote main and does not enable
-# the synthetic materializer. Capabilities 1-100 stay withheld.
+# Operator-authorized global seal. Rebind D04:93-100, then G23, then G24.
+# Does not merge to main and does not enable the synthetic materializer.
+# Capabilities 1-92 stay withheld.
 
 on:
   workflow_dispatch:
@@ -37,10 +37,10 @@ jobs:
       - name: Publish the seal
         run: |
           set -Eeuo pipefail
-          git add continuity/STATE.json continuity/certification/SUPER1200_GLOBAL.json
+          git add continuity/STATE.json continuity/certification/SUPER1200_GLOBAL.json continuity/certification/D04_93_96.json continuity/certification/D04_97_100.json
           git diff --cached --quiet && { echo "GLOBAL_SEAL_NO_CHANGE"; exit 1; }
           git config user.name "super1200-g24-certifier"
           git config user.email "super1200-g24-certifier@users.noreply.github.com"
-          git commit -m "cert(super1200): global seal for capabilities 101-1200; 1-100 withheld"
+          git commit -m "cert(super1200): rebind D04 93-100 and extend the global seal through 93"
           git pull --rebase origin custosz/super-1200-implementation-20261007
           git push origin HEAD:refs/heads/custosz/super-1200-implementation-20261007

@@ -45,13 +45,17 @@ def main() -> int:
         cert = load("continuity/certification/SUPER1200_GLOBAL.json")
         if cert.get("result") != "PASS" or cert.get("g23") != "PASS" or cert.get("g24") != "PASS":
             fail("GLOBAL_CERT_INVALID")
-        if cert.get("scope") != "SUPER1200:101-1200" or cert.get("certified_range") != [101, 1200]:
+        start = cert.get("certified_range")
+        withheld = cert.get("withheld_range")
+        if start not in ([93, 1200], [101, 1200]):
             fail("GLOBAL_CERT_RANGE")
-        if cert.get("withheld_range") != [1, 100] or cert.get("whole_catalog_claim") is not False:
+        if withheld != [1, start[0] - 1] or cert.get("scope") != f"SUPER1200:{start[0]}-{start[1]}":
+            fail("GLOBAL_CERT_RANGE")
+        if cert.get("whole_catalog_claim") is not False:
             fail("GLOBAL_CERT_WITHHELD")
         if cert.get("synthetic_materializer") != "DISABLED" or cert.get("promotion_to_main") is not False:
             fail("GLOBAL_CERT_CONTROL")
-        if state.get("global_withheld_range") != [1, 100] or state.get("promotion_to_main") is not False:
+        if state.get("global_withheld_range") != withheld or state.get("promotion_to_main") is not False:
             fail("GLOBAL_STATE_CONTROL")
     else:
         fail("GLOBAL_CERTIFICATION_ASSERTED")

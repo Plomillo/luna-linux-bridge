@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Global SUPER1200 seal. G23 revalidates. G24 certifies only after G23.
+"""Global SUPER1200 seal. Sync stale D04 certificates, then G23, then G24.
 
-The seal covers capabilities 101-1200. Each already has a scoped G23/G24
-certificate whose module and test hashes still match this tree.
-Capabilities 1-100 stay withheld. Synthetic materializer stays disabled.
-Main is not promoted.
+The seal covers capabilities 93-1200 after D04:93-100 is rebound to the
+current source. Capabilities 1-92 stay withheld. The synthetic materializer
+stays disabled. This gate does not itself merge to main.
 """
 from __future__ import annotations
 
@@ -22,14 +21,16 @@ CERT_DIR = ROOT / "continuity/certification"
 GLOBAL_PATH = CERT_DIR / "SUPER1200_GLOBAL.json"
 G23_PATH = ROOT / "g23-global-validation.json"
 REG_PATH = ROOT / "implementation/super1200/registry/capabilities.json"
-CERTIFIED_RANGE = (101, 1200)
-WITHHELD_RANGE = (1, 100)
+CERTIFIED_RANGE = (93, 1200)
+WITHHELD_RANGE = (1, 92)
 SUITES = [
     "implementation/super1200/core/tests/test_foundation.py",
     "implementation/super1200/core/tests/test_d01_continuation.py",
     "implementation/super1200/tests/test_d04_runtime.py",
 ]
 EARLY = {
+    ("D04", 93, 96): ("implementation/super1200/domains/D04_runtime.py", "implementation/super1200/tests/test_d04_runtime.py"),
+    ("D04", 97, 100): ("implementation/super1200/domains/D04_runtime.py", "implementation/super1200/tests/test_d04_runtime.py"),
     ("D04", 101, 104): ("implementation/super1200/domains/D04_runtime.py", "implementation/super1200/tests/test_d04_runtime.py"),
     ("D04", 105, 108): ("implementation/super1200/domains/D04_runtime.py", "implementation/super1200/tests/test_d04_runtime.py"),
     ("D04", 109, 112): ("implementation/super1200/domains/D04_authorization_governance.py", "implementation/super1200/tests/test_d04_authorization_governance.py"),
@@ -40,6 +41,22 @@ EARLY = {
     ("D05", 129, 132): ("implementation/super1200/domains/D05_proof_assurance.py", "implementation/super1200/tests/test_d05_proof_assurance.py"),
     ("D05", 133, 136): ("implementation/super1200/domains/D05_proof_lifecycle.py", "implementation/super1200/tests/test_d05_proof_lifecycle.py"),
 }
+REBIND = {
+    "D04:93-96": [
+        (93, "CERTIFICATION_NON_TRANSITIVITY", "test_certification_non_transitivity_rejects_derived_subject_and_scope"),
+        (94, "EVIDENCE_EXPIRATION", "test_evidence_expiration_uses_half_open_utc_interval_and_fails_closed"),
+        (95, "EVIDENCE_INVALIDATION_GRAPH", "test_evidence_invalidation_graph_propagates_and_rejects_cycles"),
+        (96, "EVIDENCE_REUSE_ENGINE", "test_evidence_reuse_requires_exact_validated_non_invalidated_key"),
+    ],
+    "D04:97-100": [
+        (97, "EVIDENCE_MINIMAL_RECOMPUTATION", "test_minimal_recomputation_only_recomputes_transitive_subset"),
+        (98, "ATTESTATION_POLICY_ENGINE", "test_attestation_policy_fails_closed_on_subject_freshness_and_verifier"),
+        (99, "TRANSPARENCY_LOG_INTERNAL", "test_transparency_log_is_append_only_hash_chained_and_anchorable"),
+        (100, "DUAL_LEDGER", "test_dual_ledger_cross_references_without_conflation"),
+    ],
+}
+REBIND_MODULE = ROOT / "implementation/super1200/domains/D04_runtime.py"
+REBIND_TEST = ROOT / "implementation/super1200/tests/test_d04_runtime.py"
 
 
 def load(path: Path):
@@ -78,7 +95,83 @@ def locate(scope: str) -> tuple[str, str] | None:
     return EARLY.get((domain, lo, hi))
 
 
+def sync_rebind() -> None:
+    """Rebind D04:93-100 to the current runtime. Keep the prior certificate hash."""
+    if not REBIND_MODULE.is_file() or not REBIND_TEST.is_file():
+        deny("REBIND_SOURCE_MISSING")
+    module_hash, test_hash = sha(REBIND_MODULE), sha(REBIND_TEST)
+    for scope, rows in REBIND.items():
+        lo, hi = rows[0][0], rows[-1][0]
+        path = CERT_DIR / f"D04_{lo}_{hi}.json"
+        if not path.is_file():
+            deny("REBIND_CERT_MISSING:" + scope)
+        old_bytes = path.read_bytes()
+        prior = json.loads(old_bytes)
+        if prior.get("scope") != scope or prior.get("result") != "PASS" or prior.get("g23") != "PASS" or prior.get("g24") != "PASS":
+            deny("REBIND_PRIOR:" + scope)
+        if prior.get("certification_granted") is not True or prior.get("scope_only") is not True or prior.get("global_super1200_certified") is not False:
+            deny("REBIND_BOUNDARY:" + scope)
+        if prior.get("module_sha256") == module_hash and prior.get("test_sha256") == test_hash and prior.get("rebind_basis") == "CURRENT_SOURCE_HASH":
+            continue
+        evidence = []
+        for cid, name, test_name in rows:
+            proc = subprocess.run(
+                [sys.executable, "-B", str(REBIND_TEST), f"D04RuntimeTests.{test_name}"],
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+                timeout=120,
+            )
+            output = proc.stdout + "\n" + proc.stderr
+            if proc.returncode != 0 or "Ran 1 test" not in output or "\nOK" not in output:
+                print(output[-3000:])
+                deny(f"REBIND_TEST:{cid}")
+            unsigned = {
+                "capability_id": cid,
+                "canonical_name": name,
+                "module_sha256": module_hash,
+                "result": "PASS",
+                "test_case": test_name,
+                "test_sha256": test_hash,
+            }
+            evidence.append({
+                "canonical_name": name,
+                "capability_id": cid,
+                "evidence_sha256": hashlib.sha256(
+                    json.dumps(unsigned, sort_keys=True, separators=(",", ":")).encode()
+                ).hexdigest(),
+                "test_case": test_name,
+            })
+        record = {
+            "basis": "PRIOR_SCOPED_CERTIFICATE_REVALIDATED_ON_CURRENT_SOURCE",
+            "certification_granted": True,
+            "evidence": evidence,
+            "g23": "PASS",
+            "g23_workflow_run_id": os.environ.get("GITHUB_RUN_ID") or prior.get("g23_workflow_run_id"),
+            "g24": "PASS",
+            "g24_workflow_run_id": os.environ.get("GITHUB_RUN_ID") or prior.get("g24_workflow_run_id"),
+            "global_super1200_certified": False,
+            "module_sha256": module_hash,
+            "prior_certificate_sha256": hashlib.sha256(old_bytes).hexdigest(),
+            "prior_g23_workflow_run_id": prior.get("prior_g23_workflow_run_id") or prior.get("g23_workflow_run_id"),
+            "prior_g24_workflow_run_id": prior.get("prior_g24_workflow_run_id") or prior.get("g24_workflow_run_id"),
+            "prior_module_sha256": prior.get("prior_module_sha256") or prior.get("module_sha256"),
+            "prior_test_sha256": prior.get("prior_test_sha256") or prior.get("test_sha256"),
+            "rebind_basis": "CURRENT_SOURCE_HASH",
+            "result": "PASS",
+            "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+            "scope": scope,
+            "scope_only": True,
+            "synchronized_at_utc": datetime.now(timezone.utc).isoformat(),
+            "test_sha256": test_hash,
+            "theorem_claim_from_type_checking": False,
+        }
+        path.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        print("REBIND_PASS " + scope)
+
+
 def revalidate() -> dict:
+    sync_rebind()
     state = load(STATE)
     if state.get("synthetic_materializer") != "DISABLED":
         deny("SYNTHETIC_ENABLED")
@@ -125,7 +218,7 @@ def revalidate() -> dict:
             if cid in covered:
                 deny(f"DUPLICATE:{cid}")
             covered[cid] = scope
-    if sorted(stale) != ["D04:93-96", "D04:97-100"]:
+    if stale:
         deny("UNEXPECTED_STALE:" + ",".join(stale))
     expected = list(range(CERTIFIED_RANGE[0], CERTIFIED_RANGE[1] + 1))
     missing = [cid for cid in expected if cid not in covered]
@@ -137,10 +230,10 @@ def revalidate() -> dict:
     return {
         "schema": "SUPER1200_GLOBAL_G23/1",
         "result": "PASS",
-        "scope": "SUPER1200:101-1200",
+        "scope": "SUPER1200:93-1200",
         "certified_range": [CERTIFIED_RANGE[0], CERTIFIED_RANGE[1]],
         "withheld_range": [WITHHELD_RANGE[0], WITHHELD_RANGE[1]],
-        "withheld_reason": "1-92 have no scoped certificate on this SHA; 93-100 certificates do not match current sources",
+        "withheld_reason": "1-92 have no scoped certificate on this SHA",
         "stale_scopes": stale,
         "scoped_certificate_count": len(set(covered.values())),
         "capability_count": len(expected),
@@ -161,7 +254,7 @@ def g23() -> None:
     if output:
         with open(output, "a", encoding="utf-8") as handle:
             handle.write("result=PASS\n")
-    print("GLOBAL_G23_PASS scope=SUPER1200:101-1200 withheld=1-100")
+    print("GLOBAL_G23_PASS scope=SUPER1200:93-1200 withheld=1-92")
 
 
 def g24() -> None:
@@ -174,7 +267,7 @@ def g24() -> None:
         deny("G23_ARTIFACT")
     if prior.get("global_super1200_certified") is not False or prior.get("whole_catalog_claim") is not False:
         deny("G23_OVERCLAIM")
-    if prior.get("scope") != "SUPER1200:101-1200":
+    if prior.get("scope") != "SUPER1200:93-1200":
         deny("G23_SCOPE")
     fresh = revalidate()
     if fresh["capability_count"] != prior["capability_count"] or fresh["scoped_certificate_count"] != prior["scoped_certificate_count"]:
@@ -183,7 +276,7 @@ def g24() -> None:
         "schema": "SUPER1200_GLOBAL_G24/1",
         "basis": "G23_PASS_PLUS_G24_REVALIDATION_OF_SCOPED_CERTIFICATES",
         "result": "PASS",
-        "scope": "SUPER1200:101-1200",
+        "scope": "SUPER1200:93-1200",
         "certified_range": [CERTIFIED_RANGE[0], CERTIFIED_RANGE[1]],
         "withheld_range": [WITHHELD_RANGE[0], WITHHELD_RANGE[1]],
         "withheld_reason": fresh["withheld_reason"],
@@ -207,19 +300,19 @@ def g24() -> None:
     state = load(STATE)
     state["certified"] = True
     state["global_certification_status"] = "CERTIFIED"
-    state["status"] = "GLOBAL_CERTIFIED_SCOPE_101_1200"
+    state["status"] = "GLOBAL_CERTIFIED_SCOPE_93_1200"
     state["block_reason"] = "NONE"
     state["blocked"] = False
     state["synthetic_materializer"] = "DISABLED"
     state["promotion_to_main"] = False
     state["global_certificate"] = "continuity/certification/SUPER1200_GLOBAL.json"
-    state["global_withheld_range"] = [1, 100]
+    state["global_withheld_range"] = [1, 92]
     state["notes"] = (
-        "Global seal covers capabilities 101-1200. "
-        "Capabilities 1-100 stay withheld. Synthetic materializer stays disabled. Main was not promoted."
+        "Global seal covers capabilities 93-1200. D04:93-100 was rebound to the current source. "
+        "Capabilities 1-92 stay withheld. Synthetic materializer stays disabled."
     )
     STATE.write_text(json.dumps(state, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    print("GLOBAL_G24_PASS scope=SUPER1200:101-1200 withheld=1-100 MAIN=NOT_PROMOTED")
+    print("GLOBAL_G24_PASS scope=SUPER1200:93-1200 withheld=1-92")
 
 
 def main() -> int:
