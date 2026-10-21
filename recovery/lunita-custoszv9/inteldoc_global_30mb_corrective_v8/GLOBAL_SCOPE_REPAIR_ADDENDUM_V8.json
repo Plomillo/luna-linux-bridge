@@ -1,0 +1,47 @@
+{
+  "schema": "CUSTOSZV9_GITHUB_SCOPE_REPAIR_ADDENDUM/1.0",
+  "addendum_id": "GITHUB_INTELDOC_GLOBAL_30MB_CORRECTIVE_REPAIR_V8_SCOPE_20261021",
+  "parent_addendum_id": "GITHUB_INTELDOC_GLOBAL_30MB_CORRECTIVE_REPAIR_V7_SCOPE_20261021",
+  "authorization_basis": "Explicit user instruction to continue global quantization immediately using the same five pinned Intelligence Documental source artifacts, preserve originals read-only, and synchronize CUSTOSZ V9, script, and assigned GitHub recovery branch. V8 adds a direct Q2_0 text-GGUF candidate with explicit Q2_0 token-embedding quantization and retains direct Q1_0 projector quantization. Candidate size gate remains strict at 30000000 bytes.",
+  "authorized_at_utc": "2026-10-21T19:15:00Z",
+  "repository": "Plomillo/luna-linux-bridge",
+  "branch": "recovery/lunita-custoszv9-operational-20261020",
+  "mission_id": "CUSTOSZV9_INTELDOC_FIVE_ARTIFACT_CORRECTIVE_V1",
+  "mission_sha256": "c928111ddc323b38c4943c56e5b40769768e0a892fbe4ab0746fbc84022ad399",
+  "worker_sha256": "3c2d7660959ae399f9df62af4051745a3ba808cab62e120183d3a7962158f59a",
+  "test_sha256": "d346558d42a301359808631276f5b9bc330317f486db0251acc53559678604f3",
+  "dispatcher_sha256": "79738dc24ad5aa13d7a44a1f4da209514a0262380b761f7c5cf37efea51d27e0",
+  "custoszv9_sha256": "667ceac7d7e59682292c864777ec3e1c228074716dc5dba17fe150e4d826ccf3",
+  "custoszv9_bytes": 236326,
+  "allowed_operations": [
+    "READ_ASSIGNED_BRANCH",
+    "CREATE_EXACT_ALLOWLISTED_V8_FILES_ON_ASSIGNED_BRANCH",
+    "READBACK_VERIFY_EXACT_CONTENT",
+    "APPEND_EXACT_LOCAL_SCOPE_TO_AUTH_AND_CONTRACT_AFTER_CHECKPOINT",
+    "LAUNCH_PINNED_WORKER_V6"
+  ],
+  "allowed_paths": [
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_corrective_v8/INTELDOC_GLOBAL_30MB_CORRECTIVE_MISSION.json",
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_corrective_v8/inteldoc_five_artifact_corrective_worker_v6.py",
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_corrective_v8/custoszv9_inteldoc_five_artifact_corrective_dispatch_v8.py",
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_corrective_v8/test_inteldoc_five_artifact_corrective_contract_v6.py",
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_corrective_v8/GLOBAL_SCOPE_REPAIR_ADDENDUM_V8.json",
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_corrective_v8/INTELDOC_GLOBAL_30MB_CORRECTIVE_V8_LAUNCH_RECEIPT.json",
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_corrective_v8/INTELDOC_GLOBAL_30MB_CORRECTIVE_V8_RESULT.json"
+  ],
+  "forbidden_operations": [
+    "write_to_main_or_other_branch",
+    "merge",
+    "force_push",
+    "delete_files",
+    "overwrite_unreviewed_artifacts",
+    "workflow_dispatch",
+    "read_or_write_secrets",
+    "write_outside_exact_allowlist",
+    "modify_source_artifacts",
+    "canonical_promotion",
+    "certification_propagation"
+  ],
+  "scope_expiry": "EXACT_PATHS_ABOVE_ONLY",
+  "signature": "NOT_PRESENT"
+}
