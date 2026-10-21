@@ -1,4 +1,4 @@
-[Reading 103 lines from start (total: 103 lines, 0 remaining)]
+[Reading 137 lines from start (total: 137 lines, 0 remaining)]
 
 #!/usr/bin/env python3
 """Regression tests for bounded, fail-closed Cajita Qwen3 conversion progression."""
@@ -94,6 +94,40 @@ class CajitaQuantizationFlowTests(unittest.TestCase):
             saved = json.loads((state / "cajita_priority_lane.json").read_text())
             self.assertEqual(saved["stage"], "DRY_RUN")
             self.assertNotIn("dry_run_fallback_evidence", saved)
+
+    def test_converter_oom_at_largest_tensor_enters_resource_block(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            operator, root, state, mission_sha = self._layout(tmp)
+            log = state / "convert.log"
+            log.write_text("INFO Exporting model\\ntoken_embd.weight, torch.bfloat16 --> BF16\\n", encoding="utf-8")
+            lane = self._lane(state, mission_sha, log)
+            lane["stage"] = "CONVERSION_RUNNING"
+            lane["conversion_attempts"] = 1
+            mod._atomic(state / "cajita_priority_lane.json", lane)
+            original = mod._read_job
+            mod._read_job = lambda current: ({"returncode":125,"error":"KeyboardInterrupt: "}, False)
+            try:
+                result = mod.tick_cajita_priority_lane(state, root / "Cajita", mission_sha)
+            finally:
+                mod._read_job = original
+            saved = json.loads((state / "cajita_priority_lane.json").read_text())
+            self.assertEqual(saved["stage"], "BLOCKED_CONVERSION_RESOURCE")
+            self.assertIsNone(saved["resource_recovery_evidence"])
+            self.assertIn("do not retry", result["next_action"].casefold())
+
+    def test_resource_block_refuses_retry_without_hash_bound_receipt(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            operator, root, state, mission_sha = self._layout(tmp)
+            log = state / "convert.log"
+            log.write_text("token_embd.weight\\n", encoding="utf-8")
+            lane = self._lane(state, mission_sha, log)
+            lane.update({"stage":"CONVERT_RETRY","conversion_attempts":1,
+                         "conversion_resource_failure":{"reason":"oom"},"resource_recovery_evidence":None})
+            mod._atomic(state / "cajita_priority_lane.json", lane)
+            result = mod.tick_cajita_priority_lane(state, root / "Cajita", mission_sha)
+            saved = json.loads((state / "cajita_priority_lane.json").read_text())
+            self.assertEqual(saved["stage"], "BLOCKED_CONVERSION_RESOURCE")
+            self.assertEqual(result["status"], "BLOCKED_CONVERSION_RESOURCE")
 
     def test_numerical_libraries_are_thread_bounded(self):
         env = mod._bounded_compute_env({"OMP_NUM_THREADS": "64", "OPENBLAS_NUM_THREADS": "32"})
