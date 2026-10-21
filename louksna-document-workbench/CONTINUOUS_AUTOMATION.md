@@ -7,8 +7,8 @@ Status: CANDIDATE_AUTOMATION_CONFIGURED_NOT_CERTIFIED
 The candidate workflow at .github/workflows/louksna-document-workbench-continuous.yml defines:
 - validation automatically on relevant pushes to this candidate branch;
 - validation on pull requests touching this component;
-- a manual workflow_dispatch entry point;
-- a six-hour schedule declaration (13 */6 * * * UTC);
+- a workflow_dispatch trigger declaration; manual dispatch is not usable until this workflow exists on the default branch;
+- a six-hour schedule declaration (13 */6 * * * UTC); the schedule is not active while this workflow exists only on the candidate branch;
 - a read-only GitHub permission set and a non-cancelling concurrency group.
 
 ## What each run does
@@ -26,7 +26,7 @@ The smoke fixture is synthetic; the workflow does not read, upload or translate 
 
 ## Schedule activation constraint
 
-GitHub Actions only executes scheduled workflows from the repository's default branch. This candidate must not be described as running every six hours while the workflow exists only on this branch. Push, pull-request and manual events provide event-driven automation in the candidate; the recurring trigger remains DECLARED_NOT_ACTIVE until the governed release process authorizes promotion of the workflow to the default branch.
+GitHub Actions requires both schedule and workflow_dispatch workflows to exist on the repository's default branch. This candidate must not be described as running every six hours or manually dispatchable while the workflow exists only on this branch. Relevant push events in this candidate are configured for event-driven automation, and pull-request validation is declared; the recurring and manual triggers remain DECLARED_NOT_ACTIVE until the governed release process authorizes promotion of the workflow to the default branch.
 
 No attempt is made to bypass this boundary through an unregistered token, external scheduler, existing Kestra flow, or mutation of main. A separate persistent Kestra runtime could later become an approved scheduler, but runtime import, execution isolation, credential scope and observed run evidence must be validated independently before claiming continuous scheduled operation.
 
