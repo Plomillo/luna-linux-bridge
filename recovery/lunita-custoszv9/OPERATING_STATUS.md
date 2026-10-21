@@ -39,3 +39,11 @@ Finish R 4.6.1 build and test; install missing Jamovi/JASP payloads only in cand
 - Runtime governor SHA-256: `14f77f06913883070da1b295ad9f71e5527c2053331fc8b0fb547eedd2531309`. Focused regression suite `test_cajita_quantization_flow_hardening_v1.py`: 4/4 PASS; SHA-256 `393296c2bf8c744d070be3846e0f861d88b25bf47d250509f382cd90c2dd666b`.
 - At the recorded checkpoint, the real BF16 conversion had started at `2026-10-21T00:51:07Z`, using the pinned llama.cpp commit `6a1a922d269908a29cbd4b49c27e6a8e7fd10fae`, candidate `QWEN3_ANALISIS_AVANZADO_R1_20261020T222741Z`, and unchanged source model weights. The next gate is an actual `llama-quantize` process in `QUANTIZATION_RUNNING`; this document does not claim that Q4_K_M quantization has started or completed.
 - Cajita certification remains `NOT_GRANTED`; do not integrate or promote the candidate until output hash, model quality/regression, size, and independent validation requirements are satisfied.
+
+
+## Qwen3 conversion OOM diagnosis — 2026-10-21 00:55 UTC
+
+- The real BF16 converter reached `token_embd.weight` and was terminated by the kernel's global OOM killer before producing a valid GGUF receipt. This was not a quantization result; `Q4_K_M` has not started.
+- Added fail-closed handling in the runtime governor: a conversion failure at the validated largest tensor is now parked at `BLOCKED_CONVERSION_RESOURCE`; the same expensive conversion cannot repeat until a new resource-recovery receipt is hash-bound to the lane.
+- Focused regression suite: 6/6 PASS, including OOM hold and refusal to retry without a verified recovery receipt. Updated runtime SHA-256 `77a041c9b14d4085eef63d93af026cdcf2353f4b8718a63927af64534411573d`; tests SHA-256 `6348c3ec78869d6c0b0fbfc3b01a9be05572414ed08edb4066d56be8aa22538b`.
+- Resource recovery and a new bounded conversion attempt remain pending; certification stays `NOT_GRANTED`.
