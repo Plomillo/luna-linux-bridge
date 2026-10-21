@@ -604,7 +604,7 @@ def organize_pdf(input_path: Path, output_path: Path, audit_path: Path | None = 
     source = require_input(input_path)
     output = require_new_output(source, output_path)
     audit = audit_path.expanduser().resolve() if audit_path else output.with_suffix(output.suffix + ".audit.json")
-    temporary = output.with_name(output.name + ".tmp")
+    temporary = output.with_name(output.stem + ".tmp" + output.suffix)
     if audit in (source.resolve(), output.resolve()):
         output.unlink(missing_ok=True)
         raise ValueError("Audit output must be distinct from the input and organized PDF.")
