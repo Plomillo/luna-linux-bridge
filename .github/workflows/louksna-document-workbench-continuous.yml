@@ -1,0 +1,81 @@
+name: Louksna Document Workbench — continuous assurance
+
+on:
+  push:
+    branches:
+      - candidate/louksna-document-workbench-v1-20261021
+    paths:
+      - "louksna-document-workbench/**"
+      - ".github/workflows/louksna-document-workbench-tests.yml"
+      - ".github/workflows/louksna-document-workbench-continuous.yml"
+  pull_request:
+    paths:
+      - "louksna-document-workbench/**"
+      - ".github/workflows/louksna-document-workbench-tests.yml"
+      - ".github/workflows/louksna-document-workbench-continuous.yml"
+  workflow_dispatch:
+  schedule:
+    - cron: "13 */6 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: louksna-document-workbench-continuous
+  cancel-in-progress: false
+
+jobs:
+  test-and-audit:
+    name: Static audit, unit tests and synthetic PDF pipeline
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout requested ref
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Create isolated Python environment
+        run: python3 -m venv "$RUNNER_TEMP/docworkbench-venv"
+      - name: Install project and test dependencies
+        working-directory: louksna-document-workbench
+        run: "$RUNNER_TEMP/docworkbench-venv/bin/python" -m pip install --disable-pip-version-check -e ".[test]"
+      - name: Verify dependency consistency
+        run: "$RUNNER_TEMP/docworkbench-venv/bin/python" -m pip check
+      - name: Compile source and CI scripts
+        run: |
+          "$RUNNER_TEMP/docworkbench-venv/bin/python" -m compileall -q \
+            louksna-document-workbench/src \
+            louksna-document-workbench/tests \
+            louksna-document-workbench/scripts
+      - name: Run static boundary audit
+        run: "$RUNNER_TEMP/docworkbench-venv/bin/python" louksna-document-workbench/scripts/static_audit.py
+      - name: Run unit tests
+        working-directory: louksna-document-workbench
+        run: "$RUNNER_TEMP/docworkbench-venv/bin/python" -m pytest -q
+      - name: Execute synthetic end-to-end PDF smoke test
+        run: |
+          set -euo pipefail
+          EVIDENCE_DIR="louksna-document-workbench-ci-evidence"
+          mkdir -p "$EVIDENCE_DIR"
+          "$RUNNER_TEMP/docworkbench-venv/bin/python" \
+            louksna-document-workbench/scripts/continuous_smoke.py \
+            --cli "$RUNNER_TEMP/docworkbench-venv/bin/louksna-docworkbench" \
+            --output-dir "$EVIDENCE_DIR"
+      - name: Record dependency inventory
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p "louksna-document-workbench-ci-evidence"
+          "$RUNNER_TEMP/docworkbench-venv/bin/python" -m pip freeze \
+            | sort > "louksna-document-workbench-ci-evidence/python-dependencies.txt"
+          "$RUNNER_TEMP/docworkbench-venv/bin/python" --version \
+            > "louksna-document-workbench-ci-evidence/python-version.txt"
+          git rev-parse HEAD > "louksna-document-workbench-ci-evidence/source-commit.txt"
+      - name: Upload non-secret test evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: document-workbench-assurance
+          path: louksna-document-workbench-ci-evidence/
+          if-no-files-found: warn
+          retention-days: 14
