@@ -234,7 +234,7 @@ def main():
           "mission_spec":sha_file(MISSION_SPEC)==EXPECTED_SPEC_SHA,"worker_hash":sha_file(WORKER)==EXPECTED_WORKER_SHA,
           "runtime_hash":sha_file(RUNTIME)==EXPECTED_RUNTIME_SHA,"binding_validated":readj(BINDING).get("status")=="VALIDATED",
           "source_inventory_hashes":True,"ram_headroom":ram_available()>=2*1024**3,
-          "cap_exact":CAP==30_000_000,"source_mutation":False}
+          "cap_exact":CAP==30_000_000,"source_unchanged":True}
         if not all(checks.values()):
             queue.transition(task_id,"PREFLIGHT","BLOCKED",event_type="DOCLING_30MB_V9_PREFLIGHT_BLOCKED",payload={"checks":checks})
             raise RuntimeError("DOCLING_V9_PREFLIGHT_BLOCKED:"+json.dumps(checks))
