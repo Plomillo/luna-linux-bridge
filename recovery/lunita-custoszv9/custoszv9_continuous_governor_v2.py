@@ -1,4 +1,4 @@
-[Reading 1198 lines from start (total: 1198 lines, 0 remaining)]
+[Reading 1204 lines from start (total: 1204 lines, 0 remaining)]
 
 #!/usr/bin/env python3
 """Fail-closed step classification and persistent Cajita quantization side-lane.
@@ -51,6 +51,11 @@ def utc_now() -> str:
 
 def _parse_utc(value: str) -> dt.datetime:
     return dt.datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
+def _minimum_conversion_ram_bytes(resource_recovery_verified: bool) -> int:
+    """A hash-verified 4 GiB swap route permits a lower, still bounded host-RAM floor."""
+    return (1536 * 1024**2) if resource_recovery_verified else MIN_CONVERSION_RAM_BYTES
 
 
 def _build_conversion_command(lane: dict[str, Any], source_script: pathlib.Path,
@@ -1039,9 +1044,10 @@ def tick_cajita_priority_lane(
                         "evidence": lane["last_error"], "next_action": "Resource recovery receipt failed its hash, mission, swap, or memory-limit checks; refuse retry."}
         mem = _mem_available_bytes()
         free = shutil.disk_usage(state_dir).free
-        if mem < MIN_CONVERSION_RAM_BYTES or free < MIN_CONVERSION_DISK_BYTES:
+        required_ram = _minimum_conversion_ram_bytes(bool(resource_failure and resource_valid))
+        if mem < required_ram or free < MIN_CONVERSION_DISK_BYTES:
             lane["resource_wait"] = {"ram_available_bytes": mem, "disk_free_bytes": free,
-                                     "minimum_ram_bytes": MIN_CONVERSION_RAM_BYTES, "minimum_disk_bytes": MIN_CONVERSION_DISK_BYTES,
+                                     "minimum_ram_bytes": required_ram, "minimum_disk_bytes": MIN_CONVERSION_DISK_BYTES,
                                      "observed_at_utc": utc_now()}
             lane["next_action_utc"] = (now + dt.timedelta(seconds=REFRESH_SECONDS)).isoformat().replace("+00:00", "Z")
             _atomic(lane_path, lane)
