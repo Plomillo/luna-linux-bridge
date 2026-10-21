@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import datetime as dt
 import email
+import functools
 import hashlib
 import json
 import os
@@ -114,14 +115,31 @@ def cajita_heavy_active() -> dict:
     return {"active": False, "reason": "NO_CAJITA_HEAVY_PROCESS_DETECTED"}
 
 
+@functools.lru_cache(maxsize=8192)
+def _debian_version_satisfies(installed_version: str, operator: str, required_version: str) -> bool:
+    """Use dpkg's Debian version semantics; comparison uncertainty always blocks."""
+    if operator not in {"<<", "<=", "=", ">=", ">>"}:
+        return False
+    try:
+        result = subprocess.run(
+            ["dpkg", "--compare-versions", installed_version, operator, required_version],
+            stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            timeout=5, check=False,
+        )
+        return result.returncode == 0
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+
+
 def parse_dpkg_status(status_path: pathlib.Path) -> dict:
-    """Resolve declared Depends/Pre-Depends against installed packages and Provides."""
+    """Resolve installed package dependencies including Debian version constraints."""
     if not status_path.is_file():
         return {"status": "BLOCKED_DPKG_STATUS_MISSING", "installed_package_count": 0,
+                "unresolved_dependency_count": 1,
                 "unresolved_dependencies": [{"reason": "dpkg status file missing"}]}
     text = status_path.read_text(encoding="utf-8", errors="replace")
     packages = {}
-    provided = set()
+    provided = {}
     for stanza in re.split(r"\n\s*\n", text):
         if not stanza.strip():
             continue
@@ -131,30 +149,77 @@ def parse_dpkg_status(status_path: pathlib.Path) -> dict:
             continue
         packages[name] = msg
         for item in (msg.get("Provides") or "").split(","):
-            virtual = re.match(r"\s*([a-z0-9][a-z0-9+.-]*)", item)
+            virtual = re.fullmatch(
+                r"\s*([a-z0-9][a-z0-9+.-]*)(?:\s*\(=\s*([^()]+?)\s*\))?\s*", item
+            )
             if virtual:
-                provided.add(virtual.group(1))
-    installed = set(packages) | provided
+                virtual_name, virtual_version = virtual.groups()
+                provided.setdefault(virtual_name, []).append({
+                    "provider_package": name, "provided_version": virtual_version,
+                })
     missing = []
-    for name, msg in packages.items():
+    total_clauses = 0
+    for package_name, msg in packages.items():
         for field in ("Pre-Depends", "Depends"):
             raw = msg.get(field) or ""
             if not raw:
                 continue
             for clause in raw.split(","):
-                alternatives = []
+                total_clauses += 1
+                parsed_alternatives = []
+                malformed = []
                 for alt in clause.split("|"):
-                    match = re.match(r"\s*([a-z0-9][a-z0-9+.-]*)(?::[a-z0-9-]+)?", alt)
-                    if match:
-                        alternatives.append(match.group(1))
-                if alternatives and not any(x in installed for x in alternatives):
-                    missing.append({"package": name, "field": field, "clause": clause.strip(),
-                                    "alternatives": alternatives})
+                    match = re.fullmatch(
+                        r"\s*([a-z0-9][a-z0-9+.-]*)(?::[a-z0-9-]+)?"
+                        r"(?:\s*\((<<|<=|=|>=|>>)\s*([^()]+?)\s*\))?\s*", alt
+                    )
+                    if not match:
+                        malformed.append(alt.strip())
+                        continue
+                    dep_name, operator, required_version = match.groups()
+                    parsed_alternatives.append((dep_name, operator, required_version))
+                resolved = False
+                if not malformed and parsed_alternatives:
+                    for dep_name, operator, required_version in parsed_alternatives:
+                        installed_msg = packages.get(dep_name)
+                        if installed_msg is not None:
+                            if operator is None:
+                                resolved = True
+                            else:
+                                installed_version = (installed_msg.get("Version") or "").strip()
+                                resolved = bool(installed_version and _debian_version_satisfies(
+                                    installed_version, operator, required_version.strip()
+                                ))
+                        elif dep_name in provided:
+                            providers = provided[dep_name]
+                            if operator is None:
+                                resolved = bool(providers)
+                            else:
+                                resolved = any(
+                                    item.get("provided_version") is not None
+                                    and _debian_version_satisfies(
+                                        item["provided_version"], operator, required_version.strip()
+                                    )
+                                    for item in providers
+                                )
+                        if resolved:
+                            break
+                if not resolved:
+                    missing.append({
+                        "package": package_name, "field": field, "clause": clause.strip(),
+                        "alternatives": [x[0] for x in parsed_alternatives],
+                        "malformed_alternatives": malformed,
+                        "reason": "UNPARSEABLE_DEPENDENCY" if malformed or not parsed_alternatives
+                                  else "MISSING_PACKAGE_OR_UNSATISFIED_VERSION_CONSTRAINT",
+                    })
     return {
         "status": "PASS_DECLARED_PACKAGE_DEPENDENCIES_RESOLVED" if not missing else "BLOCKED_UNRESOLVED_PACKAGE_DEPENDENCIES",
         "installed_package_count": len(packages), "virtual_provides_count": len(provided),
+        "dependency_clause_count": total_clauses,
         "unresolved_dependency_count": len(missing), "unresolved_dependencies": missing[:200],
         "truncated": len(missing) > 200, "dpkg_status_sha256": sha_file(status_path),
+        "version_constraints_checked_by": "dpkg --compare-versions",
+        "version_comparison_failures_fail_closed": True,
     }
 
 
