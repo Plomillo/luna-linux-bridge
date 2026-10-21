@@ -1,0 +1,55 @@
+name: "Louksna global certification control-plane tests"
+
+on:
+  push:
+    branches:
+      - "feature/louksna-global-g23-g24-control-plane-*"
+    paths:
+      - "scripts/louksna_global_*.json"
+      - "scripts/louksna_global_gate_ledger.py"
+      - "scripts/louksna_g24_terminal_certifier.py"
+      - "tests/test_louksna_global_gate_ledger.py"
+      - "tests/test_louksna_global_workflows.py"
+      - ".github/workflows/louksna-global-g23-independent-validation.yml"
+      - ".github/workflows/louksna-global-g24-terminal-certification.yml"
+      - ".github/workflows/louksna-global-gate-tooling-check.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/louksna_global_*.json"
+      - "scripts/louksna_global_gate_ledger.py"
+      - "scripts/louksna_g24_terminal_certifier.py"
+      - "tests/test_louksna_global_gate_ledger.py"
+      - "tests/test_louksna_global_workflows.py"
+      - ".github/workflows/louksna-global-g23-independent-validation.yml"
+      - ".github/workflows/louksna-global-g24-terminal-certification.yml"
+      - ".github/workflows/louksna-global-gate-tooling-check.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: louksna-global-control-plane-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  fail-closed-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Set up pinned Python
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.12"
+      - name: Install pinned YAML parser for workflow checks
+        run: >-
+          python3 -m pip install --disable-pip-version-check --only-binary=:all: PyYAML==6.0.2
+      - name: Test 24-slot canonical matrix and fail-closed G24 behavior
+        run: python3 -m unittest discover -s tests -p 'test_louksna_global_gate_ledger.py' -v
+      - name: Test G23/G24 trust separation and workflow invariants
+        run: python3 -m unittest discover -s tests -p 'test_louksna_global_workflows.py' -v
