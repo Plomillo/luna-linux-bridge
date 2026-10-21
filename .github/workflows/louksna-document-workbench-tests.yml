@@ -29,9 +29,11 @@ jobs:
     steps:
       - name: Checkout candidate branch
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Create isolated Python environment
+        run: python3 -m venv "$RUNNER_TEMP/docworkbench-venv"
       - name: Install candidate and test dependencies
         working-directory: louksna-document-workbench
-        run: python3 -m pip install --disable-pip-version-check -e ".[test]"
+        run: "$RUNNER_TEMP/docworkbench-venv/bin/python" -m pip install --disable-pip-version-check -e ".[test]"
       - name: Run unit tests
         working-directory: louksna-document-workbench
-        run: python3 -m pytest -q
+        run: "$RUNNER_TEMP/docworkbench-venv/bin/python" -m pytest -q
