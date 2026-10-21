@@ -37,9 +37,9 @@ jobs:
         run: python3 -m venv "$RUNNER_TEMP/docworkbench-venv"
       - name: Install project and test dependencies
         working-directory: louksna-document-workbench
-        run: "$RUNNER_TEMP/docworkbench-venv/bin/python" -m pip install --disable-pip-version-check -e ".[test]"
+        run: '"$RUNNER_TEMP/docworkbench-venv/bin/python" -m pip install --disable-pip-version-check -e ".[test]"'
       - name: Verify dependency consistency
-        run: "$RUNNER_TEMP/docworkbench-venv/bin/python" -m pip check
+        run: '"$RUNNER_TEMP/docworkbench-venv/bin/python" -m pip check'
       - name: Compile source and CI scripts
         run: |
           "$RUNNER_TEMP/docworkbench-venv/bin/python" -m compileall -q \
@@ -47,10 +47,10 @@ jobs:
             louksna-document-workbench/tests \
             louksna-document-workbench/scripts
       - name: Run static boundary audit
-        run: "$RUNNER_TEMP/docworkbench-venv/bin/python" louksna-document-workbench/scripts/static_audit.py
+        run: '"$RUNNER_TEMP/docworkbench-venv/bin/python" louksna-document-workbench/scripts/static_audit.py'
       - name: Run unit tests
         working-directory: louksna-document-workbench
-        run: "$RUNNER_TEMP/docworkbench-venv/bin/python" -m pytest -q
+        run: '"$RUNNER_TEMP/docworkbench-venv/bin/python" -m pytest -q'
       - name: Execute synthetic end-to-end PDF smoke test
         run: |
           set -euo pipefail
