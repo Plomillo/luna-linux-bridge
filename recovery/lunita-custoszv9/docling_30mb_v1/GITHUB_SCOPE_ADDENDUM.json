@@ -1,0 +1,47 @@
+{
+  "addendum_id": "GITHUB_DOCLING_INTELLIGENCE_30MB_SYNC_20261021",
+  "allowed_operations": [
+    "READ_ASSIGNED_BRANCH",
+    "READ_CI_RESULTS",
+    "CREATE_OR_UPDATE_EXACT_ALLOWLISTED_FILES_ON_ASSIGNED_BRANCH"
+  ],
+  "allowed_paths": [
+    "recovery/lunita-custoszv9/docling_30mb_v1/docling_30mb_quantize_worker_v1.py",
+    "recovery/lunita-custoszv9/docling_30mb_v1/docling_30mb_runtime_v1.py",
+    "recovery/lunita-custoszv9/docling_30mb_v1/custoszv9_docling_30mb_dispatch_v1.py",
+    "recovery/lunita-custoszv9/docling_30mb_v1/DOCLING_30MB_MISSION.json",
+    "recovery/lunita-custoszv9/docling_30mb_v1/test_docling_30mb_contract.py",
+    "recovery/lunita-custoszv9/docling_30mb_v1/GITHUB_SCOPE_ADDENDUM.json",
+    "recovery/lunita-custoszv9/docling_30mb_v1/DOCLING_30MB_WORKER_LAUNCH_RECEIPT.json",
+    "recovery/lunita-custoszv9/docling_30mb_v1/DOCLING_30MB_WORKER_RESULT.json"
+  ],
+  "authorization_basis": "Explicit user instruction in the current conversation to run the Docling model quantization with CUSTOSZ V9 and synchronize the mission script, runtime, tests and receipts to the assigned repository branch. Scope is limited to the exact versioned paths listed here.",
+  "authorized_at_utc": "2026-10-21T15:49:36Z",
+  "branch": "recovery/lunita-custoszv9-operational-20261020",
+  "branch_existed_at_authorization": true,
+  "mission_sha256": "0a36c59d4baf5d547f5217dc9c6db2a58ad9f8f3ea65d88f9b16a0dbe1604f8f",
+  "mission_spec_path": "state/jobs/docling_30mb_lane_v1/DOCLING_30MB_MISSION.json",
+  "mission_spec_sha256": "4a1c5ccc2554c9ae76d50c285710cb5be0654ef7ea542c3400d14480ef4ba3f5",
+  "repository": "Plomillo/luna-linux-bridge",
+  "scope_expiry": "THIS_DOCLING_30MB_MISSION_ONLY",
+  "forbidden_operations": [
+    "write_to_main_or_any_other_branch",
+    "delete_branch",
+    "force_push",
+    "merge_pull_request",
+    "workflow_dispatch",
+    "change_repository_settings",
+    "read_or_write_secrets",
+    "modify_paths_outside_allowlist",
+    "modify_original_model_weights",
+    "canonical_promotion",
+    "certification_propagation",
+    "overwrite_existing_remote_file_without_readback_and_content_sha_reconciliation"
+  ],
+  "model_source_weights_modified": false,
+  "signature": "NOT_PRESENT",
+  "parent_addenda": [
+    "GITHUB_BRANCH_SCOPED_ADAPTER_PERSISTENCE_20261020",
+    "GITHUB_WHISPER_TRANSCRIPTION_40MB_SYNC_20261021"
+  ]
+}
