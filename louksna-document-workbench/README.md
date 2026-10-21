@@ -48,7 +48,7 @@ OCR requires OCRmyPDF and its system dependencies to be installed separately. A 
 - Reorder: louksna-docworkbench reorder input.pdf output.pdf --order 1,3,2
 - OCR: louksna-docworkbench ocr input.pdf output_ocr.pdf --language spa
 - Reflow: louksna-docworkbench reflow input.pdf reading_copy.pdf --confirm-text-only
-- Translate: louksna-docworkbench translate input.pdf --output-dir translated --prefix kernberg-en --source es --target en --backend argos --glossary glossary.json
+- Translate: louksna-docworkbench translate input.pdf --output-dir translated --prefix kernberg-en --source es --target en --glossary glossary.json
 
 The page order above is only an example. For a reorder, the list must contain each original page number exactly once. The translator glossary is a JSON object whose keys are source-language terms and whose values are preferred target-language terms, for example {"transferencia": "transference"}.
 
