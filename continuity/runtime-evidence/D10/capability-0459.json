@@ -1,0 +1,21 @@
+{
+  "canonical_name": "SEMANTICS_SPEC",
+  "capability_id": 459,
+  "certification_granted": false,
+  "domain_id": "D10",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "f05827e179b150dc21dade99af184444eb81b8a42d52f91ec1c9ab5f8958882d",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d10_458_461.py",
+  "module_sha256": "b88480d4e750efefe700ebe9799de6fa89053e497af6fe2b37f8066066e9eee3",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d10_458_461.py",
+  "test_case": "test_cap_0459",
+  "test_sha256": "448003e6847f89c8c34eddf2263b109f7682c732766d1eecf8afa32621adadb1",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

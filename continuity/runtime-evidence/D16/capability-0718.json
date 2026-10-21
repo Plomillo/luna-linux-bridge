@@ -1,0 +1,21 @@
+{
+  "canonical_name": "GAME_REGRESSION_BENCHMARK",
+  "capability_id": 718,
+  "certification_granted": false,
+  "domain_id": "D16",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "9a3495200f9339ffecfb394946266a0e5465e2aa1049cd14ffef7fff9c3c79e5",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d16_717_720.py",
+  "module_sha256": "1cc4ca1d4e2e60cced8ee0ebd17c0218e92dfb1297b5772d5408b1e49ada56a4",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d16_717_720.py",
+  "test_case": "test_cap_0718",
+  "test_sha256": "13bf6a24f40ee4dbe1c81a8ce4815325ed95056f286ccaba13b81d511a4edb4b",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

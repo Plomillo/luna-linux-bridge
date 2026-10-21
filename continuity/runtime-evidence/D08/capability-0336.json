@@ -1,0 +1,21 @@
+{
+  "canonical_name": "ZSTD_PROVIDER",
+  "capability_id": 336,
+  "certification_granted": false,
+  "domain_id": "D08",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "bd6ca82a840944a720ff9db2a924d39e396e44742ac625f64adb27c746ef8661",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d08_333_336.py",
+  "module_sha256": "ff27aa426c81f762f80d732125a551c15aaf6678b1cdf6f01ecde4585b7381ab",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d08_333_336.py",
+  "test_case": "test_cap_0336",
+  "test_sha256": "439a2991aa0029fb3e8f8ba632211b6351ab833912b623db372b9d3f43002cd8",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

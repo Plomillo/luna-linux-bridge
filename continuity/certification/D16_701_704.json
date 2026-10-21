@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "WINDOWS_COMPATIBILITY_FABRIC",
+      "capability_id": 701,
+      "evidence_sha256": "034cdf5cdd9f5aee9866265931ba6f4787bef7c2049b680981743bab3d034670"
+    },
+    {
+      "canonical_name": "WINE_PROVIDER",
+      "capability_id": 702,
+      "evidence_sha256": "02cbf256204c3fb7d0b146d7f220981392acfcc38307f72b31f4d16f83e8b13a"
+    },
+    {
+      "canonical_name": "PROTON_PROVIDER",
+      "capability_id": 703,
+      "evidence_sha256": "4f9fb7cd2b351da3b1acb1ee4f30ea35f5e9c000529b3adc1be47c9b3d828d31"
+    },
+    {
+      "canonical_name": "WIN32_API_COMPATIBILITY_ANALYZER",
+      "capability_id": 704,
+      "evidence_sha256": "a7bf8fa1098daa53a8c7356115fbcf05ed66c5236d60b225c92c04782fa0db98"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "82775f63f714f4344128430cd7dc91e10c4da75c7093f39df18637a352d8575d",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D16:701-704",
+  "scope_only": true,
+  "test_sha256": "1fa7356bdea47c872c9909cfc0769fc406e84dafd8d0052355283f85c3bb9a4b",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:22:11.011829+00:00"
+}

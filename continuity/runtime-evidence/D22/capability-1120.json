@@ -1,0 +1,21 @@
+{
+  "canonical_name": "ZERO_UNNECESSARY_LIVE_MALWARE_GATE",
+  "capability_id": 1120,
+  "certification_granted": false,
+  "domain_id": "D22",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "56add2167b0115f0bc5ac8f9071edbc0ab9f5082041f781021ebc300a8c889e6",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d22_1117_1120.py",
+  "module_sha256": "179e4a8be84ca3d801c9334aefab49bc4e2405539e9294ada9aad6957ca7254d",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d22_1117_1120.py",
+  "test_case": "test_cap_1120",
+  "test_sha256": "02f15274f465d130d2610a7369a67d517b2e04103beffb72ae42ed86ffb1078f",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

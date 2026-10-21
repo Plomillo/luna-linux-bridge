@@ -1,5 +1,51 @@
 {
   "schema": "LOUKSNA_KEDB/1.0",
-  "description": "Known Error / Blocker registry for Directiva and shared use.",
-  "required_fields": ["entry_id", "scope", "symptom", "status", "evidence_present", "next_action", "branch", "commit_sha", "created_at_utc", "updated_at_utc"]
+  "description": "Known Error / Blocker registry. Register first; solutions are applied and verified, not only noted.",
+  "required_fields": [
+    "entry_id",
+    "scope",
+    "symptom",
+    "status",
+    "evidence_present",
+    "next_action",
+    "branch",
+    "commit_sha",
+    "created_at_utc",
+    "updated_at_utc"
+  ],
+  "fields": {
+    "entry_id": "stable unique id",
+    "scope": "SUPER1200 | DIRECTIVA | SHARED",
+    "symptom": "observable failure or HOLD reason",
+    "root_cause": "nullable until known",
+    "evidence_present": true,
+    "evidence_missing": [],
+    "known_solution_id": "nullable reference to KNOWN_SOLUTIONS or prior entry",
+    "workaround": "nullable",
+    "remediation_applied": false,
+    "verification_result": "PASS | FAIL | UNABLE_TO_DETERMINE | NOT_RUN",
+    "status": "OPEN | KNOWN_ERROR | RESEARCHING | REMEDIATING | VERIFIED | RESUMED | HOLD_CONSCIOUS",
+    "next_action": "mandatory concrete action",
+    "research_launched": false,
+    "research_summary": "nullable",
+    "branch": "string",
+    "commit_sha": "string",
+    "module_sha256": "nullable",
+    "test_sha256": "nullable",
+    "checkpoint": "nullable",
+    "actor": "string",
+    "created_at_utc": "ISO-8601",
+    "updated_at_utc": "ISO-8601",
+    "provenance": {
+      "sources": [],
+      "notes": "no secrets"
+    }
+  },
+  "rules": [
+    "Every HOLD or failure MUST create or update an entry",
+    "next_action is never empty",
+    "If evidence_present is false, research_launched must become true or status RESEARCHING",
+    "If a solution is applied, remediation_applied true and verification_result set after verify",
+    "Append-only history preferred; corrections are new entries or explicit updates with timestamp"
+  ]
 }

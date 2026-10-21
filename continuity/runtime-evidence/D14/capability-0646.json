@@ -1,0 +1,21 @@
+{
+  "canonical_name": "UNCERTAINTY_DEPENDENCY_GRAPH",
+  "capability_id": 646,
+  "certification_granted": false,
+  "domain_id": "D14",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "aedee31a267f98027b1efa4688d7358ef6310573030ab583e81a78a45c54cf96",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d14_645_648.py",
+  "module_sha256": "c7b8e8581db2fd3187743ed3a4272b85258576817696f41bb4394014197e26f7",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d14_645_648.py",
+  "test_case": "test_cap_0646",
+  "test_sha256": "df58281a15eeb47e4336ed5b395251172a11705ca7ada21024a64e25ed98cb6f",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

@@ -1,0 +1,21 @@
+{
+  "canonical_name": "MALWARE_ERADICATION_ENGINE",
+  "capability_id": 991,
+  "certification_granted": false,
+  "domain_id": "D20",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "f34013564f2e75574a22f010dead503f588a13538bc8c00afd1876df41cafdae",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d20_989_992.py",
+  "module_sha256": "00f162150e1fe3416c340c42514417b5a8754cc056ec2cd6165ee3f5aadb4c57",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d20_989_992.py",
+  "test_case": "test_cap_0991",
+  "test_sha256": "20a712f480948ae6540f8735148a19d51b09e9376744db9dddd624ccec715e6e",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

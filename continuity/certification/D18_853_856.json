@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "STORAGE_PRESSURE_MANAGER",
+      "capability_id": 853,
+      "evidence_sha256": "0e4d70530f8f3415298bda470d44df6a65619a3d4be70f5957d589e77a8e0988"
+    },
+    {
+      "canonical_name": "MAINTENANCE_PARALLELIZER",
+      "capability_id": 854,
+      "evidence_sha256": "b463d31d732c142567ae74e6c378aa9b969c21cf34e0bfc39da6a7fde8108bf3"
+    },
+    {
+      "canonical_name": "MAINTENANCE_CRITICAL_PATH",
+      "capability_id": 855,
+      "evidence_sha256": "2428c6d60c5d2806a71c6ed0662d5a1e13e9abe4eb31162e92764b36d4b4322a"
+    },
+    {
+      "canonical_name": "TOIL_DETECTOR",
+      "capability_id": 856,
+      "evidence_sha256": "930adce1025cad7e3eb2fce3bc1be55459ae3de4eb7acfcfa07bf3bd772e5a60"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "bbc1716b3f01a7afd0626cafa2b3731152d4c0e12aaadf9a03d326ebd3e51f85",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D18:853-856",
+  "scope_only": true,
+  "test_sha256": "96b77021ca74aaf0d7d414d8679c7ed629e8b247a7c46f7925d7d38cbb55b806",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:22:30.629133+00:00"
+}

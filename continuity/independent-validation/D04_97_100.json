@@ -1,0 +1,28 @@
+{
+  "certification_granted": false,
+  "evidence": [
+    {
+      "capability_id": 97,
+      "evidence_sha256": "6a14de79dec32f58f507929bdf2f35f39fa8026087ec111ccbf687ec4aeede40"
+    },
+    {
+      "capability_id": 98,
+      "evidence_sha256": "536a2b1b7d446cdc18afb65ce0b7fdf52bdd511f88309d976bd95499885e1684"
+    },
+    {
+      "capability_id": 99,
+      "evidence_sha256": "a932367b31df10df6dbe7ee538c330d171d498a3900c0e2012b400e3b49f2ddc"
+    },
+    {
+      "capability_id": 100,
+      "evidence_sha256": "4df7119c9da75c650619771ea46d995052d3ea5b55273819739d87748b3e9bc7"
+    }
+  ],
+  "module_sha256": "7ed8ac665ff0666299d5baad58ba0bb90803922933a5ca9685355f9ec1126ecd",
+  "registry_count": 1200,
+  "result": "PASS",
+  "schema": "SUPER1200_G23_VALIDATION/1",
+  "scope": "D04:97-100",
+  "test_sha256": "4cd43936d4df91e0e751d78abc48593252e66510c0d27fd9403caaa42a14890d",
+  "validator": "github-actions-independent-job"
+}

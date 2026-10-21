@@ -1,0 +1,21 @@
+{
+  "canonical_name": "CURRICULUM_GRAPH",
+  "capability_id": 624,
+  "certification_granted": false,
+  "domain_id": "D13",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "d4bf3fe497d76e39ae4eb25edf1d3dbb2d3f9f838a39b6c93ea7879d3fd02b1a",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d13_622_625.py",
+  "module_sha256": "5297b3121a9aee19ff740c100e944aa088e497d064477fc7966c7e91de76dfb5",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d13_622_625.py",
+  "test_case": "test_cap_0624",
+  "test_sha256": "7020cb92d5aa0ae42d54465ced85649e627918bcbd27e05b74c7cf5d090d6292",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

@@ -1,0 +1,21 @@
+{
+  "canonical_name": "EVIDENCE_GAP_ANALYZER",
+  "capability_id": 649,
+  "certification_granted": false,
+  "domain_id": "D14",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "e1e3be77c7255c5d15313416cf5c35d3a1a02caba1f4620f7117e9fe4ba7b6b7",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d14_649_652.py",
+  "module_sha256": "f1a92ee6a19ca525d65968d47fae3d20d75ee80cbda52126b446051106faf54c",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d14_649_652.py",
+  "test_case": "test_cap_0649",
+  "test_sha256": "f76f466b0a41f017f83ce6d20dda8a8611c1eaacfce2e1eda47f1296719d6cd2",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

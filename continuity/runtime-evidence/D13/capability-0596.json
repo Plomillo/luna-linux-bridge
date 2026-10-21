@@ -1,0 +1,21 @@
+{
+  "canonical_name": "FORMATIVE_ASSESSMENT_ENGINE",
+  "capability_id": 596,
+  "certification_granted": false,
+  "domain_id": "D13",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "c4ce9375352c201aed6989c4420722e90640389c2fa8967d909319899d40e83a",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d13_594_597.py",
+  "module_sha256": "94c42774982f767451102bdf29415cba36eb2f05d6308bc88f99989baabc6a17",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d13_594_597.py",
+  "test_case": "test_cap_0596",
+  "test_sha256": "1865550ecf89831ee92207d6ee499862e86c567d57f0f3ae41ed3c1d7e5f98f6",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

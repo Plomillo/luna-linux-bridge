@@ -1,0 +1,21 @@
+name: SUPER1200 — D07–D22 reviewed material verify
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: super1200-d07-d22-material
+  cancel-in-progress: false
+jobs:
+  material:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: custosz/super-1200-implementation-20261007
+          persist-credentials: false
+      - name: Re-run reviewed D07–D22 tranche tests
+        run: |
+          set -Eeuo pipefail
+          python3 -B implementation/super1200/runtime/apply_reviewed_material_d07_d22.py

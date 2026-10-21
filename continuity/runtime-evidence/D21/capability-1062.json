@@ -1,0 +1,21 @@
+{
+  "canonical_name": "SUBSTITUTE_COMPATIBILITY_TEST",
+  "capability_id": 1062,
+  "certification_granted": false,
+  "domain_id": "D21",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "c69cb1a27b4ecb059a0e635247a8e1a6d143413a1ec1bcb2a58e41e1ad465173",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d21_1061_1064.py",
+  "module_sha256": "47c09d58c2f890760bff66597287cbcc481572cee1c42d650bbf04c9ea37fdcf",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d21_1061_1064.py",
+  "test_case": "test_cap_1062",
+  "test_sha256": "0370d1c6c2711a5442b609b346748c4a82deac0f69b18616272ab3f0ca2ccd5b",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

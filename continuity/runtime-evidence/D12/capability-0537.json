@@ -1,0 +1,21 @@
+{
+  "canonical_name": "CLOCK_DRIFT_SIMULATOR",
+  "capability_id": 537,
+  "certification_granted": false,
+  "domain_id": "D12",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "9c5974bd806bab37143c304975ed447474a0de146b392521a7d5b1a9491fc233",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d12_535_538.py",
+  "module_sha256": "21e2f0337bf9121b4ed8c0d107c39d9738c2127a613cba2a2ea46d391cb90a71",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d12_535_538.py",
+  "test_case": "test_cap_0537",
+  "test_sha256": "1d46298d5c79c492b972259e6a72ef73d25f08ebd983283beebb99249ffa8f97",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

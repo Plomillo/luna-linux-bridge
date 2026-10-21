@@ -1,0 +1,21 @@
+{
+  "canonical_name": "ANDROID_SDK_PROVIDER",
+  "capability_id": 378,
+  "certification_granted": false,
+  "domain_id": "D09",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "b54596cd7fb8e851d490d94085a35b5ecf6c5412213649327f9600230a4f32cf",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d09_377_380.py",
+  "module_sha256": "da267f736f333f6f913861ed9694f769d615da9f6b00e86ffb77c0e4d2e8f74c",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d09_377_380.py",
+  "test_case": "test_cap_0378",
+  "test_sha256": "bffda307e3280e655d8049431e3e46e7d7bfc3bb58e42157712fda29c2ef2001",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

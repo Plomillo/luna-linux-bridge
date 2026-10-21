@@ -1,0 +1,21 @@
+{
+  "canonical_name": "SECURE_BOOT_PROVIDER",
+  "capability_id": 418,
+  "certification_granted": false,
+  "domain_id": "D09",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "82a64371d923675192ece8b0e37962603bddd0158390b0ad466c3eebb999dfee",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d09_417_420.py",
+  "module_sha256": "b41602c52376bd3e0d72cb54971a863e8e08f1a5915deae6b7ffa84b6354d8b3",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d09_417_420.py",
+  "test_case": "test_cap_0418",
+  "test_sha256": "5ffd74c0c961f9aba434b1de2c9bb0204d322324dfc7afd7a0431e39462ea94e",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

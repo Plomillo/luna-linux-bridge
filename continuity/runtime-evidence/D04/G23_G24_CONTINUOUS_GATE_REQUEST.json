@@ -1,0 +1,10 @@
+{
+  "schema": "SUPER1200_G23_G24_CONTINUOUS_GATE_REQUEST/1",
+  "requested_at_utc": "2026-10-13T21:18:40.457Z",
+  "branch": "custosz/super-1200-implementation-20261007",
+  "trigger": "external_commit_after_workflow_registration",
+  "scope": "D04:87-92",
+  "intent": "Run independent G23 and G24 jobs; certify only the exact scope if both gates pass. Do not propagate certification to all 1200 capabilities.",
+  "metaos": "DEFERRED",
+  "evidence_commit": "c249afb35f1486a27c14d8ccc3f2000da4cb8f6c"
+}

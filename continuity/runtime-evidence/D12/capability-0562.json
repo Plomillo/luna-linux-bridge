@@ -1,0 +1,21 @@
+{
+  "canonical_name": "GRPC_PROVIDER",
+  "capability_id": 562,
+  "certification_granted": false,
+  "domain_id": "D12",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "1beed8ad57af38cc79667844b1aaa0affb972ea52a3e3ed89fd6a95631752b98",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d12_559_562.py",
+  "module_sha256": "572b80fbd79b1e8f45976ced2bcc8cab13387e3b60b2564c0b1c4c2092bbcf6a",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d12_559_562.py",
+  "test_case": "test_cap_0562",
+  "test_sha256": "11784e1180cfe43de39c57a912c12c3c96a922c3d2a9b9e1d9b483728ce8981a",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

@@ -1,0 +1,84 @@
+{
+  "schema": "SUPER1200_GITHUB_SYNC_AUDIT/1.0",
+  "audit_id": "SUPER1200-GITHUB-SYNC-AUDIT-20261013-001",
+  "observed_at_utc": "2026-10-13T22:26:30Z",
+  "repository": "Plomillo/luna-linux-bridge",
+  "branch": "custosz/super-1200-implementation-20261007",
+  "main_modified": false,
+  "source_workflow": ".github/workflows/super1200-continuation-lrb-live.yml",
+  "workflow_run": {
+    "id": 38470256496,
+    "url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38470256496",
+    "head_sha": "95679f01baa4e0fe497df66ca6362d986c683a00",
+    "status": "completed",
+    "conclusion": "failure",
+    "updated_at_utc": "2026-10-13T22:25:00Z",
+    "runner_requirement": [
+      "self-hosted",
+      "Linux",
+      "x64",
+      "luna-aux"
+    ],
+    "material_worker_step": "CUSTOSZ V7 material continuation with 12-hour checkpoints",
+    "job_log_fetch": "UNAVAILABLE_BLOB_NOT_FOUND",
+    "telemetry_consistency": "RUN_AND_JOB_TERMINAL_FAILURE_BUT_MATERIAL_STEP_SUMMARY_REPORTED_IN_PROGRESS"
+  },
+  "device_observation": {
+    "device": "LOUKSNA",
+    "device_id": "7686828a-e341-4313-894a-1109a5bf0655",
+    "status": "OFFLINE",
+    "last_seen_relative_at_observation": "17m ago"
+  },
+  "branch_observation": {
+    "observed_head": "d2e8b111f08428c1e7afaf4705ba941c9c2d8ed1",
+    "observed_head_timestamp_utc": "2026-10-13T22:05:22Z",
+    "post_run_material_commit_observed": false
+  },
+  "checkpoint_observation": {
+    "checkpoint": "D04_87_92_MATERIALIZED",
+    "next_point": "D04",
+    "registered_executor": "implementation/super1200/runtime/d04_material_worker.py",
+    "executor_scope": [
+      87,
+      88,
+      89,
+      90,
+      91,
+      92
+    ],
+    "g23": "PASS_FOR_SCOPE_D04_87_92_ONLY",
+    "g24": "PASS_FOR_SCOPE_D04_87_92_ONLY",
+    "global_certification": false,
+    "next_d04_capabilities": {
+      "range": [
+        93,
+        120
+      ],
+      "status": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
+      "registered_task_specific_executor": false
+    }
+  },
+  "kestra_observation": {
+    "latest_known_supervisor_run": "SUCCESS",
+    "supervisor_behavior": "SAFE_HOLD_WHILE_GITHUB_RUN_ACTIVE_OR_QUEUED",
+    "live_supervisor_execution_on_github": false,
+    "ci_smoke_test_is_not_live_supervisor_execution": true
+  },
+  "findings": [
+    "The material continuation depends on a self-hosted runner and is not independent of the user's computer.",
+    "The referenced workflow run terminated with failure; no successful post-run material persistence was observed on the branch.",
+    "The local Kestra runtime and the GitHub Kestra smoke test are distinct; the smoke test does not establish that a persistent Kestra supervisor is operating on GitHub.",
+    "The current D04 executor covers only capabilities 87-92; capabilities 93-120 remain queued and no reviewed task-specific executor is registered for them.",
+    "The single 12-hour workflow must not be switched blindly to a GitHub-hosted runner because hosted-job duration limits require a bounded execution/checkpoint design."
+  ],
+  "decision": "FAIL_CLOSED_NO_FALSE_SYNCHRONIZATION_CLAIM",
+  "certification_granted": false,
+  "required_next_action": "Implement and validate a GitHub-hosted, bounded continuation architecture with durable repository checkpoints, explicit active/queued-run guards, and a reviewed material executor for the next pending capability tranche before claiming ongoing material progress.",
+  "provenance": {
+    "github_run_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38470256496",
+    "kestra_flow_path": "integrations/kestra/flows/10-super1200-continuity.yml",
+    "state_path": "continuity/STATE.json",
+    "executor_map_path": "continuity/EXECUTORS.json",
+    "domain_path": "implementation/super1200/domains/D04.json"
+  }
+}

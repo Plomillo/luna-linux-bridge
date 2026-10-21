@@ -1,0 +1,21 @@
+{
+  "canonical_name": "OPTIMIZATION_ROLLBACK",
+  "capability_id": 698,
+  "certification_granted": false,
+  "domain_id": "D15",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "e2fea5a979d8ec7309f23e4e2b4ea96b8069d2d7840dd1df5d27fd28c75dd0e4",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d15_697_700.py",
+  "module_sha256": "e4ccdd457f0e9f310d59f165347698eea135b024f5ad648e9dcd714dbdf5d1ac",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d15_697_700.py",
+  "test_case": "test_cap_0698",
+  "test_sha256": "b566f07565831254855b7f3a5152e3c01c05f3121e9b1d0bf8fb194ee6fdb5e1",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

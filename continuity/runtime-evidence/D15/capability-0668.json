@@ -1,0 +1,21 @@
+{
+  "canonical_name": "CPU_HEALTH_DIAGNOSTICS",
+  "capability_id": 668,
+  "certification_granted": false,
+  "domain_id": "D15",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "0a571ff9f0ba0baa469e05b088586407ee7158aef3e863f6f6b7a231a9ad595e",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d15_665_668.py",
+  "module_sha256": "0f335a5114dac3914bc4ba8113879a0f55f20c36dff69ee7a282cd8461651c36",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d15_665_668.py",
+  "test_case": "test_cap_0668",
+  "test_sha256": "deabdb711c6be5c7f28011d8a9cdf42bae3054a242c28b81018921963b23d456",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

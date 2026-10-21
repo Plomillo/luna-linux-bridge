@@ -1,0 +1,21 @@
+{
+  "canonical_name": "DOMAIN_VALIDATOR_REGISTRY",
+  "capability_id": 529,
+  "certification_granted": false,
+  "domain_id": "D11",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "a9d9af98efd1da20893a807f2d14c2ce4187fe49117ba791d5328daa9543bd32",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d11_529_530.py",
+  "module_sha256": "c2deb19e59e91092514b4539931f4e387274d567e9ea6eb044f4fb89cb3dc15c",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d11_529_530.py",
+  "test_case": "test_cap_0529",
+  "test_sha256": "0fc25009dce5c90c9a945e9dd5ca554defc260d9aad01ad837ff857679a81562",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

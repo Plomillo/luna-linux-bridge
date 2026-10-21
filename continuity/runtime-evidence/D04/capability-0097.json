@@ -1,0 +1,44 @@
+{
+  "canonical_name": "EVIDENCE_MINIMAL_RECOMPUTATION",
+  "capability_id": 97,
+  "certification_granted": false,
+  "evidence_refresh_workflow_run_id": "38485400175",
+  "evidence_refresh_workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38485400175",
+  "evidence_sha256": "6a14de79dec32f58f507929bdf2f35f39fa8026087ec111ccbf687ec4aeede40",
+  "executor": "implementation/super1200/runtime/d04_material_worker_97_100.py",
+  "g23": "PENDING_INDEPENDENT_REVALIDATION",
+  "g24": "PENDING_G23",
+  "github_actions_run_id": "38485400175",
+  "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+  "module_sha256": "7ed8ac665ff0666299d5baad58ba0bb90803922933a5ca9685355f9ec1126ecd",
+  "originating_material_workflow_run_id": 38484906791,
+  "prior_evidence": {
+    "prior_evidence_sha256": "cf7b2e7cdc93359d0fd2c390e67aedcc2e8a6efc4b3ab570e532e451d6ab96fb",
+    "prior_module_sha256": "7ed8ac665ff0666299d5baad58ba0bb90803922933a5ca9685355f9ec1126ecd",
+    "prior_test_sha256": "4cd43936d4df91e0e751d78abc48593252e66510c0d27fd9403caaa42a14890d"
+  },
+  "schema": "SUPER1200_D04_MATERIAL_EVIDENCE/1",
+  "selected_test_result": {
+    "exit_code": 0,
+    "result": "PASS",
+    "single_test_run_confirmed": true,
+    "stderr_sha256": "df731edf9d8d9ac5f7b956019c401dbfc3d7de0205e1cd3409e7e96bc026cd0d",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "test_case": "test_minimal_recomputation_only_recomputes_transitive_subset"
+  },
+  "status": "PASS",
+  "suite_exit_code": 0,
+  "suite_stderr_sha256": "c4cd7c5ed72f685a8d63cc131c46de3da0c79bd8c4d2c7606907d073a27b7a4d",
+  "suite_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "test_artifact": "implementation/super1200/tests/test_d04_runtime.py",
+  "test_case": "test_minimal_recomputation_only_recomputes_transitive_subset",
+  "test_invocation": [
+    "python",
+    "-B",
+    "test_d04_runtime.py",
+    "-v",
+    "D04RuntimeTests.test_minimal_recomputation_only_recomputes_transitive_subset"
+  ],
+  "test_sha256": "4cd43936d4df91e0e751d78abc48593252e66510c0d27fd9403caaa42a14890d",
+  "validated_at_utc": "2026-10-13T23:37:56.995873+00:00"
+}

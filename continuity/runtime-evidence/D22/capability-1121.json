@@ -1,0 +1,21 @@
+{
+  "canonical_name": "HISTORICAL_THREAT_INTELLIGENCE_FABRIC",
+  "capability_id": 1121,
+  "certification_granted": false,
+  "domain_id": "D22",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "75e482896628bc36f82266cb9fc59782ae0852320faa0c73554e582a5b1ed4e5",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d22_1121_1124.py",
+  "module_sha256": "aa9609ed7887efded7ba13492f8c218d26207a77df50c9d695cf8b482f0eba00",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d22_1121_1124.py",
+  "test_case": "test_cap_1121",
+  "test_sha256": "d511b1a4ec6408b1f595493a15884e0e9b2ff4aa832acce7a024f62b5e1ffca6",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

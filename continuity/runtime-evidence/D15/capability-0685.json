@@ -1,0 +1,21 @@
+{
+  "canonical_name": "CONFIGURATION_REPAIR_ENGINE",
+  "capability_id": 685,
+  "certification_granted": false,
+  "domain_id": "D15",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "5f42265efeb3a72be91e7a955a46ea33f184da6f85e03415c72b9f51fdc07cf6",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d15_685_688.py",
+  "module_sha256": "3fa4ce13eba6291bf521839d3de5f3334bb47538b114c8a91e870e52de3f0a8e",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d15_685_688.py",
+  "test_case": "test_cap_0685",
+  "test_sha256": "97a254fadbf8404f607ac93ddc0a1b9d250c8ff746e3074dd7fc5a26ef9af74a",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

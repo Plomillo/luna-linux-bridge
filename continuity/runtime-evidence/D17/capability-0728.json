@@ -1,0 +1,21 @@
+{
+  "canonical_name": "META_ASSUMPTION_REGISTRY",
+  "capability_id": 728,
+  "certification_granted": false,
+  "domain_id": "D17",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "a23fba1423621c6ebe1af597bd2983b85210e94450e8c625a4f90a5a9453c97a",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d17_725_728.py",
+  "module_sha256": "dc0120147d48e8bf693f55437e1944f2734b721e0571446397f24bf2cf3b5f77",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d17_725_728.py",
+  "test_case": "test_cap_0728",
+  "test_sha256": "108f86440ceab6415baa5c04060145f6be23767a6ac4e4629f8572a2a3c489e6",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

@@ -1,0 +1,194 @@
+name: SUPER1200 D04 current-scope evidence refresh after append-only extension
+
+on:
+  push:
+    branches:
+      - custosz/super-1200-implementation-20261007
+    paths:
+      - "implementation/super1200/domains/D04_runtime.py"
+      - "implementation/super1200/tests/test_d04_runtime.py"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: super1200-d04-evidence-refresh-current-scope
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout governed candidate branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: custosz/super-1200-implementation-20261007
+          fetch-depth: 0
+
+      - name: Rerun the current D04 tranche and refresh source-bound evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B - <<'PY'
+          import hashlib, json, os, subprocess, sys
+          from datetime import datetime, timezone
+          from pathlib import Path
+          root=Path(".")
+          state_path=root/"continuity/STATE.json"
+          registry_path=root/"implementation/super1200/registry/capabilities.json"
+          domain_path=root/"implementation/super1200/domains/D04.json"
+          module=root/"implementation/super1200/domains/D04_runtime.py"
+          test=root/"implementation/super1200/tests/test_d04_runtime.py"
+          out=root/"continuity/runtime-evidence/D04"
+          tasks_93_96=[
+              (93,"CERTIFICATION_NON_TRANSITIVITY","test_certification_non_transitivity_rejects_derived_subject_and_scope"),
+              (94,"EVIDENCE_EXPIRATION","test_evidence_expiration_uses_half_open_utc_interval_and_fails_closed"),
+              (95,"EVIDENCE_INVALIDATION_GRAPH","test_evidence_invalidation_graph_propagates_and_rejects_cycles"),
+              (96,"EVIDENCE_REUSE_ENGINE","test_evidence_reuse_requires_exact_validated_non_invalidated_key"),
+          ]
+          tasks_97_100=[
+              (97,"EVIDENCE_MINIMAL_RECOMPUTATION","test_minimal_recomputation_only_recomputes_transitive_subset"),
+              (98,"ATTESTATION_POLICY_ENGINE","test_attestation_policy_fails_closed_on_subject_freshness_and_verifier"),
+              (99,"TRANSPARENCY_LOG_INTERNAL","test_transparency_log_is_append_only_hash_chained_and_anchorable"),
+              (100,"DUAL_LEDGER","test_dual_ledger_cross_references_without_conflation"),
+          ]
+          tasks_101_104=[
+              (101,"POLICY_AS_CODE","test_policy_as_code_binds_versioned_policy_input_and_audit_receipt"),
+              (102,"OPA_REGO_PROVIDER","test_opa_rego_provider_pins_version_bundle_and_sandbox"),
+              (103,"CUE_SCHEMA_PROVIDER","test_cue_provider_binds_schema_input_and_deterministic_export"),
+              (104,"JSON_SCHEMA_PROVIDER","test_json_schema_provider_pins_dialect_and_rejects_unknown_fields"),
+          ]
+          tasks_105_108=[
+              (105,"POLICY_TEST_SUITE","test_policy_test_suite_covers_positive_negative_bypass_conflict_and_unknown"),
+              (106,"POLICY_VERSIONING","test_policy_version_history_binds_hash_interval_and_supersession"),
+              (107,"POLICY_DIFF","test_semantic_policy_diff_finds_affected_rules_claims_tests_and_authorizations"),
+              (108,"POLICY_IMPACT_ANALYSIS","test_policy_impact_analysis_invalidates_causal_evidence_dependencies"),
+          ]
+          def load(p): return json.loads(p.read_text(encoding="utf-8"))
+          def sha(p): return hashlib.sha256(p.read_bytes()).hexdigest()
+          state=load(state_path); registry=load(registry_path); domain=load(domain_path)
+          checkpoint=state.get("current_checkpoint")
+          if checkpoint=="D04_93_96_MATERIALIZED":
+              tasks=tasks_93_96; scope_name="D04_CAPABILITIES_93_96_ONLY"; scope_key="D04:93-96"
+          elif checkpoint=="D04_97_100_MATERIALIZED":
+              tasks=tasks_97_100; scope_name="D04_CAPABILITIES_97_100_ONLY"; scope_key="D04:97-100"
+          elif checkpoint=="D04_101_104_MATERIALIZED":
+              tasks=tasks_101_104; scope_name="D04_CAPABILITIES_101_104_ONLY"; scope_key="D04:101-104"
+          elif checkpoint=="D04_105_108_MATERIALIZED":
+              tasks=tasks_105_108; scope_name="D04_CAPABILITIES_105_108_ONLY"; scope_key="D04:105-108"
+          else:
+              raise SystemExit("EVIDENCE_REFRESH_DENY_UNSUPPORTED_CHECKPOINT")
+          if state.get("certified") is not False or state.get("global_certification_status")!="NOT_CERTIFIED":
+              raise SystemExit("EVIDENCE_REFRESH_DENY_CERTIFICATION_STATE_DRIFT")
+          reg={x.get("capability_id"):x for x in registry.get("items",[])}
+          dom={x.get("capability_id"):x for x in domain.get("capabilities",[])}
+          old_records={}
+          for cid,name,test_name in tasks:
+              if reg.get(cid,{}).get("implementation_state")!="EVIDENCED" or dom.get(cid,{}).get("implementation_state")!="EVIDENCED":
+                  raise SystemExit(f"EVIDENCE_REFRESH_DENY_CAPABILITY_STATE_{cid}")
+              p=out/f"capability-{cid:04d}.json"
+              prior=load(p); prior_hash=prior.get("evidence_sha256"); unsigned=dict(prior); unsigned.pop("evidence_sha256",None)
+              computed=hashlib.sha256(json.dumps(unsigned,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()).hexdigest()
+              if prior_hash!=computed or prior.get("capability_id")!=cid or prior.get("canonical_name")!=name:
+                  raise SystemExit(f"EVIDENCE_REFRESH_DENY_PRIOR_EVIDENCE_INTEGRITY_{cid}")
+              old_records[cid]={"prior_evidence_sha256":prior_hash,"prior_module_sha256":prior.get("module_sha256"),"prior_test_sha256":prior.get("test_sha256")}
+          suite=subprocess.run([sys.executable,"-B",str(test),"-v"],cwd=root,text=True,capture_output=True,timeout=240)
+          suite_output=suite.stdout+"\n"+suite.stderr
+          if suite.returncode!=0:
+              print(suite_output[-16000:]); raise SystemExit("EVIDENCE_REFRESH_DENY_FULL_SUITE_FAILED")
+          case_results={}
+          for cid,name,test_name in tasks:
+              selected=subprocess.run([sys.executable,"-B",str(test),"-v",f"D04RuntimeTests.{test_name}"],
+                  cwd=root,text=True,capture_output=True,timeout=120)
+              output=selected.stdout+"\n"+selected.stderr
+              passed=selected.returncode==0 and test_name in output and "Ran 1 test" in output and "OK" in output and "FAILED" not in output
+              if not passed:
+                  print(output[-12000:]); raise SystemExit(f"EVIDENCE_REFRESH_DENY_TEST_FAILURE_{cid}")
+              case_results[cid]={"test_case":test_name,"exit_code":selected.returncode,"result":"PASS",
+                  "single_test_run_confirmed":True,
+                  "stdout_sha256":hashlib.sha256(selected.stdout.encode()).hexdigest(),
+                  "stderr_sha256":hashlib.sha256(selected.stderr.encode()).hexdigest()}
+          module_hash,test_hash=sha(module),sha(test)
+          run_id=os.environ["GITHUB_RUN_ID"]; repo=os.environ["GITHUB_REPOSITORY"]
+          server=os.environ.get("GITHUB_SERVER_URL","https://github.com")
+          run_url=f"{server}/{repo}/actions/runs/{run_id}"; now=datetime.now(timezone.utc).isoformat()
+          for cid,name,test_name in tasks:
+              e={
+                "schema":"SUPER1200_D04_MATERIAL_EVIDENCE/1","capability_id":cid,"canonical_name":name,
+                "executor":("implementation/super1200/runtime/d04_material_worker_93_96.py" if cid<97 else ("implementation/super1200/runtime/d04_material_worker_97_100.py" if cid<101 else ("implementation/super1200/runtime/d04_material_worker_101_104.py" if cid<105 else "implementation/super1200/runtime/d04_material_worker_105_108.py"))),
+                "implementation_artifact":"implementation/super1200/domains/D04_runtime.py",
+                "test_artifact":"implementation/super1200/tests/test_d04_runtime.py",
+                "test_case":test_name,"status":"PASS",
+                "test_invocation":["python","-B","test_d04_runtime.py","-v",f"D04RuntimeTests.{test_name}"],
+                "selected_test_result":case_results[cid],
+                "validated_at_utc":now,"evidence_refresh_workflow_run_id":run_id,
+                "evidence_refresh_workflow_url":run_url,
+                "github_actions_run_id":run_id,
+                "originating_material_workflow_run_id":state.get("last_execution",{}).get("workflow_run_id"),
+                "prior_evidence":old_records[cid],
+                "module_sha256":module_hash,"test_sha256":test_hash,
+                "suite_stdout_sha256":hashlib.sha256(suite.stdout.encode()).hexdigest(),
+                "suite_stderr_sha256":hashlib.sha256(suite.stderr.encode()).hexdigest(),
+                "suite_exit_code":suite.returncode,
+                "g23":"PENDING_INDEPENDENT_REVALIDATION","g24":"PENDING_G23","certification_granted":False
+              }
+              e["evidence_sha256"]=hashlib.sha256(json.dumps(e,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()).hexdigest()
+              (out/f"capability-{cid:04d}.json").write_text(json.dumps(e,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
+          state["g23"]="PENDING_INDEPENDENT_REVALIDATION"
+          state["g24"]="PENDING_G23"
+          state["certified"]=False; state["global_certification_status"]="NOT_CERTIFIED"
+          state["evidence_refresh"]={"status":"PASS_AWAITING_G23","scope":scope_name,"scope_key":scope_key,
+              "workflow_run_id":run_id,"workflow_url":run_url,"source_commit":os.environ["GITHUB_SHA"],
+              "completed_at_utc":now,"module_sha256":module_hash,"test_sha256":test_hash,
+              "test_results":"FULL_SUITE_PASS;4_OF_4_SPECIFIC_TESTS_PASS","certification_granted":False}
+          state["independent_validation"]={**state.get("independent_validation",{}),
+              "scope":scope_name,"scope_key":scope_key,
+              "status":"PENDING_REVALIDATION_AFTER_EVIDENCE_REFRESH",
+              "g23":"PENDING_INDEPENDENT_REVALIDATION","g24":"PENDING_G23","certification_granted":False}
+          current_cert=state.get("scoped_certification",{})
+          if isinstance(current_cert,dict) and current_cert.get("scope")==scope_key:
+              current_cert["status"]="INVALIDATED_BY_APPEND_ONLY_SOURCE_HASH_CHANGE"
+              current_cert["historical_certificate_record"]="continuity/certification/"+("D04_93_96.json" if checkpoint=="D04_93_96_MATERIALIZED" else ("D04_97_100.json" if checkpoint=="D04_97_100_MATERIALIZED" else ("D04_101_104.json" if checkpoint=="D04_101_104_MATERIALIZED" else "D04_105_108.json")))
+              current_cert["global_certification_granted"]=False
+              state["scoped_certification"]=current_cert
+          scoped_certs=state.get("scoped_certifications",{})
+          if isinstance(scoped_certs,dict) and scope_key in scoped_certs:
+              scoped_certs[scope_key]["status"]="INVALIDATED_BY_APPEND_ONLY_SOURCE_HASH_CHANGE"
+              scoped_certs[scope_key]["global_certification_granted"]=False
+              state["scoped_certifications"]=scoped_certs
+          if isinstance(state.get("last_execution"),dict):
+              state["last_execution"]["g23"]="PENDING_INDEPENDENT_REVALIDATION"
+              state["last_execution"]["g24"]="PENDING_G23"
+              state["last_execution"]["global_certification_status"]="NOT_CERTIFIED"
+          if isinstance(state.get("last_material_execution"),dict):
+              state["last_material_execution"]["g23"]="PENDING_INDEPENDENT_REVALIDATION"
+              state["last_material_execution"]["g24"]="PENDING_G23"
+              state["last_material_execution"]["certification_granted"]=False
+          state_path.write_text(json.dumps(state,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
+          record={"schema":"SUPER1200_D04_EVIDENCE_REFRESH/1","status":"PASS_AWAITING_G23",
+              "scope":scope_name,"scope_key":scope_key,"workflow_run_id":run_id,"workflow_url":run_url,
+              "source_commit":os.environ["GITHUB_SHA"],"completed_at_utc":now,
+              "module_sha256":module_hash,"test_sha256":test_hash,
+              "full_suite_exit_code":suite.returncode,
+              "specific_test_results":[{"capability_id":cid,**case_results[cid]} for cid,_,_ in tasks],
+              "prior_evidence":old_records,"certification_granted":False}
+          rec=root/"continuity/evidence-refresh"/("D04_93_96.json" if checkpoint=="D04_93_96_MATERIALIZED" else "D04_97_100.json"); rec.parent.mkdir(parents=True,exist_ok=True)
+          rec.write_text(json.dumps(record,indent=2,sort_keys=True,ensure_ascii=False)+"\n",encoding="utf-8")
+          print("SUPER1200_EVIDENCE_REFRESH_PASS "+json.dumps({"run_id":run_id,"scope":scope_key,"capabilities":[x[0] for x in tasks],
+              "full_suite":"PASS","specific_tests":"4/4 PASS","g23":"PENDING_INDEPENDENT_REVALIDATION",
+              "global_certification_status":"NOT_CERTIFIED"},sort_keys=True))
+          PY
+
+      - name: Persist refreshed evidence and source checkpoint
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git diff --check
+          git add continuity/STATE.json continuity/runtime-evidence/D04/capability-*.json continuity/evidence-refresh
+          git config user.name "super1200-evidence-refresh"
+          git config user.email "super1200-evidence-refresh@users.noreply.github.com"
+          git commit -m "test(super1200): refresh current D04 tranche evidence for append-only source"
+          git push origin HEAD:refs/heads/custosz/super-1200-implementation-20261007
+          echo "SUPER1200_EVIDENCE_REFRESH_PERSISTENCE=PASS G23=PENDING G24=PENDING GLOBAL_CERTIFICATION=FALSE"

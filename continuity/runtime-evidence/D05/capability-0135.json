@@ -1,0 +1,20 @@
+{
+  "canonical_name": "PROOF_CARRYING_CONFIGURATION",
+  "capability_id": 135,
+  "certification_granted": false,
+  "evidence_sha256": "bb72f9862d08ef6433d67d652d47d98a0f48e394f212a7aa9fc86897948c4aa4",
+  "executor": "implementation/super1200/runtime/d05_material_worker_133_136.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "implementation_artifact": "implementation/super1200/domains/D05_proof_lifecycle.py",
+  "module_sha256": "46f0b2ffe782ee03536c9446cfff489ef444f1d4d92f36264b46bf8a0d7bea25",
+  "prior_certificate_blob_sha": "80c148c812d38423076a2f3cde17acb68e21c34b",
+  "prior_scoped_certificate": "continuity/certification/D05_129_132.json",
+  "schema": "SUPER1200_D05_PROOF_LIFECYCLE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d05_proof_lifecycle.py",
+  "test_case": "test_bind_proof_carrying_configuration_is_hash_bound",
+  "test_sha256": "ef569fe9adc512cbb535e2f77044f8f099f283518314203c5b4000dd192167be",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-14T07:30:59.645233+00:00"
+}

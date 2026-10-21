@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "THREAT_INTELLIGENCE_CONFLICT_RESOLUTION",
+      "capability_id": 1157,
+      "evidence_sha256": "105798bb79343def0925349cf45108c707b21da78127f216f5dca15da08543d5"
+    },
+    {
+      "canonical_name": "THREAT_KNOWLEDGE_STALENESS_ENGINE",
+      "capability_id": 1158,
+      "evidence_sha256": "6a1549e3375a30ad2b2bd87a4152fa8e01932c83abd4bc5581050fccdcf331a7"
+    },
+    {
+      "canonical_name": "OFFLINE_THREAT_REASONING_ENGINE",
+      "capability_id": 1159,
+      "evidence_sha256": "e1266ee1a65e2c9c8faa9c461641d5ac08877c1b02dad4ea76f801056a78638e"
+    },
+    {
+      "canonical_name": "PREDICTIVE_DEFENSE_ENGINE",
+      "capability_id": 1160,
+      "evidence_sha256": "910b77c561e24c89265679834171e18e1896a218ea368abb96a3b0bf30f94733"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "b7267640c7ab27e00f7f58cc7b49c6306c64c8fb3de86c7924ec22f911fb39fc",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D22:1157-1160",
+  "scope_only": true,
+  "test_sha256": "cdbc43fc58dee5c6536cae32eae4b03b81e6bddd64717ea3334fd8a281355928",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:23:10.400050+00:00"
+}

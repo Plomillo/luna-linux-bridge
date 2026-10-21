@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "MALWARE_DEFENSE_FABRIC",
+      "capability_id": 881,
+      "evidence_sha256": "81d7c70cc87bdbe464e3267b9852ce42ddc89051fcb7c0aa0a4ae7fbf73ab737"
+    },
+    {
+      "canonical_name": "SIGNATURE_SCANNER_INTERFACE",
+      "capability_id": 882,
+      "evidence_sha256": "8ecaa4fa2df516683c0cd3772d5a93f7d645f6bc90ec8d6f29ef5867c2f3f96b"
+    },
+    {
+      "canonical_name": "CLAMAV_PROVIDER",
+      "capability_id": 883,
+      "evidence_sha256": "f4283e9c4626dec74b9aa99ff9a0f052696ec1dcb8dbde1f9631e252f60cfcbf"
+    },
+    {
+      "canonical_name": "YARA_PROVIDER",
+      "capability_id": 884,
+      "evidence_sha256": "a047d3bb172905120f64edd7b85b7c9e3a4bc7449bc00db6618060971a930047"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "a63e1051d3ef722ed0aa9620e35e0f66b5d03701be36375514e0947bc2e68d3f",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D19:881-884",
+  "scope_only": true,
+  "test_sha256": "b243c9ada98184a5605fc64eab7442e28dfd64fa63240f30e6ad229543c947e7",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:22:34.250486+00:00"
+}

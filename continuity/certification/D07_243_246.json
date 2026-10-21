@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "CAPABILITY_AWARE_ROUTING",
+      "capability_id": 243,
+      "evidence_sha256": "552992219d989da36b51261cb95492e9c2c4824486d18704617399b00511dcca"
+    },
+    {
+      "canonical_name": "FAILURE_AWARE_ROUTING",
+      "capability_id": 244,
+      "evidence_sha256": "62d7262cdb4ec439105bd1882f15ce03d93d853c946dc33c26c5ae844b34b6db"
+    },
+    {
+      "canonical_name": "REDUNDANT_REASONING",
+      "capability_id": 245,
+      "evidence_sha256": "c9daa74f66f4958238a0ee10f2e5e79ebc7874e9304b2b43305716a96f51bcf2"
+    },
+    {
+      "canonical_name": "DIVERSITY_ENFORCEMENT",
+      "capability_id": 246,
+      "evidence_sha256": "10dc789c30e94da28b3f91ec8ea405ddcf3f998c3fa11c2be9c264a10b96feca"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "f40ef3642b269193cf694a4845f375fce106536676124fc85335322cd001e948",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D07:243-246",
+  "scope_only": true,
+  "test_sha256": "4549c6179e360b819d182a1b6f3e48ebe7be01279705e8e8fb43765ab263889a",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:21:12.632326+00:00"
+}

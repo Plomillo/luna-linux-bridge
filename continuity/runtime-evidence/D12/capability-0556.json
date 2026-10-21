@@ -1,0 +1,21 @@
+{
+  "canonical_name": "MACHINE_READABLE_ARCHITECTURE_DOCS",
+  "capability_id": 556,
+  "certification_granted": false,
+  "domain_id": "D12",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "aa7848361de1ecf4f3abf424d49f74c1e227a2ae7dab42e4b8803b83ec762b40",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d12_555_558.py",
+  "module_sha256": "385dcced41dbfc823321a906be037e30afd4711821a552810ad79945731f5a90",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d12_555_558.py",
+  "test_case": "test_cap_0556",
+  "test_sha256": "f51ce975fa835e8dafbdc4898d5af10daee46f23652e48b3051b5818957bd02d",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

@@ -1,0 +1,21 @@
+{
+  "canonical_name": "EXPERIMENT_DESIGN_ENGINE",
+  "capability_id": 276,
+  "certification_granted": false,
+  "domain_id": "D07",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "4b2bb3fa350289d6fcc029735f53d97fae08132f4b887c849cc49b8af80f4660",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d07_275_278.py",
+  "module_sha256": "6bb787a51120eee0f4132d3b893e3fd68b4f8024802f20ff9a8206bf887b27c9",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d07_275_278.py",
+  "test_case": "test_cap_0276",
+  "test_sha256": "0cdea00a84a0fbbbd3a3fda7cecdf510e597a9501edce670a60a14eb65950df6",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

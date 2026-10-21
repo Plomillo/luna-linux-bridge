@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "AB_UPDATE_PROVIDER",
+      "capability_id": 421,
+      "evidence_sha256": "e0eef9bde5e019771862c1d2344dd2697622d05c219f0072aa84c4dc1aff2915"
+    },
+    {
+      "canonical_name": "RECOVERY_IMAGE_FACTORY",
+      "capability_id": 422,
+      "evidence_sha256": "db314e9d4e3f650f97175f79f4d4e8ca54781c2db7d08403414fd11a5a8322c8"
+    },
+    {
+      "canonical_name": "HARDWARE_ABSTRACTION_REGISTRY",
+      "capability_id": 423,
+      "evidence_sha256": "1a68c070f46785b5217b2d7d7443f6469c9176965adc6d6ff7721e690b6c09fa"
+    },
+    {
+      "canonical_name": "DEVICE_TREE_PROVIDER",
+      "capability_id": 424,
+      "evidence_sha256": "3522399a6414b457d75bf659c5015df36c052ee4ffcbeff87d8e175af14171c8"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "50c7a09cc2848afa409fbe3e4d4060945ac1fbf8b80bea6e15dd25c0d61a4e9e",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D09:421-424",
+  "scope_only": true,
+  "test_sha256": "5608ea269a5131e9795b3b4153a89d51a90540eb73bd838999a654a80b8f6d11",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:21:35.248565+00:00"
+}

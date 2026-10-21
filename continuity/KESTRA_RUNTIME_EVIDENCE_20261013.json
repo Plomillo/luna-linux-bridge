@@ -1,0 +1,81 @@
+{
+  "schema": "SUPER1200_KESTRA_RUNTIME_EVIDENCE/1.0",
+  "evidence_id": "SUPER1200-KESTRA-RUNTIME-20261013-001",
+  "observed_at_utc": "2026-10-13T16:50:04Z",
+  "candidate_branch": "custosz/super-1200-implementation-20261007",
+  "candidate_head_at_observation": "7d96134e915a88215c64e79fe3c500abe081099a",
+  "main_head_observed": "3bee4b71bb3bf0062fa62206bfae516d9e5d52d9",
+  "runtime": {
+    "kestra": "2.0.3",
+    "postgres": "18.6-alpine",
+    "deployment": "Podman rootless containers",
+    "container_restart_policy": "unless-stopped",
+    "podman_restart_user_service": "enabled",
+    "user_linger": "enabled",
+    "published_endpoints": [
+      "127.0.0.1:8080",
+      "127.0.0.1:18081"
+    ],
+    "credentials": "Stored locally in mode-0600 files; values excluded from evidence"
+  },
+  "flow": {
+    "namespace": "louksna.kestra",
+    "id": "super1200_continuity",
+    "revision": 1,
+    "schedule": "*/5 * * * *",
+    "timezone": "America/Santiago",
+    "manual_execution": {
+      "id": "1GJYhg5lr44p9PMaVK3BN6",
+      "state": "SUCCESS"
+    },
+    "scheduled_execution": {
+      "id": "3oCSIgyjh98Pk9ZyiGLti0",
+      "state": "SUCCESS",
+      "scheduled_at_utc": "2026-10-13T16:50:00Z"
+    },
+    "task_evidence": {
+      "checkpoint_fetch": "SUCCESS",
+      "executor_registry_fetch": "SUCCESS",
+      "dispatch_gate": "SUCCESS",
+      "selected_branch": "blocked_safe_hold",
+      "workflow_dispatch_requested": false
+    }
+  },
+  "worker_readiness": {
+    "current_checkpoint": "D03_FUNCTIONALLY_CLOSED",
+    "next_point": "D04",
+    "state": "BLOCKED",
+    "reason": "UNTRUSTED_SYNTHETIC_WORKER_AND_D04_SELF_RECURSION",
+    "material_worker_ready": false,
+    "independent_validation_ready": false,
+    "g23": "BLOCKED_UNTIL_INDEPENDENT_VALIDATION",
+    "g24": "BLOCKED_UNTIL_G23",
+    "custosz_v7": "Runtime package present; mission API supervises time/state and reports executor UNBOUND_MEDIATED_OR_LOCAL; arbitrary_execution=false",
+    "metaos": "MetaOS.wasm exists in the CUSTOSZ staging branch but is not bound into the active continuation workflow. The staging manifest marks all artifacts STAGED_PENDING_VALIDATION and EJECUCION_AUTOMATICA=DESHABILITADA; standard WebAssembly.Module validation rejected the file header/version, so MetaOS was not executed.",
+    "worker_execution": "NOT_STARTED",
+    "certification": "NOT_GRANTED",
+    "promotion_to_main": "NOT_PERFORMED",
+    "metaos_validation": {
+      "standard_webassembly_runtime": "REJECTED",
+      "observed_file_sha256": "5d8f1239e3a0b452be722078760b000afc22af0a64f93ffb0a1f74024f15aed0",
+      "observed_version_bytes": "0d 00 01 00",
+      "reason": "Node.js WebAssembly.Module raised CompileError: expected version 01 00 00 00, found 0d 00 01 00",
+      "staging_manifest": "artifacts/custosz-v7/MANIFEST_STAGING.md",
+      "manifest_status": "STAGED_PENDING_VALIDATION",
+      "automatic_execution": "DISABLED",
+      "execution_performed": false
+    }
+  },
+  "independent_ci": {
+    "workflow_run_id": 38433452453,
+    "url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38433452453",
+    "conclusion": "success",
+    "scope": "Kestra Compose/governance validation and ephemeral no-side-effect smoke flow only"
+  },
+  "outcome": "KESTRA_SUPERVISOR_OPERATIONAL_FAIL_CLOSED_WORKER_CONTINUATION_BLOCKED",
+  "limitations": [
+    "The local Kestra schedule is running and successfully polls the checkpoint every five minutes.",
+    "It does not dispatch CUSTOSZ while the checkpoint is blocked or while a reviewed material executor is absent.",
+    "No SUPER1200 capability implementation or certification is claimed by this evidence."
+  ]
+}

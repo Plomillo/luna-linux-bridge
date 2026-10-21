@@ -1,0 +1,21 @@
+{
+  "canonical_name": "QUARANTINE_EVIDENCE_PRESERVATION",
+  "capability_id": 968,
+  "certification_granted": false,
+  "domain_id": "D20",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "90ac3bb1c2a7542e0e2c1b93514095160e4ad918c6443899497807392f1482ea",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d20_965_968.py",
+  "module_sha256": "e2a11aed7e20ab885414ec14a2f2b831be73f04e8e44af84c9ab0bbb01178449",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d20_965_968.py",
+  "test_case": "test_cap_0968",
+  "test_sha256": "afe011ff285449cf344ee0b3947b1717daa3c311d418270f14c0146a8e56fa19",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

@@ -1,0 +1,26 @@
+{
+  "entry_id": "KEDB-D07-NAME-SPECIFIC-REQUIRED",
+  "scope": "SUPER1200",
+  "symptom": "D07 capabilities 231-300 have no reviewed name-specific executor.",
+  "root_cause": "Authoring a generic wrapper and marking those capabilities EVIDENCED is the retired synthetic materializer. It stays disabled.",
+  "evidence_present": true,
+  "evidence_missing": ["name-specific module for capability 231 MULTI_AI_ARCHITECTURE_FACTORY"],
+  "known_solution_id": null,
+  "workaround": null,
+  "remediation_applied": false,
+  "verification_result": "NOT_RUN",
+  "status": "HOLD_CONSCIOUS",
+  "next_action": "Write a reviewed module for D07 231-234 with one negative behavioral test per capability, register it in continuity/EXECUTORS.json, then run apply only for that tranche. Do not flip implementation_state to EVIDENCED before those tests pass.",
+  "research_launched": false,
+  "research_summary": null,
+  "branch": "custosz/super-1200-implementation-20261007",
+  "commit_sha": "pending-this-commit",
+  "checkpoint": "D06_229_230_MATERIALIZED",
+  "actor": "succession-audit",
+  "created_at_utc": "2026-10-15T13:30:00Z",
+  "updated_at_utc": "2026-10-15T13:30:00Z",
+  "provenance": {
+    "sources": ["implementation/super1200/registry/domains.json"],
+    "notes": "Conscious hold. Not a silent stall."
+  }
+}

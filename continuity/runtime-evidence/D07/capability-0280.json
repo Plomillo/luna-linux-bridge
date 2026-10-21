@@ -1,0 +1,21 @@
+{
+  "canonical_name": "SURVIVAL_ANALYSIS",
+  "capability_id": 280,
+  "certification_granted": false,
+  "domain_id": "D07",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "fd43cd60718e9bb5febfd75ec4d63d72dc39799020f4e0068291ebc122deec58",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d07_279_282.py",
+  "module_sha256": "eb813346b156800dc07b33ca0a99c38baf2d0e40267be5990c3b9b2369351c42",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d07_279_282.py",
+  "test_case": "test_cap_0280",
+  "test_sha256": "9da741afaa53f939e7c65995e7f5700bc309e99c3dd144b25b9faaaa9ab839c1",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

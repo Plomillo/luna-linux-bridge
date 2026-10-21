@@ -1,0 +1,21 @@
+{
+  "canonical_name": "JUDGE_ENGINE",
+  "capability_id": 237,
+  "certification_granted": false,
+  "domain_id": "D07",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "bb7cec121f3e82683d6699482dfe049b8c4d4eb215d3cd678f88dc8cab9d9a94",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d07_235_238.py",
+  "module_sha256": "3823a2ba702e5134420e311132084699312655fb2509b78b5ca4a3d45da06f7a",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d07_235_238.py",
+  "test_case": "test_cap_0237",
+  "test_sha256": "8fa030581427cc7ea8187d7aeec90e16b24a11d7889b167b9772da9ec55f111a",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

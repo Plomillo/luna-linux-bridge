@@ -1,0 +1,21 @@
+{
+  "canonical_name": "LEARNING_OBJECT_REGISTRY",
+  "capability_id": 587,
+  "certification_granted": false,
+  "domain_id": "D13",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "ff6efabdfb4457f6e38df2750aa69cbd2865a120048b2969eab7fc9757104d63",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d13_586_589.py",
+  "module_sha256": "253d1d8cd9badedae36e0ecc63486cdc2ae0ebe81561d96dff400b17c19df89c",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d13_586_589.py",
+  "test_case": "test_cap_0587",
+  "test_sha256": "10727e24d8bc8aa5c0a47aa5a3bb68393b251d00e01f293b7a99efde42c20269",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

@@ -1,0 +1,21 @@
+{
+  "canonical_name": "ANTHROPOLOGY_OF_HARM_ENGINE",
+  "capability_id": 1165,
+  "certification_granted": false,
+  "domain_id": "D22",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "206303c9f56a057b1379a2c404a36097eee8d0f6300a4eca5732473a71608d8f",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d22_1165_1168.py",
+  "module_sha256": "5e70633433735fd8f4f16d34fb81db2309ea49ae0bb06f73fdf69cdd3b67243a",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d22_1165_1168.py",
+  "test_case": "test_cap_1165",
+  "test_sha256": "805417581a2d7833076e718229029f2cfa9c7c962a43f45e7201200cc941c1f7",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

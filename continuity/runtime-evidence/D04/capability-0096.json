@@ -1,0 +1,44 @@
+{
+  "canonical_name": "EVIDENCE_REUSE_ENGINE",
+  "capability_id": 96,
+  "certification_granted": false,
+  "evidence_refresh_workflow_run_id": "38484326133",
+  "evidence_refresh_workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38484326133",
+  "evidence_sha256": "9c7c154d2d7c31f590d06527a53dfa9581739125c8e9d981a7002f61fc662659",
+  "executor": "implementation/super1200/runtime/d04_material_worker_93_96.py",
+  "g23": "PENDING_INDEPENDENT_REVALIDATION",
+  "g24": "PENDING_G23",
+  "github_actions_run_id": "38484326133",
+  "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+  "module_sha256": "abc9c8d922e3ff56f4cdf636da99e146d95e7a15ac5608004f81398d8b4a58f0",
+  "originating_material_workflow_run_id": 38483711004,
+  "prior_evidence": {
+    "prior_evidence_sha256": "5d7c0048f22c13f493878fbc157417c8b34b7995c0d07646f5331e99d286cfdf",
+    "prior_module_sha256": "1371f945ad2f80cf6009986cf20f327e648e00dc0327cdfbea0141a617801774",
+    "prior_test_sha256": "43bc0d6524c75e316886d161c7fe6fced23c4a5c1491ca4aff9dd2a69eed8b43"
+  },
+  "schema": "SUPER1200_D04_MATERIAL_EVIDENCE/1",
+  "selected_test_result": {
+    "exit_code": 0,
+    "result": "PASS",
+    "single_test_run_confirmed": true,
+    "stderr_sha256": "f68d494c1fcc1d829e15ef92c87e35e67cf4bd8b1db836e566f22a6339bd5e14",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "test_case": "test_evidence_reuse_requires_exact_validated_non_invalidated_key"
+  },
+  "status": "PASS",
+  "suite_exit_code": 0,
+  "suite_stderr_sha256": "c2404c44df61b9f2eaa59b9e2f8bec6540ba6702ea87d03879266e35f4b1e0dc",
+  "suite_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "test_artifact": "implementation/super1200/tests/test_d04_runtime.py",
+  "test_case": "test_evidence_reuse_requires_exact_validated_non_invalidated_key",
+  "test_invocation": [
+    "python",
+    "-B",
+    "test_d04_runtime.py",
+    "-v",
+    "D04RuntimeTests.test_evidence_reuse_requires_exact_validated_non_invalidated_key"
+  ],
+  "test_sha256": "6d638e4627cf5542ea1b611a0870aee5d22154923c0e47cef1eb44f4c55b685b",
+  "validated_at_utc": "2026-10-13T23:27:16.378883+00:00"
+}

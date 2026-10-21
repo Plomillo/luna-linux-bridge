@@ -1,0 +1,21 @@
+{
+  "canonical_name": "PARSER_GENERATOR",
+  "capability_id": 441,
+  "certification_granted": false,
+  "domain_id": "D10",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "8fe2debd0f032e6e29be1d1da81322b099895701f784449d90f13da6ca85ed25",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d10_438_441.py",
+  "module_sha256": "32d0c3cf809f52586354d81d4bcacbf7cee044a343457c0b7ae40ceb13366ed0",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d10_438_441.py",
+  "test_case": "test_cap_0441",
+  "test_sha256": "b79ab46bae4461626b6fbe422fd5286564fd1835aafab0e1459f6baf51b39ff9",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

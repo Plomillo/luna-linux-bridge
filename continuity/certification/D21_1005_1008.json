@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "CONTENT_VALUE_CLASSIFIER",
+      "capability_id": 1005,
+      "evidence_sha256": "16d5327c767d131552e3ed79cb6a213f4007e13dd7f4162c615c304297c61d4d"
+    },
+    {
+      "canonical_name": "SANITIZATION_FEASIBILITY_ENGINE",
+      "capability_id": 1006,
+      "evidence_sha256": "110cd06e5c671a2b3504d41ae80577673a08bb851475dc16225bf2bcd2545356"
+    },
+    {
+      "canonical_name": "SURGICAL_REMOVAL_PLANNER",
+      "capability_id": 1007,
+      "evidence_sha256": "02c8d2795909f0814ed5ccff9f830a03058e195c7fb3fcee079c3b76d460ede4"
+    },
+    {
+      "canonical_name": "SAFE_RECONSTRUCTION_ENGINE",
+      "capability_id": 1008,
+      "evidence_sha256": "7653392dbb09f0ef936aea922bdfb5af7226fb3ea2b4d9031c9369bc0671b436"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "41a59a8166dec59e357527b5883f3be0e9eb6cb9be7c0132101278ad842386ed",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D21:1005-1008",
+  "scope_only": true,
+  "test_sha256": "0857cbda10e7a6c948363074469b456d30ecaa65f63121db6efa78b94d5be3b9",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:22:50.402712+00:00"
+}

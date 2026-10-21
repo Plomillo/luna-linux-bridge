@@ -1,0 +1,21 @@
+{
+  "canonical_name": "RESOURCE_LEAK_DETECTOR",
+  "capability_id": 695,
+  "certification_granted": false,
+  "domain_id": "D15",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "a244c7a8d73d3fede2e14b1300a9109624e58ac6084a980a78ab56744ae90315",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d15_693_696.py",
+  "module_sha256": "305d5fb32729898c997f2fc9e187d322811b3d72afb1a495777489016227610f",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d15_693_696.py",
+  "test_case": "test_cap_0695",
+  "test_sha256": "5c884c96b6e26670714a37b8c3121b68ae4a9fbeaf2bc33c88c1ee5b2f3db0f8",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

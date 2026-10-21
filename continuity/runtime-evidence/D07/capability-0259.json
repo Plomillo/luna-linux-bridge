@@ -1,0 +1,21 @@
+{
+  "canonical_name": "TRANSFORMATION_LOG",
+  "capability_id": 259,
+  "certification_granted": false,
+  "domain_id": "D07",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "bd9193bb1989de0876f951eb5521356a449faa388629c260c039323a8454f1e7",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d07_259_262.py",
+  "module_sha256": "9004e359f63877d4d670b4b1fc186e5d5dbd64c4f08c87a0e5acfd246e352ec9",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d07_259_262.py",
+  "test_case": "test_cap_0259",
+  "test_sha256": "6c1544c5911947274ac8ef5baaef1c417ddbf335cdf5a98002283981c28fee7d",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

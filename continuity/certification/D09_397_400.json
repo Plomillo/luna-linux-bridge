@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "MOBILE_RESOURCE_BUDGET",
+      "capability_id": 397,
+      "evidence_sha256": "114c5db3018f16825c11812ea43f65847d02bc8da56ba289217dc0daef7e6582"
+    },
+    {
+      "canonical_name": "OFFLINE_MOBILE_RUNTIME",
+      "capability_id": 398,
+      "evidence_sha256": "444a0443524709422eff17a8a0ef8391f204aff3dfd8ec336a04905d6f343b1b"
+    },
+    {
+      "canonical_name": "ANDROID_UPDATE_ENGINE",
+      "capability_id": 399,
+      "evidence_sha256": "2b2c01945813ea15fbb51b7e921c8eae6b177a086a1d4e4f6d2c91d12d9c7ce8"
+    },
+    {
+      "canonical_name": "ANDROID_RECOVERY_TEST",
+      "capability_id": 400,
+      "evidence_sha256": "7922ae2a8a2aef438e09180d0aeca3eb2aa11ff2022c274188e65ca8581de891"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "33231905d18f8765d812a684946f46f178b6f6b9fb4724d14b8f2c25b1b522c4",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D09:397-400",
+  "scope_only": true,
+  "test_sha256": "d770e96c77f0ceb88f6f9f5b240bb195abfa2eaa51d4c10d70e5fe1a836e6cbc",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:21:32.233093+00:00"
+}

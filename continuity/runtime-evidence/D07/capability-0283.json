@@ -1,0 +1,21 @@
+{
+  "canonical_name": "OPERATIONS_RESEARCH_ENGINE",
+  "capability_id": 283,
+  "certification_granted": false,
+  "domain_id": "D07",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "0b95d8011d19b8dc252917b9f102163a304deb754c74c1475f44cb1777c03ace",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d07_283_286.py",
+  "module_sha256": "23d0f522c2919d073605941266a2ccf0b829ad56b86e9cc677083ebc17478c75",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d07_283_286.py",
+  "test_case": "test_cap_0283",
+  "test_sha256": "e4107e4684948bd6380eef8ce5089f7589a9a3a655725a97c837399496714546",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

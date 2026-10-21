@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "ANDROID_PLATFORM_FABRIC",
+      "capability_id": 377,
+      "evidence_sha256": "6ab5200ad9fe16808b57ff086bd4ed06e9c5fcb1f44bab4360c7c60cc0258677"
+    },
+    {
+      "canonical_name": "ANDROID_SDK_PROVIDER",
+      "capability_id": 378,
+      "evidence_sha256": "b54596cd7fb8e851d490d94085a35b5ecf6c5412213649327f9600230a4f32cf"
+    },
+    {
+      "canonical_name": "ANDROID_NDK_PROVIDER",
+      "capability_id": 379,
+      "evidence_sha256": "4d67cfc790aec661072ede43c29be41ee3502428b57de25b1a207df5dacc51c6"
+    },
+    {
+      "canonical_name": "KOTLIN_PROVIDER",
+      "capability_id": 380,
+      "evidence_sha256": "4f4af18faf09289db88a8e66b611c7fb87ea02e584241a0bf0c922b21d0a1124"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "da267f736f333f6f913861ed9694f769d615da9f6b00e86ffb77c0e4d2e8f74c",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D09:377-380",
+  "scope_only": true,
+  "test_sha256": "bffda307e3280e655d8049431e3e46e7d7bfc3bb58e42157712fda29c2ef2001",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:21:29.738316+00:00"
+}

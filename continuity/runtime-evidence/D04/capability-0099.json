@@ -1,0 +1,44 @@
+{
+  "canonical_name": "TRANSPARENCY_LOG_INTERNAL",
+  "capability_id": 99,
+  "certification_granted": false,
+  "evidence_refresh_workflow_run_id": "38485400175",
+  "evidence_refresh_workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38485400175",
+  "evidence_sha256": "a932367b31df10df6dbe7ee538c330d171d498a3900c0e2012b400e3b49f2ddc",
+  "executor": "implementation/super1200/runtime/d04_material_worker_97_100.py",
+  "g23": "PENDING_INDEPENDENT_REVALIDATION",
+  "g24": "PENDING_G23",
+  "github_actions_run_id": "38485400175",
+  "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+  "module_sha256": "7ed8ac665ff0666299d5baad58ba0bb90803922933a5ca9685355f9ec1126ecd",
+  "originating_material_workflow_run_id": 38484906791,
+  "prior_evidence": {
+    "prior_evidence_sha256": "b16228770db52b9df8b78cf86625124936db2ce426ecc440408ed9bc49e38dca",
+    "prior_module_sha256": "7ed8ac665ff0666299d5baad58ba0bb90803922933a5ca9685355f9ec1126ecd",
+    "prior_test_sha256": "4cd43936d4df91e0e751d78abc48593252e66510c0d27fd9403caaa42a14890d"
+  },
+  "schema": "SUPER1200_D04_MATERIAL_EVIDENCE/1",
+  "selected_test_result": {
+    "exit_code": 0,
+    "result": "PASS",
+    "single_test_run_confirmed": true,
+    "stderr_sha256": "341e07aaa324691c0aaad78ba0281f2b9218c111b7474601e8029e092553599d",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "test_case": "test_transparency_log_is_append_only_hash_chained_and_anchorable"
+  },
+  "status": "PASS",
+  "suite_exit_code": 0,
+  "suite_stderr_sha256": "c4cd7c5ed72f685a8d63cc131c46de3da0c79bd8c4d2c7606907d073a27b7a4d",
+  "suite_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "test_artifact": "implementation/super1200/tests/test_d04_runtime.py",
+  "test_case": "test_transparency_log_is_append_only_hash_chained_and_anchorable",
+  "test_invocation": [
+    "python",
+    "-B",
+    "test_d04_runtime.py",
+    "-v",
+    "D04RuntimeTests.test_transparency_log_is_append_only_hash_chained_and_anchorable"
+  ],
+  "test_sha256": "4cd43936d4df91e0e751d78abc48593252e66510c0d27fd9403caaa42a14890d",
+  "validated_at_utc": "2026-10-13T23:37:56.995873+00:00"
+}

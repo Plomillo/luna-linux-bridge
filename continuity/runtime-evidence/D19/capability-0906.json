@@ -1,0 +1,21 @@
+{
+  "canonical_name": "REACHABILITY_SECURITY_ANALYZER",
+  "capability_id": 906,
+  "certification_granted": false,
+  "domain_id": "D19",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "f3d4bc6b5dc094513e475e8acdf8b1d0af729037afab07f8f28d46c9ae81eb19",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d19_905_908.py",
+  "module_sha256": "338366849f0c3a7c0f6714c9d2f52ba0f990feb8bff4049322a0ce589f78df83",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d19_905_908.py",
+  "test_case": "test_cap_0906",
+  "test_sha256": "370b9e77f2a3edeb46cbd5146685f1fd3e5b9d93b135011b55aedfd1575a8093",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

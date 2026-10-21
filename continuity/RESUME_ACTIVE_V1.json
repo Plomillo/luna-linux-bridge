@@ -1,9 +1,18 @@
 {
   "schema": "LOUKSNA_RESUME_ACTIVE/1.0",
   "status": "ACTIVE",
-  "activated_at_utc": "2026-10-14T07:00:00Z",
-  "last_operator_action_utc": "2026-10-14T14:42:00Z",
+  "activated_at_utc": "2026-10-14T06:45:00Z",
+  "last_operator_action_utc": "2026-10-21T17:40:00Z",
+  "contract": "DEFINITIVE_OPERATING_CONTRACT_V1",
+  "loop": "ANTIPARALYSIS_LOOP_V1",
+  "wiring": "WIRING-TRANCHE-FACTORY-AND-HOST-BOOTSTRAP-20261014",
   "rails": {
+    "SUPER1200": {
+      "branch": "custosz/super-1200-implementation-20261007",
+      "checkpoint": "GLOBAL_CERTIFIED_SCOPE_93_1200",
+      "mode": "LIVE_UNDER_CONTRACT",
+      "next_action": "Capabilities 1-92 remain withheld. No whole-catalog claim."
+    },
     "DIRECTIVA": {
       "branch": "automation/mtls-evidence-gate-20261013",
       "checkpoint": "CONNECTIVITY_PROBE_DISPATCHED",
@@ -15,11 +24,14 @@
   },
   "fail_closed": true,
   "antiparalysis": true,
-  "global_certification_status": "NOT_CERTIFIED",
+  "evidence_search_mandatory": true,
+  "g23_g24_are_flow_steps": true,
+  "global_certification_status": "CERTIFIED_SCOPE_93_1200",
   "operator_action": {
-    "action": "DISPATCH_CONNECTIVITY_PROBE_AND_FORCE_BOOTSTRAP",
-    "performed_at_utc": "2026-10-14T14:42:00Z",
+    "action": "REBIND_D04_93_100_AND_PROMOTE_MAIN",
+    "performed_at_utc": "2026-10-21T17:40:00Z",
     "actor": "operator-via-grok",
-    "rationale": "Verify luna-aux online status and force bootstrap path. Traceable and auditable."
-  }
+    "rationale": "Synchronize stale D04 certificates to the current runtime, then promote the certified rail to main. Capabilities 1-92 stay withheld."
+  },
+  "notes": "Resume is active. Wiring certified with provenance. Controls remain sequential allies."
 }

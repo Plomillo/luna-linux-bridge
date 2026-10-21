@@ -1,0 +1,21 @@
+{
+  "canonical_name": "PACKAGE_MANAGER_FACTORY",
+  "capability_id": 457,
+  "certification_granted": false,
+  "domain_id": "D10",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "32be273f7d6ac2004b0c9f519e3181aa155981eb1def7a758b6532e55f35c1d7",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d10_454_457.py",
+  "module_sha256": "84aa6f339ba9c2b56c2c2a2bfe5858eb452cc1b2336bc75b32a57cc2720e71ac",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d10_454_457.py",
+  "test_case": "test_cap_0457",
+  "test_sha256": "3019d25ad5c23488c5265284de1758b729421c4fc66bc0464d83a6b07c5b5771",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

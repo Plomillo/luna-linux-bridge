@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "MAINTENANCE_DEBT_LEDGER",
+      "capability_id": 773,
+      "evidence_sha256": "831b2fbb1fd0390baa463f8c0c8adc5919b2d2fc2b061c8adee4d53f73850e0f"
+    },
+    {
+      "canonical_name": "MAINTENANCE_DEBT_INTEREST",
+      "capability_id": 774,
+      "evidence_sha256": "9eb7ccb6e8d244c25e0642aa2ea606a905e43cb5d9d0acb3151ea1ff9ee0d4a9"
+    },
+    {
+      "canonical_name": "MAINTENANCE_BUDGET_ENGINE",
+      "capability_id": 775,
+      "evidence_sha256": "c62b75b914a803b5946d4545aa9f416c104b791688751da219cb3f89000c518f"
+    },
+    {
+      "canonical_name": "MAINTENANCE_WINDOW_ENGINE",
+      "capability_id": 776,
+      "evidence_sha256": "16d978cc98ad818888d8bdb9bbf952c32f1c09a8cedb3e71b1afe616580a0274"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "c03c8f96146ac9367bb587c7a0172e669293521e5646394d0645ff2eb38d2d79",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D18:773-776",
+  "scope_only": true,
+  "test_sha256": "e04dce46118748c449a84e44162fb103ac37fad57d18cf4076d2cac58ad54867",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:22:20.278271+00:00"
+}

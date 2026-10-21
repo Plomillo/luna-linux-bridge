@@ -1,0 +1,21 @@
+{
+  "canonical_name": "WISDOM_CONSTRAINT_ENGINE",
+  "capability_id": 740,
+  "certification_granted": false,
+  "domain_id": "D17",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "9e7a55c9328b780a10d5f1ce79d5813e3357d70e6fe7552685d36045f0a27e30",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d17_737_740.py",
+  "module_sha256": "8eda2f76467bb223a3e4590f507598014e11c42b32154a518bed969d3434b56a",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d17_737_740.py",
+  "test_case": "test_cap_0740",
+  "test_sha256": "597a4bfa4ab7ee283d10ff50182b133075b7e8bb9030a1f1d780c8ff427c2e5c",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

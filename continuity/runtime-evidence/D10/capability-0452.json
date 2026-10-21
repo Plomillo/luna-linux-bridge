@@ -1,0 +1,21 @@
+{
+  "canonical_name": "COMPILER_FACTORY",
+  "capability_id": 452,
+  "certification_granted": false,
+  "domain_id": "D10",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "923baafdc525a1b630f6a05cba585560647990353af1130b73d44a6975c50152",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d10_450_453.py",
+  "module_sha256": "8b6fd702dbfb6c3c58f47ef47d200ae70e3a0c2aba38fd64ffacd53468f33ffe",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d10_450_453.py",
+  "test_case": "test_cap_0452",
+  "test_sha256": "313a863d258c2363ffa92857849196df0ae1ac251083f445318872cde25588a5",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

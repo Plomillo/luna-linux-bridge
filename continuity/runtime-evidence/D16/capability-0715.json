@@ -1,0 +1,21 @@
+{
+  "canonical_name": "GAME_IO_ANALYZER",
+  "capability_id": 715,
+  "certification_granted": false,
+  "domain_id": "D16",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "933d483ef221717e5e36b0825dfc0eb6740be7ced46c15db94acef6db8769c32",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d16_713_716.py",
+  "module_sha256": "f514b5c159909ee2bab10cdca593afd18bdde3aa8e5aa3937385e6797f3d8a07",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d16_713_716.py",
+  "test_case": "test_cap_0715",
+  "test_sha256": "bb1dfd423022755602061381ee1045d0e25a761410b796c96ddb81a17646f8c3",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

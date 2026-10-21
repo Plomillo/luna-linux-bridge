@@ -1,0 +1,21 @@
+{
+  "canonical_name": "DEPRECATION_REGISTRY",
+  "capability_id": 807,
+  "certification_granted": false,
+  "domain_id": "D18",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "00bce392f1f338a60ddeaa98517591822fbfff750ff86af5f02719be58a38a21",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d18_805_808.py",
+  "module_sha256": "ed457ae1b24e831e7abbfe378f1e25594396802b6d8ff6c7867cc8981bae6dfb",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d18_805_808.py",
+  "test_case": "test_cap_0807",
+  "test_sha256": "2e6b2495205f781637fc3cac1aa955c101edbcaec3c84606149692bcc8ec78f3",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

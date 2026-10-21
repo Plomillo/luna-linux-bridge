@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "KNOWN_GOOD_GENERATION_REGISTRY",
+      "capability_id": 849,
+      "evidence_sha256": "1b16998ed990394563894c6291a292f7e9203678c7fd3a167e2758bb55e2b9ef"
+    },
+    {
+      "canonical_name": "GENERATION_SWITCH_ENGINE",
+      "capability_id": 850,
+      "evidence_sha256": "27d7a3bfd4ece3cefa77f40e5803a322966da8fcfcc8b15bc4807d67f62dfb31"
+    },
+    {
+      "canonical_name": "SAFE_GARBAGE_COLLECTION",
+      "capability_id": 851,
+      "evidence_sha256": "353f1e1137b101dad5dab6b32604ea5360ec59bbdd5036b107068d0df1407e84"
+    },
+    {
+      "canonical_name": "ROLLBACK_ROOT_PROTECTION",
+      "capability_id": 852,
+      "evidence_sha256": "ce80b8dae26cf3418ab1ccb5dc48c30461b9aa26310eee437f007561f09508ed"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "9d4224301237bc6571ccb59be6c7b29cb11db37af0c8d8878d0d5c680e52e3d6",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D18:849-852",
+  "scope_only": true,
+  "test_sha256": "d91884b2ab4a05db72ebfb8f7d9badaca35c5139cccd2c0e1a8edee4d245b211",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:22:30.110240+00:00"
+}

@@ -3,19 +3,42 @@
 - ID: DIRECTIVA-GITHUB-ONLY-UNLOCK-001
 - Version: 1.0.0
 - Status: BINDING
+- Branch context: automation/mtls-evidence-gate-20261013 (and related Louksna ZD work)
+- Parent: DEFINITIVE_OPERATING_CONTRACT_V1
 
-## Non-negotiable
+## Non-negotiable constraints
 
-- No owner HP as primary host
-- No foreign computers
-- Evidence must be consumable by GitHub Actions
+1. Do **not** use the owner's HP notebook (8GB RAM) as primary host for continuous privileged work.
+2. Do **not** use third-party / foreign computers.
+3. Unlock and certification evidence must be consumable by **GitHub Actions** (self-hosted runner labels or equivalent GitHub-orchestrated evidence path).
 
-## Unlock = evidence
+## What unlock means
 
-Host runner/config/reports + separated G23/G24 identities.
-Missing evidence → HOLD + KEDB + mandatory search for GitHub-only path.
-When evidence exists → existing readiness/dispatch path attempts G23 then G24.
+Unlock is not more feature code. Unlock is admissible evidence:
+
+### Host evidence
+- Self-hosted runner online with required labels (e.g. self-hosted, linux, x64, luna-aux) **or** a documented GitHub-native equivalent path that produces the same verifiable host reports
+- Real mTLS config and service state as required by PUAC-2 / readiness probe
+- Host test report + rollback report variables/artifacts bound to candidate SHA
+
+### Identity evidence
+- Separated G23 and G24 signing keys and public materials
+- Distinct validator/certifier IDs
+
+### Gate behaviour
+- Readiness probe remains continuous and fail-closed
+- Missing evidence → HOLD + KEDB entry + next_action
+- If evidence is missing → **search** for GitHub-only mechanisms (documented in KEDB research_summary)
+- When evidence appears → apply path already wired (dispatch/schedule) → verify → G23 then G24
+- Current operational checkpoint: connectivity probe dispatched, then host bootstrap. A dispatched probe is not evidence and is not certification.
+
+## Antiparalysis on this rail
+
+Stillness without registry entry is forbidden.
+HOLD is allowed; silent permanent freeze is not.
 
 ## Non-claims
 
-Does not assert evidence currently exists. Does not certify final-client remote until real G23/G24.
+- This contract does not assert that host evidence currently exists.
+- This contract does not certify the remote for final-client use until G23/G24 pass on real evidence.
+- The SUPER1200 seal does not certify Directiva.

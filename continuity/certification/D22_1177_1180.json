@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "DECEPTION_PATTERN_REGISTRY",
+      "capability_id": 1177,
+      "evidence_sha256": "515ee494852cd89f1c351fae294f996c6a30ecbbd5085cbafdbde29b1f96118e"
+    },
+    {
+      "canonical_name": "TRUST_ABUSE_ANALYZER",
+      "capability_id": 1178,
+      "evidence_sha256": "ea995f8e4cddd82e755c1c86933c571aa1322009dc4098ebf560d253689eb823"
+    },
+    {
+      "canonical_name": "HUMAN_VULNERABILITY_MODEL",
+      "capability_id": 1179,
+      "evidence_sha256": "4ea99b804c38b4e8872f03cc6d21144ff7fd60fa9eb98d4c1ea17923c7f49fee"
+    },
+    {
+      "canonical_name": "SECURITY_DECISION_BIAS_ANALYZER",
+      "capability_id": 1180,
+      "evidence_sha256": "92b7696e813962b007fb70fc683d73bbf02fa3eb00a1ddf425891d0d1ea3c2a3"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "dcc9991ad63c56babed94b710766199ae4f23a519799d53a1086449e2bbe39b5",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D22:1177-1180",
+  "scope_only": true,
+  "test_sha256": "8192d92b2b140a37fa8b5898bb8e5e85c4fe821ad35defd0728f64447a39430e",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:23:13.039826+00:00"
+}

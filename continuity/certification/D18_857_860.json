@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "TOIL_ELIMINATION_ENGINE",
+      "capability_id": 857,
+      "evidence_sha256": "5dc0b3774a8f0a807dfa3a30f4a2eab2f385c2b84521d79f8e29ec3b8c452e29"
+    },
+    {
+      "canonical_name": "MAINTENANCE_COST_REGRESSION_GATE",
+      "capability_id": 858,
+      "evidence_sha256": "9a9c48f2b85814a17607571d68341272fc04513ed513b5e477749639bd54474c"
+    },
+    {
+      "canonical_name": "MAINTAINABILITY_NON_REGRESSION_GATE",
+      "capability_id": 859,
+      "evidence_sha256": "f078d7a60d65dfca4f5652f094c22f2ad558607d207c68fdb96249476f8419e3"
+    },
+    {
+      "canonical_name": "MAINTENANCE_COMPRESSION_RATIO",
+      "capability_id": 860,
+      "evidence_sha256": "8f401c12d1c46b03033f2798e2a74170acf082b4331ebfa84495dde4b633768f"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "56fa2d09f04fe3cfccf67c127bee946d5ab0860c73667a413d2052c1f777f420",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D18:857-860",
+  "scope_only": true,
+  "test_sha256": "faae9e47170e96b3e1383716bf6b5a96b439d021ab767b73685cba3091c3bf8b",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:22:31.146235+00:00"
+}

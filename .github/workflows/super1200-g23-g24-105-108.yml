@@ -1,0 +1,20 @@
+name: "SUPER1200 — legacy duplicate guard for D04 105-108"
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  no_duplicate_certifier:
+    name: "Read-only notice — canonical G23/G24 workflow retained"
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Confirm canonical scoped gate is the sole writer
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "SUPER1200_NOTICE=This duplicate workflow is intentionally non-certifying."
+          echo "SUPER1200_CANONICAL_G23_G24=.github/workflows/super1200-g23-g24-d04-105-108.yml"
+          echo "SUPER1200_GLOBAL_CERTIFICATION=NOT_CERTIFIED"

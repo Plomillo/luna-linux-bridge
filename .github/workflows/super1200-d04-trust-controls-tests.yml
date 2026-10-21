@@ -1,0 +1,107 @@
+name: SUPER1200 D04 trust controls tests 117-120
+
+on:
+  push:
+    branches:
+      - custosz/super-1200-implementation-20261007
+    paths:
+      - "implementation/super1200/domains/D04_trust_controls.py"
+      - "implementation/super1200/tests/test_d04_trust_controls.py"
+      - "implementation/super1200/domains/D04_runtime.py"
+      - "implementation/super1200/tests/test_d04_runtime.py"
+      - "implementation/super1200/domains/D04_authorization_governance.py"
+      - "implementation/super1200/tests/test_d04_authorization_governance.py"
+      - "implementation/super1200/domains/D04_governance_controls.py"
+      - "implementation/super1200/tests/test_d04_governance_controls.py"
+      - ".github/workflows/super1200-d04-trust-controls-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: super1200-d04-trust-controls-tests
+  cancel-in-progress: false
+
+jobs:
+  behavior-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout governed candidate branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: custosz/super-1200-implementation-20261007
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+      - name: Run base, authorization, governance, and trust-control regression suites
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B implementation/super1200/tests/test_d04_runtime.py -v
+          python3 -B implementation/super1200/tests/test_d04_authorization_governance.py -v
+          python3 -B implementation/super1200/tests/test_d04_governance_controls.py -v
+          python3 -B implementation/super1200/tests/test_d04_trust_controls.py -v
+      - name: Run each 117-120 mapped test independently and hash the sources
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B - <<'PY'
+          import hashlib,json,os,subprocess,sys
+          from pathlib import Path
+          root=Path(".")
+          test=root/"implementation/super1200/tests/test_d04_trust_controls.py"
+          module=root/"implementation/super1200/domains/D04_trust_controls.py"
+          mapped={
+            117:"test_actor_independence_verifier_rejects_shared_identity_domain_credentials_path_and_permissions",
+            118:"test_trust_root_registry_binds_key_purpose_custody_validity_and_revocation",
+            119:"test_trust_root_rotation_requires_cross_signatures_overlap_and_monotonic_history",
+            120:"test_offline_trust_bundle_binds_version_chain_expiry_hash_and_signature",
+          }
+          results=[]
+          for cid,name in mapped.items():
+            proc=subprocess.run([sys.executable,"-B",str(test),"-v",f"D04TrustControlsTests.{name}"],
+                                cwd=root,text=True,capture_output=True,timeout=120)
+            output=proc.stdout+"\n"+proc.stderr
+            passed=proc.returncode==0 and name in output and "Ran 1 test" in output and "OK" in output and "FAILED" not in output
+            results.append({"capability_id":cid,"test_case":name,"result":"PASS" if passed else "FAIL",
+              "exit_code":proc.returncode,"test_name_seen":name in output,
+              "single_test_run_confirmed":"Ran 1 test" in output,
+              "stdout_sha256":hashlib.sha256(proc.stdout.encode()).hexdigest(),
+              "stderr_sha256":hashlib.sha256(proc.stderr.encode()).hexdigest()})
+            if not passed:
+              print(output[-12000:])
+              raise SystemExit(f"TRUST_CONTROL_TEST_FAIL_{cid}")
+          rec={
+            "schema":"SUPER1200_D04_TRUST_CONTROLS_TEST_RUN/1",
+            "scope":"D04:117-120",
+            "workflow_run_id":int(os.environ["GITHUB_RUN_ID"]),
+            "workflow_url":f'{os.environ.get("GITHUB_SERVER_URL","https://github.com")}/{os.environ["GITHUB_REPOSITORY"]}/actions/runs/{os.environ["GITHUB_RUN_ID"]}',
+            "source_commit":os.environ["GITHUB_SHA"],
+            "module_sha256":hashlib.sha256(module.read_bytes()).hexdigest(),
+            "test_sha256":hashlib.sha256(test.read_bytes()).hexdigest(),
+            "independent_specific_tests":results,
+            "certification_granted":False,
+            "global_super1200_certified":False
+          }
+          Path("d04-trust-controls-test-results.json").write_text(json.dumps(rec,indent=2,sort_keys=True)+"\n")
+          with open(os.environ["GITHUB_STEP_SUMMARY"],"a",encoding="utf-8") as f:
+            f.write("# SUPER1200 D04 trust controls 117-120\n\n")
+            f.write("- Scope: D04:117-120\n- Specific tests: 4/4 PASS\n")
+            f.write(f'- Module SHA-256: {rec["module_sha256"]}\n')
+            f.write(f'- Test SHA-256: {rec["test_sha256"]}\n')
+            f.write("- G23/G24: not evaluated by this behavior-only workflow\n")
+            f.write("- Global certification: NOT CERTIFIED\n")
+          print("SUPER1200_D04_TRUST_TESTS_PASS "+json.dumps({"scope":"D04:117-120","specific_tests":"4/4 PASS","module_sha256":rec["module_sha256"],"test_sha256":rec["test_sha256"],"certification_granted":False},sort_keys=True))
+          PY
+      - name: Preserve non-certifying test evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: super1200-d04-trust-controls-tests-${{ github.run_id }}
+          path: d04-trust-controls-test-results.json
+          if-no-files-found: warn
+          retention-days: 90

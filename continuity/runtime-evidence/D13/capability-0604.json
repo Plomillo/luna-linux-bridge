@@ -1,0 +1,21 @@
+{
+  "canonical_name": "MISCONCEPTION_REGISTRY",
+  "capability_id": 604,
+  "certification_granted": false,
+  "domain_id": "D13",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "b41855fd829762a34d54440ab2e4bc67c204337cfe8cf5f6f55ecec8388831d2",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d13_602_605.py",
+  "module_sha256": "ab32d4eba414e61c2f471cbf83a918d20a8221536c6a12d83cf43e51cdfbab54",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d13_602_605.py",
+  "test_case": "test_cap_0604",
+  "test_sha256": "8e2fff69040f57994c227a886e3d76d86260ad01b15ea291be72380a5e01764a",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

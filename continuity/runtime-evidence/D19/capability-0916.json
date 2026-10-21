@@ -1,0 +1,21 @@
+{
+  "canonical_name": "TYPOSQUATTING_DETECTOR",
+  "capability_id": 916,
+  "certification_granted": false,
+  "domain_id": "D19",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "aca146211a5a45bab98a5823455905f1225e98574040601ce2992fcd422d7460",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d19_913_916.py",
+  "module_sha256": "134b0921aa64ab2d146eb52d5e0c7eb53c80d8b566cdeea1e86d0d45a29efab8",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d19_913_916.py",
+  "test_case": "test_cap_0916",
+  "test_sha256": "0f0d1b6411ac62a005202d17f0c3086e29bfbd6c0f874eda3bd87df36b19064b",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

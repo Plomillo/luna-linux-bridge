@@ -1,0 +1,34 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "ACCESSIBILITY_ENGINE",
+      "capability_id": 638,
+      "evidence_sha256": "8f148121352c5b089d678491865421e331897fb8eceed7c0b4481eac15b64483"
+    },
+    {
+      "canonical_name": "MULTILINGUAL_PEDAGOGY_ENGINE",
+      "capability_id": 639,
+      "evidence_sha256": "2353a9232d44719b9150f5b36112ba45910949d04505f705f7dc95eb6273283e"
+    },
+    {
+      "canonical_name": "PEDAGOGICAL_CERTIFICATION_GATE",
+      "capability_id": 640,
+      "evidence_sha256": "4caacddc74d8e5cbcd0177e542870f9509de9020dca8602e97ef2c020eae8976"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "21b78b6bb3719ca9206293379bc5dcde7f6219cdac23c9a63d6d84ce048de124",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D13:638-640",
+  "scope_only": true,
+  "test_sha256": "f368b2d804d11152983aef0dc1c1b0cba06eba1def9b92dec768b44af6e504e7",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:22:02.795324+00:00"
+}

@@ -1,0 +1,21 @@
+{
+  "canonical_name": "MODEL_DEPENDENCE_SCORE",
+  "capability_id": 585,
+  "certification_granted": false,
+  "domain_id": "D12",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "96301a3ab739d55e6adfd6ef86f72e6826f608a43959c512d18ba6478099ceb6",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d12_583_585.py",
+  "module_sha256": "33681dcd7898684ab79ef792728d8e59f766e77f726599b08332d180ea2275cc",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d12_583_585.py",
+  "test_case": "test_cap_0585",
+  "test_sha256": "9993e7173fcc35d6fff74481f0b687d86835160b44da74eb7a9188400e065fc3",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

@@ -1,0 +1,21 @@
+{
+  "canonical_name": "MAINTENANCE_PARALLELIZER",
+  "capability_id": 854,
+  "certification_granted": false,
+  "domain_id": "D18",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "b463d31d732c142567ae74e6c378aa9b969c21cf34e0bfc39da6a7fde8108bf3",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d18_853_856.py",
+  "module_sha256": "bbc1716b3f01a7afd0626cafa2b3731152d4c0e12aaadf9a03d326ebd3e51f85",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d18_853_856.py",
+  "test_case": "test_cap_0854",
+  "test_sha256": "96b77021ca74aaf0d7d414d8679c7ed629e8b247a7c46f7925d7d38cbb55b806",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

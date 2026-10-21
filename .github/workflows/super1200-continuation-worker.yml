@@ -1,0 +1,67 @@
+name: "SUPER1200 — explicit continuation worker"
+on:
+  workflow_call:
+    inputs:
+      transition_id:
+        required: true
+        type: string
+      next_point:
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      transition_id:
+        required: true
+        type: string
+      next_point:
+        required: true
+        type: string
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: super1200-continuation-worker-${{ inputs.transition_id }}
+  cancel-in-progress: true
+jobs:
+  worker:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: custosz/super-1200-implementation-20261007
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Execute registered domain worker
+        env:
+          NEXT_POINT: ${{ inputs.next_point }}
+          TARGET_ROOT: ${{ github.workspace }}
+          CAP_ROOT: ${{ github.workspace }}
+          OUT_DIR: ${{ runner.temp }}/super1200-continuation
+        run: |
+          set -Eeuo pipefail
+          python3 -B continuity/super1200_continuation_worker.py
+      - name: Emit worker completion signal
+        if: always()
+        env:
+          TRANSITION_ID: ${{ inputs.transition_id }}
+          NEXT_POINT: ${{ inputs.next_point }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p continuity/signals
+          python3 - <<'PY'
+          import json, os, time
+          p=f"continuity/signals/{os.environ['TRANSITION_ID']}.json"
+          json.dump({"transition_id":os.environ["TRANSITION_ID"],"next_point":os.environ["NEXT_POINT"],"utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),"source":"continuation-worker"},open(p,"w"),indent=2,sort_keys=True)
+          PY
+      - name: Persist continuation evidence
+        if: always()
+        run: |
+          set -Eeuo pipefail
+          git add continuity implementation/super1200
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name "custosz-v7-runtime-bot"
+          git config user.email "custosz-v7-runtime-bot@users.noreply.github.com"
+          git commit -m "evidence(super1200): persist continuation checkpoint"
+          git pull --rebase origin custosz/super-1200-implementation-20261007
+          git push origin HEAD:custosz/super-1200-implementation-20261007

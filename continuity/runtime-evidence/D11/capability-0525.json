@@ -1,0 +1,21 @@
+{
+  "canonical_name": "INTERDISCIPLINARY_SYNTHESIS",
+  "capability_id": 525,
+  "certification_granted": false,
+  "domain_id": "D11",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "4829697ad408b206b632f24abcbb581281d8783d06fa4c79bd417a9786a98f3f",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d11_525_528.py",
+  "module_sha256": "767f0e82d31687eb5457f7bf526802b0ba1e97b1be1762de252f375e32168d7e",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d11_525_528.py",
+  "test_case": "test_cap_0525",
+  "test_sha256": "57e18fa3871fe3f5d1821014ccf08a684331a51ea2b60a92ad724ebc8d4050cb",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

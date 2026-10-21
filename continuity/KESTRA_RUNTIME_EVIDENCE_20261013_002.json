@@ -1,0 +1,111 @@
+{
+  "schema": "SUPER1200_KESTRA_RUNTIME_EVIDENCE/1.0",
+  "evidence_id": "SUPER1200-KESTRA-RUNTIME-20261013-002",
+  "observed_at_utc": "2026-10-13T16:55:15Z",
+  "candidate_branch": "custosz/super-1200-implementation-20261007",
+  "candidate_head_at_observation": "c41188391c1605aa1674a466577dc7d3cb7d6592",
+  "main_head_observed": "3bee4b71bb3bf0062fa62206bfae516d9e5d52d9",
+  "runtime": {
+    "kestra": "2.0.3",
+    "postgres": "18.6-alpine",
+    "deployment": "Podman rootless containers",
+    "container_restart_policy": "unless-stopped",
+    "podman_restart_user_service": "enabled",
+    "user_linger": "enabled",
+    "published_endpoints": [
+      "127.0.0.1:8080",
+      "127.0.0.1:18081"
+    ],
+    "secrets": "Local mode-0600 environment file; secret values excluded"
+  },
+  "flow": {
+    "namespace": "louksna.kestra",
+    "id": "super1200_continuity",
+    "active_revision": 2,
+    "schedule": "*/5 * * * *",
+    "timezone": "America/Santiago",
+    "executions": [
+      {
+        "id": "1GJYhg5lr44p9PMaVK3BN6",
+        "revision": 1,
+        "trigger": "manual",
+        "state": "SUCCESS",
+        "gate": "blocked_safe_hold"
+      },
+      {
+        "id": "3oCSIgyjh98Pk9ZyiGLti0",
+        "revision": 1,
+        "trigger": "schedule",
+        "scheduled_at_utc": "2026-10-13T16:50:00Z",
+        "state": "SUCCESS",
+        "gate": "blocked_safe_hold"
+      },
+      {
+        "id": "DR5R0BZnq9MzlJR2pske6",
+        "revision": 2,
+        "trigger": "manual",
+        "state": "SUCCESS",
+        "gate": "blocked_safe_hold"
+      },
+      {
+        "id": "3umRiA6dAIRF07QNYbEhI4",
+        "revision": 2,
+        "trigger": "schedule",
+        "scheduled_at_utc": "2026-10-13T16:55:00Z",
+        "state": "SUCCESS",
+        "gate": "blocked_safe_hold"
+      }
+    ],
+    "latest_execution_tasks": {
+      "checkpoint": "SUCCESS",
+      "executors": "SUCCESS",
+      "gate_and_dispatch": "SUCCESS",
+      "blocked_safe_hold": "SUCCESS"
+    },
+    "github_workflow_dispatches_from_kestra": 0
+  },
+  "worker_readiness": {
+    "checkpoint": "D03_FUNCTIONALLY_CLOSED",
+    "next_point": "D04",
+    "state": "BLOCKED",
+    "reason": "UNTRUSTED_SYNTHETIC_WORKER_AND_D04_SELF_RECURSION",
+    "material_worker_ready": false,
+    "metaos_ready": false,
+    "independent_validation_ready": false,
+    "g23": "BLOCKED_UNTIL_INDEPENDENT_VALIDATION",
+    "g24": "BLOCKED_UNTIL_G23",
+    "custosz_v7": {
+      "package_present": true,
+      "mission_api": "SUPERVISORY_TIME_AND_STATE_ONLY",
+      "reported_executor": "UNBOUND_MEDIATED_OR_LOCAL",
+      "arbitrary_execution": false,
+      "material_domain_executor": "NOT_BOUND"
+    },
+    "metaos": {
+      "artifact": "artifacts/custosz-v7/MetaOS.wasm",
+      "staging_manifest_status": "STAGED_PENDING_VALIDATION",
+      "manifest_automatic_execution": "DISABLED",
+      "standard_webassembly_validation": "REJECTED_FOR_FILE_AS_PROVIDED",
+      "observed_sha256": "5d8f1239e3a0b452be722078760b000afc22af0a64f93ffb0a1f74024f15aed0",
+      "execution_performed": false,
+      "active_workflow_guard": "REQUIRES_METAOS_READY_AND_STANDARD_WASM_VALIDATION"
+    },
+    "worker_execution": "NOT_STARTED",
+    "certification": "NOT_GRANTED",
+    "promotion_to_main": "NOT_PERFORMED"
+  },
+  "independent_ci": {
+    "workflow_run_id": 38434113809,
+    "url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38434113809",
+    "conclusion": "success",
+    "scope": "Kestra static governance/Compose validation and ephemeral no-side-effect smoke flow",
+    "continuation_workflow_execution": "NOT_PERFORMED"
+  },
+  "outcome": "KESTRA_SCHEDULE_OPERATIONAL_SAFE_HOLD_WORKER_CONTINUATION_NOT_YET_OPERATIONAL",
+  "required_unlocks": [
+    "Supply and validate a material D04 executor with behavior-level tests.",
+    "Resolve the MetaOS artifact/runtime validation issue and explicitly set metaos_ready only after independent validation.",
+    "Bind CUSTOSZ V7 to a concrete reviewed executor without enabling arbitrary execution.",
+    "Run independent G23, then G24 on the same candidate digest before certification or promotion."
+  ]
+}

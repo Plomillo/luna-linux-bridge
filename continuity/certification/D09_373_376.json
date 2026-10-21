@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "RSYNC_PROVIDER",
+      "capability_id": 373,
+      "evidence_sha256": "b4f17b09f77f6550e892a4c268a7aa78b27e792d68413041ad3352f49cfb5abb"
+    },
+    {
+      "canonical_name": "CAS_SYNC",
+      "capability_id": 374,
+      "evidence_sha256": "77df8c77ece694a9e8c2862ef22394120f46c7fe0cc7d8204f1c2a76df8c2b70"
+    },
+    {
+      "canonical_name": "RESUMABLE_FETCH",
+      "capability_id": 375,
+      "evidence_sha256": "06519d84b264b326a437e68e2f79d8046b379f1c2079f5a483538d227ca6b85b"
+    },
+    {
+      "canonical_name": "BANDWIDTH_BUDGET",
+      "capability_id": 376,
+      "evidence_sha256": "2808ee7fabbdfea4f3a1bbc61a20a9dc4295422d01bbd01005d83a9d31e5c8e6"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "53fa2d5c50ea2ffaa0a1d6283b47b14bfc1aa1b2f196f25b415c920a046c67f0",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D09:373-376",
+  "scope_only": true,
+  "test_sha256": "b31c02904bdf4d1bd7355e5c881230b90b432461f232ddaf1513cf5b73fc905b",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:21:29.241925+00:00"
+}

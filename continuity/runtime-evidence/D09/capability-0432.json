@@ -1,0 +1,21 @@
+{
+  "canonical_name": "OFFLINE_ROOT_KEYS",
+  "capability_id": 432,
+  "certification_granted": false,
+  "domain_id": "D09",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "43f253e90c18894dec8074ae30f9dc2ffaa7ceab1e8ff57789bb5582be45e380",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d09_429_432.py",
+  "module_sha256": "d63c33f4e26b6b558297605bf6c61057e02b615bcf1384859679945860c550ff",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d09_429_432.py",
+  "test_case": "test_cap_0432",
+  "test_sha256": "55db529cbba4de5ed162f0fb32f7b9c434c2177230c10d0cd56d56586c8a181a",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

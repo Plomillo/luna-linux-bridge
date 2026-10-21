@@ -1,0 +1,21 @@
+{
+  "canonical_name": "MAINTAINER_INTERFACE",
+  "capability_id": 763,
+  "certification_granted": false,
+  "domain_id": "D18",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "94ffd2089d0350243cb4934a335fc8986b48287f8a7459f373ec82db5e50b18e",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d18_761_764.py",
+  "module_sha256": "d300bd1cb2e8a48bcc734094c25c5264ed7c8026ee887ee40dbbfc90acadfe45",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d18_761_764.py",
+  "test_case": "test_cap_0763",
+  "test_sha256": "cf08a390c8bb0bdc6fca66b28bdb6704e172a748d24b90c210c7c15b161458d8",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

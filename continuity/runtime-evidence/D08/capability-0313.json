@@ -1,0 +1,21 @@
+{
+  "canonical_name": "EPISTEMIC_STATUS_MACHINE",
+  "capability_id": 313,
+  "certification_granted": false,
+  "domain_id": "D08",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "5b4e733a7720c7b59335213eeacf10625ea02220e50df2a24e7c70960d555d76",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d08_313_316.py",
+  "module_sha256": "dbcb550a626de1233e1d8b70b6b92cb63605a9b9dfaefb4b45a4d4693c6a6433",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d08_313_316.py",
+  "test_case": "test_cap_0313",
+  "test_sha256": "7d275269a47a8b692504e4a3d9eb89f75a049cd4de947342d7931484ef5a81f7",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

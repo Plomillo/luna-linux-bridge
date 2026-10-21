@@ -1,0 +1,21 @@
+{
+  "canonical_name": "MACHINE_HEALTH_DRIFT",
+  "capability_id": 679,
+  "certification_granted": false,
+  "domain_id": "D15",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "7719f450895941ae9999a7043eacd225fa597de25162e6f9ee65b3ab1ae645fe",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d15_677_680.py",
+  "module_sha256": "b510d600d2789e176effea1944fc2d38226b52562224ffb4053ebd2bde98c250",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d15_677_680.py",
+  "test_case": "test_cap_0679",
+  "test_sha256": "eb7c1f70c149e3678eff7ad6914f853507b875f254ccd9dfd3ab63c88c436cb4",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

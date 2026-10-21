@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "OUTBOUND_CONNECTION_POLICY",
+      "capability_id": 933,
+      "evidence_sha256": "3d8a86c610d1fd7bc8284b06e2b20611b26b153919006067477e20ba8cc8007b"
+    },
+    {
+      "canonical_name": "UNEXPECTED_EGRESS_DETECTOR",
+      "capability_id": 934,
+      "evidence_sha256": "0051d7d4b2aa78adddd0df4d519e3c91eba0d48897484f2a923563b0fb9261da"
+    },
+    {
+      "canonical_name": "REPOSITORY_SECURITY_ADVISER",
+      "capability_id": 935,
+      "evidence_sha256": "92baf00270c1d0a7a58b8774f65b9aa359d6d6d95898ff442599b8b851ca00ff"
+    },
+    {
+      "canonical_name": "COMMIT_INTEGRITY_ANALYZER",
+      "capability_id": 936,
+      "evidence_sha256": "9d6c858521782077cff677b253a6c6047d4554dbaa6c9af2c0e5acbdc679ab92"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "929714d52cd6a6b42e53ec3303f34ad70d6d0b5ab4a8fe04799fe957e81c0912",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D19:933-936",
+  "scope_only": true,
+  "test_sha256": "fcb9da4b9bcd326efcfea9f1b05debcbb0367f5930da729d6fdaa4d2d3a86079",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:22:41.025497+00:00"
+}

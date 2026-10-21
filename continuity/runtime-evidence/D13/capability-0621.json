@@ -1,0 +1,21 @@
+{
+  "canonical_name": "DOCUMENTATION_DRIFT_DETECTOR",
+  "capability_id": 621,
+  "certification_granted": false,
+  "domain_id": "D13",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "540ea665e77aae20f7a6d3e2ccdd20fe912c47acfbe8cd49db2e98887fcd9564",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d13_618_621.py",
+  "module_sha256": "06d156284245995de23520c7bab71c759d5751cfce91154725849ab2baecc688",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d13_618_621.py",
+  "test_case": "test_cap_0621",
+  "test_sha256": "56796f3e8014131b932d2e44052ca332929c361d702bc527cae8ccd5b0681ec7",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

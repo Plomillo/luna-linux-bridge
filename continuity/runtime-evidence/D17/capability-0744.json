@@ -1,0 +1,21 @@
+{
+  "canonical_name": "FORMAT_LONGEVITY_ENGINE",
+  "capability_id": 744,
+  "certification_granted": false,
+  "domain_id": "D17",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "5737292e4017b6a1beda2f258bc64612a5b9c0c2e36f0dbe2e0dfb8959a9af8c",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d17_741_744.py",
+  "module_sha256": "455d6d96752bfcbdb37f7b0499b92e88b24c0229bfbac2a97a16879a69d18eb2",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d17_741_744.py",
+  "test_case": "test_cap_0744",
+  "test_sha256": "14249f762fc08a9c92e10f4c71d65db482c5d9a6171c83fd6411f27cc556c36d",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

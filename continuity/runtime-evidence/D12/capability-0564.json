@@ -1,0 +1,21 @@
+{
+  "canonical_name": "API_VERSIONING",
+  "capability_id": 564,
+  "certification_granted": false,
+  "domain_id": "D12",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "35ff24fb6660e2f1b1520a05dd03bc1f479da1ad07685dce29df4ee1009ea718",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d12_563_566.py",
+  "module_sha256": "7e044dbaf197bef29d77cec0a483049a99423f7ae4d0d37f05bab313f500c937",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d12_563_566.py",
+  "test_case": "test_cap_0564",
+  "test_sha256": "bfcc68e33a9620662ffbf66352bc2d2e835a3dac372bcdce475e4ef6ddd57b39",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

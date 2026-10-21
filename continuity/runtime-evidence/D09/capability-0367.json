@@ -1,0 +1,21 @@
+{
+  "canonical_name": "PARTIAL_TAR_READER",
+  "capability_id": 367,
+  "certification_granted": false,
+  "domain_id": "D09",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "cd52b1b0ffb9871abd6564871f8de53ebc35ac606a2d156753d97279631dc2f5",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d09_365_368.py",
+  "module_sha256": "71bd5c87ca5f981804a8bf5b585b72d64a8136c0058d944911019f9310008787",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d09_365_368.py",
+  "test_case": "test_cap_0367",
+  "test_sha256": "0d8b54b4ffde59615fd9a88d9819d3963a6d90afbbbb51301941578807c3d9f5",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

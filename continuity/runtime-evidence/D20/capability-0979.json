@@ -1,0 +1,21 @@
+{
+  "canonical_name": "PERSISTENCE_BEHAVIOR_RECORDER",
+  "capability_id": 979,
+  "certification_granted": false,
+  "domain_id": "D20",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "ea610a72a1b71e898a09821052bb452e3df4ac1b8bdc0860012ba648ef06783e",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d20_977_980.py",
+  "module_sha256": "a47035c8ec106eaa425705e7fb314d95a216b8db57c263078ae8cf8a074eea32",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d20_977_980.py",
+  "test_case": "test_cap_0979",
+  "test_sha256": "9bce14e7aa9b3f6be2b5eb7744fb61733d5f7273edc1cebd2934b11970847b78",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

@@ -1,0 +1,106 @@
+name: "SUPER1200 D01 continuation — live material implementation"
+
+on:
+  push:
+    branches:
+      - custosz/super-1200-implementation-20261007
+    paths:
+      - "implementation/super1200/core/super1200_core/foundation.py"
+      - "implementation/super1200/core/tests/test_d01_continuation.py"
+      - ".github/workflows/super1200-d01-continuation-live.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: super1200-d01-continuation-live
+  cancel-in-progress: false
+
+jobs:
+  d01:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: custosz/super-1200-implementation-20261007
+          fetch-depth: 0
+
+      - name: Exact continuation preflight
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B -I - <<'PY'
+          import json,subprocess
+          from pathlib import Path
+          expected="5230fc3179ede314291919397c5fc602bd434d6c"
+          head=subprocess.check_output(["git","rev-parse","HEAD"],text=True).strip()
+          assert head != "4e957f2d4a388a87f8dca17053e5f2ec8693c5a2"
+          r=json.loads(Path("implementation/super1200/registry/capabilities.json").read_text())
+          d=json.loads(Path("implementation/super1200/domains/D01.json").read_text())
+          g23=json.loads(Path("implementation/super1200/governance/G23_READINESS.json").read_text())
+          g24=json.loads(Path("implementation/super1200/governance/G24_READINESS.json").read_text())
+          ev={x["capability_id"] for x in r["items"] if x["implementation_state"]=="EVIDENCED"}
+          assert len(ev)==17
+          assert d["evidenced_capabilities"]==17 and d["pending_capabilities"]==13
+          assert g23["pass"] is False and g24["pass"] is False
+          print(f"SUPER1200_TELEMETRY CONTINUATION_START=PASS HEAD={head} PRIOR_EVIDENCED=17 PENDING_D01=13 G23=BLOCKED G24=BLOCKED")
+          PY
+
+      - name: Live D01 functional tests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B -I implementation/super1200/core/tests/test_d01_continuation.py
+
+      - name: Materialize D01 evidence state
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B -I - <<'PY'
+          import json,hashlib
+          from pathlib import Path
+          base=Path("implementation/super1200")
+          regp=base/"registry/capabilities.json"
+          d01p=base/"domains/D01.json"
+          reg=json.loads(regp.read_text())
+          d01=json.loads(d01p.read_text())
+          ids={4,6,7,8,9,12,13,14,16,17,20,29,30}
+          ev={x["capability_id"] for x in reg["items"] if x["implementation_state"]=="EVIDENCED"}
+          assert len(ev)==17 and not ids & ev
+          artifact="implementation/super1200/core/super1200_core/foundation.py"
+          test="implementation/super1200/core/tests/test_d01_continuation.py"
+          for x in reg["items"]:
+              if x["capability_id"] in ids:
+                  x["implementation_state"]="EVIDENCED"
+                  x["implementation_artifact"]=artifact
+                  x["test_artifact"]=test
+          by={x["capability_id"]:x for x in d01["capabilities"]}
+          for cid in ids:
+              by[cid]["implementation_state"]="EVIDENCED"
+              by[cid]["implementation_artifact"]=artifact
+              by[cid]["test_artifact"]=test
+          d01["capabilities"]=[by[i] for i in range(1,31)]
+          d01["evidenced_capabilities"]=30
+          d01["pending_capabilities"]=0
+          d01["state"]="FUNCTIONALLY_CLOSED_PENDING_INDEPENDENT_VALIDATION"
+          d01["terminal_certification"]=False
+          reg["items"]=[next(x for x in reg["items"] if x["capability_id"]==i) for i in range(1,1201)]
+          regp.write_text(json.dumps(reg,ensure_ascii=False,indent=2,sort_keys=True)+"\n")
+          d01p.write_text(json.dumps(d01,ensure_ascii=False,indent=2,sort_keys=True)+"\n")
+          print("SUPER1200_TELEMETRY D01_MATERIAL_IMPLEMENTATION_PROGRESS=PASS EVIDENCED=30 PENDING_D01=0 TOTAL_REMAINING=1170")
+          print("SUPER1200_TELEMETRY G23=BLOCKED_UNTIL_FUNCTIONAL_CLOSURE G24=BLOCKED_UNTIL_G23_SAME_DIGEST")
+          PY
+
+      - name: Persist D01 and verify clean state
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git diff --check
+          git add implementation/super1200
+          git config user.name "custosz-v7-runtime-bot"
+          git config user.email "custosz-v7-runtime-bot@users.noreply.github.com"
+          git commit -m "feat(super1200): complete D01 material implementation"
+          git push origin HEAD:refs/heads/custosz/super-1200-implementation-20261007
+          test -z "$(git status --porcelain --untracked-files=all)"
+          echo "SUPER1200_TELEMETRY REPOSITORY_PERSISTENCE=PASS D01=FUNCTIONALLY_CLOSED G23=BLOCKED G24=BLOCKED HEAD=$(git rev-parse HEAD)"

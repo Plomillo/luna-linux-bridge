@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "REPAIRABILITY_CLASSIFIER",
+      "capability_id": 681,
+      "evidence_sha256": "5d775842fd8b3a3cc088d80857f548f2adcd7565dd678f50929bc4e6f63ce7e2"
+    },
+    {
+      "canonical_name": "REPAIR_PLAN_ENGINE",
+      "capability_id": 682,
+      "evidence_sha256": "b60ab8600c8e99c39b72e9750736422443b9f85fdb52f9710a40c7ed19505960"
+    },
+    {
+      "canonical_name": "REPAIR_RISK_ANALYZER",
+      "capability_id": 683,
+      "evidence_sha256": "84a83f9cd558c05cac4bfe815fa76f9606e6f1edc817ddba28de692bee048606"
+    },
+    {
+      "canonical_name": "SAFE_REPAIR_SANDBOX",
+      "capability_id": 684,
+      "evidence_sha256": "02625ba50905c729cac5d07a5d70064dd47edf455888e78aa21f9c03e3c83a14"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "2a173063472ecfae4aca9b787d43804f41c648c2d38435a7b1e1df0077aa6768",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D15:681-684",
+  "scope_only": true,
+  "test_sha256": "fa0ca758c3b70dc8c20b4c38966bd996ce5a4580dad177f046af36d710232dcd",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:22:08.445801+00:00"
+}

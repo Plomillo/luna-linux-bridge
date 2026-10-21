@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "GPU_HEALTH_DIAGNOSTICS",
+      "capability_id": 669,
+      "evidence_sha256": "ca29933256c579a385305485ae4de7b460ed46d1fa5addf6a942b1b4de5d10ed"
+    },
+    {
+      "canonical_name": "RAM_DIAGNOSTICS",
+      "capability_id": 670,
+      "evidence_sha256": "b7c2953ed85dac86cf9604353a0e6a8d14d6f6d6dbe1394f5bad11ef0fd3f2a3"
+    },
+    {
+      "canonical_name": "STORAGE_HEALTH_ENGINE",
+      "capability_id": 671,
+      "evidence_sha256": "f3d5daa912e137ea4b6b666cc009f2f272d676a65b1ecf9524e31b7f3097b965"
+    },
+    {
+      "canonical_name": "FILESYSTEM_HEALTH_ENGINE",
+      "capability_id": 672,
+      "evidence_sha256": "c9d5fae6de9936d349b96163c2cdd00b27d1368805e7e263662b5f3ccf816815"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "f36fced1949566ed14221670e79af38ba08e80c642b957e0739264de81714dce",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D15:669-672",
+  "scope_only": true,
+  "test_sha256": "3f191a57e133501533dc584e4a2ebe4657741422593bf23452d3173181104680",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:22:06.893949+00:00"
+}

@@ -1,0 +1,130 @@
+# Kestra Open Source — integración candidata para Hydra/Louksna
+
+**Estado:** CANDIDATE_NOT_CERTIFIED  
+**Rama de trabajo:** custosz/super-1200-implementation-20261007  
+**Autoridad:** Louksna.md · **Doctrina:** EXTEND_DO_NOT_REPLACE · **Política:** append-only / fail-closed
+
+## Qué se añade
+
+Una instalación autoalojada de Kestra Open Source declarada mediante Docker Compose y con credenciales locales. Se usa la imagen completa de Kestra, no la variante slim/no-plugins. Un contenedor de inicialización de un solo uso ajusta los permisos de su volumen; es la única fase que usa UID 0, con solo la capacidad CHOWN, sin red y sin socket Docker. El servidor Kestra de larga duración conserva su usuario no privilegiado.
+
+- Kestra: kestra/kestra:v2.0.3
+- PostgreSQL: postgres:18.6-alpine
+- UI local: http://127.0.0.1:8080
+- Health/management local: http://127.0.0.1:18081/health (authentication required)
+
+### Nota de versión y procedencia
+
+La página oficial de releases del repositorio fuente muestra v2.0.5 publicada el 5 de octubre de 2026. En la revisión del catálogo oficial de Docker Hub se observó la imagen completa con tag exacto v2.0.3; no se pudo establecer con evidencia suficiente que el artefacto de contenedor v2.0.5 estuviera disponible. Por criterio fail-closed, esta incorporación utiliza un tag exacto de imagen observado, en vez de adivinar o usar latest. La actualización a 2.0.5 queda bloqueada hasta verificar el tag de contenedor y su digest.
+
+Fuentes oficiales:
+- https://github.com/kestra-io/kestra/releases
+- https://github.com/kestra-io/kestra/releases/tag/v2.0.5
+- https://hub.docker.com/r/kestra/kestra/tags
+- https://kestra.io/docs/oss-vs-paid
+- https://kestra.io/docs/installation/docker-compose
+- https://kestra.io/docs/scripts/task-runners
+- https://kestra.io/docs/administrator-guide/monitoring
+
+## Arranque local
+
+Requisitos: Docker Engine y Docker Compose v2. Ejecuta los comandos desde la raíz clonada del repositorio.
+
+1. Crea credenciales locales sin imprimirlas. En Linux/macOS, desde la raíz del repositorio:
+
+       cd integrations/kestra
+       python3 - <<'PY'
+       from pathlib import Path
+       from secrets import token_hex
+       path = Path(".env")
+       if path.exists():
+           raise SystemExit(".env ya existe; no se sobrescribe.")
+       path.write_text(
+           "KESTRA_DB_PASSWORD=" + token_hex(32) + "\n"
+           "KESTRA_ADMIN_EMAIL=admin@example.com\n"
+           "KESTRA_ADMIN_PASSWORD=" + "Kestra-" + token_hex(30) + "A9!" + "\n",
+           encoding="utf-8",
+       )
+       print(".env creado con credenciales aleatorias locales; no se muestran.")
+       PY
+
+2. Configura el token de GitHub para el dispatcher. Crea un Fine-grained personal access token limitado solo al repositorio `Plomillo/luna-linux-bridge`, con permiso **Actions: Read and write**. No uses un token amplio ni lo compartas por chat. Desde `integrations/kestra` ejecuta:
+
+       bash configure-github-token.sh
+
+   El script oculta la entrada, escribe `.env_encoded` con permisos 0600 y nunca imprime el token. Para rotarlo exige `--replace`. Kestra OSS lee `{{ secret('GITHUB_TOKEN') }}` desde `SECRET_GITHUB_TOKEN`; Base64 no cifra el secreto. Compose carga ese archivo solo en el servicio Kestra. Confirma manualmente que el token tenga **Actions: Read and write** y esté limitado al repositorio.
+
+3. Valida y descarga las imágenes exactas:
+
+       python3 validate.py
+       docker compose -f compose.yml config --quiet
+       docker compose -f compose.yml pull
+
+4. Inicia y verifica:
+
+       docker compose -f compose.yml up -d --wait --wait-timeout 300
+       set -a; . ./.env; set +a
+       curl --config <(printf 'user = "%s:%s"' "$KESTRA_ADMIN_EMAIL" "$KESTRA_ADMIN_PASSWORD") --fail --show-error http://127.0.0.1:18081/health
+
+5. Abre http://127.0.0.1:8080 e inicia sesión con las credenciales generadas en .env. El archivo .env está ignorado por Git. No pegues ni subas sus contenidos a issues, PRs, logs o chats.
+
+6. Para detener Kestra conservando los datos:
+
+       docker compose -f compose.yml down
+
+La eliminación de volúmenes borra estado y datos persistentes. No uses docker compose down --volumes como acción rutinaria.
+
+## Prueba funcional automatizada
+
+El workflow `.github/workflows/kestra-oss-smoke.yml` importa `flows/00-smoke-test.yml` mediante la API autenticada de Kestra, ejecuta el flujo y exige que la ejecución llegue al estado terminal `SUCCESS`. El flujo solo emite un mensaje de log y no realiza efectos externos. La ejecución funcional fue verificada en el run `38369065971`; sus evidencias están en el artefacto `kestra-oss-smoke-38369065971`. Cada prueba utiliza una instancia efímera y destruye los contenedores y volúmenes al finalizar. Esto no mantiene Kestra encendido ni equivale a certificar el motor, validar de forma independiente G23 o conceder G24.
+
+La prueba automatizada valida el flujo de humo en CI. Una prueba manual de interacción por la interfaz de Kestra sigue siendo distinta y no está registrada como realizada.
+
+## Límites de seguridad deliberados
+
+- Los puertos UI y management están ligados a loopback. El endpoint de management usa `endpoints.all.basic-auth` y requiere credenciales; el mapeo a 127.0.0.1:18081 no debe cambiarse a 0.0.0.0.
+- No se monta /var/run/docker.sock del anfitrión. No se conceden tokens de GitHub, secretos de producción ni conexión automática al repositorio.
+- No hay sincronización GitOps ni importación automática de flujos en un despliegue persistente. La única importación automatizada autorizada en esta fase es el flujo de humo log-only dentro del CI efímero. No hay autorreparación, commit, push, merge ni promoción a main desde Kestra.
+- Los scripts con el runner Process se ejecutan como procesos locales con los permisos y el entorno del worker; no tienen aislamiento de contenedor. Por eso el validador bloquea flujos de scripting en esta fase. La ejecución de código confiable en un runner dedicado y aislado es una siguiente fase, no una garantía de esta instalación.
+- Docker Compose configura persistencia para Kestra y PostgreSQL. Esto no constituye backup probado ni recuperación ante desastre.
+- Las credenciales de .env se protegen frente a commit accidental, pero no frente a otros usuarios o procesos con acceso al anfitrión.
+- El CI inicia una instancia efímera en GitHub Actions, registra sus imágenes resueltas y su salud, y la destruye al finalizar. Eso valida un arranque de prueba; no instala un servicio permanente en GitHub ni en tu equipo.
+
+## Evidencia y puertas
+
+El workflow `.github/workflows/kestra-oss-smoke.yml` valida la configuración, arranca Kestra/PostgreSQL, comprueba salud autenticada, importa y ejecuta el flujo log-only, conserva evidencias no secretas y destruye el entorno temporal. La última comprobación funcional registrada es el run `38369065971`; el artefacto `11798671287` contiene las evidencias y está retenido hasta el 12 de noviembre de 2026. Las credenciales de CI son aleatorias, efímeras y no se incluyen en el artefacto.
+
+El workflow de Kestra se ejecuta automáticamente ante cambios relevantes en esta rama; no está configurado como servicio permanente ni como ejecución nocturna. GitHub Actions solo admite eventos programados desde la rama predeterminada, por lo que no se ha añadido un `schedule` que aparentaría funcionar desde esta rama candidata. `main` no se ha modificado.
+
+La prueba de humo no habilita ejecución arbitraria de scripts, no implica validación independiente G23 ni certificación G24. La integración sigue `CANDIDATE_NOT_CERTIFIED`; activación y promoción continúan prohibidas hasta que se cumplan y autoricen las puertas correspondientes.
+
+## Rollback
+
+La configuración se añade como un conjunto aislado de archivos; no sustituye los componentes existentes ni modifica Louksna.md, PUAC2.md o los ejecutores actuales. Si la incorporación debe retirarse, revierte el commit específico de integración en esta misma rama después de revisar el diff. Los datos persistentes se administran por separado y deben preservarse o destruirse mediante una decisión explícita.
+
+
+## Addendum operativo — SUPER1200 automatización continua
+
+Contrato operativo aditivo: [`continuity/SUPER1200_CONTINUOUS_AUTOMATION_CONTRACT.md`](../../blob/custosz/super-1200-implementation-20261007/continuity/SUPER1200_CONTINUOUS_AUTOMATION_CONTRACT.md).
+
+Se añadió `.github/workflows/super1200-continuous-audit.yml`: auditoría de solo lectura en cambios relevantes, invocación manual y schedule declarado cada 12 horas. El job registra SHA, checkpoint, siguiente punto, recuento de registros marcados EVIDENCED (sin tratarlos como prueba independiente), hash de MetaOS, G23/G24 y bloqueos. No ejecuta el worker ni cambia estado, no certifica y no promueve.
+
+**Limitación importante:** GitHub Actions procesa los eventos `schedule` desde la rama predeterminada. Como `main` debe permanecer intacta, el schedule incluido en esta rama candidata no demuestra ni garantiza ejecuciones cada 12 horas. Hasta que exista una ejecución programada real verificable por un mecanismo autorizado que no toque `main`, el requisito de cadencia de 12 horas permanece PENDIENTE. Los eventos `push` de la rama y `workflow_dispatch` sí están declarados en el workflow, pero su ejecución debe comprobarse en GitHub Actions.
+
+El flujo Kestra existente continúa con polling cada cinco minutos y SAFE_HOLD mientras no estén registrados y validados un ejecutor material no recursivo, CUSTOSZ V7 vinculado y MetaOS válido. Esta modificación documental y la auditoría estática no solucionan esos bloqueos ni prueban ejecución material. G23 debe aprobarse antes de G24, ambos sobre el mismo SHA; `main` sigue fuera del alcance.
+
+
+## Enmienda operativa 2026-10-13 — Kestra como supervisor real
+
+MetaOS queda aplazado y ya no es condición previa del dispatcher. El ciclo acepta checkpoints `ACTIVE` y `READY_FOR_CONTINUATION`, exige el trabajador material revisado y el ejecutor no recursivo, y consulta ejecuciones `in_progress` y `queued` de la rama candidata antes de despachar. Si existe una ejecución activa o en cola, registra SAFE_HOLD y no duplica la misión. Si la consulta o autorización falla, no despacha.
+
+La instancia persistente debe importar esta revisión y disponer del secreto local `GITHUB_TOKEN`, restringido a los permisos mínimos de despacho/lectura. No incluyas el token en archivos, logs ni artefactos. **El commit no demuestra que la instancia local haya importado el flujo ni que ya se haya producido un despacho real.** La activación se acepta solo al conservar evidencia del ciclo programado y del ID del run resultante.
+
+Enmienda contractual aditiva: [SUPER1200_CONTINUOUS_AUTOMATION_CONTRACT_V1.0.1_ADDENDUM.md](../../blob/custosz/super-1200-implementation-20261007/continuity/SUPER1200_CONTINUOUS_AUTOMATION_CONTRACT_V1.0.1_ADDENDUM.md). G23/G24 globales y la promoción a `main` permanecen cerradas.
+
+
+### Secretos de Kestra Open Source — nota operativa
+
+Kestra OSS no tiene un almacén de secretos propio: `secret('GITHUB_TOKEN')` lee `SECRET_GITHUB_TOKEN` codificado en Base64 en el entorno del servidor. Debe existir dentro del contenedor; no basta con definirlo en el archivo de interpolación `.env`. El script `configure-github-token.sh` la guarda en `.env_encoded`, ignorado por Git y con permisos 0600, y Compose la carga solo en Kestra. Base64 no es cifrado; protege el acceso al host y rota el token cuando corresponda.
+
+El token requiere **Actions: Read and write** y alcance exclusivo al repositorio. El script no envía un dispatch de prueba para evitar duplicar una misión; el envío real queda probado mediante el ID de una ejecución originada por Kestra.

@@ -1,0 +1,21 @@
+{
+  "canonical_name": "SECURITY_POSTURE_SCORE",
+  "capability_id": 576,
+  "certification_granted": false,
+  "domain_id": "D12",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "0ce5de1f04ef7f475779a26fb94933e8630f7c4812bb10bb831a1a91e1d84d1b",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d12_575_578.py",
+  "module_sha256": "d248fd42f53eab442fb1daf7a4797e138a75f449fdfce56cdc15e985ffa59771",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d12_575_578.py",
+  "test_case": "test_cap_0576",
+  "test_sha256": "30d45958b1ea8c63cc14dbdade6f048927e810bfaf5e4baee808d79f292250d2",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

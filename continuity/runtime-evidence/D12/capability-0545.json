@@ -1,0 +1,21 @@
+{
+  "canonical_name": "RECOVERY_POINT_OBJECTIVE",
+  "capability_id": 545,
+  "certification_granted": false,
+  "domain_id": "D12",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "40bf43db60746e0561eae5a4a21216e0ad36bb4c9b040aed8ff77b06b0ce28be",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d12_543_546.py",
+  "module_sha256": "367694cff405fb3d9c69da8268992c95dbd5a29a9af5fc0a67285ec89e42476b",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d12_543_546.py",
+  "test_case": "test_cap_0545",
+  "test_sha256": "6e4f691a3a79a6cdc7deb070788bc64614bb8ca051792bc33ee49e6224ce069a",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

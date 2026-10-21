@@ -1,0 +1,21 @@
+{
+  "canonical_name": "BEHAVIORAL_DIFF_ENGINE",
+  "capability_id": 792,
+  "certification_granted": false,
+  "domain_id": "D18",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "9e28d62611f8e1814caef8581839646a88af8f88ede15140c2d552940a7fc682",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d18_789_792.py",
+  "module_sha256": "b19e2963e28c8b628e85aea5c11994508f2eb5c47c46e0d9c28cd036f33b6c4a",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d18_789_792.py",
+  "test_case": "test_cap_0792",
+  "test_sha256": "f84ee3071d7c15306361ab618515638ad4a5f47051d901296f080201d3241afa",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

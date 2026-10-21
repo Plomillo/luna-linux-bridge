@@ -1,0 +1,21 @@
+{
+  "canonical_name": "ANDROID_RECOVERY_TEST",
+  "capability_id": 400,
+  "certification_granted": false,
+  "domain_id": "D09",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "7922ae2a8a2aef438e09180d0aeca3eb2aa11ff2022c274188e65ca8581de891",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d09_397_400.py",
+  "module_sha256": "33231905d18f8765d812a684946f46f178b6f6b9fb4724d14b8f2c25b1b522c4",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d09_397_400.py",
+  "test_case": "test_cap_0400",
+  "test_sha256": "d770e96c77f0ceb88f6f9f5b240bb195abfa2eaa51d4c10d70e5fe1a836e6cbc",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

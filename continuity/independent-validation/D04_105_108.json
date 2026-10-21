@@ -1,0 +1,56 @@
+{
+  "certification_granted": false,
+  "global_super1200_certified": false,
+  "independent_test_results": [
+    {
+      "canonical_name": "POLICY_TEST_SUITE",
+      "capability_id": 105,
+      "evidence_sha256": "ffbe15ee0840f44d824494db25d87e317bf4df1db860062755f7a0235968b081",
+      "independent_stderr_sha256": "a8de6b16d6f5cee5ae028d9efe28187b67f8e4556004754339e71d2c91660e13",
+      "independent_test_exit_code": 0,
+      "result": "PASS",
+      "single_test_run_confirmed": true,
+      "test_case": "test_policy_test_suite_covers_positive_negative_bypass_conflict_and_unknown"
+    },
+    {
+      "canonical_name": "POLICY_VERSIONING",
+      "capability_id": 106,
+      "evidence_sha256": "8335805e6af8df864c5c4f24e11af2e0e255d478e066c0dd6d9e32b0312b41d8",
+      "independent_stderr_sha256": "c291604f704b8dd234bd174e98a553436df556988ade0b3ac0f0d2af69b8971f",
+      "independent_test_exit_code": 0,
+      "result": "PASS",
+      "single_test_run_confirmed": true,
+      "test_case": "test_policy_version_history_binds_hash_interval_and_supersession"
+    },
+    {
+      "canonical_name": "POLICY_DIFF",
+      "capability_id": 107,
+      "evidence_sha256": "e473fce66bb7f0c85d8d0e951ee7239135dbb53d6ddcae0d836bc449a1219bad",
+      "independent_stderr_sha256": "03997bfec1c6d4d2c9f58646962689ec527eb34b858661e58c5cc4cf9a227999",
+      "independent_test_exit_code": 0,
+      "result": "PASS",
+      "single_test_run_confirmed": true,
+      "test_case": "test_semantic_policy_diff_finds_affected_rules_claims_tests_and_authorizations"
+    },
+    {
+      "canonical_name": "POLICY_IMPACT_ANALYSIS",
+      "capability_id": 108,
+      "evidence_sha256": "12e8ecdf9b9a7b0723a2a50bcee7e22b6a6a9f0cd35f6ad71dabd1134a084102",
+      "independent_stderr_sha256": "3c32ed6acbedd44b523d320046c26e78078e37b978445e4e9598dddc951af576",
+      "independent_test_exit_code": 0,
+      "result": "PASS",
+      "single_test_run_confirmed": true,
+      "test_case": "test_policy_impact_analysis_invalidates_causal_evidence_dependencies"
+    }
+  ],
+  "material_workflow_run_id": 38486725899,
+  "module_sha256": "591082428db8a61946e78341df2e086785d8d0d49f20cf632a4b3a4501139940",
+  "registry_count": 1200,
+  "result": "PASS",
+  "schema": "SUPER1200_G23_VALIDATION/1",
+  "scope": "D04:105-108",
+  "test_sha256": "8c32455a51ccf1c4d81309e15d18261e537f85a50f63ac74ac063e5466064e13",
+  "validator": "github-actions-independent-job",
+  "validator_workflow_run_id": "38486914042",
+  "validator_workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38486914042"
+}

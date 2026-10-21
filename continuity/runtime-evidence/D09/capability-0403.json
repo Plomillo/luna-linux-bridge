@@ -1,0 +1,21 @@
+{
+  "canonical_name": "LINUX_KERNEL_PROVIDER",
+  "capability_id": 403,
+  "certification_granted": false,
+  "domain_id": "D09",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "b7808b375ac6098b2721a76ae9e76a9b5cc4f73ea2b35bb4a799d29ff4675ea7",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d09_401_404.py",
+  "module_sha256": "dabc7b085c99f5d6a80364c52f5ce6f50112db642823fcc19dc2e7465f6f7cf7",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d09_401_404.py",
+  "test_case": "test_cap_0403",
+  "test_sha256": "57e3f64731501721bf5dfd828bcaca8749e5c7a2464edde7e0023c5cbf006335",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

@@ -1,0 +1,14 @@
+{
+  "schema": "LOUKSNA_KEDB/1.0",
+  "entry_id": "KEDB-SUPER1200-20261014-002",
+  "scope": "SUPER1200",
+  "symptom": "NEXT_D05_TRANCHE_EXECUTOR_NOT_REGISTERED resolved by registering 133-136 material executor",
+  "status": "REMEDIATING",
+  "remediation_applied": true,
+  "next_action": "Dispatch material workflow for D05 133-136; then independent G23/G24 scoped",
+  "evidence_present": true,
+  "evidence_missing": ["material run evidence for 133-136", "scoped G23/G24 for 133-136"],
+  "branch": "custosz/super-1200-implementation-20261007",
+  "checkpoint": "D05_129_132_MATERIALIZED",
+  "updated_at_utc": "2026-10-14T06:10:00Z"
+}

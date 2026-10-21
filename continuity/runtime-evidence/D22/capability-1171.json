@@ -1,0 +1,21 @@
+{
+  "canonical_name": "THREAT_ACTOR_MOTIVATION_TAXONOMY",
+  "capability_id": 1171,
+  "certification_granted": false,
+  "domain_id": "D22",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "73f677cfd9149256d38fad59a8cc7b0016df8259472989e1a04ab55e9a5deaf8",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d22_1169_1172.py",
+  "module_sha256": "8559aeecc68367bf5de68fd3bf578e73663bd0e711cf2917514a638b3cd3448d",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d22_1169_1172.py",
+  "test_case": "test_cap_1171",
+  "test_sha256": "dd7960fdb80dbd16f09ae7a032ca38f1bdcdfca29a7a93bf3b1551baf2b977c1",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

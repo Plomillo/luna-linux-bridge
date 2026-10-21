@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "DEPRECATION_IMPACT_ANALYZER",
+      "capability_id": 809,
+      "evidence_sha256": "7940ec36ee015e1b456e72043f454af772341190e6e4994e83339d35d5bef87c"
+    },
+    {
+      "canonical_name": "DEPRECATION_MIGRATION_ASSISTANT",
+      "capability_id": 810,
+      "evidence_sha256": "2a07cc1e8ca9a588a7ca8495c4d4e89303fb0e49b9fd6f478abaed6b51e79c88"
+    },
+    {
+      "canonical_name": "LEGACY_COMPATIBILITY_LAYER",
+      "capability_id": 811,
+      "evidence_sha256": "198c2d2bf7a2ee6f4d25c1521bff76f30b0a330ee55aa39e6bea893a719eb6e9"
+    },
+    {
+      "canonical_name": "COMPATIBILITY_SHIM_FACTORY",
+      "capability_id": 812,
+      "evidence_sha256": "19015deba2ca5249f1d74f9211d22bcd39547ec807814e7e06bd32756bd4f60d"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "84be489f13d8b063f02d908cfdeb63145c7132ed9c8e4ee0dee663ad06028061",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D18:809-812",
+  "scope_only": true,
+  "test_sha256": "265fb0526685e2982d6b3ef22dc6adbdd40f97179f037e86491eb478ba32d602",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:22:24.931801+00:00"
+}

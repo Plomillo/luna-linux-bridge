@@ -1,0 +1,21 @@
+{
+  "canonical_name": "QUARANTINE_HOST_CONTAMINATION_TEST",
+  "capability_id": 1096,
+  "certification_granted": false,
+  "domain_id": "D22",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "bab88d8c273cb25d75e7927333a9cc77bb99d5aeb27c64c7418e528be6f9b4ac",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d22_1093_1096.py",
+  "module_sha256": "41dda91deeb2247e193539e1807f1bd3477af46001be0ec8088b2e1fda878899",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d22_1093_1096.py",
+  "test_case": "test_cap_1096",
+  "test_sha256": "22fb5475c120239c8adfddbe049a38052290faf6eb2b97d3e06f326bf9053600",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

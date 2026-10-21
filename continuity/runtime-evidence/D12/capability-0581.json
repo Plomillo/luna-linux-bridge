@@ -1,0 +1,21 @@
+{
+  "canonical_name": "PORTABILITY_SCORE",
+  "capability_id": 581,
+  "certification_granted": false,
+  "domain_id": "D12",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "24a46859db5c353e1e72d8eda55bca95c28fdbae15cd06fd484fc7899b91cef9",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d12_579_582.py",
+  "module_sha256": "799f9828e2767a242c49725c355600d1d337a6ed889de871991686721f721e31",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d12_579_582.py",
+  "test_case": "test_cap_0581",
+  "test_sha256": "7a05788b73837858f1b1b55196f57ae820137be9e9b091c1a29b3ff16d5baa4e",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

@@ -1,0 +1,21 @@
+{
+  "canonical_name": "AST_SCHEMA",
+  "capability_id": 442,
+  "certification_granted": false,
+  "domain_id": "D10",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "1a87605a5b84cc2b52679a87cd1f1d8988ecca3c8ad71a2f93b1c386d8596bfe",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d10_442_445.py",
+  "module_sha256": "b3776ad1a506b3a2c231dfe8206de7278b57ef1020ee03744a06b48690261de6",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d10_442_445.py",
+  "test_case": "test_cap_0442",
+  "test_sha256": "524f15f3fa17a8b6bf1c1a63a588c1846805ccecd01f59fce592269ab51974b2",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

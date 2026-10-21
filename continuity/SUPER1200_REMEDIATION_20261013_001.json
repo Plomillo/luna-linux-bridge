@@ -1,0 +1,89 @@
+{
+  "schema": "SUPER1200_REMEDIATION_RECORD/1.0",
+  "record_id": "SUPER1200-REMEDIATION-20261013-001",
+  "branch": "custosz/super-1200-implementation-20261007",
+  "authority": "Louksna.md",
+  "audit_record": "continuity/SUPER1200_FORENSIC_BOTTLENECK_AUDIT_20261013_001.md",
+  "main_modified": false,
+  "changes": [
+    {
+      "path": "implementation/super1200/domains/D04_runtime.py",
+      "commit": "905ea23dcffe6660ad9dd9ab1221906cdd83c28b",
+      "change": "Added deterministic universal object identity, W3C PROV subset export, in-toto Statement v1 construction, and SLSA Provenance v1 predicate construction with input validation.",
+      "claim_scope": "Implemented primitives only; no D04-wide closure and no capability registry promotion."
+    },
+    {
+      "path": "implementation/super1200/tests/test_d04_runtime.py",
+      "commit": "5f279052db0d864fc4dd6b99064252818b6e2a40",
+      "change": "Added behavior-level tests for stable IDs, provenance relations, attestation shapes, digest validation, and negative cases.",
+      "claim_scope": "Tests authored; CI execution result must be checked separately."
+    },
+    {
+      "path": "implementation/super1200/runtime/super1200_continuation_worker.py",
+      "commit": "bee4d87a1edda7c591a8b147756e9e84c12206a4",
+      "change": "Disabled synthetic materialization; entry point now emits a refusal record and exits non-zero without changing capability state.",
+      "claim_scope": "Prevents the known false-evidence path; does not supply the missing full material executor."
+    },
+    {
+      "path": "integrations/kestra/flows/10-super1200-continuity.yml",
+      "commit": "52ffe4648db86824bf638673421ed336ea77a12b",
+      "change": "Removed G23 readiness from the pre-work dispatch predicate to eliminate the documented circular dependency.",
+      "claim_scope": "Other readiness requirements, including valid MetaOS and registered executor, remain in force."
+    },
+    {
+      "path": ".github/workflows/super1200-continuation-lrb-live.yml",
+      "commit": "58e754dd9a63ed8c544baf3d6bbeb45358b7458b",
+      "change": "Removed the same circular G23 prerequisite from pre-work authorization.",
+      "claim_scope": "Does not authorize work while other gates remain false."
+    },
+    {
+      "path": "continuity/SUPER1200_FORENSIC_BOTTLENECK_AUDIT_20261013_001.md",
+      "commit": "db9a3b73e823506ec5119245ac97b35d0ca332ed",
+      "change": "Recorded source-state hashes, root causes, external cross-checks, and remediation plan."
+    }
+  ],
+  "external_evidence": [
+    {
+      "source": "W3C WebAssembly Core Specification",
+      "url": "https://www.w3.org/TR/wasm-core-2/",
+      "finding": "Validation is a prerequisite to instantiation; an invalid module must not be executed."
+    },
+    {
+      "source": "SLSA Build Provenance and verification guidance",
+      "url": "https://github.com/slsa-framework/slsa/blob/main/spec/build-provenance.md",
+      "finding": "Artifact provenance must bind source, builder, parameters, and output; verification is separate from the mere existence of metadata."
+    },
+    {
+      "source": "SWE-bench ICLR 2024",
+      "url": "https://openreview.net/forum?id=VTF8yNQM66",
+      "finding": "Repository-level tasks require execution-based evaluation against tests, not self-reported completion."
+    },
+    {
+      "source": "SWE-Bench Pro Verified preprint (2026)",
+      "url": "https://arxiv.org/abs/2609.08149",
+      "finding": "Reward hacking and flawed task/test quality can inflate apparent agent capability."
+    }
+  ],
+  "status": {
+    "state": "BLOCKED_SAFE_HOLD",
+    "active": false,
+    "active_worker": false,
+    "material_work_12h_started": false,
+    "metaos_ready": false,
+    "metaos_source_and_reproducible_build": "UNRESOLVED",
+    "reviewed_material_executor_registered": false,
+    "g23": "BLOCKED_PENDING_INDEPENDENT_VALIDATION",
+    "g24": "BLOCKED_UNTIL_G23",
+    "certified": false,
+    "promotion_to_main": false,
+    "ci_validation": "PENDING_OBSERVATION"
+  },
+  "next_required_actions": [
+    "Observe candidate CI results for the D04 behavior tests and audit workflow.",
+    "Inspect and repair MetaOS from a traceable source/build; verify exact digest and standard WebAssembly validation before execution.",
+    "Implement a bounded task-level D04 executor that never auto-closes the 40-capability domain and emits immutable evidence per task.",
+    "Replace the old whole-domain completion assumption with resumable, idempotent task-level checkpoints.",
+    "Bind CUSTOSZ V7 to the concrete reviewed executor and collect real output/test/heartbeat telemetry before declaring a 12-hour mission started.",
+    "Run G23 independently and G24 only afterward on the same candidate digest."
+  ]
+}

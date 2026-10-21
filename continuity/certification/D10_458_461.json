@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "LANGUAGE_TEST_SUITE",
+      "capability_id": 458,
+      "evidence_sha256": "ce9f5464a11febdc8598d21f7a5ba08df09efa7169bfc99a23880a296d5d57ac"
+    },
+    {
+      "canonical_name": "SEMANTICS_SPEC",
+      "capability_id": 459,
+      "evidence_sha256": "f05827e179b150dc21dade99af184444eb81b8a42d52f91ec1c9ab5f8958882d"
+    },
+    {
+      "canonical_name": "FORMAL_SEMANTICS_PROVIDER",
+      "capability_id": 460,
+      "evidence_sha256": "76cbffd3b3c4be1491f84f4e3aa38d9cda4884bb843c94b27585b0c4ff8eacf4"
+    },
+    {
+      "canonical_name": "ENGINE_FACTORY",
+      "capability_id": 461,
+      "evidence_sha256": "056484bdcec1e5553a252b38f65f1b2e434eb8f1e939cb9f5c9d1460195b6e08"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "b88480d4e750efefe700ebe9799de6fa89053e497af6fe2b37f8066066e9eee3",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D10:458-461",
+  "scope_only": true,
+  "test_sha256": "448003e6847f89c8c34eddf2263b109f7682c732766d1eecf8afa32621adadb1",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:21:39.982868+00:00"
+}

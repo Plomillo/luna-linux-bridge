@@ -1,0 +1,26 @@
+{
+  "schema": "SUPER1200_D01_LEDGER_RECONCILIATION/1.0",
+  "reconciliation_id": "SUPER1200-D01-LEDGER-RECONCILIATION-20261013-002",
+  "observed_at_utc": "2026-10-13T17:00:00Z",
+  "branch": "custosz/super-1200-implementation-20261007",
+  "source_domain_progress_blob_sha": "0bf580c98f8ce961484d89665671764aab38dbe8",
+  "source_domain_record": "implementation/super1200/domains/D01.json",
+  "source_domain_record_state": "FUNCTIONALLY_CLOSED_PENDING_INDEPENDENT_VALIDATION",
+  "source_domain_record_capabilities": {
+    "evidenced": 30,
+    "pending": 0,
+    "range": [
+      1,
+      30
+    ]
+  },
+  "prior_progress_state": "IN_PROGRESS",
+  "reconciled_progress_state": "FUNCTIONALLY_CLOSED_PENDING_INDEPENDENT_VALIDATION",
+  "disposition": "RECONCILED_TO_MATCH_REPOSITORY_DOMAIN_RECORD; HISTORICAL_CONFLICT_PRESERVED_IN_THIS_RECORD",
+  "certification": "NOT_GRANTED",
+  "g23": "REQUIRED_PENDING_INDEPENDENT_VALIDATION",
+  "g24": "BLOCKED_UNTIL_G23",
+  "rationale": "The domain record declares 30/30 capabilities functionally closed pending independent validation. The progress ledger alone said IN_PROGRESS. This reconciliation aligns the summary ledger to the detailed domain record without promoting certification or changing capability IDs/states.",
+  "authority": "Louksna.md",
+  "main_modified": false
+}

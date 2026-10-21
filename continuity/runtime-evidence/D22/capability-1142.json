@@ -1,0 +1,21 @@
+{
+  "canonical_name": "PLATFORM_TARGET_GRAPH",
+  "capability_id": 1142,
+  "certification_granted": false,
+  "domain_id": "D22",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "ee0fd389455d3c2ec8e83e3428ab18acd863d195f446739190d0c2b0d52e0f2c",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d22_1141_1144.py",
+  "module_sha256": "a459684fc9e652e2596cd09bcd24941a666ed8bb2c81336f40ede792115bdf22",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d22_1141_1144.py",
+  "test_case": "test_cap_1142",
+  "test_sha256": "17b25a5d0ca61781b06ff0b4bef9cb516a11240f8fa63950f2e9b0da2a32cbe2",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

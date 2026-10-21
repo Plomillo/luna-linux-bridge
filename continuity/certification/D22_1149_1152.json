@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "DEFENSIVE_RULE_COMPILER",
+      "capability_id": 1149,
+      "evidence_sha256": "cf99b30cd4a458d78236be8847e8189c34941bbf7cfe6d0a48cf51cf0bc34aff"
+    },
+    {
+      "canonical_name": "PREVENTIVE_CONTROL_SYNTHESIS",
+      "capability_id": 1150,
+      "evidence_sha256": "30b30a1a22dfcbd6360199382be5d27afea8c3dc1ca7b481027ccad93bc5ecee"
+    },
+    {
+      "canonical_name": "THREAT_KNOWLEDGE_DEDUPLICATION",
+      "capability_id": 1151,
+      "evidence_sha256": "41a33ae55c0f9e220dede52522b61b7a9d44926cdbc48e091380d97410e918b9"
+    },
+    {
+      "canonical_name": "THREAT_KNOWLEDGE_COMPRESSION",
+      "capability_id": 1152,
+      "evidence_sha256": "760413c9a0c111baa2ca6b224c8af4d2ddab7c9ce6b785dab94f063cedcd61c4"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "698ffb4470e49641cecf825edb0c4022bf6edc9d8b9f894e792ccf439143c9cd",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D22:1149-1152",
+  "scope_only": true,
+  "test_sha256": "157e2bdace3ca9202fe1cf96319259aad77f4076e77f096f8b9bd03cede70ba7",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:23:09.345987+00:00"
+}

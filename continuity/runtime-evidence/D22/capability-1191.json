@@ -1,0 +1,21 @@
+{
+  "canonical_name": "ATTACK_SURFACE_MOTIVATION_LINKER",
+  "capability_id": 1191,
+  "certification_granted": false,
+  "domain_id": "D22",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "d629a96dc2cb0c01a46b923bbcbd877449c66d82e506071ae80acce00118bbae",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d22_1189_1192.py",
+  "module_sha256": "3e8451c692b949a69113dcd9a7d41ccd36f4af8255ed0b7d59e5fa713be5e94d",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d22_1189_1192.py",
+  "test_case": "test_cap_1191",
+  "test_sha256": "bcd6680b2d739754acfec8c07832380a448fb5ed9da3540ef3bc9e2fd05a4774",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

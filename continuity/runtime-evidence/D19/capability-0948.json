@@ -1,0 +1,21 @@
+{
+  "canonical_name": "LUNA_DEFENDER_REPOSITORY_BASELINE",
+  "capability_id": 948,
+  "certification_granted": false,
+  "domain_id": "D19",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "4f1c215889f64f78c66b335cb1f8b83d50ee449c3230a62e6d8cc162aef6d6d2",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d19_945_948.py",
+  "module_sha256": "1530dbc5a3d64ce2447e57c69274f8183a507ff61f637431a145db84b364c7e4",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d19_945_948.py",
+  "test_case": "test_cap_0948",
+  "test_sha256": "c127b133b149f3378eb08a2c2f9617b68708e3925eb7bdcc17c359bd5b328fce",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

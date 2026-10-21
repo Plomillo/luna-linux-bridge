@@ -1,0 +1,224 @@
+{
+  "record_id": "KESTRA-OSS-INTEGRATION-001",
+  "record_version": "1.0.2",
+  "created_for_branch": "custosz/super-1200-implementation-20261007",
+  "source_branch_head_before_change": "fea81fccdb1e78a781b604fdb4e97e4ef97993b8",
+  "canonical_authority": "Louksna.md",
+  "protected_baseline": "LUNACORE_final_formalized_v25.md",
+  "doctrine": "EXTEND_DO_NOT_REPLACE",
+  "change_policy": "APPEND_ONLY",
+  "failure_policy": "FAIL_CLOSED",
+  "overall_status": "CANDIDATE_NOT_CERTIFIED",
+  "activation": "OPERATIONAL_SUPERVISOR_AUTHORIZED; RUNTIME_IMPORT_PENDING; CERTIFICATION_AND_PROMOTION_NOT_AUTHORIZED",
+  "promotion_to_main": "PROHIBITED_UNTIL_APPROVED_GATES",
+  "engine": {
+    "name": "Kestra",
+    "edition": "Open Source",
+    "license": "Apache-2.0",
+    "upstream_repository": "https://github.com/kestra-io/kestra",
+    "official_release_page": "https://github.com/kestra-io/kestra/releases",
+    "newest_source_release_observed": {
+      "tag": "v2.0.5",
+      "published_at": "2026-10-05T13:29:32Z",
+      "evidence_url": "https://github.com/kestra-io/kestra/releases/tag/v2.0.5"
+    },
+    "selected_container_image": "kestra/kestra:v2.0.3",
+    "image_selection_reason": "The official Docker Hub tag listing surfaced the full v2.0.3 image as a visible exact 2.x patch tag; availability of the v2.0.5 container image was not established by this audit. v2.0.5 is an upgrade verification item, not silently assumed.",
+    "container_image_source": "https://hub.docker.com/r/kestra/kestra/tags",
+    "exact_patch_tag_immutability_claim_source": "https://hub.docker.com/r/kestra/kestra",
+    "resolved_image_digest": "CAPTURED_IN_ARTIFACT_11793269952; INDEPENDENT_EXTRACTION_PENDING",
+    "plugin_variant": "Full image with bundled plugins; not slim/no-plugins"
+  },
+  "dependencies": [
+    {
+      "name": "PostgreSQL",
+      "image": "postgres:18.6-alpine",
+      "source": "https://hub.docker.com/_/postgres/tags"
+    }
+  ],
+  "security_boundary": {
+    "ui_binding": "127.0.0.1:8080",
+    "management_binding": "127.0.0.1:18081",
+    "management_port_authentication": "Configured with endpoints.all.basic-auth using local credentials; management port remains loopback-only.",
+    "basic_auth": "Enabled; credentials generated locally from ignored .env",
+    "host_docker_socket": "NOT_MOUNTED",
+    "github_credentials": "KESTRA_OSS_SECRET_ENV_REQUIRED; local .env_encoded mode 0600 with SECRET_GITHUB_TOKEN Base64; fine-grained token scoped to this repository with Actions read/write; no token in Git/artifacts",
+    "automatic_flow_import": "PERSISTENT_RUNTIME_IMPORT_PENDING; repository commit alone does not prove that the host runtime loaded the flow",
+    "automatic_repair_or_repository_mutation": "NOT_CONFIGURED",
+    "arbitrary_script_flows": "Blocked from committed flow templates until an isolated runner is specified and independently reviewed",
+    "external_tasks": "No production side effects authorized",
+    "storage_bootstrap": "One-shot container with user 0:0, network_mode none, read_only root filesystem, cap_drop ALL, cap_add CHOWN, only kestra-data volume, no Docker socket; long-running Kestra service remains non-root.",
+    "super1200_dispatch": "BOUNDED_TO_PINNED_CANDIDATE_WORKFLOW; checks in_progress and queued runs; MetaOS deferred; no certification or promotion"
+  },
+  "gates": {
+    "specification": "RECORDED",
+    "evidence": "PASS_FUNCTIONAL_RUNTIME_SMOKE_RUN_38369065971; ARTIFACT_11798671287_RETAINED; MANUAL_UI_FLOW_EVIDENCE_PENDING",
+    "static_validation": "PASS_CI_RUN_38369065971",
+    "runtime_startup_and_database_health": "PASS_CI_RUN_38369065971: authenticated management UP; PostgreSQL healthy; authenticated UI HTTP 2xx after redirect; Kestra ready",
+    "resolved_image_digests": "CAPTURED_IN_ARTIFACT_11798671287; DIGESTS_NOT_INDEPENDENTLY_INSPECTED",
+    "manual_flow_execution": "NOT_PERFORMED_IN_MANUAL_UI",
+    "G23": "NOT_PERFORMED",
+    "G24": "NOT_GRANTED",
+    "non_regression": "PENDING",
+    "rollback": "DOCUMENTED_NOT_RUNTIME_TESTED",
+    "credentials_policy": "STRONG_RANDOM_LOCAL_AND_EPHEMERAL_CI_CREDENTIALS",
+    "automated_smoke_flow_execution": "PASS_CI_RUN_38369065971: flow louksna.kestra/kestra_oss_smoke imported; execution reached SUCCESS; LOG_ONLY; no external side effects; temporary runtime and volumes destroyed",
+    "kestra_continuous_supervisor": "FLOW_AND_SECRET_WIRING_PATCHED_IN_CANDIDATE_BRANCH; CI_VALIDATION_PENDING; PERSISTENT_RUNTIME_IMPORT_AND_REAL_DISPATCH_NOT_YET_VERIFIED"
+  },
+  "required_next_gates": [
+    "Verify official v2.0.5 Docker image availability and compare its release provenance before any upgrade.",
+    "Independently inspect retained CI artifact 11793269952, verify its resolved image digests and per-file SHA-256 evidence, and retain the artifact-level SHA-256 recorded in latest_runtime_verification.",
+    "Independently test manual smoke-flow execution.",
+    "Design and test a dedicated isolated task execution boundary before enabling script-based workflows.",
+    "Review GitHub integration permissions and side-effect restrictions before connecting any repository token.",
+    "Complete independent validation and certification as separate gates; no automated certification propagation.",
+    "Configure the persistent Kestra secret GITHUB_TOKEN with repository-scoped actions:write and contents:read; never commit the token.",
+    "Import the corrected flow into the persistent Kestra runtime, observe a scheduled SAFE_HOLD while a run is active, then observe one successful dispatch only after no run is active or queued.",
+    "Create a fine-grained GitHub token scoped only to Plomillo/luna-linux-bridge with Actions read/write, install it locally using integrations/kestra/configure-github-token.sh, and restart Kestra."
+  ],
+  "provenance": [
+    "https://kestra.io/docs/oss-vs-paid",
+    "https://kestra.io/docs/installation/docker-compose",
+    "https://kestra.io/docs/scripts/task-runners",
+    "https://kestra.io/docs/administrator-guide/monitoring",
+    "https://hub.docker.com/r/kestra/kestra/tags",
+    "https://github.com/kestra-io/kestra/releases/tag/v2.0.5",
+    "https://kestra.io/docs/migration-guide/v2.0.0/management-endpoint-hardening",
+    "https://kestra.io/blogs/security-improvements-2-0"
+  ],
+  "ci_history": [
+    {
+      "run_id": 38355694742,
+      "commit": "6addf51ef55303551028f931c15f596e730aa323",
+      "status": "FAILURE",
+      "observed": "Workflow run recorded zero jobs and used the filename as its display name.",
+      "response": "A later commit changed the job-level EVIDENCE_DIR expression from runner.temp to github.workspace; the subsequent run loaded a named job."
+    },
+    {
+      "run_id": 38355970968,
+      "commit": "59eca6686b321b59c21184e47480c6874f583c56",
+      "status": "FAILURE",
+      "observed": "Static guard passed; docker compose config --quiet failed because KESTRA_ADMIN_EMAIL was absent after malformed .env generation.",
+      "response": "Subsequent commit switched the generator to chr(10) line separators. This run did not pull images or test runtime health."
+    },
+    {
+      "run_id": 38356016781,
+      "commit": "87c128fc5f38ce2d2955b3f474f9cb256538fa68",
+      "status": "IN_PROGRESS_AT_LAST_OBSERVATION",
+      "observed": "Static validation and Compose validation passed; image pull and Compose startup passed; authenticated management-health validation was still running when the workflow was updated.",
+      "response": "Configured endpoints.all.basic-auth and changed the CI check to authenticate to management health, retaining loopback binding."
+    },
+    {
+      "run_id": 38356436011,
+      "commit": "561811a3d9fd77360e0a7d5405284987f0754b17",
+      "status": "STALLED_AT_HEALTH_CHECK_AT_LAST_OBSERVATION",
+      "observed": "Static guard and Docker Compose schema validation passed; exact image pulls and Compose startup passed; health polling had not returned and the GitHub Actions run metadata had not advanced.",
+      "response": "Added connect and total-request timeouts plus a finite 30-attempt health loop so failure is bounded and diagnostic."
+    },
+    {
+      "run_id": 38356016781,
+      "commit": "87c128fc5f38ce2d2955b3f474f9cb256538fa68",
+      "status": "FAILURE",
+      "observed": "The authenticated health check failed because Kestra terminated with AccessDeniedException at /app/storage/plugins. GitHub Actions also did not upload the evidence bundle because its directory name started with a dot and hidden files were excluded.",
+      "response": "Added an isolated one-shot volume permission bootstrap restricted to CHOWN, no network and no Docker socket; kept the long-running service non-root. Renamed the CI evidence directory to a non-hidden path."
+    },
+    {
+      "run_id": 38357009006,
+      "commit": "dc8d171bf0c92db9903d170246f55307aa29bdd0",
+      "status": "FAILURE",
+      "observed": "Static validation and Compose schema passed, image downloads completed, then container startup failed. The CI log showed Compose interpolation warnings that kestra_uid/kestra_gid were unset because Compose consumed shell dollar variables inside the command.",
+      "response": "Escaped shell variables as $$ in the Compose file and extended the static guard to enforce this invariant before startup."
+    },
+    {
+      "run_id": 38357202650,
+      "commit": "edd63073bbc93fbabec2f15c976e9439282bb929",
+      "status": "FAILURE_STATIC_VALIDATOR_FALSE_POSITIVE",
+      "observed": "The new guard correctly required escaped $$ expressions, but a redundant negative check incorrectly matched the second dollar in a valid $$(...) form. Runtime test did not run.",
+      "response": "Removed the invalid substring-based negative assertion; the positive checks for each required escaped shell variable remain."
+    },
+    {
+      "run_id": 38357270684,
+      "commit": "4ba9a70069320cdaeeb0d6c18775bda2a9add5d7",
+      "status": "FAILURE_STORAGE_INIT",
+      "observed": "Static validation passed but Compose still saw single-dollar shell variables, emitted kestra_uid/kestra_gid unset warnings, and storage-init exited with code 2. The attempted patch had been transformed by JavaScript replacement-string semantics before commit.",
+      "response": "Updated the commit-generation procedure to use callback replacements that preserve literal $$ characters, and changed the static validator to require the exact double-dollar forms."
+    },
+    {
+      "run_id": 38357504589,
+      "commit": "08e33fa5929e849cfbcff67ccef84f60a60ebf00",
+      "status": "FAILURE_HEALTH_RESPONSE_SCHEMA_MISMATCH",
+      "observed": "Static validation, Compose validation, image pulls, and isolated startup passed. Kestra logged its ready marker and the authenticated management endpoint returned {\"status\":\"UP\"}. The health assertion still failed because it required details.jdbc.status=UP even though the returned payload exposed no details.jdbc field. Artifact 11793212641 retained; SHA-256 sha256:6e0bae5353fdfcfe7cb9f6d18d6a3fb236139f3047466665bfef3247a3c485f4.",
+      "response": "Replaced the incompatible nested-JDBC JSON assumption with explicit management health, PostgreSQL container health, authenticated UI response, and Kestra-ready checks."
+    },
+    {
+      "run_id": 38358082084,
+      "commit": "1de0428fe103d2bd532d7d5c0ff848e8cf34617e",
+      "status": "FAILURE_HEALTH_PROBE_INCOMPLETE",
+      "observed": "Static and Compose checks, image pull, and startup passed; the composite health assertion still failed although the ready marker and management UP response were present. Artifact 11793288380 retained; SHA-256 sha256:bdaad9c20fb03f5c558cf51718f79caaa73e3a4be1ed9b8ab8da05bc545ed307. The component HTTP result was not printed in the failed run, so its exact status is not claimed here.",
+      "response": "Corrected authentication configuration handling in the next commit and then updated the UI probe to follow redirects instead of requiring a 2xx response from the root route without redirect handling."
+    },
+    {
+      "run_id": 38358103053,
+      "commit": "1cc34423543c4c3a6099a6f2c1ae1fa2aaf7b9ef",
+      "status": "FAILURE_UI_REDIRECT_NOT_FOLLOWED",
+      "observed": "Static and Compose checks, image pull, and startup passed. Logs included the Kestra ready marker and management health payload {\"status\":\"UP\"}; the health assertion still failed before redirect following was added. Artifact 11794281678 retained; SHA-256 sha256:357eaae44319994c7797d86abe0f15f2c0482bc62073d3f89e9e5e5423c20082. Exact UI status was not separately printed.",
+      "response": "Added curl redirect following to the authenticated UI readiness probe; the subsequent run 38358263075 passed all steps."
+    },
+    {
+      "run_id": 38358263075,
+      "commit": "ecc3471afde651120fb630a25560604fb975db9a",
+      "status": "PASS_RUNTIME_SMOKE",
+      "observed": "All workflow steps passed on the tested commit, including governance/static checks, Compose validation, exact image pulls, isolated runtime start, authenticated management health, PostgreSQL health, authenticated UI response after redirect, Kestra-ready marker, evidence upload, and runtime destruction. Artifact 11793257116; SHA-256 sha256:18f68fb55d86cc7e7a07dc99bd132564da03a3e33124566333f01c600b91d3f1.",
+      "response": "Record as successful ephemeral CI runtime evidence only. Manual flow execution, independent validation G23, certification G24, non-regression review, and promotion gates remain open."
+    },
+    {
+      "run_id": 38359065395,
+      "commit": "d16fd1884b3caad6650581d644b60c8005ca8af9",
+      "status": "PASS_RUNTIME_SMOKE_AND_GOVERNANCE_REVALIDATION",
+      "observed": "On the governance-updated branch head, staged governance/static checks, Compose validation, image pulls, isolated runtime startup, authenticated management health, PostgreSQL health, authenticated UI after redirect, Kestra-ready marker, evidence upload, and runtime cleanup all passed. Artifact 11793269952; SHA-256 sha256:9eee2cc6ef075b46a3fc946bcd96405fc33ceb69829aa3066b959e3f3d8a4de3.",
+      "response": "Record as the latest successful ephemeral CI runtime check. Keep manual flow execution, independent validation, certification, non-regression review, and activation/promotion gates open."
+    },
+    {
+      "run_id": 38369065971,
+      "commit": "f2713072fa932c4c1535345fa213e7705e0718f8",
+      "status": "PASS_FUNCTIONAL_RUNTIME_SMOKE",
+      "observed": "Static governance and Compose checks, exact image pulls, ephemeral Kestra/PostgreSQL startup, authenticated management health, PostgreSQL health, authenticated UI readiness, authenticated import of flows/00-smoke-test.yml, execution reaching terminal state SUCCESS, evidence upload, and runtime/volume destruction all passed. The flow contains a single Log task and no external side effects. Artifact 11798671287; 7895 bytes; retained until 2026-11-12T08:26:14Z; artifact digest not independently computed.",
+      "response": "This proves the isolated log-only smoke flow executes in ephemeral CI only. It does not prove a persistent service, manual UI interaction, G23 independent validation, G24 certification, non-regression, or activation. Keep candidate status and promotion gate unchanged."
+    }
+  ],
+  "latest_runtime_verification": {
+    "run_id": 38369065971,
+    "commit": "f2713072fa932c4c1535345fa213e7705e0718f8",
+    "result": "PASS_FUNCTIONAL_RUNTIME_SMOKE",
+    "verified_at_utc": "2026-10-13T08:26:15Z",
+    "artifact_id": 11798671287,
+    "artifact_name": "kestra-oss-smoke-38369065971",
+    "artifact_size_bytes": 7895,
+    "artifact_expires_at_utc": "2026-11-12T08:26:14Z",
+    "artifact_sha256": "NOT_INDEPENDENTLY_COMPUTED",
+    "checks_passed": [
+      "staged governance invariants",
+      "Docker Compose schema",
+      "pinned image pulls",
+      "ephemeral Kestra/PostgreSQL startup",
+      "authenticated management health status UP",
+      "PostgreSQL container health healthy",
+      "authenticated UI HTTP 2xx after following root redirect",
+      "Kestra ready log marker",
+      "authenticated import of log-only flow",
+      "flow execution terminal state SUCCESS",
+      "non-secret evidence capture and upload",
+      "temporary runtime and volumes destroyed"
+    ],
+    "limits": [
+      "CI runtime was ephemeral and was destroyed after the test",
+      "does not install or maintain a persistent Kestra server",
+      "does not prove a production deployment",
+      "manual UI-driven flow execution was not performed",
+      "G23 independent validation not performed",
+      "G24 certification not granted",
+      "non-regression review pending",
+      "activation and promotion to main remain unauthorized"
+    ]
+  }
+}

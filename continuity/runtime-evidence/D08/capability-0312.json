@@ -1,0 +1,21 @@
+{
+  "canonical_name": "SOURCE_CONFLICT_RESOLUTION",
+  "capability_id": 312,
+  "certification_granted": false,
+  "domain_id": "D08",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "3d0df7ecaf343ee56f8ab92eff65210075c420eb2b9760bf38e368459cdd23e3",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d08_309_312.py",
+  "module_sha256": "ed67b285ada1203b6267000661ebdd37649a7526ce982166cf4c31b0fa5534d2",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d08_309_312.py",
+  "test_case": "test_cap_0312",
+  "test_sha256": "d2e75e23e07a2293942ffd8996e1d29f7d4a554551e30b0a6fa51980acf9d3c1",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

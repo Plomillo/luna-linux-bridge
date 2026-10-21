@@ -1,0 +1,65 @@
+{
+  "certification_granted": false,
+  "full_suite_exit_code": 0,
+  "full_suite_stderr_sha256": "a76c493838d6510a4be6e269137a4b30e3203e6e12245200dabd603428f830a2",
+  "full_suite_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "g23": "PASS_FOR_SCOPE_D04_93_96",
+  "g24": "PENDING_INDEPENDENT_CERTIFICATION_REVIEW",
+  "global_certification_status": "NOT_CERTIFIED",
+  "independent_test_results": [
+    {
+      "canonical_name": "CERTIFICATION_NON_TRANSITIVITY",
+      "capability_id": 93,
+      "evidence_sha256": "cca81b33fa8483a00a6623071ee1528405e39b62fa211f464339482abb6be5bc",
+      "exit_code": 0,
+      "result": "PASS",
+      "single_test_run_confirmed": true,
+      "stderr_sha256": "0f363d9fdeaebca0b245ff2259ab7b742cd8e397416dfae2d7fe9298c599e3ea",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "test_case": "test_certification_non_transitivity_rejects_derived_subject_and_scope"
+    },
+    {
+      "canonical_name": "EVIDENCE_EXPIRATION",
+      "capability_id": 94,
+      "evidence_sha256": "af1c29f98e51497e75a0eaf367100f540011282563986e8fe3f88f6d8035e535",
+      "exit_code": 0,
+      "result": "PASS",
+      "single_test_run_confirmed": true,
+      "stderr_sha256": "c4a381fda4808569d9cb9bc902300fee88416f201319289178a6503590aaf183",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "test_case": "test_evidence_expiration_uses_half_open_utc_interval_and_fails_closed"
+    },
+    {
+      "canonical_name": "EVIDENCE_INVALIDATION_GRAPH",
+      "capability_id": 95,
+      "evidence_sha256": "ff89b94831f9ed06d1caf316b186c3a1813b455007bc1dfd5d87f7a20e14b4d8",
+      "exit_code": 0,
+      "result": "PASS",
+      "single_test_run_confirmed": true,
+      "stderr_sha256": "51775e9f548cc288c6d0572d97bbfbc69de97f2e9a330d477aadeb6b4a8e2b9d",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "test_case": "test_evidence_invalidation_graph_propagates_and_rejects_cycles"
+    },
+    {
+      "canonical_name": "EVIDENCE_REUSE_ENGINE",
+      "capability_id": 96,
+      "evidence_sha256": "9c7c154d2d7c31f590d06527a53dfa9581739125c8e9d981a7002f61fc662659",
+      "exit_code": 0,
+      "result": "PASS",
+      "single_test_run_confirmed": true,
+      "stderr_sha256": "f68d494c1fcc1d829e15ef92c87e35e67cf4bd8b1db836e566f22a6339bd5e14",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "test_case": "test_evidence_reuse_requires_exact_validated_non_invalidated_key"
+    }
+  ],
+  "material_workflow_run_id": "38484326133",
+  "module_sha256": "abc9c8d922e3ff56f4cdf636da99e146d95e7a15ac5608004f81398d8b4a58f0",
+  "schema": "SUPER1200_D04_INDEPENDENT_VALIDATION/1",
+  "scope": "D04_CAPABILITIES_93_96_ONLY",
+  "status": "PASS",
+  "test_sha256": "6d638e4627cf5542ea1b611a0870aee5d22154923c0e47cef1eb44f4c55b685b",
+  "validated_at_utc": "2026-10-13T23:27:46.349122+00:00",
+  "validator_source_commit": "990b5abbfa99c95ac0725d8b6651fd674ff320fb",
+  "validator_workflow_run_id": "38484371232",
+  "validator_workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38484371232"
+}

@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "COUNTEREXAMPLE_GENERATOR",
+      "capability_id": 606,
+      "evidence_sha256": "e5696687205b538f3e2801fb7cb4ef9a2d1031877c203ad71ea3f7b7cce0509f"
+    },
+    {
+      "canonical_name": "SOCRATIC_TUTOR_ENGINE",
+      "capability_id": 607,
+      "evidence_sha256": "1a7fa15b82e93949710c297e8dd487e41fb4a03c4c3c792d05e75d8d1e06eefb"
+    },
+    {
+      "canonical_name": "EXPLANATION_GENERATOR",
+      "capability_id": 608,
+      "evidence_sha256": "412d478ae493c9753ad4f33350b26d740bd6d155c9404182f9cb927a559236e7"
+    },
+    {
+      "canonical_name": "REFERENCE_GENERATOR",
+      "capability_id": 609,
+      "evidence_sha256": "e8922c24e8e8b70a709221444e46d26d6ff4f71650a1ff081c5341deac44d719"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "36f9049ba2d4692f221a76aac7de61dea408b35a0f25d97933d05b3228b67887",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D13:606-609",
+  "scope_only": true,
+  "test_sha256": "1e0c557170ca6cbca38370ea48cfe22a2688293a49c4a2c60618ce5da2d7a1c4",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:21:58.814542+00:00"
+}

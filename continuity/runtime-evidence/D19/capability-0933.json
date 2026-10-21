@@ -1,0 +1,21 @@
+{
+  "canonical_name": "OUTBOUND_CONNECTION_POLICY",
+  "capability_id": 933,
+  "certification_granted": false,
+  "domain_id": "D19",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "3d8a86c610d1fd7bc8284b06e2b20611b26b153919006067477e20ba8cc8007b",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d19_933_936.py",
+  "module_sha256": "929714d52cd6a6b42e53ec3303f34ad70d6d0b5ab4a8fe04799fe957e81c0912",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d19_933_936.py",
+  "test_case": "test_cap_0933",
+  "test_sha256": "fcb9da4b9bcd326efcfea9f1b05debcbb0367f5930da729d6fdaa4d2d3a86079",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

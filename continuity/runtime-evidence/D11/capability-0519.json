@@ -1,0 +1,21 @@
+{
+  "canonical_name": "EVIDENCE_TYPE_ONTOLOGY",
+  "capability_id": 519,
+  "certification_granted": false,
+  "domain_id": "D11",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "8b7282fa7302bc9ea5ebb9764577376a0b2b301a9bba1d3ffaced6844c0dbbc9",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d11_517_520.py",
+  "module_sha256": "02c1b3ea7894a9ce526d160e7d75b1d1794fc24262d7a64db829306ddb2b009f",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d11_517_520.py",
+  "test_case": "test_cap_0519",
+  "test_sha256": "4bc35e47df800d4a9808e5e89b939b662e8898571266ae5b0d0174f902efab78",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

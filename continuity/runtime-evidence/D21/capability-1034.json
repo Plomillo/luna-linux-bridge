@@ -1,0 +1,21 @@
+{
+  "canonical_name": "FALSE_SANITIZATION_DETECTOR",
+  "capability_id": 1034,
+  "certification_granted": false,
+  "domain_id": "D21",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "713f97f13aada64dd4ea51865b42a01dee622b3f13f2fe48d95cc18acadb3c21",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d21_1033_1036.py",
+  "module_sha256": "677dc2647b56b4499291874cc300cad94d99ffa7b9f21142310a478dd0289073",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d21_1033_1036.py",
+  "test_case": "test_cap_1034",
+  "test_sha256": "a5dd7f394cb8c71ebe7cd9193bfbcbcdccae2dff6bd234925cfd13738695047c",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

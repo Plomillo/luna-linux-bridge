@@ -1,0 +1,21 @@
+{
+  "canonical_name": "UPDATE_CLASSIFIER",
+  "capability_id": 822,
+  "certification_granted": false,
+  "domain_id": "D18",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "95d475756d9e08bfd9f504ef48d7c73d464ac771c60fdf59725290320fbbc96f",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d18_821_824.py",
+  "module_sha256": "6382d683c7e133f556657d2e5a16e1c0fe3aa24ade15f1d8d58739097582954c",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d18_821_824.py",
+  "test_case": "test_cap_0822",
+  "test_sha256": "b1bc2860f6c63f2af50393b9c294b1f3b1f646fc3347103cce0b93cb08a35095",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

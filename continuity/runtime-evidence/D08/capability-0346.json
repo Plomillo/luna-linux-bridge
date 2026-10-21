@@ -1,0 +1,21 @@
+{
+  "canonical_name": "SOURCE_TREE_COMPRESSION",
+  "capability_id": 346,
+  "certification_granted": false,
+  "domain_id": "D08",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "fc6e23530a00d641e7679116aa0f33f36c84a0fc8a9fa7b3942b2e13501b0177",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d08_345_348.py",
+  "module_sha256": "a21e2bf32f3edabfc2d5ed892a7c0b6f1eae71e6ce47fdb8ba330a32688754e6",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d08_345_348.py",
+  "test_case": "test_cap_0346",
+  "test_sha256": "99f3d309f02e3cf1ab74a4ca4e0975f35991fcc3dcfa42f1947a627925fda7e8",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

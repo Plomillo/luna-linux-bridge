@@ -1,0 +1,21 @@
+{
+  "canonical_name": "LEARNING_ANALYTICS_ENGINE",
+  "capability_id": 635,
+  "certification_granted": false,
+  "domain_id": "D13",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "d8231f2e40585bffb0aea2ed8e57acd87ce46e2258969cf467387e5996325976",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d13_634_637.py",
+  "module_sha256": "9b6360fdd1d0ea656ddb492a6acdd91e83c07a31929cb143745d031ae981095a",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d13_634_637.py",
+  "test_case": "test_cap_0635",
+  "test_sha256": "70251cabec15cee7544c418734ebed24c8cf02fde6abc9f21c6e78506b1e0839",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

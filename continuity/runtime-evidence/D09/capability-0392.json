@@ -1,0 +1,21 @@
+{
+  "canonical_name": "ANDROID_PERFORMANCE_PROFILER",
+  "capability_id": 392,
+  "certification_granted": false,
+  "domain_id": "D09",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "80ec635944d8bdcc14092bee2406be18c8787662d93c2612cbe68e94391bf231",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d09_389_392.py",
+  "module_sha256": "3375066eecf737bcb0255367c20100e42f5c1df1954658dfb44da374d01b7ef5",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d09_389_392.py",
+  "test_case": "test_cap_0392",
+  "test_sha256": "0dc3103227d3db923a78e6f21aff0ec749f3da7c549686fed67fe321a30be369",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

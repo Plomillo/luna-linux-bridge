@@ -1,0 +1,7 @@
+id: kestra_oss_smoke
+namespace: louksna.kestra
+description: "Prueba funcional log-only: se importa y ejecuta en CI sobre una instancia efímera; sin efectos externos."
+tasks:
+  - id: confirm_bootstrap
+    type: io.kestra.plugin.core.log.Log
+    message: "Kestra Open Source smoke flow: no external mutation performed."

@@ -1,0 +1,48 @@
+{
+  "schema": "SUPER1200_CI_VALIDATION_RECORD/1.0",
+  "record_id": "SUPER1200-CI-VALIDATION-20261013-001",
+  "branch": "custosz/super-1200-implementation-20261007",
+  "recorded_at_utc": "2026-10-13T18:46:00Z",
+  "runs": [
+    {
+      "run_id": 38449001008,
+      "url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38449001008",
+      "head_sha": "5bea037a76369a13262bfeca4ee33a72f61b969c",
+      "conclusion": "success",
+      "job": "audit-state",
+      "verified_steps": [
+        "Run concrete D04 behavior tests",
+        "Audit checkpoint, executor, evidence and gates"
+      ],
+      "scope": "D04 unit/behavior tests and static state audit only; not material continuation or certification."
+    },
+    {
+      "run_id": 38449052041,
+      "url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38449052041",
+      "head_sha": "36d9b7db5676fdcc40071c67708ba758a46d5da8",
+      "conclusion": "success",
+      "scope": "Static state audit after blocker reconciliation record."
+    },
+    {
+      "run_id": 38449057968,
+      "url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38449057968",
+      "head_sha": "dc16869906ea537afa824c11b7eb28ac7593b74c",
+      "conclusion": "success",
+      "scope": "Static state audit after operational state reconciliation."
+    }
+  ],
+  "result": {
+    "D04_behavior_tests": "PASS",
+    "synthetic_materializer_guard": "PASS",
+    "state_audit": "PASS",
+    "material_work_12h_started": false,
+    "active_worker": false,
+    "metaos_ready": false,
+    "reviewed_material_executor_registered": false,
+    "g23": "BLOCKED",
+    "g24": "BLOCKED",
+    "certified": false,
+    "main_modified": false
+  },
+  "interpretation": "Green CI confirms the tested D04 primitives and static safeguards on the referenced SHAs. It does not prove the 12-hour mission started, does not validate MetaOS, does not register a material executor, and does not certify any capability."
+}

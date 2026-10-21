@@ -1,0 +1,21 @@
+{
+  "canonical_name": "REPAIR_PLAN_ENGINE",
+  "capability_id": 682,
+  "certification_granted": false,
+  "domain_id": "D15",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "b60ab8600c8e99c39b72e9750736422443b9f85fdb52f9710a40c7ed19505960",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d15_681_684.py",
+  "module_sha256": "2a173063472ecfae4aca9b787d43804f41c648c2d38435a7b1e1df0077aa6768",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d15_681_684.py",
+  "test_case": "test_cap_0682",
+  "test_sha256": "fa0ca758c3b70dc8c20b4c38966bd996ce5a4580dad177f046af36d710232dcd",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

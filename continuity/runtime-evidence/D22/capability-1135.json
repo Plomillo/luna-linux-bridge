@@ -1,0 +1,21 @@
+{
+  "canonical_name": "INITIAL_ACCESS_KB",
+  "capability_id": 1135,
+  "certification_granted": false,
+  "domain_id": "D22",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "754ecad350419858a2056aad56ec7ea519fbad767cd44697ee15bd25a49de13a",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d22_1133_1136.py",
+  "module_sha256": "c7e06139ceacf03bbfcc7a8ff3d0165ffae1e9d2844993c9fc0130b1919a7910",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d22_1133_1136.py",
+  "test_case": "test_cap_1135",
+  "test_sha256": "b996087746ae578a395e4497f7c4db0fac4072c512f2abba050900f72e7b254f",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

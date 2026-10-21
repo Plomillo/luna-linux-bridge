@@ -1,0 +1,21 @@
+{
+  "canonical_name": "UPDATE_AUTO_ROLLBACK",
+  "capability_id": 836,
+  "certification_granted": false,
+  "domain_id": "D18",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "b13f717f0987bab2c61886c2a2b57c6f671c5aab962d92b65066fb6e2d490434",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d18_833_836.py",
+  "module_sha256": "a501b9e5a6f498f16f64eeb2a267bcca33e946576929ef65bccf63ef7e1f17af",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d18_833_836.py",
+  "test_case": "test_cap_0836",
+  "test_sha256": "2d4001e88101461ef1aba6d570a3c8b30fbbdc5686a1a425e4f2e85701bf122c",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

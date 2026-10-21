@@ -1,0 +1,21 @@
+{
+  "canonical_name": "ACCESSIBILITY_ENGINE",
+  "capability_id": 638,
+  "certification_granted": false,
+  "domain_id": "D13",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "8f148121352c5b089d678491865421e331897fb8eceed7c0b4481eac15b64483",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d13_638_640.py",
+  "module_sha256": "21b78b6bb3719ca9206293379bc5dcde7f6219cdac23c9a63d6d84ce048de124",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d13_638_640.py",
+  "test_case": "test_cap_0638",
+  "test_sha256": "f368b2d804d11152983aef0dc1c1b0cba06eba1def9b92dec768b44af6e504e7",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

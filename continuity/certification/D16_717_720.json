@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "GAMESCOPE_PROVIDER",
+      "capability_id": 717,
+      "evidence_sha256": "b99ceece0dbba08d79c0df42a602aa6aff54e2aea6372d6def0201e5b50ef76c"
+    },
+    {
+      "canonical_name": "GAME_REGRESSION_BENCHMARK",
+      "capability_id": 718,
+      "evidence_sha256": "9a3495200f9339ffecfb394946266a0e5465e2aa1049cd14ffef7fff9c3c79e5"
+    },
+    {
+      "canonical_name": "COMPATIBILITY_PATCH_FACTORY",
+      "capability_id": 719,
+      "evidence_sha256": "f8991104e8a65d56569ffe03673e4b48cce70c4e6dd8d61220f73af34779d0eb"
+    },
+    {
+      "canonical_name": "WINE_EVOLUTION_LAB",
+      "capability_id": 720,
+      "evidence_sha256": "fd761838bb15dbffe66ac8ecf8f568b910f7551e7fe25defbe695c859f3f8831"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "1cc4ca1d4e2e60cced8ee0ebd17c0218e92dfb1297b5772d5408b1e49ada56a4",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D16:717-720",
+  "scope_only": true,
+  "test_sha256": "13bf6a24f40ee4dbe1c81a8ce4815325ed95056f286ccaba13b81d511a4edb4b",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:22:13.061328+00:00"
+}

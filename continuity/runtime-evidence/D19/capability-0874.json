@@ -1,0 +1,21 @@
+{
+  "canonical_name": "SECURITY_CONSENSUS_ENGINE",
+  "capability_id": 874,
+  "certification_granted": false,
+  "domain_id": "D19",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "4c293092e3b886606ffceea02a84351e700796aa344fc20a0803db232b97502e",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d19_873_876.py",
+  "module_sha256": "c34888c3ee340d76e2153a64275ccec590f48f5e21a37a46d6fdf2284740e23c",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d19_873_876.py",
+  "test_case": "test_cap_0874",
+  "test_sha256": "a7c99f2c636e6ad18674f972c1fab0b21f5f8b69782962983a46f8126f5c7b5d",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

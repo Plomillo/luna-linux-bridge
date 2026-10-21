@@ -1,5 +1,64 @@
 {
   "schema": "LOUKSNA_TELEMETRY/1.0",
-  "description": "Actionable telemetry for Directiva readiness and unlock path.",
-  "required_fields": ["event_id", "event_type", "timestamp_utc", "rail", "branch", "commit_sha", "blocked", "block_reason", "next_action", "evidence_present", "research_launched", "verification_result"]
+  "description": "Actionable telemetry only. Not noise. Enables metacognition and audit.",
+  "emit_on": [
+    "HOLD",
+    "failure",
+    "research_start",
+    "research_result",
+    "remediation_applied",
+    "verification",
+    "resume",
+    "scoped_g23",
+    "scoped_g24",
+    "periodic_audit"
+  ],
+  "required_fields": [
+    "event_id",
+    "event_type",
+    "timestamp_utc",
+    "rail",
+    "branch",
+    "commit_sha",
+    "checkpoint",
+    "blocked",
+    "block_reason",
+    "next_action",
+    "evidence_present",
+    "evidence_missing",
+    "research_launched",
+    "remediation_applied",
+    "verification_result",
+    "provenance_actor"
+  ],
+  "fields": {
+    "event_id": "string",
+    "event_type": "string",
+    "timestamp_utc": "ISO-8601",
+    "rail": "SUPER1200 | DIRECTIVA | SHARED",
+    "branch": "string",
+    "commit_sha": "string",
+    "checkpoint": "string",
+    "blocked": true,
+    "block_reason": "string",
+    "next_action": "string",
+    "evidence_present": true,
+    "evidence_missing": [],
+    "research_launched": false,
+    "research_summary": "nullable",
+    "remediation_applied": false,
+    "verification_result": "PASS | FAIL | UNABLE_TO_DETERMINE | NOT_RUN",
+    "module_sha256": "nullable",
+    "test_sha256": "nullable",
+    "g23": "nullable",
+    "g24": "nullable",
+    "global_certification_status": "NOT_CERTIFIED | SCOPED_ONLY | CERTIFIED_SCOPE | CERTIFIED",
+    "provenance_actor": "string",
+    "kedb_entry_id": "nullable"
+  },
+  "forbidden": [
+    "secrets",
+    "raw unbounded log dumps as the only signal",
+    "claims of progress without checkpoint or evidence fields"
+  ]
 }

@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "WORKFLOW_SECURITY_ANALYZER",
+      "capability_id": 937,
+      "evidence_sha256": "0c1f0a0731a0f8f7bc40869b6ed0950313af1e39821577bb41f0726e51b28cbd"
+    },
+    {
+      "canonical_name": "BRANCH_PROTECTION_AUDITOR",
+      "capability_id": 938,
+      "evidence_sha256": "2d777eaf0cb6bc9793edf6fdc2a256de9d055e9cad6e22d5237ed1454ee13a63"
+    },
+    {
+      "canonical_name": "REPOSITORY_TAMPER_DETECTOR",
+      "capability_id": 939,
+      "evidence_sha256": "573f8b68f4b361aeff3fbd2b576ca44a954bc05d098115b05b1a34e70b5487be"
+    },
+    {
+      "canonical_name": "CANONICAL_ARTIFACT_SECURITY_GUARD",
+      "capability_id": 940,
+      "evidence_sha256": "eb97861c458bb42133a85c49c878360dee2821d3ea96ab98db3da7651d7bbdcc"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "85118a549abbc2feb3fe947af851822f4ff8717fcb554842f5843bcdd1a0a6e1",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D19:937-940",
+  "scope_only": true,
+  "test_sha256": "12a3d20d57e3e62b06fa1dedda56f7fd9f9138b6269f1376689b0493a60f0aa2",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:22:41.545147+00:00"
+}

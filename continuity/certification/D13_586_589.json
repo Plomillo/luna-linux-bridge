@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "PEDAGOGICAL_FABRIC",
+      "capability_id": 586,
+      "evidence_sha256": "f46d1350954dddcd30a7cd9e926eaf3d3c367afb05738383c01fed522b412af7"
+    },
+    {
+      "canonical_name": "LEARNING_OBJECT_REGISTRY",
+      "capability_id": 587,
+      "evidence_sha256": "ff6efabdfb4457f6e38df2750aa69cbd2865a120048b2969eab7fc9757104d63"
+    },
+    {
+      "canonical_name": "PREREQUISITE_GRAPH",
+      "capability_id": 588,
+      "evidence_sha256": "3fbda6f3215581e1bae5a527e7e1f1297c55abfe90c94730430a9b29b8deaa06"
+    },
+    {
+      "canonical_name": "KNOWLEDGE_GRAPH_PEDAGOGICAL_VIEW",
+      "capability_id": 589,
+      "evidence_sha256": "ad28a52a2d4750600d43927ca004fb0d82ddeec3715d84946666a7a9bd990441"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "253d1d8cd9badedae36e0ecc63486cdc2ae0ebe81561d96dff400b17c19df89c",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D13:586-589",
+  "scope_only": true,
+  "test_sha256": "10727e24d8bc8aa5c0a47aa5a3bb68393b251d00e01f293b7a99efde42c20269",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:21:56.277761+00:00"
+}

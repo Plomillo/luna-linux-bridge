@@ -1,0 +1,21 @@
+{
+  "canonical_name": "HUMAN_VULNERABILITY_MODEL",
+  "capability_id": 1179,
+  "certification_granted": false,
+  "domain_id": "D22",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "4ea99b804c38b4e8872f03cc6d21144ff7fd60fa9eb98d4c1ea17923c7f49fee",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d22_1177_1180.py",
+  "module_sha256": "dcc9991ad63c56babed94b710766199ae4f23a519799d53a1086449e2bbe39b5",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d22_1177_1180.py",
+  "test_case": "test_cap_1179",
+  "test_sha256": "8192d92b2b140a37fa8b5898bb8e5e85c4fe821ad35defd0728f64447a39430e",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

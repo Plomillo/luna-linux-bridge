@@ -1,0 +1,21 @@
+{
+  "canonical_name": "JAVA_ANDROID_PROVIDER",
+  "capability_id": 381,
+  "certification_granted": false,
+  "domain_id": "D09",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "a8f3a7703f7ac23d8403df46e214799cc15881bae327b07f425c932c6d0873b8",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d09_381_384.py",
+  "module_sha256": "557c10ecd66c3ea88cd7d59efa935a8d9661b6e50fab8c71d4cec3bae0c7f6f7",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d09_381_384.py",
+  "test_case": "test_cap_0381",
+  "test_sha256": "86bab6a53321fcdd6994ebf9d80f91fab4c9ecebf8260ba2e775885addd38301",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

@@ -1,0 +1,40 @@
+{
+  "canonical_name": "POLICY_TEST_SUITE",
+  "capability_id": 105,
+  "certification_granted": false,
+  "evidence_sha256": "ffbe15ee0840f44d824494db25d87e317bf4df1db860062755f7a0235968b081",
+  "executor": "implementation/super1200/runtime/d04_material_worker_105_108.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "github_actions_run_id": "38486725899",
+  "implementation_artifact": "implementation/super1200/domains/D04_runtime.py",
+  "module_sha256": "591082428db8a61946e78341df2e086785d8d0d49f20cf632a4b3a4501139940",
+  "prior_scope_certificate": "continuity/certification/D04_101_104.json",
+  "schema": "SUPER1200_D04_MATERIAL_EVIDENCE/1",
+  "selected_test_result": {
+    "exit_code": 0,
+    "result": "PASS",
+    "single_test_run_confirmed": true,
+    "stderr_sha256": "a8de6b16d6f5cee5ae028d9efe28187b67f8e4556004754339e71d2c91660e13",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "test_case": "test_policy_test_suite_covers_positive_negative_bypass_conflict_and_unknown",
+    "test_name_seen": true,
+    "unittest_ok_marker": true
+  },
+  "status": "PASS",
+  "suite_exit_code": 0,
+  "suite_stderr_sha256": "094eefb0def2501d3e676a802f00779fdc883dce93e721d65a1ed6f3ce9a7cba",
+  "suite_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "test_artifact": "implementation/super1200/tests/test_d04_runtime.py",
+  "test_case": "test_policy_test_suite_covers_positive_negative_bypass_conflict_and_unknown",
+  "test_invocation": [
+    "python",
+    "-B",
+    "test_d04_runtime.py",
+    "-v",
+    "D04RuntimeTests.test_policy_test_suite_covers_positive_negative_bypass_conflict_and_unknown"
+  ],
+  "test_sha256": "8c32455a51ccf1c4d81309e15d18261e537f85a50f63ac74ac063e5466064e13",
+  "validated_at_utc": "2026-10-13T23:51:40.346714+00:00",
+  "worker_started_at_utc": "2026-10-13T23:51:39.767399+00:00"
+}

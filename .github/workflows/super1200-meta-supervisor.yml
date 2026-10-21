@@ -1,0 +1,24 @@
+name: "SUPER1200 — second-order meta-supervisor"
+on:
+  workflow_call:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [super1200_meta_watch]
+permissions:
+  contents: write
+jobs:
+  meta:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: custosz/super-1200-implementation-20261007
+          fetch-depth: 0
+          persist-credentials: true
+      - run: python3 -B continuity/super1200_meta_supervisor.py
+      - name: Persist meta evidence as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: super1200-meta-report-${{ github.run_id }}
+          path: continuity/META_REPORT.txt

@@ -1,0 +1,21 @@
+{
+  "canonical_name": "METHODOLOGICAL_COMPATIBILITY_ENGINE",
+  "capability_id": 524,
+  "certification_granted": false,
+  "domain_id": "D11",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "07c0ea9216e89135cae0fca3736568dcec757c5e2934af9ec5f4f66b7daca826",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d11_521_524.py",
+  "module_sha256": "6c55a4574df66738905eace822a6fdb678b1e1acd426b850d69cd09abf024be2",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d11_521_524.py",
+  "test_case": "test_cap_0524",
+  "test_sha256": "091ff77d90354a9ff1798eed07e66b895018d97e510f0355d0eb80dfea1c5e04",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

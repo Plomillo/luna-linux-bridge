@@ -1,0 +1,21 @@
+{
+  "canonical_name": "DISK_FAILURE_SIMULATOR",
+  "capability_id": 534,
+  "certification_granted": false,
+  "domain_id": "D12",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "6704460e254be1883a40f2d3251c2a48e3e49628e7f5be588d4842c2c5ae86ae",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d12_531_534.py",
+  "module_sha256": "e0f2f3eb2e7d22510a53ad26aa77c7c4b809b359e9d76758514aaca762f2e450",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d12_531_534.py",
+  "test_case": "test_cap_0534",
+  "test_sha256": "9c8d32185e195308af2f6669ee47c9ac5a2a57ca3c6270da372acca94ce754b4",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

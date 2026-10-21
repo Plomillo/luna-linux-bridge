@@ -1,0 +1,21 @@
+{
+  "canonical_name": "AUTOMATIC_ROLLBACK",
+  "capability_id": 437,
+  "certification_granted": false,
+  "domain_id": "D09",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "659aba0dd9432a18f618f9473c41cd4db94197338997f4deef1768c1b43d783c",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d09_437_437.py",
+  "module_sha256": "b6c9864bc3cb736ed891e39bf7e83053003eccfe81f017ef3cc98aa17670c0f6",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d09_437_437.py",
+  "test_case": "test_cap_0437",
+  "test_sha256": "792708bd7f084e0f91eb4809ecfbc27c1ddfc8b2b32bc8ecc4b0f4a6455b8cfb",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

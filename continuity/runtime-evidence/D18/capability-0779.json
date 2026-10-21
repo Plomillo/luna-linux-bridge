@@ -1,0 +1,21 @@
+{
+  "canonical_name": "MAINTENANCE_READINESS_GATE",
+  "capability_id": 779,
+  "certification_granted": false,
+  "domain_id": "D18",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "559fce8248e98f06f424e39ea9935206d7505170bec560ec2fc2a93df7adf5b3",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d18_777_780.py",
+  "module_sha256": "2908e8410d62d49ebf6e0ed7fa27b4ea7f77ee0d5223241d7dfd68121bac0bb3",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d18_777_780.py",
+  "test_case": "test_cap_0779",
+  "test_sha256": "4990e8a2ddd9997cf83ed89366040e9ee468733c7d3ee834a0a5ec76d3f8549d",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "QUANTITATIVE_RESEARCH_FABRIC",
+      "capability_id": 263,
+      "evidence_sha256": "ec13c68d0a3f30e666544db796ead27d139f1ebb6110bd2c3bac31725a16e308"
+    },
+    {
+      "canonical_name": "STATISTICAL_ENGINE",
+      "capability_id": 264,
+      "evidence_sha256": "fe3928bff2679117fcc4eff6cff00aea73bd41792ff7e301e2a9bd1f0f740bdf"
+    },
+    {
+      "canonical_name": "R_PROVIDER",
+      "capability_id": 265,
+      "evidence_sha256": "33959b4e49a9a853fede1f9e7d58964429138e4c8cba419f2f64da7a3b465dd5"
+    },
+    {
+      "canonical_name": "PYTHON_SCIENTIFIC_PROVIDER",
+      "capability_id": 266,
+      "evidence_sha256": "fa69ea6845a665e706987ce3cf6b895fe15e06cd11a414d36913037504581c08"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "c6b1ce1b8b04556cc6cc5f1f822b8e000da87c4d431c7ad0d7667e729130fb7d",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D07:263-266",
+  "scope_only": true,
+  "test_sha256": "42108c31c3117e8b485fafdf10b16789c571ff2cb3f33dd25a11e0c74a0abaff",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:21:15.126298+00:00"
+}

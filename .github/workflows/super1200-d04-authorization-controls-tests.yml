@@ -1,0 +1,19 @@
+name: SUPER1200 — non-certifying duplicate guard for D04 113-116
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  duplicate_guard:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: State that the canonical governance-control suite is authoritative
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "SUPER1200_NOTICE=This duplicate test workflow is intentionally non-certifying."
+          echo "SUPER1200_CANONICAL_TESTS=implementation/super1200/tests/test_d04_governance_controls.py"
+          echo "SUPER1200_GLOBAL_CERTIFICATION=NOT_CERTIFIED"

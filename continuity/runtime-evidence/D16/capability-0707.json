@@ -1,0 +1,21 @@
+{
+  "canonical_name": "MESA_PROVIDER",
+  "capability_id": 707,
+  "certification_granted": false,
+  "domain_id": "D16",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "9eb023ab7c73d3c59bfb830f5304c883ee6353e521a7056cb0a0d116e93de687",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d16_705_708.py",
+  "module_sha256": "31b6cea73d3b350a6f43a5b4f46f408ec738895a6a04bcc71216077f699da37d",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d16_705_708.py",
+  "test_case": "test_cap_0707",
+  "test_sha256": "d3301cfa55e0d808f593aa7833e1cd7158e960ab334affa596defacd47547fc9",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

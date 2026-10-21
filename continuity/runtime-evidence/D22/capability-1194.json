@@ -1,0 +1,21 @@
+{
+  "canonical_name": "PREVENT_BEFORE_DOWNLOAD_ENGINE",
+  "capability_id": 1194,
+  "certification_granted": false,
+  "domain_id": "D22",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "e9e089ea200df479f319e5d5fb4212783e8fb60218f31edfca299fe4dd4fe829",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d22_1193_1196.py",
+  "module_sha256": "7b165fd22c6ba7d40f609a5f1443d1ebc8341e3eaa788f843bfb291c57b5288e",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d22_1193_1196.py",
+  "test_case": "test_cap_1194",
+  "test_sha256": "332f9a38e3d89fcdc8d7e98b75dc14a0c2a19b183d1e9ef860549554bde90d4a",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

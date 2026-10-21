@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "NETWORK_BEHAVIOR_BASELINE",
+      "capability_id": 929,
+      "evidence_sha256": "6619a458697a11fa536a5b76c78a00b14a939eea129062e3c85423f0f0b24d84"
+    },
+    {
+      "canonical_name": "NETWORK_ANOMALY_DETECTOR",
+      "capability_id": 930,
+      "evidence_sha256": "d7f04afe9d44f03d0b25706b9002afb2134556441596dea15e5514400b14cbde"
+    },
+    {
+      "canonical_name": "DNS_SECURITY_ANALYZER",
+      "capability_id": 931,
+      "evidence_sha256": "553ed69a767a34427fa4b9924b2bb038102c70e4b2807a578c034a193857914c"
+    },
+    {
+      "canonical_name": "TLS_SECURITY_ANALYZER",
+      "capability_id": 932,
+      "evidence_sha256": "b3759c8cfeb15b96caf5cad0b6a06ff406f5022191be5836d341debedd52831d"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "edfc3d27e4fdca6ce3fa3c3f1061399cdebeedc5f04f328f8762c14ecb421cde",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D19:929-932",
+  "scope_only": true,
+  "test_sha256": "3eec2ec1719ad5e32a19cff0850411f3de34e1d0ea6bf0b9f568d116d7a85cfc",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:22:40.505702+00:00"
+}

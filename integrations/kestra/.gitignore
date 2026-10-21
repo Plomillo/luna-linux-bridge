@@ -1,0 +1,10 @@
+# Local credentials: never commit.
+.env_encoded
+.env
+.env.*
+!.env.example
+
+# Local runtime artifacts.
+*.log
+state/
+backups/

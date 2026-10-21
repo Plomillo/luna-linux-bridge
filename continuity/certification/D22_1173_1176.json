@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "INCENTIVE_STRUCTURE_ANALYZER",
+      "capability_id": 1173,
+      "evidence_sha256": "94df5beb18338917c9188d108ed6a3533a4c1f91647424849207f6e564ad4c4d"
+    },
+    {
+      "canonical_name": "OPPORTUNITY_STRUCTURE_ANALYZER",
+      "capability_id": 1174,
+      "evidence_sha256": "485c4381b895e6acabf4c0beb61726a1d508366b2df6317e086b1484250bb8c7"
+    },
+    {
+      "canonical_name": "TARGET_SELECTION_ANALYZER",
+      "capability_id": 1175,
+      "evidence_sha256": "d14ab6b0d94a8d6d67bf62693f94319286d4de4ac1e6ea4c5259874972048577"
+    },
+    {
+      "canonical_name": "SOCIAL_ENGINEERING_KB",
+      "capability_id": 1176,
+      "evidence_sha256": "6d0a56d9409ba19894f493711cefec06d6c4635da9717834fb6f06164c12c02a"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "0c43ac4939d58956143f9483dd55a679675b1f83356168468a825a133165b95b",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D22:1173-1176",
+  "scope_only": true,
+  "test_sha256": "c412602c73c6390f3cdb47e419e68715ee180d1899967c65162db725222ad7a0",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:23:12.512755+00:00"
+}

@@ -1,0 +1,21 @@
+{
+  "canonical_name": "PARTIAL_WRITE_SIMULATOR",
+  "capability_id": 543,
+  "certification_granted": false,
+  "domain_id": "D12",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "415356be6abb41504789e7f43a084ef71b3fda003596c17bb189fd38bbc2b7f0",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d12_543_546.py",
+  "module_sha256": "367694cff405fb3d9c69da8268992c95dbd5a29a9af5fc0a67285ec89e42476b",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d12_543_546.py",
+  "test_case": "test_cap_0543",
+  "test_sha256": "6e4f691a3a79a6cdc7deb070788bc64614bb8ca051792bc33ee49e6224ce069a",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

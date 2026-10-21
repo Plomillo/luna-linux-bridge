@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "HOST_INTRUSION_DETECTION_FABRIC",
+      "capability_id": 921,
+      "evidence_sha256": "63b459d112b310af316b577934ceec8b295c4f4c11ede9e0b59924f8848e069b"
+    },
+    {
+      "canonical_name": "PROCESS_BEHAVIOR_BASELINE",
+      "capability_id": 922,
+      "evidence_sha256": "a1956f310079087dd8404e97c7f11ccb19d1e70703dd3afc783e275096b4b905"
+    },
+    {
+      "canonical_name": "PROCESS_ANOMALY_DETECTOR",
+      "capability_id": 923,
+      "evidence_sha256": "6133cd659c5621a8f2927e01c8e0a2d0fb39788e078477be9b5f2e5376f69bfa"
+    },
+    {
+      "canonical_name": "FILESYSTEM_INTEGRITY_MONITOR",
+      "capability_id": 924,
+      "evidence_sha256": "f6cfa2b2aaf0e4c4d030cd822eac2af58ec85e8008cb7053a7e22b54014b7cc5"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "aa58185f3d34dae62423ffbca141bae0aa5e06ed976402137a8cd219525f7965",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D19:921-924",
+  "scope_only": true,
+  "test_sha256": "cc94291da1e263b5bb42e44e8b50b57c7fbda665a6ebbecf594225681041a474",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:22:39.465089+00:00"
+}

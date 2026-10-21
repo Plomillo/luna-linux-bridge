@@ -1,0 +1,21 @@
+{
+  "canonical_name": "QUARANTINE_BOUNDARY_TEST",
+  "capability_id": 1092,
+  "certification_granted": false,
+  "domain_id": "D22",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "38f3873446c529ad1e6be6cad2f4259114d69cfb078b7f5d6c498c1789ae44b6",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d22_1089_1092.py",
+  "module_sha256": "77d21857e0452e8d5bd8c322d2b979a261d4922cf913603c44d0eb057739a4a1",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d22_1089_1092.py",
+  "test_case": "test_cap_1092",
+  "test_sha256": "22c8c2168e2ef16f5d6b459a90873c1040db1463e6512216930f25190e6e070a",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

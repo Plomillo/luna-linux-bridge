@@ -1,0 +1,74 @@
+{
+  "certification_granted": false,
+  "completed_at_utc": "2026-10-13T23:44:52.795121+00:00",
+  "full_suite_exit_code": 0,
+  "module_sha256": "591082428db8a61946e78341df2e086785d8d0d49f20cf632a4b3a4501139940",
+  "prior_evidence": {
+    "101": {
+      "prior_evidence_sha256": "0ea5ca7780788dbdb877ca2dfc8c8aa84b5483fce15d9bb25efd581a4a1c8277",
+      "prior_module_sha256": "591082428db8a61946e78341df2e086785d8d0d49f20cf632a4b3a4501139940",
+      "prior_test_sha256": "8c32455a51ccf1c4d81309e15d18261e537f85a50f63ac74ac063e5466064e13"
+    },
+    "102": {
+      "prior_evidence_sha256": "1c9fcab3a4be9998486bfffaba5035b24e61bba817bf8f63ebcffc32ff189654",
+      "prior_module_sha256": "591082428db8a61946e78341df2e086785d8d0d49f20cf632a4b3a4501139940",
+      "prior_test_sha256": "8c32455a51ccf1c4d81309e15d18261e537f85a50f63ac74ac063e5466064e13"
+    },
+    "103": {
+      "prior_evidence_sha256": "9729bf8a32c2054f0914799f03eaf3f7520e6a0495356d34b0131e5d401ef11d",
+      "prior_module_sha256": "591082428db8a61946e78341df2e086785d8d0d49f20cf632a4b3a4501139940",
+      "prior_test_sha256": "8c32455a51ccf1c4d81309e15d18261e537f85a50f63ac74ac063e5466064e13"
+    },
+    "104": {
+      "prior_evidence_sha256": "a38a42793a7c2a737f7749dd45f5ccf3e2f7b9a634aa35754834a9fcd84c4374",
+      "prior_module_sha256": "591082428db8a61946e78341df2e086785d8d0d49f20cf632a4b3a4501139940",
+      "prior_test_sha256": "8c32455a51ccf1c4d81309e15d18261e537f85a50f63ac74ac063e5466064e13"
+    }
+  },
+  "schema": "SUPER1200_D04_EVIDENCE_REFRESH/1",
+  "scope": "D04_CAPABILITIES_101_104_ONLY",
+  "scope_key": "D04:101-104",
+  "source_commit": "325bb201082eecf8fad7dace23de4fcbb6fea376",
+  "specific_test_results": [
+    {
+      "capability_id": 101,
+      "exit_code": 0,
+      "result": "PASS",
+      "single_test_run_confirmed": true,
+      "stderr_sha256": "445e1945836c7ae165dd6643ab79ccc86631c22bcf74e3f918e86bb225fa5642",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "test_case": "test_policy_as_code_binds_versioned_policy_input_and_audit_receipt"
+    },
+    {
+      "capability_id": 102,
+      "exit_code": 0,
+      "result": "PASS",
+      "single_test_run_confirmed": true,
+      "stderr_sha256": "448c8010b00954ebd0f7895153ee8a077b13e9fe83fa26781f049f975f714544",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "test_case": "test_opa_rego_provider_pins_version_bundle_and_sandbox"
+    },
+    {
+      "capability_id": 103,
+      "exit_code": 0,
+      "result": "PASS",
+      "single_test_run_confirmed": true,
+      "stderr_sha256": "2bcc80afab38e0ff26405583feefc455a4fe264621f77ae1f9af62699ecda936",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "test_case": "test_cue_provider_binds_schema_input_and_deterministic_export"
+    },
+    {
+      "capability_id": 104,
+      "exit_code": 0,
+      "result": "PASS",
+      "single_test_run_confirmed": true,
+      "stderr_sha256": "2964a7c3eac37261fe33ecba9c72f708679289a3747f5e5e6e6e962de44664e0",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "test_case": "test_json_schema_provider_pins_dialect_and_rejects_unknown_fields"
+    }
+  ],
+  "status": "PASS_AWAITING_G23",
+  "test_sha256": "8c32455a51ccf1c4d81309e15d18261e537f85a50f63ac74ac063e5466064e13",
+  "workflow_run_id": "38486078293",
+  "workflow_url": "https://github.com/Plomillo/luna-linux-bridge/actions/runs/38486078293"
+}

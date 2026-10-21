@@ -1,0 +1,21 @@
+{
+  "canonical_name": "UNCERTAINTY_REDUCTION_FABRIC",
+  "capability_id": 641,
+  "certification_granted": false,
+  "domain_id": "D14",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "a98e180c6a397a0688d2c0700258ddf3b8da94f97676961fc47a52e15f6fefe5",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d14_641_644.py",
+  "module_sha256": "9be48ab31885de31a79d86ab6d8f360bacefbcb26d8011108ad252f89cce0c44",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d14_641_644.py",
+  "test_case": "test_cap_0641",
+  "test_sha256": "fe6232e64fce2aa955795596470da4e1d9658ab37e490cac47121e65205fd83f",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

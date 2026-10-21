@@ -1,0 +1,21 @@
+{
+  "canonical_name": "SANITIZATION_FEASIBILITY_ENGINE",
+  "capability_id": 1006,
+  "certification_granted": false,
+  "domain_id": "D21",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "110cd06e5c671a2b3504d41ae80577673a08bb851475dc16225bf2bcd2545356",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d21_1005_1008.py",
+  "module_sha256": "41a59a8166dec59e357527b5883f3be0e9eb6cb9be7c0132101278ad842386ed",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d21_1005_1008.py",
+  "test_case": "test_cap_1006",
+  "test_sha256": "0857cbda10e7a6c948363074469b456d30ecaa65f63121db6efa78b94d5be3b9",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

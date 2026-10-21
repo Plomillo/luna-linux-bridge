@@ -1,0 +1,21 @@
+{
+  "canonical_name": "WINDOWS_COMPATIBILITY_FABRIC",
+  "capability_id": 701,
+  "certification_granted": false,
+  "domain_id": "D16",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "034cdf5cdd9f5aee9866265931ba6f4787bef7c2049b680981743bab3d034670",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d16_701_704.py",
+  "module_sha256": "82775f63f714f4344128430cd7dc91e10c4da75c7093f39df18637a352d8575d",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d16_701_704.py",
+  "test_case": "test_cap_0701",
+  "test_sha256": "1fa7356bdea47c872c9909cfc0769fc406e84dafd8d0052355283f85c3bb9a4b",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

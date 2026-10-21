@@ -1,0 +1,29 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "EVIDENCE_LINKED_CODING",
+      "capability_id": 299,
+      "evidence_sha256": "98395aae20559253a934009cc6fb270bc8423830d44928c1f0af2858d7104bb3"
+    },
+    {
+      "canonical_name": "MIXED_METHODS_ENGINE",
+      "capability_id": 300,
+      "evidence_sha256": "be59a161573381c80e57d0f267710bc9e3dc35e9e810b5493138a293d7ba1b1f"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "f5fee5dc291884e9382508f56c8915a3077b5f88f12cd3fd72489457cdef67db",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D07:299-300",
+  "scope_only": true,
+  "test_sha256": "6cde782a4b4e72fb77acb98a4685f53a2529c5b561ebdf01c1956f621beccc6a",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:21:19.763562+00:00"
+}

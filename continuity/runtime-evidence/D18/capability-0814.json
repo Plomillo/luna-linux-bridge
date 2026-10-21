@@ -1,0 +1,21 @@
+{
+  "canonical_name": "DATA_MIGRATION_ENGINE",
+  "capability_id": 814,
+  "certification_granted": false,
+  "domain_id": "D18",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "900745de6c25c6f400c78c8baaefbfca736a65db8986fc4cf774d48984bdac30",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d18_813_816.py",
+  "module_sha256": "8606f80ba3efa1431eb69a71d845fedfd57208c88f5719c85a841215a302d4d1",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d18_813_816.py",
+  "test_case": "test_cap_0814",
+  "test_sha256": "4f3f1e6cfbc97ff175fa59b7f358c4860444893b190c72bc48ecb2e271871cee",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

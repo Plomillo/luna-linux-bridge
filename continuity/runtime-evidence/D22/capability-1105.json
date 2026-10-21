@@ -1,0 +1,21 @@
+{
+  "canonical_name": "DESTRUCTION_RECEIPT",
+  "capability_id": 1105,
+  "certification_granted": false,
+  "domain_id": "D22",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "184589fc04b9e49f53bc19ca2423d6b6a1ca40fe815c74631a31d2acf69ce6b1",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d22_1105_1108.py",
+  "module_sha256": "533b1b45a7c55839b017f51b76043cc6da2f203ee30b5e58e0b2bb170d23789c",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d22_1105_1108.py",
+  "test_case": "test_cap_1105",
+  "test_sha256": "4bab2cb85f73bf99e4f14d6c4735f334ac8bd57a66d285a56da2cf58734fc231",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

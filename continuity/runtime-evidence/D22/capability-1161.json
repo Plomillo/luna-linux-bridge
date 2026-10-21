@@ -1,0 +1,21 @@
+{
+  "canonical_name": "HUMAN_ORIGIN_THREAT_FABRIC",
+  "capability_id": 1161,
+  "certification_granted": false,
+  "domain_id": "D22",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "de9738ff1a8c519fc6532c1e55f39e696e59c8e7b69e7a1b1593a58fcb54f9d1",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d22_1161_1164.py",
+  "module_sha256": "cbe5c21b25abcbb87e4f7637bde9e3b62a097f687bc3735c828e8d27a9833d18",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d22_1161_1164.py",
+  "test_case": "test_cap_1161",
+  "test_sha256": "96f7d2336fd3082fef6a63bf28aa73f814aec4695d3c984ba6473cb40dfe741d",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

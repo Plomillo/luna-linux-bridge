@@ -1,0 +1,21 @@
+{
+  "canonical_name": "CHUNKING_ENGINE",
+  "capability_id": 629,
+  "certification_granted": false,
+  "domain_id": "D13",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "e852a84051171e4455395ab65a6be7f7ebf98aa9509acc135abc56b790bca640",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d13_626_629.py",
+  "module_sha256": "c3230ed614979746516b5407bb54a925051b0d0141e81825a1355c2065fe0254",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d13_626_629.py",
+  "test_case": "test_cap_0629",
+  "test_sha256": "9c21f5e30cd22ed6b879d1e041053e325f6af82170c7282c434504a217e0b3f5",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

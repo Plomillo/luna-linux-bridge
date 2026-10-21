@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "ECOSYSTEM_FACTORY",
+      "capability_id": 753,
+      "evidence_sha256": "8e9d02ab7a042b00fd33727623f7e640a2850b00c9617c2aa21110149ec20965"
+    },
+    {
+      "canonical_name": "COGNITIVE_UNIVERSE_FACTORY",
+      "capability_id": 754,
+      "evidence_sha256": "4072e2065d8391a1d0b4f74d4e8d436a9e6d939de0ade8135a35d544568c95ed"
+    },
+    {
+      "canonical_name": "METACOGNITIVE_UNIVERSE_FACTORY",
+      "capability_id": 755,
+      "evidence_sha256": "cde4b3cc7f03ce5bece769549d81d55f1e3e8c2a2e5ee7d631b13d16281b9a72"
+    },
+    {
+      "canonical_name": "ECOSYSTEM_INTEROPERABILITY_GATE",
+      "capability_id": 756,
+      "evidence_sha256": "2f2f7feb9cddc7f04432775687375d95306ba4e6b2b473b67dca69c1b1ca6224"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "7cbfaf363274d54cbbdfe480f07a20b11fc8d92e642511f80240a25af7f87760",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D17:753-756",
+  "scope_only": true,
+  "test_sha256": "56294b2feaf76d7da09b5d4aa236ddffa3b90525fa995d8d3afea3dc2450ed5a",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:22:17.698080+00:00"
+}

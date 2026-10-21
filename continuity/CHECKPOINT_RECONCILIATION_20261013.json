@@ -1,0 +1,71 @@
+{
+  "schema": "SUPER1200_CHECKPOINT_RECONCILIATION/1.0",
+  "reconciliation_id": "SUPER1200-CHECKPOINT-RECONCILIATION-20261013-001",
+  "observed_at_utc": "2026-10-13T08:30:08Z",
+  "branch": "custosz/super-1200-implementation-20261007",
+  "source_head": "f2713072fa932c4c1535345fa213e7705e0718f8",
+  "outcome": "BLOCKED_SAFE_HALT",
+  "reported_checkpoint": "D03_FUNCTIONALLY_CLOSED",
+  "next_point": "D04",
+  "historical_record": {
+    "file": "continuity/CONTINUATION_RESULT.json",
+    "self_reported_status": "PASS",
+    "domain": "D03",
+    "evidenced_in_D03": 35,
+    "pending_in_D03": 0,
+    "total_remaining_recorded": 1120,
+    "g23": "BLOCKED_UNTIL_INDEPENDENT_VALIDATION",
+    "g24": "BLOCKED_UNTIL_G23",
+    "independently_validated": false
+  },
+  "findings": [
+    {
+      "id": "R01",
+      "severity": "HIGH",
+      "files": [
+        "implementation/super1200/runtime/super1200_continuation_worker.py",
+        "implementation/super1200/domains/D02_runtime.py",
+        "implementation/super1200/domains/D03_runtime.py"
+      ],
+      "finding": "The continuation worker synthesizes generic wrapper functions and self-referential tests, then writes EVIDENCED into registry/domain records without demonstrating the advertised domain behavior.",
+      "disposition": "DO_NOT_DISPATCH; preserve existing records for review rather than silently reclassifying prior capability IDs."
+    },
+    {
+      "id": "R02",
+      "severity": "HIGH",
+      "files": [
+        "continuity/EXECUTORS.json",
+        "continuity/super1200_continuation_worker.py"
+      ],
+      "finding": "D04's active executor path maps to the continuation dispatcher itself. The dispatcher would invoke itself recursively rather than invoke a material D04 worker.",
+      "disposition": "Removed the path from the active executor map and retained it under blocked_executor_records."
+    },
+    {
+      "id": "R03",
+      "severity": "MEDIUM",
+      "files": [
+        "implementation/super1200/DOMAIN_PROGRESS.json",
+        "implementation/super1200/domains/D01.json"
+      ],
+      "finding": "DOMAIN_PROGRESS reports D01 IN_PROGRESS while the D01 domain record reports 30/30 evidenced and FUNCTIONALLY_CLOSED_PENDING_INDEPENDENT_VALIDATION.",
+      "disposition": "Conflict preserved and flagged for explicit reconciliation; no capability state silently altered."
+    }
+  ],
+  "effective_state": {
+    "current_checkpoint": "D03_FUNCTIONALLY_CLOSED",
+    "checkpoint_assessment": "REPORTED_FUNCTIONAL_CLOSURE_NOT_INDEPENDENTLY_VALIDATED",
+    "dispatch": "BLOCKED",
+    "active": false,
+    "certified": false,
+    "g23": "BLOCKED_UNTIL_INDEPENDENT_VALIDATION",
+    "g24": "BLOCKED_UNTIL_G23",
+    "promotion_to_main": "PROHIBITED_UNTIL_APPROVED_GATES"
+  },
+  "required_recovery": [
+    "Implement and test a real material D04 worker with behavior-level assertions.",
+    "Review the generated D02 and D03 implementation artifacts and corresponding evidence.",
+    "Reconcile D01 DOMAIN_PROGRESS against its domain record without silent state changes.",
+    "Run G23 as a separate independent validation step; only then evaluate G24 against the same candidate digest.",
+    "Do not resume automatic continuation or promote to main before the review and gates pass."
+  ]
+}

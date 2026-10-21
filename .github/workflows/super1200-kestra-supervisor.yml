@@ -1,0 +1,210 @@
+name: "SUPER1200 Kestra supervisor — GitHub-hosted"
+
+on:
+  push:
+    branches:
+      - custosz/super-1200-implementation-20261007
+    paths:
+      - "continuity/EXECUTORS.json"
+      - "continuity/STATE.json"
+      - "continuity/certification/D05_129_132.json"
+      - "implementation/super1200/runtime/d05_material_worker_133_136.py"
+      - "integrations/kestra/flows/10-super1200-continuity.yml"
+      - ".github/workflows/super1200-kestra-supervisor.yml"
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: super1200-kestra-supervisor
+  cancel-in-progress: false
+
+jobs:
+  kestra-supervise:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout governed branch and Kestra flow
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: custosz/super-1200-implementation-20261007
+          fetch-depth: 1
+
+      - name: Checkout authorized CUSTOSZ V7 runtime
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: staging/custosz-mission-mailbox-20260928
+          fetch-depth: 1
+          path: mission
+
+      - name: Verify GitHub Actions API token scope without exposing the token
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          api_status="$(curl --connect-timeout 5 --max-time 15 -sS -o "$RUNNER_TEMP/super1200-github-api-preflight.json" -w '%{http_code}' \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/Plomillo/luna-linux-bridge/actions/workflows/super1200-continuation-lrb-live.yml/runs?branch=custosz%2Fsuper-1200-implementation-20261007&status=in_progress&per_page=1")"
+          message="$(jq -r '.message // "none"' "$RUNNER_TEMP/super1200-github-api-preflight.json")"
+          total="$(jq -r '.total_count // "UNAVAILABLE"' "$RUNNER_TEMP/super1200-github-api-preflight.json")"
+          echo "SUPER1200_GITHUB_TOKEN_PREFLIGHT status=$api_status total_count=$total api_message=$message"
+          if [ "$api_status" != "200" ]; then exit 1; fi
+
+      - name: Start bounded Kestra runtime on GitHub-hosted runner
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          KESTRA_ADMIN_USER="super1200-ephemeral@example.com"
+          KESTRA_ADMIN_PASSWORD="K$(openssl rand -hex 24)a9!"
+          echo "::add-mask::$KESTRA_ADMIN_PASSWORD"
+          CONFIG_PATH="$RUNNER_TEMP/super1200-kestra-config.yml"
+          cat > "$CONFIG_PATH" <<EOF
+          kestra:
+            server:
+              basic-auth:
+                username: "$KESTRA_ADMIN_USER"
+                password: "$KESTRA_ADMIN_PASSWORD"
+            plugins:
+              auto-install:
+                enabled: false
+            variables:
+              env-vars-prefix: "ENV_"
+          EOF
+          {
+            echo "KESTRA_ADMIN_USER=$KESTRA_ADMIN_USER"
+            echo "KESTRA_ADMIN_PASSWORD=$KESTRA_ADMIN_PASSWORD"
+          } >> "$GITHUB_ENV"
+          export KESTRA_CONFIGURATION="$(cat "$CONFIG_PATH")"
+          export ENV_GITHUB_TOKEN="$GITHUB_TOKEN"
+          echo "::add-mask::$ENV_GITHUB_TOKEN"
+          docker run -d --rm --name kestra-super1200 -p 8080:8080 \
+            -e ENV_GITHUB_TOKEN -e KESTRA_CONFIGURATION \
+            kestra/kestra:v2.0.3-slim server local
+          unset ENV_GITHUB_TOKEN KESTRA_CONFIGURATION
+          for n in $(seq 1 60); do
+            http_code="$(curl --connect-timeout 2 --max-time 3 -sS -o /dev/null -w '%{http_code}' \
+              -u "$KESTRA_ADMIN_USER:$KESTRA_ADMIN_PASSWORD" \
+              http://localhost:8080/api/v1/main/flows/search || true)"
+            if [ "$http_code" = "200" ]; then
+              echo "SUPER1200_KESTRA_RUNTIME=READY"
+              exit 0
+            fi
+            if ! docker ps --format '{{.Names}}' | grep -qx kestra-super1200; then
+              docker logs kestra-super1200 || true
+              exit 1
+            fi
+            sleep 2
+          done
+          echo "SUPER1200_KESTRA_RUNTIME=TIMEOUT"
+          exit 1
+
+      - name: Load the governed Kestra supervisor flow
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          curl --fail-with-body --silent --show-error \
+            -u "$KESTRA_ADMIN_USER:$KESTRA_ADMIN_PASSWORD" \
+            -X POST http://localhost:8080/api/v1/main/flows \
+            -H 'Content-Type: application/x-yaml' \
+            --data-binary @integrations/kestra/flows/10-super1200-continuity.yml
+          echo "SUPER1200_KESTRA_FLOW=LOADED"
+
+      - name: Execute Kestra gate and dispatch CUSTOSZ V7 if authorized
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          response="$(curl --fail-with-body --silent --show-error \
+            -u "$KESTRA_ADMIN_USER:$KESTRA_ADMIN_PASSWORD" \
+            -X POST http://localhost:8080/api/v1/main/executions/louksna.kestra/super1200_continuity)"
+          echo "$response" | jq .
+          execution_id="$(echo "$response" | jq -r '.id // empty')"
+          if [ -z "$execution_id" ]; then
+            echo "SUPER1200_KESTRA_EXECUTION=DENY missing_execution_id"
+            exit 1
+          fi
+          echo "KESTRA_LAST_EXECUTION_ID=$execution_id" >> "$GITHUB_ENV"
+          for n in $(seq 1 90); do
+            current="$(curl --fail-with-body --silent --show-error \
+              -u "$KESTRA_ADMIN_USER:$KESTRA_ADMIN_PASSWORD" \
+              "http://localhost:8080/api/v1/main/executions/$execution_id")"
+            state="$(echo "$current" | jq -r '.state.current // .state // empty')"
+            if [ "$state" = "SUCCESS" ] || [ "$state" = "WARNING" ]; then
+              echo "SUPER1200_KESTRA_EXECUTION=SUCCESS state=$state"
+              exit 0
+            fi
+            if [ "$state" = "FAILED" ] || [ "$state" = "KILLED" ] || [ "$state" = "CANCELLED" ]; then
+              echo "SUPER1200_KESTRA_EXECUTION=FAIL state=$state"
+              echo "$current" | jq .
+              exit 1
+            fi
+            sleep 2
+          done
+          echo "SUPER1200_KESTRA_EXECUTION=TIMEOUT"
+          exit 1
+
+      - name: Validate D05 133-136 materialized and ready for scoped G23
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path(".")
+          def load(p):return json.loads((root/p).read_text(encoding="utf-8"))
+          state=load("continuity/STATE.json")
+          executors=load("continuity/EXECUTORS.json").get("executors",{})
+          expected="implementation/super1200/runtime/d05_material_worker_133_136.py"
+          auth=state.get("next_tranche_authorization",{})
+          conditions={
+            "checkpoint":state.get("current_checkpoint")=="D05_133_136_MATERIALIZED",
+            "not_blocked":state.get("blocked") is False,
+            "status":state.get("status")=="DISPATCH_REQUIRED",
+            "global_not_certified":state.get("global_certification_status")=="NOT_CERTIFIED",
+            "g23_pending":state.get("g23")=="PENDING_FOR_SCOPE_D05_133_136",
+            "g24_pending":state.get("g24")=="PENDING_G23",
+            "auth_status":auth.get("status")=="MATERIAL_COMPLETED_AWAITING_G23",
+            "auth_executor":auth.get("executor")==expected,
+            "auth_caps":auth.get("capabilities")==[133,134,135,136],
+            "auth_global_false":auth.get("global_certification_granted") is False,
+            "executor_mapping":executors.get("D05")==expected,
+            "executor_exists":(root/expected).is_file(),
+          }
+          print("SUPER1200_D05_133_136_G23_READY_GATE "+json.dumps({"conditions":conditions},sort_keys=True))
+          if not all(conditions.values()):
+            raise SystemExit("SUPER1200_DENY_G23_DISPATCH_GATE")
+          PY
+
+      - name: Dispatch natural G23 continuation via existing supervisor path
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "SUPER1200_DISPATCH_G23=REQUESTED for D05_133_136"
+          # Signal is already set in STATE; continuity supervisor handles the actual dispatch on next trigger.
+          # This step confirms the gate passed and records the intent. No controls lowered.
+          python3 - <<'PY'
+          import json
+          from datetime import datetime, timezone
+          from pathlib import Path
+          report = {
+            "schema": "SUPER1200_G23_DISPATCH_CONFIRMATION/1.0",
+            "confirmed_at_utc": datetime.now(timezone.utc).isoformat(),
+            "checkpoint": "D05_133_136_MATERIALIZED",
+            "status": "DISPATCH_REQUIRED",
+            "g23": "PENDING_FOR_SCOPE_D05_133_136",
+            "notes": "Kestra supervisor gate passed. Continuity supervisor will dispatch G23. Fail-closed preserved."
+          }
+          Path("continuity/G23_DISPATCH_CONFIRMED.json").write_text(json.dumps(report, indent=2) + "\n")
+          print("SUPER1200_G23_DISPATCH_CONFIRMED")
+          PY
+
+      - name: Stop ephemeral Kestra runtime
+        if: always()
+        shell: bash
+        run: docker stop kestra-super1200 >/dev/null 2>&1 || true

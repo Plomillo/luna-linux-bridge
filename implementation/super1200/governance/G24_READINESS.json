@@ -1,0 +1,6 @@
+{
+  "certification_propagation": false,
+  "pass": false,
+  "requires_g23_same_digest": true,
+  "state": "READINESS"
+}

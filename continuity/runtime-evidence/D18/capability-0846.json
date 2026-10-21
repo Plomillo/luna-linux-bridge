@@ -1,0 +1,21 @@
+{
+  "canonical_name": "TEST_RESULT_REUSE_ENGINE",
+  "capability_id": 846,
+  "certification_granted": false,
+  "domain_id": "D18",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "80d0367a442f6e64a119069921c207131564759e301777b26b3b6a7f25cef826",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d18_845_848.py",
+  "module_sha256": "485aec5030a02f4172801ab7a193ce1144b432598aafcab264229a31320ad192",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d18_845_848.py",
+  "test_case": "test_cap_0846",
+  "test_sha256": "246cfe0dcd4781ae54b1033a9b6df64c6e3f0cd55657aeeacaaccbc4340cbc99",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

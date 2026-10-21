@@ -1,0 +1,151 @@
+id: super1200_continuity
+namespace: louksna.kestra
+description: >-
+  Checkpoint supervisor for SUPER1200, executed by a bounded GitHub-hosted Kestra instance.
+  Synced to current STATE: D05 133-136 materialized, G23 pending for that scope, prior D05 129-132 still scoped-pass.
+  Does not re-authorize the material worker and never certifies globally.
+tasks:
+  - id: checkpoint
+    type: io.kestra.plugin.core.http.Request
+    uri: "https://api.github.com/repos/Plomillo/luna-linux-bridge/contents/continuity/STATE.json?ref=custosz%2Fsuper-1200-implementation-20261007&cache_bust={{ execution.id }}"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ envs.github_token }}"
+      Accept: application/vnd.github.raw+json
+      Cache-Control: no-cache, no-store
+      Pragma: no-cache
+  - id: executors
+    type: io.kestra.plugin.core.http.Request
+    uri: "https://api.github.com/repos/Plomillo/luna-linux-bridge/contents/continuity/EXECUTORS.json?ref=custosz%2Fsuper-1200-implementation-20261007&cache_bust={{ execution.id }}"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ envs.github_token }}"
+      Accept: application/vnd.github.raw+json
+      Cache-Control: no-cache, no-store
+      Pragma: no-cache
+  - id: prior_certificate
+    type: io.kestra.plugin.core.http.Request
+    uri: "https://api.github.com/repos/Plomillo/luna-linux-bridge/contents/continuity/certification/D05_129_132.json?ref=custosz%2Fsuper-1200-implementation-20261007&cache_bust={{ execution.id }}"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ envs.github_token }}"
+      Accept: application/vnd.github.raw+json
+      Cache-Control: no-cache, no-store
+      Pragma: no-cache
+  - id: secret_provider_diagnostic
+    type: io.kestra.plugin.core.log.Log
+    message: "SUPER1200_KESTRA_AUTH_PROVIDER=PUBLIC_READ_ONLY_GITHUB_API"
+  - id: active_runs
+    type: io.kestra.plugin.core.http.Request
+    uri: "https://api.github.com/repos/Plomillo/luna-linux-bridge/actions/workflows/super1200-continuation-lrb-live.yml/runs?branch=custosz%2Fsuper-1200-implementation-20261007&status=in_progress&per_page=1"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ envs.github_token }}"
+      Accept: application/vnd.github+json
+      X-GitHub-Api-Version: "2022-11-28"
+    options:
+      allowFailed: "true"
+  - id: queued_runs
+    type: io.kestra.plugin.core.http.Request
+    uri: "https://api.github.com/repos/Plomillo/luna-linux-bridge/actions/workflows/super1200-continuation-lrb-live.yml/runs?branch=custosz%2Fsuper-1200-implementation-20261007&status=queued&per_page=1"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ envs.github_token }}"
+      Accept: application/vnd.github+json
+      X-GitHub-Api-Version: "2022-11-28"
+    options:
+      allowFailed: "true"
+  - id: scoped_certificate
+    type: io.kestra.plugin.core.http.Request
+    uri: "https://api.github.com/repos/Plomillo/luna-linux-bridge/contents/continuity/certification/D05_133_136.json?ref=custosz%2Fsuper-1200-implementation-20261007&cache_bust={{ execution.id }}"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ envs.github_token }}"
+      Accept: application/vnd.github.raw+json
+      Cache-Control: no-cache, no-store
+      Pragma: no-cache
+    options:
+      allowFailed: "true"
+  - id: already_scoped_hold
+    type: io.kestra.plugin.core.flow.If
+    condition: >-
+      {{ outputs.scoped_certificate.code == 200
+         and fromJson(outputs.checkpoint.body).blocked == true
+         and fromJson(outputs.checkpoint.body).certified == false
+         and fromJson(outputs.checkpoint.body).global_certification_status == 'NOT_CERTIFIED'
+         and fromJson(outputs.checkpoint.body).g23 == 'PASS_FOR_SCOPE_D05_133_136'
+         and fromJson(outputs.checkpoint.body).g24 == 'PASS_FOR_SCOPE_D05_133_136'
+         and fromJson(outputs.checkpoint.body).current_checkpoint == 'D05_133_136_MATERIALIZED'
+         and fromJson(outputs.scoped_certificate.body).result == 'PASS'
+         and fromJson(outputs.scoped_certificate.body).scope == 'D05:133-136'
+         and fromJson(outputs.scoped_certificate.body).scope_only == true
+         and fromJson(outputs.scoped_certificate.body).global_super1200_certified == false }}
+    then:
+      - id: scoped_hold
+        type: io.kestra.plugin.core.log.Log
+        message: >-
+          SUPER1200_SAFE_HOLD_SCOPED scope=D05:133-136 G23=PASS G24=PASS global=NOT_CERTIFIED
+          kestra_execution={{ execution.id }}
+          Next tranche stays blocked until a reviewed executor is registered. No controls lowered.
+    else:
+      - id: gate_and_dispatch
+        type: io.kestra.plugin.core.flow.If
+        condition: >-
+          {{ fromJson(outputs.checkpoint.body).blocked == false
+             and fromJson(outputs.checkpoint.body).status == 'DISPATCH_REQUIRED'
+             and fromJson(outputs.checkpoint.body).current_checkpoint == 'D05_133_136_MATERIALIZED'
+             and fromJson(outputs.executors.body).executors.D05 == 'implementation/super1200/runtime/d05_material_worker_133_136.py'
+             and fromJson(outputs.checkpoint.body).g23 == 'PENDING_FOR_SCOPE_D05_133_136'
+             and fromJson(outputs.checkpoint.body).g24 == 'PENDING_G23'
+             and fromJson(outputs.checkpoint.body).global_certification_status == 'NOT_CERTIFIED'
+             and fromJson(outputs.checkpoint.body).scoped_certification.scope == 'D05:129-132'
+             and fromJson(outputs.checkpoint.body).scoped_certification.status == 'PASS'
+             and fromJson(outputs.checkpoint.body).scoped_certification.global_certification_granted == false
+             and fromJson(outputs.checkpoint.body).next_tranche_authorization.status == 'MATERIAL_COMPLETED_AWAITING_G23'
+             and fromJson(outputs.checkpoint.body).next_tranche_authorization.executor == 'implementation/super1200/runtime/d05_material_worker_133_136.py'
+             and fromJson(outputs.checkpoint.body).next_tranche_authorization.capabilities == [133,134,135,136]
+             and fromJson(outputs.checkpoint.body).next_tranche_authorization.global_certification_granted == false
+             and outputs.prior_certificate.code == 200
+             and fromJson(outputs.prior_certificate.body).result == 'PASS'
+             and fromJson(outputs.prior_certificate.body).scope == 'D05:129-132'
+             and fromJson(outputs.prior_certificate.body).g23 == 'PASS'
+             and fromJson(outputs.prior_certificate.body).g24 == 'PASS'
+             and fromJson(outputs.prior_certificate.body).certification_granted == true
+             and fromJson(outputs.prior_certificate.body).global_super1200_certified == false
+             and outputs.active_runs.code == 200
+             and outputs.queued_runs.code == 200
+             and fromJson(outputs.active_runs.body).total_count == 0
+             and fromJson(outputs.queued_runs.body).total_count == 0 }}
+        then:
+          - id: authorization_receipt
+            type: io.kestra.plugin.core.log.Log
+            message: >-
+              SUPER1200_G23_GATE_OPEN checkpoint={{ fromJson(outputs.checkpoint.body).current_checkpoint }}
+              prior_scope=D05:129-132 G23=PENDING_FOR_SCOPE_D05_133_136 G24=PENDING_G23
+              kestra_execution={{ execution.id }}
+              material_worker=NOT_REDISPATCHED
+              certification=NOT_GRANTED
+        else:
+          - id: blocked_safe_hold
+            type: io.kestra.plugin.core.log.Log
+            message: >-
+              SUPER1200_SAFE_HOLD status={{ fromJson(outputs.checkpoint.body).status }}
+              blocked={{ fromJson(outputs.checkpoint.body).blocked }}
+              reason={{ fromJson(outputs.checkpoint.body).block_reason }}
+              next={{ fromJson(outputs.checkpoint.body).next_point }}
+              prior_certificate_http_code={{ outputs.prior_certificate.code }}
+              scoped_certificate_http_code={{ outputs.scoped_certificate.code }}
+              active_run_http_code={{ outputs.active_runs.code }}
+              queued_run_http_code={{ outputs.queued_runs.code }}
+              Hold unless the materialized tranche, prior scoped certificate, and public GitHub API reads validate. No global certification.
+          - id: fail_closed_safe_hold
+            type: io.kestra.plugin.core.execution.Fail
+            errorMessage: "SUPER1200_FAIL_CLOSED: checkpoint gate denied continuation; material worker must not execute."
+triggers:
+  - id: every_five_minutes
+    type: io.kestra.plugin.core.trigger.Schedule
+    cron: "*/5 * * * *"
+    timezone: "America/Santiago"
+    recoverMissedSchedules: NONE
+    allowConcurrent: false
+    lateMaximumDelay: PT2M

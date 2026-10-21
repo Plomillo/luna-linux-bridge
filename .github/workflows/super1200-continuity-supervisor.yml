@@ -1,0 +1,78 @@
+# D04_WORKER_TRIGGER_ISOLATION
+name: "SUPER1200 — continuity supervisor"
+on:
+  push:
+    branches: [custosz/super-1200-implementation-20261007]
+    paths:
+      - ".github/workflows/super1200-continuity-supervisor.yml"
+      - "continuity/signals/**"
+  repository_dispatch:
+    types: [super1200_continuity_watch]
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: super1200-continuity-supervisor-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  supervise:
+    outputs:
+      dispatch: ${{ steps.route.outputs.dispatch }}
+      next_point: ${{ steps.route.outputs.next_point }}
+      transition_id: ${{ steps.route.outputs.transition_id }}
+      g23: ${{ steps.route.outputs.g23 }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: custosz/super-1200-implementation-20261007
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Run metacognitive supervisor
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          python3 -B continuity/super1200_continuity_supervisor.py
+      - name: Route continuation
+        id: route
+        run: |
+          python3 - <<'PY'
+          import json, os
+          s=json.load(open("continuity/STATE.json"))
+          with open(os.environ["GITHUB_OUTPUT"],"a") as o:
+              o.write("dispatch=" + ("true" if s.get("status")=="DISPATCH_REQUIRED" else "false") + "\n")
+              o.write("next_point=" + s.get("next_point","") + "\n")
+              o.write("transition_id=" + s.get("transition_id","") + "\n")
+              o.write("g23=" + str(s.get("g23","")) + "\n")
+          PY
+      - name: Record scoped G23 continuation
+        if: steps.route.outputs.dispatch == 'true' && steps.route.outputs.g23 == 'PENDING_FOR_SCOPE_D05_133_136'
+        run: |
+          set -Eeuo pipefail
+          echo "SUPER1200_CONTINUATION=SCOPED_G23_WORKFLOW scope=D05:133-136"
+          echo "Material continuation worker is not redispatched. super1200-g23-g24-d05-133-136.yml is the registered gate."
+          echo "REST workflow_dispatch is not used: that workflow is not on the default branch and returns 404."
+      - name: Dispatch registered continuation worker
+        if: steps.route.outputs.dispatch == 'true' && steps.route.outputs.g23 != 'PENDING_FOR_SCOPE_D05_133_136'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" "/repos/${GITHUB_REPOSITORY}/actions/workflows/super1200-continuation-worker.yml/dispatches" -f ref="custosz/super-1200-implementation-20261007" -f "inputs[transition_id]=${{ steps.route.outputs.transition_id }}" -f "inputs[next_point]=${{ steps.route.outputs.next_point }}"
+      - name: Persist report
+        if: always()
+        run: |
+          set -Eeuo pipefail
+          if [ "${{ steps.route.outputs.g23 }}" = "PENDING_FOR_SCOPE_D05_133_136" ]; then
+            git checkout -- continuity/STATE.json || true
+          fi
+          git add continuity
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name "custosz-v7-runtime-bot"
+          git config user.email "custosz-v7-runtime-bot@users.noreply.github.com"
+          git commit -m "evidence(super1200): persist continuity supervisor state"
+          git pull --rebase origin custosz/super-1200-implementation-20261007
+          git push origin HEAD:custosz/super-1200-implementation-20261007

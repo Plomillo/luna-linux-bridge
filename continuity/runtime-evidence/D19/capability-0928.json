@@ -1,0 +1,21 @@
+{
+  "canonical_name": "NETWORK_SECURITY_FABRIC",
+  "capability_id": 928,
+  "certification_granted": false,
+  "domain_id": "D19",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "35ab54310e4014fc0b0d150607488c230a392f06fa1de7492f771425d288105e",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d19_925_928.py",
+  "module_sha256": "8b7bd662c612cea1283316a6af2238b3f08b56863dfa81c2a4c33b433f1ce0f5",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d19_925_928.py",
+  "test_case": "test_cap_0928",
+  "test_sha256": "faf977f990a3082fd0174df769678f1ce2d25d3bd70a45e536beed2507e9bd5e",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

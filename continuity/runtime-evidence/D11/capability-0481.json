@@ -1,0 +1,21 @@
+{
+  "canonical_name": "FAILED_PATTERN_REGISTRY",
+  "capability_id": 481,
+  "certification_granted": false,
+  "domain_id": "D11",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "70366a6f596f037f1190030bc7550f78e45d60f1dc23bf7950e3c7602d8f1d50",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d11_481_484.py",
+  "module_sha256": "b8c9cd31636b2f8a8a75476891f87f9a39983c6e646fc39d52ec540f9e65000e",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d11_481_484.py",
+  "test_case": "test_cap_0481",
+  "test_sha256": "e321ee9e08be4bde9345a03a5deea70c273522024687c9315364a7c376b7fed9",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

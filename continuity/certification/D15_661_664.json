@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "MACHINE_HEALTH_FABRIC",
+      "capability_id": 661,
+      "evidence_sha256": "0242531efdb4ddeb771f9d2296d3e702c55243c651c18a692dcbf255b30a27ce"
+    },
+    {
+      "canonical_name": "HARDWARE_INVENTORY_ENGINE",
+      "capability_id": 662,
+      "evidence_sha256": "484f7b19430c0ade646b4d817e45b7abc0e5203677c8017185ba714a19c82b3a"
+    },
+    {
+      "canonical_name": "SENSOR_TELEMETRY_ENGINE",
+      "capability_id": 663,
+      "evidence_sha256": "21038962a85dcb630e96eed1a09308195bc49531b018b5d0b928bbebaadaa06e"
+    },
+    {
+      "canonical_name": "BATTERY_HEALTH_ENGINE",
+      "capability_id": 664,
+      "evidence_sha256": "39db8881a868c76ff2fd5c733299fd556bf171855e12a2b055274321b6b8a4f1"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "9abafe1cc94e25fbb9083fedc0b4962728b90f87c22215faee65b828e1eb53d5",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D15:661-664",
+  "scope_only": true,
+  "test_sha256": "a9ed44774e536eac6f4f9d057738ffc07eff33f73c55d7e1f8e6ff57f3bbc489",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:22:05.870503+00:00"
+}

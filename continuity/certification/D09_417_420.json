@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "UEFI_PROVIDER",
+      "capability_id": 417,
+      "evidence_sha256": "e49262d51384e5211e217a27fdd3801227a8791aa60697e85ad5af9e2d4c4e5c"
+    },
+    {
+      "canonical_name": "SECURE_BOOT_PROVIDER",
+      "capability_id": 418,
+      "evidence_sha256": "82a64371d923675192ece8b0e37962603bddd0158390b0ad466c3eebb999dfee"
+    },
+    {
+      "canonical_name": "OS_INSTALLER_FACTORY",
+      "capability_id": 419,
+      "evidence_sha256": "a5eb135c334545a87309d596c5bbcfe7e9e7325c973e86a203483ff5d17a0dc6"
+    },
+    {
+      "canonical_name": "OS_UPDATE_FRAMEWORK",
+      "capability_id": 420,
+      "evidence_sha256": "a392ceaaf1fcc5e8f4cd8c5af05a38074f77129f6c66647328b3ddc676e48e8f"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "b41602c52376bd3e0d72cb54971a863e8e08f1a5915deae6b7ffa84b6354d8b3",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D09:417-420",
+  "scope_only": true,
+  "test_sha256": "5ffd74c0c961f9aba434b1de2c9bb0204d322324dfc7afd7a0431e39462ea94e",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:21:34.748059+00:00"
+}

@@ -1,0 +1,21 @@
+{
+  "canonical_name": "MAINTAINABILITY_SCORE",
+  "capability_id": 574,
+  "certification_granted": false,
+  "domain_id": "D12",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "3a12c65d2641f96649bc2821ebd934d45f073b6fad9a5ec72e4065b446751f4d",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d12_571_574.py",
+  "module_sha256": "e956e9a1d77cb42442c110e3c2096808ec5571f9e848ffbc4785d19f06b1d23b",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d12_571_574.py",
+  "test_case": "test_cap_0574",
+  "test_sha256": "437d710f913fdbc3bba2035dca5ba5a022ced94eac95ec7e8a7b4747af19f77b",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

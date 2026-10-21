@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "LUNA_DEFENDER_RULE_ROLLBACK",
+      "capability_id": 957,
+      "evidence_sha256": "b73488383087414dd3988e572b09f09d5b1fa96d6b1dfc3138fea38debe33c51"
+    },
+    {
+      "canonical_name": "LUNA_DEFENDER_INDEPENDENT_VALIDATION",
+      "capability_id": 958,
+      "evidence_sha256": "0998108fb719644e98651e5e541f717a130853213f77de13f1b1e6d5d82d53b5"
+    },
+    {
+      "canonical_name": "LUNA_DEFENDER_CERTIFICATION",
+      "capability_id": 959,
+      "evidence_sha256": "b51199fd27a72b69087ff96cc5e23052677073aad08b193cdce522a424edd232"
+    },
+    {
+      "canonical_name": "LUNA_DEFENDER_EVOLUTION_ENGINE",
+      "capability_id": 960,
+      "evidence_sha256": "fb2b75bd1363cfe98994dfbbdfa139978b765a27319848e1cf81bcb55a9e064a"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "f22023b29e399dd3c5cf19391efa5ac6d46edc5aa59bc62b341c8d03aa911c21",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D19:957-960",
+  "scope_only": true,
+  "test_sha256": "d928b02c7d5e2465028028a0818be2f4d9f932a0387390f8b17044a7da35d007",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:22:44.142662+00:00"
+}

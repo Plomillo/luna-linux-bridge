@@ -1,0 +1,21 @@
+{
+  "canonical_name": "YOCTO_PROVIDER",
+  "capability_id": 409,
+  "certification_granted": false,
+  "domain_id": "D09",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "9fb8f21d71c914f69d9beb62b7588e4b134548dbc53ad1d628052751dbcc166e",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d09_409_412.py",
+  "module_sha256": "6ec1e643a913971d2b0acf19bdbd4057d8d90cbba99e47d7f21b7d52ca18b79b",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d09_409_412.py",
+  "test_case": "test_cap_0409",
+  "test_sha256": "4c8ae36a829385730cff570541c1e8371b7dcb07927425d0cad5ac8dd32c423b",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

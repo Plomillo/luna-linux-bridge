@@ -1,0 +1,42 @@
+name: SUPER1200 — D05 133-136 material tranche
+# One scoped material run for proof-lifecycle capabilities 133-136. No global certification.
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - custosz/super-1200-implementation-20261007
+    paths:
+      - ".github/workflows/super1200-d05-133-136-material.yml"
+      - "continuity/FORCE_MATERIAL_133_136.marker"
+  schedule:
+    - cron: "*/10 * * * *"
+permissions:
+  contents: write
+concurrency:
+  group: super1200-d05-133-136-material
+  cancel-in-progress: false
+jobs:
+  material:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: custosz/super-1200-implementation-20261007
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Run D05 133-136 material worker
+        run: |
+          set -Eeuo pipefail
+          python3 -B implementation/super1200/runtime/d05_material_worker_133_136.py
+      - name: Persist evidence if produced
+        if: always()
+        run: |
+          set -Eeuo pipefail
+          git config user.name "custosz-v7-runtime-bot"
+          git config user.email "custosz-v7-runtime-bot@users.noreply.github.com"
+          git add continuity implementation/super1200 || true
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "evidence(super1200): persist D05 133-136 material tranche"
+          git pull --rebase origin custosz/super-1200-implementation-20261007 || true
+          git push origin HEAD:custosz/super-1200-implementation-20261007 || true

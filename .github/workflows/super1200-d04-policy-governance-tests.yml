@@ -1,0 +1,43 @@
+name: SUPER1200 D04 policy governance tests 105-108
+
+on:
+  push:
+    branches:
+      - custosz/super-1200-implementation-20261007
+    paths:
+      - "implementation/super1200/domains/D04_policy_governance.py"
+      - "implementation/super1200/tests/test_d04_policy_governance.py"
+      - ".github/workflows/super1200-d04-policy-governance-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: super1200-d04-policy-governance-tests
+  cancel-in-progress: false
+
+jobs:
+  test-policy-governance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout governed candidate branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: custosz/super-1200-implementation-20261007
+          persist-credentials: false
+      - name: Run prior D04 regression suite and new policy-governance suite
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -B implementation/super1200/tests/test_d04_runtime.py -v
+          python3 -B implementation/super1200/tests/test_d04_policy_governance.py -v
+          for test_name in \
+            test_policy_test_suite_covers_positive_negative_bypass_conflict_and_unknown \
+            test_policy_versioning_binds_hash_interval_and_explicit_supersession \
+            test_policy_semantic_diff_ignores_rule_order_and_reports_changed_decision_rules \
+            test_policy_impact_analysis_propagates_semantic_changes_to_claims_tests_auths; do
+            python3 -B implementation/super1200/tests/test_d04_policy_governance.py -v "D04PolicyGovernanceTests.$test_name"
+          done
+          echo "SUPER1200_POLICY_GOVERNANCE_TESTS=PASS BASE_D04_REGRESSION=PASS INDEPENDENT_CASES=4/4 GLOBAL_CERTIFICATION=FALSE"

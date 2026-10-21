@@ -1,0 +1,21 @@
+{
+  "canonical_name": "ANDROID_TEST_LAB",
+  "capability_id": 388,
+  "certification_granted": false,
+  "domain_id": "D09",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "2730ba10424afeab44ce1d9c6e8c7df9407aefa92f9e1a44077fed2c20e80f74",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d09_385_388.py",
+  "module_sha256": "fed6a4938f249e3cde684333c6fc04453f41c4bdd6cbe544eae5a29f2a217f7d",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d09_385_388.py",
+  "test_case": "test_cap_0388",
+  "test_sha256": "632e935be02799bc6384efd99c9c06f1d799714c03657368b3ab210c27db97bc",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

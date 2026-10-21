@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "OPENSSF_SCORECARD_ADAPTER",
+      "capability_id": 571,
+      "evidence_sha256": "ba3681393fb47604c7267bd4ccd5c78e5d141d934d166dd01c09627d0f8d7576"
+    },
+    {
+      "canonical_name": "BEST_PRACTICES_SELF_AUDIT",
+      "capability_id": 572,
+      "evidence_sha256": "18d443d40d232240f824b161cf71b303454105456e65f444796fadaa6155dd2d"
+    },
+    {
+      "canonical_name": "REPOSITORY_HEALTH_SCORE",
+      "capability_id": 573,
+      "evidence_sha256": "79fe22ce2fc0c57159b6b0066bb65653914e2f99003e275e128e2e05c493ec10"
+    },
+    {
+      "canonical_name": "MAINTAINABILITY_SCORE",
+      "capability_id": 574,
+      "evidence_sha256": "3a12c65d2641f96649bc2821ebd934d45f073b6fad9a5ec72e4065b446751f4d"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "e956e9a1d77cb42442c110e3c2096808ec5571f9e848ffbc4785d19f06b1d23b",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D12:571-574",
+  "scope_only": true,
+  "test_sha256": "437d710f913fdbc3bba2035dca5ba5a022ced94eac95ec7e8a7b4747af19f77b",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:21:54.347514+00:00"
+}

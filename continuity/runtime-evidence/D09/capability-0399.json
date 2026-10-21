@@ -1,0 +1,21 @@
+{
+  "canonical_name": "ANDROID_UPDATE_ENGINE",
+  "capability_id": 399,
+  "certification_granted": false,
+  "domain_id": "D09",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "2b2c01945813ea15fbb51b7e921c8eae6b177a086a1d4e4f6d2c91d12d9c7ce8",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d09_397_400.py",
+  "module_sha256": "33231905d18f8765d812a684946f46f178b6f6b9fb4724d14b8f2c25b1b522c4",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d09_397_400.py",
+  "test_case": "test_cap_0399",
+  "test_sha256": "d770e96c77f0ceb88f6f9f5b240bb195abfa2eaa51d4c10d70e5fe1a836e6cbc",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}
