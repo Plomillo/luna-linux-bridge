@@ -1,0 +1,40 @@
+name: SUPER1200 — global seal
+
+# Operator-authorized global seal. G23 revalidates scoped certificates,
+# then G24 writes the seal. Does not promote main and does not enable
+# the synthetic materializer. Capabilities 1-100 stay withheld.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: super1200-global-seal
+  cancel-in-progress: false
+
+jobs:
+  certify:
+    name: G23 then G24
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: custosz/super-1200-implementation-20261007
+          fetch-depth: 0
+      - name: G23 revalidation
+        run: GATE_STAGE=G23 python3 -B continuity/g23_g24_global.py
+      - name: G24 certification
+        run: GATE_STAGE=G24 G23_RESULT=PASS python3 -B continuity/g23_g24_global.py
+      - name: Publish the seal
+        run: |
+          set -Eeuo pipefail
+          git add continuity/STATE.json continuity/certification/SUPER1200_GLOBAL.json
+          git diff --cached --quiet && { echo "GLOBAL_SEAL_NO_CHANGE"; exit 1; }
+          git config user.name "super1200-g24-certifier"
+          git config user.email "super1200-g24-certifier@users.noreply.github.com"
+          git commit -m "cert(super1200): global seal for capabilities 101-1200; 1-100 withheld"
+          git pull --rebase origin custosz/super-1200-implementation-20261007
+          git push origin HEAD:refs/heads/custosz/super-1200-implementation-20261007

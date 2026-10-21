@@ -37,8 +37,26 @@ def domain_of(cid: int) -> str:
 
 def main() -> int:
     state = load("continuity/STATE.json")
-    if state.get("certified") is not False or state.get("global_certification_status") != "NOT_CERTIFIED":
+    status = state.get("global_certification_status")
+    certified = state.get("certified")
+    if status == "NOT_CERTIFIED" and certified is False:
+        pass
+    elif status == "CERTIFIED" and certified is True:
+        cert = load("continuity/certification/SUPER1200_GLOBAL.json")
+        if cert.get("result") != "PASS" or cert.get("g23") != "PASS" or cert.get("g24") != "PASS":
+            fail("GLOBAL_CERT_INVALID")
+        if cert.get("scope") != "SUPER1200:101-1200" or cert.get("certified_range") != [101, 1200]:
+            fail("GLOBAL_CERT_RANGE")
+        if cert.get("withheld_range") != [1, 100] or cert.get("whole_catalog_claim") is not False:
+            fail("GLOBAL_CERT_WITHHELD")
+        if cert.get("synthetic_materializer") != "DISABLED" or cert.get("promotion_to_main") is not False:
+            fail("GLOBAL_CERT_CONTROL")
+        if state.get("global_withheld_range") != [1, 100] or state.get("promotion_to_main") is not False:
+            fail("GLOBAL_STATE_CONTROL")
+    else:
         fail("GLOBAL_CERTIFICATION_ASSERTED")
+    if state.get("synthetic_materializer") not in (None, "DISABLED") and state.get("synthetic_materializer") != "DISABLED":
+        fail("SYNTHETIC_ENABLED")
     if state.get("next_point") == "D05" or state.get("block_reason") == "NEXT_D05_TRANCHE_EXECUTOR_NOT_REGISTERED":
         fail("STILL_STUCK_ON_D05")
     allowed = {f"D{n:02d}" for n in range(6, 23)} | {"NONE"}
