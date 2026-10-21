@@ -100,7 +100,7 @@ def main() -> int:
     )
     if proc.returncode != 78:
         fail("SYNTHETIC_MATERIALIZER_NOT_DISABLED")
-    print("SUCCESSION_MONITOR_PASS active_domain=" + str(state.get("active_domain")) + " global=NOT_CERTIFIED synthetic=DISABLED")
+    print("SUCCESSION_MONITOR_PASS active_domain=" + str(state.get("active_domain")) + " global=" + str(status) + " synthetic=DISABLED")
     return 0
 
 
