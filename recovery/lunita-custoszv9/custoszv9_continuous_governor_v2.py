@@ -1,4 +1,4 @@
-[Reading 1179 lines from start (total: 1179 lines, 0 remaining)]
+[Reading 1185 lines from start (total: 1185 lines, 0 remaining)]
 
 #!/usr/bin/env python3
 """Fail-closed step classification and persistent Cajita quantization side-lane.
@@ -997,6 +997,11 @@ def tick_cajita_priority_lane(
         if resource_failure:
             receipt = pathlib.Path(str(recovery_evidence.get("receipt_path") or ""))
             receipt_row = _load(receipt, {}) if receipt.is_file() else {}
+            try:
+                active_swap_paths = {line.split()[0] for line in pathlib.Path("/proc/swaps").read_text().splitlines()[1:] if line.split()}
+            except OSError:
+                active_swap_paths = set()
+            swap_path_active = str(receipt_row.get("swap_path") or "") in active_swap_paths
             resource_valid = (
                 receipt.is_file()
                 and _sha256(receipt) == recovery_evidence.get("receipt_sha256")
@@ -1004,6 +1009,7 @@ def tick_cajita_priority_lane(
                 and receipt_row.get("status") == "RESOURCE_RECOVERY_VERIFIED"
                 and receipt_row.get("mission_sha256") == mission_sha256
                 and receipt_row.get("swap_active") is True
+                and swap_path_active
                 and int(receipt_row.get("swap_bytes", 0)) >= 4 * 1024**3
                 and int(receipt_row.get("memory_high_bytes", 0)) >= 2560 * 1024**2
                 and int(receipt_row.get("memory_max_bytes", 0)) == 3 * 1024**3
