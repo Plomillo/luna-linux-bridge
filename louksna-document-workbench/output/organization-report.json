@@ -1,0 +1,147 @@
+{
+  "bookmark_count": 24,
+  "bookmarks": [
+    {
+      "level": 1,
+      "page": 1,
+      "title": "Portada — Trastornos de personalidad severos"
+    },
+    {
+      "level": 1,
+      "page": 15,
+      "title": "Capítulo 6: Adaptado de 'El tratamiento psicoterapéutico de las personalidades de la"
+    },
+    {
+      "level": 1,
+      "page": 18,
+      "title": "Parte uno: Consideraciones de diagnóstico"
+    },
+    {
+      "level": 2,
+      "page": 65,
+      "title": "Capítulo 2: La entrevista estructural Mi objetivo principal en este capítulo es ilustrar la"
+    },
+    {
+      "level": 2,
+      "page": 112,
+      "title": "Capítulo 3: Diagnóstico diferencial en la adolescencia Las consideraciones de"
+    },
+    {
+      "level": 2,
+      "page": 143,
+      "title": "Capítulo 4: Trastornos de la personalidad En la vejez en su estudio sociológico de la vejez,"
+    },
+    {
+      "level": 2,
+      "page": 160,
+      "title": "Capítulo 5: Problemas en la clasificación de los trastornos de la personalidad"
+    },
+    {
+      "level": 1,
+      "page": 195,
+      "title": "Parte Dos: Tratamiento de Personalidades Borderline"
+    },
+    {
+      "level": 2,
+      "page": 197,
+      "title": "Capítulo 6: Psicoterapia expresiva Antecedentes teóricos Debido a que los principales"
+    },
+    {
+      "level": 2,
+      "page": 227,
+      "title": "Capítulo 7: Gestión de la transferencia En psicoterapia expresiva, quizás la"
+    },
+    {
+      "level": 2,
+      "page": 265,
+      "title": "Capítulo 8: Psicoterapia expresiva con adolescentes Las tareas fundamentales del"
+    },
+    {
+      "level": 2,
+      "page": 297,
+      "title": "Capítulo 9: Psicoterapia de apoyo En el contexto de comparar la aplicación adecuada de la"
+    },
+    {
+      "level": 2,
+      "page": 332,
+      "title": "Capítulo 10: Indicaciones y contraindicaciones Para las modalidades de tratamiento"
+    },
+    {
+      "level": 1,
+      "page": 354,
+      "title": "Parte Tres: Personalidades narcisistas: Teoría clínica y tratamiento."
+    },
+    {
+      "level": 2,
+      "page": 391,
+      "title": "Capítulo 12: Estrategias técnicas en el tratamiento de personalidades narcisistas El"
+    },
+    {
+      "level": 2,
+      "page": 417,
+      "title": "Capítulo 13: Análisis de caracteres en línea con los esfuerzos anteriores para enriquecer"
+    },
+    {
+      "level": 2,
+      "page": 450,
+      "title": "Capítulo 14: Auto, el ego, afecta y impulsa el ego y los problemas terminológicos. Una"
+    },
+    {
+      "level": 1,
+      "page": 472,
+      "title": "Parte Cuatro: Regresiones severas: Diagnóstico y tratamiento."
+    },
+    {
+      "level": 2,
+      "page": 499,
+      "title": "Capítulo 16: Diagnóstico y gestión clínica de pacientes con un diagnóstico de suicidio"
+    },
+    {
+      "level": 2,
+      "page": 568,
+      "title": "Capítulo 19: Regresión paranoica y narcisismo maligno Como ya he mencionado (ver"
+    },
+    {
+      "level": 1,
+      "page": 612,
+      "title": "PART FIVE: Hospital Treatment"
+    },
+    {
+      "level": 2,
+      "page": 614,
+      "title": "Capítulo 20: Filosofías contrastantes del tratamiento hospitalar para la psicopatología"
+    },
+    {
+      "level": 2,
+      "page": 642,
+      "title": "Capítulo 21: El modelo comunitario terapéutico del tratamiento hospitalario para la"
+    },
+    {
+      "level": 2,
+      "page": 668,
+      "title": "Capítulo 22: Tratamiento hospitalario a largo plazo del límite severo y la patología"
+    }
+  ],
+  "extracted_page_text_preserved": true,
+  "human_review": "RECOMMENDED",
+  "input_name": "inglés_to_español_20261021_1924_translated.pdf",
+  "input_sha256": "ef6f0a9c5888baccf67fd398233ddb2f50ec65e3eb9a3c9687fda4ddb207b504",
+  "input_size_bytes": 1653147,
+  "limitations": [
+    "Bookmarks are inferred conservatively from page-leading headings.",
+    "Page order, geometry and extracted page text are verified invariant.",
+    "The operation does not validate the accuracy of the source's existing machine translation."
+  ],
+  "observed_at_utc": "2026-10-21T23:42:37Z",
+  "operation": "ADD_NAVIGATION_BOOKMARKS_WITHOUT_REORDERING",
+  "output_name": "Trastornos_de_personalidad_severos_organizado.pdf",
+  "output_page_count": 741,
+  "output_sha256": "466c66a4bd1a7b1c77ae39afd326439410adbca1b6d828a119b5f8626983b642",
+  "output_size_bytes": 1644481,
+  "page_geometry_preserved": true,
+  "page_order_changed": false,
+  "schema": "LOUKSNA_DOCUMENT_WORKBENCH_ORGANIZATION/1.0",
+  "source_modified": false,
+  "source_page_count": 741,
+  "verification": "PASS_STRUCTURAL_CONTENT_INVARIANCE"
+}
