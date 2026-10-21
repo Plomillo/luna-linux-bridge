@@ -6,6 +6,7 @@ on:
       - candidate/louksna-document-workbench-v1-20261021
     paths:
       - "louksna-document-workbench/**"
+      - "!louksna-document-workbench/output/**"
       - ".github/workflows/louksna-document-workbench-continuous.yml"
   pull_request:
     paths:
@@ -16,7 +17,7 @@ on:
     - cron: "13 */6 * * *"
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: louksna-document-workbench-continuous
@@ -28,7 +29,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
-      contents: read
+      contents: write
     steps:
       - name: Checkout requested ref
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -101,6 +102,28 @@ jobs:
           path: kernberg-output/kernberg-organized-package.zip
           if-no-files-found: error
           retention-days: 14
+      - name: Commit organized package and evidence to candidate branch only
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/candidate/louksna-document-workbench-v1-20261021'
+        run: |
+          set -euo pipefail
+          OUTPUT_DIR="louksna-document-workbench/output"
+          mkdir -p "$OUTPUT_DIR"
+          cp "kernberg-output/kernberg-organized-package.zip" "$OUTPUT_DIR/kernberg-organized-package.zip"
+          cp "kernberg-output/organization-report.json" "$OUTPUT_DIR/organization-report.json"
+          cp "kernberg-output/source-inspection.json" "$OUTPUT_DIR/source-inspection.json"
+          cp "kernberg-output/package-report.json" "$OUTPUT_DIR/package-report.json"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$OUTPUT_DIR/kernberg-organized-package.zip" \
+            "$OUTPUT_DIR/organization-report.json" \
+            "$OUTPUT_DIR/source-inspection.json" \
+            "$OUTPUT_DIR/package-report.json"
+          if git diff --cached --quiet; then
+            echo "No package changes to commit."
+            exit 0
+          fi
+          git commit -m "build(document-workbench): add organized PDF package and evidence"
+          git push origin "HEAD:refs/heads/candidate/louksna-document-workbench-v1-20261021"
       - name: Record dependency inventory
         if: always()
         run: |

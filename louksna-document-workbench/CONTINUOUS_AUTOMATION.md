@@ -34,7 +34,7 @@ No attempt is made to bypass this boundary through an unregistered token, extern
 
 ## Failure and recovery
 
-Any failed command stops the job. The workflow never commits, pushes, merges, modifies main, changes Document Factory, or modifies the source PDF. The organized output is uploaded as a time-limited Actions artifact only. CI evidence is ephemeral except for the uploaded, time-limited artifact. The run ID and failing stage identify the failure; retries are explicit rather than blind.
+Any failed command stops the job. On a successful push-triggered run for this candidate branch, the workflow commits the organized ZIP plus its organization report, source inventory and package report under louksna-document-workbench/output/. That output path is excluded from the push filter to prevent recursive CI runs. This write is confined to the candidate branch; main, Document Factory and the source PDF are not modified. The ZIP and assurance evidence are also uploaded as time-limited Actions artifacts. The run ID and failing stage identify the failure; retries are explicit rather than blind.
 
 ## Release gates
 
