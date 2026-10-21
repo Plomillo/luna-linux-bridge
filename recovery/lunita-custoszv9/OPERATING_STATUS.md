@@ -29,3 +29,13 @@ Status snapshot: 2026-10-20 UTC. Additive recovery track; no frozen G06/G08 obje
 
 ## Remaining implementation gates
 Finish R 4.6.1 build and test; install missing Jamovi/JASP payloads only in candidate; resolve llama shared-library behavior; run actual browser/model/R/application/fault-injection tests; create the candidate runtime report; run separate hash-bound independent validation; restart CUSTOSZ and verify it reaches S31/S32 without advancing blocked work. Do not replace frozen original or canonical bindings.
+
+
+## Cajita Qwen3 quantization flow recovery — 2026-10-21 00:51 UTC
+
+- Mission pin: `MISION1.txt` SHA-256 `0a36c59d4baf5d547f5217dc9c6db2a58ad9f8f3ea65d88f9b16a0dbe1604f8f`.
+- Fixed a repeated dry-run loop in `custoszv9_continuous_governor_v2.py`: a failed probe at the validated largest-tensor boundary can now move to a single real, pinned BF16 conversion attempt when model inventory and converter provenance pass; unrelated failures remain fail-closed.
+- Conversion/quantizer subprocesses now explicitly cap numerical-library thread fan-out to one thread. Main CUSTOSZ user service was reloaded and restarted to load the changed controller. Effective cgroup envelope: `MemoryHigh=2147483648`, `MemoryMax=3221225472` bytes; the memory hard cap remains enforced.
+- Runtime governor SHA-256: `14f77f06913883070da1b295ad9f71e5527c2053331fc8b0fb547eedd2531309`. Focused regression suite `test_cajita_quantization_flow_hardening_v1.py`: 4/4 PASS; SHA-256 `393296c2bf8c744d070be3846e0f861d88b25bf47d250509f382cd90c2dd666b`.
+- At the recorded checkpoint, the real BF16 conversion had started at `2026-10-21T00:51:07Z`, using the pinned llama.cpp commit `6a1a922d269908a29cbd4b49c27e6a8e7fd10fae`, candidate `QWEN3_ANALISIS_AVANZADO_R1_20261020T222741Z`, and unchanged source model weights. The next gate is an actual `llama-quantize` process in `QUANTIZATION_RUNNING`; this document does not claim that Q4_K_M quantization has started or completed.
+- Cajita certification remains `NOT_GRANTED`; do not integrate or promote the candidate until output hash, model quality/regression, size, and independent validation requirements are satisfied.
