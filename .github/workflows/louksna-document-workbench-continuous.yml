@@ -6,7 +6,6 @@ on:
       - candidate/louksna-document-workbench-v1-20261021
     paths:
       - "louksna-document-workbench/**"
-      - ".github/workflows/louksna-document-workbench-tests.yml"
       - ".github/workflows/louksna-document-workbench-continuous.yml"
   pull_request:
     paths:
