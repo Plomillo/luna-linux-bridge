@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "FILE_REPUTATION_ENGINE",
+      "capability_id": 889,
+      "evidence_sha256": "44154ce7d99686e5d2b9a91139ea30f73c54ddfeeaed6d9d53546e9706b42817"
+    },
+    {
+      "canonical_name": "HASH_REPUTATION_ENGINE",
+      "capability_id": 890,
+      "evidence_sha256": "8d79885164403c53a32c3a62857eb91d97e7a9f4067bea167530d8dbb64872e6"
+    },
+    {
+      "canonical_name": "PACKER_DETECTOR",
+      "capability_id": 891,
+      "evidence_sha256": "6aca7ab9e162266f6576fe816705f90a8c98930f79cb259343d8e57fdf8a8546"
+    },
+    {
+      "canonical_name": "SCRIPT_MALWARE_ANALYZER",
+      "capability_id": 892,
+      "evidence_sha256": "18e3911bef3066b4b6005f6729f26974302f280de8cea4e1749c84618a9064ea"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "3f496e0165b137dc604f69b42f45fbf50da5489e7a2779357e8251eb0b8e7786",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D19:889-892",
+  "scope_only": true,
+  "test_sha256": "103cfe9defea8e98e00b45825e88c2a6690906fb0384897b1cd2709861575e87",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:22:35.291328+00:00"
+}

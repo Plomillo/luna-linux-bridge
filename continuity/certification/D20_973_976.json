@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "STATIC_TRIAGE_ENGINE",
+      "capability_id": 973,
+      "evidence_sha256": "f6e23384fafc1d7f14e075db840072c5f06413d62fa5ca39b95aae2284857882"
+    },
+    {
+      "canonical_name": "BEHAVIORAL_SANDBOX",
+      "capability_id": 974,
+      "evidence_sha256": "310e741e7137e8f999a20dd3a2570be0f73d46feb9e5ad08a6c0a2fea37c093f"
+    },
+    {
+      "canonical_name": "EPHEMERAL_ANALYSIS_VM",
+      "capability_id": 975,
+      "evidence_sha256": "f85b5c1527bef4d449ba99c62ed2e040498a137cc8c05e0200deeca58d634c76"
+    },
+    {
+      "canonical_name": "NETWORK_SIMULATION_SANDBOX",
+      "capability_id": 976,
+      "evidence_sha256": "f1f7eb536c839f3c6a3bd564d4db4d33b57d0167da3e8611864a997e51e89f5f"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "8b4b901b6857e379abc3e0db976d7f4b2f7c9cab579a354bad6883addfdd6e29",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D20:973-976",
+  "scope_only": true,
+  "test_sha256": "3b0ab7b5797786d1374484552803836c4736ad434f27a982155bbde767a91e82",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:22:46.225076+00:00"
+}

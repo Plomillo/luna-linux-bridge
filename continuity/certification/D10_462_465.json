@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "CAPABILITY_EXTENSION_FACTORY",
+      "capability_id": 462,
+      "evidence_sha256": "250780eeb917d1263e1a350d7ed207da4fc9d738287f96299aadd7c7f6573c32"
+    },
+    {
+      "canonical_name": "COGNITIVE_EXTENSION_FACTORY",
+      "capability_id": 463,
+      "evidence_sha256": "0fa4e939dbdb7df1fd4f01195fba31f810f8f7107f1ee59ef483372914d2c7b7"
+    },
+    {
+      "canonical_name": "ENGINE_INTERFACE_GENERATOR",
+      "capability_id": 464,
+      "evidence_sha256": "ec54bf3d3ce80f40a11f99cda94a8ca17ccfda9cc60d16085ee3c97f53f03b02"
+    },
+    {
+      "canonical_name": "ENGINE_MANIFEST_GENERATOR",
+      "capability_id": 465,
+      "evidence_sha256": "6fd3a52aa18c7d0d7661faf430ae87eae0a79d4e514eb1c0b99a2931c52d7c83"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "f9c11d3221dbf9b58fea8db6c0a844df3627e491d711577b3c56d2406f60fe21",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D10:462-465",
+  "scope_only": true,
+  "test_sha256": "9134d8069fec5fc75b2b7ea18267b5b74cfb8659f4afadd0b2fd483de0f09cc1",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:21:40.489521+00:00"
+}

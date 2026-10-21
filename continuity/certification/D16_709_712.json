@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "GAME_COMPATIBILITY_KB",
+      "capability_id": 709,
+      "evidence_sha256": "dcd63f0613e4fb5a1144bd8d36d8bd258ce150e629ca547fc7d1f6bc18734762"
+    },
+    {
+      "canonical_name": "GAME_PROFILE_ENGINE",
+      "capability_id": 710,
+      "evidence_sha256": "1f62c40d8d5e2036faee361dcd83bc6bd5dde533d6d95f09644d1233c26cb2bb"
+    },
+    {
+      "canonical_name": "FRAME_TIME_ANALYZER",
+      "capability_id": 711,
+      "evidence_sha256": "e29cccbee8d38c5c800de01d8b65c32362017c2e43b2bbe02b6294a8255a0e10"
+    },
+    {
+      "canonical_name": "SHADER_STUTTER_ANALYZER",
+      "capability_id": 712,
+      "evidence_sha256": "0255af44221b749476fc5ee0e96e3d41bef5afd8dd1cdd2ab06a97eba8372189"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "6d4898fc33ff0ce605fa8d6fe808d3962d3cf0c9dac942ca84ce0faf921cccaa",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D16:709-712",
+  "scope_only": true,
+  "test_sha256": "89e5bc6f27720b5ebb15ae042eb89ddeb079488253549bb720c85f0f9947ba47",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:22:12.036199+00:00"
+}

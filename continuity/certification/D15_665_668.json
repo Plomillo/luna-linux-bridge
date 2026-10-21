@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "BATTERY_DEGRADATION_MODEL",
+      "capability_id": 665,
+      "evidence_sha256": "7b47e9247576c9c1810eb6f3b54a70855ed1e3d3cd26bb4f85e3e3a13434d31f"
+    },
+    {
+      "canonical_name": "POWER_MANAGEMENT_DIAGNOSTICS",
+      "capability_id": 666,
+      "evidence_sha256": "0c45d4015ec7200eec6ac14bdba0590fc34bc7cf1ab641b8d33a523876d72392"
+    },
+    {
+      "canonical_name": "THERMAL_DIAGNOSTICS",
+      "capability_id": 667,
+      "evidence_sha256": "6b1b9d93d655633f92000a33cc9d12799a9d0854217022537cb8dff824111d3f"
+    },
+    {
+      "canonical_name": "CPU_HEALTH_DIAGNOSTICS",
+      "capability_id": 668,
+      "evidence_sha256": "0a571ff9f0ba0baa469e05b088586407ee7158aef3e863f6f6b7a231a9ad595e"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "0f335a5114dac3914bc4ba8113879a0f55f20c36dff69ee7a282cd8461651c36",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D15:665-668",
+  "scope_only": true,
+  "test_sha256": "deabdb711c6be5c7f28011d8a9cdf42bae3054a242c28b81018921963b23d456",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:22:06.383546+00:00"
+}

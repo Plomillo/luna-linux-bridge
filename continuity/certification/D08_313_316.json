@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "EPISTEMIC_STATUS_MACHINE",
+      "capability_id": 313,
+      "evidence_sha256": "5b4e733a7720c7b59335213eeacf10625ea02220e50df2a24e7c70960d555d76"
+    },
+    {
+      "canonical_name": "HYPOTHESIS_REGISTRY",
+      "capability_id": 314,
+      "evidence_sha256": "d9aeda48d57cbd9535fa2ba1fde692f68edd86bfaa637217e4004a78a9313e36"
+    },
+    {
+      "canonical_name": "HYPOTHESIS_TESTING",
+      "capability_id": 315,
+      "evidence_sha256": "8838b4e44e131f005d5975d1f0b48284e7da911d8383ffd9b80b2c5a2c5daa03"
+    },
+    {
+      "canonical_name": "FALSIFICATION_RECORD",
+      "capability_id": 316,
+      "evidence_sha256": "a8ce2dfd2d41df18f49330c93be4dd513363a7ef6b4a405aaf577f238581ec03"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "dbcb550a626de1233e1d8b70b6b92cb63605a9b9dfaefb4b45a4d4693c6a6433",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D08:313-316",
+  "scope_only": true,
+  "test_sha256": "7d275269a47a8b692504e4a3d9eb89f75a049cd4de947342d7931484ef5a81f7",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:21:21.753679+00:00"
+}

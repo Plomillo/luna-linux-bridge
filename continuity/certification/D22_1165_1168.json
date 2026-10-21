@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "ANTHROPOLOGY_OF_HARM_ENGINE",
+      "capability_id": 1165,
+      "evidence_sha256": "206303c9f56a057b1379a2c404a36097eee8d0f6300a4eca5732473a71608d8f"
+    },
+    {
+      "canonical_name": "MORAL_PSYCHOLOGY_ADAPTER",
+      "capability_id": 1166,
+      "evidence_sha256": "e23f26a928ff2adb21002bbf0f3a904679da9e288fadc3eb8d31ffac441885fc"
+    },
+    {
+      "canonical_name": "CRIMINOLOGY_ADAPTER",
+      "capability_id": 1167,
+      "evidence_sha256": "2a462249871e4441322d917e2d0ce3586d737b5649acb3408dbf634e367157e3"
+    },
+    {
+      "canonical_name": "SOCIOLOGY_OF_CYBERCRIME",
+      "capability_id": 1168,
+      "evidence_sha256": "ed9ecd88758bf153a774cd93277cb363325865b8d223f26a92368b7d78984ea0"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "5e70633433735fd8f4f16d34fb81db2309ea49ae0bb06f73fdf69cdd3b67243a",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D22:1165-1168",
+  "scope_only": true,
+  "test_sha256": "805417581a2d7833076e718229029f2cfa9c7c962a43f45e7201200cc941c1f7",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:23:11.459258+00:00"
+}

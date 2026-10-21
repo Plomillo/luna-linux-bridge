@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "PERIPHERAL_DIAGNOSTICS",
+      "capability_id": 677,
+      "evidence_sha256": "057e646d4add242409023ad7dd6863c1993fe85924f4c67effc79b13c36a6846"
+    },
+    {
+      "canonical_name": "MACHINE_BASELINE_PROFILE",
+      "capability_id": 678,
+      "evidence_sha256": "14f2e4d9e91de7300513b564d3f221896a8b6ee03614ac02b2c2504b9b5f362f"
+    },
+    {
+      "canonical_name": "MACHINE_HEALTH_DRIFT",
+      "capability_id": 679,
+      "evidence_sha256": "7719f450895941ae9999a7043eacd225fa597de25162e6f9ee65b3ab1ae645fe"
+    },
+    {
+      "canonical_name": "MACHINE_PROGNOSTICS_ENGINE",
+      "capability_id": 680,
+      "evidence_sha256": "b7890fc82ecf3d4a0e4449c80b02d4f276acb33749eca9bfee6464917f654430"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "b510d600d2789e176effea1944fc2d38226b52562224ffb4053ebd2bde98c250",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D15:677-680",
+  "scope_only": true,
+  "test_sha256": "eb7c1f70c149e3678eff7ad6914f853507b875f254ccd9dfd3ab63c88c436cb4",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:22:07.934297+00:00"
+}

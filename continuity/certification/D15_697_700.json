@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "OPTIMIZATION_CAUSALITY_GATE",
+      "capability_id": 697,
+      "evidence_sha256": "e8855cc836592572649fbe544507132faff6c3c5187e1c05858f92e8fd6c5442"
+    },
+    {
+      "canonical_name": "OPTIMIZATION_ROLLBACK",
+      "capability_id": 698,
+      "evidence_sha256": "e2fea5a979d8ec7309f23e4e2b4ea96b8069d2d7840dd1df5d27fd28c75dd0e4"
+    },
+    {
+      "canonical_name": "HARDWARE_SERVICE_RECOMMENDER",
+      "capability_id": 699,
+      "evidence_sha256": "c4713786112f7e3d511f104b2e0dcf599d6da630c928b02b1f216ed15d95d83f"
+    },
+    {
+      "canonical_name": "DO_NOT_FAKE_REPAIR_CONTROL",
+      "capability_id": 700,
+      "evidence_sha256": "b0d9ae150ceecf8ef9bea7d83d2f3f015c80e20d397e22bc463cb35dc8bed503"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "e4ccdd457f0e9f310d59f165347698eea135b024f5ad648e9dcd714dbdf5d1ac",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D15:697-700",
+  "scope_only": true,
+  "test_sha256": "b566f07565831254855b7f3a5152e3c01c05f3121e9b1d0bf8fb194ee6fdb5e1",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:22:10.496156+00:00"
+}

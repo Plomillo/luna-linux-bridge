@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "CONFIGURATION_REPAIR_ENGINE",
+      "capability_id": 685,
+      "evidence_sha256": "5f42265efeb3a72be91e7a955a46ea33f184da6f85e03415c72b9f51fdc07cf6"
+    },
+    {
+      "canonical_name": "PACKAGE_REPAIR_ENGINE",
+      "capability_id": 686,
+      "evidence_sha256": "d7ee8b888481f8a70239f2d56e26dbf51f469e828a91fb22b96f9370c50e34fe"
+    },
+    {
+      "canonical_name": "BOOT_REPAIR_ENGINE",
+      "capability_id": 687,
+      "evidence_sha256": "53bd77ca463e4b93e7a4179d5fd96191454fe0512a890c35612954197ce175c1"
+    },
+    {
+      "canonical_name": "FILESYSTEM_REPAIR_ORCHESTRATOR",
+      "capability_id": 688,
+      "evidence_sha256": "7c729a7efd7dac7e3cfc22c537d3adfa140c1e893451f77174c44811f19fdfd5"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "3fa4ce13eba6291bf521839d3de5f3334bb47538b114c8a91e870e52de3f0a8e",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D15:685-688",
+  "scope_only": true,
+  "test_sha256": "97a254fadbf8404f607ac93ddc0a1b9d250c8ff746e3074dd7fc5a26ef9af74a",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:22:08.958719+00:00"
+}

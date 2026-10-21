@@ -1,0 +1,24 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "AUTOMATIC_ROLLBACK",
+      "capability_id": 437,
+      "evidence_sha256": "659aba0dd9432a18f618f9473c41cd4db94197338997f4deef1768c1b43d783c"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "b6c9864bc3cb736ed891e39bf7e83053003eccfe81f017ef3cc98aa17670c0f6",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D09:437-437",
+  "scope_only": true,
+  "test_sha256": "792708bd7f084e0f91eb4809ecfbc27c1ddfc8b2b32bc8ecc4b0f4a6455b8cfb",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:21:36.965814+00:00"
+}

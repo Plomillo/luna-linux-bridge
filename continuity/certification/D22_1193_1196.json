@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "THREAT_EARLY_WARNING_ENGINE",
+      "capability_id": 1193,
+      "evidence_sha256": "24fd7870228055c07c2caea6a0e199372d4edc5b4aba1ab054c9605cad407eae"
+    },
+    {
+      "canonical_name": "PREVENT_BEFORE_DOWNLOAD_ENGINE",
+      "capability_id": 1194,
+      "evidence_sha256": "e9e089ea200df479f319e5d5fb4212783e8fb60218f31edfca299fe4dd4fe829"
+    },
+    {
+      "canonical_name": "PREVENT_BEFORE_EXECUTION_ENGINE",
+      "capability_id": 1195,
+      "evidence_sha256": "c097de049d7d11207ce6ce3725346e84c0fa762f8904ddc2c2b08d87c0a73550"
+    },
+    {
+      "canonical_name": "PREVENT_BEFORE_PRIVILEGE_ENGINE",
+      "capability_id": 1196,
+      "evidence_sha256": "deea684c03aa4523d581d5be3a83f65927060c18dbb00cbf59f4da47d1a53a6b"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "7b165fd22c6ba7d40f609a5f1443d1ebc8341e3eaa788f843bfb291c57b5288e",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D22:1193-1196",
+  "scope_only": true,
+  "test_sha256": "332f9a38e3d89fcdc8d7e98b75dc14a0c2a19b183d1e9ef860549554bde90d4a",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:23:15.160515+00:00"
+}

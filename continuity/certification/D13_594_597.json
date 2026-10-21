@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "SKILL_GRAPH",
+      "capability_id": 594,
+      "evidence_sha256": "30ed7ff4a284f3abcd5b5bf2827f13bf14fe884635e008327be88e024f7edec3"
+    },
+    {
+      "canonical_name": "MASTERY_CRITERIA_ENGINE",
+      "capability_id": 595,
+      "evidence_sha256": "412dd00a1966d4c9cb6f63423ab5457f8f91a16eb16e418d30ca15bbe2398f44"
+    },
+    {
+      "canonical_name": "FORMATIVE_ASSESSMENT_ENGINE",
+      "capability_id": 596,
+      "evidence_sha256": "c4ce9375352c201aed6989c4420722e90640389c2fa8967d909319899d40e83a"
+    },
+    {
+      "canonical_name": "SUMMATIVE_ASSESSMENT_ENGINE",
+      "capability_id": 597,
+      "evidence_sha256": "28886826bf507287e10f21e6fbe811376351c013b439bd40bc2a353e1d729992"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "94c42774982f767451102bdf29415cba36eb2f05d6308bc88f99989baabc6a17",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D13:594-597",
+  "scope_only": true,
+  "test_sha256": "1865550ecf89831ee92207d6ee499862e86c567d57f0f3ae41ed3c1d7e5f98f6",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:21:57.292037+00:00"
+}

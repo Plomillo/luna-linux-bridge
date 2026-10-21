@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "ADAPTIVE_MAINTENANCE_ENGINE",
+      "capability_id": 769,
+      "evidence_sha256": "2269d2ba0f01097ad3ed2a9f69c9bab99cff75cd952c9827f16d46d0ce9aa764"
+    },
+    {
+      "canonical_name": "EVOLUTIONARY_MAINTENANCE_ENGINE",
+      "capability_id": 770,
+      "evidence_sha256": "7d3cfb5f09fca2cf4f878f2632000c7959c1b46c5b6410096a2055cb2474c8d4"
+    },
+    {
+      "canonical_name": "MAINTENANCE_PRIORITY_ENGINE",
+      "capability_id": 771,
+      "evidence_sha256": "5b56dfd368e755091676062628642bac3f6964e749827526bbbb85a8eac2474d"
+    },
+    {
+      "canonical_name": "MAINTENANCE_COST_LEDGER",
+      "capability_id": 772,
+      "evidence_sha256": "9342640028d8bc57db9d6034aadbfb2167bf24c211998fe0bdc601d1ed707a46"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "3926ba2f1fb9073a64528c80b362097025327730666ab9cd2c7645f48ece78ea",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D18:769-772",
+  "scope_only": true,
+  "test_sha256": "f581beccb592f0630df121e45c2f34d7bdece00a450514e8e6806518fc8ce082",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:22:19.762434+00:00"
+}

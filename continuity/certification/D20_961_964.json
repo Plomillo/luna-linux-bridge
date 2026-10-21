@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "SUSPICIOUS_OBJECT_INTAKE",
+      "capability_id": 961,
+      "evidence_sha256": "1781e0c4c2734caaac6957221388cdbbf3386e7f9d046ad738bd93c3dd70fe8c"
+    },
+    {
+      "canonical_name": "AUTOMATIC_CONTAINMENT_GATE",
+      "capability_id": 962,
+      "evidence_sha256": "d2664cd5ccb8b8b8efd7225c6d9aaaacbf0279db9723a94eee66f546b7b763da"
+    },
+    {
+      "canonical_name": "QUARANTINE_FABRIC",
+      "capability_id": 963,
+      "evidence_sha256": "22df5c1390d4f630aa9cc989e3903d65e3706ff280f744555484e15d3f25055e"
+    },
+    {
+      "canonical_name": "CONTENT_ADDRESSED_QUARANTINE",
+      "capability_id": 964,
+      "evidence_sha256": "dcd880baa451a42aeed1dfdb2996c957e06c8566caea976783bcf2f27dc2a605"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "484b371d2a03b9761f7f0aa7e9354249e80c4b7a75b9735fcddef558eaed6188",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D20:961-964",
+  "scope_only": true,
+  "test_sha256": "c8bd208a6082977262b57dc6b230bbb6735d8da5736f7c7bc3aab7cf2c610e22",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:22:44.664360+00:00"
+}

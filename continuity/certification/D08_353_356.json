@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "COMPRESSION_DICTIONARY_TRAINING",
+      "capability_id": 353,
+      "evidence_sha256": "7ca39f9a036b80877c6299852c1ab9c0d2b0c464c3f4a9d3079917ce1aa4e9cd"
+    },
+    {
+      "canonical_name": "ARCHIVE_INTEGRITY_MANIFEST",
+      "capability_id": 354,
+      "evidence_sha256": "1f0cc7b5a5568316a6cdf8adb5bf1a7c906cb71b330267268067de0b46c83dd4"
+    },
+    {
+      "canonical_name": "PARTIAL_EXTRACTION_INTERFACE",
+      "capability_id": 355,
+      "evidence_sha256": "9bb8dedfb85e006693c02fa8b77cf6bfa2bc4e1588b92607d8801173664e8b6d"
+    },
+    {
+      "canonical_name": "RANGE_FETCH_INTERFACE",
+      "capability_id": 356,
+      "evidence_sha256": "8af49b97008997263a95d9b7dca60c3d1e84e1c17e453dad4307b710dcc2132c"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "db640fae23e89a262d81d99dcdcd3f692827377b661457a553dadd6e967993f5",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D08:353-356",
+  "scope_only": true,
+  "test_sha256": "5ca3dc81746c22e18c86c48602b7453ed0e9774842c75bdf8ba6ccaf26c2b9ed",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:21:26.747612+00:00"
+}

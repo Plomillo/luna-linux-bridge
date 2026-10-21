@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "EMULATOR_PROVIDER",
+      "capability_id": 389,
+      "evidence_sha256": "2a25bab3d80426458fbbea7f1cfbb37ff7c93ac9e56d482bf162fb243f1d741d"
+    },
+    {
+      "canonical_name": "ADB_PROVIDER",
+      "capability_id": 390,
+      "evidence_sha256": "e32726eb4bd84be92d0b107270f04e7b181c23dc4d0f5929e648f6a4c4ca5403"
+    },
+    {
+      "canonical_name": "DEVICE_CAPABILITY_DISCOVERY",
+      "capability_id": 391,
+      "evidence_sha256": "f28cc7c5c9a80ef9e95cc9fa0eb304f4e9e61ff870b3875af6f0593f1a8ba23a"
+    },
+    {
+      "canonical_name": "ANDROID_PERFORMANCE_PROFILER",
+      "capability_id": 392,
+      "evidence_sha256": "80ec635944d8bdcc14092bee2406be18c8787662d93c2612cbe68e94391bf231"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "3375066eecf737bcb0255367c20100e42f5c1df1954658dfb44da374d01b7ef5",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D09:389-392",
+  "scope_only": true,
+  "test_sha256": "0dc3103227d3db923a78e6f21aff0ec749f3da7c549686fed67fe321a30be369",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:21:31.231528+00:00"
+}

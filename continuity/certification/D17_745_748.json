@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "DECADE_MIGRATION_TEST",
+      "capability_id": 745,
+      "evidence_sha256": "17e1786412b70359a5b61b4dd668a5f149d0fa06eb789ee7b807803023f3829b"
+    },
+    {
+      "canonical_name": "ARCHAEOLOGICAL_RECONSTRUCTION_ENGINE",
+      "capability_id": 746,
+      "evidence_sha256": "ef4a4794198748c777c7799214a10ae58ac15dcdea9319334ed3d6b0098b4b32"
+    },
+    {
+      "canonical_name": "PERSONAL_WORK_PATTERN_MODEL",
+      "capability_id": 747,
+      "evidence_sha256": "476b618e6825ff6fb375230b922f124cde95fa750a799e0b4a09910866ce9e64"
+    },
+    {
+      "canonical_name": "ATTENTION_ORGANIZATION_ENGINE",
+      "capability_id": 748,
+      "evidence_sha256": "78da51e3b4bbe441ec40f880429d086fd32bceb73a895839a795ab69889be730"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "8f9de4fdc34a16efd44e0bca21c42c634a6130be78487dbc31616a527e6e60ac",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D17:745-748",
+  "scope_only": true,
+  "test_sha256": "b63c163285ba5afbbf23c2fbdfbbad241b40f696aaa42778b175def08985aff4",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:22:16.662449+00:00"
+}

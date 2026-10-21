@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "HUMAN_ORIGIN_THREAT_FABRIC",
+      "capability_id": 1161,
+      "evidence_sha256": "de9738ff1a8c519fc6532c1e55f39e696e59c8e7b69e7a1b1593a58fcb54f9d1"
+    },
+    {
+      "canonical_name": "HUMAN_HARM_ONTOLOGY",
+      "capability_id": 1162,
+      "evidence_sha256": "2e5687205858cc3cbae88bedb2f2913dd70c7834a2f50d77876bba99203ff357"
+    },
+    {
+      "canonical_name": "PHILOSOPHY_OF_EVIL_ENGINE",
+      "capability_id": 1163,
+      "evidence_sha256": "c3973982e54bcdd43f527b550b0a30d3f32f84575e4bae06a0971ac794120724"
+    },
+    {
+      "canonical_name": "THEOLOGY_OF_EVIL_ENGINE",
+      "capability_id": 1164,
+      "evidence_sha256": "1beb64ca24fbb02bb37460f19c0cd3dddc5accec3c3e9e1d84124de131e69275"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "cbe5c21b25abcbb87e4f7637bde9e3b62a097f687bc3735c828e8d27a9833d18",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D22:1161-1164",
+  "scope_only": true,
+  "test_sha256": "96f7d2336fd3082fef6a63bf28aa73f814aec4695d3c984ba6473cb40dfe741d",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:23:10.934386+00:00"
+}

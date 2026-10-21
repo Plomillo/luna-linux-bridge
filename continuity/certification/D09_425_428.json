@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "DRIVER_COMPATIBILITY_ENGINE",
+      "capability_id": 425,
+      "evidence_sha256": "8b9b8d232365a7abdadf0f1699c814bbf00ec011c7ba536a6de65edb8667414a"
+    },
+    {
+      "canonical_name": "SECURE_UPDATE_FABRIC",
+      "capability_id": 426,
+      "evidence_sha256": "a4fecca68598ebe1f2ec13ebae505e08e9047cabbba1c06f978ee164403b2f9a"
+    },
+    {
+      "canonical_name": "TUF_PROVIDER",
+      "capability_id": 427,
+      "evidence_sha256": "023f255b70a2b550f219a2f5ba456597db9fdb450a28d89b1bc7dc784543da5c"
+    },
+    {
+      "canonical_name": "ROLLBACK_PROTECTION",
+      "capability_id": 428,
+      "evidence_sha256": "b6cf9c64fec6863713c7d85df6a3b97cc51cd21a1a37583e7721a9bba886bbd7"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "20fb32350dfb5d0e9d6143d956acc1ef9158fc9a857cafee7414abc35f19a43e",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D09:425-428",
+  "scope_only": true,
+  "test_sha256": "156e8a800d6f7c6c08d8ff5c9fa2415a06e1ffc2100ace4e304ffb4da43b0924",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:21:35.751356+00:00"
+}

@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "SOURCE_DIVERSIFICATION",
+      "capability_id": 509,
+      "evidence_sha256": "390b52a51dc528f0c25214df6aaf220988c395dfb31abc2046d083750fd4ad1c"
+    },
+    {
+      "canonical_name": "ADVERSARIAL_RESEARCH",
+      "capability_id": 510,
+      "evidence_sha256": "3aac46b74ea3ed3be93c9b605653a3bb29be8cdd98c0eccf4ee6d19464d50a27"
+    },
+    {
+      "canonical_name": "COUNTEREVIDENCE_SEARCH",
+      "capability_id": 511,
+      "evidence_sha256": "88c0a2ffe4825184699ed91046817998b761eaa2287f07c412013e86472f9d4c"
+    },
+    {
+      "canonical_name": "REPLICATION_ENGINE",
+      "capability_id": 512,
+      "evidence_sha256": "4fbb116ee3a94dc10e2b7ceb8ac5a309a153a9618110a35d8ad3f187a843ba2a"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "43c4ae7a76acbd77642a4f247024be7d3ec40957bca6c0792c43f39ecaa4c126",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D11:509-512",
+  "scope_only": true,
+  "test_sha256": "d0381fa04519d485e856f8b2b433a8f3d0f03fb18ec9d54d5936f4f3eb709ff7",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:21:46.439532+00:00"
+}

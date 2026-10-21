@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "MEMORY_PRESSURE_SIMULATOR",
+      "capability_id": 535,
+      "evidence_sha256": "317b6f393fc9a3c86f40245acbcee784ff524c9cd1493fa17c6b18aa79ec161e"
+    },
+    {
+      "canonical_name": "CPU_PRESSURE_SIMULATOR",
+      "capability_id": 536,
+      "evidence_sha256": "1ab3c4a48995e867c83c30dc46267d4b88aa38cf7e34d457aaa9738fc5044f57"
+    },
+    {
+      "canonical_name": "CLOCK_DRIFT_SIMULATOR",
+      "capability_id": 537,
+      "evidence_sha256": "9c5974bd806bab37143c304975ed447474a0de146b392521a7d5b1a9491fc233"
+    },
+    {
+      "canonical_name": "DEPENDENCY_FAILURE_SIMULATOR",
+      "capability_id": 538,
+      "evidence_sha256": "862938ba76f76a54a98aeefd22a96393db0d2f87143d3351449390f5bda9d153"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "21e2f0337bf9121b4ed8c0d107c39d9738c2127a613cba2a2ea46d391cb90a71",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D12:535-538",
+  "scope_only": true,
+  "test_sha256": "1d46298d5c79c492b972259e6a72ef73d25f08ebd983283beebb99249ffa8f97",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:21:49.796576+00:00"
+}

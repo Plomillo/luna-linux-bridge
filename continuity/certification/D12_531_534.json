@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "CHAOS_ENGINEERING_FABRIC",
+      "capability_id": 531,
+      "evidence_sha256": "d3cf2e4695bcf54d23594305730236e1cda00dac68dd0b435c718b9bcaea72aa"
+    },
+    {
+      "canonical_name": "FAULT_INJECTION",
+      "capability_id": 532,
+      "evidence_sha256": "7751d0127436168fdf2d00568b053b68021472dc3b856d85b701c54b3c4e66c1"
+    },
+    {
+      "canonical_name": "NETWORK_PARTITION_SIMULATOR",
+      "capability_id": 533,
+      "evidence_sha256": "fde37165958b8a682c9fe5446f89f5fc0a6d849cff6e1806e9357036175cb30f"
+    },
+    {
+      "canonical_name": "DISK_FAILURE_SIMULATOR",
+      "capability_id": 534,
+      "evidence_sha256": "6704460e254be1883a40f2d3251c2a48e3e49628e7f5be588d4842c2c5ae86ae"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "e0f2f3eb2e7d22510a53ad26aa77c7c4b809b359e9d76758514aaca762f2e450",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D12:531-534",
+  "scope_only": true,
+  "test_sha256": "9c8d32185e195308af2f6669ee47c9ac5a2a57ca3c6270da372acca94ce754b4",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:21:49.285762+00:00"
+}

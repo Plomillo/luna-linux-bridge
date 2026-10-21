@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "CONTENT_DEFINED_CHUNKING",
+      "capability_id": 369,
+      "evidence_sha256": "cb40a140b45f94d28c53a5c5d7c3b83318d2b89ab7d0479f75867dd237ecccdc"
+    },
+    {
+      "canonical_name": "MERKLE_CHUNK_STORE",
+      "capability_id": 370,
+      "evidence_sha256": "4c74bdb2978c7738a2717879c3c607d6a62036484646d7887ccfea10ca384335"
+    },
+    {
+      "canonical_name": "DISTRIBUTED_CONTENT_CACHE",
+      "capability_id": 371,
+      "evidence_sha256": "2b070f629b0b4b51f1ffc5f840e295f8cde261563aa3d1346b1d9e67ea8f25be"
+    },
+    {
+      "canonical_name": "DELTA_TRANSFER",
+      "capability_id": 372,
+      "evidence_sha256": "e4202fcb7352b72448be89a671dd4a853a16f82a58a7f3e4d433d0924fc8351b"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "d5dedce4c85ab36f70b27bd9801352e1b5beea6f3bb306d92a7c8a69c471d9a4",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D09:369-372",
+  "scope_only": true,
+  "test_sha256": "41a77e20d06ea5f88cb9dba55fa72d4d5262dd3203bc352e79fecae5071e6537",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:21:28.744121+00:00"
+}

@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "VULNERABILITY_MANAGEMENT_FABRIC",
+      "capability_id": 901,
+      "evidence_sha256": "2f312afa4de8f2ec520d275e97333d604dd07cc2ef7a252b05547a9b85912b0b"
+    },
+    {
+      "canonical_name": "OSV_PROVIDER",
+      "capability_id": 902,
+      "evidence_sha256": "c21688de4c858553bec366ef5b5f4a5cf3dcb57105cd935e88a7c86fd71021e9"
+    },
+    {
+      "canonical_name": "NVD_ADAPTER",
+      "capability_id": 903,
+      "evidence_sha256": "72691bc0e45061f652dcf0644470a1204db56c2d5fdcd61ed27f83737f7bcee8"
+    },
+    {
+      "canonical_name": "CVE_IDENTITY_REGISTRY",
+      "capability_id": 904,
+      "evidence_sha256": "570fd71e9c37b5c34155e84da461d3bed22a4cd599abf06079397ee39c7503ff"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "fb94601df4cbf67bff330061f7ecf9b9056e427fd840863bf0b068844ff3ae84",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D19:901-904",
+  "scope_only": true,
+  "test_sha256": "d4424ef5c757b9149748d6bdc72a3e2af8501b87ed6bc34b95cfabb0e8d754a8",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:22:36.851026+00:00"
+}

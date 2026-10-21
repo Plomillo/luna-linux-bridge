@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "ECONOMICS_OF_CYBERCRIME",
+      "capability_id": 1169,
+      "evidence_sha256": "c2e4aa378f04709ccc150cc86329e1da7be88751268cbdc0b751ea029cfe6312"
+    },
+    {
+      "canonical_name": "HISTORY_OF_CYBERCRIME",
+      "capability_id": 1170,
+      "evidence_sha256": "a5ff4167613fb2113509c5d072a904f6d327855bc5e98c8b1247b66dfa07ac6a"
+    },
+    {
+      "canonical_name": "THREAT_ACTOR_MOTIVATION_TAXONOMY",
+      "capability_id": 1171,
+      "evidence_sha256": "73f677cfd9149256d38fad59a8cc7b0016df8259472989e1a04ab55e9a5deaf8"
+    },
+    {
+      "canonical_name": "THREAT_OBJECTIVE_ENGINE",
+      "capability_id": 1172,
+      "evidence_sha256": "cbf58de7e58f91279b35fa0bb060e227cef22dc190c3912e6fe2a9f7ad562723"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "8559aeecc68367bf5de68fd3bf578e73663bd0e711cf2917514a638b3cd3448d",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D22:1169-1172",
+  "scope_only": true,
+  "test_sha256": "dd7960fdb80dbd16f09ae7a032ca38f1bdcdfca29a7a93bf3b1551baf2b977c1",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:23:11.985453+00:00"
+}

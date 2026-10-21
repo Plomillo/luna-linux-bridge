@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "DIRECTX_TRANSLATION_FABRIC",
+      "capability_id": 705,
+      "evidence_sha256": "992a323af1fd60f7e97c4c22ce813bee9a25fabd6140342cb1cad03cdb2457c7"
+    },
+    {
+      "canonical_name": "VULKAN_CAPABILITY_ENGINE",
+      "capability_id": 706,
+      "evidence_sha256": "7a60b0868ac675dc03f49e148e29c4757d836243f41da523f4afcf272f6cbe6d"
+    },
+    {
+      "canonical_name": "MESA_PROVIDER",
+      "capability_id": 707,
+      "evidence_sha256": "9eb023ab7c73d3c59bfb830f5304c883ee6353e521a7056cb0a0d116e93de687"
+    },
+    {
+      "canonical_name": "GRAPHICS_DRIVER_MATRIX",
+      "capability_id": 708,
+      "evidence_sha256": "debeb1955aa38dc2aa2644d701be251c02f10f6d03c0b378a78513486c74dcf1"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "31b6cea73d3b350a6f43a5b4f46f408ec738895a6a04bcc71216077f699da37d",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D16:705-708",
+  "scope_only": true,
+  "test_sha256": "d3301cfa55e0d808f593aa7833e1cd7158e960ab334affa596defacd47547fc9",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:22:11.522950+00:00"
+}

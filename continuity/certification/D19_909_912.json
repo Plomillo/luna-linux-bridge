@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "PATCH_AVAILABILITY_ENGINE",
+      "capability_id": 909,
+      "evidence_sha256": "d997da94bb54007e34eed5401c86c0262ed5690b27e37946bd30d0b3d89e39dd"
+    },
+    {
+      "canonical_name": "SECURITY_PATCH_PLANNER",
+      "capability_id": 910,
+      "evidence_sha256": "029132e860cd3a61ac918e04603aec9ac671dc231a03586627936fc606891310"
+    },
+    {
+      "canonical_name": "SECURITY_CONFIGURATION_ANALYZER",
+      "capability_id": 911,
+      "evidence_sha256": "af29123d223aa79a7418ef8852d8299c5d222cd9ecaba7c85998527f74462e36"
+    },
+    {
+      "canonical_name": "SECRET_EXPOSURE_DETECTOR",
+      "capability_id": 912,
+      "evidence_sha256": "96262b8862d65b1ac9421aa715986616b2f36434da25f097611dfda747027286"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "53c1869643d14213f34af9ec57546a57a91335833a8cf886e53dc2bfdf585b58",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D19:909-912",
+  "scope_only": true,
+  "test_sha256": "178aa81b130c7cbda51252d4dde1623af4eedf4565edc5dcfd1767ba14761136",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:22:37.897270+00:00"
+}

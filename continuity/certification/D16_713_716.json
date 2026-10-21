@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "CPU_GPU_BOTTLENECK_CLASSIFIER",
+      "capability_id": 713,
+      "evidence_sha256": "0d63fc892899aac3e173f7e13d21c77ee2995d38efb5f534e8b764d4e0538d1a"
+    },
+    {
+      "canonical_name": "GAME_MEMORY_ANALYZER",
+      "capability_id": 714,
+      "evidence_sha256": "75bfb4507f9966aa9f2024be49ee2e1881ca59f14b7363da972444d9ac24a34c"
+    },
+    {
+      "canonical_name": "GAME_IO_ANALYZER",
+      "capability_id": 715,
+      "evidence_sha256": "933d483ef221717e5e36b0825dfc0eb6740be7ced46c15db94acef6db8769c32"
+    },
+    {
+      "canonical_name": "GAME_CONFIGURATION_OPTIMIZER",
+      "capability_id": 716,
+      "evidence_sha256": "230577b1c07c8418a3328c9323fcdad47c10cbfb3d33bdf48a1edd30e4affc0a"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "f514b5c159909ee2bab10cdca593afd18bdde3aa8e5aa3937385e6797f3d8a07",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D16:713-716",
+  "scope_only": true,
+  "test_sha256": "bb1dfd423022755602061381ee1045d0e25a761410b796c96ddb81a17646f8c3",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:22:12.550074+00:00"
+}

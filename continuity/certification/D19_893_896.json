@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "DOCUMENT_MALWARE_ANALYZER",
+      "capability_id": 893,
+      "evidence_sha256": "4964e9fadf8328f277d58fbbfd788d57dba894f2e906fbc9c16a643dd5928b7e"
+    },
+    {
+      "canonical_name": "ARCHIVE_MALWARE_ANALYZER",
+      "capability_id": 894,
+      "evidence_sha256": "b907a5473a3b03c23893d1ebccfb23b85ac432583db5dc36174149b1d7d00836"
+    },
+    {
+      "canonical_name": "EXECUTABLE_MALWARE_ANALYZER",
+      "capability_id": 895,
+      "evidence_sha256": "1507a3e33cd80160acbe8dbd5ab01ca02790d7e5bd522bcd8fbbb5096ace529f"
+    },
+    {
+      "canonical_name": "MEMORY_MALWARE_ANALYZER",
+      "capability_id": 896,
+      "evidence_sha256": "4eb99cbdbf074a583d79419319514151ed298d85664954d799267a3b672e5b82"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "87975e2dedf4892ed192811b5b1cfbce8f01a68ac23f7aa4107f49226316f530",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D19:893-896",
+  "scope_only": true,
+  "test_sha256": "1e135ecb015de9537db1b978cfc3805f934adfb4414d89b8e722d487eff77655",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:22:35.812328+00:00"
+}

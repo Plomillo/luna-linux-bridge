@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "CORRUPTION_SIMULATOR",
+      "capability_id": 539,
+      "evidence_sha256": "545c925c3051d060334f8acdd9ce9b32c52f8a84f0c45d3611eeae599e273331"
+    },
+    {
+      "canonical_name": "CERTIFICATE_EXPIRY_SIMULATOR",
+      "capability_id": 540,
+      "evidence_sha256": "0d4bc8041cc6eee7021e18e07e45ada214f09ea6b4e76a89f74bf8699f44a979"
+    },
+    {
+      "canonical_name": "REBOOT_SIMULATOR",
+      "capability_id": 541,
+      "evidence_sha256": "2bbb104d8cda6d8eafe5e94c181ee6a41b00def3c79550ea063f4bb79b26b039"
+    },
+    {
+      "canonical_name": "POWER_LOSS_SIMULATOR",
+      "capability_id": 542,
+      "evidence_sha256": "34f76978e562b2c52b4c9ff50464d0d5726be65913a51f00ee8185439e9c9456"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "917fa89b840a570f11664315b5ef6f001d31c9826986078d04b0fe591dc6b3a8",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D12:539-542",
+  "scope_only": true,
+  "test_sha256": "d4073ab211def33f786f949164833beea001d037f369d65b613b2ec9420fd408",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:21:50.300964+00:00"
+}

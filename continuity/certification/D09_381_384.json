@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "JAVA_ANDROID_PROVIDER",
+      "capability_id": 381,
+      "evidence_sha256": "a8f3a7703f7ac23d8403df46e214799cc15881bae327b07f425c932c6d0873b8"
+    },
+    {
+      "canonical_name": "RUST_ANDROID_PROVIDER",
+      "capability_id": 382,
+      "evidence_sha256": "f6781f63eef76bf2faca16beeffa9edcff3a630c263caa40a90eb4f4e1143bb5"
+    },
+    {
+      "canonical_name": "CROSS_COMPILE_ARM64",
+      "capability_id": 383,
+      "evidence_sha256": "337ff957820238246ff33b3638eeb3d112a7a4deb5cf25271647d7102824e026"
+    },
+    {
+      "canonical_name": "CROSS_COMPILE_ARMV7",
+      "capability_id": 384,
+      "evidence_sha256": "735c3ed37578069c6cbf4b9eb62616743556143654f81cb95d99554a0d87d221"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "557c10ecd66c3ea88cd7d59efa935a8d9661b6e50fab8c71d4cec3bae0c7f6f7",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D09:381-384",
+  "scope_only": true,
+  "test_sha256": "86bab6a53321fcdd6994ebf9d80f91fab4c9ecebf8260ba2e775885addd38301",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:21:30.237505+00:00"
+}

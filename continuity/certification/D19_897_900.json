@@ -1,0 +1,39 @@
+{
+  "basis": "G23_PASS_PLUS_INDEPENDENT_G24_SOURCE_REVALIDATION",
+  "certification_granted": true,
+  "evidence": [
+    {
+      "canonical_name": "PERSISTENCE_DETECTOR",
+      "capability_id": 897,
+      "evidence_sha256": "155cf1c944baffb79f78abbbca65746eed949f98fb9238b303a2fd32c138036e"
+    },
+    {
+      "canonical_name": "MALICIOUS_BEHAVIOR_GRAPH",
+      "capability_id": 898,
+      "evidence_sha256": "79a288c7e16b5a5d853853ab010d1e33afb4417ddbb6df077d2826a2c495ccb1"
+    },
+    {
+      "canonical_name": "MALWARE_FAMILY_CLASSIFIER",
+      "capability_id": 899,
+      "evidence_sha256": "429154252ef606729a27f7ac74f1614b236b9bd2d3580476e6a5d44ed64184a2"
+    },
+    {
+      "canonical_name": "MALWARE_ANALYSIS_RECEIPT",
+      "capability_id": 900,
+      "evidence_sha256": "fa7f4474f2f86a9451c55d1513caca479c1db1658f6fa5c1d41c8afe640b2ecc"
+    }
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39616102640",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39616102640",
+  "global_super1200_certified": false,
+  "module_sha256": "22f8b8afcf590e48e0024c2e2bc1024b9bb331234a1f0f6a0a85452d15b9e3b5",
+  "result": "PASS",
+  "schema": "SUPER1200_G24_CERTIFICATION_DECISION/1",
+  "scope": "D19:897-900",
+  "scope_only": true,
+  "test_sha256": "ebff7be04aaaa9715993750ce3e5b7e6d8cc0b3e84ff6cb2fd1b185e3561e96f",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:22:36.332275+00:00"
+}
