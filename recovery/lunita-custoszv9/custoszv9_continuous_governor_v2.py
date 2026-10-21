@@ -1,4 +1,4 @@
-[Reading 1213 lines from start (total: 1213 lines, 0 remaining)]
+[Reading 1205 lines from start (total: 1205 lines, 0 remaining)]
 
 #!/usr/bin/env python3
 """Fail-closed step classification and persistent Cajita quantization side-lane.
@@ -552,6 +552,11 @@ def tick_cajita_priority_lane(
         raise RuntimeError("CAJITA_PRIORITY_LANE_MISSION_HASH_MISMATCH")
 
     stage = lane.get("stage")
+    if stage == "BLOCKED_CONVERSION_RESOURCE":
+        return {"status": "BLOCKED_CONVERSION_RESOURCE", "stage": stage, "did_work": False,
+                "candidate_id": lane.get("candidate_id"),
+                "evidence": lane.get("conversion_resource_failure") or lane.get("last_error"),
+                "next_action": "Do not repeat a tensor-materializing dry-run. Resume only after a current hash-bound resource-recovery receipt passes every guard."}
     if stage == "BLOCKED_RUNTIME_REQUIREMENTS_PROFILE":
         permission_recovery = _recover_runtime_requirements_permission_block(lane, state_dir)
         if permission_recovery:
@@ -660,42 +665,29 @@ def tick_cajita_priority_lane(
                 lane["fallback_environment_failed"] = True
                 lane["fallback_failure_log_path"] = (lane.get("job") or {}).get("log_path")
             elif stage == "DRY_RUN_RUNNING":
-                # The dry-run itself loads the model's largest tensor. An interrupted or
-                # libgomp-thread-blocked dry-run is a non-production probe failure, not a
-                # reason to loop forever: preserve it and attempt the real conversion once
-                # with a bounded numerical-library thread environment. Other failures fail closed.
+                # The supposedly dry probe materializes large tensors and writes them to a spool.
+                # Any nonzero result is a hard stop; never loop and repeat this memory/disk-heavy probe.
                 job_info = lane.get("job") or {}
                 err_text = str(job_result.get("error") or "")
                 log_path = pathlib.Path(str(job_info.get("log_path") or ""))
                 try:
-                    log_tail = log_path.read_text(encoding="utf-8", errors="replace")[-12000:] if log_path.is_file() else ""
+                    log_tail = log_path.read_text(encoding="utf-8", errors="replace")[-16000:] if log_path.is_file() else ""
                 except OSError:
                     log_tail = ""
                 failure_text = (err_text + "\n" + log_tail).casefold()
-                known_resource_probe_failure = (
-                    rc in {1, 125}
-                    and any(marker in failure_text for marker in (
-                        "keyboardinterrupt", "libgomp: thread creation failed", "resource temporarily unavailable"
-                    ))
-                    and lane.get("model_inventory", {}).get("status") == "PASS_MODEL_INVENTORY"
-                    and lane.get("toolchain", {}).get("converter_source_commit") == EXPECTED_LLAMA_CPP_COMMIT
-                    and lane.get("toolchain", {}).get("converter_source_status") == "PASS"
-                )
-                if known_resource_probe_failure:
-                    lane["stage"] = "CONVERT_RETRY"
-                    lane["dry_run_fallback_evidence"] = {
-                        "schema": "CUSTOSZ_CAJITA_DRY_RUN_FALLBACK_EVIDENCE/1.0",
-                        "timestamp_utc": utc_now(), "reason": "INTERRUPTED_OR_THREAD_BLOCKED_DRY_RUN; bounded real conversion is next diagnostic step",
-                        "dry_run_returncode": rc, "receipt_path": job_info.get("receipt_path"),
-                        "receipt_error": err_text[:1200], "log_path": str(log_path),
-                        "log_sha256": _sha256(log_path) if log_path.is_file() else None,
-                        "model_inventory_status": lane.get("model_inventory", {}).get("status"),
-                        "pinned_converter_commit": EXPECTED_LLAMA_CPP_COMMIT,
-                        "source_model_weights_modified": False,
-                        "certification": "NOT_GRANTED",
-                    }
-                else:
-                    lane["stage"] = "DRY_RUN"
+                lane["stage"] = "BLOCKED_CONVERSION_RESOURCE"
+                lane["conversion_resource_failure"] = {
+                    "schema": "CUSTOSZ_CAJITA_CONVERSION_RESOURCE_FAILURE/1.0",
+                    "timestamp_utc": utc_now(), "reason": "TENSOR_MATERIALIZING_DRY_RUN_FAILED; resource recovery required before conversion",
+                    "returncode": rc, "receipt_path": job_info.get("receipt_path"),
+                    "log_path": str(log_path), "log_sha256": _sha256(log_path) if log_path.is_file() else None,
+                    "failure_signatures": [marker for marker in ("not enough free space to write", "keyboardinterrupt", "resource temporarily unavailable", "out of memory") if marker in failure_text],
+                    "dry_run_materializes_large_tensors": True,
+                    "model_inventory_status": lane.get("model_inventory", {}).get("status"),
+                    "pinned_converter_commit": EXPECTED_LLAMA_CPP_COMMIT,
+                    "model_source_weights_modified": False, "certification": "NOT_GRANTED",
+                }
+                lane["resource_recovery_evidence"] = None
             elif stage == "CONVERSION_RUNNING":
                 job_info = lane.get("job") or {}
                 log_path = pathlib.Path(str(job_info.get("log_path") or ""))
@@ -733,7 +725,7 @@ def tick_cajita_priority_lane(
             lane["last_progress_utc"] = utc_now()
             _atomic(lane_path, lane)
             next_action = (
-                "BLOCKED: converter failed at the largest tensor. Do not retry until a versioned resource-recovery receipt is recorded and bound to the lane."
+                "BLOCKED: tensor-materializing dry-run or converter failed. Do not retry until a versioned resource-recovery receipt is recorded and bound to the lane."
                 if lane.get("conversion_resource_failure") else
                 "Launch pinned BF16 conversion with one-thread numerical libraries; the heavy lane starts Q4_K_M quantization only after a validated conversion receipt."
                 if lane.get("dry_run_fallback_evidence") else
