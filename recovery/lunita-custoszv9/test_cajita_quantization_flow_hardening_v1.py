@@ -1,4 +1,4 @@
-[Reading 212 lines from start (total: 212 lines, 0 remaining)]
+[Reading 245 lines from start (total: 245 lines, 0 remaining)]
 
 #!/usr/bin/env python3
 """Regression tests for bounded, fail-closed Cajita Qwen3 conversion progression."""
@@ -45,7 +45,7 @@ class CajitaQuantizationFlowTests(unittest.TestCase):
         mod._atomic(state / "cajita_priority_lane.json", lane)
         return lane
 
-    def test_interrupted_dryrun_advances_to_real_conversion_retry(self):
+    def test_interrupted_dryrun_fails_closed_without_repeating_probe(self):
         with tempfile.TemporaryDirectory() as tmp:
             operator, root, state, mission_sha = self._layout(tmp)
             log = state / "dryrun.log"
@@ -58,10 +58,10 @@ class CajitaQuantizationFlowTests(unittest.TestCase):
             finally:
                 mod._read_job = original
             saved = json.loads((state / "cajita_priority_lane.json").read_text())
-            self.assertEqual(saved["stage"], "CONVERT_RETRY")
-            self.assertTrue(saved["dry_run_fallback_evidence"]["source_model_weights_modified"] is False)
+            self.assertEqual(saved["stage"], "BLOCKED_CONVERSION_RESOURCE")
+            self.assertEqual(saved["conversion_resource_failure"]["returncode"], 125)
             self.assertEqual(saved["certification"], "NOT_GRANTED")
-            self.assertIn("BF16 conversion", result["next_action"])
+            self.assertIn("Do not retry", result["next_action"])
 
     def test_dead_dryrun_without_receipt_at_tensor_boundary_advances(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -92,8 +92,8 @@ class CajitaQuantizationFlowTests(unittest.TestCase):
             finally:
                 mod._read_job = original
             saved = json.loads((state / "cajita_priority_lane.json").read_text())
-            self.assertEqual(saved["stage"], "DRY_RUN")
-            self.assertNotIn("dry_run_fallback_evidence", saved)
+            self.assertEqual(saved["stage"], "BLOCKED_CONVERSION_RESOURCE")
+            self.assertIn("conversion_resource_failure", saved)
 
     def test_verified_swap_route_lowers_ram_floor_only_for_that_route(self):
         self.assertEqual(mod._minimum_conversion_ram_bytes(False), 2 * 1024**3)
@@ -113,6 +113,39 @@ class CajitaQuantizationFlowTests(unittest.TestCase):
             pathlib.Path("source-model"), pathlib.Path("candidate-R2.gguf"), 2)
         self.assertNotIn("--use-temp-file",cmd)
         self.assertIn("--split-max-size",cmd)
+
+    def test_tensor_materializing_dryrun_space_failure_enters_resource_block(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            operator, root, state, mission_sha = self._layout(tmp)
+            log = state / "dryrun.log"
+            log.write_text("OSError: Not enough free space to write 178257920 bytes\n", encoding="utf-8")
+            lane = self._lane(state, mission_sha, log)
+            lane["stage"] = "DRY_RUN_RUNNING"
+            mod._atomic(state / "cajita_priority_lane.json", lane)
+            original = mod._read_job
+            mod._read_job = lambda current: ({"returncode":1,"error":None}, False)
+            try:
+                mod.tick_cajita_priority_lane(state, root / "Cajita", mission_sha)
+            finally:
+                mod._read_job = original
+            saved = json.loads((state / "cajita_priority_lane.json").read_text())
+            self.assertEqual(saved["stage"], "BLOCKED_CONVERSION_RESOURCE")
+            self.assertIn("not enough free space to write", saved["conversion_resource_failure"]["failure_signatures"])
+            self.assertEqual(saved["certification"], "NOT_GRANTED")
+
+    def test_blocked_resource_stage_never_launches_another_job(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            operator, root, state, mission_sha = self._layout(tmp)
+            log = state / "failed.log"
+            log.write_text("OSError\n", encoding="utf-8")
+            lane = self._lane(state, mission_sha, log)
+            lane.update({"stage":"BLOCKED_CONVERSION_RESOURCE","conversion_resource_failure":{"reason":"resource"},"job":None})
+            mod._atomic(state / "cajita_priority_lane.json", lane)
+            result = mod.tick_cajita_priority_lane(state, root / "Cajita", mission_sha)
+            saved = json.loads((state / "cajita_priority_lane.json").read_text())
+            self.assertEqual(result["status"], "BLOCKED_CONVERSION_RESOURCE")
+            self.assertEqual(saved["stage"], "BLOCKED_CONVERSION_RESOURCE")
+            self.assertIsNone(saved.get("job"))
 
     def test_converter_oom_at_largest_tensor_enters_resource_block(self):
         with tempfile.TemporaryDirectory() as tmp:
