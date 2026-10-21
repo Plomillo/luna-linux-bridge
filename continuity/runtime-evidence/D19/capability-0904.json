@@ -1,0 +1,21 @@
+{
+  "canonical_name": "CVE_IDENTITY_REGISTRY",
+  "capability_id": 904,
+  "certification_granted": false,
+  "domain_id": "D19",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "570fd71e9c37b5c34155e84da461d3bed22a4cd599abf06079397ee39c7503ff",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d19_901_904.py",
+  "module_sha256": "fb94601df4cbf67bff330061f7ecf9b9056e427fd840863bf0b068844ff3ae84",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d19_901_904.py",
+  "test_case": "test_cap_0904",
+  "test_sha256": "d4424ef5c757b9149748d6bdc72a3e2af8501b87ed6bc34b95cfabb0e8d754a8",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

@@ -1,0 +1,21 @@
+{
+  "canonical_name": "ENGINE_NON_DUPLICATION_GATE",
+  "capability_id": 473,
+  "certification_granted": false,
+  "domain_id": "D10",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "7438ffac8351fc124ade709ba294b633687ffdf0b978d7fce0aab9502661d446",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d10_470_473.py",
+  "module_sha256": "30ae1d171e68b62aae8916915e79bc95708e7b32f07eedd9e3315c09ef31f075",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d10_470_473.py",
+  "test_case": "test_cap_0473",
+  "test_sha256": "0396dcbc024ac506f98b7a54ba09b01eb3ee5f324cb5f09099e49e8ae4af7474",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

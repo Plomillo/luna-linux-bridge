@@ -1,0 +1,21 @@
+{
+  "canonical_name": "FIRST_ORDER_OBJECT_REASONING",
+  "capability_id": 722,
+  "certification_granted": false,
+  "domain_id": "D17",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "98f8c6e878538a0441cb84e1cca14d2f24c490d36c134ee841116270032b7a92",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d17_721_724.py",
+  "module_sha256": "0368a834946f42f2c329b77b7874703f6984945d5be599015a718e87829e5d05",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d17_721_724.py",
+  "test_case": "test_cap_0722",
+  "test_sha256": "0dcbb9501bdfe4cc45f2e61c2935a29394d7224f295e3c348e88ee8bd970689e",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

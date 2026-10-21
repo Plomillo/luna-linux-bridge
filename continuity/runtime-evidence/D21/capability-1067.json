@@ -1,0 +1,21 @@
+{
+  "canonical_name": "SUBSTITUTE_DIFFERENTIAL_TEST",
+  "capability_id": 1067,
+  "certification_granted": false,
+  "domain_id": "D21",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "3ed7ae0c7fa0c70ee560467131c635d67e20f6eda0bf2ee11231b85928ec6ce5",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d21_1065_1068.py",
+  "module_sha256": "d2801730dae2330728e5d1b94641c107a9c0001e5c1a95adcdb4af0f9c8cc0e1",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d21_1065_1068.py",
+  "test_case": "test_cap_1067",
+  "test_sha256": "35c020a5a8be05acae710629e1b9ef5daaac245d48e2fe0fa5978e1276655bd1",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

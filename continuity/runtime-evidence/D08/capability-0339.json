@@ -1,0 +1,21 @@
+{
+  "canonical_name": "BROTLI_PROVIDER",
+  "capability_id": 339,
+  "certification_granted": false,
+  "domain_id": "D08",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "4a1959392f9d35fbd0f8b8178687167fa0cb8c88a9f38b2a2d57724816982dab",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d08_337_340.py",
+  "module_sha256": "c81894556a705bab84bbff784670f4ac2e36dafa649bb1a0ba1988920e2948c3",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d08_337_340.py",
+  "test_case": "test_cap_0339",
+  "test_sha256": "560608b80a25393692489ef4724323a9511ff31b9b49123ef03f8fa8959f0138",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

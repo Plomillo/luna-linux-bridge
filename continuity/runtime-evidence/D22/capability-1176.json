@@ -1,0 +1,21 @@
+{
+  "canonical_name": "SOCIAL_ENGINEERING_KB",
+  "capability_id": 1176,
+  "certification_granted": false,
+  "domain_id": "D22",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "6d0a56d9409ba19894f493711cefec06d6c4635da9717834fb6f06164c12c02a",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d22_1173_1176.py",
+  "module_sha256": "0c43ac4939d58956143f9483dd55a679675b1f83356168468a825a133165b95b",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d22_1173_1176.py",
+  "test_case": "test_cap_1176",
+  "test_sha256": "c412602c73c6390f3cdb47e419e68715ee180d1899967c65162db725222ad7a0",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

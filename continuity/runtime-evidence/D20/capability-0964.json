@@ -1,0 +1,21 @@
+{
+  "canonical_name": "CONTENT_ADDRESSED_QUARANTINE",
+  "capability_id": 964,
+  "certification_granted": false,
+  "domain_id": "D20",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "dcd880baa451a42aeed1dfdb2996c957e06c8566caea976783bcf2f27dc2a605",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d20_961_964.py",
+  "module_sha256": "484b371d2a03b9761f7f0aa7e9354249e80c4b7a75b9735fcddef558eaed6188",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d20_961_964.py",
+  "test_case": "test_cap_0964",
+  "test_sha256": "c8bd208a6082977262b57dc6b230bbb6735d8da5736f7c7bc3aab7cf2c610e22",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

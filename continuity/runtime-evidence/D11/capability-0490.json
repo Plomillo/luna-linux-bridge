@@ -1,0 +1,21 @@
+{
+  "canonical_name": "COST_REGRESSION_DETECTOR",
+  "capability_id": 490,
+  "certification_granted": false,
+  "domain_id": "D11",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "943120134fa595f43fd569a4ca92389e049f1bcb0e1b93f4bfe831e05c6b1652",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d11_489_492.py",
+  "module_sha256": "a54b292c277ecae96bfc6af28172087e7790038141a21d1c898ec3295a46197e",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d11_489_492.py",
+  "test_case": "test_cap_0490",
+  "test_sha256": "19914f5add9e8bf5e49635433d52f3d2f22401c256c97f71e0fb8f8692b2af20",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

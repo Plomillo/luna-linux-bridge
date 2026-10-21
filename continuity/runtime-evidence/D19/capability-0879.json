@@ -1,0 +1,21 @@
+{
+  "canonical_name": "SECURITY_SELF_CRITIC",
+  "capability_id": 879,
+  "certification_granted": false,
+  "domain_id": "D19",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "9a0632ed255d531f933e7ea7cf457202d1fd6cab6c8799508de019edc6d53ed4",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d19_877_880.py",
+  "module_sha256": "99c1669f159d2161c493c9878450c35643d6f468a88d34eea340e11cfccdda3a",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d19_877_880.py",
+  "test_case": "test_cap_0879",
+  "test_sha256": "ba5a7372887c3c407b7674a296096752a75ddfedd95ca3581056bec24266bab6",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

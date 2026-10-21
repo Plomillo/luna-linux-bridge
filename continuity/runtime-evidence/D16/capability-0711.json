@@ -1,0 +1,21 @@
+{
+  "canonical_name": "FRAME_TIME_ANALYZER",
+  "capability_id": 711,
+  "certification_granted": false,
+  "domain_id": "D16",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "e29cccbee8d38c5c800de01d8b65c32362017c2e43b2bbe02b6294a8255a0e10",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d16_709_712.py",
+  "module_sha256": "6d4898fc33ff0ce605fa8d6fe808d3962d3cf0c9dac942ca84ce0faf921cccaa",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d16_709_712.py",
+  "test_case": "test_cap_0711",
+  "test_sha256": "89e5bc6f27720b5ebb15ae042eb89ddeb079488253549bb720c85f0f9947ba47",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

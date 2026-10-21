@@ -1,0 +1,21 @@
+{
+  "canonical_name": "UTILITY_REQUIREMENT_EXTRACTOR",
+  "capability_id": 1043,
+  "certification_granted": false,
+  "domain_id": "D21",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "d40ea162540cdf3a2be70edb5043723603237ff413769516e60063f3c55f0d0f",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d21_1041_1044.py",
+  "module_sha256": "779f70a6ac8d09abef308235af915484ad946ba2124b9e267fdc0c73f3795181",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d21_1041_1044.py",
+  "test_case": "test_cap_1043",
+  "test_sha256": "89259549981e621b30044388862136852ed1f2f4510a78f09526ab9a587b5cd2",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

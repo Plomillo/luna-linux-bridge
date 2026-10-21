@@ -1,0 +1,21 @@
+{
+  "canonical_name": "MULTI_AI_ARCHITECTURE_FACTORY",
+  "capability_id": 231,
+  "certification_granted": false,
+  "domain_id": "D07",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "d02bc52314756397b2ab1e6a694d0bc01099f6672655aabc09dc39daf19fa2aa",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d07_231_234.py",
+  "module_sha256": "5d52c41bb040137007ff0f2bd9b972f3a08f3396ba1f4483759f63442ab02579",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d07_231_234.py",
+  "test_case": "test_cap_0231",
+  "test_sha256": "78a8579e428afb7d1df20ae9eee496dd781b2db5021eb33fb7d7584fdbb5025a",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

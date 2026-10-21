@@ -1,0 +1,21 @@
+{
+  "canonical_name": "DECISION_REVERSIBILITY",
+  "capability_id": 552,
+  "certification_granted": false,
+  "domain_id": "D12",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "971f16efb9ffd2c6bbe580aa0a528744e440779cc15f8cc30fffa1a8d134689b",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d12_551_554.py",
+  "module_sha256": "ca68c15a0b2be70cbe12d959d40c7d6856b6a9726e173b940552b184e94af3b9",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d12_551_554.py",
+  "test_case": "test_cap_0552",
+  "test_sha256": "21ac8c0b4679cfec445d4e0adaaf9d0bdcd1a73b36ed5e6ffcc2c923457eec98",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

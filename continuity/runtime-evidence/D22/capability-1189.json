@@ -1,0 +1,21 @@
+{
+  "canonical_name": "PREVENTION_SIMULATION_ENGINE",
+  "capability_id": 1189,
+  "certification_granted": false,
+  "domain_id": "D22",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "a58442b56a344dcaf1a5f1954ca9ce44a5f3aa6b997fb41893a6ec7c2b42c87d",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d22_1189_1192.py",
+  "module_sha256": "3e8451c692b949a69113dcd9a7d41ccd36f4af8255ed0b7d59e5fa713be5e94d",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d22_1189_1192.py",
+  "test_case": "test_cap_1189",
+  "test_sha256": "bcd6680b2d739754acfec8c07832380a448fb5ed9da3540ef3bc9e2fd05a4774",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

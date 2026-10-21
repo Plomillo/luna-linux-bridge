@@ -1,0 +1,21 @@
+{
+  "canonical_name": "COMPATIBILITY_SHIM_FACTORY",
+  "capability_id": 812,
+  "certification_granted": false,
+  "domain_id": "D18",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "19015deba2ca5249f1d74f9211d22bcd39547ec807814e7e06bd32756bd4f60d",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d18_809_812.py",
+  "module_sha256": "84be489f13d8b063f02d908cfdeb63145c7132ed9c8e4ee0dee663ad06028061",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d18_809_812.py",
+  "test_case": "test_cap_0812",
+  "test_sha256": "265fb0526685e2982d6b3ef22dc6adbdd40f97179f037e86491eb478ba32d602",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

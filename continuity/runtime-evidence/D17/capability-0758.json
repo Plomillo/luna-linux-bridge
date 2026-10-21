@@ -1,0 +1,21 @@
+{
+  "canonical_name": "AMBITION_EXPANSION_ENGINE",
+  "capability_id": 758,
+  "certification_granted": false,
+  "domain_id": "D17",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "4445d2963a57948f8218e3cecdb8761b6e9ccf627f29a99e4a652abf9cca3512",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d17_757_760.py",
+  "module_sha256": "ce8439ce2ef70120ed81a24e055f1bbe65c1b5b2e91faf4ff55b971af6d95dc7",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d17_757_760.py",
+  "test_case": "test_cap_0758",
+  "test_sha256": "792ccea492ae96ddc9eba04f990092bd0e9d016c72c92f229d16634a34c45173",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

@@ -1,0 +1,21 @@
+{
+  "canonical_name": "COMPROMISE_RECOVERY_ENGINE",
+  "capability_id": 993,
+  "certification_granted": false,
+  "domain_id": "D20",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "77087c6b3710a464728f481d345daa77172ee5d59168a3037d10529892c6d15f",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d20_993_996.py",
+  "module_sha256": "eb6f5a4a99613daec4716d26801f5da37c02022ecc9dd8571a4ec6f56d61ae59",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d20_993_996.py",
+  "test_case": "test_cap_0993",
+  "test_sha256": "87021f34713bca7ba1720e3f1c139e4bf615c9115ca33d354806d0bbf290ed90",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

@@ -1,0 +1,21 @@
+{
+  "canonical_name": "PROCESS_BEHAVIOR_BASELINE",
+  "capability_id": 922,
+  "certification_granted": false,
+  "domain_id": "D19",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "a1956f310079087dd8404e97c7f11ccb19d1e70703dd3afc783e275096b4b905",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d19_921_924.py",
+  "module_sha256": "aa58185f3d34dae62423ffbca141bae0aa5e06ed976402137a8cd219525f7965",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d19_921_924.py",
+  "test_case": "test_cap_0922",
+  "test_sha256": "cc94291da1e263b5bb42e44e8b50b57c7fbda665a6ebbecf594225681041a474",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

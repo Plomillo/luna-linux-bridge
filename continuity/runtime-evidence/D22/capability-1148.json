@@ -1,0 +1,21 @@
+{
+  "canonical_name": "THREAT_PATTERN_GENERALIZER",
+  "capability_id": 1148,
+  "certification_granted": false,
+  "domain_id": "D22",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "67c15a3595567c1a194586df080778ddf754109a6319fd18951c40c16add1fa9",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d22_1145_1148.py",
+  "module_sha256": "e68de49e468d63a151faaa2a8e4843ac9168d912ed7234361985f716d9895a8f",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d22_1145_1148.py",
+  "test_case": "test_cap_1148",
+  "test_sha256": "868facef76a1f854ef8fed4d3000c09520d9725e3b01d8c9e295e4114d0017eb",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

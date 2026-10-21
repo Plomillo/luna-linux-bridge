@@ -1,0 +1,21 @@
+{
+  "canonical_name": "TUF_PROVIDER",
+  "capability_id": 427,
+  "certification_granted": false,
+  "domain_id": "D09",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "023f255b70a2b550f219a2f5ba456597db9fdb450a28d89b1bc7dc784543da5c",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d09_425_428.py",
+  "module_sha256": "20fb32350dfb5d0e9d6143d956acc1ef9158fc9a857cafee7414abc35f19a43e",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d09_425_428.py",
+  "test_case": "test_cap_0427",
+  "test_sha256": "156e8a800d6f7c6c08d8ff5c9fa2415a06e1ffc2100ace4e304ffb4da43b0924",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

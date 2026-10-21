@@ -1,0 +1,21 @@
+{
+  "canonical_name": "MODEL_CASCADE",
+  "capability_id": 240,
+  "certification_granted": false,
+  "domain_id": "D07",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "e95b0b38be2614a7cb99863fdc02868bff9d0a9681bf09e9c82622123d1b1020",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d07_239_242.py",
+  "module_sha256": "0a72b2245f19a9231879c2e222bc667b9e9d61b55d4893377cf3843c69fc4fe4",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d07_239_242.py",
+  "test_case": "test_cap_0240",
+  "test_sha256": "abcb5a41c103a30cacd35966a0580bfe0a376ae0eef09d0cceb3de0724b88e25",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

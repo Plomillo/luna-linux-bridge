@@ -1,0 +1,21 @@
+{
+  "canonical_name": "SECONDARY_SOURCE_REGISTRY",
+  "capability_id": 321,
+  "certification_granted": false,
+  "domain_id": "D08",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "ce6650980eeb6fa5ac8d60f95cff60323deb176a11de299b51cde111660268f7",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d08_321_324.py",
+  "module_sha256": "34c066a412eaab91e2a3fb407557cbdf7e938adb27f3e0359aacd7aed92f42a5",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d08_321_324.py",
+  "test_case": "test_cap_0321",
+  "test_sha256": "02b39b1662d128b80759c887c62190c577c18bfa1b84afd268d5ada9cbd3b4b7",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

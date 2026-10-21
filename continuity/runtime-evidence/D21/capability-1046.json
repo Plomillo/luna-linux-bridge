@@ -1,0 +1,21 @@
+{
+  "canonical_name": "QUARANTINE_BLOCKER_DETECTOR",
+  "capability_id": 1046,
+  "certification_granted": false,
+  "domain_id": "D21",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "ae982698c2ec3e203b4e0aacd72929a3716359bf6ec0a25279fa9378fb0bdc43",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d21_1045_1048.py",
+  "module_sha256": "4f5e862e3f45523a4cddcadc85d4731f16a6a83b02a2b0719c108ffb0d0967aa",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d21_1045_1048.py",
+  "test_case": "test_cap_1046",
+  "test_sha256": "9de4c2b1dab66ed87edaf7948f037e4fa6d134158a80868491adea0761094291",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

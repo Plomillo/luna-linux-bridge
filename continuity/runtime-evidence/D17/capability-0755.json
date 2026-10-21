@@ -1,0 +1,21 @@
+{
+  "canonical_name": "METACOGNITIVE_UNIVERSE_FACTORY",
+  "capability_id": 755,
+  "certification_granted": false,
+  "domain_id": "D17",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "cde4b3cc7f03ce5bece769549d81d55f1e3e8c2a2e5ee7d631b13d16281b9a72",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d17_753_756.py",
+  "module_sha256": "7cbfaf363274d54cbbdfe480f07a20b11fc8d92e642511f80240a25af7f87760",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d17_753_756.py",
+  "test_case": "test_cap_0755",
+  "test_sha256": "56294b2feaf76d7da09b5d4aa236ddffa3b90525fa995d8d3afea3dc2450ed5a",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

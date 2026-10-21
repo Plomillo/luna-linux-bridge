@@ -1,0 +1,21 @@
+{
+  "canonical_name": "TUTORIAL_GENERATOR",
+  "capability_id": 611,
+  "certification_granted": false,
+  "domain_id": "D13",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "d5fa2c9b80b77e8d85c4b42f307005b453db73f95c574a68dba18030293c2575",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d13_610_613.py",
+  "module_sha256": "ff28c4dc381778c967bbe57616b977342589d2f782d31f45a9e59e78979709ef",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d13_610_613.py",
+  "test_case": "test_cap_0611",
+  "test_sha256": "206cd53e6707529c2bc2b88981e9e59947cd9a85d61f3e0bdc100f57c7092a0c",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

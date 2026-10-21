@@ -1,0 +1,21 @@
+{
+  "canonical_name": "AUTOMATION_OPPORTUNITY_DETECTOR",
+  "capability_id": 496,
+  "certification_granted": false,
+  "domain_id": "D11",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "4d2a3db7c199353dcad25ebde73721e15ad3a87228db9106061f6701e1def38f",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d11_493_496.py",
+  "module_sha256": "32e38e5312c3bb125665b57792d37fe8831f50dce5fd0ff068a71b92a43f8dda",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d11_493_496.py",
+  "test_case": "test_cap_0496",
+  "test_sha256": "28804a041ff26ee6bb980e76dc058057c45720ac9e0adc5f71ff674977efe80e",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

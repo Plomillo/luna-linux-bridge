@@ -1,0 +1,21 @@
+{
+  "canonical_name": "DEPENDENCY_DIFF_ENGINE",
+  "capability_id": 794,
+  "certification_granted": false,
+  "domain_id": "D18",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "f10856c8b00b8c1ea1aaf657928054c8448186cc6ec7fe9d371b9555f4433b5f",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d18_793_796.py",
+  "module_sha256": "caa74b7596a62a4049a19111e0a14679aa9ed653ace68c38c11d70d7d55090d6",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d18_793_796.py",
+  "test_case": "test_cap_0794",
+  "test_sha256": "340bad7990aee171e15e145aedb178134fc50e7346e189024a98b230af39db8a",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

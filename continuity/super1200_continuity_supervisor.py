@@ -2,7 +2,7 @@ import json,time
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]; STATE=ROOT/"continuity/STATE.json"; EXEC=ROOT/"continuity/EXECUTORS.json"; REPORT=ROOT/"continuity/CONTINUITY_REPORT.txt"
 s=json.loads(STATE.read_text()); ex=json.loads(EXEC.read_text())["executors"]; nxt=s["next_point"]; ts=time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
-scoped_hold = s.get("g23","").startswith("PASS_FOR_SCOPE_") and s.get("blocked") is True and s.get("global_certification_status")=="NOT_CERTIFIED" and s.get("certified") is False
+scoped_hold = (s.get("g23","").startswith("PASS_FOR_SCOPE_") or s.get("g23","").startswith("PENDING_FOR_SCOPE_")) and s.get("blocked") is True and s.get("global_certification_status")=="NOT_CERTIFIED" and s.get("certified") is False
 if s.get("active_worker"): status="WORKER_ACTIVE"
 elif s.get("terminal") or nxt in ("","NONE","TERMINAL"): status="TERMINAL"
 elif scoped_hold:

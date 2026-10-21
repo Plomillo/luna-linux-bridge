@@ -1,0 +1,21 @@
+{
+  "canonical_name": "MAINTENANCE_CACHE",
+  "capability_id": 842,
+  "certification_granted": false,
+  "domain_id": "D18",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "05f843070cb3e7ca5949b7a31f7c2eb5f2916b8b7a88983b999f4f7e39073407",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d18_841_844.py",
+  "module_sha256": "4c34eb1a38d685aa267df3a2cd6205381a29c74ae3ec487237be254397c24eec",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d18_841_844.py",
+  "test_case": "test_cap_0842",
+  "test_sha256": "e0221335079145d5fa6e82f0a72a9d4d2ffdc748b7959db2bfcdfdd5709b1d7f",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

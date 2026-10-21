@@ -1,0 +1,21 @@
+{
+  "canonical_name": "RED_TEAM_ENGINE",
+  "capability_id": 736,
+  "certification_granted": false,
+  "domain_id": "D17",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "db2308723cf8b8a8c35cf4bba171800fde817de1839f4de56d7d782d4af5dfc1",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d17_733_736.py",
+  "module_sha256": "c6f4b20a011646aaee8fe621d8df31f318fcab88813b22a8811d0a8e4d968343",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d17_733_736.py",
+  "test_case": "test_cap_0736",
+  "test_sha256": "bd574a96bdaf8987ec81f96e16a6532efd21bc4824f4c8db639d6ac9b9698a19",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

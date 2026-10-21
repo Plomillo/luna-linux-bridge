@@ -1,0 +1,21 @@
+{
+  "canonical_name": "UPDATE_PROVENANCE_GATE",
+  "capability_id": 839,
+  "certification_granted": false,
+  "domain_id": "D18",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "ab40cf674f41e94fffe4c2f454d25d0bb0d2c18433533f96fe5edc98e0495a80",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d18_837_840.py",
+  "module_sha256": "de260556e0107b08d9059bbce1a9db34fec4aa6251016bc8af67e72dbcd71f4a",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d18_837_840.py",
+  "test_case": "test_cap_0839",
+  "test_sha256": "56ceff548c867d69e631bed50fcb0d1b21e3fb7f002e2c7614bd8ed1c08e127c",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

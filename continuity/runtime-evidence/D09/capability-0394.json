@@ -1,0 +1,21 @@
+{
+  "canonical_name": "ONNX_RUNTIME_MOBILE",
+  "capability_id": 394,
+  "certification_granted": false,
+  "domain_id": "D09",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "c08935842556d0e9a0e2f6336366e2d876d3722580fde98bf2c324dccd77445e",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d09_393_396.py",
+  "module_sha256": "bbcbd752bb6c1ad6932e1acb7b53fa785ba49b495a798c49b384232aba5e8f21",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d09_393_396.py",
+  "test_case": "test_cap_0394",
+  "test_sha256": "71f4ea1d2e8440d4965345e1cf632a77a9d5d0a7b6dbfdb4f7570d5d629067be",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

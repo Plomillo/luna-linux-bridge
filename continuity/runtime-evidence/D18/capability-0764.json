@@ -1,0 +1,21 @@
+{
+  "canonical_name": "MAINTENANCE_STATE_MACHINE",
+  "capability_id": 764,
+  "certification_granted": false,
+  "domain_id": "D18",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "a5a8f057906460c7cc43f172623f16280e2ad8945478afbc1fbff30cdc8a0e04",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d18_761_764.py",
+  "module_sha256": "d300bd1cb2e8a48bcc734094c25c5264ed7c8026ee887ee40dbbfc90acadfe45",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d18_761_764.py",
+  "test_case": "test_cap_0764",
+  "test_sha256": "cf08a390c8bb0bdc6fca66b28bdb6704e172a748d24b90c210c7c15b161458d8",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

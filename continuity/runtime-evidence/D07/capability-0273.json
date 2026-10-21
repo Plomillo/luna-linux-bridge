@@ -1,0 +1,21 @@
+{
+  "canonical_name": "BAYESIAN_ENGINE",
+  "capability_id": 273,
+  "certification_granted": false,
+  "domain_id": "D07",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "f7e92accf6298497721cee5ff9790771c742f6e6a0d7f2a34bd2dd044c254288",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d07_271_274.py",
+  "module_sha256": "9714d5231354155c64b92f6c476e34142af90fb9bc39e473f0bf9b3db244d43b",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d07_271_274.py",
+  "test_case": "test_cap_0273",
+  "test_sha256": "ae0b30b30702f0db5d0d4be9d828f93f5f77e1006b70fdb562c092ba7afda863",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

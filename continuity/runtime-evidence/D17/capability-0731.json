@@ -1,0 +1,21 @@
+{
+  "canonical_name": "STRATEGY_PERFORMANCE_HISTORY",
+  "capability_id": 731,
+  "certification_granted": false,
+  "domain_id": "D17",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "ca33d05752580ce13cf76bde93df796d1e68431465a71a007d3d8c0becf30909",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d17_729_732.py",
+  "module_sha256": "909f6f60839b78274ef790c1f403a6dd3292216796cfe124f4792ccbe27def60",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d17_729_732.py",
+  "test_case": "test_cap_0731",
+  "test_sha256": "c9cf84ca9b84357f14bf322918fe9d71681c12b1809032b40199dc262f8acf68",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

@@ -4,122 +4,222 @@
     {
       "canonical_name": "UNCERTAINTY_REDUCTION_FABRIC",
       "capability_id": 641,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d14_641_644.py",
+      "test_artifact": "implementation/super1200/tests/test_d14_641_644.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "UNCERTAINTY_ORIGIN_ANALYZER",
       "capability_id": 642,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d14_641_644.py",
+      "test_artifact": "implementation/super1200/tests/test_d14_641_644.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "UNCERTAINTY_TAXONOMY",
       "capability_id": 643,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d14_641_644.py",
+      "test_artifact": "implementation/super1200/tests/test_d14_641_644.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "UNCERTAINTY_BUDGET",
       "capability_id": 644,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d14_641_644.py",
+      "test_artifact": "implementation/super1200/tests/test_d14_641_644.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "UNCERTAINTY_LEDGER",
       "capability_id": 645,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d14_645_648.py",
+      "test_artifact": "implementation/super1200/tests/test_d14_645_648.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "UNCERTAINTY_DEPENDENCY_GRAPH",
       "capability_id": 646,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d14_645_648.py",
+      "test_artifact": "implementation/super1200/tests/test_d14_645_648.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "UNCERTAINTY_PROPAGATION_ENGINE",
       "capability_id": 647,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d14_645_648.py",
+      "test_artifact": "implementation/super1200/tests/test_d14_645_648.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "QUESTION_FROM_UNCERTAINTY_ENGINE",
       "capability_id": 648,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d14_645_648.py",
+      "test_artifact": "implementation/super1200/tests/test_d14_645_648.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "EVIDENCE_GAP_ANALYZER",
       "capability_id": 649,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d14_649_652.py",
+      "test_artifact": "implementation/super1200/tests/test_d14_649_652.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "INFORMATION_ACQUISITION_PLANNER",
       "capability_id": 650,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d14_649_652.py",
+      "test_artifact": "implementation/super1200/tests/test_d14_649_652.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "VALUE_OF_INFORMATION_ENGINE",
       "capability_id": 651,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d14_649_652.py",
+      "test_artifact": "implementation/super1200/tests/test_d14_649_652.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "CHEAPEST_DISCRIMINATING_TEST",
       "capability_id": 652,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d14_649_652.py",
+      "test_artifact": "implementation/super1200/tests/test_d14_649_652.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "HYPOTHESIS_COMPETITION_ENGINE",
       "capability_id": 653,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d14_653_656.py",
+      "test_artifact": "implementation/super1200/tests/test_d14_653_656.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "BAYESIAN_BELIEF_UPDATE_ADAPTER",
       "capability_id": 654,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d14_653_656.py",
+      "test_artifact": "implementation/super1200/tests/test_d14_653_656.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "CONFIDENCE_CALIBRATION_ENGINE",
       "capability_id": 655,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d14_653_656.py",
+      "test_artifact": "implementation/super1200/tests/test_d14_653_656.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "RESIDUAL_UNCERTAINTY_REPORT",
       "capability_id": 656,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d14_653_656.py",
+      "test_artifact": "implementation/super1200/tests/test_d14_653_656.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "UNCERTAINTY_CLOSURE_CRITERIA",
       "capability_id": 657,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d14_657_660.py",
+      "test_artifact": "implementation/super1200/tests/test_d14_657_660.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "UNCERTAINTY_REOPENING_ENGINE",
       "capability_id": 658,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d14_657_660.py",
+      "test_artifact": "implementation/super1200/tests/test_d14_657_660.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "UNKNOWN_ESCALATION_ENGINE",
       "capability_id": 659,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d14_657_660.py",
+      "test_artifact": "implementation/super1200/tests/test_d14_657_660.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "UNCERTAINTY_KILL_RECEIPT",
       "capability_id": 660,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d14_657_660.py",
+      "test_artifact": "implementation/super1200/tests/test_d14_657_660.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     }
   ],
   "count": 20,
@@ -132,7 +232,7 @@
     641,
     660
   ],
-  "state": "IN_PROGRESS",
+  "state": "FUNCTIONALLY_CLOSED_PENDING_INDEPENDENT_VALIDATION",
   "telemetry": "LIVE",
   "terminal_certification": false
 }

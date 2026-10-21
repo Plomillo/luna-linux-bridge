@@ -1,0 +1,21 @@
+{
+  "canonical_name": "EVIDENCE_LINKED_CODING",
+  "capability_id": 299,
+  "certification_granted": false,
+  "domain_id": "D07",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "98395aae20559253a934009cc6fb270bc8423830d44928c1f0af2858d7104bb3",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d07_299_300.py",
+  "module_sha256": "f5fee5dc291884e9382508f56c8915a3077b5f88f12cd3fd72489457cdef67db",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d07_299_300.py",
+  "test_case": "test_cap_0299",
+  "test_sha256": "6cde782a4b4e72fb77acb98a4685f53a2529c5b561ebdf01c1956f621beccc6a",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

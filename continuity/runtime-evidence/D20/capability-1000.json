@@ -1,0 +1,21 @@
+{
+  "canonical_name": "SECURITY_IMMUNE_MEMORY",
+  "capability_id": 1000,
+  "certification_granted": false,
+  "domain_id": "D20",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "612654ea5b0a1add24bb7239439632016b0eb7d2032879e439bf93a009ff614b",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d20_997_1000.py",
+  "module_sha256": "3edad591d59a83ad65d7ade566377f466a80884210585ea67eca606672872804",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d20_997_1000.py",
+  "test_case": "test_cap_1000",
+  "test_sha256": "fa6eeef3520f1d177d5b52bcd8f9f3c8559b8964128fe9d4fd0dad197669d07a",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

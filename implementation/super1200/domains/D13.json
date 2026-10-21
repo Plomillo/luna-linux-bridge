@@ -4,332 +4,607 @@
     {
       "canonical_name": "PEDAGOGICAL_FABRIC",
       "capability_id": 586,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_586_589.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_586_589.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "LEARNING_OBJECT_REGISTRY",
       "capability_id": 587,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_586_589.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_586_589.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "PREREQUISITE_GRAPH",
       "capability_id": 588,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_586_589.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_586_589.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "KNOWLEDGE_GRAPH_PEDAGOGICAL_VIEW",
       "capability_id": 589,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_586_589.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_586_589.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "LEARNER_MODEL",
       "capability_id": 590,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_590_593.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_590_593.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "KNOWLEDGE_STATE_ESTIMATOR",
       "capability_id": 591,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_590_593.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_590_593.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "LEARNING_OBJECTIVE_ENGINE",
       "capability_id": 592,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_590_593.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_590_593.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "COMPETENCY_REGISTRY",
       "capability_id": 593,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_590_593.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_590_593.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "SKILL_GRAPH",
       "capability_id": 594,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_594_597.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_594_597.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "MASTERY_CRITERIA_ENGINE",
       "capability_id": 595,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_594_597.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_594_597.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "FORMATIVE_ASSESSMENT_ENGINE",
       "capability_id": 596,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_594_597.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_594_597.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "SUMMATIVE_ASSESSMENT_ENGINE",
       "capability_id": 597,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_594_597.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_594_597.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "RETRIEVAL_PRACTICE_ENGINE",
       "capability_id": 598,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_598_601.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_598_601.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "SPACED_REVIEW_ENGINE",
       "capability_id": 599,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_598_601.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_598_601.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "INTERLEAVED_PRACTICE_ENGINE",
       "capability_id": 600,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_598_601.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_598_601.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "WORKED_EXAMPLE_ENGINE",
       "capability_id": 601,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_598_601.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_598_601.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "FADING_GUIDANCE_ENGINE",
       "capability_id": 602,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_602_605.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_602_605.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "DEEP_QUESTION_ENGINE",
       "capability_id": 603,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_602_605.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_602_605.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "MISCONCEPTION_REGISTRY",
       "capability_id": 604,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_602_605.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_602_605.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "MISCONCEPTION_DETECTOR",
       "capability_id": 605,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_602_605.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_602_605.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "COUNTEREXAMPLE_GENERATOR",
       "capability_id": 606,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_606_609.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_606_609.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "SOCRATIC_TUTOR_ENGINE",
       "capability_id": 607,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_606_609.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_606_609.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "EXPLANATION_GENERATOR",
       "capability_id": 608,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_606_609.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_606_609.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "REFERENCE_GENERATOR",
       "capability_id": 609,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_606_609.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_606_609.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "HOW_TO_GENERATOR",
       "capability_id": 610,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_610_613.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_610_613.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "TUTORIAL_GENERATOR",
       "capability_id": 611,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_610_613.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_610_613.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "DIATAXIS_CLASSIFIER",
       "capability_id": 612,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_610_613.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_610_613.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "EXPOSITORY_ARCHITECTURE_ENGINE",
       "capability_id": 613,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_610_613.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_610_613.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "ABSTRACTION_LADDER_ENGINE",
       "capability_id": 614,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_614_617.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_614_617.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "MULTIMODAL_EXPLANATION_ENGINE",
       "capability_id": 615,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_614_617.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_614_617.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "ANALOGY_ENGINE",
       "capability_id": 616,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_614_617.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_614_617.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "EXAMPLE_PROVENANCE_ENGINE",
       "capability_id": 617,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_614_617.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_614_617.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "EXECUTABLE_EXAMPLE_ENGINE",
       "capability_id": 618,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_618_621.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_618_621.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "DOCUMENTATION_CI",
       "capability_id": 619,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_618_621.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_618_621.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "DOC_CODE_SYNCHRONIZATION",
       "capability_id": 620,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_618_621.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_618_621.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "DOCUMENTATION_DRIFT_DETECTOR",
       "capability_id": 621,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_618_621.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_618_621.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "EXPLANATION_REGRESSION_TEST",
       "capability_id": 622,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_622_625.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_622_625.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "PEDAGOGICAL_VERSIONING",
       "capability_id": 623,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_622_625.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_622_625.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "CURRICULUM_GRAPH",
       "capability_id": 624,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_622_625.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_622_625.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "CURRICULUM_COMPILER",
       "capability_id": 625,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_622_625.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_622_625.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "ADAPTIVE_PATH_ENGINE",
       "capability_id": 626,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_626_629.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_626_629.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "DIFFICULTY_ESTIMATOR",
       "capability_id": 627,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_626_629.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_626_629.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "COGNITIVE_LOAD_MONITOR",
       "capability_id": 628,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_626_629.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_626_629.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "CHUNKING_ENGINE",
       "capability_id": 629,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_626_629.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_626_629.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "PROGRESSIVE_DISCLOSURE_ENGINE",
       "capability_id": 630,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_630_633.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_630_633.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "EXPERTISE_LEVEL_ADAPTER",
       "capability_id": 631,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_630_633.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_630_633.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "TEACH_BACK_ENGINE",
       "capability_id": 632,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_630_633.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_630_633.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "TRANSFER_ASSESSMENT_ENGINE",
       "capability_id": 633,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_630_633.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_630_633.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "PEDAGOGICAL_EVIDENCE_LEDGER",
       "capability_id": 634,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_634_637.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_634_637.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "LEARNING_ANALYTICS_ENGINE",
       "capability_id": 635,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_634_637.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_634_637.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "PEDAGOGICAL_COST_LEDGER",
       "capability_id": 636,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_634_637.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_634_637.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "EXPLANATION_QUALITY_GATE",
       "capability_id": 637,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_634_637.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_634_637.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "ACCESSIBILITY_ENGINE",
       "capability_id": 638,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_638_640.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_638_640.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "MULTILINGUAL_PEDAGOGY_ENGINE",
       "capability_id": 639,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_638_640.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_638_640.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     },
     {
       "canonical_name": "PEDAGOGICAL_CERTIFICATION_GATE",
       "capability_id": 640,
-      "implementation_state": "QUEUED_FOR_MATERIAL_IMPLEMENTATION",
-      "owner": "REPOSITORY"
+      "implementation_state": "EVIDENCED",
+      "owner": "REPOSITORY",
+      "implementation_artifact": "implementation/super1200/domains/d13_638_640.py",
+      "test_artifact": "implementation/super1200/tests/test_d13_638_640.py",
+      "materialization": "CODE+NAME_SPECIFIC_BEHAVIOR+PER_CAPABILITY_NEGATIVE_TEST+HASH_BOUND_EVIDENCE",
+      "theorem_claim_from_type_checking": false,
+      "evidence_class": "NAME_SPECIFIC"
     }
   ],
   "count": 55,
@@ -342,7 +617,7 @@
     586,
     640
   ],
-  "state": "IN_PROGRESS",
+  "state": "FUNCTIONALLY_CLOSED_PENDING_INDEPENDENT_VALIDATION",
   "telemetry": "LIVE",
   "terminal_certification": false
 }

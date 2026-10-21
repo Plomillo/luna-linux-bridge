@@ -1,0 +1,21 @@
+{
+  "canonical_name": "SAFE_GARBAGE_COLLECTION",
+  "capability_id": 851,
+  "certification_granted": false,
+  "domain_id": "D18",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "353f1e1137b101dad5dab6b32604ea5360ec59bbdd5036b107068d0df1407e84",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d18_849_852.py",
+  "module_sha256": "9d4224301237bc6571ccb59be6c7b29cb11db37af0c8d8878d0d5c680e52e3d6",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d18_849_852.py",
+  "test_case": "test_cap_0851",
+  "test_sha256": "d91884b2ab4a05db72ebfb8f7d9badaca35c5139cccd2c0e1a8edee4d245b211",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

@@ -1,0 +1,21 @@
+{
+  "canonical_name": "ENGINE_COMPATIBILITY_GATE",
+  "capability_id": 474,
+  "certification_granted": false,
+  "domain_id": "D10",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "405dad6cf77245152e2e5f73ca5e6e17092385803e50b3708d98efabb8084437",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d10_474_476.py",
+  "module_sha256": "a539d4f8b949e5aac7ae33c033cdc4283e47b122802be1f4d90dc3adcb92eecd",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d10_474_476.py",
+  "test_case": "test_cap_0474",
+  "test_sha256": "c2eb0d164c23d168e8b79bd847f587cd18b775a1ca279bd81f7ca3a703a38a0b",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

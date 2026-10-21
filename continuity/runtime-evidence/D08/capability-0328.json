@@ -1,0 +1,21 @@
+{
+  "canonical_name": "ARCHAEOLOGICAL_EVIDENCE_ADAPTER",
+  "capability_id": 328,
+  "certification_granted": false,
+  "domain_id": "D08",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "8c0b213199a0c02442b9d611a322b603ad26b17c12be04d889c2f5bcdad2c63e",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d08_325_328.py",
+  "module_sha256": "6d495174c4cce19d9a18351dcd3918087d0ebbfed45366a2a8bf555e22ec9c87",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d08_325_328.py",
+  "test_case": "test_cap_0328",
+  "test_sha256": "0931ba9a051a1a26ec7c77dbf50fb51533e9bb99c0e6d0ea74cab300a5c86e5f",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

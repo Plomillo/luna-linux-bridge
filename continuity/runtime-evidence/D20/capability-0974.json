@@ -1,0 +1,21 @@
+{
+  "canonical_name": "BEHAVIORAL_SANDBOX",
+  "capability_id": 974,
+  "certification_granted": false,
+  "domain_id": "D20",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "310e741e7137e8f999a20dd3a2570be0f73d46feb9e5ad08a6c0a2fea37c093f",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d20_973_976.py",
+  "module_sha256": "8b4b901b6857e379abc3e0db976d7f4b2f7c9cab579a354bad6883addfdd6e29",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d20_973_976.py",
+  "test_case": "test_cap_0974",
+  "test_sha256": "3b0ab7b5797786d1374484552803836c4736ad434f27a982155bbde767a91e82",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

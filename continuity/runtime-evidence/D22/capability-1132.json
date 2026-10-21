@@ -1,0 +1,21 @@
+{
+  "canonical_name": "IOC_EXPIRATION_ENGINE",
+  "capability_id": 1132,
+  "certification_granted": false,
+  "domain_id": "D22",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "d8024e6dca8a832b4a0e7696d626f1f8e11ddf875ee607f75f2ba9ab78dcc551",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d22_1129_1132.py",
+  "module_sha256": "b6daa532f58411e70d85ac288f0cac122601318b7c0568006342d25e6ba8f9c6",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d22_1129_1132.py",
+  "test_case": "test_cap_1132",
+  "test_sha256": "cd8d42addfe752976e87aa78ada3787a82123eb3ed7f36cfb569d441cf165753",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

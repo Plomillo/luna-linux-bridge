@@ -1,0 +1,21 @@
+{
+  "canonical_name": "COMPETENCY_REGISTRY",
+  "capability_id": 593,
+  "certification_granted": false,
+  "domain_id": "D13",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "b271c5ac5e1e51f5ea2c7540c32238f4ed1a2aa6125b6a84a5b7f8a43dbb8841",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d13_590_593.py",
+  "module_sha256": "769388b4d72ea9a3cb8128f61dc7f7b3edec5f8418821b142253c854c3c8bb72",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d13_590_593.py",
+  "test_case": "test_cap_0593",
+  "test_sha256": "5d44dbe629e5cfef7f47ba2aa26034b7ad6e6ce380e14014cc0086ba47f969d1",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

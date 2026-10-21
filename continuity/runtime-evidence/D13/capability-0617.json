@@ -1,0 +1,21 @@
+{
+  "canonical_name": "EXAMPLE_PROVENANCE_ENGINE",
+  "capability_id": 617,
+  "certification_granted": false,
+  "domain_id": "D13",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "57f0b754ab2fc1587e0580d15e80a0f4659a972fd19477aa5f9df97c0815ed36",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d13_614_617.py",
+  "module_sha256": "3fa3effe481d3c8907fee3ce38ae585605d8474ca92ef7c29e25ad7f6561e486",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d13_614_617.py",
+  "test_case": "test_cap_0617",
+  "test_sha256": "d9ba291427f4133a2a57568a72f1bd20a1cecdc039a4e22c2c0171e2916d0b42",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

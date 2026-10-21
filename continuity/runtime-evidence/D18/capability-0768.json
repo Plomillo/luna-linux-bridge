@@ -1,0 +1,21 @@
+{
+  "canonical_name": "CORRECTIVE_MAINTENANCE_ENGINE",
+  "capability_id": 768,
+  "certification_granted": false,
+  "domain_id": "D18",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "009fa7e0a9985c5e830f701bd89195d5b68fccd6a498d4774150dbf626cdf9f5",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d18_765_768.py",
+  "module_sha256": "a378f8c01beecce9ce0ae5de3ef2c41573d57cd85dfa13107dafe360e75c0445",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d18_765_768.py",
+  "test_case": "test_cap_0768",
+  "test_sha256": "6a6c7b0bac7e52ba7f46c95f254f24b8fa9dccc34b5ebcb72f26796ac0a44723",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

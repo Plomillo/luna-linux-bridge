@@ -1,0 +1,21 @@
+{
+  "canonical_name": "HTTP_RANGE_READER",
+  "capability_id": 362,
+  "certification_granted": false,
+  "domain_id": "D09",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "57b7ec1c8c81bab483d0f67de1046db9cfbeb6b10634a79a3ab8624e10bf95a5",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d09_361_364.py",
+  "module_sha256": "1bdcf027d3a3393b2618887d899cee41c2d19c4c1a24ca52c902b6f76dc5ec9b",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d09_361_364.py",
+  "test_case": "test_cap_0362",
+  "test_sha256": "7acba64d5553ce151ae3ccc602e7ffc25f15ac73c22f22e8ac17fb7139302f3b",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

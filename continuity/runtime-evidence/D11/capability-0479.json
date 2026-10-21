@@ -1,0 +1,21 @@
+{
+  "canonical_name": "MISSION_CLASSIFIER",
+  "capability_id": 479,
+  "certification_granted": false,
+  "domain_id": "D11",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "c9c424f18e8689807736d8d58daf1bef8219bbc1a04ac3ffb0a9cfcb4f5a81bc",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d11_477_480.py",
+  "module_sha256": "f831f34a4ece2b0484047ff1fd42a527fea0b3bf9dddaf5b89c5bda7e742c789",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d11_477_480.py",
+  "test_case": "test_cap_0479",
+  "test_sha256": "4ac8689438aed37c9a0c21980c1a7a4f0f4b7e0517f8fa95d4b097b2adde6733",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

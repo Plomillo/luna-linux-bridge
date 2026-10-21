@@ -1,0 +1,21 @@
+{
+  "canonical_name": "THREAT_LIFECYCLE_FABRIC",
+  "capability_id": 1081,
+  "certification_granted": false,
+  "domain_id": "D22",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "acc51f7a35fb676cb6aa17c3d54ecc76ca22bd05a1fd0d245e0253e824932b8b",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d22_1081_1084.py",
+  "module_sha256": "2d0792530e6ed3bb96a05090a9cf0dd240c437f96e377319ff37b1ff299cb04a",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d22_1081_1084.py",
+  "test_case": "test_cap_1081",
+  "test_sha256": "5a74b348d5a03ab23533a026696b203883f40246070b47cbcd3ffb81b5031084",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

@@ -1,0 +1,21 @@
+{
+  "canonical_name": "CAS_SYNC",
+  "capability_id": 374,
+  "certification_granted": false,
+  "domain_id": "D09",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "77df8c77ece694a9e8c2862ef22394120f46c7fe0cc7d8204f1c2a76df8c2b70",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d09_373_376.py",
+  "module_sha256": "53fa2d5c50ea2ffaa0a1d6283b47b14bfc1aa1b2f196f25b415c920a046c67f0",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d09_373_376.py",
+  "test_case": "test_cap_0374",
+  "test_sha256": "b31c02904bdf4d1bd7355e5c881230b90b432461f232ddaf1513cf5b73fc905b",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

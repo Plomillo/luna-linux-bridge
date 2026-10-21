@@ -1,0 +1,21 @@
+{
+  "canonical_name": "MAINTENANCE_WINDOW_ENGINE",
+  "capability_id": 776,
+  "certification_granted": false,
+  "domain_id": "D18",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "16d978cc98ad818888d8bdb9bbf952c32f1c09a8cedb3e71b1afe616580a0274",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d18_773_776.py",
+  "module_sha256": "c03c8f96146ac9367bb587c7a0172e669293521e5646394d0645ff2eb38d2d79",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d18_773_776.py",
+  "test_case": "test_cap_0776",
+  "test_sha256": "e04dce46118748c449a84e44162fb103ac37fad57d18cf4076d2cac58ad54867",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

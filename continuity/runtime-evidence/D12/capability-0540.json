@@ -1,0 +1,21 @@
+{
+  "canonical_name": "CERTIFICATE_EXPIRY_SIMULATOR",
+  "capability_id": 540,
+  "certification_granted": false,
+  "domain_id": "D12",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "0d4bc8041cc6eee7021e18e07e45ada214f09ea6b4e76a89f74bf8699f44a979",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d12_539_542.py",
+  "module_sha256": "917fa89b840a570f11664315b5ef6f001d31c9826986078d04b0fe591dc6b3a8",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d12_539_542.py",
+  "test_case": "test_cap_0540",
+  "test_sha256": "d4073ab211def33f786f949164833beea001d037f369d65b613b2ec9420fd408",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

@@ -1,0 +1,21 @@
+{
+  "canonical_name": "INTEREST_TO_COMPETENCY_ENGINE",
+  "capability_id": 750,
+  "certification_granted": false,
+  "domain_id": "D17",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "b1d3f018a4fcff97b32aa4557626df98036065dae38ded4b20c01e3bcc397b5d",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d17_749_752.py",
+  "module_sha256": "1ce25c1f6e84106df96c3e338e2acfdcf4e4f64000aa85e7871de8377a14b5a5",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d17_749_752.py",
+  "test_case": "test_cap_0750",
+  "test_sha256": "bd7382f05e066fa8599518a52b7f2e6d3d1b0f9e6c8f2100bec024f59b74c8c2",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

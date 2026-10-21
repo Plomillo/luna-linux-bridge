@@ -1,0 +1,21 @@
+{
+  "canonical_name": "FIRMWARE_HEALTH_ENGINE",
+  "capability_id": 673,
+  "certification_granted": false,
+  "domain_id": "D15",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "80e586185bd86bcb6e10b5a0b766df1bc6a25950791234e04686b97440a05a2c",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d15_673_676.py",
+  "module_sha256": "aabff268764c7e85bd91e28f05002aa04fcb498287151e90a99d7251117a26dc",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d15_673_676.py",
+  "test_case": "test_cap_0673",
+  "test_sha256": "2d035ffa62daaee5f34c9d4b62aaee826bdff9ce6b8af65d79abbef1062e60b5",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

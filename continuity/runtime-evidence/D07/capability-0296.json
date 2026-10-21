@@ -1,0 +1,21 @@
+{
+  "canonical_name": "INTERCODER_RELIABILITY",
+  "capability_id": 296,
+  "certification_granted": false,
+  "domain_id": "D07",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "e8a990f1ec15ecade4f5f2cc96e23f7fa7fb206623931db815c7b735d4563950",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d07_295_298.py",
+  "module_sha256": "3b4f2e7eb6108f019952c78aa9047be31442503ef10e5f8491dad0cc1d952124",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d07_295_298.py",
+  "test_case": "test_cap_0296",
+  "test_sha256": "7df431659404c02d21b5f7e4aa6e98b4cca6ef2c5432a20d238d4f4236f1ab63",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

@@ -135,23 +135,26 @@ def persist(tranche: dict, report: dict) -> None:
     nxt = oldest_pending()
     state["certified"] = False
     state["global_certification_status"] = "NOT_CERTIFIED"
-    state["active_domain"] = "D06"
     state["synthetic_materializer"] = "DISABLED"
-    state["d07_executor"] = "NOT_REGISTERED"
+    state["d07_executor"] = "REGISTERED"
     if nxt is None:
         state["g23"] = "REVIEWED_SCOPES_CERTIFIED"
         state["g24"] = "REVIEWED_SCOPES_CERTIFIED"
-        state["block_reason"] = "NEXT_D07_TRANCHE_EXECUTOR_NOT_REGISTERED"
-        state["status"] = "BLOCKED"
-        state["next_point"] = "D07"
+        state["block_reason"] = "NONE"
+        state["status"] = "REVIEWED_SCOPES_CLOSED_GLOBAL_NOT_CERTIFIED"
+        state["blocked"] = False
+        state["active_domain"] = "D22"
+        state["next_point"] = "NONE"
+        state["current_checkpoint"] = "D22_1197_1200_SCOPED_CERTIFIED"
     else:
         token = scope_of(nxt).replace(":", "_")
         state["g23"] = "PENDING_FOR_SCOPE_" + token
         state["g24"] = "PENDING_G23"
         state["block_reason"] = "SCOPED_G23_PENDING_" + token
         state["status"] = "G23_PENDING"
-        state["next_point"] = "D06"
-    state["blocked"] = True
+        state["blocked"] = True
+        state["active_domain"] = nxt["domain_id"]
+        state["next_point"] = nxt["domain_id"]
     STATE.write_text(json.dumps(state, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 

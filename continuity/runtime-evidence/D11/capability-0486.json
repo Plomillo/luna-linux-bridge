@@ -1,0 +1,21 @@
+{
+  "canonical_name": "RESEARCH_COST_LEDGER",
+  "capability_id": 486,
+  "certification_granted": false,
+  "domain_id": "D11",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "ebdb186efb60e4e981efaaeceffdd06831838b01f0bfa01f57268711e3847681",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d11_485_488.py",
+  "module_sha256": "a8917027448e94d3887820b468e4ff28338f600bf8ecf0ccd04dcdd94bb1e699",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d11_485_488.py",
+  "test_case": "test_cap_0486",
+  "test_sha256": "d81ab4d82aae498f6f8460745382d038f66279374340c02db9ec215a952926a4",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

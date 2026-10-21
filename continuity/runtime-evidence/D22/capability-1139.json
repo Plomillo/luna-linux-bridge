@@ -1,0 +1,21 @@
+{
+  "canonical_name": "COMMAND_CONTROL_INDICATOR_KB",
+  "capability_id": 1139,
+  "certification_granted": false,
+  "domain_id": "D22",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "510e54f05a61148d4f117118f2f03e647cf54671b2bc3d6583ea305f4d0ab551",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d22_1137_1140.py",
+  "module_sha256": "cd531841791f902aaab9ec0be2561cf78a5a186f1f1e13e1cfea90f7f8943b2a",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d22_1137_1140.py",
+  "test_case": "test_cap_1139",
+  "test_sha256": "1329758e3493ad8b1ff6d624c804c25541514473ff8dbb0f093e785c67ad9f65",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

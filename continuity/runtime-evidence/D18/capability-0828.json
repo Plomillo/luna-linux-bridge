@@ -1,0 +1,21 @@
+{
+  "canonical_name": "PATCH_FORWARD_PORT_ENGINE",
+  "capability_id": 828,
+  "certification_granted": false,
+  "domain_id": "D18",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "e7dce54bdc11b1b3332b594f0c1f5330ad0827f6486024700a416e3fc7a73bbc",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d18_825_828.py",
+  "module_sha256": "02de162f649e3f81dce43ffae43908a4b5c31292a22e10279d4f76faefc16203",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d18_825_828.py",
+  "test_case": "test_cap_0828",
+  "test_sha256": "75571c78606624138863af19448e785eb0911b36958572baaa38862ea1f6f9c8",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

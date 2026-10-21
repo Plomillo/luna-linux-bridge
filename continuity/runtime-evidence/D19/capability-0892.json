@@ -1,0 +1,21 @@
+{
+  "canonical_name": "SCRIPT_MALWARE_ANALYZER",
+  "capability_id": 892,
+  "certification_granted": false,
+  "domain_id": "D19",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "18e3911bef3066b4b6005f6729f26974302f280de8cea4e1749c84618a9064ea",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d19_889_892.py",
+  "module_sha256": "3f496e0165b137dc604f69b42f45fbf50da5489e7a2779357e8251eb0b8e7786",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d19_889_892.py",
+  "test_case": "test_cap_0892",
+  "test_sha256": "103cfe9defea8e98e00b45825e88c2a6690906fb0384897b1cd2709861575e87",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

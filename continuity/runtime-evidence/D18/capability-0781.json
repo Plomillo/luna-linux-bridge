@@ -1,0 +1,21 @@
+{
+  "canonical_name": "CHANGE_RADIUS_ENGINE",
+  "capability_id": 781,
+  "certification_granted": false,
+  "domain_id": "D18",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "4be54fb757a49b62b350e349a4e6cf3a816d0002a8fad3bd32d6b4e0d0fddd5d",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d18_781_784.py",
+  "module_sha256": "11391e176b24c6be33347125b013fa7c83b6ebbcdfd6d7f975cc8c2f199ac2a9",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d18_781_784.py",
+  "test_case": "test_cap_0781",
+  "test_sha256": "a7c2fd91d770144690500ca0c4bc008741dad55e1f0b2e2729a3bcd0fbc2dd53",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

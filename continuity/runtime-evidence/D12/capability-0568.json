@@ -1,0 +1,21 @@
+{
+  "canonical_name": "PROTOCOL_STATE_MACHINE",
+  "capability_id": 568,
+  "certification_granted": false,
+  "domain_id": "D12",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "ff0c5501b8d6aebfe5bf0b0f1bddccea1d8c4cf793130a5d843fe62a7240f647",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d12_567_570.py",
+  "module_sha256": "e9930066aad8edf35711cbe9f08e8b8017ebc5994caa7f45532db4d5ac9cb750",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d12_567_570.py",
+  "test_case": "test_cap_0568",
+  "test_sha256": "17073e2b762561fa6f9d25eef72c0d66ecde66137fbe612a70218625378a5884",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

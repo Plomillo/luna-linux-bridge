@@ -1,0 +1,21 @@
+{
+  "canonical_name": "TRUSTED_SOURCE_SUBSTITUTION",
+  "capability_id": 1049,
+  "certification_granted": false,
+  "domain_id": "D21",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "14210a77b8ead6fda669296c8e82402ae20f07b11e65a70544dea48aec6dc1ac",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d21_1049_1052.py",
+  "module_sha256": "e5bc24159568549ef0b5ed65a2588dc0473f8eac2039672dcdd02092b7379941",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d21_1049_1052.py",
+  "test_case": "test_cap_1049",
+  "test_sha256": "2b0447fc8cd3f977b9d0efc5a16f241ac1b2f64bd7202e0c0d8a1849483cd166",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

@@ -1,0 +1,21 @@
+{
+  "canonical_name": "ADR_REGISTRY",
+  "capability_id": 547,
+  "certification_granted": false,
+  "domain_id": "D12",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "2ee7c15c4ab75f292bc7c8e1edfe882b8a2ccaa292e2c7ab2904bdbafd6040b8",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d12_547_550.py",
+  "module_sha256": "44eee2298fe2a20ae25f7a04c49417cfc441b3798c7af98deb56abad7776f67d",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d12_547_550.py",
+  "test_case": "test_cap_0547",
+  "test_sha256": "4681984e5b26858e097d6d89c3ea5edb9c7ee368d0351a892dc84ca950621715",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

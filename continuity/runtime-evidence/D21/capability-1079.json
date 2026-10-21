@@ -1,0 +1,21 @@
+{
+  "canonical_name": "SUBSTITUTE_LEARNING_ENGINE",
+  "capability_id": 1079,
+  "certification_granted": false,
+  "domain_id": "D21",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "84e849a5a4c0e943734b6622db98e6c2c33c68519a87ff1b3333dbd804829223",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d21_1077_1080.py",
+  "module_sha256": "408046c5c62a1364121a874e373708dabb5308a893c9ba618cbe70b73ee9c173",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d21_1077_1080.py",
+  "test_case": "test_cap_1079",
+  "test_sha256": "78b9fb23db9382ad3d4fcadca30a4513598a8c1363962bf09fce54e892d4152a",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

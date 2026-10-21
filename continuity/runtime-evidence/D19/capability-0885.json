@@ -1,0 +1,21 @@
+{
+  "canonical_name": "BEHAVIORAL_MALWARE_ANALYZER",
+  "capability_id": 885,
+  "certification_granted": false,
+  "domain_id": "D19",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "3083358392428c80f665331cf68aa908fa8394aadf63d0e3004cc8470e13f333",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d19_885_888.py",
+  "module_sha256": "ba6955d7248ca82fffd86801f807a4082cbd921cf4c4165ccf2d35ff8ac602b5",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d19_885_888.py",
+  "test_case": "test_cap_0885",
+  "test_sha256": "8fdc9c684a8200dfe4aea16127be1f88c91d42dc4818ea0ac167c6f701679c5b",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

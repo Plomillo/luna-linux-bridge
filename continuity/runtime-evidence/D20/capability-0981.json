@@ -1,0 +1,21 @@
+{
+  "canonical_name": "BEHAVIOR_GRAPH",
+  "capability_id": 981,
+  "certification_granted": false,
+  "domain_id": "D20",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "0c8e7153a24eb44de338177565e9ec189aec05c0401ae1419c0217c362bb1a16",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d20_981_984.py",
+  "module_sha256": "82471efc932ad7ff8702f9c7a1f7d1dde44d887baa4f11c2813d6bcd07b465bd",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d20_981_984.py",
+  "test_case": "test_cap_0981",
+  "test_sha256": "84f16369895446323b890fe682fbc04325a626d3c352f1b70a47259bd8348f71",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

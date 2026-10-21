@@ -1,0 +1,21 @@
+{
+  "canonical_name": "SUBSTITUTE_UNCERTAINTY_REPORT",
+  "capability_id": 1069,
+  "certification_granted": false,
+  "domain_id": "D21",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "baea24140b9852b3ebbca93cfcfa36bbc749709cf42d589c9f9cbf9a3d89893b",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d21_1069_1072.py",
+  "module_sha256": "ee8553d7cab84a33e892f1c29d7eb0a0b3b280268088cddbc23301cbe368163f",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d21_1069_1072.py",
+  "test_case": "test_cap_1069",
+  "test_sha256": "e1e316a750db445d8ff54fc7aaf3de7cd682cb32766d4f8d269b223a1e93965a",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

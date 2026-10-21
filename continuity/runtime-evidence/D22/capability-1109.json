@@ -1,0 +1,21 @@
+{
+  "canonical_name": "THREAT_KNOWLEDGE_PRESERVATION_GATE",
+  "capability_id": 1109,
+  "certification_granted": false,
+  "domain_id": "D22",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "fb104f998ab7b3910940821ca421aac18f1c0e9a8c78836028d5ee9da636fa47",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d22_1109_1112.py",
+  "module_sha256": "35e6056d52b6c61cf7de3f17646bb9b2c06f85f265feff9cd5594bd922db7321",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d22_1109_1112.py",
+  "test_case": "test_cap_1109",
+  "test_sha256": "9c924cd0b77ad09d823b0bfd84084476a38dc9932107281b85d1ecccb88aaef5",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

@@ -1,0 +1,21 @@
+{
+  "canonical_name": "LUNA_DEFENDER_ADVERSARIAL_EVALUATION",
+  "capability_id": 954,
+  "certification_granted": false,
+  "domain_id": "D19",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "47b12cf75c885b87033d3a963e3e664f7117e8a038916e439658a8ecb3fb17d2",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d19_953_956.py",
+  "module_sha256": "a3f1697c83c78990bb98602a11a3f0ee49ef45192a8094d6f3b0a0958e309091",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d19_953_956.py",
+  "test_case": "test_cap_0954",
+  "test_sha256": "e87962ad8b5de70adb11e871871bcdb9e7c3004950185c72257e9a2cc2d6c252",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

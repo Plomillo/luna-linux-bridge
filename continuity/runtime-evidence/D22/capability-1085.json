@@ -1,0 +1,21 @@
+{
+  "canonical_name": "MINIMUM_EVIDENCE_RETENTION",
+  "capability_id": 1085,
+  "certification_granted": false,
+  "domain_id": "D22",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "1bf4d5e4f927555330337b878cc05f4271077349343d246b00ed2ce7774826fb",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d22_1085_1088.py",
+  "module_sha256": "ffee15b38572d8cdf7d62a19ffda6c3eb0899723774350a30b08da9fb5a4cee4",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d22_1085_1088.py",
+  "test_case": "test_cap_1085",
+  "test_sha256": "4b51c31452f3ad92b08886485d283a4314692fc16db66455e8baeff7ac7e78e0",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

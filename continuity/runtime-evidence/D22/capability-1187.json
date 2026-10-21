@@ -1,0 +1,21 @@
+{
+  "canonical_name": "PRE_ATTACK_INDICATOR_ENGINE",
+  "capability_id": 1187,
+  "certification_granted": false,
+  "domain_id": "D22",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "7f09616e38c358546ba1377584f40d79584166ce62243b123ce03488e0f9e93a",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d22_1185_1188.py",
+  "module_sha256": "890c7d4cbd1abd3e423b33a0c29df2e764caa0ae21bff5d774f70c70fb30729d",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d22_1185_1188.py",
+  "test_case": "test_cap_1187",
+  "test_sha256": "7640533f56b62ea0b2b5fa210fa97b73c5d16a0eaa60e2c0f2f7e0dc8c5b6c5f",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

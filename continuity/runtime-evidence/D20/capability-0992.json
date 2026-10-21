@@ -1,0 +1,21 @@
+{
+  "canonical_name": "PERSISTENCE_ERADICATION_ENGINE",
+  "capability_id": 992,
+  "certification_granted": false,
+  "domain_id": "D20",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "d03a155783e19957a0b8ef65e4b8fd6327496977d3080a21098801471ce8a622",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d20_989_992.py",
+  "module_sha256": "00f162150e1fe3416c340c42514417b5a8754cc056ec2cd6165ee3f5aadb4c57",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d20_989_992.py",
+  "test_case": "test_cap_0992",
+  "test_sha256": "20a712f480948ae6540f8735148a19d51b09e9376744db9dddd624ccec715e6e",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

@@ -1,0 +1,21 @@
+{
+  "canonical_name": "RECOVERY_IMAGE_FACTORY",
+  "capability_id": 422,
+  "certification_granted": false,
+  "domain_id": "D09",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "db314e9d4e3f650f97175f79f4d4e8ca54781c2db7d08403414fd11a5a8322c8",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d09_421_424.py",
+  "module_sha256": "50c7a09cc2848afa409fbe3e4d4060945ac1fbf8b80bea6e15dd25c0d61a4e9e",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d09_421_424.py",
+  "test_case": "test_cap_0422",
+  "test_sha256": "5608ea269a5131e9795b3b4153a89d51a90540eb73bd838999a654a80b8f6d11",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

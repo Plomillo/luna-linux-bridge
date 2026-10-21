@@ -1,0 +1,21 @@
+{
+  "canonical_name": "ENGINE_MANIFEST_GENERATOR",
+  "capability_id": 465,
+  "certification_granted": false,
+  "domain_id": "D10",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "6fd3a52aa18c7d0d7661faf430ae87eae0a79d4e514eb1c0b99a2931c52d7c83",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d10_462_465.py",
+  "module_sha256": "f9c11d3221dbf9b58fea8db6c0a844df3627e491d711577b3c56d2406f60fe21",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d10_462_465.py",
+  "test_case": "test_cap_0465",
+  "test_sha256": "9134d8069fec5fc75b2b7ea18267b5b74cfb8659f4afadd0b2fd483de0f09cc1",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

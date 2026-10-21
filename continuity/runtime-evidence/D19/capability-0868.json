@@ -1,0 +1,21 @@
+{
+  "canonical_name": "SECURITY_AUTHORIZATION_GATE",
+  "capability_id": 868,
+  "certification_granted": false,
+  "domain_id": "D19",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "3254e1d9760b243a0d6994e42dfff00b65799e876da0bbdc5e0dda74ce3b35f2",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d19_865_868.py",
+  "module_sha256": "815782576c4dd8cd6beca57f60d9d684769e064a58032d885a6f46643190a143",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d19_865_868.py",
+  "test_case": "test_cap_0868",
+  "test_sha256": "e8ccee64d2bc12340da129baf434354e9dde3469d641d4dce65aef8b444c05e3",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

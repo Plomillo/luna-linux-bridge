@@ -1,0 +1,21 @@
+{
+  "canonical_name": "PEDAGOGICAL_VERSIONING",
+  "capability_id": 623,
+  "certification_granted": false,
+  "domain_id": "D13",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "4d9462cd4028d611c53719f696feca71f77e871b88e94b7844e06f6aa9ea38ac",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d13_622_625.py",
+  "module_sha256": "5297b3121a9aee19ff740c100e944aa088e497d064477fc7966c7e91de76dfb5",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d13_622_625.py",
+  "test_case": "test_cap_0623",
+  "test_sha256": "7020cb92d5aa0ae42d54465ced85649e627918bcbd27e05b74c7cf5d090d6292",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

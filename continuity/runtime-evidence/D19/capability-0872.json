@@ -1,0 +1,21 @@
+{
+  "canonical_name": "SECURITY_UNCERTAINTY_ADAPTER",
+  "capability_id": 872,
+  "certification_granted": false,
+  "domain_id": "D19",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "aeb5f452f0d358496853b80d68c237fe3fc1b7aaaf853c26d7d66a29f77dc1f1",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d19_869_872.py",
+  "module_sha256": "9e424508494c25f3c64470e480b29a763cbc1c97a5fcc03abd262565325f2394",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d19_869_872.py",
+  "test_case": "test_cap_0872",
+  "test_sha256": "72399c775469ccf96b568dbec78e283e6f3b2c251707d3556015ebc39cc8b14d",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

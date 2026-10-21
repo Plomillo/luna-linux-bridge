@@ -1,0 +1,21 @@
+{
+  "canonical_name": "UNCERTAINTY_CLOSURE_CRITERIA",
+  "capability_id": 657,
+  "certification_granted": false,
+  "domain_id": "D14",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "1f7f764d091052274b584bbc50e4ffdf05c38c09b73a8768cb1a6ee8b16ea1a5",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d14_657_660.py",
+  "module_sha256": "63fb8691e73a836b69cec2c3ceeefc577ecb6d0775ff4e9633e02bd8b4b1f2e0",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d14_657_660.py",
+  "test_case": "test_cap_0657",
+  "test_sha256": "8f9d2d3d736bd757a9d99601fb86986d3ff17decf66175e191ba6291408ec135",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

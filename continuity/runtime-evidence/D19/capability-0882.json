@@ -1,0 +1,21 @@
+{
+  "canonical_name": "SIGNATURE_SCANNER_INTERFACE",
+  "capability_id": 882,
+  "certification_granted": false,
+  "domain_id": "D19",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "8ecaa4fa2df516683c0cd3772d5a93f7d645f6bc90ec8d6f29ef5867c2f3f96b",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d19_881_884.py",
+  "module_sha256": "a63e1051d3ef722ed0aa9620e35e0f66b5d03701be36375514e0947bc2e68d3f",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d19_881_884.py",
+  "test_case": "test_cap_0882",
+  "test_sha256": "b243c9ada98184a5605fc64eab7442e28dfd64fa63240f30e6ad229543c947e7",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

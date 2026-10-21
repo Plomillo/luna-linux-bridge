@@ -1,0 +1,29 @@
+{
+  "entry_id": "KEDB-D07-D22-NAME-SPECIFIC-REGISTERED-20261021",
+  "scope": "SUPER1200",
+  "symptom": "D07-D22 had no reviewed tranche modules past 242.",
+  "root_cause": "The rail stopped after authorizing D07 239-242 while the material workflow was still hard-coded to 231-234.",
+  "evidence_present": true,
+  "evidence_missing": [],
+  "known_solution_id": "REVIEWED_TRANCHE_PATTERN",
+  "workaround": null,
+  "remediation_applied": true,
+  "verification_result": "LOCAL_TESTS_PASS_G23_PENDING",
+  "status": "REMEDIATED_G23_PENDING",
+  "next_action": "Run continuity/g23_g24_next_pending.py one reviewed scope at a time. Do not grant global certification.",
+  "research_launched": false,
+  "research_summary": null,
+  "branch": "custosz/super-1200-implementation-20261007",
+  "commit_sha": "pending-this-commit",
+  "checkpoint": "D22_1197_1200_MATERIALIZED",
+  "actor": "operator-via-grok",
+  "created_at_utc": "2026-10-21T14:20:00+00:00",
+  "updated_at_utc": "2026-10-21T14:20:00+00:00",
+  "provenance": {
+    "sources": [
+      "implementation/super1200/registry/domains.json",
+      "implementation/super1200/registry/capabilities.json"
+    ],
+    "notes": "Append-only remediation. Prior D07 hold entry is retained. Global certification not granted."
+  }
+}

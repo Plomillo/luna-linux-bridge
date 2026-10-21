@@ -1,0 +1,21 @@
+{
+  "canonical_name": "BUILD_INTEGRITY_SECURITY_GATE",
+  "capability_id": 919,
+  "certification_granted": false,
+  "domain_id": "D19",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "8cba3f806199eca0a3c86262881259b379474f893d16abbf024b3500200c78ea",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d19_917_920.py",
+  "module_sha256": "90d9ab0a915065bd081028b68f2ff6298f6cae7ccacbaf978507d6d4bf4bcb53",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d19_917_920.py",
+  "test_case": "test_cap_0919",
+  "test_sha256": "a3e1f9fdac0e753e1fd27d01cce877d6ff732dc74a332787c23275f6d991348f",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

@@ -1,0 +1,21 @@
+{
+  "canonical_name": "MODEL_DISAGREEMENT_ANALYZER",
+  "capability_id": 248,
+  "certification_granted": false,
+  "domain_id": "D07",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "a8a8f7e232364705fdbc070adf29d1699693f5a6e4ae8741072463c786b2fa49",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d07_247_250.py",
+  "module_sha256": "d7e069da46ae445e308c3e6b77db3d4291c6276c6965fada6218ee8964218e1e",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d07_247_250.py",
+  "test_case": "test_cap_0248",
+  "test_sha256": "b248b8a835825c494fe7b53be4a02c967ab6e70fbae61fc7d6c6a791d309a75e",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

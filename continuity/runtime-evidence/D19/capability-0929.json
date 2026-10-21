@@ -1,0 +1,21 @@
+{
+  "canonical_name": "NETWORK_BEHAVIOR_BASELINE",
+  "capability_id": 929,
+  "certification_granted": false,
+  "domain_id": "D19",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "6619a458697a11fa536a5b76c78a00b14a939eea129062e3c85423f0f0b24d84",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d19_929_932.py",
+  "module_sha256": "edfc3d27e4fdca6ce3fa3c3f1061399cdebeedc5f04f328f8762c14ecb421cde",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d19_929_932.py",
+  "test_case": "test_cap_0929",
+  "test_sha256": "3eec2ec1719ad5e32a19cff0850411f3de34e1d0ea6bf0b9f568d116d7a85cfc",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

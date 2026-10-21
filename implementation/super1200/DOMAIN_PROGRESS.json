@@ -27,67 +27,67 @@
     },
     {
       "domain_id": "D07",
-      "state": "IN_PROGRESS"
+      "state": "FUNCTIONALLY_CLOSED_PENDING_INDEPENDENT_VALIDATION"
     },
     {
       "domain_id": "D08",
-      "state": "IN_PROGRESS"
+      "state": "FUNCTIONALLY_CLOSED_PENDING_INDEPENDENT_VALIDATION"
     },
     {
       "domain_id": "D09",
-      "state": "IN_PROGRESS"
+      "state": "FUNCTIONALLY_CLOSED_PENDING_INDEPENDENT_VALIDATION"
     },
     {
       "domain_id": "D10",
-      "state": "IN_PROGRESS"
+      "state": "FUNCTIONALLY_CLOSED_PENDING_INDEPENDENT_VALIDATION"
     },
     {
       "domain_id": "D11",
-      "state": "IN_PROGRESS"
+      "state": "FUNCTIONALLY_CLOSED_PENDING_INDEPENDENT_VALIDATION"
     },
     {
       "domain_id": "D12",
-      "state": "IN_PROGRESS"
+      "state": "FUNCTIONALLY_CLOSED_PENDING_INDEPENDENT_VALIDATION"
     },
     {
       "domain_id": "D13",
-      "state": "IN_PROGRESS"
+      "state": "FUNCTIONALLY_CLOSED_PENDING_INDEPENDENT_VALIDATION"
     },
     {
       "domain_id": "D14",
-      "state": "IN_PROGRESS"
+      "state": "FUNCTIONALLY_CLOSED_PENDING_INDEPENDENT_VALIDATION"
     },
     {
       "domain_id": "D15",
-      "state": "IN_PROGRESS"
+      "state": "FUNCTIONALLY_CLOSED_PENDING_INDEPENDENT_VALIDATION"
     },
     {
       "domain_id": "D16",
-      "state": "IN_PROGRESS"
+      "state": "FUNCTIONALLY_CLOSED_PENDING_INDEPENDENT_VALIDATION"
     },
     {
       "domain_id": "D17",
-      "state": "IN_PROGRESS"
+      "state": "FUNCTIONALLY_CLOSED_PENDING_INDEPENDENT_VALIDATION"
     },
     {
       "domain_id": "D18",
-      "state": "IN_PROGRESS"
+      "state": "FUNCTIONALLY_CLOSED_PENDING_INDEPENDENT_VALIDATION"
     },
     {
       "domain_id": "D19",
-      "state": "IN_PROGRESS"
+      "state": "FUNCTIONALLY_CLOSED_PENDING_INDEPENDENT_VALIDATION"
     },
     {
       "domain_id": "D20",
-      "state": "IN_PROGRESS"
+      "state": "FUNCTIONALLY_CLOSED_PENDING_INDEPENDENT_VALIDATION"
     },
     {
       "domain_id": "D21",
-      "state": "IN_PROGRESS"
+      "state": "FUNCTIONALLY_CLOSED_PENDING_INDEPENDENT_VALIDATION"
     },
     {
       "domain_id": "D22",
-      "state": "IN_PROGRESS"
+      "state": "FUNCTIONALLY_CLOSED_PENDING_INDEPENDENT_VALIDATION"
     }
   ],
   "owner": "REPOSITORY",

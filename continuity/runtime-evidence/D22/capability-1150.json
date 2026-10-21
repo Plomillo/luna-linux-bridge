@@ -1,0 +1,21 @@
+{
+  "canonical_name": "PREVENTIVE_CONTROL_SYNTHESIS",
+  "capability_id": 1150,
+  "certification_granted": false,
+  "domain_id": "D22",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "30b30a1a22dfcbd6360199382be5d27afea8c3dc1ca7b481027ccad93bc5ecee",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d22_1149_1152.py",
+  "module_sha256": "698ffb4470e49641cecf825edb0c4022bf6edc9d8b9f894e792ccf439143c9cd",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d22_1149_1152.py",
+  "test_case": "test_cap_1150",
+  "test_sha256": "157e2bdace3ca9202fe1cf96319259aad77f4076e77f096f8b9bd03cede70ba7",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

@@ -1,0 +1,21 @@
+{
+  "canonical_name": "SECURITY_TOOL_ISOLATION",
+  "capability_id": 1099,
+  "certification_granted": false,
+  "domain_id": "D22",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "d32daef8eeebb2c9870ca3533c43cf8188179dc253a34b69162bcab2a3d1740a",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d22_1097_1100.py",
+  "module_sha256": "935b6c264f7c659a25145b10534737ca8a8b9f068fe3116bc5f2d720e2e7fba0",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d22_1097_1100.py",
+  "test_case": "test_cap_1099",
+  "test_sha256": "6b4a0d4adac8c30e9155c3b034e0662e5b9e82636b91c05de44989c8beaa34b2",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

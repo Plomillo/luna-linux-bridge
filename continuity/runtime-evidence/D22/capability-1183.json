@@ -1,0 +1,21 @@
+{
+  "canonical_name": "ILLICIT_MARKET_SIGNAL_ANALYZER",
+  "capability_id": 1183,
+  "certification_granted": false,
+  "domain_id": "D22",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "908a820cdc3d273f78289f4588d2e8a7c86f6f9d36826f76f410d54121425c16",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d22_1181_1184.py",
+  "module_sha256": "df67cde07309d0a08b7f9a68bd148f5d2dce3c6f62cbe9c36daac0375e0a43db",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d22_1181_1184.py",
+  "test_case": "test_cap_1183",
+  "test_sha256": "9b1dfe70d69b55f7de597859a1c59c97dee48dce42b91499e86b70280f623920",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

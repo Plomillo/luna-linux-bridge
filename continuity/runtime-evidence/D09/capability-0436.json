@@ -1,0 +1,21 @@
+{
+  "canonical_name": "STAGED_ROLLOUT",
+  "capability_id": 436,
+  "certification_granted": false,
+  "domain_id": "D09",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "6060aab74f7885933206809cf1be0ff46d402b8a21c39fb6fef0067e5e8b135c",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d09_433_436.py",
+  "module_sha256": "96a674d33edfb0c5d8a44d6838144a97822dd13cf2b47aca9af57c56975a2de6",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d09_433_436.py",
+  "test_case": "test_cap_0436",
+  "test_sha256": "b655b224eec690f23e549e098b95e8e9005d284ebbbb40098dbdf93c426f03bb",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

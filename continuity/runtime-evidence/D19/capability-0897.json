@@ -1,0 +1,21 @@
+{
+  "canonical_name": "PERSISTENCE_DETECTOR",
+  "capability_id": 897,
+  "certification_granted": false,
+  "domain_id": "D19",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "155cf1c944baffb79f78abbbca65746eed949f98fb9238b303a2fd32c138036e",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d19_897_900.py",
+  "module_sha256": "22f8b8afcf590e48e0024c2e2bc1024b9bb331234a1f0f6a0a85452d15b9e3b5",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d19_897_900.py",
+  "test_case": "test_cap_0897",
+  "test_sha256": "ebff7be04aaaa9715993750ce3e5b7e6d8cc0b3e84ff6cb2fd1b185e3561e96f",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

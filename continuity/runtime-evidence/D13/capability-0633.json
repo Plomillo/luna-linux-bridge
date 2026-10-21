@@ -1,0 +1,21 @@
+{
+  "canonical_name": "TRANSFER_ASSESSMENT_ENGINE",
+  "capability_id": 633,
+  "certification_granted": false,
+  "domain_id": "D13",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "c37cab9654e303ac197006881e9bd86d6251f42a4bafae1efbfa082fa53e9fac",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d13_630_633.py",
+  "module_sha256": "6dcefe76d254d967690b0b9432661c1ad594dc9124bcee985d46a09d926f9113",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d13_630_633.py",
+  "test_case": "test_cap_0633",
+  "test_sha256": "e037120a4fc54f5bce04919a2874ff8e5b35b8f497ffc8ecc9708401ab707a1b",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

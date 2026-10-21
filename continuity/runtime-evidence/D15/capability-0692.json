@@ -1,0 +1,21 @@
+{
+  "canonical_name": "BLOAT_ATTRIBUTION_ENGINE",
+  "capability_id": 692,
+  "certification_granted": false,
+  "domain_id": "D15",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "2bd02983909bca14d38e36fa10ea59c9d33077cc0438dee3dddbe9e9420e058c",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d15_689_692.py",
+  "module_sha256": "0853aae0adfca9242e7f8c912731ad6e395c85a07411bba69d7f5b62c0e23ec2",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d15_689_692.py",
+  "test_case": "test_cap_0692",
+  "test_sha256": "765467bbb97c5c1a76b153a043b9e234bdef6ff2ff9bb295e288d08a6e2a7e48",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

@@ -1,0 +1,21 @@
+{
+  "canonical_name": "HUMAN_THREAT_KNOWLEDGE_PROVENANCE",
+  "capability_id": 1197,
+  "certification_granted": false,
+  "domain_id": "D22",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "d188e96436276127dcc65d334c36b6b8c9d2a316f2ab48644f04305ca1564364",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d22_1197_1200.py",
+  "module_sha256": "54d224bc19b950552f52362abd371a23b92d577a7b6b0442def3deb274cc7779",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d22_1197_1200.py",
+  "test_case": "test_cap_1197",
+  "test_sha256": "f8f161df7c942f474d5f60620d047205c6ae8569df33c2c13fb705b8532ab874",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

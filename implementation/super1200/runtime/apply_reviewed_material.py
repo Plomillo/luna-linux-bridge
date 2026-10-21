@@ -148,6 +148,12 @@ def apply_domain(domain_id: str) -> list[str]:
 
 
 def main() -> int:
+    state = load(STATE)
+    active = str(state.get("active_domain", ""))
+    checkpoint = str(state.get("current_checkpoint", ""))
+    if active in {f"D{n:02d}" for n in range(7, 23)} or checkpoint.startswith(tuple(f"D{n:02d}" for n in range(7, 23))):
+        print("SUPER1200_TELEMETRY REFUSE_REWIND active=" + active + " checkpoint=" + checkpoint)
+        return 78
     if load(REGISTRY).get("count") != 1200:
         raise SystemExit("DENY_REGISTRY_COUNT")
     d05_cps = apply_domain("D05")

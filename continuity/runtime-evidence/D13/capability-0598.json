@@ -1,0 +1,21 @@
+{
+  "canonical_name": "RETRIEVAL_PRACTICE_ENGINE",
+  "capability_id": 598,
+  "certification_granted": false,
+  "domain_id": "D13",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "4bd8de1a25a52a156dde58e7f537744c68d233ea2dba5e814ca83dc4b94610ad",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d13_598_601.py",
+  "module_sha256": "e5b2db4ac40e71af54874ce5c835272482be7ae80fe1dc114bc46ee6b8583797",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d13_598_601.py",
+  "test_case": "test_cap_0598",
+  "test_sha256": "59e82b1f0f48d29c9f178fa06d0cd6a11eb42ad4f1f9be181c5ac6b3f987daf4",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}

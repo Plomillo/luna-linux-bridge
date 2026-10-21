@@ -28,18 +28,18 @@ jobs:
   certify-reviewed-scopes:
     name: Monitor and certify pending scopes
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: custosz/super-1200-implementation-20261007
           fetch-depth: 0
-      - name: Prove the D05 stall is gone and D07 was not invented
+      - name: Prove the rail is name-specific and globally uncertified
         run: python3 -B continuity/succession_monitor.py
       - name: Revalidate and persist each pending scope
         run: |
           set -Eeuo pipefail
-          for i in $(seq 1 24); do
+          for i in $(seq 1 300); do
             GATE_STAGE=G23 python3 -B continuity/g23_g24_next_pending.py
             if python3 -c 'import json; raise SystemExit(0 if json.load(open("g23-validation.json")).get("result")=="IDLE" else 1)'; then
               echo "SUCCESSION_GATE_IDLE"
@@ -54,6 +54,6 @@ jobs:
           fi
           git config user.name "super1200-g24-certifier"
           git config user.email "super1200-g24-certifier@users.noreply.github.com"
-          git commit -m "cert(super1200): certify reviewed D05/D06 scopes only"
+          git commit -m "cert(super1200): scoped G23/G24 for reviewed tranches; global remains NOT_CERTIFIED"
           git pull --rebase origin custosz/super-1200-implementation-20261007
           git push origin HEAD:refs/heads/custosz/super-1200-implementation-20261007

@@ -1,0 +1,21 @@
+{
+  "canonical_name": "DIMINISHING_RETURNS_DETECTOR",
+  "capability_id": 508,
+  "certification_granted": false,
+  "domain_id": "D11",
+  "evidence_class": "NAME_SPECIFIC",
+  "evidence_sha256": "e07cb2a20507232dc39d897c4d38f95d67402c5bde77d6aada5ca4c0103abc6d",
+  "executor": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
+  "g23": "PENDING_INDEPENDENT_VALIDATION",
+  "g24": "PENDING_G23",
+  "global_certification_granted": false,
+  "implementation_artifact": "implementation/super1200/domains/d11_505_508.py",
+  "module_sha256": "66ff98dc508cb4db47e1080ebbd7acb1981778d56be7811441acb75b0b9c5616",
+  "schema": "SUPER1200_REVIEWED_TRANCHE_EVIDENCE/1",
+  "status": "PASS",
+  "test_artifact": "implementation/super1200/tests/test_d11_505_508.py",
+  "test_case": "test_cap_0508",
+  "test_sha256": "ca0a2c7527a10f8ea5c9f26731f835c26527f243d4e2e1301e9efcbd50e9e09d",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:20:00+00:00"
+}
