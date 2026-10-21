@@ -78,8 +78,13 @@ def normalize_extracted_text(text: str) -> str:
 
 def parse_page_order(order_text: str, page_count: int) -> list[int]:
     """Return zero-based page indexes from a complete 1-based permutation."""
+    parts = order_text.split(",")
+    if page_count < 1:
+        raise ValueError("PDF must contain at least one page.")
+    if not order_text.strip() or any(not part.strip() for part in parts):
+        raise ValueError("Page order contains an empty item; use comma-separated integers such as 2,1,3.")
     try:
-        nums = [int(part.strip()) for part in order_text.split(",") if part.strip()]
+        nums = [int(part.strip()) for part in parts]
     except ValueError as exc:
         raise ValueError("Page order must be comma-separated integers, e.g. 2,1,3.") from exc
     expected = set(range(1, page_count + 1))
@@ -394,7 +399,7 @@ def _translate_chunks(text: str, translation: Any, glossary: dict[str, str], max
             current += paragraph
     if current:
         chunks.append(current)
-    translated = "\n".join(translation.translate(chunk) for chunk in chunks)
+    translated = "".join(translation.translate(chunk) for chunk in chunks)
     for token, target_term in tokens.items():
         if token not in translated:
             raise RuntimeError(
@@ -424,7 +429,12 @@ def translate_pdf(
             "Argos Translate is not installed. Install the optional translate extra and preinstall "
             "the required local language package; no network download is attempted."
         ) from exc
-    translation = argos_translate.get_translation_from_codes(source_language, target_language)
+    try:
+        translation = argos_translate.get_translation_from_codes(source_language, target_language)
+    except Exception as exc:
+        raise RuntimeError(
+            f"Unable to load a local Argos translation model for {source_language}->{target_language}."
+        ) from exc
     if translation is None:
         raise RuntimeError(f"No local Argos model is installed for {source_language}->{target_language}.")
     glossary = _load_glossary(glossary_path)
@@ -484,8 +494,13 @@ def translate_pdf(
     try:
         md_path.write_text(md_text, encoding="utf-8")
         created.append(md_path)
-        _render_sections_pdf(pdf_path, f"Machine-translated reading draft — {source.stem}", sections)
         created.append(pdf_path)
+        _render_sections_pdf(pdf_path, f"Machine-translated reading draft — {source.stem}", sections)
+        pdf_reader = PdfReader(str(pdf_path), strict=True)
+        with fitz.open(pdf_path) as translated_document:
+            output_text_characters = sum(len(page.get_text().strip()) for page in translated_document)
+        if not pdf_reader.pages or output_text_characters == 0:
+            raise RuntimeError("Translated PDF failed post-build text verification.")
         audit = {
             "schema": "LOUKSNA_DOCUMENT_WORKBENCH_TRANSLATION/1.0",
             "observed_at_utc": utc_now(),
@@ -504,6 +519,8 @@ def translate_pdf(
             "markdown_sha256": sha256_file(md_path),
             "pdf_output": str(pdf_path),
             "pdf_sha256": sha256_file(pdf_path),
+            "pdf_page_count": len(pdf_reader.pages),
+            "pdf_extractable_text_characters": output_text_characters,
             "translation_review": "REQUIRED",
             "network_service_used": False,
             "pages": [
