@@ -5,7 +5,7 @@ import datetime as dt, fcntl, hashlib, json, os, pathlib, subprocess, sys, time,
 
 HOME=pathlib.Path("/home/diegoignacionorambuenamiranda")
 ROOT=HOME/"Proyectos/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR"
-RT=ROOT/"CUSTOSZ_CONTINUITY_V1"; STATE=RT/"state"; OUT=STATE/"worker_outputs"
+RT=ROOT/"CUSTOSZ_CONTINUITY_V1"; STATE=RT/"state"; OUT=STATE/"worker_outputs"; CANDIDATES=STATE/"cajita_candidates"
 JOB=STATE/"jobs/docling_30mb_lane_v1"; WORKER_STATE=STATE/"jobs/docling_30mb_worker_v1"
 WORKER=JOB/"docling_30mb_quantize_worker_v1.py"; RUNTIME=JOB/"docling_30mb_runtime_v1.py"
 MISSION_SPEC=JOB/"DOCLING_30MB_MISSION.json"
