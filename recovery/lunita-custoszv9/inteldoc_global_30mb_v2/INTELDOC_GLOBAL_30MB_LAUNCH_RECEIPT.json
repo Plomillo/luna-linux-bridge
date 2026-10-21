@@ -1,0 +1,65 @@
+{
+  "canonical_promotion": "NOT_AUTHORIZED",
+  "certification": "NOT_GRANTED",
+  "custoszv9_sha256": "667ceac7d7e59682292c864777ec3e1c228074716dc5dba17fe150e4d826ccf3",
+  "dispatcher_sha256": "73d68d80668718dd7389fb1b9f6a7e8d499e4588ce3f945f4652faae3c6fb00a",
+  "global_goal_bytes": 30000000,
+  "mission_completion_claim": false,
+  "mission_id": "CUSTOSZV9_INTELDOC_GLOBAL_30MB_V2",
+  "mission_sha256": "8fc05771b2c33980278adc830a5b0ddd7fb72767dc215f9c75cd4007b4ac5222",
+  "observed_phase": "GLOBAL_INVENTORY",
+  "observed_status": "RUNNING",
+  "prestart_checkpoint": "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR/CUSTOSZ_CONTINUITY_V1/state/checkpoints/INTELDOC_GLOBAL_30MB_PRESTART_20261021T164955190262Z",
+  "prestart_checkpoint_sha256": "6e2901740a237db878d77aebd0e5bfc3e651cd4071e71681719b2d784bef1ebb",
+  "resource_caps_confirmed": true,
+  "runtime_smoke": "DEFERRED_BY_USER",
+  "schema": "INTELDOC_GLOBAL_30MB_LAUNCH_RECEIPT/1.0",
+  "source_files_modified": false,
+  "source_inventory": {
+    "calibre_binary_reference": {
+      "bytes": 192898432,
+      "path": "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/2. Cajita de Luna/5. Inteligencia documental/Calibre/calibre-9.14.0-x86_64.txz",
+      "read_only": true,
+      "sha256": "7f53a0863ed6d32407bc72053b966e39d5b64813f2592bd9c741504c01c0e7f3"
+    },
+    "calibre_source_reference": {
+      "bytes": 48867616,
+      "path": "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/2. Cajita de Luna/5. Inteligencia documental/Calibre/calibre-9.14.0.tar.xz",
+      "read_only": true,
+      "sha256": "d1bc24024b0942429c627e9c5d0b25d51df9c1af1e1d8dca3e572f03b194c561"
+    },
+    "docling_slim_wheel": {
+      "bytes": 780430,
+      "path": "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/2. Cajita de Luna/5. Inteligencia documental/Docling/docling_slim-2.124.0-py3-none-any.whl",
+      "read_only": true,
+      "sha256": "2c7c667394d3eae9080bc15143ed6f1d39a4838090d9e3f29be212606e6676bd"
+    },
+    "granite_docling_mmproj_f16": {
+      "bytes": 190031712,
+      "path": "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/2. Cajita de Luna/5. Inteligencia documental/Docling/mmproj-granite-docling-258M-f16.gguf",
+      "read_only": true,
+      "sha256": "4b7b2c4ed3162bd9cb323668c188e2324838b8f8ca4f3f9767f16c4c600d43ad"
+    },
+    "granite_docling_q4_gguf": {
+      "bytes": 138559520,
+      "path": "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/2. Cajita de Luna/5. Inteligencia documental/Docling/granite-docling-258M-Q4_K_M.gguf",
+      "read_only": true,
+      "sha256": "4ba41a480d2b6594613a23819df8fcc382d9dab9691e28bf327b3ac799fe0a82"
+    }
+  },
+  "systemd_properties": {
+    "ActiveState": "active",
+    "CPUQuotaPerSecUSec": "350ms",
+    "MemoryHigh": "805306368",
+    "MemoryMax": "1073741824"
+  },
+  "systemd_unit": "custosz-inteldoc30-20261021t164955190262z.scope",
+  "task_id": "CUSTOSZV9_INTELDOC_GLOBAL_30MB_20261021T164954",
+  "test_sha256": "827ae3966a394dbe4ef559a295ff1913da5d058a192dbc64fd9fe33324d81b4a",
+  "timestamp_utc": "2026-10-21T16:50:15Z",
+  "worker_log": "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR/CUSTOSZ_CONTINUITY_V1/state/jobs/inteldoc_global_30mb_worker_v1_startup.log",
+  "worker_pid": 324723,
+  "worker_sha256": "7c67d86c35b0e718afbc0516f1a03fb641b226f0f8e17f5cde854e51fb353738",
+  "worker_state_dir": "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR/CUSTOSZ_CONTINUITY_V1/state/jobs/inteldoc_global_30mb_worker_v1",
+  "wrapper_pid": 324720
+}
