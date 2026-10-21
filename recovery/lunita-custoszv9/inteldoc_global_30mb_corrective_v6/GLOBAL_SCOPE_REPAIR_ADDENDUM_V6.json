@@ -1,0 +1,47 @@
+{
+  "addendum_id": "GITHUB_INTELDOC_GLOBAL_30MB_CORRECTIVE_REPAIR_V6_SCOPE_20261021",
+  "allowed_operations": [
+    "READ_ASSIGNED_BRANCH",
+    "CREATE_EXACT_ALLOWLISTED_V6_FILES_ON_ASSIGNED_BRANCH",
+    "READBACK_VERIFY_EXACT_CONTENT",
+    "APPEND_EXACT_LOCAL_SCOPE_TO_AUTH_AND_CONTRACT_AFTER_CHECKPOINT",
+    "LAUNCH_PINNED_WORKER_V4"
+  ],
+  "allowed_paths": [
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_corrective_v6/INTELDOC_GLOBAL_30MB_CORRECTIVE_MISSION.json",
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_corrective_v6/inteldoc_five_artifact_corrective_worker_v4.py",
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_corrective_v6/custoszv9_inteldoc_five_artifact_corrective_dispatch_v6.py",
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_corrective_v6/test_inteldoc_five_artifact_corrective_contract_v4.py",
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_corrective_v6/GLOBAL_SCOPE_REPAIR_ADDENDUM_V6.json",
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_corrective_v6/INTELDOC_GLOBAL_30MB_CORRECTIVE_V6_LAUNCH_RECEIPT.json",
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_corrective_v6/INTELDOC_GLOBAL_30MB_CORRECTIVE_V6_RESULT.json"
+  ],
+  "authorization_basis": "Explicit current user instruction: resume CUSTOSZ V9 and synchronize the quantization script and GitHub recovery branch for all five pinned Intelligence Documental artifacts under the strict 30,000,000-decimal-byte global cap. V6 uses a fresh state root, preserves originals, records all measured sizes, and attempts the more aggressive direct Q1_0 pass for the same text GGUF rather than substituting another artifact.",
+  "authorized_at_utc": "2026-10-21T18:18:07Z",
+  "branch": "recovery/lunita-custoszv9-operational-20261020",
+  "custoszv9_bytes": 236326,
+  "custoszv9_sha256": "667ceac7d7e59682292c864777ec3e1c228074716dc5dba17fe150e4d826ccf3",
+  "dispatcher_sha256": "30a4ca8dcd82d8a6480dbb93752e32d19b7e48e8f203bec768802a8a795d656e",
+  "forbidden_operations": [
+    "write_to_main_or_other_branch",
+    "merge",
+    "force_push",
+    "delete_files",
+    "overwrite_unreviewed_artifacts",
+    "workflow_dispatch",
+    "read_or_write_secrets",
+    "write_outside_exact_allowlist",
+    "modify_source_artifacts",
+    "canonical_promotion",
+    "certification_propagation"
+  ],
+  "mission_id": "CUSTOSZV9_INTELDOC_FIVE_ARTIFACT_CORRECTIVE_V1",
+  "mission_sha256": "1778c67e2ede2292c54c6f7c85716a7805fa4f315f087935b85944c2bfa9a565",
+  "parent_addendum_id": "GITHUB_INTELDOC_GLOBAL_30MB_CORRECTIVE_REPAIR_V5_SCOPE_20261021",
+  "repository": "Plomillo/luna-linux-bridge",
+  "schema": "CUSTOSZV9_GITHUB_SCOPE_REPAIR_ADDENDUM/1.0",
+  "scope_expiry": "EXACT_PATHS_ABOVE_ONLY",
+  "signature": "NOT_PRESENT",
+  "test_sha256": "f41b41c716ec9fffd74bce0cc175a714ec53814020177e2180bf3df4609a5286",
+  "worker_sha256": "1da345907ad01f84f66e565a1cb5bb73a12763273b9a2de21a8dade02c733554"
+}
