@@ -36,6 +36,19 @@ class DpkgDependencyTests(unittest.TestCase):
         self.assertEqual("BLOCKED_UNRESOLVED_PACKAGE_DEPENDENCIES", result["status"])
         self.assertEqual(1, result["unresolved_dependency_count"])
 
+    def test_installed_package_with_insufficient_version_does_not_resolve_dependency(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = pathlib.Path(tmp) / "status"
+            p.write_text(
+                "Package: app\nStatus: install ok installed\nVersion: 1\nDepends: libc6 (>= 2.2)\n\n"
+                "Package: libc6\nStatus: install ok installed\nVersion: 2.0\n\n",
+                encoding="utf-8",
+            )
+            result = lane.parse_dpkg_status(p)
+        self.assertEqual("BLOCKED_UNRESOLVED_PACKAGE_DEPENDENCIES", result["status"])
+        self.assertEqual(1, result["unresolved_dependency_count"])
+        self.assertEqual("MISSING_PACKAGE_OR_UNSATISFIED_VERSION_CONSTRAINT", result["unresolved_dependencies"][0]["reason"])
+
 
 class RootfsInventoryTests(unittest.TestCase):
     def test_inventory_hashes_regular_files_and_records_symlink_without_following(self):
