@@ -1,4 +1,4 @@
-[Reading 203 lines from start (total: 203 lines, 0 remaining)]
+[Reading 212 lines from start (total: 212 lines, 0 remaining)]
 
 #!/usr/bin/env python3
 """Regression tests for bounded, fail-closed Cajita Qwen3 conversion progression."""
@@ -194,6 +194,15 @@ class CajitaQuantizationFlowTests(unittest.TestCase):
             self.assertEqual(saved["stage"], "BLOCKED_CONVERSION_RESOURCE")
             self.assertEqual(result["status"], "BLOCKED_CONVERSION_RESOURCE")
             self.assertIn("INVALID", saved["last_error"]["status"])
+
+    def test_converter_tempdir_is_bound_to_candidate_storage(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            temp_dir = pathlib.Path(tmp) / "candidate" / "converter_tmp"
+            env = mod._bounded_compute_env({"TMPDIR": "/tmp"}, temp_dir=temp_dir)
+            self.assertEqual(env["TMPDIR"], str(temp_dir))
+            self.assertEqual(env["TEMP"], str(temp_dir))
+            self.assertEqual(env["TMP"], str(temp_dir))
+            self.assertTrue(temp_dir.is_dir())
 
     def test_numerical_libraries_are_thread_bounded(self):
         env = mod._bounded_compute_env({"OMP_NUM_THREADS": "64", "OPENBLAS_NUM_THREADS": "32"})
