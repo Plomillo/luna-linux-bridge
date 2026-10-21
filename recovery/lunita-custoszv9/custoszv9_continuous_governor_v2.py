@@ -1,4 +1,4 @@
-[Reading 1120 lines from start (total: 1120 lines, 0 remaining)]
+[Reading 1165 lines from start (total: 1165 lines, 0 remaining)]
 
 #!/usr/bin/env python3
 """Fail-closed step classification and persistent Cajita quantization side-lane.
@@ -670,7 +670,33 @@ def tick_cajita_priority_lane(
                 else:
                     lane["stage"] = "DRY_RUN"
             elif stage == "CONVERSION_RUNNING":
-                lane["stage"] = "CONVERT_RETRY"
+                job_info = lane.get("job") or {}
+                log_path = pathlib.Path(str(job_info.get("log_path") or ""))
+                try:
+                    log_tail = log_path.read_text(encoding="utf-8", errors="replace")[-16000:] if log_path.is_file() else ""
+                except OSError:
+                    log_tail = ""
+                resource_failure = (
+                    rc in {1, 125, 137, -9}
+                    and int(lane.get("conversion_attempts", 0)) >= 1
+                    and "token_embd.weight" in log_tail
+                    and lane.get("model_inventory", {}).get("status") == "PASS_MODEL_INVENTORY"
+                    and lane.get("toolchain", {}).get("converter_source_commit") == EXPECTED_LLAMA_CPP_COMMIT
+                )
+                if resource_failure:
+                    lane["stage"] = "BLOCKED_CONVERSION_RESOURCE"
+                    lane["conversion_resource_failure"] = {
+                        "schema": "CUSTOSZ_CAJITA_CONVERSION_RESOURCE_FAILURE/1.0",
+                        "timestamp_utc": utc_now(), "reason": "CONVERSION_FAILED_AT_LARGEST_TENSOR; resource recovery required before any retry",
+                        "returncode": rc, "receipt_path": job_info.get("receipt_path"),
+                        "log_path": str(log_path), "log_sha256": _sha256(log_path) if log_path.is_file() else None,
+                        "largest_tensor_marker": "token_embd.weight", "conversion_attempts": int(lane.get("conversion_attempts", 0)),
+                        "pinned_converter_commit": EXPECTED_LLAMA_CPP_COMMIT,
+                        "model_source_weights_modified": False, "certification": "NOT_GRANTED",
+                    }
+                    lane["resource_recovery_evidence"] = None
+                else:
+                    lane["stage"] = "CONVERT_RETRY"
             elif stage == "QUANTIZATION_RUNNING":
                 lane["stage"] = "QUANTIZE_RETRY"
             elif stage == "HASH_RUNNING":
@@ -680,6 +706,8 @@ def tick_cajita_priority_lane(
             lane["last_progress_utc"] = utc_now()
             _atomic(lane_path, lane)
             next_action = (
+                "BLOCKED: converter failed at the largest tensor. Do not retry until a versioned resource-recovery receipt is recorded and bound to the lane."
+                if lane.get("conversion_resource_failure") else
                 "Launch pinned BF16 conversion with one-thread numerical libraries; the heavy lane starts Q4_K_M quantization only after a validated conversion receipt."
                 if lane.get("dry_run_fallback_evidence") else
                 "Run the configured lower-resource or dependency-repair fallback; original model weights remain read-only."
@@ -957,6 +985,23 @@ def tick_cajita_priority_lane(
                 "next_action": "Validate the pinned converter against the actual local Qwen3 inventory."}
 
     if stage in {"CONVERT", "CONVERT_RETRY"}:
+        resource_failure = lane.get("conversion_resource_failure")
+        recovery_evidence = lane.get("resource_recovery_evidence")
+        if resource_failure and not isinstance(recovery_evidence, dict):
+            lane["stage"] = "BLOCKED_CONVERSION_RESOURCE"
+            lane["next_action_utc"] = None
+            _atomic(lane_path, lane)
+            return {"status": "BLOCKED_CONVERSION_RESOURCE", "stage": stage, "did_work": True,
+                    "evidence": resource_failure,
+                    "next_action": "Require a verified resource change and hash-bound recovery receipt; do not repeat the same OOM attempt."}
+        if resource_failure:
+            receipt = pathlib.Path(str(recovery_evidence.get("receipt_path") or ""))
+            if not receipt.is_file() or _sha256(receipt) != recovery_evidence.get("receipt_sha256"):
+                lane["stage"] = "BLOCKED_CONVERSION_RESOURCE"
+                lane["last_error"] = {"status": "BLOCKED_RESOURCE_RECOVERY_RECEIPT_MISMATCH", "receipt_path": str(receipt)}
+                _atomic(lane_path, lane)
+                return {"status": "BLOCKED_CONVERSION_RESOURCE", "stage": stage, "did_work": True,
+                        "evidence": lane["last_error"], "next_action": "Resource recovery receipt binding failed; refuse retry."}
         mem = _mem_available_bytes()
         free = shutil.disk_usage(state_dir).free
         if mem < MIN_CONVERSION_RAM_BYTES or free < MIN_CONVERSION_DISK_BYTES:
