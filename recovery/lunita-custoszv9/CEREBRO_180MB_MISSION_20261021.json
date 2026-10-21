@@ -1,0 +1,55 @@
+{
+  "schema": "CUSTOSZ_CEREBRO_180MB_MISSION/1.0",
+  "mission_label": "CEREBRO / GPT-OSS MXFP4 / rank-1 INT8-factor candidate",
+  "created_at_utc": "2026-10-21T05:22:54Z",
+  "source_mission_sha256": "0a36c59d4baf5d547f5217dc9c6db2a58ad9f8f3ea65d88f9b16a0dbe1604f8f",
+  "source_model": {
+    "model_type": "gpt_oss",
+    "architectures": ["GptOssForCausalLM"],
+    "source_config_sha256": "933aeb666a3fd851133ddd7686414f369bc564c4185fb5704416550879f10566",
+    "source_index_sha256": "ede2655fdc05008561983b6e0829c600727c28d591e071077377059f03a6c00e",
+    "source_tensor_keys": 687,
+    "source_shards": 15,
+    "source_quantization": "MXFP4"
+  },
+  "target": {
+    "candidate_directory_byte_cap": 180000000,
+    "padding_allowed": false,
+    "method": "randomized truncated SVD rank-1 plus symmetric INT8 factors",
+    "rank": 1,
+    "hard_gate": "fail closed before publication when measured candidate bytes exceed 180000000"
+  },
+  "runtime_resources": {
+    "memory_high_bytes": 805306368,
+    "memory_max_bytes": 1073741824,
+    "cpu_quota_percent": 50,
+    "tasks_max": 32,
+    "concurrency": 1
+  },
+  "orchestration": {
+    "worker": "CUSTOSZ V9 CRFU bounded coordinator",
+    "worker_binding_sha256": "validated at launch; stored in the local launch receipt",
+    "github_repository": "Plomillo/luna-linux-bridge",
+    "github_branch": "recovery/lunita-custoszv9-operational-20261020",
+    "desktop_commander_role": "bootstrap/auxiliary only"
+  },
+  "immutability": {
+    "source_weights_modified": false,
+    "source_config_or_index_modified": false,
+    "candidate_output_only": true,
+    "canonical_promotion_authorized": false,
+    "certification_authority": false,
+    "automatic_certification_propagation": false
+  },
+  "epistemic_status": {
+    "stage_at_creation": "DENSE_WEIGHT_FACTORIZATION_RUNNING",
+    "size_cap_status": "NOT_YET_MEASURED",
+    "runtime_startup": "NOT_YET_TESTED",
+    "functional_equivalence": "NOT_ESTABLISHED",
+    "certification": "NOT_GRANTED",
+    "mission_completion_claim": false
+  },
+  "known_caveat": "A single MXFP4 expert matrix rank-1 INT8-factor pilot completed, but its relative Frobenius error was approximately 0.9994. A successful size fit or one-token generation must not be represented as equivalent model quality."
+}
+
+[executed on device: LOUKSNA (98c2b7f6-ee30-4f31-9444-06f7ba58f353)]
