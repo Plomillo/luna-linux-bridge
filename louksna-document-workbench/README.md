@@ -38,7 +38,7 @@ OCR is delegated to an installed ocrmypdf executable. It is not automatically ru
 
 Use Python 3.11 or later, preferably in a virtual environment.
 
-Install the project from this directory with python -m pip install -e .. For offline translation support, install the optional extra with python -m pip install -e ".[translate]", then install suitable Argos language packages through the operator's approved local package process. Package download and model installation are intentionally not triggered by this application.
+Install the project from this directory with python -m pip install -e . For offline translation support, install the optional extra with python -m pip install -e ".[translate]", then install suitable Argos language packages through the operator's approved local package process. Package download and model installation are intentionally not triggered by this application.
 
 OCR requires OCRmyPDF and its system dependencies to be installed separately. A text reflow PDF requires the extracted text to be meaningful.
 
