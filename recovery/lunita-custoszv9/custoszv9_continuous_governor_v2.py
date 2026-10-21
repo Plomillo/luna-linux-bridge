@@ -1,4 +1,4 @@
-[Reading 1204 lines from start (total: 1204 lines, 0 remaining)]
+[Reading 1213 lines from start (total: 1213 lines, 0 remaining)]
 
 #!/usr/bin/env python3
 """Fail-closed step classification and persistent Cajita quantization side-lane.
@@ -73,14 +73,21 @@ def _build_conversion_command(lane: dict[str, Any], source_script: pathlib.Path,
     return cmd
 
 
-def _bounded_compute_env(source: dict[str, str] | None = None) -> dict[str, str]:
-    """Constrain numerical libraries to one thread per process inside CUSTOSZ's heavy lane."""
+def _bounded_compute_env(source: dict[str, str] | None = None,
+                         temp_dir: pathlib.Path | str | None = None) -> dict[str, str]:
+    """Bound numerical threads and route large converter spools off the small tmpfs."""
     env = dict(os.environ if source is None else source)
     env.update({
         "OMP_NUM_THREADS": "1", "OMP_THREAD_LIMIT": "1", "OMP_WAIT_POLICY": "PASSIVE",
         "OPENBLAS_NUM_THREADS": "1", "MKL_NUM_THREADS": "1", "NUMEXPR_NUM_THREADS": "1",
         "VECLIB_MAXIMUM_THREADS": "1", "KMP_BLOCKTIME": "0", "TOKENIZERS_PARALLELISM": "false",
     })
+    if temp_dir is not None:
+        temp_path = pathlib.Path(temp_dir)
+        temp_path.mkdir(parents=True, exist_ok=True, mode=0o700)
+        if not os.access(temp_path, os.W_OK | os.X_OK):
+            raise RuntimeError("CAJITA_CONVERTER_TEMP_DIR_NOT_WRITABLE: " + str(temp_path))
+        env.update({"TMPDIR": str(temp_path), "TEMP": str(temp_path), "TMP": str(temp_path)})
     return env
 
 
@@ -994,7 +1001,8 @@ def tick_cajita_priority_lane(
         bf16 = candidate_dir / "qwen3-analysis-advanced-bf16.gguf"
         cmd = [str(vpy), str(source_script), "--outtype", "bf16", "--use-temp-file",
                "--dry-run", "--outfile", str(bf16), str(model_dir)]
-        env = _bounded_compute_env(os.environ.copy())
+        temp_dir = candidate_dir / "converter_tmp"
+        env = _bounded_compute_env(os.environ.copy(), temp_dir=temp_dir)
         env.update({"PYTHONUNBUFFERED": "1", "PYTHONDONTWRITEBYTECODE": "1"})
         job = _spawn_receipted_job(cmd, source_script.parent, env, outputs, "CAJITA_QWEN3_DRY_RUN")
         lane.update({"stage": "DRY_RUN_RUNNING", "job": job, "bf16_output": str(bf16),
@@ -1060,7 +1068,8 @@ def tick_cajita_priority_lane(
         output = candidate_dir / ("qwen3-analysis-advanced-bf16.gguf" if attempt == 1 else f"qwen3-analysis-advanced-bf16-R{attempt}.gguf")
         source_script = state_dir / "tools" / "llama.cpp-source-b10819-6a1a922d2699" / "convert_hf_to_gguf.py"
         cmd = _build_conversion_command(lane, source_script, model_dir, output, attempt)
-        env = _bounded_compute_env(os.environ.copy())
+        temp_dir = candidate_dir / "converter_tmp"
+        env = _bounded_compute_env(os.environ.copy(), temp_dir=temp_dir)
         env.update({"PYTHONUNBUFFERED": "1", "PYTHONDONTWRITEBYTECODE": "1"})
         job = _spawn_receipted_job(cmd, source_script.parent, env, outputs, "CAJITA_QWEN3_CONVERT")
         lane.update({"stage": "CONVERSION_RUNNING", "job": job, "bf16_output": str(output),
