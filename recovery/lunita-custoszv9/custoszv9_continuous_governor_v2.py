@@ -1,4 +1,4 @@
-[Reading 1185 lines from start (total: 1185 lines, 0 remaining)]
+[Reading 1198 lines from start (total: 1198 lines, 0 remaining)]
 
 #!/usr/bin/env python3
 """Fail-closed step classification and persistent Cajita quantization side-lane.
@@ -51,6 +51,21 @@ def utc_now() -> str:
 
 def _parse_utc(value: str) -> dt.datetime:
     return dt.datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
+def _build_conversion_command(lane: dict[str, Any], source_script: pathlib.Path,
+                              model_dir: pathlib.Path, output: pathlib.Path, attempt: int) -> list[str]:
+    """Build a converter command without combining incompatible tempfile/split options."""
+    cmd = [str(lane["venv_python"]), str(source_script), "--outtype", "bf16",
+           "--use-temp-file", "--outfile", str(output), str(model_dir)]
+    tensor_bytes = int((lane.get("model_inventory") or {}).get("tensor_total_size_bytes", 0))
+    # Only split outputs whose declared tensor payload exceeds 40 GiB. llama.cpp rejects
+    # --use-temp-file together with --split-max-size; retain the safer streaming temp path
+    # for the current 29.5 GB Qwen3 model and remove that option only when splitting is needed.
+    if attempt > 1 and tensor_bytes > 40 * 1024**3:
+        cmd = [arg for arg in cmd if arg != "--use-temp-file"]
+        cmd += ["--split-max-size", "4G"]
+    return cmd
 
 
 def _bounded_compute_env(source: dict[str, str] | None = None) -> dict[str, str]:
@@ -1038,9 +1053,7 @@ def tick_cajita_priority_lane(
         lane["conversion_attempts"] = attempt
         output = candidate_dir / ("qwen3-analysis-advanced-bf16.gguf" if attempt == 1 else f"qwen3-analysis-advanced-bf16-R{attempt}.gguf")
         source_script = state_dir / "tools" / "llama.cpp-source-b10819-6a1a922d2699" / "convert_hf_to_gguf.py"
-        cmd = [lane["venv_python"], str(source_script), "--outtype", "bf16", "--use-temp-file", "--outfile", str(output), str(model_dir)]
-        if attempt > 1:
-            cmd += ["--split-max-size", "4G"]
+        cmd = _build_conversion_command(lane, source_script, model_dir, output, attempt)
         env = _bounded_compute_env(os.environ.copy())
         env.update({"PYTHONUNBUFFERED": "1", "PYTHONDONTWRITEBYTECODE": "1"})
         job = _spawn_receipted_job(cmd, source_script.parent, env, outputs, "CAJITA_QWEN3_CONVERT")
