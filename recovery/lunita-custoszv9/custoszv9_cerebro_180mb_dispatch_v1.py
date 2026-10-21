@@ -7,6 +7,7 @@ the validated worker binding, a source checkpoint, a one-GiB cgroup and the assi
 from __future__ import annotations
 import datetime as dt
 import fcntl
+from dataclasses import replace
 import hashlib
 import json
 import os
@@ -153,6 +154,23 @@ def probe_ram():
         if line.startswith("MemAvailable:"):
             return int(line.split()[1]) * 1024
     return 0
+
+
+def probe_resource_snapshot(probe_host_resources):
+    """Use Linux MemAvailable for the host preflight instead of free-only SC_AVPHYS_PAGES."""
+    snapshot = probe_host_resources(ROOT)
+    if os.name == "posix":
+        try:
+            for line in pathlib.Path("/proc/meminfo").read_text(encoding="ascii").splitlines():
+                if line.startswith("MemAvailable:"):
+                    available = int(line.split()[1]) * 1024
+                    if available < 0:
+                        raise ValueError("NEGATIVE_MEMAVAILABLE")
+                    return replace(snapshot, ram_available_bytes=available,
+                                   source="/proc/meminfo:MemAvailable", confidence="MEASURED")
+        except (OSError, ValueError, IndexError):
+            pass
+    return snapshot
 
 
 def load_v9():
@@ -413,7 +431,7 @@ def _main_locked():
     atomic(spec_path, spec, exclusive=True)
     spec_sha = sha_file(spec_path)
     task = create_task(task_id, spec_sha, source)
-    snapshot = probe_host_resources(ROOT)
+    snapshot = probe_resource_snapshot(probe_host_resources)
     queue_path = STATE / "cerebro_180mb_v9_queue.sqlite3"
     queue = Queue(queue_path)
     submitted = queue.submit(task)
