@@ -26,7 +26,7 @@ def test_parse_page_order_requires_complete_permutation():
 
 
 def test_text_normalization_dehyphenates_and_joins_lines():
-    assert normalize_extracted_text("transfe-\nrencia\n\nsegundo párrafo") == "transferencia segundo párrafo"
+    assert normalize_extracted_text("transfe-\nrencia\n\nsegundo párrafo") == "transferencia\n\nsegundo párrafo"
 
 
 def test_inspection_detects_pages_and_text(tmp_path):
