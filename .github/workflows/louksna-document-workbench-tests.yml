@@ -1,0 +1,37 @@
+name: Louksna Document Workbench — candidate tests
+
+on:
+  push:
+    branches:
+      - candidate/louksna-document-workbench-v1-20261021
+    paths:
+      - "louksna-document-workbench/**"
+      - ".github/workflows/louksna-document-workbench-tests.yml"
+  pull_request:
+    paths:
+      - "louksna-document-workbench/**"
+      - ".github/workflows/louksna-document-workbench-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: louksna-document-workbench-tests
+  cancel-in-progress: false
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout candidate branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Install candidate and test dependencies
+        working-directory: louksna-document-workbench
+        run: python3 -m pip install --disable-pip-version-check -e ".[test]"
+      - name: Run unit tests
+        working-directory: louksna-document-workbench
+        run: python3 -m pytest -q
