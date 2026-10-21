@@ -13,7 +13,7 @@ LANE=STATE/"jobs/inteldoc_global_30mb_corrective_v8"
 MISSION=LANE/"INTELDOC_GLOBAL_30MB_CORRECTIVE_MISSION.json"
 WORKER=LANE/"inteldoc_five_artifact_corrective_worker_v6.py"
 TEST=LANE/"test_inteldoc_five_artifact_corrective_contract_v6.py"
-ADDENDUM=LANE/"GLOBAL_SCOPE_REPAIR_ADDENDUM_V8.json"
+ADDENDUM=LANE/"GLOBAL_SCOPE_REPAIR_ADDENDUM_V8R1.json"
 AUTH=CONT/"operator_authorization.json"; CONTRACT=CONT/"contract.json"; BINDING=CONT/"worker_binding_v2.json"
 WORKER_ROOT=STATE/"jobs/inteldoc_global_30mb_corrective_worker_v8"
 EXPECTED_V9_SHA="667ceac7d7e59682292c864777ec3e1c228074716dc5dba17fe150e4d826ccf3"
@@ -21,7 +21,7 @@ EXPECTED_MISSION_SHA="c928111ddc323b38c4943c56e5b40769768e0a892fbe4ab0746fbc8402
 EXPECTED_WORKER_SHA="3c2d7660959ae399f9df62af4051745a3ba808cab62e120183d3a7962158f59a"
 EXPECTED_TEST_SHA="d346558d42a301359808631276f5b9bc330317f486db0251acc53559678604f3"
 SCOPE_ID="INTELDOC_GLOBAL_30MB_CORRECTIVE_V8"
-ADDENDUM_ID="GITHUB_INTELDOC_GLOBAL_30MB_CORRECTIVE_REPAIR_V8_SCOPE_20261021"
+ADDENDUM_ID="GITHUB_INTELDOC_GLOBAL_30MB_CORRECTIVE_REPAIR_V8R1_SCOPE_20261021"
 REPO="Plomillo/luna-linux-bridge"; BRANCH="recovery/lunita-custoszv9-operational-20261020"
 GH_PREFIX="recovery/lunita-custoszv9/inteldoc_global_30mb_corrective_v8/"
 PYTHON=CONT/"state/tools/venvs/llama-cpp-b10819-py313/bin/python"
@@ -62,9 +62,9 @@ def verify_authorization(task):
         expected_paths={GH_PREFIX+n for n in [
             "INTELDOC_GLOBAL_30MB_CORRECTIVE_MISSION.json",
             "inteldoc_five_artifact_corrective_worker_v6.py",
-            "custoszv9_inteldoc_five_artifact_corrective_dispatch_v7.py",
+            "custoszv9_inteldoc_five_artifact_corrective_dispatch_v8.py",
             "test_inteldoc_five_artifact_corrective_contract_v6.py",
-            "GLOBAL_SCOPE_REPAIR_ADDENDUM_V8.json",
+            "GLOBAL_SCOPE_REPAIR_ADDENDUM_V8R1.json",
             "INTELDOC_GLOBAL_30MB_CORRECTIVE_V8_LAUNCH_RECEIPT.json",
             "INTELDOC_GLOBAL_30MB_CORRECTIVE_V8_RESULT.json"]}
         if not expected_paths.issubset(set(add.get("allowed_paths",[]))):
@@ -106,7 +106,7 @@ def launch(task,inventory):
         "certification":"NOT_GRANTED","canonical_promotion":"NOT_AUTHORIZED"}
     atomic(cp/"MANIFEST.json",manifest,exclusive=True); cp_hash=sha(cp/"MANIFEST.json")
     unit="custosz9-idoc-corrective-"+stamp.lower()
-    log=WORKER_ROOT.parent/"inteldoc_global_30mb_corrective_worker_v7_startup.log"
+    log=WORKER_ROOT.parent/"inteldoc_global_30mb_corrective_worker_v8_startup.log"
     WORKER_ROOT.mkdir(parents=True,exist_ok=True,mode=0o700)
     with log.open("ab") as lf:
         proc=subprocess.Popen(["sudo","-n","systemd-run","--scope","--unit="+unit,
@@ -181,7 +181,7 @@ def main():
         "completion_condition":"all five source entries have an explicit candidate or recorded failure and the global size gate is measured",
         "escalation_condition":"HOLD_FAIL_CLOSED on source pin mismatch, missing scope, resource cap failure, original mutation, or any selected bundle above 30000000 bytes",
         "authorization_evidence_reference":str(AUTH)}
-    qpath=STATE/"inteldoc_global_30mb_corrective_v7_queue.sqlite3"
+    qpath=STATE/"inteldoc_global_30mb_corrective_v8_queue.sqlite3"
     q=PersistentMissionQueue(qpath)
     sub=q.submit(task)
     if sub.get("state")!="RECEIVED": raise RuntimeError("QUEUE_SUBMIT_FAIL:"+str(sub))
