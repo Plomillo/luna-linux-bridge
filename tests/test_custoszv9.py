@@ -168,6 +168,61 @@ class CRFUTests(unittest.TestCase):
     def test_unknown_resources_hold(self):
         out=evaluate_budget(ResourceBudget(1,1,1,1),ResourceSnapshot(None,None,None,"2026-01-01T00:00:00Z","test","UNKNOWN"))
         self.assertEqual(out["status"],"HOLD")
+    def _measured_snapshot(self, ram: int, disk: int, cpu: int = 4) -> ResourceSnapshot:
+        return ResourceSnapshot(ram, disk, cpu, "2026-10-17T00:00:00Z", "test-fixture", "MEASURED")
+
+    def test_ram_strict_boundary_equality_fails(self):
+        result = evaluate_budget(
+            ResourceBudget(900, 100, 10, 1),
+            self._measured_snapshot(1000, 2000),
+        )
+        self.assertEqual(result["status"], "FAIL")
+        self.assertIn("RAM_BUDGET_EXCEEDED", result["reasons"])
+
+    def test_ram_one_byte_inside_strict_boundary_passes(self):
+        result = evaluate_budget(
+            ResourceBudget(899, 100, 10, 1),
+            self._measured_snapshot(1000, 2000),
+        )
+        self.assertEqual(result["status"], "PASS")
+
+    def test_ram_reservation_above_available_fails_even_for_zero_demand(self):
+        result = evaluate_budget(
+            ResourceBudget(0, 101, 10, 1),
+            self._measured_snapshot(100, 2000),
+        )
+        self.assertEqual(result["status"], "FAIL")
+        self.assertIn("RAM_BUDGET_EXCEEDED", result["reasons"])
+
+    def test_ram_reservation_equal_to_available_fails_even_for_zero_demand(self):
+        result = evaluate_budget(
+            ResourceBudget(0, 100, 10, 1),
+            self._measured_snapshot(100, 2000),
+        )
+        self.assertEqual(result["status"], "FAIL")
+        self.assertIn("RAM_BUDGET_EXCEEDED", result["reasons"])
+
+    def test_disk_strict_boundary_equality_fails(self):
+        result = evaluate_budget(
+            ResourceBudget(10, 10, 2000, 1),
+            self._measured_snapshot(1000, 2000),
+        )
+        self.assertEqual(result["status"], "FAIL")
+        self.assertIn("DISK_BUDGET_EXCEEDED", result["reasons"])
+
+    def test_disk_one_byte_inside_strict_boundary_passes(self):
+        result = evaluate_budget(
+            ResourceBudget(10, 10, 1999, 1),
+            self._measured_snapshot(1000, 2000),
+        )
+        self.assertEqual(result["status"], "PASS")
+
+    def test_invalid_numeric_measurement_holds_instead_of_raising_or_passing(self):
+        snapshot = ResourceSnapshot(True, 2000, 4, "2026-10-17T00:00:00Z", "test-fixture", "MEASURED")
+        result = evaluate_budget(ResourceBudget(0, 0, 0, 1), snapshot)
+        self.assertEqual(result["status"], "HOLD")
+        self.assertIn("RESOURCE_MEASUREMENT_INVALID:ram_available_bytes", result["reasons"])
+
     def test_repeated_strategy_without_evidence_blocked(self):
         h=state_fingerprint({"revision":1})
         out=decide_next_action(action_id="a",strategy_id="s",state_hash=h,
@@ -577,6 +632,70 @@ class CRFUTests(unittest.TestCase):
         self.assertFalse(result["authorization_granted"])
         self.assertFalse(result["external_host_operations"])
         self.assertEqual(result["certification"], "NOT_GRANTED_BY_SELFTEST")
+
+
+    def test_runtime_resource_decision_matches_formal_predicates_on_bounded_domain(self):
+        """Exhaustively check the Agda-aligned guards on a finite input domain.
+
+        This is bounded differential regression evidence, not a universal proof that
+        arbitrary Python execution refines the Agda model. The universal bridge remains
+        an explicit assurance obligation and must not be certified from finite tests.
+        """
+        from itertools import product
+
+        checked = 0
+        for (
+            ram_required,
+            ram_reserved,
+            ram_available,
+            disk_required,
+            disk_available,
+            cpu_count,
+            concurrency,
+        ) in product(range(4), repeat=7):
+            snapshot = self._measured_snapshot(
+                ram=ram_available,
+                disk=disk_available,
+                cpu=cpu_count,
+            )
+            result = evaluate_budget(
+                ResourceBudget(
+                    ram_required,
+                    ram_reserved,
+                    disk_required,
+                    concurrency,
+                ),
+                snapshot,
+            )
+
+            # Direct correspondence to the normalized Agda guard predicates:
+            # requiredRam + reservedRam < availableRam;
+            # requiredDisk < availableDisk;
+            # 1 <= concurrency <= max(1, cpuCount).
+            formal_guards = (
+                ram_required + ram_reserved < ram_available
+                and disk_required < disk_available
+                and concurrency >= 1
+                and concurrency <= max(1, cpu_count)
+            )
+            expected = "PASS" if formal_guards else "FAIL"
+            self.assertEqual(
+                result["status"],
+                expected,
+                msg=(
+                    "runtime/formal-guard status mismatch",
+                    ram_required,
+                    ram_reserved,
+                    ram_available,
+                    disk_required,
+                    disk_available,
+                    cpu_count,
+                    concurrency,
+                ),
+            )
+            checked += 1
+
+        self.assertEqual(checked, 4**7)
 
 if __name__=="__main__":
     unittest.main()
