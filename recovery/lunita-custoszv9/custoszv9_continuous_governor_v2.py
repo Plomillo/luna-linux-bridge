@@ -1,4 +1,4 @@
-[Reading 1165 lines from start (total: 1165 lines, 0 remaining)]
+[Reading 1179 lines from start (total: 1179 lines, 0 remaining)]
 
 #!/usr/bin/env python3
 """Fail-closed step classification and persistent Cajita quantization side-lane.
@@ -996,12 +996,26 @@ def tick_cajita_priority_lane(
                     "next_action": "Require a verified resource change and hash-bound recovery receipt; do not repeat the same OOM attempt."}
         if resource_failure:
             receipt = pathlib.Path(str(recovery_evidence.get("receipt_path") or ""))
-            if not receipt.is_file() or _sha256(receipt) != recovery_evidence.get("receipt_sha256"):
+            receipt_row = _load(receipt, {}) if receipt.is_file() else {}
+            resource_valid = (
+                receipt.is_file()
+                and _sha256(receipt) == recovery_evidence.get("receipt_sha256")
+                and receipt_row.get("schema") == "CUSTOSZ_CAJITA_RESOURCE_RECOVERY/1.0"
+                and receipt_row.get("status") == "RESOURCE_RECOVERY_VERIFIED"
+                and receipt_row.get("mission_sha256") == mission_sha256
+                and receipt_row.get("swap_active") is True
+                and int(receipt_row.get("swap_bytes", 0)) >= 4 * 1024**3
+                and int(receipt_row.get("memory_high_bytes", 0)) >= 2560 * 1024**2
+                and int(receipt_row.get("memory_max_bytes", 0)) == 3 * 1024**3
+                and receipt_row.get("source_model_weights_modified") is False
+                and receipt_row.get("no_competing_conversion") is True
+            )
+            if not resource_valid:
                 lane["stage"] = "BLOCKED_CONVERSION_RESOURCE"
-                lane["last_error"] = {"status": "BLOCKED_RESOURCE_RECOVERY_RECEIPT_MISMATCH", "receipt_path": str(receipt)}
+                lane["last_error"] = {"status": "BLOCKED_RESOURCE_RECOVERY_RECEIPT_INVALID", "receipt_path": str(receipt)}
                 _atomic(lane_path, lane)
                 return {"status": "BLOCKED_CONVERSION_RESOURCE", "stage": stage, "did_work": True,
-                        "evidence": lane["last_error"], "next_action": "Resource recovery receipt binding failed; refuse retry."}
+                        "evidence": lane["last_error"], "next_action": "Resource recovery receipt failed its hash, mission, swap, or memory-limit checks; refuse retry."}
         mem = _mem_available_bytes()
         free = shutil.disk_usage(state_dir).free
         if mem < MIN_CONVERSION_RAM_BYTES or free < MIN_CONVERSION_DISK_BYTES:
