@@ -47,3 +47,11 @@ Finish R 4.6.1 build and test; install missing Jamovi/JASP payloads only in cand
 - Added fail-closed handling in the runtime governor: a conversion failure at the validated largest tensor is now parked at `BLOCKED_CONVERSION_RESOURCE`; the same expensive conversion cannot repeat until a new resource-recovery receipt is hash-bound to the lane.
 - Focused regression suite: 6/6 PASS, including OOM hold and refusal to retry without a verified recovery receipt. Updated runtime SHA-256 `77a041c9b14d4085eef63d93af026cdcf2353f4b8718a63927af64534411573d`; tests SHA-256 `6348c3ec78869d6c0b0fbfc3b01a9be05572414ed08edb4066d56be8aa22538b`.
 - Resource recovery and a new bounded conversion attempt remain pending; certification stays `NOT_GRANTED`.
+
+
+## Quantization resource-loop stop — 2026-10-21 01:11 UTC
+
+- The llama.cpp converter's `--dry-run` path still materializes tensors through `GGUFWriter.add_tensor` and spools data. On the active Qwen3 candidate it failed with `OSError: Not enough free space to write 178257920 bytes` after reaching model tensors. Repeating that probe was unsafe and not valid evidence of quantization.
+- Runtime governor now parks any failed dry-run at `BLOCKED_CONVERSION_RESOURCE`, records the bound log/receipt, and returns without launching another tensor-materializing probe. It only resumes when the separate resource recovery receipt matches mission SHA, active swap path/capacity, memory high/max limits, unchanged source-weight declaration, and no competing conversion.
+- Focused regression suite: 14/14 PASS. Runtime SHA-256 `77b9719bde809ba777b921eeccf9f823a9d4a5a60f2714c8ead4a4dc5b66e645`; test SHA-256 `ee769d03074fe73b804547913bf597f5c143af2f0a2b13c3f6ba7c888cbc1337`.
+- Candidate `QWEN3_ANALISIS_AVANZADO_R1_20261021T010653Z` is now blocked pending verified resource recovery. No valid BF16 output or Q4_K_M quantization was produced by these attempts; certification remains `NOT_GRANTED`. This status does not claim quantization has started.
