@@ -1,0 +1,94 @@
+{
+  "schema": "CUSTOSZV9_INTELDOC_GLOBAL_30MB_MISSION/1.0",
+  "mission_id": "CUSTOSZV9_INTELDOC_GLOBAL_30MB_V2",
+  "created_at_utc": "2026-10-21T16:30:00Z",
+  "project": "Cajita de Luna / 5. Inteligencia documental",
+  "authority": "Explicit user instruction in this conversation; append-only scope; originals remain read-only",
+  "objective": "Produce one operational Intelligence Documental candidate under a strict gross ceiling of 30,000,000 bytes. Optimize all relevant artifacts as a set: Docling model weights, processing package, Calibre runtime/package and every required runtime dependency. Preserve core Calibre capabilities requested by the user (PDF/EPUB creation/conversion and ebook processing), removing only demonstrably optional language/dev/debug/documentation payload where possible. If the current architecture cannot fit, record an exact hard HOLD; never silently omit dependencies or report a false PASS.",
+  "global_limit": {
+    "hard_cap_bytes": 30000000,
+    "decimal_units": true,
+    "rounding": false,
+    "global_not_per_component": true,
+    "fail_closed": true
+  },
+  "inventory": {
+    "source_root": "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/2. Cajita de Luna/5. Inteligencia documental",
+    "pinned_originals": [
+      {
+        "id": "granite_docling_q4_gguf",
+        "path": "Docling/granite-docling-258M-Q4_K_M.gguf",
+        "bytes": 138559520,
+        "sha256": "4ba41a480d2b6594613a23819df8fcc382d9dab9691e28bf327b3ac799fe0a82",
+        "role": "read-only source"
+      },
+      {
+        "id": "granite_docling_mmproj_f16",
+        "path": "Docling/mmproj-granite-docling-258M-f16.gguf",
+        "bytes": 190031712,
+        "sha256": "4b7b2c4ed3162bd9cb323668c188e2324838b8f8ca4f3f9767f16c4c600d43ad",
+        "role": "read-only source"
+      },
+      {
+        "id": "docling_slim_wheel",
+        "path": "Docling/docling_slim-2.124.0-py3-none-any.whl",
+        "bytes": 780430,
+        "sha256": "2c7c667394d3eae9080bc15143ed6f1d39a4838090d9e3f29be212606e6676bd",
+        "role": "runtime package source"
+      },
+      {
+        "id": "calibre_binary_reference",
+        "path": "Calibre/calibre-9.14.0-x86_64.txz",
+        "bytes": 192898432,
+        "sha256": "7f53a0863ed6d32407bc72053b966e39d5b64813f2592bd9c741504c01c0e7f3",
+        "role": "runtime package source"
+      },
+      {
+        "id": "calibre_source_reference",
+        "path": "Calibre/calibre-9.14.0.tar.xz",
+        "bytes": 48867616,
+        "sha256": "d1bc24024b0942429c627e9c5d0b25d51df9c1af1e1d8dca3e572f03b194c561",
+        "role": "reproducible build/provenance source"
+      }
+    ]
+  },
+  "execution": {
+    "controller": "CUSTOSZ V9 CRFU",
+    "worker": "inteldoc_global_30mb_worker_v1.py",
+    "steps": [
+      "Verify V9 and all source hashes",
+      "Inventory all five artifacts and expanded Calibre archive contents",
+      "Aggressively requantize the pinned Docling tensor weights with lower-rank CPU binary factors",
+      "Defer functional smoke tests until all artifacts have been quantized/reduced, as explicitly requested",
+      "Repack a minimized Calibre candidate: strip ELF symbols; remove only optional locale/dev/documentation payload; retain conversion/runtime libraries",
+      "Include the Docling wheel and charge required model-runtime dependency bytes",
+      "Compute exact gross total for one combined candidate, including its manifest; HOLD if above 30,000,000 bytes"
+    ],
+    "resource_envelope": {
+      "memory_high_bytes": 805306368,
+      "memory_max_bytes": 1073741824,
+      "cpu_quota_percent": 35,
+      "tasks_max": 24,
+      "concurrency": 1
+    },
+    "smoke_test": "DEFERRED_BY_USER_UNTIL_ALL_ARTIFACTS_QUANTIZED",
+    "original_sources_mutable": false,
+    "canonical_promotion_authorized": false,
+    "certification_authorized": false
+  },
+  "github": {
+    "repository": "Plomillo/luna-linux-bridge",
+    "branch": "recovery/lunita-custoszv9-operational-20261020",
+    "path_prefix": "recovery/lunita-custoszv9/inteldoc_global_30mb_v2/"
+  },
+  "acceptance_gates": [
+    "CUSTOSZ V9 pinned SHA verified",
+    "all five source sizes and hashes match",
+    "Docling aggressive quantization candidate generated",
+    "Calibre minimized candidate generated without mutating original",
+    "required runtime dependency bytes are accounted for",
+    "combined gross total <= 30000000 bytes or explicit HOLD_OVER_CAP",
+    "no functional smoke in this quantization phase",
+    "no original overwritten; no main branch, merge, or certification propagation"
+  ]
+}
