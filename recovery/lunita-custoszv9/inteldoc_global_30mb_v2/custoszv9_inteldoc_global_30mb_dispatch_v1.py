@@ -7,13 +7,14 @@ HOME=pathlib.Path("/home/diegoignacionorambuenamiranda")
 OP=HOME/"Proyectos/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR"
 CONT=OP/"CUSTOSZ_CONTINUITY_V1"; STATE=CONT/"state"; OUT=STATE/"worker_outputs"
 V9=OP/"CUSTOSZV9.pyz"; MISSION=STATE/"jobs/inteldoc_global_30mb_lane_v1/INTELDOC_GLOBAL_30MB_MISSION.json"
+REPAIR_ADDENDUM=STATE/"jobs/inteldoc_global_30mb_lane_v1/GLOBAL_STARTUP_REPAIR_ADDENDUM.json"
 WORKER=STATE/"jobs/inteldoc_global_30mb_lane_v1/inteldoc_global_30mb_worker_v1.py"
 TEST=STATE/"jobs/inteldoc_global_30mb_lane_v1/test_inteldoc_global_30mb_contract.py"
 AUTH=CONT/"operator_authorization.json"; CONTRACT=CONT/"contract.json"; BINDING=CONT/"worker_binding_v2.json"
 WORKER_ROOT=STATE/"jobs/inteldoc_global_30mb_worker_v1"
 EXPECTED_V9_SHA="667ceac7d7e59682292c864777ec3e1c228074716dc5dba17fe150e4d826ccf3"
 EXPECTED_MISSION_SHA="8fc05771b2c33980278adc830a5b0ddd7fb72767dc215f9c75cd4007b4ac5222"
-EXPECTED_WORKER_SHA="ec12fcac87564c531bf6d0d0004b306b9bafc6ba1fa8ce64d3769f926caf82e8"
+EXPECTED_WORKER_SHA="7c67d86c35b0e718afbc0516f1a03fb641b226f0f8e17f5cde854e51fb353738"
 EXPECTED_TEST_SHA="827ae3966a394dbe4ef559a295ff1913da5d058a192dbc64fd9fe33324d81b4a"
 SCOPE_ID="INTELDOC_GLOBAL_30MB_V2"
 ADDENDUM_ID="GITHUB_INTELDOC_GLOBAL_30MB_SCOPE_20261021"
@@ -54,6 +55,13 @@ def verify_authorization(task):
   item=a[0]; paths=set(item.get("allowed_paths",[]))
   expected={GH_PREFIX+n for n in ["INTELDOC_GLOBAL_30MB_MISSION.json","inteldoc_global_30mb_worker_v1.py","custoszv9_inteldoc_global_30mb_dispatch_v1.py","test_inteldoc_global_30mb_contract.py","GLOBAL_SCOPE_ADDENDUM.json","INTELDOC_GLOBAL_30MB_LAUNCH_RECEIPT.json","INTELDOC_GLOBAL_30MB_RESULT.json"]}
   if not expected.issubset(paths) or item.get("branch")!=BRANCH or item.get("repository")!=REPO or item.get("mission_sha256")!=EXPECTED_MISSION_SHA: return {"status":"DENIED","reason":"GLOBAL_SCOPE_ADDENDUM_FIELDS_MISMATCH"}
+  repair=readj(REPAIR_ADDENDUM)
+  ar=[x for x in auth.get("authorized_scope_addenda",[]) if x.get("addendum_id")==repair.get("addendum_id")]
+  cr=[x for x in con.get("authorized_scope_addenda",[]) if x.get("addendum_id")==repair.get("addendum_id")]
+  repair_paths=set(repair.get("allowed_paths",[]))
+  required_repair={GH_PREFIX+n for n in ["inteldoc_global_30mb_worker_v1.py","custoszv9_inteldoc_global_30mb_dispatch_v1.py","GLOBAL_STARTUP_REPAIR_ADDENDUM.json","INTELDOC_GLOBAL_30MB_LAUNCH_RECEIPT.json","INTELDOC_GLOBAL_30MB_RESULT.json"]}
+  if len(ar)!=1 or len(cr)!=1 or ar[0]!=cr[0] or ar[0]!=repair: return {"status":"DENIED","reason":"STARTUP_REPAIR_SCOPE_NOT_MATCHED_IN_AUTH_AND_CONTRACT"}
+  if not required_repair.issubset(repair_paths) or repair.get("branch")!=BRANCH or repair.get("repository")!=REPO or repair.get("mission_sha256")!=EXPECTED_MISSION_SHA or repair.get("worker_sha256")!=EXPECTED_WORKER_SHA: return {"status":"DENIED","reason":"STARTUP_REPAIR_SCOPE_FIELDS_MISMATCH"}
   checks={"v9":sha(V9)==EXPECTED_V9_SHA,"mission":sha(MISSION)==EXPECTED_MISSION_SHA,"worker":sha(WORKER)==EXPECTED_WORKER_SHA,"test":sha(TEST)==EXPECTED_TEST_SHA,"binding":bind.get("status")=="VALIDATED","mission_scope":task.get("authorized_scope")==SCOPE_ID}
   if not all(checks.values()): return {"status":"DENIED","reason":"PIN_OR_BINDING_CHECK_FAILED","checks":checks}
   return {"status":"PASS","task_id":task.get("task_id"),"checks":checks,"scope":SCOPE_ID,"mission_sha256":EXPECTED_MISSION_SHA,"v9_sha256":EXPECTED_V9_SHA,"no_canonical_promotion":True,"no_certification_authority":True}
@@ -64,7 +72,7 @@ def worker_active():
  try: os.kill(int(p.read_text().strip()),0); return True
  except (ValueError,ProcessLookupError,PermissionError,FileNotFoundError): return False
 def launch(task,inventory,qpath):
- if WORKER_ROOT.exists(): return {"status":"HOLD","reason":"GLOBAL_WORKER_STATE_ALREADY_EXISTS_NO_OVERWRITE","path":str(WORKER_ROOT)}
+ if WORKER_ROOT.exists() and any(WORKER_ROOT.iterdir()): return {"status":"HOLD","reason":"GLOBAL_WORKER_STATE_NONEMPTY_NO_OVERWRITE","path":str(WORKER_ROOT)}
  if ram_available()<2*1024**3: return {"status":"HOLD","reason":"RAM_HEADROOM_BELOW_2_GIB","ram_available_bytes":ram_available()}
  if not PYTHON.is_file() or not WORKER.is_file(): return {"status":"HOLD","reason":"PINNED_RUNTIME_OR_WORKER_MISSING"}
  if worker_active(): return {"status":"HOLD","reason":"GLOBAL_WORKER_ALREADY_ACTIVE"}
@@ -79,7 +87,7 @@ def launch(task,inventory,qpath):
  atomic(cp/"MANIFEST.json",check,exclusive=True); cp_hash=sha(cp/"MANIFEST.json")
  unit="custosz-inteldoc30-"+stamp.lower()
  log=WORKER_ROOT.parent/"inteldoc_global_30mb_worker_v1_startup.log"
- WORKER_ROOT.mkdir(parents=True,exist_ok=False,mode=0o700)
+ WORKER_ROOT.mkdir(parents=True,exist_ok=True,mode=0o700)
  with log.open("ab") as lf:
   proc=subprocess.Popen(["sudo","-n","systemd-run","--scope","--unit="+unit,
    "-p","MemoryHigh=768M","-p","MemoryMax=1G","-p","CPUQuota=35%","-p","TasksMax=24",
@@ -134,7 +142,7 @@ def main():
  spec=readj(MISSION)
  if spec.get("mission_id")!="CUSTOSZV9_INTELDOC_GLOBAL_30MB_V2" or spec.get("global_limit",{}).get("hard_cap_bytes")!=30000000: raise RuntimeError("GLOBAL_MISSION_ID_OR_CAP_MISMATCH")
  src=source_inventory()
- if WORKER_ROOT.exists(): raise RuntimeError("GLOBAL_WORKER_STATE_EXISTS_NO_OVERWRITE")
+ if WORKER_ROOT.exists() and any(WORKER_ROOT.iterdir()): raise RuntimeError("GLOBAL_WORKER_STATE_NONEMPTY_NO_OVERWRITE")
  if str(V9) not in sys.path: sys.path.insert(0,str(V9))
  from custoszv9.crfu.coordinator import run_bounded_mission
  from custoszv9.crfu.event_queue import PersistentMissionQueue
