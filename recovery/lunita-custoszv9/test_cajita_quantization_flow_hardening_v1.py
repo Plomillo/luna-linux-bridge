@@ -1,4 +1,4 @@
-[Reading 199 lines from start (total: 199 lines, 0 remaining)]
+[Reading 203 lines from start (total: 203 lines, 0 remaining)]
 
 #!/usr/bin/env python3
 """Regression tests for bounded, fail-closed Cajita Qwen3 conversion progression."""
@@ -94,6 +94,10 @@ class CajitaQuantizationFlowTests(unittest.TestCase):
             saved = json.loads((state / "cajita_priority_lane.json").read_text())
             self.assertEqual(saved["stage"], "DRY_RUN")
             self.assertNotIn("dry_run_fallback_evidence", saved)
+
+    def test_verified_swap_route_lowers_ram_floor_only_for_that_route(self):
+        self.assertEqual(mod._minimum_conversion_ram_bytes(False), 2 * 1024**3)
+        self.assertEqual(mod._minimum_conversion_ram_bytes(True), 1536 * 1024**2)
 
     def test_qwen3_retry_avoids_incompatible_tempfile_split_flags(self):
         lane={"venv_python":"/python", "model_inventory":{"tensor_total_size_bytes":29536614400}}
