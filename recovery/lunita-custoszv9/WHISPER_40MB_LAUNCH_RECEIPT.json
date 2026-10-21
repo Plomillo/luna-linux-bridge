@@ -1,0 +1,243 @@
+{
+  "candidate": {
+    "candidate_directory": "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR/CUSTOSZ_CONTINUITY_V1/state/cajita_candidates/WHISPER_TRANSCRIPTION_LOWRANK_INT8_20261021T123845Z",
+    "candidate_directory_inventory": [
+      {
+        "bytes": 21196,
+        "path": "README.md",
+        "sha256": "aaef74a740faca90fa1899c4233ebe17f2093b9846d0acf16d9131bf650e9585"
+      },
+      {
+        "bytes": 34648,
+        "path": "added_tokens.json",
+        "sha256": "3c51f66c4c21f9e126970078f11ae77a78c74aee8df606ee9daba86e467108e0"
+      },
+      {
+        "bytes": 1251,
+        "path": "compression_metadata.json",
+        "sha256": "31b8629bcb893c711e9557fe442740a0e287a2751b5d88c9647eed6ce2511b30"
+      },
+      {
+        "bytes": 1256,
+        "path": "config.json",
+        "sha256": "c5b526b3e3cd64cd8940dabb45e8ba726629e22d8ed389c29b552f9140daf04a"
+      },
+      {
+        "bytes": 3772,
+        "path": "generation_config.json",
+        "sha256": "cce11bfe3aaa6ae9e072ea2637caaec8795e68d9b67e655a5af16ee509681a4c"
+      },
+      {
+        "bytes": 1519,
+        "path": "gitattributes",
+        "sha256": "11ad7efa24975ee4b0c3c3a38ed18737f0658a5f75a0a96787b576a78a023361"
+      },
+      {
+        "bytes": 7804,
+        "path": "lowrank_runtime.py",
+        "sha256": "228fd0f358ca70ee2a3ec935d2796eff53c1f2f7398d011e8b909b17c598a7c7"
+      },
+      {
+        "bytes": 493869,
+        "path": "merges.txt",
+        "sha256": "2df2990a395e35e8dfbc7511e08c12d56018d8d04691e0133e5d63b21e154dc6"
+      },
+      {
+        "bytes": 34877948,
+        "path": "model.safetensors",
+        "sha256": "6f4541536bfca7899d74e962c277b7fbcd1cbc4fb7f8d101c69bcd1ea2560aa3"
+      },
+      {
+        "bytes": 52666,
+        "path": "normalizer.json",
+        "sha256": "bf1c507dc8724ca9cf9903640dacfb69dae2f00edee4f21ceba106a7392f26dd"
+      },
+      {
+        "bytes": 340,
+        "path": "preprocessor_config.json",
+        "sha256": "7ccc62c6f2765af1f3b46c00c9b5894426835a05021c8b9c01eecb6dfb542711"
+      },
+      {
+        "bytes": 2186,
+        "path": "special_tokens_map.json",
+        "sha256": "baea4ea09372eb4fca86b4e4346139fd73cb807d5087e9de0948e971739c3e74"
+      },
+      {
+        "bytes": 2710337,
+        "path": "tokenizer.json",
+        "sha256": "297b13372ac43916285644fb9687add3cc62ee2a1adb60da3dc25cc94c1871fd"
+      },
+      {
+        "bytes": 282843,
+        "path": "tokenizer_config.json",
+        "sha256": "844b642c73a91359722f47b35705f7174686df33d252695d8572cf9ac03a6389"
+      },
+      {
+        "bytes": 1036558,
+        "path": "vocab.json",
+        "sha256": "e2aa043ef015641d363d8288e7c241c85e36a5c761fb303598e0710233344387"
+      }
+    ],
+    "candidate_id": "WHISPER_TRANSCRIPTION_LOWRANK_INT8_20261021T123845Z",
+    "candidate_sha256_manifest": "NOT_SEALED_BY_WORKER_AFTER_RUNTIME_FAILURE",
+    "model_safetensors_bytes": 34877948,
+    "model_safetensors_sha256": "6f4541536bfca7899d74e962c277b7fbcd1cbc4fb7f8d101c69bcd1ea2560aa3"
+  },
+  "certification": "NOT_GRANTED",
+  "evidence": {
+    "dispatch_state_path": "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR/CUSTOSZ_CONTINUITY_V1/state/jobs/whisper_40mb_worker_v2/dispatch_state.json",
+    "journal_path": "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR/CUSTOSZ_CONTINUITY_V1/state/jobs/whisper_40mb_worker_v2/events.jsonl",
+    "progress_path": "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR/CUSTOSZ_CONTINUITY_V1/state/jobs/whisper_40mb_worker_v2/progress.json",
+    "v9_dispatch_report": "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR/CUSTOSZ_CONTINUITY_V1/state/worker_outputs/WHISPER_40MB_V9_DISPATCH_20261021T123841Z.json",
+    "v9_dispatch_report_sha256": "67f11cf073c173a8e742214da766eddd39303363938f153354059d6e0c02b311",
+    "v9_queue_event_chain": "PASS",
+    "worker_log": "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR/CUSTOSZ_CONTINUITY_V1/state/jobs/whisper_40mb_worker_v2/worker_stdout.log"
+  },
+  "execution": {
+    "custoszv9_sha256": "667ceac7d7e59682292c864777ec3e1c228074716dc5dba17fe150e4d826ccf3",
+    "dispatcher_sha256": "dca0ad00cabf5083c8335acab2087ad17a94aa9c2e47c76511396bc2fd7d3772",
+    "quantization_worker_state": "INACTIVE_AFTER_RUNTIME_SMOKE_FAILURE",
+    "resource_caps": {
+      "quantization_worker": {
+        "CPUQuota": "50%",
+        "MemoryHigh_bytes": 805306368,
+        "MemoryMax_bytes": 1073741824,
+        "concurrency": 1
+      },
+      "runtime_retest": {
+        "CPUQuota": "50%",
+        "MemoryHigh_bytes": 805306368,
+        "MemoryMax_bytes": 1073741824
+      }
+    },
+    "runtime_retest_state": "INACTIVE_AFTER_80_SECOND_TIMEOUT",
+    "runtime_retest_unit": "custosz-whisper40-fp16-smoke-124346.scope",
+    "runtime_sha256": "228fd0f358ca70ee2a3ec935d2796eff53c1f2f7398d011e8b909b17c598a7c7",
+    "systemd_unit": "custosz-whisper40-20261021t123838448207z.scope",
+    "worker_sha256": "9da2f9657c0160bc0e125d9363a61a3a6a1049d7ceb39a24df45ba9a16ca8958"
+  },
+  "github": {
+    "branch": "recovery/lunita-custoszv9-operational-20261020",
+    "repository": "Plomillo/luna-linux-bridge",
+    "sync_status": "PENDING_VERIFIED_BRANCH_PUSH",
+    "synced": false
+  },
+  "mission": {
+    "mission_sha256": "0a36c59d4baf5d547f5217dc9c6db2a58ad9f8f3ea65d88f9b16a0dbe1604f8f",
+    "mission_spec_sha256": "349dc326209a8bde3fea6ad2c47c73379891591e0d24e49f86e200479e940868",
+    "task_id": "CUSTOSZV9_WHISPER_40MB_20261021T123837"
+  },
+  "mission_completion_claim": false,
+  "observations": {
+    "original_smoke_failure": {
+      "reason": "GenerationConfig is outdated for generate(language=...)",
+      "timestamp_utc": "2026-10-21T12:39:21.906Z"
+    },
+    "quantization_events": [
+      {
+        "event_type": "REAL_COMPRESSION_STARTED",
+        "payload": {
+          "candidate_id": "WHISPER_TRANSCRIPTION_LOWRANK_INT8_20261021T123845Z",
+          "completed_tensor_count": 0,
+          "resource_policy": {
+            "block_rows": 64,
+            "torch_threads": 1
+          },
+          "source_shards": {
+            "model.safetensors": {
+              "bytes": 1617824864,
+              "mtime_ns": 1788826320631287300,
+              "path": "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/2. Cajita de Luna/3. Transcripción/model.safetensors"
+            }
+          }
+        },
+        "sequence": 3,
+        "timestamp_utc": "2026-10-21T12:38:45.115Z"
+      },
+      {
+        "event_type": "CANDIDATE_ASSEMBLED_UNDER_HARD_CAP",
+        "payload": {
+          "candidate_bytes": 39528009,
+          "candidate_dir": "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR/CUSTOSZ_CONTINUITY_V1/state/cajita_candidates/WHISPER_TRANSCRIPTION_LOWRANK_INT8_20261021T123845Z",
+          "model_safetensors_sha256": "6f4541536bfca7899d74e962c277b7fbcd1cbc4fb7f8d101c69bcd1ea2560aa3",
+          "target_bytes": 40000000
+        },
+        "sequence": 79,
+        "timestamp_utc": "2026-10-21T12:39:12.703Z"
+      },
+      {
+        "event_type": "RUNTIME_SMOKE_TEST_FAILED",
+        "payload": {
+          "command": [
+            "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR/CUSTOSZ_CONTINUITY_V1/state/tools/venvs/llama-cpp-b10819-py313/bin/python",
+            "-B",
+            "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR/CUSTOSZ_CONTINUITY_V1/state/cajita_candidates/WHISPER_TRANSCRIPTION_LOWRANK_INT8_20261021T123845Z/lowrank_runtime.py",
+            "--smoke-test"
+          ],
+          "completed_at_utc": "2026-10-21T12:39:21.906Z",
+          "returncode": 1,
+          "stderr": "Traceback (most recent call last):\n  File \"/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR/CUSTOSZ_CONTINUITY_V1/state/cajita_candidates/WHISPER_TRANSCRIPTION_LOWRANK_INT8_20261021T123845Z/lowrank_runtime.py\", line 138, in <module>\n    print(json.dumps(smoke_test(),indent=2,ensure_ascii=False))\n                     ~~~~~~~~~~^^\n  File \"/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR/CUSTOSZ_CONTINUITY_V1/state/cajita_candidates/WHISPER_TRANSCRIPTION_LOWRANK_INT8_20261021T123845Z/lowrank_runtime.py\", line 122, in smoke_test\n    generated=model.generate(**inputs,task=\"transcribe\",language=\"spanish\",max_new_tokens=4)\n  File \"/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR/CUSTOSZ_CONTINUITY_V1/state/tools/venvs/llama-cpp-b10819-py313/lib/python3.13/site-packages/transformers/models/whisper/generation_whisper.py\", line 682, in generate\n    self._set_language_and_task(\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^\n        language=language, task=task, is_multilingual=is_multilingual, generation_config=generation_config\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR/CUSTOSZ_CONTINUITY_V1/state/tools/venvs/llama-cpp-b10819-py313/lib/python3.13/site-packages/transformers/models/whisper/generation_whisper.py\", line 1451, in _set_language_and_task\n    raise ValueError(\n    ...<3 lines>...\n    )\nValueError: The generation config is outdated and is thus not compatible with the `language` argument to `generate`. Please update the generation config as per the instructions https://github.com/huggingface/transformers/issues/25084#issuecomment-1664398224\n",
+          "stdout": ""
+        },
+        "sequence": 80,
+        "timestamp_utc": "2026-10-21T12:39:21.923Z"
+      }
+    ],
+    "runtime_retest_current": {
+      "active_state": "inactive",
+      "note": "Factorization was completed before smoke tests. Last bounded runtime-only smoke test did not finish within 80 seconds; no model quality claim or certification.",
+      "outcome": "TIMEOUT_AFTER_80_SECONDS",
+      "unit": "custosz-whisper40-fp16-smoke-124346.scope"
+    },
+    "runtime_retests": [
+      {
+        "path": "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR/CUSTOSZ_CONTINUITY_V1/state/jobs/whisper_40mb_worker_v2/runtime_smoke_test.json",
+        "reason": "GenerationConfig outdated for explicit language argument; factorization and candidate assembly were already complete.",
+        "returncode": 1,
+        "sha256": "487dadf1ba0394a93d9dc71b53ff60a69a462361ebf34a974fce4043bd1a88f7"
+      },
+      {
+        "path": "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR/CUSTOSZ_CONTINUITY_V1/state/worker_outputs/WHISPER_40MB_RUNTIME_SMOKE_RETEST_20261021T124206Z.json",
+        "reason": "Bias/input dtype mismatch in low-rank Conv1d.",
+        "returncode": 1,
+        "sha256": "fb54efdcb389792c551ad1047b90dc7fdc873e1a158b56be5b239d6e433d8da6"
+      },
+      {
+        "path": "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR/CUSTOSZ_CONTINUITY_V1/state/worker_outputs/WHISPER_40MB_RUNTIME_SMOKE_RETEST_BIAS_20261021T124300Z.json",
+        "reason": "FP16 LayerNorm weights received float32 activations.",
+        "returncode": 1,
+        "sha256": "bd20e08ee92d9f6635d103386a5ec2aaa52d3a3b503f8c7e31436524b8842347"
+      },
+      {
+        "reason": "80-second bounded timeout after FP16 input adaptation; no successful output produced.",
+        "returncode": 124,
+        "unit": "custosz-whisper40-fp16-smoke-124346.scope"
+      }
+    ]
+  },
+  "observed_at_utc": "2026-10-21T12:48:15.835715+00:00",
+  "phase_at_observation": "RUNTIME_SMOKE_TEST_RETEST_TIMED_OUT",
+  "quality_equivalence": "NOT_ESTABLISHED",
+  "quantization_phase": "FACTORIZE_INT8_COMPLETE",
+  "record_type": "WHISPER_40MB_LAUNCH_AND_STAGE_HISTORY",
+  "schema": "WHISPER_40MB_LAUNCH_RECEIPT/1.0",
+  "source": {
+    "bytes": 1617824864,
+    "path": "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/2. Cajita de Luna/3. Transcripción/model.safetensors",
+    "sha256": "542566a422ae4f3fd23f1ba11add198fca01bbf82e66e6a2857b3f608b1eb9d1",
+    "source_weights_modified": false
+  },
+  "status": "FACTORIZE_INT8_COMPLETE_CANDIDATE_UNDER_CAP_RUNTIME_SMOKE_FAILED_RETEST_TIMED_OUT",
+  "target": {
+    "bytes_remaining": 471807,
+    "hard_cap_bytes": 40000000,
+    "measured_candidate_directory_bytes": 39528193,
+    "padding_used": false,
+    "rank": 29,
+    "under_cap": true
+  },
+  "tensor_progress": {
+    "completed": 587,
+    "total": 587
+  }
+}
