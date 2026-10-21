@@ -1,4 +1,4 @@
-[Reading 245 lines from start (total: 245 lines, 0 remaining)]
+[Reading 295 lines from start (total: 295 lines, 0 remaining)]
 
 #!/usr/bin/env python3
 """Regression tests for bounded, fail-closed Cajita Qwen3 conversion progression."""
@@ -113,6 +113,56 @@ class CajitaQuantizationFlowTests(unittest.TestCase):
             pathlib.Path("source-model"), pathlib.Path("candidate-R2.gguf"), 2)
         self.assertNotIn("--use-temp-file",cmd)
         self.assertIn("--split-max-size",cmd)
+
+    def test_activation_guard_restores_preflight_to_one_real_conversion_step(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            operator, root, state, mission_sha = self._layout(tmp)
+            log = state / "dryrun.log"
+            log.write_text("prior failed probe\n", encoding="utf-8")
+            lane = self._lane(state, mission_sha, log)
+            lane["stage"] = "PROVISION_ENV"
+            lane["candidate_id"] = "QWEN3_TEST_CANDIDATE"
+            lane["candidate_dir"] = str(state / "cajita_candidates" / "QWEN3_TEST_CANDIDATE")
+            lane["job"] = None
+            mod._atomic(state / "cajita_priority_lane.json", lane)
+            receipt=state / "recovery.json"
+            receipt.write_text(json.dumps({"schema":"CUSTOSZ_CAJITA_RESOURCE_RECOVERY/1.0",
+                "status":"RESOURCE_RECOVERY_VERIFIED","mission_sha256":mission_sha,
+                "candidate_id":"QWEN3_TEST_CANDIDATE","swap_active":True,"swap_path":"/test/swap",
+                "swap_bytes":4*1024**3,"memory_high_bytes":2560*1024**2,"memory_max_bytes":3*1024**3,
+                "source_model_weights_modified":False,"no_competing_conversion":True}),encoding="utf-8")
+            import hashlib
+            evidence={"receipt_path":str(receipt),"receipt_sha256":hashlib.sha256(receipt.read_bytes()).hexdigest()}
+            guard={"schema":"CUSTOSZ_CAJITA_QUANTIZATION_ACTIVATION_GUARD/1.0","status":"REAL_CONVERSION_ONLY",
+                   "mission_sha256":mission_sha,"candidate_id":"QWEN3_TEST_CANDIDATE","lane_seed":lane,
+                   "resource_recovery_evidence":evidence,"conversion_resource_failure":{"reason":"prior dryrun failed"}}
+            mod._atomic(state / "cajita_quantization_activation_guard.json", guard)
+            from unittest.mock import patch
+            with patch.object(mod,"_guard_resource_receipt_valid",return_value=True), patch.object(mod,"_active_cajita_model_processes",return_value=[]):
+                result=mod.tick_cajita_priority_lane(state, root / "Cajita", mission_sha)
+            saved=json.loads((state / "cajita_priority_lane.json").read_text())
+            self.assertEqual(result["status"],"CAJITA_REAL_CONVERSION_GUARD_RESTORED")
+            self.assertEqual(saved["stage"],"CONVERT_RETRY")
+            self.assertTrue(saved["quantization_guard_attempt_consumed"])
+            self.assertEqual(saved["candidate_id"],"QWEN3_TEST_CANDIDATE")
+
+    def test_activation_guard_defers_when_existing_model_tool_is_active(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            operator, root, state, mission_sha = self._layout(tmp)
+            log=state / "probe.log";log.write_text("existing probe\n",encoding="utf-8")
+            lane=self._lane(state,mission_sha,log);lane["stage"]="PROVISION_ENV";lane["job"]=None
+            mod._atomic(state / "cajita_priority_lane.json",lane)
+            guard={"schema":"CUSTOSZ_CAJITA_QUANTIZATION_ACTIVATION_GUARD/1.0","status":"REAL_CONVERSION_ONLY",
+                   "mission_sha256":mission_sha,"candidate_id":lane["candidate_id"],"lane_seed":lane,
+                   "resource_recovery_evidence":{"receipt_path":"missing","receipt_sha256":"missing"},
+                   "conversion_resource_failure":{"reason":"resource"}}
+            mod._atomic(state / "cajita_quantization_activation_guard.json",guard)
+            from unittest.mock import patch
+            with patch.object(mod,"_active_cajita_model_processes",return_value=[{"pid":123,"kind":"CONVERTER"}]):
+                result=mod.tick_cajita_priority_lane(state,root / "Cajita",mission_sha)
+            saved=json.loads((state / "cajita_priority_lane.json").read_text())
+            self.assertEqual(result["status"],"CAJITA_ACTIVATION_GUARD_WAITING_FOR_EXISTING_PROCESS")
+            self.assertEqual(saved["stage"],"PROVISION_ENV")
 
     def test_tensor_materializing_dryrun_space_failure_enters_resource_block(self):
         with tempfile.TemporaryDirectory() as tmp:
