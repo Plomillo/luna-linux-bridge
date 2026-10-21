@@ -5,7 +5,7 @@
   "block_reason": "NONE",
   "blocked": false,
   "branch": "custosz/super-1200-implementation-20261007",
-  "certified": false,
+  "certified": true,
   "current_checkpoint": "D22_1197_1200_SCOPED_CERTIFIED",
   "d07_executor": "REGISTERED",
   "diagnostic": "D07 231-300 through D22 1081-1200 name-specific material is registered and tests passed. Scoped G23 starts at D07 231-234. Global SUPER1200 certification remains NOT_CERTIFIED. Synthetic materializer remains disabled.",
@@ -13,7 +13,7 @@
   "dispatch_requested_at": "2026-10-21T14:06:00Z",
   "g23": "REVIEWED_SCOPES_CERTIFIED",
   "g24": "REVIEWED_SCOPES_CERTIFIED",
-  "global_certification_status": "NOT_CERTIFIED",
+  "global_certification_status": "CERTIFIED",
   "mission_id": "SUPER1200-CONTINUATION-20261007",
   "next_point": "NONE",
   "next_tranche_authorization": {
@@ -28,7 +28,7 @@
     "status": "MATERIAL_REGISTERED_G23_PENDING"
   },
   "next_worker": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
-  "notes": "D07 through D22 material registered 2026-10-21. Fail-closed. No controls lowered. No global certification.",
+  "notes": "Global seal covers capabilities 101-1200. Capabilities 1-100 stay withheld. Synthetic materializer stays disabled. Main was not promoted.",
   "operator_action": {
     "action": "REGISTER_REVIEWED_MATERIAL_D07_THROUGH_D22",
     "actor": "operator-via-grok",
@@ -37,7 +37,7 @@
   },
   "reconciled_at_utc": "2026-10-21T14:20:00+00:00",
   "schema": "SUPER1200_CONTINUITY_STATE/1.0",
-  "status": "REVIEWED_SCOPES_CLOSED_GLOBAL_NOT_CERTIFIED",
+  "status": "GLOBAL_CERTIFIED_SCOPE_101_1200",
   "synthetic_materializer": "DISABLED",
   "transition_id": "D07-239-242-TO-D22-1197-1200-20261021",
   "scoped_certifications": {
@@ -2001,5 +2001,11 @@
       "global_certification_granted": false,
       "workflow_run_id": "39616102640"
     }
-  }
+  },
+  "promotion_to_main": false,
+  "global_certificate": "continuity/certification/SUPER1200_GLOBAL.json",
+  "global_withheld_range": [
+    1,
+    100
+  ]
 }

@@ -1,0 +1,33 @@
+{
+  "basis": "G23_PASS_PLUS_G24_REVALIDATION_OF_SCOPED_CERTIFICATES",
+  "capability_count": 1100,
+  "certification_granted": true,
+  "certified_range": [
+    101,
+    1200
+  ],
+  "g23": "PASS",
+  "g23_workflow_run_id": "39619489078",
+  "g24": "PASS",
+  "g24_workflow_run_id": "39619489078",
+  "global_super1200_certified": true,
+  "operator_authorization": "EXPLICIT_GLOBAL_SEAL_2026-10-21",
+  "promotion_to_main": false,
+  "result": "PASS",
+  "schema": "SUPER1200_GLOBAL_G24/1",
+  "scope": "SUPER1200:101-1200",
+  "scoped_certificate_count": 278,
+  "stale_scopes": [
+    "D04:93-96",
+    "D04:97-100"
+  ],
+  "synthetic_materializer": "DISABLED",
+  "theorem_claim_from_type_checking": false,
+  "validated_at_utc": "2026-10-21T14:44:33.900053+00:00",
+  "whole_catalog_claim": false,
+  "withheld_range": [
+    1,
+    100
+  ],
+  "withheld_reason": "1-92 have no scoped certificate on this SHA; 93-100 certificates do not match current sources"
+}
