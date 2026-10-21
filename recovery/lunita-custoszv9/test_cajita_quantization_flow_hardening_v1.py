@@ -1,4 +1,4 @@
-[Reading 184 lines from start (total: 184 lines, 0 remaining)]
+[Reading 199 lines from start (total: 199 lines, 0 remaining)]
 
 #!/usr/bin/env python3
 """Regression tests for bounded, fail-closed Cajita Qwen3 conversion progression."""
@@ -94,6 +94,21 @@ class CajitaQuantizationFlowTests(unittest.TestCase):
             saved = json.loads((state / "cajita_priority_lane.json").read_text())
             self.assertEqual(saved["stage"], "DRY_RUN")
             self.assertNotIn("dry_run_fallback_evidence", saved)
+
+    def test_qwen3_retry_avoids_incompatible_tempfile_split_flags(self):
+        lane={"venv_python":"/python", "model_inventory":{"tensor_total_size_bytes":29536614400}}
+        cmd=mod._build_conversion_command(lane, pathlib.Path("convert_hf_to_gguf.py"),
+            pathlib.Path("source-model"), pathlib.Path("candidate-R2.gguf"), 2)
+        self.assertIn("--use-temp-file",cmd)
+        self.assertNotIn("--split-max-size",cmd)
+        self.assertIn("candidate-R2.gguf",cmd)
+
+    def test_very_large_conversion_split_drops_tempfile_flag(self):
+        lane={"venv_python":"/python", "model_inventory":{"tensor_total_size_bytes":65*1024**3}}
+        cmd=mod._build_conversion_command(lane, pathlib.Path("convert_hf_to_gguf.py"),
+            pathlib.Path("source-model"), pathlib.Path("candidate-R2.gguf"), 2)
+        self.assertNotIn("--use-temp-file",cmd)
+        self.assertIn("--split-max-size",cmd)
 
     def test_converter_oom_at_largest_tensor_enters_resource_block(self):
         with tempfile.TemporaryDirectory() as tmp:
