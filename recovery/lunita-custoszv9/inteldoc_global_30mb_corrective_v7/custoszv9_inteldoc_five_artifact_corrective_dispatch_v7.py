@@ -9,7 +9,7 @@ BASE=HOME/"PROYECTOS/1. PROYECTOS PRIORITARIOS"
 OP=BASE/"5. CUSTOSZ/0. CUSTOSZ  - OPERADOR"
 CONT=OP/"CUSTOSZ_CONTINUITY_V1"; STATE=CONT/"state"; OUT=STATE/"worker_outputs"
 V9=OP/"CUSTOSZV9.pyz"
-LANE=STATE/"jobs/inteldoc_global_30mb_corrective_v6"
+LANE=STATE/"jobs/inteldoc_global_30mb_corrective_v7"
 MISSION=LANE/"INTELDOC_GLOBAL_30MB_CORRECTIVE_MISSION.json"
 WORKER=LANE/"inteldoc_five_artifact_corrective_worker_v5.py"
 TEST=LANE/"test_inteldoc_five_artifact_corrective_contract_v5.py"
@@ -23,7 +23,7 @@ EXPECTED_TEST_SHA="b60e4fb6ad85f87a0b88b1a1a335167f826a0dd4c945bf4615a983539bc7c
 SCOPE_ID="INTELDOC_GLOBAL_30MB_CORRECTIVE_V7"
 ADDENDUM_ID="GITHUB_INTELDOC_GLOBAL_30MB_CORRECTIVE_REPAIR_V7_SCOPE_20261021"
 REPO="Plomillo/luna-linux-bridge"; BRANCH="recovery/lunita-custoszv9-operational-20261020"
-GH_PREFIX="recovery/lunita-custoszv9/inteldoc_global_30mb_corrective_v6/"
+GH_PREFIX="recovery/lunita-custoszv9/inteldoc_global_30mb_corrective_v7/"
 PYTHON=CONT/"state/tools/venvs/llama-cpp-b10819-py313/bin/python"
 
 def utc(): return dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00","Z")
