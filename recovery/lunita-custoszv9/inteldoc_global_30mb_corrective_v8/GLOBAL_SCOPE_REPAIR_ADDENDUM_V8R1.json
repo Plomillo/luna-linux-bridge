@@ -1,0 +1,48 @@
+{
+  "addendum_id": "GITHUB_INTELDOC_GLOBAL_30MB_CORRECTIVE_REPAIR_V8R1_SCOPE_20261021",
+  "allowed_operations": [
+    "READ_ASSIGNED_BRANCH",
+    "UPDATE_ONLY_THE_PINNED_V8_DISPATCH_AFTER_RECORDED_PREFLIGHT_DENIAL",
+    "CREATE_EXACT_V8R1_SCOPE_RECORD",
+    "READBACK_VERIFY_EXACT_CONTENT",
+    "APPEND_SCOPE_TO_AUTH_AND_CONTRACT_AFTER_CHECKPOINT",
+    "LAUNCH_PINNED_WORKER_V6"
+  ],
+  "allowed_paths": [
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_corrective_v8/INTELDOC_GLOBAL_30MB_CORRECTIVE_MISSION.json",
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_corrective_v8/inteldoc_five_artifact_corrective_worker_v6.py",
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_corrective_v8/custoszv9_inteldoc_five_artifact_corrective_dispatch_v8.py",
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_corrective_v8/test_inteldoc_five_artifact_corrective_contract_v6.py",
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_corrective_v8/GLOBAL_SCOPE_REPAIR_ADDENDUM_V8R1.json",
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_corrective_v8/INTELDOC_GLOBAL_30MB_CORRECTIVE_V8_LAUNCH_RECEIPT.json",
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_corrective_v8/INTELDOC_GLOBAL_30MB_CORRECTIVE_V8_RESULT.json"
+  ],
+  "authorization_basis": "Append-only repair after V8 preflight was denied because the dispatcher's exact-path validation still named the V7 dispatcher path. This repair corrects the allowlist reference and directs the worker log/queue into V8-specific state only. The same five original artifacts stay SHA-256 pinned and read-only; no source substitution, merge, or main-branch write is authorized.",
+  "authorized_at_utc": "2026-10-21T20:16:55Z",
+  "branch": "recovery/lunita-custoszv9-operational-20261020",
+  "custoszv9_bytes": 236326,
+  "custoszv9_sha256": "667ceac7d7e59682292c864777ec3e1c228074716dc5dba17fe150e4d826ccf3",
+  "dispatcher_sha256": "b5a19f26ca14b34d91b29270417834186199ec8029d89d6bc3d385824c5a479d",
+  "forbidden_operations": [
+    "write_to_main_or_other_branch",
+    "merge",
+    "force_push",
+    "delete_files",
+    "overwrite_unreviewed_artifacts",
+    "workflow_dispatch",
+    "read_or_write_secrets",
+    "write_outside_exact_allowlist",
+    "modify_source_artifacts",
+    "canonical_promotion",
+    "certification_propagation"
+  ],
+  "mission_id": "CUSTOSZV9_INTELDOC_FIVE_ARTIFACT_CORRECTIVE_V1",
+  "mission_sha256": "c928111ddc323b38c4943c56e5b40769768e0a892fbe4ab0746fbc84022ad399",
+  "parent_addendum_id": "GITHUB_INTELDOC_GLOBAL_30MB_CORRECTIVE_REPAIR_V8_SCOPE_20261021",
+  "repository": "Plomillo/luna-linux-bridge",
+  "schema": "CUSTOSZV9_GITHUB_SCOPE_REPAIR_ADDENDUM/1.0",
+  "scope_expiry": "EXACT_PATHS_ABOVE_ONLY",
+  "signature": "NOT_PRESENT",
+  "test_sha256": "d346558d42a301359808631276f5b9bc330317f486db0251acc53559678604f3",
+  "worker_sha256": "3c2d7660959ae399f9df62af4051745a3ba808cab62e120183d3a7962158f59a"
+}
