@@ -1,0 +1,61 @@
+{
+  "created_at_utc": "2026-10-21T12:30:58.509740+00:00",
+  "immutability": {
+    "automatic_certification_propagation": false,
+    "canonical_promotion_authorized": false,
+    "certification_authority": false,
+    "source_weights_modified": false
+  },
+  "mission_id": "CUSTOSZV9_WHISPER_TRANSCRIPTION_40MB_20261021",
+  "project": "Cajita de Luna / 3. Transcripción",
+  "runtime_resources": {
+    "cpu_quota_percent": 50,
+    "max_concurrency": 1,
+    "memory_high_bytes": 805306368,
+    "memory_max_bytes": 1073741824,
+    "tasks_max": 32
+  },
+  "schema": "CUSTOSZV9_WHISPER_TRANSCRIPTION_40MB_MISSION/1.0",
+  "source_model": {
+    "architectures": [
+      "WhisperForConditionalGeneration"
+    ],
+    "config_path": "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/2. Cajita de Luna/3. Transcripción/config.json",
+    "config_sha256": "c5b526b3e3cd64cd8940dabb45e8ba726629e22d8ed389c29b552f9140daf04a",
+    "dtype": "F16",
+    "model_id": "WHISPER_TURBO_LOCAL_SOURCE",
+    "model_type": "whisper",
+    "safetensors_tensors": 587,
+    "source_read_only": true,
+    "weights_bytes": 1617824864,
+    "weights_path": "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/2. Cajita de Luna/3. Transcripción/model.safetensors",
+    "weights_sha256": "542566a422ae4f3fd23f1ba11add198fca01bbf82e66e6a2857b3f608b1eb9d1"
+  },
+  "status": {
+    "certification": "NOT_GRANTED",
+    "mission_completion_claim": false,
+    "quality_equivalence": "NOT_ESTABLISHED",
+    "runtime_smoke": "NOT_TESTED",
+    "stage": "PREPARED_AWAITING_CUSTOSZ_V9_DISPATCH"
+  },
+  "synchronization": {
+    "branch": "recovery/lunita-custoszv9-operational-20261020",
+    "paths": [
+      "recovery/lunita-custoszv9/whisper_40mb_lowrank_v1.py",
+      "recovery/lunita-custoszv9/whisper_40mb_runtime_v1.py",
+      "recovery/lunita-custoszv9/custoszv9_whisper_40mb_dispatch_v1.py",
+      "recovery/lunita-custoszv9/WHISPER_40MB_MISSION.json",
+      "recovery/lunita-custoszv9/WHISPER_40MB_LAUNCH_RECEIPT.json"
+    ],
+    "repository": "Plomillo/luna-linux-bridge"
+  },
+  "target": {
+    "candidate_directory_byte_cap": 40000000,
+    "hard_gate": "FAIL_CLOSED; refuse candidate assembly/publication above measured byte cap",
+    "method": "deterministic randomized truncated SVD rank-29 plus symmetric INT8 factor quantization; Whisper positional embedding tables preserved at source precision; decoder embedding factors mirrored to the tied output projection",
+    "no_padding": true,
+    "output": "isolated versioned candidate directory",
+    "rank": 29
+  },
+  "worker": "CUSTOSZ V9 CRFU bounded coordinator; Desktop Commander is auxiliary only"
+}
