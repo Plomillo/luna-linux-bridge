@@ -6,6 +6,12 @@ name: SUPER1200 — global seal
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - custosz/super-1200-implementation-20261007
+    paths:
+      - .github/workflows/super1200-global-seal.yml
+      - continuity/g23_g24_global.py
 
 permissions:
   contents: write
