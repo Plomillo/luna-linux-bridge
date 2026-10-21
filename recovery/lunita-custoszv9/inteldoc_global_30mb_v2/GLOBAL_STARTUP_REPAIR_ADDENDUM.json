@@ -1,0 +1,41 @@
+{
+  "schema": "CUSTOSZV9_GITHUB_SCOPE_REPAIR_ADDENDUM/1.0",
+  "addendum_id": "GITHUB_INTELDOC_GLOBAL_30MB_STARTUP_REPAIR_20261021",
+  "authorized_at_utc": "2026-10-21T16:50:00Z",
+  "authorization_basis": "Append-only operational repair after the first CUSTOSZ V9 CRFU attempt was rejected before worker startup because WORKER_ROOT was undefined; no quantization process started. Explicit user instruction requires this global mission, its worker/dispatcher and assigned-branch synchronization to start successfully.",
+  "parent_addendum_id": "GITHUB_INTELDOC_GLOBAL_30MB_SCOPE_20261021",
+  "repository": "Plomillo/luna-linux-bridge",
+  "branch": "recovery/lunita-custoszv9-operational-20261020",
+  "mission_id": "CUSTOSZV9_INTELDOC_GLOBAL_30MB_V2",
+  "mission_sha256": "8fc05771b2c33980278adc830a5b0ddd7fb72767dc215f9c75cd4007b4ac5222",
+  "worker_sha256": "7c67d86c35b0e718afbc0516f1a03fb641b226f0f8e17f5cde854e51fb353738",
+  "test_sha256": "827ae3966a394dbe4ef559a295ff1913da5d058a192dbc64fd9fe33324d81b4a",
+  "previous_dispatcher_sha256": "c2c534469408601fd256e4478572bf86a4f285c41e03e241655cd7f36970bfd2",
+  "repaired_dispatcher_sha256": "73d68d80668718dd7389fb1b9f6a7e8d499e4588ce3f945f4652faae3c6fb00a",
+  "allowed_operations": [
+    "READ_ASSIGNED_BRANCH",
+    "UPDATE_ONLY_THE_TWO_PINNED_GLOBAL_MISSION_FILES_AFTER_RECORDED_PRELAUNCH_FAILURE",
+    "CREATE_REPAIR_SCOPE_RECORD_AND_LAUNCH_RECEIPTS_ON_ASSIGNED_BRANCH",
+    "READBACK_VERIFY_EXACT_CONTENT"
+  ],
+  "allowed_paths": [
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_v2/inteldoc_global_30mb_worker_v1.py",
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_v2/custoszv9_inteldoc_global_30mb_dispatch_v1.py",
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_v2/GLOBAL_STARTUP_REPAIR_ADDENDUM.json",
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_v2/INTELDOC_GLOBAL_30MB_LAUNCH_RECEIPT.json",
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_v2/INTELDOC_GLOBAL_30MB_RESULT.json"
+  ],
+  "forbidden_operations": [
+    "write_main_or_other_branch",
+    "force_push",
+    "merge",
+    "delete_files",
+    "workflow_dispatch",
+    "read_or_write_secrets",
+    "write_outside_exact_allowlist",
+    "canonical_promotion",
+    "certification_propagation"
+  ],
+  "scope_expiry": "EXACT_PATHS_ABOVE_ONLY",
+  "signature": "NOT_PRESENT"
+}
