@@ -1,0 +1,65 @@
+{
+  "created_at_utc": "2026-10-21T00:00:00Z",
+  "immutability": {
+    "automatic_certification_propagation": false,
+    "canonical_promotion_authorized": false,
+    "certification_authority": false,
+    "source_config_or_index_modified": false,
+    "source_weights_modified": false
+  },
+  "mission_id": "CUSTOSZV9_SEAMLESSM4T_TRANSLATION_50MB_RANK4_V2_20261021",
+  "project": "Cajita de Luna / 4. Traductor Inteligente / Traducción general",
+  "runtime_resources": {
+    "cpu_quota_percent": 50,
+    "max_concurrency": 1,
+    "memory_high_bytes": 805306368,
+    "memory_max_bytes": 1073741824,
+    "tasks_max": 32
+  },
+  "schema": "CUSTOSZV9_SEAMLESSM4T_TRANSLATION_50MB_MISSION/2.0",
+  "source_model": {
+    "architecture": "SeamlessM4Tv2Model",
+    "config_path": "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/2. Cajita de Luna/4. Traductor Inteligente/Traducción general/config.json",
+    "config_sha256": "4b2fa9d863cc3033adaf261e6c3e32ad90347ee2f199a349ba1c77d5e26a605f",
+    "index_path": "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/2. Cajita de Luna/4. Traductor Inteligente/Traducción general/model.safetensors.index.json",
+    "index_sha256": "79d33aa045308d1a93b11952f2a3e6a647c107b688e5fdf1124c4601626dcdb2",
+    "indexed_tensors": 2232,
+    "indexed_weight_bytes": 9236998676,
+    "model_directory_bytes_observed": 29877642550,
+    "model_id": "facebook/seamless-m4t-v2-large",
+    "model_type": "seamless_m4t_v2",
+    "safetensors_shards": 2
+  },
+  "status": {
+    "certification": "NOT_GRANTED",
+    "mission_completion_claim": false,
+    "phase": "SPECIFICATION_PREPARED",
+    "quality_equivalence": "NOT_ESTABLISHED",
+    "runtime_smoke": "NOT_YET_TESTED",
+    "size_target": "NOT_YET_MEASURED"
+  },
+  "synchronization": {
+    "branch": "recovery/lunita-custoszv9-operational-20261020",
+    "paths": [
+      "recovery/lunita-custoszv9/seamlessm4t_50mb_v2/seamlessm4t_50mb_lowrank_v2.py",
+      "recovery/lunita-custoszv9/seamlessm4t_50mb_v2/seamlessm4t_50mb_runtime_v2.py",
+      "recovery/lunita-custoszv9/seamlessm4t_50mb_v2/custoszv9_seamlessm4t_50mb_dispatch_v2.py",
+      "recovery/lunita-custoszv9/seamlessm4t_50mb_v2/SEAMLESSM4T_50MB_RANK4_MISSION.json",
+      "recovery/lunita-custoszv9/seamlessm4t_50mb_v2/test_seamlessm4t_50mb_rank4_contract.py"
+    ],
+    "repository": "Plomillo/luna-linux-bridge"
+  },
+  "target": {
+    "candidate_directory_byte_cap": 50000000,
+    "hard_gate": "FAIL_CLOSED; candidate rejected and not published if measured total directory bytes exceed 50000000",
+    "method": "deterministic randomized truncated SVD rank-4 plus symmetric INT8 factor quantization; no padding; immutable rank-4 candidate version",
+    "output": "isolated, versioned candidate directory",
+    "rank": 4,
+    "scope_note": "Text translation candidate; standalone .pt checkpoints and vocoder_v2.pt are not copied into the payload.",
+    "selection_policy": "rank 4 selected based on measured V1 rank-1 payload of 16,599,716 bytes; use real factorization only, no synthetic padding",
+    "source_weights_read_only": true
+  },
+  "worker": "CUSTOSZ V9 CRFU bounded coordinator; Desktop Commander auxiliary only"
+}
+
+[executed on device: LOUKSNA (98c2b7f6-ee30-4f31-9444-06f7ba58f353)]
