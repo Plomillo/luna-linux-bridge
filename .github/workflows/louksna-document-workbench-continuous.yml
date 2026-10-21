@@ -10,7 +10,6 @@ on:
   pull_request:
     paths:
       - "louksna-document-workbench/**"
-      - ".github/workflows/louksna-document-workbench-tests.yml"
       - ".github/workflows/louksna-document-workbench-continuous.yml"
   workflow_dispatch:
   schedule:
