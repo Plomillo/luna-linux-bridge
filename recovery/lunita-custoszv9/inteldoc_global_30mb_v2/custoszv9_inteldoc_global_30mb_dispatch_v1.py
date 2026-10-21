@@ -154,8 +154,10 @@ def main():
   "expected_outputs":["global worker lock and progress","Docling aggressive quantization candidate","Calibre minimized candidate","global gross size-gate report","CUSTOSZ V9 queue event chain"],
   "validation_strategy":"pinned_source_hashes+V9_CRUF_launch+systemd_resource_scope+live_worker_phase+global_gross_byte_gate",
   "evidence_requirements":["mission/source/worker SHA-256","resource scope properties","CUSTOSZ queue chain","launch receipt","global candidate measured bytes"],
+  "checkpoint_reference":str(STATE/"checkpoints"),
   "rollback_strategy":"all changes remain in isolated worker candidates; originals are read-only",
   "completion_condition":"worker launched and confirmed active in the first explicit global optimization phase",
+  "escalation_condition":"HOLD_FAIL_CLOSED on missing scope, pin mismatch, resource cap failure, any source mutation, or global total above 30000000 bytes",
   "authorization_evidence_reference":str(AUTH)}
  queue_path=STATE/"inteldoc_global_30mb_v2_queue.sqlite3"; q=PersistentMissionQueue(queue_path)
  sub=q.submit(task)
