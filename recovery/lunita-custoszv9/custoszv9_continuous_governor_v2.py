@@ -1,4 +1,4 @@
-[Reading 1205 lines from start (total: 1205 lines, 0 remaining)]
+[Reading 1306 lines from start (total: 1306 lines, 0 remaining)]
 
 #!/usr/bin/env python3
 """Fail-closed step classification and persistent Cajita quantization side-lane.
@@ -138,6 +138,53 @@ def _pid_alive(pid: int | None) -> bool:
         return True
     except (OSError, ValueError, IndexError):
         return False
+
+
+def _active_cajita_model_processes() -> list[dict[str, Any]]:
+    """Detect a converter child even if its receipt wrapper no longer owns the PID."""
+    active: list[dict[str, Any]] = []
+    try:
+        entries = list(pathlib.Path("/proc").iterdir())
+    except OSError:
+        return [{"status": "PROCESS_TABLE_UNAVAILABLE"}]
+    for entry in entries:
+        if not entry.name.isdigit():
+            continue
+        try:
+            argv = [x.decode("utf-8", "replace") for x in (entry / "cmdline").read_bytes().split(b"\0") if x]
+            stat = (entry / "stat").read_text().split()
+        except (OSError, ValueError):
+            continue
+        for kind, suffix in (("CONVERTER", "/convert_hf_to_gguf.py"), ("QUANTIZER", "/llama-quantize")):
+            if any(arg.endswith(suffix) for arg in argv):
+                active.append({"pid": int(entry.name), "state": stat[2] if len(stat) > 2 else "?", "kind": kind})
+                break
+    return active
+
+
+def _guard_resource_receipt_valid(guard: dict[str, Any], mission_sha256: str) -> bool:
+    """Verify activation guard receipt binding before any guard-driven state restoration."""
+    binding = guard.get("resource_recovery_evidence") or {}
+    receipt = pathlib.Path(str(binding.get("receipt_path") or ""))
+    row = _load(receipt, {}) if receipt.is_file() else {}
+    if not receipt.is_file() or _sha256(receipt) != binding.get("receipt_sha256"):
+        return False
+    if (row.get("schema") != "CUSTOSZ_CAJITA_RESOURCE_RECOVERY/1.0"
+        or row.get("status") != "RESOURCE_RECOVERY_VERIFIED"
+        or row.get("mission_sha256") != mission_sha256
+        or row.get("candidate_id") != guard.get("candidate_id")
+        or row.get("swap_active") is not True
+        or row.get("source_model_weights_modified") is not False
+        or row.get("no_competing_conversion") is not True
+        or int(row.get("swap_bytes", 0)) < 4 * 1024**3 - 4096
+        or int(row.get("memory_high_bytes", 0)) < 2560 * 1024**2
+        or int(row.get("memory_max_bytes", 0)) != 3 * 1024**3):
+        return False
+    try:
+        active_swap_paths = {line.split()[0] for line in pathlib.Path("/proc/swaps").read_text().splitlines()[1:] if line.split()}
+    except OSError:
+        return False
+    return str(row.get("swap_path") or "") in active_swap_paths
 
 
 def _spawn_receipted_job(
@@ -552,6 +599,59 @@ def tick_cajita_priority_lane(
         raise RuntimeError("CAJITA_PRIORITY_LANE_MISSION_HASH_MISMATCH")
 
     stage = lane.get("stage")
+    # A versioned sidecar guard survives any stale/preflight lane rewrite by the mission loop.
+    # It converts only the same pinned candidate, only once, and never overrides a live converter.
+    activation_guard_path = state_dir / "cajita_quantization_activation_guard.json"
+    activation_guard = _load(activation_guard_path, None)
+    guard_status = "CUSTOSZ_CAJITA_QUANTIZATION_ACTIVATION_GUARD/1.0"
+    if (isinstance(activation_guard, dict)
+        and activation_guard.get("schema") == guard_status
+        and activation_guard.get("status") == "REAL_CONVERSION_ONLY"
+        and activation_guard.get("mission_sha256") == mission_sha256):
+        if (stage not in {"CONVERSION_RUNNING", "QUANTIZATION_RUNNING", "HASH_RUNNING", "VALIDATE_HASH", "COMPLETE"}
+            and not lane.get("quantization_guard_attempt_consumed")):
+            active_tools = _active_cajita_model_processes()
+            job_info = lane.get("job") or {}
+            if active_tools or (stage in {"ENV_INSTALL_RUNNING", "ENV_INSTALL_FALLBACK_RUNNING", "DRY_RUN_RUNNING"}
+                                and _pid_alive(job_info.get("pid"))):
+                return {"status": "CAJITA_ACTIVATION_GUARD_WAITING_FOR_EXISTING_PROCESS", "stage": stage,
+                        "candidate_id": lane.get("candidate_id"), "active_processes": active_tools,
+                        "did_work": False, "next_action": "Do not duplicate/interrupt the current process; resume the pinned real conversion once it exits."}
+            if not _guard_resource_receipt_valid(activation_guard, mission_sha256):
+                lane["stage"] = "BLOCKED_CONVERSION_RESOURCE"
+                lane["next_action_utc"] = None
+                lane["last_error"] = {"status": "BLOCKED_ACTIVATION_GUARD_RESOURCE_RECEIPT_INVALID",
+                                       "guard_path": str(activation_guard_path)}
+                _atomic(lane_path, lane)
+                return {"status": "BLOCKED_CONVERSION_RESOURCE", "stage": lane["stage"],
+                        "did_work": True, "evidence": lane["last_error"],
+                        "next_action": "Activation guard cannot pass receipt verification; refuse conversion."}
+            seed = activation_guard.get("lane_seed")
+            if (not isinstance(seed, dict) or seed.get("mission_sha256") != mission_sha256
+                or seed.get("candidate_id") != activation_guard.get("candidate_id")
+                or (seed.get("toolchain") or {}).get("converter_source_commit") != EXPECTED_LLAMA_CPP_COMMIT
+                or (seed.get("model_inventory") or {}).get("status") != "PASS_MODEL_INVENTORY"):
+                lane["stage"] = "BLOCKED_CONVERSION_RESOURCE"
+                lane["last_error"] = {"status": "BLOCKED_ACTIVATION_GUARD_SEED_INVALID", "guard_path": str(activation_guard_path)}
+                _atomic(lane_path, lane)
+                return {"status": "BLOCKED_CONVERSION_RESOURCE", "stage": lane["stage"],
+                        "did_work": True, "evidence": lane["last_error"], "next_action": "Refuse an unbound conversion seed."}
+            seed = dict(seed)
+            seed["stage"] = "CONVERT_RETRY"
+            seed["job"] = None
+            seed["quantization_guard_attempt_consumed"] = True
+            seed["resource_recovery_evidence"] = activation_guard["resource_recovery_evidence"]
+            seed["conversion_resource_failure"] = activation_guard["conversion_resource_failure"]
+            seed["last_progress_utc"] = utc_now()
+            seed["next_action_utc"] = None
+            seed["last_error"] = {"status": "ACTIVATION_GUARD_RESTORED_PINNED_REAL_CONVERSION_ONLY",
+                                   "guard_path": str(activation_guard_path),
+                                   "guard_sha256": _sha256(activation_guard_path)}
+            _atomic(lane_path, seed)
+            return {"status": "CAJITA_REAL_CONVERSION_GUARD_RESTORED", "stage": seed["stage"],
+                    "candidate_id": seed["candidate_id"], "did_work": True,
+                    "guard_path": str(activation_guard_path),
+                    "next_action": "Next bounded tick launches the one hash-authorized BF16 conversion; no dry-run is allowed."}
     if stage == "BLOCKED_CONVERSION_RESOURCE":
         return {"status": "BLOCKED_CONVERSION_RESOURCE", "stage": stage, "did_work": False,
                 "candidate_id": lane.get("candidate_id"),
@@ -1028,6 +1128,7 @@ def tick_cajita_priority_lane(
                 and receipt_row.get("schema") == "CUSTOSZ_CAJITA_RESOURCE_RECOVERY/1.0"
                 and receipt_row.get("status") == "RESOURCE_RECOVERY_VERIFIED"
                 and receipt_row.get("mission_sha256") == mission_sha256
+                and receipt_row.get("candidate_id") == lane.get("candidate_id")
                 and receipt_row.get("swap_active") is True
                 and swap_path_active
                 and int(receipt_row.get("swap_bytes", 0)) >= 4 * 1024**3
