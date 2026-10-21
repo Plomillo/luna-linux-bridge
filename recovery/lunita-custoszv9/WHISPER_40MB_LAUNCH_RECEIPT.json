@@ -118,9 +118,28 @@
   },
   "github": {
     "branch": "recovery/lunita-custoszv9-operational-20261020",
+    "file_commits": {
+      "WHISPER_40MB_LAUNCH_RECEIPT.json": "cc7de52a906925ca84984cea6ba05c28d2df5c9c",
+      "WHISPER_40MB_MISSION.json": "13c7cb7dacbff2d36ad2c43cac55e97922d60a4a",
+      "custoszv9_whisper_40mb_dispatch_v1.py": "4d35d3ccb526f2997ffcb4ff2a0195e1bdd7e0c0",
+      "whisper_40mb_lowrank_v1.py": "ccad06e05d275a4b2f1facd0a039316957b21dde",
+      "whisper_40mb_runtime_v1.py": "90c5b6267831191da415bce3dd9fc30e800cb112"
+    },
+    "remote_branch_head_before_receipt_update": "cc7de52a906925ca84984cea6ba05c28d2df5c9c",
     "repository": "Plomillo/luna-linux-bridge",
-    "sync_status": "PENDING_VERIFIED_BRANCH_PUSH",
-    "synced": false
+    "scope_addendum": "GITHUB_WHISPER_TRANSCRIPTION_40MB_SYNC_20261021",
+    "sync_method": "GitHub Contents API (sequential, branch-scoped file commits); local HTTPS push timed out",
+    "sync_status": "GITHUB_CONTENTS_API_WRITES_AND_READBACKS_VERIFIED",
+    "synced": true,
+    "verified_at_utc": "2026-10-21T12:53:17.695823+00:00",
+    "verified_blob_sha": {
+      "WHISPER_40MB_LAUNCH_RECEIPT.json": "f6a949c29ff95c42fcaf84137f8f258ab8f4d815",
+      "WHISPER_40MB_MISSION.json": "cf524d2f25bdc8ade32b07e1c4a6d52a4bd44715",
+      "custoszv9_whisper_40mb_dispatch_v1.py": "b9cd208853201e1ebd511572375839dd69cfbd35",
+      "whisper_40mb_lowrank_v1.py": "1ba7fcf261392c186ea6c1c6a8c9d8af8d740f70",
+      "whisper_40mb_runtime_v1.py": "87a2b5da89a6601dde192751e4d4f8111ddfb9a8"
+    },
+    "verified_paths_exact_match": true
   },
   "mission": {
     "mission_sha256": "0a36c59d4baf5d547f5217dc9c6db2a58ad9f8f3ea65d88f9b16a0dbe1604f8f",
