@@ -1,0 +1,90 @@
+{
+  "schema": "CUSTOSZV9_DOCLING_30MB_MISSION/1.0",
+  "mission_id": "CUSTOSZV9_DOCLING_INTELIGENCIA_DOCUMENTAL_30MB_BIVLM_NQ_V1",
+  "created_at_utc": "2026-10-21T00:00:00Z",
+  "project": "Cajita de Luna / 5. Inteligencia documental / Docling",
+  "repository": "Plomillo/luna-linux-bridge",
+  "branch": "recovery/lunita-custoszv9-operational-20261020",
+  "target": {
+    "model_id": "ibm-granite/granite-docling-258M",
+    "architecture": "Idefics3ForConditionalGeneration",
+    "hard_cap_bytes": 30000000,
+    "comparison": "Measured bytes of complete isolated Docling candidate directory, including quantized weights, local config/tokenizer/processor assets, manifest and runtime shim",
+    "fail_closed": true,
+    "no_padding": true,
+    "output": "Versioned candidate under CUSTOSZ_CONTINUITY_V1/state/cajita_candidates",
+    "source_weights_read_only": true
+  },
+  "source": {
+    "pinned_huggingface_revision": "982fe3b40f2fa73c365bdb1bcacf6c81b7184bfe",
+    "local_files": [
+      {
+        "id": "granite_docling_q4_gguf",
+        "path": "Docling/granite-docling-258M-Q4_K_M.gguf",
+        "bytes": 138559520,
+        "sha256": "4ba41a480d2b6594613a23819df8fcc382d9dab9691e28bf327b3ac799fe0a82"
+      },
+      {
+        "id": "granite_docling_mmproj_f16",
+        "path": "Docling/mmproj-granite-docling-258M-f16.gguf",
+        "bytes": 190031712,
+        "sha256": "4b7b2c4ed3162bd9cb323668c188e2324838b8f8ca4f3f9767f16c4c600d43ad"
+      },
+      {
+        "id": "docling_slim_wheel",
+        "path": "Docling/docling_slim-2.124.0-py3-none-any.whl",
+        "bytes": 780430,
+        "sha256": "2c7c667394d3eae9080bc15143ed6f1d39a4838090d9e3f29be212606e6676bd"
+      },
+      {
+        "id": "calibre_binary_reference",
+        "path": "Calibre/calibre-9.14.0-x86_64.txz",
+        "bytes": 192898432,
+        "sha256": "7f53a0863ed6d32407bc72053b966e39d5b64813f2592bd9c741504c01c0e7f3"
+      },
+      {
+        "id": "calibre_source_reference",
+        "path": "Calibre/calibre-9.14.0.tar.xz",
+        "bytes": 48867616,
+        "sha256": "d1bc24024b0942429c627e9c5d0b25d51df9c1af1e1d8dca3e572f03b194c561"
+      }
+    ],
+    "source_mutation": false
+  },
+  "method": {
+    "text": "CPU adaptation of randomized-SVD-initialized, row-scaled binary low-rank compression inspired by NanoQuant",
+    "vision_and_connector": "Row-scaled binary sign quantization with sparse FP16 residual outliers, inspired by Bi-VLM",
+    "note": "These are explicitly adapted methods, not the unmodified upstream CUDA/GPU implementations and not a claim of equivalent model quality.",
+    "seed": 20261021
+  },
+  "runtime": {
+    "target": "CPU",
+    "python": "3.13.5",
+    "torch": "2.11.0+cpu",
+    "transformers": "4.57.6",
+    "memory_max_bytes": 1073741824,
+    "memory_high_bytes": 805306368,
+    "cpu_quota_percent": 50,
+    "tasks_max": 32,
+    "concurrency": 1
+  },
+  "acceptance_gates": [
+    "CUSTOSZ V9 artifact, mission and authorization pins verified",
+    "all five existing local resource files match pinned size and SHA-256",
+    "official model repository and revision downloaded without mutating existing model artifacts",
+    "candidate file manifest and tensor shapes reconcile to the pinned architecture",
+    "measured entire candidate directory is <= 30000000 bytes",
+    "candidate loads offline from its own local directory with no missing/random model parameters",
+    "real CPU startup smoke performs image preprocessing and generates nonempty output",
+    "source local artifacts stay unchanged",
+    "launch, checkpoint, event chain and GitHub branch files are synchronized and hash-reconciled",
+    "model quality equivalence and canonical certification remain NOT_GRANTED until separately evaluated"
+  ],
+  "preservation": {
+    "calibre_assets": "Preserve both Calibre packages; do not delete or misrepresent them as included in the Docling model bundle.",
+    "docling_slim": "Preserve wheel unchanged; keep registered dependency status explicit.",
+    "original_gguf_and_mmproj": "Read-only, no replacement or overwrite.",
+    "canonical_promotion": "NOT_AUTHORIZED",
+    "automatic_certification_propagation": false
+  }
+}
