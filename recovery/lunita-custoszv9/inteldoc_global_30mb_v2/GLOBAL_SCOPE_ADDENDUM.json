@@ -1,0 +1,39 @@
+{
+  "schema": "CUSTOSZV9_GITHUB_SCOPE_ADDENDUM/1.0",
+  "addendum_id": "GITHUB_INTELDOC_GLOBAL_30MB_SCOPE_20261021",
+  "authorized_at_utc": "2026-10-21T16:40:00Z",
+  "authorization_basis": "Explicit user instruction in this conversation: synchronize the global Intelligence Documental 30,000,000-byte mission, worker and CUSTOSZ V9 dispatcher to the already assigned recovery branch; perform only exact-path additive writes and readback.",
+  "repository": "Plomillo/luna-linux-bridge",
+  "branch": "recovery/lunita-custoszv9-operational-20261020",
+  "mission_id": "CUSTOSZV9_INTELDOC_GLOBAL_30MB_V2",
+  "mission_sha256": "8fc05771b2c33980278adc830a5b0ddd7fb72767dc215f9c75cd4007b4ac5222",
+  "worker_sha256": "ec12fcac87564c531bf6d0d0004b306b9bafc6ba1fa8ce64d3769f926caf82e8",
+  "test_sha256": "827ae3966a394dbe4ef559a295ff1913da5d058a192dbc64fd9fe33324d81b4a",
+  "allowed_operations": [
+    "READ_ASSIGNED_BRANCH",
+    "CREATE_EXACT_ALLOWLISTED_FILES_ON_ASSIGNED_BRANCH",
+    "READBACK_VERIFY_EXACT_CONTENT"
+  ],
+  "allowed_paths": [
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_v2/INTELDOC_GLOBAL_30MB_MISSION.json",
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_v2/inteldoc_global_30mb_worker_v1.py",
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_v2/custoszv9_inteldoc_global_30mb_dispatch_v1.py",
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_v2/test_inteldoc_global_30mb_contract.py",
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_v2/GLOBAL_SCOPE_ADDENDUM.json",
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_v2/INTELDOC_GLOBAL_30MB_LAUNCH_RECEIPT.json",
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_v2/INTELDOC_GLOBAL_30MB_RESULT.json"
+  ],
+  "forbidden_operations": [
+    "write_to_main_or_other_branch",
+    "merge",
+    "force_push",
+    "delete_or_overwrite_unreviewed_artifacts",
+    "workflow_dispatch",
+    "read_or_write_secrets",
+    "write_outside_exact_allowlist",
+    "canonical_promotion",
+    "certification_propagation"
+  ],
+  "scope_expiry": "THIS_EXACT_MISSION_PATH_ALLOWLIST_ONLY",
+  "signature": "NOT_PRESENT"
+}
