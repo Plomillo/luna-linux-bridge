@@ -28,7 +28,7 @@
     "status": "MATERIAL_REGISTERED_G23_PENDING"
   },
   "next_worker": "implementation/super1200/runtime/apply_reviewed_material_d07_d22.py",
-  "notes": "Global seal covers capabilities 101-1200. Capabilities 1-100 stay withheld. Synthetic materializer stays disabled. Main was not promoted.",
+  "notes": "Global seal covers capabilities 93-1200. D04:93-100 was rebound to the current source. Capabilities 1-92 stay withheld. Synthetic materializer stays disabled.",
   "operator_action": {
     "action": "REGISTER_REVIEWED_MATERIAL_D07_THROUGH_D22",
     "actor": "operator-via-grok",
@@ -37,7 +37,7 @@
   },
   "reconciled_at_utc": "2026-10-21T14:20:00+00:00",
   "schema": "SUPER1200_CONTINUITY_STATE/1.0",
-  "status": "GLOBAL_CERTIFIED_SCOPE_101_1200",
+  "status": "GLOBAL_CERTIFIED_SCOPE_93_1200",
   "synthetic_materializer": "DISABLED",
   "transition_id": "D07-239-242-TO-D22-1197-1200-20261021",
   "scoped_certifications": {
@@ -2006,6 +2006,6 @@
   "global_certificate": "continuity/certification/SUPER1200_GLOBAL.json",
   "global_withheld_range": [
     1,
-    100
+    92
   ]
 }
