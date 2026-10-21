@@ -3,7 +3,10 @@ from pathlib import Path
 import fitz
 import pytest
 
-from louksna_docworkbench.engine import normalize_extracted_text, parse_page_order, reorder_pdf, inspect_pdf
+from louksna_docworkbench.engine import (
+    _protect_glossary, inspect_pdf, normalize_extracted_text,
+    parse_page_order, reflow_pdf, reorder_pdf,
+)
 
 
 def make_pdf(path: Path, pages: list[str]) -> None:
@@ -47,3 +50,33 @@ def test_reorder_creates_distinct_output(tmp_path):
     with fitz.open(output) as doc:
         assert "MARKER_SECOND" in doc[0].get_text()
         assert "MARKER_FIRST" in doc[1].get_text()
+
+def test_page_order_rejects_blank_items():
+    with pytest.raises(ValueError):
+        parse_page_order("1,,2", 2)
+    with pytest.raises(ValueError):
+        parse_page_order("", 2)
+
+
+def test_glossary_protection_tracks_each_occurrence():
+    protected, tokens, counts = _protect_glossary(
+        "El apego y el apego seguro", {"apego": "attachment"}
+    )
+    assert len(tokens) == 2
+    assert counts["apego"] == 2
+    assert "attachment" not in protected
+    assert all(token in protected for token in tokens)
+
+
+def test_reflow_is_explicit_and_writes_audit(tmp_path):
+    source = tmp_path / "source.pdf"
+    output = tmp_path / "reading-copy.pdf"
+    make_pdf(source, ["Este es un texto suficientemente largo para crear una copia de lectura."])
+    with pytest.raises(ValueError):
+        reflow_pdf(source, output, confirm_text_only=False)
+    result = reflow_pdf(source, output, confirm_text_only=True)
+    assert result["operation"] == "TEXT_ONLY_REFLOW"
+    assert result["human_visual_review_required"] is True
+    assert output.is_file()
+    assert output.with_suffix(".pdf.audit.json").is_file()
+
