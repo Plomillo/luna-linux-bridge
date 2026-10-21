@@ -1,4 +1,4 @@
-[Reading 137 lines from start (total: 137 lines, 0 remaining)]
+[Reading 160 lines from start (total: 160 lines, 0 remaining)]
 
 #!/usr/bin/env python3
 """Regression tests for bounded, fail-closed Cajita Qwen3 conversion progression."""
@@ -128,6 +128,29 @@ class CajitaQuantizationFlowTests(unittest.TestCase):
             saved = json.loads((state / "cajita_priority_lane.json").read_text())
             self.assertEqual(saved["stage"], "BLOCKED_CONVERSION_RESOURCE")
             self.assertEqual(result["status"], "BLOCKED_CONVERSION_RESOURCE")
+
+    def test_resource_recovery_receipt_wrong_mission_is_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            operator, root, state, mission_sha = self._layout(tmp)
+            log = state / "convert.log"
+            log.write_text("token_embd.weight\\n", encoding="utf-8")
+            lane = self._lane(state, mission_sha, log)
+            lane.update({"stage":"CONVERT_RETRY","conversion_attempts":1,
+                         "conversion_resource_failure":{"reason":"oom"}})
+            receipt=state / "resource-recovery.json"
+            receipt.write_text(json.dumps({"schema":"CUSTOSZ_CAJITA_RESOURCE_RECOVERY/1.0",
+                "status":"RESOURCE_RECOVERY_VERIFIED","mission_sha256":"wrong-mission",
+                "swap_active":True,"swap_bytes":4*1024**3,"memory_high_bytes":2560*1024**2,
+                "memory_max_bytes":3*1024**3,"source_model_weights_modified":False,
+                "no_competing_conversion":True}), encoding="utf-8")
+            import hashlib
+            lane["resource_recovery_evidence"]={"receipt_path":str(receipt),"receipt_sha256":hashlib.sha256(receipt.read_bytes()).hexdigest()}
+            mod._atomic(state / "cajita_priority_lane.json", lane)
+            result = mod.tick_cajita_priority_lane(state, root / "Cajita", mission_sha)
+            saved = json.loads((state / "cajita_priority_lane.json").read_text())
+            self.assertEqual(saved["stage"], "BLOCKED_CONVERSION_RESOURCE")
+            self.assertEqual(result["status"], "BLOCKED_CONVERSION_RESOURCE")
+            self.assertIn("INVALID", saved["last_error"]["status"])
 
     def test_numerical_libraries_are_thread_bounded(self):
         env = mod._bounded_compute_env({"OMP_NUM_THREADS": "64", "OPENBLAS_NUM_THREADS": "32"})
