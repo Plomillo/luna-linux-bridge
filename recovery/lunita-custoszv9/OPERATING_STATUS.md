@@ -55,3 +55,8 @@ Finish R 4.6.1 build and test; install missing Jamovi/JASP payloads only in cand
 - Runtime governor now parks any failed dry-run at `BLOCKED_CONVERSION_RESOURCE`, records the bound log/receipt, and returns without launching another tensor-materializing probe. It only resumes when the separate resource recovery receipt matches mission SHA, active swap path/capacity, memory high/max limits, unchanged source-weight declaration, and no competing conversion.
 - Focused regression suite: 14/14 PASS. Runtime SHA-256 `77b9719bde809ba777b921eeccf9f823a9d4a5a60f2714c8ead4a4dc5b66e645`; test SHA-256 `ee769d03074fe73b804547913bf597f5c143af2f0a2b13c3f6ba7c888cbc1337`.
 - Candidate `QWEN3_ANALISIS_AVANZADO_R1_20261021T010653Z` is now blocked pending verified resource recovery. No valid BF16 output or Q4_K_M quantization was produced by these attempts; certification remains `NOT_GRANTED`. This status does not claim quantization has started.
+
+
+## Quantization lane update — 2026-10-21 01:24 UTC
+
+The mission-bound Qwen3 candidate `QWEN3_ANALISIS_AVANZADO_R1_20261021T011453Z` passed tensor enumeration (`--dry-run`, return code 0; this did not write GGUF). CUSTOSZ V9 then started the real pinned BF16 conversion at `2026-10-21T01:22:57Z`, attempt 1, receipt `CAJITA_QWEN3_CONVERT_20261021T012257863389Z.json`. At 01:24:21 UTC it remained `CONVERSION_RUNNING`. The activation-guard runtime and 16-test regression suite have been synchronized in this branch (runtime commit `c215188d3b7b817ca9567dd523da8b4d38bf4826`; tests commit `27f76fa76e85864ac6a8d6efa3c870a515a091bb`). Q4_K_M quantization is not yet confirmed active; certification remains `NOT_GRANTED`.
