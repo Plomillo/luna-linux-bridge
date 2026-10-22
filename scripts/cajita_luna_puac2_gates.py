@@ -12,6 +12,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -721,6 +722,8 @@ def persist_bundle(root: Path, g23_path: Path, g24_path: Path, run_id: str,
         raise ValueError("CANDIDATE_COMMIT_INVALID")
     root = root.resolve(strict=True)
     inventory_before = ctl.scan_tree(root)
+    if inventory_before["total_bytes"] > ctl.CAP_BYTES:
+        raise ValueError("PERSISTENCE_BLOCKED_TREE_EXCEEDS_CAP")
     plan_path = root / ctl.PLAN_REL
     if not plan_path.is_file() or plan_path.is_symlink():
         raise ValueError("PERSISTENCE_BLOCKED_OPTIMIZATION_PLAN_MISSING")
