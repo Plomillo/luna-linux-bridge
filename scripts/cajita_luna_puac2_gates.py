@@ -157,7 +157,7 @@ def final_evidence(root: Path) -> dict[str, Any]:
             "subject_tree_sha256": None,
             "tree_bytes_at_validation": None,
             "hard_cap_bytes": ctl.CAP_BYTES,
-            "evidence_reserve_bytes": ctl.MIN_EVIDENCE_RESERVE_BYTES,
+            "evidence_reserve_bytes": reserve,
             "projected_tree_bytes_with_reserve": None,
             "gates_checked": [],
             "evidence_hashes": {},
@@ -166,8 +166,22 @@ def final_evidence(root: Path) -> dict[str, Any]:
         }
     inventory = ctl.scan_tree(root)
     total = inventory["total_bytes"]
-    projected = total + ctl.MIN_EVIDENCE_RESERVE_BYTES
-    if total + ctl.MIN_EVIDENCE_RESERVE_BYTES > ctl.CAP_BYTES:
+    reserve = ctl.MIN_EVIDENCE_RESERVE_BYTES
+    plan_path = root / ctl.PLAN_REL
+    if not plan_path.is_file() or plan_path.is_symlink():
+        blockers.append("OPTIMIZATION_PLAN_MISSING")
+    else:
+        try:
+            plan = load_object(plan_path)
+            candidate_reserve = plan.get("final_evidence_reserve_bytes")
+            if isinstance(candidate_reserve, int) and not isinstance(candidate_reserve, bool) and candidate_reserve >= ctl.MIN_EVIDENCE_RESERVE_BYTES:
+                reserve = candidate_reserve
+            else:
+                blockers.append("OPTIMIZATION_PLAN_EVIDENCE_RESERVE_INVALID")
+        except (OSError, ValueError, json.JSONDecodeError):
+            blockers.append("OPTIMIZATION_PLAN_UNREADABLE")
+    projected = total + reserve
+    if projected > ctl.CAP_BYTES:
         blockers.append("FINAL_TREE_PLUS_CERTIFICATE_RESERVE_EXCEEDS_CAP")
     if inventory["symlinks"]:
         blockers.append("SYMLINKS_PRESENT_FAIL_CLOSED")
@@ -181,7 +195,7 @@ def final_evidence(root: Path) -> dict[str, Any]:
             blockers.append("MANDATORY_DOMAIN_MISSING:" + domain)
     # Avoid multi-gigabyte content hashing when the budget already proves that the
     # final candidate cannot pass. This still returns a signed, auditable HOLD.
-    if total + ctl.MIN_EVIDENCE_RESERVE_BYTES > ctl.CAP_BYTES:
+    if projected > ctl.CAP_BYTES:
         for rel, blocker in (
             (ctl.FROZEN_MANIFEST_REL, "FROZEN_V9_OUTPUTS_MANIFEST_MISSING"),
             (ctl.RECONCILIATION_REL, "REGISTRY_RECONCILIATION_MANIFEST_MISSING"),
@@ -699,7 +713,14 @@ def persist_bundle(root: Path, g23_path: Path, g24_path: Path, run_id: str,
         raise ValueError("CANDIDATE_COMMIT_INVALID")
     root = root.resolve(strict=True)
     inventory_before = ctl.scan_tree(root)
-    if inventory_before["total_bytes"] + ctl.MIN_EVIDENCE_RESERVE_BYTES > ctl.CAP_BYTES:
+    plan_path = root / ctl.PLAN_REL
+    if not plan_path.is_file() or plan_path.is_symlink():
+        raise ValueError("PERSISTENCE_BLOCKED_OPTIMIZATION_PLAN_MISSING")
+    plan = load_object(plan_path)
+    reserve = plan.get("final_evidence_reserve_bytes")
+    if isinstance(reserve, bool) or not isinstance(reserve, int) or reserve < ctl.MIN_EVIDENCE_RESERVE_BYTES:
+        raise ValueError("PERSISTENCE_BLOCKED_EVIDENCE_RESERVE_INVALID")
+    if inventory_before["total_bytes"] + reserve > ctl.CAP_BYTES:
         raise ValueError("PERSISTENCE_BLOCKED_TREE_PLUS_EVIDENCE_RESERVE_EXCEEDS_CAP")
     if inventory_before["symlinks"] or inventory_before["hardlink_groups"] or inventory_before["non_regular"] or inventory_before["scan_errors"]:
         raise ValueError("PERSISTENCE_BLOCKED_UNSAFE_TREE_ENTRIES")
@@ -762,7 +783,7 @@ def persist_bundle(root: Path, g23_path: Path, g24_path: Path, run_id: str,
     ]
     sidecar_bytes = sum(len(f"{digest_bytes(raw)}  {path.name}\n".encode("utf-8")) for path, raw in serialized)
     planned_receipt_bytes = sum(len(raw) for _, raw in serialized) + sidecar_bytes
-    if planned_receipt_bytes + 64 * 1024 > ctl.MIN_EVIDENCE_RESERVE_BYTES:
+    if planned_receipt_bytes + 64 * 1024 > reserve:
         raise ValueError("PERSISTENCE_BUNDLE_EXCEEDS_RESERVED_METADATA_BUDGET")
     # Append-only commits: every write is exclusive and fsynced. If any step fails,
     # the partial receipts remain as evidence and release stays blocked; nothing is overwritten.
