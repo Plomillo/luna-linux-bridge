@@ -353,6 +353,13 @@ class AcademicReadingDoc(SimpleDocTemplate):
         self._outline_counter = 0
         self._has_part = False
 
+    def beforeDocument(self) -> None:
+        # TableOfContents.multiBuild renders multiple passes. Reset outline state on
+        # every pass so the first chapter cannot inherit a stale nested outline level.
+        self._outline_counter = 0
+        self._has_part = False
+        super().beforeDocument()
+
     def afterFlowable(self, flowable: Any) -> None:
         if not isinstance(flowable, Paragraph):
             return
