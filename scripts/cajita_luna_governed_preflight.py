@@ -1031,121 +1031,36 @@ def validate_execution_manifest(root: Path) -> list[str]:
     return sorted(set(errors))
 
 
-def verify_puac2(root: Path, repo_root: Path, manifest_path: Path) -> dict[str, Any]:
-    blockers: list[str] = []
+def verify_puac2(root: Path, repo_root: Path, manifest_path: Path,
+                  candidate_commit: str | None = None) -> dict[str, Any]:
+    """Delegate Cajita certification to its own G23/G24 trust chain, not bridge mTLS."""
+    gate_script = Path(__file__).with_name("cajita_luna_puac2_gates.py")
+    if not gate_script.is_file():
+        return {"decision": "HOLD", "certification_status": "NOT_GRANTED",
+                "blockers": ["CAJITA_PUAC2_GATE_SCRIPT_MISSING"]}
+    command = [
+        sys.executable, str(gate_script), "verify-release",
+        "--root", str(root), "--manifest", str(manifest_path),
+    ]
+    if candidate_commit:
+        command.extend(["--candidate-commit", candidate_commit])
+    completed = subprocess.run(
+        command, cwd=repo_root, env=os.environ.copy(), capture_output=True,
+        text=True, timeout=180, check=False,
+    )
     try:
-        inventory = scan_tree(root)
-    except (OSError, ValueError) as exc:
-        return {"decision": "HOLD", "certification_status": "NOT_GRANTED",
-                "blockers": [f"INVENTORY_FAILED:{type(exc).__name__}"]}
-    if inventory["total_bytes"] > CAP_BYTES:
-        blockers.append("FINAL_TREE_EXCEEDS_CAP")
-    if inventory["symlinks"]:
-        blockers.append("SYMLINKS_PRESENT_FAIL_CLOSED")
-    if inventory["hardlink_groups"]:
-        blockers.append("HARDLINKS_PRESENT_FAIL_CLOSED")
-    if inventory["non_regular"] or inventory["scan_errors"]:
-        blockers.append("TREE_CONTAINS_UNSAFE_OR_UNREADABLE_ENTRIES")
-    for domain in EXPECTED_DOMAINS:
-        if not (root / domain).is_dir() or (root / domain).is_symlink():
-            blockers.append(f"MANDATORY_DOMAIN_MISSING:{domain}")
-    edge = edge_evidence(root)
-    if edge.get("status") != "PASS":
-        blockers.append("EDGE_ARCHIVE_INTEGRITY_BLOCKED")
-    registry = registry_comparison(root)
-    blockers.extend(validate_reconciliation(root, registry))
-    blockers.extend(validate_frozen_manifest(root))
-    blockers.extend(validate_functional_manifest(root))
-    blockers.extend(validate_gate_matrix(root))
-    blockers.extend(validate_execution_manifest(root))
-    if blockers:
-        return {
-            "schema": "CAJITA_PUAC2_RELEASE_VERIFICATION/1.0",
-            "decision": "HOLD",
-            "certification_status": "NOT_GRANTED",
-            "current_tree_bytes": inventory["total_bytes"],
-            "hard_cap_bytes": CAP_BYTES,
-            "edge_archive_bytes": edge.get("archive_bytes"),
-            "blockers": sorted(set(blockers)),
-            "measured_at_utc": utc_now(),
-        }
-    try:
-        subject_sha, files_hashed, payload_bytes = candidate_tree_digest(root)
-        manifest = read_object(manifest_path)
-    except (OSError, ValueError, json.JSONDecodeError) as exc:
-        return {"decision": "HOLD", "certification_status": "NOT_GRANTED",
-                "blockers": [f"SUBJECT_OR_MANIFEST_INVALID:{type(exc).__name__}"]}
-    evidence = manifest.get("evidence")
-    if not isinstance(evidence, dict):
-        blockers.append("PUAC2_EVIDENCE_OBJECT_MISSING")
-    elif evidence.get("output_sha256") != subject_sha or evidence.get("subject_tree_sha256") != subject_sha:
-        blockers.append("PUAC2_SUBJECT_DIGEST_DOES_NOT_MATCH_LIVE_TREE")
-    g23 = manifest.get("g23")
-    g24 = manifest.get("g24")
-    if not isinstance(g23, dict) or not isinstance(g24, dict):
-        blockers.append("G23_OR_G24_RECEIPT_MISSING")
-    else:
-        if g23.get("validator_id") in (None, "", manifest.get("submitter_id")):
-            blockers.append("G23_IDENTITY_NOT_INDEPENDENT")
-        if g24.get("certifier_id") in (None, "", manifest.get("submitter_id"), g23.get("validator_id")):
-            blockers.append("G24_IDENTITY_NOT_DISTINCT")
-        if g23.get("candidate_commit") != manifest.get("candidate_commit") or g24.get("candidate_commit") != manifest.get("candidate_commit"):
-            blockers.append("G23_G24_SUBJECT_COMMIT_MISMATCH")
-        if g23.get("status") != "PASS" or g24.get("status") != "CERTIFIED":
-            blockers.append("G23_OR_G24_STATUS_NOT_ACCEPTABLE")
-        if g24.get("g23_attestation_sha256") != g23.get("attestation_sha256"):
-            blockers.append("G24_G23_CHAIN_MISMATCH")
-    if blockers:
-        return {
-            "schema": "CAJITA_PUAC2_RELEASE_VERIFICATION/1.0",
-            "decision": "HOLD",
-            "certification_status": "NOT_GRANTED",
-            "candidate_tree_sha256": subject_sha,
-            "hashed_file_count": files_hashed,
-            "hashed_payload_bytes": payload_bytes,
-            "blockers": sorted(set(blockers)),
-            "measured_at_utc": utc_now(),
-        }
-    verifier = repo_root / "scripts" / "puac2_mtls_gate.py"
-    if not verifier.is_file():
-        return {"decision": "HOLD", "certification_status": "NOT_GRANTED",
-                "blockers": ["PUAC2_VERIFIER_NOT_FOUND_IN_REPOSITORY"]}
-    env = os.environ.copy()
-    command = [sys.executable, str(verifier), "--manifest", str(manifest_path)]
-    result = subprocess.run(command, cwd=repo_root, env=env, capture_output=True, text=True, timeout=120, check=False)
-    chain_output = (result.stdout + "\n" + result.stderr).strip()
-    if result.returncode != 0 or "PUAC2_CHAIN_VERIFIED" not in chain_output:
-        return {
-            "schema": "CAJITA_PUAC2_RELEASE_VERIFICATION/1.0",
-            "decision": "HOLD",
-            "certification_status": "NOT_GRANTED",
-            "candidate_tree_sha256": subject_sha,
-            "puac2_verifier_exit_code": result.returncode,
-            "puac2_output": chain_output[-4000:],
-            "blockers": ["PUAC2_G23_G24_CRYPTOGRAPHIC_CHAIN_NOT_VERIFIED"],
-            "measured_at_utc": utc_now(),
-        }
-    final_scan = scan_tree(root)
-    if final_scan["total_bytes"] > CAP_BYTES:
-        return {"decision": "HOLD", "certification_status": "NOT_GRANTED",
-                "blockers": ["TREE_EXCEEDED_CAP_AFTER_VERIFICATION"], "final_bytes": final_scan["total_bytes"]}
-    return {
-        "schema": "CAJITA_PUAC2_RELEASE_VERIFICATION/1.0",
-        "decision": "PASS",
-        "certification_status": "CERTIFIED_FOR_EXACT_CAJA_SCOPE",
-        "scope": "CAJITA_DE_LUNA_EXACT_TREE_NOT_LOUKSNA_CANONICAL_PROMOTION",
-        "candidate_tree_sha256": subject_sha,
-        "final_tree_bytes": final_scan["total_bytes"],
-        "hard_cap_bytes": CAP_BYTES,
-        "hashed_file_count": files_hashed,
-        "hashed_payload_bytes": payload_bytes,
-        "puac2_chain": "PUAC2_CHAIN_VERIFIED",
-        "g23_independent_validation": "PASS_VERIFIED",
-        "g24_certification": "PASS_VERIFIED",
-        "canonical_authority_transfer": False,
-        "certification_propagation": False,
-        "measured_at_utc": utc_now(),
-    }
+        report = json.loads(completed.stdout)
+        if isinstance(report, dict):
+            report.setdefault("delegate_exit_code", completed.returncode)
+            return report
+    except (ValueError, json.JSONDecodeError):
+        pass
+    return {"decision": "HOLD", "certification_status": "NOT_GRANTED",
+            "blockers": ["CAJITA_PUAC2_GATE_OUTPUT_INVALID"],
+            "exit_code": completed.returncode,
+            "stdout_tail": completed.stdout[-2000:],
+            "stderr_tail": completed.stderr[-2000:]}
+
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -1155,7 +1070,8 @@ def main(argv: list[str] | None = None) -> int:
     pre.add_argument("--no-persist", action="store_true", help="Print report without writing to Cajita.")
     release = sub.add_parser("verify-release", help="Independently verify final functional gates and signed PUAC2 G23/G24 receipts.")
     release.add_argument("--root", type=Path, required=True)
-    release.add_argument("--repo-root", type=Path, required=True)
+    release.add_argument("--repo-root", type=Path, default=None)
+    release.add_argument("--candidate-commit", default=None)
     release.add_argument("--manifest", type=Path, default=None, help="PUAC2 signed manifest; defaults to the in-Cajita evidence path.")
     args = parser.parse_args(argv)
     try:
@@ -1175,9 +1091,9 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps(report, sort_keys=True, indent=2, ensure_ascii=False))
             return 0 if report["release_status"] == "READY_FOR_CONTROLLED_OPTIMIZATION" else 2
         if args.command == "verify-release":
-            repo_root = args.repo_root.resolve(strict=True)
+            repo_root = args.repo_root.resolve(strict=True) if args.repo_root else Path(__file__).resolve().parents[1]
             manifest = args.manifest or (root / RELEASE_MANIFEST_REL)
-            report = verify_puac2(root, repo_root, manifest)
+            report = verify_puac2(root, repo_root, manifest, args.candidate_commit)
             print(json.dumps(report, sort_keys=True, indent=2, ensure_ascii=False))
             return 0 if report.get("decision") == "PASS" else 3
     except (OSError, ValueError, json.JSONDecodeError, subprocess.SubprocessError) as exc:
