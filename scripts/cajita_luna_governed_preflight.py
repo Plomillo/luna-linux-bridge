@@ -569,6 +569,7 @@ def validate_domain_routing(root: Path, plan: dict[str, Any],
     reports_by_domain = {row.get("domain_id"): row for row in report_domains if isinstance(row, dict)}
     route_components: dict[str, set[str]] = {domain_id: set() for domain_id in DOMAIN_CAPABILITY_RANGES}
     route_capabilities: dict[str, set[int]] = {domain_id: set() for domain_id in DOMAIN_CAPABILITY_RANGES}
+    route_evidence_by_capability: dict[tuple[str, int], set[str]] = {}
     for component, op in operations_by_component.items():
         routes = op.get("domain_routes")
         if not isinstance(routes, list) or not routes:
@@ -601,8 +602,12 @@ def validate_domain_routing(root: Path, plan: dict[str, Any],
                 errors.append(f"OPTIMIZATION_DOMAIN_CAPABILITY_DUPLICATED:{component}:{domain_id}")
             if not isinstance(route.get("rationale"), str) or len(route["rationale"].strip()) < 12:
                 errors.append(f"OPTIMIZATION_DOMAIN_ROUTE_RATIONALE_MISSING:{component}:{domain_id}")
-            if not is_sha256(route.get("route_evidence_sha256")):
+            route_evidence = route.get("route_evidence_sha256")
+            if not is_sha256(route_evidence):
                 errors.append(f"OPTIMIZATION_DOMAIN_ROUTE_EVIDENCE_HASH_MISSING:{component}:{domain_id}")
+            else:
+                for cap_id in normalized:
+                    route_evidence_by_capability.setdefault((domain_id, cap_id), set()).add(route_evidence)
             route_components[domain_id].add(component)
             route_capabilities[domain_id].update(normalized)
 
@@ -715,6 +720,11 @@ def validate_domain_routing(root: Path, plan: dict[str, Any],
                     errors.append(f"DOMAIN_SOURCE_BLOB_UNAVAILABLE:{domain_id}:{cap_id}:{key}")
             if result_row.get("test_status") != "PASS" or result_row.get("test_return_code") != 0:
                 errors.append(f"DOMAIN_CAPABILITY_TEST_NOT_PASS:{domain_id}:{cap_id}")
+            route_evidence_values = route_evidence_by_capability.get((domain_id, cap_id), set())
+            if len(route_evidence_values) != 1:
+                errors.append(f"DOMAIN_CAPABILITY_ROUTE_EVIDENCE_CONFLICT_OR_MISSING:{domain_id}:{cap_id}")
+            elif result_row.get("route_evidence_sha256") != next(iter(route_evidence_values)):
+                errors.append(f"DOMAIN_CAPABILITY_ROUTE_EVIDENCE_MISMATCH:{domain_id}:{cap_id}")
             if not is_sha256(result_row.get("test_output_sha256")):
                 errors.append(f"DOMAIN_CAPABILITY_TEST_OUTPUT_HASH_MISSING:{domain_id}:{cap_id}")
             test_output_rel = result_row.get("test_output_path")
