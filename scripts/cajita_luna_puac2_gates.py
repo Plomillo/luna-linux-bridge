@@ -716,6 +716,11 @@ def persist_bundle(root: Path, g23_path: Path, g24_path: Path, run_id: str,
     for target in (g23_dest, g24_dest, manifest_dest, report_dest):
         if target.exists() or target.is_symlink():
             raise ValueError("PERSISTENCE_APPEND_ONLY_TARGET_EXISTS:" + target.name)
+    generated_paths = sorted(
+        [path.relative_to(root).as_posix() for path in (g23_dest, g24_dest, manifest_dest, report_dest)]
+        + [path.with_suffix(path.suffix + ".sha256").relative_to(root).as_posix()
+           for path in (g23_dest, g24_dest, manifest_dest, report_dest)]
+    )
     # The 1 MiB reserve must cover the entire set of signed receipts, manifests,
     # sidecars and decision reports. Precompute exact serialized sizes before writes.
     manifest = {
@@ -732,6 +737,8 @@ def persist_bundle(root: Path, g23_path: Path, g24_path: Path, run_id: str,
         "g23": g23_envelope,
         "g24": g24_envelope,
         "run_id": stamp,
+        "generated_evidence_paths": generated_paths,
+        "subject_excluded_paths": generated_paths,
         "persisted_at_utc": utc_now(),
         "canonical_authority_transfer": False,
         "certification_propagation": False,
