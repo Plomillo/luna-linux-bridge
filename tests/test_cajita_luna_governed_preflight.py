@@ -101,13 +101,23 @@ class GovernedPreflightTests(unittest.TestCase):
             (root / "model.bin").write_bytes(b"model")
             first, count, size = ctl.candidate_tree_digest(root)
             (root / ".cajita-optimization-candidates" / "evidence" / "G23.json").write_text("one", encoding="utf-8")
-            second, _, _ = ctl.candidate_tree_digest(root)
-            self.assertEqual(first, second)
+            second, count2, size2 = ctl.candidate_tree_digest(root)
+            self.assertNotEqual(first, second)
             self.assertEqual(count, 1)
             self.assertEqual(size, 5)
+            self.assertEqual(count2, 2)
+            self.assertEqual(size2, 8)
+            third, count3, size3 = ctl.candidate_tree_digest(
+                root, {".cajita-optimization-candidates/evidence/G23.json"}
+            )
+            self.assertEqual(first, third)
+            self.assertEqual(count3, 1)
+            self.assertEqual(size3, 5)
             (root / "model.bin").write_bytes(b"other")
-            third, _, _ = ctl.candidate_tree_digest(root)
-            self.assertNotEqual(first, third)
+            fourth, _, _ = ctl.candidate_tree_digest(
+                root, {".cajita-optimization-candidates/evidence/G23.json"}
+            )
+            self.assertNotEqual(first, fourth)
 
     def test_persisted_report_and_hash_sidecar_are_counted(self):
         with tempfile.TemporaryDirectory() as temp:
