@@ -26,7 +26,7 @@
 Medición de sólo lectura sobre el árbol existente:
 `/home/diegoignacionorambuenamiranda/PROYECTOS/1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/2. Cajita de Luna`
 
-**Instante de medición:** `2026-10-22T05:22:19Z`.
+**Instante de medición:** `2026-10-22T06:25:23Z`.
 
 | Ruta raíz | Bytes medidos |
 |---|---:|
@@ -47,7 +47,7 @@ El valor anterior es una fotografía de medición, no un resultado de optimizaci
 
 **Edge:** el archivo `2. Orquestación/Orquestador/EdgeBackup_20260907_170357_d18dac86743a/EdgeBackup_20260907_170357_d18dac86743a.7z` mide `951395079` bytes. Su SHA-256 observado el mismo día es `9b6be254db05b410dbb8966f861c3b64ff7d74a56a267f6218ff3c108c9d4e6b`. El archivo por sí solo supera el techo completo en `472395079` bytes, sin contar los sidecars. Esta es una incompatibilidad de tamaño demostrada con la representación actual, no una razón para eliminar el perfil. El plan sólo puede avanzar si CUSTOSZ presenta una estrategia cuantificada que conserve los datos operativos obligatorios y demuestre una salida final válida. Si no existe una estrategia probada, el estado será `BLOCKED`.
 
-El sistema de archivos tenía `63679909888` bytes disponibles en la medición. Ese espacio libre sirve sólo para evaluar picos transitorios; no eleva ni reemplaza el techo de distribución.
+El sistema de archivos tenía `63367270400` bytes disponibles en la medición. Ese espacio libre sirve sólo para evaluar picos transitorios; no eleva ni reemplaza el techo de distribución.
 
 ## 2. Inventario legado y reconciliación de V9
 
@@ -289,3 +289,12 @@ La automatización de este contrato se realiza en \`validate_domain_routing()\`,
 ### Estado del contrato
 
 El validador está implementado en la rama de PR como condición obligatoria. Los 22 informes de ejecución real, el routing manifest completo y su evidencia aún deben generarse y cotejarse por el ejecutor autorizado CUSTOSZ V9. Por eso no debe interpretarse como prueba de que los 22 dominios ya ejecutaron con éxito trabajo sobre Cajita.
+
+
+## 9. Última medición física confirmada
+
+La lectura de sólo lectura más reciente quedó registrada como \`docs/cajita-luna/MEASUREMENTS_20261022T062523Z.json\`, medida a \`2026-10-22T06:25:23Z\`. El tamaño total permanece en \`1656649690\` bytes; el uso del disco disponible para temporales cambió respecto de la lectura anterior, así que el nuevo valor registrado es \`63367270400\` bytes libres. Las seis carpetas de dominio y ambos elementos de raíz medidos siguen sumando exactamente el total publicado en el JSON.
+
+La lectura volvió a comprobar el SHA-256 del archivo Edge, que coincide con su sidecar. También volvió a comparar el inventario legado: 121 registros, \`128230075138\` bytes originales declarados, 47 rutas ausentes y 6 discrepancias de tamaño. No aparecieron los manifiestos de congelación, reconciliación, plan, prueba de los dominios ni validación funcional; G23/G24 siguen sin emitirse para Cajita.
+
+**Decisión por evidencia:** no se ha hecho ninguna transformación física durante esta actualización de plan/controladores. Cajita continúa bloqueada por el exceso exacto de \`1177649690\` bytes, por la incompatibilidad del archivo Edge con el techo global en su representación actual y por los manifiestos/evidencias operativas ausentes.
