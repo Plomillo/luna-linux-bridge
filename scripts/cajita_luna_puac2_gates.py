@@ -345,7 +345,8 @@ def sign_g23(unsigned_path: Path, output_path: Path, private_pem: str, validator
 
 
 def issue_g24(g23_path: Path, output_path: Path, g23_public_pem: str, g24_private_pem: str,
-              certifier_id: str, producer_id: str, candidate_commit: str) -> dict[str, Any]:
+              certifier_id: str, producer_id: str, candidate_commit: str,
+              expected_subject_sha256: str | None = None) -> dict[str, Any]:
     errors: list[str] = []
     try:
         g23_envelope = load_object(g23_path)
@@ -377,6 +378,16 @@ def issue_g24(g23_path: Path, output_path: Path, g23_public_pem: str, g24_privat
             errors.append("G23_REQUIRED_GATES_INCOMPLETE")
         if not ctl.is_sha256(g23_payload.get("subject_tree_sha256")):
             errors.append("G23_SUBJECT_HASH_INVALID")
+        if expected_subject_sha256 and g23_payload.get("subject_tree_sha256") != expected_subject_sha256:
+            errors.append("G23_DISPATCHED_SUBJECT_MISMATCH")
+        evidence_hashes = g23_payload.get("evidence_hashes")
+        required_hashes = {
+            "registry_sha256", "reconciliation_sha256", "frozen_manifest_sha256",
+            "optimization_plan_sha256", "execution_manifest_sha256",
+            "functional_manifest_sha256", "gate_matrix_sha256", "independent_tests_sha256",
+        }
+        if not isinstance(evidence_hashes, dict) or set(evidence_hashes) != required_hashes or any(not ctl.is_sha256(v) for v in evidence_hashes.values()):
+            errors.append("G23_EVIDENCE_HASH_SET_INVALID")
         if not isinstance(g23_payload.get("tree_bytes_at_validation"), int) or g23_payload.get("projected_tree_bytes_with_reserve", ctl.CAP_BYTES + 1) > ctl.CAP_BYTES:
             errors.append("G23_SIZE_OR_RESERVE_INVALID")
         if g23_payload.get("blockers"):
@@ -441,6 +452,19 @@ def verify_release(root: Path, manifest_path: Path, g23_public_pem: str, g24_pub
         errors.append("FINAL_TREE_EXCEEDS_CAP")
     if inventory["symlinks"] or inventory["hardlink_groups"] or inventory["non_regular"] or inventory["scan_errors"]:
         errors.append("FINAL_TREE_HAS_UNSAFE_ENTRIES")
+    # A known cap violation is already decisive. Avoid rereading multi-GB model
+    # files and the Edge archive merely to rediscover that the release is on HOLD.
+    if inventory["total_bytes"] > ctl.CAP_BYTES:
+        return {
+            "schema": "CAJITA_PUAC2_RELEASE_VERIFICATION/1.0",
+            "decision": "HOLD",
+            "certification_status": "NOT_GRANTED",
+            "current_tree_bytes": inventory["total_bytes"],
+            "hard_cap_bytes": ctl.CAP_BYTES,
+            "overage_bytes": inventory["total_bytes"] - ctl.CAP_BYTES,
+            "blockers": sorted(set(errors + ["FINAL_TREE_EXCEEDS_CAP"])),
+            "measured_at_utc": utc_now(),
+        }
     for domain in ctl.EXPECTED_DOMAINS:
         if not (root / domain).is_dir() or (root / domain).is_symlink():
             errors.append("MANDATORY_DOMAIN_MISSING:" + domain)
@@ -502,6 +526,22 @@ def verify_release(root: Path, manifest_path: Path, g23_public_pem: str, g24_pub
             errors.append("G23_REQUIRED_GATE_SET_MISMATCH")
         if g23_payload.get("scope") != "CAJITA_DE_LUNA_EXACT_TREE":
             errors.append("G23_SCOPE_MISMATCH")
+        expected_evidence = {
+            "registry_sha256": root / "RUNTIME_CANDIDATE_V1" / "registry.json",
+            "reconciliation_sha256": root / ctl.RECONCILIATION_REL,
+            "frozen_manifest_sha256": root / ctl.FROZEN_MANIFEST_REL,
+            "optimization_plan_sha256": root / ctl.PLAN_REL,
+            "execution_manifest_sha256": root / ".cajita-optimization-candidates" / "OPTIMIZATION_EXECUTION_V9.json",
+            "functional_manifest_sha256": root / ctl.FUNCTIONAL_REL,
+            "gate_matrix_sha256": root / ctl.GATE_MATRIX_REL,
+            "independent_tests_sha256": root / INDEPENDENT_TESTS_REL,
+        }
+        actual_evidence = {
+            key: ctl.sha256_file(path) for key, path in expected_evidence.items()
+            if path.is_file() and not path.is_symlink()
+        }
+        if g23_payload.get("evidence_hashes") != actual_evidence:
+            errors.append("G23_EVIDENCE_HASHES_NO_LONGER_MATCH_TREE")
     if g24_payload is not None:
         if g24_payload.get("status") != "CERTIFIED" or g24_payload.get("certification_granted") is not True:
             errors.append("G24_CERTIFICATION_NOT_GRANTED")
@@ -517,6 +557,8 @@ def verify_release(root: Path, manifest_path: Path, g23_public_pem: str, g24_pub
             errors.append("G24_VALIDATOR_BINDING_MISMATCH")
         if g24_payload.get("certifier_id") in (None, "", (g23_payload or {}).get("validator_id"), (g23_payload or {}).get("producer_id")):
             errors.append("G24_IDENTITY_NOT_DISTINCT")
+        if g23_envelope and g24_envelope and g23_envelope.get("signer_public_key_sha256") == g24_envelope.get("signer_public_key_sha256"):
+            errors.append("G23_G24_SIGNING_KEYS_NOT_DISTINCT")
         if g24_payload.get("canonical_authority_transfer") is not False or g24_payload.get("certification_propagation") is not False:
             errors.append("FORBIDDEN_CERTIFICATION_PROPAGATION")
     final_scan = ctl.scan_tree(root)
