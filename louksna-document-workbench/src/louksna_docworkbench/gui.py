@@ -105,29 +105,57 @@ class WorkbenchGUI(tk.Tk):
         threading.Thread(target=run,daemon=True).start()
 
     def _analyse(self):
+        try:
+            src, directory = self._paths()
+        except Exception as exc:
+            messagebox.showerror("PDF no válido", str(exc))
+            return
         def work():
-            src,d=self._paths(); report=self._unique(d/f"{src.stem}_analisis_orden.json")
-            r=self._cli("analyze-order",str(src),"--audit",str(report))
-            return report,f"Estado: {r['status']}\nRecomendación: {r['recommendation']} · {r['confidence']}\nFolios: {r['printed_folio_detection']['detected_pages']}/{r['page_count']}\n{r['explanation']}"
-        self._launch("análisis de orden",work)
+            report = self._unique(directory / f"{src.stem}_analisis_orden.json")
+            r = self._cli("analyze-order", str(src), "--audit", str(report))
+            return report, (
+                f"Estado: {r['status']}\nRecomendación: {r['recommendation']} · {r['confidence']}\n"
+                f"Folios: {r['printed_folio_detection']['detected_pages']}/{r['page_count']}\n{r['explanation']}"
+            )
+        self._launch("análisis de orden", work)
 
     def _order(self):
+        try:
+            src, directory = self._paths()
+        except Exception as exc:
+            messagebox.showerror("PDF no válido", str(exc))
+            return
         def work():
-            src,d=self._paths(); analysis=self._unique(d/f"{src.stem}_analisis_orden.json")
-            audit=self._unique(d/f"{src.stem}_aplicacion_orden.json"); pdf=self._unique(d/f"{src.stem}_orden_verificado.pdf")
-            a=self._cli("analyze-order",str(src),"--audit",str(analysis))
-            r=self._cli("order-from-folios",str(src),str(pdf),"--analysis",str(analysis),"--audit",str(audit))
-            return pdf,f"Análisis: {a['recommendation']}\nResultado: {r['status']}\nPáginas movidas: {r['page_order_changed']}\nSHA-256: {r['output_sha256']}\n{r['order_evidence']['explanation']}"
-        self._launch("verificación del orden",work)
+            analysis = self._unique(directory / f"{src.stem}_analisis_orden.json")
+            audit = self._unique(directory / f"{src.stem}_aplicacion_orden.json")
+            pdf = self._unique(directory / f"{src.stem}_orden_verificado.pdf")
+            a = self._cli("analyze-order", str(src), "--audit", str(analysis))
+            r = self._cli("order-from-folios", str(src), str(pdf), "--analysis", str(analysis), "--audit", str(audit))
+            return pdf, (
+                f"Análisis: {a['recommendation']}\nResultado: {r['status']}\n"
+                f"Páginas movidas: {r['page_order_changed']}\nSHA-256: {r['output_sha256']}\n"
+                f"{r['order_evidence']['explanation']}"
+            )
+        self._launch("verificación del orden", work)
 
     def _academic(self):
+        try:
+            src, directory = self._paths()
+        except Exception as exc:
+            messagebox.showerror("PDF no válido", str(exc))
+            return
         def work():
-            src,d=self._paths(); analysis=self._unique(d/f"{src.stem}_analisis_orden.json")
-            audit=self._unique(d/f"{src.stem}_edicion_lectura.audit.json"); pdf=self._unique(d/f"{src.stem}_edicion_lectura.pdf")
-            self._cli("analyze-order",str(src),"--audit",str(analysis))
-            r=self._cli("academic-edition",str(src),str(pdf),"--analysis",str(analysis),"--audit",str(audit))
-            return pdf,f"Estado: {r['status']}\nReferencias cruzadas: {r['source_page_markers_verified']}/{r['input_page_count']}\nEntradas de índice: {r['chapter_and_part_navigation_entries']}\nPáginas de lectura: {r['output_page_count']}\nSHA-256: {r['output_sha256']}\nTraducción y terminología clínica: revisión humana pendiente."
-        self._launch("edición académica",work)
+            analysis = self._unique(directory / f"{src.stem}_analisis_orden.json")
+            audit = self._unique(directory / f"{src.stem}_edicion_lectura.audit.json")
+            pdf = self._unique(directory / f"{src.stem}_edicion_lectura.pdf")
+            self._cli("analyze-order", str(src), "--audit", str(analysis))
+            r = self._cli("academic-edition", str(src), str(pdf), "--analysis", str(analysis), "--audit", str(audit))
+            return pdf, (
+                f"Estado: {r['status']}\nReferencias cruzadas: {r['source_page_markers_verified']}/{r['input_page_count']}\n"
+                f"Entradas de índice: {r['chapter_and_part_navigation_entries']}\nPáginas de lectura: {r['output_page_count']}\n"
+                f"SHA-256: {r['output_sha256']}\nTraducción y terminología clínica: revisión humana pendiente."
+            )
+        self._launch("edición académica", work)
 
     def _open(self):
         if not self.last_output or not self.last_output.exists():

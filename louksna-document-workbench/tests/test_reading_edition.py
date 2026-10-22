@@ -43,3 +43,20 @@ def test_academic_edition_has_outline_and_source_markers(tmp_path):
         assert len(doc.get_toc())>=2
         text="\n".join(p.get_text() for p in doc)
     assert "Capítulo 1" in text and "Fuente PDF página 1" in text
+
+
+def test_navigation_headings_exclude_attribution_and_body_text():
+    from louksna_docworkbench.reading_edition import _heading_from_page, _trim_chapter_heading
+
+    assert _heading_from_page(
+        ["Capítulo 6: Adaptado de 'El tratamiento psicoterapéutico de las personalidades de la'"],
+        toc_like=False,
+    ) is None
+    result = _heading_from_page(
+        ["CAPÍTULO 2: La entrevista estructural Mi objetivo principal en este capítulo es ilustrar la"],
+        toc_like=False,
+    )
+    assert result is not None
+    assert result["title"] == "Capítulo 2: La entrevista estructural"
+    assert result["source_line"] == result["title"]
+    assert _trim_chapter_heading("Diagnóstico diferencial en la adolescencia Las consideraciones de") == "Diagnóstico diferencial en la adolescencia"

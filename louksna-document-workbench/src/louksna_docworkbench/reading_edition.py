@@ -63,6 +63,34 @@ def _page_toc_like(lines: list[str]) -> bool:
     return chapter_like >= 2 or leader_like >= 2
 
 
+def _trim_chapter_heading(suffix: str) -> str:
+    """Trim recognized first-sentence spillover from navigation labels, never from body text."""
+    value = re.sub(r"\s+", " ", suffix).strip(" :-–—")
+    if re.search(r"\b(?:adaptado de|adapted from|reimpreso de|reprinted from|con permiso de|with permission)\b", value, re.IGNORECASE):
+        return ""
+    body_cues = (
+        r"\s+Mi objetivo principal\b.*$",
+        r"\s+Las consideraciones de\b.*$",
+        r"\s+en su estudio sociológico\b.*$",
+        r"\s+Debido a que\b.*$",
+        r"\s+En psicoterapia expresiva\b.*$",
+        r"\s+Las tareas fundamentales\b.*$",
+        r"\s+En el contexto de comparar\b.*$",
+        r"\s+Para las modalidades de tratamiento\b.*$",
+        r"\s+en línea con los esfuerzos anteriores\b.*$",
+        r"(?<=terminológicos\.)\s+Una\b.*$",
+        r"\s+Como ya he mencionado\b.*$",
+        r"\s+El$",
+    )
+    for cue in body_cues:
+        value = re.sub(cue, "", value, flags=re.IGNORECASE).strip(" :-–—")
+    if re.search(r"\s+(?:el|la|los|las|de|del|para|en|con)$", value, re.IGNORECASE):
+        value = re.sub(r"\s+(?:el|la|los|las|de|del|para|en|con)$", "", value, flags=re.IGNORECASE).rstrip()
+        if value:
+            value += "…"
+    return value
+
+
 def _heading_from_page(lines: list[str], toc_like: bool) -> dict[str, Any] | None:
     if toc_like or not lines:
         return None
@@ -71,15 +99,18 @@ def _heading_from_page(lines: list[str], toc_like: bool) -> dict[str, Any] | Non
         if not clean:
             continue
         if index <= 2 and PART_RE.match(clean) and len(clean) <= 180:
-            return {"kind": "part", "level": 0, "title": clean, "source_line": line}
+            return {"kind": "part", "level": 0, "title": clean, "source_line": clean}
         match = CHAPTER_RE.match(clean)
         if index <= 3 and match and len(clean) <= 240:
             number = int(match.group(2))
-            suffix = re.sub(r"\s+", " ", match.group(3)).strip(" :-–—")
+            suffix = _trim_chapter_heading(match.group(3))
+            if not suffix:
+                continue
             title = f"Capítulo {number}: {suffix}" if suffix else f"Capítulo {number}"
+            source_line = f"Capítulo {number}: {suffix}" if suffix else f"Capítulo {number}"
             return {
                 "kind": "chapter", "level": 1, "chapter_number": number,
-                "title": title[:240], "source_line": line,
+                "title": title[:180], "source_line": source_line,
             }
     return None
 

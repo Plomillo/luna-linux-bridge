@@ -536,8 +536,36 @@ def translate_pdf(
         raise
 
 
+def _trim_heading_body(suffix: str) -> str:
+    """Keep a navigation label concise when extracted title and first body sentence share a line."""
+    value = re.sub(r"\s+", " ", suffix).strip(" :-–—")
+    if re.search(r"\b(?:adaptado de|adapted from|reimpreso de|reprinted from|con permiso de|with permission)\b", value, re.IGNORECASE):
+        return ""
+    body_cues = (
+        r"\s+Mi objetivo principal\b.*$",
+        r"\s+Las consideraciones de\b.*$",
+        r"\s+en su estudio sociológico\b.*$",
+        r"\s+Debido a que\b.*$",
+        r"\s+En psicoterapia expresiva\b.*$",
+        r"\s+Las tareas fundamentales\b.*$",
+        r"\s+En el contexto de comparar\b.*$",
+        r"\s+Para las modalidades de tratamiento\b.*$",
+        r"\s+en línea con los esfuerzos anteriores\b.*$",
+        r"(?<=terminológicos\.)\s+Una\b.*$",
+        r"\s+Como ya he mencionado\b.*$",
+        r"\s+El$",
+    )
+    for cue in body_cues:
+        value = re.sub(cue, "", value, flags=re.IGNORECASE).strip(" :-–—")
+    if re.search(r"\s+(?:el|la|los|las|de|del|para|en|con)$", value, re.IGNORECASE):
+        value = re.sub(r"\s+(?:el|la|los|las|de|del|para|en|con)$", "", value, flags=re.IGNORECASE).rstrip()
+        if value:
+            value += "…"
+    return value
+
+
 def _organization_outline(document: fitz.Document) -> list[list[Any]]:
-    """Infer conservative bookmarks without changing page order or page content."""
+    """Infer bookmarks while excluding contents/attribution lines and trimming body-text spillover."""
     toc: list[list[Any]] = []
     seen: set[tuple[int, str]] = set()
     active_part = False
@@ -560,6 +588,7 @@ def _organization_outline(document: fitz.Document) -> list[list[Any]]:
         r"^(?:CONTENIDOS|CONTENIDO|CONTENTS|TABLE OF CONTENTS|[ÍI]NDICE)\b",
         re.IGNORECASE,
     )
+    leader_pattern = re.compile(r"(?:\.{2,}|…{1,})\s*\d{1,4}\s*$")
     for page_index, page in enumerate(document):
         raw_text = page.get_text("text", sort=True)
         lines = [
@@ -572,7 +601,15 @@ def _organization_outline(document: fitz.Document) -> list[list[Any]]:
             toc.append([1, f"Portada — {title}", physical_page])
             seen.add((physical_page, title.casefold()))
             continue
-        if not lines or any(toc_pattern.match(line) for line in lines[:2]):
+        if not lines:
+            continue
+        chapter_entries = sum(bool(chapter_pattern.match(line)) for line in lines[:30])
+        leader_entries = sum(bool(leader_pattern.search(line)) for line in lines[:30])
+        if (
+            any(toc_pattern.match(line) for line in lines[:10])
+            or chapter_entries >= 2
+            or leader_entries >= 2
+        ):
             continue
         entry: tuple[int, str] | None = None
         for line_index, line in enumerate(lines[:4]):
@@ -583,8 +620,10 @@ def _organization_outline(document: fitz.Document) -> list[list[Any]]:
             match = chapter_pattern.match(line)
             if line_index <= 2 and match:
                 number = int(match.group(1))
-                suffix = re.sub(r"\s+", " ", match.group(2)).strip(" :-–—")
-                title = f"Capítulo {number}: {suffix}" if suffix and len(suffix) <= 85 else f"Capítulo {number}"
+                suffix = _trim_heading_body(match.group(2))
+                if not suffix:
+                    continue
+                title = f"Capítulo {number}: {suffix}" if len(suffix) <= 105 else f"Capítulo {number}"
                 entry = (2 if active_part else 1, title[:120])
                 break
             if line_index <= 2 and front_pattern.fullmatch(line) and len(line) <= 120:
