@@ -473,12 +473,6 @@ def verify_release(root: Path, manifest_path: Path, g23_public_pem: str, g24_pub
         return {"decision": "HOLD", "certification_status": "NOT_GRANTED",
                 "blockers": ["CAJITA_INVENTORY_FAILED:" + type(exc).__name__]}
     if inventory["total_bytes"] > ctl.CAP_BYTES:
-        errors.append("FINAL_TREE_EXCEEDS_CAP")
-    if inventory["symlinks"] or inventory["hardlink_groups"] or inventory["non_regular"] or inventory["scan_errors"]:
-        errors.append("FINAL_TREE_HAS_UNSAFE_ENTRIES")
-    # A known cap violation is already decisive. Avoid rereading multi-GB model
-    # files and the Edge archive merely to rediscover that the release is on HOLD.
-    if inventory["total_bytes"] > ctl.CAP_BYTES:
         return {
             "schema": "CAJITA_PUAC2_RELEASE_VERIFICATION/1.0",
             "decision": "HOLD",
@@ -486,9 +480,11 @@ def verify_release(root: Path, manifest_path: Path, g23_public_pem: str, g24_pub
             "current_tree_bytes": inventory["total_bytes"],
             "hard_cap_bytes": ctl.CAP_BYTES,
             "overage_bytes": inventory["total_bytes"] - ctl.CAP_BYTES,
-            "blockers": sorted(set(errors + ["FINAL_TREE_EXCEEDS_CAP"])),
+            "blockers": ["FINAL_TREE_EXCEEDS_CAP"],
             "measured_at_utc": utc_now(),
         }
+    if inventory["symlinks"] or inventory["hardlink_groups"] or inventory["non_regular"] or inventory["scan_errors"]:
+        errors.append("FINAL_TREE_HAS_UNSAFE_ENTRIES")
     for domain in ctl.EXPECTED_DOMAINS:
         if not (root / domain).is_dir() or (root / domain).is_symlink():
             errors.append("MANDATORY_DOMAIN_MISSING:" + domain)
@@ -516,6 +512,48 @@ def verify_release(root: Path, manifest_path: Path, g23_public_pem: str, g24_pub
         errors.append("CERTIFICATION_CANDIDATE_COMMIT_INVALID")
     if expected_candidate_commit and candidate_commit != expected_candidate_commit:
         errors.append("CERTIFICATION_CANDIDATE_COMMIT_MISMATCH")
+
+    run_id = manifest.get("run_id")
+    if not isinstance(run_id, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,80}", run_id):
+        errors.append("CERTIFICATION_RUN_ID_INVALID")
+        run_id = "INVALID_RUN_ID"
+    evidence_dir = ".cajita-optimization-candidates/evidence"
+    expected_json_names = [
+        f"CAJITA_G23_{run_id}.json",
+        f"CAJITA_G24_{run_id}.json",
+        f"cajita-certification-manifest-{run_id}.json",
+        f"cajita-release-verification-{run_id}.json",
+    ]
+    expected_generated_paths = sorted(
+        [f"{evidence_dir}/{name}" for name in expected_json_names]
+        + [f"{evidence_dir}/{name}.sha256" for name in expected_json_names]
+    )
+    generated_paths = manifest.get("generated_evidence_paths")
+    subject_exclusions = manifest.get("subject_excluded_paths")
+    if generated_paths != expected_generated_paths or subject_exclusions != expected_generated_paths:
+        errors.append("CERTIFICATION_SUBJECT_EXCLUSIONS_NOT_EXACT_RUN_SCOPE")
+    # All receipt files and sidecars must exist and hash correctly. The decision
+    # report is absent during the first verification pass but required on read-back.
+    for rel in expected_generated_paths:
+        target = root / rel
+        if not target.exists():
+            if rel.endswith(f"cajita-release-verification-{run_id}.json") or rel.endswith(f"cajita-release-verification-{run_id}.json.sha256"):
+                continue
+            errors.append("CERTIFICATION_EVIDENCE_FILE_MISSING:" + rel)
+            continue
+        if target.is_symlink() or not target.is_file():
+            errors.append("CERTIFICATION_EVIDENCE_FILE_UNSAFE:" + rel)
+            continue
+        if rel.endswith(".sha256"):
+            continue
+        sidecar = target.with_suffix(target.suffix + ".sha256")
+        if not sidecar.is_file() or sidecar.is_symlink():
+            errors.append("CERTIFICATION_EVIDENCE_SIDECAR_MISSING:" + rel)
+            continue
+        match = re.match(r"^([0-9a-f]{64})\s+", sidecar.read_text(encoding="utf-8", errors="replace"))
+        if not match or match.group(1) != ctl.sha256_file(target):
+            errors.append("CERTIFICATION_EVIDENCE_SIDECAR_MISMATCH:" + rel)
+
     g23_envelope = manifest.get("g23")
     g24_envelope = manifest.get("g24")
     g23_payload = None
@@ -534,11 +572,25 @@ def verify_release(root: Path, manifest_path: Path, g23_public_pem: str, g24_pub
         errors.extend(["G24:" + item for item in verification_errors])
     else:
         errors.append("G24_CERTIFICATE_MISSING")
+
+    manifest_evidence = manifest.get("evidence")
+    if not isinstance(manifest_evidence, dict):
+        errors.append("CERTIFICATION_MANIFEST_EVIDENCE_MISSING")
+    else:
+        if not isinstance(g23_envelope, dict) or manifest_evidence.get("g23_receipt_sha256") != digest_bytes(canonical_json(g23_envelope)):
+            errors.append("MANIFEST_G23_RECEIPT_HASH_MISMATCH")
+        if not isinstance(g24_envelope, dict) or manifest_evidence.get("g24_receipt_sha256") != digest_bytes(canonical_json(g24_envelope)):
+            errors.append("MANIFEST_G24_RECEIPT_HASH_MISMATCH")
+
     try:
-        subject_sha, hashed_files, hashed_bytes = ctl.candidate_tree_digest(root)
+        subject_sha, hashed_files, hashed_bytes = ctl.candidate_tree_digest(root, set(expected_generated_paths))
     except (OSError, ValueError) as exc:
         subject_sha, hashed_files, hashed_bytes = None, 0, 0
         errors.append("FINAL_SUBJECT_DIGEST_FAILED:" + type(exc).__name__)
+    if isinstance(manifest_evidence, dict):
+        if manifest_evidence.get("output_sha256") != subject_sha or manifest_evidence.get("subject_tree_sha256") != subject_sha:
+            errors.append("MANIFEST_SUBJECT_DIGEST_MISMATCH")
+
     if g23_payload is not None:
         if g23_payload.get("status") != "PASS" or g23_payload.get("blockers"):
             errors.append("G23_NOT_PASS_OR_HAS_BLOCKERS")
@@ -583,7 +635,7 @@ def verify_release(root: Path, manifest_path: Path, g23_public_pem: str, g24_pub
             errors.append("G24_VALIDATOR_BINDING_MISMATCH")
         if g24_payload.get("certifier_id") in (None, "", (g23_payload or {}).get("validator_id"), (g23_payload or {}).get("producer_id")):
             errors.append("G24_IDENTITY_NOT_DISTINCT")
-            if g23_envelope and g24_envelope and g23_envelope.get("signer_public_key_sha256") == g24_envelope.get("signer_public_key_sha256"):
+        if g23_envelope and g24_envelope and g23_envelope.get("signer_public_key_sha256") == g24_envelope.get("signer_public_key_sha256"):
             errors.append("G23_G24_SIGNING_KEYS_NOT_DISTINCT")
         if g24_payload.get("canonical_authority_transfer") is not False or g24_payload.get("certification_propagation") is not False:
             errors.append("FORBIDDEN_CERTIFICATION_PROPAGATION")
@@ -608,7 +660,6 @@ def verify_release(root: Path, manifest_path: Path, g23_public_pem: str, g24_pub
         "blockers": sorted(set(errors)),
         "measured_at_utc": utc_now(),
     }
-
 
 
 def write_exclusive(path: Path, payload: bytes) -> None:
