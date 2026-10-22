@@ -174,3 +174,78 @@ Sólo se permite `RELEASED_AND_CERTIFIED` cuando simultáneamente:
 `G24 = NOT_ISSUED_FOR_CAJITA`
 
 Por estos bloqueos, el plan persistente queda especificado, pero **la Cajita no está todavía lista ni certificada**. El controlador debe devolver `BLOCKED` mientras falten el plan medible, el inventario de congelación, la reconciliación, las pruebas operativas o una estrategia Edge cuantificada. No puede declarar éxito por redactar este documento ni por superar sus propias pruebas unitarias.
+
+
+## 7. Automatización ejecutable de G23/G24 — enmienda de endurecimiento
+
+Esta sección concreta el plano de automatización. Es aditiva; no altera la autoridad de \`Louksna.md\`, la línea base protegida ni los cinco resultados de cuantización congelados.
+
+### Controladores
+
+- \`scripts/cajita_luna_governed_preflight.py\`: inventario de bytes, recursos, alcance y preflight de cambios; no transforma motores.
+- \`scripts/cajita_luna_puac2_gates.py\`: prepara la evidencia G23, firma el recibo independiente, comprueba la firma de G23, emite una decisión G24 o \`HOLD\`, persiste los recibos de manera append-only y verifica de nuevo el árbol físico.
+- \`.github/workflows/cajita-luna-governed-preflight.yml\`: compila los controladores y ejecuta sus pruebas automatizadas. Su éxito certifica los controles del código, no el producto Cajita.
+- \`.github/workflows/cajita-luna-puac2-g23-g24.yml\`: workflow confiable de despacho manual-controlado, con G23 en el host autorizado, G24 en un runner distinto y persistencia/lectura final de vuelta en el host de Cajita. No se ejecuta desde un pull request ni distribuye los archivos/modelos/perfil de Cajita como artefactos de Actions.
+
+### Cadena automática
+
+1. Tras terminar una transformación con CUSTOSZ V9, el controlador vuelve a medir y sólo permite el siguiente paso si preflight, inventarios y pruebas pasan.
+2. Una vez que el conjunto final ya es funcional y el manifiesto de preparación está cerrado, \`dispatch-g23-g24\` vuelve a ejecutar el preflight G23, recalcula SHA-256 del sujeto y solicita el workflow confiable de \`main\`. No despacha si faltan manifests, quedan puertas abiertas, la raíz tiene errores, el tamaño previsto no cabe o el hash recibido no coincide.
+3. G23 valida el estado actual y firma con la identidad de validación independiente. Una falta de evidencia produce un recibo \`HOLD\`; firmar ese recibo no convierte la validación fallida en aprobación.
+4. G24 valida la firma de G23, la identidad distinta, el candidato/hash exactos, los digests de evidencia y todos los predicados G01–G24. Produce un certificado firmado sólo si todos pasan; de otro modo firma \`HOLD\`.
+5. El host persiste los recibos y el manifiesto en \`.cajita-optimization-candidates/evidence/\` sin sobrescribir registros existentes. El controlador vuelve a comprobar el árbol con esos bytes incluidos, más sidecars y el informe de decisión.
+6. El estado final sólo es \`RELEASED_AND_CERTIFIED\` si la verificación posterior a la persistencia devuelve \`PASS\` y mide el árbol completo en \`<= 479000000\` bytes. En todos los demás casos el resultado es \`BLOCKED\` o \`HOLD\`.
+
+### Interfaz de operación autorizada
+
+Preflight de sólo lectura:
+
+\`\`\`bash
+python3 scripts/cajita_luna_governed_preflight.py preflight --root "$CAJITA_LUNA_ROOT" --no-persist
+\`\`\`
+
+Comprobación de evidencia G23 sin despacho:
+
+\`\`\`bash
+python3 scripts/cajita_luna_puac2_gates.py prepare-g23 \\
+  --root "$CAJITA_LUNA_ROOT" \\
+  --candidate-commit "$CANDIDATE_COMMIT_40_HEX" \\
+  --expected-subject-sha256 "$SUBJECT_SHA256" \\
+  --validator-id "$CAJITA_G23_VALIDATOR_ID" \\
+  --producer-id CUSTOSZ_V9 \\
+  --output "$RUNNER_TEMP/G23_UNSIGNED.json"
+\`\`\`
+
+Despacho a G23/G24 sólo después de tener PASS real para preflight final y evidencia funcional:
+
+\`\`\`bash
+python3 scripts/cajita_luna_puac2_gates.py dispatch-g23-g24 \\
+  --root "$CAJITA_LUNA_ROOT" \\
+  --candidate-commit "$CANDIDATE_COMMIT_40_HEX" \\
+  --expected-subject-sha256 "$SUBJECT_SHA256" \\
+  --repo Plomillo/luna-linux-bridge \\
+  --workflow .github/workflows/cajita-luna-puac2-g23-g24.yml \\
+  --ref main
+\`\`\`
+
+La llamada de despacho no modifica contenido y no hace cuantización; sólo lanza el workflow de certificación si la comprobación previa pasa. El flujo requiere identidad/configuración de confianza provisionadas. Claves privadas separadas (G23 y G24) se guardan únicamente en GitHub Actions Secrets; identificadores y claves públicas van en variables de Actions. No se registran secretos, contraseñas, cookies ni datos de sesión en los informes.
+
+Variables requeridas para la automatización confiable:
+- \`CAJITA_LUNA_ROOT\`: ruta absoluta al árbol físico autorizado en el runner self-hosted.
+- \`CAJITA_G23_VALIDATOR_ID\`, \`CAJITA_G24_CERTIFIER_ID\`: identidades inequívocas y distintas.
+- Secretos \`CAJITA_G23_SIGNING_PRIVATE_KEY_PEM\` y \`CAJITA_G24_SIGNING_PRIVATE_KEY_PEM\`, almacenados en ámbitos separados de sus jobs.
+- Variables públicas \`CAJITA_G23_PUBLIC_KEY_PEM\` y \`CAJITA_G24_PUBLIC_KEY_PEM\`; los fingerprints resultantes deben ser distintos.
+- CLI \`gh\` autenticado únicamente con permisos mínimos para despachar el workflow.
+- Runner host autorizado con etiquetas \`self-hosted, linux, x64, luna-aux\`, accesible a la ruta local real de Cajita. La ausencia del runner o de su raíz configurada bloquea la certificación, no la degrada a una validación del contenido subido a GitHub.
+
+### Evidencia independiente adicional y preservación
+
+\`.cajita-optimization-candidates/evidence/INDEPENDENT_FUNCTIONAL_TESTS.json\` debe certificar una repetición de pruebas por una identidad/ejecutor diferente de CUSTOSZ V9 y enlazar por SHA-256 el plan de pruebas, informe de resultado y manifiesto de ejecución. Debe cubrir seis dominios y los catorce componentes pendientes. No reemplaza G23: es una entrada de evidencia que G23 vuelve a verificar.
+
+El manifiesto de congelación de V9 identifica por ruta, tamaño y hash todos los archivos incluidos en los cinco alcances protegidos y vincula evidencia de cuantización de V9. El registro histórico se reconcilia en otro artefacto, sin reescritura del registro original. Ambas condiciones se verifican automáticamente antes de certificar.
+
+El único gate G23/G24 utilizado para Cajita es \`scripts/cajita_luna_puac2_gates.py\` y su workflow dedicado. El gate \`scripts/puac2_mtls_gate.py\` es específico del puente remoto/mTLS; no es prueba de funcionalidad de Cajita y no se debe reutilizar como su autoridad certificadora.
+
+### Estado de esta enmienda
+
+Esta actualización persiste el diseño y el código de control en la rama de revisión. La ejecución funcional de la Cajita, la provisión real de identidades/llaves/runner, la viabilidad del límite de bytes y el certificado G23/G24 siguen pendientes. Que la CI pase las pruebas de controlador no cambia esos estados.
