@@ -17,7 +17,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from scripts import cajita_luna_governed_preflight as ctl
+try:
+    from scripts import cajita_luna_governed_preflight as ctl
+except ModuleNotFoundError:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    from scripts import cajita_luna_governed_preflight as ctl
 
 COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 G23_SCHEMA = "CAJITA_PUAC2_G23_PAYLOAD/1.0"
