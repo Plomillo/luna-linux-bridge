@@ -154,6 +154,14 @@ class GovernedPreflightTests(unittest.TestCase):
     def test_domain_routing_requires_exact_twenty_two_domains(self):
         with tempfile.TemporaryDirectory() as temp:
             root = make_root(Path(temp))
+            report_path = root / ctl.DOMAIN_TOOL_REPORT_REL
+            write_json(report_path, {
+                "schema": "CAJITA_DOMAIN_TOOL_VALIDATION_V9/1.0",
+                "repository": "Plomillo/luna-linux-bridge",
+                "repository_commit": "a" * 40,
+                "status": "PASS",
+                "domains": [],
+            })
             errors = ctl.validate_domain_routing(
                 root,
                 {
@@ -163,14 +171,14 @@ class GovernedPreflightTests(unittest.TestCase):
                         "repository": "Plomillo/luna-linux-bridge",
                         "repository_commit": "a" * 40,
                         "validation_report_path": ctl.DOMAIN_TOOL_REPORT_REL,
-                        "validation_report_sha256": "b" * 64,
-                        "domains": [{"domain_id": "D01"}],
+                        "validation_report_sha256": ctl.sha256_file(report_path),
+                        "domains": [],
                     },
                 },
                 {},
             )
             self.assertIn("DOMAIN_ROUTING_MATRIX_MUST_COVER_D01_D22_EXACTLY", errors)
-            self.assertIn("DOMAIN_TOOL_VALIDATION_REPORT_MISSING", errors)
+            self.assertIn("DOMAIN_TOOL_VALIDATION_MUST_COVER_D01_D22_EXACTLY", errors)
 
 
 if __name__ == "__main__":
