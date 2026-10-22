@@ -687,6 +687,8 @@ def validate_domain_routing(root: Path, plan: dict[str, Any],
         report_cap_map = {
             item.get("capability_id"): item for item in report_caps if isinstance(item, dict)
         }
+        if len(report_cap_map) != len(report_caps):
+            errors.append(f"DOMAIN_TEST_REPORT_CAPABILITY_DUPLICATED_OR_INVALID:{domain_id}")
         if not expected_caps.issubset(set(report_cap_map)):
             errors.append(f"DOMAIN_TEST_REPORT_CAPABILITY_COVERAGE_MISMATCH:{domain_id}")
         if set(report_cap_map) != expected_caps:
