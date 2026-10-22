@@ -984,6 +984,11 @@ def validate_execution_manifest(root: Path) -> list[str]:
         errors.append("OPTIMIZATION_EXECUTION_SCHEMA_MISMATCH")
     if execution.get("status") != "PASS" or execution.get("rollback_verified") is not True:
         errors.append("OPTIMIZATION_EXECUTION_OR_ROLLBACK_NOT_PASS")
+    execution_commit = execution.get("candidate_commit")
+    if not isinstance(execution_commit, str) or re.fullmatch(r"[0-9a-f]{40}", execution_commit) is None:
+        errors.append("OPTIMIZATION_EXECUTION_CANDIDATE_COMMIT_INVALID")
+    if execution.get("executor") != "CUSTOSZ_V9":
+        errors.append("OPTIMIZATION_EXECUTION_EXECUTOR_MISMATCH")
     if execution.get("plan_sha256") != sha256_file(plan_path):
         errors.append("OPTIMIZATION_EXECUTION_PLAN_DIGEST_MISMATCH")
     rows = execution.get("completed_operations")
