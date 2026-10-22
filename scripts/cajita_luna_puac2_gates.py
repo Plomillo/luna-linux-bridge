@@ -512,6 +512,16 @@ def verify_release(root: Path, manifest_path: Path, g23_public_pem: str, g24_pub
         errors.append("CERTIFICATION_CANDIDATE_COMMIT_INVALID")
     if expected_candidate_commit and candidate_commit != expected_candidate_commit:
         errors.append("CERTIFICATION_CANDIDATE_COMMIT_MISMATCH")
+    execution_path = root / ".cajita-optimization-candidates" / "OPTIMIZATION_EXECUTION_V9.json"
+    if not execution_path.is_file() or execution_path.is_symlink():
+        errors.append("OPTIMIZATION_EXECUTION_MANIFEST_MISSING")
+    else:
+        try:
+            execution_manifest = load_object(execution_path)
+            if execution_manifest.get("candidate_commit") != candidate_commit:
+                errors.append("CERTIFICATION_COMMIT_NOT_BOUND_TO_OPTIMIZATION_EXECUTION")
+        except (OSError, ValueError, json.JSONDecodeError):
+            errors.append("OPTIMIZATION_EXECUTION_MANIFEST_INVALID")
 
     run_id = manifest.get("run_id")
     if not isinstance(run_id, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,80}", run_id):
@@ -915,6 +925,26 @@ def main(argv: list[str] | None = None) -> int:
             root = args.root.resolve(strict=False)
             payload = final_evidence(root)
             payload["candidate_commit"] = args.candidate_commit
+            execution_path = root / ".cajita-optimization-candidates" / "OPTIMIZATION_EXECUTION_V9.json"
+            if payload.get("status") == "PASS":
+                try:
+                    execution_manifest = load_object(execution_path)
+                    if execution_manifest.get("candidate_commit") != args.candidate_commit:
+                        payload["status"] = "HOLD"
+                        payload["blockers"] = sorted(set(payload.get("blockers", []) + ["G23_COMMIT_NOT_BOUND_TO_OPTIMIZATION_EXECUTION"]))
+                except (OSError, ValueError, json.JSONDecodeError):
+                    payload["status"] = "HOLD"
+                    payload["blockers"] = sorted(set(payload.get("blockers", []) + ["G23_OPTIMIZATION_EXECUTION_MANIFEST_INVALID"]))
+            if independent_path := (root / INDEPENDENT_TESTS_REL):
+                if independent_path.is_file():
+                    try:
+                        independent_manifest = load_object(independent_path)
+                        if independent_manifest.get("executor_id") == args.validator_id:
+                            payload["status"] = "HOLD"
+                            payload["blockers"] = sorted(set(payload.get("blockers", []) + ["G23_IDENTITY_COLLIDES_WITH_INDEPENDENT_TESTER"]))
+                    except (OSError, ValueError, json.JSONDecodeError):
+                        payload["status"] = "HOLD"
+                        payload["blockers"] = sorted(set(payload.get("blockers", []) + ["G23_INDEPENDENT_TEST_MANIFEST_INVALID"]))
             if args.expected_subject_sha256 and payload.get("subject_tree_sha256") != args.expected_subject_sha256:
                 payload["status"] = "HOLD"
                 payload["blockers"] = sorted(set(payload.get("blockers", []) + ["G23_DISPATCHED_SUBJECT_MISMATCH"]))
