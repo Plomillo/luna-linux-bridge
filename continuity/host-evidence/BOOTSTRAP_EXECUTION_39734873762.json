@@ -1,0 +1,10 @@
+{
+  "schema": "DIRECTIVA_HOST_BOOTSTRAP_EVIDENCE/1.0",
+  "run_id": "39734873762",
+  "sha": "1441a84a7b9d198668adde9b58049654bb5aecda",
+  "runner": "luna-aux",
+  "result": "success",
+  "executed_at_utc": "2026-10-22T06:35:23Z",
+  "script": "scripts/directiva/host_bootstrap.sh",
+  "notes": "Governed execution. Does not claim G23/G24. Root remains required for host paths."
+}
