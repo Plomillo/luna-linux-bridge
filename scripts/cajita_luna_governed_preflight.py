@@ -92,6 +92,15 @@ def is_sha256(value: Any) -> bool:
     return isinstance(value, str) and SHA256_RE.fullmatch(value) is not None
 
 
+def calculate_projected_final(total_bytes: int, current_scope_bytes: int,
+                               output_upper_bytes: int, reserve_bytes: int) -> int:
+    if min(total_bytes, current_scope_bytes, output_upper_bytes, reserve_bytes) < 0:
+        raise ValueError("NEGATIVE_SIZE_IN_BUDGET")
+    if current_scope_bytes > total_bytes:
+        raise ValueError("TARGET_SCOPE_BYTES_EXCEED_TREE")
+    return total_bytes - current_scope_bytes + output_upper_bytes + reserve_bytes
+
+
 def read_object(path: Path) -> dict[str, Any]:
     value = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(value, dict):
@@ -407,7 +416,12 @@ def validate_frozen_manifest(root: Path) -> list[str]:
             errors.append(f"FROZEN_SCOPE_ROOT_INVALID:{scope}")
             continue
         parent_prefix = FROZEN_SCOPES.get(scope)
-        if not parent_prefix or not (normalized == parent_prefix or normalized.startswith(parent_prefix + "/")):
+        whole_domain_scopes = {"CEREBRO", "TRANSCRIPCION", "INTELIGENCIA_DOCUMENTAL"}
+        if scope in whole_domain_scopes:
+            authorized = normalized == parent_prefix
+        else:
+            authorized = bool(parent_prefix and normalized.startswith(parent_prefix + "/"))
+        if not parent_prefix or not authorized:
             errors.append(f"FROZEN_SCOPE_ROOT_OUTSIDE_AUTHORIZED_DOMAIN:{scope}")
         if not target.is_dir() or target.is_symlink():
             errors.append(f"FROZEN_SCOPE_ROOT_MISSING:{scope}")
@@ -618,6 +632,8 @@ def validate_plan(root: Path, total_bytes: int, available_disk: int, available_r
         })
     if set(by_component) != set(PENDING_COMPONENTS):
         errors.append("OPTIMIZATION_COMPONENT_COVERAGE_INCOMPLETE")
+    if EDGE_ARCHIVE_REL not in assigned_files:
+        errors.append("EDGE_ARCHIVE_NOT_INCLUDED_IN_OPTIMIZATION_SCOPE")
     # Overlapping declared roots are only acceptable when the enclosing operation
     # explicitly excludes all files assigned to the nested operation.
     for i, (left_component, left) in enumerate(covered_roots):
@@ -657,7 +673,11 @@ def validate_plan(root: Path, total_bytes: int, available_disk: int, available_r
         for item in edge.get("removed_paths", []) if isinstance(edge.get("removed_paths", []), list) else []:
             if not isinstance(item, dict) or item.get("classification") != "REGENERABLE_CACHE_ONLY" or not is_sha256(item.get("regeneration_evidence_sha256")):
                 errors.append("EDGE_REMOVAL_NOT_PROVEN_REGENERABLE_CACHE")
-    projected = total_bytes - current_scope_total + output_upper_total + reserve
+    try:
+        projected = calculate_projected_final(total_bytes, current_scope_total, output_upper_total, reserve)
+    except ValueError as exc:
+        errors.append(str(exc))
+        projected = total_bytes + output_upper_total + reserve
     result["projected_final_upper_bound_bytes"] = projected
     result["current_target_scope_bytes"] = current_scope_total
     result["output_upper_bound_bytes"] = output_upper_total
@@ -857,63 +877,204 @@ def candidate_tree_digest(root: Path) -> tuple[str, int, int]:
     return sha256_bytes(canonical_json(records)), files_hashed, total_hashed_bytes
 
 
+def validate_functional_manifest(root: Path) -> list[str]:
+    path = root / FUNCTIONAL_REL
+    if not path.is_file():
+        return ["FUNCTIONAL_VALIDATION_MANIFEST_MISSING"]
+    try:
+        manifest = read_object(path)
+    except (OSError, ValueError, json.JSONDecodeError):
+        return ["FUNCTIONAL_VALIDATION_MANIFEST_INVALID"]
+    errors: list[str] = []
+    if manifest.get("schema") != "CAJITA_FUNCTIONAL_VALIDATION_V9/1.0":
+        errors.append("FUNCTIONAL_VALIDATION_SCHEMA_MISMATCH")
+    if manifest.get("status") != "PASS" or manifest.get("executor") != "CUSTOSZ_V9":
+        errors.append("FUNCTIONAL_VALIDATION_NOT_PASS_OR_EXECUTOR_MISMATCH")
+    domains = manifest.get("domains")
+    if not isinstance(domains, dict) or set(domains) != set(EXPECTED_DOMAINS):
+        errors.append("FUNCTIONAL_VALIDATION_DOMAIN_COVERAGE_INVALID")
+    else:
+        for domain, item in domains.items():
+            if not isinstance(item, dict) or item.get("status") != "PASS":
+                errors.append(f"DOMAIN_FUNCTIONAL_TEST_NOT_PASS:{domain}")
+            elif not is_sha256(item.get("test_report_sha256")):
+                errors.append(f"DOMAIN_TEST_REPORT_HASH_MISSING:{domain}")
+    components = manifest.get("components")
+    if not isinstance(components, list):
+        errors.append("FUNCTIONAL_COMPONENT_COVERAGE_MISSING")
+    else:
+        component_map = {
+            item.get("component"): item for item in components if isinstance(item, dict)
+        }
+        if set(component_map) != set(PENDING_COMPONENTS):
+            errors.append("FUNCTIONAL_COMPONENT_COVERAGE_INVALID")
+        for component in PENDING_COMPONENTS:
+            item = component_map.get(component)
+            if not isinstance(item, dict) or item.get("status") != "PASS":
+                errors.append(f"PENDING_COMPONENT_NOT_FUNCTIONAL:{component}")
+            elif not is_sha256(item.get("test_report_sha256")):
+                errors.append(f"PENDING_COMPONENT_REPORT_HASH_MISSING:{component}")
+    edge = manifest.get("edge_profile")
+    if not isinstance(edge, dict) or edge.get("status") != "PASS":
+        errors.append("EDGE_PROFILE_FUNCTIONAL_TEST_NOT_PASS")
+    else:
+        if edge.get("authentication_state_preserved") is not True:
+            errors.append("EDGE_AUTHENTICATION_PRESERVATION_NOT_TESTED")
+        for field in ("smoke_test_sha256", "restore_test_sha256"):
+            if not is_sha256(edge.get(field)):
+                errors.append("EDGE_PROFILE_EVIDENCE_HASH_MISSING:" + field)
+    if not is_sha256(manifest.get("subject_inventory_sha256")):
+        errors.append("FUNCTIONAL_VALIDATION_SUBJECT_INVENTORY_HASH_MISSING")
+    return sorted(set(errors))
+
+
+def validate_gate_matrix(root: Path) -> list[str]:
+    path = root / GATE_MATRIX_REL
+    if not path.is_file():
+        return ["G01_G22_EVIDENCE_MATRIX_MISSING"]
+    try:
+        manifest = read_object(path)
+    except (OSError, ValueError, json.JSONDecodeError):
+        return ["G01_G22_EVIDENCE_MATRIX_INVALID"]
+    errors: list[str] = []
+    if manifest.get("schema") != "CAJITA_PUAC2_G01_G22_EVIDENCE/1.0":
+        errors.append("GATE_MATRIX_SCHEMA_MISMATCH")
+    gates = manifest.get("gates")
+    if not isinstance(gates, list):
+        return errors + ["GATE_MATRIX_LIST_INVALID"]
+    by_gate = {g.get("gate_id"): g for g in gates if isinstance(g, dict)}
+    if set(by_gate) != set(GATE_IDS_22) or len(gates) != len(GATE_IDS_22):
+        errors.append("G01_G22_GATE_SET_INCOMPLETE_OR_DUPLICATED")
+    for gate_id in GATE_IDS_22:
+        row = by_gate.get(gate_id)
+        if not isinstance(row, dict) or row.get("status") != "PASS" or not is_sha256(row.get("evidence_sha256")):
+            errors.append(f"MANDATORY_GATE_NOT_PASS_OR_NOT_EVIDENCED:{gate_id}")
+    if manifest.get("candidate_tree_sha256") is not None and not is_sha256(manifest.get("candidate_tree_sha256")):
+        errors.append("GATE_MATRIX_SUBJECT_HASH_INVALID")
+    return sorted(set(errors))
+
+
+def validate_execution_manifest(root: Path) -> list[str]:
+    plan_path = root / PLAN_REL
+    execution_path = root / ".cajita-optimization-candidates" / "OPTIMIZATION_EXECUTION_V9.json"
+    frozen_path = root / FROZEN_MANIFEST_REL
+    if not plan_path.is_file():
+        return ["OPTIMIZATION_PLAN_MISSING"]
+    if not execution_path.is_file():
+        return ["OPTIMIZATION_EXECUTION_MANIFEST_MISSING"]
+    try:
+        plan = read_object(plan_path)
+        execution = read_object(execution_path)
+    except (OSError, ValueError, json.JSONDecodeError):
+        return ["OPTIMIZATION_PLAN_OR_EXECUTION_MANIFEST_INVALID"]
+    errors: list[str] = []
+    if plan.get("schema") != "CAJITA_OPTIMIZATION_PLAN_V9/1.0" or plan.get("final_cap_bytes") != CAP_BYTES:
+        errors.append("OPTIMIZATION_PLAN_SCOPE_OR_CAP_INVALID")
+    if plan.get("authority") != "Louksna.md" or plan.get("executor") != "CUSTOSZ_V9":
+        errors.append("OPTIMIZATION_PLAN_AUTHORITY_INVALID")
+    if execution.get("schema") != "CAJITA_OPTIMIZATION_EXECUTION_V9/1.0":
+        errors.append("OPTIMIZATION_EXECUTION_SCHEMA_MISMATCH")
+    if execution.get("status") != "PASS" or execution.get("rollback_verified") is not True:
+        errors.append("OPTIMIZATION_EXECUTION_OR_ROLLBACK_NOT_PASS")
+    if execution.get("plan_sha256") != sha256_file(plan_path):
+        errors.append("OPTIMIZATION_EXECUTION_PLAN_DIGEST_MISMATCH")
+    rows = execution.get("completed_operations")
+    if not isinstance(rows, list):
+        return sorted(set(errors + ["OPTIMIZATION_EXECUTION_ROWS_INVALID"]))
+    by_component = {row.get("component"): row for row in rows if isinstance(row, dict)}
+    if len(rows) != len(PENDING_COMPONENTS) or set(by_component) != set(PENDING_COMPONENTS):
+        errors.append("OPTIMIZATION_EXECUTION_COMPONENT_COVERAGE_INVALID")
+    frozen_roots: list[str] = []
+    if frozen_path.is_file():
+        try:
+            frozen = read_object(frozen_path)
+            roots = frozen.get("scope_roots", {})
+            if isinstance(roots, dict):
+                frozen_roots = [str(v).rstrip("/") for v in roots.values() if isinstance(v, str)]
+        except (OSError, ValueError, json.JSONDecodeError):
+            errors.append("FROZEN_MANIFEST_UNREADABLE_DURING_EXECUTION_AUDIT")
+    for component in PENDING_COMPONENTS:
+        row = by_component.get(component)
+        if not isinstance(row, dict) or row.get("status") != "PASS":
+            errors.append(f"OPTIMIZATION_OPERATION_NOT_PASS:{component}")
+            continue
+        for field in ("input_scope_sha256", "output_scope_sha256", "test_report_sha256", "rollback_test_sha256"):
+            if not is_sha256(row.get(field)):
+                errors.append(f"OPTIMIZATION_EXECUTION_EVIDENCE_HASH_MISSING:{component}:{field}")
+        outputs = row.get("output_targets")
+        if not isinstance(outputs, list) or not outputs:
+            errors.append(f"OPTIMIZATION_EXECUTION_OUTPUT_TARGETS_MISSING:{component}")
+            continue
+        for output in outputs:
+            if not isinstance(output, dict) or not isinstance(output.get("path"), str):
+                errors.append(f"OPTIMIZATION_EXECUTION_OUTPUT_TARGET_INVALID:{component}")
+                continue
+            rel = output["path"]
+            try:
+                target = safe_relative(root, rel)
+            except ValueError:
+                errors.append(f"OPTIMIZATION_EXECUTION_OUTPUT_PATH_UNSAFE:{component}")
+                continue
+            if any(rel == protected or rel.startswith(protected + "/") for protected in frozen_roots):
+                errors.append(f"OPTIMIZATION_EXECUTION_TOUCHES_FROZEN_SCOPE:{component}:{rel}")
+                continue
+            if not target.is_file() or target.is_symlink():
+                errors.append(f"OPTIMIZATION_EXECUTION_OUTPUT_MISSING:{component}:{rel}")
+                continue
+            if output.get("size_bytes") != target.stat().st_size:
+                errors.append(f"OPTIMIZATION_EXECUTION_OUTPUT_SIZE_MISMATCH:{component}:{rel}")
+            if not is_sha256(output.get("sha256")) or sha256_file(target) != output.get("sha256"):
+                errors.append(f"OPTIMIZATION_EXECUTION_OUTPUT_HASH_MISMATCH:{component}:{rel}")
+    edge = execution.get("edge_profile")
+    if not isinstance(edge, dict) or edge.get("status") != "PASS" or edge.get("authentication_state_preserved") is not True:
+        errors.append("EDGE_EXECUTION_PRESERVATION_NOT_PASS")
+    return sorted(set(errors))
+
+
 def verify_puac2(root: Path, repo_root: Path, manifest_path: Path) -> dict[str, Any]:
     blockers: list[str] = []
-    pre = check_preflight(root)
-    inventory = pre["inventory"]
+    try:
+        inventory = scan_tree(root)
+    except (OSError, ValueError) as exc:
+        return {"decision": "HOLD", "certification_status": "NOT_GRANTED",
+                "blockers": [f"INVENTORY_FAILED:{type(exc).__name__}"]}
     if inventory["total_bytes"] > CAP_BYTES:
         blockers.append("FINAL_TREE_EXCEEDS_CAP")
-    if pre["release_status"] != "READY_FOR_CONTROLLED_OPTIMIZATION":
-        blockers.append("MANDATORY_PREFLIGHTS_NOT_PASS")
-    functional_path = root / FUNCTIONAL_REL
-    gate_path = root / GATE_MATRIX_REL
-    for p, reason in ((functional_path, "FUNCTIONAL_VALIDATION_MANIFEST_MISSING"),
-                      (gate_path, "G01_G22_EVIDENCE_MATRIX_MISSING")):
-        if not p.is_file():
-            blockers.append(reason)
+    if inventory["symlinks"]:
+        blockers.append("SYMLINKS_PRESENT_FAIL_CLOSED")
+    if inventory["hardlink_groups"]:
+        blockers.append("HARDLINKS_PRESENT_FAIL_CLOSED")
+    if inventory["non_regular"] or inventory["scan_errors"]:
+        blockers.append("TREE_CONTAINS_UNSAFE_OR_UNREADABLE_ENTRIES")
+    for domain in EXPECTED_DOMAINS:
+        if not (root / domain).is_dir() or (root / domain).is_symlink():
+            blockers.append(f"MANDATORY_DOMAIN_MISSING:{domain}")
+    edge = edge_evidence(root)
+    if edge.get("status") != "PASS":
+        blockers.append("EDGE_ARCHIVE_INTEGRITY_BLOCKED")
+    registry = registry_comparison(root)
+    blockers.extend(validate_reconciliation(root, registry))
+    blockers.extend(validate_frozen_manifest(root))
+    blockers.extend(validate_functional_manifest(root))
+    blockers.extend(validate_gate_matrix(root))
+    blockers.extend(validate_execution_manifest(root))
     if blockers:
         return {
             "schema": "CAJITA_PUAC2_RELEASE_VERIFICATION/1.0",
             "decision": "HOLD",
             "certification_status": "NOT_GRANTED",
-            "blockers": sorted(set(blockers + pre["blockers"])),
+            "current_tree_bytes": inventory["total_bytes"],
+            "hard_cap_bytes": CAP_BYTES,
+            "edge_archive_bytes": edge.get("archive_bytes"),
+            "blockers": sorted(set(blockers)),
             "measured_at_utc": utc_now(),
         }
-    try:
-        functional = read_object(functional_path)
-        gate_matrix = read_object(gate_path)
-    except (OSError, ValueError, json.JSONDecodeError):
-        return {"decision": "HOLD", "certification_status": "NOT_GRANTED", "blockers": ["FUNCTIONAL_OR_GATE_EVIDENCE_INVALID"]}
-    if functional.get("schema") != "CAJITA_FUNCTIONAL_VALIDATION_V9/1.0" or functional.get("status") != "PASS":
-        blockers.append("FUNCTIONAL_VALIDATION_NOT_PASS")
-    domain_tests = functional.get("domains")
-    if not isinstance(domain_tests, dict) or set(domain_tests) != set(EXPECTED_DOMAINS):
-        blockers.append("FUNCTIONAL_VALIDATION_DOMAIN_COVERAGE_INVALID")
-    else:
-        for domain, record in domain_tests.items():
-            if not isinstance(record, dict) or record.get("status") != "PASS" or not is_sha256(record.get("test_report_sha256")):
-                blockers.append(f"DOMAIN_FUNCTIONAL_TEST_NOT_PASS:{domain}")
-    if not isinstance(functional.get("edge_profile"), dict) or functional["edge_profile"].get("status") != "PASS":
-        blockers.append("EDGE_PROFILE_FUNCTIONAL_TEST_NOT_PASS")
-    if gate_matrix.get("schema") != "CAJITA_PUAC2_G01_G22_EVIDENCE/1.0":
-        blockers.append("GATE_MATRIX_SCHEMA_MISMATCH")
-    gates = gate_matrix.get("gates")
-    if not isinstance(gates, list):
-        blockers.append("GATE_MATRIX_LIST_INVALID")
-    else:
-        by_gate = {g.get("gate_id"): g for g in gates if isinstance(g, dict)}
-        if set(by_gate) != set(GATE_IDS_22):
-            blockers.append("G01_G22_GATE_SET_INCOMPLETE")
-        for gate_id in GATE_IDS_22:
-            row = by_gate.get(gate_id)
-            if not isinstance(row, dict) or row.get("status") != "PASS" or not is_sha256(row.get("evidence_sha256")):
-                blockers.append(f"MANDATORY_GATE_NOT_PASS:{gate_id}")
     try:
         subject_sha, files_hashed, payload_bytes = candidate_tree_digest(root)
         manifest = read_object(manifest_path)
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         return {"decision": "HOLD", "certification_status": "NOT_GRANTED",
-                "blockers": sorted(set(blockers + [f"SUBJECT_OR_MANIFEST_INVALID:{type(exc).__name__}"]))}
+                "blockers": [f"SUBJECT_OR_MANIFEST_INVALID:{type(exc).__name__}"]}
     evidence = manifest.get("evidence")
     if not isinstance(evidence, dict):
         blockers.append("PUAC2_EVIDENCE_OBJECT_MISSING")
@@ -930,6 +1091,10 @@ def verify_puac2(root: Path, repo_root: Path, manifest_path: Path) -> dict[str, 
             blockers.append("G24_IDENTITY_NOT_DISTINCT")
         if g23.get("candidate_commit") != manifest.get("candidate_commit") or g24.get("candidate_commit") != manifest.get("candidate_commit"):
             blockers.append("G23_G24_SUBJECT_COMMIT_MISMATCH")
+        if g23.get("status") != "PASS" or g24.get("status") != "CERTIFIED":
+            blockers.append("G23_OR_G24_STATUS_NOT_ACCEPTABLE")
+        if g24.get("g23_attestation_sha256") != g23.get("attestation_sha256"):
+            blockers.append("G24_G23_CHAIN_MISMATCH")
     if blockers:
         return {
             "schema": "CAJITA_PUAC2_RELEASE_VERIFICATION/1.0",
@@ -943,7 +1108,8 @@ def verify_puac2(root: Path, repo_root: Path, manifest_path: Path) -> dict[str, 
         }
     verifier = repo_root / "scripts" / "puac2_mtls_gate.py"
     if not verifier.is_file():
-        return {"decision": "HOLD", "certification_status": "NOT_GRANTED", "blockers": ["PUAC2_VERIFIER_NOT_FOUND_IN_REPOSITORY"]}
+        return {"decision": "HOLD", "certification_status": "NOT_GRANTED",
+                "blockers": ["PUAC2_VERIFIER_NOT_FOUND_IN_REPOSITORY"]}
     env = os.environ.copy()
     command = [sys.executable, str(verifier), "--manifest", str(manifest_path)]
     result = subprocess.run(command, cwd=repo_root, env=env, capture_output=True, text=True, timeout=120, check=False)
@@ -980,7 +1146,6 @@ def verify_puac2(root: Path, repo_root: Path, manifest_path: Path) -> dict[str, 
         "certification_propagation": False,
         "measured_at_utc": utc_now(),
     }
-
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
