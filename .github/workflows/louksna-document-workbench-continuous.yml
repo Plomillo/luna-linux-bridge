@@ -69,29 +69,46 @@ jobs:
           sparse-checkout: |
             inglés_to_español_20261021_1924_translated.pdf
           sparse-checkout-cone-mode: false
-      - name: Inspect, bookmark and package the actual PDF
+      - name: Analyse folios, order pages only on complete evidence, render reading edition and package
         run: |
           set -euo pipefail
           BOOK_DIR="kernberg-output"
           EVIDENCE_DIR="louksna-document-workbench-ci-evidence"
           SOURCE_PDF="source-pdf/inglés_to_español_20261021_1924_translated.pdf"
+          ORDERED_PDF="$BOOK_DIR/Trastornos_de_personalidad_severos_orden_verificado.pdf"
           ORGANIZED_PDF="$BOOK_DIR/Trastornos_de_personalidad_severos_organizado.pdf"
+          ACADEMIC_PDF="$BOOK_DIR/Trastornos_de_personalidad_severos_edicion_lectura.pdf"
+          CLI="$RUNNER_TEMP/docworkbench-venv/bin/louksna-docworkbench"
           mkdir -p "$BOOK_DIR" "$EVIDENCE_DIR"
           test -s "$SOURCE_PDF"
-          "$RUNNER_TEMP/docworkbench-venv/bin/louksna-docworkbench" \
-            inspect "$SOURCE_PDF" --audit "$BOOK_DIR/source-inspection.json" \
-            > /dev/null
-          "$RUNNER_TEMP/docworkbench-venv/bin/louksna-docworkbench" \
-            organize "$SOURCE_PDF" "$ORGANIZED_PDF" \
+          "$CLI" inspect "$SOURCE_PDF" --audit "$BOOK_DIR/source-inspection.json" > /dev/null
+          "$CLI" analyze-order "$SOURCE_PDF" --audit "$BOOK_DIR/order-analysis-source.json" > /dev/null
+          "$CLI" order-from-folios "$SOURCE_PDF" "$ORDERED_PDF" \
+            --analysis "$BOOK_DIR/order-analysis-source.json" \
+            --audit "$BOOK_DIR/order-application-report.json" > /dev/null
+          "$CLI" analyze-order "$ORDERED_PDF" --audit "$BOOK_DIR/order-analysis-final.json" > /dev/null
+          "$CLI" organize "$ORDERED_PDF" "$ORGANIZED_PDF" \
             --audit "$BOOK_DIR/organization-report.json" > /dev/null
+          "$CLI" academic-edition "$ORDERED_PDF" "$ACADEMIC_PDF" \
+            --analysis "$BOOK_DIR/order-analysis-final.json" \
+            --audit "$BOOK_DIR/academic-edition-report.json" > /dev/null
           "$RUNNER_TEMP/docworkbench-venv/bin/python" \
             louksna-document-workbench/scripts/package_organized_document.py \
             --pdf "$ORGANIZED_PDF" \
             --organization-report "$BOOK_DIR/organization-report.json" \
             --source-inspection "$BOOK_DIR/source-inspection.json" \
+            --academic-pdf "$ACADEMIC_PDF" \
+            --academic-report "$BOOK_DIR/academic-edition-report.json" \
+            --order-analysis-source "$BOOK_DIR/order-analysis-source.json" \
+            --order-application "$BOOK_DIR/order-application-report.json" \
+            --order-analysis-final "$BOOK_DIR/order-analysis-final.json" \
             --output "$BOOK_DIR/kernberg-organized-package.zip" \
             | tee "$BOOK_DIR/package-report.json"
           cp "$BOOK_DIR/source-inspection.json" "$EVIDENCE_DIR/kernberg-source-inspection.json"
+          cp "$BOOK_DIR/order-analysis-source.json" "$EVIDENCE_DIR/kernberg-order-analysis-source.json"
+          cp "$BOOK_DIR/order-application-report.json" "$EVIDENCE_DIR/kernberg-order-application-report.json"
+          cp "$BOOK_DIR/order-analysis-final.json" "$EVIDENCE_DIR/kernberg-order-analysis-final.json"
+          cp "$BOOK_DIR/academic-edition-report.json" "$EVIDENCE_DIR/kernberg-academic-edition-report.json"
           cp "$BOOK_DIR/organization-report.json" "$EVIDENCE_DIR/kernberg-organization-report.json"
           cp "$BOOK_DIR/package-report.json" "$EVIDENCE_DIR/kernberg-package-report.json"
       - name: Upload organized PDF package
@@ -109,15 +126,18 @@ jobs:
           OUTPUT_DIR="louksna-document-workbench/output"
           mkdir -p "$OUTPUT_DIR"
           cp "kernberg-output/kernberg-organized-package.zip" "$OUTPUT_DIR/kernberg-organized-package.zip"
+          cp "kernberg-output/Trastornos_de_personalidad_severos_organizado.pdf" "$OUTPUT_DIR/Trastornos_de_personalidad_severos_organizado.pdf"
+          cp "kernberg-output/Trastornos_de_personalidad_severos_edicion_lectura.pdf" "$OUTPUT_DIR/Trastornos_de_personalidad_severos_edicion_lectura.pdf"
           cp "kernberg-output/organization-report.json" "$OUTPUT_DIR/organization-report.json"
           cp "kernberg-output/source-inspection.json" "$OUTPUT_DIR/source-inspection.json"
+          cp "kernberg-output/order-analysis-source.json" "$OUTPUT_DIR/order-analysis-source.json"
+          cp "kernberg-output/order-application-report.json" "$OUTPUT_DIR/order-application-report.json"
+          cp "kernberg-output/order-analysis-final.json" "$OUTPUT_DIR/order-analysis-final.json"
+          cp "kernberg-output/academic-edition-report.json" "$OUTPUT_DIR/academic-edition-report.json"
           cp "kernberg-output/package-report.json" "$OUTPUT_DIR/package-report.json"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "$OUTPUT_DIR/kernberg-organized-package.zip" \
-            "$OUTPUT_DIR/organization-report.json" \
-            "$OUTPUT_DIR/source-inspection.json" \
-            "$OUTPUT_DIR/package-report.json"
+          git add "$OUTPUT_DIR"
           if git diff --cached --quiet; then
             echo "No package changes to commit."
             exit 0

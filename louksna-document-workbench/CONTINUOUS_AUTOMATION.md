@@ -19,12 +19,15 @@ The candidate workflow at .github/workflows/louksna-document-workbench-continuou
 4. Audits the runtime package for Python syntax errors, accidental Document Factory imports, unsafe subprocess.run(..., shell=True) usage and literal HTTP(S) endpoints.
 5. Runs unit tests.
 6. Builds a temporary three-page synthetic PDF and tests inspection, audited page reordering, text-only reflow, and invariance of the input SHA-256.
-7. Checks out the identified PDF already present at the root of main in read-only mode, inspects it, adds navigation bookmarks without changing page order, and verifies page count, geometry and extracted text.
-8. Packages the organized PDF with SHA-256 checksums and non-secret audit records as a time-limited Actions artifact.
+7. Checks out the identified PDF from main in read-only mode and computes an evidence-backed folio/chapter order analysis.
+8. Applies a complete page permutation only when printed folios prove a unique, contiguous sequence; otherwise it preserves the exact source bytes and records the need for manual review.
+9. Adds chapter/part navigation bookmarks and verifies the output against the page sequence selected by the order stage.
+10. Builds a separate academic reading edition with a cover, table of contents, readable typography, PDF bookmarks and a source-page marker for every input page.
+11. Packages both reading outputs, provenance reports and SHA-256 checksums as a time-limited Actions artifact.
 7. Records the commit ID, Python version and dependency inventory.
 8. Uploads non-secret evidence for 14 days.
 
-The smoke fixture remains synthetic. A separate, scoped workflow step reads the identified PDF already present on main and creates a bookmark-organized reading copy as a time-limited Actions artifact. It does not change main or commit the generated book. OCR and translation are not exercised unless system OCR dependencies or local language models are separately provisioned. Machine-translation accuracy and visual fidelity are not certified by these checks.
+The smoke fixture remains synthetic. A separate, scoped workflow step reads the identified PDF already present on main, runs the printed-folio analysis, conditionally reorders only on strong evidence, creates a bookmarked PDF and creates a separate typographically reflowed reading edition. It does not change main or the source PDF; output is committed only to the explicitly named candidate branch on successful push runs. OCR and translation are not exercised unless system OCR dependencies or local language models are separately provisioned. Machine-translation accuracy and visual fidelity are not certified by these checks.
 
 ## Schedule activation constraint
 

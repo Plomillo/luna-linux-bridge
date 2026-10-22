@@ -63,3 +63,18 @@ A separate Kestra flow can invoke the CLI in a dedicated, resource-limited runne
 ## Scope boundary
 
 No files under document-factory/ are modified or required. Do not merge this candidate into main or call it certified without the repository's separate evidence, G23 independent validation, G24 certification, non-regression, and rollback gates.
+
+
+## Verified page-order analysis and academic reading edition
+
+The current document workflow adds three explicit stages beyond navigation bookmarks:
+
+- \`analyze-order input.pdf --audit order.json\` inspects isolated Arabic folios and page-leading chapter/part anchors. It returns a recommended complete permutation only when the detected folios are unique, contiguous and sufficiently complete.
+- \`order-from-folios input.pdf output.pdf --analysis order.json --audit order-application.json\` physically reorders pages only for a high-confidence complete folio sequence. If the evidence is weak, it writes an unchanged, byte-identical copy and records \`REVIEW_REQUIRED_NO_PAGES_MOVED\`; it never invents a sequence.
+- \`academic-edition input.pdf reading.pdf --analysis order.json --audit reading.audit.json\` creates a reflowed reading PDF with a designed cover, table of contents, chapter hierarchy, readable body typography, running page numbers, PDF outline bookmarks and a source-PDF-page marker for every input page.
+
+Install the project in a virtual environment with \`python -m pip install -e ".[test]"\`. Run the graphical desktop application with \`louksna-docworkbench-gui\` or \`python -m louksna_docworkbench.gui\`.
+
+### Editorial limits
+
+The source file is immutable. The academic reading copy is a separately labelled text reflow, not a facsimile: its pagination and page geometry differ from the original. It preserves references back to every source PDF page and reports the audit hashes. It does not silently rewrite the machine translation, clinical terminology, quotations or references; human academic review remains required. The GUI uses local files and process calls only; it does not upload documents.

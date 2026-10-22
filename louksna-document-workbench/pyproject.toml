@@ -21,6 +21,7 @@ test = ["pytest>=8"]
 
 [project.scripts]
 louksna-docworkbench = "louksna_docworkbench.cli:main"
+louksna-docworkbench-gui = "louksna_docworkbench.gui:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

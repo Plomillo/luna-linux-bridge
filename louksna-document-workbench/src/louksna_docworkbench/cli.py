@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 
 from .engine import inspect_pdf, organize_pdf, reorder_pdf, reflow_pdf, run_ocr, translate_pdf, write_json_new
+from .reading_edition import analyze_pdf_order, create_safe_ordered_copy, create_academic_reading_edition
 
 
 def _path(value: str) -> Path:
@@ -53,6 +54,32 @@ def build_parser() -> argparse.ArgumentParser:
     translate.add_argument("--target", required=True, help="Target language code, e.g. en.")
     translate.add_argument("--glossary", type=_path, help="Optional JSON object mapping source terms to preferred target terms.")
 
+    order_analysis = commands.add_parser(
+        "analyze-order",
+        help="Analyse printed folios and chapter anchors; preserve order when evidence is weak.",
+    )
+    order_analysis.add_argument("input", type=_path)
+    order_analysis.add_argument("--audit", type=_path, help="Write a new JSON order analysis.")
+
+    order_apply = commands.add_parser(
+        "order-from-folios",
+        help="Reorder only when unique, contiguous printed folios establish a complete permutation.",
+    )
+    order_apply.add_argument("input", type=_path)
+    order_apply.add_argument("output", type=_path)
+    order_apply.add_argument("--analysis", type=_path, required=True, help="Matching analyze-order JSON.")
+    order_apply.add_argument("--audit", type=_path, required=True, help="New JSON application report.")
+
+    academic = commands.add_parser(
+        "academic-edition",
+        help="Create an academic text reading edition with hierarchy, TOC and source-page markers.",
+    )
+    academic.add_argument("input", type=_path)
+    academic.add_argument("output", type=_path)
+    academic.add_argument("--analysis", type=_path, required=True, help="Matching analyze-order JSON.")
+    academic.add_argument("--audit", type=_path, required=True, help="New JSON reading-edition report.")
+    academic.add_argument("--title", default="Trastornos de personalidad severos")
+
     return parser
 
 
@@ -81,6 +108,19 @@ def main() -> int:
             print(json.dumps(translate_pdf(
                 args.input, args.output_dir, args.prefix,
                 args.source, args.target, args.glossary,
+            ), ensure_ascii=False, indent=2))
+        elif args.command == "analyze-order":
+            result = analyze_pdf_order(args.input)
+            if args.audit:
+                write_json_new(args.audit, result)
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+        elif args.command == "order-from-folios":
+            print(json.dumps(create_safe_ordered_copy(
+                args.input, args.output, args.analysis, args.audit,
+            ), ensure_ascii=False, indent=2))
+        elif args.command == "academic-edition":
+            print(json.dumps(create_academic_reading_edition(
+                args.input, args.output, args.analysis, args.audit, args.title,
             ), ensure_ascii=False, indent=2))
         else:
             parser.error("Unsupported command.")
