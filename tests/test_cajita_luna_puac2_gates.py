@@ -187,6 +187,7 @@ class CajitaPUAC2GateTests(unittest.TestCase):
             "execution_manifest_sha256": "5" * 64,
             "functional_manifest_sha256": "6" * 64,
             "gate_matrix_sha256": "7" * 64,
+            "domain_tool_validation_sha256": "b" * 64,
             "independent_tests_sha256": "a" * 64,
         }
         payload = {
@@ -250,6 +251,7 @@ class CajitaPUAC2GateTests(unittest.TestCase):
                 "execution_manifest_sha256": "5" * 64,
                 "functional_manifest_sha256": "6" * 64,
                 "gate_matrix_sha256": "7" * 64,
+                "domain_tool_validation_sha256": "9" * 64,
                 "independent_tests_sha256": "8" * 64,
             },
             "blockers": [],
