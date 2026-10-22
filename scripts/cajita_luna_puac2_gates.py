@@ -590,6 +590,7 @@ def main(argv: list[str] | None = None) -> int:
     prep = sub.add_parser("prepare-g23", help="Independently inspect final Cajita evidence; emits PASS or HOLD without mutation.")
     prep.add_argument("--root", type=Path, required=True)
     prep.add_argument("--candidate-commit", required=True)
+    prep.add_argument("--expected-subject-sha256", default=None)
     prep.add_argument("--validator-id", default=os.environ.get("CAJITA_G23_VALIDATOR_ID", ""))
     prep.add_argument("--producer-id", default=os.environ.get("CAJITA_PRODUCER_ID", "CUSTOSZ_V9"))
     prep.add_argument("--output", type=Path, required=True)
@@ -604,6 +605,7 @@ def main(argv: list[str] | None = None) -> int:
     s24.add_argument("--output", type=Path, required=True)
     s24.add_argument("--certifier-id", default=os.environ.get("CAJITA_G24_CERTIFIER_ID", ""))
     s24.add_argument("--producer-id", default=os.environ.get("CAJITA_PRODUCER_ID", "CUSTOSZ_V9"))
+    s24.add_argument("--expected-subject-sha256", default=None)
     verify = sub.add_parser("verify-release", help="Verify the final Cajita tree and signed G23/G24 receipts.")
     verify.add_argument("--root", type=Path, required=True)
     verify.add_argument("--manifest", type=Path, required=True)
@@ -614,6 +616,12 @@ def main(argv: list[str] | None = None) -> int:
             root = args.root.resolve(strict=False)
             payload = final_evidence(root)
             payload["candidate_commit"] = args.candidate_commit
+            if args.expected_subject_sha256 and payload.get("subject_tree_sha256") != args.expected_subject_sha256:
+                payload["status"] = "HOLD"
+                payload["blockers"] = sorted(set(payload.get("blockers", []) + ["G23_DISPATCHED_SUBJECT_MISMATCH"]))
+            if args.expected_subject_sha256 and not ctl.is_sha256(args.expected_subject_sha256):
+                payload["status"] = "HOLD"
+                payload["blockers"] = sorted(set(payload.get("blockers", []) + ["G23_EXPECTED_SUBJECT_HASH_INVALID"]))
             payload["validator_id"] = args.validator_id
             payload["producer_id"] = args.producer_id
             if not COMMIT_RE.fullmatch(args.candidate_commit):
@@ -639,6 +647,7 @@ def main(argv: list[str] | None = None) -> int:
                 args.g23, args.output, os.environ.get("CAJITA_G23_PUBLIC_KEY_PEM", ""),
                 os.environ.get("CAJITA_G24_SIGNING_PRIVATE_KEY_PEM", ""),
                 args.certifier_id, args.producer_id, args.candidate_commit,
+                args.expected_subject_sha256,
             )
             print(json.dumps({"decision": envelope.get("payload", {}).get("status", "HOLD"),
                               "signed": envelope.get("status") == "SIGNED"}, sort_keys=True))
