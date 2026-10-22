@@ -15,8 +15,12 @@ on:
   pull_request:
     paths:
       - "scripts/cajita_luna_governed_preflight.py"
+      - "scripts/cajita_luna_puac2_gates.py"
       - "tests/test_cajita_luna_governed_preflight.py"
+      - "tests/test_cajita_luna_puac2_gates.py"
+      - "tests/test_cajita_puac2_workflow_contract.py"
       - ".github/workflows/cajita-luna-governed-preflight.yml"
+      - ".github/workflows/cajita-luna-puac2-g23-g24.yml"
 
 permissions:
   contents: read
