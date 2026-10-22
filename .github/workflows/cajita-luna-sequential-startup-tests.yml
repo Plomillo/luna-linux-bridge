@@ -1,0 +1,45 @@
+name: "Cajita sequential startup controller tests"
+
+on:
+  push:
+    branches: ["feature/cajita-luna-sequential-startup-20261022"]
+    paths:
+      - "scripts/cajita_luna_sequential_startup.py"
+      - "tests/test_cajita_luna_sequential_startup.py"
+      - ".github/workflows/cajita-luna-sequential-startup-tests.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/cajita_luna_sequential_startup.py"
+      - "tests/test_cajita_luna_sequential_startup.py"
+      - ".github/workflows/cajita-luna-sequential-startup-tests.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "cajita-sequential-startup-${{ github.ref }}"
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: "Startup controller tests only — not Cajita certification"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    env:
+      PYTHONPATH: scripts
+    steps:
+      - name: Checkout without persisted credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.12"
+      - name: Compile sequential controller and tests
+        run: python -m py_compile scripts/cajita_luna_sequential_startup.py tests/test_cajita_luna_sequential_startup.py
+      - name: Run strict-order, fail-closed and RAM policy tests
+        run: python -m unittest discover -s tests -p 'test_cajita_luna_sequential_startup.py' -v

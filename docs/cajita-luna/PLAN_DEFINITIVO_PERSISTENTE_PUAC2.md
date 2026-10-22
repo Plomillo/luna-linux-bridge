@@ -298,3 +298,18 @@ La lectura de sólo lectura más reciente quedó registrada como \`docs/cajita-l
 La lectura volvió a comprobar el SHA-256 del archivo Edge, que coincide con su sidecar. También volvió a comparar el inventario legado: 121 registros, \`128230075138\` bytes originales declarados, 47 rutas ausentes y 6 discrepancias de tamaño. No aparecieron los manifiestos de congelación, reconciliación, plan, prueba de los dominios ni validación funcional; G23/G24 siguen sin emitirse para Cajita.
 
 **Decisión por evidencia:** no se ha hecho ninguna transformación física durante esta actualización de plan/controladores. Cajita continúa bloqueada por el exceso exacto de \`1177649690\` bytes, por la incompatibilidad del archivo Edge con el techo global en su representación actual y por los manifiestos/evidencias operativas ausentes.
+
+
+## 10. Arranque local secuencial persistente (append-only)
+
+El controlador `scripts/cajita_luna_sequential_startup.py` implementa el arranque local de este plan. Preserva el orden B1→B2→B3→B4→B5→B6→B7 y falla cerrado: si un bloque queda en HOLD/FAIL, los posteriores se registran como `NOT_STARTED_PREDECESSOR_HOLD`. La telemetría y el ledger SHA-256 encadenado se guardan fuera de Cajita, dentro del directorio de jobs de CUSTOS. La ejecución no escribe manifiestos, recibos ni logs dentro del árbol de Cajita.
+
+La política de recursos solicita 1 GiB para el árbol de procesos del controlador, limita el espacio virtual del controlador a 384 MiB y el de un hijo secuencial a 640 MiB, y supervisa el RSS sumado del proceso y sus descendientes. No se ejecuta paralelismo de transformaciones. La prueba unitaria del controlador cubre el orden estricto, rechazo de operaciones cuando CUSTOS V9 no está autorizado, tope de RAM declarado y detección de manipulación del ledger.
+
+### Evidencia del primer arranque local
+
+Run ID `20261022T071427355820Z`; commit de `main` utilizado: `b88cc56aeb81930230babd700d426c84046ed9a8`. El controlador registró `SUCCESS_TELEMETRY_CONFIRMED` en 1,69 s y la cadena de eventos pasó su verificación SHA-256. B1 pasó tras inventariar 136 entradas y calcular hashes de los cinco ámbitos congelados y del archivo Edge. B2 quedó en HOLD: `FROZEN_V9_OUTPUTS_MANIFEST_MISSING` y `REGISTRY_RECONCILIATION_MANIFEST_MISSING`; el registro legado presenta 47 rutas ausentes y 6 discrepancias de tamaño. Por orden estricto, B3–B7 se registraron `NOT_STARTED_PREDECESSOR_HOLD`.
+
+Los 22 manifiestos D01–D22 estaban presentes y sus JSON se pudieron analizar, pero esto no demuestra que hayan ejecutado tareas sobre Cajita. El paquete local CUSTOSZ V9 informó `active_authorized=false`, `certification=NOT_GRANTED`; su autoprueba pasó 12 comprobaciones, pero devolvió `authorization_granted=false`. Por ello el controlador no lanzó el trabajador de transformación. La telemetría midió Cajita en `1656649690` bytes, techo `479000000`, exceso `1177649690`; el archivo Edge ocupa `951395079` bytes y su SHA-256 observado fue `9b6be254db05b410dbb8966f861c3b64ff7d74a56a267f6218ff3c108c9d4e6b`.
+
+Este resultado certifica únicamente que el controlador se inició, midió y conservó evidencia local verificable. **No certifica el inicio de la misión CUSTOS, la viabilidad del límite, el funcionamiento final ni G23/G24.** No se modificaron los artefactos de Cajita.
