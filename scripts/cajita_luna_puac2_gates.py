@@ -91,6 +91,7 @@ def sign_envelope(payload: dict[str, Any], private_pem: str, signer_id: str, sch
     signature = base64.b64encode(key.sign(canonical)).decode("ascii")
     return {
         "schema": schema,
+        "status": "SIGNED",
         "signer_id": signer_id,
         "payload_sha256": digest_bytes(canonical),
         "signer_public_key_sha256": digest_bytes(key.public_key().public_bytes(
@@ -107,6 +108,8 @@ def verify_envelope(envelope: Any, public_pem: str, expected_schema: str, expect
         return None, ["SIGNED_ENVELOPE_NOT_OBJECT"]
     if envelope.get("schema") != expected_schema:
         errors.append("SIGNED_ENVELOPE_SCHEMA_MISMATCH")
+    if envelope.get("status") != "SIGNED":
+        errors.append("SIGNED_ENVELOPE_STATUS_INVALID")
     signer_id = envelope.get("signer_id")
     if not isinstance(signer_id, str) or not signer_id.strip():
         errors.append("SIGNED_ENVELOPE_SIGNER_MISSING")
@@ -363,8 +366,16 @@ def issue_g24(g23_path: Path, output_path: Path, g23_public_pem: str, g24_privat
         errors.append("G23_PUBLIC_KEY_NOT_CONFIGURED")
     if g23_payload is None:
         errors.append("G23_SIGNATURE_NOT_VERIFIED")
-    if not certifier_id or certifier_id == producer_id:
+    if not certifier_id or certifier_id in {producer_id, (g23_payload or {}).get("validator_id")}:
         errors.append("G24_CERTIFIER_ID_INVALID")
+    if g23_public_pem and g24_private_pem:
+        try:
+            g23_fingerprint = public_key_fingerprint(g23_public_pem)
+            g24_fingerprint = public_key_fingerprint(public_pem_from_private(g24_private_pem))
+            if g23_fingerprint == g24_fingerprint:
+                errors.append("G23_G24_SIGNING_KEYS_NOT_DISTINCT")
+        except Exception as exc:
+            errors.append("G23_G24_SIGNING_KEY_VALIDATION_FAILED:" + type(exc).__name__)
     if g23_payload is not None:
         if g23_payload.get("status") != "PASS":
             errors.extend(g23_payload.get("blockers", []) or ["G23_NOT_PASS"])
@@ -390,7 +401,17 @@ def issue_g24(g23_path: Path, output_path: Path, g23_public_pem: str, g24_privat
         }
         if not isinstance(evidence_hashes, dict) or set(evidence_hashes) != required_hashes or any(not ctl.is_sha256(v) for v in evidence_hashes.values()):
             errors.append("G23_EVIDENCE_HASH_SET_INVALID")
-        if not isinstance(g23_payload.get("tree_bytes_at_validation"), int) or g23_payload.get("projected_tree_bytes_with_reserve", ctl.CAP_BYTES + 1) > ctl.CAP_BYTES:
+        measured_bytes = g23_payload.get("tree_bytes_at_validation")
+        reserve_bytes = g23_payload.get("evidence_reserve_bytes")
+        projected_bytes = g23_payload.get("projected_tree_bytes_with_reserve")
+        if (
+            isinstance(measured_bytes, bool) or not isinstance(measured_bytes, int) or measured_bytes < 0
+            or isinstance(reserve_bytes, bool) or not isinstance(reserve_bytes, int) or reserve_bytes < ctl.MIN_EVIDENCE_RESERVE_BYTES
+            or g23_payload.get("hard_cap_bytes") != ctl.CAP_BYTES
+            or projected_bytes != measured_bytes + reserve_bytes
+            or measured_bytes > ctl.CAP_BYTES
+            or projected_bytes > ctl.CAP_BYTES
+        ):
             errors.append("G23_SIZE_OR_RESERVE_INVALID")
         if g23_payload.get("blockers"):
             errors.append("G23_REPORT_HAS_BLOCKERS")
@@ -562,7 +583,7 @@ def verify_release(root: Path, manifest_path: Path, g23_public_pem: str, g24_pub
             errors.append("G24_VALIDATOR_BINDING_MISMATCH")
         if g24_payload.get("certifier_id") in (None, "", (g23_payload or {}).get("validator_id"), (g23_payload or {}).get("producer_id")):
             errors.append("G24_IDENTITY_NOT_DISTINCT")
-        if g23_envelope and g24_envelope and g23_envelope.get("signer_public_key_sha256") == g24_envelope.get("signer_public_key_sha256"):
+            if g23_envelope and g24_envelope and g23_envelope.get("signer_public_key_sha256") == g24_envelope.get("signer_public_key_sha256"):
             errors.append("G23_G24_SIGNING_KEYS_NOT_DISTINCT")
         if g24_payload.get("canonical_authority_transfer") is not False or g24_payload.get("certification_propagation") is not False:
             errors.append("FORBIDDEN_CERTIFICATION_PROPAGATION")
