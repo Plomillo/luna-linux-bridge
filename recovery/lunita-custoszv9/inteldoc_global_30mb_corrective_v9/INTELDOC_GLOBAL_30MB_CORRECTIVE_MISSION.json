@@ -1,0 +1,65 @@
+{
+  "schema": "INTELDOC_GLOBAL_30MB_CORRECTIVE_MISSION/2.0",
+  "mission_id": "CUSTOSZV9_INTELDOC_FIVE_ARTIFACT_CORRECTIVE_V2",
+  "objective": "Continue from the 264156512-byte V8 direct bundle using a new structural-compression strategy. Produce and compare a compact replacement candidate under the exact 30000000-byte payload cap, retain an honest global-gross dependency gate, and continue exploring routes that can reduce required runtime closure without running functional tests.",
+  "global_limit": {
+    "hard_cap_bytes": 30000000,
+    "unit": "decimal_bytes",
+    "scope": "all selected candidate payload files plus required runtime dependencies that are evidenced as required",
+    "no_goal_to_equal_cap": true,
+    "fail_closed": true
+  },
+  "inventory": {
+    "source_root": "/home/diegoignacionorambuenamiranda/PROYECTOS/1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/2. Cajita de Luna/5. Inteligencia documental",
+    "pinned_originals": [
+      {"id":"CALIBRE_BINARY","path":"Calibre/calibre-9.14.0-x86_64.txz","bytes":192898432,"sha256":"7f53a0863ed6d32407bc72053b966e39d5b64813f2592bd9c741504c01c0e7f3"},
+      {"id":"CALIBRE_SOURCE","path":"Calibre/calibre-9.14.0.tar.xz","bytes":48867616,"sha256":"d1bc24024b0942429c627e9c5d0b25d51df9c1af1e1d8dca3e572f03b194c561"},
+      {"id":"DOCLING_WHEEL","path":"Docling/docling_slim-2.124.0-py3-none-any.whl","bytes":780430,"sha256":"2c7c667394d3eae9080bc15143ed6f1d39a4838090d9e3f29be212606e6676bd"},
+      {"id":"DOCLING_GGUF_TEXT","path":"Docling/granite-docling-258M-Q4_K_M.gguf","bytes":138559520,"sha256":"4ba41a480d2b6594613a23819df8fcc382d9dab9691e28bf327b3ac799fe0a82"},
+      {"id":"DOCLING_GGUF_MMPROJ","path":"Docling/mmproj-granite-docling-258M-f16.gguf","bytes":190031712,"sha256":"4b7b2c4ed3162bd9cb323668c188e2324838b8f8ca4f3f9767f16c4c600d43ad"}
+    ]
+  },
+  "prior_evidence": {
+    "v8_direct_bundle_bytes": 264156512,
+    "v8_compact_bundle_bytes": 216268463,
+    "v8_compact_python_runtime_charge_bytes": 1051798942,
+    "v8_finished_at_utc": "2026-10-21T20:18:45Z",
+    "v8_result_path": "/home/diegoignacionorambuenamiranda/PROYECTOS/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR/CUSTOSZ_CONTINUITY_V1/state/jobs/inteldoc_global_30mb_corrective_worker_v8/result.json"
+  },
+  "candidate_strategy": {
+    "mode": "STRUCTURAL_REPACKAGING_AND_RUNTIME_CLOSURE_SEARCH",
+    "calibre_binary": "Do not carry the 151177876-byte minimized Calibre archive in the compact payload; materialize a versioned externalization descriptor and explicitly record that Calibre is not installed in the current host. Do not claim capability equivalence.",
+    "calibre_source": "Treat the 48867616-byte Calibre source archive as build/provenance input, not runtime payload; retain a provenance descriptor with original SHA-256 and exact bytes.",
+    "docling_model": "Use the isolated 20871887-byte compact upstream Hugging Face candidate only as a separate candidate, not as a proven byte-transform/equivalent replacement of the two pinned GGUFs.",
+    "docling_wheel": "Reuse the pinned 775392-byte pruned wheel candidate after hash and ZIP integrity inventory.",
+    "runtime": "Explore how to replace the previous 1051798942-byte Python/Torch/Transformers closure with a materially smaller runtime. Do not report the global 30MB gate as passed while runtime bytes are required but unresolved or exceed the cap.",
+    "continuation": "Do not terminate the mission just because the first structural candidate passes payload-only size. Emit the candidate and a precise blocker/next strategy when a native runtime under the remaining byte budget cannot be evidenced in this run."
+  },
+  "controls": {
+    "original_sources_read_only": true,
+    "candidate_output_only": true,
+    "no_functional_tests": true,
+    "no_runtime_smoke": true,
+    "no_model_loading_or_generation": true,
+    "no_testsuite_execution": true,
+    "no_canonical_promotion": true,
+    "no_certification": true,
+    "no_source_substitution_claim": true,
+    "max_concurrency": 1,
+    "resource_limits": {"MemoryHigh":805306368,"MemoryMax":1073741824,"CPUQuotaPercent":35,"TasksMax":24}
+  },
+  "acceptance_criteria": [
+    "all five original SHA-256 pins and byte sizes are verified before candidate generation",
+    "original source files remain unchanged",
+    "a fresh isolated candidate payload with exact filesystem byte accounting is produced",
+    "payload gate and global-gross gate are reported separately without redefining the cap",
+    "no functional tests, runtime smoke, model loading or generation are run",
+    "global_target_met is true only if candidate plus all evidenced required runtime dependencies totals at most 30000000 bytes",
+    "otherwise status remains HOLD and the unresolved required dependency is named explicitly"
+  ],
+  "github": {
+    "repository": "Plomillo/luna-linux-bridge",
+    "branch": "recovery/lunita-custoszv9-operational-20261020",
+    "path_prefix": "recovery/lunita-custoszv9/inteldoc_global_30mb_corrective_v9/"
+  }
+}
