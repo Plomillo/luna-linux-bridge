@@ -145,21 +145,33 @@ class CajitaPUAC2GateTests(unittest.TestCase):
             self.assertEqual(result["certification_status"], "NOT_GRANTED")
             self.assertGreater(result["overage_bytes"], 0)
 
-    def test_generated_evidence_is_excluded_from_subject_hash_but_not_size_accounting(self):
+    def test_only_exactly_named_generated_receipts_are_excluded_from_subject_hash(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             (root / "payload.bin").write_bytes(b"payload")
             subject1, count1, bytes1 = ctl.candidate_tree_digest(root)
             evidence = root / ".cajita-optimization-candidates" / "evidence"
             evidence.mkdir(parents=True)
-            (evidence / "signed-receipt.json").write_text('{"status":"PASS"}', encoding="utf-8")
+            history = evidence / "historical-audit.json"
+            receipt = evidence / "CAJITA_G23_run.json"
+            history.write_text('{"history":true}', encoding="utf-8")
+            receipt.write_text('{"status":"SIGNED"}', encoding="utf-8")
             subject2, count2, bytes2 = ctl.candidate_tree_digest(root)
-            self.assertEqual(subject1, subject2)
-            self.assertEqual(count1, 1)
-            self.assertEqual(bytes1, 7)
-            self.assertEqual(count2, 1)
-            self.assertEqual(bytes2, 7)
-            self.assertGreater(ctl.scan_tree(root)["total_bytes"], bytes2)
+            self.assertNotEqual(subject1, subject2)
+            subject3, count3, bytes3 = ctl.candidate_tree_digest(
+                root, {".cajita-optimization-candidates/evidence/CAJITA_G23_run.json"}
+            )
+            expected, expected_count, expected_bytes = ctl.candidate_tree_digest(
+                root, {".cajita-optimization-candidates/evidence/CAJITA_G23_run.json",
+                       ".cajita-optimization-candidates/evidence/historical-audit.json"}
+            )
+            self.assertNotEqual(subject3, subject1)
+            self.assertEqual(count3, 2)
+            self.assertEqual(bytes3, 7 + history.stat().st_size)
+            self.assertEqual(expected_count, 1)
+            self.assertEqual(expected_bytes, 7)
+            self.assertNotEqual(subject3, expected)
+            self.assertGreater(ctl.scan_tree(root)["total_bytes"], bytes3)
 
 
     def test_valid_g23_and_distinct_g24_can_certify_the_same_subject(self):
