@@ -141,5 +141,37 @@ class GovernedPreflightTests(unittest.TestCase):
                 ctl.safe_relative(root, "../outside.bin")
 
 
+    def test_missing_22_domain_routing_report_fails_closed(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = make_root(Path(temp))
+            errors = ctl.validate_domain_routing(
+                root,
+                {"schema": "CAJITA_OPTIMIZATION_PLAN_V9/1.0"},
+                {},
+            )
+            self.assertIn("DOMAIN_ROUTING_MANIFEST_MISSING", errors)
+
+    def test_domain_routing_requires_exact_twenty_two_domains(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = make_root(Path(temp))
+            errors = ctl.validate_domain_routing(
+                root,
+                {
+                    "schema": "CAJITA_OPTIMIZATION_PLAN_V9/1.0",
+                    "domain_routing": {
+                        "schema": "CAJITA_V9_DOMAIN_ROUTING/1.0",
+                        "repository": "Plomillo/luna-linux-bridge",
+                        "repository_commit": "a" * 40,
+                        "validation_report_path": ctl.DOMAIN_TOOL_REPORT_REL,
+                        "validation_report_sha256": "b" * 64,
+                        "domains": [{"domain_id": "D01"}],
+                    },
+                },
+                {},
+            )
+            self.assertIn("DOMAIN_ROUTING_MATRIX_MUST_COVER_D01_D22_EXACTLY", errors)
+            self.assertIn("DOMAIN_TOOL_VALIDATION_REPORT_MISSING", errors)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
