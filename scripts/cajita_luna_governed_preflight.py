@@ -883,6 +883,9 @@ def validate_plan(root: Path, total_bytes: int, available_disk: int, available_r
         errors.append("OPTIMIZATION_COMPONENT_COVERAGE_INCOMPLETE")
     if EDGE_ARCHIVE_REL not in assigned_files:
         errors.append("EDGE_ARCHIVE_NOT_INCLUDED_IN_OPTIMIZATION_SCOPE")
+    # Every helper domain must be pinned, routed, tested, and bound to the exact
+    # implementation/test sources at the declared repository commit.
+    errors.extend(validate_domain_routing(root, plan, by_component))
     # Overlapping declared roots are only acceptable when the enclosing operation
     # explicitly excludes all files assigned to the nested operation.
     for i, (left_component, left) in enumerate(covered_roots):
