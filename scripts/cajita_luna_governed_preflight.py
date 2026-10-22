@@ -493,6 +493,242 @@ def validate_frozen_manifest(root: Path) -> list[str]:
     return sorted(set(errors))
 
 
+
+def git_show_bytes(repo_root: Path, commit_sha: str, source_path: str,
+                   cache: dict[tuple[str, str], bytes]) -> bytes:
+    """Read a source blob from the pinned helper-repository commit without checking it out."""
+    key = (commit_sha, source_path)
+    if key in cache:
+        return cache[key]
+    if not re.fullmatch(r"[0-9a-f]{40}", commit_sha):
+        raise ValueError("HELPER_COMMIT_SHA_INVALID")
+    if not isinstance(source_path, str) or not source_path or Path(source_path).is_absolute() or ".." in Path(source_path).parts:
+        raise ValueError("HELPER_SOURCE_PATH_UNSAFE")
+    proc = subprocess.run(
+        ["git", "-C", str(repo_root), "show", f"{commit_sha}:{source_path}"],
+        capture_output=True, text=False, timeout=20, check=False,
+    )
+    if proc.returncode != 0:
+        raise ValueError("HELPER_SOURCE_BLOB_UNAVAILABLE:" + source_path)
+    cache[key] = proc.stdout
+    return proc.stdout
+
+
+def sha256_git_blob(repo_root: Path, commit_sha: str, source_path: str,
+                    cache: dict[tuple[str, str], bytes]) -> str:
+    return hashlib.sha256(git_show_bytes(repo_root, commit_sha, source_path, cache)).hexdigest()
+
+
+def validate_domain_routing(root: Path, plan: dict[str, Any],
+                            operations_by_component: dict[str, dict[str, Any]]) -> list[str]:
+    """Require auditable routing across the 22 helper domains without packaging them into Cajita."""
+    errors: list[str] = []
+    routing = plan.get("domain_routing")
+    if not isinstance(routing, dict):
+        return ["DOMAIN_ROUTING_MANIFEST_MISSING"]
+    if routing.get("schema") != "CAJITA_V9_DOMAIN_ROUTING/1.0":
+        errors.append("DOMAIN_ROUTING_SCHEMA_MISMATCH")
+    if routing.get("repository") != HELPER_REPOSITORY:
+        errors.append("DOMAIN_ROUTING_REPOSITORY_MISMATCH")
+    helper_commit = routing.get("repository_commit")
+    if not isinstance(helper_commit, str) or re.fullmatch(r"[0-9a-f]{40}", helper_commit) is None:
+        return sorted(set(errors + ["DOMAIN_ROUTING_HELPER_COMMIT_INVALID"]))
+    report_rel = routing.get("validation_report_path")
+    if report_rel != DOMAIN_TOOL_REPORT_REL:
+        errors.append("DOMAIN_TOOL_VALIDATION_REPORT_PATH_MISMATCH")
+    try:
+        report_path = safe_relative(root, report_rel)
+    except (ValueError, TypeError):
+        return sorted(set(errors + ["DOMAIN_TOOL_VALIDATION_REPORT_PATH_UNSAFE"]))
+    if not report_path.is_file() or report_path.is_symlink():
+        return sorted(set(errors + ["DOMAIN_TOOL_VALIDATION_REPORT_MISSING"]))
+    actual_report_sha = sha256_file(report_path)
+    if not is_sha256(routing.get("validation_report_sha256")) or actual_report_sha != routing.get("validation_report_sha256"):
+        errors.append("DOMAIN_TOOL_VALIDATION_REPORT_HASH_MISMATCH")
+    try:
+        validation_report = read_object(report_path)
+    except (OSError, ValueError, json.JSONDecodeError):
+        return sorted(set(errors + ["DOMAIN_TOOL_VALIDATION_REPORT_INVALID_JSON"]))
+    if validation_report.get("schema") != "CAJITA_DOMAIN_TOOL_VALIDATION_V9/1.0":
+        errors.append("DOMAIN_TOOL_VALIDATION_SCHEMA_MISMATCH")
+    if validation_report.get("repository") != HELPER_REPOSITORY or validation_report.get("repository_commit") != helper_commit:
+        errors.append("DOMAIN_TOOL_VALIDATION_SOURCE_BINDING_MISMATCH")
+    if validation_report.get("status") != "PASS":
+        errors.append("DOMAIN_TOOL_VALIDATION_NOT_PASS")
+
+    domain_rows = routing.get("domains")
+    report_domains = validation_report.get("domains")
+    expected_ids = set(DOMAIN_CAPABILITY_RANGES)
+    if not isinstance(domain_rows, list) or {row.get("domain_id") for row in domain_rows if isinstance(row, dict)} != expected_ids or len(domain_rows) != len(expected_ids):
+        errors.append("DOMAIN_ROUTING_MATRIX_MUST_COVER_D01_D22_EXACTLY")
+        domain_rows = domain_rows if isinstance(domain_rows, list) else []
+    if not isinstance(report_domains, list) or {row.get("domain_id") for row in report_domains if isinstance(row, dict)} != expected_ids or len(report_domains) != len(expected_ids):
+        errors.append("DOMAIN_TOOL_VALIDATION_MUST_COVER_D01_D22_EXACTLY")
+        report_domains = report_domains if isinstance(report_domains, list) else []
+    by_domain = {row.get("domain_id"): row for row in domain_rows if isinstance(row, dict)}
+    reports_by_domain = {row.get("domain_id"): row for row in report_domains if isinstance(row, dict)}
+    route_components: dict[str, set[str]] = {domain_id: set() for domain_id in DOMAIN_CAPABILITY_RANGES}
+    route_capabilities: dict[str, set[int]] = {domain_id: set() for domain_id in DOMAIN_CAPABILITY_RANGES}
+    for component, op in operations_by_component.items():
+        routes = op.get("domain_routes")
+        if not isinstance(routes, list) or not routes:
+            errors.append(f"OPTIMIZATION_DOMAIN_ROUTES_MISSING:{component}")
+            continue
+        seen_domains: set[str] = set()
+        for route in routes:
+            if not isinstance(route, dict):
+                errors.append(f"OPTIMIZATION_DOMAIN_ROUTE_INVALID:{component}")
+                continue
+            domain_id = route.get("domain_id")
+            if domain_id not in DOMAIN_CAPABILITY_RANGES:
+                errors.append(f"OPTIMIZATION_DOMAIN_ID_INVALID:{component}:{domain_id}")
+                continue
+            if domain_id in seen_domains:
+                errors.append(f"OPTIMIZATION_DOMAIN_ROUTE_DUPLICATED:{component}:{domain_id}")
+            seen_domains.add(domain_id)
+            cap_ids = route.get("capability_ids")
+            if not isinstance(cap_ids, list) or not cap_ids:
+                errors.append(f"OPTIMIZATION_DOMAIN_CAPABILITIES_MISSING:{component}:{domain_id}")
+                continue
+            low, high = DOMAIN_CAPABILITY_RANGES[domain_id]
+            normalized: set[int] = set()
+            for cap_id in cap_ids:
+                if isinstance(cap_id, bool) or not isinstance(cap_id, int) or not (low <= cap_id <= high):
+                    errors.append(f"OPTIMIZATION_DOMAIN_CAPABILITY_OUT_OF_RANGE:{component}:{domain_id}:{cap_id}")
+                else:
+                    normalized.add(cap_id)
+            if len(normalized) != len(cap_ids):
+                errors.append(f"OPTIMIZATION_DOMAIN_CAPABILITY_DUPLICATED:{component}:{domain_id}")
+            if not isinstance(route.get("rationale"), str) or len(route["rationale"].strip()) < 12:
+                errors.append(f"OPTIMIZATION_DOMAIN_ROUTE_RATIONALE_MISSING:{component}:{domain_id}")
+            if not is_sha256(route.get("route_evidence_sha256")):
+                errors.append(f"OPTIMIZATION_DOMAIN_ROUTE_EVIDENCE_HASH_MISSING:{component}:{domain_id}")
+            route_components[domain_id].add(component)
+            route_capabilities[domain_id].update(normalized)
+
+    repo_root = Path(__file__).resolve().parents[1]
+    blob_cache: dict[tuple[str, str], bytes] = {}
+    for domain_id in sorted(expected_ids):
+        row = by_domain.get(domain_id)
+        report_row = reports_by_domain.get(domain_id)
+        low, high = DOMAIN_CAPABILITY_RANGES[domain_id]
+        if not isinstance(row, dict) or not isinstance(report_row, dict):
+            errors.append(f"DOMAIN_ROUTE_ROW_MISSING:{domain_id}")
+            continue
+        if row.get("decision") != "USED":
+            errors.append(f"DOMAIN_NOT_USED_OR_NOT_JUSTIFIED:{domain_id}")
+        components = row.get("routed_components")
+        expected_components = sorted(route_components[domain_id])
+        if not isinstance(components, list) or sorted(set(components)) != expected_components or not expected_components:
+            errors.append(f"DOMAIN_ROUTED_COMPONENT_COVERAGE_MISMATCH:{domain_id}")
+        cap_ids = row.get("capability_ids")
+        expected_caps = sorted(route_capabilities[domain_id])
+        if not isinstance(cap_ids, list) or sorted(set(cap_ids)) != expected_caps or not expected_caps:
+            errors.append(f"DOMAIN_ROUTED_CAPABILITY_COVERAGE_MISMATCH:{domain_id}")
+        if any(isinstance(cid, bool) or not isinstance(cid, int) or cid < low or cid > high for cid in expected_caps):
+            errors.append(f"DOMAIN_CAPABILITY_RANGE_INVALID:{domain_id}")
+        manifest_path = f"{DOMAIN_MANIFEST_ROOT}/{domain_id}.json"
+        if row.get("domain_manifest_path") != manifest_path:
+            errors.append(f"DOMAIN_MANIFEST_PATH_MISMATCH:{domain_id}")
+        try:
+            manifest_bytes = git_show_bytes(repo_root, helper_commit, manifest_path, blob_cache)
+            manifest_sha = hashlib.sha256(manifest_bytes).hexdigest()
+            if row.get("domain_manifest_sha256") != manifest_sha:
+                errors.append(f"DOMAIN_MANIFEST_PINNED_HASH_MISMATCH:{domain_id}")
+            manifest = json.loads(manifest_bytes.decode("utf-8"))
+        except (OSError, ValueError, UnicodeDecodeError, json.JSONDecodeError, subprocess.SubprocessError):
+            errors.append(f"DOMAIN_MANIFEST_PINNED_SOURCE_UNAVAILABLE:{domain_id}")
+            continue
+        capabilities = manifest.get("capabilities")
+        if not isinstance(capabilities, list):
+            errors.append(f"DOMAIN_CAPABILITY_REGISTRY_INVALID:{domain_id}")
+            continue
+        cap_map = {
+            item.get("capability_id"): item for item in capabilities if isinstance(item, dict)
+        }
+        if not set(expected_caps).issubset(set(cap_map)):
+            errors.append(f"DOMAIN_CAPABILITY_NOT_IN_PINNED_MANIFEST:{domain_id}")
+        test_report_rel = row.get("test_report_path")
+        try:
+            test_report_path = safe_relative(root, test_report_rel)
+        except (ValueError, TypeError):
+            errors.append(f"DOMAIN_TEST_REPORT_PATH_UNSAFE:{domain_id}")
+            continue
+        if not test_report_path.is_file() or test_report_path.is_symlink():
+            errors.append(f"DOMAIN_TEST_REPORT_MISSING:{domain_id}")
+            continue
+        test_report_sha = sha256_file(test_report_path)
+        if row.get("test_report_sha256") != test_report_sha or report_row.get("test_report_sha256") != test_report_sha:
+            errors.append(f"DOMAIN_TEST_REPORT_HASH_MISMATCH:{domain_id}")
+        if report_row.get("decision") != "USED" or report_row.get("status") != "PASS":
+            errors.append(f"DOMAIN_TOOL_TEST_STATUS_NOT_PASS:{domain_id}")
+        if report_row.get("test_report_path") != test_report_rel:
+            errors.append(f"DOMAIN_TEST_REPORT_PATH_BINDING_MISMATCH:{domain_id}")
+        try:
+            test_report = read_object(test_report_path)
+        except (OSError, ValueError, json.JSONDecodeError):
+            errors.append(f"DOMAIN_TEST_REPORT_INVALID_JSON:{domain_id}")
+            continue
+        if test_report.get("schema") != "CAJITA_DOMAIN_TEST_REPORT_V9/1.0":
+            errors.append(f"DOMAIN_TEST_REPORT_SCHEMA_MISMATCH:{domain_id}")
+        if test_report.get("domain_id") != domain_id or test_report.get("repository") != HELPER_REPOSITORY or test_report.get("repository_commit") != helper_commit:
+            errors.append(f"DOMAIN_TEST_REPORT_SOURCE_BINDING_MISMATCH:{domain_id}")
+        if test_report.get("status") != "PASS" or test_report.get("exit_code") != 0:
+            errors.append(f"DOMAIN_TEST_REPORT_NOT_PASS:{domain_id}")
+        report_caps = test_report.get("capabilities")
+        if not isinstance(report_caps, list):
+            errors.append(f"DOMAIN_TEST_REPORT_CAPABILITIES_INVALID:{domain_id}")
+            continue
+        report_cap_map = {
+            item.get("capability_id"): item for item in report_caps if isinstance(item, dict)
+        }
+        if not expected_caps.issubset(set(report_cap_map)):
+            errors.append(f"DOMAIN_TEST_REPORT_CAPABILITY_COVERAGE_MISMATCH:{domain_id}")
+        if set(report_cap_map) != expected_caps:
+            errors.append(f"DOMAIN_TEST_REPORT_CONTAINS_UNROUTED_CAPABILITIES:{domain_id}")
+        for cap_id in sorted(expected_caps):
+            item = cap_map.get(cap_id)
+            result_row = report_cap_map.get(cap_id)
+            if not isinstance(item, dict) or not isinstance(result_row, dict):
+                continue
+            if item.get("implementation_state") != "EVIDENCED":
+                errors.append(f"DOMAIN_CAPABILITY_NOT_EVIDENCED:{domain_id}:{cap_id}")
+            if result_row.get("canonical_name") != item.get("canonical_name"):
+                errors.append(f"DOMAIN_CAPABILITY_NAME_MISMATCH:{domain_id}:{cap_id}")
+            for key, manifest_key in (
+                ("implementation_path", "implementation_artifact"),
+                ("test_path", "test_artifact"),
+            ):
+                source_path = item.get(manifest_key)
+                if not isinstance(source_path, str) or source_path.startswith("/") or ".." in Path(source_path).parts:
+                    errors.append(f"DOMAIN_SOURCE_PATH_INVALID:{domain_id}:{cap_id}:{manifest_key}")
+                    continue
+                if result_row.get(key) != source_path:
+                    errors.append(f"DOMAIN_TEST_REPORT_SOURCE_PATH_MISMATCH:{domain_id}:{cap_id}:{key}")
+                    continue
+                hash_key = "implementation_sha256" if key == "implementation_path" else "test_sha256"
+                try:
+                    observed_sha = sha256_git_blob(repo_root, helper_commit, source_path, blob_cache)
+                    if result_row.get(hash_key) != observed_sha:
+                        errors.append(f"DOMAIN_SOURCE_HASH_MISMATCH:{domain_id}:{cap_id}:{key}")
+                except (OSError, ValueError, subprocess.SubprocessError):
+                    errors.append(f"DOMAIN_SOURCE_BLOB_UNAVAILABLE:{domain_id}:{cap_id}:{key}")
+            if result_row.get("test_status") != "PASS" or result_row.get("test_return_code") != 0:
+                errors.append(f"DOMAIN_CAPABILITY_TEST_NOT_PASS:{domain_id}:{cap_id}")
+            if not is_sha256(result_row.get("test_output_sha256")):
+                errors.append(f"DOMAIN_CAPABILITY_TEST_OUTPUT_HASH_MISSING:{domain_id}:{cap_id}")
+            test_output_rel = result_row.get("test_output_path")
+            try:
+                test_output_path = safe_relative(root, test_output_rel)
+            except (ValueError, TypeError):
+                errors.append(f"DOMAIN_CAPABILITY_TEST_OUTPUT_PATH_UNSAFE:{domain_id}:{cap_id}")
+                continue
+            if not test_output_path.is_file() or test_output_path.is_symlink():
+                errors.append(f"DOMAIN_CAPABILITY_TEST_OUTPUT_MISSING:{domain_id}:{cap_id}")
+            elif sha256_file(test_output_path) != result_row.get("test_output_sha256"):
+                errors.append(f"DOMAIN_CAPABILITY_TEST_OUTPUT_HASH_MISMATCH:{domain_id}:{cap_id}")
+    return sorted(set(errors))
+
 def validate_plan(root: Path, total_bytes: int, available_disk: int, available_ram: int | None) -> dict[str, Any]:
     plan_path = root / PLAN_REL
     result: dict[str, Any] = {
