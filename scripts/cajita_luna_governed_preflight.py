@@ -67,6 +67,19 @@ PENDING_COMPONENTS = {
     "anti_alucinaciones": "6. Sistema Inteligente",
 }
 
+HELPER_REPOSITORY = "Plomillo/luna-linux-bridge"
+DOMAIN_MANIFEST_ROOT = "implementation/super1200/domains"
+DOMAIN_TOOL_REPORT_REL = ".cajita-optimization-candidates/evidence/DOMAIN_TOOL_VALIDATION_V9.json"
+DOMAIN_CAPABILITY_RANGES = {
+    "D01": (1, 30), "D02": (31, 45), "D03": (46, 80), "D04": (81, 120),
+    "D05": (121, 176), "D06": (177, 230), "D07": (231, 300), "D08": (301, 360),
+    "D09": (361, 437), "D10": (438, 476), "D11": (477, 530), "D12": (531, 585),
+    "D13": (586, 640), "D14": (641, 660), "D15": (661, 700), "D16": (701, 720),
+    "D17": (721, 760), "D18": (761, 860), "D19": (861, 960), "D20": (961, 1000),
+    "D21": (1001, 1080), "D22": (1081, 1200),
+}
+
+
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
