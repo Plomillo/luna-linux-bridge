@@ -249,3 +249,43 @@ El único gate G23/G24 utilizado para Cajita es \`scripts/cajita_luna_puac2_gate
 ### Estado de esta enmienda
 
 Esta actualización persiste el diseño y el código de control en la rama de revisión. La ejecución funcional de la Cajita, la provisión real de identidades/llaves/runner, la viabilidad del límite de bytes y el certificado G23/G24 siguen pendientes. Que la CI pase las pruebas de controlador no cambia esos estados.
+
+
+## 8. Contrato verificable para los 22 dominios auxiliares
+
+Los 22 dominios se usan como herramientas externas a la distribución Cajita. No se copian sus repositorios, módulos, dependencias, pruebas ni cachés a la distribución final. La autorización es por capacidad específica, no por nombre genérico del dominio.
+
+### Fuente versionada
+
+- Repositorio de ayuda: \`Plomillo/luna-linux-bridge\`.
+- Registro autoritativo de capacidades: \`implementation/super1200/domains/D01.json\` a \`D22.json\`.
+- Fuente de cada capacidad: su \`implementation_artifact\` declarado en el manifiesto versionado.
+- Prueba específica: su \`test_artifact\` declarado en el mismo manifiesto.
+- Fijación: \`repository_commit\` inmutable de 40 caracteres hexadecimales, registrado en \`OPTIMIZATION_PLAN_V9.json\`. Todos los hashes se verifican contra ese commit, no contra la rama móvil en el momento de certificar.
+- Alcance de cada dominio: la tabla de rangos D01–D22 ya definida en el repositorio. Una capacidad fuera del rango del dominio es causa de rechazo.
+
+### Manifiestos que debe producir el ejecutor
+
+Dentro del árbol Cajita, y por tanto contabilizados en los bytes finales:
+
+- \`.cajita-optimization-candidates/evidence/DOMAIN_TOOL_VALIDATION_V9.json\`, esquema \`CAJITA_DOMAIN_TOOL_VALIDATION_V9/1.0\`. Contiene exactamente los 22 dominios, el repositorio y commit fijados, \`status=PASS\` sólo si toda la matriz pasa y un SHA-256 del informe de prueba por dominio.
+- Un informe por dominio en la ruta \`test_report_path\` declarada en el manifiesto, esquema \`CAJITA_DOMAIN_TEST_REPORT_V9/1.0\`, enlazado por hash al informe global. Cada informe contiene exactamente las capacidades enrutadas a ese dominio y el resultado por capacidad: identificador, nombre canónico, rutas de implementación/test, SHA-256 de ambas fuentes, estado/código de salida de la prueba, ruta y SHA-256 de la salida de prueba y \`route_evidence_sha256\`.
+- \`OPTIMIZATION_PLAN_V9.json\` contiene un bloque \`domain_routing\` de esquema \`CAJITA_V9_DOMAIN_ROUTING/1.0\`. Para cada uno de los 14 componentes pendientes, \`operations[].domain_routes\` identifica uno o más dominios, los IDs de capacidad concretos, la justificación y \`route_evidence_sha256\`. Cada uno de los 22 dominios debe figurar como \`USED\` con una relación trazable a componentes y capacidades.
+- \`DOMAIN_TOOL_VALIDATION_V9.json\` se incluye en la cadena de hashes G23/G24 como \`domain_tool_validation_sha256\`; el test report por dominio se verifica de nuevo a partir de esos hashes en G23.
+
+### Predicados de aceptación automáticos
+
+1. Exactamente D01–D22, sin duplicados, omisiones ni dominios externos.
+2. Cada manifiesto Dxx, implementación y fichero de prueba coincide byte a byte por SHA-256 con el commit fijado.
+3. Cada capability ID está en el intervalo correcto y figura en el manifiesto Dxx con nombre canónico coincidente.
+4. Las capacidades declaradas en la ruta superior, las asignadas a componentes y las presentes en el informe de prueba por dominio deben coincidir exactamente; se rechazan capacidades no enrutadas o resultados extra.
+5. Cada prueba tiene \`status=PASS\`, \`exit_code=0\`, salidas guardadas por hash y evidencia de ruta única. Una capacidad usada por varios componentes sólo puede compartir el mismo digest de evidencia de ruta si el manifiesto demuestra esa relación; las colisiones se rechazan.
+6. G23 repite el cotejo de manifests, implementaciones, pruebas y hashes sobre la fuente fijada. G24 no firma \`CERTIFIED\` si falta el hash del informe global o si G23 no pasa.
+7. El resultado es \`BLOCKED/HOLD\` si no existen informes o si no se puede acceder al commit de origen. No se completan los manifiestos con hashes inventados ni se resuelve un dominio por inferencia.
+8. Ninguna de las pruebas de los dominios auxiliares puede modificar el payload congelado de Cajita ni su perfil Edge. Las salidas de prueba se limitan a informes pequeños y medibles; cualquier salida voluminosa se rechaza o se evita antes de ejecutarla.
+
+La automatización de este contrato se realiza en \`validate_domain_routing()\`, invocada por el preflight de optimización y repetida por G23 a través del mismo validador de plan. El éxito de una prueba unitaria del controlador no sustituye los 22 informes reales.
+
+### Estado del contrato
+
+El validador está implementado en la rama de PR como condición obligatoria. Los 22 informes de ejecución real, el routing manifest completo y su evidencia aún deben generarse y cotejarse por el ejecutor autorizado CUSTOSZ V9. Por eso no debe interpretarse como prueba de que los 22 dominios ya ejecutaron con éxito trabajo sobre Cajita.
