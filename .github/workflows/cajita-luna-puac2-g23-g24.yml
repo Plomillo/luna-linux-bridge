@@ -1,0 +1,236 @@
+name: Cajita PUAC2 — trusted G23/G24 certification
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_commit:
+        description: "40-character commit SHA identifying the authorized release execution"
+        required: true
+        type: string
+      expected_subject_sha256:
+        description: "Exact SHA-256 of the post-validated Cajita payload tree (excluding only its generated evidence ledger)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: cajita-puac2-g23-g24-${{ inputs.candidate_commit }}
+  cancel-in-progress: false
+
+jobs:
+  g23-independent-validation:
+    name: "G23 — independent validation on the authorized Cajita host"
+    if: github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, linux, x64, luna-aux]
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: read
+    env:
+      CAJITA_LUNA_ROOT: ${{ vars.CAJITA_LUNA_ROOT }}
+      CAJITA_G23_VALIDATOR_ID: ${{ vars.CAJITA_G23_VALIDATOR_ID }}
+      CAJITA_PRODUCER_ID: CUSTOSZ_V9
+      CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+      EXPECTED_SUBJECT_SHA256: ${{ inputs.expected_subject_sha256 }}
+    steps:
+      - name: Checkout trusted gate code and pinned helper-source history from main
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate trusted host path, role identity and dispatch inputs
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$GITHUB_REF" = "refs/heads/main"
+          test -n "$CAJITA_LUNA_ROOT" || { echo "::error::CAJITA_LUNA_ROOT variable missing"; exit 3; }
+          test -d "$CAJITA_LUNA_ROOT" && test ! -L "$CAJITA_LUNA_ROOT"
+          [[ "$CANDIDATE_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$EXPECTED_SUBJECT_SHA256" =~ ^[0-9a-f]{64}$ ]]
+          test -n "$CAJITA_G23_VALIDATOR_ID"
+          test "$CAJITA_G23_VALIDATOR_ID" != "$CAJITA_PRODUCER_ID"
+      - name: Prepare isolated Python tools
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -m venv "$RUNNER_TEMP/cajita-g23-venv"
+          "$RUNNER_TEMP/cajita-g23-venv/bin/python" -m pip install --disable-pip-version-check --only-binary=:all: cryptography==50.0.2
+      - name: Independently validate exact candidate, preserved artifacts, resources and functional evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/cajita-g23"
+          "$RUNNER_TEMP/cajita-g23-venv/bin/python" -I scripts/cajita_luna_puac2_gates.py prepare-g23 \
+            --root "$CAJITA_LUNA_ROOT" \
+            --candidate-commit "$CANDIDATE_COMMIT" \
+            --expected-subject-sha256 "$EXPECTED_SUBJECT_SHA256" \
+            --validator-id "$CAJITA_G23_VALIDATOR_ID" \
+            --producer-id "$CAJITA_PRODUCER_ID" \
+            --output "$RUNNER_TEMP/cajita-g23/G23_UNSIGNED.json"
+          cat "$RUNNER_TEMP/cajita-g23/G23_UNSIGNED.json"
+      - name: Sign G23 with the separately provisioned G23 identity (PASS or explicit HOLD)
+        env:
+          CAJITA_G23_SIGNING_PRIVATE_KEY_PEM: ${{ secrets.CAJITA_G23_SIGNING_PRIVATE_KEY_PEM }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          "$RUNNER_TEMP/cajita-g23-venv/bin/python" -I scripts/cajita_luna_puac2_gates.py sign-g23 \
+            --input "$RUNNER_TEMP/cajita-g23/G23_UNSIGNED.json" \
+            --output "$RUNNER_TEMP/cajita-g23/G23_SIGNED.json" \
+            --validator-id "$CAJITA_G23_VALIDATOR_ID" \
+            --producer-id "$CAJITA_PRODUCER_ID"
+          "$RUNNER_TEMP/cajita-g23-venv/bin/python" - "$RUNNER_TEMP/cajita-g23/G23_SIGNED.json" <<'PY'
+          import json, sys
+          d=json.load(open(sys.argv[1], encoding="utf-8"))
+          print(json.dumps({"g23_status": d.get("payload",{}).get("status"), "envelope_status": d.get("status"), "signer_id": d.get("signer_id"), "private_key_emitted": False}, sort_keys=True))
+          PY
+      - name: Upload only bounded evidence records (never upload profile/model payloads)
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: cajita-g23-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/cajita-g23/G23_UNSIGNED.json
+            ${{ runner.temp }}/cajita-g23/G23_SIGNED.json
+          if-no-files-found: error
+          retention-days: 90
+
+  g24-independent-certification:
+    name: "G24 — independent signature verification and terminal decision"
+    if: github.ref == 'refs/heads/main'
+    needs: g23-independent-validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    env:
+      CAJITA_G24_CERTIFIER_ID: ${{ vars.CAJITA_G24_CERTIFIER_ID }}
+      CAJITA_PRODUCER_ID: CUSTOSZ_V9
+      CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+      EXPECTED_SUBJECT_SHA256: ${{ inputs.expected_subject_sha256 }}
+    steps:
+      - name: Checkout trusted G24 implementation from main
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Prepare isolated Python tools
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 -m venv "$RUNNER_TEMP/cajita-g24-venv"
+          "$RUNNER_TEMP/cajita-g24-venv/bin/python" -m pip install --disable-pip-version-check --only-binary=:all: cryptography==50.0.2
+      - name: Download G23 signed evidence only
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: cajita-g23-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/cajita-g23
+      - name: Verify the G23 signature, candidate, evidence digests and all required gates; issue G24 or HOLD
+        env:
+          CAJITA_G23_PUBLIC_KEY_PEM: ${{ vars.CAJITA_G23_PUBLIC_KEY_PEM }}
+          CAJITA_G24_SIGNING_PRIVATE_KEY_PEM: ${{ secrets.CAJITA_G24_SIGNING_PRIVATE_KEY_PEM }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -n "$CAJITA_G24_CERTIFIER_ID"
+          test "$CAJITA_G24_CERTIFIER_ID" != "$CAJITA_PRODUCER_ID"
+          mkdir -p "$RUNNER_TEMP/cajita-g24"
+          "$RUNNER_TEMP/cajita-g24-venv/bin/python" -I scripts/cajita_luna_puac2_gates.py issue-g24 \
+            --g23 "$RUNNER_TEMP/cajita-g23/G23_SIGNED.json" \
+            --candidate-commit "$CANDIDATE_COMMIT" \
+            --expected-subject-sha256 "$EXPECTED_SUBJECT_SHA256" \
+            --certifier-id "$CAJITA_G24_CERTIFIER_ID" \
+            --producer-id "$CAJITA_PRODUCER_ID" \
+            --output "$RUNNER_TEMP/cajita-g24/G24_SIGNED.json"
+          cat "$RUNNER_TEMP/cajita-g24/G24_SIGNED.json"
+      - name: Upload the compact terminal decision (never upload profile/model payloads)
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: cajita-g24-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/cajita-g24/G24_SIGNED.json
+          if-no-files-found: error
+          retention-days: 90
+
+  persist-and-final-readback:
+    name: "Persist receipts inside Cajita and verify the post-persistence byte ceiling"
+    if: github.ref == 'refs/heads/main'
+    needs: [g23-independent-validation, g24-independent-certification]
+    runs-on: [self-hosted, linux, x64, luna-aux]
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+    env:
+      CAJITA_LUNA_ROOT: ${{ vars.CAJITA_LUNA_ROOT }}
+      CAJITA_PRODUCER_ID: CUSTOSZ_V9
+      CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+    steps:
+      - name: Checkout trusted verifier and pinned helper-source history from main
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prepare isolated Python tools
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -n "$CAJITA_LUNA_ROOT" && test -d "$CAJITA_LUNA_ROOT" && test ! -L "$CAJITA_LUNA_ROOT"
+          python3 -m venv "$RUNNER_TEMP/cajita-persist-venv"
+          "$RUNNER_TEMP/cajita-persist-venv/bin/python" -m pip install --disable-pip-version-check --only-binary=:all: cryptography==50.0.2
+      - name: Download signed G23 evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: cajita-g23-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/cajita-g23
+      - name: Download signed G24 terminal decision
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: cajita-g24-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/cajita-g24
+      - name: Persist append-only receipts and perform final read-back validation
+        env:
+          CAJITA_G23_PUBLIC_KEY_PEM: ${{ vars.CAJITA_G23_PUBLIC_KEY_PEM }}
+          CAJITA_G24_PUBLIC_KEY_PEM: ${{ vars.CAJITA_G24_PUBLIC_KEY_PEM }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$RUNNER_TEMP/cajita-final"
+          set +e
+          "$RUNNER_TEMP/cajita-persist-venv/bin/python" -I scripts/cajita_luna_puac2_gates.py persist-bundle \
+            --root "$CAJITA_LUNA_ROOT" \
+            --g23 "$RUNNER_TEMP/cajita-g23/G23_SIGNED.json" \
+            --g24 "$RUNNER_TEMP/cajita-g24/G24_SIGNED.json" \
+            --run-id "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+            --candidate-commit "$CANDIDATE_COMMIT" \
+            --producer-id "$CAJITA_PRODUCER_ID" \
+            2>&1 | tee "$RUNNER_TEMP/cajita-final/FINAL_VERIFICATION.json"
+          result=${PIPESTATUS[0]}
+          set -e
+          echo "Final persisted verification exit code: $result"
+          "$RUNNER_TEMP/cajita-persist-venv/bin/python" - "$RUNNER_TEMP/cajita-final/FINAL_VERIFICATION.json" <<'PY'
+          import json, sys
+          p=sys.argv[1]
+          try:
+              d=json.load(open(p, encoding="utf-8"))
+          except Exception:
+              raise SystemExit("FINAL_VERIFICATION_OUTPUT_NOT_JSON")
+          print(json.dumps({"decision":d.get("decision"),"certification_status":d.get("certification_status"),"final_tree_bytes":d.get("final_tree_bytes"),"hard_cap_bytes":d.get("hard_cap_bytes"),"blockers":d.get("blockers",[])},sort_keys=True))
+          if d.get("decision") != "PASS" or d.get("certification_status") != "CERTIFIED_FOR_EXACT_CAJA_SCOPE":
+              raise SystemExit("CAJITA_RELEASE_NOT_CERTIFIED")
+          PY
+          test "$result" -eq 0
+      - name: Publish compact verification receipt for audit
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: cajita-final-verification-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/cajita-final/FINAL_VERIFICATION.json
+          if-no-files-found: warn
+          retention-days: 180

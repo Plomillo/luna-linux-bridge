@@ -1,0 +1,58 @@
+name: "Cajita de Luna governed preflight tests"
+
+on:
+  push:
+    branches: ["feature/cajita-luna-puac2-release-controls-20261022"]
+    paths:
+      - "scripts/cajita_luna_governed_preflight.py"
+      - "scripts/cajita_luna_puac2_gates.py"
+      - "tests/test_cajita_luna_governed_preflight.py"
+      - "tests/test_cajita_luna_puac2_gates.py"
+      - "tests/test_cajita_puac2_workflow_contract.py"
+      - ".github/workflows/cajita-luna-governed-preflight.yml"
+      - ".github/workflows/cajita-luna-puac2-g23-g24.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/cajita_luna_governed_preflight.py"
+      - "scripts/cajita_luna_puac2_gates.py"
+      - "tests/test_cajita_luna_governed_preflight.py"
+      - "tests/test_cajita_luna_puac2_gates.py"
+      - "tests/test_cajita_puac2_workflow_contract.py"
+      - ".github/workflows/cajita-luna-governed-preflight.yml"
+      - ".github/workflows/cajita-luna-puac2-g23-g24.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "cajita-governed-preflight-${{ github.ref }}"
+  cancel-in-progress: false
+
+jobs:
+  unit-and-syntax:
+    name: "Controller tests only (not Cajita certification)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout candidate without persisted credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.12"
+      - name: Install pinned test-only dependencies
+        run: "python -m pip install --disable-pip-version-check --only-binary=:all: cryptography==50.0.2 PyYAML==6.0.2"
+      - name: Compile both control scripts and test suites
+        run: python -m py_compile scripts/cajita_luna_governed_preflight.py scripts/cajita_luna_puac2_gates.py tests/test_cajita_luna_governed_preflight.py tests/test_cajita_luna_puac2_gates.py tests/test_cajita_puac2_workflow_contract.py
+      - name: Run fail-closed controller and G23/G24 tests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -m unittest discover -s tests -p 'test_cajita_luna_governed_preflight.py' -v
+          python -m unittest discover -s tests -p 'test_cajita_luna_puac2_gates.py' -v
+          python -m unittest discover -s tests -p 'test_cajita_puac2_workflow_contract.py' -v
