@@ -223,6 +223,12 @@ def final_evidence(root: Path) -> dict[str, Any]:
     edge = ctl.edge_evidence(root)
     if edge.get("status") != "PASS":
         blockers.append("EDGE_ARCHIVE_INTEGRITY_BLOCKED")
+    disk_free = shutil.disk_usage(root).free
+    available_ram = ctl.available_ram_bytes()
+    plan_check = ctl.validate_plan(root, total, disk_free, available_ram)
+    blockers.extend(plan_check.get("errors", []))
+    if plan_check.get("status") != "PASS":
+        blockers.append("OPTIMIZATION_PLAN_NOT_READY")
     registry = ctl.registry_comparison(root)
     blockers.extend(ctl.validate_reconciliation(root, registry))
     blockers.extend(ctl.validate_frozen_manifest(root))
@@ -294,6 +300,7 @@ def final_evidence(root: Path) -> dict[str, Any]:
         "execution_manifest_sha256": root / ".cajita-optimization-candidates" / "OPTIMIZATION_EXECUTION_V9.json",
         "functional_manifest_sha256": root / ctl.FUNCTIONAL_REL,
         "gate_matrix_sha256": root / ctl.GATE_MATRIX_REL,
+        "domain_tool_validation_sha256": root / ctl.DOMAIN_TOOL_REPORT_REL,
         "independent_tests_sha256": independent_path,
     }
     evidence_hashes = {
@@ -413,7 +420,7 @@ def issue_g24(g23_path: Path, output_path: Path, g23_public_pem: str, g24_privat
         required_hashes = {
             "registry_sha256", "reconciliation_sha256", "frozen_manifest_sha256",
             "optimization_plan_sha256", "execution_manifest_sha256",
-            "functional_manifest_sha256", "gate_matrix_sha256", "independent_tests_sha256",
+            "functional_manifest_sha256", "gate_matrix_sha256", "domain_tool_validation_sha256", "independent_tests_sha256",
         }
         if not isinstance(evidence_hashes, dict) or set(evidence_hashes) != required_hashes or any(not ctl.is_sha256(v) for v in evidence_hashes.values()):
             errors.append("G23_EVIDENCE_HASH_SET_INVALID")
@@ -636,6 +643,7 @@ def verify_release(root: Path, manifest_path: Path, g23_public_pem: str, g24_pub
             "execution_manifest_sha256": root / ".cajita-optimization-candidates" / "OPTIMIZATION_EXECUTION_V9.json",
             "functional_manifest_sha256": root / ctl.FUNCTIONAL_REL,
             "gate_matrix_sha256": root / ctl.GATE_MATRIX_REL,
+            "domain_tool_validation_sha256": root / ctl.DOMAIN_TOOL_REPORT_REL,
             "independent_tests_sha256": root / INDEPENDENT_TESTS_REL,
         }
         actual_evidence = {
