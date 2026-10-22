@@ -42,4 +42,4 @@ def test_academic_edition_has_outline_and_source_markers(tmp_path):
     with fitz.open(out) as doc:
         assert len(doc.get_toc())>=2
         text="\n".join(p.get_text() for p in doc)
-    assert "CAPÍTULO 1" in text and "Fuente PDF página 1" in text
+    assert "Capítulo 1" in text and "Fuente PDF página 1" in text
