@@ -1,0 +1,48 @@
+{
+  "addendum_id": "GITHUB_INTELDOC_GLOBAL_30MB_CORRECTIVE_REPAIR_V9_SCOPE_20261021",
+  "allowed_operations": [
+    "READ_PINNED_SOURCE_ARTIFACTS",
+    "CREATE_FRESH_VERSIONED_CANDIDATE_STAGING",
+    "APPEND_SCOPE_TO_AUTH_AND_CONTRACT_AFTER_CHECKPOINT",
+    "LAUNCH_CUSTOSZ_V9_RESOURCE_LIMITED_WORKER",
+    "WRITE_LOCAL_HASH_LINKED_EVIDENCE",
+    "READBACK_VERIFY_EXACT_LOCAL_SCOPE"
+  ],
+  "allowed_paths": [
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_corrective_v9/INTELDOC_GLOBAL_30MB_CORRECTIVE_MISSION.json",
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_corrective_v9/inteldoc_five_artifact_corrective_worker_v7.py",
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_corrective_v9/custoszv9_inteldoc_five_artifact_corrective_dispatch_v9.py",
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_corrective_v9/GLOBAL_SCOPE_REPAIR_ADDENDUM_V9.json",
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_corrective_v9/INTELDOC_GLOBAL_30MB_CORRECTIVE_V9_LAUNCH_RECEIPT.json",
+    "recovery/lunita-custoszv9/inteldoc_global_30mb_corrective_v9/INTELDOC_GLOBAL_30MB_CORRECTIVE_V9_RESULT.json"
+  ],
+  "authorization_basis": "Explicit current user instruction to restart CUSTOSZ V9 work and reduce the V8 264156512-byte candidate toward a strict 30000000-decimal-byte global cap. This additive scope permits a fresh isolated structural candidate and a resource-limited CUSTOSZ V9 dispatch only. Originals remain SHA-256 pinned/read-only; functional tests, runtime smoke, canonical promotion and certification are not authorized.",
+  "authorized_at_utc": "2026-10-22T01:45:55Z",
+  "branch": "recovery/lunita-custoszv9-operational-20261020",
+  "custoszv9_bytes": 236326,
+  "custoszv9_sha256": "667ceac7d7e59682292c864777ec3e1c228074716dc5dba17fe150e4d826ccf3",
+  "dispatcher_sha256": "56ca529c453212ec24b71e8a5105a81d105d0a59dbb33e58084d7858a437608b",
+  "forbidden_operations": [
+    "modify_original_source_artifacts",
+    "run_functional_tests",
+    "run_runtime_smoke",
+    "load_or_generate_with_model",
+    "write_to_main_or_other_github_branch",
+    "merge",
+    "force_push",
+    "delete_files",
+    "overwrite_unreviewed_artifacts",
+    "read_or_write_secrets",
+    "write_outside_exact_allowlist",
+    "canonical_promotion",
+    "certification_propagation"
+  ],
+  "mission_id": "CUSTOSZV9_INTELDOC_FIVE_ARTIFACT_CORRECTIVE_V2",
+  "mission_sha256": "2effd53160f5f43e7999feb4582e6002b0a7af170672b2b30fe7029ecb6f1ef0",
+  "parent_addendum_id": "GITHUB_INTELDOC_GLOBAL_30MB_CORRECTIVE_REPAIR_V8R1_SCOPE_20261021",
+  "repository": "Plomillo/luna-linux-bridge",
+  "schema": "CUSTOSZV9_GITHUB_SCOPE_REPAIR_ADDENDUM/1.0",
+  "scope_expiry": "EXACT_PATHS_ABOVE_ONLY",
+  "signature": "NOT_PRESENT",
+  "worker_sha256": "48bb8e82a1df5d83ef93f1658f60d1f4ef7db92fa01aca6a47940879e1cbcec7"
+}
