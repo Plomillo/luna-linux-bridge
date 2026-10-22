@@ -6,7 +6,7 @@
     "When evidence is insufficient, the PDF is copied byte-for-byte and no page is moved.",
     "Structural verification does not certify translation accuracy or editorial correctness."
   ],
-  "observed_at_utc": "2026-10-22T00:05:36Z",
+  "observed_at_utc": "2026-10-22T00:10:09Z",
   "operation": "COPY_ONLY_ORDER_UNRESOLVED",
   "order_evidence": {
     "confidence": "INSUFFICIENT",

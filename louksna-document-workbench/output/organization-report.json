@@ -1,15 +1,10 @@
 {
-  "bookmark_count": 24,
+  "bookmark_count": 23,
   "bookmarks": [
     {
       "level": 1,
       "page": 1,
       "title": "Portada — Trastornos de personalidad severos"
-    },
-    {
-      "level": 1,
-      "page": 15,
-      "title": "Capítulo 6: Adaptado de 'El tratamiento psicoterapéutico de las personalidades de la"
     },
     {
       "level": 1,
@@ -19,17 +14,17 @@
     {
       "level": 2,
       "page": 65,
-      "title": "Capítulo 2: La entrevista estructural Mi objetivo principal en este capítulo es ilustrar la"
+      "title": "Capítulo 2: La entrevista estructural"
     },
     {
       "level": 2,
       "page": 112,
-      "title": "Capítulo 3: Diagnóstico diferencial en la adolescencia Las consideraciones de"
+      "title": "Capítulo 3: Diagnóstico diferencial en la adolescencia"
     },
     {
       "level": 2,
       "page": 143,
-      "title": "Capítulo 4: Trastornos de la personalidad En la vejez en su estudio sociológico de la vejez,"
+      "title": "Capítulo 4: Trastornos de la personalidad En la vejez"
     },
     {
       "level": 2,
@@ -44,27 +39,27 @@
     {
       "level": 2,
       "page": 197,
-      "title": "Capítulo 6: Psicoterapia expresiva Antecedentes teóricos Debido a que los principales"
+      "title": "Capítulo 6: Psicoterapia expresiva Antecedentes teóricos"
     },
     {
       "level": 2,
       "page": 227,
-      "title": "Capítulo 7: Gestión de la transferencia En psicoterapia expresiva, quizás la"
+      "title": "Capítulo 7: Gestión de la transferencia"
     },
     {
       "level": 2,
       "page": 265,
-      "title": "Capítulo 8: Psicoterapia expresiva con adolescentes Las tareas fundamentales del"
+      "title": "Capítulo 8: Psicoterapia expresiva con adolescentes"
     },
     {
       "level": 2,
       "page": 297,
-      "title": "Capítulo 9: Psicoterapia de apoyo En el contexto de comparar la aplicación adecuada de la"
+      "title": "Capítulo 9: Psicoterapia de apoyo"
     },
     {
       "level": 2,
       "page": 332,
-      "title": "Capítulo 10: Indicaciones y contraindicaciones Para las modalidades de tratamiento"
+      "title": "Capítulo 10: Indicaciones y contraindicaciones"
     },
     {
       "level": 1,
@@ -74,17 +69,17 @@
     {
       "level": 2,
       "page": 391,
-      "title": "Capítulo 12: Estrategias técnicas en el tratamiento de personalidades narcisistas El"
+      "title": "Capítulo 12: Estrategias técnicas en el tratamiento de personalidades narcisistas"
     },
     {
       "level": 2,
       "page": 417,
-      "title": "Capítulo 13: Análisis de caracteres en línea con los esfuerzos anteriores para enriquecer"
+      "title": "Capítulo 13: Análisis de caracteres"
     },
     {
       "level": 2,
       "page": 450,
-      "title": "Capítulo 14: Auto, el ego, afecta y impulsa el ego y los problemas terminológicos. Una"
+      "title": "Capítulo 14: Auto, el ego, afecta y impulsa el ego y los problemas terminológicos."
     },
     {
       "level": 1,
@@ -99,7 +94,7 @@
     {
       "level": 2,
       "page": 568,
-      "title": "Capítulo 19: Regresión paranoica y narcisismo maligno Como ya he mencionado (ver"
+      "title": "Capítulo 19: Regresión paranoica y narcisismo maligno"
     },
     {
       "level": 1,
@@ -114,7 +109,7 @@
     {
       "level": 2,
       "page": 642,
-      "title": "Capítulo 21: El modelo comunitario terapéutico del tratamiento hospitalario para la"
+      "title": "Capítulo 21: El modelo comunitario terapéutico del tratamiento hospitalario para…"
     },
     {
       "level": 2,
@@ -132,12 +127,12 @@
     "Page order, geometry and extracted page text are verified invariant.",
     "The operation does not validate the accuracy of the source's existing machine translation."
   ],
-  "observed_at_utc": "2026-10-22T00:06:07Z",
+  "observed_at_utc": "2026-10-22T00:10:26Z",
   "operation": "ADD_NAVIGATION_BOOKMARKS_WITHOUT_REORDERING",
   "output_name": "Trastornos_de_personalidad_severos_organizado.pdf",
   "output_page_count": 741,
-  "output_sha256": "1064fc67226595ff78b973e5f2211dcb50294583c161def1ca5553a6b234fee4",
-  "output_size_bytes": 1644481,
+  "output_sha256": "2367b40c6053426aad8a9a0c09c59cdc19116859c073f203eeac8599360b350e",
+  "output_size_bytes": 1644091,
   "page_geometry_preserved": true,
   "page_order_changed": false,
   "schema": "LOUKSNA_DOCUMENT_WORKBENCH_ORGANIZATION/1.0",

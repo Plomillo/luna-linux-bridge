@@ -1,5 +1,5 @@
 {
-  "chapter_and_part_navigation_entries": 23,
+  "chapter_and_part_navigation_entries": 22,
   "editorial_changes": [
     "Consistent title, part and chapter hierarchy.",
     "Readable line spacing, margins and running folios.",
@@ -18,12 +18,12 @@
     "Human review is required before academic quotation or clinical use.",
     "Consult the original PDF to verify figures, tables, quotations, citations and visual layout."
   ],
-  "observed_at_utc": "2026-10-22T00:06:27Z",
+  "observed_at_utc": "2026-10-22T00:10:37Z",
   "operation": "REFLOW_EXTRACTED_TEXT_WITH_ACADEMIC_TYPOGRAPHY",
   "output_name": "Trastornos_de_personalidad_severos_edicion_lectura.pdf",
   "output_page_count": 365,
-  "output_sha256": "860de014540db0e26c92b398af5cea444315bd443eff48ad169e5f6d26d6eeb9",
-  "output_size_bytes": 1075924,
+  "output_sha256": "3c9277353076751a60006b92e17eb0186320f15fb493d49816fab8c9c90d74f3",
+  "output_size_bytes": 1074905,
   "schema": "LOUKSNA_DOCUMENT_WORKBENCH_ACADEMIC_READING_EDITION/1.0",
   "source_page_markers_missing": [],
   "source_page_markers_verified": 741,

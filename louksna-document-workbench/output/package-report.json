@@ -1,10 +1,10 @@
 {
   "schema": "LOUKSNA_DOCUMENT_WORKBENCH_PACKAGE/1.0",
-  "observed_at_utc": "2026-10-22T00:06:27Z",
+  "observed_at_utc": "2026-10-22T00:10:37Z",
   "status": "PASS_PACKAGE_INTEGRITY",
   "package_name": "kernberg-organized-package.zip",
-  "package_size_bytes": 2289773,
-  "package_sha256": "852be448377988f6885f06d752c786a0c4314b3bbf9a5984184a2b335aff2ee1",
+  "package_size_bytes": 2287747,
+  "package_sha256": "13db86def44ea7598ea74937056d98f726b3c163f4ec436df8baec62916145d4",
   "members": [
     {
       "name": "README.txt",
@@ -16,11 +16,11 @@
     },
     {
       "name": "Trastornos_de_personalidad_severos_edicion_lectura.pdf",
-      "size_bytes": 1075924
+      "size_bytes": 1074905
     },
     {
       "name": "Trastornos_de_personalidad_severos_organizado.pdf",
-      "size_bytes": 1644481
+      "size_bytes": 1644091
     },
     {
       "name": "academic-edition-report.json",
@@ -28,11 +28,11 @@
     },
     {
       "name": "order-analysis-final.json",
-      "size_bytes": 187968
+      "size_bytes": 186132
     },
     {
       "name": "order-analysis-source.json",
-      "size_bytes": 187961
+      "size_bytes": 186125
     },
     {
       "name": "order-application-report.json",
@@ -40,7 +40,7 @@
     },
     {
       "name": "organization-report.json",
-      "size_bytes": 4627
+      "size_bytes": 4078
     },
     {
       "name": "source-inspection.json",
@@ -48,13 +48,13 @@
     }
   ],
   "source_sha256": "ef6f0a9c5888baccf67fd398233ddb2f50ec65e3eb9a3c9687fda4ddb207b504",
-  "organized_pdf_sha256": "1064fc67226595ff78b973e5f2211dcb50294583c161def1ca5553a6b234fee4",
+  "organized_pdf_sha256": "2367b40c6053426aad8a9a0c09c59cdc19116859c073f203eeac8599360b350e",
   "page_count": 741,
-  "bookmark_count": 24,
+  "bookmark_count": 23,
   "order_status": "REVIEW_REQUIRED_NO_PAGES_MOVED",
   "page_order_changed": false,
   "order_confidence": "INSUFFICIENT",
-  "academic_pdf_sha256": "860de014540db0e26c92b398af5cea444315bd443eff48ad169e5f6d26d6eeb9",
+  "academic_pdf_sha256": "3c9277353076751a60006b92e17eb0186320f15fb493d49816fab8c9c90d74f3",
   "academic_pdf_page_count": 365,
   "source_order_review_required": true
 }

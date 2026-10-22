@@ -1,15 +1,6 @@
 {
   "chapter_candidates": [
     {
-      "chapter_number": 6,
-      "kind": "chapter",
-      "level": 1,
-      "pdf_page": 15,
-      "printed_folio": null,
-      "source_line": "Capítulo 6: Adaptado de 'El tratamiento psicoterapéutico de las personalidades de la",
-      "title": "Capítulo 6: Adaptado de 'El tratamiento psicoterapéutico de las personalidades de la"
-    },
-    {
       "kind": "part",
       "level": 0,
       "pdf_page": 18,
@@ -23,8 +14,8 @@
       "level": 1,
       "pdf_page": 65,
       "printed_folio": null,
-      "source_line": "Capítulo 2: La entrevista estructural Mi objetivo principal en este capítulo es ilustrar la",
-      "title": "Capítulo 2: La entrevista estructural Mi objetivo principal en este capítulo es ilustrar la"
+      "source_line": "Capítulo 2: La entrevista estructural",
+      "title": "Capítulo 2: La entrevista estructural"
     },
     {
       "chapter_number": 3,
@@ -32,8 +23,8 @@
       "level": 1,
       "pdf_page": 112,
       "printed_folio": 52,
-      "source_line": "CAPÍTULO 3: Diagnóstico diferencial en la adolescencia Las consideraciones de",
-      "title": "Capítulo 3: Diagnóstico diferencial en la adolescencia Las consideraciones de"
+      "source_line": "Capítulo 3: Diagnóstico diferencial en la adolescencia",
+      "title": "Capítulo 3: Diagnóstico diferencial en la adolescencia"
     },
     {
       "chapter_number": 4,
@@ -41,8 +32,8 @@
       "level": 1,
       "pdf_page": 143,
       "printed_folio": null,
-      "source_line": "Capítulo 4: Trastornos de la personalidad En la vejez en su estudio sociológico de la vejez,",
-      "title": "Capítulo 4: Trastornos de la personalidad En la vejez en su estudio sociológico de la vejez,"
+      "source_line": "Capítulo 4: Trastornos de la personalidad En la vejez",
+      "title": "Capítulo 4: Trastornos de la personalidad En la vejez"
     },
     {
       "chapter_number": 5,
@@ -67,8 +58,8 @@
       "level": 1,
       "pdf_page": 197,
       "printed_folio": null,
-      "source_line": "CAPÍTULO 6: Psicoterapia expresiva Antecedentes teóricos Debido a que los principales",
-      "title": "Capítulo 6: Psicoterapia expresiva Antecedentes teóricos Debido a que los principales"
+      "source_line": "Capítulo 6: Psicoterapia expresiva Antecedentes teóricos",
+      "title": "Capítulo 6: Psicoterapia expresiva Antecedentes teóricos"
     },
     {
       "chapter_number": 7,
@@ -76,8 +67,8 @@
       "level": 1,
       "pdf_page": 227,
       "printed_folio": 112,
-      "source_line": "CAPÍTULO 7: Gestión de la transferencia En psicoterapia expresiva, quizás la",
-      "title": "Capítulo 7: Gestión de la transferencia En psicoterapia expresiva, quizás la"
+      "source_line": "Capítulo 7: Gestión de la transferencia",
+      "title": "Capítulo 7: Gestión de la transferencia"
     },
     {
       "chapter_number": 8,
@@ -85,8 +76,8 @@
       "level": 1,
       "pdf_page": 265,
       "printed_folio": 131,
-      "source_line": "CAPÍTULO 8: Psicoterapia expresiva con adolescentes Las tareas fundamentales del",
-      "title": "Capítulo 8: Psicoterapia expresiva con adolescentes Las tareas fundamentales del"
+      "source_line": "Capítulo 8: Psicoterapia expresiva con adolescentes",
+      "title": "Capítulo 8: Psicoterapia expresiva con adolescentes"
     },
     {
       "chapter_number": 9,
@@ -94,8 +85,8 @@
       "level": 1,
       "pdf_page": 297,
       "printed_folio": null,
-      "source_line": "Capítulo 9: Psicoterapia de apoyo En el contexto de comparar la aplicación adecuada de la",
-      "title": "Capítulo 9: Psicoterapia de apoyo En el contexto de comparar la aplicación adecuada de la"
+      "source_line": "Capítulo 9: Psicoterapia de apoyo",
+      "title": "Capítulo 9: Psicoterapia de apoyo"
     },
     {
       "chapter_number": 10,
@@ -103,8 +94,8 @@
       "level": 1,
       "pdf_page": 332,
       "printed_folio": null,
-      "source_line": "Capítulo 10: Indicaciones y contraindicaciones Para las modalidades de tratamiento",
-      "title": "Capítulo 10: Indicaciones y contraindicaciones Para las modalidades de tratamiento"
+      "source_line": "Capítulo 10: Indicaciones y contraindicaciones",
+      "title": "Capítulo 10: Indicaciones y contraindicaciones"
     },
     {
       "kind": "part",
@@ -120,8 +111,8 @@
       "level": 1,
       "pdf_page": 391,
       "printed_folio": null,
-      "source_line": "Capítulo 12: Estrategias técnicas en el tratamiento de personalidades narcisistas El",
-      "title": "Capítulo 12: Estrategias técnicas en el tratamiento de personalidades narcisistas El"
+      "source_line": "Capítulo 12: Estrategias técnicas en el tratamiento de personalidades narcisistas",
+      "title": "Capítulo 12: Estrategias técnicas en el tratamiento de personalidades narcisistas"
     },
     {
       "chapter_number": 13,
@@ -129,8 +120,8 @@
       "level": 1,
       "pdf_page": 417,
       "printed_folio": 210,
-      "source_line": "Capítulo 13: Análisis de caracteres en línea con los esfuerzos anteriores para enriquecer",
-      "title": "Capítulo 13: Análisis de caracteres en línea con los esfuerzos anteriores para enriquecer"
+      "source_line": "Capítulo 13: Análisis de caracteres",
+      "title": "Capítulo 13: Análisis de caracteres"
     },
     {
       "chapter_number": 14,
@@ -138,8 +129,8 @@
       "level": 1,
       "pdf_page": 450,
       "printed_folio": null,
-      "source_line": "Capítulo 14: Auto, el ego, afecta y impulsa el ego y los problemas terminológicos. Una",
-      "title": "Capítulo 14: Auto, el ego, afecta y impulsa el ego y los problemas terminológicos. Una"
+      "source_line": "Capítulo 14: Auto, el ego, afecta y impulsa el ego y los problemas terminológicos.",
+      "title": "Capítulo 14: Auto, el ego, afecta y impulsa el ego y los problemas terminológicos."
     },
     {
       "kind": "part",
@@ -164,8 +155,8 @@
       "level": 1,
       "pdf_page": 568,
       "printed_folio": null,
-      "source_line": "Capítulo 19: Regresión paranoica y narcisismo maligno Como ya he mencionado (ver",
-      "title": "Capítulo 19: Regresión paranoica y narcisismo maligno Como ya he mencionado (ver"
+      "source_line": "Capítulo 19: Regresión paranoica y narcisismo maligno",
+      "title": "Capítulo 19: Regresión paranoica y narcisismo maligno"
     },
     {
       "kind": "part",
@@ -190,8 +181,8 @@
       "level": 1,
       "pdf_page": 642,
       "printed_folio": null,
-      "source_line": "CAPÍTULO 21: El modelo comunitario terapéutico del tratamiento hospitalario para la",
-      "title": "Capítulo 21: El modelo comunitario terapéutico del tratamiento hospitalario para la"
+      "source_line": "Capítulo 21: El modelo comunitario terapéutico del tratamiento hospitalario para…",
+      "title": "Capítulo 21: El modelo comunitario terapéutico del tratamiento hospitalario para…"
     },
     {
       "chapter_number": 22,
@@ -203,14 +194,7 @@
       "title": "Capítulo 22: Tratamiento hospitalario a largo plazo del límite severo y la patología"
     }
   ],
-  "chapter_number_anomalies": [
-    {
-      "next_chapter": 2,
-      "note": "Candidate headings decrease numerically; review context before inferring a page move.",
-      "position": 2,
-      "previous_chapter": 6
-    }
-  ],
+  "chapter_number_anomalies": [],
   "confidence": "INSUFFICIENT",
   "explanation": "Automatic page movement is blocked because only 6 of 741 pages have unambiguous bottom folios; the folio range is not contiguous; one or more unnumbered pages occur inside the numbered sequence. The source sequence is preserved pending human review.",
   "input_name": "inglés_to_español_20261021_1924_translated.pdf",
@@ -221,7 +205,7 @@
     "complete_page_permutation": true,
     "input_modified": false
   },
-  "observed_at_utc": "2026-10-22T00:05:21Z",
+  "observed_at_utc": "2026-10-22T00:10:01Z",
   "page_count": 741,
   "page_evidence": [
     {
@@ -323,7 +307,6 @@
       "toc_like_page": false
     },
     {
-      "heading": "Capítulo 6: Adaptado de 'El tratamiento psicoterapéutico de las personalidades de la",
       "page_text_sha256": "17abba1c56aef6229504c61b0bf6268f8b071445b50c3d2b09b4e23302fa71f8",
       "pdf_page": 15,
       "printed_folio": null,
@@ -675,7 +658,7 @@
       "toc_like_page": false
     },
     {
-      "heading": "Capítulo 2: La entrevista estructural Mi objetivo principal en este capítulo es ilustrar la",
+      "heading": "Capítulo 2: La entrevista estructural",
       "page_text_sha256": "f290610220997f19a83ea68ac82f1af72f5bd8d496f937987c83d68b3cb51187",
       "pdf_page": 65,
       "printed_folio": null,
@@ -1005,7 +988,7 @@
       "toc_like_page": false
     },
     {
-      "heading": "Capítulo 3: Diagnóstico diferencial en la adolescencia Las consideraciones de",
+      "heading": "Capítulo 3: Diagnóstico diferencial en la adolescencia",
       "page_text_sha256": "a861eea8db0fe17d54163f2502735371a22ab00f82b07c0b25c19cdaf2e728a4",
       "pdf_page": 112,
       "printed_folio": 52,
@@ -1223,7 +1206,7 @@
       "toc_like_page": false
     },
     {
-      "heading": "Capítulo 4: Trastornos de la personalidad En la vejez en su estudio sociológico de la vejez,",
+      "heading": "Capítulo 4: Trastornos de la personalidad En la vejez",
       "page_text_sha256": "c57e00bce8bea78134499e7b9ac06b93043110129e53c58552099fa05811ec0d",
       "pdf_page": 143,
       "printed_folio": null,
@@ -1604,7 +1587,7 @@
       "toc_like_page": false
     },
     {
-      "heading": "Capítulo 6: Psicoterapia expresiva Antecedentes teóricos Debido a que los principales",
+      "heading": "Capítulo 6: Psicoterapia expresiva Antecedentes teóricos",
       "page_text_sha256": "387b9aeda4dee8293bf4f9ed471193bd11d1e4f00bc1e0b66c209fdcf5890d67",
       "pdf_page": 197,
       "printed_folio": null,
@@ -1815,7 +1798,7 @@
       "toc_like_page": false
     },
     {
-      "heading": "Capítulo 7: Gestión de la transferencia En psicoterapia expresiva, quizás la",
+      "heading": "Capítulo 7: Gestión de la transferencia",
       "page_text_sha256": "afe202b48330ad066ed238a10c93e1c665a449195f484f89775ae01f271d51bf",
       "pdf_page": 227,
       "printed_folio": 112,
@@ -2082,7 +2065,7 @@
       "toc_like_page": false
     },
     {
-      "heading": "Capítulo 8: Psicoterapia expresiva con adolescentes Las tareas fundamentales del",
+      "heading": "Capítulo 8: Psicoterapia expresiva con adolescentes",
       "page_text_sha256": "d88998a86369697c487d6ef0d24ec2547966f0903e241011a7514eecb7cf5dbf",
       "pdf_page": 265,
       "printed_folio": 131,
@@ -2307,7 +2290,7 @@
       "toc_like_page": false
     },
     {
-      "heading": "Capítulo 9: Psicoterapia de apoyo En el contexto de comparar la aplicación adecuada de la",
+      "heading": "Capítulo 9: Psicoterapia de apoyo",
       "page_text_sha256": "a57c342485751ca87c85eb5677e42d40e5fff734a361537e2d6671ffbdc898c8",
       "pdf_page": 297,
       "printed_folio": null,
@@ -2553,7 +2536,7 @@
       "toc_like_page": false
     },
     {
-      "heading": "Capítulo 10: Indicaciones y contraindicaciones Para las modalidades de tratamiento",
+      "heading": "Capítulo 10: Indicaciones y contraindicaciones",
       "page_text_sha256": "b8c45f87320bddca1078bd902286d4c2bd4652381a0489324b8293718c6b5dfa",
       "pdf_page": 332,
       "printed_folio": null,
@@ -2968,7 +2951,7 @@
       "toc_like_page": false
     },
     {
-      "heading": "Capítulo 12: Estrategias técnicas en el tratamiento de personalidades narcisistas El",
+      "heading": "Capítulo 12: Estrategias técnicas en el tratamiento de personalidades narcisistas",
       "page_text_sha256": "a5a7fcd49593528ec7c6d7a7051465f49ec2f9ce34eecfe174f4d83cb75e28ac",
       "pdf_page": 391,
       "printed_folio": null,
@@ -3151,7 +3134,7 @@
       "toc_like_page": false
     },
     {
-      "heading": "Capítulo 13: Análisis de caracteres en línea con los esfuerzos anteriores para enriquecer",
+      "heading": "Capítulo 13: Análisis de caracteres",
       "page_text_sha256": "7cc911598968e666b4315962996120c95a515e87167464f2d7da1d6d11b35db4",
       "pdf_page": 417,
       "printed_folio": 210,
@@ -3383,7 +3366,7 @@
       "toc_like_page": false
     },
     {
-      "heading": "Capítulo 14: Auto, el ego, afecta y impulsa el ego y los problemas terminológicos. Una",
+      "heading": "Capítulo 14: Auto, el ego, afecta y impulsa el ego y los problemas terminológicos.",
       "page_text_sha256": "1b5993296679bc0640f8609031374fe5b75203d32c3c81635a8b7d6afed80f02",
       "pdf_page": 450,
       "printed_folio": null,
@@ -4212,7 +4195,7 @@
       "toc_like_page": false
     },
     {
-      "heading": "Capítulo 19: Regresión paranoica y narcisismo maligno Como ya he mencionado (ver",
+      "heading": "Capítulo 19: Regresión paranoica y narcisismo maligno",
       "page_text_sha256": "5a72e733b8a9963c667e2305ae6b801eb3157e89c7995c1d3ba7545fad37552b",
       "pdf_page": 568,
       "printed_folio": null,
@@ -4733,7 +4716,7 @@
       "toc_like_page": false
     },
     {
-      "heading": "Capítulo 21: El modelo comunitario terapéutico del tratamiento hospitalario para la",
+      "heading": "Capítulo 21: El modelo comunitario terapéutico del tratamiento hospitalario para…",
       "page_text_sha256": "d1adf7056cd79e5242c7e217104e3dfcdd73e6df4be6e2239bbd2837ece299cf",
       "pdf_page": 642,
       "printed_folio": null,
