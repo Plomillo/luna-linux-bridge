@@ -366,6 +366,8 @@ def issue_g24(g23_path: Path, output_path: Path, g23_public_pem: str, g24_privat
         errors.append("G23_PUBLIC_KEY_NOT_CONFIGURED")
     if g23_payload is None:
         errors.append("G23_SIGNATURE_NOT_VERIFIED")
+    if not ctl.is_sha256(expected_subject_sha256):
+        errors.append("G24_EXPECTED_SUBJECT_SHA256_INVALID")
     if not certifier_id or certifier_id in {producer_id, (g23_payload or {}).get("validator_id")}:
         errors.append("G24_CERTIFIER_ID_INVALID")
     if g23_public_pem and g24_private_pem:
@@ -885,7 +887,7 @@ def main(argv: list[str] | None = None) -> int:
     prep = sub.add_parser("prepare-g23", help="Independently inspect final Cajita evidence; emits PASS or HOLD without mutation.")
     prep.add_argument("--root", type=Path, required=True)
     prep.add_argument("--candidate-commit", required=True)
-    prep.add_argument("--expected-subject-sha256", default=None)
+    prep.add_argument("--expected-subject-sha256", required=True)
     prep.add_argument("--validator-id", default=os.environ.get("CAJITA_G23_VALIDATOR_ID", ""))
     prep.add_argument("--producer-id", default=os.environ.get("CAJITA_PRODUCER_ID", "CUSTOSZ_V9"))
     prep.add_argument("--output", type=Path, required=True)
@@ -900,7 +902,7 @@ def main(argv: list[str] | None = None) -> int:
     s24.add_argument("--output", type=Path, required=True)
     s24.add_argument("--certifier-id", default=os.environ.get("CAJITA_G24_CERTIFIER_ID", ""))
     s24.add_argument("--producer-id", default=os.environ.get("CAJITA_PRODUCER_ID", "CUSTOSZ_V9"))
-    s24.add_argument("--expected-subject-sha256", default=None)
+    s24.add_argument("--expected-subject-sha256", required=True)
     persist = sub.add_parser("persist-bundle", help="Persist signed G23/G24 receipts and verify the exact final tree.")
     persist.add_argument("--root", type=Path, required=True)
     persist.add_argument("--g23", type=Path, required=True)
@@ -935,8 +937,8 @@ def main(argv: list[str] | None = None) -> int:
                 except (OSError, ValueError, json.JSONDecodeError):
                     payload["status"] = "HOLD"
                     payload["blockers"] = sorted(set(payload.get("blockers", []) + ["G23_OPTIMIZATION_EXECUTION_MANIFEST_INVALID"]))
-            if independent_path := (root / INDEPENDENT_TESTS_REL):
-                if independent_path.is_file():
+            independent_path = root / INDEPENDENT_TESTS_REL
+            if independent_path.is_file():
                     try:
                         independent_manifest = load_object(independent_path)
                         if independent_manifest.get("executor_id") == args.validator_id:
