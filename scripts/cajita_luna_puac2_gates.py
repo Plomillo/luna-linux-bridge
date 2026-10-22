@@ -84,7 +84,8 @@ def sign_envelope(payload: dict[str, Any], private_pem: str, signer_id: str, sch
     key = serialization.load_pem_private_key(private_pem.encode("utf-8"), password=None)
     if not isinstance(key, private_type):
         raise ValueError("SIGNER_KEY_NOT_ED25519")
-    if payload.get("validator_id", payload.get("certifier_id")) != signer_id:
+    identity_field = "validator_id" if schema == G23_ENVELOPE_SCHEMA else "certifier_id"
+    if payload.get(identity_field) != signer_id:
         raise ValueError("SIGNER_IDENTITY_PAYLOAD_MISMATCH")
     canonical = canonical_json(payload)
     signature = base64.b64encode(key.sign(canonical)).decode("ascii")
@@ -137,7 +138,8 @@ def verify_envelope(envelope: Any, public_pem: str, expected_schema: str, expect
                     errors.append("ED25519_SIGNATURE_INVALID")
     except Exception as exc:
         errors.append("SIGNATURE_VERIFICATION_ERROR:" + type(exc).__name__)
-    if payload.get("validator_id", payload.get("certifier_id")) != signer_id:
+    identity_field = "validator_id" if expected_schema == G23_ENVELOPE_SCHEMA else "certifier_id"
+    if payload.get(identity_field) != signer_id:
         errors.append("PAYLOAD_SIGNER_IDENTITY_MISMATCH")
     return (payload if not errors else None), sorted(set(errors))
 
@@ -405,6 +407,7 @@ def issue_g24(g23_path: Path, output_path: Path, g23_public_pem: str, g24_privat
         "candidate_commit": candidate_commit,
         "subject_tree_sha256": g23_payload.get("subject_tree_sha256") if g23_payload else None,
         "g23_payload_sha256": g23_payload_hash,
+        "g23_envelope_sha256": digest_bytes(canonical_json(g23_envelope)) if isinstance(g23_envelope, dict) else None,
         "gates_checked": ctl.GATE_IDS_24 if status == "CERTIFIED" else [],
         "tree_bytes_at_g23": g23_payload.get("tree_bytes_at_validation") if g23_payload else None,
         "hard_cap_bytes": ctl.CAP_BYTES,
@@ -551,6 +554,8 @@ def verify_release(root: Path, manifest_path: Path, g23_public_pem: str, g24_pub
             errors.append("G24_SUBJECT_HASH_MISMATCH")
         if g23_envelope and g24_payload.get("g23_payload_sha256") != g23_envelope.get("payload_sha256"):
             errors.append("G24_G23_CHAIN_MISMATCH")
+        if g23_envelope and g24_payload.get("g23_envelope_sha256") != digest_bytes(canonical_json(g23_envelope)):
+            errors.append("G24_G23_ENVELOPE_DIGEST_MISMATCH")
         if g24_payload.get("gates_checked") != ctl.GATE_IDS_24:
             errors.append("G24_REQUIRED_GATE_SET_MISMATCH")
         if g24_payload.get("validator_id") != (g23_payload or {}).get("validator_id"):
