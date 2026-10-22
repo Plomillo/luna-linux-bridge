@@ -1,0 +1,41 @@
+name: Cajita de Luna governed preflight tests
+
+on:
+  push:
+    branches:
+      - feature/cajita-luna-puac2-release-controls-20261022
+    paths:
+      - "scripts/cajita_luna_governed_preflight.py"
+      - "tests/test_cajita_luna_governed_preflight.py"
+      - ".github/workflows/cajita-luna-governed-preflight.yml"
+  pull_request:
+    paths:
+      - "scripts/cajita_luna_governed_preflight.py"
+      - "tests/test_cajita_luna_governed_preflight.py"
+      - ".github/workflows/cajita-luna-governed-preflight.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cajita-governed-preflight-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  unit-and-syntax:
+    name: Controller tests only (not Cajita certification)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.12"
+      - name: Compile controller and tests
+        run: python -m py_compile scripts/cajita_luna_governed_preflight.py tests/test_cajita_luna_governed_preflight.py
+      - name: Run fail-closed unit tests
+        run: python -m unittest discover -s tests -p 'test_cajita_luna_governed_preflight.py' -v
