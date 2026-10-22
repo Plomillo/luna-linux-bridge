@@ -188,7 +188,7 @@ class CajitaPUAC2GateTests(unittest.TestCase):
             "tree_bytes_at_validation": 100_000_000,
             "hard_cap_bytes": ctl.CAP_BYTES,
             "evidence_reserve_bytes": ctl.MIN_EVIDENCE_RESERVE_BYTES,
-            "projected_tree_bytes_with_reserve": 101_000_000,
+            "projected_tree_bytes_with_reserve": 100_000_000 + ctl.MIN_EVIDENCE_RESERVE_BYTES,
             "gates_checked": ctl.GATE_IDS_22,
             "evidence_hashes": evidence_hashes,
             "blockers": [],
@@ -206,6 +206,9 @@ class CajitaPUAC2GateTests(unittest.TestCase):
         self.assertTrue(verified["certification_granted"])
         self.assertEqual(verified["subject_tree_sha256"], subject)
         self.assertEqual(verified["g23_envelope_sha256"], gates.digest_bytes(gates.canonical_json(envelope)))
+        self.assertEqual(verified["certifier_id"], "independent-g24")
+        self.assertEqual(result["status"], "SIGNED")
+        self.assertEqual(envelope["status"], "SIGNED")
         self.assertNotEqual(result["signer_public_key_sha256"], envelope["signer_public_key_sha256"])
 
 
