@@ -36,10 +36,11 @@ jobs:
       CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
       EXPECTED_SUBJECT_SHA256: ${{ inputs.expected_subject_sha256 }}
     steps:
-      - name: Checkout trusted gate code from main without persisted credentials
+      - name: Checkout trusted gate code and pinned helper-source history from main
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: main
+          fetch-depth: 0
           persist-credentials: false
       - name: Validate trusted host path, role identity and dispatch inputs
         shell: bash
@@ -170,10 +171,11 @@ jobs:
       CAJITA_PRODUCER_ID: CUSTOSZ_V9
       CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
     steps:
-      - name: Checkout trusted verifier from main
+      - name: Checkout trusted verifier and pinned helper-source history from main
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: main
+          fetch-depth: 0
           persist-credentials: false
       - name: Prepare isolated Python tools
         shell: bash
