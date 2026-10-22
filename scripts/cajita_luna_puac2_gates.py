@@ -939,14 +939,14 @@ def main(argv: list[str] | None = None) -> int:
                     payload["blockers"] = sorted(set(payload.get("blockers", []) + ["G23_OPTIMIZATION_EXECUTION_MANIFEST_INVALID"]))
             independent_path = root / INDEPENDENT_TESTS_REL
             if independent_path.is_file():
-                    try:
-                        independent_manifest = load_object(independent_path)
-                        if independent_manifest.get("executor_id") == args.validator_id:
-                            payload["status"] = "HOLD"
-                            payload["blockers"] = sorted(set(payload.get("blockers", []) + ["G23_IDENTITY_COLLIDES_WITH_INDEPENDENT_TESTER"]))
-                    except (OSError, ValueError, json.JSONDecodeError):
+                try:
+                    independent_manifest = load_object(independent_path)
+                    if independent_manifest.get("executor_id") == args.validator_id:
                         payload["status"] = "HOLD"
-                        payload["blockers"] = sorted(set(payload.get("blockers", []) + ["G23_INDEPENDENT_TEST_MANIFEST_INVALID"]))
+                        payload["blockers"] = sorted(set(payload.get("blockers", []) + ["G23_IDENTITY_COLLIDES_WITH_INDEPENDENT_TESTER"]))
+                except (OSError, ValueError, json.JSONDecodeError):
+                    payload["status"] = "HOLD"
+                    payload["blockers"] = sorted(set(payload.get("blockers", []) + ["G23_INDEPENDENT_TEST_MANIFEST_INVALID"]))
             if args.expected_subject_sha256 and payload.get("subject_tree_sha256") != args.expected_subject_sha256:
                 payload["status"] = "HOLD"
                 payload["blockers"] = sorted(set(payload.get("blockers", []) + ["G23_DISPATCHED_SUBJECT_MISMATCH"]))
