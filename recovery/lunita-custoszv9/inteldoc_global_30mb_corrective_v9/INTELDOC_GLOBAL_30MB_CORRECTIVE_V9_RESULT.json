@@ -1,0 +1,230 @@
+{
+  "candidate_payload": {
+    "bytes": 21650145,
+    "entries": [
+      {
+        "bytes": 1791,
+        "path": "HOST_TOOL_INVENTORY.json",
+        "sha256": "1fe0fe5d941657c8133ec7530cda7d709c69386066f07545174511efcc7dde6f"
+      },
+      {
+        "bytes": 526,
+        "path": "calibre/CALIBRE_BINARY_EXTERNALIZATION.json",
+        "sha256": "af59dbc475c2f60ef38bb580d1a6d2a44c3103da836923ddc4d9df8bc62410c1"
+      },
+      {
+        "bytes": 549,
+        "path": "calibre/CALIBRE_SOURCE_PROVENANCE.json",
+        "sha256": "fde8c2eb9287d819e11c23b9e6678f145b94084ddb535df5b8e613f700d75050"
+      },
+      {
+        "bytes": 35,
+        "path": "docling/compact_upstream_hf_candidate/added_tokens.json",
+        "sha256": "882e49757a3bea90e00df1d2dc8c18b2b526ff77380db20439feeb1f053a63cd"
+      },
+      {
+        "bytes": 588,
+        "path": "docling/compact_upstream_hf_candidate/chat_template.jinja",
+        "sha256": "a4b0bf4348b014acca131da664d05b61e39d5dc8af980f1913846a57ccc6d289"
+      },
+      {
+        "bytes": 1641,
+        "path": "docling/compact_upstream_hf_candidate/config.json",
+        "sha256": "4fbb5d2ad9549663e5740b36a5f45cb3d861d20d2e1c158af8569765f9864f30"
+      },
+      {
+        "bytes": 6906,
+        "path": "docling/compact_upstream_hf_candidate/docling_30mb_runtime_v1.py",
+        "sha256": "ac77f2bce09693aea9abd5bfc86c7317179388a5f861db459faf8f7eebe9e370"
+      },
+      {
+        "bytes": 169,
+        "path": "docling/compact_upstream_hf_candidate/generation_config.json",
+        "sha256": "369256b622c73d709b248da31ba4332ef19c01dec6e311d8e4b671bc1321bc06"
+      },
+      {
+        "bytes": 486,
+        "path": "docling/compact_upstream_hf_candidate/preprocessor_config.json",
+        "sha256": "6cb6e36d6fcb88ca1502c4a26750715dc3e7dedddc9a8f17b27d8d167d1457e7"
+      },
+      {
+        "bytes": 68,
+        "path": "docling/compact_upstream_hf_candidate/processor_config.json",
+        "sha256": "e7bff42da73ae9eec9042ef20e066e11f1ee20f025358ff79131e3c0fb549b46"
+      },
+      {
+        "bytes": 206894,
+        "path": "docling/compact_upstream_hf_candidate/quantized_manifest.json",
+        "sha256": "aa08a8cfa4e8406a72466ccd071639966f53042c90e2525f10a5883a7b4a9c23"
+      },
+      {
+        "bytes": 13483380,
+        "path": "docling/compact_upstream_hf_candidate/quantized_weights.bin",
+        "sha256": "4a13b916b63b682a28c8fe89fc608b90d3bf5a8a77cb0988e1e19131c64ebc88"
+      },
+      {
+        "bytes": 812,
+        "path": "docling/compact_upstream_hf_candidate/special_tokens_map.json",
+        "sha256": "45c073d82ba37a1fc69c8d6a772d17a8e4f78b64b63c0fce2c77d18a3259d18e"
+      },
+      {
+        "bytes": 7153134,
+        "path": "docling/compact_upstream_hf_candidate/tokenizer.json",
+        "sha256": "673ef3c60759806916ebf37c5d9b79f7ffd53a1419f1ebd75bfec8f177c2b1b3"
+      },
+      {
+        "bytes": 17774,
+        "path": "docling/compact_upstream_hf_candidate/tokenizer_config.json",
+        "sha256": "261f9491897226589c131a4ac5993c495eec2104dace144f69c397682865a3a0"
+      },
+      {
+        "bytes": 775392,
+        "path": "docling/docling_slim-2.124.0-pruned.whl",
+        "sha256": "471a1bea5431ea264201d3781efe0b9d35b547357dfd0e483e4943f2127c974f"
+      }
+    ],
+    "files": 16,
+    "path": "/home/diegoignacionorambuenamiranda/PROYECTOS/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR/CUSTOSZ_CONTINUITY_V1/state/jobs/inteldoc_global_30mb_corrective_worker_v9/candidate_staging_20261022T014610218668Z/compact_payload"
+  },
+  "candidate_transform": {
+    "CALIBRE_BINARY": "EXTERNALIZED_DESCRIPTOR_ONLY; original 192898432-byte archive not included in payload",
+    "CALIBRE_SOURCE": "PROVENANCE_DESCRIPTOR_ONLY; original 48867616-byte source archive not included in payload",
+    "DOCLING_GGUF_TEXT_AND_MMPROJ": "REPLACED_BY_SEPARATE_COMPACT_UPSTREAM_HF_CANDIDATE; equivalence not established",
+    "DOCLING_WHEEL": "PINNED_REDUCED_WHEEL_REUSED"
+  },
+  "canonical_promotion": "NOT_AUTHORIZED",
+  "certification": "NOT_GRANTED",
+  "elapsed_seconds": 4.4,
+  "finished_at_utc": "2026-10-22T01:46:11Z",
+  "functional_tests": "NOT_RUN_BY_USER_INSTRUCTION",
+  "global_gross_gate": {
+    "additional_calibre_runtime_dependency_charge": "UNRESOLVED_HOST_CALIBRE_NOT_DETECTED",
+    "candidate_payload_bytes": 21650145,
+    "global_target_met": false,
+    "hard_cap_bytes": 30000000,
+    "known_required_python_runtime_dependency_charge_bytes": 1051798942,
+    "minimum_gross_charged_bytes": 1073449087,
+    "overage_bytes": 1043449087,
+    "status": "HOLD_OVER_CAP"
+  },
+  "hard_cap_bytes": 30000000,
+  "host_tools": [
+    {
+      "available": false,
+      "name": "ebook-convert",
+      "path": null
+    },
+    {
+      "available": false,
+      "name": "calibre",
+      "path": null
+    },
+    {
+      "available": true,
+      "bytes": 6652,
+      "name": "libreoffice",
+      "path": "/usr/bin/libreoffice",
+      "resolved_path": "/usr/lib/libreoffice/program/soffice",
+      "sha256": "adf468b45764b2abce53a7d91bbf3056b33f2734c5d5f628c075753e73903c43"
+    },
+    {
+      "available": true,
+      "bytes": 6652,
+      "name": "soffice",
+      "path": "/usr/bin/soffice",
+      "resolved_path": "/usr/lib/libreoffice/program/soffice",
+      "sha256": "adf468b45764b2abce53a7d91bbf3056b33f2734c5d5f628c075753e73903c43"
+    },
+    {
+      "available": true,
+      "bytes": 51664,
+      "name": "pdftotext",
+      "path": "/usr/bin/pdftotext",
+      "resolved_path": "/usr/bin/pdftotext",
+      "sha256": "7fe3559cac3ba61dd93650a1ba90499b9fc488184ef8d0f2f1305ddf52c0378b"
+    },
+    {
+      "available": true,
+      "bytes": 35344,
+      "name": "pdftoppm",
+      "path": "/usr/bin/pdftoppm",
+      "resolved_path": "/usr/bin/pdftoppm",
+      "sha256": "f22d753dfb4c31c9f0198d608982dac5b06a3c5d9a08d7d9bf0c6004f08a1a56"
+    },
+    {
+      "available": false,
+      "name": "tesseract",
+      "path": null
+    },
+    {
+      "available": false,
+      "name": "llama-cli",
+      "path": null
+    },
+    {
+      "available": false,
+      "name": "llama-mtmd-cli",
+      "path": null
+    },
+    {
+      "available": false,
+      "name": "llama-server",
+      "path": null
+    },
+    {
+      "available": false,
+      "name": "ollama",
+      "path": null
+    }
+  ],
+  "mission_id": "CUSTOSZV9_INTELDOC_FIVE_ARTIFACT_CORRECTIVE_V2",
+  "model_loading_or_generation": "NOT_RUN",
+  "next_required_strategy": "A native or otherwise dependency-light inference runtime is required before this payload can pass the strict global-gross 30000000-byte gate. Do not count externalized Calibre as resolved.",
+  "original_artifact_total_bytes": 571137710,
+  "original_hashes_after": {
+    "CALIBRE_BINARY": {
+      "bytes": 192898432,
+      "path": "/home/diegoignacionorambuenamiranda/PROYECTOS/1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/2. Cajita de Luna/5. Inteligencia documental/Calibre/calibre-9.14.0-x86_64.txz",
+      "read_only": true,
+      "sha256": "7f53a0863ed6d32407bc72053b966e39d5b64813f2592bd9c741504c01c0e7f3"
+    },
+    "CALIBRE_SOURCE": {
+      "bytes": 48867616,
+      "path": "/home/diegoignacionorambuenamiranda/PROYECTOS/1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/2. Cajita de Luna/5. Inteligencia documental/Calibre/calibre-9.14.0.tar.xz",
+      "read_only": true,
+      "sha256": "d1bc24024b0942429c627e9c5d0b25d51df9c1af1e1d8dca3e572f03b194c561"
+    },
+    "DOCLING_GGUF_MMPROJ": {
+      "bytes": 190031712,
+      "path": "/home/diegoignacionorambuenamiranda/PROYECTOS/1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/2. Cajita de Luna/5. Inteligencia documental/Docling/mmproj-granite-docling-258M-f16.gguf",
+      "read_only": true,
+      "sha256": "4b7b2c4ed3162bd9cb323668c188e2324838b8f8ca4f3f9767f16c4c600d43ad"
+    },
+    "DOCLING_GGUF_TEXT": {
+      "bytes": 138559520,
+      "path": "/home/diegoignacionorambuenamiranda/PROYECTOS/1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/2. Cajita de Luna/5. Inteligencia documental/Docling/granite-docling-258M-Q4_K_M.gguf",
+      "read_only": true,
+      "sha256": "4ba41a480d2b6594613a23819df8fcc382d9dab9691e28bf327b3ac799fe0a82"
+    },
+    "DOCLING_WHEEL": {
+      "bytes": 780430,
+      "path": "/home/diegoignacionorambuenamiranda/PROYECTOS/1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/2. Cajita de Luna/5. Inteligencia documental/Docling/docling_slim-2.124.0-py3-none-any.whl",
+      "read_only": true,
+      "sha256": "2c7c667394d3eae9080bc15143ed6f1d39a4838090d9e3f29be212606e6676bd"
+    }
+  },
+  "original_sources_modified": false,
+  "payload_gate": {
+    "bytes": 21650145,
+    "hard_cap_bytes": 30000000,
+    "headroom_bytes": 8349855,
+    "status": "PASS"
+  },
+  "phase": "STRUCTURAL_CANDIDATE_AND_RUNTIME_CLOSURE_GATE",
+  "prestart_checkpoint": "/home/diegoignacionorambuenamiranda/PROYECTOS/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR/CUSTOSZ_CONTINUITY_V1/state/checkpoints/INTELDOC_GLOBAL_30MB_V9_CANDIDATE_PRESTART_20261022T014610218668Z",
+  "quality_equivalence": "NOT_ESTABLISHED",
+  "runtime_smoke": "NOT_RUN_BY_USER_INSTRUCTION",
+  "schema": "INTELDOC_GLOBAL_30MB_CORRECTIVE_V9_RESULT/1.0",
+  "started_at_utc": "2026-10-22T01:46:11Z",
+  "status": "HOLD_OVER_GLOBAL_GROSS_CAP_OR_EXTERNALIZED_DEPENDENCIES"
+}
