@@ -844,15 +844,24 @@ def persist_report(root: Path, report: dict[str, Any]) -> Path:
     return report_path
 
 
-def candidate_tree_digest(root: Path) -> tuple[str, int, int]:
-    """Hash all non-generated-evidence payload files with streaming reads.
+def candidate_tree_digest(root: Path, exclude_paths: set[str] | list[str] | None = None) -> tuple[str, int, int]:
+    """Hash every regular payload file except explicitly listed evidence outputs.
 
-    Generated receipt/log files are excluded from the subject digest to prevent a
-    certificate hashing itself, but remain counted in the physical byte budget.
-    Each excluded record must still be hash-linked by PUAC2 evidence.
+    The caller must provide a narrow, exact list of current run receipts/manifests.
+    Historical evidence remains part of the subject digest. Every excluded output
+    still contributes to the physical size budget and must have its own hash sidecar.
     """
-    ignored_prefix = ".cajita-optimization-candidates/evidence/"
-    records = []
+    exclusions: set[str] = set()
+    for value in exclude_paths or set():
+        try:
+            target = safe_relative(root, value)
+        except ValueError as exc:
+            raise ValueError("UNSAFE_SUBJECT_EXCLUSION:" + str(value)) from exc
+        rel = target.relative_to(root).as_posix()
+        if not rel.startswith(".cajita-optimization-candidates/evidence/"):
+            raise ValueError("SUBJECT_EXCLUSION_OUTSIDE_GENERATED_EVIDENCE_LEDGER:" + rel)
+        exclusions.add(rel)
+    records: list[dict[str, Any]] = []
     files_hashed = 0
     total_hashed_bytes = 0
     for base, dirs, names in os.walk(root, topdown=True, followlinks=False):
@@ -864,7 +873,7 @@ def candidate_tree_digest(root: Path) -> tuple[str, int, int]:
         for name in names:
             p = base_path / name
             rel = p.relative_to(root).as_posix()
-            if rel.startswith(ignored_prefix):
+            if rel in exclusions:
                 continue
             if p.is_symlink() or not p.is_file():
                 raise ValueError(f"UNSAFE_PATH_DURING_SUBJECT_HASH:{rel}")
@@ -875,7 +884,6 @@ def candidate_tree_digest(root: Path) -> tuple[str, int, int]:
             total_hashed_bytes += size
     records.sort(key=lambda item: item["path"])
     return sha256_bytes(canonical_json(records)), files_hashed, total_hashed_bytes
-
 
 def validate_functional_manifest(root: Path) -> list[str]:
     path = root / FUNCTIONAL_REL
