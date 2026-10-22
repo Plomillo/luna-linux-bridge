@@ -66,6 +66,19 @@ class CajitaTrustedWorkflowContractTests(unittest.TestCase):
                 if action == "actions/checkout":
                     self.assertIs(step.get("with", {}).get("persist-credentials"), False)
 
+
+    def test_g23_and_final_readback_fetch_pinned_helper_source_history(self):
+        jobs = self.workflow["jobs"]
+        for job_id in ("g23-independent-validation", "persist-and-final-readback"):
+            checkouts = [
+                step for step in jobs[job_id]["steps"]
+                if step.get("uses", "").startswith("actions/checkout@")
+                and step.get("with", {}).get("ref") == "main"
+            ]
+            self.assertTrue(checkouts, f"No trusted main checkout in {job_id}")
+            self.assertIs(checkouts[0].get("with", {}).get("fetch-depth"), 0)
+
+
     def test_artifact_paths_only_upload_compact_gate_receipts(self):
         self.assertNotRegex(self.text, r"^\s*-\s+.*\.(?:7z|safetensors|gguf|apk)\s*$")
         self.assertIn("G23_SIGNED.json", self.text)
