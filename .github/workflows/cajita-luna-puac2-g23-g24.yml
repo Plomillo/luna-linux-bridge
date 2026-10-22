@@ -17,7 +17,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: cajita-puac2-g23-g24-\${{ inputs.candidate_commit }}
+  group: cajita-puac2-g23-g24-${{ inputs.candidate_commit }}
   cancel-in-progress: false
 
 jobs:
@@ -30,11 +30,11 @@ jobs:
       contents: read
       actions: read
     env:
-      CAJITA_LUNA_ROOT: \${{ vars.CAJITA_LUNA_ROOT }}
-      CAJITA_G23_VALIDATOR_ID: \${{ vars.CAJITA_G23_VALIDATOR_ID }}
+      CAJITA_LUNA_ROOT: ${{ vars.CAJITA_LUNA_ROOT }}
+      CAJITA_G23_VALIDATOR_ID: ${{ vars.CAJITA_G23_VALIDATOR_ID }}
       CAJITA_PRODUCER_ID: CUSTOSZ_V9
-      CANDIDATE_COMMIT: \${{ inputs.candidate_commit }}
-      EXPECTED_SUBJECT_SHA256: \${{ inputs.expected_subject_sha256 }}
+      CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+      EXPECTED_SUBJECT_SHA256: ${{ inputs.expected_subject_sha256 }}
     steps:
       - name: Checkout trusted gate code from main without persisted credentials
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -73,7 +73,7 @@ jobs:
           cat "$RUNNER_TEMP/cajita-g23/G23_UNSIGNED.json"
       - name: Sign G23 with the separately provisioned G23 identity (PASS or explicit HOLD)
         env:
-          CAJITA_G23_SIGNING_PRIVATE_KEY_PEM: \${{ secrets.CAJITA_G23_SIGNING_PRIVATE_KEY_PEM }}
+          CAJITA_G23_SIGNING_PRIVATE_KEY_PEM: ${{ secrets.CAJITA_G23_SIGNING_PRIVATE_KEY_PEM }}
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -91,10 +91,10 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: cajita-g23-\${{ github.run_id }}-\${{ github.run_attempt }}
+          name: cajita-g23-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
-            \${{ runner.temp }}/cajita-g23/G23_UNSIGNED.json
-            \${{ runner.temp }}/cajita-g23/G23_SIGNED.json
+            ${{ runner.temp }}/cajita-g23/G23_UNSIGNED.json
+            ${{ runner.temp }}/cajita-g23/G23_SIGNED.json
           if-no-files-found: error
           retention-days: 90
 
@@ -108,10 +108,10 @@ jobs:
       contents: read
       actions: read
     env:
-      CAJITA_G24_CERTIFIER_ID: \${{ vars.CAJITA_G24_CERTIFIER_ID }}
+      CAJITA_G24_CERTIFIER_ID: ${{ vars.CAJITA_G24_CERTIFIER_ID }}
       CAJITA_PRODUCER_ID: CUSTOSZ_V9
-      CANDIDATE_COMMIT: \${{ inputs.candidate_commit }}
-      EXPECTED_SUBJECT_SHA256: \${{ inputs.expected_subject_sha256 }}
+      CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+      EXPECTED_SUBJECT_SHA256: ${{ inputs.expected_subject_sha256 }}
     steps:
       - name: Checkout trusted G24 implementation from main
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -127,12 +127,12 @@ jobs:
       - name: Download G23 signed evidence only
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
-          name: cajita-g23-\${{ github.run_id }}-\${{ github.run_attempt }}
-          path: \${{ runner.temp }}/cajita-g23
+          name: cajita-g23-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/cajita-g23
       - name: Verify the G23 signature, candidate, evidence digests and all required gates; issue G24 or HOLD
         env:
-          CAJITA_G23_PUBLIC_KEY_PEM: \${{ vars.CAJITA_G23_PUBLIC_KEY_PEM }}
-          CAJITA_G24_SIGNING_PRIVATE_KEY_PEM: \${{ secrets.CAJITA_G24_SIGNING_PRIVATE_KEY_PEM }}
+          CAJITA_G23_PUBLIC_KEY_PEM: ${{ vars.CAJITA_G23_PUBLIC_KEY_PEM }}
+          CAJITA_G24_SIGNING_PRIVATE_KEY_PEM: ${{ secrets.CAJITA_G24_SIGNING_PRIVATE_KEY_PEM }}
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -151,8 +151,8 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: cajita-g24-\${{ github.run_id }}-\${{ github.run_attempt }}
-          path: \${{ runner.temp }}/cajita-g24/G24_SIGNED.json
+          name: cajita-g24-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/cajita-g24/G24_SIGNED.json
           if-no-files-found: error
           retention-days: 90
 
@@ -166,9 +166,9 @@ jobs:
       contents: read
       actions: read
     env:
-      CAJITA_LUNA_ROOT: \${{ vars.CAJITA_LUNA_ROOT }}
+      CAJITA_LUNA_ROOT: ${{ vars.CAJITA_LUNA_ROOT }}
       CAJITA_PRODUCER_ID: CUSTOSZ_V9
-      CANDIDATE_COMMIT: \${{ inputs.candidate_commit }}
+      CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
     steps:
       - name: Checkout trusted verifier from main
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -185,17 +185,17 @@ jobs:
       - name: Download signed G23 evidence
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
-          name: cajita-g23-\${{ github.run_id }}-\${{ github.run_attempt }}
-          path: \${{ runner.temp }}/cajita-g23
+          name: cajita-g23-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/cajita-g23
       - name: Download signed G24 terminal decision
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
-          name: cajita-g24-\${{ github.run_id }}-\${{ github.run_attempt }}
-          path: \${{ runner.temp }}/cajita-g24
+          name: cajita-g24-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/cajita-g24
       - name: Persist append-only receipts and perform final read-back validation
         env:
-          CAJITA_G23_PUBLIC_KEY_PEM: \${{ vars.CAJITA_G23_PUBLIC_KEY_PEM }}
-          CAJITA_G24_PUBLIC_KEY_PEM: \${{ vars.CAJITA_G24_PUBLIC_KEY_PEM }}
+          CAJITA_G23_PUBLIC_KEY_PEM: ${{ vars.CAJITA_G23_PUBLIC_KEY_PEM }}
+          CAJITA_G24_PUBLIC_KEY_PEM: ${{ vars.CAJITA_G24_PUBLIC_KEY_PEM }}
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -209,7 +209,7 @@ jobs:
             --candidate-commit "$CANDIDATE_COMMIT" \
             --producer-id "$CAJITA_PRODUCER_ID" \
             2>&1 | tee "$RUNNER_TEMP/cajita-final/FINAL_VERIFICATION.json"
-          result=\${PIPESTATUS[0]}
+          result=${PIPESTATUS[0]}
           set -e
           echo "Final persisted verification exit code: $result"
           "$RUNNER_TEMP/cajita-persist-venv/bin/python" - "$RUNNER_TEMP/cajita-final/FINAL_VERIFICATION.json" <<'PY'
@@ -228,7 +228,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: cajita-final-verification-\${{ github.run_id }}-\${{ github.run_attempt }}
-          path: \${{ runner.temp }}/cajita-final/FINAL_VERIFICATION.json
+          name: cajita-final-verification-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/cajita-final/FINAL_VERIFICATION.json
           if-no-files-found: warn
           retention-days: 180
