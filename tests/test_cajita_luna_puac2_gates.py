@@ -162,5 +162,53 @@ class CajitaPUAC2GateTests(unittest.TestCase):
             self.assertGreater(ctl.scan_tree(root)["total_bytes"], bytes2)
 
 
+    def test_valid_g23_and_distinct_g24_can_certify_the_same_subject(self):
+        g23_private, g23_public = keypair()
+        g24_private, g24_public = keypair()
+        commit = "9" * 40
+        subject = "8" * 64
+        evidence_hashes = {
+            "registry_sha256": "1" * 64,
+            "reconciliation_sha256": "2" * 64,
+            "frozen_manifest_sha256": "3" * 64,
+            "optimization_plan_sha256": "4" * 64,
+            "execution_manifest_sha256": "5" * 64,
+            "functional_manifest_sha256": "6" * 64,
+            "gate_matrix_sha256": "7" * 64,
+            "independent_tests_sha256": "a" * 64,
+        }
+        payload = {
+            "schema": gates.G23_SCHEMA,
+            "status": "PASS",
+            "scope": "CAJITA_DE_LUNA_EXACT_TREE",
+            "validator_id": "independent-g23",
+            "producer_id": "CUSTOSZ_V9",
+            "candidate_commit": commit,
+            "subject_tree_sha256": subject,
+            "tree_bytes_at_validation": 100_000_000,
+            "hard_cap_bytes": ctl.CAP_BYTES,
+            "evidence_reserve_bytes": ctl.MIN_EVIDENCE_RESERVE_BYTES,
+            "projected_tree_bytes_with_reserve": 101_000_000,
+            "gates_checked": ctl.GATE_IDS_22,
+            "evidence_hashes": evidence_hashes,
+            "blockers": [],
+            "decision_utc": gates.utc_now(),
+        }
+        envelope = gates.sign_envelope(payload, g23_private, "independent-g23", gates.G23_ENVELOPE_SCHEMA)
+        with tempfile.TemporaryDirectory() as temp:
+            g23_path, g24_path = Path(temp) / "g23.json", Path(temp) / "g24.json"
+            g23_path.write_text(json.dumps(envelope), encoding="utf-8")
+            result = gates.issue_g24(g23_path, g24_path, g23_public, g24_private,
+                                     "independent-g24", "CUSTOSZ_V9", commit, subject)
+            verified, errors = gates.verify_envelope(result, g24_public, gates.G24_ENVELOPE_SCHEMA)
+        self.assertEqual(errors, [])
+        self.assertEqual(verified["status"], "CERTIFIED")
+        self.assertTrue(verified["certification_granted"])
+        self.assertEqual(verified["subject_tree_sha256"], subject)
+        self.assertEqual(verified["g23_envelope_sha256"], gates.digest_bytes(gates.canonical_json(envelope)))
+        self.assertNotEqual(result["signer_public_key_sha256"], envelope["signer_public_key_sha256"])
+
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
