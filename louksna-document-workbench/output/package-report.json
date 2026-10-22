@@ -1,26 +1,46 @@
 {
   "schema": "LOUKSNA_DOCUMENT_WORKBENCH_PACKAGE/1.0",
-  "observed_at_utc": "2026-10-21T23:42:37Z",
+  "observed_at_utc": "2026-10-22T00:06:27Z",
   "status": "PASS_PACKAGE_INTEGRITY",
   "package_name": "kernberg-organized-package.zip",
-  "package_size_bytes": 1422894,
-  "package_sha256": "827759547ae1b2e9fa05a489a4624f057eb18af3dd10d65dc02dd243838e0c03",
+  "package_size_bytes": 2289773,
+  "package_sha256": "852be448377988f6885f06d752c786a0c4314b3bbf9a5984184a2b335aff2ee1",
   "members": [
     {
       "name": "README.txt",
-      "size_bytes": 617
+      "size_bytes": 1030
     },
     {
       "name": "SHA256SUMS.txt",
-      "size_bytes": 296
+      "size_bytes": 793
+    },
+    {
+      "name": "Trastornos_de_personalidad_severos_edicion_lectura.pdf",
+      "size_bytes": 1075924
     },
     {
       "name": "Trastornos_de_personalidad_severos_organizado.pdf",
       "size_bytes": 1644481
     },
     {
+      "name": "academic-edition-report.json",
+      "size_bytes": 1986
+    },
+    {
+      "name": "order-analysis-final.json",
+      "size_bytes": 187968
+    },
+    {
+      "name": "order-analysis-source.json",
+      "size_bytes": 187961
+    },
+    {
+      "name": "order-application-report.json",
+      "size_bytes": 11199
+    },
+    {
       "name": "organization-report.json",
-      "size_bytes": 4620
+      "size_bytes": 4627
     },
     {
       "name": "source-inspection.json",
@@ -28,7 +48,13 @@
     }
   ],
   "source_sha256": "ef6f0a9c5888baccf67fd398233ddb2f50ec65e3eb9a3c9687fda4ddb207b504",
-  "organized_pdf_sha256": "466c66a4bd1a7b1c77ae39afd326439410adbca1b6d828a119b5f8626983b642",
+  "organized_pdf_sha256": "1064fc67226595ff78b973e5f2211dcb50294583c161def1ca5553a6b234fee4",
   "page_count": 741,
-  "bookmark_count": 24
+  "bookmark_count": 24,
+  "order_status": "REVIEW_REQUIRED_NO_PAGES_MOVED",
+  "page_order_changed": false,
+  "order_confidence": "INSUFFICIENT",
+  "academic_pdf_sha256": "860de014540db0e26c92b398af5cea444315bd443eff48ad169e5f6d26d6eeb9",
+  "academic_pdf_page_count": 365,
+  "source_order_review_required": true
 }

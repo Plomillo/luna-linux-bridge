@@ -1,0 +1,44 @@
+{
+  "chapter_and_part_navigation_entries": 23,
+  "editorial_changes": [
+    "Consistent title, part and chapter hierarchy.",
+    "Readable line spacing, margins and running folios.",
+    "Whitespace and line-break normalization.",
+    "Safe line-end hyphenation repair only when unambiguous.",
+    "Original PDF page markers retained for cross-reference."
+  ],
+  "input_name": "Trastornos_de_personalidad_severos_orden_verificado.pdf",
+  "input_nonempty_pages": 739,
+  "input_page_count": 741,
+  "input_sha256": "ef6f0a9c5888baccf67fd398233ddb2f50ec65e3eb9a3c9687fda4ddb207b504",
+  "input_text_characters": 1131696,
+  "limitations": [
+    "This is a reflowed text reading copy, not a facsimile of original page design.",
+    "Machine-translation accuracy and clinical terminology are not certified or substantively rewritten.",
+    "Human review is required before academic quotation or clinical use.",
+    "Consult the original PDF to verify figures, tables, quotations, citations and visual layout."
+  ],
+  "observed_at_utc": "2026-10-22T00:06:27Z",
+  "operation": "REFLOW_EXTRACTED_TEXT_WITH_ACADEMIC_TYPOGRAPHY",
+  "output_name": "Trastornos_de_personalidad_severos_edicion_lectura.pdf",
+  "output_page_count": 365,
+  "output_sha256": "860de014540db0e26c92b398af5cea444315bd443eff48ad169e5f6d26d6eeb9",
+  "output_size_bytes": 1075924,
+  "schema": "LOUKSNA_DOCUMENT_WORKBENCH_ACADEMIC_READING_EDITION/1.0",
+  "source_page_markers_missing": [],
+  "source_page_markers_verified": 741,
+  "status": "PASS_STRUCTURAL_CHECKS_HUMAN_REVIEW_REQUIRED",
+  "table_of_contents_present": true,
+  "typographic_controls": {
+    "alignment": "justified",
+    "body_font": "Helvetica",
+    "body_font_size_pt": 10.3,
+    "body_leading_pt": 15.2,
+    "dynamic_table_of_contents": true,
+    "page_size": "A4",
+    "pdf_outline_bookmarks": true,
+    "running_header_and_page_number": true,
+    "source_pdf_page_markers": true
+  },
+  "verification": "PASS_SOURCE_PAGE_CROSS_REFERENCE_AND_TEXT_PRESENCE"
+}
