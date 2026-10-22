@@ -584,6 +584,207 @@ def verify_release(root: Path, manifest_path: Path, g23_public_pem: str, g24_pub
     }
 
 
+
+def write_exclusive(path: Path, payload: bytes) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(fd, "wb") as stream:
+        stream.write(payload)
+        stream.flush()
+        os.fsync(stream.fileno())
+
+
+def write_json_exclusive(path: Path, value: dict[str, Any]) -> str:
+    raw = (json.dumps(value, sort_keys=True, indent=2, ensure_ascii=False) + "\n").encode("utf-8")
+    write_exclusive(path, raw)
+    sidecar = path.with_suffix(path.suffix + ".sha256")
+    write_exclusive(sidecar, f"{digest_bytes(raw)}  {path.name}\n".encode("utf-8"))
+    return digest_bytes(raw)
+
+
+def persist_bundle(root: Path, g23_path: Path, g24_path: Path, run_id: str,
+                   candidate_commit: str, producer_id: str) -> dict[str, Any]:
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,80}", run_id):
+        raise ValueError("RUN_ID_INVALID")
+    if not COMMIT_RE.fullmatch(candidate_commit):
+        raise ValueError("CANDIDATE_COMMIT_INVALID")
+    root = root.resolve(strict=True)
+    inventory_before = ctl.scan_tree(root)
+    if inventory_before["total_bytes"] + ctl.MIN_EVIDENCE_RESERVE_BYTES > ctl.CAP_BYTES:
+        raise ValueError("PERSISTENCE_BLOCKED_TREE_PLUS_EVIDENCE_RESERVE_EXCEEDS_CAP")
+    if inventory_before["symlinks"] or inventory_before["hardlink_groups"] or inventory_before["non_regular"] or inventory_before["scan_errors"]:
+        raise ValueError("PERSISTENCE_BLOCKED_UNSAFE_TREE_ENTRIES")
+    g23_envelope = load_object(g23_path)
+    g24_envelope = load_object(g24_path)
+    if g23_envelope.get("schema") != G23_ENVELOPE_SCHEMA or g24_envelope.get("schema") != G24_ENVELOPE_SCHEMA:
+        raise ValueError("PERSISTENCE_BLOCKED_RECEIPT_SCHEMA_MISMATCH")
+    g23_payload = g23_envelope.get("payload")
+    g24_payload = g24_envelope.get("payload")
+    if not isinstance(g23_payload, dict) or not isinstance(g24_payload, dict):
+        raise ValueError("PERSISTENCE_BLOCKED_RECEIPT_PAYLOAD_MISSING")
+    if g23_payload.get("candidate_commit") != candidate_commit or g24_payload.get("candidate_commit") != candidate_commit:
+        raise ValueError("PERSISTENCE_BLOCKED_CANDIDATE_MISMATCH")
+    if g23_payload.get("producer_id") != producer_id or g24_payload.get("producer_id") != producer_id:
+        raise ValueError("PERSISTENCE_BLOCKED_PRODUCER_MISMATCH")
+    if g24_payload.get("g23_payload_sha256") != g23_envelope.get("payload_sha256"):
+        raise ValueError("PERSISTENCE_BLOCKED_G23_G24_CHAIN_MISMATCH")
+    evidence_dir = root / ".cajita-optimization-candidates" / "evidence"
+    if evidence_dir.is_symlink():
+        raise ValueError("PERSISTENCE_BLOCKED_EVIDENCE_PATH_SYMLINK")
+    stamp = re.sub(r"[^A-Za-z0-9._-]", "_", run_id)
+    g23_dest = evidence_dir / f"CAJITA_G23_{stamp}.json"
+    g24_dest = evidence_dir / f"CAJITA_G24_{stamp}.json"
+    manifest_dest = evidence_dir / f"cajita-certification-manifest-{stamp}.json"
+    report_dest = evidence_dir / f"cajita-release-verification-{stamp}.json"
+    for target in (g23_dest, g24_dest, manifest_dest, report_dest):
+        if target.exists() or target.is_symlink():
+            raise ValueError("PERSISTENCE_APPEND_ONLY_TARGET_EXISTS:" + target.name)
+    # The 1 MiB reserve must cover the entire set of signed receipts, manifests,
+    # sidecars and decision reports. Precompute exact serialized sizes before writes.
+    manifest = {
+        "schema": "CAJITA_PUAC2_CERTIFICATION_MANIFEST/1.0",
+        "candidate_commit": candidate_commit,
+        "submitter_id": producer_id,
+        "scope": "CAJITA_DE_LUNA_EXACT_TREE",
+        "evidence": {
+            "output_sha256": g23_payload.get("subject_tree_sha256"),
+            "subject_tree_sha256": g23_payload.get("subject_tree_sha256"),
+            "g23_receipt_sha256": digest_bytes(canonical_json(g23_envelope)),
+            "g24_receipt_sha256": digest_bytes(canonical_json(g24_envelope)),
+        },
+        "g23": g23_envelope,
+        "g24": g24_envelope,
+        "run_id": stamp,
+        "persisted_at_utc": utc_now(),
+        "canonical_authority_transfer": False,
+        "certification_propagation": False,
+    }
+    serialized = [
+        (g23_dest, (json.dumps(g23_envelope, sort_keys=True, indent=2, ensure_ascii=False) + "\n").encode("utf-8")),
+        (g24_dest, (json.dumps(g24_envelope, sort_keys=True, indent=2, ensure_ascii=False) + "\n").encode("utf-8")),
+        (manifest_dest, (json.dumps(manifest, sort_keys=True, indent=2, ensure_ascii=False) + "\n").encode("utf-8")),
+    ]
+    sidecar_bytes = sum(len(f"{digest_bytes(raw)}  {path.name}\n".encode("utf-8")) for path, raw in serialized)
+    planned_receipt_bytes = sum(len(raw) for _, raw in serialized) + sidecar_bytes
+    if planned_receipt_bytes + 64 * 1024 > ctl.MIN_EVIDENCE_RESERVE_BYTES:
+        raise ValueError("PERSISTENCE_BUNDLE_EXCEEDS_RESERVED_METADATA_BUDGET")
+    # Append-only commits: every write is exclusive and fsynced. If any step fails,
+    # the partial receipts remain as evidence and release stays blocked; nothing is overwritten.
+    for path, raw in serialized:
+        write_exclusive(path, raw)
+        write_exclusive(path.with_suffix(path.suffix + ".sha256"),
+                        f"{digest_bytes(raw)}  {path.name}\n".encode("utf-8"))
+    # Verify stored bytes and cryptographic chain before writing the final decision record.
+    report = verify_release(root, manifest_dest, os.environ.get("CAJITA_G23_PUBLIC_KEY_PEM", ""),
+                            os.environ.get("CAJITA_G24_PUBLIC_KEY_PEM", ""), candidate_commit)
+    after_receipts = ctl.scan_tree(root)
+    report["run_id"] = stamp
+    report["manifest_path"] = manifest_dest.relative_to(root).as_posix()
+    report["g23_receipt_path"] = g23_dest.relative_to(root).as_posix()
+    report["g24_receipt_path"] = g24_dest.relative_to(root).as_posix()
+    report["tree_bytes_before_decision_report"] = after_receipts["total_bytes"]
+    report["decision_report_path"] = report_dest.relative_to(root).as_posix()
+    report["decision_report_sidecar_path"] = report_dest.with_suffix(".json.sha256").relative_to(root).as_posix()
+    # Solve the finite size fixed point so the receipt accounts for itself and its sidecar.
+    predicted_total = after_receipts["total_bytes"]
+    sidecar_len = len(f"{'0' * 64}  {report_dest.name}\n".encode("utf-8"))
+    for _ in range(12):
+        report["final_tree_bytes_including_this_report_and_sidecar"] = predicted_total
+        raw = (json.dumps(report, sort_keys=True, indent=2, ensure_ascii=False) + "\n").encode("utf-8")
+        new_total = after_receipts["total_bytes"] + len(raw) + sidecar_len
+        if new_total == predicted_total:
+            break
+        predicted_total = new_total
+    else:
+        raise ValueError("FINAL_REPORT_SIZE_FIXED_POINT_DID_NOT_CONVERGE")
+    if predicted_total > ctl.CAP_BYTES:
+        report["decision"] = "HOLD"
+        report["certification_status"] = "NOT_GRANTED"
+        report["blockers"] = sorted(set(report.get("blockers", []) + ["FINAL_TREE_WITH_DECISION_REPORT_EXCEEDS_CAP"]))
+        report["final_tree_bytes_including_this_report_and_sidecar"] = predicted_total
+        raw = (json.dumps(report, sort_keys=True, indent=2, ensure_ascii=False) + "\n").encode("utf-8")
+    write_exclusive(report_dest, raw)
+    write_exclusive(report_dest.with_suffix(".json.sha256"),
+                    f"{digest_bytes(raw)}  {report_dest.name}\n".encode("utf-8"))
+    observed_total = ctl.scan_tree(root)["total_bytes"]
+    report["observed_final_tree_bytes_after_persistence"] = observed_total
+    report["predicted_final_tree_bytes_match"] = observed_total == predicted_total
+    # The signed certificate/receipts bind the payload tree (excluding the evidence
+    # ledger); this post-write scan binds every receipt and sidecar to the exact cap.
+    final_decision = verify_release(root, manifest_dest, os.environ.get("CAJITA_G23_PUBLIC_KEY_PEM", ""),
+                                    os.environ.get("CAJITA_G24_PUBLIC_KEY_PEM", ""), candidate_commit)
+    report["post_persistence_reverification"] = final_decision
+    report["status"] = "PASS" if (
+        report.get("decision") == "PASS" and
+        final_decision.get("decision") == "PASS" and
+        observed_total == predicted_total and observed_total <= ctl.CAP_BYTES
+    ) else "HOLD"
+    report["certification_status"] = "CERTIFIED_FOR_EXACT_CAJA_SCOPE" if report["status"] == "PASS" else "NOT_GRANTED"
+    # The immutable decision report was written before the second check and therefore
+    # records the pre-report check plus exact predicted bytes. Reverification is returned
+    # to the caller and workflow artifact; any discrepancy makes the workflow fail.
+    return {
+        "schema": "CAJITA_PUAC2_PERSIST_BUNDLE/1.0",
+        "decision": report["status"],
+        "certification_status": report["certification_status"],
+        "final_tree_bytes": observed_total,
+        "hard_cap_bytes": ctl.CAP_BYTES,
+        "predicted_final_tree_bytes": predicted_total,
+        "predicted_exact_match": observed_total == predicted_total,
+        "manifest_path": manifest_dest.relative_to(root).as_posix(),
+        "decision_report_path": report_dest.relative_to(root).as_posix(),
+        "post_persistence_reverification": final_decision,
+        "blockers": report.get("blockers", []),
+    }
+
+
+def dispatch_g23_g24(root: Path, candidate_commit: str, expected_subject_sha256: str,
+                     repo: str, workflow: str, ref: str) -> dict[str, Any]:
+    if not COMMIT_RE.fullmatch(candidate_commit):
+        return {"decision": "HOLD", "blockers": ["CANDIDATE_COMMIT_INVALID"], "dispatched": False}
+    if not ctl.is_sha256(expected_subject_sha256):
+        return {"decision": "HOLD", "blockers": ["EXPECTED_SUBJECT_SHA256_INVALID"], "dispatched": False}
+    evidence = final_evidence(root.resolve(strict=True))
+    if evidence.get("status") != "PASS" or evidence.get("blockers"):
+        return {
+            "decision": "HOLD", "dispatched": False,
+            "subject_tree_sha256": evidence.get("subject_tree_sha256"),
+            "tree_bytes": evidence.get("tree_bytes_at_validation"),
+            "blockers": evidence.get("blockers", []) + ["CERTIFICATION_DISPATCH_DENIED_BY_G23_PREFLIGHT"],
+        }
+    subject, _, _ = ctl.candidate_tree_digest(root.resolve(strict=True))
+    if subject != expected_subject_sha256 or evidence.get("subject_tree_sha256") != expected_subject_sha256:
+        return {"decision": "HOLD", "dispatched": False, "blockers": ["DISPATCHED_SUBJECT_MISMATCH"]}
+    gh = shutil.which("gh")
+    if gh is None:
+        return {"decision": "HOLD", "dispatched": False, "blockers": ["GITHUB_CLI_NOT_FOUND"]}
+    auth = subprocess.run([gh, "auth", "status", "--hostname", "github.com"],
+                          capture_output=True, text=True, timeout=20, check=False)
+    if auth.returncode != 0:
+        return {"decision": "HOLD", "dispatched": False, "blockers": ["GITHUB_CLI_AUTH_NOT_READY"]}
+    command = [
+        gh, "workflow", "run", workflow, "--repo", repo, "--ref", ref,
+        "-f", f"candidate_commit={candidate_commit}",
+        "-f", f"expected_subject_sha256={expected_subject_sha256}",
+    ]
+    proc = subprocess.run(command, capture_output=True, text=True, timeout=30, check=False)
+    if proc.returncode != 0:
+        return {"decision": "HOLD", "dispatched": False,
+                "blockers": ["GITHUB_WORKFLOW_DISPATCH_FAILED"],
+                "detail": (proc.stderr or proc.stdout)[-2000:]}
+    return {
+        "schema": "CAJITA_PUAC2_CERTIFICATION_DISPATCH/1.0",
+        "decision": "DISPATCHED",
+        "dispatched": True,
+        "workflow": workflow,
+        "repo": repo,
+        "ref": ref,
+        "candidate_commit": candidate_commit,
+        "subject_tree_sha256": subject,
+        "tree_bytes_at_dispatch": evidence.get("tree_bytes_at_validation"),
+        "measured_at_utc": utc_now(),
+    }
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -606,6 +807,20 @@ def main(argv: list[str] | None = None) -> int:
     s24.add_argument("--certifier-id", default=os.environ.get("CAJITA_G24_CERTIFIER_ID", ""))
     s24.add_argument("--producer-id", default=os.environ.get("CAJITA_PRODUCER_ID", "CUSTOSZ_V9"))
     s24.add_argument("--expected-subject-sha256", default=None)
+    persist = sub.add_parser("persist-bundle", help="Persist signed G23/G24 receipts and verify the exact final tree.")
+    persist.add_argument("--root", type=Path, required=True)
+    persist.add_argument("--g23", type=Path, required=True)
+    persist.add_argument("--g24", type=Path, required=True)
+    persist.add_argument("--run-id", required=True)
+    persist.add_argument("--candidate-commit", required=True)
+    persist.add_argument("--producer-id", default=os.environ.get("CAJITA_PRODUCER_ID", "CUSTOSZ_V9"))
+    dispatch = sub.add_parser("dispatch-g23-g24", help="Dispatch trusted G23/G24 only after a clean, size-feasible final preflight.")
+    dispatch.add_argument("--root", type=Path, required=True)
+    dispatch.add_argument("--candidate-commit", required=True)
+    dispatch.add_argument("--expected-subject-sha256", required=True)
+    dispatch.add_argument("--repo", default="Plomillo/luna-linux-bridge")
+    dispatch.add_argument("--workflow", default=".github/workflows/cajita-luna-puac2-g23-g24.yml")
+    dispatch.add_argument("--ref", default="main")
     verify = sub.add_parser("verify-release", help="Verify the final Cajita tree and signed G23/G24 receipts.")
     verify.add_argument("--root", type=Path, required=True)
     verify.add_argument("--manifest", type=Path, required=True)
@@ -652,6 +867,19 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps({"decision": envelope.get("payload", {}).get("status", "HOLD"),
                               "signed": envelope.get("status") == "SIGNED"}, sort_keys=True))
             return 0
+        if args.command == "persist-bundle":
+            report = persist_bundle(
+                args.root, args.g23, args.g24, args.run_id, args.candidate_commit, args.producer_id
+            )
+            print(json.dumps(report, sort_keys=True, indent=2, ensure_ascii=False))
+            return 0 if report.get("decision") == "PASS" else 3
+        if args.command == "dispatch-g23-g24":
+            report = dispatch_g23_g24(
+                args.root, args.candidate_commit, args.expected_subject_sha256,
+                args.repo, args.workflow, args.ref
+            )
+            print(json.dumps(report, sort_keys=True, indent=2, ensure_ascii=False))
+            return 0 if report.get("decision") == "DISPATCHED" else 3
         if args.command == "verify-release":
             report = verify_release(
                 args.root.resolve(strict=False), args.manifest.resolve(strict=False),
