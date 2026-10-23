@@ -130,7 +130,7 @@ def normalize_command(value: str | None) -> str | None:
     """Accept exact canonical spellings and only explicitly registered aliases."""
     if not value or not value.strip():
         return None
-    candidate = re.sub(r"\\s+", " ", value.strip())
+    candidate = re.sub(r"\s+", " ", value.strip())
     if candidate in CANONICAL_COMMANDS:
         return candidate
     return COMMAND_ALIASES.get(candidate)
@@ -141,10 +141,10 @@ def extract_command(request: str) -> tuple[str | None, bool]:
     if not request or not request.strip():
         return None, False
     stripped = request.lstrip()
-    match = re.match(r"^(/help|/play\\s+[^\\s]+)\\b", stripped)
+    match = re.match(r"^(/help|/play\s+[^\s]+)\b", stripped)
     if not match:
         return None, stripped.startswith("/")
-    raw = re.sub(r"\\s+", " ", match.group(1).strip())
+    raw = re.sub(r"\s+", " ", match.group(1).strip())
     normalized = normalize_command(raw)
     return normalized, normalized is None
 
@@ -265,7 +265,7 @@ def build_plan(request: str, route_command: str | None = None) -> dict[str, Any]
         }
     requested = normalized_override or detected
     route = next((item for item in ROUTES if item["command"] == requested), None)
-    task_text = re.sub(r"^\\s*(?:/help|/play\\s+[^\\s]+)\\s*", "", request) if detected else request
+    task_text = re.sub(r"^\s*(?:/help|/play\s+[^\s]+)\s*", "", request) if detected else request
     if route_command and not detected:
         task_text = request
     intent_domains, capabilities, legacy_reasons = detect_tasks(task_text)
