@@ -14,7 +14,9 @@ on:
     paths:
       - "cajita-luna-runtime/cajita_router.py"
       - "cajita-luna-runtime/cajita_runtime.py"
+      - "cajita-luna-runtime/cajita_model_adapter.py"
       - "tests/test_cajita_router.py"
+      - "tests/test_cajita_model_adapter.py"
       - ".github/workflows/cajita-luna-router.yml"
 
 permissions:
