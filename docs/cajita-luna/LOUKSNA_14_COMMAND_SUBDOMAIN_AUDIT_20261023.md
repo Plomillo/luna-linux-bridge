@@ -26,14 +26,14 @@ Los motores listados por la matriz canónica permanecen en el registro activo de
 
 | ID | Comando canónico | Destinos iniciales |
 |---|---|---|
-| HELP | `/help` | Orquestador; Motor Protocolar; Testing |
-| PT | `/play PT` | Cerebro; Anti-Alucinaciones |
-| PA | `/play PA` | Multi + Interdisciplinar; Análisis Avanzado; Motor Protocolar; Testing |
-| DCI | `/play DCI` | Multi + Interdisciplinar; Hermenéutica H-G; Anti-Alucinaciones |
+| HELP | `/help` | Motor Protocolar; Testing |
+| PT | `/play PT` | Cerebro; Análisis Avanzado; Testing |
+| PA | `/play PA` | Multi + Interdisciplinar; Análisis Avanzado; Motor Protocolar; Cognitive CI-CD; Testing |
+| DCI | `/play DCI` | Multi + Interdisciplinar; Hermenéutica H-G; Análisis Avanzado; Anti-Alucinaciones |
 | DCIL | `/play DCIL` | Multi + Interdisciplinar; Hermenéutica H-G; Análisis Avanzado; Anti-Alucinaciones |
 | TRAD | `/play traductor` | Traducción general; selección por intención/pareja lingüística |
 | E | `/play e` | Hermenéutica H-G; Anti-Alucinaciones |
-| EMA | `/play ema` | Hermenéutica H-G; Multi + Interdisciplinar; Anti-Alucinaciones; Testing |
+| EMA | `/play ema` | Hermenéutica H-G; Multi + Interdisciplinar; Análisis Avanzado; Anti-Alucinaciones; Testing |
 | P | `/play p` | Orquestador; Motor Protocolar; Cognitive CI-CD; Testing |
 | C | `/play c` | Multi + Interdisciplinar; Archivado Deteccion; Análisis Avanzado |
 | CP | `/play cp` | Multi + Interdisciplinar; Análisis Avanzado; Anti-Alucinaciones |
