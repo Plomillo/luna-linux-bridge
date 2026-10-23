@@ -168,6 +168,34 @@ class ModelAdapterControlTests(unittest.TestCase):
         self.assertEqual(tuple(target.shape), tuple(record["shape"]))
         np.testing.assert_array_equal(target.numpy(), expected)
 
+
+    def test_chunked_vision_attention_matches_full_eager_attention(self):
+        import importlib.util
+        if importlib.util.find_spec("torch") is None:
+            self.skipTest("torch is installed only in the model-resource workflow")
+        import torch
+        from types import SimpleNamespace
+
+        torch.manual_seed(20261023)
+        batch, heads, seq_len, head_dim = 1, 2, 137, 16
+        query = torch.randn(batch, heads, seq_len, head_dim, dtype=torch.float32)
+        key = torch.randn(batch, heads, seq_len, head_dim, dtype=torch.float32)
+        value = torch.randn(batch, heads, seq_len, head_dim, dtype=torch.float32)
+        mask = torch.zeros(batch, 1, seq_len, seq_len, dtype=torch.float32)
+        mask[:, :, :, -7:] = -10000.0
+        scale = head_dim ** -0.5
+
+        scores = torch.matmul(query, key.transpose(-1, -2)) * scale
+        weights = torch.nn.functional.softmax(scores + mask, dim=-1, dtype=torch.float32)
+        expected = torch.matmul(weights, value).transpose(1, 2).contiguous()
+        actual, returned_weights = adapter.chunked_eager_attention_forward(
+            SimpleNamespace(training=False), query, key, value, mask, scale, dropout=0.0
+        )
+        self.assertIsNone(returned_weights)
+        self.assertEqual(tuple(actual.shape), tuple(expected.shape))
+        torch.testing.assert_close(actual, expected, rtol=1e-5, atol=1e-5)
+        self.assertEqual(adapter.VISION_ATTENTION_QUERY_BLOCK, 64)
+
     def test_pdf_generation_domain_adapter_does_not_claim_model_load(self):
         with tempfile.TemporaryDirectory() as temp:
             output = Path(temp) / "domain.pdf"
