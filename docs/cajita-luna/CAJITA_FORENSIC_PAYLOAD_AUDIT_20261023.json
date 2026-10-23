@@ -364,7 +364,12 @@
         "git_blob_sha1": "6891fa3d40a794a36c675bbe43816fb418f1c121",
         "git_tree_size_bytes": 23986647,
         "original_record_path": "2. Orquestación/Multi + Interdisciplinar/apache-jena-6.2.0.tar.gz",
-        "quantization_applicable_as_model_weights": false
+        "quantization_applicable_as_model_weights": false,
+        "source_staging_path": "externalized-assets-staging/2-Orquestacion/Multi-Interdisciplinar/apache-jena-6.2.0.tar.gz",
+        "source_staging_git_blob_sha1": "6891fa3d40a794a36c675bbe43816fb418f1c121",
+        "target_git_blob_sha1": "6891fa3d40a794a36c675bbe43816fb418f1c121",
+        "staging_and_target_blobs_identical": true,
+        "target_size_matches_record": true
       },
       {
         "id": "PLAYWRIGHT_1_63_0_SOURCE",
@@ -377,7 +382,12 @@
         "git_blob_sha1": "f89837e5359e933d58b479b34e226e4b1379910c",
         "git_tree_size_bytes": 40525667,
         "original_record_path": "2. Orquestación/Orquestador/playwright-1.63.0.tar.gz",
-        "quantization_applicable_as_model_weights": false
+        "quantization_applicable_as_model_weights": false,
+        "source_staging_path": "externalized-assets-staging/2-Orquestacion/Orquestador/playwright-1.63.0.tar.gz",
+        "source_staging_git_blob_sha1": "f89837e5359e933d58b479b34e226e4b1379910c",
+        "target_git_blob_sha1": "f89837e5359e933d58b479b34e226e4b1379910c",
+        "staging_and_target_blobs_identical": true,
+        "target_size_matches_record": true
       },
       {
         "id": "ONNX_RUNTIME_1_29_0_CP311",
@@ -390,7 +400,12 @@
         "git_blob_sha1": "ffe343b450b8afaeacd28bd61abe19ca0d59e150",
         "git_tree_size_bytes": 23113193,
         "original_record_path": "6. Sistema Inteligente/Anti-Alucinaciones/onnxruntime-1.29.0-cp311-cp311-manylinux_2_28_x86_64.whl",
-        "quantization_applicable_as_model_weights": false
+        "quantization_applicable_as_model_weights": false,
+        "source_staging_path": "externalized-assets-staging/6-Sistema-Inteligente/Anti-Alucinaciones/onnxruntime-1.29.0-cp311-cp311-manylinux_2_28_x86_64.whl",
+        "source_staging_git_blob_sha1": "ffe343b450b8afaeacd28bd61abe19ca0d59e150",
+        "target_git_blob_sha1": "ffe343b450b8afaeacd28bd61abe19ca0d59e150",
+        "staging_and_target_blobs_identical": true,
+        "target_size_matches_record": true
       },
       {
         "id": "DAGGER_0_21_8_LINUX_AMD64",
@@ -403,7 +418,12 @@
         "git_blob_sha1": "477d899c6f147cd17c4f6e845ba2530f9075b6ef",
         "git_tree_size_bytes": 21927634,
         "original_record_path": "6. Sistema Inteligente/Cognitive CI - CD/dagger_v0.21.8_linux_amd64.tar.gz",
-        "quantization_applicable_as_model_weights": false
+        "quantization_applicable_as_model_weights": false,
+        "source_staging_path": "externalized-assets-staging/6-Sistema-Inteligente/Cognitive-CI-CD/dagger_v0.21.8_linux_amd64.tar.gz",
+        "source_staging_git_blob_sha1": "477d899c6f147cd17c4f6e845ba2530f9075b6ef",
+        "target_git_blob_sha1": "477d899c6f147cd17c4f6e845ba2530f9075b6ef",
+        "staging_and_target_blobs_identical": true,
+        "target_size_matches_record": true
       },
       {
         "id": "OPA_STATIC_LINUX_AMD64_CANDIDATE",
@@ -416,7 +436,12 @@
         "git_blob_sha1": "74f377e30e0178c9af50bd3e76af39c404153d9e",
         "git_tree_size_bytes": 64185579,
         "original_record_path": "6. Sistema Inteligente/Cognitive CI - CD/opa_linux_amd64_static",
-        "quantization_applicable_as_model_weights": false
+        "quantization_applicable_as_model_weights": false,
+        "source_staging_path": "externalized-assets-staging/6-Sistema-Inteligente/Cognitive-CI-CD/opa_linux_amd64_static",
+        "source_staging_git_blob_sha1": "74f377e30e0178c9af50bd3e76af39c404153d9e",
+        "target_git_blob_sha1": "74f377e30e0178c9af50bd3e76af39c404153d9e",
+        "staging_and_target_blobs_identical": true,
+        "target_size_matches_record": true
       },
       {
         "id": "RQLITE_10_2_7_LINUX_AMD64",
@@ -429,7 +454,12 @@
         "git_blob_sha1": "2ad40f29587ef8fce00f25762f50cce5ae758678",
         "git_tree_size_bytes": 17600273,
         "original_record_path": "6. Sistema Inteligente/Migración y Persistencia/rqlite-v10.2.7-linux-amd64.tar.gz",
-        "quantization_applicable_as_model_weights": false
+        "quantization_applicable_as_model_weights": false,
+        "source_staging_path": "externalized-assets-staging/6-Sistema-Inteligente/Migracion-y-Persistencia/rqlite-v10.2.7-linux-amd64.tar.gz",
+        "source_staging_git_blob_sha1": "2ad40f29587ef8fce00f25762f50cce5ae758678",
+        "target_git_blob_sha1": "2ad40f29587ef8fce00f25762f50cce5ae758678",
+        "staging_and_target_blobs_identical": true,
+        "target_size_matches_record": true
       },
       {
         "id": "SQLITE_SOURCE_3_53_4",
@@ -442,7 +472,12 @@
         "git_blob_sha1": "3765a6741b08944f2e71872e5363d1b6bb7b854b",
         "git_tree_size_bytes": 14557315,
         "original_record_path": "6. Sistema Inteligente/Migración y Persistencia/sqlite-src-3530400.zip",
-        "quantization_applicable_as_model_weights": false
+        "quantization_applicable_as_model_weights": false,
+        "source_staging_path": "externalized-assets-staging/6-Sistema-Inteligente/Migracion-y-Persistencia/sqlite-src-3530400.zip",
+        "source_staging_git_blob_sha1": "3765a6741b08944f2e71872e5363d1b6bb7b854b",
+        "target_git_blob_sha1": "3765a6741b08944f2e71872e5363d1b6bb7b854b",
+        "staging_and_target_blobs_identical": true,
+        "target_size_matches_record": true
       },
       {
         "id": "CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE",
@@ -455,7 +490,12 @@
         "git_blob_sha1": "ce3889ed42e56ea8c28cfffaa5372a91db6b67e0",
         "git_tree_size_bytes": 54408599,
         "original_record_path": "6. Sistema Inteligente/Portabilidad base/cmake-4.4.3-windows-x86_64.zip",
-        "quantization_applicable_as_model_weights": false
+        "quantization_applicable_as_model_weights": false,
+        "source_staging_path": "externalized-assets-staging/6-Sistema-Inteligente/Portabilidad-base/cmake-4.4.3-windows-x86_64.zip",
+        "source_staging_git_blob_sha1": "ce3889ed42e56ea8c28cfffaa5372a91db6b67e0",
+        "target_git_blob_sha1": "ce3889ed42e56ea8c28cfffaa5372a91db6b67e0",
+        "staging_and_target_blobs_identical": true,
+        "target_size_matches_record": true
       },
       {
         "id": "AVALONIA_12_1_1_NUGET",
@@ -468,7 +508,12 @@
         "git_blob_sha1": "93a0ad097db76ab82293b3cd25dea86fa85c5967",
         "git_tree_size_bytes": 10112805,
         "original_record_path": "6. Sistema Inteligente/Runtime Android Windows/avalonia.12.1.1.nupkg",
-        "quantization_applicable_as_model_weights": false
+        "quantization_applicable_as_model_weights": false,
+        "source_staging_path": "externalized-assets-staging/6-Sistema-Inteligente/Runtime-Android-Windows/avalonia.12.1.1.nupkg",
+        "source_staging_git_blob_sha1": "93a0ad097db76ab82293b3cd25dea86fa85c5967",
+        "target_git_blob_sha1": "93a0ad097db76ab82293b3cd25dea86fa85c5967",
+        "staging_and_target_blobs_identical": true,
+        "target_size_matches_record": true
       },
       {
         "id": "TAURI_2_11_5_SOURCE_ZIP",
@@ -481,7 +526,12 @@
         "git_blob_sha1": "93626e615ea132533005cb9f4843821bee04cb6e",
         "git_tree_size_bytes": 16117618,
         "original_record_path": "6. Sistema Inteligente/Runtime Android Windows/tauri-tauri-v2.11.5.zip",
-        "quantization_applicable_as_model_weights": false
+        "quantization_applicable_as_model_weights": false,
+        "source_staging_path": "externalized-assets-staging/6-Sistema-Inteligente/Runtime-Android-Windows/tauri-tauri-v2.11.5.zip",
+        "source_staging_git_blob_sha1": "93626e615ea132533005cb9f4843821bee04cb6e",
+        "target_git_blob_sha1": "93626e615ea132533005cb9f4843821bee04cb6e",
+        "staging_and_target_blobs_identical": true,
+        "target_size_matches_record": true
       }
     ],
     "alternate_candidate_comparisons": [
@@ -716,5 +766,20 @@
     "functional_certification": "NOT_GRANTED",
     "independent_validation": "NOT_RUN",
     "next_work_authorization": "Audit result only. Await user's stated next step; do not infer which artifacts to quantize or remove."
+  },
+  "post_audit_verification": {
+    "verified_at_commit": "29c45d3c51660f9750a11deacedd5683edbe72a4",
+    "current_tree_truncated": false,
+    "markdown_document_bytes_after_audit_link": 12657,
+    "markdown_byte_delta_from_audit_snapshot": 2806,
+    "current_git_visible_build_input_file_count": 144,
+    "current_git_visible_build_input_bytes_excluding_static_manifest": 504066111,
+    "current_build_input_projection_with_lfs_objects_materialized": 763059244,
+    "package_manifest_blob_bytes": 34916,
+    "recovered_assets_present_and_size_matches": true,
+    "staging_target_git_blobs_identical": true,
+    "quantization_performed": false,
+    "model_weight_files_modified": false,
+    "note": "Post-audit commits changed only the reproducible Markdown and added this audit report outside cajita-luna-runtime. This checkpoint updates the current input-size projection; the immutable base inventory remains identified by base_commit."
   }
 }
