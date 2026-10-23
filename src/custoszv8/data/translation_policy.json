@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0.0",
+  "policy_id": "CUSTOSZV8-TRANSLATION-POLICY-1",
+  "profile": "DETERMINISTIC_PHRASE_PROFILE",
+  "supported_directions": [
+    "es-en",
+    "en-es"
+  ],
+  "full_general_translation": "NOT_CLAIMED",
+  "unknown_input": "RETURN_UNKNOWN_WITHOUT_INVENTED_TRANSLATION",
+  "partial_input": "RETURN_PARTIAL_AND_PRESERVE_UNTRANSLATED_TEXT",
+  "protected_classes": [
+    "identifiers",
+    "paths",
+    "hashes",
+    "filenames",
+    "CLI flags",
+    "quoted literals",
+    "environment variables",
+    "quantities",
+    "deadlines",
+    "negations",
+    "permission boundaries"
+  ],
+  "translation_never_authorizes_execution": true,
+  "source_text_immutability": true,
+  "semantic_validation_required": true
+}

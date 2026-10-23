@@ -1,0 +1,41 @@
+name: "CUSTOSZ V7: continuación R4 v2 con RAM acotada"
+on:
+  push:
+    branches:
+      - staging/custosz-v7-metaos-20260927
+    paths:
+      - .github/workflows/custosz-native-continuation-v2.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: custosz-native-continuation-v2
+  cancel-in-progress: false
+
+jobs:
+  register:
+    runs-on: [self-hosted, Linux, x64, luna-aux]
+    timeout-minutes: 3
+    steps:
+      - name: Checkout mínimo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            artifacts/custosz-v7
+            scripts/missions/custosz_native_continuation.py
+          sparse-checkout-cone-mode: false
+      - name: Registrar continuación
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ulimit -v 262144 || true
+          nice -n 10 python3 -B -I scripts/missions/custosz_native_continuation.py
+      - name: Publicar evidencia
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: custosz-native-continuation
+          path: ${{ runner.temp }}/CUSTOSZ_CONTINUATION.json
+          if-no-files-found: warn

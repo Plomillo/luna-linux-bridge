@@ -1,0 +1,33 @@
+name: "CUSTOSZ V7: inspeccion estatica del runtime"
+on:
+  push:
+    branches:
+      - staging/custosz-v7-metaos-20260927
+    paths:
+      - .github/workflows/custosz-runtime-static-inspection.yml
+permissions:
+  contents: read
+jobs:
+  inspect-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Inspeccionar entradas ZIPAPP sin ejecutarlas
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, zipfile
+          root = Path('artifacts/custosz-v7')
+          for path in sorted(root.glob('*.pyz')):
+              print('FILE',path.name, path.stat().st_size, hashlib.sha256(path.read_bytes()).hexdigest())
+              with zipfile.ZipFile(path) as archive:
+                  print('ENTRIES', archive.namelist())
+                  src = archive.read('__main__.py').decode('utf-8')
+                  print('ENTRYPOINT_BEGIN',path.name)
+                  print(src)
+                  print('ENTRYPOINT_END',path.name)
+          PY

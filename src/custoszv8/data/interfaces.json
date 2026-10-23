@@ -1,0 +1,129 @@
+{
+  "schema_version": "1.0.0",
+  "registry_id": "CUSTOSZV8-INTERFACE-REGISTRY-1",
+  "interfaces": [
+    {
+      "interface_id": "V8.CORE.CLI.1",
+      "provider": "CUSTOSZV8",
+      "transport": "PYTHON_ZIP_APPLICATION_CLI",
+      "status": "IMPLEMENTED",
+      "operations": [
+        "selftest",
+        "status",
+        "manifest",
+        "validate-manifest",
+        "inspect-component",
+        "inspect-wasm",
+        "translate",
+        "code-to-english",
+        "journal-verify",
+        "journal-append",
+        "capability-validate",
+        "mission-validate"
+      ]
+    },
+    {
+      "interface_id": "V8.V7.READONLY.CLI.1",
+      "provider": "CUSTOSZ_V7",
+      "transport": "SUBPROCESS",
+      "operations": [
+        "v07-status",
+        "v07-selftest"
+      ],
+      "status": "ALLOWLISTED_READ_ONLY_REQUIRES_EXPLICIT_OPT_IN_AND_AUTHORIZATION"
+    },
+    {
+      "interface_id": "V8.RUNTIME.NATIVE.1",
+      "provider": "RUNTIME_V1_SELECTED_STAGING",
+      "transport": "NATIVE_PYZ_API",
+      "operations": [
+        "bounded-integration-probe"
+      ],
+      "status": "BOUNDED_PROBE_INTERFACE_IMPLEMENTED; PRODUCTION_MISSION_INTERFACE_NOT_VERIFIED",
+      "verified_scope": [
+        "exact selected Runtime V1 package digest",
+        "Runtime.selftest with synthetic authority fixture",
+        "sandbox file checkpoint/restore round trip",
+        "one benign bounded ProcessSupervisor child",
+        "wrong authority digest denied with evidence"
+      ],
+      "excluded_scope": [
+        "canonical Louksna.md binding",
+        "SRExecBoundFME01 material mission dispatch",
+        "production system restoration",
+        "G22 global non-regression",
+        "G23 independent validation",
+        "G24 certification"
+      ],
+      "mission_dispatch": "NOT_PERFORMED",
+      "execution_authorized": false
+    },
+    {
+      "interface_id": "V8.METAOS.COMPONENT.1",
+      "provider": "METAOS_V8_CANDIDATE_1_0_1",
+      "transport": "WASM_COMPONENT_MODEL_VIA_PINNED_WASMTIME_HOSTLESS",
+      "operations": [
+        "architecture-version",
+        "terminal-success",
+        "knowledge-gate",
+        "formalization-gate",
+        "implementation-gate",
+        "implementation-authorized",
+        "active-allowed",
+        "checkpoint-trusted",
+        "provider-failure-is-mission-failure",
+        "resource-red-is-mission-failure",
+        "unknown-effect-retry-allowed",
+        "network-default-deny"
+      ],
+      "status": "CANDIDATE_ADAPTER_IMPLEMENTED_REQUIRES_CI_ADAPTER_TEST_AND_G22",
+      "component_sha256": "069240d6cfc81f9b659479cc938519bc4eb4e4a0c794e300c89b477dbe3caa02",
+      "source_component": "METAOS_WASM_ORIGINAL",
+      "source_component_sha256": "5d8f1239e3a0b452be722078760b000afc22af0a64f93ffb0a1f74024f15aed0",
+      "version": "1.0.1-candidate",
+      "policy_corrections": [
+        "provider-failure-is-mission-failure false->true",
+        "resource-red-is-mission-failure false->true"
+      ],
+      "host_imports": 0,
+      "host_capabilities": "NONE",
+      "mission_dispatch": "NOT_PERFORMED_BY_ADAPTER",
+      "execution_requirements": [
+        "explicit --allow-execution opt-in",
+        "exact expected SHA-256",
+        "allowlisted export",
+        "exact typed args",
+        "bounded Wasmtime fuel",
+        "append-only evidence journal"
+      ]
+    },
+    {
+      "interface_id": "V8.GITHUB.API.1",
+      "provider": "GITHUB_API",
+      "transport": "HTTPS_JSON",
+      "operations": [
+        "inspect_repository",
+        "inspect_branch",
+        "workflow_runs",
+        "dispatch_workflow"
+      ],
+      "status": "READ_REQUIRES_NETWORK; WRITE_REQUIRES_TOKEN_AND_AUTHORIZATION_REF"
+    },
+    {
+      "interface_id": "V8.METAOS.ORIGINAL.1",
+      "provider": "METAOS_WASM_ORIGINAL",
+      "transport": "WASM_COMPONENT_MODEL",
+      "operations": [],
+      "status": "PRESERVED_UNMODIFIED_NOT_SELECTED_FOR_V8_CANDIDATE",
+      "component_sha256": "5d8f1239e3a0b452be722078760b000afc22af0a64f93ffb0a1f74024f15aed0"
+    }
+  ],
+  "rules": [
+    "Every native operation must be discovered and tested against the exact bytes.",
+    "Unsupported operations are blocked; no mocks count as operational integration.",
+    "All writes require authorization; source tokens are never stored in manifests.",
+    "MetaOS_V8_CANDIDATE_1_0_1 is a derived candidate; the original MetaOS.wasm bytes remain preserved and separately identified.",
+    "Only exact-digest policy exports are callable; invocation is hostless, fuel-limited, and never authorizes mission dispatch.",
+    "Independent G23 and G24 remain separate from component behavioral checks and are never inferred from them."
+  ]
+}

@@ -1,0 +1,59 @@
+name: "CUSTOSZ V7: introspeccion estatica de runtime (GitHub-hosted)"
+on:
+  push:
+    branches:
+      - staging/custosz-v7-metaos-20260927
+    paths:
+      - .github/workflows/custosz-v7-runtime-introspect.yml
+permissions:
+  contents: read
+concurrency:
+  group: custosz-v7-runtime-introspect
+  cancel-in-progress: false
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout fijado al commit disparador
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            artifacts/custosz-v7
+          sparse-checkout-cone-mode: false
+      - name: Extraer interfaces sin ejecutar CUSTOSZ ni Runtime
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import zipfile, pathlib, re, hashlib
+          targets = [
+              pathlib.Path("artifacts/custosz-v7/CUSTOSZ_RUNTIME_V1_SR_EXEC_BOUND_FME_01.b.pyz"),
+              pathlib.Path("artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz"),
+          ]
+          keywords = re.compile(r"(argparse|ArgumentParser|add_argument|__main__|def main|mission|task|request|stdin|json|execute|runtime|custos|plan|scope|budget|timeout|output|evidence)", re.I)
+          for p in targets:
+              print("=== ARCHIVE", p, "===")
+              print("SHA256", hashlib.sha256(p.read_bytes()).hexdigest())
+              with zipfile.ZipFile(p) as z:
+                  print("FILES")
+                  for n in z.namelist():
+                      print(" ", n)
+                  print("RELEVANT_SOURCE")
+                  for n in z.namelist():
+                      if not n.endswith(".py"):
+                          continue
+                      data=z.read(n).decode("utf-8","replace")
+                      lines=data.splitlines()
+                      hits=[i for i,s in enumerate(lines,1) if keywords.search(s)]
+                      if n=="__main__.py" or hits:
+                          print(f"--- {n} ---")
+                          wanted=set()
+                          for i in hits:
+                              wanted.update(range(max(1,i-4), min(len(lines),i+8)+1))
+                          if n=="__main__.py":
+                              wanted.update(range(1,min(len(lines),260)+1))
+                          for i in sorted(wanted):
+                              print(f"{i:04d}: {lines[i-1]}")
+          PY

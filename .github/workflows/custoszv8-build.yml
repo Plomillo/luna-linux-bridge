@@ -1,0 +1,174 @@
+name: "CUSTOSZ V8 candidate build and validation"
+
+on:
+  push:
+    branches:
+      - "feature/custoszv8-candidate-*"
+    paths:
+      - "src/custoszv8/**"
+      - "tests/**"
+      - "scripts/validate_components.py"
+      - "scripts/validate_runtime_v1_selftest.py"
+      - "scripts/validate_metaos_component.py"
+      - "scripts/validate_metaos_execution.py"
+      - "scripts/build_custoszv8_assurance_case.py"
+      - "scripts/validate_runtime_v1_integration.py"
+      - "scripts/validate_runtime_v1_material_dispatch.py"
+      - "build.py"
+      - ".github/workflows/custoszv8-build.yml"
+      - "artifacts/custosz-v7/**"
+  pull_request:
+    branches:
+      - "staging/custosz-v7-metaos-20260927"
+    paths:
+      - "src/custoszv8/**"
+      - "tests/**"
+      - "scripts/validate_components.py"
+      - "scripts/validate_runtime_v1_selftest.py"
+      - "scripts/validate_metaos_component.py"
+      - "scripts/validate_metaos_execution.py"
+      - "scripts/build_custoszv8_assurance_case.py"
+      - "scripts/validate_runtime_v1_integration.py"
+      - "scripts/validate_runtime_v1_material_dispatch.py"
+      - "build.py"
+      - ".github/workflows/custoszv8-build.yml"
+      - "artifacts/custosz-v7/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: custoszv8-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-test:
+    name: Unit tests, package build and bounded component checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact triggering commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Compile source and tests
+        run: python -m compileall -q src tests build.py scripts/validate_components.py scripts/validate_runtime_v1_selftest.py scripts/validate_metaos_component.py scripts/validate_metaos_execution.py scripts/build_custoszv8_assurance_case.py
+
+      - name: Run V8 unit tests
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p evidence
+          python -m unittest discover -s tests -v 2>&1 | tee evidence/custoszv8-unit-tests.log
+
+      - name: Run pinned wasm-tools validation and extract MetaOS WIT contract
+        env:
+          CUSTOSZV8_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: python scripts/validate_metaos_component.py
+
+      - name: Build standalone ZIPAPP
+        env:
+          CUSTOSZV8_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          GITHUB_REF_NAME: ${{ github.event.pull_request.head.ref || github.ref_name }}
+        run: python build.py
+
+      - name: Verify deterministic rebuild for the same source commit
+        env:
+          CUSTOSZV8_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          first="$(sha256sum dist/CUSTOSZV8.pyz | awk '{print $1}')"
+          python build.py > /tmp/custoszv8-rebuild-report.json
+          second="$(sha256sum dist/CUSTOSZV8.pyz | awk '{print $1}')"
+          status=FAIL
+          if [[ "$first" == "$second" ]]; then status=PASS; fi
+          python - "$first" "$second" "$status" "$CUSTOSZV8_CANDIDATE_SHA" <<'PY'
+          import json,sys
+          from datetime import datetime,timezone
+          first,second,status,commit=sys.argv[1:]
+          path="evidence/custoszv8-reproducibility.json"
+          obj={"schema":"custoszv8.reproducibility.v1","status":status,
+               "first_sha256":first,"second_sha256":second,
+               "candidate_commit":commit,
+               "observed_at_utc":datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00","Z"),
+               "same_source_commit_two_builds": first == second}
+          with open(path,"w",encoding="utf-8") as f: json.dump(obj,f,indent=2,sort_keys=True); f.write("\n")
+          print(json.dumps(obj,indent=2,sort_keys=True))
+          PY
+          printf 'first=%s\\nsecond=%s\\n' "$first" "$second"
+          test "$first" = "$second"
+
+      - name: Exercise built package CLI and selftest
+        run: |
+          set -Eeuo pipefail
+          python dist/CUSTOSZV8.pyz selftest
+          python dist/CUSTOSZV8.pyz status
+          python dist/CUSTOSZV8.pyz inspect-component artifacts/custosz-v7/CUSTOSZ.v07.f04_b.pyz
+          python dist/CUSTOSZV8.pyz inspect-component artifacts/custosz-v7/CUSTOSZ_RUNTIME_V1_SR_EXEC_BOUND_FME_01.b.pyz
+          python dist/CUSTOSZV8.pyz inspect-wasm artifacts/custosz-v7/MetaOS.wasm
+
+      - name: Test actual CUSTOSZ V7 read-only commands and inspect Runtime and MetaOS
+        env:
+          CUSTOSZV8_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: python scripts/validate_components.py
+
+      - name: Install pinned Runtime V1 test dependency
+        run: python -m pip install --disable-pip-version-check --no-input psutil==7.0.0 wasmtime==49.0.0
+
+      - name: Run source-audited Runtime V1 selftest in isolation
+        env:
+          CUSTOSZV8_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: python scripts/validate_runtime_v1_selftest.py
+
+      - name: Run bounded Runtime V1 integration and rollback probe in isolation
+        env:
+          CUSTOSZV8_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: python scripts/validate_runtime_v1_integration.py
+
+      - name: Run bounded SRExecBoundFME01 dispatch and file rollback in isolation
+        env:
+          CUSTOSZV8_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: python scripts/validate_runtime_v1_material_dispatch.py
+
+      - name: Execute all MetaOS policy exports under bounded Wasmtime
+        env:
+          CUSTOSZV8_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: python scripts/validate_metaos_execution.py
+      - name: Build digest-bound assurance case (never auto-grant G23/G24)
+        env:
+          CUSTOSZV8_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          GITHUB_HEAD_REF: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: python scripts/build_custoszv8_assurance_case.py
+
+      - name: Upload CUSTOSZV8.pyz and evidence reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: CUSTOSZV8-candidate-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            dist/CUSTOSZV8.pyz
+            evidence/custoszv8-selftest.json
+            evidence/custoszv8-build-report.json
+            evidence/custoszv8-component-checks.json
+            evidence/custoszv8-runtime-v1-selftest.json
+            evidence/custoszv8-runtime-v1-integration.json
+            evidence/custoszv8-runtime-v1-material-dispatch.json
+            evidence/custoszv8-metaos-component.json
+            evidence/custoszv8-metaos-execution.json
+            evidence/custoszv8-unit-tests.log
+            evidence/custoszv8-reproducibility.json
+            evidence/custoszv8-assurance-case.json
+            evidence/custoszv8-assurance-case.md
+          if-no-files-found: warn
+          retention-days: 30
