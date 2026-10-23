@@ -207,8 +207,8 @@ class ModelAdapterControlTests(unittest.TestCase):
             adapter.make_synthetic_audio(wav)
             adapter.make_synthetic_image(ppm)
             self.assertTrue(wav.read_bytes().startswith(b"RIFF"))
-            self.assertTrue(ppm.read_bytes().startswith(b"P6\n640 480\n255\n"))
-            self.assertGreater(len(ppm.read_bytes()), 900_000)
+            self.assertTrue(ppm.read_bytes().startswith(b"P6\n512 512\n255\n"))
+            self.assertGreater(len(ppm.read_bytes()), 750_000)
 
 if __name__ == "__main__":
     unittest.main()
