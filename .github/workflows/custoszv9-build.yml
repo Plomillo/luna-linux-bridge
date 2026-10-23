@@ -7,6 +7,7 @@ on:
       - "custoszv9/**"
       - "formal/crfu/**"
       - "tests/test_custoszv9.py"
+      - "tests/test_custoszv9_formal_links.py"
       - "build_custoszv9.py"
       - ".github/workflows/custoszv9-build.yml"
       - ".github/workflows/custoszv9-independent-g22-g23-g24.yml"
@@ -18,6 +19,7 @@ on:
       - "custoszv9/**"
       - "formal/crfu/**"
       - "tests/test_custoszv9.py"
+      - "tests/test_custoszv9_formal_links.py"
       - "build_custoszv9.py"
       - ".github/workflows/custoszv9-build.yml"
       - ".github/workflows/custoszv9-independent-g22-g23-g24.yml"
@@ -48,7 +50,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Compile CRFU sources, tests and builder
-        run: python3 -m compileall -q custoszv9 tests/test_custoszv9.py build_custoszv9.py scripts/custoszv9_gate_trust_root.py
+        run: python3 -m compileall -q custoszv9 tests/test_custoszv9.py tests/test_custoszv9_formal_links.py build_custoszv9.py scripts/custoszv9_gate_trust_root.py
       - name: Install pinned Ed25519 test dependency (CI only, not bundled in ZIPAPP)
         run: "python3 -m pip install --disable-pip-version-check --only-binary=:all: cryptography==50.0.2"
       - name: Run CRFU regression tests
@@ -56,7 +58,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           mkdir -p evidence
-          python3 -m unittest discover -s tests -p 'test_custoszv9.py' -v 2>&1 | tee evidence/custoszv9-unit-tests.log
+          python3 -m unittest discover -s tests -p 'test_custoszv9*.py' -v 2>&1 | tee evidence/custoszv9-unit-tests.log
       - name: Build CUSTOSZV9.pyz from exact tracked V8 baseline
         env:
           CUSTOSZV9_SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
