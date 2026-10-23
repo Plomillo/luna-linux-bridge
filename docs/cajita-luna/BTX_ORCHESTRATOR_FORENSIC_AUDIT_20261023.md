@@ -35,6 +35,8 @@ Ruta fuente:
 
 La diferencia en los nombres detectados y la ausencia de encabezados de libro claramente aislados en la primera pasada impiden usar el recuento textual como prueba de cobertura completa. Los diagnósticos de formato no publican el contenido de los versículos.
 
+El perfil tipográfico independiente con PyMuPDF contabilizó 4.519.610 caracteres y 897.446 palabras en los spans del PDF. Encontró 28.831 spans numéricos aislados en `Clearface-Heavy` a 10 pt, otros 1.173 en `Clearface-Regular-SC700` a 10,2 pt y 1.033 spans numéricos grandes de 26 pt. Son candidatos de estructura, **no recuentos certificados de versículos/capítulos**. El perfil encontró siete líneas que coinciden exactamente con nombres de libros y ningún bloque completo que coincida exactamente con un nombre de libro. Por tanto, hace falta un parser basado en estructura/estilo y validación de cobertura; una división por expresiones regulares sobre el texto plano no es suficiente.
+
 ## 3. El conjunto estructurado existente no es BTX
 
 El README contiguo a `data.parquet` declara:
