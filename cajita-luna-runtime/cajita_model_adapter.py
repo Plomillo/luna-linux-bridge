@@ -314,20 +314,27 @@ def load_translation_lang_map(tokenizer):
         raise RuntimeError("PACKAGED_TOKENIZER_LANGUAGE_MAP_EMPTY")
     return mapping
 
-def apply_low_memory_document_profile(processor) -> dict[str, Any]:
-    """Bound Idefics3 image tiles so one-page OCR does not upscale/split to 2K."""
+def apply_compatible_document_profile(processor) -> dict[str, Any]:
+    """Keep the packaged Idefics3 tile/token geometry while capping each tile at 512px."""
     image_processor = getattr(processor, "image_processor", None)
     if image_processor is None:
         raise RuntimeError("DOCUMENT_IMAGE_PROCESSOR_MISSING")
-    # The packaged preprocessor defaults to longest_edge=2048 with image splitting,
-    # which can turn one page into many 512px crops and exceed the 1 GiB profile.
-    # This candidate explicitly trades resolution for a bounded single-image path.
-    image_processor.size = {"longest_edge": 512}
-    image_processor.max_image_size = {"longest_edge": 512}
-    image_processor.do_image_splitting = False
-    return {"profile_id": "LOW_MEMORY_512_NO_SPLITS", "longest_edge_px": 512,
-            "max_image_edge_px": 512, "image_splitting": False,
-            "quality_equivalence": "NOT_ESTABLISHED"}
+    packaged_size = getattr(image_processor, "size", None)
+    packaged_max = getattr(image_processor, "max_image_size", None)
+    if not isinstance(packaged_size, dict) or not isinstance(packaged_max, dict):
+        raise RuntimeError("DOCUMENT_IMAGE_SIZE_CONFIG_INVALID")
+    longest_edge = int(packaged_size.get("longest_edge", 0))
+    max_edge = int(packaged_max.get("longest_edge", 0))
+    if not (1 <= max_edge <= 512 and max_edge <= longest_edge <= 2048):
+        raise RuntimeError("DOCUMENT_IMAGE_SIZE_PROFILE_OUT_OF_BOUNDS")
+    # Idefics3's processor inserts row/column and image tokens that must agree with
+    # its patch grid. Keep the packaged longest_edge (2048) and tile size (512);
+    # disabling splitting changes that geometry and made generation fail.
+    image_processor.max_image_size = {"longest_edge": max_edge}
+    image_processor.do_image_splitting = True
+    return {"profile_id": "PACKAGED_IDEFICS3_GEOMETRY_SPLIT_512",
+            "longest_edge_px": longest_edge, "max_image_edge_px": max_edge,
+            "image_splitting": True, "quality_equivalence": "NOT_ESTABLISHED"}
 
 def run_model_task(domain_id: str, payload: dict[str, Any]) -> dict[str, Any]:
     spec = DOMAINS[domain_id]
@@ -490,7 +497,7 @@ def run_model_task(domain_id: str, payload: dict[str, Any]) -> dict[str, Any]:
                 from PIL import Image
                 image = Image.open(input_path).convert("RGB")
             processor = AutoProcessor.from_pretrained(spec["module"].parent, local_files_only=True, trust_remote_code=False)
-            image_profile = apply_low_memory_document_profile(processor)
+            image_profile = apply_compatible_document_profile(processor)
             model, meta = mod.load_candidate(str(spec["module"].parent))
             prompt = str(payload.get("text", "Extract the visible text and structure from this page."))
             messages = [{"role": "user", "content": [{"type": "image", "image": image}, {"type": "text", "text": prompt}]}]
