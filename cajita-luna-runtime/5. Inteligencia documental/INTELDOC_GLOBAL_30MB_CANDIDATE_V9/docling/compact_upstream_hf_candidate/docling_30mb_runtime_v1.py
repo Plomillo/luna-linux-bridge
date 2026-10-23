@@ -45,8 +45,65 @@ def decode_tensor(blob, r):
     raise RuntimeError("UNKNOWN_QUANT_ENCODING:"+str(kind))
 
 def decode_tensor_chunked_into(blob, r, target, chunk_rows=256):
-    """Decode one quantized tensor directly into its destination, bounding temporary RAM."""
-    if r.get("kind") != "nanoquant_style_binary_lowrank":
+    """Decode quantized tensors into preallocated storage without dense full-matrix temporaries."""
+    kind = r.get("kind")
+    if kind == "bivlm_binary_outliers":
+        shape = tuple(int(x) for x in r["shape"])
+        m, n = map(int, r["matrix_shape"])
+        if tuple(target.shape) != shape or int(np.prod(shape)) != m * n:
+            raise RuntimeError("BIVLM_CHUNK_TARGET_SHAPE_MISMATCH:" + r["name"])
+        required = {"sign_nbytes": (m * n + 7) // 8, "scale_nbytes": m * 2}
+        for key, expected in required.items():
+            if int(r[key]) != expected:
+                raise RuntimeError("BIVLM_MANIFEST_LENGTH_MISMATCH:" + r["name"] + ":" + key)
+        scales = np.frombuffer(
+            blob[int(r["scale_offset"]):int(r["scale_offset"]) + int(r["scale_nbytes"])],
+            dtype="<f2",
+        ).astype(np.float32)
+        if scales.size != m:
+            raise RuntimeError("SCALE_MISMATCH:" + r["name"])
+        k = int(r["outlier_count"])
+        ids = np.frombuffer(
+            blob[int(r["outlier_index_offset"]):int(r["outlier_index_offset"]) + 4 * k],
+            dtype="<u4",
+        ).astype(np.int64)
+        vals = np.frombuffer(
+            blob[int(r["outlier_value_offset"]):int(r["outlier_value_offset"]) + 2 * k],
+            dtype="<f2",
+        ).astype(np.float32)
+        if ids.size != k or vals.size != k or np.any(ids >= m * n):
+            raise RuntimeError("OUTLIER_INDEX_INVALID:" + r["name"])
+
+        def read_sign_range(bit_start, bit_count):
+            first = bit_start // 8
+            last = (bit_start + bit_count + 7) // 8
+            byte_start = int(r["sign_offset"]) + first
+            byte_end = int(r["sign_offset"]) + last
+            packed = np.frombuffer(blob[byte_start:byte_end], dtype=np.uint8)
+            unpacked = np.unpackbits(packed, bitorder="little")
+            skip = bit_start - first * 8
+            return unpacked[skip:skip + bit_count].astype(np.float32) * 2.0 - 1.0
+
+        # Cap this high-fanout vision projection to 64 rows per chunk. A full FP32
+        # decode needs tens of MiB of temporary arrays on top of the resident model.
+        chunk_rows = min(64, max(8, int(chunk_rows)))
+        for start in range(0, m, chunk_rows):
+            end = min(m, start + chunk_rows)
+            row_count = end - start
+            flat_start, flat_end = start * n, end * n
+            signs = read_sign_range(flat_start, row_count * n).reshape(row_count, n)
+            decoded = signs * scales[start:end, None]
+            selected = (ids >= flat_start) & (ids < flat_end)
+            if np.any(selected):
+                decoded.reshape(-1)[ids[selected] - flat_start] += vals[selected]
+            decoded_fp16 = decoded.astype(np.float16)
+            target[start:end].copy_(
+                torch.from_numpy(np.ascontiguousarray(decoded_fp16)).to(device=target.device, dtype=target.dtype)
+            )
+            del signs, decoded, decoded_fp16, selected
+        del scales, ids, vals
+        return
+    if kind != "nanoquant_style_binary_lowrank":
         arr = decode_tensor(blob, r)
         if tuple(arr.shape) != tuple(target.shape):
             raise RuntimeError("SHAPE_MISMATCH:" + r["name"])
