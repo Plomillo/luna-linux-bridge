@@ -1,7 +1,7 @@
 # Cajita de Luna — Runtime reproducible V9
 
 **Formato de distribución:** `CAJITA_RUNTIME_MACRODOWN/1.0`, archivo contenedor ZIP determinista con extensión `.macrodown`.
-**Límite bruto:** 479.000.000 bytes (decimal, exacto).
+**Límite bruto operativo vigente:** 470.000.000 bytes (decimal, exacto).
 **Orden canónico de rutas:** Cerebro → Orquestación → Transcripción → Traductor Inteligente → Inteligencia documental → Sistema Inteligente.
 
 ## Dominios y route_type
