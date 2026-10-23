@@ -19,7 +19,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: cajita-router-regression
+  group: cajita-router-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
