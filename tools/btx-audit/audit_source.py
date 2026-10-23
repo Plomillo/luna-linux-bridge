@@ -73,7 +73,7 @@ def safe_member_path(entry: dict[str, str]) -> bool:
     normalized = raw.replace("\\", "/")
     posix = PurePosixPath(normalized)
     drive, _ = os.path.splitdrive(normalized)
-    if not raw or "\x00" in raw or drive or posix.is_absolute():
+    if not raw or "\x00" in raw or drive or re.match(r"^[A-Za-z]:", normalized) or posix.is_absolute():
         return False
     if any(part in {"..", ""} for part in posix.parts):
         return False
