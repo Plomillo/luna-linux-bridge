@@ -1,0 +1,133 @@
+name: Cajita functional adapters and live resource evidence
+
+on:
+  push:
+    branches: ["repair/**"]
+    paths:
+      - "cajita-luna-runtime/cajita_model_adapter.py"
+      - "cajita-luna-runtime/cajita_runtime.py"
+      - "cajita-luna-runtime/REQUIREMENTS.runtime.lock"
+      - "cajita-luna-runtime/CAJITA_RUNTIME_V1/weights_manifest.json"
+      - "cajita-luna-runtime/1. Cerebro/**"
+      - "cajita-luna-runtime/2. Orquestación/**"
+      - "cajita-luna-runtime/3. Transcripción/**"
+      - "cajita-luna-runtime/4. Traductor Inteligente/**"
+      - "cajita-luna-runtime/5. Inteligencia documental/**"
+      - "cajita-luna-runtime/6. Sistema Inteligente/**"
+      - ".github/workflows/cajita-luna-model-resource-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cajita-model-resource-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  real-inference-and-resource-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout branch and materialize Git LFS weights
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+          lfs: true
+          persist-credentials: false
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: cajita-luna-runtime/REQUIREMENTS.runtime.lock
+
+      - name: Install pinned host runtime dependencies
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python -m pip install --disable-pip-version-check --only-binary=:all: \
+            --index-url https://pypi.org/simple \
+            --extra-index-url https://download.pytorch.org/whl/cpu \
+            -r cajita-luna-runtime/REQUIREMENTS.runtime.lock
+
+      - name: Verify LFS materialization and model hashes
+        env:
+          PYTHONPATH: cajita-luna-runtime
+        run: |
+          mkdir -p artifacts
+          python -B cajita-luna-runtime/cajita_model_adapter.py selftest > artifacts/artifacts-adapter-selftest.json
+          python -B cajita-luna-runtime/cajita_runtime.py audit-weights > artifacts/artifacts-weight-audit.json
+
+      - name: Run minimal real inference per domain, one process at a time
+        id: measure
+        continue-on-error: true
+        env:
+          PYTHONPATH: cajita-luna-runtime
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+          OMP_NUM_THREADS: "1"
+          OPENBLAS_NUM_THREADS: "1"
+          MKL_NUM_THREADS: "1"
+          NUMEXPR_NUM_THREADS: "1"
+          TOKENIZERS_PARALLELISM: "false"
+        run: |
+          python -B cajita-luna-runtime/cajita_runtime.py adapter measure-all \
+            --max-rss-mib 800 \
+            --timeout-seconds 600 \
+            --report-file artifacts/cajita-resource-evidence.json \
+            --trace-file artifacts/cajita-resource-audit.jsonl
+
+      - name: Validate resource, unload and inference evidence
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path("artifacts/cajita-resource-evidence.json")
+          if not p.is_file():
+              raise SystemExit("RESOURCE_EVIDENCE_REPORT_MISSING")
+          report = json.loads(p.read_text(encoding="utf-8"))
+          results = report.get("results", [])
+          required = {"D01_CEREBRO", "D02_ORQUESTACION", "D03_TRANSCRIPCION",
+                      "D04_TRADUCTOR_INTELIGENTE", "D05_INTELIGENCIA_DOCUMENTAL",
+                      "D06_SISTEMA_INTELIGENTE"}
+          actual = {r.get("domain_id") for r in results}
+          failures = [r for r in results if r.get("status") != "PASS"]
+          unreaped = [r.get("domain_id") for r in results
+                      if r.get("worker_started") and not r.get("worker_pid_reaped")]
+          unmeasured = [r.get("domain_id") for r in results
+                        if r.get("status") == "PASS" and r.get("peak_rss_mib") is None]
+          if actual != required:
+              print("DOMAIN_COVERAGE_MISMATCH", sorted(actual), sorted(required))
+          if failures:
+              print("DOMAIN_FAILURES", json.dumps([
+                  {"domain_id": r.get("domain_id"), "status": r.get("status"),
+                   "reason": r.get("reason"), "peak_rss_mib": r.get("peak_rss_mib")}
+                  for r in failures
+              ]))
+          if unreaped:
+              print("WORKER_PROCESS_NOT_REAPED", unreaped)
+          if unmeasured:
+              print("RSS_NOT_MEASURED", unmeasured)
+          if actual != required or failures or unreaped or unmeasured:
+              raise SystemExit(1)
+          print("PASS: six domain tasks executed sequentially, each stage measured RSS, and every worker process was reaped.")
+          print("Certification remains NOT_GRANTED; task-quality equivalence is not assessed by this workflow.")
+          PY
+
+      - name: Upload exact resource and audit evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: cajita-resource-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            artifacts/cajita-resource-evidence.json
+            artifacts/cajita-resource-audit.jsonl
+            artifacts/artifacts-weight-audit.json
+            artifacts/artifacts-adapter-selftest.json
+          if-no-files-found: warn
+          retention-days: 90
