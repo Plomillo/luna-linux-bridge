@@ -35,7 +35,8 @@
     "task_dispatch": "PLAN_ONLY_UNTIL_TASK_ADAPTERS_AND_RESOURCE_EVIDENCE_PASS",
     "certification": "NOT_GRANTED",
     "engine_count": 15,
-    "target_engine_bindings": 21
+    "target_engine_bindings": 21,
+    "target_engine_binding_basis": "PROPOSED_COMPATIBILITY_PENDING_INDEPENDENT_VALIDATION"
   },
   "domain_order": [
     "D01_CEREBRO",
@@ -265,7 +266,8 @@
         "E12",
         "E13",
         "E14",
-        "E15"
+        "E15",
+        "E11"
       ]
     },
     {
@@ -623,20 +625,36 @@
       "id": "HELP",
       "command": "/help",
       "default_targets": [
-        "D02_ORQUESTADOR",
         "D06_MOTOR_PROTOCOLAR",
         "D06_TESTING"
       ],
-      "policy": "governed-help-and-registry"
+      "policy": "governed-help-and-registry",
+      "canonical_rationale": "Governance gate; not a content-expansion path.",
+      "extension_families": [
+        "Validation",
+        "Provenance Trace",
+        "Consensus Certification"
+      ],
+      "assignment_basis": "SOURCE_SECTION_27_COMMAND_ROUTING_MATRIX"
     },
     {
       "id": "PT",
       "command": "/play PT",
       "default_targets": [
         "D01_CEREBRO_ROOT",
-        "D06_ANTI_ALUCINACIONES"
+        "D06_ANALISIS_AVANZADO",
+        "D06_TESTING"
       ],
-      "policy": "prompt-template-and-linguistic-structuring"
+      "policy": "prompt-template-and-linguistic-structuring",
+      "canonical_rationale": "Prompt/template route; linguistic and pedagogical formalization.",
+      "extension_families": [
+        "Language Reasoning",
+        "Communication",
+        "Educational Structuring",
+        "Formalization",
+        "Validation"
+      ],
+      "assignment_basis": "SOURCE_SECTION_27_COMMAND_ROUTING_MATRIX"
     },
     {
       "id": "PA",
@@ -645,9 +663,20 @@
         "D02_MULTI_INTERDISCIPLINAR",
         "D06_ANALISIS_AVANZADO",
         "D06_MOTOR_PROTOCOLAR",
+        "D06_COGNITIVE_CI_CD",
         "D06_TESTING"
       ],
-      "policy": "architecture-first-planning"
+      "policy": "architecture-first-planning",
+      "canonical_rationale": "Architecture-first and structure-heavy route.",
+      "extension_families": [
+        "Knowledge Graph",
+        "Ontology Inference",
+        "Rule Validation",
+        "Formalization",
+        "Provenance",
+        "Engineering/Architecture"
+      ],
+      "assignment_basis": "SOURCE_SECTION_27_COMMAND_ROUTING_MATRIX"
     },
     {
       "id": "DCI",
@@ -655,9 +684,20 @@
       "default_targets": [
         "D02_MULTI_INTERDISCIPLINAR",
         "D04_HERMENEUTICA_HG",
+        "D06_ANALISIS_AVANZADO",
         "D06_ANTI_ALUCINACIONES"
       ],
-      "policy": "contextual-and-interdisciplinary-integration"
+      "policy": "contextual-and-interdisciplinary-integration",
+      "canonical_rationale": "Contextual integration; Josefina's contextual lane.",
+      "extension_families": [
+        "Retrieval Semantic",
+        "Human Behavior",
+        "Social Systems",
+        "Historical Context",
+        "Scientific Method",
+        "Traceability"
+      ],
+      "assignment_basis": "SOURCE_SECTION_27_COMMAND_ROUTING_MATRIX"
     },
     {
       "id": "DCIL",
@@ -668,7 +708,18 @@
         "D06_ANALISIS_AVANZADO",
         "D06_ANTI_ALUCINACIONES"
       ],
-      "policy": "literal-and-contextual-integration"
+      "policy": "literal-and-contextual-integration",
+      "canonical_rationale": "Adds literal discipline to context, combining contextual and educational support.",
+      "extension_families": [
+        "Language Reasoning",
+        "Retrieval Semantic",
+        "Literal Analysis",
+        "Contextualization",
+        "Communication",
+        "Education",
+        "Validation"
+      ],
+      "assignment_basis": "SOURCE_SECTION_27_COMMAND_ROUTING_MATRIX"
     },
     {
       "id": "TRAD",
@@ -676,7 +727,16 @@
       "default_targets": [
         "D04_TRADUCCION_GENERAL"
       ],
-      "policy": "translation-target-selected-by-language-pair"
+      "policy": "translation-target-selected-by-language-pair",
+      "canonical_rationale": "Preserve meaning while restructuring form; multilingual terminology and semantic equivalence.",
+      "extension_families": [
+        "Multilingual Processing",
+        "Terminology Extraction",
+        "Semantic Equivalence",
+        "Communication Clarity",
+        "Validation"
+      ],
+      "assignment_basis": "SOURCE_SECTION_27_COMMAND_ROUTING_MATRIX"
     },
     {
       "id": "E",
@@ -685,7 +745,16 @@
         "D04_HERMENEUTICA_HG",
         "D06_ANTI_ALUCINACIONES"
       ],
-      "policy": "explanation-and-interpretation"
+      "policy": "explanation-and-interpretation",
+      "canonical_rationale": "Explanatory and interpretive route.",
+      "extension_families": [
+        "Hermeneutics",
+        "Historical Context",
+        "Worldview Analysis",
+        "Evidence Handling",
+        "Synthesis"
+      ],
+      "assignment_basis": "SOURCE_SECTION_27_COMMAND_ROUTING_MATRIX"
     },
     {
       "id": "EMA",
@@ -693,10 +762,20 @@
       "default_targets": [
         "D04_HERMENEUTICA_HG",
         "D02_MULTI_INTERDISCIPLINAR",
+        "D06_ANALISIS_AVANZADO",
         "D06_ANTI_ALUCINACIONES",
         "D06_TESTING"
       ],
-      "policy": "meta-hermeneutics-and-reflective-learning"
+      "policy": "meta-hermeneutics-and-reflective-learning",
+      "canonical_rationale": "Second-order interpretation combining reflection and structured teaching.",
+      "extension_families": [
+        "Meta-Hermeneutics",
+        "Reflective Learning",
+        "Metacognition",
+        "Synthesis",
+        "Educational Design"
+      ],
+      "assignment_basis": "SOURCE_SECTION_27_COMMAND_ROUTING_MATRIX"
     },
     {
       "id": "P",
@@ -707,7 +786,16 @@
         "D06_COGNITIVE_CI_CD",
         "D06_TESTING"
       ],
-      "policy": "sequencing-planning-and-governed-control"
+      "policy": "sequencing-planning-and-governed-control",
+      "canonical_rationale": "Planning is a sequencing and control problem.",
+      "extension_families": [
+        "Planning",
+        "Orchestration",
+        "Governance",
+        "Control",
+        "Change Management"
+      ],
+      "assignment_basis": "SOURCE_SECTION_27_COMMAND_ROUTING_MATRIX"
     },
     {
       "id": "C",
@@ -717,7 +805,16 @@
         "D06_ARCHIVADO_DETECCION",
         "D06_ANALISIS_AVANZADO"
       ],
-      "policy": "classification-and-taxonomy"
+      "policy": "classification-and-taxonomy",
+      "canonical_rationale": "Classification and conceptual structuring.",
+      "extension_families": [
+        "Classification",
+        "Taxonomy",
+        "Conceptual Hierarchy",
+        "Curriculum Organization",
+        "Validation"
+      ],
+      "assignment_basis": "SOURCE_SECTION_27_COMMAND_ROUTING_MATRIX"
     },
     {
       "id": "CP",
@@ -727,7 +824,16 @@
         "D06_ANALISIS_AVANZADO",
         "D06_ANTI_ALUCINACIONES"
       ],
-      "policy": "comparison-crosswalk-and-knowledge-mapping"
+      "policy": "comparison-crosswalk-and-knowledge-mapping",
+      "canonical_rationale": "Comparison across conceptual spaces.",
+      "extension_families": [
+        "Comparison",
+        "Crosswalk",
+        "Knowledge Mapping",
+        "Contextual Differentiation",
+        "Traceability"
+      ],
+      "assignment_basis": "SOURCE_SECTION_27_COMMAND_ROUTING_MATRIX"
     },
     {
       "id": "MA",
@@ -736,7 +842,12 @@
         "D01_CEREBRO_ROOT",
         "D02_MULTI_INTERDISCIPLINAR"
       ],
-      "policy": "highest-synthesis-route-select-targets-on-demand"
+      "policy": "highest-synthesis-route-select-targets-on-demand",
+      "canonical_rationale": "Highest-synthesis route; remains under Luna and selects relevant domains on demand.",
+      "extension_families": [
+        "All seed extension families CFE001-CFE074"
+      ],
+      "assignment_basis": "SOURCE_SECTION_27_COMMAND_ROUTING_MATRIX"
     },
     {
       "id": "H",
@@ -746,7 +857,16 @@
         "D02_CONFESION_ECLESIAL_REFORMADA",
         "D06_ANTI_ALUCINACIONES"
       ],
-      "policy": "grammatical-historical-hermeneutics"
+      "policy": "grammatical-historical-hermeneutics",
+      "canonical_rationale": "Hermeneutic lane.",
+      "extension_families": [
+        "Hermeneutics",
+        "Grammatical-Historical Method",
+        "Doctrinal Synthesis",
+        "Historical Control",
+        "Validation"
+      ],
+      "assignment_basis": "SOURCE_SECTION_27_COMMAND_ROUTING_MATRIX"
     },
     {
       "id": "AE",
@@ -758,7 +878,17 @@
         "D06_COGNITIVE_CI_CD",
         "D06_TESTING"
       ],
-      "policy": "explicit-architecture-and-systems-integration"
+      "policy": "explicit-architecture-and-systems-integration",
+      "canonical_rationale": "Architecture explicitness and systems control.",
+      "extension_families": [
+        "Architectural Explicitness",
+        "Systems Integration",
+        "Modularity",
+        "Traceability",
+        "Validation",
+        "Provenance"
+      ],
+      "assignment_basis": "SOURCE_SECTION_27_COMMAND_ROUTING_MATRIX"
     }
   ],
   "intent_rules": [
@@ -1087,7 +1217,9 @@
         "D04_HERMENEUTICA_HG",
         "D04_TRADUCCION_LENGUAS_ANTIGUAS"
       ]
-    }
+    },
+    "command_profile_semantics": "Canonical rationale and extension-family labels are copied from Louksna Section 27; runtime target assignments are a proposed compatibility layer and remain non-certifying.",
+    "command_agent_engine_bindings_are_authoritative": true
   },
   "audit_findings": [
     {
