@@ -1,7 +1,7 @@
 {
   "schema": "CAJITA_NEW_ENGINE_MODEL_QUANTIZATION/1.0",
   "audit_id": "CAJITA_NEW_ENGINE_QUANTIZATION_20261023",
-  "created_at_utc": "2026-10-23T17:44:38.878575+00:00",
+  "created_at_utc": "2026-10-23T17:47:34.469217+00:00",
   "repository": "Plomillo/luna-linux-bridge",
   "branch": "main",
   "target_hard_cap_bytes": 470000000,
@@ -25,9 +25,12 @@
     "files_scanned": 15921,
     "expanded_bytes_scanned": 536826818,
     "model_payloads_found": 3,
+    "onnx_graphs_found": 3,
     "onnx_candidates_quantized_smaller_and_validated": 0,
+    "onnx_candidates_not_smaller": 1,
+    "quantization_failures": 2,
     "hard_cap_compliance": "NOT_EVALUATED_BY_QUANTIZATION_PASS",
-    "status": "NO_ONNX_TENSORS_FOUND_IN_THE_TEN_ASSETS"
+    "status": "ONNX_FOUND_BUT_NO_SIZE_SAVING_QUANTIZATION"
   },
   "assets": [
     {
@@ -60,14 +63,8 @@
       "container_sha256": "d13eebe3214d7e47fed0258e58e9cbb88d33172c31d8ca62dd70dc378660a26b",
       "model_payloads_found": [
         {
-          "name": "sigmoid.onnx",
-          "suffix": ".onnx",
-          "bytes": 103,
-          "sha256": "5340aba67a7e3475162ad794378af55f1718f55f9a5d74b4af60ecc7f7a624b6",
-          "quantizer": "ONNX_DYNAMIC_INT8"
-        },
-        {
           "name": "mul_1.onnx",
+          "relative_path": "ONNX_RUNTIME_1_29_0_CP311/onnxruntime/datasets/mul_1.onnx",
           "suffix": ".onnx",
           "bytes": 130,
           "sha256": "71f431c4e9321ec6fbeb158d02ed240459a7dcc98673fa79a4f439ce42efaf10",
@@ -75,16 +72,37 @@
         },
         {
           "name": "logreg_iris.onnx",
+          "relative_path": "ONNX_RUNTIME_1_29_0_CP311/onnxruntime/datasets/logreg_iris.onnx",
           "suffix": ".onnx",
           "bytes": 670,
           "sha256": "8224784c98d73412d9fd99abcd57a38568bd590980d0fbe5916464531c52e8fc",
+          "quantizer": "ONNX_DYNAMIC_INT8"
+        },
+        {
+          "name": "sigmoid.onnx",
+          "relative_path": "ONNX_RUNTIME_1_29_0_CP311/onnxruntime/datasets/sigmoid.onnx",
+          "suffix": ".onnx",
+          "bytes": 103,
+          "sha256": "5340aba67a7e3475162ad794378af55f1718f55f9a5d74b4af60ecc7f7a624b6",
           "quantizer": "ONNX_DYNAMIC_INT8"
         }
       ],
       "quantization_results": [
         {
+          "source_sha256": "71f431c4e9321ec6fbeb158d02ed240459a7dcc98673fa79a4f439ce42efaf10",
+          "quantization": "ONNX_DYNAMIC_INT8",
+          "status": "QUANTIZATION_OR_VALIDATION_FAILED",
+          "error": "ConvertError: Input W is undefined!"
+        },
+        {
+          "source_sha256": "8224784c98d73412d9fd99abcd57a38568bd590980d0fbe5916464531c52e8fc",
+          "quantization": "ONNX_DYNAMIC_INT8",
+          "status": "QUANTIZATION_OR_VALIDATION_FAILED",
+          "error": "ValueError: Failed to find proper ai.onnx domain"
+        },
+        {
           "source_sha256": "5340aba67a7e3475162ad794378af55f1718f55f9a5d74b4af60ecc7f7a624b6",
-          "candidate_artifact_path": "cajita_quantized_candidates/ONNX_RUNTIME_1_29_0_CP311/000_0000_sigmoid.int8.onnx",
+          "candidate_artifact_path": "cajita_quantized_candidates/ONNX_RUNTIME_1_29_0_CP311/002_0002_sigmoid.int8.onnx",
           "candidate_sha256": "e63a6dc24d101722fbbfb5432dcaa7fe5fe518f841809b880beff93b4a7cf6dd",
           "original_bytes": 103,
           "candidate_bytes": 146,
@@ -100,18 +118,6 @@
           ],
           "status": "QUANTIZED_CANDIDATE_NOT_SMALLER",
           "runtime_replacement": "NOT_PROMOTED_WITHOUT_GOLDEN_EQUIVALENCE_TESTS"
-        },
-        {
-          "source_sha256": "71f431c4e9321ec6fbeb158d02ed240459a7dcc98673fa79a4f439ce42efaf10",
-          "quantization": "ONNX_DYNAMIC_INT8",
-          "status": "QUANTIZATION_OR_VALIDATION_FAILED",
-          "error": "ConvertError: Input W is undefined!"
-        },
-        {
-          "source_sha256": "8224784c98d73412d9fd99abcd57a38568bd590980d0fbe5916464531c52e8fc",
-          "quantization": "ONNX_DYNAMIC_INT8",
-          "status": "QUANTIZATION_OR_VALIDATION_FAILED",
-          "error": "ValueError: Failed to find proper ai.onnx domain"
         }
       ],
       "expanded_bytes_scanned": 62736574,
