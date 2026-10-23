@@ -584,6 +584,57 @@ def build_db(
             if nums:
                 missing=[n for n in range(1,max(nums)+1) if n not in nums]
                 if missing: gaps_by_chapter.append({"book":book,"chapter":ch,"missing_numbers":missing[:30]})
+    # For every gap in the observed reference sequence, inspect the source
+    # region between this chapter anchor and the next canonical chapter anchor.
+    # Output only token/font/coordinate metadata, never verse text.
+    chapter_anchor_spans: dict[tuple[str,int],Span] = {}
+    all_anchor_maps = [big_map, psalm_map, single_span_map]
+    for anchor_map in all_anchor_maps:
+        for span_key,(book,ch) in anchor_map.items():
+            chapter_anchor_spans[(book,ch)] = span_by_key[span_key]
+    expected_chapter_index = {ref:i for i,ref in enumerate(EXPECTED_CHAPTERS)}
+    gap_marker_diagnostics: list[dict[str,Any]] = []
+    for gap in gaps_by_chapter:
+        book=gap["book"]
+        ch=gap["chapter"]
+        idx=expected_chapter_index.get((book,ch))
+        start_span=chapter_anchor_spans.get((book,ch))
+        next_span=None
+        if idx is not None and idx+1 < len(EXPECTED_CHAPTERS):
+            next_span=chapter_anchor_spans.get(EXPECTED_CHAPTERS[idx+1])
+        candidates_by_missing_number=[]
+        for missing_number in gap["missing_numbers"]:
+            candidates=[]
+            if start_span is not None:
+                for candidate in spans:
+                    pos=span_order(candidate)
+                    if pos <= span_order(start_span):
+                        continue
+                    if next_span is not None and pos >= span_order(next_span):
+                        continue
+                    parsed_candidate=parse_verse_token(candidate.text)
+                    if parsed_candidate is None or parsed_candidate[0] != missing_number:
+                        continue
+                    is_expected_style=(candidate.font=="Clearface-Heavy" and 9.0<=candidate.size<=10.5)
+                    candidates.append({
+                        "page":candidate.page,"column":candidate.col,"x0":round(candidate.x0,1),
+                        "y0":round(candidate.y0,1),"font":candidate.font,"font_size":candidate.size,
+                        "token":candidate.text.strip(),"expected_marker_style":is_expected_style,
+                        "line_char_count":len(candidate.line_text),"text_emitted":False
+                    })
+            candidates_by_missing_number.append({
+                "missing_verse_number":missing_number,
+                "candidate_span_count":len(candidates),
+                "expected_style_candidate_count":sum(1 for c in candidates if c["expected_marker_style"]),
+                "candidates_first_8":candidates[:8]
+            })
+        gap_marker_diagnostics.append({
+            "book":book,"chapter":ch,
+            "start_page":start_span.page if start_span else None,
+            "next_chapter_start_page":next_span.page if next_span else None,
+            "missing_number_candidates":candidates_by_missing_number
+        })
+
     integrity=conn.execute("PRAGMA integrity_check").fetchone()[0]
     db_metadata={
         "schema":"CAJITA_BTX_BOOK/1.0",
@@ -653,6 +704,7 @@ def build_db(
         "chapter_verse_number_gap_chapter_count":len(gaps_by_chapter),
         "chapter_verse_number_gap_total":gaps_total,
         "chapter_verse_number_gap_examples":gaps_by_chapter[:100],
+        "gap_marker_diagnostics":gap_marker_diagnostics,
         "text_roundtrip_whitespace_normalized_exact":text_stream_exact,
         "captured_text_characters":len(expected_text_stream),
         "stored_text_characters":len(stored_text_stream),
@@ -735,7 +787,7 @@ def main() -> int:
         "verse_marker_spans_seen","main_bible_end_page","post_canon_pages_excluded_from_scripture",
         "duplicate_reference_keys","duplicate_marker_events","duplicate_marker_examples","tail_page_layout_profiles","john8_opening_layout_profile",
         "missing_expected_chapter_count","missing_first_verse_chapter_count","missing_first_verse_examples","empty_verse_chapter_count","empty_verse_examples",
-        "chapter_verse_number_gap_chapter_count","chapter_verse_number_gap_total","chapter_verse_number_gap_examples",
+        "chapter_verse_number_gap_chapter_count","chapter_verse_number_gap_total","chapter_verse_number_gap_examples","gap_marker_diagnostics",
         "text_roundtrip_whitespace_normalized_exact","captured_text_characters","stored_text_characters",
         "fts5_enabled","representative_reference_query_tests","error"
     ]},ensure_ascii=False,indent=2))
