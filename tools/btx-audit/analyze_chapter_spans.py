@@ -206,6 +206,11 @@ def main() -> int:
             for i,(book,ch) in enumerate(EXPECTED) if i not in all_matched_by_expected
         ]
         expected_large_values = [ch for _, ch in EXPECTED_LARGE]
+        positional_chapter_checks = [
+            {"index": i, "book": book, "expected_chapter": ch, "observed_chapter": candidates[i]["value"], "page": candidates[i]["page"], "match": ch == candidates[i]["value"]}
+            for i, (book, ch) in enumerate(EXPECTED_LARGE)
+        ] if len(candidates) == len(EXPECTED_LARGE) else []
+        positional_mismatches = [row for row in positional_chapter_checks if not row["match"]]
         pairs, matched = lcs_match(expected_large_values, candidates)
         matched_by_expected = {i:j for i,j in pairs}
         unmatched_expected = [
@@ -267,6 +272,10 @@ def main() -> int:
             "expected_sequence_coverage_percent": round(all_matched / len(EXPECTED) * 100, 2),
             "expected_large_marker_chapters": len(EXPECTED_LARGE),
             "large_marker_sequence_lcs_matches": matched,
+            "positional_chapter_sequence_matches": sum(1 for row in positional_chapter_checks if row["match"]),
+            "positional_chapter_sequence_total": len(positional_chapter_checks),
+            "positional_chapter_sequence_mismatch_count": len(positional_mismatches),
+            "positional_chapter_sequence_mismatches_first_100": positional_mismatches[:100],
             "large_marker_coverage_percent": round(matched / len(EXPECTED_LARGE) * 100, 2),
             "large_marker_unmatched_expected_count": len(unmatched_expected),
             "large_marker_unmatched_expected_first_100": unmatched_expected[:100],
