@@ -24,7 +24,7 @@ class ModelAdapterControlTests(unittest.TestCase):
             data = output.read_bytes()
             self.assertEqual(result["status"], "PASS_PDF_CREATED")
             self.assertTrue(data.startswith(b"%PDF-1.4"))
-            self.assertIn(b"xref\\n", data)
+            self.assertIn(b"xref\n", data)
             self.assertTrue(data.rstrip().endswith(b"%%EOF"))
             self.assertEqual(result["output_sha256"], adapter.sha256_file(output))
             self.assertGreaterEqual(result["page_count"], 1)
@@ -32,7 +32,7 @@ class ModelAdapterControlTests(unittest.TestCase):
     def test_pdf_adapter_handles_multiple_pages(self):
         with tempfile.TemporaryDirectory() as temp:
             output = Path(temp) / "long.pdf"
-            result = adapter.make_pdf("\\n".join(f"line {i}" for i in range(125)), output)
+            result = adapter.make_pdf("\n".join(f"line {i}" for i in range(125)), output)
             data = output.read_bytes()
             self.assertEqual(result["page_count"], 3)
             self.assertIn(b"/Count 3", data)
