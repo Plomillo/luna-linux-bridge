@@ -16,6 +16,7 @@ jobs:
     timeout-minutes: 60
     permissions:
       contents: write
+      actions: write
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
@@ -44,61 +45,65 @@ jobs:
         run: |
           set -euo pipefail
           printf '%s  %s\n' "$EXPECTED_SHA256" "CajitadeLuna.7z" > "$RUNNER_TEMP/CajitadeLuna.7z.sha256"
-          cat > "$RUNNER_TEMP/release-notes.md" <<EOF
-          Original Cajita de Luna archive uploaded without modifying its bytes.
-
-          - Archive size: 348,027,363 bytes
-          - SHA-256: `$EXPECTED_SHA256`
-          - Archive integrity test: `7z t` passed before publication.
-          - Uncompressed content size reported by 7-Zip: 430,611,776 bytes.
-
-          This release records artifact distribution and integrity only. It does not assert complete functional equivalence, independent validation, or runtime certification.
-          EOF
+          {
+            printf '%s\n\n' 'Original Cajita de Luna archive uploaded without modifying its bytes.'
+            printf -- '- Archive size: %s bytes\n' "$EXPECTED_BYTES"
+            printf -- '- SHA-256: `%s`\n' "$EXPECTED_SHA256"
+            printf '%s\n' '- Archive integrity test: `7z t` passed before publication.'
+            printf -- '- Uncompressed content size reported by 7-Zip: %s bytes.\n' '430611776'
+            printf '%s\n' '- Round-trip integrity is verified by downloading the published asset and rechecking SHA-256.'
+            printf '\n%s\n' 'This release records artifact distribution and integrity only. It does not assert complete functional equivalence, independent validation, or runtime certification.'
+          } > "$RUNNER_TEMP/release-notes.md"
 
       - name: Publish release assets
         shell: bash
         run: |
           set -euo pipefail
-          if gh release view "$TAG" --repo "$GH_REPO" >/dev/null 2>&1; then
-            echo "Refusing to overwrite an existing release: $TAG"
-            exit 1
+          if gh release view "$TAG" --repo "$GH_REPO" --json assets > "$RUNNER_TEMP/existing-release.json" 2>/dev/null; then
+            gh release edit "$TAG" --repo "$GH_REPO" \
+              --title "Cajita de Luna archive — candidate upload (2026-10-23)" \
+              --notes-file "$RUNNER_TEMP/release-notes.md"
+          else
+            gh release create "$TAG" \
+              --repo "$GH_REPO" \
+              --target main \
+              --title "Cajita de Luna archive — candidate upload (2026-10-23)" \
+              --notes-file "$RUNNER_TEMP/release-notes.md" \
+              "$ARCHIVE#CajitadeLuna.7z" \
+              "$RUNNER_TEMP/CajitadeLuna.7z.sha256#CajitadeLuna.7z.sha256"
           fi
-          gh release create "$TAG" \
-            --repo "$GH_REPO" \
-            --target main \
-            --title "Cajita de Luna archive — candidate upload (2026-10-23)" \
-            --notes-file "$RUNNER_TEMP/release-notes.md" \
-            "$ARCHIVE#CajitadeLuna.7z" \
-            "$RUNNER_TEMP/CajitadeLuna.7z.sha256#CajitadeLuna.7z.sha256"
 
       - name: Verify published asset
         shell: bash
         run: |
           set -euo pipefail
           gh release view "$TAG" --repo "$GH_REPO" --json url,tagName,assets > "$RUNNER_TEMP/release.json"
-          python3 - "$RUNNER_TEMP/release.json" "$EXPECTED_BYTES" "$EXPECTED_SHA256" <<'PY'
+          python3 - "$RUNNER_TEMP/release.json" "$EXPECTED_BYTES" <<'PY'
           import json, sys
           data = json.load(open(sys.argv[1], encoding="utf-8"))
           expected_size = int(sys.argv[2])
-          expected_digest = "sha256:" + sys.argv[3]
           assets = data.get("assets", [])
           archive = next((a for a in assets if a.get("name") == "CajitadeLuna.7z"), None)
           checksum = next((a for a in assets if a.get("name") == "CajitadeLuna.7z.sha256"), None)
           if not archive or archive.get("size") != expected_size:
               raise SystemExit("FAIL: GitHub release asset name/size mismatch")
-          digest = archive.get("digest")
-          if digest and digest.lower() != expected_digest:
-              raise SystemExit("FAIL: GitHub-reported digest mismatch")
           if not checksum or checksum.get("size", 0) == 0:
               raise SystemExit("FAIL: checksum sidecar missing")
           print("RELEASE_URL=" + data.get("url", ""))
           print("TAG=" + data.get("tagName", ""))
           print("ASSET_NAME=" + archive["name"])
           print("ASSET_SIZE=" + str(archive["size"]))
-          print("ASSET_SHA256_METADATA=" + (digest or "not-exposed-by-GitHub"))
           print("CHECKSUM_ASSET=" + checksum["name"])
-          print("UPLOAD_VERIFICATION=PASS")
           PY
+          verify_dir="$RUNNER_TEMP/cajita-roundtrip-verification"
+          mkdir -p "$verify_dir"
+          gh release download "$TAG" --repo "$GH_REPO" --pattern "CajitadeLuna.7z*" --dir "$verify_dir"
+          (
+            cd "$verify_dir"
+            sha256sum -c "CajitadeLuna.7z.sha256"
+          )
+          rm -rf "$verify_dir"
+          echo "ROUNDTRIP_SHA256_VERIFICATION=PASS"
 
       - name: Disable temporary publisher after verified release
         if: success()
