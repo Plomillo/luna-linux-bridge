@@ -105,3 +105,12 @@ El registro `BUILD_PROVENANCE.json` fija las fuentes, el commit externo auxiliar
 La prueba estructural y la integridad de los seis hashes de modelos son gates de contenido, no pruebas de equivalencia de calidad. D04 superó una generación de traducción mínima; D05 pasó la verificación de carga de su modelo. Las pruebas anteriores del candidato V4 dieron PASS para D01, D02, D03 y D06; D04 y D05 presentaban fallos que se han corregido en el candidato V9, con los límites de prueba descritos en el registro de procedencia. Equivalencia de calidad, validación independiente y certificación integral siguen sin establecerse.
 
 **Estado de publicación:** las ubicaciones de los diez activos y este inventario documental están en GitHub. El artefacto distribuible `.macrodown` no se ha reconstruido ni publicado con estos activos; la puerta de límite bruto continúa bloqueada, como se documenta arriba.
+
+
+## Compactación de los diez activos nuevos — 2026-10-23
+
+Se ejecutó una pasada de compactación máxima de los diez activos incorporados, priorizando reducción de bytes. Los contenedores LZMA2/7z solo sustituyen al original cuando disminuyen estrictamente el tamaño; los originales recuperados continúan preservados en externalized-assets-staging para rollback. Los binarios ELF elegibles de Dagger, OPA y rqlite se sometieron a UPX con comprobación del empaquetado y ronda exacta de descompresión SHA-256. La relación entre ruta lógica y contenedor comprimido queda registrada en EXTERNALIZED_ASSET_PLACEMENT.json.
+
+La reparación de rutas de extracción/consumo queda pendiente para la siguiente fase. No se modificaron los seis artefactos de peso/modelo preexistentes. La proyección usa los tamaños LFS declarados y excluye el manifiesto estático obsoleto; el constructor deberá regenerar el manifiesto tras la reparación y volver a comprobar el límite de 470.000.000 bytes. Certificación no otorgada.
+
+Informe de evidencia: ../docs/cajita-luna/CAJITA_NEW_ENGINE_COMPACTION_20261023.json.

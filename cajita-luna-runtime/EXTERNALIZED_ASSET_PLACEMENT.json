@@ -2,148 +2,396 @@
   "schema": "CAJITA_EXTERNALIZED_ASSET_PLACEMENT/1.0",
   "candidate_id": "CAJITA_LUNA_RUNTIME_V9_20261023_EXTERNAL_ASSET_PLACEMENT",
   "based_on_commit": "cf777392759b1926e9999ed4f877aa09fc88cf90",
-  "status": "SOURCE_TREE_PLACEMENT_COMPLETE_PACKAGE_BUDGET_BLOCKED",
+  "status": "NEW_ASSET_COMPACTION_COMPLETE_RUNTIME_PATH_REPAIR_PENDING",
   "purpose": "Place recovered externalized assets at their intended six-domain source-tree paths without silently promoting them into the distributable archive.",
-  "hard_cap_bytes": 479000000,
+  "hard_cap_bytes": 470000000,
   "current_macrodown_manifest": {
     "path": "cajita-luna-runtime/MACRODOWN_MANIFEST.json",
     "recorded_gross_payload_bytes": 476525572,
     "listed_files": 132,
     "mutated": false
   },
-  "placed_assets_raw_bytes": 286535330,
-  "projected_raw_payload_bytes_before_new_manifest_growth": 763060902,
-  "projected_over_cap_bytes_before_new_manifest_growth": 284060902,
+  "placed_assets_raw_bytes": 165250049,
+  "projected_raw_payload_bytes_before_new_manifest_growth": 641773963,
+  "projected_over_cap_bytes_before_new_manifest_growth": 171773963,
   "assets": [
     {
       "id": "APACHE_JENA_6_2_0",
       "source_staging_path": "externalized-assets-staging/2-Orquestacion/Multi-Interdisciplinar/apache-jena-6.2.0.tar.gz",
-      "placed_path": "cajita-luna-runtime/2. Orquestación/Multi + Interdisciplinar/apache-jena-6.2.0.tar.gz",
+      "placed_path": "cajita-luna-runtime/2. Orquestación/Multi + Interdisciplinar/apache-jena-6.2.0.tar.gz.7z",
       "source_version": "6.2.0",
       "asset_kind": "source_archive",
-      "sha256": "14c12ef4aa2f0078a473be4b10b015e0e0b85e767d6867e8581679de8fec3f6e",
-      "size_bytes": 23986647,
+      "sha256": "a26d64b241bc7b125725d9a8ac377c74df6b4565a51a3f7fb66a5bda63ffa77a",
+      "size_bytes": 23103199,
       "exact_externalized_candidate": true,
-      "placement": "IN_CAJITA_SOURCE_TREE",
+      "placement": "IN_CAJITA_SOURCE_TREE_COMPRESSED_CONTAINER_REPAIR_PENDING",
       "included_in_current_macrodown_manifest": false,
-      "notes": "Exact SHA-256 and size match with the externalization record."
+      "notes": "Exact SHA-256 and size match with the externalization record. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending.",
+      "upstream_size_bytes": 23986647,
+      "upstream_sha256": "14c12ef4aa2f0078a473be4b10b015e0e0b85e767d6867e8581679de8fec3f6e",
+      "optimization": {
+        "status": "COMPACTED_TO_7Z_REPAIR_PENDING",
+        "original_placed_path": "cajita-luna-runtime/2. Orquestación/Multi + Interdisciplinar/apache-jena-6.2.0.tar.gz",
+        "original_size_bytes": 23986647,
+        "original_sha256": "14c12ef4aa2f0078a473be4b10b015e0e0b85e767d6867e8581679de8fec3f6e",
+        "optimized_path": "cajita-luna-runtime/2. Orquestación/Multi + Interdisciplinar/apache-jena-6.2.0.tar.gz.7z",
+        "optimized_size_bytes": 23103199,
+        "optimized_sha256": "a26d64b241bc7b125725d9a8ac377c74df6b4565a51a3f7fb66a5bda63ffa77a",
+        "saved_bytes": 883448,
+        "methods": [
+          "UPX-9-LZMA on eligible executable ELF assets",
+          "7z LZMA2 ultra container"
+        ],
+        "upx_changes": [],
+        "member_roundtrip": "PASS",
+        "runtime_path_repair": "PENDING_NEXT_PHASE"
+      }
     },
     {
       "id": "PLAYWRIGHT_1_63_0_SOURCE",
       "source_staging_path": "externalized-assets-staging/2-Orquestacion/Orquestador/playwright-1.63.0.tar.gz",
-      "placed_path": "cajita-luna-runtime/2. Orquestación/Orquestador/playwright-1.63.0.tar.gz",
+      "placed_path": "cajita-luna-runtime/2. Orquestación/Orquestador/playwright-1.63.0.tar.gz.7z",
       "source_version": "v1.63.0",
       "asset_kind": "source_archive",
-      "sha256": "bc3d50b5a6c51cd401b2b4a71514be75ffd91223e129abcee51b8913746e4c6d",
-      "size_bytes": 40525667,
+      "sha256": "395141a67bce645b0aa37cecb202b0762273bdb4f79c8a2cab2967a93a78dc14",
+      "size_bytes": 32133546,
       "exact_externalized_candidate": true,
-      "placement": "IN_CAJITA_SOURCE_TREE",
+      "placement": "IN_CAJITA_SOURCE_TREE_COMPRESSED_CONTAINER_REPAIR_PENDING",
       "included_in_current_macrodown_manifest": false,
-      "notes": "Exact SHA-256 and size match with the externalization record."
+      "notes": "Exact SHA-256 and size match with the externalization record. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending.",
+      "upstream_size_bytes": 40525667,
+      "upstream_sha256": "bc3d50b5a6c51cd401b2b4a71514be75ffd91223e129abcee51b8913746e4c6d",
+      "optimization": {
+        "status": "COMPACTED_TO_7Z_REPAIR_PENDING",
+        "original_placed_path": "cajita-luna-runtime/2. Orquestación/Orquestador/playwright-1.63.0.tar.gz",
+        "original_size_bytes": 40525667,
+        "original_sha256": "bc3d50b5a6c51cd401b2b4a71514be75ffd91223e129abcee51b8913746e4c6d",
+        "optimized_path": "cajita-luna-runtime/2. Orquestación/Orquestador/playwright-1.63.0.tar.gz.7z",
+        "optimized_size_bytes": 32133546,
+        "optimized_sha256": "395141a67bce645b0aa37cecb202b0762273bdb4f79c8a2cab2967a93a78dc14",
+        "saved_bytes": 8392121,
+        "methods": [
+          "UPX-9-LZMA on eligible executable ELF assets",
+          "7z LZMA2 ultra container"
+        ],
+        "upx_changes": [],
+        "member_roundtrip": "PASS",
+        "runtime_path_repair": "PENDING_NEXT_PHASE"
+      }
     },
     {
       "id": "ONNX_RUNTIME_1_29_0_CP311",
       "source_staging_path": "externalized-assets-staging/6-Sistema-Inteligente/Anti-Alucinaciones/onnxruntime-1.29.0-cp311-cp311-manylinux_2_28_x86_64.whl",
-      "placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/onnxruntime-1.29.0-cp311-cp311-manylinux_2_28_x86_64.whl",
+      "placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/onnxruntime-1.29.0-cp311-cp311-manylinux_2_28_x86_64.whl.7z",
       "source_version": "1.29.0",
       "asset_kind": "binary_wheel",
-      "sha256": "85f8e8406c52658735fe5c7fbfd3ebaa1ed340768324f6252e4274e374580a23",
-      "size_bytes": 23113193,
+      "sha256": "d13eebe3214d7e47fed0258e58e9cbb88d33172c31d8ca62dd70dc378660a26b",
+      "size_bytes": 10219873,
       "exact_externalized_candidate": false,
-      "placement": "IN_CAJITA_SOURCE_TREE",
+      "placement": "IN_CAJITA_SOURCE_TREE_COMPRESSED_CONTAINER_REPAIR_PENDING",
       "included_in_current_macrodown_manifest": false,
-      "notes": "Matches official PyPI digest for exact filename; differs from externalized manifest hash and size."
+      "notes": "Matches official PyPI digest for exact filename; differs from externalized manifest hash and size. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending.",
+      "upstream_size_bytes": 23113193,
+      "upstream_sha256": "85f8e8406c52658735fe5c7fbfd3ebaa1ed340768324f6252e4274e374580a23",
+      "optimization": {
+        "status": "COMPACTED_TO_7Z_REPAIR_PENDING",
+        "original_placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/onnxruntime-1.29.0-cp311-cp311-manylinux_2_28_x86_64.whl",
+        "original_size_bytes": 23113193,
+        "original_sha256": "85f8e8406c52658735fe5c7fbfd3ebaa1ed340768324f6252e4274e374580a23",
+        "optimized_path": "cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/onnxruntime-1.29.0-cp311-cp311-manylinux_2_28_x86_64.whl.7z",
+        "optimized_size_bytes": 10219873,
+        "optimized_sha256": "d13eebe3214d7e47fed0258e58e9cbb88d33172c31d8ca62dd70dc378660a26b",
+        "saved_bytes": 12893320,
+        "methods": [
+          "UPX-9-LZMA on eligible executable ELF assets",
+          "7z LZMA2 ultra container"
+        ],
+        "upx_changes": [],
+        "member_roundtrip": "PASS",
+        "runtime_path_repair": "PENDING_NEXT_PHASE"
+      }
     },
     {
       "id": "DAGGER_0_21_8_LINUX_AMD64",
       "source_staging_path": "externalized-assets-staging/6-Sistema-Inteligente/Cognitive-CI-CD/dagger_v0.21.8_linux_amd64.tar.gz",
-      "placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/dagger_v0.21.8_linux_amd64.tar.gz",
+      "placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/dagger_v0.21.8_linux_amd64.tar.gz.7z",
       "source_version": "v0.21.8",
       "asset_kind": "binary_archive",
-      "sha256": "53e226c7da8fb75171e58c35759d736d961ce8b3a12db0baa7b7107954fccc5a",
-      "size_bytes": 21927634,
+      "sha256": "bb95a9e4580009f3e7bb5d365d3ef608832a6387a2fea586eec7bafab4a92f4e",
+      "size_bytes": 15377436,
       "exact_externalized_candidate": true,
-      "placement": "IN_CAJITA_SOURCE_TREE",
+      "placement": "IN_CAJITA_SOURCE_TREE_COMPRESSED_CONTAINER_REPAIR_PENDING",
       "included_in_current_macrodown_manifest": false,
-      "notes": "Exact SHA-256 and size match with the externalization record."
+      "notes": "Exact SHA-256 and size match with the externalization record. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending.",
+      "upstream_size_bytes": 21927634,
+      "upstream_sha256": "53e226c7da8fb75171e58c35759d736d961ce8b3a12db0baa7b7107954fccc5a",
+      "optimization": {
+        "status": "COMPACTED_TO_7Z_REPAIR_PENDING",
+        "original_placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/dagger_v0.21.8_linux_amd64.tar.gz",
+        "original_size_bytes": 21927634,
+        "original_sha256": "53e226c7da8fb75171e58c35759d736d961ce8b3a12db0baa7b7107954fccc5a",
+        "optimized_path": "cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/dagger_v0.21.8_linux_amd64.tar.gz.7z",
+        "optimized_size_bytes": 15377436,
+        "optimized_sha256": "bb95a9e4580009f3e7bb5d365d3ef608832a6387a2fea586eec7bafab4a92f4e",
+        "saved_bytes": 6550198,
+        "methods": [
+          "UPX-9-LZMA on eligible executable ELF assets",
+          "7z LZMA2 ultra container"
+        ],
+        "upx_changes": [
+          {
+            "path": "dagger",
+            "before_bytes": 64393378,
+            "after_bytes": 15372196,
+            "before_sha256": "c6d08ba2edf34583844eecbf3ae0897127c0cc8377d151da56c66997cb503db2",
+            "after_sha256": "1b3d1c424baaed61095e2e3b823708cf7b82a16d1d5194e15a744ef09500657f",
+            "upx_test": "PASS",
+            "decompression_sha256_roundtrip": "PASS",
+            "method": "UPX-9-LZMA",
+            "relative_path": "dagger"
+          }
+        ],
+        "member_roundtrip": "PASS",
+        "runtime_path_repair": "PENDING_NEXT_PHASE"
+      }
     },
     {
       "id": "OPA_STATIC_LINUX_AMD64_CANDIDATE",
       "source_staging_path": "externalized-assets-staging/6-Sistema-Inteligente/Cognitive-CI-CD/opa_linux_amd64_static",
-      "placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/opa_linux_amd64_static",
+      "placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/opa_linux_amd64_static.7z",
       "source_version": "v1.21.3",
       "asset_kind": "binary",
-      "sha256": "add7c9dcf56e1ce1538426a6ee595ea1cc7ee830bbedd4c23219825b02b19a79",
-      "size_bytes": 64185579,
+      "sha256": "75957907b2f3b74820b20934a36a1d6d46a2561b58380873a59ccc4f23583628",
+      "size_bytes": 25273630,
       "exact_externalized_candidate": false,
-      "placement": "IN_CAJITA_SOURCE_TREE",
+      "placement": "IN_CAJITA_SOURCE_TREE_COMPRESSED_CONTAINER_REPAIR_PENDING",
       "included_in_current_macrodown_manifest": false,
-      "notes": "Official OPA v1.21.3 asset; externalized record had no pinned version and expected a different binary size/hash."
+      "notes": "Official OPA v1.21.3 asset; externalized record had no pinned version and expected a different binary size/hash. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending.",
+      "upstream_size_bytes": 64185579,
+      "upstream_sha256": "add7c9dcf56e1ce1538426a6ee595ea1cc7ee830bbedd4c23219825b02b19a79",
+      "optimization": {
+        "status": "COMPACTED_TO_7Z_REPAIR_PENDING",
+        "original_placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/opa_linux_amd64_static",
+        "original_size_bytes": 64185579,
+        "original_sha256": "add7c9dcf56e1ce1538426a6ee595ea1cc7ee830bbedd4c23219825b02b19a79",
+        "optimized_path": "cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/opa_linux_amd64_static.7z",
+        "optimized_size_bytes": 25273630,
+        "optimized_sha256": "75957907b2f3b74820b20934a36a1d6d46a2561b58380873a59ccc4f23583628",
+        "saved_bytes": 38911949,
+        "methods": [
+          "UPX-9-LZMA on eligible executable ELF assets",
+          "7z LZMA2 ultra container"
+        ],
+        "upx_changes": [
+          {
+            "path": "opa_linux_amd64_static",
+            "before_bytes": 64185579,
+            "after_bytes": 25271120,
+            "before_sha256": "add7c9dcf56e1ce1538426a6ee595ea1cc7ee830bbedd4c23219825b02b19a79",
+            "after_sha256": "6ad06683b6b732d6aa273dbe549061e8295482abb5f3f09133707296e5f0ef55",
+            "upx_test": "PASS",
+            "decompression_sha256_roundtrip": "PASS",
+            "method": "UPX-9-LZMA",
+            "relative_path": "opa_linux_amd64_static"
+          }
+        ],
+        "member_roundtrip": "PASS",
+        "runtime_path_repair": "PENDING_NEXT_PHASE"
+      }
     },
     {
       "id": "RQLITE_10_2_7_LINUX_AMD64",
       "source_staging_path": "externalized-assets-staging/6-Sistema-Inteligente/Migracion-y-Persistencia/rqlite-v10.2.7-linux-amd64.tar.gz",
-      "placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/rqlite-v10.2.7-linux-amd64.tar.gz",
+      "placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/rqlite-v10.2.7-linux-amd64.tar.gz.7z",
       "source_version": "v10.2.7",
       "asset_kind": "binary_archive",
-      "sha256": "0b4e8ffbbacc84e421c49915bbd82cc67ac6488e22d4ce58b678fc1219c6a38a",
-      "size_bytes": 17600273,
+      "sha256": "bd14c66472a595aa49788e5246715f840ff5964f3d624833f49055d06913f9ea",
+      "size_bytes": 12962199,
       "exact_externalized_candidate": true,
-      "placement": "IN_CAJITA_SOURCE_TREE",
+      "placement": "IN_CAJITA_SOURCE_TREE_COMPRESSED_CONTAINER_REPAIR_PENDING",
       "included_in_current_macrodown_manifest": false,
-      "notes": "Exact SHA-256 and size match with the externalization record."
+      "notes": "Exact SHA-256 and size match with the externalization record. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending.",
+      "upstream_size_bytes": 17600273,
+      "upstream_sha256": "0b4e8ffbbacc84e421c49915bbd82cc67ac6488e22d4ce58b678fc1219c6a38a",
+      "optimization": {
+        "status": "COMPACTED_TO_7Z_REPAIR_PENDING",
+        "original_placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/rqlite-v10.2.7-linux-amd64.tar.gz",
+        "original_size_bytes": 17600273,
+        "original_sha256": "0b4e8ffbbacc84e421c49915bbd82cc67ac6488e22d4ce58b678fc1219c6a38a",
+        "optimized_path": "cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/rqlite-v10.2.7-linux-amd64.tar.gz.7z",
+        "optimized_size_bytes": 12962199,
+        "optimized_sha256": "bd14c66472a595aa49788e5246715f840ff5964f3d624833f49055d06913f9ea",
+        "saved_bytes": 4638074,
+        "methods": [
+          "UPX-9-LZMA on eligible executable ELF assets",
+          "7z LZMA2 ultra container"
+        ],
+        "upx_changes": [
+          {
+            "path": "rqbench",
+            "before_bytes": 6263049,
+            "after_bytes": 1989052,
+            "before_sha256": "18aadbe76a74aa5031a788cefdc53c14c212a61fb6ca42995c46f5c42e8b09da",
+            "after_sha256": "713fb36bdbc41839d08a5ae9bd8a6ae9e1ca5947fe0e1ba5b335df3850ad0750",
+            "upx_test": "PASS",
+            "decompression_sha256_roundtrip": "PASS",
+            "method": "UPX-9-LZMA",
+            "relative_path": "rqlite-v10.2.7-linux-amd64/rqbench"
+          },
+          {
+            "path": "rqlite",
+            "before_bytes": 7635209,
+            "after_bytes": 2371564,
+            "before_sha256": "98b13c2c234245c9376a7720ba08d8df2523d08eeeb42343573236904a7722c9",
+            "after_sha256": "153b6f78a86f4b6e45c3931ed1b58c61ad7dffc09e7c5511ad113689eac9d803",
+            "upx_test": "PASS",
+            "decompression_sha256_roundtrip": "PASS",
+            "method": "UPX-9-LZMA",
+            "relative_path": "rqlite-v10.2.7-linux-amd64/rqlite"
+          },
+          {
+            "path": "rqlited",
+            "before_bytes": 35405496,
+            "after_bytes": 8609988,
+            "before_sha256": "175ad4a5e75aeb91281e30540ba9505b704ea856fb1d3d8312a60bc7ef4600ce",
+            "after_sha256": "a2d8b399e96a42f7e50a2fdacb8e43c05d06c77e8be0e03b206832a14d1124c2",
+            "upx_test": "PASS",
+            "decompression_sha256_roundtrip": "PASS",
+            "method": "UPX-9-LZMA",
+            "relative_path": "rqlite-v10.2.7-linux-amd64/rqlited"
+          }
+        ],
+        "member_roundtrip": "PASS",
+        "runtime_path_repair": "PENDING_NEXT_PHASE"
+      }
     },
     {
       "id": "SQLITE_SOURCE_3_53_4",
       "source_staging_path": "externalized-assets-staging/6-Sistema-Inteligente/Migracion-y-Persistencia/sqlite-src-3530400.zip",
-      "placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/sqlite-src-3530400.zip",
+      "placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/sqlite-src-3530400.zip.7z",
       "source_version": "3.53.4",
       "asset_kind": "source_archive",
-      "sha256": "d18fa15aec74d8c17e1463f861095adc01b5ad190256acb4f91d22f0368d232b",
-      "size_bytes": 14557315,
+      "sha256": "e0279eabebb520b4d0cc9abea1a63ff6372f3ba9264829da11b059d06b1dab1e",
+      "size_bytes": 7954439,
       "exact_externalized_candidate": true,
-      "placement": "IN_CAJITA_SOURCE_TREE",
+      "placement": "IN_CAJITA_SOURCE_TREE_COMPRESSED_CONTAINER_REPAIR_PENDING",
       "included_in_current_macrodown_manifest": false,
-      "notes": "Exact SHA-256 and size match with the externalization record."
+      "notes": "Exact SHA-256 and size match with the externalization record. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending.",
+      "upstream_size_bytes": 14557315,
+      "upstream_sha256": "d18fa15aec74d8c17e1463f861095adc01b5ad190256acb4f91d22f0368d232b",
+      "optimization": {
+        "status": "COMPACTED_TO_7Z_REPAIR_PENDING",
+        "original_placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/sqlite-src-3530400.zip",
+        "original_size_bytes": 14557315,
+        "original_sha256": "d18fa15aec74d8c17e1463f861095adc01b5ad190256acb4f91d22f0368d232b",
+        "optimized_path": "cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/sqlite-src-3530400.zip.7z",
+        "optimized_size_bytes": 7954439,
+        "optimized_sha256": "e0279eabebb520b4d0cc9abea1a63ff6372f3ba9264829da11b059d06b1dab1e",
+        "saved_bytes": 6602876,
+        "methods": [
+          "UPX-9-LZMA on eligible executable ELF assets",
+          "7z LZMA2 ultra container"
+        ],
+        "upx_changes": [],
+        "member_roundtrip": "PASS",
+        "runtime_path_repair": "PENDING_NEXT_PHASE"
+      }
     },
     {
       "id": "CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE",
       "source_staging_path": "externalized-assets-staging/6-Sistema-Inteligente/Portabilidad-base/cmake-4.4.3-windows-x86_64.zip",
-      "placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Portabilidad base/cmake-4.4.3-windows-x86_64.zip",
+      "placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Portabilidad base/cmake-4.4.3-windows-x86_64.zip.7z",
       "source_version": "4.4.3",
       "asset_kind": "binary_archive",
-      "sha256": "4d52ebab7193a698651639ed80d8d04fd903358843572cf44c7fd234cb7c26ab",
-      "size_bytes": 54408599,
+      "sha256": "fc8a06079563f1befb35204eee593a1c87ce405ffc8a8483cf769ae9feedbf37",
+      "size_bytes": 21310484,
       "exact_externalized_candidate": false,
-      "placement": "IN_CAJITA_SOURCE_TREE",
+      "placement": "IN_CAJITA_SOURCE_TREE_COMPRESSED_CONTAINER_REPAIR_PENDING",
       "included_in_current_macrodown_manifest": false,
-      "notes": "Official CMake v4.4.3 Windows ZIP; not the originally recorded .optimized.zip candidate."
+      "notes": "Official CMake v4.4.3 Windows ZIP; not the originally recorded .optimized.zip candidate. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending.",
+      "upstream_size_bytes": 54408599,
+      "upstream_sha256": "4d52ebab7193a698651639ed80d8d04fd903358843572cf44c7fd234cb7c26ab",
+      "optimization": {
+        "status": "COMPACTED_TO_7Z_REPAIR_PENDING",
+        "original_placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Portabilidad base/cmake-4.4.3-windows-x86_64.zip",
+        "original_size_bytes": 54408599,
+        "original_sha256": "4d52ebab7193a698651639ed80d8d04fd903358843572cf44c7fd234cb7c26ab",
+        "optimized_path": "cajita-luna-runtime/6. Sistema Inteligente/Portabilidad base/cmake-4.4.3-windows-x86_64.zip.7z",
+        "optimized_size_bytes": 21310484,
+        "optimized_sha256": "fc8a06079563f1befb35204eee593a1c87ce405ffc8a8483cf769ae9feedbf37",
+        "saved_bytes": 33098115,
+        "methods": [
+          "UPX-9-LZMA on eligible executable ELF assets",
+          "7z LZMA2 ultra container"
+        ],
+        "upx_changes": [],
+        "member_roundtrip": "PASS",
+        "runtime_path_repair": "PENDING_NEXT_PHASE"
+      }
     },
     {
       "id": "AVALONIA_12_1_1_NUGET",
       "source_staging_path": "externalized-assets-staging/6-Sistema-Inteligente/Runtime-Android-Windows/avalonia.12.1.1.nupkg",
-      "placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/avalonia.12.1.1.nupkg",
+      "placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/avalonia.12.1.1.nupkg.7z",
       "source_version": "12.1.1",
       "asset_kind": "package",
-      "sha256": "193bf6ae8b90293acb72bca8a1d62e8e46b460a48527f5f1f18f629073d9d77d",
-      "size_bytes": 10112805,
+      "sha256": "46ea1b444978950605f3cea2edaf2e7a9116e14ebd0db42f49f7582eff7ae66f",
+      "size_bytes": 3836434,
       "exact_externalized_candidate": true,
-      "placement": "IN_CAJITA_SOURCE_TREE",
+      "placement": "IN_CAJITA_SOURCE_TREE_COMPRESSED_CONTAINER_REPAIR_PENDING",
       "included_in_current_macrodown_manifest": false,
-      "notes": "Exact SHA-256 and size match with the externalization record."
+      "notes": "Exact SHA-256 and size match with the externalization record. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending.",
+      "upstream_size_bytes": 10112805,
+      "upstream_sha256": "193bf6ae8b90293acb72bca8a1d62e8e46b460a48527f5f1f18f629073d9d77d",
+      "optimization": {
+        "status": "COMPACTED_TO_7Z_REPAIR_PENDING",
+        "original_placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/avalonia.12.1.1.nupkg",
+        "original_size_bytes": 10112805,
+        "original_sha256": "193bf6ae8b90293acb72bca8a1d62e8e46b460a48527f5f1f18f629073d9d77d",
+        "optimized_path": "cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/avalonia.12.1.1.nupkg.7z",
+        "optimized_size_bytes": 3836434,
+        "optimized_sha256": "46ea1b444978950605f3cea2edaf2e7a9116e14ebd0db42f49f7582eff7ae66f",
+        "saved_bytes": 6276371,
+        "methods": [
+          "UPX-9-LZMA on eligible executable ELF assets",
+          "7z LZMA2 ultra container"
+        ],
+        "upx_changes": [],
+        "member_roundtrip": "PASS",
+        "runtime_path_repair": "PENDING_NEXT_PHASE"
+      }
     },
     {
       "id": "TAURI_2_11_5_SOURCE_ZIP",
       "source_staging_path": "externalized-assets-staging/6-Sistema-Inteligente/Runtime-Android-Windows/tauri-tauri-v2.11.5.zip",
-      "placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/tauri-tauri-v2.11.5.zip",
+      "placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/tauri-tauri-v2.11.5.zip.7z",
       "source_version": "tauri-v2.11.5",
       "asset_kind": "source_archive",
-      "sha256": "a85eb38b0ffc7b37b5c2eadbd637dc1206fb7f719bfe5b3ceca37ad5dac42cdd",
-      "size_bytes": 16117618,
+      "sha256": "04c9076f708683d66d36f56c643a284a4e3db70a9c08a7f66f3016b2531c39a8",
+      "size_bytes": 13078809,
       "exact_externalized_candidate": true,
-      "placement": "IN_CAJITA_SOURCE_TREE",
+      "placement": "IN_CAJITA_SOURCE_TREE_COMPRESSED_CONTAINER_REPAIR_PENDING",
       "included_in_current_macrodown_manifest": false,
-      "notes": "Exact SHA-256 and size match with the externalization record."
+      "notes": "Exact SHA-256 and size match with the externalization record. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending.",
+      "upstream_size_bytes": 16117618,
+      "upstream_sha256": "a85eb38b0ffc7b37b5c2eadbd637dc1206fb7f719bfe5b3ceca37ad5dac42cdd",
+      "optimization": {
+        "status": "COMPACTED_TO_7Z_REPAIR_PENDING",
+        "original_placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/tauri-tauri-v2.11.5.zip",
+        "original_size_bytes": 16117618,
+        "original_sha256": "a85eb38b0ffc7b37b5c2eadbd637dc1206fb7f719bfe5b3ceca37ad5dac42cdd",
+        "optimized_path": "cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/tauri-tauri-v2.11.5.zip.7z",
+        "optimized_size_bytes": 13078809,
+        "optimized_sha256": "04c9076f708683d66d36f56c643a284a4e3db70a9c08a7f66f3016b2531c39a8",
+        "saved_bytes": 3038809,
+        "methods": [
+          "UPX-9-LZMA on eligible executable ELF assets",
+          "7z LZMA2 ultra container"
+        ],
+        "upx_changes": [],
+        "member_roundtrip": "PASS",
+        "runtime_path_repair": "PENDING_NEXT_PHASE"
+      }
     }
   ],
   "constraints": [
@@ -151,5 +399,333 @@
     "The deterministic builder recursively includes files below cajita-luna-runtime and will fail the 479,000,000-byte raw cap while all ten assets and the current payload coexist.",
     "Rebalance the raw payload before building a new .macrodown; preserve the prior package candidate and its manifest.",
     "ONNX Runtime 1.29.0, OPA v1.21.3, and the official CMake v4.4.3 ZIP are recorded as source candidates, not byte-identical replacements for the externalized records. The CMake file is deliberately not mislabeled as optimized."
-  ]
+  ],
+  "compaction_pass": {
+    "completed_at_utc": "2026-10-23T17:20:11.617880+00:00",
+    "algorithm": "FORMAT_AWARE_MAX_COMPRESSION",
+    "targeted_assets": 10,
+    "old_model_weight_paths_mutated": [],
+    "legacy_weight_protection": "PASS",
+    "new_asset_original_bytes": 286535330,
+    "new_asset_final_bytes": 165250049,
+    "new_asset_saved_bytes": 121285281,
+    "per_asset_results": [
+      {
+        "id": "OPA_STATIC_LINUX_AMD64_CANDIDATE",
+        "source_path": "cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/opa_linux_amd64_static",
+        "source_bytes": 64185579,
+        "source_sha256": "add7c9dcf56e1ce1538426a6ee595ea1cc7ee830bbedd4c23219825b02b19a79",
+        "staging_rollback_path": "externalized-assets-staging/6-Sistema-Inteligente/Cognitive-CI-CD/opa_linux_amd64_static",
+        "staging_rollback_sha256": "add7c9dcf56e1ce1538426a6ee595ea1cc7ee830bbedd4c23219825b02b19a79",
+        "source_version": "v1.21.3",
+        "asset_kind": "binary",
+        "archive_format": "standalone binary or opaque payload",
+        "upx_changes": [
+          {
+            "path": "opa_linux_amd64_static",
+            "before_bytes": 64185579,
+            "after_bytes": 25271120,
+            "before_sha256": "add7c9dcf56e1ce1538426a6ee595ea1cc7ee830bbedd4c23219825b02b19a79",
+            "after_sha256": "6ad06683b6b732d6aa273dbe549061e8295482abb5f3f09133707296e5f0ef55",
+            "upx_test": "PASS",
+            "decompression_sha256_roundtrip": "PASS",
+            "method": "UPX-9-LZMA",
+            "relative_path": "opa_linux_amd64_static"
+          }
+        ],
+        "method": [
+          "UPX-9-LZMA on eligible executable ELF assets",
+          "7z LZMA2 ultra container"
+        ],
+        "candidate_7z_bytes": 25273630,
+        "candidate_7z_sha256": "75957907b2f3b74820b20934a36a1d6d46a2561b58380873a59ccc4f23583628",
+        "candidate_roundtrip": "PASS",
+        "verified_member_count": 1,
+        "status": "COMPACTED_TO_7Z_REPAIR_PENDING",
+        "final_path": "cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/opa_linux_amd64_static.7z",
+        "final_bytes": 25273630,
+        "final_sha256": "75957907b2f3b74820b20934a36a1d6d46a2561b58380873a59ccc4f23583628",
+        "saved_bytes": 38911949
+      },
+      {
+        "id": "CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE",
+        "source_path": "cajita-luna-runtime/6. Sistema Inteligente/Portabilidad base/cmake-4.4.3-windows-x86_64.zip",
+        "source_bytes": 54408599,
+        "source_sha256": "4d52ebab7193a698651639ed80d8d04fd903358843572cf44c7fd234cb7c26ab",
+        "staging_rollback_path": "externalized-assets-staging/6-Sistema-Inteligente/Portabilidad-base/cmake-4.4.3-windows-x86_64.zip",
+        "staging_rollback_sha256": "4d52ebab7193a698651639ed80d8d04fd903358843572cf44c7fd234cb7c26ab",
+        "source_version": "4.4.3",
+        "asset_kind": "binary_archive",
+        "archive_format": "zip-compatible (zip/whl/nupkg)",
+        "upx_changes": [],
+        "method": [
+          "UPX-9-LZMA on eligible executable ELF assets",
+          "7z LZMA2 ultra container"
+        ],
+        "candidate_7z_bytes": 21310484,
+        "candidate_7z_sha256": "fc8a06079563f1befb35204eee593a1c87ce405ffc8a8483cf769ae9feedbf37",
+        "candidate_roundtrip": "PASS",
+        "verified_member_count": 8819,
+        "status": "COMPACTED_TO_7Z_REPAIR_PENDING",
+        "final_path": "cajita-luna-runtime/6. Sistema Inteligente/Portabilidad base/cmake-4.4.3-windows-x86_64.zip.7z",
+        "final_bytes": 21310484,
+        "final_sha256": "fc8a06079563f1befb35204eee593a1c87ce405ffc8a8483cf769ae9feedbf37",
+        "saved_bytes": 33098115
+      },
+      {
+        "id": "PLAYWRIGHT_1_63_0_SOURCE",
+        "source_path": "cajita-luna-runtime/2. Orquestación/Orquestador/playwright-1.63.0.tar.gz",
+        "source_bytes": 40525667,
+        "source_sha256": "bc3d50b5a6c51cd401b2b4a71514be75ffd91223e129abcee51b8913746e4c6d",
+        "staging_rollback_path": "externalized-assets-staging/2-Orquestacion/Orquestador/playwright-1.63.0.tar.gz",
+        "staging_rollback_sha256": "bc3d50b5a6c51cd401b2b4a71514be75ffd91223e129abcee51b8913746e4c6d",
+        "source_version": "v1.63.0",
+        "asset_kind": "source_archive",
+        "archive_format": "tar archive",
+        "upx_changes": [],
+        "method": [
+          "UPX-9-LZMA on eligible executable ELF assets",
+          "7z LZMA2 ultra container"
+        ],
+        "candidate_7z_bytes": 32133546,
+        "candidate_7z_sha256": "395141a67bce645b0aa37cecb202b0762273bdb4f79c8a2cab2967a93a78dc14",
+        "candidate_roundtrip": "PASS",
+        "verified_member_count": 3093,
+        "status": "COMPACTED_TO_7Z_REPAIR_PENDING",
+        "final_path": "cajita-luna-runtime/2. Orquestación/Orquestador/playwright-1.63.0.tar.gz.7z",
+        "final_bytes": 32133546,
+        "final_sha256": "395141a67bce645b0aa37cecb202b0762273bdb4f79c8a2cab2967a93a78dc14",
+        "saved_bytes": 8392121
+      },
+      {
+        "id": "APACHE_JENA_6_2_0",
+        "source_path": "cajita-luna-runtime/2. Orquestación/Multi + Interdisciplinar/apache-jena-6.2.0.tar.gz",
+        "source_bytes": 23986647,
+        "source_sha256": "14c12ef4aa2f0078a473be4b10b015e0e0b85e767d6867e8581679de8fec3f6e",
+        "staging_rollback_path": "externalized-assets-staging/2-Orquestacion/Multi-Interdisciplinar/apache-jena-6.2.0.tar.gz",
+        "staging_rollback_sha256": "14c12ef4aa2f0078a473be4b10b015e0e0b85e767d6867e8581679de8fec3f6e",
+        "source_version": "6.2.0",
+        "asset_kind": "source_archive",
+        "archive_format": "tar archive",
+        "upx_changes": [],
+        "method": [
+          "UPX-9-LZMA on eligible executable ELF assets",
+          "7z LZMA2 ultra container"
+        ],
+        "candidate_7z_bytes": 23103199,
+        "candidate_7z_sha256": "a26d64b241bc7b125725d9a8ac377c74df6b4565a51a3f7fb66a5bda63ffa77a",
+        "candidate_roundtrip": "PASS",
+        "verified_member_count": 251,
+        "status": "COMPACTED_TO_7Z_REPAIR_PENDING",
+        "final_path": "cajita-luna-runtime/2. Orquestación/Multi + Interdisciplinar/apache-jena-6.2.0.tar.gz.7z",
+        "final_bytes": 23103199,
+        "final_sha256": "a26d64b241bc7b125725d9a8ac377c74df6b4565a51a3f7fb66a5bda63ffa77a",
+        "saved_bytes": 883448
+      },
+      {
+        "id": "ONNX_RUNTIME_1_29_0_CP311",
+        "source_path": "cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/onnxruntime-1.29.0-cp311-cp311-manylinux_2_28_x86_64.whl",
+        "source_bytes": 23113193,
+        "source_sha256": "85f8e8406c52658735fe5c7fbfd3ebaa1ed340768324f6252e4274e374580a23",
+        "staging_rollback_path": "externalized-assets-staging/6-Sistema-Inteligente/Anti-Alucinaciones/onnxruntime-1.29.0-cp311-cp311-manylinux_2_28_x86_64.whl",
+        "staging_rollback_sha256": "85f8e8406c52658735fe5c7fbfd3ebaa1ed340768324f6252e4274e374580a23",
+        "source_version": "1.29.0",
+        "asset_kind": "binary_wheel",
+        "archive_format": "zip-compatible (zip/whl/nupkg)",
+        "upx_changes": [],
+        "method": [
+          "UPX-9-LZMA on eligible executable ELF assets",
+          "7z LZMA2 ultra container"
+        ],
+        "candidate_7z_bytes": 10219873,
+        "candidate_7z_sha256": "d13eebe3214d7e47fed0258e58e9cbb88d33172c31d8ca62dd70dc378660a26b",
+        "candidate_roundtrip": "PASS",
+        "verified_member_count": 322,
+        "status": "COMPACTED_TO_7Z_REPAIR_PENDING",
+        "final_path": "cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/onnxruntime-1.29.0-cp311-cp311-manylinux_2_28_x86_64.whl.7z",
+        "final_bytes": 10219873,
+        "final_sha256": "d13eebe3214d7e47fed0258e58e9cbb88d33172c31d8ca62dd70dc378660a26b",
+        "saved_bytes": 12893320
+      },
+      {
+        "id": "DAGGER_0_21_8_LINUX_AMD64",
+        "source_path": "cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/dagger_v0.21.8_linux_amd64.tar.gz",
+        "source_bytes": 21927634,
+        "source_sha256": "53e226c7da8fb75171e58c35759d736d961ce8b3a12db0baa7b7107954fccc5a",
+        "staging_rollback_path": "externalized-assets-staging/6-Sistema-Inteligente/Cognitive-CI-CD/dagger_v0.21.8_linux_amd64.tar.gz",
+        "staging_rollback_sha256": "53e226c7da8fb75171e58c35759d736d961ce8b3a12db0baa7b7107954fccc5a",
+        "source_version": "v0.21.8",
+        "asset_kind": "binary_archive",
+        "archive_format": "tar archive",
+        "upx_changes": [
+          {
+            "path": "dagger",
+            "before_bytes": 64393378,
+            "after_bytes": 15372196,
+            "before_sha256": "c6d08ba2edf34583844eecbf3ae0897127c0cc8377d151da56c66997cb503db2",
+            "after_sha256": "1b3d1c424baaed61095e2e3b823708cf7b82a16d1d5194e15a744ef09500657f",
+            "upx_test": "PASS",
+            "decompression_sha256_roundtrip": "PASS",
+            "method": "UPX-9-LZMA",
+            "relative_path": "dagger"
+          }
+        ],
+        "method": [
+          "UPX-9-LZMA on eligible executable ELF assets",
+          "7z LZMA2 ultra container"
+        ],
+        "candidate_7z_bytes": 15377436,
+        "candidate_7z_sha256": "bb95a9e4580009f3e7bb5d365d3ef608832a6387a2fea586eec7bafab4a92f4e",
+        "candidate_roundtrip": "PASS",
+        "verified_member_count": 2,
+        "status": "COMPACTED_TO_7Z_REPAIR_PENDING",
+        "final_path": "cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/dagger_v0.21.8_linux_amd64.tar.gz.7z",
+        "final_bytes": 15377436,
+        "final_sha256": "bb95a9e4580009f3e7bb5d365d3ef608832a6387a2fea586eec7bafab4a92f4e",
+        "saved_bytes": 6550198
+      },
+      {
+        "id": "RQLITE_10_2_7_LINUX_AMD64",
+        "source_path": "cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/rqlite-v10.2.7-linux-amd64.tar.gz",
+        "source_bytes": 17600273,
+        "source_sha256": "0b4e8ffbbacc84e421c49915bbd82cc67ac6488e22d4ce58b678fc1219c6a38a",
+        "staging_rollback_path": "externalized-assets-staging/6-Sistema-Inteligente/Migracion-y-Persistencia/rqlite-v10.2.7-linux-amd64.tar.gz",
+        "staging_rollback_sha256": "0b4e8ffbbacc84e421c49915bbd82cc67ac6488e22d4ce58b678fc1219c6a38a",
+        "source_version": "v10.2.7",
+        "asset_kind": "binary_archive",
+        "archive_format": "tar archive",
+        "upx_changes": [
+          {
+            "path": "rqbench",
+            "before_bytes": 6263049,
+            "after_bytes": 1989052,
+            "before_sha256": "18aadbe76a74aa5031a788cefdc53c14c212a61fb6ca42995c46f5c42e8b09da",
+            "after_sha256": "713fb36bdbc41839d08a5ae9bd8a6ae9e1ca5947fe0e1ba5b335df3850ad0750",
+            "upx_test": "PASS",
+            "decompression_sha256_roundtrip": "PASS",
+            "method": "UPX-9-LZMA",
+            "relative_path": "rqlite-v10.2.7-linux-amd64/rqbench"
+          },
+          {
+            "path": "rqlite",
+            "before_bytes": 7635209,
+            "after_bytes": 2371564,
+            "before_sha256": "98b13c2c234245c9376a7720ba08d8df2523d08eeeb42343573236904a7722c9",
+            "after_sha256": "153b6f78a86f4b6e45c3931ed1b58c61ad7dffc09e7c5511ad113689eac9d803",
+            "upx_test": "PASS",
+            "decompression_sha256_roundtrip": "PASS",
+            "method": "UPX-9-LZMA",
+            "relative_path": "rqlite-v10.2.7-linux-amd64/rqlite"
+          },
+          {
+            "path": "rqlited",
+            "before_bytes": 35405496,
+            "after_bytes": 8609988,
+            "before_sha256": "175ad4a5e75aeb91281e30540ba9505b704ea856fb1d3d8312a60bc7ef4600ce",
+            "after_sha256": "a2d8b399e96a42f7e50a2fdacb8e43c05d06c77e8be0e03b206832a14d1124c2",
+            "upx_test": "PASS",
+            "decompression_sha256_roundtrip": "PASS",
+            "method": "UPX-9-LZMA",
+            "relative_path": "rqlite-v10.2.7-linux-amd64/rqlited"
+          }
+        ],
+        "method": [
+          "UPX-9-LZMA on eligible executable ELF assets",
+          "7z LZMA2 ultra container"
+        ],
+        "candidate_7z_bytes": 12962199,
+        "candidate_7z_sha256": "bd14c66472a595aa49788e5246715f840ff5964f3d624833f49055d06913f9ea",
+        "candidate_roundtrip": "PASS",
+        "verified_member_count": 3,
+        "status": "COMPACTED_TO_7Z_REPAIR_PENDING",
+        "final_path": "cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/rqlite-v10.2.7-linux-amd64.tar.gz.7z",
+        "final_bytes": 12962199,
+        "final_sha256": "bd14c66472a595aa49788e5246715f840ff5964f3d624833f49055d06913f9ea",
+        "saved_bytes": 4638074
+      },
+      {
+        "id": "TAURI_2_11_5_SOURCE_ZIP",
+        "source_path": "cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/tauri-tauri-v2.11.5.zip",
+        "source_bytes": 16117618,
+        "source_sha256": "a85eb38b0ffc7b37b5c2eadbd637dc1206fb7f719bfe5b3ceca37ad5dac42cdd",
+        "staging_rollback_path": "externalized-assets-staging/6-Sistema-Inteligente/Runtime-Android-Windows/tauri-tauri-v2.11.5.zip",
+        "staging_rollback_sha256": "a85eb38b0ffc7b37b5c2eadbd637dc1206fb7f719bfe5b3ceca37ad5dac42cdd",
+        "source_version": "tauri-v2.11.5",
+        "asset_kind": "source_archive",
+        "archive_format": "zip-compatible (zip/whl/nupkg)",
+        "upx_changes": [],
+        "method": [
+          "UPX-9-LZMA on eligible executable ELF assets",
+          "7z LZMA2 ultra container"
+        ],
+        "candidate_7z_bytes": 13078809,
+        "candidate_7z_sha256": "04c9076f708683d66d36f56c643a284a4e3db70a9c08a7f66f3016b2531c39a8",
+        "candidate_roundtrip": "PASS",
+        "verified_member_count": 1058,
+        "status": "COMPACTED_TO_7Z_REPAIR_PENDING",
+        "final_path": "cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/tauri-tauri-v2.11.5.zip.7z",
+        "final_bytes": 13078809,
+        "final_sha256": "04c9076f708683d66d36f56c643a284a4e3db70a9c08a7f66f3016b2531c39a8",
+        "saved_bytes": 3038809
+      },
+      {
+        "id": "SQLITE_SOURCE_3_53_4",
+        "source_path": "cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/sqlite-src-3530400.zip",
+        "source_bytes": 14557315,
+        "source_sha256": "d18fa15aec74d8c17e1463f861095adc01b5ad190256acb4f91d22f0368d232b",
+        "staging_rollback_path": "externalized-assets-staging/6-Sistema-Inteligente/Migracion-y-Persistencia/sqlite-src-3530400.zip",
+        "staging_rollback_sha256": "d18fa15aec74d8c17e1463f861095adc01b5ad190256acb4f91d22f0368d232b",
+        "source_version": "3.53.4",
+        "asset_kind": "source_archive",
+        "archive_format": "zip-compatible (zip/whl/nupkg)",
+        "upx_changes": [],
+        "method": [
+          "UPX-9-LZMA on eligible executable ELF assets",
+          "7z LZMA2 ultra container"
+        ],
+        "candidate_7z_bytes": 7954439,
+        "candidate_7z_sha256": "e0279eabebb520b4d0cc9abea1a63ff6372f3ba9264829da11b059d06b1dab1e",
+        "candidate_roundtrip": "PASS",
+        "verified_member_count": 2208,
+        "status": "COMPACTED_TO_7Z_REPAIR_PENDING",
+        "final_path": "cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/sqlite-src-3530400.zip.7z",
+        "final_bytes": 7954439,
+        "final_sha256": "e0279eabebb520b4d0cc9abea1a63ff6372f3ba9264829da11b059d06b1dab1e",
+        "saved_bytes": 6602876
+      },
+      {
+        "id": "AVALONIA_12_1_1_NUGET",
+        "source_path": "cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/avalonia.12.1.1.nupkg",
+        "source_bytes": 10112805,
+        "source_sha256": "193bf6ae8b90293acb72bca8a1d62e8e46b460a48527f5f1f18f629073d9d77d",
+        "staging_rollback_path": "externalized-assets-staging/6-Sistema-Inteligente/Runtime-Android-Windows/avalonia.12.1.1.nupkg",
+        "staging_rollback_sha256": "193bf6ae8b90293acb72bca8a1d62e8e46b460a48527f5f1f18f629073d9d77d",
+        "source_version": "12.1.1",
+        "asset_kind": "package",
+        "archive_format": "zip-compatible (zip/whl/nupkg)",
+        "upx_changes": [],
+        "method": [
+          "UPX-9-LZMA on eligible executable ELF assets",
+          "7z LZMA2 ultra container"
+        ],
+        "candidate_7z_bytes": 3836434,
+        "candidate_7z_sha256": "46ea1b444978950605f3cea2edaf2e7a9116e14ebd0db42f49f7582eff7ae66f",
+        "candidate_roundtrip": "PASS",
+        "verified_member_count": 121,
+        "status": "COMPACTED_TO_7Z_REPAIR_PENDING",
+        "final_path": "cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/avalonia.12.1.1.nupkg.7z",
+        "final_bytes": 3836434,
+        "final_sha256": "46ea1b444978950605f3cea2edaf2e7a9116e14ebd0db42f49f7582eff7ae66f",
+        "saved_bytes": 6276371
+      }
+    ],
+    "sevenzip_version_lines": [
+      "",
+      "7-Zip 23.01 (x64) : Copyright (c) 1999-2023 Igor Pavlov : 2023-06-20",
+      " 64-bit locale=C.UTF-8 Threads:4 OPEN_MAX:65536"
+    ],
+    "upx_version": "upx 4.2.2",
+    "functional_repair": "NOT_PERFORMED_BY_ORDER",
+    "certification": "NOT_GRANTED"
+  }
 }
