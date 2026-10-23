@@ -557,18 +557,10 @@ def build_db(
             "INSERT INTO verses(book_id,chapter_number,verse_number,verse_suffix,verse_id,text,source_start_page,source_end_page) VALUES(?,?,?,?,?,?,?,?)",
             (BOOK_ORDER[row["book"]],row["chapter"],row["verse_number"],row["verse_suffix"],row["verse_id"],row["text"],row["source_start_page"],row["source_end_page"])
         )
+    # Keep the distribution database compact: reference indexes are bundled.
+    # FTS5 is tested separately in transient memory and is not copied into the core.
     fts_available=False
     fts_error=None
-    try:
-        conn.execute("CREATE VIRTUAL TABLE verses_fts USING fts5(verse_id UNINDEXED, text, tokenize='unicode61 remove_diacritics 2')")
-        conn.execute("INSERT INTO verses_fts(verse_id,text) SELECT verse_id,text FROM verses")
-        fts_count=conn.execute("SELECT COUNT(*) FROM verses_fts").fetchone()[0]
-        fts_available=(fts_count==conn.execute("SELECT COUNT(*) FROM verses").fetchone()[0])
-        if not fts_available:
-            fts_error="FTS_ROW_COUNT_MISMATCH"
-    except sqlite3.OperationalError as exc:
-        fts_error=type(exc).__name__
-        fts_available=False
 
     expected_text_stream=" ".join("".join(captured_stream_parts).split())
     stored_text_stream=" ".join(" ".join(row["text"] for row in verse_rows if row["text"]).split())
@@ -691,7 +683,8 @@ def build_db(
         "post_canon_pages_excluded_from_scripture":1360-main_bible_end_page if main_bible_end_page else None,
         "duplicate_marker_events":len(duplicate_markers),
         "source_unmarked_reference_count":len(source_unmarked_references),
-        "fts5_enabled":fts_available,
+        "fts5_enabled":False,
+        "full_text_index_policy":"OPTIONAL_TRANSIENT_FTS5_PROTOTYPE_NOT_BUNDLED_IN_CORE",
         "text_roundtrip_whitespace_normalized_exact":text_stream_exact,
         "captured_text_characters":len(expected_text_stream),
         "stored_text_characters":len(stored_text_stream),
@@ -717,15 +710,13 @@ def build_db(
         if (item["book"],item["chapter"],1) not in source_gap_keys
     ]
     reference_query_tests=run_query_tests(output)
-    full_text_query_test=run_full_text_query_test(output) if fts_available else {
-        "passed":False,"reason":"FTS5_UNAVAILABLE","text_emitted":False
-    }
+    full_text_query_test=run_full_text_query_test(output)
     structural_pass=(
         books_count==66 and chapter_count==1189
         and not missing_expected_chapters and duplicate_keys==0 and integrity=="ok"
         and len(duplicate_markers)==0 and not unexplained_missing_first_verses
         and not empty_verses and reference_gap_reconciliation_pass
-        and text_stream_exact and fts_available
+        and text_stream_exact
         and reference_query_tests["passed"]==reference_query_tests["cases"]
         and full_text_query_test.get("passed",False)
     )
@@ -783,22 +774,34 @@ def build_db(
 
 
 def run_full_text_query_test(path: Path) -> dict[str,Any]:
-    con=sqlite3.connect(str(path))
-    first=con.execute("SELECT text FROM verses WHERE length(trim(text))>0 ORDER BY book_id,chapter_number,verse_number LIMIT 1").fetchone()
-    if not first:
-        con.close()
-        return {"passed":False,"reason":"NO_NONEMPTY_VERSE","text_emitted":False}
-    tokens=re.findall(r"[^\W_]{4,}",first[0],flags=re.UNICODE)
+    source=sqlite3.connect(str(path))
+    rows=source.execute(
+        "SELECT verse_id,text FROM verses WHERE length(trim(text))>0 ORDER BY book_id,chapter_number,verse_number,verse_suffix"
+    ).fetchall()
+    source.close()
+    if not rows:
+        return {"passed":False,"reason":"NO_NONEMPTY_VERSE","text_emitted":False,"bundled_in_core_database":False}
+    tokens=re.findall(r"[^\W_]{4,}",rows[0][1],flags=re.UNICODE)
     query=tokens[0] if tokens else None
     if not query:
-        con.close()
-        return {"passed":False,"reason":"NO_SEARCHABLE_TOKEN","text_emitted":False}
+        return {"passed":False,"reason":"NO_SEARCHABLE_TOKEN","text_emitted":False,"bundled_in_core_database":False}
+    con=sqlite3.connect(":memory:")
     try:
+        con.execute("CREATE VIRTUAL TABLE verses_fts USING fts5(verse_id UNINDEXED, text, tokenize='unicode61 remove_diacritics 2')")
+        con.executemany("INSERT INTO verses_fts(verse_id,text) VALUES(?,?)",rows)
         row=con.execute("SELECT verse_id FROM verses_fts WHERE verses_fts MATCH ? LIMIT 1",(query,)).fetchone()
         passed=bool(row and row[0])
-        result={"passed":passed,"query_token_length":len(query),"match_found":passed,"text_emitted":False}
+        result={
+            "passed":passed,
+            "query_token_length":len(query),
+            "match_found":passed,
+            "indexed_verse_count":len(rows),
+            "bundled_in_core_database":False,
+            "mode":"TRANSIENT_IN_MEMORY_PROTOTYPE",
+            "text_emitted":False
+        }
     except sqlite3.OperationalError as exc:
-        result={"passed":False,"reason":type(exc).__name__,"text_emitted":False}
+        result={"passed":False,"reason":type(exc).__name__,"text_emitted":False,"bundled_in_core_database":False}
     con.close()
     return result
 
