@@ -40,6 +40,7 @@ class CajitaRouterTests(unittest.TestCase):
         self.assertIsNone(normalize_command("/PLAY EMA"))
         self.assertIsNone(normalize_command("/HELP"))
         self.assertIsNone(normalize_command("/play UNKNOWN"))
+        self.assertIsNone(normalize_command("/play  PT"))
 
     def test_unknown_command_fails_closed(self):
         result = build_plan("/play UNKNOWN haz algo")
@@ -59,6 +60,8 @@ class CajitaRouterTests(unittest.TestCase):
         self.assertEqual(result["route_command"], "/play traductor")
         self.assertEqual(result["engines"], route["engines"])
         self.assertEqual(result["agents"], route["agents"])
+        self.assertTrue(result["canonical_rationale"])
+        self.assertTrue(result["extension_families"])
         self.assertIn("D04_TRADUCCION_GENERAL", [target["id"] for target in result["selected_targets"]])
         self.assertEqual(result["domain_sequence"][:2], ["D01_CEREBRO", "D02_ORQUESTACION"])
 
