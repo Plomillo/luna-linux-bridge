@@ -116,37 +116,46 @@ def main():
    row["status"]="MODEL_PAYLOADS_FOUND" if row["model_payloads_found"] else "NO_NEURAL_MODEL_PAYLOAD_FOUND"
    rows.append(row)
   if onnx:
-   p=subprocess.run([sys.executable,"-m","pip","install","--disable-pip-version-check","onnx","onnxruntime"],
-     stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True)
+   deps=OUT.parent/"cajita_quantizer_python_deps"
+   p=subprocess.run([sys.executable,"-m","pip","install","--disable-pip-version-check","--upgrade",
+     "--target",str(deps),"onnx","onnxruntime"],stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True)
    if p.returncode:
     for aid,model,h in onnx:
      next(r for r in rows if r["asset_id"]==aid)["quantization_results"].append(
-      {"source_sha256":h,"status":"BLOCKED_QUANTIZER_INSTALL_FAILED","log_tail":p.stdout[-1500:]})
+      {"source_sha256":h,"status":"BLOCKED_QUANTIZER_INSTALL_FAILED","log_tail":p.stdout[-2500:]})
    else:
-    import onnx, onnxruntime as ort
-    from onnxruntime.quantization import quantize_dynamic, QuantType
-    for ix,(aid,model,orig_hash) in enumerate(onnx):
-     target=next(r for r in rows if r["asset_id"]==aid)
-     q=OUT/aid/f"{ix:03d}_{model.stem}.int8.onnx";q.parent.mkdir(parents=True,exist_ok=True)
-     try:
-      onnx.load(str(model),load_external_data=True)
-      quantize_dynamic(str(model),str(q),weight_type=QuantType.QInt8)
-      onnx.checker.check_model(str(q),full_check=False)
-      sess=ort.InferenceSession(str(q),providers=["CPUExecutionProvider"])
-      before,after=model.stat().st_size,q.stat().st_size
-      target["quantization_results"].append({
-       "source_sha256":orig_hash,"candidate_artifact_path":str(q.relative_to(OUT.parent)),
-       "candidate_sha256":sha(q),"original_bytes":before,"candidate_bytes":after,
-       "saved_bytes":before-after,"quantization":"ONNX_DYNAMIC_INT8",
-       "graph_check":"PASS","cpu_session_load":"PASS",
-       "inputs":[v.name for v in sess.get_inputs()],"outputs":[v.name for v in sess.get_outputs()],
-       "status":"QUANTIZED_CANDIDATE_SMALLER" if after<before else "QUANTIZED_CANDIDATE_NOT_SMALLER",
-       "runtime_replacement":"NOT_PROMOTED_WITHOUT_GOLDEN_EQUIVALENCE_TESTS"})
-     except Exception as e:
-      if q.exists():q.unlink()
-      target["quantization_results"].append({"source_sha256":orig_hash,
-       "quantization":"ONNX_DYNAMIC_INT8","status":"QUANTIZATION_OR_VALIDATION_FAILED",
-       "error":f"{type(e).__name__}: {e}"[:1500]})
+    sys.path.insert(0,str(deps))
+    try:
+     import onnx, onnxruntime as ort
+     from onnxruntime.quantization import quantize_dynamic, QuantType
+    except Exception as import_error:
+     for aid,model,h in onnx:
+      next(r for r in rows if r["asset_id"]==aid)["quantization_results"].append(
+       {"source_sha256":h,"status":"BLOCKED_QUANTIZER_IMPORT_FAILED",
+        "error":f"{type(import_error).__name__}: {import_error}","install_log_tail":p.stdout[-2500:]})
+    else:
+     for ix,(aid,model,orig_hash) in enumerate(onnx):
+      target=next(r for r in rows if r["asset_id"]==aid)
+      q=OUT/aid/f"{ix:03d}_{model.stem}.int8.onnx";q.parent.mkdir(parents=True,exist_ok=True)
+      try:
+       onnx.load(str(model),load_external_data=True)
+       quantize_dynamic(str(model),str(q),weight_type=QuantType.QInt8)
+       onnx.checker.check_model(str(q),full_check=False)
+       sess=ort.InferenceSession(str(q),providers=["CPUExecutionProvider"])
+       before,after=model.stat().st_size,q.stat().st_size
+       target["quantization_results"].append({
+        "source_sha256":orig_hash,"candidate_artifact_path":str(q.relative_to(OUT.parent)),
+        "candidate_sha256":sha(q),"original_bytes":before,"candidate_bytes":after,
+        "saved_bytes":before-after,"quantization":"ONNX_DYNAMIC_INT8",
+        "graph_check":"PASS","cpu_session_load":"PASS",
+        "inputs":[v.name for v in sess.get_inputs()],"outputs":[v.name for v in sess.get_outputs()],
+        "status":"QUANTIZED_CANDIDATE_SMALLER" if after<before else "QUANTIZED_CANDIDATE_NOT_SMALLER",
+        "runtime_replacement":"NOT_PROMOTED_WITHOUT_GOLDEN_EQUIVALENCE_TESTS"})
+      except Exception as e:
+       if q.exists():q.unlink()
+       target["quantization_results"].append({"source_sha256":orig_hash,
+        "quantization":"ONNX_DYNAMIC_INT8","status":"QUANTIZATION_OR_VALIDATION_FAILED",
+        "error":f"{type(e).__name__}: {e}"[:1500]})
  models=sum(len(r["model_payloads_found"]) for r in rows)
  wins=sum(q.get("status")=="QUANTIZED_CANDIDATE_SMALLER" for r in rows for q in r["quantization_results"])
  report={"schema":"CAJITA_NEW_ENGINE_MODEL_QUANTIZATION/1.0","audit_id":"CAJITA_NEW_ENGINE_QUANTIZATION_20261023",
