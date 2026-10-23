@@ -81,8 +81,22 @@ Los diez archivos siguientes están presentes físicamente bajo sus rutas intern
 - **Integridad criptográfica:** el registro estructurado conserva los SHA-256 de los artefactos. Para los tres candidatos alternativos, el hash identifica el candidato oficial recuperado y no acredita identidad con el artefacto externalizado original.
 - **Integración funcional:** NO VERIFICADA. La colocación física no equivale a instalación, enlace con adaptadores, pruebas de ejecución ni certificación de los motores.
 - **Inclusión en el manifiesto de distribución previo:** NO. `MACRODOWN_MANIFEST.json` corresponde al snapshot anterior y no debe reinterpretarse como si ya enumerara estos diez archivos.
-- **Puerta bruta del paquete:** BLOQUEADA. El payload anterior registrado era 476.525.572 bytes. Los diez activos suman 286.535.330 bytes; la proyección asciende a 763.060.902 bytes antes del crecimiento del manifiesto regenerado, es decir, **284.060.902 bytes por encima** del máximo de 479.000.000. `reproduce_macrodown.py` denegará el build mientras se mantenga este exceso.
+- **Puerta bruta del paquete:** pendiente de reconciliación y reconstrucción. La auditoría completa del árbol, diferenciando los punteros Git LFS de sus objetos declarados, queda registrada en `../docs/cajita-luna/CAJITA_FORENSIC_PAYLOAD_AUDIT_20261023.json`. No se deben tomar las cifras del manifiesto estático anterior como inventario del árbol actual.
 - **Estado del artefacto distribuible:** NO RECONSTRUIDO ni certificado con estos activos. No se actualiza el manifiesto anterior para fingir una inclusión ya empaquetada. La regeneración debe producir un manifiesto nuevo desde el árbol efectivo y pasar de nuevo ambas comprobaciones de límite.
+
+## Auditoría forense pre-cuantización — 2026-10-23
+
+**Informe forense completo:** [CAJITA_FORENSIC_PAYLOAD_AUDIT_20261023.json](../docs/cajita-luna/CAJITA_FORENSIC_PAYLOAD_AUDIT_20261023.json). El informe vive fuera de `cajita-luna-runtime/` para no añadir su propio inventario al payload distribuible.
+
+El inventario del árbol `main` del commit base `91b1c89543511d171de83f20a46012f51f7c97a9` registró 144 archivos de entrada al generador, excluyendo el manifiesto estático que el generador reemplaza. La vista de blobs Git suma 504.063.305 bytes, pero contiene dos punteros Git LFS de 134 bytes. Sus OID SHA-256 y tamaños declarados coinciden con el manifiesto de pesos (148.477.400 y 110.516.001 bytes); el cuerpo actual de los dos objetos LFS no se descargó de nuevo durante esta auditoría. Con ambos objetos materializados conforme a sus declaraciones, la suma calculada de archivos de entrada es 763.056.438 bytes antes del manifiesto generado.
+
+El manifiesto estático existente enumera 132 archivos, mientras que el árbol actual tiene 144 entradas de archivo destinadas al generador: hay 12 archivos no enumerados y cuatro divergencias visibles frente al snapshot antiguo. Dos divergencias son los punteros LFS; las otras corresponden a este documento y a `cajita_runtime.py`, modificados después de generarse aquel manifiesto. Por tanto, debe regenerarse a partir del árbol definitivo después de la optimización del payload, no corregirse manualmente con cifras supuestas.
+
+**Clasificación para la auditoría de masa:** los diez activos recuperados son archivos de software (binarios, wheels, paquetes o archivos de código fuente), no tensores de pesos de modelos; la cuantización estadística de pesos no es la operación aplicable a esos diez artefactos. La reducción de sus bytes, si procede, se evalúa por tipo de artefacto y contenido incluido. Los seis elementos de `weights_manifest.json` suman 380.561.028 bytes declarados; la cuantización y la calidad no se dan por aprobadas únicamente por su etiqueta o por un smoke test.
+
+**Alertas de evidencia que se conservan para priorizar el trabajo de peso:** el registro de Cerebro informa error relativo de Frobenius 0,998336 y un smoke runtime fallido; el informe de Qwen3 informa 0,996409 y deja el gate de calidad sin ejecutar/sin aprobar. El runtime de traducción solo tiene una prueba mínima con salida `te te te te`, y la generación completa de Docling no quedó completada. Son límites de evidencia relevantes para decidir qué pesos deben optimizarse, no certificaciones.
+
+La auditoría no cuantizó, reemplazó ni eliminó binarios y no regeneró el manifiesto de distribución. La distinción entre inventario físico, contenido LFS materializado, peso de archivo y evidencia de calidad queda trazada en el informe enlazado.
 
 ## Alcance, entorno y evidencia
 
