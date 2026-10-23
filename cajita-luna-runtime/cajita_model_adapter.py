@@ -627,10 +627,11 @@ def make_synthetic_audio(path: pathlib.Path) -> None:
         wav.writeframes(frames)
 
 def make_synthetic_image(path: pathlib.Path) -> None:
-    # Match the packaged Idefics3 smoke fixture geometry. A 64x64 image creates a
-    # 4x4 patch grid without the 512px tile protocol and can fail against this
-    # processor's image_seq_len. Keep the fixture standard-library-only for CI.
-    width, height = 640, 480
+    # Use exactly one configured Idefics3 tile. The 512px image maps to 32x32
+    # vision patches and the packaged scale_factor=4 yields image_seq_len=64.
+    # Larger fixtures can fan out into multiple tiles and needlessly raise RSS.
+    # Keep the fixture standard-library-only for CI.
+    width, height = 512, 512
     pixels = bytearray([255, 255, 255]) * width * height
     # Non-degenerate page structure: horizontal rules and a few table columns.
     for y in (32, 64, 112, 160, 208, 256, 304, 352, 400):
