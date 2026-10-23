@@ -137,7 +137,7 @@ def main() -> int:
                             "y": round(float(box[1]),1),
                             "font": font,
                             "size": size,
-                            "column": "left" if float(box[0]) < pw * 0.50 else "right",
+                            "column": "left" if float(box[0]) < pw * 0.40 else "right",
                         }
                         if size >= 18.0:
                             page_spans.append(item)
