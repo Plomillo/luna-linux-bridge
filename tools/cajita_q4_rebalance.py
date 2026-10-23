@@ -303,6 +303,130 @@ def quantize_onnx():
    result["status"]="NO_SMALLER_VALIDATED_CANDIDATE"
   return result
 
+def pack_q2_affine_tensor(tensor, group_size, torch):
+ flat=tensor.detach().to(device="cpu",dtype=torch.float32).contiguous().reshape(-1)
+ numel=flat.numel()
+ groups=math.ceil(numel/group_size)
+ padded=torch.zeros(groups*group_size,dtype=torch.float32)
+ padded[:numel]=flat
+ matrix=padded.reshape(groups,group_size)
+ minima=matrix.amin(dim=1)
+ maxima=matrix.amax(dim=1)
+ steps=(maxima-minima)/3.0
+ steps=torch.where(steps>0,steps,torch.ones_like(steps)).to(torch.float32)
+ codes=torch.round((matrix-minima[:,None])/steps[:,None]).clamp(0,3).to(torch.uint8).reshape(-1)[:numel]
+ if codes.numel()%4:
+  codes=torch.cat((codes,torch.zeros(4-codes.numel()%4,dtype=torch.uint8)))
+ packed=torch.bitwise_or(
+  torch.bitwise_or(codes[0::4],torch.bitwise_left_shift(codes[1::4],2)),
+  torch.bitwise_or(torch.bitwise_left_shift(codes[2::4],4),torch.bitwise_left_shift(codes[3::4],6))
+ ).contiguous()
+ return packed,minima,steps,numel,tuple(tensor.shape)
+
+def quantize_factor_models_q2(torch, load_file, save_file):
+ """Second-stage asymmetric 2-bit packing for the existing Q4 low-rank factor tensors."""
+ if str(RUNTIME) not in sys.path:
+  sys.path.insert(0,str(RUNTIME))
+ from cajita_weight_materializer import load_model_state
+ rows=[]
+ for spec in MODEL_RUNS:
+  path=RUNTIME/spec["rel"]
+  sidecar=path.with_name(path.name+".q4.json")
+  row={"id":spec["id"],"path":spec["rel"],"status":"NOT_PROMOTED"}
+  if not path.is_file() or not sidecar.is_file():
+   row["status"]="SKIPPED_NO_Q4_SIDECAR"; rows.append(row); continue
+  current_meta=json.loads(sidecar.read_text(encoding="utf-8"))
+  entries=current_meta.get("tensors",[])
+  if not entries:
+   row["status"]="SKIPPED_NO_FACTOR_ENTRIES"; rows.append(row); continue
+  if all(e.get("encoding")=="UNSIGNED_INT2_ASYMMETRIC" for e in entries):
+   row["status"]="ALREADY_Q2_PACKED"; row["candidate_bytes"]=path.stat().st_size; rows.append(row); continue
+  if any(e.get("encoding")=="UNSIGNED_INT2_ASYMMETRIC" for e in entries):
+   row["status"]="BLOCKED_PARTIAL_Q2_METADATA"; rows.append(row); continue
+  original_bytes=path.stat().st_size
+  original_sidecar_bytes=sidecar.stat().st_size
+  original_hash=sha256(path)
+  baseline=run_model_smoke(spec)
+  row.update({"original_bytes":original_bytes,"original_sidecar_bytes":original_sidecar_bytes,
+              "original_sha256":original_hash,"factor_tensor_count":len(entries),"attempts":[]})
+  row["baseline_smoke"]={"passed":baseline.get("passed",False),"status":baseline.get("status"),
+                         "returncode":baseline.get("returncode"),"result":baseline.get("result",{})}
+  if not baseline.get("passed"):
+   row["status"]="BLOCKED_BASELINE_SMOKE_FAILED"; rows.append(row); continue
+  with tempfile.TemporaryDirectory(prefix="cajita-q2-factor-") as td:
+   tmp=Path(td)
+   backup=tmp/"before.safetensors"; backup_meta=tmp/"before.q4.json"
+   shutil.copy2(path,backup); shutil.copy2(sidecar,backup_meta)
+   raw_state=load_file(str(backup),device="cpu")
+   logical_state=load_model_state(path)
+   promoted=False
+   for group_size in (512,256,128):
+    candidate=tmp/f"candidate_g{group_size}.safetensors"
+    candidate_sidecar=tmp/f"candidate_g{group_size}.q4.json"
+    candidate_state=dict(raw_state)
+    updated_meta=json.loads(json.dumps(current_meta))
+    new_entries=[]
+    try:
+     for entry in updated_meta["tensors"]:
+      name=entry["name"]
+      if name not in logical_state:
+       raise RuntimeError("LOGICAL_FACTOR_NOT_MATERIALIZED:"+name)
+      packed_key=entry["packed_key"]; scales_key=entry["scales_key"]
+      if packed_key not in candidate_state or scales_key not in candidate_state:
+       raise RuntimeError("Q4_SOURCE_KEYS_MISSING:"+name)
+      packed,mins,steps,numel,shape=pack_q2_affine_tensor(logical_state[name],group_size,torch)
+      min_key="__cajita_q2_min__."+name
+      step_key="__cajita_q2_step__."+name
+      q2_key="__cajita_q2_packed__."+name
+      candidate_state.pop(packed_key); candidate_state.pop(scales_key)
+      candidate_state[q2_key]=packed; candidate_state[min_key]=mins; candidate_state[step_key]=steps
+      entry.pop("scales_key",None)
+      entry.update({"packed_key":q2_key,"min_key":min_key,"step_key":step_key,
+                    "group_size":group_size,"original_dtype":"float32",
+                    "encoding":"UNSIGNED_INT2_ASYMMETRIC"})
+      new_entries.append({"name":name,"numel":numel,"shape":list(shape)})
+     save_file(candidate_state,str(candidate),metadata={"cajita_format":"CAJITA_MIXED_BLOCK_PACKED/1.0"})
+     candidate_hash=sha256(candidate)
+     updated_meta["schema"]="CAJITA_MIXED_BLOCK_PACKED/1.0"
+     updated_meta["candidate_sha256"]=candidate_hash
+     updated_meta["q2_factor_pass"]={"group_size":group_size,"source_q4_sha256":original_hash,
+                                     "packed_tensor_count":len(new_entries),
+                                     "packing":"unsigned affine 2-bit codes; per-block min/step FP32"}
+     candidate_sidecar.write_text(json.dumps(updated_meta,ensure_ascii=False,separators=(",",":"))+"\n",encoding="utf-8")
+    except Exception as exc:
+     row["attempts"].append({"group_size":group_size,"status":"CANDIDATE_BUILD_FAILED",
+                             "error":type(exc).__name__+":"+str(exc)[:1000]})
+     continue
+    candidate_total=candidate.stat().st_size+candidate_sidecar.stat().st_size
+    original_total=original_bytes+original_sidecar_bytes
+    if candidate_total>=original_total:
+     row["attempts"].append({"group_size":group_size,"status":"CANDIDATE_WITH_SIDECAR_NOT_SMALLER",
+                             "candidate_bytes":candidate.stat().st_size,
+                             "candidate_sidecar_bytes":candidate_sidecar.stat().st_size})
+     continue
+    shutil.copy2(candidate,path); shutil.copy2(candidate_sidecar,sidecar)
+    after=run_model_smoke(spec); smoke_ok=bool(after.get("passed"))
+    attempt={"group_size":group_size,"candidate_bytes":path.stat().st_size,
+             "candidate_sidecar_bytes":sidecar.stat().st_size,"candidate_sha256":sha256(path),
+             "candidate_factor_count":len(new_entries),
+             "runtime_smoke_after":{"passed":smoke_ok,"status":after.get("status"),
+                "returncode":after.get("returncode"),"result":after.get("result",{}),
+                "stderr_tail":after.get("stderr_tail","")},
+             "status":"PROMOTED" if smoke_ok else "ROLLBACK_RUNTIME_SMOKE_FAILURE"}
+    row["attempts"].append(attempt)
+    if smoke_ok:
+     row.update({"status":"PROMOTED_Q2_BLOCKWISE","group_size":group_size,
+                 "candidate_bytes":path.stat().st_size,"candidate_sidecar_bytes":sidecar.stat().st_size,
+                 "candidate_sha256":sha256(path),"saved_bytes":original_total-(path.stat().st_size+sidecar.stat().st_size),
+                 "smoke_signature_preserved":signature_equal(spec,baseline,after)})
+     promoted=True; break
+    shutil.copy2(backup,path); shutil.copy2(backup_meta,sidecar)
+   if not promoted:
+    shutil.copy2(backup,path); shutil.copy2(backup_meta,sidecar)
+    row["status"]="NO_Q2_CANDIDATE_PASSED_RUNTIME_SMOKE"
+  rows.append(row)
+ return rows
+
 def pack_float_tensor(tensor, group_size, torch):
  flat=tensor.detach().to(device="cpu",dtype=torch.float32).contiguous().reshape(-1)
  numel=flat.numel()
@@ -459,6 +583,12 @@ def update_manifest_and_doc():
  text=re.sub(r"(\|\s*\*\*Total de seis archivos de modelo/pesos\*\*\s*\|\s*\|)\s*\*\*[\d.]+\*\*\s*(\|)",
              lambda m:m.group(1)+" **"+format_es(total)+"** "+m.group(2),text,count=1)
  marker="## Rebalanceo de peso cuantizado — 2026-10-23"
+ q2_marker="## Segunda pasada de empaquetado de factores a 2 bits — 2026-10-23"
+ if q2_marker not in text:
+  q2_rows=[]
+  for r in report.get("q2_factor_results",[]):
+   q2_rows.append("| "+r["id"]+" | "+str(r.get("status","NOT_CHANGED"))+" | "+str(r.get("factor_tensor_count",0))+" | "+str(r.get("original_bytes",0))+" | "+str(r.get("candidate_bytes",r.get("original_bytes",0)))+" | "+str(r.get("saved_bytes",0))+" |")
+  text += "\n\n"+q2_marker+"\n\nLos factores de bajo rango que ya estaban empaquetados en INT4 se recodificaron como enteros afines sin signo de 2 bits por bloque, con mínimos y pasos FP32 por grupo. Cada candidato se admite únicamente si reduce el total modelo+sidecar y la prueba de arranque/generación sigue pasando. La comparación de firma se registra, pero no equivale a equivalencia de calidad ni certificación.\n\n| Motor | Estado | Tensores factores | Bytes del modelo previos | Bytes candidatos/activos | Bytes netos ahorrados |\n|---|---|---:|---:|---:|---:|\n"+"\n".join(q2_rows)+"\n"
  deep_marker="## Segunda pasada de INT4 para tensores flotantes — 2026-10-23"
  if deep_marker not in text:
   rows=[]
@@ -501,6 +631,7 @@ def main():
    report["weight_factor_results"].append({"id":spec["id"],"path":spec["rel"],"status":"ALREADY_Q4_PACKED","candidate_bytes":path.stat().st_size})
    continue
   report["weight_factor_results"].append(quantize_factor_model(spec,torch,load_file,save_file))
+ report["q2_factor_results"]=quantize_factor_models_q2(torch,load_file,save_file)
  report["float_tensor_results"]=quantize_remaining_float_tensors(torch,load_file,save_file)
  report["onnx_result"]=quantize_onnx()
  report["weights_manifest_sha256"]=update_manifest_and_doc()
@@ -510,6 +641,8 @@ def main():
  report["bytes_over_cap"]=max(0,post-HARD_CAP)
  report["size_gate"]="PASS" if post<=HARD_CAP else "FAIL"
  report["quantized_factor_models_promoted"]=sum(x.get("status")=="PROMOTED_Q4_BLOCKWISE" for x in report["weight_factor_results"])
+ report["q2_factor_models_promoted"]=sum(x.get("status")=="PROMOTED_Q2_BLOCKWISE" for x in report.get("q2_factor_results",[]))
+ report["q2_factor_bytes_saved"]=sum(int(x.get("saved_bytes",0)) for x in report.get("q2_factor_results",[]))
  report["float_tensor_models_promoted"]=sum(x.get("status")=="PROMOTED_FLOAT_Q4_BLOCKWISE" for x in report.get("float_tensor_results",[]))
  report["float_tensor_bytes_saved"]=sum(int(x.get("saved_bytes",0)) for x in report.get("float_tensor_results",[]))
  report["onnx_status"]=report["onnx_result"].get("status")
@@ -523,6 +656,7 @@ def main():
  print(json.dumps({"status":report["status"],"runtime_bytes_before":pre,"runtime_bytes_after":post,
    "saved_bytes":pre-post,"hard_cap_bytes":HARD_CAP,"bytes_over_cap":report["bytes_over_cap"],
    "size_gate":report["size_gate"],"q4_models_promoted":report["quantized_factor_models_promoted"],
+   "q2_factor_models_promoted":report["q2_factor_models_promoted"],"q2_factor_bytes_saved":report["q2_factor_bytes_saved"],
    "float_tensor_models_promoted":report["float_tensor_models_promoted"],"float_tensor_bytes_saved":report["float_tensor_bytes_saved"],
    "onnx_status":report["onnx_status"],"certification":report["certification"]},ensure_ascii=False))
  return 0
