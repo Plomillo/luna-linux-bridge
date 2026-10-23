@@ -262,12 +262,25 @@ def identify_anchors(
         prev_pos = big_anchor_pos[prev_key]
         next_pos = big_anchor_pos[next_key]
         matches = []
+        def is_target_title(line_text: str, target: str) -> bool:
+            normalized = norm_text(line_text)
+            if target == "2 Juan":
+                return normalized in {"2juan","iijuan","segundajuan","segundacartadejuan","segundaepistoladejuan","segundacarta dejuan".replace(" ","")} or ("juan" in normalized and ("segunda" in normalized or normalized.startswith("ii")))
+            if target == "3 Juan":
+                return normalized in {"3juan","iiijuan","tercerajuan","terceracartadejuan","terceraepistoladejuan"} or ("juan" in normalized and ("tercera" in normalized or normalized.startswith("iii")))
+            if target == "Judas":
+                return "judas" in normalized and len(normalized) <= 35
+            if target == "Filemón":
+                return "filemon" in normalized and len(normalized) <= 40
+            if target == "Abdías":
+                return "abdias" in normalized and len(normalized) <= 35
+            return normalized == norm_text(target)
         for line in lines:
-            if norm_text(line.text) != norm_text(book):
+            if not is_target_title(line.text, book):
                 continue
             max_size = max((span.size for span in line.spans), default=0.0)
             absolute = (line.page, line.col, float(line.y0), float(line.x0))
-            if absolute > (prev_pos[0], prev_pos[1], prev_pos[2], prev_pos[3]) and absolute < (next_pos[0], next_pos[1], next_pos[2], next_pos[3]):
+            if absolute > prev_pos and absolute < next_pos:
                 matches.append({"line":line,"font_size":max_size})
         candidate_summary[book] = [
             {"page":m["line"].page,"column":m["line"].col,"y":round(m["line"].y0,1),"font_size":m["font_size"]}
