@@ -312,7 +312,7 @@ def identify_anchors(
         "large_chapter_positional_mismatches":len(positional_mismatches),
         "psalm_chapter_markers":len(psalm_entries),
         "psalm_sequence_exact":True,
-        "single_chapter_book_title_candidates":candidate_summary,
+        "single_chapter_verse1_boundary_candidates":single_anchor_summary,
         "chapter_anchor_count":len(anchors),
         "chapter_anchor_sequence_exact":True,
     }
@@ -328,7 +328,7 @@ def build_db(
     spans: list[Span],
     big_map: dict[tuple[int,int,int,int], tuple[str,int]],
     psalm_map: dict[tuple[int,int,int,int], tuple[str,int]],
-    single_line_map: dict[tuple[int,int,int], tuple[str,int]],
+    single_span_map: dict[tuple[int,int,int,int], tuple[str,int]],
     psalm_heading_lines: set[tuple[int,int,int]],
 ) -> dict[str,Any]:
     output.parent.mkdir(parents=True, exist_ok=True)
