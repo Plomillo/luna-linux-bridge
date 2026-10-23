@@ -130,7 +130,7 @@ def normalize_command(value: str | None) -> str | None:
     """Accept exact canonical spellings and only explicitly registered aliases."""
     if not value or not value.strip():
         return None
-    candidate = re.sub(r"\s+", " ", value.strip())
+    candidate = value.strip()
     if candidate in CANONICAL_COMMANDS:
         return candidate
     return COMMAND_ALIASES.get(candidate)
@@ -144,7 +144,7 @@ def extract_command(request: str) -> tuple[str | None, bool]:
     match = re.match(r"^(/help|/play\s+[^\s]+)\b", stripped)
     if not match:
         return None, stripped.startswith("/")
-    raw = re.sub(r"\s+", " ", match.group(1).strip())
+    raw = match.group(1).strip()
     normalized = normalize_command(raw)
     return normalized, normalized is None
 
@@ -207,6 +207,10 @@ def route_table_selftest() -> dict[str, Any]:
         profile = ROUTE_PROFILES_BY_COMMAND.get(route["command"], {})
         if any(target_id not in TARGETS_BY_ID for target_id in profile.get("default_targets", [])):
             errors.append("UNKNOWN_PROFILE_TARGET:" + route["id"])
+        supported_engines = {engine_id for target_id in profile.get("default_targets", [])
+                             for engine_id in TARGETS_BY_ID.get(target_id, {}).get("engine_ids", [])}
+        if not (set(route["engines"]) & supported_engines):
+            errors.append("COMMAND_ENGINE_TARGET_MISMATCH:" + route["id"])
     expected_counts = {"D02_ORQUESTACION": 3, "D04_TRADUCTOR_INTELIGENTE": 3,
                        "D05_INTELIGENCIA_DOCUMENTAL": 2, "D06_SISTEMA_INTELIGENTE": 11}
     for domain_id, expected in expected_counts.items():
@@ -218,7 +222,14 @@ def route_table_selftest() -> dict[str, Any]:
     for target in TARGETS:
         if not target.get("engine_ids") or any(engine_id not in VALID_ENGINE_IDS for engine_id in target.get("engine_ids", [])):
             errors.append("INVALID_TARGET_ENGINE_BINDING:" + str(target.get("id")))
+    for target in TARGETS:
+        for asset_id in target.get("support_assets", []):
+            if target["id"] not in SUPPORT_ASSETS_BY_ID.get(asset_id, {}).get("subdomain_ids", []):
+                errors.append("ASSET_TARGET_BINDING_ASYMMETRIC:" + target["id"] + ":" + asset_id)
     for asset in SUPPORT_ASSETS:
+        for target_id in asset.get("subdomain_ids", []):
+            if asset["id"] not in TARGETS_BY_ID.get(target_id, {}).get("support_assets", []):
+                errors.append("TARGET_ASSET_BINDING_ASYMMETRIC:" + asset["id"] + ":" + target_id)
         if not asset.get("sha256") or not asset.get("relative_path") or int(asset.get("bytes", 0)) <= 0:
             errors.append("INCOMPLETE_ASSET_IDENTITY:" + str(asset.get("id")))
         if not asset.get("subdomain_ids") or any(t not in TARGETS_BY_ID for t in asset.get("subdomain_ids", [])):
