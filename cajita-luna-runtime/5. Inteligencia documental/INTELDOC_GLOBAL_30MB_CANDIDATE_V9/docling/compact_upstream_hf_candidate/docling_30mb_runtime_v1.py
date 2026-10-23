@@ -110,10 +110,16 @@ def load_candidate(candidate_dir):
     config=AutoConfig.from_pretrained(str(p),local_files_only=True,trust_remote_code=False)
     old=torch.get_default_dtype()
     try:
+        # Construct on the meta device to avoid allocating and initializing a full
+        # random FP16 model before overwriting every declared tensor with decoded weights.
         torch.set_default_dtype(torch.float16)
-        model=AutoModelForImageTextToText.from_config(config,trust_remote_code=False)
-    finally: torch.set_default_dtype(old)
-    model.to(device="cpu",dtype=torch.float16)
+        with torch.device("meta"):
+            model=AutoModelForImageTextToText.from_config(config,trust_remote_code=False)
+    finally:
+        torch.set_default_dtype(old)
+    # Allocate uninitialized CPU storage; the verified quantized manifest fills all
+    # declared parameters below, after which missing parameters are rejected.
+    model.to_empty(device="cpu")
     state=model.state_dict(keep_vars=True); raw=bp.read_bytes(); view=memoryview(raw); loaded=set()
     with torch.no_grad():
         for name,r in meta["tensors"].items():
