@@ -80,7 +80,7 @@ class ModelAdapterControlTests(unittest.TestCase):
 
     def test_rss_limits_keep_system_headroom(self):
         self.assertEqual(adapter.MAX_GLOBAL_RAM_MIB, 1024)
-        self.assertEqual(adapter.DEFAULT_WORKER_RSS_LIMIT_MIB, 850)
+        self.assertEqual(adapter.DEFAULT_WORKER_RSS_LIMIT_MIB, 875)
         self.assertEqual(adapter.MAX_PARENT_PLUS_WORKER_RSS_MIB, 900)
         self.assertGreaterEqual(adapter.MAX_GLOBAL_RAM_MIB - adapter.MAX_PARENT_PLUS_WORKER_RSS_MIB, 124)
 
