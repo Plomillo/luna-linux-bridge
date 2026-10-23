@@ -42,13 +42,13 @@ D05 ejecuta el verificador de carga del candidato cuantizado; la generación OCR
 
 | Dominio | Activo | Bytes |
 |---|---|---:|
-| Cerebro | `1. Cerebro/model.safetensors` | 148.477.400 |
-| Transcripción | `3. Transcripción/model.safetensors` | 34.877.948 |
-| Traductor Inteligente | `4. Traductor Inteligente/Traducción general/model.safetensors` | 20.256.147 |
+| Cerebro | `1. Cerebro/model.safetensors` | 116.856.296 |
+| Transcripción | `3. Transcripción/model.safetensors` | 21.579.806 |
+| Traductor Inteligente | `4. Traductor Inteligente/Traducción general/model.safetensors` | 14.765.381 |
 | Inteligencia documental | `5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin` | 13.483.380 |
-| Sistema Inteligente | `6. Sistema Inteligente/Análisis Avanzado/model.safetensors` | 52.950.152 |
+| Sistema Inteligente | `6. Sistema Inteligente/Análisis Avanzado/model.safetensors` | 28.687.808 |
 | Sistema Inteligente | `6. Sistema Inteligente/Anti-Alucinaciones/model.onnx` | 110.516.001 |
-| **Total de seis archivos de modelo/pesos** | | **380.561.028** |
+| **Total de seis archivos de modelo/pesos** | | **305.888.672** |
 
 ## Integración de activos recuperados — registro aditivo
 
@@ -204,3 +204,18 @@ Informe: `../docs/cajita-luna/CAJITA_TEN_ASSET_EXPANSION_20261023.json`.
 **Puerta de tamaño global:** sigue bloqueada hasta cuantizar y validar los pesos neuronales. La proyección previa con objetos LFS materializados era 641.773.963 bytes; por tanto, la siguiente reducción requerida es de al menos 171.773.964 bytes más el crecimiento del manifiesto. Los diez componentes de infraestructura no se someten a cuantización de tensores. Los seis archivos de modelo/pesos no se sustituyen automáticamente ni se declaran equivalentes: sus candidatos cuantizados requieren comparación de calidad, hashes, pruebas por dominio, validación independiente y rollback. El límite bruto de 470.000.000 bytes sigue siendo un hard gate; no se construye ni publica un paquete que lo exceda.
 
 **Certificación:** NOT_GRANTED. La compactación física no prueba por sí sola la integración funcional ni la equivalencia de calidad.
+
+
+## Rebalanceo de peso cuantizado — 2026-10-23
+
+La pasada actúa sobre los factores INT8 de bajo rango de los cuatro motores que usan model.safetensors y ensaya cuantización INT8 dinámica del ONNX. Un candidato solo se promueve si reduce bytes y el smoke de salida conserva la firma funcional determinista observada antes de la transformación. Los artefactos originales quedan recuperables en el historial Git; el informe registra hashes, tamaños y rollback.
+
+| Motor | Ruta | Estado | Bytes originales | Bytes candidatos/activos |
+|---|---|---|---:|---:|
+| W01_CEREBRO | `1. Cerebro/model.safetensors` | PROMOTED_Q4_BLOCKWISE | 148477400 | 116856296 |
+| W02_TRANSCRIPTION | `3. Transcripción/model.safetensors` | PROMOTED_Q4_BLOCKWISE | 34877948 | 21579806 |
+| W03_TRANSLATION | `4. Traductor Inteligente/Traducción general/model.safetensors` | PROMOTED_Q4_BLOCKWISE | 20256147 | 14765381 |
+| W05_QWEN3 | `6. Sistema Inteligente/Análisis Avanzado/model.safetensors` | PROMOTED_Q4_BLOCKWISE | 52950152 | 28687808 |
+| W06_ONNX | `6. Sistema Inteligente/Anti-Alucinaciones/model.onnx` | CANDIDATE_NOT_SMALLER | 110516001 | 110581945 |
+
+El control de tamaño suma los archivos reales del runtime, excluye únicamente el manifiesto de distribución que el constructor regenera y compara con el techo decimal de 470.000.000 bytes. Este control de tamaño no equivale por sí solo a certificación integral de calidad.
