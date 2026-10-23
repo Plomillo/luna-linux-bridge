@@ -7,6 +7,10 @@ on:
     paths:
       - .github/workflows/restore-externalized-assets.yml
       - scripts/restore_externalized_assets.py
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: write
@@ -24,7 +28,7 @@ jobs:
       - name: Checkout recovery branch
         uses: actions/checkout@v4
         with:
-          ref: \${{ github.ref_name }}
+          ref: ${{ github.head_ref || github.ref_name }}
           fetch-depth: 1
 
       - name: Download and verify upstream assets
@@ -32,8 +36,8 @@ jobs:
 
       - name: Commit verified recovery payloads and report
         env:
-          GH_TOKEN: \${{ github.token }}
-          BRANCH_NAME: \${{ github.ref_name }}
+          GH_TOKEN: ${{ github.token }}
+          BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -43,4 +47,4 @@ jobs:
             exit 1
           fi
           git commit -m "Recover verified externalized Cajita assets to staging"
-          git push origin "HEAD:refs/heads/\${BRANCH_NAME}"
+          git push origin "HEAD:refs/heads/${BRANCH_NAME}"
