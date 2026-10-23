@@ -381,6 +381,11 @@ def build_db(
     captured_stream_parts: list[str]=[]
     active_book: str | None=None
     active_chapter: int | None=None
+    # The canonical Scripture text ends at Revelation 22:21. Later pages in this
+    # PDF contain appendices/index material that reuse verse-like typography.
+    # We include the entire page containing the first canonical 22:21 marker,
+    # then stop parsing subsequent pages as Scripture.
+    main_bible_end_page: int | None=None
 
     def set_current(key: tuple[str,int,int,str], page: int, source_kind: str) -> None:
         nonlocal current,last_span
@@ -425,6 +430,8 @@ def build_db(
         last_span=span
 
     for line in lines:
+        if main_bible_end_page is not None and line.page > main_bible_end_page:
+            break
         if line.key in psalm_heading_lines:
             # The "Salmo N" label is structural; create the chapter at its number span
             # but do not add the label itself as verse content.
@@ -459,6 +466,8 @@ def build_db(
             if is_verse_marker and active_book is not None and active_chapter is not None:
                 marker_count += 1
                 verse_num,suffix=parsed
+                if active_book == "Apocalipsis" and active_chapter == 22 and verse_num == 21 and not suffix and main_bible_end_page is None:
+                    main_bible_end_page = span.page
                 new_key=(active_book,active_chapter,verse_num,suffix)
                 if verse_num == 1 and current == (active_book,active_chapter,1,"") and not verses[current]["parts"]:
                     # A visible verse-1 numeral follows an already observed chapter title.
@@ -587,6 +596,8 @@ def build_db(
         "actual_books":books_count,"actual_chapters":chapter_count,
         "actual_verse_rows":stored_verse_count,
         "verse_marker_spans_seen":marker_count,
+        "main_bible_end_page":main_bible_end_page,
+        "post_canon_pages_excluded_from_scripture":1360-main_bible_end_page if main_bible_end_page else None,
         "duplicate_marker_events":len(duplicate_markers),
         "text_roundtrip_whitespace_normalized_exact":text_stream_exact,
         "captured_text_characters":len(expected_text_stream),
@@ -626,6 +637,8 @@ def build_db(
         "chapter_count":chapter_count,
         "verse_row_count":stored_verse_count,
         "verse_marker_spans_seen":marker_count,
+        "main_bible_end_page":main_bible_end_page,
+        "post_canon_pages_excluded_from_scripture":1360-main_bible_end_page if main_bible_end_page else None,
         "duplicate_reference_keys":duplicate_keys,
         "duplicate_marker_events":len(duplicate_markers),
         "duplicate_marker_examples":duplicate_markers[:50],
@@ -719,7 +732,8 @@ def main() -> int:
         "large_chapter_markers","large_chapter_positional_mismatches","psalm_chapter_markers",
         "chapter_anchor_count","chapter_anchor_sequence_exact","single_chapter_verse1_boundary_candidates",
         "database_file_bytes","database_sha256","book_count","chapter_count","verse_row_count",
-        "verse_marker_spans_seen","duplicate_reference_keys","duplicate_marker_events","duplicate_marker_examples","tail_page_layout_profiles","john8_opening_layout_profile",
+        "verse_marker_spans_seen","main_bible_end_page","post_canon_pages_excluded_from_scripture",
+        "duplicate_reference_keys","duplicate_marker_events","duplicate_marker_examples","tail_page_layout_profiles","john8_opening_layout_profile",
         "missing_expected_chapter_count","missing_first_verse_chapter_count","missing_first_verse_examples","empty_verse_chapter_count","empty_verse_examples",
         "chapter_verse_number_gap_chapter_count","chapter_verse_number_gap_total","chapter_verse_number_gap_examples",
         "text_roundtrip_whitespace_normalized_exact","captured_text_characters","stored_text_characters",
