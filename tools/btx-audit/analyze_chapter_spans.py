@@ -234,7 +234,7 @@ def main() -> int:
                     if heading["line_char_count"] == 6 + len(token["token"]):
                         salmo_chapter_markers.append({
                             "page": heading["page"],
-                            "number": int(re.match(r"^\\d+", token["token"]).group(0)),
+                            "number": int(re.match(r"^\d+", token["token"]).group(0)),
                             "x": token["x"],
                             "y": token["y"],
                             "size": token["size"],
