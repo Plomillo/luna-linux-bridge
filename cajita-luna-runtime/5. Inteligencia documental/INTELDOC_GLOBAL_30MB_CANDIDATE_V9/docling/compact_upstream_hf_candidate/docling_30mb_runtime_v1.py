@@ -84,9 +84,10 @@ def decode_tensor_chunked_into(blob, r, target, chunk_rows=256):
             skip = bit_start - first * 8
             return unpacked[skip:skip + bit_count].astype(np.float32) * 2.0 - 1.0
 
-        # Cap this high-fanout vision projection to 64 rows per chunk. A full FP32
-        # decode needs tens of MiB of temporary arrays on top of the resident model.
-        chunk_rows = min(64, max(8, int(chunk_rows)))
+        # Cap the high-fanout vision projection to eight rows per chunk. The
+        # flattened connector matrix has 12,288 columns; 64 rows create several MiB
+        # of simultaneous FP32 temporaries and cross the measured RSS gate.
+        chunk_rows = min(8, max(1, int(chunk_rows)))
         for start in range(0, m, chunk_rows):
             end = min(m, start + chunk_rows)
             row_count = end - start
@@ -232,6 +233,15 @@ def load_candidate(candidate_dir):
     with bp.open("rb") as weights_file:
         mapped=mmap.mmap(weights_file.fileno(),0,access=mmap.ACCESS_READ)
     view=memoryview(mapped); loaded=set()
+    # On glibc, return freed temporary-array heap pages after every tensor copy.
+    # This function is absent on some libc implementations, so keep it optional.
+    try:
+        import ctypes
+        libc = ctypes.CDLL(None)
+        malloc_trim = getattr(libc, "malloc_trim", None)
+    except Exception:
+        libc = None
+        malloc_trim = None
     try:
         with torch.no_grad():
             for name,r in meta["tensors"].items():
@@ -244,6 +254,10 @@ def load_candidate(candidate_dir):
                     # Keep the anonymous FP16 parameter set resident; discard mapped
                     # source pages after every tensor copy to minimize combined RSS.
                     mapped.madvise(mmap.MADV_DONTNEED)
+                if malloc_trim is not None:
+                    # decode_tensor_chunked_into has returned; temporary arrays are dead,
+                    # so trimming now cannot affect the live destination weights.
+                    malloc_trim(0)
     finally:
         view.release()
         try:
