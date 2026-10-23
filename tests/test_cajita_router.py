@@ -93,9 +93,9 @@ class CajitaRouterTests(unittest.TestCase):
         self.assertEqual(len(ROUTES), 14)
 
     def test_task_adapter_registry_reflects_current_evidence_boundary(self):
-        self.assertEqual(CAPABILITY_ADAPTERS["pdf_generation"], "NOT_REGISTERED")
-        self.assertEqual(CAPABILITY_ADAPTERS["audio_transcription"], "NOT_REGISTERED")
-        self.assertEqual(CAPABILITY_ADAPTERS["job_orchestration"], "REGISTRY_SELFTEST_ONLY")
+        self.assertEqual(CAPABILITY_ADAPTERS["pdf_generation"], "CAJITA_MODEL_ADAPTERS/1.0_STANDARD_LIBRARY")
+        self.assertEqual(CAPABILITY_ADAPTERS["audio_transcription"], "CAJITA_MODEL_ADAPTERS/1.0")
+        self.assertEqual(CAPABILITY_ADAPTERS["job_orchestration"], "CAJITA_MODEL_ADAPTERS/1.0_DIAGNOSTIC_ONLY")
 
     def test_primary_runtime_exposes_routes_command(self):
         runtime = Path(__file__).resolve().parents[1] / "cajita-luna-runtime" / "cajita_runtime.py"
