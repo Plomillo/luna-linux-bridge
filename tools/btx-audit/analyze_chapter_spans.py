@@ -114,6 +114,9 @@ def main() -> int:
         candidates: list[dict[str, Any]] = []
         style_counts: collections.Counter[str] = collections.Counter()
         verse_style_counts: collections.Counter[str] = collections.Counter()
+        verse_suffix_counts: collections.Counter[str] = collections.Counter()
+        large_noninteger_counts: collections.Counter[str] = collections.Counter()
+        large_noninteger_samples: list[dict[str, Any]] = []
         page_size_counts: dict[int, int] = collections.Counter()
         for pno, page in enumerate(pdf, start=1):
             pw = float(page.rect.width)
@@ -125,11 +128,21 @@ def main() -> int:
                 for line in block.get("lines", []):
                     for span in line.get("spans", []):
                         value_text = span.get("text", "").strip()
-                        if not value_text or not re.fullmatch(r"\d{1,3}", value_text):
+                        if not value_text:
                             continue
                         font = str(span.get("font", ""))
                         size = round(float(span.get("size", 0)), 1)
                         box = span.get("bbox", [0,0,0,0])
+                        if re.fullmatch(r"\d{1,3}[a-z]?", value_text, flags=re.IGNORECASE) and 9.0 <= size <= 11.5 and ("Heavy" in font or "Bold" in font):
+                            verse_suffix_counts[f"{font}|{size:g}|{value_text[-1].isalpha()}"] += 1
+                        if size >= 18.0 and not re.fullmatch(r"\d{1,3}", value_text):
+                            if re.fullmatch(r"[\d]{1,3}[a-zA-Z*†‡.,:;]?", value_text):
+                                large_noninteger_counts[f"{font}|{size:g}|{value_text}"] += 1
+                                if len(large_noninteger_samples) < 100:
+                                    large_noninteger_samples.append({"page": pno, "x": round(float(box[0]),1), "y": round(float(box[1]),1), "font": font, "size": size, "token": value_text})
+                            continue
+                        if not re.fullmatch(r"\d{1,3}", value_text):
+                            continue
                         item = {
                             "value": int(value_text),
                             "page": pno,
@@ -170,6 +183,9 @@ def main() -> int:
             "large_numeric_span_count": len(candidates),
             "large_numeric_span_style_counts": style_counts.most_common(100),
             "small_bold_numeric_span_style_counts": verse_style_counts.most_common(60),
+            "small_bold_numeric_span_suffix_counts": verse_suffix_counts.most_common(100),
+            "large_noninteger_numeric_style_counts": large_noninteger_counts.most_common(100),
+            "large_noninteger_numeric_samples": large_noninteger_samples,
             "expected_sequence_lcs_matches": matched,
             "expected_sequence_coverage_percent": round(matched / len(EXPECTED) * 100, 2),
             "book_chapter_alignment": [
