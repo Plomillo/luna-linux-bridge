@@ -70,7 +70,7 @@ jobs:
           set -euo pipefail
           python -m pip install --upgrade pip
           python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
-          python -m pip install "transformers>=4.55,<5" safetensors numpy sentencepiece scipy soundfile librosa onnx onnxruntime
+          python -m pip install "transformers>=4.55,<5" safetensors numpy sentencepiece scipy soundfile librosa onnx onnxruntime onnxconverter-common
 
       - name: Compile shared materializer and rebalance driver
         run: |

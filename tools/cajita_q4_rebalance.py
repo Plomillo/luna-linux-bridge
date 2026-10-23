@@ -198,7 +198,7 @@ def compare_onnx_outputs(before, after, np):
  return True,{"outputs":measurements,"policy":"same top-1 and relative L2 <= 0.10 on deterministic zero-valued smoke inputs; not a task-level quality certificate"}
 
 def quantize_onnx():
- result={"path":ONNX_REL,"status":"NOT_PROMOTED"}
+ result={"path":ONNX_REL,"status":"NOT_PROMOTED","attempts":[]}
  path=RUNTIME/ONNX_REL
  result["original_bytes"]=path.stat().st_size; result["original_sha256"]=sha256(path)
  try:
@@ -208,34 +208,100 @@ def quantize_onnx():
   from onnxruntime.quantization import quantize_dynamic, QuantType
  except Exception as exc:
   result.update({"status":"BLOCKED_DEPENDENCY","error":type(exc).__name__+":"+str(exc)[:1000]}); return result
- with tempfile.TemporaryDirectory(prefix="cajita-onnx-int8-") as td:
-  candidate=Path(td)/"candidate.int8.onnx"
+ with tempfile.TemporaryDirectory(prefix="cajita-onnx-rebalance-") as td:
+  tmp=Path(td)
   try:
+   source_model=onnx.load(str(path),load_external_data=True)
+   onnx.checker.check_model(source_model,full_check=False)
+   used=set()
+   op_counts={}
+   def scan_graph(graph):
+    for node in graph.node:
+     op_counts[node.op_type]=op_counts.get(node.op_type,0)+1
+     used.update(node.input)
+     for attr in node.attribute:
+      if attr.type==onnx.AttributeProto.GRAPH:
+       scan_graph(attr.g)
+      elif attr.type==onnx.AttributeProto.GRAPHS:
+       for sub in attr.graphs: scan_graph(sub)
+   scan_graph(source_model.graph)
+   dtype_bytes={}; initializer_total=0; unused_bytes=0; unused_names=[]
+   for tensor in source_model.graph.initializer:
+    if tensor.data_location==onnx.TensorProto.EXTERNAL:
+     size=int(next((e.value for e in tensor.external_data if e.key=="length"),"0"))
+    else:
+     try: size=len(tensor.raw_data) if tensor.raw_data else int(onnx.numpy_helper.to_array(tensor).nbytes)
+     except Exception: size=0
+    dtype=onnx.TensorProto.DataType.Name(tensor.data_type)
+    dtype_bytes[dtype]=dtype_bytes.get(dtype,0)+size
+    initializer_total+=size
+    if tensor.name not in used:
+     unused_bytes+=size; unused_names.append({"name":tensor.name,"bytes":size,"dtype":dtype})
+   result["graph_profile"]={"node_count":len(source_model.graph.node),"op_type_counts":op_counts,
+       "initializer_count":len(source_model.graph.initializer),"initializer_payload_bytes":initializer_total,
+       "initializer_bytes_by_dtype":dtype_bytes,"unused_initializer_bytes":unused_bytes,
+       "unused_initializer_count":len(unused_names),"unused_initializer_preview":unused_names[:30]}
    session0=ort.InferenceSession(str(path),providers=["CPUExecutionProvider"])
-   feed=make_onnx_inputs(session0,np)
-   out0=session0.run(None,feed)
-   quantize_dynamic(str(path),str(candidate),weight_type=QuantType.QInt8)
-   onnx.checker.check_model(str(candidate),full_check=False)
-   session1=ort.InferenceSession(str(candidate),providers=["CPUExecutionProvider"])
-   feed1=make_onnx_inputs(session1,np)
-   out1=session1.run(None,feed1)
-   equivalent,metrics=compare_onnx_outputs(out0,out1,np)
-   result["candidate_bytes"]=candidate.stat().st_size
-   result["candidate_sha256"]=sha256(candidate)
-   result["output_comparison"]=metrics
-   result["graph_check"]="PASS"
-   result["cpu_session_load"]="PASS"
-   if candidate.stat().st_size >= path.stat().st_size:
-    result["status"]="CANDIDATE_NOT_SMALLER"; return result
-   if not equivalent:
-    result["status"]="ROLLBACK_OUTPUT_SMOKE_MISMATCH"; return result
-   shutil.copy2(candidate,path)
-   result["status"]="PROMOTED_DYNAMIC_INT8"
-   result["saved_bytes"]=result["original_bytes"]-result["candidate_bytes"]
-   return result
+   feed0=make_onnx_inputs(session0,np)
+   out0=session0.run(None,feed0)
   except Exception as exc:
-   result.update({"status":"QUANTIZATION_OR_VALIDATION_FAILED","error":type(exc).__name__+":"+str(exc)[:1500]})
+   result.update({"status":"SOURCE_MODEL_LOAD_OR_PROFILE_FAILED","error":type(exc).__name__+":"+str(exc)[:1500]})
    return result
+  candidates=[]
+  dynamic=tmp/"candidate.dynamic-int8.onnx"
+  try:
+   quantize_dynamic(str(path),str(dynamic),weight_type=QuantType.QInt8)
+   if dynamic.is_file():
+    candidates.append({"method":"ONNX_DYNAMIC_INT8","path":dynamic})
+  except Exception as exc:
+   result["attempts"].append({"method":"ONNX_DYNAMIC_INT8","status":"CANDIDATE_BUILD_FAILED",
+                              "error":type(exc).__name__+":"+str(exc)[:1200]})
+  fp16=tmp/"candidate.float16.onnx"
+  try:
+   from onnxconverter_common import float16 as onnx_float16
+   model_fp16=onnx_float16.convert_float_to_float16(source_model,keep_io_types=True,disable_shape_infer=True)
+   onnx.save_model(model_fp16,str(fp16))
+   candidates.append({"method":"ONNX_FLOAT16_CONVERSION","path":fp16})
+  except Exception as exc:
+   result["attempts"].append({"method":"ONNX_FLOAT16_CONVERSION","status":"CANDIDATE_BUILD_FAILED",
+                              "error":type(exc).__name__+":"+str(exc)[:1500]})
+  for candidate in candidates:
+   cp=candidate["path"]; method=candidate["method"]
+   attempt={"method":method,"candidate_bytes":cp.stat().st_size,"candidate_sha256":sha256(cp)}
+   try:
+    onnx.checker.check_model(str(cp),full_check=False)
+    sess=ort.InferenceSession(str(cp),providers=["CPUExecutionProvider"])
+    feed=make_onnx_inputs(sess,np)
+    outputs=sess.run(None,feed)
+    equivalent,metrics=compare_onnx_outputs(out0,outputs,np)
+    attempt.update({"graph_check":"PASS","cpu_session_load":"PASS","output_comparison":metrics,
+                    "output_smoke_passed":equivalent})
+   except Exception as exc:
+    attempt.update({"graph_or_runtime_check":"FAIL","error":type(exc).__name__+":"+str(exc)[:1500],
+                    "status":"CANDIDATE_RUNTIME_FAILED"})
+    result["attempts"].append(attempt)
+    continue
+   if cp.stat().st_size>=path.stat().st_size:
+    attempt["status"]="CANDIDATE_NOT_SMALLER"
+    result["attempts"].append(attempt)
+    continue
+   if not equivalent:
+    attempt["status"]="CANDIDATE_OUTPUT_MISMATCH"
+    result["attempts"].append(attempt)
+    continue
+   shutil.copy2(cp,path)
+   attempt["status"]="PROMOTED"
+   result["attempts"].append(attempt)
+   result.update({"status":"PROMOTED_"+method,"candidate_bytes":path.stat().st_size,
+                  "candidate_sha256":sha256(path),
+                  "saved_bytes":result["original_bytes"]-path.stat().st_size,
+                  "output_comparison":metrics,"graph_check":"PASS","cpu_session_load":"PASS"})
+   return result
+  if any(a.get("status")=="CANDIDATE_NOT_SMALLER" for a in result["attempts"]):
+   result["status"]="CANDIDATES_NOT_SMALLER_OR_FAILED_VALIDATION"
+  else:
+   result["status"]="NO_SMALLER_VALIDATED_CANDIDATE"
+  return result
 
 def pack_float_tensor(tensor, group_size, torch):
  flat=tensor.detach().to(device="cpu",dtype=torch.float32).contiguous().reshape(-1)
