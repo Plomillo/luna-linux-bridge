@@ -117,15 +117,45 @@ def load_candidate(candidate_dir):
             model=AutoModelForImageTextToText.from_config(config,trust_remote_code=False)
     finally:
         torch.set_default_dtype(old)
-    # Tie shared embeddings while the model is still on the meta device. The
-    # quantized manifest records lm_head.weight as an alias of embed_tokens.weight.
-    # Tying only after CPU materialization transiently allocates a second ~110 MiB
-    # vocabulary matrix, raising peak RSS even though it is immediately discarded.
-    if meta.get("tie_word_embeddings") and hasattr(model, "tie_weights"):
+    # Materialize without traversing the tied output head twice. Some Transformers
+    # model classes re-apply `to_empty` to shared Parameters through both the input
+    # embedding and lm_head module, briefly allocating a redundant ~110 MiB tensor.
+    # Tie on meta, detach the output-head module for the CPU allocation, then restore it.
+    output_head = model.get_output_embeddings() if hasattr(model, "get_output_embeddings") else None
+    input_embeddings = model.get_input_embeddings() if hasattr(model, "get_input_embeddings") else None
+    if meta.get("tie_word_embeddings"):
+        if output_head is None or input_embeddings is None:
+            raise RuntimeError("TIED_EMBEDDING_MODULES_NOT_FOUND")
+        if not hasattr(model, "tie_weights"):
+            raise RuntimeError("TIED_EMBEDDING_TIE_METHOD_MISSING")
         model.tie_weights()
-    # Allocate uninitialized CPU storage only after aliasing tied parameters, then
-    # fill each declared tensor from the already hash-verified compact payload.
-    model.to_empty(device="cpu")
+        if getattr(output_head, "weight", None) is not getattr(input_embeddings, "weight", None):
+            raise RuntimeError("TIED_EMBEDDING_ALIAS_NOT_ESTABLISHED_ON_META")
+        output_head_parameters = list(output_head.named_parameters(recurse=False))
+        unexpected = [name for name, _ in output_head_parameters if name != "weight"]
+        if unexpected:
+            raise RuntimeError("TIED_OUTPUT_HEAD_HAS_UNSUPPORTED_EXTRA_PARAMETERS:" + ",".join(unexpected))
+        parents = [
+            (parent, child_name)
+            for _, parent in model.named_modules()
+            for child_name, child in list(parent._modules.items())
+            if child is output_head
+        ]
+        if len(parents) != 1:
+            raise RuntimeError("TIED_OUTPUT_HEAD_PARENT_NOT_UNIQUE")
+        output_parent, output_name = parents[0]
+        output_parent._modules.pop(output_name)
+        try:
+            model.to_empty(device="cpu")
+        finally:
+            output_parent._modules[output_name] = output_head
+        # The input embedding was materialized once. Rebind the restored lm_head
+        # to that CPU storage; no second vocabulary matrix is allocated.
+        model.tie_weights()
+        if getattr(output_head, "weight", None) is not getattr(input_embeddings, "weight", None):
+            raise RuntimeError("TIED_EMBEDDING_ALIAS_NOT_PRESERVED_AFTER_CPU_MATERIALIZATION")
+    else:
+        model.to_empty(device="cpu")
     state=model.state_dict(keep_vars=True)
     # File-map the compact payload and release mapped resident pages periodically.
     # read_bytes() duplicates the complete payload in anonymous RSS at the same time
