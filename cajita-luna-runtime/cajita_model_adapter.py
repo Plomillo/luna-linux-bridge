@@ -314,6 +314,21 @@ def load_translation_lang_map(tokenizer):
         raise RuntimeError("PACKAGED_TOKENIZER_LANGUAGE_MAP_EMPTY")
     return mapping
 
+def apply_low_memory_document_profile(processor) -> dict[str, Any]:
+    """Bound Idefics3 image tiles so one-page OCR does not upscale/split to 2K."""
+    image_processor = getattr(processor, "image_processor", None)
+    if image_processor is None:
+        raise RuntimeError("DOCUMENT_IMAGE_PROCESSOR_MISSING")
+    # The packaged preprocessor defaults to longest_edge=2048 with image splitting,
+    # which can turn one page into many 512px crops and exceed the 1 GiB profile.
+    # This candidate explicitly trades resolution for a bounded single-image path.
+    image_processor.size = {"longest_edge": 512}
+    image_processor.max_image_size = {"longest_edge": 512}
+    image_processor.do_image_splitting = False
+    return {"profile_id": "LOW_MEMORY_512_NO_SPLITS", "longest_edge_px": 512,
+            "max_image_edge_px": 512, "image_splitting": False,
+            "quality_equivalence": "NOT_ESTABLISHED"}
+
 def run_model_task(domain_id: str, payload: dict[str, Any]) -> dict[str, Any]:
     spec = DOMAINS[domain_id]
     action = str(payload.get("action", "infer"))
@@ -475,6 +490,7 @@ def run_model_task(domain_id: str, payload: dict[str, Any]) -> dict[str, Any]:
                 from PIL import Image
                 image = Image.open(input_path).convert("RGB")
             processor = AutoProcessor.from_pretrained(spec["module"].parent, local_files_only=True, trust_remote_code=False)
+            image_profile = apply_low_memory_document_profile(processor)
             model, meta = mod.load_candidate(str(spec["module"].parent))
             prompt = str(payload.get("text", "Extract the visible text and structure from this page."))
             messages = [{"role": "user", "content": [{"type": "image", "image": image}, {"type": "text", "text": prompt}]}]
@@ -495,7 +511,8 @@ def run_model_task(domain_id: str, payload: dict[str, Any]) -> dict[str, Any]:
             return {"status": "PASS_DOCUMENT_EXTRACTION", "domain_id": domain_id,
                     "candidate_id": meta.get("candidate_id"), "generated_token_count": int(generated.shape[-1]),
                     "output_text": text_out, "document_kind": input_path.suffix.casefold().lstrip("."),
-                    "model_loaded": True, "quality_metric": "OCR_LAYOUT_QUALITY_NOT_EVALUATED",
+                    "model_loaded": True, "image_processing_profile": image_profile,
+                    "quality_metric": "OCR_LAYOUT_QUALITY_NOT_EVALUATED",
                     "task_adapter": "local-quantized-granite-docling"}
         finally:
             del generated, inputs, model, processor, bitmap, page, pdfdoc, image
