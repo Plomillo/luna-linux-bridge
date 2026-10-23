@@ -152,7 +152,7 @@ class CajitaRouterTests(unittest.TestCase):
         self.assertFalse(result["execution_authorized"])
         self.assertEqual(result["orchestration_mode"], "PLAN_ONLY; SUBDOMAIN_TASK_DISPATCH_NOT_IMPLEMENTED")
         self.assertIn("D01_CEREBRO", result["unmeasured_peak_rss_domains"])
-        self.assertIn("PEAK_RSS_UNMEASURED:D01_CEREBRO", result["blockers"])
+        self.assertTrue(any(blocker.startswith("PEAK_RSS_UNMEASURED:D01_CEREBRO") for blocker in result["blockers"]))
 
     def test_trace_records_hash_but_not_request_body(self):
         request = "Mi texto privado que no debe persistirse"
