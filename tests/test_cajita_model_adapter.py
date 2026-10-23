@@ -76,6 +76,8 @@ class ModelAdapterControlTests(unittest.TestCase):
         tensor_loop = source[tensor_loop_start:tensor_loop_end]
         self.assertIn('mapped.madvise(mmap.MADV_DONTNEED)', tensor_loop)
         self.assertLess(tensor_loop.index('loaded.add(name)'), tensor_loop.index('mapped.madvise(mmap.MADV_DONTNEED)'))
+        self.assertIn("chunk_rows = min(8, max(1, int(chunk_rows)))", source)
+        self.assertIn("malloc_trim(0)", tensor_loop)
 
 
     def test_docling_bivlm_chunk_decoder_matches_full_reference(self):
