@@ -153,9 +153,19 @@ def smoke(root,d,timeout):
 
 def main():
  ap=argparse.ArgumentParser(description=__doc__)
- ap.add_argument("command",choices=("status","selftest","audit-weights","smoke","smoke-all"))
+ ap.add_argument("command",choices=("status","selftest","audit-weights","smoke","smoke-all","routes","plan"))
  ap.add_argument("--root"); ap.add_argument("--domain"); ap.add_argument("--timeout",type=int,default=600)
+ ap.add_argument("--request"); ap.add_argument("--route-command"); ap.add_argument("--trace-file")
  a=ap.parse_args()
+ if a.command in {"routes","plan"}:
+  from cajita_router import main as router_main
+  router_args=[a.command]
+  if a.command=="plan":
+   if not a.request: ap.error("plan requires --request")
+   router_args.extend(["--request",a.request])
+   if a.route_command: router_args.extend(["--route-command",a.route_command])
+   if a.trace_file: router_args.extend(["--trace-file",a.trace_file])
+  return router_main(router_args)
  try:
   root=root_for(a.root)
   if not 1<=a.timeout<=7200: raise ValueError("TIMEOUT_OUT_OF_RANGE")
