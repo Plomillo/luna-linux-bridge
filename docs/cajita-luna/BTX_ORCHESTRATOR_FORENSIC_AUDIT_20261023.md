@@ -124,3 +124,13 @@ Si una puerta no pasa, el resultado debe marcarse `NOT_CERTIFIED`, conservar el 
 - Eliminación o sustitución del original: DENIED.
 
 Esta pasada añade evidencia y herramientas de inspección en una rama separada. No altera `CajitadeLuna.md`, la autoridad canónica, el archivo BTX, el PDF contenido ni el Parquet existente.
+
+## 9. Reconciliación tipográfica posterior — 2026-10-23
+
+La primera cifra del 86,96 % correspondía únicamente a comparar los números de capítulo de tamaño grande contra los 1.189 capítulos del canon protestante habitual; no era evidencia de 155 capítulos ausentes. Una segunda pasada separó el estilo grande de las variantes tipográficas:
+
+- **1.034/1.034 marcadores de capítulo en tipografía grande** coinciden en orden con los capítulos que el PDF representa con ese estilo.
+- **Salmos:** se detectaron 150 marcadores de capítulo en estilo `Clearface-Heavy-SC700`, tamaño 10,2 pt. La secuencia obtenida cubre los números 1–150 sin duplicados ni huecos.
+- **Cinco libros de un capítulo** no presentan el marcador grande esperado y deben identificarse por el límite del libro: Abdías, Filemón, 2 Juan, 3 Juan y Judas.
+
+La reconciliación tipográfica, por tanto, explica el total estructural de 1.189 capítulos como **1.034 marcadores grandes + 150 marcadores de Salmos + 5 capítulos únicos representados por el límite del libro**. Esta comprobación cierra el diagnóstico de numeración de capítulos; **no certifica todavía la extracción de los versículos** ni la correspondencia exacta de cada fragmento de texto con su referencia. El siguiente gate continúa siendo construir el libro BTX y validar íntegramente sus libros, capítulos, versículos, contenido, consultas e índices antes de autorizar cualquier sustitución.
