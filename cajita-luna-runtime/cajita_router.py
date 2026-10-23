@@ -58,7 +58,7 @@ CAPABILITY_ADAPTERS = {
 TASK_RULES = [
     ("audio_transcription", "D03_TRANSCRIPCION", (r"\btranscrib\w*\b", r"\btranscripci[oó]n\b", r"\baudio\b", r"\bspeech[- ]to[- ]text\b", r"\bvoz a texto\b")),
     ("document_extraction", "D05_INTELIGENCIA_DOCUMENTAL", (r"\b(pdf|documento|documentos|documental|ocr)\b", r"\bextraer\s+(el\s+)?texto\b", r"\bleer\s+(el\s+)?(archivo|documento)\b", r"\bresum\w*\s+(el\s+)?(pdf|documento)\b")),
-    ("text_translation", "D04_TRADUCTOR_INTELIGENTE", (r"\btraduc\w*\b", r"\btranslation\b", r"\btranslate\b", r"\btraducci[oó]n\b", r"\btranslator\b")),
+    ("text_translation", "D04_TRADUCTOR_INTELIGENTE", (r"\btrad[uú]c\w*\b", r"\btranslation\b", r"\btranslate\b", r"\btraducci[oó]n\b", r"\btranslator\b")),
     ("advanced_reasoning", "D06_SISTEMA_INTELIGENTE", (r"\brazon\w*\b", r"\binfer\w*\b", r"\banaliza\w*\b", r"\bcompara\w*\b", r"\bauditor[ií]a\b", r"\bdemuestra\b", r"\bformaliz\w*\b")),
 ]
 
