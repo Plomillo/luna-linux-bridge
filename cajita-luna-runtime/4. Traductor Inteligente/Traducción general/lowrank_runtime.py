@@ -5,7 +5,9 @@ import json, pathlib, time
 import torch
 from torch import nn
 from torch.nn import functional as F
-from safetensors.torch import load_file
+import sys
+sys.path.insert(0, str(next(p for p in pathlib.Path(__file__).resolve().parents if p.name == "cajita-luna-runtime")))
+from cajita_weight_materializer import load_model_state
 from transformers import AutoConfig, AutoProcessor, SeamlessM4Tv2Model
 
 ROOT = pathlib.Path(__file__).resolve().parent
@@ -117,7 +119,7 @@ def load_candidate():
     cfg = AutoConfig.from_pretrained(ROOT, local_files_only=True)
     if getattr(cfg, "model_type", None) != "seamless_m4t_v2":
         raise RuntimeError("MODEL_IDENTITY_MISMATCH")
-    weights = load_file(str(ROOT / "model.safetensors"), device="cpu")
+    weights = load_model_state(ROOT / "model.safetensors")
     with torch.device("meta"):
         model = SeamlessM4Tv2Model(cfg)
     modules = dict(model.named_modules())
