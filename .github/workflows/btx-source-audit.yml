@@ -47,7 +47,7 @@ jobs:
       - name: Align large numeric spans to canonical chapter sequence
         run: |
           python tools/btx-audit/analyze_chapter_spans.py > btx-chapter-span-alignment.json
-          python -c "import json; d=json.load(open('btx-chapter-span-alignment.json', encoding='utf-8')); keys=['pdf_pages','large_numeric_span_count','large_numeric_span_style_counts','small_bold_numeric_span_style_counts','small_bold_numeric_span_suffix_counts','large_noninteger_numeric_style_counts','expected_sequence_lcs_matches','expected_sequence_coverage_percent','unmatched_expected_chapter_count','unmatched_expected_chapters_first_150','unmatched_observed_candidate_count','unmatched_observed_candidates_first_100','book_chapter_alignment','candidate_counts_by_page_sample','status']; print(json.dumps({k:d.get(k) for k in keys}, ensure_ascii=False))"
+          python -c "import json; d=json.load(open('btx-chapter-span-alignment.json', encoding='utf-8')); keys=['pdf_pages','large_numeric_span_count','large_numeric_span_style_counts','small_bold_numeric_span_style_counts','small_bold_numeric_span_suffix_counts','all_small_numeric_span_style_counts','small_numeric_tokens_by_value','large_noninteger_numeric_style_counts','expected_sequence_lcs_matches','expected_sequence_coverage_percent','unmatched_expected_chapter_count','unmatched_expected_chapters_first_150','unmatched_observed_candidate_count','unmatched_observed_candidates_first_100','chapter_page_ranges_by_book','book_chapter_alignment','candidate_counts_by_page_sample','status']; print(json.dumps({k:d.get(k) for k in keys}, ensure_ascii=False))"
       - name: Upload forensic metadata report
         if: always()
         uses: actions/upload-artifact@v4
