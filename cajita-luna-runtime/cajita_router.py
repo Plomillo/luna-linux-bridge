@@ -50,10 +50,13 @@ DOMAIN_CAPABILITY = {
     "D05_INTELIGENCIA_DOCUMENTAL": "document_extraction", "D06_SISTEMA_INTELIGENTE": "advanced_reasoning",
 }
 CAPABILITY_ADAPTERS = {
-    "answer_generation": "NOT_REGISTERED", "job_orchestration": "REGISTRY_SELFTEST_ONLY",
-    "audio_transcription": "NOT_REGISTERED", "text_translation": "NOT_REGISTERED",
-    "document_extraction": "NOT_REGISTERED", "pdf_generation": "NOT_REGISTERED",
-    "advanced_reasoning": "NOT_REGISTERED",
+    "answer_generation": "CAJITA_MODEL_ADAPTERS/1.0",
+    "job_orchestration": "CAJITA_MODEL_ADAPTERS/1.0_DIAGNOSTIC_ONLY",
+    "audio_transcription": "CAJITA_MODEL_ADAPTERS/1.0",
+    "text_translation": "CAJITA_MODEL_ADAPTERS/1.0",
+    "document_extraction": "CAJITA_MODEL_ADAPTERS/1.0",
+    "pdf_generation": "CAJITA_MODEL_ADAPTERS/1.0_STANDARD_LIBRARY",
+    "advanced_reasoning": "CAJITA_MODEL_ADAPTERS/1.0",
 }
 TASK_RULES = [
     ("audio_transcription", "D03_TRANSCRIPCION", (r"\btranscrib\w*\b", r"\btranscripci[oó]n\b", r"\baudio\b", r"\bspeech[- ]to[- ]text\b", r"\bvoz a texto\b")),
