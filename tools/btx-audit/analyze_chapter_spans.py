@@ -35,6 +35,8 @@ BOOKS_CHAPTERS = [
  ("3 Juan",1),("Judas",1),("Apocalipsis",22)
 ]
 EXPECTED = [(book, ch) for book, n in BOOKS_CHAPTERS for ch in range(1, n + 1)]
+ALTERNATE_CHAPTER_MARKERS = {"Salmos", "Abdías", "Filemón", "2 Juan", "3 Juan", "Judas"}
+EXPECTED_LARGE = [(book, ch) for book, ch in EXPECTED if book not in ALTERNATE_CHAPTER_MARKERS]
 
 
 def find_7z() -> str:
@@ -197,21 +199,28 @@ def main() -> int:
         pdf.close()
         observed_values = [x["value"] for x in candidates]
         expected_values = [ch for _, ch in EXPECTED]
-        pairs, matched = lcs_match(expected_values, candidates)
+        all_pairs, all_matched = lcs_match(expected_values, candidates)
+        all_matched_by_expected = {i:j for i,j in all_pairs}
+        all_unmatched_expected = [
+            {"index":i,"book":book,"chapter":ch}
+            for i,(book,ch) in enumerate(EXPECTED) if i not in all_matched_by_expected
+        ]
+        expected_large_values = [ch for _, ch in EXPECTED_LARGE]
+        pairs, matched = lcs_match(expected_large_values, candidates)
         matched_by_expected = {i:j for i,j in pairs}
         unmatched_expected = [
             {"index":i,"book":book,"chapter":ch}
-            for i,(book,ch) in enumerate(EXPECTED) if i not in matched_by_expected
+            for i,(book,ch) in enumerate(EXPECTED_LARGE) if i not in matched_by_expected
         ]
         matched_observed = {j:i for i,j in pairs}
         unmatched_observed = [c for j,c in enumerate(candidates) if j not in matched_observed]
         expected_by_book: dict[str,dict[str,int]] = {}
         chapter_page_ranges: dict[str,dict[str,Any]] = {}
-        for i,(book,ch) in enumerate(EXPECTED):
-            row = expected_by_book.setdefault(book, {"expected":0,"matched":0})
-            row["expected"] += 1
+        for i,(book,ch) in enumerate(EXPECTED_LARGE):
+            row = expected_by_book.setdefault(book, {"expected_large_markers":0,"matched_large_markers":0})
+            row["expected_large_markers"] += 1
             if i in matched_by_expected:
-                row["matched"] += 1
+                row["matched_large_markers"] += 1
                 candidate = candidates[matched_by_expected[i]]
                 bounds = chapter_page_ranges.setdefault(book, {"first_matched_chapter":ch,"first_page":candidate["page"],"last_matched_chapter":ch,"last_page":candidate["page"]})
                 bounds["last_matched_chapter"] = ch
@@ -229,17 +238,23 @@ def main() -> int:
             "small_numeric_one_pages": [{"page":p,"ones":counts["1"],"twos":counts["2"],"threes":counts["3"]} for p,counts in sorted(small_number_pages.items()) if counts["1"]],
             "large_noninteger_numeric_style_counts": large_noninteger_counts.most_common(100),
             "large_noninteger_numeric_samples": large_noninteger_samples,
-            "expected_sequence_lcs_matches": matched,
-            "expected_sequence_coverage_percent": round(matched / len(EXPECTED) * 100, 2),
+            "expected_sequence_lcs_matches": all_matched,
+            "expected_sequence_coverage_percent": round(all_matched / len(EXPECTED) * 100, 2),
+            "expected_large_marker_chapters": len(EXPECTED_LARGE),
+            "large_marker_sequence_lcs_matches": matched,
+            "large_marker_coverage_percent": round(matched / len(EXPECTED_LARGE) * 100, 2),
+            "large_marker_unmatched_expected_count": len(unmatched_expected),
+            "large_marker_unmatched_expected_first_100": unmatched_expected[:100],
+            "large_marker_unmatched_observed_count": len(unmatched_observed),
+            "large_marker_unmatched_observed_first_100": unmatched_observed[:100],
+            "all_canon_unmatched_expected_count": len(all_unmatched_expected),
+            "all_canon_unmatched_expected_first_150": all_unmatched_expected[:150],
+            "alternate_chapter_marker_books": sorted(ALTERNATE_CHAPTER_MARKERS),
             "chapter_page_ranges_by_book": chapter_page_ranges,
             "book_chapter_alignment": [
-                {"book":book, **row, "coverage_percent":round(100*row["matched"]/row["expected"],2)}
+                {"book":book, **row, "large_marker_coverage_percent":round(100*row["matched_large_markers"]/row["expected_large_markers"],2)}
                 for book,row in expected_by_book.items()
             ],
-            "unmatched_expected_chapter_count": len(unmatched_expected),
-            "unmatched_expected_chapters_first_150": unmatched_expected[:150],
-            "unmatched_observed_candidate_count": len(unmatched_observed),
-            "unmatched_observed_candidates_first_100": unmatched_observed[:100],
             "large_numeric_candidates_first_100": candidates[:100],
             "large_numeric_candidates_last_100": candidates[-100:],
             "candidate_counts_by_page_sample": {
