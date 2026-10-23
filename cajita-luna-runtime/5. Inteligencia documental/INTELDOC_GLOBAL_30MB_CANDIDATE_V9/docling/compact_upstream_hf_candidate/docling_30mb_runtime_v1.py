@@ -127,7 +127,7 @@ def load_candidate(candidate_dir):
     import mmap
     with bp.open("rb") as weights_file:
         mapped=mmap.mmap(weights_file.fileno(),0,access=mmap.ACCESS_READ)
-    view=memoryview(mapped); loaded=set(); close_map=True
+    view=memoryview(mapped); loaded=set()
     try:
         with torch.no_grad():
             for name,r in meta["tensors"].items():
@@ -146,7 +146,7 @@ def load_candidate(candidate_dir):
         except BufferError:
             # Failures can retain temporary NumPy views in traceback frames. Keep the
             # exception authoritative; the mapping is read-only and GC will close it.
-            close_map=False
+            pass
     if hasattr(model,"tie_weights"): model.tie_weights()
     params=set(dict(model.named_parameters()))
     missing=sorted(params-loaded)
