@@ -152,6 +152,9 @@ def smoke(root,d,timeout):
  return code
 
 def main():
+ if len(sys.argv)>1 and sys.argv[1]=="adapter":
+  from cajita_model_adapter import main as adapter_main
+  return adapter_main(sys.argv[2:])
  ap=argparse.ArgumentParser(description=__doc__)
  ap.add_argument("command",choices=("status","selftest","audit-weights","smoke","smoke-all","routes","plan"))
  ap.add_argument("--root"); ap.add_argument("--domain"); ap.add_argument("--timeout",type=int,default=600)
