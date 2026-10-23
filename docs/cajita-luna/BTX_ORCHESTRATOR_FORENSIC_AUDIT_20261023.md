@@ -213,3 +213,14 @@ Los resultados estructurales comprobados independientemente son: integridad SQLi
 El validador independiente no coteja cada texto versicular de la base contra el segmento correspondiente del PDF original; valida estructura, procedencia por hashes, integridad de la base, consultas e índices. El cotejo semántico/textual independiente, las notas y referencias cruzadas, la regeneración del manifiesto de Cajita, la medición real del .macrodown reconstruido bajo el hard cap, la activación de runtime y el rollback de sustitución siguen siendo gates separados.
 
 Por tanto, esta candidata ya supera la validación estructural independiente, pero **no equivale aún a la certificación integral exigida para borrar o reemplazar la fuente**. La fuente BTX .7z y el PDF interno permanecen intactos. El PR #96 se mantiene en borrador, sin integrar el candidato en main ni distribuir la base como artefacto certificado.
+
+## 14. Artefacto temporal descargable para revisión — 2026-10-23 23:45 UTC
+
+El flujo completo de la revisión, incluida la etapa que prepara y publica una copia temporal de la base sólo tras pasar las puertas estructurales, terminó correctamente: https://github.com/Plomillo/luna-linux-bridge/actions/runs/40041430598
+
+Artefacto de GitHub Actions:
+https://github.com/Plomillo/luna-linux-bridge/actions/runs/40041430598/artifacts/12539033768
+
+Nombre del artefacto: `BTX-SQLite-Core-Candidate-STRUCTURAL-NOT-CERTIFIED`. Tamaño del paquete comprimido de artefacto: 2.246.379 bytes. Incluye la base SQLite candidata (el archivo de base tiene 6.750.208 bytes antes de compresión) y los informes de validación/reproducibilidad asociados.
+
+Esta entrega es temporal, identificada expresamente como candidata no certificada y no forma parte de `main` ni del runtime. Puede usarse para probar consultas, índices e integración, pero no debe reemplazar la fuente. Sigue pendiente la comparación independiente del contenido de cada versículo contra la fuente PDF, además de decidir cómo representar notas, referencias cruzadas y material editorial.
