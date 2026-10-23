@@ -106,7 +106,7 @@ def main():
    for f in files:
     n=f.name.lower(); ext=f.suffix.lower()
     if ext not in MODEL_EXTS and n not in {"pytorch_model.bin","model.onnx"}: continue
-    item={"name":f.name,"suffix":ext,"bytes":f.stat().st_size,"sha256":sha(f)}
+    item={"name":f.name,"relative_path":str(f.relative_to(tmp)),"suffix":ext,"bytes":f.stat().st_size,"sha256":sha(f)}
     if ext==".onnx":
      copy=tmp/"onnx"/aid/f"{len(onnx_models):04d}_{f.name}";copy.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(f,copy)
      onnx_models.append((aid,copy,item["sha256"]));item["quantizer"]="ONNX_DYNAMIC_INT8"
@@ -158,15 +158,18 @@ def main():
         "error":f"{type(e).__name__}: {e}"[:1500]})
  models=sum(len(r["model_payloads_found"]) for r in rows)
  wins=sum(q.get("status")=="QUANTIZED_CANDIDATE_SMALLER" for r in rows for q in r["quantization_results"])
+ quantization_failures=sum(q.get("status") in {"QUANTIZATION_OR_VALIDATION_FAILED","BLOCKED_QUANTIZER_IMPORT_FAILED","BLOCKED_QUANTIZER_INSTALL_FAILED"} for r in rows for q in r["quantization_results"])
+ not_smaller=sum(q.get("status")=="QUANTIZED_CANDIDATE_NOT_SMALLER" for r in rows for q in r["quantization_results"])
  report={"schema":"CAJITA_NEW_ENGINE_MODEL_QUANTIZATION/1.0","audit_id":"CAJITA_NEW_ENGINE_QUANTIZATION_20261023",
   "created_at_utc":datetime.now(timezone.utc).isoformat(),"repository":"Plomillo/luna-linux-bridge","branch":"main",
   "target_hard_cap_bytes":470000000,"scope":"exactly ten newly incorporated assets in EXTERNALIZED_ASSET_PLACEMENT.json",
   "method":"Scan nested containers and dynamically quantize actual ONNX graphs to signed INT8; never lossy-transform general executable bytes.",
   "protected_legacy_weights":{"policy":"NO_MODIFICATION","paths":PROTECTED,"status":"NOT_TARGETED"},
   "summary":{"assets_expected":10,"assets_scanned":len(rows),"files_scanned":scanned,"expanded_bytes_scanned":expanded_total,
-   "model_payloads_found":models,"onnx_candidates_quantized_smaller_and_validated":wins,
+   "model_payloads_found":models,"onnx_graphs_found":len(onnx_models),"onnx_candidates_quantized_smaller_and_validated":wins,\n   "onnx_candidates_not_smaller":not_smaller,"quantization_failures":quantization_failures,
    "hard_cap_compliance":"NOT_EVALUATED_BY_QUANTIZATION_PASS",
-   "status":"QUANTIZED_CANDIDATES_CREATED" if wins else "NO_ONNX_TENSORS_FOUND_IN_THE_TEN_ASSETS"},
+   "status":("QUANTIZED_CANDIDATES_CREATED" if wins else
+    ("ONNX_FOUND_BUT_NO_SIZE_SAVING_QUANTIZATION" if onnx_models else "NO_NEURAL_MODEL_PAYLOAD_FOUND_IN_THE_TEN_ASSETS"))},
   "assets":rows,"caveats":["Model file types other than ONNX are inventoried but require architecture-specific quantizers.",
    "Graph validation and CPU session loading are not quality equivalence tests; candidates are not auto-promoted.",
    "Six prior legacy model paths are not touched."]}
