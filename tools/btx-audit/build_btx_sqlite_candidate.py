@@ -464,7 +464,13 @@ def build_db(
                     # A visible verse-1 numeral follows an already observed chapter title.
                     continue
                 if new_key in verses and current != new_key:
-                    duplicate_markers.append({"book":active_book,"chapter":active_chapter,"verse":f"{verse_num}{suffix}","page":span.page})
+                    duplicate_markers.append({
+                        "book":active_book,"chapter":active_chapter,"verse":f"{verse_num}{suffix}",
+                        "page":span.page,"column":span.col,"block":span.block,"line":span.line,
+                        "x0":round(span.x0,1),"y0":round(span.y0,1),"x1":round(span.x1,1),"y1":round(span.y1,1),
+                        "font":span.font,"font_size":span.size,"line_char_count":len(span.line_text),
+                        "line_text_emitted":False
+                    })
                     current=new_key
                     last_span=None
                     continue
@@ -472,6 +478,52 @@ def build_db(
                 continue
             append_body(span)
 
+    # Metadata-only layout diagnostics for suspected appended matter and the
+    # unresolved John 8 opening. Verse/source text is never copied into this report.
+    tail_page_profiles=[]
+    for page_no in range(1308, 1361):
+        page_spans=[sp for sp in spans if sp.page==page_no]
+        page_lines=[ln for ln in lines if ln.page==page_no]
+        style_counts=collections.Counter(sp.font for sp in page_spans)
+        numeric_marker_candidates=[
+            sp for sp in page_spans
+            if sp.font=="Clearface-Heavy" and 9.0<=sp.size<=10.5 and parse_verse_token(sp.text) is not None and sp.y0>=30
+        ]
+        tail_page_profiles.append({
+            "page":page_no,
+            "span_count":len(page_spans),
+            "line_count":len(page_lines),
+            "body_font_character_count":sum(len(sp.text.strip()) for sp in page_spans if body_font(sp)),
+            "verse_marker_style_candidate_count":len(numeric_marker_candidates),
+            "numeric_marker_candidates":[
+                {"token":sp.text.strip(),"column":sp.col,"block":sp.block,"line":sp.line,
+                 "x0":round(sp.x0,1),"y0":round(sp.y0,1),"font":sp.font,"font_size":sp.size,
+                 "line_char_count":len(sp.line_text),"text_emitted":False}
+                for sp in numeric_marker_candidates[:30]
+            ],
+            "top_fonts":[{"font":font,"count":count} for font,count in style_counts.most_common(8)],
+            "text_emitted":False
+        })
+    john8_anchor=next((sp for sp in spans if big_map.get(sp.key)==("Juan",8)),None)
+    john8_opening_profile={"anchor_found":john8_anchor is not None,"verse1_candidate_spans":[]}
+    if john8_anchor is not None:
+        john8_opening_profile.update({
+            "anchor_page":john8_anchor.page,"anchor_column":john8_anchor.col,
+            "anchor_x0":round(john8_anchor.x0,1),"anchor_y0":round(john8_anchor.y0,1),
+            "anchor_font":john8_anchor.font,"anchor_font_size":john8_anchor.size
+        })
+        j_candidates=[
+            sp for sp in spans
+            if john8_anchor.page-1<=sp.page<=john8_anchor.page+2
+            and sp.font=="Clearface-Heavy" and 9.0<=sp.size<=10.5
+            and sp.text.strip()=="1" and sp.y0>=30
+        ]
+        john8_opening_profile["verse1_candidate_spans"]=[
+            {"page":sp.page,"column":sp.col,"block":sp.block,"line":sp.line,
+             "x0":round(sp.x0,1),"y0":round(sp.y0,1),"font":sp.font,"font_size":sp.size,
+             "line_char_count":len(sp.line_text),"text_emitted":False}
+            for sp in j_candidates[:100]
+        ]
     verse_rows=[]
     for key in verse_order:
         book,ch,vnum,suffix=key
@@ -577,6 +629,8 @@ def build_db(
         "duplicate_reference_keys":duplicate_keys,
         "duplicate_marker_events":len(duplicate_markers),
         "duplicate_marker_examples":duplicate_markers[:50],
+        "tail_page_layout_profiles":tail_page_profiles,
+        "john8_opening_layout_profile":john8_opening_profile,
         "missing_expected_chapter_count":len(missing_expected_chapters),
         "missing_expected_chapter_examples":missing_expected_chapters[:50],
         "missing_first_verse_chapter_count":len(missing_first_verses),
@@ -665,7 +719,7 @@ def main() -> int:
         "large_chapter_markers","large_chapter_positional_mismatches","psalm_chapter_markers",
         "chapter_anchor_count","chapter_anchor_sequence_exact","single_chapter_verse1_boundary_candidates",
         "database_file_bytes","database_sha256","book_count","chapter_count","verse_row_count",
-        "verse_marker_spans_seen","duplicate_reference_keys","duplicate_marker_events","duplicate_marker_examples",
+        "verse_marker_spans_seen","duplicate_reference_keys","duplicate_marker_events","duplicate_marker_examples","tail_page_layout_profiles","john8_opening_layout_profile",
         "missing_expected_chapter_count","missing_first_verse_chapter_count","missing_first_verse_examples","empty_verse_chapter_count","empty_verse_examples",
         "chapter_verse_number_gap_chapter_count","chapter_verse_number_gap_total","chapter_verse_number_gap_examples",
         "text_roundtrip_whitespace_normalized_exact","captured_text_characters","stored_text_characters",
