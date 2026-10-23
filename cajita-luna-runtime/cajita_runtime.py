@@ -5,7 +5,7 @@ import argparse, datetime as dt, hashlib, json, os, subprocess, sys, time
 from pathlib import Path
 
 SCHEMA = "CAJITA_SIX_DOMAIN_RUNTIME/1.1"
-HARD_CAP_BYTES = 479_000_000
+HARD_CAP_BYTES = 470_000_000
 CANDIDATE_ID = "CAJITA_LUNA_RUNTIME_V9_20261023"
 MANIFEST_REL = Path("CAJITA_RUNTIME_V1/weights_manifest.json")
 MANIFEST_SHA256 = "50ae6f9cf60ef84d4be15d35af998c5ad64685f54b882cc3fff8e812357e3483"
