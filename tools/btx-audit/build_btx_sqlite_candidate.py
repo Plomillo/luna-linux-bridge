@@ -245,9 +245,9 @@ def identify_anchors(
     psalm_map = {span.key: ("Salmos", num) for span, num in psalm_entries}
     psalm_heading_lines = {span.line_key for span,_ in psalm_entries}
 
-    # Candidate book-heading lines are accepted only inside the page/column span
-    # bounded by adjacent canonical chapter markers. This prevents a verse word
-    # in the body from silently becoming a book boundary.
+    # Five one-chapter books do not use the large 26pt chapter marker.
+    # Their verse-1 marker is used as a boundary, constrained between the two
+    # adjacent chapter anchors already validated in canonical order.
     single_chapter_prev_next = {
         "Abdías": (("Amós", 9), ("Jonás", 1)),
         "Filemón": (("Tito", 3), ("Hebreos", 1)),
@@ -255,54 +255,48 @@ def identify_anchors(
         "3 Juan": (("1 Juan", 5), ("Apocalipsis", 1)),
         "Judas": (("1 Juan", 5), ("Apocalipsis", 1)),
     }
-    big_anchor_pos = {chapter: (big[idx].page, big[idx].col, big[idx].y0, big[idx].x0) for idx, chapter in enumerate(EXPECTED_LARGE_CHAPTERS)}
-    single_line_map: dict[tuple[int,int,int], tuple[str,int]] = {}
-    candidate_summary: dict[str,Any] = {}
-    for book, (prev_key, next_key) in single_chapter_prev_next.items():
-        prev_pos = big_anchor_pos[prev_key]
-        next_pos = big_anchor_pos[next_key]
-        matches = []
-        def is_target_title(line_text: str, target: str) -> bool:
-            normalized = norm_text(line_text)
-            if target == "2 Juan":
-                return normalized in {"2juan","iijuan","segundajuan","segundacartadejuan","segundaepistoladejuan","segundacarta dejuan".replace(" ","")} or ("juan" in normalized and ("segunda" in normalized or normalized.startswith("ii")))
-            if target == "3 Juan":
-                return normalized in {"3juan","iiijuan","tercerajuan","terceracartadejuan","terceraepistoladejuan"} or ("juan" in normalized and ("tercera" in normalized or normalized.startswith("iii")))
-            if target == "Judas":
-                return "judas" in normalized and len(normalized) <= 35
-            if target == "Filemón":
-                return "filemon" in normalized and len(normalized) <= 40
-            if target == "Abdías":
-                return "abdias" in normalized and len(normalized) <= 35
-            return normalized == norm_text(target)
-        for line in lines:
-            if not is_target_title(line.text, book):
-                continue
-            max_size = max((span.size for span in line.spans), default=0.0)
-            absolute = (line.page, line.col, float(line.y0), float(line.x0))
-            if absolute > prev_pos and absolute < next_pos:
-                matches.append({"line":line,"font_size":max_size})
-        candidate_summary[book] = [
-            {"page":m["line"].page,"column":m["line"].col,"y":round(m["line"].y0,1),"font_size":m["font_size"]}
-            for m in matches
-        ]
-        if not matches:
-            raise RuntimeError(f"SINGLE_CHAPTER_BOOK_HEADING_UNRESOLVED:{book}")
-        # If a boundary interval contains multiple exact standalone occurrences,
-        # use only one when unambiguous; otherwise deny conversion.
-        if len(matches) != 1:
-            raise RuntimeError(f"SINGLE_CHAPTER_BOOK_HEADING_AMBIGUOUS:{book}:{len(matches)}")
-        single_line_map[matches[0]["line"].key] = (book, 1)
-
+    big_anchor_pos = {
+        chapter: (big[idx].page, big[idx].col, big[idx].y0, big[idx].x0)
+        for idx, chapter in enumerate(EXPECTED_LARGE_CHAPTERS)
+    }
+    small_one_spans = [
+        span for span in spans
+        if span.font == "Clearface-Heavy"
+        and 9.0 <= span.size <= 10.5
+        and span.text.strip() == "1"
+        and span.y0 >= 30
+    ]
+    single_span_map: dict[tuple[int,int,int,int], tuple[str,int]] = {}
+    single_anchor_summary: dict[str,Any] = {}
+    # First four one-chapter-book boundaries are unique intervals; three Johannine
+    # short books share one interval and must appear in canonical order.
+    for book in ("Abdías", "Filemón"):
+        prev_key, next_key = single_chapter_prev_next[book]
+        prev_pos, next_pos = big_anchor_pos[prev_key], big_anchor_pos[next_key]
+        candidates = [sp for sp in small_one_spans if prev_pos < span_order(sp) < next_pos]
+        candidates.sort(key=span_order)
+        single_anchor_summary[book] = [{"page":sp.page,"x":sp.x0,"y":sp.y0} for sp in candidates]
+        if len(candidates) != 1:
+            raise RuntimeError(f"SINGLE_CHAPTER_VERSE1_BOUNDARY_UNRESOLVED:{book}:{len(candidates)}")
+        single_span_map[candidates[0].key] = (book,1)
+    prev_pos, next_pos = big_anchor_pos[("1 Juan",5)], big_anchor_pos[("Apocalipsis",1)]
+    candidates = [sp for sp in small_one_spans if prev_pos < span_order(sp) < next_pos]
+    candidates.sort(key=span_order)
+    single_anchor_summary["2 Juan / 3 Juan / Judas"] = [{"page":sp.page,"x":sp.x0,"y":sp.y0} for sp in candidates]
+    if len(candidates) != 3:
+        raise RuntimeError(f"SINGLE_CHAPTER_VERSE1_BOUNDARIES_UNRESOLVED:JOHANNINE_GROUP:{len(candidates)}")
+    for book, span in zip(("2 Juan","3 Juan","Judas"), candidates):
+        single_span_map[span.key] = (book,1)
     anchors = []
     for span in big:
         book, ch = big_map[span.key]
         anchors.append({"book":book,"chapter":ch,"page":span.page,"col":span.col,"y":span.y0,"x":span.x0,"kind":"LARGE_CHAPTER"})
     for span, ch in psalm_entries:
         anchors.append({"book":"Salmos","chapter":ch,"page":span.page,"col":span.col,"y":span.y0,"x":span.x0,"kind":"PSALM_SMALLCAPS"})
-    for line_key,(book,ch) in single_line_map.items():
-        line=line_map[line_key]
-        anchors.append({"book":book,"chapter":ch,"page":line.page,"col":line.col,"y":line.y0,"x":line.x0,"kind":"ONE_CHAPTER_BOOK_TITLE"})
+    span_by_key={sp.key:sp for sp in spans}
+    for span_key,(book,ch) in single_span_map.items():
+        sp=span_by_key[span_key]
+        anchors.append({"book":book,"chapter":ch,"page":sp.page,"col":sp.col,"y":sp.y0,"x":sp.x0,"kind":"SINGLE_CHAPTER_VERSE1"})
     anchors.sort(key=lambda a:(a["page"],a["col"],a["y"],a["x"]))
     observed_sequence=[(a["book"],a["chapter"]) for a in anchors]
     if observed_sequence != EXPECTED_CHAPTERS:
@@ -322,7 +316,7 @@ def identify_anchors(
         "chapter_anchor_count":len(anchors),
         "chapter_anchor_sequence_exact":True,
     }
-    return anchors,big_map,psalm_map,metadata | {"single_line_map":single_line_map,"psalm_heading_lines":psalm_heading_lines}
+    return anchors,big_map,psalm_map,metadata | {"single_span_map":single_span_map,"psalm_heading_lines":psalm_heading_lines}
 
 
 def build_db(
@@ -362,12 +356,11 @@ def build_db(
     for i,(book,chap_count) in enumerate(BOOKS_CHAPTERS, start=1):
         conn.execute("INSERT INTO books(book_id,book_order,name,abbreviation) VALUES(?,?,?,?)",(i,i,book,book))
     chapters_seen: dict[tuple[str,int],int]={}
-    for line in lines:
-        # selected title line represents one-chapter-book heading; its chapter is created below.
-        if line.key in single_line_map:
-            book,ch=single_line_map[line.key]
-            chapters_seen[(book,ch)]=line.page
-            conn.execute("INSERT INTO chapters(book_id,chapter_number,source_page) VALUES(?,?,?)",(BOOK_ORDER[book],ch,line.page))
+    span_by_key={sp.key:sp for sp in spans}
+    for span_key,(book,ch) in single_span_map.items():
+        page=span_by_key[span_key].page
+        chapters_seen[(book,ch)]=page
+        conn.execute("INSERT INTO chapters(book_id,chapter_number,source_page) VALUES(?,?,?)",(BOOK_ORDER[book],ch,page))
 
     for span in spans:
         if span.key in big_map:
@@ -430,11 +423,6 @@ def build_db(
         last_span=span
 
     for line in lines:
-        if line.key in single_line_map:
-            book,ch=single_line_map[line.key]
-            chapter_start(book,ch,line.page)
-            last_span=None
-            continue
         if line.key in psalm_heading_lines:
             # The "Salmo N" label is structural; create the chapter at its number span
             # but do not add the label itself as verse content.
@@ -447,6 +435,10 @@ def build_db(
         if line.y0 < 30:
             continue
         for span in line.spans:
+            if span.key in single_span_map:
+                book,ch=single_span_map[span.key]
+                chapter_start(book,ch,span.page)
+                continue
             if span.key in big_map:
                 book,ch=big_map[span.key]
                 chapter_start(book,ch,span.page)
@@ -650,10 +642,10 @@ def main() -> int:
             anchors,big_map,psalm_map,anchor_meta=identify_anchors(lines,spans,widths,line_map)
             output_report=build_db(
                 pdf_path,args.output,source_sha,pdf_sha,lines,spans,
-                big_map,psalm_map,anchor_meta["single_line_map"],anchor_meta["psalm_heading_lines"]
+                big_map,psalm_map,anchor_meta["single_span_map"],anchor_meta["psalm_heading_lines"]
             )
             report.update(anchor_meta)
-            report.pop("single_line_map",None)
+            report.pop("single_span_map",None)
             report.pop("psalm_heading_lines",None)
             report.update(output_report)
             report["source_archive_integrity"]="PASS"
