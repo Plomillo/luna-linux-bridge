@@ -74,7 +74,7 @@ def main():
  if not PLACEMENT.is_file(): raise SystemExit("FAIL_CLOSED: placement manifest absent")
  assets=json.loads(PLACEMENT.read_text(encoding="utf-8")).get("assets",[])
  if len(assets)!=10: raise SystemExit(f"FAIL_CLOSED: expected 10 assets, got {len(assets)}")
- OUT.mkdir(parents=True,exist_ok=True); rows=[]; onnx=[]; scanned=0; expanded_total=0
+ OUT.mkdir(parents=True,exist_ok=True); rows=[]; onnx_models=[]; scanned=0; expanded_total=0
  with tempfile.TemporaryDirectory(prefix="cajita-quantize-") as td:
   tmp=Path(td)
   for a in assets:
@@ -108,19 +108,19 @@ def main():
     if ext not in MODEL_EXTS and n not in {"pytorch_model.bin","model.onnx"}: continue
     item={"name":f.name,"suffix":ext,"bytes":f.stat().st_size,"sha256":sha(f)}
     if ext==".onnx":
-     copy=tmp/"onnx"/aid/f"{len(onnx):04d}_{f.name}";copy.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(f,copy)
-     onnx.append((aid,copy,item["sha256"]));item["quantizer"]="ONNX_DYNAMIC_INT8"
+     copy=tmp/"onnx"/aid/f"{len(onnx_models):04d}_{f.name}";copy.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(f,copy)
+     onnx_models.append((aid,copy,item["sha256"]));item["quantizer"]="ONNX_DYNAMIC_INT8"
     else:item["quantizer"]="ARCHITECTURE_SPECIFIC_REQUIRED"
     row["model_payloads_found"].append(item)
    row["expanded_bytes_scanned"]=budget[0]
    row["status"]="MODEL_PAYLOADS_FOUND" if row["model_payloads_found"] else "NO_NEURAL_MODEL_PAYLOAD_FOUND"
    rows.append(row)
-  if onnx:
+  if onnx_models:
    deps=OUT.parent/"cajita_quantizer_python_deps"
    p=subprocess.run([sys.executable,"-m","pip","install","--disable-pip-version-check","--upgrade",
      "--target",str(deps),"onnx","onnxruntime"],stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True)
    if p.returncode:
-    for aid,model,h in onnx:
+    for aid,model,h in onnx_models:
      next(r for r in rows if r["asset_id"]==aid)["quantization_results"].append(
       {"source_sha256":h,"status":"BLOCKED_QUANTIZER_INSTALL_FAILED","log_tail":p.stdout[-2500:]})
    else:
@@ -134,7 +134,7 @@ def main():
        {"source_sha256":h,"status":"BLOCKED_QUANTIZER_IMPORT_FAILED",
         "error":f"{type(import_error).__name__}: {import_error}","install_log_tail":p.stdout[-2500:]})
     else:
-     for ix,(aid,model,orig_hash) in enumerate(onnx):
+     for ix,(aid,model,orig_hash) in enumerate(onnx_models):
       target=next(r for r in rows if r["asset_id"]==aid)
       q=OUT/aid/f"{ix:03d}_{model.stem}.int8.onnx";q.parent.mkdir(parents=True,exist_ok=True)
       try:
