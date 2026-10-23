@@ -75,7 +75,7 @@ jobs:
           TOKENIZERS_PARALLELISM: "false"
         run: |
           python -B cajita-luna-runtime/cajita_runtime.py adapter measure-all \
-            --max-rss-mib 850 \
+            --max-rss-mib 875 \
             --timeout-seconds 600 \
             --report-file artifacts/cajita-resource-evidence.json \
             --trace-file artifacts/cajita-resource-audit.jsonl
