@@ -110,6 +110,9 @@ def extract_archive(tool: str, archive: Path, dest: Path) -> list[dict[str, str]
 def norm_ascii(text: str) -> str:
     return "".join(c for c in unicodedata.normalize("NFKD", text.casefold()) if not unicodedata.combining(c))
 
+BOOK_LOOKUP = {norm_ascii(book): book for book in BOOKS_ES}
+BOOK_PATTERN = re.compile(r"(?<!\\w)(" + "|".join(re.escape(name) for name in sorted(BOOK_LOOKUP, key=len, reverse=True)) + r")(?!\\w)")
+
 
 def pdf_audit(pdf: Path, temp_root: Path) -> dict[str, Any]:
     info = run_checked(["pdfinfo", str(pdf)], timeout=60).stdout
@@ -134,12 +137,11 @@ def pdf_audit(pdf: Path, temp_root: Path) -> dict[str, Any]:
         raw_text = raw_txt.read_text(encoding="utf-8", errors="replace")
         raw_lines = [(i + 1, line.strip()) for i, line in enumerate(raw_text.splitlines()) if line.strip()]
         raw_flat = norm_ascii(raw_text)
-        raw_book_hits = [book for book in BOOKS_ES if re.search(r"(?<!\\w)" + re.escape(norm_ascii(book)) + r"(?!\\w)", raw_flat)]
+        raw_book_hits = sorted({BOOK_LOOKUP[m.group(1)] for m in BOOK_PATTERN.finditer(raw_flat)})
         raw_exact_headings = [
-            {"line": i, "book": book}
+            {"line": i, "book": BOOK_LOOKUP[normalized]}
             for i, line in raw_lines
-            for book in BOOKS_ES
-            if norm_ascii(line.strip().rstrip(".:")) == norm_ascii(book)
+            if (normalized := norm_ascii(line.strip().rstrip(".:"))) in BOOK_LOOKUP
         ]
         raw_numeric_lines = [
             {"line": i, "numbers": re.findall(r"(?<![A-Za-z])\\d{1,3}(?:[a-z])?(?::\\d{1,3}(?:[a-z])?)?", line)[:12],
@@ -175,10 +177,9 @@ def pdf_audit(pdf: Path, temp_root: Path) -> dict[str, Any]:
                 masked = re.sub(r"\d+", "N", masked)
                 numeric_line_examples.append({"line": line_no, "number_tokens": nums[:14], "masked_shape": masked[:180]})
         normalized_line = norm_ascii(line.strip().replace(".", " "))
-        for book in BOOKS_ES:
-            if normalized_line == norm_ascii(book) or normalized_line == norm_ascii(book + "."):
-                exact_book_heading_lines.append({"line": line_no, "book": book})
-                break
+        heading = BOOK_LOOKUP.get(normalized_line.rstrip("."))
+        if heading:
+            exact_book_heading_lines.append({"line": line_no, "book": heading})
     line_signatures: dict[str, int] = {}
     for line in nonempty_lines:
         signature = re.sub(r"[^\W\d_]+", "W", line[1], flags=re.UNICODE)
@@ -188,7 +189,7 @@ def pdf_audit(pdf: Path, temp_root: Path) -> dict[str, Any]:
             signature = signature[:100]
         line_signatures[signature] = line_signatures.get(signature, 0) + 1
     flat = norm_ascii(text)
-    book_hits = [book for book in BOOKS_ES if re.search(r"(?<!\w)" + re.escape(norm_ascii(book)) + r"(?!\w)", flat)]
+    book_hits = sorted({BOOK_LOOKUP[m.group(1)] for m in BOOK_PATTERN.finditer(flat)})
     return {
         "path": str(pdf.name),
         "size_bytes": pdf.stat().st_size,
