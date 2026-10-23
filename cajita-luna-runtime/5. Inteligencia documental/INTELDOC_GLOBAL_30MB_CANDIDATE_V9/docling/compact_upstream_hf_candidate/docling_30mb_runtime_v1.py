@@ -137,8 +137,9 @@ def load_candidate(candidate_dir):
                 target=state[name]
                 decode_tensor_chunked_into(view,r,target)
                 loaded.add(name)
-                if (len(loaded) % 8 == 0 and hasattr(mapped,"madvise")
-                        and hasattr(mmap,"MADV_DONTNEED")):
+                if hasattr(mapped,"madvise") and hasattr(mmap,"MADV_DONTNEED"):
+                    # Keep the anonymous FP16 parameter set resident; discard mapped
+                    # source pages after every tensor copy to minimize combined RSS.
                     mapped.madvise(mmap.MADV_DONTNEED)
     finally:
         view.release()
