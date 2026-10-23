@@ -60,7 +60,11 @@ jobs:
           mkdir -p artifacts
           python -B cajita-luna-runtime/cajita_model_adapter.py selftest > artifacts/artifacts-adapter-selftest.json
           python -B cajita-luna-runtime/cajita_runtime.py audit-weights > artifacts/artifacts-weight-audit.json
-          python -B -m unittest discover -s tests -p "test_cajita_model_adapter.py" -v
+
+      - name: Run adapter and quantized-decoder regression tests
+        env:
+          PYTHONPATH: cajita-luna-runtime
+        run: python -B -m unittest discover -s tests -p "test_cajita_model_adapter.py" -v
 
       - name: Run minimal real inference per domain, one process at a time
         id: measure
