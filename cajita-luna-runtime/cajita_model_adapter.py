@@ -337,6 +337,64 @@ def apply_compatible_document_profile(processor) -> dict[str, Any]:
             "longest_edge_px": longest_edge, "max_image_edge_px": max_edge,
             "image_splitting": True, "quality_equivalence": "NOT_ESTABLISHED"}
 
+VISION_ATTENTION_QUERY_BLOCK = 64
+
+def chunked_eager_attention_forward(module, query, key, value, attention_mask,
+                                    scaling, dropout=0.0, **kwargs):
+    """Compute exact row-wise eager attention in bounded query blocks.
+
+    Idefics3 vision attention otherwise materializes [batch, heads, patches, patches]
+    score and softmax tensors. At 1,024 patches these intermediates create a substantial
+    CPU RSS spike. Chunking only the query rows keeps softmax normalization over the
+    complete key axis and returns the same mathematical result, apart from FP rounding.
+    """
+    import torch
+    import torch.nn.functional as F
+    query_length = int(query.shape[-2])
+    key_length = int(key.shape[-2])
+    if query_length < 1 or key_length < 1:
+        raise RuntimeError("CHUNKED_ATTENTION_EMPTY_SEQUENCE")
+    outputs = []
+    for start in range(0, query_length, VISION_ATTENTION_QUERY_BLOCK):
+        end = min(query_length, start + VISION_ATTENTION_QUERY_BLOCK)
+        query_block = query[..., start:end, :]
+        scores = torch.matmul(query_block, key.transpose(-1, -2)) * scaling
+        if attention_mask is not None:
+            mask = attention_mask
+            if getattr(mask, "ndim", 0) >= 3 and int(mask.shape[-2]) == query_length:
+                mask = mask[..., start:end, :]
+            scores = scores + mask
+        weights = F.softmax(scores, dim=-1, dtype=torch.float32).to(query.dtype)
+        if dropout:
+            weights = F.dropout(weights, p=dropout, training=bool(getattr(module, "training", False)))
+        output_block = torch.matmul(weights, value)
+        outputs.append(output_block)
+        del scores, weights, output_block, query_block
+    output = torch.cat(outputs, dim=-2).transpose(1, 2).contiguous()
+    return output, None
+
+def install_chunked_idefics3_attention(model) -> dict[str, Any]:
+    """Patch only this child process's Idefics3 vision attention implementation."""
+    try:
+        import transformers.models.idefics3.modeling_idefics3 as idefics3_modeling
+    except Exception as exc:
+        raise RuntimeError("IDEFICS3_ATTENTION_MODULE_UNAVAILABLE") from exc
+    idefics3_modeling.eager_attention_forward = chunked_eager_attention_forward
+    patched = 0
+    for module in model.modules():
+        if module.__class__.__name__ == "Idefics3VisionAttention":
+            module.config._attn_implementation = "eager"
+            patched += 1
+    if patched < 1:
+        raise RuntimeError("IDEFICS3_VISION_ATTENTION_MODULES_NOT_FOUND")
+    return {
+        "strategy": "CHUNKED_EAGER_QUERY_BLOCK",
+        "query_block_size": VISION_ATTENTION_QUERY_BLOCK,
+        "vision_attention_layers_patched": patched,
+        "full_attention_matrix_materialized": False,
+        "quality_equivalence": "MATHEMATICALLY_EQUIVALENT_ROW_WISE_SOFTMAX; NUMERIC_TOLERANCE_TEST_REQUIRED",
+    }
+
 def run_model_task(domain_id: str, payload: dict[str, Any]) -> dict[str, Any]:
     spec = DOMAINS[domain_id]
     action = str(payload.get("action", "infer"))
@@ -500,6 +558,7 @@ def run_model_task(domain_id: str, payload: dict[str, Any]) -> dict[str, Any]:
             processor = AutoProcessor.from_pretrained(spec["module"].parent, local_files_only=True, trust_remote_code=False)
             image_profile = apply_compatible_document_profile(processor)
             model, meta = mod.load_candidate(str(spec["module"].parent))
+            attention_profile = install_chunked_idefics3_attention(model)
             prompt = str(payload.get("text", "Extract the visible text and structure from this page."))
             messages = [{"role": "user", "content": [{"type": "image", "image": image}, {"type": "text", "text": prompt}]}]
             try:
@@ -520,6 +579,7 @@ def run_model_task(domain_id: str, payload: dict[str, Any]) -> dict[str, Any]:
                     "candidate_id": meta.get("candidate_id"), "generated_token_count": int(generated.shape[-1]),
                     "output_text": text_out, "document_kind": input_path.suffix.casefold().lstrip("."),
                     "model_loaded": True, "image_processing_profile": image_profile,
+                    "vision_attention_profile": attention_profile,
                     "quality_metric": "OCR_LAYOUT_QUALITY_NOT_EVALUATED",
                     "task_adapter": "local-quantized-granite-docling"}
         finally:
