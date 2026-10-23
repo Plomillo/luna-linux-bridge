@@ -23,6 +23,7 @@ import sys
 import tempfile
 import textwrap
 import time
+import traceback
 import wave
 from typing import Any
 
@@ -609,6 +610,7 @@ def worker_main(domain_id: str) -> int:
         result = {"schema": SCHEMA, "operation": "worker-result", "domain_id": domain_id,
                   "status": "FAIL_CLOSED", "elapsed_seconds": round(time.monotonic() - started, 3),
                   "error_type": type(exc).__name__, "reason": str(exc)[:500],
+                  "traceback_excerpt": traceback.format_exc(limit=12)[-4000:],
                   "peak_rss_mib": peak_rss_mib(), "rss_after_model_unload_mib": current_rss_mib(),
                   "model_payload_hash_verified": False, "model_asset_validation": "FAILED",
                   "cpu_affinity": affinity, "certification": "NOT_GRANTED"}
@@ -790,6 +792,7 @@ def run_stage(domain_id: str, payload: dict[str, Any], max_rss_mib: int,
         "output_chars": (worker_result or {}).get("output_chars", 0),
         "worker_error_type": (worker_result or {}).get("error_type"),
         "worker_error_reason": (worker_result or {}).get("reason"),
+        "worker_traceback_excerpt": (worker_result or {}).get("traceback_excerpt"),
         "stderr_sha256": sha256_text(stderr) if stderr else None,
         "stderr_excerpt": stderr[-1000:] if status != "PASS" and stderr else None,
         "commit_sha": commit_sha, "captured_at_utc": utc_now(),
