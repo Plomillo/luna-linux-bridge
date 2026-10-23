@@ -315,8 +315,8 @@ def load_translation_lang_map(tokenizer):
         raise RuntimeError("PACKAGED_TOKENIZER_LANGUAGE_MAP_EMPTY")
     return mapping
 
-def apply_compatible_document_profile(processor) -> dict[str, Any]:
-    """Keep the packaged Idefics3 tile/token geometry while capping each tile at 512px."""
+def apply_low_memory_document_profile(processor) -> dict[str, Any]:
+    """Use one 256px Idefics3 tile and the corresponding 16-token image sequence."""
     image_processor = getattr(processor, "image_processor", None)
     if image_processor is None:
         raise RuntimeError("DOCUMENT_IMAGE_PROCESSOR_MISSING")
@@ -328,14 +328,29 @@ def apply_compatible_document_profile(processor) -> dict[str, Any]:
     max_edge = int(packaged_max.get("longest_edge", 0))
     if not (1 <= max_edge <= 512 and max_edge <= longest_edge <= 2048):
         raise RuntimeError("DOCUMENT_IMAGE_SIZE_PROFILE_OUT_OF_BOUNDS")
-    # Idefics3's processor inserts row/column and image tokens that must agree with
-    # its patch grid. Keep the packaged longest_edge (2048) and tile size (512);
-    # disabling splitting changes that geometry and made generation fail.
-    image_processor.max_image_size = {"longest_edge": max_edge}
-    image_processor.do_image_splitting = True
-    return {"profile_id": "PACKAGED_IDEFICS3_GEOMETRY_SPLIT_512",
-            "longest_edge_px": longest_edge, "max_image_edge_px": max_edge,
-            "image_splitting": True, "quality_equivalence": "NOT_ESTABLISHED"}
+    packaged_image_seq_len = int(getattr(processor, "image_seq_len", 0))
+    if packaged_image_seq_len != 64:
+        raise RuntimeError("PACKAGED_IDEFICS3_IMAGE_SEQ_LEN_MISMATCH")
+    # Config contract: patch_size=16 and scale_factor=4. A 256px image has a 16x16
+    # patch grid, projected to 16 image tokens. Align Idefics3's prompt placeholders
+    # with this grid and avoid the previous 512px preprocessing peak.
+    image_processor.size = {"longest_edge": 256}
+    image_processor.max_image_size = {"longest_edge": 256}
+    image_processor.do_image_splitting = False
+    processor.image_seq_len = 16
+    return {
+        "profile_id": "LOW_MEMORY_SINGLE_TILE_256",
+        "source_packaged_longest_edge_px": longest_edge,
+        "source_packaged_max_image_edge_px": max_edge,
+        "source_packaged_image_seq_len": packaged_image_seq_len,
+        "longest_edge_px": 256,
+        "max_image_edge_px": 256,
+        "image_seq_len": 16,
+        "image_splitting": False,
+        "patch_size_px": 16,
+        "scale_factor": 4,
+        "quality_equivalence": "NOT_ESTABLISHED",
+    }
 
 VISION_ATTENTION_QUERY_BLOCK = 64
 
@@ -585,7 +600,7 @@ def run_model_task(domain_id: str, payload: dict[str, Any]) -> dict[str, Any]:
                 from PIL import Image
                 image = Image.open(input_path).convert("RGB")
             processor = AutoProcessor.from_pretrained(spec["module"].parent, local_files_only=True, trust_remote_code=False)
-            image_profile = apply_compatible_document_profile(processor)
+            image_profile = apply_low_memory_document_profile(processor)
             print(f"CAJITA_D05_PHASE=MODEL_LOAD_BEGIN rss_mib={current_rss_mib()}", file=sys.stderr, flush=True)
             model, meta = mod.load_candidate(str(spec["module"].parent))
             print(f"CAJITA_D05_PHASE=MODEL_LOADED rss_mib={current_rss_mib()}", file=sys.stderr, flush=True)
@@ -593,6 +608,7 @@ def run_model_task(domain_id: str, payload: dict[str, Any]) -> dict[str, Any]:
             print(f"CAJITA_D05_PHASE=ATTENTION_PATCHED layers={attention_profile['vision_attention_layers_patched']} rss_mib={current_rss_mib()}", file=sys.stderr, flush=True)
             prompt = str(payload.get("text", "Extract the visible text and structure from this page."))
             messages = [{"role": "user", "content": [{"type": "image", "image": image}, {"type": "text", "text": prompt}]}]
+            print(f"CAJITA_D05_PHASE=PREPROCESS_BEGIN rss_mib={current_rss_mib()} image_seq_len={processor.image_seq_len}", file=sys.stderr, flush=True)
             try:
                 inputs = processor.apply_chat_template(messages, add_generation_prompt=True, tokenize=True,
                                                        return_dict=True, return_tensors="pt")
@@ -600,7 +616,18 @@ def run_model_task(domain_id: str, payload: dict[str, Any]) -> dict[str, Any]:
                 inputs = processor(images=image, text=prompt, return_tensors="pt")
             inputs = {key: (value.to("cpu") if isinstance(value, torch.Tensor) else value)
                       for key, value in inputs.items()}
-            max_new = max(1, min(int(payload.get("max_new_tokens", 32)), 64))
+            # The PIL source and chat structure are no longer needed once tensors
+            # exist; release them before entering autoregressive generation.
+            messages = None
+            image = None
+            gc.collect()
+            try:
+                import ctypes
+                ctypes.CDLL(None).malloc_trim(0)
+            except Exception:
+                pass
+            print(f"CAJITA_D05_PHASE=PREPROCESS_DONE input_keys={','.join(sorted(inputs.keys()))} rss_mib={current_rss_mib()}", file=sys.stderr, flush=True)
+            max_new = max(1, min(int(payload.get("max_new_tokens", 4)), 4))
             print(f"CAJITA_D05_PHASE=GENERATION_BEGIN input_keys={','.join(sorted(inputs.keys()))} rss_mib={current_rss_mib()}", file=sys.stderr, flush=True)
             with torch.inference_mode():
                 generated = model.generate(**inputs, max_new_tokens=max_new, do_sample=False)
