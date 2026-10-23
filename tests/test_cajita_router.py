@@ -51,7 +51,7 @@ class CajitaRouterTests(unittest.TestCase):
         self.assertFalse(result["execution_authorized"])
 
     def test_document_extraction_then_translation_is_sequential(self):
-        result = build_plan("Extrae el texto del PDF y traduce el contenido al inglés")
+        result = build_plan("Extrae el texto del PDF y tradúcelo al inglés")
         sequence = result["domain_sequence"]
         self.assertLess(sequence.index("D05_INTELIGENCIA_DOCUMENTAL"),
                         sequence.index("D04_TRADUCTOR_INTELIGENTE"))
