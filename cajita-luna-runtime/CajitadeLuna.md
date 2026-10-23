@@ -193,3 +193,14 @@ Se extrajeron los diez contenedores internos y su contenido real quedó material
 El manifiesto estático de distribución no se declara actualizado ni certificado. La expansión deja pendiente el rebalanceo del tamaño global y la fase de cuantización/optimización; la reconstrucción debe ejecutarse solo tras reducir el payload a un máximo de `470.000.000` bytes.
 
 Informe: `../docs/cajita-luna/CAJITA_TEN_ASSET_EXPANSION_20261023.json`.
+
+
+## Rebalanceo físico del payload — 2026-10-23
+
+**Operación aplicada:** los diez árboles expandidos (15.877 archivos; 525.037.706 bytes de blobs Git) se sustituyen en las rutas de runtime por sus diez contenedores LZMA2/7z verificados. Las copias fuente y los contenedores de reversión se conservan fuera del payload, en `externalized-assets-staging/`; no se cambia la identidad/versionado de los diez componentes. El orden de los seis dominios permanece intacto. La restauración del formato original se realiza desde los contenedores con verificación SHA-256 contra el registro de colocación.
+
+**Reducción medida de esta operación:** 525.037.706 bytes de árboles expandidos eliminados del payload + 165.250.049 bytes de contenedores añadidos = reducción neta de 359.787.657 bytes en la representación Git del runtime. Esta cifra no equivale al tamaño bruto final distribuible porque los dos objetos Git LFS de modelos se contabilizan por su tamaño declarado, no por los punteros de 134 bytes.
+
+**Puerta de tamaño global:** sigue bloqueada hasta cuantizar y validar los pesos neuronales. La proyección previa con objetos LFS materializados era 641.773.963 bytes; por tanto, la siguiente reducción requerida es de al menos 171.773.964 bytes más el crecimiento del manifiesto. Los diez componentes de infraestructura no se someten a cuantización de tensores. Los seis archivos de modelo/pesos no se sustituyen automáticamente ni se declaran equivalentes: sus candidatos cuantizados requieren comparación de calidad, hashes, pruebas por dominio, validación independiente y rollback. El límite bruto de 470.000.000 bytes sigue siendo un hard gate; no se construye ni publica un paquete que lo exceda.
+
+**Certificación:** NOT_GRANTED. La compactación física no prueba por sí sola la integración funcional ni la equivalencia de calidad.

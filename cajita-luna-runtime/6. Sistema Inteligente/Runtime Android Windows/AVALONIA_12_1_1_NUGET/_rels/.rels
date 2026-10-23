@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Type="http://schemas.microsoft.com/packaging/2010/07/manifest" Target="/Avalonia.nuspec" Id="R0C335DA102291AAE" />
-  <Relationship Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="/package/services/metadata/core-properties/47abe386d1e946358bc909a92cb55c5b.psmdcp" Id="RC22C92E0C4EC7CDD" />
-</Relationships>

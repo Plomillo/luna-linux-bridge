@@ -2,7 +2,7 @@
   "schema": "CAJITA_EXTERNALIZED_ASSET_PLACEMENT/1.0",
   "candidate_id": "CAJITA_LUNA_RUNTIME_V9_20261023_EXTERNAL_ASSET_PLACEMENT",
   "based_on_commit": "cf777392759b1926e9999ed4f877aa09fc88cf90",
-  "status": "TEN_ASSETS_EXPANDED_RUNTIME_SIZE_REBALANCE_REQUIRED",
+  "status": "TEN_ASSETS_COMPACTED_RUNTIME_MODEL_QUANTIZATION_REQUIRED",
   "purpose": "Place recovered externalized assets at their intended six-domain source-tree paths without silently promoting them into the distributable archive.",
   "hard_cap_bytes": 470000000,
   "current_macrodown_manifest": {
@@ -18,15 +18,15 @@
     {
       "id": "APACHE_JENA_6_2_0",
       "source_staging_path": "externalized-assets-staging/2-Orquestacion/Multi-Interdisciplinar/apache-jena-6.2.0.tar.gz",
-      "placed_path": "cajita-luna-runtime/2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0",
+      "placed_path": "cajita-luna-runtime/2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0.7z",
       "source_version": "6.2.0",
       "asset_kind": "source_archive",
       "sha256": "6c63682c55b9c536aff878613db25a2d0a4f21e57999f50a1d4718bc3b64702f",
-      "size_bytes": 27295036,
+      "size_bytes": 23103199,
       "exact_externalized_candidate": true,
-      "placement": "IN_CAJITA_RUNTIME_EXPANDED_TREE",
+      "placement": "IN_CAJITA_RUNTIME_COMPRESSED_CONTAINER",
       "included_in_current_macrodown_manifest": false,
-      "notes": "Exact SHA-256 and size match with the externalization record. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending. Expanded to cajita-luna-runtime/2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0; optimized .7z rollback copy retained outside runtime.",
+      "notes": "Exact SHA-256 and size match with the externalization record. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending. Expanded to cajita-luna-runtime/2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0; optimized .7z rollback copy retained outside runtime. Runtime tree changed to the compact verified 7z container; original and expanded rollback evidence retained outside runtime. Runtime consumer extraction and model quantization remain subject to the global 470,000,000-byte gate.",
       "upstream_size_bytes": 23986647,
       "upstream_sha256": "14c12ef4aa2f0078a473be4b10b015e0e0b85e767d6867e8581679de8fec3f6e",
       "optimization": {
@@ -53,20 +53,28 @@
       "expanded_path": "cajita-luna-runtime/2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0",
       "expanded_file_count": 251,
       "expanded_bytes": 27295036,
-      "expanded_tree_sha256": "6c63682c55b9c536aff878613db25a2d0a4f21e57999f50a1d4718bc3b64702f"
+      "expanded_tree_sha256": "6c63682c55b9c536aff878613db25a2d0a4f21e57999f50a1d4718bc3b64702f",
+      "previous_expanded_path": "cajita-luna-runtime/2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0",
+      "previous_expanded_bytes": 27295036,
+      "compact_runtime_container": {
+        "path": "cajita-luna-runtime/2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0.7z",
+        "sha256": "a26d64b241bc7b125725d9a8ac377c74df6b4565a51a3f7fb66a5bda63ffa77a",
+        "size_bytes": 23103199,
+        "git_blob_sha": "b208b1ccfcb5f7702d46b0bcc5b9d5d707301ad4"
+      }
     },
     {
       "id": "PLAYWRIGHT_1_63_0_SOURCE",
       "source_staging_path": "externalized-assets-staging/2-Orquestacion/Orquestador/playwright-1.63.0.tar.gz",
-      "placed_path": "cajita-luna-runtime/2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE",
+      "placed_path": "cajita-luna-runtime/2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE.7z",
       "source_version": "v1.63.0",
       "asset_kind": "source_archive",
       "sha256": "20bfbd9a2756bcb94f0a5ce6f2b9f468e75c45e1eb9c68af499c66255c893175",
-      "size_bytes": 68493538,
+      "size_bytes": 32133546,
       "exact_externalized_candidate": true,
-      "placement": "IN_CAJITA_RUNTIME_EXPANDED_TREE",
+      "placement": "IN_CAJITA_RUNTIME_COMPRESSED_CONTAINER",
       "included_in_current_macrodown_manifest": false,
-      "notes": "Exact SHA-256 and size match with the externalization record. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending. Expanded to cajita-luna-runtime/2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE; optimized .7z rollback copy retained outside runtime.",
+      "notes": "Exact SHA-256 and size match with the externalization record. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending. Expanded to cajita-luna-runtime/2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE; optimized .7z rollback copy retained outside runtime. Runtime tree changed to the compact verified 7z container; original and expanded rollback evidence retained outside runtime. Runtime consumer extraction and model quantization remain subject to the global 470,000,000-byte gate.",
       "upstream_size_bytes": 40525667,
       "upstream_sha256": "bc3d50b5a6c51cd401b2b4a71514be75ffd91223e129abcee51b8913746e4c6d",
       "optimization": {
@@ -93,20 +101,28 @@
       "expanded_path": "cajita-luna-runtime/2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE",
       "expanded_file_count": 3093,
       "expanded_bytes": 68493538,
-      "expanded_tree_sha256": "20bfbd9a2756bcb94f0a5ce6f2b9f468e75c45e1eb9c68af499c66255c893175"
+      "expanded_tree_sha256": "20bfbd9a2756bcb94f0a5ce6f2b9f468e75c45e1eb9c68af499c66255c893175",
+      "previous_expanded_path": "cajita-luna-runtime/2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE",
+      "previous_expanded_bytes": 68493538,
+      "compact_runtime_container": {
+        "path": "cajita-luna-runtime/2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE.7z",
+        "sha256": "395141a67bce645b0aa37cecb202b0762273bdb4f79c8a2cab2967a93a78dc14",
+        "size_bytes": 32133546,
+        "git_blob_sha": "9213396bf133cfc8fcf433f0a85f81e245533d66"
+      }
     },
     {
       "id": "ONNX_RUNTIME_1_29_0_CP311",
       "source_staging_path": "externalized-assets-staging/6-Sistema-Inteligente/Anti-Alucinaciones/onnxruntime-1.29.0-cp311-cp311-manylinux_2_28_x86_64.whl",
-      "placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311",
+      "placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311.7z",
       "source_version": "1.29.0",
       "asset_kind": "binary_wheel",
       "sha256": "e95a255726a633b080d8c568f54dd24c23babed147c72296374fd1fa044650ec",
-      "size_bytes": 62736574,
+      "size_bytes": 10219873,
       "exact_externalized_candidate": false,
-      "placement": "IN_CAJITA_RUNTIME_EXPANDED_TREE",
+      "placement": "IN_CAJITA_RUNTIME_COMPRESSED_CONTAINER",
       "included_in_current_macrodown_manifest": false,
-      "notes": "Matches official PyPI digest for exact filename; differs from externalized manifest hash and size. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending. Expanded to cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311; optimized .7z rollback copy retained outside runtime.",
+      "notes": "Matches official PyPI digest for exact filename; differs from externalized manifest hash and size. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending. Expanded to cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311; optimized .7z rollback copy retained outside runtime. Runtime tree changed to the compact verified 7z container; original and expanded rollback evidence retained outside runtime. Runtime consumer extraction and model quantization remain subject to the global 470,000,000-byte gate.",
       "upstream_size_bytes": 23113193,
       "upstream_sha256": "85f8e8406c52658735fe5c7fbfd3ebaa1ed340768324f6252e4274e374580a23",
       "optimization": {
@@ -133,20 +149,28 @@
       "expanded_path": "cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311",
       "expanded_file_count": 322,
       "expanded_bytes": 62736574,
-      "expanded_tree_sha256": "e95a255726a633b080d8c568f54dd24c23babed147c72296374fd1fa044650ec"
+      "expanded_tree_sha256": "e95a255726a633b080d8c568f54dd24c23babed147c72296374fd1fa044650ec",
+      "previous_expanded_path": "cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311",
+      "previous_expanded_bytes": 62736574,
+      "compact_runtime_container": {
+        "path": "cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311.7z",
+        "sha256": "d13eebe3214d7e47fed0258e58e9cbb88d33172c31d8ca62dd70dc378660a26b",
+        "size_bytes": 10219873,
+        "git_blob_sha": "baa48c493b6e44143b5c5b212b62530697da17a2"
+      }
     },
     {
       "id": "DAGGER_0_21_8_LINUX_AMD64",
       "source_staging_path": "externalized-assets-staging/6-Sistema-Inteligente/Cognitive-CI-CD/dagger_v0.21.8_linux_amd64.tar.gz",
-      "placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/DAGGER_0_21_8_LINUX_AMD64",
+      "placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/DAGGER_0_21_8_LINUX_AMD64.7z",
       "source_version": "v0.21.8",
       "asset_kind": "binary_archive",
       "sha256": "63b35d9ec39b40c2397f00a623519cbd52275f1a2d4e23e2379fb33810feb3ad",
-      "size_bytes": 15382954,
+      "size_bytes": 15377436,
       "exact_externalized_candidate": true,
-      "placement": "IN_CAJITA_RUNTIME_EXPANDED_TREE",
+      "placement": "IN_CAJITA_RUNTIME_COMPRESSED_CONTAINER",
       "included_in_current_macrodown_manifest": false,
-      "notes": "Exact SHA-256 and size match with the externalization record. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending. Expanded to cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/DAGGER_0_21_8_LINUX_AMD64; optimized .7z rollback copy retained outside runtime.",
+      "notes": "Exact SHA-256 and size match with the externalization record. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending. Expanded to cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/DAGGER_0_21_8_LINUX_AMD64; optimized .7z rollback copy retained outside runtime. Runtime tree changed to the compact verified 7z container; original and expanded rollback evidence retained outside runtime. Runtime consumer extraction and model quantization remain subject to the global 470,000,000-byte gate.",
       "upstream_size_bytes": 21927634,
       "upstream_sha256": "53e226c7da8fb75171e58c35759d736d961ce8b3a12db0baa7b7107954fccc5a",
       "optimization": {
@@ -185,20 +209,28 @@
       "expanded_path": "cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/DAGGER_0_21_8_LINUX_AMD64",
       "expanded_file_count": 2,
       "expanded_bytes": 15382954,
-      "expanded_tree_sha256": "63b35d9ec39b40c2397f00a623519cbd52275f1a2d4e23e2379fb33810feb3ad"
+      "expanded_tree_sha256": "63b35d9ec39b40c2397f00a623519cbd52275f1a2d4e23e2379fb33810feb3ad",
+      "previous_expanded_path": "cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/DAGGER_0_21_8_LINUX_AMD64",
+      "previous_expanded_bytes": 15382954,
+      "compact_runtime_container": {
+        "path": "cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/DAGGER_0_21_8_LINUX_AMD64.7z",
+        "sha256": "bb95a9e4580009f3e7bb5d365d3ef608832a6387a2fea586eec7bafab4a92f4e",
+        "size_bytes": 15377436,
+        "git_blob_sha": "7cdae84185cfb60ab65ad8d2c439420232c16bad"
+      }
     },
     {
       "id": "OPA_STATIC_LINUX_AMD64_CANDIDATE",
       "source_staging_path": "externalized-assets-staging/6-Sistema-Inteligente/Cognitive-CI-CD/opa_linux_amd64_static",
-      "placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/OPA_STATIC_LINUX_AMD64_CANDIDATE",
+      "placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/OPA_STATIC_LINUX_AMD64_CANDIDATE.7z",
       "source_version": "v1.21.3",
       "asset_kind": "binary",
       "sha256": "ae4365a9ec41b3141af6fd2319e33754ef62f16a4b0c18d7f9409bb00446fcaa",
-      "size_bytes": 25271120,
+      "size_bytes": 25273630,
       "exact_externalized_candidate": false,
-      "placement": "IN_CAJITA_RUNTIME_EXPANDED_TREE",
+      "placement": "IN_CAJITA_RUNTIME_COMPRESSED_CONTAINER",
       "included_in_current_macrodown_manifest": false,
-      "notes": "Official OPA v1.21.3 asset; externalized record had no pinned version and expected a different binary size/hash. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending. Expanded to cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/OPA_STATIC_LINUX_AMD64_CANDIDATE; optimized .7z rollback copy retained outside runtime.",
+      "notes": "Official OPA v1.21.3 asset; externalized record had no pinned version and expected a different binary size/hash. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending. Expanded to cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/OPA_STATIC_LINUX_AMD64_CANDIDATE; optimized .7z rollback copy retained outside runtime. Runtime tree changed to the compact verified 7z container; original and expanded rollback evidence retained outside runtime. Runtime consumer extraction and model quantization remain subject to the global 470,000,000-byte gate.",
       "upstream_size_bytes": 64185579,
       "upstream_sha256": "add7c9dcf56e1ce1538426a6ee595ea1cc7ee830bbedd4c23219825b02b19a79",
       "optimization": {
@@ -237,20 +269,28 @@
       "expanded_path": "cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/OPA_STATIC_LINUX_AMD64_CANDIDATE",
       "expanded_file_count": 1,
       "expanded_bytes": 25271120,
-      "expanded_tree_sha256": "ae4365a9ec41b3141af6fd2319e33754ef62f16a4b0c18d7f9409bb00446fcaa"
+      "expanded_tree_sha256": "ae4365a9ec41b3141af6fd2319e33754ef62f16a4b0c18d7f9409bb00446fcaa",
+      "previous_expanded_path": "cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/OPA_STATIC_LINUX_AMD64_CANDIDATE",
+      "previous_expanded_bytes": 25271120,
+      "compact_runtime_container": {
+        "path": "cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/OPA_STATIC_LINUX_AMD64_CANDIDATE.7z",
+        "sha256": "75957907b2f3b74820b20934a36a1d6d46a2561b58380873a59ccc4f23583628",
+        "size_bytes": 25273630,
+        "git_blob_sha": "6b3c6bbad8c1a5cae80096fbe38b7a38a19c4226"
+      }
     },
     {
       "id": "RQLITE_10_2_7_LINUX_AMD64",
       "source_staging_path": "externalized-assets-staging/6-Sistema-Inteligente/Migracion-y-Persistencia/rqlite-v10.2.7-linux-amd64.tar.gz",
-      "placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/RQLITE_10_2_7_LINUX_AMD64",
+      "placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/RQLITE_10_2_7_LINUX_AMD64.7z",
       "source_version": "v10.2.7",
       "asset_kind": "binary_archive",
       "sha256": "77d628dcf862c54f6a5ae4d009df8b8317a33bf93cd2943a8c58639d8dd31ef7",
-      "size_bytes": 12970604,
+      "size_bytes": 12962199,
       "exact_externalized_candidate": true,
-      "placement": "IN_CAJITA_RUNTIME_EXPANDED_TREE",
+      "placement": "IN_CAJITA_RUNTIME_COMPRESSED_CONTAINER",
       "included_in_current_macrodown_manifest": false,
-      "notes": "Exact SHA-256 and size match with the externalization record. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending. Expanded to cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/RQLITE_10_2_7_LINUX_AMD64; optimized .7z rollback copy retained outside runtime.",
+      "notes": "Exact SHA-256 and size match with the externalization record. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending. Expanded to cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/RQLITE_10_2_7_LINUX_AMD64; optimized .7z rollback copy retained outside runtime. Runtime tree changed to the compact verified 7z container; original and expanded rollback evidence retained outside runtime. Runtime consumer extraction and model quantization remain subject to the global 470,000,000-byte gate.",
       "upstream_size_bytes": 17600273,
       "upstream_sha256": "0b4e8ffbbacc84e421c49915bbd82cc67ac6488e22d4ce58b678fc1219c6a38a",
       "optimization": {
@@ -311,20 +351,28 @@
       "expanded_path": "cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/RQLITE_10_2_7_LINUX_AMD64",
       "expanded_file_count": 3,
       "expanded_bytes": 12970604,
-      "expanded_tree_sha256": "77d628dcf862c54f6a5ae4d009df8b8317a33bf93cd2943a8c58639d8dd31ef7"
+      "expanded_tree_sha256": "77d628dcf862c54f6a5ae4d009df8b8317a33bf93cd2943a8c58639d8dd31ef7",
+      "previous_expanded_path": "cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/RQLITE_10_2_7_LINUX_AMD64",
+      "previous_expanded_bytes": 12970604,
+      "compact_runtime_container": {
+        "path": "cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/RQLITE_10_2_7_LINUX_AMD64.7z",
+        "sha256": "bd14c66472a595aa49788e5246715f840ff5964f3d624833f49055d06913f9ea",
+        "size_bytes": 12962199,
+        "git_blob_sha": "5075c99664f066982e0a089b456d8550374e77ab"
+      }
     },
     {
       "id": "SQLITE_SOURCE_3_53_4",
       "source_staging_path": "externalized-assets-staging/6-Sistema-Inteligente/Migracion-y-Persistencia/sqlite-src-3530400.zip",
-      "placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4",
+      "placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4.7z",
       "source_version": "3.53.4",
       "asset_kind": "source_archive",
       "sha256": "e008d35dbb7700a017c387c85599bb9d91ba338cfb4a3fe7875f7f5bda04fd9c",
-      "size_bytes": 111974369,
+      "size_bytes": 7954439,
       "exact_externalized_candidate": true,
-      "placement": "IN_CAJITA_RUNTIME_EXPANDED_TREE",
+      "placement": "IN_CAJITA_RUNTIME_COMPRESSED_CONTAINER",
       "included_in_current_macrodown_manifest": false,
-      "notes": "Exact SHA-256 and size match with the externalization record. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending. Expanded to cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4; optimized .7z rollback copy retained outside runtime.",
+      "notes": "Exact SHA-256 and size match with the externalization record. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending. Expanded to cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4; optimized .7z rollback copy retained outside runtime. Runtime tree changed to the compact verified 7z container; original and expanded rollback evidence retained outside runtime. Runtime consumer extraction and model quantization remain subject to the global 470,000,000-byte gate.",
       "upstream_size_bytes": 14557315,
       "upstream_sha256": "d18fa15aec74d8c17e1463f861095adc01b5ad190256acb4f91d22f0368d232b",
       "optimization": {
@@ -351,20 +399,28 @@
       "expanded_path": "cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4",
       "expanded_file_count": 2208,
       "expanded_bytes": 111974369,
-      "expanded_tree_sha256": "e008d35dbb7700a017c387c85599bb9d91ba338cfb4a3fe7875f7f5bda04fd9c"
+      "expanded_tree_sha256": "e008d35dbb7700a017c387c85599bb9d91ba338cfb4a3fe7875f7f5bda04fd9c",
+      "previous_expanded_path": "cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4",
+      "previous_expanded_bytes": 111974369,
+      "compact_runtime_container": {
+        "path": "cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4.7z",
+        "sha256": "e0279eabebb520b4d0cc9abea1a63ff6372f3ba9264829da11b059d06b1dab1e",
+        "size_bytes": 7954439,
+        "git_blob_sha": "73ed8e5bbe0999ca0b4b94f62879c20f013510c7"
+      }
     },
     {
       "id": "CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE",
       "source_staging_path": "externalized-assets-staging/6-Sistema-Inteligente/Portabilidad-base/cmake-4.4.3-windows-x86_64.zip",
-      "placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Portabilidad base/CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE",
+      "placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Portabilidad base/CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE.7z",
       "source_version": "4.4.3",
       "asset_kind": "binary_archive",
       "sha256": "8e4b2e9ce54787c53cd92440873a4f97cf95626dc12ecf3f3b572750d1b92ec1",
-      "size_bytes": 143281458,
+      "size_bytes": 21310484,
       "exact_externalized_candidate": false,
-      "placement": "IN_CAJITA_RUNTIME_EXPANDED_TREE",
+      "placement": "IN_CAJITA_RUNTIME_COMPRESSED_CONTAINER",
       "included_in_current_macrodown_manifest": false,
-      "notes": "Official CMake v4.4.3 Windows ZIP; not the originally recorded .optimized.zip candidate. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending. Expanded to cajita-luna-runtime/6. Sistema Inteligente/Portabilidad base/CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE; optimized .7z rollback copy retained outside runtime.",
+      "notes": "Official CMake v4.4.3 Windows ZIP; not the originally recorded .optimized.zip candidate. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending. Expanded to cajita-luna-runtime/6. Sistema Inteligente/Portabilidad base/CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE; optimized .7z rollback copy retained outside runtime. Runtime tree changed to the compact verified 7z container; original and expanded rollback evidence retained outside runtime. Runtime consumer extraction and model quantization remain subject to the global 470,000,000-byte gate.",
       "upstream_size_bytes": 54408599,
       "upstream_sha256": "4d52ebab7193a698651639ed80d8d04fd903358843572cf44c7fd234cb7c26ab",
       "optimization": {
@@ -391,20 +447,28 @@
       "expanded_path": "cajita-luna-runtime/6. Sistema Inteligente/Portabilidad base/CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE",
       "expanded_file_count": 8819,
       "expanded_bytes": 143281458,
-      "expanded_tree_sha256": "8e4b2e9ce54787c53cd92440873a4f97cf95626dc12ecf3f3b572750d1b92ec1"
+      "expanded_tree_sha256": "8e4b2e9ce54787c53cd92440873a4f97cf95626dc12ecf3f3b572750d1b92ec1",
+      "previous_expanded_path": "cajita-luna-runtime/6. Sistema Inteligente/Portabilidad base/CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE",
+      "previous_expanded_bytes": 143281458,
+      "compact_runtime_container": {
+        "path": "cajita-luna-runtime/6. Sistema Inteligente/Portabilidad base/CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE.7z",
+        "sha256": "fc8a06079563f1befb35204eee593a1c87ce405ffc8a8483cf769ae9feedbf37",
+        "size_bytes": 21310484,
+        "git_blob_sha": "ee472498932126cf0c9787422f78769568646bec"
+      }
     },
     {
       "id": "AVALONIA_12_1_1_NUGET",
       "source_staging_path": "externalized-assets-staging/6-Sistema-Inteligente/Runtime-Android-Windows/avalonia.12.1.1.nupkg",
-      "placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/AVALONIA_12_1_1_NUGET",
+      "placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/AVALONIA_12_1_1_NUGET.7z",
       "source_version": "12.1.1",
       "asset_kind": "package",
       "sha256": "35e97da06469f68c0deeca2a2e393ce57cc5e35d5e1d28ebdec09becdd626323",
-      "size_bytes": 35926924,
+      "size_bytes": 3836434,
       "exact_externalized_candidate": true,
-      "placement": "IN_CAJITA_RUNTIME_EXPANDED_TREE",
+      "placement": "IN_CAJITA_RUNTIME_COMPRESSED_CONTAINER",
       "included_in_current_macrodown_manifest": false,
-      "notes": "Exact SHA-256 and size match with the externalization record. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending. Expanded to cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/AVALONIA_12_1_1_NUGET; optimized .7z rollback copy retained outside runtime.",
+      "notes": "Exact SHA-256 and size match with the externalization record. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending. Expanded to cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/AVALONIA_12_1_1_NUGET; optimized .7z rollback copy retained outside runtime. Runtime tree changed to the compact verified 7z container; original and expanded rollback evidence retained outside runtime. Runtime consumer extraction and model quantization remain subject to the global 470,000,000-byte gate.",
       "upstream_size_bytes": 10112805,
       "upstream_sha256": "193bf6ae8b90293acb72bca8a1d62e8e46b460a48527f5f1f18f629073d9d77d",
       "optimization": {
@@ -431,20 +495,28 @@
       "expanded_path": "cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/AVALONIA_12_1_1_NUGET",
       "expanded_file_count": 121,
       "expanded_bytes": 35926924,
-      "expanded_tree_sha256": "35e97da06469f68c0deeca2a2e393ce57cc5e35d5e1d28ebdec09becdd626323"
+      "expanded_tree_sha256": "35e97da06469f68c0deeca2a2e393ce57cc5e35d5e1d28ebdec09becdd626323",
+      "previous_expanded_path": "cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/AVALONIA_12_1_1_NUGET",
+      "previous_expanded_bytes": 35926924,
+      "compact_runtime_container": {
+        "path": "cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/AVALONIA_12_1_1_NUGET.7z",
+        "sha256": "46ea1b444978950605f3cea2edaf2e7a9116e14ebd0db42f49f7582eff7ae66f",
+        "size_bytes": 3836434,
+        "git_blob_sha": "68368033e2cd813b493057342241c68f7c3a0da4"
+      }
     },
     {
       "id": "TAURI_2_11_5_SOURCE_ZIP",
       "source_staging_path": "externalized-assets-staging/6-Sistema-Inteligente/Runtime-Android-Windows/tauri-tauri-v2.11.5.zip",
-      "placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP",
+      "placed_path": "cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP.7z",
       "source_version": "tauri-v2.11.5",
       "asset_kind": "source_archive",
       "sha256": "88b3b38b4e7a90ca85a0c4911b3938bb5ea8e7b42e8f57ce536d15ded7ce3034",
-      "size_bytes": 21729836,
+      "size_bytes": 13078809,
       "exact_externalized_candidate": true,
-      "placement": "IN_CAJITA_RUNTIME_EXPANDED_TREE",
+      "placement": "IN_CAJITA_RUNTIME_COMPRESSED_CONTAINER",
       "included_in_current_macrodown_manifest": false,
-      "notes": "Exact SHA-256 and size match with the externalization record. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending. Expanded to cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP; optimized .7z rollback copy retained outside runtime.",
+      "notes": "Exact SHA-256 and size match with the externalization record. Repacked into a smaller LZMA2/7z payload; original preserved in staging. Consumer/extraction path repair is explicitly pending. Expanded to cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP; optimized .7z rollback copy retained outside runtime. Runtime tree changed to the compact verified 7z container; original and expanded rollback evidence retained outside runtime. Runtime consumer extraction and model quantization remain subject to the global 470,000,000-byte gate.",
       "upstream_size_bytes": 16117618,
       "upstream_sha256": "a85eb38b0ffc7b37b5c2eadbd637dc1206fb7f719bfe5b3ceca37ad5dac42cdd",
       "optimization": {
@@ -471,7 +543,15 @@
       "expanded_path": "cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP",
       "expanded_file_count": 1058,
       "expanded_bytes": 21729836,
-      "expanded_tree_sha256": "88b3b38b4e7a90ca85a0c4911b3938bb5ea8e7b42e8f57ce536d15ded7ce3034"
+      "expanded_tree_sha256": "88b3b38b4e7a90ca85a0c4911b3938bb5ea8e7b42e8f57ce536d15ded7ce3034",
+      "previous_expanded_path": "cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP",
+      "previous_expanded_bytes": 21729836,
+      "compact_runtime_container": {
+        "path": "cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP.7z",
+        "sha256": "04c9076f708683d66d36f56c643a284a4e3db70a9c08a7f66f3016b2531c39a8",
+        "size_bytes": 13078809,
+        "git_blob_sha": "3be19a44a8966a9628b4fdfed707ae4c5833eecf"
+      }
     }
   ],
   "constraints": [
@@ -827,5 +907,10 @@
   "placed_assets_expanded_bytes": 525062413,
   "expanded_asset_file_count": 15878,
   "projected_raw_payload_bytes_after_expansion_before_manifest_growth": 1001586327,
-  "projected_over_cap_bytes_after_expansion": 531586327
+  "projected_over_cap_bytes_after_expansion": 531586327,
+  "runtime_expanded_tree_bytes_removed": 525037706,
+  "compact_containers_added_bytes": 165250049,
+  "net_runtime_tree_reduction_bytes": 359787657,
+  "last_operation": "REPLACE_EXPANDED_TREES_WITH_VERIFIED_7Z_CONTAINERS",
+  "certification": "NOT_GRANTED"
 }
