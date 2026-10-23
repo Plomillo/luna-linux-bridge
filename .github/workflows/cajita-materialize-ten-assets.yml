@@ -317,11 +317,29 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A -- cajita-luna-runtime externalized-assets-staging/optimized-containers docs/cajita-luna/CAJITA_TEN_ASSET_EXPANSION_20261023.json
-          if git diff --cached --quiet; then echo "No changes; all ten assets may already be materialized."; exit 0; fi
-          # Upstream source trees may legitimately contain whitespace that should not block materialization.
-          # Keep whitespace validation scoped to the changed Cajita control/documentation artifacts.
-          git diff --cached --check -- cajita-luna-runtime/CajitadeLuna.md cajita-luna-runtime/EXTERNALIZED_ASSET_PLACEMENT.json docs/cajita-luna/CAJITA_TEN_ASSET_EXPANSION_20261023.json
-          git diff --cached --stat
-          git commit -m "Expand ten real Cajita asset payloads into runtime tree"
-          git -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" push origin HEAD:main
+          if ! git add -A -- cajita-luna-runtime externalized-assets-staging/optimized-containers docs/cajita-luna/CAJITA_TEN_ASSET_EXPANSION_20261023.json >/tmp/cajita-git-add.log 2>&1; then
+            echo "CAJITA_PUBLISH_STAGE=git_add_failed"
+            tail -n 40 /tmp/cajita-git-add.log
+            exit 1
+          fi
+          if git diff --cached --quiet; then echo "CAJITA_PUBLISH=already_materialized_no_changes"; exit 0; fi
+          if ! git diff --cached --check -- cajita-luna-runtime/CajitadeLuna.md cajita-luna-runtime/EXTERNALIZED_ASSET_PLACEMENT.json docs/cajita-luna/CAJITA_TEN_ASSET_EXPANSION_20261023.json >/tmp/cajita-diff-check.log 2>&1; then
+            echo "CAJITA_PUBLISH_STAGE=diff_check_failed"
+            tail -n 40 /tmp/cajita-diff-check.log
+            exit 1
+          fi
+          printf 'CAJITA_STAGED_PATH_COUNT='
+          git diff --cached --name-only | wc -l
+          printf 'CAJITA_STAGED_BYTES='
+          git diff --cached --numstat | awk -F '\t' '{a+=$1; d+=$2} END {printf "insertions=%d deletions=%d\n", a, d}'
+          if ! git commit -m "Expand ten real Cajita asset payloads into runtime tree" >/tmp/cajita-git-commit.log 2>&1; then
+            echo "CAJITA_PUBLISH_STAGE=git_commit_failed"
+            tail -n 50 /tmp/cajita-git-commit.log
+            exit 1
+          fi
+          if ! git -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" push origin HEAD:main >/tmp/cajita-git-push.log 2>&1; then
+            echo "CAJITA_PUBLISH_STAGE=git_push_failed"
+            tail -n 80 /tmp/cajita-git-push.log
+            exit 1
+          fi
+          echo "CAJITA_PUBLISH=success"
