@@ -114,3 +114,26 @@ Se ejecutó una pasada de compactación máxima de los diez activos incorporados
 La reparación de rutas de extracción/consumo queda pendiente para la siguiente fase. No se modificaron los seis artefactos de peso/modelo preexistentes. La proyección usa los tamaños LFS declarados y excluye el manifiesto estático obsoleto; el constructor deberá regenerar el manifiesto tras la reparación y volver a comprobar el límite de 470.000.000 bytes. Certificación no otorgada.
 
 Informe de evidencia: ../docs/cajita-luna/CAJITA_NEW_ENGINE_COMPACTION_20261023.json.
+
+
+## Auditoría de integración funcional de los diez activos — 2026-10-23
+
+**Referencia auditada:** rama `main`, commit de referencia `edf9f39cc5a65f338595775894a1526f5a99cb57`.
+**Evidencia primaria:** [EXTERNALIZED_ASSET_PLACEMENT.json](EXTERNALIZED_ASSET_PLACEMENT.json), [CAJITA_NEW_ENGINE_COMPACTION_20261023.json](../docs/cajita-luna/CAJITA_NEW_ENGINE_COMPACTION_20261023.json) y [CAJITA_NEW_ENGINE_QUANTIZATION_20261023.json](../docs/cajita-luna/CAJITA_NEW_ENGINE_QUANTIZATION_20261023.json).
+
+#### Resultado
+
+- **Diez activos inventariados:** sí.
+- **Diez artefactos disponibles en el árbol de runtime en sus formatos originales:** no. Las diez rutas de runtime apuntan a contenedores `.7z`; las copias fuente conservadas en `externalized-assets-staging/` están fuera del árbol de runtime.
+- **Diez activos incluidos en `MACRODOWN_MANIFEST.json`:** no. El manifiesto estático previo enumera 132 archivos y los diez campos `included_in_current_macrodown_manifest` permanecen en `false`.
+- **Integración funcional de los consumidores/rutas:** no verificada; `runtime_path_repair` sigue pendiente. Presencia del contenedor, prueba de integridad del contenedor y funcionamiento de la herramienta son controles distintos.
+- **Cuantización de redes neuronales contenidas en esos diez paquetes:** no produjo ninguna reducción validada que permita cerrar el déficit. El escaneo halló solo tres ONNX de demostración dentro de ONNX Runtime; cero candidatos quedaron más pequeños y validados.
+- **Puerta de tamaño:** bloqueada. La proyección bruta de entradas es `641.773.963` bytes frente a `470.000.000`; el exceso es `171.773.963` bytes, antes del crecimiento del manifiesto generado.
+
+#### Decisión de control
+
+`INTEGRATION_STATUS = BLOCKED_GLOBAL_SIZE_CAP`
+
+No se declara que los diez activos estén funcionalmente integrados. No se deben descomprimir/copiarlos todos al árbol distribuible ni reconstruir/publicar el paquete hasta rebajar y volver a medir el payload global, preservando los seis artefactos de pesos existentes y validando cualquier optimización con pruebas funcionales. Hacerlo antes dejaría el paquete por encima del límite de tamaño. La extracción diferida a un entorno de instalación separado es una estrategia distinta y no equivale a incluir los diez artefactos expandidos en el `.macrodown`.
+
+Este bloque registra el estado real de la auditoría actual; no sustituye ni borra los registros históricos de compactación.
