@@ -17,6 +17,16 @@
 
 Los seis directorios contienen cada uno su adaptador y los recursos cuantizados de su candidato. El runtime `cajita_runtime.py` ofrece enrutamiento por dominio, autoprueba de estructura, auditoría SHA-256 de pesos y smoke por ruta.
 
+## Routing de los 14 comandos y asignación por subdominio
+
+El registro ejecutable de asignaciones es `command_subdomain_routing.json`. Conserva las catorce órdenes canónicas y sus bindings de agente/motores E01–E15, y añade destinos concretos por subdominio, compatibilidad de motores por destino y los diez activos de infraestructura con versión, ruta, tamaño y SHA-256.
+
+El árbol de enrutamiento tiene seis dominios, 21 destinos registrados, 19 subdominios explícitos y quince motores canónicos enlazados a los destinos. Sistema Inteligente conserva sus once subdominios; Traductor Inteligente conserva sus tres; Orquestación tiene tres; Inteligencia documental tiene dos. Los subdominios se seleccionan por orden canónico e intención de la tarea, con ejecución secuencial y carga bajo demanda.
+
+Los activos `.7z` son paquetes de soporte, no ejecutables directos. Antes de invocarlos se requiere extracción bajo demanda, verificación SHA-256, adaptador real de consumidor, smoke nativo y medición de recursos. El router conserva `PLAN_ONLY` y deniega ejecución si esas dependencias/evidencias no están disponibles. Una asignación registrada no equivale a prueba de funcionamiento.
+
+La identidad de comando es estricta. Solo se aceptan las catorce grafías canónicas y los cinco aliases explícitos registrados en el contrato; no se normalizan arbitrariamente todas las mayúsculas/minúsculas. La tabla de auditoría se conserva en `../docs/cajita-luna/LOUKSNA_14_COMMAND_SUBDOMAIN_AUDIT_20261023.md`.
+
 ## Construcción reproducible
 
 El generador es `reproduce_macrodown.py`; no necesita acceso a GitHub ni a la red. Enumera de forma recursiva los archivos regulares del directorio de runtime y calcula el manifiesto con tamaño y SHA-256. El build debe ejecutarse después de reconciliar el presupuesto bruto; el script deniega la construcción si se supera el límite.

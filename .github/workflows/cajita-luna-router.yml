@@ -5,11 +5,13 @@ on:
     branches: [main, "repair/**"]
     paths:
       - "cajita-luna-runtime/cajita_router.py"
+      - "cajita-luna-runtime/command_subdomain_routing.json"
       - "cajita-luna-runtime/cajita_runtime.py"
       - "tests/test_cajita_router.py"
       - ".github/workflows/cajita-luna-router.yml"
   pull_request:
     paths:
+      - "cajita-luna-runtime/command_subdomain_routing.json"
       - "cajita-luna-runtime/cajita_router.py"
       - "cajita-luna-runtime/cajita_runtime.py"
       - "tests/test_cajita_router.py"
