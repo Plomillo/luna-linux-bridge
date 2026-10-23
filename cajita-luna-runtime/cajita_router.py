@@ -18,7 +18,7 @@ MAX_PARALLEL_DOMAINS = 1
 
 DOMAINS: dict[str, dict[str, Any]] = {
     "D01_CEREBRO": {"name": "Cerebro", "peak_rss_mib": None, "task_adapter": "NOT_REGISTERED", "evidence": "smoke-only"},
-    "D02_ORQUESTACION": {"name": "Orquestación", "peak_rss_mib": 32, "task_adapter": "REGISTRY_SELFTEST_ONLY", "evidence": "CLI registry self-test only"},
+    "D02_ORQUESTACION": {"name": "Orquestación", "peak_rss_mib": None, "task_adapter": "REGISTRY_SELFTEST_ONLY", "evidence": "CLI registry self-test only"},
     "D03_TRANSCRIPCION": {"name": "Transcripción", "peak_rss_mib": None, "task_adapter": "NOT_REGISTERED", "evidence": "smoke-only; WER not established"},
     "D04_TRADUCTOR_INTELIGENTE": {"name": "Traductor inteligente", "peak_rss_mib": None, "task_adapter": "NOT_REGISTERED", "evidence": "text smoke only; translation quality not established"},
     "D05_INTELIGENCIA_DOCUMENTAL": {"name": "Inteligencia documental", "peak_rss_mib": None, "task_adapter": "NOT_REGISTERED", "evidence": "model verification only; document-task quality not established"},
