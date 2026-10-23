@@ -1,0 +1,337 @@
+name: One-shot Cajita de Luna expansion
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/expand-cajita-release-once.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  expand:
+    if: github.ref == 'refs/heads/main' && github.event.head_commit.message == 'bootstrap(cajita): expand published release into repository (2026-10-23)'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    env:
+      ARCHIVE_URL: https://github.com/Plomillo/luna-linux-bridge/releases/download/cajita-luna-archive-2026-10-23-b4015050/CajitadeLuna.7z
+      ARCHIVE_BYTES: "348027363"
+      ARCHIVE_SHA256: b40150508f702ee456da4041927611c5f0f78639d45a8582eff2e88258eb6abf
+      EXPANDED_BYTES_MAX: "479000000"
+      TARGET_DIR: cajita-luna-runtime
+      RECEIPT: docs/cajita-luna/GITHUB_EXPANSION_RECEIPT_20261023.json
+
+    steps:
+      - name: Checkout the same main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+          lfs: false
+
+      - name: Install 7z and Git LFS on the GitHub-hosted runner
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y 7zip git-lfs
+          command -v 7zz || command -v 7z
+          git lfs version
+
+      - name: Download and verify the already-published release asset
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/CajitadeLuna.7z"
+          curl --fail --location --retry 3 --retry-all-errors "$ARCHIVE_URL" -o "$archive"
+          test "$(stat -c '%s' "$archive")" = "$ARCHIVE_BYTES"
+          printf '%s  %s\n' "$ARCHIVE_SHA256" "$archive" | sha256sum --check -
+          SEVEN_ZIP="$(command -v 7zz || command -v 7z)"
+          "$SEVEN_ZIP" t -bd "$archive"
+
+      - name: Safely expand the outer 7z and validate its inner ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          SEVEN_ZIP="$(command -v 7zz || command -v 7z)"
+          outer_dir="$RUNNER_TEMP/cajita-outer"
+          mkdir -p "$outer_dir"
+          "$SEVEN_ZIP" x -y "-o$outer_dir" "$RUNNER_TEMP/CajitadeLuna.7z"
+          inner="$outer_dir/CajitadeLuna.md"
+          test -f "$inner"
+          test "$(stat -c '%s' "$inner")" = "430611776"
+          python3 - "$inner" "$RUNNER_TEMP/inner-inventory.json" "$EXPANDED_BYTES_MAX" <<'PY'
+          import hashlib, json, os, re, stat, sys, zipfile
+          from pathlib import PurePosixPath
+
+          archive_path, report_path = sys.argv[1], sys.argv[2]
+          max_bytes = int(sys.argv[3])
+          with open(archive_path, "rb") as f:
+              if f.read(4) != b"PK\x03\x04":
+                  raise SystemExit("FAIL: CajitadeLuna.md is not the expected ZIP container")
+          if not zipfile.is_zipfile(archive_path):
+              raise SystemExit("FAIL: inner container is not a readable ZIP")
+          entries = []
+          seen = set()
+          total = 0
+          with zipfile.ZipFile(archive_path, "r") as z:
+              if not z.namelist():
+                  raise SystemExit("FAIL: inner ZIP is empty")
+              bad = z.testzip()
+              if bad is not None:
+                  raise SystemExit("FAIL: inner ZIP CRC error at " + bad)
+              for info in z.infolist():
+                  raw = info.filename
+                  if not raw or "\\" in raw or raw.startswith("/"):
+                      raise SystemExit("FAIL: unsafe or ambiguous archive path: " + repr(raw))
+                  p = PurePosixPath(raw)
+                  if any(part in ("..", ".") for part in p.parts) or re.match(r"^[A-Za-z]:", raw):
+                      raise SystemExit("FAIL: path traversal / absolute path in inner ZIP: " + raw)
+                  normalized = str(p)
+                  if normalized in seen:
+                      raise SystemExit("FAIL: duplicate member path: " + normalized)
+                  seen.add(normalized)
+                  mode = (info.external_attr >> 16) & 0xFFFF
+                  kind = stat.S_IFMT(mode)
+                  if kind == stat.S_IFLNK or (kind not in (0, stat.S_IFREG, stat.S_IFDIR)):
+                      raise SystemExit("FAIL: link or special file prohibited: " + normalized)
+                  if not info.is_dir():
+                      total += info.file_size
+                      entries.append({"path": normalized, "size_bytes": info.file_size})
+              files = {e["path"] for e in entries}
+              for name in files:
+                  parts = PurePosixPath(name).parts
+                  for i in range(1, len(parts)):
+                      parent = str(PurePosixPath(*parts[:i]))
+                      if parent in files:
+                          raise SystemExit("FAIL: file/directory path collision: " + parent)
+              if total > max_bytes:
+                  raise SystemExit(f"FAIL: expanded payload {total} exceeds hard cap {max_bytes}")
+              if not any(e["path"].rsplit("/", 1)[-1] == "MACRODOWN_MANIFEST.json" for e in entries):
+                  raise SystemExit("FAIL: expected MACRODOWN_MANIFEST.json missing")
+          digest = hashlib.sha256()
+          with open(archive_path, "rb") as f:
+              for block in iter(lambda: f.read(8 * 1024 * 1024), b""):
+                  digest.update(block)
+          report = {
+              "inner_container_name_in_7z": "CajitadeLuna.md",
+              "inner_container_size_bytes": os.path.getsize(archive_path),
+              "inner_container_sha256": digest.hexdigest(),
+              "zip_crc_validation": "PASS",
+              "archive_path_safety": "PASS",
+              "payload_uncompressed_bytes": total,
+              "payload_hard_cap_bytes": max_bytes,
+              "payload_within_cap": True,
+              "member_count": len(entries),
+              "members": sorted(entries, key=lambda e: e["path"]),
+          }
+          with open(report_path, "w", encoding="utf-8") as f:
+              json.dump(report, f, ensure_ascii=False, indent=2)
+          print("INNER_ZIP_SHA256=" + digest.hexdigest())
+          print("INNER_ZIP_MEMBERS=" + str(len(entries)))
+          print("INNER_ZIP_UNCOMPRESSED_BYTES=" + str(total))
+          print("INNER_ZIP_CRC=PASS")
+          PY
+
+      - name: Extract runtime files on the GitHub-hosted runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e "$TARGET_DIR"
+          mkdir -p "$TARGET_DIR"
+          python3 - "$RUNNER_TEMP/cajita-outer/CajitadeLuna.md" "$TARGET_DIR" "$RUNNER_TEMP/extracted-files.json" "$EXPANDED_BYTES_MAX" <<'PY'
+          import hashlib, json, os, shutil, stat, sys, zipfile
+          from pathlib import Path, PurePosixPath
+
+          zip_path, target_arg, manifest_path = sys.argv[1:4]
+          max_bytes = int(sys.argv[4])
+          root = Path(target_arg).resolve()
+          records = []
+          total = 0
+          with zipfile.ZipFile(zip_path, "r") as z:
+              for info in z.infolist():
+                  name = info.filename
+                  rel = PurePosixPath(name)
+                  if not name or "\\" in name or rel.is_absolute() or any(p in ("..", ".") for p in rel.parts):
+                      raise SystemExit("FAIL: unsafe path during extraction: " + repr(name))
+                  dest = (root / Path(*rel.parts)).resolve()
+                  if dest != root and root not in dest.parents:
+                      raise SystemExit("FAIL: extraction path escapes target: " + name)
+                  mode = (info.external_attr >> 16) & 0xFFFF
+                  kind = stat.S_IFMT(mode)
+                  if kind == stat.S_IFLNK or (kind not in (0, stat.S_IFREG, stat.S_IFDIR)):
+                      raise SystemExit("FAIL: link/special member refused: " + name)
+                  if info.is_dir():
+                      dest.mkdir(parents=True, exist_ok=True)
+                      continue
+                  dest.parent.mkdir(parents=True, exist_ok=True)
+                  digest = hashlib.sha256()
+                  written = 0
+                  with z.open(info, "r") as src, open(dest, "wb") as out:
+                      while True:
+                          block = src.read(8 * 1024 * 1024)
+                          if not block:
+                              break
+                          out.write(block)
+                          digest.update(block)
+                          written += len(block)
+                  if written != info.file_size:
+                      raise SystemExit("FAIL: extracted size mismatch: " + name)
+                  if mode & 0o777:
+                      os.chmod(dest, mode & 0o777)
+                  total += written
+                  records.append({"path": str(dest.relative_to(root)), "size_bytes": written, "sha256": digest.hexdigest()})
+              if total > max_bytes:
+                  raise SystemExit(f"FAIL: extracted payload {total} exceeds hard cap {max_bytes}")
+          basenames = [Path(r["path"]).name for r in records]
+          if basenames.count("model.safetensors") != 4 or basenames.count("model.onnx") != 1 or basenames.count("quantized_weights.bin") != 1:
+              raise SystemExit("FAIL: six expected model-weight artifacts were not found (expected 4 safetensors, 1 ONNX, 1 quantized bin)")
+          record = {
+              "extracted_file_count": len(records),
+              "extracted_payload_bytes": total,
+              "files": sorted(records, key=lambda x: x["path"]),
+              "six_model_artifacts": "PASS",
+              "member_sha256": "computed while extracting",
+          }
+          with open(manifest_path, "w", encoding="utf-8") as f:
+              json.dump(record, f, ensure_ascii=False, indent=2)
+          print("EXTRACTED_FILES=" + str(len(records)))
+          print("EXTRACTED_BYTES=" + str(total))
+          print("SIX_MODEL_ARTIFACTS=PASS")
+          PY
+
+      - name: Configure Git LFS only for extracted files over 90 MB
+        shell: bash
+        run: |
+          set -euo pipefail
+          git lfs install --local
+          python3 - "$TARGET_DIR" "$RUNNER_TEMP/lfs-paths.txt" <<'PY'
+          import os, sys
+          root, out = sys.argv[1:3]
+          found = []
+          for base, dirs, files in os.walk(root):
+              dirs.sort()
+              for name in sorted(files):
+                  path = os.path.join(base, name)
+                  if os.path.getsize(path) > 90_000_000:
+                      found.append(path.replace(os.sep, "/"))
+          with open(out, "w", encoding="utf-8") as f:
+              for path in found:
+                  f.write(path + "\n")
+          print("LFS_FILES_OVER_90MB=" + str(len(found)))
+          for path in found:
+              print("LFS_TRACK=" + path)
+          PY
+          while IFS= read -r path; do
+            test -n "$path"
+            git lfs track "$path"
+          done < "$RUNNER_TEMP/lfs-paths.txt"
+          while IFS= read -r path; do
+            test -z "$path" && continue
+            git check-attr filter -- "$path" | grep -q 'filter: lfs'
+          done < "$RUNNER_TEMP/lfs-paths.txt"
+
+      - name: Write expansion receipt without modifying the runtime payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e "$RECEIPT"
+          python3 - "$RUNNER_TEMP/inner-inventory.json" "$RUNNER_TEMP/extracted-files.json" "$RECEIPT" "$ARCHIVE_SHA256" "$ARCHIVE_BYTES" <<'PY'
+          import json, os, sys
+          inner_path, extracted_path, receipt_path, outer_sha, outer_bytes = sys.argv[1:]
+          inner = json.load(open(inner_path, encoding="utf-8"))
+          extracted = json.load(open(extracted_path, encoding="utf-8"))
+          receipt = {
+              "receipt_id": "CAJITA_LUNA_GITHUB_EXPANSION_20261023",
+              "status": "EXTRACTION_AND_INTEGRITY_VALIDATED",
+              "branch": "main",
+              "execution_environment": "GitHub-hosted ubuntu-latest runner",
+              "source_release": "https://github.com/Plomillo/luna-linux-bridge/releases/tag/cajita-luna-archive-2026-10-23-b4015050",
+              "source_asset": "CajitadeLuna.7z",
+              "source_asset_size_bytes": int(outer_bytes),
+              "source_asset_sha256": outer_sha,
+              "outer_7z_integrity": "PASS",
+              "outer_member_name": inner["inner_container_name_in_7z"],
+              "outer_member_size_bytes": inner["inner_container_size_bytes"],
+              "outer_member_sha256": inner["inner_container_sha256"],
+              "inner_zip_crc": inner["zip_crc_validation"],
+              "path_safety_validation": inner["archive_path_safety"],
+              "extracted_directory": "cajita-luna-runtime/",
+              "extracted_file_count": extracted["extracted_file_count"],
+              "extracted_payload_bytes": extracted["extracted_payload_bytes"],
+              "hard_cap_bytes": inner["payload_hard_cap_bytes"],
+              "within_hard_cap": extracted["extracted_payload_bytes"] <= inner["payload_hard_cap_bytes"],
+              "six_model_artifacts": extracted["six_model_artifacts"],
+              "large_file_transport": "Git LFS for files over 90,000,000 bytes",
+              "file_inventory": extracted["files"],
+              "certification_scope": "Artifact extraction and file integrity only; no functional certification is implied."
+          }
+          os.makedirs(os.path.dirname(receipt_path), exist_ok=True)
+          with open(receipt_path, "w", encoding="utf-8") as f:
+              json.dump(receipt, f, ensure_ascii=False, indent=2)
+              f.write("\n")
+          print("RECEIPT_WRITTEN=" + receipt_path)
+          print("RECEIPT_FILES=" + str(receipt["extracted_file_count"]))
+          print("RECEIPT_PAYLOAD_BYTES=" + str(receipt["extracted_payload_bytes"]))
+          PY
+
+      - name: Commit extracted payload and receipt to the same main branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git branch --show-current)" = "main"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -f .github/workflows/expand-cajita-release-once.yml
+          git add "$TARGET_DIR" "$RECEIPT" .gitattributes
+          git diff --cached --check
+          git diff --cached --stat
+          git lfs status
+          git commit -m "feat(cajita): expand verified runtime into main (2026-10-23)"
+          git lfs push origin HEAD
+          git push origin HEAD:main
+          local_head="$(git rev-parse HEAD)"
+          remote_head="$(git ls-remote origin refs/heads/main | awk '{print $1}')"
+          test "$local_head" = "$remote_head"
+          echo "MAIN_COMMIT=$local_head"
+          echo "MAIN_PUSH_VERIFICATION=PASS"
+
+      - name: Verify expansion receipt on the public main branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="https://raw.githubusercontent.com/$GITHUB_REPOSITORY/main/$RECEIPT"
+          curl --fail --location --retry 3 "$url" -o "$RUNNER_TEMP/published-receipt.json"
+          python3 - "$RUNNER_TEMP/published-receipt.json" <<'PY'
+          import json, sys
+          d = json.load(open(sys.argv[1], encoding="utf-8"))
+          assert d["branch"] == "main"
+          assert d["outer_7z_integrity"] == "PASS"
+          assert d["inner_zip_crc"] == "PASS"
+          assert d["six_model_artifacts"] == "PASS"
+          assert d["within_hard_cap"] is True
+          assert d["extracted_file_count"] > 0
+          print("PUBLIC_RECEIPT_VERIFICATION=PASS")
+          print("EXTRACTED_FILES=" + str(d["extracted_file_count"]))
+          print("EXTRACTED_BYTES=" + str(d["extracted_payload_bytes"]))
+          print("RUNTIME_DIRECTORY=" + d["extracted_directory"])
+          PY
+
+      - name: Remove the temporary workflow if extraction fails
+        if: failure()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          path=".github/workflows/expand-cajita-release-once.yml"
+          current_sha="$(gh api "repos/$GITHUB_REPOSITORY/contents/$path" --jq .sha 2>/dev/null || true)"
+          if [ -n "$current_sha" ]; then
+            gh api --method DELETE "repos/$GITHUB_REPOSITORY/contents/$path" \
+              -f message="cleanup(cajita): remove failed one-shot expansion workflow" \
+              -f sha="$current_sha" \
+              -f branch=main
+          fi
