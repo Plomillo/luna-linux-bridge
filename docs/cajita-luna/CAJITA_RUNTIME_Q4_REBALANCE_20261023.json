@@ -400,9 +400,9 @@
     }
   },
   "weights_manifest_sha256": "703fb6b4c278b6111a354951bb7f9faf3721edb0c89b4dda843242e47634039d",
-  "runtime_bytes_after": 464302918,
+  "runtime_bytes_after": 464215286,
   "runtime_file_count_after": 154,
-  "saved_bytes": 41690943,
+  "saved_bytes": 41778575,
   "bytes_over_cap": 0,
   "size_gate": "PASS",
   "quantized_factor_models_promoted": 0,
@@ -415,5 +415,7 @@
   "independent_validation": "NOT_RUN",
   "certification": "NOT_GRANTED",
   "elapsed_seconds": 55.587,
-  "status": "SIZE_GATE_PASS_CERTIFICATION_NOT_GRANTED"
+  "status": "SIZE_GATE_PASS_CERTIFICATION_NOT_GRANTED",
+  "placement_size_gate_recorded": true,
+  "registered_asset_count": 10
 }

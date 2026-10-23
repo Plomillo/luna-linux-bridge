@@ -2,7 +2,7 @@
   "schema": "CAJITA_EXTERNALIZED_ASSET_PLACEMENT/1.0",
   "candidate_id": "CAJITA_LUNA_RUNTIME_V9_20261023_EXTERNAL_ASSET_PLACEMENT",
   "based_on_commit": "cf777392759b1926e9999ed4f877aa09fc88cf90",
-  "status": "TEN_ASSETS_COMPACTED_RUNTIME_MODEL_QUANTIZATION_REQUIRED",
+  "status": "TEN_ASSETS_COMPACTED_RUNTIME_SIZE_GATE_PASS",
   "purpose": "Place recovered externalized assets at their intended six-domain source-tree paths without silently promoting them into the distributable archive.",
   "hard_cap_bytes": 470000000,
   "current_macrodown_manifest": {
@@ -912,5 +912,28 @@
   "compact_containers_added_bytes": 165250049,
   "net_runtime_tree_reduction_bytes": 359787657,
   "last_operation": "REPLACE_EXPANDED_TREES_WITH_VERIFIED_7Z_CONTAINERS",
-  "certification": "NOT_GRANTED"
+  "certification": "NOT_GRANTED",
+  "runtime_size_gate": {
+    "audit_id": "CAJITA_FINAL_RUNTIME_SIZE_GATE_20261023",
+    "measurement_method": "sum of every regular file byte under cajita-luna-runtime except MACRODOWN_MANIFEST.json; no LFS pointers",
+    "payload_bytes": 464215286,
+    "hard_cap_bytes": 470000000,
+    "bytes_under_cap": 5784714,
+    "size_gate": "PASS",
+    "registered_asset_count": 10,
+    "registered_asset_ids": [
+      "APACHE_JENA_6_2_0",
+      "PLAYWRIGHT_1_63_0_SOURCE",
+      "ONNX_RUNTIME_1_29_0_CP311",
+      "DAGGER_0_21_8_LINUX_AMD64",
+      "OPA_STATIC_LINUX_AMD64_CANDIDATE",
+      "RQLITE_10_2_7_LINUX_AMD64",
+      "SQLITE_SOURCE_3_53_4",
+      "CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE",
+      "AVALONIA_12_1_1_NUGET",
+      "TAURI_2_11_5_SOURCE_ZIP"
+    ],
+    "q2_factor_models_promoted": 4,
+    "certification": "NOT_GRANTED"
+  }
 }
