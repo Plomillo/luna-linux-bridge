@@ -1,0 +1,203 @@
+{
+  "schema": "CAJITA_NEW_ENGINE_MODEL_QUANTIZATION/1.0",
+  "audit_id": "CAJITA_NEW_ENGINE_QUANTIZATION_20261023",
+  "created_at_utc": "2026-10-23T17:44:38.878575+00:00",
+  "repository": "Plomillo/luna-linux-bridge",
+  "branch": "main",
+  "target_hard_cap_bytes": 470000000,
+  "scope": "exactly ten newly incorporated assets in EXTERNALIZED_ASSET_PLACEMENT.json",
+  "method": "Scan nested containers and dynamically quantize actual ONNX graphs to signed INT8; never lossy-transform general executable bytes.",
+  "protected_legacy_weights": {
+    "policy": "NO_MODIFICATION",
+    "paths": [
+      "1. Cerebro/model.safetensors",
+      "3. Transcripción/model.safetensors",
+      "4. Traductor Inteligente/Traducción general/model.safetensors",
+      "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin",
+      "6. Sistema Inteligente/Análisis Avanzado/model.safetensors",
+      "6. Sistema Inteligente/Anti-Alucinaciones/model.onnx"
+    ],
+    "status": "NOT_TARGETED"
+  },
+  "summary": {
+    "assets_expected": 10,
+    "assets_scanned": 10,
+    "files_scanned": 15921,
+    "expanded_bytes_scanned": 536826818,
+    "model_payloads_found": 3,
+    "onnx_candidates_quantized_smaller_and_validated": 0,
+    "hard_cap_compliance": "NOT_EVALUATED_BY_QUANTIZATION_PASS",
+    "status": "NO_ONNX_TENSORS_FOUND_IN_THE_TEN_ASSETS"
+  },
+  "assets": [
+    {
+      "asset_id": "APACHE_JENA_6_2_0",
+      "container_path": "cajita-luna-runtime/2. Orquestación/Multi + Interdisciplinar/apache-jena-6.2.0.tar.gz.7z",
+      "container_exists": true,
+      "container_bytes": 23103199,
+      "container_sha256": "a26d64b241bc7b125725d9a8ac377c74df6b4565a51a3f7fb66a5bda63ffa77a",
+      "model_payloads_found": [],
+      "quantization_results": [],
+      "expanded_bytes_scanned": 27295036,
+      "status": "NO_NEURAL_MODEL_PAYLOAD_FOUND"
+    },
+    {
+      "asset_id": "PLAYWRIGHT_1_63_0_SOURCE",
+      "container_path": "cajita-luna-runtime/2. Orquestación/Orquestador/playwright-1.63.0.tar.gz.7z",
+      "container_exists": true,
+      "container_bytes": 32133546,
+      "container_sha256": "395141a67bce645b0aa37cecb202b0762273bdb4f79c8a2cab2967a93a78dc14",
+      "model_payloads_found": [],
+      "quantization_results": [],
+      "expanded_bytes_scanned": 68853033,
+      "status": "NO_NEURAL_MODEL_PAYLOAD_FOUND"
+    },
+    {
+      "asset_id": "ONNX_RUNTIME_1_29_0_CP311",
+      "container_path": "cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/onnxruntime-1.29.0-cp311-cp311-manylinux_2_28_x86_64.whl.7z",
+      "container_exists": true,
+      "container_bytes": 10219873,
+      "container_sha256": "d13eebe3214d7e47fed0258e58e9cbb88d33172c31d8ca62dd70dc378660a26b",
+      "model_payloads_found": [
+        {
+          "name": "sigmoid.onnx",
+          "suffix": ".onnx",
+          "bytes": 103,
+          "sha256": "5340aba67a7e3475162ad794378af55f1718f55f9a5d74b4af60ecc7f7a624b6",
+          "quantizer": "ONNX_DYNAMIC_INT8"
+        },
+        {
+          "name": "mul_1.onnx",
+          "suffix": ".onnx",
+          "bytes": 130,
+          "sha256": "71f431c4e9321ec6fbeb158d02ed240459a7dcc98673fa79a4f439ce42efaf10",
+          "quantizer": "ONNX_DYNAMIC_INT8"
+        },
+        {
+          "name": "logreg_iris.onnx",
+          "suffix": ".onnx",
+          "bytes": 670,
+          "sha256": "8224784c98d73412d9fd99abcd57a38568bd590980d0fbe5916464531c52e8fc",
+          "quantizer": "ONNX_DYNAMIC_INT8"
+        }
+      ],
+      "quantization_results": [
+        {
+          "source_sha256": "5340aba67a7e3475162ad794378af55f1718f55f9a5d74b4af60ecc7f7a624b6",
+          "candidate_artifact_path": "cajita_quantized_candidates/ONNX_RUNTIME_1_29_0_CP311/000_0000_sigmoid.int8.onnx",
+          "candidate_sha256": "e63a6dc24d101722fbbfb5432dcaa7fe5fe518f841809b880beff93b4a7cf6dd",
+          "original_bytes": 103,
+          "candidate_bytes": 146,
+          "saved_bytes": -43,
+          "quantization": "ONNX_DYNAMIC_INT8",
+          "graph_check": "PASS",
+          "cpu_session_load": "PASS",
+          "inputs": [
+            "x"
+          ],
+          "outputs": [
+            "y"
+          ],
+          "status": "QUANTIZED_CANDIDATE_NOT_SMALLER",
+          "runtime_replacement": "NOT_PROMOTED_WITHOUT_GOLDEN_EQUIVALENCE_TESTS"
+        },
+        {
+          "source_sha256": "71f431c4e9321ec6fbeb158d02ed240459a7dcc98673fa79a4f439ce42efaf10",
+          "quantization": "ONNX_DYNAMIC_INT8",
+          "status": "QUANTIZATION_OR_VALIDATION_FAILED",
+          "error": "ConvertError: Input W is undefined!"
+        },
+        {
+          "source_sha256": "8224784c98d73412d9fd99abcd57a38568bd590980d0fbe5916464531c52e8fc",
+          "quantization": "ONNX_DYNAMIC_INT8",
+          "status": "QUANTIZATION_OR_VALIDATION_FAILED",
+          "error": "ValueError: Failed to find proper ai.onnx domain"
+        }
+      ],
+      "expanded_bytes_scanned": 62736574,
+      "status": "MODEL_PAYLOADS_FOUND"
+    },
+    {
+      "asset_id": "DAGGER_0_21_8_LINUX_AMD64",
+      "container_path": "cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/dagger_v0.21.8_linux_amd64.tar.gz.7z",
+      "container_exists": true,
+      "container_bytes": 15377436,
+      "container_sha256": "bb95a9e4580009f3e7bb5d365d3ef608832a6387a2fea586eec7bafab4a92f4e",
+      "model_payloads_found": [],
+      "quantization_results": [],
+      "expanded_bytes_scanned": 15382954,
+      "status": "NO_NEURAL_MODEL_PAYLOAD_FOUND"
+    },
+    {
+      "asset_id": "OPA_STATIC_LINUX_AMD64_CANDIDATE",
+      "container_path": "cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/opa_linux_amd64_static.7z",
+      "container_exists": true,
+      "container_bytes": 25273630,
+      "container_sha256": "75957907b2f3b74820b20934a36a1d6d46a2561b58380873a59ccc4f23583628",
+      "model_payloads_found": [],
+      "quantization_results": [],
+      "expanded_bytes_scanned": 25271120,
+      "status": "NO_NEURAL_MODEL_PAYLOAD_FOUND"
+    },
+    {
+      "asset_id": "RQLITE_10_2_7_LINUX_AMD64",
+      "container_path": "cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/rqlite-v10.2.7-linux-amd64.tar.gz.7z",
+      "container_exists": true,
+      "container_bytes": 12962199,
+      "container_sha256": "bd14c66472a595aa49788e5246715f840ff5964f3d624833f49055d06913f9ea",
+      "model_payloads_found": [],
+      "quantization_results": [],
+      "expanded_bytes_scanned": 12970604,
+      "status": "NO_NEURAL_MODEL_PAYLOAD_FOUND"
+    },
+    {
+      "asset_id": "SQLITE_SOURCE_3_53_4",
+      "container_path": "cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/sqlite-src-3530400.zip.7z",
+      "container_exists": true,
+      "container_bytes": 7954439,
+      "container_sha256": "e0279eabebb520b4d0cc9abea1a63ff6372f3ba9264829da11b059d06b1dab1e",
+      "model_payloads_found": [],
+      "quantization_results": [],
+      "expanded_bytes_scanned": 111974369,
+      "status": "NO_NEURAL_MODEL_PAYLOAD_FOUND"
+    },
+    {
+      "asset_id": "CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE",
+      "container_path": "cajita-luna-runtime/6. Sistema Inteligente/Portabilidad base/cmake-4.4.3-windows-x86_64.zip.7z",
+      "container_exists": true,
+      "container_bytes": 21310484,
+      "container_sha256": "fc8a06079563f1befb35204eee593a1c87ce405ffc8a8483cf769ae9feedbf37",
+      "model_payloads_found": [],
+      "quantization_results": [],
+      "expanded_bytes_scanned": 143281458,
+      "status": "NO_NEURAL_MODEL_PAYLOAD_FOUND"
+    },
+    {
+      "asset_id": "AVALONIA_12_1_1_NUGET",
+      "container_path": "cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/avalonia.12.1.1.nupkg.7z",
+      "container_exists": true,
+      "container_bytes": 3836434,
+      "container_sha256": "46ea1b444978950605f3cea2edaf2e7a9116e14ebd0db42f49f7582eff7ae66f",
+      "model_payloads_found": [],
+      "quantization_results": [],
+      "expanded_bytes_scanned": 35926924,
+      "status": "NO_NEURAL_MODEL_PAYLOAD_FOUND"
+    },
+    {
+      "asset_id": "TAURI_2_11_5_SOURCE_ZIP",
+      "container_path": "cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/tauri-tauri-v2.11.5.zip.7z",
+      "container_exists": true,
+      "container_bytes": 13078809,
+      "container_sha256": "04c9076f708683d66d36f56c643a284a4e3db70a9c08a7f66f3016b2531c39a8",
+      "model_payloads_found": [],
+      "quantization_results": [],
+      "expanded_bytes_scanned": 33134746,
+      "status": "NO_NEURAL_MODEL_PAYLOAD_FOUND"
+    }
+  ],
+  "caveats": [
+    "Model file types other than ONNX are inventoried but require architecture-specific quantizers.",
+    "Graph validation and CPU session loading are not quality equivalence tests; candidates are not auto-promoted.",
+    "Six prior legacy model paths are not touched."
+  ]
+}
