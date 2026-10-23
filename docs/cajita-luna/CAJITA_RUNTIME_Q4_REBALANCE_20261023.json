@@ -1,27 +1,59 @@
 {
   "schema": "CAJITA_RUNTIME_HARD_CAP_REBALANCE/1.0",
   "audit_id": "CAJITA_RUNTIME_Q4_REBALANCE_20261023",
-  "created_at_utc": "2026-10-23T20:23:12.397071+00:00",
+  "created_at_utc": "2026-10-23T20:30:37.694158+00:00",
   "repository": "Plomillo/luna-linux-bridge",
   "branch": "main",
   "hard_cap_bytes": 470000000,
   "size_basis": "sum of actual runtime file bytes excluding only the regenerated MACRODOWN_MANIFEST.json",
-  "runtime_bytes_before": 641921943,
-  "runtime_file_count_before": 150,
+  "runtime_bytes_before": 568088366,
+  "runtime_file_count_before": 154,
   "weight_factor_results": [
     {
       "id": "W01_CEREBRO",
       "path": "1. Cerebro/model.safetensors",
-      "original_bytes": 148477400,
-      "original_sha256": "935d226a65faca9b59a7742c7c31208ef0ba671509d475c1a4e2f3489cecc19e",
+      "status": "ALREADY_Q4_PACKED",
+      "candidate_bytes": 116856296
+    },
+    {
+      "id": "W02_TRANSCRIPTION",
+      "path": "3. Transcripción/model.safetensors",
+      "status": "ALREADY_Q4_PACKED",
+      "candidate_bytes": 21579806
+    },
+    {
+      "id": "W03_TRANSLATION",
+      "path": "4. Traductor Inteligente/Traducción general/model.safetensors",
+      "status": "ALREADY_Q4_PACKED",
+      "candidate_bytes": 14765381
+    },
+    {
+      "id": "W05_QWEN3",
+      "path": "6. Sistema Inteligente/Análisis Avanzado/model.safetensors",
+      "status": "ALREADY_Q4_PACKED",
+      "candidate_bytes": 28687808
+    }
+  ],
+  "float_tensor_results": [
+    {
+      "id": "W01_CEREBRO",
+      "path": "1. Cerebro/model.safetensors",
+      "original_bytes": 116856296,
+      "original_sidecar_bytes": 120198,
+      "original_sha256": "630de7b7aeef5385196be404587b25246204162159ea899a963bd90f41437d28",
+      "eligible_tensor_count": 72,
+      "eligible_float_bytes": 79626240,
+      "eligible_dtypes_bytes": {
+        "bfloat16": 79626240
+      },
       "attempts": [
         {
-          "candidate_bytes": 116856296,
-          "candidate_sha256": "630de7b7aeef5385196be404587b25246204162159ea899a963bd90f41437d28",
           "group_size": 128,
-          "factor_tensor_count": 508,
-          "factor_values_packed": 67617920,
-          "sidecar_bytes": 120198,
+          "candidate_bytes": 58391640,
+          "candidate_sidecar_bytes": 144998,
+          "candidate_sha256": "ad52cce29b454bb2d8df39cd062fcc94a7c55aefc4f718f4a41af6d67224ee8f",
+          "packed_tensor_count": 72,
+          "packed_original_bytes": 79626240,
           "runtime_smoke_after": {
             "passed": true,
             "status": "PASS_MODEL_START_AND_FORWARD",
@@ -37,7 +69,7 @@
               ],
               "finite_logits": true,
               "argmax_token_id": 2963,
-              "elapsed_seconds": 0.965,
+              "elapsed_seconds": 1.725,
               "quality_equivalence": "NOT_ESTABLISHED_BY_SMOKE_TEST",
               "compression_rank": 1
             },
@@ -48,7 +80,7 @@
           "status": "PROMOTED"
         }
       ],
-      "status": "PROMOTED_Q4_BLOCKWISE",
+      "status": "PROMOTED_FLOAT_Q4_BLOCKWISE",
       "baseline_smoke": {
         "passed": true,
         "status": "PASS_MODEL_START_AND_FORWARD",
@@ -64,29 +96,37 @@
           ],
           "finite_logits": true,
           "argmax_token_id": 2963,
-          "elapsed_seconds": 0.586,
+          "elapsed_seconds": 1.613,
           "quality_equivalence": "NOT_ESTABLISHED_BY_SMOKE_TEST",
           "compression_rank": 1
         }
       },
-      "candidate_bytes": 116856296,
-      "candidate_sha256": "630de7b7aeef5385196be404587b25246204162159ea899a963bd90f41437d28",
-      "sidecar_bytes": 120198,
-      "saved_bytes": 31500906
+      "group_size": 128,
+      "candidate_bytes": 58391640,
+      "candidate_sidecar_bytes": 144998,
+      "candidate_sha256": "ad52cce29b454bb2d8df39cd062fcc94a7c55aefc4f718f4a41af6d67224ee8f",
+      "saved_bytes": 58439856,
+      "smoke_signature_preserved": true
     },
     {
       "id": "W02_TRANSCRIPTION",
       "path": "3. Transcripción/model.safetensors",
-      "original_bytes": 34877948,
-      "original_sha256": "6f4541536bfca7899d74e962c277b7fbcd1cbc4fb7f8d101c69bcd1ea2560aa3",
+      "original_bytes": 21579806,
+      "original_sidecar_bytes": 119478,
+      "original_sha256": "566467b15ad374c68bf90c8d02dcea9370c2b8216ae9a17da059479b2f073f6c",
+      "eligible_tensor_count": 2,
+      "eligible_float_bytes": 4986880,
+      "eligible_dtypes_bytes": {
+        "float16": 4986880
+      },
       "attempts": [
         {
-          "candidate_bytes": 21579806,
-          "candidate_sha256": "566467b15ad374c68bf90c8d02dcea9370c2b8216ae9a17da059479b2f073f6c",
           "group_size": 128,
-          "factor_tensor_count": 472,
-          "factor_values_packed": 28520804,
-          "sidecar_bytes": 119478,
+          "candidate_bytes": 17918086,
+          "candidate_sidecar_bytes": 120316,
+          "candidate_sha256": "200d88cf86fc85c427eeebb09fe8be489f26ba1627a7954b545ba3d547d7768a",
+          "packed_tensor_count": 2,
+          "packed_original_bytes": 4986880,
           "runtime_smoke_after": {
             "passed": true,
             "status": "PASS_TRANSCRIPTION_GENERATION",
@@ -101,7 +141,7 @@
               ],
               "generated_token_count": 4,
               "decoded": " a a a a",
-              "elapsed_seconds": 5.988,
+              "elapsed_seconds": 8.386,
               "quality_equivalence": "NOT_ESTABLISHED_BY_SMOKE_TEST"
             },
             "stderr_tail": "`generation_config` default values have been modified to match model-specific defaults: {'begin_suppress_tokens': [220, 50256]}. If this is not desired, please set these values explicitly.\nThe attention mask is not set and cannot be inferred from input because pad token is same as eos token. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.\nA custom logits processor of type <class 'transformers.generation.logits_process.SuppressTokensAtBeginLogitsProcessor'> has been passed to `.generate()`, but it was also created in `.generate()`, given its parameterization. The custom <class 'transformers.generation.logits_process.SuppressTokensAtBeginLogitsProcessor'> will take precedence. Please check the docstring of <class 'transformers.generation.logits_process.SuppressTokensAtBeginLogitsProcessor'> to see related `.generate()` flags.\n"
@@ -111,7 +151,7 @@
           "status": "PROMOTED"
         }
       ],
-      "status": "PROMOTED_Q4_BLOCKWISE",
+      "status": "PROMOTED_FLOAT_Q4_BLOCKWISE",
       "baseline_smoke": {
         "passed": true,
         "status": "PASS_TRANSCRIPTION_GENERATION",
@@ -126,134 +166,30 @@
           ],
           "generated_token_count": 4,
           "decoded": " a a a a",
-          "elapsed_seconds": 5.803,
+          "elapsed_seconds": 8.518,
           "quality_equivalence": "NOT_ESTABLISHED_BY_SMOKE_TEST"
         }
       },
-      "candidate_bytes": 21579806,
-      "candidate_sha256": "566467b15ad374c68bf90c8d02dcea9370c2b8216ae9a17da059479b2f073f6c",
-      "sidecar_bytes": 119478,
-      "saved_bytes": 13178664
+      "group_size": 128,
+      "candidate_bytes": 17918086,
+      "candidate_sidecar_bytes": 120316,
+      "candidate_sha256": "200d88cf86fc85c427eeebb09fe8be489f26ba1627a7954b545ba3d547d7768a",
+      "saved_bytes": 3660882,
+      "smoke_signature_preserved": true
     },
     {
       "id": "W03_TRANSLATION",
       "path": "4. Traductor Inteligente/Traducción general/model.safetensors",
-      "original_bytes": 20256147,
-      "original_sha256": "a2ba25feb33c68b7a5ea27ff8aadeaf96f67d80fc74d169c075e14d1ff363bf5",
-      "attempts": [
-        {
-          "candidate_bytes": 14765381,
-          "candidate_sha256": "2024c96da5476a217296c79046282c1d76b52216e002243e01c0bf89e139973a",
-          "group_size": 128,
-          "factor_tensor_count": 1682,
-          "factor_values_packed": 12271596,
-          "sidecar_bytes": 462638,
-          "runtime_smoke_after": {
-            "passed": true,
-            "status": "PASS_TEXT_TRANSLATION_GENERATION",
-            "returncode": 0,
-            "result": {
-              "status": "PASS_TEXT_TRANSLATION_GENERATION",
-              "model_type": "seamless_m4t_v2",
-              "input_token_count": 6,
-              "generated_token_count": 6,
-              "decoded": "te te te te",
-              "elapsed_seconds": 3.463,
-              "quality_equivalence": "NOT_ESTABLISHED_BY_SMOKE_TEST"
-            },
-            "stderr_tail": "Instantiating a decoder SeamlessM4Tv2Attention without passing `layer_idx` is not recommended and will lead to errors during the forward call, if caching is used. Please make sure to provide a `layer_idx` when creating this class.\n"
-          },
-          "smoke_signature_preserved": true,
-          "smoke_passed": true,
-          "status": "PROMOTED"
-        }
-      ],
-      "status": "PROMOTED_Q4_BLOCKWISE",
-      "baseline_smoke": {
-        "passed": true,
-        "status": "PASS_TEXT_TRANSLATION_GENERATION",
-        "returncode": 0,
-        "result": {
-          "status": "PASS_TEXT_TRANSLATION_GENERATION",
-          "model_type": "seamless_m4t_v2",
-          "input_token_count": 6,
-          "generated_token_count": 6,
-          "decoded": "te te te te",
-          "elapsed_seconds": 3.263,
-          "quality_equivalence": "NOT_ESTABLISHED_BY_SMOKE_TEST"
-        }
-      },
-      "candidate_bytes": 14765381,
-      "candidate_sha256": "2024c96da5476a217296c79046282c1d76b52216e002243e01c0bf89e139973a",
-      "sidecar_bytes": 462638,
-      "saved_bytes": 5028128
+      "original_bytes": 14765381,
+      "original_sha256": "2024c96da5476a217296c79046282c1d76b52216e002243e01c0bf89e139973a",
+      "status": "NO_LARGE_FLOAT_TENSORS_TO_PACK"
     },
     {
       "id": "W05_QWEN3",
       "path": "6. Sistema Inteligente/Análisis Avanzado/model.safetensors",
-      "original_bytes": 52950152,
-      "original_sha256": "9d5c2ec7d88583c016a7d48f29695915ecfe0619cbca49bdfa8708f6cf6a4604",
-      "attempts": [
-        {
-          "candidate_bytes": 28687808,
-          "candidate_sha256": "024bfb663ec29dcb45ad4c21f37bf316b8a660e758c332df820122bef1d557f8",
-          "group_size": 128,
-          "factor_tensor_count": 564,
-          "factor_values_packed": 51938304,
-          "sidecar_bytes": 133174,
-          "runtime_smoke_after": {
-            "passed": true,
-            "status": "PASS_MODEL_START_AND_FORWARD",
-            "returncode": 0,
-            "result": {
-              "status": "PASS_MODEL_START_AND_FORWARD",
-              "model_type": "qwen3",
-              "vocab_size": 151936,
-              "input_token_count": 1,
-              "logits_shape": [
-                1,
-                1,
-                151936
-              ],
-              "finite_logits": true,
-              "argmax_token_id": 119414,
-              "elapsed_seconds": 0.673,
-              "rope_buffers_materialized": 1,
-              "quality_equivalence": "NOT_ESTABLISHED_BY_SMOKE_TEST"
-            },
-            "stderr_tail": ""
-          },
-          "smoke_signature_preserved": false,
-          "smoke_passed": true,
-          "status": "PROMOTED"
-        }
-      ],
-      "status": "PROMOTED_Q4_BLOCKWISE",
-      "baseline_smoke": {
-        "passed": true,
-        "status": "PASS_MODEL_START_AND_FORWARD",
-        "returncode": 0,
-        "result": {
-          "status": "PASS_MODEL_START_AND_FORWARD",
-          "model_type": "qwen3",
-          "vocab_size": 151936,
-          "input_token_count": 1,
-          "logits_shape": [
-            1,
-            1,
-            151936
-          ],
-          "finite_logits": true,
-          "argmax_token_id": 9779,
-          "elapsed_seconds": 0.367,
-          "rope_buffers_materialized": 1,
-          "quality_equivalence": "NOT_ESTABLISHED_BY_SMOKE_TEST"
-        }
-      },
-      "candidate_bytes": 28687808,
-      "candidate_sha256": "024bfb663ec29dcb45ad4c21f37bf316b8a660e758c332df820122bef1d557f8",
-      "sidecar_bytes": 133174,
-      "saved_bytes": 24129170
+      "original_bytes": 28687808,
+      "original_sha256": "024bfb663ec29dcb45ad4c21f37bf316b8a660e758c332df820122bef1d557f8",
+      "status": "NO_LARGE_FLOAT_TENSORS_TO_PACK"
     }
   ],
   "onnx_result": {
@@ -267,7 +203,7 @@
       "outputs": [
         {
           "index": 0,
-          "relative_l2_error": 0.02539970797956496,
+          "relative_l2_error": 0.006748258135160156,
           "top1_same": true,
           "shape": [
             1,
@@ -281,17 +217,19 @@
     "graph_check": "PASS",
     "cpu_session_load": "PASS"
   },
-  "weights_manifest_sha256": "55438cded084b4b35b2cfdfd1c196083b5401ae1ce5ffc9a2df2e01b2f67114a",
-  "runtime_bytes_after": 568086498,
+  "weights_manifest_sha256": "3edc1d7cee75f08f52d0c34d92eaaffa356e4a6c35edddbf98d12a839f971632",
+  "runtime_bytes_after": 505988501,
   "runtime_file_count_after": 154,
-  "saved_bytes": 73835445,
-  "bytes_over_cap": 98086498,
+  "saved_bytes": 62099865,
+  "bytes_over_cap": 35988501,
   "size_gate": "FAIL",
-  "quantized_factor_models_promoted": 4,
+  "quantized_factor_models_promoted": 0,
+  "float_tensor_models_promoted": 2,
+  "float_tensor_bytes_saved": 62100738,
   "onnx_status": "CANDIDATE_NOT_SMALLER",
   "quality_equivalence": "SMOKE_SIGNATURE_ONLY; TASK_LEVEL_QUALITY_NOT_ESTABLISHED",
   "independent_validation": "NOT_RUN",
   "certification": "NOT_GRANTED",
-  "elapsed_seconds": 53.288,
+  "elapsed_seconds": 47.485,
   "status": "SIZE_GATE_FAIL_OPTIMIZATION_RESULTS_COMMITTED_FOR_NEXT_PASS"
 }

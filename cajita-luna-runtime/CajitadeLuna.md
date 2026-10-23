@@ -42,13 +42,13 @@ D05 ejecuta el verificador de carga del candidato cuantizado; la generación OCR
 
 | Dominio | Activo | Bytes |
 |---|---|---:|
-| Cerebro | `1. Cerebro/model.safetensors` | 116.856.296 |
-| Transcripción | `3. Transcripción/model.safetensors` | 21.579.806 |
+| Cerebro | `1. Cerebro/model.safetensors` | 58.391.640 |
+| Transcripción | `3. Transcripción/model.safetensors` | 17.918.086 |
 | Traductor Inteligente | `4. Traductor Inteligente/Traducción general/model.safetensors` | 14.765.381 |
 | Inteligencia documental | `5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin` | 13.483.380 |
 | Sistema Inteligente | `6. Sistema Inteligente/Análisis Avanzado/model.safetensors` | 28.687.808 |
 | Sistema Inteligente | `6. Sistema Inteligente/Anti-Alucinaciones/model.onnx` | 110.516.001 |
-| **Total de seis archivos de modelo/pesos** | | **305.888.672** |
+| **Total de seis archivos de modelo/pesos** | | **243.762.296** |
 
 ## Integración de activos recuperados — registro aditivo
 
@@ -219,3 +219,15 @@ La pasada actúa sobre los factores INT8 de bajo rango de los cuatro motores que
 | W06_ONNX | `6. Sistema Inteligente/Anti-Alucinaciones/model.onnx` | CANDIDATE_NOT_SMALLER | 110516001 | 110581945 |
 
 El control de tamaño suma los archivos reales del runtime, excluye únicamente el manifiesto de distribución que el constructor regenera y compara con el techo decimal de 470.000.000 bytes. Este control de tamaño no equivale por sí solo a certificación integral de calidad.
+
+
+## Segunda pasada de INT4 para tensores flotantes — 2026-10-23
+
+Se empaquetaron tensores de precisión restantes en bloques INT4 con escala por bloque, manteniendo el mismo modelo lógico y restaurando el dtype original al cargar. Los candidatos se promueven solo si reducen el tamaño total (modelo más sidecar) y la prueba de arranque/generación sigue pasando. La firma de salida se registra separadamente; equivalencia de calidad y certificación no quedan establecidas.
+
+| Motor | Estado | Tensores empaquetados | Bytes originales elegibles | Bytes netos ahorrados |
+|---|---|---:|---:|---:|
+| W01_CEREBRO | PROMOTED_FLOAT_Q4_BLOCKWISE | 72 | 79626240 | 58439856 |
+| W02_TRANSCRIPTION | PROMOTED_FLOAT_Q4_BLOCKWISE | 2 | 4986880 | 3660882 |
+| W03_TRANSLATION | NO_LARGE_FLOAT_TENSORS_TO_PACK | 0 | 0 | 0 |
+| W05_QWEN3 | NO_LARGE_FLOAT_TENSORS_TO_PACK | 0 | 0 | 0 |

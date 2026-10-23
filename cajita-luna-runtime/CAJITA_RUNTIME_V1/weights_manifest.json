@@ -9,8 +9,8 @@
       "label": "GPT-OSS compactado",
       "domain_id": "1_CEREBRO",
       "path": "1. Cerebro/model.safetensors",
-      "bytes": 116856296,
-      "sha256": "630de7b7aeef5385196be404587b25246204162159ea899a963bd90f41437d28",
+      "bytes": 58391640,
+      "sha256": "ad52cce29b454bb2d8df39cd062fcc94a7c55aefc4f718f4a41af6d67224ee8f",
       "representation": "GPT-OSS rank-1 INT8 factors",
       "presence": "VERIFIED",
       "integrity_at_manifest_creation": "SHA256_STREAMED"
@@ -20,8 +20,8 @@
       "label": "Whisper compactado",
       "domain_id": "3_TRANSCRIPCION",
       "path": "3. Transcripción/model.safetensors",
-      "bytes": 21579806,
-      "sha256": "566467b15ad374c68bf90c8d02dcea9370c2b8216ae9a17da059479b2f073f6c",
+      "bytes": 17918086,
+      "sha256": "200d88cf86fc85c427eeebb09fe8be489f26ba1627a7954b545ba3d547d7768a",
       "representation": "Whisper low-rank INT8 factors",
       "presence": "VERIFIED",
       "integrity_at_manifest_creation": "SHA256_STREAMED"
@@ -71,7 +71,7 @@
       "integrity_at_manifest_creation": "SHA256_STREAMED"
     }
   ],
-  "total_weight_bytes": 305888672,
+  "total_weight_bytes": 243762296,
   "total_weight_decimal_mb": 380.561,
   "scope_note": "All six declared model/weight payloads in this compact candidate. Presence and per-file SHA-256 are covered; these checks do not establish model quality, semantic equivalence, complete dependency closure, or functional certification.",
   "weight_presence_integrity": "REQUIRES_RUNTIME_AUDIT",

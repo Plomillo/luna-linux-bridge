@@ -8,7 +8,7 @@ SCHEMA = "CAJITA_SIX_DOMAIN_RUNTIME/1.1"
 HARD_CAP_BYTES = 470_000_000
 CANDIDATE_ID = "CAJITA_LUNA_RUNTIME_V9_20261023"
 MANIFEST_REL = Path("CAJITA_RUNTIME_V1/weights_manifest.json")
-MANIFEST_SHA256 = "55438cded084b4b35b2cfdfd1c196083b5401ae1ce5ffc9a2df2e01b2f67114a"
+MANIFEST_SHA256 = "3edc1d7cee75f08f52d0c34d92eaaffa356e4a6c35edddbf98d12a839f971632"
 DOMAINS = [
  {"id":"D01_CEREBRO","name":"1. Cerebro","directory":"1. Cerebro","entrypoint":"1. Cerebro/cerebro_180mb_runtime.py","args":["--smoke-test"],"assets":["1. Cerebro/config.json","1. Cerebro/model.safetensors","1. Cerebro/tokenizer.json","1. Cerebro/tokenizer_config.json"],"scope":"GPT-OSS low-rank candidate; smoke is not quality certification."},
  {"id":"D02_ORQUESTACION","name":"2. Orquestación","directory":"2. Orquestación","entrypoint":"2. Orquestación/Orquestador/CLIs/cli_registry.py","args":["--self-test"],"assets":["2. Orquestación/Orquestador/punto.json","2. Orquestación/Orquestador/CLIS.txt"],"scope":"CLI registry self-test; does not prove all external CLI tools are installed."},
