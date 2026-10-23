@@ -55,11 +55,16 @@ jobs:
       - name: Independently rebuild candidate to test byte reproducibility
         run: |
           python tools/btx-audit/build_btx_sqlite_candidate.py --output /tmp/btx-candidate-rebuild.sqlite3 --report /tmp/btx-candidate-rebuild-validation.json > /tmp/btx-candidate-rebuild-log.json
-          python -c "import json,sys; a=json.load(open('btx-candidate-validation.json',encoding='utf-8')); b=json.load(open('/tmp/btx-candidate-rebuild-validation.json',encoding='utf-8')); ok=a.get('database_sha256')==b.get('database_sha256') and a.get('database_file_bytes')==b.get('database_file_bytes'); print(json.dumps({'status':'PASS' if ok else 'FAIL','sha256_first':a.get('database_sha256'),'sha256_rebuild':b.get('database_sha256'),'bytes_first':a.get('database_file_bytes'),'bytes_rebuild':b.get('database_file_bytes'),'reproducible':ok})); sys.exit(0 if ok else 2)"
+          python -c "import json,sys; a=json.load(open('btx-candidate-validation.json',encoding='utf-8')); b=json.load(open('/tmp/btx-candidate-rebuild-validation.json',encoding='utf-8')); ok=a.get('database_sha256')==b.get('database_sha256') and a.get('database_file_bytes')==b.get('database_file_bytes'); r={'status':'PASS' if ok else 'FAIL','sha256_first':a.get('database_sha256'),'sha256_rebuild':b.get('database_sha256'),'bytes_first':a.get('database_file_bytes'),'bytes_rebuild':b.get('database_file_bytes'),'reproducible':ok}; open('btx-reproducibility.json','w',encoding='utf-8').write(json.dumps(r,ensure_ascii=False,indent=2)+'\\n'); print(json.dumps(r,ensure_ascii=False)); sys.exit(0 if ok else 2)"
       - name: Run independent structural validator
         run: |
           python -m py_compile tools/btx-audit/validate_btx_sqlite_candidate.py
           python tools/btx-audit/validate_btx_sqlite_candidate.py --database /tmp/btx-candidate.sqlite3 --source-audit btx-source-audit.json --report btx-independent-validation.json
+      - name: Stage candidate artifact only after independent structural gates
+        run: |
+          python -c "import hashlib,json,pathlib,shutil,sys; b=json.load(open('btx-candidate-validation.json',encoding='utf-8')); i=json.load(open('btx-independent-validation.json',encoding='utf-8')); r=json.load(open('btx-reproducibility.json',encoding='utf-8')); ok=b.get('structural_candidate_pass') is True and i.get('candidate_structural_independent_validation')=='PASS' and not i.get('failures') and r.get('reproducible') is True and b.get('database_sha256')==i.get('database_sha256') and b.get('database_file_bytes')==i.get('database_file_bytes'); print(json.dumps({'candidate_artifact_stage_gate':'PASS' if ok else 'DENY','structural_candidate_pass':b.get('structural_candidate_pass'),'independent_validation':i.get('candidate_structural_independent_validation'),'independent_failures':i.get('failures'),'byte_reproducible':r.get('reproducible'),'hash_agreement':b.get('database_sha256')==i.get('database_sha256'),'bytes_agreement':b.get('database_file_bytes')==i.get('database_file_bytes')})); sys.exit(0 if ok else 2);"
+          cp /tmp/btx-candidate.sqlite3 BTX_Book_Core_Candidate.sqlite3
+          sha256sum BTX_Book_Core_Candidate.sqlite3
       - name: Upload forensic metadata report
         if: always()
         uses: actions/upload-artifact@v4
@@ -71,5 +76,18 @@ jobs:
             btx-chapter-span-alignment.json
             btx-candidate-validation.json
             btx-independent-validation.json
+            btx-reproducibility.json
           if-no-files-found: warn
+          retention-days: 14
+      - name: Upload compact BTX SQLite candidate for review
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: BTX-SQLite-Core-Candidate-STRUCTURAL-NOT-CERTIFIED
+          path: |
+            BTX_Book_Core_Candidate.sqlite3
+            btx-candidate-validation.json
+            btx-independent-validation.json
+            btx-reproducibility.json
+          if-no-files-found: error
           retention-days: 14
