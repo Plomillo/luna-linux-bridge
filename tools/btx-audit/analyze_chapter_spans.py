@@ -124,6 +124,8 @@ def main() -> int:
         large_noninteger_samples: list[dict[str, Any]] = []
         page_size_counts: dict[int, int] = collections.Counter()
         salmo_heading_candidates: list[dict[str, Any]] = []
+        book_heading_candidates: list[dict[str, Any]] = []
+        book_lookup_norm = {re.sub(r"[^a-z0-9]", "", b.casefold().replace("á","a").replace("é","e").replace("í","i").replace("ó","o").replace("ú","u").replace("ü","u").replace("ñ","n")): b for b, _ in BOOKS_CHAPTERS}
         for pno, page in enumerate(pdf, start=1):
             pw = float(page.rect.width)
             page_spans = []
@@ -134,6 +136,11 @@ def main() -> int:
                 for line_no, line in enumerate(block.get("lines", [])):
                     line_spans = line.get("spans", [])
                     line_text = "".join(str(span.get("text", "")) for span in line_spans)
+                    normalized_heading = re.sub(r"[^a-z0-9]", "", line_text.casefold().replace("á","a").replace("é","e").replace("í","i").replace("ó","o").replace("ú","u").replace("ü","u").replace("ñ","n"))
+                    heading_book = book_lookup_norm.get(normalized_heading)
+                    max_font = max([round(float(sp.get("size",0)),1) for sp in line_spans] or [0])
+                    if heading_book and max_font >= 14.0:
+                        book_heading_candidates.append({"page":pno,"book":heading_book,"max_font_size":max_font,"line_char_count":len(line_text),"line_text_emitted":False})
                     if 515 <= pno <= 675 and re.search(r"salmo", line_text, flags=re.IGNORECASE):
                         numeric_tokens = []
                         for span in line_spans:
@@ -253,6 +260,8 @@ def main() -> int:
             "pdf_pages": len(page_size_counts),
             "large_numeric_span_count": len(candidates),
             "salmo_heading_candidate_count": len(salmo_heading_candidates),
+            "book_heading_candidate_count": len(book_heading_candidates),
+            "book_heading_candidates": book_heading_candidates,
             "salmo_heading_candidates": salmo_heading_candidates,
             "salmo_chapter_marker_count": len(salmo_chapter_markers),
             "salmo_chapter_markers_first_40": salmo_chapter_markers[:40],
