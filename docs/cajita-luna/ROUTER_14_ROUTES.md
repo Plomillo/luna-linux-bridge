@@ -41,3 +41,15 @@ The audit trace intentionally stores request hashes and route metadata, not raw 
 - Measure peak resident memory and runtime latency per domain on the target device.
 - Add adapter shutdown/unload verification and prove that resources are released between stages.
 - Run independent validation and applicable governance gates. This candidate does not claim certification.
+
+
+## Entry through the existing Cajita runtime
+
+The planner is also exposed through the existing runtime CLI:
+
+- python cajita-luna-runtime/cajita_runtime.py routes
+- python cajita-luna-runtime/cajita_runtime.py selftest
+- python cajita-luna-runtime/cajita_runtime.py plan --request "Transcribe este audio"
+- python cajita-luna-runtime/cajita_runtime.py plan --route-command "/play traductor" --request "Traduce este párrafo al inglés"
+
+This is CLI integration for planning only. It does not turn current model smoke entrypoints into task-execution adapters.
