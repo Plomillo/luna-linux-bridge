@@ -5,6 +5,9 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/cajita-macrodown-hardcap.yml"
+      - "cajita-luna-runtime/cajita_router.py"
+      - "cajita-luna-runtime/command_subdomain_routing.json"
+      - "cajita-luna-runtime/CajitadeLuna.md"
       - "cajita-luna-runtime/reproduce_macrodown.py"
       - "docs/cajita-luna/CAJITA_RUNTIME_Q4_REBALANCE_20261023.json"
       - "cajita-luna-runtime/EXTERNALIZED_ASSET_PLACEMENT.json"
