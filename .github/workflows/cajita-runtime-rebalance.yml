@@ -1,0 +1,163 @@
+name: Cajita — INT4/INT8 rebalance and 470 MB hard gate
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/cajita-runtime-rebalance.yml"
+      - "tools/cajita_q4_rebalance.py"
+      - "cajita-luna-runtime/cajita_weight_materializer.py"
+      - "cajita-luna-runtime/1. Cerebro/cerebro_180mb_runtime.py"
+      - "cajita-luna-runtime/3. Transcripción/lowrank_runtime.py"
+      - "cajita-luna-runtime/4. Traductor Inteligente/Traducción general/lowrank_runtime.py"
+      - "cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/lowrank_runtime_v2.py"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cajita-runtime-rebalance-main
+  cancel-in-progress: false
+
+jobs:
+  rebalance:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Checkout main without global LFS materialization
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+          lfs: false
+          persist-credentials: true
+
+      - name: Materialize only the six active model payloads from Git LFS
+        shell: bash
+        run: |
+          set -euo pipefail
+          git lfs install
+          LFS_INCLUDE='cajita-luna-runtime/1. Cerebro/model.safetensors,cajita-luna-runtime/3. Transcripción/model.safetensors,cajita-luna-runtime/4. Traductor Inteligente/Traducción general/model.safetensors,cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin,cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/model.safetensors,cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/model.onnx'
+          git lfs pull --include="$LFS_INCLUDE" --exclude="" origin main
+          python - <<'PY'
+          from pathlib import Path
+          targets = [
+              "cajita-luna-runtime/1. Cerebro/model.safetensors",
+              "cajita-luna-runtime/3. Transcripción/model.safetensors",
+              "cajita-luna-runtime/4. Traductor Inteligente/Traducción general/model.safetensors",
+              "cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/model.safetensors",
+              "cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/model.onnx",
+          ]
+          for item in targets:
+              p = Path(item)
+              if not p.is_file() or p.stat().st_size < 4096:
+                  raise SystemExit(f"LFS_PAYLOAD_NOT_MATERIALIZED:{item}")
+              if p.read_bytes()[:80].startswith(b"version https://git-lfs.github.com/spec/v1"):
+                  raise SystemExit(f"LFS_POINTER_REMAINS:{item}")
+              print(f"MATERIALIZED {item} {p.stat().st_size}")
+          PY
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install CPU quantization and model-runtime dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install "transformers>=4.55,<5" safetensors numpy sentencepiece scipy soundfile librosa onnx onnxruntime
+
+      - name: Compile shared materializer and rebalance driver
+        run: |
+          python -m py_compile \
+            cajita-luna-runtime/cajita_weight_materializer.py \
+            tools/cajita_q4_rebalance.py \
+            "cajita-luna-runtime/1. Cerebro/cerebro_180mb_runtime.py" \
+            "cajita-luna-runtime/3. Transcripción/lowrank_runtime.py" \
+            "cajita-luna-runtime/4. Traductor Inteligente/Traducción general/lowrank_runtime.py" \
+            "cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/lowrank_runtime_v2.py"
+
+      - name: Quantize existing low-rank factor tensors and ONNX weights
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/cajita_q4_rebalance.py
+
+      - name: Verify model manifest hash and runtime integrity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json, re
+          from pathlib import Path
+          root = Path("cajita-luna-runtime")
+          manifest = root / "CAJITA_RUNTIME_V1/weights_manifest.json"
+          report = json.loads(Path("docs/cajita-luna/CAJITA_RUNTIME_Q4_REBALANCE_20261023.json").read_text())
+          expected = hashlib.sha256(manifest.read_bytes()).hexdigest()
+          runtime = (root / "cajita_runtime.py").read_text()
+          match = re.search(r'MANIFEST_SHA256\s*=\s*"([0-9a-f]{64})"', runtime)
+          if not match or match.group(1) != expected:
+              raise SystemExit("WEIGHTS_MANIFEST_RUNTIME_HASH_MISMATCH")
+          if report.get("runtime_bytes_after") is None or report.get("hard_cap_bytes") != 470000000:
+              raise SystemExit("MISSING_RUNTIME_SIZE_EVIDENCE")
+          print(json.dumps({
+              "runtime_bytes_before": report["runtime_bytes_before"],
+              "runtime_bytes_after": report["runtime_bytes_after"],
+              "hard_cap_bytes": report["hard_cap_bytes"],
+              "size_gate": report["size_gate"],
+              "quantized_factor_models_promoted": report["quantized_factor_models_promoted"],
+              "onnx_status": report["onnx_status"],
+              "certification": report["certification"]
+          }, indent=2))
+          PY
+
+      - name: Commit optimized payloads and traceable evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A -- \
+            "cajita-luna-runtime/1. Cerebro/model.safetensors" \
+            "cajita-luna-runtime/1. Cerebro/model.safetensors.q4.json" \
+            "cajita-luna-runtime/3. Transcripción/model.safetensors" \
+            "cajita-luna-runtime/3. Transcripción/model.safetensors.q4.json" \
+            "cajita-luna-runtime/4. Traductor Inteligente/Traducción general/model.safetensors" \
+            "cajita-luna-runtime/4. Traductor Inteligente/Traducción general/model.safetensors.q4.json" \
+            "cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/model.safetensors" \
+            "cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/model.safetensors.q4.json" \
+            "cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/model.onnx" \
+            "cajita-luna-runtime/CAJITA_RUNTIME_V1/weights_manifest.json" \
+            "cajita-luna-runtime/cajita_runtime.py" \
+            "cajita-luna-runtime/CajitadeLuna.md" \
+            "docs/cajita-luna/CAJITA_RUNTIME_Q4_REBALANCE_20261023.json"
+          if git diff --cached --quiet; then
+            echo "CAJITA_REBALANCE_NO_CHANGES"
+          else
+            git diff --cached --check
+            git diff --cached --stat
+            git commit -m "Quantize active Cajita low-rank weights and record hard-cap measurement"
+            git push origin HEAD:main
+          fi
+
+      - name: Enforce 470000000-byte hard cap
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path("docs/cajita-luna/CAJITA_RUNTIME_Q4_REBALANCE_20261023.json")
+          r = json.loads(p.read_text())
+          print(f'PAYLOAD_BYTES={r["runtime_bytes_after"]}')
+          print(f'HARD_CAP_BYTES={r["hard_cap_bytes"]}')
+          print(f'SIZE_GATE={r["size_gate"]}')
+          if r["size_gate"] != "PASS":
+              raise SystemExit(f'FAIL: payload remains {r["bytes_over_cap"]} bytes above hard cap')
+          PY
