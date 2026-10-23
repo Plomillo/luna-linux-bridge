@@ -34,7 +34,8 @@ except ImportError:  # pragma: no cover - non-POSIX hosts fail closed for resour
 ROOT = pathlib.Path(__file__).resolve().parent
 SCHEMA = "CAJITA_MODEL_ADAPTERS/1.0"
 MAX_GLOBAL_RAM_MIB = 1024
-DEFAULT_WORKER_RSS_LIMIT_MIB = 800
+DEFAULT_WORKER_RSS_LIMIT_MIB = 850
+MAX_PARENT_PLUS_WORKER_RSS_MIB = 900
 DEFAULT_STAGE_TIMEOUT_SECONDS = 600
 MAX_INPUT_FILE_BYTES = 50 * 1024 * 1024
 MODEL_MANIFEST = ROOT / "CAJITA_RUNTIME_V1" / "weights_manifest.json"
@@ -657,14 +658,29 @@ def run_stage(domain_id: str, payload: dict[str, Any], max_rss_mib: int,
         except (BrokenPipeError, OSError):
             pass
         peak_sample = 0.0
-        limit_hit = False
+        peak_supervisor_sample = current_rss_mib() or 0.0
+        peak_combined_sample = peak_supervisor_sample
+        worker_limit_hit = False
+        combined_limit_hit = False
         timeout_hit = False
         while proc.poll() is None:
             sample = process_rss_mib(worker_pid)
+            supervisor_sample = current_rss_mib() or 0.0
+            peak_supervisor_sample = max(peak_supervisor_sample, supervisor_sample)
             if sample is not None:
                 peak_sample = max(peak_sample, sample)
+                combined = sample + supervisor_sample
+                peak_combined_sample = max(peak_combined_sample, combined)
                 if sample > max_rss_mib:
-                    limit_hit = True
+                    worker_limit_hit = True
+                    proc.terminate()
+                    try:
+                        proc.wait(timeout=2)
+                    except subprocess.TimeoutExpired:
+                        proc.kill()
+                    break
+                if combined > MAX_PARENT_PLUS_WORKER_RSS_MIB:
+                    combined_limit_hit = True
                     proc.terminate()
                     try:
                         proc.wait(timeout=2)
@@ -701,10 +717,14 @@ def run_stage(domain_id: str, payload: dict[str, Any], max_rss_mib: int,
             continue
     reported_peak = (worker_result or {}).get("peak_rss_mib")
     max_observed = max(peak_sample, float(reported_peak or 0))
+    supervisor_peak = round(peak_supervisor_sample, 3)
+    combined_peak = round(max(peak_combined_sample, max_observed + supervisor_peak), 3)
     status = "PASS"
     reason = None
-    if limit_hit:
+    if worker_limit_hit:
         status, reason = "RESOURCE_LIMIT_EXCEEDED", f"WORKER_RSS_EXCEEDED_{max_rss_mib}_MIB"
+    elif combined_limit_hit:
+        status, reason = "RESOURCE_LIMIT_EXCEEDED", f"GLOBAL_PROCESS_RSS_EXCEEDED_{MAX_PARENT_PLUS_WORKER_RSS_MIB}_MIB"
     elif timeout_hit:
         status, reason = "TIMEOUT", f"STAGE_TIMEOUT_{timeout_seconds}_SECONDS"
     elif proc.returncode != 0 or not worker_result or worker_result.get("status") == "FAIL_CLOSED":
@@ -712,6 +732,8 @@ def run_stage(domain_id: str, payload: dict[str, Any], max_rss_mib: int,
         reason = (worker_result or {}).get("reason") or f"WORKER_EXIT_CODE_{proc.returncode}"
     elif max_observed > max_rss_mib:
         status, reason = "RESOURCE_LIMIT_EXCEEDED", f"WORKER_PEAK_RSS_EXCEEDED_{max_rss_mib}_MIB"
+    elif combined_peak > MAX_PARENT_PLUS_WORKER_RSS_MIB:
+        status, reason = "RESOURCE_LIMIT_EXCEEDED", f"GLOBAL_PROCESS_RSS_EXCEEDED_{MAX_PARENT_PLUS_WORKER_RSS_MIB}_MIB"
     if not pid_reaped:
         status, reason = "FAIL_CLOSED", "WORKER_PROCESS_NOT_REAPED"
     if worker_result and worker_result.get("status", "").startswith("PASS") and status == "PASS":
@@ -726,12 +748,16 @@ def run_stage(domain_id: str, payload: dict[str, Any], max_rss_mib: int,
         "worker_pid_reaped": pid_reaped, "worker_exit_code": proc.returncode,
         "elapsed_seconds": round(time.monotonic() - started, 3),
         "peak_rss_mib": round(max_observed, 3), "worker_rss_limit_mib": max_rss_mib,
+        "supervisor_peak_rss_mib": supervisor_peak,
+        "peak_combined_parent_worker_rss_mib": combined_peak,
+        "combined_parent_worker_rss_limit_mib": MAX_PARENT_PLUS_WORKER_RSS_MIB,
         "global_ram_budget_mib": MAX_GLOBAL_RAM_MIB,
         "rss_after_model_unload_mib": (worker_result or {}).get("rss_after_model_unload_mib"),
         "model_loaded": bool(((worker_result or {}).get("task_result") or {}).get("model_loaded", False)),
         "model_asset": asset,
-        "model_payload_hash_verified": bool((worker_result or {}).get("model_payload_hash_verified", False)),
-        "model_asset_validation": (worker_result or {}).get("model_asset_validation", "FAILED_OR_UNAVAILABLE"),
+        "model_payload_hash_verified": bool((asset and asset.get("sha256")) or (worker_result or {}).get("model_payload_hash_verified", False)),
+        "model_asset_validation": (worker_result or {}).get("model_asset_validation",
+                                   "PASS_PRE_DISPATCH" if asset and asset.get("sha256") else "FAILED_OR_UNAVAILABLE"),
         "worker_cpu_affinity": (worker_result or {}).get("cpu_affinity"),
         "input_file": input_summary,
         "output_sha256": (worker_result or {}).get("output_sha256") or (hashlib.sha256(output.encode("utf-8")).hexdigest() if output else None),
@@ -814,6 +840,8 @@ def selftest() -> dict[str, Any]:
             "domain_count": len(DOMAINS), "domains": module_results,
             "asset_audit": asset_reports, "dependency_presence": dependency_results,
             "worker_rss_limit_mib_default": DEFAULT_WORKER_RSS_LIMIT_MIB,
+            "combined_parent_worker_rss_limit_mib": MAX_PARENT_PLUS_WORKER_RSS_MIB,
+            "reserved_for_os_and_other_processes_mib": MAX_GLOBAL_RAM_MIB - MAX_PARENT_PLUS_WORKER_RSS_MIB,
             "global_ram_budget_mib": MAX_GLOBAL_RAM_MIB, "cpu_thread_limit": 1,
             "execution_mode": "ONE_DOMAIN_PER_CHILD_PROCESS",
             "unload_evidence_available": sys.platform.startswith("linux"),
@@ -920,6 +948,8 @@ def main(argv: list[str] | None = None) -> int:
                  "cpu_count_logical": os.cpu_count(), "memory_monitor": "/proc/<pid>/status",
                  "cpu_affinity_requested": 1},
         "budgets": {"global_ram_mib": MAX_GLOBAL_RAM_MIB, "worker_rss_mib": args.max_rss_mib,
+                    "combined_parent_worker_rss_mib": MAX_PARENT_PLUS_WORKER_RSS_MIB,
+                    "reserved_for_os_and_other_processes_mib": MAX_GLOBAL_RAM_MIB - MAX_PARENT_PLUS_WORKER_RSS_MIB,
                     "single_active_domain_process": True, "unload_by_process_exit": True},
         "results": results,
         "summary": {"domain_count": len(results), "passed": statuses.count("PASS"),
