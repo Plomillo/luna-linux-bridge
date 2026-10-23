@@ -41,7 +41,9 @@ jobs:
       - name: Inspect BTX archive without publishing Bible text
         run: python tools/btx-audit/audit_source.py --output btx-source-audit.json
       - name: Profile font and layout metadata without emitting Bible text
-        run: python tools/btx-audit/inspect_pdf_layout.py > btx-layout-profile.json
+        run: |
+          python tools/btx-audit/inspect_pdf_layout.py > btx-layout-profile.json
+          python -c "import json; d=json.load(open('btx-layout-profile.json', encoding='utf-8')); print(json.dumps({k:d.get(k) for k in ['pdf_open','pdf_pages','text_char_count_from_spans','text_word_count_from_spans','font_styles','numeric_only_span_font_distribution','exact_book_heading_lines','exact_book_heading_blocks','numeric_only_block_count','body_char_distribution_by_font_size_pt','status']}, ensure_ascii=False))"
       - name: Upload forensic metadata report
         if: always()
         uses: actions/upload-artifact@v4
