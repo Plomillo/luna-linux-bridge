@@ -114,7 +114,8 @@ class CajitaRouterTests(unittest.TestCase):
         self.assertEqual(result.returncode, 2, msg=result.stderr)
         payload = json.loads(result.stdout)
         self.assertFalse(payload["execution_authorized"])
-        self.assertIn("PDF_GENERATION_ADAPTER_NOT_REGISTERED", payload["blockers"])
+        self.assertNotIn("PDF_GENERATION_ADAPTER_NOT_REGISTERED", payload["blockers"])
+        self.assertTrue(any(item.startswith("PEAK_RSS_UNMEASURED:") for item in payload["blockers"]))
 
 if __name__ == "__main__":
     unittest.main()
