@@ -121,15 +121,41 @@ def main() -> int:
         large_noninteger_counts: collections.Counter[str] = collections.Counter()
         large_noninteger_samples: list[dict[str, Any]] = []
         page_size_counts: dict[int, int] = collections.Counter()
+        salmo_heading_candidates: list[dict[str, Any]] = []
         for pno, page in enumerate(pdf, start=1):
             pw = float(page.rect.width)
             page_spans = []
             data = page.get_text("dict", sort=False)
-            for block in data.get("blocks", []):
+            for block_no, block in enumerate(data.get("blocks", [])):
                 if block.get("type") != 0:
                     continue
-                for line in block.get("lines", []):
-                    for span in line.get("spans", []):
+                for line_no, line in enumerate(block.get("lines", [])):
+                    line_spans = line.get("spans", [])
+                    line_text = "".join(str(span.get("text", "")) for span in line_spans)
+                    if re.search(r"salmo", line_text, flags=re.IGNORECASE):
+                        numeric_tokens = []
+                        for span in line_spans:
+                            token = str(span.get("text", "")).strip()
+                            if re.fullmatch(r"\d{1,3}[a-z]?", token, flags=re.IGNORECASE):
+                                box = span.get("bbox", [0,0,0,0])
+                                numeric_tokens.append({
+                                    "token": token,
+                                    "font": str(span.get("font", "")),
+                                    "size": round(float(span.get("size", 0)), 1),
+                                    "x": round(float(box[0]), 1),
+                                    "y": round(float(box[1]), 1),
+                                })
+                        salmo_heading_candidates.append({
+                            "page": pno,
+                            "block": block_no,
+                            "line": line_no,
+                            "contains_salmo_label": True,
+                            "line_char_count": len(line_text),
+                            "line_max_font_size": max([round(float(sp.get("size",0)),1) for sp in line_spans] or [0]),
+                            "numeric_tokens": numeric_tokens,
+                            "line_text_emitted": False,
+                        })
+                    for span in line_spans:
                         value_text = span.get("text", "").strip()
                         if not value_text:
                             continue
@@ -193,6 +219,8 @@ def main() -> int:
         report.update({
             "pdf_pages": len(page_size_counts),
             "large_numeric_span_count": len(candidates),
+            "salmo_heading_candidate_count": len(salmo_heading_candidates),
+            "salmo_heading_candidates": salmo_heading_candidates,
             "large_numeric_span_style_counts": style_counts.most_common(100),
             "small_bold_numeric_span_style_counts": verse_style_counts.most_common(60),
             "small_bold_numeric_span_suffix_counts": verse_suffix_counts.most_common(100),
