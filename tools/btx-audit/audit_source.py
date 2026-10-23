@@ -111,7 +111,7 @@ def norm_ascii(text: str) -> str:
     return "".join(c for c in unicodedata.normalize("NFKD", text.casefold()) if not unicodedata.combining(c))
 
 BOOK_LOOKUP = {norm_ascii(book): book for book in BOOKS_ES}
-BOOK_PATTERN = re.compile(r"(?<!\\w)(" + "|".join(re.escape(name) for name in sorted(BOOK_LOOKUP, key=len, reverse=True)) + r")(?!\\w)")
+BOOK_PATTERN = re.compile(r"(?<!\w)(" + "|".join(re.escape(name) for name in sorted(BOOK_LOOKUP, key=len, reverse=True)) + r")(?!\w)")
 
 
 def pdf_audit(pdf: Path, temp_root: Path) -> dict[str, Any]:
@@ -144,15 +144,15 @@ def pdf_audit(pdf: Path, temp_root: Path) -> dict[str, Any]:
             if (normalized := norm_ascii(line.strip().rstrip(".:"))) in BOOK_LOOKUP
         ]
         raw_numeric_lines = [
-            {"line": i, "numbers": re.findall(r"(?<![A-Za-z])\\d{1,3}(?:[a-z])?(?::\\d{1,3}(?:[a-z])?)?", line)[:12],
-             "masked_shape": re.sub(r"\\d+", "N", re.sub(r"[^\\W\\d_]+", "W", line, flags=re.UNICODE))[:150]}
+            {"line": i, "numbers": re.findall(r"(?<![A-Za-z])\d{1,3}(?:[a-z])?(?::\d{1,3}(?:[a-z])?)?", line)[:12],
+             "masked_shape": re.sub(r"\d+", "N", re.sub(r"[^\W\d_]+", "W", line, flags=re.UNICODE))[:150]}
             for i, line in raw_lines
-            if len(re.findall(r"(?<![A-Za-z])\\d{1,3}(?:[a-z])?(?::\\d{1,3}(?:[a-z])?)?", line)) >= 3
+            if len(re.findall(r"(?<![A-Za-z])\d{1,3}(?:[a-z])?(?::\d{1,3}(?:[a-z])?)?", line)) >= 3
         ][:40]
         raw_diagnostics = {
             "text_extraction": "PASS",
             "nonempty_lines": len(raw_lines),
-            "lines_starting_with_verse_like_number": sum(bool(re.match(r"^\\d{1,3}(?:[a-z])?\\s+\\S", line, re.IGNORECASE)) for _, line in raw_lines),
+            "lines_starting_with_verse_like_number": sum(bool(re.match(r"^\d{1,3}(?:[a-z])?\s+\S", line, re.IGNORECASE)) for _, line in raw_lines),
             "exact_book_heading_line_count": len(raw_exact_headings),
             "exact_book_heading_lines": raw_exact_headings[:100],
             "known_book_names_detected": len(raw_book_hits),
