@@ -6,7 +6,9 @@ import numpy as np
 import torch
 from torch import nn
 from torch.nn import functional as F
-from safetensors.torch import load_file
+import sys
+sys.path.insert(0, str(next(p for p in pathlib.Path(__file__).resolve().parents if p.name == "cajita-luna-runtime")))
+from cajita_weight_materializer import load_model_state
 from transformers import AutoConfig, WhisperForConditionalGeneration, WhisperProcessor
 
 ROOT = pathlib.Path(__file__).resolve().parent
@@ -107,7 +109,7 @@ def load_candidate():
         factorized+=1
     if factorized < 200:
         raise RuntimeError("MODEL_MAPPING_INCOMPLETE:"+str(factorized))
-    weights=load_file(str(ROOT/"model.safetensors"),device="cpu")
+    weights=load_model_state(ROOT/"model.safetensors")
     missing,unexpected=model.load_state_dict(weights,strict=True,assign=True)
     if missing or unexpected:
         raise RuntimeError("STATE_MAPPING_MISMATCH:"+json.dumps({"missing":missing[:30],"unexpected":unexpected[:30]}))
