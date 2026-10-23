@@ -171,3 +171,25 @@ Los términos «motor» y «activo» se utilizan aquí para los componentes de i
 4. El estado realmente materializado se determina mediante `docs/cajita-luna/CAJITA_TEN_ASSET_EXPANSION_20261023.json` y la sección generada `Despliegue materializado de los diez activos`; este catálogo fija la asignación arquitectónica de carpetas y no sustituye esas evidencias.
 
 **Regla de orden:** no reordenar los seis dominios ni mover un activo entre dominios sin cambio explícito y trazable de su asignación. Se preservan los seis artefactos de peso/modelo preexistentes y se mantiene el estado de certificación en `NOT_GRANTED` hasta superar las validaciones independientes pertinentes.
+
+
+## Despliegue materializado de los diez activos — 2026-10-23
+
+Se extrajeron los diez contenedores internos y su contenido real quedó materializado bajo el árbol persistente de Cajita. Los contenedores optimizados se conservaron como copias de rollback fuera del árbol de distribución. Se validaron SHA-256 y tamaños de los contenedores, integridad 7z, número de miembros, tipos de payload esperados y la ronda de copia del árbol expandido. Los seis hashes de los artefactos de peso/modelo preexistentes permanecen idénticos. Las pruebas de ejecución de los ejecutables nativos no forman parte de esta pasada y se mantienen explícitamente como pendientes.
+
+| Activo | Ruta expandida en runtime | Archivos/objetos | Bytes expandidos | Validación |
+|---|---|---:|---:|---|
+| APACHE_JENA_6_2_0 | `cajita-luna-runtime/2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0` | 251 | 27,295,036 | PASS |
+| PLAYWRIGHT_1_63_0_SOURCE | `cajita-luna-runtime/2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE` | 3093 | 68,493,538 | PASS |
+| ONNX_RUNTIME_1_29_0_CP311 | `cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311` | 322 | 62,736,574 | PASS |
+| DAGGER_0_21_8_LINUX_AMD64 | `cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/DAGGER_0_21_8_LINUX_AMD64` | 2 | 15,382,954 | PASS |
+| OPA_STATIC_LINUX_AMD64_CANDIDATE | `cajita-luna-runtime/6. Sistema Inteligente/Cognitive CI - CD/OPA_STATIC_LINUX_AMD64_CANDIDATE` | 1 | 25,271,120 | PASS |
+| RQLITE_10_2_7_LINUX_AMD64 | `cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/RQLITE_10_2_7_LINUX_AMD64` | 3 | 12,970,604 | PASS |
+| SQLITE_SOURCE_3_53_4 | `cajita-luna-runtime/6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4` | 2208 | 111,974,369 | PASS |
+| CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE | `cajita-luna-runtime/6. Sistema Inteligente/Portabilidad base/CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE` | 8819 | 143,281,458 | PASS |
+| AVALONIA_12_1_1_NUGET | `cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/AVALONIA_12_1_1_NUGET` | 121 | 35,926,924 | PASS |
+| TAURI_2_11_5_SOURCE_ZIP | `cajita-luna-runtime/6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP` | 1058 | 21,729,836 | PASS |
+
+El manifiesto estático de distribución no se declara actualizado ni certificado. La expansión deja pendiente el rebalanceo del tamaño global y la fase de cuantización/optimización; la reconstrucción debe ejecutarse solo tras reducir el payload a un máximo de `470.000.000` bytes.
+
+Informe: `../docs/cajita-luna/CAJITA_TEN_ASSET_EXPANSION_20261023.json`.
