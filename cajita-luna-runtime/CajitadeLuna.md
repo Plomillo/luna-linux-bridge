@@ -42,13 +42,13 @@ D05 ejecuta el verificador de carga del candidato cuantizado; la generación OCR
 
 | Dominio | Activo | Bytes |
 |---|---|---:|
-| Cerebro | `1. Cerebro/model.safetensors` | 58.391.640 |
-| Transcripción | `3. Transcripción/model.safetensors` | 17.918.086 |
-| Traductor Inteligente | `4. Traductor Inteligente/Traducción general/model.safetensors` | 14.765.381 |
+| Cerebro | `1. Cerebro/model.safetensors` | 40.489.120 |
+| Transcripción | `3. Transcripción/model.safetensors` | 10.399.882 |
+| Traductor Inteligente | `4. Traductor Inteligente/Traducción general/model.safetensors` | 11.720.882 |
 | Inteligencia documental | `5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin` | 13.483.380 |
-| Sistema Inteligente | `6. Sistema Inteligente/Análisis Avanzado/model.safetensors` | 28.687.808 |
+| Sistema Inteligente | `6. Sistema Inteligente/Análisis Avanzado/model.safetensors` | 14.956.240 |
 | Sistema Inteligente | `6. Sistema Inteligente/Anti-Alucinaciones/model.onnx` | 110.516.001 |
-| **Total de seis archivos de modelo/pesos** | | **243.762.296** |
+| **Total de seis archivos de modelo/pesos** | | **201.565.505** |
 
 ## Integración de activos recuperados — registro aditivo
 
@@ -231,3 +231,15 @@ Se empaquetaron tensores de precisión restantes en bloques INT4 con escala por 
 | W02_TRANSCRIPTION | PROMOTED_FLOAT_Q4_BLOCKWISE | 2 | 4986880 | 3660882 |
 | W03_TRANSLATION | NO_LARGE_FLOAT_TENSORS_TO_PACK | 0 | 0 | 0 |
 | W05_QWEN3 | NO_LARGE_FLOAT_TENSORS_TO_PACK | 0 | 0 | 0 |
+
+
+## Segunda pasada de empaquetado de factores a 2 bits — 2026-10-23
+
+Los factores de bajo rango que ya estaban empaquetados en INT4 se recodificaron como enteros afines sin signo de 2 bits por bloque, con mínimos y pasos FP32 por grupo. Cada candidato se admite únicamente si reduce el total modelo+sidecar y la prueba de arranque/generación sigue pasando. La comparación de firma se registra, pero no equivale a equivalencia de calidad ni certificación.
+
+| Motor | Estado | Tensores factores | Bytes del modelo previos | Bytes candidatos/activos | Bytes netos ahorrados |
+|---|---|---:|---:|---:|---:|
+| W01_CEREBRO | PROMOTED_Q2_BLOCKWISE | 508 | 58391640 | 40489120 | 17826826 |
+| W02_TRANSCRIPTION | PROMOTED_Q2_BLOCKWISE | 472 | 17918086 | 10399882 | 7445404 |
+| W03_TRANSLATION | PROMOTED_Q2_BLOCKWISE | 1682 | 14765381 | 11720882 | 2771797 |
+| W05_QWEN3 | PROMOTED_Q2_BLOCKWISE | 564 | 28687808 | 14956240 | 13647850 |
