@@ -225,11 +225,36 @@ def main() -> int:
                 bounds = chapter_page_ranges.setdefault(book, {"first_matched_chapter":ch,"first_page":candidate["page"],"last_matched_chapter":ch,"last_page":candidate["page"]})
                 bounds["last_matched_chapter"] = ch
                 bounds["last_page"] = candidate["page"]
+        salmo_chapter_markers: list[dict[str, Any]] = []
+        for heading in salmo_heading_candidates:
+            if heading["line_char_count"] > 10:
+                continue
+            for token in heading["numeric_tokens"]:
+                if token["font"] == "Clearface-Heavy-SC700" and abs(token["size"] - 10.2) < 0.15:
+                    if heading["line_char_count"] == 6 + len(token["token"]):
+                        salmo_chapter_markers.append({
+                            "page": heading["page"],
+                            "number": int(re.match(r"^\\d+", token["token"]).group(0)),
+                            "x": token["x"],
+                            "y": token["y"],
+                            "size": token["size"],
+                        })
+        salmo_chapter_markers.sort(key=lambda row: (row["page"], 0 if row["x"] < 200 else 1, row["y"], row["x"]))
+        salmo_numbers = [row["number"] for row in salmo_chapter_markers]
+        salmo_counts = collections.Counter(salmo_numbers)
+        salmo_missing = sorted(set(range(1,151)) - set(salmo_numbers))
+        salmo_duplicates = {str(k):v for k,v in sorted(salmo_counts.items()) if v > 1}
         report.update({
             "pdf_pages": len(page_size_counts),
             "large_numeric_span_count": len(candidates),
             "salmo_heading_candidate_count": len(salmo_heading_candidates),
             "salmo_heading_candidates": salmo_heading_candidates,
+            "salmo_chapter_marker_count": len(salmo_chapter_markers),
+            "salmo_chapter_markers_first_40": salmo_chapter_markers[:40],
+            "salmo_chapter_markers_last_40": salmo_chapter_markers[-40:],
+            "salmo_unique_chapter_count": len(set(salmo_numbers)),
+            "salmo_missing_chapter_numbers": salmo_missing,
+            "salmo_duplicate_chapter_numbers": salmo_duplicates,
             "large_numeric_span_style_counts": style_counts.most_common(100),
             "small_bold_numeric_span_style_counts": verse_style_counts.most_common(60),
             "small_bold_numeric_span_suffix_counts": verse_suffix_counts.most_common(100),
