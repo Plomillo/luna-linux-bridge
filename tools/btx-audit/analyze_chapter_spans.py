@@ -132,7 +132,7 @@ def main() -> int:
                 for line_no, line in enumerate(block.get("lines", [])):
                     line_spans = line.get("spans", [])
                     line_text = "".join(str(span.get("text", "")) for span in line_spans)
-                    if re.search(r"salmo", line_text, flags=re.IGNORECASE):
+                    if 515 <= pno <= 675 and re.search(r"salmo", line_text, flags=re.IGNORECASE):
                         numeric_tokens = []
                         for span in line_spans:
                             token = str(span.get("text", "")).strip()
