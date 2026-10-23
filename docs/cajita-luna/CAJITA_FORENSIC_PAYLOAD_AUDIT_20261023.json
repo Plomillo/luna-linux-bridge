@@ -1,0 +1,720 @@
+{
+  "schema": "CAJITA_FORENSIC_PAYLOAD_AUDIT/1.0",
+  "audit_id": "CAJITA_FORENSIC_PAYLOAD_AUDIT_20261023",
+  "audit_date": "2026-10-23",
+  "repository": "Plomillo/luna-linux-bridge",
+  "audited_ref": "main",
+  "base_commit": "91b1c89543511d171de83f20a46012f51f7c97a9",
+  "scope": [
+    "Complete recursive file inventory of cajita-luna-runtime on the audited commit",
+    "Raw-byte sizing and comparison with the existing reproducible-package manifest",
+    "Audit of all six manifest-declared model/weight artifacts",
+    "Audit of the ten recovered externalized assets by path, size, provenance class and packaging type",
+    "Review of existing quantization evidence that materially affects size-first planning"
+  ],
+  "method": {
+    "tree_source": "GitHub Git Trees API, recursive; the response reported truncated=false.",
+    "size_semantics": "Git tree blob sizes reflect objects stored in Git. For LFS-tracked files the Git blob size is the pointer file, not the declared LFS object's size.",
+    "binary_sha256_recomputation": "Not performed in this remote JSON/API pass for opaque binary contents. SHA-256 values below are identified as manifest/recovery-record declarations. Git blob SHA-1 is recorded separately and is not mislabeled as SHA-256.",
+    "lfs_verification": "The two pointer contents, their declared SHA-256 OIDs and sizes were read from the default branch. The LFS object bodies were not downloaded in this audit, so their current retrieval/materialization is not independently proven here.",
+    "mutation": "Audit-only. No model weights, software archives, runtime executable or build output was changed by this audit."
+  },
+  "inventory": {
+    "full_repo_tree_entries": 2500,
+    "tree_truncated": false,
+    "runtime_tree_entries_including_directories": 184,
+    "runtime_file_count_including_current_static_manifest": 145,
+    "build_input_file_count_excluding_current_static_manifest": 144,
+    "git_visible_file_bytes_including_current_static_manifest": 504098221,
+    "git_visible_build_input_bytes_excluding_current_static_manifest": 504063305,
+    "lfs_pointer_count": 2,
+    "lfs_pointer_bytes": 268,
+    "lfs_declared_object_bytes": 258993401,
+    "bytes_to_materialize_from_lfs_objects": 258993133,
+    "estimated_build_input_bytes_with_both_lfs_objects_materialized": 763056438,
+    "weight_manifest_declared_total_bytes": 380561028,
+    "actual_git_visible_sizes_of_six_weight_paths_bytes": 121567895,
+    "note": "The LFS-materialized input estimate is derived from the exact pointer OID/size declarations and the current Git-tree byte total. It does not prove that the LFS object bodies can currently be downloaded."
+  },
+  "domain_inventory": [
+    {
+      "domain": "1. Cerebro",
+      "file_count": 14,
+      "git_tree_visible_bytes": 28016147,
+      "estimated_materialized_bytes": 176493413
+    },
+    {
+      "domain": "2. Orquestación",
+      "file_count": 38,
+      "git_tree_visible_bytes": 81771703,
+      "estimated_materialized_bytes": 81771703
+    },
+    {
+      "domain": "3. Transcripción",
+      "file_count": 15,
+      "git_tree_visible_bytes": 39528219,
+      "estimated_materialized_bytes": 39528219
+    },
+    {
+      "domain": "4. Traductor Inteligente",
+      "file_count": 12,
+      "git_tree_visible_bytes": 26897990,
+      "estimated_materialized_bytes": 26897990
+    },
+    {
+      "domain": "5. Inteligencia documental",
+      "file_count": 17,
+      "git_tree_visible_bytes": 21661837,
+      "estimated_materialized_bytes": 21661837
+    },
+    {
+      "domain": "6. Sistema Inteligente",
+      "file_count": 34,
+      "git_tree_visible_bytes": 305945282,
+      "estimated_materialized_bytes": 416461149
+    }
+  ],
+  "current_macrodown_manifest": {
+    "path": "cajita-luna-runtime/MACRODOWN_MANIFEST.json",
+    "blob_sha1": "70d1dcc738801cff8dd3aaae17ea551594148bfc",
+    "candidate_id": "CAJITA_LUNA_RUNTIME_V9_20261023",
+    "file_count_listed": 132,
+    "recorded_gross_payload_bytes": 476525572,
+    "recorded_payload_bytes_excluding_manifest": 476490656,
+    "hard_cap_raw_bytes": 479000000,
+    "current_build_input_file_count": 144,
+    "current_unlisted_file_count": 12,
+    "current_unlisted_files": [
+      {
+        "path": "2. Orquestación/Multi + Interdisciplinar/apache-jena-6.2.0.tar.gz",
+        "bytes": 23986647,
+        "git_blob_sha1": "6891fa3d40a794a36c675bbe43816fb418f1c121"
+      },
+      {
+        "path": "2. Orquestación/Orquestador/playwright-1.63.0.tar.gz",
+        "bytes": 40525667,
+        "git_blob_sha1": "f89837e5359e933d58b479b34e226e4b1379910c"
+      },
+      {
+        "path": "6. Sistema Inteligente/Anti-Alucinaciones/onnxruntime-1.29.0-cp311-cp311-manylinux_2_28_x86_64.whl",
+        "bytes": 23113193,
+        "git_blob_sha1": "ffe343b450b8afaeacd28bd61abe19ca0d59e150"
+      },
+      {
+        "path": "6. Sistema Inteligente/Cognitive CI - CD/dagger_v0.21.8_linux_amd64.tar.gz",
+        "bytes": 21927634,
+        "git_blob_sha1": "477d899c6f147cd17c4f6e845ba2530f9075b6ef"
+      },
+      {
+        "path": "6. Sistema Inteligente/Cognitive CI - CD/opa_linux_amd64_static",
+        "bytes": 64185579,
+        "git_blob_sha1": "74f377e30e0178c9af50bd3e76af39c404153d9e"
+      },
+      {
+        "path": "6. Sistema Inteligente/Migración y Persistencia/rqlite-v10.2.7-linux-amd64.tar.gz",
+        "bytes": 17600273,
+        "git_blob_sha1": "2ad40f29587ef8fce00f25762f50cce5ae758678"
+      },
+      {
+        "path": "6. Sistema Inteligente/Migración y Persistencia/sqlite-src-3530400.zip",
+        "bytes": 14557315,
+        "git_blob_sha1": "3765a6741b08944f2e71872e5363d1b6bb7b854b"
+      },
+      {
+        "path": "6. Sistema Inteligente/Portabilidad base/cmake-4.4.3-windows-x86_64.zip",
+        "bytes": 54408599,
+        "git_blob_sha1": "ce3889ed42e56ea8c28cfffaa5372a91db6b67e0"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/avalonia.12.1.1.nupkg",
+        "bytes": 10112805,
+        "git_blob_sha1": "93a0ad097db76ab82293b3cd25dea86fa85c5967"
+      },
+      {
+        "path": "6. Sistema Inteligente/Runtime Android Windows/tauri-tauri-v2.11.5.zip",
+        "bytes": 16117618,
+        "git_blob_sha1": "93626e615ea132533005cb9f4843821bee04cb6e"
+      },
+      {
+        "path": "EXTERNALIZED_ASSET_PLACEMENT.json",
+        "bytes": 8728,
+        "git_blob_sha1": "49efca0fb7323885b0c2b60c7a93f873251b3e6a"
+      },
+      {
+        "path": "cajita_router.py",
+        "bytes": 15294,
+        "git_blob_sha1": "ba5ce29d9cf3257c19a8613878d2bbfd6528c96c"
+      }
+    ],
+    "count_of_existing_manifest_entries_with_size_or_presence_mismatch": 4,
+    "existing_manifest_mismatches": [
+      {
+        "path": "1. Cerebro/model.safetensors",
+        "manifest_size_bytes": 148477400,
+        "git_tree_size_bytes": 134,
+        "manifest_sha256": "935d226a65faca9b59a7742c7c31208ef0ba671509d475c1a4e2f3489cecc19e",
+        "git_blob_sha1": "839ccab0acc343277429fb671aef6e0ff9ff1ffe",
+        "exists": true,
+        "size_matches": false
+      },
+      {
+        "path": "6. Sistema Inteligente/Anti-Alucinaciones/model.onnx",
+        "manifest_size_bytes": 110516001,
+        "git_tree_size_bytes": 134,
+        "manifest_sha256": "c6a266fe0f7f1f782094ff4b1e7ae3547fa48a22ab44712881cc03bba07bc5b7",
+        "git_blob_sha1": "e0fff90020d88c447af9f30ce80795c600c38692",
+        "exists": true,
+        "size_matches": false
+      },
+      {
+        "path": "CajitadeLuna.md",
+        "manifest_size_bytes": 3957,
+        "git_tree_size_bytes": 9851,
+        "manifest_sha256": "4ea018a74f213a91b6dd4d19b41ab63a85697b086139a85d8e0c50478970b900",
+        "git_blob_sha1": "b081025901484d4942899851fa2a9355a7f5db3d",
+        "exists": true,
+        "size_matches": false
+      },
+      {
+        "path": "cajita_runtime.py",
+        "manifest_size_bytes": 13669,
+        "git_tree_size_bytes": 14205,
+        "manifest_sha256": "9353e0d1d8e5950dc0330706f206a928922bd042f30708abe36156c9bb516d67",
+        "git_blob_sha1": "f7d3420fbbc5f32f438c969372f5e5c3c284fe3e",
+        "exists": true,
+        "size_matches": false
+      }
+    ],
+    "conclusion": "The present MACRODOWN_MANIFEST.json describes an earlier candidate snapshot. Do not use it as a current inventory of all repository payloads; it has 12 unlisted current input files and four mismatched entries."
+  },
+  "lfs_pointers": [
+    {
+      "path": "1. Cerebro/model.safetensors",
+      "git_blob_sha1": "839ccab0acc343277429fb671aef6e0ff9ff1ffe",
+      "git_blob_size_bytes": 134,
+      "pointer_oid_sha256": "935d226a65faca9b59a7742c7c31208ef0ba671509d475c1a4e2f3489cecc19e",
+      "pointer_declared_size_bytes": 148477400,
+      "weight_manifest_sha256": "935d226a65faca9b59a7742c7c31208ef0ba671509d475c1a4e2f3489cecc19e",
+      "weight_manifest_bytes": 148477400,
+      "oid_matches_weight_manifest": true,
+      "size_matches_weight_manifest": true,
+      "verdict": "POINTER_METADATA_MATCHES; ACTUAL_LFS_OBJECT_BODY_NOT_RETRIEVED_IN_THIS_AUDIT"
+    },
+    {
+      "path": "6. Sistema Inteligente/Anti-Alucinaciones/model.onnx",
+      "git_blob_sha1": "e0fff90020d88c447af9f30ce80795c600c38692",
+      "git_blob_size_bytes": 134,
+      "pointer_oid_sha256": "c6a266fe0f7f1f782094ff4b1e7ae3547fa48a22ab44712881cc03bba07bc5b7",
+      "pointer_declared_size_bytes": 110516001,
+      "weight_manifest_sha256": "c6a266fe0f7f1f782094ff4b1e7ae3547fa48a22ab44712881cc03bba07bc5b7",
+      "weight_manifest_bytes": 110516001,
+      "oid_matches_weight_manifest": true,
+      "size_matches_weight_manifest": true,
+      "verdict": "POINTER_METADATA_MATCHES; ACTUAL_LFS_OBJECT_BODY_NOT_RETRIEVED_IN_THIS_AUDIT"
+    }
+  ],
+  "weight_inventory": {
+    "count": 6,
+    "declared_total_bytes": 380561028,
+    "artifacts": [
+      {
+        "id": "W01",
+        "label": "GPT-OSS compactado",
+        "domain_id": "1_CEREBRO",
+        "path": "1. Cerebro/model.safetensors",
+        "declared_bytes": 148477400,
+        "declared_sha256": "935d226a65faca9b59a7742c7c31208ef0ba671509d475c1a4e2f3489cecc19e",
+        "representation": "GPT-OSS rank-1 INT8 factors",
+        "manifest_presence": "VERIFIED",
+        "git_blob_size_bytes": 134,
+        "storage_state": "GIT_LFS_POINTER_OID_SIZE_MATCH_LFS_PAYLOAD_RETRIEVAL_NOT_INDEPENDENTLY_VERIFIED",
+        "quantization_status": "GPT-OSS rank-1 INT8 factors"
+      },
+      {
+        "id": "W02",
+        "label": "Whisper compactado",
+        "domain_id": "3_TRANSCRIPCION",
+        "path": "3. Transcripción/model.safetensors",
+        "declared_bytes": 34877948,
+        "declared_sha256": "6f4541536bfca7899d74e962c277b7fbcd1cbc4fb7f8d101c69bcd1ea2560aa3",
+        "representation": "Whisper low-rank INT8 factors",
+        "manifest_presence": "VERIFIED",
+        "git_blob_size_bytes": 34877948,
+        "storage_state": "FILE_PRESENT_SIZE_MATCH",
+        "quantization_status": "Whisper low-rank INT8 factors"
+      },
+      {
+        "id": "W03",
+        "label": "SeamlessM4T v2 compactado",
+        "domain_id": "4_TRADUCTOR_INTELIGENTE",
+        "path": "4. Traductor Inteligente/Traducción general/model.safetensors",
+        "declared_bytes": 20256147,
+        "declared_sha256": "a2ba25feb33c68b7a5ea27ff8aadeaf96f67d80fc74d169c075e14d1ff363bf5",
+        "representation": "SeamlessM4T v2 low-rank INT8 factors",
+        "manifest_presence": "VERIFIED",
+        "git_blob_size_bytes": 20256147,
+        "storage_state": "FILE_PRESENT_SIZE_MATCH",
+        "quantization_status": "SeamlessM4T v2 low-rank INT8 factors"
+      },
+      {
+        "id": "W04",
+        "label": "Granite Docling cuantizado",
+        "domain_id": "5_INTELIGENCIA_DOCUMENTAL",
+        "path": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin",
+        "declared_bytes": 13483380,
+        "declared_sha256": "4a13b916b63b682a28c8fe89fc608b90d3bf5a8a77cb0988e1e19131c64ebc88",
+        "representation": "Granite Docling packed quantized weights",
+        "manifest_presence": "VERIFIED",
+        "git_blob_size_bytes": 13483380,
+        "storage_state": "FILE_PRESENT_SIZE_MATCH",
+        "quantization_status": "Granite Docling packed quantized weights"
+      },
+      {
+        "id": "W05",
+        "label": "Qwen3 compactado",
+        "domain_id": "6_SISTEMA_INTELIGENTE",
+        "path": "6. Sistema Inteligente/Análisis Avanzado/model.safetensors",
+        "declared_bytes": 52950152,
+        "declared_sha256": "9d5c2ec7d88583c016a7d48f29695915ecfe0619cbca49bdfa8708f6cf6a4604",
+        "representation": "Qwen3 low-rank INT8 factors",
+        "manifest_presence": "VERIFIED",
+        "git_blob_size_bytes": 52950152,
+        "storage_state": "FILE_PRESENT_SIZE_MATCH",
+        "quantization_status": "Qwen3 low-rank INT8 factors"
+      },
+      {
+        "id": "W06",
+        "label": "Anti-Alucinaciones ONNX",
+        "domain_id": "6_SISTEMA_INTELIGENTE",
+        "path": "6. Sistema Inteligente/Anti-Alucinaciones/model.onnx",
+        "declared_bytes": 110516001,
+        "declared_sha256": "c6a266fe0f7f1f782094ff4b1e7ae3547fa48a22ab44712881cc03bba07bc5b7",
+        "representation": "ONNX model artifact; model architecture independently unverified",
+        "manifest_presence": "VERIFIED",
+        "git_blob_size_bytes": 134,
+        "storage_state": "GIT_LFS_POINTER_OID_SIZE_MATCH_LFS_PAYLOAD_RETRIEVAL_NOT_INDEPENDENTLY_VERIFIED",
+        "quantization_status": "QUANTIZATION_STATE_NOT_DOCUMENTED"
+      }
+    ],
+    "historical_quantization_evidence": {
+      "brain_gpt_oss": {
+        "candidate_id": "GPTOSS_CEREBRO_RANK1_INT8_20261021T062719Z",
+        "declared_candidate_bytes": 176485377,
+        "aggregate_relative_frobenius_error_after_int8": 0.9983363410727844,
+        "runtime_smoke_returncode": 1,
+        "runtime_smoke_error": "NotImplementedError: Cannot copy out of meta tensor; no data!",
+        "quality_equivalence": "NOT_ESTABLISHED",
+        "certification": "NOT_GRANTED"
+      },
+      "transcription_whisper": {
+        "representation": "randomized_truncated_SVD_low_rank_factorization_plus_symmetric_INT8_factor_quantization",
+        "rank": 4,
+        "actual_weight_bytes": 34877948,
+        "target_bytes": 50000000,
+        "quality_equivalence": "NOT_ESTABLISHED",
+        "certification": "NOT_GRANTED"
+      },
+      "translation_seamless": {
+        "method": "randomized_truncated_SVD_low_rank_factorization_plus_symmetric_INT8_factor_quantization",
+        "rank": 4,
+        "actual_weight_bytes": 20256147,
+        "target_bytes": 50000000,
+        "quality_equivalence": "NOT_ESTABLISHED",
+        "certification": "NOT_GRANTED"
+      },
+      "document_docling": {
+        "candidate_id": "GRANITE_DOCLING_258M_BIVLM_NQ_CPU_20261021T165027Z",
+        "representation": "packed binary quantization",
+        "actual_weight_bytes": 13483380,
+        "document_generation": "NOT_COMPLETED per BUILD_PROVENANCE",
+        "certification": "NOT_GRANTED"
+      },
+      "reasoning_qwen3": {
+        "candidate_id": "QWEN3_ANALISIS_AVANZADO_LOWRANK_Q12_INT8_20261021T040905Z",
+        "declared_candidate_bytes": 68858803,
+        "aggregate_relative_frobenius_error_after_int8": 0.9964088220513415,
+        "runtime_smoke_v2_status": "PASS_MODEL_START_AND_FORWARD",
+        "functional_quality_gate": "NOT_PASSED_NOT_RUN",
+        "quality_equivalence": "NOT_ESTABLISHED",
+        "certification": "NOT_GRANTED"
+      },
+      "onnx_anti_hallucination": {
+        "declared_bytes": 110516001,
+        "representation": "ONNX model artifact; model architecture independently unverified",
+        "quantization_status": "NOT_DOCUMENTED_IN_WEIGHT_MANIFEST",
+        "architecture_verification": "NOT_ESTABLISHED"
+      }
+    }
+  },
+  "recovered_assets": {
+    "count": 10,
+    "total_bytes": 286535330,
+    "exact_externalized_match_count": 7,
+    "official_alternate_candidate_count": 3,
+    "quantizable_as_model_weights_count": 0,
+    "assets": [
+      {
+        "id": "APACHE_JENA_6_2_0",
+        "path": "2. Orquestación/Multi + Interdisciplinar/apache-jena-6.2.0.tar.gz",
+        "version": "6.2.0",
+        "asset_kind": "source_archive",
+        "bytes": 23986647,
+        "sha256": "14c12ef4aa2f0078a473be4b10b015e0e0b85e767d6867e8581679de8fec3f6e",
+        "exact_externalized_candidate": true,
+        "git_blob_sha1": "6891fa3d40a794a36c675bbe43816fb418f1c121",
+        "git_tree_size_bytes": 23986647,
+        "original_record_path": "2. Orquestación/Multi + Interdisciplinar/apache-jena-6.2.0.tar.gz",
+        "quantization_applicable_as_model_weights": false
+      },
+      {
+        "id": "PLAYWRIGHT_1_63_0_SOURCE",
+        "path": "2. Orquestación/Orquestador/playwright-1.63.0.tar.gz",
+        "version": "v1.63.0",
+        "asset_kind": "source_archive",
+        "bytes": 40525667,
+        "sha256": "bc3d50b5a6c51cd401b2b4a71514be75ffd91223e129abcee51b8913746e4c6d",
+        "exact_externalized_candidate": true,
+        "git_blob_sha1": "f89837e5359e933d58b479b34e226e4b1379910c",
+        "git_tree_size_bytes": 40525667,
+        "original_record_path": "2. Orquestación/Orquestador/playwright-1.63.0.tar.gz",
+        "quantization_applicable_as_model_weights": false
+      },
+      {
+        "id": "ONNX_RUNTIME_1_29_0_CP311",
+        "path": "6. Sistema Inteligente/Anti-Alucinaciones/onnxruntime-1.29.0-cp311-cp311-manylinux_2_28_x86_64.whl",
+        "version": "1.29.0",
+        "asset_kind": "binary_wheel",
+        "bytes": 23113193,
+        "sha256": "85f8e8406c52658735fe5c7fbfd3ebaa1ed340768324f6252e4274e374580a23",
+        "exact_externalized_candidate": false,
+        "git_blob_sha1": "ffe343b450b8afaeacd28bd61abe19ca0d59e150",
+        "git_tree_size_bytes": 23113193,
+        "original_record_path": "6. Sistema Inteligente/Anti-Alucinaciones/onnxruntime-1.29.0-cp311-cp311-manylinux_2_28_x86_64.whl",
+        "quantization_applicable_as_model_weights": false
+      },
+      {
+        "id": "DAGGER_0_21_8_LINUX_AMD64",
+        "path": "6. Sistema Inteligente/Cognitive CI - CD/dagger_v0.21.8_linux_amd64.tar.gz",
+        "version": "v0.21.8",
+        "asset_kind": "binary_archive",
+        "bytes": 21927634,
+        "sha256": "53e226c7da8fb75171e58c35759d736d961ce8b3a12db0baa7b7107954fccc5a",
+        "exact_externalized_candidate": true,
+        "git_blob_sha1": "477d899c6f147cd17c4f6e845ba2530f9075b6ef",
+        "git_tree_size_bytes": 21927634,
+        "original_record_path": "6. Sistema Inteligente/Cognitive CI - CD/dagger_v0.21.8_linux_amd64.tar.gz",
+        "quantization_applicable_as_model_weights": false
+      },
+      {
+        "id": "OPA_STATIC_LINUX_AMD64_CANDIDATE",
+        "path": "6. Sistema Inteligente/Cognitive CI - CD/opa_linux_amd64_static",
+        "version": "v1.21.3",
+        "asset_kind": "binary",
+        "bytes": 64185579,
+        "sha256": "add7c9dcf56e1ce1538426a6ee595ea1cc7ee830bbedd4c23219825b02b19a79",
+        "exact_externalized_candidate": false,
+        "git_blob_sha1": "74f377e30e0178c9af50bd3e76af39c404153d9e",
+        "git_tree_size_bytes": 64185579,
+        "original_record_path": "6. Sistema Inteligente/Cognitive CI - CD/opa_linux_amd64_static",
+        "quantization_applicable_as_model_weights": false
+      },
+      {
+        "id": "RQLITE_10_2_7_LINUX_AMD64",
+        "path": "6. Sistema Inteligente/Migración y Persistencia/rqlite-v10.2.7-linux-amd64.tar.gz",
+        "version": "v10.2.7",
+        "asset_kind": "binary_archive",
+        "bytes": 17600273,
+        "sha256": "0b4e8ffbbacc84e421c49915bbd82cc67ac6488e22d4ce58b678fc1219c6a38a",
+        "exact_externalized_candidate": true,
+        "git_blob_sha1": "2ad40f29587ef8fce00f25762f50cce5ae758678",
+        "git_tree_size_bytes": 17600273,
+        "original_record_path": "6. Sistema Inteligente/Migración y Persistencia/rqlite-v10.2.7-linux-amd64.tar.gz",
+        "quantization_applicable_as_model_weights": false
+      },
+      {
+        "id": "SQLITE_SOURCE_3_53_4",
+        "path": "6. Sistema Inteligente/Migración y Persistencia/sqlite-src-3530400.zip",
+        "version": "3.53.4",
+        "asset_kind": "source_archive",
+        "bytes": 14557315,
+        "sha256": "d18fa15aec74d8c17e1463f861095adc01b5ad190256acb4f91d22f0368d232b",
+        "exact_externalized_candidate": true,
+        "git_blob_sha1": "3765a6741b08944f2e71872e5363d1b6bb7b854b",
+        "git_tree_size_bytes": 14557315,
+        "original_record_path": "6. Sistema Inteligente/Migración y Persistencia/sqlite-src-3530400.zip",
+        "quantization_applicable_as_model_weights": false
+      },
+      {
+        "id": "CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE",
+        "path": "6. Sistema Inteligente/Portabilidad base/cmake-4.4.3-windows-x86_64.zip",
+        "version": "4.4.3",
+        "asset_kind": "binary_archive",
+        "bytes": 54408599,
+        "sha256": "4d52ebab7193a698651639ed80d8d04fd903358843572cf44c7fd234cb7c26ab",
+        "exact_externalized_candidate": false,
+        "git_blob_sha1": "ce3889ed42e56ea8c28cfffaa5372a91db6b67e0",
+        "git_tree_size_bytes": 54408599,
+        "original_record_path": "6. Sistema Inteligente/Portabilidad base/cmake-4.4.3-windows-x86_64.zip",
+        "quantization_applicable_as_model_weights": false
+      },
+      {
+        "id": "AVALONIA_12_1_1_NUGET",
+        "path": "6. Sistema Inteligente/Runtime Android Windows/avalonia.12.1.1.nupkg",
+        "version": "12.1.1",
+        "asset_kind": "package",
+        "bytes": 10112805,
+        "sha256": "193bf6ae8b90293acb72bca8a1d62e8e46b460a48527f5f1f18f629073d9d77d",
+        "exact_externalized_candidate": true,
+        "git_blob_sha1": "93a0ad097db76ab82293b3cd25dea86fa85c5967",
+        "git_tree_size_bytes": 10112805,
+        "original_record_path": "6. Sistema Inteligente/Runtime Android Windows/avalonia.12.1.1.nupkg",
+        "quantization_applicable_as_model_weights": false
+      },
+      {
+        "id": "TAURI_2_11_5_SOURCE_ZIP",
+        "path": "6. Sistema Inteligente/Runtime Android Windows/tauri-tauri-v2.11.5.zip",
+        "version": "tauri-v2.11.5",
+        "asset_kind": "source_archive",
+        "bytes": 16117618,
+        "sha256": "a85eb38b0ffc7b37b5c2eadbd637dc1206fb7f719bfe5b3ceca37ad5dac42cdd",
+        "exact_externalized_candidate": true,
+        "git_blob_sha1": "93626e615ea132533005cb9f4843821bee04cb6e",
+        "git_tree_size_bytes": 16117618,
+        "original_record_path": "6. Sistema Inteligente/Runtime Android Windows/tauri-tauri-v2.11.5.zip",
+        "quantization_applicable_as_model_weights": false
+      }
+    ],
+    "alternate_candidate_comparisons": [
+      {
+        "id": "ONNX_RUNTIME_1_29_0_CP311",
+        "original_bytes": 23020724,
+        "original_sha256": "7d85eb77dddc3b9f2bda38f8dbcb6804a2c4b06e19ebbbc8f2fd54e8d7468321",
+        "candidate_bytes": 23113193,
+        "candidate_sha256": "85f8e8406c52658735fe5c7fbfd3ebaa1ed340768324f6252e4274e374580a23",
+        "delta_bytes": 92469,
+        "delta_percent": 0.4,
+        "hash_matches": false
+      },
+      {
+        "id": "OPA_STATIC_LINUX_AMD64_CANDIDATE",
+        "original_bytes": 38436344,
+        "original_sha256": "64529d378ebf1c8ed18795df06353a7c34b0fc797629d80d10636b7ad9880e62",
+        "candidate_bytes": 64185579,
+        "candidate_sha256": "add7c9dcf56e1ce1538426a6ee595ea1cc7ee830bbedd4c23219825b02b19a79",
+        "delta_bytes": 25749235,
+        "delta_percent": 66.99,
+        "hash_matches": false
+      },
+      {
+        "id": "CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE",
+        "original_bytes": 22576162,
+        "original_sha256": "75bdd838bc5d806dfa025f2c7cfed945f04f83ac7391aa5d2a704b2fe3ef1324",
+        "candidate_bytes": 54408599,
+        "candidate_sha256": "4d52ebab7193a698651639ed80d8d04fd903358843572cf44c7fd234cb7c26ab",
+        "delta_bytes": 31832437,
+        "delta_percent": 141,
+        "hash_matches": false
+      }
+    ],
+    "notes": [
+      "The ten recovered files are software binaries, packages, wheels or source/binary archives, not ML parameter tensors. Standard model-weight quantization is not applicable to these ten payloads.",
+      "Their size may need to be reduced later by artifact/version/platform selection, pruning or packaging decisions; the present audit makes no such removals or substitutions.",
+      "Playwright discrepancy: the bootstrap still pins Playwright 1.62.1 while a separate Playwright v1.63.0 source archive is now present. This is a version-provenance conflict, not evidence that v1.63.0 is wired into the installer.",
+      "CMake and OPA are official alternate candidates, not byte-identical recovery of the original records. Do not label the CMake base ZIP as the original .optimized.zip."
+    ]
+  },
+  "effective_payload_ranking": [
+    {
+      "path": "1. Cerebro/model.safetensors",
+      "bytes": 148477400,
+      "git_tree_blob_sha1": "839ccab0acc343277429fb671aef6e0ff9ff1ffe"
+    },
+    {
+      "path": "6. Sistema Inteligente/Anti-Alucinaciones/model.onnx",
+      "bytes": 110516001,
+      "git_tree_blob_sha1": "e0fff90020d88c447af9f30ce80795c600c38692"
+    },
+    {
+      "path": "6. Sistema Inteligente/Cognitive CI - CD/opa_linux_amd64_static",
+      "bytes": 64185579,
+      "git_tree_blob_sha1": "74f377e30e0178c9af50bd3e76af39c404153d9e"
+    },
+    {
+      "path": "6. Sistema Inteligente/Portabilidad base/cmake-4.4.3-windows-x86_64.zip",
+      "bytes": 54408599,
+      "git_tree_blob_sha1": "ce3889ed42e56ea8c28cfffaa5372a91db6b67e0"
+    },
+    {
+      "path": "6. Sistema Inteligente/Análisis Avanzado/model.safetensors",
+      "bytes": 52950152,
+      "git_tree_blob_sha1": "597f118f99896ef3c6ef354ebbe9885bc2799cb5"
+    },
+    {
+      "path": "2. Orquestación/Orquestador/playwright-1.63.0.tar.gz",
+      "bytes": 40525667,
+      "git_tree_blob_sha1": "f89837e5359e933d58b479b34e226e4b1379910c"
+    },
+    {
+      "path": "3. Transcripción/model.safetensors",
+      "bytes": 34877948,
+      "git_tree_blob_sha1": "760a98e187dff5bda743ced45a023a222e144aee"
+    },
+    {
+      "path": "1. Cerebro/tokenizer.json",
+      "bytes": 27868174,
+      "git_tree_blob_sha1": "2df4de1f11d9b060f2d497d2d7d76520dca60981"
+    },
+    {
+      "path": "2. Orquestación/Multi + Interdisciplinar/apache-jena-6.2.0.tar.gz",
+      "bytes": 23986647,
+      "git_tree_blob_sha1": "6891fa3d40a794a36c675bbe43816fb418f1c121"
+    },
+    {
+      "path": "6. Sistema Inteligente/Anti-Alucinaciones/onnxruntime-1.29.0-cp311-cp311-manylinux_2_28_x86_64.whl",
+      "bytes": 23113193,
+      "git_tree_blob_sha1": "ffe343b450b8afaeacd28bd61abe19ca0d59e150"
+    },
+    {
+      "path": "6. Sistema Inteligente/Cognitive CI - CD/dagger_v0.21.8_linux_amd64.tar.gz",
+      "bytes": 21927634,
+      "git_tree_blob_sha1": "477d899c6f147cd17c4f6e845ba2530f9075b6ef"
+    },
+    {
+      "path": "4. Traductor Inteligente/Traducción general/model.safetensors",
+      "bytes": 20256147,
+      "git_tree_blob_sha1": "8ccf481e0455a7ef6c42d8b18c7ddf9e14f9b18a"
+    },
+    {
+      "path": "6. Sistema Inteligente/Migración y Persistencia/rqlite-v10.2.7-linux-amd64.tar.gz",
+      "bytes": 17600273,
+      "git_tree_blob_sha1": "2ad40f29587ef8fce00f25762f50cce5ae758678"
+    },
+    {
+      "path": "6. Sistema Inteligente/Runtime Android Windows/tauri-tauri-v2.11.5.zip",
+      "bytes": 16117618,
+      "git_tree_blob_sha1": "93626e615ea132533005cb9f4843821bee04cb6e"
+    },
+    {
+      "path": "6. Sistema Inteligente/Migración y Persistencia/sqlite-src-3530400.zip",
+      "bytes": 14557315,
+      "git_tree_blob_sha1": "3765a6741b08944f2e71872e5363d1b6bb7b854b"
+    },
+    {
+      "path": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin",
+      "bytes": 13483380,
+      "git_tree_blob_sha1": "e407c7922f1bb819bfc15f64ff08b4a554ccdc0d"
+    },
+    {
+      "path": "6. Sistema Inteligente/Análisis Avanzado/tokenizer.json",
+      "bytes": 11422654,
+      "git_tree_blob_sha1": "949e1ec83f61520a25c75426edc4a43acc36f29a"
+    },
+    {
+      "path": "6. Sistema Inteligente/Runtime Android Windows/avalonia.12.1.1.nupkg",
+      "bytes": 10112805,
+      "git_tree_blob_sha1": "93a0ad097db76ab82293b3cd25dea86fa85c5967"
+    },
+    {
+      "path": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/tokenizer.json",
+      "bytes": 7153134,
+      "git_tree_blob_sha1": "d3eef61ed03b4b5f9a18bbd7c330a0ef7e5de02e"
+    },
+    {
+      "path": "2. Orquestación/Confesión Eclesial Reformada/Biblia Textual BTX -- Biblia Textual BTX -- ( WeLib.org ).7z",
+      "bytes": 6949245,
+      "git_tree_blob_sha1": "451a4f47370b924e497512463d87924c2e4e6cb7"
+    },
+    {
+      "path": "4. Traductor Inteligente/Traducción general/sentencepiece.bpe.model",
+      "bytes": 5165809,
+      "git_tree_blob_sha1": "e6149ec4e500ba6663d464d50c5c59683f6774ae"
+    },
+    {
+      "path": "2. Orquestación/Orquestador/agno-3.0.4-py3-none-any.whl",
+      "bytes": 3860188,
+      "git_tree_blob_sha1": "c119d57ae74782c9eeb090c62ffd7069df5846ca"
+    },
+    {
+      "path": "6. Sistema Inteligente/Archivado Deteccion/siegfried_1-11-6_linux-x86_64_static.zip",
+      "bytes": 3727204,
+      "git_tree_blob_sha1": "e42fdeca5c8ef24d13d2b999724d70f31f774d98"
+    },
+    {
+      "path": "6. Sistema Inteligente/Anti-Alucinaciones/tokenizers-0.23.1-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "bytes": 3240180,
+      "git_tree_blob_sha1": "824b8869702d71c21db5ffbb2db185b60b4322ee"
+    },
+    {
+      "path": "6. Sistema Inteligente/Memoria Gobernada/sqlite-amalgamation-3530400.zip",
+      "bytes": 2923847,
+      "git_tree_blob_sha1": "bc9e868f565890252644f7a2c5f537da7f4f05d9"
+    }
+  ],
+  "findings": [
+    {
+      "id": "F01",
+      "severity": "HIGH",
+      "status": "CONFIRMED",
+      "finding": "Current static package manifest is stale. There are 12 files not represented by it and four existing entries whose file size/presence no longer matches the recorded snapshot.",
+      "evidence": "current_macrodown_manifest"
+    },
+    {
+      "id": "F02",
+      "severity": "HIGH",
+      "status": "POINTER_METADATA_MATCHES_PAYLOAD_NOT_RETRIEVED",
+      "finding": "The Brain safetensors and anti-hallucination ONNX paths are Git LFS pointers of 134 bytes. Pointer SHA-256 OIDs and declared sizes match the weight manifest, but LFS object retrieval/materialization was not tested in this audit.",
+      "evidence": "lfs_pointers"
+    },
+    {
+      "id": "F03",
+      "severity": "HIGH",
+      "status": "CONFIRMED",
+      "finding": "The ten new files are not model weights. Their reduction requires software-artifact/package scope decisions, not ordinary tensor quantization.",
+      "evidence": "recovered_assets"
+    },
+    {
+      "id": "F04",
+      "severity": "HIGH",
+      "status": "EVIDENCE_WARNING",
+      "finding": "The Cerebro rank-1 INT8 report records aggregate relative Frobenius error 0.998336 and a runtime smoke failure (meta tensor without data). Treating the candidate as size-effective does not establish it as a viable replacement.",
+      "evidence": "weight_inventory.historical_quantization_evidence.brain_gpt_oss"
+    },
+    {
+      "id": "F05",
+      "severity": "HIGH",
+      "status": "EVIDENCE_WARNING",
+      "finding": "The Qwen3 INT8 report records aggregate relative Frobenius error 0.996409 and a forward-pass smoke, but its functional quality gate is not passed/not run; no quality equivalence is established.",
+      "evidence": "weight_inventory.historical_quantization_evidence.reasoning_qwen3"
+    },
+    {
+      "id": "F06",
+      "severity": "MEDIUM",
+      "status": "CONFIRMED",
+      "finding": "The recorded Playwright bootstrap pins 1.62.1 while the new source archive is 1.63.0. The archive should not be silently treated as the installed pinned runtime.",
+      "evidence": "recovered_assets.notes"
+    },
+    {
+      "id": "F07",
+      "severity": "MEDIUM",
+      "status": "CONFIRMED",
+      "finding": "Three recovered assets are alternate official candidates with different recorded hashes/sizes: ONNX Runtime wheel, OPA static executable and CMake Windows ZIP. Their candidate identities must remain distinct from the prior externalized artifacts.",
+      "evidence": "recovered_assets.alternate_candidate_comparisons"
+    },
+    {
+      "id": "F08",
+      "severity": "MEDIUM",
+      "status": "CONFIRMED",
+      "finding": "Historical evidence includes a minimal translation smoke that returned 'te te te te'; full Docling generation was not completed. These records do not justify any quality-equivalence claim for the existing compressed weights.",
+      "evidence": "BUILD_PROVENANCE.json"
+    }
+  ],
+  "disposition": {
+    "outcome": "FORENSIC_INVENTORY_COMPLETE_NO_QUANTIZATION_PERFORMED",
+    "payload_mutation": "NONE",
+    "model_weight_mutation": "NONE",
+    "package_manifest_regenerated": false,
+    "functional_certification": "NOT_GRANTED",
+    "independent_validation": "NOT_RUN",
+    "next_work_authorization": "Audit result only. Await user's stated next step; do not infer which artifacts to quantize or remove."
+  }
+}
