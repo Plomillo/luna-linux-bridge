@@ -663,11 +663,11 @@ def main() -> int:
     print(json.dumps({k:report.get(k) for k in [
         "status","certification","source_archive_integrity","source_pdf_text_extraction",
         "large_chapter_markers","large_chapter_positional_mismatches","psalm_chapter_markers",
-        "chapter_anchor_count","chapter_anchor_sequence_exact","single_chapter_book_title_candidates",
+        "chapter_anchor_count","chapter_anchor_sequence_exact","single_chapter_verse1_boundary_candidates",
         "database_file_bytes","database_sha256","book_count","chapter_count","verse_row_count",
-        "verse_marker_spans_seen","duplicate_reference_keys","duplicate_marker_events",
-        "missing_expected_chapter_count","missing_first_verse_chapter_count",
-        "chapter_verse_number_gap_chapter_count","chapter_verse_number_gap_total",
+        "verse_marker_spans_seen","duplicate_reference_keys","duplicate_marker_events","duplicate_marker_examples",
+        "missing_expected_chapter_count","missing_first_verse_chapter_count","missing_first_verse_examples","empty_verse_chapter_count","empty_verse_examples",
+        "chapter_verse_number_gap_chapter_count","chapter_verse_number_gap_total","chapter_verse_number_gap_examples",
         "text_roundtrip_whitespace_normalized_exact","captured_text_characters","stored_text_characters",
         "fts5_enabled","representative_reference_query_tests","error"
     ]},ensure_ascii=False,indent=2))
