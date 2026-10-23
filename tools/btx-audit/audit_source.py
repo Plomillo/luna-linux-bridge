@@ -128,6 +128,23 @@ def pdf_audit(pdf: Path, temp_root: Path) -> dict[str, Any]:
     nonempty_lines = [(i + 1, line.rstrip()) for i, line in enumerate(text.splitlines()) if line.strip()]
     start_numeric = [line for _, line in nonempty_lines if re.match(r"^\s*\d{1,3}(?:[a-z])?\s+\S", line, re.IGNORECASE)]
     standalone_numbers = [line for _, line in nonempty_lines if re.fullmatch(r"\s*\d{1,3}\s*", line)]
+    number_sequences: dict[str, int] = {}
+    exact_book_heading_lines: list[dict[str, Any]] = []
+    numeric_line_examples: list[dict[str, Any]] = []
+    for line_no, line in nonempty_lines:
+        nums = re.findall(r"(?<![A-Za-z])\d{1,3}(?:[a-z])?(?::\d{1,3}(?:[a-z])?)?", line, flags=re.IGNORECASE)
+        if nums:
+            signature = " ".join(nums[:14])
+            number_sequences[signature] = number_sequences.get(signature, 0) + 1
+            if len(numeric_line_examples) < 40 and len(nums) >= 3:
+                masked = re.sub(r"[^\W\d_]+", "W", line, flags=re.UNICODE)
+                masked = re.sub(r"\d+", "N", masked)
+                numeric_line_examples.append({"line": line_no, "number_tokens": nums[:14], "masked_shape": masked[:180]})
+        normalized_line = norm_ascii(line.strip().replace(".", " "))
+        for book in BOOKS_ES:
+            if normalized_line == norm_ascii(book) or normalized_line == norm_ascii(book + "."):
+                exact_book_heading_lines.append({"line": line_no, "book": book})
+                break
     line_signatures: dict[str, int] = {}
     for line in nonempty_lines:
         signature = re.sub(r"[^\W\d_]+", "W", line[1], flags=re.UNICODE)
@@ -153,6 +170,10 @@ def pdf_audit(pdf: Path, temp_root: Path) -> dict[str, Any]:
             "nonempty_lines": len(nonempty_lines),
             "lines_starting_with_verse_like_number": len(start_numeric),
             "standalone_number_lines": len(standalone_numbers),
+            "exact_book_heading_line_count": len(exact_book_heading_lines),
+            "exact_book_heading_lines": exact_book_heading_lines[:100],
+            "common_numeric_token_sequences": sorted(number_sequences.items(), key=lambda kv: (-kv[1], kv[0]))[:30],
+            "masked_numeric_line_examples": numeric_line_examples,
             "common_redacted_line_signatures": sorted(line_signatures.items(), key=lambda kv: (-kv[1], kv[0]))[:30],
             "text_content_redacted": True,
         },
