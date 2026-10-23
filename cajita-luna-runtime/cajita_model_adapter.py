@@ -627,10 +627,21 @@ def make_synthetic_audio(path: pathlib.Path) -> None:
         wav.writeframes(frames)
 
 def make_synthetic_image(path: pathlib.Path) -> None:
-    # Binary PPM keeps fixture creation standard-library-only; PIL handles it in the worker.
-    width = height = 64
-    pixels = bytes([255, 255, 255]) * width * height
-    path.write_bytes(f"P6\n{width} {height}\n255\n".encode("ascii") + pixels)
+    # Match the packaged Idefics3 smoke fixture geometry. A 64x64 image creates a
+    # 4x4 patch grid without the 512px tile protocol and can fail against this
+    # processor's image_seq_len. Keep the fixture standard-library-only for CI.
+    width, height = 640, 480
+    pixels = bytearray([255, 255, 255]) * width * height
+    # Non-degenerate page structure: horizontal rules and a few table columns.
+    for y in (32, 64, 112, 160, 208, 256, 304, 352, 400):
+        for x in range(32, min(width - 32, 420)):
+            idx = (y * width + x) * 3
+            pixels[idx:idx + 3] = b"\x20\x20\x20"
+    for x in (32, 300, 420):
+        for y in range(32, height - 32):
+            idx = (y * width + x) * 3
+            pixels[idx:idx + 3] = b"\x20\x20\x20"
+    path.write_bytes(f"P6\n{width} {height}\n255\n".encode("ascii") + bytes(pixels))
 
 def process_rss_mib(pid: int) -> float | None:
     return current_rss_mib(pid)
