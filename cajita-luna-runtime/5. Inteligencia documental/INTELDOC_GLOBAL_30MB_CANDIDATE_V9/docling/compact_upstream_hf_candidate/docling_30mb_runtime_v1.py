@@ -120,14 +120,33 @@ def load_candidate(candidate_dir):
     # Allocate uninitialized CPU storage; the verified quantized manifest fills all
     # declared parameters below, after which missing parameters are rejected.
     model.to_empty(device="cpu")
-    state=model.state_dict(keep_vars=True); raw=bp.read_bytes(); view=memoryview(raw); loaded=set()
-    with torch.no_grad():
-        for name,r in meta["tensors"].items():
-            if r["kind"]=="alias": continue
-            if name not in state: raise RuntimeError("TENSOR_NOT_IN_ARCHITECTURE:"+name)
-            target=state[name]
-            decode_tensor_chunked_into(view,r,target)
-            loaded.add(name)
+    # File-map the compact payload and release mapped resident pages periodically.
+    # read_bytes() duplicates the complete payload in anonymous RSS at the same time
+    # the full FP16 parameter set is resident. DONTNEED is safe for this read-only file:
+    # any tensor accessed later is transparently paged back from the verified payload.
+    import mmap
+    with bp.open("rb") as weights_file:
+        mapped=mmap.mmap(weights_file.fileno(),0,access=mmap.ACCESS_READ)
+    view=memoryview(mapped); loaded=set(); close_map=True
+    try:
+        with torch.no_grad():
+            for name,r in meta["tensors"].items():
+                if r["kind"]=="alias": continue
+                if name not in state: raise RuntimeError("TENSOR_NOT_IN_ARCHITECTURE:"+name)
+                target=state[name]
+                decode_tensor_chunked_into(view,r,target)
+                loaded.add(name)
+                if (len(loaded) % 8 == 0 and hasattr(mapped,"madvise")
+                        and hasattr(mmap,"MADV_DONTNEED")):
+                    mapped.madvise(mmap.MADV_DONTNEED)
+    finally:
+        view.release()
+        try:
+            mapped.close()
+        except BufferError:
+            # Failures can retain temporary NumPy views in traceback frames. Keep the
+            # exception authoritative; the mapping is read-only and GC will close it.
+            close_map=False
     if hasattr(model,"tie_weights"): model.tie_weights()
     params=set(dict(model.named_parameters()))
     missing=sorted(params-loaded)
