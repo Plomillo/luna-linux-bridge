@@ -120,6 +120,7 @@ def load_candidate(candidate_dir):
     # Allocate uninitialized CPU storage; the verified quantized manifest fills all
     # declared parameters below, after which missing parameters are rejected.
     model.to_empty(device="cpu")
+    state=model.state_dict(keep_vars=True)
     # File-map the compact payload and release mapped resident pages periodically.
     # read_bytes() duplicates the complete payload in anonymous RSS at the same time
     # the full FP16 parameter set is resident. DONTNEED is safe for this read-only file:
