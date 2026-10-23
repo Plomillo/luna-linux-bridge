@@ -124,6 +124,40 @@ def pdf_audit(pdf: Path, temp_root: Path) -> dict[str, Any]:
         return {"path": str(pdf.relative_to(temp_root)), "pages": pages, "text_extraction": "FAILED",
                 "error_excerpt": extract.stderr[-400:]}
     text = out_txt.read_text(encoding="utf-8", errors="replace")
+    raw_txt = temp_root / (hashlib.sha256((str(pdf) + "-raw").encode()).hexdigest()[:12] + ".txt")
+    raw_extract = subprocess.run(
+        ["pdftotext", "-raw", "-enc", "UTF-8", str(pdf), str(raw_txt)],
+        capture_output=True, text=True, timeout=300
+    )
+    raw_diagnostics: dict[str, Any] = {"text_extraction": "FAILED"}
+    if raw_extract.returncode == 0:
+        raw_text = raw_txt.read_text(encoding="utf-8", errors="replace")
+        raw_lines = [(i + 1, line.strip()) for i, line in enumerate(raw_text.splitlines()) if line.strip()]
+        raw_flat = norm_ascii(raw_text)
+        raw_book_hits = [book for book in BOOKS_ES if re.search(r"(?<!\\w)" + re.escape(norm_ascii(book)) + r"(?!\\w)", raw_flat)]
+        raw_exact_headings = [
+            {"line": i, "book": book}
+            for i, line in raw_lines
+            for book in BOOKS_ES
+            if norm_ascii(line.strip().rstrip(".:")) == norm_ascii(book)
+        ]
+        raw_numeric_lines = [
+            {"line": i, "numbers": re.findall(r"(?<![A-Za-z])\\d{1,3}(?:[a-z])?(?::\\d{1,3}(?:[a-z])?)?", line)[:12],
+             "masked_shape": re.sub(r"\\d+", "N", re.sub(r"[^\\W\\d_]+", "W", line, flags=re.UNICODE))[:150]}
+            for i, line in raw_lines
+            if len(re.findall(r"(?<![A-Za-z])\\d{1,3}(?:[a-z])?(?::\\d{1,3}(?:[a-z])?)?", line)) >= 3
+        ][:40]
+        raw_diagnostics = {
+            "text_extraction": "PASS",
+            "nonempty_lines": len(raw_lines),
+            "lines_starting_with_verse_like_number": sum(bool(re.match(r"^\\d{1,3}(?:[a-z])?\\s+\\S", line, re.IGNORECASE)) for _, line in raw_lines),
+            "exact_book_heading_line_count": len(raw_exact_headings),
+            "exact_book_heading_lines": raw_exact_headings[:100],
+            "known_book_names_detected": len(raw_book_hits),
+            "known_book_names_missing": sorted(set(BOOKS_ES) - set(raw_book_hits)),
+            "masked_numeric_line_examples": raw_numeric_lines,
+            "text_content_redacted": True,
+        }
     page_texts = [p for p in text.split("\f") if p.strip()]
     nonempty_lines = [(i + 1, line.rstrip()) for i, line in enumerate(text.splitlines()) if line.strip()]
     start_numeric = [line for _, line in nonempty_lines if re.match(r"^\s*\d{1,3}(?:[a-z])?\s+\S", line, re.IGNORECASE)]
@@ -166,6 +200,7 @@ def pdf_audit(pdf: Path, temp_root: Path) -> dict[str, Any]:
         "text_layer_likely_usable": len(text.strip()) >= max(1000, (pages or 1) * 40),
         "known_spanish_bible_book_names_detected": len(book_hits),
         "known_book_names_detected": book_hits,
+        "raw_mode_diagnostics": raw_diagnostics,
         "layout_diagnostics": {
             "nonempty_lines": len(nonempty_lines),
             "lines_starting_with_verse_like_number": len(start_numeric),
