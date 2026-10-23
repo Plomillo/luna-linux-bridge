@@ -916,9 +916,9 @@
   "runtime_size_gate": {
     "audit_id": "CAJITA_FINAL_RUNTIME_SIZE_GATE_20261023",
     "measurement_method": "sum of every regular file byte under cajita-luna-runtime except MACRODOWN_MANIFEST.json; no LFS pointers",
-    "payload_bytes": 464215286,
+    "payload_bytes": 464268004,
     "hard_cap_bytes": 470000000,
-    "bytes_under_cap": 5784714,
+    "bytes_under_cap": 5731996,
     "size_gate": "PASS",
     "registered_asset_count": 10,
     "registered_asset_ids": [
