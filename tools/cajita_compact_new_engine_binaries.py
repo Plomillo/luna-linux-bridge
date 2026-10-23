@@ -175,8 +175,39 @@ def main():
             check=tmp/"roundtrip"
             check.mkdir()
             out=run(["7z","x","-y",f"-o{check}",str(new_container)],timeout=900)
-            if out.returncode!=0 or fingerprint(extracted)!=fingerprint(check):
-                raise RuntimeError(f"Fail closed: inner asset round-trip mismatch for {asset_id}")
+            if out.returncode != 0:
+                raise RuntimeError(f"Fail closed: cannot extract candidate for {asset_id}: {out.stdout[-1000:]} {out.stderr[-1000:]}")
+            expected_tree=fingerprint(extracted)
+            actual_tree=fingerprint(check)
+            if expected_tree != actual_tree:
+                keys=sorted(set(expected_tree)|set(actual_tree))
+                mismatches=[
+                    {"path":k,"expected":expected_tree.get(k),"actual":actual_tree.get(k)}
+                    for k in keys if expected_tree.get(k)!=actual_tree.get(k)
+                ][:30]
+                item.update({
+                    "recognized_pe_elf_candidate_count":candidate_count,
+                    "upx_transforms_candidate_not_promoted":transformed,
+                    "candidate_7z_test":"PASS",
+                    "member_tree_roundtrip":"FAIL_CANDIDATE_REJECTED",
+                    "roundtrip_mismatch_count_capped":len(mismatches),
+                    "roundtrip_mismatches_first_30":mismatches,
+                    "status":"CANDIDATE_REJECTED_ROUNDTRIP_MISMATCH_ORIGINAL_CONTAINER_RETAINED",
+                    "container_after_bytes":old_container_size,
+                    "container_after_sha256":item["container_before_sha256"],
+                    "container_saved_bytes":0,
+                })
+                asset.setdefault("optimization",{})["binary_compaction_pass"]={
+                    "status":"CANDIDATE_REJECTED_ROUNDTRIP_MISMATCH_ORIGINAL_CONTAINER_RETAINED",
+                    "candidate_upx_transforms_not_promoted":transformed,
+                    "roundtrip":"FAIL_CANDIDATE_REJECTED",
+                    "original_container_preserved":True,
+                    "mismatch_examples":mismatches,
+                }
+                results.append(item)
+                final_container_bytes+=old_container_size
+                print(json.dumps(item,ensure_ascii=False))
+                continue
             candidate_size=new_container.stat().st_size
             candidate_hash=sha256(new_container)
             item.update({
