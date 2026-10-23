@@ -166,7 +166,8 @@ def main():
   "method":"Scan nested containers and dynamically quantize actual ONNX graphs to signed INT8; never lossy-transform general executable bytes.",
   "protected_legacy_weights":{"policy":"NO_MODIFICATION","paths":PROTECTED,"status":"NOT_TARGETED"},
   "summary":{"assets_expected":10,"assets_scanned":len(rows),"files_scanned":scanned,"expanded_bytes_scanned":expanded_total,
-   "model_payloads_found":models,"onnx_graphs_found":len(onnx_models),"onnx_candidates_quantized_smaller_and_validated":wins,\n   "onnx_candidates_not_smaller":not_smaller,"quantization_failures":quantization_failures,
+   "model_payloads_found":models,"onnx_graphs_found":len(onnx_models),"onnx_candidates_quantized_smaller_and_validated":wins,
+   "onnx_candidates_not_smaller":not_smaller,"quantization_failures":quantization_failures,
    "hard_cap_compliance":"NOT_EVALUATED_BY_QUANTIZATION_PASS",
    "status":("QUANTIZED_CANDIDATES_CREATED" if wins else
     ("ONNX_FOUND_BUT_NO_SIZE_SAVING_QUANTIZATION" if onnx_models else "NO_NEURAL_MODEL_PAYLOAD_FOUND_IN_THE_TEN_ASSETS"))},
