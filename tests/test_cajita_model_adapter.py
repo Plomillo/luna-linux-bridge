@@ -37,6 +37,21 @@ class ModelAdapterControlTests(unittest.TestCase):
             self.assertEqual(result["page_count"], 3)
             self.assertIn(b"/Count 3", data)
 
+
+    def test_document_processor_uses_bounded_512px_non_tiled_profile(self):
+        from types import SimpleNamespace
+        processor = SimpleNamespace(image_processor=SimpleNamespace(
+            size={"longest_edge": 2048},
+            max_image_size={"longest_edge": 512},
+            do_image_splitting=True,
+        ))
+        profile = adapter.apply_low_memory_document_profile(processor)
+        self.assertEqual(processor.image_processor.size, {"longest_edge": 512})
+        self.assertEqual(processor.image_processor.max_image_size, {"longest_edge": 512})
+        self.assertFalse(processor.image_processor.do_image_splitting)
+        self.assertEqual(profile["profile_id"], "LOW_MEMORY_512_NO_SPLITS")
+        self.assertEqual(profile["quality_equivalence"], "NOT_ESTABLISHED")
+
     def test_pdf_generation_domain_adapter_does_not_claim_model_load(self):
         with tempfile.TemporaryDirectory() as temp:
             output = Path(temp) / "domain.pdf"
