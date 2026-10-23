@@ -25,6 +25,7 @@ BOOKS = [
  "1 Tesalonicenses","2 Tesalonicenses","1 Timoteo","2 Timoteo","Tito","Filemón","Hebreos","Santiago","1 Pedro",
  "2 Pedro","1 Juan","2 Juan","3 Juan","Judas","Apocalipsis"
 ]
+BOOK_LOOKUP = {re.sub(r"\\s+", " ", book.casefold()).strip(): book for book in BOOKS}
 
 def main() -> int:
     out: dict[str, Any] = {
