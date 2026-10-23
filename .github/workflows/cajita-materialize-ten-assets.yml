@@ -139,7 +139,7 @@ jobs:
           if {a.get("id") for a in placement.get("assets", [])} != expected_ids:
             raise RuntimeError("FAIL_CLOSED_EXPECTED_TEN_ASSETS")
           expected_counts = {a["id"]: int(a["verified_member_count"])
-                             for a in compaction["compaction_pass"]["per_asset_results"]}
+                             for a in compaction["assets"]}
           protected_before = {rel: sha_file(runtime / rel) for rel in protected}
           backup_root = root / "externalized-assets-staging/optimized-containers"
           backup_root.mkdir(parents=True, exist_ok=True)
