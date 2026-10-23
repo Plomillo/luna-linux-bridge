@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/cajita-materialize-ten-assets.yml"
+      - "cajita-luna-runtime/CajitadeLuna.md"
   workflow_dispatch:
 
 permissions:
@@ -122,8 +123,11 @@ jobs:
               for name in ("rqlite", "rqlited"):
                 require(files, lambda p, n=name: p.name == n and p.read_bytes()[:4] == b"\x7fELF", name + " ELF", asset_id)
             elif asset_id == "SQLITE_SOURCE_3_53_4":
-              require(files, lambda p: p.name.lower() == "sqlite3.c", "sqlite3.c", asset_id)
-              require(files, lambda p: p.name.lower() == "sqlite3.h", "sqlite3.h", asset_id)
+              # sqlite-src is the full source tree; unlike sqlite-amalgamation, it does not
+              # promise generated sqlite3.c/sqlite3.h files at the archive root.
+              require(files, lambda p: "src" in p.parts and p.name == "main.c", "SQLite src/main.c", asset_id)
+              require(files, lambda p: "src" in p.parts and p.name == "sqliteInt.h", "SQLite src/sqliteInt.h", asset_id)
+              require(files, lambda p: "src" in p.parts and p.suffix.lower() == ".c", "SQLite core C sources", asset_id)
             elif asset_id == "CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE":
               require(files, lambda p: p.name.lower() == "cmake.exe" and p.read_bytes()[:2] == b"MZ", "cmake.exe PE", asset_id)
               require(files, lambda p: p.name.lower() == "ctest.exe" and p.read_bytes()[:2] == b"MZ", "ctest.exe PE", asset_id)

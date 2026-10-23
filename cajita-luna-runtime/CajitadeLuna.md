@@ -137,3 +137,37 @@ Informe de evidencia: ../docs/cajita-luna/CAJITA_NEW_ENGINE_COMPACTION_20261023.
 No se declara que los diez activos estén funcionalmente integrados. No se deben descomprimir/copiarlos todos al árbol distribuible ni reconstruir/publicar el paquete hasta rebajar y volver a medir el payload global, preservando los seis artefactos de pesos existentes y validando cualquier optimización con pruebas funcionales. Hacerlo antes dejaría el paquete por encima del límite de tamaño. La extracción diferida a un entorno de instalación separado es una estrategia distinta y no equivale a incluir los diez artefactos expandidos en el `.macrodown`.
 
 Este bloque registra el estado real de la auditoría actual; no sustituye ni borra los registros históricos de compactación.
+## Catálogo canónico de los diez motores y componentes de infraestructura
+
+Este catálogo incorpora los diez activos al mapa operativo de `CajitadeLuna.md` y los agrupa según el orden canónico de dominios de la Cajita. Se conserva el orden de los seis dominios: `1. Cerebro` → `2. Orquestación` → `3. Transcripción` → `4. Traductor Inteligente` → `5. Inteligencia documental` → `6. Sistema Inteligente`. Estos diez activos pertenecen a los dominios 2 y 6; no se inventan entradas para los dominios 1, 3, 4 o 5.
+
+Los términos «motor» y «activo» se utilizan aquí para los componentes de infraestructura del runtime. No todos son modelos neuronales: Jena, Playwright, ONNX Runtime, Dagger, OPA, rqlite, SQLite, CMake, Avalonia y Tauri cumplen funciones distintas y no deben tratarse como pesos cuantizables equivalentes.
+
+### Dominio 2 — Orquestación
+
+| Orden | ID canónico del activo | Función prevista en Cajita | Directorio de materialización dentro del runtime | Paquete de origen registrado |
+|---:|---|---|---|---|
+| 01 | `APACHE_JENA_6_2_0` | Infraestructura RDF/OWL, grafos y consultas semánticas para los flujos interdisciplinarios. | `2. Orquestación/Multi + Interdisciplinar/APACHE_JENA_6_2_0/` | `apache-jena-6.2.0.tar.gz.7z` |
+| 02 | `PLAYWRIGHT_1_63_0_SOURCE` | Automatización de navegador y pruebas end-to-end controladas del orquestador. | `2. Orquestación/Orquestador/PLAYWRIGHT_1_63_0_SOURCE/` | `playwright-1.63.0.tar.gz.7z` |
+
+### Dominio 6 — Sistema Inteligente
+
+| Orden | ID canónico del activo | Función prevista en Cajita | Directorio de materialización dentro del runtime | Paquete de origen registrado |
+|---:|---|---|---|---|
+| 03 | `ONNX_RUNTIME_1_29_0_CP311` | Runtime de inferencia ONNX para Linux x86-64 y CPython 3.11, ubicado bajo Anti-Alucinaciones para los consumidores compatibles. | `6. Sistema Inteligente/Anti-Alucinaciones/ONNX_RUNTIME_1_29_0_CP311/` | `onnxruntime-1.29.0-cp311-cp311-manylinux_2_28_x86_64.whl.7z` |
+| 04 | `DAGGER_0_21_8_LINUX_AMD64` | Motor de ejecución de pipelines CI/CD reproducibles en Linux amd64 para Cognitive CI/CD. | `6. Sistema Inteligente/Cognitive CI - CD/DAGGER_0_21_8_LINUX_AMD64/` | `dagger_v0.21.8_linux_amd64.tar.gz.7z` |
+| 05 | `OPA_STATIC_LINUX_AMD64_CANDIDATE` | Evaluación local de políticas como puerta de autorización/validación en Cognitive CI/CD. | `6. Sistema Inteligente/Cognitive CI - CD/OPA_STATIC_LINUX_AMD64_CANDIDATE/` | `opa_linux_amd64_static.7z` |
+| 06 | `RQLITE_10_2_7_LINUX_AMD64` | Persistencia SQL replicada y servicio de base de datos distribuida. | `6. Sistema Inteligente/Migración y Persistencia/RQLITE_10_2_7_LINUX_AMD64/` | `rqlite-v10.2.7-linux-amd64.tar.gz.7z` |
+| 07 | `SQLITE_SOURCE_3_53_4` | Fuentes del motor SQLite para compilación, integración y validación de persistencia embebida. | `6. Sistema Inteligente/Migración y Persistencia/SQLITE_SOURCE_3_53_4/` | `sqlite-src-3530400.zip.7z` |
+| 08 | `CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE` | Herramienta de configuración/construcción para la base de portabilidad Windows x64. El ejecutable Windows no se declara ejecutable en Linux. | `6. Sistema Inteligente/Portabilidad base/CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE/` | `cmake-4.4.3-windows-x86_64.zip.7z` |
+| 09 | `AVALONIA_12_1_1_NUGET` | Paquete NuGet de interfaz/runtime .NET para el dominio Runtime Android/Windows, sujeto a compatibilidad del consumidor .NET. | `6. Sistema Inteligente/Runtime Android Windows/AVALONIA_12_1_1_NUGET/` | `avalonia.12.1.1.nupkg.7z` |
+| 10 | `TAURI_2_11_5_SOURCE_ZIP` | Fuentes del framework Rust/Tauri para el runtime de escritorio multiplataforma. | `6. Sistema Inteligente/Runtime Android Windows/TAURI_2_11_5_SOURCE_ZIP/` | `tauri-tauri-v2.11.5.zip.7z` |
+
+### Contrato de materialización y validación
+
+1. Cada activo debe quedar expandido en el directorio indicado, con sus nombres, subdirectorios y bytes de origen preservados; los diez `.7z` no cuentan por sí solos como integración del motor.
+2. La automatización verifica tamaño y SHA-256 del contenedor, integridad 7z, recuento de miembros, tipo de contenido esperado y hash del árbol copiado. Los contenedores optimizados se conservan fuera del árbol de runtime como rollback.
+3. La expansión no autoriza por sí sola la inclusión en `MACRODOWN_MANIFEST.json`, la reconstrucción del paquete, la cuantización de componentes que no sean modelos neuronales ni la certificación funcional. Las pruebas nativas de ejecución y el rebalanceo del límite global de `470.000.000` bytes son puertas separadas.
+4. El estado realmente materializado se determina mediante `docs/cajita-luna/CAJITA_TEN_ASSET_EXPANSION_20261023.json` y la sección generada `Despliegue materializado de los diez activos`; este catálogo fija la asignación arquitectónica de carpetas y no sustituye esas evidencias.
+
+**Regla de orden:** no reordenar los seis dominios ni mover un activo entre dominios sin cambio explícito y trazable de su asignación. Se preservan los seis artefactos de peso/modelo preexistentes y se mantiene el estado de certificación en `NOT_GRANTED` hasta superar las validaciones independientes pertinentes.
