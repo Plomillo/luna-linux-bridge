@@ -8,7 +8,9 @@ import time
 import torch
 from torch import nn
 from torch.nn import functional as F
-from safetensors.torch import load_file
+import sys
+sys.path.insert(0, str(next(p for p in pathlib.Path(__file__).resolve().parents if p.name == "cajita-luna-runtime")))
+from cajita_weight_materializer import load_model_state
 from transformers import AutoTokenizer, GptOssConfig, GptOssForCausalLM
 from transformers.models.gpt_oss.modeling_gpt_oss import GptOssExperts, GptOssTopKRouter
 
@@ -152,7 +154,7 @@ def build_model():
         replacements += 1
     if replacements < 200:
         raise RuntimeError(f"MODEL_MAPPING_INCOMPLETE:{replacements}")
-    state = load_file(str(ROOT / "model.safetensors"), device="cpu")
+    state = load_model_state(ROOT / "model.safetensors")
     missing, unexpected = model.load_state_dict(state, strict=True, assign=True)
     if missing or unexpected:
         raise RuntimeError("STATE_MAPPING_MISMATCH:" + json.dumps({"missing": missing[:25], "unexpected": unexpected[:25]}))
