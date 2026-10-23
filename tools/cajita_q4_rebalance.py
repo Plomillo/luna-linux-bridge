@@ -237,6 +237,134 @@ def quantize_onnx():
    result.update({"status":"QUANTIZATION_OR_VALIDATION_FAILED","error":type(exc).__name__+":"+str(exc)[:1500]})
    return result
 
+def pack_float_tensor(tensor, group_size, torch):
+ flat=tensor.detach().to(device="cpu",dtype=torch.float32).contiguous().reshape(-1)
+ numel=flat.numel()
+ group_count=math.ceil(numel/group_size)
+ padded=torch.zeros(group_count*group_size,dtype=torch.float32)
+ padded[:numel]=flat
+ matrix=padded.reshape(group_count,group_size)
+ maximum=matrix.abs().amax(dim=1)
+ scales=torch.where(maximum>0,maximum/7.0,torch.ones_like(maximum)).to(torch.float32)
+ codes=torch.round(matrix/scales[:,None]).clamp(-7,7).to(torch.int16).reshape(-1)[:numel]
+ nibbles=torch.bitwise_and(codes,0x0F).to(torch.uint8)
+ if nibbles.numel() % 2:
+  nibbles=torch.cat((nibbles,torch.zeros(1,dtype=torch.uint8)))
+ packed=torch.bitwise_or(nibbles[0::2],torch.bitwise_left_shift(nibbles[1::2],4)).contiguous()
+ return packed,scales,numel,tuple(tensor.shape)
+
+def quantize_remaining_float_tensors(torch, load_file, save_file):
+ """Pack the large remaining float tensors in active low-rank models as signed INT4."""
+ rows=[]
+ for spec in MODEL_RUNS:
+  path=RUNTIME/spec["rel"]
+  sidecar=path.with_name(path.name+".q4.json")
+  if not path.is_file() or not sidecar.is_file():
+   rows.append({"id":spec["id"],"path":spec["rel"],"status":"SKIPPED_NO_Q4_SIDECAR"})
+   continue
+  original_bytes=path.stat().st_size
+  original_hash=sha256(path)
+  current_meta=json.loads(sidecar.read_text(encoding="utf-8"))
+  existing_entries=current_meta.get("tensors",[])+current_meta.get("additional_tensors",[])
+  already_packed={x["name"] for x in existing_entries}
+  with tempfile.TemporaryDirectory(prefix="cajita-q4-float-") as td:
+   tmp=Path(td)
+   state=load_file(str(path),device="cpu")
+   eligible=[]; dtype_bytes={}
+   for name,tensor in state.items():
+    if name.startswith("__cajita_q4_") or name in already_packed:
+     continue
+    if "scale" in name.rsplit(".",1)[-1].lower():
+     continue
+    if tensor.dtype not in (torch.float16,torch.bfloat16,torch.float32):
+     continue
+    original_tensor_bytes=tensor.numel()*tensor.element_size()
+    if original_tensor_bytes < 262144 or tensor.numel() < 65536:
+     continue
+    eligible.append((name,tensor))
+    dtype_key=str(tensor.dtype).replace("torch.","")
+    dtype_bytes[dtype_key]=dtype_bytes.get(dtype_key,0)+original_tensor_bytes
+   if not eligible:
+    rows.append({"id":spec["id"],"path":spec["rel"],"original_bytes":original_bytes,
+                 "original_sha256":original_hash,"status":"NO_LARGE_FLOAT_TENSORS_TO_PACK"})
+    continue
+   eligible_bytes=sum(t.numel()*t.element_size() for _,t in eligible)
+   before_sidecar_bytes=sidecar.stat().st_size
+   baseline=run_model_smoke(spec)
+   row={"id":spec["id"],"path":spec["rel"],"original_bytes":original_bytes,
+        "original_sidecar_bytes":before_sidecar_bytes,"original_sha256":original_hash,
+        "eligible_tensor_count":len(eligible),"eligible_float_bytes":eligible_bytes,
+        "eligible_dtypes_bytes":dtype_bytes,"attempts":[],"status":"NOT_PROMOTED"}
+   row["baseline_smoke"]={"passed":baseline.get("passed",False),"status":baseline.get("status"),
+                          "returncode":baseline.get("returncode"),"result":baseline.get("result",{})}
+   if not baseline.get("passed"):
+    row["status"]="BLOCKED_BASELINE_SMOKE_FAILED"
+    rows.append(row); continue
+   backup=tmp/"before.safetensors"; backup_meta=tmp/"before.q4.json"
+   shutil.copy2(path,backup); shutil.copy2(sidecar,backup_meta)
+   promoted=False
+   for group_size in GROUP_SIZES:
+    candidate=tmp/f"candidate_g{group_size}.safetensors"
+    candidate_meta_path=tmp/f"candidate_g{group_size}.q4.json"
+    candidate_state=dict(state); new_entries=[]
+    for name,tensor in eligible:
+     packed,scales,numel,shape=pack_float_tensor(tensor,group_size,torch)
+     pkey="__cajita_q4_extra_packed__."+name
+     skey="__cajita_q4_extra_scales__."+name
+     candidate_state[pkey]=packed; candidate_state[skey]=scales
+     del candidate_state[name]
+     new_entries.append({"name":name,"packed_key":pkey,"scales_key":skey,
+                         "shape":list(shape),"numel":numel,"group_size":group_size,
+                         "original_dtype":str(tensor.dtype).replace("torch.",""),
+                         "encoding":"SIGNED_INT4_BLOCKWISE"})
+    try:
+     save_file(candidate_state,str(candidate),metadata={"cajita_format":"CAJITA_Q4_BLOCK_PACKED/1.0"})
+     candidate_hash=sha256(candidate)
+     updated_meta=json.loads(json.dumps(current_meta))
+     updated_meta["additional_tensors"]=updated_meta.get("additional_tensors",[])+new_entries
+     updated_meta["deep_pack_pass"]={"group_size":group_size,"source_sha256":original_hash,
+                                     "packed_tensor_count":len(new_entries),
+                                     "packed_original_bytes":eligible_bytes}
+     updated_meta["candidate_sha256"]=candidate_hash
+     candidate_meta_path.write_text(json.dumps(updated_meta,ensure_ascii=False,separators=(",",":"))+"\n",encoding="utf-8")
+    except Exception as exc:
+     row["attempts"].append({"group_size":group_size,"status":"CANDIDATE_BUILD_FAILED",
+                             "error":type(exc).__name__+":"+str(exc)[:800]})
+     continue
+    candidate_total=candidate.stat().st_size+candidate_meta_path.stat().st_size
+    original_total=original_bytes+before_sidecar_bytes
+    if candidate_total>=original_total:
+     row["attempts"].append({"group_size":group_size,"status":"CANDIDATE_WITH_SIDECAR_NOT_SMALLER",
+                             "candidate_bytes":candidate.stat().st_size,
+                             "candidate_sidecar_bytes":candidate_meta_path.stat().st_size})
+     continue
+    shutil.copy2(candidate,path); shutil.copy2(candidate_meta_path,sidecar)
+    after=run_model_smoke(spec); same=signature_equal(spec,baseline,after)
+    smoke_ok=bool(after.get("passed"))
+    attempt={"group_size":group_size,"candidate_bytes":candidate.stat().st_size,
+             "candidate_sidecar_bytes":candidate_meta_path.stat().st_size,
+             "candidate_sha256":candidate_hash,"packed_tensor_count":len(new_entries),
+             "packed_original_bytes":eligible_bytes,
+             "runtime_smoke_after":{"passed":smoke_ok,"status":after.get("status"),
+                 "returncode":after.get("returncode"),"result":after.get("result",{}),
+                 "stderr_tail":after.get("stderr_tail","")},
+             "smoke_signature_preserved":same,"smoke_passed":smoke_ok,
+             "status":"PROMOTED" if smoke_ok else "ROLLBACK_RUNTIME_SMOKE_FAILURE"}
+    row["attempts"].append(attempt)
+    if smoke_ok:
+     row.update({"status":"PROMOTED_FLOAT_Q4_BLOCKWISE","group_size":group_size,
+                 "candidate_bytes":path.stat().st_size,"candidate_sidecar_bytes":sidecar.stat().st_size,
+                 "candidate_sha256":sha256(path),
+                 "saved_bytes":original_total-(path.stat().st_size+sidecar.stat().st_size),
+                 "smoke_signature_preserved":same})
+     promoted=True; break
+    shutil.copy2(backup,path); shutil.copy2(backup_meta,sidecar)
+   if not promoted:
+    shutil.copy2(backup,path); shutil.copy2(backup_meta,sidecar)
+    row["status"]="NO_FLOAT_Q4_CANDIDATE_PASSED_RUNTIME_SMOKE"
+   rows.append(row)
+ return rows
+
 def format_es(value): return f"{int(value):,}".replace(",",".")
 
 def update_manifest_and_doc():
@@ -265,6 +393,13 @@ def update_manifest_and_doc():
  text=re.sub(r"(\|\s*\*\*Total de seis archivos de modelo/pesos\*\*\s*\|\s*\|)\s*\*\*[\d.]+\*\*\s*(\|)",
              lambda m:m.group(1)+" **"+format_es(total)+"** "+m.group(2),text,count=1)
  marker="## Rebalanceo de peso cuantizado — 2026-10-23"
+ deep_marker="## Segunda pasada de INT4 para tensores flotantes — 2026-10-23"
+ if deep_marker not in text:
+  rows=[]
+  for r in report.get("float_tensor_results",[]):
+   rows.append("| "+r["id"]+" | "+str(r.get("status","NOT_CHANGED"))+" | "+str(r.get("eligible_tensor_count",0))+" | "+str(r.get("eligible_float_bytes",0))+" | "+str(r.get("saved_bytes",0))+" |")
+  text += "\n\n"+deep_marker+"\n\nSe empaquetaron tensores de precisión restantes en bloques INT4 con escala por bloque, manteniendo el mismo modelo lógico y restaurando el dtype original al cargar. Los candidatos se promueven solo si reducen el tamaño total (modelo más sidecar) y la prueba de arranque/generación sigue pasando. La firma de salida se registra separadamente; equivalencia de calidad y certificación no quedan establecidas.\n\n| Motor | Estado | Tensores empaquetados | Bytes originales elegibles | Bytes netos ahorrados |\n|---|---|---:|---:|---:|\n"+"\n".join(rows)+"\n"
+
  if marker not in text:
   lines=[]
   for r in report["weight_factor_results"]:
@@ -300,6 +435,7 @@ def main():
    report["weight_factor_results"].append({"id":spec["id"],"path":spec["rel"],"status":"ALREADY_Q4_PACKED","candidate_bytes":path.stat().st_size})
    continue
   report["weight_factor_results"].append(quantize_factor_model(spec,torch,load_file,save_file))
+ report["float_tensor_results"]=quantize_remaining_float_tensors(torch,load_file,save_file)
  report["onnx_result"]=quantize_onnx()
  report["weights_manifest_sha256"]=update_manifest_and_doc()
  post,post_count=bytes_tree(RUNTIME)
@@ -308,6 +444,8 @@ def main():
  report["bytes_over_cap"]=max(0,post-HARD_CAP)
  report["size_gate"]="PASS" if post<=HARD_CAP else "FAIL"
  report["quantized_factor_models_promoted"]=sum(x.get("status")=="PROMOTED_Q4_BLOCKWISE" for x in report["weight_factor_results"])
+ report["float_tensor_models_promoted"]=sum(x.get("status")=="PROMOTED_FLOAT_Q4_BLOCKWISE" for x in report.get("float_tensor_results",[]))
+ report["float_tensor_bytes_saved"]=sum(int(x.get("saved_bytes",0)) for x in report.get("float_tensor_results",[]))
  report["onnx_status"]=report["onnx_result"].get("status")
  report["quality_equivalence"]="SMOKE_SIGNATURE_ONLY; TASK_LEVEL_QUALITY_NOT_ESTABLISHED"
  report["independent_validation"]="NOT_RUN"
@@ -319,6 +457,7 @@ def main():
  print(json.dumps({"status":report["status"],"runtime_bytes_before":pre,"runtime_bytes_after":post,
    "saved_bytes":pre-post,"hard_cap_bytes":HARD_CAP,"bytes_over_cap":report["bytes_over_cap"],
    "size_gate":report["size_gate"],"q4_models_promoted":report["quantized_factor_models_promoted"],
+   "float_tensor_models_promoted":report["float_tensor_models_promoted"],"float_tensor_bytes_saved":report["float_tensor_bytes_saved"],
    "onnx_status":report["onnx_status"],"certification":report["certification"]},ensure_ascii=False))
  return 0
 

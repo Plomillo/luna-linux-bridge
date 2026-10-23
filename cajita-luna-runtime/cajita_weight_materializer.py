@@ -33,7 +33,7 @@ def load_model_state(path: str | Path) -> dict[str, torch.Tensor]:
     if group_size < 8 or group_size & (group_size - 1):
         raise RuntimeError("Q4_GROUP_SIZE_INVALID")
     result = dict(state)
-    for item in metadata.get("tensors", []):
+    for item in metadata.get("tensors", []) + metadata.get("additional_tensors", []):
         name = item["name"]
         packed_key = item["packed_key"]
         scales_key = item["scales_key"]
@@ -45,18 +45,29 @@ def load_model_state(path: str | Path) -> dict[str, torch.Tensor]:
         scales = result.pop(scales_key).reshape(-1).to(torch.float32)
         if packed.numel() != math.ceil(numel / 2):
             raise RuntimeError("Q4_PACKED_TENSOR_LENGTH_MISMATCH:" + name)
-        expected_groups = math.ceil(numel / group_size)
+        item_group_size = int(item.get("group_size", group_size))
+        if item_group_size < 8 or item_group_size & (item_group_size - 1):
+            raise RuntimeError("Q4_ITEM_GROUP_SIZE_INVALID:" + name)
+        expected_groups = math.ceil(numel / item_group_size)
         if scales.numel() != expected_groups:
             raise RuntimeError("Q4_SCALE_COUNT_MISMATCH:" + name)
         lo = torch.bitwise_and(packed, 0x0F).to(torch.int16)
         hi = torch.bitwise_right_shift(packed, 4).to(torch.int16)
         codes = torch.stack((lo, hi), dim=1).reshape(-1)[:numel]
         codes = torch.where(codes >= 8, codes - 16, codes).to(torch.float32)
-        padded = expected_groups * group_size
+        padded = expected_groups * item_group_size
         if codes.numel() < padded:
             codes = torch.nn.functional.pad(codes, (0, padded - codes.numel()))
-        values = codes.reshape(expected_groups, group_size) * scales[:, None]
-        result[name] = values.reshape(-1)[:numel].reshape(shape).contiguous()
-    if any(k.startswith("__cajita_q4_packed__.") or k.startswith("__cajita_q4_scales__.") for k in result):
+        values = codes.reshape(expected_groups, item_group_size) * scales[:, None]
+        tensor = values.reshape(-1)[:numel].reshape(shape).contiguous()
+        dtype_name = item.get("original_dtype")
+        if dtype_name:
+            if not hasattr(torch, dtype_name):
+                raise RuntimeError("Q4_ORIGINAL_DTYPE_UNSUPPORTED:" + str(dtype_name))
+            tensor = tensor.to(dtype=getattr(torch, dtype_name))
+        else:
+            tensor = tensor.to(dtype=torch.float32)
+        result[name] = tensor
+    if any(k.startswith("__cajita_q4_packed__.") or k.startswith("__cajita_q4_scales__.") or k.startswith("__cajita_q4_extra_packed__.") or k.startswith("__cajita_q4_extra_scales__.") for k in result):
         raise RuntimeError("Q4_UNCONSUMED_PACKED_TENSORS")
     return result
