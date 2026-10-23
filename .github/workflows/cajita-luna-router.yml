@@ -5,11 +5,13 @@ on:
     branches: [main, "repair/**"]
     paths:
       - "cajita-luna-runtime/cajita_router.py"
+      - "cajita-luna-runtime/cajita_runtime.py"
       - "tests/test_cajita_router.py"
       - ".github/workflows/cajita-luna-router.yml"
   pull_request:
     paths:
       - "cajita-luna-runtime/cajita_router.py"
+      - "cajita-luna-runtime/cajita_runtime.py"
       - "tests/test_cajita_router.py"
       - ".github/workflows/cajita-luna-router.yml"
 
@@ -17,7 +19,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: cajita-router-\${{ github.ref }}
+  group: cajita-router-regression
   cancel-in-progress: true
 
 jobs:
@@ -31,11 +33,11 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Compile router
-        run: python -B -m py_compile cajita-luna-runtime/cajita_router.py
+      - name: Compile runtime and router
+        run: python -B -m py_compile cajita-luna-runtime/cajita_runtime.py cajita-luna-runtime/cajita_router.py
       - name: Run router regression tests
         env:
           PYTHONPATH: cajita-luna-runtime
         run: python -B -m unittest discover -s tests -p "test_cajita_router.py" -v
-      - name: Verify route catalog
-        run: python -B cajita-luna-runtime/cajita_router.py selftest
+      - name: Verify route catalog through runtime
+        run: python -B cajita-luna-runtime/cajita_runtime.py routes
