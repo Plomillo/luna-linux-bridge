@@ -33,7 +33,9 @@
     "support_assets_mapped": 10,
     "activation_mode": "MINIMUM_RELEVANT_TARGETS_ON_DEMAND_SEQUENTIAL",
     "task_dispatch": "PLAN_ONLY_UNTIL_TASK_ADAPTERS_AND_RESOURCE_EVIDENCE_PASS",
-    "certification": "NOT_GRANTED"
+    "certification": "NOT_GRANTED",
+    "engine_count": 15,
+    "target_engine_bindings": 21
   },
   "domain_order": [
     "D01_CEREBRO",
@@ -55,7 +57,14 @@
       "name": "Cerebro",
       "path": "1. Cerebro",
       "purpose": "General cognition and answer generation",
-      "support_assets": []
+      "support_assets": [],
+      "engine_ids": [
+        "E01",
+        "E02",
+        "E03",
+        "E13",
+        "E14"
+      ]
     },
     {
       "id": "D02_CONFESION_ECLESIAL_REFORMADA",
@@ -64,7 +73,16 @@
       "name": "Confesión Eclesial Reformada",
       "path": "2. Orquestación/Confesión Eclesial Reformada",
       "purpose": "Biblical and confessional theological corpus",
-      "support_assets": []
+      "support_assets": [],
+      "engine_ids": [
+        "E09",
+        "E10",
+        "E11",
+        "E12",
+        "E13",
+        "E14",
+        "E15"
+      ]
     },
     {
       "id": "D02_MULTI_INTERDISCIPLINAR",
@@ -75,6 +93,19 @@
       "purpose": "Interdisciplinary synthesis, semantic graphs and RDF/OWL",
       "support_assets": [
         "APACHE_JENA_6_2_0"
+      ],
+      "engine_ids": [
+        "E03",
+        "E04",
+        "E05",
+        "E06",
+        "E07",
+        "E08",
+        "E09",
+        "E12",
+        "E13",
+        "E14",
+        "E15"
       ]
     },
     {
@@ -86,6 +117,13 @@
       "purpose": "Workflow planning, tool coordination and browser automation",
       "support_assets": [
         "PLAYWRIGHT_1_63_0_SOURCE"
+      ],
+      "engine_ids": [
+        "E10",
+        "E12",
+        "E13",
+        "E14",
+        "E15"
       ]
     },
     {
@@ -95,7 +133,13 @@
       "name": "Transcripción",
       "path": "3. Transcripción",
       "purpose": "Audio-to-text and Whisper transcription",
-      "support_assets": []
+      "support_assets": [],
+      "engine_ids": [
+        "E02",
+        "E03",
+        "E13",
+        "E14"
+      ]
     },
     {
       "id": "D04_HERMENEUTICA_HG",
@@ -104,7 +148,15 @@
       "name": "Hermenéutica H-G",
       "path": "4. Traductor Inteligente/Hermenéutica H-G",
       "purpose": "Grammatical-historical interpretation and source-language context",
-      "support_assets": []
+      "support_assets": [],
+      "engine_ids": [
+        "E09",
+        "E11",
+        "E12",
+        "E13",
+        "E14",
+        "E15"
+      ]
     },
     {
       "id": "D04_TRADUCCION_LENGUAS_ANTIGUAS",
@@ -113,7 +165,16 @@
       "name": "Traducción de lenguas antiguas",
       "path": "4. Traductor Inteligente/Traducción de lenguas antiguas",
       "purpose": "Ancient-language and historical-language translation",
-      "support_assets": []
+      "support_assets": [],
+      "engine_ids": [
+        "E02",
+        "E09",
+        "E11",
+        "E12",
+        "E13",
+        "E14",
+        "E15"
+      ]
     },
     {
       "id": "D04_TRADUCCION_GENERAL",
@@ -122,7 +183,18 @@
       "name": "Traducción general",
       "path": "4. Traductor Inteligente/Traducción general",
       "purpose": "General neural machine translation",
-      "support_assets": []
+      "support_assets": [],
+      "engine_ids": [
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05",
+        "E12",
+        "E13",
+        "E14",
+        "E15"
+      ]
     },
     {
       "id": "D05_CALIBRE",
@@ -131,7 +203,13 @@
       "name": "Calibre",
       "path": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/calibre",
       "purpose": "E-book/library ingestion and format conversion",
-      "support_assets": []
+      "support_assets": [],
+      "engine_ids": [
+        "E02",
+        "E03",
+        "E13",
+        "E14"
+      ]
     },
     {
       "id": "D05_DOCLING",
@@ -140,7 +218,16 @@
       "name": "Docling",
       "path": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate",
       "purpose": "Document parsing and structured extraction candidate",
-      "support_assets": []
+      "support_assets": [],
+      "engine_ids": [
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05",
+        "E13",
+        "E14"
+      ]
     },
     {
       "id": "D06_ANTI_ALUCINACIONES",
@@ -151,6 +238,13 @@
       "purpose": "Evidence checks and ONNX anti-hallucination pipeline",
       "support_assets": [
         "ONNX_RUNTIME_1_29_0_CP311"
+      ],
+      "engine_ids": [
+        "E09",
+        "E10",
+        "E13",
+        "E14",
+        "E15"
       ]
     },
     {
@@ -160,7 +254,19 @@
       "name": "Análisis Avanzado",
       "path": "6. Sistema Inteligente/Análisis Avanzado",
       "purpose": "Advanced reasoning and Qwen3 analysis candidate",
-      "support_assets": []
+      "support_assets": [],
+      "engine_ids": [
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05",
+        "E09",
+        "E12",
+        "E13",
+        "E14",
+        "E15"
+      ]
     },
     {
       "id": "D06_ARCHIVADO_DETECCION",
@@ -169,7 +275,13 @@
       "name": "Archivado Deteccion",
       "path": "6. Sistema Inteligente/Archivado Deteccion",
       "purpose": "Archive handling, file inventory and format detection",
-      "support_assets": []
+      "support_assets": [],
+      "engine_ids": [
+        "E02",
+        "E10",
+        "E13",
+        "E14"
+      ]
     },
     {
       "id": "D06_COGNITIVE_CI_CD",
@@ -181,6 +293,13 @@
       "support_assets": [
         "DAGGER_0_21_8_LINUX_AMD64",
         "OPA_STATIC_LINUX_AMD64_CANDIDATE"
+      ],
+      "engine_ids": [
+        "E10",
+        "E12",
+        "E13",
+        "E14",
+        "E15"
       ]
     },
     {
@@ -190,7 +309,13 @@
       "name": "Consola",
       "path": "6. Sistema Inteligente/Consola",
       "purpose": "CLI, shell and local operational interaction",
-      "support_assets": []
+      "support_assets": [],
+      "engine_ids": [
+        "E10",
+        "E12",
+        "E13",
+        "E14"
+      ]
     },
     {
       "id": "D06_MEMORIA_GOBERNADA",
@@ -202,6 +327,15 @@
       "support_assets": [
         "RQLITE_10_2_7_LINUX_AMD64",
         "SQLITE_SOURCE_3_53_4"
+      ],
+      "engine_ids": [
+        "E03",
+        "E04",
+        "E05",
+        "E06",
+        "E13",
+        "E14",
+        "E15"
       ]
     },
     {
@@ -214,6 +348,15 @@
       "support_assets": [
         "RQLITE_10_2_7_LINUX_AMD64",
         "SQLITE_SOURCE_3_53_4"
+      ],
+      "engine_ids": [
+        "E06",
+        "E07",
+        "E08",
+        "E10",
+        "E12",
+        "E13",
+        "E14"
       ]
     },
     {
@@ -225,6 +368,13 @@
       "purpose": "Protocol, policy, guardrails and route authorization",
       "support_assets": [
         "OPA_STATIC_LINUX_AMD64_CANDIDATE"
+      ],
+      "engine_ids": [
+        "E10",
+        "E12",
+        "E13",
+        "E14",
+        "E15"
       ]
     },
     {
@@ -236,6 +386,12 @@
       "purpose": "Build-system and platform portability",
       "support_assets": [
         "CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE"
+      ],
+      "engine_ids": [
+        "E10",
+        "E12",
+        "E13",
+        "E14"
       ]
     },
     {
@@ -248,6 +404,12 @@
       "support_assets": [
         "AVALONIA_12_1_1_NUGET",
         "TAURI_2_11_5_SOURCE_ZIP"
+      ],
+      "engine_ids": [
+        "E10",
+        "E12",
+        "E13",
+        "E14"
       ]
     },
     {
@@ -259,6 +421,12 @@
       "purpose": "Smoke, regression, boundary and integration testing",
       "support_assets": [
         "PLAYWRIGHT_1_63_0_SOURCE"
+      ],
+      "engine_ids": [
+        "E10",
+        "E13",
+        "E14",
+        "E15"
       ]
     }
   ],
@@ -957,6 +1125,83 @@
       "severity": "MEDIUM",
       "finding": "The capability registry has the target nodes but marks operability UNVERIFIED.",
       "disposition": "DO_NOT_PROPAGATE_CERTIFICATION"
+    }
+  ],
+  "engine_registry": [
+    {
+      "id": "E01",
+      "name": "LLM",
+      "role": "language-model inference"
+    },
+    {
+      "id": "E02",
+      "name": "NLP",
+      "role": "natural-language processing"
+    },
+    {
+      "id": "E03",
+      "name": "RAG",
+      "role": "retrieval-augmented generation"
+    },
+    {
+      "id": "E04",
+      "name": "EMBEDDINGS",
+      "role": "vector representation"
+    },
+    {
+      "id": "E05",
+      "name": "VECTOR_SEARCH",
+      "role": "nearest-neighbor retrieval"
+    },
+    {
+      "id": "E06",
+      "name": "KNOWLEDGE_GRAPH",
+      "role": "graph operations"
+    },
+    {
+      "id": "E07",
+      "name": "RDF",
+      "role": "RDF representation and queries"
+    },
+    {
+      "id": "E08",
+      "name": "OWL",
+      "role": "ontology representation and reasoning"
+    },
+    {
+      "id": "E09",
+      "name": "SEMANTIC_INFERENCE",
+      "role": "semantic inference"
+    },
+    {
+      "id": "E10",
+      "name": "RULE_ENGINE",
+      "role": "explicit rule evaluation"
+    },
+    {
+      "id": "E11",
+      "name": "HERMENEUTIC",
+      "role": "contextual interpretation"
+    },
+    {
+      "id": "E12",
+      "name": "FORMALIZATION",
+      "role": "structured/formal output"
+    },
+    {
+      "id": "E13",
+      "name": "VALIDATION",
+      "role": "result validation"
+    },
+    {
+      "id": "E14",
+      "name": "PROVENANCE",
+      "role": "source and evidence trace"
+    },
+    {
+      "id": "E15",
+      "name": "CONSENSUS",
+      "role": "consensus/certification support"
     }
   ]
 }
