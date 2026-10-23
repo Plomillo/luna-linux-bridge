@@ -188,3 +188,28 @@ During work on the separate structural validator, one file-add call omitted the 
 \`SOURCE_REPLACEMENT_IN_MAIN = DENIED\`
 
 The working database remains a temporary CI candidate. The original BTX \`.7z\` and its embedded PDF remain intact in the repository. The draft PR must not be merged as a certified runtime replacement until the separate validator, reproducibility check, source-content verification, manifest regeneration, hard-cap check, independent validation and rollback test all pass.
+
+## 13. Estado actualizado tras validador independiente y reproducibilidad — 2026-10-23 23:40 UTC
+
+Este apartado actualiza el estado de validación sin borrar las decisiones históricas de las secciones anteriores.
+
+**Evidencia CI final de esta pasada:**
+- Flujo completo de auditoría, construcción, segunda reconstrucción e independencia estructural: https://github.com/Plomillo/luna-linux-bridge/actions/runs/40040822725 — PASS.
+- Check PR para el informe actualizado: https://github.com/Plomillo/luna-linux-bridge/actions/runs/40040859391 — PASS.
+- Segunda construcción byte a byte: SHA-256 idéntico y tamaño idéntico de 6.750.208 bytes; resultado reproducible=true.
+- Validador independiente validate_btx_sqlite_candidate.py: candidate_structural_independent_validation=PASS, failures=[].
+
+Los resultados estructurales comprobados independientemente son: integridad SQLite, catálogos de 66 libros y 1.189 capítulos en el orden esperado, referencias únicas y no vacías, índices de referencia presentes, 36 referencias sin marcador registradas explícitamente y sin colisiones con las filas textuales, 13/13 consultas representativas y prueba transitoria de búsqueda textual FTS5. La base core no contiene una tabla FTS5 persistida.
+
+**Estado epistemológico actualizado:**
+- STRUCTURAL_VALIDATION = PASS
+- INDEPENDENT_STRUCTURAL_VALIDATION = PASS
+- BYTE_REPRODUCIBILITY = PASS
+- SOURCE_TO_VERSE_CONTENT_EQUIVALENCE = NOT_INDEPENDENTLY_VALIDATED
+- EDITORIAL_NOTES_AND_CROSS_REFERENCES = NOT_INCLUDED_OR_CERTIFIED
+- PUAC_G24_CERTIFICATION = NOT_GRANTED
+- SOURCE_DELETION_OR_REPLACEMENT = DENIED
+
+El validador independiente no coteja cada texto versicular de la base contra el segmento correspondiente del PDF original; valida estructura, procedencia por hashes, integridad de la base, consultas e índices. El cotejo semántico/textual independiente, las notas y referencias cruzadas, la regeneración del manifiesto de Cajita, la medición real del .macrodown reconstruido bajo el hard cap, la activación de runtime y el rollback de sustitución siguen siendo gates separados.
+
+Por tanto, esta candidata ya supera la validación estructural independiente, pero **no equivale aún a la certificación integral exigida para borrar o reemplazar la fuente**. La fuente BTX .7z y el PDF interno permanecen intactos. El PR #96 se mantiene en borrador, sin integrar el candidato en main ni distribuir la base como artefacto certificado.
