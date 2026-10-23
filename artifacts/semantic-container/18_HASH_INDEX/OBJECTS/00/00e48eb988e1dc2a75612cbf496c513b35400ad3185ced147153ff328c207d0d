@@ -1,0 +1,128 @@
+{
+  "E812": 1,
+  "analysis_type": "MICRO",
+  "authority_transfer": false,
+  "certification_propagation": false,
+  "continuation": "ALLOW_E813",
+  "e813_plus_executed": false,
+  "factor_failure_count": 0,
+  "forbidden_text_field_count": 0,
+  "formal_invariants": {
+    "failed": [],
+    "status": "PASS"
+  },
+  "formal_registration_states": {
+    "assumptions": "PENDING_E818",
+    "contradictions": "PENDING_E817",
+    "limitations": "PENDING_E819"
+  },
+  "forward_map": "C:\\PROYECTOS\\1. PROYECTOS PRIORITARIOS\\5. CUSTOSZ\\0. CUSTOSZ  - OPERADOR\\MISSIONS\\METAOS_S08_FULL_MISSION_MIS-a8818ca7f6444b469d95\\02_KNOWLEDGE\\E812_MICRO_ANALYSIS\\SOURCE_LOCATION_TO_MICRO.jsonl.gz",
+  "forward_map_bytes": 8280323,
+  "forward_map_sha256": "58fc54283ead384689317644ec24323b45357895e3e0ed09580988b343ff6c5d",
+  "g23_executed": false,
+  "g24_executed": false,
+  "gates": {
+    "ASSUMPTIONS_BOUND_ALL": true,
+    "CONTEXT_BOUND_ALL": true,
+    "CONTRADICTIONS_BOUND_ALL": true,
+    "DEPENDENCIES_BOUND_ALL": true,
+    "E817_PENDING": true,
+    "E818_PENDING": true,
+    "E819_PENDING": true,
+    "EVIDENCE_BOUND_ALL": true,
+    "LIMITATIONS_BOUND_ALL": true,
+    "MATERIALITY_PARTITION_EXACT": true,
+    "MEANING_RESOLVED_ALL": true,
+    "MICRO_ANALYSIS_COMPLETE": true,
+    "NO_E813_PLUS": true,
+    "NO_LONG_SOURCE_TEXT": true,
+    "NO_NETWORK": true,
+    "NO_RAW_REREAD": true,
+    "PROVENANCE_BOUND_ALL": true,
+    "SOURCE_LOCATION_BOUND_ALL": true
+  },
+  "global_assurance": {
+    "failed": [],
+    "self_certification": false,
+    "status": "PASS"
+  },
+  "invalid_micro_object_count": 0,
+  "long_source_text_persisted": false,
+  "material_micro_object_count": 98126,
+  "materiality_rule": "cue_counts_nonempty",
+  "memory_chain_verified": true,
+  "memory_evidence_sha256": "1987d74c929a2c573bc1289685dd2eccd5728088f59ac07249f3bb87c662fea1",
+  "micro_analysis_complete": true,
+  "micro_archive": "C:\\PROYECTOS\\1. PROYECTOS PRIORITARIOS\\5. CUSTOSZ\\0. CUSTOSZ  - OPERADOR\\MISSIONS\\METAOS_S08_FULL_MISSION_MIS-a8818ca7f6444b469d95\\02_KNOWLEDGE\\E812_MICRO_ANALYSIS\\MICRO_OBJECTS.jsonl.gz",
+  "micro_archive_bytes": 20475330,
+  "micro_archive_sha256": "83e0ae0c247b2e2a8cb3891f9bce97db887b5aa382a2ee887914a46483ecd16e",
+  "micro_index": "C:\\PROYECTOS\\1. PROYECTOS PRIORITARIOS\\5. CUSTOSZ\\0. CUSTOSZ  - OPERADOR\\MISSIONS\\METAOS_S08_FULL_MISSION_MIS-a8818ca7f6444b469d95\\02_KNOWLEDGE\\E812_MICRO_ANALYSIS\\MICRO_SOURCE_INDEX.json",
+  "micro_index_sha256": "8940efa50392c456405c2c0b2c261b2c62de385532d24d17944a9966496f8652",
+  "micro_valid_product": 1,
+  "mission_id": "MIS-a8818ca7f6444b469d95",
+  "native_fabric": {
+    "anti_duplication": {
+      "admit": false,
+      "reason": "SEMANTIC_DUPLICATE"
+    },
+    "families": 9,
+    "gap_proof": {
+      "overlap": {
+        "native_count": 72
+      },
+      "requirement": "E812 micro analysis",
+      "true_gap": false
+    },
+    "security": {
+      "risk": "LOW",
+      "trust": {
+        "allowed": true,
+        "evidence_score": 2,
+        "requested": "SAFE_FOR_READ"
+      }
+    },
+    "selftest": {
+      "certification": "NOT_CERTIFICATION",
+      "checks": {
+        "gap_reuse": true,
+        "logic": true,
+        "nine_families": true,
+        "registry_nonempty": true,
+        "trust_exec_denied_without_three": true,
+        "unique_capabilities": true
+      },
+      "status": "PASS"
+    }
+  },
+  "network_used": false,
+  "nonmaterial_unit_count": 17648,
+  "phase_digest": "4baf024ad978183f92a90770d5aa4d295702f075ecc0f77536931809daefd6f9",
+  "raw_mutation": false,
+  "raw_re_read": false,
+  "registration_timestamp": "2026-09-22T20:25:55.373786Z",
+  "schema": "metaos.s8.e812-micro-analysis-registry/v1",
+  "self_certification": false,
+  "semantic_basis": "FROZEN_E805_E806_SEMANTIC_MICRO_SHARDS",
+  "semantic_family_counts": {
+    "ALG": 47737,
+    "ASM": 39495,
+    "CTR": 58788,
+    "DEF": 48197,
+    "EXM": 64797,
+    "FAI": 40768,
+    "LIM": 21116,
+    "MET": 65498
+  },
+  "source_count": 49,
+  "stage_id": "METAOS_S08_FULL_MISSION",
+  "status": "PASS",
+  "step_id": "E812_PERFORM_MICRO_ANALYSIS",
+  "target_type_counts": {
+    "ALGORITHM": 47737,
+    "CLAIM": 91341,
+    "DEFINITION": 48197,
+    "FAILURE": 40768,
+    "LIMITATION": 21116
+  },
+  "total_units": 115774
+}

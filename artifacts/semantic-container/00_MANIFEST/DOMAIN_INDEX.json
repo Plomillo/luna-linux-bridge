@@ -1,0 +1,9 @@
+{
+  "entries": [],
+  "entry_count": 0,
+  "index_digest": "a104b01b3b7928c018dba3256292a7a69a09045341d3fdf33349f511bd9b7a0e",
+  "no_semantic_promotion": true,
+  "payload_store_relative": "../../18_HASH_INDEX/OBJECTS",
+  "schema": "metaos.semantic-container.domain-index/v1",
+  "section": "00_MANIFEST"
+}

@@ -1,0 +1,29 @@
+{
+  "BINARY_ROUNDTRIP_VALID": 1,
+  "all_cas_hashes_verified": true,
+  "all_section_indexes_valid": true,
+  "all_structured_payloads_parsed": true,
+  "binary_sha256": "6c95f1ed8c608cda7813942b92042c42f14aec26d2ace14b9420d076ad0ad777",
+  "cas_manifest_sha256": "c2daca06496353de517fc458b84ce6b41dedb0c486629419f149f7b676daad39",
+  "container_manifest_sha256": "74e6d3f616ff0460b995b183ffde73ae6728d7339afe8c23ce19dd61df2a304f",
+  "created_at": "2026-09-23T00:35:21.956199Z",
+  "empty_structured_payloads": 1,
+  "human_machine_semantic_digest": "2bf4f99028c2fab70585d31e0440ee886d3dc71b04be50c7801aaeb82b42f0d2",
+  "human_sha256": "2defec33d7f2cbe1d9cafacfc8710396a813e0654f5e310be8c66697ad1cb2ed",
+  "machine_sha256": "c0bb140fdd80353778217b5146af2e2167315a5168d333a64f27af94aaba2b48",
+  "mission_id": "MIS-a8818ca7f6444b469d95",
+  "no_machine_rule_only_in_prose": true,
+  "no_semantics_only_in_binary": true,
+  "opaque_payloads_byte_only": 0,
+  "parsed_semantic_records": 2207823,
+  "representation_counts": {
+    "JSON": 85,
+    "JSONL": 19,
+    "JSONL_GZIP": 148
+  },
+  "roundtrip_digest": "c24b9e990d79ff0ffbadfd28bbec53d0a4711e584b156f4f3b8cace1393dd960",
+  "route": "H->M->B->M_PRIME->H_PRIME",
+  "schema": "metaos.s8.e825-roundtrip/v1",
+  "source_references": 254,
+  "unique_payloads": 252
+}

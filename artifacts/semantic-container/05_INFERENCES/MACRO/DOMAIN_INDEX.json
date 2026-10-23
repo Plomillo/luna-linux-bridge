@@ -1,0 +1,9 @@
+{
+  "entries": [],
+  "entry_count": 0,
+  "index_digest": "6dc2cef760ca842d670d03df9e1ef5ea7233c4ab9caec9883c79047332277186",
+  "no_semantic_promotion": true,
+  "payload_store_relative": "../../18_HASH_INDEX/OBJECTS",
+  "schema": "metaos.semantic-container.domain-index/v1",
+  "section": "05_INFERENCES/MACRO"
+}
