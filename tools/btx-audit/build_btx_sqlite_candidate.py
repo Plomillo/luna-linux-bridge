@@ -385,6 +385,8 @@ def build_db(
     def set_current(key: tuple[str,int,int,str], page: int, source_kind: str) -> None:
         nonlocal current,last_span
         if key not in verses:
+            if captured_stream_parts:
+                captured_stream_parts.append(" ")
             verses[key]={"parts":[],"page_start":page,"page_end":page,"source_kind":source_kind}
             verse_order.append(key)
         current=key
@@ -541,14 +543,10 @@ def build_db(
     }
     for key,val in db_metadata.items():
         conn.execute("INSERT INTO metadata(key,value) VALUES(?,?)",(key,json.dumps(val,ensure_ascii=False) if not isinstance(val,str) else val))
-    # Optional full-text index is useful for a software-facing book; no extra text is copied into logs.
-    fts_available=True
-    try:
-        conn.execute("CREATE VIRTUAL TABLE verse_fts USING fts5(verse_id UNINDEXED,text, tokenize='unicode61')")
-        conn.execute("INSERT INTO verse_fts(verse_id,text) SELECT verse_id,text FROM verses")
-    except sqlite3.OperationalError:
-        fts_available=False
-    conn.execute("INSERT INTO metadata(key,value) VALUES('fts5_enabled',?)",("true" if fts_available else "false",))
+    # Keep the distribution database reference-first and compact. Full-text
+    # indexing can be added as a separately budgeted extension after certification.
+    fts_available=False
+    conn.execute("INSERT INTO metadata(key,value) VALUES('fts5_enabled','false')")
     conn.commit()
     conn.execute("VACUUM")
     conn.close()
@@ -558,6 +556,7 @@ def build_db(
         books_count==66 and chapter_count==1189
         and not missing_expected_chapters and duplicate_keys==0 and integrity=="ok"
         and len(duplicate_markers)==0 and not missing_first_verses
+        and not empty_verses and not gaps_by_chapter
         and text_stream_exact
     )
     return {
