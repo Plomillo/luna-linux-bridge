@@ -115,6 +115,9 @@ def main() -> int:
         style_counts: collections.Counter[str] = collections.Counter()
         verse_style_counts: collections.Counter[str] = collections.Counter()
         verse_suffix_counts: collections.Counter[str] = collections.Counter()
+        small_number_by_value: collections.Counter[str] = collections.Counter()
+        small_number_pages: dict[int, collections.Counter[str]] = collections.defaultdict(collections.Counter)
+        all_numeric_style_counts: collections.Counter[str] = collections.Counter()
         large_noninteger_counts: collections.Counter[str] = collections.Counter()
         large_noninteger_samples: list[dict[str, Any]] = []
         page_size_counts: dict[int, int] = collections.Counter()
@@ -133,8 +136,12 @@ def main() -> int:
                         font = str(span.get("font", ""))
                         size = round(float(span.get("size", 0)), 1)
                         box = span.get("bbox", [0,0,0,0])
-                        if re.fullmatch(r"\d{1,3}[a-z]?", value_text, flags=re.IGNORECASE) and 9.0 <= size <= 11.5 and ("Heavy" in font or "Bold" in font):
-                            verse_suffix_counts[f"{font}|{size:g}|{value_text[-1].isalpha()}"] += 1
+                        if re.fullmatch(r"\d{1,3}[a-z]?", value_text, flags=re.IGNORECASE) and 8.5 <= size <= 12.0:
+                            all_numeric_style_counts[f"{font}|{size:g}"] += 1
+                            small_number_by_value[value_text.casefold()] += 1
+                            small_number_pages[pno][value_text.casefold()] += 1
+                            if 9.0 <= size <= 11.5 and ("Heavy" in font or "Bold" in font):
+                                verse_suffix_counts[f"{font}|{size:g}|{value_text[-1].isalpha()}"] += 1
                         if size >= 18.0 and not re.fullmatch(r"\d{1,3}", value_text):
                             if re.fullmatch(r"[\d]{1,3}[a-zA-Z*†‡.,:;]?", value_text):
                                 large_noninteger_counts[f"{font}|{size:g}|{value_text}"] += 1
@@ -173,21 +180,30 @@ def main() -> int:
         matched_observed = {j:i for i,j in pairs}
         unmatched_observed = [c for j,c in enumerate(candidates) if j not in matched_observed]
         expected_by_book: dict[str,dict[str,int]] = {}
+        chapter_page_ranges: dict[str,dict[str,Any]] = {}
         for i,(book,ch) in enumerate(EXPECTED):
             row = expected_by_book.setdefault(book, {"expected":0,"matched":0})
             row["expected"] += 1
             if i in matched_by_expected:
                 row["matched"] += 1
+                candidate = candidates[matched_by_expected[i]]
+                bounds = chapter_page_ranges.setdefault(book, {"first_matched_chapter":ch,"first_page":candidate["page"],"last_matched_chapter":ch,"last_page":candidate["page"]})
+                bounds["last_matched_chapter"] = ch
+                bounds["last_page"] = candidate["page"]
         report.update({
             "pdf_pages": len(page_size_counts),
             "large_numeric_span_count": len(candidates),
             "large_numeric_span_style_counts": style_counts.most_common(100),
             "small_bold_numeric_span_style_counts": verse_style_counts.most_common(60),
             "small_bold_numeric_span_suffix_counts": verse_suffix_counts.most_common(100),
+            "all_small_numeric_span_style_counts": all_numeric_style_counts.most_common(100),
+            "small_numeric_tokens_by_value": small_number_by_value.most_common(100),
+            "small_numeric_one_pages": [{"page":p,"ones":counts["1"],"twos":counts["2"],"threes":counts["3"]} for p,counts in sorted(small_number_pages.items()) if counts["1"]],
             "large_noninteger_numeric_style_counts": large_noninteger_counts.most_common(100),
             "large_noninteger_numeric_samples": large_noninteger_samples,
             "expected_sequence_lcs_matches": matched,
             "expected_sequence_coverage_percent": round(matched / len(EXPECTED) * 100, 2),
+            "chapter_page_ranges_by_book": chapter_page_ranges,
             "book_chapter_alignment": [
                 {"book":book, **row, "coverage_percent":round(100*row["matched"]/row["expected"],2)}
                 for book,row in expected_by_book.items()
