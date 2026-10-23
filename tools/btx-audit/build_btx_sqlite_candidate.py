@@ -350,6 +350,11 @@ def build_db(
                           source_start_page INTEGER NOT NULL, source_end_page INTEGER NOT NULL,
                           PRIMARY KEY(book_id, chapter_number, verse_number, verse_suffix),
                           FOREIGN KEY(book_id, chapter_number) REFERENCES chapters(book_id, chapter_number)) WITHOUT ROWID;
+      CREATE TABLE source_reference_gaps(
+          book_id INTEGER NOT NULL, chapter_number INTEGER NOT NULL, verse_number INTEGER NOT NULL,
+          status TEXT NOT NULL, rationale TEXT NOT NULL,
+          PRIMARY KEY(book_id, chapter_number, verse_number),
+          FOREIGN KEY(book_id, chapter_number) REFERENCES chapters(book_id, chapter_number)) WITHOUT ROWID;
       CREATE INDEX idx_verses_reference ON verses(book_id, chapter_number, verse_number, verse_suffix);
       CREATE INDEX idx_verses_id ON verses(verse_id);
     """)
@@ -552,6 +557,19 @@ def build_db(
             "INSERT INTO verses(book_id,chapter_number,verse_number,verse_suffix,verse_id,text,source_start_page,source_end_page) VALUES(?,?,?,?,?,?,?,?)",
             (BOOK_ORDER[row["book"]],row["chapter"],row["verse_number"],row["verse_suffix"],row["verse_id"],row["text"],row["source_start_page"],row["source_end_page"])
         )
+    fts_available=False
+    fts_error=None
+    try:
+        conn.execute("CREATE VIRTUAL TABLE verses_fts USING fts5(verse_id UNINDEXED, text, tokenize='unicode61 remove_diacritics 2')")
+        conn.execute("INSERT INTO verses_fts(verse_id,text) SELECT verse_id,text FROM verses")
+        fts_count=conn.execute("SELECT COUNT(*) FROM verses_fts").fetchone()[0]
+        fts_available=(fts_count==conn.execute("SELECT COUNT(*) FROM verses").fetchone()[0])
+        if not fts_available:
+            fts_error="FTS_ROW_COUNT_MISMATCH"
+    except sqlite3.OperationalError as exc:
+        fts_error=type(exc).__name__
+        fts_available=False
+
     expected_text_stream=" ".join("".join(captured_stream_parts).split())
     stored_text_stream=" ".join(" ".join(row["text"] for row in verse_rows if row["text"]).split())
     text_stream_exact=expected_text_stream==stored_text_stream
@@ -635,6 +653,29 @@ def build_db(
             "missing_number_candidates":candidates_by_missing_number
         })
 
+    source_unmarked_references=[]
+    unresolved_gap_references=[]
+    for gap in gap_marker_diagnostics:
+        book=gap["book"]
+        chapter=gap["chapter"]
+        for missing in gap["missing_number_candidates"]:
+            verse_number=missing["missing_verse_number"]
+            if missing["candidate_span_count"] == 0:
+                status="NO_EXPLICIT_VERSE_MARKER_FOUND_IN_SOURCE_RANGE"
+                rationale=("No matching numeric token was found between this chapter anchor and the next canonical chapter anchor. "
+                           "No verse text was synthesized; the textual/numbering interpretation remains unverified.")
+                conn.execute(
+                    "INSERT INTO source_reference_gaps(book_id,chapter_number,verse_number,status,rationale) VALUES(?,?,?,?,?)",
+                    (BOOK_ORDER[book],chapter,verse_number,status,rationale)
+                )
+                source_unmarked_references.append({"book":book,"chapter":chapter,"verse":verse_number})
+            else:
+                unresolved_gap_references.append({
+                    "book":book,"chapter":chapter,"verse":verse_number,
+                    "candidate_span_count":missing["candidate_span_count"],
+                    "expected_style_candidate_count":missing["expected_style_candidate_count"]
+                })
+
     integrity=conn.execute("PRAGMA integrity_check").fetchone()[0]
     db_metadata={
         "schema":"CAJITA_BTX_BOOK/1.0",
@@ -650,6 +691,8 @@ def build_db(
         "main_bible_end_page":main_bible_end_page,
         "post_canon_pages_excluded_from_scripture":1360-main_bible_end_page if main_bible_end_page else None,
         "duplicate_marker_events":len(duplicate_markers),
+        "source_unmarked_reference_count":len(source_unmarked_references),
+        "fts5_enabled":fts_available,
         "text_roundtrip_whitespace_normalized_exact":text_stream_exact,
         "captured_text_characters":len(expected_text_stream),
         "stored_text_characters":len(stored_text_stream),
@@ -657,21 +700,36 @@ def build_db(
     }
     for key,val in db_metadata.items():
         conn.execute("INSERT INTO metadata(key,value) VALUES(?,?)",(key,json.dumps(val,ensure_ascii=False) if not isinstance(val,str) else val))
-    # Keep the distribution database reference-first and compact. Full-text
-    # indexing can be added as a separately budgeted extension after certification.
-    fts_available=False
-    conn.execute("INSERT INTO metadata(key,value) VALUES('fts5_enabled','false')")
+    # Store the policy that source-unmarked verse numbers stay unfilled.
+    conn.execute("INSERT INTO metadata(key,value) VALUES('fts5_enabled',?)",("true" if fts_available else "false",))
+    conn.execute("INSERT INTO metadata(key,value) VALUES('reference_gap_policy',?)",(
+        "Only explicit source verse markers are materialized. Unmarked reference positions are recorded separately; no verse text is invented.",))
     conn.commit()
     conn.execute("VACUUM")
     conn.close()
     db_hash=sha256(output)
     gaps_total=sum(len(row["missing_numbers"]) for row in gaps_by_chapter)
+    reference_gap_reconciliation_pass=(
+        len(unresolved_gap_references)==0
+        and len(source_unmarked_references)==gaps_total
+    )
+    source_gap_keys={(item["book"],item["chapter"],item["verse"]) for item in source_unmarked_references}
+    unexplained_missing_first_verses=[
+        item for item in missing_first_verses
+        if (item["book"],item["chapter"],1) not in source_gap_keys
+    ]
+    reference_query_tests=run_query_tests(output)
+    full_text_query_test=run_full_text_query_test(output) if fts_available else {
+        "passed":False,"reason":"FTS5_UNAVAILABLE","text_emitted":False
+    }
     structural_pass=(
         books_count==66 and chapter_count==1189
         and not missing_expected_chapters and duplicate_keys==0 and integrity=="ok"
-        and len(duplicate_markers)==0 and not missing_first_verses
-        and not empty_verses and not gaps_by_chapter
-        and text_stream_exact
+        and len(duplicate_markers)==0 and not unexplained_missing_first_verses
+        and not empty_verses and reference_gap_reconciliation_pass
+        and text_stream_exact and fts_available
+        and reference_query_tests["passed"]==reference_query_tests["cases"]
+        and full_text_query_test.get("passed",False)
     )
     return {
         "schema":"BTX_SQLITE_CANDIDATE_VALIDATION/1.0",
@@ -699,22 +757,51 @@ def build_db(
         "missing_expected_chapter_examples":missing_expected_chapters[:50],
         "missing_first_verse_chapter_count":len(missing_first_verses),
         "missing_first_verse_examples":missing_first_verses[:50],
+        "unexplained_missing_first_verse_count":len(unexplained_missing_first_verses),
         "empty_verse_chapter_count":len(empty_verses),
         "empty_verse_examples":empty_verses[:50],
         "chapter_verse_number_gap_chapter_count":len(gaps_by_chapter),
         "chapter_verse_number_gap_total":gaps_total,
         "chapter_verse_number_gap_examples":gaps_by_chapter[:100],
+        "source_unmarked_reference_count":len(source_unmarked_references),
+        "source_unmarked_reference_examples":source_unmarked_references[:100],
+        "source_reference_gap_rows_written":len(source_unmarked_references),
+        "reference_gap_reconciliation_pass":reference_gap_reconciliation_pass,
+        "unresolved_gap_references":unresolved_gap_references,
         "gap_marker_diagnostics":gap_marker_diagnostics,
         "text_roundtrip_whitespace_normalized_exact":text_stream_exact,
         "captured_text_characters":len(expected_text_stream),
         "stored_text_characters":len(stored_text_stream),
         "fts5_enabled":fts_available,
-        "representative_reference_query_tests":run_query_tests(output),
+        "fts5_error":fts_error,
+        "representative_reference_query_tests":reference_query_tests,
+        "representative_full_text_query_test":full_text_query_test,
         "source_deletion_performed":False,
         "source_pdf_removed":False,
         "full_text_emitted_to_report":False,
         "structural_candidate_pass":structural_pass,
     }
+
+
+def run_full_text_query_test(path: Path) -> dict[str,Any]:
+    con=sqlite3.connect(str(path))
+    first=con.execute("SELECT text FROM verses WHERE length(trim(text))>0 ORDER BY book_id,chapter_number,verse_number LIMIT 1").fetchone()
+    if not first:
+        con.close()
+        return {"passed":False,"reason":"NO_NONEMPTY_VERSE","text_emitted":False}
+    tokens=re.findall(r"[^\W_]{4,}",first[0],flags=re.UNICODE)
+    query=tokens[0] if tokens else None
+    if not query:
+        con.close()
+        return {"passed":False,"reason":"NO_SEARCHABLE_TOKEN","text_emitted":False}
+    try:
+        row=con.execute("SELECT verse_id FROM verses_fts WHERE verses_fts MATCH ? LIMIT 1",(query,)).fetchone()
+        passed=bool(row and row[0])
+        result={"passed":passed,"query_token_length":len(query),"match_found":passed,"text_emitted":False}
+    except sqlite3.OperationalError as exc:
+        result={"passed":False,"reason":type(exc).__name__,"text_emitted":False}
+    con.close()
+    return result
 
 
 def run_query_tests(path: Path) -> dict[str,Any]:
