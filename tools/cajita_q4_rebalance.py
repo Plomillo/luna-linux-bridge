@@ -53,8 +53,10 @@ def pack_q4_tensor(tensor, group_size, torch):
  matrix=padded.reshape(group_count,group_size)
  maximum=matrix.abs().amax(dim=1)
  scales=torch.where(maximum>0,maximum/7.0,torch.ones_like(maximum)).to(torch.float32)
- codes=torch.round(matrix/scales[:,None]).clamp(-7,7).to(torch.int16).reshape(-1)
+ codes=torch.round(matrix/scales[:,None]).clamp(-7,7).to(torch.int16).reshape(-1)[:numel]
  nibbles=torch.bitwise_and(codes,0x0F).to(torch.uint8)
+ if nibbles.numel() % 2:
+  nibbles=torch.cat((nibbles,torch.zeros(1,dtype=torch.uint8)))
  packed=torch.bitwise_or(nibbles[0::2],torch.bitwise_left_shift(nibbles[1::2],4)).contiguous()
  return packed,scales,numel,tuple(tensor.shape)
 
