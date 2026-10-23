@@ -26,6 +26,8 @@ class CajitaRouterTests(unittest.TestCase):
         self.assertEqual(result["subdomain_counts_by_domain"]["D05_INTELIGENCIA_DOCUMENTAL"], 2)
         self.assertEqual(result["subdomain_counts_by_domain"]["D06_SISTEMA_INTELIGENTE"], 11)
         self.assertEqual(result["support_asset_count"], 10)
+        self.assertEqual(result["engine_count"], 15)
+        self.assertEqual(result["target_engine_binding_count"], 21)
 
     def test_canonical_spellings_and_only_explicit_aliases(self):
         self.assertEqual(normalize_command("/play PT"), "/play PT")
@@ -135,6 +137,9 @@ class CajitaRouterTests(unittest.TestCase):
             self.assertTrue(asset["subdomain_ids"])
             for target_id in asset["subdomain_ids"]:
                 self.assertIn(target_id, TARGETS_BY_ID)
+        for target in TARGETS_BY_ID.values():
+            self.assertTrue(target["engine_ids"])
+            self.assertTrue(set(target["engine_ids"]).issubset({f"E{i:02d}" for i in range(1, 16)}))
 
     def test_complex_route_preserves_canonical_engines(self):
         route = next(route for route in ROUTES if route["command"] == "/play DCIL")
