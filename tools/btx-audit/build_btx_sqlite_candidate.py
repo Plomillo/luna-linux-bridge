@@ -683,7 +683,6 @@ def build_db(
         "source_archive_sha256":source_sha,
         "source_pdf_sha256":pdf_sha,
         "parser_version":PARSER_VERSION,
-        "generated_at_utc":datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00","Z"),
         "expected_books":66,"expected_chapters":1189,
         "actual_books":books_count,"actual_chapters":chapter_count,
         "actual_verse_rows":stored_verse_count,
@@ -696,12 +695,11 @@ def build_db(
         "text_roundtrip_whitespace_normalized_exact":text_stream_exact,
         "captured_text_characters":len(expected_text_stream),
         "stored_text_characters":len(stored_text_stream),
-        "database_sha256_pre_vacuum":None,
+        "content_scope":"MAIN_SCRIPTURE_BODY_TEXT_ONLY; EDITORIAL_NOTES_AND_CROSS_REFERENCES_NOT_CERTIFIED",
     }
     for key,val in db_metadata.items():
         conn.execute("INSERT INTO metadata(key,value) VALUES(?,?)",(key,json.dumps(val,ensure_ascii=False) if not isinstance(val,str) else val))
     # Store the policy that source-unmarked verse numbers stay unfilled.
-    conn.execute("INSERT INTO metadata(key,value) VALUES('fts5_enabled',?)",("true" if fts_available else "false",))
     conn.execute("INSERT INTO metadata(key,value) VALUES('reference_gap_policy',?)",(
         "Only explicit source verse markers are materialized. Unmarked reference positions are recorded separately; no verse text is invented.",))
     conn.commit()
@@ -733,6 +731,7 @@ def build_db(
     )
     return {
         "schema":"BTX_SQLITE_CANDIDATE_VALIDATION/1.0",
+        "generated_at_utc":datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00","Z"),
         "status":"STRUCTURAL_CANDIDATE_PASS_NOT_INDEPENDENTLY_CERTIFIED" if structural_pass else "CANDIDATE_FAILED_VALIDATION_GATES",
         "certification":"NOT_GRANTED",
         "source_removal_allowed":False,
