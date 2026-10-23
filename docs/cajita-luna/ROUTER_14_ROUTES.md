@@ -21,7 +21,7 @@ The planner separates three levels:
 - The planner itself does not load model weights.
 - An unknown command, unregistered adapter, missing resource measurement, or missing capability fails closed.
 
-These are guardrails, not proof that the model payloads can execute under a 1 GiB cap. Peak RAM is not measured for five model domains. The router also does not execute domain tasks; it emits a route plan and evidence blockers.
+These are guardrails, not proof that the model payloads can execute under a 1 GiB cap. Peak RAM is not measured for any of the six domains. The router also does not execute domain tasks; it emits a route plan and evidence blockers.
 
 ## Commands
 
