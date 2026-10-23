@@ -128,21 +128,23 @@ def quantize_factor_model(spec, torch, load_file, save_file):
     result["attempts"].append({"group_size":group_size,"status":"CANDIDATE_BUILD_FAILED",
                                "error":type(exc).__name__+":"+str(exc)[:800]})
     continue
-   if info["candidate_bytes"] >= result["original_bytes"]:
-    result["attempts"].append({**info,"status":"CANDIDATE_NOT_SMALLER"})
+   if info["candidate_bytes"] + info["sidecar_bytes"] >= result["original_bytes"]:
+    result["attempts"].append({**info,"status":"CANDIDATE_WITH_SIDECAR_NOT_SMALLER"})
     continue
    shutil.copy2(candidate,path)
    live_sidecar=path.with_name(path.name+".q4.json")
    shutil.copy2(candidate_meta,live_sidecar)
    after=run_model_smoke(spec)
    same=signature_equal(spec,baseline,after)
-   attempt={**info,"runtime_smoke_after":{"passed":after.get("passed",False),"status":after.get("status"),
+   smoke_ok=bool(after.get("passed"))
+   attempt={**info,"runtime_smoke_after":{"passed":smoke_ok,"status":after.get("status"),
               "returncode":after.get("returncode"),"result":after.get("result",{}),
               "stderr_tail":after.get("stderr_tail","")},
            "smoke_signature_preserved":same,
-           "status":"PROMOTED" if same else "ROLLBACK_FUNCTIONAL_SMOKE_MISMATCH"}
+           "smoke_passed":smoke_ok,
+           "status":"PROMOTED" if smoke_ok else "ROLLBACK_FUNCTIONAL_SMOKE_FAILURE"}
    result["attempts"].append(attempt)
-   if same:
+   if smoke_ok:
     result["status"]="PROMOTED_Q4_BLOCKWISE"
     result["candidate_bytes"]=path.stat().st_size
     result["candidate_sha256"]=sha256(path)
