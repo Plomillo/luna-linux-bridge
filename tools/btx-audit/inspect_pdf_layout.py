@@ -25,7 +25,7 @@ BOOKS = [
  "1 Tesalonicenses","2 Tesalonicenses","1 Timoteo","2 Timoteo","Tito","Filemón","Hebreos","Santiago","1 Pedro",
  "2 Pedro","1 Juan","2 Juan","3 Juan","Judas","Apocalipsis"
 ]
-BOOK_LOOKUP = {re.sub(r"\\s+", " ", book.casefold()).strip(): book for book in BOOKS}
+BOOK_LOOKUP = {re.sub(r"\s+", " ", book.casefold()).strip(): book for book in BOOKS}
 
 def main() -> int:
     out: dict[str, Any] = {
@@ -100,17 +100,16 @@ def main() -> int:
                                 })
                 for line_text in block_lines:
                     normalized = re.sub(r"[\s.:]+", " ", line_text.casefold()).strip()
-                    for book in BOOKS:
-                        if normalized == re.sub(r"[\s.:]+", " ", book.casefold()).strip():
-                            exact_heading_lines.append({"page": pno, "book": book})
-                            break
+                    book = BOOK_LOOKUP.get(normalized)
+                    if book:
+                        exact_heading_lines.append({"page": pno, "book": book})
                 block_text = " ".join(block_lines)
                 if re.fullmatch(r"\s*\d{1,3}\s*", block_text):
                     numeric_line_count += 1
-                for book in BOOKS:
-                    if re.fullmatch(r"\s*" + re.escape(book) + r"[.:]?\s*", block_text, flags=re.IGNORECASE):
-                        exact_heading_spans.append({"page": pno, "book": book})
-                        break
+                normalized_block = re.sub(r"[\s.:]+", " ", block_text.casefold()).strip()
+                book = BOOK_LOOKUP.get(normalized_block)
+                if book:
+                    exact_heading_spans.append({"page": pno, "book": book})
         doc.close()
         out.update({
             "pdf_open": "PASS",
