@@ -139,7 +139,7 @@ def main() -> int:
                     normalized_heading = re.sub(r"[^a-z0-9]", "", line_text.casefold().replace("á","a").replace("é","e").replace("í","i").replace("ó","o").replace("ú","u").replace("ü","u").replace("ñ","n"))
                     heading_book = book_lookup_norm.get(normalized_heading)
                     max_font = max([round(float(sp.get("size",0)),1) for sp in line_spans] or [0])
-                    if heading_book and max_font >= 14.0:
+                    if heading_book and max_font >= 7.5:
                         book_heading_candidates.append({"page":pno,"book":heading_book,"max_font_size":max_font,"line_char_count":len(line_text),"line_text_emitted":False})
                     if 515 <= pno <= 675 and re.search(r"salmo", line_text, flags=re.IGNORECASE):
                         numeric_tokens = []
