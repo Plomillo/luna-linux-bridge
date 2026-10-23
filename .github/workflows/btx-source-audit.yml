@@ -52,6 +52,14 @@ jobs:
         run: |
           python tools/btx-audit/build_btx_sqlite_candidate.py --output /tmp/btx-candidate.sqlite3 --report btx-candidate-validation.json
           python -c "import json; d=json.load(open('btx-candidate-validation.json', encoding='utf-8')); keys=['status','certification','source_archive_integrity','source_pdf_text_extraction','large_chapter_markers','psalm_chapter_markers','chapter_anchor_count','chapter_anchor_sequence_exact','database_file_bytes','database_sha256','book_count','chapter_count','verse_row_count','main_bible_end_page','post_canon_pages_excluded_from_scripture','duplicate_reference_keys','duplicate_marker_events','missing_expected_chapter_count','missing_first_verse_chapter_count','unexplained_missing_first_verse_count','empty_verse_chapter_count','chapter_verse_number_gap_chapter_count','chapter_verse_number_gap_total','source_unmarked_reference_count','source_reference_gap_rows_written','reference_gap_reconciliation_pass','unresolved_gap_references','text_roundtrip_whitespace_normalized_exact','fts5_enabled','fts5_error','representative_reference_query_tests','representative_full_text_query_test','source_removal_allowed','source_pdf_removed','structural_candidate_pass']; print(json.dumps({k:d.get(k) for k in keys}, ensure_ascii=False))"
+      - name: Independently rebuild candidate to test byte reproducibility
+        run: |
+          python tools/btx-audit/build_btx_sqlite_candidate.py --output /tmp/btx-candidate-rebuild.sqlite3 --report /tmp/btx-candidate-rebuild-validation.json > /tmp/btx-candidate-rebuild-log.json
+          python -c "import json,sys; a=json.load(open('btx-candidate-validation.json',encoding='utf-8')); b=json.load(open('/tmp/btx-candidate-rebuild-validation.json',encoding='utf-8')); ok=a.get('database_sha256')==b.get('database_sha256') and a.get('database_file_bytes')==b.get('database_file_bytes'); print(json.dumps({'status':'PASS' if ok else 'FAIL','sha256_first':a.get('database_sha256'),'sha256_rebuild':b.get('database_sha256'),'bytes_first':a.get('database_file_bytes'),'bytes_rebuild':b.get('database_file_bytes'),'reproducible':ok})); sys.exit(0 if ok else 2)"
+      - name: Run independent structural validator
+        run: |
+          python -m py_compile tools/btx-audit/validate_btx_sqlite_candidate.py
+          python tools/btx-audit/validate_btx_sqlite_candidate.py --database /tmp/btx-candidate.sqlite3 --source-audit btx-source-audit.json --report btx-independent-validation.json
       - name: Upload forensic metadata report
         if: always()
         uses: actions/upload-artifact@v4
@@ -62,5 +70,6 @@ jobs:
             btx-layout-profile.json
             btx-chapter-span-alignment.json
             btx-candidate-validation.json
+            btx-independent-validation.json
           if-no-files-found: warn
           retention-days: 14
