@@ -4,7 +4,7 @@ from __future__ import annotations
 import argparse, hashlib, json, os, shutil, stat, zipfile
 from pathlib import Path
 SCHEMA="CAJITA_RUNTIME_MACRODOWN/1.0"
-HARD_CAP_BYTES=479_000_000
+HARD_CAP_BYTES=470_000_000
 MANIFEST_NAME="MACRODOWN_MANIFEST.json"
 BINARY_SUFFIXES={".safetensors",".onnx",".bin",".7z",".zip",".gz",".xz",".whl",".nupkg",".model",".gguf",".parquet",".pdf"}
 EXCLUDED_DIRS={".git","__pycache__",".pytest_cache"}
