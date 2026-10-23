@@ -136,6 +136,14 @@ jobs:
 
           placement = json.loads(placement_path.read_text(encoding="utf-8"))
           compaction = json.loads(compaction_path.read_text(encoding="utf-8"))
+          if placement.get("status") == "TEN_ASSETS_EXPANDED_RUNTIME_SIZE_REBALANCE_REQUIRED":
+            for a in placement.get("assets", []):
+              expanded = root / a.get("expanded_path", "")
+              backup = root / a.get("container_path_outside_runtime", "")
+              if not expanded.is_dir() or not backup.is_file():
+                raise RuntimeError("IDEMPOTENCE_CHECK_FAILED:" + a.get("id", "unknown"))
+            print("TEN_ASSETS_ALREADY_MATERIALIZED_AND_ROLLBACK_COPIES_VERIFIED")
+            raise SystemExit(0)
           if {a.get("id") for a in placement.get("assets", [])} != expected_ids:
             raise RuntimeError("FAIL_CLOSED_EXPECTED_TEN_ASSETS")
           expected_counts = {a["id"]: int(a["verified_member_count"])
@@ -306,6 +314,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A -- cajita-luna-runtime externalized-assets-staging/optimized-containers docs/cajita-luna/CAJITA_TEN_ASSET_EXPANSION_20261023.json
+          if git diff --cached --quiet; then echo "No changes; all ten assets may already be materialized."; exit 0; fi
           git diff --cached --check
           git diff --cached --stat
           git commit -m "Expand ten real Cajita asset payloads into runtime tree"
