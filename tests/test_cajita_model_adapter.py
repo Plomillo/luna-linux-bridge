@@ -67,6 +67,51 @@ class ModelAdapterControlTests(unittest.TestCase):
         self.assertIn('mapped.madvise(mmap.MADV_DONTNEED)', tensor_loop)
         self.assertLess(tensor_loop.index('loaded.add(name)'), tensor_loop.index('mapped.madvise(mmap.MADV_DONTNEED)'))
 
+
+    def test_docling_bivlm_chunk_decoder_matches_full_reference(self):
+        import importlib.util
+        if importlib.util.find_spec("numpy") is None or importlib.util.find_spec("torch") is None:
+            self.skipTest("numpy/torch are installed only in the model-resource workflow")
+        import numpy as np
+        import torch
+        module_path = adapter.DOMAINS["D05_INTELIGENCIA_DOCUMENTAL"]["module"]
+        spec = importlib.util.spec_from_file_location("docling_chunk_test_runtime", module_path)
+        self.assertIsNotNone(spec)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        rows, cols = 13, 17
+        sign_count = rows * cols
+        signs = ((np.arange(sign_count) % 3) == 0).astype(np.uint8)
+        packed = np.packbits(signs, bitorder="little").tobytes()
+        scales = np.linspace(0.5, 1.5, rows, dtype=np.float32).astype("<f2").tobytes()
+        outlier_ids = np.array([1, sign_count // 2, sign_count - 2], dtype="<u4")
+        outlier_values = np.array([0.25, -0.5, 0.75], dtype="<f2")
+        indices = outlier_ids.tobytes()
+        values = outlier_values.tobytes()
+        scale_offset = len(packed)
+        index_offset = scale_offset + len(scales)
+        value_offset = index_offset + len(indices)
+        blob = packed + scales + indices + values
+        record = {
+            "name": "synthetic-vision-projection",
+            "kind": "bivlm_binary_outliers",
+            "shape": [rows, cols],
+            "matrix_shape": [rows, cols],
+            "sign_offset": 0,
+            "sign_nbytes": len(packed),
+            "scale_offset": scale_offset,
+            "scale_nbytes": len(scales),
+            "outlier_count": len(outlier_ids),
+            "outlier_index_offset": index_offset,
+            "outlier_value_offset": value_offset,
+        }
+        expected = module.decode_tensor(blob, record)
+        target = torch.empty((rows, cols), dtype=torch.float16)
+        module.decode_tensor_chunked_into(memoryview(blob), record, target, chunk_rows=8)
+        np.testing.assert_array_equal(target.numpy(), expected)
+
+
     def test_pdf_generation_domain_adapter_does_not_claim_model_load(self):
         with tempfile.TemporaryDirectory() as temp:
             output = Path(temp) / "domain.pdf"
