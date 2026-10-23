@@ -380,6 +380,8 @@ def build_plan(request: str, route_command: str | None = None) -> dict[str, Any]
         "engines": route["engines"] if route else ["E01", "E02", "E13", "E14", "E15"],
         "intent_reasons": legacy_reasons, "matched_intent_rules": matched_rule_ids,
         "selection_policy": profile.get("policy") if route else "minimum-relevant-subdomains-from-intent",
+        "canonical_rationale": profile.get("canonical_rationale") if route else None,
+        "extension_families": profile.get("extension_families", []) if route else [],
         "required_capabilities": capabilities,
         "command_default_target_ids": command_target_ids,
         "selected_targets": selected_targets,
