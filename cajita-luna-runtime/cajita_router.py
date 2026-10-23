@@ -165,7 +165,7 @@ def build_plan(request: str, route_command: str | None = None) -> dict[str, Any]
     blockers = []
     if missing: blockers.append("TASK_ADAPTER_NOT_REGISTERED:" + ",".join(missing))
     if unmeasured: blockers.append("PEAK_RSS_UNMEASURED:" + ",".join(unmeasured))
-    if "pdf_generation" in capabilities: blockers.append("PDF_GENERATION_ADAPTER_NOT_REGISTERED")
+    if "pdf_generation" in capabilities and CAPABILITY_ADAPTERS.get("pdf_generation", "NOT_REGISTERED") == "NOT_REGISTERED": blockers.append("PDF_GENERATION_ADAPTER_NOT_REGISTERED")
     return {
         "schema": SCHEMA, "operation": "plan", "captured_at_utc": utc_now(),
         "status": "PLAN_READY" if not blockers else "PLAN_ONLY_BLOCKED",
