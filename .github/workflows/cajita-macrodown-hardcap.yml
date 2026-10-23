@@ -1,0 +1,256 @@
+name: Cajita — reproducible Macrodown build and final size gate
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/cajita-macrodown-hardcap.yml"
+      - "cajita-luna-runtime/reproduce_macrodown.py"
+      - "docs/cajita-luna/CAJITA_RUNTIME_Q4_REBALANCE_20261023.json"
+      - "cajita-luna-runtime/EXTERNALIZED_ASSET_PLACEMENT.json"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cajita-macrodown-hardcap-main
+  cancel-in-progress: false
+
+jobs:
+  build-and-audit:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout main without blanket LFS download
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+          lfs: false
+          persist-credentials: true
+
+      - name: Materialize only Cajita's registered model payloads
+        shell: bash
+        run: |
+          set -euo pipefail
+          git lfs install
+          LFS_INCLUDE='cajita-luna-runtime/1. Cerebro/model.safetensors,cajita-luna-runtime/3. Transcripción/model.safetensors,cajita-luna-runtime/4. Traductor Inteligente/Traducción general/model.safetensors,cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin,cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/model.safetensors,cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/model.onnx'
+          git lfs pull --include="$LFS_INCLUDE" --exclude="" origin main
+          python - <<'PY'
+          from pathlib import Path
+          files = [
+              "cajita-luna-runtime/1. Cerebro/model.safetensors",
+              "cajita-luna-runtime/3. Transcripción/model.safetensors",
+              "cajita-luna-runtime/4. Traductor Inteligente/Traducción general/model.safetensors",
+              "cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin",
+              "cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/model.safetensors",
+              "cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/model.onnx",
+          ]
+          for item in files:
+              p = Path(item)
+              if not p.is_file() or p.stat().st_size < 4096:
+                  raise SystemExit("LFS_PAYLOAD_NOT_MATERIALIZED:" + item)
+              if p.read_bytes()[:80].startswith(b"version https://git-lfs.github.com/spec/v1"):
+                  raise SystemExit("LFS_POINTER_REMAINS:" + item)
+          print("CAJITA_LFS_MATERIALIZATION=PASS files=6")
+          PY
+
+      - name: Reconcile the ten-asset placement record with the measured tree size
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("cajita-luna-runtime")
+          placement_path = root / "EXTERNALIZED_ASSET_PLACEMENT.json"
+          report_path = Path("docs/cajita-luna/CAJITA_RUNTIME_Q4_REBALANCE_20261023.json")
+          placement = json.loads(placement_path.read_text(encoding="utf-8"))
+          report = json.loads(report_path.read_text(encoding="utf-8"))
+          cap = 470_000_000
+          assets = placement.get("assets", [])
+          if len(assets) != 10 or len({x.get("id") for x in assets}) != 10:
+              raise SystemExit("TEN_ASSET_REGISTRY_INVALID")
+          if report.get("size_gate") != "PASS" or int(report.get("runtime_bytes_after", cap + 1)) > cap:
+              raise SystemExit("PRIOR_RUNTIME_SIZE_GATE_NOT_PASS")
+          if int(report.get("q2_factor_models_promoted", 0)) < 1:
+              raise SystemExit("Q2_FACTOR_PACKING_EVIDENCE_MISSING")
+
+          placement["status"] = "TEN_ASSETS_COMPACTED_RUNTIME_SIZE_GATE_PASS"
+          placement["runtime_size_gate"] = {
+              "audit_id": "CAJITA_FINAL_RUNTIME_SIZE_GATE_20261023",
+              "measurement_method": "sum of every regular file byte under cajita-luna-runtime except MACRODOWN_MANIFEST.json; no LFS pointers",
+              "payload_bytes": 999999999,
+              "hard_cap_bytes": cap,
+              "bytes_under_cap": 9999999,
+              "size_gate": "PASS",
+              "registered_asset_count": len(assets),
+              "registered_asset_ids": [x["id"] for x in assets],
+              "q2_factor_models_promoted": int(report.get("q2_factor_models_promoted", 0)),
+              "certification": "NOT_GRANTED"
+          }
+
+          def runtime_size():
+              total = 0
+              for p in root.rglob("*"):
+                  if p.is_symlink():
+                      raise SystemExit("SYMLINK_IN_RUNTIME:" + str(p))
+                  if p.is_file() and p.name != "MACRODOWN_MANIFEST.json":
+                      total += p.stat().st_size
+              return total
+
+          placement_path.write_text(json.dumps(placement, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+          measured = None
+          for _ in range(8):
+              measured = runtime_size()
+              gate = "PASS" if measured <= cap else "FAIL"
+              placement["status"] = "TEN_ASSETS_COMPACTED_RUNTIME_SIZE_GATE_" + gate
+              placement["runtime_size_gate"].update({
+                  "payload_bytes": measured,
+                  "hard_cap_bytes": cap,
+                  "bytes_under_cap": max(0, cap - measured),
+                  "size_gate": gate,
+              })
+              placement_path.write_text(json.dumps(placement, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+              after_write = runtime_size()
+              if after_write == measured:
+                  break
+          else:
+              raise SystemExit("PLACEMENT_SIZE_MEASUREMENT_DID_NOT_CONVERGE")
+
+          report["runtime_bytes_after"] = measured
+          report["saved_bytes"] = int(report.get("runtime_bytes_before", measured)) - measured
+          report["bytes_over_cap"] = max(0, measured - cap)
+          report["size_gate"] = "PASS" if measured <= cap else "FAIL"
+          report["status"] = "SIZE_GATE_PASS_CERTIFICATION_NOT_GRANTED" if measured <= cap else "SIZE_GATE_FAIL_CERTIFICATION_NOT_GRANTED"
+          report["placement_size_gate_recorded"] = True
+          report["registered_asset_count"] = len(assets)
+          report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+          print(json.dumps({
+              "runtime_payload_bytes": measured,
+              "hard_cap_bytes": cap,
+              "bytes_under_cap": max(0, cap - measured),
+              "size_gate": report["size_gate"],
+              "registered_assets": len(assets),
+              "q2_factor_models_promoted": report.get("q2_factor_models_promoted"),
+              "certification": "NOT_GRANTED"
+          }, ensure_ascii=False))
+          if report["size_gate"] != "PASS":
+              raise SystemExit("RUNTIME_RAW_PAYLOAD_OVER_HARD_CAP")
+          PY
+
+      - name: Build deterministic Macrodown and enforce raw plus archive hard caps
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT="$RUNNER_TEMP/CAJITA_LUNA_RUNTIME_V9.macrodown"
+          RESULT="$RUNNER_TEMP/macrodown-build-result.json"
+          python cajita-luna-runtime/reproduce_macrodown.py \
+            --root cajita-luna-runtime \
+            --output "$OUT" > "$RESULT"
+          python - <<'PY'
+          import hashlib, json, os, subprocess
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          result_path = Path(os.environ["RUNNER_TEMP"]) / "macrodown-build-result.json"
+          result = json.loads(result_path.read_text(encoding="utf-8"))
+          raw_report_path = Path("docs/cajita-luna/CAJITA_RUNTIME_Q4_REBALANCE_20261023.json")
+          raw_report = json.loads(raw_report_path.read_text(encoding="utf-8"))
+          placement_path = Path("cajita-luna-runtime/EXTERNALIZED_ASSET_PLACEMENT.json")
+          placement = json.loads(placement_path.read_text(encoding="utf-8"))
+          cap = 470_000_000
+          archive_path = Path(result["output"])
+          if result.get("status") != "PASS":
+              raise SystemExit("MACRODOWN_BUILD_NOT_PASS")
+          if int(result.get("gross_raw_payload_bytes", cap + 1)) > cap:
+              raise SystemExit("MACRODOWN_RAW_PAYLOAD_OVER_CAP")
+          if int(result.get("archive_bytes", cap + 1)) > cap:
+              raise SystemExit("MACRODOWN_ARCHIVE_OVER_CAP")
+          if raw_report.get("size_gate") != "PASS" or placement.get("runtime_size_gate", {}).get("size_gate") != "PASS":
+              raise SystemExit("PLACEMENT_OR_RUNTIME_SIZE_GATE_NOT_PASS")
+          if int(placement["runtime_size_gate"]["registered_asset_count"]) != 10:
+              raise SystemExit("TEN_REGISTERED_ASSETS_NOT_PRESERVED")
+
+          record = {
+              "schema": "CAJITA_MACRODOWN_BUILD_AUDIT/1.0",
+              "audit_id": "CAJITA_MACRODOWN_BUILD_20261023",
+              "created_at_utc": datetime.now(timezone.utc).isoformat(),
+              "repository": "Plomillo/luna-linux-bridge",
+              "source_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
+              "format": "deterministic ZIP container with .macrodown extension",
+              "runtime_payload_bytes_excluding_generated_manifest": int(raw_report["runtime_bytes_after"]),
+              "gross_raw_payload_bytes_including_manifest": int(result["gross_raw_payload_bytes"]),
+              "archive_bytes": int(result["archive_bytes"]),
+              "hard_cap_bytes": cap,
+              "bytes_under_cap_raw": max(0, cap - int(result["gross_raw_payload_bytes"])),
+              "bytes_under_cap_archive": max(0, cap - int(result["archive_bytes"])),
+              "file_count": int(result["member_count"]),
+              "archive_sha256": result["sha256"],
+              "archive_rebuildable": bool(result["rebuildable"]),
+              "build_status": "PASS",
+              "raw_payload_size_gate": "PASS",
+              "archive_size_gate": "PASS",
+              "registered_assets_preserved": 10,
+              "asset_ids": placement["runtime_size_gate"]["registered_asset_ids"],
+              "onnx_optimization": raw_report.get("onnx_status"),
+              "functional_quality_equivalence": "NOT_ESTABLISHED",
+              "certification": "NOT_GRANTED"
+          }
+          Path("docs/cajita-luna/CAJITA_MACRODOWN_BUILD_20261023.json").write_text(
+              json.dumps(record, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+          )
+          print(json.dumps(record, ensure_ascii=False))
+          PY
+
+      - name: Commit final size-gate and reproducible-build evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- \
+            "cajita-luna-runtime/EXTERNALIZED_ASSET_PLACEMENT.json" \
+            "docs/cajita-luna/CAJITA_RUNTIME_Q4_REBALANCE_20261023.json" \
+            "docs/cajita-luna/CAJITA_MACRODOWN_BUILD_20261023.json"
+          if git diff --cached --quiet; then
+            echo "CAJITA_FINAL_BUILD_EVIDENCE_ALREADY_CURRENT"
+          else
+            git diff --cached --check
+            git diff --cached --stat
+            git commit -m "Record Cajita final raw and Macrodown size-gate evidence"
+            git push origin HEAD:main
+          fi
+
+      - name: Enforce final raw and reproducible archive gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("docs/cajita-luna/CAJITA_RUNTIME_Q4_REBALANCE_20261023.json").read_text())
+          b=json.loads(Path("docs/cajita-luna/CAJITA_MACRODOWN_BUILD_20261023.json").read_text())
+          p=json.loads(Path("cajita-luna-runtime/EXTERNALIZED_ASSET_PLACEMENT.json").read_text())
+          cap=470_000_000
+          print(json.dumps({
+              "raw_payload_bytes":r["runtime_bytes_after"],
+              "macrodown_gross_raw_payload_bytes":b["gross_raw_payload_bytes_including_manifest"],
+              "macrodown_archive_bytes":b["archive_bytes"],
+              "hard_cap_bytes":cap,
+              "raw_gate":r["size_gate"],
+              "macrodown_build":b["build_status"],
+              "archive_gate":b["archive_size_gate"],
+              "registered_assets":p["runtime_size_gate"]["registered_asset_count"],
+              "certification":b["certification"]
+          },indent=2))
+          if r["size_gate"]!="PASS" or b["build_status"]!="PASS" or b["archive_size_gate"]!="PASS":
+              raise SystemExit("CAJITA_FINAL_HARD_GATE_FAIL")
+          if int(r["runtime_bytes_after"])>cap or int(b["gross_raw_payload_bytes_including_manifest"])>cap or int(b["archive_bytes"])>cap:
+              raise SystemExit("CAJITA_FINAL_BYTE_LIMIT_EXCEEDED")
+          if int(p["runtime_size_gate"]["registered_asset_count"])!=10:
+              raise SystemExit("CAJITA_REGISTERED_ASSET_COUNT_MISMATCH")
+          PY
