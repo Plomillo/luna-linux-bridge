@@ -316,7 +316,7 @@ def load_translation_lang_map(tokenizer):
     return mapping
 
 def apply_low_memory_document_profile(processor) -> dict[str, Any]:
-    """Use one 256px Idefics3 tile and the corresponding 16-token image sequence."""
+    """Use one 192px Idefics3 tile and the corresponding 9-token image sequence."""
     image_processor = getattr(processor, "image_processor", None)
     if image_processor is None:
         raise RuntimeError("DOCUMENT_IMAGE_PROCESSOR_MISSING")
@@ -331,21 +331,21 @@ def apply_low_memory_document_profile(processor) -> dict[str, Any]:
     packaged_image_seq_len = int(getattr(processor, "image_seq_len", 0))
     if packaged_image_seq_len != 64:
         raise RuntimeError("PACKAGED_IDEFICS3_IMAGE_SEQ_LEN_MISMATCH")
-    # Config contract: patch_size=16 and scale_factor=4. A 256px image has a 16x16
-    # patch grid, projected to 16 image tokens. Align Idefics3's prompt placeholders
-    # with this grid and avoid the previous 512px preprocessing peak.
-    image_processor.size = {"longest_edge": 256}
-    image_processor.max_image_size = {"longest_edge": 256}
+    # Config contract: patch_size=16 and scale_factor=4. A 192px image produces a
+    # 12x12 vision grid, projected to 9 image tokens. Set the processor's placeholder
+    # count to match the actual grid and disable multi-tile splitting.
+    image_processor.size = {"longest_edge": 192}
+    image_processor.max_image_size = {"longest_edge": 192}
     image_processor.do_image_splitting = False
-    processor.image_seq_len = 16
+    processor.image_seq_len = 9
     return {
-        "profile_id": "LOW_MEMORY_SINGLE_TILE_256",
+        "profile_id": "LOW_MEMORY_SINGLE_TILE_192",
         "source_packaged_longest_edge_px": longest_edge,
         "source_packaged_max_image_edge_px": max_edge,
         "source_packaged_image_seq_len": packaged_image_seq_len,
-        "longest_edge_px": 256,
-        "max_image_edge_px": 256,
-        "image_seq_len": 16,
+        "longest_edge_px": 192,
+        "max_image_edge_px": 192,
+        "image_seq_len": 9,
         "image_splitting": False,
         "patch_size_px": 16,
         "scale_factor": 4,

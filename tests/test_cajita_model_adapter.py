@@ -38,7 +38,7 @@ class ModelAdapterControlTests(unittest.TestCase):
             self.assertIn(b"/Count 3", data)
 
 
-    def test_document_processor_uses_low_memory_256px_profile_with_matching_tokens(self):
+    def test_document_processor_uses_low_memory_192px_profile_with_matching_tokens(self):
         from types import SimpleNamespace
         processor = SimpleNamespace(
             image_processor=SimpleNamespace(
@@ -49,12 +49,12 @@ class ModelAdapterControlTests(unittest.TestCase):
             image_seq_len=64,
         )
         profile = adapter.apply_low_memory_document_profile(processor)
-        self.assertEqual(processor.image_processor.size, {"longest_edge": 256})
-        self.assertEqual(processor.image_processor.max_image_size, {"longest_edge": 256})
+        self.assertEqual(processor.image_processor.size, {"longest_edge": 192})
+        self.assertEqual(processor.image_processor.max_image_size, {"longest_edge": 192})
         self.assertFalse(processor.image_processor.do_image_splitting)
-        self.assertEqual(processor.image_seq_len, 16)
-        self.assertEqual(profile["profile_id"], "LOW_MEMORY_SINGLE_TILE_256")
-        self.assertEqual(profile["image_seq_len"], 16)
+        self.assertEqual(processor.image_seq_len, 9)
+        self.assertEqual(profile["profile_id"], "LOW_MEMORY_SINGLE_TILE_192")
+        self.assertEqual(profile["image_seq_len"], 9)
         self.assertEqual(profile["quality_equivalence"], "NOT_ESTABLISHED")
 
     def test_document_processor_rejects_unbounded_tile_configuration(self):
