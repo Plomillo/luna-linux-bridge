@@ -44,6 +44,10 @@ jobs:
         run: |
           python tools/btx-audit/inspect_pdf_layout.py > btx-layout-profile.json
           python -c "import json; d=json.load(open('btx-layout-profile.json', encoding='utf-8')); print(json.dumps({k:d.get(k) for k in ['pdf_open','pdf_pages','text_char_count_from_spans','text_word_count_from_spans','font_styles','numeric_only_span_font_distribution','numeric_only_span_sample_coordinates','exact_book_heading_lines','exact_book_heading_blocks','numeric_only_block_count','body_char_distribution_by_font_size_pt','status']}, ensure_ascii=False))"
+      - name: Align large numeric spans to canonical chapter sequence
+        run: |
+          python tools/btx-audit/analyze_chapter_spans.py > btx-chapter-span-alignment.json
+          python -c "import json; d=json.load(open('btx-chapter-span-alignment.json', encoding='utf-8')); keys=['pdf_pages','large_numeric_span_count','large_numeric_span_style_counts','small_bold_numeric_span_style_counts','expected_sequence_lcs_matches','expected_sequence_coverage_percent','unmatched_expected_chapter_count','unmatched_observed_candidate_count','candidate_counts_by_page_sample','status']; print(json.dumps({k:d.get(k) for k in keys}, ensure_ascii=False))"
       - name: Upload forensic metadata report
         if: always()
         uses: actions/upload-artifact@v4
@@ -52,5 +56,6 @@ jobs:
           path: |
             btx-source-audit.json
             btx-layout-profile.json
+            btx-chapter-span-alignment.json
           if-no-files-found: warn
           retention-days: 14
