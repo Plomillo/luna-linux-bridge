@@ -47,7 +47,8 @@ class CajitaRouterTests(unittest.TestCase):
         result = build_plan("Crea un PDF con este informe")
         self.assertIn("pdf_generation", result["required_capabilities"])
         self.assertIn("D05_INTELIGENCIA_DOCUMENTAL", result["domain_sequence"])
-        self.assertIn("PDF_GENERATION_ADAPTER_NOT_REGISTERED", result["blockers"])
+        self.assertNotIn("PDF_GENERATION_ADAPTER_NOT_REGISTERED", result["blockers"])
+        self.assertTrue(any("D05_INTELIGENCIA_DOCUMENTAL" in item for item in result["unmeasured_peak_rss_domains"]))
         self.assertFalse(result["execution_authorized"])
 
     def test_document_extraction_then_translation_is_sequential(self):
