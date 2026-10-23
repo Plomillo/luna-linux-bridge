@@ -26,7 +26,7 @@ jobs:
     permissions:
       contents: read
     env:
-      GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout read-only audit flow
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
