@@ -1,0 +1,312 @@
+name: Cajita — materialize ten real asset payloads
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/cajita-materialize-ten-assets.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cajita-materialize-ten-assets-main
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Checkout main without downloading legacy LFS weights
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+          lfs: false
+          persist-credentials: false
+
+      - name: Install archive validation tools
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y p7zip-full upx-ucl
+          7z | head -n 3
+          upx --version
+
+      - name: Expand and validate the ten assets inside Cajita
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, os, shutil, stat, subprocess, tempfile
+          from pathlib import Path, PurePosixPath
+
+          root = Path.cwd()
+          runtime = root / "cajita-luna-runtime"
+          placement_path = runtime / "EXTERNALIZED_ASSET_PLACEMENT.json"
+          compaction_path = root / "docs/cajita-luna/CAJITA_NEW_ENGINE_COMPACTION_20261023.json"
+          doc_path = runtime / "CajitadeLuna.md"
+          report_path = root / "docs/cajita-luna/CAJITA_TEN_ASSET_EXPANSION_20261023.json"
+          expected_ids = {
+            "APACHE_JENA_6_2_0", "PLAYWRIGHT_1_63_0_SOURCE",
+            "ONNX_RUNTIME_1_29_0_CP311", "DAGGER_0_21_8_LINUX_AMD64",
+            "OPA_STATIC_LINUX_AMD64_CANDIDATE", "RQLITE_10_2_7_LINUX_AMD64",
+            "SQLITE_SOURCE_3_53_4", "CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE",
+            "AVALONIA_12_1_1_NUGET", "TAURI_2_11_5_SOURCE_ZIP"
+          }
+          protected = [
+            "1. Cerebro/model.safetensors",
+            "3. Transcripción/model.safetensors",
+            "4. Traductor Inteligente/Traducción general/model.safetensors",
+            "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin",
+            "6. Sistema Inteligente/Análisis Avanzado/model.safetensors",
+            "6. Sistema Inteligente/Anti-Alucinaciones/model.onnx"
+          ]
+
+          def sha_file(p):
+            h = hashlib.sha256()
+            with p.open("rb") as f:
+              for chunk in iter(lambda: f.read(1024 * 1024), b""):
+                h.update(chunk)
+            return h.hexdigest()
+
+          def tree_records(base):
+            base = base.resolve()
+            rows = []
+            for p in sorted(base.rglob("*"), key=lambda q: q.relative_to(base).as_posix()):
+              rel = p.relative_to(base).as_posix()
+              if p.is_symlink():
+                target = os.readlink(p)
+                if PurePosixPath(target).is_absolute():
+                  raise RuntimeError(f"ABSOLUTE_SYMLINK_BLOCKED:{rel}")
+                resolved = (p.parent / target).resolve(strict=False)
+                if resolved != base and base not in resolved.parents:
+                  raise RuntimeError(f"SYMLINK_ESCAPE_BLOCKED:{rel}")
+                rows.append({"path": rel, "kind": "symlink", "target": target,
+                             "mode": stat.S_IMODE(p.lstat().st_mode)})
+              elif p.is_file():
+                rows.append({"path": rel, "kind": "file", "bytes": p.stat().st_size,
+                             "sha256": sha_file(p), "mode": stat.S_IMODE(p.stat().st_mode)})
+            return rows
+
+          def tree_hash(rows):
+            h = hashlib.sha256()
+            for row in rows:
+              h.update(json.dumps(row, sort_keys=True, separators=(",", ":")).encode())
+              h.update(b"\n")
+            return h.hexdigest()
+
+          def require(files, condition, label, asset_id):
+            if not any(condition(p) for p in files):
+              raise RuntimeError(f"PAYLOAD_TYPE_CHECK_FAILED:{asset_id}:{label}")
+
+          def verify_payload(asset_id, dest):
+            files = [p for p in dest.rglob("*") if p.is_file() and not p.is_symlink()]
+            if not files:
+              raise RuntimeError(f"EMPTY_EXPANSION:{asset_id}")
+            if asset_id == "APACHE_JENA_6_2_0":
+              require(files, lambda p: p.suffix.lower() in {".jar", ".java", ".pom"}, "Jena archive/source", asset_id)
+            elif asset_id == "PLAYWRIGHT_1_63_0_SOURCE":
+              require(files, lambda p: p.name.lower() == "package.json", "package.json", asset_id)
+              require(files, lambda p: p.suffix.lower() in {".js", ".ts"}, "JS/TS payload", asset_id)
+            elif asset_id == "ONNX_RUNTIME_1_29_0_CP311":
+              require(files, lambda p: p.name == "__init__.py" and "onnxruntime" in p.parts, "Python runtime", asset_id)
+              require(files, lambda p: p.suffix == ".so" or ".so." in p.name, "native ONNX library", asset_id)
+            elif asset_id in {"DAGGER_0_21_8_LINUX_AMD64", "OPA_STATIC_LINUX_AMD64_CANDIDATE"}:
+              name = "dagger" if asset_id.startswith("DAGGER") else "opa_linux_amd64_static"
+              require(files, lambda p: p.name == name and p.read_bytes()[:4] == b"\x7fELF", "ELF executable", asset_id)
+            elif asset_id == "RQLITE_10_2_7_LINUX_AMD64":
+              for name in ("rqlite", "rqlited"):
+                require(files, lambda p, n=name: p.name == n and p.read_bytes()[:4] == b"\x7fELF", name + " ELF", asset_id)
+            elif asset_id == "SQLITE_SOURCE_3_53_4":
+              require(files, lambda p: p.name.lower() == "sqlite3.c", "sqlite3.c", asset_id)
+              require(files, lambda p: p.name.lower() == "sqlite3.h", "sqlite3.h", asset_id)
+            elif asset_id == "CMAKE_4_4_3_WINDOWS_X64_OFFICIAL_BASE":
+              require(files, lambda p: p.name.lower() == "cmake.exe" and p.read_bytes()[:2] == b"MZ", "cmake.exe PE", asset_id)
+              require(files, lambda p: p.name.lower() == "ctest.exe" and p.read_bytes()[:2] == b"MZ", "ctest.exe PE", asset_id)
+            elif asset_id == "AVALONIA_12_1_1_NUGET":
+              require(files, lambda p: p.suffix.lower() == ".dll" and p.read_bytes()[:2] == b"MZ", "Avalonia assemblies", asset_id)
+            elif asset_id == "TAURI_2_11_5_SOURCE_ZIP":
+              require(files, lambda p: p.name == "Cargo.toml", "Cargo.toml", asset_id)
+              require(files, lambda p: p.suffix == ".rs", "Rust sources", asset_id)
+            return files
+
+          placement = json.loads(placement_path.read_text(encoding="utf-8"))
+          compaction = json.loads(compaction_path.read_text(encoding="utf-8"))
+          if {a.get("id") for a in placement.get("assets", [])} != expected_ids:
+            raise RuntimeError("FAIL_CLOSED_EXPECTED_TEN_ASSETS")
+          expected_counts = {a["id"]: int(a["verified_member_count"])
+                             for a in compaction["compaction_pass"]["per_asset_results"]}
+          protected_before = {rel: sha_file(runtime / rel) for rel in protected}
+          backup_root = root / "externalized-assets-staging/optimized-containers"
+          backup_root.mkdir(parents=True, exist_ok=True)
+          results, expanded_bytes, total_members = [], 0, 0
+
+          for asset in placement["assets"]:
+            aid = asset["id"]
+            container_rel = asset["placed_path"]
+            container = root / container_rel
+            opt = asset.get("optimization", {})
+            exp_sha = opt.get("optimized_sha256", asset.get("sha256"))
+            exp_size = int(opt.get("optimized_size_bytes", asset.get("size_bytes", -1)))
+            if not container.is_file() or not container_rel.endswith(".7z"):
+              raise RuntimeError(f"CONTAINER_NOT_FOUND:{aid}:{container_rel}")
+            if container.stat().st_size != exp_size or sha_file(container) != exp_sha:
+              raise RuntimeError(f"CONTAINER_HASH_OR_SIZE_MISMATCH:{aid}")
+            test = subprocess.run(["7z", "t", str(container)], capture_output=True, text=True, timeout=600)
+            if test.returncode:
+              raise RuntimeError(f"7Z_TEST_FAILED:{aid}:{test.stdout[-1000:]}")
+            original_rel = opt.get("original_placed_path")
+            if not original_rel:
+              raise RuntimeError(f"ORIGINAL_LOGICAL_PATH_NOT_REGISTERED:{aid}")
+            dest = (root / original_rel).parent / aid
+            backup = backup_root / (aid + ".7z")
+            if dest.exists() or backup.exists():
+              raise RuntimeError(f"DESTINATION_EXISTS_FAIL_CLOSED:{aid}")
+            with tempfile.TemporaryDirectory(prefix="cajita-expand-") as td:
+              tmp = Path(td) / "expanded"
+              tmp.mkdir()
+              unpack = subprocess.run(["7z", "x", "-y", f"-o{tmp}", str(container)],
+                                      capture_output=True, text=True, timeout=900)
+              if unpack.returncode:
+                raise RuntimeError(f"7Z_EXTRACTION_FAILED:{aid}:{unpack.stdout[-1000:]}")
+              rows = tree_records(tmp)
+              if len(rows) != expected_counts[aid]:
+                raise RuntimeError(f"MEMBER_COUNT_MISMATCH:{aid}:{len(rows)}!={expected_counts[aid]}")
+              files = verify_payload(aid, tmp)
+              digest = tree_hash(rows)
+              size = sum(int(r.get("bytes", 0)) for r in rows if r["kind"] == "file")
+              dest.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copytree(tmp, dest, symlinks=True)
+              copied = tree_records(dest)
+              if rows != copied or tree_hash(copied) != digest:
+                raise RuntimeError(f"POST_COPY_TREE_MISMATCH:{aid}")
+              backup.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copy2(container, backup)
+              if sha_file(backup) != exp_sha:
+                raise RuntimeError(f"ROLLBACK_CONTAINER_HASH_MISMATCH:{aid}")
+              container.unlink()
+            item = {
+              "id": aid, "former_runtime_container_path": container_rel,
+              "expanded_path": dest.relative_to(root).as_posix(),
+              "expanded_file_count": len(rows), "expanded_bytes": size,
+              "expanded_tree_sha256": digest,
+              "rollback_container_path": backup.relative_to(root).as_posix(),
+              "rollback_container_bytes": backup.stat().st_size,
+              "rollback_container_sha256": sha_file(backup),
+              "payload_type_validation": "PASS",
+              "7z_integrity": "PASS", "member_count_validation": "PASS",
+              "post_copy_tree_validation": "PASS",
+              "native_execution_smoke": "NOT_RUN",
+              "status": "EXPANDED_IN_CAJITA_RUNTIME"
+            }
+            results.append(item)
+            expanded_bytes += size
+            total_members += len(rows)
+            asset["container_path_outside_runtime"] = backup.relative_to(root).as_posix()
+            asset["container_sha256"] = exp_sha
+            asset["container_size_bytes"] = exp_size
+            asset["expanded_path"] = item["expanded_path"]
+            asset["expanded_file_count"] = len(rows)
+            asset["expanded_bytes"] = size
+            asset["expanded_tree_sha256"] = digest
+            asset["placed_path"] = item["expanded_path"]
+            asset["size_bytes"] = size
+            asset["sha256"] = digest
+            asset["placement"] = "IN_CAJITA_RUNTIME_EXPANDED_TREE"
+            asset["included_in_current_macrodown_manifest"] = False
+            asset.setdefault("optimization", {})["runtime_path_repair"] = "PASS"
+            asset["optimization"]["functional_integration"] = "EXPANSION_AND_PAYLOAD_TYPE_VALIDATED; NATIVE_EXECUTION_SMOKE_NOT_RUN"
+            asset["optimization"]["optimized_path"] = item["rollback_container_path"]
+            asset["optimization"]["status"] = "EXPANDED_RUNTIME_PATH_REPAIRED"
+            asset["optimization"]["member_roundtrip"] = "PASS"
+            asset["notes"] = (str(asset.get("notes", "")).rstrip()
+                              + f" Expanded to {item['expanded_path']}; optimized .7z rollback copy retained outside runtime.")
+            print(json.dumps(item, ensure_ascii=False))
+
+          protected_after = {rel: sha_file(runtime / rel) for rel in protected}
+          if protected_before != protected_after:
+            raise RuntimeError("PROTECTED_LEGACY_MODEL_HASH_CHANGED")
+          baseline = int(placement.get("projected_raw_payload_bytes_before_new_manifest_growth", 0)) - int(placement.get("placed_assets_raw_bytes", 0))
+          projected_after = baseline + expanded_bytes
+          cap = int(placement.get("hard_cap_bytes", 470000000))
+          placement["status"] = "TEN_ASSETS_EXPANDED_RUNTIME_SIZE_REBALANCE_REQUIRED"
+          placement["placed_assets_expanded_bytes"] = expanded_bytes
+          placement["expanded_asset_file_count"] = total_members
+          placement["projected_raw_payload_bytes_after_expansion_before_manifest_growth"] = projected_after
+          placement["projected_over_cap_bytes_after_expansion"] = max(0, projected_after - cap)
+          placement["functional_integration_audit"] = {
+            "audit_id": "CAJITA_TEN_ASSET_EXPANSION_20261023",
+            "status": "EXPANSION_AND_PAYLOAD_TYPE_VALIDATION_PASS",
+            "assets_expected": 10, "assets_expanded": len(results),
+            "total_expanded_asset_files": total_members, "expanded_asset_bytes": expanded_bytes,
+            "all_original_runtime_containers_removed": True,
+            "optimized_container_backups_preserved_outside_runtime": True,
+            "protected_legacy_weight_hashes_unchanged": True,
+            "native_execution_smoke": "NOT_RUN",
+            "cap_bytes": cap, "projected_bytes_after_expansion": projected_after,
+            "size_rebalance": "REQUIRED_BEFORE_REPRODUCIBLE_PACKAGE_BUILD",
+            "certification": "NOT_GRANTED"
+          }
+          placement_path.write_text(json.dumps(placement, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+          report = {
+            "schema": "CAJITA_TEN_ASSET_EXPANSION/1.0",
+            "audit_id": "CAJITA_TEN_ASSET_EXPANSION_20261023",
+            "status": "EXPANSION_AND_PAYLOAD_TYPE_VALIDATION_PASS_SIZE_REBALANCE_REQUIRED",
+            "repository": "Plomillo/luna-linux-bridge", "branch": "main",
+            "assets_expected": 10, "assets_expanded": len(results),
+            "total_expanded_asset_files": total_members, "expanded_asset_bytes": expanded_bytes,
+            "protected_legacy_weight_hashes_before": protected_before,
+            "protected_legacy_weight_hashes_after": protected_after,
+            "assets": results,
+            "hard_cap_bytes": cap,
+            "projected_raw_payload_bytes_after_expansion_before_manifest_growth": projected_after,
+            "projected_over_cap_bytes_after_expansion": max(0, projected_after-cap),
+            "native_execution_smoke": "NOT_RUN",
+            "package_rebuild": "NOT_RUN",
+            "next_phase": "QUANTIZE_AND_REBALANCE_THEN_REBUILD_MANIFEST_AND_VALIDATE_GLOBAL_CAP",
+            "certification": "NOT_GRANTED"
+          }
+          report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+          doc = doc_path.read_text(encoding="utf-8")
+          marker = "## Despliegue materializado de los diez activos — 2026-10-23"
+          if marker not in doc:
+            rows = "\n".join(
+              f"| {a['id']} | `{a['expanded_path']}` | {a['expanded_file_count']} | {a['expanded_bytes']:,} | PASS |"
+              for a in results
+            )
+            doc += f"""
+
+          {marker}
+
+          Se extrajeron los diez contenedores internos y su contenido real quedó materializado bajo el árbol persistente de Cajita. Los contenedores optimizados se conservaron como copias de rollback fuera del árbol de distribución. Se validaron SHA-256 y tamaños de los contenedores, integridad 7z, número de miembros, tipos de payload esperados y la ronda de copia del árbol expandido. Los seis hashes de los artefactos de peso/modelo preexistentes permanecen idénticos. Las pruebas de ejecución de los ejecutables nativos no forman parte de esta pasada y se mantienen explícitamente como pendientes.
+
+          | Activo | Ruta expandida en runtime | Archivos/objetos | Bytes expandidos | Validación |
+          |---|---|---:|---:|---|
+          {rows}
+
+          El manifiesto estático de distribución no se declara actualizado ni certificado. La expansión deja pendiente el rebalanceo del tamaño global y la fase de cuantización/optimización; la reconstrucción debe ejecutarse solo tras reducir el payload a un máximo de `470.000.000` bytes.
+
+          Informe: `../docs/cajita-luna/CAJITA_TEN_ASSET_EXPANSION_20261023.json`.
+          """
+            doc_path.write_text(doc.rstrip() + "\n", encoding="utf-8")
+          PY
+
+      - name: Commit expanded runtime payloads and rollback copies
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A -- cajita-luna-runtime externalized-assets-staging/optimized-containers docs/cajita-luna/CAJITA_TEN_ASSET_EXPANSION_20261023.json
+          git diff --cached --check
+          git diff --cached --stat
+          git commit -m "Expand ten real Cajita asset payloads into runtime tree"
+          git -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" push origin HEAD:main
