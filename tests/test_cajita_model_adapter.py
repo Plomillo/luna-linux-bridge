@@ -63,10 +63,11 @@ class ModelAdapterControlTests(unittest.TestCase):
             self.assertEqual(item["request_sha256"], adapter.sha256_text(secretish))
             self.assertFalse(item["request_body_stored"])
 
-    def test_rss_limit_keeps_system_headroom(self):
+    def test_rss_limits_keep_system_headroom(self):
         self.assertEqual(adapter.MAX_GLOBAL_RAM_MIB, 1024)
-        self.assertLess(adapter.DEFAULT_WORKER_RSS_LIMIT_MIB, adapter.MAX_GLOBAL_RAM_MIB)
-        self.assertGreaterEqual(adapter.MAX_GLOBAL_RAM_MIB - adapter.DEFAULT_WORKER_RSS_LIMIT_MIB, 128)
+        self.assertEqual(adapter.DEFAULT_WORKER_RSS_LIMIT_MIB, 850)
+        self.assertEqual(adapter.MAX_PARENT_PLUS_WORKER_RSS_MIB, 900)
+        self.assertGreaterEqual(adapter.MAX_GLOBAL_RAM_MIB - adapter.MAX_PARENT_PLUS_WORKER_RSS_MIB, 124)
 
     def test_synthetic_fixtures_have_valid_container_signatures(self):
         with tempfile.TemporaryDirectory() as temp:
