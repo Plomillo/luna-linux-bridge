@@ -198,6 +198,38 @@ class ModelAdapterControlTests(unittest.TestCase):
         torch.testing.assert_close(actual, expected, rtol=1e-5, atol=1e-5)
         self.assertEqual(adapter.VISION_ATTENTION_QUERY_BLOCK, 64)
 
+
+    def test_direct_idefics3_attention_override_matches_reference_forward(self):
+        import importlib.util
+        if importlib.util.find_spec("torch") is None:
+            self.skipTest("torch is installed only in the model-resource workflow")
+        import torch
+        from types import SimpleNamespace
+
+        torch.manual_seed(20261023)
+        hidden = torch.randn(1, 137, 16, dtype=torch.float32)
+        mask = torch.zeros(1, 1, 137, 137, dtype=torch.float32)
+        mask[:, :, :, -5:] = -10000.0
+        attention = SimpleNamespace(
+            q_proj=torch.nn.Linear(16, 16, bias=False),
+            k_proj=torch.nn.Linear(16, 16, bias=False),
+            v_proj=torch.nn.Linear(16, 16, bias=False),
+            out_proj=torch.nn.Linear(16, 16, bias=False),
+            num_heads=2, head_dim=8, scale=8 ** -0.5, dropout=0.0, training=False,
+        )
+        q = attention.q_proj(hidden).view(1, 137, 2, 8).transpose(1, 2)
+        k = attention.k_proj(hidden).view(1, 137, 2, 8).transpose(1, 2)
+        v = attention.v_proj(hidden).view(1, 137, 2, 8).transpose(1, 2)
+        scores = torch.matmul(q, k.transpose(-1, -2)) * attention.scale + mask
+        weights = torch.nn.functional.softmax(scores, dim=-1, dtype=torch.float32)
+        expected_heads = torch.matmul(weights, v).transpose(1, 2).contiguous()
+        expected = attention.out_proj(expected_heads.reshape(1, 137, 16).contiguous())
+        actual, returned_weights = adapter.chunked_idefics3_vision_attention_forward(
+            attention, hidden, attention_mask=mask
+        )
+        self.assertIsNone(returned_weights)
+        torch.testing.assert_close(actual, expected, rtol=1e-5, atol=1e-5)
+
     def test_pdf_generation_domain_adapter_does_not_claim_model_load(self):
         with tempfile.TemporaryDirectory() as temp:
             output = Path(temp) / "domain.pdf"
