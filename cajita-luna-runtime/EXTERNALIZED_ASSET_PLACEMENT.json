@@ -2,7 +2,7 @@
   "schema": "CAJITA_EXTERNALIZED_ASSET_PLACEMENT/1.0",
   "candidate_id": "CAJITA_LUNA_RUNTIME_V9_20261023_EXTERNAL_ASSET_PLACEMENT",
   "based_on_commit": "cf777392759b1926e9999ed4f877aa09fc88cf90",
-  "status": "NEW_ASSET_COMPACTION_COMPLETE_RUNTIME_PATH_REPAIR_PENDING",
+  "status": "INTEGRATION_BLOCKED_GLOBAL_SIZE_CAP",
   "purpose": "Place recovered externalized assets at their intended six-domain source-tree paths without silently promoting them into the distributable archive.",
   "hard_cap_bytes": 470000000,
   "current_macrodown_manifest": {
@@ -44,7 +44,8 @@
         ],
         "upx_changes": [],
         "member_roundtrip": "PASS",
-        "runtime_path_repair": "PENDING_NEXT_PHASE"
+        "runtime_path_repair": "BLOCKED_GLOBAL_SIZE_CAP",
+        "functional_integration": "NOT_VALIDATED"
       }
     },
     {
@@ -76,7 +77,8 @@
         ],
         "upx_changes": [],
         "member_roundtrip": "PASS",
-        "runtime_path_repair": "PENDING_NEXT_PHASE"
+        "runtime_path_repair": "BLOCKED_GLOBAL_SIZE_CAP",
+        "functional_integration": "NOT_VALIDATED"
       }
     },
     {
@@ -108,7 +110,8 @@
         ],
         "upx_changes": [],
         "member_roundtrip": "PASS",
-        "runtime_path_repair": "PENDING_NEXT_PHASE"
+        "runtime_path_repair": "BLOCKED_GLOBAL_SIZE_CAP",
+        "functional_integration": "NOT_VALIDATED"
       }
     },
     {
@@ -152,7 +155,8 @@
           }
         ],
         "member_roundtrip": "PASS",
-        "runtime_path_repair": "PENDING_NEXT_PHASE"
+        "runtime_path_repair": "BLOCKED_GLOBAL_SIZE_CAP",
+        "functional_integration": "NOT_VALIDATED"
       }
     },
     {
@@ -196,7 +200,8 @@
           }
         ],
         "member_roundtrip": "PASS",
-        "runtime_path_repair": "PENDING_NEXT_PHASE"
+        "runtime_path_repair": "BLOCKED_GLOBAL_SIZE_CAP",
+        "functional_integration": "NOT_VALIDATED"
       }
     },
     {
@@ -262,7 +267,8 @@
           }
         ],
         "member_roundtrip": "PASS",
-        "runtime_path_repair": "PENDING_NEXT_PHASE"
+        "runtime_path_repair": "BLOCKED_GLOBAL_SIZE_CAP",
+        "functional_integration": "NOT_VALIDATED"
       }
     },
     {
@@ -294,7 +300,8 @@
         ],
         "upx_changes": [],
         "member_roundtrip": "PASS",
-        "runtime_path_repair": "PENDING_NEXT_PHASE"
+        "runtime_path_repair": "BLOCKED_GLOBAL_SIZE_CAP",
+        "functional_integration": "NOT_VALIDATED"
       }
     },
     {
@@ -326,7 +333,8 @@
         ],
         "upx_changes": [],
         "member_roundtrip": "PASS",
-        "runtime_path_repair": "PENDING_NEXT_PHASE"
+        "runtime_path_repair": "BLOCKED_GLOBAL_SIZE_CAP",
+        "functional_integration": "NOT_VALIDATED"
       }
     },
     {
@@ -358,7 +366,8 @@
         ],
         "upx_changes": [],
         "member_roundtrip": "PASS",
-        "runtime_path_repair": "PENDING_NEXT_PHASE"
+        "runtime_path_repair": "BLOCKED_GLOBAL_SIZE_CAP",
+        "functional_integration": "NOT_VALIDATED"
       }
     },
     {
@@ -390,7 +399,8 @@
         ],
         "upx_changes": [],
         "member_roundtrip": "PASS",
-        "runtime_path_repair": "PENDING_NEXT_PHASE"
+        "runtime_path_repair": "BLOCKED_GLOBAL_SIZE_CAP",
+        "functional_integration": "NOT_VALIDATED"
       }
     }
   ],
@@ -727,5 +737,22 @@
     "upx_version": "upx 4.2.2",
     "functional_repair": "NOT_PERFORMED_BY_ORDER",
     "certification": "NOT_GRANTED"
+  },
+  "functional_integration_audit": {
+    "audit_id": "CAJITA_TEN_ASSET_RUNTIME_INTEGRATION_AUDIT_20261023",
+    "audited_branch": "main",
+    "documentation_commit": "7b57272cddc5c183d211210a6b1d4d2920302b9b",
+    "assets_expected": 10,
+    "containers_present_in_runtime_tree": 10,
+    "original_assets_restored_to_runtime_tree": 0,
+    "included_in_current_macrodown_manifest": 0,
+    "source_copies_preserved_outside_runtime": "externalized-assets-staging/",
+    "runtime_path_repair": "NOT_PERFORMED_FAIL_CLOSED",
+    "cap_bytes": 470000000,
+    "projected_raw_payload_bytes": 641773963,
+    "projected_over_cap_bytes": 171773963,
+    "quantization_result": "NO_SIZE_SAVING_QUANTIZATION_VALIDATED",
+    "decision": "BLOCKED_GLOBAL_SIZE_CAP",
+    "reason": "Promoting the ten expanded assets to the distributable runtime tree would violate the current global byte cap. Do not claim functional integration or certification until a measured size rebalance passes the cap and consumers are validated."
   }
 }
