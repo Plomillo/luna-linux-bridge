@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   publish:
-    if: github.ref == 'refs/heads/main' && github.event.head_commit.message == 'chore(release): publish Cajita archive 2026-10-23'
+    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: [self-hosted, linux, x64]
     timeout-minutes: 60
     permissions:
@@ -99,3 +99,8 @@ jobs:
           print("CHECKSUM_ASSET=" + checksum["name"])
           print("UPLOAD_VERIFICATION=PASS")
           PY
+
+      - name: Disable temporary publisher after verified release
+        if: success()
+        shell: bash
+        run: gh workflow disable publish-cajita-luna-archive-once.yml --repo "$GH_REPO"
