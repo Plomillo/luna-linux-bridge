@@ -52,6 +52,18 @@ class ModelAdapterControlTests(unittest.TestCase):
         self.assertEqual(profile["profile_id"], "LOW_MEMORY_512_NO_SPLITS")
         self.assertEqual(profile["quality_equivalence"], "NOT_ESTABLISHED")
 
+
+    def test_docling_releases_each_tensor_mapping_and_ties_embeddings_before_allocation(self):
+        source = Path(adapter.DOMAINS["D05_INTELIGENCIA_DOCUMENTAL"]["module"]).read_text(encoding="utf-8")
+        tie_pos = source.index('model.tie_weights()')
+        allocate_pos = source.index('model.to_empty(device="cpu")')
+        self.assertLess(tie_pos, allocate_pos, "tied embedding storage must be shared before CPU allocation")
+        tensor_loop_start = source.index('for name,r in meta["tensors"].items():')
+        tensor_loop_end = source.index('    finally:', tensor_loop_start)
+        tensor_loop = source[tensor_loop_start:tensor_loop_end]
+        self.assertIn('mapped.madvise(mmap.MADV_DONTNEED)', tensor_loop)
+        self.assertLess(tensor_loop.index('loaded.add(name)'), tensor_loop.index('mapped.madvise(mmap.MADV_DONTNEED)'))
+
     def test_pdf_generation_domain_adapter_does_not_claim_model_load(self):
         with tempfile.TemporaryDirectory() as temp:
             output = Path(temp) / "domain.pdf"
