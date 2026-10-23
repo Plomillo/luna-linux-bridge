@@ -20,7 +20,7 @@ class ModelAdapterControlTests(unittest.TestCase):
     def test_pdf_adapter_creates_valid_minimal_pdf_and_hash(self):
         with tempfile.TemporaryDirectory() as temp:
             output = Path(temp) / "sample.pdf"
-            result = adapter.make_pdf("Informe de prueba\\nResumen: acción, economía y traducción.", output)
+            result = adapter.make_pdf("Informe de prueba\nResumen: acción, economía y traducción.", output)
             data = output.read_bytes()
             self.assertEqual(result["status"], "PASS_PDF_CREATED")
             self.assertTrue(data.startswith(b"%PDF-1.4"))
@@ -75,7 +75,7 @@ class ModelAdapterControlTests(unittest.TestCase):
             adapter.make_synthetic_audio(wav)
             adapter.make_synthetic_image(ppm)
             self.assertTrue(wav.read_bytes().startswith(b"RIFF"))
-            self.assertTrue(ppm.read_bytes().startswith(b"P6\\n64 64\\n255\\n"))
+            self.assertTrue(ppm.read_bytes().startswith(b"P6\n64 64\n255\n"))
 
 if __name__ == "__main__":
     unittest.main()
