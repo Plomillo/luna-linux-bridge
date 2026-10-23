@@ -1,0 +1,171 @@
+name: Cajita — read-only Kestra size-gate audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/cajita-kestra-audit.yml"
+      - "integrations/kestra/flows/20-cajita-runtime-size-gate.yml"
+      - "docs/cajita-luna/CAJITA_RUNTIME_Q4_REBALANCE_20261023.json"
+      - "docs/cajita-luna/CAJITA_MACRODOWN_BUILD_20261023.json"
+      - "cajita-luna-runtime/EXTERNALIZED_ASSET_PLACEMENT.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cajita-kestra-audit-main
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout read-only audit flow
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: main
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Start ephemeral Kestra with read-only GitHub access
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          KESTRA_ADMIN_USER="cajita-audit-ci@example.com"
+          KESTRA_ADMIN_PASSWORD="K$(openssl rand -hex 24)a9!"
+          echo "::add-mask::$KESTRA_ADMIN_PASSWORD"
+          echo "::add-mask::$GITHUB_TOKEN"
+          echo "KESTRA_ADMIN_USER=$KESTRA_ADMIN_USER" >> "$GITHUB_ENV"
+          echo "KESTRA_ADMIN_PASSWORD=$KESTRA_ADMIN_PASSWORD" >> "$GITHUB_ENV"
+          CONFIG_PATH="$RUNNER_TEMP/cajita-kestra-config.yml"
+          cat > "$CONFIG_PATH" <<EOF
+          kestra:
+            server:
+              basic-auth:
+                username: "$KESTRA_ADMIN_USER"
+                password: "$KESTRA_ADMIN_PASSWORD"
+            plugins:
+              auto-install:
+                enabled: false
+            variables:
+              env-vars-prefix: "ENV_"
+          EOF
+          export KESTRA_CONFIGURATION="$(cat "$CONFIG_PATH")"
+          export ENV_GITHUB_TOKEN="$GITHUB_TOKEN"
+          docker run -d --rm --name kestra-cajita-audit -p 8080:8080 \
+            -e ENV_GITHUB_TOKEN -e KESTRA_CONFIGURATION \
+            kestra/kestra:v2.0.3-slim server local
+          unset ENV_GITHUB_TOKEN KESTRA_CONFIGURATION
+          for attempt in $(seq 1 60); do
+            code="$(curl --connect-timeout 2 --max-time 3 -sS -o /dev/null -w '%{http_code}' \
+              -u "$KESTRA_ADMIN_USER:$KESTRA_ADMIN_PASSWORD" \
+              http://localhost:8080/api/v1/main/flows/search || true)"
+            if [ "$code" = "200" ]; then
+              echo "KESTRA_RUNTIME=READY"
+              {
+                echo "Kestra runtime: ready"
+                echo "Kestra image: kestra/kestra:v2.0.3-slim"
+                echo "GitHub token scope: contents:read only"
+                echo "Flow effects: read-only HTTP + log/fail; no repository mutation"
+              } >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            if ! docker ps --format '{{.Names}}' | grep -qx kestra-cajita-audit; then
+              echo "KESTRA_RUNTIME=FAILED"
+              exit 1
+            fi
+            sleep 2
+          done
+          echo "KESTRA_RUNTIME=TIMEOUT"
+          exit 1
+
+      - name: Import read-only Cajita gate flow
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          auth_cfg="$RUNNER_TEMP/cajita-kestra-auth"
+          umask 077
+          printf 'user = "%s:%s"\n' "$KESTRA_ADMIN_USER" "$KESTRA_ADMIN_PASSWORD" > "$auth_cfg"
+          trap 'rm -f "$auth_cfg"' EXIT
+          response="$RUNNER_TEMP/cajita-kestra-flow-import.json"
+          code="$(curl --connect-timeout 3 --max-time 20 --config "$auth_cfg" --silent --show-error \
+            --output "$response" --write-out '%{http_code}' \
+            --request POST --header 'Content-Type: application/x-yaml' \
+            --data-binary @integrations/kestra/flows/20-cajita-runtime-size-gate.yml \
+            http://localhost:8080/api/v1/main/flows || true)"
+          if [[ ! "$code" =~ ^2[0-9][0-9]$ ]]; then
+            echo "KESTRA_FLOW_IMPORT=FAIL HTTP=$code"
+            cat "$response" 2>/dev/null || true
+            exit 1
+          fi
+          echo "KESTRA_FLOW_IMPORT=PASS"
+
+      - name: Execute the read-only size audit and require SUCCESS
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          auth_cfg="$RUNNER_TEMP/cajita-kestra-auth"
+          if [ ! -f "$auth_cfg" ]; then
+            umask 077
+            printf 'user = "%s:%s"\n' "$KESTRA_ADMIN_USER" "$KESTRA_ADMIN_PASSWORD" > "$auth_cfg"
+          fi
+          trap 'rm -f "$auth_cfg"' EXIT
+          start="$RUNNER_TEMP/cajita-kestra-execution-start.json"
+          http="$(curl --connect-timeout 3 --max-time 20 --config "$auth_cfg" --silent --show-error \
+            --output "$start" --write-out '%{http_code}' --request POST \
+            http://localhost:8080/api/v1/main/executions/louksna.kestra/cajita_runtime_size_gate || true)"
+          if [[ ! "$http" =~ ^2[0-9][0-9]$ ]]; then
+            echo "KESTRA_EXECUTION_START=FAIL HTTP=$http"
+            cat "$start" 2>/dev/null || true
+            exit 1
+          fi
+          id="$(jq -r '.id // empty' "$start")"
+          if [ -z "$id" ]; then
+            echo "KESTRA_EXECUTION_START=FAIL missing-id"
+            cat "$start"
+            exit 1
+          fi
+          state=""
+          for attempt in $(seq 1 90); do
+            current="$RUNNER_TEMP/cajita-kestra-execution-status.json"
+            status_http="$(curl --connect-timeout 3 --max-time 10 --config "$auth_cfg" --silent --show-error \
+              --output "$current" --write-out '%{http_code}' \
+              "http://localhost:8080/api/v1/main/executions/$id" || true)"
+            if [[ "$status_http" =~ ^2[0-9][0-9]$ ]]; then
+              state="$(jq -r '.state.current // .state // "UNKNOWN"' "$current")"
+              if [ "$state" = "SUCCESS" ]; then
+                echo "KESTRA_CAJITA_SIZE_AUDIT=PASS execution_id=$id state=$state"
+                {
+                  echo "Kestra Cajita size audit: PASS"
+                  echo "Kestra execution id: $id"
+                  echo "Final raw payload: $(jq -r '.runtime_bytes_after' docs/cajita-luna/CAJITA_RUNTIME_Q4_REBALANCE_20261023.json) bytes"
+                  echo "Macrodown archive: $(jq -r '.archive_bytes' docs/cajita-luna/CAJITA_MACRODOWN_BUILD_20261023.json) bytes"
+                  echo "Certification: NOT_GRANTED"
+                } >> "$GITHUB_STEP_SUMMARY"
+                exit 0
+              fi
+              if [[ "$state" == "FAILED" || "$state" == "KILLED" || "$state" == "CANCELLED" || "$state" == "WARNING" ]]; then
+                echo "KESTRA_CAJITA_SIZE_AUDIT=FAIL state=$state"
+                cat "$current"
+                exit 1
+              fi
+            fi
+            sleep 2
+          done
+          echo "KESTRA_CAJITA_SIZE_AUDIT=TIMEOUT last_state=$state"
+          cat "$RUNNER_TEMP/cajita-kestra-execution-status.json" 2>/dev/null || true
+          exit 1
+
+      - name: Stop ephemeral Kestra
+        if: always()
+        shell: bash
+        run: |
+          docker rm -f kestra-cajita-audit >/dev/null 2>&1 || true
