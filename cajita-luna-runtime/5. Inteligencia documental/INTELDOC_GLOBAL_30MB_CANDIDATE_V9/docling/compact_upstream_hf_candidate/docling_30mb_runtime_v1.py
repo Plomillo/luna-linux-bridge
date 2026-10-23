@@ -97,10 +97,20 @@ def decode_tensor_chunked_into(blob, r, target, chunk_rows=256):
             if np.any(selected):
                 decoded.reshape(-1)[ids[selected] - flat_start] += vals[selected]
             decoded_fp16 = decoded.astype(np.float16)
+            # Quantization treats every output filter as one flattened matrix row.
+            # Conv kernels such as patch_embedding are stored as [out, in, kh, kw],
+            # so restore the declared tensor's trailing dimensions before copying.
+            target_tail = tuple(int(dim) for dim in target.shape[1:])
+            if int(np.prod(target_tail)) != n:
+                raise RuntimeError(
+                    "BIVLM_TARGET_TAIL_SHAPE_MISMATCH:" + r["name"] +
+                    f":tail={target_tail}:matrix_cols={n}"
+                )
+            decoded_target = decoded_fp16.reshape((row_count,) + target_tail)
             target[start:end].copy_(
-                torch.from_numpy(np.ascontiguousarray(decoded_fp16)).to(device=target.device, dtype=target.dtype)
+                torch.from_numpy(np.ascontiguousarray(decoded_target)).to(device=target.device, dtype=target.dtype)
             )
-            del signs, decoded, decoded_fp16, selected
+            del signs, decoded, decoded_fp16, decoded_target, selected
         del scales, ids, vals
         return
     if kind != "nanoquant_style_binary_lowrank":
