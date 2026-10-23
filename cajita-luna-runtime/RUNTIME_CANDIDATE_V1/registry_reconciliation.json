@@ -1,0 +1,545 @@
+{
+  "captured_at_utc": "2026-10-22T09:04:20.084Z",
+  "certification": "NOT_GRANTED",
+  "disposition_status": "ALL_FINDINGS_CLASSIFIED_WITH_HASH_BOUND_EVIDENCE",
+  "entries": [
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B4",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "1. Cerebro/LICENSE",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B5",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "1. Cerebro/config.json",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B4",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "1. Cerebro/gitattributes",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B5",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "1. Cerebro/model-00000-of-00014.safetensors",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B5",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "1. Cerebro/model-00001-of-00014.safetensors",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B5",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "1. Cerebro/model-00002-of-00014.safetensors",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B5",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "1. Cerebro/model-00003-of-00014.safetensors",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B5",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "1. Cerebro/model-00004-of-00014.safetensors",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B5",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "1. Cerebro/model-00005-of-00014.safetensors",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B5",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "1. Cerebro/model-00006-of-00014.safetensors",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B5",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "1. Cerebro/model-00007-of-00014.safetensors",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B5",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "1. Cerebro/model-00008-of-00014.safetensors",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B5",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "1. Cerebro/model-00009-of-00014.safetensors",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B5",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "1. Cerebro/model-00010-of-00014.safetensors",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B5",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "1. Cerebro/model-00011-of-00014.safetensors",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B5",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "1. Cerebro/model-00012-of-00014.safetensors",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B5",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "1. Cerebro/model-00013-of-00014.safetensors",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B5",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "1. Cerebro/model-00014-of-00014.safetensors",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B5",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "1. Cerebro/model.safetensors.index.json",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B4",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "2. Orquestación/Orquestador/Louksna_WebLocal_Bootstrap_LINUX_SECURE_ULTRA.7z",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B5",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "3. Transcripción/model.safetensors",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B4",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "4. Traductor Inteligente/Traducción general/README.md",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B4",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "4. Traductor Inteligente/Traducción general/generation_config.json",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "current_path": "3. Transcripción/gitattributes",
+      "current_sha256": "11ad7efa24975ee4b0c3c3a38ed18737f0658a5f75a0a96787b576a78a023361",
+      "current_size_bytes": 1519,
+      "current_validation_report_path": ".cajita-optimization-candidates/evidence/CURRENT_ARTIFACT_VALIDATION_V9.json",
+      "current_validation_report_sha256": "30c3a1229ede797be6009b1f1d67d677d245e1d80e5e2ec53da33f4b4fd253d9",
+      "disposition": "CURRENT_ARTIFACT_VALIDATED",
+      "functional_equivalence": "NOT_CLAIMED",
+      "legacy_source_match": true,
+      "resolution_evidence_sha256": "30c3a1229ede797be6009b1f1d67d677d245e1d80e5e2ec53da33f4b4fd253d9",
+      "source_path": "4. Traductor Inteligente/Traducción general/gitattributes"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B5",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "4. Traductor Inteligente/Traducción general/m4t_v2_multitask_unity2.pt",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B5",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "4. Traductor Inteligente/Traducción general/model-00001-of-00002.safetensors",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B5",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "4. Traductor Inteligente/Traducción general/model-00002-of-00002.safetensors",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B4",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "4. Traductor Inteligente/Traducción general/model.safetensors.index.json",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B5",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "4. Traductor Inteligente/Traducción general/seamlessM4T_v2_large.pt",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B4",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "4. Traductor Inteligente/Traducción general/seamlessm4t_arch.svg",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "current_path": "4. Traductor Inteligente/Traducción general/sentencepiece.bpe.model",
+      "current_sha256": "026a76827537db9f1348e4d5aaa127bb10a2f2ff633243f3a52d16be82d73f9d",
+      "current_size_bytes": 5165809,
+      "current_validation_report_path": ".cajita-optimization-candidates/evidence/CURRENT_ARTIFACT_VALIDATION_V9.json",
+      "current_validation_report_sha256": "30c3a1229ede797be6009b1f1d67d677d245e1d80e5e2ec53da33f4b4fd253d9",
+      "disposition": "CURRENT_ARTIFACT_VALIDATED",
+      "functional_equivalence": "NOT_CLAIMED",
+      "legacy_source_match": true,
+      "resolution_evidence_sha256": "30c3a1229ede797be6009b1f1d67d677d245e1d80e5e2ec53da33f4b4fd253d9",
+      "source_path": "4. Traductor Inteligente/Traducción general/tokenizer.model"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B5",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "4. Traductor Inteligente/Traducción general/vocoder_v2.pt",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B4",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "5. Inteligencia documental/Calibre/calibre-9.14.0-x86_64.txz",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B4",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "5. Inteligencia documental/Calibre/calibre-9.14.0.tar.xz",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B4",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "5. Inteligencia documental/Docling/docling_slim-2.124.0-py3-none-any.whl",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B5",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "5. Inteligencia documental/Docling/granite-docling-258M-Q4_K_M.gguf",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B5",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "5. Inteligencia documental/Docling/mmproj-granite-docling-258M-f16.gguf",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B4",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "6. Sistema Inteligente/Análisis Avanzado/README.md",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B4",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "6. Sistema Inteligente/Análisis Avanzado/gitattributes",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B5",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "6. Sistema Inteligente/Análisis Avanzado/model-00001-of-00008.safetensors",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B5",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "6. Sistema Inteligente/Análisis Avanzado/model-00002-of-00008.safetensors",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B5",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "6. Sistema Inteligente/Análisis Avanzado/model-00003-of-00008.safetensors",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B5",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "6. Sistema Inteligente/Análisis Avanzado/model-00004-of-00008.safetensors",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B5",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "6. Sistema Inteligente/Análisis Avanzado/model-00005-of-00008.safetensors",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B5",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "6. Sistema Inteligente/Análisis Avanzado/model-00006-of-00008.safetensors",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B5",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "6. Sistema Inteligente/Análisis Avanzado/model-00007-of-00008.safetensors",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B5",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "6. Sistema Inteligente/Análisis Avanzado/model-00008-of-00008.safetensors",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B4",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "6. Sistema Inteligente/Análisis Avanzado/model.safetensors.index.json",
+      "status": "REMEDIATION_REQUIRED"
+    },
+    {
+      "current_path": "6. Sistema Inteligente/Archivado Deteccion/rarlinux-x64-723 (1).tar.gz",
+      "current_sha256": "e140def835dedcd2f1a86879914bfe4aa6628acbd8aaf89b272d9d135c91baa1",
+      "current_size_bytes": 691630,
+      "current_validation_report_path": ".cajita-optimization-candidates/evidence/CURRENT_ARTIFACT_VALIDATION_V9.json",
+      "current_validation_report_sha256": "30c3a1229ede797be6009b1f1d67d677d245e1d80e5e2ec53da33f4b4fd253d9",
+      "disposition": "CURRENT_ARTIFACT_VALIDATED",
+      "functional_equivalence": "NOT_CLAIMED",
+      "legacy_source_match": false,
+      "note": "Archive integrity/version tested; legacy size/hash differs.",
+      "resolution_evidence_sha256": "30c3a1229ede797be6009b1f1d67d677d245e1d80e5e2ec53da33f4b4fd253d9",
+      "source_path": "6. Sistema Inteligente/Archivado Deteccion/rarlinux-x64-723 (1).tar.gz"
+    },
+    {
+      "current_path": "6. Sistema Inteligente/Archivado Deteccion/siegfried_1-11-6_linux-x86_64_static.zip",
+      "current_sha256": "1d8c6fae32af635c0a97fc7d9d6abc2708a1c7769c946f04ec25a545362200a6",
+      "current_size_bytes": 3727204,
+      "current_validation_report_path": ".cajita-optimization-candidates/evidence/CURRENT_ARTIFACT_VALIDATION_V9.json",
+      "current_validation_report_sha256": "30c3a1229ede797be6009b1f1d67d677d245e1d80e5e2ec53da33f4b4fd253d9",
+      "disposition": "CURRENT_ARTIFACT_VALIDATED",
+      "functional_equivalence": "NOT_CLAIMED",
+      "legacy_source_match": false,
+      "note": "Archive integrity/version tested; legacy size/hash differs.",
+      "resolution_evidence_sha256": "30c3a1229ede797be6009b1f1d67d677d245e1d80e5e2ec53da33f4b4fd253d9",
+      "source_path": "6. Sistema Inteligente/Archivado Deteccion/siegfried_1-11-6_linux-x86_64_static.zip"
+    },
+    {
+      "current_path": "6. Sistema Inteligente/Consola/quickjs-linux-x86_64-2026-06-04.zip",
+      "current_sha256": "4a4732e2b812ce386234118ec36fa817771b474b1a335aed8fece55fb6279dae",
+      "current_size_bytes": 909563,
+      "current_validation_report_path": ".cajita-optimization-candidates/evidence/CURRENT_ARTIFACT_VALIDATION_V9.json",
+      "current_validation_report_sha256": "30c3a1229ede797be6009b1f1d67d677d245e1d80e5e2ec53da33f4b4fd253d9",
+      "disposition": "CURRENT_ARTIFACT_VALIDATED",
+      "functional_equivalence": "NOT_CLAIMED",
+      "legacy_source_match": false,
+      "note": "Archive integrity/version tested; legacy size/hash differs.",
+      "resolution_evidence_sha256": "30c3a1229ede797be6009b1f1d67d677d245e1d80e5e2ec53da33f4b4fd253d9",
+      "source_path": "6. Sistema Inteligente/Consola/quickjs-linux-x86_64-2026-06-04.zip"
+    },
+    {
+      "disposition": "MISSING_REQUIRED_REMEDIATION",
+      "functional_equivalence": "NOT_ESTABLISHED",
+      "gate_after": "B4",
+      "remediation_plan_path": ".cajita-optimization-candidates/evidence/REGISTRY_GAP_REMEDIATION_V9.json",
+      "remediation_plan_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "resolution_evidence_sha256": "781763687a42feac5ff02899d9080da343af28ce9f86e96153bf52dbd05bc466",
+      "source_path": "desktop.ini",
+      "status": "REMEDIATION_REQUIRED"
+    }
+  ],
+  "functional_release": "HOLD_PENDING_B5",
+  "registry_raw_status": "RECONCILIATION_REQUIRED",
+  "remediation_required_count": 47,
+  "schema": "CAJITA_V9_REGISTRY_RECONCILIATION/1.0",
+  "source_registry_sha256": "e872101b9347356eb2e6574efbe7ae24986d0cef2b5e5c9288bb3e5d4f0ba22a"
+}

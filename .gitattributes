@@ -1,0 +1,2 @@
+cajita-luna-runtime/1.[[:space:]]Cerebro/model.safetensors filter=lfs diff=lfs merge=lfs -text
+cajita-luna-runtime/6.[[:space:]]Sistema[[:space:]]Inteligente/Anti-Alucinaciones/model.onnx filter=lfs diff=lfs merge=lfs -text

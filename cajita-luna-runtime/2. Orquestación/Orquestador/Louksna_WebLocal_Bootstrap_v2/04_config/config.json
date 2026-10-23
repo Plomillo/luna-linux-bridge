@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "Louksna Web Orchestration — Local First",
+  "version": "1.0.0",
+  "purpose": "Configuración preoptimizada para integrar una pila de automatización web local con Louksna.md.",
+  "policy": {
+    "execution_mode": "local_first",
+    "remote_fallback": "disabled_by_default",
+    "secrets_in_config": false,
+    "password_storage": "forbidden",
+    "human_intervention_on_auth_or_challenge": true
+  },
+  "stack": {
+    "primary_agent": {
+      "name": "skyvern",
+      "mode": "local",
+      "role": "high_level_web_agent",
+      "install": [
+        "pip install \"skyvern[all]\"",
+        "skyvern quickstart"
+      ]
+    },
+    "agent_control": {
+      "name": "stagehand",
+      "mode": "local",
+      "role": "agentic_browser_control",
+      "package": "@browserbasehq/stagehand",
+      "install": [
+        "npm install @browserbasehq/stagehand playwright"
+      ]
+    },
+    "browser_driver": {
+      "name": "playwright",
+      "mode": "local",
+      "browser": "chromium",
+      "role": "browser_driver",
+      "install": [
+        "npx playwright install chromium"
+      ]
+    },
+    "remote_fallback": {
+      "name": "browserbase",
+      "enabled": false,
+      "role": "remote_browser_infrastructure",
+      "required_env": [
+        "BROWSERBASE_API_KEY",
+        "BROWSERBASE_PROJECT_ID"
+      ]
+    }
+  },
+  "browser": {
+    "engine": "chromium",
+    "headless": true,
+    "persistent_context": true,
+    "downloads": true,
+    "uploads": true,
+    "javascript": true,
+    "local_storage": true,
+    "cookies": true,
+    "keep_browser_open_when_idle": false,
+    "minimal_browser_set": [
+      "chromium"
+    ]
+  },
+  "authentication": {
+    "mode": "user_authorized",
+    "persist_session": true,
+    "store_passwords": false,
+    "store_browser_state": true,
+    "mfa": "human_assist",
+    "captcha": "human_assist",
+    "oauth": "use_provider_authorization_flow"
+  },
+  "routing": {
+    "web_task": [
+      "skyvern_local",
+      "stagehand_local",
+      "playwright_local"
+    ],
+    "fallback_if_local_browser_unavailable": [
+      "browserbase_remote"
+    ],
+    "filesystem_task": [
+      "umot"
+    ]
+  },
+  "louksna_integration": {
+    "target": "Louksna.md",
+    "placement": "1. Orquestación",
+    "change_type": "new_capability",
+    "mutate_existing_blocks": false,
+    "preserve_canonical_identity": true,
+    "require_validation_before_activation": true,
+    "provenance_required": true,
+    "rollback_required": true
+  },
+  "resources": {
+    "official": {
+      "skyvern_github": "https://github.com/Skyvern-AI/skyvern",
+      "skyvern_docs": "https://www.skyvern.com/docs/",
+      "stagehand_github": "https://github.com/browserbase/stagehand",
+      "stagehand_npm": "https://www.npmjs.com/package/@browserbasehq/stagehand",
+      "playwright_docs": "https://playwright.dev/",
+      "playwright_github": "https://github.com/microsoft/playwright",
+      "browserbase": "https://www.browserbase.com/"
+    }
+  },
+  "notes": [
+    "El JSON contiene configuración, no binarios ni credenciales.",
+    "Playwright instala el navegador Chromium por separado.",
+    "Skyvern puede ejecutarse localmente/self-hosted y controlar un navegador local.",
+    "Stagehand puede ejecutarse con Playwright y modo local.",
+    "Browserbase queda deshabilitado por defecto como backend remoto alternativo.",
+    "ClamAV 1.5.4 queda configurado para Linux x86_64."
+  ],
+  "security": {
+    "engine": "clamav",
+    "version": "1.5.4",
+    "mode": "local",
+    "enabled": true,
+    "quarantine_before_release": true,
+    "on_access_scanning": false,
+    "signature_updates": "freshclam",
+    "binary_included": false,
+    "reason": "Linux-only security profile; the upstream payload is fetched by the Linux downloader at installation time.",
+    "platform": "linux-x86_64",
+    "package_options": {
+      "rpm": "clamav-1.5.4.linux.x86_64.rpm",
+      "deb": "clamav-1.5.4.linux.x86_64.deb",
+      "source": "clamav-1.5.4.tar.gz"
+    }
+  }
+}

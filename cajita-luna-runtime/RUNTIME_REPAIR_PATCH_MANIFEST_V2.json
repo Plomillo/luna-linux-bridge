@@ -1,0 +1,41 @@
+{
+  "candidate_source": "/home/diegoignacionorambuenamiranda/PROYECTOS/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR/CUSTOSZ_CONTINUITY_V1/state/distribution_candidates/CAJITA_GLOBAL_479M_CANDIDATE_20261022T211443Z",
+  "certification": "NOT_GRANTED",
+  "changes": [
+    "GPT-OSS rotary frequency buffers initialized explicitly after meta-device construction",
+    "Whisper inference runtime converts loaded candidate model to float32 for CPU feature compatibility",
+    "SeamlessM4T runtime infers each low-rank matrix rank from stored factors and supports ConvTranspose1d in HiFi-GAN"
+  ],
+  "created_at_utc": "2026-10-22T22:11:56.402Z",
+  "limits": [
+    "No canonical promotion",
+    "No quality-equivalence claim",
+    "Functional and independent gates remain mandatory"
+  ],
+  "patches": [
+    {
+      "after_bytes": 11677,
+      "after_sha256": "2897b7ca4d6b3c53349298b40381bfc0c19ec3fb6f38633c21d93296aea6db34",
+      "before_bytes": 11184,
+      "before_sha256": "93dde7011421f22212cd8ddc8e63318a6a0af71426f0bbb82165d441c4c85ff1",
+      "path": "1. Cerebro/cerebro_180mb_runtime.py"
+    },
+    {
+      "after_bytes": 7830,
+      "after_sha256": "845eff9326687f2b76f42af27c88eb571c0ce5e42de68d5383c65f53657a0a8d",
+      "before_bytes": 7804,
+      "before_sha256": "472c291892f56eb88ee60287de0f4dc98844b187a4f0833136c14beac60e4d5a",
+      "path": "3. Transcripción/lowrank_runtime.py"
+    },
+    {
+      "after_bytes": 10463,
+      "after_sha256": "8347e75916047783144e19f6496a8c9a02eecc8398679f8519278798ca536b8d",
+      "before_bytes": 7516,
+      "before_sha256": "ee9d3e10d829177cac7ad48cfe45adff0fc17f813e25c60fff07858e7308ba65",
+      "path": "4. Traductor Inteligente/Traducción general/lowrank_runtime.py"
+    }
+  ],
+  "promotion": "NOT_AUTHORIZED",
+  "schema": "CAJITA_RUNTIME_REPAIR_PATCH_MANIFEST/2.0",
+  "source_mutated": false
+}

@@ -1,0 +1,189 @@
+{
+  "authority": "Louksna.md",
+  "certification": "NOT_GRANTED",
+  "cli_extension_framework": {
+    "role": "EXTENSIBLE_INFRASTRUCTURE_NOT_NINTH_CLI"
+  },
+  "cli_spec": {
+    "path": "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/2. Cajita de Luna/2. Orquestación/Orquestador/CLIS.txt",
+    "sha256": "ecac2319f8d1cdc2aef0046a6cabd2c25de39801f07eea15021c38ed6e30d7fb"
+  },
+  "created_at_utc": "2026-10-17T20:36:25Z",
+  "doctrine": "EXTEND_DO_NOT_REPLACE",
+  "domain_order": [
+    "CLI_MOJO",
+    "CLI_CPP23_TOOLCHAIN",
+    "CLI_CLAUDE_CODE",
+    "CLI_PYTHON",
+    "CLI_GITHUB",
+    "CLI_GEMINI",
+    "CLI_GROK",
+    "CLI_HUGGING_FACE"
+  ],
+  "domains": [
+    {
+      "allowed_default_effects": [
+        "DISCOVER",
+        "VERSION_PROBE",
+        "DIAGNOSE"
+      ],
+      "dependencies": "UNRESOLVED_UNTIL_INVENTORY",
+      "executable_probe": {
+        "argv": [
+          "--version"
+        ],
+        "binary": "mojo"
+      },
+      "id": "CLI_MOJO",
+      "initial_state": "ADAPTER_PENDING",
+      "module": "CLIs/cli_mojo.py",
+      "mutations": "DENY_UNTIL_VERSIONED_ACTION_CONTRACT"
+    },
+    {
+      "allowed_default_effects": [
+        "DISCOVER",
+        "VERSION_PROBE",
+        "DIAGNOSE"
+      ],
+      "dependencies": "UNRESOLVED_UNTIL_INVENTORY",
+      "executable_probe": {
+        "argv": [
+          "--version"
+        ],
+        "binary": "g++"
+      },
+      "id": "CLI_CPP23_TOOLCHAIN",
+      "initial_state": "ADAPTER_PENDING",
+      "module": "CLIs/cli_cpp23_toolchain.py",
+      "mutations": "DENY_UNTIL_VERSIONED_ACTION_CONTRACT"
+    },
+    {
+      "allowed_default_effects": [
+        "DISCOVER",
+        "VERSION_PROBE",
+        "DIAGNOSE"
+      ],
+      "dependencies": "UNRESOLVED_UNTIL_INVENTORY",
+      "executable_probe": {
+        "argv": [
+          "--version"
+        ],
+        "binary": "claude"
+      },
+      "id": "CLI_CLAUDE_CODE",
+      "initial_state": "ADAPTER_PENDING",
+      "module": "CLIs/cli_claude_code.py",
+      "mutations": "DENY_UNTIL_VERSIONED_ACTION_CONTRACT"
+    },
+    {
+      "allowed_default_effects": [
+        "DISCOVER",
+        "VERSION_PROBE",
+        "DIAGNOSE"
+      ],
+      "dependencies": "UNRESOLVED_UNTIL_INVENTORY",
+      "executable_probe": {
+        "argv": [
+          "--version"
+        ],
+        "binary": "python3"
+      },
+      "id": "CLI_PYTHON",
+      "initial_state": "ADAPTER_PENDING",
+      "module": "CLIs/cli_python.py",
+      "mutations": "DENY_UNTIL_VERSIONED_ACTION_CONTRACT"
+    },
+    {
+      "allowed_default_effects": [
+        "DISCOVER",
+        "VERSION_PROBE",
+        "DIAGNOSE"
+      ],
+      "dependencies": "UNRESOLVED_UNTIL_INVENTORY",
+      "executable_probe": {
+        "argv": [
+          "--version"
+        ],
+        "binary": "gh"
+      },
+      "id": "CLI_GITHUB",
+      "initial_state": "ADAPTER_PENDING",
+      "module": "CLIs/cli_github.py",
+      "mutations": "DENY_UNTIL_VERSIONED_ACTION_CONTRACT"
+    },
+    {
+      "allowed_default_effects": [
+        "DISCOVER",
+        "VERSION_PROBE",
+        "DIAGNOSE"
+      ],
+      "dependencies": "UNRESOLVED_UNTIL_INVENTORY",
+      "executable_probe": {
+        "argv": [
+          "--version"
+        ],
+        "binary": "gemini"
+      },
+      "id": "CLI_GEMINI",
+      "initial_state": "ADAPTER_PENDING",
+      "module": "CLIs/cli_gemini.py",
+      "mutations": "DENY_UNTIL_VERSIONED_ACTION_CONTRACT"
+    },
+    {
+      "allowed_default_effects": [
+        "DISCOVER",
+        "VERSION_PROBE",
+        "DIAGNOSE"
+      ],
+      "dependencies": "UNRESOLVED_UNTIL_INVENTORY",
+      "executable_probe": {
+        "argv": [
+          "--version"
+        ],
+        "binary": "grok"
+      },
+      "id": "CLI_GROK",
+      "initial_state": "ADAPTER_PENDING",
+      "module": "CLIs/cli_grok.py",
+      "mutations": "DENY_UNTIL_VERSIONED_ACTION_CONTRACT"
+    },
+    {
+      "allowed_default_effects": [
+        "DISCOVER",
+        "VERSION_PROBE",
+        "DIAGNOSE"
+      ],
+      "dependencies": "UNRESOLVED_UNTIL_INVENTORY",
+      "executable_probe": {
+        "argv": [
+          "--version"
+        ],
+        "binary": "hf"
+      },
+      "id": "CLI_HUGGING_FACE",
+      "initial_state": "ADAPTER_PENDING",
+      "module": "CLIs/cli_hugging_face.py",
+      "mutations": "DENY_UNTIL_VERSIONED_ACTION_CONTRACT"
+    }
+  ],
+  "role": "DECLARATIVE_ENTRYPOINT_NOT_MONOLITHIC_IMPLEMENTATION",
+  "schema": "CUSTOSZ_ORCHESTRATOR_MANIFEST/1.0",
+  "security": {
+    "checkpoint_before_mutation": true,
+    "credential_values_never_logged": true,
+    "fail_closed_for_unauthorized_mutation": true,
+    "independent_validation_required": true,
+    "install_update_requires_explicit_versioned_plan": true,
+    "no_silent_path_or_shell_mutation": true,
+    "official_hash_signature_used_when_published": true,
+    "read_only_discovery_before_changes": true,
+    "rollback_and_post_validation_required": true
+  },
+  "shared_runtime_policy": {
+    "evidence_jsonl_hash_chain": true,
+    "idempotent": true,
+    "max_concurrency": 1,
+    "subprocess_shell": false,
+    "timeout_seconds_default": 30
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "architecture": "Whisperv2Model",
+  "certification": "NOT_GRANTED",
+  "created_at_utc": "2026-10-21T12:39:12.614Z",
+  "hard_cap_behavior": "candidate is never published if final measured bytes exceed TARGET_BYTES; no padding",
+  "matrix_count_factorized": 235,
+  "matrix_count_preserved": 2,
+  "method": "randomized_truncated_SVD_low_rank_factorization_plus_symmetric_INT8_factor_quantization",
+  "mission_sha256": "0a36c59d4baf5d547f5217dc9c6db2a58ad9f8f3ea65d88f9b16a0dbe1604f8f",
+  "model_id": "CAJITA_TRANSCRIPCION_WHISPER_TURBO",
+  "model_type": "whisper",
+  "oversample": 8,
+  "quality_equivalence": "NOT_ESTABLISHED",
+  "rank": 29,
+  "runtime": "lowrank_runtime.py",
+  "schema": "CUSTOSZ_CAJITA_WHISPER_TRANSCRIPTION_LOW_RANK_INT8_TARGET40/1.0",
+  "source_config_sha256": "c5b526b3e3cd64cd8940dabb45e8ba726629e22d8ed389c29b552f9140daf04a",
+  "source_model_identity_preserved": true,
+  "source_shard_sha256": {
+    "model.safetensors": "542566a422ae4f3fd23f1ba11add198fca01bbf82e66e6a2857b3f608b1eb9d1"
+  },
+  "source_weights_sha256": "542566a422ae4f3fd23f1ba11add198fca01bbf82e66e6a2857b3f608b1eb9d1",
+  "target_bytes": 40000000,
+  "tied_projection_factors_duplicated": true,
+  "vector_count_preserved": 350,
+  "weight_count_source": 587
+}

@@ -1,0 +1,26 @@
+{
+  "architecture": "SeamlessM4Tv2Model",
+  "certification": "NOT_GRANTED",
+  "created_at_utc": "2026-10-21T13:35:03.287Z",
+  "hard_cap_behavior": "candidate is never published if final measured bytes exceed TARGET_BYTES; no padding",
+  "matrix_count_factorized": 864,
+  "method": "randomized_truncated_SVD_low_rank_factorization_plus_symmetric_INT8_factor_quantization",
+  "mission_sha256": "0a36c59d4baf5d547f5217dc9c6db2a58ad9f8f3ea65d88f9b16a0dbe1604f8f",
+  "model_id": "CAJITA_TRADUCCION_SEAMLESSM4T_V2_LARGE",
+  "model_type": "seamless_m4t_v2",
+  "oversample": 8,
+  "quality_equivalence": "NOT_ESTABLISHED",
+  "rank": 4,
+  "runtime": "lowrank_runtime.py",
+  "schema": "CUSTOSZ_CAJITA_SEAMLESSM4T_LOW_RANK_INT8_TARGET50/2.0",
+  "source_config_sha256": "4b2fa9d863cc3033adaf261e6c3e32ad90347ee2f199a349ba1c77d5e26a605f",
+  "source_index_sha256": "79d33aa045308d1a93b11952f2a3e6a647c107b688e5fdf1124c4601626dcdb2",
+  "source_model_identity_preserved": true,
+  "source_shard_sha256": {
+    "model-00001-of-00002.safetensors": "85cab984fbc111f8713827c440499453b9e66f262862866eeed8725c302ba2ac",
+    "model-00002-of-00002.safetensors": "9536dc05892a6ca8410bcfea763dde422e2430c3cc1f3acd26c55182c8989017"
+  },
+  "target_bytes": 50000000,
+  "vector_count_preserved": 1368,
+  "weight_count_source": 2232
+}

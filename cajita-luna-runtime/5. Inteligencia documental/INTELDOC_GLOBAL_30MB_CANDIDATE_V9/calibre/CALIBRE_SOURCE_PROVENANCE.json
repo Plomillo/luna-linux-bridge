@@ -1,0 +1,11 @@
+{
+  "bundled_source_archive": false,
+  "equivalence": "NOT_ESTABLISHED",
+  "functional_tests": "NOT_RUN",
+  "original_bytes": 48867616,
+  "original_path": "/home/diegoignacionorambuenamiranda/PROYECTOS/1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/2. Cajita de Luna/5. Inteligencia documental/Calibre/calibre-9.14.0.tar.xz",
+  "original_sha256": "d1bc24024b0942429c627e9c5d0b25d51df9c1af1e1d8dca3e572f03b194c561",
+  "role": "BUILD_PROVENANCE_ONLY_IN_THIS_EXPERIMENT",
+  "schema": "INTELDOC_EXTERNALIZED_ARTIFACT/1.0",
+  "source_id": "CALIBRE_SOURCE"
+}

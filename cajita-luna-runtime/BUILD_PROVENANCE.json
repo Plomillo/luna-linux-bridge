@@ -1,0 +1,126 @@
+{
+  "schema": "CAJITA_MACRODOWN_BUILD_PROVENANCE/1.0",
+  "candidate_id": "CAJITA_LUNA_RUNTIME_V9_20261023",
+  "build_scope": "Six-domain compact runtime distribution; user performs any later GitHub upload manually.",
+  "source_candidate": {
+    "id": "CAJITA_GLOBAL_479M_CANDIDATE_RUNTIME_V4_20261022T233541Z",
+    "original_measured_bytes": 476521554,
+    "use": "Existing pre-quantized low-rank/packed model payloads reused as inputs; this build did not rerun weight quantization training/optimization."
+  },
+  "external_support": {
+    "repository": "https://github.com/Plomillo/luna-linux-bridge",
+    "pinned_commit": "d5c18de6db37835cb28c9ae8760aeb64b4c894e8",
+    "domain_manifest_count": 22,
+    "domain_manifests": "implementation/super1200/domains/D01.json through D22.json",
+    "included_in_macrodown": false,
+    "role": "external planning/verification reference only"
+  },
+  "custosz_tool": {
+    "path": "CUSTOSZV9.pyz",
+    "sha256": "667ceac7d7e59682292c864777ec3e1c228074716dc5dba17fe150e4d826ccf3",
+    "version_command": "CUSTOSZV9 9.0.0-candidate",
+    "internal_selftest_identity": "CUSTOSZV8 / 8.0.0-candidate",
+    "discrepancy": "The supplied V9-named artifact reports V8 identity in its selftest/status output. This mismatch is preserved as a discrepancy; no V9 certification claim is made."
+  },
+  "domains": [
+    {
+      "id": "D01_CEREBRO",
+      "route_type": "cerebro",
+      "root": "1. Cerebro/",
+      "entrypoint": "1. Cerebro/cerebro_180mb_runtime.py",
+      "weight_method": "GPT-OSS rank-1 INT8 factors"
+    },
+    {
+      "id": "D02_ORQUESTACION",
+      "route_type": "orquestacion",
+      "root": "2. Orquestación/",
+      "entrypoint": "2. Orquestación/Orquestador/CLIs/cli_registry.py",
+      "weight_method": "CLI registry route; no dedicated model weight"
+    },
+    {
+      "id": "D03_TRANSCRIPCION",
+      "route_type": "transcripcion",
+      "root": "3. Transcripción/",
+      "entrypoint": "3. Transcripción/lowrank_runtime.py",
+      "weight_method": "Whisper low-rank INT8 factors"
+    },
+    {
+      "id": "D04_TRADUCTOR_INTELIGENTE",
+      "route_type": "traductor_inteligente",
+      "root": "4. Traductor Inteligente/",
+      "entrypoint": "4. Traductor Inteligente/Traducción general/lowrank_runtime.py",
+      "weight_method": "SeamlessM4T v2 low-rank INT8 factors with tied shared embeddings/heads linked in runtime"
+    },
+    {
+      "id": "D05_INTELIGENCIA_DOCUMENTAL",
+      "route_type": "inteligencia_documental",
+      "root": "5. Inteligencia documental/",
+      "entrypoint": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/docling_30mb_runtime_v1.py",
+      "weight_method": "Granite Docling packed binary quantization; large low-rank tensor decoding by row chunks"
+    },
+    {
+      "id": "D06_SISTEMA_INTELIGENTE",
+      "route_type": "sistema_inteligente",
+      "root": "6. Sistema Inteligente/",
+      "entrypoint": "6. Sistema Inteligente/Análisis Avanzado/lowrank_runtime_v2.py",
+      "weight_method": "Qwen3 low-rank INT8 factors; ONNX artifact retained, inference adapter not certified"
+    }
+  ],
+  "validation_evidence": {
+    "structural_selftest": {
+      "status": "PASS",
+      "domain_count": 6,
+      "routes_wired": 6,
+      "package_bytes_before_archive_manifest": 476490466,
+      "hard_cap_bytes": 479000000
+    },
+    "static_weight_hash_audit": {
+      "status": "PASS",
+      "declared_weight_files": 6,
+      "declared_weight_bytes": 380561028,
+      "missing_files": [],
+      "undeclared_model_like_files": []
+    },
+    "D04_translator_smoke": {
+      "status": "PASS",
+      "mode": "text translation",
+      "input_token_count": 6,
+      "output_token_count": 6,
+      "decoded_text": "te te te te",
+      "elapsed_seconds": 5.943,
+      "quality_equivalence": "NOT_ESTABLISHED"
+    },
+    "D05_document_model_load": {
+      "status": "PASS",
+      "mode": "verify-only/model load",
+      "generation": "NOT_RUN",
+      "quality_equivalence": "NOT_ESTABLISHED"
+    },
+    "D01_D02_D03_D06_smoke": {
+      "status": "PASS_IN_PREVIOUS_V4_RECEIPT_CANDIDATE_ASSETS_AND_ADAPTERS_UNCHANGED",
+      "detail": "D01 5.529s; D02 0.064s; D03 17.514s; D06 4.483s. This is carry-forward evidence, not a new independent run in this build."
+    },
+    "D05_full_generation": {
+      "status": "NOT_COMPLETED",
+      "detail": "A CPU generation smoke was stopped after prolonged high CPU usage and no observable output. Verify-only model-load succeeded."
+    }
+  },
+  "gates": {
+    "hard_cap_bytes": 479000000,
+    "macrodown_raw_payload_gate": "PASS_PREBUILD; builder rechecks the final raw-byte total including its manifest",
+    "macrodown_archive_size_gate": "PENDING_BUILDER_RECHECK",
+    "runtime_portability": "CANDIDATE_ID_FIXED; extracted archive selftest and audit will be run",
+    "functional_equivalence": "NOT_ESTABLISHED",
+    "independent_validation": "NOT_RUN",
+    "certification": "NOT_GRANTED",
+    "github_upload": "NOT_PERFORMED"
+  },
+  "reproducibility": {
+    "build_script": "reproduce_macrodown.py",
+    "manifest": "MACRODOWN_MANIFEST.json",
+    "sidecar": "CAJITA_LUNA_RUNTIME_V9.macrodown.sha256",
+    "deterministic_zip_metadata": true,
+    "hash_each_included_file": true,
+    "checksum_test_required": true
+  }
+}

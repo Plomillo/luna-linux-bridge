@@ -1,0 +1,74 @@
+{
+  "collected_at_utc": "2026-10-22T01:46:10Z",
+  "inventory_only_not_execution": true,
+  "schema": "INTELDOC_HOST_TOOL_INVENTORY/1.0",
+  "tools": [
+    {
+      "available": false,
+      "name": "ebook-convert",
+      "path": null
+    },
+    {
+      "available": false,
+      "name": "calibre",
+      "path": null
+    },
+    {
+      "available": true,
+      "bytes": 6652,
+      "name": "libreoffice",
+      "path": "/usr/bin/libreoffice",
+      "resolved_path": "/usr/lib/libreoffice/program/soffice",
+      "sha256": "adf468b45764b2abce53a7d91bbf3056b33f2734c5d5f628c075753e73903c43"
+    },
+    {
+      "available": true,
+      "bytes": 6652,
+      "name": "soffice",
+      "path": "/usr/bin/soffice",
+      "resolved_path": "/usr/lib/libreoffice/program/soffice",
+      "sha256": "adf468b45764b2abce53a7d91bbf3056b33f2734c5d5f628c075753e73903c43"
+    },
+    {
+      "available": true,
+      "bytes": 51664,
+      "name": "pdftotext",
+      "path": "/usr/bin/pdftotext",
+      "resolved_path": "/usr/bin/pdftotext",
+      "sha256": "7fe3559cac3ba61dd93650a1ba90499b9fc488184ef8d0f2f1305ddf52c0378b"
+    },
+    {
+      "available": true,
+      "bytes": 35344,
+      "name": "pdftoppm",
+      "path": "/usr/bin/pdftoppm",
+      "resolved_path": "/usr/bin/pdftoppm",
+      "sha256": "f22d753dfb4c31c9f0198d608982dac5b06a3c5d9a08d7d9bf0c6004f08a1a56"
+    },
+    {
+      "available": false,
+      "name": "tesseract",
+      "path": null
+    },
+    {
+      "available": false,
+      "name": "llama-cli",
+      "path": null
+    },
+    {
+      "available": false,
+      "name": "llama-mtmd-cli",
+      "path": null
+    },
+    {
+      "available": false,
+      "name": "llama-server",
+      "path": null
+    },
+    {
+      "available": false,
+      "name": "ollama",
+      "path": null
+    }
+  ]
+}

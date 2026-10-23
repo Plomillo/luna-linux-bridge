@@ -1,0 +1,122 @@
+#!/usr/bin/env python3
+"""Inference runtime for a same-source Qwen3 low-rank INT8-factor candidate."""
+from __future__ import annotations
+import json, pathlib, time
+import torch
+from torch import nn
+from torch.nn import functional as F
+from safetensors.torch import load_file
+from transformers import AutoConfig, AutoTokenizer, Qwen3ForCausalLM
+
+ROOT = pathlib.Path(__file__).resolve().parent
+
+class LowRankLinear(nn.Module):
+    def __init__(self, base, rank):
+        super().__init__()
+        self.in_features, self.out_features = base.in_features, base.out_features
+        self.weight_u = nn.Parameter(torch.empty((self.out_features, rank), dtype=torch.int8, device="meta"), requires_grad=False)
+        self.weight_v = nn.Parameter(torch.empty((rank, self.in_features), dtype=torch.int8, device="meta"), requires_grad=False)
+        self.scale_u = nn.Parameter(torch.empty((rank,), dtype=torch.float32, device="meta"), requires_grad=False)
+        self.scale_v = nn.Parameter(torch.empty((rank,), dtype=torch.float32, device="meta"), requires_grad=False)
+        self.bias = base.bias
+
+    def forward(self, x):
+        v = self.weight_v.to(dtype=x.dtype) * self.scale_v.to(dtype=x.dtype).unsqueeze(1)
+        u = self.weight_u.to(dtype=x.dtype) * self.scale_u.to(dtype=x.dtype).unsqueeze(0)
+        return F.linear(F.linear(x, v), u, self.bias)
+
+class LowRankEmbedding(nn.Module):
+    def __init__(self, base, rank):
+        super().__init__()
+        self.num_embeddings, self.embedding_dim = base.num_embeddings, base.embedding_dim
+        self.padding_idx = base.padding_idx
+        self.max_norm, self.norm_type = base.max_norm, base.norm_type
+        self.scale_grad_by_freq, self.sparse = base.scale_grad_by_freq, base.sparse
+        self.weight_u = nn.Parameter(torch.empty((self.num_embeddings, rank), dtype=torch.int8, device="meta"), requires_grad=False)
+        self.weight_v = nn.Parameter(torch.empty((rank, self.embedding_dim), dtype=torch.int8, device="meta"), requires_grad=False)
+        self.scale_u = nn.Parameter(torch.empty((rank,), dtype=torch.float32, device="meta"), requires_grad=False)
+        self.scale_v = nn.Parameter(torch.empty((rank,), dtype=torch.float32, device="meta"), requires_grad=False)
+
+    def forward(self, ids):
+        u = F.embedding(ids, self.weight_u).to(dtype=torch.bfloat16)
+        u = u * self.scale_u.to(dtype=u.dtype)
+        v = self.weight_v.to(dtype=u.dtype) * self.scale_v.to(dtype=u.dtype).unsqueeze(1)
+        return torch.matmul(u, v)
+
+def load_candidate():
+    torch.set_num_threads(1)
+    torch.set_num_interop_threads(1)
+    cfg = AutoConfig.from_pretrained(ROOT, local_files_only=True)
+    if getattr(cfg, "model_type", None) != "qwen3":
+        raise RuntimeError("MODEL_IDENTITY_MISMATCH")
+    with torch.device("meta"):
+        model = Qwen3ForCausalLM(cfg)
+    modules = dict(model.named_modules())
+    factorized = 0
+    for name, module in list(modules.items()):
+        if not name:
+            continue
+        if isinstance(module, nn.Embedding):
+            replacement = LowRankEmbedding(module, int(json.loads((ROOT / "compression_metadata.json").read_text())["rank"]))
+        elif isinstance(module, nn.Linear):
+            replacement = LowRankLinear(module, int(json.loads((ROOT / "compression_metadata.json").read_text())["rank"]))
+        else:
+            continue
+        parent_name, _, leaf = name.rpartition(".")
+        parent = modules[parent_name]
+        setattr(parent, leaf, replacement)
+        factorized += 1
+    if factorized < 200:
+        raise RuntimeError("MODEL_MAPPING_INCOMPLETE:" + str(factorized))
+    weights = load_file(str(ROOT / "model.safetensors"), device="cpu")
+    missing, unexpected = model.load_state_dict(weights, strict=True, assign=True)
+    if missing or unexpected:
+        raise RuntimeError("STATE_MAPPING_MISMATCH:" + json.dumps({"missing": missing[:20], "unexpected": unexpected[:20]}))
+    # Qwen3's rotary buffers were initialized under the meta device. Re-materialize
+    # the exact configured RoPE frequencies on CPU after loading the factor weights.
+    from transformers.modeling_rope_utils import ROPE_INIT_FUNCTIONS
+    rope_count = 0
+    for module in model.modules():
+        if module.__class__.__name__ == "Qwen3RotaryEmbedding":
+            inv_freq, attention_scaling = ROPE_INIT_FUNCTIONS[module.rope_type](module.config, device=torch.device("cpu"))
+            module.inv_freq = inv_freq
+            module.original_inv_freq = inv_freq.clone()
+            module.attention_scaling = attention_scaling
+            rope_count += 1
+    if rope_count < 1:
+        raise RuntimeError("QWEN3_ROPE_MODULE_NOT_FOUND")
+    remaining_meta = [name for name, buf in model.named_buffers() if buf.is_meta]
+    if remaining_meta:
+        raise RuntimeError("UNMATERIALIZED_META_BUFFERS:" + ",".join(remaining_meta[:20]))
+    model._lowrank_rope_materialized = rope_count
+    model.eval()
+    return model
+
+def smoke_test():
+    t0 = time.monotonic()
+    tokenizer = AutoTokenizer.from_pretrained(ROOT, local_files_only=True)
+    model = load_candidate()
+    tok = tokenizer("Test", return_tensors="pt")
+    with torch.inference_mode():
+        out = model(input_ids=tok["input_ids"], attention_mask=tok.get("attention_mask"), use_cache=False)
+    logits = out.logits
+    if logits.ndim != 3 or logits.shape[0] != 1 or not torch.isfinite(logits).all():
+        raise RuntimeError("NONFINITE_OR_MALFORMED_LOGITS")
+    next_id = int(logits[0, -1].argmax().item())
+    if not 0 <= next_id < int(model.config.vocab_size):
+        raise RuntimeError("NEXT_TOKEN_OUT_OF_RANGE")
+    return {"status": "PASS_MODEL_START_AND_FORWARD", "model_type": model.config.model_type,
+            "vocab_size": int(model.config.vocab_size), "input_token_count": int(tok["input_ids"].shape[-1]),
+            "logits_shape": list(logits.shape), "finite_logits": True, "argmax_token_id": next_id,
+            "elapsed_seconds": round(time.monotonic()-t0, 3),
+            "rope_buffers_materialized": int(getattr(model, "_lowrank_rope_materialized", 0)),
+            "quality_equivalence": "NOT_ESTABLISHED_BY_SMOKE_TEST"}
+
+if __name__ == "__main__":
+    import argparse
+    p = argparse.ArgumentParser()
+    p.add_argument("--smoke-test", action="store_true")
+    a = p.parse_args()
+    if not a.smoke_test:
+        p.error("Use --smoke-test")
+    print(json.dumps(smoke_test(), indent=2))

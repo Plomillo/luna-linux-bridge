@@ -1,0 +1,25 @@
+{
+  "name": "ClamAV",
+  "version": "1.5.4",
+  "platform": "linux-x86_64",
+  "official_download_page": "https://www.clamav.net/downloads",
+  "assets": {
+    "rpm": {
+      "filename": "clamav-1.5.4.linux.x86_64.rpm",
+      "url": "https://github.com/Cisco-Talos/clamav/releases/download/clamav-1.5.4/clamav-1.5.4.linux.x86_64.rpm",
+      "published_size_mb": 43.2
+    },
+    "deb": {
+      "filename": "clamav-1.5.4.linux.x86_64.deb",
+      "url": "https://github.com/Cisco-Talos/clamav/releases/download/clamav-1.5.4/clamav-1.5.4.linux.x86_64.deb",
+      "published_size_mb": 101.0
+    },
+    "source": {
+      "filename": "clamav-1.5.4.tar.gz",
+      "url": "https://github.com/Cisco-Talos/clamav/releases/download/clamav-1.5.4/clamav-1.5.4.tar.gz",
+      "published_size_mb": 60.8
+    }
+  },
+  "asset_included": false,
+  "reason": "The execution environment could not transfer the upstream Linux binary payload. Only reproducible source/configuration is included."
+}

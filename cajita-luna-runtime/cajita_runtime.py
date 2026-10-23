@@ -1,0 +1,179 @@
+#!/usr/bin/env python3
+"""Cajita de Luna six-domain runtime router; candidate integration, fail-closed."""
+from __future__ import annotations
+import argparse, datetime as dt, hashlib, json, os, subprocess, sys, time
+from pathlib import Path
+
+SCHEMA = "CAJITA_SIX_DOMAIN_RUNTIME/1.1"
+HARD_CAP_BYTES = 479_000_000
+CANDIDATE_ID = "CAJITA_LUNA_RUNTIME_V9_20261023"
+MANIFEST_REL = Path("CAJITA_RUNTIME_V1/weights_manifest.json")
+MANIFEST_SHA256 = "50ae6f9cf60ef84d4be15d35af998c5ad64685f54b882cc3fff8e812357e3483"
+DOMAINS = [
+ {"id":"D01_CEREBRO","name":"1. Cerebro","directory":"1. Cerebro","entrypoint":"1. Cerebro/cerebro_180mb_runtime.py","args":["--smoke-test"],"assets":["1. Cerebro/config.json","1. Cerebro/model.safetensors","1. Cerebro/tokenizer.json","1. Cerebro/tokenizer_config.json"],"scope":"GPT-OSS low-rank candidate; smoke is not quality certification."},
+ {"id":"D02_ORQUESTACION","name":"2. Orquestación","directory":"2. Orquestación","entrypoint":"2. Orquestación/Orquestador/CLIs/cli_registry.py","args":["--self-test"],"assets":["2. Orquestación/Orquestador/punto.json","2. Orquestación/Orquestador/CLIS.txt"],"scope":"CLI registry self-test; does not prove all external CLI tools are installed."},
+ {"id":"D03_TRANSCRIPCION","name":"3. Transcripción","directory":"3. Transcripción","entrypoint":"3. Transcripción/lowrank_runtime.py","args":["--smoke-test"],"assets":["3. Transcripción/config.json","3. Transcripción/model.safetensors","3. Transcripción/preprocessor_config.json","3. Transcripción/tokenizer.json"],"scope":"Whisper low-rank candidate; smoke does not certify transcription quality/WER."},
+ {"id":"D04_TRADUCTOR_INTELIGENTE","name":"4. Traductor Inteligente","directory":"4. Traductor Inteligente","entrypoint":"4. Traductor Inteligente/Traducción general/lowrank_runtime.py","args":["--smoke-test"],"assets":["4. Traductor Inteligente/Traducción general/config.json","4. Traductor Inteligente/Traducción general/model.safetensors","4. Traductor Inteligente/Traducción general/sentencepiece.bpe.model"],"scope":"SeamlessM4T v2 low-rank candidate; exact shared embedding/output aliases are restored by the compact runtime; smoke tests text generation only."},
+ {"id":"D05_INTELIGENCIA_DOCUMENTAL","name":"5. Inteligencia documental","directory":"5. Inteligencia documental","entrypoint":"5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/docling_30mb_runtime_v1.py","args":["--candidate-dir","5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate","--verify-only"],"assets":["5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_manifest.json","5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin"],"scope":"Granite Docling candidate; model-load verification, not document OCR/quality certification."},
+ {"id":"D06_SISTEMA_INTELIGENTE","name":"6. Sistema Inteligente","directory":"6. Sistema Inteligente","entrypoint":"6. Sistema Inteligente/Análisis Avanzado/lowrank_runtime_v2.py","args":["--smoke-test"],"assets":["6. Sistema Inteligente/Análisis Avanzado/config.json","6. Sistema Inteligente/Análisis Avanzado/model.safetensors","6. Sistema Inteligente/Anti-Alucinaciones/model.onnx"],"scope":"Qwen3 smoke and ONNX file integrity; ONNX inference adapter/dependencies not certified."},
+]
+
+def utc():
+ return dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds").replace("+00:00","Z")
+def sha256(path):
+ h=hashlib.sha256()
+ with Path(path).open("rb") as f:
+  for chunk in iter(lambda:f.read(8*1024*1024),b""): h.update(chunk)
+ return h.hexdigest()
+def root_for(value):
+ root=Path(value).resolve() if value else Path(__file__).resolve().parent
+ missing=[d["directory"] for d in DOMAINS if not (root/d["directory"]).is_dir()]
+ if missing: raise RuntimeError("DOMAIN_DIRECTORIES_MISSING:"+",".join(missing))
+ return root
+def file_for(root, rel):
+ p=root/rel
+ if p.is_symlink(): raise RuntimeError("SYMLINK_REJECTED:"+rel)
+ p=p.resolve(strict=True)
+ if not p.is_relative_to(root) or not p.is_file(): raise RuntimeError("INVALID_OR_ESCAPING_FILE:"+rel)
+ return p
+def manifest_for(root):
+ p=file_for(root,str(MANIFEST_REL))
+ if sha256(p)!=MANIFEST_SHA256: raise RuntimeError("WEIGHTS_MANIFEST_SHA256_MISMATCH")
+ m=json.loads(p.read_text(encoding="utf-8"))
+ if m.get("schema")!="CAJITA_SIX_DOMAIN_WEIGHT_MANIFEST/1.0": raise RuntimeError("MANIFEST_SCHEMA_INVALID")
+ if m.get("candidate_id") != CANDIDATE_ID: raise RuntimeError("MANIFEST_CANDIDATE_ID_MISMATCH")
+ if len(m.get("artifacts",[]))!=6 or int(m.get("artifact_count",-1))!=6: raise RuntimeError("WEIGHT_COUNT_MISMATCH")
+ if sum(int(a["bytes"]) for a in m["artifacts"])!=int(m["total_weight_bytes"]): raise RuntimeError("WEIGHT_TOTAL_MISMATCH")
+ return m
+def package_size(root):
+ count=total=0
+ for base, dirs, files in os.walk(root,followlinks=False):
+  bp=Path(base)
+  for name in dirs:
+   if (bp/name).is_symlink(): raise RuntimeError("SYMLINK_DIRECTORY_REJECTED:"+str((bp/name).relative_to(root)))
+  for name in files:
+   p=bp/name
+   if p.is_symlink() or not p.is_file(): raise RuntimeError("NON_REGULAR_FILE_REJECTED:"+str(p.relative_to(root)))
+   count+=1; total+=p.stat().st_size
+ return count,total
+def selftest(root):
+ domains=[]; missing=[]
+ for d in DOMAINS:
+  entry=root/d["entrypoint"]
+  assets=[{"path":a,"present":(root/a).is_file() and not (root/a).is_symlink()} for a in d["assets"]]
+  route= (root/d["directory"]).is_dir() and entry.is_file() and not entry.is_symlink() and all(a["present"] for a in assets)
+  domains.append({"id":d["id"],"directory_present":(root/d["directory"]).is_dir(),"entrypoint":d["entrypoint"],"entrypoint_present":entry.is_file() and not entry.is_symlink(),"assets":assets,"route_state":"WIRED" if route else "BLOCKED","scope":d["scope"]})
+  if not route: missing.append(d["id"])
+ try:
+  manifest_for(root); manifest_ok=True; manifest_error=None
+ except Exception as exc:
+  manifest_ok=False; manifest_error=str(exc)
+ count,size=package_size(root); capok=size<=HARD_CAP_BYTES
+ return {"schema":SCHEMA,"operation":"selftest","captured_at_utc":utc(),"candidate_id":CANDIDATE_ID,"root":str(root),"domain_order":[d["id"] for d in DOMAINS],"domain_count":6,"domains":domains,"blocked_domains":missing,"weights_manifest_valid":manifest_ok,"weights_manifest_error":manifest_error,"package_file_count":count,"package_size_bytes":size,"hard_cap_bytes":HARD_CAP_BYTES,"size_gate":"PASS" if capok else "FAIL","functional_equivalence":"NOT_ESTABLISHED","certification":"NOT_GRANTED","status":"PASS" if not missing and manifest_ok and capok else "FAIL"}
+def audit(root):
+ m=manifest_for(root); listed={a["path"] for a in m["artifacts"]}; found=set()
+ for base,dirs,files in os.walk(root,followlinks=False):
+  for n in files:
+   p=Path(base)/n
+   if p.suffix.lower() in {".safetensors",".bin",".onnx",".pt",".gguf"}: found.add(p.relative_to(root).as_posix())
+ result=[]
+ for a in m["artifacts"]:
+  p=file_for(root,a["path"]); actualsize=p.stat().st_size; actualhash=sha256(p)
+  result.append({"id":a["id"],"domain_id":a["domain_id"],"path":a["path"],"expected_bytes":a["bytes"],"actual_bytes":actualsize,"expected_sha256":a["sha256"],"actual_sha256":actualhash,"status":"PASS" if actualsize==int(a["bytes"]) and actualhash==a["sha256"] else "FAIL"})
+ count,size=package_size(root); capok=size<=HARD_CAP_BYTES
+ extra=sorted(found-listed); absent=sorted(listed-found); hashok=all(x["status"]=="PASS" for x in result)
+ passed=hashok and not extra and not absent and capok
+ return {"schema":SCHEMA,"operation":"audit-weights","captured_at_utc":utc(),"candidate_id":CANDIDATE_ID,"artifacts":result,"artifact_count":len(result),"total_weight_bytes":sum(x["actual_bytes"] for x in result),"undeclared_model_like_files":extra,"missing_manifest_files":absent,"package_file_count":count,"package_size_bytes":size,"hard_cap_bytes":HARD_CAP_BYTES,"size_gate":"PASS" if capok else "FAIL","weight_presence_integrity":"PASS" if passed else "FAIL","functional_equivalence":"NOT_ESTABLISHED","independent_validation":"NOT_RUN","certification":"NOT_GRANTED","promotion":"NOT_AUTHORIZED","status":"PASS" if passed else "FAIL"}
+def select_domain(value):
+ aliases={}
+ for i,d in enumerate(DOMAINS,1):
+  aliases[d["id"].casefold()]=d; aliases[str(i)]=d
+  aliases[d["name"].casefold()]=d
+  aliases[d["name"].split(". ",1)[-1].casefold()]=d
+ aliases.update({"orquestacion":DOMAINS[1],"orquestación":DOMAINS[1],"transcripcion":DOMAINS[2],"transcripción":DOMAINS[2],"traductor":DOMAINS[3],"documental":DOMAINS[4],"sistema":DOMAINS[5]})
+ try: return aliases[value.strip().casefold()]
+ except KeyError as exc: raise ValueError("UNKNOWN_DOMAIN:"+value) from exc
+def choose_python(root, domain):
+ if domain["id"] == "D02_ORQUESTACION":
+  return sys.executable, "standard-library"
+ required = ("torch", "numpy", "transformers", "safetensors")
+ configured = os.environ.get("CAJITA_PYTHON")
+ candidates = []
+ if configured:
+  candidates.append((Path(configured).expanduser(), "CAJITA_PYTHON"))
+ else:
+  for ancestor in (root, *root.parents):
+   candidate = ancestor / "state/tools/venvs/llama-cpp-b10819-py313/bin/python"
+   if candidate.is_file():
+    candidates.append((candidate, "discovered-CUSTOSZ-model-venv"))
+  candidates.append((Path(sys.executable), "runtime-interpreter"))
+ seen = set()
+ failures = []
+ probe_code = "import importlib.util,sys; req=('torch','numpy','transformers','safetensors'); missing=[x for x in req if importlib.util.find_spec(x) is None]; print('MISSING='+','.join(missing)); sys.exit(1 if missing else 0)"
+ for candidate, source in candidates:
+  try:
+   # Preserve the venv executable path: resolving its symlink to /usr/bin/python
+   # discards the virtual-environment context and its installed packages.
+   candidate = Path(os.path.abspath(os.path.expanduser(str(candidate))))
+   candidate_key = os.path.normcase(str(candidate))
+   if candidate_key in seen: continue
+   seen.add(candidate_key)
+   if not candidate.is_file() or (os.name != "nt" and not os.access(candidate, os.X_OK)):
+    failures.append(str(candidate)+":not-executable"); continue
+   probe = subprocess.run([str(candidate), "-B", "-c", probe_code], text=True,
+                          stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=12, check=False)
+   if probe.returncode == 0:
+    return str(candidate), source
+   failures.append(str(candidate)+":"+(probe.stdout.strip() or probe.stderr.strip())[:250])
+  except Exception as exc:
+   failures.append(str(candidate)+":"+type(exc).__name__+":"+str(exc)[:150])
+ raise RuntimeError("MODEL_PYTHON_ENVIRONMENT_NOT_READY; set CAJITA_PYTHON to a Python with torch,numpy,transformers,safetensors; "+ " | ".join(failures))
+
+def smoke(root,d,timeout):
+ entry=file_for(root,d["entrypoint"])
+ interpreter, env_source = choose_python(root,d)
+ argv=[interpreter,"-B",str(entry),*d["args"]]
+ env=os.environ.copy()
+ env.update({"OMP_NUM_THREADS":"1","OPENBLAS_NUM_THREADS":"1","MKL_NUM_THREADS":"1",
+             "NUMEXPR_NUM_THREADS":"1","TOKENIZERS_PARALLELISM":"false",
+             "HF_HUB_OFFLINE":"1","TRANSFORMERS_OFFLINE":"1"})
+ print(json.dumps({"schema":SCHEMA,"operation":"smoke-start","domain_id":d["id"],"argv":argv,
+                   "python_environment_source":env_source,"timeout_seconds":timeout,
+                   "offline_mode":True,"certification":"NOT_GRANTED"},ensure_ascii=False),flush=True)
+ t=time.monotonic()
+ try: p=subprocess.run(argv,cwd=str(root),env=env,check=False,timeout=timeout)
+ except subprocess.TimeoutExpired:
+  print(json.dumps({"domain_id":d["id"],"status":"TIMEOUT","timeout_seconds":timeout,"certification":"NOT_GRANTED"}),flush=True); return 124
+ code=p.returncode
+ print(json.dumps({"schema":SCHEMA,"operation":"smoke-result","domain_id":d["id"],"return_code":code,
+                   "elapsed_seconds":round(time.monotonic()-t,3),"status":"PASS" if code==0 else "FAIL",
+                   "python_environment_source":env_source,"quality_equivalence":"NOT_ESTABLISHED",
+                   "certification":"NOT_GRANTED"},ensure_ascii=False),flush=True)
+ return code
+
+def main():
+ ap=argparse.ArgumentParser(description=__doc__)
+ ap.add_argument("command",choices=("status","selftest","audit-weights","smoke","smoke-all"))
+ ap.add_argument("--root"); ap.add_argument("--domain"); ap.add_argument("--timeout",type=int,default=600)
+ a=ap.parse_args()
+ try:
+  root=root_for(a.root)
+  if not 1<=a.timeout<=7200: raise ValueError("TIMEOUT_OUT_OF_RANGE")
+  if a.command in {"status","selftest"}:
+   r=selftest(root); r["operation"]=a.command
+   print(json.dumps(r,indent=2,ensure_ascii=False)); return 0 if r["status"]=="PASS" else 2
+  if a.command=="audit-weights":
+   r=audit(root); print(json.dumps(r,indent=2,ensure_ascii=False)); return 0 if r["status"]=="PASS" else 2
+  if a.command=="smoke":
+   if not a.domain: ap.error("smoke requires --domain (1..6 or domain id)")
+   return smoke(root,select_domain(a.domain),a.timeout)
+  results=[]
+  for d in DOMAINS: results.append({"domain_id":d["id"],"return_code":smoke(root,d,a.timeout)})
+  ok=all(x["return_code"]==0 for x in results)
+  print(json.dumps({"schema":SCHEMA,"operation":"smoke-all-summary","results":results,"status":"PASS" if ok else "FAIL","certification":"NOT_GRANTED"},indent=2))
+  return 0 if ok else 3
+ except Exception as exc:
+  print(json.dumps({"schema":SCHEMA,"status":"FAIL_CLOSED","error_type":type(exc).__name__,"reason":str(exc)[:1000],"certification":"NOT_GRANTED"},indent=2,ensure_ascii=False),file=sys.stderr)
+  return 2
+if __name__=="__main__": raise SystemExit(main())
+

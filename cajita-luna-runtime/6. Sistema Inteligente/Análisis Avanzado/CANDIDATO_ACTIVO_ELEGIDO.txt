@@ -1,0 +1,12 @@
+ACTIVE CANDIDATE — USER-SELECTED FINAL SELECTION
+Domain: 6. Sistema Inteligente / Análisis Avanzado
+Candidate: Qwen3 low-rank INT8, rank 12
+Payload size: 68,858,803 bytes (target: 70,000,000 bytes)
+Payload files: 12; SHA-256 manifest: PASS 12/12
+Model weight file: model.safetensors (52,950,152 bytes).
+IMPORTANT: This is a multi-file safetensors/runtime/tokenizer package, NOT a GGUF file. Do not rename model.safetensors to .gguf; that would corrupt the format contract.
+Previous 9,001,753,472-byte Q4 GGUF was removed from the active Cajita tree and preserved outside Cajita at:
+/home/diegoignacionorambuenamiranda/PROYECTOS/1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/_ARCHIVO_CANDIDATOS_NO_SELECCIONADOS/ANALISIS_AVANZADO_Q4_K_M_9GB_20261022
+Runtime smoke test: PASS_MODEL_START_AND_FORWARD.
+Functional quality/equivalence: NOT ESTABLISHED. Certification: NOT GRANTED. Canonical promotion: NOT AUTHORIZED.
+

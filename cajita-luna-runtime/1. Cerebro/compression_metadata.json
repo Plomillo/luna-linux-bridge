@@ -1,0 +1,99 @@
+{
+  "aggregate_relative_frobenius_error_after_int8": 0.9983363410727844,
+  "architecture": "GptOssForCausalLM",
+  "candidate_total_bytes_before_metadata": 176481866,
+  "canonical_promotion": "NOT_AUTHORIZED",
+  "certification": "NOT_GRANTED",
+  "created_at_utc": "2026-10-21T08:33:15.114Z",
+  "dense_matrices_factorized": 182,
+  "expert_matrices_factorized": 9216,
+  "method": "randomized_truncated_svd_rank1_plus_symmetric_int8_factor_quantization",
+  "model_id": "OPENAI_GPT_OSS_CEREBRO_MXFP4",
+  "one_token_generation_test": "PENDING",
+  "oversample": 3,
+  "quality_equivalence": "NOT_ESTABLISHED",
+  "rank": 1,
+  "schema": "CUSTOSZ_CEREBRO_GPTOSS_RANK1_INT8_TARGET180/1.0",
+  "source_config_sha256": "933aeb666a3fd851133ddd7686414f369bc564c4185fb5704416550879f10566",
+  "source_index_sha256": "ede2655fdc05008561983b6e0829c600727c28d591e071077377059f03a6c00e",
+  "source_shard_mutation": "NO_SOURCE_WRITES_PERFORMED; SIZE_AND_MTIME_POSTCHECK_REQUIRED",
+  "source_shards_inventory": {
+    "model-00000-of-00014.safetensors": {
+      "bytes": 4625017896,
+      "mtime_ns": 1788818723425772300,
+      "name": "model-00000-of-00014.safetensors"
+    },
+    "model-00001-of-00014.safetensors": {
+      "bytes": 4115586736,
+      "mtime_ns": 1788818763135840100,
+      "name": "model-00001-of-00014.safetensors"
+    },
+    "model-00002-of-00014.safetensors": {
+      "bytes": 4625017888,
+      "mtime_ns": 1788819257356609600,
+      "name": "model-00002-of-00014.safetensors"
+    },
+    "model-00003-of-00014.safetensors": {
+      "bytes": 4115586752,
+      "mtime_ns": 1788819966809796800,
+      "name": "model-00003-of-00014.safetensors"
+    },
+    "model-00004-of-00014.safetensors": {
+      "bytes": 4625017896,
+      "mtime_ns": 1788818767158393900,
+      "name": "model-00004-of-00014.safetensors"
+    },
+    "model-00005-of-00014.safetensors": {
+      "bytes": 4115586696,
+      "mtime_ns": 1788818472247272400,
+      "name": "model-00005-of-00014.safetensors"
+    },
+    "model-00006-of-00014.safetensors": {
+      "bytes": 4625017856,
+      "mtime_ns": 1788818502926642800,
+      "name": "model-00006-of-00014.safetensors"
+    },
+    "model-00007-of-00014.safetensors": {
+      "bytes": 4060267176,
+      "mtime_ns": 1788818380339100800,
+      "name": "model-00007-of-00014.safetensors"
+    },
+    "model-00008-of-00014.safetensors": {
+      "bytes": 4625017896,
+      "mtime_ns": 1788818601947027200,
+      "name": "model-00008-of-00014.safetensors"
+    },
+    "model-00009-of-00014.safetensors": {
+      "bytes": 4170906304,
+      "mtime_ns": 1788818710657670300,
+      "name": "model-00009-of-00014.safetensors"
+    },
+    "model-00010-of-00014.safetensors": {
+      "bytes": 4625017896,
+      "mtime_ns": 1788818453524964200,
+      "name": "model-00010-of-00014.safetensors"
+    },
+    "model-00011-of-00014.safetensors": {
+      "bytes": 4115586752,
+      "mtime_ns": 1788818511112030700,
+      "name": "model-00011-of-00014.safetensors"
+    },
+    "model-00012-of-00014.safetensors": {
+      "bytes": 4064660808,
+      "mtime_ns": 1788818505966075100,
+      "name": "model-00012-of-00014.safetensors"
+    },
+    "model-00013-of-00014.safetensors": {
+      "bytes": 4625017896,
+      "mtime_ns": 1788818572595141200,
+      "name": "model-00013-of-00014.safetensors"
+    },
+    "model-00014-of-00014.safetensors": {
+      "bytes": 4115586736,
+      "mtime_ns": 1788818728049101800,
+      "name": "model-00014-of-00014.safetensors"
+    }
+  },
+  "source_tensor_keys": 687,
+  "target_bytes": 180000000
+}

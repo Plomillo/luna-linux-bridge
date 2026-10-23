@@ -1,0 +1,20 @@
+{
+  "active_runtime": "lowrank_runtime_v2.py",
+  "active_runtime_sha256": "d9b8c5a32cb17f6f6e8171516633d65c6cff5d04ee612a84982e8df1cf1bcc57",
+  "candidate_dir": "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR/CUSTOSZ_CONTINUITY_V1/state/cajita_candidates/QWEN3_ANALISIS_AVANZADO_LOWRANK_Q12_INT8_20261021T040905Z",
+  "candidate_id": "QWEN3_ANALISIS_AVANZADO_LOWRANK_Q12_INT8_20261021T040905Z",
+  "candidate_weights_sha256": "9d5c2ec7d88583c016a7d48f29695915ecfe0619cbca49bdfa8708f6cf6a4604",
+  "certification": "NOT_GRANTED",
+  "created_at_utc": "2026-10-21T04:13:55.893Z",
+  "fix": "materialize Qwen3RotaryEmbedding.inv_freq and original_inv_freq from the pinned config on CPU; reject any remaining meta buffers",
+  "mission_sha256": "0a36c59d4baf5d547f5217dc9c6db2a58ad9f8f3ea65d88f9b16a0dbe1604f8f",
+  "parent_runtime": "lowrank_runtime.py",
+  "parent_runtime_sha256": "ca041b36effa79ce28457f4c9a26ec5326be625a953c133a324031259ae64284",
+  "parent_smoke_status": "FAILED_META_ROPE_BUFFER_PRESERVED_AS_EVIDENCE",
+  "parent_smoke_test": "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR/CUSTOSZ_CONTINUITY_V1/state/jobs/cajita_qwen3_lowrank_target70_v1/runtime_smoke_test.json",
+  "quality_equivalence": "NOT_ESTABLISHED",
+  "schema": "CUSTOSZ_QWEN3_LOW_RANK_RUNTIME_PATCH/1.0",
+  "source_model_identity_preserved": true,
+  "source_weights_modified": false,
+  "target_bytes": 70000000
+}

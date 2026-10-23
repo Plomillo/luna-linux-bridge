@@ -1,0 +1,8 @@
+ACTIVE CANDIDATE — USER-SELECTED FOR CEREBRO
+Candidate ID: GPTOSS_CEREBRO_RANK1_INT8_20261021T062719Z
+Source model identity: OPENAI_GPT_OSS_CEREBRO_MXFP4 (gpt-oss-120b family)
+Format: multi-file safetensors low-rank INT8 package; NOT GGUF.
+Payload size (12 files): 176,485,377 bytes; cap: 180,000,000; headroom: 3,514,623 bytes.
+Placement manifest: 12/12 source-vs-destination SHA-256 matches.
+IMPORTANT VALIDATION LIMIT: existing report records runtime smoke-test failure (return code 1); quality equivalence NOT ESTABLISHED; certification NOT GRANTED; canonical promotion NOT AUTHORIZED. This marker records selection and placement only, not operational certification.
+Prior active model preserved outside Cajita at: /home/diegoignacionorambuenamiranda/PROYECTOS/1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/_ARCHIVO_CANDIDATOS_NO_SELECCIONADOS/CEREBRO_SMOLLM2_Q4_270MB_20261022/SmolLM2-360M-Instruct-Q4_K_M.gguf

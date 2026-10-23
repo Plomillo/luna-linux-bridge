@@ -1,0 +1,80 @@
+{
+  "schema": "CAJITA_SIX_DOMAIN_WEIGHT_MANIFEST/1.0",
+  "candidate_id": "CAJITA_LUNA_RUNTIME_V9_20261023",
+  "generated_at_utc": "2026-10-22T23:35:42Z",
+  "artifact_count": 6,
+  "artifacts": [
+    {
+      "id": "W01",
+      "label": "GPT-OSS compactado",
+      "domain_id": "1_CEREBRO",
+      "path": "1. Cerebro/model.safetensors",
+      "bytes": 148477400,
+      "sha256": "935d226a65faca9b59a7742c7c31208ef0ba671509d475c1a4e2f3489cecc19e",
+      "representation": "GPT-OSS rank-1 INT8 factors",
+      "presence": "VERIFIED",
+      "integrity_at_manifest_creation": "SHA256_STREAMED"
+    },
+    {
+      "id": "W02",
+      "label": "Whisper compactado",
+      "domain_id": "3_TRANSCRIPCION",
+      "path": "3. Transcripción/model.safetensors",
+      "bytes": 34877948,
+      "sha256": "6f4541536bfca7899d74e962c277b7fbcd1cbc4fb7f8d101c69bcd1ea2560aa3",
+      "representation": "Whisper low-rank INT8 factors",
+      "presence": "VERIFIED",
+      "integrity_at_manifest_creation": "SHA256_STREAMED"
+    },
+    {
+      "id": "W03",
+      "label": "SeamlessM4T v2 compactado",
+      "domain_id": "4_TRADUCTOR_INTELIGENTE",
+      "path": "4. Traductor Inteligente/Traducción general/model.safetensors",
+      "bytes": 20256147,
+      "sha256": "a2ba25feb33c68b7a5ea27ff8aadeaf96f67d80fc74d169c075e14d1ff363bf5",
+      "representation": "SeamlessM4T v2 low-rank INT8 factors",
+      "presence": "VERIFIED",
+      "integrity_at_manifest_creation": "SHA256_STREAMED"
+    },
+    {
+      "id": "W04",
+      "label": "Granite Docling cuantizado",
+      "domain_id": "5_INTELIGENCIA_DOCUMENTAL",
+      "path": "5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin",
+      "bytes": 13483380,
+      "sha256": "4a13b916b63b682a28c8fe89fc608b90d3bf5a8a77cb0988e1e19131c64ebc88",
+      "representation": "Granite Docling packed quantized weights",
+      "presence": "VERIFIED",
+      "integrity_at_manifest_creation": "SHA256_STREAMED"
+    },
+    {
+      "id": "W05",
+      "label": "Qwen3 compactado",
+      "domain_id": "6_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Análisis Avanzado/model.safetensors",
+      "bytes": 52950152,
+      "sha256": "9d5c2ec7d88583c016a7d48f29695915ecfe0619cbca49bdfa8708f6cf6a4604",
+      "representation": "Qwen3 low-rank INT8 factors",
+      "presence": "VERIFIED",
+      "integrity_at_manifest_creation": "SHA256_STREAMED"
+    },
+    {
+      "id": "W06",
+      "label": "Anti-Alucinaciones ONNX",
+      "domain_id": "6_SISTEMA_INTELIGENTE",
+      "path": "6. Sistema Inteligente/Anti-Alucinaciones/model.onnx",
+      "bytes": 110516001,
+      "sha256": "c6a266fe0f7f1f782094ff4b1e7ae3547fa48a22ab44712881cc03bba07bc5b7",
+      "representation": "ONNX model artifact; model architecture independently unverified",
+      "presence": "VERIFIED",
+      "integrity_at_manifest_creation": "SHA256_STREAMED"
+    }
+  ],
+  "total_weight_bytes": 380561028,
+  "total_weight_decimal_mb": 380.561,
+  "scope_note": "All six declared model/weight payloads in this compact candidate. Presence and per-file SHA-256 are covered; these checks do not establish model quality, semantic equivalence, complete dependency closure, or functional certification.",
+  "weight_presence_integrity": "REQUIRES_RUNTIME_AUDIT",
+  "functional_equivalence": "NOT_ESTABLISHED",
+  "certification": "NOT_GRANTED"
+}

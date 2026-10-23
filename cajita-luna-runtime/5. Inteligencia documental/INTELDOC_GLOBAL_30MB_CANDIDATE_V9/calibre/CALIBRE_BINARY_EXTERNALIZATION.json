@@ -1,0 +1,11 @@
+{
+  "bundled_binary": false,
+  "equivalence": "NOT_ESTABLISHED",
+  "functional_tests": "NOT_RUN",
+  "host_calibre_detected": false,
+  "original_bytes": 192898432,
+  "original_path": "/home/diegoignacionorambuenamiranda/PROYECTOS/1. PROYECTOS PRIORITARIOS/1. PROYECTO LUNA/2. Cajita de Luna/5. Inteligencia documental/Calibre/calibre-9.14.0-x86_64.txz",
+  "original_sha256": "7f53a0863ed6d32407bc72053b966e39d5b64813f2592bd9c741504c01c0e7f3",
+  "schema": "INTELDOC_EXTERNALIZED_ARTIFACT/1.0",
+  "source_id": "CALIBRE_BINARY"
+}

@@ -1,0 +1,122 @@
+{
+  "active_runtime": "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR/CUSTOSZ_CONTINUITY_V1/state/cajita_candidates/QWEN3_ANALISIS_AVANZADO_LOWRANK_Q12_INT8_20261021T040905Z/lowrank_runtime_v2.py",
+  "active_runtime_sha256": "d9b8c5a32cb17f6f6e8171516633d65c6cff5d04ee612a84982e8df1cf1bcc57",
+  "aggregate_relative_frobenius_error_after_int8": 0.9964088220513415,
+  "aggregate_relative_residual_before_factor_int8": 0.9964067735222465,
+  "candidate_bytes": 68858803,
+  "candidate_dir": "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR/CUSTOSZ_CONTINUITY_V1/state/cajita_candidates/QWEN3_ANALISIS_AVANZADO_LOWRANK_Q12_INT8_20261021T040905Z",
+  "candidate_file_inventory": [
+    {
+      "bytes": 11343,
+      "path": "LICENSE",
+      "sha256": "832dd9e00a68dd83b3c3fb9f5588dad7dcf337a0db50f7d9483f310cd292e92e"
+    },
+    {
+      "bytes": 2041,
+      "path": "compression_metadata.json",
+      "sha256": "82850aa9247dfb4dc381f8bcf5bb6291d031a9b7b87ebbdef098563248398eb0"
+    },
+    {
+      "bytes": 728,
+      "path": "config.json",
+      "sha256": "e73c3664ca09b10a673fef0c22e8a6b456201d49bd4713c9691f775720e8857a"
+    },
+    {
+      "bytes": 239,
+      "path": "generation_config.json",
+      "sha256": "2325da0f15bb848e018c5ae071b7943332e9f871d6b60e2ed22ca97d4cb993d2"
+    },
+    {
+      "bytes": 5322,
+      "path": "lowrank_runtime.py",
+      "sha256": "ca041b36effa79ce28457f4c9a26ec5326be625a953c133a324031259ae64284"
+    },
+    {
+      "bytes": 6403,
+      "path": "lowrank_runtime_v2.py",
+      "sha256": "d9b8c5a32cb17f6f6e8171516633d65c6cff5d04ee612a84982e8df1cf1bcc57"
+    },
+    {
+      "bytes": 1671853,
+      "path": "merges.txt",
+      "sha256": "8831e4f1a044471340f7c0a83d7bd71306a5b867e95fd870f74d0c5308a904d5"
+    },
+    {
+      "bytes": 52950152,
+      "path": "model.safetensors",
+      "sha256": "9d5c2ec7d88583c016a7d48f29695915ecfe0619cbca49bdfa8708f6cf6a4604"
+    },
+    {
+      "bytes": 1503,
+      "path": "runtime_patch_v2.json",
+      "sha256": "1c5214ab66088dbcc1aec5f5b994878845df1b170018df426badddcc87ff4b63"
+    },
+    {
+      "bytes": 11422654,
+      "path": "tokenizer.json",
+      "sha256": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4"
+    },
+    {
+      "bytes": 9732,
+      "path": "tokenizer_config.json",
+      "sha256": "d5d09f07b48c3086c508b30d1c9114bd1189145b74e982a265350c923acd8101"
+    },
+    {
+      "bytes": 2776833,
+      "path": "vocab.json",
+      "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+    }
+  ],
+  "candidate_id": "QWEN3_ANALISIS_AVANZADO_LOWRANK_Q12_INT8_20261021T040905Z",
+  "canonical_promotion": "NOT_AUTHORIZED",
+  "certification": "NOT_GRANTED",
+  "factor_dtype": "INT8",
+  "factor_rank": 12,
+  "factorized_matrix_count": 282,
+  "functional_quality_gate": "NOT_PASSED_NOT_RUN",
+  "mission_completion_claim": false,
+  "mission_sha256": "0a36c59d4baf5d547f5217dc9c6db2a58ad9f8f3ea65d88f9b16a0dbe1604f8f",
+  "preserved_vector_count": 161,
+  "prior_q4_candidate_sha256": "540af8bdf3c6b0ffef75146189088c7ab21e1658c166a9b1612eeb7e48c49098",
+  "prior_q4_modified": false,
+  "quantization": "randomized_truncated_SVD_low_rank_factorization_plus_symmetric_INT8_factor_quantization",
+  "report_path": "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR/CUSTOSZ_CONTINUITY_V1/state/worker_outputs/CAJITA_QWEN3_LOWRANK_TARGET70_FINAL_20261021T041400Z.json",
+  "runtime_patch_manifest": "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR/CUSTOSZ_CONTINUITY_V1/state/cajita_candidates/QWEN3_ANALISIS_AVANZADO_LOWRANK_Q12_INT8_20261021T040905Z/runtime_patch_v2.json",
+  "runtime_smoke_test_v1": "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR/CUSTOSZ_CONTINUITY_V1/state/jobs/cajita_qwen3_lowrank_target70_v1/runtime_smoke_test.json",
+  "runtime_smoke_test_v1_status": "FAIL_META_ROPE_BUFFER_PRESERVED",
+  "runtime_smoke_test_v2": {
+    "candidate_bytes": 68858803,
+    "candidate_id": "QWEN3_ANALISIS_AVANZADO_LOWRANK_Q12_INT8_20261021T040905Z",
+    "candidate_within_hard_cap": true,
+    "command": [
+      "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR/CUSTOSZ_CONTINUITY_V1/state/tools/venvs/llama-cpp-b10819-py313/bin/python",
+      "-B",
+      "/home/diegoignacionorambuenamiranda/Proyectos/1. PROYECTOS PRIORITARIOS/5. CUSTOSZ/0. CUSTOSZ  - OPERADOR/CUSTOSZ_CONTINUITY_V1/state/cajita_candidates/QWEN3_ANALISIS_AVANZADO_LOWRANK_Q12_INT8_20261021T040905Z/lowrank_runtime_v2.py",
+      "--smoke-test"
+    ],
+    "returncode": 0,
+    "schema": "CUSTOSZ_QWEN3_RUNTIME_SMOKE_TEST_V2/1.0",
+    "stderr": "",
+    "stdout": "{\n  \"status\": \"PASS_MODEL_START_AND_FORWARD\",\n  \"model_type\": \"qwen3\",\n  \"vocab_size\": 151936,\n  \"input_token_count\": 1,\n  \"logits_shape\": [\n    1,\n    1,\n    151936\n  ],\n  \"finite_logits\": true,\n  \"argmax_token_id\": 9779,\n  \"elapsed_seconds\": 0.885,\n  \"rope_buffers_materialized\": 1,\n  \"quality_equivalence\": \"NOT_ESTABLISHED_BY_SMOKE_TEST\"\n}\n",
+    "target_bytes": 70000000,
+    "timestamp_utc": "2026-10-21T04:14:00.433Z"
+  },
+  "schema": "CUSTOSZ_CAJITA_QWEN3_LOWRANK_TARGET70_FINAL/1.0",
+  "source_config_sha256": "e73c3664ca09b10a673fef0c22e8a6b456201d49bd4713c9691f775720e8857a",
+  "source_index_sha256": "62d7ad35757bae5e7baa452cb1483178b7daa50e869e923226b8da10871f7ebc",
+  "source_model_id": "CAJITA_SISTEMA_INTELIGENTE_ANALISIS_AVANZADO_QWEN3",
+  "source_shard_sha256": {
+    "model-00001-of-00008.safetensors": "e942bdbdf08857d16a8fef7d1dae9fceabeb4e84def6043485fe2f6f085dab0e",
+    "model-00002-of-00008.safetensors": "f7c9c6eee628f5ad831d2d1d292e120505e5fcadeb38f88b4d3c4cb86306ccf9",
+    "model-00003-of-00008.safetensors": "dfb8c5df9404b41ad6ae74e8b6b367135f017b4467b884cf71b17c71954f18a9",
+    "model-00004-of-00008.safetensors": "eab286fec759e3e59ab228621aefa0fef14ed56039e06f959e67257d5af7604d",
+    "model-00005-of-00008.safetensors": "97f0dc2992e59da95c466eff6f4fd0c8335843bbc36ed5c913a6f5150748c0e6",
+    "model-00006-of-00008.safetensors": "9e8e76a013cd5e253865b792991e0b410f869b136b3c500079b531b09198e99e",
+    "model-00007-of-00008.safetensors": "0aee70ee6e91dc00d818804fb47f124d13ee4ad5b4a64553e09dbf9391cd5750",
+    "model-00008-of-00008.safetensors": "0d6b92296e326d39bbbaeb32c3ec454ac606da843d4c8ffa8edf010b62b8c9e0"
+  },
+  "source_weights_modified": false,
+  "status": "SIZE_TARGET_MET_RUNTIME_SMOKE_PASS_QUALITY_UNVALIDATED",
+  "target_bytes": 70000000,
+  "timestamp_utc": "2026-10-21T04:14:00.518Z"
+}
