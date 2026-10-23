@@ -1,0 +1,75 @@
+name: Cajita — compactación de los diez activos nuevos
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/cajita-new-assets-compaction.yml"
+      - "tools/cajita_compact_new_engines.py"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cajita-new-asset-compaction-main
+  cancel-in-progress: false
+
+jobs:
+  compact-new-assets:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout main without materializing legacy LFS weights
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+          lfs: false
+          persist-credentials: true
+
+      - name: Install 7z and UPX on the GitHub runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y p7zip-full upx-ucl
+          python --version
+          7z | head -n 3 || true
+          upx --version
+
+      - name: Validate the compaction worker
+        run: python -m py_compile tools/cajita_compact_new_engines.py
+
+      - name: Compact all ten registered new assets
+        run: python tools/cajita_compact_new_engines.py
+
+      - name: Enforce no mutation of the six pre-existing model weights
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --quiet HEAD -- \
+            "cajita-luna-runtime/1. Cerebro/model.safetensors" \
+            "cajita-luna-runtime/3. Transcripción/model.safetensors" \
+            "cajita-luna-runtime/4. Traductor Inteligente/Traducción general/model.safetensors" \
+            "cajita-luna-runtime/5. Inteligencia documental/INTELDOC_GLOBAL_30MB_CANDIDATE_V9/docling/compact_upstream_hf_candidate/quantized_weights.bin" \
+            "cajita-luna-runtime/6. Sistema Inteligente/Análisis Avanzado/model.safetensors" \
+            "cajita-luna-runtime/6. Sistema Inteligente/Anti-Alucinaciones/model.onnx"
+          echo "LEGACY_MODEL_WEIGHTS_UNCHANGED=PASS"
+
+      - name: Commit the compacted assets and evidence directly to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A -- cajita-luna-runtime
+          git add -- docs/cajita-luna/CAJITA_NEW_ENGINE_COMPACTION_20261023.json
+          if git diff --cached --quiet; then
+            echo "No new content changes to commit."
+            exit 0
+          fi
+          git diff --cached --name-only
+          git commit -m "Compact newly incorporated Cajita assets; defer runtime repair"
+          git push origin HEAD:main
