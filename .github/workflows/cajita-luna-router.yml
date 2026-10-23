@@ -7,6 +7,8 @@ on:
       - "cajita-luna-runtime/cajita_router.py"
       - "cajita-luna-runtime/cajita_runtime.py"
       - "tests/test_cajita_router.py"
+      - "tests/test_cajita_model_adapter.py"
+      - "cajita-luna-runtime/cajita_model_adapter.py"
       - ".github/workflows/cajita-luna-router.yml"
   pull_request:
     paths:
@@ -34,10 +36,12 @@ jobs:
         with:
           python-version: "3.11"
       - name: Compile runtime and router
-        run: python -B -m py_compile cajita-luna-runtime/cajita_runtime.py cajita-luna-runtime/cajita_router.py
+        run: python -B -m py_compile cajita-luna-runtime/cajita_runtime.py cajita-luna-runtime/cajita_router.py cajita-luna-runtime/cajita_model_adapter.py
       - name: Run router regression tests
         env:
           PYTHONPATH: cajita-luna-runtime
-        run: python -B -m unittest discover -s tests -p "test_cajita_router.py" -v
+        run: |
+          python -B -m unittest discover -s tests -p "test_cajita_router.py" -v
+          python -B -m unittest discover -s tests -p "test_cajita_model_adapter.py" -v
       - name: Verify route catalog through runtime
         run: python -B cajita-luna-runtime/cajita_runtime.py routes
